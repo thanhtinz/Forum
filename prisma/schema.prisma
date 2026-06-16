@@ -142,6 +142,7 @@ model User {
   role            UserRole   @default(MEMBER)
   status          UserStatus @default(ACTIVE)
   isVerified      Boolean    @default(false)
+  verifiedBadge   Boolean    @default(false)
   ageVerified     Boolean    @default(false)
   threadCount     Int        @default(0)
   postCount       Int        @default(0)

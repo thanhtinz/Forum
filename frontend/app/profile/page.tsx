@@ -6,6 +6,7 @@ import { UserPlus, UserMinus, Send, Heart, Trash2, Ban, ExternalLink } from 'luc
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
+import { UserBadges, type BadgeDescriptor } from '@/components/UserBadges';
 
 interface Look {
   gender: string;
@@ -47,6 +48,7 @@ function ProfileView() {
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
   const [following, setFollowing] = useState(false);
   const [blocked, setBlocked] = useState(false);
+  const [badges, setBadges] = useState<BadgeDescriptor[]>([]);
   const [fields, setFields] = useState<{ field: { id: string; label: string; type: string }; value: string }[]>([]);
 
   useEffect(() => {
@@ -56,6 +58,7 @@ function ProfileView() {
       if (p?.id) {
         api.get<any>(`/trophies/user/${p.id}`).then(setTrophies).catch(() => {});
         api.get<{ followers: number; following: number }>(`/social/users/${p.id}/follow-counts`).then(setCounts).catch(() => {});
+        api.get<{ badges: BadgeDescriptor[] }>(`/badges/user/${p.id}`).then((r) => setBadges(r.badges || [])).catch(() => {});
         api.get<{ field: { id: string; label: string; type: string }; value: string }[]>(`/profile-extra/users/${p.id}/fields`).then((r) => setFields((r || []).filter((f) => f.value?.trim()))).catch(() => {});
         if (user && user.id !== p.id) {
           api.get<{ following: boolean }>(`/social/users/${p.id}/follow-state`).then((r) => setFollowing(r.following)).catch(() => {});
@@ -98,8 +101,8 @@ function ProfileView() {
         <div className="mx-auto w-fit"><Avatar user={profile} size={96} /></div>
         <h1 className="mt-3 text-xl font-bold">{profile.displayName || profile.username}</h1>
         <p className="text-sm text-ink-500">@{profile.username}</p>
-        {profile.role && profile.role !== 'MEMBER' && (
-          <span className="chip mt-2 bg-brand-100 text-brand-700">{profile.role}</span>
+        {badges.length > 0 && (
+          <div className="mt-2 flex justify-center"><UserBadges badges={badges} /></div>
         )}
         {profile.bio && <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{profile.bio}</p>}
         {trophies && <p className="mt-2 text-sm font-medium text-amber-600">🏅 {trophies.currentTitle} · {trophies.totalPoints} điểm</p>}

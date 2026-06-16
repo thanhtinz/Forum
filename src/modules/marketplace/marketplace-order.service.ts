@@ -7,6 +7,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GemService } from '../gem/gem.service';
+import { StoreStaffService } from './store-staff.service';
 
 const HOLD_DAYS = 3;          // giam tiền seller 3 ngày
 const PLATFORM_FEE = 0.1;     // 10% phí nền tảng
@@ -16,6 +17,7 @@ export class MarketplaceOrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gem: GemService,
+    private readonly staff: StoreStaffService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -108,10 +110,11 @@ export class MarketplaceOrderService {
     }));
   }
 
-  // Đơn của seller (kèm trạng thái giao hàng)
+  // Đơn của seller (kèm trạng thái giao hàng) — chủ hoặc nhân viên có quyền 'orders'
   async sellerOrders(userId: string) {
+    const store = await this.staff.resolveStore(userId, 'orders');
     const rows = await this.prisma.order.findMany({
-      where: { product: { sellerId: userId } }, orderBy: { createdAt: 'desc' }, take: 200,
+      where: { product: { storefrontId: store.id } }, orderBy: { createdAt: 'desc' }, take: 200,
       include: { product: { select: { title: true } }, buyer: { select: { username: true } } },
     });
     return rows.map((o) => ({
@@ -122,9 +125,10 @@ export class MarketplaceOrderService {
 
   // Giao hàng thủ công
   async deliverManual(userId: string, orderId: string, content: string) {
-    const o = await this.prisma.order.findUnique({ where: { id: orderId }, include: { product: { select: { sellerId: true } } } });
+    const o = await this.prisma.order.findUnique({ where: { id: orderId }, include: { product: { select: { sellerId: true, storefrontId: true } } } });
     if (!o) throw new NotFoundException('Đơn không tồn tại');
-    if (o.product.sellerId !== userId) throw new ForbiddenException('Không phải đơn của shop bạn');
+    const allowed = o.product.sellerId === userId || (!!o.product.storefrontId && await this.staff.can(userId, o.product.storefrontId, 'orders'));
+    if (!allowed) throw new ForbiddenException('Không phải đơn của shop bạn');
     if (!content?.trim()) throw new BadRequestException('Nội dung giao hàng trống');
     await this.prisma.order.update({ where: { id: orderId }, data: { deliveredContent: content.trim() } });
     return { ok: true };

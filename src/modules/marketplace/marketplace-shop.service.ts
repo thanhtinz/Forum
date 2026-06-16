@@ -8,10 +8,14 @@ import { Prisma, ProductType, ProductStatus } from '@prisma/client';
 import slugify from 'slugify';
 import { createId } from '@paralleldrive/cuid2';
 import { PrismaService } from '../../prisma/prisma.service';
+import { StoreStaffService } from './store-staff.service';
 
 @Injectable()
 export class MarketplaceShopService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly staff: StoreStaffService,
+  ) {}
 
   // ──────────────────────────────────────────────
   // DANH MỤC (admin tạo, seller không)
@@ -207,7 +211,7 @@ export class MarketplaceShopService {
   }
 
   async shopTickets(userId: string, status?: string) {
-    const store = await this.requireStore(userId);
+    const store = await this.staff.resolveStore(userId, 'tickets');
     return this.prisma.shopTicket.findMany({
       where: { storefrontId: store.id, ...(status ? { status } : {}) },
       orderBy: { updatedAt: 'desc' },
@@ -217,17 +221,18 @@ export class MarketplaceShopService {
   async ticketDetail(userId: string, ticketId: string) {
     const t = await this.prisma.shopTicket.findUnique({
       where: { id: ticketId },
-      include: { messages: { orderBy: { createdAt: 'asc' } }, storefront: { select: { ownerId: true, name: true } } },
+      include: { messages: { orderBy: { createdAt: 'asc' } }, storefront: { select: { id: true, ownerId: true, name: true } } },
     });
     if (!t) throw new NotFoundException('Ticket không tồn tại');
-    if (t.userId !== userId && t.storefront.ownerId !== userId) throw new ForbiddenException('Không có quyền');
-    return t;
+    const isShop = t.storefront.ownerId === userId || await this.staff.can(userId, t.storefront.id, 'tickets');
+    if (t.userId !== userId && !isShop) throw new ForbiddenException('Không có quyền');
+    return { ...t, isShop };
   }
 
   async replyTicket(userId: string, ticketId: string, body: string) {
     const t = await this.ticketDetail(userId, ticketId);
     if (t.status === 'CLOSED') throw new BadRequestException('Ticket đã đóng');
-    const isOwner = t.storefront.ownerId === userId;
+    const isOwner = t.isShop;
     await this.prisma.$transaction([
       this.prisma.shopTicketMessage.create({ data: { ticketId, senderId: userId, body: body.trim() } }),
       this.prisma.shopTicket.update({ where: { id: ticketId }, data: { status: isOwner ? 'ANSWERED' : 'OPEN', updatedAt: new Date() } }),

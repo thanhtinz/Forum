@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { Currency, SpecialItemType } from '@prisma/client';
+import { SpecialItemType } from '@prisma/client';
+import { Currency } from '../../../common/enums';
 
 @Injectable()
 export class SpecialItemService {

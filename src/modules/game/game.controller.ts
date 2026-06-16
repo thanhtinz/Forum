@@ -9,7 +9,8 @@ import { SpecialItemService } from './shop/special-item.service';
 import { GuildService } from './guild/guild.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/roles.decorator';
-import { Gender, EquipSlot, Currency, ItemRarity } from '@prisma/client';
+import { Gender, EquipSlot, ItemRarity } from '@prisma/client';
+import { Currency } from '../../common/enums';
 
 @Controller('game')
 @UseGuards(JwtAuthGuard)

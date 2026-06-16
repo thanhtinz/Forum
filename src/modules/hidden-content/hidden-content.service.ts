@@ -130,7 +130,7 @@ export class HiddenContentService {
     if (!section) throw new NotFoundException('Không tìm thấy nội dung ẩn');
 
     // Kiểm tra gate type có hỗ trợ gem không
-    const gemGates = [
+    const gemGates: HiddenGateType[] = [
       HiddenGateType.GEM_PURCHASE,
       HiddenGateType.LIKE_OR_GEM,
       HiddenGateType.COMMENT_OR_GEM,

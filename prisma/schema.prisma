@@ -854,6 +854,7 @@ model AiOutfitUnlock {
   outfitId  String
   unlockedAt DateTime @default(now())
 
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   outfit AiOutfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
 
   @@unique([userId, outfitId])
@@ -921,6 +922,7 @@ model Storefront {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  owner     User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   followers StorefrontFollow[]
 
   @@index([slug])
@@ -932,6 +934,7 @@ model StorefrontFollow {
   storefrontId String
   createdAt    DateTime @default(now())
 
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
 
   @@id([userId, storefrontId])

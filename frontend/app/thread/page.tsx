@@ -4,11 +4,20 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import type { Thread, Post, Paginated } from '@/lib/types';
+
+const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
+
+// Ước tính thời gian đọc (200 từ/phút) từ HTML các bài viết
+function readingTime(posts: { content: string }[]): number {
+  const text = posts.map((p) => p.content.replace(/<[^>]+>/g, ' ')).join(' ');
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}
 
 interface PollOption { id: string; text: string; voteCount: number; percent: number }
 interface Poll {
@@ -114,8 +123,20 @@ function ThreadView() {
     } catch (e: any) { setErr(e.message); }
   }
 
-  async function like(postId: string) {
-    try { await api.post(`/forum/posts/${postId}/react`, { emoji: 'like' }); load(); } catch {}
+  async function react(postId: string, emoji: string) {
+    try { await api.post(`/forum/posts/${postId}/react`, { emoji }); load(); } catch {}
+  }
+  async function moveThread() {
+    if (!thread) return;
+    const categoryId = prompt('Nhập ID chuyên mục đích:');
+    if (!categoryId) return;
+    try { await api.post(`/forum/threads/${thread.id}/move`, { categoryId }); load(); } catch (e: any) { setErr(e.message); }
+  }
+  async function mergeThread() {
+    if (!thread) return;
+    const targetId = prompt('Nhập ID chủ đề đích để gộp VÀO (chủ đề này sẽ bị xoá):');
+    if (!targetId) return;
+    try { const r = await api.post<{ mergedInto: string }>(`/forum/threads/${thread.id}/merge`, { targetId }); alert('Đã gộp.'); window.location.href = `/thread?slug=`; } catch (e: any) { setErr(e.message); }
   }
   async function toggleSub() {
     if (!thread) return;
@@ -167,7 +188,14 @@ function ThreadView() {
           <span className="flex items-center gap-1"><MessageCircle size={14} /> {thread.replyCount} trả lời</span>
           <span className="flex items-center gap-1"><Eye size={14} /> {thread.viewCount} lượt xem</span>
           <span className="flex items-center gap-1"><ThumbsUp size={14} /> {thread.likeCount}</span>
+          {posts.length > 0 && <span className="flex items-center gap-1"><Clock size={14} /> ~{readingTime(posts)} phút đọc</span>}
         </div>
+        {isMod && (
+          <div className="mt-3 flex gap-2 border-t border-ink-200/70 pt-3 dark:border-ink-800">
+            <button onClick={moveThread} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><FolderInput size={13} /> Chuyển mục</button>
+            <button onClick={mergeThread} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Merge size={13} /> Gộp chủ đề</button>
+          </div>
+        )}
       </div>
 
       <PollCard threadId={thread.id} />
@@ -189,12 +217,35 @@ function ThreadView() {
                   {isBest && <span className="flex items-center gap-1 font-medium text-emerald-600"><Award size={14} /> Câu trả lời hay nhất</span>}
                 </div>
                 <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: p.content }} />
-                <div className="mt-3 flex items-center gap-3 text-xs">
-                  <button onClick={() => like(p.id)} className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
-                    <ThumbsUp size={14} /> Thích ({p.likeCount})
-                  </button>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                  {/* Các reaction đã có, gom theo emoji */}
+                  {(() => {
+                    const groups: Record<string, string[]> = {};
+                    (p.reactions || []).forEach((r) => { (groups[r.emoji] ||= []).push(r.userId); });
+                    return Object.entries(groups).map(([emoji, uids]) => {
+                      const mine = !!user && uids.includes(user.id);
+                      const label = emoji === 'like' ? '👍' : emoji;
+                      return (
+                        <button key={emoji} onClick={() => user && react(p.id, emoji)}
+                          className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${mine ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30' : 'border-ink-200 dark:border-ink-800'}`}>
+                          <span>{label}</span> <span className="text-ink-500">{uids.length}</span>
+                        </button>
+                      );
+                    });
+                  })()}
+                  {/* Bộ chọn thêm reaction */}
+                  {user && (
+                    <div className="group relative">
+                      <button className="flex items-center gap-1 rounded-full border border-dashed border-ink-300 px-2 py-0.5 text-ink-500 hover:text-brand-600 dark:border-ink-700"><SmilePlus size={14} /></button>
+                      <div className="absolute left-0 top-full z-10 mt-1 hidden gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card group-hover:flex dark:border-ink-800 dark:bg-ink-900">
+                        {REACTIONS.map((e) => (
+                          <button key={e} onClick={() => react(p.id, e)} className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-800">{e}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {canManage && !isFirst && (
-                    <button onClick={() => markBest(p.id)} className={`flex items-center gap-1 ${isBest ? 'text-emerald-600' : 'text-ink-500 hover:text-emerald-600'}`}>
+                    <button onClick={() => markBest(p.id)} className={`ml-auto flex items-center gap-1 ${isBest ? 'text-emerald-600' : 'text-ink-500 hover:text-emerald-600'}`}>
                       <Award size={14} /> {isBest ? 'Bỏ chọn' : 'Chọn là câu trả lời hay nhất'}
                     </button>
                   )}

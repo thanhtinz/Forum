@@ -36,6 +36,7 @@ export interface Post {
   isFirstPost?: boolean;
   createdAt: string;
   author?: ThreadAuthor;
+  reactions?: { emoji: string; userId: string }[];
 }
 
 export interface Paginated<T> {

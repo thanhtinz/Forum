@@ -504,6 +504,53 @@ export class ForumService {
     });
   }
 
+  // ── Move (chuyển chuyên mục) ──
+  async moveThread(threadId: string, categoryId: string) {
+    const thread = await this.prisma.thread.findUnique({ where: { id: threadId }, select: { id: true, categoryId: true, replyCount: true } });
+    if (!thread) throw new NotFoundException('Thread không tồn tại');
+    const target = await this.prisma.category.findUnique({ where: { id: categoryId } });
+    if (!target) throw new NotFoundException('Chuyên mục không tồn tại');
+    if (thread.categoryId === categoryId) return thread;
+
+    const postCount = await this.prisma.post.count({ where: { threadId, isDeleted: false } });
+    await this.prisma.$transaction([
+      this.prisma.thread.update({ where: { id: threadId }, data: { categoryId } }),
+      this.prisma.category.update({ where: { id: thread.categoryId }, data: { threadCount: { decrement: 1 }, postCount: { decrement: postCount } } }),
+      this.prisma.category.update({ where: { id: categoryId }, data: { threadCount: { increment: 1 }, postCount: { increment: postCount } } }),
+    ]);
+    return this.prisma.thread.findUnique({ where: { id: threadId } });
+  }
+
+  // ── Merge (gộp source vào target) ──
+  async mergeThreads(sourceId: string, targetId: string) {
+    if (sourceId === targetId) throw new BadRequestException('Không thể gộp chính nó');
+    const [source, target] = await Promise.all([
+      this.prisma.thread.findUnique({ where: { id: sourceId }, select: { id: true, categoryId: true, slug: true } }),
+      this.prisma.thread.findUnique({ where: { id: targetId }, select: { id: true, categoryId: true } }),
+    ]);
+    if (!source || !target) throw new NotFoundException('Thread không tồn tại');
+
+    // Bài gốc của source trở thành trả lời thường trong target
+    const movedPosts = await this.prisma.post.count({ where: { threadId: sourceId, isDeleted: false } });
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.post.updateMany({ where: { threadId: sourceId }, data: { threadId: targetId, isFirstPost: false } });
+      // Gộp subscriptions/bookmarks (bỏ trùng)
+      const subs = await tx.threadSubscription.findMany({ where: { threadId: sourceId }, select: { userId: true } });
+      for (const s of subs) await tx.threadSubscription.upsert({ where: { threadId_userId: { threadId: targetId, userId: s.userId } }, update: {}, create: { threadId: targetId, userId: s.userId } });
+      await tx.threadSubscription.deleteMany({ where: { threadId: sourceId } });
+
+      // Cập nhật số liệu target
+      const total = await tx.post.count({ where: { threadId: targetId, isDeleted: false } });
+      await tx.thread.update({ where: { id: targetId }, data: { replyCount: Math.max(0, total - 1), lastPostAt: new Date() } });
+      // Giảm thống kê chuyên mục của source và xoá source
+      await tx.category.update({ where: { id: source.categoryId }, data: { threadCount: { decrement: 1 } } });
+      await tx.thread.delete({ where: { id: sourceId } });
+    });
+
+    return { mergedInto: targetId, movedPosts };
+  }
+
   async deletePost(postId: string, deletedById: string, reason?: string) {
     return this.prisma.post.update({
       where: { id: postId },

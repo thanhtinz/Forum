@@ -83,6 +83,10 @@ export class AiGateway implements OnGatewayConnection {
         }
         if (chunk.done) {
           client.emit('done', { emotion: chunk.emotion });
+          if (chunk.bond) {
+            // Báo độ thân thiết tăng / mở khoá outfit mới
+            client.emit('bond', chunk.bond);
+          }
         }
       }
     } catch (err: any) {

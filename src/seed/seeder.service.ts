@@ -6,6 +6,7 @@ import { CROPS, FERTILIZERS, ANIMALS, RECIPES } from './data/farm.data';
 import { FOODS } from './data/foods.data';
 import { WARDROBE_ITEMS } from './data/wardrobe.data';
 import { TOOL_CATEGORIES, TOOLS } from './data/tools.data';
+import { AI_CHARACTER, AI_OUTFITS } from './data/ai-character.data';
 
 // Tự seed dữ liệu mẫu (cá/cây/phân/vật nuôi/công thức/đồ ăn/wardrobe) khi app khởi động.
 // Data nằm thẳng trong src/seed/data — không cần chạy lệnh seed thủ công.
@@ -98,6 +99,57 @@ export class SeederService implements OnApplicationBootstrap {
       };
       await this.prisma.tool.upsert({ where: { slug: t.slug }, update: data, create: { ...data, slug: t.slug } });
       n++;
+    }
+
+    // ── Nhân vật AI Live2D + trang phục mở dần theo bond ──
+    const character = await this.prisma.aiCharacter.upsert({
+      where: { slug: AI_CHARACTER.slug },
+      update: {
+        name: AI_CHARACTER.name, description: AI_CHARACTER.description,
+        defaultOutfit: AI_CHARACTER.defaultOutfit, emotionMap: AI_CHARACTER.emotionMap,
+        sortOrder: AI_CHARACTER.sortOrder,
+      },
+      create: {
+        slug: AI_CHARACTER.slug, name: AI_CHARACTER.name, description: AI_CHARACTER.description,
+        defaultOutfit: AI_CHARACTER.defaultOutfit, emotionMap: AI_CHARACTER.emotionMap,
+        sortOrder: AI_CHARACTER.sortOrder,
+      },
+    });
+    n++;
+    for (const o of AI_OUTFITS) {
+      const data = { ...o, isDefault: o.slug === AI_CHARACTER.defaultOutfit };
+      await this.prisma.aiOutfit.upsert({
+        where: { characterId_slug: { characterId: character.id, slug: o.slug } },
+        update: data,
+        create: { ...data, characterId: character.id },
+      });
+      n++;
+    }
+    // Persona mặc định (tạo nếu chưa có) + gắn vào character này để chat tích bond
+    const existingPersona = await this.prisma.aiPersona.findFirst({ where: { isDefault: true } });
+    if (!existingPersona) {
+      await this.prisma.aiPersona.create({
+        data: {
+          name: 'Minori',
+          systemPrompt:
+            'Bạn là Minori, một trợ lý AI anime dễ thương và thân thiện của diễn đàn.\n' +
+            'Bạn nói tiếng Việt, vui vẻ, hay giúp đỡ thành viên về các vấn đề kỹ thuật, lập trình, game.\n' +
+            'Tính cách: năng động, đáng yêu, đôi khi nghịch ngợm nhưng luôn nhiệt tình giúp đỡ.',
+          provider: 'GEMINI',
+          modelId: 'gemini-2.0-flash',
+          greetingText: 'Xin chào! Mình là Minori~ Có gì mình giúp được không nè? 🌸',
+          live2dModel: AI_OUTFITS[0].modelPath,
+          isDefault: true,
+          isActive: true,
+          characterId: character.id,
+        },
+      });
+      n++;
+    } else {
+      await this.prisma.aiPersona.updateMany({
+        where: { isDefault: true, characterId: null },
+        data: { characterId: character.id },
+      });
     }
 
     this.logger.log(`Auto-seed hoàn tất: ${n} bản ghi template`);

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiProviderService, AiChatMessage } from './ai-provider.service';
 import { EmotionService, Emotion } from './emotion.service';
+import { OutfitService } from './outfit.service';
 
 @Injectable()
 export class AiCompanionService {
@@ -9,6 +10,7 @@ export class AiCompanionService {
     private readonly prisma: PrismaService,
     private readonly aiProvider: AiProviderService,
     private readonly emotion: EmotionService,
+    private readonly outfit: OutfitService,
   ) {}
 
   async getDefaultPersona() {
@@ -64,7 +66,7 @@ export class AiCompanionService {
     sessionId: string,
     userId: string,
     userMessage: string,
-  ): AsyncGenerator<{ text: string; emotion?: Emotion; expressionId?: string; done: boolean }> {
+  ): AsyncGenerator<{ text: string; emotion?: Emotion; expressionId?: string; done: boolean; bond?: { leveledUp: boolean; newLevel: number; unlockedOutfits: string[] } }> {
     const session = await this.getSession(sessionId, userId);
     const persona = session.persona;
 
@@ -142,11 +144,24 @@ export class AiCompanionService {
       data: { updatedAt: new Date() },
     });
 
+    // Tăng độ thân thiết (bond) → có thể mở khoá outfit mới
+    let bond: { leveledUp: boolean; newLevel: number; unlockedOutfits: string[] } | undefined;
+    if (persona.characterId) {
+      try {
+        // Đảm bảo có bond record (tạo nếu chưa có) rồi cộng điểm
+        await this.outfit.getBondState(userId, persona.characterId);
+        bond = await this.outfit.addBondPoints(userId, persona.characterId);
+      } catch {
+        /* không chặn chat nếu bond lỗi */
+      }
+    }
+
     yield {
       text: '',
       emotion: detectedEmotion,
       expressionId: this.emotion.getExpressionId(detectedEmotion),
       done: true,
+      bond,
     };
   }
 
@@ -156,7 +171,7 @@ export class AiCompanionService {
   async listPersonas() {
     return this.prisma.aiPersona.findMany({
       where: { isActive: true },
-      select: { id: true, name: true, greetingText: true, live2dModel: true, isDefault: true },
+      select: { id: true, name: true, greetingText: true, live2dModel: true, isDefault: true, characterId: true },
     });
   }
 }

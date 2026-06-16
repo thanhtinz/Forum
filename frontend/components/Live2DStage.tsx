@@ -5,9 +5,12 @@ import { useEffect, useRef } from 'react';
 // 5 bộ trang phục Live2D (model Cubism 3.0 của minori)
 export const MINORI_MODELS: Record<string, { label: string; path: string }> = {
   normal: { label: 'Thường ngày', path: '/models/minori/normal/05minori_normal_3.0_f_t05.model3.json' },
-  cloth002: { label: 'Váy dạo phố', path: '/models/minori/cloth002/05minori_cloth002_3.0_f_t04.model3.json' },
   culture: { label: 'Đồng phục', path: '/models/minori/culture/05minori_culture_t01.model3.json' },
+  sports02: { label: 'Thể thao', path: '/models/minori/sports02/05minori_sports02.model3.json' },
   parttime: { label: 'Làm thêm', path: '/models/minori/parttime/05minori_parttime_t03.model3.json' },
+  cloth002: { label: 'Váy dạo phố', path: '/models/minori/cloth002/05minori_cloth002_3.0_f_t04.model3.json' },
+  unit: { label: 'Đồng phục đặc biệt', path: '/models/minori/unit/05minori_unit_3.0_f_t02.model3.json' },
+  swimsuit: { label: 'Đồ bơi', path: '/models/minori/swimsuit/05minori_swimsuit.model3.json' },
   priestess: { label: 'Miko', path: '/models/minori/priestess/05minori_priestess_t02.model3.json' },
 };
 
@@ -41,11 +44,13 @@ function loadScript(src: string): Promise<void> {
 
 interface Props {
   outfit?: string;       // key trong MINORI_MODELS
+  modelPath?: string;    // đường dẫn model trực tiếp (ưu tiên hơn outfit)
   emotion?: string;      // cảm xúc hiện tại
   className?: string;
 }
 
-export default function Live2DStage({ outfit = 'normal', emotion = 'neutral', className }: Props) {
+export default function Live2DStage({ outfit = 'normal', modelPath, emotion = 'neutral', className }: Props) {
+  const resolvePath = () => modelPath || MINORI_MODELS[outfit]?.path || MINORI_MODELS.normal.path;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const appRef = useRef<any>(null);
   const modelRef = useRef<any>(null);
@@ -72,7 +77,7 @@ export default function Live2DStage({ outfit = 'normal', emotion = 'neutral', cl
           antialias: true,
         });
         appRef.current = app;
-        await loadModel(MINORI_MODELS[outfit]?.path || MINORI_MODELS.normal.path);
+        await loadModel(resolvePath());
 
         // idle body motion ngẫu nhiên
         idleTimer.current = setInterval(() => {
@@ -118,9 +123,9 @@ export default function Live2DStage({ outfit = 'normal', emotion = 'neutral', cl
 
   // Đổi trang phục
   useEffect(() => {
-    if (Live2DModelRef.current && appRef.current) loadModel(MINORI_MODELS[outfit]?.path || MINORI_MODELS.normal.path);
+    if (Live2DModelRef.current && appRef.current) loadModel(resolvePath());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [outfit]);
+  }, [outfit, modelPath]);
 
   // Đổi cảm xúc -> chơi motion khuôn mặt
   useEffect(() => {

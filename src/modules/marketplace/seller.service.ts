@@ -1,7 +1,17 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { AiProvider } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GemService } from '../gem/gem.service';
+import { AiProviderService, AiChatMessage } from '../ai-companion/ai-provider.service';
 import { MarketplaceOrderService } from './marketplace-order.service';
+
+const AI_PROMPTS: Record<string, string> = {
+  description: 'Bạn là copywriter bán hàng. Viết mô tả sản phẩm hấp dẫn, có gạch đầu dòng tính năng, kêu gọi mua hàng. Tiếng Việt, ngắn gọn.',
+  seo: 'Bạn là chuyên gia SEO. Tạo tiêu đề SEO (<60 ký tự) và meta description (<160 ký tự) cho sản phẩm. Tiếng Việt.',
+  reply: 'Bạn là nhân viên CSKH lịch sự, chuyên nghiệp. Soạn câu trả lời cho khách hàng. Tiếng Việt.',
+  analyze: 'Bạn là chuyên gia phân tích kinh doanh. Phân tích số liệu doanh thu và đưa lời khuyên ngắn gọn. Tiếng Việt.',
+};
 
 // Xếp hạng seller theo tổng doanh thu (gem) đã giải ngân
 function tierOf(revenue: number) {
@@ -18,7 +28,30 @@ export class SellerService {
     private readonly prisma: PrismaService,
     private readonly gem: GemService,
     private readonly orders: MarketplaceOrderService,
+    private readonly ai: AiProviderService,
+    private readonly config: ConfigService,
   ) {}
+
+  // ── 18. Công cụ AI cho seller ──
+  async aiAssist(userId: string, task: string, input: string) {
+    const system = AI_PROMPTS[task];
+    if (!system) throw new BadRequestException('Tác vụ AI không hợp lệ');
+    if (!input?.trim()) throw new BadRequestException('Cần nhập nội dung');
+    const provider = (this.config.get<string>('AI_PROVIDER') || 'GEMINI') as AiProvider;
+    const model = this.config.get<string>('AI_MODEL') || 'gemini-1.5-flash';
+    const messages: AiChatMessage[] = [
+      { role: 'system', content: system },
+      { role: 'user', content: input },
+    ];
+    let text = '';
+    try {
+      for await (const chunk of this.ai.streamChat(provider, model, messages)) text += chunk.text;
+    } catch {
+      throw new BadRequestException('Không gọi được AI (kiểm tra API key server)');
+    }
+    if (!text.trim()) throw new BadRequestException('AI không trả về nội dung (kiểm tra API key/model)');
+    return { result: text };
+  }
 
   private async store(userId: string) {
     const s = await this.prisma.storefront.findUnique({ where: { ownerId: userId } });

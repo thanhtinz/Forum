@@ -64,6 +64,11 @@ export function Header() {
         <button onClick={toggleTheme} className="rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="theme">
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
+        {user && (
+          <Link href="/notifications" className="rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="notifications">
+            <Bell size={18} />
+          </Link>
+        )}
 
         {user ? (
           <div className="relative">

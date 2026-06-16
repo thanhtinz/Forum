@@ -41,6 +41,10 @@ export class MarketplaceController {
   @UseGuards(JwtAuthGuard)
   sellerReviews(@CurrentUser('id') uid: string) { return this.seller.reviews(uid); }
 
+  @Post('seller/ai')
+  @UseGuards(JwtAuthGuard)
+  sellerAi(@CurrentUser('id') uid: string, @Body() b: { task: string; input: string }) { return this.seller.aiAssist(uid, b.task, b.input); }
+
   @Post('reviews/:id/reply')
   @UseGuards(JwtAuthGuard)
   replyReview(@CurrentUser('id') uid: string, @Param('id') id: string, @Body('reply') reply: string) { return this.seller.replyReview(uid, id, reply); }

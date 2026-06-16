@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
-type Tab = 'stats' | 'categories' | 'stores' | 'products' | 'orders' | 'withdrawals' | 'tickets' | 'coupons';
-const TABS: [Tab, string][] = [['stats', 'Tổng quan'], ['categories', 'Danh mục'], ['stores', 'Cửa hàng'], ['products', 'Sản phẩm'], ['orders', 'Đơn hàng'], ['withdrawals', 'Rút tiền'], ['tickets', 'Ticket'], ['coupons', 'Mã giảm giá']];
+type Tab = 'stats' | 'categories' | 'stores' | 'products' | 'orders' | 'withdrawals' | 'tickets' | 'coupons' | 'perks';
+const TABS: [Tab, string][] = [['stats', 'Tổng quan'], ['categories', 'Danh mục'], ['stores', 'Cửa hàng'], ['products', 'Sản phẩm'], ['orders', 'Đơn hàng'], ['withdrawals', 'Rút tiền'], ['perks', 'Giá dịch vụ'], ['tickets', 'Ticket'], ['coupons', 'Mã giảm giá']];
 
 export default function AdminMarketplace() {
   const [tab, setTab] = useState<Tab>('stats');
@@ -20,6 +20,7 @@ export default function AdminMarketplace() {
       {tab === 'products' && <Products />}
       {tab === 'orders' && <Orders />}
       {tab === 'withdrawals' && <Withdrawals />}
+      {tab === 'perks' && <Perks />}
       {tab === 'tickets' && <Simple url="/marketplace/admin/tickets" render={(t: any) => `[${t.status}] ${t.subject} — ${t.storefront?.name}`} />}
       {tab === 'coupons' && <Simple url="/marketplace/admin/coupons" render={(c: any) => `${c.code} (-${c.discountPercent}%) — ${c.storefront?.name} · dùng ${c.usedCount}`} />}
     </div>
@@ -135,6 +136,38 @@ function Withdrawals() {
         </div>
       ))}
       {list.length === 0 && <div className="p-6 text-center text-ink-500">Không có yêu cầu rút.</div>}
+    </div>
+  );
+}
+
+function Perks() {
+  const [c, setC] = useState<any>(null);
+  const [msg, setMsg] = useState('');
+  useEffect(() => { api.get('/marketplace/admin/perk-config').then(setC).catch((e) => setMsg(e.message)); }, []);
+  if (!c) return <div className="p-6 text-center text-ink-500">{msg || 'Đang tải…'}</div>;
+  const groups: [string, string, string[]][] = [
+    ['pinProduct', 'Ghim sản phẩm', ['d1', 'd7', 'd30']],
+    ['featureProduct', 'Đề xuất sản phẩm', ['d1', 'd7', 'd30']],
+    ['featureStore', 'Đề xuất gian hàng', ['d1', 'd7', 'd30']],
+    ['aiShop', 'Gói AI shop', ['month', 'forever']],
+  ];
+  const lbl: Record<string, string> = { d1: '1 ngày', d7: '7 ngày', d30: '1 tháng', month: 'Tháng', forever: 'Vĩnh viễn' };
+  return (
+    <div className="space-y-4">
+      {groups.map(([g, title, keys]) => (
+        <div key={g} className="card p-4">
+          <h3 className="mb-2 font-semibold">{title} (gem)</h3>
+          <div className="flex flex-wrap gap-3">
+            {keys.map((k) => (
+              <label key={k} className="text-sm">{lbl[k]}
+                <input type="number" className="input mt-1 w-28" value={c[g][k]} onChange={(e) => setC({ ...c, [g]: { ...c[g], [k]: Number(e.target.value) } })} />
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      <button onClick={async () => { try { await api.put('/marketplace/admin/perk-config', c); setMsg('Đã lưu ✓'); } catch (e: any) { setMsg(e.message); } }} className="btn-primary">Lưu giá</button>
+      {msg && <span className="ml-2 text-sm text-brand-600">{msg}</span>}
     </div>
   );
 }

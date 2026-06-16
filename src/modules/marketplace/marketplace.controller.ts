@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import { MarketplaceService } from './marketplace.service';
 import { MarketplaceShopService } from './marketplace-shop.service';
 import { MarketplaceOrderService } from './marketplace-order.service';
 import { SellerService } from './seller.service';
+import { SellerPerkService } from './seller-perk.service';
 import { CreateStorefrontDto, UpdateStorefrontDto } from './marketplace.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
@@ -26,7 +28,36 @@ export class MarketplaceController {
     private readonly shop: MarketplaceShopService,
     private readonly orders: MarketplaceOrderService,
     private readonly seller: SellerService,
+    private readonly perks: SellerPerkService,
   ) {}
+
+  // ── Dịch vụ trả phí (gem) — mua trong Seller Dashboard ──
+  @Get('seller/perks')
+  @UseGuards(JwtAuthGuard)
+  myPerks(@CurrentUser('id') uid: string) { return this.perks.myPerks(uid); }
+
+  @Post('seller/perks/product/:id')
+  @UseGuards(JwtAuthGuard)
+  buyProductPerk(@CurrentUser('id') uid: string, @Param('id') id: string, @Body() b: { kind: 'pin' | 'feature'; dur: 'd1' | 'd7' | 'd30' }) {
+    return this.perks.buyProductPerk(uid, id, b.kind, b.dur);
+  }
+
+  @Post('seller/perks/store')
+  @UseGuards(JwtAuthGuard)
+  buyStoreFeature(@CurrentUser('id') uid: string, @Body('dur') dur: 'd1' | 'd7' | 'd30') { return this.perks.buyStoreFeature(uid, dur); }
+
+  @Post('seller/perks/ai')
+  @UseGuards(JwtAuthGuard)
+  buyAi(@CurrentUser('id') uid: string, @Body('plan') plan: 'month' | 'forever') { return this.perks.buyAi(uid, plan); }
+
+  // Admin cấu hình giá dịch vụ
+  @Get('admin/perk-config')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  perkConfig() { return this.perks.getConfig(); }
+
+  @Put('admin/perk-config')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  setPerkConfig(@Body() b: any) { return this.perks.setConfig(b); }
 
   // ── SELLER CENTER ──
   @Get('seller/dashboard')
@@ -163,6 +194,9 @@ export class MarketplaceController {
   // ── Danh mục (public + admin) ──
   @Get('categories')
   categories() { return this.shop.listCategories(); }
+
+  @Get('featured')
+  featured() { return this.shop.featured(); }
 
   @Post('admin/categories')
   @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)

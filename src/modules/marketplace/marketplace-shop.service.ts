@@ -50,6 +50,24 @@ export class MarketplaceShopService {
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 
+  // Đề xuất (đã trả gem, còn hạn) cho trang chợ
+  async featured() {
+    const now = new Date();
+    const [stores, products] = await Promise.all([
+      this.prisma.storefront.findMany({
+        where: { isActive: true, featuredUntil: { gt: now } },
+        orderBy: { featuredUntil: 'desc' }, take: 12,
+        select: { id: true, slug: true, name: true, tagline: true, logoUrl: true, isVerified: true },
+      }),
+      this.prisma.product.findMany({
+        where: { status: 'ACTIVE', OR: [{ pinnedUntil: { gt: now } }, { featuredUntil: { gt: now } }] },
+        orderBy: [{ pinnedUntil: { sort: 'desc', nulls: 'last' } }, { featuredUntil: { sort: 'desc', nulls: 'last' } }], take: 12,
+        select: { id: true, title: true, slug: true, gemPrice: true, isFree: true, thumbnailUrl: true },
+      }),
+    ]);
+    return { stores, products };
+  }
+
   async storeProducts(slug: string) {
     const store = await this.prisma.storefront.findUnique({ where: { slug }, select: { id: true } });
     if (!store) throw new NotFoundException('Gian hàng không tồn tại');

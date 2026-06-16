@@ -20,7 +20,7 @@ const SECTIONS: { label: string; href: string | null }[] = [
   { label: '17. Xếp hạng Seller', href: '/seller' },
   { label: '16. Thông báo', href: '/notifications' },
   { label: '18. Công cụ AI', href: '/seller/ai' },
-  { label: '10. Marketing', href: null },
+  { label: '10. Quảng bá (gem)', href: '/seller/boost' },
   { label: '12. Thống kê nâng cao', href: null },
   { label: '13. Nhân viên', href: null },
   { label: '15. Bảo mật', href: null },

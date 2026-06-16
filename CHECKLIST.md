@@ -173,7 +173,16 @@
 - [x] **Phòng PvP realtime** — RoomService + WebSocket gateway (`/minigame`): tạo/vào/rời/sẵn sàng/đánh/bỏ lượt, pot coin, người thắng ăn pot (trừ phí); REST fallback `/minigame/rooms/*`
 - [ ] Combat animation replay (đã lưu rounds, chưa có UI replay)
 
-### 🎨 Frontend hoàn chỉnh (Next.js 14)
+### 🎨 Frontend Next.js 14 (App Router) — nền tảng chuyên nghiệp
+- [x] Setup Next.js 14 + Tailwind + theme forum (XenForo/Flarum style), dark mode
+- [x] Header chuyên nghiệp (brand, search, nav, theme toggle, user menu), AuthProvider (JWT)
+- [x] Trang chủ: hero + danh sách thread (prefix/avatar/stats) + sidebar khám phá
+- [x] Trang thread (cột avatar + nội dung kiểu XenForo) + trả lời + thả tim
+- [x] Đăng nhập / Đăng ký; trang Tools (lưới công cụ)
+- [x] API client (rewrite /api -> backend) — **build thành công (next build OK)**
+- [ ] (tiếp) Trang game/farm/fishing/minigame/marketplace/profile + chat UI
+
+### 🎨 (cũ) Frontend artifacts lẻ
 - [ ] Ghép toàn bộ app Next.js (mới có component lẻ)
 - [ ] **Pixel character thay avatar** ở mọi nơi hiển thị
 - [ ] **Chat UI đầy đủ** — 4 kênh + popup sticker/gif/emoji tách tab + media player

@@ -6,6 +6,7 @@ import { join } from 'path';
 import { PrismaModule } from './prisma/prisma.module';
 import { HiddenContentModule } from './modules/hidden-content/hidden-content.module';
 import { ForumModule } from './modules/forum/forum.module';
+import { PagesModule } from './modules/pages/pages.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { GemModule } from './modules/gem/gem.module';
 import { MarketplaceModule } from './modules/marketplace/marketplace.module';
@@ -40,6 +41,7 @@ import { SeederModule } from './seed/seeder.module';
     AuthModule,
     UsersModule,
     ForumModule,
+    PagesModule,
     HiddenContentModule,
     NotificationsModule,
     GemModule,

@@ -18,6 +18,7 @@ import { PollService, CreatePollDto } from './poll.service';
 import { SubscriptionService } from './subscription.service';
 import { DraftService, SaveDraftDto } from './draft.service';
 import { ForumTextService } from './forum-text.service';
+import { BookmarkService } from './bookmark.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
@@ -30,6 +31,7 @@ export class ForumController {
     private readonly subs: SubscriptionService,
     private readonly drafts: DraftService,
     private readonly text: ForumTextService,
+    private readonly bookmarks: BookmarkService,
   ) {}
 
   @Get('categories')
@@ -184,6 +186,25 @@ export class ForumController {
   @UseGuards(JwtAuthGuard)
   deleteDraft(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.drafts.remove(id, userId);
+  }
+
+  // ── Bookmarks (lưu chủ đề) ──
+  @Get('bookmarks')
+  @UseGuards(JwtAuthGuard)
+  myBookmarks(@CurrentUser('id') userId: string) {
+    return this.bookmarks.listMine(userId);
+  }
+
+  @Get('threads/:id/bookmark')
+  @UseGuards(JwtAuthGuard)
+  bookmarkState(@Param('id') threadId: string, @CurrentUser('id') userId: string) {
+    return this.bookmarks.isBookmarked(threadId, userId);
+  }
+
+  @Post('threads/:id/bookmark')
+  @UseGuards(JwtAuthGuard)
+  toggleBookmark(@Param('id') threadId: string, @CurrentUser('id') userId: string, @Body('note') note?: string) {
+    return this.bookmarks.toggle(threadId, userId, note);
   }
 
   // ── Admin: ngưỡng tự chọn câu trả lời hay nhất theo reaction ──

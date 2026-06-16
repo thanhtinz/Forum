@@ -181,7 +181,9 @@
 - [x] Đăng nhập / Đăng ký; trang Tools (lưới công cụ)
 - [x] API client (rewrite /api -> backend) — **build thành công (next build OK)**
 - [x] **Deploy chung 1 process**: Next static export + NestJS ServeStaticModule (FE+BE+API cùng origin :3001), Dockerfile gộp 2 stage build — đã verify
-- [ ] (tiếp) Trang game/farm/fishing/minigame/marketplace/profile + chat UI
+- [x] Trang Game (nhân vật/tạo char), Nông trại (ô đất/tưới/thu hoạch/kho/vật nuôi), Câu cá (khu/cần/mồi/thả/giật/bán), Tủ đồ (mua/mặc theo slot)
+- [x] Trang Minigame (sảnh game), Marketplace (gian hàng), Profile (thông tin + diện mạo avatar)
+- [ ] (tiếp) Chat UI realtime + trang tool chi tiết + Live2D widget
 
 ### 🎨 (cũ) Frontend artifacts lẻ
 - [ ] Ghép toàn bộ app Next.js (mới có component lẻ)

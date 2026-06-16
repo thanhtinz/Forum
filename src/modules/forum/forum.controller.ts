@@ -22,6 +22,11 @@ import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.de
 export class ForumController {
   constructor(private readonly forum: ForumService) {}
 
+  @Get('categories')
+  categories() {
+    return this.forum.listCategories();
+  }
+
   // ── Threads ──
   @Get('threads')
   listThreads(

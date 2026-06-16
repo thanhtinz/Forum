@@ -55,6 +55,13 @@ export class ForumService {
   // THREADS
   // ──────────────────────────────────────────────
 
+  async listCategories() {
+    return this.prisma.category.findMany({
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, name: true, slug: true, icon: true, color: true, threadCount: true, description: true },
+    });
+  }
+
   async getThreadList(query: ThreadListQuery) {
     const page = query.page ?? 1;
     const limit = Math.min(query.limit ?? 20, 50);

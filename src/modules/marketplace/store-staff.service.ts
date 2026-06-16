@@ -61,6 +61,15 @@ export class StoreStaffService {
     try { await this.prisma.storeActivityLog.create({ data: { storefrontId, actorId, action, detail } }); } catch { /* */ }
   }
 
+  // Trả về storefront mà user là CHỦ hoặc NHÂN VIÊN có quyền `perm`
+  async resolveStore(userId: string, perm: string): Promise<{ id: string }> {
+    const owned = await this.prisma.storefront.findUnique({ where: { ownerId: userId }, select: { id: true } });
+    if (owned) return owned;
+    const staff = await this.prisma.storeStaff.findFirst({ where: { userId } });
+    if (staff && (staff.role === 'MANAGER' || staff.permissions.includes(perm))) return { id: staff.storefrontId };
+    throw new ForbiddenException('Bạn không có quyền cho thao tác này');
+  }
+
   // Kiểm tra quyền (chủ hoặc nhân viên có quyền)
   async can(userId: string, storefrontId: string, perm: string): Promise<boolean> {
     const s = await this.prisma.storefront.findUnique({ where: { id: storefrontId }, select: { ownerId: true } });

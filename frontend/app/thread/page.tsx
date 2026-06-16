@@ -8,6 +8,7 @@ import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, Che
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
+import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 import type { Thread, Post, Paginated } from '@/lib/types';
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
@@ -351,6 +352,19 @@ function ThreadView() {
               <div className="w-32 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50">
                 {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
                 <div className="mt-2 truncate text-sm font-semibold">{p.author?.displayName || p.author?.username}</div>
+                {p.author && (
+                  <div className="mt-1 flex flex-wrap justify-center gap-1">
+                    <UserBadges
+                      size="xs"
+                      badges={roleBadgesFromUser({
+                        role: (p.author as any).role,
+                        verifiedBadge: (p.author as any).verifiedBadge,
+                        isSeller: !!(p.author as any).storefront,
+                        sellerVerified: (p.author as any).storefront?.isVerified,
+                      })}
+                    />
+                  </div>
+                )}
                 {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700">Chủ thớt</span>}
               </div>
               <div className="min-w-0 flex-1 p-4">

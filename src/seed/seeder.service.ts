@@ -152,6 +152,23 @@ export class SeederService implements OnApplicationBootstrap {
       });
     }
 
+    // ── Huy hiệu mốc mặc định (milestone badges, isAuto) ──
+    const DEFAULT_BADGES = [
+      { id: 'badge-first-post', name: 'Bài viết đầu tiên', icon: '📝', color: 'green', condition: { type: 'postCount', gte: 1 } },
+      { id: 'badge-active-100', name: 'Cây bút năng nổ', icon: '✍️', color: 'blue', condition: { type: 'postCount', gte: 100 } },
+      { id: 'badge-rep-1000', name: 'Uy tín ngàn điểm', icon: '💎', color: 'violet', condition: { type: 'reputationScore', gte: 1000 } },
+      { id: 'badge-threads-50', name: 'Người mở chuyện', icon: '🧵', color: 'amber', condition: { type: 'threadCount', gte: 50 } },
+    ];
+    for (const b of DEFAULT_BADGES) {
+      const data = { name: b.name, icon: b.icon, color: b.color, condition: b.condition, isAuto: true };
+      await this.prisma.badge.upsert({
+        where: { id: b.id },
+        update: data,
+        create: { id: b.id, ...data },
+      });
+      n++;
+    }
+
     this.logger.log(`Auto-seed hoàn tất: ${n} bản ghi template`);
   }
 }

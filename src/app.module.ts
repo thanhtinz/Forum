@@ -29,6 +29,7 @@ import { SocialModule } from './modules/social/social.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
 import { ProfileExtraModule } from './modules/profile-extra/profile-extra.module';
 import { CommunityModule } from './modules/community/community.module';
+import { BadgesModule } from './modules/badges/badge.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { CommunityModule } from './modules/community/community.module';
     GalleryModule,
     ProfileExtraModule,
     CommunityModule,
+    BadgesModule,
   ],
 })
 export class AppModule {}

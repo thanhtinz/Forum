@@ -75,11 +75,21 @@ npm run start:dev
 > `SeederService` tự upsert khi app khởi động (data nằm trong `src/seed/data/*`).
 > Tắt bằng `AUTO_SEED=false`. Seed forum/gem gốc vẫn chạy `npm run prisma:seed`.
 
+### 🚀 Triển khai lên VPS (production, có HTTPS)
+Xem hướng dẫn chi tiết A→Z cho người mới: **[DEPLOY.md](./DEPLOY.md)** (chọn VPS, trỏ domain, cài Docker, cấu hình, chạy, backup…).
+
+Tóm tắt:
+```bash
+cp .env.production.example .env.production && nano .env.production   # điền DOMAIN, mật khẩu, JWT
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+# Caddy tự xin HTTPS → mở https://<domain-cua-ban>
+```
+
 ### Deploy chung (1 process: frontend + backend + API)
 NestJS phục vụ luôn frontend (Next.js static export) cùng origin với API — **không tách build/deploy**.
 
 ```bash
-docker-compose up -d   # service `app` build cả FE+BE, tự db push rồi start
+docker compose up -d   # (dev) service `app` build cả FE+BE, tự db push rồi start
 # Mở http://localhost:3001  → giao diện forum
 # API tại  http://localhost:3001/api
 ```

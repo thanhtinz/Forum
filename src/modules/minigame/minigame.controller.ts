@@ -1,12 +1,57 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { MinigameType } from '@prisma/client';
 import { MinigameService } from './minigame.service';
+import { RoomService } from './room.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/roles.decorator';
 
 @Controller('minigame')
 @UseGuards(JwtAuthGuard)
 export class MinigameController {
-  constructor(private readonly minigame: MinigameService) {}
+  constructor(
+    private readonly minigame: MinigameService,
+    private readonly rooms: RoomService,
+  ) {}
+
+  // ── Phòng PvP (chơi với người thật) — fallback REST cho gateway WS ──
+  @Get('rooms')
+  listRooms(@Query('type') type: MinigameType) {
+    return this.rooms.listRooms(type);
+  }
+
+  @Post('rooms/create')
+  createRoom(@CurrentUser('id') userId: string, @Body() b: { type: MinigameType; betCoin: number }) {
+    return this.rooms.createRoom(userId, b.type, Number(b.betCoin));
+  }
+
+  @Post('rooms/:id/join')
+  joinRoom(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.rooms.joinRoom(userId, id);
+  }
+
+  @Post('rooms/:id/leave')
+  leaveRoom(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.rooms.leaveRoom(userId, id);
+  }
+
+  @Post('rooms/:id/ready')
+  readyRoom(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.rooms.ready(userId, id);
+  }
+
+  @Get('rooms/:id')
+  viewRoom(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.rooms.view(userId, id);
+  }
+
+  @Post('rooms/:id/play')
+  playRoom(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() b: { action: 'play' | 'pass'; cards?: any[] },
+  ) {
+    return this.rooms.play(userId, id, b.action, b.cards);
+  }
 
   @Get('games')
   listGames() {

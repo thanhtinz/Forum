@@ -450,6 +450,7 @@ model Product {
   reviews     ProductReview[]
   screenshots ProductScreenshot[]
   tags        ProductTag[]
+  stock       ProductStock[]
 
   @@index([sellerId])
   @@index([storefrontId])
@@ -495,6 +496,7 @@ model Order {
   escrowStatus  String?     @db.VarChar(20) // HELD | RELEASED | REFUNDED
   escrowReleaseAt DateTime?  // tiền seller được giải ngân sau khi giam 3 ngày
   couponCode    String?     @db.VarChar(40)
+  deliveredContent String?  @db.Text // nội dung giao tự động (tài khoản/key)
   completedAt   DateTime?
   refundedAt    DateTime?
   refundReason  String?
@@ -513,10 +515,11 @@ model ProductReview {
   productId String
   userId    String
   orderId   String?
-  rating    Int
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  rating      Int
+  content     String   @db.Text
+  sellerReply String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -2091,4 +2094,46 @@ model ShopTicketMessage {
   ticket ShopTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@index([ticketId])
+}
+
+// ============================================================
+// SELLER CENTER — kho hàng (giao tự động), rút tiền
+// ============================================================
+model ProductStock {
+  id          String    @id @default(cuid())
+  productId   String
+  content     String    @db.Text // tài khoản / key / link file (1 đơn vị)
+  isSold      Boolean   @default(false)
+  soldOrderId String?
+  createdAt   DateTime  @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, isSold])
+}
+
+model PayoutMethod {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   @db.VarChar(20) // BANK | PAYPAL | MOMO
+  label     String   @db.VarChar(120)
+  detail    String   @db.Text // số tk / email...
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Withdrawal {
+  id          String    @id @default(cuid())
+  userId      String
+  amount      Int       // gem
+  methodLabel String    @db.VarChar(160)
+  status      String    @default("PENDING") @db.VarChar(20) // PENDING | APPROVED | PAID | REJECTED
+  note        String?   @db.Text
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@index([userId])
+  @@index([status])
 }

@@ -13,6 +13,7 @@ import { UserRole } from '@prisma/client';
 import { MarketplaceService } from './marketplace.service';
 import { MarketplaceShopService } from './marketplace-shop.service';
 import { MarketplaceOrderService } from './marketplace-order.service';
+import { SellerService } from './seller.service';
 import { CreateStorefrontDto, UpdateStorefrontDto } from './marketplace.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
@@ -24,7 +25,63 @@ export class MarketplaceController {
     private readonly marketplace: MarketplaceService,
     private readonly shop: MarketplaceShopService,
     private readonly orders: MarketplaceOrderService,
+    private readonly seller: SellerService,
   ) {}
+
+  // ── SELLER CENTER ──
+  @Get('seller/dashboard')
+  @UseGuards(JwtAuthGuard)
+  sellerDashboard(@CurrentUser('id') uid: string) { return this.seller.dashboard(uid); }
+
+  @Get('seller/wallet')
+  @UseGuards(JwtAuthGuard)
+  sellerWallet(@CurrentUser('id') uid: string) { return this.seller.wallet(uid); }
+
+  @Get('seller/reviews')
+  @UseGuards(JwtAuthGuard)
+  sellerReviews(@CurrentUser('id') uid: string) { return this.seller.reviews(uid); }
+
+  @Post('reviews/:id/reply')
+  @UseGuards(JwtAuthGuard)
+  replyReview(@CurrentUser('id') uid: string, @Param('id') id: string, @Body('reply') reply: string) { return this.seller.replyReview(uid, id, reply); }
+
+  // Kho hàng (giao tự động)
+  @Get('products/:id/stock')
+  @UseGuards(JwtAuthGuard)
+  listStock(@CurrentUser('id') uid: string, @Param('id') id: string) { return this.seller.listStock(uid, id); }
+
+  @Post('products/:id/stock')
+  @UseGuards(JwtAuthGuard)
+  addStock(@CurrentUser('id') uid: string, @Param('id') id: string, @Body('lines') lines: string[]) { return this.seller.addStock(uid, id, lines || []); }
+
+  @Delete('stock/:id')
+  @UseGuards(JwtAuthGuard)
+  deleteStock(@CurrentUser('id') uid: string, @Param('id') id: string) { return this.seller.deleteStock(uid, id); }
+
+  @Post('products/:id/duplicate')
+  @UseGuards(JwtAuthGuard)
+  duplicate(@CurrentUser('id') uid: string, @Param('id') id: string) { return this.seller.duplicateProduct(uid, id); }
+
+  // Rút tiền
+  @Get('seller/payout-methods')
+  @UseGuards(JwtAuthGuard)
+  payoutMethods(@CurrentUser('id') uid: string) { return this.seller.payoutMethods(uid); }
+
+  @Post('seller/payout-methods')
+  @UseGuards(JwtAuthGuard)
+  addPayout(@CurrentUser('id') uid: string, @Body() b: { type: string; label: string; detail: string }) { return this.seller.addPayoutMethod(uid, b); }
+
+  @Delete('seller/payout-methods/:id')
+  @UseGuards(JwtAuthGuard)
+  delPayout(@CurrentUser('id') uid: string, @Param('id') id: string) { return this.seller.deletePayoutMethod(uid, id); }
+
+  @Get('seller/withdrawals')
+  @UseGuards(JwtAuthGuard)
+  withdrawals(@CurrentUser('id') uid: string) { return this.seller.withdrawals(uid); }
+
+  @Post('seller/withdrawals')
+  @UseGuards(JwtAuthGuard)
+  requestWithdrawal(@CurrentUser('id') uid: string, @Body() b: { amount: number; methodId: string }) { return this.seller.requestWithdrawal(uid, Number(b.amount), b.methodId); }
 
   // ── Mua hàng + escrow (giam 3 ngày) ──
   @Post('products/:id/buy')

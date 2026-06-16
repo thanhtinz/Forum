@@ -98,6 +98,23 @@ export class MarketplaceController {
   @UseGuards(JwtAuthGuard)
   myEarnings(@CurrentUser('id') userId: string) { return this.orders.sellerEarnings(userId); }
 
+  @Get('seller/orders')
+  @UseGuards(JwtAuthGuard)
+  sellerOrders(@CurrentUser('id') userId: string) { return this.orders.sellerOrders(userId); }
+
+  @Post('orders/:id/deliver')
+  @UseGuards(JwtAuthGuard)
+  deliverManual(@CurrentUser('id') userId: string, @Param('id') id: string, @Body('content') content: string) { return this.orders.deliverManual(userId, id, content); }
+
+  // Admin duyệt rút tiền
+  @Get('admin/withdrawals')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminWithdrawals(@Query('status') status?: string) { return this.orders.adminWithdrawals(status); }
+
+  @Post('admin/withdrawals/:id/:action')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  processWithdrawal(@Param('id') id: string, @Param('action') action: 'approve' | 'paid' | 'reject') { return this.orders.adminProcessWithdrawal(id, action); }
+
   // ── ADMIN — quản lý toàn bộ chợ ──
   @Get('admin/stats')
   @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)

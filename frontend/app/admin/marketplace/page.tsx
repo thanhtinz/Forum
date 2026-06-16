@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
-type Tab = 'stats' | 'categories' | 'stores' | 'products' | 'orders' | 'tickets' | 'coupons';
-const TABS: [Tab, string][] = [['stats', 'Tổng quan'], ['categories', 'Danh mục'], ['stores', 'Cửa hàng'], ['products', 'Sản phẩm'], ['orders', 'Đơn hàng'], ['tickets', 'Ticket'], ['coupons', 'Mã giảm giá']];
+type Tab = 'stats' | 'categories' | 'stores' | 'products' | 'orders' | 'withdrawals' | 'tickets' | 'coupons';
+const TABS: [Tab, string][] = [['stats', 'Tổng quan'], ['categories', 'Danh mục'], ['stores', 'Cửa hàng'], ['products', 'Sản phẩm'], ['orders', 'Đơn hàng'], ['withdrawals', 'Rút tiền'], ['tickets', 'Ticket'], ['coupons', 'Mã giảm giá']];
 
 export default function AdminMarketplace() {
   const [tab, setTab] = useState<Tab>('stats');
@@ -19,6 +19,7 @@ export default function AdminMarketplace() {
       {tab === 'stores' && <Stores />}
       {tab === 'products' && <Products />}
       {tab === 'orders' && <Orders />}
+      {tab === 'withdrawals' && <Withdrawals />}
       {tab === 'tickets' && <Simple url="/marketplace/admin/tickets" render={(t: any) => `[${t.status}] ${t.subject} — ${t.storefront?.name}`} />}
       {tab === 'coupons' && <Simple url="/marketplace/admin/coupons" render={(c: any) => `${c.code} (-${c.discountPercent}%) — ${c.storefront?.name} · dùng ${c.usedCount}`} />}
     </div>
@@ -111,6 +112,29 @@ function Orders() {
         </div>
       ))}
       {list.length === 0 && <div className="p-6 text-center text-ink-500">Chưa có đơn.</div>}
+    </div>
+  );
+}
+
+function Withdrawals() {
+  const [list, setList] = useState<any[]>([]);
+  function load() { api.get<any[]>('/marketplace/admin/withdrawals').then(setList).catch(() => {}); }
+  useEffect(() => { load(); }, []);
+  const act = async (id: string, action: string) => { await api.post(`/marketplace/admin/withdrawals/${id}/${action}`).catch(() => {}); load(); };
+  return (
+    <div className="card divide-y divide-ink-100 dark:divide-ink-800">
+      {list.map((w) => (
+        <div key={w.id} className="flex items-center justify-between p-3 text-sm">
+          <span><b>{w.amount} gem</b> · {w.methodLabel} <span className="chip ml-2 bg-ink-200 text-ink-600">{w.status}</span></span>
+          {(w.status === 'PENDING' || w.status === 'APPROVED') && (
+            <div className="flex gap-2">
+              <button onClick={() => act(w.id, 'paid')} className="btn-outline !py-1 text-xs text-emerald-600">Đã chi</button>
+              <button onClick={() => act(w.id, 'reject')} className="btn-outline !py-1 text-xs text-red-600">Từ chối</button>
+            </div>
+          )}
+        </div>
+      ))}
+      {list.length === 0 && <div className="p-6 text-center text-ink-500">Không có yêu cầu rút.</div>}
     </div>
   );
 }

@@ -32,6 +32,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   useEffect(() => { loadMe(); }, []);
 
+  // Presence heartbeat: cập nhật trạng thái online khi đã đăng nhập
+  useEffect(() => {
+    if (!user) return;
+    const ping = () => api.post('/community/heartbeat').catch(() => {});
+    ping();
+    const id = setInterval(ping, 60_000);
+    return () => clearInterval(id);
+  }, [user]);
+
   async function login(email: string, password: string, code?: string) {
     const res = await api.post<{ accessToken: string; user: User }>('/auth/login', { email, password, code });
     setToken(res.accessToken);

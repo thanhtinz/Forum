@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Gamepad2, Fish, Sprout, Trophy, Wrench, Store, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag } from 'lucide-react';
+import { Gamepad2, Fish, Sprout, Trophy, Wrench, Store, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -48,6 +48,8 @@ export function Sidebar() {
         <div className="flex flex-col gap-1">
           <Link href="/feed" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Newspaper size={16} className="text-brand-600" /> Bảng tin</Link>
           <Link href="/members" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Users size={16} className="text-emerald-600" /> Thành viên</Link>
+          <Link href="/community" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><BarChart3 size={16} className="text-sky-600" /> Cộng đồng</Link>
+          <Link href="/gallery" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Image size={16} className="text-rose-600" /> Thư viện ảnh</Link>
           <Link href="/tags" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Tag size={16} className="text-fuchsia-600" /> Thẻ</Link>
         </div>
       </div>

@@ -26,6 +26,9 @@ import { ToolsModule } from './modules/tools/tools.module';
 import { FortuneModule } from './modules/fortune/fortune.module';
 import { SeederModule } from './seed/seeder.module';
 import { SocialModule } from './modules/social/social.module';
+import { GalleryModule } from './modules/gallery/gallery.module';
+import { ProfileExtraModule } from './modules/profile-extra/profile-extra.module';
+import { CommunityModule } from './modules/community/community.module';
 
 @Module({
   imports: [
@@ -61,6 +64,9 @@ import { SocialModule } from './modules/social/social.module';
     FortuneModule,
     SeederModule,
     SocialModule,
+    GalleryModule,
+    ProfileExtraModule,
+    CommunityModule,
   ],
 })
 export class AppModule {}

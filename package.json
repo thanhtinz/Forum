@@ -12,6 +12,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:seed:fishing": "ts-node prisma/seed-fishing.ts",
+    "prisma:seed:farm": "ts-node prisma/seed-farm.ts",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {

@@ -131,6 +131,16 @@
 - [x] Seed 3 loài cá + copy asset (`game-assets/cauca`)
 - [ ] Frontend UI câu cá
 
+### 🌾 Nông Trại (port từ mod WAP, chỉ coin)
+- [x] **Trồng trọt** — mua đất (tăng giá dần, max 55), gieo/tưới/bón phân/thu hoạch, 4 giai đoạn
+- [x] Không tưới mất 50% sản lượng; phân bón giảm thời gian chín
+- [x] **Level nông trại RIÊNG** (EXP từ thu hoạch, tách level nhân vật)
+- [x] Kho + bán nông sản; 7 cây + 5 phân bón (seed + asset)
+- [x] **Vật nuôi** — gà/lợn/bò/cừu/cá: mua/cho ăn/thu sản phẩm/bán, chết nếu bỏ đói 1 ngày
+- [x] **Nhà bếp** — học công thức (tốn EXP), nấu (tốn nguyên liệu), nâng cấp bếp (max 15)
+- [x] **Chó giữ nhà** (30 ngày) + **điểm danh** hằng ngày + **ăn trộm** cây hàng xóm (gặp chó bị cắn)
+- [ ] Nhiệm vụ lái buôn + Frontend UI
+
 ### 🛠️ Tools Collection (~50 tools)
 - [ ] Framework tools (ToolCategory + Tool schema đã có)
 - [ ] 50 tool từ tools-collection.net: formatters, validators, encoders, generators, converters, calculators

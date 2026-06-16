@@ -1073,6 +1073,13 @@ model GameCharacter {
   survival    CharacterSurvival?
   fishingProfile FishingProfile?
   fishCatches    FishCatch[]
+  farmProfile    FarmProfile?
+  farmPlots      FarmPlot[]
+  warehouse      WarehouseItem[]
+  farmAnimals    FarmAnimal[]
+  farmFertilizers FarmFertilizer[]
+  farmCooking    FarmCooking[]
+  farmSkills     FarmSkill[]
 
   @@index([level])
   @@index([pvpRank])
@@ -1734,4 +1741,193 @@ model FishCatch {
   species   FishSpecies   @relation(fields: [speciesId], references: [id])
 
   @@index([characterId, soldAt])
+}
+
+// ============================================================
+// NÔNG TRẠI (Farm) — chỉ dùng coin (Xu & Lượng gốc đều quy về coin)
+// ============================================================
+
+// Định nghĩa cây trồng (seed sẵn)
+model CropTemplate {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(60)
+  name        String   @db.VarChar(100)
+  seedPrice   Int      // coin mua hạt
+  sellPrice   Int      // coin / đơn vị nông sản
+  growSeconds Int      // thời gian sinh trưởng
+  exp         Int      // EXP farm khi thu hoạch
+  yieldMin    Int
+  yieldMax    Int
+  reqLevel    Int      @default(0)
+  asset       String?  @db.VarChar(255)
+  sortOrder   Int      @default(0)
+
+  plots FarmPlot[]
+}
+
+model FertilizerTemplate {
+  id            String  @id @default(cuid())
+  slug          String  @unique @db.VarChar(60)
+  name          String  @db.VarChar(100)
+  price         Int     // coin
+  reduceSeconds Int     // giảm thời gian chín
+  asset         String? @db.VarChar(255)
+  sortOrder     Int     @default(0)
+
+  owned FarmFertilizer[]
+}
+
+model AnimalTemplate {
+  id             String  @id @default(cuid())
+  slug           String  @unique @db.VarChar(60)
+  name           String  @db.VarChar(100)
+  buyPrice       Int     // coin
+  growSeconds    Int     // thời gian lớn (bắt đầu cho sản phẩm)
+  lifeSeconds    Int     // hết đời -> chết
+  feedCooldownSec Int    // cooldown cho ăn
+  starveSeconds  Int     @default(86400) // không cho ăn quá lâu -> chết
+  productSlug    String? @db.VarChar(60) // sản phẩm tạo ra (trung/suabo/longcuu...)
+  productName    String? @db.VarChar(100)
+  productYield   Int     @default(0)     // sản lượng mỗi lần thu
+  productPrice   Int     @default(0)     // coin / sản phẩm
+  sellGrown      Int     @default(0)     // bán khi đã lớn
+  sellYoung      Int     @default(0)     // bán khi còn non
+  asset          String? @db.VarChar(255)
+  sortOrder      Int     @default(0)
+
+  animals FarmAnimal[]
+}
+
+model RecipeTemplate {
+  id          String  @id @default(cuid())
+  slug        String  @unique @db.VarChar(60)
+  name        String  @db.VarChar(100)
+  cookSeconds Int
+  reward      Int     // coin khi bán/nhận bánh
+  skillExp    Int     @default(0) // EXP cần để học (nếu needSkill)
+  needSkill   Boolean @default(false)
+  reqLevel    Int     @default(0)
+  asset       String? @db.VarChar(255)
+  sortOrder   Int     @default(0)
+
+  ingredients RecipeIngredient[]
+  cooking     FarmCooking[]
+  skills      FarmSkill[]
+}
+
+model RecipeIngredient {
+  id        String @id @default(cuid())
+  recipeId  String
+  cropSlug  String @db.VarChar(60) // slug nông sản/sản phẩm cần
+  name      String @db.VarChar(100)
+  quantity  Int
+
+  recipe RecipeTemplate @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+}
+
+// Hồ sơ nông trại (level RIÊNG, tách hẳn level nhân vật)
+model FarmProfile {
+  id            String   @id @default(cuid())
+  characterId   String   @unique
+  level         Int      @default(0)
+  exp           Int      @default(0)
+  plotCount     Int      @default(0)
+  nextPlotPrice Int      @default(5000) // giá ô đất kế tiếp (tăng dần)
+  kitchenLevel  Int      @default(1)
+  dogUntil      DateTime? // chó bảo vệ tới khi nào
+  lastCheckinAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+// Ô đất
+model FarmPlot {
+  id          String    @id @default(cuid())
+  characterId String
+  index       Int       // số thứ tự ô
+  cropId      String?
+  plantedAt   DateTime?
+  readyAt     DateTime?
+  watered     Boolean   @default(false)
+  yield       Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  crop      CropTemplate? @relation(fields: [cropId], references: [id])
+
+  @@unique([characterId, index])
+  @@index([characterId])
+}
+
+// Kho nông trại (hạt giống, nông sản, sản phẩm vật nuôi, bánh)
+model WarehouseItem {
+  id          String  @id @default(cuid())
+  characterId String
+  slug        String  @db.VarChar(60)
+  name        String  @db.VarChar(100)
+  category    String  @db.VarChar(20) // SEED | CROP | PRODUCT | DISH
+  quantity    Int     @default(0)
+  unitSell    Int     @default(0)     // coin / đơn vị khi bán
+  asset       String? @db.VarChar(255)
+
+  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, slug, category])
+  @@index([characterId])
+}
+
+model FarmFertilizer {
+  characterId  String
+  fertilizerId String
+  quantity     Int    @default(0)
+
+  character  GameCharacter      @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  fertilizer FertilizerTemplate @relation(fields: [fertilizerId], references: [id], onDelete: Cascade)
+
+  @@id([characterId, fertilizerId])
+}
+
+model FarmAnimal {
+  id          String    @id @default(cuid())
+  characterId String
+  animalId    String
+  boughtAt    DateTime  @default(now())
+  grownAt     DateTime  // thời điểm trưởng thành
+  diesAt      DateTime  // hết đời
+  lastFedAt   DateTime  @default(now())
+  fedCount    Int       @default(0)
+  productReadyAt DateTime?
+
+  character GameCharacter  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  animal    AnimalTemplate @relation(fields: [animalId], references: [id])
+
+  @@index([characterId])
+}
+
+model FarmCooking {
+  id          String   @id @default(cuid())
+  characterId String
+  recipeId    String
+  doneAt      DateTime
+  createdAt   DateTime @default(now())
+
+  character GameCharacter  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  recipe    RecipeTemplate @relation(fields: [recipeId], references: [id])
+
+  @@index([characterId])
+}
+
+model FarmSkill {
+  characterId String
+  recipeId    String
+  learnedAt   DateTime @default(now())
+
+  character GameCharacter  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  recipe    RecipeTemplate @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@id([characterId, recipeId])
 }

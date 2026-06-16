@@ -19,6 +19,7 @@ import { SubscriptionService } from './subscription.service';
 import { DraftService, SaveDraftDto } from './draft.service';
 import { ForumTextService } from './forum-text.service';
 import { BookmarkService } from './bookmark.service';
+import { TipService } from './tip.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
@@ -32,6 +33,7 @@ export class ForumController {
     private readonly drafts: DraftService,
     private readonly text: ForumTextService,
     private readonly bookmarks: BookmarkService,
+    private readonly tips: TipService,
   ) {}
 
   @Get('categories')
@@ -202,6 +204,19 @@ export class ForumController {
   @UseGuards(JwtAuthGuard)
   deleteDraft(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.drafts.remove(id, userId);
+  }
+
+  // ── Tip/Donate bằng gem ──
+  @Post('posts/:id/tip')
+  @UseGuards(JwtAuthGuard)
+  tipPost(@Param('id') postId: string, @CurrentUser('id') userId: string, @Body() b: { amount: number; message?: string }) {
+    return this.tips.tipPost(postId, userId, Number(b.amount), b.message);
+  }
+
+  @Get('tips/received')
+  @UseGuards(JwtAuthGuard)
+  tipsReceived(@CurrentUser('id') userId: string) {
+    return this.tips.listReceived(userId);
   }
 
   // ── Bookmarks (lưu chủ đề) ──

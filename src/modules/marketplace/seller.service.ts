@@ -187,16 +187,37 @@ export class SellerService {
     await this.prisma.payoutMethod.deleteMany({ where: { id, userId } });
     return { ok: true };
   }
+  // % phí rút gem về bank (admin cấu hình; key withdrawal.feePercent)
+  async getWithdrawFeePercent(): Promise<number> {
+    const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'withdrawal.feePercent' } }).catch(() => null);
+    const v = cfg?.value;
+    const n = typeof v === 'number' ? v : typeof v === 'string' ? parseFloat(v) : 0;
+    return Number.isFinite(n) && n >= 0 && n <= 100 ? n : 0;
+  }
+
   async requestWithdrawal(userId: string, amount: number, methodId: string) {
     if (amount < 100) throw new BadRequestException('Số tiền rút tối thiểu 100 gem');
     const method = await this.prisma.payoutMethod.findFirst({ where: { id: methodId, userId } });
     if (!method) throw new BadRequestException('Phương thức nhận tiền không hợp lệ');
-    // giữ tiền: trừ gem ngay, hoàn nếu bị từ chối
-    await this.gem.debit(userId, amount, 'ADMIN_ADJUST', undefined, 'Yêu cầu rút tiền');
-    return this.prisma.withdrawal.create({ data: { userId, amount, methodLabel: `${method.type} · ${method.label}` } });
+    const feePercent = await this.getWithdrawFeePercent();
+    const feeAmount = Math.round((amount * feePercent) / 100);
+    const netAmount = amount - feeAmount;
+    // giữ tiền: trừ gem (gộp) ngay, hoàn nếu bị từ chối
+    await this.gem.debit(userId, amount, 'ADMIN_ADJUST', undefined, `Yêu cầu rút tiền (phí ${feePercent}%)`);
+    return this.prisma.withdrawal.create({
+      data: { userId, amount, feePercent, feeAmount, netAmount, methodLabel: `${method.type} · ${method.label}` },
+    });
   }
   async withdrawals(userId: string) {
     return this.prisma.withdrawal.findMany({ where: { userId }, orderBy: { createdAt: 'desc' } });
+  }
+  async setWithdrawFeePercent(percent: number) {
+    const n = Number.isFinite(percent) && percent >= 0 && percent <= 100 ? percent : 0;
+    await this.prisma.siteConfig.upsert({
+      where: { key: 'withdrawal.feePercent' },
+      update: { value: n }, create: { key: 'withdrawal.feePercent', value: n },
+    });
+    return { feePercent: n };
   }
 
   // ── 11. Đánh giá ──

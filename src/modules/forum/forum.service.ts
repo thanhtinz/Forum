@@ -17,6 +17,7 @@ import { TrophyService } from '../reputation/trophy.service';
 import { PrisonService } from '../moderation/prison.service';
 import { ForumTextService } from './forum-text.service';
 import { SubscriptionService } from './subscription.service';
+import { TipService } from './tip.service';
 import { UserRole as Role } from '@prisma/client';
 
 export interface CreateThreadDto {
@@ -54,6 +55,7 @@ export class ForumService {
     private readonly prison: PrisonService,
     private readonly text: ForumTextService,
     private readonly subs: SubscriptionService,
+    private readonly tips: TipService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -260,13 +262,17 @@ export class ForumService {
       this.prisma.post.count({ where }),
     ]);
 
-    // Gắn hidden sections cho từng post
+    // Tổng donate theo từng post
+    const tipTotals = await this.tips.totalsForPosts(posts.map((p) => p.id));
+
+    // Gắn hidden sections + donate cho từng post
     const postsWithHidden = await Promise.all(
       posts.map(async (post) => {
         const hiddenSections = await this.hiddenContent.getSectionsForPost(
           post.id, userId, threadId,
         );
-        return { ...post, hiddenSections };
+        const tip = tipTotals[post.id] || { total: 0, count: 0 };
+        return { ...post, hiddenSections, tipTotal: tip.total, tipCount: tip.count };
       }),
     );
 

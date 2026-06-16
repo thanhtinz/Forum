@@ -37,6 +37,8 @@ export interface Post {
   createdAt: string;
   author?: ThreadAuthor;
   reactions?: { emoji: string; userId: string }[];
+  tipTotal?: number;
+  tipCount?: number;
 }
 
 export interface Paginated<T> {

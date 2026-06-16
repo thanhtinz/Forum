@@ -5,6 +5,7 @@ import { DiceGames } from './games/dice-games';
 import { CardGames } from './games/card-games';
 import { CaroGame } from './games/caro-game';
 import { JackpotGame } from './games/jackpot-game';
+import { RaceGame } from './games/race-game';
 
 @Injectable()
 export class MinigameService {
@@ -141,6 +142,37 @@ export class MinigameService {
     await this.settleBet(char.id, 'LUCKY_WHEEL', betCoin, netCoin);
 
     return { multiplier: landed.mul, payout, netCoin };
+  }
+
+  // ──────────────────────────────────────────────
+  // ĐUA THÚ — đặt 1 trong 7 con, "đặt 1 ăn 5"
+  // ──────────────────────────────────────────────
+  async playDuaThu(userId: string, betCoin: number, choice: number) {
+    if (!Number.isInteger(choice) || choice < 1 || choice > RaceGame.LANE_COUNT) {
+      throw new BadRequestException(`Thú đặt cược không hợp lệ (1-${RaceGame.LANE_COUNT})`);
+    }
+    const { char, config } = await this.validateAndLockBet(userId, betCoin, 'DUA_THU');
+
+    const result = RaceGame.simulate();
+    const won = result.winner === choice;
+    const payout = won
+      ? Math.floor(betCoin * RaceGame.PAYOUT_MULTIPLIER * (1 - config.houseFee))
+      : 0;
+    const netCoin = won ? payout - betCoin : -betCoin;
+
+    await this.settleBet(char.id, 'DUA_THU', betCoin, netCoin);
+
+    return {
+      animals: RaceGame.ANIMALS,
+      winner: result.winner,
+      results: result.results,
+      durationMs: result.durationMs,
+      frames: result.frames,
+      choice,
+      won,
+      payout,
+      netCoin,
+    };
   }
 
   // ──────────────────────────────────────────────

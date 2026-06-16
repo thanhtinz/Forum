@@ -130,7 +130,7 @@
 - [ ] UI trang tools + admin quản lý tools
 
 ### 🎮 Game engines chi tiết còn thiếu
-- [ ] **Đua Thú** — engine mô phỏng đua (mới có config, chưa có engine)
+- [x] **Đua Thú** — engine mô phỏng đua 7 con, đặt 1 ăn 5, kèm frame animation + asset (gif/track)
 - [ ] **Tiến Lên** — logic đánh bài đầy đủ (mới có chia bài)
 - [ ] **Poker** — vòng cược đầy đủ (mới có đánh giá bài)
 - [ ] Combat animation replay (đã lưu rounds, chưa có UI replay)

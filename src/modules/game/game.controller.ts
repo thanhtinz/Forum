@@ -57,6 +57,11 @@ export class GameController {
     return this.survival.getSurvival(userId);
   }
 
+  @Get('consumables')
+  listConsumables() {
+    return this.survival.listConsumables();
+  }
+
   @Post('survival/consume')
   consume(@CurrentUser('id') userId: string, @Body('consumableId') id: string) {
     return this.survival.consume(userId, id);

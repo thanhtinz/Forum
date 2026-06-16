@@ -12,6 +12,7 @@ import {
 import { UserRole } from '@prisma/client';
 import { MarketplaceService } from './marketplace.service';
 import { MarketplaceShopService } from './marketplace-shop.service';
+import { MarketplaceOrderService } from './marketplace-order.service';
 import { CreateStorefrontDto, UpdateStorefrontDto } from './marketplace.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
@@ -22,7 +23,64 @@ export class MarketplaceController {
   constructor(
     private readonly marketplace: MarketplaceService,
     private readonly shop: MarketplaceShopService,
+    private readonly orders: MarketplaceOrderService,
   ) {}
+
+  // ── Mua hàng + escrow (giam 3 ngày) ──
+  @Post('products/:id/buy')
+  @UseGuards(JwtAuthGuard)
+  buy(@CurrentUser('id') userId: string, @Param('id') id: string, @Body('couponCode') couponCode?: string) {
+    return this.orders.buy(userId, id, couponCode);
+  }
+
+  @Get('me/purchases')
+  @UseGuards(JwtAuthGuard)
+  myPurchases(@CurrentUser('id') userId: string) { return this.orders.myPurchases(userId); }
+
+  @Get('me/earnings')
+  @UseGuards(JwtAuthGuard)
+  myEarnings(@CurrentUser('id') userId: string) { return this.orders.sellerEarnings(userId); }
+
+  // ── ADMIN — quản lý toàn bộ chợ ──
+  @Get('admin/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminStats() { return this.orders.adminStats(); }
+
+  @Get('admin/storefronts')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminStorefronts(@Query('q') q?: string) { return this.orders.adminStorefronts(q); }
+
+  @Post('admin/storefronts/:id/toggle')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminToggleStore(@Param('id') id: string, @Body('field') field: 'isVerified' | 'isActive') { return this.orders.adminToggleStorefront(id, field); }
+
+  @Get('admin/products')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminProducts(@Query('q') q?: string) { return this.orders.adminProducts(q); }
+
+  @Post('admin/products/:id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminProductStatus(@Param('id') id: string, @Body('status') status: 'ACTIVE' | 'SUSPENDED' | 'DRAFT') { return this.orders.adminSetProductStatus(id, status); }
+
+  @Get('admin/orders')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminOrders(@Query('status') status?: string) { return this.orders.adminOrders(status); }
+
+  @Post('admin/orders/:id/release')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminRelease(@Param('id') id: string) { return this.orders.adminReleaseOrder(id); }
+
+  @Post('admin/orders/:id/refund')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminRefund(@Param('id') id: string, @Body('reason') reason?: string) { return this.orders.adminRefundOrder(id, reason); }
+
+  @Get('admin/tickets')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminTickets(@Query('status') status?: string) { return this.orders.adminTickets(status); }
+
+  @Get('admin/coupons')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminCoupons() { return this.orders.adminCoupons(); }
 
   // ── Danh mục (public + admin) ──
   @Get('categories')

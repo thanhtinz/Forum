@@ -946,6 +946,8 @@ model Storefront {
   products  Product[]
   coupons   Coupon[]
   tickets   ShopTicket[]
+  staff     StoreStaff[]
+  activityLogs StoreActivityLog[]
 
   @@index([slug])
   @@index([ownerId])
@@ -2141,4 +2143,35 @@ model Withdrawal {
 
   @@index([userId])
   @@index([status])
+}
+
+// ============================================================
+// SELLER — nhân viên gian hàng + nhật ký hoạt động
+// ============================================================
+model StoreStaff {
+  id           String   @id @default(cuid())
+  storefrontId String
+  userId       String
+  role         String   @default("STAFF") @db.VarChar(20) // MANAGER | STAFF
+  permissions  String[] // products | orders | tickets | coupons | stock
+  createdAt    DateTime @default(now())
+
+  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
+
+  @@unique([storefrontId, userId])
+  @@index([storefrontId])
+  @@index([userId])
+}
+
+model StoreActivityLog {
+  id           String   @id @default(cuid())
+  storefrontId String
+  actorId      String
+  action       String   @db.VarChar(80)
+  detail       String?  @db.VarChar(255)
+  createdAt    DateTime @default(now())
+
+  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
+
+  @@index([storefrontId])
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Coins, Swords, Heart, Zap, Brain, Sprout, Fish, Shirt, Trophy, Shield, HeartPulse } from 'lucide-react';
+import { Coins, Swords, Heart, Zap, Brain, Sprout, Fish, Shirt, Trophy, Shield, HeartPulse, Sword } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -15,6 +15,7 @@ interface Character {
 const SUB = [
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, color: 'text-emerald-600' },
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, color: 'text-sky-600' },
+  { href: '/game/shop', label: 'Cửa hàng', icon: Sword, color: 'text-amber-600' },
   { href: '/game/survival', label: 'Sinh tồn', icon: HeartPulse, color: 'text-teal-600' },
   { href: '/game/wardrobe', label: 'Tủ đồ / Pet', icon: Shirt, color: 'text-fuchsia-600' },
   { href: '/game/guild', label: 'Bang hội', icon: Shield, color: 'text-indigo-600' },

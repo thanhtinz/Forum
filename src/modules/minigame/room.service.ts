@@ -8,6 +8,7 @@ import { MinigameType, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CardGames, Card } from './games/card-games';
 import { TienLen, Combo } from './games/tien-len';
+import { CaroGame, CaroState } from './games/caro-game';
 
 export interface TLRoomState {
   seats: string[];      // characterId theo ghế
@@ -24,7 +25,10 @@ export interface TLRoomState {
 const MAX_BY_TYPE: Partial<Record<MinigameType, number>> = {
   TIEN_LEN: 4,
   POKER: 6,
+  CARO: 2,
 };
+
+export interface CaroRoomState extends CaroState { seats: string[] }
 
 // Phòng chơi nhiều người (PvP) — hiện hỗ trợ Tiến Lên. Cược gom vào pot, người thắng ăn pot.
 @Injectable()
@@ -140,11 +144,41 @@ export class RoomService {
 
     const players = room.players.map((p) => (p.id === me.id ? { ...p, isReady: true } : p));
     const allReady = players.length >= 2 && players.every((p) => p.isReady);
-    if (allReady && room.status === 'WAITING' && room.type === 'TIEN_LEN') {
-      await this.startTienLen(room.id, players.map((p) => p.characterId));
-      return { ready: true, started: true };
+    if (allReady && room.status === 'WAITING') {
+      const seats = players.map((p) => p.characterId);
+      if (room.type === 'TIEN_LEN') { await this.startTienLen(room.id, seats); return { ready: true, started: true }; }
+      if (room.type === 'CARO') { await this.startCaro(room.id, seats); return { ready: true, started: true }; }
     }
     return { ready: true, started: false };
+  }
+
+  private async startCaro(roomId: string, seats: string[]) {
+    const state: CaroRoomState = { seats: seats.slice(0, 2), ...CaroGame.initState() };
+    await this.prisma.minigameRoom.update({
+      where: { id: roomId },
+      data: { status: 'PLAYING', state: state as unknown as Prisma.InputJsonValue },
+    });
+  }
+
+  // Đánh 1 nước cờ caro
+  async caroMove(userId: string, roomId: string, x: number, y: number) {
+    const char = await this.getChar(userId);
+    const room = await this.prisma.minigameRoom.findUnique({ where: { id: roomId } });
+    if (!room || room.status !== 'PLAYING' || !room.state) throw new BadRequestException('Phòng chưa vào ván');
+    const s = room.state as unknown as CaroRoomState;
+    const seat = s.seats.indexOf(char.id);
+    if (seat < 0) throw new ForbiddenException('Bạn không ở trong phòng');
+    let next: CaroState;
+    try { next = CaroGame.move(s, seat, x, y); } catch (e: any) { throw new BadRequestException(e.message); }
+    const newState: CaroRoomState = { seats: s.seats, ...next };
+
+    if (newState.winner != null && newState.winner >= 0) {
+      await this.prisma.minigameRoom.update({ where: { id: room.id }, data: { state: newState as unknown as Prisma.InputJsonValue } });
+      await this.settleRoom(room.id, s.seats[newState.winner]);
+    } else {
+      await this.prisma.minigameRoom.update({ where: { id: room.id }, data: { state: newState as unknown as Prisma.InputJsonValue, ...(newState.winner === -1 ? { status: 'FINISHED', finishedAt: new Date() } : {}) } });
+    }
+    return { ok: true, finished: newState.winner != null, winnerSeat: newState.winner != null && newState.winner >= 0 ? newState.winner : undefined };
   }
 
   private async startTienLen(roomId: string, seats: string[]) {
@@ -220,6 +254,15 @@ export class RoomService {
     if (!room) throw new NotFoundException('Phòng không tồn tại');
     if (!room.state) {
       return { status: room.status, players: room.players.length, maxPlayers: room.maxPlayers, betAmount: room.betAmount };
+    }
+    const raw = room.state as any;
+    if (raw.board) {
+      // Caro
+      const seat = (raw.seats as string[]).indexOf(char.id);
+      return {
+        game: 'caro', mySeat: seat, board: raw.board, currentTurn: raw.currentTurn,
+        lastMove: raw.lastMove, winner: raw.winner, potCoin: room.potCoin,
+      };
     }
     return this.viewState(room.state as unknown as TLRoomState, char.id, room.potCoin);
   }

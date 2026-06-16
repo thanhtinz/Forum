@@ -53,6 +53,11 @@ export class MinigameController {
     return this.rooms.play(userId, id, b.action, b.cards);
   }
 
+  @Post('rooms/:id/caro-move')
+  caroMoveRoom(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() b: { x: number; y: number }) {
+    return this.rooms.caroMove(userId, id, Number(b.x), Number(b.y));
+  }
+
   @Get('games')
   listGames() {
     return this.minigame.listGames();

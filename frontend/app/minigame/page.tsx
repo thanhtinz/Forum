@@ -5,7 +5,7 @@ import useSWR from 'swr';
 import { Dices, Users, Coins } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 
-const PVP_LINK: Record<string, string> = { TIEN_LEN: '/minigame/tien-len' };
+const PVP_LINK: Record<string, string> = { TIEN_LEN: '/minigame/tien-len', CARO: '/minigame/caro' };
 
 interface GameConfig {
   id: string; type: string; name: string; description?: string;

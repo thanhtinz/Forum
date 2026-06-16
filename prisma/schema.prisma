@@ -178,6 +178,7 @@ model User {
   storefront      Storefront?
   storefrontFollows StorefrontFollow[]
   gameCharacter   GameCharacter?
+  prisonRecords   Prison[]          @relation("UserPrison")
 
   @@index([email])
   @@index([username])
@@ -1931,4 +1932,25 @@ model FarmSkill {
   recipe    RecipeTemplate @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
   @@id([characterId, recipeId])
+}
+
+// ============================================================
+// NHÀ TÙ (Prison) — giam người chơi vi phạm (kiểu Avatar, NPC Giám thị)
+// ============================================================
+model Prison {
+  id           String    @id @default(cuid())
+  userId       String
+  reason       String    @db.Text
+  jailedById   String?   // mod/admin ra lệnh giam
+  jailedAt     DateTime  @default(now())
+  releaseAt    DateTime  // hết hạn giam
+  bailCoin     Int       @default(0) // tiền chuộc (coin); 0 = không cho chuộc
+  released     Boolean   @default(false)
+  releasedAt   DateTime?
+  releaseType  String?   @db.VarChar(20) // SERVED | BAIL | PARDON
+
+  user User @relation("UserPrison", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, released])
+  @@index([releaseAt])
 }

@@ -143,6 +143,17 @@
 - [x] **Chó giữ nhà** (30 ngày) + **điểm danh** hằng ngày + **ăn trộm** cây hàng xóm (gặp chó bị cắn)
 - [ ] Nhiệm vụ lái buôn + Frontend UI
 
+### 🏛️ Nhà Tù (Prison) — kiểu Avatar (NPC Giám thị)
+- [x] Mod/Admin tống giam người chơi (thời gian + lý do + tiền chuộc), không giam được Admin
+- [x] Người chơi xem án + đếm ngược; **nộp coin chuộc** ra sớm; tự thả khi hết hạn
+- [x] Giám thị xem danh sách tù nhân + ân xá; helper `isJailed()` cho module khác chặn hành động
+- [ ] Tích hợp chặn đăng bài/chat khi đang bị giam (hook vào guard)
+
+### 🎨 Asset trích từ Avatar (Teamobi)
+- [x] 108 asset → `game-assets/avatar/`: 53 lá bài, 34 asset **bàn/phòng game**, 17 farm UI, effect
+- [x] Manifest trong `asset-config.json` (AVATAR_ASSETS)
+- [ ] Asset tài xỉu (bát/đĩa) nằm trong `res.rar` — môi trường thiếu `unrar`, chưa giải nén được
+
 ### 🛠️ Tools Collection (~50 tools)
 - [ ] Framework tools (ToolCategory + Tool schema đã có)
 - [ ] 50 tool từ tools-collection.net: formatters, validators, encoders, generators, converters, calculators

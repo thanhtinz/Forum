@@ -86,6 +86,22 @@
       { "lane": 7, "slug": "khung-long-phun-nua", "name": "Khủng long phun nửa", "image": "/game-assets/duathu/7.gif" }
     ]
   },
+  "AVATAR_ASSETS": {
+    "note": "Asset trích từ Avatar (Teamobi) unity decode",
+    "gameRoom": "/game-assets/avatar/gameroom",
+    "cards": "/game-assets/avatar/cards",
+    "farmUI": "/game-assets/avatar/farm",
+    "effects": "/game-assets/avatar/effect",
+    "gameRoomKey": {
+      "imgTable": "bàn chơi", "imgBan2": "bàn 2 người", "imgBan4": "bàn 4 người",
+      "imgBan5": "bàn 5 người", "imgSelectban": "chọn bàn", "imgRoomtitle": "tiêu đề phòng",
+      "imgPlay": "nút chơi", "imgLock": "bàn khóa", "ready": "sẵn sàng", "imgNumPlayer": "số người"
+    },
+    "farmUIKey": {
+      "cell0-7": "ô đất các trạng thái", "buyLand": "mua đất", "w": "tưới nước",
+      "cut": "thu hoạch", "coin": "xu"
+    }
+  },
   "CARD_DECK": {
     "cardBack": "/game-assets/cards/back.png",
     "cards": {

@@ -51,7 +51,7 @@ export function ThreadList() {
                 {t.prefix && t.prefix !== 'NONE' && (
                   <span className={`chip ${PREFIX_STYLE[t.prefix] || 'bg-ink-200 text-ink-700'}`}>{t.prefix}</span>
                 )}
-                <Link href={`/threads/${t.slug}`} className="truncate font-semibold text-ink-800 hover:text-brand-600 dark:text-ink-100">
+                <Link href={`/thread?slug=${t.slug}`} className="truncate font-semibold text-ink-800 hover:text-brand-600 dark:text-ink-100">
                   {t.title}
                 </Link>
               </div>

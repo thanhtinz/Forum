@@ -75,13 +75,29 @@ npm run start:dev
 > `SeederService` tự upsert khi app khởi động (data nằm trong `src/seed/data/*`).
 > Tắt bằng `AUTO_SEED=false`. Seed forum/gem gốc vẫn chạy `npm run prisma:seed`.
 
-### Chạy toàn bộ bằng Docker
+### Deploy chung (1 process: frontend + backend + API)
+NestJS phục vụ luôn frontend (Next.js static export) cùng origin với API — **không tách build/deploy**.
+
 ```bash
-docker-compose up -d   # gồm cả service `api` (tự `prisma db push` rồi start)
-# API: http://localhost:3001/api
+docker-compose up -d   # service `app` build cả FE+BE, tự db push rồi start
+# Mở http://localhost:3001  → giao diện forum
+# API tại  http://localhost:3001/api
 ```
 
-✅ Đã verify: `db push` → boot → auto-seed 181 template → `GET /api/tools` & `/api/forum/threads` trả 200.
+Build tay không Docker:
+```bash
+cd frontend && npm ci && npm run build   # -> frontend/out (static)
+cd .. && npm ci && npm run build && npx prisma db push
+node dist/main                            # serve cả frontend lẫn /api tại :3001
+```
+
+✅ Đã verify unified: `/` (frontend), `/thread`, `/tools`, `/api/tools`, `/game-assets/*` đều trả 200 từ **một process**.
+
+### Dev (tách, hot-reload)
+```bash
+npm run start:dev          # backend :3001
+cd frontend && npm run dev # frontend :3000 (proxy /api -> :3001)
+```
 
 ## API Endpoints chính
 

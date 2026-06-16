@@ -440,6 +440,8 @@ model Product {
   viewCount      Int           @default(0)
   ratingAvg      Float         @default(0)
   ratingCount    Int           @default(0)
+  pinnedUntil    DateTime?     // ghim sản phẩm (trả gem)
+  featuredUntil  DateTime?     // đề xuất sản phẩm (trả gem)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -933,6 +935,9 @@ model Storefront {
   followerCount Int     @default(0)
   policyRefund String?  @db.Text
   socialLinks  Json?    // { facebook, discord, telegram }
+  featuredUntil DateTime? // đề xuất gian hàng (trả gem)
+  aiUntil      DateTime?  // gói AI shop theo tháng
+  aiForever    Boolean   @default(false) // gói AI vĩnh viễn
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

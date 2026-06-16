@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { GemService } from '../gem/gem.service';
 import { AiProviderService, AiChatMessage } from '../ai-companion/ai-provider.service';
 import { MarketplaceOrderService } from './marketplace-order.service';
+import { SellerPerkService } from './seller-perk.service';
 
 const AI_PROMPTS: Record<string, string> = {
   description: 'Bạn là copywriter bán hàng. Viết mô tả sản phẩm hấp dẫn, có gạch đầu dòng tính năng, kêu gọi mua hàng. Tiếng Việt, ngắn gọn.',
@@ -30,13 +31,15 @@ export class SellerService {
     private readonly orders: MarketplaceOrderService,
     private readonly ai: AiProviderService,
     private readonly config: ConfigService,
+    private readonly perks: SellerPerkService,
   ) {}
 
-  // ── 18. Công cụ AI cho seller ──
+  // ── 18. Công cụ AI cho seller (cần mua gói AI) ──
   async aiAssist(userId: string, task: string, input: string) {
     const system = AI_PROMPTS[task];
     if (!system) throw new BadRequestException('Tác vụ AI không hợp lệ');
     if (!input?.trim()) throw new BadRequestException('Cần nhập nội dung');
+    if (!(await this.perks.isAiActive(userId))) throw new ForbiddenException('Cần mua gói AI shop để dùng tính năng này');
     const provider = (this.config.get<string>('AI_PROVIDER') || 'GEMINI') as AiProvider;
     const model = this.config.get<string>('AI_MODEL') || 'gemini-1.5-flash';
     const messages: AiChatMessage[] = [

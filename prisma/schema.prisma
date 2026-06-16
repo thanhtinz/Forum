@@ -1,0 +1,1673 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  GUEST
+  MEMBER
+  VIP
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  SUSPENDED
+  PENDING_VERIFY
+}
+
+enum ThreadPrefix {
+  NONE
+  FREE
+  PAID
+  REQUEST
+  GUIDE
+  DISCUSSION
+  SHOWCASE
+  ANNOUNCEMENT
+}
+
+enum ThreadStatus {
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum ProductType {
+  SOURCE_CODE
+  TOOL
+  SERVICE
+  ACCOUNT
+  TEMPLATE
+  DESIGN
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  SOLD_OUT
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+  DISPUTED
+}
+
+enum GemTxType {
+  TOPUP_SEPAY
+  TOPUP_PAYPAL
+  SPEND_PRODUCT
+  SPEND_HIDDEN_CONTENT
+  EARN_SELL
+  REFUND
+  ADMIN_ADJUST
+  BONUS
+}
+
+enum ReportType {
+  SPAM
+  SCAM
+  INAPPROPRIATE
+  COPYRIGHT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum NotifType {
+  THREAD_REPLY
+  POST_MENTION
+  POST_LIKE
+  ORDER_COMPLETE
+  GEM_RECEIVED
+  SYSTEM
+  AI_MESSAGE
+}
+
+enum HiddenGateType {
+  LIKE_REQUIRED
+  COMMENT_REQUIRED
+  LIKE_AND_COMMENT
+  LIKE_OR_COMMENT
+  GEM_PURCHASE
+  LIKE_OR_GEM
+  COMMENT_OR_GEM
+}
+
+enum AiProvider {
+  OPENAI
+  GEMINI
+  OLLAMA
+}
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// ============================================================
+// USERS
+// ============================================================
+
+model User {
+  id              String     @id @default(cuid())
+  username        String     @unique @db.VarChar(50)
+  email           String     @unique @db.VarChar(255)
+  passwordHash    String?
+  displayName     String?    @db.VarChar(100)
+  avatar          String?
+  bio             String?    @db.Text
+  role            UserRole   @default(MEMBER)
+  status          UserStatus @default(ACTIVE)
+  isVerified      Boolean    @default(false)
+  ageVerified     Boolean    @default(false)
+  threadCount     Int        @default(0)
+  postCount       Int        @default(0)
+  reputationScore Int        @default(0)
+  gemBalance      Int        @default(0)
+  lastSeenAt      DateTime?
+  bannedUntil     DateTime?
+  banReason       String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  oauthProviders  OAuthProvider[]
+  threads         Thread[]
+  posts           Post[]
+  reactions       PostReaction[]
+  threadViews     ThreadView[]
+  gemWallet       GemWallet?
+  gemTransactions GemTransaction[]
+  orders          Order[]           @relation("BuyerOrders")
+  products        Product[]         @relation("SellerProducts")
+  notifications   Notification[]
+  reports         Report[]          @relation("ReporterReports")
+  reportedReports Report[]          @relation("ReportedUserReports")
+  badges          UserBadge[]
+  warnHistory     UserWarning[]     @relation("WarnedUser")
+  warnedBy        UserWarning[]     @relation("WarnedByUser")
+  aiSessions      AiSession[]
+  hiddenUnlocks   HiddenContentUnlock[]
+  scamReports     ScamReport[]      @relation("ScamReporter")
+  scamReported    ScamReport[]      @relation("ScamReported")
+  friends         Friendship[]      @relation("UserFriends")
+  friendOf        Friendship[]      @relation("FriendOf")
+  followedTags    UserTagFollow[]
+
+  aiBonds         AiBond[]
+  aiOutfitUnlocks AiOutfitUnlock[]
+  storefront      Storefront?
+  storefrontFollows StorefrontFollow[]
+  gameCharacter   GameCharacter?
+
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@index([createdAt])
+}
+
+model OAuthProvider {
+  id         String   @id @default(cuid())
+  userId     String
+  provider   String   @db.VarChar(20)
+  providerId String   @db.VarChar(255)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+// ============================================================
+// FORUM
+// ============================================================
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(120)
+  description String?  @db.Text
+  icon        String?  @db.VarChar(50)
+  color       String?  @db.VarChar(20)
+  parentId    String?
+  sortOrder   Int      @default(0)
+  isPrivate   Boolean  @default(false)
+  minRoleView UserRole @default(GUEST)
+  minRolePost UserRole @default(MEMBER)
+  threadCount Int      @default(0)
+  postCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children Category[] @relation("SubCategories")
+  threads  Thread[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@index([sortOrder])
+}
+
+model Tag {
+  id         String   @id @default(cuid())
+  name       String   @unique @db.VarChar(50)
+  slug       String   @unique @db.VarChar(60)
+  color      String?  @db.VarChar(20)
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  threadTags   ThreadTag[]
+  productTags  ProductTag[]
+  followers    UserTagFollow[]
+
+  @@index([slug])
+}
+
+model UserTagFollow {
+  userId String
+  tagId  String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tagId])
+}
+
+model Thread {
+  id             String       @id @default(cuid())
+  categoryId     String
+  authorId       String
+  title          String       @db.VarChar(255)
+  slug           String       @unique @db.VarChar(280)
+  prefix         ThreadPrefix @default(NONE)
+  status         ThreadStatus @default(OPEN)
+  isPinned       Boolean      @default(false)
+  isFeatured     Boolean      @default(false)
+  isLocked       Boolean      @default(false)
+  viewCount      Int          @default(0)
+  replyCount     Int          @default(0)
+  likeCount      Int          @default(0)
+  lastPostAt     DateTime     @default(now())
+  lastPostUserId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  category Category    @relation(fields: [categoryId], references: [id])
+  author   User        @relation(fields: [authorId], references: [id])
+  posts    Post[]
+  tags     ThreadTag[]
+  views    ThreadView[]
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([slug])
+  @@index([lastPostAt])
+  @@index([prefix])
+}
+
+model ThreadTag {
+  threadId String
+  tagId    String
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, tagId])
+}
+
+model ThreadView {
+  userId   String
+  threadId String
+  viewedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@id([userId, threadId])
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  threadId    String
+  authorId    String
+  parentId    String?
+  content     String    @db.Text
+  contentRaw  String    @db.Text
+  isFirstPost Boolean   @default(false)
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+  deletedById String?
+  editCount   Int       @default(0)
+  lastEditAt  DateTime?
+  likeCount   Int       @default(0)
+  isHelpful   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  thread         Thread           @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author         User             @relation(fields: [authorId], references: [id])
+  parent         Post?            @relation("PostQuotes", fields: [parentId], references: [id])
+  replies        Post[]           @relation("PostQuotes")
+  reactions      PostReaction[]
+  hiddenSections HiddenSection[]
+  attachments    PostAttachment[]
+
+  @@index([threadId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PostReaction {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  emoji     String   @db.VarChar(20)
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, emoji])
+  @@index([postId])
+  @@index([userId])
+}
+
+model PostAttachment {
+  id        String   @id @default(cuid())
+  postId    String
+  fileName  String   @db.VarChar(255)
+  fileUrl   String
+  fileSize  Int
+  mimeType  String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+// ============================================================
+// HIDDEN CONTENT GATE
+// ============================================================
+
+model HiddenSection {
+  id          String         @id @default(cuid())
+  postId      String
+  sortOrder   Int            @default(0)
+  label       String?        @db.VarChar(255)
+  content     String         @db.Text
+  contentRaw  String         @db.Text
+  gateType    HiddenGateType
+
+  // điều kiện mở
+  likeRequired    Int?
+  commentRequired Int?
+  gemPrice        Int?
+
+  unlockCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  post    Post                  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  unlocks HiddenContentUnlock[]
+
+  @@index([postId])
+}
+
+model HiddenContentUnlock {
+  id              String   @id @default(cuid())
+  userId          String
+  hiddenSectionId String
+  unlockedVia     String   @db.VarChar(20)
+  gemSpent        Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hiddenSection HiddenSection @relation(fields: [hiddenSectionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hiddenSectionId])
+  @@index([userId])
+  @@index([hiddenSectionId])
+}
+
+// ============================================================
+// MARKETPLACE
+// ============================================================
+
+model Product {
+  id             String        @id @default(cuid())
+  sellerId       String
+  title          String        @db.VarChar(255)
+  slug           String        @unique @db.VarChar(280)
+  description    String        @db.Text
+  descriptionRaw String        @db.Text
+  type           ProductType
+  status         ProductStatus @default(DRAFT)
+  gemPrice       Int           @default(0)
+  isFree         Boolean       @default(false)
+  version        String?       @db.VarChar(50)
+  techStack      String[]
+  thumbnailUrl   String?
+  demoUrl        String?
+  fileUrl        String?
+  fileSize       Int?
+  downloadCount  Int           @default(0)
+  salesCount     Int           @default(0)
+  viewCount      Int           @default(0)
+  ratingAvg      Float         @default(0)
+  ratingCount    Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  seller      User               @relation("SellerProducts", fields: [sellerId], references: [id])
+  orders      Order[]
+  reviews     ProductReview[]
+  screenshots ProductScreenshot[]
+  tags        ProductTag[]
+
+  @@index([sellerId])
+  @@index([slug])
+  @@index([type])
+  @@index([status])
+}
+
+model ProductScreenshot {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  buyerId       String
+  productId     String
+  status        OrderStatus @default(PENDING)
+  gemSpent      Int
+  sellerEarned  Int
+  platformFee   Int
+  downloadUrl   String?
+  downloadCount Int         @default(0)
+  downloadLimit Int         @default(5)
+  completedAt   DateTime?
+  refundedAt    DateTime?
+  refundReason  String?
+  createdAt     DateTime    @default(now())
+
+  buyer   User    @relation("BuyerOrders", fields: [buyerId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([buyerId])
+  @@index([productId])
+  @@index([status])
+}
+
+model ProductReview {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  orderId   String?
+  rating    Int
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+  @@index([productId])
+}
+
+// ============================================================
+// GEM / PAYMENTS
+// ============================================================
+
+model GemWallet {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  balance     Int      @default(0)
+  totalTopup  Int      @default(0)
+  totalSpent  Int      @default(0)
+  totalEarned Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GemTransaction {
+  id            String    @id @default(cuid())
+  userId        String
+  type          GemTxType
+  amount        Int
+  balanceBefore Int
+  balanceAfter  Int
+  refId         String?   @db.VarChar(100)
+  refType       String?   @db.VarChar(50)
+  note          String?   @db.VarChar(255)
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model PaymentTopup {
+  id          String    @id @default(cuid())
+  userId      String
+  provider    String    @db.VarChar(20)
+  providerRef String?   @db.VarChar(255)
+  amountVnd   Int?
+  amountUsd   Float?
+  gemAwarded  Int
+  status      String    @default("pending") @db.VarChar(20)
+  webhookData Json?
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([provider])
+  @@index([status])
+  @@index([providerRef])
+}
+
+model GemPackage {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(100)
+  gemAmount Int
+  priceVnd  Int?
+  priceUsd  Float?
+  bonus     Int      @default(0)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// REPUTATION
+// ============================================================
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(100)
+  description String?
+  icon        String   @db.VarChar(50)
+  color       String   @db.VarChar(20)
+  condition   Json
+  isAuto      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  userBadges UserBadge[]
+}
+
+model UserBadge {
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+}
+
+// ============================================================
+// MODERATION
+// ============================================================
+
+model Report {
+  id             String       @id @default(cuid())
+  reporterId     String
+  reportedUserId String?
+  targetType     String       @db.VarChar(20)
+  targetId       String
+  type           ReportType
+  status         ReportStatus @default(PENDING)
+  reason         String       @db.Text
+  modNote        String?      @db.Text
+  resolvedById   String?
+  resolvedAt     DateTime?
+  createdAt      DateTime     @default(now())
+
+  reporter     User  @relation("ReporterReports", fields: [reporterId], references: [id])
+  reportedUser User? @relation("ReportedUserReports", fields: [reportedUserId], references: [id])
+
+  @@index([reporterId])
+  @@index([targetType, targetId])
+  @@index([status])
+}
+
+model ScamReport {
+  id           String       @id @default(cuid())
+  reporterId   String
+  reportedId   String
+  evidence     String       @db.Text
+  evidenceUrls String[]
+  status       ReportStatus @default(PENDING)
+  modNote      String?
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+
+  reporter User @relation("ScamReporter", fields: [reporterId], references: [id])
+  reported User @relation("ScamReported", fields: [reportedId], references: [id])
+
+  @@index([reportedId])
+  @@index([status])
+}
+
+model UserWarning {
+  id         String    @id @default(cuid())
+  userId     String
+  warnedById String
+  reason     String    @db.Text
+  points     Int       @default(1)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user     User @relation("WarnedUser", fields: [userId], references: [id])
+  warnedBy User @relation("WarnedByUser", fields: [warnedById], references: [id])
+
+  @@index([userId])
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String
+  type       NotifType
+  title      String    @db.VarChar(255)
+  body       String?   @db.VarChar(500)
+  link       String?   @db.VarChar(500)
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  actorId    String?
+  targetType String?   @db.VarChar(30)
+  targetId   String?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+// ============================================================
+// AI COMPANION
+// ============================================================
+
+model AiPersona {
+  id           String     @id @default(cuid())
+  characterId  String?
+  name         String     @db.VarChar(100)
+  systemPrompt String     @db.Text
+  provider     AiProvider @default(GEMINI)
+  modelId      String     @db.VarChar(100)
+  greetingText String?    @db.Text
+  live2dModel  String?    @db.VarChar(255)
+  isDefault    Boolean    @default(false)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  character AiCharacter? @relation(fields: [characterId], references: [id])
+  sessions  AiSession[]
+}
+
+model AiSession {
+  id        String   @id @default(cuid())
+  userId    String
+  personaId String
+  title     String?  @db.VarChar(255)
+  context   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  persona  AiPersona   @relation(fields: [personaId], references: [id])
+  messages AiMessage[]
+
+  @@index([userId])
+}
+
+model AiMessage {
+  id        String        @id @default(cuid())
+  sessionId String
+  role      AiMessageRole
+  content   String        @db.Text
+  emotion   String?       @db.VarChar(30)
+  tokens    Int?
+  createdAt DateTime      @default(now())
+
+  session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+// ============================================================
+// SOCIAL
+// ============================================================
+
+model Friendship {
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+
+  user   User @relation("UserFriends", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("FriendOf", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@id([userId, friendId])
+}
+
+// ============================================================
+// SYSTEM
+// ============================================================
+
+model SiteConfig {
+  key       String   @id @db.VarChar(100)
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String   @db.VarChar(100)
+  targetType String?  @db.VarChar(50)
+  targetId   String?
+  before     Json?
+  after      Json?
+  ip         String?  @db.VarChar(45)
+  userAgent  String?  @db.VarChar(255)
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================================
+// AI COMPANION — OUTFIT & BONDING SYSTEM
+// ============================================================
+
+model AiCharacter {
+  id           String   @id @default(cuid())
+  slug         String   @unique @db.VarChar(60)
+  name         String   @db.VarChar(100)
+  description  String?  @db.Text
+  defaultOutfit String  @db.VarChar(60)
+  emotionMap   Json     // emotion → motion names
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  outfits  AiOutfit[]
+  bonds    AiBond[]
+  personas AiPersona[]
+}
+
+model AiOutfit {
+  id              String   @id @default(cuid())
+  characterId     String
+  slug            String   @db.VarChar(60)
+  name            String   @db.VarChar(100)
+  nameEn          String?  @db.VarChar(100)
+  modelPath       String   @db.VarChar(255)
+  thumbnail       String?  @db.VarChar(255)
+  description     String?  @db.Text
+  unlockBondLevel Int      @default(0)
+  rarity          String   @default("common") @db.VarChar(20) // common|rare|legendary
+  isDefault       Boolean  @default(false)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  character AiCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  unlocks   AiOutfitUnlock[]
+
+  @@unique([characterId, slug])
+  @@index([characterId])
+}
+
+// Thiện cảm/bond giữa user và character
+model AiBond {
+  id          String   @id @default(cuid())
+  userId      String
+  characterId String
+  bondLevel   Int      @default(0)
+  bondPoints  Int      @default(0)   // tích lũy → lên level
+  totalMessages Int    @default(0)
+  currentOutfit String @db.VarChar(60) // outfit đang chọn
+  lastInteractAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character AiCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, characterId])
+  @@index([userId])
+}
+
+model AiOutfitUnlock {
+  id        String   @id @default(cuid())
+  userId    String
+  outfitId  String
+  unlockedAt DateTime @default(now())
+
+  outfit AiOutfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, outfitId])
+  @@index([userId])
+}
+
+// ============================================================
+// TOOLS SYSTEM
+// ============================================================
+
+model ToolCategory {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(60)
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  icon        String?  @db.VarChar(50)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  tools Tool[]
+}
+
+model Tool {
+  id          String   @id @default(cuid())
+  categoryId  String
+  slug        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String   @db.Text
+  icon        String?  @db.VarChar(50)
+  component   String   @db.VarChar(100) // tên React component
+  isActive    Boolean  @default(true)
+  isPro       Boolean  @default(false)  // cần VIP/gem
+  usageCount  Int      @default(0)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  category ToolCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([slug])
+}
+
+// ============================================================
+// MARKETPLACE — STOREFRONT (gian hàng riêng)
+// ============================================================
+
+model Storefront {
+  id           String   @id @default(cuid())
+  ownerId      String   @unique
+  slug         String   @unique @db.VarChar(80)
+  name         String   @db.VarChar(120)
+  tagline      String?  @db.VarChar(255)
+  description  String?  @db.Text
+  bannerUrl    String?
+  logoUrl      String?
+  isVerified   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  totalSales   Int      @default(0)
+  totalRevenue Int      @default(0)
+  ratingAvg    Float    @default(0)
+  ratingCount  Int      @default(0)
+  followerCount Int     @default(0)
+  policyRefund String?  @db.Text
+  socialLinks  Json?    // { facebook, discord, telegram }
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  followers StorefrontFollow[]
+
+  @@index([slug])
+  @@index([ownerId])
+}
+
+model StorefrontFollow {
+  userId       String
+  storefrontId String
+  createdAt    DateTime @default(now())
+
+  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
+
+  @@id([userId, storefrontId])
+  @@index([storefrontId])
+}
+
+// ============================================================
+// ADMIN — DYNAMIC CONFIG GROUPS
+// ============================================================
+
+model ConfigGroup {
+  id          String   @id @default(cuid())
+  key         String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  icon        String?  @db.VarChar(50)
+  sortOrder   Int      @default(0)
+
+  settings ConfigSetting[]
+}
+
+model ConfigSetting {
+  id           String   @id @default(cuid())
+  groupId      String
+  key          String   @unique @db.VarChar(120)
+  label        String   @db.VarChar(200)
+  description  String?  @db.Text
+  type         String   @db.VarChar(30) // string|number|boolean|select|json|color|image|textarea
+  value        Json
+  defaultValue Json?
+  options      Json?    // cho select: [{label, value}]
+  validation   Json?    // { min, max, required, pattern }
+  sortOrder    Int      @default(0)
+  isSecret     Boolean  @default(false) // API keys → mask trong UI
+  updatedAt    DateTime @updatedAt
+
+  group ConfigGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+}
+
+// ============================================================
+// RPG — PIXEL CHARACTER & GAME SYSTEM
+// ============================================================
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum EquipSlot {
+  WEAPON
+  ARMOR       // áo
+  CLOAK       // áo choàng
+  PANTS       // quần
+  BELT        // thắt lưng
+  GLOVES      // găng tay
+  BOOTS       // giày
+  NECKLACE    // dây chuyền
+  RING        // nhẫn
+  SKIN        // skin đổi toàn bộ giao diện
+}
+
+enum ItemRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+  MYTHIC
+}
+
+enum Currency {
+  COIN   // kiếm trong game, không rút được
+  GEM    // nạp/rút được
+}
+
+enum BattleType {
+  PVP_AUTO
+  PVP_MANUAL
+  PVE
+}
+
+enum BattleResult {
+  WIN
+  LOSE
+  DRAW
+}
+
+enum GuildRole {
+  LEADER
+  CO_LEADER
+  ELDER
+  MEMBER
+}
+
+// ── Nhân vật pixel của user ──
+model GameCharacter {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  gender      Gender
+  level       Int      @default(1)
+  exp         Int      @default(0)         // exp từ forum
+  statPoints  Int      @default(0)         // điểm chưa phân bổ
+
+  // Chỉ số cơ bản (user tự phân bổ, +5 mỗi level)
+  strength    Int      @default(5)         // sát thương vật lý
+  vitality    Int      @default(5)         // máu
+  agility     Int      @default(5)         // tốc độ, né
+  intelligence Int     @default(5)         // sát thương phép, mana
+
+  // Pixel appearance (base, trước khi mặc skin)
+  skinTone    String   @default("#f0c8a0") @db.VarChar(20)
+  hairStyle   Int      @default(1)
+  hairColor   String   @default("#3a2a1a") @db.VarChar(20)
+  faceType    Int      @default(1)
+
+  coinBalance Int      @default(0)         // tiền tệ game
+
+  // Combat stats (cache, tính lại khi đổi trang bị/level)
+  combatPower Int      @default(0)
+
+  // PvP
+  pvpRank     Int      @default(1000)      // elo
+  pvpWins     Int      @default(0)
+  pvpLosses   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventory   InventoryItem[]
+  equipped    EquippedItem[]
+  guildMember GuildMember?
+  skills      CharacterSkill[]
+  survival    CharacterSurvival?
+
+  @@index([level])
+  @@index([pvpRank])
+  @@index([combatPower])
+}
+
+// ── Item template (admin định nghĩa) ──
+model ItemTemplate {
+  id          String     @id @default(cuid())
+  slug        String     @unique @db.VarChar(80)
+  name        String     @db.VarChar(120)
+  description String?    @db.Text
+  slot        EquipSlot
+  rarity      ItemRarity @default(COMMON)
+  spriteUrl   String     @db.VarChar(255)  // pixel sprite
+  iconUrl     String?    @db.VarChar(255)
+
+  // Yêu cầu
+  reqLevel    Int        @default(1)
+
+  // Chỉ số cộng thêm
+  bonusStr    Int        @default(0)
+  bonusVit    Int        @default(0)
+  bonusAgi    Int        @default(0)
+  bonusInt    Int        @default(0)
+  bonusHp     Int        @default(0)
+  bonusAtk    Int        @default(0)
+  bonusDef    Int        @default(0)
+
+  // Giá (cả hai loại tiền, giá khác nhau)
+  priceCoin   Int?       // null = không bán bằng coin
+  priceGem    Int?       // null = không bán bằng gem
+
+  isActive    Boolean    @default(true)
+  isTradeable Boolean    @default(true)
+  stock       Int?       // null = vô hạn
+
+  createdAt   DateTime   @default(now())
+
+  inventoryItems InventoryItem[]
+
+  @@index([slot])
+  @@index([rarity])
+}
+
+// ── Item trong túi đồ user ──
+model InventoryItem {
+  id          String   @id @default(cuid())
+  characterId String
+  templateId  String
+  quantity    Int      @default(1)
+  enhanceLevel Int     @default(0)   // cấp cường hóa +0 → +15
+  isLocked    Boolean  @default(false)
+  acquiredAt  DateTime @default(now())
+
+  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  template  ItemTemplate  @relation(fields: [templateId], references: [id])
+  equipped  EquippedItem?
+
+  @@index([characterId])
+  @@index([templateId])
+}
+
+// ── Item đang trang bị (1 slot 1 item) ──
+model EquippedItem {
+  id             String    @id @default(cuid())
+  characterId    String
+  slot           EquipSlot
+  inventoryItemId String   @unique
+  equippedAt     DateTime  @default(now())
+
+  character     GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, slot])
+  @@index([characterId])
+}
+
+// ── Skill ──
+model SkillTemplate {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  iconUrl     String?  @db.VarChar(255)
+  reqLevel    Int      @default(1)
+  manaCost    Int      @default(0)
+  cooldown    Int      @default(0)      // số turn
+  damageMultiplier Float @default(1.0)
+  effectType  String?  @db.VarChar(50)  // stun|heal|buff|dot
+  effectValue Int      @default(0)
+  priceCoin   Int?
+  priceGem    Int?
+  isActive    Boolean  @default(true)
+
+  characterSkills CharacterSkill[]
+}
+
+model CharacterSkill {
+  id          String   @id @default(cuid())
+  characterId String
+  skillId     String
+  slotIndex   Int      // vị trí trên thanh skill (0-3)
+  learnedAt   DateTime @default(now())
+
+  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  skill     SkillTemplate @relation(fields: [skillId], references: [id])
+
+  @@unique([characterId, skillId])
+  @@index([characterId])
+}
+
+// ── Guild ──
+model Guild {
+  id          String   @id @default(cuid())
+  name        String   @unique @db.VarChar(60)
+  tag         String   @unique @db.VarChar(8)  // [TAG]
+  description String?  @db.Text
+  emblemUrl   String?  @db.VarChar(255)
+  level       Int      @default(1)
+  exp         Int      @default(0)
+  coinFund    Int      @default(0)   // quỹ guild
+  maxMembers  Int      @default(30)
+  leaderId    String
+  isPublic    Boolean  @default(true)
+  reqLevel    Int      @default(1)   // level tối thiểu để xin vào
+  createdAt   DateTime @default(now())
+
+  members GuildMember[]
+
+  @@index([level])
+}
+
+model GuildMember {
+  id          String    @id @default(cuid())
+  guildId     String
+  characterId String    @unique
+  role        GuildRole @default(MEMBER)
+  contribution Int      @default(0)   // đóng góp tích lũy
+  joinedAt    DateTime  @default(now())
+
+  guild     Guild         @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+}
+
+// ── Battle log ──
+model Battle {
+  id          String       @id @default(cuid())
+  type        BattleType
+  attackerId  String
+  defenderId  String?      // null nếu PvE
+  result      BattleResult
+  attackerPowerBefore Int
+  defenderPowerBefore Int
+  rounds      Json         // chi tiết từng round để replay
+  expGained   Int          @default(0)
+  coinGained  Int          @default(0)
+  rankChange  Int          @default(0)  // elo change
+  createdAt   DateTime     @default(now())
+
+  @@index([attackerId])
+  @@index([defenderId])
+  @@index([createdAt])
+}
+
+// ── Coin transaction (tách khỏi gem) ──
+model CoinTransaction {
+  id            String   @id @default(cuid())
+  characterId   String
+  type          String   @db.VarChar(40)  // earn_battle|earn_forum|spend_shop|guild_donate|...
+  amount        Int
+  balanceBefore Int
+  balanceAfter  Int
+  refId         String?  @db.VarChar(100)
+  note          String?  @db.VarChar(255)
+  createdAt     DateTime @default(now())
+
+  @@index([characterId])
+  @@index([type])
+}
+
+// ── Level curve config (admin chỉnh) ──
+model LevelCurve {
+  level    Int  @id
+  expRequired Int
+  statPointReward Int @default(5)
+  coinReward  Int @default(0)
+}
+
+// ============================================================
+// SURVIVAL STATS (kiểu The Sims) — gắn vào GameCharacter
+// ============================================================
+
+model CharacterSurvival {
+  id          String   @id @default(cuid())
+  characterId String   @unique
+
+  // Các chỉ số 0-100 (100 = đầy đủ, 0 = nguy hiểm)
+  hunger      Int      @default(100)   // đói (giảm dần theo thời gian)
+  thirst      Int      @default(100)   // khát
+  hygiene     Int      @default(100)   // vệ sinh
+  energy      Int      @default(100)   // ngủ/năng lượng
+  health      Int      @default(100)   // sức khỏe tổng
+
+  // Bệnh
+  isSick      Boolean  @default(false)
+  sickness    String?  @db.VarChar(60)  // loại bệnh
+  sickUntil   DateTime?
+
+  // Mốc thời gian để tính suy giảm
+  lastUpdated DateTime @default(now())
+  lastFed     DateTime @default(now())
+  lastDrink   DateTime @default(now())
+  lastClean   DateTime @default(now())
+  lastSleep   DateTime @default(now())
+
+  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+// Loại consumable (food/drink/medicine) — định nghĩa hiệu ứng survival
+// Dùng chung ItemTemplate với slot mới, hoặc bảng riêng cho consumable
+
+enum ConsumableType {
+  FOOD
+  DRINK
+  MEDICINE
+  HYGIENE_ITEM
+  ENERGY_ITEM
+}
+
+model ConsumableTemplate {
+  id          String         @id @default(cuid())
+  slug        String         @unique @db.VarChar(80)
+  name        String         @db.VarChar(120)
+  description String?        @db.Text
+  type        ConsumableType
+  iconUrl     String?        @db.VarChar(255)
+  spriteUrl   String?        @db.VarChar(255)
+
+  // Hiệu ứng hồi phục (0-100)
+  restoreHunger  Int @default(0)
+  restoreThirst  Int @default(0)
+  restoreHygiene Int @default(0)
+  restoreEnergy  Int @default(0)
+  restoreHealth  Int @default(0)
+  curesSickness  Boolean @default(false)
+
+  priceCoin   Int?
+  priceGem    Int?
+  isActive    Boolean @default(true)
+  stock       Int?
+  sortOrder   Int     @default(0)
+  createdAt   DateTime @default(now())
+}
+
+// ============================================================
+// CONSUMABLE / SPECIAL ITEMS (thẻ đổi tên, thẻ nổi bật tên...)
+// ============================================================
+
+enum SpecialItemType {
+  RENAME_CARD       // thẻ đổi tên
+  NAME_HIGHLIGHT    // thẻ làm nổi bật tên (màu/gradient/animation)
+  NAME_COLOR        // đổi màu tên
+  PROFILE_BANNER    // banner profile
+  AVATAR_FRAME      // khung avatar
+  POST_EFFECT       // hiệu ứng bài viết
+  EXP_BOOST         // tăng exp x lần
+  COIN_BOOST        // tăng coin
+}
+
+model SpecialItemTemplate {
+  id          String          @id @default(cuid())
+  slug        String          @unique @db.VarChar(80)
+  name        String          @db.VarChar(120)
+  description String?         @db.Text
+  type        SpecialItemType
+  iconUrl     String?         @db.VarChar(255)
+
+  // Cấu hình hiệu ứng (JSON linh hoạt)
+  effectConfig Json?          // { color, gradient, duration, multiplier, ... }
+  durationDays Int?           // null = vĩnh viễn
+
+  priceCoin   Int?
+  priceGem    Int?
+  isActive    Boolean @default(true)
+  stock       Int?
+  sortOrder   Int     @default(0)
+  createdAt   DateTime @default(now())
+
+  userItems UserSpecialItem[]
+}
+
+model UserSpecialItem {
+  id          String   @id @default(cuid())
+  userId      String
+  templateId  String
+  isUsed      Boolean  @default(false)
+  usedAt      DateTime?
+  expiresAt   DateTime?  // cho item có thời hạn
+  acquiredAt  DateTime @default(now())
+
+  template SpecialItemTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([userId])
+}
+
+// User cosmetic state (đang active gì)
+model UserCosmetic {
+  userId         String   @id
+  nameColor      String?  @db.VarChar(20)
+  nameHighlight  String?  @db.VarChar(40)  // gradient/glow/rainbow
+  nameHighlightUntil DateTime?
+  avatarFrame    String?  @db.VarChar(60)
+  profileBanner  String?  @db.VarChar(255)
+  hasRenameCard  Boolean  @default(false)  // đã mua thẻ đổi tên chưa dùng
+  renameCount    Int      @default(0)      // số lần đã đổi tên
+  updatedAt      DateTime @updatedAt
+}
+
+// ============================================================
+// TROPHY / DANH HIỆU SYSTEM (kiểu XenForo)
+// ============================================================
+
+model Trophy {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String   @db.Text
+  iconUrl     String?  @db.VarChar(255)
+  points      Int      @default(1)        // trophy points khi đạt
+
+  // Criteria (JSON linh hoạt, admin cấu hình)
+  // vd: { type: "post_count", value: 100 } | { type: "reaction_received", value: 500 }
+  //     { type: "days_registered", value: 365 } | { type: "first_post" }
+  criteria    Json
+
+  isActive    Boolean  @default(true)
+  isHidden    Boolean  @default(false)    // trophy ẩn (bất ngờ)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  userTrophies UserTrophy[]
+}
+
+model UserTrophy {
+  id        String   @id @default(cuid())
+  userId    String
+  trophyId  String
+  awardedAt DateTime @default(now())
+
+  trophy Trophy @relation(fields: [trophyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trophyId])
+  @@index([userId])
+}
+
+// User Title Ladder — danh hiệu theo mốc trophy points
+model UserTitle {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(120)   // "Thành viên", "Kỳ cựu", "Huyền thoại"
+  minPoints   Int      @unique            // mốc điểm tối thiểu
+  color       String?  @db.VarChar(20)
+  iconUrl     String?  @db.VarChar(255)
+  sortOrder   Int      @default(0)
+}
+
+// User trophy points tracker
+model UserTrophyStats {
+  userId       String   @id
+  totalPoints  Int      @default(0)
+  currentTitle String?  @db.VarChar(120)
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================================
+// MINIGAME / CASINO — CHỈ DÙNG COIN (cấm gem vì gem quy đổi tiền mặt)
+// ============================================================
+
+enum MinigameType {
+  JACKPOT_777    // máy quay slot 777
+  TIEN_LEN       // tiến lên miền nam
+  BLACKJACK
+  POKER
+  TAI_XIU        // tài xỉu
+  DUA_THU        // đua thú
+  CARO           // cờ caro
+  BAU_CUA        // bầu cua
+  LUCKY_WHEEL    // vòng quay may mắn
+  COIN_FLIP      // tung đồng xu
+}
+
+enum MinigameStatus {
+  WAITING        // chờ người chơi
+  PLAYING        // đang chơi
+  FINISHED
+  CANCELLED
+}
+
+model MinigameConfig {
+  id          String       @id @default(cuid())
+  type        MinigameType @unique
+  name        String       @db.VarChar(120)
+  description String?      @db.Text
+  iconUrl     String?      @db.VarChar(255)
+
+  // Cấu hình cược (CHỈ COIN)
+  minBet      Int          @default(100)
+  maxBet      Int          @default(100000)
+  houseFee    Float        @default(0.05)   // phí nhà cái 5%
+
+  // Asset config (admin upload)
+  assetConfig Json?        // { cardSprites, diceSprites, animalSprites, ... }
+
+  maxPlayers  Int          @default(4)
+  minPlayers  Int          @default(2)
+  isActive    Boolean      @default(true)
+  sortOrder   Int          @default(0)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  rooms       MinigameRoom[]
+}
+
+model MinigameRoom {
+  id          String         @id @default(cuid())
+  configId    String
+  type        MinigameType
+  status      MinigameStatus @default(WAITING)
+  betAmount   Int            // cược cố định của phòng (coin)
+  hostId      String         // characterId người tạo
+  maxPlayers  Int
+  state       Json?          // game state hiện tại
+  potCoin     Int            @default(0)   // tổng tiền cược trong pot
+  createdAt   DateTime       @default(now())
+  finishedAt  DateTime?
+
+  config  MinigameConfig    @relation(fields: [configId], references: [id])
+  players MinigamePlayer[]
+  results MinigameResult[]
+
+  @@index([type, status])
+}
+
+model MinigamePlayer {
+  id          String   @id @default(cuid())
+  roomId      String
+  characterId String
+  seatIndex   Int
+  betCoin     Int
+  isReady     Boolean  @default(false)
+  hasLeft     Boolean  @default(false)
+  joinedAt    DateTime @default(now())
+
+  room MinigameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, characterId])
+  @@index([roomId])
+}
+
+model MinigameResult {
+  id          String   @id @default(cuid())
+  roomId      String
+  characterId String
+  coinBet     Int
+  coinWon     Int      // số coin nhận (đã trừ phí), 0 nếu thua
+  isWinner    Boolean
+  details     Json?    // bài, điểm, vị trí về đích...
+  createdAt   DateTime @default(now())
+
+  room MinigameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
+  @@index([roomId])
+}
+
+// Lịch sử cược tổng (thống kê, chống gian lận)
+model GambleLog {
+  id          String       @id @default(cuid())
+  characterId String
+  type        MinigameType
+  betCoin     Int
+  resultCoin  Int          // + thắng / - thua
+  createdAt   DateTime     @default(now())
+
+  @@index([characterId])
+  @@index([createdAt])
+}
+
+// ============================================================
+// CHAT SYSTEM
+// ============================================================
+
+enum ChatChannelType {
+  GLOBAL      // chat tổng
+  PRIVATE     // chat riêng (1-1)
+  GROUP       // chat nhóm
+  GUILD       // chat guild
+}
+
+enum ChatMessageType {
+  TEXT
+  EMOJI
+  STICKER
+  GIF
+  IMAGE
+  VIDEO
+  FILE
+  VOICE       // mic
+  MUSIC       // link mp3/youtube/spotify/soundcloud
+}
+
+model ChatChannel {
+  id          String          @id @default(cuid())
+  type        ChatChannelType
+  name        String?         @db.VarChar(120)  // null cho private/global
+  avatarUrl   String?
+  guildId     String?         @unique           // nếu là guild chat
+  createdById String?
+  isActive    Boolean         @default(true)
+  lastMessageAt DateTime      @default(now())
+  createdAt   DateTime        @default(now())
+
+  members  ChatMember[]
+  messages ChatMessage[]
+
+  @@index([type])
+  @@index([lastMessageAt])
+}
+
+model ChatMember {
+  id          String   @id @default(cuid())
+  channelId   String
+  userId      String
+  isAdmin     Boolean  @default(false)  // admin nhóm
+  isMuted     Boolean  @default(false)
+  lastReadAt  DateTime @default(now())
+  joinedAt    DateTime @default(now())
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([userId])
+}
+
+model ChatMessage {
+  id          String          @id @default(cuid())
+  channelId   String
+  senderId    String
+  type        ChatMessageType @default(TEXT)
+  content     String          @db.Text       // text / url / file path
+  metadata    Json?           // { stickerPackId, gifUrl, musicProvider, duration, fileSize, mimeType, ... }
+  replyToId   String?
+  isDeleted   Boolean         @default(false)
+  isEdited    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  replyTo ChatMessage? @relation("ChatReply", fields: [replyToId], references: [id])
+  replies ChatMessage[] @relation("ChatReply")
+
+  @@index([channelId, createdAt])
+  @@index([senderId])
+}
+
+// ── Sticker packs (admin upload zip + đặt tên) ──
+model StickerPack {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  thumbnailUrl String?
+  isActive    Boolean  @default(true)
+  isPremium   Boolean  @default(false)
+  priceCoin   Int?
+  priceGem    Int?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  stickers Sticker[]
+}
+
+model Sticker {
+  id          String   @id @default(cuid())
+  packId      String
+  name        String   @db.VarChar(80)
+  imageUrl    String   @db.VarChar(255)
+  sortOrder   Int      @default(0)
+
+  pack StickerPack @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  @@index([packId])
+}
+
+// User sở hữu sticker pack (nếu premium)
+model UserStickerPack {
+  userId      String
+  packId      String
+  acquiredAt  DateTime @default(now())
+
+  @@id([userId, packId])
+}

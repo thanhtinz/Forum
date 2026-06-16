@@ -1,0 +1,47 @@
+{
+  "name": "forum-ai-platform",
+  "version": "1.0.0",
+  "description": "Forum platform with hidden content gate, gem marketplace & Live2D AI companion",
+  "scripts": {
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@nestjs/common": "^10.4.0",
+    "@nestjs/config": "^3.2.0",
+    "@nestjs/core": "^10.4.0",
+    "@nestjs/event-emitter": "^2.1.0",
+    "@nestjs/jwt": "^10.2.0",
+    "@nestjs/passport": "^10.0.0",
+    "@nestjs/platform-express": "^10.4.0",
+    "@nestjs/platform-socket.io": "^10.4.0",
+    "@nestjs/websockets": "^10.4.0",
+    "@paralleldrive/cuid2": "^2.2.2",
+    "@prisma/client": "^5.20.0",
+    "argon2": "^0.41.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
+    "marked": "^14.1.0",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "slugify": "^1.6.6",
+    "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^10.4.0",
+    "@types/node": "^22.5.0",
+    "@types/passport-jwt": "^4.0.1",
+    "prisma": "^5.20.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.0"
+  }
+}

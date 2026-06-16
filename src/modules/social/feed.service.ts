@@ -48,7 +48,7 @@ export class FeedService {
 
     const [threads, profilePosts] = await Promise.all([
       this.prisma.thread.findMany({
-        where: { authorId: { in: followingIds } },
+        where: { authorId: { in: followingIds }, isApproved: true },
         orderBy: { createdAt: 'desc' },
         take: fetchCount,
         select: {

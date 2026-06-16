@@ -21,10 +21,10 @@ const SECTIONS: { label: string; href: string | null }[] = [
   { label: '16. Thông báo', href: '/notifications' },
   { label: '18. Công cụ AI', href: '/seller/ai' },
   { label: '10. Quảng bá (gem)', href: '/seller/boost' },
-  { label: '12. Thống kê', href: null },
+  { label: '12. Thống kê', href: '/seller/analytics' },
   { label: '13. Nhân viên', href: '/seller/staff' },
   { label: '20. Nhật ký', href: '/seller/activity' },
-  { label: '15. Bảo mật', href: null },
+  { label: '15. Bảo mật', href: '/seller/security' },
   { label: '19. Nâng cao', href: null },
 ];
 

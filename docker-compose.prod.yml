@@ -1,0 +1,87 @@
+# ============================================================
+# Forum AI Platform — Triển khai PRODUCTION trên VPS
+# Stack tối thiểu: PostgreSQL + App (NestJS phục vụ cả API + frontend) + Caddy (HTTPS tự động)
+#
+# Dùng:   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+# Tắt:    docker compose -f docker-compose.prod.yml down
+# ============================================================
+
+services:
+  # ── Cơ sở dữ liệu PostgreSQL ──
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-forum}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Phai dat POSTGRES_PASSWORD trong .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-forum}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # KHÔNG mở cổng 5432 ra ngoài internet — chỉ nội bộ trong mạng docker.
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-forum} -d ${POSTGRES_DB:-forum}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ── Ứng dụng: 1 process phục vụ cả /api lẫn frontend tĩnh tại cổng 3001 (nội bộ) ──
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-forum}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-forum}?schema=public
+      PORT: 3001
+      NODE_ENV: production
+      FRONTEND_URL: ${FRONTEND_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Phai dat JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Phai dat JWT_REFRESH_SECRET}
+      JWT_ACCESS_EXPIRES: ${JWT_ACCESS_EXPIRES:-15m}
+      JWT_REFRESH_EXPIRES: ${JWT_REFRESH_EXPIRES:-7d}
+      AUTO_SEED: ${AUTO_SEED:-true}
+      # AI (tuỳ chọn — để trống nếu chưa dùng)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      # Thanh toán (tuỳ chọn)
+      SEPAY_BANK_ACCOUNT: ${SEPAY_BANK_ACCOUNT:-}
+      SEPAY_BANK_NAME: ${SEPAY_BANK_NAME:-}
+      SEPAY_ACCOUNT_NAME: ${SEPAY_ACCOUNT_NAME:-}
+      SEPAY_WEBHOOK_API_KEY: ${SEPAY_WEBHOOK_API_KEY:-}
+      PAYPAL_MODE: ${PAYPAL_MODE:-sandbox}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_SECRET: ${PAYPAL_SECRET:-}
+      # Lưu trữ media (tuỳ chọn — chỉ cần nếu bật upload file trực tiếp qua MinIO/S3)
+      MEDIA_ENDPOINT: ${MEDIA_ENDPOINT:-}
+      MEDIA_REGION: ${MEDIA_REGION:-us-east-1}
+      MEDIA_BUCKET: ${MEDIA_BUCKET:-}
+      MEDIA_ACCESS_KEY: ${MEDIA_ACCESS_KEY:-}
+      MEDIA_SECRET_KEY: ${MEDIA_SECRET_KEY:-}
+      MEDIA_FORCE_PATH_STYLE: ${MEDIA_FORCE_PATH_STYLE:-true}
+      MEDIA_PUBLIC_URL: ${MEDIA_PUBLIC_URL:-}
+    # Chỉ mở cổng cho mạng nội bộ docker, Caddy sẽ proxy vào.
+    expose:
+      - '3001'
+
+  # ── Caddy: reverse proxy + HTTPS (Let's Encrypt) tự động theo domain ──
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      DOMAIN: ${DOMAIN:?Phai dat DOMAIN (vi du forum.example.com) trong .env.production}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

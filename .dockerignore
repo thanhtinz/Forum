@@ -3,6 +3,10 @@
 **/.next
 frontend/out
 .git
+.github
 *.log
 .env
+.env.*
 logs
+*.md
+!README.md

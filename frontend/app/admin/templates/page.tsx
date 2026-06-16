@@ -10,6 +10,8 @@ const TYPES = [
   { id: 'animal', label: 'Vật nuôi' },
   { id: 'recipe', label: 'Công thức' },
   { id: 'avatar', label: 'Wardrobe/Pet/Mount' },
+  { id: 'consumable', label: 'Đồ ăn (consumable)' },
+  { id: 'gempackage', label: 'Gói nạp Gem' },
 ];
 
 export default function AdminTemplates() {

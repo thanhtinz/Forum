@@ -57,8 +57,9 @@ export default function WalletPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {packages.map((p) => (
             <div key={p.id} className="card p-4 text-center">
-              <div className="text-2xl font-bold text-fuchsia-600">{(p.gemAmount ?? p.gems ?? 0).toLocaleString()} 💎</div>
-              {p.bonusGem ? <div className="text-xs text-emerald-600">+{p.bonusGem} thưởng</div> : null}
+              <div className="text-2xl font-bold text-fuchsia-600">{(p.gemAmount ?? 0).toLocaleString()} 💎</div>
+              {p.bonus ? <div className="text-xs text-emerald-600">+{p.bonus} thưởng</div> : null}
+              <div className="text-sm font-medium">{p.name}</div>
               <div className="mt-1 text-sm text-ink-500">{(p.priceVnd ?? 0).toLocaleString()}đ</div>
               <div className="mt-3 flex gap-2">
                 <button onClick={() => sepay(p.id)} className="btn-primary flex-1 !py-1.5 text-xs">SePay QR</button>

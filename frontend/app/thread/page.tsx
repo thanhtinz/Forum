@@ -116,8 +116,9 @@ function ThreadView() {
     e.preventDefault();
     if (!thread || !reply.trim()) return;
     try {
-      await api.post('/forum/posts', { threadId: thread.id, content: reply });
+      const r = await api.post<any>('/forum/posts', { threadId: thread.id, content: reply });
       setReply('');
+      if (r?.pendingApproval) { setErr(''); alert('Trả lời của bạn đang chờ kiểm duyệt và sẽ hiển thị sau khi được duyệt.'); return; }
       const p = await api.get<Paginated<Post>>(`/forum/threads/${thread.id}/posts?limit=50`);
       setPosts(p.data);
     } catch (e: any) { setErr(e.message); }

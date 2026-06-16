@@ -28,7 +28,8 @@ export default function NewThreadPage() {
     e.preventDefault();
     setErr(''); setBusy(true);
     try {
-      const t = await api.post<{ id: string; slug: string }>('/forum/threads', { ...form, prefix: form.prefix === 'NONE' ? undefined : form.prefix });
+      const t = await api.post<{ id: string; slug: string; pendingApproval?: boolean }>('/forum/threads', { ...form, prefix: form.prefix === 'NONE' ? undefined : form.prefix });
+      if (t.pendingApproval) { if (draftId) await api.del(`/forum/drafts/${draftId}`).catch(() => {}); alert('Bài viết của bạn đang chờ kiểm duyệt và sẽ hiển thị sau khi được duyệt.'); router.push('/'); return; }
       if (pollOn) {
         const opts = poll.options.map((o) => o.trim()).filter(Boolean);
         if (poll.question.trim() && opts.length >= 2) {

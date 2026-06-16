@@ -273,6 +273,7 @@ model Thread {
   isPinned       Boolean      @default(false)
   isFeatured     Boolean      @default(false)
   isLocked       Boolean      @default(false)
+  isApproved     Boolean      @default(true) // FoF Approval: chờ duyệt nếu false
   bestAnswerId   String? // post được chọn là câu trả lời hay nhất (Q&A)
   bestAnswerAuto Boolean      @default(false) // true nếu hệ thống tự chọn theo lượt reaction
   viewCount      Int          @default(0)
@@ -328,6 +329,7 @@ model Post {
   content     String    @db.Text
   contentRaw  String    @db.Text
   isFirstPost Boolean   @default(false)
+  isApproved  Boolean   @default(true) // FoF Approval: chờ duyệt nếu false
   isDeleted   Boolean   @default(false)
   deletedAt   DateTime?
   deletedById String?

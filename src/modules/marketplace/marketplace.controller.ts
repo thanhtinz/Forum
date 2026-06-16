@@ -16,6 +16,7 @@ import { MarketplaceShopService } from './marketplace-shop.service';
 import { MarketplaceOrderService } from './marketplace-order.service';
 import { SellerService } from './seller.service';
 import { SellerPerkService } from './seller-perk.service';
+import { StoreStaffService } from './store-staff.service';
 import { CreateStorefrontDto, UpdateStorefrontDto } from './marketplace.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
@@ -29,7 +30,28 @@ export class MarketplaceController {
     private readonly orders: MarketplaceOrderService,
     private readonly seller: SellerService,
     private readonly perks: SellerPerkService,
+    private readonly staff: StoreStaffService,
   ) {}
+
+  // ── Nhân viên gian hàng (mục 13) ──
+  @Get('seller/staff')
+  @UseGuards(JwtAuthGuard)
+  listStaff(@CurrentUser('id') uid: string) { return this.staff.listStaff(uid); }
+
+  @Post('seller/staff')
+  @UseGuards(JwtAuthGuard)
+  addStaff(@CurrentUser('id') uid: string, @Body() b: { username: string; role: string; permissions: string[] }) {
+    return this.staff.addStaff(uid, b.username, b.role || 'STAFF', b.permissions || []);
+  }
+
+  @Delete('seller/staff/:id')
+  @UseGuards(JwtAuthGuard)
+  removeStaff(@CurrentUser('id') uid: string, @Param('id') id: string) { return this.staff.removeStaff(uid, id); }
+
+  // ── Nhật ký hoạt động (mục 20) ──
+  @Get('seller/activity')
+  @UseGuards(JwtAuthGuard)
+  activity(@CurrentUser('id') uid: string, @Query('page') page = 1) { return this.staff.activity(uid, Number(page)); }
 
   // ── Dịch vụ trả phí (gem) — mua trong Seller Dashboard ──
   @Get('seller/perks')

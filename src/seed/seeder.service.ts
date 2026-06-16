@@ -169,6 +169,25 @@ export class SeederService implements OnApplicationBootstrap {
       n++;
     }
 
+    // ── Cấp độ mặc định (level tiers) ──
+    const DEFAULT_LEVELS = [
+      { level: 1, name: 'Tân binh', icon: '🌱', color: 'green', minScore: 0 },
+      { level: 2, name: 'Thành viên', icon: '🟢', color: 'gray', minScore: 50 },
+      { level: 3, name: 'Năng nổ', icon: '🔵', color: 'blue', minScore: 200 },
+      { level: 4, name: 'Kỳ cựu', icon: '🟣', color: 'violet', minScore: 600 },
+      { level: 5, name: 'Lão làng', icon: '🟠', color: 'amber', minScore: 1500 },
+      { level: 6, name: 'Huyền thoại', icon: '🔴', color: 'red', minScore: 4000 },
+    ];
+    for (const t of DEFAULT_LEVELS) {
+      const data = { name: t.name, icon: t.icon, color: t.color, minScore: t.minScore };
+      await this.prisma.levelTier.upsert({
+        where: { level: t.level },
+        update: data,
+        create: { level: t.level, ...data },
+      });
+      n++;
+    }
+
     this.logger.log(`Auto-seed hoàn tất: ${n} bản ghi template`);
   }
 }

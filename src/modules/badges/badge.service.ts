@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { LevelService } from './level.service';
 
 export type BadgeColor = 'red' | 'blue' | 'amber' | 'green' | 'gray' | 'violet';
 
@@ -9,7 +10,7 @@ export interface BadgeDescriptor {
   label: string;
   icon: string;
   color: BadgeColor;
-  kind: 'role' | 'verify' | 'seller' | 'milestone';
+  kind: 'role' | 'verify' | 'seller' | 'milestone' | 'level';
   description?: string;
 }
 
@@ -93,7 +94,10 @@ function parseCondition(condition: Prisma.JsonValue | null): { type: ConditionTy
 
 @Injectable()
 export class BadgeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly levels: LevelService,
+  ) {}
 
   async getUserBadges(userId: string): Promise<BadgeDescriptor[]> {
     const user = await this.prisma.user.findUnique({
@@ -102,6 +106,9 @@ export class BadgeService {
         role: true,
         isVerified: true,
         verifiedBadge: true,
+        postCount: true,
+        threadCount: true,
+        reputationScore: true,
         storefront: { select: { id: true, isVerified: true } },
         badges: { include: { badge: true }, orderBy: { awardedAt: 'asc' } },
       },
@@ -116,6 +123,23 @@ export class BadgeService {
     // 2. Role (always except GUEST)
     const rb = roleBadge(user.role);
     if (rb) out.push(rb);
+
+    // 2b. Level (activity-score based)
+    const lvl = await this.levels.getUserLevel({
+      postCount: user.postCount,
+      threadCount: user.threadCount,
+      reputationScore: user.reputationScore,
+    });
+    if (lvl) {
+      out.push({
+        key: 'level:' + lvl.level,
+        label: `Lv.${lvl.level} ${lvl.name}`,
+        icon: lvl.icon,
+        color: normalizeColor(lvl.color),
+        kind: 'level',
+        description: `Điểm hoạt động: ${lvl.score}`,
+      });
+    }
 
     // 3. Seller
     if (user.storefront) {

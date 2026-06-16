@@ -16,6 +16,15 @@ interface Badge {
 
 const COLORS = ['red', 'blue', 'amber', 'green', 'gray', 'violet'];
 
+interface LevelTier {
+  id: string;
+  level: number;
+  name: string;
+  icon: string;
+  color: string;
+  minScore: number;
+}
+
 export default function AdminBadges() {
   const [catalog, setCatalog] = useState<Badge[]>([]);
   const [msg, setMsg] = useState('');
@@ -26,10 +35,39 @@ export default function AdminBadges() {
   const [awardBadgeId, setAwardBadgeId] = useState('');
   const [verifyUserId, setVerifyUserId] = useState('');
 
+  // levels
+  const [tiers, setTiers] = useState<LevelTier[]>([]);
+  const [tierForm, setTierForm] = useState({ level: '', name: '', icon: '🌱', color: 'green', minScore: '' });
+
   function load() {
     api.get<Badge[]>('/badges/catalog').then(setCatalog).catch((e) => setMsg(e.message));
   }
-  useEffect(() => { load(); }, []);
+  function loadTiers() {
+    api.get<LevelTier[]>('/badges/levels').then(setTiers).catch((e) => setMsg(e.message));
+  }
+  useEffect(() => { load(); loadTiers(); }, []);
+
+  async function createTier(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg('');
+    try {
+      await api.post('/badges/admin/levels', {
+        level: Number(tierForm.level),
+        name: tierForm.name,
+        icon: tierForm.icon,
+        color: tierForm.color,
+        minScore: Number(tierForm.minScore),
+      });
+      setTierForm({ level: '', name: '', icon: '🌱', color: 'green', minScore: '' });
+      setMsg('Đã tạo cấp độ ✓');
+      loadTiers();
+    } catch (e: any) { setMsg(e.message); }
+  }
+
+  async function removeTier(id: string) {
+    if (!confirm('Xoá cấp độ này?')) return;
+    try { await api.del(`/badges/admin/levels/${id}`); loadTiers(); } catch (e: any) { setMsg(e.message); }
+  }
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
@@ -134,6 +172,49 @@ export default function AdminBadges() {
             {catalog.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-ink-500">Chưa có huy hiệu mục tiêu nào.</td></tr>}
           </tbody>
         </table>
+      </div>
+
+      {/* Cấp độ (Level) */}
+      <h2 className="pt-2 text-lg font-bold">Cấp độ (Level)</h2>
+      <p className="text-sm text-ink-500">Điểm hoạt động = số bài viết + số chủ đề × 2 + điểm uy tín.</p>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="card p-4">
+          <h3 className="mb-2 flex items-center gap-1 font-semibold"><Plus size={16} /> Tạo cấp độ</h3>
+          <form onSubmit={createTier} className="space-y-2">
+            <div className="flex gap-2">
+              <input className="input w-24" type="number" placeholder="Level" value={tierForm.level} onChange={(e) => setTierForm({ ...tierForm, level: e.target.value })} required />
+              <input className="input" placeholder="Tên cấp độ" value={tierForm.name} onChange={(e) => setTierForm({ ...tierForm, name: e.target.value })} required />
+            </div>
+            <div className="flex gap-2">
+              <input className="input w-20 text-center" placeholder="Icon" value={tierForm.icon} onChange={(e) => setTierForm({ ...tierForm, icon: e.target.value })} />
+              <select className="input" value={tierForm.color} onChange={(e) => setTierForm({ ...tierForm, color: e.target.value })}>
+                {COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <input className="input w-32" type="number" placeholder="Điểm tối thiểu" value={tierForm.minScore} onChange={(e) => setTierForm({ ...tierForm, minScore: e.target.value })} required />
+            </div>
+            <button className="btn-primary">Tạo cấp độ</button>
+          </form>
+        </div>
+
+        <div className="card overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-left text-ink-500"><tr><th className="p-3">Level</th><th className="p-3">Tên</th><th className="p-3">Icon</th><th className="p-3">Màu</th><th className="p-3">Điểm ≥</th><th className="p-3"></th></tr></thead>
+            <tbody>
+              {tiers.map((t) => (
+                <tr key={t.id} className="border-t border-ink-100 dark:border-ink-800">
+                  <td className="p-3">Lv.{t.level}</td>
+                  <td className="p-3">{t.name}</td>
+                  <td className="p-3">{t.icon}</td>
+                  <td className="p-3 text-xs text-ink-400">{t.color}</td>
+                  <td className="p-3">{t.minScore}</td>
+                  <td className="p-3"><button onClick={() => removeTier(t.id)} className="text-red-600" title="Xoá"><Trash2 size={15} /></button></td>
+                </tr>
+              ))}
+              {tiers.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-500">Chưa có cấp độ nào.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

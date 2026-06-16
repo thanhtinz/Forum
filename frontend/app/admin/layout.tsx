@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award } from 'lucide-react';
+import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 const NAV = [
@@ -18,6 +18,7 @@ const NAV = [
   { href: '/admin/invites', label: 'Mã mời', icon: Ticket },
   { href: '/admin/profile-fields', label: 'Trường hồ sơ', icon: BadgeInfo },
   { href: '/admin/badges', label: 'Huy hiệu', icon: Award },
+  { href: '/admin/verification', label: 'Xác minh', icon: BadgeCheck },
   { href: '/admin/users', label: 'Người dùng', icon: Users },
   { href: '/admin/settings', label: 'Cấu hình', icon: Settings },
 ];

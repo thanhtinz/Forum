@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GemService } from '../gem/gem.service';
 import { StoreStaffService } from './store-staff.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const HOLD_DAYS = 3;          // giam tiền seller 3 ngày
 const PLATFORM_FEE = 0.1;     // 10% phí nền tảng
@@ -18,6 +19,7 @@ export class MarketplaceOrderService {
     private readonly prisma: PrismaService,
     private readonly gem: GemService,
     private readonly staff: StoreStaffService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -68,6 +70,10 @@ export class MarketplaceOrderService {
       if (product.storefrontId) await tx.storefront.update({ where: { id: product.storefrontId }, data: { totalSales: { increment: 1 } } });
       return o;
     });
+
+    this.notifications.notify(product.sellerId, {
+      type: 'ORDER_COMPLETE', title: 'Đơn hàng mới', body: `Có người mua "${product.title}"`, link: '/seller/orders',
+    }).catch(() => {});
 
     return { ok: true, orderId: order.id, paid: price, downloadUrl: product.fileUrl, deliveredContent: order.deliveredContent, escrowReleaseAt: order.escrowReleaseAt };
   }
@@ -222,8 +228,10 @@ export class MarketplaceOrderService {
     if (action === 'reject') {
       await this.gem.credit(w.userId, w.amount, 'REFUND', w.id, 'Hoàn gem do từ chối rút tiền');
       await this.prisma.withdrawal.update({ where: { id }, data: { status: 'REJECTED', processedAt: new Date() } });
+      this.notifications.notify(w.userId, { type: 'SYSTEM', title: 'Yêu cầu rút tiền bị từ chối', body: `Đã hoàn ${w.amount} gem`, link: '/seller/withdraw' }).catch(() => {});
     } else {
       await this.prisma.withdrawal.update({ where: { id }, data: { status: action === 'paid' ? 'PAID' : 'APPROVED', processedAt: action === 'paid' ? new Date() : null } });
+      if (action === 'paid') this.notifications.notify(w.userId, { type: 'GEM_RECEIVED', title: 'Rút tiền thành công', body: `${w.amount} gem đã được chi`, link: '/seller/withdraw' }).catch(() => {});
     }
     return { ok: true };
   }

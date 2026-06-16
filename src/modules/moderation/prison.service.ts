@@ -5,12 +5,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // Nhà tù (kiểu Avatar): mod/admin giam người chơi vi phạm trong 1 khoảng thời gian.
 // Người bị giam có thể nộp tiền chuộc (coin) để ra sớm, hoặc chờ hết hạn.
 @Injectable()
 export class PrisonService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   // ── Giám thị (mod/admin) tống giam ──
   async jail(
@@ -46,6 +50,7 @@ export class PrisonService {
         bailCoin: Math.max(0, Math.floor(bailCoin)),
       },
     });
+    this.notifications.notify(target.id, { type: 'SYSTEM', title: 'Bạn đã bị giam', body: reason.trim(), link: '/' }).catch(() => {});
     return { ok: true, prisonId: record.id, releaseAt: record.releaseAt, bailCoin: record.bailCoin };
   }
 

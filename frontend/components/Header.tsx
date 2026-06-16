@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import { useRouter } from 'next/navigation';
+import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
   Store, Wrench, Sparkles, LogOut, User as UserIcon, ChevronDown,
@@ -25,6 +27,16 @@ export function Header() {
   const [q, setQ] = useState('');
   const [menu, setMenu] = useState(false);
   const [dark, setDark] = useState(false);
+  const [unread, setUnread] = useState(0);
+
+  useEffect(() => {
+    if (!user) { setUnread(0); return; }
+    api.get<{ meta: { unreadCount: number } }>('/notifications').then((r) => setUnread(r.meta.unreadCount)).catch(() => {});
+    const base = process.env.NEXT_PUBLIC_API_URL || '';
+    const s = io(`${base}/notif`, { auth: { token: getToken() }, transports: ['websocket', 'polling'] });
+    s.on('notification', () => setUnread((n) => n + 1));
+    return () => { s.disconnect(); };
+  }, [user]);
 
   function toggleTheme() {
     const el = document.documentElement;
@@ -66,8 +78,9 @@ export function Header() {
           {dark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
         {user && (
-          <Link href="/notifications" className="rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="notifications">
+          <Link href="/notifications" onClick={() => setUnread(0)} className="relative rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="notifications">
             <Bell size={18} />
+            {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}
           </Link>
         )}
 

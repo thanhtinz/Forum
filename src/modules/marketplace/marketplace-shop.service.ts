@@ -9,12 +9,14 @@ import slugify from 'slugify';
 import { createId } from '@paralleldrive/cuid2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { StoreStaffService } from './store-staff.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class MarketplaceShopService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly staff: StoreStaffService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -198,12 +200,14 @@ export class MarketplaceShopService {
   // TICKET HỖ TRỢ (mỗi shop)
   // ──────────────────────────────────────────────
   async createTicket(userId: string, storefrontId: string, subject: string, body: string) {
-    const store = await this.prisma.storefront.findUnique({ where: { id: storefrontId }, select: { id: true } });
+    const store = await this.prisma.storefront.findUnique({ where: { id: storefrontId }, select: { id: true, ownerId: true } });
     if (!store) throw new NotFoundException('Gian hàng không tồn tại');
     if (!subject?.trim() || !body?.trim()) throw new BadRequestException('Cần tiêu đề và nội dung');
-    return this.prisma.shopTicket.create({
+    const ticket = await this.prisma.shopTicket.create({
       data: { storefrontId, userId, subject: subject.trim(), messages: { create: { senderId: userId, body: body.trim() } } },
     });
+    this.notifications.notify(store.ownerId, { type: 'SYSTEM', title: 'Ticket hỗ trợ mới', body: subject.trim(), link: '/seller' }).catch(() => {});
+    return ticket;
   }
 
   async myTickets(userId: string) {
@@ -237,6 +241,8 @@ export class MarketplaceShopService {
       this.prisma.shopTicketMessage.create({ data: { ticketId, senderId: userId, body: body.trim() } }),
       this.prisma.shopTicket.update({ where: { id: ticketId }, data: { status: isOwner ? 'ANSWERED' : 'OPEN', updatedAt: new Date() } }),
     ]);
+    const notifyUser = isOwner ? t.userId : t.storefront.ownerId;
+    this.notifications.notify(notifyUser, { type: 'SYSTEM', title: 'Phản hồi ticket', body: t.subject, link: isOwner ? '/orders' : '/seller' }).catch(() => {});
     return { ok: true };
   }
 

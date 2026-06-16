@@ -19,9 +19,12 @@ export default function MinigamePage() {
 
   return (
     <div className="space-y-5">
-      <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white shadow-card">
-        <h1 className="text-2xl font-bold">Sảnh Minigame</h1>
-        <p className="text-white/90">Chơi bằng coin — solo với máy hoặc PvP với người thật.</p>
+      <header className="flex items-center justify-between overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white shadow-card">
+        <div>
+          <h1 className="text-2xl font-bold">Sảnh Minigame</h1>
+          <p className="text-white/90">Chơi bằng coin — solo với máy hoặc PvP với người thật.</p>
+        </div>
+        <Link href="/minigame/solo" className="rounded-lg bg-white/15 px-4 py-2 text-sm font-medium hover:bg-white/25">Chơi nhanh với máy →</Link>
       </header>
 
       {isLoading && <div className="p-10 text-center text-ink-500">Đang tải…</div>}

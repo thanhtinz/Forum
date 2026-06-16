@@ -1,44 +1,71 @@
 'use client';
 
-import { useState } from 'react';
-import { Sparkles, Moon, Hash } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Sparkles, Moon, Hash, Coins, Bot } from 'lucide-react';
 import { api } from '@/lib/api';
 
 type Tab = 'bazi' | 'tarot' | 'meihua';
+interface Cfg { priceBazi: number; priceTarot: number; priceMeihua: number; aiEnabled: boolean; aiPrice: number; }
 
 export default function FortunePage() {
   const [tab, setTab] = useState<Tab>('bazi');
+  const [cfg, setCfg] = useState<Cfg | null>(null);
+  useEffect(() => { api.get<Cfg>('/fortune/config').then(setCfg).catch(() => {}); }, []);
 
   return (
     <div className="space-y-5">
       <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-violet-700 via-purple-700 to-fuchsia-700 p-6 text-white shadow-card">
         <h1 className="flex items-center gap-2 text-2xl font-bold"><Sparkles /> Bói toán & Tử vi</h1>
-        <p className="text-white/85">Bát Tự (Tứ Trụ) · Tarot · Mai Hoa Dịch Số — engine chuẩn, miễn phí.</p>
+        <p className="text-white/85">Bát Tự · Tarot · Mai Hoa Dịch Số {cfg?.aiEnabled && '· có luận giải AI'}</p>
       </header>
 
       <div className="flex gap-2">
-        {([['bazi', 'Bát Tự', Hash], ['tarot', 'Tarot', Moon], ['meihua', 'Mai Hoa', Sparkles]] as const).map(([id, label, Icon]) => (
+        {([['bazi', 'Bát Tự', Hash, cfg?.priceBazi], ['tarot', 'Tarot', Moon, cfg?.priceTarot], ['meihua', 'Mai Hoa', Sparkles, cfg?.priceMeihua]] as const).map(([id, label, Icon, price]) => (
           <button key={id} onClick={() => setTab(id)}
             className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium ${tab === id ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>
-            <Icon size={16} /> {label}
+            <Icon size={16} /> {label}{price ? <span className="ml-1 flex items-center gap-0.5 text-xs opacity-80"><Coins size={11} />{price}</span> : null}
           </button>
         ))}
       </div>
 
-      {tab === 'bazi' && <Bazi />}
-      {tab === 'tarot' && <Tarot />}
-      {tab === 'meihua' && <Meihua />}
+      {tab === 'bazi' && <Bazi ai={cfg?.aiEnabled} aiPrice={cfg?.aiPrice} />}
+      {tab === 'tarot' && <Tarot ai={cfg?.aiEnabled} aiPrice={cfg?.aiPrice} />}
+      {tab === 'meihua' && <Meihua ai={cfg?.aiEnabled} aiPrice={cfg?.aiPrice} />}
     </div>
   );
 }
 
-function Bazi() {
+function AiAnalyze({ type, result, question, enabled, price }: { type: string; result: any; question?: string; enabled?: boolean; price?: number }) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  if (!enabled) return null;
+  async function go() {
+    setBusy(true); setErr('');
+    try { const r = await api.post<{ analysis: string }>('/fortune/analyze', { type, result, question }); setText(r.analysis); }
+    catch (e: any) { setErr(e.message); }
+    setBusy(false);
+  }
+  return (
+    <div className="mt-4 border-t border-ink-200/70 pt-3 dark:border-ink-800">
+      {!text && (
+        <button onClick={go} disabled={busy} className="btn-outline">
+          <Bot size={16} /> {busy ? 'AI đang luận giải…' : `Luận giải bằng AI${price ? ` (${price} coin)` : ''}`}
+        </button>
+      )}
+      {err && <p className="mt-2 text-sm text-red-500">{err}</p>}
+      {text && <div className="prose prose-sm mt-2 max-w-none whitespace-pre-wrap rounded-lg bg-violet-50 p-3 dark:bg-ink-900">{text}</div>}
+    </div>
+  );
+}
+
+function Bazi({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
   const [f, setF] = useState({ year: 1995, month: 8, day: 15, hour: 10, minute: 0 });
   const [r, setR] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
   const num = (k: keyof typeof f) => (e: any) => setF({ ...f, [k]: Number(e.target.value) });
-
-  async function go() { setBusy(true); try { setR(await api.post('/fortune/bazi', f)); } catch {} setBusy(false); }
+  async function go() { setBusy(true); setErr(''); try { setR(await api.post('/fortune/bazi', f)); } catch (e: any) { setErr(e.message); } setBusy(false); }
 
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
@@ -52,6 +79,7 @@ function Bazi() {
           <label className="text-xs">Phút<input className="input mt-1" type="number" value={f.minute} onChange={num('minute')} /></label>
         </div>
         <button onClick={go} disabled={busy} className="btn-primary w-full">{busy ? '…' : 'Lập lá số'}</button>
+        {err && <p className="text-sm text-red-500">{err}</p>}
       </div>
       {r && (
         <div className="card p-5">
@@ -70,17 +98,19 @@ function Bazi() {
             <b>Ngũ hành:</b> {Object.entries(r.wuxingCount).map(([k, v]) => `${k} ${v}`).join(' · ')}
             <p className="mt-2 text-ink-600 dark:text-ink-300">{r.summary}</p>
           </div>
+          <AiAnalyze type="BAZI" result={r} enabled={ai} price={aiPrice} />
         </div>
       )}
     </div>
   );
 }
 
-function Tarot() {
+function Tarot({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
   const [n, setN] = useState(3);
   const [q, setQ] = useState('');
   const [r, setR] = useState<any>(null);
-  async function go() { try { setR(await api.post('/fortune/tarot', { n, question: q })); } catch {} }
+  const [err, setErr] = useState('');
+  async function go() { setErr(''); try { setR(await api.post('/fortune/tarot', { n, question: q })); } catch (e: any) { setErr(e.message); } }
 
   return (
     <div className="space-y-4">
@@ -90,27 +120,37 @@ function Tarot() {
         <label className="flex-1 text-xs">Câu hỏi (tuỳ chọn)<input className="input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="VD: Tình duyên sắp tới?" /></label>
         <button onClick={go} className="btn-primary">Bốc bài</button>
       </div>
+      {err && <p className="text-sm text-red-500">{err}</p>}
       {r && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {r.cards.map((c: any, i: number) => (
-            <div key={i} className="card p-4 text-center">
-              <div className={`mx-auto grid h-28 w-20 place-items-center rounded-lg bg-gradient-to-b from-violet-600 to-purple-800 text-3xl text-white ${c.reversedOrientation ? 'rotate-180' : ''}`}>✦</div>
-              <div className="mt-2 font-semibold">{c.nameVi}</div>
-              <div className="text-xs text-ink-500">{c.name} · {c.reversedOrientation ? 'Ngược' : 'Xuôi'}</div>
-              <div className="mt-1 text-sm text-brand-600">{c.meaning.join(', ')}</div>
-            </div>
-          ))}
+        <div className="card p-5">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {r.cards.map((c: any, i: number) => (
+              <div key={i} className="text-center">
+                <div className="mx-auto overflow-hidden rounded-xl border border-ink-200/70 dark:border-ink-800" style={{ maxWidth: 140 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={c.image} alt={c.nameVi} className={`w-full object-cover ${c.reversedOrientation ? 'rotate-180' : ''}`} />
+                </div>
+                <div className="mt-2 font-semibold">{c.nameVi}</div>
+                <div className="text-xs text-ink-500">{c.name} · {c.reversedOrientation ? 'Ngược' : 'Xuôi'}</div>
+                <div className="mt-1 text-sm text-brand-600">{c.meaning.join(', ')}</div>
+              </div>
+            ))}
+          </div>
+          <AiAnalyze type="TAROT" result={r} question={q} enabled={ai} price={aiPrice} />
         </div>
       )}
     </div>
   );
 }
 
-function Meihua() {
+function Meihua({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
   const [f, setF] = useState({ num1: '', num2: '', question: '' });
   const [r, setR] = useState<any>(null);
+  const [err, setErr] = useState('');
   async function go() {
-    try { setR(await api.post('/fortune/meihua', { num1: f.num1 ? Number(f.num1) : undefined, num2: f.num2 ? Number(f.num2) : undefined, question: f.question })); } catch {}
+    setErr('');
+    try { setR(await api.post('/fortune/meihua', { num1: f.num1 ? Number(f.num1) : undefined, num2: f.num2 ? Number(f.num2) : undefined, question: f.question })); }
+    catch (e: any) { setErr(e.message); }
   }
   return (
     <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
@@ -123,6 +163,7 @@ function Meihua() {
         </div>
         <input className="input" placeholder="Câu hỏi (tuỳ chọn)" value={f.question} onChange={(e) => setF({ ...f, question: e.target.value })} />
         <button onClick={go} className="btn-primary w-full">Lập quẻ</button>
+        {err && <p className="text-sm text-red-500">{err}</p>}
       </div>
       {r && (
         <div className="card p-5 text-center">
@@ -131,6 +172,7 @@ function Meihua() {
           <div className="text-sm text-ink-500">Hào động: {r.movingLine}</div>
           <div className="mt-3 inline-block rounded-full bg-brand-100 px-4 py-1 font-semibold text-brand-700">{r.verdict}</div>
           <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{r.analysis}</p>
+          <div className="text-left"><AiAnalyze type="MEIHUA" result={r} question={f.question} enabled={ai} price={aiPrice} /></div>
         </div>
       )}
     </div>

@@ -1,16 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { io, Socket } from 'socket.io-client';
 import { Send } from 'lucide-react';
 import { api, getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { MINORI_MODELS } from '@/components/Live2DStage';
 
-// Cảm xúc -> emoji (chỗ cắm Live2D expression sau này)
-const EMOTION_FACE: Record<string, string> = {
-  neutral: '🙂', happy: '😊', joy: '😄', sad: '😢', angry: '😠',
-  surprise: '😮', shy: '😳', love: '🥰', think: '🤔', cry: '😭',
-};
+// Live2D chỉ render phía client (dùng pixi + cubism core)
+const Live2DStage = dynamic(() => import('@/components/Live2DStage'), { ssr: false });
 
 interface Msg { role: 'user' | 'ai'; text: string }
 
@@ -21,6 +20,7 @@ export default function AiCompanionPage() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState('');
   const [emotion, setEmotion] = useState('neutral');
+  const [outfit, setOutfit] = useState('normal');
   const [typing, setTyping] = useState(false);
   const sock = useRef<Socket | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
@@ -68,13 +68,24 @@ export default function AiCompanionPage() {
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[300px_1fr]">
-      {/* Avatar (chỗ cắm Live2D) */}
-      <div className="card flex flex-col items-center p-6">
-        <div className="grid h-48 w-48 place-items-center rounded-2xl bg-gradient-to-b from-violet-500 to-fuchsia-600 text-7xl shadow-card transition-transform">
-          {EMOTION_FACE[emotion] || '🙂'}
+      {/* Avatar Live2D */}
+      <div className="card flex flex-col items-center p-4">
+        <div className="w-full overflow-hidden rounded-2xl bg-gradient-to-b from-violet-100 to-fuchsia-100 shadow-card dark:from-violet-950/40 dark:to-fuchsia-950/40">
+          <Live2DStage outfit={outfit} emotion={emotion} className="relative h-80 w-full" />
         </div>
         <h2 className="mt-3 text-lg font-bold">{persona?.name || 'AI Companion'}</h2>
         <p className="text-sm text-ink-500">Cảm xúc: {emotion}</p>
+        <div className="mt-3 w-full">
+          <p className="mb-1 text-xs font-medium text-ink-500">Trang phục</p>
+          <div className="flex flex-wrap gap-1.5">
+            {Object.entries(MINORI_MODELS).map(([key, m]) => (
+              <button key={key} onClick={() => setOutfit(key)}
+                className={`rounded-lg px-2.5 py-1 text-xs ${outfit === key ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
+                {m.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Chat */}

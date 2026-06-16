@@ -83,10 +83,12 @@ function StoreView() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {products.map((p) => (
               <div key={p.id} className="rounded-xl border border-ink-200/70 p-3 dark:border-ink-800">
-                {p.thumbnailUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={p.thumbnailUrl} alt={p.title} className="mb-2 h-24 w-full rounded object-cover" />}
-                <div className="truncate text-sm font-medium">{p.title}</div>
-                <div className="text-xs text-brand-600">{p.isFree ? 'Miễn phí' : `${p.gemPrice} gem`}</div>
-                <button onClick={() => buy(p.id)} className="btn-primary mt-2 w-full !py-1 text-xs">Mua</button>
+                <a href={`/product?slug=${p.slug}`}>
+                  {p.thumbnailUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={p.thumbnailUrl} alt={p.title} className="mb-2 h-24 w-full rounded object-cover" />}
+                  <div className="truncate text-sm font-medium hover:text-brand-600">{p.title}</div>
+                  <div className="text-xs text-brand-600">{p.isFree ? 'Miễn phí' : `${p.gemPrice} gem`}</div>
+                </a>
+                <button onClick={() => buy(p.id)} className="btn-primary mt-2 w-full !py-1 text-xs">Mua nhanh</button>
               </div>
             ))}
           </div>

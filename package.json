@@ -13,6 +13,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:seed:fishing": "ts-node prisma/seed-fishing.ts",
     "prisma:seed:farm": "ts-node prisma/seed-farm.ts",
+    "prisma:seed:foods": "ts-node prisma/seed-foods.ts",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {

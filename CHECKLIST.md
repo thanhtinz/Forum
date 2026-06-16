@@ -133,7 +133,9 @@
 
 ### 🌾 Nông Trại (port từ mod WAP, chỉ coin)
 - [x] **Trồng trọt** — mua đất (tăng giá dần, max 55), gieo/tưới/bón phân/thu hoạch, 4 giai đoạn
-- [x] Không tưới mất 50% sản lượng; phân bón giảm thời gian chín
+- [x] **Sức khỏe ô đất 0-100** (cơ chế Avatar): sản lượng = raw × health/100; tưới +25, bón +15
+- [x] Phân bón giảm thời gian chín + tăng sức khỏe ô đất
+- [x] Import 11 món ăn từ Avatar server vào consumable (hồi máu/đói/khát, mua bằng coin)
 - [x] **Level nông trại RIÊNG** (EXP từ thu hoạch, tách level nhân vật)
 - [x] Kho + bán nông sản; 7 cây + 5 phân bón (seed + asset)
 - [x] **Vật nuôi** — gà/lợn/bò/cừu/cá: mua/cho ăn/thu sản phẩm/bán, chết nếu bỏ đói 1 ngày

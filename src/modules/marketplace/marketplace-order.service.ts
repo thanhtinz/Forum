@@ -96,10 +96,38 @@ export class MarketplaceOrderService {
   // ĐƠN HÀNG (buyer / seller)
   // ──────────────────────────────────────────────
   async myPurchases(buyerId: string) {
-    return this.prisma.order.findMany({
+    const rows = await this.prisma.order.findMany({
       where: { buyerId }, orderBy: { createdAt: 'desc' },
-      include: { product: { select: { title: true, slug: true, thumbnailUrl: true } } },
+      include: { product: { select: { title: true, slug: true, thumbnailUrl: true, storefront: { select: { slug: true, name: true } } } } },
     });
+    return rows.map((o) => ({
+      id: o.id, title: o.product.title, thumbnailUrl: o.product.thumbnailUrl,
+      shop: o.product.storefront?.name, shopSlug: o.product.storefront?.slug,
+      gemSpent: o.gemSpent, status: o.status, escrowStatus: o.escrowStatus,
+      downloadUrl: o.downloadUrl, deliveredContent: o.deliveredContent, createdAt: o.createdAt,
+    }));
+  }
+
+  // Đơn của seller (kèm trạng thái giao hàng)
+  async sellerOrders(userId: string) {
+    const rows = await this.prisma.order.findMany({
+      where: { product: { sellerId: userId } }, orderBy: { createdAt: 'desc' }, take: 200,
+      include: { product: { select: { title: true } }, buyer: { select: { username: true } } },
+    });
+    return rows.map((o) => ({
+      id: o.id, product: o.product.title, buyer: o.buyer.username, gemSpent: o.gemSpent, sellerEarned: o.sellerEarned,
+      status: o.status, escrowStatus: o.escrowStatus, delivered: !!o.deliveredContent, deliveredContent: o.deliveredContent, createdAt: o.createdAt,
+    }));
+  }
+
+  // Giao hàng thủ công
+  async deliverManual(userId: string, orderId: string, content: string) {
+    const o = await this.prisma.order.findUnique({ where: { id: orderId }, include: { product: { select: { sellerId: true } } } });
+    if (!o) throw new NotFoundException('Đơn không tồn tại');
+    if (o.product.sellerId !== userId) throw new ForbiddenException('Không phải đơn của shop bạn');
+    if (!content?.trim()) throw new BadRequestException('Nội dung giao hàng trống');
+    await this.prisma.order.update({ where: { id: orderId }, data: { deliveredContent: content.trim() } });
+    return { ok: true };
   }
 
   async sellerEarnings(userId: string) {
@@ -180,6 +208,22 @@ export class MarketplaceOrderService {
   adminCoupons() {
     return this.prisma.coupon.findMany({ orderBy: { createdAt: 'desc' }, take: 200, include: { storefront: { select: { name: true } } } });
   }
+  adminWithdrawals(status?: string) {
+    return this.prisma.withdrawal.findMany({ where: status ? { status } : {}, orderBy: { createdAt: 'desc' }, take: 200 });
+  }
+  async adminProcessWithdrawal(id: string, action: 'approve' | 'paid' | 'reject') {
+    const w = await this.prisma.withdrawal.findUnique({ where: { id } });
+    if (!w) throw new NotFoundException();
+    if (w.status === 'PAID' || w.status === 'REJECTED') throw new BadRequestException('Yêu cầu đã xử lý');
+    if (action === 'reject') {
+      await this.gem.credit(w.userId, w.amount, 'REFUND', w.id, 'Hoàn gem do từ chối rút tiền');
+      await this.prisma.withdrawal.update({ where: { id }, data: { status: 'REJECTED', processedAt: new Date() } });
+    } else {
+      await this.prisma.withdrawal.update({ where: { id }, data: { status: action === 'paid' ? 'PAID' : 'APPROVED', processedAt: action === 'paid' ? new Date() : null } });
+    }
+    return { ok: true };
+  }
+
   async adminStats() {
     const [stores, products, orders, held] = await Promise.all([
       this.prisma.storefront.count(),

@@ -78,6 +78,9 @@ export function Header() {
                 <Link href={`/profile?u=${user.username}`} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                   <UserIcon size={15} /> Trang cá nhân
                 </Link>
+                <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                  <Store size={15} /> Đơn hàng của tôi
+                </Link>
                 <Link href="/seller" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                   <Store size={15} /> Seller Center
                 </Link>

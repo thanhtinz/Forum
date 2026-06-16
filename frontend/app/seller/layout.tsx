@@ -9,7 +9,7 @@ const SECTIONS: { label: string; href: string | null }[] = [
   { label: '1. Dashboard', href: '/seller' },
   { label: '2. Sản phẩm', href: '/store/manage' },
   { label: '3. Kho hàng', href: '/seller/stock' },
-  { label: '4. Đơn hàng', href: '/store/manage' },
+  { label: '4. Đơn hàng', href: '/seller/orders' },
   { label: '5. Chat khách hàng', href: '/chat' },
   { label: '6. Hỗ trợ / Ticket', href: '/store/manage' },
   { label: '7. Ví & Tài chính', href: '/seller/wallet' },

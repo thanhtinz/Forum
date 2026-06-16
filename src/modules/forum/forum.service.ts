@@ -15,6 +15,9 @@ import { createId } from '@paralleldrive/cuid2';
 import { CharacterService } from '../game/character/character.service';
 import { TrophyService } from '../reputation/trophy.service';
 import { PrisonService } from '../moderation/prison.service';
+import { ForumTextService } from './forum-text.service';
+import { SubscriptionService } from './subscription.service';
+import { UserRole as Role } from '@prisma/client';
 
 export interface CreateThreadDto {
   categoryId: string;
@@ -49,6 +52,8 @@ export class ForumService {
     private readonly character: CharacterService,
     private readonly trophy: TrophyService,
     private readonly prison: PrisonService,
+    private readonly text: ForumTextService,
+    private readonly subs: SubscriptionService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -139,7 +144,7 @@ export class ForumService {
     if (!category) throw new NotFoundException('Category không tồn tại');
 
     const slug = await this.generateUniqueSlug(dto.title);
-    const content = await this.renderContent(dto.content);
+    const { html: content, mentioned } = await this.buildContent(dto.content, authorId);
 
     const thread = await this.prisma.$transaction(async (tx) => {
       const t = await tx.thread.create({
@@ -191,6 +196,11 @@ export class ForumService {
     });
 
     this.events.emit('forum.thread.created', { threadId: thread.id, authorId });
+
+    // Tác giả tự động theo dõi thread của mình
+    await this.subs.ensure(thread.id, authorId);
+    // Thông báo cho người được @mention
+    await this.notifyMentions(mentioned, authorId, dto.title, `/forum/${slug}`);
 
     // Forum EXP → game level (cơ chế XenForo/Flarum)
     await this.character.addForumExp(authorId, 10, 'create_thread');
@@ -250,7 +260,7 @@ export class ForumService {
     if (!thread) throw new NotFoundException('Thread không tồn tại');
     if (thread.isLocked) throw new ForbiddenException('Thread đã bị khoá');
 
-    const content = await this.renderContent(dto.content);
+    const { html: content, mentioned } = await this.buildContent(dto.content, authorId);
 
     const post = await this.prisma.$transaction(async (tx) => {
       const p = await tx.post.create({
@@ -325,6 +335,14 @@ export class ForumService {
         actorId: authorId,
       });
     }
+
+    // Người trả lời tự động theo dõi thread
+    await this.subs.ensure(dto.threadId, authorId);
+    // Thông báo cho người được @mention (trừ những người đã được notify dưới đây)
+    const mentionedIds = mentioned.map((m) => m.id);
+    await this.notifyMentions(mentioned.filter((m) => m.id !== thread.authorId), authorId, thread.title, `/forum/${thread.slug}#post-${post.id}`);
+    // Thông báo cho người theo dõi thread (trừ tác giả & người được mention đã nhận)
+    await this.subs.notifyNewReply(dto.threadId, thread.title, thread.slug, post.id, authorId, [thread.authorId, ...mentionedIds]);
 
     return post;
   }
@@ -438,6 +456,77 @@ export class ForumService {
   }
 
   private async renderContent(raw: string): Promise<string> {
-    return marked.parse(raw) as string;
+    const censored = await this.text.censor(raw);
+    return marked.parse(censored) as string;
+  }
+
+  // Render + lọc từ cấm + link @mention, trả về cả danh sách user được nhắc
+  private async buildContent(raw: string, excludeUserId: string): Promise<{ html: string; mentioned: { id: string; username: string }[] }> {
+    const censored = await this.text.censor(raw);
+    let html = marked.parse(censored) as string;
+    const usernames = this.text.extractMentions(censored);
+    const mentioned = await this.text.resolveMentionedUsers(usernames, excludeUserId);
+    if (mentioned.length) {
+      const map = new Map(mentioned.map((u) => [u.username.toLowerCase(), u.username]));
+      html = this.text.linkMentions(html, map);
+    }
+    return { html, mentioned };
+  }
+
+  private async notifyMentions(mentioned: { id: string }[], actorId: string, threadTitle: string, link: string) {
+    await Promise.all(mentioned.map((u) =>
+      this.notifications.notify(u.id, {
+        type: 'POST_MENTION',
+        title: 'Bạn được nhắc đến trong một bài viết',
+        body: threadTitle,
+        link,
+        actorId,
+      }).catch(() => {}),
+    ));
+  }
+
+  // ──────────────────────────────────────────────
+  // BEST ANSWER (Q&A) — chọn câu trả lời hay nhất
+  // ──────────────────────────────────────────────
+  async toggleBestAnswer(threadId: string, postId: string, userId: string, role: Role) {
+    const thread = await this.prisma.thread.findUnique({ where: { id: threadId }, select: { id: true, authorId: true, bestAnswerId: true, slug: true, title: true } });
+    if (!thread) throw new NotFoundException('Thread không tồn tại');
+    const isMod = role === Role.ADMIN || role === Role.MODERATOR;
+    if (thread.authorId !== userId && !isMod) throw new ForbiddenException('Chỉ tác giả hoặc mod chọn câu trả lời hay nhất');
+
+    const post = await this.prisma.post.findUnique({ where: { id: postId }, select: { id: true, threadId: true, authorId: true, isFirstPost: true } });
+    if (!post || post.threadId !== threadId) throw new NotFoundException('Post không thuộc thread này');
+    if (post.isFirstPost) throw new BadRequestException('Không thể chọn bài gốc làm câu trả lời');
+
+    // Bỏ chọn bài cũ
+    if (thread.bestAnswerId) {
+      await this.prisma.post.update({ where: { id: thread.bestAnswerId }, data: { isHelpful: false } }).catch(() => {});
+    }
+
+    // Toggle: nếu bấm lại đúng bài đang chọn → bỏ chọn
+    if (thread.bestAnswerId === postId) {
+      await this.prisma.thread.update({ where: { id: threadId }, data: { bestAnswerId: null } });
+      return { bestAnswerId: null };
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.thread.update({ where: { id: threadId }, data: { bestAnswerId: postId } }),
+      this.prisma.post.update({ where: { id: postId }, data: { isHelpful: true } }),
+    ]);
+
+    // Thưởng EXP + thông báo cho người trả lời
+    if (post.authorId !== userId) {
+      await this.character.addForumExp(post.authorId, 15, 'best_answer').catch(() => {});
+      await this.notifications.notify(post.authorId, {
+        type: 'BEST_ANSWER',
+        title: 'Câu trả lời của bạn được chọn là hay nhất! 🏆',
+        body: thread.title,
+        link: `/forum/${thread.slug}#post-${postId}`,
+        actorId: userId,
+      }).catch(() => {});
+    }
+    await this.trophy.checkAndAward(post.authorId).catch(() => {});
+
+    return { bestAnswerId: postId };
   }
 }

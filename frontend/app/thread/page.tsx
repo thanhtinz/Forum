@@ -4,11 +4,71 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import type { Thread, Post, Paginated } from '@/lib/types';
+
+interface PollOption { id: string; text: string; voteCount: number; percent: number }
+interface Poll {
+  id: string; question: string; multiple: boolean; maxOptions: number; totalVotes: number;
+  isClosed: boolean; hasVoted: boolean; myVotes: string[]; options: PollOption[];
+}
+
+function PollCard({ threadId }: { threadId: string }) {
+  const { user } = useAuth();
+  const [poll, setPoll] = useState<Poll | null>(null);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    const p = await api.get<Poll | null>(`/forum/threads/${threadId}/poll`).catch(() => null);
+    setPoll(p); if (p) setPicked(p.myVotes);
+  }
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [threadId]);
+  if (!poll) return null;
+
+  const showResults = poll.hasVoted || poll.isClosed;
+  function toggle(id: string) {
+    if (poll!.multiple) setPicked((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id].slice(-poll!.maxOptions));
+    else setPicked([id]);
+  }
+  async function vote() {
+    if (!picked.length) return;
+    setBusy(true);
+    try { const p = await api.post<Poll>(`/forum/polls/${poll!.id}/vote`, { optionIds: picked }); setPoll(p); setPicked(p.myVotes); } catch {}
+    setBusy(false);
+  }
+
+  return (
+    <div className="card p-5">
+      <h3 className="flex items-center gap-2 font-semibold"><BarChart3 size={18} className="text-brand-600" /> {poll.question}</h3>
+      <p className="mt-0.5 text-xs text-ink-500">{poll.totalVotes} lượt bình chọn{poll.multiple ? ` · chọn tối đa ${poll.maxOptions}` : ''}{poll.isClosed ? ' · đã đóng' : ''}</p>
+      <div className="mt-3 space-y-2">
+        {poll.options.map((o) => {
+          const mine = picked.includes(o.id);
+          return (
+            <button key={o.id} disabled={poll.isClosed || !user}
+              onClick={() => toggle(o.id)}
+              className={`relative w-full overflow-hidden rounded-lg border px-3 py-2 text-left text-sm ${mine ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30' : 'border-ink-200 dark:border-ink-800'}`}>
+              {showResults && <span className="absolute inset-0 -z-0 bg-brand-100/60 dark:bg-brand-900/30" style={{ width: `${o.percent}%` }} />}
+              <span className="relative flex items-center justify-between gap-2">
+                <span className="flex items-center gap-2">{mine && <CheckCircle2 size={14} className="text-brand-600" />}{o.text}</span>
+                {showResults && <span className="text-xs font-medium text-ink-500">{o.percent}% ({o.voteCount})</span>}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {!poll.isClosed && user && (
+        <button onClick={vote} disabled={busy || !picked.length} className="btn-primary mt-3 !py-1.5 text-sm">
+          {poll.hasVoted ? 'Đổi bình chọn' : 'Bình chọn'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 function ThreadView() {
   const slug = useSearchParams().get('slug') || '';
@@ -18,6 +78,11 @@ function ThreadView() {
   const [reply, setReply] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
+  const [subscribed, setSubscribed] = useState(false);
+
+  const isMod = user && (user.role === 'ADMIN' || user.role === 'MODERATOR');
+  const canManage = thread && user && ((thread as any).author?.id === user.id || isMod);
+  const bestAnswerId = thread ? (thread as any).bestAnswerId : null;
 
   async function load() {
     try {
@@ -25,13 +90,14 @@ function ThreadView() {
       setThread(t);
       const p = await api.get<Paginated<Post>>(`/forum/threads/${t.id}/posts?limit=50`);
       setPosts(p.data);
+      if (user) api.get<{ subscribed: boolean }>(`/forum/threads/${t.id}/subscription`).then((s) => setSubscribed(s.subscribed)).catch(() => {});
     } catch (e: any) {
       setErr(e.message);
     } finally {
       setLoading(false);
     }
   }
-  useEffect(() => { if (slug) load(); /* eslint-disable-next-line */ }, [slug]);
+  useEffect(() => { if (slug) load(); /* eslint-disable-next-line */ }, [slug, user]);
 
   async function submitReply(e: React.FormEvent) {
     e.preventDefault();
@@ -47,10 +113,24 @@ function ThreadView() {
   async function like(postId: string) {
     try { await api.post(`/forum/posts/${postId}/react`, { emoji: 'like' }); load(); } catch {}
   }
+  async function toggleSub() {
+    if (!thread) return;
+    try { const r = await api.post<{ subscribed: boolean }>(`/forum/threads/${thread.id}/subscribe`, {}); setSubscribed(r.subscribed); } catch {}
+  }
+  async function markBest(postId: string) {
+    if (!thread) return;
+    try { await api.post(`/forum/threads/${thread.id}/best-answer`, { postId }); load(); } catch {}
+  }
 
   if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
   if (err && !thread) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!thread) return null;
+
+  // Đưa best answer lên đầu (sau bài gốc) nếu có
+  const ordered = bestAnswerId ? [...posts].sort((a, b) => {
+    if ((a as any).isFirstPost) return -1; if ((b as any).isFirstPost) return 1;
+    if (a.id === bestAnswerId) return -1; if (b.id === bestAnswerId) return 1; return 0;
+  }) : posts;
 
   return (
     <div className="space-y-4">
@@ -60,7 +140,15 @@ function ThreadView() {
           {thread.isLocked && <Lock size={14} />}
           {thread.category && <span className="text-brand-600">{thread.category.name}</span>}
         </div>
-        <h1 className="mt-1 text-xl font-bold sm:text-2xl">{thread.title}</h1>
+        <div className="mt-1 flex items-start justify-between gap-3">
+          <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
+          {user && (
+            <button onClick={toggleSub} title="Theo dõi chủ đề"
+              className={`flex shrink-0 items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${subscribed ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
+              {subscribed ? <BellRing size={14} /> : <Bell size={14} />} {subscribed ? 'Đang theo dõi' : 'Theo dõi'}
+            </button>
+          )}
+        </div>
         <div className="mt-2 flex flex-wrap gap-4 text-xs text-ink-500">
           <span className="flex items-center gap-1"><MessageCircle size={14} /> {thread.replyCount} trả lời</span>
           <span className="flex items-center gap-1"><Eye size={14} /> {thread.viewCount} lượt xem</span>
@@ -68,27 +156,39 @@ function ThreadView() {
         </div>
       </div>
 
+      <PollCard threadId={thread.id} />
+
       <div className="space-y-3">
-        {posts.map((p, i) => (
-          <article key={p.id} className="card flex overflow-hidden">
-            <div className="w-32 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50">
-              {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
-              <div className="mt-2 truncate text-sm font-semibold">{p.author?.displayName || p.author?.username}</div>
-              {i === 0 && <span className="chip mt-1 bg-brand-100 text-brand-700">Chủ thớt</span>}
-            </div>
-            <div className="min-w-0 flex-1 p-4">
-              <div className="mb-2 text-xs text-ink-500">
-                {(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}
+        {ordered.map((p) => {
+          const isFirst = (p as any).isFirstPost;
+          const isBest = p.id === bestAnswerId;
+          return (
+            <article key={p.id} id={`post-${p.id}`} className={`card flex overflow-hidden ${isBest ? 'ring-2 ring-emerald-400' : ''}`}>
+              <div className="w-32 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50">
+                {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
+                <div className="mt-2 truncate text-sm font-semibold">{p.author?.displayName || p.author?.username}</div>
+                {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700">Chủ thớt</span>}
               </div>
-              <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: p.content }} />
-              <div className="mt-3 flex items-center gap-3 text-xs">
-                <button onClick={() => like(p.id)} className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
-                  <ThumbsUp size={14} /> Thích ({p.likeCount})
-                </button>
+              <div className="min-w-0 flex-1 p-4">
+                <div className="mb-2 flex items-center justify-between text-xs text-ink-500">
+                  <span>{(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}</span>
+                  {isBest && <span className="flex items-center gap-1 font-medium text-emerald-600"><Award size={14} /> Câu trả lời hay nhất</span>}
+                </div>
+                <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: p.content }} />
+                <div className="mt-3 flex items-center gap-3 text-xs">
+                  <button onClick={() => like(p.id)} className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
+                    <ThumbsUp size={14} /> Thích ({p.likeCount})
+                  </button>
+                  {canManage && !isFirst && (
+                    <button onClick={() => markBest(p.id)} className={`flex items-center gap-1 ${isBest ? 'text-emerald-600' : 'text-ink-500 hover:text-emerald-600'}`}>
+                      <Award size={14} /> {isBest ? 'Bỏ chọn' : 'Chọn là câu trả lời hay nhất'}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
 
       <div className="card p-4">
@@ -98,7 +198,7 @@ function ThreadView() {
           ) : (
             <form onSubmit={submitReply} className="space-y-2">
               <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4}
-                placeholder="Viết trả lời (hỗ trợ Markdown)…" className="input resize-y" />
+                placeholder="Viết trả lời (hỗ trợ Markdown · @ để nhắc thành viên)…" className="input resize-y" />
               {err && <p className="text-sm text-red-500">{err}</p>}
               <div className="flex justify-end">
                 <button className="btn-primary" type="submit">Gửi trả lời</button>

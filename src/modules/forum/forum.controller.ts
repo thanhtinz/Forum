@@ -14,13 +14,23 @@ import {
   CreateThreadDto,
   CreatePostDto,
 } from './forum.service';
+import { PollService, CreatePollDto } from './poll.service';
+import { SubscriptionService } from './subscription.service';
+import { DraftService, SaveDraftDto } from './draft.service';
+import { ForumTextService } from './forum-text.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
 
 @Controller('forum')
 export class ForumController {
-  constructor(private readonly forum: ForumService) {}
+  constructor(
+    private readonly forum: ForumService,
+    private readonly polls: PollService,
+    private readonly subs: SubscriptionService,
+    private readonly drafts: DraftService,
+    private readonly text: ForumTextService,
+  ) {}
 
   @Get('categories')
   categories() {
@@ -105,5 +115,89 @@ export class ForumController {
   @Roles(UserRole.MODERATOR)
   lock(@Param('id') id: string, @Body('lock') lock = true) {
     return this.forum.lockThread(id, lock);
+  }
+
+  // ── Best Answer (Q&A) ──
+  @Post('threads/:id/best-answer')
+  @UseGuards(JwtAuthGuard)
+  bestAnswer(
+    @Param('id') threadId: string,
+    @Body('postId') postId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
+  ) {
+    return this.forum.toggleBestAnswer(threadId, postId, userId, role);
+  }
+
+  // ── Polls (FoF Polls) ──
+  @Get('threads/:threadId/poll')
+  @UseGuards(OptionalJwtGuard)
+  getPoll(@Param('threadId') threadId: string, @CurrentUser('id') userId?: string) {
+    return this.polls.getForThread(threadId, userId);
+  }
+
+  @Post('threads/:threadId/poll')
+  @UseGuards(JwtAuthGuard)
+  createPoll(@Param('threadId') threadId: string, @CurrentUser('id') userId: string, @Body() dto: CreatePollDto) {
+    return this.polls.createForThread(threadId, userId, dto);
+  }
+
+  @Post('polls/:pollId/vote')
+  @UseGuards(JwtAuthGuard)
+  vote(@Param('pollId') pollId: string, @CurrentUser('id') userId: string, @Body('optionIds') optionIds: string[]) {
+    return this.polls.vote(pollId, userId, optionIds || []);
+  }
+
+  // ── Subscriptions (theo dõi thread) ──
+  @Get('subscriptions')
+  @UseGuards(JwtAuthGuard)
+  mySubs(@CurrentUser('id') userId: string) {
+    return this.subs.listMine(userId);
+  }
+
+  @Get('threads/:id/subscription')
+  @UseGuards(JwtAuthGuard)
+  subState(@Param('id') threadId: string, @CurrentUser('id') userId: string) {
+    return this.subs.isSubscribed(threadId, userId).then((subscribed) => ({ subscribed }));
+  }
+
+  @Post('threads/:id/subscribe')
+  @UseGuards(JwtAuthGuard)
+  toggleSub(@Param('id') threadId: string, @CurrentUser('id') userId: string) {
+    return this.subs.toggle(threadId, userId);
+  }
+
+  // ── Drafts (FoF Drafts) ──
+  @Get('drafts')
+  @UseGuards(JwtAuthGuard)
+  listDrafts(@CurrentUser('id') userId: string) {
+    return this.drafts.list(userId);
+  }
+
+  @Post('drafts')
+  @UseGuards(JwtAuthGuard)
+  saveDraft(@CurrentUser('id') userId: string, @Body() dto: SaveDraftDto) {
+    return this.drafts.save(userId, dto);
+  }
+
+  @Delete('drafts/:id')
+  @UseGuards(JwtAuthGuard)
+  deleteDraft(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.drafts.remove(id, userId);
+  }
+
+  // ── Admin: quản lý từ cấm (FoF Filter) ──
+  @Get('admin/censor')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  getCensor() {
+    return this.text.getCensorList().then((words) => ({ words }));
+  }
+
+  @Post('admin/censor')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  setCensor(@Body('words') words: string[]) {
+    return this.text.setCensorList(words || []).then((w) => ({ words: w }));
   }
 }

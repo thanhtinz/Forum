@@ -119,6 +119,20 @@ export class ForumController {
     return this.forum.lockThread(id, lock);
   }
 
+  @Post('threads/:id/move')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  move(@Param('id') id: string, @Body('categoryId') categoryId: string) {
+    return this.forum.moveThread(id, categoryId);
+  }
+
+  @Post('threads/:id/merge')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  merge(@Param('id') sourceId: string, @Body('targetId') targetId: string) {
+    return this.forum.mergeThreads(sourceId, targetId);
+  }
+
   // ── Best Answer (Q&A) ──
   @Post('threads/:id/best-answer')
   @UseGuards(JwtAuthGuard)

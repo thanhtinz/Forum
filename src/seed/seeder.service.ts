@@ -5,6 +5,7 @@ import { FISH_SPECIES } from './data/fishing.data';
 import { CROPS, FERTILIZERS, ANIMALS, RECIPES } from './data/farm.data';
 import { FOODS } from './data/foods.data';
 import { WARDROBE_ITEMS } from './data/wardrobe.data';
+import { TOOL_CATEGORIES, TOOLS } from './data/tools.data';
 
 // Tự seed dữ liệu mẫu (cá/cây/phân/vật nuôi/công thức/đồ ăn/wardrobe) khi app khởi động.
 // Data nằm thẳng trong src/seed/data — không cần chạy lệnh seed thủ công.
@@ -74,6 +75,28 @@ export class SeederService implements OnApplicationBootstrap {
     for (const w of WARDROBE_ITEMS) {
       const data = { ...w, slot: w.slot as AvatarSlot };
       await this.prisma.avatarItemTemplate.upsert({ where: { slug: w.slug }, update: data, create: data });
+      n++;
+    }
+
+    // Tools Collection
+    const catId = new Map<string, string>();
+    for (const c of TOOL_CATEGORIES) {
+      const cat = await this.prisma.toolCategory.upsert({
+        where: { slug: c.slug },
+        update: { name: c.name, description: c.description, icon: c.icon, sortOrder: c.sortOrder },
+        create: { name: c.name, description: c.description, icon: c.icon, sortOrder: c.sortOrder, slug: c.slug },
+      });
+      catId.set(c.slug, cat.id);
+      n++;
+    }
+    for (const t of TOOLS) {
+      const categoryId = catId.get(t.categorySlug);
+      if (!categoryId) continue;
+      const data = {
+        categoryId, name: t.name, description: t.description, icon: t.icon,
+        component: t.component, isPro: t.isPro ?? false, sortOrder: t.sortOrder,
+      };
+      await this.prisma.tool.upsert({ where: { slug: t.slug }, update: data, create: { ...data, slug: t.slug } });
       n++;
     }
 

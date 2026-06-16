@@ -6,6 +6,7 @@ import { Heart, ImagePlus, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
+import ImageUpload from '@/components/ImageUpload';
 
 interface Owner { id: string; username: string; displayName?: string | null; avatar?: string | null }
 interface Media {
@@ -72,7 +73,8 @@ function AlbumView() {
       {canManage && (
         <form onSubmit={addMedia} className="card space-y-2 p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold"><ImagePlus size={16} /> Thêm ảnh</h3>
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="URL ảnh (https://…)" className="input w-full" />
+          <ImageUpload value={url || undefined} onUploaded={setUrl} />
+          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="hoặc dán URL ảnh (https://…)" className="input w-full" />
           <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Chú thích (tuỳ chọn)" className="input w-full" />
           {err && <p className="text-sm text-red-500">{err}</p>}
           <div className="flex justify-end">

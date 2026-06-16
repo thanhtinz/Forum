@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { BlockService } from '../profile-extra/block.service';
 import { NotifType, UserRole } from '@prisma/client';
 
 const AUTHOR_CARD = {
@@ -21,6 +22,7 @@ export class ProfilePostService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly block: BlockService,
   ) {}
 
   async create(authorId: string, wallId: string, content: string) {
@@ -62,13 +64,21 @@ export class ProfilePostService {
     return post;
   }
 
-  async list(wallId: string, page = 1, limit = 20) {
+  async list(wallId: string, page = 1, limit = 20, viewerId?: string) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 50);
     const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
 
+    const where: any = { wallId };
+    if (viewerId) {
+      const blockedIds = await this.block.getBlockedIds(viewerId);
+      if (blockedIds.length > 0) {
+        where.authorId = { notIn: blockedIds };
+      }
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.profilePost.findMany({
-        where: { wallId },
+        where,
         orderBy: { createdAt: 'desc' },
         skip,
         take,
@@ -80,7 +90,7 @@ export class ProfilePostService {
           },
         },
       }),
-      this.prisma.profilePost.count({ where: { wallId } }),
+      this.prisma.profilePost.count({ where }),
     ]);
 
     return { data, meta: { total, page: Number(page) || 1, limit: take } };

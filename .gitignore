@@ -7,5 +7,6 @@ prisma/migrations/
 .env.production
 .env.*.local
 frontend/out/
+uploads/
 
 backups/

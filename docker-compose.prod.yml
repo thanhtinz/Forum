@@ -61,6 +61,10 @@ services:
       MEDIA_SECRET_KEY: ${MEDIA_SECRET_KEY:-}
       MEDIA_FORCE_PATH_STYLE: ${MEDIA_FORCE_PATH_STYLE:-true}
       MEDIA_PUBLIC_URL: ${MEDIA_PUBLIC_URL:-}
+      # Upload file local (lưu trên server) — bền vững qua named volume.
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - uploads:/app/uploads
     # Chỉ mở cổng cho mạng nội bộ docker, Caddy sẽ proxy vào.
     expose:
       - '3001'
@@ -83,5 +87,6 @@ services:
 
 volumes:
   pgdata:
+  uploads:
   caddy_data:
   caddy_config:

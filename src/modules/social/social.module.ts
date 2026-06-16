@@ -5,9 +5,10 @@ import { ProfilePostService } from './profile-post.service';
 import { FeedService } from './feed.service';
 import { MembersService } from './members.service';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { ProfileExtraModule } from '../profile-extra/profile-extra.module';
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, ProfileExtraModule],
   controllers: [SocialController],
   providers: [FollowService, ProfilePostService, FeedService, MembersService],
   exports: [FollowService, ProfilePostService, FeedService, MembersService],

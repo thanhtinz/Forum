@@ -14,6 +14,7 @@ import { ProfilePostService } from './profile-post.service';
 import { FeedService } from './feed.service';
 import { MembersService, MemberSortBy } from './members.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { CurrentUser } from '../../common/decorators/roles.decorator';
 
 @Controller('social')
@@ -57,12 +58,14 @@ export class SocialController {
 
   // ── Wall / Profile posts ──
   @Get('wall/:userId')
+  @UseGuards(OptionalJwtGuard)
   wall(
     @Param('userId') userId: string,
+    @CurrentUser('id') viewerId: string | undefined,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.profilePosts.list(userId, Number(page), Number(limit));
+    return this.profilePosts.list(userId, Number(page), Number(limit), viewerId);
   }
 
   @Post('wall/:userId')

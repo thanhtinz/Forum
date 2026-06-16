@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { BlockService } from '../profile-extra/block.service';
 
 const AUTHOR_CARD = {
   id: true,
@@ -27,7 +28,10 @@ export interface FeedItem {
 
 @Injectable()
 export class FeedService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly block: BlockService,
+  ) {}
 
   async getFeed(userId: string, page = 1, limit = 20) {
     const take = Math.min(Math.max(Number(limit) || 20, 1), 50);
@@ -43,12 +47,19 @@ export class FeedService {
       return { data: [] as FeedItem[], meta: { page: pageNum, limit: take } };
     }
 
+    const blockedIds = await this.block.getBlockedIds(userId);
+    const visibleIds = followingIds.filter((id) => !blockedIds.includes(id));
+
+    if (visibleIds.length === 0) {
+      return { data: [] as FeedItem[], meta: { page: pageNum, limit: take } };
+    }
+
     // Lấy dư (page*limit) từ mỗi nguồn rồi gộp & cắt — đủ cho feed nhỏ.
     const fetchCount = pageNum * take;
 
     const [threads, profilePosts] = await Promise.all([
       this.prisma.thread.findMany({
-        where: { authorId: { in: followingIds }, isApproved: true },
+        where: { authorId: { in: visibleIds }, isApproved: true },
         orderBy: { createdAt: 'desc' },
         take: fetchCount,
         select: {
@@ -60,7 +71,7 @@ export class FeedService {
         },
       }),
       this.prisma.profilePost.findMany({
-        where: { authorId: { in: followingIds } },
+        where: { authorId: { in: visibleIds } },
         orderBy: { createdAt: 'desc' },
         take: fetchCount,
         select: {

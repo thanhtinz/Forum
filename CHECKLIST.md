@@ -253,3 +253,10 @@
 - [x] **Luận giải AI** — admin cấu hình provider/model/system prompt + phí AI; gọi AiProviderService (gom stream)
 - [x] **Admin frontend** (`/admin`, gate theo role ADMIN): tổng quan + trang Bói toán (giá/AI/thống kê)
 - [x] Nguyên tắc "client có gì admin có nấy": dựng shell admin + menu (bói toán hoàn chỉnh, các mục khác stub có API sẵn)
+
+### 🛠️ Admin frontend (mở rộng — client có gì admin có nấy)
+- [x] **Người dùng**: tìm kiếm, đổi vai trò, ban/gỡ ban (nối /admin/users)
+- [x] **Kiểm duyệt**: hàng đợi báo cáo theo trạng thái + xử lý/bỏ qua (nối /admin/reports)
+- [x] **Nhà tù**: tống giam (thời gian/lý do/tiền chuộc) + danh sách tù nhân + ân xá (nối /prison)
+- [x] Link "Trang quản trị" trong menu Header cho ADMIN
+- [ ] (tiếp) Admin: Tools CRUD, Game templates (cây/cá/wardrobe), Cấu hình động (settings)

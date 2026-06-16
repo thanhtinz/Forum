@@ -3,12 +3,13 @@ import { AdminConfigService } from './admin-config.service';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminShopService } from './admin-shop.service';
 import { AdminGameAssetService } from './admin-game-asset.service';
+import { AdminTemplateService } from './admin-template.service';
 import { AdminController } from './admin.controller';
 
 @Global()
 @Module({
   controllers: [AdminController],
-  providers: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService],
-  exports: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService],
+  providers: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService, AdminTemplateService],
+  exports: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService, AdminTemplateService],
 })
 export class AdminModule {}

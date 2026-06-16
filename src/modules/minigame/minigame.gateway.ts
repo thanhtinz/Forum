@@ -106,6 +106,18 @@ export class MinigameGateway implements OnGatewayConnection, OnGatewayDisconnect
     return this.doMove(client, data.roomId, 'pass');
   }
 
+  @SubscribeMessage('caroMove')
+  async caroMove(@ConnectedSocket() client: Socket, @MessageBody() data: { roomId: string; x: number; y: number }) {
+    const uid = this.uid(client);
+    if (!uid) return;
+    try {
+      const res = await this.rooms.caroMove(uid, data.roomId, data.x, data.y);
+      this.server.to(`room:${data.roomId}`).emit('update', { roomId: data.roomId });
+      if (res.finished) this.server.to(`room:${data.roomId}`).emit('finished', { winnerSeat: res.winnerSeat });
+      return { ok: true };
+    } catch (e: any) { client.emit('error', { message: e.message }); }
+  }
+
   private async doMove(client: Socket, roomId: string, action: 'play' | 'pass', cards?: Card[]) {
     const uid = this.uid(client);
     if (!uid) return;

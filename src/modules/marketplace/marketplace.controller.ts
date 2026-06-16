@@ -144,6 +144,10 @@ export class MarketplaceController {
   @UseGuards(JwtAuthGuard)
   requestWithdrawal(@CurrentUser('id') uid: string, @Body() b: { amount: number; methodId: string }) { return this.seller.requestWithdrawal(uid, Number(b.amount), b.methodId); }
 
+  @Get('withdraw-fee')
+  @UseGuards(JwtAuthGuard)
+  async withdrawFee() { return { feePercent: await this.seller.getWithdrawFeePercent() }; }
+
   // ── Mua hàng + escrow (giam 3 ngày) ──
   @Post('products/:id/buy')
   @UseGuards(JwtAuthGuard)
@@ -175,6 +179,14 @@ export class MarketplaceController {
   @Post('admin/withdrawals/:id/:action')
   @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
   processWithdrawal(@Param('id') id: string, @Param('action') action: 'approve' | 'paid' | 'reject') { return this.orders.adminProcessWithdrawal(id, action); }
+
+  @Get('admin/withdraw-fee')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  async adminGetWithdrawFee() { return { feePercent: await this.seller.getWithdrawFeePercent() }; }
+
+  @Post('admin/withdraw-fee')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminSetWithdrawFee(@Body('feePercent') feePercent: number) { return this.seller.setWithdrawFeePercent(Number(feePercent)); }
 
   // ── ADMIN — quản lý toàn bộ chợ ──
   @Get('admin/stats')

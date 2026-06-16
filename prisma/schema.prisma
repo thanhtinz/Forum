@@ -75,6 +75,8 @@ enum GemTxType {
   REFUND
   ADMIN_ADJUST
   BONUS
+  TIP_SENT
+  TIP_RECEIVED
 }
 
 enum ReportType {
@@ -187,6 +189,8 @@ model User {
   threadSubs        ThreadSubscription[]
   postDrafts        PostDraft[]
   bookmarks         Bookmark[]
+  tipsSent          Tip[]                @relation("TipFrom")
+  tipsReceived      Tip[]                @relation("TipTo")
 
   @@index([email])
   @@index([username])
@@ -2148,7 +2152,10 @@ model PayoutMethod {
 model Withdrawal {
   id          String    @id @default(cuid())
   userId      String
-  amount      Int // gem
+  amount      Int // gem gộp (bị trừ khỏi ví)
+  feePercent  Float     @default(0) // % phí rút lúc tạo
+  feeAmount   Int       @default(0) // gem phí
+  netAmount   Int       @default(0) // gem thực nhận sau phí
   methodLabel String    @db.VarChar(160)
   status      String    @default("PENDING") @db.VarChar(20) // PENDING | APPROVED | PAID | REJECTED
   note        String?   @db.Text
@@ -2314,4 +2321,23 @@ model Bookmark {
 
   @@unique([userId, threadId])
   @@index([userId])
+}
+
+// Tip/Donate — ủng hộ tác giả bằng gem (rút về bank sau, có phí % cấu hình)
+model Tip {
+  id         String   @id @default(cuid())
+  fromUserId String
+  toUserId   String
+  postId     String?
+  threadId   String?
+  amount     Int // gem
+  message    String?  @db.VarChar(255)
+  createdAt  DateTime @default(now())
+
+  fromUser User @relation("TipFrom", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser   User @relation("TipTo", fields: [toUserId], references: [id], onDelete: Cascade)
+
+  @@index([toUserId])
+  @@index([postId])
+  @@index([fromUserId])
 }

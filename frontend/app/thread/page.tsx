@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
@@ -151,6 +151,15 @@ function ThreadView() {
     if (!thread) return;
     try { await api.post(`/forum/threads/${thread.id}/best-answer`, { postId }); load(); } catch {}
   }
+  async function donate(postId: string) {
+    const raw = prompt('Donate bao nhiêu 💎 Gem cho tác giả?');
+    if (!raw) return;
+    const amount = parseInt(raw, 10);
+    if (!Number.isFinite(amount) || amount <= 0) { alert('Số gem không hợp lệ'); return; }
+    const message = prompt('Lời nhắn (tuỳ chọn):') || undefined;
+    try { await api.post(`/forum/posts/${postId}/tip`, { amount, message }); alert(`Đã donate ${amount} 💎. Cảm ơn bạn!`); load(); }
+    catch (e: any) { alert(e.message); }
+  }
 
   if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
   if (err && !thread) return <div className="card p-8 text-center text-red-500">{err}</div>;
@@ -244,6 +253,17 @@ function ThreadView() {
                         ))}
                       </div>
                     </div>
+                  )}
+                  {/* Tổng donate + nút donate (không tự donate cho mình) */}
+                  {(p.tipTotal ?? 0) > 0 && (
+                    <span className="flex items-center gap-1 rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-300" title={`${p.tipCount} lượt donate`}>
+                      <Gem size={12} /> {p.tipTotal}
+                    </span>
+                  )}
+                  {user && p.author && user.id !== p.author.id && (
+                    <button onClick={() => donate(p.id)} className="flex items-center gap-1 text-fuchsia-600 hover:text-fuchsia-700">
+                      <Gem size={14} /> Donate
+                    </button>
                   )}
                   {canManage && !isFirst && (
                     <button onClick={() => markBest(p.id)} className={`ml-auto flex items-center gap-1 ${isBest ? 'text-emerald-600' : 'text-ink-500 hover:text-emerald-600'}`}>

@@ -10,12 +10,17 @@ export default function SellerWithdraw() {
   const [amount, setAmount] = useState(100);
   const [methodId, setMethodId] = useState('');
   const [msg, setMsg] = useState('');
+  const [feePercent, setFeePercent] = useState(0);
 
   function load() {
     api.get<any[]>('/marketplace/seller/payout-methods').then((m) => { setMethods(m); if (m[0]) setMethodId(m[0].id); }).catch(() => {});
     api.get<any[]>('/marketplace/seller/withdrawals').then(setHistory).catch(() => {});
+    api.get<{ feePercent: number }>('/marketplace/withdraw-fee').then((r) => setFeePercent(r.feePercent)).catch(() => {});
   }
   useEffect(() => { load(); }, []);
+
+  const feeAmount = Math.round((amount * feePercent) / 100);
+  const netAmount = amount - feeAmount;
 
   async function addMethod() {
     if (!mForm.label || !mForm.detail) return;
@@ -61,6 +66,9 @@ export default function SellerWithdraw() {
           </select>
           <button onClick={request} disabled={!methodId} className="btn-primary disabled:opacity-50">Yêu cầu rút</button>
         </div>
+        <p className="text-xs text-ink-500">
+          Phí rút: {feePercent}% = {feeAmount.toLocaleString()} 💎 · Thực nhận: <b className="text-emerald-600">{netAmount.toLocaleString()} 💎</b>
+        </p>
         {msg && <p className="text-sm text-brand-600">{msg}</p>}
       </div>
 
@@ -69,7 +77,7 @@ export default function SellerWithdraw() {
         <div className="divide-y divide-ink-100 text-sm dark:divide-ink-800">
           {history.map((w) => (
             <div key={w.id} className="flex justify-between py-2">
-              <span>{w.amount} gem · {w.methodLabel}</span>
+              <span>{w.amount} gem{w.feeAmount ? ` (−${w.feeAmount} phí, nhận ${w.netAmount})` : ''} · {w.methodLabel}</span>
               <span className="chip bg-ink-200 text-ink-600">{w.status}</span>
             </div>
           ))}

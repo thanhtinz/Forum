@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Pin, Star, Store, Bot } from 'lucide-react';
+import { Pin, Star, Store, Bot, Gem, CheckCircle2 } from 'lucide-react';
 import { api } from '@/lib/api';
 
 const DURS: [string, string][] = [['d1', '1 ngày'], ['d7', '7 ngày'], ['d30', '1 tháng']];
@@ -34,11 +34,11 @@ export default function SellerBoost() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <div className="mb-1 text-sm font-medium">Ghim sản phẩm</div>
-            <div className="flex gap-2">{DURS.map(([k, l]) => <button key={k} disabled={!pid} onClick={() => act(() => api.post(`/marketplace/seller/perks/product/${pid}`, { kind: 'pin', dur: k }))} className="btn-outline flex-1 !py-1 text-xs disabled:opacity-50">{l} · {P.pinProduct[k]}💎</button>)}</div>
+            <div className="flex gap-2">{DURS.map(([k, l]) => <button key={k} disabled={!pid} onClick={() => act(() => api.post(`/marketplace/seller/perks/product/${pid}`, { kind: 'pin', dur: k }))} className="btn-outline inline-flex flex-1 items-center justify-center gap-1 !py-1 text-xs disabled:opacity-50">{l} · {P.pinProduct[k]}<Gem size={12} /></button>)}</div>
           </div>
           <div>
             <div className="mb-1 text-sm font-medium">Đề xuất sản phẩm</div>
-            <div className="flex gap-2">{DURS.map(([k, l]) => <button key={k} disabled={!pid} onClick={() => act(() => api.post(`/marketplace/seller/perks/product/${pid}`, { kind: 'feature', dur: k }))} className="btn-outline flex-1 !py-1 text-xs disabled:opacity-50">{l} · {P.featureProduct[k]}💎</button>)}</div>
+            <div className="flex gap-2">{DURS.map(([k, l]) => <button key={k} disabled={!pid} onClick={() => act(() => api.post(`/marketplace/seller/perks/product/${pid}`, { kind: 'feature', dur: k }))} className="btn-outline inline-flex flex-1 items-center justify-center gap-1 !py-1 text-xs disabled:opacity-50">{l} · {P.featureProduct[k]}<Gem size={12} /></button>)}</div>
           </div>
         </div>
       </section>
@@ -47,18 +47,18 @@ export default function SellerBoost() {
       <section className="card p-4">
         <h2 className="mb-2 flex items-center gap-2 font-semibold"><Store size={16} /> Đề xuất gian hàng</h2>
         {d.storeFeaturedUntil && new Date(d.storeFeaturedUntil) > new Date() && <p className="mb-2 text-xs text-emerald-600">Đang được đề xuất đến {new Date(d.storeFeaturedUntil).toLocaleDateString('vi')}</p>}
-        <div className="flex gap-2">{DURS.map(([k, l]) => <button key={k} onClick={() => act(() => api.post('/marketplace/seller/perks/store', { dur: k }))} className="btn-outline flex-1 !py-1 text-xs">{l} · {P.featureStore[k]}💎</button>)}</div>
+        <div className="flex gap-2">{DURS.map(([k, l]) => <button key={k} onClick={() => act(() => api.post('/marketplace/seller/perks/store', { dur: k }))} className="btn-outline inline-flex flex-1 items-center justify-center gap-1 !py-1 text-xs">{l} · {P.featureStore[k]}<Gem size={12} /></button>)}</div>
       </section>
 
       {/* Gói AI shop */}
       <section className="card p-4">
         <h2 className="mb-2 flex items-center gap-2 font-semibold"><Bot size={16} /> Gói Công cụ AI</h2>
-        <p className="mb-2 text-xs text-ink-500">
-          {d.aiForever ? '✓ Đã mở vĩnh viễn' : d.aiUntil && new Date(d.aiUntil) > new Date() ? `Còn hạn đến ${new Date(d.aiUntil).toLocaleDateString('vi')}` : 'Chưa kích hoạt'}
+        <p className="mb-2 inline-flex items-center gap-1 text-xs text-ink-500">
+          {d.aiForever ? <><CheckCircle2 size={12} /> Đã mở vĩnh viễn</> : d.aiUntil && new Date(d.aiUntil) > new Date() ? `Còn hạn đến ${new Date(d.aiUntil).toLocaleDateString('vi')}` : 'Chưa kích hoạt'}
         </p>
         <div className="flex gap-2">
-          <button onClick={() => act(() => api.post('/marketplace/seller/perks/ai', { plan: 'month' }))} className="btn-outline flex-1 !py-1 text-xs">1 tháng · {P.aiShop.month}💎</button>
-          <button onClick={() => act(() => api.post('/marketplace/seller/perks/ai', { plan: 'forever' }))} className="btn-primary flex-1 !py-1 text-xs">Vĩnh viễn · {P.aiShop.forever}💎</button>
+          <button onClick={() => act(() => api.post('/marketplace/seller/perks/ai', { plan: 'month' }))} className="btn-outline inline-flex flex-1 items-center justify-center gap-1 !py-1 text-xs">1 tháng · {P.aiShop.month}<Gem size={12} /></button>
+          <button onClick={() => act(() => api.post('/marketplace/seller/perks/ai', { plan: 'forever' }))} className="btn-primary inline-flex flex-1 items-center justify-center gap-1 !py-1 text-xs">Vĩnh viễn · {P.aiShop.forever}<Gem size={12} /></button>
         </div>
       </section>
     </div>

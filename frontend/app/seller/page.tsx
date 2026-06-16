@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { BadgeCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 
 const TIER_COLOR: Record<string, string> = {
@@ -25,7 +26,7 @@ export default function SellerDashboard() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Dashboard</h1>
-        <span className={`chip text-white ${TIER_COLOR[d.tier] || 'bg-ink-500'}`}>{d.tier}{d.verified ? ' · ✓ Verified' : ''}</span>
+        <span className={`chip inline-flex items-center gap-1 text-white ${TIER_COLOR[d.tier] || 'bg-ink-500'}`}>{d.tier}{d.verified ? <> · <BadgeCheck size={12} /> Verified</> : ''}</span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

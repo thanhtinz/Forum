@@ -118,4 +118,17 @@ export class BadgeController {
   verify(@Body() body: { userId: string; value: boolean }) {
     return this.badges.setVerified(body.userId, body.value);
   }
+
+  // Icon ảnh cho badge hệ thống (role/verify/seller)
+  @Get('system-icons')
+  systemIcons() {
+    return this.badges.getSystemIcons();
+  }
+
+  @Post('admin/system-icons')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  setSystemIcons(@Body() body: Record<string, string>) {
+    return this.badges.setSystemIcons(body);
+  }
 }

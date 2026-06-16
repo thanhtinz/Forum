@@ -1,17 +1,12 @@
 'use client';
 
-// Hệ thống huy hiệu hiển thị cạnh tên/avatar người dùng.
-// - Badge vai trò: Quản trị / Điều hành / VIP / Thành viên
-// - Badge verify: Đã xác minh (admin cấp)
-// - Badge người bán: Người bán / Người bán uy tín
-// - Badge mục tiêu: thành tựu tự trao theo cột mốc
-//
-// Có 2 cách dùng:
-//   <UserBadges badges={descriptorsTừAPI} />              // đầy đủ (trang hồ sơ)
-//   <UserBadges user={{role, verifiedBadge, isSeller}} /> // suy ra nhanh (cạnh bài viết)
+// Hệ thống huy hiệu (badge) hiển thị cạnh tên/avatar người dùng.
+// icon = TÊN icon lucide (CSS), render qua <Icon name=.../>.
+
+import { BadgeIcon } from '@/lib/icons';
 
 export type BadgeColor = 'red' | 'blue' | 'amber' | 'green' | 'gray' | 'violet';
-export type BadgeKind = 'role' | 'verify' | 'seller' | 'milestone';
+export type BadgeKind = 'role' | 'verify' | 'seller' | 'milestone' | 'level';
 
 export interface BadgeDescriptor {
   key: string;
@@ -40,14 +35,14 @@ export function roleBadgesFromUser(u: {
   sellerVerified?: boolean | null;
 }): BadgeDescriptor[] {
   const out: BadgeDescriptor[] = [];
-  if (u.verifiedBadge) out.push({ key: 'verify', label: 'Đã xác minh', icon: '✔️', color: 'blue', kind: 'verify' });
+  if (u.verifiedBadge) out.push({ key: 'verify', label: 'Đã xác minh', icon: 'BadgeCheck', color: 'blue', kind: 'verify' });
   switch (u.role) {
-    case 'ADMIN': out.push({ key: 'role:ADMIN', label: 'Quản trị viên', icon: '🛡️', color: 'red', kind: 'role' }); break;
-    case 'MODERATOR': out.push({ key: 'role:MOD', label: 'Điều hành viên', icon: '🛠️', color: 'violet', kind: 'role' }); break;
-    case 'VIP': out.push({ key: 'role:VIP', label: 'VIP', icon: '⭐', color: 'amber', kind: 'role' }); break;
-    case 'MEMBER': out.push({ key: 'role:MEMBER', label: 'Thành viên', icon: '👤', color: 'gray', kind: 'role' }); break;
+    case 'ADMIN': out.push({ key: 'role:ADMIN', label: 'Quản trị viên', icon: 'Shield', color: 'red', kind: 'role' }); break;
+    case 'MODERATOR': out.push({ key: 'role:MOD', label: 'Điều hành viên', icon: 'ShieldHalf', color: 'violet', kind: 'role' }); break;
+    case 'VIP': out.push({ key: 'role:VIP', label: 'VIP', icon: 'Star', color: 'amber', kind: 'role' }); break;
+    case 'MEMBER': out.push({ key: 'role:MEMBER', label: 'Thành viên', icon: 'User', color: 'gray', kind: 'role' }); break;
   }
-  if (u.isSeller) out.push({ key: 'seller', label: u.sellerVerified ? 'Người bán uy tín' : 'Người bán', icon: '🏪', color: 'green', kind: 'seller' });
+  if (u.isSeller) out.push({ key: 'seller', label: u.sellerVerified ? 'Người bán uy tín' : 'Người bán', icon: 'Store', color: 'green', kind: 'seller' });
   return out;
 }
 
@@ -70,7 +65,10 @@ export function UserBadges({
   if (!list.length) return null;
   if (max && list.length > max) list = list.slice(0, max);
 
-  const pad = size === 'xs' ? 'px-1.5 py-0 text-[10px]' : 'px-2 py-0.5 text-xs';
+  const pad = iconOnly
+    ? (size === 'xs' ? 'p-0.5' : 'p-1')
+    : (size === 'xs' ? 'px-1.5 py-0 text-[10px]' : 'px-2 py-0.5 text-xs');
+  const iconSize = size === 'xs' ? 11 : 13;
 
   return (
     <span className={`inline-flex flex-wrap items-center gap-1 ${className}`}>
@@ -80,7 +78,7 @@ export function UserBadges({
           title={b.description ? `${b.label} — ${b.description}` : b.label}
           className={`inline-flex items-center gap-1 rounded-full font-medium ${pad} ${COLOR_CLASS[b.color] || COLOR_CLASS.gray}`}
         >
-          <span aria-hidden>{b.icon}</span>
+          <BadgeIcon icon={b.icon} size={iconSize} />
           {!iconOnly && <span>{b.label}</span>}
         </span>
       ))}

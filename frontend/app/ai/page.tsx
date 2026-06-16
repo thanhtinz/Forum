@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { io, Socket } from 'socket.io-client';
-import { Send, Heart, Lock } from 'lucide-react';
+import { Send, Heart, Lock, Star } from 'lucide-react';
 import { api, getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -162,7 +162,7 @@ export default function AiCompanionPage() {
                   {!o.isUnlocked && <Lock size={11} />} {o.name}
                 </span>
                 {!o.isUnlocked && <span className="block text-[10px]">Cấp {o.unlockBondLevel}</span>}
-                {o.rarity === 'legendary' && o.isUnlocked && <span className="block text-[10px] text-amber-500">★ Huyền thoại</span>}
+                {o.rarity === 'legendary' && o.isUnlocked && <span className="flex items-center gap-0.5 text-[10px] text-amber-500"><Star size={9} className="fill-amber-500" /> Huyền thoại</span>}
               </button>
             ))}
             {!bond && <p className="col-span-2 text-xs text-ink-400">Đang tải trang phục…</p>}

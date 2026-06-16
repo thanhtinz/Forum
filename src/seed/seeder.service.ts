@@ -154,10 +154,10 @@ export class SeederService implements OnApplicationBootstrap {
 
     // ── Huy hiệu mốc mặc định (milestone badges, isAuto) ──
     const DEFAULT_BADGES = [
-      { id: 'badge-first-post', name: 'Bài viết đầu tiên', icon: '📝', color: 'green', condition: { type: 'postCount', gte: 1 } },
-      { id: 'badge-active-100', name: 'Cây bút năng nổ', icon: '✍️', color: 'blue', condition: { type: 'postCount', gte: 100 } },
-      { id: 'badge-rep-1000', name: 'Uy tín ngàn điểm', icon: '💎', color: 'violet', condition: { type: 'reputationScore', gte: 1000 } },
-      { id: 'badge-threads-50', name: 'Người mở chuyện', icon: '🧵', color: 'amber', condition: { type: 'threadCount', gte: 50 } },
+      { id: 'badge-first-post', name: 'Bài viết đầu tiên', icon: 'PenLine', color: 'green', condition: { type: 'postCount', gte: 1 } },
+      { id: 'badge-active-100', name: 'Cây bút năng nổ', icon: 'Pen', color: 'blue', condition: { type: 'postCount', gte: 100 } },
+      { id: 'badge-rep-1000', name: 'Uy tín ngàn điểm', icon: 'Gem', color: 'violet', condition: { type: 'reputationScore', gte: 1000 } },
+      { id: 'badge-threads-50', name: 'Người mở chuyện', icon: 'MessageSquare', color: 'amber', condition: { type: 'threadCount', gte: 50 } },
     ];
     for (const b of DEFAULT_BADGES) {
       const data = { name: b.name, icon: b.icon, color: b.color, condition: b.condition, isAuto: true };
@@ -171,12 +171,12 @@ export class SeederService implements OnApplicationBootstrap {
 
     // ── Cấp độ mặc định (level tiers) ──
     const DEFAULT_LEVELS = [
-      { level: 1, name: 'Tân binh', icon: '🌱', color: 'green', minScore: 0 },
-      { level: 2, name: 'Thành viên', icon: '🟢', color: 'gray', minScore: 50 },
-      { level: 3, name: 'Năng nổ', icon: '🔵', color: 'blue', minScore: 200 },
-      { level: 4, name: 'Kỳ cựu', icon: '🟣', color: 'violet', minScore: 600 },
-      { level: 5, name: 'Lão làng', icon: '🟠', color: 'amber', minScore: 1500 },
-      { level: 6, name: 'Huyền thoại', icon: '🔴', color: 'red', minScore: 4000 },
+      { level: 1, name: 'Tân binh', icon: 'Sprout', color: 'green', minScore: 0 },
+      { level: 2, name: 'Thành viên', icon: 'Leaf', color: 'gray', minScore: 50 },
+      { level: 3, name: 'Năng nổ', icon: 'Star', color: 'blue', minScore: 200 },
+      { level: 4, name: 'Kỳ cựu', icon: 'Award', color: 'violet', minScore: 600 },
+      { level: 5, name: 'Lão làng', icon: 'Crown', color: 'amber', minScore: 1500 },
+      { level: 6, name: 'Huyền thoại', icon: 'Trophy', color: 'red', minScore: 4000 },
     ];
     for (const t of DEFAULT_LEVELS) {
       const data = { name: t.name, icon: t.icon, color: t.color, minScore: t.minScore };

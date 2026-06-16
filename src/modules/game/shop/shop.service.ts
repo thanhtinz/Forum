@@ -2,7 +2,8 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CharacterService } from '../character/character.service';
 import { GemService } from '../../gem/gem.service';
-import { Currency, EquipSlot, ItemRarity } from '@prisma/client';
+import { EquipSlot, ItemRarity } from '@prisma/client';
+import { Currency } from '../../../common/enums';
 
 @Injectable()
 export class ShopService {

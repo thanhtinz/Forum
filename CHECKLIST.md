@@ -117,11 +117,12 @@
 ## ⏳ CHƯA HOÀN THÀNH
 
 ### 🏪 Marketplace Storefront
-- [ ] Dashboard gian hàng riêng cho từng user
-- [ ] Trang storefront chuyên nghiệp (banner, logo, mô tả, chính sách)
-- [ ] Theo dõi gian hàng (follow), rating/review
-- [ ] Thống kê doanh thu cho seller
-- [ ] (Schema Storefront + StorefrontFollow đã có, cần service + UI)
+- [x] **Backend service** — CRUD gian hàng (slug tự sinh), 1 user 1 gian hàng
+- [x] **Follow/Unfollow** gian hàng + đếm follower
+- [x] API public: danh sách + trang storefront theo slug (kèm trạng thái đang follow)
+- [ ] UI dashboard gian hàng cho seller
+- [ ] Trang storefront chuyên nghiệp (banner, logo, chính sách) — frontend
+- [ ] Rating/review + thống kê doanh thu cho seller
 
 ### 🛠️ Tools Collection (~50 tools)
 - [ ] Framework tools (ToolCategory + Tool schema đã có)
@@ -165,7 +166,8 @@
 | AI Live2D + bonding | ✅ Xong |
 | Chat system (backend) | ✅ Xong |
 | Admin panel + guide | ✅ Xong |
-| Marketplace storefront | ⏳ Chưa |
+| Marketplace storefront (backend) | ✅ Xong |
+| Moderation (gửi báo cáo) + Search + Media presign | ✅ Xong |
 | Tools collection (50) | ⏳ Chưa |
 | Frontend Next.js hoàn chỉnh | ⏳ Chưa |
 | Hạ tầng deploy | ⏳ Chưa |

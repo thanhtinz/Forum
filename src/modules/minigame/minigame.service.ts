@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MinigameType } from '@prisma/client';
+import { MinigameType, Prisma } from '@prisma/client';
 import { DiceGames } from './games/dice-games';
 import { CardGames } from './games/card-games';
 import { CaroGame } from './games/caro-game';
@@ -203,7 +203,7 @@ export class MinigameService {
           characterId, type: netCoin >= 0 ? 'win_minigame' : 'lose_minigame',
           amount: netCoin,
           balanceBefore: char.coinBalance, balanceAfter,
-          refType: 'minigame', note: `${type}`,
+          refId: 'minigame', note: `${type}`,
         },
       });
 
@@ -228,7 +228,7 @@ export class MinigameService {
         hostId: char.id,
         maxPlayers: 2,
         potCoin: 0,
-        state: CaroGame.initState(),
+        state: CaroGame.initState() as unknown as Prisma.InputJsonValue,
       },
     });
 

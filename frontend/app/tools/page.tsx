@@ -26,7 +26,7 @@ export default function ToolsPage() {
             <h2 className="mb-3 text-lg font-semibold">{cat.name}</h2>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {cat.tools.map((t) => (
-                <a key={t.slug} href={`/tools/${t.slug}`}
+                <a key={t.slug} href={`/tool?slug=${t.slug}`}
                   className="card group p-4 transition-shadow hover:shadow-lg">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold group-hover:text-brand-600">{t.name}</h3>

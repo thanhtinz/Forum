@@ -243,6 +243,9 @@ export class MarketplaceController {
   @Get('storefronts/:slug/products')
   storeProducts(@Param('slug') slug: string) { return this.shop.storeProducts(slug); }
 
+  @Get('product/:slug')
+  productDetail(@Param('slug') slug: string) { return this.shop.productDetail(slug); }
+
   @Get('me/products')
   @UseGuards(JwtAuthGuard)
   myProducts(@CurrentUser('id') userId: string) { return this.shop.myProducts(userId); }

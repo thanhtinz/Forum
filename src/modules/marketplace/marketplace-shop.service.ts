@@ -78,6 +78,23 @@ export class MarketplaceShopService {
     });
   }
 
+  // Chi tiết sản phẩm (tăng lượt xem) + ảnh + đánh giá
+  async productDetail(slug: string) {
+    const p = await this.prisma.product.findUnique({
+      where: { slug },
+      include: {
+        screenshots: { orderBy: { sortOrder: 'asc' } },
+        seller: { select: { username: true, displayName: true } },
+        storefront: { select: { slug: true, name: true, isVerified: true } },
+        category: { select: { name: true, slug: true } },
+        reviews: { orderBy: { createdAt: 'desc' }, take: 50 },
+      },
+    });
+    if (!p || p.status !== 'ACTIVE') throw new NotFoundException('Sản phẩm không khả dụng');
+    await this.prisma.product.update({ where: { id: p.id }, data: { viewCount: { increment: 1 } } });
+    return p;
+  }
+
   async myProducts(userId: string) {
     const store = await this.requireStore(userId);
     return this.prisma.product.findMany({ where: { storefrontId: store.id }, orderBy: { createdAt: 'desc' } });

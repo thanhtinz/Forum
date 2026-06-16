@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserPlus, UserMinus, Send, Heart, Trash2 } from 'lucide-react';
+import { UserPlus, UserMinus, Send, Heart, Trash2, Ban, ExternalLink } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
@@ -46,6 +46,8 @@ function ProfileView() {
 
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
   const [following, setFollowing] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [fields, setFields] = useState<{ field: { id: string; label: string; type: string }; value: string }[]>([]);
 
   useEffect(() => {
     if (!name) return;
@@ -54,8 +56,10 @@ function ProfileView() {
       if (p?.id) {
         api.get<any>(`/trophies/user/${p.id}`).then(setTrophies).catch(() => {});
         api.get<{ followers: number; following: number }>(`/social/users/${p.id}/follow-counts`).then(setCounts).catch(() => {});
+        api.get<{ field: { id: string; label: string; type: string }; value: string }[]>(`/profile-extra/users/${p.id}/fields`).then((r) => setFields((r || []).filter((f) => f.value?.trim()))).catch(() => {});
         if (user && user.id !== p.id) {
           api.get<{ following: boolean }>(`/social/users/${p.id}/follow-state`).then((r) => setFollowing(r.following)).catch(() => {});
+          api.get<{ blocked: boolean }>(`/profile-extra/block/${p.id}/state`).then((r) => setBlocked(r.blocked)).catch(() => {});
         }
       }
     }).catch((e) => setErr(e.message));
@@ -68,6 +72,16 @@ function ProfileView() {
       const r = await api.post<{ following: boolean }>(`/social/follow/${profile.id}`);
       setFollowing(r.following);
       setCounts((c) => ({ ...c, followers: c.followers + (r.following ? 1 : -1) }));
+    } catch (e: any) {
+      alert(e.message);
+    }
+  }
+
+  async function toggleBlock() {
+    if (!profile?.id) return;
+    try {
+      const r = await api.post<{ blocked: boolean }>(`/profile-extra/block/${profile.id}`);
+      setBlocked(r.blocked);
     } catch (e: any) {
       alert(e.message);
     }
@@ -96,12 +110,20 @@ function ProfileView() {
         </div>
 
         {user && !isSelf && (
-          <button
-            onClick={toggleFollow}
-            className={`btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 ${following ? '!bg-ink-200 !text-ink-700 dark:!bg-ink-700 dark:!text-ink-100' : ''}`}
-          >
-            {following ? <><UserMinus size={16} /> Bỏ theo dõi</> : <><UserPlus size={16} /> Theo dõi</>}
-          </button>
+          <div className="mt-4 space-y-2">
+            <button
+              onClick={toggleFollow}
+              className={`btn-primary inline-flex w-full items-center justify-center gap-2 ${following ? '!bg-ink-200 !text-ink-700 dark:!bg-ink-700 dark:!text-ink-100' : ''}`}
+            >
+              {following ? <><UserMinus size={16} /> Bỏ theo dõi</> : <><UserPlus size={16} /> Theo dõi</>}
+            </button>
+            <button
+              onClick={toggleBlock}
+              className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium ${blocked ? 'bg-red-500 text-white' : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300'}`}
+            >
+              <Ban size={15} /> {blocked ? 'Bỏ chặn' : 'Chặn'}
+            </button>
+          </div>
         )}
 
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -139,6 +161,24 @@ function ProfileView() {
             )}
           </div>
         )}
+        {fields.length > 0 && (
+          <div className="card p-5">
+            <h2 className="mb-3 font-semibold">Thông tin thêm</h2>
+            <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {fields.map((f) => (
+                <div key={f.field.id} className="rounded-lg bg-ink-50 p-3 dark:bg-ink-900">
+                  <dt className="text-xs text-ink-500">{f.field.label}</dt>
+                  <dd className="mt-0.5 break-words text-sm">
+                    {f.field.type === 'url'
+                      ? <a href={f.value} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">{f.value} <ExternalLink size={12} /></a>
+                      : <span className="whitespace-pre-wrap">{f.value}</span>}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+
         <div className="card p-5">
           <h2 className="mb-1 font-semibold">Hoạt động</h2>
           <p className="text-sm text-ink-500">Tham gia từ {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('vi') : '—'}</p>

@@ -106,6 +106,8 @@ function ThreadView() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const scrolledToLastRead = useRef(false);
 
+  const [viewing, setViewing] = useState<{ total: number; users: { id: string; username: string; displayName?: string | null; avatar?: string | null }[] }>({ total: 0, users: [] });
+
   const isMod = user && (user.role === 'ADMIN' || user.role === 'MODERATOR');
   const canManage = thread && user && ((thread as any).author?.id === user.id || isMod);
   const bestAnswerId = thread ? (thread as any).bestAnswerId : null;
@@ -116,6 +118,7 @@ function ThreadView() {
       setThread(t);
       const p = await api.get<Paginated<Post>>(`/forum/threads/${t.id}/posts?limit=50`);
       setPosts(p.data);
+      api.get<{ total: number; users: any[] }>(`/community/threads/${t.id}/viewing`).then(setViewing).catch(() => {});
       if (user) {
         api.get<{ subscribed: boolean }>(`/forum/threads/${t.id}/subscription`).then((s) => setSubscribed(s.subscribed)).catch(() => {});
         api.get<{ bookmarked: boolean }>(`/forum/threads/${t.id}/bookmark`).then((b) => setBookmarked(b.bookmarked)).catch(() => {});
@@ -306,6 +309,11 @@ function ThreadView() {
           <span className="flex items-center gap-1"><Eye size={14} /> {thread.viewCount} lượt xem</span>
           <span className="flex items-center gap-1"><ThumbsUp size={14} /> {thread.likeCount}</span>
           {posts.length > 0 && <span className="flex items-center gap-1"><Clock size={14} /> ~{readingTime(posts)} phút đọc</span>}
+          {viewing.total > 0 && (
+            <span className="flex items-center gap-1 text-emerald-600" title={viewing.users.map((u) => u.displayName || u.username).join(', ')}>
+              <span className="h-2 w-2 rounded-full bg-emerald-500" /> {viewing.total} đang xem
+            </span>
+          )}
         </div>
         {isMod && (
           <div className="mt-3 flex gap-2 border-t border-ink-200/70 pt-3 dark:border-ink-800">

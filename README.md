@@ -132,3 +132,22 @@ WS     /ai   (chat realtime + emotion → Live2D)
 - Meilisearch indexing
 - MinIO upload service
 - Next.js frontend đầy đủ
+
+---
+
+## ✅ Trạng thái (cập nhật 16/06/2026)
+
+Đã verify end-to-end với PostgreSQL thật: boot OK, auto-seed 181 template, các endpoint chính trả 200.
+
+**Backend (~256 route, deploy 1 process)**
+- Forum đầy đủ (thread/post/react/category, đăng bài) + hidden content gate
+- Game: nhân vật RPG/combat/guild/survival, Nông trại, Câu cá, Wardrobe/Pet/Mount
+- Minigame 11 game (+ PvP realtime: Tiến Lên, Caro) — hệ phòng/pot/socket
+- Chat realtime, AI Companion (streaming + cảm xúc), Bói toán (Bát Tự/Tarot/Mai Hoa + AI + thu phí)
+- Tools (44 công cụ), Nhà tù (giam/chuộc/ân xá)
+- **Marketplace + Seller Center (19 mục)**: sản phẩm/kho-giao-tự-động/đơn/escrow giam 3 ngày/coupon/quảng-bá-gem/ticket/đánh-giá/nhân-viên-phân-quyền/ví/rút-tiền/AI/2FA/thống-kê/nhật-ký
+- Admin toàn diện: chợ (cửa hàng/đơn/rút tiền/danh mục/giá dịch vụ), bói toán, tools, dữ liệu game, kiểm duyệt, nhà tù, người dùng
+- Thông báo realtime (gateway /notif) đẩy live + badge chưa đọc
+
+**Frontend (48 trang, Next.js static export do NestJS phục vụ)**
+- Forum, Chat, AI Companion, Game (+farm/fishing/wardrobe), Minigame (+bàn PvP), Bói toán, Tools, Marketplace (+sản phẩm/gian hàng), Đơn hàng, Profile, Seller Center, Admin

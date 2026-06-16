@@ -2,8 +2,25 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Star } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+
+function ReviewForm({ productId }: { productId: string }) {
+  const [rating, setRating] = useState(5);
+  const [content, setContent] = useState('');
+  const [done, setDone] = useState(false);
+  const [msg, setMsg] = useState('');
+  if (done) return <p className="mt-2 text-xs text-emerald-600">Đã gửi đánh giá ✓</p>;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div className="flex">{[1, 2, 3, 4, 5].map((n) => <button key={n} onClick={() => setRating(n)}><Star size={16} className="text-amber-500" fill={n <= rating ? 'currentColor' : 'none'} /></button>)}</div>
+      <input className="input flex-1" placeholder="Nhận xét…" value={content} onChange={(e) => setContent(e.target.value)} />
+      <button onClick={async () => { try { await api.post(`/marketplace/products/${productId}/review`, { rating, content }); setDone(true); } catch (e: any) { setMsg(e.message); } }} className="btn-outline !py-1 text-xs">Đánh giá</button>
+      {msg && <span className="text-xs text-red-500">{msg}</span>}
+    </div>
+  );
+}
 
 export default function OrdersPage() {
   const { user, loading } = useAuth();
@@ -36,6 +53,7 @@ export default function OrdersPage() {
               </div>
             )}
             {!o.deliveredContent && !o.downloadUrl && <p className="mt-2 text-xs text-amber-600">Đang chờ người bán giao hàng…</p>}
+            {o.status === 'COMPLETED' && o.productId && <ReviewForm productId={o.productId} />}
           </div>
         ))}
         {orders.length === 0 && <div className="card p-10 text-center text-ink-500">Bạn chưa mua sản phẩm nào.</div>}

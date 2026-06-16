@@ -93,6 +93,12 @@ function ThreadView() {
   const [splitSelected, setSplitSelected] = useState<string[]>([]);
   const [splitTitle, setSplitTitle] = useState('');
   const [splitBusy, setSplitBusy] = useState(false);
+  const [modModal, setModModal] = useState<null | 'move' | 'merge'>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
+  const [moveCategoryId, setMoveCategoryId] = useState('');
+  const [mergeQuery, setMergeQuery] = useState('');
+  const [mergeResults, setMergeResults] = useState<Thread[]>([]);
+  const [modBusy, setModBusy] = useState(false);
   const [lastReadPostId, setLastReadPostId] = useState<string | null>(null);
   const [initialLastReadPostId, setInitialLastReadPostId] = useState<string | null>(null);
   const lastSentPostIdRef = useRef<string | null>(null);
@@ -141,17 +147,33 @@ function ThreadView() {
   async function react(postId: string, emoji: string) {
     try { await api.post(`/forum/posts/${postId}/react`, { emoji }); load(); } catch {}
   }
-  async function moveThread() {
-    if (!thread) return;
-    const categoryId = prompt('Nhập ID chuyên mục đích:');
-    if (!categoryId) return;
-    try { await api.post(`/forum/threads/${thread.id}/move`, { categoryId }); load(); } catch (e: any) { setErr(e.message); }
+  function openMove() {
+    setModModal('move');
+    if (!categories.length) api.get<{ id: string; name: string }[]>('/forum/categories').then(setCategories).catch(() => {});
+    setMoveCategoryId((thread as any)?.category?.id || (thread as any)?.categoryId || '');
   }
-  async function mergeThread() {
+  async function confirmMove() {
+    if (!thread || !moveCategoryId) return;
+    setModBusy(true);
+    try { await api.post(`/forum/threads/${thread.id}/move`, { categoryId: moveCategoryId }); setModModal(null); load(); }
+    catch (e: any) { setErr(e.message); }
+    finally { setModBusy(false); }
+  }
+  function openMerge() { setModModal('merge'); setMergeQuery(''); setMergeResults([]); }
+  async function searchMergeTargets(q: string) {
+    setMergeQuery(q);
+    if (q.trim().length < 2) { setMergeResults([]); return; }
+    try {
+      const r = await api.get<Paginated<Thread>>(`/forum/threads?limit=10&q=${encodeURIComponent(q)}`);
+      setMergeResults((r.data || []).filter((t) => t.id !== thread?.id));
+    } catch { setMergeResults([]); }
+  }
+  async function confirmMerge(targetId: string) {
     if (!thread) return;
-    const targetId = prompt('Nhập ID chủ đề đích để gộp VÀO (chủ đề này sẽ bị xoá):');
-    if (!targetId) return;
-    try { const r = await api.post<{ mergedInto: string }>(`/forum/threads/${thread.id}/merge`, { targetId }); alert('Đã gộp.'); window.location.href = `/thread?slug=`; } catch (e: any) { setErr(e.message); }
+    if (!confirm('Gộp chủ đề này VÀO chủ đề đã chọn? Chủ đề hiện tại sẽ bị xoá.')) return;
+    setModBusy(true);
+    try { const r = await api.post<{ mergedInto: string; slug?: string }>(`/forum/threads/${thread.id}/merge`, { targetId }); setModModal(null); window.location.href = r.slug ? `/thread?slug=${r.slug}` : '/'; }
+    catch (e: any) { setErr(e.message); setModBusy(false); }
   }
   async function toggleSub() {
     if (!thread) return;
@@ -287,8 +309,8 @@ function ThreadView() {
         </div>
         {isMod && (
           <div className="mt-3 flex gap-2 border-t border-ink-200/70 pt-3 dark:border-ink-800">
-            <button onClick={moveThread} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><FolderInput size={13} /> Chuyển mục</button>
-            <button onClick={mergeThread} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Merge size={13} /> Gộp chủ đề</button>
+            <button onClick={openMove} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><FolderInput size={13} /> Chuyển mục</button>
+            <button onClick={openMerge} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Merge size={13} /> Gộp chủ đề</button>
             <button onClick={() => { setSplitMode(true); setSplitSelected([]); setSplitTitle(''); }} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Scissors size={13} /> Tách bài</button>
           </div>
         )}
@@ -400,6 +422,44 @@ function ThreadView() {
           </p>
         )}
       </div>
+
+      {modModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !modBusy && setModModal(null)}>
+          <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            {modModal === 'move' ? (
+              <>
+                <h3 className="flex items-center gap-2 font-semibold"><FolderInput size={16} /> Chuyển chủ đề sang chuyên mục khác</h3>
+                <select className="input mt-3 w-full" value={moveCategoryId} onChange={(e) => setMoveCategoryId(e.target.value)}>
+                  <option value="">— Chọn chuyên mục —</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <div className="mt-4 flex justify-end gap-2">
+                  <button onClick={() => setModModal(null)} className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Hủy</button>
+                  <button onClick={confirmMove} disabled={modBusy || !moveCategoryId} className="btn-primary !py-1.5 text-sm disabled:opacity-50">{modBusy ? 'Đang chuyển…' : 'Chuyển'}</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="flex items-center gap-2 font-semibold"><Merge size={16} /> Gộp chủ đề này vào…</h3>
+                <p className="mt-0.5 text-xs text-ink-500">Tìm chủ đề đích. Chủ đề hiện tại sẽ bị xoá, các bài viết được chuyển sang chủ đề đích.</p>
+                <input autoFocus className="input mt-3 w-full" placeholder="Gõ tên chủ đề đích…" value={mergeQuery} onChange={(e) => searchMergeTargets(e.target.value)} />
+                <div className="mt-2 max-h-60 space-y-1 overflow-y-auto">
+                  {mergeResults.map((t) => (
+                    <button key={t.id} onClick={() => confirmMerge(t.id)} disabled={modBusy}
+                      className="block w-full truncate rounded-lg border border-ink-200 px-3 py-2 text-left text-sm hover:bg-ink-50 disabled:opacity-50 dark:border-ink-800 dark:hover:bg-ink-800/50">
+                      {t.title}
+                    </button>
+                  ))}
+                  {mergeQuery.trim().length >= 2 && mergeResults.length === 0 && <p className="py-2 text-center text-xs text-ink-500">Không tìm thấy chủ đề phù hợp.</p>}
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <button onClick={() => setModModal(null)} className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Hủy</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {splitMode && (
         <div className="fixed inset-x-0 bottom-0 z-50 border-t border-ink-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur dark:border-ink-800 dark:bg-ink-950/95">

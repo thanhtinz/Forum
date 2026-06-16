@@ -51,6 +51,15 @@ export class MinigameController {
     return this.minigame.playLuckyWheel(userId, betCoin);
   }
 
+  // ── Đua Thú ──
+  @Post('dua-thu')
+  playDuaThu(
+    @CurrentUser('id') userId: string,
+    @Body() body: { betCoin: number; choice: number },
+  ) {
+    return this.minigame.playDuaThu(userId, body.betCoin, body.choice);
+  }
+
   // ── Coin Flip ──
   @Post('coin-flip')
   playCoinFlip(

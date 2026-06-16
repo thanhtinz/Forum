@@ -69,6 +69,23 @@
       }
     ]
   },
+  "DUA_THU": {
+    "payoutMultiplier": 5,
+    "track": {
+      "sky": "/game-assets/duathu/kg.png",
+      "ground": "/game-assets/duathu/dd.png",
+      "fence": "/game-assets/duathu/buico.png"
+    },
+    "animals": [
+      { "lane": 1, "slug": "thanh-nhim", "name": "Thánh nhím", "image": "/game-assets/duathu/1.gif" },
+      { "lane": 2, "slug": "rong-huyen-thoai", "name": "Rồng huyền thoại", "image": "/game-assets/duathu/2.gif" },
+      { "lane": 3, "slug": "ran-tho-san", "name": "Rắn thợ săn", "image": "/game-assets/duathu/3.gif" },
+      { "lane": 4, "slug": "mini-totoro", "name": "Mini Totoro", "image": "/game-assets/duathu/4.gif" },
+      { "lane": 5, "slug": "con-buom-xinh", "name": "Con bướm xinh", "image": "/game-assets/duathu/5.gif" },
+      { "lane": 6, "slug": "nguoi-ngoai-hanh-tinh", "name": "Người ngoài hành tinh", "image": "/game-assets/duathu/6.gif" },
+      { "lane": 7, "slug": "khung-long-phun-nua", "name": "Khủng long phun nửa", "image": "/game-assets/duathu/7.gif" }
+    ]
+  },
   "CARD_DECK": {
     "cardBack": "/game-assets/cards/back.png",
     "cards": {

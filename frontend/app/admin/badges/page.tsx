@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
-import { Plus, Trash2, Award, BadgeCheck } from 'lucide-react';
+import { Plus, Trash2, Award, BadgeCheck, Pencil } from 'lucide-react';
 import { BadgeIcon } from '@/lib/icons';
 import ImageUpload from '@/components/ImageUpload';
 
@@ -31,6 +31,8 @@ export default function AdminBadges() {
   const [catalog, setCatalog] = useState<Badge[]>([]);
   const [msg, setMsg] = useState('');
   const [form, setForm] = useState({ name: '', description: '', icon: '', color: 'amber', condType: '', condGte: '' });
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editTierId, setEditTierId] = useState<string | null>(null);
 
   // award / verify panel
   const [awardUserId, setAwardUserId] = useState('');
@@ -61,45 +63,64 @@ export default function AdminBadges() {
     try { await api.post('/badges/admin/system-icons', next); setMsg('Đã lưu icon hệ thống ✓'); } catch (e: any) { setMsg(e.message); }
   }
 
+  function resetTierForm() { setTierForm({ level: '', name: '', icon: '', color: 'green', minScore: '' }); setEditTierId(null); }
+  function startEditTier(t: LevelTier) {
+    setEditTierId(t.id);
+    setTierForm({ level: String(t.level), name: t.name, icon: t.icon, color: t.color, minScore: String(t.minScore) });
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+
   async function createTier(e: React.FormEvent) {
     e.preventDefault();
     setMsg('');
+    const payload = {
+      level: Number(tierForm.level),
+      name: tierForm.name,
+      icon: tierForm.icon,
+      color: tierForm.color,
+      minScore: Number(tierForm.minScore),
+    };
     try {
-      await api.post('/badges/admin/levels', {
-        level: Number(tierForm.level),
-        name: tierForm.name,
-        icon: tierForm.icon,
-        color: tierForm.color,
-        minScore: Number(tierForm.minScore),
-      });
-      setTierForm({ level: '', name: '', icon: '', color: 'green', minScore: '' });
-      setMsg('Đã tạo cấp độ ✓');
+      if (editTierId) await api.patch(`/badges/admin/levels/${editTierId}`, payload);
+      else await api.post('/badges/admin/levels', payload);
+      resetTierForm();
+      setMsg(editTierId ? 'Đã lưu cấp độ ✓' : 'Đã tạo cấp độ ✓');
       loadTiers();
     } catch (e: any) { setMsg(e.message); }
   }
 
   async function removeTier(id: string) {
     if (!confirm('Xoá cấp độ này?')) return;
-    try { await api.del(`/badges/admin/levels/${id}`); loadTiers(); } catch (e: any) { setMsg(e.message); }
+    try { await api.del(`/badges/admin/levels/${id}`); if (editTierId === id) resetTierForm(); loadTiers(); } catch (e: any) { setMsg(e.message); }
+  }
+
+  function resetForm() { setForm({ name: '', description: '', icon: '', color: 'amber', condType: '', condGte: '' }); setEditId(null); }
+  function startEdit(b: Badge) {
+    setEditId(b.id);
+    setForm({
+      name: b.name, description: b.description || '', icon: b.icon, color: b.color,
+      condType: b.condition?.type || '', condGte: b.condition?.gte != null ? String(b.condition.gte) : '',
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
     setMsg('');
     try {
-      const condition = form.condType && form.condGte ? { type: form.condType, gte: Number(form.condGte) } : undefined;
-      await api.post('/badges/admin/catalog', {
-        name: form.name, description: form.description || undefined, icon: form.icon, color: form.color, condition,
-      });
-      setForm({ name: '', description: '', icon: '', color: 'amber', condType: '', condGte: '' });
-      setMsg('Đã tạo huy hiệu ✓');
+      const condition = form.condType && form.condGte ? { type: form.condType, gte: Number(form.condGte) } : null;
+      const payload = { name: form.name, description: form.description || undefined, icon: form.icon, color: form.color, condition };
+      if (editId) await api.patch(`/badges/admin/catalog/${editId}`, payload);
+      else await api.post('/badges/admin/catalog', payload);
+      resetForm();
+      setMsg(editId ? 'Đã lưu huy hiệu ✓' : 'Đã tạo huy hiệu ✓');
       load();
     } catch (e: any) { setMsg(e.message); }
   }
 
   async function remove(id: string) {
     if (!confirm('Xoá huy hiệu này?')) return;
-    try { await api.del(`/badges/admin/catalog/${id}`); load(); } catch (e: any) { setMsg(e.message); }
+    try { await api.del(`/badges/admin/catalog/${id}`); if (editId === id) resetForm(); load(); } catch (e: any) { setMsg(e.message); }
   }
 
   async function award() {
@@ -122,7 +143,7 @@ export default function AdminBadges() {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Tạo badge mục tiêu */}
         <div className="card p-4">
-          <h2 className="mb-2 flex items-center gap-1 font-semibold"><Plus size={16} /> Tạo huy hiệu mục tiêu</h2>
+          <h2 className="mb-2 flex items-center gap-1 font-semibold"><Plus size={16} /> {editId ? 'Sửa huy hiệu' : 'Tạo huy hiệu mục tiêu'}</h2>
           <form onSubmit={create} className="space-y-2">
             <input className="input" placeholder="Tên huy hiệu" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             <input className="input" placeholder="Mô tả (tuỳ chọn)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
@@ -139,7 +160,10 @@ export default function AdminBadges() {
               </select>
               <input className="input w-28" type="number" placeholder="Mốc" value={form.condGte} onChange={(e) => setForm({ ...form, condGte: e.target.value })} disabled={!form.condType} />
             </div>
-            <button className="btn-primary">Tạo</button>
+            <div className="flex gap-2">
+              <button className="btn-primary">{editId ? 'Lưu' : 'Tạo'}</button>
+              {editId && <button type="button" onClick={resetForm} className="rounded-lg bg-ink-100 px-3 py-1.5 text-sm dark:bg-ink-800">Huỷ</button>}
+            </div>
           </form>
         </div>
 
@@ -178,7 +202,7 @@ export default function AdminBadges() {
                 <td className="p-3 text-ink-500">{b.description || '—'}</td>
                 <td className="p-3 text-xs text-ink-500">{b.condition ? `${b.condition.type} ≥ ${b.condition.gte}` : '—'}</td>
                 <td className="p-3">{b.isAuto ? '✓' : '—'}</td>
-                <td className="p-3"><button onClick={() => remove(b.id)} className="text-red-600" title="Xoá"><Trash2 size={15} /></button></td>
+                <td className="p-3"><div className="flex gap-2"><button onClick={() => startEdit(b)} className="text-brand-600" title="Sửa"><Pencil size={15} /></button><button onClick={() => remove(b.id)} className="text-red-600" title="Xoá"><Trash2 size={15} /></button></div></td>
               </tr>
             ))}
             {catalog.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-ink-500">Chưa có huy hiệu mục tiêu nào.</td></tr>}
@@ -212,7 +236,7 @@ export default function AdminBadges() {
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="card p-4">
-          <h3 className="mb-2 flex items-center gap-1 font-semibold"><Plus size={16} /> Tạo cấp độ</h3>
+          <h3 className="mb-2 flex items-center gap-1 font-semibold"><Plus size={16} /> {editTierId ? 'Sửa cấp độ' : 'Tạo cấp độ'}</h3>
           <form onSubmit={createTier} className="space-y-2">
             <div className="flex gap-2">
               <input className="input w-24" type="number" placeholder="Level" value={tierForm.level} onChange={(e) => setTierForm({ ...tierForm, level: e.target.value })} required />
@@ -225,7 +249,10 @@ export default function AdminBadges() {
               <input className="input w-32" type="number" placeholder="Điểm tối thiểu" value={tierForm.minScore} onChange={(e) => setTierForm({ ...tierForm, minScore: e.target.value })} required />
             </div>
             <ImageUpload value={tierForm.icon} onUploaded={(url: string) => setTierForm({ ...tierForm, icon: url })} label="Tải ảnh icon cấp độ" />
-            <button className="btn-primary">Tạo cấp độ</button>
+            <div className="flex gap-2">
+              <button className="btn-primary">{editTierId ? 'Lưu cấp độ' : 'Tạo cấp độ'}</button>
+              {editTierId && <button type="button" onClick={resetTierForm} className="rounded-lg bg-ink-100 px-3 py-1.5 text-sm dark:bg-ink-800">Huỷ</button>}
+            </div>
           </form>
         </div>
 
@@ -240,7 +267,7 @@ export default function AdminBadges() {
                   <td className="p-3"><BadgeIcon icon={t.icon} size={18} /></td>
                   <td className="p-3 text-xs text-ink-400">{t.color}</td>
                   <td className="p-3">{t.minScore}</td>
-                  <td className="p-3"><button onClick={() => removeTier(t.id)} className="text-red-600" title="Xoá"><Trash2 size={15} /></button></td>
+                  <td className="p-3"><div className="flex gap-2"><button onClick={() => startEditTier(t)} className="text-brand-600" title="Sửa"><Pencil size={15} /></button><button onClick={() => removeTier(t.id)} className="text-red-600" title="Xoá"><Trash2 size={15} /></button></div></td>
                 </tr>
               ))}
               {tiers.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-500">Chưa có cấp độ nào.</td></tr>}

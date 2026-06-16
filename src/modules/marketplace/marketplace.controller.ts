@@ -246,6 +246,12 @@ export class MarketplaceController {
   @Get('product/:slug')
   productDetail(@Param('slug') slug: string) { return this.shop.productDetail(slug); }
 
+  @Post('products/:id/review')
+  @UseGuards(JwtAuthGuard)
+  reviewProduct(@CurrentUser('id') uid: string, @Param('id') id: string, @Body() b: { rating: number; content?: string }) {
+    return this.shop.reviewProduct(uid, id, Number(b.rating), b.content || '');
+  }
+
   @Get('me/products')
   @UseGuards(JwtAuthGuard)
   myProducts(@CurrentUser('id') userId: string) { return this.shop.myProducts(userId); }

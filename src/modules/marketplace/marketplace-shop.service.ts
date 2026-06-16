@@ -100,6 +100,22 @@ export class MarketplaceShopService {
     return this.prisma.product.findMany({ where: { storefrontId: store.id }, orderBy: { createdAt: 'desc' } });
   }
 
+  // Khách đã mua -> viết/cập nhật đánh giá
+  async reviewProduct(userId: string, productId: string, rating: number, content: string) {
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new BadRequestException('Số sao 1-5');
+    const order = await this.prisma.order.findFirst({ where: { buyerId: userId, productId, status: 'COMPLETED' }, select: { id: true } });
+    if (!order) throw new ForbiddenException('Bạn cần mua sản phẩm trước khi đánh giá');
+    await this.prisma.productReview.upsert({
+      where: { productId_userId: { productId, userId } },
+      update: { rating, content: content?.trim() ?? '' },
+      create: { productId, userId, orderId: order.id, rating, content: content?.trim() ?? '' },
+    });
+    // cập nhật rating trung bình
+    const agg = await this.prisma.productReview.aggregate({ where: { productId }, _avg: { rating: true }, _count: { _all: true } });
+    await this.prisma.product.update({ where: { id: productId }, data: { ratingAvg: agg._avg.rating ?? 0, ratingCount: agg._count._all } });
+    return { ok: true };
+  }
+
   async createProduct(userId: string, dto: {
     title: string; description?: string; type?: ProductType; gemPrice?: number;
     isFree?: boolean; categoryId?: string; thumbnailUrl?: string; demoUrl?: string; fileUrl?: string;

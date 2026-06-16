@@ -101,7 +101,7 @@ export class MarketplaceOrderService {
       include: { product: { select: { title: true, slug: true, thumbnailUrl: true, storefront: { select: { slug: true, name: true } } } } },
     });
     return rows.map((o) => ({
-      id: o.id, title: o.product.title, thumbnailUrl: o.product.thumbnailUrl,
+      id: o.id, productId: o.productId, slug: o.product.slug, title: o.product.title, thumbnailUrl: o.product.thumbnailUrl,
       shop: o.product.storefront?.name, shopSlug: o.product.storefront?.slug,
       gemSpent: o.gemSpent, status: o.status, escrowStatus: o.escrowStatus,
       downloadUrl: o.downloadUrl, deliveredContent: o.deliveredContent, createdAt: o.createdAt,

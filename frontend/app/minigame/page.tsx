@@ -1,8 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import useSWR from 'swr';
 import { Dices, Users, Coins } from 'lucide-react';
 import { fetcher } from '@/lib/api';
+
+const PVP_LINK: Record<string, string> = { TIEN_LEN: '/minigame/tien-len' };
 
 interface GameConfig {
   id: string; type: string; name: string; description?: string;
@@ -40,6 +43,9 @@ export default function MinigamePage() {
               <span className="flex items-center gap-1"><Coins size={13} /> {g.minBet.toLocaleString()}–{g.maxBet.toLocaleString()}</span>
               <span>Tối đa {g.maxPlayers} người</span>
             </div>
+            {PVP_LINK[g.type] && (
+              <Link href={PVP_LINK[g.type]} className="btn-primary mt-3 w-full !py-1.5 text-xs">Vào bàn PvP →</Link>
+            )}
           </div>
         ))}
       </div>

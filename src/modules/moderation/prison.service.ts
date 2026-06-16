@@ -68,6 +68,17 @@ export class PrisonService {
     return !!(await this.getActiveRecord(userId));
   }
 
+  // Ném lỗi nếu đang bị giam — dùng để chặn đăng bài/chat/giao dịch
+  async assertNotJailed(userId: string): Promise<void> {
+    const record = await this.getActiveRecord(userId);
+    if (record) {
+      const mins = Math.ceil((record.releaseAt.getTime() - Date.now()) / 60000);
+      throw new ForbiddenException(
+        `Bạn đang ở trong tù (còn ~${mins} phút). Lý do: ${record.reason}`,
+      );
+    }
+  }
+
   // ── Nộp tiền chuộc bằng coin ──
   async bail(userId: string) {
     const record = await this.getActiveRecord(userId);

@@ -14,6 +14,7 @@ import slugify from 'slugify';
 import { createId } from '@paralleldrive/cuid2';
 import { CharacterService } from '../game/character/character.service';
 import { TrophyService } from '../reputation/trophy.service';
+import { PrisonService } from '../moderation/prison.service';
 
 export interface CreateThreadDto {
   categoryId: string;
@@ -47,6 +48,7 @@ export class ForumService {
     private readonly events: EventEmitter2,
     private readonly character: CharacterService,
     private readonly trophy: TrophyService,
+    private readonly prison: PrisonService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -125,6 +127,7 @@ export class ForumService {
   }
 
   async createThread(dto: CreateThreadDto, authorId: string) {
+    await this.prison.assertNotJailed(authorId);
     const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
     if (!category) throw new NotFoundException('Category không tồn tại');
 
@@ -235,6 +238,7 @@ export class ForumService {
   }
 
   async createPost(dto: CreatePostDto, authorId: string) {
+    await this.prison.assertNotJailed(authorId);
     const thread = await this.prisma.thread.findUnique({ where: { id: dto.threadId } });
     if (!thread) throw new NotFoundException('Thread không tồn tại');
     if (thread.isLocked) throw new ForbiddenException('Thread đã bị khoá');

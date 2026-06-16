@@ -1,0 +1,64 @@
+# CI (kiểm tra build) + CD (tự deploy lên VPS khi push main).
+#
+# Cần khai báo các "Secrets" trong repo: Settings → Secrets and variables → Actions:
+#   VPS_HOST     IP hoặc domain VPS           (vd 123.45.67.89)
+#   VPS_USER     user SSH                      (vd root)
+#   VPS_SSH_KEY  private key SSH (toàn bộ nội dung file id_ed25519)
+#   VPS_PORT     (tuỳ chọn) cổng SSH, mặc định 22
+#   VPS_PATH     (tuỳ chọn) thư mục code trên VPS, mặc định /opt/forum
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # ── Kiểm tra biên dịch backend + build frontend ──
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cài deps backend
+        run: npm ci
+
+      - name: Sinh Prisma Client
+        run: npx prisma generate
+
+      - name: Kiểm tra type backend
+        run: npx tsc --noEmit
+
+      - name: Build frontend (static export)
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+  # ── Tự deploy lên VPS (chỉ khi push vào main và build OK) ──
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH vào VPS và deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -e
+            cd ${{ secrets.VPS_PATH || '/opt/forum' }}
+            git pull origin main
+            docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+            docker image prune -f
+            docker compose -f docker-compose.prod.yml ps

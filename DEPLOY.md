@@ -211,29 +211,78 @@ Script sẽ tự: `git pull` → build lại → khởi động lại → dọn 
 
 ## 11. Sao lưu & phục hồi dữ liệu
 
-**Sao lưu** (xuất ra file `.sql`):
+**Sao lưu nhanh** (xuất ra file `.sql`):
 
 ```bash
 docker compose -f docker-compose.prod.yml exec -T postgres \
   pg_dump -U forum forum > backup_$(date +%F).sql
 ```
 
+**Hoặc dùng script có sẵn** (nén gzip + tự xoá bản cũ + tuỳ chọn đẩy lên cloud):
+
+```bash
+./scripts/backup.sh
+```
+
 **Phục hồi** từ file backup:
 
 ```bash
-cat backup_2026-06-16.sql | docker compose -f docker-compose.prod.yml exec -T postgres \
-  psql -U forum -d forum
+# Nếu là .sql
+cat backup_2026-06-16.sql | docker compose -f docker-compose.prod.yml exec -T postgres psql -U forum -d forum
+# Nếu là .sql.gz (từ script)
+gunzip -c backups/forum_2026-06-16_0300.sql.gz | docker compose -f docker-compose.prod.yml exec -T postgres psql -U forum -d forum
 ```
 
-**Tự động sao lưu hằng ngày** (lúc 3h sáng) bằng cron:
+**Tự động sao lưu hằng ngày** (3h sáng) bằng cron:
 
 ```bash
 crontab -e
 # Thêm dòng:
-0 3 * * * cd /opt/forum && docker compose -f docker-compose.prod.yml exec -T postgres pg_dump -U forum forum > /opt/forum/backup_$(date +\%F).sql
+0 3 * * * cd /opt/forum && ./scripts/backup.sh >> /opt/forum/backups/backup.log 2>&1
 ```
 
-> 💾 Nên copy file backup ra nơi khác (Google Drive, S3, máy khác) để an toàn.
+**Đẩy backup lên cloud (Google Drive / S3 / R2…) với [rclone](https://rclone.org):**
+
+```bash
+# 1. Cài rclone
+curl https://rclone.org/install.sh | sudo bash
+# 2. Cấu hình 1 remote (làm theo hướng dẫn tương tác), vd đặt tên "gdrive"
+rclone config
+# 3. Khai báo đích trong .env.production
+echo 'RCLONE_REMOTE=gdrive:forum-backups' >> .env.production
+# 4. Từ giờ ./scripts/backup.sh sẽ tự upload lên cloud sau mỗi lần dump.
+```
+
+---
+
+## 11b. Tự động deploy bằng GitHub Actions (CI/CD)
+
+Repo đã kèm workflow `.github/workflows/ci-cd.yml`: mỗi khi **push lên `main`** nó sẽ (1) kiểm tra build, (2) **SSH vào VPS và tự deploy**. Bạn không cần SSH thủ công nữa.
+
+**Thiết lập 1 lần:**
+
+1. **Tạo SSH key dành riêng cho deploy** (trên máy bạn hoặc trên VPS):
+   ```bash
+   ssh-keygen -t ed25519 -C "github-deploy" -f ~/.ssh/forum_deploy -N ""
+   ```
+2. **Cho VPS chấp nhận key này** — thêm public key vào VPS:
+   ```bash
+   ssh-copy-id -i ~/.ssh/forum_deploy.pub root@IP_VPS
+   # hoặc thủ công: dán nội dung forum_deploy.pub vào ~/.ssh/authorized_keys trên VPS
+   ```
+3. **Khai báo Secrets trên GitHub**: repo → **Settings → Secrets and variables → Actions → New repository secret**:
+
+   | Secret | Giá trị |
+   |--------|---------|
+   | `VPS_HOST` | IP hoặc domain VPS |
+   | `VPS_USER` | user SSH (vd `root`) |
+   | `VPS_SSH_KEY` | **toàn bộ nội dung private key** `~/.ssh/forum_deploy` |
+   | `VPS_PORT` | (tuỳ chọn) cổng SSH, mặc định 22 |
+   | `VPS_PATH` | (tuỳ chọn) thư mục code, mặc định `/opt/forum` |
+
+4. Đảm bảo trên VPS đã `git clone` sẵn vào đúng `VPS_PATH` và có file `.env.production`.
+
+Xong! Từ giờ chỉ cần `git push` là website tự cập nhật. Xem tiến trình ở tab **Actions** trên GitHub.
 
 ---
 

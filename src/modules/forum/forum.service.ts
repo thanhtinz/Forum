@@ -691,6 +691,98 @@ export class ForumService {
     return { threshold: n };
   }
 
+  // ── Split (tách bài viết sang chủ đề mới) ──
+  async splitThread(
+    threadId: string,
+    postIds: string[],
+    newTitle: string,
+    userId: string,
+    newCategoryId?: string,
+  ) {
+    if (!postIds.length) throw new BadRequestException('Chưa chọn bài viết nào để tách');
+    if (!newTitle.trim()) throw new BadRequestException('Tiêu đề chủ đề mới không được trống');
+
+    // Kiểm tra quyền mod
+    const actor = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (!actor || (actor.role !== Role.ADMIN && actor.role !== Role.MODERATOR)) {
+      throw new ForbiddenException('Chỉ moderator mới có thể tách bài');
+    }
+
+    const source = await this.prisma.thread.findUnique({ where: { id: threadId }, select: { id: true, categoryId: true, slug: true, title: true } });
+    if (!source) throw new NotFoundException('Thread không tồn tại');
+
+    // Kiểm tra tất cả post thuộc thread nguồn và không phải bài gốc
+    const postsToMove = await this.prisma.post.findMany({
+      where: { id: { in: postIds }, threadId },
+      select: { id: true, isFirstPost: true, authorId: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (postsToMove.length !== postIds.length) {
+      throw new BadRequestException('Một số bài viết không thuộc chủ đề này');
+    }
+    if (postsToMove.some((p) => p.isFirstPost)) {
+      throw new BadRequestException('Không thể tách bài viết gốc');
+    }
+
+    const categoryId = newCategoryId || source.categoryId;
+    const targetCategory = await this.prisma.category.findUnique({ where: { id: categoryId } });
+    if (!targetCategory) throw new NotFoundException('Chuyên mục không tồn tại');
+
+    const slug = await this.generateUniqueSlug(newTitle);
+    const firstSplitPost = postsToMove[0];
+
+    const newThread = await this.prisma.$transaction(async (tx) => {
+      // Tạo thread mới
+      const t = await tx.thread.create({
+        data: {
+          categoryId,
+          authorId: firstSplitPost.authorId,
+          title: newTitle,
+          slug,
+          prefix: ThreadPrefix.NONE,
+          isApproved: true,
+          lastPostAt: new Date(),
+          lastPostUserId: postsToMove[postsToMove.length - 1].authorId,
+          replyCount: Math.max(0, postsToMove.length - 1),
+        },
+      });
+
+      // Bài đầu tiên của nhóm tách trở thành firstPost của thread mới
+      await tx.post.update({
+        where: { id: firstSplitPost.id },
+        data: { threadId: t.id, isFirstPost: true },
+      });
+
+      // Chuyển các bài còn lại
+      if (postsToMove.length > 1) {
+        const restIds = postsToMove.slice(1).map((p) => p.id);
+        await tx.post.updateMany({
+          where: { id: { in: restIds } },
+          data: { threadId: t.id },
+        });
+      }
+
+      // Cập nhật replyCount của thread nguồn
+      const sourceTotal = await tx.post.count({ where: { threadId, isDeleted: false } });
+      await tx.thread.update({
+        where: { id: threadId },
+        data: { replyCount: Math.max(0, sourceTotal - 1) },
+      });
+
+      // Cập nhật thống kê chuyên mục nếu khác category
+      if (categoryId !== source.categoryId) {
+        await tx.category.update({ where: { id: categoryId }, data: { threadCount: { increment: 1 }, postCount: { increment: postsToMove.length } } });
+        await tx.category.update({ where: { id: source.categoryId }, data: { postCount: { decrement: postsToMove.length } } });
+      } else {
+        await tx.category.update({ where: { id: categoryId }, data: { threadCount: { increment: 1 } } });
+      }
+
+      return t;
+    });
+
+    return newThread;
+  }
+
   async deletePost(postId: string, deletedById: string, reason?: string) {
     return this.prisma.post.update({
       where: { id: postId },

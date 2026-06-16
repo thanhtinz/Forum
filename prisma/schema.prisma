@@ -191,6 +191,8 @@ model User {
   bookmarks         Bookmark[]
   tipsSent          Tip[]                @relation("TipFrom")
   tipsReceived      Tip[]                @relation("TipTo")
+  inviteCodesCreated InviteCode[]        @relation("InviteCodesCreated")
+  inviteCodeUses     InviteCodeUse[]
 
   @@index([email])
   @@index([username])
@@ -208,6 +210,38 @@ model OAuthProvider {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerId])
+  @@index([userId])
+}
+
+// ============================================================
+// INVITE CODES
+// ============================================================
+
+model InviteCode {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  role      UserRole  @default(MEMBER)
+  maxUses   Int?      // null = unlimited
+  uses      Int       @default(0)
+  expiresAt DateTime?
+  createdBy String
+  creator   User      @relation("InviteCodesCreated", fields: [createdBy], references: [id])
+  createdAt DateTime  @default(now())
+  usedBy    InviteCodeUse[]
+
+  @@index([code])
+}
+
+model InviteCodeUse {
+  id           String     @id @default(cuid())
+  inviteCodeId String
+  inviteCode   InviteCode @relation(fields: [inviteCodeId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  usedAt       DateTime   @default(now())
+
+  @@unique([inviteCodeId, userId])
+  @@index([inviteCodeId])
   @@index([userId])
 }
 
@@ -315,9 +349,11 @@ model ThreadTag {
 }
 
 model ThreadView {
-  userId   String
-  threadId String
-  viewedAt DateTime @default(now())
+  userId         String
+  threadId       String
+  viewedAt       DateTime @default(now())
+  lastReadPostId String?
+  lastReadAt     DateTime @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)

@@ -8,7 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 export default function RegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', inviteCode: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -33,6 +33,7 @@ export default function RegisterPage() {
           <input className="input" placeholder="Tên đăng nhập" value={form.username} onChange={upd('username')} />
           <input className="input" type="email" placeholder="Email" value={form.email} onChange={upd('email')} />
           <input className="input" type="password" placeholder="Mật khẩu" value={form.password} onChange={upd('password')} />
+          <input className="input" placeholder="Mã mời (không bắt buộc)" value={form.inviteCode} onChange={upd('inviteCode')} />
           {err && <p className="text-sm text-red-500">{err}</p>}
           <button className="btn-primary w-full" disabled={busy}>{busy ? '…' : 'Đăng ký'}</button>
         </form>

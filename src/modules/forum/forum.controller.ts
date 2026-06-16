@@ -20,6 +20,8 @@ import { DraftService, SaveDraftDto } from './draft.service';
 import { ForumTextService } from './forum-text.service';
 import { BookmarkService } from './bookmark.service';
 import { TipService } from './tip.service';
+import { InviteService, CreateInviteCodeDto } from './invite.service';
+import { ReadingProgressService } from './reading-progress.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
@@ -34,6 +36,8 @@ export class ForumController {
     private readonly text: ForumTextService,
     private readonly bookmarks: BookmarkService,
     private readonly tips: TipService,
+    private readonly invites: InviteService,
+    private readonly readingProgress: ReadingProgressService,
   ) {}
 
   @Get('categories')
@@ -135,6 +139,17 @@ export class ForumController {
   @Roles(UserRole.MODERATOR)
   merge(@Param('id') sourceId: string, @Body('targetId') targetId: string) {
     return this.forum.mergeThreads(sourceId, targetId);
+  }
+
+  @Post('threads/:id/split')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  split(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body() body: { postIds: string[]; title: string; categoryId?: string },
+  ) {
+    return this.forum.splitThread(id, body.postIds, body.title, userId, body.categoryId);
   }
 
   // ── Best Answer (Q&A) ──
@@ -309,5 +324,63 @@ export class ForumController {
   @Roles(UserRole.MODERATOR)
   setCensor(@Body('words') words: string[]) {
     return this.text.setCensorList(words || []).then((w) => ({ words: w }));
+  }
+
+  // ── Reading Progress (tiến trình đọc) ──
+  @Post('threads/:threadId/read-progress')
+  @UseGuards(JwtAuthGuard)
+  markReadProgress(
+    @Param('threadId') threadId: string,
+    @CurrentUser('id') userId: string,
+    @Body('postId') postId: string,
+  ) {
+    return this.readingProgress.markRead(userId, threadId, postId);
+  }
+
+  @Get('threads/:threadId/read-progress')
+  @UseGuards(JwtAuthGuard)
+  getReadProgress(
+    @Param('threadId') threadId: string,
+    @CurrentUser('id') userId: string,
+  ) {
+    return this.readingProgress.getProgress(userId, threadId);
+  }
+
+  @Post('read-progress/bulk')
+  @UseGuards(JwtAuthGuard)
+  getBulkReadProgress(
+    @CurrentUser('id') userId: string,
+    @Body('threadIds') threadIds: string[],
+  ) {
+    return this.readingProgress.getBulkUnreadCounts(userId, threadIds || []);
+  }
+
+  // ── Admin: Invite Codes (Mã mời) ──
+  @Get('admin/invite-codes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  listInviteCodes() {
+    return this.invites.listCodes();
+  }
+
+  @Post('admin/invite-codes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  createInviteCode(@CurrentUser('id') userId: string, @Body() dto: CreateInviteCodeDto) {
+    return this.invites.createCode(userId, dto);
+  }
+
+  @Delete('admin/invite-codes/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteInviteCode(@Param('id') id: string) {
+    return this.invites.deleteCode(id);
+  }
+
+  // ── Redeem invite code (authenticated user) ──
+  @Post('invite-codes/redeem')
+  @UseGuards(JwtAuthGuard)
+  redeemInviteCode(@CurrentUser('id') userId: string, @Body('code') code: string) {
+    return this.invites.redeemCode(userId, code);
   }
 }

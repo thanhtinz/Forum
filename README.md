@@ -1,163 +1,111 @@
-# Forum AI Platform
+# 🌐 Forum AI Platform
 
-Nền tảng forum tích hợp hidden content gate, gem marketplace và Live2D AI companion.
-Tham khảo: chiasemanguon.com + tính năng ẩn nội dung kiểu XenForo.
+> Nền tảng diễn đàn cộng đồng thế hệ mới — kết hợp **forum** mạnh mẽ kiểu Flarum/XenForo, **game hoá** (RPG, farm, câu cá, minigame), **chợ số** (marketplace + ví Gem), **AI companion Live2D**, và hàng loạt tính năng giải trí — tất cả trong **một ứng dụng duy nhất**.
 
-## Stack
-- **Backend**: NestJS + Prisma + PostgreSQL
-- **Realtime**: Socket.IO (AI chat + notifications)
-- **Queue**: BullMQ | **Cache**: Redis | **Search**: Meilisearch | **Storage**: MinIO
-- **AI**: OpenAI / Gemini / Ollama (multi-provider, streaming)
-- **Live2D**: PIXI.js + pixi-live2d-display
-- **Payments**: SePay (QR/webhook) + PayPal
-
-## Tính năng đã build
-
-### ✅ Core Backend (compile-clean)
-| Module | Trạng thái |
-|---|---|
-| Auth (JWT + OAuth Google/Discord/Zalo) | ✅ Hoàn chỉnh |
-| Forum (thread/post/like/comment) | ✅ Hoàn chỉnh |
-| **Hidden Content Gate** | ✅ Hoàn chỉnh — 7 loại điều kiện |
-| Gem System (wallet/transaction) | ✅ Hoàn chỉnh |
-| Payments (SePay + PayPal) | ✅ Hoàn chỉnh |
-| AI Companion (WebSocket + emotion + Live2D) | ✅ Hoàn chỉnh |
-| Notifications | ✅ Hoàn chỉnh |
-| Users (profile) | ✅ Hoàn chỉnh |
-| Marketplace (storefront + follow) | ✅ Hoàn chỉnh |
-| Moderation + Nhà tù (prison) | ✅ Hoàn chỉnh |
-| Media (presign S3/MinIO) / Search | ✅ Hoàn chỉnh |
-| Game RPG (nhân vật/combat/guild/survival/shop) | ✅ Hoàn chỉnh |
-| Nông trại + Câu cá + Wardrobe/Pet/Mount | ✅ Hoàn chỉnh |
-| Minigame (11 game) + PvP room realtime | ✅ Hoàn chỉnh |
-| Tools Collection (44 tool catalog) | ✅ Backend |
-
-### ✅ Frontend Components
-- `Live2DWidget.tsx` — widget AI nổi + trang chat riêng
-- `HiddenContentBlock.tsx` — render nội dung ẩn với progress bar + nút unlock
-
-## Hidden Content Gate — 7 loại điều kiện
-| Gate Type | Điều kiện mở |
-|---|---|
-| `LIKE_REQUIRED` | Đủ N like |
-| `COMMENT_REQUIRED` | Đủ N bình luận |
-| `LIKE_AND_COMMENT` | Đủ CẢ HAI |
-| `LIKE_OR_COMMENT` | Một trong hai |
-| `GEM_PURCHASE` | Mua bằng gem |
-| `LIKE_OR_GEM` | Like hoặc trả gem |
-| `COMMENT_OR_GEM` | Comment hoặc trả gem |
-
-Auto-unlock realtime khi like/comment qua Socket.IO. Mua bằng gem → tác giả nhận 70% (platform fee 30%).
-
-## Chạy local
-
-```bash
-# 1. Cài dependencies
-npm install
-
-# 2. Setup env
-cp .env.example .env
-# Điền DATABASE_URL, JWT secrets, AI keys, SePay/PayPal...
-
-# 3. Khởi động services hạ tầng
-docker-compose up -d postgres redis meilisearch minio
-
-# 4. Đồng bộ schema vào DB (repo chưa dùng migration files)
-npx prisma generate
-npx prisma db push
-
-# 5. Chạy API
-npm run start:dev
-# → http://localhost:3001/api
-```
-
-> **Dữ liệu mẫu tự động**: cá/cây/phân/vật nuôi/công thức/đồ ăn/wardrobe/tools được
-> `SeederService` tự upsert khi app khởi động (data nằm trong `src/seed/data/*`).
-> Tắt bằng `AUTO_SEED=false`. Seed forum/gem gốc vẫn chạy `npm run prisma:seed`.
-
-### 🚀 Triển khai lên VPS (production, có HTTPS)
-Xem hướng dẫn chi tiết A→Z cho người mới: **[DEPLOY.md](./DEPLOY.md)** (chọn VPS, trỏ domain, cài Docker, cấu hình, chạy, backup…).
-
-Tóm tắt:
-```bash
-cp .env.production.example .env.production && nano .env.production   # điền DOMAIN, mật khẩu, JWT
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
-# Caddy tự xin HTTPS → mở https://<domain-cua-ban>
-```
-
-### Deploy chung (1 process: frontend + backend + API)
-NestJS phục vụ luôn frontend (Next.js static export) cùng origin với API — **không tách build/deploy**.
-
-```bash
-docker compose up -d   # (dev) service `app` build cả FE+BE, tự db push rồi start
-# Mở http://localhost:3001  → giao diện forum
-# API tại  http://localhost:3001/api
-```
-
-Build tay không Docker:
-```bash
-cd frontend && npm ci && npm run build   # -> frontend/out (static)
-cd .. && npm ci && npm run build && npx prisma db push
-node dist/main                            # serve cả frontend lẫn /api tại :3001
-```
-
-✅ Đã verify unified: `/` (frontend), `/thread`, `/tools`, `/api/tools`, `/game-assets/*` đều trả 200 từ **một process**.
-
-### Dev (tách, hot-reload)
-```bash
-npm run start:dev          # backend :3001
-cd frontend && npm run dev # frontend :3000 (proxy /api -> :3001)
-```
-
-## API Endpoints chính
-
-```
-POST   /api/auth/register
-POST   /api/auth/login
-POST   /api/auth/oauth
-GET    /api/auth/me
-
-GET    /api/hidden-content/sections/post/:postId
-POST   /api/hidden-content/sections          (tạo section ẩn)
-POST   /api/hidden-content/unlock/gem        (mở bằng gem)
-
-GET    /api/gem/balance
-GET    /api/gem/packages
-POST   /api/payments/sepay/topup
-POST   /api/payments/sepay/webhook
-POST   /api/payments/paypal/order
-POST   /api/payments/paypal/capture/:orderId
-
-POST   /api/ai/sessions
-GET    /api/ai/personas
-WS     /ai   (chat realtime + emotion → Live2D)
-```
-
-## Database
-34 models, 14 enums, 52 indexes. Xem `prisma/schema.prisma`.
-
-## Tiếp theo
-- Marketplace module (product CRUD, file delivery)
-- Reputation engine (auto badge)
-- Meilisearch indexing
-- MinIO upload service
-- Next.js frontend đầy đủ
+Một người dùng kiếm điểm khi tham gia diễn đàn → tiêu trong game → mua bán ở chợ → trò chuyện với AI → nhận huy hiệu, lên cấp. Mọi thứ liền mạch trong cùng một hệ sinh thái.
 
 ---
 
-## ✅ Trạng thái (cập nhật 16/06/2026)
+## ✨ Tính năng nổi bật
 
-Đã verify end-to-end với PostgreSQL thật: boot OK, auto-seed 181 template, các endpoint chính trả 200.
+### 💬 Diễn đàn (kiểu Flarum + XenForo)
+- Chuyên mục, thẻ (tag) + **theo dõi thẻ**, chủ đề/bài viết, **reactions** đa biểu cảm
+- **Câu trả lời hay nhất** (tự chọn theo lượt reaction), **bình chọn (poll)**
+- **Theo dõi / lưu (bookmark)**, **bản nháp**, **nhắc tên (@mention)**, **lọc từ cấm**
+- **Hàng đợi duyệt bài** cho thành viên mới, **Di chuyển / Gộp / Tách** chủ đề (mod)
+- **Tiến độ đọc** + đánh dấu bài mới, **donate Gem** cho tác giả, ước tính thời gian đọc
 
-**Backend (~256 route, deploy 1 process)**
-- Forum đầy đủ (thread/post/react/category, đăng bài) + hidden content gate
-- Game: nhân vật RPG/combat/guild/survival, Nông trại, Câu cá, Wardrobe/Pet/Mount
-- Minigame 11 game (+ PvP realtime: Tiến Lên, Caro) — hệ phòng/pot/socket
-- Chat realtime, AI Companion (streaming + cảm xúc), Bói toán (Bát Tự/Tarot/Mai Hoa + AI + thu phí)
-- Tools (44 công cụ), Nhà tù (giam/chuộc/ân xá)
-- **Marketplace + Seller Center (19 mục)**: sản phẩm/kho-giao-tự-động/đơn/escrow giam 3 ngày/coupon/quảng-bá-gem/ticket/đánh-giá/nhân-viên-phân-quyền/ví/rút-tiền/AI/2FA/thống-kê/nhật-ký
-- Admin toàn diện: chợ (cửa hàng/đơn/rút tiền/danh mục/giá dịch vụ), bói toán, tools, dữ liệu game, kiểm duyệt, nhà tù, người dùng
-- Thông báo realtime (gateway /notif) đẩy live + badge chưa đọc
+### 👥 Cộng đồng & Hồ sơ (XenForo)
+- **Theo dõi người dùng** + **Bảng tin hoạt động**, **Tường nhà (profile posts)**
+- **Chặn/phớt lờ** người dùng, **trường hồ sơ tuỳ chỉnh**, **danh bạ thành viên**
+- **Trạng thái online** + "đang xem chủ đề", **BXH cảm xúc & đóng góp**
+- **Thư viện ảnh (Media Gallery)** với album, bình luận, thích
 
-**Frontend (48 trang, Next.js static export do NestJS phục vụ)**
-- Forum, Chat, AI Companion, Game (+farm/fishing/wardrobe), Minigame (+bàn PvP), Bói toán, Tools, Marketplace (+sản phẩm/gian hàng), Đơn hàng, Profile, Seller Center, Admin
+### 🏅 Huy hiệu & Cấp độ
+- Huy hiệu theo **vai trò / người bán / mục tiêu (tự trao theo cột mốc)**
+- **Cấp độ (level/rank)** theo điểm hoạt động, **icon tự tải lên** cho từng huy hiệu
+- **Tích xanh (verify)**: thành viên đạt ngưỡng tự đăng ký → **admin duyệt**
+
+### 🎮 Giải trí
+- **Điểm danh hằng ngày** (chuỗi streak thưởng coin)
+- **Vòng quay may mắn** (gacha), **Giveaway / Lì xì** (rút thăm & bóc nhanh)
+- **Đố vui** hằng ngày + **Dự đoán** sự kiện (chia thưởng pari-mutuel)
+
+### 🕹️ Game hoá
+- Nhân vật RPG, trang bị, kỹ năng, **PvP/PvE**, **guild**
+- **Nông trại, câu cá**, minigame casino (chỉ dùng coin), nhà tù
+- Hai loại tiền tệ: **coin** (trong game, không quy đổi) & **Gem** (chợ, rút được)
+
+### 🛒 Chợ số (Marketplace)
+- Gian hàng người bán, sản phẩm số, đơn hàng, đánh giá, mã giảm giá
+- Nạp Gem (SePay QR / PayPal), **rút Gem về bank** (phí % cấu hình bởi admin)
+
+### 🤖 AI Companion (Live2D)
+- Nhân vật Live2D tương tác, hệ thống **thân thiết (bond)** mở khoá trang phục
+- Chat AI streaming đa nhà cung cấp (OpenAI / Gemini / Ollama)
+
+### 🔮 Khác
+- Bói toán (Tử vi / Tarot / Mai Hoa), chat realtime (DM/nhóm), CMS trang & menu
+- **Mã mời (invite code)**, hệ thống danh hiệu/trophy, bảng quản trị đầy đủ
+
+---
+
+## 🧱 Công nghệ
+
+| Lớp | Công nghệ |
+|-----|-----------|
+| Backend | **NestJS 10** + **Prisma** + **PostgreSQL** |
+| Realtime | Socket.IO (AI chat, thông báo) |
+| Frontend | **Next.js 14** (App Router, static export) + Tailwind CSS |
+| AI | OpenAI / Gemini / Ollama (đa nhà cung cấp, streaming) |
+| Live2D | PIXI.js + pixi-live2d-display |
+| Thanh toán | SePay (QR/webhook) + PayPal |
+| Lưu trữ | Upload nội bộ hoặc S3/MinIO (tuỳ chọn) |
+| Triển khai | Docker + Caddy (HTTPS tự động) |
+
+**Kiến trúc gọn:** NestJS phục vụ luôn frontend (Next.js static export) **cùng một origin** với API — deploy **một process duy nhất**.
+
+---
+
+## 🚀 Chạy thử nhanh (local)
+
+```bash
+# Backend
+cp .env.example .env            # điền DATABASE_URL, JWT secrets
+npm install
+npx prisma db push
+npm run start:dev               # API tại http://localhost:3001/api
+
+# Frontend (cửa sổ khác)
+cd frontend && npm install && npm run dev   # http://localhost:3000
+```
+
+Hoặc chạy cả cụm bằng Docker:
+```bash
+docker compose up -d            # http://localhost:3001
+```
+
+## 🌍 Triển khai lên VPS (production, HTTPS)
+
+Xem hướng dẫn chi tiết **A → Z cho người mới**: **[DEPLOY.md](./DEPLOY.md)**
+(chọn VPS, trỏ domain, cài Docker, cấu hình, backup, CI/CD…).
+
+```bash
+cp .env.production.example .env.production && nano .env.production
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+---
+
+## 📊 Quy mô dự án
+
+- **40+ module** backend · **130+ model** dữ liệu · **440+ API endpoint**
+- **86 trang** giao diện · biên dịch & build sạch (TypeScript strict)
+
+---
+
+## 📜 Giấy phép
+
+Dự án thuộc sở hữu của **thanhtinz**. Được dùng cho mục đích **cá nhân, phi lợi nhuận**.
+**Cấm kinh doanh dưới mọi hình thức, ngoại trừ chủ sở hữu mã nguồn.**
+Chi tiết tại [LICENSE](./LICENSE). Liên hệ cấp phép thương mại: **thanhtinz23072003@gmail.com**.

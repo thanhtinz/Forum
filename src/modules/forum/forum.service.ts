@@ -410,9 +410,80 @@ export class ForumService {
           actorId: userId,
         });
       }
+
+      // Tự động chọn câu trả lời hay nhất khi đủ lượt reaction (FoF Best Answer auto)
+      await this.maybeAutoBestAnswer(post.threadId, userId).catch(() => {});
     }
 
     return { liked: !existing, likeCount: newLikeCount };
+  }
+
+  // Admin: đọc / ghi ngưỡng tự chọn best answer
+  async getAutoBestConfig() {
+    return { threshold: await this.getAutoBestThreshold() };
+  }
+  async setAutoBestConfig(threshold: number) {
+    const n = Number.isFinite(threshold) && threshold >= 0 ? Math.floor(threshold) : 10;
+    await this.prisma.siteConfig.upsert({
+      where: { key: 'forum.autoBestAnswerLikes' },
+      update: { value: n },
+      create: { key: 'forum.autoBestAnswerLikes', value: n },
+    });
+    return { threshold: n };
+  }
+
+  // Lấy ngưỡng like tự chọn best answer (0 = tắt)
+  private async getAutoBestThreshold(): Promise<number> {
+    const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'forum.autoBestAnswerLikes' } }).catch(() => null);
+    const v = cfg?.value;
+    const n = typeof v === 'number' ? v : typeof v === 'string' ? parseInt(v, 10) : 10;
+    return Number.isFinite(n) && n >= 0 ? n : 10;
+  }
+
+  // Nếu chưa có ai chọn thủ công, tự chọn (hoặc cập nhật) reply được like nhiều nhất làm best answer
+  private async maybeAutoBestAnswer(threadId: string, actorId: string) {
+    const threshold = await this.getAutoBestThreshold();
+    if (threshold <= 0) return;
+
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, slug: true, title: true, bestAnswerId: true, bestAnswerAuto: true },
+    });
+    if (!thread) return;
+    // Tôn trọng lựa chọn thủ công — không ghi đè
+    if (thread.bestAnswerId && !thread.bestAnswerAuto) return;
+
+    // Reply được like nhiều nhất (không tính bài gốc)
+    const top = await this.prisma.post.findFirst({
+      where: { threadId, isFirstPost: false, isDeleted: false },
+      orderBy: { likeCount: 'desc' },
+      select: { id: true, authorId: true, likeCount: true },
+    });
+    if (!top || top.likeCount < threshold) return;
+    if (top.id === thread.bestAnswerId) return; // đã là best answer rồi
+
+    // Bỏ cờ bài auto cũ (nếu có)
+    if (thread.bestAnswerId && thread.bestAnswerAuto) {
+      await this.prisma.post.update({ where: { id: thread.bestAnswerId }, data: { isHelpful: false } }).catch(() => {});
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.thread.update({ where: { id: threadId }, data: { bestAnswerId: top.id, bestAnswerAuto: true } }),
+      this.prisma.post.update({ where: { id: top.id }, data: { isHelpful: true } }),
+    ]);
+
+    // Thưởng + thông báo cho người trả lời (không tự thưởng cho actor đang like)
+    if (top.authorId !== actorId) {
+      await this.character.addForumExp(top.authorId, 15, 'best_answer_auto').catch(() => {});
+    }
+    await this.notifications.notify(top.authorId, {
+      type: 'BEST_ANSWER',
+      title: 'Câu trả lời của bạn được cộng đồng bình chọn là hay nhất! 🏆',
+      body: thread.title,
+      link: `/forum/${thread.slug}#post-${top.id}`,
+      actorId,
+    }).catch(() => {});
+    await this.trophy.checkAndAward(top.authorId).catch(() => {});
   }
 
   // ──────────────────────────────────────────────
@@ -505,12 +576,13 @@ export class ForumService {
 
     // Toggle: nếu bấm lại đúng bài đang chọn → bỏ chọn
     if (thread.bestAnswerId === postId) {
-      await this.prisma.thread.update({ where: { id: threadId }, data: { bestAnswerId: null } });
+      await this.prisma.thread.update({ where: { id: threadId }, data: { bestAnswerId: null, bestAnswerAuto: false } });
       return { bestAnswerId: null };
     }
 
     await this.prisma.$transaction([
-      this.prisma.thread.update({ where: { id: threadId }, data: { bestAnswerId: postId } }),
+      // bestAnswerAuto=false → khoá lựa chọn thủ công, auto sẽ không ghi đè
+      this.prisma.thread.update({ where: { id: threadId }, data: { bestAnswerId: postId, bestAnswerAuto: false } }),
       this.prisma.post.update({ where: { id: postId }, data: { isHelpful: true } }),
     ]);
 

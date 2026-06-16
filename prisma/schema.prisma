@@ -273,6 +273,7 @@ model Thread {
   isFeatured     Boolean      @default(false)
   isLocked       Boolean      @default(false)
   bestAnswerId   String? // post được chọn là câu trả lời hay nhất (Q&A)
+  bestAnswerAuto Boolean      @default(false) // true nếu hệ thống tự chọn theo lượt reaction
   viewCount      Int          @default(0)
   replyCount     Int          @default(0)
   likeCount      Int          @default(0)

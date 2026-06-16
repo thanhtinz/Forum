@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, Settings } from 'lucide-react';
+import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 const NAV = [
   { href: '/admin', label: 'Tổng quan', icon: LayoutDashboard },
   { href: '/admin/fortune', label: 'Bói toán & AI', icon: Sparkles },
-  { href: '/admin/marketplace', label: 'Danh mục chợ', icon: Store },
+  { href: '/admin/marketplace', label: 'Quản lý Chợ', icon: Store },
+  { href: '/admin/payments', label: 'Nạp tiền', icon: CreditCard },
   { href: '/admin/tools', label: 'Công cụ', icon: Wrench },
   { href: '/admin/templates', label: 'Dữ liệu game', icon: Sprout },
   { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert },

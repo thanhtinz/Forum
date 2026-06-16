@@ -24,6 +24,36 @@ export class PaymentsService {
   // ──────────────────────────────────────────────
   // SEPAY: tạo yêu cầu nạp + sinh nội dung chuyển khoản
   // ──────────────────────────────────────────────
+  // ── ADMIN: lịch sử nạp tiền ──
+  async adminTopups(status?: string, page = 1, limit = 30) {
+    const where = status ? { status } : {};
+    const skip = (page - 1) * limit;
+    const [rows, total] = await Promise.all([
+      this.prisma.paymentTopup.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' } }),
+      this.prisma.paymentTopup.count({ where }),
+    ]);
+    const users = await this.prisma.user.findMany({ where: { id: { in: rows.map((r) => r.userId) } }, select: { id: true, username: true } });
+    const map = new Map(users.map((u) => [u.id, u.username]));
+    return {
+      data: rows.map((r) => ({ ...r, username: map.get(r.userId) })),
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  async adminTopupStats() {
+    const completed = ['completed', 'confirmed', 'success', 'paid'];
+    const [byStatus, revenue, gem] = await Promise.all([
+      this.prisma.paymentTopup.groupBy({ by: ['status'], _count: { _all: true } }),
+      this.prisma.paymentTopup.aggregate({ where: { status: { in: completed } }, _sum: { amountVnd: true } }),
+      this.prisma.paymentTopup.aggregate({ where: { status: { in: completed } }, _sum: { gemAwarded: true } }),
+    ]);
+    return {
+      revenueVnd: revenue._sum.amountVnd ?? 0,
+      gemAwarded: gem._sum.gemAwarded ?? 0,
+      byStatus: byStatus.map((b) => ({ status: b.status, count: b._count._all })),
+    };
+  }
+
   async createSepayTopup(userId: string, packageId: string) {
     const pkg = await this.prisma.gemPackage.findUnique({ where: { id: packageId } });
     if (!pkg || !pkg.priceVnd) throw new BadRequestException('Gói nạp không hợp lệ');

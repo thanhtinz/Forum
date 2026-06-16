@@ -183,10 +183,11 @@
 - [ ] Trang cá nhân (profile + trophy showcase + pixel character)
 
 ### 🔧 Hạ tầng triển khai
-- [ ] Docker Compose hoàn chỉnh (Postgres/Redis/MinIO/Meilisearch)
+- [x] **Docker Compose hoàn chỉnh** (Postgres/Redis/MinIO/Meilisearch + service api) — env JWT/MEDIA/AUTO_SEED đủ
+- [x] **App chạy được verify thật**: `prisma db push` → boot → auto-seed 181 → API 200
+- [x] Dockerfile dùng `db push` khi khởi động (repo chưa dùng migration); README hướng dẫn chạy
 - [ ] BullMQ workers (survival decay cron, notification queue)
-- [ ] Nginx config
-- [ ] CI/CD
+- [ ] Nginx config + CI/CD
 
 ---
 

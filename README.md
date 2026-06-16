@@ -24,7 +24,13 @@ Tham khảo: chiasemanguon.com + tính năng ẩn nội dung kiểu XenForo.
 | AI Companion (WebSocket + emotion + Live2D) | ✅ Hoàn chỉnh |
 | Notifications | ✅ Hoàn chỉnh |
 | Users (profile) | ✅ Hoàn chỉnh |
-| Marketplace / Reputation / Moderation / Media / Search | 🔲 Stub (làm tiếp) |
+| Marketplace (storefront + follow) | ✅ Hoàn chỉnh |
+| Moderation + Nhà tù (prison) | ✅ Hoàn chỉnh |
+| Media (presign S3/MinIO) / Search | ✅ Hoàn chỉnh |
+| Game RPG (nhân vật/combat/guild/survival/shop) | ✅ Hoàn chỉnh |
+| Nông trại + Câu cá + Wardrobe/Pet/Mount | ✅ Hoàn chỉnh |
+| Minigame (11 game) + PvP room realtime | ✅ Hoàn chỉnh |
+| Tools Collection (44 tool catalog) | ✅ Backend |
 
 ### ✅ Frontend Components
 - `Live2DWidget.tsx` — widget AI nổi + trang chat riêng
@@ -53,17 +59,29 @@ npm install
 cp .env.example .env
 # Điền DATABASE_URL, JWT secrets, AI keys, SePay/PayPal...
 
-# 3. Khởi động services
+# 3. Khởi động services hạ tầng
 docker-compose up -d postgres redis meilisearch minio
 
-# 4. Migrate + seed
-npx prisma migrate dev
-npm run prisma:seed
+# 4. Đồng bộ schema vào DB (repo chưa dùng migration files)
+npx prisma generate
+npx prisma db push
 
 # 5. Chạy API
 npm run start:dev
 # → http://localhost:3001/api
 ```
+
+> **Dữ liệu mẫu tự động**: cá/cây/phân/vật nuôi/công thức/đồ ăn/wardrobe/tools được
+> `SeederService` tự upsert khi app khởi động (data nằm trong `src/seed/data/*`).
+> Tắt bằng `AUTO_SEED=false`. Seed forum/gem gốc vẫn chạy `npm run prisma:seed`.
+
+### Chạy toàn bộ bằng Docker
+```bash
+docker-compose up -d   # gồm cả service `api` (tự `prisma db push` rồi start)
+# API: http://localhost:3001/api
+```
+
+✅ Đã verify: `db push` → boot → auto-seed 181 template → `GET /api/tools` & `/api/forum/threads` trả 200.
 
 ## API Endpoints chính
 

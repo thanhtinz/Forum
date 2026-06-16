@@ -25,6 +25,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { ToolsModule } from './modules/tools/tools.module';
 import { FortuneModule } from './modules/fortune/fortune.module';
 import { SeederModule } from './seed/seeder.module';
+import { SocialModule } from './modules/social/social.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { SeederModule } from './seed/seeder.module';
     ToolsModule,
     FortuneModule,
     SeederModule,
+    SocialModule,
   ],
 })
 export class AppModule {}

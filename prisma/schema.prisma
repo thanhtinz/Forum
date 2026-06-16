@@ -193,6 +193,11 @@ model User {
   tipsReceived      Tip[]                @relation("TipTo")
   inviteCodesCreated InviteCode[]        @relation("InviteCodesCreated")
   inviteCodeUses     InviteCodeUse[]
+  following          UserFollow[]         @relation("Follower")
+  followers          UserFollow[]         @relation("Following")
+  profilePosts       ProfilePost[]        @relation("ProfilePostAuthor")
+  profilePostsOnWall ProfilePost[]        @relation("ProfilePostWall")
+  profilePostComments ProfilePostComment[]
 
   @@index([email])
   @@index([username])
@@ -826,6 +831,49 @@ model Friendship {
   friend User @relation("FriendOf", fields: [friendId], references: [id], onDelete: Cascade)
 
   @@id([userId, friendId])
+}
+
+// Theo dõi người dùng (1 chiều, kiểu XenForo "Follow")
+model UserFollow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+}
+
+// Profile posts (tường nhà) — đăng lên hồ sơ của 1 user
+model ProfilePost {
+  id        String   @id @default(cuid())
+  authorId  String   // người viết
+  wallId    String   // hồ sơ được viết lên
+  content   String   @db.Text
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author   User                 @relation("ProfilePostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  wall     User                 @relation("ProfilePostWall", fields: [wallId], references: [id], onDelete: Cascade)
+  comments ProfilePostComment[]
+
+  @@index([wallId, createdAt])
+}
+
+model ProfilePostComment {
+  id            String      @id @default(cuid())
+  profilePostId String
+  authorId      String
+  content       String      @db.Text
+  createdAt     DateTime    @default(now())
+
+  profilePost ProfilePost @relation(fields: [profilePostId], references: [id], onDelete: Cascade)
+  author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([profilePostId, createdAt])
 }
 
 // ============================================================

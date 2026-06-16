@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { PrismaModule } from './prisma/prisma.module';
 import { HiddenContentModule } from './modules/hidden-content/hidden-content.module';
 import { ForumModule } from './modules/forum/forum.module';
@@ -26,6 +28,13 @@ import { SeederModule } from './seed/seeder.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     EventEmitterModule.forRoot(),
+    // Phục vụ frontend Next.js (static export) cùng origin với API -> deploy 1 process.
+    // Bỏ qua /api để không nuốt route backend. extensions:['html'] để /thread -> thread.html.
+    ServeStaticModule.forRoot({
+      rootPath: process.env.FRONTEND_DIST || join(process.cwd(), 'frontend', 'out'),
+      exclude: ['/api*'],
+      serveStaticOptions: { extensions: ['html'] },
+    }),
     PrismaModule,
     AuthModule,
     UsersModule,

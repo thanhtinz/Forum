@@ -27,7 +27,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`/api${path}`, { ...options, headers, cache: 'no-store' });
+  // Unified deploy: NestJS phục vụ cùng origin -> '/api' tương đối.
+  // Dev tách: đặt NEXT_PUBLIC_API_URL=http://localhost:3001 (hoặc dùng rewrite của next dev).
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '';
+  const res = await fetch(`${base}/api${path}`, { ...options, headers, cache: 'no-store' });
   const text = await res.text();
   const body = text ? JSON.parse(text) : null;
   if (!res.ok) {

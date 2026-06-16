@@ -38,7 +38,9 @@ services:
     volumes:
       - miniodata:/data
 
-  api:
+  # 1 service duy nhất: build cả frontend + backend, phục vụ chung tại :3001
+  # (NestJS serve frontend tĩnh + API /api cùng origin — không tách build/deploy)
+  app:
     build: .
     depends_on:
       - postgres

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { ThumbsUp, MessageCircle, Eye, Lock, Pin } from 'lucide-react';
@@ -10,8 +10,8 @@ import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import type { Thread, Post, Paginated } from '@/lib/types';
 
-export default function ThreadPage() {
-  const { slug } = useParams<{ slug: string }>();
+function ThreadView() {
+  const slug = useSearchParams().get('slug') || '';
   const { user } = useAuth();
   const [thread, setThread] = useState<Thread | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -31,7 +31,7 @@ export default function ThreadPage() {
       setLoading(false);
     }
   }
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [slug]);
+  useEffect(() => { if (slug) load(); /* eslint-disable-next-line */ }, [slug]);
 
   async function submitReply(e: React.FormEvent) {
     e.preventDefault();
@@ -91,7 +91,6 @@ export default function ThreadPage() {
         ))}
       </div>
 
-      {/* Reply */}
       <div className="card p-4">
         {user ? (
           thread.isLocked ? (
@@ -113,5 +112,13 @@ export default function ThreadPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ThreadPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center text-ink-500">Đang tải…</div>}>
+      <ThreadView />
+    </Suspense>
   );
 }

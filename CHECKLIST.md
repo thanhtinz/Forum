@@ -180,6 +180,7 @@
 - [x] Trang thread (cột avatar + nội dung kiểu XenForo) + trả lời + thả tim
 - [x] Đăng nhập / Đăng ký; trang Tools (lưới công cụ)
 - [x] API client (rewrite /api -> backend) — **build thành công (next build OK)**
+- [x] **Deploy chung 1 process**: Next static export + NestJS ServeStaticModule (FE+BE+API cùng origin :3001), Dockerfile gộp 2 stage build — đã verify
 - [ ] (tiếp) Trang game/farm/fishing/minigame/marketplace/profile + chat UI
 
 ### 🎨 (cũ) Frontend artifacts lẻ

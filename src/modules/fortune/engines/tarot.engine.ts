@@ -35,6 +35,7 @@ export const MAJOR_ARCANA: TarotCard[] = [
 export interface DrawnCard extends TarotCard {
   reversedOrientation: boolean;
   meaning: string[];
+  image: string;
 }
 
 // Bốc `n` lá không trùng
@@ -46,7 +47,12 @@ export function drawTarot(n = 3): DrawnCard[] {
     const idx = Math.floor(Math.random() * deck.length);
     const card = deck.splice(idx, 1)[0];
     const reversed = Math.random() < 0.5;
-    drawn.push({ ...card, reversedOrientation: reversed, meaning: reversed ? card.reversed : card.upright });
+    drawn.push({
+      ...card,
+      reversedOrientation: reversed,
+      meaning: reversed ? card.reversed : card.upright,
+      image: `/game-assets/tarot/${card.number}.jpg`,
+    });
   }
   return drawn;
 }

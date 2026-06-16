@@ -246,3 +246,10 @@
 - [x] Trang `/chat` kết nối WebSocket `/chat` (socket.io-client) + JWT handshake
 - [x] Tải lịch sử tin nhắn (GET /chat/global + messages), gửi/nhận realtime, bubble trái/phải, auto-scroll, trạng thái kết nối
 - [ ] (tiếp) Chọn kênh (private/group/guild), sticker/emoji picker, media player
+
+### 🔮 Bói toán nâng cấp + Admin
+- [x] **Ảnh thật**: 22 lá Tarot Ẩn Chính từ repo taibu → `game-assets/tarot`, hiển thị trong UI
+- [x] **Thu phí mỗi lần xem** (coin) — giá từng loại cấu hình trong admin (0 = miễn phí)
+- [x] **Luận giải AI** — admin cấu hình provider/model/system prompt + phí AI; gọi AiProviderService (gom stream)
+- [x] **Admin frontend** (`/admin`, gate theo role ADMIN): tổng quan + trang Bói toán (giá/AI/thống kê)
+- [x] Nguyên tắc "client có gì admin có nấy": dựng shell admin + menu (bói toán hoàn chỉnh, các mục khác stub có API sẵn)

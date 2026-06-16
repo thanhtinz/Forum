@@ -124,6 +124,13 @@
 - [ ] Trang storefront chuyên nghiệp (banner, logo, chính sách) — frontend
 - [ ] Rating/review + thống kê doanh thu cho seller
 
+### 🎣 Câu Cá (port từ mod WAP, chỉ coin)
+- [x] **Backend** — 3 khu, mua cần/mồi, thả cần, giật cá (90% trúng), cooldown 40s
+- [x] Level câu cá RIÊNG (2000kg/cấp, thưởng coin lên cấp), hồi cá 4h
+- [x] Kho cá + bán lẻ/bán hết, BXH theo số cá câu được
+- [x] Seed 3 loài cá + copy asset (`game-assets/cauca`)
+- [ ] Frontend UI câu cá
+
 ### 🛠️ Tools Collection (~50 tools)
 - [ ] Framework tools (ToolCategory + Tool schema đã có)
 - [ ] 50 tool từ tools-collection.net: formatters, validators, encoders, generators, converters, calculators

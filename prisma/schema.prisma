@@ -1071,6 +1071,8 @@ model GameCharacter {
   guildMember GuildMember?
   skills      CharacterSkill[]
   survival    CharacterSurvival?
+  fishingProfile FishingProfile?
+  fishCatches    FishCatch[]
 
   @@index([level])
   @@index([pvpRank])
@@ -1673,4 +1675,63 @@ model UserStickerPack {
   acquiredAt  DateTime @default(now())
 
   @@id([userId, packId])
+}
+
+// ============================================================
+// CÂU CÁ (Fishing minigame) — chỉ dùng coin
+// ============================================================
+
+// Định nghĩa loài cá theo khu (seed sẵn). Stock hồi theo thời gian.
+model FishSpecies {
+  id          String   @id @default(cuid())
+  zone        Int      // 1, 2, 3
+  slug        String   @unique @db.VarChar(60)
+  name        String   @db.VarChar(100)
+  kgMin       Int      // trọng lượng tối thiểu (kg)
+  kgMax       Int      // trọng lượng tối đa (kg)
+  pricePerKg  Int      // coin / kg khi bán
+  refillCount Int      // số con hồi lại mỗi chu kỳ
+  stock       Int      @default(0)   // số con còn lại trong khu
+  nextRefillAt DateTime?
+  asset       String?  @db.VarChar(255)
+  sortOrder   Int      @default(0)
+
+  catches FishCatch[]
+
+  @@index([zone])
+}
+
+// Hồ sơ câu cá của mỗi nhân vật (level RIÊNG, không liên quan level nhân vật)
+model FishingProfile {
+  id          String   @id @default(cuid())
+  characterId String   @unique
+  level       Int      @default(0)
+  totalKg     Int      @default(0)   // tích lũy hướng tới lên cấp (2000kg/cấp)
+  totalCaught Int      @default(0)   // tổng số cá đã câu (cho BXH)
+  ownedRods   Int[]    @default([])  // các khu đã mua cần (1/2/3)
+  bait1       Int      @default(0)   // lượt mồi khu 1 còn lại
+  bait2       Int      @default(0)
+  bait3       Int      @default(0)
+  castZone    Int?     // đang thả cần ở khu nào
+  biteAt      DateTime?  // thời điểm cá cắn câu
+  lastCatchAt DateTime?  // cooldown 40s giữa 2 lần giật
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+// Cá đã câu được (kho lạnh) — bán lấy coin
+model FishCatch {
+  id          String   @id @default(cuid())
+  characterId String
+  speciesId   String
+  weightKg    Int
+  soldAt      DateTime?
+  caughtAt    DateTime @default(now())
+
+  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  species   FishSpecies   @relation(fields: [speciesId], references: [id])
+
+  @@index([characterId, soldAt])
 }

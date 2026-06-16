@@ -33,6 +33,23 @@ export class AuthService {
       throw new ConflictException('Tên đăng nhập đã tồn tại');
     }
 
+    // Validate invite code if provided
+    let inviteRole: string | undefined;
+    let inviteCodeRecord: any;
+    if (dto.inviteCode) {
+      inviteCodeRecord = await this.prisma.inviteCode.findUnique({
+        where: { code: dto.inviteCode },
+      });
+      if (!inviteCodeRecord) throw new BadRequestException('Mã mời không hợp lệ');
+      if (inviteCodeRecord.expiresAt && inviteCodeRecord.expiresAt < new Date()) {
+        throw new BadRequestException('Mã mời đã hết hạn');
+      }
+      if (inviteCodeRecord.maxUses !== null && inviteCodeRecord.uses >= inviteCodeRecord.maxUses) {
+        throw new BadRequestException('Mã mời đã hết lượt sử dụng');
+      }
+      inviteRole = inviteCodeRecord.role;
+    }
+
     const passwordHash = await argon2.hash(dto.password);
 
     const user = await this.prisma.$transaction(async (tx) => {
@@ -42,10 +59,21 @@ export class AuthService {
           email: dto.email,
           passwordHash,
           displayName: dto.displayName ?? dto.username,
+          ...(inviteRole ? { role: inviteRole as any } : {}),
         },
       });
       // Tạo gem wallet
       await tx.gemWallet.create({ data: { userId: u.id } });
+      // Record invite code usage
+      if (inviteCodeRecord) {
+        await tx.inviteCode.update({
+          where: { id: inviteCodeRecord.id },
+          data: { uses: { increment: 1 } },
+        });
+        await tx.inviteCodeUse.create({
+          data: { inviteCodeId: inviteCodeRecord.id, userId: u.id },
+        });
+      }
       return u;
     });
 

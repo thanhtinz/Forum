@@ -19,6 +19,10 @@ export class RegisterDto {
   @IsString()
   @MaxLength(100)
   displayName?: string;
+
+  @IsOptional()
+  @IsString()
+  inviteCode?: string;
 }
 
 export class LoginDto {

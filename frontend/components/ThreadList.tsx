@@ -1,12 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Pin, Lock, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
-import { fetcher } from '@/lib/api';
+import { api, fetcher } from '@/lib/api';
 import { Avatar } from './Header';
+import { useAuth } from './AuthProvider';
 import type { Paginated, Thread } from '@/lib/types';
 
 const PREFIX_STYLE: Record<string, string> = {
@@ -25,7 +27,18 @@ function timeAgo(d?: string) {
 }
 
 export function ThreadList() {
+  const { user } = useAuth();
   const { data, error, isLoading } = useSWR<Paginated<Thread>>('/forum/threads?limit=20', fetcher);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+
+  // Fetch bulk unread counts when threads load
+  useEffect(() => {
+    if (!user || !data?.data?.length) return;
+    const threadIds = data.data.map((t) => t.id);
+    api.post<Record<string, number>>('/forum/read-progress/bulk', { threadIds })
+      .then(setUnreadCounts)
+      .catch(() => {});
+  }, [user, data]);
 
   return (
     <section className="card overflow-hidden">
@@ -41,32 +54,42 @@ export function ThreadList() {
       )}
 
       <ul className="divide-y divide-ink-200/70 dark:divide-ink-800">
-        {data?.data.map((t) => (
-          <li key={t.id} className="flex items-start gap-3 px-4 py-3 hover:bg-ink-50/70 dark:hover:bg-ink-800/40">
-            {t.author && <Avatar user={t.author} size={40} />}
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                {t.isPinned && <Pin size={14} className="text-amber-500" />}
-                {t.isLocked && <Lock size={14} className="text-ink-400" />}
-                {t.prefix && t.prefix !== 'NONE' && (
-                  <span className={`chip ${PREFIX_STYLE[t.prefix] || 'bg-ink-200 text-ink-700'}`}>{t.prefix}</span>
-                )}
-                <Link href={`/thread?slug=${t.slug}`} className="truncate font-semibold text-ink-800 hover:text-brand-600 dark:text-ink-100">
-                  {t.title}
-                </Link>
+        {data?.data.map((t) => {
+          const unread = unreadCounts[t.id];
+          // unread > 0 means new posts since last read; -1 means never read (show nothing special for never-read)
+          const hasUnread = typeof unread === 'number' && unread > 0;
+          return (
+            <li key={t.id} className="flex items-start gap-3 px-4 py-3 hover:bg-ink-50/70 dark:hover:bg-ink-800/40">
+              {t.author && <Avatar user={t.author} size={40} />}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  {hasUnread && (
+                    <span className="inline-flex h-5 items-center rounded-full bg-blue-500 px-1.5 text-[10px] font-bold text-white" title={`${unread} bài mới`}>
+                      {unread} mới
+                    </span>
+                  )}
+                  {t.isPinned && <Pin size={14} className="text-amber-500" />}
+                  {t.isLocked && <Lock size={14} className="text-ink-400" />}
+                  {t.prefix && t.prefix !== 'NONE' && (
+                    <span className={`chip ${PREFIX_STYLE[t.prefix] || 'bg-ink-200 text-ink-700'}`}>{t.prefix}</span>
+                  )}
+                  <Link href={`/thread?slug=${t.slug}`} className={`truncate font-semibold hover:text-brand-600 dark:text-ink-100 ${hasUnread ? 'text-ink-900 dark:text-white' : 'text-ink-800'}`}>
+                    {t.title}
+                  </Link>
+                </div>
+                <div className="mt-0.5 text-xs text-ink-500">
+                  {t.author?.displayName || t.author?.username || 'Ẩn danh'} · {timeAgo(t.createdAt)}
+                  {t.category && <> · trong <span className="text-brand-600">{t.category.name}</span></>}
+                </div>
               </div>
-              <div className="mt-0.5 text-xs text-ink-500">
-                {t.author?.displayName || t.author?.username || 'Ẩn danh'} · {timeAgo(t.createdAt)}
-                {t.category && <> · trong <span className="text-brand-600">{t.category.name}</span></>}
+              <div className="hidden shrink-0 items-center gap-4 text-xs text-ink-500 sm:flex">
+                <span className="flex items-center gap-1"><MessageCircle size={14} /> {t.replyCount}</span>
+                <span className="flex items-center gap-1"><Eye size={14} /> {t.viewCount}</span>
+                <span className="flex items-center gap-1"><ThumbsUp size={14} /> {t.likeCount}</span>
               </div>
-            </div>
-            <div className="hidden shrink-0 items-center gap-4 text-xs text-ink-500 sm:flex">
-              <span className="flex items-center gap-1"><MessageCircle size={14} /> {t.replyCount}</span>
-              <span className="flex items-center gap-1"><Eye size={14} /> {t.viewCount}</span>
-              <span className="flex items-center gap-1"><ThumbsUp size={14} /> {t.likeCount}</span>
-            </div>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

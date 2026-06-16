@@ -1,10 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
@@ -89,6 +89,16 @@ function ThreadView() {
   const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [splitMode, setSplitMode] = useState(false);
+  const [splitSelected, setSplitSelected] = useState<string[]>([]);
+  const [splitTitle, setSplitTitle] = useState('');
+  const [splitBusy, setSplitBusy] = useState(false);
+  const [lastReadPostId, setLastReadPostId] = useState<string | null>(null);
+  const [initialLastReadPostId, setInitialLastReadPostId] = useState<string | null>(null);
+  const lastSentPostIdRef = useRef<string | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const scrolledToLastRead = useRef(false);
 
   const isMod = user && (user.role === 'ADMIN' || user.role === 'MODERATOR');
   const canManage = thread && user && ((thread as any).author?.id === user.id || isMod);
@@ -103,6 +113,10 @@ function ThreadView() {
       if (user) {
         api.get<{ subscribed: boolean }>(`/forum/threads/${t.id}/subscription`).then((s) => setSubscribed(s.subscribed)).catch(() => {});
         api.get<{ bookmarked: boolean }>(`/forum/threads/${t.id}/bookmark`).then((b) => setBookmarked(b.bookmarked)).catch(() => {});
+        api.get<{ lastReadPostId: string | null }>(`/forum/threads/${t.id}/read-progress`).then((rp) => {
+          setLastReadPostId(rp.lastReadPostId);
+          setInitialLastReadPostId(rp.lastReadPostId);
+        }).catch(() => {});
       }
     } catch (e: any) {
       setErr(e.message);
@@ -161,6 +175,77 @@ function ThreadView() {
     catch (e: any) { alert(e.message); }
   }
 
+  // ── Reading progress: debounced mark-read ──
+  const sendReadProgress = useCallback((postId: string) => {
+    if (!thread || !user) return;
+    if (lastSentPostIdRef.current === postId) return;
+    lastSentPostIdRef.current = postId;
+    api.post(`/forum/threads/${thread.id}/read-progress`, { postId }).catch(() => {});
+  }, [thread, user]);
+
+  const debouncedMarkRead = useCallback((postId: string) => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(() => sendReadProgress(postId), 1500);
+  }, [sendReadProgress]);
+
+  // IntersectionObserver to track visible posts
+  useEffect(() => {
+    if (!user || !thread || !posts.length) return;
+    const postEls = document.querySelectorAll('[data-post-id]');
+    if (!postEls.length) return;
+
+    // Track furthest visible post (by order in array)
+    const postOrder = posts.map((p) => p.id);
+    let furthestIdx = -1;
+
+    observerRef.current = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const pid = (entry.target as HTMLElement).dataset.postId;
+        if (!pid) continue;
+        const idx = postOrder.indexOf(pid);
+        if (idx > furthestIdx) {
+          furthestIdx = idx;
+          debouncedMarkRead(pid);
+        }
+      }
+    }, { threshold: 0.3 });
+
+    postEls.forEach((el) => observerRef.current!.observe(el));
+
+    return () => {
+      observerRef.current?.disconnect();
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    };
+  }, [user, thread, posts, debouncedMarkRead]);
+
+  // Auto-scroll to last read position on initial load
+  useEffect(() => {
+    if (!initialLastReadPostId || scrolledToLastRead.current || !posts.length) return;
+    scrolledToLastRead.current = true;
+    // Small delay to let DOM render
+    setTimeout(() => {
+      const el = document.getElementById(`post-${initialLastReadPostId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  }, [initialLastReadPostId, posts]);
+
+  function toggleSplitPost(postId: string) {
+    setSplitSelected((prev) => prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId]);
+  }
+  function cancelSplit() {
+    setSplitMode(false); setSplitSelected([]); setSplitTitle('');
+  }
+  async function confirmSplit() {
+    if (!thread || !splitSelected.length || !splitTitle.trim()) return;
+    setSplitBusy(true);
+    try {
+      const r = await api.post<{ slug: string }>(`/forum/threads/${thread.id}/split`, { postIds: splitSelected, title: splitTitle });
+      cancelSplit();
+      window.location.href = `/thread?slug=${r.slug}`;
+    } catch (e: any) { setErr(e.message); setSplitBusy(false); }
+  }
+
   if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
   if (err && !thread) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!thread) return null;
@@ -204,6 +289,7 @@ function ThreadView() {
           <div className="mt-3 flex gap-2 border-t border-ink-200/70 pt-3 dark:border-ink-800">
             <button onClick={moveThread} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><FolderInput size={13} /> Chuyển mục</button>
             <button onClick={mergeThread} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Merge size={13} /> Gộp chủ đề</button>
+            <button onClick={() => { setSplitMode(true); setSplitSelected([]); setSplitTitle(''); }} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Scissors size={13} /> Tách bài</button>
           </div>
         )}
       </div>
@@ -211,11 +297,27 @@ function ThreadView() {
       <PollCard threadId={thread.id} />
 
       <div className="space-y-3">
-        {ordered.map((p) => {
+        {ordered.map((p, idx) => {
           const isFirst = (p as any).isFirstPost;
           const isBest = p.id === bestAnswerId;
+          // Show "Bai moi" divider between last-read post and the next unread posts
+          const showNewDivider = user && initialLastReadPostId && idx > 0 && ordered[idx - 1].id === initialLastReadPostId && p.id !== initialLastReadPostId;
           return (
-            <article key={p.id} id={`post-${p.id}`} className={`card flex overflow-hidden ${isBest ? 'ring-2 ring-emerald-400' : ''}`}>
+            <div key={p.id}>
+              {showNewDivider && (
+                <div className="my-3 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-blue-400" />
+                  <span className="shrink-0 rounded-full bg-blue-500 px-3 py-0.5 text-xs font-semibold text-white">Bài mới</span>
+                  <div className="h-px flex-1 bg-blue-400" />
+                </div>
+              )}
+            <article data-post-id={p.id} id={`post-${p.id}`} className={`card flex overflow-hidden ${isBest ? 'ring-2 ring-emerald-400' : ''} ${splitMode && splitSelected.includes(p.id) ? 'ring-2 ring-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
+              {splitMode && !isFirst && (
+                <div className="flex items-center justify-center border-r border-ink-200/70 px-3 dark:border-ink-800">
+                  <input type="checkbox" checked={splitSelected.includes(p.id)} onChange={() => toggleSplitPost(p.id)}
+                    className="h-4 w-4 cursor-pointer accent-orange-500" />
+                </div>
+              )}
               <div className="w-32 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50">
                 {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
                 <div className="mt-2 truncate text-sm font-semibold">{p.author?.displayName || p.author?.username}</div>
@@ -273,6 +375,7 @@ function ThreadView() {
                 </div>
               </div>
             </article>
+            </div>
           );
         })}
       </div>
@@ -297,6 +400,32 @@ function ThreadView() {
           </p>
         )}
       </div>
+
+      {splitMode && (
+        <div className="fixed inset-x-0 bottom-0 z-50 border-t border-ink-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur dark:border-ink-800 dark:bg-ink-950/95">
+          <div className="mx-auto flex max-w-4xl items-center gap-3">
+            <span className="shrink-0 text-sm font-medium text-orange-600">
+              <Scissors size={14} className="mr-1 inline" />
+              Tách {splitSelected.length} bài
+            </span>
+            <input
+              type="text" value={splitTitle} onChange={(e) => setSplitTitle(e.target.value)}
+              placeholder="Tiêu đề chủ đề mới…"
+              className="input flex-1 !py-1.5 text-sm"
+            />
+            <button
+              onClick={confirmSplit}
+              disabled={splitBusy || !splitSelected.length || !splitTitle.trim()}
+              className="btn-primary shrink-0 !py-1.5 text-sm"
+            >
+              {splitBusy ? 'Đang tách…' : 'Tách'}
+            </button>
+            <button onClick={cancelSplit} className="shrink-0 rounded-lg bg-ink-100 px-3 py-1.5 text-sm hover:bg-ink-200 dark:bg-ink-800">
+              Hủy
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

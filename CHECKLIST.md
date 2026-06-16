@@ -234,3 +234,10 @@
 ## 🔒 LƯU Ý BẢO MẬT
 - Token GitHub đã chia sẻ qua chat cần **revoke ngay** tại https://github.com/settings/tokens
 - Dùng Working Copy (iOS) hoặc github.dev để push code an toàn
+
+### 🔮 Bói toán / Tử vi (engine kỹ thuật port từ taibu-core MIT, UI tự build)
+- [x] **Bát Tự (Tứ Trụ)** — dùng lib lunar-javascript: tứ trụ can-chi, con giáp, ngũ hành, nhật chủ, hành thiếu
+- [x] **Tarot** — 22 lá Ẩn Chính (nghĩa tiếng Việt), bốc N lá xuôi/ngược
+- [x] **Mai Hoa Dịch Số** — lập quẻ từ số (tiên thiên bát quái), phân tích Thể-Dụng ngũ hành
+- [x] Lưu lịch sử (FortuneRecord) khi đăng nhập; trang `/fortune` 3 tab (UI mới theo theme forum)
+- [x] API công khai (OptionalJwt): POST /fortune/bazi|tarot|meihua, GET /fortune/history — verify end-to-end OK

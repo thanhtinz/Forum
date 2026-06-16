@@ -22,6 +22,7 @@ import { GameModule } from './modules/game/game.module';
 import { MinigameModule } from './modules/minigame/minigame.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ToolsModule } from './modules/tools/tools.module';
+import { FortuneModule } from './modules/fortune/fortune.module';
 import { SeederModule } from './seed/seeder.module';
 
 @Module({
@@ -54,6 +55,7 @@ import { SeederModule } from './seed/seeder.module';
     MinigameModule,
     ChatModule,
     ToolsModule,
+    FortuneModule,
     SeederModule,
   ],
 })

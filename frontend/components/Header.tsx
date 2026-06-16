@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  Store, Wrench, LogOut, User as UserIcon, ChevronDown,
+  Store, Wrench, Sparkles, LogOut, User as UserIcon, ChevronDown,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
@@ -13,6 +13,7 @@ const NAV = [
   { href: '/', label: 'Diễn đàn', icon: MessageSquare },
   { href: '/game', label: 'Game', icon: Gamepad2 },
   { href: '/marketplace', label: 'Chợ', icon: Store },
+  { href: '/fortune', label: 'Bói toán', icon: Sparkles },
   { href: '/tools', label: 'Công cụ', icon: Wrench },
 ];
 

@@ -1081,6 +1081,7 @@ model GameCharacter {
   farmFertilizers FarmFertilizer[]
   farmCooking    FarmCooking[]
   farmSkills     FarmSkill[]
+  avatarItems    UserAvatarItem[]
 
   @@index([level])
   @@index([pvpRank])
@@ -1953,4 +1954,52 @@ model Prison {
 
   @@index([userId, released])
   @@index([releaseAt])
+}
+
+// ============================================================
+// WARDROBE / PET / MOUNT — cosmetic avatar (port từ Avatar, chỉ coin)
+// ============================================================
+enum AvatarSlot {
+  HAIR       // tóc
+  FACE       // mặt/râu
+  TOP        // áo
+  BOTTOM     // quần
+  HAT        // mũ
+  WING       // cánh
+  ACCESSORY  // phụ kiện
+  PET        // thú cưng
+  MOUNT      // thú cưỡi
+}
+
+model AvatarItemTemplate {
+  id         String     @id @default(cuid())
+  slug       String     @unique @db.VarChar(80)
+  name       String     @db.VarChar(120)
+  slot       AvatarSlot
+  gender     Int        @default(0) // 0 unisex, 1 nam, 2 nữ
+  priceCoin  Int        @default(0)
+  reqLevel   Int        @default(0)
+  expiredDay Int        @default(0) // 0 = vĩnh viễn
+  zorder     Int        @default(0) // lớp vẽ (layered avatar)
+  asset      String?    @db.VarChar(255)
+  sortOrder  Int        @default(0)
+
+  owned UserAvatarItem[]
+
+  @@index([slot])
+}
+
+model UserAvatarItem {
+  id          String    @id @default(cuid())
+  characterId String
+  templateId  String
+  equipped    Boolean   @default(false)
+  expiresAt   DateTime?
+  acquiredAt  DateTime  @default(now())
+
+  character GameCharacter      @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  template  AvatarItemTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, templateId])
+  @@index([characterId])
 }

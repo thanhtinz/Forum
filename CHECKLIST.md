@@ -143,6 +143,13 @@
 - [x] **Chó giữ nhà** (30 ngày) + **điểm danh** hằng ngày + **ăn trộm** cây hàng xóm (gặp chó bị cắn)
 - [ ] Nhiệm vụ lái buôn + Frontend UI
 
+### 👕 Wardrobe / Pet / Thú cưỡi (port từ Avatar, chỉ coin)
+- [x] Hệ cosmetic layered (slot HAIR/FACE/TOP/BOTTOM/HAT/WING/ACCESSORY + PET + MOUNT)
+- [x] Cửa hàng lọc theo giới tính + cấp; mua bằng coin; mặc/cởi (1 món/slot, 1 pet, 1 mount)
+- [x] API diện mạo `look/:username` (layers theo zorder + pet + mount) cho render avatar
+- [x] Seed 86 item quần áo/tóc import từ Avatar + 6 pet + 3 thú cưỡi (icon dùng vật nuôi nông trại)
+- [ ] Sprite quần áo gốc nằm trong `res.rar` — chưa giải nén được (asset clothes tạm null)
+
 ### 🏛️ Nhà Tù (Prison) — kiểu Avatar (NPC Giám thị)
 - [x] Mod/Admin tống giam người chơi (thời gian + lý do + tiền chuộc), không giam được Admin
 - [x] Người chơi xem án + đếm ngược; **nộp coin chuộc** ra sớm; tự thả khi hết hạn

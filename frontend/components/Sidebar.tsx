@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, Fish, Sprout, Trophy, Wrench, Store } from 'lucide-react';
+import { Gamepad2, Fish, Sprout, Trophy, Wrench, Store, Award } from 'lucide-react';
 
 const SHORTCUTS = [
   { href: '/game', label: 'Nhân vật & RPG', icon: Gamepad2, desc: 'Combat, guild, trang bị' },
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, desc: 'Trồng trọt & vật nuôi' },
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, desc: '3 khu, cá hiếm' },
   { href: '/minigame', label: 'Minigame', icon: Trophy, desc: '11 game, chơi PvP' },
+  { href: '/leaderboard', label: 'Xếp hạng', icon: Award, desc: 'Top danh hiệu & câu cá' },
   { href: '/marketplace', label: 'Chợ gian hàng', icon: Store, desc: 'Mua bán source' },
   { href: '/tools', label: 'Công cụ', icon: Wrench, desc: '44 tool dev' },
 ];

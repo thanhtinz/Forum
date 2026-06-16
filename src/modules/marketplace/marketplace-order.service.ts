@@ -49,6 +49,8 @@ export class MarketplaceOrderService {
     const now = Date.now();
 
     const order = await this.prisma.$transaction(async (tx) => {
+      // Giao hàng tự động: lấy 1 đơn vị kho chưa bán (nếu có)
+      const stock = await tx.productStock.findFirst({ where: { productId, isSold: false } });
       const o = await tx.order.create({
         data: {
           buyerId, productId, gemSpent: price, sellerEarned, platformFee: fee,
@@ -56,14 +58,16 @@ export class MarketplaceOrderService {
           escrowStatus: price > 0 ? 'HELD' : 'RELEASED',
           escrowReleaseAt: price > 0 ? new Date(now + HOLD_DAYS * 864e5) : null,
           couponCode: appliedCode, downloadUrl: product.fileUrl,
+          deliveredContent: stock?.content ?? null,
         },
       });
+      if (stock) await tx.productStock.update({ where: { id: stock.id }, data: { isSold: true, soldOrderId: o.id } });
       await tx.product.update({ where: { id: productId }, data: { salesCount: { increment: 1 }, downloadCount: { increment: 1 } } });
       if (product.storefrontId) await tx.storefront.update({ where: { id: product.storefrontId }, data: { totalSales: { increment: 1 } } });
       return o;
     });
 
-    return { ok: true, orderId: order.id, paid: price, downloadUrl: product.fileUrl, escrowReleaseAt: order.escrowReleaseAt };
+    return { ok: true, orderId: order.id, paid: price, downloadUrl: product.fileUrl, deliveredContent: order.deliveredContent, escrowReleaseAt: order.escrowReleaseAt };
   }
 
   // Giải ngân các đơn đã hết hạn giam (gọi lười khi seller xem thu nhập / admin)

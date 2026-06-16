@@ -104,6 +104,43 @@ export class SellerService {
     };
   }
 
+  // ── 12. Thống kê nâng cao ──
+  async analytics(userId: string) {
+    const store = await this.store(userId);
+    const products = await this.prisma.product.findMany({
+      where: { sellerId: userId },
+      select: { id: true, title: true, viewCount: true, salesCount: true, gemPrice: true, category: { select: { name: true } } },
+    });
+    const orders = await this.prisma.order.findMany({ where: { product: { sellerId: userId } }, select: { productId: true, sellerEarned: true, escrowStatus: true } });
+
+    const totalOrders = orders.length;
+    const refunded = orders.filter((o) => o.escrowStatus === 'REFUNDED').length;
+    const totalViews = products.reduce((s, p) => s + p.viewCount, 0);
+    const totalSales = products.reduce((s, p) => s + p.salesCount, 0);
+
+    // doanh thu theo danh mục
+    const byCat: Record<string, number> = {};
+    const prodMap = new Map(products.map((p) => [p.id, p]));
+    for (const o of orders) {
+      if (o.escrowStatus === 'REFUNDED') continue;
+      const cat = prodMap.get(o.productId)?.category?.name ?? 'Khác';
+      byCat[cat] = (byCat[cat] ?? 0) + o.sellerEarned;
+    }
+
+    return {
+      tier: store.totalRevenue,
+      totalViews, totalSales,
+      conversion: totalViews ? +((totalSales / totalViews) * 100).toFixed(2) : 0,
+      refundRate: totalOrders ? +((refunded / totalOrders) * 100).toFixed(2) : 0,
+      byCategory: Object.entries(byCat).map(([name, revenue]) => ({ name, revenue })).sort((a, b) => b.revenue - a.revenue),
+      products: products.map((p) => ({
+        title: p.title, views: p.viewCount, sales: p.salesCount,
+        conversion: p.viewCount ? +((p.salesCount / p.viewCount) * 100).toFixed(2) : 0,
+        revenue: p.salesCount * p.gemPrice,
+      })).sort((a, b) => b.sales - a.sales),
+    };
+  }
+
   // ── 3. Kho hàng (giao tự động) ──
   async listStock(userId: string, productId: string) {
     await this.ownProduct(userId, productId);

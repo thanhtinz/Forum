@@ -3,6 +3,7 @@ import {
   ConflictException,
   UnauthorizedException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -138,8 +139,17 @@ export class AuthService {
   // ──────────────────────────────────────────────
   // VALIDATE (cho JWT strategy)
   // ──────────────────────────────────────────────
-  async validateUser(userId: string) {
-    const user = await this.prisma.user.findUnique({
+  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+    if (!newPassword || newPassword.length < 6) throw new BadRequestException('Mật khẩu mới tối thiểu 6 ký tự');
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+    if (!user?.passwordHash) throw new BadRequestException('Tài khoản không dùng mật khẩu');
+    const ok = await argon2.verify(user.passwordHash, oldPassword);
+    if (!ok) throw new BadRequestException('Mật khẩu hiện tại không đúng');
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await argon2.hash(newPassword) } });
+    return { ok: true };
+  }
+
+  async validateUser(userId: string) {    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true, username: true, displayName: true, email: true,

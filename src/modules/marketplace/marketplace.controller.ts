@@ -94,6 +94,10 @@ export class MarketplaceController {
   @UseGuards(JwtAuthGuard)
   sellerReviews(@CurrentUser('id') uid: string) { return this.seller.reviews(uid); }
 
+  @Get('seller/analytics')
+  @UseGuards(JwtAuthGuard)
+  sellerAnalytics(@CurrentUser('id') uid: string) { return this.seller.analytics(uid); }
+
   @Post('seller/ai')
   @UseGuards(JwtAuthGuard)
   sellerAi(@CurrentUser('id') uid: string, @Body() b: { task: string; input: string }) { return this.seller.aiAssist(uid, b.task, b.input); }

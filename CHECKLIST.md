@@ -241,3 +241,8 @@
 - [x] **Mai Hoa Dịch Số** — lập quẻ từ số (tiên thiên bát quái), phân tích Thể-Dụng ngũ hành
 - [x] Lưu lịch sử (FortuneRecord) khi đăng nhập; trang `/fortune` 3 tab (UI mới theo theme forum)
 - [x] API công khai (OptionalJwt): POST /fortune/bazi|tarot|meihua, GET /fortune/history — verify end-to-end OK
+
+### 💬 Chat UI realtime (frontend)
+- [x] Trang `/chat` kết nối WebSocket `/chat` (socket.io-client) + JWT handshake
+- [x] Tải lịch sử tin nhắn (GET /chat/global + messages), gửi/nhận realtime, bubble trái/phải, auto-scroll, trạng thái kết nối
+- [ ] (tiếp) Chọn kênh (private/group/guild), sticker/emoji picker, media player

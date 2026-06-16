@@ -34,6 +34,12 @@ import { CommunityModule } from './modules/community/community.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     EventEmitterModule.forRoot(),
+    // Phục vụ file upload local (ảnh người dùng tải lên) tại /uploads.
+    // Đăng ký TRƯỚC ServeStatic frontend để không bị nuốt route.
+    ServeStaticModule.forRoot({
+      rootPath: process.env.UPLOAD_DIR || join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
     // Phục vụ frontend Next.js (static export) cùng origin với API -> deploy 1 process.
     // Bỏ qua /api để không nuốt route backend. extensions:['html'] để /thread -> thread.html.
     ServeStaticModule.forRoot({

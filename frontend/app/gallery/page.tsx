@@ -5,6 +5,7 @@ import { Heart, Images, Plus, FolderOpen } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
+import ImageUpload from '@/components/ImageUpload';
 
 interface Owner { id: string; username: string; displayName?: string | null; avatar?: string | null }
 interface Album {
@@ -26,6 +27,7 @@ export default function GalleryPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [coverUrl, setCoverUrl] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -48,8 +50,8 @@ export default function GalleryPage() {
     if (!title.trim()) return;
     setBusy(true); setErr('');
     try {
-      const a = await api.post<Album>('/gallery/albums', { title, description });
-      setShowCreate(false); setTitle(''); setDescription('');
+      const a = await api.post<Album>('/gallery/albums', { title, description, coverUrl: coverUrl || undefined });
+      setShowCreate(false); setTitle(''); setDescription(''); setCoverUrl('');
       window.location.href = `/gallery/album?id=${a.id}`;
     } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   }
@@ -133,6 +135,10 @@ export default function GalleryPage() {
             <h3 className="font-semibold">Tạo album mới</h3>
             <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tiêu đề album" className="input mt-3 w-full" />
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mô tả (tuỳ chọn)" rows={3} className="input mt-2 w-full resize-y" />
+            <div className="mt-2">
+              <label className="mb-1 block text-xs text-ink-500">Ảnh bìa (tuỳ chọn)</label>
+              <ImageUpload value={coverUrl || undefined} onUploaded={setCoverUrl} label="Tải ảnh bìa" />
+            </div>
             {err && <p className="mt-2 text-sm text-red-500">{err}</p>}
             <div className="mt-4 flex justify-end gap-2">
               <button type="button" onClick={() => setShowCreate(false)} className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Hủy</button>

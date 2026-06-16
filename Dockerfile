@@ -24,6 +24,8 @@ COPY --from=backend /app/prisma ./prisma
 COPY package*.json ./
 # Frontend export đặt đúng nơi ServeStaticModule đọc (frontend/out)
 COPY --from=frontend /fe/out ./frontend/out
+# Thư mục lưu ảnh người dùng tải lên (gắn volume để bền vững)
+RUN mkdir -p /app/uploads
 EXPOSE 3001
 # Đồng bộ schema rồi start. NestJS serve cả /api lẫn frontend tĩnh.
 CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node dist/main"]

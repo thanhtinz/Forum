@@ -29,6 +29,15 @@ export class BlockService {
     return !!existing;
   }
 
+  async getBlockedIds(blockerId: string): Promise<string[]> {
+    if (!blockerId) return [];
+    const blocks = await this.prisma.userBlock.findMany({
+      where: { blockerId },
+      select: { blockedId: true },
+    });
+    return blocks.map((b) => b.blockedId);
+  }
+
   async listBlocked(blockerId: string) {
     const blocks = await this.prisma.userBlock.findMany({
       where: { blockerId },

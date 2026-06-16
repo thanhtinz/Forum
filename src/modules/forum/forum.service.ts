@@ -18,6 +18,7 @@ import { PrisonService } from '../moderation/prison.service';
 import { ForumTextService } from './forum-text.service';
 import { SubscriptionService } from './subscription.service';
 import { TipService } from './tip.service';
+import { BlockService } from '../profile-extra/block.service';
 import { UserRole as Role } from '@prisma/client';
 
 export interface CreateThreadDto {
@@ -57,6 +58,7 @@ export class ForumService {
     private readonly text: ForumTextService,
     private readonly subs: SubscriptionService,
     private readonly tips: TipService,
+    private readonly block: BlockService,
   ) {}
 
   // ──────────────────────────────────────────────
@@ -243,7 +245,15 @@ export class ForumService {
     const approvalFilter = canSeeUnapproved
       ? {}
       : { OR: [{ isApproved: true }, ...(userId ? [{ authorId: userId }] : [])] };
-    const where = { threadId, isDeleted: false, ...approvalFilter };
+    const where: any = { threadId, isDeleted: false, ...approvalFilter };
+
+    // Ẩn bài của người đã bị viewer chặn (trừ bài mở đầu thread)
+    if (userId && !canSeeUnapproved) {
+      const blockedIds = await this.block.getBlockedIds(userId);
+      if (blockedIds.length > 0) {
+        where.NOT = { AND: [{ authorId: { in: blockedIds } }, { isFirstPost: false }] };
+      }
+    }
 
     const [posts, total] = await Promise.all([
       this.prisma.post.findMany({

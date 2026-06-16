@@ -52,3 +52,26 @@ export const api = {
 };
 
 export const fetcher = <T>(p: string) => api.get<T>(p);
+
+// Upload ảnh trực tiếp lên server (multipart). KHÔNG set Content-Type để
+// trình duyệt tự thêm boundary cho multipart/form-data.
+export async function uploadImage(file: File): Promise<{ url: string }> {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '';
+  const form = new FormData();
+  form.append('file', file);
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${base}/api/media/upload`, {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : null;
+  if (!res.ok) {
+    const msg = body?.message || res.statusText;
+    throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg);
+  }
+  return body as { url: string };
+}

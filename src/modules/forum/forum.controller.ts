@@ -22,6 +22,7 @@ import { BookmarkService } from './bookmark.service';
 import { TipService } from './tip.service';
 import { InviteService, CreateInviteCodeDto } from './invite.service';
 import { ReadingProgressService } from './reading-progress.service';
+import { TagService } from './tag.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
@@ -38,11 +39,51 @@ export class ForumController {
     private readonly tips: TipService,
     private readonly invites: InviteService,
     private readonly readingProgress: ReadingProgressService,
+    private readonly tags: TagService,
   ) {}
 
   @Get('categories')
   categories() {
     return this.forum.listCategories();
+  }
+
+  // ── Tags (theo dõi thẻ) ──
+  // Đặt route có path riêng cho danh sách thẻ đang theo dõi để tránh đụng tags/:slug
+  @Get('my/followed-tags')
+  @UseGuards(JwtAuthGuard)
+  followedTags(@CurrentUser('id') userId: string) {
+    return this.tags.listFollowed(userId);
+  }
+
+  @Get('tags')
+  @UseGuards(OptionalJwtGuard)
+  listTags(
+    @CurrentUser('id') userId: string | undefined,
+    @Query('q') q?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.tags.listTags({ q, limit: limit ? Number(limit) : undefined, userId });
+  }
+
+  @Get('tags/:slug')
+  @UseGuards(OptionalJwtGuard)
+  getTag(@Param('slug') slug: string, @CurrentUser('id') userId?: string) {
+    return this.tags.getTag(slug, userId);
+  }
+
+  @Get('tags/:tagId/threads')
+  threadsForTag(
+    @Param('tagId') tagId: string,
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+  ) {
+    return this.tags.threadsForTag(tagId, Number(page), Number(limit));
+  }
+
+  @Post('tags/:tagId/follow')
+  @UseGuards(JwtAuthGuard)
+  followTag(@Param('tagId') tagId: string, @CurrentUser('id') userId: string) {
+    return this.tags.toggleFollow(userId, tagId);
   }
 
   // ── Threads ──

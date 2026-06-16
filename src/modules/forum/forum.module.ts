@@ -9,6 +9,7 @@ import { BookmarkService } from './bookmark.service';
 import { TipService } from './tip.service';
 import { ReadingProgressService } from './reading-progress.service';
 import { InviteService } from './invite.service';
+import { TagService } from './tag.service';
 import { HiddenContentModule } from '../hidden-content/hidden-content.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { GameModule } from '../game/game.module';
@@ -18,7 +19,7 @@ import { GemModule } from '../gem/gem.module';
 @Module({
   imports: [HiddenContentModule, NotificationsModule, GameModule, ModerationModule, GemModule],
   controllers: [ForumController],
-  providers: [ForumService, PollService, SubscriptionService, DraftService, ForumTextService, BookmarkService, TipService, InviteService, ReadingProgressService],
+  providers: [ForumService, PollService, SubscriptionService, DraftService, ForumTextService, BookmarkService, TipService, InviteService, ReadingProgressService, TagService],
   exports: [ForumService],
 })
 export class ForumModule {}

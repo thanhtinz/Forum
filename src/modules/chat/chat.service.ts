@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatChannelType, ChatMessageType } from '@prisma/client';
+import { PrisonService } from '../moderation/prison.service';
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly prison: PrisonService,
+  ) {}
 
   // ──────────────────────────────────────────────
   // LẤY/TẠO KÊNH GLOBAL (chat tổng — duy nhất)
@@ -109,6 +113,7 @@ export class ChatService {
     metadata?: any;
     replyToId?: string;
   }) {
+    await this.prison.assertNotJailed(userId);
     const channel = await this.prisma.chatChannel.findUnique({
       where: { id: data.channelId },
     });

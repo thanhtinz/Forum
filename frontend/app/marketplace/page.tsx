@@ -15,9 +15,12 @@ export default function MarketplacePage() {
 
   return (
     <div className="space-y-5">
-      <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-6 text-white shadow-card">
-        <h1 className="text-2xl font-bold">Chợ gian hàng</h1>
-        <p className="text-white/90">Khám phá các gian hàng source code, tool, dịch vụ.</p>
+      <header className="flex items-center justify-between overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-6 text-white shadow-card">
+        <div>
+          <h1 className="text-2xl font-bold">Chợ gian hàng</h1>
+          <p className="text-white/90">Khám phá các gian hàng source code, tool, dịch vụ.</p>
+        </div>
+        <a href="/store/manage" className="rounded-lg bg-white/15 px-4 py-2 text-sm font-medium hover:bg-white/25">Gian hàng của tôi</a>
       </header>
 
       {isLoading && <div className="p-10 text-center text-ink-500">Đang tải…</div>}

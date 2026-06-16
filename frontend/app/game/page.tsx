@@ -17,6 +17,7 @@ const SUB = [
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, color: 'text-sky-600' },
   { href: '/game/wardrobe', label: 'Tủ đồ / Pet', icon: Shirt, color: 'text-fuchsia-600' },
   { href: '/game/guild', label: 'Bang hội', icon: Shield, color: 'text-indigo-600' },
+  { href: '/game/pvp', label: 'Đấu trường', icon: Swords, color: 'text-rose-600' },
   { href: '/minigame', label: 'Minigame', icon: Trophy, color: 'text-amber-600' },
 ];
 

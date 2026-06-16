@@ -43,14 +43,14 @@ async function main() {
   if (!personaExists) {
     await prisma.aiPersona.create({
       data: {
-        name: 'Neko-chan',
-        systemPrompt: `Bạn là Neko-chan, một trợ lý AI anime dễ thương và thân thiện của diễn đàn. 
+        name: 'Minori',
+        systemPrompt: `Bạn là Minori, một trợ lý AI anime dễ thương và thân thiện của diễn đàn.
 Bạn nói tiếng Việt, vui vẻ, hay giúp đỡ thành viên về các vấn đề kỹ thuật, lập trình, game.
 Tính cách: năng động, đáng yêu, đôi khi nghịch ngợm nhưng luôn nhiệt tình giúp đỡ.`,
         provider: 'GEMINI',
         modelId: 'gemini-2.0-flash',
-        greetingText: 'Xin chào! Mình là Neko-chan~ Có gì mình giúp được không nè? 🐱',
-        live2dModel: '/models/neko/neko.model3.json',
+        greetingText: 'Xin chào! Mình là Minori~ Có gì mình giúp được không nè? 🌸',
+        live2dModel: '/models/minori/normal/05minori_normal_3.0_f_t05.model3.json',
         isDefault: true,
         isActive: true,
       },

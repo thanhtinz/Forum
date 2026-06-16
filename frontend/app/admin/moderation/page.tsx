@@ -13,17 +13,26 @@ export default function AdminModeration() {
   const [msg, setMsg] = useState('');
   const [censor, setCensor] = useState('');
   const [censorMsg, setCensorMsg] = useState('');
+  const [autoBest, setAutoBest] = useState(10);
+  const [autoBestMsg, setAutoBestMsg] = useState('');
 
   function load() {
     api.get<{ data: Report[] }>(`/admin/reports?status=${status}`).then((r) => setReports(r.data)).catch((e) => setMsg(e.message));
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [status]);
-  useEffect(() => { api.get<{ words: string[] }>('/forum/admin/censor').then((r) => setCensor((r.words || []).join(', '))).catch(() => {}); }, []);
+  useEffect(() => {
+    api.get<{ words: string[] }>('/forum/admin/censor').then((r) => setCensor((r.words || []).join(', '))).catch(() => {});
+    api.get<{ threshold: number }>('/forum/admin/auto-best').then((r) => setAutoBest(r.threshold)).catch(() => {});
+  }, []);
 
   async function saveCensor() {
     const words = censor.split(/[,\n]/).map((w) => w.trim()).filter(Boolean);
     try { const r = await api.post<{ words: string[] }>('/forum/admin/censor', { words }); setCensor((r.words || []).join(', ')); setCensorMsg('Đã lưu ✓'); setTimeout(() => setCensorMsg(''), 2500); }
     catch (e: any) { setCensorMsg(e.message); }
+  }
+  async function saveAutoBest() {
+    try { const r = await api.post<{ threshold: number }>('/forum/admin/auto-best', { threshold: autoBest }); setAutoBest(r.threshold); setAutoBestMsg('Đã lưu ✓'); setTimeout(() => setAutoBestMsg(''), 2500); }
+    catch (e: any) { setAutoBestMsg(e.message); }
   }
 
   const resolve = async (id: string, action: 'resolve' | 'dismiss') => {
@@ -34,6 +43,18 @@ export default function AdminModeration() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Hàng đợi kiểm duyệt</h1>
+
+      {/* Tự chọn câu trả lời hay nhất theo reaction */}
+      <div className="card p-4">
+        <h2 className="font-semibold">Tự chọn câu trả lời hay nhất</h2>
+        <p className="mt-0.5 text-xs text-ink-500">Khi một trả lời đạt đủ số lượt thích, hệ thống tự gắn "câu trả lời hay nhất" (đặt 0 để tắt). Lựa chọn thủ công của chủ thớt/mod luôn được ưu tiên.</p>
+        <div className="mt-2 flex items-center gap-2">
+          <input type="number" min={0} className="input w-28" value={autoBest} onChange={(e) => setAutoBest(Number(e.target.value))} />
+          <span className="text-sm text-ink-500">lượt thích</span>
+          <button onClick={saveAutoBest} className="btn-primary !py-1.5 text-sm">Lưu</button>
+          {autoBestMsg && <span className="text-sm text-emerald-600">{autoBestMsg}</span>}
+        </div>
+      </div>
 
       {/* Bộ lọc từ cấm (FoF Filter) */}
       <div className="card p-4">

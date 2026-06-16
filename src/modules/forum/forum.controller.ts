@@ -186,6 +186,21 @@ export class ForumController {
     return this.drafts.remove(id, userId);
   }
 
+  // ── Admin: ngưỡng tự chọn câu trả lời hay nhất theo reaction ──
+  @Get('admin/auto-best')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  getAutoBest() {
+    return this.forum.getAutoBestConfig();
+  }
+
+  @Post('admin/auto-best')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  setAutoBest(@Body('threshold') threshold: number) {
+    return this.forum.setAutoBestConfig(Number(threshold));
+  }
+
   // ── Admin: quản lý từ cấm (FoF Filter) ──
   @Get('admin/censor')
   @UseGuards(JwtAuthGuard, RolesGuard)

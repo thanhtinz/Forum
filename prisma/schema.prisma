@@ -96,6 +96,7 @@ enum NotifType {
   THREAD_REPLY
   POST_MENTION
   POST_LIKE
+  BEST_ANSWER
   ORDER_COMPLETE
   GEM_RECEIVED
   SYSTEM
@@ -159,29 +160,32 @@ model User {
   threadViews     ThreadView[]
   gemWallet       GemWallet?
   gemTransactions GemTransaction[]
-  orders          Order[]           @relation("BuyerOrders")
-  products        Product[]         @relation("SellerProducts")
+  orders          Order[]               @relation("BuyerOrders")
+  products        Product[]             @relation("SellerProducts")
   notifications   Notification[]
-  reports         Report[]          @relation("ReporterReports")
-  reportedReports Report[]          @relation("ReportedUserReports")
+  reports         Report[]              @relation("ReporterReports")
+  reportedReports Report[]              @relation("ReportedUserReports")
   badges          UserBadge[]
-  warnHistory     UserWarning[]     @relation("WarnedUser")
-  warnedBy        UserWarning[]     @relation("WarnedByUser")
+  warnHistory     UserWarning[]         @relation("WarnedUser")
+  warnedBy        UserWarning[]         @relation("WarnedByUser")
   aiSessions      AiSession[]
   hiddenUnlocks   HiddenContentUnlock[]
-  scamReports     ScamReport[]      @relation("ScamReporter")
-  scamReported    ScamReport[]      @relation("ScamReported")
-  friends         Friendship[]      @relation("UserFriends")
-  friendOf        Friendship[]      @relation("FriendOf")
+  scamReports     ScamReport[]          @relation("ScamReporter")
+  scamReported    ScamReport[]          @relation("ScamReported")
+  friends         Friendship[]          @relation("UserFriends")
+  friendOf        Friendship[]          @relation("FriendOf")
   followedTags    UserTagFollow[]
 
-  aiBonds         AiBond[]
-  aiOutfitUnlocks AiOutfitUnlock[]
-  storefront      Storefront?
+  aiBonds           AiBond[]
+  aiOutfitUnlocks   AiOutfitUnlock[]
+  storefront        Storefront?
   storefrontFollows StorefrontFollow[]
-  gameCharacter   GameCharacter?
-  prisonRecords   Prison[]          @relation("UserPrison")
-  fortuneRecords  FortuneRecord[]   @relation("UserFortune")
+  gameCharacter     GameCharacter?
+  prisonRecords     Prison[]             @relation("UserPrison")
+  fortuneRecords    FortuneRecord[]      @relation("UserFortune")
+  pollVotes         PollVote[]
+  threadSubs        ThreadSubscription[]
+  postDrafts        PostDraft[]
 
   @@index([email])
   @@index([username])
@@ -240,9 +244,9 @@ model Tag {
   usageCount Int      @default(0)
   createdAt  DateTime @default(now())
 
-  threadTags   ThreadTag[]
-  productTags  ProductTag[]
-  followers    UserTagFollow[]
+  threadTags  ThreadTag[]
+  productTags ProductTag[]
+  followers   UserTagFollow[]
 
   @@index([slug])
 }
@@ -268,6 +272,7 @@ model Thread {
   isPinned       Boolean      @default(false)
   isFeatured     Boolean      @default(false)
   isLocked       Boolean      @default(false)
+  bestAnswerId   String? // post được chọn là câu trả lời hay nhất (Q&A)
   viewCount      Int          @default(0)
   replyCount     Int          @default(0)
   likeCount      Int          @default(0)
@@ -276,11 +281,13 @@ model Thread {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  category Category    @relation(fields: [categoryId], references: [id])
-  author   User        @relation(fields: [authorId], references: [id])
-  posts    Post[]
-  tags     ThreadTag[]
-  views    ThreadView[]
+  category      Category             @relation(fields: [categoryId], references: [id])
+  author        User                 @relation(fields: [authorId], references: [id])
+  posts         Post[]
+  tags          ThreadTag[]
+  views         ThreadView[]
+  poll          Poll?
+  subscriptions ThreadSubscription[]
 
   @@index([categoryId])
   @@index([authorId])
@@ -375,13 +382,13 @@ model PostAttachment {
 // ============================================================
 
 model HiddenSection {
-  id          String         @id @default(cuid())
-  postId      String
-  sortOrder   Int            @default(0)
-  label       String?        @db.VarChar(255)
-  content     String         @db.Text
-  contentRaw  String         @db.Text
-  gateType    HiddenGateType
+  id         String         @id @default(cuid())
+  postId     String
+  sortOrder  Int            @default(0)
+  label      String?        @db.VarChar(255)
+  content    String         @db.Text
+  contentRaw String         @db.Text
+  gateType   HiddenGateType
 
   // điều kiện mở
   likeRequired    Int?
@@ -442,14 +449,14 @@ model Product {
   viewCount      Int           @default(0)
   ratingAvg      Float         @default(0)
   ratingCount    Int           @default(0)
-  pinnedUntil    DateTime?     // ghim sản phẩm (trả gem)
-  featuredUntil  DateTime?     // đề xuất sản phẩm (trả gem)
+  pinnedUntil    DateTime? // ghim sản phẩm (trả gem)
+  featuredUntil  DateTime? // đề xuất sản phẩm (trả gem)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  seller      User               @relation("SellerProducts", fields: [sellerId], references: [id])
-  storefront  Storefront?        @relation(fields: [storefrontId], references: [id])
-  category    MarketCategory?    @relation(fields: [categoryId], references: [id])
+  seller      User                @relation("SellerProducts", fields: [sellerId], references: [id])
+  storefront  Storefront?         @relation(fields: [storefrontId], references: [id])
+  category    MarketCategory?     @relation(fields: [categoryId], references: [id])
   orders      Order[]
   reviews     ProductReview[]
   screenshots ProductScreenshot[]
@@ -487,24 +494,24 @@ model ProductTag {
 }
 
 model Order {
-  id            String      @id @default(cuid())
-  buyerId       String
-  productId     String
-  status        OrderStatus @default(PENDING)
-  gemSpent      Int
-  sellerEarned  Int
-  platformFee   Int
-  downloadUrl   String?
-  downloadCount Int         @default(0)
-  downloadLimit Int         @default(5)
-  escrowStatus  String?     @db.VarChar(20) // HELD | RELEASED | REFUNDED
-  escrowReleaseAt DateTime?  // tiền seller được giải ngân sau khi giam 3 ngày
-  couponCode    String?     @db.VarChar(40)
-  deliveredContent String?  @db.Text // nội dung giao tự động (tài khoản/key)
-  completedAt   DateTime?
-  refundedAt    DateTime?
-  refundReason  String?
-  createdAt     DateTime    @default(now())
+  id               String      @id @default(cuid())
+  buyerId          String
+  productId        String
+  status           OrderStatus @default(PENDING)
+  gemSpent         Int
+  sellerEarned     Int
+  platformFee      Int
+  downloadUrl      String?
+  downloadCount    Int         @default(0)
+  downloadLimit    Int         @default(5)
+  escrowStatus     String?     @db.VarChar(20) // HELD | RELEASED | REFUNDED
+  escrowReleaseAt  DateTime? // tiền seller được giải ngân sau khi giam 3 ngày
+  couponCode       String?     @db.VarChar(40)
+  deliveredContent String?     @db.Text // nội dung giao tự động (tài khoản/key)
+  completedAt      DateTime?
+  refundedAt       DateTime?
+  refundReason     String?
+  createdAt        DateTime    @default(now())
 
   buyer   User    @relation("BuyerOrders", fields: [buyerId], references: [id])
   product Product @relation(fields: [productId], references: [id])
@@ -515,10 +522,10 @@ model Order {
 }
 
 model ProductReview {
-  id        String   @id @default(cuid())
-  productId String
-  userId    String
-  orderId   String?
+  id          String   @id @default(cuid())
+  productId   String
+  userId      String
+  orderId     String?
   rating      Int
   content     String   @db.Text
   sellerReply String?  @db.Text
@@ -808,16 +815,16 @@ model AuditLog {
 // ============================================================
 
 model AiCharacter {
-  id           String   @id @default(cuid())
-  slug         String   @unique @db.VarChar(60)
-  name         String   @db.VarChar(100)
-  description  String?  @db.Text
-  defaultOutfit String  @db.VarChar(60)
-  emotionMap   Json     // emotion → motion names
-  isActive     Boolean  @default(true)
-  sortOrder    Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String   @id @default(cuid())
+  slug          String   @unique @db.VarChar(60)
+  name          String   @db.VarChar(100)
+  description   String?  @db.Text
+  defaultOutfit String   @db.VarChar(60)
+  emotionMap    Json // emotion → motion names
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   outfits  AiOutfit[]
   bonds    AiBond[]
@@ -839,7 +846,7 @@ model AiOutfit {
   sortOrder       Int      @default(0)
   createdAt       DateTime @default(now())
 
-  character AiCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  character AiCharacter      @relation(fields: [characterId], references: [id], onDelete: Cascade)
   unlocks   AiOutfitUnlock[]
 
   @@unique([characterId, slug])
@@ -848,16 +855,16 @@ model AiOutfit {
 
 // Thiện cảm/bond giữa user và character
 model AiBond {
-  id          String   @id @default(cuid())
-  userId      String
-  characterId String
-  bondLevel   Int      @default(0)
-  bondPoints  Int      @default(0)   // tích lũy → lên level
-  totalMessages Int    @default(0)
-  currentOutfit String @db.VarChar(60) // outfit đang chọn
+  id             String   @id @default(cuid())
+  userId         String
+  characterId    String
+  bondLevel      Int      @default(0)
+  bondPoints     Int      @default(0) // tích lũy → lên level
+  totalMessages  Int      @default(0)
+  currentOutfit  String   @db.VarChar(60) // outfit đang chọn
   lastInteractAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   character AiCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
@@ -867,9 +874,9 @@ model AiBond {
 }
 
 model AiOutfitUnlock {
-  id        String   @id @default(cuid())
-  userId    String
-  outfitId  String
+  id         String   @id @default(cuid())
+  userId     String
+  outfitId   String
   unlockedAt DateTime @default(now())
 
   user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -884,13 +891,13 @@ model AiOutfitUnlock {
 // ============================================================
 
 model ToolCategory {
-  id          String   @id @default(cuid())
-  slug        String   @unique @db.VarChar(60)
-  name        String   @db.VarChar(100)
-  description String?  @db.Text
-  icon        String?  @db.VarChar(50)
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
+  id          String  @id @default(cuid())
+  slug        String  @unique @db.VarChar(60)
+  name        String  @db.VarChar(100)
+  description String? @db.Text
+  icon        String? @db.VarChar(50)
+  sortOrder   Int     @default(0)
+  isActive    Boolean @default(true)
 
   tools Tool[]
 }
@@ -904,7 +911,7 @@ model Tool {
   icon        String?  @db.VarChar(50)
   component   String   @db.VarChar(100) // tên React component
   isActive    Boolean  @default(true)
-  isPro       Boolean  @default(false)  // cần VIP/gem
+  isPro       Boolean  @default(false) // cần VIP/gem
   usageCount  Int      @default(0)
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
@@ -920,35 +927,35 @@ model Tool {
 // ============================================================
 
 model Storefront {
-  id           String   @id @default(cuid())
-  ownerId      String   @unique
-  slug         String   @unique @db.VarChar(80)
-  name         String   @db.VarChar(120)
-  tagline      String?  @db.VarChar(255)
-  description  String?  @db.Text
-  bannerUrl    String?
-  logoUrl      String?
-  isVerified   Boolean  @default(false)
-  isActive     Boolean  @default(true)
-  totalSales   Int      @default(0)
-  totalRevenue Int      @default(0)
-  ratingAvg    Float    @default(0)
-  ratingCount  Int      @default(0)
-  followerCount Int     @default(0)
-  policyRefund String?  @db.Text
-  socialLinks  Json?    // { facebook, discord, telegram }
+  id            String    @id @default(cuid())
+  ownerId       String    @unique
+  slug          String    @unique @db.VarChar(80)
+  name          String    @db.VarChar(120)
+  tagline       String?   @db.VarChar(255)
+  description   String?   @db.Text
+  bannerUrl     String?
+  logoUrl       String?
+  isVerified    Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  totalSales    Int       @default(0)
+  totalRevenue  Int       @default(0)
+  ratingAvg     Float     @default(0)
+  ratingCount   Int       @default(0)
+  followerCount Int       @default(0)
+  policyRefund  String?   @db.Text
+  socialLinks   Json? // { facebook, discord, telegram }
   featuredUntil DateTime? // đề xuất gian hàng (trả gem)
-  aiUntil      DateTime?  // gói AI shop theo tháng
-  aiForever    Boolean   @default(false) // gói AI vĩnh viễn
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  aiUntil       DateTime? // gói AI shop theo tháng
+  aiForever     Boolean   @default(false) // gói AI vĩnh viễn
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  owner     User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  followers StorefrontFollow[]
-  products  Product[]
-  coupons   Coupon[]
-  tickets   ShopTicket[]
-  staff     StoreStaff[]
+  owner        User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  followers    StorefrontFollow[]
+  products     Product[]
+  coupons      Coupon[]
+  tickets      ShopTicket[]
+  staff        StoreStaff[]
   activityLogs StoreActivityLog[]
 
   @@index([slug])
@@ -972,12 +979,12 @@ model StorefrontFollow {
 // ============================================================
 
 model ConfigGroup {
-  id          String   @id @default(cuid())
-  key         String   @unique @db.VarChar(80)
-  name        String   @db.VarChar(120)
-  description String?  @db.Text
-  icon        String?  @db.VarChar(50)
-  sortOrder   Int      @default(0)
+  id          String  @id @default(cuid())
+  key         String  @unique @db.VarChar(80)
+  name        String  @db.VarChar(120)
+  description String? @db.Text
+  icon        String? @db.VarChar(50)
+  sortOrder   Int     @default(0)
 
   settings ConfigSetting[]
 }
@@ -991,8 +998,8 @@ model ConfigSetting {
   type         String   @db.VarChar(30) // string|number|boolean|select|json|color|image|textarea
   value        Json
   defaultValue Json?
-  options      Json?    // cho select: [{label, value}]
-  validation   Json?    // { min, max, required, pattern }
+  options      Json? // cho select: [{label, value}]
+  validation   Json? // { min, max, required, pattern }
   sortOrder    Int      @default(0)
   isSecret     Boolean  @default(false) // API keys → mask trong UI
   updatedAt    DateTime @updatedAt
@@ -1013,15 +1020,15 @@ enum Gender {
 
 enum EquipSlot {
   WEAPON
-  ARMOR       // áo
-  CLOAK       // áo choàng
-  PANTS       // quần
-  BELT        // thắt lưng
-  GLOVES      // găng tay
-  BOOTS       // giày
-  NECKLACE    // dây chuyền
-  RING        // nhẫn
-  SKIN        // skin đổi toàn bộ giao diện
+  ARMOR // áo
+  CLOAK // áo choàng
+  PANTS // quần
+  BELT // thắt lưng
+  GLOVES // găng tay
+  BOOTS // giày
+  NECKLACE // dây chuyền
+  RING // nhẫn
+  SKIN // skin đổi toàn bộ giao diện
 }
 
 enum ItemRarity {
@@ -1034,8 +1041,8 @@ enum ItemRarity {
 }
 
 enum Currency {
-  COIN   // kiếm trong game, không rút được
-  GEM    // nạp/rút được
+  COIN // kiếm trong game, không rút được
+  GEM // nạp/rút được
 }
 
 enum BattleType {
@@ -1059,54 +1066,54 @@ enum GuildRole {
 
 // ── Nhân vật pixel của user ──
 model GameCharacter {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  gender      Gender
-  level       Int      @default(1)
-  exp         Int      @default(0)         // exp từ forum
-  statPoints  Int      @default(0)         // điểm chưa phân bổ
+  id         String @id @default(cuid())
+  userId     String @unique
+  gender     Gender
+  level      Int    @default(1)
+  exp        Int    @default(0) // exp từ forum
+  statPoints Int    @default(0) // điểm chưa phân bổ
 
   // Chỉ số cơ bản (user tự phân bổ, +5 mỗi level)
-  strength    Int      @default(5)         // sát thương vật lý
-  vitality    Int      @default(5)         // máu
-  agility     Int      @default(5)         // tốc độ, né
-  intelligence Int     @default(5)         // sát thương phép, mana
+  strength     Int @default(5) // sát thương vật lý
+  vitality     Int @default(5) // máu
+  agility      Int @default(5) // tốc độ, né
+  intelligence Int @default(5) // sát thương phép, mana
 
   // Pixel appearance (base, trước khi mặc skin)
-  skinTone    String   @default("#f0c8a0") @db.VarChar(20)
-  hairStyle   Int      @default(1)
-  hairColor   String   @default("#3a2a1a") @db.VarChar(20)
-  faceType    Int      @default(1)
+  skinTone  String @default("#f0c8a0") @db.VarChar(20)
+  hairStyle Int    @default(1)
+  hairColor String @default("#3a2a1a") @db.VarChar(20)
+  faceType  Int    @default(1)
 
-  coinBalance Int      @default(0)         // tiền tệ game
+  coinBalance Int @default(0) // tiền tệ game
 
   // Combat stats (cache, tính lại khi đổi trang bị/level)
-  combatPower Int      @default(0)
+  combatPower Int @default(0)
 
   // PvP
-  pvpRank     Int      @default(1000)      // elo
-  pvpWins     Int      @default(0)
-  pvpLosses   Int      @default(0)
+  pvpRank   Int @default(1000) // elo
+  pvpWins   Int @default(0)
+  pvpLosses Int @default(0)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  inventory   InventoryItem[]
-  equipped    EquippedItem[]
-  guildMember GuildMember?
-  skills      CharacterSkill[]
-  survival    CharacterSurvival?
-  fishingProfile FishingProfile?
-  fishCatches    FishCatch[]
-  farmProfile    FarmProfile?
-  farmPlots      FarmPlot[]
-  warehouse      WarehouseItem[]
-  farmAnimals    FarmAnimal[]
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventory       InventoryItem[]
+  equipped        EquippedItem[]
+  guildMember     GuildMember?
+  skills          CharacterSkill[]
+  survival        CharacterSurvival?
+  fishingProfile  FishingProfile?
+  fishCatches     FishCatch[]
+  farmProfile     FarmProfile?
+  farmPlots       FarmPlot[]
+  warehouse       WarehouseItem[]
+  farmAnimals     FarmAnimal[]
   farmFertilizers FarmFertilizer[]
-  farmCooking    FarmCooking[]
-  farmSkills     FarmSkill[]
-  avatarItems    UserAvatarItem[]
+  farmCooking     FarmCooking[]
+  farmSkills      FarmSkill[]
+  avatarItems     UserAvatarItem[]
 
   @@index([level])
   @@index([pvpRank])
@@ -1121,30 +1128,30 @@ model ItemTemplate {
   description String?    @db.Text
   slot        EquipSlot
   rarity      ItemRarity @default(COMMON)
-  spriteUrl   String     @db.VarChar(255)  // pixel sprite
+  spriteUrl   String     @db.VarChar(255) // pixel sprite
   iconUrl     String?    @db.VarChar(255)
 
   // Yêu cầu
-  reqLevel    Int        @default(1)
+  reqLevel Int @default(1)
 
   // Chỉ số cộng thêm
-  bonusStr    Int        @default(0)
-  bonusVit    Int        @default(0)
-  bonusAgi    Int        @default(0)
-  bonusInt    Int        @default(0)
-  bonusHp     Int        @default(0)
-  bonusAtk    Int        @default(0)
-  bonusDef    Int        @default(0)
+  bonusStr Int @default(0)
+  bonusVit Int @default(0)
+  bonusAgi Int @default(0)
+  bonusInt Int @default(0)
+  bonusHp  Int @default(0)
+  bonusAtk Int @default(0)
+  bonusDef Int @default(0)
 
   // Giá (cả hai loại tiền, giá khác nhau)
-  priceCoin   Int?       // null = không bán bằng coin
-  priceGem    Int?       // null = không bán bằng gem
+  priceCoin Int? // null = không bán bằng coin
+  priceGem  Int? // null = không bán bằng gem
 
-  isActive    Boolean    @default(true)
-  isTradeable Boolean    @default(true)
-  stock       Int?       // null = vô hạn
+  isActive    Boolean @default(true)
+  isTradeable Boolean @default(true)
+  stock       Int? // null = vô hạn
 
-  createdAt   DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   inventoryItems InventoryItem[]
 
@@ -1154,13 +1161,13 @@ model ItemTemplate {
 
 // ── Item trong túi đồ user ──
 model InventoryItem {
-  id          String   @id @default(cuid())
-  characterId String
-  templateId  String
-  quantity    Int      @default(1)
-  enhanceLevel Int     @default(0)   // cấp cường hóa +0 → +15
-  isLocked    Boolean  @default(false)
-  acquiredAt  DateTime @default(now())
+  id           String   @id @default(cuid())
+  characterId  String
+  templateId   String
+  quantity     Int      @default(1)
+  enhanceLevel Int      @default(0) // cấp cường hóa +0 → +15
+  isLocked     Boolean  @default(false)
+  acquiredAt   DateTime @default(now())
 
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
   template  ItemTemplate  @relation(fields: [templateId], references: [id])
@@ -1172,11 +1179,11 @@ model InventoryItem {
 
 // ── Item đang trang bị (1 slot 1 item) ──
 model EquippedItem {
-  id             String    @id @default(cuid())
-  characterId    String
-  slot           EquipSlot
-  inventoryItemId String   @unique
-  equippedAt     DateTime  @default(now())
+  id              String    @id @default(cuid())
+  characterId     String
+  slot            EquipSlot
+  inventoryItemId String    @unique
+  equippedAt      DateTime  @default(now())
 
   character     GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
   inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
@@ -1187,20 +1194,20 @@ model EquippedItem {
 
 // ── Skill ──
 model SkillTemplate {
-  id          String   @id @default(cuid())
-  slug        String   @unique @db.VarChar(80)
-  name        String   @db.VarChar(120)
-  description String?  @db.Text
-  iconUrl     String?  @db.VarChar(255)
-  reqLevel    Int      @default(1)
-  manaCost    Int      @default(0)
-  cooldown    Int      @default(0)      // số turn
-  damageMultiplier Float @default(1.0)
-  effectType  String?  @db.VarChar(50)  // stun|heal|buff|dot
-  effectValue Int      @default(0)
-  priceCoin   Int?
-  priceGem    Int?
-  isActive    Boolean  @default(true)
+  id               String  @id @default(cuid())
+  slug             String  @unique @db.VarChar(80)
+  name             String  @db.VarChar(120)
+  description      String? @db.Text
+  iconUrl          String? @db.VarChar(255)
+  reqLevel         Int     @default(1)
+  manaCost         Int     @default(0)
+  cooldown         Int     @default(0) // số turn
+  damageMultiplier Float   @default(1.0)
+  effectType       String? @db.VarChar(50) // stun|heal|buff|dot
+  effectValue      Int     @default(0)
+  priceCoin        Int?
+  priceGem         Int?
+  isActive         Boolean @default(true)
 
   characterSkills CharacterSkill[]
 }
@@ -1209,7 +1216,7 @@ model CharacterSkill {
   id          String   @id @default(cuid())
   characterId String
   skillId     String
-  slotIndex   Int      // vị trí trên thanh skill (0-3)
+  slotIndex   Int // vị trí trên thanh skill (0-3)
   learnedAt   DateTime @default(now())
 
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
@@ -1223,16 +1230,16 @@ model CharacterSkill {
 model Guild {
   id          String   @id @default(cuid())
   name        String   @unique @db.VarChar(60)
-  tag         String   @unique @db.VarChar(8)  // [TAG]
+  tag         String   @unique @db.VarChar(8) // [TAG]
   description String?  @db.Text
   emblemUrl   String?  @db.VarChar(255)
   level       Int      @default(1)
   exp         Int      @default(0)
-  coinFund    Int      @default(0)   // quỹ guild
+  coinFund    Int      @default(0) // quỹ guild
   maxMembers  Int      @default(30)
   leaderId    String
   isPublic    Boolean  @default(true)
-  reqLevel    Int      @default(1)   // level tối thiểu để xin vào
+  reqLevel    Int      @default(1) // level tối thiểu để xin vào
   createdAt   DateTime @default(now())
 
   members GuildMember[]
@@ -1241,12 +1248,12 @@ model Guild {
 }
 
 model GuildMember {
-  id          String    @id @default(cuid())
-  guildId     String
-  characterId String    @unique
-  role        GuildRole @default(MEMBER)
-  contribution Int      @default(0)   // đóng góp tích lũy
-  joinedAt    DateTime  @default(now())
+  id           String    @id @default(cuid())
+  guildId      String
+  characterId  String    @unique
+  role         GuildRole @default(MEMBER)
+  contribution Int       @default(0) // đóng góp tích lũy
+  joinedAt     DateTime  @default(now())
 
   guild     Guild         @relation(fields: [guildId], references: [id], onDelete: Cascade)
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
@@ -1256,18 +1263,18 @@ model GuildMember {
 
 // ── Battle log ──
 model Battle {
-  id          String       @id @default(cuid())
-  type        BattleType
-  attackerId  String
-  defenderId  String?      // null nếu PvE
-  result      BattleResult
+  id                  String       @id @default(cuid())
+  type                BattleType
+  attackerId          String
+  defenderId          String? // null nếu PvE
+  result              BattleResult
   attackerPowerBefore Int
   defenderPowerBefore Int
-  rounds      Json         // chi tiết từng round để replay
-  expGained   Int          @default(0)
-  coinGained  Int          @default(0)
-  rankChange  Int          @default(0)  // elo change
-  createdAt   DateTime     @default(now())
+  rounds              Json // chi tiết từng round để replay
+  expGained           Int          @default(0)
+  coinGained          Int          @default(0)
+  rankChange          Int          @default(0) // elo change
+  createdAt           DateTime     @default(now())
 
   @@index([attackerId])
   @@index([defenderId])
@@ -1278,7 +1285,7 @@ model Battle {
 model CoinTransaction {
   id            String   @id @default(cuid())
   characterId   String
-  type          String   @db.VarChar(40)  // earn_battle|earn_forum|spend_shop|guild_donate|...
+  type          String   @db.VarChar(40) // earn_battle|earn_forum|spend_shop|guild_donate|...
   amount        Int
   balanceBefore Int
   balanceAfter  Int
@@ -1292,10 +1299,10 @@ model CoinTransaction {
 
 // ── Level curve config (admin chỉnh) ──
 model LevelCurve {
-  level    Int  @id
-  expRequired Int
+  level           Int @id
+  expRequired     Int
   statPointReward Int @default(5)
-  coinReward  Int @default(0)
+  coinReward      Int @default(0)
 }
 
 // ============================================================
@@ -1303,20 +1310,20 @@ model LevelCurve {
 // ============================================================
 
 model CharacterSurvival {
-  id          String   @id @default(cuid())
-  characterId String   @unique
+  id          String @id @default(cuid())
+  characterId String @unique
 
   // Các chỉ số 0-100 (100 = đầy đủ, 0 = nguy hiểm)
-  hunger      Int      @default(100)   // đói (giảm dần theo thời gian)
-  thirst      Int      @default(100)   // khát
-  hygiene     Int      @default(100)   // vệ sinh
-  energy      Int      @default(100)   // ngủ/năng lượng
-  health      Int      @default(100)   // sức khỏe tổng
+  hunger  Int @default(100) // đói (giảm dần theo thời gian)
+  thirst  Int @default(100) // khát
+  hygiene Int @default(100) // vệ sinh
+  energy  Int @default(100) // ngủ/năng lượng
+  health  Int @default(100) // sức khỏe tổng
 
   // Bệnh
-  isSick      Boolean  @default(false)
-  sickness    String?  @db.VarChar(60)  // loại bệnh
-  sickUntil   DateTime?
+  isSick    Boolean   @default(false)
+  sickness  String?   @db.VarChar(60) // loại bệnh
+  sickUntil DateTime?
 
   // Mốc thời gian để tính suy giảm
   lastUpdated DateTime @default(now())
@@ -1349,19 +1356,19 @@ model ConsumableTemplate {
   spriteUrl   String?        @db.VarChar(255)
 
   // Hiệu ứng hồi phục (0-100)
-  restoreHunger  Int @default(0)
-  restoreThirst  Int @default(0)
-  restoreHygiene Int @default(0)
-  restoreEnergy  Int @default(0)
-  restoreHealth  Int @default(0)
+  restoreHunger  Int     @default(0)
+  restoreThirst  Int     @default(0)
+  restoreHygiene Int     @default(0)
+  restoreEnergy  Int     @default(0)
+  restoreHealth  Int     @default(0)
   curesSickness  Boolean @default(false)
 
-  priceCoin   Int?
-  priceGem    Int?
-  isActive    Boolean @default(true)
-  stock       Int?
-  sortOrder   Int     @default(0)
-  createdAt   DateTime @default(now())
+  priceCoin Int?
+  priceGem  Int?
+  isActive  Boolean  @default(true)
+  stock     Int?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 // ============================================================
@@ -1369,14 +1376,14 @@ model ConsumableTemplate {
 // ============================================================
 
 enum SpecialItemType {
-  RENAME_CARD       // thẻ đổi tên
-  NAME_HIGHLIGHT    // thẻ làm nổi bật tên (màu/gradient/animation)
-  NAME_COLOR        // đổi màu tên
-  PROFILE_BANNER    // banner profile
-  AVATAR_FRAME      // khung avatar
-  POST_EFFECT       // hiệu ứng bài viết
-  EXP_BOOST         // tăng exp x lần
-  COIN_BOOST        // tăng coin
+  RENAME_CARD // thẻ đổi tên
+  NAME_HIGHLIGHT // thẻ làm nổi bật tên (màu/gradient/animation)
+  NAME_COLOR // đổi màu tên
+  PROFILE_BANNER // banner profile
+  AVATAR_FRAME // khung avatar
+  POST_EFFECT // hiệu ứng bài viết
+  EXP_BOOST // tăng exp x lần
+  COIN_BOOST // tăng coin
 }
 
 model SpecialItemTemplate {
@@ -1388,27 +1395,27 @@ model SpecialItemTemplate {
   iconUrl     String?         @db.VarChar(255)
 
   // Cấu hình hiệu ứng (JSON linh hoạt)
-  effectConfig Json?          // { color, gradient, duration, multiplier, ... }
-  durationDays Int?           // null = vĩnh viễn
+  effectConfig Json? // { color, gradient, duration, multiplier, ... }
+  durationDays Int? // null = vĩnh viễn
 
-  priceCoin   Int?
-  priceGem    Int?
-  isActive    Boolean @default(true)
-  stock       Int?
-  sortOrder   Int     @default(0)
-  createdAt   DateTime @default(now())
+  priceCoin Int?
+  priceGem  Int?
+  isActive  Boolean  @default(true)
+  stock     Int?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 
   userItems UserSpecialItem[]
 }
 
 model UserSpecialItem {
-  id          String   @id @default(cuid())
-  userId      String
-  templateId  String
-  isUsed      Boolean  @default(false)
-  usedAt      DateTime?
-  expiresAt   DateTime?  // cho item có thời hạn
-  acquiredAt  DateTime @default(now())
+  id         String    @id @default(cuid())
+  userId     String
+  templateId String
+  isUsed     Boolean   @default(false)
+  usedAt     DateTime?
+  expiresAt  DateTime? // cho item có thời hạn
+  acquiredAt DateTime  @default(now())
 
   template SpecialItemTemplate @relation(fields: [templateId], references: [id])
 
@@ -1417,15 +1424,15 @@ model UserSpecialItem {
 
 // User cosmetic state (đang active gì)
 model UserCosmetic {
-  userId         String   @id
-  nameColor      String?  @db.VarChar(20)
-  nameHighlight  String?  @db.VarChar(40)  // gradient/glow/rainbow
+  userId             String    @id
+  nameColor          String?   @db.VarChar(20)
+  nameHighlight      String?   @db.VarChar(40) // gradient/glow/rainbow
   nameHighlightUntil DateTime?
-  avatarFrame    String?  @db.VarChar(60)
-  profileBanner  String?  @db.VarChar(255)
-  hasRenameCard  Boolean  @default(false)  // đã mua thẻ đổi tên chưa dùng
-  renameCount    Int      @default(0)      // số lần đã đổi tên
-  updatedAt      DateTime @updatedAt
+  avatarFrame        String?   @db.VarChar(60)
+  profileBanner      String?   @db.VarChar(255)
+  hasRenameCard      Boolean   @default(false) // đã mua thẻ đổi tên chưa dùng
+  renameCount        Int       @default(0) // số lần đã đổi tên
+  updatedAt          DateTime  @updatedAt
 }
 
 // ============================================================
@@ -1433,22 +1440,22 @@ model UserCosmetic {
 // ============================================================
 
 model Trophy {
-  id          String   @id @default(cuid())
-  slug        String   @unique @db.VarChar(80)
-  name        String   @db.VarChar(120)
-  description String   @db.Text
-  iconUrl     String?  @db.VarChar(255)
-  points      Int      @default(1)        // trophy points khi đạt
+  id          String  @id @default(cuid())
+  slug        String  @unique @db.VarChar(80)
+  name        String  @db.VarChar(120)
+  description String  @db.Text
+  iconUrl     String? @db.VarChar(255)
+  points      Int     @default(1) // trophy points khi đạt
 
   // Criteria (JSON linh hoạt, admin cấu hình)
   // vd: { type: "post_count", value: 100 } | { type: "reaction_received", value: 500 }
   //     { type: "days_registered", value: 365 } | { type: "first_post" }
-  criteria    Json
+  criteria Json
 
-  isActive    Boolean  @default(true)
-  isHidden    Boolean  @default(false)    // trophy ẩn (bất ngờ)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  isActive  Boolean  @default(true)
+  isHidden  Boolean  @default(false) // trophy ẩn (bất ngờ)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 
   userTrophies UserTrophy[]
 }
@@ -1467,12 +1474,12 @@ model UserTrophy {
 
 // User Title Ladder — danh hiệu theo mốc trophy points
 model UserTitle {
-  id          String   @id @default(cuid())
-  name        String   @db.VarChar(120)   // "Thành viên", "Kỳ cựu", "Huyền thoại"
-  minPoints   Int      @unique            // mốc điểm tối thiểu
-  color       String?  @db.VarChar(20)
-  iconUrl     String?  @db.VarChar(255)
-  sortOrder   Int      @default(0)
+  id        String  @id @default(cuid())
+  name      String  @db.VarChar(120) // "Thành viên", "Kỳ cựu", "Huyền thoại"
+  minPoints Int     @unique // mốc điểm tối thiểu
+  color     String? @db.VarChar(20)
+  iconUrl   String? @db.VarChar(255)
+  sortOrder Int     @default(0)
 }
 
 // User trophy points tracker
@@ -1488,21 +1495,21 @@ model UserTrophyStats {
 // ============================================================
 
 enum MinigameType {
-  JACKPOT_777    // máy quay slot 777
-  TIEN_LEN       // tiến lên miền nam
+  JACKPOT_777 // máy quay slot 777
+  TIEN_LEN // tiến lên miền nam
   BLACKJACK
   POKER
-  TAI_XIU        // tài xỉu
-  DUA_THU        // đua thú
-  CARO           // cờ caro
-  BAU_CUA        // bầu cua
-  LUCKY_WHEEL    // vòng quay may mắn
-  COIN_FLIP      // tung đồng xu
+  TAI_XIU // tài xỉu
+  DUA_THU // đua thú
+  CARO // cờ caro
+  BAU_CUA // bầu cua
+  LUCKY_WHEEL // vòng quay may mắn
+  COIN_FLIP // tung đồng xu
 }
 
 enum MinigameStatus {
-  WAITING        // chờ người chơi
-  PLAYING        // đang chơi
+  WAITING // chờ người chơi
+  PLAYING // đang chơi
   FINISHED
   CANCELLED
 }
@@ -1515,37 +1522,37 @@ model MinigameConfig {
   iconUrl     String?      @db.VarChar(255)
 
   // Cấu hình cược (CHỈ COIN)
-  minBet      Int          @default(100)
-  maxBet      Int          @default(100000)
-  houseFee    Float        @default(0.05)   // phí nhà cái 5%
+  minBet   Int   @default(100)
+  maxBet   Int   @default(100000)
+  houseFee Float @default(0.05) // phí nhà cái 5%
 
   // Asset config (admin upload)
-  assetConfig Json?        // { cardSprites, diceSprites, animalSprites, ... }
+  assetConfig Json? // { cardSprites, diceSprites, animalSprites, ... }
 
-  maxPlayers  Int          @default(4)
-  minPlayers  Int          @default(2)
-  isActive    Boolean      @default(true)
-  sortOrder   Int          @default(0)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  maxPlayers Int      @default(4)
+  minPlayers Int      @default(2)
+  isActive   Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  rooms       MinigameRoom[]
+  rooms MinigameRoom[]
 }
 
 model MinigameRoom {
-  id          String         @id @default(cuid())
-  configId    String
-  type        MinigameType
-  status      MinigameStatus @default(WAITING)
-  betAmount   Int            // cược cố định của phòng (coin)
-  hostId      String         // characterId người tạo
-  maxPlayers  Int
-  state       Json?          // game state hiện tại
-  potCoin     Int            @default(0)   // tổng tiền cược trong pot
-  createdAt   DateTime       @default(now())
-  finishedAt  DateTime?
+  id         String         @id @default(cuid())
+  configId   String
+  type       MinigameType
+  status     MinigameStatus @default(WAITING)
+  betAmount  Int // cược cố định của phòng (coin)
+  hostId     String // characterId người tạo
+  maxPlayers Int
+  state      Json? // game state hiện tại
+  potCoin    Int            @default(0) // tổng tiền cược trong pot
+  createdAt  DateTime       @default(now())
+  finishedAt DateTime?
 
-  config  MinigameConfig    @relation(fields: [configId], references: [id])
+  config  MinigameConfig   @relation(fields: [configId], references: [id])
   players MinigamePlayer[]
   results MinigameResult[]
 
@@ -1573,9 +1580,9 @@ model MinigameResult {
   roomId      String
   characterId String
   coinBet     Int
-  coinWon     Int      // số coin nhận (đã trừ phí), 0 nếu thua
+  coinWon     Int // số coin nhận (đã trừ phí), 0 nếu thua
   isWinner    Boolean
-  details     Json?    // bài, điểm, vị trí về đích...
+  details     Json? // bài, điểm, vị trí về đích...
   createdAt   DateTime @default(now())
 
   room MinigameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
@@ -1590,7 +1597,7 @@ model GambleLog {
   characterId String
   type        MinigameType
   betCoin     Int
-  resultCoin  Int          // + thắng / - thua
+  resultCoin  Int // + thắng / - thua
   createdAt   DateTime     @default(now())
 
   @@index([characterId])
@@ -1602,10 +1609,10 @@ model GambleLog {
 // ============================================================
 
 enum ChatChannelType {
-  GLOBAL      // chat tổng
-  PRIVATE     // chat riêng (1-1)
-  GROUP       // chat nhóm
-  GUILD       // chat guild
+  GLOBAL // chat tổng
+  PRIVATE // chat riêng (1-1)
+  GROUP // chat nhóm
+  GUILD // chat guild
 }
 
 enum ChatMessageType {
@@ -1616,20 +1623,20 @@ enum ChatMessageType {
   IMAGE
   VIDEO
   FILE
-  VOICE       // mic
-  MUSIC       // link mp3/youtube/spotify/soundcloud
+  VOICE // mic
+  MUSIC // link mp3/youtube/spotify/soundcloud
 }
 
 model ChatChannel {
-  id          String          @id @default(cuid())
-  type        ChatChannelType
-  name        String?         @db.VarChar(120)  // null cho private/global
-  avatarUrl   String?
-  guildId     String?         @unique           // nếu là guild chat
-  createdById String?
-  isActive    Boolean         @default(true)
-  lastMessageAt DateTime      @default(now())
-  createdAt   DateTime        @default(now())
+  id            String          @id @default(cuid())
+  type          ChatChannelType
+  name          String?         @db.VarChar(120) // null cho private/global
+  avatarUrl     String?
+  guildId       String?         @unique // nếu là guild chat
+  createdById   String?
+  isActive      Boolean         @default(true)
+  lastMessageAt DateTime        @default(now())
+  createdAt     DateTime        @default(now())
 
   members  ChatMember[]
   messages ChatMessage[]
@@ -1639,13 +1646,13 @@ model ChatChannel {
 }
 
 model ChatMember {
-  id          String   @id @default(cuid())
-  channelId   String
-  userId      String
-  isAdmin     Boolean  @default(false)  // admin nhóm
-  isMuted     Boolean  @default(false)
-  lastReadAt  DateTime @default(now())
-  joinedAt    DateTime @default(now())
+  id         String   @id @default(cuid())
+  channelId  String
+  userId     String
+  isAdmin    Boolean  @default(false) // admin nhóm
+  isMuted    Boolean  @default(false)
+  lastReadAt DateTime @default(now())
+  joinedAt   DateTime @default(now())
 
   channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
 
@@ -1654,19 +1661,19 @@ model ChatMember {
 }
 
 model ChatMessage {
-  id          String          @id @default(cuid())
-  channelId   String
-  senderId    String
-  type        ChatMessageType @default(TEXT)
-  content     String          @db.Text       // text / url / file path
-  metadata    Json?           // { stickerPackId, gifUrl, musicProvider, duration, fileSize, mimeType, ... }
-  replyToId   String?
-  isDeleted   Boolean         @default(false)
-  isEdited    Boolean         @default(false)
-  createdAt   DateTime        @default(now())
+  id        String          @id @default(cuid())
+  channelId String
+  senderId  String
+  type      ChatMessageType @default(TEXT)
+  content   String          @db.Text // text / url / file path
+  metadata  Json? // { stickerPackId, gifUrl, musicProvider, duration, fileSize, mimeType, ... }
+  replyToId String?
+  isDeleted Boolean         @default(false)
+  isEdited  Boolean         @default(false)
+  createdAt DateTime        @default(now())
 
-  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  replyTo ChatMessage? @relation("ChatReply", fields: [replyToId], references: [id])
+  channel ChatChannel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  replyTo ChatMessage?  @relation("ChatReply", fields: [replyToId], references: [id])
   replies ChatMessage[] @relation("ChatReply")
 
   @@index([channelId, createdAt])
@@ -1675,27 +1682,27 @@ model ChatMessage {
 
 // ── Sticker packs (admin upload zip + đặt tên) ──
 model StickerPack {
-  id          String   @id @default(cuid())
-  slug        String   @unique @db.VarChar(80)
-  name        String   @db.VarChar(120)
-  description String?  @db.Text
+  id           String   @id @default(cuid())
+  slug         String   @unique @db.VarChar(80)
+  name         String   @db.VarChar(120)
+  description  String?  @db.Text
   thumbnailUrl String?
-  isActive    Boolean  @default(true)
-  isPremium   Boolean  @default(false)
-  priceCoin   Int?
-  priceGem    Int?
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  isActive     Boolean  @default(true)
+  isPremium    Boolean  @default(false)
+  priceCoin    Int?
+  priceGem     Int?
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
 
   stickers Sticker[]
 }
 
 model Sticker {
-  id          String   @id @default(cuid())
-  packId      String
-  name        String   @db.VarChar(80)
-  imageUrl    String   @db.VarChar(255)
-  sortOrder   Int      @default(0)
+  id        String @id @default(cuid())
+  packId    String
+  name      String @db.VarChar(80)
+  imageUrl  String @db.VarChar(255)
+  sortOrder Int    @default(0)
 
   pack StickerPack @relation(fields: [packId], references: [id], onDelete: Cascade)
 
@@ -1704,9 +1711,9 @@ model Sticker {
 
 // User sở hữu sticker pack (nếu premium)
 model UserStickerPack {
-  userId      String
-  packId      String
-  acquiredAt  DateTime @default(now())
+  userId     String
+  packId     String
+  acquiredAt DateTime @default(now())
 
   @@id([userId, packId])
 }
@@ -1717,18 +1724,18 @@ model UserStickerPack {
 
 // Định nghĩa loài cá theo khu (seed sẵn). Stock hồi theo thời gian.
 model FishSpecies {
-  id          String   @id @default(cuid())
-  zone        Int      // 1, 2, 3
-  slug        String   @unique @db.VarChar(60)
-  name        String   @db.VarChar(100)
-  kgMin       Int      // trọng lượng tối thiểu (kg)
-  kgMax       Int      // trọng lượng tối đa (kg)
-  pricePerKg  Int      // coin / kg khi bán
-  refillCount Int      // số con hồi lại mỗi chu kỳ
-  stock       Int      @default(0)   // số con còn lại trong khu
+  id           String    @id @default(cuid())
+  zone         Int // 1, 2, 3
+  slug         String    @unique @db.VarChar(60)
+  name         String    @db.VarChar(100)
+  kgMin        Int // trọng lượng tối thiểu (kg)
+  kgMax        Int // trọng lượng tối đa (kg)
+  pricePerKg   Int // coin / kg khi bán
+  refillCount  Int // số con hồi lại mỗi chu kỳ
+  stock        Int       @default(0) // số con còn lại trong khu
   nextRefillAt DateTime?
-  asset       String?  @db.VarChar(255)
-  sortOrder   Int      @default(0)
+  asset        String?   @db.VarChar(255)
+  sortOrder    Int       @default(0)
 
   catches FishCatch[]
 
@@ -1737,32 +1744,32 @@ model FishSpecies {
 
 // Hồ sơ câu cá của mỗi nhân vật (level RIÊNG, không liên quan level nhân vật)
 model FishingProfile {
-  id          String   @id @default(cuid())
-  characterId String   @unique
-  level       Int      @default(0)
-  totalKg     Int      @default(0)   // tích lũy hướng tới lên cấp (2000kg/cấp)
-  totalCaught Int      @default(0)   // tổng số cá đã câu (cho BXH)
-  ownedRods   Int[]    @default([])  // các khu đã mua cần (1/2/3)
-  bait1       Int      @default(0)   // lượt mồi khu 1 còn lại
-  bait2       Int      @default(0)
-  bait3       Int      @default(0)
-  castZone    Int?     // đang thả cần ở khu nào
-  biteAt      DateTime?  // thời điểm cá cắn câu
-  lastCatchAt DateTime?  // cooldown 40s giữa 2 lần giật
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id          String    @id @default(cuid())
+  characterId String    @unique
+  level       Int       @default(0)
+  totalKg     Int       @default(0) // tích lũy hướng tới lên cấp (2000kg/cấp)
+  totalCaught Int       @default(0) // tổng số cá đã câu (cho BXH)
+  ownedRods   Int[]     @default([]) // các khu đã mua cần (1/2/3)
+  bait1       Int       @default(0) // lượt mồi khu 1 còn lại
+  bait2       Int       @default(0)
+  bait3       Int       @default(0)
+  castZone    Int? // đang thả cần ở khu nào
+  biteAt      DateTime? // thời điểm cá cắn câu
+  lastCatchAt DateTime? // cooldown 40s giữa 2 lần giật
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }
 
 // Cá đã câu được (kho lạnh) — bán lấy coin
 model FishCatch {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   characterId String
   speciesId   String
   weightKg    Int
   soldAt      DateTime?
-  caughtAt    DateTime @default(now())
+  caughtAt    DateTime  @default(now())
 
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
   species   FishSpecies   @relation(fields: [speciesId], references: [id])
@@ -1776,18 +1783,18 @@ model FishCatch {
 
 // Định nghĩa cây trồng (seed sẵn)
 model CropTemplate {
-  id          String   @id @default(cuid())
-  slug        String   @unique @db.VarChar(60)
-  name        String   @db.VarChar(100)
-  seedPrice   Int      // coin mua hạt
-  sellPrice   Int      // coin / đơn vị nông sản
-  growSeconds Int      // thời gian sinh trưởng
-  exp         Int      // EXP farm khi thu hoạch
+  id          String  @id @default(cuid())
+  slug        String  @unique @db.VarChar(60)
+  name        String  @db.VarChar(100)
+  seedPrice   Int // coin mua hạt
+  sellPrice   Int // coin / đơn vị nông sản
+  growSeconds Int // thời gian sinh trưởng
+  exp         Int // EXP farm khi thu hoạch
   yieldMin    Int
   yieldMax    Int
-  reqLevel    Int      @default(0)
-  asset       String?  @db.VarChar(255)
-  sortOrder   Int      @default(0)
+  reqLevel    Int     @default(0)
+  asset       String? @db.VarChar(255)
+  sortOrder   Int     @default(0)
 
   plots FarmPlot[]
 }
@@ -1796,8 +1803,8 @@ model FertilizerTemplate {
   id            String  @id @default(cuid())
   slug          String  @unique @db.VarChar(60)
   name          String  @db.VarChar(100)
-  price         Int     // coin
-  reduceSeconds Int     // giảm thời gian chín
+  price         Int // coin
+  reduceSeconds Int // giảm thời gian chín
   asset         String? @db.VarChar(255)
   sortOrder     Int     @default(0)
 
@@ -1805,22 +1812,22 @@ model FertilizerTemplate {
 }
 
 model AnimalTemplate {
-  id             String  @id @default(cuid())
-  slug           String  @unique @db.VarChar(60)
-  name           String  @db.VarChar(100)
-  buyPrice       Int     // coin
-  growSeconds    Int     // thời gian lớn (bắt đầu cho sản phẩm)
-  lifeSeconds    Int     // hết đời -> chết
-  feedCooldownSec Int    // cooldown cho ăn
-  starveSeconds  Int     @default(86400) // không cho ăn quá lâu -> chết
-  productSlug    String? @db.VarChar(60) // sản phẩm tạo ra (trung/suabo/longcuu...)
-  productName    String? @db.VarChar(100)
-  productYield   Int     @default(0)     // sản lượng mỗi lần thu
-  productPrice   Int     @default(0)     // coin / sản phẩm
-  sellGrown      Int     @default(0)     // bán khi đã lớn
-  sellYoung      Int     @default(0)     // bán khi còn non
-  asset          String? @db.VarChar(255)
-  sortOrder      Int     @default(0)
+  id              String  @id @default(cuid())
+  slug            String  @unique @db.VarChar(60)
+  name            String  @db.VarChar(100)
+  buyPrice        Int // coin
+  growSeconds     Int // thời gian lớn (bắt đầu cho sản phẩm)
+  lifeSeconds     Int // hết đời -> chết
+  feedCooldownSec Int // cooldown cho ăn
+  starveSeconds   Int     @default(86400) // không cho ăn quá lâu -> chết
+  productSlug     String? @db.VarChar(60) // sản phẩm tạo ra (trung/suabo/longcuu...)
+  productName     String? @db.VarChar(100)
+  productYield    Int     @default(0) // sản lượng mỗi lần thu
+  productPrice    Int     @default(0) // coin / sản phẩm
+  sellGrown       Int     @default(0) // bán khi đã lớn
+  sellYoung       Int     @default(0) // bán khi còn non
+  asset           String? @db.VarChar(255)
+  sortOrder       Int     @default(0)
 
   animals FarmAnimal[]
 }
@@ -1830,7 +1837,7 @@ model RecipeTemplate {
   slug        String  @unique @db.VarChar(60)
   name        String  @db.VarChar(100)
   cookSeconds Int
-  reward      Int     // coin khi bán/nhận bánh
+  reward      Int // coin khi bán/nhận bánh
   skillExp    Int     @default(0) // EXP cần để học (nếu needSkill)
   needSkill   Boolean @default(false)
   reqLevel    Int     @default(0)
@@ -1843,11 +1850,11 @@ model RecipeTemplate {
 }
 
 model RecipeIngredient {
-  id        String @id @default(cuid())
-  recipeId  String
-  cropSlug  String @db.VarChar(60) // slug nông sản/sản phẩm cần
-  name      String @db.VarChar(100)
-  quantity  Int
+  id       String @id @default(cuid())
+  recipeId String
+  cropSlug String @db.VarChar(60) // slug nông sản/sản phẩm cần
+  name     String @db.VarChar(100)
+  quantity Int
 
   recipe RecipeTemplate @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
@@ -1856,17 +1863,17 @@ model RecipeIngredient {
 
 // Hồ sơ nông trại (level RIÊNG, tách hẳn level nhân vật)
 model FarmProfile {
-  id            String   @id @default(cuid())
-  characterId   String   @unique
-  level         Int      @default(0)
-  exp           Int      @default(0)
-  plotCount     Int      @default(0)
-  nextPlotPrice Int      @default(5000) // giá ô đất kế tiếp (tăng dần)
-  kitchenLevel  Int      @default(1)
+  id            String    @id @default(cuid())
+  characterId   String    @unique
+  level         Int       @default(0)
+  exp           Int       @default(0)
+  plotCount     Int       @default(0)
+  nextPlotPrice Int       @default(5000) // giá ô đất kế tiếp (tăng dần)
+  kitchenLevel  Int       @default(1)
   dogUntil      DateTime? // chó bảo vệ tới khi nào
   lastCheckinAt DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }
@@ -1875,7 +1882,7 @@ model FarmProfile {
 model FarmPlot {
   id          String    @id @default(cuid())
   characterId String
-  index       Int       // số thứ tự ô
+  index       Int // số thứ tự ô
   cropId      String?
   plantedAt   DateTime?
   readyAt     DateTime?
@@ -1899,7 +1906,7 @@ model WarehouseItem {
   name        String  @db.VarChar(100)
   category    String  @db.VarChar(20) // SEED | CROP | PRODUCT | DISH
   quantity    Int     @default(0)
-  unitSell    Int     @default(0)     // coin / đơn vị khi bán
+  unitSell    Int     @default(0) // coin / đơn vị khi bán
   asset       String? @db.VarChar(255)
 
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
@@ -1920,14 +1927,14 @@ model FarmFertilizer {
 }
 
 model FarmAnimal {
-  id          String    @id @default(cuid())
-  characterId String
-  animalId    String
-  boughtAt    DateTime  @default(now())
-  grownAt     DateTime  // thời điểm trưởng thành
-  diesAt      DateTime  // hết đời
-  lastFedAt   DateTime  @default(now())
-  fedCount    Int       @default(0)
+  id             String    @id @default(cuid())
+  characterId    String
+  animalId       String
+  boughtAt       DateTime  @default(now())
+  grownAt        DateTime // thời điểm trưởng thành
+  diesAt         DateTime // hết đời
+  lastFedAt      DateTime  @default(now())
+  fedCount       Int       @default(0)
   productReadyAt DateTime?
 
   character GameCharacter  @relation(fields: [characterId], references: [id], onDelete: Cascade)
@@ -1964,16 +1971,16 @@ model FarmSkill {
 // NHÀ TÙ (Prison) — giam người chơi vi phạm (kiểu Avatar, NPC Giám thị)
 // ============================================================
 model Prison {
-  id           String    @id @default(cuid())
-  userId       String
-  reason       String    @db.Text
-  jailedById   String?   // mod/admin ra lệnh giam
-  jailedAt     DateTime  @default(now())
-  releaseAt    DateTime  // hết hạn giam
-  bailCoin     Int       @default(0) // tiền chuộc (coin); 0 = không cho chuộc
-  released     Boolean   @default(false)
-  releasedAt   DateTime?
-  releaseType  String?   @db.VarChar(20) // SERVED | BAIL | PARDON
+  id          String    @id @default(cuid())
+  userId      String
+  reason      String    @db.Text
+  jailedById  String? // mod/admin ra lệnh giam
+  jailedAt    DateTime  @default(now())
+  releaseAt   DateTime // hết hạn giam
+  bailCoin    Int       @default(0) // tiền chuộc (coin); 0 = không cho chuộc
+  released    Boolean   @default(false)
+  releasedAt  DateTime?
+  releaseType String?   @db.VarChar(20) // SERVED | BAIL | PARDON
 
   user User @relation("UserPrison", fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1985,15 +1992,15 @@ model Prison {
 // WARDROBE / PET / MOUNT — cosmetic avatar (port từ Avatar, chỉ coin)
 // ============================================================
 enum AvatarSlot {
-  HAIR       // tóc
-  FACE       // mặt/râu
-  TOP        // áo
-  BOTTOM     // quần
-  HAT        // mũ
-  WING       // cánh
-  ACCESSORY  // phụ kiện
-  PET        // thú cưng
-  MOUNT      // thú cưỡi
+  HAIR // tóc
+  FACE // mặt/râu
+  TOP // áo
+  BOTTOM // quần
+  HAT // mũ
+  WING // cánh
+  ACCESSORY // phụ kiện
+  PET // thú cưng
+  MOUNT // thú cưỡi
 }
 
 model AvatarItemTemplate {
@@ -2050,12 +2057,12 @@ model FortuneRecord {
 // MARKETPLACE — danh mục (admin), mã giảm giá (seller), ticket hỗ trợ
 // ============================================================
 model MarketCategory {
-  id        String   @id @default(cuid())
-  slug      String   @unique @db.VarChar(80)
-  name      String   @db.VarChar(120)
-  icon      String?  @db.VarChar(50)
-  sortOrder Int      @default(0)
-  isActive  Boolean  @default(true)
+  id        String  @id @default(cuid())
+  slug      String  @unique @db.VarChar(80)
+  name      String  @db.VarChar(120)
+  icon      String? @db.VarChar(50)
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
 
   products Product[]
 }
@@ -2080,7 +2087,7 @@ model Coupon {
 model ShopTicket {
   id           String   @id @default(cuid())
   storefrontId String
-  userId       String   // khách hàng tạo ticket
+  userId       String // khách hàng tạo ticket
   subject      String   @db.VarChar(200)
   status       String   @default("OPEN") @db.VarChar(20) // OPEN | ANSWERED | CLOSED
   createdAt    DateTime @default(now())
@@ -2109,12 +2116,12 @@ model ShopTicketMessage {
 // SELLER CENTER — kho hàng (giao tự động), rút tiền
 // ============================================================
 model ProductStock {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   productId   String
-  content     String    @db.Text // tài khoản / key / link file (1 đơn vị)
-  isSold      Boolean   @default(false)
+  content     String   @db.Text // tài khoản / key / link file (1 đơn vị)
+  isSold      Boolean  @default(false)
   soldOrderId String?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -2136,7 +2143,7 @@ model PayoutMethod {
 model Withdrawal {
   id          String    @id @default(cuid())
   userId      String
-  amount      Int       // gem
+  amount      Int // gem
   methodLabel String    @db.VarChar(160)
   status      String    @default("PENDING") @db.VarChar(20) // PENDING | APPROVED | PAID | REJECTED
   note        String?   @db.Text
@@ -2176,4 +2183,84 @@ model StoreActivityLog {
   storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
 
   @@index([storefrontId])
+}
+
+// ============================================================
+// FORUM EXTENSIONS (lấy cảm hứng từ các extension Flarum nổi bật)
+// Polls · Best Answer · Subscriptions · Drafts
+// ============================================================
+
+// FoF Polls — bình chọn gắn vào thread
+model Poll {
+  id         String    @id @default(cuid())
+  threadId   String    @unique
+  question   String    @db.VarChar(255)
+  multiple   Boolean   @default(false) // cho chọn nhiều đáp án
+  maxOptions Int       @default(1)
+  closesAt   DateTime?
+  totalVotes Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  thread  Thread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  options PollOption[]
+  votes   PollVote[]
+}
+
+model PollOption {
+  id        String @id @default(cuid())
+  pollId    String
+  text      String @db.VarChar(200)
+  voteCount Int    @default(0)
+  sortOrder Int    @default(0)
+
+  poll  Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes PollVote[]
+
+  @@index([pollId])
+}
+
+model PollVote {
+  id        String   @id @default(cuid())
+  pollId    String
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  poll   Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([optionId, userId])
+  @@index([pollId])
+  @@index([userId])
+}
+
+// Core Subscriptions — theo dõi thread để nhận thông báo khi có trả lời mới
+model ThreadSubscription {
+  id        String   @id @default(cuid())
+  threadId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, userId])
+  @@index([userId])
+}
+
+// FoF Drafts — lưu nháp bài viết / trả lời
+model PostDraft {
+  id         String   @id @default(cuid())
+  userId     String
+  threadId   String? // nếu là nháp trả lời cho 1 thread
+  categoryId String? // nếu là nháp thread mới
+  title      String?  @db.VarChar(255)
+  content    String   @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

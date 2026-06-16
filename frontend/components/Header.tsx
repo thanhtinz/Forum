@@ -15,6 +15,7 @@ const NAV = [
   { href: '/game', label: 'Game', icon: Gamepad2 },
   { href: '/marketplace', label: 'Chợ', icon: Store },
   { href: '/fortune', label: 'Bói toán', icon: Sparkles },
+  { href: '/ai', label: 'AI Companion', icon: Sparkles },
   { href: '/tools', label: 'Công cụ', icon: Wrench },
 ];
 

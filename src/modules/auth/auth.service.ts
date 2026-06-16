@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RegisterDto, LoginDto, OAuthLoginDto } from './auth.dto';
 import * as argon2 from 'argon2';
+import { generateSecret, verifyTotp, otpauthUrl } from './totp';
 
 @Injectable()
 export class AuthService {
@@ -61,6 +62,11 @@ export class AuthService {
 
     const valid = await argon2.verify(user.passwordHash, dto.password);
     if (!valid) throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+
+    if (user.twoFaEnabled && user.twoFaSecret) {
+      if (!dto.code) throw new UnauthorizedException('2FA_REQUIRED');
+      if (!verifyTotp(user.twoFaSecret, dto.code)) throw new UnauthorizedException('Mã 2FA không đúng');
+    }
 
     if (user.status === 'BANNED')
       throw new UnauthorizedException(`Tài khoản đã bị khoá: ${user.banReason ?? ''}`);
@@ -146,6 +152,37 @@ export class AuthService {
     const ok = await argon2.verify(user.passwordHash, oldPassword);
     if (!ok) throw new BadRequestException('Mật khẩu hiện tại không đúng');
     await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await argon2.hash(newPassword) } });
+    return { ok: true };
+  }
+
+  // ── 2FA (TOTP) ──
+  async twoFaStatus(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { twoFaEnabled: true } });
+    return { enabled: !!u?.twoFaEnabled };
+  }
+
+  async setup2fa(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { username: true, email: true, twoFaEnabled: true } });
+    if (!u) throw new NotFoundException();
+    if (u.twoFaEnabled) throw new BadRequestException('2FA đã được bật');
+    const secret = generateSecret();
+    await this.prisma.user.update({ where: { id: userId }, data: { twoFaSecret: secret } });
+    return { secret, otpauth: otpauthUrl(secret, u.email || u.username) };
+  }
+
+  async enable2fa(userId: string, code: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { twoFaSecret: true } });
+    if (!u?.twoFaSecret) throw new BadRequestException('Hãy thiết lập 2FA trước');
+    if (!verifyTotp(u.twoFaSecret, code)) throw new BadRequestException('Mã không đúng');
+    await this.prisma.user.update({ where: { id: userId }, data: { twoFaEnabled: true } });
+    return { ok: true };
+  }
+
+  async disable2fa(userId: string, code: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { twoFaSecret: true, twoFaEnabled: true } });
+    if (!u?.twoFaEnabled || !u.twoFaSecret) throw new BadRequestException('2FA chưa bật');
+    if (!verifyTotp(u.twoFaSecret, code)) throw new BadRequestException('Mã không đúng');
+    await this.prisma.user.update({ where: { id: userId }, data: { twoFaEnabled: false, twoFaSecret: null } });
     return { ok: true };
   }
 

@@ -7,7 +7,7 @@ import type { User } from '@/lib/types';
 interface AuthCtx {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (email: string, password: string, code?: string) => Promise<void>;
   register: (data: { username: string; email: string; password: string }) => Promise<void>;
   logout: () => void;
 }
@@ -32,8 +32,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   useEffect(() => { loadMe(); }, []);
 
-  async function login(username: string, password: string) {
-    const res = await api.post<{ accessToken: string; user: User }>('/auth/login', { username, password });
+  async function login(email: string, password: string, code?: string) {
+    const res = await api.post<{ accessToken: string; user: User }>('/auth/login', { email, password, code });
     setToken(res.accessToken);
     setUser(res.user ?? (await api.get<User>('/auth/me')));
   }

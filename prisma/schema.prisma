@@ -147,6 +147,8 @@ model User {
   lastSeenAt      DateTime?
   bannedUntil     DateTime?
   banReason       String?
+  twoFaSecret     String?
+  twoFaEnabled    Boolean    @default(false)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 

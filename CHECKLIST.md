@@ -147,8 +147,8 @@
 - [x] Hệ cosmetic layered (slot HAIR/FACE/TOP/BOTTOM/HAT/WING/ACCESSORY + PET + MOUNT)
 - [x] Cửa hàng lọc theo giới tính + cấp; mua bằng coin; mặc/cởi (1 món/slot, 1 pet, 1 mount)
 - [x] API diện mạo `look/:username` (layers theo zorder + pet + mount) cho render avatar
-- [x] Seed 86 item quần áo/tóc import từ Avatar + 6 pet + 3 thú cưỡi (icon dùng vật nuôi nông trại)
-- [ ] Sprite quần áo gốc nằm trong `res.rar` — chưa giải nén được (asset clothes tạm null)
+- [x] 86 item quần áo/tóc import từ Avatar + 6 pet + 3 thú cưỡi (icon HD thật từ hd.zip)
+- [x] **Sprite HD đầy đủ**: copy 85 icon item + 235 farm + 71 effect từ hd.zip → `game-assets/avatar/`
 
 ### 🏛️ Nhà Tù (Prison) — kiểu Avatar (NPC Giám thị)
 - [x] Mod/Admin tống giam người chơi (thời gian + lý do + tiền chuộc), không giam được Admin
@@ -188,6 +188,10 @@
 - [ ] CI/CD
 
 ---
+
+### 🌱 Dữ liệu mẫu (auto-seed)
+- [x] Bỏ seed thủ công cho game mới — data nằm thẳng trong `src/seed/data/*` (cá/cây/phân/vật nuôi/công thức/đồ ăn/wardrobe)
+- [x] `SeederService` tự upsert khi app khởi động (`OnApplicationBootstrap`), tắt bằng `AUTO_SEED=false`
 
 ## 📊 TIẾN ĐỘ TỔNG QUAN
 

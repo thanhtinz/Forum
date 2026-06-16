@@ -19,6 +19,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { GameModule } from './modules/game/game.module';
 import { MinigameModule } from './modules/minigame/minigame.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { SeederModule } from './seed/seeder.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { ChatModule } from './modules/chat/chat.module';
     GameModule,
     MinigameModule,
     ChatModule,
+    SeederModule,
   ],
 })
 export class AppModule {}

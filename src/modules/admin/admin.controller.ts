@@ -1,10 +1,11 @@
 import {
-  Controller, Get, Post, Patch, Body, Param, Query, UseGuards,
+  Controller, Get, Post, Patch, Delete, Body, Param, Query, UseGuards,
 } from '@nestjs/common';
 import { AdminConfigService } from './admin-config.service';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminShopService } from './admin-shop.service';
 import { AdminGameAssetService } from './admin-game-asset.service';
+import { AdminTemplateService, TemplateType } from './admin-template.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard, Roles, CurrentUser } from '../../common/decorators/roles.decorator';
 import { UserRole, UserStatus, ReportStatus, MinigameType } from '@prisma/client';
@@ -18,7 +19,29 @@ export class AdminController {
     private readonly dashboard: AdminDashboardService,
     private readonly shop: AdminShopService,
     private readonly gameAsset: AdminGameAssetService,
+    private readonly templates: AdminTemplateService,
   ) {}
+
+  // ── Game templates (cây/cá/phân/vật nuôi/công thức/wardrobe) ──
+  @Get('templates/:type')
+  listTemplates(@Param('type') type: TemplateType) {
+    return this.templates.list(type);
+  }
+
+  @Post('templates/:type')
+  createTemplate(@Param('type') type: TemplateType, @Body() body: Record<string, unknown>) {
+    return this.templates.create(type, body);
+  }
+
+  @Patch('templates/:type/:id')
+  updateTemplate(@Param('type') type: TemplateType, @Param('id') id: string, @Body() body: Record<string, unknown>) {
+    return this.templates.update(type, id, body);
+  }
+
+  @Delete('templates/:type/:id')
+  deleteTemplate(@Param('type') type: TemplateType, @Param('id') id: string) {
+    return this.templates.remove(type, id);
+  }
 
   // ── Dashboard ──
   @Get('stats')

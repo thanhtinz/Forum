@@ -54,9 +54,10 @@ export class ForumController {
     @Query('page') page = 1,
     @Query('limit') limit = 20,
     @Query('sortBy') sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes',
+    @Query('q') q?: string,
   ) {
     return this.forum.getThreadList({
-      categoryId, prefix, tagId, page: Number(page), limit: Number(limit), sortBy,
+      categoryId, prefix, tagId, page: Number(page), limit: Number(limit), sortBy, q,
     });
   }
 

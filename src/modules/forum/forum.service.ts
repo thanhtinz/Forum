@@ -41,6 +41,7 @@ export interface ThreadListQuery {
   page?: number;
   limit?: number;
   sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes';
+  q?: string;
 }
 
 @Injectable()
@@ -79,6 +80,9 @@ export class ForumService {
     if (query.prefix) where.prefix = query.prefix;
     if (query.tagId) {
       where.tags = { some: { tagId: query.tagId } };
+    }
+    if (query.q?.trim()) {
+      where.title = { contains: query.q.trim(), mode: 'insensitive' };
     }
 
     const orderBy: any =

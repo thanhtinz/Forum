@@ -72,7 +72,7 @@ export class ForumService {
     const limit = Math.min(query.limit ?? 20, 50);
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = { isApproved: true };
     if (query.categoryId) where.categoryId = query.categoryId;
     if (query.prefix) where.prefix = query.prefix;
     if (query.tagId) {
@@ -119,6 +119,10 @@ export class ForumService {
       },
     });
     if (!thread) throw new NotFoundException('Không tìm thấy bài viết');
+    // Bài chờ duyệt: chỉ tác giả & mod xem được (mod xem qua queue bằng id)
+    if (!thread.isApproved && thread.authorId !== userId) {
+      throw new NotFoundException('Không tìm thấy bài viết');
+    }
 
     // Tăng view count (non-blocking)
     this.prisma.thread.update({
@@ -145,6 +149,7 @@ export class ForumService {
 
     const slug = await this.generateUniqueSlug(dto.title);
     const { html: content, mentioned } = await this.buildContent(dto.content, authorId);
+    const pending = await this.needsApproval(authorId);
 
     const thread = await this.prisma.$transaction(async (tx) => {
       const t = await tx.thread.create({
@@ -154,6 +159,7 @@ export class ForumService {
           title: dto.title,
           slug,
           prefix: dto.prefix ?? ThreadPrefix.NONE,
+          isApproved: !pending,
           lastPostAt: new Date(),
           lastPostUserId: authorId,
         },
@@ -167,6 +173,7 @@ export class ForumService {
           content,
           contentRaw: dto.content,
           isFirstPost: true,
+          isApproved: !pending,
         },
       });
 
@@ -182,44 +189,59 @@ export class ForumService {
         });
       }
 
-      // Update stats
-      await tx.category.update({
-        where: { id: dto.categoryId },
-        data: { threadCount: { increment: 1 } },
-      });
-      await tx.user.update({
-        where: { id: authorId },
-        data: { threadCount: { increment: 1 } },
-      });
+      // Chỉ cập nhật thống kê khi đã được duyệt
+      if (!pending) {
+        await tx.category.update({ where: { id: dto.categoryId }, data: { threadCount: { increment: 1 } } });
+        await tx.user.update({ where: { id: authorId }, data: { threadCount: { increment: 1 } } });
+      }
 
       return t;
     });
 
-    this.events.emit('forum.thread.created', { threadId: thread.id, authorId });
-
     // Tác giả tự động theo dõi thread của mình
     await this.subs.ensure(thread.id, authorId);
-    // Thông báo cho người được @mention
-    await this.notifyMentions(mentioned, authorId, dto.title, `/forum/${slug}`);
 
-    // Forum EXP → game level (cơ chế XenForo/Flarum)
+    if (pending) {
+      // Chờ duyệt: không phát event/EXP/notify cho tới khi mod duyệt
+      return { ...thread, pendingApproval: true };
+    }
+
+    this.events.emit('forum.thread.created', { threadId: thread.id, authorId });
+    await this.notifyMentions(mentioned, authorId, dto.title, `/forum/${slug}`);
     await this.character.addForumExp(authorId, 10, 'create_thread');
-    // Kiểm tra & trao danh hiệu
     await this.trophy.checkAndAward(authorId);
 
     return thread;
+  }
+
+  // FoF Approval: user cần duyệt nếu là MEMBER và postCount < ngưỡng cấu hình (0 = tắt)
+  private async needsApproval(userId: string): Promise<boolean> {
+    const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'forum.approvalPostThreshold' } }).catch(() => null);
+    const v = cfg?.value;
+    const threshold = typeof v === 'number' ? v : typeof v === 'string' ? parseInt(v, 10) : 0;
+    if (!Number.isFinite(threshold) || threshold <= 0) return false;
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true, postCount: true, threadCount: true } });
+    if (!user) return false;
+    if (user.role !== Role.MEMBER) return false; // VIP/MOD/ADMIN miễn duyệt
+    return (user.postCount + user.threadCount) < threshold;
   }
 
   // ──────────────────────────────────────────────
   // POSTS
   // ──────────────────────────────────────────────
 
-  async getPostsForThread(threadId: string, userId: string | null, page = 1, limit = 20) {
+  async getPostsForThread(threadId: string, userId: string | null, page = 1, limit = 20, canSeeUnapproved = false) {
     const skip = (page - 1) * limit;
+
+    // Ẩn bài chờ duyệt với người khác (chỉ tác giả & mod thấy)
+    const approvalFilter = canSeeUnapproved
+      ? {}
+      : { OR: [{ isApproved: true }, ...(userId ? [{ authorId: userId }] : [])] };
+    const where = { threadId, isDeleted: false, ...approvalFilter };
 
     const [posts, total] = await Promise.all([
       this.prisma.post.findMany({
-        where: { threadId, isDeleted: false },
+        where,
         skip,
         take: limit,
         orderBy: { createdAt: 'asc' },
@@ -235,7 +257,7 @@ export class ForumService {
           attachments: true,
         },
       }),
-      this.prisma.post.count({ where: { threadId, isDeleted: false } }),
+      this.prisma.post.count({ where }),
     ]);
 
     // Gắn hidden sections cho từng post
@@ -261,6 +283,7 @@ export class ForumService {
     if (thread.isLocked) throw new ForbiddenException('Thread đã bị khoá');
 
     const { html: content, mentioned } = await this.buildContent(dto.content, authorId);
+    const pending = await this.needsApproval(authorId);
 
     const post = await this.prisma.$transaction(async (tx) => {
       const p = await tx.post.create({
@@ -270,31 +293,29 @@ export class ForumService {
           content,
           contentRaw: dto.content,
           parentId: dto.parentId ?? null,
+          isApproved: !pending,
         },
       });
 
-      // Cập nhật thread
-      await tx.thread.update({
-        where: { id: dto.threadId },
-        data: {
-          replyCount: { increment: 1 },
-          lastPostAt: new Date(),
-          lastPostUserId: authorId,
-        },
-      });
-
-      // Cập nhật category và user stats
-      await tx.category.update({
-        where: { id: thread.categoryId },
-        data: { postCount: { increment: 1 } },
-      });
-      await tx.user.update({
-        where: { id: authorId },
-        data: { postCount: { increment: 1 } },
-      });
+      if (!pending) {
+        await tx.thread.update({
+          where: { id: dto.threadId },
+          data: { replyCount: { increment: 1 }, lastPostAt: new Date(), lastPostUserId: authorId },
+        });
+        await tx.category.update({ where: { id: thread.categoryId }, data: { postCount: { increment: 1 } } });
+        await tx.user.update({ where: { id: authorId }, data: { postCount: { increment: 1 } } });
+      }
 
       return p;
     });
+
+    // Người trả lời tự động theo dõi thread (kể cả khi chờ duyệt)
+    await this.subs.ensure(dto.threadId, authorId);
+
+    if (pending) {
+      // Chờ duyệt: không cộng điểm/không thông báo cho tới khi mod duyệt
+      return { ...post, pendingApproval: true };
+    }
 
     // Auto-unlock hidden content dựa trên số comment mới
     const newCommentCount = thread.replyCount + 1;
@@ -336,8 +357,6 @@ export class ForumService {
       });
     }
 
-    // Người trả lời tự động theo dõi thread
-    await this.subs.ensure(dto.threadId, authorId);
     // Thông báo cho người được @mention (trừ những người đã được notify dưới đây)
     const mentionedIds = mentioned.map((m) => m.id);
     await this.notifyMentions(mentioned.filter((m) => m.id !== thread.authorId), authorId, thread.title, `/forum/${thread.slug}#post-${post.id}`);
@@ -549,6 +568,121 @@ export class ForumService {
     });
 
     return { mergedInto: targetId, movedPosts };
+  }
+
+  // ──────────────────────────────────────────────
+  // APPROVAL QUEUE (FoF Approval)
+  // ──────────────────────────────────────────────
+  async listPendingApproval() {
+    const [threads, posts] = await Promise.all([
+      this.prisma.thread.findMany({
+        where: { isApproved: false },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: { select: { id: true, username: true, displayName: true, avatar: true } },
+          category: { select: { name: true } },
+          posts: { where: { isFirstPost: true }, select: { content: true }, take: 1 },
+        },
+      }),
+      this.prisma.post.findMany({
+        where: { isApproved: false, isFirstPost: false, isDeleted: false },
+        orderBy: { createdAt: 'desc' },
+        include: {
+          author: { select: { id: true, username: true, displayName: true, avatar: true } },
+          thread: { select: { id: true, title: true, slug: true } },
+        },
+      }),
+    ]);
+    return { threads, posts };
+  }
+
+  async approveThread(threadId: string) {
+    const thread = await this.prisma.thread.findUnique({ where: { id: threadId } });
+    if (!thread) throw new NotFoundException('Thread không tồn tại');
+    if (thread.isApproved) return thread;
+
+    await this.prisma.$transaction([
+      this.prisma.thread.update({ where: { id: threadId }, data: { isApproved: true } }),
+      this.prisma.post.updateMany({ where: { threadId, isFirstPost: true }, data: { isApproved: true } }),
+      this.prisma.category.update({ where: { id: thread.categoryId }, data: { threadCount: { increment: 1 } } }),
+      this.prisma.user.update({ where: { id: thread.authorId }, data: { threadCount: { increment: 1 } } }),
+    ]);
+
+    this.events.emit('forum.thread.created', { threadId, authorId: thread.authorId });
+    await this.character.addForumExp(thread.authorId, 10, 'create_thread').catch(() => {});
+    await this.trophy.checkAndAward(thread.authorId).catch(() => {});
+    await this.notifications.notify(thread.authorId, {
+      type: 'SYSTEM', title: 'Bài viết của bạn đã được duyệt ✓', body: thread.title,
+      link: `/forum/${thread.slug}`,
+    }).catch(() => {});
+    return { ...thread, isApproved: true };
+  }
+
+  async approvePost(postId: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      include: { thread: { select: { id: true, categoryId: true, slug: true, title: true, authorId: true } } },
+    });
+    if (!post) throw new NotFoundException('Post không tồn tại');
+    if (post.isApproved) return post;
+
+    await this.prisma.$transaction([
+      this.prisma.post.update({ where: { id: postId }, data: { isApproved: true } }),
+      this.prisma.thread.update({ where: { id: post.threadId }, data: { replyCount: { increment: 1 }, lastPostAt: new Date(), lastPostUserId: post.authorId } }),
+      this.prisma.category.update({ where: { id: post.thread.categoryId }, data: { postCount: { increment: 1 } } }),
+      this.prisma.user.update({ where: { id: post.authorId }, data: { postCount: { increment: 1 } } }),
+    ]);
+
+    await this.character.addForumExp(post.authorId, 5, 'create_post').catch(() => {});
+    await this.trophy.checkAndAward(post.authorId).catch(() => {});
+
+    // Thông báo trả lời mới + mention + subscribers (giờ mới phát vì đã duyệt)
+    const mentioned = await this.text.resolveMentionedUsers(this.text.extractMentions(post.contentRaw), post.authorId);
+    const mentionedIds = mentioned.map((m) => m.id);
+    if (post.thread.authorId !== post.authorId) {
+      await this.notifications.notify(post.thread.authorId, {
+        type: 'THREAD_REPLY', title: 'Có người trả lời bài viết của bạn', body: post.thread.title,
+        link: `/forum/${post.thread.slug}#post-${post.id}`, actorId: post.authorId,
+      }).catch(() => {});
+    }
+    await this.notifyMentions(mentioned.filter((m) => m.id !== post.thread.authorId), post.authorId, post.thread.title, `/forum/${post.thread.slug}#post-${post.id}`);
+    await this.subs.notifyNewReply(post.threadId, post.thread.title, post.thread.slug, post.id, post.authorId, [post.thread.authorId, ...mentionedIds]);
+    await this.notifications.notify(post.authorId, {
+      type: 'SYSTEM', title: 'Trả lời của bạn đã được duyệt ✓', body: post.thread.title,
+      link: `/forum/${post.thread.slug}#post-${post.id}`,
+    }).catch(() => {});
+    return { ...post, isApproved: true };
+  }
+
+  async rejectContent(kind: 'thread' | 'post', id: string) {
+    if (kind === 'thread') {
+      const thread = await this.prisma.thread.findUnique({ where: { id }, select: { id: true, authorId: true, title: true, isApproved: true } });
+      if (!thread) throw new NotFoundException('Thread không tồn tại');
+      await this.prisma.thread.delete({ where: { id } });
+      await this.notifications.notify(thread.authorId, { type: 'SYSTEM', title: 'Bài viết của bạn không được duyệt', body: thread.title }).catch(() => {});
+    } else {
+      const post = await this.prisma.post.findUnique({ where: { id }, select: { id: true, authorId: true } });
+      if (!post) throw new NotFoundException('Post không tồn tại');
+      await this.prisma.post.update({ where: { id }, data: { isDeleted: true, deletedAt: new Date() } });
+      await this.notifications.notify(post.authorId, { type: 'SYSTEM', title: 'Trả lời của bạn không được duyệt' }).catch(() => {});
+    }
+    return { rejected: true };
+  }
+
+  // Admin: đọc/ghi ngưỡng duyệt bài (số bài tối thiểu để miễn duyệt; 0 = tắt)
+  async getApprovalConfig() {
+    const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'forum.approvalPostThreshold' } }).catch(() => null);
+    const v = cfg?.value;
+    const threshold = typeof v === 'number' ? v : typeof v === 'string' ? parseInt(v, 10) : 0;
+    return { threshold: Number.isFinite(threshold) && threshold > 0 ? threshold : 0 };
+  }
+  async setApprovalConfig(threshold: number) {
+    const n = Number.isFinite(threshold) && threshold >= 0 ? Math.floor(threshold) : 0;
+    await this.prisma.siteConfig.upsert({
+      where: { key: 'forum.approvalPostThreshold' },
+      update: { value: n }, create: { key: 'forum.approvalPostThreshold', value: n },
+    });
+    return { threshold: n };
   }
 
   async deletePost(postId: string, deletedById: string, reason?: string) {

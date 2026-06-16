@@ -15,15 +15,29 @@ export default function AdminModeration() {
   const [censorMsg, setCensorMsg] = useState('');
   const [autoBest, setAutoBest] = useState(10);
   const [autoBestMsg, setAutoBestMsg] = useState('');
+  const [queue, setQueue] = useState<{ threads: any[]; posts: any[] }>({ threads: [], posts: [] });
+  const [approvalThr, setApprovalThr] = useState(0);
+  const [approvalMsg, setApprovalMsg] = useState('');
 
   function load() {
     api.get<{ data: Report[] }>(`/admin/reports?status=${status}`).then((r) => setReports(r.data)).catch((e) => setMsg(e.message));
   }
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [status]);
+  function loadQueue() { api.get<{ threads: any[]; posts: any[] }>('/forum/admin/approval').then(setQueue).catch(() => {}); }
   useEffect(() => {
     api.get<{ words: string[] }>('/forum/admin/censor').then((r) => setCensor((r.words || []).join(', '))).catch(() => {});
     api.get<{ threshold: number }>('/forum/admin/auto-best').then((r) => setAutoBest(r.threshold)).catch(() => {});
+    api.get<{ threshold: number }>('/forum/admin/approval-config').then((r) => setApprovalThr(r.threshold)).catch(() => {});
+    loadQueue();
   }, []);
+
+  async function saveApprovalThr() {
+    try { const r = await api.post<{ threshold: number }>('/forum/admin/approval-config', { threshold: approvalThr }); setApprovalThr(r.threshold); setApprovalMsg('Đã lưu ✓'); setTimeout(() => setApprovalMsg(''), 2500); }
+    catch (e: any) { setApprovalMsg(e.message); }
+  }
+  const approveThread = async (id: string) => { try { await api.post(`/forum/admin/approval/thread/${id}/approve`, {}); loadQueue(); } catch {} };
+  const approvePost = async (id: string) => { try { await api.post(`/forum/admin/approval/post/${id}/approve`, {}); loadQueue(); } catch {} };
+  const reject = async (kind: 'thread' | 'post', id: string) => { try { await api.del(`/forum/admin/approval/${kind}/${id}`); loadQueue(); } catch {} };
 
   async function saveCensor() {
     const words = censor.split(/[,\n]/).map((w) => w.trim()).filter(Boolean);
@@ -43,6 +57,44 @@ export default function AdminModeration() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Hàng đợi kiểm duyệt</h1>
+
+      {/* Hàng đợi duyệt bài (FoF Approval) */}
+      <div className="card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Duyệt bài chờ ({queue.threads.length + queue.posts.length})</h2>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-ink-500">Yêu cầu duyệt nếu thành viên có &lt;</span>
+            <input type="number" min={0} className="input w-20" value={approvalThr} onChange={(e) => setApprovalThr(Number(e.target.value))} />
+            <span className="text-ink-500">bài (0 = tắt)</span>
+            <button onClick={saveApprovalThr} className="btn-primary !py-1 text-xs">Lưu</button>
+            {approvalMsg && <span className="text-emerald-600">{approvalMsg}</span>}
+          </div>
+        </div>
+        <div className="mt-3 space-y-2">
+          {queue.threads.map((t) => (
+            <div key={t.id} className="rounded-lg border border-amber-300 p-3 dark:border-amber-700">
+              <div className="text-xs text-ink-500">Chủ đề mới · {t.author?.displayName || t.author?.username} · {t.category?.name}</div>
+              <div className="font-medium">{t.title}</div>
+              <div className="prose prose-sm mt-1 max-w-none line-clamp-3 dark:prose-invert" dangerouslySetInnerHTML={{ __html: t.posts?.[0]?.content || '' }} />
+              <div className="mt-2 flex gap-2">
+                <button onClick={() => approveThread(t.id)} className="btn-primary !py-1 text-xs">Duyệt</button>
+                <button onClick={() => reject('thread', t.id)} className="btn-outline !py-1 text-xs text-red-600">Từ chối</button>
+              </div>
+            </div>
+          ))}
+          {queue.posts.map((p) => (
+            <div key={p.id} className="rounded-lg border border-amber-300 p-3 dark:border-amber-700">
+              <div className="text-xs text-ink-500">Trả lời · {p.author?.displayName || p.author?.username} · trong "{p.thread?.title}"</div>
+              <div className="prose prose-sm mt-1 max-w-none line-clamp-3 dark:prose-invert" dangerouslySetInnerHTML={{ __html: p.content }} />
+              <div className="mt-2 flex gap-2">
+                <button onClick={() => approvePost(p.id)} className="btn-primary !py-1 text-xs">Duyệt</button>
+                <button onClick={() => reject('post', p.id)} className="btn-outline !py-1 text-xs text-red-600">Từ chối</button>
+              </div>
+            </div>
+          ))}
+          {queue.threads.length + queue.posts.length === 0 && <p className="text-sm text-ink-500">Không có bài chờ duyệt.</p>}
+        </div>
+      </div>
 
       {/* Tự chọn câu trả lời hay nhất theo reaction */}
       <div className="card p-4">

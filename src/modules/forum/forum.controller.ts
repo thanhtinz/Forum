@@ -71,10 +71,12 @@ export class ForumController {
   getPosts(
     @Param('threadId') threadId: string,
     @CurrentUser('id') userId: string | undefined,
+    @CurrentUser('role') role: UserRole | undefined,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
   ) {
-    return this.forum.getPostsForThread(threadId, userId ?? null, Number(page), Number(limit));
+    const isMod = role === UserRole.ADMIN || role === UserRole.MODERATOR;
+    return this.forum.getPostsForThread(threadId, userId ?? null, Number(page), Number(limit), isMod);
   }
 
   // ── Posts ──
@@ -219,6 +221,49 @@ export class ForumController {
   @UseGuards(JwtAuthGuard)
   toggleBookmark(@Param('id') threadId: string, @CurrentUser('id') userId: string, @Body('note') note?: string) {
     return this.bookmarks.toggle(threadId, userId, note);
+  }
+
+  // ── Approval queue (FoF Approval) ──
+  @Get('admin/approval')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  approvalQueue() {
+    return this.forum.listPendingApproval();
+  }
+
+  @Post('admin/approval/thread/:id/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  approveThread(@Param('id') id: string) {
+    return this.forum.approveThread(id);
+  }
+
+  @Post('admin/approval/post/:id/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  approvePost(@Param('id') id: string) {
+    return this.forum.approvePost(id);
+  }
+
+  @Delete('admin/approval/:kind/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  rejectContent(@Param('kind') kind: 'thread' | 'post', @Param('id') id: string) {
+    return this.forum.rejectContent(kind, id);
+  }
+
+  @Get('admin/approval-config')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  getApprovalConfig() {
+    return this.forum.getApprovalConfig();
+  }
+
+  @Post('admin/approval-config')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  setApprovalConfig(@Body('threshold') threshold: number) {
+    return this.forum.setApprovalConfig(Number(threshold));
   }
 
   // ── Admin: ngưỡng tự chọn câu trả lời hay nhất theo reaction ──

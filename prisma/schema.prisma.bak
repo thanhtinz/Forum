@@ -1,0 +1,778 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  GUEST
+  MEMBER
+  VIP
+  MODERATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BANNED
+  SUSPENDED
+  PENDING_VERIFY
+}
+
+enum ThreadPrefix {
+  NONE
+  FREE
+  PAID
+  REQUEST
+  GUIDE
+  DISCUSSION
+  SHOWCASE
+  ANNOUNCEMENT
+}
+
+enum ThreadStatus {
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum ProductType {
+  SOURCE_CODE
+  TOOL
+  SERVICE
+  ACCOUNT
+  TEMPLATE
+  DESIGN
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  SUSPENDED
+  SOLD_OUT
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+  DISPUTED
+}
+
+enum GemTxType {
+  TOPUP_SEPAY
+  TOPUP_PAYPAL
+  SPEND_PRODUCT
+  SPEND_HIDDEN_CONTENT
+  EARN_SELL
+  REFUND
+  ADMIN_ADJUST
+  BONUS
+}
+
+enum ReportType {
+  SPAM
+  SCAM
+  INAPPROPRIATE
+  COPYRIGHT
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum NotifType {
+  THREAD_REPLY
+  POST_MENTION
+  POST_LIKE
+  ORDER_COMPLETE
+  GEM_RECEIVED
+  SYSTEM
+  AI_MESSAGE
+}
+
+enum HiddenGateType {
+  LIKE_REQUIRED
+  COMMENT_REQUIRED
+  LIKE_AND_COMMENT
+  LIKE_OR_COMMENT
+  GEM_PURCHASE
+  LIKE_OR_GEM
+  COMMENT_OR_GEM
+}
+
+enum AiProvider {
+  OPENAI
+  GEMINI
+  OLLAMA
+}
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// ============================================================
+// USERS
+// ============================================================
+
+model User {
+  id              String     @id @default(cuid())
+  username        String     @unique @db.VarChar(50)
+  email           String     @unique @db.VarChar(255)
+  passwordHash    String?
+  displayName     String?    @db.VarChar(100)
+  avatar          String?
+  bio             String?    @db.Text
+  role            UserRole   @default(MEMBER)
+  status          UserStatus @default(ACTIVE)
+  isVerified      Boolean    @default(false)
+  ageVerified     Boolean    @default(false)
+  threadCount     Int        @default(0)
+  postCount       Int        @default(0)
+  reputationScore Int        @default(0)
+  gemBalance      Int        @default(0)
+  lastSeenAt      DateTime?
+  bannedUntil     DateTime?
+  banReason       String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  oauthProviders  OAuthProvider[]
+  threads         Thread[]
+  posts           Post[]
+  reactions       PostReaction[]
+  threadViews     ThreadView[]
+  gemWallet       GemWallet?
+  gemTransactions GemTransaction[]
+  orders          Order[]           @relation("BuyerOrders")
+  products        Product[]         @relation("SellerProducts")
+  notifications   Notification[]
+  reports         Report[]          @relation("ReporterReports")
+  reportedReports Report[]          @relation("ReportedUserReports")
+  badges          UserBadge[]
+  warnHistory     UserWarning[]     @relation("WarnedUser")
+  warnedBy        UserWarning[]     @relation("WarnedByUser")
+  aiSessions      AiSession[]
+  hiddenUnlocks   HiddenContentUnlock[]
+  scamReports     ScamReport[]      @relation("ScamReporter")
+  scamReported    ScamReport[]      @relation("ScamReported")
+  friends         Friendship[]      @relation("UserFriends")
+  friendOf        Friendship[]      @relation("FriendOf")
+  followedTags    UserTagFollow[]
+
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@index([createdAt])
+}
+
+model OAuthProvider {
+  id         String   @id @default(cuid())
+  userId     String
+  provider   String   @db.VarChar(20)
+  providerId String   @db.VarChar(255)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerId])
+  @@index([userId])
+}
+
+// ============================================================
+// FORUM
+// ============================================================
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(120)
+  description String?  @db.Text
+  icon        String?  @db.VarChar(50)
+  color       String?  @db.VarChar(20)
+  parentId    String?
+  sortOrder   Int      @default(0)
+  isPrivate   Boolean  @default(false)
+  minRoleView UserRole @default(GUEST)
+  minRolePost UserRole @default(MEMBER)
+  threadCount Int      @default(0)
+  postCount   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
+  children Category[] @relation("SubCategories")
+  threads  Thread[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@index([sortOrder])
+}
+
+model Tag {
+  id         String   @id @default(cuid())
+  name       String   @unique @db.VarChar(50)
+  slug       String   @unique @db.VarChar(60)
+  color      String?  @db.VarChar(20)
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  threadTags   ThreadTag[]
+  productTags  ProductTag[]
+  followers    UserTagFollow[]
+
+  @@index([slug])
+}
+
+model UserTagFollow {
+  userId String
+  tagId  String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tagId])
+}
+
+model Thread {
+  id             String       @id @default(cuid())
+  categoryId     String
+  authorId       String
+  title          String       @db.VarChar(255)
+  slug           String       @unique @db.VarChar(280)
+  prefix         ThreadPrefix @default(NONE)
+  status         ThreadStatus @default(OPEN)
+  isPinned       Boolean      @default(false)
+  isFeatured     Boolean      @default(false)
+  isLocked       Boolean      @default(false)
+  viewCount      Int          @default(0)
+  replyCount     Int          @default(0)
+  likeCount      Int          @default(0)
+  lastPostAt     DateTime     @default(now())
+  lastPostUserId String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  category Category    @relation(fields: [categoryId], references: [id])
+  author   User        @relation(fields: [authorId], references: [id])
+  posts    Post[]
+  tags     ThreadTag[]
+  views    ThreadView[]
+
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([slug])
+  @@index([lastPostAt])
+  @@index([prefix])
+}
+
+model ThreadTag {
+  threadId String
+  tagId    String
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, tagId])
+}
+
+model ThreadView {
+  userId   String
+  threadId String
+  viewedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@id([userId, threadId])
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  threadId    String
+  authorId    String
+  parentId    String?
+  content     String    @db.Text
+  contentRaw  String    @db.Text
+  isFirstPost Boolean   @default(false)
+  isDeleted   Boolean   @default(false)
+  deletedAt   DateTime?
+  deletedById String?
+  editCount   Int       @default(0)
+  lastEditAt  DateTime?
+  likeCount   Int       @default(0)
+  isHelpful   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  thread         Thread           @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author         User             @relation(fields: [authorId], references: [id])
+  parent         Post?            @relation("PostQuotes", fields: [parentId], references: [id])
+  replies        Post[]           @relation("PostQuotes")
+  reactions      PostReaction[]
+  hiddenSections HiddenSection[]
+  attachments    PostAttachment[]
+
+  @@index([threadId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model PostReaction {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  emoji     String   @db.VarChar(20)
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, emoji])
+  @@index([postId])
+  @@index([userId])
+}
+
+model PostAttachment {
+  id        String   @id @default(cuid())
+  postId    String
+  fileName  String   @db.VarChar(255)
+  fileUrl   String
+  fileSize  Int
+  mimeType  String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+// ============================================================
+// HIDDEN CONTENT GATE
+// ============================================================
+
+model HiddenSection {
+  id          String         @id @default(cuid())
+  postId      String
+  sortOrder   Int            @default(0)
+  label       String?        @db.VarChar(255)
+  content     String         @db.Text
+  contentRaw  String         @db.Text
+  gateType    HiddenGateType
+
+  // điều kiện mở
+  likeRequired    Int?
+  commentRequired Int?
+  gemPrice        Int?
+
+  unlockCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  post    Post                  @relation(fields: [postId], references: [id], onDelete: Cascade)
+  unlocks HiddenContentUnlock[]
+
+  @@index([postId])
+}
+
+model HiddenContentUnlock {
+  id              String   @id @default(cuid())
+  userId          String
+  hiddenSectionId String
+  unlockedVia     String   @db.VarChar(20)
+  gemSpent        Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hiddenSection HiddenSection @relation(fields: [hiddenSectionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, hiddenSectionId])
+  @@index([userId])
+  @@index([hiddenSectionId])
+}
+
+// ============================================================
+// MARKETPLACE
+// ============================================================
+
+model Product {
+  id             String        @id @default(cuid())
+  sellerId       String
+  title          String        @db.VarChar(255)
+  slug           String        @unique @db.VarChar(280)
+  description    String        @db.Text
+  descriptionRaw String        @db.Text
+  type           ProductType
+  status         ProductStatus @default(DRAFT)
+  gemPrice       Int           @default(0)
+  isFree         Boolean       @default(false)
+  version        String?       @db.VarChar(50)
+  techStack      String[]
+  thumbnailUrl   String?
+  demoUrl        String?
+  fileUrl        String?
+  fileSize       Int?
+  downloadCount  Int           @default(0)
+  salesCount     Int           @default(0)
+  viewCount      Int           @default(0)
+  ratingAvg      Float         @default(0)
+  ratingCount    Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  seller      User               @relation("SellerProducts", fields: [sellerId], references: [id])
+  orders      Order[]
+  reviews     ProductReview[]
+  screenshots ProductScreenshot[]
+  tags        ProductTag[]
+
+  @@index([sellerId])
+  @@index([slug])
+  @@index([type])
+  @@index([status])
+}
+
+model ProductScreenshot {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  buyerId       String
+  productId     String
+  status        OrderStatus @default(PENDING)
+  gemSpent      Int
+  sellerEarned  Int
+  platformFee   Int
+  downloadUrl   String?
+  downloadCount Int         @default(0)
+  downloadLimit Int         @default(5)
+  completedAt   DateTime?
+  refundedAt    DateTime?
+  refundReason  String?
+  createdAt     DateTime    @default(now())
+
+  buyer   User    @relation("BuyerOrders", fields: [buyerId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([buyerId])
+  @@index([productId])
+  @@index([status])
+}
+
+model ProductReview {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String
+  orderId   String?
+  rating    Int
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, userId])
+  @@index([productId])
+}
+
+// ============================================================
+// GEM / PAYMENTS
+// ============================================================
+
+model GemWallet {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  balance     Int      @default(0)
+  totalTopup  Int      @default(0)
+  totalSpent  Int      @default(0)
+  totalEarned Int      @default(0)
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GemTransaction {
+  id            String    @id @default(cuid())
+  userId        String
+  type          GemTxType
+  amount        Int
+  balanceBefore Int
+  balanceAfter  Int
+  refId         String?   @db.VarChar(100)
+  refType       String?   @db.VarChar(50)
+  note          String?   @db.VarChar(255)
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model PaymentTopup {
+  id          String    @id @default(cuid())
+  userId      String
+  provider    String    @db.VarChar(20)
+  providerRef String?   @db.VarChar(255)
+  amountVnd   Int?
+  amountUsd   Float?
+  gemAwarded  Int
+  status      String    @default("pending") @db.VarChar(20)
+  webhookData Json?
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([provider])
+  @@index([status])
+  @@index([providerRef])
+}
+
+model GemPackage {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(100)
+  gemAmount Int
+  priceVnd  Int?
+  priceUsd  Float?
+  bonus     Int      @default(0)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// ============================================================
+// REPUTATION
+// ============================================================
+
+model Badge {
+  id          String   @id @default(cuid())
+  name        String   @db.VarChar(100)
+  description String?
+  icon        String   @db.VarChar(50)
+  color       String   @db.VarChar(20)
+  condition   Json
+  isAuto      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  userBadges UserBadge[]
+}
+
+model UserBadge {
+  userId    String
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+}
+
+// ============================================================
+// MODERATION
+// ============================================================
+
+model Report {
+  id             String       @id @default(cuid())
+  reporterId     String
+  reportedUserId String?
+  targetType     String       @db.VarChar(20)
+  targetId       String
+  type           ReportType
+  status         ReportStatus @default(PENDING)
+  reason         String       @db.Text
+  modNote        String?      @db.Text
+  resolvedById   String?
+  resolvedAt     DateTime?
+  createdAt      DateTime     @default(now())
+
+  reporter     User  @relation("ReporterReports", fields: [reporterId], references: [id])
+  reportedUser User? @relation("ReportedUserReports", fields: [reportedUserId], references: [id])
+
+  @@index([reporterId])
+  @@index([targetType, targetId])
+  @@index([status])
+}
+
+model ScamReport {
+  id           String       @id @default(cuid())
+  reporterId   String
+  reportedId   String
+  evidence     String       @db.Text
+  evidenceUrls String[]
+  status       ReportStatus @default(PENDING)
+  modNote      String?
+  resolvedById String?
+  resolvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+
+  reporter User @relation("ScamReporter", fields: [reporterId], references: [id])
+  reported User @relation("ScamReported", fields: [reportedId], references: [id])
+
+  @@index([reportedId])
+  @@index([status])
+}
+
+model UserWarning {
+  id         String    @id @default(cuid())
+  userId     String
+  warnedById String
+  reason     String    @db.Text
+  points     Int       @default(1)
+  expiresAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  user     User @relation("WarnedUser", fields: [userId], references: [id])
+  warnedBy User @relation("WarnedByUser", fields: [warnedById], references: [id])
+
+  @@index([userId])
+}
+
+// ============================================================
+// NOTIFICATIONS
+// ============================================================
+
+model Notification {
+  id         String    @id @default(cuid())
+  userId     String
+  type       NotifType
+  title      String    @db.VarChar(255)
+  body       String?   @db.VarChar(500)
+  link       String?   @db.VarChar(500)
+  isRead     Boolean   @default(false)
+  readAt     DateTime?
+  actorId    String?
+  targetType String?   @db.VarChar(30)
+  targetId   String?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+// ============================================================
+// AI COMPANION
+// ============================================================
+
+model AiPersona {
+  id           String     @id @default(cuid())
+  name         String     @db.VarChar(100)
+  systemPrompt String     @db.Text
+  provider     AiProvider @default(GEMINI)
+  modelId      String     @db.VarChar(100)
+  greetingText String?    @db.Text
+  live2dModel  String?    @db.VarChar(255)
+  isDefault    Boolean    @default(false)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  sessions AiSession[]
+}
+
+model AiSession {
+  id        String   @id @default(cuid())
+  userId    String
+  personaId String
+  title     String?  @db.VarChar(255)
+  context   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  persona  AiPersona   @relation(fields: [personaId], references: [id])
+  messages AiMessage[]
+
+  @@index([userId])
+}
+
+model AiMessage {
+  id        String        @id @default(cuid())
+  sessionId String
+  role      AiMessageRole
+  content   String        @db.Text
+  emotion   String?       @db.VarChar(30)
+  tokens    Int?
+  createdAt DateTime      @default(now())
+
+  session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+// ============================================================
+// SOCIAL
+// ============================================================
+
+model Friendship {
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+
+  user   User @relation("UserFriends", fields: [userId], references: [id], onDelete: Cascade)
+  friend User @relation("FriendOf", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@id([userId, friendId])
+}
+
+// ============================================================
+// SYSTEM
+// ============================================================
+
+model SiteConfig {
+  key       String   @id @db.VarChar(100)
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String   @db.VarChar(100)
+  targetType String?  @db.VarChar(50)
+  targetId   String?
+  before     Json?
+  after      Json?
+  ip         String?  @db.VarChar(45)
+  userAgent  String?  @db.VarChar(255)
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([action])
+  @@index([createdAt])
+}

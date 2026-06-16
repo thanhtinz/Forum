@@ -1,0 +1,130 @@
+{
+  "JACKPOT_777": {
+    "symbols": [
+      {
+        "slug": "coin",
+        "name": "Đồng Xu",
+        "image": "/game-assets/jackpot/coin.png"
+      },
+      {
+        "slug": "seven",
+        "name": "Số 7",
+        "image": "/game-assets/jackpot/seven.png"
+      },
+      {
+        "slug": "bar",
+        "name": "BAR",
+        "image": "/game-assets/jackpot/bar.png"
+      },
+      {
+        "slug": "bell",
+        "name": "Chuông",
+        "image": "/game-assets/jackpot/bell.png"
+      },
+      {
+        "slug": "lemon",
+        "name": "Chanh",
+        "image": "/game-assets/jackpot/lemon.png"
+      },
+      {
+        "slug": "cherry",
+        "name": "Cherry",
+        "image": "/game-assets/jackpot/cherry.png"
+      }
+    ],
+    "reels": 3,
+    "rows": 3
+  },
+  "BAU_CUA": {
+    "symbols": [
+      {
+        "slug": "ca",
+        "name": "Cá",
+        "image": "/game-assets/baucua/ca.png"
+      },
+      {
+        "slug": "tom",
+        "name": "Tôm",
+        "image": "/game-assets/baucua/tom.png"
+      },
+      {
+        "slug": "cua",
+        "name": "Cua",
+        "image": "/game-assets/baucua/cua.png"
+      },
+      {
+        "slug": "ga",
+        "name": "Gà",
+        "image": "/game-assets/baucua/ga.png"
+      },
+      {
+        "slug": "bau",
+        "name": "Bầu",
+        "image": "/game-assets/baucua/bau.png"
+      },
+      {
+        "slug": "nai",
+        "name": "Nai",
+        "image": "/game-assets/baucua/nai.png"
+      }
+    ]
+  },
+  "CARD_DECK": {
+    "cardBack": "/game-assets/cards/back.png",
+    "cards": {
+      "2_spades": "/game-assets/cards/2_spades.png",
+      "3_spades": "/game-assets/cards/3_spades.png",
+      "4_spades": "/game-assets/cards/4_spades.png",
+      "5_spades": "/game-assets/cards/5_spades.png",
+      "6_spades": "/game-assets/cards/6_spades.png",
+      "7_spades": "/game-assets/cards/7_spades.png",
+      "8_spades": "/game-assets/cards/8_spades.png",
+      "9_spades": "/game-assets/cards/9_spades.png",
+      "10_spades": "/game-assets/cards/10_spades.png",
+      "J_spades": "/game-assets/cards/J_spades.png",
+      "Q_spades": "/game-assets/cards/Q_spades.png",
+      "K_spades": "/game-assets/cards/K_spades.png",
+      "A_spades": "/game-assets/cards/A_spades.png",
+      "2_clubs": "/game-assets/cards/2_clubs.png",
+      "3_clubs": "/game-assets/cards/3_clubs.png",
+      "4_clubs": "/game-assets/cards/4_clubs.png",
+      "5_clubs": "/game-assets/cards/5_clubs.png",
+      "6_clubs": "/game-assets/cards/6_clubs.png",
+      "7_clubs": "/game-assets/cards/7_clubs.png",
+      "8_clubs": "/game-assets/cards/8_clubs.png",
+      "9_clubs": "/game-assets/cards/9_clubs.png",
+      "10_clubs": "/game-assets/cards/10_clubs.png",
+      "J_clubs": "/game-assets/cards/J_clubs.png",
+      "Q_clubs": "/game-assets/cards/Q_clubs.png",
+      "K_clubs": "/game-assets/cards/K_clubs.png",
+      "A_clubs": "/game-assets/cards/A_clubs.png",
+      "2_diamonds": "/game-assets/cards/2_diamonds.png",
+      "3_diamonds": "/game-assets/cards/3_diamonds.png",
+      "4_diamonds": "/game-assets/cards/4_diamonds.png",
+      "5_diamonds": "/game-assets/cards/5_diamonds.png",
+      "6_diamonds": "/game-assets/cards/6_diamonds.png",
+      "7_diamonds": "/game-assets/cards/7_diamonds.png",
+      "8_diamonds": "/game-assets/cards/8_diamonds.png",
+      "9_diamonds": "/game-assets/cards/9_diamonds.png",
+      "10_diamonds": "/game-assets/cards/10_diamonds.png",
+      "J_diamonds": "/game-assets/cards/J_diamonds.png",
+      "Q_diamonds": "/game-assets/cards/Q_diamonds.png",
+      "K_diamonds": "/game-assets/cards/K_diamonds.png",
+      "A_diamonds": "/game-assets/cards/A_diamonds.png",
+      "2_hearts": "/game-assets/cards/2_hearts.png",
+      "3_hearts": "/game-assets/cards/3_hearts.png",
+      "4_hearts": "/game-assets/cards/4_hearts.png",
+      "5_hearts": "/game-assets/cards/5_hearts.png",
+      "6_hearts": "/game-assets/cards/6_hearts.png",
+      "7_hearts": "/game-assets/cards/7_hearts.png",
+      "8_hearts": "/game-assets/cards/8_hearts.png",
+      "9_hearts": "/game-assets/cards/9_hearts.png",
+      "10_hearts": "/game-assets/cards/10_hearts.png",
+      "J_hearts": "/game-assets/cards/J_hearts.png",
+      "Q_hearts": "/game-assets/cards/Q_hearts.png",
+      "K_hearts": "/game-assets/cards/K_hearts.png",
+      "A_hearts": "/game-assets/cards/A_hearts.png"
+    },
+    "note": "52 lá: bích/chuồng/rô/cơ, mỗi chất 2→A"
+  }
+}

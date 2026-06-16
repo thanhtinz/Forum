@@ -1,0 +1,86 @@
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { MinigameService } from './minigame.service';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/roles.decorator';
+
+@Controller('minigame')
+@UseGuards(JwtAuthGuard)
+export class MinigameController {
+  constructor(private readonly minigame: MinigameService) {}
+
+  @Get('games')
+  listGames() {
+    return this.minigame.listGames();
+  }
+
+  @Get('stats')
+  getStats(@CurrentUser('id') userId: string) {
+    return this.minigame.getMyGambleStats(userId);
+  }
+
+  // ── Jackpot 777 ──
+  @Post('jackpot')
+  playJackpot(
+    @CurrentUser('id') userId: string,
+    @Body() body: { betCoin: number; activeLines?: number },
+  ) {
+    return this.minigame.playJackpot(userId, body.betCoin, body.activeLines);
+  }
+
+  // ── Tài Xỉu ──
+  @Post('tai-xiu')
+  playTaiXiu(
+    @CurrentUser('id') userId: string,
+    @Body() body: { betCoin: number; choice: 'tai' | 'xiu' },
+  ) {
+    return this.minigame.playTaiXiu(userId, body.betCoin, body.choice);
+  }
+
+  // ── Bầu Cua ──
+  @Post('bau-cua')
+  playBauCua(
+    @CurrentUser('id') userId: string,
+    @Body('bets') bets: { symbol: string; amount: number }[],
+  ) {
+    return this.minigame.playBauCua(userId, bets);
+  }
+
+  // ── Lucky Wheel ──
+  @Post('lucky-wheel')
+  playLuckyWheel(@CurrentUser('id') userId: string, @Body('betCoin') betCoin: number) {
+    return this.minigame.playLuckyWheel(userId, betCoin);
+  }
+
+  // ── Coin Flip ──
+  @Post('coin-flip')
+  playCoinFlip(
+    @CurrentUser('id') userId: string,
+    @Body() body: { betCoin: number; choice: 'heads' | 'tails' },
+  ) {
+    return this.minigame.playCoinFlip(userId, body.betCoin, body.choice);
+  }
+
+  // ── Blackjack ──
+  @Post('blackjack')
+  playBlackjack(
+    @CurrentUser('id') userId: string,
+    @Body() body: { betCoin: number; action?: 'start' | 'hit' | 'stand'; state?: any },
+  ) {
+    return this.minigame.playBlackjack(userId, body.betCoin, body.action, body.state);
+  }
+
+  // ── Caro (PvP) ──
+  @Post('caro/room')
+  createCaroRoom(@CurrentUser('id') userId: string, @Body('betCoin') betCoin: number) {
+    return this.minigame.createCaroRoom(userId, betCoin);
+  }
+
+  @Post('caro/:roomId/move')
+  caroMove(
+    @CurrentUser('id') userId: string,
+    @Param('roomId') roomId: string,
+    @Body() body: { x: number; y: number },
+  ) {
+    return this.minigame.caroMove(roomId, userId, body.x, body.y);
+  }
+}

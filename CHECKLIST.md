@@ -168,8 +168,8 @@
 
 ### 🎮 Game engines chi tiết còn thiếu
 - [x] **Đua Thú** — engine mô phỏng đua 7 con, đặt 1 ăn 5, kèm frame animation + asset (gif/track)
-- [ ] **Tiến Lên** — logic đánh bài đầy đủ (mới có chia bài)
-- [ ] **Poker** — vòng cược đầy đủ (mới có đánh giá bài)
+- [x] **Tiến Lên** — engine đầy đủ (combo single/đôi/sám/sảnh/tứ quý/đôi thông, chặt bom) + 3 bot, chơi theo lượt, cược coin
+- [x] **Poker** — Video Poker (Jacks or Better): cược, chia 5, đổi bài, trả thưởng theo hạng
 - [ ] Combat animation replay (đã lưu rounds, chưa có UI replay)
 
 ### 🎨 Frontend hoàn chỉnh (Next.js 14)

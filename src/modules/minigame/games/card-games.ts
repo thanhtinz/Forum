@@ -117,9 +117,34 @@ export class CardGames {
     return { rank: 1, name: 'Mậu thầu' };
   }
 
+  // ── VIDEO POKER (Jacks or Better) ──
+  // Hệ số trả theo hạng bài của evaluatePokerHand (1-9)
+  static POKER_PAYOUT: Record<number, number> = {
+    9: 50, // thùng phá sảnh
+    8: 25, // tứ quý
+    7: 9,  // cù lũ
+    6: 6,  // thùng
+    5: 4,  // sảnh
+    4: 3,  // sám cô
+    3: 2,  // thú (2 đôi)
+    2: 1,  // đôi
+    1: 0,  // mậu thầu
+  };
+
+  static videoPokerDeal(): { hand: Card[]; deck: Card[] } {
+    const deck = CardGames.shuffle(CardGames.createDeck());
+    const hand = [deck.pop()!, deck.pop()!, deck.pop()!, deck.pop()!, deck.pop()!];
+    return { hand, deck };
+  }
+
+  // hold: mảng 5 boolean — true = giữ lá đó
+  static videoPokerDraw(hand: Card[], deck: Card[], hold: boolean[]): Card[] {
+    return hand.map((c, i) => (hold[i] ? c : deck.pop()!));
+  }
+
   // ── TIẾN LÊN — sắp bài, chia 13 lá/người ──
   static tienLenDeal(numPlayers: number): Card[][] {
-    const deck = CardGames.createDeck();
+    const deck = CardGames.shuffle(CardGames.createDeck());
     const hands: Card[][] = Array.from({ length: numPlayers }, () => []);
     for (let i = 0; i < 52; i++) {
       hands[i % numPlayers].push(deck[i]);

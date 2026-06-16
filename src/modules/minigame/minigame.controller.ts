@@ -78,6 +78,24 @@ export class MinigameController {
     return this.minigame.playBlackjack(userId, body.betCoin, body.action, body.state);
   }
 
+  // ── Video Poker ──
+  @Post('poker')
+  playPoker(
+    @CurrentUser('id') userId: string,
+    @Body() body: { betCoin: number; action?: 'start' | 'draw'; state?: any; hold?: boolean[] },
+  ) {
+    return this.minigame.playPoker(userId, body.betCoin, body.action, body.state, body.hold);
+  }
+
+  // ── Tiến Lên (vs 3 bot) ──
+  @Post('tien-len')
+  playTienLen(
+    @CurrentUser('id') userId: string,
+    @Body() body: { betCoin: number; action?: 'start' | 'play' | 'pass'; state?: any; cards?: any[] },
+  ) {
+    return this.minigame.playTienLen(userId, body.betCoin, body.action, body.state, body.cards);
+  }
+
   // ── Caro (PvP) ──
   @Post('caro/room')
   createCaroRoom(@CurrentUser('id') userId: string, @Body('betCoin') betCoin: number) {

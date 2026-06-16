@@ -6,6 +6,7 @@ import { CardGames } from './games/card-games';
 import { CaroGame } from './games/caro-game';
 import { JackpotGame } from './games/jackpot-game';
 import { RaceGame } from './games/race-game';
+import { TienLen, TLState } from './games/tien-len';
 
 @Injectable()
 export class MinigameService {
@@ -209,6 +210,158 @@ export class MinigameService {
       return { ...result, payout, netCoin };
     }
     return result;
+  }
+
+  // ──────────────────────────────────────────────
+  // VIDEO POKER (Jacks or Better) — cược, chia 5 lá, đổi bài, trả theo hạng
+  // ──────────────────────────────────────────────
+  async playPoker(
+    userId: string,
+    betCoin: number,
+    action?: 'start' | 'draw',
+    state?: { hand: any[]; deck: any[] },
+    hold?: boolean[],
+  ) {
+    const { char, config } = await this.validateAndLockBet(userId, betCoin, 'POKER');
+
+    if (action === 'start' || !action) {
+      const game = CardGames.videoPokerDeal();
+      return { state: game, finished: false };
+    }
+
+    if (!state) throw new BadRequestException('Thiếu state ván bài');
+    const holdMask = (hold ?? [false, false, false, false, false]).slice(0, 5);
+    const finalHand = CardGames.videoPokerDraw(state.hand, state.deck, holdMask);
+    const ev = CardGames.evaluatePokerHand(finalHand);
+    const mult = CardGames.POKER_PAYOUT[ev.rank] ?? 0;
+    const payout = mult > 0 ? Math.floor(betCoin * mult * (1 - config.houseFee)) : 0;
+    const netCoin = payout - betCoin;
+    await this.settleBet(char.id, 'POKER', betCoin, netCoin);
+
+    return { finished: true, hand: finalHand, handName: ev.name, multiplier: mult, payout, netCoin };
+  }
+
+  // ──────────────────────────────────────────────
+  // TIẾN LÊN MIỀN NAM — 1 người vs 3 bot
+  // ──────────────────────────────────────────────
+  async playTienLen(
+    userId: string,
+    betCoin: number,
+    action?: 'start' | 'play' | 'pass',
+    state?: TLState,
+    cards?: any[],
+  ) {
+    const { char, config } = await this.validateAndLockBet(userId, betCoin, 'TIEN_LEN');
+
+    if (action === 'start' || !action) {
+      const s = TienLen.start();
+      // bot đi trước nếu người không phải leader
+      this.runBots(s);
+      return { state: this.publicState(s), finished: false };
+    }
+
+    if (!state) throw new BadRequestException('Thiếu state ván bài');
+    const s: TLState = state;
+    if (s.finished) throw new BadRequestException('Ván đã kết thúc');
+    if (s.turn !== 0) throw new BadRequestException('Chưa tới lượt bạn');
+
+    if (action === 'pass') {
+      if (!s.pileCombo) throw new BadRequestException('Bạn đang được đánh tự do, không thể bỏ lượt');
+      s.passed[0] = true;
+      this.advanceTurn(s);
+    } else {
+      // play: validate combo của người chơi
+      if (!cards || cards.length === 0) throw new BadRequestException('Chưa chọn bài');
+      const combo = TienLen.parse(cards);
+      if (combo.type === 'invalid') throw new BadRequestException('Bộ bài không hợp lệ');
+      if (!TienLen.canBeat(s.pileCombo, combo)) throw new BadRequestException('Bài không chặt được bộ trên bàn');
+      // các lá phải có trong tay
+      const handKeys = new Set(s.hands[0].map((c: any) => `${c.rank}-${c.suit}`));
+      if (!cards.every((c) => handKeys.has(`${c.rank}-${c.suit}`))) {
+        throw new BadRequestException('Bạn không có những lá này');
+      }
+      s.hands[0] = TienLen.removeCards(s.hands[0], cards);
+      s.pile = combo.cards;
+      s.pileCombo = combo;
+      s.leader = 0;
+      s.passed = [false, false, false, false];
+      if (s.hands[0].length === 0) {
+        s.finished = true;
+        s.winner = 0;
+      } else {
+        this.advanceTurn(s);
+      }
+    }
+
+    if (!s.finished) this.runBots(s);
+
+    let payout = 0;
+    let netCoin = -betCoin;
+    if (s.finished) {
+      if (s.winner === 0) {
+        payout = Math.floor(betCoin * 3 * (1 - config.houseFee));
+        netCoin = payout - betCoin;
+      }
+      await this.settleBet(char.id, 'TIEN_LEN', betCoin, netCoin);
+    }
+
+    return {
+      state: this.publicState(s),
+      finished: s.finished,
+      winner: s.finished ? s.winner : undefined,
+      payout: s.finished ? payout : undefined,
+      netCoin: s.finished ? netCoin : undefined,
+    };
+  }
+
+  // Cho bot đánh đến khi tới lượt người chơi hoặc ván kết thúc
+  private runBots(s: TLState) {
+    let guard = 0;
+    while (!s.finished && s.turn !== 0 && guard++ < 200) {
+      const p = s.turn;
+      const move = TienLen.botMove(s.hands[p], s.pileCombo);
+      if (move && move.length) {
+        const combo = TienLen.parse(move);
+        s.hands[p] = TienLen.removeCards(s.hands[p], move);
+        s.pile = combo.cards;
+        s.pileCombo = combo;
+        s.leader = p;
+        s.passed = [false, false, false, false];
+        if (s.hands[p].length === 0) { s.finished = true; s.winner = p; break; }
+        this.advanceTurn(s);
+      } else {
+        s.passed[p] = true;
+        this.advanceTurn(s);
+      }
+    }
+  }
+
+  // chuyển lượt; nếu 3 người đã pass quanh leader -> leader đánh tự do
+  private advanceTurn(s: TLState) {
+    let next = (s.turn + 1) % 4;
+    let guard = 0;
+    while (s.passed[next] && next !== s.leader && guard++ < 8) {
+      next = (next + 1) % 4;
+    }
+    // nếu vòng về leader (mọi người khác đã pass) -> reset bàn, leader đánh tự do
+    const others = [0, 1, 2, 3].filter((i) => i !== s.leader);
+    if (others.every((i) => s.passed[i])) {
+      s.pile = [];
+      s.pileCombo = null;
+      s.passed = [false, false, false, false];
+      s.turn = s.leader;
+    } else {
+      s.turn = next;
+    }
+  }
+
+  // Trả full state để client gửi lại lượt sau (server tin state như blackjack).
+  // Kèm botCounts cho UI hiển thị số lá còn lại của bot.
+  private publicState(s: TLState) {
+    return {
+      ...s,
+      botCounts: [s.hands[1].length, s.hands[2].length, s.hands[3].length],
+    };
   }
 
   // ──────────────────────────────────────────────

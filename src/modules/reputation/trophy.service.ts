@@ -116,6 +116,25 @@ export class TrophyService {
     return stats.currentTitle;
   }
 
+  // Bảng xếp hạng theo điểm danh hiệu
+  async leaderboard(limit = 20) {
+    const rows = await this.prisma.userTrophyStats.findMany({
+      take: Math.min(Math.max(limit, 1), 50),
+      orderBy: { totalPoints: 'desc' },
+    });
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: rows.map((r) => r.userId) } },
+      select: { id: true, username: true, displayName: true, avatar: true },
+    });
+    const map = new Map(users.map((u) => [u.id, u]));
+    return rows.map((r, i) => ({
+      rank: i + 1,
+      user: map.get(r.userId),
+      totalPoints: r.totalPoints,
+      currentTitle: r.currentTitle,
+    }));
+  }
+
   // ──────────────────────────────────────────────
   // LẤY TROPHY CỦA USER (cho profile)
   // ──────────────────────────────────────────────

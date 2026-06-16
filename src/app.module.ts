@@ -19,6 +19,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { GameModule } from './modules/game/game.module';
 import { MinigameModule } from './modules/minigame/minigame.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { ToolsModule } from './modules/tools/tools.module';
 import { SeederModule } from './seed/seeder.module';
 
 @Module({
@@ -43,6 +44,7 @@ import { SeederModule } from './seed/seeder.module';
     GameModule,
     MinigameModule,
     ChatModule,
+    ToolsModule,
     SeederModule,
   ],
 })

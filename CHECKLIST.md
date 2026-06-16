@@ -162,9 +162,9 @@
 - [ ] Asset tài xỉu (bát/đĩa) nằm trong `res.rar` — môi trường thiếu `unrar`, chưa giải nén được
 
 ### 🛠️ Tools Collection (~50 tools)
-- [ ] Framework tools (ToolCategory + Tool schema đã có)
-- [ ] 50 tool từ tools-collection.net: formatters, validators, encoders, generators, converters, calculators
-- [ ] UI trang tools + admin quản lý tools
+- [x] Backend catalog: ToolsModule (list nhóm+tool, get theo slug, đếm lượt dùng, top phổ biến)
+- [x] 44 tool / 6 nhóm (formatters, validators, encoders, generators, converters, calculators) — auto-seed
+- [ ] UI trang tools (logic chạy client qua field `component`) + admin quản lý
 
 ### 🎮 Game engines chi tiết còn thiếu
 - [x] **Đua Thú** — engine mô phỏng đua 7 con, đặt 1 ăn 5, kèm frame animation + asset (gif/track)

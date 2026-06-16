@@ -30,6 +30,7 @@ import { GalleryModule } from './modules/gallery/gallery.module';
 import { ProfileExtraModule } from './modules/profile-extra/profile-extra.module';
 import { CommunityModule } from './modules/community/community.module';
 import { BadgesModule } from './modules/badges/badge.module';
+import { VerificationModule } from './modules/verification/verification.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { BadgesModule } from './modules/badges/badge.module';
     ProfileExtraModule,
     CommunityModule,
     BadgesModule,
+    VerificationModule,
   ],
 })
 export class AppModule {}

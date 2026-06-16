@@ -14,13 +14,21 @@ import {
   CreateBadgeDto,
   UpdateBadgeDto,
 } from './badge.service';
+import {
+  LevelService,
+  CreateLevelTierDto,
+  UpdateLevelTierDto,
+} from './level.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { Roles, RolesGuard } from '../../common/decorators/roles.decorator';
 
 @Controller('badges')
 export class BadgeController {
-  constructor(private readonly badges: BadgeService) {}
+  constructor(
+    private readonly badges: BadgeService,
+    private readonly levels: LevelService,
+  ) {}
 
   @Get('user/:userId')
   @UseGuards(OptionalJwtGuard)
@@ -33,6 +41,39 @@ export class BadgeController {
   @Get('catalog')
   catalog() {
     return this.badges.listCatalog();
+  }
+
+  // ── Levels (public) ──
+  @Get('levels')
+  levels_() {
+    return this.levels.listTiers();
+  }
+
+  @Get('levels/user/:userId')
+  userLevel(@Param('userId') userId: string) {
+    return this.levels.getUserLevelByUserId(userId);
+  }
+
+  // ── Levels admin ──
+  @Post('admin/levels')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  createLevel(@Body() dto: CreateLevelTierDto) {
+    return this.levels.createTier(dto);
+  }
+
+  @Patch('admin/levels/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateLevel(@Param('id') id: string, @Body() dto: UpdateLevelTierDto) {
+    return this.levels.updateTier(id, dto);
+  }
+
+  @Delete('admin/levels/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteLevel(@Param('id') id: string) {
+    return this.levels.deleteTier(id);
   }
 
   // ── Admin ──

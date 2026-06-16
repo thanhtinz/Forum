@@ -205,6 +205,7 @@ model User {
   galleryAlbums      GalleryAlbum[]
   galleryMedia       GalleryMedia[]
   galleryComments    GalleryComment[]
+  verificationRequests VerificationRequest[]
 
   @@index([email])
   @@index([username])
@@ -687,6 +688,36 @@ model UserBadge {
   badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@id([userId, badgeId])
+}
+
+// Cấp độ (rank theo điểm hoạt động) — kiểu XenForo User Level/Rank.
+// Điểm = postCount + threadCount*2 + reputationScore.
+model LevelTier {
+  id        String   @id @default(cuid())
+  level     Int      @unique
+  name      String   @db.VarChar(60)
+  icon      String   @db.VarChar(20)
+  color     String   @db.VarChar(20)
+  minScore  Int
+  createdAt DateTime @default(now())
+
+  @@index([minScore])
+}
+
+// Đơn đăng ký tích xanh (verify) — user đạt ngưỡng tự nộp, admin duyệt.
+model VerificationRequest {
+  id           String    @id @default(cuid())
+  userId       String
+  status       String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  note         String?   @db.Text
+  createdAt    DateTime  @default(now())
+  reviewedById String?
+  reviewedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
 }
 
 // ============================================================

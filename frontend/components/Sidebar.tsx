@@ -51,6 +51,7 @@ export function Sidebar() {
           <Link href="/community" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><BarChart3 size={16} className="text-sky-600" /> Cộng đồng</Link>
           <Link href="/gallery" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Image size={16} className="text-rose-600" /> Thư viện ảnh</Link>
           <Link href="/tags" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Tag size={16} className="text-fuchsia-600" /> Thẻ</Link>
+          <Link href="/levels" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Award size={16} className="text-amber-600" /> Cấp độ</Link>
         </div>
       </div>
 

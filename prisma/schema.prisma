@@ -1853,6 +1853,7 @@ model FarmPlot {
   plantedAt   DateTime?
   readyAt     DateTime?
   watered     Boolean   @default(false)
+  health      Int       @default(100) // sức khỏe ô đất 0-100 -> ảnh hưởng sản lượng
   yield       Int       @default(0)
   createdAt   DateTime  @default(now())
 

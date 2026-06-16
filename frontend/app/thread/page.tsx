@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
@@ -79,6 +79,7 @@ function ThreadView() {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
+  const [bookmarked, setBookmarked] = useState(false);
 
   const isMod = user && (user.role === 'ADMIN' || user.role === 'MODERATOR');
   const canManage = thread && user && ((thread as any).author?.id === user.id || isMod);
@@ -90,7 +91,10 @@ function ThreadView() {
       setThread(t);
       const p = await api.get<Paginated<Post>>(`/forum/threads/${t.id}/posts?limit=50`);
       setPosts(p.data);
-      if (user) api.get<{ subscribed: boolean }>(`/forum/threads/${t.id}/subscription`).then((s) => setSubscribed(s.subscribed)).catch(() => {});
+      if (user) {
+        api.get<{ subscribed: boolean }>(`/forum/threads/${t.id}/subscription`).then((s) => setSubscribed(s.subscribed)).catch(() => {});
+        api.get<{ bookmarked: boolean }>(`/forum/threads/${t.id}/bookmark`).then((b) => setBookmarked(b.bookmarked)).catch(() => {});
+      }
     } catch (e: any) {
       setErr(e.message);
     } finally {
@@ -116,6 +120,10 @@ function ThreadView() {
   async function toggleSub() {
     if (!thread) return;
     try { const r = await api.post<{ subscribed: boolean }>(`/forum/threads/${thread.id}/subscribe`, {}); setSubscribed(r.subscribed); } catch {}
+  }
+  async function toggleBookmark() {
+    if (!thread) return;
+    try { const r = await api.post<{ bookmarked: boolean }>(`/forum/threads/${thread.id}/bookmark`, {}); setBookmarked(r.bookmarked); } catch {}
   }
   async function markBest(postId: string) {
     if (!thread) return;
@@ -143,10 +151,16 @@ function ThreadView() {
         <div className="mt-1 flex items-start justify-between gap-3">
           <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
           {user && (
-            <button onClick={toggleSub} title="Theo dõi chủ đề"
-              className={`flex shrink-0 items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${subscribed ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
-              {subscribed ? <BellRing size={14} /> : <Bell size={14} />} {subscribed ? 'Đang theo dõi' : 'Theo dõi'}
-            </button>
+            <div className="flex shrink-0 gap-2">
+              <button onClick={toggleBookmark} title="Lưu chủ đề"
+                className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${bookmarked ? 'bg-amber-500 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
+                {bookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />} {bookmarked ? 'Đã lưu' : 'Lưu'}
+              </button>
+              <button onClick={toggleSub} title="Theo dõi chủ đề"
+                className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${subscribed ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
+                {subscribed ? <BellRing size={14} /> : <Bell size={14} />} {subscribed ? 'Đang theo dõi' : 'Theo dõi'}
+              </button>
+            </div>
           )}
         </div>
         <div className="mt-2 flex flex-wrap gap-4 text-xs text-ink-500">

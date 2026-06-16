@@ -186,6 +186,7 @@ model User {
   pollVotes         PollVote[]
   threadSubs        ThreadSubscription[]
   postDrafts        PostDraft[]
+  bookmarks         Bookmark[]
 
   @@index([email])
   @@index([username])
@@ -289,6 +290,7 @@ model Thread {
   views         ThreadView[]
   poll          Poll?
   subscriptions ThreadSubscription[]
+  bookmarks     Bookmark[]
 
   @@index([categoryId])
   @@index([authorId])
@@ -2263,5 +2265,51 @@ model PostDraft {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+}
+
+// ============================================================
+// CMS & BOOKMARKS (extension Flarum: FoF Pages / FoF Links / Bookmarks)
+// ============================================================
+
+// FoF Pages — trang tĩnh do admin tạo (nội quy, giới thiệu, hướng dẫn…)
+model Page {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(120)
+  title       String   @db.VarChar(200)
+  content     String   @db.Text // markdown
+  isPublished Boolean  @default(true)
+  showInNav   Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublished])
+}
+
+// FoF Links — liên kết điều hướng tuỳ chỉnh trên menu
+model NavLink {
+  id         String   @id @default(cuid())
+  label      String   @db.VarChar(80)
+  url        String   @db.VarChar(255)
+  icon       String?  @db.VarChar(40)
+  openNewTab Boolean  @default(false)
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+}
+
+// Bookmarks — lưu chủ đề để đọc sau
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  threadId  String
+  note      String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, threadId])
   @@index([userId])
 }

@@ -25,6 +25,13 @@ function StoreView() {
   }
   useEffect(() => { if (slug) load(); /* eslint-disable-next-line */ }, [slug]);
 
+  async function buy(productId: string) {
+    if (!user) { setErr('Đăng nhập để mua'); return; }
+    const code = prompt('Mã giảm giá (bỏ trống nếu không có):') || undefined;
+    try { const r = await api.post<any>(`/marketplace/products/${productId}/buy`, { couponCode: code }); alert(`Mua thành công! Đã trả ${r.paid} gem.${r.downloadUrl ? ' Link tải: ' + r.downloadUrl : ''}`); }
+    catch (e: any) { alert(e.message); }
+  }
+
   async function sendTicket() {
     if (!user) { setErr('Đăng nhập để gửi yêu cầu'); return; }
     try { await api.post(`/marketplace/storefronts/${s.id}/tickets`, ticket); setShowTicket(false); setTicket({ subject: '', body: '' }); alert('Đã gửi yêu cầu hỗ trợ'); } catch (e: any) { setErr(e.message); }
@@ -79,6 +86,7 @@ function StoreView() {
                 {p.thumbnailUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={p.thumbnailUrl} alt={p.title} className="mb-2 h-24 w-full rounded object-cover" />}
                 <div className="truncate text-sm font-medium">{p.title}</div>
                 <div className="text-xs text-brand-600">{p.isFree ? 'Miễn phí' : `${p.gemPrice} gem`}</div>
+                <button onClick={() => buy(p.id)} className="btn-primary mt-2 w-full !py-1 text-xs">Mua</button>
               </div>
             ))}
           </div>

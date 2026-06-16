@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Store, Package, Ticket, BadgePercent, Info } from 'lucide-react';
+import { Store, Package, Ticket, BadgePercent, Info, Wallet } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
-type Tab = 'info' | 'products' | 'coupons' | 'tickets';
+type Tab = 'info' | 'products' | 'coupons' | 'tickets' | 'earnings';
 
 export default function ManageStore() {
   const { user, loading } = useAuth();
@@ -22,7 +22,7 @@ export default function ManageStore() {
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để quản lý gian hàng.</div>;
   if (hasStore === null) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
 
-  const TABS: [Tab, string, any][] = [['info', 'Thông tin', Info], ['products', 'Sản phẩm', Package], ['coupons', 'Mã giảm giá', BadgePercent], ['tickets', 'Hỗ trợ', Ticket]];
+  const TABS: [Tab, string, any][] = [['info', 'Thông tin', Info], ['products', 'Sản phẩm', Package], ['coupons', 'Mã giảm giá', BadgePercent], ['earnings', 'Đơn & Thu nhập', Wallet], ['tickets', 'Hỗ trợ', Ticket]];
 
   return (
     <div className="space-y-4">
@@ -45,6 +45,7 @@ export default function ManageStore() {
           {tab === 'info' && <StoreInfo store={store} onSaved={setStore} />}
           {tab === 'products' && <Products />}
           {tab === 'coupons' && <Coupons />}
+          {tab === 'earnings' && <Earnings />}
           {tab === 'tickets' && <Tickets ownerId={user!.id} />}
         </>
       )}
@@ -151,6 +152,33 @@ function Coupons() {
           </div>
         ))}
         {list.length === 0 && <div className="p-6 text-center text-ink-500">Chưa có mã giảm giá.</div>}
+      </div>
+    </div>
+  );
+}
+
+function Earnings() {
+  const [d, setD] = useState<any>(null);
+  useEffect(() => { api.get('/marketplace/me/earnings').then(setD).catch(() => {}); }, []);
+  if (!d) return <div className="p-6 text-center text-ink-500">Đang tải…</div>;
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="card p-4 text-center"><div className="text-2xl font-bold text-amber-600">{d.held}</div><div className="text-xs text-ink-500">Đang giam (3 ngày)</div></div>
+        <div className="card p-4 text-center"><div className="text-2xl font-bold text-emerald-600">{d.released}</div><div className="text-xs text-ink-500">Đã nhận (gem)</div></div>
+        <div className="card p-4 text-center"><div className="text-2xl font-bold">{d.totalOrders}</div><div className="text-xs text-ink-500">Tổng đơn</div></div>
+      </div>
+      <div className="card divide-y divide-ink-100 dark:divide-ink-800">
+        {d.orders.map((o: any) => (
+          <div key={o.id} className="flex items-center justify-between p-3 text-sm">
+            <div>{o.product} <span className="text-ink-400">· mua bởi {o.buyer}</span></div>
+            <div className="text-right">
+              <div className="font-medium text-emerald-600">+{o.sellerEarned} gem</div>
+              <div className="text-xs text-ink-400">{o.escrowStatus === 'HELD' ? `Giam đến ${new Date(o.escrowReleaseAt).toLocaleDateString('vi')}` : o.escrowStatus}</div>
+            </div>
+          </div>
+        ))}
+        {d.orders.length === 0 && <div className="p-6 text-center text-ink-500">Chưa có đơn nào.</div>}
       </div>
     </div>
   );

@@ -492,6 +492,9 @@ model Order {
   downloadUrl   String?
   downloadCount Int         @default(0)
   downloadLimit Int         @default(5)
+  escrowStatus  String?     @db.VarChar(20) // HELD | RELEASED | REFUNDED
+  escrowReleaseAt DateTime?  // tiền seller được giải ngân sau khi giam 3 ngày
+  couponCode    String?     @db.VarChar(40)
   completedAt   DateTime?
   refundedAt    DateTime?
   refundReason  String?

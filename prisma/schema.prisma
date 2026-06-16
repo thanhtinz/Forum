@@ -206,6 +206,12 @@ model User {
   galleryMedia       GalleryMedia[]
   galleryComments    GalleryComment[]
   verificationRequests VerificationRequest[]
+  checkIns           CheckIn[]
+  spinHistory        SpinHistory[]
+  giveaways          Giveaway[]
+  giveawayEntries    GiveawayEntry[]
+  triviaAnswers      TriviaAnswer[]
+  predictionBets     PredictionBet[]
 
   @@index([email])
   @@index([username])
@@ -1001,6 +1007,166 @@ model GalleryComment {
   author User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([mediaId, createdAt])
+}
+
+// ============================================================
+// ENTERTAINMENT (điểm danh, vòng quay, giveaway, đố vui, dự đoán)
+// ============================================================
+
+model CheckIn {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @db.Date
+  streak    Int      @default(1)
+  reward    Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+}
+
+model SpinWheel {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(100)
+  costCoin  Int      @default(100)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  segments SpinSegment[]
+  history  SpinHistory[]
+}
+
+model SpinSegment {
+  id           String  @id @default(cuid())
+  wheelId      String
+  label        String  @db.VarChar(100)
+  icon         String? // URL ảnh
+  color        String? @db.VarChar(20)
+  rewardType   String  @default("coin") // coin | item | badge | nothing
+  rewardAmount Int     @default(0)
+  rewardRefId  String? // itemTemplateId / badgeId
+  weight       Int     @default(1)
+  sortOrder    Int     @default(0)
+
+  wheel SpinWheel @relation(fields: [wheelId], references: [id], onDelete: Cascade)
+
+  @@index([wheelId])
+}
+
+model SpinHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  wheelId      String
+  segmentLabel String
+  rewardType   String
+  rewardAmount Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wheel SpinWheel @relation(fields: [wheelId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Giveaway {
+  id           String    @id @default(cuid())
+  hostId       String
+  title        String    @db.VarChar(200)
+  description  String?   @db.Text
+  rewardKind   String    @default("coin") // coin | gem
+  totalAmount  Int
+  winnersCount Int       @default(1)
+  perWinner    Int       @default(0)
+  mode         String    @default("raffle") // raffle | envelope
+  threadId     String?
+  status       String    @default("OPEN") // OPEN | DRAWN | CLOSED
+  endsAt       DateTime?
+  createdAt    DateTime  @default(now())
+  drawnAt      DateTime?
+
+  host    User            @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  entries GiveawayEntry[]
+
+  @@index([status, createdAt])
+}
+
+model GiveawayEntry {
+  id         String   @id @default(cuid())
+  giveawayId String
+  userId     String
+  isWinner   Boolean  @default(false)
+  amountWon  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  giveaway Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([giveawayId, userId])
+  @@index([userId])
+}
+
+model TriviaQuestion {
+  id           String         @id @default(cuid())
+  question     String         @db.Text
+  options      Json // string[]
+  correctIndex Int
+  reward       Int            @default(0) // coin
+  activeDate   DateTime?      @db.Date
+  isActive     Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+
+  answers TriviaAnswer[]
+}
+
+model TriviaAnswer {
+  id          String   @id @default(cuid())
+  questionId  String
+  userId      String
+  choiceIndex Int
+  isCorrect   Boolean
+  rewardGiven Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  question TriviaQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, userId])
+  @@index([userId])
+}
+
+model Prediction {
+  id           String          @id @default(cuid())
+  title        String          @db.VarChar(200)
+  description  String?         @db.Text
+  options      Json // string[] outcomes
+  status       String          @default("OPEN") // OPEN | LOCKED | SETTLED
+  correctIndex Int?
+  closesAt     DateTime?
+  createdBy    String
+  createdAt    DateTime        @default(now())
+  settledAt    DateTime?
+
+  bets PredictionBet[]
+
+  @@index([status, createdAt])
+}
+
+model PredictionBet {
+  id           String   @id @default(cuid())
+  predictionId String
+  userId       String
+  optionIndex  Int
+  amount       Int
+  payout       Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  prediction Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([predictionId, userId])
+  @@index([userId])
 }
 
 // ============================================================

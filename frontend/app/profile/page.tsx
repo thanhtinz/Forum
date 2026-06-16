@@ -16,11 +16,15 @@ function ProfileView() {
   const name = useSearchParams().get('u') || '';
   const [profile, setProfile] = useState<any>(null);
   const [look, setLook] = useState<Look | null>(null);
+  const [trophies, setTrophies] = useState<any>(null);
   const [err, setErr] = useState('');
 
   useEffect(() => {
     if (!name) return;
-    api.get<any>(`/users/${name}`).then(setProfile).catch((e) => setErr(e.message));
+    api.get<any>(`/users/${name}`).then((p) => {
+      setProfile(p);
+      if (p?.id) api.get<any>(`/trophies/user/${p.id}`).then(setTrophies).catch(() => {});
+    }).catch((e) => setErr(e.message));
     api.get<Look>(`/wardrobe/look/${name}`).then(setLook).catch(() => {});
   }, [name]);
 
@@ -37,6 +41,7 @@ function ProfileView() {
           <span className="chip mt-2 bg-brand-100 text-brand-700">{profile.role}</span>
         )}
         {profile.bio && <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{profile.bio}</p>}
+        {trophies && <p className="mt-2 text-sm font-medium text-amber-600">🏅 {trophies.currentTitle} · {trophies.totalPoints} điểm</p>}
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
           <Stat label="Bài" value={profile.threadCount ?? 0} />
           <Stat label="Trả lời" value={profile.postCount ?? 0} />
@@ -54,6 +59,22 @@ function ProfileView() {
               {look.pet && <AssetCard name={look.pet.name} asset={look.pet.asset} tag="PET" />}
               {look.mount && <AssetCard name={look.mount.name} asset={look.mount.asset} tag="MOUNT" />}
             </div>
+          </div>
+        )}
+        {trophies && (
+          <div className="card p-5">
+            <h2 className="mb-3 font-semibold">Danh hiệu ({trophies.earned}/{trophies.total})</h2>
+            {trophies.trophies.length === 0 ? <p className="text-sm text-ink-500">Chưa có danh hiệu nào.</p> : (
+              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                {trophies.trophies.map((t: any) => (
+                  <div key={t.id} className="rounded-xl border border-amber-200/60 p-3 text-center dark:border-ink-800" title={t.description || ''}>
+                    <div className="text-2xl">{t.icon || '🏆'}</div>
+                    <div className="mt-1 truncate text-xs font-medium">{t.name}</div>
+                    {t.points ? <div className="text-[11px] text-amber-600">{t.points}đ</div> : null}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
         <div className="card p-5">

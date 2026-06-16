@@ -29,6 +29,10 @@ import { SocialModule } from './modules/social/social.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
 import { ProfileExtraModule } from './modules/profile-extra/profile-extra.module';
 import { CommunityModule } from './modules/community/community.module';
+import { CheckInModule } from './modules/checkin/checkin.module';
+import { SpinModule } from './modules/spin/spin.module';
+import { GiveawayModule } from './modules/giveaway/giveaway.module';
+import { QuizModule } from './modules/quiz/quiz.module';
 import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
 
@@ -77,6 +81,10 @@ import { VerificationModule } from './modules/verification/verification.module';
     CommunityModule,
     BadgesModule,
     VerificationModule,
+    CheckInModule,
+    SpinModule,
+    GiveawayModule,
+    QuizModule,
   ],
 })
 export class AppModule {}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Gamepad2, Fish, Sprout, Trophy, Wrench, Store, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3 } from 'lucide-react';
+import { Gamepad2, Fish, Sprout, Trophy, Wrench, Store, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Disc3, Gift, HelpCircle, TrendingUp } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -52,6 +52,17 @@ export function Sidebar() {
           <Link href="/gallery" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Image size={16} className="text-rose-600" /> Thư viện ảnh</Link>
           <Link href="/tags" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Tag size={16} className="text-fuchsia-600" /> Thẻ</Link>
           <Link href="/levels" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Award size={16} className="text-amber-600" /> Cấp độ</Link>
+        </div>
+      </div>
+
+      <div className="card p-4">
+        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-500">Giải trí</h3>
+        <div className="flex flex-col gap-1">
+          <Link href="/checkin" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><CalendarCheck size={16} className="text-emerald-600" /> Điểm danh</Link>
+          <Link href="/spin" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Disc3 size={16} className="text-fuchsia-600" /> Vòng quay may mắn</Link>
+          <Link href="/giveaways" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Gift size={16} className="text-rose-600" /> Giveaway / Lì xì</Link>
+          <Link href="/trivia" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><HelpCircle size={16} className="text-sky-600" /> Đố vui</Link>
+          <Link href="/predictions" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><TrendingUp size={16} className="text-amber-600" /> Dự đoán</Link>
         </div>
       </div>
 

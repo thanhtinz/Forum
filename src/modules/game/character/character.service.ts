@@ -261,6 +261,17 @@ export class CharacterService {
   // ──────────────────────────────────────────────
   // HELPERS
   // ──────────────────────────────────────────────
+  /** Cộng/trừ coin theo userId (tự tạo nhân vật mặc định nếu chưa có). amount âm để trừ. */
+  async adjustCoinByUser(userId: string, type: string, amount: number, note: string, refId?: string) {
+    let char = await this.prisma.gameCharacter.findUnique({ where: { userId }, select: { id: true } });
+    if (!char) {
+      const created = await this.prisma.gameCharacter.create({ data: { userId, gender: 'MALE' } });
+      await this.recalcCombatPower(created.id).catch(() => {});
+      char = { id: created.id };
+    }
+    return this.logCoin(char.id, type, amount, note, refId);
+  }
+
   async logCoin(characterId: string, type: string, amount: number, note: string, refId?: string) {
     return this.prisma.$transaction(async (tx) => {
       const char = await tx.gameCharacter.findUnique({

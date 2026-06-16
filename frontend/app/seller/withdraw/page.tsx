@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Gem } from 'lucide-react';
 import { api } from '@/lib/api';
 
 export default function SellerWithdraw() {
@@ -66,8 +67,8 @@ export default function SellerWithdraw() {
           </select>
           <button onClick={request} disabled={!methodId} className="btn-primary disabled:opacity-50">Yêu cầu rút</button>
         </div>
-        <p className="text-xs text-ink-500">
-          Phí rút: {feePercent}% = {feeAmount.toLocaleString()} 💎 · Thực nhận: <b className="text-emerald-600">{netAmount.toLocaleString()} 💎</b>
+        <p className="inline-flex flex-wrap items-center gap-1 text-xs text-ink-500">
+          Phí rút: {feePercent}% = {feeAmount.toLocaleString()} <Gem size={12} /> · Thực nhận: <b className="inline-flex items-center gap-1 text-emerald-600">{netAmount.toLocaleString()} <Gem size={12} /></b>
         </p>
         {msg && <p className="text-sm text-brand-600">{msg}</p>}
       </div>

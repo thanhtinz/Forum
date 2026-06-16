@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Trophy, Fish } from 'lucide-react';
+import { Trophy, Fish, Crown, Medal } from 'lucide-react';
 import { api } from '@/lib/api';
 
 export default function LeaderboardPage() {
@@ -15,7 +15,12 @@ export default function LeaderboardPage() {
     api.get<any[]>('/fishing/leaderboard').then(setFishing).catch(() => {});
   }, []);
 
-  const medal = (i: number) => ['🥇', '🥈', '🥉'][i] || `#${i + 1}`;
+  const medal = (i: number) => {
+    if (i === 0) return <Crown size={18} className="mx-auto text-amber-500" />;
+    if (i === 1) return <Medal size={18} className="mx-auto text-slate-400" />;
+    if (i === 2) return <Medal size={18} className="mx-auto text-amber-700" />;
+    return `#${i + 1}`;
+  };
 
   return (
     <div className="space-y-4">

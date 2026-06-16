@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { Icon } from '@/lib/icons';
 
 interface LevelTier {
   id: string;
@@ -39,7 +40,7 @@ export default function LevelsPage() {
       <div className="space-y-2">
         {tiers.map((t) => (
           <div key={t.id} className="card flex items-center gap-3 p-4">
-            <span className="text-2xl">{t.icon}</span>
+            <span className="grid h-9 w-9 place-items-center rounded-lg bg-ink-100 dark:bg-ink-800"><Icon name={t.icon} size={20} /></span>
             <div className="flex-1">
               <div className="font-semibold">Lv.{t.level} {t.name}</div>
             </div>

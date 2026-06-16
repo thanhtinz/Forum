@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Utensils, Droplet, Sparkles, BatteryCharging, HeartPulse, Bed, ShowerHead } from 'lucide-react';
+import { Utensils, Droplet, Sparkles, BatteryCharging, HeartPulse, Bed, ShowerHead, Thermometer, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -30,7 +30,7 @@ export default function SurvivalPage() {
     <div className="space-y-5">
       <header className="rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 p-6 text-white shadow-card">
         <h1 className="text-2xl font-bold">Nhu cầu sinh tồn</h1>
-        <p className="text-white/90">{s.isSick ? `🤒 Đang bệnh: ${s.sickness || ''}` : 'Tình trạng: ' + (s.status || 'bình thường')}</p>
+        <p className="flex items-center gap-1 text-white/90">{s.isSick ? <><Thermometer size={15} /> Đang bệnh: {s.sickness || ''}</> : <>Tình trạng: {s.status || 'bình thường'}</>}</p>
       </header>
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
 
@@ -41,7 +41,7 @@ export default function SurvivalPage() {
             <div className="h-3 overflow-hidden rounded-full bg-ink-200 dark:bg-ink-800"><div className={`h-full ${color}`} style={{ width: `${Math.max(0, Math.min(100, s[k] ?? 0))}%` }} /></div>
           </div>
         ))}
-        {s.warnings?.length > 0 && <p className="text-sm text-amber-600">⚠️ {s.warnings.join(' · ')}</p>}
+        {s.warnings?.length > 0 && <p className="flex items-center gap-1 text-sm text-amber-600"><AlertTriangle size={14} /> {s.warnings.join(' · ')}</p>}
       </div>
 
       <div className="flex gap-2">

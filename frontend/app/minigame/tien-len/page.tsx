@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Coins, Users, RefreshCw } from 'lucide-react';
+import { Coins, Users, RefreshCw, ArrowRight } from 'lucide-react';
 import { getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -121,7 +121,7 @@ export default function TienLenPvP() {
       </div>
 
       <div className="card p-4">
-        <div className="mb-2 text-sm font-medium">{myTurn ? '➡️ Tới lượt bạn' : 'Chờ lượt…'}</div>
+        <div className="mb-2 flex items-center gap-1 text-sm font-medium">{myTurn ? <><ArrowRight size={15} /> Tới lượt bạn</> : 'Chờ lượt…'}</div>
         <div className="flex flex-wrap gap-1">
           {view.myHand.map((c) => {
             const k = cardKey(c);

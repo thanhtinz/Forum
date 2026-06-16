@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Coins, Users, RefreshCw } from 'lucide-react';
+import { Coins, Users, RefreshCw, ArrowRight } from 'lucide-react';
 import { getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -74,7 +74,7 @@ export default function CaroPvP() {
       <div className="card flex items-center justify-between p-4">
         <div>
           <h1 className="font-bold">Bàn Caro · Pot {view.potCoin}</h1>
-          <p className="text-sm text-ink-500">Bạn là <b>{marks[view.mySeat + 1]}</b> · {view.winner != null ? (view.winner === view.mySeat ? 'Bạn THẮNG!' : view.winner === -1 ? 'Hòa' : 'Bạn thua') : myTurn ? '➡️ Lượt bạn' : 'Chờ đối thủ…'}</p>
+          <p className="flex items-center gap-1 text-sm text-ink-500">Bạn là <b>{marks[view.mySeat + 1]}</b> · {view.winner != null ? (view.winner === view.mySeat ? 'Bạn THẮNG!' : view.winner === -1 ? 'Hòa' : 'Bạn thua') : myTurn ? <span className="inline-flex items-center gap-1"><ArrowRight size={14} /> Lượt bạn</span> : 'Chờ đối thủ…'}</p>
         </div>
         <button onClick={leave} className="btn-ghost text-xs text-red-600">Rời bàn</button>
       </div>

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserPlus, UserMinus, Send, Heart, Trash2, Ban, ExternalLink } from 'lucide-react';
+import { UserPlus, UserMinus, Send, Heart, Trash2, Ban, ExternalLink, Medal, Trophy, BadgeCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
@@ -105,7 +105,7 @@ function ProfileView() {
           <div className="mt-2 flex justify-center"><UserBadges badges={badges} /></div>
         )}
         {profile.bio && <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{profile.bio}</p>}
-        {trophies && <p className="mt-2 text-sm font-medium text-amber-600">🏅 {trophies.currentTitle} · {trophies.totalPoints} điểm</p>}
+        {trophies && <p className="mt-2 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-amber-600"><Medal size={16} /> {trophies.currentTitle} · {trophies.totalPoints} điểm</p>}
 
         <div className="mt-3 flex items-center justify-center gap-5 text-sm">
           <span><b>{counts.followers}</b> <span className="text-ink-500">người theo dõi</span></span>
@@ -131,7 +131,7 @@ function ProfileView() {
 
         {isSelf && (
           <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
-            <a href="/settings/verify" className="rounded-lg bg-sky-100 px-3 py-1.5 font-medium text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300">✔️ Đăng ký tích xanh</a>
+            <a href="/settings/verify" className="inline-flex items-center gap-1.5 rounded-lg bg-sky-100 px-3 py-1.5 font-medium text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300"><BadgeCheck size={14} /> Đăng ký tích xanh</a>
             <a href="/settings/avatar" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Đổi ảnh đại diện</a>
             <a href="/settings/profile-fields" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Thông tin thêm</a>
           </div>
@@ -163,7 +163,7 @@ function ProfileView() {
               <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                 {trophies.trophies.map((t: any) => (
                   <div key={t.id} className="rounded-xl border border-amber-200/60 p-3 text-center dark:border-ink-800" title={t.description || ''}>
-                    <div className="text-2xl">{t.icon || '🏆'}</div>
+                    <div className="flex justify-center text-2xl">{t.icon ? t.icon : <Trophy size={24} className="text-amber-500" />}</div>
                     <div className="mt-1 truncate text-xs font-medium">{t.name}</div>
                     {t.points ? <div className="text-[11px] text-amber-600">{t.points}đ</div> : null}
                   </div>

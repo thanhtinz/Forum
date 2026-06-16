@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { BadgeCheck, Star, ShoppingCart, Eye, Download } from 'lucide-react';
+import { BadgeCheck, Star, ShoppingCart, Eye, Download, Gem } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -67,7 +67,7 @@ function ProductView() {
         <div className="card p-5">
           <h1 className="text-xl font-bold">{p.title}</h1>
           {p.category && <span className="chip mt-1 bg-ink-200 text-ink-600">{p.category.name}</span>}
-          <div className="my-3 text-2xl font-bold text-brand-600">{p.isFree ? 'Miễn phí' : `${p.gemPrice} 💎`}</div>
+          <div className="my-3 inline-flex items-center gap-1.5 text-2xl font-bold text-brand-600">{p.isFree ? 'Miễn phí' : <>{p.gemPrice} <Gem size={20} /></>}</div>
           <button onClick={buy} className="btn-primary w-full"><ShoppingCart size={16} /> Mua ngay</button>
           <div className="mt-3 flex gap-4 text-xs text-ink-500">
             <span className="flex items-center gap-1"><Eye size={13} /> {p.viewCount}</span>

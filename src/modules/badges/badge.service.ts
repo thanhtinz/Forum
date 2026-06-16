@@ -55,13 +55,13 @@ function normalizeColor(raw: string | null | undefined): BadgeColor {
 function roleBadge(role: UserRole): BadgeDescriptor | null {
   switch (role) {
     case 'ADMIN':
-      return { key: 'role:ADMIN', label: 'Quản trị viên', icon: '🛡️', color: 'red', kind: 'role' };
+      return { key: 'role:ADMIN', label: 'Quản trị viên', icon: 'Shield', color: 'red', kind: 'role' };
     case 'MODERATOR':
-      return { key: 'role:MODERATOR', label: 'Điều hành viên', icon: '🛠️', color: 'violet', kind: 'role' };
+      return { key: 'role:MODERATOR', label: 'Điều hành viên', icon: 'ShieldHalf', color: 'violet', kind: 'role' };
     case 'VIP':
-      return { key: 'role:VIP', label: 'VIP', icon: '⭐', color: 'amber', kind: 'role' };
+      return { key: 'role:VIP', label: 'VIP', icon: 'Star', color: 'amber', kind: 'role' };
     case 'MEMBER':
-      return { key: 'role:MEMBER', label: 'Thành viên', icon: '👤', color: 'gray', kind: 'role' };
+      return { key: 'role:MEMBER', label: 'Thành viên', icon: 'User', color: 'gray', kind: 'role' };
     case 'GUEST':
     default:
       return null;
@@ -71,7 +71,7 @@ function roleBadge(role: UserRole): BadgeDescriptor | null {
 const VERIFY_BADGE: BadgeDescriptor = {
   key: 'verify',
   label: 'Đã xác minh',
-  icon: '✔️',
+  icon: 'BadgeCheck',
   color: 'blue',
   kind: 'verify',
 };
@@ -98,6 +98,27 @@ export class BadgeService {
     private readonly prisma: PrismaService,
     private readonly levels: LevelService,
   ) {}
+
+  // ── Icon ảnh (asset) admin tải lên cho badge hệ thống (role/verify/seller) ──
+  // Lưu trong SiteConfig key 'badge.systemIcons' = { 'verify': url, 'role:ADMIN': url, 'seller': url, 'seller_verified': url, ... }
+  async getSystemIcons(): Promise<Record<string, string>> {
+    const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'badge.systemIcons' } });
+    const v = cfg?.value;
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, string>) : {};
+  }
+
+  async setSystemIcons(icons: Record<string, string>) {
+    const clean: Record<string, string> = {};
+    for (const [k, val] of Object.entries(icons || {})) {
+      if (typeof val === 'string' && val.trim()) clean[k] = val.trim();
+    }
+    await this.prisma.siteConfig.upsert({
+      where: { key: 'badge.systemIcons' },
+      update: { value: clean },
+      create: { key: 'badge.systemIcons', value: clean },
+    });
+    return clean;
+  }
 
   async getUserBadges(userId: string): Promise<BadgeDescriptor[]> {
     const user = await this.prisma.user.findUnique({
@@ -146,7 +167,7 @@ export class BadgeService {
       out.push({
         key: 'seller',
         label: user.storefront.isVerified ? 'Người bán uy tín' : 'Người bán',
-        icon: '🏪',
+        icon: 'Store',
         color: 'green',
         kind: 'seller',
       });
@@ -163,6 +184,19 @@ export class BadgeService {
         kind: 'milestone',
         description: b.description ?? undefined,
       });
+    }
+
+    // Áp icon ảnh admin cấu hình cho badge hệ thống (nếu có)
+    const sys = await this.getSystemIcons();
+    if (Object.keys(sys).length) {
+      for (const d of out) {
+        if (d.kind === 'seller') {
+          const key = user.storefront?.isVerified && sys['seller_verified'] ? 'seller_verified' : 'seller';
+          if (sys[key]) d.icon = sys[key];
+        } else if (sys[d.key]) {
+          d.icon = sys[d.key];
+        }
+      }
     }
 
     return out;
@@ -190,7 +224,7 @@ export class BadgeService {
         list.push({
           key: 'seller',
           label: u.storefront.isVerified ? 'Người bán uy tín' : 'Người bán',
-          icon: '🏪',
+          icon: 'Store',
           color: 'green',
           kind: 'seller',
         });

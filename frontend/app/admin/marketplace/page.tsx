@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { BadgeCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 
 type Tab = 'stats' | 'categories' | 'stores' | 'products' | 'orders' | 'withdrawals' | 'tickets' | 'coupons' | 'perks';
@@ -68,7 +69,7 @@ function Stores() {
     <div className="card divide-y divide-ink-100 dark:divide-ink-800">
       {list.map((s) => (
         <div key={s.id} className="flex items-center justify-between p-3 text-sm">
-          <span><b>{s.name}</b> {s.isVerified && '✓'} {!s.isActive && '· (ẩn)'} <span className="text-ink-400">· {s.totalSales} bán</span></span>
+          <span className="inline-flex items-center gap-1"><b>{s.name}</b> {s.isVerified && <BadgeCheck size={16} className="text-brand-600" />} {!s.isActive && '· (ẩn)'} <span className="text-ink-400">· {s.totalSales} bán</span></span>
           <div className="flex gap-2">
             <button onClick={() => toggle(s.id, 'isVerified')} className="btn-outline !py-1 text-xs">{s.isVerified ? 'Bỏ verify' : 'Verify'}</button>
             <button onClick={() => toggle(s.id, 'isActive')} className="btn-outline !py-1 text-xs">{s.isActive ? 'Ẩn' : 'Hiện'}</button>

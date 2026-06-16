@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Dices, Coins } from 'lucide-react';
+import { Dices, Coins, Trophy } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -40,7 +40,7 @@ export default function SoloPlay() {
       <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white shadow-card">
         <Dices /> <h1 className="text-2xl font-bold">Minigame (chơi với máy)</h1>
       </header>
-      <p className="text-xs text-ink-500">Chơi bằng 🪙 Vàng (coin). Kiếm coin qua forum/game.</p>
+      <p className="flex items-center gap-1 text-xs text-ink-500">Chơi bằng <Coins size={13} className="text-amber-500" /> Vàng (coin). Kiếm coin qua forum/game.</p>
 
       <div className="flex flex-wrap gap-2">
         {GAMES.map(([g, l]) => (
@@ -71,7 +71,7 @@ export default function SoloPlay() {
 
       {result && (
         <div className={`card p-5 text-center ${won ? 'border-emerald-400' : 'border-rose-400'}`}>
-          <div className={`text-xl font-bold ${won ? 'text-emerald-600' : 'text-rose-600'}`}>{won ? '🎉 THẮNG!' : 'Thua'}</div>
+          <div className={`flex items-center justify-center gap-1.5 text-xl font-bold ${won ? 'text-emerald-600' : 'text-rose-600'}`}>{won ? <><Trophy size={20} /> THẮNG!</> : 'Thua'}</div>
           <div className="mt-2 text-sm text-ink-500">
             {result.outcome && `Kết quả: ${result.outcome.toUpperCase()} `}{result.total != null && `(tổng ${result.total}) `}
             {result.result && `· ${result.result} `}{result.multiplier != null && `· x${result.multiplier} `}

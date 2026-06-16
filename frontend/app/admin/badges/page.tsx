@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Plus, Trash2, Award, BadgeCheck } from 'lucide-react';
+import { BadgeIcon } from '@/lib/icons';
+import ImageUpload from '@/components/ImageUpload';
 
 interface Badge {
   id: string;
@@ -28,7 +30,7 @@ interface LevelTier {
 export default function AdminBadges() {
   const [catalog, setCatalog] = useState<Badge[]>([]);
   const [msg, setMsg] = useState('');
-  const [form, setForm] = useState({ name: '', description: '', icon: '🏅', color: 'amber', condType: '', condGte: '' });
+  const [form, setForm] = useState({ name: '', description: '', icon: '', color: 'amber', condType: '', condGte: '' });
 
   // award / verify panel
   const [awardUserId, setAwardUserId] = useState('');
@@ -37,7 +39,10 @@ export default function AdminBadges() {
 
   // levels
   const [tiers, setTiers] = useState<LevelTier[]>([]);
-  const [tierForm, setTierForm] = useState({ level: '', name: '', icon: '🌱', color: 'green', minScore: '' });
+  const [tierForm, setTierForm] = useState({ level: '', name: '', icon: '', color: 'green', minScore: '' });
+
+  // icon ảnh cho badge hệ thống
+  const [sysIcons, setSysIcons] = useState<Record<string, string>>({});
 
   function load() {
     api.get<Badge[]>('/badges/catalog').then(setCatalog).catch((e) => setMsg(e.message));
@@ -45,7 +50,16 @@ export default function AdminBadges() {
   function loadTiers() {
     api.get<LevelTier[]>('/badges/levels').then(setTiers).catch((e) => setMsg(e.message));
   }
-  useEffect(() => { load(); loadTiers(); }, []);
+  function loadSysIcons() {
+    api.get<Record<string, string>>('/badges/system-icons').then((r) => setSysIcons(r || {})).catch(() => {});
+  }
+  useEffect(() => { load(); loadTiers(); loadSysIcons(); }, []);
+
+  async function saveSysIcon(key: string, url: string) {
+    const next = { ...sysIcons, [key]: url };
+    setSysIcons(next);
+    try { await api.post('/badges/admin/system-icons', next); setMsg('Đã lưu icon hệ thống ✓'); } catch (e: any) { setMsg(e.message); }
+  }
 
   async function createTier(e: React.FormEvent) {
     e.preventDefault();
@@ -58,7 +72,7 @@ export default function AdminBadges() {
         color: tierForm.color,
         minScore: Number(tierForm.minScore),
       });
-      setTierForm({ level: '', name: '', icon: '🌱', color: 'green', minScore: '' });
+      setTierForm({ level: '', name: '', icon: '', color: 'green', minScore: '' });
       setMsg('Đã tạo cấp độ ✓');
       loadTiers();
     } catch (e: any) { setMsg(e.message); }
@@ -77,7 +91,7 @@ export default function AdminBadges() {
       await api.post('/badges/admin/catalog', {
         name: form.name, description: form.description || undefined, icon: form.icon, color: form.color, condition,
       });
-      setForm({ name: '', description: '', icon: '🏅', color: 'amber', condType: '', condGte: '' });
+      setForm({ name: '', description: '', icon: '', color: 'amber', condType: '', condGte: '' });
       setMsg('Đã tạo huy hiệu ✓');
       load();
     } catch (e: any) { setMsg(e.message); }
@@ -112,12 +126,10 @@ export default function AdminBadges() {
           <form onSubmit={create} className="space-y-2">
             <input className="input" placeholder="Tên huy hiệu" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             <input className="input" placeholder="Mô tả (tuỳ chọn)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            <div className="flex gap-2">
-              <input className="input w-20 text-center" placeholder="Icon" value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} />
-              <select className="input" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })}>
-                {COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
+            <select className="input" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })}>
+              {COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <ImageUpload value={form.icon} onUploaded={(url: string) => setForm({ ...form, icon: url })} label="Tải ảnh icon huy hiệu" />
             <div className="flex gap-2">
               <select className="input" value={form.condType} onChange={(e) => setForm({ ...form, condType: e.target.value })}>
                 <option value="">— Tự trao theo cột mốc (tuỳ chọn) —</option>
@@ -139,7 +151,7 @@ export default function AdminBadges() {
               <input className="input" placeholder="User ID" value={awardUserId} onChange={(e) => setAwardUserId(e.target.value)} />
               <select className="input" value={awardBadgeId} onChange={(e) => setAwardBadgeId(e.target.value)}>
                 <option value="">— Chọn huy hiệu —</option>
-                {catalog.map((b) => <option key={b.id} value={b.id}>{b.icon} {b.name}</option>)}
+                {catalog.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
               <button onClick={award} className="btn-outline">Trao</button>
             </div>
@@ -162,7 +174,7 @@ export default function AdminBadges() {
           <tbody>
             {catalog.map((b) => (
               <tr key={b.id} className="border-t border-ink-100 dark:border-ink-800">
-                <td className="p-3"><span className="mr-1">{b.icon}</span> {b.name} <span className="ml-1 text-xs text-ink-400">({b.color})</span></td>
+                <td className="p-3"><span className="mr-1 inline-flex align-middle"><BadgeIcon icon={b.icon} size={18} /></span> {b.name} <span className="ml-1 text-xs text-ink-400">({b.color})</span></td>
                 <td className="p-3 text-ink-500">{b.description || '—'}</td>
                 <td className="p-3 text-xs text-ink-500">{b.condition ? `${b.condition.type} ≥ ${b.condition.gte}` : '—'}</td>
                 <td className="p-3">{b.isAuto ? '✓' : '—'}</td>
@@ -172,6 +184,26 @@ export default function AdminBadges() {
             {catalog.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-ink-500">Chưa có huy hiệu mục tiêu nào.</td></tr>}
           </tbody>
         </table>
+      </div>
+
+      {/* Icon badge hệ thống */}
+      <h2 className="pt-2 text-lg font-bold">Icon badge hệ thống</h2>
+      <p className="text-sm text-ink-500">Tải ảnh icon riêng cho các badge tự động (vai trò, tích xanh, người bán). Bỏ trống = dùng icon mặc định.</p>
+      <div className="card grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4">
+        {[
+          { key: 'verify', label: 'Tích xanh' },
+          { key: 'role:ADMIN', label: 'Quản trị viên' },
+          { key: 'role:MODERATOR', label: 'Điều hành viên' },
+          { key: 'role:VIP', label: 'VIP' },
+          { key: 'role:MEMBER', label: 'Thành viên' },
+          { key: 'seller', label: 'Người bán' },
+          { key: 'seller_verified', label: 'Người bán uy tín' },
+        ].map((s) => (
+          <div key={s.key} className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium"><BadgeIcon icon={sysIcons[s.key]} size={18} /> {s.label}</div>
+            <ImageUpload value={sysIcons[s.key]} onUploaded={(url: string) => saveSysIcon(s.key, url)} label="Tải icon" />
+          </div>
+        ))}
       </div>
 
       {/* Cấp độ (Level) */}
@@ -187,12 +219,12 @@ export default function AdminBadges() {
               <input className="input" placeholder="Tên cấp độ" value={tierForm.name} onChange={(e) => setTierForm({ ...tierForm, name: e.target.value })} required />
             </div>
             <div className="flex gap-2">
-              <input className="input w-20 text-center" placeholder="Icon" value={tierForm.icon} onChange={(e) => setTierForm({ ...tierForm, icon: e.target.value })} />
               <select className="input" value={tierForm.color} onChange={(e) => setTierForm({ ...tierForm, color: e.target.value })}>
                 {COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               <input className="input w-32" type="number" placeholder="Điểm tối thiểu" value={tierForm.minScore} onChange={(e) => setTierForm({ ...tierForm, minScore: e.target.value })} required />
             </div>
+            <ImageUpload value={tierForm.icon} onUploaded={(url: string) => setTierForm({ ...tierForm, icon: url })} label="Tải ảnh icon cấp độ" />
             <button className="btn-primary">Tạo cấp độ</button>
           </form>
         </div>
@@ -205,7 +237,7 @@ export default function AdminBadges() {
                 <tr key={t.id} className="border-t border-ink-100 dark:border-ink-800">
                   <td className="p-3">Lv.{t.level}</td>
                   <td className="p-3">{t.name}</td>
-                  <td className="p-3">{t.icon}</td>
+                  <td className="p-3"><BadgeIcon icon={t.icon} size={18} /></td>
                   <td className="p-3 text-xs text-ink-400">{t.color}</td>
                   <td className="p-3">{t.minScore}</td>
                   <td className="p-3"><button onClick={() => removeTier(t.id)} className="text-red-600" title="Xoá"><Trash2 size={15} /></button></td>

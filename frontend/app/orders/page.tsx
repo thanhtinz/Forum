@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Star } from 'lucide-react';
+import { Star, CheckCircle2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -11,7 +11,7 @@ function ReviewForm({ productId }: { productId: string }) {
   const [content, setContent] = useState('');
   const [done, setDone] = useState(false);
   const [msg, setMsg] = useState('');
-  if (done) return <p className="mt-2 text-xs text-emerald-600">Đã gửi đánh giá ✓</p>;
+  if (done) return <p className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600"><CheckCircle2 size={13} /> Đã gửi đánh giá</p>;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
       <div className="flex">{[1, 2, 3, 4, 5].map((n) => <button key={n} onClick={() => setRating(n)}><Star size={16} className="text-amber-500" fill={n <= rating ? 'currentColor' : 'none'} /></button>)}</div>

@@ -49,6 +49,21 @@ services:
       DATABASE_URL: postgresql://forum:forum_password@postgres:5432/forum?schema=public
       REDIS_URL: redis://redis:6379
       MEILISEARCH_HOST: http://meilisearch:7700
+      JWT_ACCESS_SECRET: change-me-access-secret
+      JWT_REFRESH_SECRET: change-me-refresh-secret
+      JWT_ACCESS_EXPIRES: 15m
+      JWT_REFRESH_EXPIRES: 7d
+      FRONTEND_URL: http://localhost:3000
+      PORT: 3001
+      AUTO_SEED: 'true'
+      # Lưu trữ media (MinIO) — dùng path-style
+      MEDIA_ENDPOINT: http://minio:9000
+      MEDIA_REGION: us-east-1
+      MEDIA_BUCKET: forum-media
+      MEDIA_ACCESS_KEY: minioadmin
+      MEDIA_SECRET_KEY: minioadmin
+      MEDIA_FORCE_PATH_STYLE: 'true'
+      MEDIA_PUBLIC_URL: http://localhost:9000/forum-media
     ports:
       - '3001:3001'
 

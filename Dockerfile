@@ -13,4 +13,6 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY package*.json ./
 EXPOSE 3001
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+# Repo chưa commit migration -> dùng db push để đồng bộ schema khi khởi động.
+# Đổi sang "prisma migrate deploy" nếu sau này dùng migration.
+CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && node dist/main"]

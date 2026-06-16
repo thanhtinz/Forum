@@ -419,6 +419,8 @@ model HiddenContentUnlock {
 model Product {
   id             String        @id @default(cuid())
   sellerId       String
+  storefrontId   String?
+  categoryId     String?
   title          String        @db.VarChar(255)
   slug           String        @unique @db.VarChar(280)
   description    String        @db.Text
@@ -442,12 +444,16 @@ model Product {
   updatedAt      DateTime      @updatedAt
 
   seller      User               @relation("SellerProducts", fields: [sellerId], references: [id])
+  storefront  Storefront?        @relation(fields: [storefrontId], references: [id])
+  category    MarketCategory?    @relation(fields: [categoryId], references: [id])
   orders      Order[]
   reviews     ProductReview[]
   screenshots ProductScreenshot[]
   tags        ProductTag[]
 
   @@index([sellerId])
+  @@index([storefrontId])
+  @@index([categoryId])
   @@index([slug])
   @@index([type])
   @@index([status])
@@ -926,6 +932,9 @@ model Storefront {
 
   owner     User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   followers StorefrontFollow[]
+  products  Product[]
+  coupons   Coupon[]
+  tickets   ShopTicket[]
 
   @@index([slug])
   @@index([ownerId])
@@ -2020,4 +2029,63 @@ model FortuneRecord {
   user User @relation("UserFortune", fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, type])
+}
+
+// ============================================================
+// MARKETPLACE — danh mục (admin), mã giảm giá (seller), ticket hỗ trợ
+// ============================================================
+model MarketCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique @db.VarChar(80)
+  name      String   @db.VarChar(120)
+  icon      String?  @db.VarChar(50)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  products Product[]
+}
+
+model Coupon {
+  id              String    @id @default(cuid())
+  storefrontId    String
+  code            String    @db.VarChar(40)
+  discountPercent Int       @default(0) // 0-100
+  maxUses         Int       @default(0) // 0 = không giới hạn
+  usedCount       Int       @default(0)
+  expiresAt       DateTime?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+
+  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
+
+  @@unique([storefrontId, code])
+  @@index([storefrontId])
+}
+
+model ShopTicket {
+  id           String   @id @default(cuid())
+  storefrontId String
+  userId       String   // khách hàng tạo ticket
+  subject      String   @db.VarChar(200)
+  status       String   @default("OPEN") @db.VarChar(20) // OPEN | ANSWERED | CLOSED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  storefront Storefront          @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
+  messages   ShopTicketMessage[]
+
+  @@index([storefrontId, status])
+  @@index([userId])
+}
+
+model ShopTicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  senderId  String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  ticket ShopTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
 }

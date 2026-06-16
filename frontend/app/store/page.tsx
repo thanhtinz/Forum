@@ -13,8 +13,22 @@ function StoreView() {
   const [s, setS] = useState<any>(null);
   const [err, setErr] = useState('');
 
-  function load() { api.get<any>(`/marketplace/storefronts/${slug}`).then(setS).catch((e) => setErr(e.message)); }
+  const [products, setProducts] = useState<any[]>([]);
+  const [showTicket, setShowTicket] = useState(false);
+  const [ticket, setTicket] = useState({ subject: '', body: '' });
+
+  function load() {
+    api.get<any>(`/marketplace/storefronts/${slug}`).then((st) => {
+      setS(st);
+      api.get<any[]>(`/marketplace/storefronts/${slug}/products`).then(setProducts).catch(() => {});
+    }).catch((e) => setErr(e.message));
+  }
   useEffect(() => { if (slug) load(); /* eslint-disable-next-line */ }, [slug]);
+
+  async function sendTicket() {
+    if (!user) { setErr('Đăng nhập để gửi yêu cầu'); return; }
+    try { await api.post(`/marketplace/storefronts/${s.id}/tickets`, ticket); setShowTicket(false); setTicket({ subject: '', body: '' }); alert('Đã gửi yêu cầu hỗ trợ'); } catch (e: any) { setErr(e.message); }
+  }
 
   async function toggleFollow() {
     if (!user) { setErr('Đăng nhập để theo dõi'); return; }
@@ -41,8 +55,35 @@ function StoreView() {
             <span className="flex items-center gap-1"><Star size={13} /> {s.ratingAvg?.toFixed?.(1) ?? 0} ({s.ratingCount})</span>
           </div>
         </div>
-        <button onClick={toggleFollow} className={s.isFollowing ? 'btn-outline' : 'btn-primary'}>{s.isFollowing ? 'Đang theo dõi' : 'Theo dõi'}</button>
+        <div className="flex gap-2">
+          <button onClick={toggleFollow} className={s.isFollowing ? 'btn-outline' : 'btn-primary'}>{s.isFollowing ? 'Đang theo dõi' : 'Theo dõi'}</button>
+          <button onClick={() => setShowTicket((v) => !v)} className="btn-outline">Liên hệ</button>
+        </div>
       </div>
+
+      {showTicket && (
+        <div className="card space-y-2 p-4">
+          <h2 className="font-semibold">Gửi yêu cầu hỗ trợ</h2>
+          <input className="input" placeholder="Tiêu đề" value={ticket.subject} onChange={(e) => setTicket({ ...ticket, subject: e.target.value })} />
+          <textarea className="input" rows={3} placeholder="Nội dung" value={ticket.body} onChange={(e) => setTicket({ ...ticket, body: e.target.value })} />
+          <button onClick={sendTicket} className="btn-primary">Gửi</button>
+        </div>
+      )}
+
+      {products.length > 0 && (
+        <div className="card p-5">
+          <h2 className="mb-3 font-semibold">Sản phẩm ({products.length})</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {products.map((p) => (
+              <div key={p.id} className="rounded-xl border border-ink-200/70 p-3 dark:border-ink-800">
+                {p.thumbnailUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={p.thumbnailUrl} alt={p.title} className="mb-2 h-24 w-full rounded object-cover" />}
+                <div className="truncate text-sm font-medium">{p.title}</div>
+                <div className="text-xs text-brand-600">{p.isFree ? 'Miễn phí' : `${p.gemPrice} gem`}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {s.description && <div className="card p-5"><h2 className="mb-2 font-semibold">Giới thiệu</h2><p className="whitespace-pre-wrap text-sm text-ink-600 dark:text-ink-300">{s.description}</p></div>}
       {s.policyRefund && <div className="card p-5"><h2 className="mb-2 font-semibold">Chính sách</h2><p className="whitespace-pre-wrap text-sm text-ink-600 dark:text-ink-300">{s.policyRefund}</p></div>}

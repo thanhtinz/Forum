@@ -179,6 +179,7 @@ model User {
   storefrontFollows StorefrontFollow[]
   gameCharacter   GameCharacter?
   prisonRecords   Prison[]          @relation("UserPrison")
+  fortuneRecords  FortuneRecord[]   @relation("UserFortune")
 
   @@index([email])
   @@index([username])
@@ -2002,4 +2003,21 @@ model UserAvatarItem {
 
   @@unique([characterId, templateId])
   @@index([characterId])
+}
+
+// ============================================================
+// BÓI TOÁN (Fortune) — lưu lịch sử các quẻ/lá bài (engine port từ taibu-core MIT)
+// ============================================================
+model FortuneRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   @db.VarChar(20) // BAZI | TAROT | MEIHUA
+  question  String?  @db.Text
+  input     Json
+  result    Json
+  createdAt DateTime @default(now())
+
+  user User @relation("UserFortune", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
 }

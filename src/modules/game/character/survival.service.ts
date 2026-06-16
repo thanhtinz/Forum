@@ -56,6 +56,14 @@ export class SurvivalService {
     };
   }
 
+  // Danh sách vật phẩm tiêu dùng (ăn/uống/thuốc/vệ sinh)
+  async listConsumables() {
+    return this.prisma.consumableTemplate.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
   // ──────────────────────────────────────────────
   // DÙNG CONSUMABLE (ăn/uống/thuốc)
   // ──────────────────────────────────────────────

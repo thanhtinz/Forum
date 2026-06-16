@@ -61,4 +61,32 @@ export class ToolsService {
     });
     return tools;
   }
+
+  // ── ADMIN ──
+  async adminListAll() {
+    return this.prisma.toolCategory.findMany({
+      orderBy: { sortOrder: 'asc' },
+      include: { tools: { orderBy: { sortOrder: 'asc' } } },
+    });
+  }
+
+  async createTool(data: {
+    categoryId: string; slug: string; name: string; description: string;
+    icon?: string; component: string; isPro?: boolean; sortOrder?: number;
+  }) {
+    return this.prisma.tool.create({ data: { ...data, isPro: data.isPro ?? false, sortOrder: data.sortOrder ?? 0 } });
+  }
+
+  async updateTool(id: string, data: Partial<{ name: string; description: string; icon: string; component: string; isPro: boolean; isActive: boolean; sortOrder: number; categoryId: string }>) {
+    return this.prisma.tool.update({ where: { id }, data });
+  }
+
+  async deleteTool(id: string) {
+    await this.prisma.tool.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  async createCategory(data: { slug: string; name: string; description?: string; icon?: string; sortOrder?: number }) {
+    return this.prisma.toolCategory.create({ data: { ...data, sortOrder: data.sortOrder ?? 0 } });
+  }
 }

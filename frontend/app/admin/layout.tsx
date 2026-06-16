@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Settings } from 'lucide-react';
+import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Settings } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 const NAV = [
   { href: '/admin', label: 'Tổng quan', icon: LayoutDashboard },
   { href: '/admin/fortune', label: 'Bói toán & AI', icon: Sparkles },
+  { href: '/admin/tools', label: 'Công cụ', icon: Wrench },
   { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert },
   { href: '/admin/prison', label: 'Nhà tù', icon: Lock },
   { href: '/admin/users', label: 'Người dùng', icon: Users },

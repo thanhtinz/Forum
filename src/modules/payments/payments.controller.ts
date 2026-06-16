@@ -1,18 +1,32 @@
 import {
   Controller,
+  Get,
   Post,
   Body,
   Headers,
+  Query,
   UseGuards,
   Param,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/roles.decorator';
+import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
 
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
+
+  // ── ADMIN ──
+  @Get('admin/topups')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminTopups(@Query('status') status?: string, @Query('page') page = 1) {
+    return this.paymentsService.adminTopups(status, Number(page));
+  }
+
+  @Get('admin/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminStats() { return this.paymentsService.adminTopupStats(); }
 
   // SePay
   @Post('sepay/topup')

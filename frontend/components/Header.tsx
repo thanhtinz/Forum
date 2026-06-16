@@ -78,6 +78,11 @@ export function Header() {
                 <Link href={`/profile?u=${user.username}`} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                   <UserIcon size={15} /> Trang cá nhân
                 </Link>
+                {user.role === 'ADMIN' && (
+                  <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <UserIcon size={15} /> Trang quản trị
+                  </Link>
+                )}
                 <button onClick={() => { logout(); setMenu(false); }}
                   className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-ink-100 dark:hover:bg-ink-700">
                   <LogOut size={15} /> Đăng xuất

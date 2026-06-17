@@ -264,6 +264,7 @@ model User {
   predictionBets     PredictionBet[]
   predictionComments PredictionComment[]
   predictionReactions PredictionReaction[]
+  parlayBets         ParlayBet[]
   aiPersonas         AiPersona[]
   authTokens         AuthToken[]
   groupMemberships   UserGroupMember[]
@@ -1299,9 +1300,12 @@ model Prediction {
   maxBet        Int?
   commissionBps Int       @default(0) // hoa hồng (basis points, 100 = 1%)
   resultNote    String?   @db.Text
+  resultSource  String    @default("MANUAL") // MANUAL | EXTERNAL
+  externalRef   String? // mã tham chiếu nguồn kết quả ngoài (vd: trận đấu, ký hiệu)
 
-  bets     PredictionBet[]
-  comments PredictionComment[]
+  bets       PredictionBet[]
+  comments   PredictionComment[]
+  parlayLegs ParlayLeg[]
 
   @@index([status, createdAt])
   @@index([category])
@@ -1337,6 +1341,40 @@ model PredictionReaction {
 
   @@unique([targetType, targetId, userId, emoji])
   @@index([targetType, targetId])
+}
+
+// Cược xiên: gộp nhiều kèo (nhà cái hệ thống, FIXED) vào 1 vé, nhân odds
+model ParlayBet {
+  id              String      @id @default(cuid())
+  userId          String
+  amount          Int
+  combinedOdds    Float
+  potentialPayout Int
+  status          String      @default("ACTIVE") // ACTIVE | WON | LOST | REFUNDED
+  payout          Int         @default(0)
+  createdAt       DateTime    @default(now())
+  settledAt       DateTime?
+
+  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  legs ParlayLeg[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model ParlayLeg {
+  id           String @id @default(cuid())
+  parlayId     String
+  predictionId String
+  optionIndex  Int
+  odds         Float
+  status       String @default("PENDING") // PENDING | WON | LOST | VOID
+
+  parlay     ParlayBet  @relation(fields: [parlayId], references: [id], onDelete: Cascade)
+  prediction Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+
+  @@index([parlayId])
+  @@index([predictionId])
 }
 
 model PredictionBet {

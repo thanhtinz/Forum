@@ -368,6 +368,103 @@ export class PredictionService {
     return { ok: true, refund, fee: bet.amount - refund };
   }
 
+  // ──────────────────────────────────────────────
+  // PARLAY (cược xiên — chỉ kèo nhà cái hệ thống, FIXED)
+  // ──────────────────────────────────────────────
+  async placeParlay(userId: string, legs: { predictionId: string; optionIndex: number }[], amount: number) {
+    amount = Math.round(Number(amount) || 0);
+    if (amount <= 0) throw new BadRequestException('Số coin phải lớn hơn 0');
+    if (!Array.isArray(legs) || legs.length < 2) throw new BadRequestException('Cược xiên cần ít nhất 2 kèo');
+    if (legs.length > 12) throw new BadRequestException('Tối đa 12 kèo trong một vé xiên');
+    const ids = legs.map((l) => l.predictionId);
+    if (new Set(ids).size !== ids.length) throw new BadRequestException('Không thể chọn cùng một kèo hai lần');
+
+    const preds = await this.prisma.prediction.findMany({ where: { id: { in: ids } } });
+    const byId = new Map(preds.map((p) => [p.id, p]));
+    let combined = 1;
+    const legData: { predictionId: string; optionIndex: number; odds: number }[] = [];
+    const now = Date.now();
+    for (const l of legs) {
+      const p = byId.get(l.predictionId);
+      if (!p) throw new BadRequestException('Kèo không tồn tại trong vé');
+      if (p.oddsMode !== 'FIXED' || !p.isAdminMarket) throw new BadRequestException('Cược xiên chỉ áp dụng cho kèo nhà cái hệ thống (odds cố định)');
+      if (p.status !== 'OPEN') throw new BadRequestException(`Kèo «${p.title}» đã đóng cược`);
+      if (p.closesAt && p.closesAt.getTime() <= now) throw new BadRequestException(`Kèo «${p.title}» đã hết hạn`);
+      const opts = p.options as string[];
+      if (l.optionIndex < 0 || l.optionIndex >= opts.length) throw new BadRequestException('Lựa chọn không hợp lệ');
+      const odds = Number((p.fixedOdds as number[])?.[l.optionIndex]) || 0;
+      if (!(odds > 1)) throw new BadRequestException('Odds không hợp lệ');
+      combined *= odds;
+      legData.push({ predictionId: p.id, optionIndex: l.optionIndex, odds });
+    }
+    combined = Number(combined.toFixed(2));
+    const potentialPayout = Math.floor(amount * combined);
+
+    try {
+      await this.character.adjustCoinByUser(userId, 'parlay_bet', -amount, 'Đặt cược xiên', undefined);
+    } catch (e: any) {
+      throw new BadRequestException(e?.message || 'Không đủ coin');
+    }
+    const parlay = await this.prisma.parlayBet.create({
+      data: {
+        userId, amount, combinedOdds: combined, potentialPayout, status: 'ACTIVE',
+        legs: { create: legData },
+      },
+      include: { legs: true },
+    });
+    return { ok: true, parlayId: parlay.id, combinedOdds: combined, potentialPayout };
+  }
+
+  async myParlays(userId: string) {
+    const rows = await this.prisma.parlayBet.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: { legs: { include: { prediction: { select: { id: true, title: true, options: true, status: true, correctIndex: true } } } } },
+    });
+    return rows;
+  }
+
+  // Cập nhật các vé xiên liên quan khi một kèo được chốt/huỷ
+  private async resolveParlaysForPrediction(predictionId: string, outcome: { cancelled?: boolean; correctIndex?: number }) {
+    const legs = await this.prisma.parlayLeg.findMany({
+      where: { predictionId, parlay: { status: 'ACTIVE' } },
+      select: { id: true, parlayId: true, optionIndex: true },
+    });
+    if (!legs.length) return;
+    for (const leg of legs) {
+      const status = outcome.cancelled ? 'VOID' : leg.optionIndex === outcome.correctIndex ? 'WON' : 'LOST';
+      await this.prisma.parlayLeg.update({ where: { id: leg.id }, data: { status } });
+    }
+    const parlayIds = [...new Set(legs.map((l) => l.parlayId))];
+    for (const pid of parlayIds) await this.tryResolveParlay(pid);
+  }
+
+  private async tryResolveParlay(parlayId: string) {
+    const parlay = await this.prisma.parlayBet.findUnique({ where: { id: parlayId }, include: { legs: true } });
+    if (!parlay || parlay.status !== 'ACTIVE') return;
+    const legs = parlay.legs;
+    if (legs.some((l) => l.status === 'LOST')) {
+      await this.prisma.parlayBet.update({ where: { id: parlayId }, data: { status: 'LOST', payout: 0, settledAt: new Date() } });
+      this.notifySafe(parlay.userId, 'Vé xiên không trúng', `Vé xiên ${legs.length} kèo của bạn đã thua.`, legs[0]?.predictionId || '');
+      return;
+    }
+    if (legs.some((l) => l.status === 'PENDING')) return; // còn kèo chưa có kết quả
+    // Tất cả đã WON/VOID
+    const wonLegs = legs.filter((l) => l.status === 'WON');
+    if (wonLegs.length === 0) {
+      await this.character.adjustCoinByUser(parlay.userId, 'parlay_refund', parlay.amount, 'Hoàn vé xiên (toàn bộ huỷ)', undefined);
+      await this.prisma.parlayBet.update({ where: { id: parlayId }, data: { status: 'REFUNDED', payout: parlay.amount, settledAt: new Date() } });
+      this.notifySafe(parlay.userId, 'Vé xiên được hoàn', `Toàn bộ kèo trong vé bị huỷ, hoàn ${parlay.amount.toLocaleString()} coin.`, '');
+      return;
+    }
+    const effectiveOdds = wonLegs.reduce((s, l) => s * l.odds, 1);
+    const payout = Math.floor(parlay.amount * effectiveOdds);
+    await this.character.adjustCoinByUser(parlay.userId, 'parlay_win', payout, 'Thắng cược xiên', undefined);
+    await this.prisma.parlayBet.update({ where: { id: parlayId }, data: { status: 'WON', payout, settledAt: new Date() } });
+    this.notifySafe(parlay.userId, '🎉 Thắng cược xiên!', `Vé xiên ${wonLegs.length} kèo thắng, nhận ${payout.toLocaleString()} coin (x${effectiveOdds.toFixed(2)}).`, '');
+  }
+
   private async ownerOrModOrThrow(id: string, userId: string, isMod: boolean) {
     const p = await this.prisma.prediction.findUnique({ where: { id } });
     if (!p) throw new NotFoundException('Kèo không tồn tại');
@@ -397,10 +494,12 @@ export class PredictionService {
       await this.settlePool(p, bets, correctIndex);
     }
 
-    return this.prisma.prediction.update({
+    const updated = await this.prisma.prediction.update({
       where: { id },
       data: { status: 'SETTLED', correctIndex, settledAt: new Date(), resultNote: note?.trim() || null },
     });
+    await this.resolveParlaysForPrediction(id, { correctIndex });
+    return updated;
   }
 
   // Pari-mutuel: người thua góp quỹ chia người thắng; hoa hồng về người tạo (kèo user) hoặc hệ thống (admin)
@@ -486,10 +585,12 @@ export class PredictionService {
     if (p.creatorStake > 0) {
       await this.character.adjustCoinByUser(p.createdBy, 'prediction_stake_refund', p.creatorStake, 'Hoàn ký quỹ (huỷ kèo)', p.id);
     }
-    return this.prisma.prediction.update({
+    const updated = await this.prisma.prediction.update({
       where: { id },
       data: { status: 'CANCELLED', resultNote: reason?.trim() || null, creatorEscrow: 0 },
     });
+    await this.resolveParlaysForPrediction(id, { cancelled: true });
+    return updated;
   }
 
   // Tương thích controller cũ
@@ -707,5 +808,108 @@ export class PredictionService {
       players: rows.map((r) => ({ ...r, user: byId.get(r.userId) || null, rank: this.rankOf(r.total, r.profit) })),
       creators: creators.map((c) => ({ userId: c.createdBy, markets: c._count._all, user: creatorById.get(c.createdBy) || null })),
     };
+  }
+
+  // ──────────────────────────────────────────────
+  // PHÂN TÍCH CHO NGƯỜI TẠO KÈO
+  // ──────────────────────────────────────────────
+  async analytics(id: string, userId: string, isMod: boolean) {
+    const p = await this.ownerOrModOrThrow(id, userId, isMod);
+    const bets = await this.prisma.predictionBet.findMany({ where: { predictionId: id } });
+    const counted = bets.filter((b) => b.status !== 'CASHED_OUT' && b.status !== 'REFUNDED');
+    const options = p.options as string[];
+    const optionTotals = options.map(() => 0);
+    const optionCounts = options.map(() => 0);
+    for (const b of counted) {
+      if (b.optionIndex >= 0 && b.optionIndex < options.length) {
+        optionTotals[b.optionIndex] += b.amount;
+        optionCounts[b.optionIndex] += 1;
+      }
+    }
+    const totalStaked = counted.reduce((s, b) => s + b.amount, 0);
+    const uniqueBettors = new Set(counted.map((b) => b.userId)).size;
+    const cashedOut = bets.filter((b) => b.status === 'CASHED_OUT').length;
+
+    let result: any = null;
+    if (p.status === 'SETTLED') {
+      const won = bets.filter((b) => b.status === 'WON');
+      const paidOut = won.reduce((s, b) => s + b.payout, 0);
+      if (p.oddsMode === 'POOL') {
+        const commission = p.isAdminMarket ? 0 : Math.floor((totalStaked * (p.commissionBps || 0)) / 10000);
+        result = { winners: won.length, paidOut, commissionEarned: commission };
+      } else {
+        // FIXED: P/L của nhà cái = tiền cược - tiền trả thưởng (+ ký quỹ với kèo user)
+        const bookProfit = totalStaked - paidOut;
+        result = { winners: won.length, paidOut, bookProfit, isHouse: p.isAdminMarket };
+      }
+    }
+    return {
+      id: p.id, title: p.title, status: p.status, oddsMode: p.oddsMode, isAdminMarket: p.isAdminMarket,
+      options, optionTotals, optionCounts, totalStaked, uniqueBettors, betCount: counted.length, cashedOut, result,
+    };
+  }
+
+  async creatorStats(userId: string) {
+    const markets = await this.prisma.prediction.findMany({ where: { createdBy: userId }, select: { id: true, status: true } });
+    const byStatus: Record<string, number> = {};
+    for (const m of markets) byStatus[m.status] = (byStatus[m.status] || 0) + 1;
+    const ids = markets.map((m) => m.id);
+    let totalVolume = 0;
+    let totalParticipants = 0;
+    if (ids.length) {
+      const agg = await this.prisma.predictionBet.aggregate({
+        where: { predictionId: { in: ids }, status: { notIn: ['CASHED_OUT', 'REFUNDED'] } },
+        _sum: { amount: true },
+      });
+      totalVolume = agg._sum.amount || 0;
+      const bettors = await this.prisma.predictionBet.findMany({ where: { predictionId: { in: ids } }, select: { userId: true }, distinct: ['userId'] });
+      totalParticipants = bettors.length;
+    }
+    return {
+      totalMarkets: markets.length,
+      open: byStatus['OPEN'] || 0,
+      locked: byStatus['LOCKED'] || 0,
+      settled: byStatus['SETTLED'] || 0,
+      cancelled: byStatus['CANCELLED'] || 0,
+      totalVolume,
+      totalParticipants,
+    };
+  }
+
+  // ──────────────────────────────────────────────
+  // TÁC VỤ TỰ ĐỘNG (chạy theo lịch)
+  // ──────────────────────────────────────────────
+  // Khoá hàng loạt kèo quá hạn đặt cược
+  async autoLockAll() {
+    const now = new Date();
+    const r = await this.prisma.prediction.updateMany({
+      where: { status: 'OPEN', closesAt: { not: null, lte: now } },
+      data: { status: 'LOCKED' },
+    });
+    return r.count;
+  }
+
+  // Khung tự quyết toán theo nguồn kết quả ngoài.
+  // Hiện chưa gắn provider thật (cần API key + network); trả về kết quả "no-op" có log.
+  async resolveExternalPending(): Promise<{ checked: number; settled: number; note: string }> {
+    const candidates = await this.prisma.prediction.findMany({
+      where: { status: { in: ['OPEN', 'LOCKED'] }, resultSource: 'EXTERNAL', autoSettleAt: { not: null, lte: new Date() } },
+      select: { id: true, externalRef: true },
+      take: 50,
+    });
+    let settled = 0;
+    for (const c of candidates) {
+      const outcome = await this.fetchExternalResult(c.externalRef);
+      if (outcome == null) continue; // chưa có provider / chưa có kết quả
+      await this.settle(c.id, outcome, 'system', true, 'Tự quyết toán từ nguồn ngoài').catch(() => {});
+      settled++;
+    }
+    return { checked: candidates.length, settled, note: candidates.length && !settled ? 'Chưa cấu hình provider kết quả ngoài' : 'OK' };
+  }
+
+  // Điểm cắm provider kết quả ngoài (thể thao/crypto…). Trả index cửa thắng, hoặc null nếu chưa có.
+  // TODO: nối API thật (cần khoá & network). Hiện trả null.
+  private async fetchExternalResult(_externalRef: string | null): Promise<number | null> {
+    return null;
   }
 }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -46,6 +47,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     // Giới hạn tần suất request (chống spam/brute-force): 120 req / 60s / IP
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     // Phục vụ file upload local (ảnh người dùng tải lên) tại /uploads.

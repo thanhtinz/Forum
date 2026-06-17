@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   TrendingUp, Coins, Lock, CheckCircle2, ShieldCheck, Users2, Clock, Tag,
-  Gavel, XCircle, AlertTriangle, Wallet, MessageCircle, Send, Trash2,
+  Gavel, XCircle, AlertTriangle, Wallet, MessageCircle, Send, Trash2, BarChart3,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
@@ -70,6 +70,7 @@ function PredView() {
 
   const [resultIdx, setResultIdx] = useState<number | null>(null);
   const [resultNote, setResultNote] = useState('');
+  const [analytics, setAnalytics] = useState<any>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -80,6 +81,14 @@ function PredView() {
   }, [id]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [id, user?.id]);
+
+  useEffect(() => {
+    if (!id || !p) return;
+    if (p.isOwner || (user && (user.role === 'ADMIN' || user.role === 'MODERATOR'))) {
+      api.get(`/quiz/predictions/${id}/analytics`).then(setAnalytics).catch(() => setAnalytics(null));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, p?.isOwner, p?.status]);
 
   async function act(fn: () => Promise<unknown>, ok: string) {
     setErr(''); setMsg('');
@@ -243,6 +252,39 @@ function PredView() {
             <button onClick={() => resultIdx !== null && act(() => api.post(`/quiz/predictions/${id}/settle`, { correctIndex: resultIdx, note: resultNote || undefined }), 'Đã chốt kết quả & trả thưởng')} disabled={resultIdx === null} className="btn-primary inline-flex items-center gap-1 !py-1.5 text-sm disabled:opacity-50"><CheckCircle2 size={15} /> Chốt & trả thưởng</button>
             <p className="flex items-start gap-1 text-xs text-ink-400"><AlertTriangle size={12} className="mt-0.5 shrink-0" /> Sau khi chốt sẽ tự động tính & trả thưởng cho người thắng. Không thể hoàn tác.</p>
           </div>
+        </div>
+      )}
+
+      {analytics && (
+        <div className="card p-5">
+          <h2 className="mb-3 flex items-center gap-2 font-semibold"><BarChart3 size={18} className="text-violet-500" /> Phân tích kèo</h2>
+          <div className="grid grid-cols-3 gap-3 text-center">
+            <div><div className="text-xs text-ink-500">Tổng cược</div><div className="text-lg font-bold">{analytics.totalStaked.toLocaleString()}</div></div>
+            <div><div className="text-xs text-ink-500">Người tham gia</div><div className="text-lg font-bold">{analytics.uniqueBettors}</div></div>
+            <div><div className="text-xs text-ink-500">Lượt cược</div><div className="text-lg font-bold">{analytics.betCount}{analytics.cashedOut > 0 ? ` (${analytics.cashedOut} bán)` : ''}</div></div>
+          </div>
+          <div className="mt-3 space-y-1.5">
+            {analytics.options.map((opt: string, idx: number) => {
+              const t = analytics.optionTotals[idx] ?? 0;
+              const pct = analytics.totalStaked > 0 ? Math.round((t / analytics.totalStaked) * 100) : 0;
+              return (
+                <div key={idx} className="relative overflow-hidden rounded-lg border border-ink-200 dark:border-ink-700">
+                  <div className="absolute inset-y-0 left-0 bg-violet-100 dark:bg-violet-900/30" style={{ width: `${pct}%` }} />
+                  <div className="relative flex items-center justify-between px-3 py-1.5 text-sm">
+                    <span>{opt || `Cửa ${idx + 1}`}</span>
+                    <span className="text-xs text-ink-500">{pct}% · {t.toLocaleString()} · {analytics.optionCounts[idx] ?? 0} lượt</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {analytics.result && (
+            <div className="mt-3 rounded-lg bg-ink-50 p-3 text-sm dark:bg-ink-800/60">
+              <div>Người thắng: <b>{analytics.result.winners}</b> · Đã trả thưởng: <b>{analytics.result.paidOut.toLocaleString()}</b></div>
+              {analytics.result.commissionEarned != null && <div>Hoa hồng nhận: <b className="text-emerald-600">{analytics.result.commissionEarned.toLocaleString()}</b></div>}
+              {analytics.result.bookProfit != null && <div>P/L nhà cái: <b className={analytics.result.bookProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}>{analytics.result.bookProfit >= 0 ? '+' : ''}{analytics.result.bookProfit.toLocaleString()}</b>{analytics.result.isHouse ? ' (hệ thống)' : ''}</div>}
+            </div>
+          )}
         </div>
       )}
 

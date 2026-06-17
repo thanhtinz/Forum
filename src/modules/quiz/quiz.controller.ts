@@ -175,6 +175,46 @@ export class QuizController {
     return this.predictions.cashout(userId, betId);
   }
 
+  // ── Cược xiên (Parlay) ──
+  @Post('parlays')
+  @UseGuards(JwtAuthGuard)
+  placeParlay(
+    @CurrentUser('id') userId: string,
+    @Body('legs') legs: { predictionId: string; optionIndex: number }[],
+    @Body('amount') amount: number,
+  ) {
+    return this.predictions.placeParlay(userId, legs, Number(amount));
+  }
+
+  @Get('parlays/mine')
+  @UseGuards(JwtAuthGuard)
+  myParlays(@CurrentUser('id') userId: string) {
+    return this.predictions.myParlays(userId);
+  }
+
+  // ── Phân tích người tạo kèo ──
+  @Get('predictions/creator/stats')
+  @UseGuards(JwtAuthGuard)
+  creatorStats(@CurrentUser('id') userId: string) {
+    return this.predictions.creatorStats(userId);
+  }
+
+  @Get('predictions/:id/analytics')
+  @UseGuards(JwtAuthGuard)
+  predictionAnalytics(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: UserRole) {
+    return this.predictions.analytics(id, userId, this.isMod(role));
+  }
+
+  // ── Kích hoạt tác vụ tự động thủ công (admin) ──
+  @Post('admin/predictions/run-auto')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  async runAuto() {
+    const locked = await this.predictions.autoLockAll();
+    const ext = await this.predictions.resolveExternalPending();
+    return { locked, ...ext };
+  }
+
   @Post('predictions/:id/lock')
   @UseGuards(JwtAuthGuard)
   predictionLockUser(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: UserRole) {

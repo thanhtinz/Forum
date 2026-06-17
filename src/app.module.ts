@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ServeStaticModule } from '@nestjs/serve-static';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { join } from 'path';
 import { PrismaModule } from './prisma/prisma.module';
 import { HiddenContentModule } from './modules/hidden-content/hidden-content.module';
@@ -34,6 +36,7 @@ import { SpinModule } from './modules/spin/spin.module';
 import { GiveawayModule } from './modules/giveaway/giveaway.module';
 import { QuizModule } from './modules/quiz/quiz.module';
 import { MailModule } from './modules/mail/mail.module';
+import { SecurityModule } from './modules/security/security.module';
 import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
 
@@ -41,6 +44,8 @@ import { VerificationModule } from './modules/verification/verification.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     EventEmitterModule.forRoot(),
+    // Giới hạn tần suất request (chống spam/brute-force): 120 req / 60s / IP
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     // Phục vụ file upload local (ảnh người dùng tải lên) tại /uploads.
     // Đăng ký TRƯỚC ServeStatic frontend để không bị nuốt route.
     ServeStaticModule.forRoot({
@@ -87,6 +92,8 @@ import { VerificationModule } from './modules/verification/verification.module';
     GiveawayModule,
     QuizModule,
     MailModule,
+    SecurityModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

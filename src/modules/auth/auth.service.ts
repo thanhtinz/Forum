@@ -13,6 +13,7 @@ import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { generateSecret, verifyTotp, otpauthUrl } from './totp';
 import { MailService } from '../mail/mail.service';
+import { CaptchaService } from '../security/captcha.service';
 
 @Injectable()
 export class AuthService {
@@ -21,6 +22,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
     private readonly mail: MailService,
+    private readonly captcha: CaptchaService,
   ) {}
 
   // URL gốc của site (để dựng link trong email)
@@ -103,6 +105,7 @@ export class AuthService {
   // REGISTER
   // ──────────────────────────────────────────────
   async register(dto: RegisterDto) {
+    await this.captcha.assertValid(dto.captchaToken);
     const existing = await this.prisma.user.findFirst({
       where: { OR: [{ email: dto.email }, { username: dto.username }] },
     });

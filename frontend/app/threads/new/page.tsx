@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
-import RichEditor from '@/components/RichEditor';
+import TipTapEditor from '@/components/TipTapEditor';
 
 const PREFIXES = ['NONE', 'FREE', 'PAID', 'GUIDE', 'DISCUSSION', 'SHOWCASE', 'REQUEST', 'ANNOUNCEMENT'];
 
@@ -67,7 +67,7 @@ export default function NewThreadPage() {
           </label>
         </div>
         <input className="input" placeholder="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-        <RichEditor value={form.content} onChange={(v) => setForm({ ...form, content: v })} placeholder="Nội dung (hỗ trợ Markdown/BBCode · @ để nhắc thành viên)…" minHeight={220} />
+        <TipTapEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} placeholder="Viết nội dung bài đăng…" />
 
         {/* Bình chọn (Poll) */}
         <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">

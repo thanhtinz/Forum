@@ -263,6 +263,7 @@ model User {
   triviaAnswers      TriviaAnswer[]
   predictionBets     PredictionBet[]
   predictionComments PredictionComment[]
+  predictionReactions PredictionReaction[]
   aiPersonas         AiPersona[]
   authTokens         AuthToken[]
   groupMemberships   UserGroupMember[]
@@ -1322,6 +1323,20 @@ model PredictionComment {
   replies    PredictionComment[] @relation("PredCommentReplies")
 
   @@index([predictionId, createdAt])
+}
+
+model PredictionReaction {
+  id         String   @id @default(cuid())
+  targetType String   @db.VarChar(20) // PREDICTION | COMMENT
+  targetId   String
+  userId     String
+  emoji      String   @db.VarChar(20)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([targetType, targetId, userId, emoji])
+  @@index([targetType, targetId])
 }
 
 model PredictionBet {

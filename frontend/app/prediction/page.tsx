@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   TrendingUp, Coins, Lock, CheckCircle2, ShieldCheck, Users2, Clock, Tag,
-  Gavel, XCircle, AlertTriangle, Wallet,
+  Gavel, XCircle, AlertTriangle, Wallet, MessageCircle, Send, Trash2,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
@@ -195,7 +195,92 @@ function PredView() {
         </div>
       )}
 
+      <CommentsSection predictionId={p.id} />
+
       <Link href="/predictions" className="inline-flex items-center gap-1 text-sm text-brand-600"><TrendingUp size={15} /> Về danh sách kèo</Link>
+    </div>
+  );
+}
+
+interface CUser { id: string; username: string; displayName?: string | null; avatar?: string | null }
+interface Comment {
+  id: string; parentId: string | null; content: string | null; isDeleted: boolean;
+  createdAt: string; user: CUser | null; replies?: Comment[];
+}
+
+function CommentsSection({ predictionId }: { predictionId: string }) {
+  const { user } = useAuth();
+  const [items, setItems] = useState<Comment[]>([]);
+  const [text, setText] = useState('');
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(() => {
+    api.get<Comment[]>(`/quiz/predictions/${predictionId}/comments`).then(setItems).catch(() => setItems([]));
+  }, [predictionId]);
+  useEffect(() => { load(); }, [load]);
+
+  async function send(content: string, parentId?: string) {
+    if (!content.trim()) return;
+    setBusy(true);
+    try {
+      await api.post(`/quiz/predictions/${predictionId}/comments`, { content, parentId });
+      setText(''); setReplyText(''); setReplyTo(null); load();
+    } catch { /* noop */ } finally { setBusy(false); }
+  }
+  async function del(id: string) {
+    if (!confirm('Xoá bình luận này?')) return;
+    await api.del(`/quiz/predictions/comments/${id}`).catch(() => {});
+    load();
+  }
+
+  const total = items.reduce((s, c) => s + 1 + (c.replies?.length || 0), 0);
+  const canDel = (c: Comment) => user && (user.id === c.user?.id || user.role === 'ADMIN' || user.role === 'MODERATOR');
+
+  function Item({ c, isReply }: { c: Comment; isReply?: boolean }) {
+    return (
+      <div className={`flex gap-2.5 ${isReply ? 'ml-8 mt-2' : ''}`}>
+        {c.user ? <Avatar user={c.user} size={32} /> : <div className="h-8 w-8 rounded-full bg-ink-100 dark:bg-ink-800" />}
+        <div className="min-w-0 flex-1">
+          <div className="rounded-xl bg-ink-50 px-3 py-2 dark:bg-ink-800/60">
+            <div className="flex items-center justify-between gap-2">
+              <Link href={c.user ? `/profile?username=${c.user.username}` : '#'} className="text-sm font-semibold hover:text-brand-600">{c.user?.displayName || c.user?.username || 'Ẩn danh'}</Link>
+              {canDel(c) && !c.isDeleted && <button onClick={() => del(c.id)} className="text-ink-400 hover:text-red-500"><Trash2 size={13} /></button>}
+            </div>
+            <p className={`whitespace-pre-wrap break-words text-sm ${c.isDeleted ? 'italic text-ink-400' : ''}`}>{c.isDeleted ? 'Bình luận đã bị xoá' : c.content}</p>
+          </div>
+          <div className="mt-0.5 flex items-center gap-3 px-1 text-xs text-ink-400">
+            <span>{new Date(c.createdAt).toLocaleString('vi-VN')}</span>
+            {user && !isReply && <button onClick={() => { setReplyTo(replyTo === c.id ? null : c.id); setReplyText(''); }} className="hover:text-brand-600">Trả lời</button>}
+          </div>
+          {replyTo === c.id && (
+            <div className="mt-1.5 flex gap-2">
+              <input className="input flex-1 !py-1.5 text-sm" placeholder="Viết trả lời…" value={replyText} onChange={(e) => setReplyText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send(replyText, c.id)} />
+              <button onClick={() => send(replyText, c.id)} disabled={busy} className="btn-primary !px-3 !py-1.5"><Send size={14} /></button>
+            </div>
+          )}
+          {c.replies?.map((r) => <Item key={r.id} c={r} isReply />)}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card p-5">
+      <h2 className="mb-3 flex items-center gap-2 font-semibold"><MessageCircle size={18} /> Thảo luận <span className="text-sm font-normal text-ink-400">({total})</span></h2>
+      {user ? (
+        <div className="mb-4 flex gap-2">
+          <input className="input flex-1" placeholder="Chia sẻ nhận định của bạn…" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send(text)} />
+          <button onClick={() => send(text)} disabled={busy || !text.trim()} className="btn-primary inline-flex items-center gap-1 disabled:opacity-50"><Send size={15} /> Gửi</button>
+        </div>
+      ) : (
+        <p className="mb-4 text-sm text-ink-500"><a href="/login" className="text-brand-600 font-medium">Đăng nhập</a> để tham gia thảo luận.</p>
+      )}
+      {items.length === 0 && <p className="text-sm text-ink-500">Chưa có bình luận. Hãy là người đầu tiên!</p>}
+      <div className="space-y-3">
+        {items.map((c) => <Item key={c.id} c={c} />)}
+      </div>
     </div>
   );
 }

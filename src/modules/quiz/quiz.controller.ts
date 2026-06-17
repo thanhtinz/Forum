@@ -134,6 +134,28 @@ export class QuizController {
     return this.predictions.bet(userId, id, Number(optionIndex), Number(amount), password);
   }
 
+  @Get('predictions/:id/comments')
+  predictionComments(@Param('id') id: string) {
+    return this.predictions.listComments(id);
+  }
+
+  @Post('predictions/:id/comments')
+  @UseGuards(JwtAuthGuard)
+  predictionAddComment(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @Body('content') content: string,
+    @Body('parentId') parentId?: string,
+  ) {
+    return this.predictions.addComment(id, userId, content, parentId);
+  }
+
+  @Delete('predictions/comments/:commentId')
+  @UseGuards(JwtAuthGuard)
+  predictionDeleteComment(@Param('commentId') commentId: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: UserRole) {
+    return this.predictions.deleteComment(commentId, userId, this.isMod(role));
+  }
+
   @Post('predictions/:id/lock')
   @UseGuards(JwtAuthGuard)
   predictionLockUser(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: UserRole) {

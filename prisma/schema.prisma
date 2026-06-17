@@ -262,6 +262,7 @@ model User {
   giveawayEntries    GiveawayEntry[]
   triviaAnswers      TriviaAnswer[]
   predictionBets     PredictionBet[]
+  predictionComments PredictionComment[]
   aiPersonas         AiPersona[]
   authTokens         AuthToken[]
   groupMemberships   UserGroupMember[]
@@ -1298,11 +1299,29 @@ model Prediction {
   commissionBps Int       @default(0) // hoa hồng (basis points, 100 = 1%)
   resultNote    String?   @db.Text
 
-  bets PredictionBet[]
+  bets     PredictionBet[]
+  comments PredictionComment[]
 
   @@index([status, createdAt])
   @@index([category])
   @@index([createdBy])
+}
+
+model PredictionComment {
+  id           String   @id @default(cuid())
+  predictionId String
+  userId       String
+  parentId     String?
+  content      String   @db.Text
+  isDeleted    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  prediction Prediction          @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent     PredictionComment?  @relation("PredCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies    PredictionComment[] @relation("PredCommentReplies")
+
+  @@index([predictionId, createdAt])
 }
 
 model PredictionBet {

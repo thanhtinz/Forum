@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TrendingUp, Coins, Lock, CheckCircle2, Plus, Trophy, ShieldCheck, Users, Filter, Search, ArrowUpDown } from 'lucide-react';
+import { TrendingUp, Coins, Lock, CheckCircle2, Plus, Trophy, ShieldCheck, Users, Filter, Search, ArrowUpDown, Layers } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { PRED_CATEGORIES, PRED_STATUS, catLabel, typeLabel, statusLabel, type Prediction } from '@/lib/predictions';
@@ -97,6 +97,7 @@ export default function PredictionsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href="/predictions/leaderboard" className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-4 py-2 text-sm font-medium hover:bg-white/25"><Trophy size={16} /> BXH</Link>
+          <Link href="/predictions/parlay" className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-4 py-2 text-sm font-medium hover:bg-white/25"><Layers size={16} /> Xiên</Link>
           {user && <Link href="/predictions/mine" className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-4 py-2 text-sm font-medium hover:bg-white/25"><Users size={16} /> Của tôi</Link>}
           {user && <Link href="/predictions/new" className="inline-flex items-center gap-1 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-white/90"><Plus size={16} /> Tạo kèo</Link>}
         </div>

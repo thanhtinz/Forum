@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TrendingUp, Wallet, Target, Flame, Trophy } from 'lucide-react';
+import { TrendingUp, Wallet, Target, Flame, Trophy, Layers, BarChart3 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { RANK_LABELS, RANK_COLORS, statusLabel, catLabel } from '@/lib/predictions';
@@ -15,11 +15,16 @@ interface BetRow {
   id: string; optionIndex: number; amount: number; odds: number; payout: number; status: string;
   prediction: { id: string; title: string; status: string; options: string[]; correctIndex?: number | null; category: string };
 }
+interface CreatorStats { totalMarkets: number; open: number; locked: number; settled: number; cancelled: number; totalVolume: number; totalParticipants: number }
+interface ParlayLeg { id: string; optionIndex: number; odds: number; status: string; prediction: { id: string; title: string; options: string[] } }
+interface Parlay { id: string; amount: number; combinedOdds: number; potentialPayout: number; payout: number; status: string; createdAt: string; legs: ParlayLeg[] }
 
 export default function MyPredictionsPage() {
   const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState<Stats | null>(null);
   const [bets, setBets] = useState<BetRow[]>([]);
+  const [creator, setCreator] = useState<CreatorStats | null>(null);
+  const [parlays, setParlays] = useState<Parlay[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,7 +32,9 @@ export default function MyPredictionsPage() {
     Promise.all([
       api.get<Stats>('/quiz/predictions/stats').catch(() => null),
       api.get<BetRow[]>('/quiz/predictions/my-bets').catch(() => []),
-    ]).then(([s, b]) => { setStats(s); setBets(b as BetRow[]); }).finally(() => setLoading(false));
+      api.get<CreatorStats>('/quiz/predictions/creator/stats').catch(() => null),
+      api.get<Parlay[]>('/quiz/parlays/mine').catch(() => []),
+    ]).then(([s, b, c, p]) => { setStats(s); setBets(b as BetRow[]); setCreator(c); setParlays(p as Parlay[]); }).finally(() => setLoading(false));
   }, [user]);
 
   if (authLoading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
@@ -62,6 +69,47 @@ export default function MyPredictionsPage() {
             <div className="card p-4"><div className="flex items-center gap-1.5 text-xs text-ink-500"><Flame size={14} className="text-red-500" /> Chuỗi thua</div><div className="mt-1 text-xl font-bold">{stats.bestLoseStreak}</div></div>
           </div>
         </>
+      )}
+
+      {creator && creator.totalMarkets > 0 && (
+        <div className="card p-4">
+          <h2 className="mb-3 flex items-center gap-2 font-semibold"><BarChart3 size={18} className="text-violet-500" /> Kèo tôi tổ chức</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div><div className="text-xs text-ink-500">Tổng kèo</div><div className="text-lg font-bold">{creator.totalMarkets}</div></div>
+            <div><div className="text-xs text-ink-500">Đang mở / khoá</div><div className="text-lg font-bold">{creator.open + creator.locked}</div></div>
+            <div><div className="text-xs text-ink-500">Tổng cược (volume)</div><div className="text-lg font-bold">{creator.totalVolume.toLocaleString()}</div></div>
+            <div><div className="text-xs text-ink-500">Người tham gia</div><div className="text-lg font-bold">{creator.totalParticipants}</div></div>
+          </div>
+          <div className="mt-2 text-xs text-ink-400">Đã chốt {creator.settled} · Đã huỷ {creator.cancelled}. Mở trang chi tiết từng kèo để xem phân tích dòng tiền theo cửa.</div>
+        </div>
+      )}
+
+      {parlays.length > 0 && (
+        <div className="card p-4">
+          <h2 className="mb-3 flex items-center gap-2 font-semibold"><Layers size={18} /> Vé cược xiên</h2>
+          <div className="space-y-2">
+            {parlays.map((p) => (
+              <div key={p.id} className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{p.legs.length} kèo · x{p.combinedOdds.toFixed(2)} · {p.amount.toLocaleString()} coin</span>
+                  <span className={`text-sm font-medium ${p.status === 'WON' ? 'text-emerald-600' : p.status === 'LOST' ? 'text-red-500' : p.status === 'REFUNDED' ? 'text-amber-600' : 'text-ink-500'}`}>
+                    {p.status === 'ACTIVE' ? `Chờ · có thể thắng ${p.potentialPayout.toLocaleString()}` : p.status === 'WON' ? `Thắng +${p.payout.toLocaleString()}` : p.status === 'LOST' ? 'Thua' : `Hoàn ${p.payout.toLocaleString()}`}
+                  </span>
+                </div>
+                <div className="mt-1.5 space-y-0.5">
+                  {p.legs.map((l) => (
+                    <Link key={l.id} href={`/prediction?id=${l.prediction.id}`} className="flex items-center justify-between gap-2 text-xs hover:text-brand-600">
+                      <span className="truncate">{l.prediction.title} — {l.prediction.options[l.optionIndex] || `#${l.optionIndex + 1}`} (x{l.odds.toFixed(2)})</span>
+                      <span className={`shrink-0 ${l.status === 'WON' ? 'text-emerald-600' : l.status === 'LOST' ? 'text-red-500' : l.status === 'VOID' ? 'text-amber-600' : 'text-ink-400'}`}>
+                        {l.status === 'PENDING' ? '•' : l.status === 'WON' ? '✓' : l.status === 'VOID' ? 'huỷ' : '✗'}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="card p-4">

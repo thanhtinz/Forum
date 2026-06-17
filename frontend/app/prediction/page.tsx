@@ -194,11 +194,20 @@ function PredView() {
           <h2 className="mb-2 font-semibold">Vé cược của tôi</h2>
           <div className="space-y-2">
             {p.myBets.map((b) => (
-              <div key={b.id} className="flex items-center justify-between rounded-lg border border-ink-200 px-3 py-2 text-sm dark:border-ink-800">
+              <div key={b.id} className="flex items-center justify-between gap-2 rounded-lg border border-ink-200 px-3 py-2 text-sm dark:border-ink-800">
                 <span>{p.options[b.optionIndex] || `Cửa ${b.optionIndex + 1}`} · {b.amount.toLocaleString()} coin{b.odds > 0 ? ` · x${b.odds.toFixed(2)}` : ''}</span>
-                <span className={`font-medium ${b.status === 'WON' ? 'text-emerald-600' : b.status === 'LOST' ? 'text-red-500' : b.status === 'REFUNDED' ? 'text-amber-600' : 'text-ink-500'}`}>
-                  {b.status === 'ACTIVE' ? 'Đang chờ' : b.status === 'WON' ? `Thắng +${b.payout.toLocaleString()}` : b.status === 'LOST' ? 'Thua' : `Hoàn ${b.payout.toLocaleString()}`}
-                </span>
+                <div className="flex items-center gap-2">
+                  {p.status === 'OPEN' && b.status === 'ACTIVE' && (
+                    <button onClick={() => act(() => api.post(`/quiz/predictions/bets/${b.id}/cashout`, {}), 'Đã bán vé sớm')}
+                      title="Bán sớm: hoàn 95% (phí 5%)"
+                      className="inline-flex items-center gap-1 rounded-lg border border-amber-300 px-2 py-1 text-xs text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20">
+                      <Wallet size={12} /> Bán ~{Math.floor(b.amount * 0.95).toLocaleString()}
+                    </button>
+                  )}
+                  <span className={`font-medium ${b.status === 'WON' ? 'text-emerald-600' : b.status === 'LOST' ? 'text-red-500' : b.status === 'REFUNDED' ? 'text-amber-600' : b.status === 'CASHED_OUT' ? 'text-sky-600' : 'text-ink-500'}`}>
+                    {b.status === 'ACTIVE' ? 'Đang chờ' : b.status === 'WON' ? `Thắng +${b.payout.toLocaleString()}` : b.status === 'LOST' ? 'Thua' : b.status === 'CASHED_OUT' ? `Đã bán ${b.payout.toLocaleString()}` : `Hoàn ${b.payout.toLocaleString()}`}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

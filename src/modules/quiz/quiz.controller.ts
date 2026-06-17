@@ -169,6 +169,12 @@ export class QuizController {
     return this.predictions.deleteComment(commentId, userId, this.isMod(role));
   }
 
+  @Post('predictions/bets/:betId/cashout')
+  @UseGuards(JwtAuthGuard)
+  predictionCashout(@Param('betId') betId: string, @CurrentUser('id') userId: string) {
+    return this.predictions.cashout(userId, betId);
+  }
+
   @Post('predictions/:id/lock')
   @UseGuards(JwtAuthGuard)
   predictionLockUser(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: UserRole) {

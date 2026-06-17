@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, Gift, HelpCircle, ImagePlus, Paperclip, Mail, ShieldCheck, KeyRound, BellRing, Gavel } from 'lucide-react';
+import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, Gift, HelpCircle, ImagePlus, Paperclip, Mail, ShieldCheck, KeyRound, BellRing, Gavel, FolderTree } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 const NAV = [
   { href: '/admin', label: 'Tổng quan', icon: LayoutDashboard },
   { href: '/admin/fortune', label: 'Bói toán & AI', icon: Sparkles },
+  { href: '/admin/forum-categories', label: 'Danh mục diễn đàn', icon: FolderTree },
   { href: '/admin/marketplace', label: 'Quản lý Chợ', icon: Store },
   { href: '/admin/payments', label: 'Nạp tiền', icon: CreditCard },
   { href: '/admin/tools', label: 'Công cụ', icon: Wrench },

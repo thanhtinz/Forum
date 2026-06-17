@@ -96,6 +96,48 @@ export class JobsService {
     });
   }
 
+  // Tạo job gắn với một bài forum (đăng qua danh mục dạng module JOB).
+  // Dùng lại UI đăng bài của forum: thread chứa tiêu đề + mô tả, job chỉ lưu phần "việc làm".
+  async createForThread(employerId: string, threadId: string, dto: CreateJobDto) {
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      include: { category: { select: { moduleType: true } } },
+    });
+    if (!thread) throw new NotFoundException('Không tìm thấy bài viết');
+    if (thread.authorId !== employerId) throw new ForbiddenException('Không phải bài viết của bạn');
+    if (thread.category?.moduleType !== 'JOB') {
+      throw new BadRequestException('Danh mục này không phải module Việc làm');
+    }
+    const existing = await this.prisma.job.findUnique({ where: { threadId } });
+    if (existing) throw new ConflictException('Bài viết này đã có thông tin việc làm');
+
+    return this.prisma.job.create({
+      data: {
+        employerId,
+        threadId,
+        title: dto.title?.trim() || thread.title,
+        category: dto.category ?? JobCategory.OTHER,
+        description: dto.description?.trim() || thread.title,
+        budgetType: dto.budgetType ?? JobBudgetType.FIXED,
+        budgetMin: dto.budgetMin,
+        budgetMax: dto.budgetMax,
+        deadline: dto.deadline ? new Date(dto.deadline) : undefined,
+        attachments: dto.attachments ?? Prisma.JsonNull,
+        skills: dto.skills ?? [],
+        country: dto.country,
+        language: dto.language,
+        status: JobStatus.OPEN,
+      },
+    });
+  }
+
+  // Lấy thông tin job gắn với 1 thread (null nếu thread không phải dạng JOB).
+  async getByThread(threadId: string, viewerId?: string) {
+    const job = await this.prisma.job.findUnique({ where: { threadId } });
+    if (!job) return null;
+    return this.get(job.id, viewerId);
+  }
+
   async list(query: ListJobsQuery) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));

@@ -11,6 +11,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 import type { Thread, Post, Paginated } from '@/lib/types';
 import TipTapEditor from '@/components/TipTapEditor';
+import ThreadJobPanel from '@/components/ThreadJobPanel';
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -377,6 +378,8 @@ function ThreadView() {
       </div>
 
       <PollCard threadId={thread.id} />
+
+      {(thread as any).category?.moduleType === 'JOB' && <ThreadJobPanel threadId={thread.id} />}
 
       <div className="space-y-3">
         {ordered.map((p, idx) => {

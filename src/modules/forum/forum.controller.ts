@@ -13,6 +13,7 @@ import {
   ForumService,
   CreateThreadDto,
   CreatePostDto,
+  CategoryDto,
 } from './forum.service';
 import { PollService, CreatePollDto } from './poll.service';
 import { SubscriptionService } from './subscription.service';
@@ -46,6 +47,35 @@ export class ForumController {
   @Get('categories')
   categories() {
     return this.forum.listCategories();
+  }
+
+  // ── Admin: quản lý danh mục (CRUD + cờ module) ──
+  @Get('admin/categories')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  adminListCategories() {
+    return this.forum.adminListCategories();
+  }
+
+  @Post('admin/categories')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  createCategory(@Body() dto: CategoryDto) {
+    return this.forum.createCategory(dto);
+  }
+
+  @Post('admin/categories/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateCategory(@Param('id') id: string, @Body() dto: CategoryDto) {
+    return this.forum.updateCategory(id, dto);
+  }
+
+  @Delete('admin/categories/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteCategory(@Param('id') id: string) {
+    return this.forum.deleteCategory(id);
   }
 
   // ── Tags (theo dõi thẻ) ──

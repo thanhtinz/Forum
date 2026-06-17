@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import TipTapEditor from '@/components/TipTapEditor';
-import { Sparkles, Lock, FileClock, Trash2 } from 'lucide-react';
+import { Sparkles, Lock, FileClock, Trash2, Briefcase } from 'lucide-react';
+import { CATEGORY_LABELS, BUDGET_TYPE_LABELS, parseList } from '@/lib/jobs';
 
 const GATE_OPTIONS: { value: string; label: string }[] = [
   { value: 'LIKE_REQUIRED', label: 'Cần Like' },
@@ -59,6 +60,11 @@ export default function NewThreadPage() {
   const [drafts, setDrafts] = useState<any[]>([]);
   // AI
   const [aiBusy, setAiBusy] = useState('');
+  // Module Việc làm (khi danh mục có moduleType === 'JOB')
+  const [job, setJob] = useState({ category: 'PROGRAMMING', budgetType: 'FIXED', budgetMin: '', budgetMax: '', deadline: '', skills: '' });
+
+  const activeCat = cats.find((c) => c.id === form.categoryId);
+  const isJobCat = activeCat?.moduleType === 'JOB';
 
   function loadDrafts() {
     api.get<any[]>('/forum/drafts').then((d) => setDrafts((d || []).filter((x) => !x.threadId))).catch(() => {});
@@ -120,6 +126,22 @@ export default function NewThreadPage() {
         if (poll.question.trim() && opts.length >= 2) {
           await api.post(`/forum/threads/${t.id}/poll`, { question: poll.question, options: opts, multiple: poll.multiple }).catch(() => {});
         }
+      }
+      // Module Việc làm → tạo job gắn với bài vừa đăng
+      if (isJobCat) {
+        try {
+          await api.post('/jobs/from-thread', {
+            threadId: t.id,
+            title: form.title,
+            description: htmlToText(form.content) || form.title,
+            category: job.category,
+            budgetType: job.budgetType,
+            budgetMin: job.budgetMin ? Number(job.budgetMin) : undefined,
+            budgetMax: job.budgetMax ? Number(job.budgetMax) : undefined,
+            deadline: job.deadline || undefined,
+            skills: parseList(job.skills),
+          });
+        } catch { /* không chặn đăng bài */ }
       }
       // Nội dung ẩn → tạo section gắn vào bài gốc
       if (hiddenOn && hidden.content.trim()) {
@@ -184,6 +206,39 @@ export default function NewThreadPage() {
           </button>
         </div>
         <TipTapEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} placeholder="Viết nội dung bài đăng…" autosaveKey="new-thread" />
+
+        {/* Module Việc làm (danh mục được đánh dấu là module JOB) */}
+        {isJobCat && (
+          <div className="rounded-lg border border-emerald-300 bg-emerald-50/50 p-3 dark:border-emerald-800 dark:bg-emerald-950/20">
+            <div className="mb-2 flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+              <Briefcase size={15} /> Thông tin việc làm (module Việc làm)
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="text-sm">Lĩnh vực
+                <select className="input mt-1" value={job.category} onChange={(e) => setJob({ ...job, category: e.target.value })}>
+                  {Object.entries(CATEGORY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </label>
+              <label className="text-sm">Hình thức ngân sách
+                <select className="input mt-1" value={job.budgetType} onChange={(e) => setJob({ ...job, budgetType: e.target.value })}>
+                  {Object.entries(BUDGET_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </label>
+              <label className="text-sm">Ngân sách tối thiểu (gem)
+                <input type="number" min={0} className="input mt-1" value={job.budgetMin} onChange={(e) => setJob({ ...job, budgetMin: e.target.value })} placeholder="vd: 100" />
+              </label>
+              <label className="text-sm">Ngân sách tối đa (gem)
+                <input type="number" min={0} className="input mt-1" value={job.budgetMax} onChange={(e) => setJob({ ...job, budgetMax: e.target.value })} placeholder="vd: 500" />
+              </label>
+              <label className="text-sm">Hạn chót
+                <input type="date" className="input mt-1" value={job.deadline} onChange={(e) => setJob({ ...job, deadline: e.target.value })} />
+              </label>
+              <label className="text-sm">Kỹ năng (phân cách bằng dấu phẩy)
+                <input className="input mt-1" value={job.skills} onChange={(e) => setJob({ ...job, skills: e.target.value })} placeholder="vd: React, Node.js" />
+              </label>
+            </div>
+          </div>
+        )}
 
         {/* Bình chọn (Poll) */}
         <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, Gift, HelpCircle, ImagePlus, Paperclip, Mail, ShieldCheck, KeyRound } from 'lucide-react';
+import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, Gift, HelpCircle, ImagePlus, Paperclip, Mail, ShieldCheck, KeyRound, BellRing } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 const NAV = [
@@ -27,6 +27,7 @@ const NAV = [
   { href: '/admin/users', label: 'Người dùng', icon: Users },
   { href: '/admin/groups', label: 'Nhóm & Quyền', icon: KeyRound },
   { href: '/admin/mail', label: 'Email / SMTP', icon: Mail },
+  { href: '/admin/push', label: 'Web Push', icon: BellRing },
   { href: '/admin/security', label: 'Chống spam', icon: ShieldCheck },
   { href: '/admin/settings', label: 'Cấu hình', icon: Settings },
 ];

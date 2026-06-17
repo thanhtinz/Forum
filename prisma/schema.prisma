@@ -143,6 +143,7 @@ model User {
   status          UserStatus @default(ACTIVE)
   isVerified      Boolean    @default(false)
   verifiedBadge   Boolean    @default(false)
+  emailNotify     Boolean    @default(true)
   ageVerified     Boolean    @default(false)
   threadCount     Int        @default(0)
   postCount       Int        @default(0)
@@ -215,6 +216,7 @@ model User {
   aiPersonas         AiPersona[]
   authTokens         AuthToken[]
   groupMemberships   UserGroupMember[]
+  pushSubscriptions  PushSubscription[]
 
   @@index([email])
   @@index([username])
@@ -246,6 +248,20 @@ model UserGroupMember {
 
   @@id([userId, groupId])
   @@index([groupId])
+}
+
+// Đăng ký Web Push của trình duyệt
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique @db.Text
+  p256dh    String   @db.Text
+  auth      String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 // Token xác thực email / đặt lại mật khẩu

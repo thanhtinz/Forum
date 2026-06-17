@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
@@ -87,6 +87,9 @@ function ThreadView() {
   const [thread, setThread] = useState<Thread | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [reply, setReply] = useState('');
+  const [replyDraft, setReplyDraft] = useState<string | null>(null);
+  const [hiddenOn, setHiddenOn] = useState(false);
+  const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
@@ -128,6 +131,10 @@ function ThreadView() {
           setLastReadPostId(rp.lastReadPostId);
           setInitialLastReadPostId(rp.lastReadPostId);
         }).catch(() => {});
+        api.get<any[]>('/forum/drafts').then((ds) => {
+          const d = (ds || []).find((x) => x.threadId === t.id);
+          if (d?.content) setReplyDraft(d.content);
+        }).catch(() => {});
       }
     } catch (e: any) {
       setErr(e.message);
@@ -137,6 +144,18 @@ function ThreadView() {
   }
   useEffect(() => { if (slug) load(); /* eslint-disable-next-line */ }, [slug, user]);
 
+  function quotePost(p: Post) {
+    const name = p.author?.username || 'ẩn danh';
+    const html = `<blockquote><p><strong>@${name}</strong> đã viết:</p>${p.content}</blockquote><p></p>`;
+    setReply((prev) => (prev || '') + html);
+    document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  async function saveReplyDraft() {
+    if (!thread || !reply.trim()) return;
+    try { await api.post('/forum/drafts', { threadId: thread.id, content: reply }); setErr(''); alert('Đã lưu nháp trả lời'); } catch (e: any) { setErr(e.message); }
+  }
+
   async function submitReply(e: React.FormEvent) {
     e.preventDefault();
     if (!thread || !reply.trim()) return;
@@ -144,6 +163,22 @@ function ThreadView() {
       const r = await api.post<any>('/forum/posts', { threadId: thread.id, content: reply });
       setReply('');
       if (r?.pendingApproval) { setErr(''); alert('Trả lời của bạn đang chờ kiểm duyệt và sẽ hiển thị sau khi được duyệt.'); return; }
+      // Nội dung ẩn cho bài trả lời
+      if (hiddenOn && hidden.content.trim() && r?.id) {
+        const g = hidden.gateType;
+        const body: any = { postId: r.id, contentRaw: hidden.content, gateType: g };
+        if (hidden.label.trim()) body.label = hidden.label.trim();
+        if (['LIKE_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'LIKE_OR_GEM'].includes(g)) body.likeRequired = Math.max(1, hidden.likeRequired);
+        if (['COMMENT_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'COMMENT_OR_GEM'].includes(g)) body.commentRequired = Math.max(1, hidden.commentRequired);
+        if (['GEM_PURCHASE', 'LIKE_OR_GEM', 'COMMENT_OR_GEM'].includes(g)) body.gemPrice = Math.max(1, hidden.gemPrice);
+        await api.post('/hidden-content/sections', body).catch(() => {});
+        setHiddenOn(false); setHidden({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
+      }
+      // Xoá nháp trả lời của thread này (nếu có)
+      api.get<any[]>('/forum/drafts').then((ds) => {
+        const d = (ds || []).find((x) => x.threadId === thread.id);
+        if (d) api.del(`/forum/drafts/${d.id}`).catch(() => {});
+      }).catch(() => {});
       const p = await api.get<Paginated<Post>>(`/forum/threads/${thread.id}/posts?limit=50`);
       setPosts(p.data);
     } catch (e: any) { setErr(e.message); }
@@ -407,6 +442,11 @@ function ThreadView() {
                       <Gem size={12} /> {p.tipTotal}
                     </span>
                   )}
+                  {user && !thread.isLocked && (
+                    <button onClick={() => quotePost(p)} className="flex items-center gap-1 text-ink-500 hover:text-brand-600" title="Trích dẫn bài này">
+                      <Quote size={14} /> Trích
+                    </button>
+                  )}
                   {user && p.author && user.id !== p.author.id && (
                     <button onClick={() => donate(p.id)} className="flex items-center gap-1 text-fuchsia-600 hover:text-fuchsia-700">
                       <Gem size={14} /> Donate
@@ -425,15 +465,48 @@ function ThreadView() {
         })}
       </div>
 
-      <div className="card p-4">
+      <div className="card p-4" id="reply-box">
         {user ? (
           thread.isLocked ? (
             <p className="text-center text-sm text-ink-500">Chủ đề đã bị khoá.</p>
           ) : (
             <form onSubmit={submitReply} className="space-y-2">
+              {replyDraft && !reply && (
+                <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                  <span>Có nháp trả lời đã lưu.</span>
+                  <button type="button" onClick={() => { setReply(replyDraft); setReplyDraft(null); }} className="rounded bg-amber-500 px-2 py-0.5 font-medium text-white">Khôi phục</button>
+                  <button type="button" onClick={() => setReplyDraft(null)} className="px-2 py-0.5 font-medium">Bỏ</button>
+                </div>
+              )}
               <TipTapEditor value={reply} onChange={setReply} placeholder="Viết trả lời…" autosaveKey={`reply-${thread?.id || 'x'}`} />
+
+              <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
+                <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hiddenOn} onChange={(e) => setHiddenOn(e.target.checked)} /><Lock size={14} /> Thêm nội dung ẩn</label>
+                {hiddenOn && (
+                  <div className="mt-2 space-y-2">
+                    <TipTapEditor value={hidden.content} onChange={(html) => setHidden({ ...hidden, content: html })} placeholder="Nội dung ẩn cho tới khi mở khoá…" />
+                    <input className="input" placeholder="Nhãn (tuỳ chọn)" value={hidden.label} onChange={(e) => setHidden({ ...hidden, label: e.target.value })} />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
+                        <option value="LIKE_REQUIRED">Cần Like</option>
+                        <option value="COMMENT_REQUIRED">Cần Bình luận</option>
+                        <option value="LIKE_AND_COMMENT">Cần Like & Bình luận</option>
+                        <option value="LIKE_OR_COMMENT">Like hoặc Bình luận</option>
+                        <option value="GEM_PURCHASE">Mua bằng Gem</option>
+                        <option value="LIKE_OR_GEM">Like hoặc Gem</option>
+                        <option value="COMMENT_OR_GEM">Bình luận hoặc Gem</option>
+                      </select>
+                      {['LIKE_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'LIKE_OR_GEM'].includes(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
+                      {['COMMENT_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'COMMENT_OR_GEM'].includes(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
+                      {['GEM_PURCHASE', 'LIKE_OR_GEM', 'COMMENT_OR_GEM'].includes(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {err && <p className="text-sm text-red-500">{err}</p>}
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={saveReplyDraft} className="btn-outline inline-flex items-center gap-1"><Save size={15} /> Lưu nháp</button>
                 <button className="btn-primary" type="submit">Gửi trả lời</button>
               </div>
             </form>

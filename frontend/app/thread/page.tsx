@@ -88,6 +88,7 @@ function ThreadView() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [reply, setReply] = useState('');
   const [replyDraft, setReplyDraft] = useState<string | null>(null);
+  const [copyToast, setCopyToast] = useState('');
   const [hiddenOn, setHiddenOn] = useState(false);
   const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
   const [err, setErr] = useState('');
@@ -155,6 +156,19 @@ function ThreadView() {
     if (!thread || !reply.trim()) return;
     try { await api.post('/forum/drafts', { threadId: thread.id, content: reply }); setErr(''); alert('Đã lưu nháp trả lời'); } catch (e: any) { setErr(e.message); }
   }
+
+  // Bấm để copy (widget .fx-copy trong nội dung bài viết)
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      const el = (e.target as HTMLElement)?.closest?.('.fx-copy') as HTMLElement | null;
+      if (!el) return;
+      const text = el.getAttribute('data-copy') || el.textContent || '';
+      if (!text) return;
+      navigator.clipboard?.writeText(text).then(() => { setCopyToast('Đã copy'); setTimeout(() => setCopyToast(''), 1500); }).catch(() => {});
+    }
+    document.addEventListener('click', onClick);
+    return () => document.removeEventListener('click', onClick);
+  }, []);
 
   async function submitReply(e: React.FormEvent) {
     e.preventDefault();
@@ -320,6 +334,7 @@ function ThreadView() {
 
   return (
     <div className="space-y-4">
+      {copyToast && <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg bg-ink-900 px-4 py-2 text-sm text-white shadow-card dark:bg-white dark:text-ink-900">{copyToast}</div>}
       <div className="card p-5">
         <div className="flex items-center gap-2 text-sm text-ink-500">
           {thread.isPinned && <Pin size={14} className="text-amber-500" />}

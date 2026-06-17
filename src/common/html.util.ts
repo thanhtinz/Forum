@@ -19,7 +19,7 @@ export function sanitizeRichHtml(html: string): string {
     allowedAttributes: {
       a: ['href', 'target', 'rel', 'title', 'class', 'data-type', 'data-id', 'data-label', 'style'],
       img: ['src', 'alt', 'title', 'width', 'height', 'style'],
-      span: ['style', 'data-type', 'data-id', 'class'],
+      span: ['style', 'data-type', 'data-id', 'class', 'data-copy', 'title'],
       div: ['style', 'class', 'data-type', 'data-percent'],
       p: ['style', 'class'],
       h1: ['style', 'class'], h2: ['style', 'class'], h3: ['style', 'class'], h4: ['style', 'class'], h5: ['style', 'class'], h6: ['style', 'class'],
@@ -48,6 +48,7 @@ export function sanitizeRichHtml(html: string): string {
     allowedClasses: {
       '*': ['callout', 'callout-info', 'callout-success', 'callout-warning', 'callout-danger',
         'fx-btn', 'fx-note', 'fx-marquee', 'fx-progress', 'fx-progress-bar', 'fx-divider',
+        'fx-card', 'fx-card-title', 'fx-card-body', 'fx-timeline', 'fx-netdisk', 'fx-netdisk-pw', 'fx-copy',
         'video-embed', 'video-embed-wrap', 'mention', 'hashtag', 'attachment', 'spoiler'],
     },
     allowedSchemes: ['http', 'https', 'mailto', 'data'],

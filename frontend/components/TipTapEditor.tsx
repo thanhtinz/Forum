@@ -507,6 +507,78 @@ const FxAudio = TiptapNode.create({
   },
 });
 
+const FxCard = TiptapNode.create({
+  name: 'fxCard',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  addAttributes() { return { title: { default: '' } }; },
+  parseHTML() { return [{ tag: 'div.fx-card' }]; },
+  renderHTML({ node }) {
+    return ['div', { class: 'fx-card' }, ['div', { class: 'fx-card-title' }, node.attrs.title || ''], ['div', { class: 'fx-card-body' }, 0]];
+  },
+  addCommands() {
+    return {
+      setFxCard: (opts: { title?: string }) => ({ commands }: any) =>
+        commands.insertContent({ type: this.name, attrs: { title: opts.title || '' }, content: [{ type: 'paragraph' }] }),
+    } as any;
+  },
+});
+
+const FxTimeline = TiptapNode.create({
+  name: 'fxTimeline',
+  group: 'block',
+  content: 'paragraph+',
+  defining: true,
+  parseHTML() { return [{ tag: 'div.fx-timeline' }]; },
+  renderHTML() { return ['div', { class: 'fx-timeline' }, 0]; },
+  addCommands() {
+    return {
+      setFxTimeline: () => ({ commands }: any) =>
+        commands.insertContent({ type: this.name, content: [{ type: 'paragraph' }, { type: 'paragraph' }] }),
+    } as any;
+  },
+});
+
+const FxNetdisk = TiptapNode.create({
+  name: 'fxNetdisk',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  addAttributes() { return { url: { default: '' }, label: { default: 'Tải xuống' }, password: { default: '' } }; },
+  parseHTML() { return [{ tag: 'div.fx-netdisk' }]; },
+  renderHTML({ node }) {
+    const kids: any[] = [['a', { class: 'fx-btn', href: node.attrs.url, target: '_blank', rel: 'noopener noreferrer' }, node.attrs.label || 'Tải xuống']];
+    if (node.attrs.password) kids.push(['span', { class: 'fx-netdisk-pw' }, 'Mật khẩu: ' + node.attrs.password]);
+    return ['div', { class: 'fx-netdisk' }, ...kids];
+  },
+  addCommands() {
+    return {
+      setFxNetdisk: (opts: { url: string; label?: string; password?: string }) => ({ commands }: any) =>
+        commands.insertContent({ type: this.name, attrs: { url: opts.url, label: opts.label || 'Tải xuống', password: opts.password || '' } }),
+    } as any;
+  },
+});
+
+const FxCopy = TiptapNode.create({
+  name: 'fxCopy',
+  group: 'inline',
+  inline: true,
+  atom: true,
+  selectable: true,
+  addAttributes() { return { text: { default: '' } }; },
+  parseHTML() { return [{ tag: 'span.fx-copy' }]; },
+  renderHTML({ node }) {
+    return ['span', { class: 'fx-copy', 'data-copy': node.attrs.text, title: 'Bấm để copy' }, node.attrs.text];
+  },
+  addCommands() {
+    return {
+      setFxCopy: (opts: { text: string }) => ({ commands }: any) =>
+        commands.insertContent({ type: this.name, attrs: { text: opts.text } }),
+    } as any;
+  },
+});
+
 const MentionUser = makeMentionExtension({
   name: 'mention',
   htmlClass: 'mention',
@@ -592,6 +664,10 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
       FxMarquee,
       FxButton,
       FxAudio,
+      FxCard,
+      FxTimeline,
+      FxNetdisk,
+      FxCopy,
       MentionUser,
       MentionTag,
     ],
@@ -855,6 +931,33 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
     chain().insertContent(new Date().toLocaleString('vi')).run();
   }
 
+  function addCard() {
+    closeInsert();
+    const title = window.prompt('Tiêu đề thẻ:', 'Tiêu đề');
+    if (title === null) return;
+    chain().setFxCard({ title: title || 'Tiêu đề' }).run();
+  }
+
+  function addTimeline() {
+    closeInsert();
+    chain().setFxTimeline().run();
+  }
+
+  function addNetdisk() {
+    closeInsert();
+    const url = window.prompt('Link tải (網盤/Drive…):', 'https://');
+    if (!url) return;
+    const password = window.prompt('Mật khẩu (nếu có, để trống nếu không):', '') || '';
+    chain().setFxNetdisk({ url, label: 'Tải xuống', password }).run();
+  }
+
+  function addCopy() {
+    closeInsert();
+    const text = window.prompt('Nội dung cần copy:', '');
+    if (!text) return;
+    chain().setFxCopy({ text }).run();
+  }
+
   // ── Công cụ viết bằng AI ──
   // Lấy văn bản đang chọn, nếu không có thì lấy toàn bộ nội dung
   function getAiInput(): { text: string; hasSelection: boolean } {
@@ -1052,6 +1155,10 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
               <button type="button" className={aiMenuItem} onClick={addBilibili}>Bilibili</button>
               <button type="button" className={aiMenuItem} onClick={addColorDivider}>Đường kẻ màu</button>
               <button type="button" className={aiMenuItem} onClick={addCenterHeading}>Tiêu đề căn giữa</button>
+              <button type="button" className={aiMenuItem} onClick={addCard}>Thẻ card</button>
+              <button type="button" className={aiMenuItem} onClick={addTimeline}>Dòng thời gian</button>
+              <button type="button" className={aiMenuItem} onClick={addNetdisk}>Nút tải (網盤)</button>
+              <button type="button" className={aiMenuItem} onClick={addCopy}>Bấm để copy</button>
               <button type="button" className={aiMenuItem} onClick={addDateTime}><span className="flex items-center gap-2"><Clock size={14} /> Chèn thời gian</span></button>
             </div>
           )}

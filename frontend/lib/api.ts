@@ -76,6 +76,24 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   return body as { url: string };
 }
 
+// Upload tệp đính kèm (mọi loại file) — R2/S3 nếu admin bật, fallback local.
+export async function uploadAttachment(file: File): Promise<{ url: string; filename: string; size: number }> {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '';
+  const form = new FormData();
+  form.append('file', file);
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${base}/api/media/upload-attachment`, { method: 'POST', headers, body: form });
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : null;
+  if (!res.ok) {
+    const msg = body?.message || res.statusText;
+    throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg);
+  }
+  return body as { url: string; filename: string; size: number };
+}
+
 // Upload ảnh cho trình soạn thảo (có thể đẩy lên dịch vụ ảnh ngoài nếu admin bật).
 // Giống uploadImage nhưng gọi endpoint /media/upload-image. KHÔNG set Content-Type
 // để trình duyệt tự thêm boundary cho multipart/form-data.

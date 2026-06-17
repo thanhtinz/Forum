@@ -24,6 +24,7 @@ import {
   Youtube as YoutubeIcon, Minus, Undo2, Redo2, Type, Palette, Highlighter,
   Rows, Columns, Trash2, EyeOff, Sparkles, ChevronDown,
   Eye, Maximize2, Minimize2, Paperclip,
+  Plus, Info, Music, Smile, Clock, Hash,
 } from 'lucide-react';
 import { uploadEditorImage, uploadAttachment, api } from '@/lib/api';
 
@@ -35,6 +36,9 @@ interface TipTapEditorProps {
 }
 
 const FONT_SIZES = [12, 14, 16, 18, 24, 32];
+
+const SYMBOLS = ['→','←','↑','↓','★','☆','✓','✗','♥','♠','♦','♣','©','®','™','§','¶','…','—','·','✦','❤'];
+const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😎','🤔','😢','😡','👍','👎','🙏','🎉','🔥','💯','❤️','✨','😅','🥰','😭','😏'];
 
 // Coi nội dung là rỗng nếu trống hoặc chỉ là đoạn rỗng
 function isEmptyHtml(html: string): boolean {
@@ -335,6 +339,174 @@ const IframeEmbed = TiptapNode.create({
   },
 });
 
+// ── Widget nội dung kiểu diễn đàn (callout, hiệu ứng) ────────────────
+const clampPct = (n: number) => Math.max(0, Math.min(100, Math.round(Number.isFinite(n) ? n : 0)));
+
+// Khung thông báo (block có nội dung soạn thảo được)
+const Callout = TiptapNode.create({
+  name: 'callout',
+  group: 'block',
+  content: 'block+',
+  defining: true,
+  addAttributes() {
+    return { variant: { default: 'info' } };
+  },
+  parseHTML() {
+    return [{ tag: 'div.callout' }];
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    return ['div', mergeAttributes(HTMLAttributes, { class: `callout callout-${node.attrs.variant || 'info'}` }), 0];
+  },
+  addCommands() {
+    return {
+      setCallout:
+        (variant: string) =>
+        ({ commands }: any) =>
+          commands.wrapIn(this.name, { variant }),
+    } as any;
+  },
+});
+
+// Đường kẻ màu (gradient)
+const FxDivider = TiptapNode.create({
+  name: 'fxDivider',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  parseHTML() {
+    return [{ tag: 'hr.fx-divider' }];
+  },
+  renderHTML() {
+    return ['hr', { class: 'fx-divider' }];
+  },
+  addCommands() {
+    return {
+      setFxDivider:
+        () =>
+        ({ commands }: any) =>
+          commands.insertContent({ type: this.name }),
+    } as any;
+  },
+});
+
+// Thanh tiến độ
+const FxProgress = TiptapNode.create({
+  name: 'fxProgress',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  addAttributes() {
+    return { percent: { default: 50 } };
+  },
+  parseHTML() {
+    return [{ tag: 'div.fx-progress' }];
+  },
+  renderHTML({ node }) {
+    const p = clampPct(node.attrs.percent);
+    return ['div', { class: 'fx-progress' }, ['div', { class: 'fx-progress-bar', style: `width:${p}%` }, `${p}%`]];
+  },
+  addCommands() {
+    return {
+      setFxProgress:
+        (opts: { percent: number }) =>
+        ({ commands }: any) =>
+          commands.insertContent({ type: this.name, attrs: { percent: clampPct(opts.percent) } }),
+    } as any;
+  },
+});
+
+// Chữ chạy (marquee)
+const FxMarquee = TiptapNode.create({
+  name: 'fxMarquee',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  addAttributes() {
+    return { text: { default: '' } };
+  },
+  parseHTML() {
+    return [{ tag: 'div.fx-marquee' }];
+  },
+  renderHTML({ node }) {
+    return ['div', { class: 'fx-marquee' }, ['span', {}, node.attrs.text || '']];
+  },
+  addCommands() {
+    return {
+      setFxMarquee:
+        (opts: { text: string }) =>
+        ({ commands }: any) =>
+          commands.insertContent({ type: this.name, attrs: { text: opts.text } }),
+    } as any;
+  },
+});
+
+// Nút bấm /便条 ghi chú
+const FxButton = TiptapNode.create({
+  name: 'fxButton',
+  group: 'block',
+  inline: false,
+  atom: true,
+  selectable: true,
+  addAttributes() {
+    return {
+      href: { default: '' },
+      label: { default: 'Nút' },
+      variant: { default: 'btn' },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'a.fx-btn' }, { tag: 'a.fx-note' }];
+  },
+  renderHTML({ node }) {
+    return [
+      'a',
+      {
+        class: node.attrs.variant === 'note' ? 'fx-note' : 'fx-btn',
+        href: node.attrs.href,
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      },
+      node.attrs.label || 'Nút',
+    ];
+  },
+  addCommands() {
+    return {
+      setFxButton:
+        (opts: { href: string; label: string; variant?: string }) =>
+        ({ commands }: any) =>
+          commands.insertContent({
+            type: this.name,
+            attrs: { href: opts.href, label: opts.label, variant: opts.variant || 'btn' },
+          }),
+    } as any;
+  },
+});
+
+// Âm thanh (audio)
+const FxAudio = TiptapNode.create({
+  name: 'fxAudio',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  addAttributes() {
+    return { src: { default: '' } };
+  },
+  parseHTML() {
+    return [{ tag: 'audio[src]' }];
+  },
+  renderHTML({ node }) {
+    return ['audio', { controls: 'true', src: node.attrs.src }];
+  },
+  addCommands() {
+    return {
+      setFxAudio:
+        (opts: { src: string }) =>
+        ({ commands }: any) =>
+          commands.insertContent({ type: this.name, attrs: { src: opts.src } }),
+    } as any;
+  },
+});
+
 const MentionUser = makeMentionExtension({
   name: 'mention',
   htmlClass: 'mention',
@@ -360,6 +532,15 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
   const [aiErr, setAiErr] = useState('');
   const aiRef = useRef<HTMLDivElement>(null);
 
+  // Menu "Chèn" + popover ký hiệu/emoji
+  const [insertOpen, setInsertOpen] = useState(false);
+  const [calloutOpen, setCalloutOpen] = useState(false);
+  const [symbolOpen, setSymbolOpen] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
+  const insertRef = useRef<HTMLDivElement>(null);
+  const symbolRef = useRef<HTMLDivElement>(null);
+  const emojiRef = useRef<HTMLDivElement>(null);
+
   // XenForo-style UX
   const [preview, setPreview] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -372,7 +553,14 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
   // Đóng menu AI khi click ra ngoài
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (aiRef.current && !aiRef.current.contains(e.target as Node)) setAiOpen(false);
+      const t = e.target as Node;
+      if (aiRef.current && !aiRef.current.contains(t)) setAiOpen(false);
+      if (insertRef.current && !insertRef.current.contains(t)) {
+        setInsertOpen(false);
+        setCalloutOpen(false);
+      }
+      if (symbolRef.current && !symbolRef.current.contains(t)) setSymbolOpen(false);
+      if (emojiRef.current && !emojiRef.current.contains(t)) setEmojiOpen(false);
     }
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
@@ -398,6 +586,12 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
       Placeholder.configure({ placeholder: placeholder || 'Viết nội dung…' }),
       CharacterCount,
       IframeEmbed,
+      Callout,
+      FxDivider,
+      FxProgress,
+      FxMarquee,
+      FxButton,
+      FxAudio,
       MentionUser,
       MentionTag,
     ],
@@ -594,6 +788,73 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
     ).run();
   }
 
+  // ── Widget "Chèn" ──
+  const chain = () => (editor!.chain().focus() as any);
+
+  function closeInsert() {
+    setInsertOpen(false);
+    setCalloutOpen(false);
+  }
+
+  function addCallout(variant: 'info' | 'success' | 'warning' | 'danger') {
+    chain().setCallout(variant).run();
+    closeInsert();
+  }
+
+  function addProgress() {
+    closeInsert();
+    const v = window.prompt('Phần trăm tiến độ (0-100):', '50');
+    if (v === null) return;
+    chain().setFxProgress({ percent: clampPct(parseInt(v, 10)) }).run();
+  }
+
+  function addMarquee() {
+    closeInsert();
+    const text = window.prompt('Nội dung chữ chạy:', '');
+    if (!text) return;
+    chain().setFxMarquee({ text }).run();
+  }
+
+  function addButton(variant: 'btn' | 'note') {
+    closeInsert();
+    const label = window.prompt(variant === 'note' ? 'Nội dung ghi chú:' : 'Nhãn nút:', variant === 'note' ? 'Ghi chú' : 'Nút');
+    if (label === null) return;
+    const href = window.prompt('Đường dẫn (URL):', 'https://');
+    if (href === null) return;
+    chain().setFxButton({ href, label: label || (variant === 'note' ? 'Ghi chú' : 'Nút'), variant }).run();
+  }
+
+  function addAudio() {
+    closeInsert();
+    const src = window.prompt('Đường dẫn tệp âm thanh (mp3…):', 'https://');
+    if (!src) return;
+    chain().setFxAudio({ src }).run();
+  }
+
+  function addBilibili() {
+    closeInsert();
+    const u = window.prompt('Dán link Bilibili hoặc mã BV:', 'https://');
+    if (!u) return;
+    const m = u.match(/BV[0-9A-Za-z]+/);
+    if (!m) { window.alert('Không tìm thấy mã BV hợp lệ.'); return; }
+    chain().setIframeEmbed({ src: `https://player.bilibili.com/player.html?bvid=${m[0]}&page=1` }).run();
+  }
+
+  function addColorDivider() {
+    chain().setFxDivider().run();
+    closeInsert();
+  }
+
+  function addCenterHeading() {
+    chain().toggleHeading({ level: 2 }).setTextAlign('center').run();
+    closeInsert();
+  }
+
+  function addDateTime() {
+    closeInsert();
+    chain().insertContent(new Date().toLocaleString('vi')).run();
+  }
+
   // ── Công cụ viết bằng AI ──
   // Lấy văn bản đang chọn, nếu không có thì lấy toàn bộ nội dung
   function getAiInput(): { text: string; hasSelection: boolean } {
@@ -749,6 +1010,104 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
         <button type="button" className={btn} title="Nhúng video (YouTube / TikTok)" onClick={insertVideo}><YoutubeIcon size={16} /></button>
         <button type="button" className={btn} title="Chèn bảng 3x3" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon size={16} /></button>
         <button type="button" className={btn} title="Spoiler (nội dung ẩn)" onClick={insertSpoiler}><EyeOff size={16} /></button>
+
+        <Divider />
+
+        {/* Menu "Chèn" — widget nội dung kiểu diễn đàn */}
+        <div className="relative" ref={insertRef}>
+          <button
+            type="button"
+            className={`${btn} flex items-center gap-1 ${insertOpen ? active : ''}`}
+            title="Chèn nội dung"
+            onClick={() => { setInsertOpen((o) => !o); setCalloutOpen(false); }}
+          >
+            <Plus size={16} /><ChevronDown size={12} />
+          </button>
+          {insertOpen && (
+            <div className="absolute left-0 top-full z-20 mt-1 w-52 rounded-md border border-ink-200 bg-white py-1 shadow-lg dark:border-ink-700 dark:bg-ink-800">
+              {/* Khung thông báo + submenu */}
+              <div className="relative">
+                <button
+                  type="button"
+                  className={`${aiMenuItem} justify-between`}
+                  onClick={() => setCalloutOpen((o) => !o)}
+                >
+                  <span className="flex items-center gap-2"><Info size={14} /> Khung thông báo</span>
+                  <ChevronDown size={12} />
+                </button>
+                {calloutOpen && (
+                  <div className="border-y border-ink-100 bg-ink-50 py-0.5 dark:border-ink-700 dark:bg-ink-900/40">
+                    <button type="button" className={`${aiMenuItem} pl-8`} onClick={() => addCallout('info')}>Thông tin</button>
+                    <button type="button" className={`${aiMenuItem} pl-8`} onClick={() => addCallout('success')}>Thành công</button>
+                    <button type="button" className={`${aiMenuItem} pl-8`} onClick={() => addCallout('warning')}>Cảnh báo</button>
+                    <button type="button" className={`${aiMenuItem} pl-8`} onClick={() => addCallout('danger')}>Nguy hiểm</button>
+                  </div>
+                )}
+              </div>
+              <button type="button" className={aiMenuItem} onClick={addProgress}>Thanh tiến độ</button>
+              <button type="button" className={aiMenuItem} onClick={addMarquee}>Chữ chạy (marquee)</button>
+              <button type="button" className={aiMenuItem} onClick={() => addButton('btn')}>Nút bấm</button>
+              <button type="button" className={aiMenuItem} onClick={() => addButton('note')}>Nút便条/ghi chú</button>
+              <button type="button" className={aiMenuItem} onClick={addAudio}><span className="flex items-center gap-2"><Music size={14} /> Âm thanh (audio)</span></button>
+              <button type="button" className={aiMenuItem} onClick={addBilibili}>Bilibili</button>
+              <button type="button" className={aiMenuItem} onClick={addColorDivider}>Đường kẻ màu</button>
+              <button type="button" className={aiMenuItem} onClick={addCenterHeading}>Tiêu đề căn giữa</button>
+              <button type="button" className={aiMenuItem} onClick={addDateTime}><span className="flex items-center gap-2"><Clock size={14} /> Chèn thời gian</span></button>
+            </div>
+          )}
+        </div>
+
+        {/* Ký hiệu đặc biệt */}
+        <div className="relative" ref={symbolRef}>
+          <button
+            type="button"
+            className={`${btn} ${symbolOpen ? active : ''}`}
+            title="Ký hiệu đặc biệt"
+            onClick={() => { setSymbolOpen((o) => !o); setEmojiOpen(false); }}
+          >
+            <Hash size={16} />
+          </button>
+          {symbolOpen && (
+            <div className="absolute left-0 top-full z-20 mt-1 grid w-56 grid-cols-6 gap-0.5 rounded-md border border-ink-200 bg-white p-1.5 shadow-lg dark:border-ink-700 dark:bg-ink-800">
+              {SYMBOLS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-700"
+                  onClick={() => { editor.chain().focus().insertContent(s).run(); setSymbolOpen(false); }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Emoji */}
+        <div className="relative" ref={emojiRef}>
+          <button
+            type="button"
+            className={`${btn} ${emojiOpen ? active : ''}`}
+            title="Emoji"
+            onClick={() => { setEmojiOpen((o) => !o); setSymbolOpen(false); }}
+          >
+            <Smile size={16} />
+          </button>
+          {emojiOpen && (
+            <div className="absolute left-0 top-full z-20 mt-1 grid w-56 grid-cols-6 gap-0.5 rounded-md border border-ink-200 bg-white p-1.5 shadow-lg dark:border-ink-700 dark:bg-ink-800">
+              {EMOJIS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-700"
+                  onClick={() => { editor.chain().focus().insertContent(s).run(); setEmojiOpen(false); }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         <Divider />
 

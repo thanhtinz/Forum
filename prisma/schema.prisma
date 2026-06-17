@@ -1268,16 +1268,41 @@ model Prediction {
   title        String          @db.VarChar(200)
   description  String?         @db.Text
   options      Json // string[] outcomes
-  status       String          @default("OPEN") // OPEN | LOCKED | SETTLED
+  status       String          @default("OPEN") // OPEN | LOCKED | RESULT_PENDING | SETTLED | CANCELLED | DISPUTED
   correctIndex Int?
-  closesAt     DateTime?
+  closesAt     DateTime? // thời gian khoá cược (lock)
   createdBy    String
   createdAt    DateTime        @default(now())
   settledAt    DateTime?
 
+  // ── Prediction Market v2 ──
+  category      String    @default("OTHER") // ANIME|MANGA|GAME|ESPORTS|SPORTS|TECH|CRYPTO|COMMUNITY|OTHER
+  marketType    String    @default("BINARY") // BINARY|MULTI|HANDICAP|OVERUNDER|ONEXTWO|ODDEVEN|EXACT|CUSTOM
+  oddsMode      String    @default("POOL") // POOL (pari-mutuel) | FIXED (nhà cái)
+  fixedOdds     Json? // number[] khớp options (chế độ FIXED)
+  line          Float? // mức chấp / tài xỉu (hiển thị)
+  isAdminMarket Boolean   @default(false) // kèo admin tổ chức (nhà = hệ thống)
+  creatorStake  Int       @default(0) // coin ký quỹ của người tạo (FIXED, kèo user)
+  creatorEscrow Int       @default(0) // thanh khoản còn lại của nhà cái
+  visibility    String    @default("PUBLIC") // PUBLIC|PRIVATE|FRIENDS|GUILD
+  joinPassword  String? // mật khẩu tham gia (PRIVATE)
+  guildId       String?
+  image         String?
+  banner        String?
+  tags          String[]
+  opensAt       DateTime?
+  resultAt      DateTime?
+  autoSettleAt  DateTime?
+  minBet        Int       @default(1)
+  maxBet        Int?
+  commissionBps Int       @default(0) // hoa hồng (basis points, 100 = 1%)
+  resultNote    String?   @db.Text
+
   bets PredictionBet[]
 
   @@index([status, createdAt])
+  @@index([category])
+  @@index([createdBy])
 }
 
 model PredictionBet {
@@ -1286,13 +1311,15 @@ model PredictionBet {
   userId       String
   optionIndex  Int
   amount       Int
+  odds         Float    @default(0) // odds khoá tại thời điểm cược (FIXED)
   payout       Int      @default(0)
+  status       String   @default("ACTIVE") // ACTIVE|WON|LOST|REFUNDED
   createdAt    DateTime @default(now())
 
   prediction Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([predictionId, userId])
+  @@index([predictionId])
   @@index([userId])
 }
 

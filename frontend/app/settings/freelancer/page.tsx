@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Plus, X, Save, UserCog } from 'lucide-react';
+import { Plus, X, Save, UserCog, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import ImageUpload from '@/components/ImageUpload';
@@ -25,6 +25,19 @@ export default function FreelancerSettingsPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
+  const [cvBusy, setCvBusy] = useState(false);
+  const [cvResult, setCvResult] = useState('');
+
+  async function analyzeCv() {
+    const text = [headline && `Tiêu đề: ${headline}`, bio && `Giới thiệu: ${bio}`, skills && `Kỹ năng: ${skills}`, experience && `Kinh nghiệm: ${experience}`, certifications && `Chứng chỉ: ${certifications}`].filter(Boolean).join('\n');
+    if (!text.trim()) { setErr('Hãy điền hồ sơ trước khi nhờ AI phân tích.'); return; }
+    setErr(''); setCvBusy(true); setCvResult('');
+    try {
+      const r = await api.post<{ result: string }>('/jobs/ai/analyze-cv', { text });
+      setCvResult(r.result || '');
+    } catch (e: any) { setErr('AI lỗi: ' + (e?.message || 'không xác định')); }
+    finally { setCvBusy(false); }
+  }
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -138,9 +151,16 @@ export default function FreelancerSettingsPage() {
           <input type="checkbox" checked={available} onChange={(e) => setAvailable(e.target.checked)} /> Đang nhận việc
         </label>
 
+        {cvResult && (
+          <div className="rounded-xl border border-brand-300 bg-brand-50/50 p-3 text-sm dark:border-brand-800 dark:bg-brand-950/20">
+            <div className="mb-1 flex items-center gap-1 font-medium text-brand-700 dark:text-brand-400"><Sparkles size={14} /> AI phân tích hồ sơ</div>
+            <p className="whitespace-pre-wrap text-ink-700 dark:text-ink-200">{cvResult}</p>
+          </div>
+        )}
         {msg && <p className="text-sm text-emerald-600">{msg}</p>}
         {err && <p className="text-sm text-red-500">{err}</p>}
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={analyzeCv} disabled={cvBusy} className="btn-outline inline-flex items-center gap-1 disabled:opacity-50"><Sparkles size={16} /> {cvBusy ? 'Đang phân tích…' : 'AI phân tích hồ sơ'}</button>
           <button type="submit" disabled={busy} className="btn-primary inline-flex items-center gap-1 disabled:opacity-50"><Save size={16} /> {busy ? 'Đang lưu…' : 'Lưu hồ sơ'}</button>
         </div>
       </form>

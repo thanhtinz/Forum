@@ -121,4 +121,19 @@ export class FreelancerService {
 
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
+
+  // ── Top Freelancer: xếp theo rating rồi số job hoàn thành ──
+  // Gắn cờ badge "TOP_FREELANCER" cho người đủ điều kiện (≥4.5★, ≥5 job).
+  async top(limit = 10) {
+    const data = await this.prisma.freelancerProfile.findMany({
+      where: { ratingCount: { gt: 0 } },
+      orderBy: [{ ratingAvg: 'desc' }, { jobsDone: 'desc' }, { earned: 'desc' }],
+      take: Math.min(50, Math.max(1, limit)),
+      include: { user: { select: USER_BASIC } },
+    });
+    return data.map((p) => ({
+      ...p,
+      isTop: p.ratingAvg >= 4.5 && p.jobsDone >= 5,
+    }));
+  }
 }

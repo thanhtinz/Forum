@@ -21,13 +21,36 @@ import {
   UpdateJobDto,
   SubmitProposalDto,
 } from './jobs.service';
+import { JobsAiService } from './jobs-ai.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
 
 @Controller('jobs')
 export class JobsController {
-  constructor(private readonly jobs: JobsService) {}
+  constructor(
+    private readonly jobs: JobsService,
+    private readonly jobsAi: JobsAiService,
+  ) {}
+
+  // ── AI & thống kê (path tĩnh, đặt trước :id) ──
+  @Post('ai/generate-description')
+  @UseGuards(JwtAuthGuard)
+  aiGenerateDescription(@Body() body: { brief: string; category?: string }) {
+    return this.jobsAi.generateDescription(body.brief, body.category);
+  }
+
+  @Post('ai/analyze-cv')
+  @UseGuards(JwtAuthGuard)
+  aiAnalyzeCv(@Body('text') text: string) {
+    return this.jobsAi.analyzeCv(text);
+  }
+
+  @Get('stats/me')
+  @UseGuards(JwtAuthGuard)
+  myStats(@CurrentUser('id') userId: string) {
+    return this.jobs.myStats(userId);
+  }
 
   // ── Public ──
   @Get()
@@ -185,6 +208,19 @@ export class JobsController {
   @UseGuards(JwtAuthGuard)
   listProposals(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.jobs.listProposals(id, userId);
+  }
+
+  // ── AI cho 1 job ──
+  @Get(':id/ai/suggest-freelancers')
+  @UseGuards(JwtAuthGuard)
+  aiSuggestFreelancers(@Param('id') id: string, @Query('limit') limit?: string) {
+    return this.jobsAi.suggestFreelancers(id, limit ? Number(limit) : undefined);
+  }
+
+  @Get(':id/ai/score-candidates')
+  @UseGuards(JwtAuthGuard)
+  aiScoreCandidates(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.jobsAi.scoreCandidates(id, userId);
   }
 
   @Post(':id/invite')

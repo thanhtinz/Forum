@@ -26,6 +26,11 @@ export class FreelancersController {
     });
   }
 
+  @Get('top')
+  top(@Query('limit') limit?: string) {
+    return this.freelancers.top(limit ? Number(limit) : undefined);
+  }
+
   @Get('me/profile')
   @UseGuards(JwtAuthGuard)
   getMine(@CurrentUser('id') userId: string) {

@@ -15,6 +15,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { extname, join } from 'path';
 import { MediaService } from './media.service';
 import { ImageHostService } from './image-host.service';
+import { AttachmentService } from './attachment.service';
 import { PresignUploadDto } from './media.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles, RolesGuard } from '../../common/decorators/roles.decorator';
@@ -29,6 +30,7 @@ export class MediaController {
   constructor(
     private readonly media: MediaService,
     private readonly imageHost: ImageHostService,
+    private readonly attachments: AttachmentService,
   ) {}
 
   // Client gọi để lấy URL upload trực tiếp lên S3/MinIO
@@ -96,6 +98,33 @@ export class MediaController {
     const filename = `${createId()}${ext}`;
     writeFileSync(join(UPLOAD_DIR, filename), file.buffer);
     return { url: `/uploads/${filename}`, filename };
+  }
+
+  // ── Tệp đính kèm (mọi loại file) lên R2/S3, fallback local ──
+  @Post('upload-attachment')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+    }),
+  )
+  async uploadAttachment(@UploadedFile() file: any) {
+    if (!file) throw new BadRequestException('Không có tệp được tải lên');
+    return this.attachments.upload(file.buffer, file.originalname, file.mimetype);
+  }
+
+  @Get('admin/attachment')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getAttachmentConfig() {
+    return this.attachments.getConfig();
+  }
+
+  @Post('admin/attachment')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  setAttachmentConfig(@Body() body: Record<string, any>) {
+    return this.attachments.setConfig(body);
   }
 
   // ── Admin: cấu hình dịch vụ lưu trữ ảnh ngoài ──

@@ -23,9 +23,9 @@ import {
   Link as LinkIcon, Unlink, Image as ImageIcon, Table as TableIcon,
   Youtube as YoutubeIcon, Minus, Undo2, Redo2, Type, Palette, Highlighter,
   Rows, Columns, Trash2, EyeOff, Sparkles, ChevronDown,
-  Eye, Maximize2, Minimize2,
+  Eye, Maximize2, Minimize2, Paperclip,
 } from 'lucide-react';
-import { uploadEditorImage, api } from '@/lib/api';
+import { uploadEditorImage, uploadAttachment, api } from '@/lib/api';
 
 interface TipTapEditorProps {
   value: string;
@@ -353,6 +353,7 @@ const MentionTag = makeMentionExtension({
 
 export default function TipTapEditor({ value, onChange, placeholder, autosaveKey }: TipTapEditorProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const attachRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
@@ -521,6 +522,25 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
     const file = e.target.files?.[0];
     e.target.value = '';
     if (file) await uploadAndInsert(file);
+  }
+
+  async function onPickAttachment(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !editor) return;
+    setUploading(true);
+    try {
+      const r = await uploadAttachment(file);
+      const sizeKb = Math.max(1, Math.round(r.size / 1024));
+      const label = `${r.filename} (${sizeKb} KB)`;
+      editor.chain().focus().insertContent(
+        `<p><a href="${r.url}" class="attachment" target="_blank" rel="noopener noreferrer">📎 ${label}</a></p>`.replace('📎 ', ''),
+      ).run();
+    } catch (err: any) {
+      window.alert('Tải tệp thất bại: ' + (err?.message || 'lỗi không xác định'));
+    } finally {
+      setUploading(false);
+    }
   }
 
   if (!editor) {
@@ -725,6 +745,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
         <button type="button" className={cls(editor.isActive('link'))} title="Liên kết" onClick={setLink}><LinkIcon size={16} /></button>
         <button type="button" className={btn} title="Gỡ liên kết" onClick={() => editor.chain().focus().unsetLink().run()}><Unlink size={16} /></button>
         <button type="button" className={btn} title="Chèn ảnh" disabled={uploading} onClick={() => fileRef.current?.click()}><ImageIcon size={16} /></button>
+        <button type="button" className={btn} title="Đính kèm tệp" disabled={uploading} onClick={() => attachRef.current?.click()}><Paperclip size={16} /></button>
         <button type="button" className={btn} title="Nhúng video (YouTube / TikTok)" onClick={insertVideo}><YoutubeIcon size={16} /></button>
         <button type="button" className={btn} title="Chèn bảng 3x3" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon size={16} /></button>
         <button type="button" className={btn} title="Spoiler (nội dung ẩn)" onClick={insertSpoiler}><EyeOff size={16} /></button>
@@ -805,6 +826,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
       </div>
 
       <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
+      <input ref={attachRef} type="file" hidden onChange={onPickAttachment} />
       </div>
     </div>
   );

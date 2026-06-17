@@ -122,7 +122,7 @@ export class PredictionService {
   // ──────────────────────────────────────────────
   // LIST / GET
   // ──────────────────────────────────────────────
-  async list(opts: { status?: string; category?: string; marketType?: string; q?: string; mine?: string } = {}, userId?: string) {
+  async list(opts: { status?: string; category?: string; marketType?: string; q?: string; mine?: string; sort?: string } = {}, userId?: string) {
     const where: any = {};
     if (opts.status && ['OPEN', 'LOCKED', 'RESULT_PENDING', 'SETTLED', 'CANCELLED', 'DISPUTED'].includes(opts.status)) where.status = opts.status;
     if (opts.category && CATEGORIES.includes(opts.category)) where.category = opts.category;
@@ -139,13 +139,42 @@ export class PredictionService {
     const preds = await this.prisma.prediction.findMany({
       where,
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
-      take: 100,
+      take: 200,
       include: {
         bets: { select: { optionIndex: true, amount: true } },
       },
     });
     const locked = await this.autoLockExpired(preds);
-    return preds.map((p) => this.toView(locked.has(p.id) ? { ...p, status: 'LOCKED' } : p, userId));
+    const views = preds.map((p) => this.toView(locked.has(p.id) ? { ...p, status: 'LOCKED' } : p, userId));
+    return this.sortViews(views, opts.sort).slice(0, 100);
+  }
+
+  // Sắp xếp danh sách kèo (kèo đang mở luôn ưu tiên trước kèo đã kết thúc)
+  private sortViews(views: any[], sort?: string) {
+    const live = (s: string) => (s === 'OPEN' ? 0 : s === 'LOCKED' ? 1 : 2);
+    const now = Date.now();
+    const byNew = (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    let cmp: (a: any, b: any) => number;
+    switch (sort) {
+      case 'closing':
+        cmp = (a, b) => {
+          const at = a.closesAt ? new Date(a.closesAt).getTime() : Infinity;
+          const bt = b.closesAt ? new Date(b.closesAt).getTime() : Infinity;
+          const af = at >= now ? at : Infinity; // đã quá hạn -> xuống cuối
+          const bf = bt >= now ? bt : Infinity;
+          return af - bf || byNew(a, b);
+        };
+        break;
+      case 'pool':
+        cmp = (a, b) => b.pool - a.pool || byNew(a, b);
+        break;
+      case 'hot':
+        cmp = (a, b) => (b.betCount * 2 + b.pool / 100) - (a.betCount * 2 + a.pool / 100) || byNew(a, b);
+        break;
+      default:
+        cmp = byNew;
+    }
+    return views.sort((a, b) => live(a.status) - live(b.status) || cmp(a, b));
   }
 
   async get(id: string, userId?: string) {

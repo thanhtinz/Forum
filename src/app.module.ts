@@ -57,8 +57,8 @@ import { VerificationModule } from './modules/verification/verification.module';
     // Bỏ qua /api để không nuốt route backend. extensions:['html'] để /thread -> thread.html.
     ServeStaticModule.forRoot({
       rootPath: process.env.FRONTEND_DIST || join(process.cwd(), 'frontend', 'out'),
-      // /thread do SeoHtmlController phục vụ (chèn meta động cho mạng xã hội).
-      exclude: ['/api*', '/thread'],
+      // Các route này do SeoHtmlController phục vụ (chèn meta động cho mạng xã hội).
+      exclude: ['/api*', '/thread', '/profile', '/tag', '/p'],
       serveStaticOptions: { extensions: ['html'] },
     }),
     PrismaModule,

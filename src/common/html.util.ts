@@ -1,0 +1,74 @@
+import sanitizeHtml from 'sanitize-html';
+
+// Nội dung từ TipTap là HTML; nội dung cũ là Markdown/BBCode.
+export function isHtmlContent(raw: string): boolean {
+  return /<\/?(p|div|span|h[1-6]|ul|ol|li|blockquote|pre|code|table|img|a|br|strong|em|u|s|details|iframe|mark)\b/i.test(raw);
+}
+
+// Làm sạch HTML từ trình soạn thảo TipTap (whitelist chống XSS).
+export function sanitizeRichHtml(html: string): string {
+  return sanitizeHtml(html, {
+    allowedTags: [
+      'p', 'br', 'hr', 'span', 'div', 'strong', 'b', 'em', 'i', 'u', 's', 'del', 'mark', 'sub', 'sup',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
+      'a', 'img',
+      'table', 'thead', 'tbody', 'tr', 'td', 'th',
+      'details', 'summary', 'iframe', 'input', 'label',
+    ],
+    allowedAttributes: {
+      a: ['href', 'target', 'rel', 'title', 'class', 'data-type', 'data-id', 'data-label'],
+      img: ['src', 'alt', 'title', 'width', 'height'],
+      span: ['style', 'data-type', 'data-id', 'class'],
+      div: ['style', 'class', 'data-type'],
+      p: ['style'],
+      h1: ['style'], h2: ['style'], h3: ['style'], h4: ['style'], h5: ['style'], h6: ['style'],
+      td: ['style', 'colspan', 'rowspan'], th: ['style', 'colspan', 'rowspan'],
+      li: ['data-type', 'data-checked', 'class'],
+      ul: ['data-type', 'class'],
+      input: ['type', 'checked', 'disabled'],
+      code: ['class'], pre: ['class'],
+      iframe: ['src', 'width', 'height', 'allow', 'allowfullscreen', 'frameborder'],
+      details: ['class'], summary: ['class'],
+    },
+    allowedStyles: {
+      '*': {
+        color: [/^#(0x)?[0-9a-fA-F]{3,8}$/, /^rgba?\(/, /^[a-zA-Z]+$/],
+        'background-color': [/^#(0x)?[0-9a-fA-F]{3,8}$/, /^rgba?\(/, /^[a-zA-Z]+$/],
+        'text-align': [/^(left|right|center|justify)$/],
+        'font-size': [/^\d{1,3}(px|pt|em|rem|%)$/],
+      },
+    },
+    allowedSchemes: ['http', 'https', 'mailto', 'data'],
+    allowedIframeHostnames: ['www.youtube.com', 'youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'player.vimeo.com', 'www.tiktok.com'],
+    transformTags: {
+      a: (tagName, attribs) => ({
+        tagName: 'a',
+        attribs: { ...attribs, target: '_blank', rel: 'noopener noreferrer nofollow' },
+      }),
+    },
+  });
+}
+
+// Chuyển BBCode phổ biến sang HTML (whitelist an toàn) — chạy trước markdown.
+export function applyBBCode(text: string): string {
+  let s = text;
+  const esc = (u: string) => String(u).replace(/"/g, '%22').replace(/\s/g, '');
+  for (let i = 0; i < 4; i++) {
+    s = s
+      .replace(/\[b\]([\s\S]*?)\[\/b\]/gi, '<strong>$1</strong>')
+      .replace(/\[i\]([\s\S]*?)\[\/i\]/gi, '<em>$1</em>')
+      .replace(/\[u\]([\s\S]*?)\[\/u\]/gi, '<u>$1</u>')
+      .replace(/\[s\]([\s\S]*?)\[\/s\]/gi, '<s>$1</s>')
+      .replace(/\[center\]([\s\S]*?)\[\/center\]/gi, '<div style="text-align:center">$1</div>')
+      .replace(/\[quote(?:=[^\]]+)?\]([\s\S]*?)\[\/quote\]/gi, '<blockquote>$1</blockquote>')
+      .replace(/\[code\]([\s\S]*?)\[\/code\]/gi, '<pre><code>$1</code></pre>')
+      .replace(/\[color=(#?[a-zA-Z0-9]+)\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>')
+      .replace(/\[size=(\d{1,3})\]([\s\S]*?)\[\/size\]/gi, (_m, n, c) => `<span style="font-size:${Math.min(Math.max(+n, 8), 48)}px">${c}</span>`)
+      .replace(/\[url=([^\]]+)\]([\s\S]*?)\[\/url\]/gi, (_m, u, t) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${t}</a>`)
+      .replace(/\[url\]([\s\S]*?)\[\/url\]/gi, (_m, u) => `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${u}</a>`)
+      .replace(/\[img\]([\s\S]*?)\[\/img\]/gi, (_m, u) => `<img src="${esc(u)}" alt="" style="max-width:100%" />`)
+      .replace(/\[list\]([\s\S]*?)\[\/list\]/gi, (_m, c) => `<ul>${String(c).replace(/\[\*\]\s?([^\[\n]*)/gi, '<li>$1</li>')}</ul>`);
+  }
+  return s;
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
+import { Node as TiptapNode, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle, Color, FontSize, BackgroundColor } from '@tiptap/extension-text-style';
 import { TaskList, TaskItem } from '@tiptap/extension-list';
@@ -298,6 +299,42 @@ const tagSuggestion: Omit<SuggestionOptions, 'editor'> = {
   render: makeSuggestionRender('#'),
 };
 
+// Node iframe chung để nhúng TikTok/Vimeo (YouTube đã có extension riêng).
+const IframeEmbed = TiptapNode.create({
+  name: 'iframeEmbed',
+  group: 'block',
+  atom: true,
+  selectable: true,
+  draggable: true,
+  addAttributes() {
+    return {
+      src: { default: null },
+      class: { default: 'video-embed' },
+    };
+  },
+  parseHTML() {
+    return [{ tag: 'iframe[src]' }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return [
+      'div',
+      { class: 'video-embed-wrap' },
+      ['iframe', mergeAttributes(
+        { frameborder: '0', allowfullscreen: 'true', allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture' },
+        HTMLAttributes,
+      )],
+    ];
+  },
+  addCommands() {
+    return {
+      setIframeEmbed:
+        (opts: { src: string }) =>
+        ({ commands }: any) =>
+          commands.insertContent({ type: this.name, attrs: { src: opts.src } }),
+    } as any;
+  },
+});
+
 const MentionUser = makeMentionExtension({
   name: 'mention',
   htmlClass: 'mention',
@@ -359,6 +396,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
       Youtube.configure({ controls: true, nocookie: true }),
       Placeholder.configure({ placeholder: placeholder || 'Viết nội dung…' }),
       CharacterCount,
+      IframeEmbed,
       MentionUser,
       MentionTag,
     ],
@@ -506,9 +544,28 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
   }
 
   function insertVideo() {
-    const url = window.prompt('Nhập đường dẫn video YouTube:', 'https://');
+    const url = window.prompt('Dán link YouTube hoặc TikTok:', 'https://');
     if (!url) return;
-    editor!.commands.setYoutubeVideo({ src: url });
+    const u = url.trim();
+    // YouTube
+    if (/youtube\.com|youtu\.be/i.test(u)) {
+      editor!.commands.setYoutubeVideo({ src: u });
+      return;
+    }
+    // TikTok → lấy id số → embed v2
+    const tiktok = u.match(/tiktok\.com\/.*\/video\/(\d+)/i) || u.match(/tiktok\.com\/.*?(\d{6,})/i);
+    if (/tiktok\.com/i.test(u) && tiktok) {
+      (editor!.chain().focus() as any).setIframeEmbed({ src: `https://www.tiktok.com/embed/v2/${tiktok[1]}` }).run();
+      return;
+    }
+    // Vimeo
+    const vimeo = u.match(/vimeo\.com\/(\d+)/i);
+    if (vimeo) {
+      (editor!.chain().focus() as any).setIframeEmbed({ src: `https://player.vimeo.com/video/${vimeo[1]}` }).run();
+      return;
+    }
+    // Khác → chèn liên kết
+    editor!.chain().focus().extendMarkRange('link').setLink({ href: u }).insertContent(u).run();
   }
 
   function insertSpoiler() {
@@ -668,7 +725,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
         <button type="button" className={cls(editor.isActive('link'))} title="Liên kết" onClick={setLink}><LinkIcon size={16} /></button>
         <button type="button" className={btn} title="Gỡ liên kết" onClick={() => editor.chain().focus().unsetLink().run()}><Unlink size={16} /></button>
         <button type="button" className={btn} title="Chèn ảnh" disabled={uploading} onClick={() => fileRef.current?.click()}><ImageIcon size={16} /></button>
-        <button type="button" className={btn} title="Nhúng video YouTube" onClick={insertVideo}><YoutubeIcon size={16} /></button>
+        <button type="button" className={btn} title="Nhúng video (YouTube / TikTok)" onClick={insertVideo}><YoutubeIcon size={16} /></button>
         <button type="button" className={btn} title="Chèn bảng 3x3" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon size={16} /></button>
         <button type="button" className={btn} title="Spoiler (nội dung ẩn)" onClick={insertSpoiler}><EyeOff size={16} /></button>
 

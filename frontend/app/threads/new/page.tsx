@@ -5,7 +5,30 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import TipTapEditor from '@/components/TipTapEditor';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Lock, FileClock, Trash2 } from 'lucide-react';
+
+const GATE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'LIKE_REQUIRED', label: 'Cần Like' },
+  { value: 'COMMENT_REQUIRED', label: 'Cần Bình luận' },
+  { value: 'LIKE_AND_COMMENT', label: 'Cần Like & Bình luận' },
+  { value: 'LIKE_OR_COMMENT', label: 'Like hoặc Bình luận' },
+  { value: 'GEM_PURCHASE', label: 'Mua bằng Gem' },
+  { value: 'LIKE_OR_GEM', label: 'Like hoặc Gem' },
+  { value: 'COMMENT_OR_GEM', label: 'Bình luận hoặc Gem' },
+];
+const needLike = (g: string) => ['LIKE_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'LIKE_OR_GEM'].includes(g);
+const needComment = (g: string) => ['COMMENT_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'COMMENT_OR_GEM'].includes(g);
+const needGem = (g: string) => ['GEM_PURCHASE', 'LIKE_OR_GEM', 'COMMENT_OR_GEM'].includes(g);
+
+// Tạo body cho section nội dung ẩn theo gateType
+function buildHiddenBody(postId: string, content: string, gate: string, like: number, comment: number, gem: number, label?: string) {
+  const body: any = { postId, contentRaw: content, gateType: gate };
+  if (label?.trim()) body.label = label.trim();
+  if (needLike(gate)) body.likeRequired = Math.max(1, like);
+  if (needComment(gate)) body.commentRequired = Math.max(1, comment);
+  if (needGem(gate)) body.gemPrice = Math.max(1, gem);
+  return body;
+}
 
 // Bỏ thẻ HTML để gửi văn bản thuần cho AI
 function htmlToText(html: string): string {
@@ -29,8 +52,30 @@ export default function NewThreadPage() {
   // Poll
   const [pollOn, setPollOn] = useState(false);
   const [poll, setPoll] = useState({ question: '', multiple: false, options: ['', ''] });
+  // Nội dung ẩn
+  const [hiddenOn, setHiddenOn] = useState(false);
+  const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
+  // Nháp của tôi
+  const [drafts, setDrafts] = useState<any[]>([]);
   // AI
   const [aiBusy, setAiBusy] = useState('');
+
+  function loadDrafts() {
+    api.get<any[]>('/forum/drafts').then((d) => setDrafts((d || []).filter((x) => !x.threadId))).catch(() => {});
+  }
+  useEffect(() => { loadDrafts(); }, []);
+
+  function restoreDraft(d: any) {
+    setForm((f) => ({ ...f, categoryId: d.categoryId || f.categoryId, title: d.title || '', content: d.content || '' }));
+    setDraftId(d.id);
+    setMsg('Đã khôi phục nháp');
+    setTimeout(() => setMsg(''), 2000);
+  }
+  async function deleteDraft(id: string) {
+    await api.del(`/forum/drafts/${id}`).catch(() => {});
+    if (draftId === id) setDraftId(undefined);
+    loadDrafts();
+  }
 
   async function aiTitle() {
     const text = htmlToText(form.content);
@@ -76,6 +121,16 @@ export default function NewThreadPage() {
           await api.post(`/forum/threads/${t.id}/poll`, { question: poll.question, options: opts, multiple: poll.multiple }).catch(() => {});
         }
       }
+      // Nội dung ẩn → tạo section gắn vào bài gốc
+      if (hiddenOn && hidden.content.trim()) {
+        try {
+          const ps = await api.get<{ data: { id: string }[] }>(`/forum/threads/${t.id}/posts?limit=1`);
+          const firstId = ps?.data?.[0]?.id;
+          if (firstId) {
+            await api.post('/hidden-content/sections', buildHiddenBody(firstId, hidden.content, hidden.gateType, hidden.likeRequired, hidden.commentRequired, hidden.gemPrice, hidden.label));
+          }
+        } catch { /* không chặn đăng bài */ }
+      }
       if (draftId) await api.del(`/forum/drafts/${draftId}`).catch(() => {});
       router.push(`/thread?slug=${t.slug}`);
     } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
@@ -92,6 +147,23 @@ export default function NewThreadPage() {
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="mb-4 text-2xl font-bold">Đăng bài mới</h1>
+
+      {drafts.length > 0 && (
+        <div className="card mb-3 p-3">
+          <div className="mb-1 flex items-center gap-1 text-sm font-medium"><FileClock size={15} /> Nháp của tôi</div>
+          <div className="divide-y divide-ink-100 dark:divide-ink-800">
+            {drafts.map((d) => (
+              <div key={d.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
+                <button type="button" onClick={() => restoreDraft(d)} className="min-w-0 flex-1 truncate text-left hover:text-brand-600" title="Khôi phục nháp này">
+                  {d.title || '(không tiêu đề)'} <span className="text-xs text-ink-400">· {new Date(d.updatedAt).toLocaleString('vi')}</span>
+                </button>
+                <button type="button" onClick={() => deleteDraft(d.id)} className="text-red-500 hover:text-red-600" title="Xoá nháp"><Trash2 size={14} /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <form onSubmit={submit} className="card space-y-3 p-5">
         <div className="grid grid-cols-2 gap-2">
           <label className="text-sm">Chuyên mục
@@ -135,6 +207,28 @@ export default function NewThreadPage() {
               <div className="flex items-center justify-between">
                 <button type="button" onClick={() => setPoll({ ...poll, options: [...poll.options, ''] })} className="text-xs text-brand-600">+ Thêm lựa chọn</button>
                 <label className="flex items-center gap-1.5 text-xs"><input type="checkbox" checked={poll.multiple} onChange={(e) => setPoll({ ...poll, multiple: e.target.checked })} /> Cho chọn nhiều</label>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Nội dung ẩn */}
+        <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
+          <label className="flex items-center gap-2 text-sm font-medium">
+            <input type="checkbox" checked={hiddenOn} onChange={(e) => setHiddenOn(e.target.checked)} />
+            <Lock size={14} /> Thêm nội dung ẩn
+          </label>
+          {hiddenOn && (
+            <div className="mt-3 space-y-2">
+              <TipTapEditor value={hidden.content} onChange={(html) => setHidden({ ...hidden, content: html })} placeholder="Nội dung sẽ bị ẩn cho tới khi mở khoá…" />
+              <input className="input" placeholder="Nhãn nội dung ẩn (tuỳ chọn)" value={hidden.label} onChange={(e) => setHidden({ ...hidden, label: e.target.value })} />
+              <div className="flex flex-wrap items-center gap-2">
+                <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
+                  {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                </select>
+                {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
+                {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
+                {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
               </div>
             </div>
           )}

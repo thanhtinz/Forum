@@ -71,11 +71,13 @@ export class PredictionService {
   // ──────────────────────────────────────────────
   // Helpers
   // ──────────────────────────────────────────────
-  private optionTotals(options: string[], bets: { optionIndex: number; amount: number }[]) {
+  private optionTotals(options: string[], bets: { optionIndex: number; amount: number; status?: string }[]) {
     const totals = options.map(() => 0);
     const counts = options.map(() => 0);
     let pool = 0;
     for (const b of bets) {
+      // Bỏ qua vé đã bán sớm / hoàn (không tính vào quỹ)
+      if (b.status === 'CASHED_OUT' || b.status === 'REFUNDED') continue;
       if (b.optionIndex >= 0 && b.optionIndex < totals.length) {
         totals[b.optionIndex] += b.amount;
         counts[b.optionIndex] += 1;
@@ -115,7 +117,7 @@ export class PredictionService {
       optionCounts: counts,
       pool,
       odds: this.displayOdds(p, totals, pool),
-      betCount: (p.bets || []).length,
+      betCount: (p.bets || []).filter((b: any) => b.status !== 'CASHED_OUT' && b.status !== 'REFUNDED').length,
     };
   }
 
@@ -141,7 +143,7 @@ export class PredictionService {
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
       take: 200,
       include: {
-        bets: { select: { optionIndex: true, amount: true } },
+        bets: { select: { optionIndex: true, amount: true, status: true } },
       },
     });
     const locked = await this.autoLockExpired(preds);
@@ -180,7 +182,7 @@ export class PredictionService {
   async get(id: string, userId?: string) {
     const p = await this.prisma.prediction.findUnique({
       where: { id },
-      include: { bets: { select: { optionIndex: true, amount: true } } },
+      include: { bets: { select: { optionIndex: true, amount: true, status: true } } },
     });
     if (!p) throw new NotFoundException('Kèo không tồn tại');
 
@@ -339,6 +341,33 @@ export class PredictionService {
   // ──────────────────────────────────────────────
   // LOCK / SETTLE / CANCEL
   // ──────────────────────────────────────────────
+  // ──────────────────────────────────────────────
+  // CASH-OUT (bán vé sớm khi kèo còn mở)
+  // ──────────────────────────────────────────────
+  // Hoàn lại phần lớn tiền cược, trừ phí thoát sớm; an toàn quỹ vì luôn ≤ tiền đã đặt.
+  async cashout(userId: string, betId: string) {
+    const EARLY_EXIT_FEE_BPS = 500; // 5%
+    const bet = await this.prisma.predictionBet.findUnique({ where: { id: betId }, include: { prediction: true } });
+    if (!bet) throw new NotFoundException('Vé cược không tồn tại');
+    if (bet.userId !== userId) throw new ForbiddenException('Không phải vé của bạn');
+    if (bet.status !== 'ACTIVE') throw new BadRequestException('Vé này không thể bán');
+    const p = bet.prediction;
+    if (p.status !== 'OPEN') throw new BadRequestException('Chỉ bán được khi kèo đang mở');
+    if (p.closesAt && p.closesAt.getTime() <= Date.now()) throw new BadRequestException('Kèo đã hết hạn, không thể bán');
+
+    const refund = Math.floor(bet.amount * (1 - EARLY_EXIT_FEE_BPS / 10000));
+
+    // Trả lại thanh khoản đã giữ cho nhà cái (kèo FIXED của user)
+    if (p.oddsMode === 'FIXED' && !p.isAdminMarket) {
+      const reserved = Math.round(bet.amount * (bet.odds - 1));
+      await this.prisma.prediction.update({ where: { id: p.id }, data: { creatorEscrow: { increment: reserved } } }).catch(() => {});
+    }
+
+    await this.character.adjustCoinByUser(userId, 'prediction_cashout', refund, 'Bán vé cược sớm', p.id);
+    await this.prisma.predictionBet.update({ where: { id: betId }, data: { status: 'CASHED_OUT', payout: refund } });
+    return { ok: true, refund, fee: bet.amount - refund };
+  }
+
   private async ownerOrModOrThrow(id: string, userId: string, isMod: boolean) {
     const p = await this.prisma.prediction.findUnique({ where: { id } });
     if (!p) throw new NotFoundException('Kèo không tồn tại');

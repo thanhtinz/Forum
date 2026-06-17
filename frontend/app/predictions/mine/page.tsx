@@ -80,8 +80,8 @@ export default function MyPredictionsPage() {
                   <h3 className="mt-1 truncate font-medium">{b.prediction.title}</h3>
                   <div className="text-xs text-ink-500">Cửa: {b.prediction.options[b.optionIndex] || `#${b.optionIndex + 1}`} · {b.amount.toLocaleString()} coin{b.odds > 0 ? ` · x${b.odds.toFixed(2)}` : ''}</div>
                 </div>
-                <span className={`shrink-0 text-sm font-medium ${b.status === 'WON' ? 'text-emerald-600' : b.status === 'LOST' ? 'text-red-500' : b.status === 'REFUNDED' ? 'text-amber-600' : 'text-ink-500'}`}>
-                  {b.status === 'ACTIVE' ? 'Đang chờ' : b.status === 'WON' ? `+${b.payout.toLocaleString()}` : b.status === 'LOST' ? 'Thua' : `Hoàn ${b.payout.toLocaleString()}`}
+                <span className={`shrink-0 text-sm font-medium ${b.status === 'WON' ? 'text-emerald-600' : b.status === 'LOST' ? 'text-red-500' : b.status === 'REFUNDED' ? 'text-amber-600' : b.status === 'CASHED_OUT' ? 'text-sky-600' : 'text-ink-500'}`}>
+                  {b.status === 'ACTIVE' ? 'Đang chờ' : b.status === 'WON' ? `+${b.payout.toLocaleString()}` : b.status === 'LOST' ? 'Thua' : b.status === 'CASHED_OUT' ? `Đã bán ${b.payout.toLocaleString()}` : `Hoàn ${b.payout.toLocaleString()}`}
                 </span>
               </div>
             </Link>

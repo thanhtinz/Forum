@@ -176,6 +176,7 @@ function PredView() {
           <span className="flex items-center gap-1"><Coins size={14} /> Pool {p.pool.toLocaleString()}</span>
           <span className="flex items-center gap-1"><Users2 size={14} /> {p.betCount} lượt cược</span>
           {p.closesAt && <span className="flex items-center gap-1"><Clock size={14} /> Khoá: {new Date(p.closesAt).toLocaleString('vi-VN')}</span>}
+          {p.resultAt && p.status !== 'SETTLED' && p.status !== 'CANCELLED' && <span className="flex items-center gap-1"><Clock size={14} /> Dự kiến KQ: {new Date(p.resultAt).toLocaleString('vi-VN')}</span>}
         </div>
         {p.tags?.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">{p.tags.map((t) => <span key={t} className="flex items-center gap-0.5 text-xs text-ink-400"><Tag size={11} />{t}</span>)}</div>

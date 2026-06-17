@@ -79,6 +79,26 @@ export class PredictionService {
     } catch { /* không chặn nghiệp vụ */ }
   }
 
+  // Kiểm tra quyền xem/tham gia theo chế độ hiển thị (FRIENDS / GUILD)
+  private async assertCanAccess(p: any, userId?: string) {
+    if (p.visibility === 'PUBLIC' || p.visibility === 'PRIVATE') return; // PRIVATE gate bằng mật khẩu khi cược
+    if (userId && userId === p.createdBy) return;
+    if (!userId) throw new ForbiddenException('Kèo này giới hạn người tham gia');
+    if (p.visibility === 'FRIENDS') {
+      const f = await this.prisma.friendship.findFirst({
+        where: { OR: [{ userId: p.createdBy, friendId: userId }, { userId, friendId: p.createdBy }] },
+        select: { userId: true },
+      });
+      if (!f) throw new ForbiddenException('Chỉ bạn bè của người tạo mới tham gia được kèo này');
+    } else if (p.visibility === 'GUILD') {
+      if (!p.guildId) return;
+      const char = await this.prisma.gameCharacter.findUnique({ where: { userId }, select: { id: true } });
+      if (!char) throw new ForbiddenException('Chỉ thành viên guild mới tham gia được kèo này');
+      const member = await this.prisma.guildMember.findFirst({ where: { guildId: p.guildId, characterId: char.id }, select: { id: true } });
+      if (!member) throw new ForbiddenException('Chỉ thành viên guild mới tham gia được kèo này');
+    }
+  }
+
   // Gửi thông báo (bỏ qua lỗi để không chặn quyết toán)
   private notifySafe(userId: string, title: string, body: string, predictionId: string) {
     this.notif
@@ -154,7 +174,7 @@ export class PredictionService {
   // ──────────────────────────────────────────────
   async list(opts: { status?: string; category?: string; marketType?: string; q?: string; mine?: string; sort?: string } = {}, userId?: string) {
     const where: any = {};
-    if (opts.status && ['OPEN', 'LOCKED', 'RESULT_PENDING', 'SETTLED', 'CANCELLED', 'DISPUTED'].includes(opts.status)) where.status = opts.status;
+    if (opts.status && ['OPEN', 'LOCKED', 'SETTLED', 'CANCELLED'].includes(opts.status)) where.status = opts.status;
     if (opts.category && CATEGORIES.includes(opts.category)) where.category = opts.category;
     if (opts.marketType && MARKET_TYPES.includes(opts.marketType)) where.marketType = opts.marketType;
     if (opts.q?.trim()) where.title = { contains: opts.q.trim(), mode: 'insensitive' };
@@ -213,6 +233,7 @@ export class PredictionService {
       include: { bets: { select: { optionIndex: true, amount: true, status: true } } },
     });
     if (!p) throw new NotFoundException('Kèo không tồn tại');
+    await this.assertCanAccess(p, userId);
 
     const locked = await this.autoLockExpired([p]);
     if (locked.has(p.id)) p.status = 'LOCKED';
@@ -323,6 +344,8 @@ export class PredictionService {
     if (p.visibility === 'PRIVATE' && p.joinPassword && p.joinPassword !== password) {
       throw new ForbiddenException('Sai mật khẩu kèo riêng tư');
     }
+    // Kèo giới hạn bạn bè / guild
+    await this.assertCanAccess(p, userId);
     // Người tạo không tự cược kèo của mình (trừ kèo nhà cái hệ thống)
     if (p.createdBy === userId && !p.isAdminMarket) {
       throw new BadRequestException('Người tạo không thể đặt cược kèo của mình');

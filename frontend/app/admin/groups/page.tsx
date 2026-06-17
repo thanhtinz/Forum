@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Plus, Trash2, Check } from 'lucide-react';
 
-interface Group { id: string; key: string; name: string; color?: string; priority: number; isSystem: boolean; permissions: string[]; _count?: { members: number } }
+interface Group { id: string; key: string; name: string; color?: string; priority: number; isSystem: boolean; permissions: string[]; autoPromote?: boolean; minPosts?: number; minReputation?: number; minDays?: number; _count?: { members: number } }
 interface CatItem { key: string; label: string; group: string }
 const COLORS = ['red', 'blue', 'amber', 'green', 'gray', 'violet'];
 
@@ -12,8 +12,13 @@ export default function AdminGroups() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [catalog, setCatalog] = useState<CatItem[]>([]);
   const [msg, setMsg] = useState('');
-  const [form, setForm] = useState({ name: '', color: 'gray', priority: 30 });
+  const [form, setForm] = useState({ name: '', color: 'gray', priority: 30, autoPromote: false, minPosts: 0, minReputation: 0, minDays: 0 });
   const [assign, setAssign] = useState({ userId: '', groupId: '' });
+
+  async function savePromo(g: Group, patch: Partial<Group>) {
+    setGroups((gs) => gs.map((x) => (x.id === g.id ? { ...x, ...patch } : x)));
+    try { await api.patch(`/permissions/groups/${g.id}`, patch); } catch (e: any) { setMsg(e.message); }
+  }
 
   function load() {
     api.get<Group[]>('/permissions/groups').then(setGroups).catch((e) => setMsg(e.message));
@@ -33,7 +38,7 @@ export default function AdminGroups() {
 
   async function createGroup(e: React.FormEvent) {
     e.preventDefault();
-    try { await api.post('/permissions/groups', form); setForm({ name: '', color: 'gray', priority: 30 }); load(); }
+    try { await api.post('/permissions/groups', form); setForm({ name: '', color: 'gray', priority: 30, autoPromote: false, minPosts: 0, minReputation: 0, minDays: 0 }); load(); }
     catch (e: any) { setMsg(e.message); }
   }
   async function removeGroup(id: string) {
@@ -92,6 +97,24 @@ export default function AdminGroups() {
         </table>
       </div>
 
+      {/* Tự thăng nhóm theo cột mốc */}
+      <div className="card p-4">
+        <h2 className="mb-2 font-semibold">Tự thăng nhóm (cột mốc)</h2>
+        <p className="mb-2 text-xs text-ink-500">Khi user đăng nhập và đạt đủ điều kiện, sẽ được tự gán vào nhóm phụ tương ứng.</p>
+        <div className="space-y-1.5">
+          {groups.filter((g) => !g.isSystem).map((g) => (
+            <div key={g.id} className="flex flex-wrap items-center gap-2 border-b border-ink-100 py-1.5 text-sm dark:border-ink-800">
+              <span className="w-32 font-medium">{g.name}</span>
+              <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={!!g.autoPromote} onChange={(e) => savePromo(g, { autoPromote: e.target.checked })} /> Bật</label>
+              <label className="text-xs">Bài ≥ <input type="number" className="input ml-1 w-20" value={g.minPosts ?? 0} onChange={(e) => savePromo(g, { minPosts: Number(e.target.value) })} /></label>
+              <label className="text-xs">Uy tín ≥ <input type="number" className="input ml-1 w-20" value={g.minReputation ?? 0} onChange={(e) => savePromo(g, { minReputation: Number(e.target.value) })} /></label>
+              <label className="text-xs">Ngày ≥ <input type="number" className="input ml-1 w-16" value={g.minDays ?? 0} onChange={(e) => savePromo(g, { minDays: Number(e.target.value) })} /></label>
+            </div>
+          ))}
+          {groups.filter((g) => !g.isSystem).length === 0 && <p className="text-xs text-ink-400">Tạo nhóm phụ ở dưới để cấu hình tự thăng nhóm.</p>}
+        </div>
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <form onSubmit={createGroup} className="card space-y-2 p-4">
           <h2 className="flex items-center gap-1 font-semibold"><Plus size={16} /> Tạo nhóm phụ</h2>
@@ -100,6 +123,14 @@ export default function AdminGroups() {
             <select className="input" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })}>{COLORS.map((c) => <option key={c}>{c}</option>)}</select>
             <input className="input w-28" type="number" placeholder="Ưu tiên" value={form.priority} onChange={(e) => setForm({ ...form, priority: Number(e.target.value) })} />
           </div>
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.autoPromote} onChange={(e) => setForm({ ...form, autoPromote: e.target.checked })} /> Tự thăng nhóm khi đạt cột mốc</label>
+          {form.autoPromote && (
+            <div className="flex flex-wrap gap-2 text-xs">
+              <label>Bài ≥ <input type="number" className="input ml-1 w-20" value={form.minPosts} onChange={(e) => setForm({ ...form, minPosts: Number(e.target.value) })} /></label>
+              <label>Uy tín ≥ <input type="number" className="input ml-1 w-20" value={form.minReputation} onChange={(e) => setForm({ ...form, minReputation: Number(e.target.value) })} /></label>
+              <label>Ngày tuổi ≥ <input type="number" className="input ml-1 w-16" value={form.minDays} onChange={(e) => setForm({ ...form, minDays: Number(e.target.value) })} /></label>
+            </div>
+          )}
           <button className="btn-primary">Tạo nhóm</button>
         </form>
 

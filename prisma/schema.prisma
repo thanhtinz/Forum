@@ -234,6 +234,11 @@ model UserGroup {
   priority    Int      @default(0)
   isSystem    Boolean  @default(false) // nhóm hệ thống map theo role, không xoá được
   permissions String[] // danh sách khoá quyền; '*' = tất cả
+  // Tự thăng nhóm khi đạt cột mốc (kiểu XenForo group promotions)
+  autoPromote   Boolean @default(false)
+  minPosts      Int     @default(0)
+  minReputation Int     @default(0)
+  minDays       Int     @default(0) // tuổi tài khoản (ngày)
   createdAt   DateTime @default(now())
 
   members UserGroupMember[]

@@ -40,6 +40,7 @@ import { SecurityModule } from './modules/security/security.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 
 @Module({
   imports: [
@@ -96,6 +97,7 @@ import { VerificationModule } from './modules/verification/verification.module';
     MailModule,
     SecurityModule,
     PermissionsModule,
+    JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

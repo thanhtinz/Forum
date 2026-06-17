@@ -43,9 +43,12 @@ export default function AdminUsers() {
                 <td className="p-3">{u.status}</td>
                 <td className="p-3">{u.gemBalance ?? 0}</td>
                 <td className="p-3">
-                  {u.status === 'BANNED'
-                    ? <button onClick={() => act(() => api.post(`/admin/users/${u.id}/unban`))} className="btn-outline !py-1 text-xs">Gỡ ban</button>
-                    : <button onClick={() => act(() => api.post(`/admin/users/${u.id}/ban`, { reason: 'Vi phạm' }))} className="btn-outline !py-1 text-xs text-red-600">Ban</button>}
+                  <div className="flex flex-wrap gap-1">
+                    {u.status === 'BANNED'
+                      ? <button onClick={() => act(() => api.post(`/admin/users/${u.id}/unban`))} className="btn-outline !py-1 text-xs">Gỡ ban</button>
+                      : <button onClick={() => act(() => api.post(`/admin/users/${u.id}/ban`, { reason: 'Vi phạm' }))} className="btn-outline !py-1 text-xs text-red-600">Ban</button>}
+                    <button onClick={() => { if (confirm('Dọn spam: BAN user này và xoá toàn bộ bài/chủ đề/profile post của họ?')) act(() => api.post(`/admin/users/${u.id}/spam-clean`, { reason: 'Spam' })); }} className="btn-outline !py-1 text-xs text-red-600" title="Ban + xoá sạch nội dung">Dọn spam</button>
+                  </div>
                 </td>
               </tr>
             ))}

@@ -122,6 +122,11 @@ export class AdminController {
     return this.dashboard.unbanUser(id, actorId);
   }
 
+  @Post('users/:id/spam-clean')
+  spamClean(@Param('id') id: string, @Body() body: { reason?: string }, @CurrentUser('id') actorId: string) {
+    return this.dashboard.spamClean(id, body?.reason || 'Spam', actorId);
+  }
+
   @Post('users/:id/gem')
   adjustGem(
     @Param('id') id: string,

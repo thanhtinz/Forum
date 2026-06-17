@@ -401,6 +401,7 @@ model Category {
   isPrivate   Boolean  @default(false)
   minRoleView UserRole @default(GUEST)
   minRolePost UserRole @default(MEMBER)
+  moduleType  String   @default("NONE") // NONE | JOB — danh mục dạng module đặc biệt
   threadCount Int      @default(0)
   postCount   Int      @default(0)
   createdAt   DateTime @default(now())
@@ -1324,6 +1325,7 @@ model FreelancerProfile {
 model Job {
   id          String        @id @default(cuid())
   employerId  String
+  threadId    String?       @unique // liên kết với bài forum (nếu đăng qua danh mục module JOB)
   title       String        @db.VarChar(200)
   category    JobCategory   @default(OTHER)
   description String        @db.Text

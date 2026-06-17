@@ -35,6 +35,16 @@ export interface CreatePostDto {
   parentId?: string; // quote reply
 }
 
+export interface CategoryDto {
+  name: string;
+  slug?: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  sortOrder?: number;
+  moduleType?: string; // NONE | JOB
+}
+
 export interface ThreadListQuery {
   categoryId?: string;
   prefix?: ThreadPrefix;
@@ -68,8 +78,73 @@ export class ForumService {
   async listCategories() {
     return this.prisma.category.findMany({
       orderBy: { sortOrder: 'asc' },
-      select: { id: true, name: true, slug: true, icon: true, color: true, threadCount: true, description: true },
+      select: { id: true, name: true, slug: true, icon: true, color: true, threadCount: true, description: true, moduleType: true },
     });
+  }
+
+  // ──────────────────────────────────────────────
+  // ADMIN: quản lý danh mục (CRUD) + cờ module
+  // ──────────────────────────────────────────────
+  async adminListCategories() {
+    return this.prisma.category.findMany({
+      orderBy: { sortOrder: 'asc' },
+      include: { _count: { select: { threads: true } } },
+    });
+  }
+
+  async createCategory(dto: CategoryDto) {
+    if (!dto.name?.trim()) throw new BadRequestException('Thiếu tên danh mục');
+    const slug = dto.slug?.trim()
+      ? slugify(dto.slug, { lower: true, strict: true })
+      : await this.generateUniqueCategorySlug(dto.name);
+    return this.prisma.category.create({
+      data: {
+        name: dto.name.trim(),
+        slug,
+        description: dto.description ?? null,
+        icon: dto.icon ?? null,
+        color: dto.color ?? null,
+        sortOrder: dto.sortOrder ?? 0,
+        moduleType: this.normalizeModuleType(dto.moduleType),
+      },
+    });
+  }
+
+  async updateCategory(id: string, dto: CategoryDto) {
+    const cat = await this.prisma.category.findUnique({ where: { id } });
+    if (!cat) throw new NotFoundException('Không tìm thấy danh mục');
+    const data: any = {};
+    if (dto.name !== undefined) data.name = dto.name.trim();
+    if (dto.description !== undefined) data.description = dto.description || null;
+    if (dto.icon !== undefined) data.icon = dto.icon || null;
+    if (dto.color !== undefined) data.color = dto.color || null;
+    if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
+    if (dto.moduleType !== undefined) data.moduleType = this.normalizeModuleType(dto.moduleType);
+    if (dto.slug !== undefined && dto.slug.trim()) data.slug = slugify(dto.slug, { lower: true, strict: true });
+    return this.prisma.category.update({ where: { id }, data });
+  }
+
+  async deleteCategory(id: string) {
+    const count = await this.prisma.thread.count({ where: { categoryId: id } });
+    if (count > 0) throw new BadRequestException('Danh mục còn bài viết, không thể xoá');
+    await this.prisma.category.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  private normalizeModuleType(v?: string): string {
+    const allowed = ['NONE', 'JOB'];
+    const up = (v ?? 'NONE').toUpperCase();
+    return allowed.includes(up) ? up : 'NONE';
+  }
+
+  private async generateUniqueCategorySlug(name: string): Promise<string> {
+    const base = slugify(name, { lower: true, strict: true }) || createId().slice(0, 8);
+    let slug = base;
+    let i = 1;
+    while (await this.prisma.category.findUnique({ where: { slug } })) {
+      slug = `${base}-${i++}`;
+    }
+    return slug;
   }
 
   async getThreadList(query: ThreadListQuery) {

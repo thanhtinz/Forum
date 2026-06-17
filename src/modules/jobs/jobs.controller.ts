@@ -127,6 +127,23 @@ export class JobsController {
     return this.jobs.addEvidence(id, userId, url);
   }
 
+  // ── Job gắn với bài forum (module JOB) ──
+  @Post('from-thread')
+  @UseGuards(JwtAuthGuard)
+  createFromThread(
+    @CurrentUser('id') userId: string,
+    @Body() body: CreateJobDto & { threadId: string },
+  ) {
+    const { threadId, ...dto } = body;
+    return this.jobs.createForThread(userId, threadId, dto);
+  }
+
+  @Get('by-thread/:threadId')
+  @UseGuards(OptionalJwtGuard)
+  getByThread(@Param('threadId') threadId: string, @CurrentUser('id') userId?: string) {
+    return this.jobs.getByThread(threadId, userId);
+  }
+
   // ── Create ──
   @Post()
   @UseGuards(JwtAuthGuard)

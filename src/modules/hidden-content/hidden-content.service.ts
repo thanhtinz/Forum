@@ -426,8 +426,8 @@ export class HiddenContentService {
   }
 
   private async renderContent(raw: string): Promise<string> {
-    // Nội dung từ TipTap là HTML -> sanitize; nội dung cũ Markdown/BBCode -> render.
-    if (isHtmlContent(raw)) return sanitizeRichHtml(raw);
+    // Nội dung từ TipTap là HTML -> vẫn cho BBCode gõ tay rồi sanitize; nội dung cũ Markdown/BBCode -> render.
+    if (isHtmlContent(raw)) return sanitizeRichHtml(applyBBCode(raw));
     return marked.parse(applyBBCode(raw)) as string;
   }
 }

@@ -440,7 +440,7 @@ const FxMarquee = TiptapNode.create({
   },
 });
 
-// Nút bấm /便条 ghi chú
+// Nút bấm / ghi chú
 const FxButton = TiptapNode.create({
   name: 'fxButton',
   group: 'block',
@@ -945,7 +945,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
 
   function addNetdisk() {
     closeInsert();
-    const url = window.prompt('Link tải (網盤/Drive…):', 'https://');
+    const url = window.prompt('Link tải (Drive/Fshare…):', 'https://');
     if (!url) return;
     const password = window.prompt('Mật khẩu (nếu có, để trống nếu không):', '') || '';
     chain().setFxNetdisk({ url, label: 'Tải xuống', password }).run();
@@ -1150,14 +1150,14 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
               <button type="button" className={aiMenuItem} onClick={addProgress}>Thanh tiến độ</button>
               <button type="button" className={aiMenuItem} onClick={addMarquee}>Chữ chạy (marquee)</button>
               <button type="button" className={aiMenuItem} onClick={() => addButton('btn')}>Nút bấm</button>
-              <button type="button" className={aiMenuItem} onClick={() => addButton('note')}>Nút便条/ghi chú</button>
+              <button type="button" className={aiMenuItem} onClick={() => addButton('note')}>Nút ghi chú</button>
               <button type="button" className={aiMenuItem} onClick={addAudio}><span className="flex items-center gap-2"><Music size={14} /> Âm thanh (audio)</span></button>
               <button type="button" className={aiMenuItem} onClick={addBilibili}>Bilibili</button>
               <button type="button" className={aiMenuItem} onClick={addColorDivider}>Đường kẻ màu</button>
               <button type="button" className={aiMenuItem} onClick={addCenterHeading}>Tiêu đề căn giữa</button>
               <button type="button" className={aiMenuItem} onClick={addCard}>Thẻ card</button>
               <button type="button" className={aiMenuItem} onClick={addTimeline}>Dòng thời gian</button>
-              <button type="button" className={aiMenuItem} onClick={addNetdisk}>Nút tải (網盤)</button>
+              <button type="button" className={aiMenuItem} onClick={addNetdisk}>Nút tải về</button>
               <button type="button" className={aiMenuItem} onClick={addCopy}>Bấm để copy</button>
               <button type="button" className={aiMenuItem} onClick={addDateTime}><span className="flex items-center gap-2"><Clock size={14} /> Chèn thời gian</span></button>
             </div>

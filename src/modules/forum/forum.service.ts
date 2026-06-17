@@ -828,7 +828,8 @@ export class ForumService {
 
   private async renderContent(raw: string): Promise<string> {
     if (this.isHtmlContent(raw)) {
-      return this.text.censorHtml(this.text.sanitizeRichHtml(raw));
+      // Nội dung HTML từ TipTap: vẫn cho phép BBCode ([b]…[/b]) gõ tay trong editor.
+      return this.text.censorHtml(this.text.sanitizeRichHtml(this.text.applyBBCode(raw)));
     }
     const censored = await this.text.censor(raw);
     return marked.parse(this.text.applyBBCode(censored)) as string;
@@ -838,7 +839,7 @@ export class ForumService {
   private async buildContent(raw: string, excludeUserId: string): Promise<{ html: string; mentioned: { id: string; username: string }[] }> {
     let html: string;
     if (this.isHtmlContent(raw)) {
-      html = await this.text.censorHtml(this.text.sanitizeRichHtml(raw));
+      html = await this.text.censorHtml(this.text.sanitizeRichHtml(this.text.applyBBCode(raw)));
     } else {
       const censored = await this.text.censor(raw);
       html = marked.parse(this.text.applyBBCode(censored)) as string;

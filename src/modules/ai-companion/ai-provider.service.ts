@@ -37,6 +37,20 @@ export class AiProviderService {
     }
   }
 
+  // Gọi không streaming: gom toàn bộ chunk thành một chuỗi
+  async complete(
+    provider: AiProvider,
+    modelId: string,
+    messages: AiChatMessage[],
+  ): Promise<string> {
+    let out = '';
+    for await (const c of this.streamChat(provider, modelId, messages)) {
+      if (c.done) break;
+      out += c.text;
+    }
+    return out.trim();
+  }
+
   // ──────────────────────────────────────────────
   // OPENAI (native fetch, SSE)
   // ──────────────────────────────────────────────

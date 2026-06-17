@@ -431,7 +431,7 @@ function ThreadView() {
             <p className="text-center text-sm text-ink-500">Chủ đề đã bị khoá.</p>
           ) : (
             <form onSubmit={submitReply} className="space-y-2">
-              <TipTapEditor value={reply} onChange={setReply} placeholder="Viết trả lời…" />
+              <TipTapEditor value={reply} onChange={setReply} placeholder="Viết trả lời…" autosaveKey={`reply-${thread?.id || 'x'}`} />
               {err && <p className="text-sm text-red-500">{err}</p>}
               <div className="flex justify-end">
                 <button className="btn-primary" type="submit">Gửi trả lời</button>

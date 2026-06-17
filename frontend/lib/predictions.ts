@@ -117,7 +117,11 @@ export interface Prediction {
   creator?: { id: string; username: string; displayName?: string | null; avatar?: string | null } | null;
   isOwner?: boolean;
   myBets?: { id: string; optionIndex: number; amount: number; odds: number; payout: number; status: string }[];
+  reactions?: Record<string, number>;
+  myReactions?: string[];
 }
+
+export const REACTION_EMOJIS = ['👍', '🔥', '😂', '😮', '😢', '💰'];
 
 export function catLabel(c?: string) { return (c && PRED_CATEGORIES[c]) || c || ''; }
 export function typeLabel(t?: string) { return (t && MARKET_TYPES[t]) || t || ''; }

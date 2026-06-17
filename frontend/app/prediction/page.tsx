@@ -11,8 +11,49 @@ import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import {
-  catLabel, typeLabel, statusLabel, ODDS_MODES, VISIBILITIES, type Prediction,
+  catLabel, typeLabel, statusLabel, ODDS_MODES, VISIBILITIES, REACTION_EMOJIS, type Prediction,
 } from '@/lib/predictions';
+
+function ReactionBar({ targetType, targetId, counts, mine, compact }: {
+  targetType: 'PREDICTION' | 'COMMENT'; targetId: string;
+  counts: Record<string, number>; mine: string[]; compact?: boolean;
+}) {
+  const { user } = useAuth();
+  const [c, setC] = useState<Record<string, number>>(counts || {});
+  const [m, setM] = useState<string[]>(mine || []);
+  const [open, setOpen] = useState(false);
+
+  async function toggle(emoji: string) {
+    if (!user) return;
+    try {
+      const r = await api.post<{ counts: Record<string, number>; mine: string[] }>('/quiz/predictions/react', { targetType, targetId, emoji });
+      setC(r.counts || {}); setM(r.mine || []); setOpen(false);
+    } catch { /* noop */ }
+  }
+  const active = REACTION_EMOJIS.filter((e) => (c[e] || 0) > 0);
+  return (
+    <div className={`flex flex-wrap items-center gap-1 ${compact ? '' : 'mt-1'}`}>
+      {active.map((e) => (
+        <button key={e} onClick={() => toggle(e)} disabled={!user}
+          className={`inline-flex items-center gap-0.5 rounded-full border px-2 py-0.5 text-xs ${m.includes(e) ? 'border-brand-400 bg-brand-50 dark:bg-brand-900/30' : 'border-ink-200 dark:border-ink-700'}`}>
+          <span>{e}</span><span className="text-ink-500">{c[e]}</span>
+        </button>
+      ))}
+      {user && (
+        <div className="relative">
+          <button onClick={() => setOpen((v) => !v)} className="rounded-full border border-ink-200 px-2 py-0.5 text-xs text-ink-400 hover:text-brand-600 dark:border-ink-700">＋</button>
+          {open && (
+            <div className="absolute left-0 z-10 mt-1 flex gap-1 rounded-lg border border-ink-200 bg-white p-1.5 shadow-card dark:border-ink-700 dark:bg-ink-900">
+              {REACTION_EMOJIS.map((e) => (
+                <button key={e} onClick={() => toggle(e)} className={`rounded p-1 text-lg hover:bg-ink-100 dark:hover:bg-ink-800 ${m.includes(e) ? 'bg-brand-50 dark:bg-brand-900/30' : ''}`}>{e}</button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function PredView() {
   const id = useSearchParams().get('id') || '';
@@ -101,6 +142,7 @@ function PredView() {
           <div className="mt-2 flex flex-wrap gap-1.5">{p.tags.map((t) => <span key={t} className="flex items-center gap-0.5 text-xs text-ink-400"><Tag size={11} />{t}</span>)}</div>
         )}
         <div className="mt-2 text-xs text-ink-400">Cược {p.minBet}{p.maxBet ? `–${p.maxBet}` : '+'} coin · hoa hồng {(p.commissionBps / 100).toFixed(1)}%{p.oddsMode === 'FIXED' && !p.isAdminMarket ? ` · ký quỹ nhà cái: ${p.creatorStake.toLocaleString()} (còn ${p.creatorEscrow.toLocaleString()})` : ''}</div>
+        <ReactionBar targetType="PREDICTION" targetId={p.id} counts={p.reactions || {}} mine={p.myReactions || []} />
       </div>
 
       {/* Các cửa + đặt cược */}
@@ -206,6 +248,7 @@ interface CUser { id: string; username: string; displayName?: string | null; ava
 interface Comment {
   id: string; parentId: string | null; content: string | null; isDeleted: boolean;
   createdAt: string; user: CUser | null; replies?: Comment[];
+  reactions?: Record<string, number>; myReactions?: string[];
 }
 
 function CommentsSection({ predictionId }: { predictionId: string }) {
@@ -250,9 +293,10 @@ function CommentsSection({ predictionId }: { predictionId: string }) {
             </div>
             <p className={`whitespace-pre-wrap break-words text-sm ${c.isDeleted ? 'italic text-ink-400' : ''}`}>{c.isDeleted ? 'Bình luận đã bị xoá' : c.content}</p>
           </div>
-          <div className="mt-0.5 flex items-center gap-3 px-1 text-xs text-ink-400">
+          <div className="mt-0.5 flex flex-wrap items-center gap-3 px-1 text-xs text-ink-400">
             <span>{new Date(c.createdAt).toLocaleString('vi-VN')}</span>
             {user && !isReply && <button onClick={() => { setReplyTo(replyTo === c.id ? null : c.id); setReplyText(''); }} className="hover:text-brand-600">Trả lời</button>}
+            {!c.isDeleted && <ReactionBar targetType="COMMENT" targetId={c.id} counts={c.reactions || {}} mine={c.myReactions || []} compact />}
           </div>
           {replyTo === c.id && (
             <div className="mt-1.5 flex gap-2">

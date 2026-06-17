@@ -135,8 +135,20 @@ export class QuizController {
   }
 
   @Get('predictions/:id/comments')
-  predictionComments(@Param('id') id: string) {
-    return this.predictions.listComments(id);
+  @UseGuards(OptionalJwtGuard)
+  predictionComments(@Param('id') id: string, @CurrentUser('id') userId?: string) {
+    return this.predictions.listComments(id, userId);
+  }
+
+  @Post('predictions/react')
+  @UseGuards(JwtAuthGuard)
+  predictionReact(
+    @CurrentUser('id') userId: string,
+    @Body('targetType') targetType: string,
+    @Body('targetId') targetId: string,
+    @Body('emoji') emoji: string,
+  ) {
+    return this.predictions.toggleReaction(userId, targetType, targetId, emoji);
   }
 
   @Post('predictions/:id/comments')

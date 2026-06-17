@@ -15,6 +15,7 @@ const ODDS_MODES = ['POOL', 'FIXED'];
 const VISIBILITIES = ['PUBLIC', 'PRIVATE', 'FRIENDS', 'GUILD'];
 
 const USER_BASIC = { id: true, username: true, displayName: true, avatar: true } as const;
+const REACTION_EMOJIS = ['👍', '🔥', '😂', '😮', '😢', '💰'];
 
 export interface CreatePredictionDto {
   title: string;
@@ -166,7 +167,8 @@ export class PredictionService {
       myBets = bs.map((b) => ({ id: b.id, optionIndex: b.optionIndex, amount: b.amount, odds: b.odds, payout: b.payout, status: b.status }));
     }
     const creator = await this.prisma.user.findUnique({ where: { id: p.createdBy }, select: USER_BASIC });
-    return { ...view, creator, myBets, isOwner: userId === p.createdBy };
+    const reactions = await this.reactionSummary('PREDICTION', [p.id], userId);
+    return { ...view, creator, myBets, isOwner: userId === p.createdBy, reactions: reactions[p.id].counts, myReactions: reactions[p.id].mine };
   }
 
   // ──────────────────────────────────────────────
@@ -444,9 +446,53 @@ export class PredictionService {
   // HỒ SƠ NGƯỜI CHƠI / BXH
   // ──────────────────────────────────────────────
   // ──────────────────────────────────────────────
+  // REACTIONS (emoji cho kèo & bình luận)
+  // ──────────────────────────────────────────────
+  // Tổng hợp reaction cho nhiều target -> { [targetId]: { counts: {emoji:n}, mine: string[] } }
+  private async reactionSummary(targetType: string, ids: string[], userId?: string) {
+    const out: Record<string, { counts: Record<string, number>; mine: string[] }> = {};
+    for (const id of ids) out[id] = { counts: {}, mine: [] };
+    if (!ids.length) return out;
+    const rows = await this.prisma.predictionReaction.findMany({
+      where: { targetType, targetId: { in: ids } },
+      select: { targetId: true, emoji: true, userId: true },
+    });
+    for (const r of rows) {
+      const slot = out[r.targetId];
+      if (!slot) continue;
+      slot.counts[r.emoji] = (slot.counts[r.emoji] || 0) + 1;
+      if (userId && r.userId === userId) slot.mine.push(r.emoji);
+    }
+    return out;
+  }
+
+  async toggleReaction(userId: string, targetType: string, targetId: string, emoji: string) {
+    if (!['PREDICTION', 'COMMENT'].includes(targetType)) throw new BadRequestException('Loại không hợp lệ');
+    if (!REACTION_EMOJIS.includes(emoji)) throw new BadRequestException('Emoji không hợp lệ');
+    // Xác thực target tồn tại
+    if (targetType === 'PREDICTION') {
+      const ok = await this.prisma.prediction.findUnique({ where: { id: targetId }, select: { id: true } });
+      if (!ok) throw new NotFoundException('Kèo không tồn tại');
+    } else {
+      const ok = await this.prisma.predictionComment.findUnique({ where: { id: targetId }, select: { id: true } });
+      if (!ok) throw new NotFoundException('Bình luận không tồn tại');
+    }
+    const existing = await this.prisma.predictionReaction.findUnique({
+      where: { targetType_targetId_userId_emoji: { targetType, targetId, userId, emoji } },
+    });
+    if (existing) {
+      await this.prisma.predictionReaction.delete({ where: { id: existing.id } });
+    } else {
+      await this.prisma.predictionReaction.create({ data: { targetType, targetId, userId, emoji } });
+    }
+    const summary = await this.reactionSummary(targetType, [targetId], userId);
+    return { reacted: !existing, ...summary[targetId] };
+  }
+
+  // ──────────────────────────────────────────────
   // THẢO LUẬN
   // ──────────────────────────────────────────────
-  async listComments(predictionId: string) {
+  async listComments(predictionId: string, userId?: string) {
     const exists = await this.prisma.prediction.findUnique({ where: { id: predictionId }, select: { id: true } });
     if (!exists) throw new NotFoundException('Kèo không tồn tại');
     const rows = await this.prisma.predictionComment.findMany({
@@ -455,6 +501,7 @@ export class PredictionService {
       take: 500,
       include: { user: { select: USER_BASIC } },
     });
+    const reactions = await this.reactionSummary('COMMENT', rows.map((r) => r.id), userId);
     const view = rows.map((c) => ({
       id: c.id,
       parentId: c.parentId,
@@ -462,6 +509,8 @@ export class PredictionService {
       isDeleted: c.isDeleted,
       createdAt: c.createdAt,
       user: c.isDeleted ? null : c.user,
+      reactions: reactions[c.id]?.counts || {},
+      myReactions: reactions[c.id]?.mine || [],
     }));
     // Gom theo cây 1 cấp
     const roots = view.filter((c) => !c.parentId);
@@ -491,7 +540,20 @@ export class PredictionService {
       data: { predictionId, userId, content: text, parentId: parentId || null },
       include: { user: { select: USER_BASIC } },
     });
-    return { id: c.id, parentId: c.parentId, content: c.content, isDeleted: false, createdAt: c.createdAt, user: c.user, replies: [] };
+
+    // Thông báo
+    const full = await this.prisma.prediction.findUnique({ where: { id: predictionId }, select: { title: true, createdBy: true } });
+    const who = c.user?.displayName || c.user?.username || 'Ai đó';
+    if (parentId) {
+      const parent = await this.prisma.predictionComment.findUnique({ where: { id: parentId }, select: { userId: true } });
+      if (parent && parent.userId !== userId) {
+        this.notifySafe(parent.userId, `${who} đã trả lời bình luận của bạn`, `Trong kèo «${full?.title || ''}»`, predictionId);
+      }
+    } else if (full && full.createdBy !== userId) {
+      this.notifySafe(full.createdBy, `${who} đã bình luận về kèo của bạn`, `«${full.title}»`, predictionId);
+    }
+
+    return { id: c.id, parentId: c.parentId, content: c.content, isDeleted: false, createdAt: c.createdAt, user: c.user, reactions: {}, myReactions: [], replies: [] };
   }
 
   async deleteComment(commentId: string, userId: string, isMod: boolean) {

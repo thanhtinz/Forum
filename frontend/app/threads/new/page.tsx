@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import TipTapEditor from '@/components/TipTapEditor';
+import { Sparkles } from 'lucide-react';
+
+// Bỏ thẻ HTML để gửi văn bản thuần cho AI
+function htmlToText(html: string): string {
+  if (typeof document === 'undefined') return html;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return (div.textContent || div.innerText || '').trim();
+}
 
 const PREFIXES = ['NONE', 'FREE', 'PAID', 'GUIDE', 'DISCUSSION', 'SHOWCASE', 'REQUEST', 'ANNOUNCEMENT'];
 
@@ -20,6 +29,36 @@ export default function NewThreadPage() {
   // Poll
   const [pollOn, setPollOn] = useState(false);
   const [poll, setPoll] = useState({ question: '', multiple: false, options: ['', ''] });
+  // AI
+  const [aiBusy, setAiBusy] = useState('');
+
+  async function aiTitle() {
+    const text = htmlToText(form.content);
+    if (!text) { setErr('Hãy viết nội dung trước khi gợi ý tiêu đề.'); return; }
+    setErr(''); setAiBusy('title');
+    try {
+      const res = await api.post<{ result: string }>('/ai/writing/title', { text });
+      if (res.result) setForm((f) => ({ ...f, title: res.result.trim() }));
+    } catch (e: any) { setErr('AI lỗi: ' + (e?.message || 'không xác định')); }
+    finally { setAiBusy(''); }
+  }
+
+  async function aiPoll() {
+    const text = htmlToText(form.content);
+    if (!text) { setErr('Hãy viết nội dung trước khi tạo poll.'); return; }
+    setErr(''); setAiBusy('poll');
+    try {
+      const res = await api.post<{ question: string; options: string[] }>('/ai/writing/poll', { text });
+      const opts = (res.options || []).filter(Boolean);
+      setPollOn(true);
+      setPoll({
+        question: res.question || '',
+        multiple: false,
+        options: opts.length >= 2 ? opts : [...opts, '', ''].slice(0, 2),
+      });
+    } catch (e: any) { setErr('AI lỗi: ' + (e?.message || 'không xác định')); }
+    finally { setAiBusy(''); }
+  }
 
   useEffect(() => { api.get<any[]>('/forum/categories').then((c) => { setCats(c); if (c[0]) setForm((f) => ({ ...f, categoryId: c[0].id })); }).catch(() => {}); }, []);
 
@@ -66,14 +105,24 @@ export default function NewThreadPage() {
             </select>
           </label>
         </div>
-        <input className="input" placeholder="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+        <div className="flex gap-2">
+          <input className="input flex-1" placeholder="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+          <button type="button" onClick={aiTitle} disabled={!!aiBusy} className="btn-outline flex shrink-0 items-center gap-1 whitespace-nowrap" title="AI gợi ý tiêu đề từ nội dung">
+            <Sparkles size={14} /> {aiBusy === 'title' ? 'Đang gợi ý…' : 'AI tiêu đề'}
+          </button>
+        </div>
         <TipTapEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} placeholder="Viết nội dung bài đăng…" />
 
         {/* Bình chọn (Poll) */}
         <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
-          <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="checkbox" checked={pollOn} onChange={(e) => setPollOn(e.target.checked)} /> Thêm bình chọn
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={pollOn} onChange={(e) => setPollOn(e.target.checked)} /> Thêm bình chọn
+            </label>
+            <button type="button" onClick={aiPoll} disabled={!!aiBusy} className="flex items-center gap-1 text-xs text-brand-600 disabled:opacity-50" title="Tạo poll từ nội dung bằng AI">
+              <Sparkles size={12} /> {aiBusy === 'poll' ? 'Đang tạo…' : 'Tạo poll từ nội dung'}
+            </button>
+          </div>
           {pollOn && (
             <div className="mt-3 space-y-2">
               <input className="input" placeholder="Câu hỏi bình chọn" value={poll.question} onChange={(e) => setPoll({ ...poll, question: e.target.value })} />

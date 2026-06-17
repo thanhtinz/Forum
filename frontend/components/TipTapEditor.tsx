@@ -19,9 +19,9 @@ import {
   List, ListOrdered, ListChecks, AlignLeft, AlignCenter, AlignRight,
   Link as LinkIcon, Unlink, Image as ImageIcon, Table as TableIcon,
   Youtube as YoutubeIcon, Minus, Undo2, Redo2, Type, Palette, Highlighter,
-  Rows, Columns, Trash2, EyeOff,
+  Rows, Columns, Trash2, EyeOff, Sparkles, ChevronDown,
 } from 'lucide-react';
-import { uploadEditorImage } from '@/lib/api';
+import { uploadEditorImage, api } from '@/lib/api';
 
 interface TipTapEditorProps {
   value: string;
@@ -34,6 +34,19 @@ const FONT_SIZES = [12, 14, 16, 18, 24, 32];
 export default function TipTapEditor({ value, onChange, placeholder }: TipTapEditorProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiErr, setAiErr] = useState('');
+  const aiRef = useRef<HTMLDivElement>(null);
+
+  // Đóng menu AI khi click ra ngoài
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (aiRef.current && !aiRef.current.contains(e.target as Node)) setAiOpen(false);
+    }
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -148,6 +161,56 @@ export default function TipTapEditor({ value, onChange, placeholder }: TipTapEdi
     ).run();
   }
 
+  // ── Công cụ viết bằng AI ──
+  // Lấy văn bản đang chọn, nếu không có thì lấy toàn bộ nội dung
+  function getAiInput(): { text: string; hasSelection: boolean } {
+    const { from, to } = editor!.state.selection;
+    if (from !== to) {
+      const sel = editor!.state.doc.textBetween(from, to, '\n').trim();
+      if (sel) return { text: sel, hasSelection: true };
+    }
+    return { text: editor!.getText().trim(), hasSelection: false };
+  }
+
+  async function runAi(
+    path: string,
+    body: Record<string, unknown>,
+    mode: 'replace' | 'append',
+  ) {
+    setAiErr('');
+    const { text, hasSelection } = getAiInput();
+    if (!text) { setAiErr('Chưa có nội dung để xử lý.'); return; }
+    setAiOpen(false);
+    setAiBusy(true);
+    try {
+      const res = await api.post<{ result: string }>(path, { ...body, text });
+      const result = (res.result || '').trim();
+      if (!result) { setAiErr('AI không trả về nội dung.'); return; }
+      if (mode === 'append') {
+        editor!.chain().focus().command(({ commands, state }) => {
+          return commands.insertContentAt(state.doc.content.size, `<p>${result}</p>`);
+        }).run();
+      } else if (hasSelection) {
+        // insertContent thay thế đoạn đang chọn
+        editor!.chain().focus().insertContent(result).run();
+      } else {
+        editor!.chain().focus().insertContentAt(editor!.state.doc.content.size, `<p>${result}</p>`).run();
+      }
+    } catch (e: any) {
+      setAiErr('AI lỗi: ' + (e?.message || 'không xác định'));
+    } finally {
+      setAiBusy(false);
+    }
+  }
+
+  function aiTranslate() {
+    const target = window.prompt('Dịch sang ngôn ngữ nào?', 'Tiếng Anh');
+    if (target === null) return;
+    void runAi('/ai/writing/translate', { target: target || 'Tiếng Anh' }, 'replace');
+  }
+
+  const aiMenuItem = 'flex w-full items-center px-3 py-1.5 text-left text-sm text-ink-700 hover:bg-ink-100 dark:text-ink-200 dark:hover:bg-ink-700';
+
   const inTable = editor.isActive('table');
 
   // Giá trị heading hiện tại cho select
@@ -250,7 +313,33 @@ export default function TipTapEditor({ value, onChange, placeholder }: TipTapEdi
         <button type="button" className={btn} title="Hoàn tác" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}><Undo2 size={16} /></button>
         <button type="button" className={btn} title="Làm lại" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}><Redo2 size={16} /></button>
 
+        <Divider />
+
+        {/* Công cụ AI */}
+        <div className="relative" ref={aiRef}>
+          <button
+            type="button"
+            className={`${btn} flex items-center gap-1 ${aiOpen ? active : ''}`}
+            title="Công cụ AI"
+            disabled={aiBusy}
+            onClick={() => setAiOpen((o) => !o)}
+          >
+            <Sparkles size={16} /><span className="text-xs">AI</span><ChevronDown size={12} />
+          </button>
+          {aiOpen && (
+            <div className="absolute left-0 top-full z-20 mt-1 w-44 rounded-md border border-ink-200 bg-white py-1 shadow-lg dark:border-ink-700 dark:bg-ink-800">
+              <button type="button" className={aiMenuItem} onClick={() => runAi('/ai/writing/rewrite', {}, 'replace')}>Viết lại</button>
+              <button type="button" className={aiMenuItem} onClick={aiTranslate}>Dịch…</button>
+              <button type="button" className={aiMenuItem} onClick={() => runAi('/ai/writing/summarize', {}, 'append')}>Tóm tắt</button>
+              <button type="button" className={aiMenuItem} onClick={() => runAi('/ai/writing/grammar', {}, 'replace')}>Sửa ngữ pháp</button>
+              <button type="button" className={aiMenuItem} onClick={() => runAi('/ai/writing/continue', {}, 'append')}>Viết tiếp</button>
+            </div>
+          )}
+        </div>
+
         {uploading && <span className="ml-1 text-xs text-ink-500">Đang tải ảnh…</span>}
+        {aiBusy && <span className="ml-1 text-xs text-brand-600">AI đang xử lý…</span>}
+        {aiErr && <span className="ml-1 text-xs text-red-500">{aiErr}</span>}
       </div>
 
       {/* Công cụ bảng (chỉ hiện khi đang ở trong bảng) */}

@@ -38,7 +38,10 @@ export default function LoginPage() {
           {err && <p className="text-sm text-red-500">{err}</p>}
           <button className="btn-primary w-full" disabled={busy}>{busy ? '…' : 'Đăng nhập'}</button>
         </form>
-        <p className="mt-4 text-center text-sm text-ink-500">
+        <p className="mt-3 text-center text-sm">
+          <Link href="/forgot-password" className="text-ink-500 hover:text-brand-600">Quên mật khẩu?</Link>
+        </p>
+        <p className="mt-1 text-center text-sm text-ink-500">
           Chưa có tài khoản? <Link href="/register" className="font-medium text-brand-600">Đăng ký</Link>
         </p>
       </div>

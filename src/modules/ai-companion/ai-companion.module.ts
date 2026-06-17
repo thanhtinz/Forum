@@ -13,6 +13,6 @@ import { AiWritingController } from './ai-writing.controller';
   imports: [JwtModule.register({})],
   controllers: [AiCompanionController, AiWritingController],
   providers: [AiCompanionService, AiProviderService, EmotionService, AiGateway, OutfitService, AiWritingService],
-  exports: [AiCompanionService, OutfitService],
+  exports: [AiCompanionService, OutfitService, AiProviderService],
 })
 export class AiCompanionModule {}

@@ -138,6 +138,41 @@ export class JobsService {
     return this.get(job.id, viewerId);
   }
 
+  // ── Thống kê thu nhập/chi tiêu của tôi ──
+  async myStats(userId: string) {
+    const [profile, postedTotal, postedActive, completedAsEmployer, hiredJobs] = await Promise.all([
+      this.prisma.freelancerProfile.findUnique({
+        where: { userId },
+        select: { earned: true, jobsDone: true, ratingAvg: true, ratingCount: true },
+      }),
+      this.prisma.job.count({ where: { employerId: userId } }),
+      this.prisma.job.count({ where: { employerId: userId, status: { in: [JobStatus.OPEN, JobStatus.IN_PROGRESS, JobStatus.SUBMITTED] } } }),
+      this.prisma.job.findMany({
+        where: { employerId: userId, status: JobStatus.COMPLETED },
+        select: { escrow: { select: { amount: true } } },
+      }),
+      this.prisma.job.count({ where: { hiredFreelancerId: userId, status: { in: [JobStatus.IN_PROGRESS, JobStatus.SUBMITTED] } } }),
+    ]);
+
+    const spent = completedAsEmployer.reduce((s, j) => s + (j.escrow?.amount ?? 0), 0);
+
+    return {
+      asFreelancer: {
+        earned: profile?.earned ?? 0,
+        jobsDone: profile?.jobsDone ?? 0,
+        ratingAvg: profile?.ratingAvg ?? 0,
+        ratingCount: profile?.ratingCount ?? 0,
+        activeJobs: hiredJobs,
+      },
+      asEmployer: {
+        spent,
+        postedTotal,
+        activeJobs: postedActive,
+        completedJobs: completedAsEmployer.length,
+      },
+    };
+  }
+
   async list(query: ListJobsQuery) {
     const page = Math.max(1, Number(query.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));

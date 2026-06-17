@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Users2, Star, Filter, CheckCircle2, Briefcase } from 'lucide-react';
+import { Users2, Star, Filter, CheckCircle2, Briefcase, Crown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import type { FreelancerCard, Meta } from '@/lib/jobs';
+
+interface TopFreelancer extends FreelancerCard { isTop: boolean }
 
 export default function FreelancersPage() {
   const [q, setQ] = useState('');
@@ -17,6 +19,9 @@ export default function FreelancersPage() {
   const [items, setItems] = useState<FreelancerCard[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [loading, setLoading] = useState(true);
+  const [top, setTop] = useState<TopFreelancer[]>([]);
+
+  useEffect(() => { api.get<TopFreelancer[]>('/freelancers/top?limit=5').then(setTop).catch(() => {}); }, []);
 
   async function load() {
     setLoading(true);
@@ -49,6 +54,30 @@ export default function FreelancersPage() {
           <Link href="/jobs" className="inline-flex items-center gap-1 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-white/90"><Briefcase size={16} /> Việc làm</Link>
         </div>
       </header>
+
+      {top.length > 0 && (
+        <div className="card p-4">
+          <h2 className="mb-3 flex items-center gap-2 font-semibold"><Crown size={18} className="text-amber-500" /> Top Freelancer</h2>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {top.map((f, i) => (
+              <Link key={f.userId} href={`/freelancer?userId=${f.user.id}`} className="flex items-center gap-3 rounded-lg border border-ink-200 p-3 hover:shadow-card dark:border-ink-800">
+                <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold ${i === 0 ? 'bg-amber-400 text-white' : i === 1 ? 'bg-ink-300 text-white' : i === 2 ? 'bg-amber-700 text-white' : 'bg-ink-100 text-ink-500 dark:bg-ink-800'}`}>{i + 1}</span>
+                <Avatar user={f.user} size={40} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1 truncate text-sm font-semibold">
+                    {f.user.displayName || f.user.username}
+                    {f.isTop && <Crown size={13} className="shrink-0 text-amber-500" aria-label="Top Freelancer" />}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-ink-500">
+                    <span className="flex items-center gap-0.5"><Star size={11} className="fill-amber-400 text-amber-400" /> {(f.ratingAvg ?? 0).toFixed(1)}</span>
+                    <span>{f.jobsDone} việc xong</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <form onSubmit={apply} className="card space-y-3 p-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-ink-500"><Filter size={16} /> Bộ lọc</div>

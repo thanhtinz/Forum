@@ -9,6 +9,7 @@ import {
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
+import JobOwnerAiTools from '@/components/JobOwnerAiTools';
 import {
   catLabel, formatBudget, statusLabel, BUDGET_TYPE_LABELS, PROPOSAL_STATUS_LABELS,
   type Job, type Proposal,
@@ -160,6 +161,9 @@ export default function ThreadJobPanel({ threadId }: { threadId: string }) {
       {!user && job.status === 'OPEN' && (
         <div className="card p-5 text-center text-sm text-ink-500">Vui lòng <a href="/login" className="text-brand-600 font-medium">đăng nhập</a> để gửi đề xuất.</div>
       )}
+
+      {/* Chủ job: trợ lý AI tuyển dụng */}
+      {job.isOwner && (job.status === 'OPEN' || job.status === 'IN_PROGRESS') && <JobOwnerAiTools jobId={job.id} />}
 
       {/* Chủ job: danh sách ứng tuyển */}
       {job.isOwner && (

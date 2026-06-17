@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Paperclip, X, Loader2 } from 'lucide-react';
+import { Plus, Paperclip, X, Loader2, Sparkles } from 'lucide-react';
 import { api, uploadAttachment } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import TipTapEditor from '@/components/TipTapEditor';
@@ -26,6 +26,20 @@ export default function NewJobPage() {
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [aiBusy, setAiBusy] = useState(false);
+
+  async function aiDescription() {
+    if (!title.trim()) { setErr('Nhập tiêu đề trước khi nhờ AI viết mô tả.'); return; }
+    setErr(''); setAiBusy(true);
+    try {
+      const r = await api.post<{ result: string }>('/jobs/ai/generate-description', { brief: title.trim(), category });
+      if (r.result) {
+        const html = r.result.split(/\n{2,}/).map((p) => `<p>${p.replace(/\n/g, '<br/>')}</p>`).join('');
+        setDescription(html);
+      }
+    } catch (e: any) { setErr('AI lỗi: ' + (e?.message || 'không xác định')); }
+    finally { setAiBusy(false); }
+  }
 
   if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
   if (!user) return <div className="card p-10 text-center text-ink-500">Vui lòng <a href="/login" className="text-brand-600 font-medium">đăng nhập</a> để đăng việc.</div>;
@@ -90,7 +104,12 @@ export default function NewJobPage() {
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium">Mô tả</label>
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-sm font-medium">Mô tả</label>
+            <button type="button" onClick={aiDescription} disabled={aiBusy} className="flex items-center gap-1 text-xs text-brand-600 disabled:opacity-50" title="AI viết mô tả từ tiêu đề">
+              <Sparkles size={13} /> {aiBusy ? 'Đang viết…' : 'AI tạo mô tả'}
+            </button>
+          </div>
           <TipTapEditor value={description} onChange={setDescription} placeholder="Mô tả chi tiết yêu cầu công việc…" autosaveKey="job-new-desc" />
         </div>
 

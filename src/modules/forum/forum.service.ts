@@ -821,16 +821,29 @@ export class ForumService {
     return slug;
   }
 
+  // Nội dung từ TipTap là HTML; nội dung cũ là Markdown/BBCode.
+  private isHtmlContent(raw: string): boolean {
+    return /<\/?(p|div|span|h[1-6]|ul|ol|li|blockquote|pre|code|table|img|a|br|strong|em|u|s|details|iframe|mark)\b/i.test(raw);
+  }
+
   private async renderContent(raw: string): Promise<string> {
+    if (this.isHtmlContent(raw)) {
+      return this.text.censorHtml(this.text.sanitizeRichHtml(raw));
+    }
     const censored = await this.text.censor(raw);
     return marked.parse(this.text.applyBBCode(censored)) as string;
   }
 
-  // Render + lọc từ cấm + BBCode + link @mention, trả về cả danh sách user được nhắc
+  // Render + lọc từ cấm + BBCode/HTML + link @mention, trả về cả danh sách user được nhắc
   private async buildContent(raw: string, excludeUserId: string): Promise<{ html: string; mentioned: { id: string; username: string }[] }> {
-    const censored = await this.text.censor(raw);
-    let html = marked.parse(this.text.applyBBCode(censored)) as string;
-    const usernames = this.text.extractMentions(censored);
+    let html: string;
+    if (this.isHtmlContent(raw)) {
+      html = await this.text.censorHtml(this.text.sanitizeRichHtml(raw));
+    } else {
+      const censored = await this.text.censor(raw);
+      html = marked.parse(this.text.applyBBCode(censored)) as string;
+    }
+    const usernames = this.text.extractMentions(raw);
     const mentioned = await this.text.resolveMentionedUsers(usernames, excludeUserId);
     if (mentioned.length) {
       const map = new Map(mentioned.map((u) => [u.username.toLowerCase(), u.username]));

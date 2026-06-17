@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import sanitizeHtml from 'sanitize-html';
 
 // Mentions (@user) + lọc từ cấm (FoF Filter) + trích @username để thông báo
 @Injectable()
@@ -49,6 +50,62 @@ export class ForumTextService {
       out = out.replace(re, (m) => '*'.repeat(m.length));
     }
     return out;
+  }
+
+  // Làm sạch HTML từ trình soạn thảo TipTap (whitelist chống XSS).
+  sanitizeRichHtml(html: string): string {
+    return sanitizeHtml(html, {
+      allowedTags: [
+        'p', 'br', 'hr', 'span', 'div', 'strong', 'b', 'em', 'i', 'u', 's', 'del', 'mark', 'sub', 'sup',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'blockquote', 'pre', 'code',
+        'a', 'img',
+        'table', 'thead', 'tbody', 'tr', 'td', 'th',
+        'details', 'summary', 'iframe', 'input', 'label',
+      ],
+      allowedAttributes: {
+        a: ['href', 'target', 'rel', 'title'],
+        img: ['src', 'alt', 'title', 'width', 'height'],
+        span: ['style', 'data-type', 'data-id', 'class'],
+        div: ['style', 'class', 'data-type'],
+        p: ['style'],
+        h1: ['style'], h2: ['style'], h3: ['style'], h4: ['style'], h5: ['style'], h6: ['style'],
+        td: ['style', 'colspan', 'rowspan'], th: ['style', 'colspan', 'rowspan'],
+        li: ['data-type', 'data-checked', 'class'],
+        ul: ['data-type', 'class'],
+        input: ['type', 'checked', 'disabled'],
+        code: ['class'], pre: ['class'],
+        iframe: ['src', 'width', 'height', 'allow', 'allowfullscreen', 'frameborder'],
+        details: ['class'], summary: ['class'],
+      },
+      allowedStyles: {
+        '*': {
+          color: [/^#(0x)?[0-9a-fA-F]{3,8}$/, /^rgba?\(/, /^[a-zA-Z]+$/],
+          'background-color': [/^#(0x)?[0-9a-fA-F]{3,8}$/, /^rgba?\(/, /^[a-zA-Z]+$/],
+          'text-align': [/^(left|right|center|justify)$/],
+          'font-size': [/^\d{1,3}(px|pt|em|rem|%)$/],
+        },
+      },
+      allowedSchemes: ['http', 'https', 'mailto', 'data'],
+      // Chỉ cho nhúng iframe từ YouTube/TikTok
+      allowedIframeHostnames: ['www.youtube.com', 'youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'player.vimeo.com', 'www.tiktok.com'],
+      transformTags: {
+        a: (tagName, attribs) => ({
+          tagName: 'a',
+          attribs: { ...attribs, target: '_blank', rel: 'noopener noreferrer nofollow' },
+        }),
+      },
+    });
+  }
+
+  // Lọc từ cấm trên HTML: chỉ thay ở phần text, không đụng vào thẻ.
+  async censorHtml(html: string): Promise<string> {
+    const words = await this.getCensorWords();
+    if (!words.length) return html;
+    const res = words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    const re = new RegExp(res, 'gi');
+    // tách theo thẻ, chỉ censor ngoài thẻ
+    return html.replace(/>([^<]+)</g, (_m, text) => '>' + text.replace(re, (x: string) => '*'.repeat(x.length)) + '<');
   }
 
   // Chuyển BBCode phổ biến sang HTML (whitelist an toàn) — chạy trước markdown.

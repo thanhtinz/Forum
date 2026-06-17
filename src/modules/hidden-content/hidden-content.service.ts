@@ -11,6 +11,7 @@ import {
   HiddenSectionResponseDto,
 } from './hidden-content.dto';
 import { marked } from 'marked';
+import { isHtmlContent, sanitizeRichHtml, applyBBCode } from '../../common/html.util';
 
 @Injectable()
 export class HiddenContentService {
@@ -425,7 +426,8 @@ export class HiddenContentService {
   }
 
   private async renderContent(raw: string): Promise<string> {
-    // Dùng marked để render Markdown; có thể thêm BBCode parser sau
-    return marked.parse(raw) as string;
+    // Nội dung từ TipTap là HTML -> sanitize; nội dung cũ Markdown/BBCode -> render.
+    if (isHtmlContent(raw)) return sanitizeRichHtml(raw);
+    return marked.parse(applyBBCode(raw)) as string;
   }
 }

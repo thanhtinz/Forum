@@ -823,13 +823,13 @@ export class ForumService {
 
   private async renderContent(raw: string): Promise<string> {
     const censored = await this.text.censor(raw);
-    return marked.parse(censored) as string;
+    return marked.parse(this.text.applyBBCode(censored)) as string;
   }
 
-  // Render + lọc từ cấm + link @mention, trả về cả danh sách user được nhắc
+  // Render + lọc từ cấm + BBCode + link @mention, trả về cả danh sách user được nhắc
   private async buildContent(raw: string, excludeUserId: string): Promise<{ html: string; mentioned: { id: string; username: string }[] }> {
     const censored = await this.text.censor(raw);
-    let html = marked.parse(censored) as string;
+    let html = marked.parse(this.text.applyBBCode(censored)) as string;
     const usernames = this.text.extractMentions(censored);
     const mentioned = await this.text.resolveMentionedUsers(usernames, excludeUserId);
     if (mentioned.length) {

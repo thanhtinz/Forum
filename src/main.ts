@@ -9,7 +9,7 @@ async function bootstrap() {
   try { (app.getHttpAdapter().getInstance() as any).set('trust proxy', 1); } catch {}
 
   // /api cho backend; chừa các route SEO ở gốc
-  app.setGlobalPrefix('api', { exclude: ['sitemap.xml', 'rss.xml', 'robots.txt', 'thread'] });
+  app.setGlobalPrefix('api', { exclude: ['sitemap.xml', 'rss.xml', 'robots.txt', 'thread', 'profile', 'tag', 'p'] });
   app.enableCors({
     origin: process.env.FRONTEND_URL?.split(',') ?? '*',
     credentials: true,

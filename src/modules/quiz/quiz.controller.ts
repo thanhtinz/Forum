@@ -69,16 +69,57 @@ export class QuizController {
     return this.trivia.delete(id);
   }
 
-  // ── Predictions (Dự đoán) ──
+  // ── Predictions (Kèo dự đoán) ──
+  private isMod(role?: UserRole) {
+    return role === UserRole.ADMIN || role === UserRole.MODERATOR;
+  }
+
   @Get('predictions')
-  predictionList(@Query('status') status?: string) {
-    return this.predictions.list({ status });
+  @UseGuards(OptionalJwtGuard)
+  predictionList(
+    @CurrentUser('id') userId: string | undefined,
+    @Query('status') status?: string,
+    @Query('category') category?: string,
+    @Query('marketType') marketType?: string,
+    @Query('q') q?: string,
+    @Query('mine') mine?: string,
+  ) {
+    return this.predictions.list({ status, category, marketType, q, mine }, userId);
+  }
+
+  // Path tĩnh trước :id
+  @Get('predictions/leaderboard')
+  predictionLeaderboard(@Query('period') period?: 'week' | 'month' | 'all') {
+    return this.predictions.leaderboard(period || 'week');
+  }
+
+  @Get('predictions/my-bets')
+  @UseGuards(JwtAuthGuard)
+  predictionMyBets(@CurrentUser('id') userId: string) {
+    return this.predictions.myBets(userId);
+  }
+
+  @Get('predictions/stats')
+  @UseGuards(JwtAuthGuard)
+  predictionStats(@CurrentUser('id') userId: string) {
+    return this.predictions.playerStats(userId);
   }
 
   @Get('predictions/:id')
   @UseGuards(OptionalJwtGuard)
   predictionGet(@Param('id') id: string, @CurrentUser('id') userId?: string) {
     return this.predictions.get(id, userId);
+  }
+
+  // Tạo kèo (mọi thành viên). Admin có thể bật isAdminMarket (nhà cái = hệ thống).
+  @Post('predictions')
+  @UseGuards(JwtAuthGuard)
+  predictionCreateUser(
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
+    @Body() dto: CreatePredictionDto,
+  ) {
+    return this.predictions.create(dto, userId, this.isMod(role));
   }
 
   @Post('predictions/:id/bet')
@@ -88,36 +129,66 @@ export class QuizController {
     @Param('id') id: string,
     @Body('optionIndex') optionIndex: number,
     @Body('amount') amount: number,
+    @Body('password') password?: string,
   ) {
-    return this.predictions.bet(userId, id, Number(optionIndex), Number(amount));
+    return this.predictions.bet(userId, id, Number(optionIndex), Number(amount), password);
   }
 
-  // Admin predictions
+  @Post('predictions/:id/lock')
+  @UseGuards(JwtAuthGuard)
+  predictionLockUser(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: UserRole) {
+    return this.predictions.lock(id, userId, this.isMod(role));
+  }
+
+  @Post('predictions/:id/settle')
+  @UseGuards(JwtAuthGuard)
+  predictionSettleUser(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
+    @Body('correctIndex') correctIndex: number,
+    @Body('note') note?: string,
+  ) {
+    return this.predictions.settle(id, Number(correctIndex), userId, this.isMod(role), note);
+  }
+
+  @Post('predictions/:id/cancel')
+  @UseGuards(JwtAuthGuard)
+  predictionCancelUser(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: UserRole,
+    @Body('reason') reason?: string,
+  ) {
+    return this.predictions.cancel(id, userId, this.isMod(role), reason);
+  }
+
+  // ── Admin (tương thích trang quản trị cũ) ──
   @Post('admin/predictions')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   predictionCreate(@CurrentUser('id') userId: string, @Body() dto: CreatePredictionDto) {
-    return this.predictions.create(dto, userId);
+    return this.predictions.create({ isAdminMarket: true, ...dto }, userId, true);
   }
 
   @Post('admin/predictions/:id/lock')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  predictionLock(@Param('id') id: string) {
-    return this.predictions.lock(id);
+  predictionLock(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.predictions.lock(id, userId, true);
   }
 
   @Post('admin/predictions/:id/settle')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  predictionSettle(@Param('id') id: string, @Body('correctIndex') correctIndex: number) {
-    return this.predictions.settle(id, Number(correctIndex));
+  predictionSettle(@Param('id') id: string, @CurrentUser('id') userId: string, @Body('correctIndex') correctIndex: number) {
+    return this.predictions.settle(id, Number(correctIndex), userId, true);
   }
 
   @Delete('admin/predictions/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  predictionDelete(@Param('id') id: string) {
-    return this.predictions.delete(id);
+  predictionDelete(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.predictions.delete(id, userId, true);
   }
 }

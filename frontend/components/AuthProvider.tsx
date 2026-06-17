@@ -8,7 +8,7 @@ interface AuthCtx {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string, code?: string) => Promise<void>;
-  register: (data: { username: string; email: string; password: string; inviteCode?: string }) => Promise<void>;
+  register: (data: { username: string; email: string; password: string; inviteCode?: string; captchaToken?: string }) => Promise<void>;
   logout: () => void;
 }
 
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.user ?? (await api.get<User>('/auth/me')));
   }
 
-  async function register(data: { username: string; email: string; password: string; inviteCode?: string }) {
+  async function register(data: { username: string; email: string; password: string; inviteCode?: string; captchaToken?: string }) {
     const payload = { ...data, inviteCode: data.inviteCode || undefined };
     const res = await api.post<{ accessToken: string; user: User }>('/auth/register', payload);
     if (res.accessToken) { setToken(res.accessToken); setUser(res.user); }

@@ -3,9 +3,16 @@ import './globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
 import { Header } from '@/components/Header';
 
+const SITE = 'Forum AI Platform';
+const DESC = 'Diễn đàn cộng đồng tích hợp game, chợ số, AI Live2D — phong cách XenForo/Flarum.';
+
 export const metadata: Metadata = {
-  title: 'ForumHub — Diễn đàn cộng đồng',
-  description: 'Diễn đàn + game + chợ source code, phong cách XenForo/Flarum.',
+  title: { default: `${SITE} — Diễn đàn cộng đồng`, template: `%s · ${SITE}` },
+  description: DESC,
+  applicationName: SITE,
+  openGraph: { title: SITE, description: DESC, type: 'website', siteName: SITE },
+  twitter: { card: 'summary_large_image', title: SITE, description: DESC },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

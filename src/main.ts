@@ -5,7 +5,11 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('api');
+  // Sau reverse proxy (Caddy) — để rate-limit lấy đúng IP client
+  try { (app.getHttpAdapter().getInstance() as any).set('trust proxy', 1); } catch {}
+
+  // /api cho backend; chừa các route SEO ở gốc
+  app.setGlobalPrefix('api', { exclude: ['sitemap.xml', 'rss.xml', 'robots.txt'] });
   app.enableCors({
     origin: process.env.FRONTEND_URL?.split(',') ?? '*',
     credentials: true,

@@ -10,6 +10,7 @@ import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 import type { Thread, Post, Paginated } from '@/lib/types';
+import RichEditor from '@/components/RichEditor';
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -430,8 +431,7 @@ function ThreadView() {
             <p className="text-center text-sm text-ink-500">Chủ đề đã bị khoá.</p>
           ) : (
             <form onSubmit={submitReply} className="space-y-2">
-              <textarea value={reply} onChange={(e) => setReply(e.target.value)} rows={4}
-                placeholder="Viết trả lời (hỗ trợ Markdown · @ để nhắc thành viên)…" className="input resize-y" />
+              <RichEditor value={reply} onChange={setReply} placeholder="Viết trả lời…" minHeight={120} />
               {err && <p className="text-sm text-red-500">{err}</p>}
               <div className="flex justify-end">
                 <button className="btn-primary" type="submit">Gửi trả lời</button>

@@ -35,6 +35,7 @@
     "clsx": "2.1.1",
     "date-fns": "3.6.0",
     "lucide-react": "0.414.0",
+    "marked": "^18.0.5",
     "next": "14.2.5",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^6.5.10",

@@ -26,6 +26,7 @@ import { TagService } from './tag.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
+import { PermissionsGuard, RequirePermission } from '../permissions/permissions.guard';
 
 @Controller('forum')
 export class ForumController {
@@ -109,7 +110,8 @@ export class ForumController {
   }
 
   @Post('threads')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('forum.startThread')
   createThread(@CurrentUser('id') userId: string, @Body() dto: CreateThreadDto) {
     return this.forum.createThread(dto, userId);
   }
@@ -129,7 +131,8 @@ export class ForumController {
 
   // ── Posts ──
   @Post('posts')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('forum.reply')
   createPost(@CurrentUser('id') userId: string, @Body() dto: CreatePostDto) {
     return this.forum.createPost(dto, userId);
   }

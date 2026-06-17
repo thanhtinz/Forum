@@ -214,11 +214,38 @@ model User {
   predictionBets     PredictionBet[]
   aiPersonas         AiPersona[]
   authTokens         AuthToken[]
+  groupMemberships   UserGroupMember[]
 
   @@index([email])
   @@index([username])
   @@index([role])
   @@index([createdAt])
+}
+
+// Nhóm người dùng + bộ quyền (kiểu Flarum/XenForo). Bổ sung cho `role`.
+model UserGroup {
+  id          String   @id @default(cuid())
+  key         String   @unique @db.VarChar(40) // 'guest'|'member'|'vip'|'moderator'|'admin'|custom
+  name        String   @db.VarChar(80)
+  color       String?  @db.VarChar(20)
+  badgeIcon   String?  @db.VarChar(255) // tên icon lucide hoặc URL ảnh
+  priority    Int      @default(0)
+  isSystem    Boolean  @default(false) // nhóm hệ thống map theo role, không xoá được
+  permissions String[] // danh sách khoá quyền; '*' = tất cả
+  createdAt   DateTime @default(now())
+
+  members UserGroupMember[]
+}
+
+model UserGroupMember {
+  userId  String
+  groupId String
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+  @@index([groupId])
 }
 
 // Token xác thực email / đặt lại mật khẩu

@@ -37,6 +37,7 @@ import { GiveawayModule } from './modules/giveaway/giveaway.module';
 import { QuizModule } from './modules/quiz/quiz.module';
 import { MailModule } from './modules/mail/mail.module';
 import { SecurityModule } from './modules/security/security.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
 import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
 
@@ -93,6 +94,7 @@ import { VerificationModule } from './modules/verification/verification.module';
     QuizModule,
     MailModule,
     SecurityModule,
+    PermissionsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

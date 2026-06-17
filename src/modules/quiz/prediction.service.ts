@@ -443,6 +443,65 @@ export class PredictionService {
   // ──────────────────────────────────────────────
   // HỒ SƠ NGƯỜI CHƠI / BXH
   // ──────────────────────────────────────────────
+  // ──────────────────────────────────────────────
+  // THẢO LUẬN
+  // ──────────────────────────────────────────────
+  async listComments(predictionId: string) {
+    const exists = await this.prisma.prediction.findUnique({ where: { id: predictionId }, select: { id: true } });
+    if (!exists) throw new NotFoundException('Kèo không tồn tại');
+    const rows = await this.prisma.predictionComment.findMany({
+      where: { predictionId },
+      orderBy: { createdAt: 'asc' },
+      take: 500,
+      include: { user: { select: USER_BASIC } },
+    });
+    const view = rows.map((c) => ({
+      id: c.id,
+      parentId: c.parentId,
+      content: c.isDeleted ? null : c.content,
+      isDeleted: c.isDeleted,
+      createdAt: c.createdAt,
+      user: c.isDeleted ? null : c.user,
+    }));
+    // Gom theo cây 1 cấp
+    const roots = view.filter((c) => !c.parentId);
+    const byParent = new Map<string, typeof view>();
+    for (const c of view) {
+      if (c.parentId) {
+        const arr = byParent.get(c.parentId) || [];
+        arr.push(c);
+        byParent.set(c.parentId, arr);
+      }
+    }
+    return roots.map((r) => ({ ...r, replies: byParent.get(r.id) || [] }));
+  }
+
+  async addComment(predictionId: string, userId: string, content: string, parentId?: string) {
+    const text = String(content || '').trim();
+    if (!text) throw new BadRequestException('Nội dung trống');
+    if (text.length > 2000) throw new BadRequestException('Bình luận quá dài (tối đa 2000 ký tự)');
+    const p = await this.prisma.prediction.findUnique({ where: { id: predictionId }, select: { id: true } });
+    if (!p) throw new NotFoundException('Kèo không tồn tại');
+    if (parentId) {
+      const parent = await this.prisma.predictionComment.findUnique({ where: { id: parentId }, select: { id: true, predictionId: true, parentId: true } });
+      if (!parent || parent.predictionId !== predictionId) throw new BadRequestException('Bình luận gốc không hợp lệ');
+      if (parent.parentId) parentId = parent.parentId; // chỉ lồng 1 cấp
+    }
+    const c = await this.prisma.predictionComment.create({
+      data: { predictionId, userId, content: text, parentId: parentId || null },
+      include: { user: { select: USER_BASIC } },
+    });
+    return { id: c.id, parentId: c.parentId, content: c.content, isDeleted: false, createdAt: c.createdAt, user: c.user, replies: [] };
+  }
+
+  async deleteComment(commentId: string, userId: string, isMod: boolean) {
+    const c = await this.prisma.predictionComment.findUnique({ where: { id: commentId } });
+    if (!c) throw new NotFoundException('Bình luận không tồn tại');
+    if (c.userId !== userId && !isMod) throw new ForbiddenException('Không có quyền xoá');
+    await this.prisma.predictionComment.update({ where: { id: commentId }, data: { isDeleted: true } });
+    return { ok: true };
+  }
+
   async myBets(userId: string) {
     const bets = await this.prisma.predictionBet.findMany({
       where: { userId },

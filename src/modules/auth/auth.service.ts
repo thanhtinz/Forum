@@ -14,6 +14,7 @@ import { randomBytes } from 'crypto';
 import { generateSecret, verifyTotp, otpauthUrl } from './totp';
 import { MailService } from '../mail/mail.service';
 import { CaptchaService } from '../security/captcha.service';
+import { PermissionService } from '../permissions/permission.service';
 
 @Injectable()
 export class AuthService {
@@ -23,6 +24,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly mail: MailService,
     private readonly captcha: CaptchaService,
+    private readonly permissions: PermissionService,
   ) {}
 
   // URL gốc của site (để dựng link trong email)
@@ -188,6 +190,9 @@ export class AuthService {
       where: { id: user.id },
       data: { lastSeenAt: new Date() },
     });
+
+    // Tự thăng nhóm theo cột mốc (không chặn đăng nhập nếu lỗi)
+    this.permissions.applyAutoPromotions(user.id).catch(() => {});
 
     return this.issueTokens(user.id, user.username, user.role);
   }

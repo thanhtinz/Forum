@@ -57,6 +57,28 @@ export class PermissionService {
     return perms.includes('*') || perms.includes(permission);
   }
 
+  /** Tự thăng nhóm: gán user vào các nhóm autoPromote khi đạt cột mốc. Gọi lúc đăng nhập / lazy. */
+  async applyAutoPromotions(userId: string): Promise<string[]> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { postCount: true, reputationScore: true, createdAt: true, groupMemberships: { select: { groupId: true } } },
+    });
+    if (!user) return [];
+    const groups = await this.prisma.userGroup.findMany({ where: { autoPromote: true } });
+    if (!groups.length) return [];
+    const ageDays = Math.floor((Date.now() - user.createdAt.getTime()) / 86_400_000);
+    const already = new Set(user.groupMemberships.map((m) => m.groupId));
+    const assigned: string[] = [];
+    for (const g of groups) {
+      if (already.has(g.id)) continue;
+      if (user.postCount >= g.minPosts && user.reputationScore >= g.minReputation && ageDays >= g.minDays) {
+        await this.prisma.userGroupMember.create({ data: { userId, groupId: g.id } }).catch(() => {});
+        assigned.push(g.name);
+      }
+    }
+    return assigned;
+  }
+
   // ── Admin ──
   listCatalog() { return { catalog: PERMISSION_CATALOG }; }
 
@@ -67,22 +89,29 @@ export class PermissionService {
     });
   }
 
-  async createGroup(dto: { key?: string; name: string; color?: string; badgeIcon?: string; priority?: number; permissions?: string[] }) {
+  async createGroup(dto: any) {
     const key = (dto.key?.trim() || dto.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')).slice(0, 40);
     return this.prisma.userGroup.create({
-      data: { key, name: dto.name.trim(), color: dto.color, badgeIcon: dto.badgeIcon, priority: dto.priority ?? 30, isSystem: false, permissions: dto.permissions || [] },
+      data: {
+        key, name: dto.name.trim(), color: dto.color, badgeIcon: dto.badgeIcon, priority: dto.priority ?? 30, isSystem: false, permissions: dto.permissions || [],
+        autoPromote: !!dto.autoPromote, minPosts: Number(dto.minPosts) || 0, minReputation: Number(dto.minReputation) || 0, minDays: Number(dto.minDays) || 0,
+      },
     });
   }
 
-  async updateGroup(id: string, dto: { name?: string; color?: string; badgeIcon?: string; priority?: number; permissions?: string[] }) {
+  async updateGroup(id: string, dto: any) {
     return this.prisma.userGroup.update({
       where: { id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
         ...(dto.color !== undefined ? { color: dto.color } : {}),
         ...(dto.badgeIcon !== undefined ? { badgeIcon: dto.badgeIcon } : {}),
-        ...(dto.priority !== undefined ? { priority: dto.priority } : {}),
+        ...(dto.priority !== undefined ? { priority: Number(dto.priority) } : {}),
         ...(dto.permissions !== undefined ? { permissions: dto.permissions } : {}),
+        ...(dto.autoPromote !== undefined ? { autoPromote: !!dto.autoPromote } : {}),
+        ...(dto.minPosts !== undefined ? { minPosts: Number(dto.minPosts) || 0 } : {}),
+        ...(dto.minReputation !== undefined ? { minReputation: Number(dto.minReputation) || 0 } : {}),
+        ...(dto.minDays !== undefined ? { minDays: Number(dto.minDays) || 0 } : {}),
       },
     });
   }

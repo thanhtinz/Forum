@@ -36,6 +36,9 @@ export default function NewPredictionPage() {
   const [commissionBps, setCommissionBps] = useState('0');
   const [creatorStake, setCreatorStake] = useState('');
   const [isAdminMarket, setIsAdminMarket] = useState(false);
+  const [resultSource, setResultSource] = useState('MANUAL');
+  const [externalRef, setExternalRef] = useState('');
+  const [autoSettleAt, setAutoSettleAt] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -79,6 +82,11 @@ export default function NewPredictionPage() {
       if (maxBet) body.maxBet = Number(maxBet);
       if (oddsMode === 'FIXED' && !isAdminMarket) body.creatorStake = Number(creatorStake);
       if (isMod && isAdminMarket) body.isAdminMarket = true;
+      if (isMod && resultSource === 'EXTERNAL') {
+        body.resultSource = 'EXTERNAL';
+        if (externalRef.trim()) body.externalRef = externalRef.trim();
+        if (autoSettleAt) body.autoSettleAt = autoSettleAt;
+      }
 
       const p = await api.post<{ id: string }>('/quiz/predictions', body);
       router.push(`/prediction?id=${p.id}`);
@@ -220,10 +228,34 @@ export default function NewPredictionPage() {
         </div>
 
         {isMod && (
-          <label className="flex items-center gap-2 rounded-lg bg-amber-50 p-2 text-sm dark:bg-amber-950/20">
-            <input type="checkbox" checked={isAdminMarket} onChange={(e) => setIsAdminMarket(e.target.checked)} />
-            Kèo nhà cái hệ thống (admin) — hệ thống chi trả, không cần ký quỹ
-          </label>
+          <div className="space-y-2 rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/20">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" checked={isAdminMarket} onChange={(e) => setIsAdminMarket(e.target.checked)} />
+              Kèo nhà cái hệ thống (admin) — hệ thống chi trả, không cần ký quỹ
+            </label>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium">Nguồn kết quả</label>
+                <select className="input w-full" value={resultSource} onChange={(e) => setResultSource(e.target.value)}>
+                  <option value="MANUAL">Thủ công</option>
+                  <option value="EXTERNAL">Tự động (nguồn ngoài)</option>
+                </select>
+              </div>
+              {resultSource === 'EXTERNAL' && (
+                <>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium">Mã tham chiếu</label>
+                    <input className="input w-full" value={externalRef} onChange={(e) => setExternalRef(e.target.value)} placeholder="vd: match-123" />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium">Tự chốt lúc</label>
+                    <input className="input w-full" type="datetime-local" value={autoSettleAt} onChange={(e) => setAutoSettleAt(e.target.value)} />
+                  </div>
+                </>
+              )}
+            </div>
+            {resultSource === 'EXTERNAL' && <p className="text-xs text-ink-500">Cron sẽ tự chốt kèo theo nguồn ngoài sau thời điểm trên (cần cấu hình provider kết quả ở backend).</p>}
+          </div>
         )}
 
         {err && <p className="text-sm text-red-500">{err}</p>}

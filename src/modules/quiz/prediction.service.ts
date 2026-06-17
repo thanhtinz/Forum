@@ -41,6 +41,8 @@ export interface CreatePredictionDto {
   commissionBps?: number;
   creatorStake?: number;
   isAdminMarket?: boolean;
+  resultSource?: string;
+  externalRef?: string;
 }
 
 @Injectable()
@@ -269,6 +271,9 @@ export class PredictionService {
         closesAt: dto.closesAt ? new Date(dto.closesAt) : null,
         resultAt: dto.resultAt ? new Date(dto.resultAt) : null,
         autoSettleAt: dto.autoSettleAt ? new Date(dto.autoSettleAt) : null,
+        // Nguồn kết quả ngoài chỉ dành cho admin (kèo hệ thống có provider)
+        resultSource: isAdmin && dto.resultSource === 'EXTERNAL' ? 'EXTERNAL' : 'MANUAL',
+        externalRef: isAdmin && dto.resultSource === 'EXTERNAL' ? (dto.externalRef?.trim() || null) : null,
         minBet,
         maxBet,
         commissionBps,

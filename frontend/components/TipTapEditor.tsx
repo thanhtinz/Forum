@@ -27,6 +27,28 @@ import {
   Plus, Info, Music, Smile, Clock, Hash,
 } from 'lucide-react';
 import { uploadEditorImage, uploadAttachment, api } from '@/lib/api';
+import { marked } from 'marked';
+
+// Phát hiện đoạn text có vẻ là Markdown/BBCode để tự chuyển khi dán.
+function looksLikeMarkup(t: string): boolean {
+  return /(^|\n)\s{0,3}#{1,6}\s|\*\*[^*]+\*\*|`[^`]+`|\[(b|i|u|s|url|img|quote|code|color|size|list)\b|(^|\n)\s*[-*+]\s|(^|\n)\s*\d+\.\s|\[[^\]]+\]\([^)]+\)/i.test(t);
+}
+// BBCode -> HTML (bản client, mirror backend) để dùng khi dán.
+function applyBBCodeClient(s: string): string {
+  for (let i = 0; i < 4; i++) {
+    s = s
+      .replace(/\[b\]([\s\S]*?)\[\/b\]/gi, '<strong>$1</strong>')
+      .replace(/\[i\]([\s\S]*?)\[\/i\]/gi, '<em>$1</em>')
+      .replace(/\[u\]([\s\S]*?)\[\/u\]/gi, '<u>$1</u>')
+      .replace(/\[s\]([\s\S]*?)\[\/s\]/gi, '<s>$1</s>')
+      .replace(/\[quote(?:=[^\]]+)?\]([\s\S]*?)\[\/quote\]/gi, '<blockquote>$1</blockquote>')
+      .replace(/\[code\]([\s\S]*?)\[\/code\]/gi, '<pre><code>$1</code></pre>')
+      .replace(/\[color=(#?[a-zA-Z0-9]+)\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>')
+      .replace(/\[url=([^\]]+)\]([\s\S]*?)\[\/url\]/gi, '<a href="$1">$2</a>')
+      .replace(/\[img\]([\s\S]*?)\[\/img\]/gi, '<img src="$1" alt="" />');
+  }
+  return s;
+}
 
 interface TipTapEditorProps {
   value: string;
@@ -597,6 +619,7 @@ const MentionTag = makeMentionExtension({
 
 export default function TipTapEditor({ value, onChange, placeholder, autosaveKey }: TipTapEditorProps) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<any>(null);
   const attachRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
@@ -703,10 +726,23 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
             return true;
           }
         }
+        // Dán đoạn Markdown/BBCode (text thuần) -> tự chuyển sang HTML
+        const text = event.clipboardData?.getData('text/plain') || '';
+        const hasHtml = (event.clipboardData?.getData('text/html') || '').trim().length > 0;
+        if (!hasHtml && text && looksLikeMarkup(text)) {
+          try {
+            const html = marked.parse(applyBBCodeClient(text), { breaks: true, async: false }) as string;
+            event.preventDefault();
+            editorRef.current?.chain().focus().insertContent(html).run();
+            return true;
+          } catch { /* để paste mặc định */ }
+        }
         return false;
       },
     },
   });
+
+  useEffect(() => { editorRef.current = editor; }, [editor]);
 
   // Đồng bộ value từ bên ngoài (ví dụ reset về '' sau khi gửi)
   useEffect(() => {

@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotifType } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PushService } from './push.service';
+import { MailService } from '../mail/mail.service';
 
 interface NotifyPayload {
   type: NotifType;
@@ -13,11 +15,16 @@ interface NotifyPayload {
   targetId?: string;
 }
 
+// Loại thông báo gửi kèm email (tránh gửi mail cho mọi loại)
+const EMAIL_TYPES = ['THREAD_REPLY', 'POST_MENTION', 'BEST_ANSWER', 'GEM_RECEIVED', 'ORDER_COMPLETE'];
+
 @Injectable()
 export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly events: EventEmitter2,
+    private readonly push: PushService,
+    private readonly mail: MailService,
   ) {}
 
   async notify(userId: string, payload: NotifyPayload) {
@@ -37,7 +44,33 @@ export class NotificationsService {
     // Emit realtime event → Socket.IO gateway sẽ push tới client
     this.events.emit('notification.created', { userId, notification: notif });
 
+    // Web push (fire-and-forget)
+    const base = (process.env.FRONTEND_URL || '').split(',')[0].replace(/\/$/, '');
+    this.push.sendToUser(userId, { title: payload.title, body: payload.body, link: payload.link ? `${base}${payload.link}` : (base || '/') }).catch(() => {});
+
+    // Email (fire-and-forget) — chỉ loại quan trọng + user bật + SMTP bật
+    if (EMAIL_TYPES.includes(payload.type)) this.sendNotifyEmail(userId, payload).catch(() => {});
+
     return notif;
+  }
+
+  private async sendNotifyEmail(userId: string, payload: NotifyPayload) {
+    if (!(await this.mail.isEnabled())) return;
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, emailNotify: true } });
+    if (!user?.emailNotify || !user.email) return;
+    const base = (process.env.FRONTEND_URL || '').split(',')[0].replace(/\/$/, '');
+    const url = payload.link ? `${base}${payload.link}` : base;
+    await this.mail.send(user.email, payload.title, this.mail.layout(payload.title, payload.body || '', url || undefined, url ? 'Xem ngay' : undefined));
+  }
+
+  // Bật/tắt nhận email thông báo
+  async setEmailNotify(userId: string, value: boolean) {
+    await this.prisma.user.update({ where: { id: userId }, data: { emailNotify: value } });
+    return { emailNotify: value };
+  }
+  async getEmailNotify(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { emailNotify: true } });
+    return { emailNotify: u?.emailNotify ?? true };
   }
 
   async markRead(notifId: string, userId: string) {

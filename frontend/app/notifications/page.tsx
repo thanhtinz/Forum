@@ -3,12 +3,21 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { PushToggle } from '@/components/PushToggle';
 
 export default function NotificationsPage() {
   const { user, loading } = useAuth();
   const [data, setData] = useState<any>(null);
+  const [emailNotify, setEmailNotify] = useState(true);
   function load() { api.get('/notifications').then(setData).catch(() => {}); }
-  useEffect(() => { if (!loading && user) load(); }, [user, loading]);
+  useEffect(() => {
+    if (!loading && user) { load(); api.get<{ emailNotify: boolean }>('/notifications/email-pref').then((r) => setEmailNotify(r.emailNotify)).catch(() => {}); }
+  }, [user, loading]);
+
+  async function toggleEmail() {
+    const v = !emailNotify; setEmailNotify(v);
+    await api.post('/notifications/email-pref', { value: v }).catch(() => {});
+  }
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để xem thông báo.</div>;
 
@@ -17,6 +26,11 @@ export default function NotificationsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Thông báo {data?.meta?.unreadCount ? <span className="chip ml-2 bg-red-100 text-red-600">{data.meta.unreadCount} mới</span> : null}</h1>
         <button onClick={() => api.post('/notifications/read-all').then(load)} className="btn-outline text-xs">Đánh dấu đã đọc</button>
+      </div>
+
+      <div className="card flex flex-wrap items-center justify-between gap-3 p-3">
+        <PushToggle />
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={emailNotify} onChange={toggleEmail} /> Nhận thông báo qua email</label>
       </div>
       <div className="card divide-y divide-ink-100 dark:divide-ink-800">
         {data?.data?.map((n: any) => (

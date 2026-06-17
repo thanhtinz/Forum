@@ -33,6 +33,7 @@ import { CheckInModule } from './modules/checkin/checkin.module';
 import { SpinModule } from './modules/spin/spin.module';
 import { GiveawayModule } from './modules/giveaway/giveaway.module';
 import { QuizModule } from './modules/quiz/quiz.module';
+import { MailModule } from './modules/mail/mail.module';
 import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
 
@@ -85,6 +86,7 @@ import { VerificationModule } from './modules/verification/verification.module';
     SpinModule,
     GiveawayModule,
     QuizModule,
+    MailModule,
   ],
 })
 export class AppModule {}

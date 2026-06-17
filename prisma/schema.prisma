@@ -213,11 +213,28 @@ model User {
   triviaAnswers      TriviaAnswer[]
   predictionBets     PredictionBet[]
   aiPersonas         AiPersona[]
+  authTokens         AuthToken[]
 
   @@index([email])
   @@index([username])
   @@index([role])
   @@index([createdAt])
+}
+
+// Token xác thực email / đặt lại mật khẩu
+model AuthToken {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // 'reset' | 'verify'
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }
 
 model OAuthProvider {

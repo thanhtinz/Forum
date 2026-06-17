@@ -40,6 +40,28 @@ export class AuthController {
     return this.authService.changePassword(userId, b.oldPassword, b.newPassword);
   }
 
+  // ── Email: xác thực & quên mật khẩu ──
+  @Post('forgot-password')
+  forgotPassword(@Body('email') email: string) {
+    return this.authService.requestPasswordReset(email);
+  }
+
+  @Post('reset-password')
+  resetPassword(@Body() b: { token: string; password: string }) {
+    return this.authService.resetPassword(b.token, b.password);
+  }
+
+  @Post('verify-email')
+  verifyEmail(@Body('token') token: string) {
+    return this.authService.verifyEmail(token);
+  }
+
+  @Post('resend-verification')
+  @UseGuards(JwtAuthGuard)
+  resendVerification(@CurrentUser('id') userId: string) {
+    return this.authService.resendVerification(userId);
+  }
+
   // ── 2FA ──
   @Get('2fa/status')
   @UseGuards(JwtAuthGuard)

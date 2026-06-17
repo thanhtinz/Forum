@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CharacterService } from '../game/character/character.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // ── Hằng số ──
 const CATEGORIES = ['ANIME', 'MANGA', 'GAME', 'ESPORTS', 'SPORTS', 'TECH', 'CRYPTO', 'COMMUNITY', 'OTHER'];
@@ -46,7 +47,25 @@ export class PredictionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly character: CharacterService,
+    private readonly notif: NotificationsService,
   ) {}
+
+  // Gửi thông báo (bỏ qua lỗi để không chặn quyết toán)
+  private notifySafe(userId: string, title: string, body: string, predictionId: string) {
+    this.notif
+      .notify(userId, { type: 'SYSTEM', title, body, link: `/prediction?id=${predictionId}`, targetType: 'prediction', targetId: predictionId })
+      .catch(() => {});
+  }
+
+  // Tự động khoá kèo đã quá hạn đặt cược (lazy, khi đọc)
+  private async autoLockExpired(ids: { id: string; status: string; closesAt: Date | null }[]) {
+    const now = Date.now();
+    const expired = ids.filter((p) => p.status === 'OPEN' && p.closesAt && p.closesAt.getTime() <= now).map((p) => p.id);
+    if (expired.length) {
+      await this.prisma.prediction.updateMany({ where: { id: { in: expired } }, data: { status: 'LOCKED' } }).catch(() => {});
+    }
+    return new Set(expired);
+  }
 
   // ──────────────────────────────────────────────
   // Helpers
@@ -124,7 +143,8 @@ export class PredictionService {
         bets: { select: { optionIndex: true, amount: true } },
       },
     });
-    return preds.map((p) => this.toView(p, userId));
+    const locked = await this.autoLockExpired(preds);
+    return preds.map((p) => this.toView(locked.has(p.id) ? { ...p, status: 'LOCKED' } : p, userId));
   }
 
   async get(id: string, userId?: string) {
@@ -134,6 +154,8 @@ export class PredictionService {
     });
     if (!p) throw new NotFoundException('Kèo không tồn tại');
 
+    const locked = await this.autoLockExpired([p]);
+    if (locked.has(p.id)) p.status = 'LOCKED';
     const view = this.toView(p, userId);
     let myBets: { id: string; optionIndex: number; amount: number; odds: number; payout: number; status: string }[] = [];
     if (userId) {
@@ -332,6 +354,7 @@ export class PredictionService {
       for (const b of bets) {
         await this.character.adjustCoinByUser(b.userId, 'prediction_refund', b.amount, 'Hoàn coin (không ai thắng)', p.id);
         await this.prisma.predictionBet.update({ where: { id: b.id }, data: { payout: b.amount, status: 'REFUNDED' } });
+        this.notifySafe(b.userId, 'Kèo hoàn coin', `Kèo «${p.title}» không có người thắng, hoàn ${b.amount.toLocaleString()} coin.`, p.id);
       }
       return;
     }
@@ -343,6 +366,7 @@ export class PredictionService {
         const payout = Math.floor((b.amount / winnersStake) * distributable);
         await this.character.adjustCoinByUser(b.userId, 'prediction_win', payout, 'Thắng kèo dự đoán', p.id);
         await this.prisma.predictionBet.update({ where: { id: b.id }, data: { payout, status: 'WON' } });
+        this.notifySafe(b.userId, '🎉 Thắng kèo dự đoán', `Bạn thắng kèo «${p.title}» và nhận ${payout.toLocaleString()} coin!`, p.id);
       } else {
         await this.prisma.predictionBet.update({ where: { id: b.id }, data: { payout: 0, status: 'LOST' } });
       }
@@ -350,6 +374,7 @@ export class PredictionService {
     // Hoa hồng: kèo user → người tạo nhận; kèo admin → hệ thống giữ
     if (commission > 0 && !p.isAdminMarket) {
       await this.character.adjustCoinByUser(p.createdBy, 'prediction_commission', commission, 'Hoa hồng tạo kèo', p.id);
+      this.notifySafe(p.createdBy, 'Hoa hồng tạo kèo', `Kèo «${p.title}» đã chốt, bạn nhận ${commission.toLocaleString()} coin hoa hồng.`, p.id);
     }
   }
 
@@ -364,6 +389,7 @@ export class PredictionService {
         totalWinnerPayout += payout;
         await this.character.adjustCoinByUser(b.userId, 'prediction_win', payout, 'Thắng kèo (FIXED)', p.id);
         await this.prisma.predictionBet.update({ where: { id: b.id }, data: { payout, status: 'WON' } });
+        this.notifySafe(b.userId, '🎉 Thắng kèo dự đoán', `Bạn thắng kèo «${p.title}» (x${b.odds.toFixed(2)}) và nhận ${payout.toLocaleString()} coin!`, p.id);
       } else {
         await this.prisma.predictionBet.update({ where: { id: b.id }, data: { payout: 0, status: 'LOST' } });
       }
@@ -394,6 +420,7 @@ export class PredictionService {
     for (const b of bets) {
       await this.character.adjustCoinByUser(b.userId, 'prediction_refund', b.amount, 'Hoàn coin (huỷ kèo)', p.id);
       await this.prisma.predictionBet.update({ where: { id: b.id }, data: { payout: b.amount, status: 'REFUNDED' } });
+      this.notifySafe(b.userId, 'Kèo đã huỷ', `Kèo «${p.title}» đã bị huỷ, hoàn ${b.amount.toLocaleString()} coin.`, p.id);
     }
     // Trả lại ký quỹ cho người tạo
     if (p.creatorStake > 0) {

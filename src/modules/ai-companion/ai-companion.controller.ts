@@ -16,6 +16,30 @@ export class AiCompanionController {
     return this.aiService.listPersonas();
   }
 
+  // ── Persona riêng của user (đặt tên + tính cách, tự sinh prompt) ──
+  @Get('me/persona')
+  @UseGuards(JwtAuthGuard)
+  getMyPersona(@CurrentUser('id') userId: string) {
+    return this.aiService.getMyPersona(userId);
+  }
+
+  @Post('me/persona')
+  @UseGuards(JwtAuthGuard)
+  saveMyPersona(
+    @CurrentUser('id') userId: string,
+    @Body() body: { name: string; personality?: string; traits?: string[]; speakingStyle?: string; greetingText?: string },
+  ) {
+    return this.aiService.createOrUpdateMyPersona(userId, body);
+  }
+
+  @Post('me/persona/preview')
+  @UseGuards(JwtAuthGuard)
+  previewMyPersona(
+    @Body() body: { name: string; personality?: string; traits?: string[]; speakingStyle?: string },
+  ) {
+    return { systemPrompt: this.aiService.buildSystemPrompt(body) };
+  }
+
   @Post('sessions')
   @UseGuards(JwtAuthGuard)
   createSession(

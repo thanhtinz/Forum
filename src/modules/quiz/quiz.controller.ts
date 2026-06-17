@@ -88,12 +88,6 @@ export class QuizController {
     return this.predictions.list({ status, category, marketType, q, mine, sort }, userId);
   }
 
-  // Path tĩnh trước :id
-  @Get('predictions/leaderboard')
-  predictionLeaderboard(@Query('period') period?: 'week' | 'month' | 'all') {
-    return this.predictions.leaderboard(period || 'week');
-  }
-
   @Get('predictions/my-bets')
   @UseGuards(JwtAuthGuard)
   predictionMyBets(@CurrentUser('id') userId: string) {

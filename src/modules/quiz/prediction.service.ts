@@ -831,51 +831,6 @@ export class PredictionService {
     };
   }
 
-  async leaderboard(period: 'week' | 'month' | 'all' = 'week') {
-    const since = new Date();
-    if (period === 'week') since.setDate(since.getDate() - 7);
-    else if (period === 'month') since.setMonth(since.getMonth() - 1);
-    else since.setFullYear(2000);
-
-    const bets = await this.prisma.predictionBet.findMany({
-      where: { status: { in: ['WON', 'LOST'] }, prediction: { settledAt: { gte: since } } },
-      select: { userId: true, amount: true, payout: true, status: true },
-    });
-
-    const map = new Map<string, { profit: number; won: number; total: number; staked: number }>();
-    for (const b of bets) {
-      const cur = map.get(b.userId) || { profit: 0, won: 0, total: 0, staked: 0 };
-      cur.profit += b.payout - b.amount;
-      cur.staked += b.amount;
-      cur.total += 1;
-      if (b.status === 'WON') cur.won += 1;
-      map.set(b.userId, cur);
-    }
-    const rows = [...map.entries()]
-      .map(([userId, v]) => ({ userId, ...v, winRate: v.total ? Number(((v.won / v.total) * 100).toFixed(1)) : 0 }))
-      .sort((a, b) => b.profit - a.profit)
-      .slice(0, 20);
-
-    const users = await this.prisma.user.findMany({ where: { id: { in: rows.map((r) => r.userId) } }, select: USER_BASIC });
-    const byId = new Map(users.map((u) => [u.id, u]));
-
-    // Top người tạo kèo (theo số kèo đã quyết toán)
-    const creators = await this.prisma.prediction.groupBy({
-      by: ['createdBy'],
-      where: { status: 'SETTLED', settledAt: { gte: since } },
-      _count: { _all: true },
-      orderBy: { _count: { createdBy: 'desc' } },
-      take: 10,
-    });
-    const creatorUsers = await this.prisma.user.findMany({ where: { id: { in: creators.map((c) => c.createdBy) } }, select: USER_BASIC });
-    const creatorById = new Map(creatorUsers.map((u) => [u.id, u]));
-
-    return {
-      players: rows.map((r) => ({ ...r, user: byId.get(r.userId) || null, rank: this.rankOf(r.total, r.profit) })),
-      creators: creators.map((c) => ({ userId: c.createdBy, markets: c._count._all, user: creatorById.get(c.createdBy) || null })),
-    };
-  }
-
   // ──────────────────────────────────────────────
   // PHÂN TÍCH CHO NGƯỜI TẠO KÈO
   // ──────────────────────────────────────────────

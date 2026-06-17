@@ -1,11 +1,12 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { io, type Socket } from 'socket.io-client';
 import {
   TrendingUp, Coins, Lock, CheckCircle2, ShieldCheck, Users2, Clock, Tag,
-  Gavel, XCircle, AlertTriangle, Wallet, MessageCircle, Send, Trash2, BarChart3,
+  Gavel, XCircle, AlertTriangle, Wallet, MessageCircle, Send, Trash2, BarChart3, Radio,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
@@ -71,6 +72,10 @@ function PredView() {
   const [resultIdx, setResultIdx] = useState<number | null>(null);
   const [resultNote, setResultNote] = useState('');
   const [analytics, setAnalytics] = useState<any>(null);
+  const [feed, setFeed] = useState<{ id: string; text: string; kind: string }[]>([]);
+  const [liveOn, setLiveOn] = useState(false);
+  const [liveComment, setLiveComment] = useState<any>(null);
+  const feedSeq = useRef(0);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -89,6 +94,31 @@ function PredView() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, p?.isOwner, p?.status]);
+
+  // Livestream realtime
+  useEffect(() => {
+    if (!id) return;
+    const base = process.env.NEXT_PUBLIC_API_URL || '';
+    const socket: Socket = io(`${base}/predictions`, { transports: ['websocket', 'polling'] });
+    socket.on('connect', () => { setLiveOn(true); socket.emit('join', id); });
+    socket.on('disconnect', () => setLiveOn(false));
+    socket.on('live', (ev: any) => {
+      if (ev.snapshot) {
+        setP((prev) => (prev ? { ...prev, ...ev.snapshot } : prev));
+        if (ev.snapshot.status === 'SETTLED' || ev.snapshot.status === 'CANCELLED') load();
+      }
+      const name = ev.actor?.displayName || ev.actor?.username || 'Ai đó';
+      const push = (text: string, kind: string) => { feedSeq.current += 1; setFeed((f) => [{ id: `${Date.now()}-${feedSeq.current}`, text, kind }, ...f].slice(0, 30)); };
+      if (ev.type === 'bet') push(`${name} đặt ${Number(ev.amount).toLocaleString()} coin vào «${ev.optionLabel}»`, 'bet');
+      else if (ev.type === 'cashout') push('Một người chơi đã bán vé sớm', 'cashout');
+      else if (ev.type === 'lock') push('🔒 Kèo đã khoá cược', 'lock');
+      else if (ev.type === 'settle') push('🏁 Kèo đã có kết quả', 'settle');
+      else if (ev.type === 'cancel') push('Kèo đã bị huỷ', 'cancel');
+      else if (ev.type === 'comment') { push(`💬 ${ev.comment?.user?.displayName || ev.comment?.user?.username || 'Ai đó'} vừa bình luận`, 'comment'); setLiveComment(ev.comment); }
+    });
+    return () => { socket.emit('leave', id); socket.disconnect(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   async function act(fn: () => Promise<unknown>, ok: string) {
     setErr(''); setMsg('');
@@ -197,6 +227,28 @@ function PredView() {
         {!user && p.status === 'OPEN' && <p className="border-t border-ink-200 pt-3 text-sm text-ink-500 dark:border-ink-800">Vui lòng <a href="/login" className="text-brand-600 font-medium">đăng nhập</a> để đặt cược.</p>}
       </div>
 
+      {/* Diễn biến trực tiếp */}
+      <div className="card p-5">
+        <h2 className="mb-2 flex items-center gap-2 font-semibold">
+          <Radio size={18} className={liveOn ? 'text-red-500' : 'text-ink-400'} /> Diễn biến trực tiếp
+          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${liveOn ? 'bg-red-100 text-red-600 dark:bg-red-900/30' : 'bg-ink-100 text-ink-400 dark:bg-ink-800'}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${liveOn ? 'animate-pulse bg-red-500' : 'bg-ink-400'}`} /> {liveOn ? 'LIVE' : 'offline'}
+          </span>
+        </h2>
+        {feed.length === 0 ? (
+          <p className="text-sm text-ink-500">Đang chờ hoạt động… mọi lượt cược sẽ hiện ở đây ngay lập tức.</p>
+        ) : (
+          <div className="max-h-64 space-y-1.5 overflow-y-auto">
+            {feed.map((f) => (
+              <div key={f.id} className="flex items-center gap-2 rounded-lg bg-ink-50 px-3 py-1.5 text-sm dark:bg-ink-800/60">
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${f.kind === 'bet' ? 'bg-emerald-500' : f.kind === 'settle' ? 'bg-amber-500' : f.kind === 'cancel' ? 'bg-red-500' : 'bg-brand-500'}`} />
+                <span className="truncate">{f.text}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Vé cược của tôi */}
       {p.myBets && p.myBets.length > 0 && (
         <div className="card p-5">
@@ -288,7 +340,7 @@ function PredView() {
         </div>
       )}
 
-      <CommentsSection predictionId={p.id} />
+      <CommentsSection predictionId={p.id} liveComment={liveComment} />
 
       <Link href="/predictions" className="inline-flex items-center gap-1 text-sm text-brand-600"><TrendingUp size={15} /> Về danh sách kèo</Link>
     </div>
@@ -302,7 +354,7 @@ interface Comment {
   reactions?: Record<string, number>; myReactions?: string[];
 }
 
-function CommentsSection({ predictionId }: { predictionId: string }) {
+function CommentsSection({ predictionId, liveComment }: { predictionId: string; liveComment?: Comment | null }) {
   const { user } = useAuth();
   const [items, setItems] = useState<Comment[]>([]);
   const [text, setText] = useState('');
@@ -314,6 +366,19 @@ function CommentsSection({ predictionId }: { predictionId: string }) {
     api.get<Comment[]>(`/quiz/predictions/${predictionId}/comments`).then(setItems).catch(() => setItems([]));
   }, [predictionId]);
   useEffect(() => { load(); }, [load]);
+
+  // Bình luận realtime: chèn vào đúng vị trí (gốc / trả lời), tránh trùng
+  useEffect(() => {
+    if (!liveComment) return;
+    setItems((prev) => {
+      const exists = prev.some((c) => c.id === liveComment.id || c.replies?.some((r) => r.id === liveComment.id));
+      if (exists) return prev;
+      if (liveComment.parentId) {
+        return prev.map((c) => (c.id === liveComment.parentId ? { ...c, replies: [...(c.replies || []), liveComment] } : c));
+      }
+      return [...prev, { ...liveComment, replies: [] }];
+    });
+  }, [liveComment]);
 
   async function send(content: string, parentId?: string) {
     if (!content.trim()) return;

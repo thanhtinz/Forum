@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { CharacterService } from '../game/character/character.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 // ── Hằng số ──
 const CATEGORIES = ['ANIME', 'MANGA', 'GAME', 'ESPORTS', 'SPORTS', 'TECH', 'CRYPTO', 'COMMUNITY', 'OTHER'];
@@ -51,7 +52,32 @@ export class PredictionService {
     private readonly prisma: PrismaService,
     private readonly character: CharacterService,
     private readonly notif: NotificationsService,
+    private readonly events: EventEmitter2,
   ) {}
+
+  // Phát sự kiện realtime tới phòng của kèo (livestream)
+  private async emitLive(predictionId: string, type: string, extra: Record<string, any> = {}) {
+    try {
+      const p = await this.prisma.prediction.findUnique({
+        where: { id: predictionId },
+        select: { options: true, oddsMode: true, fixedOdds: true, commissionBps: true, status: true, correctIndex: true,
+          bets: { select: { optionIndex: true, amount: true, status: true } } },
+      });
+      if (!p) return;
+      const options = p.options as string[];
+      const { totals, counts, pool } = this.optionTotals(options, p.bets || []);
+      const snapshot = {
+        pool,
+        optionTotals: totals,
+        optionCounts: counts,
+        odds: this.displayOdds(p, totals, pool),
+        betCount: (p.bets || []).filter((b: any) => b.status !== 'CASHED_OUT' && b.status !== 'REFUNDED').length,
+        status: p.status,
+        correctIndex: p.correctIndex,
+      };
+      this.events.emit('prediction.live', { predictionId, type, snapshot, ...extra });
+    } catch { /* không chặn nghiệp vụ */ }
+  }
 
   // Gửi thông báo (bỏ qua lỗi để không chặn quyết toán)
   private notifySafe(userId: string, title: string, body: string, predictionId: string) {
@@ -340,6 +366,11 @@ export class PredictionService {
       data: { predictionId, userId, optionIndex, amount, odds, status: 'ACTIVE' },
     });
     const expected = p.oddsMode === 'FIXED' ? Math.round(amount * odds) : 0;
+    const actor = await this.prisma.user.findUnique({ where: { id: userId }, select: USER_BASIC });
+    await this.emitLive(predictionId, 'bet', {
+      actor: { displayName: actor?.displayName, username: actor?.username, avatar: actor?.avatar },
+      optionIndex, optionLabel: (p.options as string[])[optionIndex], amount, odds,
+    });
     return { ok: true, bet: { id: created.id, optionIndex, amount, odds, expectedPayout: expected } };
   }
 
@@ -370,6 +401,7 @@ export class PredictionService {
 
     await this.character.adjustCoinByUser(userId, 'prediction_cashout', refund, 'Bán vé cược sớm', p.id);
     await this.prisma.predictionBet.update({ where: { id: betId }, data: { status: 'CASHED_OUT', payout: refund } });
+    await this.emitLive(p.id, 'cashout', { optionIndex: bet.optionIndex });
     return { ok: true, refund, fee: bet.amount - refund };
   }
 
@@ -480,7 +512,9 @@ export class PredictionService {
   async lock(id: string, userId: string, isMod: boolean) {
     const p = await this.ownerOrModOrThrow(id, userId, isMod);
     if (p.status === 'SETTLED' || p.status === 'CANCELLED') throw new BadRequestException('Kèo đã kết thúc');
-    return this.prisma.prediction.update({ where: { id }, data: { status: 'LOCKED' } });
+    const updated = await this.prisma.prediction.update({ where: { id }, data: { status: 'LOCKED' } });
+    await this.emitLive(id, 'lock');
+    return updated;
   }
 
   async settle(id: string, correctIndex: number, userId: string, isMod: boolean, note?: string) {
@@ -504,6 +538,7 @@ export class PredictionService {
       data: { status: 'SETTLED', correctIndex, settledAt: new Date(), resultNote: note?.trim() || null },
     });
     await this.resolveParlaysForPrediction(id, { correctIndex });
+    await this.emitLive(id, 'settle', { correctIndex });
     return updated;
   }
 
@@ -595,6 +630,7 @@ export class PredictionService {
       data: { status: 'CANCELLED', resultNote: reason?.trim() || null, creatorEscrow: 0 },
     });
     await this.resolveParlaysForPrediction(id, { cancelled: true });
+    await this.emitLive(id, 'cancel');
     return updated;
   }
 
@@ -717,7 +753,9 @@ export class PredictionService {
       this.notifySafe(full.createdBy, `${who} đã bình luận về kèo của bạn`, `«${full.title}»`, predictionId);
     }
 
-    return { id: c.id, parentId: c.parentId, content: c.content, isDeleted: false, createdAt: c.createdAt, user: c.user, reactions: {}, myReactions: [], replies: [] };
+    const payload = { id: c.id, parentId: c.parentId, content: c.content, isDeleted: false, createdAt: c.createdAt, user: c.user, reactions: {}, myReactions: [], replies: [] };
+    this.events.emit('prediction.live', { predictionId, type: 'comment', comment: payload });
+    return payload;
   }
 
   async deleteComment(commentId: string, userId: string, isMod: boolean) {

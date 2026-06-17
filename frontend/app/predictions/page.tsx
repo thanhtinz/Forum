@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TrendingUp, Coins, Lock, CheckCircle2, Plus, Trophy, ShieldCheck, Users, Filter } from 'lucide-react';
+import { TrendingUp, Coins, Lock, CheckCircle2, Plus, Trophy, ShieldCheck, Users, Filter, Search, ArrowUpDown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { PRED_CATEGORIES, PRED_STATUS, catLabel, typeLabel, statusLabel, type Prediction } from '@/lib/predictions';
@@ -69,6 +69,9 @@ export default function PredictionsPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState('OPEN');
   const [category, setCategory] = useState('');
+  const [sort, setSort] = useState('new');
+  const [q, setQ] = useState('');
+  const [query, setQuery] = useState('');
   const [items, setItems] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -77,11 +80,13 @@ export default function PredictionsPage() {
     const p = new URLSearchParams();
     if (tab) p.set('status', tab);
     if (category) p.set('category', category);
+    if (sort) p.set('sort', sort);
+    if (query.trim()) p.set('q', query.trim());
     api.get<Prediction[]>(`/quiz/predictions?${p.toString()}`)
       .then(setItems).catch(() => setItems([])).finally(() => setLoading(false));
   }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, [tab, category]);
+  useEffect(() => { load(); }, [tab, category, sort, query]);
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 py-4">
@@ -97,11 +102,23 @@ export default function PredictionsPage() {
         </div>
       </header>
 
+      <form onSubmit={(e) => { e.preventDefault(); setQuery(q); }} className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+        <input className="input w-full pl-9" placeholder="Tìm kèo theo tiêu đề…" value={q} onChange={(e) => setQ(e.target.value)} />
+      </form>
+
       <div className="flex flex-wrap items-center gap-2">
         {TABS.map((t) => (
           <button key={t.key} onClick={() => setTab(t.key)} className={`chip ${tab === t.key ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800'}`}>{t.label}</button>
         ))}
-        <div className="ml-auto flex items-center gap-1.5 text-sm text-ink-500">
+        <div className="ml-auto flex flex-wrap items-center gap-1.5 text-sm text-ink-500">
+          <ArrowUpDown size={15} />
+          <select className="input !py-1.5" value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="new">Mới nhất</option>
+            <option value="hot">Sôi động</option>
+            <option value="closing">Sắp đóng</option>
+            <option value="pool">Pool lớn</option>
+          </select>
           <Filter size={15} />
           <select className="input !py-1.5" value={category} onChange={(e) => setCategory(e.target.value)}>
             <option value="">Mọi danh mục</option>

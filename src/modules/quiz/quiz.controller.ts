@@ -83,8 +83,9 @@ export class QuizController {
     @Query('marketType') marketType?: string,
     @Query('q') q?: string,
     @Query('mine') mine?: string,
+    @Query('sort') sort?: string,
   ) {
-    return this.predictions.list({ status, category, marketType, q, mine }, userId);
+    return this.predictions.list({ status, category, marketType, q, mine, sort }, userId);
   }
 
   // Path tĩnh trước :id

@@ -121,6 +121,22 @@ export class AdminDashboardService {
     return user;
   }
 
+  /** Spam cleaner: ban user + xoá mềm toàn bộ bài/chủ đề/profile post của họ. */
+  async spamClean(userId: string, reason: string, actorId: string) {
+    const target = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (!target) throw new Error('User không tồn tại');
+    if (target.role === 'ADMIN') throw new Error('Không thể dọn spam tài khoản admin');
+
+    const [posts, threads, profilePosts] = await this.prisma.$transaction([
+      this.prisma.post.updateMany({ where: { authorId: userId, isDeleted: false }, data: { isDeleted: true, deletedAt: new Date(), deletedById: actorId } }),
+      this.prisma.thread.updateMany({ where: { authorId: userId }, data: { isApproved: false, status: 'ARCHIVED' } }),
+      this.prisma.profilePost.deleteMany({ where: { authorId: userId } }),
+      this.prisma.user.update({ where: { id: userId }, data: { status: 'BANNED', banReason: reason || 'Spam', bannedUntil: null } }),
+    ]);
+    await this.audit(actorId, 'user.spam_clean', 'user', userId, null, { reason, posts: posts.count, threads: threads.count, profilePosts: profilePosts.count });
+    return { ok: true, postsDeleted: posts.count, threadsArchived: threads.count, profilePostsDeleted: profilePosts.count };
+  }
+
   async adjustGem(userId: string, amount: number, note: string, actorId: string) {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({ where: { id: userId }, select: { gemBalance: true } });

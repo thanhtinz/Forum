@@ -212,6 +212,7 @@ model User {
   giveawayEntries    GiveawayEntry[]
   triviaAnswers      TriviaAnswer[]
   predictionBets     PredictionBet[]
+  aiPersonas         AiPersona[]
 
   @@index([email])
   @@index([username])
@@ -817,7 +818,9 @@ model Notification {
 model AiPersona {
   id           String     @id @default(cuid())
   characterId  String?
+  userId       String? // null = persona toàn cục (admin); có giá trị = persona riêng của user
   name         String     @db.VarChar(100)
+  personality  String?    @db.Text // tính cách thô do user nhập (để sửa lại)
   systemPrompt String     @db.Text
   provider     AiProvider @default(GEMINI)
   modelId      String     @db.VarChar(100)
@@ -829,7 +832,10 @@ model AiPersona {
   updatedAt    DateTime   @updatedAt
 
   character AiCharacter? @relation(fields: [characterId], references: [id])
+  user      User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
   sessions  AiSession[]
+
+  @@index([userId])
 }
 
 model AiSession {

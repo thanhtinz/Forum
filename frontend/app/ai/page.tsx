@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { io, Socket } from 'socket.io-client';
-import { Send, Heart, Lock, Star } from 'lucide-react';
+import { Send, Heart, Lock, Star, Sparkles, Settings2, Wand2 } from 'lucide-react';
 import { api, getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -25,9 +25,101 @@ const RARITY_RING: Record<string, string> = {
   common: 'ring-ink-300', rare: 'ring-sky-400', legendary: 'ring-amber-400',
 };
 
+const TRAIT_PRESETS = ['Vui vẻ', 'Dịu dàng', 'Hài hước', 'Nghiêm túc', 'Tsundere', 'Năng động', 'Điềm tĩnh', 'Thông minh', 'Tinh nghịch', 'Ấm áp', 'Lạnh lùng', 'Tốt bụng'];
+
+// ── Form thiết lập AI riêng (tên + tính cách → hệ thống tự sinh prompt) ──
+function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p: any) => void; isEdit?: boolean }) {
+  const [name, setName] = useState(initial?.name || '');
+  const [traits, setTraits] = useState<string[]>([]);
+  const [personality, setPersonality] = useState(initial?.personality || '');
+  const [speakingStyle, setSpeakingStyle] = useState('');
+  const [preview, setPreview] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  function toggleTrait(t: string) {
+    setTraits((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+  }
+
+  async function doPreview() {
+    if (!name.trim()) { setErr('Hãy đặt tên cho AI'); return; }
+    try {
+      const r = await api.post<{ systemPrompt: string }>('/ai/me/persona/preview', { name, traits, personality, speakingStyle });
+      setPreview(r.systemPrompt);
+    } catch (e: any) { setErr(e.message); }
+  }
+
+  async function submit() {
+    setErr('');
+    if (!name.trim()) { setErr('Hãy đặt tên cho AI'); return; }
+    setBusy(true);
+    try {
+      const p = await api.post<any>('/ai/me/persona', { name, traits, personality, speakingStyle });
+      onSaved(p);
+    } catch (e: any) { setErr(e.message); setBusy(false); }
+  }
+
+  return (
+    <div className="mx-auto max-w-xl">
+      <div className="card p-6">
+        <h1 className="flex items-center gap-2 text-xl font-bold"><Sparkles size={20} className="text-fuchsia-500" /> {isEdit ? 'Tùy chỉnh AI của bạn' : 'Tạo người bạn AI của riêng bạn'}</h1>
+        <p className="mt-1 text-sm text-ink-500">Đặt tên và mô tả tính cách — hệ thống sẽ tự tạo "tính cách" (prompt) riêng cho AI của bạn.</p>
+
+        <div className="mt-4 space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Tên AI</label>
+            <input className="input" placeholder="VD: Mira, Tom, Bé Na…" value={name} maxLength={50} onChange={(e) => setName(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Tính cách (chọn nhanh)</label>
+            <div className="flex flex-wrap gap-1.5">
+              {TRAIT_PRESETS.map((t) => (
+                <button key={t} type="button" onClick={() => toggleTrait(t)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${traits.includes(t) ? 'bg-brand-600 text-white ring-brand-600' : 'bg-ink-100 ring-transparent hover:bg-ink-200 dark:bg-ink-800'}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Mô tả thêm (tuỳ chọn)</label>
+            <textarea className="input min-h-[80px] resize-y" placeholder="VD: thích anime, hay trêu chọc nhẹ nhàng, giỏi động viên, mê công nghệ…" value={personality} maxLength={800} onChange={(e) => setPersonality(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium">Cách xưng hô / giọng điệu (tuỳ chọn)</label>
+            <input className="input" placeholder="VD: xưng mình - gọi bạn, nhẹ nhàng" value={speakingStyle} onChange={(e) => setSpeakingStyle(e.target.value)} />
+          </div>
+
+          {err && <p className="text-sm text-red-500">{err}</p>}
+
+          <div className="flex flex-wrap gap-2">
+            <button onClick={submit} disabled={busy} className="btn-primary inline-flex items-center gap-1">
+              <Sparkles size={16} /> {busy ? 'Đang tạo…' : (isEdit ? 'Lưu thay đổi' : 'Tạo AI của tôi')}
+            </button>
+            <button type="button" onClick={doPreview} className="btn-outline inline-flex items-center gap-1"><Wand2 size={16} /> Xem prompt</button>
+          </div>
+
+          {preview && (
+            <div className="rounded-lg border border-ink-200 bg-ink-50 p-3 text-xs text-ink-600 dark:border-ink-800 dark:bg-ink-900 dark:text-ink-300">
+              <p className="mb-1 font-medium text-ink-500">Prompt hệ thống sẽ tạo:</p>
+              <pre className="whitespace-pre-wrap font-sans">{preview}</pre>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AiCompanionPage() {
   const { user, loading } = useAuth();
   const [persona, setPersona] = useState<any>(null);
+  const [needsSetup, setNeedsSetup] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [booting, setBooting] = useState(true);
   const [sessionId, setSessionId] = useState('');
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [text, setText] = useState('');
@@ -39,6 +131,9 @@ export default function AiCompanionPage() {
   const sock = useRef<Socket | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const characterId = useRef<string | null>(null);
+  const started = useRef(false);
+
+  function showToast(t: string, ms = 4000) { setToast(t); setTimeout(() => setToast(''), ms); }
 
   async function refreshBond() {
     if (!characterId.current) return;
@@ -50,48 +145,55 @@ export default function AiCompanionPage() {
     }
   }
 
-  useEffect(() => {
-    if (loading || !user) return;
-    (async () => {
-      const personas = await api.get<any[]>('/ai/personas').catch(() => []);
-      const p = personas[0]; setPersona(p);
-      const s = await api.post<{ id: string }>('/ai/sessions', { personaId: p?.id });
-      setSessionId(s.id);
-      if (p?.greetingText) setMsgs([{ role: 'ai', text: p.greetingText }]);
+  async function startChat(p: any) {
+    setPersona(p);
+    const s = await api.post<{ id: string }>('/ai/sessions', { personaId: p?.id });
+    setSessionId(s.id);
+    setMsgs(p?.greetingText ? [{ role: 'ai', text: p.greetingText }] : []);
+    if (p?.characterId) { characterId.current = p.characterId; await refreshBond(); }
 
-      if (p?.characterId) { characterId.current = p.characterId; await refreshBond(); }
-
-      const base = process.env.NEXT_PUBLIC_API_URL || '';
-      const socket = io(`${base}/ai`, { auth: { token: getToken() }, transports: ['websocket', 'polling'] });
-      sock.current = socket;
-      socket.on('emotion', (d: { emotion: string }) => setEmotion(d.emotion || 'neutral'));
-      socket.on('chunk', (d: { text: string }) => {
-        setTyping(false);
-        setMsgs((prev) => {
-          const last = prev[prev.length - 1];
-          if (last && last.role === 'ai' && (last as any)._streaming) {
-            return [...prev.slice(0, -1), { ...last, text: last.text + d.text }];
-          }
-          return [...prev, { role: 'ai', text: d.text, _streaming: true } as any];
-        });
-      });
-      socket.on('done', () => setMsgs((prev) => prev.map((m) => ({ ...m, _streaming: false } as any))));
-      socket.on('bond', (d: { leveledUp: boolean; newLevel: number; unlockedOutfits: string[] }) => {
-        refreshBond();
-        if (d.unlockedOutfits?.length) {
-          setToast(`🎉 Thân thiết cấp ${d.newLevel}! Mở khoá: ${d.unlockedOutfits.join(', ')}`);
-          setTimeout(() => setToast(''), 6000);
-        } else if (d.leveledUp) {
-          setToast(`💗 Thân thiết tăng lên cấp ${d.newLevel}!`);
-          setTimeout(() => setToast(''), 4000);
+    const base = process.env.NEXT_PUBLIC_API_URL || '';
+    const socket = io(`${base}/ai`, { auth: { token: getToken() }, transports: ['websocket', 'polling'] });
+    sock.current = socket;
+    socket.on('emotion', (d: { emotion: string }) => setEmotion(d.emotion || 'neutral'));
+    socket.on('chunk', (d: { text: string }) => {
+      setTyping(false);
+      setMsgs((prev) => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === 'ai' && (last as any)._streaming) {
+          return [...prev.slice(0, -1), { ...last, text: last.text + d.text }];
         }
+        return [...prev, { role: 'ai', text: d.text, _streaming: true } as any];
       });
+    });
+    socket.on('done', () => setMsgs((prev) => prev.map((m) => ({ ...m, _streaming: false } as any))));
+    socket.on('bond', (d: { leveledUp: boolean; newLevel: number; unlockedOutfits: string[] }) => {
+      refreshBond();
+      if (d.unlockedOutfits?.length) showToast(`Thân thiết cấp ${d.newLevel}! Mở khoá: ${d.unlockedOutfits.join(', ')}`, 6000);
+      else if (d.leveledUp) showToast(`Thân thiết tăng lên cấp ${d.newLevel}!`);
+    });
+  }
+
+  useEffect(() => {
+    if (loading || !user || started.current) return;
+    (async () => {
+      const mine = await api.get<any>('/ai/me/persona').catch(() => null);
+      if (mine && mine.id) { started.current = true; await startChat(mine); }
+      else setNeedsSetup(true);
+      setBooting(false);
     })();
     return () => { sock.current?.disconnect(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading]);
 
   useEffect(() => { bottom.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs, typing]);
+
+  async function onPersonaSaved(p: any) {
+    setNeedsSetup(false);
+    setEditing(false);
+    if (!started.current) { started.current = true; await startChat(p); }
+    else { setPersona(p); showToast('Đã cập nhật AI của bạn'); }
+  }
 
   function send(e: React.FormEvent) {
     e.preventDefault();
@@ -103,21 +205,20 @@ export default function AiCompanionPage() {
   }
 
   async function pickOutfit(o: Outfit) {
-    if (!o.isUnlocked) {
-      setToast(`🔒 "${o.name}" cần thân thiết cấp ${o.unlockBondLevel}. Trò chuyện thêm để mở khoá!`);
-      setTimeout(() => setToast(''), 4000);
-      return;
-    }
+    if (!o.isUnlocked) { showToast(`"${o.name}" cần thân thiết cấp ${o.unlockBondLevel}. Trò chuyện thêm để mở khoá!`); return; }
     if (!characterId.current) { setModelPath(o.modelPath); return; }
     try {
       const r = await api.post<{ currentOutfit: string; modelPath: string }>(
         `/ai/characters/${characterId.current}/outfit`, { outfitSlug: o.slug });
       setModelPath(r.modelPath);
       setBond((b) => b ? { ...b, bond: { ...b.bond, currentOutfit: r.currentOutfit }, outfits: b.outfits.map((x) => ({ ...x, isCurrent: x.slug === r.currentOutfit })) } : b);
-    } catch (e: any) { setToast(e.message); setTimeout(() => setToast(''), 4000); }
+    } catch (e: any) { showToast(e.message); }
   }
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để trò chuyện với AI.</div>;
+  if (booting) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
+  if (needsSetup) return <PersonaSetup onSaved={onPersonaSaved} />;
+  if (editing) return <PersonaSetup initial={persona} isEdit onSaved={onPersonaSaved} />;
 
   const pct = bond ? Math.min(100, Math.round(((bond.bond.points % bond.bond.pointsToNextLevel) / bond.bond.pointsToNextLevel) * 100)) : 0;
 
@@ -132,7 +233,10 @@ export default function AiCompanionPage() {
         <div className="w-full overflow-hidden rounded-2xl bg-gradient-to-b from-violet-100 to-fuchsia-100 shadow-card dark:from-violet-950/40 dark:to-fuchsia-950/40">
           <Live2DStage modelPath={modelPath} emotion={emotion} className="relative h-80 w-full" />
         </div>
-        <h2 className="mt-3 text-lg font-bold">{persona?.name || bond?.character.name || 'AI Companion'}</h2>
+        <div className="mt-3 flex items-center gap-2">
+          <h2 className="text-lg font-bold">{persona?.name || bond?.character.name || 'AI Companion'}</h2>
+          <button onClick={() => setEditing(true)} title="Tùy chỉnh AI" className="text-ink-400 hover:text-brand-600"><Settings2 size={16} /></button>
+        </div>
         <p className="text-sm text-ink-500">Cảm xúc: {emotion}</p>
 
         {bond && (

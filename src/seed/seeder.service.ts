@@ -7,6 +7,7 @@ import { FOODS } from './data/foods.data';
 import { WARDROBE_ITEMS } from './data/wardrobe.data';
 import { TOOL_CATEGORIES, TOOLS } from './data/tools.data';
 import { AI_CHARACTER, AI_OUTFITS } from './data/ai-character.data';
+import { DEFAULT_GROUPS } from '../modules/permissions/permission.service';
 
 // Tự seed dữ liệu mẫu (cá/cây/phân/vật nuôi/công thức/đồ ăn/wardrobe) khi app khởi động.
 // Data nằm thẳng trong src/seed/data — không cần chạy lệnh seed thủ công.
@@ -29,6 +30,16 @@ export class SeederService implements OnApplicationBootstrap {
 
   private async seedAll() {
     let n = 0;
+
+    // Nhóm hệ thống + bộ quyền (Flarum-style). Cập nhật tên/màu nhưng giữ permissions nếu admin đã sửa.
+    for (const g of DEFAULT_GROUPS) {
+      await this.prisma.userGroup.upsert({
+        where: { key: g.key },
+        update: { name: g.name, color: g.color, priority: g.priority, isSystem: true },
+        create: { key: g.key, name: g.name, color: g.color, priority: g.priority, isSystem: true, permissions: g.permissions },
+      });
+      n++;
+    }
 
     for (const f of FISH_SPECIES) {
       await this.prisma.fishSpecies.upsert({

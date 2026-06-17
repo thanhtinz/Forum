@@ -111,7 +111,7 @@ export default function NewThreadPage() {
             <Sparkles size={14} /> {aiBusy === 'title' ? 'Đang gợi ý…' : 'AI tiêu đề'}
           </button>
         </div>
-        <TipTapEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} placeholder="Viết nội dung bài đăng…" />
+        <TipTapEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} placeholder="Viết nội dung bài đăng…" autosaveKey="new-thread" />
 
         {/* Bình chọn (Poll) */}
         <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">

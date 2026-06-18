@@ -169,12 +169,15 @@ export default function FishingPage() {
               <button onClick={() => act(() => api.post('/fishing/pond/harvest-all'))} className="btn-primary !py-1.5 text-xs">Thu hoạch tất cả</button>
             )}
           </div>
-          {/* Cảnh hồ — cá bơi qua lại */}
-          <div className="relative mb-2 h-28 overflow-hidden rounded-xl bg-gradient-to-b from-sky-300 to-sky-600">
+          {/* Cảnh hồ (asset hoca.png) — cá thật bơi qua lại */}
+          <div className="relative mb-2 h-32 overflow-hidden rounded-xl bg-cover bg-center" style={{ backgroundImage: `url(/game-assets/cauca/hoca.png)`, backgroundColor: '#bae6fd' }}>
             {pond.fishes.slice(0, 14).map((f, i) => (
-              <span key={f.id} className="anim-swim" style={{ top: `${10 + (i % 4) * 22}%`, animationDuration: `${8 + (i % 5) * 2.5}s`, animationDelay: `${-(i * 1.1)}s`, fontSize: `${18 + Math.min(14, (f.currentKg))}px` }}>🐟</span>
+              f.asset
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img key={f.id} src={f.asset} alt={f.name} className="anim-swim object-contain" style={{ top: `${12 + (i % 4) * 20}%`, height: `${22 + Math.min(20, f.currentKg)}px`, animationDuration: `${8 + (i % 5) * 2.5}s`, animationDelay: `${-(i * 1.1)}s` }} />
+                : <span key={f.id} className="anim-swim text-2xl" style={{ top: `${12 + (i % 4) * 20}%`, animationDuration: `${9 + (i % 4) * 2}s`, animationDelay: `${-(i * 1.1)}s` }}>🐟</span>
             ))}
-            {pond.fishes.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm text-white/90">Hồ trống — thả cá vào để nuôi</p>}
+            {pond.fishes.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm font-medium text-sky-900/80">Hồ trống — thả cá vào để nuôi</p>}
           </div>
           <p className="mb-2 text-xs text-ink-500">Cá lớn dần theo thời gian (tối đa x{pond.maxMult}) — nuôi lâu bán càng được giá.</p>
           {pond.fishes.length === 0 ? <p className="text-sm text-ink-500">Hồ trống. Thả cá từ kho vào để nuôi.</p> : (

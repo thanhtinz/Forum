@@ -53,9 +53,10 @@ export default function AnimalsPage() {
           </div>
           {/* các con thú đi lại dưới sàn chuồng */}
           {owned.slice(0, 12).map((a, i) => (
-            <span key={a.id} className="anim-walk text-3xl" style={{ bottom: `${6 + (i % 3) * 18}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
-              {animalEmoji(a.slug)}
-            </span>
+            a.asset
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img key={a.id} src={a.asset} alt={a.name} className="anim-walk h-9 object-contain" style={{ bottom: `${6 + (i % 3) * 20}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }} />
+              : <span key={a.id} className="anim-walk text-3xl" style={{ bottom: `${6 + (i % 3) * 20}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>{animalEmoji(a.slug)}</span>
           ))}
           {owned.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm text-white drop-shadow">Chuồng trống — mua thú ở cửa hàng</p>}
         </div>

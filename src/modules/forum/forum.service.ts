@@ -54,6 +54,7 @@ export interface ThreadListQuery {
   limit?: number;
   sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes';
   q?: string;
+  authorId?: string;
 }
 
 @Injectable()
@@ -194,6 +195,7 @@ export class ForumService {
     const skip = (page - 1) * limit;
 
     const where: any = { isApproved: true };
+    if (query.authorId) where.authorId = query.authorId;
     if (query.categoryId) where.categoryId = query.categoryId;
     if (query.prefix) where.prefix = query.prefix;
     if (query.tagId) {

@@ -73,7 +73,7 @@ export default function FarmPage() {
       <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 p-6 text-white shadow-card">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold"><Sprout /> Nông trại</h1>
-          <p className="text-white/90">Cấp {s.profile.level} · {s.profile.plotCount} ô đất · bếp Lv{s.profile.kitchenLevel}</p>
+          <p className="text-white/90">Cấp {s.profile.level} · {s.profile.plotCount} ô đất · <a href="/game/kitchen" className="underline hover:text-white">bếp Lv{s.profile.kitchenLevel}</a></p>
         </div>
         <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {formatCoin(s.coin)}</div>
       </header>

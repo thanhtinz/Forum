@@ -17,7 +17,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   updateAiSettings(
     @CurrentUser('id') userId: string,
-    @Body() data: { provider?: string; model?: string; apiKey?: string },
+    @Body() data: { provider?: string; model?: string; apiKey?: string; baseUrl?: string },
   ) {
     return this.usersService.updateAiSettings(userId, data);
   }

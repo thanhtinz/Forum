@@ -154,7 +154,7 @@ export class AiCompanionService {
     // Nếu user đã tự đấu API key riêng -> dùng provider/model/key của user
     const u = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { aiProvider: true, aiModel: true, aiApiKey: true },
+      select: { aiProvider: true, aiModel: true, aiApiKey: true, aiBaseUrl: true },
     });
     const useOwnKey = !!u?.aiApiKey;
     const provider = (useOwnKey && u?.aiProvider ? u.aiProvider : persona.provider) as any;
@@ -165,6 +165,7 @@ export class AiCompanionService {
       modelId,
       history,
       useOwnKey ? u!.aiApiKey : null,
+      useOwnKey ? u?.aiBaseUrl : null,
     )) {
       if (chunk.done) break;
       fullResponse += chunk.text;

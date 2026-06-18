@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { AiCompanionService } from './ai-companion.service';
 import { OutfitService } from './outfit.service';
+import { AiProviderService } from './ai-provider.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/roles.decorator';
 
@@ -9,7 +10,15 @@ export class AiCompanionController {
   constructor(
     private readonly aiService: AiCompanionService,
     private readonly outfitService: OutfitService,
+    private readonly aiProvider: AiProviderService,
   ) {}
+
+  // Lấy danh sách model thực tế của provider (realtime), dùng key truyền lên hoặc key hệ thống
+  @Post('models')
+  @UseGuards(JwtAuthGuard)
+  listModels(@Body() body: { provider: string; apiKey?: string; baseUrl?: string }) {
+    return this.aiProvider.listModels(body.provider, body.apiKey, body.baseUrl).then((models) => ({ models }));
+  }
 
   @Get('personas')
   listPersonas() {

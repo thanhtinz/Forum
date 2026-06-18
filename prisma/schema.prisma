@@ -199,9 +199,10 @@ model User {
   postCount       Int        @default(0)
   reputationScore Int        @default(0)
   gemBalance      Int        @default(0)
-  aiProvider      String?    @db.VarChar(20)  // user tự chọn: OPENAI | GEMINI | OLLAMA
+  aiProvider      String?    @db.VarChar(20)  // OPENAI | GEMINI | OLLAMA | OPENAI_COMPAT
   aiModel         String?    @db.VarChar(80)  // model user tự chọn
   aiApiKey        String?    @db.VarChar(500) // API key riêng của user
+  aiBaseUrl       String?    @db.VarChar(300) // base URL cho nguồn OpenAI-compatible (OpenRouter, Groq, LM Studio…)
   lastSeenAt      DateTime?
   bannedUntil     DateTime?
   banReason       String?

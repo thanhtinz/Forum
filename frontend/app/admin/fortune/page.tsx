@@ -14,6 +14,15 @@ export default function AdminFortune() {
   const [stats, setStats] = useState<any>(null);
   const [msg, setMsg] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [models, setModels] = useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+
+  async function fetchModels() {
+    if (!cfg) return;
+    setLoadingModels(true);
+    try { const r = await api.post<{ models: string[] }>('/ai-companion/models', { provider: cfg.aiProvider, apiKey: apiKey || undefined }); setModels(r.models || []); if (!r.models?.length) setMsg('Không lấy được model — lưu API key trước.'); }
+    catch (e: any) { setMsg(e.message); } finally { setLoadingModels(false); }
+  }
 
   async function saveKey() {
     if (!cfg) return;
@@ -63,7 +72,9 @@ export default function AdminFortune() {
             </select>
           </label>
           <label className="text-sm">Model
-            <input className="input mt-1" value={cfg.aiModel} onChange={(e) => set('aiModel', e.target.value)} />
+            <input className="input mt-1" list="sys-ai-models" value={cfg.aiModel} onChange={(e) => set('aiModel', e.target.value)} />
+            <datalist id="sys-ai-models">{models.map((m) => <option key={m} value={m} />)}</datalist>
+            <button type="button" onClick={fetchModels} disabled={loadingModels} className="mt-1 text-xs text-brand-600 hover:underline disabled:opacity-50">{loadingModels ? 'Đang tải…' : 'Tải model thực tế'}</button>
           </label>
         </div>
         <label className="mt-3 block text-sm">System prompt

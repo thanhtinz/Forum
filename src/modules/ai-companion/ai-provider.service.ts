@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AiProvider } from '@prisma/client';
 import { AdminConfigService } from '../admin/admin-config.service';
 
 export interface AiChatMessage {
@@ -20,27 +19,65 @@ export class AiProviderService {
 
   // Stream response từ provider được chọn
   async *streamChat(
-    provider: AiProvider,
+    provider: string,
     modelId: string,
     messages: AiChatMessage[],
     keyOverride?: string | null,
+    baseUrl?: string | null,
   ): AsyncGenerator<AiStreamChunk> {
     switch (provider) {
-      case 'OPENAI':
-        yield* this.streamOpenAI(modelId, messages, keyOverride);
-        break;
       case 'GEMINI':
         yield* this.streamGemini(modelId, messages, keyOverride);
         break;
       case 'OLLAMA':
-        yield* this.streamOllama(modelId, messages);
+        yield* this.streamOllama(modelId, messages, baseUrl);
         break;
+      case 'OPENAI':
+        yield* this.streamOpenAI(modelId, messages, keyOverride);
+        break;
+      default:
+        // OPENAI_COMPAT hoặc bất kỳ nguồn OpenAI-compatible nào (OpenRouter, Groq, LM Studio…)
+        yield* this.streamOpenAI(modelId, messages, keyOverride, baseUrl);
+        break;
+    }
+  }
+
+  // Lấy danh sách model thực tế từ provider (realtime) bằng key tương ứng
+  async listModels(provider: string, key?: string | null, baseUrl?: string | null): Promise<string[]> {
+    try {
+      if (provider === 'GEMINI') {
+        const k = key || await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '');
+        if (!k) return [];
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${k}`);
+        if (!res.ok) return [];
+        const j: any = await res.json();
+        return (j.models || [])
+          .filter((m: any) => (m.supportedGenerationMethods || []).includes('generateContent'))
+          .map((m: any) => String(m.name).replace(/^models\//, ''))
+          .sort();
+      }
+      if (provider === 'OLLAMA') {
+        const base = (baseUrl || await this.config.resolve('ai.ollamaUrl', 'OLLAMA_BASE_URL', 'http://localhost:11434')).replace(/\/$/, '');
+        const res = await fetch(`${base}/api/tags`);
+        if (!res.ok) return [];
+        const j: any = await res.json();
+        return (j.models || []).map((m: any) => m.name).sort();
+      }
+      // OpenAI & OpenAI-compatible
+      const base = (baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+      const k = key || await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '');
+      const res = await fetch(`${base}/models`, { headers: k ? { Authorization: `Bearer ${k}` } : {} });
+      if (!res.ok) return [];
+      const j: any = await res.json();
+      return (j.data || []).map((m: any) => m.id).sort();
+    } catch {
+      return [];
     }
   }
 
   // Gọi không streaming: gom toàn bộ chunk thành một chuỗi
   async complete(
-    provider: AiProvider,
+    provider: string,
     modelId: string,
     messages: AiChatMessage[],
   ): Promise<string> {
@@ -59,9 +96,11 @@ export class AiProviderService {
     modelId: string,
     messages: AiChatMessage[],
     keyOverride?: string | null,
+    baseUrl?: string | null,
   ): AsyncGenerator<AiStreamChunk> {
     const apiKey = keyOverride || await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '');
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    const base = (baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+    const res = await fetch(`${base}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -112,6 +151,7 @@ export class AiProviderService {
     keyOverride?: string | null,
   ): AsyncGenerator<AiStreamChunk> {
     const apiKey = keyOverride || await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '');
+    modelId = modelId.replace(/^models\//, ''); // tránh 404 do prefix
     const systemMsg = messages.find((m) => m.role === 'system');
     const contents = messages
       .filter((m) => m.role !== 'system')
@@ -163,8 +203,9 @@ export class AiProviderService {
   private async *streamOllama(
     modelId: string,
     messages: AiChatMessage[],
+    baseUrl?: string | null,
   ): AsyncGenerator<AiStreamChunk> {
-    const base = await this.config.resolve('ai.ollamaUrl', 'OLLAMA_BASE_URL', 'http://localhost:11434');
+    const base = (baseUrl || await this.config.resolve('ai.ollamaUrl', 'OLLAMA_BASE_URL', 'http://localhost:11434')).replace(/\/$/, '');
     const res = await fetch(`${base}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

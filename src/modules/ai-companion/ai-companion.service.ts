@@ -13,17 +13,20 @@ export class AiCompanionService {
     private readonly outfit: OutfitService,
   ) {}
 
-  // Lấy model thực tế: ưu tiên key gửi lên, nếu trống thì dùng key đã lưu của user, cuối cùng key hệ thống.
+  // Lấy model thực tế: ưu tiên key gửi lên, nếu trống thì dùng key đã lưu của user
+  // (chỉ khi đúng nguồn đã lưu — tránh gửi key OpenAI sang Gemini), cuối cùng key hệ thống.
   async listModelsForUser(userId: string, provider: string, apiKey?: string, baseUrl?: string) {
-    let key = apiKey;
+    let key = apiKey?.trim() || undefined;
     let base = baseUrl;
     if (!key) {
       const u = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { aiApiKey: true, aiBaseUrl: true },
+        select: { aiProvider: true, aiApiKey: true, aiBaseUrl: true },
       });
-      if (u?.aiApiKey) key = u.aiApiKey;
-      if (!base && u?.aiBaseUrl) base = u.aiBaseUrl;
+      if (u?.aiApiKey && (!u.aiProvider || u.aiProvider === provider)) {
+        key = u.aiApiKey;
+        if (!base && u.aiBaseUrl) base = u.aiBaseUrl;
+      }
     }
     return this.aiProvider.listModels(provider, key, base);
   }

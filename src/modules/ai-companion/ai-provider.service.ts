@@ -45,9 +45,11 @@ export class AiProviderService {
   // Lấy danh sách model thực tế từ provider (realtime) bằng key tương ứng
   async listModels(provider: string, key?: string | null, baseUrl?: string | null): Promise<string[]> {
     if (provider === 'GEMINI') {
-      const k = key || await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '');
+      const k = (key || await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '')).trim();
       if (!k) throw new Error('Chưa có Gemini API key');
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${k}`);
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', {
+        headers: { 'x-goog-api-key': k },
+      });
       if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 150)}`);
       const j: any = await res.json();
       return (j.models || [])
@@ -64,7 +66,7 @@ export class AiProviderService {
     }
     // OpenAI & OpenAI-compatible
     const base = (baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
-    const k = key || await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '');
+    const k = (key || await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '')).trim();
     if (!k) throw new Error('Chưa có API key');
     const res = await fetch(`${base}/models`, { headers: { Authorization: `Bearer ${k}` } });
     if (!res.ok) throw new Error(`${res.status}: ${(await res.text()).slice(0, 150)}`);
@@ -95,7 +97,7 @@ export class AiProviderService {
     keyOverride?: string | null,
     baseUrl?: string | null,
   ): AsyncGenerator<AiStreamChunk> {
-    const apiKey = keyOverride || await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '');
+    const apiKey = (keyOverride || await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '')).trim();
     const base = (baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
     const res = await fetch(`${base}/chat/completions`, {
       method: 'POST',
@@ -147,7 +149,7 @@ export class AiProviderService {
     messages: AiChatMessage[],
     keyOverride?: string | null,
   ): AsyncGenerator<AiStreamChunk> {
-    const apiKey = keyOverride || await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '');
+    const apiKey = (keyOverride || await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '')).trim();
     modelId = modelId.replace(/^models\//, ''); // tránh 404 do prefix
     const systemMsg = messages.find((m) => m.role === 'system');
     const contents = messages
@@ -157,11 +159,11 @@ export class AiProviderService {
         parts: [{ text: m.content }],
       }));
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse`;
 
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify({
         contents,
         systemInstruction: systemMsg ? { parts: [{ text: systemMsg.content }] } : undefined,

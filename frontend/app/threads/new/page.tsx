@@ -112,7 +112,14 @@ export default function NewThreadPage() {
     finally { setAiBusy(''); }
   }
 
-  useEffect(() => { api.get<any[]>('/forum/categories').then((c) => { setCats(c); if (c[0]) setForm((f) => ({ ...f, categoryId: c[0].id })); }).catch(() => {}); }, []);
+  useEffect(() => { api.get<any[]>('/forum/categories').then((c) => {
+    setCats(c);
+    const fromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('cat') : null;
+    // ưu tiên ?cat= (nếu là danh mục đăng được), rồi tới con đầu tiên / danh mục gốc không có con
+    const urlPick = fromUrl && c.find((x: any) => x.id === fromUrl && (x.parentId || !c.some((y: any) => y.parentId === x.id)));
+    const selectable = urlPick || c.find((x: any) => x.parentId) || c.find((x: any) => !x.parentId && !c.some((y: any) => y.parentId === x.id));
+    if (selectable) setForm((f) => ({ ...f, categoryId: f.categoryId || (selectable as any).id }));
+  }).catch(() => {}); }, []);
 
   // Tải tiền tố theo danh mục đang chọn (admin tạo riêng cho từng danh mục)
   useEffect(() => {
@@ -199,7 +206,15 @@ export default function NewThreadPage() {
         <div className="grid grid-cols-2 gap-2">
           <label className="text-sm">Chuyên mục
             <select className="input mt-1" value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
-              {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              {cats.filter((c: any) => !c.parentId).map((parent: any) => {
+                const children = cats.filter((c: any) => c.parentId === parent.id);
+                // Danh mục cha có con -> optgroup tiêu đề (không chọn được), chỉ con chọn được
+                if (children.length > 0) {
+                  return <optgroup key={parent.id} label={parent.name}>{children.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</optgroup>;
+                }
+                // Danh mục cấp gốc không có con -> chọn trực tiếp
+                return <option key={parent.id} value={parent.id}>{parent.name}</option>;
+              })}
             </select>
           </label>
           <label className="text-sm">Tiền tố

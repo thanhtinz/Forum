@@ -86,7 +86,7 @@ export class ForumService {
       orderBy: { sortOrder: 'asc' },
       select: {
         id: true, name: true, slug: true, icon: true, iconUrl: true, color: true,
-        threadCount: true, description: true, moduleType: true, parentId: true,
+        threadCount: true, description: true, moduleType: true, parentId: true, minRolePost: true,
         threads: {
           where: { isApproved: true },
           orderBy: { lastPostAt: 'desc' },

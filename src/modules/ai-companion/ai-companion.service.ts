@@ -57,6 +57,19 @@ export class AiCompanionService {
     ].filter(Boolean).join('\n');
   }
 
+  // Câu chào động theo cấu hình: tên + tính cách + giọng điệu
+  buildGreeting(input: { name: string; personality?: string; traits?: string[]; speakingStyle?: string }): string {
+    const name = (input.name || 'AI').trim();
+    const traits = (input.traits || []).map((t) => t.trim().toLowerCase()).filter(Boolean);
+    const parts = [`Chào bạn~ Mình là ${name}`];
+    if (traits.length) parts[0] += `, một người bạn ${traits.slice(0, 3).join(', ')}`;
+    parts[0] += '.';
+    if (input.personality?.trim()) parts.push(`${input.personality.trim()}.`);
+    if (input.speakingStyle?.trim()) parts.push(`(${input.speakingStyle.trim()})`);
+    parts.push('Hôm nay bạn thế nào? Có gì cứ nhắn mình nhé!');
+    return parts.join(' ');
+  }
+
   async getMyPersona(userId: string) {
     return this.prisma.aiPersona.findFirst({
       where: { userId, isActive: true },
@@ -71,8 +84,7 @@ export class AiCompanionService {
     if (!dto?.name?.trim()) throw new BadRequestException('Hãy đặt tên cho AI của bạn');
     const base = await this.getDefaultPersona();
     const systemPrompt = this.buildSystemPrompt(dto);
-    const greetingText =
-      dto.greetingText?.trim() || `Xin chào! Mình là ${dto.name.trim()}, rất vui được làm quen với bạn~`;
+    const greetingText = dto.greetingText?.trim() || this.buildGreeting(dto);
 
     const data = {
       name: dto.name.trim().slice(0, 100),

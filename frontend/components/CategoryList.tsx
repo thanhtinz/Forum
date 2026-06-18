@@ -42,7 +42,7 @@ function ChildRow({ c }: { c: Category }) {
     <div className="flex items-start gap-3 px-4 py-3">
       <CategoryIcon c={c} />
       <div className="min-w-0 flex-1">
-        <Link href={`/?cat=${c.id}`} className="font-semibold hover:text-brand-600">{c.name}</Link>
+        <Link href={`/category?id=${c.id}`} className="font-semibold hover:text-brand-600">{c.name}</Link>
         <p className="text-xs text-ink-500">Chủ đề: <b>{fmtCount(c.threadCount)}</b></p>
         {c.latest && (
           <p className="mt-0.5 truncate text-sm text-ink-500">

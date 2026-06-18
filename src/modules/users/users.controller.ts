@@ -7,6 +7,21 @@ import { CurrentUser } from '../../common/decorators/roles.decorator';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get('me/ai')
+  @UseGuards(JwtAuthGuard)
+  getAiSettings(@CurrentUser('id') userId: string) {
+    return this.usersService.getAiSettings(userId);
+  }
+
+  @Patch('me/ai')
+  @UseGuards(JwtAuthGuard)
+  updateAiSettings(
+    @CurrentUser('id') userId: string,
+    @Body() data: { provider?: string; model?: string; apiKey?: string },
+  ) {
+    return this.usersService.updateAiSettings(userId, data);
+  }
+
   @Get(':username')
   getProfile(@Param('username') username: string) {
     return this.usersService.getProfile(username);

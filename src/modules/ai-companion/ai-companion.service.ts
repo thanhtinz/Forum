@@ -151,10 +151,20 @@ export class AiCompanionService {
     let detectedEmotion: Emotion = 'neutral';
     let emotionSent = false;
 
+    // Nếu user đã tự đấu API key riêng -> dùng provider/model/key của user
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { aiProvider: true, aiModel: true, aiApiKey: true },
+    });
+    const useOwnKey = !!u?.aiApiKey;
+    const provider = (useOwnKey && u?.aiProvider ? u.aiProvider : persona.provider) as any;
+    const modelId = useOwnKey && u?.aiModel ? u.aiModel : persona.modelId;
+
     for await (const chunk of this.aiProvider.streamChat(
-      persona.provider,
-      persona.modelId,
+      provider,
+      modelId,
       history,
+      useOwnKey ? u!.aiApiKey : null,
     )) {
       if (chunk.done) break;
       fullResponse += chunk.text;

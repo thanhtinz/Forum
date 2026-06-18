@@ -114,7 +114,7 @@ export class QuizController {
     @CurrentUser('role') role: UserRole,
     @Body() dto: CreatePredictionDto,
   ) {
-    return this.predictions.create(dto, userId, this.isMod(role));
+    return this.predictions.create(dto, userId, role === UserRole.ADMIN);
   }
 
   @Post('predictions/:id/bet')

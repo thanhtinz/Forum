@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { AvatarSlot, ConsumableType } from '@prisma/client';
+import { AvatarSlot, ConsumableType, MinigameType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FISH_SPECIES } from './data/fishing.data';
 import { CROPS, FERTILIZERS, ANIMALS, RECIPES } from './data/farm.data';
@@ -49,27 +49,56 @@ export class SeederService implements OnApplicationBootstrap {
       n++;
     }
 
-    for (const f of FISH_SPECIES) {
-      await this.prisma.fishSpecies.upsert({
-        where: { slug: f.slug },
-        update: { ...f, stock: f.refillCount },
-        create: { ...f, stock: f.refillCount },
-      });
-      n++;
-    }
+    // Bọc từng phần để 1 lỗi không chặn các phần seed sau (vd: icon/minigame không cập nhật)
+    try {
+      for (const f of FISH_SPECIES) {
+        await this.prisma.fishSpecies.upsert({
+          where: { slug: f.slug },
+          update: { ...f, stock: f.refillCount },
+          create: { ...f, stock: f.refillCount },
+        });
+        n++;
+      }
+    } catch (e) { this.logger.warn(`Seed fishSpecies lỗi: ${(e as Error).message}`); }
 
-    for (const c of CROPS) {
-      await this.prisma.cropTemplate.upsert({ where: { slug: c.slug }, update: c, create: c });
-      n++;
-    }
-    for (const fz of FERTILIZERS) {
-      await this.prisma.fertilizerTemplate.upsert({ where: { slug: fz.slug }, update: fz, create: fz });
-      n++;
-    }
-    for (const a of ANIMALS) {
-      await this.prisma.animalTemplate.upsert({ where: { slug: a.slug }, update: a, create: a });
-      n++;
-    }
+    try {
+      for (const c of CROPS) {
+        await this.prisma.cropTemplate.upsert({ where: { slug: c.slug }, update: c, create: c });
+        n++;
+      }
+      for (const fz of FERTILIZERS) {
+        await this.prisma.fertilizerTemplate.upsert({ where: { slug: fz.slug }, update: fz, create: fz });
+        n++;
+      }
+      for (const a of ANIMALS) {
+        await this.prisma.animalTemplate.upsert({ where: { slug: a.slug }, update: a, create: a });
+        n++;
+      }
+    } catch (e) { this.logger.warn(`Seed farm lỗi: ${(e as Error).message}`); }
+
+    // ── Minigame configs (nếu thiếu sẽ báo "Game không khả dụng") ──
+    const MINIGAMES: { type: MinigameType; name: string; minBet: number; maxBet: number; minPlayers: number; maxPlayers: number; sortOrder: number }[] = [
+      { type: 'TAI_XIU', name: 'Tài Xỉu', minBet: 100, maxBet: 50000, minPlayers: 1, maxPlayers: 1, sortOrder: 0 },
+      { type: 'BAU_CUA', name: 'Bầu Cua', minBet: 100, maxBet: 50000, minPlayers: 1, maxPlayers: 1, sortOrder: 1 },
+      { type: 'COIN_FLIP', name: 'Tung Xu', minBet: 100, maxBet: 50000, minPlayers: 1, maxPlayers: 1, sortOrder: 2 },
+      { type: 'LUCKY_WHEEL', name: 'Vòng Quay', minBet: 100, maxBet: 50000, minPlayers: 1, maxPlayers: 1, sortOrder: 3 },
+      { type: 'DUA_THU', name: 'Đua Thú', minBet: 100, maxBet: 50000, minPlayers: 1, maxPlayers: 1, sortOrder: 4 },
+      { type: 'JACKPOT_777', name: 'Jackpot 777', minBet: 100, maxBet: 20000, minPlayers: 1, maxPlayers: 1, sortOrder: 5 },
+      { type: 'BLACKJACK', name: 'Blackjack', minBet: 100, maxBet: 50000, minPlayers: 1, maxPlayers: 1, sortOrder: 6 },
+      { type: 'POKER', name: 'Poker', minBet: 100, maxBet: 50000, minPlayers: 2, maxPlayers: 6, sortOrder: 7 },
+      { type: 'TIEN_LEN', name: 'Tiến Lên', minBet: 100, maxBet: 50000, minPlayers: 2, maxPlayers: 4, sortOrder: 8 },
+      { type: 'CARO', name: 'Cờ Caro', minBet: 100, maxBet: 50000, minPlayers: 2, maxPlayers: 2, sortOrder: 9 },
+    ];
+    try {
+      for (const m of MINIGAMES) {
+        await this.prisma.minigameConfig.upsert({
+          where: { type: m.type },
+          update: { name: m.name, isActive: true },
+          create: { ...m, houseFee: 0.05, isActive: true },
+        });
+        n++;
+      }
+    } catch (e) { this.logger.warn(`Seed minigame lỗi: ${(e as Error).message}`); }
     for (const r of RECIPES) {
       const { ingredients, ...data } = r;
       const recipe = await this.prisma.recipeTemplate.upsert({

@@ -9,6 +9,8 @@ RUN npm run build
 # ── Build backend (NestJS) ──
 FROM node:22-alpine AS backend
 WORKDIR /app
+# Prisma cần OpenSSL để tạo/chạy engine trên Alpine (musl)
+RUN apk add --no-cache openssl
 COPY package*.json ./
 RUN npm ci
 COPY . .
@@ -18,6 +20,8 @@ RUN npm run build
 # ── Runtime: 1 process phục vụ cả API + frontend ──
 FROM node:22-alpine
 WORKDIR /app
+# OpenSSL cho Prisma engine khi chạy `prisma db push` lúc khởi động
+RUN apk add --no-cache openssl
 COPY --from=backend /app/node_modules ./node_modules
 COPY --from=backend /app/dist ./dist
 COPY --from=backend /app/prisma ./prisma

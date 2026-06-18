@@ -42,6 +42,11 @@ export default function FishingPage() {
 
       {msg && <div className="card p-3 text-center text-sm text-brand-600">{msg}</div>}
 
+      {/* Hồ câu */}
+      <div className="card overflow-hidden p-0">
+        <img src="/game-assets/cauca/hoca.png" alt="Hồ câu" className="max-h-48 w-full object-contain bg-sky-100 dark:bg-ink-900" />
+      </div>
+
       {s.cast && (
         <div className="card flex items-center justify-between p-4">
           <span>Đang thả cần ở khu {s.cast.zone} — {s.cast.biteReady ? 'cá đã cắn!' : 'đang chờ…'}</span>

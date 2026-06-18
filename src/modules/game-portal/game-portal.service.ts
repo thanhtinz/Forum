@@ -22,17 +22,18 @@ export class GamePortalService {
     private readonly prisma: PrismaService,
   ) {}
 
-  // Catalog tĩnh (stub). Thực tế sẽ lấy từ DB / admin từng game đẩy lên.
-  private readonly catalog: GamePortalGame[] = [
-    { slug: 'nhat-kiem-mon', name: 'Nhất Kiếm Môn', publisher: 'SohaGame', genre: 'Nhập vai', iconUrl: '', rating: 4, featured: true, online: true, shortDesc: 'Tinh Hoa Thế Giới Kiếm Hiệp Nhập Vai', links: { googlePlay: '#', appStore: '#', apk: '#' } },
-    { slug: '3q-sieu-hung', name: '3Q Siêu Hùng', publisher: 'SohaGame', genre: 'Thẻ tướng', iconUrl: '', rating: 4, featured: true, online: true, shortDesc: '3Q Siêu Hùng – Game AFK – X3 Sức Mạnh' },
-    { slug: 'sieu-chien-binh', name: 'Siêu Chiến Binh', publisher: 'GGames', genre: 'Casual', iconUrl: '', rating: 4, featured: true, online: true, shortDesc: 'Game đối kháng casual' },
-    { slug: 'tay-du-phuc-ma', name: 'Tây Du Phục Ma', publisher: 'GGames', genre: 'Nhập vai', iconUrl: '', online: true, shortDesc: 'Tu tiên phục ma' },
-  ];
+  private toGame(g: any): GamePortalGame {
+    return {
+      slug: g.slug, name: g.name, publisher: g.publisher, genre: g.genre,
+      iconUrl: g.iconUrl, coverUrl: g.coverUrl || undefined, shortDesc: g.shortDesc || undefined,
+      rating: g.rating, featured: g.featured, online: g.online,
+    };
+  }
 
   // Chọn connector: nếu game đã đấu API (GameApi active) -> RestConnector, ngược lại MockConnector stub.
   private async connector(slug: string): Promise<GameConnector> {
-    if (!this.catalog.some((g) => g.slug === slug)) throw new NotFoundException('Game không tồn tại');
+    const g = await this.prisma.portalGame.findUnique({ where: { slug } });
+    if (!g) throw new NotFoundException('Game không tồn tại');
     const cfg = await this.prisma.gameApi.findUnique({ where: { slug } });
     if (cfg && cfg.active && cfg.baseUrl) {
       return new RestConnector({
@@ -45,16 +46,17 @@ export class GamePortalService {
     return new MockConnector(slug);
   }
 
-  listGames() {
-    return this.catalog;
+  async listGames(): Promise<GamePortalGame[]> {
+    const games = await this.prisma.portalGame.findMany({ where: { active: true }, orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+    return games.map((g) => this.toGame(g));
   }
 
-  getGame(slug: string): GamePortalGameDetail {
-    const g = this.catalog.find((x) => x.slug === slug);
+  async getGame(slug: string): Promise<GamePortalGameDetail> {
+    const g = await this.prisma.portalGame.findUnique({ where: { slug } });
     if (!g) throw new NotFoundException('Game không tồn tại');
     return {
-      ...g,
-      description: g.shortDesc || g.name,
+      ...this.toGame(g),
+      description: g.description || g.shortDesc || g.name,
       screenshots: [],
       events: [
         { id: 'e1', title: 'Sự kiện đăng nhập nhận quà', excerpt: 'Đăng nhập mỗi ngày nhận thưởng lớn.' },
@@ -126,14 +128,48 @@ export class GamePortalService {
   // ADMIN: quản lý đấu API game ngoài
   // ──────────────────────────────────────────────
   async listApis() {
-    const apis = await this.prisma.gameApi.findMany({ orderBy: { createdAt: 'desc' } });
-    // kèm danh sách game trong catalog để admin chọn slug gắn API
-    return { apis, catalog: this.catalog.map((g) => ({ slug: g.slug, name: g.name })) };
+    const [apis, games] = await Promise.all([
+      this.prisma.gameApi.findMany({ orderBy: { createdAt: 'desc' } }),
+      this.prisma.portalGame.findMany({ orderBy: { createdAt: 'asc' }, select: { slug: true, name: true } }),
+    ]);
+    return { apis, catalog: games };
+  }
+
+  // ── Admin: tạo/sửa/xoá game trong cổng ──
+  async adminListGames() {
+    return this.prisma.portalGame.findMany({ orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }] });
+  }
+
+  async upsertGame(body: any) {
+    const slug = (body.slug || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
+    if (!slug || !body.name?.trim()) throw new BadRequestException('Thiếu slug hoặc tên game');
+    const data = {
+      name: body.name.trim(),
+      publisher: body.publisher?.trim() || '',
+      genre: body.genre?.trim() || '',
+      iconUrl: body.iconUrl?.trim() || '',
+      coverUrl: body.coverUrl?.trim() || null,
+      shortDesc: body.shortDesc?.trim() || null,
+      description: body.description?.trim() || null,
+      rating: typeof body.rating === 'number' ? body.rating : 4,
+      featured: !!body.featured,
+      online: body.online ?? true,
+      active: body.active ?? true,
+      sortOrder: Number(body.sortOrder) || 0,
+    };
+    return this.prisma.portalGame.upsert({ where: { slug }, update: data, create: { slug, ...data } });
+  }
+
+  async deleteGame(slug: string) {
+    await this.prisma.gameApi.deleteMany({ where: { slug } });
+    await this.prisma.portalGame.delete({ where: { slug } }).catch(() => { throw new NotFoundException('Không tìm thấy game'); });
+    return { ok: true };
   }
 
   async upsertApi(body: { id?: string; slug: string; name: string; baseUrl: string; apiKey?: string; identifierKind?: string; active?: boolean }) {
     if (!body.slug?.trim() || !body.baseUrl?.trim()) throw new BadRequestException('Thiếu slug hoặc baseUrl');
-    if (!this.catalog.some((g) => g.slug === body.slug)) throw new BadRequestException('Slug game không có trong cổng');
+    const game = await this.prisma.portalGame.findUnique({ where: { slug: body.slug } });
+    if (!game) throw new BadRequestException('Slug game không có trong cổng');
     const data = {
       name: body.name?.trim() || body.slug,
       baseUrl: body.baseUrl.trim(),

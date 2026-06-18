@@ -3122,3 +3122,23 @@ model GameApi {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
+
+// Game trong cổng game (catalog) — admin tạo/sửa
+model PortalGame {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String   @db.VarChar(150)
+  publisher   String   @default("") @db.VarChar(120)
+  genre       String   @default("") @db.VarChar(80)
+  iconUrl     String   @default("") @db.VarChar(500)
+  coverUrl    String?  @db.VarChar(500)
+  shortDesc   String?  @db.VarChar(500)
+  description String?  @db.Text
+  rating      Float    @default(4)
+  featured    Boolean  @default(false)
+  online      Boolean  @default(true)
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

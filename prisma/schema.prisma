@@ -2539,6 +2539,7 @@ model FishCatch {
   weightKg    Int
   soldAt      DateTime?
   caughtAt    DateTime  @default(now())
+  pondAt      DateTime? // != null = đang nuôi trong hồ (lớn dần theo thời gian)
 
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
   species   FishSpecies   @relation(fields: [speciesId], references: [id])

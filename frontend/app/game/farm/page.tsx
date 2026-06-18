@@ -27,7 +27,7 @@ function growthSrc(asset: string | null, ready: boolean, progress: number): stri
 interface FarmState {
   coin: number;
   profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean; dogUntil?: string | null };
-  plots: { index: number; slug: string | null; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
+  plots: { index: number; slug: string | null; crop: string | null; asset: string | null; watered: boolean; tilled: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
   warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number; asset?: string | null }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
   fertilizers?: { slug: string; name: string; quantity: number; reduceSeconds: number }[];
@@ -52,6 +52,7 @@ export default function FarmPage() {
 
   async function buyPlot() { await api.post('/farm/plot/buy').catch(() => {}); load(); }
   async function buyDog() { try { await api.post('/farm/dog/buy'); setMsg('Đã mua chó giữ nhà (30 ngày)!'); } catch (e: any) { setMsg(e.message); } load(); }
+  async function till(i: number) { try { await api.post('/farm/till', { plotIndex: i }); setMsg('Đã xới đất, giờ gieo hạt được rồi!'); } catch (e: any) { setMsg(e.message); } load(); }
   async function harvest(i: number) { await api.post('/farm/harvest', { plotIndex: i }).catch(() => {}); load(); }
   async function water(i: number) { await api.post('/farm/water', { plotIndex: i }).catch(() => {}); load(); }
   async function plant(plotIndex: number, cropSlug: string, name: string) {
@@ -156,14 +157,14 @@ export default function FarmPage() {
               const prog = p.progress ?? 0;
               return (
               <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
-                <div className="relative grid h-16 place-items-center rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${GROUND})` }}>
+                <div className={`relative grid h-16 place-items-center rounded-lg bg-cover bg-center ${p.empty && !p.tilled ? 'saturate-50 brightness-90' : ''}`} style={{ backgroundImage: `url(${GROUND})` }}>
                   {!p.empty && (p.asset
                     // cây lớn dần: ảnh sprite theo giai đoạn, nhỏ lúc mới trồng to khi sắp chín
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={growthSrc(p.asset, p.ready, prog)} alt="" onError={(e) => { if (p.asset) (e.currentTarget as HTMLImageElement).src = p.asset; }}
                         className="object-contain transition-all" style={{ maxHeight: `${40 + prog * 60}%` }} />
                     : <span className="leading-none transition-all" style={{ fontSize: `${14 + prog * 26}px` }}>{cropEmoji(p.slug || '')}</span>)}
-                  {p.empty && <span className="text-[10px] text-ink-400">+ Trồng</span>}
+                  {p.empty && <span className="text-[10px] text-ink-400">{p.tilled ? '+ Gieo' : 'Đất chưa xới'}</span>}
                 </div>
                 <div className="mt-1 truncate text-xs">{p.crop || 'Trống'}</div>
                 {/* Thanh tiến độ lớn + đếm giờ */}
@@ -173,11 +174,15 @@ export default function FarmPage() {
                     {p.readyAt && <div className="text-[10px] text-emerald-600">⏳ {formatDuration(secondsUntil(p.readyAt, now))}</div>}
                   </>
                 )}
-                {/* Ô trống: chọn hạt để gieo */}
-                {p.empty && planting !== p.index && (
+                {/* Ô trống chưa xới: phải xới trước */}
+                {p.empty && !p.tilled && (
+                  <button onClick={() => till(p.index)} className="mt-1 w-full rounded bg-amber-600 px-1 py-0.5 text-[10px] text-white">⛏ Xới đất</button>
+                )}
+                {/* Ô trống đã xới: chọn hạt để gieo */}
+                {p.empty && p.tilled && planting !== p.index && (
                   <button onClick={() => { setPlanting(p.index); setSeedChoice(''); }} className="mt-1 w-full rounded bg-emerald-500 px-1 py-0.5 text-[10px] text-white">Gieo hạt</button>
                 )}
-                {p.empty && planting === p.index && (
+                {p.empty && p.tilled && planting === p.index && (
                   <div className="mt-1 space-y-1">
                     {seeds.length === 0 ? <p className="text-[10px] text-ink-400">Chưa có hạt. Mua ở cửa hàng.</p> : (
                       <>

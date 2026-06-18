@@ -75,6 +75,7 @@ export class FarmService {
           crop: p.crop?.name ?? null,
           asset: p.crop?.asset ?? null,
           watered: p.watered,
+          tilled: p.tilled,
           health: p.health,
           ready: p.readyAt ? p.readyAt.getTime() <= now : false,
           readyAt: p.readyAt,
@@ -243,10 +244,21 @@ export class FarmService {
   // ──────────────────────────────────────────────
   // GIEO / TƯỚI / BÓN / THU HOẠCH
   // ──────────────────────────────────────────────
+  // Xới đất trước khi gieo
+  async till(userId: string, plotIndex: number) {
+    const char = await this.getCharacter(userId);
+    const plot = await this.getPlot(char.id, plotIndex);
+    if (plot.cropId) throw new BadRequestException('Ô đất đang có cây');
+    if (plot.tilled) return { ok: true, alreadyTilled: true };
+    await this.prisma.farmPlot.update({ where: { id: plot.id }, data: { tilled: true } });
+    return { ok: true };
+  }
+
   async plant(userId: string, plotIndex: number, cropSlug: string) {
     const char = await this.getCharacter(userId);
     const plot = await this.getPlot(char.id, plotIndex);
     if (plot.cropId) throw new BadRequestException('Ô đất đang có cây');
+    if (!plot.tilled) throw new BadRequestException('Cần xới đất trước khi gieo hạt');
     const crop = await this.prisma.cropTemplate.findUnique({ where: { slug: cropSlug } });
     if (!crop) throw new NotFoundException('Cây trồng không tồn tại');
 
@@ -320,7 +332,7 @@ export class FarmService {
       }, amount);
       await tx.farmPlot.update({
         where: { id: plot.id },
-        data: { cropId: null, plantedAt: null, readyAt: null, watered: false, health: 100, yield: 0 },
+        data: { cropId: null, plantedAt: null, readyAt: null, watered: false, tilled: false, health: 100, yield: 0 },
       });
       return this.addExp(tx, char.id, crop.exp);
     });

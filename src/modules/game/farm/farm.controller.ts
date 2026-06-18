@@ -39,6 +39,11 @@ export class FarmController {
     return this.farm.buySeed(userId, b.cropSlug, Number(b.qty ?? 1));
   }
 
+  @Post('till')
+  till(@CurrentUser('id') userId: string, @Body('plotIndex') plotIndex: number) {
+    return this.farm.till(userId, Number(plotIndex));
+  }
+
   @Post('plant')
   plant(@CurrentUser('id') userId: string, @Body() b: { plotIndex: number; cropSlug: string }) {
     return this.farm.plant(userId, Number(b.plotIndex), b.cropSlug);

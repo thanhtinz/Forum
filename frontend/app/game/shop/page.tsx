@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Sprout, Fish, ShoppingBag, Coins, Beef, FlaskConical, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { formatCoin } from '@/lib/format';
 
 type Tab = 'crop' | 'animal' | 'fertilizer' | 'fishing';
 
@@ -34,6 +35,7 @@ export default function GameShopPage() {
   const [ferts, setFerts] = useState<Fertilizer[]>([]);
   const [zones, setZones] = useState<FishZone[]>([]);
   const [busy, setBusy] = useState('');
+  const [qty, setQty] = useState(1);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const loadCoin = useCallback(() => {
@@ -70,9 +72,19 @@ export default function GameShopPage() {
     <div className="space-y-4">
       <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white shadow-card">
         <h1 className="flex items-center gap-2 text-2xl font-bold"><ShoppingBag /> Cửa hàng</h1>
-        <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {coin?.toLocaleString() ?? '...'}</span>
+        <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {coin != null ? formatCoin(coin) : '...'}</span>
       </header>
-      <p className="text-sm text-ink-500">Mua hạt giống, vật nuôi, dụng cụ trồng trọt và dụng cụ câu cá — thanh toán bằng Coin kiếm trong game.</p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-ink-500">Thanh toán bằng Coin kiếm trong game.</p>
+        {/* Chọn số lượng mua (áp dụng cho hạt giống & phân bón) */}
+        <div className="flex items-center gap-1 text-sm">
+          <span className="text-ink-500">Số lượng:</span>
+          <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-7 w-7 place-items-center rounded bg-ink-100 dark:bg-ink-800">−</button>
+          <input type="number" min={1} value={qty} onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))} className="input w-16 text-center !py-1" />
+          <button onClick={() => setQty((q) => q + 1)} className="grid h-7 w-7 place-items-center rounded bg-ink-100 dark:bg-ink-800">+</button>
+          {[10, 50, 100].map((n) => <button key={n} onClick={() => setQty(n)} className="rounded bg-ink-100 px-2 py-1 text-xs dark:bg-ink-800">{n}</button>)}
+        </div>
+      </div>
 
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -95,9 +107,9 @@ export default function GameShopPage() {
                 <p className="truncate font-medium">{c.name}</p>
                 {c.reqLevel ? <p className="text-xs text-ink-400">Cấp nông trại {c.reqLevel}</p> : null}
               </div>
-              <button disabled={!!busy} onClick={() => buy(c.slug, () => api.post('/farm/seed/buy', { cropSlug: c.slug, qty: 1 }), `Đã mua hạt ${c.name}`)}
+              <button disabled={!!busy} onClick={() => buy(c.slug, () => api.post('/farm/seed/buy', { cropSlug: c.slug, qty }), `Đã mua ${qty} hạt ${c.name}`)}
                 className="btn-outline shrink-0 !py-1.5 text-xs">
-                {busy === c.slug ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {c.seedPrice}</>}
+                {busy === c.slug ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {formatCoin(c.seedPrice * qty)}</>}
               </button>
             </div>
           ))}
@@ -117,7 +129,7 @@ export default function GameShopPage() {
               </div>
               <button disabled={!!busy} onClick={() => buy(a.slug, () => api.post('/farm/animal/buy', { slug: a.slug }), `Đã mua ${a.name}`)}
                 className="btn-outline shrink-0 !py-1.5 text-xs">
-                {busy === a.slug ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {a.buyPrice}</>}
+                {busy === a.slug ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {formatCoin(a.buyPrice)}</>}
               </button>
             </div>
           ))}
@@ -135,9 +147,9 @@ export default function GameShopPage() {
                 <p className="truncate font-medium">{f.name}</p>
                 {f.reduceSeconds ? <p className="text-xs text-ink-400">Giảm {Math.round(f.reduceSeconds / 60)} phút chín</p> : null}
               </div>
-              <button disabled={!!busy} onClick={() => buy(f.slug, () => api.post('/farm/fertilizer/buy', { slug: f.slug, qty: 1 }), `Đã mua ${f.name}`)}
+              <button disabled={!!busy} onClick={() => buy(f.slug, () => api.post('/farm/fertilizer/buy', { slug: f.slug, qty }), `Đã mua ${qty} ${f.name}`)}
                 className="btn-outline shrink-0 !py-1.5 text-xs">
-                {busy === f.slug ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {f.price}</>}
+                {busy === f.slug ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {formatCoin(f.price * qty)}</>}
               </button>
             </div>
           ))}

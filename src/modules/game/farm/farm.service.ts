@@ -93,7 +93,10 @@ export class FarmService {
         id: a.id,
         name: a.animal.name,
         grown: a.grownAt.getTime() <= now,
+        grownAt: a.grownAt,
         productReady: a.productReadyAt ? a.productReadyAt.getTime() <= now : false,
+        productReadyAt: a.productReadyAt,
+        hasProduct: !!a.animal.productSlug,
         fedCount: a.fedCount,
         diesAt: a.diesAt,
         asset: a.animal.asset,
@@ -129,12 +132,25 @@ export class FarmService {
     const DAY = 24 * 3600 * 1000;
     const last = profile.kheLastWaterAt ? profile.kheLastWaterAt.getTime() : 0;
     const nextWaterAt = last ? new Date(last + DAY) : null;
+    const fruit = this.currentKheFruit(profile);
+    const now = Date.now();
+    const base = profile.kheFruit || 0;
+    const lastUpd = profile.kheUpdatedAt ? profile.kheUpdatedAt.getTime() : now;
+    let nextFruitAt: Date | null = null;
+    let fullAt: Date | null = null;
+    if (fruit < this.KHE_MAX) {
+      const sinceLast = (now - lastUpd) % this.KHE_REGEN_MS;
+      nextFruitAt = new Date(now + (this.KHE_REGEN_MS - sinceLast));
+      fullAt = new Date(lastUpd + (this.KHE_MAX - base) * this.KHE_REGEN_MS);
+    }
     return {
-      fruit: this.currentKheFruit(profile),
+      fruit,
       max: this.KHE_MAX,
       pricePerFruit: this.KHE_PRICE,
-      canWater: !nextWaterAt || nextWaterAt.getTime() <= Date.now(),
+      canWater: !nextWaterAt || nextWaterAt.getTime() <= now,
       nextWaterAt,
+      nextFruitAt,
+      fullAt,
     };
   }
 

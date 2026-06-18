@@ -462,25 +462,38 @@ export class FarmService {
   // ──────────────────────────────────────────────
   async listRecipes(userId: string) {
     const char = await this.getCharacter(userId);
-    const [recipes, skills] = await Promise.all([
+    const profile = await this.getProfile(char.id);
+    const [recipes, skills, cooking] = await Promise.all([
       this.prisma.recipeTemplate.findMany({
         orderBy: { sortOrder: 'asc' },
         include: { ingredients: true },
       }),
       this.prisma.farmSkill.findMany({ where: { characterId: char.id }, select: { recipeId: true } }),
+      this.prisma.farmCooking.findMany({
+        where: { characterId: char.id },
+        include: { recipe: { select: { name: true, asset: true, reward: true } } },
+        orderBy: { doneAt: 'asc' },
+      }),
     ]);
     const learned = new Set(skills.map((s) => s.recipeId));
-    return recipes.map((r) => ({
-      slug: r.slug,
-      name: r.name,
-      cookSeconds: r.cookSeconds,
-      reward: r.reward,
-      needSkill: r.needSkill,
-      learned: !r.needSkill || learned.has(r.id),
-      skillExp: r.skillExp,
-      ingredients: r.ingredients.map((i) => ({ slug: i.cropSlug, name: i.name, quantity: i.quantity })),
-      asset: r.asset,
-    }));
+    return {
+      kitchenLevel: profile.kitchenLevel,
+      maxKitchen: MAX_KITCHEN_LEVEL,
+      exp: profile.exp,
+      upgradeCost: profile.kitchenLevel >= MAX_KITCHEN_LEVEL ? null : (profile.kitchenLevel <= 5 ? 1000 * profile.kitchenLevel : 3000 * profile.kitchenLevel),
+      cooking: cooking.map((c) => ({ id: c.id, name: c.recipe.name, asset: c.recipe.asset, reward: c.recipe.reward, doneAt: c.doneAt })),
+      recipes: recipes.map((r) => ({
+        slug: r.slug,
+        name: r.name,
+        cookSeconds: r.cookSeconds,
+        reward: r.reward,
+        needSkill: r.needSkill,
+        learned: !r.needSkill || learned.has(r.id),
+        skillExp: r.skillExp,
+        ingredients: r.ingredients.map((i) => ({ slug: i.cropSlug, name: i.name, quantity: i.quantity })),
+        asset: r.asset,
+      })),
+    };
   }
 
   async learnSkill(userId: string, recipeSlug: string) {

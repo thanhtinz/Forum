@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
-import { Header } from '@/components/Header';
-import { SiteFooter } from '@/components/SiteFooter';
+import { ForumChrome } from '@/components/ForumChrome';
 
 const SITE = 'Forum AI Platform';
 const DESC = 'Diễn đàn cộng đồng tích hợp game, chợ số, AI Live2D — phong cách XenForo/Flarum.';
@@ -21,9 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="vi">
       <body>
         <AuthProvider>
-          <Header />
-          <main className="container-forum py-5">{children}</main>
-          <SiteFooter />
+          <ForumChrome>{children}</ForumChrome>
         </AuthProvider>
       </body>
     </html>

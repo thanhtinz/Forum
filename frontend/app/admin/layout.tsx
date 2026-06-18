@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, Gift, HelpCircle, ImagePlus, Paperclip, Mail, ShieldCheck, KeyRound, BellRing, Gavel, FolderTree } from 'lucide-react';
+import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, Gift, HelpCircle, ImagePlus, Paperclip, Mail, ShieldCheck, KeyRound, BellRing, Gavel, FolderTree, ArrowLeft, LogOut } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 const NAV = [
@@ -35,31 +35,53 @@ const NAV = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const path = usePathname();
 
   if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
   if (!user || user.role !== 'ADMIN') {
-    return <div className="card p-10 text-center text-ink-500">Khu vực quản trị — chỉ dành cho Admin.</div>;
+    return <div className="card m-6 p-10 text-center text-ink-500">Khu vực quản trị — chỉ dành cho Admin.</div>;
   }
 
+  // Shell quản trị độc lập: header + menu + footer riêng (không dùng của forum)
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[220px_1fr]">
-      <aside className="card h-fit p-2">
-        <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-ink-400">Quản trị</div>
-        <nav className="space-y-0.5">
-          {NAV.map((n) => {
-            const active = path === n.href;
-            return (
-              <Link key={n.href} href={n.href}
-                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${active ? 'bg-brand-600 text-white' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
-                <n.icon size={16} /> {n.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </aside>
-      <div>{children}</div>
+    <div className="flex min-h-screen flex-col bg-ink-100 dark:bg-ink-950">
+      {/* Header admin */}
+      <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-ink-200/70 bg-ink-900 px-4 text-white dark:border-ink-800">
+        <Link href="/admin" className="flex items-center gap-2 font-bold">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600">⚙</span>
+          <span>Trang quản trị</span>
+        </Link>
+        <div className="ml-auto flex items-center gap-2 text-sm">
+          <Link href="/" className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-white/85 hover:bg-white/10"><ArrowLeft size={15} /> Về trang chủ</Link>
+          <span className="hidden text-white/70 sm:block">{user.displayName || user.username}</span>
+          <button onClick={logout} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-white/85 hover:bg-white/10"><LogOut size={15} /> Đăng xuất</button>
+        </div>
+      </header>
+
+      {/* Thân: menu trái + nội dung */}
+      <div className="mx-auto flex w-full max-w-7xl flex-1 gap-5 px-4 py-5">
+        <aside className="card hidden h-fit w-56 shrink-0 p-2 sm:block">
+          <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-ink-400">Quản trị</div>
+          <nav className="space-y-0.5">
+            {NAV.map((n) => {
+              const active = path === n.href;
+              return (
+                <Link key={n.href} href={n.href}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${active ? 'bg-brand-600 text-white' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
+                  <n.icon size={16} /> {n.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </aside>
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
+
+      {/* Footer admin */}
+      <footer className="border-t border-ink-200/70 py-4 text-center text-xs text-ink-500 dark:border-ink-800">
+        Trang quản trị · ForumHub
+      </footer>
     </div>
   );
 }

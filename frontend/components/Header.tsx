@@ -121,7 +121,7 @@ export function Header() {
                     <UserIcon size={15} /> Trang cá nhân
                   </Link>
                   <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <Gem size={15} /> Nạp game
+                    <Gem size={15} /> Nạp Gem
                   </Link>
                   <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <Store size={15} /> Đơn hàng của tôi

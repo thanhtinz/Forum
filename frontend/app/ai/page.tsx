@@ -68,9 +68,10 @@ function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p
   async function fetchAiModels() {
     setAiLoadingModels(true); setErr('');
     try {
-      const r = await api.post<{ models: string[] }>('/ai/models', { provider: aiProvider, apiKey: aiKey || undefined, baseUrl: aiBaseUrl || undefined });
+      const r = await api.post<{ models: string[]; error?: string }>('/ai/models', { provider: aiProvider, apiKey: aiKey || undefined, baseUrl: aiBaseUrl || undefined });
       setAiModels(r.models || []);
-      if (!r.models?.length) setErr('Không có model nào — kiểm tra lại API key/Base URL.');
+      if (r.error) setErr(`Tải model lỗi: ${r.error}`);
+      else if (!r.models?.length) setErr('Không có model nào — kiểm tra lại API key/Base URL.');
     } catch (e: any) { setErr(`Tải model lỗi: ${e.message}`); } finally { setAiLoadingModels(false); }
   }
 

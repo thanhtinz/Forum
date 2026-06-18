@@ -227,7 +227,7 @@ export default function NewPredictionPage() {
           <ImageUpload value={banner} onUploaded={setBanner} label="Banner" />
         </div>
 
-        {isMod && (
+        {user?.role === 'ADMIN' && (
           <div className="space-y-2 rounded-lg bg-amber-50 p-3 text-sm dark:bg-amber-950/20">
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={isAdminMarket} onChange={(e) => setIsAdminMarket(e.target.checked)} />

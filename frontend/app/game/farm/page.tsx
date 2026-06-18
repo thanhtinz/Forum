@@ -49,14 +49,32 @@ export default function FarmPage() {
 
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
 
-      {/* Cây Khế — tưới mỗi ngày nhận tiền */}
-      {s.khe && (
+      {/* Cây Khế — tự ra quả theo thời gian, tưới để thêm, có quả mới thu hoạch */}
+      {s.khe && (() => {
+        const ratio = Math.min(1, s.khe.fruit / s.khe.max);
+        const visFruits = Math.round(ratio * 8); // số quả hiển thị trên tán (0–8)
+        const ripe = s.khe.fruit >= s.khe.max;
+        const status = s.khe.fruit <= 0 ? 'Chưa có quả — chờ cây ra quả' : ripe ? 'Sai trĩu quả — thu hoạch ngay!' : 'Đang ra quả…';
+        // vị trí quả rải trên tán
+        const spots = [[20, 18], [48, 12], [70, 22], [12, 40], [38, 34], [62, 38], [82, 46], [30, 54]];
+        return (
         <section className="card flex items-center gap-4 p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={KHE_TREE} alt="Cây khế" className="h-20 w-20 object-contain" />
+          {/* Cây + quả mọc dần trên tán */}
+          <div className="relative h-24 w-24 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={KHE_TREE} alt="Cây khế" className={`h-24 w-24 object-contain transition-all ${s.khe.fruit <= 0 ? 'opacity-70 saturate-50' : ''}`} />
+            {spots.slice(0, visFruits).map(([x, y], i) => (
+              <span key={i} className="absolute text-base drop-shadow" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' }}>⭐</span>
+            ))}
+          </div>
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold">Cây Khế</h2>
-            <p className="text-sm text-ink-500">Quả: <b>{s.khe.fruit}</b>/{s.khe.max} · {s.khe.pricePerFruit} coin/quả. Cây tự ra quả theo thời gian, tưới mỗi ngày để có thêm.</p>
+            <p className={`text-xs font-medium ${ripe ? 'text-amber-600' : s.khe.fruit <= 0 ? 'text-ink-400' : 'text-emerald-600'}`}>{status}</p>
+            {/* thanh tiến độ ra quả */}
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
+              <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${ratio * 100}%` }} />
+            </div>
+            <p className="mt-1 text-sm text-ink-500">Quả: <b>{s.khe.fruit}</b>/{s.khe.max} · {s.khe.pricePerFruit} coin/quả. Tưới mỗi ngày để ra thêm quả.</p>
             {!s.khe.canWater && s.khe.nextWaterAt && (
               <p className="text-xs text-ink-400">Tưới tiếp được sau: {new Date(s.khe.nextWaterAt).toLocaleString('vi')}</p>
             )}
@@ -66,7 +84,8 @@ export default function FarmPage() {
             <button onClick={waterKhe} disabled={!s.khe.canWater} className="btn-outline disabled:opacity-50">{s.khe.canWater ? 'Tưới cây' : 'Đã tưới'}</button>
           </div>
         </section>
-      )}
+        );
+      })()}
 
       <section className="card overflow-hidden p-4 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)), url(${FARM_BG})` }}>
         <div className="mb-3 flex items-center justify-between">

@@ -136,6 +136,38 @@ export class AdminController {
     return this.dashboard.adjustGem(id, body.amount, body.note, actorId);
   }
 
+  @Post('users/:id/coin')
+  adjustCoin(
+    @Param('id') id: string,
+    @Body() body: { amount: number; note: string },
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.dashboard.adjustCoin(id, body.amount, body.note, actorId);
+  }
+
+  @Patch('users/:id/info')
+  updateUserInfo(
+    @Param('id') id: string,
+    @Body() body: { displayName?: string; email?: string },
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.dashboard.updateUserInfo(id, body, actorId);
+  }
+
+  @Post('users/:id/reset-password')
+  resetPassword(
+    @Param('id') id: string,
+    @Body('password') password: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.dashboard.resetPassword(id, password, actorId);
+  }
+
+  @Delete('users/:id')
+  deleteUser(@Param('id') id: string, @CurrentUser('id') actorId: string) {
+    return this.dashboard.deleteUser(id, actorId);
+  }
+
   // ── Moderation ──
   @Get('reports')
   getReports(

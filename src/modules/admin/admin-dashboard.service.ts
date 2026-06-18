@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRole, UserStatus, ReportStatus } from '@prisma/client';
 
@@ -89,6 +90,7 @@ export class AdminDashboardService {
           id: true, username: true, email: true, displayName: true, avatar: true,
           role: true, status: true, gemBalance: true, postCount: true,
           reputationScore: true, createdAt: true, lastSeenAt: true,
+          gameCharacter: { select: { coinBalance: true } },
         },
       }),
       this.prisma.user.count({ where }),
@@ -155,6 +157,54 @@ export class AdminDashboardService {
       await this.audit(actorId, 'user.gem_adjust', 'user', userId, null, { amount, note });
       return { balanceAfter };
     });
+  }
+
+  // Điều chỉnh xu (coin game) trên nhân vật
+  async adjustCoin(userId: string, amount: number, note: string, actorId: string) {
+    const char = await this.prisma.gameCharacter.findUnique({ where: { userId }, select: { id: true, coinBalance: true } });
+    if (!char) throw new NotFoundException('User chưa có nhân vật game');
+    const balanceAfter = char.coinBalance + amount;
+    if (balanceAfter < 0) throw new BadRequestException('Số dư xu không thể âm');
+    await this.prisma.gameCharacter.update({ where: { id: char.id }, data: { coinBalance: balanceAfter } });
+    await this.audit(actorId, 'user.coin_adjust', 'user', userId, null, { amount, note });
+    return { balanceAfter };
+  }
+
+  // Sửa thông tin user (tên hiển thị / email)
+  async updateUserInfo(userId: string, data: { displayName?: string; email?: string }, actorId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { displayName: true, email: true } });
+    if (!user) throw new NotFoundException('User không tồn tại');
+    const patch: any = {};
+    if (data.displayName !== undefined) patch.displayName = data.displayName?.trim() || null;
+    if (data.email !== undefined && data.email.trim()) {
+      const exist = await this.prisma.user.findFirst({ where: { email: data.email.trim(), id: { not: userId } }, select: { id: true } });
+      if (exist) throw new BadRequestException('Email đã được dùng bởi tài khoản khác');
+      patch.email = data.email.trim();
+    }
+    await this.prisma.user.update({ where: { id: userId }, data: patch });
+    await this.audit(actorId, 'user.update_info', 'user', userId, user, patch);
+    return { ok: true };
+  }
+
+  // Đặt lại mật khẩu
+  async resetPassword(userId: string, newPassword: string, actorId: string) {
+    if (!newPassword || newPassword.length < 6) throw new BadRequestException('Mật khẩu tối thiểu 6 ký tự');
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { id: true } });
+    if (!user) throw new NotFoundException('User không tồn tại');
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: await argon2.hash(newPassword) } });
+    await this.audit(actorId, 'user.reset_password', 'user', userId, null, {});
+    return { ok: true };
+  }
+
+  // Xoá user (cascade qua quan hệ onDelete: Cascade)
+  async deleteUser(userId: string, actorId: string) {
+    if (userId === actorId) throw new BadRequestException('Không thể tự xoá chính mình');
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { username: true, role: true } });
+    if (!user) throw new NotFoundException('User không tồn tại');
+    if (user.role === 'ADMIN') throw new BadRequestException('Không thể xoá tài khoản ADMIN');
+    await this.audit(actorId, 'user.delete', 'user', userId, user, null);
+    await this.prisma.user.delete({ where: { id: userId } });
+    return { ok: true };
   }
 
   // ──────────────────────────────────────────────

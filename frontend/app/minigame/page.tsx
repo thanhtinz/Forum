@@ -6,6 +6,11 @@ import { Dices, Users, Coins } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 
 const PVP_LINK: Record<string, string> = { TIEN_LEN: '/minigame/tien-len', CARO: '/minigame/caro' };
+// Map game solo -> slug trang chơi với máy
+const SOLO_SLUG: Record<string, string> = {
+  JACKPOT_777: 'jackpot', TAI_XIU: 'tai-xiu', BAU_CUA: 'bau-cua',
+  LUCKY_WHEEL: 'lucky-wheel', DUA_THU: 'dua-thu', COIN_FLIP: 'coin-flip',
+};
 
 interface GameConfig {
   id: string; type: string; name: string; description?: string;
@@ -46,8 +51,12 @@ export default function MinigamePage() {
               <span className="flex items-center gap-1"><Coins size={13} /> {g.minBet.toLocaleString()}–{g.maxBet.toLocaleString()}</span>
               <span>Tối đa {g.maxPlayers} người</span>
             </div>
-            {PVP_LINK[g.type] && (
+            {PVP_LINK[g.type] ? (
               <Link href={PVP_LINK[g.type]} className="btn-primary mt-3 w-full !py-1.5 text-xs">Vào bàn PvP →</Link>
+            ) : SOLO_SLUG[g.type] ? (
+              <Link href={`/minigame/solo?game=${SOLO_SLUG[g.type]}`} className="btn-primary mt-3 w-full !py-1.5 text-xs">Chơi với máy →</Link>
+            ) : (
+              <span className="mt-3 block text-center text-xs text-ink-400">Sắp ra mắt</span>
             )}
           </div>
         ))}

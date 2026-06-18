@@ -2,8 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Gamepad2, Star, Play, ChevronRight } from 'lucide-react';
+import { Gamepad2, Star, Play, ChevronRight, Sprout, Fish, PawPrint, Trophy, ShoppingBag, Shield } from 'lucide-react';
 import { gamePortal, GameItem } from '@/lib/gamePortal';
+
+// Game trên web — mỗi game là 1 trang riêng (không phải tab)
+const WEB_GAMES = [
+  { href: '/game/farm', label: 'Nông trại', desc: 'Trồng trọt & thu hoạch', icon: Sprout, color: 'from-emerald-500 to-green-600' },
+  { href: '/game/fishing', label: 'Câu cá', desc: '3 khu, cá hiếm', icon: Fish, color: 'from-sky-500 to-cyan-600' },
+  { href: '/game/wardrobe', label: 'Nuôi thú / Tủ đồ', desc: 'Thú cưng & trang phục', icon: PawPrint, color: 'from-fuchsia-500 to-pink-600' },
+  { href: '/minigame', label: 'Minigame', desc: 'Tài xỉu, bầu cua, PvP…', icon: Trophy, color: 'from-amber-500 to-orange-600' },
+  { href: '/game/shop', label: 'Cửa hàng', desc: 'Hạt giống, vật nuôi, đồ câu', icon: ShoppingBag, color: 'from-teal-500 to-emerald-600' },
+  { href: '/game/guild', label: 'Bang hội', desc: 'Lập & gia nhập bang', icon: Shield, color: 'from-indigo-500 to-violet-600' },
+];
 
 function GameIcon({ g, size = 'md' }: { g: GameItem; size?: 'md' | 'lg' }) {
   const cls = size === 'lg' ? 'h-24 w-24 text-3xl' : 'h-14 w-14 text-lg';
@@ -42,6 +52,20 @@ export default function CongGamePage() {
       </header>
 
       {err && <p className="text-sm text-rose-500">{err}</p>}
+
+      {/* Trò chơi trên web — vào thẳng từng game */}
+      <section>
+        <h2 className="mb-3 text-lg font-bold">Trò chơi trên web</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          {WEB_GAMES.map((g) => (
+            <Link key={g.href} href={g.href} className="card flex flex-col items-center gap-2 p-4 text-center transition hover:-translate-y-0.5 hover:shadow-lg">
+              <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${g.color} text-white`}><g.icon size={22} /></span>
+              <span className="text-sm font-semibold">{g.label}</span>
+              <span className="text-[11px] text-ink-400">{g.desc}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Có thể bạn quan tâm */}
       <section>

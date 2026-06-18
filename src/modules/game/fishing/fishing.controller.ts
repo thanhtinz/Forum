@@ -59,6 +59,32 @@ export class FishingController {
     return this.fishing.sellAll(userId);
   }
 
+  // ── Hồ nuôi cá ──
+  @Get('pond')
+  pond(@CurrentUser('id') userId: string) {
+    return this.fishing.pond(userId);
+  }
+
+  @Post('pond/release/:catchId')
+  releaseToPond(@CurrentUser('id') userId: string, @Param('catchId') catchId: string) {
+    return this.fishing.releaseToPond(userId, catchId);
+  }
+
+  @Post('pond/release-all')
+  releaseAllToPond(@CurrentUser('id') userId: string) {
+    return this.fishing.releaseAllToPond(userId);
+  }
+
+  @Post('pond/harvest/:catchId')
+  harvestPond(@CurrentUser('id') userId: string, @Param('catchId') catchId: string) {
+    return this.fishing.harvestPond(userId, catchId);
+  }
+
+  @Post('pond/harvest-all')
+  harvestPondAll(@CurrentUser('id') userId: string) {
+    return this.fishing.harvestPondAll(userId);
+  }
+
   @Get('leaderboard')
   leaderboard(@Query('limit') limit = 10) {
     return this.fishing.leaderboard(Number(limit));

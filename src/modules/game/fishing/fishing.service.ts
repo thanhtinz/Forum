@@ -261,7 +261,7 @@ export class FishingService {
   async storage(userId: string) {
     const char = await this.getCharacter(userId);
     const catches = await this.prisma.fishCatch.findMany({
-      where: { characterId: char.id, soldAt: null },
+      where: { characterId: char.id, soldAt: null, pondAt: null },
       orderBy: { caughtAt: 'desc' },
       include: { species: { select: { name: true, pricePerKg: true, asset: true } } },
     });
@@ -278,7 +278,7 @@ export class FishingService {
   async sell(userId: string, catchId: string) {
     const char = await this.getCharacter(userId);
     const fish = await this.prisma.fishCatch.findFirst({
-      where: { id: catchId, characterId: char.id, soldAt: null },
+      where: { id: catchId, characterId: char.id, soldAt: null, pondAt: null },
       include: { species: { select: { pricePerKg: true } } },
     });
     if (!fish) throw new NotFoundException('Không tìm thấy cá hoặc đã bán');
@@ -293,19 +293,122 @@ export class FishingService {
   async sellAll(userId: string) {
     const char = await this.getCharacter(userId);
     const catches = await this.prisma.fishCatch.findMany({
-      where: { characterId: char.id, soldAt: null },
+      where: { characterId: char.id, soldAt: null, pondAt: null },
       include: { species: { select: { pricePerKg: true } } },
     });
     if (catches.length === 0) return { ok: true, sold: 0, value: 0 };
     const value = catches.reduce((s, c) => s + c.weightKg * c.species.pricePerKg, 0);
     await this.prisma.$transaction(async (tx) => {
       await tx.fishCatch.updateMany({
-        where: { characterId: char.id, soldAt: null },
+        where: { characterId: char.id, soldAt: null, pondAt: null },
         data: { soldAt: new Date() },
       });
       await this.addCoin(tx, char.id, value, 'fishing_sell_all', 'Bán toàn bộ cá');
     });
     return { ok: true, sold: catches.length, value };
+  }
+
+  // ──────────────────────────────────────────────
+  // HỒ NUÔI CÁ — thả cá câu được vào hồ, cá lớn dần rồi thu hoạch bán giá cao hơn
+  // ──────────────────────────────────────────────
+  private readonly POND_GROWTH_PER_HR = 0.05; // +5% trọng lượng / giờ
+  private readonly POND_MAX_MULT = 3;          // tối đa gấp 3 lần
+  private readonly POND_CAPACITY = 50;         // sức chứa hồ
+
+  // Trọng lượng hiện tại của cá trong hồ (lớn dần theo thời gian)
+  private pondWeight(fish: { weightKg: number; pondAt: Date | null }) {
+    if (!fish.pondAt) return fish.weightKg;
+    const hrs = (Date.now() - fish.pondAt.getTime()) / 3_600_000;
+    const mult = Math.min(this.POND_MAX_MULT, 1 + this.POND_GROWTH_PER_HR * hrs);
+    return Math.max(fish.weightKg, Math.round(fish.weightKg * mult));
+  }
+
+  // Danh sách cá trong hồ
+  async pond(userId: string) {
+    const char = await this.getCharacter(userId);
+    const fishes = await this.prisma.fishCatch.findMany({
+      where: { characterId: char.id, soldAt: null, pondAt: { not: null } },
+      orderBy: { pondAt: 'asc' },
+      include: { species: { select: { name: true, pricePerKg: true, asset: true } } },
+    });
+    return {
+      capacity: this.POND_CAPACITY,
+      count: fishes.length,
+      maxMult: this.POND_MAX_MULT,
+      fishes: fishes.map((f) => {
+        const grown = this.pondWeight(f);
+        const matured = grown >= f.weightKg * this.POND_MAX_MULT;
+        return {
+          id: f.id,
+          name: f.species.name,
+          asset: f.species.asset,
+          startKg: f.weightKg,
+          currentKg: grown,
+          value: grown * f.species.pricePerKg,
+          matured,
+          pondAt: f.pondAt,
+        };
+      }),
+    };
+  }
+
+  // Thả 1 con cá từ kho vào hồ
+  async releaseToPond(userId: string, catchId: string) {
+    const char = await this.getCharacter(userId);
+    const inPond = await this.prisma.fishCatch.count({ where: { characterId: char.id, soldAt: null, pondAt: { not: null } } });
+    if (inPond >= this.POND_CAPACITY) throw new BadRequestException('Hồ đã đầy');
+    const fish = await this.prisma.fishCatch.findFirst({ where: { id: catchId, characterId: char.id, soldAt: null, pondAt: null } });
+    if (!fish) throw new NotFoundException('Không tìm thấy cá trong kho');
+    await this.prisma.fishCatch.update({ where: { id: fish.id }, data: { pondAt: new Date() } });
+    return { ok: true };
+  }
+
+  // Thả toàn bộ cá trong kho vào hồ (đến khi đầy)
+  async releaseAllToPond(userId: string) {
+    const char = await this.getCharacter(userId);
+    const inPond = await this.prisma.fishCatch.count({ where: { characterId: char.id, soldAt: null, pondAt: { not: null } } });
+    const slot = this.POND_CAPACITY - inPond;
+    if (slot <= 0) throw new BadRequestException('Hồ đã đầy');
+    const ids = (await this.prisma.fishCatch.findMany({
+      where: { characterId: char.id, soldAt: null, pondAt: null },
+      orderBy: { caughtAt: 'asc' }, take: slot, select: { id: true },
+    })).map((f) => f.id);
+    if (ids.length === 0) return { ok: true, moved: 0 };
+    await this.prisma.fishCatch.updateMany({ where: { id: { in: ids } }, data: { pondAt: new Date() } });
+    return { ok: true, moved: ids.length };
+  }
+
+  // Thu hoạch (bán) 1 con cá trong hồ theo trọng lượng đã lớn
+  async harvestPond(userId: string, catchId: string) {
+    const char = await this.getCharacter(userId);
+    const fish = await this.prisma.fishCatch.findFirst({
+      where: { id: catchId, characterId: char.id, soldAt: null, pondAt: { not: null } },
+      include: { species: { select: { pricePerKg: true } } },
+    });
+    if (!fish) throw new NotFoundException('Không tìm thấy cá trong hồ');
+    const grown = this.pondWeight(fish);
+    const value = grown * fish.species.pricePerKg;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.fishCatch.update({ where: { id: fish.id }, data: { soldAt: new Date() } });
+      await this.addCoin(tx, char.id, value, 'pond_harvest', 'Thu hoạch cá hồ nuôi');
+    });
+    return { ok: true, weightKg: grown, value };
+  }
+
+  // Thu hoạch toàn bộ cá trong hồ
+  async harvestPondAll(userId: string) {
+    const char = await this.getCharacter(userId);
+    const fishes = await this.prisma.fishCatch.findMany({
+      where: { characterId: char.id, soldAt: null, pondAt: { not: null } },
+      include: { species: { select: { pricePerKg: true } } },
+    });
+    if (fishes.length === 0) return { ok: true, sold: 0, value: 0 };
+    const value = fishes.reduce((s, f) => s + this.pondWeight(f) * f.species.pricePerKg, 0);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.fishCatch.updateMany({ where: { id: { in: fishes.map((f) => f.id) } }, data: { soldAt: new Date() } });
+      await this.addCoin(tx, char.id, value, 'pond_harvest_all', 'Thu hoạch toàn bộ cá hồ nuôi');
+    });
+    return { ok: true, sold: fishes.length, value };
   }
 
   async leaderboard(limit = 10) {

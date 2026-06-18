@@ -17,12 +17,21 @@ interface FishState {
     species: { id: string; name: string; pricePerKg: number; stock: number; asset: string | null }[] }[];
 }
 
+interface StoredFish { id: string; name: string; weightKg: number; value: number; asset: string | null }
+interface PondData { capacity: number; count: number; maxMult: number; fishes: { id: string; name: string; asset: string | null; startKg: number; currentKg: number; value: number; matured: boolean }[] }
+
 export default function FishingPage() {
   const { user, loading } = useAuth();
   const [s, setS] = useState<FishState | null>(null);
+  const [store, setStore] = useState<StoredFish[]>([]);
+  const [pond, setPond] = useState<PondData | null>(null);
   const [msg, setMsg] = useState('');
 
-  function load() { api.get<FishState>('/fishing/state').then(setS).catch((e) => setMsg(e.message)); }
+  function load() {
+    api.get<FishState>('/fishing/state').then(setS).catch((e) => setMsg(e.message));
+    api.get<StoredFish[]>('/fishing/storage').then(setStore).catch(() => {});
+    api.get<PondData>('/fishing/pond').then(setPond).catch(() => {});
+  }
   useEffect(() => { if (!loading && user) load(); }, [user, loading]);
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để câu cá.</div>;
@@ -84,9 +93,57 @@ export default function FishingPage() {
         ))}
       </div>
 
-      <div className="flex justify-end">
-        <button onClick={() => act(() => api.post('/fishing/sell-all'))} className="btn-outline">Bán toàn bộ cá</button>
+      {/* Kho cá vừa câu */}
+      <div className="card p-4">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-semibold">Kho cá ({store.length})</h2>
+          {store.length > 0 && (
+            <div className="flex gap-2">
+              <button onClick={() => act(() => api.post('/fishing/pond/release-all'))} className="btn-outline !py-1.5 text-xs">Thả tất cả vào hồ</button>
+              <button onClick={() => act(() => api.post('/fishing/sell-all'))} className="btn-primary !py-1.5 text-xs">Bán toàn bộ</button>
+            </div>
+          )}
+        </div>
+        {store.length === 0 ? <p className="text-sm text-ink-500">Chưa có cá trong kho. Hãy câu cá!</p> : (
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {store.map((f) => (
+              <div key={f.id} className="flex items-center gap-2 rounded-lg border border-ink-100 p-2 text-sm dark:border-ink-800">
+                {f.asset && <img src={f.asset} alt={f.name} className="h-8 w-8 object-contain" />}
+                <div className="min-w-0 flex-1"><p className="truncate font-medium">{f.name}</p><p className="text-xs text-ink-400">{f.weightKg}kg · {f.value.toLocaleString()} coin</p></div>
+                <button onClick={() => act(() => api.post(`/fishing/pond/release/${f.id}`))} className="btn-outline shrink-0 !px-2 !py-1 text-xs">Thả hồ</button>
+                <button onClick={() => act(() => api.post(`/fishing/sell/${f.id}`))} className="btn-primary shrink-0 !px-2 !py-1 text-xs">Bán</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Hồ nuôi cá */}
+      {pond && (
+        <div className="card p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-semibold">🐟 Hồ nuôi cá ({pond.count}/{pond.capacity})</h2>
+            {pond.fishes.length > 0 && (
+              <button onClick={() => act(() => api.post('/fishing/pond/harvest-all'))} className="btn-primary !py-1.5 text-xs">Thu hoạch tất cả</button>
+            )}
+          </div>
+          <p className="mb-2 text-xs text-ink-500">Cá trong hồ lớn dần theo thời gian (tối đa x{pond.maxMult} trọng lượng) — nuôi lâu bán càng được giá.</p>
+          {pond.fishes.length === 0 ? <p className="text-sm text-ink-500">Hồ trống. Thả cá từ kho vào để nuôi.</p> : (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {pond.fishes.map((f) => (
+                <div key={f.id} className={`flex items-center gap-2 rounded-lg border p-2 text-sm ${f.matured ? 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-ink-100 dark:border-ink-800'}`}>
+                  {f.asset && <img src={f.asset} alt={f.name} className="h-8 w-8 object-contain" />}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{f.name} {f.matured && <span className="text-emerald-600">• đã lớn tối đa</span>}</p>
+                    <p className="text-xs text-ink-400">{f.startKg}kg → <b>{f.currentKg}kg</b> · {f.value.toLocaleString()} coin</p>
+                  </div>
+                  <button onClick={() => act(() => api.post(`/fishing/pond/harvest/${f.id}`))} className="btn-primary shrink-0 !px-2 !py-1 text-xs">Thu hoạch</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

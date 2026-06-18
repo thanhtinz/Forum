@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserPlus, UserMinus, Send, Heart, Trash2, Ban, ExternalLink, Medal, Trophy, BadgeCheck } from 'lucide-react';
+import { UserPlus, UserMinus, Ban, ExternalLink, Medal, Trophy, BadgeCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
@@ -13,28 +13,6 @@ interface Look {
   layers: { slot: string; name: string; asset: string | null; zorder: number }[];
   pet: { name: string; asset: string | null } | null;
   mount: { name: string; asset: string | null } | null;
-}
-
-interface WallAuthor {
-  id: string;
-  username: string;
-  displayName: string | null;
-  avatar: string | null;
-  role: string;
-}
-interface WallComment {
-  id: string;
-  content: string;
-  createdAt: string;
-  author: WallAuthor;
-}
-interface WallPost {
-  id: string;
-  content: string;
-  likeCount: number;
-  createdAt: string;
-  author: WallAuthor;
-  comments: WallComment[];
 }
 
 function ProfileView() {
@@ -90,6 +68,15 @@ function ProfileView() {
     }
   }
 
+  async function editName() {
+    const displayName = prompt('Tên hiển thị mới:', profile?.displayName || '');
+    if (displayName === null) return;
+    try {
+      await api.patch('/users/me', { displayName: displayName.trim() });
+      setProfile((p: any) => ({ ...p, displayName: displayName.trim() }));
+    } catch (e: any) { alert(e.message); }
+  }
+
   if (err) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!profile) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
 
@@ -131,6 +118,7 @@ function ProfileView() {
 
         {isSelf && (
           <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
+            <button onClick={editName} className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Đổi tên hiển thị</button>
             <a href="/settings/verify" className="inline-flex items-center gap-1.5 rounded-lg bg-sky-100 px-3 py-1.5 font-medium text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300"><BadgeCheck size={14} /> Đăng ký tích xanh</a>
             <a href="/settings/avatar" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Đổi ảnh đại diện</a>
             <a href="/settings/profile-fields" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Thông tin thêm</a>
@@ -145,11 +133,10 @@ function ProfileView() {
       </div>
 
       <div className="space-y-5">
-        {look && (
+        {look && (look.layers.length > 0 || look.pet || look.mount) && (
           <div className="card p-5">
             <h2 className="mb-3 font-semibold">Diện mạo nhân vật</h2>
             <div className="flex flex-wrap gap-3">
-              {look.layers.length === 0 && <p className="text-sm text-ink-500">Chưa trang bị cosmetic.</p>}
               {look.layers.map((l) => <AssetCard key={l.slot} name={l.name} asset={l.asset} tag={l.slot} />)}
               {look.pet && <AssetCard name={look.pet.name} asset={look.pet.asset} tag="PET" />}
               {look.mount && <AssetCard name={look.mount.name} asset={look.mount.asset} tag="MOUNT" />}
@@ -202,139 +189,33 @@ function ProfileView() {
 }
 
 function Wall({ wallId }: { wallId: string }) {
-  const { user } = useAuth();
-  const [posts, setPosts] = useState<WallPost[]>([]);
-  const [content, setContent] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  function load() {
-    api.get<{ data: WallPost[] }>(`/social/wall/${wallId}?page=1&limit=20`).then((r) => setPosts(r.data)).catch(() => {});
-  }
-  useEffect(() => { if (wallId) load(); }, [wallId]);
-
-  async function submit() {
-    if (!content.trim() || busy) return;
-    setBusy(true);
-    try {
-      await api.post(`/social/wall/${wallId}`, { content });
-      setContent('');
-      load();
-    } catch (e: any) {
-      alert(e.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function remove(id: string) {
-    if (!confirm('Xóa bài viết này?')) return;
-    try { await api.del(`/social/profile-posts/${id}`); load(); } catch (e: any) { alert(e.message); }
-  }
-
-  async function like(id: string) {
-    try {
-      await api.post(`/social/profile-posts/${id}/like`);
-      setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, likeCount: p.likeCount + 1 } : p)));
-    } catch (e: any) { alert(e.message); }
-  }
+  const [threads, setThreads] = useState<any[]>([]);
+  useEffect(() => {
+    if (!wallId) return;
+    api.get<{ data: any[] }>(`/forum/threads?authorId=${wallId}&limit=20&sortBy=createdAt`)
+      .then((r) => setThreads(r.data || [])).catch(() => {});
+  }, [wallId]);
 
   return (
     <div className="card p-5">
-      <h2 className="mb-3 font-semibold">Tường nhà</h2>
-
-      {user && (
-        <div className="mb-4 flex gap-2">
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Viết gì đó lên tường…"
-            className="input min-h-[44px] flex-1 resize-y"
-            maxLength={2000}
-          />
-          <button onClick={submit} disabled={busy} className="btn-primary inline-flex items-center gap-1 self-start">
-            <Send size={16} /> Đăng
-          </button>
-        </div>
-      )}
-
-      {posts.length === 0 ? (
-        <p className="text-sm text-ink-500">Chưa có bài viết nào trên tường.</p>
+      <h2 className="mb-3 font-semibold">Bài viết trên diễn đàn</h2>
+      {threads.length === 0 ? (
+        <p className="text-sm text-ink-500">Chưa đăng bài nào trên diễn đàn.</p>
       ) : (
-        <div className="space-y-4">
-          {posts.map((p) => (
-            <WallPostCard key={p.id} post={p} canDelete={user?.id === p.author.id || user?.id === wallId || user?.role === 'ADMIN' || user?.role === 'MODERATOR'} onDelete={() => remove(p.id)} onLike={() => like(p.id)} onCommented={load} loggedIn={!!user} />
+        <ul className="divide-y divide-ink-100 dark:divide-ink-800">
+          {threads.map((t) => (
+            <li key={t.id} className="py-2.5">
+              <a href={`/thread?slug=${t.slug}`} className="font-medium hover:text-brand-600 hover:underline">{t.title}</a>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
+                {t.category?.name && <span className="font-medium" style={t.category.color ? { color: t.category.color } : undefined}>{t.category.name}</span>}
+                <span>· {t.createdAt ? new Date(t.createdAt).toLocaleDateString('vi') : ''}</span>
+                <span>· {t.replyCount ?? t.postCount ?? 0} trả lời</span>
+                <span>· {t.viewCount ?? 0} xem</span>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
-    </div>
-  );
-}
-
-function WallPostCard({ post, canDelete, onDelete, onLike, onCommented, loggedIn }: {
-  post: WallPost; canDelete: boolean; onDelete: () => void; onLike: () => void; onCommented: () => void; loggedIn: boolean;
-}) {
-  const [comment, setComment] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  async function addComment() {
-    if (!comment.trim() || busy) return;
-    setBusy(true);
-    try {
-      await api.post(`/social/profile-posts/${post.id}/comments`, { content: comment });
-      setComment('');
-      onCommented();
-    } catch (e: any) { alert(e.message); } finally { setBusy(false); }
-  }
-
-  return (
-    <div className="rounded-xl border border-ink-200/70 p-4 dark:border-ink-800">
-      <div className="flex items-start gap-3">
-        <Avatar user={post.author} size={40} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <a href={`/profile?u=${post.author.username}`} className="text-sm font-semibold hover:underline">{post.author.displayName || post.author.username}</a>
-              <span className="ml-2 text-xs text-ink-500">{new Date(post.createdAt).toLocaleString('vi')}</span>
-            </div>
-            {canDelete && (
-              <button onClick={onDelete} className="text-ink-400 hover:text-red-500" title="Xóa"><Trash2 size={15} /></button>
-            )}
-          </div>
-          <p className="mt-1 whitespace-pre-wrap break-words text-sm">{post.content}</p>
-          <div className="mt-2 flex items-center gap-3 text-xs text-ink-500">
-            <button onClick={onLike} className="inline-flex items-center gap-1 hover:text-rose-500"><Heart size={14} /> {post.likeCount}</button>
-          </div>
-
-          {post.comments.length > 0 && (
-            <div className="mt-3 space-y-2 border-l-2 border-ink-100 pl-3 dark:border-ink-800">
-              {post.comments.map((c) => (
-                <div key={c.id} className="flex items-start gap-2">
-                  <Avatar user={c.author} size={26} />
-                  <div className="min-w-0">
-                    <a href={`/profile?u=${c.author.username}`} className="text-xs font-semibold hover:underline">{c.author.displayName || c.author.username}</a>
-                    <span className="ml-1 text-[11px] text-ink-400">{new Date(c.createdAt).toLocaleString('vi')}</span>
-                    <p className="whitespace-pre-wrap break-words text-sm">{c.content}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {loggedIn && (
-            <div className="mt-3 flex gap-2">
-              <input
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') addComment(); }}
-                placeholder="Bình luận…"
-                className="input flex-1 text-sm"
-                maxLength={2000}
-              />
-              <button onClick={addComment} disabled={busy} className="btn-primary px-3 text-sm">Gửi</button>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

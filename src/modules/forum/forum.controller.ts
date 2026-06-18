@@ -155,9 +155,10 @@ export class ForumController {
     @Query('limit') limit = 20,
     @Query('sortBy') sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes',
     @Query('q') q?: string,
+    @Query('authorId') authorId?: string,
   ) {
     return this.forum.getThreadList({
-      categoryId, prefix, tagId, page: Number(page), limit: Number(limit), sortBy, q,
+      categoryId, prefix, tagId, page: Number(page), limit: Number(limit), sortBy, q, authorId,
     });
   }
 

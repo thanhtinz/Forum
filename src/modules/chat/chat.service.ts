@@ -10,6 +10,17 @@ export class ChatService {
     private readonly prison: PrisonService,
   ) {}
 
+  // Batch-lấy thông tin user (ChatMessage/ChatMember chỉ lưu id, không có relation)
+  private async usersMap(ids: (string | null | undefined)[]) {
+    const uniq = [...new Set(ids.filter((x): x is string => !!x))];
+    if (!uniq.length) return new Map<string, any>();
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: uniq } },
+      select: { id: true, username: true, displayName: true, avatar: true },
+    });
+    return new Map(users.map((u) => [u.id, u]));
+  }
+
   // ──────────────────────────────────────────────
   // LẤY/TẠO KÊNH GLOBAL (chat tổng — duy nhất)
   // ──────────────────────────────────────────────
@@ -151,7 +162,8 @@ export class ChatService {
       data: { lastMessageAt: new Date() },
     });
 
-    return message;
+    const sender = (await this.usersMap([userId])).get(userId) || null;
+    return { ...message, sender };
   }
 
   // ──────────────────────────────────────────────
@@ -181,14 +193,19 @@ export class ChatService {
       },
     });
 
-    return messages.reverse();
+    const map = await this.usersMap(messages.flatMap((m) => [m.senderId, m.replyTo?.senderId]));
+    return messages.reverse().map((m) => ({
+      ...m,
+      sender: map.get(m.senderId) || null,
+      replyTo: m.replyTo ? { ...m.replyTo, sender: map.get(m.replyTo.senderId) || null } : null,
+    }));
   }
 
   // ──────────────────────────────────────────────
   // DANH SÁCH KÊNH CỦA USER
   // ──────────────────────────────────────────────
   async getUserChannels(userId: string) {
-    return this.prisma.chatChannel.findMany({
+    const channels = await this.prisma.chatChannel.findMany({
       where: {
         OR: [
           { type: 'GLOBAL' },
@@ -198,9 +215,29 @@ export class ChatService {
       },
       orderBy: { lastMessageAt: 'desc' },
       include: {
-        members: { take: 5 },
+        members: true,
         messages: { take: 1, orderBy: { createdAt: 'desc' } },
       },
+    });
+
+    const map = await this.usersMap(channels.flatMap((c) => c.members.map((m) => m.userId)));
+    return channels.map((c) => {
+      const members = c.members.map((m) => ({ ...m, user: map.get(m.userId) || null }));
+      // Với chat riêng: tên & avatar lấy theo người còn lại
+      const other = c.type === 'PRIVATE' ? members.find((m) => m.userId !== userId)?.user : null;
+      const title = c.type === 'PRIVATE'
+        ? (other?.displayName || other?.username || 'Chat riêng')
+        : (c.name || (c.type === 'GLOBAL' ? 'Chat Tổng' : 'Nhóm'));
+      return {
+        id: c.id,
+        type: c.type,
+        title,
+        avatarUrl: c.type === 'PRIVATE' ? other?.avatar || null : c.avatarUrl,
+        lastMessageAt: c.lastMessageAt,
+        memberCount: members.length,
+        members,
+        lastMessage: c.messages[0] || null,
+      };
     });
   }
 

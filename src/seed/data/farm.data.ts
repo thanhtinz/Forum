@@ -13,6 +13,15 @@ export const CROPS: CropSeed[] = [
   { slug: 'thanh-long', name: 'Thanh long', seedPrice: 600, sellPrice: 95, growSeconds: 2400, exp: 28, yieldMin: 5, yieldMax: 10, reqLevel: 5, asset: img('img/sv1/6.png'), sortOrder: 4 },
   { slug: 'xoai', name: 'Xoài', seedPrice: 900, sellPrice: 140, growSeconds: 3600, exp: 40, yieldMin: 5, yieldMax: 9, reqLevel: 8, asset: img('img/sv1/7.png'), sortOrder: 5 },
   { slug: 'dua-hau', name: 'Dưa hấu', seedPrice: 1300, sellPrice: 200, growSeconds: 5400, exp: 60, yieldMin: 4, yieldMax: 8, reqLevel: 12, asset: img('img/sv1/11.png'), sortOrder: 6 },
+  { slug: 'ca-rot', name: 'Cà rốt', seedPrice: 90, sellPrice: 20, growSeconds: 480, exp: 7, yieldMin: 6, yieldMax: 11, reqLevel: 0, asset: img('img/sv1/2.png'), sortOrder: 7 },
+  { slug: 'khom', name: 'Khóm', seedPrice: 300, sellPrice: 55, growSeconds: 1500, exp: 16, yieldMin: 5, yieldMax: 10, reqLevel: 2, asset: img('img/sv1/3.png'), sortOrder: 8 },
+  { slug: 'bap', name: 'Bắp', seedPrice: 160, sellPrice: 32, growSeconds: 720, exp: 10, yieldMin: 6, yieldMax: 10, reqLevel: 1, asset: img('img/sv1/4.png'), sortOrder: 9 },
+  { slug: 'dua-leo', name: 'Dưa leo', seedPrice: 240, sellPrice: 45, growSeconds: 1080, exp: 14, yieldMin: 5, yieldMax: 9, reqLevel: 2, asset: img('img/sv1/5.png'), sortOrder: 10 },
+  { slug: 'ca-tim', name: 'Cà tím', seedPrice: 500, sellPrice: 82, growSeconds: 2100, exp: 24, yieldMin: 5, yieldMax: 10, reqLevel: 4, asset: img('img/sv1/8.png'), sortOrder: 11 },
+  { slug: 'nha-dam', name: 'Nha đam', seedPrice: 700, sellPrice: 110, growSeconds: 2700, exp: 32, yieldMin: 5, yieldMax: 9, reqLevel: 6, asset: img('img/sv1/9.png'), sortOrder: 12 },
+  { slug: 'hoa-hong', name: 'Hoa hồng', seedPrice: 1100, sellPrice: 175, growSeconds: 4200, exp: 50, yieldMin: 4, yieldMax: 8, reqLevel: 10, asset: img('img/sv1/13.png'), sortOrder: 13 },
+  { slug: 'huong-duong', name: 'Hoa hướng dương', seedPrice: 1600, sellPrice: 250, growSeconds: 6000, exp: 70, yieldMin: 4, yieldMax: 8, reqLevel: 14, asset: img('img/sv1/14.png'), sortOrder: 14 },
+  { slug: 'tulip', name: 'Hoa tulip', seedPrice: 2000, sellPrice: 320, growSeconds: 7200, exp: 85, yieldMin: 4, yieldMax: 7, reqLevel: 16, asset: img('img/sv1/15.png'), sortOrder: 15 },
 ];
 
 export interface FertilizerSeed { slug: string; name: string; price: number; reduceSeconds: number; asset: string; sortOrder: number; }
@@ -35,7 +44,10 @@ export const ANIMALS: AnimalSeed[] = [
   { slug: 'lon', name: 'Lợn', buyPrice: 5000, growSeconds: 7200, lifeSeconds: 7 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: null, productName: null, productYield: 0, productPrice: 0, sellGrown: 9000, sellYoung: 2500, asset: img('vatnuoi/50.gif'), sortOrder: 1 },
   { slug: 'bo', name: 'Bò sữa', buyPrice: 20000, growSeconds: 10800, lifeSeconds: 10 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: 'sua-bo', productName: 'Sữa bò', productYield: 2, productPrice: 300, sellGrown: 25000, sellYoung: 8000, asset: img('vatnuoi/suabo.png'), sortOrder: 2 },
   { slug: 'cuu', name: 'Cừu', buyPrice: 18000, growSeconds: 10800, lifeSeconds: 10 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: 'long-cuu', productName: 'Lông cừu', productYield: 2, productPrice: 250, sellGrown: 22000, sellYoung: 7000, asset: img('vatnuoi/longcuu.png'), sortOrder: 3 },
-  { slug: 'ca-nuoi', name: 'Cá nuôi', buyPrice: 4000, growSeconds: 7200, lifeSeconds: 7 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: null, productName: null, productYield: 0, productPrice: 0, sellGrown: 7000, sellYoung: 2000, asset: img('vatnuoi/54.gif'), sortOrder: 4 },
+  { slug: 'ca-nuoi', name: 'Cá chép', buyPrice: 4000, growSeconds: 7200, lifeSeconds: 7 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: null, productName: null, productYield: 0, productPrice: 0, sellGrown: 7000, sellYoung: 2000, asset: img('vatnuoi/54.gif'), sortOrder: 4 },
+  { slug: 'vit', name: 'Vịt', buyPrice: 6000, growSeconds: 5400, lifeSeconds: 7 * DAY, feedCooldownSec: 5400, starveSeconds: DAY, productSlug: 'trung-vit', productName: 'Trứng vịt', productYield: 2, productPrice: 110, sellGrown: 3000, sellYoung: 1000, asset: img('vatnuoi/53.gif'), sortOrder: 5 },
+  { slug: 'trau', name: 'Trâu', buyPrice: 25000, growSeconds: 12600, lifeSeconds: 12 * DAY, feedCooldownSec: 9000, starveSeconds: DAY, productSlug: null, productName: null, productYield: 0, productPrice: 0, sellGrown: 32000, sellYoung: 10000, asset: img('vatnuoi/52.gif'), sortOrder: 6 },
+  { slug: 'rua', name: 'Rùa', buyPrice: 30000, growSeconds: 18000, lifeSeconds: 15 * DAY, feedCooldownSec: 10800, starveSeconds: 2 * DAY, productSlug: null, productName: null, productYield: 0, productPrice: 0, sellGrown: 40000, sellYoung: 12000, asset: img('vatnuoi/51.gif'), sortOrder: 7 },
 ];
 
 export interface RecipeSeed {

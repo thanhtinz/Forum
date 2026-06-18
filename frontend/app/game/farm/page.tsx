@@ -4,19 +4,20 @@ import { useEffect, useState } from 'react';
 import { Coins, Sprout, Droplets } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
+import { useNow } from '@/lib/useNow';
 
 const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
 const GROUND = '/game-assets/nongtrai/img/product/dat.png';
-const KHE_TREE = '/game-assets/nongtrai/img/sv1/13.png';
 
 interface FarmState {
   coin: number;
   profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean };
-  plots: { index: number; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; progress?: number; empty: boolean }[];
+  plots: { index: number; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
   warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
   fertilizers?: { slug: string; name: string; quantity: number; reduceSeconds: number }[];
-  khe?: { fruit: number; max: number; pricePerFruit: number; canWater: boolean; nextWaterAt: string | null };
+  khe?: { fruit: number; max: number; pricePerFruit: number; canWater: boolean; nextWaterAt: string | null; nextFruitAt: string | null; fullAt: string | null };
 }
 
 // Ảnh cây theo giai đoạn lớn (product/<id>-non|uong|chin.png), fallback ảnh chín
@@ -34,6 +35,7 @@ export default function FarmPage() {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [planting, setPlanting] = useState<number | null>(null);
+  const now = useNow();
 
   function load() { api.get<FarmState>('/farm/state').then(setS).catch((e) => setErr(e.message)); }
   useEffect(() => { if (!loading && user) load(); }, [user, loading]);
@@ -56,7 +58,7 @@ export default function FarmPage() {
   async function waterKhe() { try { const r = await api.post<{ bonus: number }>('/farm/khe/water'); setMsg(`Đã tưới cây khế (+${r.bonus} quả)!`); } catch (e: any) { setMsg(e.message); } load(); }
   async function harvestKhe() { try { const r = await api.post<{ harvested: number }>('/farm/khe/harvest'); setMsg(`Đã thu hoạch ${r.harvested} quả khế vào kho. Vào kho để bán!`); } catch (e: any) { setMsg(e.message); } load(); }
   async function sellItem(slug: string, category: string, qty: number, name: string) {
-    try { const r = await api.post<{ value: number }>('/farm/sell', { slug, category, qty }); setMsg(`Đã bán ${qty} ${name}, nhận ${r.value.toLocaleString()} coin!`); }
+    try { const r = await api.post<{ value: number }>('/farm/sell', { slug, category, qty }); setMsg(`Đã bán ${qty} ${name}, nhận ${formatCoin(r.value)} coin!`); }
     catch (e: any) { setMsg(e.message); } load();
   }
 
@@ -67,7 +69,7 @@ export default function FarmPage() {
           <h1 className="flex items-center gap-2 text-2xl font-bold"><Sprout /> Nông trại</h1>
           <p className="text-white/90">Cấp {s.profile.level} · {s.profile.plotCount} ô đất · bếp Lv{s.profile.kitchenLevel}</p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {s.coin.toLocaleString()}</div>
+        <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {formatCoin(s.coin)}</div>
       </header>
 
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
@@ -82,12 +84,11 @@ export default function FarmPage() {
         const spots = [[20, 18], [48, 12], [70, 22], [12, 40], [38, 34], [62, 38], [82, 46], [30, 54]];
         return (
         <section className="card flex items-center gap-4 p-4">
-          {/* Cây + quả mọc dần trên tán */}
+          {/* Cây + quả khế mọc dần trên tán */}
           <div className="relative h-24 w-24 shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={KHE_TREE} alt="Cây khế" className={`h-24 w-24 object-contain transition-all ${s.khe.fruit <= 0 ? 'opacity-70 saturate-50' : ''}`} />
+            <div className={`grid h-24 w-24 place-items-center text-6xl transition-all ${s.khe.fruit <= 0 ? 'opacity-70 saturate-50' : ''}`}>🌳</div>
             {spots.slice(0, visFruits).map(([x, y], i) => (
-              <span key={i} className="absolute text-base drop-shadow" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' }}>⭐</span>
+              <span key={i} className="absolute text-sm drop-shadow" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' }}>⭐</span>
             ))}
           </div>
           <div className="min-w-0 flex-1">
@@ -98,6 +99,9 @@ export default function FarmPage() {
               <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${ratio * 100}%` }} />
             </div>
             <p className="mt-1 text-sm text-ink-500">Quả: <b>{s.khe.fruit}</b>/{s.khe.max} · {s.khe.pricePerFruit} coin/quả. Tưới mỗi ngày để ra thêm quả.</p>
+            {!ripe && s.khe.nextFruitAt && (
+              <p className="text-xs text-emerald-600">⏳ Quả tiếp theo sau {formatDuration(secondsUntil(s.khe.nextFruitAt, now))}{s.khe.fullAt ? ` · đầy cây sau ${formatDuration(secondsUntil(s.khe.fullAt, now))}` : ''}</p>
+            )}
             {!s.khe.canWater && s.khe.nextWaterAt && (
               <p className="text-xs text-ink-400">Tưới tiếp được sau: {new Date(s.khe.nextWaterAt).toLocaleString('vi')}</p>
             )}
@@ -113,7 +117,7 @@ export default function FarmPage() {
       <section className="card overflow-hidden p-4 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)), url(${FARM_BG})` }}>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Ô đất</h2>
-          <button onClick={buyPlot} className="btn-primary !py-1.5 text-xs">+ Mua ô ({s.profile.nextPlotPrice.toLocaleString()})</button>
+          <button onClick={buyPlot} className="btn-primary !py-1.5 text-xs">+ Mua ô ({formatCoin(s.profile.nextPlotPrice)})</button>
         </div>
         {s.plots.length === 0 ? (
           <p className="text-sm text-ink-700">Chưa có ô đất. Mua ô đầu tiên để bắt đầu.</p>
@@ -136,9 +140,12 @@ export default function FarmPage() {
                   {p.empty && <span className="text-[10px] text-ink-400">+ Trồng</span>}
                 </div>
                 <div className="mt-1 truncate text-xs">{p.crop || 'Trống'}</div>
-                {/* Thanh tiến độ lớn */}
+                {/* Thanh tiến độ lớn + đếm giờ */}
                 {!p.empty && !p.ready && (
-                  <div className="mt-1 h-1 w-full overflow-hidden rounded bg-ink-100 dark:bg-ink-800"><div className="h-full bg-emerald-400" style={{ width: `${prog * 100}%` }} /></div>
+                  <>
+                    <div className="mt-1 h-1 w-full overflow-hidden rounded bg-ink-100 dark:bg-ink-800"><div className="h-full bg-emerald-400" style={{ width: `${prog * 100}%` }} /></div>
+                    {p.readyAt && <div className="text-[10px] text-emerald-600">⏳ {formatDuration(secondsUntil(p.readyAt, now))}</div>}
+                  </>
                 )}
                 {/* Ô trống: chọn hạt để gieo */}
                 {p.empty && planting !== p.index && (
@@ -186,7 +193,7 @@ export default function FarmPage() {
           {s.warehouse.filter((w) => w.quantity > 0).slice(0, 16).map((w) => (
             <li key={w.slug + w.category} className="flex items-center justify-between gap-2 border-b border-ink-100 py-1 dark:border-ink-800">
               <span className="min-w-0 flex-1 truncate">{w.name} <span className="text-ink-400">×{w.quantity}</span></span>
-              <span className="shrink-0 text-ink-500">{w.unitSell ? `${w.unitSell}/cái` : '—'}</span>
+              <span className="shrink-0 text-ink-500">{w.unitSell ? `${formatCoin(w.unitSell)}/cái` : '—'}</span>
               {w.unitSell > 0 && (
                 <button onClick={() => sellItem(w.slug, w.category, w.quantity, w.name)} className="btn-primary shrink-0 !px-2 !py-0.5 text-xs">Bán</button>
               )}

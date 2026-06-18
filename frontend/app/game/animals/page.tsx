@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { Coins, Beef, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
+import { useNow } from '@/lib/useNow';
 
 const BARN_BG = '/game-assets/nongtrai/img/chuong.png';
 
-interface Owned { id: string; name: string; grown: boolean; productReady: boolean; asset?: string | null }
+interface Owned { id: string; name: string; grown: boolean; grownAt: string | null; productReady: boolean; productReadyAt: string | null; hasProduct: boolean; diesAt: string | null; asset?: string | null }
 
 export default function AnimalsPage() {
   const { user, loading } = useAuth();
@@ -16,6 +18,7 @@ export default function AnimalsPage() {
   const [owned, setOwned] = useState<Owned[]>([]);
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
+  const now = useNow();
 
   const load = useCallback(() => {
     api.get<{ coin: number; animals: Owned[] }>('/farm/state').then((s) => { setCoin(s.coin); setOwned(s.animals || []); }).catch((e) => setMsg(e.message));
@@ -36,7 +39,7 @@ export default function AnimalsPage() {
     <div className="space-y-5">
       <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
         <h1 className="flex items-center gap-2 text-2xl font-bold"><Beef /> Vật nuôi</h1>
-        <span className="flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {coin.toLocaleString()}</span>
+        <span className="flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {formatCoin(coin)}</span>
       </header>
       {msg && <p className="text-sm text-rose-500">{msg}</p>}
 
@@ -60,7 +63,14 @@ export default function AnimalsPage() {
                     : <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800"><Beef size={20} /></span>}
                   <div>
                     <p className="font-medium">{a.name}</p>
-                    <p className="text-xs text-ink-400">{a.productReady ? 'Có sản phẩm' : a.grown ? 'Trưởng thành' : 'Đang lớn'}</p>
+                    <p className="text-xs text-ink-400">
+                      {!a.grown
+                        ? `Đang lớn · còn ${formatDuration(secondsUntil(a.grownAt, now))}`
+                        : a.hasProduct
+                          ? (a.productReady ? 'Có sản phẩm — thu được' : `Sản phẩm sau ${formatDuration(secondsUntil(a.productReadyAt, now))}`)
+                          : 'Trưởng thành'}
+                    </p>
+                    {a.diesAt && <p className="text-[10px] text-rose-400">Hết hạn sau {formatDuration(secondsUntil(a.diesAt, now))}</p>}
                   </div>
                 </div>
                 <div className="flex gap-1">

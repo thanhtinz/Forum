@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Dices, Coins, Trophy, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { formatCoin } from '@/lib/format';
 
 type Game = 'tai-xiu' | 'coin-flip' | 'lucky-wheel' | 'dua-thu' | 'jackpot' | 'bau-cua';
 const GAMES: [Game, string][] = [
@@ -159,7 +160,7 @@ function SoloPlay() {
             {result.multiplier != null && `· x${result.multiplier} `}{result.winner != null && `· thú thắng: ${result.winner}`}
             {result.isJackpot && ' · 🎰 JACKPOT!'}
           </div>
-          <div className="mt-1 font-medium">{(result.netCoin ?? 0) >= 0 ? '+' : ''}{result.netCoin ?? 0} coin</div>
+          <div className="mt-1 font-medium">{(result.netCoin ?? 0) >= 0 ? '+' : ''}{formatCoin(result.netCoin ?? 0)} coin</div>
           <button onClick={() => setResult(null)} className="btn-outline mt-3 text-xs">Chơi tiếp</button>
         </div>
       )}

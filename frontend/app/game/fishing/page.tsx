@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Coins, Fish, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { formatCoin } from '@/lib/format';
 
 const FISH_BG = '/game-assets/cauca/nencauca.png';
 const ZONE_BG = (z: number) => `/game-assets/cauca/khu${z}.png`;
@@ -46,7 +47,7 @@ export default function FishingPage() {
           <h1 className="flex items-center gap-2 text-2xl font-bold"><Fish /> Câu cá</h1>
           <p className="text-white/90">Cấp {s.profile.level} · {s.profile.totalKg}/{s.profile.nextLevelKg}kg · đã câu {s.profile.totalCaught}</p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {s.coin.toLocaleString()}</div>
+        <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {formatCoin(s.coin)}</div>
       </header>
 
       {msg && <div className="card p-3 text-center text-sm text-brand-600">{msg}</div>}
@@ -109,7 +110,7 @@ export default function FishingPage() {
             {store.map((f) => (
               <div key={f.id} className="flex items-center gap-2 rounded-lg border border-ink-100 p-2 text-sm dark:border-ink-800">
                 {f.asset && <img src={f.asset} alt={f.name} className="h-8 w-8 object-contain" />}
-                <div className="min-w-0 flex-1"><p className="truncate font-medium">{f.name}</p><p className="text-xs text-ink-400">{f.weightKg}kg · {f.value.toLocaleString()} coin</p></div>
+                <div className="min-w-0 flex-1"><p className="truncate font-medium">{f.name}</p><p className="text-xs text-ink-400">{f.weightKg}kg · {formatCoin(f.value)} coin</p></div>
                 <button onClick={() => act(() => api.post(`/fishing/pond/release/${f.id}`))} className="btn-outline shrink-0 !px-2 !py-1 text-xs">Thả hồ</button>
                 <button onClick={() => act(() => api.post(`/fishing/sell/${f.id}`))} className="btn-primary shrink-0 !px-2 !py-1 text-xs">Bán</button>
               </div>
@@ -135,7 +136,7 @@ export default function FishingPage() {
                   {f.asset && <img src={f.asset} alt={f.name} className="h-8 w-8 object-contain" />}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-medium">{f.name} {f.matured && <span className="text-emerald-600">• đã lớn tối đa</span>}</p>
-                    <p className="text-xs text-ink-400">{f.startKg}kg → <b>{f.currentKg}kg</b> · {f.value.toLocaleString()} coin</p>
+                    <p className="text-xs text-ink-400">{f.startKg}kg → <b>{f.currentKg}kg</b> · {formatCoin(f.value)} coin</p>
                   </div>
                   <button onClick={() => act(() => api.post(`/fishing/pond/harvest/${f.id}`))} className="btn-primary shrink-0 !px-2 !py-1 text-xs">Thu hoạch</button>
                 </div>

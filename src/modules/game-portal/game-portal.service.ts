@@ -1,11 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { GemTxType } from '@prisma/client';
 import { GemService } from '../gem/gem.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
-  GameConnector, GamePortalGame, GamePortalGameDetail, GameCharacter,
-  ShopItemKind, VerifyCharacterInput,
+  GameConnector, GamePortalGame, GamePortalGameDetail,
+  ShopItemKind, VerifyCharacterInput, CharacterIdentifierKind,
 } from './game-portal.contract';
 import { MockConnector } from './connectors/mock.connector';
+import { RestConnector } from './connectors/rest.connector';
 
 /**
  * Catalog game + registry connector.
@@ -15,7 +17,10 @@ import { MockConnector } from './connectors/mock.connector';
  */
 @Injectable()
 export class GamePortalService {
-  constructor(private readonly gem: GemService) {}
+  constructor(
+    private readonly gem: GemService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // Catalog tĩnh (stub). Thực tế sẽ lấy từ DB / admin từng game đẩy lên.
   private readonly catalog: GamePortalGame[] = [
@@ -25,15 +30,19 @@ export class GamePortalService {
     { slug: 'tay-du-phuc-ma', name: 'Tây Du Phục Ma', publisher: 'GGames', genre: 'Nhập vai', iconUrl: '', online: true, shortDesc: 'Tu tiên phục ma' },
   ];
 
-  private readonly connectors = new Map<string, GameConnector>();
-
-  private connector(slug: string): GameConnector {
-    if (!this.connectors.has(slug)) {
-      if (!this.catalog.some((g) => g.slug === slug)) throw new NotFoundException('Game không tồn tại');
-      // Mặc định stub. Thay bằng connector thật khi đấu API game.
-      this.connectors.set(slug, new MockConnector(slug));
+  // Chọn connector: nếu game đã đấu API (GameApi active) -> RestConnector, ngược lại MockConnector stub.
+  private async connector(slug: string): Promise<GameConnector> {
+    if (!this.catalog.some((g) => g.slug === slug)) throw new NotFoundException('Game không tồn tại');
+    const cfg = await this.prisma.gameApi.findUnique({ where: { slug } });
+    if (cfg && cfg.active && cfg.baseUrl) {
+      return new RestConnector({
+        slug,
+        baseUrl: cfg.baseUrl,
+        apiKey: cfg.apiKey,
+        identifierKind: cfg.identifierKind as CharacterIdentifierKind,
+      });
     }
-    return this.connectors.get(slug)!;
+    return new MockConnector(slug);
   }
 
   listGames() {
@@ -53,36 +62,35 @@ export class GamePortalService {
     };
   }
 
-  getServers(slug: string) {
-    return this.connector(slug).getServers();
+  async getServers(slug: string) {
+    return (await this.connector(slug)).getServers();
   }
 
-  identifierKind(slug: string) {
-    return { kind: this.connector(slug).identifierKind };
+  async identifierKind(slug: string) {
+    return { kind: (await this.connector(slug)).identifierKind };
   }
 
-  verifyCharacter(slug: string, input: VerifyCharacterInput) {
+  async verifyCharacter(slug: string, input: VerifyCharacterInput) {
     if (!input?.serverId || !input?.identifier?.trim()) {
       throw new BadRequestException('Vui lòng chọn server và nhập định danh nhân vật');
     }
-    return this.connector(slug).verifyCharacter(input).then((c) => {
-      if (!c) throw new NotFoundException('Không tìm thấy nhân vật trên server đã chọn');
-      return c;
-    });
+    const c = await (await this.connector(slug)).verifyCharacter(input);
+    if (!c) throw new NotFoundException('Không tìm thấy nhân vật trên server đã chọn');
+    return c;
   }
 
-  listGiftcodes(slug: string) {
-    return this.connector(slug).listGiftcodes();
+  async listGiftcodes(slug: string) {
+    return (await this.connector(slug)).listGiftcodes();
   }
 
   async redeemGiftcode(slug: string, code: string, input: VerifyCharacterInput) {
     if (!code?.trim()) throw new BadRequestException('Vui lòng nhập mã');
     const character = await this.verifyCharacter(slug, input);
-    return this.connector(slug).redeemGiftcode(code.trim(), character);
+    return (await this.connector(slug)).redeemGiftcode(code.trim(), character);
   }
 
-  listShop(slug: string, kind: ShopItemKind) {
-    return this.connector(slug).listShop(kind);
+  async listShop(slug: string, kind: ShopItemKind) {
+    return (await this.connector(slug)).listShop(kind);
   }
 
   /**
@@ -92,7 +100,8 @@ export class GamePortalService {
   async buyItem(userId: string, slug: string, body: { itemId: string; kind: ShopItemKind; quantity?: number; serverId: string; identifier: string }) {
     const qty = Math.max(1, Math.min(99, body.quantity || 1));
     const character = await this.verifyCharacter(slug, { serverId: body.serverId, identifier: body.identifier });
-    const items = await this.connector(slug).listShop(body.kind);
+    const conn = await this.connector(slug);
+    const items = await conn.listShop(body.kind);
     const item = items.find((i) => i.id === body.itemId);
     if (!item) throw new NotFoundException('Vật phẩm không tồn tại');
 
@@ -103,7 +112,7 @@ export class GamePortalService {
     const refId = `gp:${slug}:${item.id}:${Date.now()}`;
     await this.gem.debit(userId, cost, GemTxType.SPEND_PRODUCT, refId, `Mua ${qty}x ${item.name} (${slug})`);
     try {
-      const res = await this.connector(slug).deliverPurchase(item, character, qty);
+      const res = await conn.deliverPurchase(item, character, qty);
       if (!res.ok) throw new Error(res.message);
       return { ok: true, message: res.message, spentGem: cost };
     } catch (e: any) {
@@ -111,5 +120,53 @@ export class GamePortalService {
       await this.gem.credit(userId, cost, GemTxType.REFUND, refId, `Hoàn Gem: giao vật phẩm thất bại (${slug})`);
       throw new BadRequestException(e?.message || 'Giao vật phẩm vào game thất bại, đã hoàn Gem.');
     }
+  }
+
+  // ──────────────────────────────────────────────
+  // ADMIN: quản lý đấu API game ngoài
+  // ──────────────────────────────────────────────
+  async listApis() {
+    const apis = await this.prisma.gameApi.findMany({ orderBy: { createdAt: 'desc' } });
+    // kèm danh sách game trong catalog để admin chọn slug gắn API
+    return { apis, catalog: this.catalog.map((g) => ({ slug: g.slug, name: g.name })) };
+  }
+
+  async upsertApi(body: { id?: string; slug: string; name: string; baseUrl: string; apiKey?: string; identifierKind?: string; active?: boolean }) {
+    if (!body.slug?.trim() || !body.baseUrl?.trim()) throw new BadRequestException('Thiếu slug hoặc baseUrl');
+    if (!this.catalog.some((g) => g.slug === body.slug)) throw new BadRequestException('Slug game không có trong cổng');
+    const data = {
+      name: body.name?.trim() || body.slug,
+      baseUrl: body.baseUrl.trim(),
+      apiKey: body.apiKey?.trim() || null,
+      identifierKind: body.identifierKind || 'character_name',
+      active: body.active ?? true,
+    };
+    return this.prisma.gameApi.upsert({
+      where: { slug: body.slug },
+      update: data,
+      create: { slug: body.slug, ...data },
+    });
+  }
+
+  async deleteApi(id: string) {
+    await this.prisma.gameApi.delete({ where: { id } }).catch(() => { throw new NotFoundException('Không tìm thấy cấu hình'); });
+    return { ok: true };
+  }
+
+  // Test đấu nối: gọi thử GET {base}/servers
+  async testApi(id: string) {
+    const cfg = await this.prisma.gameApi.findUnique({ where: { id } });
+    if (!cfg) throw new NotFoundException('Không tìm thấy cấu hình');
+    let ok = false; let message = '';
+    try {
+      const conn = new RestConnector({ slug: cfg.slug, baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, identifierKind: cfg.identifierKind as CharacterIdentifierKind });
+      const servers = await conn.getServers();
+      ok = Array.isArray(servers);
+      message = ok ? `OK — ${servers.length} server` : 'Phản hồi không hợp lệ';
+    } catch (e: any) {
+      message = e?.message || 'Kết nối thất bại';
+    }
+    await this.prisma.gameApi.update({ where: { id }, data: { lastTestAt: new Date(), lastTestOk: ok } });
+    return { ok, message };
   }
 }

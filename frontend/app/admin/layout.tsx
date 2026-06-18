@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, HelpCircle, ImagePlus, Paperclip, Mail, ShieldCheck, KeyRound, BellRing, Gavel, FolderTree, ArrowLeft, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, HelpCircle, ImagePlus, Paperclip, Mail, ShieldCheck, KeyRound, BellRing, Gavel, FolderTree, Gamepad2, ArrowLeft, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 // Menu quản trị gom theo nhóm (kiểu Flarum/XenForo) cho gọn, dễ tìm
@@ -25,6 +25,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
     title: 'Game & Giải trí',
     items: [
       { href: '/admin/templates', label: 'Dữ liệu game', icon: Sprout },
+      { href: '/admin/game-api', label: 'Đấu API game', icon: Gamepad2 },
       { href: '/admin/fortune', label: 'Bói toán & AI', icon: Sparkles },
       { href: '/admin/checkin', label: 'Điểm danh', icon: CalendarCheck },
       { href: '/admin/spin', label: 'Vòng quay', icon: Disc3 },

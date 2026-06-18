@@ -1,6 +1,6 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { CurrentUser } from '../../common/decorators/roles.decorator';
+import { CurrentUser, RolesGuard, Roles } from '../../common/decorators/roles.decorator';
 import { GamePortalService } from './game-portal.service';
 import { ShopItemKind } from './game-portal.contract';
 
@@ -60,5 +60,34 @@ export class GamePortalController {
     @Body() body: { itemId: string; kind: ShopItemKind; quantity?: number; serverId: string; identifier: string },
   ) {
     return this.svc.buyItem(userId, slug, body);
+  }
+
+  // ── Admin: quản lý đấu API game ──
+  @Get('admin/apis')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  listApis() {
+    return this.svc.listApis();
+  }
+
+  @Post('admin/apis')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  upsertApi(@Body() body: { id?: string; slug: string; name: string; baseUrl: string; apiKey?: string; identifierKind?: string; active?: boolean }) {
+    return this.svc.upsertApi(body);
+  }
+
+  @Post('admin/apis/:id/test')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  testApi(@Param('id') id: string) {
+    return this.svc.testApi(id);
+  }
+
+  @Delete('admin/apis/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  deleteApi(@Param('id') id: string) {
+    return this.svc.deleteApi(id);
   }
 }

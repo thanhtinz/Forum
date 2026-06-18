@@ -403,6 +403,7 @@ model Category {
   slug        String   @unique @db.VarChar(120)
   description String?  @db.Text
   icon        String?  @db.VarChar(50)
+  iconUrl     String?  @db.VarChar(500) // ảnh icon tải lên (ưu tiên hơn emoji)
   color       String?  @db.VarChar(20)
   parentId    String?
   sortOrder   Int      @default(0)

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { FolderTree, Plus, Trash2, Pencil, Briefcase, X, Tags } from 'lucide-react';
 import { api } from '@/lib/api';
+import ImageUpload from '@/components/ImageUpload';
 
 interface Prefix { id: string; label: string; color?: string | null; sortOrder?: number }
 
@@ -27,7 +28,7 @@ const MODULES: { value: string; label: string }[] = [
   { value: 'JOB', label: 'Việc làm (freelance)' },
 ];
 
-const EMPTY = { name: '', slug: '', description: '', icon: '', color: '', sortOrder: 0, moduleType: 'NONE', parentId: '', staffOnlyPost: false, isPrivate: false };
+const EMPTY = { name: '', slug: '', description: '', icon: '', iconUrl: '', color: '', sortOrder: 0, moduleType: 'NONE', parentId: '', staffOnlyPost: false, isPrivate: false };
 
 export default function AdminForumCategoriesPage() {
   const [cats, setCats] = useState<Category[]>([]);
@@ -90,7 +91,7 @@ export default function AdminForumCategoriesPage() {
   function openEdit(c: Category) {
     setEditing(c);
     setForm({
-      name: c.name, slug: c.slug, description: c.description || '', icon: c.icon || '',
+      name: c.name, slug: c.slug, description: c.description || '', icon: c.icon || '', iconUrl: (c as any).iconUrl || '',
       color: c.color || '', sortOrder: c.sortOrder, moduleType: c.moduleType || 'NONE',
       parentId: c.parentId || '', staffOnlyPost: (c.minRolePost === 'MODERATOR' || c.minRolePost === 'ADMIN'), isPrivate: !!c.isPrivate,
     });
@@ -107,6 +108,7 @@ export default function AdminForumCategoriesPage() {
         slug: form.slug || undefined,
         description: form.description,
         icon: form.icon,
+        iconUrl: form.iconUrl,
         color: form.color,
         sortOrder: Number(form.sortOrder) || 0,
         moduleType: form.moduleType,
@@ -205,8 +207,13 @@ export default function AdminForumCategoriesPage() {
             <label className="block text-sm">Mô tả
               <textarea className="input mt-1" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
             </label>
+            <div>
+              <label className="block text-sm">Ảnh icon danh mục (tải lên)</label>
+              <div className="mt-1"><ImageUpload value={form.iconUrl} onUploaded={(url) => setForm({ ...form, iconUrl: url })} label="Tải ảnh icon" /></div>
+              {form.iconUrl && <button type="button" onClick={() => setForm({ ...form, iconUrl: '' })} className="mt-1 text-xs text-red-500 hover:underline">Xoá ảnh icon</button>}
+            </div>
             <div className="grid grid-cols-3 gap-2">
-              <label className="block text-sm">Icon
+              <label className="block text-sm">Icon emoji (nếu không tải ảnh)
                 <input className="input mt-1" value={form.icon} onChange={(e) => setForm({ ...form, icon: e.target.value })} placeholder="emoji/tên" />
               </label>
               <label className="block text-sm">Màu

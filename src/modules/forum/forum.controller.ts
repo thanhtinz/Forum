@@ -92,6 +92,20 @@ export class ForumController {
     return this.forum.createCategory(dto);
   }
 
+  @Post('admin/tags')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  createTag(@Body() dto: { name: string; color?: string }) {
+    return this.tags.createTag(dto.name, dto.color);
+  }
+
+  @Delete('admin/tags/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteTag(@Param('id') id: string) {
+    return this.tags.deleteTag(id);
+  }
+
   @Post('admin/categories/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

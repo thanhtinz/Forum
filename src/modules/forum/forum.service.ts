@@ -44,6 +44,9 @@ export interface CategoryDto {
   color?: string;
   sortOrder?: number;
   moduleType?: string; // NONE | JOB
+  parentId?: string | null; // danh mục cha (null = cấp gốc)
+  staffOnlyPost?: boolean;  // chỉ Ban quản trị được đăng
+  isPrivate?: boolean;
 }
 
 export interface ThreadListQuery {
@@ -148,6 +151,9 @@ export class ForumService {
         color: dto.color ?? null,
         sortOrder: dto.sortOrder ?? 0,
         moduleType: this.normalizeModuleType(dto.moduleType),
+        parentId: dto.parentId || null,
+        isPrivate: dto.isPrivate ?? false,
+        minRolePost: dto.staffOnlyPost ? 'MODERATOR' : 'MEMBER',
       },
     });
   }
@@ -163,6 +169,9 @@ export class ForumService {
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
     if (dto.moduleType !== undefined) data.moduleType = this.normalizeModuleType(dto.moduleType);
     if (dto.slug !== undefined && dto.slug.trim()) data.slug = slugify(dto.slug, { lower: true, strict: true });
+    if (dto.parentId !== undefined) data.parentId = dto.parentId && dto.parentId !== id ? dto.parentId : null;
+    if (dto.isPrivate !== undefined) data.isPrivate = dto.isPrivate;
+    if (dto.staffOnlyPost !== undefined) data.minRolePost = dto.staffOnlyPost ? 'MODERATOR' : 'MEMBER';
     return this.prisma.category.update({ where: { id }, data });
   }
 

@@ -23,6 +23,12 @@ export class AdminController {
   ) {}
 
   // ── Game templates (cây/cá/phân/vật nuôi/công thức/wardrobe) ──
+  // Nguyên liệu có thể chọn cho công thức (sản phẩm cây/thú/cá) — đặt trước route :type
+  @Get('templates/recipe-ingredients')
+  recipeIngredientOptions() {
+    return this.templates.ingredientOptions();
+  }
+
   @Get('templates/:type')
   listTemplates(@Param('type') type: TemplateType) {
     return this.templates.list(type);

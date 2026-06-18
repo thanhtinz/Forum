@@ -4,10 +4,10 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { createHash, createHmac } from 'crypto';
 import { createId } from '@paralleldrive/cuid2';
 import { PresignUploadDto } from './media.dto';
+import { AdminConfigService } from '../admin/admin-config.service';
 
 // Cấu trúc sẵn cho S3 / MinIO. Tự ký SigV4 bằng `crypto` built-in,
 // không phụ thuộc aws-sdk. Nếu chưa cấu hình storage -> báo lỗi rõ ràng.
@@ -29,11 +29,11 @@ export class MediaService {
   ]);
   private readonly maxSize = 100 * 1024 * 1024; // 100MB
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: AdminConfigService) {}
 
   // Trả về URL presigned PUT để client upload trực tiếp lên storage,
   // kèm publicUrl để lưu vào DB sau khi upload xong.
-  presignUpload(dto: PresignUploadDto) {
+  async presignUpload(dto: PresignUploadDto) {
     if (!this.allowedTypes.has(dto.contentType)) {
       throw new BadRequestException(`Định dạng không được phép: ${dto.contentType}`);
     }
@@ -41,7 +41,7 @@ export class MediaService {
       throw new BadRequestException('File vượt quá giới hạn 100MB');
     }
 
-    const cfg = this.getStorageConfig();
+    const cfg = await this.getStorageConfig();
     const key = this.buildObjectKey(dto.folder, dto.filename);
     const expires = 900; // 15 phút
 
@@ -63,29 +63,31 @@ export class MediaService {
   // ──────────────────────────────────────────────
   // CONFIG
   // ──────────────────────────────────────────────
-  private getStorageConfig() {
-    const endpoint = this.config.get<string>('MEDIA_ENDPOINT');
-    const bucket = this.config.get<string>('MEDIA_BUCKET');
-    const accessKey = this.config.get<string>('MEDIA_ACCESS_KEY');
-    const secretKey = this.config.get<string>('MEDIA_SECRET_KEY');
+  private async getStorageConfig() {
+    // Ưu tiên cấu hình admin (nhóm "media"), fallback biến môi trường MEDIA_*
+    const endpoint = await this.config.resolve<string>('media.endpoint', 'MEDIA_ENDPOINT', '');
+    const bucket = await this.config.resolve<string>('media.bucket', 'MEDIA_BUCKET', '');
+    const accessKey = await this.config.resolve<string>('media.accessKey', 'MEDIA_ACCESS_KEY', '');
+    const secretKey = await this.config.resolve<string>('media.secretKey', 'MEDIA_SECRET_KEY', '');
 
     if (!endpoint || !bucket || !accessKey || !secretKey) {
       this.logger.warn('Storage (S3/MinIO) chưa được cấu hình đầy đủ');
       throw new ServiceUnavailableException(
-        'Dịch vụ lưu trữ chưa được cấu hình. Cần MEDIA_ENDPOINT, MEDIA_BUCKET, MEDIA_ACCESS_KEY, MEDIA_SECRET_KEY',
+        'Dịch vụ lưu trữ chưa được cấu hình. Vào Admin → Cấu hình → Lưu trữ Media (S3/MinIO) hoặc đặt MEDIA_ENDPOINT, MEDIA_BUCKET, MEDIA_ACCESS_KEY, MEDIA_SECRET_KEY',
       );
     }
+
+    const forcePathStyle = await this.config.resolve<any>('media.forcePathStyle', 'MEDIA_FORCE_PATH_STYLE', true);
 
     return {
       endpoint: endpoint.replace(/\/$/, ''),
       bucket,
       accessKey,
       secretKey,
-      region: this.config.get<string>('MEDIA_REGION') ?? 'us-east-1',
-      // MinIO mặc định dùng path-style
-      forcePathStyle:
-        (this.config.get<string>('MEDIA_FORCE_PATH_STYLE') ?? 'true') !== 'false',
-      publicBaseUrl: this.config.get<string>('MEDIA_PUBLIC_URL'),
+      region: await this.config.resolve<string>('media.region', 'MEDIA_REGION', 'us-east-1'),
+      // MinIO mặc định dùng path-style. Chấp nhận cả boolean (admin) lẫn chuỗi 'false' (env)
+      forcePathStyle: forcePathStyle !== false && forcePathStyle !== 'false',
+      publicBaseUrl: await this.config.resolve<string>('media.publicUrl', 'MEDIA_PUBLIC_URL', ''),
     };
   }
 
@@ -100,7 +102,7 @@ export class MediaService {
       : `${safeFolder}/${datePath}/${name}`;
   }
 
-  private objectUrl(cfg: ReturnType<MediaService['getStorageConfig']>, key: string) {
+  private objectUrl(cfg: Awaited<ReturnType<MediaService['getStorageConfig']>>, key: string) {
     const { host, basePath } = this.hostAndBasePath(cfg, key);
     return `${this.scheme(cfg.endpoint)}://${host}${basePath}`;
   }
@@ -109,7 +111,7 @@ export class MediaService {
   // AWS Signature V4 — presigned PUT (query string)
   // ──────────────────────────────────────────────
   private presignPutUrl(
-    cfg: ReturnType<MediaService['getStorageConfig']>,
+    cfg: Awaited<ReturnType<MediaService['getStorageConfig']>>,
     key: string,
     expires: number,
   ): string {
@@ -157,7 +159,7 @@ export class MediaService {
   }
 
   private hostAndBasePath(
-    cfg: ReturnType<MediaService['getStorageConfig']>,
+    cfg: Awaited<ReturnType<MediaService['getStorageConfig']>>,
     key: string,
   ): { host: string; basePath: string } {
     const endpointHost = cfg.endpoint.replace(/^https?:\/\//, '');

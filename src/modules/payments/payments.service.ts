@@ -4,10 +4,10 @@ import {
   NotFoundException,
   Logger,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GemService } from '../gem/gem.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AdminConfigService } from '../admin/admin-config.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -17,7 +17,7 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly gem: GemService,
-    private readonly config: ConfigService,
+    private readonly config: AdminConfigService,
     private readonly notifications: NotificationsService,
   ) {}
 
@@ -75,9 +75,9 @@ export class PaymentsService {
     });
 
     // Thông tin chuyển khoản hiển thị cho user
-    const bankAccount = this.config.get('SEPAY_BANK_ACCOUNT');
-    const bankName = this.config.get('SEPAY_BANK_NAME');
-    const accountName = this.config.get('SEPAY_ACCOUNT_NAME');
+    const bankAccount = await this.config.resolve('payment.sepayBankAccount', 'SEPAY_BANK_ACCOUNT', '');
+    const bankName = await this.config.resolve('payment.sepayBankName', 'SEPAY_BANK_NAME', '');
+    const accountName = await this.config.resolve('payment.sepayAccountName', 'SEPAY_ACCOUNT_NAME', '');
 
     return {
       topupId: topup.id,
@@ -97,7 +97,7 @@ export class PaymentsService {
   // ──────────────────────────────────────────────
   async handleSepayWebhook(payload: any, apiKey: string) {
     // Verify API key
-    const expectedKey = this.config.get('SEPAY_WEBHOOK_API_KEY');
+    const expectedKey = await this.config.resolve('payment.sepayApiKey', 'SEPAY_WEBHOOK_API_KEY', '');
     if (apiKey !== expectedKey) {
       throw new BadRequestException('API key không hợp lệ');
     }
@@ -173,7 +173,7 @@ export class PaymentsService {
       },
     });
 
-    const res = await fetch(`${this.getPaypalBase()}/v2/checkout/orders`, {
+    const res = await fetch(`${await this.getPaypalBase()}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -209,7 +209,7 @@ export class PaymentsService {
     const accessToken = await this.getPaypalAccessToken();
 
     const res = await fetch(
-      `${this.getPaypalBase()}/v2/checkout/orders/${orderId}/capture`,
+      `${await this.getPaypalBase()}/v2/checkout/orders/${orderId}/capture`,
       {
         method: 'POST',
         headers: {
@@ -255,18 +255,19 @@ export class PaymentsService {
   // ──────────────────────────────────────────────
   // PAYPAL HELPERS
   // ──────────────────────────────────────────────
-  private getPaypalBase(): string {
-    return this.config.get('PAYPAL_MODE') === 'live'
+  private async getPaypalBase(): Promise<string> {
+    const mode = await this.config.resolve('payment.paypalMode', 'PAYPAL_MODE', 'sandbox');
+    return mode === 'live'
       ? 'https://api-m.paypal.com'
       : 'https://api-m.sandbox.paypal.com';
   }
 
   private async getPaypalAccessToken(): Promise<string> {
-    const clientId = this.config.get('PAYPAL_CLIENT_ID');
-    const secret = this.config.get('PAYPAL_SECRET');
+    const clientId = await this.config.resolve('payment.paypalClientId', 'PAYPAL_CLIENT_ID', '');
+    const secret = await this.config.resolve('payment.paypalSecret', 'PAYPAL_SECRET', '');
     const auth = Buffer.from(`${clientId}:${secret}`).toString('base64');
 
-    const res = await fetch(`${this.getPaypalBase()}/v1/oauth2/token`, {
+    const res = await fetch(`${await this.getPaypalBase()}/v1/oauth2/token`, {
       method: 'POST',
       headers: {
         Authorization: `Basic ${auth}`,

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { AiProvider } from '@prisma/client';
+import { AdminConfigService } from '../admin/admin-config.service';
 
 export interface AiChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -16,7 +16,7 @@ export interface AiStreamChunk {
 export class AiProviderService {
   private readonly logger = new Logger(AiProviderService.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: AdminConfigService) {}
 
   // Stream response từ provider được chọn
   async *streamChat(
@@ -58,11 +58,12 @@ export class AiProviderService {
     modelId: string,
     messages: AiChatMessage[],
   ): AsyncGenerator<AiStreamChunk> {
+    const apiKey = await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '');
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.config.get('OPENAI_API_KEY')}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({ model: modelId, messages, stream: true }),
     });
@@ -107,7 +108,7 @@ export class AiProviderService {
     modelId: string,
     messages: AiChatMessage[],
   ): AsyncGenerator<AiStreamChunk> {
-    const apiKey = this.config.get('GEMINI_API_KEY');
+    const apiKey = await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '');
     const systemMsg = messages.find((m) => m.role === 'system');
     const contents = messages
       .filter((m) => m.role !== 'system')
@@ -160,7 +161,7 @@ export class AiProviderService {
     modelId: string,
     messages: AiChatMessage[],
   ): AsyncGenerator<AiStreamChunk> {
-    const base = this.config.get('OLLAMA_BASE_URL', 'http://localhost:11434');
+    const base = await this.config.resolve('ai.ollamaUrl', 'OLLAMA_BASE_URL', 'http://localhost:11434');
     const res = await fetch(`${base}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

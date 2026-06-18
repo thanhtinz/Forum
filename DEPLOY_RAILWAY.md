@@ -48,9 +48,21 @@ Mở **service ứng dụng** (không phải Postgres) → tab **Variables** →
 
 > **Không cần đặt `PORT`** — Railway tự tiêm biến `PORT`, và app đã đọc `process.env.PORT`.
 
-### Tuỳ chọn (chỉ thêm khi dùng)
+### Tuỳ chọn — cấu hình ngay trong Admin (khuyến nghị)
 
-| Nhóm | Biến |
+Các nhóm dưới đây **không cần đặt biến môi trường** nữa: sau khi deploy, đăng nhập tài khoản admin và vào **Admin → Cấu hình** (`/admin/settings`) để nhập trực tiếp. Giá trị lưu trong DB, có thể đổi bất cứ lúc nào mà không cần redeploy. API key được che (•••) trong UI.
+
+| Nhóm cấu hình trong Admin | Gồm |
+|---------------------------|-----|
+| **AI Companion** | OpenAI API Key, Gemini API Key, Ollama Base URL, provider mặc định |
+| **Thanh toán** | SePay (số TK, ngân hàng, chủ TK, webhook key), PayPal (mode, client ID, secret) |
+| **Lưu trữ Media (S3/MinIO)** | Endpoint, Bucket, Region, Access/Secret Key, Force Path Style, Public URL |
+
+> Lần đầu vào trang nếu chưa thấy nhóm cấu hình, bấm **"Khởi tạo cấu hình mặc định"** (hệ thống cũng tự seed khi khởi động nếu `AUTO_SEED` không tắt).
+
+**Vẫn dùng biến môi trường được không?** Có. Mỗi giá trị ưu tiên: **Admin (DB) → biến môi trường → mặc định**. Nên nếu bạn thích quản lý bằng env của Railway thì đặt các biến tương ứng vẫn chạy:
+
+| Nhóm | Biến môi trường tương đương |
 |------|------|
 | AI | `GEMINI_API_KEY`, `OPENAI_API_KEY`, `OLLAMA_BASE_URL` |
 | Thanh toán SePay | `SEPAY_BANK_ACCOUNT`, `SEPAY_BANK_NAME`, `SEPAY_ACCOUNT_NAME`, `SEPAY_WEBHOOK_API_KEY` |

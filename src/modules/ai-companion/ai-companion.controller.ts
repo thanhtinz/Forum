@@ -13,12 +13,16 @@ export class AiCompanionController {
     private readonly aiProvider: AiProviderService,
   ) {}
 
-  // Lấy danh sách model thực tế của provider (realtime), dùng key truyền lên hoặc key hệ thống
+  // Lấy danh sách model thực tế của provider (realtime); ưu tiên key truyền lên,
+  // nếu trống thì dùng key đã lưu của user, cuối cùng key hệ thống.
   @Post('models')
   @UseGuards(JwtAuthGuard)
-  async listModels(@Body() body: { provider: string; apiKey?: string; baseUrl?: string }) {
+  async listModels(
+    @CurrentUser('id') userId: string,
+    @Body() body: { provider: string; apiKey?: string; baseUrl?: string },
+  ) {
     try {
-      const models = await this.aiProvider.listModels(body.provider, body.apiKey, body.baseUrl);
+      const models = await this.aiService.listModelsForUser(userId, body.provider, body.apiKey, body.baseUrl);
       return { models };
     } catch (e: any) {
       // Không trả 500 — trả lỗi gọn để UI hiển thị lý do

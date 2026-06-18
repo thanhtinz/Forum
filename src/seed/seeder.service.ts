@@ -90,6 +90,19 @@ export class SeederService implements OnApplicationBootstrap {
       { type: 'CARO', name: 'Cờ Caro', minBet: 100, maxBet: 50000, minPlayers: 2, maxPlayers: 2, sortOrder: 9 },
     ];
     try {
+      const PORTAL_GAMES = [
+        { slug: 'nhat-kiem-mon', name: 'Nhất Kiếm Môn', publisher: 'SohaGame', genre: 'Nhập vai', shortDesc: 'Tinh Hoa Thế Giới Kiếm Hiệp Nhập Vai', featured: true, sortOrder: 0 },
+        { slug: '3q-sieu-hung', name: '3Q Siêu Hùng', publisher: 'SohaGame', genre: 'Thẻ tướng', shortDesc: '3Q Siêu Hùng – Game AFK – X3 Sức Mạnh', featured: true, sortOrder: 1 },
+        { slug: 'sieu-chien-binh', name: 'Siêu Chiến Binh', publisher: 'GGames', genre: 'Casual', shortDesc: 'Game đối kháng casual', featured: true, sortOrder: 2 },
+        { slug: 'tay-du-phuc-ma', name: 'Tây Du Phục Ma', publisher: 'GGames', genre: 'Nhập vai', shortDesc: 'Tu tiên phục ma', sortOrder: 3 },
+      ];
+      for (const g of PORTAL_GAMES) {
+        await this.prisma.portalGame.upsert({ where: { slug: g.slug }, update: {}, create: g });
+        n++;
+      }
+    } catch (e) { this.logger.warn(`Seed portalGame lỗi: ${(e as Error).message}`); }
+
+    try {
       for (const m of MINIGAMES) {
         await this.prisma.minigameConfig.upsert({
           where: { type: m.type },

@@ -62,6 +62,28 @@ export class GamePortalController {
     return this.svc.buyItem(userId, slug, body);
   }
 
+  // ── Admin: quản lý game trong cổng ──
+  @Get('admin/games')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminListGames() {
+    return this.svc.adminListGames();
+  }
+
+  @Post('admin/games')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  upsertGame(@Body() body: any) {
+    return this.svc.upsertGame(body);
+  }
+
+  @Delete('admin/games/:slug')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  deleteGame(@Param('slug') slug: string) {
+    return this.svc.deleteGame(slug);
+  }
+
   // ── Admin: quản lý đấu API game ──
   @Get('admin/apis')
   @UseGuards(JwtAuthGuard, RolesGuard)

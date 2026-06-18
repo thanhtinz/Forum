@@ -20,8 +20,9 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
 ];
 
 function Asset({ src, fallback }: { src?: string | null; fallback: React.ReactNode }) {
-  if (src) return <img src={src} alt="" className="h-12 w-12 object-contain" />;
-  return <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800">{fallback}</span>;
+  const [err, setErr] = useState(false);
+  if (src && !err) return <img src={src} alt="" onError={() => setErr(true)} className="h-12 w-12 shrink-0 object-contain" />;
+  return <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800">{fallback}</span>;
 }
 
 export default function GameShopPage() {

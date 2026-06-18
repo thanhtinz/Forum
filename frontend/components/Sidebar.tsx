@@ -13,6 +13,7 @@ const SHORTCUTS = [
   { href: '/cong-game', label: 'Cổng game', icon: Gamepad2, desc: 'Nông trại, câu cá, minigame…' },
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, desc: 'Trồng trọt & vật nuôi' },
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, desc: '3 khu, cá hiếm' },
+  { href: '/predictions', label: 'Cá cược & Dự đoán', icon: TrendingUp, desc: 'Đặt cược, dự đoán kèo' },
   { href: '/leaderboard', label: 'Xếp hạng', icon: Award, desc: 'Top danh hiệu & câu cá' },
   { href: '/guild', label: 'Bang hội', icon: Shield, desc: 'Cộng đồng — lập & gia nhập bang hội' },
   { href: '/marketplace', label: 'Chợ gian hàng', icon: Store, desc: 'Mua bán source' },

@@ -144,4 +144,80 @@ export class GuildService {
 
     return { success: true, donated: amount };
   }
+
+  // ── Quản lý guild (mở rộng) ──
+  private static RANK: Record<GuildRole, number> = { LEADER: 4, CO_LEADER: 3, ELDER: 2, MEMBER: 1 } as any;
+
+  private async myMembership(userId: string) {
+    const char = await this.prisma.gameCharacter.findUnique({
+      where: { userId },
+      include: { guildMember: true },
+    });
+    if (!char?.guildMember) throw new BadRequestException('Bạn không ở trong guild nào');
+    return { char, member: char.guildMember };
+  }
+
+  /** Sửa thông tin guild (leader/phó). */
+  async updateGuild(userId: string, data: { description?: string; emblemUrl?: string; isPublic?: boolean; reqLevel?: number }) {
+    const { member } = await this.myMembership(userId);
+    if (member.role !== 'LEADER' && member.role !== 'CO_LEADER')
+      throw new ForbiddenException('Chỉ chủ hoặc phó guild mới được sửa');
+    return this.prisma.guild.update({
+      where: { id: member.guildId },
+      data: {
+        ...(data.description !== undefined ? { description: data.description } : {}),
+        ...(data.emblemUrl !== undefined ? { emblemUrl: data.emblemUrl } : {}),
+        ...(data.isPublic !== undefined ? { isPublic: data.isPublic } : {}),
+        ...(data.reqLevel !== undefined ? { reqLevel: data.reqLevel } : {}),
+      },
+    });
+  }
+
+  /** Đuổi thành viên (chỉ đuổi được người cấp thấp hơn). */
+  async kickMember(userId: string, targetMemberId: string) {
+    const { member } = await this.myMembership(userId);
+    if (member.role !== 'LEADER' && member.role !== 'CO_LEADER')
+      throw new ForbiddenException('Không có quyền đuổi thành viên');
+    const target = await this.prisma.guildMember.findUnique({ where: { id: targetMemberId } });
+    if (!target || target.guildId !== member.guildId) throw new NotFoundException('Thành viên không tồn tại');
+    if (target.id === member.id) throw new BadRequestException('Không thể tự đuổi mình');
+    if (GuildService.RANK[target.role] >= GuildService.RANK[member.role])
+      throw new ForbiddenException('Không thể đuổi người cấp ngang/cao hơn');
+    await this.prisma.guildMember.delete({ where: { id: target.id } });
+    return { success: true };
+  }
+
+  /** Đặt cấp bậc cho thành viên (chỉ leader). */
+  async setMemberRole(userId: string, targetMemberId: string, role: GuildRole) {
+    const { member } = await this.myMembership(userId);
+    if (member.role !== 'LEADER') throw new ForbiddenException('Chỉ chủ guild mới phân quyền');
+    if (role === 'LEADER') throw new BadRequestException('Dùng chuyển quyền chủ để đặt LEADER');
+    const target = await this.prisma.guildMember.findUnique({ where: { id: targetMemberId } });
+    if (!target || target.guildId !== member.guildId) throw new NotFoundException('Thành viên không tồn tại');
+    if (target.id === member.id) throw new BadRequestException('Không thể đổi cấp của chính mình');
+    return this.prisma.guildMember.update({ where: { id: target.id }, data: { role } });
+  }
+
+  /** Chuyển quyền chủ guild (chỉ leader). */
+  async transferLeadership(userId: string, targetMemberId: string) {
+    const { member } = await this.myMembership(userId);
+    if (member.role !== 'LEADER') throw new ForbiddenException('Chỉ chủ guild mới chuyển quyền');
+    const target = await this.prisma.guildMember.findUnique({ where: { id: targetMemberId } });
+    if (!target || target.guildId !== member.guildId) throw new NotFoundException('Thành viên không tồn tại');
+    if (target.id === member.id) throw new BadRequestException('Bạn đã là chủ guild');
+    await this.prisma.$transaction([
+      this.prisma.guildMember.update({ where: { id: target.id }, data: { role: 'LEADER' } }),
+      this.prisma.guildMember.update({ where: { id: member.id }, data: { role: 'CO_LEADER' } }),
+      this.prisma.guild.update({ where: { id: member.guildId }, data: { leaderId: target.characterId } }),
+    ]);
+    return { success: true };
+  }
+
+  /** Giải tán guild (chỉ leader). */
+  async disbandGuild(userId: string) {
+    const { member } = await this.myMembership(userId);
+    if (member.role !== 'LEADER') throw new ForbiddenException('Chỉ chủ guild mới giải tán');
+    await this.prisma.guild.delete({ where: { id: member.guildId } });
+    return { success: true };
+  }
 }

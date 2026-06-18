@@ -2666,6 +2666,7 @@ model FarmPlot {
   plantedAt   DateTime?
   readyAt     DateTime?
   watered     Boolean   @default(false)
+  tilled      Boolean   @default(false) // đã xới đất chưa (phải xới trước khi gieo)
   health      Int       @default(100) // sức khỏe ô đất 0-100 -> ảnh hưởng sản lượng
   yield       Int       @default(0)
   createdAt   DateTime  @default(now())

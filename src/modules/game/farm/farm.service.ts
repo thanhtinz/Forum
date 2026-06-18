@@ -88,7 +88,34 @@ export class FarmService {
         diesAt: a.diesAt,
         asset: a.animal.asset,
       })),
+      khe: this.kheInfo(profile),
     };
+  }
+
+  // ──────────────────────────────────────────────
+  // CÂY KHẾ (cây sẵn — tưới mỗi ngày để nhận tiền)
+  // ──────────────────────────────────────────────
+  private kheReward(level: number) { return 500 + level * 200; }
+
+  private kheInfo(profile: { level: number; kheLastWaterAt: Date | null }) {
+    const DAY = 24 * 3600 * 1000;
+    const last = profile.kheLastWaterAt ? profile.kheLastWaterAt.getTime() : 0;
+    const nextAt = last ? new Date(last + DAY) : null;
+    const canWater = !nextAt || nextAt.getTime() <= Date.now();
+    return { canWater, nextAt, reward: this.kheReward(profile.level) };
+  }
+
+  async waterKhe(userId: string) {
+    const char = await this.getCharacter(userId);
+    const profile = await this.getProfile(char.id);
+    const info = this.kheInfo(profile as any);
+    if (!info.canWater) throw new BadRequestException('Cây khế đã được tưới hôm nay, quay lại sau.');
+    const reward = this.kheReward(profile.level);
+    await this.prisma.$transaction(async (tx) => {
+      await tx.farmProfile.update({ where: { characterId: char.id }, data: { kheLastWaterAt: new Date() } });
+      await this.addCoin(tx, char.id, reward, 'farm_khe', 'Tưới cây khế nhận tiền');
+    });
+    return { reward, nextAt: new Date(Date.now() + 24 * 3600 * 1000) };
   }
 
   // ──────────────────────────────────────────────

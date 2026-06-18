@@ -18,6 +18,11 @@ export class FarmController {
     return this.farm.waterKhe(userId);
   }
 
+  @Post('khe/harvest')
+  harvestKhe(@CurrentUser('id') userId: string) {
+    return this.farm.harvestKhe(userId);
+  }
+
   // ── Đất + trồng trọt ──
   @Post('plot/buy')
   buyPlot(@CurrentUser('id') userId: string) {

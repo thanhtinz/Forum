@@ -93,29 +93,61 @@ export class FarmService {
   }
 
   // ──────────────────────────────────────────────
-  // CÂY KHẾ (cây sẵn — tưới mỗi ngày để nhận tiền)
+  // CÂY KHẾ (cây sẵn — ra quả theo thời gian, tưới để tăng, thu hoạch bán)
+  // Theo game gốc: tối đa 180 quả; "ăn khế trả vàng".
   // ──────────────────────────────────────────────
-  private kheReward(level: number) { return 500 + level * 200; }
+  private readonly KHE_MAX = 180;
+  private readonly KHE_REGEN_MS = 8 * 60 * 1000; // 1 quả / 8 phút (~180 quả/ngày)
+  private readonly KHE_WATER_BONUS = 30;         // tưới mỗi ngày +30 quả
+  private readonly KHE_PRICE = 50;               // coin / quả khi thu hoạch
 
-  private kheInfo(profile: { level: number; kheLastWaterAt: Date | null }) {
-    const DAY = 24 * 3600 * 1000;
-    const last = profile.kheLastWaterAt ? profile.kheLastWaterAt.getTime() : 0;
-    const nextAt = last ? new Date(last + DAY) : null;
-    const canWater = !nextAt || nextAt.getTime() <= Date.now();
-    return { canWater, nextAt, reward: this.kheReward(profile.level) };
+  // Số quả khế hiện tại = đã chốt + sinh thêm theo thời gian (cap KHE_MAX)
+  private currentKheFruit(profile: { kheFruit: number; kheUpdatedAt: Date | null }) {
+    const base = profile.kheFruit || 0;
+    const since = profile.kheUpdatedAt ? Date.now() - profile.kheUpdatedAt.getTime() : 0;
+    const grown = since > 0 ? Math.floor(since / this.KHE_REGEN_MS) : 0;
+    return Math.min(this.KHE_MAX, base + grown);
   }
 
+  private kheInfo(profile: { kheFruit: number; kheUpdatedAt: Date | null; kheLastWaterAt: Date | null }) {
+    const DAY = 24 * 3600 * 1000;
+    const last = profile.kheLastWaterAt ? profile.kheLastWaterAt.getTime() : 0;
+    const nextWaterAt = last ? new Date(last + DAY) : null;
+    return {
+      fruit: this.currentKheFruit(profile),
+      max: this.KHE_MAX,
+      pricePerFruit: this.KHE_PRICE,
+      canWater: !nextWaterAt || nextWaterAt.getTime() <= Date.now(),
+      nextWaterAt,
+    };
+  }
+
+  // Tưới: cộng quả thưởng (1 lần/ngày)
   async waterKhe(userId: string) {
     const char = await this.getCharacter(userId);
     const profile = await this.getProfile(char.id);
     const info = this.kheInfo(profile as any);
     if (!info.canWater) throw new BadRequestException('Cây khế đã được tưới hôm nay, quay lại sau.');
-    const reward = this.kheReward(profile.level);
-    await this.prisma.$transaction(async (tx) => {
-      await tx.farmProfile.update({ where: { characterId: char.id }, data: { kheLastWaterAt: new Date() } });
-      await this.addCoin(tx, char.id, reward, 'farm_khe', 'Tưới cây khế nhận tiền');
+    const fruit = Math.min(this.KHE_MAX, this.currentKheFruit(profile as any) + this.KHE_WATER_BONUS);
+    await this.prisma.farmProfile.update({
+      where: { characterId: char.id },
+      data: { kheFruit: fruit, kheUpdatedAt: new Date(), kheLastWaterAt: new Date() },
     });
-    return { reward, nextAt: new Date(Date.now() + 24 * 3600 * 1000) };
+    return { fruit, bonus: this.KHE_WATER_BONUS };
+  }
+
+  // Thu hoạch: bán toàn bộ quả hiện có lấy coin
+  async harvestKhe(userId: string) {
+    const char = await this.getCharacter(userId);
+    const profile = await this.getProfile(char.id);
+    const fruit = this.currentKheFruit(profile as any);
+    if (fruit <= 0) throw new BadRequestException('Cây khế chưa có quả để thu hoạch.');
+    const coin = fruit * this.KHE_PRICE;
+    await this.prisma.$transaction(async (tx) => {
+      await tx.farmProfile.update({ where: { characterId: char.id }, data: { kheFruit: 0, kheUpdatedAt: new Date() } });
+      await this.addCoin(tx, char.id, coin, 'farm_khe', `Thu hoạch ${fruit} quả khế`);
+    });
+    return { harvested: fruit, coin };
   }
 
   // ──────────────────────────────────────────────

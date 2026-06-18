@@ -15,7 +15,7 @@ interface FarmState {
   plots: { index: number; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; empty: boolean }[];
   warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
-  khe?: { canWater: boolean; nextAt: string | null; reward: number };
+  khe?: { fruit: number; max: number; pricePerFruit: number; canWater: boolean; nextWaterAt: string | null };
 }
 
 export default function FarmPage() {
@@ -34,7 +34,8 @@ export default function FarmPage() {
   async function buyPlot() { await api.post('/farm/plot/buy').catch(() => {}); load(); }
   async function harvest(i: number) { await api.post('/farm/harvest', { plotIndex: i }).catch(() => {}); load(); }
   async function water(i: number) { await api.post('/farm/water', { plotIndex: i }).catch(() => {}); load(); }
-  async function waterKhe() { try { const r = await api.post<{ reward: number }>('/farm/khe/water'); setMsg(`Đã nhận ${r.reward} coin từ cây khế!`); } catch (e: any) { setMsg(e.message); } load(); }
+  async function waterKhe() { try { const r = await api.post<{ bonus: number }>('/farm/khe/water'); setMsg(`Đã tưới cây khế (+${r.bonus} quả)!`); } catch (e: any) { setMsg(e.message); } load(); }
+  async function harvestKhe() { try { const r = await api.post<{ harvested: number; coin: number }>('/farm/khe/harvest'); setMsg(`Thu hoạch ${r.harvested} quả khế, nhận ${r.coin.toLocaleString()} coin!`); } catch (e: any) { setMsg(e.message); } load(); }
 
   return (
     <div className="space-y-5">
@@ -55,14 +56,15 @@ export default function FarmPage() {
           <img src={KHE_TREE} alt="Cây khế" className="h-20 w-20 object-contain" />
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold">Cây Khế</h2>
-            <p className="text-sm text-ink-500">Tưới mỗi ngày để nhận <b>{s.khe.reward.toLocaleString()}</b> coin.</p>
-            {!s.khe.canWater && s.khe.nextAt && (
-              <p className="text-xs text-ink-400">Lần tưới tiếp theo: {new Date(s.khe.nextAt).toLocaleString('vi')}</p>
+            <p className="text-sm text-ink-500">Quả: <b>{s.khe.fruit}</b>/{s.khe.max} · {s.khe.pricePerFruit} coin/quả. Cây tự ra quả theo thời gian, tưới mỗi ngày để có thêm.</p>
+            {!s.khe.canWater && s.khe.nextWaterAt && (
+              <p className="text-xs text-ink-400">Tưới tiếp được sau: {new Date(s.khe.nextWaterAt).toLocaleString('vi')}</p>
             )}
           </div>
-          <button onClick={waterKhe} disabled={!s.khe.canWater} className="btn-primary shrink-0 disabled:opacity-50">
-            {s.khe.canWater ? 'Tưới cây' : 'Đã tưới hôm nay'}
-          </button>
+          <div className="flex shrink-0 flex-col gap-2">
+            <button onClick={harvestKhe} disabled={s.khe.fruit <= 0} className="btn-primary disabled:opacity-50">Thu hoạch ({s.khe.fruit})</button>
+            <button onClick={waterKhe} disabled={!s.khe.canWater} className="btn-outline disabled:opacity-50">{s.khe.canWater ? 'Tưới cây' : 'Đã tưới'}</button>
+          </div>
         </section>
       )}
 

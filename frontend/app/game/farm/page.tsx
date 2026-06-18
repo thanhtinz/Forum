@@ -5,6 +5,9 @@ import { Coins, Sprout, Droplets } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
+const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
+const GROUND = '/game-assets/nongtrai/img/product/dat.png';
+
 interface FarmState {
   coin: number;
   profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean };
@@ -39,22 +42,22 @@ export default function FarmPage() {
         <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {s.coin.toLocaleString()}</div>
       </header>
 
-      <section className="card p-4">
+      <section className="card overflow-hidden p-4 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)), url(${FARM_BG})` }}>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Ô đất</h2>
           <button onClick={buyPlot} className="btn-primary !py-1.5 text-xs">+ Mua ô ({s.profile.nextPlotPrice.toLocaleString()})</button>
         </div>
         {s.plots.length === 0 ? (
-          <p className="text-sm text-ink-500">Chưa có ô đất. Mua ô đầu tiên để bắt đầu.</p>
+          <p className="text-sm text-ink-700">Chưa có ô đất. Mua ô đầu tiên để bắt đầu.</p>
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-7">
             {s.plots.map((p) => (
-              <div key={p.index} className="rounded-xl border border-ink-200/70 p-2 text-center dark:border-ink-800">
-                <div className="grid h-16 place-items-center rounded-lg bg-ink-50 dark:bg-ink-900">
+              <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
+                <div className="grid h-16 place-items-center rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${GROUND})` }}>
                   {p.asset
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={p.asset} alt="" className="max-h-12 object-contain" />
-                    : <Sprout className="text-ink-300" />}
+                    : null}
                 </div>
                 <div className="mt-1 truncate text-xs">{p.crop || 'Trống'}</div>
                 {!p.empty && (

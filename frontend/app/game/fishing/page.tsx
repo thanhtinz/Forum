@@ -1,9 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Coins, Fish } from 'lucide-react';
+import Link from 'next/link';
+import { Coins, Fish, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+
+const FISH_BG = '/game-assets/cauca/nencauca.png';
+const ZONE_BG = (z: number) => `/game-assets/cauca/khu${z}.png`;
 
 interface FishState {
   coin: number;
@@ -27,7 +31,7 @@ export default function FishingPage() {
   const act = async (fn: () => Promise<any>) => { try { const r = await fn(); setMsg(r?.message || 'OK'); } catch (e: any) { setMsg(e.message); } load(); };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 rounded-2xl bg-cover bg-center p-1" style={{ backgroundImage: `linear-gradient(rgba(240,249,255,.6),rgba(240,249,255,.6)), url(${FISH_BG})` }}>
       <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-500 p-6 text-white shadow-card">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold"><Fish /> Câu cá</h1>
@@ -48,11 +52,12 @@ export default function FishingPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {s.zones.map((z) => (
-          <div key={z.zone} className="card p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Khu {z.zone}</h3>
-              <span className="text-xs text-ink-500">mồi: {s.profile.bait[z.zone] ?? 0}</span>
+          <div key={z.zone} className="card overflow-hidden p-0">
+            <div className="flex items-center justify-between bg-cover bg-center p-3" style={{ backgroundImage: `linear-gradient(rgba(0,0,0,.3),rgba(0,0,0,.3)), url(${ZONE_BG(z.zone)})` }}>
+              <h3 className="font-semibold text-white drop-shadow">Khu {z.zone}</h3>
+              <span className="rounded bg-black/30 px-1.5 text-xs text-white">mồi: {s.profile.bait[z.zone] ?? 0}</span>
             </div>
+            <div className="p-4 pt-2">
             {z.species.map((sp) => (
               <div key={sp.id} className="mt-2 flex items-center gap-2 text-sm">
                 {sp.asset
@@ -64,11 +69,11 @@ export default function FishingPage() {
             ))}
             <div className="mt-3 flex gap-2">
               {!z.hasRod
-                ? <button onClick={() => act(() => api.post('/fishing/buy-rod', { zone: z.zone }))} className="btn-outline flex-1 !py-1.5 text-xs">Mua cần ({z.rodPrice})</button>
-                : <>
-                    <button onClick={() => act(() => api.post('/fishing/buy-bait', { zone: z.zone, packs: 1 }))} className="btn-outline flex-1 !py-1.5 text-xs">Mua mồi ({z.baitPrice})</button>
-                    <button disabled={!!s.cast} onClick={() => act(() => api.post('/fishing/cast', { zone: z.zone }))} className="btn-primary flex-1 !py-1.5 text-xs disabled:opacity-50">Thả cần</button>
-                  </>}
+                ? <Link href="/game/shop?tab=fishing" className="btn-outline flex-1 !py-1.5 text-xs"><ShoppingBag size={12} /> Mua cần ở Cửa hàng</Link>
+                : (s.profile.bait[z.zone] ?? 0) <= 0
+                  ? <Link href="/game/shop?tab=fishing" className="btn-outline flex-1 !py-1.5 text-xs"><ShoppingBag size={12} /> Hết mồi — mua thêm</Link>
+                  : <button disabled={!!s.cast} onClick={() => act(() => api.post('/fishing/cast', { zone: z.zone }))} className="btn-primary flex-1 !py-1.5 text-xs disabled:opacity-50">Thả cần</button>}
+            </div>
             </div>
           </div>
         ))}

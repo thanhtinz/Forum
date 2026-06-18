@@ -47,7 +47,7 @@ function SoloPlay() {
 
   return (
     <div className="space-y-4">
-      <Link href="/minigame" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Trò chơi khác</Link>
+      <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Trò chơi khác</Link>
       <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white shadow-card">
         <Dices /> <h1 className="text-2xl font-bold">{gameLabel}</h1>
       </header>
@@ -67,13 +67,23 @@ function SoloPlay() {
           </div>
         )}
         {game === 'dua-thu' && (
-          <select className="input w-48" value={duaThu} onChange={(e) => setDuaThu(Number(e.target.value))}>
-            {[1, 2, 3, 4, 5, 6, 7].map((n) => <option key={n} value={n}>Thú số {n}</option>)}
-          </select>
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <button key={n} onClick={() => setDuaThu(n)} className={`flex flex-col items-center rounded-lg border-2 p-1 ${duaThu === n ? 'border-brand-600 bg-brand-50 dark:bg-ink-800' : 'border-transparent bg-ink-100 dark:bg-ink-800'}`}>
+                <img src={`/game-assets/duathu/${n}.gif`} alt={`Thú ${n}`} className="h-10 object-contain" />
+                <span className="text-[11px]">Thú {n}</span>
+              </button>
+            ))}
+          </div>
         )}
         {game === 'bau-cua' && (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {BAUCUA.map(([s, l]) => <button key={s} onClick={() => setSymbol(s)} className={`rounded-lg py-2 text-sm font-medium ${symbol === s ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{l}</button>)}
+            {BAUCUA.map(([s, l]) => (
+              <button key={s} onClick={() => setSymbol(s)} className={`flex flex-col items-center rounded-lg border-2 p-1.5 ${symbol === s ? 'border-brand-600 bg-brand-50 dark:bg-ink-800' : 'border-transparent bg-ink-100 dark:bg-ink-800'}`}>
+                <img src={`/game-assets/baucua/${s}.png`} alt={l} className="h-10 w-10 object-contain" />
+                <span className="text-[11px] font-medium">{l}</span>
+              </button>
+            ))}
           </div>
         )}
         {game === 'jackpot' && <p className="text-xs text-ink-500">Quay 3×3, 5 dòng thắng. Cược tính trên mỗi dòng.</p>}
@@ -85,6 +95,20 @@ function SoloPlay() {
       {result && (
         <div className={`card border p-5 text-center ${won ? 'border-emerald-400' : 'border-rose-400'}`}>
           <div className={`flex items-center justify-center gap-1.5 text-xl font-bold ${won ? 'text-emerald-600' : 'text-rose-600'}`}>{won ? <><Trophy size={20} /> THẮNG!</> : 'Thua'}</div>
+
+          {/* Hình ảnh kết quả theo game */}
+          {game === 'bau-cua' && Array.isArray(result.dice) && (
+            <div className="mt-3 flex justify-center gap-3">
+              {result.dice.map((d: string, i: number) => <img key={i} src={`/game-assets/baucua/${d}.png`} alt={d} className="h-14 w-14 object-contain" />)}
+            </div>
+          )}
+          {game === 'dua-thu' && result.winner != null && (
+            <div className="mt-3 flex flex-col items-center">
+              <img src={`/game-assets/duathu/${result.winner}.gif`} alt="winner" className="h-16 object-contain" />
+              <span className="text-xs text-ink-500">Thú thắng: {result.winner}</span>
+            </div>
+          )}
+
           <div className="mt-2 text-sm text-ink-500">
             {result.outcome && `Kết quả: ${String(result.outcome).toUpperCase()} `}{result.total != null && `(tổng ${result.total}) `}
             {Array.isArray(result.dice) && `· [${result.dice.join(', ')}] `}

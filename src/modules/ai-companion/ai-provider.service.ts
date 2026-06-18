@@ -44,35 +44,32 @@ export class AiProviderService {
 
   // Lấy danh sách model thực tế từ provider (realtime) bằng key tương ứng
   async listModels(provider: string, key?: string | null, baseUrl?: string | null): Promise<string[]> {
-    try {
-      if (provider === 'GEMINI') {
-        const k = key || await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '');
-        if (!k) return [];
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${k}`);
-        if (!res.ok) return [];
-        const j: any = await res.json();
-        return (j.models || [])
-          .filter((m: any) => (m.supportedGenerationMethods || []).includes('generateContent'))
-          .map((m: any) => String(m.name).replace(/^models\//, ''))
-          .sort();
-      }
-      if (provider === 'OLLAMA') {
-        const base = (baseUrl || await this.config.resolve('ai.ollamaUrl', 'OLLAMA_BASE_URL', 'http://localhost:11434')).replace(/\/$/, '');
-        const res = await fetch(`${base}/api/tags`);
-        if (!res.ok) return [];
-        const j: any = await res.json();
-        return (j.models || []).map((m: any) => m.name).sort();
-      }
-      // OpenAI & OpenAI-compatible
-      const base = (baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
-      const k = key || await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '');
-      const res = await fetch(`${base}/models`, { headers: k ? { Authorization: `Bearer ${k}` } : {} });
-      if (!res.ok) return [];
+    if (provider === 'GEMINI') {
+      const k = key || await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '');
+      if (!k) throw new Error('Chưa có Gemini API key');
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${k}`);
+      if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 150)}`);
       const j: any = await res.json();
-      return (j.data || []).map((m: any) => m.id).sort();
-    } catch {
-      return [];
+      return (j.models || [])
+        .filter((m: any) => (m.supportedGenerationMethods || []).includes('generateContent'))
+        .map((m: any) => String(m.name).replace(/^models\//, ''))
+        .sort();
     }
+    if (provider === 'OLLAMA') {
+      const base = (baseUrl || await this.config.resolve('ai.ollamaUrl', 'OLLAMA_BASE_URL', 'http://localhost:11434')).replace(/\/$/, '');
+      const res = await fetch(`${base}/api/tags`);
+      if (!res.ok) throw new Error(`Ollama ${res.status}`);
+      const j: any = await res.json();
+      return (j.models || []).map((m: any) => m.name).sort();
+    }
+    // OpenAI & OpenAI-compatible
+    const base = (baseUrl || 'https://api.openai.com/v1').replace(/\/$/, '');
+    const k = key || await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '');
+    if (!k) throw new Error('Chưa có API key');
+    const res = await fetch(`${base}/models`, { headers: { Authorization: `Bearer ${k}` } });
+    if (!res.ok) throw new Error(`${res.status}: ${(await res.text()).slice(0, 150)}`);
+    const j: any = await res.json();
+    return (j.data || []).map((m: any) => m.id).sort();
   }
 
   // Gọi không streaming: gom toàn bộ chunk thành một chuỗi

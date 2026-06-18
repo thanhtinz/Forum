@@ -84,7 +84,9 @@ export default function FarmPage() {
       {/* Chó giữ nhà + Đi cướp */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="card flex items-center gap-3 p-4">
-          <span className="text-3xl">🐕</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/game-assets/nongtrai/img/dog.jpg" alt="Chó giữ nhà" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+          {/* asset chuồng chó dùng chung khu nông trại */}
           <div className="min-w-0 flex-1">
             <p className="font-semibold">Chó giữ nhà</p>
             {s.profile.dogActive

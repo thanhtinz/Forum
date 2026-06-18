@@ -184,11 +184,11 @@ html, body {
   100% { left: 4%; transform: scaleX(1); }
 }
 @keyframes swim-x {
-  0% { left: -8%; transform: scaleX(1); }
-  49% { left: 92%; transform: scaleX(1); }
-  50% { left: 92%; transform: scaleX(-1); }
-  99% { left: -8%; transform: scaleX(-1); }
-  100% { left: -8%; transform: scaleX(1); }
+  0% { left: 2%; transform: scaleX(1); }
+  49% { left: 78%; transform: scaleX(1); }
+  50% { left: 78%; transform: scaleX(-1); }
+  99% { left: 2%; transform: scaleX(-1); }
+  100% { left: 2%; transform: scaleX(1); }
 }
 @keyframes bob-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 .anim-walk { position: absolute; animation: walk-x linear infinite; }

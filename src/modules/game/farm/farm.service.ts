@@ -180,7 +180,7 @@ export class FarmService {
       await tx.farmProfile.update({ where: { characterId: char.id }, data: { kheFruit: 0, kheUpdatedAt: new Date() } });
       await this.addWarehouse(tx, char.id, {
         slug: 'qua-khe', name: 'Quả Khế', category: 'CROP', unitSell: this.KHE_PRICE,
-        asset: '',
+        asset: '/game-assets/nongtrai/img/caykhechin.png',
       }, fruit);
     });
     return { harvested: fruit };

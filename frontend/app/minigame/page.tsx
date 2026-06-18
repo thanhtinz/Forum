@@ -36,30 +36,31 @@ export default function MinigamePage() {
       {error && <div className="card p-6 text-center text-ink-500">Cần đăng nhập để xem sảnh game.</div>}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {data?.map((g) => (
-          <div key={g.id} className="card p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-semibold">
-                <Dices size={18} className="text-amber-500" /> {g.name}
-              </h3>
-              {PVP.includes(g.type) && (
-                <span className="chip bg-emerald-100 text-emerald-700"><Users size={12} className="mr-1" /> PvP</span>
-              )}
-            </div>
-            {g.description && <p className="mt-1 text-sm text-ink-500">{g.description}</p>}
-            <div className="mt-3 flex items-center justify-between text-xs text-ink-500">
-              <span className="flex items-center gap-1"><Coins size={13} /> {g.minBet.toLocaleString()}–{g.maxBet.toLocaleString()}</span>
-              <span>Tối đa {g.maxPlayers} người</span>
-            </div>
-            {PVP_LINK[g.type] ? (
-              <Link href={PVP_LINK[g.type]} className="btn-primary mt-3 w-full !py-1.5 text-xs">Vào bàn PvP →</Link>
-            ) : SOLO_SLUG[g.type] ? (
-              <Link href={`/minigame/solo?game=${SOLO_SLUG[g.type]}`} className="btn-primary mt-3 w-full !py-1.5 text-xs">Chơi với máy →</Link>
-            ) : (
-              <span className="mt-3 block text-center text-xs text-ink-400">Sắp ra mắt</span>
-            )}
-          </div>
-        ))}
+        {data?.map((g) => {
+          const href = PVP_LINK[g.type] || (SOLO_SLUG[g.type] ? `/minigame/solo?game=${SOLO_SLUG[g.type]}` : '');
+          const inner = (
+            <>
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-2 font-semibold">
+                  <Dices size={18} className="text-amber-500" /> {g.name}
+                </h3>
+                {PVP.includes(g.type) && (
+                  <span className="chip bg-emerald-100 text-emerald-700"><Users size={12} className="mr-1" /> PvP</span>
+                )}
+              </div>
+              {g.description && <p className="mt-1 text-sm text-ink-500">{g.description}</p>}
+              <div className="mt-3 flex items-center justify-between text-xs text-ink-500">
+                <span className="flex items-center gap-1"><Coins size={13} /> {g.minBet.toLocaleString()}–{g.maxBet.toLocaleString()}</span>
+                <span>{href ? (PVP_LINK[g.type] ? 'Vào bàn PvP →' : 'Chơi ngay →') : 'Sắp ra mắt'}</span>
+              </div>
+            </>
+          );
+          return href ? (
+            <Link key={g.id} href={href} className="card p-4 transition hover:-translate-y-0.5 hover:shadow-lg">{inner}</Link>
+          ) : (
+            <div key={g.id} className="card p-4 opacity-70">{inner}</div>
+          );
+        })}
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ export default function AdminFortune() {
   async function fetchModels() {
     if (!cfg) return;
     setLoadingModels(true);
-    try { const r = await api.post<{ models: string[] }>('/ai-companion/models', { provider: cfg.aiProvider, apiKey: apiKey || undefined }); setModels(r.models || []); if (!r.models?.length) setMsg('Không lấy được model — lưu API key trước.'); }
+    try { const r = await api.post<{ models: string[] }>('/ai/models', { provider: cfg.aiProvider, apiKey: apiKey || undefined }); setModels(r.models || []); if (!r.models?.length) setMsg('Không lấy được model — lưu API key trước.'); }
     catch (e: any) { setMsg(e.message); } finally { setLoadingModels(false); }
   }
 

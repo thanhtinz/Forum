@@ -26,7 +26,7 @@ function timeAgo(d?: string) {
   try { return formatDistanceToNow(new Date(d), { addSuffix: true, locale: vi }); } catch { return ''; }
 }
 
-export function ThreadList({ categoryId }: { categoryId?: string } = {}) {
+export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hideHeader?: boolean } = {}) {
   const { user } = useAuth();
   const url = categoryId ? `/forum/threads?limit=20&categoryId=${categoryId}` : '/forum/threads?limit=20';
   const { data, error, isLoading } = useSWR<Paginated<Thread>>(url, fetcher);
@@ -43,10 +43,12 @@ export function ThreadList({ categoryId }: { categoryId?: string } = {}) {
 
   return (
     <section className="card overflow-hidden">
-      <div className="flex items-center justify-between border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
-        <h2 className="font-semibold">Bài viết mới nhất</h2>
-        <Link href="/threads/new" className="btn-primary !py-1.5 !px-3 text-xs">+ Đăng bài</Link>
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center justify-between border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
+          <h2 className="font-semibold">Bài viết mới nhất</h2>
+          <Link href="/threads/new" className="btn-primary !py-1.5 !px-3 text-xs">+ Đăng bài</Link>
+        </div>
+      )}
 
       {isLoading && <div className="p-8 text-center text-ink-500">Đang tải…</div>}
       {error && <div className="p-8 text-center text-red-500">Không tải được dữ liệu (kiểm tra API).</div>}

@@ -67,7 +67,7 @@ function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p
 
   async function fetchAiModels() {
     setAiLoadingModels(true);
-    try { const r = await api.post<{ models: string[] }>('/ai-companion/models', { provider: aiProvider, apiKey: aiKey || undefined, baseUrl: aiBaseUrl || undefined }); setAiModels(r.models || []); }
+    try { const r = await api.post<{ models: string[] }>('/ai/models', { provider: aiProvider, apiKey: aiKey || undefined, baseUrl: aiBaseUrl || undefined }); setAiModels(r.models || []); }
     catch { /* ignore */ } finally { setAiLoadingModels(false); }
   }
 
@@ -326,9 +326,8 @@ export default function AiCompanionPage() {
             <p className="mt-1 text-[11px] text-ink-400">Đã trò chuyện {bond.bond.totalMessages} lượt</p>
           </div>
         )}
-
-        <button onClick={() => setShowOutfits(true)} className="btn-outline mt-3 inline-flex w-full items-center justify-center gap-1 text-sm"><Shirt size={14} /> Trang phục</button>
       </div>
+
 
       {/* Popup trang phục */}
       {showOutfits && (

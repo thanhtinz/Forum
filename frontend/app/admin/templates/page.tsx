@@ -78,6 +78,45 @@ const SCHEMAS: Record<string, Field[]> = {
   ],
 };
 
+// giây -> chuỗi dễ đọc (giờ/ngày)
+function humanDur(sec: any): string {
+  const s = Number(sec);
+  if (!s || s <= 0) return '';
+  if (s % 86400 === 0) return `${s / 86400} ngày`;
+  if (s % 3600 === 0) return `${s / 3600} giờ`;
+  if (s >= 3600) return `${(s / 3600).toFixed(1)} giờ`;
+  if (s % 60 === 0) return `${s / 60} phút`;
+  return `${s} giây`;
+}
+
+// chỉ số tóm tắt hiển thị ở danh sách theo loại
+function rowStats(r: any, type: string): string {
+  const parts: string[] = [];
+  if (type === 'crop') {
+    if (r.seedPrice != null) parts.push(`hạt ${r.seedPrice} coin`);
+    if (r.growSeconds) parts.push(`chín ${humanDur(r.growSeconds)}`);
+    if (r.yieldMin != null) parts.push(`SL ${r.yieldMin}-${r.yieldMax}`);
+    if (r.sellPrice != null) parts.push(`bán ${r.sellPrice}/cái`);
+  } else if (type === 'animal') {
+    if (r.buyPrice != null) parts.push(`mua ${r.buyPrice} coin`);
+    if (r.growSeconds) parts.push(`lớn ${humanDur(r.growSeconds)}`);
+    if (r.lifeSeconds) parts.push(`thọ ${humanDur(r.lifeSeconds)}`);
+    if (r.productName) parts.push(`SP ${r.productName} x${r.productYield}`);
+  } else if (type === 'fish') {
+    parts.push(`khu ${r.zone}`);
+    if (r.pricePerKg != null) parts.push(`${r.pricePerKg} coin/kg`);
+    if (r.kgMin != null) parts.push(`${r.kgMin}-${r.kgMax}kg`);
+    if (r.stock != null) parts.push(`tồn ${r.stock}`);
+  } else {
+    if (r.priceCoin != null) parts.push(`coin ${r.priceCoin}`);
+    if (r.price != null) parts.push(`${r.price} coin`);
+    if (r.gemAmount != null) parts.push(`${r.gemAmount} gem`);
+    if (r.slot) parts.push(r.slot);
+    if (r.cookSeconds) parts.push(`nấu ${humanDur(r.cookSeconds)}`);
+  }
+  return parts.join(' · ');
+}
+
 export default function AdminTemplates() {
   const [type, setType] = useState('crop');
   const [rows, setRows] = useState<any[]>([]);
@@ -152,6 +191,7 @@ export default function AdminTemplates() {
                       value={form[f.key] ?? ''}
                       onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
                     />
+                    {/^[a-z]+Seconds$/.test(f.key) && humanDur(form[f.key]) && <span className="mt-0.5 block text-[11px] text-emerald-600">= {humanDur(form[f.key])}</span>}
                   </>
                 )}
               </label>
@@ -168,11 +208,9 @@ export default function AdminTemplates() {
       <div className="card divide-y divide-ink-100 dark:divide-ink-800">
         {rows.map((r) => (
           <div key={r.id} className="flex items-center justify-between p-3 text-sm">
-            <div>
-              <b>{r.name || r.slug}</b> <span className="text-ink-400">/{r.slug}</span>
-              <span className="ml-2 text-xs text-ink-400">
-                {r.priceCoin != null && `coin ${r.priceCoin}`}{r.seedPrice != null && `hạt ${r.seedPrice}`}{r.buyPrice != null && `mua ${r.buyPrice}`}{r.pricePerKg != null && `${r.pricePerKg}/kg`}{r.gemAmount != null && `${r.gemAmount} gem`}{r.slot && ` · ${r.slot}`}
-              </span>
+            <div className="min-w-0">
+              <b>{r.name || r.slug}</b> {r.slug && <span className="text-ink-400">/{r.slug}</span>}
+              <div className="text-xs text-ink-400">{rowStats(r, type)}</div>
             </div>
             <div className="flex gap-2">
               <button onClick={() => openEdit(r)} className="btn-outline !py-1 text-xs">Sửa</button>

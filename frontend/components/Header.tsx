@@ -14,6 +14,7 @@ import { useAuth } from './AuthProvider';
 const NAV = [
   { href: '/', label: 'Diễn đàn', icon: MessageSquare },
   { href: '/chat', label: 'Chat', icon: Bell },
+  { href: '/cong-game', label: 'Cổng game', icon: Gamepad2 },
   { href: '/game', label: 'Game', icon: Gamepad2 },
   { href: '/marketplace', label: 'Chợ', icon: Store },
   { href: '/fortune', label: 'Bói toán', icon: Sparkles },

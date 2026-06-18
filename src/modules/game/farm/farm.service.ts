@@ -136,18 +136,19 @@ export class FarmService {
     return { fruit, bonus: this.KHE_WATER_BONUS };
   }
 
-  // Thu hoạch: bán toàn bộ quả hiện có lấy coin
+  // Thu hoạch: thả quả khế vào kho (bán sau như nông sản khác)
   async harvestKhe(userId: string) {
     const char = await this.getCharacter(userId);
     const profile = await this.getProfile(char.id);
     const fruit = this.currentKheFruit(profile as any);
     if (fruit <= 0) throw new BadRequestException('Cây khế chưa có quả để thu hoạch.');
-    const coin = fruit * this.KHE_PRICE;
     await this.prisma.$transaction(async (tx) => {
       await tx.farmProfile.update({ where: { characterId: char.id }, data: { kheFruit: 0, kheUpdatedAt: new Date() } });
-      await this.addCoin(tx, char.id, coin, 'farm_khe', `Thu hoạch ${fruit} quả khế`);
+      await this.addWarehouse(tx, char.id, {
+        slug: 'qua-khe', name: 'Quả Khế', category: 'CROP', unitSell: this.KHE_PRICE, asset: null,
+      }, fruit);
     });
-    return { harvested: fruit, coin };
+    return { harvested: fruit };
   }
 
   // ──────────────────────────────────────────────

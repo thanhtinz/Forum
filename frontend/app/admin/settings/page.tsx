@@ -1,29 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { ChevronRight, Settings as SettingsIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 
-interface Setting { id: string; key: string; label: string; type: string; value: any; options?: any; validation?: any; isSecret?: boolean; }
-interface Group { id: string; key: string; name: string; icon?: string; settings: Setting[]; }
+interface Group { id: string; key: string; name: string; description?: string; settings: { key: string }[]; }
 
 export default function AdminSettings() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [msg, setMsg] = useState('');
-  const [dirty, setDirty] = useState<Record<string, any>>({});
 
   function load() { api.get<Group[]>('/admin/config').then(setGroups).catch((e) => setMsg(e.message)); }
   useEffect(() => { load(); }, []);
 
   async function seed() { try { await api.post('/admin/config/seed'); setMsg('Đã khởi tạo cấu hình'); } catch (e: any) { setMsg(e.message); } load(); }
-
-  async function saveOne(key: string) {
-    try { await api.patch(`/admin/config/setting/${key}`, { value: dirty[key] }); setMsg('Đã lưu ' + key);
-      setDirty((d) => { const n = { ...d }; delete n[key]; return n; });
-    } catch (e: any) { setMsg(e.message); }
-  }
-
-  const setVal = (key: string, v: any) => setDirty((d) => ({ ...d, [key]: v }));
-  const cur = (s: Setting) => (s.key in dirty ? dirty[s.key] : s.value);
 
   return (
     <div className="space-y-4">
@@ -31,45 +22,22 @@ export default function AdminSettings() {
         <h1 className="text-xl font-bold">Cấu hình hệ thống</h1>
         <button onClick={seed} className="btn-outline text-xs">Khởi tạo cấu hình mặc định</button>
       </div>
+      <p className="text-sm text-ink-500">Mỗi nhóm cấu hình là một trang riêng cho gọn. Chọn nhóm để chỉnh.</p>
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
       {groups.length === 0 && <div className="card p-6 text-center text-ink-500">Chưa có cấu hình. Bấm "Khởi tạo cấu hình mặc định".</div>}
 
-      {groups.map((g) => (
-        <section key={g.id} className="card p-4">
-          <h2 className="mb-3 font-semibold">{g.name}</h2>
-          <div className="space-y-3">
-            {g.settings.map((s) => (
-              <div key={s.key} className="grid grid-cols-1 items-center gap-2 sm:grid-cols-[240px_1fr_auto]">
-                <label className="text-sm">{s.label}<div className="text-[11px] text-ink-400">{s.key}</div></label>
-                <Field s={s} value={cur(s)} onChange={(v) => setVal(s.key, v)} />
-                <button onClick={() => saveOne(s.key)} disabled={!(s.key in dirty)} className="btn-primary !py-1 text-xs disabled:opacity-40">Lưu</button>
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {groups.map((g) => (
+          <Link key={g.id} href={`/admin/config?group=${g.key}`} className="card flex items-center gap-3 p-4 transition hover:-translate-y-0.5 hover:shadow-lg">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600 dark:bg-ink-800"><SettingsIcon size={18} /></span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{g.name}</p>
+              <p className="text-xs text-ink-400">{g.settings.length} mục</p>
+            </div>
+            <ChevronRight size={16} className="text-ink-300" />
+          </Link>
+        ))}
+      </div>
     </div>
   );
-}
-
-function Field({ s, value, onChange }: { s: Setting; value: any; onChange: (v: any) => void }) {
-  const opts = s.options?.options || s.validation?.options;
-  switch (s.type) {
-    case 'boolean':
-      return <input type="checkbox" checked={!!value} onChange={(e) => onChange(e.target.checked)} />;
-    case 'number':
-      return <input type="number" className="input" value={value ?? 0} onChange={(e) => onChange(Number(e.target.value))} />;
-    case 'textarea':
-      return <textarea className="input resize-y" rows={2} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
-    case 'color':
-      return <input type="color" className="h-9 w-16" value={value || '#000000'} onChange={(e) => onChange(e.target.value)} />;
-    case 'select':
-      return (
-        <select className="input" value={value ?? ''} onChange={(e) => onChange(e.target.value)}>
-          {(opts || []).map((o: any) => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o.value ?? o}</option>)}
-        </select>
-      );
-    default:
-      return <input className="input" value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
-  }
 }

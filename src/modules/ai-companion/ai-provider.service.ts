@@ -23,13 +23,14 @@ export class AiProviderService {
     provider: AiProvider,
     modelId: string,
     messages: AiChatMessage[],
+    keyOverride?: string | null,
   ): AsyncGenerator<AiStreamChunk> {
     switch (provider) {
       case 'OPENAI':
-        yield* this.streamOpenAI(modelId, messages);
+        yield* this.streamOpenAI(modelId, messages, keyOverride);
         break;
       case 'GEMINI':
-        yield* this.streamGemini(modelId, messages);
+        yield* this.streamGemini(modelId, messages, keyOverride);
         break;
       case 'OLLAMA':
         yield* this.streamOllama(modelId, messages);
@@ -57,8 +58,9 @@ export class AiProviderService {
   private async *streamOpenAI(
     modelId: string,
     messages: AiChatMessage[],
+    keyOverride?: string | null,
   ): AsyncGenerator<AiStreamChunk> {
-    const apiKey = await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '');
+    const apiKey = keyOverride || await this.config.resolve('ai.openaiKey', 'OPENAI_API_KEY', '');
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -107,8 +109,9 @@ export class AiProviderService {
   private async *streamGemini(
     modelId: string,
     messages: AiChatMessage[],
+    keyOverride?: string | null,
   ): AsyncGenerator<AiStreamChunk> {
-    const apiKey = await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '');
+    const apiKey = keyOverride || await this.config.resolve('ai.geminiKey', 'GEMINI_API_KEY', '');
     const systemMsg = messages.find((m) => m.role === 'system');
     const contents = messages
       .filter((m) => m.role !== 'system')

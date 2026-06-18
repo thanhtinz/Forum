@@ -13,6 +13,7 @@ export const CROPS: CropSeed[] = [
   { slug: 'thanh-long', name: 'Thanh long', seedPrice: 600, sellPrice: 95, growSeconds: 2400, exp: 28, yieldMin: 5, yieldMax: 10, reqLevel: 5, asset: img('img/sv1/6.png'), sortOrder: 4 },
   { slug: 'xoai', name: 'Xoài', seedPrice: 900, sellPrice: 140, growSeconds: 3600, exp: 40, yieldMin: 5, yieldMax: 9, reqLevel: 8, asset: img('img/sv1/7.png'), sortOrder: 5 },
   { slug: 'dua-hau', name: 'Dưa hấu', seedPrice: 1300, sellPrice: 200, growSeconds: 5400, exp: 60, yieldMin: 4, yieldMax: 8, reqLevel: 12, asset: img('img/sv1/11.png'), sortOrder: 6 },
+  { slug: 'khe', name: 'Khế', seedPrice: 750, sellPrice: 115, growSeconds: 3000, exp: 34, yieldMin: 5, yieldMax: 10, reqLevel: 6, asset: img('img/sv1/13.png'), sortOrder: 7 },
 ];
 
 export interface FertilizerSeed { slug: string; name: string; price: number; reduceSeconds: number; asset: string; sortOrder: number; }

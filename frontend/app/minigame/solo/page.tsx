@@ -13,6 +13,7 @@ const GAMES: [Game, string][] = [
   ['lucky-wheel', 'Vòng Quay'], ['dua-thu', 'Đua Thú'], ['jackpot', 'Jackpot 777'],
 ];
 const BAUCUA: [string, string][] = [['bau', 'Bầu'], ['cua', 'Cua'], ['tom', 'Tôm'], ['ca', 'Cá'], ['ga', 'Gà'], ['nai', 'Nai']];
+const BOARD = '/game-assets/avatar/gameroom/imgTable.png';
 
 function SoloPlay() {
   const { user, loading } = useAuth();
@@ -53,7 +54,7 @@ function SoloPlay() {
       </header>
       <p className="flex items-center gap-1 text-xs text-ink-500">Chơi bằng <Coins size={13} className="text-amber-500" /> Vàng (coin). Kiếm coin qua forum/game.</p>
 
-      <div className="card space-y-3 p-4">
+      <div className="card space-y-3 bg-cover bg-center p-4" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)), url(${BOARD})` }}>
         <label className="block text-sm">Tiền cược (coin)<input type="number" className="input mt-1 w-40" value={bet} onChange={(e) => setBet(Number(e.target.value))} /></label>
 
         {game === 'tai-xiu' && (
@@ -106,6 +107,13 @@ function SoloPlay() {
             <div className="mt-3 flex flex-col items-center">
               <img src={`/game-assets/duathu/${result.winner}.gif`} alt="winner" className="h-16 object-contain" />
               <span className="text-xs text-ink-500">Thú thắng: {result.winner}</span>
+            </div>
+          )}
+          {game === 'jackpot' && Array.isArray(result.grid) && (
+            <div className="mt-3 inline-grid grid-cols-3 gap-1 rounded-xl bg-ink-900/80 p-2">
+              {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => (
+                <img key={`${c}-${r}`} src={`/game-assets/jackpot/${result.grid[c]?.[r]}.png`} alt="" className="h-12 w-12 object-contain" />
+              )))}
             </div>
           )}
 

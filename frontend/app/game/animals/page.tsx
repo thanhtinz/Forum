@@ -42,7 +42,7 @@ export default function AnimalsPage() {
 
       {/* Chuồng thú (có asset chuồng) */}
       <section className="card overflow-hidden p-0">
-        <div className="flex items-center justify-between bg-cover bg-center p-4" style={{ backgroundImage: `linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.35)), url(${BARN_BG})` }}>
+        <div className="flex h-28 items-end justify-between bg-contain bg-center bg-no-repeat p-4" style={{ backgroundImage: `linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25)), url(${BARN_BG})`, backgroundColor: '#7dd3fc' }}>
           <h2 className="font-semibold text-white drop-shadow">Chuồng thú ({owned.length})</h2>
           <Link href="/game/shop" className="flex items-center gap-1 rounded-lg bg-white/20 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/30"><ShoppingBag size={14} /> Mua thêm ở Cửa hàng</Link>
         </div>

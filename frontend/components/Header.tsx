@@ -7,17 +7,26 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  Store, Wrench, Sparkles, LogOut, User as UserIcon, ChevronDown,
+  Store, Wrench, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 
+// Icon kiểu Messenger cho mục Chat
+function MessengerIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden>
+      <path d="M12 2C6.36 2 2 6.13 2 11.7c0 2.91 1.19 5.44 3.14 7.17.16.14.26.35.27.57l.05 1.78c.02.57.6.94 1.12.71l1.99-.88c.17-.07.36-.09.54-.04.91.25 1.86.38 2.79.38 5.64 0 10-4.13 10-9.7S17.64 2 12 2zm6.05 7.46l-2.94 4.66c-.47.74-1.47.93-2.18.41l-2.34-1.75a.46.46 0 0 0-.55 0l-3.16 2.4c-.42.32-.97-.18-.69-.62l2.94-4.66c.47-.74 1.47-.93 2.18-.41l2.34 1.75c.16.12.39.12.55 0l3.16-2.4c.42-.32.97.18.69.62z"/>
+    </svg>
+  );
+}
+
 const NAV = [
   { href: '/', label: 'Diễn đàn', icon: MessageSquare },
-  { href: '/chat', label: 'Chat', icon: Bell },
+  { href: '/chat', label: 'Chat', icon: MessengerIcon },
   { href: '/cong-game', label: 'Cổng game', icon: Gamepad2 },
   { href: '/game', label: 'Game', icon: Gamepad2 },
   { href: '/marketplace', label: 'Chợ', icon: Store },
-  { href: '/fortune', label: 'Bói toán', icon: Sparkles },
+  { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
   { href: '/ai', label: 'AI Companion', icon: Sparkles },
   { href: '/tools', label: 'Công cụ', icon: Wrench },
 ];

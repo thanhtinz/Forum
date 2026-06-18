@@ -230,52 +230,52 @@ model User {
   friendOf        Friendship[]          @relation("FriendOf")
   followedTags    UserTagFollow[]
 
-  aiBonds           AiBond[]
-  aiOutfitUnlocks   AiOutfitUnlock[]
-  storefront        Storefront?
-  storefrontFollows StorefrontFollow[]
-  gameCharacter     GameCharacter?
-  prisonRecords     Prison[]             @relation("UserPrison")
-  fortuneRecords    FortuneRecord[]      @relation("UserFortune")
-  pollVotes         PollVote[]
-  threadSubs        ThreadSubscription[]
-  postDrafts        PostDraft[]
-  bookmarks         Bookmark[]
-  tipsSent          Tip[]                @relation("TipFrom")
-  tipsReceived      Tip[]                @relation("TipTo")
-  inviteCodesCreated InviteCode[]        @relation("InviteCodesCreated")
-  inviteCodeUses     InviteCodeUse[]
-  following          UserFollow[]         @relation("Follower")
-  followers          UserFollow[]         @relation("Following")
-  profilePosts       ProfilePost[]        @relation("ProfilePostAuthor")
-  profilePostsOnWall ProfilePost[]        @relation("ProfilePostWall")
-  profilePostComments ProfilePostComment[]
-  blocking           UserBlock[]          @relation("Blocker")
-  blockedBy          UserBlock[]          @relation("Blocked")
-  profileFieldValues UserProfileFieldValue[]
-  galleryAlbums      GalleryAlbum[]
-  galleryMedia       GalleryMedia[]
-  galleryComments    GalleryComment[]
+  aiBonds              AiBond[]
+  aiOutfitUnlocks      AiOutfitUnlock[]
+  storefront           Storefront?
+  storefrontFollows    StorefrontFollow[]
+  gameCharacter        GameCharacter?
+  prisonRecords        Prison[]                @relation("UserPrison")
+  fortuneRecords       FortuneRecord[]         @relation("UserFortune")
+  pollVotes            PollVote[]
+  threadSubs           ThreadSubscription[]
+  postDrafts           PostDraft[]
+  bookmarks            Bookmark[]
+  tipsSent             Tip[]                   @relation("TipFrom")
+  tipsReceived         Tip[]                   @relation("TipTo")
+  inviteCodesCreated   InviteCode[]            @relation("InviteCodesCreated")
+  inviteCodeUses       InviteCodeUse[]
+  following            UserFollow[]            @relation("Follower")
+  followers            UserFollow[]            @relation("Following")
+  profilePosts         ProfilePost[]           @relation("ProfilePostAuthor")
+  profilePostsOnWall   ProfilePost[]           @relation("ProfilePostWall")
+  profilePostComments  ProfilePostComment[]
+  blocking             UserBlock[]             @relation("Blocker")
+  blockedBy            UserBlock[]             @relation("Blocked")
+  profileFieldValues   UserProfileFieldValue[]
+  galleryAlbums        GalleryAlbum[]
+  galleryMedia         GalleryMedia[]
+  galleryComments      GalleryComment[]
   verificationRequests VerificationRequest[]
-  checkIns           CheckIn[]
-  spinHistory        SpinHistory[]
-  giveaways          Giveaway[]
-  giveawayEntries    GiveawayEntry[]
-  triviaAnswers      TriviaAnswer[]
-  predictionBets     PredictionBet[]
-  predictionComments PredictionComment[]
-  predictionReactions PredictionReaction[]
-  parlayBets         ParlayBet[]
-  aiPersonas         AiPersona[]
-  authTokens         AuthToken[]
-  groupMemberships   UserGroupMember[]
-  pushSubscriptions  PushSubscription[]
-  freelancerProfile  FreelancerProfile?
-  jobsPosted         Job[]              @relation("JobEmployer")
-  jobProposals       JobProposal[]      @relation("ProposalFreelancer")
-  jobReviewsGiven    JobReview[]        @relation("JobReviewFrom")
-  jobReviewsGot      JobReview[]        @relation("JobReviewTo")
-  jobBookmarks       JobBookmark[]
+  checkIns             CheckIn[]
+  spinHistory          SpinHistory[]
+  giveaways            Giveaway[]
+  giveawayEntries      GiveawayEntry[]
+  triviaAnswers        TriviaAnswer[]
+  predictionBets       PredictionBet[]
+  predictionComments   PredictionComment[]
+  predictionReactions  PredictionReaction[]
+  parlayBets           ParlayBet[]
+  aiPersonas           AiPersona[]
+  authTokens           AuthToken[]
+  groupMemberships     UserGroupMember[]
+  pushSubscriptions    PushSubscription[]
+  freelancerProfile    FreelancerProfile?
+  jobsPosted           Job[]                   @relation("JobEmployer")
+  jobProposals         JobProposal[]           @relation("ProposalFreelancer")
+  jobReviewsGiven      JobReview[]             @relation("JobReviewFrom")
+  jobReviewsGot        JobReview[]             @relation("JobReviewTo")
+  jobBookmarks         JobBookmark[]
 
   @@index([email])
   @@index([username])
@@ -285,20 +285,20 @@ model User {
 
 // Nhóm người dùng + bộ quyền (kiểu Flarum/XenForo). Bổ sung cho `role`.
 model UserGroup {
-  id          String   @id @default(cuid())
-  key         String   @unique @db.VarChar(40) // 'guest'|'member'|'vip'|'moderator'|'admin'|custom
-  name        String   @db.VarChar(80)
-  color       String?  @db.VarChar(20)
-  badgeIcon   String?  @db.VarChar(255) // tên icon lucide hoặc URL ảnh
-  priority    Int      @default(0)
-  isSystem    Boolean  @default(false) // nhóm hệ thống map theo role, không xoá được
-  permissions String[] // danh sách khoá quyền; '*' = tất cả
+  id            String   @id @default(cuid())
+  key           String   @unique @db.VarChar(40) // 'guest'|'member'|'vip'|'moderator'|'admin'|custom
+  name          String   @db.VarChar(80)
+  color         String?  @db.VarChar(20)
+  badgeIcon     String?  @db.VarChar(255) // tên icon lucide hoặc URL ảnh
+  priority      Int      @default(0)
+  isSystem      Boolean  @default(false) // nhóm hệ thống map theo role, không xoá được
+  permissions   String[] // danh sách khoá quyền; '*' = tất cả
   // Tự thăng nhóm khi đạt cột mốc (kiểu XenForo group promotions)
-  autoPromote   Boolean @default(false)
-  minPosts      Int     @default(0)
-  minReputation Int     @default(0)
-  minDays       Int     @default(0) // tuổi tài khoản (ngày)
-  createdAt   DateTime @default(now())
+  autoPromote   Boolean  @default(false)
+  minPosts      Int      @default(0)
+  minReputation Int      @default(0)
+  minDays       Int      @default(0) // tuổi tài khoản (ngày)
+  createdAt     DateTime @default(now())
 
   members UserGroupMember[]
 }
@@ -362,15 +362,15 @@ model OAuthProvider {
 // ============================================================
 
 model InviteCode {
-  id        String    @id @default(cuid())
-  code      String    @unique
-  role      UserRole  @default(MEMBER)
-  maxUses   Int?      // null = unlimited
-  uses      Int       @default(0)
+  id        String          @id @default(cuid())
+  code      String          @unique
+  role      UserRole        @default(MEMBER)
+  maxUses   Int? // null = unlimited
+  uses      Int             @default(0)
   expiresAt DateTime?
   createdBy String
-  creator   User      @relation("InviteCodesCreated", fields: [createdBy], references: [id])
-  createdAt DateTime  @default(now())
+  creator   User            @relation("InviteCodesCreated", fields: [createdBy], references: [id])
+  createdAt DateTime        @default(now())
   usedBy    InviteCodeUse[]
 
   @@index([code])
@@ -411,9 +411,10 @@ model Category {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  parent   Category?  @relation("SubCategories", fields: [parentId], references: [id])
-  children Category[] @relation("SubCategories")
+  parent   Category?        @relation("SubCategories", fields: [parentId], references: [id])
+  children Category[]       @relation("SubCategories")
   threads  Thread[]
+  prefixes CategoryPrefix[]
 
   @@index([slug])
   @@index([parentId])
@@ -452,6 +453,7 @@ model Thread {
   title          String       @db.VarChar(255)
   slug           String       @unique @db.VarChar(280)
   prefix         ThreadPrefix @default(NONE)
+  prefixId       String? // tiền tố do admin tạo theo từng danh mục
   status         ThreadStatus @default(OPEN)
   isPinned       Boolean      @default(false)
   isFeatured     Boolean      @default(false)
@@ -468,6 +470,7 @@ model Thread {
   updatedAt      DateTime     @updatedAt
 
   category      Category             @relation(fields: [categoryId], references: [id])
+  prefixRef     CategoryPrefix?      @relation(fields: [prefixId], references: [id])
   author        User                 @relation(fields: [authorId], references: [id])
   posts         Post[]
   tags          ThreadTag[]
@@ -481,6 +484,22 @@ model Thread {
   @@index([slug])
   @@index([lastPostAt])
   @@index([prefix])
+  @@index([prefixId])
+}
+
+// Tiền tố bài viết do admin tạo riêng cho từng danh mục (user chọn khi đăng bài)
+model CategoryPrefix {
+  id         String   @id @default(cuid())
+  categoryId String
+  label      String   @db.VarChar(50)
+  color      String?  @db.VarChar(20)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  threads  Thread[]
+
+  @@index([categoryId])
 }
 
 model ThreadTag {
@@ -1024,8 +1043,8 @@ model UserFollow {
 // Profile posts (tường nhà) — đăng lên hồ sơ của 1 user
 model ProfilePost {
   id        String   @id @default(cuid())
-  authorId  String   // người viết
-  wallId    String   // hồ sơ được viết lên
+  authorId  String // người viết
+  wallId    String // hồ sơ được viết lên
   content   String   @db.Text
   likeCount Int      @default(0)
   createdAt DateTime @default(now())
@@ -1039,11 +1058,11 @@ model ProfilePost {
 }
 
 model ProfilePostComment {
-  id            String      @id @default(cuid())
+  id            String   @id @default(cuid())
   profilePostId String
   authorId      String
-  content       String      @db.Text
-  createdAt     DateTime    @default(now())
+  content       String   @db.Text
+  createdAt     DateTime @default(now())
 
   profilePost ProfilePost @relation(fields: [profilePostId], references: [id], onDelete: Cascade)
   author      User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -1239,14 +1258,14 @@ model GiveawayEntry {
 }
 
 model TriviaQuestion {
-  id           String         @id @default(cuid())
-  question     String         @db.Text
+  id           String    @id @default(cuid())
+  question     String    @db.Text
   options      Json // string[]
   correctIndex Int
-  reward       Int            @default(0) // coin
-  activeDate   DateTime?      @db.Date
-  isActive     Boolean        @default(true)
-  createdAt    DateTime       @default(now())
+  reward       Int       @default(0) // coin
+  activeDate   DateTime? @db.Date
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
 
   answers TriviaAnswer[]
 }
@@ -1268,15 +1287,15 @@ model TriviaAnswer {
 }
 
 model Prediction {
-  id           String          @id @default(cuid())
-  title        String          @db.VarChar(200)
-  description  String?         @db.Text
+  id           String    @id @default(cuid())
+  title        String    @db.VarChar(200)
+  description  String?   @db.Text
   options      Json // string[] outcomes
-  status       String          @default("OPEN") // OPEN | LOCKED | RESULT_PENDING | SETTLED | CANCELLED | DISPUTED
+  status       String    @default("OPEN") // OPEN | LOCKED | RESULT_PENDING | SETTLED | CANCELLED | DISPUTED
   correctIndex Int?
   closesAt     DateTime? // thời gian khoá cược (lock)
   createdBy    String
-  createdAt    DateTime        @default(now())
+  createdAt    DateTime  @default(now())
   settledAt    DateTime?
 
   // ── Prediction Market v2 ──
@@ -1346,14 +1365,14 @@ model PredictionReaction {
 
 // Cược xiên: gộp nhiều kèo (nhà cái hệ thống, FIXED) vào 1 vé, nhân odds
 model ParlayBet {
-  id              String      @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
   amount          Int
   combinedOdds    Float
   potentialPayout Int
-  status          String      @default("ACTIVE") // ACTIVE | WON | LOST | REFUNDED
-  payout          Int         @default(0)
-  createdAt       DateTime    @default(now())
+  status          String    @default("ACTIVE") // ACTIVE | WON | LOST | REFUNDED
+  payout          Int       @default(0)
+  createdAt       DateTime  @default(now())
   settledAt       DateTime?
 
   user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1423,25 +1442,25 @@ model FreelancerProfile {
 }
 
 model Job {
-  id          String        @id @default(cuid())
-  employerId  String
-  threadId    String?       @unique // liên kết với bài forum (nếu đăng qua danh mục module JOB)
-  title       String        @db.VarChar(200)
-  category    JobCategory   @default(OTHER)
-  description String        @db.Text
-  budgetType  JobBudgetType @default(FIXED)
-  budgetMin   Int?
-  budgetMax   Int?
-  deadline    DateTime?
-  attachments Json? // [{ url, name }]
-  skills      String[]
-  country     String?       @db.VarChar(60)
-  language    String?       @db.VarChar(40)
-  status      JobStatus     @default(OPEN)
+  id                String        @id @default(cuid())
+  employerId        String
+  threadId          String?       @unique // liên kết với bài forum (nếu đăng qua danh mục module JOB)
+  title             String        @db.VarChar(200)
+  category          JobCategory   @default(OTHER)
+  description       String        @db.Text
+  budgetType        JobBudgetType @default(FIXED)
+  budgetMin         Int?
+  budgetMax         Int?
+  deadline          DateTime?
+  attachments       Json? // [{ url, name }]
+  skills            String[]
+  country           String?       @db.VarChar(60)
+  language          String?       @db.VarChar(40)
+  status            JobStatus     @default(OPEN)
   hiredFreelancerId String?
-  submittedNote String?     @db.Text
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  submittedNote     String?       @db.Text
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   employer  User          @relation("JobEmployer", fields: [employerId], references: [id], onDelete: Cascade)
   proposals JobProposal[]
@@ -1504,14 +1523,14 @@ model JobDispute {
 }
 
 model JobReview {
-  id        String   @id @default(cuid())
-  jobId     String
-  fromId    String
-  toId      String
-  rating    Int // 1-5
-  comment   String?  @db.Text
-  fromEmployer Boolean @default(true)
-  createdAt DateTime @default(now())
+  id           String   @id @default(cuid())
+  jobId        String
+  fromId       String
+  toId         String
+  rating       Int // 1-5
+  comment      String?  @db.Text
+  fromEmployer Boolean  @default(true)
+  createdAt    DateTime @default(now())
 
   job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
   from User @relation("JobReviewFrom", fields: [fromId], references: [id], onDelete: Cascade)

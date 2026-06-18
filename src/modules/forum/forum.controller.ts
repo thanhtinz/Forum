@@ -49,6 +49,34 @@ export class ForumController {
     return this.forum.listCategories();
   }
 
+  // Tiền tố của 1 danh mục (công khai — để form đăng bài hiển thị)
+  @Get('categories/:id/prefixes')
+  categoryPrefixes(@Param('id') id: string) {
+    return this.forum.listCategoryPrefixes(id);
+  }
+
+  // ── Admin: tiền tố bài viết theo danh mục ──
+  @Post('admin/categories/:id/prefixes')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  createCategoryPrefix(@Param('id') id: string, @Body() dto: { label: string; color?: string; sortOrder?: number }) {
+    return this.forum.createCategoryPrefix(id, dto);
+  }
+
+  @Post('admin/prefixes/:prefixId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateCategoryPrefix(@Param('prefixId') prefixId: string, @Body() dto: { label?: string; color?: string; sortOrder?: number }) {
+    return this.forum.updateCategoryPrefix(prefixId, dto);
+  }
+
+  @Delete('admin/prefixes/:prefixId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteCategoryPrefix(@Param('prefixId') prefixId: string) {
+    return this.forum.deleteCategoryPrefix(prefixId);
+  }
+
   // ── Admin: quản lý danh mục (CRUD + cờ module) ──
   @Get('admin/categories')
   @UseGuards(JwtAuthGuard, RolesGuard)

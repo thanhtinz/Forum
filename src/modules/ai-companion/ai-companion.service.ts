@@ -13,6 +13,21 @@ export class AiCompanionService {
     private readonly outfit: OutfitService,
   ) {}
 
+  // Lấy model thực tế: ưu tiên key gửi lên, nếu trống thì dùng key đã lưu của user, cuối cùng key hệ thống.
+  async listModelsForUser(userId: string, provider: string, apiKey?: string, baseUrl?: string) {
+    let key = apiKey;
+    let base = baseUrl;
+    if (!key) {
+      const u = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { aiApiKey: true, aiBaseUrl: true },
+      });
+      if (u?.aiApiKey) key = u.aiApiKey;
+      if (!base && u?.aiBaseUrl) base = u.aiBaseUrl;
+    }
+    return this.aiProvider.listModels(provider, key, base);
+  }
+
   async getDefaultPersona() {
     let persona = await this.prisma.aiPersona.findFirst({
       where: { isDefault: true, isActive: true },

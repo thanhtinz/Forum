@@ -48,6 +48,10 @@ export class FarmService {
         include: { animal: true },
       }),
     ]);
+    const fertilizers = await this.prisma.farmFertilizer.findMany({
+      where: { characterId: char.id, quantity: { gt: 0 } },
+      include: { fertilizer: { select: { slug: true, name: true, reduceSeconds: true } } },
+    });
 
     const now = Date.now();
     return {
@@ -61,16 +65,22 @@ export class FarmService {
         dogActive: profile.dogUntil ? profile.dogUntil.getTime() > now : false,
         dogUntil: profile.dogUntil,
       },
-      plots: plots.map((p) => ({
-        index: p.index,
-        crop: p.crop?.name ?? null,
-        asset: p.crop?.asset ?? null,
-        watered: p.watered,
-        health: p.health,
-        ready: p.readyAt ? p.readyAt.getTime() <= now : false,
-        readyAt: p.readyAt,
-        empty: !p.cropId,
-      })),
+      plots: plots.map((p) => {
+        const total = p.plantedAt && p.readyAt ? p.readyAt.getTime() - p.plantedAt.getTime() : 0;
+        const done = p.plantedAt ? now - p.plantedAt.getTime() : 0;
+        const progress = total > 0 ? Math.max(0, Math.min(1, done / total)) : 0;
+        return {
+          index: p.index,
+          crop: p.crop?.name ?? null,
+          asset: p.crop?.asset ?? null,
+          watered: p.watered,
+          health: p.health,
+          ready: p.readyAt ? p.readyAt.getTime() <= now : false,
+          readyAt: p.readyAt,
+          progress,
+          empty: !p.cropId,
+        };
+      }),
       warehouse: warehouse.map((w) => ({
         slug: w.slug,
         name: w.name,
@@ -87,6 +97,12 @@ export class FarmService {
         fedCount: a.fedCount,
         diesAt: a.diesAt,
         asset: a.animal.asset,
+      })),
+      fertilizers: fertilizers.map((f) => ({
+        slug: f.fertilizer.slug,
+        name: f.fertilizer.name,
+        quantity: f.quantity,
+        reduceSeconds: f.fertilizer.reduceSeconds,
       })),
       khe: this.kheInfo(profile),
     };

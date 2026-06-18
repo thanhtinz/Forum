@@ -12,10 +12,20 @@ const KHE_TREE = '/game-assets/nongtrai/img/sv1/13.png';
 interface FarmState {
   coin: number;
   profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean };
-  plots: { index: number; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; empty: boolean }[];
+  plots: { index: number; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; progress?: number; empty: boolean }[];
   warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
+  fertilizers?: { slug: string; name: string; quantity: number; reduceSeconds: number }[];
   khe?: { fruit: number; max: number; pricePerFruit: number; canWater: boolean; nextWaterAt: string | null };
+}
+
+// Ảnh cây theo giai đoạn lớn (product/<id>-non|uong|chin.png), fallback ảnh chín
+function growthSrc(asset: string | null, ready: boolean, progress: number): string | null {
+  if (!asset) return null;
+  const m = asset.match(/\/sv1\/(\d+)\.png$/);
+  if (!m) return asset;
+  const stage = ready ? 'chin' : progress < 0.45 ? 'non' : 'uong';
+  return `/game-assets/nongtrai/img/product/${m[1]}-${stage}.png`;
 }
 
 export default function FarmPage() {
@@ -23,6 +33,7 @@ export default function FarmPage() {
   const [s, setS] = useState<FarmState | null>(null);
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
+  const [planting, setPlanting] = useState<number | null>(null);
 
   function load() { api.get<FarmState>('/farm/state').then(setS).catch((e) => setErr(e.message)); }
   useEffect(() => { if (!loading && user) load(); }, [user, loading]);
@@ -34,6 +45,14 @@ export default function FarmPage() {
   async function buyPlot() { await api.post('/farm/plot/buy').catch(() => {}); load(); }
   async function harvest(i: number) { await api.post('/farm/harvest', { plotIndex: i }).catch(() => {}); load(); }
   async function water(i: number) { await api.post('/farm/water', { plotIndex: i }).catch(() => {}); load(); }
+  async function plant(plotIndex: number, cropSlug: string, name: string) {
+    try { await api.post('/farm/plant', { plotIndex, cropSlug }); setMsg(`Đã gieo ${name}`); setPlanting(null); }
+    catch (e: any) { setMsg(e.message); } load();
+  }
+  async function fertilize(plotIndex: number, fertilizerSlug: string, name: string) {
+    try { await api.post('/farm/fertilize', { plotIndex, fertilizerSlug }); setMsg(`Đã bón ${name}`); }
+    catch (e: any) { setMsg(e.message); } load();
+  }
   async function waterKhe() { try { const r = await api.post<{ bonus: number }>('/farm/khe/water'); setMsg(`Đã tưới cây khế (+${r.bonus} quả)!`); } catch (e: any) { setMsg(e.message); } load(); }
   async function harvestKhe() { try { const r = await api.post<{ harvested: number }>('/farm/khe/harvest'); setMsg(`Đã thu hoạch ${r.harvested} quả khế vào kho. Vào kho để bán!`); } catch (e: any) { setMsg(e.message); } load(); }
   async function sellItem(slug: string, category: string, qty: number, name: string) {
@@ -100,24 +119,63 @@ export default function FarmPage() {
           <p className="text-sm text-ink-700">Chưa có ô đất. Mua ô đầu tiên để bắt đầu.</p>
         ) : (
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-7">
-            {s.plots.map((p) => (
+            {s.plots.map((p) => {
+              const seeds = (s.warehouse || []).filter((w) => w.category === 'SEED' && w.quantity > 0);
+              const ferts = s.fertilizers || [];
+              const prog = p.progress ?? 0;
+              const gsrc = growthSrc(p.asset, p.ready, prog);
+              return (
               <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
-                <div className="grid h-16 place-items-center rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${GROUND})` }}>
-                  {p.asset
+                <div className="relative grid h-16 place-items-center rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${GROUND})` }}>
+                  {gsrc && (
+                    // cây lớn dần: nhỏ lúc mới trồng, to khi sắp chín
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={p.asset} alt="" className="max-h-12 object-contain" />
-                    : null}
+                    <img src={gsrc} alt="" onError={(e) => { if (p.asset) (e.currentTarget as HTMLImageElement).src = p.asset; }}
+                      className="object-contain transition-all" style={{ maxHeight: `${(p.empty ? 0 : 40 + prog * 60)}%`, height: p.empty ? 0 : undefined }} />
+                  )}
+                  {p.empty && <span className="text-[10px] text-ink-400">+ Trồng</span>}
                 </div>
                 <div className="mt-1 truncate text-xs">{p.crop || 'Trống'}</div>
+                {/* Thanh tiến độ lớn */}
+                {!p.empty && !p.ready && (
+                  <div className="mt-1 h-1 w-full overflow-hidden rounded bg-ink-100 dark:bg-ink-800"><div className="h-full bg-emerald-400" style={{ width: `${prog * 100}%` }} /></div>
+                )}
+                {/* Ô trống: chọn hạt để gieo */}
+                {p.empty && planting !== p.index && (
+                  <button onClick={() => setPlanting(p.index)} className="mt-1 w-full rounded bg-emerald-500 px-1 py-0.5 text-[10px] text-white">Gieo hạt</button>
+                )}
+                {p.empty && planting === p.index && (
+                  <div className="mt-1 space-y-1">
+                    {seeds.length === 0 ? <p className="text-[10px] text-ink-400">Chưa có hạt. Mua ở cửa hàng.</p> : (
+                      <select className="input !py-0.5 !text-[10px]" defaultValue="" onChange={(e) => e.target.value && plant(p.index, e.target.value, e.target.options[e.target.selectedIndex].text)}>
+                        <option value="" disabled>Chọn hạt…</option>
+                        {seeds.map((sd) => <option key={sd.slug} value={sd.slug}>{sd.name} (×{sd.quantity})</option>)}
+                      </select>
+                    )}
+                    <button onClick={() => setPlanting(null)} className="text-[10px] text-ink-400 underline">Hủy</button>
+                  </div>
+                )}
+                {/* Cây đang trồng: tưới / bón / thu */}
                 {!p.empty && (
-                  <div className="mt-1 flex justify-center gap-1">
-                    {p.ready
-                      ? <button onClick={() => harvest(p.index)} className="rounded bg-amber-500 px-2 py-0.5 text-[10px] text-white">Thu</button>
-                      : !p.watered && <button onClick={() => water(p.index)} className="rounded bg-sky-500 px-2 py-0.5 text-[10px] text-white"><Droplets size={10} /></button>}
+                  <div className="mt-1 flex flex-wrap justify-center gap-1">
+                    {p.ready ? (
+                      <button onClick={() => harvest(p.index)} className="rounded bg-amber-500 px-2 py-0.5 text-[10px] text-white">Thu hoạch</button>
+                    ) : (
+                      <>
+                        {!p.watered && <button onClick={() => water(p.index)} className="rounded bg-sky-500 px-2 py-0.5 text-[10px] text-white inline-flex items-center gap-0.5"><Droplets size={10} /> Tưới</button>}
+                        {ferts.length > 0 && (
+                          <select className="input !py-0.5 !text-[10px] !w-auto" defaultValue="" onChange={(e) => e.target.value && fertilize(p.index, e.target.value, e.target.options[e.target.selectedIndex].text)}>
+                            <option value="" disabled>Bón…</option>
+                            {ferts.map((f) => <option key={f.slug} value={f.slug}>{f.name} (×{f.quantity})</option>)}
+                          </select>
+                        )}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

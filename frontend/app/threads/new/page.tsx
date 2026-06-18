@@ -39,13 +39,14 @@ function htmlToText(html: string): string {
   return (div.textContent || div.innerText || '').trim();
 }
 
-const PREFIXES = ['NONE', 'FREE', 'PAID', 'GUIDE', 'DISCUSSION', 'SHOWCASE', 'REQUEST', 'ANNOUNCEMENT'];
+interface Prefix { id: string; label: string; color?: string | null }
 
 export default function NewThreadPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [cats, setCats] = useState<any[]>([]);
-  const [form, setForm] = useState({ categoryId: '', title: '', content: '', prefix: 'NONE' });
+  const [prefixes, setPrefixes] = useState<Prefix[]>([]);
+  const [form, setForm] = useState({ categoryId: '', title: '', content: '', prefixId: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -113,13 +114,21 @@ export default function NewThreadPage() {
 
   useEffect(() => { api.get<any[]>('/forum/categories').then((c) => { setCats(c); if (c[0]) setForm((f) => ({ ...f, categoryId: c[0].id })); }).catch(() => {}); }, []);
 
+  // Tải tiền tố theo danh mục đang chọn (admin tạo riêng cho từng danh mục)
+  useEffect(() => {
+    if (!form.categoryId) { setPrefixes([]); return; }
+    api.get<Prefix[]>(`/forum/categories/${form.categoryId}/prefixes`)
+      .then((p) => { setPrefixes(p); setForm((f) => ({ ...f, prefixId: p.some((x) => x.id === f.prefixId) ? f.prefixId : '' })); })
+      .catch(() => setPrefixes([]));
+  }, [form.categoryId]);
+
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để đăng bài.</div>;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr(''); setBusy(true);
     try {
-      const t = await api.post<{ id: string; slug: string; pendingApproval?: boolean }>('/forum/threads', { ...form, prefix: form.prefix === 'NONE' ? undefined : form.prefix });
+      const t = await api.post<{ id: string; slug: string; pendingApproval?: boolean }>('/forum/threads', { ...form, prefixId: form.prefixId || undefined });
       if (t.pendingApproval) { if (draftId) await api.del(`/forum/drafts/${draftId}`).catch(() => {}); alert('Bài viết của bạn đang chờ kiểm duyệt và sẽ hiển thị sau khi được duyệt.'); router.push('/'); return; }
       if (pollOn) {
         const opts = poll.options.map((o) => o.trim()).filter(Boolean);
@@ -194,8 +203,9 @@ export default function NewThreadPage() {
             </select>
           </label>
           <label className="text-sm">Tiền tố
-            <select className="input mt-1" value={form.prefix} onChange={(e) => setForm({ ...form, prefix: e.target.value })}>
-              {PREFIXES.map((p) => <option key={p} value={p}>{p}</option>)}
+            <select className="input mt-1" value={form.prefixId} onChange={(e) => setForm({ ...form, prefixId: e.target.value })} disabled={prefixes.length === 0}>
+              <option value="">{prefixes.length === 0 ? '— Danh mục chưa có tiền tố —' : '— Không dùng —'}</option>
+              {prefixes.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
             </select>
           </label>
         </div>

@@ -230,8 +230,8 @@ export default function AiCompanionPage() {
 
       {/* Avatar Live2D + thân thiết + trang phục */}
       <div className="card flex flex-col items-center p-4">
-        <div className="w-full overflow-hidden rounded-2xl bg-gradient-to-b from-violet-100 to-fuchsia-100 shadow-card dark:from-violet-950/40 dark:to-fuchsia-950/40">
-          <Live2DStage modelPath={modelPath} emotion={emotion} className="relative h-80 w-full" />
+        <div className="w-full overflow-hidden rounded-2xl bg-ink-100 dark:bg-ink-900">
+          <Live2DStage modelPath={modelPath} emotion={emotion} className="relative h-96 w-full" />
         </div>
         <div className="mt-3 flex items-center gap-2">
           <h2 className="text-lg font-bold">{persona?.name || bond?.character.name || 'AI Companion'}</h2>

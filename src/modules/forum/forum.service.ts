@@ -26,6 +26,7 @@ export interface CreateThreadDto {
   title: string;
   content: string; // raw BBCode/MD
   prefix?: ThreadPrefix;
+  prefixId?: string; // tiền tố do admin tạo theo danh mục
   tagIds?: string[];
 }
 
@@ -80,6 +81,46 @@ export class ForumService {
       orderBy: { sortOrder: 'asc' },
       select: { id: true, name: true, slug: true, icon: true, color: true, threadCount: true, description: true, moduleType: true },
     });
+  }
+
+  // ──────────────────────────────────────────────
+  // TIỀN TỐ BÀI VIẾT THEO DANH MỤC (admin tạo, user chọn)
+  // ──────────────────────────────────────────────
+  listCategoryPrefixes(categoryId: string) {
+    return this.prisma.categoryPrefix.findMany({
+      where: { categoryId },
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, label: true, color: true, sortOrder: true },
+    });
+  }
+
+  async createCategoryPrefix(categoryId: string, dto: { label: string; color?: string; sortOrder?: number }) {
+    if (!dto.label?.trim()) throw new BadRequestException('Thiếu nhãn tiền tố');
+    const cat = await this.prisma.category.findUnique({ where: { id: categoryId } });
+    if (!cat) throw new NotFoundException('Danh mục không tồn tại');
+    return this.prisma.categoryPrefix.create({
+      data: { categoryId, label: dto.label.trim(), color: dto.color || null, sortOrder: dto.sortOrder ?? 0 },
+    });
+  }
+
+  async updateCategoryPrefix(id: string, dto: { label?: string; color?: string; sortOrder?: number }) {
+    const exist = await this.prisma.categoryPrefix.findUnique({ where: { id } });
+    if (!exist) throw new NotFoundException('Tiền tố không tồn tại');
+    return this.prisma.categoryPrefix.update({
+      where: { id },
+      data: {
+        ...(dto.label !== undefined ? { label: dto.label.trim() } : {}),
+        ...(dto.color !== undefined ? { color: dto.color || null } : {}),
+        ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
+      },
+    });
+  }
+
+  async deleteCategoryPrefix(id: string) {
+    await this.prisma.categoryPrefix.delete({ where: { id } }).catch(() => {
+      throw new NotFoundException('Tiền tố không tồn tại');
+    });
+    return { ok: true };
   }
 
   // ──────────────────────────────────────────────
@@ -180,6 +221,7 @@ export class ForumService {
         include: {
           author: { select: { id: true, username: true, displayName: true, avatar: true } },
           category: { select: { id: true, name: true, slug: true, color: true } },
+          prefixRef: { select: { id: true, label: true, color: true } },
           tags: { include: { tag: true } },
         },
       }),
@@ -198,6 +240,7 @@ export class ForumService {
       include: {
         author: { select: { id: true, username: true, displayName: true, avatar: true, reputationScore: true, postCount: true, createdAt: true } },
         category: true,
+        prefixRef: { select: { id: true, label: true, color: true } },
         tags: { include: { tag: true } },
       },
     });
@@ -230,6 +273,12 @@ export class ForumService {
     const category = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
     if (!category) throw new NotFoundException('Category không tồn tại');
 
+    // Validate tiền tố (nếu có) phải thuộc đúng danh mục
+    if (dto.prefixId) {
+      const pre = await this.prisma.categoryPrefix.findUnique({ where: { id: dto.prefixId } });
+      if (!pre || pre.categoryId !== dto.categoryId) throw new BadRequestException('Tiền tố không hợp lệ');
+    }
+
     const slug = await this.generateUniqueSlug(dto.title);
     const { html: content, mentioned } = await this.buildContent(dto.content, authorId);
     const pending = await this.needsApproval(authorId);
@@ -242,6 +291,7 @@ export class ForumService {
           title: dto.title,
           slug,
           prefix: dto.prefix ?? ThreadPrefix.NONE,
+          prefixId: dto.prefixId ?? null,
           isApproved: !pending,
           lastPostAt: new Date(),
           lastPostUserId: authorId,

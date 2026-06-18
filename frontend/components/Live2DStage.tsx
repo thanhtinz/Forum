@@ -115,10 +115,11 @@ export default function Live2DStage({ outfit = 'normal', modelPath, emotion = 'n
     const app = appRef.current; const model = modelRef.current;
     if (!app || !model) return;
     const w = app.renderer.width, h = app.renderer.height;
-    const scale = Math.min(w / model.width, h / model.height) * 1.8;
+    // Fit toàn bộ model trong khung, không phóng to quá khiến bị cắt xén
+    const scale = Math.min(w / model.width, h / model.height) * 0.95;
     model.scale.set(scale);
     model.anchor?.set?.(0.5, 0.5);
-    model.position.set(w / 2, h / 2 + model.height * scale * 0.18);
+    model.position.set(w / 2, h / 2);
   }
 
   // Đổi trang phục

@@ -71,9 +71,11 @@ export function ThreadList({ categoryId }: { categoryId?: string } = {}) {
                   )}
                   {t.isPinned && <Pin size={14} className="text-amber-500" />}
                   {t.isLocked && <Lock size={14} className="text-ink-400" />}
-                  {t.prefix && t.prefix !== 'NONE' && (
+                  {(t as any).prefixRef ? (
+                    <span className="chip text-white" style={{ backgroundColor: (t as any).prefixRef.color || '#6366f1' }}>{(t as any).prefixRef.label}</span>
+                  ) : t.prefix && t.prefix !== 'NONE' ? (
                     <span className={`chip ${PREFIX_STYLE[t.prefix] || 'bg-ink-200 text-ink-700'}`}>{t.prefix}</span>
-                  )}
+                  ) : null}
                   <Link href={`/thread?slug=${t.slug}`} className={`truncate font-semibold hover:text-brand-600 dark:text-ink-100 ${hasUnread ? 'text-ink-900 dark:text-white' : 'text-ink-800'}`}>
                     {t.title}
                   </Link>

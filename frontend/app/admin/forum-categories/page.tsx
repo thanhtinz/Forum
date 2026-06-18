@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FolderTree, Plus, Trash2, Pencil, Briefcase, X } from 'lucide-react';
+import { FolderTree, Plus, Trash2, Pencil, Briefcase, X, Tags } from 'lucide-react';
 import { api } from '@/lib/api';
+
+interface Prefix { id: string; label: string; color?: string | null; sortOrder?: number }
 
 interface Category {
   id: string;
@@ -32,6 +34,26 @@ export default function AdminForumCategoriesPage() {
   const [showForm, setShowForm] = useState(false);
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  // Quản lý tiền tố theo danh mục
+  const [prefixCat, setPrefixCat] = useState<Category | null>(null);
+  const [prefixes, setPrefixes] = useState<Prefix[]>([]);
+  const [newPrefix, setNewPrefix] = useState({ label: '', color: '#6366f1' });
+
+  function openPrefixes(c: Category) {
+    setPrefixCat(c);
+    api.get<Prefix[]>(`/forum/categories/${c.id}/prefixes`).then(setPrefixes).catch(() => setPrefixes([]));
+    setNewPrefix({ label: '', color: '#6366f1' });
+  }
+  async function addPrefix() {
+    if (!prefixCat || !newPrefix.label.trim()) return;
+    await api.post(`/forum/admin/categories/${prefixCat.id}/prefixes`, { label: newPrefix.label.trim(), color: newPrefix.color });
+    setNewPrefix({ label: '', color: '#6366f1' });
+    api.get<Prefix[]>(`/forum/categories/${prefixCat.id}/prefixes`).then(setPrefixes).catch(() => {});
+  }
+  async function removePrefix(id: string) {
+    await api.del(`/forum/admin/prefixes/${id}`).catch(() => {});
+    setPrefixes((p) => p.filter((x) => x.id !== id));
+  }
 
   function load() {
     setLoading(true);
@@ -114,6 +136,7 @@ export default function AdminForumCategoriesPage() {
                 <div className="text-xs text-ink-500">/{c.slug} · {c._count?.threads ?? c.threadCount ?? 0} bài · thứ tự {c.sortOrder}</div>
               </div>
               <div className="flex gap-2">
+                <button onClick={() => openPrefixes(c)} className="btn-outline inline-flex items-center gap-1 !py-1.5 text-sm"><Tags size={14} /> Tiền tố</button>
                 <button onClick={() => openEdit(c)} className="btn-outline inline-flex items-center gap-1 !py-1.5 text-sm"><Pencil size={14} /> Sửa</button>
                 <button onClick={() => remove(c)} className="btn-outline inline-flex items-center gap-1 !py-1.5 text-sm text-red-500"><Trash2 size={14} /> Xoá</button>
               </div>
@@ -165,6 +188,38 @@ export default function AdminForumCategoriesPage() {
               <button className="btn-primary" disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu'}</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Modal quản lý tiền tố theo danh mục */}
+      {prefixCat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPrefixCat(null)}>
+          <div onClick={(e) => e.stopPropagation()} className="card w-full max-w-md space-y-3 p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-semibold"><Tags size={18} /> Tiền tố · {prefixCat.name}</h2>
+              <button onClick={() => setPrefixCat(null)} className="text-ink-400 hover:text-ink-600"><X size={20} /></button>
+            </div>
+            <p className="text-sm text-ink-500">Tạo tiền tố riêng cho danh mục này. Người đăng bài sẽ chọn từ danh sách bên dưới.</p>
+
+            <div className="space-y-1.5">
+              {prefixes.length === 0 && <p className="text-sm text-ink-400">Chưa có tiền tố nào.</p>}
+              {prefixes.map((p) => (
+                <div key={p.id} className="flex items-center justify-between rounded-lg border border-ink-200/70 p-2 dark:border-ink-800">
+                  <span className="chip text-white" style={{ backgroundColor: p.color || '#6366f1' }}>{p.label}</span>
+                  <button onClick={() => removePrefix(p.id)} className="text-red-500 hover:text-red-600"><Trash2 size={15} /></button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 border-t border-ink-200/70 pt-3 dark:border-ink-800">
+              <input className="input flex-1" placeholder="Nhãn tiền tố (vd: Miễn phí)" value={newPrefix.label}
+                onChange={(e) => setNewPrefix({ ...newPrefix, label: e.target.value })}
+                onKeyDown={(e) => e.key === 'Enter' && addPrefix()} />
+              <input type="color" className="h-9 w-10 cursor-pointer rounded border border-ink-300 dark:border-ink-700" value={newPrefix.color}
+                onChange={(e) => setNewPrefix({ ...newPrefix, color: e.target.value })} />
+              <button onClick={addPrefix} className="btn-primary !px-3"><Plus size={16} /></button>
+            </div>
+          </div>
         </div>
       )}
     </div>

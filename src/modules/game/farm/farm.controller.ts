@@ -13,6 +13,11 @@ export class FarmController {
     return this.farm.getState(userId);
   }
 
+  @Post('khe/water')
+  waterKhe(@CurrentUser('id') userId: string) {
+    return this.farm.waterKhe(userId);
+  }
+
   // ── Đất + trồng trọt ──
   @Post('plot/buy')
   buyPlot(@CurrentUser('id') userId: string) {

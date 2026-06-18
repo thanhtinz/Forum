@@ -8,7 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 
 const BARN_BG = '/game-assets/nongtrai/img/chuong.png';
 
-interface Owned { id: string; name: string; grown: boolean; productReady: boolean }
+interface Owned { id: string; name: string; grown: boolean; productReady: boolean; asset?: string | null }
 
 export default function AnimalsPage() {
   const { user, loading } = useAuth();
@@ -53,9 +53,15 @@ export default function AnimalsPage() {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {owned.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-2 rounded-xl border border-ink-200/70 p-3 dark:border-ink-800">
-                <div>
-                  <p className="font-medium">{a.name}</p>
-                  <p className="text-xs text-ink-400">{a.productReady ? 'Có sản phẩm' : a.grown ? 'Trưởng thành' : 'Đang lớn'}</p>
+                <div className="flex items-center gap-3">
+                  {a.asset
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={a.asset} alt={a.name} className="h-12 w-12 object-contain" />
+                    : <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800"><Beef size={20} /></span>}
+                  <div>
+                    <p className="font-medium">{a.name}</p>
+                    <p className="text-xs text-ink-400">{a.productReady ? 'Có sản phẩm' : a.grown ? 'Trưởng thành' : 'Đang lớn'}</p>
+                  </div>
                 </div>
                 <div className="flex gap-1">
                   <button disabled={!!busy} onClick={() => act(a.id, () => api.post('/farm/animal/feed', { animalId: a.id }))} className="btn-outline !py-1 text-xs">Cho ăn</button>

@@ -2641,6 +2641,7 @@ model FarmProfile {
   kitchenLevel  Int       @default(1)
   dogUntil      DateTime? // chó bảo vệ tới khi nào
   lastCheckinAt DateTime?
+  kheLastWaterAt DateTime? // lần tưới cây khế gần nhất (mỗi ngày nhận tiền)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

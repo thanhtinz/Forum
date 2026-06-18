@@ -26,9 +26,10 @@ function timeAgo(d?: string) {
   try { return formatDistanceToNow(new Date(d), { addSuffix: true, locale: vi }); } catch { return ''; }
 }
 
-export function ThreadList() {
+export function ThreadList({ categoryId }: { categoryId?: string } = {}) {
   const { user } = useAuth();
-  const { data, error, isLoading } = useSWR<Paginated<Thread>>('/forum/threads?limit=20', fetcher);
+  const url = categoryId ? `/forum/threads?limit=20&categoryId=${categoryId}` : '/forum/threads?limit=20';
+  const { data, error, isLoading } = useSWR<Paginated<Thread>>(url, fetcher);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
   // Fetch bulk unread counts when threads load

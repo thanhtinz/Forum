@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { FarmService } from './farm.service';
 import { JwtAuthGuard } from '../../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../common/decorators/roles.decorator';
@@ -137,6 +137,11 @@ export class FarmController {
   @Post('checkin')
   checkin(@CurrentUser('id') userId: string) {
     return this.farm.dailyCheckin(userId);
+  }
+
+  @Get('raid/:username')
+  viewFarm(@Param('username') username: string) {
+    return this.farm.viewFarm(username);
   }
 
   @Post('steal')

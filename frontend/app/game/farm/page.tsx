@@ -26,7 +26,7 @@ function growthSrc(asset: string | null, ready: boolean, progress: number): stri
 
 interface FarmState {
   coin: number;
-  profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean };
+  profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean; dogUntil?: string | null };
   plots: { index: number; slug: string | null; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
   warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number; asset?: string | null }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
@@ -51,6 +51,7 @@ export default function FarmPage() {
   if (!s) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
 
   async function buyPlot() { await api.post('/farm/plot/buy').catch(() => {}); load(); }
+  async function buyDog() { try { await api.post('/farm/dog/buy'); setMsg('Đã mua chó giữ nhà (30 ngày)!'); } catch (e: any) { setMsg(e.message); } load(); }
   async function harvest(i: number) { await api.post('/farm/harvest', { plotIndex: i }).catch(() => {}); load(); }
   async function water(i: number) { await api.post('/farm/water', { plotIndex: i }).catch(() => {}); load(); }
   async function plant(plotIndex: number, cropSlug: string, name: string) {
@@ -79,6 +80,28 @@ export default function FarmPage() {
       </header>
 
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
+
+      {/* Chó giữ nhà + Đi cướp */}
+      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="card flex items-center gap-3 p-4">
+          <span className="text-3xl">🐕</span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Chó giữ nhà</p>
+            {s.profile.dogActive
+              ? <p className="text-xs text-emerald-600">Đang bảo vệ{s.profile.dogUntil ? ` · đến ${new Date(s.profile.dogUntil).toLocaleDateString('vi')}` : ''} — cắn kẻ trộm, mất tới 50% coin của chúng.</p>
+              : <p className="text-xs text-ink-500">Nuôi chó để chống bị cướp cây/thú/cá. 20.000 coin / 30 ngày.</p>}
+          </div>
+          <button onClick={buyDog} className="btn-outline shrink-0 !py-1.5 text-xs">{s.profile.dogActive ? 'Gia hạn' : 'Mua chó'}</button>
+        </div>
+        <a href="/game/raid" className="card flex items-center gap-3 p-4 transition hover:shadow-lg">
+          <span className="text-3xl">🥷</span>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Đi cướp nhà người khác</p>
+            <p className="text-xs text-ink-500">Sang nông trại thành viên khác trộm cây chín (coi chừng chó!).</p>
+          </div>
+          <span className="btn-primary shrink-0 !py-1.5 text-xs">Đi cướp →</span>
+        </a>
+      </section>
 
       {/* Cây Khế — tự ra quả theo thời gian, tưới để thêm, có quả mới thu hoạch */}
       {s.khe && (() => {

@@ -11,12 +11,12 @@ const ROD_PRICE: Record<number, number> = { 1: 2000, 2: 5000, 3: 7000 };
 const BAIT_PRICE: Record<number, number> = { 1: 250, 2: 500, 3: 700 };
 const BAIT_USES_PER_PACK = 100;
 const BITE_RANGE: Record<number, [number, number]> = {
-  1: [30, 150],
-  2: [60, 250],
-  3: [65, 300],
+  1: [3, 6],
+  2: [4, 7],
+  3: [5, 8],
 };
 const MISS_CHANCE = 0.1; // 10% cá chạy mất
-const CATCH_COOLDOWN_SEC = 40; // chống spam giật cá
+const CATCH_COOLDOWN_SEC = 0; // theo game gốc: quăng ~3s, giật, lặp lại liên tục
 const LEVEL_KG = 2000; // tích đủ 2000kg -> lên 1 cấp
 const REFILL_SEC = 14400; // 4h hồi cá
 
@@ -198,7 +198,12 @@ export class FishingService {
       });
       throw new BadRequestException('Khu đã hết cá');
     }
-    const species = candidates[Math.floor(Math.random() * candidates.length)];
+    // Random theo trọng số (theo game gốc): cá càng đắt càng hiếm
+    const weighted = candidates.map((c) => ({ c, w: Math.max(1, Math.round(1000 / Math.max(1, c.pricePerKg))) }));
+    const totalW = weighted.reduce((s, x) => s + x.w, 0);
+    let roll = Math.random() * totalW;
+    let species = weighted[0].c;
+    for (const x of weighted) { roll -= x.w; if (roll <= 0) { species = x.c; break; } }
     const weight =
       species.kgMin +
       Math.floor(Math.random() * (species.kgMax - species.kgMin + 1));

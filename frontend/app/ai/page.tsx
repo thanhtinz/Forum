@@ -3,9 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { io, Socket } from 'socket.io-client';
-import { Send, Heart, Lock, Star, Sparkles, Settings2, Wand2 } from 'lucide-react';
+import { Send, Heart, Lock, Star, Sparkles, Settings2, Wand2, Shirt, RefreshCw, X } from 'lucide-react';
 import { api, getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+
+const AI_PROVIDERS: { value: string; label: string; needBase?: boolean; defaultBase?: string }[] = [
+  { value: 'GEMINI', label: 'Google Gemini' },
+  { value: 'OPENAI', label: 'OpenAI' },
+  { value: 'OPENAI_COMPAT', label: 'OpenAI-compatible (URL)', needBase: true },
+  { value: 'OLLAMA', label: 'Ollama (tự host)', needBase: true, defaultBase: 'http://localhost:11434' },
+];
+const AI_PRESETS = [
+  { label: 'OpenRouter', url: 'https://openrouter.ai/api/v1' },
+  { label: 'Groq', url: 'https://api.groq.com/openai/v1' },
+  { label: 'DeepSeek', url: 'https://api.deepseek.com/v1' },
+];
 
 // Live2D chỉ render phía client (dùng pixi + cubism core)
 const Live2DStage = dynamic(() => import('@/components/Live2DStage'), { ssr: false });
@@ -36,9 +48,35 @@ function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p
   const [preview, setPreview] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  // Cấu hình AI riêng (key/model) — gộp vào đây
+  const [aiProvider, setAiProvider] = useState('GEMINI');
+  const [aiModel, setAiModel] = useState('');
+  const [aiBaseUrl, setAiBaseUrl] = useState('');
+  const [aiKey, setAiKey] = useState('');
+  const [aiHasKey, setAiHasKey] = useState(false);
+  const [aiModels, setAiModels] = useState<string[]>([]);
+  const [aiLoadingModels, setAiLoadingModels] = useState(false);
+  const pInfo = AI_PROVIDERS.find((p) => p.value === aiProvider);
+
+  useEffect(() => {
+    api.get<{ provider: string; model: string; baseUrl: string; hasKey: boolean }>('/users/me/ai').then((r) => {
+      if (r.provider) setAiProvider(r.provider);
+      setAiModel(r.model || ''); setAiBaseUrl(r.baseUrl || ''); setAiHasKey(r.hasKey);
+    }).catch(() => {});
+  }, []);
+
+  async function fetchAiModels() {
+    setAiLoadingModels(true);
+    try { const r = await api.post<{ models: string[] }>('/ai-companion/models', { provider: aiProvider, apiKey: aiKey || undefined, baseUrl: aiBaseUrl || undefined }); setAiModels(r.models || []); }
+    catch { /* ignore */ } finally { setAiLoadingModels(false); }
+  }
 
   function toggleTrait(t: string) {
     setTraits((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+  }
+
+  async function saveAiConfig() {
+    await api.patch('/users/me/ai', { provider: aiProvider, model: aiModel, baseUrl: aiBaseUrl, ...(aiKey ? { apiKey: aiKey } : {}) }).catch(() => {});
   }
 
   async function doPreview() {
@@ -54,6 +92,7 @@ function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p
     if (!name.trim()) { setErr('Hãy đặt tên cho AI'); return; }
     setBusy(true);
     try {
+      await saveAiConfig();
       const p = await api.post<any>('/ai/me/persona', { name, traits, personality, speakingStyle });
       onSaved(p);
     } catch (e: any) { setErr(e.message); setBusy(false); }
@@ -93,6 +132,36 @@ function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p
             <input className="input" placeholder="VD: xưng mình - gọi bạn, nhẹ nhàng" value={speakingStyle} onChange={(e) => setSpeakingStyle(e.target.value)} />
           </div>
 
+          {/* Cấu hình AI (nguồn/key/model) — gộp vào đây, dùng cho chat của bạn */}
+          <div className="rounded-lg border border-ink-200/70 p-3 dark:border-ink-800">
+            <p className="mb-2 text-sm font-medium">Cấu hình AI (nguồn & model)</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label className="text-xs">Nguồn AI
+                <select className="input mt-1 !py-1.5" value={aiProvider} onChange={(e) => { const v = e.target.value; setAiProvider(v); setAiModel(''); const np = AI_PROVIDERS.find((p) => p.value === v); if (np?.defaultBase !== undefined) setAiBaseUrl(np.defaultBase || ''); }}>
+                  {AI_PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+              </label>
+              <label className="text-xs">API key {aiProvider === 'OLLAMA' ? '(không cần)' : ''}
+                <input className="input mt-1 !py-1.5" type="password" autoComplete="off" placeholder={aiHasKey ? '•••• (đã lưu)' : 'Dán API key…'} value={aiKey} onChange={(e) => setAiKey(e.target.value)} />
+              </label>
+            </div>
+            {pInfo?.needBase && (
+              <label className="mt-2 block text-xs">Base URL
+                <input className="input mt-1 !py-1.5" placeholder={pInfo.defaultBase || 'https://…/v1'} value={aiBaseUrl} onChange={(e) => setAiBaseUrl(e.target.value)} />
+                {aiProvider === 'OPENAI_COMPAT' && <span className="mt-1 flex flex-wrap gap-1">{AI_PRESETS.map((p) => <button key={p.url} type="button" onClick={() => setAiBaseUrl(p.url)} className="rounded bg-ink-100 px-2 py-0.5 text-[11px] dark:bg-ink-800">{p.label}</button>)}</span>}
+              </label>
+            )}
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-xs">
+                <span>Model</span>
+                <button type="button" onClick={fetchAiModels} disabled={aiLoadingModels} className="inline-flex items-center gap-1 text-brand-600 hover:underline disabled:opacity-50"><RefreshCw size={11} className={aiLoadingModels ? 'animate-spin' : ''} /> Tải model thực tế</button>
+              </div>
+              <input className="input mt-1 !py-1.5" list="ai-models-chat" placeholder="Chọn/nhập model…" value={aiModel} onChange={(e) => setAiModel(e.target.value)} />
+              <datalist id="ai-models-chat">{aiModels.map((m) => <option key={m} value={m} />)}</datalist>
+            </div>
+            <p className="mt-1 text-[11px] text-ink-400">Để trống = dùng AI mặc định của hệ thống. Hỗ trợ cả nguồn không kiểm duyệt (OpenRouter…).</p>
+          </div>
+
           {err && <p className="text-sm text-red-500">{err}</p>}
 
           <div className="flex flex-wrap gap-2">
@@ -128,6 +197,7 @@ export default function AiCompanionPage() {
   const [bond, setBond] = useState<BondState | null>(null);
   const [toast, setToast] = useState('');
   const [typing, setTyping] = useState(false);
+  const [showOutfits, setShowOutfits] = useState(false);
   const sock = useRef<Socket | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const characterId = useRef<string | null>(null);
@@ -167,6 +237,10 @@ export default function AiCompanionPage() {
       });
     });
     socket.on('done', () => setMsgs((prev) => prev.map((m) => ({ ...m, _streaming: false } as any))));
+    socket.on('error', (d: { message?: string }) => {
+      setTyping(false);
+      showToast(d?.message ? `AI lỗi: ${d.message}. Kiểm tra cấu hình AI (key/model) ở nút ⚙.` : 'AI gặp lỗi. Kiểm tra cấu hình AI.', 6000);
+    });
     socket.on('bond', (d: { leveledUp: boolean; newLevel: number; unlockedOutfits: string[] }) => {
       refreshBond();
       if (d.unlockedOutfits?.length) showToast(`Thân thiết cấp ${d.newLevel}! Mở khoá: ${d.unlockedOutfits.join(', ')}`, 6000);
@@ -235,7 +309,8 @@ export default function AiCompanionPage() {
         </div>
         <div className="mt-3 flex items-center gap-2">
           <h2 className="text-lg font-bold">{persona?.name || bond?.character.name || 'AI Companion'}</h2>
-          <button onClick={() => setEditing(true)} title="Tùy chỉnh AI" className="text-ink-400 hover:text-brand-600"><Settings2 size={16} /></button>
+          <button onClick={() => setEditing(true)} title="Tùy chỉnh AI & cấu hình AI" className="text-ink-400 hover:text-brand-600"><Settings2 size={16} /></button>
+          <button onClick={() => setShowOutfits(true)} title="Trang phục" className="text-ink-400 hover:text-brand-600"><Shirt size={16} /></button>
         </div>
         <p className="text-sm text-ink-500">Cảm xúc: {emotion}</p>
 
@@ -252,27 +327,35 @@ export default function AiCompanionPage() {
           </div>
         )}
 
-        <div className="mt-3 w-full">
-          <p className="mb-1.5 text-xs font-medium text-ink-500">Trang phục</p>
-          <div className="grid grid-cols-2 gap-1.5">
-            {(bond?.outfits ?? []).map((o) => (
-              <button key={o.id} onClick={() => pickOutfit(o)}
-                className={`relative rounded-lg px-2.5 py-2 text-left text-xs ring-1 transition ${
-                  o.isCurrent ? 'bg-brand-600 text-white ring-brand-600'
-                    : o.isUnlocked ? `bg-ink-100 hover:bg-ink-200 dark:bg-ink-800 ${RARITY_RING[o.rarity] || 'ring-transparent'}`
-                    : 'cursor-not-allowed bg-ink-100/60 text-ink-400 ring-transparent dark:bg-ink-800/50'
-                }`}>
-                <span className="flex items-center gap-1 font-medium">
-                  {!o.isUnlocked && <Lock size={11} />} {o.name}
-                </span>
-                {!o.isUnlocked && <span className="block text-[10px]">Cấp {o.unlockBondLevel}</span>}
-                {o.rarity === 'legendary' && o.isUnlocked && <span className="flex items-center gap-0.5 text-[10px] text-amber-500"><Star size={9} className="fill-amber-500" /> Huyền thoại</span>}
-              </button>
-            ))}
-            {!bond && <p className="col-span-2 text-xs text-ink-400">Đang tải trang phục…</p>}
+        <button onClick={() => setShowOutfits(true)} className="btn-outline mt-3 inline-flex w-full items-center justify-center gap-1 text-sm"><Shirt size={14} /> Trang phục</button>
+      </div>
+
+      {/* Popup trang phục */}
+      {showOutfits && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowOutfits(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="card w-full max-w-md p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 font-semibold"><Shirt size={18} /> Trang phục</h3>
+              <button onClick={() => setShowOutfits(false)} className="text-ink-400 hover:text-ink-600"><X size={20} /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {(bond?.outfits ?? []).map((o) => (
+                <button key={o.id} onClick={() => { pickOutfit(o); }}
+                  className={`relative rounded-lg px-2.5 py-2 text-left text-xs ring-1 transition ${
+                    o.isCurrent ? 'bg-brand-600 text-white ring-brand-600'
+                      : o.isUnlocked ? `bg-ink-100 hover:bg-ink-200 dark:bg-ink-800 ${RARITY_RING[o.rarity] || 'ring-transparent'}`
+                      : 'cursor-not-allowed bg-ink-100/60 text-ink-400 ring-transparent dark:bg-ink-800/50'
+                  }`}>
+                  <span className="flex items-center gap-1 font-medium">{!o.isUnlocked && <Lock size={11} />} {o.name}</span>
+                  {!o.isUnlocked && <span className="block text-[10px]">Cấp {o.unlockBondLevel}</span>}
+                  {o.rarity === 'legendary' && o.isUnlocked && <span className="flex items-center gap-0.5 text-[10px] text-amber-500"><Star size={9} className="fill-amber-500" /> Huyền thoại</span>}
+                </button>
+              ))}
+              {!bond && <p className="col-span-full text-xs text-ink-400">Đang tải trang phục…</p>}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Chat */}
       <div className="card flex h-[calc(100vh-200px)] flex-col overflow-hidden">

@@ -158,7 +158,11 @@ export class AiCompanionService {
     });
     const useOwnKey = !!u?.aiApiKey;
     const provider = (useOwnKey && u?.aiProvider ? u.aiProvider : persona.provider) as any;
-    const modelId = useOwnKey && u?.aiModel ? u.aiModel : persona.modelId;
+    const DEFAULT_MODEL: Record<string, string> = { GEMINI: 'gemini-2.0-flash', OPENAI: 'gpt-4o-mini', OLLAMA: 'llama3.1' };
+    // Nếu user đổi nguồn nhưng chưa chọn model -> dùng model mặc định đúng nguồn (tránh 404 do model lệch provider)
+    const modelId = useOwnKey
+      ? (u?.aiModel?.trim() || DEFAULT_MODEL[provider] || persona.modelId)
+      : persona.modelId;
 
     for await (const chunk of this.aiProvider.streamChat(
       provider,

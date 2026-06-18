@@ -2,7 +2,7 @@
 export const CROP_EMOJI: Record<string, string> = {
   lua: '🌾', 'ca-chua': '🍅', toi: '🧄', nho: '🍇', 'thanh-long': '🐲', xoai: '🥭',
   'dua-hau': '🍉', 'ca-rot': '🥕', khom: '🍍', bap: '🌽', 'dua-leo': '🥒', 'ca-tim': '🍆',
-  'nha-dam': '🌵', 'hoa-hong': '🌹', 'huong-duong': '🌻', tulip: '🌷',
+  'nha-dam': '🌵', 'hoa-hong': '🌹', 'huong-duong': '🌻', tulip: '🌷', 'qua-khe': '⭐',
 };
 
 export const ANIMAL_EMOJI: Record<string, string> = {

@@ -6,18 +6,20 @@ import { useSearchParams } from 'next/navigation';
 import { ThreadList } from '@/components/ThreadList';
 import { CategoryList } from '@/components/CategoryList';
 import { HomeSidebar } from '@/components/HomeSidebar';
+import { useSiteConfig } from '@/lib/siteConfig';
 
 function HomeContent() {
   const cat = useSearchParams().get('cat') || '';
+  const cfg = useSiteConfig();
 
   return (
     <div className="space-y-5">
-      {/* Hero */}
+      {/* Hero (chỉnh trong Admin → Cấu hình) */}
       <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 p-6 text-white shadow-card sm:p-8">
-        <h1 className="text-2xl font-bold sm:text-3xl">Chào mừng đến ForumHub</h1>
-        <p className="mt-1 max-w-xl text-white/85">
-          Diễn đàn cộng đồng tích hợp game hoá — chia sẻ, thảo luận, chơi game và mua bán source code.
-        </p>
+        <h1 className="text-2xl font-bold sm:text-3xl">{cfg.heroTitle}</h1>
+        {cfg.heroDescription && (
+          <p className="mt-1 max-w-xl whitespace-pre-line text-white/85">{cfg.heroDescription}</p>
+        )}
       </section>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]">

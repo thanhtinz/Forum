@@ -174,3 +174,23 @@ html, body {
 .fx-copy, .prose .fx-copy { cursor: pointer; border-bottom: 1px dashed #6366f1; color: #4f46e5; }
 .fx-copy:hover, .prose .fx-copy:hover { background: #eef2ff; }
 .dark .fx-copy, .dark .prose .fx-copy { color: #a5b4fc; }
+
+/* ── Animation game: thú đi trong chuồng + cá bơi trong hồ ── */
+@keyframes walk-x {
+  0% { left: 4%; transform: scaleX(1); }
+  48% { left: 86%; transform: scaleX(1); }
+  50% { left: 86%; transform: scaleX(-1); }
+  98% { left: 4%; transform: scaleX(-1); }
+  100% { left: 4%; transform: scaleX(1); }
+}
+@keyframes swim-x {
+  0% { left: -8%; transform: scaleX(1); }
+  49% { left: 92%; transform: scaleX(1); }
+  50% { left: 92%; transform: scaleX(-1); }
+  99% { left: -8%; transform: scaleX(-1); }
+  100% { left: -8%; transform: scaleX(1); }
+}
+@keyframes bob-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.anim-walk { position: absolute; animation: walk-x linear infinite; }
+.anim-swim { position: absolute; animation: swim-x linear infinite; }
+.anim-bob { animation: bob-y ease-in-out infinite; }

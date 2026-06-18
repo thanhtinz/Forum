@@ -44,11 +44,20 @@ export default function AnimalsPage() {
       </header>
       {msg && <p className="text-sm text-rose-500">{msg}</p>}
 
-      {/* Chuồng thú (có asset chuồng) */}
+      {/* Chuồng thú — con vật di chuyển qua lại */}
       <section className="card overflow-hidden p-0">
-        <div className="flex h-28 items-end justify-between bg-contain bg-center bg-no-repeat p-4" style={{ backgroundImage: `linear-gradient(rgba(0,0,0,.25),rgba(0,0,0,.25)), url(${BARN_BG})`, backgroundColor: '#7dd3fc' }}>
-          <h2 className="font-semibold text-white drop-shadow">Chuồng thú ({owned.length})</h2>
-          <Link href="/game/shop" className="flex items-center gap-1 rounded-lg bg-white/20 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/30"><ShoppingBag size={14} /> Mua thêm ở Cửa hàng</Link>
+        <div className="relative h-40 overflow-hidden bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(0,0,0,.15),rgba(0,0,0,.15)), url(${BARN_BG})`, backgroundColor: '#bbf7d0' }}>
+          <div className="absolute left-0 right-0 top-0 flex items-center justify-between p-3">
+            <h2 className="font-semibold text-white drop-shadow">Chuồng thú ({owned.length})</h2>
+            <Link href="/game/shop" className="flex items-center gap-1 rounded-lg bg-white/20 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/30"><ShoppingBag size={14} /> Mua thêm</Link>
+          </div>
+          {/* các con thú đi lại dưới sàn chuồng */}
+          {owned.slice(0, 12).map((a, i) => (
+            <span key={a.id} className="anim-walk text-3xl" style={{ bottom: `${6 + (i % 3) * 18}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
+              {animalEmoji(a.slug)}
+            </span>
+          ))}
+          {owned.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm text-white drop-shadow">Chuồng trống — mua thú ở cửa hàng</p>}
         </div>
         <div className="p-4">
         {owned.length === 0 ? (

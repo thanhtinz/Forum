@@ -633,6 +633,35 @@ export class FarmService {
   }
 
   // Ăn trộm cây chín của hàng xóm
+  // Xem nông trại người khác để đi cướp: ô đất đang chín + trạng thái chó
+  async viewFarm(targetUsername: string) {
+    const target = await this.prisma.user.findUnique({
+      where: { username: targetUsername },
+      select: { username: true, displayName: true, gameCharacter: { select: { id: true } } },
+    });
+    const charId = target?.gameCharacter?.id;
+    if (!charId) throw new NotFoundException('Không tìm thấy nông trại của người này');
+    const profile = await this.prisma.farmProfile.findUnique({ where: { characterId: charId }, select: { dogUntil: true } });
+    const now = Date.now();
+    const plots = await this.prisma.farmPlot.findMany({
+      where: { characterId: charId },
+      orderBy: { index: 'asc' },
+      include: { crop: { select: { name: true, slug: true } } },
+    });
+    return {
+      username: target!.username,
+      displayName: target!.displayName,
+      dogActive: profile?.dogUntil ? profile.dogUntil.getTime() > now : false,
+      plots: plots.map((p) => ({
+        index: p.index,
+        crop: p.crop?.name ?? null,
+        slug: p.crop?.slug ?? null,
+        ready: !!(p.cropId && p.readyAt && p.readyAt.getTime() <= now),
+        empty: !p.cropId,
+      })),
+    };
+  }
+
   async steal(userId: string, targetUsername: string, plotIndex: number) {
     const thief = await this.getCharacter(userId);
     const profile = await this.getProfile(thief.id);

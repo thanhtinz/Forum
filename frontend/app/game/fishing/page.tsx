@@ -41,7 +41,7 @@ export default function FishingPage() {
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để câu cá.</div>;
   if (!s) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
 
-  const act = async (fn: () => Promise<any>) => { try { const r = await fn(); setMsg(r?.message || 'OK'); } catch (e: any) { setMsg(e.message); } load(); };
+  const act = async (fn: () => Promise<any>) => { try { const r = await fn(); if (r?.message) setMsg(r.message); else setMsg(''); } catch (e: any) { setMsg(e.message); } load(); };
   const casting = s.cast; // đang quăng cần (toàn cục, chỉ 1 lần)
 
   return (
@@ -168,6 +168,13 @@ export default function FishingPage() {
             {pond.fishes.length > 0 && (
               <button onClick={() => act(() => api.post('/fishing/pond/harvest-all'))} className="btn-primary !py-1.5 text-xs">Thu hoạch tất cả</button>
             )}
+          </div>
+          {/* Cảnh hồ — cá bơi qua lại */}
+          <div className="relative mb-2 h-28 overflow-hidden rounded-xl bg-gradient-to-b from-sky-300 to-sky-600">
+            {pond.fishes.slice(0, 14).map((f, i) => (
+              <span key={f.id} className="anim-swim" style={{ top: `${10 + (i % 4) * 22}%`, animationDuration: `${8 + (i % 5) * 2.5}s`, animationDelay: `${-(i * 1.1)}s`, fontSize: `${18 + Math.min(14, (f.currentKg))}px` }}>🐟</span>
+            ))}
+            {pond.fishes.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm text-white/90">Hồ trống — thả cá vào để nuôi</p>}
           </div>
           <p className="mb-2 text-xs text-ink-500">Cá lớn dần theo thời gian (tối đa x{pond.maxMult}) — nuôi lâu bán càng được giá.</p>
           {pond.fishes.length === 0 ? <p className="text-sm text-ink-500">Hồ trống. Thả cá từ kho vào để nuôi.</p> : (

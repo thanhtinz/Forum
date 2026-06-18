@@ -11,13 +11,17 @@ import { cropEmoji } from '@/lib/gameIcons';
 const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
 const GROUND = '/game-assets/nongtrai/img/product/dat.png';
 
-// Ảnh cây theo giai đoạn lớn (product/<id>-non|uong|chin.png), fallback ảnh chín
+// Ảnh cây theo 4 giai đoạn: gieohat (vừa gieo) -> non (cây con) -> uong (đang lớn) -> chin (chín)
+const PRODUCT_BASE = '/game-assets/nongtrai/img/product';
 function growthSrc(asset: string | null, ready: boolean, progress: number): string {
   if (!asset) return '';
   const m = asset.match(/\/sv1\/(\d+)\.png$/);
   if (!m) return asset;
-  const stage = ready ? 'chin' : progress < 0.45 ? 'non' : 'uong';
-  return `/game-assets/nongtrai/img/product/${m[1]}-${stage}.png`;
+  const id = m[1];
+  if (ready) return `${PRODUCT_BASE}/${id}-chin.png`;
+  if (progress < 0.3) return `${PRODUCT_BASE}/gieohat.png`;
+  if (progress < 0.65) return `${PRODUCT_BASE}/${id}-non.png`;
+  return `${PRODUCT_BASE}/${id}-uong.png`;
 }
 
 interface FarmState {

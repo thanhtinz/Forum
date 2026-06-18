@@ -7,14 +7,12 @@ import { useAuth } from '@/components/AuthProvider';
 
 export default function WalletPage() {
   const { user, loading } = useAuth();
-  const [balance, setBalance] = useState(0);
   const [packages, setPackages] = useState<any[]>([]);
   const [tx, setTx] = useState<any[]>([]);
   const [topup, setTopup] = useState<any>(null);
   const [msg, setMsg] = useState('');
 
   function load() {
-    api.get<{ balance: number }>('/gem/balance').then((b) => setBalance(b.balance)).catch(() => {});
     api.get<any[]>('/gem/packages').then(setPackages).catch(() => {});
     api.get<{ data: any[] }>('/gem/transactions').then((r) => setTx(r.data || [])).catch(() => {});
   }
@@ -34,9 +32,8 @@ export default function WalletPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
-        <h1 className="flex items-center gap-2 text-2xl font-bold"><Gem /> Nạp game</h1>
-        <div className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 text-lg font-bold">{balance.toLocaleString()} <Gem size={18} /></div>
+      <header className="rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
+        <h1 className="flex items-center gap-2 text-2xl font-bold"><Gem /> Nạp Gem</h1>
       </header>
 
       {topup && (

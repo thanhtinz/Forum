@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
+import { cropEmoji } from '@/lib/gameIcons';
 
 const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
 const GROUND = '/game-assets/nongtrai/img/product/dat.png';
@@ -13,20 +14,11 @@ const GROUND = '/game-assets/nongtrai/img/product/dat.png';
 interface FarmState {
   coin: number;
   profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean };
-  plots: { index: number; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
+  plots: { index: number; slug: string | null; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
   warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
   fertilizers?: { slug: string; name: string; quantity: number; reduceSeconds: number }[];
   khe?: { fruit: number; max: number; pricePerFruit: number; canWater: boolean; nextWaterAt: string | null; nextFruitAt: string | null; fullAt: string | null };
-}
-
-// Ảnh cây theo giai đoạn lớn (product/<id>-non|uong|chin.png), fallback ảnh chín
-function growthSrc(asset: string | null, ready: boolean, progress: number): string | null {
-  if (!asset) return null;
-  const m = asset.match(/\/sv1\/(\d+)\.png$/);
-  if (!m) return asset;
-  const stage = ready ? 'chin' : progress < 0.45 ? 'non' : 'uong';
-  return `/game-assets/nongtrai/img/product/${m[1]}-${stage}.png`;
 }
 
 export default function FarmPage() {
@@ -35,6 +27,7 @@ export default function FarmPage() {
   const [err, setErr] = useState('');
   const [msg, setMsg] = useState('');
   const [planting, setPlanting] = useState<number | null>(null);
+  const [seedChoice, setSeedChoice] = useState('');
   const now = useNow();
 
   function load() { api.get<FarmState>('/farm/state').then(setS).catch((e) => setErr(e.message)); }
@@ -77,7 +70,7 @@ export default function FarmPage() {
       {/* Cây Khế — tự ra quả theo thời gian, tưới để thêm, có quả mới thu hoạch */}
       {s.khe && (() => {
         const ratio = Math.min(1, s.khe.fruit / s.khe.max);
-        const visFruits = Math.round(ratio * 8); // số quả hiển thị trên tán (0–8)
+        const visFruits = s.khe.fruit <= 0 ? 0 : Math.max(1, Math.round(ratio * 8)); // có quả là hiện ít nhất 1
         const ripe = s.khe.fruit >= s.khe.max;
         const status = s.khe.fruit <= 0 ? 'Chưa có quả — chờ cây ra quả' : ripe ? 'Sai trĩu quả — thu hoạch ngay!' : 'Đang ra quả…';
         // vị trí quả rải trên tán
@@ -127,15 +120,12 @@ export default function FarmPage() {
               const seeds = (s.warehouse || []).filter((w) => w.category === 'SEED' && w.quantity > 0);
               const ferts = s.fertilizers || [];
               const prog = p.progress ?? 0;
-              const gsrc = growthSrc(p.asset, p.ready, prog);
               return (
               <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
                 <div className="relative grid h-16 place-items-center rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${GROUND})` }}>
-                  {gsrc && (
-                    // cây lớn dần: nhỏ lúc mới trồng, to khi sắp chín
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={gsrc} alt="" onError={(e) => { if (p.asset) (e.currentTarget as HTMLImageElement).src = p.asset; }}
-                      className="object-contain transition-all" style={{ maxHeight: `${(p.empty ? 0 : 40 + prog * 60)}%`, height: p.empty ? 0 : undefined }} />
+                  {!p.empty && p.slug && (
+                    // cây lớn dần: emoji nhỏ lúc mới trồng, to khi sắp chín
+                    <span className="leading-none transition-all" style={{ fontSize: `${14 + prog * 26}px`, filter: p.ready ? 'none' : 'saturate(0.85)' }}>{cropEmoji(p.slug)}</span>
                   )}
                   {p.empty && <span className="text-[10px] text-ink-400">+ Trồng</span>}
                 </div>
@@ -149,15 +139,19 @@ export default function FarmPage() {
                 )}
                 {/* Ô trống: chọn hạt để gieo */}
                 {p.empty && planting !== p.index && (
-                  <button onClick={() => setPlanting(p.index)} className="mt-1 w-full rounded bg-emerald-500 px-1 py-0.5 text-[10px] text-white">Gieo hạt</button>
+                  <button onClick={() => { setPlanting(p.index); setSeedChoice(''); }} className="mt-1 w-full rounded bg-emerald-500 px-1 py-0.5 text-[10px] text-white">Gieo hạt</button>
                 )}
                 {p.empty && planting === p.index && (
                   <div className="mt-1 space-y-1">
                     {seeds.length === 0 ? <p className="text-[10px] text-ink-400">Chưa có hạt. Mua ở cửa hàng.</p> : (
-                      <select className="input !py-0.5 !text-[10px]" defaultValue="" onChange={(e) => e.target.value && plant(p.index, e.target.value, e.target.options[e.target.selectedIndex].text)}>
-                        <option value="" disabled>Chọn hạt…</option>
-                        {seeds.map((sd) => <option key={sd.slug} value={sd.slug}>{sd.name} (×{sd.quantity})</option>)}
-                      </select>
+                      <>
+                        <select className="input !py-0.5 !text-[10px]" value={seedChoice} onChange={(e) => setSeedChoice(e.target.value)}>
+                          <option value="">Chọn hạt…</option>
+                          {seeds.map((sd) => <option key={sd.slug} value={sd.slug}>{cropEmoji(sd.slug)} {sd.name} (×{sd.quantity})</option>)}
+                        </select>
+                        <button disabled={!seedChoice} onClick={() => { const sd = seeds.find((x) => x.slug === seedChoice); if (sd) plant(p.index, sd.slug, sd.name); }}
+                          className="w-full rounded bg-emerald-600 px-1 py-0.5 text-[10px] font-medium text-white disabled:opacity-50">Gieo</button>
+                      </>
                     )}
                     <button onClick={() => setPlanting(null)} className="text-[10px] text-ink-400 underline">Hủy</button>
                   </div>

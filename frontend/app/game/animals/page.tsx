@@ -7,10 +7,11 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
+import { animalEmoji } from '@/lib/gameIcons';
 
 const BARN_BG = '/game-assets/nongtrai/img/chuong.png';
 
-interface Owned { id: string; name: string; grown: boolean; grownAt: string | null; productReady: boolean; productReadyAt: string | null; hasProduct: boolean; diesAt: string | null; asset?: string | null }
+interface Owned { id: string; slug: string; name: string; grown: boolean; grownAt: string | null; productReady: boolean; productReadyAt: string | null; hasProduct: boolean; diesAt: string | null; asset?: string | null }
 
 export default function AnimalsPage() {
   const { user, loading } = useAuth();
@@ -57,10 +58,7 @@ export default function AnimalsPage() {
             {owned.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-2 rounded-xl border border-ink-200/70 p-3 dark:border-ink-800">
                 <div className="flex items-center gap-3">
-                  {a.asset
-                    // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={a.asset} alt={a.name} className="h-12 w-12 object-contain" />
-                    : <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800"><Beef size={20} /></span>}
+                  <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-2xl dark:bg-ink-800">{animalEmoji(a.slug)}</span>
                   <div>
                     <p className="font-medium">{a.name}</p>
                     <p className="text-xs text-ink-400">

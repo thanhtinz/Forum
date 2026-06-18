@@ -37,7 +37,7 @@ export class FarmService {
       this.prisma.farmPlot.findMany({
         where: { characterId: char.id },
         orderBy: { index: 'asc' },
-        include: { crop: { select: { name: true, asset: true, sellPrice: true } } },
+        include: { crop: { select: { slug: true, name: true, asset: true, sellPrice: true } } },
       }),
       this.prisma.warehouseItem.findMany({
         where: { characterId: char.id, quantity: { gt: 0 } },
@@ -71,6 +71,7 @@ export class FarmService {
         const progress = total > 0 ? Math.max(0, Math.min(1, done / total)) : 0;
         return {
           index: p.index,
+          slug: p.crop?.slug ?? null,
           crop: p.crop?.name ?? null,
           asset: p.crop?.asset ?? null,
           watered: p.watered,
@@ -91,6 +92,7 @@ export class FarmService {
       })),
       animals: animals.map((a) => ({
         id: a.id,
+        slug: a.animal.slug,
         name: a.animal.name,
         grown: a.grownAt.getTime() <= now,
         grownAt: a.grownAt,

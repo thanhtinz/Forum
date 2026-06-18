@@ -5,6 +5,7 @@ import { Sprout, Fish, ShoppingBag, Coins, Beef, FlaskConical, Loader2 } from 'l
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin } from '@/lib/format';
+import { cropEmoji, animalEmoji } from '@/lib/gameIcons';
 
 type Tab = 'crop' | 'animal' | 'fertilizer' | 'fishing';
 
@@ -102,7 +103,7 @@ export default function GameShopPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {crops.map((c) => (
             <div key={c.slug} className="card flex items-center gap-3 p-3">
-              <Asset src={c.asset} fallback={<Sprout size={20} />} />
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-ink-50 text-2xl dark:bg-ink-800">{cropEmoji(c.slug)}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{c.name}</p>
                 {c.reqLevel ? <p className="text-xs text-ink-400">Cấp nông trại {c.reqLevel}</p> : null}
@@ -122,7 +123,7 @@ export default function GameShopPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {animals.map((a) => (
             <div key={a.slug} className="card flex items-center gap-3 p-3">
-              <Asset src={a.asset} fallback={<Beef size={20} />} />
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-ink-50 text-2xl dark:bg-ink-800">{animalEmoji(a.slug)}</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{a.name}</p>
                 {a.productName ? <p className="text-xs text-ink-400">Sản phẩm: {a.productName}</p> : null}

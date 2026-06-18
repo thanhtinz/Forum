@@ -25,7 +25,6 @@ const NAV = [
   { href: '/', label: 'Diễn đàn', icon: MessageSquare },
   { href: '/chat', label: 'Chat', icon: MessengerIcon },
   { href: '/cong-game', label: 'Cổng game', icon: Gamepad2 },
-  { href: '/game', label: 'Game', icon: Gamepad2 },
   { href: '/marketplace', label: 'Chợ', icon: Store },
   { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
   { href: '/ai', label: 'AI Companion', icon: Sparkles },

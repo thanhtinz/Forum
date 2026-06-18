@@ -10,8 +10,7 @@ interface NavPage { slug: string; title: string }
 interface NavLinkItem { id: string; label: string; url: string; openNewTab: boolean }
 
 const SHORTCUTS = [
-  { href: '/cong-game', label: 'Cổng game', icon: Gamepad2, desc: 'Giftcode & mua vật phẩm bằng Gem' },
-  { href: '/game', label: 'Nhân vật & RPG', icon: Gamepad2, desc: 'Combat, guild, trang bị' },
+  { href: '/cong-game', label: 'Cổng game', icon: Gamepad2, desc: 'Nông trại, câu cá, minigame…' },
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, desc: 'Trồng trọt & vật nuôi' },
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, desc: '3 khu, cá hiếm' },
   { href: '/game/guild', label: 'Bang hội', icon: Shield, desc: 'Lập & gia nhập bang hội' },

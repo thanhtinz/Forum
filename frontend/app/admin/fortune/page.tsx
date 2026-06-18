@@ -13,6 +13,14 @@ export default function AdminFortune() {
   const [cfg, setCfg] = useState<Cfg | null>(null);
   const [stats, setStats] = useState<any>(null);
   const [msg, setMsg] = useState('');
+  const [apiKey, setApiKey] = useState('');
+
+  async function saveKey() {
+    if (!cfg) return;
+    const k = cfg.aiProvider === 'OPENAI' ? 'ai.openaiKey' : cfg.aiProvider === 'GEMINI' ? 'ai.geminiKey' : 'ai.ollamaUrl';
+    try { await api.patch(`/admin/config/setting/${k}`, { value: apiKey.trim() }); setMsg('Đã lưu API key ✓'); setApiKey(''); }
+    catch (e: any) { setMsg(e.message); }
+  }
 
   useEffect(() => {
     api.get<Cfg>('/fortune/admin/config').then(setCfg).catch((e) => setMsg(e.message));
@@ -61,7 +69,20 @@ export default function AdminFortune() {
         <label className="mt-3 block text-sm">System prompt
           <textarea className="input mt-1 resize-y" rows={4} value={cfg.aiSystemPrompt} onChange={(e) => set('aiSystemPrompt', e.target.value)} />
         </label>
-        <p className="mt-2 text-xs text-ink-500">API key đặt ở biến môi trường server (OPENAI_API_KEY / GEMINI_API_KEY / OLLAMA_BASE_URL).</p>
+
+        {/* API key — lưu vào config server, dùng cho cả luận giải AI lẫn chat Minori */}
+        <div className="mt-3 rounded-lg border border-ink-200/70 p-3 dark:border-ink-800">
+          <label className="block text-sm font-medium">
+            API key {cfg.aiProvider === 'OLLAMA' ? '(Ollama Base URL)' : `(${cfg.aiProvider})`}
+            <div className="mt-1 flex gap-2">
+              <input className="input flex-1" type="password" autoComplete="off"
+                placeholder={cfg.aiProvider === 'OLLAMA' ? 'http://localhost:11434' : 'Dán API key…'}
+                value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+              <button onClick={saveKey} disabled={!apiKey.trim()} className="btn-primary shrink-0 disabled:opacity-50">Lưu key</button>
+            </div>
+          </label>
+          <p className="mt-1 text-xs text-ink-500">Key lưu an toàn ở server (đồng bộ Admin → Cài đặt → AI). Lưu xong dùng được ngay, không cần khởi động lại. Đổi Provider ở trên để lưu key tương ứng.</p>
+        </div>
       </section>
 
       <div className="flex items-center gap-3">

@@ -5,7 +5,7 @@ import { Sprout, Fish, ShoppingBag, Coins, Beef, FlaskConical, Loader2 } from 'l
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin } from '@/lib/format';
-import { cropEmoji, animalEmoji } from '@/lib/gameIcons';
+import { cropEmoji } from '@/lib/gameIcons';
 
 type Tab = 'crop' | 'animal' | 'fertilizer' | 'fishing';
 
@@ -123,7 +123,7 @@ export default function GameShopPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {animals.map((a) => (
             <div key={a.slug} className="card flex items-center gap-3 p-3">
-              <Asset src={a.asset} fallback={<span className="text-2xl">{animalEmoji(a.slug)}</span>} />
+              <Asset src={a.asset} fallback={<Beef size={20} />} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{a.name}</p>
                 {a.productName ? <p className="text-xs text-ink-400">Sản phẩm: {a.productName}</p> : null}

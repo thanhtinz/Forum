@@ -88,7 +88,7 @@ export class ForumService {
         id: true, name: true, slug: true, icon: true, iconUrl: true, color: true,
         threadCount: true, description: true, moduleType: true, parentId: true, minRolePost: true,
         threads: {
-          where: { isApproved: true },
+          where: { isApproved: true, isHidden: false },
           orderBy: { lastPostAt: 'desc' },
           take: 1,
           select: {
@@ -224,7 +224,7 @@ export class ForumService {
     const limit = Math.min(query.limit ?? 20, 50);
     const skip = (page - 1) * limit;
 
-    const where: any = { isApproved: true };
+    const where: any = { isApproved: true, isHidden: false };
     if (query.authorId) where.authorId = query.authorId;
     if (query.categoryId) where.categoryId = query.categoryId;
     if (query.prefix) where.prefix = query.prefix;
@@ -280,6 +280,10 @@ export class ForumService {
     // Bài chờ duyệt: chỉ tác giả & mod xem được (mod xem qua queue bằng id)
     if (!thread.isApproved && thread.authorId !== userId) {
       throw new NotFoundException('Không tìm thấy bài viết');
+    }
+    // Bài đã ẩn: chỉ tác giả xem được (BQT ẩn/hiện qua hành động)
+    if (thread.isHidden && thread.authorId !== userId) {
+      throw new NotFoundException('Bài viết đã bị ẩn');
     }
 
     // Tăng view count (non-blocking)
@@ -695,11 +699,28 @@ export class ForumService {
     });
   }
 
-  async lockThread(threadId: string, lock: boolean) {
+  async lockThread(threadId: string, lock: boolean, userId?: string, role?: string) {
+    await this.assertThreadOwnerOrStaff(threadId, userId, role);
     return this.prisma.thread.update({
       where: { id: threadId },
       data: { isLocked: lock },
     });
+  }
+
+  // Ẩn/hiện bài (không xoá) — tác giả hoặc BQT
+  async hideThread(threadId: string, hide: boolean, userId?: string, role?: string) {
+    await this.assertThreadOwnerOrStaff(threadId, userId, role);
+    return this.prisma.thread.update({
+      where: { id: threadId },
+      data: { isHidden: hide },
+    });
+  }
+
+  private async assertThreadOwnerOrStaff(threadId: string, userId?: string, role?: string) {
+    const t = await this.prisma.thread.findUnique({ where: { id: threadId }, select: { authorId: true } });
+    if (!t) throw new NotFoundException('Không tìm thấy chủ đề');
+    const isStaff = role === 'ADMIN' || role === 'MODERATOR';
+    if (!isStaff && t.authorId !== userId) throw new BadRequestException('Bạn không có quyền với chủ đề này');
   }
 
   // ── Move (chuyển chuyên mục) ──

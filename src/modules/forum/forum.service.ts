@@ -41,6 +41,7 @@ export interface CategoryDto {
   slug?: string;
   description?: string;
   icon?: string;
+  iconUrl?: string;
   color?: string;
   sortOrder?: number;
   moduleType?: string; // NONE | JOB
@@ -81,9 +82,27 @@ export class ForumService {
   // ──────────────────────────────────────────────
 
   async listCategories() {
-    return this.prisma.category.findMany({
+    const cats = await this.prisma.category.findMany({
       orderBy: { sortOrder: 'asc' },
-      select: { id: true, name: true, slug: true, icon: true, color: true, threadCount: true, description: true, moduleType: true },
+      select: {
+        id: true, name: true, slug: true, icon: true, iconUrl: true, color: true,
+        threadCount: true, description: true, moduleType: true, parentId: true,
+        threads: {
+          where: { isApproved: true },
+          orderBy: { lastPostAt: 'desc' },
+          take: 1,
+          select: {
+            title: true, slug: true, lastPostAt: true, createdAt: true,
+            prefixRef: { select: { label: true, color: true } },
+            author: { select: { username: true, displayName: true } },
+          },
+        },
+      },
+    });
+    return cats.map((c) => {
+      const t = c.threads[0];
+      const { threads, ...rest } = c;
+      return { ...rest, latest: t ? { title: t.title, slug: t.slug, at: t.lastPostAt ?? t.createdAt, prefix: t.prefixRef?.label ?? null, author: t.author?.displayName || t.author?.username || null } : null };
     });
   }
 
@@ -148,6 +167,7 @@ export class ForumService {
         slug,
         description: dto.description ?? null,
         icon: dto.icon ?? null,
+        iconUrl: dto.iconUrl ?? null,
         color: dto.color ?? null,
         sortOrder: dto.sortOrder ?? 0,
         moduleType: this.normalizeModuleType(dto.moduleType),
@@ -165,6 +185,7 @@ export class ForumService {
     if (dto.name !== undefined) data.name = dto.name.trim();
     if (dto.description !== undefined) data.description = dto.description || null;
     if (dto.icon !== undefined) data.icon = dto.icon || null;
+    if (dto.iconUrl !== undefined) data.iconUrl = dto.iconUrl || null;
     if (dto.color !== undefined) data.color = dto.color || null;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
     if (dto.moduleType !== undefined) data.moduleType = this.normalizeModuleType(dto.moduleType);

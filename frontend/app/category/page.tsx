@@ -56,7 +56,7 @@ function CategoryView() {
         )}
       </section>
 
-      {id ? <ThreadList categoryId={id} /> : <div className="card p-8 text-center text-ink-500">Không tìm thấy danh mục.</div>}
+      {id ? <ThreadList categoryId={id} hideHeader /> : <div className="card p-8 text-center text-ink-500">Không tìm thấy danh mục.</div>}
     </div>
   );
 }

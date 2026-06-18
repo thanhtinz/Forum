@@ -70,32 +70,18 @@ export default function FarmPage() {
         )}
       </section>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <section className="card p-4">
-          <h2 className="mb-2 font-semibold">Kho ({s.warehouse.length})</h2>
-          <ul className="space-y-1 text-sm">
-            {s.warehouse.slice(0, 12).map((w) => (
-              <li key={w.slug + w.category} className="flex justify-between border-b border-ink-100 py-1 dark:border-ink-800">
-                <span>{w.name} <span className="text-ink-400">×{w.quantity}</span></span>
-                <span className="text-ink-500">{w.unitSell ? `${w.unitSell}/cái` : '—'}</span>
-              </li>
-            ))}
-            {s.warehouse.length === 0 && <li className="text-ink-500">Kho trống.</li>}
-          </ul>
-        </section>
-        <section className="card p-4">
-          <h2 className="mb-2 font-semibold">Vật nuôi ({s.animals.length})</h2>
-          <ul className="space-y-1 text-sm">
-            {s.animals.map((a) => (
-              <li key={a.id} className="flex justify-between border-b border-ink-100 py-1 dark:border-ink-800">
-                <span>{a.name}</span>
-                <span className="text-ink-500">{a.productReady ? 'Có sản phẩm' : a.grown ? 'Trưởng thành' : 'Đang lớn'}</span>
-              </li>
-            ))}
-            {s.animals.length === 0 && <li className="text-ink-500">Chưa có vật nuôi.</li>}
-          </ul>
-        </section>
-      </div>
+      <section className="card p-4">
+        <h2 className="mb-2 font-semibold">Kho ({s.warehouse.length})</h2>
+        <ul className="grid grid-cols-1 gap-x-6 text-sm sm:grid-cols-2">
+          {s.warehouse.slice(0, 16).map((w) => (
+            <li key={w.slug + w.category} className="flex justify-between border-b border-ink-100 py-1 dark:border-ink-800">
+              <span>{w.name} <span className="text-ink-400">×{w.quantity}</span></span>
+              <span className="text-ink-500">{w.unitSell ? `${w.unitSell}/cái` : '—'}</span>
+            </li>
+          ))}
+          {s.warehouse.length === 0 && <li className="text-ink-500">Kho trống.</li>}
+        </ul>
+      </section>
     </div>
   );
 }

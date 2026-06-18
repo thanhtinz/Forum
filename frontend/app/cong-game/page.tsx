@@ -9,7 +9,7 @@ import { gamePortal, GameItem } from '@/lib/gamePortal';
 const WEB_GAMES = [
   { href: '/game/farm', label: 'Nông trại', desc: 'Trồng trọt & thu hoạch', icon: Sprout, color: 'from-emerald-500 to-green-600' },
   { href: '/game/fishing', label: 'Câu cá', desc: '3 khu, cá hiếm', icon: Fish, color: 'from-sky-500 to-cyan-600' },
-  { href: '/game/wardrobe', label: 'Nuôi thú / Tủ đồ', desc: 'Thú cưng & trang phục', icon: PawPrint, color: 'from-fuchsia-500 to-pink-600' },
+  { href: '/game/animals', label: 'Vật nuôi', desc: 'Nuôi thú lấy sản phẩm', icon: PawPrint, color: 'from-fuchsia-500 to-pink-600' },
   { href: '/minigame', label: 'Minigame', desc: 'Tài xỉu, bầu cua, PvP…', icon: Trophy, color: 'from-amber-500 to-orange-600' },
   { href: '/game/shop', label: 'Cửa hàng', desc: 'Hạt giống, vật nuôi, đồ câu', icon: ShoppingBag, color: 'from-teal-500 to-emerald-600' },
   { href: '/game/guild', label: 'Bang hội', desc: 'Lập & gia nhập bang', icon: Shield, color: 'from-indigo-500 to-violet-600' },

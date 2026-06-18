@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Gamepad2, Sprout, Fish, Shirt, Trophy, ShoppingBag } from 'lucide-react';
+import { Gamepad2, Sprout, Fish, PawPrint, Trophy, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -11,9 +11,9 @@ interface Character { id: string; gender: string }
 // Khu trò chơi casual — không còn nhân vật/chỉ số RPG
 const SUB = [
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, color: 'text-emerald-600' },
+  { href: '/game/animals', label: 'Vật nuôi', icon: PawPrint, color: 'text-fuchsia-600' },
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, color: 'text-sky-600' },
   { href: '/game/shop', label: 'Cửa hàng', icon: ShoppingBag, color: 'text-amber-600' },
-  { href: '/game/wardrobe', label: 'Tủ đồ / Pet', icon: Shirt, color: 'text-fuchsia-600' },
   { href: '/minigame', label: 'Minigame', icon: Trophy, color: 'text-amber-600' },
 ];
 

@@ -1,8 +1,9 @@
 'use client';
 
 import { Suspense, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Dices, Coins, Trophy } from 'lucide-react';
+import { Dices, Coins, Trophy, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -16,7 +17,8 @@ const BAUCUA: [string, string][] = [['bau', 'Bầu'], ['cua', 'Cua'], ['tom', 'T
 function SoloPlay() {
   const { user, loading } = useAuth();
   const initial = (useSearchParams().get('game') as Game) || 'tai-xiu';
-  const [game, setGame] = useState<Game>(GAMES.some(([g]) => g === initial) ? initial : 'tai-xiu');
+  const game: Game = GAMES.some(([g]) => g === initial) ? initial : 'tai-xiu';
+  const gameLabel = GAMES.find(([g]) => g === game)?.[1] || 'Minigame';
   const [bet, setBet] = useState(100);
   const [choice, setChoice] = useState<string>('tai');
   const [duaThu, setDuaThu] = useState(1);
@@ -45,16 +47,11 @@ function SoloPlay() {
 
   return (
     <div className="space-y-4">
+      <Link href="/minigame" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Trò chơi khác</Link>
       <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 p-6 text-white shadow-card">
-        <Dices /> <h1 className="text-2xl font-bold">Minigame (chơi với máy)</h1>
+        <Dices /> <h1 className="text-2xl font-bold">{gameLabel}</h1>
       </header>
       <p className="flex items-center gap-1 text-xs text-ink-500">Chơi bằng <Coins size={13} className="text-amber-500" /> Vàng (coin). Kiếm coin qua forum/game.</p>
-
-      <div className="flex flex-wrap gap-2">
-        {GAMES.map(([g, l]) => (
-          <button key={g} onClick={() => { setGame(g); setResult(null); }} className={`rounded-lg px-3 py-1.5 text-sm ${game === g ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{l}</button>
-        ))}
-      </div>
 
       <div className="card space-y-3 p-4">
         <label className="block text-sm">Tiền cược (coin)<input type="number" className="input mt-1 w-40" value={bet} onChange={(e) => setBet(Number(e.target.value))} /></label>

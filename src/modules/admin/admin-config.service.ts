@@ -26,6 +26,23 @@ export class AdminConfigService {
     return Object.fromEntries(keys.map((k) => [k, this.cache.get(k)]));
   }
 
+  /**
+   * Lấy giá trị cấu hình theo thứ tự ưu tiên:
+   *   1. Giá trị admin đặt trong DB (nếu khác rỗng)
+   *   2. Biến môi trường `envKey` (nếu có)
+   *   3. `fallback`
+   * Dùng cho các service cần đọc cấu hình do admin đặt nhưng vẫn tương thích .env cũ.
+   */
+  async resolve<T = any>(key: string, envKey?: string, fallback?: T): Promise<T> {
+    const dbVal = await this.get<T>(key);
+    if (dbVal !== undefined && dbVal !== null && (dbVal as any) !== '') return dbVal;
+    if (envKey) {
+      const env = process.env[envKey];
+      if (env != null && env !== '') return env as unknown as T;
+    }
+    return fallback as T;
+  }
+
   private async loadCache() {
     const settings = await this.prisma.configSetting.findMany();
     this.cache.clear();
@@ -307,6 +324,22 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
         options: [{ label: 'Sandbox', value: 'sandbox' }, { label: 'Live', value: 'live' }] },
       { key: 'payment.paypalClientId', label: 'PayPal Client ID', type: 'string', value: '', isSecret: true },
       { key: 'payment.paypalSecret', label: 'PayPal Secret', type: 'string', value: '', isSecret: true },
+    ],
+  },
+  {
+    key: 'media',
+    name: 'Lưu trữ Media (S3/MinIO)',
+    description: 'Cấu hình kho lưu file/ảnh ngoài cho upload trực tiếp (presign). Để trống sẽ dùng biến môi trường MEDIA_* hoặc lưu local.',
+    icon: 'image',
+    sortOrder: 6,
+    settings: [
+      { key: 'media.endpoint', label: 'Endpoint', description: 'VD: https://s3.amazonaws.com hoặc URL MinIO', type: 'string', value: '' },
+      { key: 'media.bucket', label: 'Bucket', type: 'string', value: '' },
+      { key: 'media.region', label: 'Region', type: 'string', value: 'us-east-1' },
+      { key: 'media.accessKey', label: 'Access Key', type: 'string', value: '', isSecret: true },
+      { key: 'media.secretKey', label: 'Secret Key', type: 'string', value: '', isSecret: true },
+      { key: 'media.forcePathStyle', label: 'Force Path Style (MinIO)', type: 'boolean', value: true },
+      { key: 'media.publicUrl', label: 'Public Base URL', description: 'URL công khai để truy cập file đã upload', type: 'string', value: '' },
     ],
   },
   {

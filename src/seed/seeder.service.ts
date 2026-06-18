@@ -8,6 +8,7 @@ import { WARDROBE_ITEMS } from './data/wardrobe.data';
 import { TOOL_CATEGORIES, TOOLS } from './data/tools.data';
 import { AI_CHARACTER, AI_OUTFITS } from './data/ai-character.data';
 import { DEFAULT_GROUPS } from '../modules/permissions/permission.service';
+import { AdminConfigService } from '../modules/admin/admin-config.service';
 
 // Tự seed dữ liệu mẫu (cá/cây/phân/vật nuôi/công thức/đồ ăn/wardrobe) khi app khởi động.
 // Data nằm thẳng trong src/seed/data — không cần chạy lệnh seed thủ công.
@@ -16,7 +17,10 @@ import { DEFAULT_GROUPS } from '../modules/permissions/permission.service';
 export class SeederService implements OnApplicationBootstrap {
   private readonly logger = new Logger(SeederService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly adminConfig: AdminConfigService,
+  ) {}
 
   async onApplicationBootstrap() {
     if (process.env.AUTO_SEED === 'false') return;
@@ -30,6 +34,10 @@ export class SeederService implements OnApplicationBootstrap {
 
   private async seedAll() {
     let n = 0;
+
+    // Nhóm cấu hình hệ thống (AI, Thanh toán, Media...) — admin chỉnh trong UI.
+    // upsert giữ nguyên value admin đã đặt, chỉ thêm key/nhóm mới.
+    await this.adminConfig.seedDefaults();
 
     // Nhóm hệ thống + bộ quyền (Flarum-style). Cập nhật tên/màu nhưng giữ permissions nếu admin đã sửa.
     for (const g of DEFAULT_GROUPS) {

@@ -239,10 +239,15 @@ export class ForumController {
   }
 
   @Post('threads/:id/lock')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.MODERATOR)
-  lock(@Param('id') id: string, @Body('lock') lock = true) {
-    return this.forum.lockThread(id, lock);
+  @UseGuards(JwtAuthGuard)
+  lock(@Param('id') id: string, @Body('lock') lock = true, @CurrentUser('id') userId?: string, @CurrentUser('role') role?: string) {
+    return this.forum.lockThread(id, lock, userId, role);
+  }
+
+  @Post('threads/:id/hide')
+  @UseGuards(JwtAuthGuard)
+  hide(@Param('id') id: string, @Body('hide') hide = true, @CurrentUser('id') userId?: string, @CurrentUser('role') role?: string) {
+    return this.forum.hideThread(id, hide, userId, role);
   }
 
   @Post('threads/:id/move')

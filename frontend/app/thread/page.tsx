@@ -214,6 +214,20 @@ function ThreadView() {
     catch (e: any) { setErr(e.message); }
     finally { setModBusy(false); }
   }
+  async function toggleLock() {
+    if (!thread) return;
+    try { await api.post(`/forum/threads/${thread.id}/lock`, { lock: !thread.isLocked }); load(); } catch (e: any) { setErr(e.message); }
+  }
+  async function toggleHide() {
+    if (!thread) return;
+    const hidden = (thread as any).isHidden;
+    if (!hidden && !confirm('Ẩn bài này? Bài sẽ không hiển thị nhưng không bị xoá.')) return;
+    try { await api.post(`/forum/threads/${thread.id}/hide`, { hide: !hidden }); if (!hidden) { alert('Đã ẩn bài.'); } load(); } catch (e: any) { setErr(e.message); }
+  }
+  async function togglePin() {
+    if (!thread) return;
+    try { await api.post(`/forum/threads/${thread.id}/pin`, { pin: !thread.isPinned }); load(); } catch (e: any) { setErr(e.message); }
+  }
   function openMerge() { setModModal('merge'); setMergeQuery(''); setMergeResults([]); }
   async function searchMergeTargets(q: string) {
     setMergeQuery(q);
@@ -340,6 +354,7 @@ function ThreadView() {
         <div className="flex items-center gap-2 text-sm text-ink-500">
           {thread.isPinned && <Pin size={14} className="text-amber-500" />}
           {thread.isLocked && <Lock size={14} />}
+          {(thread as any).isHidden && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">Đã ẩn</span>}
           {thread.category && <span className="text-brand-600">{thread.category.name}</span>}
         </div>
         <div className="mt-1 flex items-start justify-between gap-3">
@@ -368,8 +383,15 @@ function ThreadView() {
             </span>
           )}
         </div>
+        {(isMod || (user && thread.author && user.id === thread.author.id)) && (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-ink-200/70 pt-3 dark:border-ink-800">
+            <button onClick={toggleLock} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Lock size={13} /> {thread.isLocked ? 'Mở bài (cho bình luận)' : 'Đóng bài (khoá bình luận)'}</button>
+            <button onClick={toggleHide} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs text-amber-600 hover:bg-ink-200 dark:bg-ink-800">{(thread as any).isHidden ? 'Hiện bài' : 'Ẩn bài (không xoá)'}</button>
+            {isMod && <button onClick={togglePin} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Pin size={13} /> {thread.isPinned ? 'Bỏ ghim' : 'Ghim'}</button>}
+          </div>
+        )}
         {isMod && (
-          <div className="mt-3 flex gap-2 border-t border-ink-200/70 pt-3 dark:border-ink-800">
+          <div className="mt-2 flex flex-wrap gap-2">
             <button onClick={openMove} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><FolderInput size={13} /> Chuyển mục</button>
             <button onClick={openMerge} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Merge size={13} /> Gộp chủ đề</button>
             <button onClick={() => { setSplitMode(true); setSplitSelected([]); setSplitTitle(''); }} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Scissors size={13} /> Tách bài</button>

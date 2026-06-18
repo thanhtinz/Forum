@@ -463,6 +463,7 @@ model Thread {
   isPinned       Boolean      @default(false)
   isFeatured     Boolean      @default(false)
   isLocked       Boolean      @default(false)
+  isHidden       Boolean      @default(false) // ẩn bài (không xoá) — tác giả/BQT ẩn
   isApproved     Boolean      @default(true) // FoF Approval: chờ duyệt nếu false
   bestAnswerId   String? // post được chọn là câu trả lời hay nhất (Q&A)
   bestAnswerAuto Boolean      @default(false) // true nếu hệ thống tự chọn theo lượt reaction

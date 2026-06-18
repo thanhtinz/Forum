@@ -152,6 +152,11 @@ export default function ChatPage() {
               <div ref={bottomRef} />
             </div>
 
+            {active.type !== 'PRIVATE' && (
+              <p className="border-t border-amber-200/60 bg-amber-50 px-4 py-1.5 text-center text-[11px] text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+                ⚠️ Không bình luận ngôn từ xúc phạm, chia sẻ liên kết, nội dung lừa đảo… Vi phạm sẽ bị BAN cảnh cáo hoặc vĩnh viễn.
+              </p>
+            )}
             <Composer onSend={handleSend} replyTo={replyTo} onCancelReply={() => setReplyTo(null)} onTyping={handleTyping} />
           </>
         )}

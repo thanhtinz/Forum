@@ -2,6 +2,7 @@
 
 import { FileText, Reply, Music } from 'lucide-react';
 import { ChatMsg, musicEmbed } from '@/lib/chat';
+import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 
 export function MessageBody({ m }: { m: ChatMsg }) {
   switch (m.type) {
@@ -42,7 +43,12 @@ export function MessageView({ m, mine, showName }: { m: ChatMsg; mine: boolean; 
   return (
     <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm ${bubble}`}>
-        {!mine && showName && <div className="mb-0.5 text-[11px] font-medium opacity-70">{name}</div>}
+        {!mine && showName && (
+          <div className="mb-0.5 flex items-center gap-1 text-[11px] font-medium opacity-80">
+            {name}
+            <UserBadges badges={roleBadgesFromUser({ role: m.sender?.role, verifiedBadge: m.sender?.verifiedBadge })} size="xs" iconOnly />
+          </div>
+        )}
         {m.replyTo && (
           <div className="mb-1 flex items-center gap-1 rounded-md border-l-2 border-current/40 bg-black/5 px-2 py-1 text-[11px] opacity-80 dark:bg-white/10">
             <Reply size={11} /> {m.replyTo.type === 'TEXT' ? m.replyTo.content.slice(0, 60) : m.replyTo.type}

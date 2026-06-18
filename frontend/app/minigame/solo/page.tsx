@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Dices, Coins, Trophy, ChevronLeft } from 'lucide-react';
@@ -10,8 +10,8 @@ import { formatCoin } from '@/lib/format';
 
 type Game = 'tai-xiu' | 'coin-flip' | 'lucky-wheel' | 'dua-thu' | 'jackpot' | 'bau-cua';
 const GAMES: [Game, string][] = [
-  ['tai-xiu', 'Tài Xỉu'], ['bau-cua', 'Bầu Cua'], ['coin-flip', 'Tung Xu'],
-  ['lucky-wheel', 'Vòng Quay'], ['dua-thu', 'Đua Thú'], ['jackpot', 'Jackpot 777'],
+  ['tai-xiu', 'Tài Xỉu'], ['bau-cua', 'Bầu Cua'],
+  ['dua-thu', 'Đua Thú'], ['jackpot', 'Jackpot 777'],
 ];
 const BAUCUA: [string, string][] = [['bau', 'Bầu'], ['cua', 'Cua'], ['tom', 'Tôm'], ['ca', 'Cá'], ['ga', 'Gà'], ['nai', 'Nai']];
 const BOARD = '/game-assets/avatar/gameroom/imgTable.png';
@@ -30,6 +30,15 @@ function SoloPlay() {
   const [result, setResult] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [animating, setAnimating] = useState(false);
+  const [frame, setFrame] = useState(0);
+
+  // tick để cuộn reel/đua thú khi đang chạy
+  useEffect(() => {
+    if (!animating) return;
+    const id = setInterval(() => setFrame((f) => f + 1), 90);
+    return () => clearInterval(id);
+  }, [animating]);
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để chơi.</div>;
 
@@ -38,10 +47,15 @@ function SoloPlay() {
     try {
       let body: any = { betCoin: bet };
       if (game === 'tai-xiu') body.choice = choice === 'xiu' ? 'xiu' : 'tai';
-      else if (game === 'coin-flip') body.choice = choice === 'tails' ? 'tails' : 'heads';
       else if (game === 'dua-thu') body.choice = duaThu;
       else if (game === 'bau-cua') body = { bets: [{ symbol, amount: bet }] };
       const r = await api.post<any>(`/minigame/${game}`, body);
+      // Hiệu ứng chạy trước khi hiện kết quả
+      if (game === 'jackpot' || game === 'dua-thu') {
+        setAnimating(true);
+        await new Promise((res) => setTimeout(res, game === 'jackpot' ? 1500 : 2400));
+        setAnimating(false);
+      }
       setResult(r);
     } catch (e: any) { setMsg(e.message); }
     setBusy(false);
@@ -68,26 +82,22 @@ function SoloPlay() {
             {['tai', 'xiu'].map((c) => <button key={c} onClick={() => setChoice(c)} className={`flex-1 rounded-lg py-2 text-sm font-medium ${choice === c ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{c === 'tai' ? 'TÀI (11-17)' : 'XỈU (4-10)'}</button>)}
           </div>
         )}
-        {game === 'coin-flip' && (
-          <div className="flex gap-2">
-            {[['heads', 'Sấp (Heads)'], ['tails', 'Ngửa (Tails)']].map(([c, l]) => <button key={c} onClick={() => setChoice(c)} className={`flex-1 rounded-lg py-2 text-sm ${choice === c ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{l}</button>)}
-          </div>
-        )}
         {game === 'dua-thu' && (
           <div>
-            <p className="mb-1 text-xs text-ink-500">Chọn thú để đặt cược (1 ăn 5):</p>
+            <p className="mb-1 text-xs text-ink-500">Chọn thú để đặt cược (1 ăn 5){animating ? ' — đang đua…' : ''}:</p>
             {/* Sàn chạy đua thú */}
             <div className="space-y-1 rounded-xl border-4 border-amber-700/70 bg-gradient-to-b from-lime-600/30 to-green-700/30 p-2">
               {[1, 2, 3, 4, 5, 6, 7].map((n) => {
                 const winner = result?.winner === n;
+                const pos = animating ? Math.min(90, (frame * (3 + ((n * 7) % 4))) % 112) : winner ? 90 : 0;
                 return (
-                  <button key={n} onClick={() => setDuaThu(n)}
-                    className={`flex w-full items-center gap-2 rounded-md border-y border-dashed border-white/40 px-2 py-1 text-left ${duaThu === n ? 'bg-amber-300/40 ring-2 ring-amber-500' : 'bg-black/5 hover:bg-black/10'}`}>
-                    <span className="w-5 shrink-0 text-center text-xs font-bold text-ink-600">{n}</span>
-                    <img src={`/game-assets/duathu/${n}.gif`} alt={`Thú ${n}`} className={`h-8 object-contain transition-all ${winner ? 'translate-x-2 scale-125' : ''}`} />
-                    <span className="flex-1 border-b-2 border-dotted border-white/50" />
-                    <span className="shrink-0 text-lg">{winner ? '🏁🥇' : '🏁'}</span>
-                  </button>
+                  <div key={n} onClick={() => !animating && setDuaThu(n)}
+                    className={`relative h-9 cursor-pointer overflow-hidden rounded-md border-y border-dashed border-white/40 ${duaThu === n ? 'bg-amber-300/40 ring-2 ring-amber-500' : 'bg-black/5 hover:bg-black/10'}`}>
+                    <span className="absolute left-1 top-1/2 z-10 -translate-y-1/2 text-xs font-bold text-ink-600">{n}</span>
+                    <span className="absolute right-1 top-1/2 -translate-y-1/2 text-lg">{winner && !animating ? '🏁🥇' : '🏁'}</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={`/game-assets/duathu/${n}.gif`} alt={`Thú ${n}`} className="absolute top-1/2 h-7 -translate-y-1/2 object-contain transition-all duration-100" style={{ left: `calc(${pos}% + 14px)` }} />
+                  </div>
                 );
               })}
             </div>
@@ -108,8 +118,12 @@ function SoloPlay() {
             <div className="mb-2 text-center text-lg font-extrabold tracking-widest text-amber-300">🎰 777</div>
             <div className="grid grid-cols-3 gap-1 rounded-lg bg-ink-950/70 p-2">
               {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => {
-                const sym = result?.grid?.[c]?.[r] || ['seven', 'bar', 'bell', 'cherry', 'lemon', 'coin'][(r * 3 + c) % 6];
-                return <img key={`${c}-${r}`} src={`/game-assets/jackpot/${sym}.png`} alt="" className="h-12 w-12 rounded bg-white/90 object-contain p-0.5" />;
+                const SYMS = ['seven', 'bar', 'bell', 'cherry', 'lemon', 'coin'];
+                // đang quay: đổi symbol liên tục theo frame (cột phải dừng trễ hơn -> cảm giác quay)
+                const sym = animating
+                  ? SYMS[(frame + c * 2 + r) % SYMS.length]
+                  : (result?.grid?.[c]?.[r] || SYMS[(r * 3 + c) % 6]);
+                return <img key={`${c}-${r}`} src={`/game-assets/jackpot/${sym}.png`} alt="" className={`h-12 w-12 rounded bg-white/90 object-contain p-0.5 ${animating ? 'blur-[1px]' : ''}`} />;
               }))}
             </div>
             <p className="mt-2 text-center text-[11px] text-amber-100/80">Quay 3×3 · 5 dòng thắng · cược mỗi dòng</p>

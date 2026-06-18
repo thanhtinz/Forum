@@ -19,8 +19,6 @@ const MINIGAMES = [
   { href: '/minigame/solo?game=tai-xiu', label: 'Tài Xỉu', color: 'from-rose-500 to-red-600' },
   { href: '/minigame/solo?game=bau-cua', label: 'Bầu Cua', color: 'from-amber-500 to-orange-600' },
   { href: '/minigame/solo?game=dua-thu', label: 'Đua Thú', color: 'from-lime-500 to-green-600' },
-  { href: '/minigame/solo?game=coin-flip', label: 'Tung Xu', color: 'from-yellow-500 to-amber-600' },
-  { href: '/minigame/solo?game=lucky-wheel', label: 'Vòng Quay', color: 'from-fuchsia-500 to-pink-600' },
   { href: '/minigame/solo?game=jackpot', label: 'Jackpot 777', color: 'from-purple-500 to-fuchsia-600' },
   { href: '/minigame/tien-len', label: 'Tiến Lên (PvP)', color: 'from-sky-500 to-blue-600' },
   { href: '/minigame/caro', label: 'Cờ Caro (PvP)', color: 'from-teal-500 to-cyan-600' },

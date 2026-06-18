@@ -10,6 +10,7 @@ import {
   Store, Wrench, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
+import { WalletChips } from './WalletChips';
 
 // Icon kiểu Messenger cho mục Chat
 function MessengerIcon({ size = 16 }: { size?: number }) {
@@ -94,8 +95,9 @@ export function Header() {
           </div>
         </form>
 
-        {/* Cụm điều khiển: đổi theme, thông báo, tài khoản — đặt ở góc phải */}
+        {/* Cụm điều khiển: số dư + đổi theme, thông báo, tài khoản — đặt ở góc phải */}
         <div className="ml-auto flex items-center gap-1 sm:ml-0">
+          <WalletChips />
           <button onClick={toggleTheme} className="rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="theme">
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>

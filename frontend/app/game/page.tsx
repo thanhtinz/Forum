@@ -2,24 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Coins, Swords, Heart, Zap, Brain, Sprout, Fish, Shirt, Trophy, Shield, HeartPulse, Sword } from 'lucide-react';
+import { Gamepad2, Sprout, Fish, Shirt, Trophy, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
-interface Character {
-  id: string; level: number; exp: number; coinBalance: number; combatPower: number;
-  strength: number; vitality: number; agility: number; intelligence: number;
-  statPoints: number; gender: string;
-}
+interface Character { id: string; gender: string }
 
+// Khu trò chơi casual — không còn nhân vật/chỉ số RPG
 const SUB = [
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, color: 'text-emerald-600' },
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, color: 'text-sky-600' },
-  { href: '/game/shop', label: 'Cửa hàng', icon: Sword, color: 'text-amber-600' },
-  { href: '/game/survival', label: 'Sinh tồn', icon: HeartPulse, color: 'text-teal-600' },
+  { href: '/game/shop', label: 'Cửa hàng', icon: ShoppingBag, color: 'text-amber-600' },
   { href: '/game/wardrobe', label: 'Tủ đồ / Pet', icon: Shirt, color: 'text-fuchsia-600' },
-  { href: '/game/guild', label: 'Bang hội', icon: Shield, color: 'text-indigo-600' },
-  { href: '/game/pvp', label: 'Đấu trường', icon: Swords, color: 'text-rose-600' },
   { href: '/minigame', label: 'Minigame', icon: Trophy, color: 'text-amber-600' },
 ];
 
@@ -52,10 +46,11 @@ export default function GamePage() {
     </div>
   );
 
+  // Lần đầu vào: tạo hồ sơ chơi (cần cho nông trại/câu cá/coin) — không hiển thị chỉ số
   if (state === 'none' || !char) return (
     <div className="card mx-auto max-w-md p-8 text-center">
-      <h1 className="text-xl font-bold">Tạo nhân vật</h1>
-      <p className="mt-1 text-ink-500">Chọn giới tính để bắt đầu hành trình.</p>
+      <h1 className="text-xl font-bold">Bắt đầu chơi</h1>
+      <p className="mt-1 text-ink-500">Chọn ảnh đại diện để bắt đầu.</p>
       <div className="mt-4 flex justify-center gap-3">
         <button onClick={() => createChar('MALE')} className="btn-primary">♂ Nam</button>
         <button onClick={() => createChar('FEMALE')} className="btn-outline">♀ Nữ</button>
@@ -63,40 +58,15 @@ export default function GamePage() {
     </div>
   );
 
-  const stats = [
-    { label: 'Sức mạnh', value: char.strength, icon: Swords },
-    { label: 'Thể lực', value: char.vitality, icon: Heart },
-    { label: 'Nhanh nhẹn', value: char.agility, icon: Zap },
-    { label: 'Trí tuệ', value: char.intelligence, icon: Brain },
-  ];
-
   return (
     <div className="space-y-5">
-      <section className="card overflow-hidden">
-        <div className="flex flex-col gap-4 bg-gradient-to-r from-brand-700 to-brand-500 p-6 text-white sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Nhân vật của bạn</h1>
-            <p className="text-white/85">Cấp {char.level} · Sức mạnh chiến đấu {char.combatPower}</p>
-          </div>
-          <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 text-lg font-bold">
-            <Coins size={20} /> {char.coinBalance.toLocaleString()} coin
-          </div>
+      <header className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-500 p-6 text-white shadow-card">
+        <Gamepad2 size={28} />
+        <div>
+          <h1 className="text-2xl font-bold">Khu trò chơi</h1>
+          <p className="text-sm text-white/85">Nông trại, câu cá, thú cưng và minigame</p>
         </div>
-        <div className="grid grid-cols-2 gap-px bg-ink-200/70 sm:grid-cols-4 dark:bg-ink-800">
-          {stats.map((s) => (
-            <div key={s.label} className="bg-white p-4 text-center dark:bg-ink-900">
-              <s.icon className="mx-auto text-brand-500" size={20} />
-              <div className="mt-1 text-2xl font-bold">{s.value}</div>
-              <div className="text-xs text-ink-500">{s.label}</div>
-            </div>
-          ))}
-        </div>
-        {char.statPoints > 0 && (
-          <div className="border-t border-ink-200/70 p-3 text-center text-sm text-brand-600 dark:border-ink-800">
-            Bạn có {char.statPoints} điểm tiềm năng chưa phân bổ.
-          </div>
-        )}
-      </section>
+      </header>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {SUB.map((s) => (

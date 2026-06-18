@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Coins, Beef, ShoppingBag } from 'lucide-react';
+import { mutate } from 'swr';
+import { ChevronLeft, Beef, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
-import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
+import { formatDuration, secondsUntil } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 
 const BARN_BG = '/game-assets/nongtrai/img/chuong.png';
@@ -14,14 +15,14 @@ interface Owned { id: string; slug: string; name: string; grown: boolean; grownA
 
 export default function AnimalsPage() {
   const { user, loading } = useAuth();
-  const [coin, setCoin] = useState(0);
   const [owned, setOwned] = useState<Owned[]>([]);
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const now = useNow();
 
   const load = useCallback(() => {
-    api.get<{ coin: number; animals: Owned[] }>('/farm/state').then((s) => { setCoin(s.coin); setOwned(s.animals || []); }).catch((e) => setMsg(e.message));
+    api.get<{ animals: Owned[] }>('/farm/state').then((s) => { setOwned(s.animals || []); }).catch((e) => setMsg(e.message));
+    mutate('/game/character');
   }, []);
   useEffect(() => {
     if (loading || !user) return;
@@ -37,9 +38,9 @@ export default function AnimalsPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
-        <h1 className="flex items-center gap-2 text-2xl font-bold"><Beef /> Vật nuôi</h1>
-        <span className="flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {formatCoin(coin)}</span>
+      <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
+      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
+        <Beef /> <h1 className="text-2xl font-bold">Vật nuôi</h1>
       </header>
       {msg && <p className="text-sm text-rose-500">{msg}</p>}
 

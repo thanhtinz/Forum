@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Sprout, Fish, ShoppingBag, Coins, Beef, FlaskConical, Loader2 } from 'lucide-react';
+import { mutate } from 'swr';
+import { ChevronLeft, Sprout, Fish, ShoppingBag, Coins, Beef, FlaskConical, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin } from '@/lib/format';
@@ -30,7 +31,6 @@ function Asset({ src, fallback }: { src?: string | null; fallback: React.ReactNo
 export default function GameShopPage() {
   const { user, loading } = useAuth();
   const [tab, setTab] = useState<Tab>('crop');
-  const [coin, setCoin] = useState<number | null>(null);
   const [crops, setCrops] = useState<Crop[]>([]);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [ferts, setFerts] = useState<Fertilizer[]>([]);
@@ -39,9 +39,8 @@ export default function GameShopPage() {
   const [qty, setQty] = useState(1);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const loadCoin = useCallback(() => {
-    api.get<{ coinBalance?: number }>('/game/character').then((c) => setCoin(c.coinBalance ?? 0)).catch(() => setCoin(0));
-  }, []);
+  // Coin hiển thị ở header (WalletChips); chỉ cần báo SWR refresh sau khi mua.
+  const loadCoin = useCallback(() => { mutate('/game/character'); }, []);
   const loadFishing = useCallback(() => {
     api.get<{ zones: FishZone[] }>('/fishing/state').then((s) => setZones(s.zones || [])).catch(() => {});
   }, []);
@@ -71,9 +70,9 @@ export default function GameShopPage() {
 
   return (
     <div className="space-y-4">
-      <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white shadow-card">
-        <h1 className="flex items-center gap-2 text-2xl font-bold"><ShoppingBag /> Cửa hàng</h1>
-        <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {coin != null ? formatCoin(coin) : '...'}</span>
+      <a href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</a>
+      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white shadow-card">
+        <ShoppingBag /> <h1 className="text-2xl font-bold">Cửa hàng</h1>
       </header>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-ink-500">Thanh toán bằng Coin kiếm trong game.</p>

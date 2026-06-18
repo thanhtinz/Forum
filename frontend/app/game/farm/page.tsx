@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Coins, Sprout, Droplets } from 'lucide-react';
+import { mutate } from 'swr';
+import { ChevronLeft, Sprout, Droplets } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
@@ -43,7 +44,7 @@ export default function FarmPage() {
   const [seedChoice, setSeedChoice] = useState('');
   const now = useNow();
 
-  function load() { api.get<FarmState>('/farm/state').then(setS).catch((e) => setErr(e.message)); }
+  function load() { api.get<FarmState>('/farm/state').then(setS).catch((e) => setErr(e.message)); mutate('/game/character'); }
   useEffect(() => { if (!loading && user) load(); }, [user, loading]);
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để vào nông trại.</div>;
@@ -68,12 +69,13 @@ export default function FarmPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 p-6 text-white shadow-card">
+      <a href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</a>
+      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 p-6 text-white shadow-card">
+        <Sprout />
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold"><Sprout /> Nông trại</h1>
-          <p className="text-white/90">Cấp {s.profile.level} · {s.profile.plotCount} ô đất · <a href="/game/kitchen" className="underline hover:text-white">bếp Lv{s.profile.kitchenLevel}</a></p>
+          <h1 className="text-2xl font-bold">Nông trại</h1>
+          <p className="text-sm text-white/90">Cấp {s.profile.level} · {s.profile.plotCount} ô đất · <a href="/game/kitchen" className="underline hover:text-white">bếp Lv{s.profile.kitchenLevel}</a></p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {formatCoin(s.coin)}</div>
       </header>
 
       {msg && <p className="text-sm text-brand-600">{msg}</p>}

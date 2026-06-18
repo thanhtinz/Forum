@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { ChefHat, Coins, ArrowUpCircle, Loader2 } from 'lucide-react';
+import { ChefHat, Coins, ArrowUpCircle, Loader2, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
@@ -36,12 +36,16 @@ export default function KitchenPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-orange-600 to-amber-500 p-6 text-white shadow-card">
+      <div className="flex items-center justify-between">
+        <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
+        <Link href="/game/farm" className="text-sm text-ink-400 hover:text-brand-600">Nông trại →</Link>
+      </div>
+      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-500 p-6 text-white shadow-card">
+        <ChefHat />
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold"><ChefHat /> Nhà bếp</h1>
-          <p className="text-white/90">Bếp cấp {s.kitchenLevel}/{s.maxKitchen} · nấu tối đa {s.kitchenLevel} món · EXP nông trại {formatCoin(s.exp)}</p>
+          <h1 className="text-2xl font-bold">Nhà bếp</h1>
+          <p className="text-sm text-white/90">Bếp cấp {s.kitchenLevel}/{s.maxKitchen} · nấu tối đa {s.kitchenLevel} món · EXP nông trại {formatCoin(s.exp)}</p>
         </div>
-        <Link href="/game/farm" className="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-medium hover:bg-white/25">← Nông trại</Link>
       </header>
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
 

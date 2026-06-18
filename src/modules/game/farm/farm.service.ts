@@ -179,7 +179,8 @@ export class FarmService {
     await this.prisma.$transaction(async (tx) => {
       await tx.farmProfile.update({ where: { characterId: char.id }, data: { kheFruit: 0, kheUpdatedAt: new Date() } });
       await this.addWarehouse(tx, char.id, {
-        slug: 'qua-khe', name: 'Quả Khế', category: 'CROP', unitSell: this.KHE_PRICE, asset: null,
+        slug: 'qua-khe', name: 'Quả Khế', category: 'CROP', unitSell: this.KHE_PRICE,
+        asset: '/game-assets/nongtrai/img/caykhechin.png',
       }, fruit);
     });
     return { harvested: fruit };
@@ -764,7 +765,7 @@ export class FarmService {
   ) {
     await tx.warehouseItem.upsert({
       where: { characterId_slug_category: { characterId, slug: item.slug, category: item.category } },
-      update: { quantity: { increment: qty }, unitSell: item.unitSell },
+      update: { quantity: { increment: qty }, unitSell: item.unitSell, asset: item.asset ?? undefined },
       create: {
         characterId,
         slug: item.slug,

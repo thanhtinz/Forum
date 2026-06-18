@@ -24,7 +24,7 @@ interface FarmState {
   coin: number;
   profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean };
   plots: { index: number; slug: string | null; crop: string | null; asset: string | null; watered: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
-  warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number }[];
+  warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number; asset?: string | null }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
   fertilizers?: { slug: string; name: string; quantity: number; reduceSeconds: number }[];
   khe?: { fruit: number; max: number; pricePerFruit: number; canWater: boolean; nextWaterAt: string | null; nextFruitAt: string | null; fullAt: string | null };
@@ -79,19 +79,15 @@ export default function FarmPage() {
       {/* Cây Khế — tự ra quả theo thời gian, tưới để thêm, có quả mới thu hoạch */}
       {s.khe && (() => {
         const ratio = Math.min(1, s.khe.fruit / s.khe.max);
-        const visFruits = s.khe.fruit <= 0 ? 0 : Math.max(1, Math.round(ratio * 8)); // có quả là hiện ít nhất 1
         const ripe = s.khe.fruit >= s.khe.max;
         const status = s.khe.fruit <= 0 ? 'Chưa có quả — chờ cây ra quả' : ripe ? 'Sai trĩu quả — thu hoạch ngay!' : 'Đang ra quả…';
-        // vị trí quả rải trên tán
-        const spots = [[20, 18], [48, 12], [70, 22], [12, 40], [38, 34], [62, 38], [82, 46], [30, 54]];
         return (
         <section className="card flex items-center gap-4 p-4">
-          {/* Cây + quả khế mọc dần trên tán */}
-          <div className="relative h-24 w-24 shrink-0">
-            <div className={`grid h-24 w-24 place-items-center text-6xl transition-all ${s.khe.fruit <= 0 ? 'opacity-70 saturate-50' : ''}`}>🌳</div>
-            {spots.slice(0, visFruits).map(([x, y], i) => (
-              <span key={i} className="absolute text-sm drop-shadow" style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%,-50%)' }}>⭐</span>
-            ))}
+          {/* Cây khế: có quả -> ảnh cây chín, chưa có quả -> ảnh cây xanh */}
+          <div className="h-24 w-24 shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/game-assets/nongtrai/img/${s.khe.fruit > 0 ? 'caykhechin' : 'caykhe'}.png`} alt="Cây khế"
+              className={`h-24 w-24 object-contain transition-all ${s.khe.fruit <= 0 ? 'opacity-80' : ''}`} />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold">Cây Khế</h2>
@@ -197,6 +193,10 @@ export default function FarmPage() {
         <ul className="grid grid-cols-1 gap-x-6 text-sm sm:grid-cols-2">
           {s.warehouse.filter((w) => w.quantity > 0).slice(0, 16).map((w) => (
             <li key={w.slug + w.category} className="flex items-center justify-between gap-2 border-b border-ink-100 py-1 dark:border-ink-800">
+              {w.asset
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={w.asset} alt="" className="h-7 w-7 shrink-0 object-contain" />
+                : <span className="grid h-7 w-7 shrink-0 place-items-center text-lg">{cropEmoji(w.slug.replace(/^seed_/, ''))}</span>}
               <span className="min-w-0 flex-1 truncate">{w.name} <span className="text-ink-400">×{w.quantity}</span></span>
               <span className="shrink-0 text-ink-500">{w.unitSell ? `${formatCoin(w.unitSell)}/cái` : '—'}</span>
               {w.unitSell > 0 && (

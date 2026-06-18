@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  Store, Wrench, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem,
+  Store, Wrench, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, Package,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -123,7 +123,7 @@ export function Header() {
                     <Gem size={15} /> Nạp Gem
                   </Link>
                   <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <Store size={15} /> Đơn hàng của tôi
+                    <Package size={15} /> Đơn hàng của tôi
                   </Link>
                   <Link href="/seller" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <Store size={15} /> Seller Center

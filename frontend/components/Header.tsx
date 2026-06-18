@@ -54,8 +54,39 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-brand-700 text-white shadow-sm dark:border-ink-800 dark:bg-ink-900">
       <div className="container-forum flex h-14 items-center gap-3">
-        {/* Cụm điều khiển: đổi theme, thông báo, tài khoản — đặt ở góc trái */}
-        <div className="flex items-center gap-1">
+        {/* Hamburger: mở menu trên màn hình nhỏ */}
+        <button
+          onClick={() => setNavOpen((o) => !o)}
+          className="rounded-lg p-2 text-white/85 hover:bg-white/10 md:hidden"
+          aria-label="menu"
+        >
+          <Menu size={20} />
+        </button>
+
+        <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/15 text-lg">◆</span>
+          <span className="hidden sm:block text-lg">Forum<span className="text-brand-200">Hub</span></span>
+        </Link>
+
+        <nav className="ml-2 hidden items-center gap-1 md:flex">
+          {NAV.map((n) => (
+            <Link key={n.href} href={n.href}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+              <n.icon size={16} /> {n.label}
+            </Link>
+          ))}
+        </nav>
+
+        <form onSubmit={onSearch} className="ml-auto hidden flex-1 max-w-xs items-center sm:flex">
+          <div className="relative w-full">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm..."
+              className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
+          </div>
+        </form>
+
+        {/* Cụm điều khiển: đổi theme, thông báo, tài khoản — đặt ở góc phải */}
+        <div className="ml-auto flex items-center gap-1 sm:ml-0">
           <button onClick={toggleTheme} className="rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="theme">
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
@@ -74,7 +105,7 @@ export function Header() {
                 <ChevronDown size={14} />
               </button>
               {menu && (
-                <div className="absolute left-0 mt-2 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
+                <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
                   <Link href={`/profile?u=${user.username}`} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <UserIcon size={15} /> Trang cá nhân
                   </Link>
@@ -106,37 +137,6 @@ export function Header() {
             </div>
           )}
         </div>
-
-        {/* Hamburger: mở menu trên màn hình nhỏ */}
-        <button
-          onClick={() => setNavOpen((o) => !o)}
-          className="rounded-lg p-2 text-white/85 hover:bg-white/10 md:hidden"
-          aria-label="menu"
-        >
-          <Menu size={20} />
-        </button>
-
-        <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/15 text-lg">◆</span>
-          <span className="hidden sm:block text-lg">Forum<span className="text-brand-200">Hub</span></span>
-        </Link>
-
-        <nav className="ml-2 hidden items-center gap-1 md:flex">
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
-              <n.icon size={16} /> {n.label}
-            </Link>
-          ))}
-        </nav>
-
-        <form onSubmit={onSearch} className="ml-auto hidden flex-1 max-w-xs items-center sm:flex">
-          <div className="relative w-full">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm..."
-              className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
-          </div>
-        </form>
       </div>
 
       {/* Menu xổ xuống cho màn hình nhỏ */}

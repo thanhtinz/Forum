@@ -1,9 +1,25 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import slugify from 'slugify';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class TagService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ── Admin: tạo / xoá thẻ ──
+  async createTag(name: string, color?: string) {
+    const clean = (name || '').trim();
+    if (!clean) throw new BadRequestException('Thiếu tên thẻ');
+    const slug = slugify(clean, { lower: true, strict: true });
+    const exist = await this.prisma.tag.findFirst({ where: { OR: [{ name: clean }, { slug }] } });
+    if (exist) throw new BadRequestException('Thẻ đã tồn tại');
+    return this.prisma.tag.create({ data: { name: clean, slug, color: color || null } });
+  }
+
+  async deleteTag(id: string) {
+    await this.prisma.tag.delete({ where: { id } }).catch(() => { throw new NotFoundException('Không tìm thấy thẻ'); });
+    return { ok: true };
+  }
 
   // Danh sách thẻ + usageCount + followerCount (+ isFollowing nếu có user)
   async listTags(params: { q?: string; limit?: number; userId?: string }) {

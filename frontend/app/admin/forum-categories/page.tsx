@@ -15,6 +15,9 @@ interface Category {
   color?: string | null;
   sortOrder: number;
   moduleType: string;
+  parentId?: string | null;
+  minRolePost?: string;
+  isPrivate?: boolean;
   threadCount?: number;
   _count?: { threads: number };
 }
@@ -24,7 +27,7 @@ const MODULES: { value: string; label: string }[] = [
   { value: 'JOB', label: 'Việc làm (freelance)' },
 ];
 
-const EMPTY = { name: '', slug: '', description: '', icon: '', color: '', sortOrder: 0, moduleType: 'NONE' };
+const EMPTY = { name: '', slug: '', description: '', icon: '', color: '', sortOrder: 0, moduleType: 'NONE', parentId: '', staffOnlyPost: false, isPrivate: false };
 
 export default function AdminForumCategoriesPage() {
   const [cats, setCats] = useState<Category[]>([]);
@@ -38,6 +41,20 @@ export default function AdminForumCategoriesPage() {
   const [prefixCat, setPrefixCat] = useState<Category | null>(null);
   const [prefixes, setPrefixes] = useState<Prefix[]>([]);
   const [newPrefix, setNewPrefix] = useState({ label: '', color: '#6366f1' });
+  // Quản lý thẻ (tag) toàn diễn đàn
+  const [tags, setTags] = useState<{ id: string; name: string; slug: string; color?: string | null; usageCount?: number }[]>([]);
+  const [newTag, setNewTag] = useState({ name: '', color: '#10b981' });
+
+  function loadTags() { api.get<any[]>('/forum/tags?limit=200').then(setTags).catch(() => {}); }
+  async function addTag() {
+    if (!newTag.name.trim()) return;
+    try { await api.post('/forum/admin/tags', { name: newTag.name.trim(), color: newTag.color }); setNewTag({ name: '', color: '#10b981' }); loadTags(); }
+    catch (e: any) { alert(e.message); }
+  }
+  async function removeTag(id: string) {
+    if (!confirm('Xoá thẻ này?')) return;
+    await api.del(`/forum/admin/tags/${id}`).catch((e: any) => alert(e.message)); loadTags();
+  }
 
   function openPrefixes(c: Category) {
     setPrefixCat(c);
@@ -62,7 +79,7 @@ export default function AdminForumCategoriesPage() {
       .catch((e) => setErr(e.message))
       .finally(() => setLoading(false));
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); loadTags(); }, []);
 
   function openNew() {
     setEditing(null);
@@ -75,6 +92,7 @@ export default function AdminForumCategoriesPage() {
     setForm({
       name: c.name, slug: c.slug, description: c.description || '', icon: c.icon || '',
       color: c.color || '', sortOrder: c.sortOrder, moduleType: c.moduleType || 'NONE',
+      parentId: c.parentId || '', staffOnlyPost: (c.minRolePost === 'MODERATOR' || c.minRolePost === 'ADMIN'), isPrivate: !!c.isPrivate,
     });
     setShowForm(true);
     setErr('');
@@ -92,6 +110,9 @@ export default function AdminForumCategoriesPage() {
         color: form.color,
         sortOrder: Number(form.sortOrder) || 0,
         moduleType: form.moduleType,
+        parentId: form.parentId || null,
+        staffOnlyPost: form.staffOnlyPost,
+        isPrivate: form.isPrivate,
       };
       if (editing) await api.post(`/forum/admin/categories/${editing.id}`, payload);
       else await api.post('/forum/admin/categories', payload);
@@ -127,11 +148,15 @@ export default function AdminForumCategoriesPage() {
           {cats.map((c) => (
             <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 p-4">
               <div className="min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  {c.parentId && <span className="text-ink-400">↳</span>}
                   <span className="font-semibold">{c.name}</span>
+                  {c.parentId && <span className="chip bg-ink-100 text-ink-500">con của {cats.find((p) => p.id === c.parentId)?.name || '—'}</span>}
                   {c.moduleType === 'JOB' && (
                     <span className="chip inline-flex items-center gap-1 bg-emerald-100 text-emerald-700"><Briefcase size={12} /> Việc làm</span>
                   )}
+                  {(c.minRolePost === 'MODERATOR' || c.minRolePost === 'ADMIN') && <span className="chip bg-amber-100 text-amber-700">BQT đăng</span>}
+                  {c.isPrivate && <span className="chip bg-rose-100 text-rose-700">Riêng tư</span>}
                 </div>
                 <div className="text-xs text-ink-500">/{c.slug} · {c._count?.threads ?? c.threadCount ?? 0} bài · thứ tự {c.sortOrder}</div>
               </div>
@@ -144,6 +169,25 @@ export default function AdminForumCategoriesPage() {
           ))}
         </div>
       )}
+
+      {/* Quản lý thẻ (tag) toàn diễn đàn */}
+      <div className="card p-4">
+        <h2 className="mb-2 flex items-center gap-2 font-semibold"><Tags size={18} /> Thẻ (tag) diễn đàn</h2>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <input className="input !py-1.5 text-sm" placeholder="Tên thẻ mới…" value={newTag.name} onChange={(e) => setNewTag({ ...newTag, name: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && addTag()} />
+          <input type="color" className="h-9 w-12" value={newTag.color} onChange={(e) => setNewTag({ ...newTag, color: e.target.value })} />
+          <button onClick={addTag} className="btn-primary inline-flex items-center gap-1 !py-1.5 text-sm"><Plus size={14} /> Tạo thẻ</button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {tags.length === 0 && <span className="text-sm text-ink-500">Chưa có thẻ nào.</span>}
+          {tags.map((t) => (
+            <span key={t.id} className="chip inline-flex items-center gap-1.5" style={t.color ? { backgroundColor: t.color + '22', color: t.color } : undefined}>
+              {t.name}{t.usageCount ? <span className="opacity-60">·{t.usageCount}</span> : null}
+              <button onClick={() => removeTag(t.id)} className="opacity-60 hover:opacity-100"><X size={12} /></button>
+            </span>
+          ))}
+        </div>
+      </div>
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowForm(false)}>
@@ -172,11 +216,21 @@ export default function AdminForumCategoriesPage() {
                 <input type="number" className="input mt-1" value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
               </label>
             </div>
+            <label className="block text-sm">Danh mục cha (để trống = cấp gốc)
+              <select className="input mt-1" value={form.parentId} onChange={(e) => setForm({ ...form, parentId: e.target.value })}>
+                <option value="">— Không (cấp gốc) —</option>
+                {cats.filter((c) => !editing || c.id !== editing.id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </label>
             <label className="block text-sm">Module đặc biệt
               <select className="input mt-1" value={form.moduleType} onChange={(e) => setForm({ ...form, moduleType: e.target.value })}>
                 {MODULES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </label>
+            <div className="space-y-1.5 rounded-lg bg-ink-50 p-3 dark:bg-ink-900">
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.staffOnlyPost} onChange={(e) => setForm({ ...form, staffOnlyPost: e.target.checked })} /> Chỉ Ban quản trị được đăng bài</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isPrivate} onChange={(e) => setForm({ ...form, isPrivate: e.target.checked })} /> Danh mục riêng tư (ẩn với khách)</label>
+            </div>
             {form.moduleType === 'JOB' && (
               <p className="rounded-lg bg-emerald-50 p-2 text-xs text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
                 <Briefcase size={12} className="mr-1 inline" /> Bài đăng trong danh mục này sẽ có thêm: ngân sách, đề xuất ứng tuyển, ký quỹ &amp; đánh giá.

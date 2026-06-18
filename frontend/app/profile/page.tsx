@@ -8,18 +8,10 @@ import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import { UserBadges, type BadgeDescriptor } from '@/components/UserBadges';
 
-interface Look {
-  gender: string;
-  layers: { slot: string; name: string; asset: string | null; zorder: number }[];
-  pet: { name: string; asset: string | null } | null;
-  mount: { name: string; asset: string | null } | null;
-}
-
 function ProfileView() {
   const name = useSearchParams().get('u') || '';
   const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
-  const [look, setLook] = useState<Look | null>(null);
   const [trophies, setTrophies] = useState<any>(null);
   const [err, setErr] = useState('');
 
@@ -44,7 +36,6 @@ function ProfileView() {
         }
       }
     }).catch((e) => setErr(e.message));
-    api.get<Look>(`/wardrobe/look/${name}`).then(setLook).catch(() => {});
   }, [name, user]);
 
   async function toggleFollow() {
@@ -133,16 +124,6 @@ function ProfileView() {
       </div>
 
       <div className="space-y-5">
-        {look && (look.layers.length > 0 || look.pet || look.mount) && (
-          <div className="card p-5">
-            <h2 className="mb-3 font-semibold">Diện mạo nhân vật</h2>
-            <div className="flex flex-wrap gap-3">
-              {look.layers.map((l) => <AssetCard key={l.slot} name={l.name} asset={l.asset} tag={l.slot} />)}
-              {look.pet && <AssetCard name={look.pet.name} asset={look.pet.asset} tag="PET" />}
-              {look.mount && <AssetCard name={look.mount.name} asset={look.mount.asset} tag="MOUNT" />}
-            </div>
-          </div>
-        )}
         {trophies && (
           <div className="card p-5">
             <h2 className="mb-3 font-semibold">Danh hiệu ({trophies.earned}/{trophies.total})</h2>
@@ -225,20 +206,6 @@ function Stat({ label, value }: { label: string; value: number }) {
     <div className="rounded-lg bg-ink-100 py-2 dark:bg-ink-800">
       <div className="font-bold">{value}</div>
       <div className="text-xs text-ink-500">{label}</div>
-    </div>
-  );
-}
-
-function AssetCard({ name, asset, tag }: { name: string; asset: string | null; tag: string }) {
-  return (
-    <div className="w-20 text-center">
-      <div className="grid h-20 w-20 place-items-center rounded-xl border border-ink-200/70 bg-ink-50 dark:border-ink-800 dark:bg-ink-900">
-        {asset
-          // eslint-disable-next-line @next/next/no-img-element
-          ? <img src={asset} alt={name} className="max-h-16 max-w-16 object-contain" />
-          : <span className="text-xs text-ink-400">{tag}</span>}
-      </div>
-      <div className="mt-1 truncate text-xs">{name}</div>
     </div>
   );
 }

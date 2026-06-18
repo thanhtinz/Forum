@@ -54,6 +54,59 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-brand-700 text-white shadow-sm dark:border-ink-800 dark:bg-ink-900">
       <div className="container-forum flex h-14 items-center gap-3">
+        {/* Cụm điều khiển: đổi theme, thông báo, tài khoản — đặt ở góc trái */}
+        <div className="flex items-center gap-1">
+          <button onClick={toggleTheme} className="rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="theme">
+            {dark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+          {user && (
+            <Link href="/notifications" onClick={() => setUnread(0)} className="relative rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="notifications">
+              <Bell size={18} />
+              {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}
+            </Link>
+          )}
+          {user ? (
+            <div className="relative">
+              <button onClick={() => setMenu((m) => !m)}
+                className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-white/10">
+                <Avatar user={user} size={28} />
+                <span className="hidden text-sm font-medium sm:block">{user.displayName || user.username}</span>
+                <ChevronDown size={14} />
+              </button>
+              {menu && (
+                <div className="absolute left-0 mt-2 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
+                  <Link href={`/profile?u=${user.username}`} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <UserIcon size={15} /> Trang cá nhân
+                  </Link>
+                  <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <UserIcon size={15} /> Ví Gem & Nạp
+                  </Link>
+                  <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <Store size={15} /> Đơn hàng của tôi
+                  </Link>
+                  <Link href="/seller" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <Store size={15} /> Seller Center
+                  </Link>
+                  {user.role === 'ADMIN' && (
+                    <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                      <UserIcon size={15} /> Trang quản trị
+                    </Link>
+                  )}
+                  <button onClick={() => { logout(); setMenu(false); }}
+                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <LogOut size={15} /> Đăng xuất
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link href="/login" className="rounded-lg px-3 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10">Đăng nhập</Link>
+              <Link href="/register" className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">Đăng ký</Link>
+            </div>
+          )}
+        </div>
+
         {/* Hamburger: mở menu trên màn hình nhỏ */}
         <button
           onClick={() => setNavOpen((o) => !o)}
@@ -84,57 +137,6 @@ export function Header() {
               className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
           </div>
         </form>
-
-        <button onClick={toggleTheme} className="rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="theme">
-          {dark ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-        {user && (
-          <Link href="/notifications" onClick={() => setUnread(0)} className="relative rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="notifications">
-            <Bell size={18} />
-            {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}
-          </Link>
-        )}
-
-        {user ? (
-          <div className="relative">
-            <button onClick={() => setMenu((m) => !m)}
-              className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-white/10">
-              <Avatar user={user} size={28} />
-              <span className="hidden text-sm font-medium sm:block">{user.displayName || user.username}</span>
-              <ChevronDown size={14} />
-            </button>
-            {menu && (
-              <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
-                <Link href={`/profile?u=${user.username}`} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                  <UserIcon size={15} /> Trang cá nhân
-                </Link>
-                <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                  <UserIcon size={15} /> Ví Gem & Nạp
-                </Link>
-                <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                  <Store size={15} /> Đơn hàng của tôi
-                </Link>
-                <Link href="/seller" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                  <Store size={15} /> Seller Center
-                </Link>
-                {user.role === 'ADMIN' && (
-                  <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <UserIcon size={15} /> Trang quản trị
-                  </Link>
-                )}
-                <button onClick={() => { logout(); setMenu(false); }}
-                  className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-ink-100 dark:hover:bg-ink-700">
-                  <LogOut size={15} /> Đăng xuất
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Link href="/login" className="rounded-lg px-3 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10">Đăng nhập</Link>
-            <Link href="/register" className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">Đăng ký</Link>
-          </div>
-        )}
       </div>
 
       {/* Menu xổ xuống cho màn hình nhỏ */}

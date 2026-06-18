@@ -60,7 +60,7 @@ export default function KitchenPage() {
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-semibold">Đang nấu ({s.cooking.length}/{s.kitchenLevel})</h2>
           {doneCount > 0 && (
-            <button disabled={!!busy} onClick={() => act('collect', () => api.post('/farm/kitchen/collect'), 'Đã thu món & bán!')} className="btn-primary !py-1.5 text-xs">Thu {doneCount} món xong</button>
+            <button disabled={!!busy} onClick={() => act('collect', () => api.post('/farm/kitchen/collect'), 'Đã thu món vào kho — vào Kho để bán!')} className="btn-primary !py-1.5 text-xs">Thu {doneCount} món xong</button>
           )}
         </div>
         {s.cooking.length === 0 ? <p className="text-sm text-ink-500">Bếp đang trống. Chọn công thức bên dưới để nấu.</p> : (

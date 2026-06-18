@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Gamepad2, Star, Play, ChevronRight, Sprout, Fish, PawPrint, ShoppingBag, Dices, ChefHat } from 'lucide-react';
+import { Gamepad2, Star, Play, ChevronRight, Sprout, Fish, PawPrint, ShoppingBag, Dices, ChefHat, Warehouse } from 'lucide-react';
 import { gamePortal, GameItem } from '@/lib/gamePortal';
 
 // Game trên web — mỗi game là 1 trang riêng (không phải tab)
@@ -12,6 +12,7 @@ const WEB_GAMES = [
   { href: '/game/animals', label: 'Vật nuôi', desc: 'Nuôi thú lấy sản phẩm', icon: PawPrint, color: 'from-fuchsia-500 to-pink-600' },
   { href: '/game/kitchen', label: 'Nhà bếp', desc: 'Nấu món từ nông sản', icon: ChefHat, color: 'from-orange-500 to-amber-600' },
   { href: '/game/shop', label: 'Cửa hàng', desc: 'Hạt giống, vật nuôi, đồ câu', icon: ShoppingBag, color: 'from-teal-500 to-emerald-600' },
+  { href: '/game/kho', label: 'Kho chung', desc: 'Nông sản, sản phẩm, cá, món ăn', icon: Warehouse, color: 'from-amber-500 to-yellow-600' },
 ];
 
 // Từng minigame hiện thẳng ra ngoài — bấm vào chơi luôn

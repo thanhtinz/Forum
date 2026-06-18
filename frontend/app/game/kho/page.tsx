@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { Coins, Warehouse, ChevronLeft } from 'lucide-react';
+import { mutate } from 'swr';
+import { Warehouse, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin } from '@/lib/format';
@@ -16,14 +17,14 @@ const CAT_ORDER = ['CROP', 'PRODUCT', 'DISH', 'SEED', 'FERTILIZER'];
 
 export default function WarehousePage() {
   const { user, loading } = useAuth();
-  const [coin, setCoin] = useState(0);
   const [items, setItems] = useState<WItem[]>([]);
   const [fish, setFish] = useState<FishItem[]>([]);
   const [msg, setMsg] = useState('');
 
   const load = useCallback(() => {
-    api.get<any>('/farm/state').then((s) => { setCoin(s.coin); setItems(s.warehouse || []); }).catch((e) => setMsg(e.message));
+    api.get<any>('/farm/state').then((s) => { setItems(s.warehouse || []); }).catch((e) => setMsg(e.message));
     api.get<FishItem[]>('/fishing/storage').then(setFish).catch(() => {});
+    mutate('/game/character');
   }, []);
   useEffect(() => { if (!loading && user) load(); }, [user, loading, load]);
 
@@ -47,10 +48,7 @@ export default function WarehousePage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
-        <span className="flex items-center gap-1.5 rounded-xl bg-ink-100 px-3 py-1.5 text-sm font-bold dark:bg-ink-800"><Coins size={16} className="text-amber-500" /> {formatCoin(coin)}</span>
-      </div>
+      <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
       <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-500 p-6 text-white shadow-card">
         <Warehouse /> <h1 className="text-2xl font-bold">Kho chung</h1>
       </header>

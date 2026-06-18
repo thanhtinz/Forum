@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Coins, Fish, ShoppingBag, ChevronLeft } from 'lucide-react';
+import { mutate } from 'swr';
+import { Fish, ShoppingBag, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
@@ -35,6 +36,7 @@ export default function FishingPage() {
     api.get<FishState>('/fishing/state').then((st) => { setS(st); if (st.cast) setZone(st.cast.zone); }).catch((e) => setMsg(e.message));
     api.get<StoredFish[]>('/fishing/storage').then(setStore).catch(() => {});
     api.get<PondData>('/fishing/pond').then(setPond).catch(() => {});
+    mutate('/game/character');
   }
   useEffect(() => { if (!loading && user) load(); }, [user, loading]);
 
@@ -46,12 +48,13 @@ export default function FishingPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-500 p-6 text-white shadow-card">
+      <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
+      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-500 p-6 text-white shadow-card">
+        <Fish />
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold"><Fish /> Câu cá</h1>
-          <p className="text-white/90">Cấp {s.profile.level} · {s.profile.totalKg}/{s.profile.nextLevelKg}kg · đã câu {s.profile.totalCaught}</p>
+          <h1 className="text-2xl font-bold">Câu cá</h1>
+          <p className="text-sm text-white/90">Cấp {s.profile.level} · {s.profile.totalKg}/{s.profile.nextLevelKg}kg · đã câu {s.profile.totalCaught}</p>
         </div>
-        <div className="flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2 font-bold"><Coins size={18} /> {formatCoin(s.coin)}</div>
       </header>
 
       {msg && <div className="card p-3 text-center text-sm text-brand-600">{msg}</div>}

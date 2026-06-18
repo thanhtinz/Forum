@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Gamepad2, Fish, Sprout, Trophy, Wrench, Store, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Disc3, Gift, HelpCircle, TrendingUp, Briefcase, Users2, Shield } from 'lucide-react';
+import { Gamepad2, Fish, Sprout, Wrench, Store, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Disc3, Gift, HelpCircle, TrendingUp, Briefcase, Users2, Shield } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -14,7 +14,6 @@ const SHORTCUTS = [
   { href: '/game', label: 'Nhân vật & RPG', icon: Gamepad2, desc: 'Combat, guild, trang bị' },
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, desc: 'Trồng trọt & vật nuôi' },
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, desc: '3 khu, cá hiếm' },
-  { href: '/minigame', label: 'Minigame', icon: Trophy, desc: '11 game, chơi PvP' },
   { href: '/game/guild', label: 'Bang hội', icon: Shield, desc: 'Lập & gia nhập bang hội' },
   { href: '/leaderboard', label: 'Xếp hạng', icon: Award, desc: 'Top danh hiệu & câu cá' },
   { href: '/marketplace', label: 'Chợ gian hàng', icon: Store, desc: 'Mua bán source' },

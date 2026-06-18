@@ -1,24 +1,19 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { Coins, Beef, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Coins, Beef, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
-interface Owned { id: string; name: string; grown: boolean; productReady: boolean }
-interface Tpl { slug: string; name: string; buyPrice: number; productName?: string | null; asset?: string | null }
+const BARN_BG = '/game-assets/nongtrai/img/chuong.png';
 
-function Asset({ src }: { src?: string | null }) {
-  const [err, setErr] = useState(false);
-  if (src && !err) return <img src={src} alt="" onError={() => setErr(true)} className="h-12 w-12 shrink-0 object-contain" />;
-  return <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800"><Beef size={20} /></span>;
-}
+interface Owned { id: string; name: string; grown: boolean; productReady: boolean }
 
 export default function AnimalsPage() {
   const { user, loading } = useAuth();
   const [coin, setCoin] = useState(0);
   const [owned, setOwned] = useState<Owned[]>([]);
-  const [catalog, setCatalog] = useState<Tpl[]>([]);
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
 
@@ -28,7 +23,6 @@ export default function AnimalsPage() {
   useEffect(() => {
     if (loading || !user) return;
     load();
-    api.get<Tpl[]>('/farm/animals').then(setCatalog).catch(() => {});
   }, [user, loading, load]);
 
   const act = async (id: string, fn: () => Promise<any>) => {
@@ -46,11 +40,15 @@ export default function AnimalsPage() {
       </header>
       {msg && <p className="text-sm text-rose-500">{msg}</p>}
 
-      {/* Vật nuôi của tôi */}
-      <section className="card p-4">
-        <h2 className="mb-3 font-semibold">Chuồng của tôi ({owned.length})</h2>
+      {/* Chuồng thú (có asset chuồng) */}
+      <section className="card overflow-hidden p-0">
+        <div className="flex items-center justify-between bg-cover bg-center p-4" style={{ backgroundImage: `linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.35)), url(${BARN_BG})` }}>
+          <h2 className="font-semibold text-white drop-shadow">Chuồng thú ({owned.length})</h2>
+          <Link href="/game/shop" className="flex items-center gap-1 rounded-lg bg-white/20 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/30"><ShoppingBag size={14} /> Mua thêm ở Cửa hàng</Link>
+        </div>
+        <div className="p-4">
         {owned.length === 0 ? (
-          <p className="text-sm text-ink-500">Chưa có vật nuôi. Mua ở danh sách bên dưới.</p>
+          <p className="text-sm text-ink-500">Chưa có vật nuôi. Mua ở <Link href="/game/shop" className="text-brand-600">Cửa hàng</Link>.</p>
         ) : (
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {owned.map((a) => (
@@ -68,25 +66,6 @@ export default function AnimalsPage() {
             ))}
           </div>
         )}
-      </section>
-
-      {/* Mua vật nuôi */}
-      <section className="card p-4">
-        <h2 className="mb-3 font-semibold">Mua vật nuôi</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {catalog.map((t) => (
-            <div key={t.slug} className="flex items-center gap-3 rounded-xl border border-ink-200/70 p-3 dark:border-ink-800">
-              <Asset src={t.asset} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{t.name}</p>
-                {t.productName && <p className="text-xs text-ink-400">Sản phẩm: {t.productName}</p>}
-              </div>
-              <button disabled={!!busy} onClick={() => act(t.slug, () => api.post('/farm/animal/buy', { slug: t.slug }))} className="btn-outline shrink-0 !py-1.5 text-xs">
-                {busy === t.slug ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {t.buyPrice}</>}
-              </button>
-            </div>
-          ))}
-          {catalog.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có vật nuôi để mua.</p>}
         </div>
       </section>
     </div>

@@ -27,6 +27,7 @@ export function Header() {
   const router = useRouter();
   const [q, setQ] = useState('');
   const [menu, setMenu] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [unread, setUnread] = useState(0);
 
@@ -53,6 +54,15 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-brand-700 text-white shadow-sm dark:border-ink-800 dark:bg-ink-900">
       <div className="container-forum flex h-14 items-center gap-3">
+        {/* Hamburger: mở menu trên màn hình nhỏ */}
+        <button
+          onClick={() => setNavOpen((o) => !o)}
+          className="rounded-lg p-2 text-white/85 hover:bg-white/10 md:hidden"
+          aria-label="menu"
+        >
+          <Menu size={20} />
+        </button>
+
         <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/15 text-lg">◆</span>
           <span className="hidden sm:block text-lg">Forum<span className="text-brand-200">Hub</span></span>
@@ -126,6 +136,27 @@ export function Header() {
           </div>
         )}
       </div>
+
+      {/* Menu xổ xuống cho màn hình nhỏ */}
+      {navOpen && (
+        <nav className="border-t border-white/10 bg-brand-700 px-3 pb-3 pt-1 md:hidden dark:bg-ink-900">
+          <form onSubmit={(e) => { onSearch(e); setNavOpen(false); }} className="my-2 sm:hidden">
+            <div className="relative w-full">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm..."
+                className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
+            </div>
+          </form>
+          <div className="flex flex-col gap-1">
+            {NAV.map((n) => (
+              <Link key={n.href} href={n.href} onClick={() => setNavOpen(false)}
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+                <n.icon size={16} /> {n.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      )}
     </header>
   );
 }

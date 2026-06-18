@@ -580,17 +580,24 @@ export class FarmService {
     const char = await this.getCharacter(userId);
     const done = await this.prisma.farmCooking.findMany({
       where: { characterId: char.id, doneAt: { lte: new Date() } },
-      include: { recipe: { select: { name: true, reward: true } } },
+      include: { recipe: { select: { slug: true, name: true, reward: true, asset: true } } },
     });
-    if (done.length === 0) return { ok: true, collected: 0, reward: 0 };
-    const reward = done.reduce((s, c) => s + c.recipe.reward, 0);
+    if (done.length === 0) return { ok: true, collected: 0 };
+    // Nấu xong -> món ăn vào KHO (bán sau), không cộng coin trực tiếp
     await this.prisma.$transaction(async (tx) => {
-      await tx.farmCooking.deleteMany({
-        where: { id: { in: done.map((d) => d.id) } },
-      });
-      await this.addCoin(tx, char.id, reward, 'farm_dish', 'Bán bánh');
+      await tx.farmCooking.deleteMany({ where: { id: { in: done.map((d) => d.id) } } });
+      // gom theo loại món
+      const byRecipe = new Map<string, { name: string; reward: number; asset: string | null; qty: number }>();
+      for (const c of done) {
+        const k = c.recipe.slug;
+        const cur = byRecipe.get(k) || { name: c.recipe.name, reward: c.recipe.reward, asset: c.recipe.asset, qty: 0 };
+        cur.qty += 1; byRecipe.set(k, cur);
+      }
+      for (const [slug, d] of byRecipe) {
+        await this.addWarehouse(tx, char.id, { slug: `dish_${slug}`, name: d.name, category: 'DISH', unitSell: d.reward, asset: d.asset }, d.qty);
+      }
     });
-    return { ok: true, collected: done.length, reward };
+    return { ok: true, collected: done.length };
   }
 
   async upgradeKitchen(userId: string) {

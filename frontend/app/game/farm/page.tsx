@@ -65,10 +65,6 @@ export default function FarmPage() {
   }
   async function waterKhe() { try { const r = await api.post<{ bonus: number }>('/farm/khe/water'); setMsg(`Đã tưới cây khế (+${r.bonus} quả)!`); } catch (e: any) { setMsg(e.message); } load(); }
   async function harvestKhe() { try { const r = await api.post<{ harvested: number }>('/farm/khe/harvest'); setMsg(`Đã thu hoạch ${r.harvested} quả khế vào kho. Vào kho để bán!`); } catch (e: any) { setMsg(e.message); } load(); }
-  async function sellItem(slug: string, category: string, qty: number, name: string) {
-    try { const r = await api.post<{ value: number }>('/farm/sell', { slug, category, qty }); setMsg(`Đã bán ${qty} ${name}, nhận ${formatCoin(r.value)} coin!`); }
-    catch (e: any) { setMsg(e.message); } load();
-  }
 
   return (
     <div className="space-y-5">
@@ -222,25 +218,10 @@ export default function FarmPage() {
         )}
       </section>
 
-      <section className="card p-4">
-        <h2 className="mb-2 font-semibold">Kho ({s.warehouse.length})</h2>
-        <ul className="grid grid-cols-1 gap-x-6 text-sm sm:grid-cols-2">
-          {s.warehouse.filter((w) => w.quantity > 0).slice(0, 16).map((w) => (
-            <li key={w.slug + w.category} className="flex items-center justify-between gap-2 border-b border-ink-100 py-1 dark:border-ink-800">
-              {w.asset
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={w.asset} alt="" className="h-7 w-7 shrink-0 object-contain" />
-                : <span className="grid h-7 w-7 shrink-0 place-items-center text-lg">{cropEmoji(w.slug.replace(/^seed_/, ''))}</span>}
-              <span className="min-w-0 flex-1 truncate">{w.name} <span className="text-ink-400">×{w.quantity}</span></span>
-              <span className="shrink-0 text-ink-500">{w.unitSell ? `${formatCoin(w.unitSell)}/cái` : '—'}</span>
-              {w.unitSell > 0 && (
-                <button onClick={() => sellItem(w.slug, w.category, w.quantity, w.name)} className="btn-primary shrink-0 !px-2 !py-0.5 text-xs">Bán</button>
-              )}
-            </li>
-          ))}
-          {s.warehouse.filter((w) => w.quantity > 0).length === 0 && <li className="text-ink-500">Kho trống.</li>}
-        </ul>
-      </section>
+      <a href="/game/kho" className="card flex items-center justify-between p-4 transition hover:shadow-lg">
+        <span className="font-semibold">📦 Kho chung — xem & bán nông sản, sản phẩm, cá, món ăn</span>
+        <span className="btn-outline !py-1.5 text-xs">Mở kho →</span>
+      </a>
     </div>
   );
 }

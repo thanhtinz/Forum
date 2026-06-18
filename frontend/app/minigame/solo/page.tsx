@@ -14,6 +14,8 @@ const GAMES: [Game, string][] = [
 ];
 const BAUCUA: [string, string][] = [['bau', 'Bầu'], ['cua', 'Cua'], ['tom', 'Tôm'], ['ca', 'Cá'], ['ga', 'Gà'], ['nai', 'Nai']];
 const BOARD = '/game-assets/avatar/gameroom/imgTable.png';
+const COIN = '/game-assets/jackpot/coin.png';
+const DICE_FACE = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
 function SoloPlay() {
   const { user, loading } = useAuth();
@@ -114,6 +116,23 @@ function SoloPlay() {
               {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => (
                 <img key={`${c}-${r}`} src={`/game-assets/jackpot/${result.grid[c]?.[r]}.png`} alt="" className="h-12 w-12 object-contain" />
               )))}
+            </div>
+          )}
+          {game === 'tai-xiu' && Array.isArray(result.dice) && (
+            <div className="mt-3 flex justify-center gap-3 text-5xl leading-none">
+              {result.dice.map((d: number, i: number) => <span key={i}>{DICE_FACE[d] || '🎲'}</span>)}
+            </div>
+          )}
+          {game === 'coin-flip' && result.result && (
+            <div className="mt-3 flex flex-col items-center">
+              <img src={COIN} alt="coin" className="h-16 w-16 object-contain" />
+              <span className="text-sm text-ink-500">{result.result === 'heads' ? 'Sấp (Heads)' : 'Ngửa (Tails)'}</span>
+            </div>
+          )}
+          {game === 'lucky-wheel' && result.multiplier != null && (
+            <div className="mt-3 flex flex-col items-center">
+              <span className="text-5xl">🎡</span>
+              <span className="text-lg font-bold text-brand-600">x{result.multiplier}</span>
             </div>
           )}
 

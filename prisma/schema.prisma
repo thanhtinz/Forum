@@ -2633,20 +2633,20 @@ model RecipeIngredient {
 
 // Hồ sơ nông trại (level RIÊNG, tách hẳn level nhân vật)
 model FarmProfile {
-  id            String    @id @default(cuid())
-  characterId   String    @unique
-  level         Int       @default(0)
-  exp           Int       @default(0)
-  plotCount     Int       @default(0)
-  nextPlotPrice Int       @default(5000) // giá ô đất kế tiếp (tăng dần)
-  kitchenLevel  Int       @default(1)
-  dogUntil      DateTime? // chó bảo vệ tới khi nào
-  lastCheckinAt DateTime?
+  id             String    @id @default(cuid())
+  characterId    String    @unique
+  level          Int       @default(0)
+  exp            Int       @default(0)
+  plotCount      Int       @default(0)
+  nextPlotPrice  Int       @default(5000) // giá ô đất kế tiếp (tăng dần)
+  kitchenLevel   Int       @default(1)
+  dogUntil       DateTime? // chó bảo vệ tới khi nào
+  lastCheckinAt  DateTime?
   kheLastWaterAt DateTime? // lần tưới cây khế gần nhất (mỗi ngày)
   kheFruit       Int       @default(0) // số quả khế đã tích (đã chốt tại kheUpdatedAt)
   kheUpdatedAt   DateTime? // mốc thời gian chốt số quả khế
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
 }
@@ -3104,4 +3104,21 @@ model Tip {
   @@index([toUserId])
   @@index([postId])
   @@index([fromUserId])
+}
+
+// ============================================================
+// CỔNG GAME — cấu hình đấu API game ngoài (REST)
+// ============================================================
+model GameApi {
+  id             String    @id @default(cuid())
+  slug           String    @unique // khớp slug game trong cổng (catalog)
+  name           String    @db.VarChar(150)
+  baseUrl        String    @db.VarChar(500) // VD: https://api.game.com
+  apiKey         String?   @db.VarChar(500) // gửi kèm header Authorization: Bearer
+  identifierKind String    @default("character_name") // character_name | character_id | ingame_account
+  active         Boolean   @default(true)
+  lastTestAt     DateTime?
+  lastTestOk     Boolean?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

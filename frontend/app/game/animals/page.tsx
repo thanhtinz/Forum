@@ -58,7 +58,10 @@ export default function AnimalsPage() {
             {owned.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-2 rounded-xl border border-ink-200/70 p-3 dark:border-ink-800">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-2xl dark:bg-ink-800">{animalEmoji(a.slug)}</span>
+                  {a.asset
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={a.asset} alt={a.name} className="h-12 w-12 object-contain" />
+                    : <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-2xl dark:bg-ink-800">{animalEmoji(a.slug)}</span>}
                   <div>
                     <p className="font-medium">{a.name}</p>
                     <p className="text-xs text-ink-400">

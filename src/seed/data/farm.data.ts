@@ -8,7 +8,7 @@ export interface CropSeed {
 export const CROPS: CropSeed[] = [
   { slug: 'lua', name: 'Lúa', seedPrice: 50, sellPrice: 12, growSeconds: 300, exp: 5, yieldMin: 8, yieldMax: 14, reqLevel: 0, asset: img('img/sv1/12.png'), sortOrder: 0 },
   { slug: 'ca-chua', name: 'Cà chua', seedPrice: 120, sellPrice: 25, growSeconds: 600, exp: 8, yieldMin: 6, yieldMax: 10, reqLevel: 0, asset: img('img/sv1/1.png'), sortOrder: 1 },
-  { slug: 'toi', name: 'Tỏi', seedPrice: 200, sellPrice: 40, growSeconds: 900, exp: 12, yieldMin: 5, yieldMax: 9, reqLevel: 1, asset: img('img/sv1/0.png'), sortOrder: 2 },
+  { slug: 'toi', name: 'Tỏi', seedPrice: 200, sellPrice: 40, growSeconds: 900, exp: 12, yieldMin: 5, yieldMax: 9, reqLevel: 1, asset: '', sortOrder: 2 },
   { slug: 'nho', name: 'Nho', seedPrice: 400, sellPrice: 70, growSeconds: 1800, exp: 20, yieldMin: 6, yieldMax: 12, reqLevel: 3, asset: img('img/sv1/10.png'), sortOrder: 3 },
   { slug: 'thanh-long', name: 'Thanh long', seedPrice: 600, sellPrice: 95, growSeconds: 2400, exp: 28, yieldMin: 5, yieldMax: 10, reqLevel: 5, asset: img('img/sv1/18.png'), sortOrder: 4 },
   { slug: 'xoai', name: 'Xoài', seedPrice: 900, sellPrice: 140, growSeconds: 3600, exp: 40, yieldMin: 5, yieldMax: 9, reqLevel: 8, asset: img('img/sv1/13.png'), sortOrder: 5 },
@@ -18,7 +18,7 @@ export const CROPS: CropSeed[] = [
   { slug: 'bap', name: 'Bắp', seedPrice: 160, sellPrice: 32, growSeconds: 720, exp: 10, yieldMin: 6, yieldMax: 10, reqLevel: 1, asset: img('img/sv1/17.png'), sortOrder: 9 },
   { slug: 'dua-leo', name: 'Dưa leo', seedPrice: 240, sellPrice: 45, growSeconds: 1080, exp: 14, yieldMin: 5, yieldMax: 9, reqLevel: 2, asset: img('img/sv1/14.png'), sortOrder: 10 },
   { slug: 'ca-tim', name: 'Cà tím', seedPrice: 500, sellPrice: 82, growSeconds: 2100, exp: 24, yieldMin: 5, yieldMax: 10, reqLevel: 4, asset: img('img/sv1/15.png'), sortOrder: 11 },
-  { slug: 'nha-dam', name: 'Nha đam', seedPrice: 700, sellPrice: 110, growSeconds: 2700, exp: 32, yieldMin: 5, yieldMax: 9, reqLevel: 6, asset: img('img/sv1/7.png'), sortOrder: 12 },
+  { slug: 'nha-dam', name: 'Nha đam', seedPrice: 700, sellPrice: 110, growSeconds: 2700, exp: 32, yieldMin: 5, yieldMax: 9, reqLevel: 6, asset: '', sortOrder: 12 },
   { slug: 'hoa-hong', name: 'Hoa hồng', seedPrice: 1100, sellPrice: 175, growSeconds: 4200, exp: 50, yieldMin: 4, yieldMax: 8, reqLevel: 10, asset: img('img/sv1/8.png'), sortOrder: 13 },
   { slug: 'huong-duong', name: 'Hoa hướng dương', seedPrice: 1600, sellPrice: 250, growSeconds: 6000, exp: 70, yieldMin: 4, yieldMax: 8, reqLevel: 14, asset: img('img/sv1/5.png'), sortOrder: 14 },
   { slug: 'tulip', name: 'Hoa tulip', seedPrice: 2000, sellPrice: 320, growSeconds: 7200, exp: 85, yieldMin: 4, yieldMax: 7, reqLevel: 16, asset: img('img/sv1/4.png'), sortOrder: 15 },

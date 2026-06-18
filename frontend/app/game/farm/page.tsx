@@ -11,6 +11,15 @@ import { cropEmoji } from '@/lib/gameIcons';
 const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
 const GROUND = '/game-assets/nongtrai/img/product/dat.png';
 
+// Ảnh cây theo giai đoạn lớn (product/<id>-non|uong|chin.png), fallback ảnh chín
+function growthSrc(asset: string | null, ready: boolean, progress: number): string {
+  if (!asset) return '';
+  const m = asset.match(/\/sv1\/(\d+)\.png$/);
+  if (!m) return asset;
+  const stage = ready ? 'chin' : progress < 0.45 ? 'non' : 'uong';
+  return `/game-assets/nongtrai/img/product/${m[1]}-${stage}.png`;
+}
+
 interface FarmState {
   coin: number;
   profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean };
@@ -123,10 +132,12 @@ export default function FarmPage() {
               return (
               <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
                 <div className="relative grid h-16 place-items-center rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${GROUND})` }}>
-                  {!p.empty && p.slug && (
-                    // cây lớn dần: emoji nhỏ lúc mới trồng, to khi sắp chín
-                    <span className="leading-none transition-all" style={{ fontSize: `${14 + prog * 26}px`, filter: p.ready ? 'none' : 'saturate(0.85)' }}>{cropEmoji(p.slug)}</span>
-                  )}
+                  {!p.empty && (p.asset
+                    // cây lớn dần: ảnh sprite theo giai đoạn, nhỏ lúc mới trồng to khi sắp chín
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={growthSrc(p.asset, p.ready, prog)} alt="" onError={(e) => { if (p.asset) (e.currentTarget as HTMLImageElement).src = p.asset; }}
+                        className="object-contain transition-all" style={{ maxHeight: `${40 + prog * 60}%` }} />
+                    : <span className="leading-none transition-all" style={{ fontSize: `${14 + prog * 26}px` }}>{cropEmoji(p.slug || '')}</span>)}
                   {p.empty && <span className="text-[10px] text-ink-400">+ Trồng</span>}
                 </div>
                 <div className="mt-1 truncate text-xs">{p.crop || 'Trống'}</div>
@@ -147,9 +158,9 @@ export default function FarmPage() {
                       <>
                         <select className="input !py-0.5 !text-[10px]" value={seedChoice} onChange={(e) => setSeedChoice(e.target.value)}>
                           <option value="">Chọn hạt…</option>
-                          {seeds.map((sd) => <option key={sd.slug} value={sd.slug}>{cropEmoji(sd.slug)} {sd.name} (×{sd.quantity})</option>)}
+                          {seeds.map((sd) => <option key={sd.slug} value={sd.slug}>{cropEmoji(sd.slug.replace(/^seed_/, ''))} {sd.name} (×{sd.quantity})</option>)}
                         </select>
-                        <button disabled={!seedChoice} onClick={() => { const sd = seeds.find((x) => x.slug === seedChoice); if (sd) plant(p.index, sd.slug, sd.name); }}
+                        <button disabled={!seedChoice} onClick={() => { const sd = seeds.find((x) => x.slug === seedChoice); if (sd) plant(p.index, sd.slug.replace(/^seed_/, ''), sd.name); }}
                           className="w-full rounded bg-emerald-600 px-1 py-0.5 text-[10px] font-medium text-white disabled:opacity-50">Gieo</button>
                       </>
                     )}

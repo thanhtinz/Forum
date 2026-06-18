@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Gem, QrCode, Coins } from 'lucide-react';
+import { Gem, QrCode } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -35,10 +35,9 @@ export default function WalletPage() {
   return (
     <div className="space-y-5">
       <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
-        <h1 className="flex items-center gap-2 text-2xl font-bold"><Gem /> Ví Gem</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-bold"><Gem /> Nạp game</h1>
         <div className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 text-lg font-bold">{balance.toLocaleString()} <Gem size={18} /></div>
       </header>
-      <p className="text-sm text-ink-500"><Gem size={14} className="mb-0.5 inline" /> <b>Gem</b> (nạp tiền) dùng cho <b>chợ</b> & <b>dịch vụ seller</b>. <Coins size={14} className="mb-0.5 inline" /> <b>Vàng</b> (kiếm trong game) dùng cho item/minigame/bói toán — xem ở <a href="/game" className="text-brand-600">trang Game</a>.</p>
 
       {topup && (
         <div className="card p-5 text-center">

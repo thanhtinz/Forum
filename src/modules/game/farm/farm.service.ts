@@ -177,11 +177,19 @@ export class FarmService {
     const profile = await this.getProfile(char.id);
     const fruit = this.currentKheFruit(profile as any);
     if (fruit <= 0) throw new BadRequestException('Cây khế chưa có quả để thu hoạch.');
+    // Lấy icon/giá quả khế từ dữ liệu game (admin) nếu có — kho hiển thị icon quả, không phải cả cây.
+    const tpl = await this.prisma.cropTemplate.findFirst({
+      where: { OR: [{ slug: 'qua-khe' }, { slug: 'khe' }, { name: { contains: 'Khế' } }, { name: { contains: 'khế' } }] },
+    });
     await this.prisma.$transaction(async (tx) => {
       await tx.farmProfile.update({ where: { characterId: char.id }, data: { kheFruit: 0, kheUpdatedAt: new Date() } });
       await this.addWarehouse(tx, char.id, {
-        slug: 'qua-khe', name: 'Quả Khế', category: 'CROP', unitSell: this.KHE_PRICE,
-        asset: '/game-assets/nongtrai/img/caykhechin.png',
+        // giữ slug 'qua-khe' để cập nhật luôn icon của các stack đã có trong kho
+        slug: 'qua-khe',
+        name: tpl?.name ?? 'Quả Khế',
+        category: 'CROP',
+        unitSell: tpl?.sellPrice ?? this.KHE_PRICE,
+        asset: tpl?.asset ?? '/game-assets/nongtrai/img/caykhechin.png',
       }, fruit);
     });
     return { harvested: fruit };

@@ -1,7 +1,15 @@
-import { ThreadList } from '@/components/ThreadList';
-import { Sidebar } from '@/components/Sidebar';
+'use client';
 
-export default function HomePage() {
+import { Suspense } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { ThreadList } from '@/components/ThreadList';
+import { CategoryList } from '@/components/CategoryList';
+import { HomeSidebar } from '@/components/HomeSidebar';
+
+function HomeContent() {
+  const cat = useSearchParams().get('cat') || '';
+
   return (
     <div className="space-y-5">
       {/* Hero */}
@@ -13,9 +21,26 @@ export default function HomePage() {
       </section>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]">
-        <ThreadList />
-        <Sidebar />
+        <div className="space-y-5">
+          {cat && (
+            <Link href="/" className="inline-flex items-center text-sm text-brand-600 hover:underline">← Xem tất cả danh mục</Link>
+          )}
+          {/* 1. Bài viết mới của tất cả danh mục */}
+          <ThreadList categoryId={cat || undefined} />
+          {/* 2. Danh mục kiểu XenForo (ẩn khi đang lọc 1 danh mục) */}
+          {!cat && <CategoryList />}
+        </div>
+
+        <HomeSidebar />
       </div>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="card p-10 text-center text-ink-500">Đang tải…</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }

@@ -9,7 +9,7 @@ import { SpecialItemService } from './shop/special-item.service';
 import { GuildService } from './guild/guild.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/roles.decorator';
-import { Gender, EquipSlot, ItemRarity } from '@prisma/client';
+import { Gender, EquipSlot, ItemRarity, GuildRole } from '@prisma/client';
 import { Currency } from '../../common/enums';
 
 @Controller('game')
@@ -192,5 +192,30 @@ export class GameController {
   @Post('guilds/donate')
   donateCoin(@CurrentUser('id') userId: string, @Body('amount') amount: number) {
     return this.guild.donateCoin(userId, amount);
+  }
+
+  @Post('guilds/update')
+  updateGuild(@CurrentUser('id') userId: string, @Body() body: { description?: string; emblemUrl?: string; isPublic?: boolean; reqLevel?: number }) {
+    return this.guild.updateGuild(userId, body);
+  }
+
+  @Post('guilds/members/:memberId/kick')
+  kickMember(@CurrentUser('id') userId: string, @Param('memberId') memberId: string) {
+    return this.guild.kickMember(userId, memberId);
+  }
+
+  @Post('guilds/members/:memberId/role')
+  setMemberRole(@CurrentUser('id') userId: string, @Param('memberId') memberId: string, @Body('role') role: GuildRole) {
+    return this.guild.setMemberRole(userId, memberId, role);
+  }
+
+  @Post('guilds/members/:memberId/transfer')
+  transferLeadership(@CurrentUser('id') userId: string, @Param('memberId') memberId: string) {
+    return this.guild.transferLeadership(userId, memberId);
+  }
+
+  @Post('guilds/disband')
+  disbandGuild(@CurrentUser('id') userId: string) {
+    return this.guild.disbandGuild(userId);
   }
 }

@@ -56,7 +56,10 @@ function SoloPlay() {
       </header>
       <p className="flex items-center gap-1 text-xs text-ink-500">Chơi bằng <Coins size={13} className="text-amber-500" /> Vàng (coin). Kiếm coin qua forum/game.</p>
 
-      <div className="card space-y-3 bg-cover bg-center p-4" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)), url(${BOARD})` }}>
+      <div
+        className={`card space-y-3 p-4 ${game !== 'jackpot' && game !== 'dua-thu' ? 'bg-cover bg-center' : ''}`}
+        style={game !== 'jackpot' && game !== 'dua-thu' ? { backgroundImage: `linear-gradient(rgba(255,255,255,.72),rgba(255,255,255,.72)), url(${BOARD})` } : undefined}
+      >
         <label className="block text-sm">Tiền cược (coin)<input type="number" className="input mt-1 w-40" value={bet} onChange={(e) => setBet(Number(e.target.value))} /></label>
 
         {game === 'tai-xiu' && (

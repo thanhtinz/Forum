@@ -147,27 +147,36 @@ export default function GameShopPage() {
 
       {/* Dụng cụ câu cá */}
       {tab === 'fishing' && (
-        <div className="space-y-3">
-          {zones.map((z) => (
-            <div key={z.zone} className="card p-4">
-              <p className="mb-2 font-semibold">Khu {z.zone}</p>
-              <div className="flex flex-wrap gap-2">
-                {z.hasRod ? (
-                  <span className="chip bg-emerald-100 text-emerald-700">Đã có cần câu</span>
-                ) : (
-                  <button disabled={!!busy} onClick={() => buy(`rod${z.zone}`, () => api.post('/fishing/buy-rod', { zone: z.zone }), `Đã mua cần khu ${z.zone}`)}
-                    className="btn-outline !py-1.5 text-xs">
-                    {busy === `rod${z.zone}` ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> Cần câu · {z.rodPrice}</>}
-                  </button>
-                )}
-                <button disabled={!!busy} onClick={() => buy(`bait${z.zone}`, () => api.post('/fishing/buy-bait', { zone: z.zone, packs: 1 }), `Đã mua mồi khu ${z.zone}`)}
-                  className="btn-outline !py-1.5 text-xs">
-                  {busy === `bait${z.zone}` ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> Mồi (100 lượt) · {z.baitPrice}</>}
-                </button>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {zones.flatMap((z) => [
+            <div key={`rod${z.zone}`} className="card flex items-center gap-3 p-3">
+              <Asset src={`/game-assets/cauca/cancau${z.zone}.png`} fallback={<Fish size={20} />} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">Cần câu — Khu {z.zone}</p>
+                <p className="text-xs text-ink-400">Câu cá khu {z.zone}</p>
               </div>
-            </div>
-          ))}
-          {zones.length === 0 && <p className="text-center text-ink-500">Chưa có dữ liệu khu câu cá.</p>}
+              {z.hasRod ? (
+                <span className="chip shrink-0 bg-emerald-100 text-emerald-700">Đã có</span>
+              ) : (
+                <button disabled={!!busy} onClick={() => buy(`rod${z.zone}`, () => api.post('/fishing/buy-rod', { zone: z.zone }), `Đã mua cần khu ${z.zone}`)}
+                  className="btn-outline shrink-0 !py-1.5 text-xs">
+                  {busy === `rod${z.zone}` ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {z.rodPrice}</>}
+                </button>
+              )}
+            </div>,
+            <div key={`bait${z.zone}`} className="card flex items-center gap-3 p-3">
+              <Asset src={`/game-assets/cauca/moi${z.zone}.png`} fallback={<Fish size={20} />} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">Mồi câu — Khu {z.zone}</p>
+                <p className="text-xs text-ink-400">100 lượt câu</p>
+              </div>
+              <button disabled={!!busy} onClick={() => buy(`bait${z.zone}`, () => api.post('/fishing/buy-bait', { zone: z.zone, packs: 1 }), `Đã mua mồi khu ${z.zone}`)}
+                className="btn-outline shrink-0 !py-1.5 text-xs">
+                {busy === `bait${z.zone}` ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {z.baitPrice}</>}
+              </button>
+            </div>,
+          ])}
+          {zones.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có dữ liệu khu câu cá.</p>}
         </div>
       )}
     </div>

@@ -50,7 +50,7 @@ export default function CongGamePage() {
         </div>
         <div className="flex gap-4 overflow-x-auto pb-2">
           {featured.map((g) => (
-            <Link key={g.slug} href={`/cong-game/${g.slug}`} className="card group w-36 shrink-0 p-3 text-center transition hover:-translate-y-0.5 hover:shadow-lg">
+            <Link key={g.slug} href={`/cong-game/detail?slug=${g.slug}`} className="card group w-36 shrink-0 p-3 text-center transition hover:-translate-y-0.5 hover:shadow-lg">
               <GameIcon g={g} size="lg" />
               <p className="mt-2 truncate text-sm font-semibold">{g.name}</p>
               <p className="truncate text-xs text-ink-400">{g.genre}</p>
@@ -68,13 +68,13 @@ export default function CongGamePage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {online.map((g) => (
             <div key={g.slug} className="card flex items-center gap-3 p-3">
-              <Link href={`/cong-game/${g.slug}`}><GameIcon g={g} /></Link>
+              <Link href={`/cong-game/detail?slug=${g.slug}`}><GameIcon g={g} /></Link>
               <div className="min-w-0 flex-1">
-                <Link href={`/cong-game/${g.slug}`} className="block truncate font-semibold hover:text-brand-600">{g.name}</Link>
+                <Link href={`/cong-game/detail?slug=${g.slug}`} className="block truncate font-semibold hover:text-brand-600">{g.name}</Link>
                 <p className="text-xs text-ink-400">Thể loại: {g.genre}</p>
                 {g.shortDesc && <p className="mt-0.5 line-clamp-2 text-xs text-ink-500">{g.shortDesc}</p>}
               </div>
-              <Link href={`/cong-game/${g.slug}`} className="btn-primary shrink-0 !px-3 !py-1.5 text-xs"><Play size={14} /> Chơi ngay</Link>
+              <Link href={`/cong-game/detail?slug=${g.slug}`} className="btn-primary shrink-0 !px-3 !py-1.5 text-xs"><Play size={14} /> Chơi ngay</Link>
             </div>
           ))}
           {online.length === 0 && <p className="text-sm text-ink-400">Chưa có game.</p>}
@@ -86,7 +86,7 @@ export default function CongGamePage() {
         <h2 className="mb-3 text-lg font-bold">Tất cả game</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {games.map((g) => (
-            <Link key={g.slug} href={`/cong-game/${g.slug}`} className="card flex items-center gap-3 p-3 transition hover:shadow-lg">
+            <Link key={g.slug} href={`/cong-game/detail?slug=${g.slug}`} className="card flex items-center gap-3 p-3 transition hover:shadow-lg">
               <GameIcon g={g} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{g.name}</p>

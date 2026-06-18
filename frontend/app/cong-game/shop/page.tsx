@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { ShoppingBag, Gem, Loader2, ChevronLeft, Package, Ticket, Search } from 'lucide-react';
 import { api } from '@/lib/api';
 import { gamePortal, ShopItem, ShopItemKind, GameCharacter } from '@/lib/gamePortal';
@@ -81,11 +81,12 @@ function ShopInner({ slug, character }: { slug: string; character: GameCharacter
   );
 }
 
-export default function ShopPage() {
-  const slug = useParams().slug as string;
+function ShopView() {
+  const slug = useSearchParams().get('slug') || '';
+  if (!slug) return <div className="card p-8 text-center text-rose-500">Thiếu mã game</div>;
   return (
     <div className="space-y-4">
-      <Link href={`/cong-game/${slug}`} className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Quay lại game</Link>
+      <Link href={`/cong-game/detail?slug=${slug}`} className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Quay lại game</Link>
       <header className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-700 to-orange-600 p-6 text-white shadow-card">
         <ShoppingBag size={26} />
         <div>
@@ -97,5 +98,13 @@ export default function ShopPage() {
         {(character) => <ShopInner slug={slug} character={character} />}
       </CharacterGate>
     </div>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={<div className="card p-8 text-center text-ink-400">Đang tải...</div>}>
+      <ShopView />
+    </Suspense>
   );
 }

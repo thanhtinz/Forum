@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Gift, Loader2, ChevronLeft } from 'lucide-react';
 import { gamePortal, GiftcodePublic, GameCharacter } from '@/lib/gamePortal';
 import { CharacterGate } from '@/components/game-portal/CharacterGate';
@@ -62,11 +62,12 @@ function GiftcodeInner({ slug, character }: { slug: string; character: GameChara
   );
 }
 
-export default function GiftcodePage() {
-  const slug = useParams().slug as string;
+function GiftcodeView() {
+  const slug = useSearchParams().get('slug') || '';
+  if (!slug) return <div className="card p-8 text-center text-rose-500">Thiếu mã game</div>;
   return (
     <div className="space-y-4">
-      <Link href={`/cong-game/${slug}`} className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Quay lại game</Link>
+      <Link href={`/cong-game/detail?slug=${slug}`} className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Quay lại game</Link>
       <header className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-rose-700 to-fuchsia-700 p-6 text-white shadow-card">
         <Gift size={26} />
         <div>
@@ -78,5 +79,13 @@ export default function GiftcodePage() {
         {(character) => <GiftcodeInner slug={slug} character={character} />}
       </CharacterGate>
     </div>
+  );
+}
+
+export default function GiftcodePage() {
+  return (
+    <Suspense fallback={<div className="card p-8 text-center text-ink-400">Đang tải...</div>}>
+      <GiftcodeView />
+    </Suspense>
   );
 }

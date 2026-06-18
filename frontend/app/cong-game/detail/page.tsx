@@ -1,21 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Star, Gift, ShoppingBag, Calendar, Info, Download, Smartphone, Apple } from 'lucide-react';
 import { gamePortal, GameDetail, GiftcodePublic } from '@/lib/gamePortal';
 
 type Tab = 'info' | 'giftcode' | 'events';
 
-export default function GameDetailPage() {
-  const slug = useParams().slug as string;
+function GameDetailView() {
+  const slug = useSearchParams().get('slug') || '';
   const [game, setGame] = useState<GameDetail | null>(null);
   const [codes, setCodes] = useState<GiftcodePublic[]>([]);
   const [tab, setTab] = useState<Tab>('info');
   const [err, setErr] = useState('');
 
   useEffect(() => {
+    if (!slug) { setErr('Thiếu mã game'); return; }
     gamePortal.getGame(slug).then(setGame).catch((e) => setErr(e.message));
     gamePortal.listGiftcodes(slug).then(setCodes).catch(() => {});
   }, [slug]);
@@ -53,8 +54,8 @@ export default function GameDetailPage() {
 
         {/* Hành động chính */}
         <div className="grid grid-cols-2 gap-2 border-t border-ink-200/70 p-3 dark:border-ink-800">
-          <Link href={`/cong-game/${slug}/giftcode`} className="btn-primary"><Gift size={16} /> Nhập Giftcode</Link>
-          <Link href={`/cong-game/${slug}/shop`} className="btn-primary !bg-amber-600 hover:!bg-amber-700"><ShoppingBag size={16} /> Mua vật phẩm</Link>
+          <Link href={`/cong-game/giftcode?slug=${slug}`} className="btn-primary"><Gift size={16} /> Nhập Giftcode</Link>
+          <Link href={`/cong-game/shop?slug=${slug}`} className="btn-primary !bg-amber-600 hover:!bg-amber-700"><ShoppingBag size={16} /> Mua vật phẩm</Link>
         </div>
       </div>
 
@@ -81,7 +82,7 @@ export default function GameDetailPage() {
 
       {tab === 'giftcode' && (
         <div className="space-y-3">
-          <Link href={`/cong-game/${slug}/giftcode`} className="btn-primary w-full"><Gift size={16} /> Nhập mã nhận thưởng</Link>
+          <Link href={`/cong-game/giftcode?slug=${slug}`} className="btn-primary w-full"><Gift size={16} /> Nhập mã nhận thưởng</Link>
           <div className="grid gap-3 sm:grid-cols-2">
             {codes.map((c) => (
               <div key={c.code} className="card p-4">
@@ -110,5 +111,13 @@ export default function GameDetailPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function GameDetailPage() {
+  return (
+    <Suspense fallback={<div className="card p-8 text-center text-ink-400">Đang tải...</div>}>
+      <GameDetailView />
+    </Suspense>
   );
 }

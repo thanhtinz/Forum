@@ -48,8 +48,13 @@ function ConfigGroupView() {
             <button onClick={saveAll} disabled={Object.keys(dirty).length === 0} className="btn-primary text-sm disabled:opacity-40">Lưu tất cả ({Object.keys(dirty).length})</button>
           </div>
           {msg && <p className="text-sm text-brand-600">{msg}</p>}
+          {group.key === 'ai' && (
+            <p className="rounded-lg bg-sky-50 p-3 text-xs text-sky-700 dark:bg-sky-950/30 dark:text-sky-300">
+              Cấu hình AI chat (nguồn/API key/model) giờ do <b>người dùng tự đặt</b> trong trang Chat AI, và key hệ thống/luận giải đặt ở <b>Bói toán & AI</b>. Ở đây chỉ còn điểm thân thiết lên cấp.
+            </p>
+          )}
           <section className="card divide-y divide-ink-100 p-0 dark:divide-ink-800">
-            {group.settings.map((s) => (
+            {group.settings.filter((s) => group.key !== 'ai' || s.key.includes('bond')).map((s) => (
               <div key={s.key} className="grid grid-cols-1 items-center gap-2 p-4 sm:grid-cols-[260px_1fr_auto]">
                 <label className="text-sm font-medium">{s.label}<div className="text-[11px] font-normal text-ink-400">{s.key}{s.isSecret ? ' · bí mật' : ''}</div></label>
                 <Field s={s} value={cur(s)} onChange={(v) => setVal(s.key, v)} />

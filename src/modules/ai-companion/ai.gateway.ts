@@ -91,7 +91,7 @@ export class AiGateway implements OnGatewayConnection {
       }
     } catch (err: any) {
       this.logger.error(`AI chat error: ${err.message}`);
-      client.emit('error', { message: 'Lỗi xử lý AI' });
+      client.emit('error', { message: err?.message || 'Lỗi xử lý AI' });
     }
   }
 

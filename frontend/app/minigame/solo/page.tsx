@@ -70,13 +70,23 @@ function SoloPlay() {
           </div>
         )}
         {game === 'dua-thu' && (
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
-            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-              <button key={n} onClick={() => setDuaThu(n)} className={`flex flex-col items-center rounded-lg border-2 p-1 ${duaThu === n ? 'border-brand-600 bg-brand-50 dark:bg-ink-800' : 'border-transparent bg-ink-100 dark:bg-ink-800'}`}>
-                <img src={`/game-assets/duathu/${n}.gif`} alt={`Thú ${n}`} className="h-10 object-contain" />
-                <span className="text-[11px]">Thú {n}</span>
-              </button>
-            ))}
+          <div>
+            <p className="mb-1 text-xs text-ink-500">Chọn thú để đặt cược (1 ăn 5):</p>
+            {/* Sàn chạy đua thú */}
+            <div className="space-y-1 rounded-xl border-4 border-amber-700/70 bg-gradient-to-b from-lime-600/30 to-green-700/30 p-2">
+              {[1, 2, 3, 4, 5, 6, 7].map((n) => {
+                const winner = result?.winner === n;
+                return (
+                  <button key={n} onClick={() => setDuaThu(n)}
+                    className={`flex w-full items-center gap-2 rounded-md border-y border-dashed border-white/40 px-2 py-1 text-left ${duaThu === n ? 'bg-amber-300/40 ring-2 ring-amber-500' : 'bg-black/5 hover:bg-black/10'}`}>
+                    <span className="w-5 shrink-0 text-center text-xs font-bold text-ink-600">{n}</span>
+                    <img src={`/game-assets/duathu/${n}.gif`} alt={`Thú ${n}`} className={`h-8 object-contain transition-all ${winner ? 'translate-x-2 scale-125' : ''}`} />
+                    <span className="flex-1 border-b-2 border-dotted border-white/50" />
+                    <span className="shrink-0 text-lg">{winner ? '🏁🥇' : '🏁'}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
         {game === 'bau-cua' && (
@@ -89,7 +99,18 @@ function SoloPlay() {
             ))}
           </div>
         )}
-        {game === 'jackpot' && <p className="text-xs text-ink-500">Quay 3×3, 5 dòng thắng. Cược tính trên mỗi dòng.</p>}
+        {game === 'jackpot' && (
+          <div className="mx-auto w-fit rounded-2xl border-4 border-amber-500 bg-gradient-to-b from-red-700 to-red-900 p-3 shadow-lg">
+            <div className="mb-2 text-center text-lg font-extrabold tracking-widest text-amber-300">🎰 777</div>
+            <div className="grid grid-cols-3 gap-1 rounded-lg bg-ink-950/70 p-2">
+              {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => {
+                const sym = result?.grid?.[c]?.[r] || ['seven', 'bar', 'bell', 'cherry', 'lemon', 'coin'][(r * 3 + c) % 6];
+                return <img key={`${c}-${r}`} src={`/game-assets/jackpot/${sym}.png`} alt="" className="h-12 w-12 rounded bg-white/90 object-contain p-0.5" />;
+              }))}
+            </div>
+            <p className="mt-2 text-center text-[11px] text-amber-100/80">Quay 3×3 · 5 dòng thắng · cược mỗi dòng</p>
+          </div>
+        )}
 
         <button onClick={play} disabled={busy} className="btn-primary">{busy ? 'Đang chơi…' : 'Chơi'}</button>
         {msg && <p className="text-sm text-red-500">{msg}</p>}
@@ -109,13 +130,6 @@ function SoloPlay() {
             <div className="mt-3 flex flex-col items-center">
               <img src={`/game-assets/duathu/${result.winner}.gif`} alt="winner" className="h-16 object-contain" />
               <span className="text-xs text-ink-500">Thú thắng: {result.winner}</span>
-            </div>
-          )}
-          {game === 'jackpot' && Array.isArray(result.grid) && (
-            <div className="mt-3 inline-grid grid-cols-3 gap-1 rounded-xl bg-ink-900/80 p-2">
-              {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => (
-                <img key={`${c}-${r}`} src={`/game-assets/jackpot/${result.grid[c]?.[r]}.png`} alt="" className="h-12 w-12 object-contain" />
-              )))}
             </div>
           )}
           {game === 'tai-xiu' && Array.isArray(result.dice) && (

@@ -56,6 +56,7 @@ function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p
   const [aiHasKey, setAiHasKey] = useState(false);
   const [aiModels, setAiModels] = useState<string[]>([]);
   const [aiLoadingModels, setAiLoadingModels] = useState(false);
+  const [aiModelMsg, setAiModelMsg] = useState('');
   const pInfo = AI_PROVIDERS.find((p) => p.value === aiProvider);
 
   useEffect(() => {
@@ -66,12 +67,16 @@ function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p
   }, []);
 
   async function fetchAiModels() {
-    setAiLoadingModels(true); setErr('');
+    setAiLoadingModels(true); setErr(''); setAiModelMsg('');
     try {
       const r = await api.post<{ models: string[]; error?: string }>('/ai/models', { provider: aiProvider, apiKey: aiKey || undefined, baseUrl: aiBaseUrl || undefined });
       setAiModels(r.models || []);
       if (r.error) setErr(`Tải model lỗi: ${r.error}`);
       else if (!r.models?.length) setErr('Không có model nào — kiểm tra lại API key/Base URL.');
+      else {
+        setAiModelMsg(`Đã tải ${r.models.length} model — chọn ở ô bên dưới.`);
+        if (!aiModel && r.models[0]) setAiModel(r.models[0]);
+      }
     } catch (e: any) { setErr(`Tải model lỗi: ${e.message}`); } finally { setAiLoadingModels(false); }
   }
 
@@ -160,8 +165,15 @@ function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p
                 <span>Model</span>
                 <button type="button" onClick={fetchAiModels} disabled={aiLoadingModels} className="inline-flex items-center gap-1 text-brand-600 hover:underline disabled:opacity-50"><RefreshCw size={11} className={aiLoadingModels ? 'animate-spin' : ''} /> Tải model thực tế</button>
               </div>
-              <input className="input mt-1 !py-1.5" list="ai-models-chat" placeholder="Chọn/nhập model…" value={aiModel} onChange={(e) => setAiModel(e.target.value)} />
+              {aiModels.length > 0 && (
+                <select className="input mt-1 !py-1.5" value={aiModels.includes(aiModel) ? aiModel : ''} onChange={(e) => setAiModel(e.target.value)}>
+                  <option value="">— Chọn model ({aiModels.length}) —</option>
+                  {aiModels.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+              )}
+              <input className="input mt-1 !py-1.5" list="ai-models-chat" placeholder="Hoặc nhập tên model…" value={aiModel} onChange={(e) => setAiModel(e.target.value)} />
               <datalist id="ai-models-chat">{aiModels.map((m) => <option key={m} value={m} />)}</datalist>
+              {aiModelMsg && <p className="mt-1 text-[11px] text-emerald-600">{aiModelMsg}</p>}
             </div>
             <p className="mt-1 text-[11px] text-ink-400">Để trống = dùng AI mặc định của hệ thống. Hỗ trợ cả nguồn không kiểm duyệt (OpenRouter…).</p>
           </div>

@@ -60,8 +60,7 @@ export default function FarmPage() {
     if (p.empty && !p.tilled) { till(p.index); return; }
     if (p.empty && p.tilled) { setSeedChoice(''); setPlanting(p.index); return; }   // mở chọn hạt
     if (!p.empty && p.ready) { harvest(p.index); return; }
-    if (!p.empty && !p.watered) { water(p.index); return; }
-    if (!p.empty) { setFertPlot(p.index); return; }                                 // mở bón phân
+    if (!p.empty) { setFertPlot(p.index); return; }   // cây đang lớn -> mở chăm sóc (tưới / bón phân)
   }
   async function waterKhe() { try { const r = await api.post<{ bonus: number }>('/farm/khe/water'); setMsg(`Đã tưới cây khế (+${r.bonus} quả)!`); } catch (e: any) { setMsg(e.message); } load(); }
   async function harvestKhe() { try { const r = await api.post<{ harvested: number }>('/farm/khe/harvest'); setMsg(`Đã thu hoạch ${r.harvested} quả khế vào kho. Vào kho để bán!`); } catch (e: any) { setMsg(e.message); } load(); }
@@ -232,22 +231,30 @@ export default function FarmPage() {
         );
       })()}
 
-      {/* Popup bón phân */}
+      {/* Popup chăm sóc cây: tưới nước + bón phân */}
       {fertPlot !== null && (() => {
         const ferts = s.fertilizers || [];
+        const plot = s.plots.find((p) => p.index === fertPlot);
         return (
           <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setFertPlot(null)}>
             <div className="card w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
-              <h2 className="mb-1 font-semibold">Bón phân ô {fertPlot + 1}</h2>
-              <p className="mb-3 text-xs text-ink-500">Bón phân để giảm thời gian chín.</p>
+              <h2 className="mb-1 font-semibold">Chăm sóc {plot?.crop ? plot.crop : `ô ${fertPlot + 1}`}</h2>
+              <p className="mb-3 text-xs text-ink-500">Tưới nước giúp cây khoẻ (tăng sản lượng); bón phân giảm thời gian chín.</p>
+
+              {/* Tưới nước */}
+              {plot && !plot.watered
+                ? <button onClick={() => { water(fertPlot); setFertPlot(null); }} className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-sky-500 px-2 py-2 text-sm font-medium text-white hover:bg-sky-600">💧 Tưới nước</button>
+                : <p className="mb-3 rounded-lg bg-ink-100 px-2 py-1.5 text-center text-xs text-ink-500 dark:bg-ink-800">✓ Đã tưới nước</p>}
+
+              <p className="mb-1 text-sm font-semibold">Bón phân</p>
               {ferts.length === 0 ? (
-                <p className="text-sm text-ink-500">Chưa có phân. Mua ở <a href="/game/shop" className="text-brand-600">Cửa hàng</a>.</p>
+                <p className="text-sm text-ink-500">Chưa có phân. Mua ở <a href="/game/shop" className="text-brand-600">Cửa hàng → Dụng cụ trồng trọt</a>.</p>
               ) : (
                 <div className="space-y-2">
                   {ferts.map((f) => (
                     <button key={f.slug} onClick={() => { fertilize(fertPlot, f.slug, f.name); setFertPlot(null); }} className="flex w-full items-center justify-between rounded-lg border border-ink-200/70 p-2 text-sm hover:bg-emerald-50 dark:border-ink-700 dark:hover:bg-emerald-900/20">
                       <span>{f.name} <span className="text-ink-400">×{f.quantity}</span></span>
-                      <span className="text-xs text-emerald-600">-{Math.round((f.reduceSeconds || 0) / 60)} phút</span>
+                      <span className="text-xs text-emerald-600">-{Math.round((f.reduceSeconds || 0) / 60)} phút chín</span>
                     </button>
                   ))}
                 </div>

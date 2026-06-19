@@ -9,7 +9,7 @@ import { formatCoin, formatDuration } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
 import { cropFruit, animalSprite } from '@/lib/cropSprites';
 
-type Tab = 'crop' | 'animal' | 'fertilizer' | 'fishing';
+type Tab = 'crop' | 'animal' | 'fishing';
 
 interface Crop { slug: string; name: string; seedPrice: number; sellPrice?: number; growSeconds?: number; exp?: number; yieldMin?: number; yieldMax?: number; reqLevel?: number; asset?: string | null }
 interface Animal { slug: string; name: string; buyPrice: number; growSeconds?: number; lifeSeconds?: number; productName?: string | null; productYield?: number; productPrice?: number; sellGrown?: number; asset?: string | null }
@@ -31,9 +31,8 @@ type Selected =
 const SUPPLY_ICON: Record<string, string> = { 'feed-poultry': '🌾', 'feed-livestock': '🥬', medicine: '💊' };
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
-  { key: 'crop', label: 'Hạt giống', icon: Sprout },
+  { key: 'crop', label: 'Trồng trọt', icon: Sprout },
   { key: 'animal', label: 'Vật nuôi', icon: Beef },
-  { key: 'fertilizer', label: 'Dụng cụ trồng trọt', icon: FlaskConical },
   { key: 'fishing', label: 'Câu cá', icon: Fish },
 ];
 
@@ -141,9 +140,10 @@ export default function GameShopPage() {
 
       {msg && <p className={`text-sm ${msg.ok ? 'text-emerald-600' : 'text-rose-500'}`}>{msg.text}</p>}
 
-      {/* Hạt giống */}
+      {/* Trồng trọt: hạt giống + phân bón/dụng cụ */}
       {tab === 'crop' && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="col-span-full mb-1 text-sm font-semibold">Hạt giống</div>
           {crops.map((c) => (
             <div key={c.slug} className="card flex items-center gap-3 p-3">
               <Asset src={cropFruit(c.slug) || c.asset} fallback={<span className="text-2xl">{cropEmoji(c.slug)}</span>} />
@@ -155,6 +155,18 @@ export default function GameShopPage() {
             </div>
           ))}
           {crops.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có hạt giống.</p>}
+          <div className="col-span-full mt-2 mb-1 text-sm font-semibold">Phân bón & dụng cụ</div>
+          {ferts.map((f) => (
+            <div key={f.slug} className="card flex items-center gap-3 p-3">
+              <Asset src={f.asset} fallback={<FlaskConical size={20} />} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{f.name}</p>
+                <p className="text-xs text-ink-400 inline-flex items-center gap-1"><Coins size={11} /> {formatCoin(f.price)}/cái</p>
+              </div>
+              <button onClick={() => openView({ kind: 'fertilizer', item: f })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
+            </div>
+          ))}
+          {ferts.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có dụng cụ.</p>}
         </div>
       )}
 
@@ -184,23 +196,6 @@ export default function GameShopPage() {
               <button onClick={() => openView({ kind: 'supply', item: sp })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Dụng cụ trồng trọt (phân bón) */}
-      {tab === 'fertilizer' && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {ferts.map((f) => (
-            <div key={f.slug} className="card flex items-center gap-3 p-3">
-              <Asset src={f.asset} fallback={<FlaskConical size={20} />} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{f.name}</p>
-                <p className="text-xs text-ink-400 inline-flex items-center gap-1"><Coins size={11} /> {formatCoin(f.price)}/cái</p>
-              </div>
-              <button onClick={() => openView({ kind: 'fertilizer', item: f })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
-            </div>
-          ))}
-          {ferts.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có dụng cụ trồng trọt.</p>}
         </div>
       )}
 

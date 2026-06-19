@@ -137,7 +137,7 @@ export default function GalleryPage() {
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mô tả (tuỳ chọn)" rows={3} className="input mt-2 w-full resize-y" />
             <div className="mt-2">
               <label className="mb-1 block text-xs text-ink-500">Ảnh bìa (tuỳ chọn)</label>
-              <ImageUpload value={coverUrl || undefined} onUploaded={setCoverUrl} label="Tải ảnh bìa" />
+              <ImageUpload external value={coverUrl || undefined} onUploaded={setCoverUrl} label="Tải ảnh bìa" />
             </div>
             {err && <p className="mt-2 text-sm text-red-500">{err}</p>}
             <div className="mt-4 flex justify-end gap-2">

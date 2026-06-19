@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Send, Smile, Plus, Image as ImageIcon, Paperclip, Music, Mic, Square, X, Reply } from 'lucide-react';
-import { api, uploadImage, uploadAttachment } from '@/lib/api';
+import { api, uploadEditorImage, uploadAttachment } from '@/lib/api';
 import { EMOJIS, StickerPack, searchGifs, ChatMsg } from '@/lib/chat';
 
 type OutMsg = { type: ChatMsg['type']; content: string; metadata?: any };
@@ -49,7 +49,7 @@ export function Composer({ onSend, replyTo, onCancelReply, onTyping }: {
 
   async function pickImage(f: File) {
     setUploading(true);
-    try { const { url } = await uploadImage(f); onSend({ type: 'IMAGE', content: url }); }
+    try { const { url } = await uploadEditorImage(f); onSend({ type: 'IMAGE', content: url }); }
     finally { setUploading(false); }
   }
   async function pickFile(f: File) {

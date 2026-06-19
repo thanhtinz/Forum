@@ -16,8 +16,8 @@ const WEB_GAMES = [
 
 // Từng minigame hiện thẳng ra ngoài — bấm vào chơi luôn
 const MINIGAMES = [
-  { href: '/minigame/solo?game=tai-xiu', label: 'Tài Xỉu', color: 'from-rose-500 to-red-600' },
-  { href: '/minigame/solo?game=bau-cua', label: 'Bầu Cua', color: 'from-amber-500 to-orange-600' },
+  { href: '/minigame/live?game=tai-xiu', label: 'Tài Xỉu (phòng chung)', color: 'from-rose-500 to-red-600' },
+  { href: '/minigame/live?game=bau-cua', label: 'Bầu Cua (phòng chung)', color: 'from-amber-500 to-orange-600' },
   { href: '/minigame/solo?game=dua-thu', label: 'Đua Thú', color: 'from-lime-500 to-green-600' },
   { href: '/minigame/solo?game=jackpot', label: 'Jackpot 777', color: 'from-purple-500 to-fuchsia-600' },
   { href: '/minigame/tien-len', label: 'Tiến Lên (PvP)', color: 'from-sky-500 to-blue-600' },

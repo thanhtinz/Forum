@@ -11,7 +11,8 @@ import { cropEmoji } from '@/lib/gameIcons';
 import { cropStage } from '@/lib/cropSprites';
 
 const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
-const GROUND = '/game-assets/nongtrai/img/product/dat.png';
+const SOIL_TILLED = '/game-assets/nongtrai/img/product/dat.png';      // đất đã xới
+const SOIL_UNTILLED = '/game-assets/nongtrai/img/product/chuaxoi.png'; // đất chưa xới
 
 interface FarmState {
   coin: number;
@@ -158,7 +159,7 @@ export default function FarmPage() {
               const stageSrc = cropStage(p.slug || '', p.ready, prog) || p.asset || '';
               return (
               <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
-                <div className={`relative grid h-24 place-items-center rounded-lg bg-amber-900/10 bg-contain bg-center bg-no-repeat ${p.empty && !p.tilled ? 'opacity-60' : ''}`} style={{ backgroundImage: `url(${GROUND})` }}>
+                <div className="relative grid h-24 place-items-center rounded-lg bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${p.empty && !p.tilled ? SOIL_UNTILLED : SOIL_TILLED})` }}>
                   {!p.empty && (stageSrc
                     // cây lớn dần: ảnh sprite theo giai đoạn, nhỏ lúc mới trồng to khi sắp chín
                     // eslint-disable-next-line @next/next/no-img-element

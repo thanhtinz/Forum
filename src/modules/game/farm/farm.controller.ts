@@ -92,6 +92,21 @@ export class FarmController {
     return this.farm.feedAnimal(userId, animalId);
   }
 
+  @Post('animal/cure')
+  cure(@CurrentUser('id') userId: string, @Body('animalId') animalId: string) {
+    return this.farm.cureAnimal(userId, animalId);
+  }
+
+  @Get('supplies')
+  supplies() {
+    return this.farm.listSupplies();
+  }
+
+  @Post('supply/buy')
+  buySupply(@CurrentUser('id') userId: string, @Body() b: { slug: string; qty?: number }) {
+    return this.farm.buySupply(userId, b.slug, Number(b.qty ?? 1));
+  }
+
   @Post('animal/collect')
   collect(@CurrentUser('id') userId: string, @Body('animalId') animalId: string) {
     return this.farm.collectAnimal(userId, animalId);

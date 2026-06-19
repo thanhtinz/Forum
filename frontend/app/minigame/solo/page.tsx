@@ -51,9 +51,10 @@ function SoloPlay() {
       else if (game === 'bau-cua') body = { bets: [{ symbol, amount: bet }] };
       const r = await api.post<any>(`/minigame/${game}`, body);
       // Hiệu ứng chạy trước khi hiện kết quả
-      if (game === 'jackpot' || game === 'dua-thu') {
+      if (game === 'jackpot' || game === 'dua-thu' || game === 'tai-xiu' || game === 'bau-cua') {
         setAnimating(true);
-        await new Promise((res) => setTimeout(res, game === 'jackpot' ? 1500 : 2400));
+        const dur = game === 'jackpot' ? 1500 : game === 'dua-thu' ? 2400 : 1300;
+        await new Promise((res) => setTimeout(res, dur));
         setAnimating(false);
       }
       setResult(r);
@@ -78,9 +79,17 @@ function SoloPlay() {
         <label className="block text-sm">Tiền cược (coin)<input type="number" className="input mt-1 w-40" value={bet} onChange={(e) => setBet(Number(e.target.value))} /></label>
 
         {game === 'tai-xiu' && (
-          <div className="flex gap-2">
-            {['tai', 'xiu'].map((c) => <button key={c} onClick={() => setChoice(c)} className={`flex-1 rounded-lg py-2 text-sm font-medium ${choice === c ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{c === 'tai' ? 'TÀI (11-17)' : 'XỈU (4-10)'}</button>)}
-          </div>
+          <>
+            <div className="flex gap-2">
+              {['tai', 'xiu'].map((c) => <button key={c} disabled={animating} onClick={() => setChoice(c)} className={`flex-1 rounded-lg py-2 text-sm font-medium ${choice === c ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{c === 'tai' ? 'TÀI (11-17)' : 'XỈU (4-10)'}</button>)}
+            </div>
+            {/* Bát xúc xắc đang lắc */}
+            {animating && (
+              <div className="flex justify-center gap-3 text-5xl leading-none">
+                {[0, 1, 2].map((i) => <span key={i} className="inline-block animate-bounce" style={{ animationDelay: `${i * 0.12}s` }}>{DICE_FACE[1 + ((frame + i * 2) % 6)]}</span>)}
+              </div>
+            )}
+          </>
         )}
         {game === 'dua-thu' && (
           <div>
@@ -104,14 +113,26 @@ function SoloPlay() {
           </div>
         )}
         {game === 'bau-cua' && (
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-            {BAUCUA.map(([s, l]) => (
-              <button key={s} onClick={() => setSymbol(s)} className={`flex flex-col items-center rounded-lg border-2 p-1.5 ${symbol === s ? 'border-brand-600 bg-brand-50 dark:bg-ink-800' : 'border-transparent bg-ink-100 dark:bg-ink-800'}`}>
-                <img src={`/game-assets/baucua/${s}.png`} alt={l} className="h-10 w-10 object-contain" />
-                <span className="text-[11px] font-medium">{l}</span>
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {BAUCUA.map(([s, l]) => (
+                <button key={s} disabled={animating} onClick={() => setSymbol(s)} className={`flex flex-col items-center rounded-lg border-2 p-1.5 ${symbol === s ? 'border-brand-600 bg-brand-50 dark:bg-ink-800' : 'border-transparent bg-ink-100 dark:bg-ink-800'}`}>
+                  <img src={`/game-assets/baucua/${s}.png`} alt={l} className="h-10 w-10 object-contain" />
+                  <span className="text-[11px] font-medium">{l}</span>
+                </button>
+              ))}
+            </div>
+            {/* Đĩa bầu cua đang xóc */}
+            {animating && (
+              <div className="flex justify-center gap-3">
+                {[0, 1, 2].map((i) => {
+                  const s = BAUCUA[(frame + i * 2) % BAUCUA.length][0];
+                  // eslint-disable-next-line @next/next/no-img-element
+                  return <img key={i} src={`/game-assets/baucua/${s}.png`} alt="" className="h-14 w-14 animate-bounce object-contain" style={{ animationDelay: `${i * 0.12}s` }} />;
+                })}
+              </div>
+            )}
+          </>
         )}
         {game === 'jackpot' && (
           <div className="mx-auto w-fit rounded-2xl border-4 border-amber-500 bg-gradient-to-b from-red-700 to-red-900 p-3 shadow-lg">

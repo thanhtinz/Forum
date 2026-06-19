@@ -51,40 +51,41 @@ export class SeederService implements OnApplicationBootstrap {
 
     // Bọc từng phần để 1 lỗi không chặn các phần seed sau (vd: icon/minigame không cập nhật)
     try {
+      // update: {} -> chỉ thêm khi thiếu, KHÔNG ghi đè dữ liệu admin đã sửa
       for (const f of FISH_SPECIES) {
         await this.prisma.fishSpecies.upsert({
           where: { slug: f.slug },
-          update: { ...f, stock: f.refillCount },
+          update: {},
           create: { ...f, stock: f.refillCount },
         });
         n++;
       }
       // Độ sâu hồ + cần câu + thuyền (admin sửa được sau)
       for (const d of FISH_DEPTHS) {
-        await this.prisma.fishDepth.upsert({ where: { depth: d.depth }, update: d, create: d });
+        await this.prisma.fishDepth.upsert({ where: { depth: d.depth }, update: {}, create: d });
         n++;
       }
       for (const r of FISHING_RODS) {
-        await this.prisma.fishingRod.upsert({ where: { slug: r.slug }, update: r, create: r });
+        await this.prisma.fishingRod.upsert({ where: { slug: r.slug }, update: {}, create: r });
         n++;
       }
       for (const b of FISHING_BOATS) {
-        await this.prisma.fishingBoat.upsert({ where: { slug: b.slug }, update: b, create: b });
+        await this.prisma.fishingBoat.upsert({ where: { slug: b.slug }, update: {}, create: b });
         n++;
       }
     } catch (e) { this.logger.warn(`Seed fishSpecies lỗi: ${(e as Error).message}`); }
 
     try {
       for (const c of CROPS) {
-        await this.prisma.cropTemplate.upsert({ where: { slug: c.slug }, update: c, create: c });
+        await this.prisma.cropTemplate.upsert({ where: { slug: c.slug }, update: {}, create: c });
         n++;
       }
       for (const fz of FERTILIZERS) {
-        await this.prisma.fertilizerTemplate.upsert({ where: { slug: fz.slug }, update: fz, create: fz });
+        await this.prisma.fertilizerTemplate.upsert({ where: { slug: fz.slug }, update: {}, create: fz });
         n++;
       }
       for (const a of ANIMALS) {
-        await this.prisma.animalTemplate.upsert({ where: { slug: a.slug }, update: a, create: a });
+        await this.prisma.animalTemplate.upsert({ where: { slug: a.slug }, update: {}, create: a });
         n++;
       }
     } catch (e) { this.logger.warn(`Seed farm lỗi: ${(e as Error).message}`); }
@@ -127,12 +128,10 @@ export class SeederService implements OnApplicationBootstrap {
     } catch (e) { this.logger.warn(`Seed minigame lỗi: ${(e as Error).message}`); }
     for (const r of RECIPES) {
       const { ingredients, ...data } = r;
-      const recipe = await this.prisma.recipeTemplate.upsert({
-        where: { slug: r.slug },
-        update: data,
-        create: data,
-      });
-      await this.prisma.recipeIngredient.deleteMany({ where: { recipeId: recipe.id } });
+      // Giữ nguyên công thức admin đã sửa: chỉ tạo mới + seed nguyên liệu khi recipe chưa tồn tại
+      const existing = await this.prisma.recipeTemplate.findUnique({ where: { slug: r.slug }, select: { id: true } });
+      if (existing) { n++; continue; }
+      const recipe = await this.prisma.recipeTemplate.create({ data });
       for (const i of ingredients) {
         await this.prisma.recipeIngredient.create({
           data: { recipeId: recipe.id, cropSlug: i.slug, name: i.name, quantity: i.quantity },
@@ -143,7 +142,7 @@ export class SeederService implements OnApplicationBootstrap {
 
     for (const food of FOODS) {
       const data = { ...food, type: food.type as ConsumableType };
-      await this.prisma.consumableTemplate.upsert({ where: { slug: food.slug }, update: data, create: data });
+      await this.prisma.consumableTemplate.upsert({ where: { slug: food.slug }, update: {}, create: data });
       n++;
     }
 

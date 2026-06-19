@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
+import { cropFruit } from '@/lib/cropSprites';
 
 type Tab = 'crop' | 'animal' | 'fertilizer' | 'fishing' | 'recipe';
 
@@ -144,7 +145,7 @@ export default function GameShopPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {crops.map((c) => (
             <div key={c.slug} className="card flex items-center gap-3 p-3">
-              <Asset src={c.asset} fallback={<span className="text-2xl">{cropEmoji(c.slug)}</span>} />
+              <Asset src={cropFruit(c.slug) || c.asset} fallback={<span className="text-2xl">{cropEmoji(c.slug)}</span>} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{c.name}</p>
                 <p className="text-xs text-ink-400 inline-flex items-center gap-1"><Coins size={11} /> {formatCoin(c.seedPrice)}/hạt{c.reqLevel ? ` · cấp ${c.reqLevel}` : ''}</p>
@@ -258,7 +259,7 @@ export default function GameShopPage() {
 
             <div className="flex gap-3">
               <Asset
-                src={selected.kind === 'bait' ? null : selected.item.asset}
+                src={selected.kind === 'bait' ? null : selected.kind === 'crop' ? (cropFruit(selected.item.slug) || selected.item.asset) : selected.item.asset}
                 className="h-20 w-20"
                 fallback={
                   selected.kind === 'crop' ? <span className="text-3xl">{cropEmoji(selected.item.slug)}</span>

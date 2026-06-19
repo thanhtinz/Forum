@@ -34,6 +34,11 @@ const SUPPLIES = [
   { slug: 'medicine', name: 'Thuốc thú y', price: 500, kind: 'medicine' },
 ];
 const SICK_CHANCE = 0.12; // tỉ lệ vật nuôi bị bệnh sau mỗi lần cho ăn
+// Chuồng thú: level riêng (như nông trại), lên cấp mở thêm slot nuôi
+const BARN_START_SLOTS = 3;
+const BARN_MAX_SLOTS = 24;
+const BARN_EXP_PER_LEVEL = 500;
+const BARN_MAX_LEVEL = 21; // 3 + 21 = 24 slot
 // Sức khỏe ô đất (mô phỏng cơ chế sucKhoe của Avatar): sản lượng = raw × health/100
 const PLANT_BASE_HEALTH = 60; // mới gieo cần chăm sóc mới đạt full
 const WATER_HEALTH = 25;      // tưới nước +25
@@ -141,6 +146,15 @@ export class FarmService {
         'feed-poultry': warehouse.find((w) => w.slug === 'feed-poultry' && w.category === 'SUPPLY')?.quantity ?? 0,
         'feed-livestock': warehouse.find((w) => w.slug === 'feed-livestock' && w.category === 'SUPPLY')?.quantity ?? 0,
         'medicine': warehouse.find((w) => w.slug === 'medicine' && w.category === 'SUPPLY')?.quantity ?? 0,
+      },
+      barn: {
+        level: profile.barnLevel,
+        maxLevel: BARN_MAX_LEVEL,
+        expIntoLevel: profile.barnLevel >= BARN_MAX_LEVEL ? 0 : profile.barnExp - profile.barnLevel * BARN_EXP_PER_LEVEL,
+        expForNextLevel: profile.barnLevel >= BARN_MAX_LEVEL ? null : BARN_EXP_PER_LEVEL,
+        slots: this.barnSlots(profile.barnLevel),
+        used: animals.length,
+        nextSlotLevel: this.barnSlots(profile.barnLevel) >= BARN_MAX_SLOTS ? null : profile.barnLevel + 1,
       },
       fertilizers: fertilizers.map((f) => ({
         slug: f.fertilizer.slug,
@@ -431,9 +445,13 @@ export class FarmService {
 
   async buyAnimal(userId: string, slug: string) {
     const char = await this.getCharacter(userId);
-    await this.getProfile(char.id);
+    const profile = await this.getProfile(char.id);
     const tpl = await this.prisma.animalTemplate.findUnique({ where: { slug } });
     if (!tpl) throw new NotFoundException('Vật nuôi không tồn tại');
+    const count = await this.prisma.farmAnimal.count({ where: { characterId: char.id } });
+    if (count >= this.barnSlots(profile.barnLevel)) {
+      throw new BadRequestException('Chuồng đã đầy — lên cấp chuồng (thu hoạch sản phẩm thú) để mở thêm chỗ');
+    }
     const now = Date.now();
     await this.prisma.$transaction(async (tx) => {
       await this.spendCoin(tx, char.id, tpl.buyPrice, 'farm_animal', `Mua ${tpl.name}`);
@@ -526,6 +544,8 @@ export class FarmService {
         where: { id: a.id },
         data: { fedCount: 0, productReadyAt: null },
       });
+      // Thu sản phẩm -> tăng EXP chuồng (lên cấp mở thêm slot)
+      await this.addBarnExp(tx, char.id, Math.max(8, amount * 8));
     });
     return { ok: true, product: a.animal.productName, amount };
   }
@@ -679,6 +699,19 @@ export class FarmService {
 
   private farmLevel(exp: number) {
     return Math.min(MAX_FARM_LEVEL, Math.floor(exp / EXP_PER_LEVEL));
+  }
+
+  private barnLevel(exp: number) {
+    return Math.min(BARN_MAX_LEVEL, Math.floor(exp / BARN_EXP_PER_LEVEL));
+  }
+  private barnSlots(level: number) {
+    return Math.min(BARN_MAX_SLOTS, BARN_START_SLOTS + Math.max(0, level));
+  }
+  private async addBarnExp(tx: Prisma.TransactionClient, characterId: string, exp: number) {
+    const p = await tx.farmProfile.findUnique({ where: { characterId }, select: { barnExp: true } });
+    if (!p) return;
+    const newExp = p.barnExp + exp;
+    await tx.farmProfile.update({ where: { characterId }, data: { barnExp: newExp, barnLevel: this.barnLevel(newExp) } });
   }
 
   private async getCharacter(userId: string) {

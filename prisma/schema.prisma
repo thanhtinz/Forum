@@ -2652,6 +2652,8 @@ model FarmProfile {
   exp            Int       @default(0)
   plotCount      Int       @default(0)
   nextPlotPrice  Int       @default(5000) // giá ô đất kế tiếp (tăng dần)
+  barnLevel      Int       @default(0) // cấp chuồng thú
+  barnExp        Int       @default(0) // EXP chuồng thú
   dogUntil       DateTime? // chó bảo vệ tới khi nào
   lastCheckinAt  DateTime?
   kheLastWaterAt DateTime? // lần tưới cây khế gần nhất (mỗi ngày)

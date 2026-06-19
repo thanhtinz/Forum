@@ -143,8 +143,7 @@ export default function FarmPage() {
         );
       })()}
 
-      <section className="card relative overflow-hidden p-4 pb-12 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.55)), url(${FARM_BG})` }}>
-        <DogCompanion active={s.profile.dogActive} />
+      <section className="card overflow-hidden p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Ô đất ({s.profile.plotCount}/{s.profile.maxPlots})</h2>
           <span className="text-xs text-ink-600">{s.profile.nextPlotLevel != null ? `Ô kế mở ở cấp ${s.profile.nextPlotLevel}` : 'Đã mở tối đa'}</span>
@@ -152,14 +151,17 @@ export default function FarmPage() {
         {s.plots.length === 0 ? (
           <p className="text-sm text-ink-700">Đang mở ô đất…</p>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {s.plots.map((p) => {
+          <div className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-xl border border-ink-200/60" style={{ aspectRatio: '900 / 757', backgroundImage: `url(${FARM_BG})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+            <DogCompanion active={s.profile.dogActive} />
+            <div className="absolute inset-0 overflow-y-auto px-[8%] py-[11%]">
+              <div className="flex flex-wrap content-start justify-center gap-2">
+                {s.plots.map((p) => {
               const seeds = (s.warehouse || []).filter((w) => w.category === 'SEED' && w.quantity > 0);
               const ferts = s.fertilizers || [];
               const prog = p.progress ?? 0;
               const stageSrc = cropStage(p.slug || '', p.ready, prog) || p.asset || '';
               return (
-              <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
+              <div key={p.index} className="w-[78px] shrink-0 rounded-xl border border-ink-200/70 bg-white/85 p-1.5 text-center shadow-sm">
                 <div className="relative grid h-24 place-items-center rounded-lg bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${p.empty && !p.tilled ? SOIL_UNTILLED : SOIL_TILLED})` }}>
                   {!p.empty && (stageSrc
                     // cây lớn dần: ảnh sprite theo giai đoạn, nhỏ lúc mới trồng to khi sắp chín
@@ -221,6 +223,8 @@ export default function FarmPage() {
               </div>
               );
             })}
+              </div>
+            </div>
           </div>
         )}
       </section>

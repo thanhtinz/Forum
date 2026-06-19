@@ -9,6 +9,7 @@ import { formatDuration, secondsUntil } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { cropEmoji } from '@/lib/gameIcons';
 import { cropStage } from '@/lib/cropSprites';
+import DogCompanion from '@/components/DogCompanion';
 
 const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
 const SOIL_TILLED = '/game-assets/nongtrai/img/product/dat.png';      // đất đã xới
@@ -86,8 +87,7 @@ export default function FarmPage() {
       {/* Chó giữ nhà + Đi cướp */}
       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="card flex items-center gap-3 p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/game-assets/nongtrai/img/dog.jpg" alt="Chó giữ nhà" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+          <span className="grid h-12 w-16 shrink-0 place-items-center"><span className="dogspr dog-sit" /></span>
           {/* asset chuồng chó dùng chung khu nông trại */}
           <div className="min-w-0 flex-1">
             <p className="font-semibold">Chó giữ nhà</p>
@@ -143,7 +143,8 @@ export default function FarmPage() {
         );
       })()}
 
-      <section className="card overflow-hidden p-4 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.55)), url(${FARM_BG})` }}>
+      <section className="card relative overflow-hidden p-4 pb-12 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.55)), url(${FARM_BG})` }}>
+        <DogCompanion active={s.profile.dogActive} />
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Ô đất ({s.profile.plotCount}/{s.profile.maxPlots})</h2>
           <span className="text-xs text-ink-600">{s.profile.nextPlotLevel != null ? `Ô kế mở ở cấp ${s.profile.nextPlotLevel}` : 'Đã mở tối đa'}</span>

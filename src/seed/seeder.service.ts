@@ -75,6 +75,9 @@ export class SeederService implements OnApplicationBootstrap {
       }
     } catch (e) { this.logger.warn(`Seed fishSpecies lỗi: ${(e as Error).message}`); }
 
+    // Reset 1 lần: xoá roster cây/thú/công thức cũ, thay bằng pack mới (chỉ chạy khi còn dữ liệu cũ)
+    try { await this.resetFarmRosterIfNeeded(); } catch (e) { this.logger.warn(`Reset farm roster lỗi: ${(e as Error).message}`); }
+
     try {
       for (const c of CROPS) {
         await this.prisma.cropTemplate.upsert({ where: { slug: c.slug }, update: {}, create: c });
@@ -274,5 +277,51 @@ export class SeederService implements OnApplicationBootstrap {
     }
 
     this.logger.log(`Auto-seed hoàn tất: ${n} bản ghi template`);
+  }
+
+  // Xoá roster cây/thú/công thức cũ (không thuộc pack mới) — chạy 1 lần khi còn dữ liệu cũ.
+  private async resetFarmRosterIfNeeded() {
+    const cropSlugs = CROPS.map((c) => c.slug);
+    const animalSlugs = ANIMALS.map((a) => a.slug);
+    const recipeSlugs = RECIPES.map((r) => r.slug);
+
+    // Có còn cây/thú cũ (ngoài danh sách mới) không?
+    const oldCrops = await this.prisma.cropTemplate.count({ where: { slug: { notIn: cropSlugs } } });
+    const oldAnimals = await this.prisma.animalTemplate.count({ where: { slug: { notIn: animalSlugs } } });
+    if (oldCrops === 0 && oldAnimals === 0) return; // đã sạch, bỏ qua
+
+    this.logger.log('Reset roster nông trại: xoá cây/thú/công thức cũ...');
+
+    // 1) Cây: gỡ cây đang trồng thuộc loại bị xoá rồi xoá template
+    const removeCrops = await this.prisma.cropTemplate.findMany({ where: { slug: { notIn: cropSlugs } }, select: { id: true } });
+    if (removeCrops.length) {
+      const ids = removeCrops.map((c) => c.id);
+      await this.prisma.farmPlot.updateMany({
+        where: { cropId: { in: ids } },
+        data: { cropId: null, plantedAt: null, readyAt: null, watered: false, tilled: false, health: 100, yield: 0 },
+      });
+      await this.prisma.cropTemplate.deleteMany({ where: { id: { in: ids } } });
+    }
+
+    // 2) Thú: xoá thú đang nuôi thuộc loại bị xoá rồi xoá template
+    const removeAnimals = await this.prisma.animalTemplate.findMany({ where: { slug: { notIn: animalSlugs } }, select: { id: true } });
+    if (removeAnimals.length) {
+      const ids = removeAnimals.map((a) => a.id);
+      await this.prisma.farmAnimal.deleteMany({ where: { animalId: { in: ids } } });
+      await this.prisma.animalTemplate.deleteMany({ where: { id: { in: ids } } });
+    }
+
+    // 3) Công thức: xoá công thức cũ (kèm đang nấu/đã học) — sẽ seed lại theo danh sách mới
+    const removeRecipes = await this.prisma.recipeTemplate.findMany({ where: { slug: { notIn: recipeSlugs } }, select: { id: true } });
+    if (removeRecipes.length) {
+      const ids = removeRecipes.map((r) => r.id);
+      await this.prisma.farmCooking.deleteMany({ where: { recipeId: { in: ids } } });
+      await this.prisma.farmSkill.deleteMany({ where: { recipeId: { in: ids } } });
+      await this.prisma.recipeTemplate.deleteMany({ where: { id: { in: ids } } }); // RecipeIngredient cascade
+    }
+
+    // 4) Cập nhật dữ liệu cây/thú giữ lại về đúng pack mới (giá/chỉ số/icon)
+    for (const c of CROPS) await this.prisma.cropTemplate.upsert({ where: { slug: c.slug }, update: c, create: c });
+    for (const a of ANIMALS) await this.prisma.animalTemplate.upsert({ where: { slug: a.slug }, update: a, create: a });
   }
 }

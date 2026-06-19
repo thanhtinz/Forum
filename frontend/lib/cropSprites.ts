@@ -5,22 +5,22 @@ const BASE = '/game-assets/nongtrai/pixel';
 const STAGES = 5;
 
 export const CROP_BAND: Record<string, string> = {
-  'lua': 'b10',
   'ca-chua': 'b0',
-  'toi': 'b6',
-  'nho': 'b1',
-  'thanh-long': 'b14',
-  'xoai': 'b4',
-  'dua-hau': 'b12',
+  'cu-cai': 'b1',
+  'cu-den': 'b2',
   'ca-rot': 'b3',
-  'khom': 'b15',
-  'bap': 'b10',
-  'dua-leo': 'b11',
-  'ca-tim': 'b13',
-  'nha-dam': 'b15',
+  'khoai-lang': 'b4',
+  'khoai-tay': 'b5',
+  'bong': 'b6',
   'hoa-hong': 'b7',
+  'hoa-chuong': 'b8',
   'huong-duong': 'b9',
-  'tulip': 'b8',
+  'dau-bap': 'b10',
+  'bi-ngo': 'b11',
+  'dua-hau': 'b12',
+  'ca-tim': 'b13',
+  'ot': 'b14',
+  'bap-cai': 'b15',
 };
 
 // Icon nông sản (cho cửa hàng / kho / sản phẩm thu hoạch)

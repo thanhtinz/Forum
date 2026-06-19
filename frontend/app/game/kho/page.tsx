@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
+import { cropFruit } from '@/lib/cropSprites';
 
 interface WItem { slug: string; name: string; category: string; quantity: number; unitSell: number; asset?: string | null }
 interface FishItem { id: string; name: string; weightKg: number; value: number; asset: string | null }
@@ -63,16 +64,20 @@ export default function WarehousePage() {
         <section key={g.cat} className="card p-4">
           <h2 className="mb-2 font-semibold">{CAT_LABEL[g.cat] || g.cat} ({g.items.length})</h2>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {g.items.map((w) => (
+            {g.items.map((w) => {
+              const cropKey = w.slug.replace(/^seed_/, '');
+              const icon = cropFruit(cropKey) || w.asset || KNOWN_ASSET[w.slug];
+              return (
               <div key={w.slug + w.category} className="flex items-center gap-2 rounded-lg border border-ink-100 p-2 text-sm dark:border-ink-800">
-                {(w.asset || KNOWN_ASSET[w.slug])
+                {icon
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={w.asset || KNOWN_ASSET[w.slug]} alt="" className="h-8 w-8 object-contain" />
+                  ? <img src={icon} alt="" className="h-8 w-8 object-contain" />
                   : <span className="grid h-8 w-8 place-items-center text-lg">{cropEmoji(w.slug.replace(/^(seed_|dish_)/, ''))}</span>}
                 <div className="min-w-0 flex-1"><p className="truncate font-medium">{w.name} <span className="text-ink-400">×{w.quantity}</span></p><p className="text-xs text-ink-400">{w.unitSell ? `${formatCoin(w.unitSell)}/cái` : 'không bán'}</p></div>
                 {w.unitSell > 0 && <button onClick={() => sellItem(w)} className="btn-primary shrink-0 !px-2 !py-1 text-xs">Bán</button>}
               </div>
-            ))}
+              );
+            })}
           </div>
         </section>
       ))}

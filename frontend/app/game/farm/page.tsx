@@ -8,6 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { formatDuration, secondsUntil } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { cropEmoji } from '@/lib/gameIcons';
+import { cropStage } from '@/lib/cropSprites';
 
 const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
 const GROUND = '/game-assets/nongtrai/img/product/dat.png';
@@ -167,14 +168,15 @@ export default function FarmPage() {
               const seeds = (s.warehouse || []).filter((w) => w.category === 'SEED' && w.quantity > 0);
               const ferts = s.fertilizers || [];
               const prog = p.progress ?? 0;
+              const stageSrc = cropStage(p.slug || '', p.ready, prog) || (p.asset ? growthSrc(p.asset, p.ready, prog) : '');
               return (
               <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
                 <div className={`relative grid h-24 place-items-center rounded-lg bg-amber-900/10 bg-contain bg-center bg-no-repeat ${p.empty && !p.tilled ? 'opacity-60' : ''}`} style={{ backgroundImage: `url(${GROUND})` }}>
-                  {!p.empty && (p.asset
+                  {!p.empty && (stageSrc
                     // cây lớn dần: ảnh sprite theo giai đoạn, nhỏ lúc mới trồng to khi sắp chín
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={growthSrc(p.asset, p.ready, prog)} alt="" onError={(e) => { if (p.asset) (e.currentTarget as HTMLImageElement).src = p.asset; }}
-                        className="object-contain transition-all" style={{ maxHeight: `${40 + prog * 60}%` }} />
+                    ? <img src={stageSrc} alt="" onError={(e) => { if (p.asset) (e.currentTarget as HTMLImageElement).src = p.asset; }}
+                        className="object-contain transition-all" style={{ maxHeight: `${45 + prog * 55}%` }} />
                     : <span className="leading-none transition-all" style={{ fontSize: `${18 + prog * 34}px` }}>{cropEmoji(p.slug || '')}</span>)}
                   {p.empty && <span className="text-xs font-medium text-ink-500">{p.tilled ? '+ Gieo' : 'Đất chưa xới'}</span>}
                 </div>

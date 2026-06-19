@@ -7,6 +7,7 @@ import { ChevronLeft, Beef, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatDuration, secondsUntil } from '@/lib/format';
+import { animalSprite } from '@/lib/cropSprites';
 import { useNow } from '@/lib/useNow';
 
 const BARN_BG = '/game-assets/nongtrai/img/chuong.png';
@@ -52,9 +53,9 @@ export default function AnimalsPage() {
             <Link href="/game/shop" className="flex items-center gap-1 rounded-lg bg-white/25 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/40"><ShoppingBag size={14} /> Mua thêm</Link>
           </div>
           {/* các con thú (có asset) đi lại dưới sàn chuồng */}
-          {owned.filter((a) => a.asset).slice(0, 12).map((a, i) => (
+          {owned.filter((a) => animalSprite(a.slug) || a.asset).slice(0, 12).map((a, i) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={a.id} src={a.asset!} alt={a.name} className="anim-walk h-12 object-contain" style={{ bottom: `${10 + (i % 3) * 26}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }} />
+            <img key={a.id} src={animalSprite(a.slug) || a.asset!} alt={a.name} className="anim-walk h-12 object-contain" style={{ bottom: `${10 + (i % 3) * 26}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }} />
           ))}
           {owned.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm text-white drop-shadow">Chuồng trống — mua thú ở cửa hàng</p>}
         </div>
@@ -66,9 +67,9 @@ export default function AnimalsPage() {
             {owned.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-2 rounded-xl border border-ink-200/70 p-3 dark:border-ink-800">
                 <div className="flex items-center gap-3">
-                  {a.asset
+                  {(animalSprite(a.slug) || a.asset)
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={a.asset} alt={a.name} className="h-12 w-12 object-contain" />
+                    ? <img src={animalSprite(a.slug) || a.asset!} alt={a.name} className="h-12 w-12 object-contain" />
                     : <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800"><Beef size={20} /></span>}
                   <div>
                     <p className="font-medium">{a.name}</p>

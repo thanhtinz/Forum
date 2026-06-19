@@ -36,3 +36,14 @@ export function cropStage(slug: string, ready: boolean, progress: number): strin
   const idx = ready ? STAGES - 1 : Math.max(0, Math.min(STAGES - 1, Math.floor((progress || 0) * STAGES)));
   return `${BASE}/${b}/${idx}.png`;
 }
+
+// Sprite thú nuôi (Pixel Lands Farm) — chỉ những con có trong pack
+export const ANIMAL_ART: Record<string, string> = {
+  ga: '/game-assets/nongtrai/pixel-animals/ga.png',
+  bo: '/game-assets/nongtrai/pixel-animals/bo.png',
+  cuu: '/game-assets/nongtrai/pixel-animals/cuu.png',
+};
+export function animalSprite(slug: string): string | null {
+  return ANIMAL_ART[slug] || null;
+}
+

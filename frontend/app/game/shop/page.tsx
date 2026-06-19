@@ -2,27 +2,37 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { mutate } from 'swr';
-import { ChevronLeft, Sprout, ShoppingBag, Coins, Beef, FlaskConical, Loader2, X } from 'lucide-react';
+import { ChevronLeft, Sprout, ShoppingBag, Coins, Beef, FlaskConical, Fish, ChefHat, Ship, Anchor, Loader2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
 
-type Tab = 'crop' | 'animal' | 'fertilizer';
+type Tab = 'crop' | 'animal' | 'fertilizer' | 'fishing' | 'recipe';
 
 interface Crop { slug: string; name: string; seedPrice: number; sellPrice?: number; growSeconds?: number; exp?: number; yieldMin?: number; yieldMax?: number; reqLevel?: number; asset?: string | null }
 interface Animal { slug: string; name: string; buyPrice: number; growSeconds?: number; lifeSeconds?: number; productName?: string | null; productYield?: number; productPrice?: number; sellGrown?: number; asset?: string | null }
 interface Fertilizer { slug: string; name: string; price: number; reduceSeconds?: number; asset?: string | null }
+interface Boat { slug: string; name: string; price: number; capacity: number; maxDepth: number; asset: string | null; owned: boolean }
+interface Rod { slug: string; name: string; tier: number; price: number; asset: string | null; owned: boolean }
+interface Recipe { slug: string; name: string; cookSeconds: number; reward: number; needSkill: boolean; learned: boolean; skillExp: number; asset: string | null; ingredients: { name: string; quantity: number }[] }
+interface FishShop { profile: { bait: number; rodTier: number }; baitPack: { uses: number; price: number }; rods: Rod[]; boats: Boat[] }
 
 type Selected =
   | { kind: 'crop'; item: Crop }
   | { kind: 'animal'; item: Animal }
-  | { kind: 'fertilizer'; item: Fertilizer };
+  | { kind: 'fertilizer'; item: Fertilizer }
+  | { kind: 'boat'; item: Boat }
+  | { kind: 'rod'; item: Rod }
+  | { kind: 'bait' }
+  | { kind: 'recipe'; item: Recipe };
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: 'crop', label: 'Hạt giống', icon: Sprout },
   { key: 'animal', label: 'Vật nuôi', icon: Beef },
   { key: 'fertilizer', label: 'Dụng cụ trồng trọt', icon: FlaskConical },
+  { key: 'fishing', label: 'Câu cá', icon: Fish },
+  { key: 'recipe', label: 'Công thức', icon: ChefHat },
 ];
 
 function Asset({ src, fallback, className = 'h-12 w-12' }: { src?: string | null; fallback: React.ReactNode; className?: string }) {
@@ -37,6 +47,8 @@ export default function GameShopPage() {
   const [crops, setCrops] = useState<Crop[]>([]);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [ferts, setFerts] = useState<Fertilizer[]>([]);
+  const [fish, setFish] = useState<FishShop | null>(null);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [selected, setSelected] = useState<Selected | null>(null);
@@ -44,13 +56,19 @@ export default function GameShopPage() {
 
   const loadCoin = useCallback(() => { mutate('/game/character'); }, []);
 
-  useEffect(() => {
-    if (loading || !user) return;
-    loadCoin();
+  const loadAll = useCallback(() => {
     api.get<Crop[]>('/farm/crops').then(setCrops).catch(() => {});
     api.get<Animal[]>('/farm/animals').then(setAnimals).catch(() => {});
     api.get<Fertilizer[]>('/farm/fertilizers').then(setFerts).catch(() => {});
-  }, [user, loading, loadCoin]);
+    api.get<FishShop>('/fishing/state').then(setFish).catch(() => {});
+    api.get<{ recipes: Recipe[] }>('/farm/recipes').then((r) => setRecipes(r.recipes || [])).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    loadCoin();
+    loadAll();
+  }, [user, loading, loadCoin, loadAll]);
 
   function openView(sel: Selected) { setSelected(sel); setQty(1); setMsg(null); }
 
@@ -64,21 +82,42 @@ export default function GameShopPage() {
       } else if (selected.kind === 'fertilizer') {
         await api.post('/farm/fertilizer/buy', { slug: selected.item.slug, qty });
         setMsg({ ok: true, text: `Đã mua ${qty} ${selected.item.name}` });
-      } else {
+      } else if (selected.kind === 'animal') {
         await api.post('/farm/animal/buy', { slug: selected.item.slug });
         setMsg({ ok: true, text: `Đã mua ${selected.item.name}` });
+      } else if (selected.kind === 'boat') {
+        await api.post('/fishing/boat/buy', { slug: selected.item.slug });
+        setMsg({ ok: true, text: `Đã mua ${selected.item.name}` });
+      } else if (selected.kind === 'rod') {
+        await api.post('/fishing/rod/buy', { slug: selected.item.slug });
+        setMsg({ ok: true, text: `Đã mua ${selected.item.name}` });
+      } else if (selected.kind === 'bait') {
+        await api.post('/fishing/bait/buy', { packs: qty });
+        setMsg({ ok: true, text: `Đã mua ${qty} gói mồi` });
+      } else if (selected.kind === 'recipe') {
+        await api.post('/farm/kitchen/learn', { recipeSlug: selected.item.slug });
+        setMsg({ ok: true, text: `Đã học ${selected.item.name}` });
       }
       loadCoin();
+      loadAll();
       setSelected(null);
     } catch (e: any) {
-      setMsg({ ok: false, text: e.message || 'Mua thất bại' });
+      setMsg({ ok: false, text: e.message || 'Thất bại' });
     } finally { setBusy(false); }
   }
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để vào cửa hàng.</div>;
 
-  const unitPrice = selected ? (selected.kind === 'crop' ? selected.item.seedPrice : selected.kind === 'fertilizer' ? selected.item.price : selected.item.buyPrice) : 0;
-  const canQty = selected?.kind === 'crop' || selected?.kind === 'fertilizer';
+  const canQty = selected?.kind === 'crop' || selected?.kind === 'fertilizer' || selected?.kind === 'bait';
+  const isRecipe = selected?.kind === 'recipe';
+  const unitPrice = !selected ? 0
+    : selected.kind === 'crop' ? selected.item.seedPrice
+    : selected.kind === 'fertilizer' ? selected.item.price
+    : selected.kind === 'animal' ? selected.item.buyPrice
+    : selected.kind === 'boat' ? selected.item.price
+    : selected.kind === 'rod' ? selected.item.price
+    : selected.kind === 'bait' ? (fish?.baitPack.price ?? 0)
+    : 0;
   const total = unitPrice * (canQty ? qty : 1);
 
   return (
@@ -151,22 +190,85 @@ export default function GameShopPage() {
         </div>
       )}
 
-      <p className="text-xs text-ink-400">Cần câu & thuyền câu cá mua trong <a href="/game/fishing" className="text-brand-600 hover:underline">trang Câu cá</a>.</p>
+      {/* Câu cá: thuyền + cần + mồi */}
+      {tab === 'fishing' && (
+        <div className="space-y-4">
+          <div>
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold"><Ship size={15} /> Thuyền</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {(fish?.boats || []).map((b) => (
+                <div key={b.slug} className="card flex items-center gap-3 p-3">
+                  <Asset src={b.asset} fallback={<Ship size={20} />} />
+                  <div className="min-w-0 flex-1"><p className="truncate font-medium">{b.name}{b.owned && <span className="ml-1 text-xs text-sky-600">• đang dùng</span>}</p><p className="text-xs text-ink-400 inline-flex items-center gap-1"><Coins size={11} /> {formatCoin(b.price)}</p></div>
+                  <button onClick={() => openView({ kind: 'boat', item: b })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold"><Anchor size={15} /> Cần câu</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {(fish?.rods || []).map((r) => (
+                <div key={r.slug} className="card flex items-center gap-3 p-3">
+                  <Asset src={r.asset} fallback={<Anchor size={20} />} />
+                  <div className="min-w-0 flex-1"><p className="truncate font-medium">{r.name}{r.owned && <span className="ml-1 text-xs text-emerald-600">• đã có</span>}</p><p className="text-xs text-ink-400 inline-flex items-center gap-1"><Coins size={11} /> {formatCoin(r.price)} · bậc {r.tier}</p></div>
+                  <button onClick={() => openView({ kind: 'rod', item: r })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-semibold">🪱 Mồi câu</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="card flex items-center gap-3 p-3">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-ink-100 text-2xl dark:bg-ink-800">🪱</span>
+                <div className="min-w-0 flex-1"><p className="truncate font-medium">Gói mồi câu</p><p className="text-xs text-ink-400 inline-flex items-center gap-1"><Coins size={11} /> {formatCoin(fish?.baitPack.price ?? 0)} · {fish?.baitPack.uses ?? 0} lượt · đang có {fish?.profile.bait ?? 0}</p></div>
+                <button onClick={() => openView({ kind: 'bait' })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Công thức làm thức ăn */}
+      {tab === 'recipe' && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {recipes.map((r) => (
+            <div key={r.slug} className="card flex items-center gap-3 p-3">
+              <Asset src={r.asset} fallback={<span className="text-2xl">🍽️</span>} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{r.name}</p>
+                <p className="text-xs text-ink-400">{!r.needSkill || r.learned ? 'Đã có sẵn' : `Học: ${formatCoin(r.skillExp)} EXP`}</p>
+              </div>
+              <button onClick={() => openView({ kind: 'recipe', item: r })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
+            </div>
+          ))}
+          {recipes.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có công thức.</p>}
+        </div>
+      )}
 
       {/* ───── Popup thông tin sản phẩm ───── */}
       {selected && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setSelected(null)}>
           <div className="card w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-start justify-between gap-2">
-              <h2 className="text-lg font-bold">{selected.item.name}</h2>
+              <h2 className="text-lg font-bold">{selected.kind === 'bait' ? 'Gói mồi câu' : selected.item.name}</h2>
               <button onClick={() => setSelected(null)} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
             </div>
 
             <div className="flex gap-3">
               <Asset
-                src={selected.item.asset}
+                src={selected.kind === 'bait' ? null : selected.item.asset}
                 className="h-20 w-20"
-                fallback={selected.kind === 'crop' ? <span className="text-3xl">{cropEmoji(selected.item.slug)}</span> : selected.kind === 'animal' ? <Beef size={28} /> : <FlaskConical size={28} />}
+                fallback={
+                  selected.kind === 'crop' ? <span className="text-3xl">{cropEmoji(selected.item.slug)}</span>
+                  : selected.kind === 'animal' ? <Beef size={28} />
+                  : selected.kind === 'fertilizer' ? <FlaskConical size={28} />
+                  : selected.kind === 'boat' ? <Ship size={28} />
+                  : selected.kind === 'rod' ? <Anchor size={28} />
+                  : selected.kind === 'recipe' ? <span className="text-3xl">🍽️</span>
+                  : <span className="text-3xl">🪱</span>
+                }
               />
               <div className="flex-1 space-y-0.5 text-sm text-ink-600 dark:text-ink-300">
                 {selected.kind === 'crop' && (() => { const c = selected.item; return (
@@ -192,13 +294,42 @@ export default function GameShopPage() {
                     {f.reduceSeconds ? <p>Giảm {formatDuration(f.reduceSeconds)} thời gian chín</p> : null}
                   </>
                 ); })()}
+                {selected.kind === 'boat' && (() => { const b = selected.item; return (
+                  <>
+                    <p>Giá: <b>{formatCoin(b.price)}</b> coin</p>
+                    <p>Sức chứa: {b.capacity} cá</p>
+                    <p>Ra được độ sâu tối đa: {b.maxDepth}</p>
+                    {b.owned ? <p className="text-sky-600">Đang dùng</p> : null}
+                  </>
+                ); })()}
+                {selected.kind === 'rod' && (() => { const r = selected.item; return (
+                  <>
+                    <p>Giá: <b>{formatCoin(r.price)}</b> coin</p>
+                    <p>Bậc cần: {r.tier} (câu được độ sâu tới {r.tier})</p>
+                    {r.owned ? <p className="text-emerald-600">Đã có</p> : null}
+                  </>
+                ); })()}
+                {selected.kind === 'bait' && (
+                  <>
+                    <p>Giá: <b>{formatCoin(fish?.baitPack.price ?? 0)}</b> coin/gói</p>
+                    <p>Mỗi gói: {fish?.baitPack.uses ?? 0} lượt câu</p>
+                    <p>Đang có: {fish?.profile.bait ?? 0} lượt</p>
+                  </>
+                )}
+                {selected.kind === 'recipe' && (() => { const r = selected.item; return (
+                  <>
+                    <p>Thời gian nấu: {formatDuration(r.cookSeconds)}</p>
+                    <p>Nguyên liệu: {r.ingredients.map((i) => `${i.name}×${i.quantity}`).join(', ') || '—'}</p>
+                    {r.needSkill && !r.learned ? <p>Học tốn: <b>{formatCoin(r.skillExp)}</b> EXP nông trại</p> : <p className="text-emerald-600">Đã có sẵn — nấu ở Nhà bếp</p>}
+                  </>
+                ); })()}
               </div>
             </div>
 
-            {/* Số lượng (cây trồng & phân bón) */}
+            {/* Số lượng (cây / phân / mồi) */}
             {canQty && (
               <div className="mt-4 flex items-center gap-1 text-sm">
-                <span className="text-ink-500">Số lượng:</span>
+                <span className="text-ink-500">{selected?.kind === 'bait' ? 'Số gói:' : 'Số lượng:'}</span>
                 <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="grid h-8 w-8 place-items-center rounded bg-ink-100 dark:bg-ink-800">−</button>
                 <input type="number" min={1} value={qty} onChange={(e) => setQty(Math.max(1, Number(e.target.value) || 1))} className="input w-16 text-center !py-1" />
                 <button onClick={() => setQty((q) => q + 1)} className="grid h-8 w-8 place-items-center rounded bg-ink-100 dark:bg-ink-800">+</button>
@@ -207,10 +338,16 @@ export default function GameShopPage() {
             )}
 
             <div className="mt-4 flex items-center justify-between gap-2">
-              <span className="text-sm">Tổng: <b className="inline-flex items-center gap-1 text-amber-600"><Coins size={14} /> {formatCoin(total)}</b></span>
-              <button disabled={busy} onClick={confirmBuy} className="btn-primary inline-flex items-center gap-1 disabled:opacity-50">
-                {busy ? <Loader2 size={15} className="animate-spin" /> : <Coins size={15} />} Mua
-              </button>
+              {isRecipe
+                ? <span className="text-sm">{(selected.item as Recipe).needSkill && !(selected.item as Recipe).learned ? <>Học: <b className="text-amber-600">{formatCoin((selected.item as Recipe).skillExp)} EXP</b></> : 'Đã có sẵn'}</span>
+                : <span className="text-sm">Tổng: <b className="inline-flex items-center gap-1 text-amber-600"><Coins size={14} /> {formatCoin(total)}</b></span>}
+              {isRecipe
+                ? ((selected.item as Recipe).needSkill && !(selected.item as Recipe).learned
+                    ? <button disabled={busy} onClick={confirmBuy} className="btn-primary inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <ChefHat size={15} />} Học</button>
+                    : <span className="text-sm font-medium text-emerald-600">Đã có</span>)
+                : ((selected.kind === 'boat' && selected.item.owned) || (selected.kind === 'rod' && selected.item.owned)
+                    ? <span className="text-sm font-medium text-emerald-600">Đã sở hữu</span>
+                    : <button disabled={busy} onClick={confirmBuy} className="btn-primary inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <Coins size={15} />} {selected.kind === 'boat' ? 'Mua thuyền' : 'Mua'}</button>)}
             </div>
           </div>
         </div>

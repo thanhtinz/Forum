@@ -12,6 +12,8 @@ const LEVEL_KG = 2000;
 const REFILL_SEC = 14400; // 4h hồi cá
 const BITE_MIN = 3;
 const BITE_MAX = 7;
+const BAIT_PACK_USES = 100; // 1 gói mồi = 100 lượt
+const BAIT_PACK_PRICE = 500; // coin / gói
 
 @Injectable()
 export class FishingService {
@@ -48,8 +50,10 @@ export class FishingService {
         totalCaught: profile.totalCaught,
         rodTier: profile.rodTier,
         boatSlug: profile.boatSlug,
+        bait: profile.bait1,
         boat: boat ? { slug: boat.slug, name: boat.name, capacity: boat.capacity, maxDepth: boat.maxDepth, asset: boat.asset } : null,
       },
+      baitPack: { uses: BAIT_PACK_USES, price: BAIT_PACK_PRICE },
       cast: profile.castDepth != null ? { depth: profile.castDepth, biteAt: profile.biteAt, biteReady } : null,
       depths: depths.map((d) => {
         const reachable = !!boat && boat.maxDepth >= d.depth;
@@ -121,6 +125,7 @@ export class FishingService {
     const boat = await this.prisma.fishingBoat.findUnique({ where: { slug: profile.boatSlug } });
     if (!boat || boat.maxDepth < depth) throw new BadRequestException('Thuyền của bạn chưa ra được độ sâu này — nâng cấp thuyền');
     if (profile.rodTier < d.minRodTier) throw new BadRequestException(`Cần câu bậc ${d.minRodTier} trở lên mới câu được độ sâu này`);
+    if (profile.bait1 <= 0) throw new BadRequestException('Bạn đã hết mồi câu — mua thêm ở Cửa hàng (tab Câu cá)');
     if (profile.castDepth != null) throw new BadRequestException('Bạn đang thả cần, hãy giật cá trước');
 
     const holdCount = await this.prisma.fishCatch.count({ where: { characterId: char.id, soldAt: null, pondAt: null, onBoat: true } });
@@ -131,11 +136,25 @@ export class FishingService {
 
     const delay = BITE_MIN + Math.floor(Math.random() * (BITE_MAX - BITE_MIN + 1));
     const biteAt = new Date(Date.now() + delay * 1000);
+    // Mỗi lần thả cần tốn 1 mồi
     await this.prisma.fishingProfile.update({
       where: { characterId: char.id },
-      data: { castDepth: depth, biteAt },
+      data: { castDepth: depth, biteAt, bait1: { decrement: 1 } },
     });
     return { ok: true, depth, biteInSec: delay, biteAt };
+  }
+
+  // Mua mồi câu (mỗi gói = 100 lượt)
+  async buyBait(userId: string, packs = 1) {
+    if (!Number.isInteger(packs) || packs < 1 || packs > 100) throw new BadRequestException('Số gói mồi không hợp lệ (1-100)');
+    const char = await this.getCharacter(userId);
+    await this.getProfile(char.id);
+    await this.spendCoin(char.id, BAIT_PACK_PRICE * packs, 'fishing_bait', 'Mua mồi câu');
+    await this.prisma.fishingProfile.update({
+      where: { characterId: char.id },
+      data: { bait1: { increment: BAIT_PACK_USES * packs } },
+    });
+    return { ok: true, added: BAIT_PACK_USES * packs, spent: BAIT_PACK_PRICE * packs };
   }
 
   // ──────────────────────────────────────────────

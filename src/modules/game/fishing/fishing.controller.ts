@@ -31,6 +31,11 @@ export class FishingController {
     return this.fishing.buyBoat(userId, slug);
   }
 
+  @Post('bait/buy')
+  buyBait(@CurrentUser('id') userId: string, @Body('packs') packs = 1) {
+    return this.fishing.buyBait(userId, Number(packs));
+  }
+
   @Post('cast')
   cast(@CurrentUser('id') userId: string, @Body('depth') depth: number) {
     return this.fishing.cast(userId, Number(depth));

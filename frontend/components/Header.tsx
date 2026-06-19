@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  Store, Wrench, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, Package, TrendingUp,
+  Store, Wrench, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, Package, TrendingUp, ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -29,6 +29,7 @@ const NAV = [
   { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
   { href: '/predictions', label: 'Cá cược', icon: TrendingUp },
   { href: '/ai', label: 'AI Companion', icon: Sparkles },
+  { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },
   { href: '/tools', label: 'Công cụ', icon: Wrench },
 ];
 

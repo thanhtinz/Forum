@@ -18,6 +18,7 @@ import { AiCompanionModule } from './modules/ai-companion/ai-companion.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ModerationModule } from './modules/moderation/moderation.module';
+import { ScamModule } from './modules/scam/scam.module';
 import { ReputationModule } from './modules/reputation/reputation.module';
 import { MediaModule } from './modules/media/media.module';
 import { SearchModule } from './modules/search/search.module';
@@ -77,6 +78,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
     PaymentsModule,
     AiCompanionModule,
     ModerationModule,
+    ScamModule,
     ReputationModule,
     MediaModule,
     SearchModule,

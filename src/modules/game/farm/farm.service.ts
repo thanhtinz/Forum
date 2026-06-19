@@ -17,8 +17,17 @@ const CHECKIN_REWARD = 500;
 const STEAL_EXP_COST = 200;
 const STEAL_SUCCESS = 0.6;
 const MAX_FEED = 3;
-// Thức ăn & thuốc cho vật nuôi (gia cầm / gia súc / thuốc thú y)
-const FEED_OF: Record<string, string> = { ga: 'feed-poultry', vit: 'feed-poultry', bo: 'feed-livestock', lon: 'feed-livestock' };
+// Thức ăn theo loại: gia cầm (gà/vịt) vs gia súc (bò/lợn)
+function feedSlugFor(slug: string) {
+  return (slug.startsWith('ga') || slug.startsWith('vit')) ? 'feed-poultry' : 'feed-livestock';
+}
+// Icon sản phẩm vật nuôi (trứng/thịt) — pack GHAP
+const PRODUCT_ICON: Record<string, string> = {
+  'trung': '/game-assets/nongtrai/products/trung.png',
+  'trung-vit': '/game-assets/nongtrai/products/trung-vit.png',
+  'thit-heo': '/game-assets/nongtrai/products/thit.png',
+  'thit-bo': '/game-assets/nongtrai/products/thit.png',
+};
 const SUPPLIES = [
   { slug: 'feed-poultry', name: 'Thức ăn gia cầm', price: 120, kind: 'feed' },
   { slug: 'feed-livestock', name: 'Thức ăn gia súc', price: 200, kind: 'feed' },
@@ -466,7 +475,7 @@ export class FarmService {
       throw new BadRequestException('Chưa tới giờ cho ăn lại');
     }
     if (a.fedCount >= MAX_FEED) throw new BadRequestException('Đã cho ăn tối đa, hãy thu hoạch sản phẩm');
-    const feedSlug = FEED_OF[a.animal.slug] || 'feed-livestock';
+    const feedSlug = feedSlugFor(a.animal.slug);
     const feedName = feedSlug === 'feed-poultry' ? 'Thức ăn gia cầm' : 'Thức ăn gia súc';
     const productReadyAt = a.productReadyAt ?? new Date(Math.max(now, a.grownAt.getTime()));
     const gotSick = Math.random() < SICK_CHANCE;
@@ -511,7 +520,7 @@ export class FarmService {
         name: a.animal.productName ?? a.animal.productSlug!,
         category: 'PRODUCT',
         unitSell: a.animal.productPrice,
-        asset: a.animal.asset,
+        asset: PRODUCT_ICON[a.animal.productSlug!] ?? a.animal.asset,
       }, amount);
       await tx.farmAnimal.update({
         where: { id: a.id },

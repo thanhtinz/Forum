@@ -217,9 +217,13 @@ html, body {
 
 /* Thú nuôi GHAP — strip 48x36, animate steps() */
 .farmanim { display: inline-block; width: 48px; height: 36px; background-repeat: no-repeat; background-size: auto 36px; image-rendering: pixelated; }
-.fa-ga  { background-image: url(/game-assets/nongtrai/animals/ga.png);  animation: fagachk .8s steps(4) infinite; }
-.fa-vit { background-image: url(/game-assets/nongtrai/animals/vit.png); animation: fagachk .8s steps(4) infinite; }
-.fa-bo  { background-image: url(/game-assets/nongtrai/animals/bo.png);  animation: fabolon 1s steps(8) infinite; }
-.fa-lon { background-image: url(/game-assets/nongtrai/animals/lon.png); animation: fabolon 1s steps(8) infinite; }
+.fa-ga      { background-image: url(/game-assets/nongtrai/animals/ga.png);      animation: fagachk .8s steps(4) infinite; }
+.fa-ga-nau  { background-image: url(/game-assets/nongtrai/animals/ga-nau.png);  animation: fagachk .8s steps(4) infinite; }
+.fa-vit     { background-image: url(/game-assets/nongtrai/animals/vit.png);     animation: fagachk .8s steps(4) infinite; }
+.fa-vit-co  { background-image: url(/game-assets/nongtrai/animals/vit-co.png);  animation: fagachk .8s steps(4) infinite; }
+.fa-bo      { background-image: url(/game-assets/nongtrai/animals/bo.png);      animation: fabolon 1s steps(8) infinite; }
+.fa-bo-nau  { background-image: url(/game-assets/nongtrai/animals/bo-nau.png);  animation: fabolon 1s steps(8) infinite; }
+.fa-lon     { background-image: url(/game-assets/nongtrai/animals/lon.png);     animation: fabolon 1s steps(8) infinite; }
+.fa-lon-den { background-image: url(/game-assets/nongtrai/animals/lon-den.png); animation: fabolon 1s steps(8) infinite; }
 @keyframes fagachk { to { background-position-x: -192px; } }
 @keyframes fabolon { to { background-position-x: -384px; } }

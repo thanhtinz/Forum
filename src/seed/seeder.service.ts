@@ -101,6 +101,9 @@ export class SeederService implements OnApplicationBootstrap {
         });
         n++;
       }
+      // Lợn/Bò chuyển sang cho THỊT (migrate dữ liệu cũ: lợn chưa có sản phẩm, bò còn sữa)
+      await this.prisma.animalTemplate.updateMany({ where: { slug: 'lon', OR: [{ productSlug: null }, { productSlug: { not: 'thit-heo' } }] }, data: { productSlug: 'thit-heo', productName: 'Thịt heo', productYield: 2, productPrice: 400 } });
+      await this.prisma.animalTemplate.updateMany({ where: { slug: 'bo', OR: [{ productSlug: null }, { productSlug: { not: 'thit-bo' } }] }, data: { productSlug: 'thit-bo', productName: 'Thịt bò', productYield: 2, productPrice: 600, name: 'Bò' } });
     } catch (e) { this.logger.warn(`Seed farm lỗi: ${(e as Error).message}`); }
 
     // ── Minigame configs (nếu thiếu sẽ báo "Game không khả dụng") ──

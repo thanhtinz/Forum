@@ -38,13 +38,11 @@ export function cropStage(slug: string, ready: boolean, progress: number): strin
 }
 
 // Sprite thú nuôi (GHAP) — ảnh tĩnh (cho <img>) + class hoạt ảnh (steps)
-export const ANIMAL_ART: Record<string, string> = {
-  ga: '/game-assets/nongtrai/animals/ga_s.png',
-  bo: '/game-assets/nongtrai/animals/bo_s.png',
-  lon: '/game-assets/nongtrai/animals/lon_s.png',
-  vit: '/game-assets/nongtrai/animals/vit_s.png',
-};
-const ANIMAL_ANIM: Record<string, string> = { ga: 'fa-ga', bo: 'fa-bo', lon: 'fa-lon', vit: 'fa-vit' };
+const ANIMAL_SLUGS = ['ga', 'ga-nau', 'vit', 'vit-co', 'lon', 'lon-den', 'bo', 'bo-nau'];
+export const ANIMAL_ART: Record<string, string> = Object.fromEntries(
+  ANIMAL_SLUGS.map((s) => [s, `/game-assets/nongtrai/animals/${s}_s.png`]),
+);
+const ANIMAL_ANIM: Record<string, string> = Object.fromEntries(ANIMAL_SLUGS.map((s) => [s, `fa-${s}`]));
 export function animalSprite(slug: string): string | null {
   return ANIMAL_ART[slug] || null;
 }

@@ -194,3 +194,14 @@ html, body {
 .anim-walk { position: absolute; animation: walk-x linear infinite; }
 .anim-swim { position: absolute; animation: swim-x linear infinite; }
 .anim-bob { animation: bob-y ease-in-out infinite; }
+
+/* Chó giữ nhà — sprite strip 64x40, animate bằng steps() */
+.dogspr { width: 64px; height: 40px; background-repeat: no-repeat; background-size: auto 40px; image-rendering: pixelated; }
+.dog-walk  { background-image: url(/game-assets/nongtrai/dog/walk.png);  animation: dogwalk .72s steps(6) infinite; }
+.dog-run   { background-image: url(/game-assets/nongtrai/dog/run.png);   animation: dogrun .64s steps(8) infinite; }
+.dog-sit   { background-image: url(/game-assets/nongtrai/dog/sit.png);   animation: dogsit 1s steps(6) infinite; }
+.dog-sleep { background-image: url(/game-assets/nongtrai/dog/sleep.png); animation: dogsleep 1.2s steps(4) infinite; }
+@keyframes dogwalk  { to { background-position-x: -384px; } }
+@keyframes dogrun   { to { background-position-x: -512px; } }
+@keyframes dogsit   { to { background-position-x: -384px; } }
+@keyframes dogsleep { to { background-position-x: -256px; } }

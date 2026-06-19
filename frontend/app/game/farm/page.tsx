@@ -154,7 +154,7 @@ export default function FarmPage() {
         );
       })()}
 
-      <section className="card overflow-hidden p-4 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)), url(${FARM_BG})` }}>
+      <section className="card overflow-hidden p-4 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.55)), url(${FARM_BG})` }}>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Ô đất ({s.profile.plotCount}/{s.profile.maxPlots})</h2>
           <span className="text-xs text-ink-600">{s.profile.nextPlotLevel != null ? `Ô kế mở ở cấp ${s.profile.nextPlotLevel}` : 'Đã mở tối đa'}</span>
@@ -169,7 +169,7 @@ export default function FarmPage() {
               const prog = p.progress ?? 0;
               return (
               <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
-                <div className={`relative grid h-24 place-items-center rounded-lg bg-cover bg-center ${p.empty && !p.tilled ? 'saturate-50 brightness-90' : ''}`} style={{ backgroundImage: `url(${GROUND})` }}>
+                <div className={`relative grid h-24 place-items-center rounded-lg bg-amber-900/10 bg-contain bg-center bg-no-repeat ${p.empty && !p.tilled ? 'opacity-60' : ''}`} style={{ backgroundImage: `url(${GROUND})` }}>
                   {!p.empty && (p.asset
                     // cây lớn dần: ảnh sprite theo giai đoạn, nhỏ lúc mới trồng to khi sắp chín
                     // eslint-disable-next-line @next/next/no-img-element

@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { AvatarSlot, ConsumableType, MinigameType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { FISH_SPECIES } from './data/fishing.data';
+import { FISH_SPECIES, FISH_DEPTHS, FISHING_RODS, FISHING_BOATS } from './data/fishing.data';
 import { CROPS, FERTILIZERS, ANIMALS, RECIPES } from './data/farm.data';
 import { FOODS } from './data/foods.data';
 import { WARDROBE_ITEMS } from './data/wardrobe.data';
@@ -57,6 +57,19 @@ export class SeederService implements OnApplicationBootstrap {
           update: { ...f, stock: f.refillCount },
           create: { ...f, stock: f.refillCount },
         });
+        n++;
+      }
+      // Độ sâu hồ + cần câu + thuyền (admin sửa được sau)
+      for (const d of FISH_DEPTHS) {
+        await this.prisma.fishDepth.upsert({ where: { depth: d.depth }, update: d, create: d });
+        n++;
+      }
+      for (const r of FISHING_RODS) {
+        await this.prisma.fishingRod.upsert({ where: { slug: r.slug }, update: r, create: r });
+        n++;
+      }
+      for (const b of FISHING_BOATS) {
+        await this.prisma.fishingBoat.upsert({ where: { slug: b.slug }, update: b, create: b });
         n++;
       }
     } catch (e) { this.logger.warn(`Seed fishSpecies lỗi: ${(e as Error).message}`); }

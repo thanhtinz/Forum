@@ -8,18 +8,16 @@ import { useAuth } from '@/components/AuthProvider';
 import { formatCoin } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
 
-type Tab = 'crop' | 'animal' | 'fertilizer' | 'fishing';
+type Tab = 'crop' | 'animal' | 'fertilizer';
 
 interface Crop { slug: string; name: string; seedPrice: number; reqLevel?: number; asset?: string | null }
 interface Animal { slug: string; name: string; buyPrice: number; productName?: string | null; asset?: string | null }
 interface Fertilizer { slug: string; name: string; price: number; reduceSeconds?: number; asset?: string | null }
-interface FishZone { zone: number; rodPrice: number; baitPrice: number; hasRod: boolean }
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: 'crop', label: 'Hạt giống', icon: Sprout },
   { key: 'animal', label: 'Vật nuôi', icon: Beef },
   { key: 'fertilizer', label: 'Dụng cụ trồng trọt', icon: FlaskConical },
-  { key: 'fishing', label: 'Dụng cụ câu cá', icon: Fish },
 ];
 
 function Asset({ src, fallback }: { src?: string | null; fallback: React.ReactNode }) {
@@ -34,16 +32,12 @@ export default function GameShopPage() {
   const [crops, setCrops] = useState<Crop[]>([]);
   const [animals, setAnimals] = useState<Animal[]>([]);
   const [ferts, setFerts] = useState<Fertilizer[]>([]);
-  const [zones, setZones] = useState<FishZone[]>([]);
   const [busy, setBusy] = useState('');
   const [qty, setQty] = useState(1);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // Coin hiển thị ở header (WalletChips); chỉ cần báo SWR refresh sau khi mua.
   const loadCoin = useCallback(() => { mutate('/game/character'); }, []);
-  const loadFishing = useCallback(() => {
-    api.get<{ zones: FishZone[] }>('/fishing/state').then((s) => setZones(s.zones || [])).catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -51,8 +45,7 @@ export default function GameShopPage() {
     api.get<Crop[]>('/farm/crops').then(setCrops).catch(() => {});
     api.get<Animal[]>('/farm/animals').then(setAnimals).catch(() => {});
     api.get<Fertilizer[]>('/farm/fertilizers').then(setFerts).catch(() => {});
-    loadFishing();
-  }, [user, loading, loadCoin, loadFishing]);
+  }, [user, loading, loadCoin]);
 
   async function buy(id: string, fn: () => Promise<any>, okText: string) {
     setBusy(id); setMsg(null);
@@ -60,7 +53,6 @@ export default function GameShopPage() {
       await fn();
       setMsg({ ok: true, text: okText });
       loadCoin();
-      if (tab === 'fishing') loadFishing();
     } catch (e: any) {
       setMsg({ ok: false, text: e.message || 'Mua thất bại' });
     } finally { setBusy(''); }
@@ -157,40 +149,7 @@ export default function GameShopPage() {
         </div>
       )}
 
-      {/* Dụng cụ câu cá */}
-      {tab === 'fishing' && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {zones.flatMap((z) => [
-            <div key={`rod${z.zone}`} className="card flex items-center gap-3 p-3">
-              <Asset src={`/game-assets/cauca/cancau${z.zone}.png`} fallback={<Fish size={20} />} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">Cần câu — Khu {z.zone}</p>
-                <p className="text-xs text-ink-400">Câu cá khu {z.zone}</p>
-              </div>
-              {z.hasRod ? (
-                <span className="chip shrink-0 bg-emerald-100 text-emerald-700">Đã có</span>
-              ) : (
-                <button disabled={!!busy} onClick={() => buy(`rod${z.zone}`, () => api.post('/fishing/buy-rod', { zone: z.zone }), `Đã mua cần khu ${z.zone}`)}
-                  className="btn-outline shrink-0 !py-1.5 text-xs">
-                  {busy === `rod${z.zone}` ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {z.rodPrice}</>}
-                </button>
-              )}
-            </div>,
-            <div key={`bait${z.zone}`} className="card flex items-center gap-3 p-3">
-              <Asset src={`/game-assets/cauca/moi${z.zone}.png`} fallback={<Fish size={20} />} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">Mồi câu — Khu {z.zone}</p>
-                <p className="text-xs text-ink-400">100 lượt câu</p>
-              </div>
-              <button disabled={!!busy} onClick={() => buy(`bait${z.zone}`, () => api.post('/fishing/buy-bait', { zone: z.zone, packs: 1 }), `Đã mua mồi khu ${z.zone}`)}
-                className="btn-outline shrink-0 !py-1.5 text-xs">
-                {busy === `bait${z.zone}` ? <Loader2 size={13} className="animate-spin" /> : <><Coins size={12} /> {z.baitPrice}</>}
-              </button>
-            </div>,
-          ])}
-          {zones.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có dữ liệu khu câu cá.</p>}
-        </div>
-      )}
+      <p className="text-xs text-ink-400">Cần câu & thuyền câu cá mua trong <a href="/game/fishing" className="text-brand-600 hover:underline">trang Câu cá</a>.</p>
     </div>
   );
 }

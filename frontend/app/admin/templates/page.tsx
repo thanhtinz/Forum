@@ -15,6 +15,9 @@ interface IngredientRow { cropSlug: string; name: string; quantity: number }
 const TYPES = [
   { id: 'crop', label: 'Cây trồng' },
   { id: 'fish', label: 'Cá' },
+  { id: 'fishdepth', label: 'Độ sâu hồ' },
+  { id: 'fishingrod', label: 'Cần câu' },
+  { id: 'fishingboat', label: 'Thuyền' },
   { id: 'fertilizer', label: 'Phân bón' },
   { id: 'animal', label: 'Vật nuôi' },
   { id: 'recipe', label: 'Công thức' },
@@ -33,10 +36,25 @@ const SCHEMAS: Record<string, Field[]> = {
     { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
   ],
   fish: [
-    { key: 'zone', label: 'Khu (1-3)', type: 'number' }, { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
+    { key: 'depth', label: 'Độ sâu (cá xuất hiện)', type: 'number' }, { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
     { key: 'kgMin', label: 'KG tối thiểu', type: 'number' }, { key: 'kgMax', label: 'KG tối đa', type: 'number' },
     { key: 'pricePerKg', label: 'Giá / kg (coin)', type: 'number' }, { key: 'refillCount', label: 'Số con hồi/chu kỳ', type: 'number' },
     { key: 'stock', label: 'Tồn kho', type: 'number' }, { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
+  ],
+  fishdepth: [
+    { key: 'depth', label: 'Độ sâu (số, vd 1,2,3)', type: 'number' }, { key: 'name', label: 'Tên (Nông/Vừa/Sâu…)', type: 'text' },
+    { key: 'minRodTier', label: 'Cần bậc tối thiểu', type: 'number' }, { key: 'catchRate', label: 'Tỷ lệ bắt được (%)', type: 'number' },
+    { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
+  ],
+  fishingrod: [
+    { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên cần', type: 'text' },
+    { key: 'tier', label: 'Bậc cần', type: 'number' }, { key: 'price', label: 'Giá (coin)', type: 'number' },
+    { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
+  ],
+  fishingboat: [
+    { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên thuyền', type: 'text' },
+    { key: 'price', label: 'Giá (coin)', type: 'number' }, { key: 'capacity', label: 'Sức chứa cá', type: 'number' },
+    { key: 'maxDepth', label: 'Độ sâu tối đa', type: 'number' }, { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
   ],
   fertilizer: [
     { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },

@@ -21,27 +21,40 @@ export class FishingController {
     return this.fishing.getState(userId);
   }
 
-  @Post('buy-rod')
-  buyRod(@CurrentUser('id') userId: string, @Body('zone') zone: number) {
-    return this.fishing.buyRod(userId, Number(zone));
+  @Post('rod/buy')
+  buyRod(@CurrentUser('id') userId: string, @Body('slug') slug: string) {
+    return this.fishing.buyRod(userId, slug);
   }
 
-  @Post('buy-bait')
-  buyBait(
-    @CurrentUser('id') userId: string,
-    @Body() body: { zone: number; packs?: number },
-  ) {
-    return this.fishing.buyBait(userId, Number(body.zone), Number(body.packs ?? 1));
+  @Post('boat/buy')
+  buyBoat(@CurrentUser('id') userId: string, @Body('slug') slug: string) {
+    return this.fishing.buyBoat(userId, slug);
   }
 
   @Post('cast')
-  cast(@CurrentUser('id') userId: string, @Body('zone') zone: number) {
-    return this.fishing.cast(userId, Number(zone));
+  cast(@CurrentUser('id') userId: string, @Body('depth') depth: number) {
+    return this.fishing.cast(userId, Number(depth));
   }
 
   @Post('reel')
   reel(@CurrentUser('id') userId: string) {
     return this.fishing.reel(userId);
+  }
+
+  // ── Khoang thuyền ──
+  @Get('boat-hold')
+  boatHold(@CurrentUser('id') userId: string) {
+    return this.fishing.boatHold(userId);
+  }
+
+  @Post('boat/to-kho')
+  moveToKho(@CurrentUser('id') userId: string, @Body('id') id?: string) {
+    return this.fishing.moveToKho(userId, id);
+  }
+
+  @Post('boat/sell-all')
+  sellBoatAll(@CurrentUser('id') userId: string) {
+    return this.fishing.sellBoatAll(userId);
   }
 
   @Get('storage')

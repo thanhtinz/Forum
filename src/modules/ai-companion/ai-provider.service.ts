@@ -109,7 +109,9 @@ export class AiProviderService {
     });
 
     if (!res.ok || !res.body) {
-      throw new Error(`OpenAI error: ${res.status}`);
+      const body = await res.text().catch(() => '');
+      const hint = res.status === 404 ? ` (model "${modelId}" không tồn tại — chọn model khác)` : '';
+      throw new Error(`OpenAI ${res.status}${hint}: ${body.slice(0, 200)}`);
     }
 
     const reader = res.body.getReader();
@@ -170,7 +172,11 @@ export class AiProviderService {
       }),
     });
 
-    if (!res.ok || !res.body) throw new Error(`Gemini error: ${res.status}`);
+    if (!res.ok || !res.body) {
+      const body = await res.text().catch(() => '');
+      const hint = res.status === 404 ? ` (model "${modelId}" không tồn tại/không hỗ trợ — chọn model khác trong danh sách)` : '';
+      throw new Error(`Gemini ${res.status}${hint}: ${body.slice(0, 200)}`);
+    }
 
     const reader = res.body.getReader();
     const decoder = new TextDecoder();

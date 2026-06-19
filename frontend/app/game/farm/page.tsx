@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
-import { ChevronLeft, Sprout, Droplets } from 'lucide-react';
+import { ChevronLeft, Sprout } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatDuration, secondsUntil } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { cropEmoji } from '@/lib/gameIcons';
-import { cropStage } from '@/lib/cropSprites';
+import { cropStage, cropFruit } from '@/lib/cropSprites';
 import DogCompanion from '@/components/DogCompanion';
 
 const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
@@ -32,6 +32,7 @@ export default function FarmPage() {
   const [msg, setMsg] = useState('');
   const [planting, setPlanting] = useState<number | null>(null);
   const [seedChoice, setSeedChoice] = useState('');
+  const [fertPlot, setFertPlot] = useState<number | null>(null);
   const now = useNow();
 
   function load() { api.get<FarmState>('/farm/state').then(setS).catch((e) => setErr(e.message)); mutate('/game/character'); }
@@ -52,6 +53,15 @@ export default function FarmPage() {
   async function fertilize(plotIndex: number, fertilizerSlug: string, name: string) {
     try { await api.post('/farm/fertilize', { plotIndex, fertilizerSlug }); setMsg(`Đã bón ${name}`); }
     catch (e: any) { setMsg(e.message); } load();
+  }
+  // Bấm vào ô đất -> hành động theo trạng thái
+  function onPlotTap(p: FarmState['plots'][number]) {
+    setMsg('');
+    if (p.empty && !p.tilled) { till(p.index); return; }
+    if (p.empty && p.tilled) { setSeedChoice(''); setPlanting(p.index); return; }   // mở chọn hạt
+    if (!p.empty && p.ready) { harvest(p.index); return; }
+    if (!p.empty && !p.watered) { water(p.index); return; }
+    if (!p.empty) { setFertPlot(p.index); return; }                                 // mở bón phân
   }
   async function waterKhe() { try { const r = await api.post<{ bonus: number }>('/farm/khe/water'); setMsg(`Đã tưới cây khế (+${r.bonus} quả)!`); } catch (e: any) { setMsg(e.message); } load(); }
   async function harvestKhe() { try { const r = await api.post<{ harvested: number }>('/farm/khe/harvest'); setMsg(`Đã thu hoạch ${r.harvested} quả khế vào kho. Vào kho để bán!`); } catch (e: any) { setMsg(e.message); } load(); }
@@ -156,71 +166,30 @@ export default function FarmPage() {
             <div className="absolute inset-0 overflow-y-auto px-[8%] py-[11%]">
               <div className="flex flex-wrap content-start justify-center gap-2">
                 {s.plots.map((p) => {
-              const seeds = (s.warehouse || []).filter((w) => w.category === 'SEED' && w.quantity > 0);
-              const ferts = s.fertilizers || [];
               const prog = p.progress ?? 0;
               const stageSrc = cropStage(p.slug || '', p.ready, prog) || p.asset || '';
+              const left = !p.empty && !p.ready && p.readyAt ? secondsUntil(p.readyAt, now) : 0;
               return (
-              <div key={p.index} className="w-[78px] shrink-0 rounded-xl border border-ink-200/70 bg-white/85 p-1.5 text-center shadow-sm">
-                <div className="relative grid h-24 place-items-center rounded-lg bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${p.empty && !p.tilled ? SOIL_UNTILLED : SOIL_TILLED})` }}>
-                  {!p.empty && (stageSrc
-                    // cây lớn dần: ảnh sprite theo giai đoạn, nhỏ lúc mới trồng to khi sắp chín
-                    // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={stageSrc} alt="" onError={(e) => { if (p.asset) (e.currentTarget as HTMLImageElement).src = p.asset; }}
-                        className="object-contain transition-all" style={{ maxHeight: `${45 + prog * 55}%` }} />
-                    : <span className="leading-none transition-all" style={{ fontSize: `${18 + prog * 34}px` }}>{cropEmoji(p.slug || '')}</span>)}
-                  {p.empty && <span className="text-xs font-medium text-ink-500">{p.tilled ? '+ Gieo' : 'Đất chưa xới'}</span>}
-                </div>
-                <div className="mt-1.5 truncate text-sm font-medium">{p.crop || 'Trống'}</div>
-                {/* Thanh tiến độ lớn + đếm giờ */}
+              <button key={p.index} onClick={() => onPlotTap(p)} title={p.crop || (p.tilled ? 'Đã xới — bấm để gieo' : 'Bấm để xới đất')}
+                className="relative grid h-[72px] w-[64px] shrink-0 place-items-center bg-contain bg-bottom bg-no-repeat transition active:scale-95"
+                style={{ backgroundImage: `url(${p.empty && !p.tilled ? SOIL_UNTILLED : SOIL_TILLED})` }}>
+                {/* cây lớn dần */}
+                {!p.empty && (stageSrc
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={stageSrc} alt="" onError={(e) => { if (p.asset) (e.currentTarget as HTMLImageElement).src = p.asset; }}
+                      className="object-contain transition-all" style={{ maxHeight: `${50 + prog * 45}%` }} />
+                  : <span className="leading-none" style={{ fontSize: `${16 + prog * 28}px` }}>{cropEmoji(p.slug || '')}</span>)}
+                {/* trạng thái */}
+                {p.empty && !p.tilled && <span className="absolute bottom-0.5 rounded bg-black/45 px-1 text-[9px] text-white">Xới</span>}
+                {p.empty && p.tilled && <span className="absolute bottom-0.5 rounded bg-emerald-600/80 px-1 text-[9px] text-white">Gieo</span>}
+                {p.ready && <span className="absolute -top-0.5 right-0 rounded bg-amber-500 px-1 text-[9px] font-bold text-white shadow">Chín!</span>}
                 {!p.empty && !p.ready && (
-                  <>
-                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-ink-100 dark:bg-ink-800"><div className="h-full bg-emerald-400" style={{ width: `${prog * 100}%` }} /></div>
-                    {p.readyAt && <div className="text-xs text-emerald-600">⏳ {formatDuration(secondsUntil(p.readyAt, now))}</div>}
-                  </>
+                  <span className="absolute bottom-0 left-0 right-0">
+                    <span className="block h-1 w-full bg-black/20"><span className="block h-full bg-emerald-400" style={{ width: `${prog * 100}%` }} /></span>
+                    <span className="block bg-black/40 text-center text-[8px] text-white">{!p.watered ? '💧 cần tưới' : `⏳ ${formatDuration(left)}`}</span>
+                  </span>
                 )}
-                {/* Ô trống chưa xới: phải xới trước */}
-                {p.empty && !p.tilled && (
-                  <button onClick={() => till(p.index)} className="mt-2 w-full rounded-lg bg-amber-600 px-2 py-2 text-sm font-medium text-white hover:bg-amber-700">⛏ Xới đất</button>
-                )}
-                {/* Ô trống đã xới: chọn hạt để gieo */}
-                {p.empty && p.tilled && planting !== p.index && (
-                  <button onClick={() => { setPlanting(p.index); setSeedChoice(''); }} className="mt-2 w-full rounded-lg bg-emerald-500 px-2 py-2 text-sm font-medium text-white hover:bg-emerald-600">🌱 Gieo hạt</button>
-                )}
-                {p.empty && p.tilled && planting === p.index && (
-                  <div className="mt-2 space-y-1.5">
-                    {seeds.length === 0 ? <p className="text-xs text-ink-400">Chưa có hạt. Mua ở cửa hàng.</p> : (
-                      <>
-                        <select className="input !py-1.5 !text-xs" value={seedChoice} onChange={(e) => setSeedChoice(e.target.value)}>
-                          <option value="">Chọn hạt…</option>
-                          {seeds.map((sd) => <option key={sd.slug} value={sd.slug}>{cropEmoji(sd.slug.replace(/^seed_/, ''))} {sd.name} (×{sd.quantity})</option>)}
-                        </select>
-                        <button disabled={!seedChoice} onClick={() => { const sd = seeds.find((x) => x.slug === seedChoice); if (sd) plant(p.index, sd.slug.replace(/^seed_/, ''), sd.name); }}
-                          className="w-full rounded-lg bg-emerald-600 px-2 py-2 text-sm font-medium text-white disabled:opacity-50">Gieo</button>
-                      </>
-                    )}
-                    <button onClick={() => setPlanting(null)} className="text-xs text-ink-400 underline">Hủy</button>
-                  </div>
-                )}
-                {/* Cây đang trồng: tưới / bón / thu */}
-                {!p.empty && (
-                  <div className="mt-2 flex flex-wrap justify-center gap-1.5">
-                    {p.ready ? (
-                      <button onClick={() => harvest(p.index)} className="w-full rounded-lg bg-amber-500 px-2 py-2 text-sm font-semibold text-white hover:bg-amber-600">🧺 Thu hoạch</button>
-                    ) : (
-                      <>
-                        {!p.watered && <button onClick={() => water(p.index)} className="inline-flex items-center gap-1 rounded-lg bg-sky-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-600"><Droplets size={14} /> Tưới</button>}
-                        {ferts.length > 0 && (
-                          <select className="input !py-1.5 !text-xs !w-auto" defaultValue="" onChange={(e) => e.target.value && fertilize(p.index, e.target.value, e.target.options[e.target.selectedIndex].text)}>
-                            <option value="" disabled>Bón…</option>
-                            {ferts.map((f) => <option key={f.slug} value={f.slug}>{f.name} (×{f.quantity})</option>)}
-                          </select>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              </button>
               );
             })}
               </div>
@@ -233,6 +202,61 @@ export default function FarmPage() {
         <span className="font-semibold">📦 Kho chung — xem & bán nông sản, sản phẩm, cá, món ăn</span>
         <span className="btn-outline !py-1.5 text-xs">Mở kho →</span>
       </a>
+
+      {/* Popup chọn hạt để gieo */}
+      {planting !== null && (() => {
+        const seeds = (s.warehouse || []).filter((w) => w.category === 'SEED' && w.quantity > 0);
+        return (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setPlanting(null)}>
+            <div className="card w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+              <h2 className="mb-3 font-semibold">Gieo hạt vào ô {planting + 1}</h2>
+              {seeds.length === 0 ? (
+                <p className="text-sm text-ink-500">Chưa có hạt. Mua ở <a href="/game/shop" className="text-brand-600">Cửa hàng</a>.</p>
+              ) : (
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {seeds.map((sd) => {
+                    const cs = sd.slug.replace(/^seed_/, '');
+                    return (
+                      <button key={sd.slug} onClick={() => plant(planting, cs, sd.name)} className="flex flex-col items-center gap-1 rounded-lg border border-ink-200/70 p-2 hover:bg-emerald-50 dark:border-ink-700 dark:hover:bg-emerald-900/20">
+                        {cropFruit(cs) ? <img src={cropFruit(cs)!} alt="" className="h-8 w-8 object-contain" /> : <span className="text-2xl">{cropEmoji(cs)}</span>}
+                        <span className="truncate text-[11px]">{sd.name}</span>
+                        <span className="text-[10px] text-ink-400">×{sd.quantity}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              <button onClick={() => setPlanting(null)} className="btn-outline mt-3 w-full !py-1.5 text-xs">Đóng</button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Popup bón phân */}
+      {fertPlot !== null && (() => {
+        const ferts = s.fertilizers || [];
+        return (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setFertPlot(null)}>
+            <div className="card w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+              <h2 className="mb-1 font-semibold">Bón phân ô {fertPlot + 1}</h2>
+              <p className="mb-3 text-xs text-ink-500">Bón phân để giảm thời gian chín.</p>
+              {ferts.length === 0 ? (
+                <p className="text-sm text-ink-500">Chưa có phân. Mua ở <a href="/game/shop" className="text-brand-600">Cửa hàng</a>.</p>
+              ) : (
+                <div className="space-y-2">
+                  {ferts.map((f) => (
+                    <button key={f.slug} onClick={() => { fertilize(fertPlot, f.slug, f.name); setFertPlot(null); }} className="flex w-full items-center justify-between rounded-lg border border-ink-200/70 p-2 text-sm hover:bg-emerald-50 dark:border-ink-700 dark:hover:bg-emerald-900/20">
+                      <span>{f.name} <span className="text-ink-400">×{f.quantity}</span></span>
+                      <span className="text-xs text-emerald-600">-{Math.round((f.reduceSeconds || 0) / 60)} phút</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => setFertPlot(null)} className="btn-outline mt-3 w-full !py-1.5 text-xs">Đóng</button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

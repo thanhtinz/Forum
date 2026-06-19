@@ -7,10 +7,8 @@ import { ChevronLeft, Beef, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatDuration, secondsUntil } from '@/lib/format';
-import { animalSprite } from '@/lib/cropSprites';
+import { animalSprite, animalAnimClass } from '@/lib/cropSprites';
 import { useNow } from '@/lib/useNow';
-
-const BARN_BG = '/game-assets/nongtrai/img/chuong.png';
 
 interface Owned { id: string; slug: string; name: string; grown: boolean; grownAt: string | null; productReady: boolean; productReadyAt: string | null; hasProduct: boolean; diesAt: string | null; asset?: string | null }
 
@@ -47,17 +45,26 @@ export default function AnimalsPage() {
 
       {/* Chuồng thú — con vật di chuyển qua lại */}
       <section className="card overflow-hidden p-0">
-        <div className="relative h-56 overflow-hidden bg-cover bg-center" style={{ backgroundImage: `url(${BARN_BG})`, backgroundColor: '#bbf7d0' }}>
-          <div className="absolute left-0 right-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/35 to-transparent p-3">
+        <div className="relative h-56 overflow-hidden" style={{ background: 'linear-gradient(#aee27a, #86c34e 70%, #6fae3e)' }}>
+          <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/35 to-transparent p-3">
             <h2 className="font-semibold text-white drop-shadow">Chuồng thú ({owned.length})</h2>
-            <Link href="/game/shop" className="flex items-center gap-1 rounded-lg bg-white/25 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/40"><ShoppingBag size={14} /> Mua thêm</Link>
+            <Link href="/game/shop?tab=animal" className="flex items-center gap-1 rounded-lg bg-white/25 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/40"><ShoppingBag size={14} /> Mua thêm</Link>
           </div>
-          {/* các con thú (có asset) đi lại dưới sàn chuồng */}
-          {owned.filter((a) => animalSprite(a.slug) || a.asset).slice(0, 12).map((a, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={a.id} src={animalSprite(a.slug) || a.asset!} alt={a.name} className="anim-walk h-12 object-contain" style={{ bottom: `${10 + (i % 3) * 26}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }} />
-          ))}
-          {owned.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm text-white drop-shadow">Chuồng trống — mua thú ở cửa hàng</p>}
+          {/* hàng rào chuồng (GHAP) chạy ngang đáy */}
+          <div className="absolute bottom-0 left-0 right-0 h-7" style={{ backgroundImage: 'url(/game-assets/nongtrai/animals/fence.png)', backgroundRepeat: 'repeat-x', backgroundSize: 'auto 28px', imageRendering: 'pixelated', opacity: 0.95 }} />
+          {/* các con thú đi lại trong chuồng (hoạt ảnh bước chân) */}
+          {owned.slice(0, 12).map((a, i) => {
+            const cls = animalAnimClass(a.slug);
+            return (
+              <div key={a.id} className="anim-walk-l" style={{ bottom: `${14 + (i % 3) * 30}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
+                {cls
+                  ? <span className={`farmanim ${cls}`} />
+                  // eslint-disable-next-line @next/next/no-img-element
+                  : a.asset ? <img src={a.asset} alt={a.name} className="h-10 object-contain" /> : null}
+              </div>
+            );
+          })}
+          {owned.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm font-medium text-emerald-900/70">Chuồng trống — mua thú ở cửa hàng</p>}
         </div>
         <div className="p-4">
         {owned.length === 0 ? (

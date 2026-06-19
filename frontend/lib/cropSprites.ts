@@ -37,13 +37,18 @@ export function cropStage(slug: string, ready: boolean, progress: number): strin
   return `${BASE}/${b}/${idx}.png`;
 }
 
-// Sprite thú nuôi (Pixel Lands Farm) — chỉ những con có trong pack
+// Sprite thú nuôi (GHAP) — ảnh tĩnh (cho <img>) + class hoạt ảnh (steps)
 export const ANIMAL_ART: Record<string, string> = {
-  ga: '/game-assets/nongtrai/pixel-animals/ga.png',
-  bo: '/game-assets/nongtrai/pixel-animals/bo.png',
-  cuu: '/game-assets/nongtrai/pixel-animals/cuu.png',
+  ga: '/game-assets/nongtrai/animals/ga_s.png',
+  bo: '/game-assets/nongtrai/animals/bo_s.png',
+  lon: '/game-assets/nongtrai/animals/lon_s.png',
+  vit: '/game-assets/nongtrai/animals/vit_s.png',
 };
+const ANIMAL_ANIM: Record<string, string> = { ga: 'fa-ga', bo: 'fa-bo', lon: 'fa-lon', vit: 'fa-vit' };
 export function animalSprite(slug: string): string | null {
   return ANIMAL_ART[slug] || null;
+}
+export function animalAnimClass(slug: string): string | null {
+  return ANIMAL_ANIM[slug] || null;
 }
 

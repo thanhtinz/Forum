@@ -40,7 +40,8 @@ export interface AnimalSeed {
   productYield: number; productPrice: number; sellGrown: number; sellYoung: number; asset: string; sortOrder: number;
 }
 export const ANIMALS: AnimalSeed[] = [
-  { slug: 'ga', name: 'Gà', buyPrice: 3000, growSeconds: 3600, lifeSeconds: 7 * DAY, feedCooldownSec: 4200, starveSeconds: DAY, productSlug: 'trung', productName: 'Trứng', productYield: 2, productPrice: 80, sellGrown: 1500, sellYoung: 500, asset: img('pixel-animals/ga.png'), sortOrder: 0 },
-  { slug: 'bo', name: 'Bò sữa', buyPrice: 20000, growSeconds: 10800, lifeSeconds: 10 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: 'sua-bo', productName: 'Sữa bò', productYield: 2, productPrice: 300, sellGrown: 25000, sellYoung: 8000, asset: img('pixel-animals/bo.png'), sortOrder: 1 },
-  { slug: 'cuu', name: 'Cừu', buyPrice: 18000, growSeconds: 10800, lifeSeconds: 10 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: 'long-cuu', productName: 'Lông cừu', productYield: 2, productPrice: 250, sellGrown: 22000, sellYoung: 7000, asset: img('pixel-animals/cuu.png'), sortOrder: 2 },
+  { slug: 'ga', name: 'Gà', buyPrice: 3000, growSeconds: 3600, lifeSeconds: 7 * DAY, feedCooldownSec: 4200, starveSeconds: DAY, productSlug: 'trung', productName: 'Trứng', productYield: 2, productPrice: 80, sellGrown: 1500, sellYoung: 500, asset: img('animals/ga_s.png'), sortOrder: 0 },
+  { slug: 'vit', name: 'Vịt', buyPrice: 6000, growSeconds: 5400, lifeSeconds: 7 * DAY, feedCooldownSec: 5400, starveSeconds: DAY, productSlug: 'trung-vit', productName: 'Trứng vịt', productYield: 2, productPrice: 110, sellGrown: 3000, sellYoung: 1000, asset: img('animals/vit_s.png'), sortOrder: 1 },
+  { slug: 'lon', name: 'Lợn', buyPrice: 5000, growSeconds: 7200, lifeSeconds: 7 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: null, productName: null, productYield: 0, productPrice: 0, sellGrown: 9000, sellYoung: 2500, asset: img('animals/lon_s.png'), sortOrder: 2 },
+  { slug: 'bo', name: 'Bò sữa', buyPrice: 20000, growSeconds: 10800, lifeSeconds: 10 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: 'sua-bo', productName: 'Sữa bò', productYield: 2, productPrice: 300, sellGrown: 25000, sellYoung: 8000, asset: img('animals/bo_s.png'), sortOrder: 3 },
 ];

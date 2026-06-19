@@ -94,13 +94,11 @@ export class SeederService implements OnApplicationBootstrap {
       }
       for (const a of ANIMALS) {
         await this.prisma.animalTemplate.upsert({ where: { slug: a.slug }, update: {}, create: a });
-        // Thay sprite thú cũ (vatnuoi gif) / trống bằng pixel mới (gà/bò/cừu); giữ ảnh admin tự tải
-        if (['ga', 'bo', 'cuu'].includes(a.slug)) {
-          await this.prisma.animalTemplate.updateMany({
-            where: { slug: a.slug, OR: [{ asset: { contains: 'vatnuoi' } }, { asset: null }, { asset: '' }] },
-            data: { asset: a.asset },
-          });
-        }
+        // Thay sprite thú cũ (vatnuoi/pixel-animals) hoặc trống bằng sprite GHAP mới; giữ ảnh admin tự tải
+        await this.prisma.animalTemplate.updateMany({
+          where: { slug: a.slug, OR: [{ asset: { contains: 'vatnuoi' } }, { asset: { contains: 'pixel-animals' } }, { asset: null }, { asset: '' }] },
+          data: { asset: a.asset },
+        });
         n++;
       }
     } catch (e) { this.logger.warn(`Seed farm lỗi: ${(e as Error).message}`); }

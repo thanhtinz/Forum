@@ -191,7 +191,16 @@ html, body {
   100% { left: 2%; transform: scaleX(1); }
 }
 @keyframes bob-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+/* walk-x cho sprite quay TRÁI mặc định (lật ngược chiều) */
+@keyframes walk-x-left {
+  0% { left: 4%; transform: scaleX(-1); }
+  48% { left: 84%; transform: scaleX(-1); }
+  50% { left: 84%; transform: scaleX(1); }
+  98% { left: 4%; transform: scaleX(1); }
+  100% { left: 4%; transform: scaleX(-1); }
+}
 .anim-walk { position: absolute; animation: walk-x linear infinite; }
+.anim-walk-l { position: absolute; animation: walk-x-left linear infinite; }
 .anim-swim { position: absolute; animation: swim-x linear infinite; }
 .anim-bob { animation: bob-y ease-in-out infinite; }
 
@@ -205,3 +214,12 @@ html, body {
 @keyframes dogrun   { to { background-position-x: -512px; } }
 @keyframes dogsit   { to { background-position-x: -384px; } }
 @keyframes dogsleep { to { background-position-x: -256px; } }
+
+/* Thú nuôi GHAP — strip 48x36, animate steps() */
+.farmanim { width: 48px; height: 36px; background-repeat: no-repeat; background-size: auto 36px; image-rendering: pixelated; }
+.fa-ga  { background-image: url(/game-assets/nongtrai/animals/ga.png);  animation: fagachk .8s steps(4) infinite; }
+.fa-vit { background-image: url(/game-assets/nongtrai/animals/vit.png); animation: fagachk .8s steps(4) infinite; }
+.fa-bo  { background-image: url(/game-assets/nongtrai/animals/bo.png);  animation: fabolon 1s steps(8) infinite; }
+.fa-lon { background-image: url(/game-assets/nongtrai/animals/lon.png); animation: fabolon 1s steps(8) infinite; }
+@keyframes fagachk { to { background-position-x: -192px; } }
+@keyframes fabolon { to { background-position-x: -384px; } }

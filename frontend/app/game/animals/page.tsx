@@ -57,10 +57,12 @@ export default function AnimalsPage() {
             const cls = animalAnimClass(a.slug);
             return (
               <div key={a.id} className="anim-walk-pen" style={{ bottom: `${16 + (i % 4) * 9}%`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
-                {cls
-                  ? <span className={`farmanim ${cls}`} />
-                  // eslint-disable-next-line @next/next/no-img-element
-                  : a.asset ? <img src={a.asset} alt={a.name} className="h-10 object-contain" /> : null}
+                <div style={{ transform: 'scale(1.8)', transformOrigin: 'bottom center' }}>
+                  {cls
+                    ? <span className={`farmanim ${cls}`} />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    : a.asset ? <img src={a.asset} alt={a.name} className="h-10 object-contain" /> : null}
+                </div>
               </div>
             );
           })}

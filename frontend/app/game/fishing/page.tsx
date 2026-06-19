@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { mutate } from 'swr';
-import { Fish, ChevronLeft, Ship, Anchor, Lock } from 'lucide-react';
+import { Fish, ChevronLeft, Ship, Anchor, Lock, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
@@ -18,7 +18,7 @@ interface Rod { slug: string; name: string; tier: number; price: number; asset: 
 interface Boat { slug: string; name: string; price: number; capacity: number; maxDepth: number; asset: string | null; owned: boolean }
 interface FishState {
   coin: number;
-  profile: { level: number; totalKg: number; nextLevelKg: number; totalCaught: number; rodTier: number; boatSlug: string | null; boat: { slug: string; name: string; capacity: number; maxDepth: number; asset: string | null } | null };
+  profile: { level: number; totalKg: number; nextLevelKg: number; totalCaught: number; rodTier: number; bait: number; boatSlug: string | null; boat: { slug: string; name: string; capacity: number; maxDepth: number; asset: string | null } | null };
   cast: { depth: number; biteAt: string | null; biteReady: boolean } | null;
   depths: Depth[];
   rods: Rod[];
@@ -63,49 +63,23 @@ export default function FishingPage() {
 
       {msg && <div className="card p-3 text-center text-sm text-brand-600">{msg}</div>}
 
-      {/* ───── Chưa có thuyền: bắt buộc mua thuyền ───── */}
+      {/* ───── Trạng thái dụng cụ (mua ở Cửa hàng → tab Câu cá) ───── */}
+      <div className="card flex flex-wrap items-center justify-between gap-2 p-3 text-sm">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="inline-flex items-center gap-1"><Ship size={14} className="text-sky-500" /> {boat ? `${boat.name} (chứa ${s.boatHold.count}/${boat.capacity}, sâu ≤ ${boat.maxDepth})` : 'Chưa có thuyền'}</span>
+          <span className="inline-flex items-center gap-1"><Anchor size={14} className="text-emerald-500" /> Cần bậc {s.profile.rodTier || '—'}</span>
+          <span className="inline-flex items-center gap-1">🪱 Mồi: <b>{s.profile.bait}</b></span>
+        </div>
+        <Link href="/game/shop?tab=fishing" className="btn-outline !py-1.5 text-xs"><ShoppingBag size={12} /> Mua thuyền/cần/mồi</Link>
+      </div>
+
       {!boat && (
         <div className="card border-amber-300 p-4 text-center">
           <Ship className="mx-auto text-sky-500" size={28} />
           <p className="mt-1 font-semibold">Bạn cần mua thuyền để ra hồ câu cá</p>
-          <p className="text-xs text-ink-500">Thuyền tốt hơn ra được vùng nước sâu hơn và chứa nhiều cá hơn.</p>
+          <p className="text-xs text-ink-500">Vào <Link href="/game/shop?tab=fishing" className="text-brand-600 hover:underline">Cửa hàng → Câu cá</Link> để mua thuyền, cần câu và mồi.</p>
         </div>
       )}
-
-      {/* ───── Thuyền: mua / nâng cấp ───── */}
-      <section className="card p-4">
-        <h2 className="mb-2 flex items-center gap-1.5 font-semibold"><Ship size={16} /> Thuyền {boat && <span className="text-sm font-normal text-ink-500">· đang dùng: {boat.name} (chứa {s.boatHold.count}/{boat.capacity}, sâu tối đa {boat.maxDepth})</span>}</h2>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          {s.boats.map((b) => (
-            <div key={b.slug} className={`flex items-center gap-2 rounded-lg border p-2 text-sm ${b.owned ? 'border-sky-300 bg-sky-50/50 dark:bg-sky-900/10' : 'border-ink-100 dark:border-ink-800'}`}>
-              {b.asset ? <img src={b.asset} alt="" className="h-9 w-9 object-contain" /> : <span className="grid h-9 w-9 place-items-center rounded bg-ink-100 dark:bg-ink-800"><Ship size={18} /></span>}
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{b.name}</p>
-                <p className="text-xs text-ink-400">Chứa {b.capacity} cá · sâu tối đa {b.maxDepth} · {formatCoin(b.price)} coin</p>
-              </div>
-              {b.owned
-                ? <span className="shrink-0 text-xs font-medium text-sky-600">Đang dùng</span>
-                : <button onClick={() => act(() => api.post('/fishing/boat/buy', { slug: b.slug }))} className="btn-primary shrink-0 !px-2 !py-1 text-xs">{boat ? 'Nâng cấp' : 'Mua'}</button>}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ───── Cần câu ───── */}
-      <section className="card p-4">
-        <h2 className="mb-2 flex items-center gap-1.5 font-semibold"><Anchor size={16} /> Cần câu <span className="text-sm font-normal text-ink-500">· bậc cao hơn câu được nước sâu hơn</span></h2>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {s.rods.map((r) => (
-            <div key={r.slug} className={`flex items-center gap-2 rounded-lg border p-2 text-sm ${r.owned ? 'border-emerald-300 bg-emerald-50/50 dark:bg-emerald-900/10' : 'border-ink-100 dark:border-ink-800'}`}>
-              {r.asset ? <img src={r.asset} alt="" className="h-9 w-9 object-contain" /> : <span className="grid h-9 w-9 place-items-center rounded bg-ink-100 dark:bg-ink-800"><Anchor size={16} /></span>}
-              <div className="min-w-0 flex-1"><p className="truncate font-medium">{r.name}</p><p className="text-xs text-ink-400">Bậc {r.tier} · {formatCoin(r.price)} coin</p></div>
-              {r.owned
-                ? <span className="shrink-0 text-xs font-medium text-emerald-600">Đã có</span>
-                : <button onClick={() => act(() => api.post('/fishing/rod/buy', { slug: r.slug }))} className="btn-outline shrink-0 !px-2 !py-1 text-xs">Mua</button>}
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* ───── Chọn độ sâu (khi có thuyền) ───── */}
       {boat && depth === null && (
@@ -158,11 +132,13 @@ export default function FishingPage() {
                 <span className="text-sm text-ink-500">Tỷ lệ bắt: <b>{d?.catchRate}%</b></span>
                 {full && !casting
                   ? <Link href="#hold" className="btn-outline text-xs">Khoang đầy — chuyển về kho/bán</Link>
-                  : !casting
-                    ? <button onClick={() => act(() => api.post('/fishing/cast', { depth }))} className="btn-primary">🎣 Quăng cần</button>
-                    : here
-                      ? <button disabled={left > 0} onClick={() => act(() => api.post('/fishing/reel'))} className="btn-primary disabled:opacity-50">Giật cá!</button>
-                      : <span className="text-xs text-amber-600">Đang câu ở độ sâu khác</span>}
+                  : !casting && s.profile.bait <= 0
+                    ? <Link href="/game/shop?tab=fishing" className="btn-outline text-xs"><ShoppingBag size={12} /> Hết mồi — mua</Link>
+                    : !casting
+                      ? <button onClick={() => act(() => api.post('/fishing/cast', { depth }))} className="btn-primary">🎣 Quăng cần</button>
+                      : here
+                        ? <button disabled={left > 0} onClick={() => act(() => api.post('/fishing/reel'))} className="btn-primary disabled:opacity-50">Giật cá!</button>
+                        : <span className="text-xs text-amber-600">Đang câu ở độ sâu khác</span>}
               </div>
             </div>
           </div>

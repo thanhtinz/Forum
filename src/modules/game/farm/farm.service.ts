@@ -17,6 +17,14 @@ const CHECKIN_REWARD = 500;
 const STEAL_EXP_COST = 200;
 const STEAL_SUCCESS = 0.6;
 const MAX_FEED = 3;
+// Thức ăn & thuốc cho vật nuôi (gia cầm / gia súc / thuốc thú y)
+const FEED_OF: Record<string, string> = { ga: 'feed-poultry', vit: 'feed-poultry', bo: 'feed-livestock', lon: 'feed-livestock' };
+const SUPPLIES = [
+  { slug: 'feed-poultry', name: 'Thức ăn gia cầm', price: 120, kind: 'feed' },
+  { slug: 'feed-livestock', name: 'Thức ăn gia súc', price: 200, kind: 'feed' },
+  { slug: 'medicine', name: 'Thuốc thú y', price: 500, kind: 'medicine' },
+];
+const SICK_CHANCE = 0.12; // tỉ lệ vật nuôi bị bệnh sau mỗi lần cho ăn
 // Sức khỏe ô đất (mô phỏng cơ chế sucKhoe của Avatar): sản lượng = raw × health/100
 const PLANT_BASE_HEALTH = 60; // mới gieo cần chăm sóc mới đạt full
 const WATER_HEALTH = 25;      // tưới nước +25
@@ -117,8 +125,14 @@ export class FarmService {
         hasProduct: !!a.animal.productSlug,
         fedCount: a.fedCount,
         diesAt: a.diesAt,
+        sick: !!a.sickAt,
         asset: a.animal.asset,
       })),
+      supplies: {
+        'feed-poultry': warehouse.find((w) => w.slug === 'feed-poultry' && w.category === 'SUPPLY')?.quantity ?? 0,
+        'feed-livestock': warehouse.find((w) => w.slug === 'feed-livestock' && w.category === 'SUPPLY')?.quantity ?? 0,
+        'medicine': warehouse.find((w) => w.slug === 'medicine' && w.category === 'SUPPLY')?.quantity ?? 0,
+      },
       fertilizers: fertilizers.map((f) => ({
         slug: f.fertilizer.slug,
         name: f.fertilizer.name,
@@ -420,28 +434,62 @@ export class FarmService {
           animalId: tpl.id,
           grownAt: new Date(now + tpl.growSeconds * 1000),
           diesAt: new Date(now + tpl.lifeSeconds * 1000),
-          lastFedAt: new Date(),
+          // cho phép cho ăn ngay (không chặn bởi cooldown lúc mới mua)
+          lastFedAt: new Date(now - tpl.feedCooldownSec * 1000),
         },
       });
     });
     return { ok: true, animal: tpl.name, spent: tpl.buyPrice };
   }
 
+  // Danh sách thức ăn/thuốc bán ở cửa hàng
+  listSupplies() { return SUPPLIES; }
+
+  async buySupply(userId: string, slug: string, qty: number) {
+    qty = this.assertQty(qty);
+    const sup = SUPPLIES.find((s) => s.slug === slug);
+    if (!sup) throw new NotFoundException('Vật phẩm không tồn tại');
+    const char = await this.getCharacter(userId);
+    await this.prisma.$transaction(async (tx) => {
+      await this.spendCoin(tx, char.id, sup.price * qty, 'farm_supply', `Mua ${sup.name}`);
+      await this.addWarehouse(tx, char.id, { slug: sup.slug, name: sup.name, category: 'SUPPLY', unitSell: 0 }, qty);
+    });
+    return { ok: true, added: qty };
+  }
+
   async feedAnimal(userId: string, animalId: string) {
     const char = await this.getCharacter(userId);
     const a = await this.getAnimal(char.id, animalId);
     const now = Date.now();
+    if (a.sickAt) throw new BadRequestException('Vật nuôi đang bệnh — dùng Thuốc thú y trước khi cho ăn');
     if (a.lastFedAt.getTime() + a.animal.feedCooldownSec * 1000 > now) {
       throw new BadRequestException('Chưa tới giờ cho ăn lại');
     }
     if (a.fedCount >= MAX_FEED) throw new BadRequestException('Đã cho ăn tối đa, hãy thu hoạch sản phẩm');
-    const productReadyAt =
-      a.productReadyAt ?? new Date(Math.max(now, a.grownAt.getTime()));
-    await this.prisma.farmAnimal.update({
-      where: { id: a.id },
-      data: { fedCount: { increment: 1 }, lastFedAt: new Date(), productReadyAt },
+    const feedSlug = FEED_OF[a.animal.slug] || 'feed-livestock';
+    const feedName = feedSlug === 'feed-poultry' ? 'Thức ăn gia cầm' : 'Thức ăn gia súc';
+    const productReadyAt = a.productReadyAt ?? new Date(Math.max(now, a.grownAt.getTime()));
+    const gotSick = Math.random() < SICK_CHANCE;
+    await this.prisma.$transaction(async (tx) => {
+      await this.consumeWarehouse(tx, char.id, feedSlug, 'SUPPLY', 1, `Hết ${feedName} — mua ở cửa hàng`);
+      await tx.farmAnimal.update({
+        where: { id: a.id },
+        data: { fedCount: { increment: 1 }, lastFedAt: new Date(), productReadyAt, sickAt: gotSick ? new Date() : undefined },
+      });
     });
-    return { ok: true, fedCount: a.fedCount + 1 };
+    return { ok: true, fedCount: a.fedCount + 1, sick: gotSick };
+  }
+
+  // Chữa bệnh bằng Thuốc thú y
+  async cureAnimal(userId: string, animalId: string) {
+    const char = await this.getCharacter(userId);
+    const a = await this.getAnimal(char.id, animalId);
+    if (!a.sickAt) throw new BadRequestException('Vật nuôi không bị bệnh');
+    await this.prisma.$transaction(async (tx) => {
+      await this.consumeWarehouse(tx, char.id, 'medicine', 'SUPPLY', 1, 'Hết Thuốc thú y — mua ở cửa hàng');
+      await tx.farmAnimal.update({ where: { id: a.id }, data: { sickAt: null } });
+    });
+    return { ok: true };
   }
 
   async collectAnimal(userId: string, animalId: string) {
@@ -702,6 +750,12 @@ export class FarmService {
         quantity: qty,
       },
     });
+  }
+
+  private async consumeWarehouse(tx: Prisma.TransactionClient, characterId: string, slug: string, category: string, qty: number, errMsg: string) {
+    const item = await tx.warehouseItem.findUnique({ where: { characterId_slug_category: { characterId, slug, category } } });
+    if (!item || item.quantity < qty) throw new BadRequestException(errMsg);
+    await tx.warehouseItem.update({ where: { id: item.id }, data: { quantity: { decrement: qty } } });
   }
 
   private async spendCoin(tx: Prisma.TransactionClient, characterId: string, amount: number, refId: string, note: string) {

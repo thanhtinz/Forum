@@ -10,17 +10,19 @@ import { formatDuration, secondsUntil } from '@/lib/format';
 import { animalSprite, animalAnimClass } from '@/lib/cropSprites';
 import { useNow } from '@/lib/useNow';
 
-interface Owned { id: string; slug: string; name: string; grown: boolean; grownAt: string | null; productReady: boolean; productReadyAt: string | null; hasProduct: boolean; diesAt: string | null; asset?: string | null }
+interface Owned { id: string; slug: string; name: string; grown: boolean; grownAt: string | null; productReady: boolean; productReadyAt: string | null; hasProduct: boolean; diesAt: string | null; sick?: boolean; asset?: string | null }
+type Supplies = { 'feed-poultry': number; 'feed-livestock': number; medicine: number };
 
 export default function AnimalsPage() {
   const { user, loading } = useAuth();
   const [owned, setOwned] = useState<Owned[]>([]);
+  const [supplies, setSupplies] = useState<Supplies>({ 'feed-poultry': 0, 'feed-livestock': 0, medicine: 0 });
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const now = useNow();
 
   const load = useCallback(() => {
-    api.get<{ animals: Owned[] }>('/farm/state').then((s) => { setOwned(s.animals || []); }).catch((e) => setMsg(e.message));
+    api.get<{ animals: Owned[]; supplies: Supplies }>('/farm/state').then((s) => { setOwned(s.animals || []); if (s.supplies) setSupplies(s.supplies); }).catch((e) => setMsg(e.message));
     mutate('/game/character');
   }, []);
   useEffect(() => {
@@ -67,6 +69,13 @@ export default function AnimalsPage() {
           {owned.length === 0 && <p className="absolute inset-0 grid place-items-center text-sm font-medium text-emerald-900/70">Chuồng trống — mua thú ở cửa hàng</p>}
         </div>
         <div className="p-4">
+        {/* Kho thức ăn & thuốc */}
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg bg-ink-50 p-2 text-sm dark:bg-ink-800/50">
+          <span title="Thức ăn gia cầm (gà/vịt)">🐔 Gia cầm: <b>{supplies['feed-poultry']}</b></span>
+          <span title="Thức ăn gia súc (bò/lợn)">🐄 Gia súc: <b>{supplies['feed-livestock']}</b></span>
+          <span title="Thuốc thú y">💊 Thuốc: <b>{supplies.medicine}</b></span>
+          <Link href="/game/shop?tab=animal" className="ml-auto text-xs text-brand-600 hover:underline">Mua thêm →</Link>
+        </div>
         {owned.length === 0 ? (
           <p className="text-sm text-ink-500">Chưa có vật nuôi. Mua ở <Link href="/game/shop" className="text-brand-600">Cửa hàng</Link>.</p>
         ) : (
@@ -79,20 +88,24 @@ export default function AnimalsPage() {
                     ? <img src={animalSprite(a.slug) || a.asset!} alt={a.name} className="h-12 w-12 object-contain" />
                     : <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800"><Beef size={20} /></span>}
                   <div>
-                    <p className="font-medium">{a.name}</p>
+                    <p className="font-medium">{a.name} {a.sick && <span className="rounded bg-rose-100 px-1 text-[10px] font-bold text-rose-600">🤒 Bệnh</span>}</p>
                     <p className="text-xs text-ink-400">
-                      {!a.grown
-                        ? `Đang lớn · còn ${formatDuration(secondsUntil(a.grownAt, now))}`
-                        : a.hasProduct
-                          ? (a.productReady ? 'Có sản phẩm — thu được' : `Sản phẩm sau ${formatDuration(secondsUntil(a.productReadyAt, now))}`)
-                          : 'Trưởng thành'}
+                      {a.sick
+                        ? 'Đang bệnh — cần Thuốc thú y'
+                        : !a.grown
+                          ? `Đang lớn · còn ${formatDuration(secondsUntil(a.grownAt, now))}`
+                          : a.hasProduct
+                            ? (a.productReady ? 'Có sản phẩm — thu được' : `Sản phẩm sau ${formatDuration(secondsUntil(a.productReadyAt, now))}`)
+                            : 'Trưởng thành'}
                     </p>
                     {a.diesAt && <p className="text-[10px] text-rose-400">Hết hạn sau {formatDuration(secondsUntil(a.diesAt, now))}</p>}
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button disabled={!!busy} onClick={() => act(a.id, () => api.post('/farm/animal/feed', { animalId: a.id }))} className="btn-outline !py-1 text-xs">Cho ăn</button>
-                  {a.productReady && <button disabled={!!busy} onClick={() => act(a.id, () => api.post('/farm/animal/collect', { animalId: a.id }))} className="btn-primary !py-1 text-xs">Thu</button>}
+                <div className="flex flex-wrap justify-end gap-1">
+                  {a.sick
+                    ? <button disabled={!!busy} onClick={() => act(a.id, () => api.post('/farm/animal/cure', { animalId: a.id }))} className="btn-primary !py-1 text-xs">💊 Chữa bệnh</button>
+                    : <button disabled={!!busy} onClick={() => act(a.id, () => api.post('/farm/animal/feed', { animalId: a.id }))} className="btn-outline !py-1 text-xs">Cho ăn</button>}
+                  {a.productReady && !a.sick && <button disabled={!!busy} onClick={() => act(a.id, () => api.post('/farm/animal/collect', { animalId: a.id }))} className="btn-primary !py-1 text-xs">Thu</button>}
                   <button disabled={!!busy} onClick={() => act(a.id, () => api.post('/farm/animal/sell', { animalId: a.id }))} className="btn-outline !py-1 text-xs text-red-600">Bán</button>
                 </div>
               </div>

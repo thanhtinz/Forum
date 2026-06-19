@@ -2722,6 +2722,7 @@ model FarmAnimal {
   lastFedAt      DateTime  @default(now())
   fedCount       Int       @default(0)
   productReadyAt DateTime?
+  sickAt         DateTime? // != null = đang bệnh, cần thuốc thú y
 
   character GameCharacter  @relation(fields: [characterId], references: [id], onDelete: Cascade)
   animal    AnimalTemplate @relation(fields: [animalId], references: [id])

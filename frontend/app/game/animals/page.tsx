@@ -47,16 +47,16 @@ export default function AnimalsPage() {
 
       {/* Chuồng thú — con vật di chuyển qua lại */}
       <section className="card overflow-hidden p-0">
-        <div className="relative h-60 overflow-hidden bg-cover bg-center" style={{ backgroundImage: 'url(/game-assets/nongtrai/animals/barn-scene.png)', imageRendering: 'pixelated', backgroundColor: '#86c34e' }}>
+        <div className="relative mx-auto aspect-square w-full max-w-md overflow-hidden bg-cover bg-center" style={{ backgroundImage: 'url(/game-assets/nongtrai/animals/barn-scene.png)', imageRendering: 'pixelated', backgroundColor: '#86c34e' }}>
           <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/35 to-transparent p-3">
             <h2 className="font-semibold text-white drop-shadow">Chuồng thú ({owned.length})</h2>
             <Link href="/game/shop?tab=animal" className="flex items-center gap-1 rounded-lg bg-white/25 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/40"><ShoppingBag size={14} /> Mua thêm</Link>
           </div>
-          {/* các con thú đi lại trong sân (hoạt ảnh bước chân) */}
+          {/* các con thú đi lại trong sân cỏ (tránh hàng rào) */}
           {owned.slice(0, 12).map((a, i) => {
             const cls = animalAnimClass(a.slug);
             return (
-              <div key={a.id} className="anim-walk" style={{ bottom: `${16 + (i % 3) * 22}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
+              <div key={a.id} className="anim-walk-pen" style={{ bottom: `${16 + (i % 4) * 9}%`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
                 {cls
                   ? <span className={`farmanim ${cls}`} />
                   // eslint-disable-next-line @next/next/no-img-element
@@ -64,7 +64,7 @@ export default function AnimalsPage() {
               </div>
             );
           })}
-          {owned.length === 0 && <p className="absolute inset-x-0 bottom-6 text-center text-sm font-medium text-emerald-950/80 drop-shadow">Chuồng trống — mua thú ở cửa hàng</p>}
+          {owned.length === 0 && <p className="absolute inset-x-0 bottom-1/2 text-center text-sm font-medium text-emerald-950/80 drop-shadow">Chuồng trống — mua thú ở cửa hàng</p>}
         </div>
         <div className="p-4">
         {/* Kho thức ăn & thuốc */}

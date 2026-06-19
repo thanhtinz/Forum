@@ -159,6 +159,16 @@ export class AiCompanionService {
     const session = await this.getSession(sessionId, userId);
     const persona = session.persona;
 
+    // Chat Live2D BẮT BUỘC dùng API key riêng của user — KHÔNG dùng AI hệ thống
+    // (AI hệ thống chỉ dành cho bói bài, forum và tính năng của seller).
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { aiProvider: true, aiModel: true, aiApiKey: true, aiBaseUrl: true },
+    });
+    if (!u?.aiApiKey) {
+      throw new BadRequestException('Chat AI cần API key riêng của bạn. Vào trang “Chat AI”, chọn nguồn và dán API key trước khi trò chuyện.');
+    }
+
     // Lưu tin nhắn user
     await this.prisma.aiMessage.create({
       data: { sessionId, role: 'USER', content: userMessage },
@@ -181,25 +191,18 @@ export class AiCompanionService {
     let detectedEmotion: Emotion = 'neutral';
     let emotionSent = false;
 
-    // Nếu user đã tự đấu API key riêng -> dùng provider/model/key của user
-    const u = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { aiProvider: true, aiModel: true, aiApiKey: true, aiBaseUrl: true },
-    });
-    const useOwnKey = !!u?.aiApiKey;
-    const provider = (useOwnKey && u?.aiProvider ? u.aiProvider : persona.provider) as any;
+    // Dùng nguồn/model/key riêng của user (đã kiểm tra có key ở trên).
+    const provider = (u.aiProvider || persona.provider) as any;
     const DEFAULT_MODEL: Record<string, string> = { GEMINI: 'gemini-2.0-flash', OPENAI: 'gpt-4o-mini', OLLAMA: 'llama3.1' };
-    // Nếu user đổi nguồn nhưng chưa chọn model -> dùng model mặc định đúng nguồn (tránh 404 do model lệch provider)
-    const modelId = useOwnKey
-      ? (u?.aiModel?.trim() || DEFAULT_MODEL[provider] || persona.modelId)
-      : persona.modelId;
+    // Nếu user chưa chọn model -> dùng model mặc định đúng nguồn (tránh 404 do model lệch provider)
+    const modelId = u.aiModel?.trim() || DEFAULT_MODEL[provider] || persona.modelId;
 
     for await (const chunk of this.aiProvider.streamChat(
       provider,
       modelId,
       history,
-      useOwnKey ? u!.aiApiKey : null,
-      useOwnKey ? u?.aiBaseUrl : null,
+      u.aiApiKey,
+      u.aiBaseUrl,
     )) {
       if (chunk.done) break;
       fullResponse += chunk.text;

@@ -144,6 +144,71 @@ enum ReportStatus {
   DISMISSED
 }
 
+// ===== Hệ thống Tố Cáo Scam =====
+enum ScamTargetType {
+  USER
+  SELLER
+  FREELANCER
+  EMPLOYER
+  WEBSITE
+  COMMUNITY
+  SERVICE
+}
+
+enum ScamReason {
+  FRAUD          // Lừa đảo
+  NO_DELIVERY    // Không giao hàng
+  NO_PAYMENT     // Không thanh toán
+  CHARGEBACK     // Chargeback
+  FAKE_GOODS     // Bán hàng giả
+  STOLEN_ACCOUNT // Tài khoản đánh cắp
+  SPAM
+  IMPERSONATION  // Mạo danh
+  HARASSMENT     // Quấy rối
+  OTHER
+}
+
+enum ScamCaseStatus {
+  PENDING        // Chờ duyệt
+  VERIFYING      // Đang xác minh
+  NEED_EVIDENCE  // Cần bổ sung bằng chứng
+  CONFIRMED      // Đã xác nhận scam
+  INSUFFICIENT   // Không đủ bằng chứng
+  RESOLVED       // Đã giải quyết
+  CLOSED         // Đóng báo cáo
+  CLEARED        // Đã minh oan
+}
+
+enum ScamRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ScamEvidenceKind {
+  IMAGE
+  VIDEO
+  FILE
+  CHAT_SCREENSHOT
+  INVOICE
+  CRYPTO_TX
+  LINK
+  SYSTEM_MSG
+}
+
+enum ScamVoteKind {
+  HELPFUL
+  ME_TOO
+}
+
+enum ScamBlacklistKind {
+  WALLET
+  IP
+  DOMAIN
+  EMAIL
+}
+
 enum NotifType {
   THREAD_REPLY
   POST_MENTION
@@ -280,6 +345,14 @@ model User {
   jobReviewsGiven      JobReview[]             @relation("JobReviewFrom")
   jobReviewsGot        JobReview[]             @relation("JobReviewTo")
   jobBookmarks         JobBookmark[]
+  scamCasesReported    ScamCase[]              @relation("ScamCaseReporter")
+  scamCasesAgainst     ScamCase[]              @relation("ScamCaseReported")
+  scamComments         ScamCaseComment[]
+  scamVotes            ScamCaseVote[]
+  scamFollows          ScamCaseFollow[]
+  scamAppeals          ScamCaseAppeal[]
+  scamEditLogs         ScamCaseEditLog[]
+  scamBlacklistAdded   ScamBlacklist[]
 
   @@index([email])
   @@index([username])
@@ -920,6 +993,162 @@ model ScamReport {
 
   @@index([reportedId])
   @@index([status])
+}
+
+// ===== Hồ sơ Tố Cáo Scam (đầy đủ) =====
+model ScamCase {
+  id             String         @id @default(cuid())
+  reporterId     String
+  targetType     ScamTargetType
+  reason         ScamReason
+  status         ScamCaseStatus @default(PENDING)
+  riskLevel      ScamRiskLevel?
+
+  reportedUserId String? // nếu đối tượng là thành viên trên hệ thống
+  targetName     String? @db.VarChar(150) // tên/handle đối tượng
+  targetUid      String? @db.VarChar(100)
+  targetEmail    String? @db.VarChar(150)
+  targetPhone    String? @db.VarChar(40)
+  targetWallet   String? @db.VarChar(120) // địa chỉ ví crypto
+  targetDomain   String? @db.VarChar(150)
+  targetDiscord  String? @db.VarChar(100)
+  targetTelegram String? @db.VarChar(100)
+  targetFacebook String? @db.VarChar(150)
+  targetZalo     String? @db.VarChar(40)
+
+  title        String    @db.VarChar(200)
+  description  String    @db.Text
+  damageValue  Int? // thiệt hại ước tính
+  incidentDate DateTime?
+  orderRef     String?   @db.VarChar(120) // ID đơn hàng liên quan
+
+  helpfulCount  Int @default(0)
+  meTooCount    Int @default(0)
+  followerCount Int @default(0)
+  commentCount  Int @default(0)
+  viewCount     Int @default(0)
+
+  modNote      String?  @db.Text
+  resolvedById String?
+  resolvedAt   DateTime?
+  hidden       Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reporter     User               @relation("ScamCaseReporter", fields: [reporterId], references: [id])
+  reportedUser User?              @relation("ScamCaseReported", fields: [reportedUserId], references: [id])
+  evidence     ScamCaseEvidence[]
+  comments     ScamCaseComment[]
+  votes        ScamCaseVote[]
+  follows      ScamCaseFollow[]
+  appeals      ScamCaseAppeal[]
+  editLogs     ScamCaseEditLog[]
+
+  @@index([status])
+  @@index([targetType])
+  @@index([reportedUserId])
+  @@index([targetWallet])
+  @@index([targetDomain])
+  @@index([targetEmail])
+  @@index([createdAt])
+}
+
+model ScamCaseEvidence {
+  id        String           @id @default(cuid())
+  caseId    String
+  kind      ScamEvidenceKind
+  url       String?          @db.VarChar(500)
+  label     String?          @db.VarChar(500) // mô tả / hash giao dịch / nội dung
+  createdAt DateTime         @default(now())
+
+  case ScamCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+model ScamCaseComment {
+  id        String   @id @default(cuid())
+  caseId    String
+  authorId  String
+  body      String   @db.Text
+  isDefense Boolean  @default(false) // phản hồi từ bên bị tố cáo
+  createdAt DateTime @default(now())
+
+  case   ScamCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  author User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+model ScamCaseVote {
+  id        String       @id @default(cuid())
+  caseId    String
+  userId    String
+  kind      ScamVoteKind
+  createdAt DateTime     @default(now())
+
+  case ScamCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, userId, kind])
+  @@index([caseId])
+}
+
+model ScamCaseFollow {
+  id        String   @id @default(cuid())
+  caseId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  case ScamCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, userId])
+  @@index([userId])
+}
+
+model ScamCaseAppeal {
+  id        String       @id @default(cuid())
+  caseId    String
+  userId    String
+  reason    String       @db.Text
+  status    ReportStatus @default(PENDING)
+  modNote   String?      @db.Text
+  createdAt DateTime     @default(now())
+
+  case ScamCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([status])
+}
+
+model ScamCaseEditLog {
+  id        String   @id @default(cuid())
+  caseId    String
+  editorId  String
+  summary   String   @db.Text
+  createdAt DateTime @default(now())
+
+  case   ScamCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  editor User     @relation(fields: [editorId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+}
+
+model ScamBlacklist {
+  id          String            @id @default(cuid())
+  kind        ScamBlacklistKind
+  value       String            @db.VarChar(200)
+  note        String?           @db.VarChar(500)
+  createdById String
+  createdAt   DateTime          @default(now())
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@unique([kind, value])
+  @@index([kind])
 }
 
 model UserWarning {

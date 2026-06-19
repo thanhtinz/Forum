@@ -18,6 +18,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/forum-categories', label: 'Danh mục diễn đàn', icon: FolderTree },
       { href: '/admin/pages', label: 'Trang & Menu', icon: FileText },
       { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert },
+      { href: '/admin/scam', label: 'Tố cáo scam', icon: ShieldAlert },
       { href: '/admin/disputes', label: 'Tranh chấp', icon: Gavel },
     ],
   },

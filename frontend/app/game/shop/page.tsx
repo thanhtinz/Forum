@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
-import { cropFruit } from '@/lib/cropSprites';
+import { cropFruit, animalSprite } from '@/lib/cropSprites';
 
 type Tab = 'crop' | 'animal' | 'fertilizer' | 'fishing' | 'recipe';
 
@@ -162,7 +162,7 @@ export default function GameShopPage() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {animals.map((a) => (
             <div key={a.slug} className="card flex items-center gap-3 p-3">
-              <Asset src={a.asset} fallback={<Beef size={20} />} />
+              <Asset src={animalSprite(a.slug) || a.asset} fallback={<Beef size={20} />} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{a.name}</p>
                 <p className="text-xs text-ink-400 inline-flex items-center gap-1"><Coins size={11} /> {formatCoin(a.buyPrice)}</p>
@@ -259,7 +259,7 @@ export default function GameShopPage() {
 
             <div className="flex gap-3">
               <Asset
-                src={selected.kind === 'bait' ? null : selected.kind === 'crop' ? (cropFruit(selected.item.slug) || selected.item.asset) : selected.item.asset}
+                src={selected.kind === 'bait' ? null : selected.kind === 'crop' ? (cropFruit(selected.item.slug) || selected.item.asset) : selected.kind === 'animal' ? (animalSprite(selected.item.slug) || selected.item.asset) : selected.item.asset}
                 className="h-20 w-20"
                 fallback={
                   selected.kind === 'crop' ? <span className="text-3xl">{cropEmoji(selected.item.slug)}</span>

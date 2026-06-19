@@ -16,7 +16,7 @@ interface FishItem { id: string; name: string; weightKg: number; value: number; 
 const CAT_LABEL: Record<string, string> = { SEED: 'Hạt giống', CROP: 'Nông sản', PRODUCT: 'Sản phẩm vật nuôi', DISH: 'Món ăn', FERTILIZER: 'Phân bón' };
 const CAT_ORDER = ['CROP', 'PRODUCT', 'DISH', 'SEED', 'FERTILIZER'];
 // Ảnh mặc định cho vật phẩm đặc biệt không có asset lưu sẵn
-const KNOWN_ASSET: Record<string, string> = { 'qua-khe': '/game-assets/nongtrai/img/caykhechin.png' };
+const KNOWN_ASSET: Record<string, string> = { 'qua-khe': '/game-assets/nongtrai/pixel/qua-khe.png' };
 
 export default function WarehousePage() {
   const { user, loading } = useAuth();

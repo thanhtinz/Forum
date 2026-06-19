@@ -59,7 +59,7 @@ export class FarmService {
     // Lấy icon nông sản từ dữ liệu admin để kho luôn khớp cửa hàng (kể cả quả khế)
     const cropTemplates = await this.prisma.cropTemplate.findMany({ select: { slug: true, name: true, asset: true } });
     const cropAsset = new Map(cropTemplates.map((c) => [c.slug, c.asset]));
-    const kheAsset = cropTemplates.find((c) => ['qua-khe', 'khe'].includes(c.slug) || /khế/i.test(c.name))?.asset ?? null;
+    const kheAsset = cropTemplates.find((c) => ['qua-khe', 'khe'].includes(c.slug) || /khế/i.test(c.name))?.asset ?? '/game-assets/nongtrai/pixel/qua-khe.png';
 
     const now = Date.now();
     return {
@@ -206,7 +206,7 @@ export class FarmService {
         name: tpl?.name ?? 'Quả Khế',
         category: 'CROP',
         unitSell: tpl?.sellPrice ?? this.KHE_PRICE,
-        asset: tpl?.asset ?? '/game-assets/nongtrai/img/caykhechin.png',
+        asset: tpl?.asset ?? '/game-assets/nongtrai/pixel/qua-khe.png',
       }, fruit);
     });
     return { harvested: fruit };

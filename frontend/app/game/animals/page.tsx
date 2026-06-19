@@ -12,17 +12,19 @@ import { useNow } from '@/lib/useNow';
 
 interface Owned { id: string; slug: string; name: string; grown: boolean; grownAt: string | null; productReady: boolean; productReadyAt: string | null; hasProduct: boolean; diesAt: string | null; sick?: boolean; asset?: string | null }
 type Supplies = { 'feed-poultry': number; 'feed-livestock': number; medicine: number };
+interface Barn { level: number; maxLevel: number; expIntoLevel: number; expForNextLevel: number | null; slots: number; used: number; nextSlotLevel: number | null }
 
 export default function AnimalsPage() {
   const { user, loading } = useAuth();
   const [owned, setOwned] = useState<Owned[]>([]);
   const [supplies, setSupplies] = useState<Supplies>({ 'feed-poultry': 0, 'feed-livestock': 0, medicine: 0 });
+  const [barn, setBarn] = useState<Barn | null>(null);
   const [busy, setBusy] = useState('');
   const [msg, setMsg] = useState('');
   const now = useNow();
 
   const load = useCallback(() => {
-    api.get<{ animals: Owned[]; supplies: Supplies }>('/farm/state').then((s) => { setOwned(s.animals || []); if (s.supplies) setSupplies(s.supplies); }).catch((e) => setMsg(e.message));
+    api.get<{ animals: Owned[]; supplies: Supplies; barn: Barn }>('/farm/state').then((s) => { setOwned(s.animals || []); if (s.supplies) setSupplies(s.supplies); if (s.barn) setBarn(s.barn); }).catch((e) => setMsg(e.message));
     mutate('/game/character');
   }, []);
   useEffect(() => {
@@ -40,8 +42,26 @@ export default function AnimalsPage() {
   return (
     <div className="space-y-5">
       <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
-      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
-        <Beef /> <h1 className="text-2xl font-bold">Vật nuôi</h1>
+      <header className="rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
+        <div className="flex items-center gap-2">
+          <Beef />
+          <div>
+            <h1 className="text-2xl font-bold">Vật nuôi</h1>
+            {barn && <p className="text-sm text-white/90">Chuồng cấp {barn.level}/{barn.maxLevel} · {barn.used}/{barn.slots} chỗ</p>}
+          </div>
+        </div>
+        {barn && (
+          <div className="mt-3">
+            <div className="mb-1 flex justify-between text-xs text-white/90">
+              <span>EXP chuồng</span>
+              <span>{barn.expForNextLevel != null ? `${barn.expIntoLevel}/${barn.expForNextLevel} → cấp ${barn.level + 1}` : 'Đã đạt cấp tối đa'}</span>
+            </div>
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/25">
+              <div className="h-full rounded-full bg-amber-300 transition-all" style={{ width: `${barn.expForNextLevel ? Math.min(100, (barn.expIntoLevel / barn.expForNextLevel) * 100) : 100}%` }} />
+            </div>
+            <p className="mt-1 text-[11px] text-white/80">{barn.nextSlotLevel != null ? `🔓 Lên cấp ${barn.nextSlotLevel} để mở thêm 1 chỗ nuôi (tối đa ${24} chỗ). Thu hoạch sản phẩm thú để lên cấp.` : 'Đã mở tối đa số chỗ nuôi.'}</p>
+          </div>
+        )}
       </header>
       {msg && <p className="text-sm text-rose-500">{msg}</p>}
 

@@ -53,6 +53,16 @@ export const api = {
 
 export const fetcher = <T>(p: string) => api.get<T>(p);
 
+// Chuẩn hoá URL ảnh trả về từ backend: nếu là đường dẫn tương đối (/uploads/…)
+// thì gắn API base để client (static export, khác origin) hiển thị được.
+// URL tuyệt đối (http…, dịch vụ ảnh ngoài) giữ nguyên.
+function absolutizeUrl(url: string): string {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '';
+  return url.startsWith('/') ? `${base}${url}` : url;
+}
+
 // Upload ảnh trực tiếp lên server (multipart). KHÔNG set Content-Type để
 // trình duyệt tự thêm boundary cho multipart/form-data.
 export async function uploadImage(file: File): Promise<{ url: string }> {
@@ -73,7 +83,7 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
     const msg = body?.message || res.statusText;
     throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg);
   }
-  return body as { url: string };
+  return { url: absolutizeUrl((body as { url: string }).url) };
 }
 
 // Upload tệp đính kèm (mọi loại file) — R2/S3 nếu admin bật, fallback local.
@@ -91,7 +101,8 @@ export async function uploadAttachment(file: File): Promise<{ url: string; filen
     const msg = body?.message || res.statusText;
     throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg);
   }
-  return body as { url: string; filename: string; size: number };
+  const b = body as { url: string; filename: string; size: number };
+  return { ...b, url: absolutizeUrl(b.url) };
 }
 
 // Upload ảnh cho trình soạn thảo (có thể đẩy lên dịch vụ ảnh ngoài nếu admin bật).
@@ -115,5 +126,5 @@ export async function uploadEditorImage(file: File): Promise<{ url: string }> {
     const msg = body?.message || res.statusText;
     throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg);
   }
-  return body as { url: string };
+  return { url: absolutizeUrl((body as { url: string }).url) };
 }

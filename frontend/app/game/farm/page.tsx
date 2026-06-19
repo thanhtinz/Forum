@@ -13,19 +13,6 @@ import { cropStage } from '@/lib/cropSprites';
 const FARM_BG = '/game-assets/nongtrai/img/nennongtrai.png';
 const GROUND = '/game-assets/nongtrai/img/product/dat.png';
 
-// Ảnh cây theo 4 giai đoạn: gieohat (vừa gieo) -> non (cây con) -> uong (đang lớn) -> chin (chín)
-const PRODUCT_BASE = '/game-assets/nongtrai/img/product';
-function growthSrc(asset: string | null, ready: boolean, progress: number): string {
-  if (!asset) return '';
-  const m = asset.match(/\/sv1\/(\d+)\.png$/);
-  if (!m) return asset;
-  const id = m[1];
-  if (ready) return `${PRODUCT_BASE}/${id}-chin.png`;
-  if (progress < 0.3) return `${PRODUCT_BASE}/gieohat.png`;
-  if (progress < 0.65) return `${PRODUCT_BASE}/${id}-non.png`;
-  return `${PRODUCT_BASE}/${id}-uong.png`;
-}
-
 interface FarmState {
   coin: number;
   profile: { level: number; exp: number; maxLevel: number; expIntoLevel: number; expForNextLevel: number | null; plotCount: number; maxPlots: number; nextPlotLevel: number | null; kitchenLevel: number; dogActive: boolean; dogUntil?: string | null };
@@ -168,7 +155,7 @@ export default function FarmPage() {
               const seeds = (s.warehouse || []).filter((w) => w.category === 'SEED' && w.quantity > 0);
               const ferts = s.fertilizers || [];
               const prog = p.progress ?? 0;
-              const stageSrc = cropStage(p.slug || '', p.ready, prog) || (p.asset ? growthSrc(p.asset, p.ready, prog) : '');
+              const stageSrc = cropStage(p.slug || '', p.ready, prog) || p.asset || '';
               return (
               <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
                 <div className={`relative grid h-24 place-items-center rounded-lg bg-amber-900/10 bg-contain bg-center bg-no-repeat ${p.empty && !p.tilled ? 'opacity-60' : ''}`} style={{ backgroundImage: `url(${GROUND})` }}>

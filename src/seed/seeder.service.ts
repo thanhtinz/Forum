@@ -78,6 +78,11 @@ export class SeederService implements OnApplicationBootstrap {
     try {
       for (const c of CROPS) {
         await this.prisma.cropTemplate.upsert({ where: { slug: c.slug }, update: {}, create: c });
+        // Thay asset cũ (/sv1) hoặc trống bằng sprite pixel mới — giữ icon admin tự tải lên
+        await this.prisma.cropTemplate.updateMany({
+          where: { slug: c.slug, OR: [{ asset: { contains: '/sv1/' } }, { asset: null }, { asset: '' }] },
+          data: { asset: c.asset },
+        });
         n++;
       }
       for (const fz of FERTILIZERS) {

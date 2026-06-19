@@ -5,7 +5,7 @@ import { mutate } from 'swr';
 import { ChevronLeft, Sprout, Droplets } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
-import { formatCoin, formatDuration, secondsUntil } from '@/lib/format';
+import { formatDuration, secondsUntil } from '@/lib/format';
 import { useNow } from '@/lib/useNow';
 import { cropEmoji } from '@/lib/gameIcons';
 
@@ -27,7 +27,7 @@ function growthSrc(asset: string | null, ready: boolean, progress: number): stri
 
 interface FarmState {
   coin: number;
-  profile: { level: number; exp: number; plotCount: number; nextPlotPrice: number; kitchenLevel: number; dogActive: boolean; dogUntil?: string | null };
+  profile: { level: number; exp: number; maxLevel: number; expIntoLevel: number; expForNextLevel: number | null; plotCount: number; maxPlots: number; nextPlotLevel: number | null; kitchenLevel: number; dogActive: boolean; dogUntil?: string | null };
   plots: { index: number; slug: string | null; crop: string | null; asset: string | null; watered: boolean; tilled: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
   warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number; asset?: string | null }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
@@ -51,7 +51,6 @@ export default function FarmPage() {
   if (err) return <div className="card p-8 text-center text-ink-500">{err}</div>;
   if (!s) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
 
-  async function buyPlot() { await api.post('/farm/plot/buy').catch(() => {}); load(); }
   async function buyDog() { try { await api.post('/farm/dog/buy'); setMsg('Đã mua chó giữ nhà (30 ngày)!'); } catch (e: any) { setMsg(e.message); } load(); }
   async function till(i: number) { try { await api.post('/farm/till', { plotIndex: i }); setMsg('Đã xới đất, giờ gieo hạt được rồi!'); } catch (e: any) { setMsg(e.message); } load(); }
   async function harvest(i: number) { await api.post('/farm/harvest', { plotIndex: i }).catch(() => {}); load(); }
@@ -70,11 +69,26 @@ export default function FarmPage() {
   return (
     <div className="space-y-5">
       <a href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</a>
-      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 p-6 text-white shadow-card">
-        <Sprout />
-        <div>
-          <h1 className="text-2xl font-bold">Nông trại</h1>
-          <p className="text-sm text-white/90">Cấp {s.profile.level} · {s.profile.plotCount} ô đất · <a href="/game/kitchen" className="underline hover:text-white">bếp Lv{s.profile.kitchenLevel}</a></p>
+      <header className="rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 p-6 text-white shadow-card">
+        <div className="flex items-center gap-2">
+          <Sprout />
+          <div>
+            <h1 className="text-2xl font-bold">Nông trại</h1>
+            <p className="text-sm text-white/90">Cấp {s.profile.level}/{s.profile.maxLevel} · {s.profile.plotCount}/{s.profile.maxPlots} ô đất · <a href="/game/kitchen" className="underline hover:text-white">bếp Lv{s.profile.kitchenLevel}</a></p>
+          </div>
+        </div>
+        {/* Thanh EXP nông trại */}
+        <div className="mt-3">
+          <div className="mb-1 flex justify-between text-xs text-white/90">
+            <span>EXP nông trại</span>
+            <span>{s.profile.expForNextLevel != null ? `${s.profile.expIntoLevel}/${s.profile.expForNextLevel} → cấp ${s.profile.level + 1}` : 'Đã đạt cấp tối đa'}</span>
+          </div>
+          <div className="h-2.5 w-full overflow-hidden rounded-full bg-white/25">
+            <div className="h-full rounded-full bg-amber-300 transition-all" style={{ width: `${s.profile.expForNextLevel ? Math.min(100, (s.profile.expIntoLevel / s.profile.expForNextLevel) * 100) : 100}%` }} />
+          </div>
+          <p className="mt-1 text-[11px] text-white/80">
+            {s.profile.nextPlotLevel != null ? `🔓 Lên cấp ${s.profile.nextPlotLevel} để mở thêm 1 ô đất (tối đa ${s.profile.maxPlots} ô).` : `Đã mở tối đa ${s.profile.maxPlots} ô đất.`}
+          </p>
         </div>
       </header>
 
@@ -142,69 +156,69 @@ export default function FarmPage() {
 
       <section className="card overflow-hidden p-4 bg-cover bg-center" style={{ backgroundImage: `linear-gradient(rgba(255,255,255,.78),rgba(255,255,255,.78)), url(${FARM_BG})` }}>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold">Ô đất</h2>
-          <button onClick={buyPlot} className="btn-primary !py-1.5 text-xs">+ Mua ô ({formatCoin(s.profile.nextPlotPrice)})</button>
+          <h2 className="font-semibold">Ô đất ({s.profile.plotCount}/{s.profile.maxPlots})</h2>
+          <span className="text-xs text-ink-600">{s.profile.nextPlotLevel != null ? `Ô kế mở ở cấp ${s.profile.nextPlotLevel}` : 'Đã mở tối đa'}</span>
         </div>
         {s.plots.length === 0 ? (
-          <p className="text-sm text-ink-700">Chưa có ô đất. Mua ô đầu tiên để bắt đầu.</p>
+          <p className="text-sm text-ink-700">Đang mở ô đất…</p>
         ) : (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-7">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {s.plots.map((p) => {
               const seeds = (s.warehouse || []).filter((w) => w.category === 'SEED' && w.quantity > 0);
               const ferts = s.fertilizers || [];
               const prog = p.progress ?? 0;
               return (
               <div key={p.index} className="rounded-xl border border-ink-200/70 bg-white/70 p-2 text-center">
-                <div className={`relative grid h-16 place-items-center rounded-lg bg-cover bg-center ${p.empty && !p.tilled ? 'saturate-50 brightness-90' : ''}`} style={{ backgroundImage: `url(${GROUND})` }}>
+                <div className={`relative grid h-24 place-items-center rounded-lg bg-cover bg-center ${p.empty && !p.tilled ? 'saturate-50 brightness-90' : ''}`} style={{ backgroundImage: `url(${GROUND})` }}>
                   {!p.empty && (p.asset
                     // cây lớn dần: ảnh sprite theo giai đoạn, nhỏ lúc mới trồng to khi sắp chín
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={growthSrc(p.asset, p.ready, prog)} alt="" onError={(e) => { if (p.asset) (e.currentTarget as HTMLImageElement).src = p.asset; }}
                         className="object-contain transition-all" style={{ maxHeight: `${40 + prog * 60}%` }} />
-                    : <span className="leading-none transition-all" style={{ fontSize: `${14 + prog * 26}px` }}>{cropEmoji(p.slug || '')}</span>)}
-                  {p.empty && <span className="text-[10px] text-ink-400">{p.tilled ? '+ Gieo' : 'Đất chưa xới'}</span>}
+                    : <span className="leading-none transition-all" style={{ fontSize: `${18 + prog * 34}px` }}>{cropEmoji(p.slug || '')}</span>)}
+                  {p.empty && <span className="text-xs font-medium text-ink-500">{p.tilled ? '+ Gieo' : 'Đất chưa xới'}</span>}
                 </div>
-                <div className="mt-1 truncate text-xs">{p.crop || 'Trống'}</div>
+                <div className="mt-1.5 truncate text-sm font-medium">{p.crop || 'Trống'}</div>
                 {/* Thanh tiến độ lớn + đếm giờ */}
                 {!p.empty && !p.ready && (
                   <>
-                    <div className="mt-1 h-1 w-full overflow-hidden rounded bg-ink-100 dark:bg-ink-800"><div className="h-full bg-emerald-400" style={{ width: `${prog * 100}%` }} /></div>
-                    {p.readyAt && <div className="text-[10px] text-emerald-600">⏳ {formatDuration(secondsUntil(p.readyAt, now))}</div>}
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded bg-ink-100 dark:bg-ink-800"><div className="h-full bg-emerald-400" style={{ width: `${prog * 100}%` }} /></div>
+                    {p.readyAt && <div className="text-xs text-emerald-600">⏳ {formatDuration(secondsUntil(p.readyAt, now))}</div>}
                   </>
                 )}
                 {/* Ô trống chưa xới: phải xới trước */}
                 {p.empty && !p.tilled && (
-                  <button onClick={() => till(p.index)} className="mt-1 w-full rounded bg-amber-600 px-1 py-0.5 text-[10px] text-white">⛏ Xới đất</button>
+                  <button onClick={() => till(p.index)} className="mt-2 w-full rounded-lg bg-amber-600 px-2 py-2 text-sm font-medium text-white hover:bg-amber-700">⛏ Xới đất</button>
                 )}
                 {/* Ô trống đã xới: chọn hạt để gieo */}
                 {p.empty && p.tilled && planting !== p.index && (
-                  <button onClick={() => { setPlanting(p.index); setSeedChoice(''); }} className="mt-1 w-full rounded bg-emerald-500 px-1 py-0.5 text-[10px] text-white">Gieo hạt</button>
+                  <button onClick={() => { setPlanting(p.index); setSeedChoice(''); }} className="mt-2 w-full rounded-lg bg-emerald-500 px-2 py-2 text-sm font-medium text-white hover:bg-emerald-600">🌱 Gieo hạt</button>
                 )}
                 {p.empty && p.tilled && planting === p.index && (
-                  <div className="mt-1 space-y-1">
-                    {seeds.length === 0 ? <p className="text-[10px] text-ink-400">Chưa có hạt. Mua ở cửa hàng.</p> : (
+                  <div className="mt-2 space-y-1.5">
+                    {seeds.length === 0 ? <p className="text-xs text-ink-400">Chưa có hạt. Mua ở cửa hàng.</p> : (
                       <>
-                        <select className="input !py-0.5 !text-[10px]" value={seedChoice} onChange={(e) => setSeedChoice(e.target.value)}>
+                        <select className="input !py-1.5 !text-xs" value={seedChoice} onChange={(e) => setSeedChoice(e.target.value)}>
                           <option value="">Chọn hạt…</option>
                           {seeds.map((sd) => <option key={sd.slug} value={sd.slug}>{cropEmoji(sd.slug.replace(/^seed_/, ''))} {sd.name} (×{sd.quantity})</option>)}
                         </select>
                         <button disabled={!seedChoice} onClick={() => { const sd = seeds.find((x) => x.slug === seedChoice); if (sd) plant(p.index, sd.slug.replace(/^seed_/, ''), sd.name); }}
-                          className="w-full rounded bg-emerald-600 px-1 py-0.5 text-[10px] font-medium text-white disabled:opacity-50">Gieo</button>
+                          className="w-full rounded-lg bg-emerald-600 px-2 py-2 text-sm font-medium text-white disabled:opacity-50">Gieo</button>
                       </>
                     )}
-                    <button onClick={() => setPlanting(null)} className="text-[10px] text-ink-400 underline">Hủy</button>
+                    <button onClick={() => setPlanting(null)} className="text-xs text-ink-400 underline">Hủy</button>
                   </div>
                 )}
                 {/* Cây đang trồng: tưới / bón / thu */}
                 {!p.empty && (
-                  <div className="mt-1 flex flex-wrap justify-center gap-1">
+                  <div className="mt-2 flex flex-wrap justify-center gap-1.5">
                     {p.ready ? (
-                      <button onClick={() => harvest(p.index)} className="rounded bg-amber-500 px-2 py-0.5 text-[10px] text-white">Thu hoạch</button>
+                      <button onClick={() => harvest(p.index)} className="w-full rounded-lg bg-amber-500 px-2 py-2 text-sm font-semibold text-white hover:bg-amber-600">🧺 Thu hoạch</button>
                     ) : (
                       <>
-                        {!p.watered && <button onClick={() => water(p.index)} className="rounded bg-sky-500 px-2 py-0.5 text-[10px] text-white inline-flex items-center gap-0.5"><Droplets size={10} /> Tưới</button>}
+                        {!p.watered && <button onClick={() => water(p.index)} className="inline-flex items-center gap-1 rounded-lg bg-sky-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-sky-600"><Droplets size={14} /> Tưới</button>}
                         {ferts.length > 0 && (
-                          <select className="input !py-0.5 !text-[10px] !w-auto" defaultValue="" onChange={(e) => e.target.value && fertilize(p.index, e.target.value, e.target.options[e.target.selectedIndex].text)}>
+                          <select className="input !py-1.5 !text-xs !w-auto" defaultValue="" onChange={(e) => e.target.value && fertilize(p.index, e.target.value, e.target.options[e.target.selectedIndex].text)}>
                             <option value="" disabled>Bón…</option>
                             {ferts.map((f) => <option key={f.slug} value={f.slug}>{f.name} (×{f.quantity})</option>)}
                           </select>

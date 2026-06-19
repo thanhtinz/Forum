@@ -7,8 +7,10 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 // Hằng số (viết lại từ mod nông trại WAP, toàn bộ Xu & Lượng -> coin)
-const PLOT_PRICE_STEP = 5000;
-const MAX_PLOTS = 55;
+const MAX_PLOTS = 50;        // tối đa 50 ô đất
+const START_PLOTS = 5;       // ban đầu 5 ô
+const EXP_PER_LEVEL = 500;   // mỗi cấp cần 500 EXP; mỗi cấp mở thêm 1 ô (tới khi đạt 50)
+const MAX_FARM_LEVEL = 50;
 const DOG_PRICE = 20000;
 const DOG_DAYS = 30;
 const CHECKIN_REWARD = 500;
@@ -32,6 +34,8 @@ export class FarmService {
     const char = await this.getCharacter(userId);
     const profile = await this.getProfile(char.id);
     await this.cleanupDeadAnimals(char.id);
+    // Mở ô đất theo cấp: đảm bảo đã có đủ ô được mở khoá (5 + level, tối đa 50)
+    await this.ensurePlots(char.id, profile.level);
 
     const [plots, warehouse, animals] = await Promise.all([
       this.prisma.farmPlot.findMany({
@@ -59,8 +63,14 @@ export class FarmService {
       profile: {
         level: profile.level,
         exp: profile.exp,
-        plotCount: profile.plotCount,
-        nextPlotPrice: profile.nextPlotPrice,
+        maxLevel: MAX_FARM_LEVEL,
+        // Dữ liệu thanh EXP: tiến độ trong cấp hiện tại
+        expIntoLevel: profile.level >= MAX_FARM_LEVEL ? 0 : profile.exp - profile.level * EXP_PER_LEVEL,
+        expForNextLevel: profile.level >= MAX_FARM_LEVEL ? null : EXP_PER_LEVEL,
+        plotCount: plots.length,
+        maxPlots: MAX_PLOTS,
+        // Cấp cần đạt để mở thêm 1 ô (null nếu đã đủ 50 ô)
+        nextPlotLevel: plots.length >= MAX_PLOTS ? null : Math.max(profile.level + 1, plots.length - START_PLOTS + 1),
         kitchenLevel: profile.kitchenLevel,
         dogActive: profile.dogUntil ? profile.dogUntil.getTime() > now : false,
         dogUntil: profile.dogUntil,
@@ -196,27 +206,20 @@ export class FarmService {
   }
 
   // ──────────────────────────────────────────────
-  // ĐẤT
+  // ĐẤT — mở khoá theo cấp (5 ô ban đầu, +1 mỗi cấp, tối đa 50). KHÔNG mua bằng coin.
   // ──────────────────────────────────────────────
-  async buyPlot(userId: string) {
-    const char = await this.getCharacter(userId);
-    const profile = await this.getProfile(char.id);
-    if (profile.plotCount >= MAX_PLOTS) {
-      throw new BadRequestException(`Tối đa ${MAX_PLOTS} ô đất`);
-    }
-    const price = profile.nextPlotPrice;
-    await this.prisma.$transaction(async (tx) => {
-      await this.spendCoin(tx, char.id, price, 'farm_plot', 'Mua ô đất');
-      await tx.farmPlot.create({ data: { characterId: char.id, index: profile.plotCount } });
-      await tx.farmProfile.update({
-        where: { characterId: char.id },
-        data: {
-          plotCount: { increment: 1 },
-          nextPlotPrice: { increment: PLOT_PRICE_STEP },
-        },
-      });
-    });
-    return { ok: true, plotIndex: profile.plotCount, spent: price, nextPrice: price + PLOT_PRICE_STEP };
+  private unlockedPlots(level: number) {
+    return Math.min(MAX_PLOTS, START_PLOTS + Math.max(0, level));
+  }
+
+  // Tạo đủ các ô đất đã được mở khoá (không bao giờ xoá ô đã có).
+  private async ensurePlots(characterId: string, level: number) {
+    const target = this.unlockedPlots(level);
+    const count = await this.prisma.farmPlot.count({ where: { characterId } });
+    if (count >= target) return;
+    const data = [] as { characterId: string; index: number }[];
+    for (let i = count; i < target; i++) data.push({ characterId, index: i });
+    if (data.length) await this.prisma.farmPlot.createMany({ data, skipDuplicates: true });
   }
 
   // ──────────────────────────────────────────────
@@ -764,7 +767,7 @@ export class FarmService {
   }
 
   private farmLevel(exp: number) {
-    return Math.min(50, Math.floor(exp / 500));
+    return Math.min(MAX_FARM_LEVEL, Math.floor(exp / EXP_PER_LEVEL));
   }
 
   private async getCharacter(userId: string) {

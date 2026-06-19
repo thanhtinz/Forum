@@ -23,12 +23,7 @@ export class FarmController {
     return this.farm.harvestKhe(userId);
   }
 
-  // ── Đất + trồng trọt ──
-  @Post('plot/buy')
-  buyPlot(@CurrentUser('id') userId: string) {
-    return this.farm.buyPlot(userId);
-  }
-
+  // ── Đất + trồng trọt (ô đất mở khoá theo cấp, không mua) ──
   @Get('crops')
   crops() {
     return this.farm.listCrops();

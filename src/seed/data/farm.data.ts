@@ -44,16 +44,3 @@ export const ANIMALS: AnimalSeed[] = [
   { slug: 'bo', name: 'Bò sữa', buyPrice: 20000, growSeconds: 10800, lifeSeconds: 10 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: 'sua-bo', productName: 'Sữa bò', productYield: 2, productPrice: 300, sellGrown: 25000, sellYoung: 8000, asset: img('pixel-animals/bo.png'), sortOrder: 1 },
   { slug: 'cuu', name: 'Cừu', buyPrice: 18000, growSeconds: 10800, lifeSeconds: 10 * DAY, feedCooldownSec: 7200, starveSeconds: DAY, productSlug: 'long-cuu', productName: 'Lông cừu', productYield: 2, productPrice: 250, sellGrown: 22000, sellYoung: 7000, asset: img('pixel-animals/cuu.png'), sortOrder: 2 },
 ];
-
-export interface RecipeSeed {
-  slug: string; name: string; cookSeconds: number; reward: number; skillExp: number; needSkill: boolean;
-  reqLevel: number; asset: string; sortOrder: number; ingredients: { slug: string; name: string; quantity: number }[];
-}
-export const RECIPES: RecipeSeed[] = [
-  { slug: 'salad', name: 'Salad rau củ', cookSeconds: 480, reward: 400, skillExp: 0, needSkill: false, reqLevel: 0, asset: img('nhabep/2.png'), sortOrder: 0, ingredients: [{ slug: 'ca-chua', name: 'Cà chua', quantity: 4 }, { slug: 'bap-cai', name: 'Bắp cải', quantity: 2 }] },
-  { slug: 'trung-chien', name: 'Trứng chiên', cookSeconds: 360, reward: 500, skillExp: 0, needSkill: false, reqLevel: 0, asset: img('nhabep/3.png'), sortOrder: 1, ingredients: [{ slug: 'trung', name: 'Trứng', quantity: 3 }] },
-  { slug: 'khoai-chien', name: 'Khoai tây chiên', cookSeconds: 420, reward: 600, skillExp: 0, needSkill: false, reqLevel: 0, asset: img('nhabep/1.png'), sortOrder: 2, ingredients: [{ slug: 'khoai-tay', name: 'Khoai tây', quantity: 4 }] },
-  { slug: 'sup-bi-ngo', name: 'Súp bí ngô', cookSeconds: 900, reward: 1100, skillExp: 0, needSkill: false, reqLevel: 4, asset: img('nhabep/4.png'), sortOrder: 3, ingredients: [{ slug: 'bi-ngo', name: 'Bí ngô', quantity: 3 }, { slug: 'cu-cai', name: 'Củ cải', quantity: 2 }] },
-  { slug: 'sua-chua', name: 'Sữa chua', cookSeconds: 900, reward: 1200, skillExp: 500, needSkill: true, reqLevel: 5, asset: img('nhabep/4.png'), sortOrder: 4, ingredients: [{ slug: 'sua-bo', name: 'Sữa bò', quantity: 3 }] },
-  { slug: 'banh-ca-rot', name: 'Bánh cà rốt', cookSeconds: 1200, reward: 1800, skillExp: 800, needSkill: true, reqLevel: 8, asset: img('nhabep/5.png'), sortOrder: 5, ingredients: [{ slug: 'ca-rot', name: 'Cà rốt', quantity: 5 }, { slug: 'trung', name: 'Trứng', quantity: 2 }] },
-];

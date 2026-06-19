@@ -2,7 +2,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { AvatarSlot, ConsumableType, MinigameType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FISH_SPECIES, FISH_DEPTHS, FISHING_RODS, FISHING_BOATS } from './data/fishing.data';
-import { CROPS, FERTILIZERS, ANIMALS, RECIPES } from './data/farm.data';
+import { CROPS, FERTILIZERS, ANIMALS } from './data/farm.data';
 import { FOODS } from './data/foods.data';
 import { WARDROBE_ITEMS } from './data/wardrobe.data';
 import { TOOL_CATEGORIES, TOOLS } from './data/tools.data';
@@ -141,19 +141,6 @@ export class SeederService implements OnApplicationBootstrap {
         n++;
       }
     } catch (e) { this.logger.warn(`Seed minigame lỗi: ${(e as Error).message}`); }
-    for (const r of RECIPES) {
-      const { ingredients, ...data } = r;
-      // Giữ nguyên công thức admin đã sửa: chỉ tạo mới + seed nguyên liệu khi recipe chưa tồn tại
-      const existing = await this.prisma.recipeTemplate.findUnique({ where: { slug: r.slug }, select: { id: true } });
-      if (existing) { n++; continue; }
-      const recipe = await this.prisma.recipeTemplate.create({ data });
-      for (const i of ingredients) {
-        await this.prisma.recipeIngredient.create({
-          data: { recipeId: recipe.id, cropSlug: i.slug, name: i.name, quantity: i.quantity },
-        });
-      }
-      n++;
-    }
 
     for (const food of FOODS) {
       const data = { ...food, type: food.type as ConsumableType };
@@ -279,11 +266,10 @@ export class SeederService implements OnApplicationBootstrap {
     this.logger.log(`Auto-seed hoàn tất: ${n} bản ghi template`);
   }
 
-  // Xoá roster cây/thú/công thức cũ (không thuộc pack mới) — chạy 1 lần khi còn dữ liệu cũ.
+  // Xoá roster cây/thú cũ (không thuộc pack mới) — chạy 1 lần khi còn dữ liệu cũ.
   private async resetFarmRosterIfNeeded() {
     const cropSlugs = CROPS.map((c) => c.slug);
     const animalSlugs = ANIMALS.map((a) => a.slug);
-    const recipeSlugs = RECIPES.map((r) => r.slug);
 
     // Có còn cây/thú cũ (ngoài danh sách mới) không?
     const oldCrops = await this.prisma.cropTemplate.count({ where: { slug: { notIn: cropSlugs } } });
@@ -311,16 +297,7 @@ export class SeederService implements OnApplicationBootstrap {
       await this.prisma.animalTemplate.deleteMany({ where: { id: { in: ids } } });
     }
 
-    // 3) Công thức: xoá công thức cũ (kèm đang nấu/đã học) — sẽ seed lại theo danh sách mới
-    const removeRecipes = await this.prisma.recipeTemplate.findMany({ where: { slug: { notIn: recipeSlugs } }, select: { id: true } });
-    if (removeRecipes.length) {
-      const ids = removeRecipes.map((r) => r.id);
-      await this.prisma.farmCooking.deleteMany({ where: { recipeId: { in: ids } } });
-      await this.prisma.farmSkill.deleteMany({ where: { recipeId: { in: ids } } });
-      await this.prisma.recipeTemplate.deleteMany({ where: { id: { in: ids } } }); // RecipeIngredient cascade
-    }
-
-    // 4) Cập nhật dữ liệu cây/thú giữ lại về đúng pack mới (giá/chỉ số/icon)
+    // 3) Cập nhật dữ liệu cây/thú giữ lại về đúng pack mới (giá/chỉ số/icon)
     for (const c of CROPS) await this.prisma.cropTemplate.upsert({ where: { slug: c.slug }, update: c, create: c });
     for (const a of ANIMALS) await this.prisma.animalTemplate.upsert({ where: { slug: a.slug }, update: a, create: a });
   }

@@ -17,7 +17,7 @@ const SOIL_UNTILLED = '/game-assets/nongtrai/img/product/chuaxoi.png'; // đất
 
 interface FarmState {
   coin: number;
-  profile: { level: number; exp: number; maxLevel: number; expIntoLevel: number; expForNextLevel: number | null; plotCount: number; maxPlots: number; nextPlotLevel: number | null; kitchenLevel: number; dogActive: boolean; dogUntil?: string | null };
+  profile: { level: number; exp: number; maxLevel: number; expIntoLevel: number; expForNextLevel: number | null; plotCount: number; maxPlots: number; nextPlotLevel: number | null; dogActive: boolean; dogUntil?: string | null };
   plots: { index: number; slug: string | null; crop: string | null; asset: string | null; watered: boolean; tilled: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
   warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number; asset?: string | null }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
@@ -74,7 +74,7 @@ export default function FarmPage() {
           <Sprout />
           <div>
             <h1 className="text-2xl font-bold">Nông trại</h1>
-            <p className="text-sm text-white/90">Cấp {s.profile.level}/{s.profile.maxLevel} · {s.profile.plotCount}/{s.profile.maxPlots} ô đất · <a href="/game/kitchen" className="underline hover:text-white">bếp Lv{s.profile.kitchenLevel}</a></p>
+            <p className="text-sm text-white/90">Cấp {s.profile.level}/{s.profile.maxLevel} · {s.profile.plotCount}/{s.profile.maxPlots} ô đất</p>
           </div>
         </div>
         {/* Thanh EXP nông trại */}

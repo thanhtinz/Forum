@@ -42,7 +42,7 @@ export default function AvatarSettings() {
           <p className="text-sm text-ink-500">Tải ảnh lên hoặc dán URL ảnh đại diện của bạn.</p>
         </div>
 
-        <ImageUpload value={avatar || undefined} onUploaded={setAvatar} label="Tải ảnh đại diện" />
+        <ImageUpload external value={avatar || undefined} onUploaded={setAvatar} label="Tải ảnh đại diện" />
 
         <div>
           <label className="mb-1 block text-sm text-ink-500">hoặc URL ảnh</label>

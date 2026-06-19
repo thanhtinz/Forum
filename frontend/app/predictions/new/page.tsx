@@ -223,8 +223,8 @@ export default function NewPredictionPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <ImageUpload value={image} onUploaded={setImage} label="Ảnh đại diện" />
-          <ImageUpload value={banner} onUploaded={setBanner} label="Banner" />
+          <ImageUpload external value={image} onUploaded={setImage} label="Ảnh đại diện" />
+          <ImageUpload external value={banner} onUploaded={setBanner} label="Banner" />
         </div>
 
         {user?.role === 'ADMIN' && (

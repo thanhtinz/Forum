@@ -73,7 +73,7 @@ function AlbumView() {
       {canManage && (
         <form onSubmit={addMedia} className="card space-y-2 p-4">
           <h3 className="flex items-center gap-2 text-sm font-semibold"><ImagePlus size={16} /> Thêm ảnh</h3>
-          <ImageUpload value={url || undefined} onUploaded={setUrl} />
+          <ImageUpload external value={url || undefined} onUploaded={setUrl} />
           <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="hoặc dán URL ảnh (https://…)" className="input w-full" />
           <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Chú thích (tuỳ chọn)" className="input w-full" />
           {err && <p className="text-sm text-red-500">{err}</p>}

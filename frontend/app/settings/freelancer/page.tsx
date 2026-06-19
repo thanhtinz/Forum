@@ -141,7 +141,7 @@ export default function FreelancerSettingsPage() {
                 </div>
                 <input className="input w-full" placeholder="Tiêu đề" value={item.title} onChange={(e) => updatePortfolio(i, { title: e.target.value })} />
                 <input className="input w-full" placeholder="Link" value={item.url} onChange={(e) => updatePortfolio(i, { url: e.target.value })} />
-                <ImageUpload value={item.image} onUploaded={(url) => updatePortfolio(i, { image: url })} label="Ảnh minh hoạ" />
+                <ImageUpload external value={item.image} onUploaded={(url) => updatePortfolio(i, { image: url })} label="Ảnh minh hoạ" />
               </div>
             ))}
           </div>

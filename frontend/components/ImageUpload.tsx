@@ -2,15 +2,18 @@
 
 import { useRef, useState } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
-import { uploadImage } from '@/lib/api';
+import { uploadImage, uploadEditorImage } from '@/lib/api';
 
 interface Props {
   value?: string;
   onUploaded: (url: string) => void;
   label?: string;
+  // external = true: đẩy qua dịch vụ ảnh ngoài đã cấu hình (zpic…) — dùng cho upload phía client.
+  // mặc định (admin) lưu thẳng lên server.
+  external?: boolean;
 }
 
-export default function ImageUpload({ value, onUploaded, label = 'Tải ảnh lên' }: Props) {
+export default function ImageUpload({ value, onUploaded, label = 'Tải ảnh lên', external = false }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -19,7 +22,7 @@ export default function ImageUpload({ value, onUploaded, label = 'Tải ảnh l�
     setBusy(true);
     setErr('');
     try {
-      const r = await uploadImage(file);
+      const r = external ? await uploadEditorImage(file) : await uploadImage(file);
       onUploaded(r.url);
     } catch (e: any) {
       setErr(e.message || 'Tải ảnh thất bại');

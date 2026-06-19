@@ -58,7 +58,7 @@ export default function DogCompanion({ active }: { active: boolean }) {
     <div className="pointer-events-auto absolute bottom-1 left-0 right-0 z-10 h-10 select-none" title="Chó giữ nhà — bấm để gọi nó đi">
       <div
         className="absolute bottom-0 cursor-pointer"
-        style={{ left: `${x}%`, transform: dir < 0 ? 'scaleX(-1)' : 'none', transition: 'left .06s linear' }}
+        style={{ left: `${x}%`, transform: dir > 0 ? 'scaleX(-1)' : 'none', transition: 'left .06s linear' }}
         onClick={startWalk}
       >
         <div className={`dogspr ${mode === 'sleep' ? 'dog-sleep' : mode === 'sit' ? 'dog-sit' : 'dog-walk'}`} />

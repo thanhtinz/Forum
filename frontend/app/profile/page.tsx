@@ -110,7 +110,9 @@ function ProfileView() {
         {isSelf && (
           <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
             <button onClick={editName} className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Đổi tên hiển thị</button>
-            <a href="/settings/verify" className="inline-flex items-center gap-1.5 rounded-lg bg-sky-100 px-3 py-1.5 font-medium text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300"><BadgeCheck size={14} /> Đăng ký tích xanh</a>
+            {!profile.verifiedBadge && (
+              <a href="/settings/verify" className="inline-flex items-center gap-1.5 rounded-lg bg-sky-100 px-3 py-1.5 font-medium text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300"><BadgeCheck size={14} /> Đăng ký tích xanh</a>
+            )}
             <a href="/settings/avatar" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Đổi ảnh đại diện</a>
             <a href="/settings/profile-fields" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Thông tin thêm</a>
           </div>

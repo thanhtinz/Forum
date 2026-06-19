@@ -175,7 +175,7 @@ function PersonaSetup({ initial, onSaved, isEdit }: { initial?: any; onSaved: (p
               <datalist id="ai-models-chat">{aiModels.map((m) => <option key={m} value={m} />)}</datalist>
               {aiModelMsg && <p className="mt-1 text-[11px] text-emerald-600">{aiModelMsg}</p>}
             </div>
-            <p className="mt-1 text-[11px] text-ink-400">Để trống = dùng AI mặc định của hệ thống. Hỗ trợ cả nguồn không kiểm duyệt (OpenRouter…).</p>
+            <p className="mt-1 text-[11px] text-ink-400">Chat AI yêu cầu API key riêng của bạn (không dùng AI hệ thống). Hỗ trợ cả nguồn không kiểm duyệt (OpenRouter…).</p>
           </div>
 
           {err && <p className="text-sm text-red-500">{err}</p>}

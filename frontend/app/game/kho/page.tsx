@@ -14,6 +14,8 @@ interface FishItem { id: string; name: string; weightKg: number; value: number; 
 
 const CAT_LABEL: Record<string, string> = { SEED: 'Hạt giống', CROP: 'Nông sản', PRODUCT: 'Sản phẩm vật nuôi', DISH: 'Món ăn', FERTILIZER: 'Phân bón' };
 const CAT_ORDER = ['CROP', 'PRODUCT', 'DISH', 'SEED', 'FERTILIZER'];
+// Ảnh mặc định cho vật phẩm đặc biệt không có asset lưu sẵn
+const KNOWN_ASSET: Record<string, string> = { 'qua-khe': '/game-assets/nongtrai/img/caykhechin.png' };
 
 export default function WarehousePage() {
   const { user, loading } = useAuth();
@@ -63,9 +65,9 @@ export default function WarehousePage() {
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {g.items.map((w) => (
               <div key={w.slug + w.category} className="flex items-center gap-2 rounded-lg border border-ink-100 p-2 text-sm dark:border-ink-800">
-                {w.asset
+                {(w.asset || KNOWN_ASSET[w.slug])
                   // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={w.asset} alt="" className="h-8 w-8 object-contain" />
+                  ? <img src={w.asset || KNOWN_ASSET[w.slug]} alt="" className="h-8 w-8 object-contain" />
                   : <span className="grid h-8 w-8 place-items-center text-lg">{cropEmoji(w.slug.replace(/^(seed_|dish_)/, ''))}</span>}
                 <div className="min-w-0 flex-1"><p className="truncate font-medium">{w.name} <span className="text-ink-400">×{w.quantity}</span></p><p className="text-xs text-ink-400">{w.unitSell ? `${formatCoin(w.unitSell)}/cái` : 'không bán'}</p></div>
                 {w.unitSell > 0 && <button onClick={() => sellItem(w)} className="btn-primary shrink-0 !px-2 !py-1 text-xs">Bán</button>}

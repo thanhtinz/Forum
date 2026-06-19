@@ -56,6 +56,10 @@ export class FarmService {
       where: { characterId: char.id, quantity: { gt: 0 } },
       include: { fertilizer: { select: { slug: true, name: true, reduceSeconds: true } } },
     });
+    // Lấy icon nông sản từ dữ liệu admin để kho luôn khớp cửa hàng (kể cả quả khế)
+    const cropTemplates = await this.prisma.cropTemplate.findMany({ select: { slug: true, name: true, asset: true } });
+    const cropAsset = new Map(cropTemplates.map((c) => [c.slug, c.asset]));
+    const kheAsset = cropTemplates.find((c) => ['qua-khe', 'khe'].includes(c.slug) || /khế/i.test(c.name))?.asset ?? null;
 
     const now = Date.now();
     return {
@@ -99,7 +103,10 @@ export class FarmService {
         category: w.category,
         quantity: w.quantity,
         unitSell: w.unitSell,
-        asset: w.asset,
+        // Nông sản: ưu tiên icon theo crop template admin (đồng bộ cửa hàng); quả khế lấy theo template khế
+        asset: w.category === 'CROP'
+          ? (cropAsset.get(w.slug) ?? (w.slug === 'qua-khe' ? kheAsset : null) ?? w.asset)
+          : w.asset,
       })),
       animals: animals.map((a) => ({
         id: a.id,

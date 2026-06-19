@@ -56,7 +56,7 @@ export default function AnimalsPage() {
           {owned.slice(0, 12).map((a, i) => {
             const cls = animalAnimClass(a.slug);
             return (
-              <div key={a.id} className="anim-walk-l" style={{ bottom: `${16 + (i % 3) * 22}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
+              <div key={a.id} className="anim-walk" style={{ bottom: `${16 + (i % 3) * 22}px`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
                 {cls
                   ? <span className={`farmanim ${cls}`} />
                   // eslint-disable-next-line @next/next/no-img-element

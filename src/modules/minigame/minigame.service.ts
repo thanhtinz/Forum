@@ -47,27 +47,24 @@ export class MinigameService {
   async playJackpot(userId: string, betCoin: number, activeLines = 5) {
     const { char, config } = await this.validateAndLockBet(userId, betCoin, 'JACKPOT_777');
 
-    // Cược nhân theo số payline active
-    const totalBet = betCoin * activeLines;
-    if (char.coinBalance < totalBet)
-      throw new BadRequestException(`Không đủ Coin cho ${activeLines} dòng. Cần ${totalBet}`);
+    const lines = Math.max(1, Math.min(5, activeLines));
+    const result = JackpotGame.spin(lines);
 
-    const result = JackpotGame.spin(activeLines);
+    // betCoin = TỔNG cược, chia đều cho các dòng. payout = cược/dòng × tổng hệ số × (1 - phí)
+    const perLine = betCoin / lines;
+    const payout = Math.floor(perLine * result.totalMultiplier * (1 - config.houseFee));
+    const netCoin = payout - betCoin; // thua tối đa = đúng số đã cược
 
-    // Tính payout: tổng hệ số × cược mỗi dòng × (1 - phí)
-    const payout = Math.floor(betCoin * result.totalMultiplier * (1 - config.houseFee));
-    const netCoin = payout - totalBet;
-
-    await this.settleBet(char.id, 'JACKPOT_777', totalBet, netCoin);
+    await this.settleBet(char.id, 'JACKPOT_777', betCoin, netCoin);
 
     return {
       grid: result.grid,
       paylines: result.paylines,
       multiplier: result.totalMultiplier,
       isJackpot: result.isJackpot,
-      betPerLine: betCoin,
-      activeLines,
-      totalBet,
+      betPerLine: Math.floor(perLine),
+      activeLines: lines,
+      totalBet: betCoin,
       payout,
       netCoin,
     };

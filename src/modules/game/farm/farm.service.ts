@@ -16,7 +16,6 @@ const DOG_DAYS = 30;
 const CHECKIN_REWARD = 500;
 const STEAL_EXP_COST = 200;
 const STEAL_SUCCESS = 0.6;
-const MAX_KITCHEN_LEVEL = 15;
 const MAX_FEED = 3;
 // Sức khỏe ô đất (mô phỏng cơ chế sucKhoe của Avatar): sản lượng = raw × health/100
 const PLANT_BASE_HEALTH = 60; // mới gieo cần chăm sóc mới đạt full
@@ -75,7 +74,6 @@ export class FarmService {
         maxPlots: MAX_PLOTS,
         // Cấp cần đạt để mở thêm 1 ô (null nếu đã đủ 50 ô)
         nextPlotLevel: plots.length >= MAX_PLOTS ? null : Math.max(profile.level + 1, plots.length - START_PLOTS + 1),
-        kitchenLevel: profile.kitchenLevel,
         dogActive: profile.dogUntil ? profile.dogUntil.getTime() > now : false,
         dogUntil: profile.dogUntil,
       },
@@ -485,157 +483,6 @@ export class FarmService {
       if (value > 0) await this.addCoin(tx, char.id, value, 'farm_animal_sell', `Bán ${a.animal.name}`);
     });
     return { ok: true, value };
-  }
-
-  // ──────────────────────────────────────────────
-  // NHÀ BẾP
-  // ──────────────────────────────────────────────
-  async listRecipes(userId: string) {
-    const char = await this.getCharacter(userId);
-    const profile = await this.getProfile(char.id);
-    const [recipes, skills, cooking] = await Promise.all([
-      this.prisma.recipeTemplate.findMany({
-        orderBy: { sortOrder: 'asc' },
-        include: { ingredients: true },
-      }),
-      this.prisma.farmSkill.findMany({ where: { characterId: char.id }, select: { recipeId: true } }),
-      this.prisma.farmCooking.findMany({
-        where: { characterId: char.id },
-        include: { recipe: { select: { name: true, asset: true, reward: true } } },
-        orderBy: { doneAt: 'asc' },
-      }),
-    ]);
-    const learned = new Set(skills.map((s) => s.recipeId));
-    return {
-      kitchenLevel: profile.kitchenLevel,
-      maxKitchen: MAX_KITCHEN_LEVEL,
-      exp: profile.exp,
-      upgradeCost: profile.kitchenLevel >= MAX_KITCHEN_LEVEL ? null : (profile.kitchenLevel <= 5 ? 1000 * profile.kitchenLevel : 3000 * profile.kitchenLevel),
-      cooking: cooking.map((c) => ({ id: c.id, name: c.recipe.name, asset: c.recipe.asset, reward: c.recipe.reward, doneAt: c.doneAt })),
-      recipes: recipes.map((r) => ({
-        slug: r.slug,
-        name: r.name,
-        cookSeconds: r.cookSeconds,
-        reward: r.reward,
-        needSkill: r.needSkill,
-        learned: !r.needSkill || learned.has(r.id),
-        skillExp: r.skillExp,
-        ingredients: r.ingredients.map((i) => ({ slug: i.cropSlug, name: i.name, quantity: i.quantity })),
-        asset: r.asset,
-      })),
-    };
-  }
-
-  async learnSkill(userId: string, recipeSlug: string) {
-    const char = await this.getCharacter(userId);
-    const profile = await this.getProfile(char.id);
-    const recipe = await this.prisma.recipeTemplate.findUnique({ where: { slug: recipeSlug } });
-    if (!recipe) throw new NotFoundException('Công thức không tồn tại');
-    if (!recipe.needSkill) return { ok: true, message: 'Công thức này không cần học' };
-    const existing = await this.prisma.farmSkill.findUnique({
-      where: { characterId_recipeId: { characterId: char.id, recipeId: recipe.id } },
-    });
-    if (existing) return { ok: true, message: 'Đã học rồi' };
-    if (profile.exp < recipe.skillExp) {
-      throw new BadRequestException(`Cần ${recipe.skillExp} EXP nông trại để học`);
-    }
-    await this.prisma.$transaction(async (tx) => {
-      await tx.farmProfile.update({
-        where: { characterId: char.id },
-        data: { exp: { decrement: recipe.skillExp }, level: this.farmLevel(profile.exp - recipe.skillExp) },
-      });
-      await tx.farmSkill.create({ data: { characterId: char.id, recipeId: recipe.id } });
-    });
-    return { ok: true, learned: recipe.name };
-  }
-
-  async cook(userId: string, recipeSlug: string) {
-    const char = await this.getCharacter(userId);
-    const profile = await this.getProfile(char.id);
-    const recipe = await this.prisma.recipeTemplate.findUnique({
-      where: { slug: recipeSlug },
-      include: { ingredients: true },
-    });
-    if (!recipe) throw new NotFoundException('Công thức không tồn tại');
-
-    if (recipe.needSkill) {
-      const skill = await this.prisma.farmSkill.findUnique({
-        where: { characterId_recipeId: { characterId: char.id, recipeId: recipe.id } },
-      });
-      if (!skill) throw new BadRequestException('Bạn chưa học công thức này');
-    }
-    const cooking = await this.prisma.farmCooking.count({ where: { characterId: char.id } });
-    if (cooking >= profile.kitchenLevel) {
-      throw new BadRequestException(`Bếp chỉ nấu tối đa ${profile.kitchenLevel} món cùng lúc`);
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      // kiểm tra + trừ nguyên liệu (tìm trong CROP rồi PRODUCT)
-      for (const ing of recipe.ingredients) {
-        const item = await tx.warehouseItem.findFirst({
-          where: { characterId: char.id, slug: ing.cropSlug, category: { in: ['CROP', 'PRODUCT'] } },
-        });
-        if (!item || item.quantity < ing.quantity) {
-          throw new BadRequestException(`Thiếu nguyên liệu: ${ing.name}`);
-        }
-        await tx.warehouseItem.update({
-          where: { id: item.id },
-          data: { quantity: { decrement: ing.quantity } },
-        });
-      }
-      await tx.farmCooking.create({
-        data: {
-          characterId: char.id,
-          recipeId: recipe.id,
-          doneAt: new Date(Date.now() + recipe.cookSeconds * 1000),
-        },
-      });
-    });
-    return { ok: true, dish: recipe.name, doneInSec: recipe.cookSeconds };
-  }
-
-  async collectDishes(userId: string) {
-    const char = await this.getCharacter(userId);
-    const done = await this.prisma.farmCooking.findMany({
-      where: { characterId: char.id, doneAt: { lte: new Date() } },
-      include: { recipe: { select: { slug: true, name: true, reward: true, asset: true } } },
-    });
-    if (done.length === 0) return { ok: true, collected: 0 };
-    // Nấu xong -> món ăn vào KHO (bán sau), không cộng coin trực tiếp
-    await this.prisma.$transaction(async (tx) => {
-      await tx.farmCooking.deleteMany({ where: { id: { in: done.map((d) => d.id) } } });
-      // gom theo loại món
-      const byRecipe = new Map<string, { name: string; reward: number; asset: string | null; qty: number }>();
-      for (const c of done) {
-        const k = c.recipe.slug;
-        const cur = byRecipe.get(k) || { name: c.recipe.name, reward: c.recipe.reward, asset: c.recipe.asset, qty: 0 };
-        cur.qty += 1; byRecipe.set(k, cur);
-      }
-      for (const [slug, d] of byRecipe) {
-        await this.addWarehouse(tx, char.id, { slug: `dish_${slug}`, name: d.name, category: 'DISH', unitSell: d.reward, asset: d.asset }, d.qty);
-      }
-    });
-    return { ok: true, collected: done.length };
-  }
-
-  async upgradeKitchen(userId: string) {
-    const char = await this.getCharacter(userId);
-    const profile = await this.getProfile(char.id);
-    if (profile.kitchenLevel >= MAX_KITCHEN_LEVEL) {
-      throw new BadRequestException('Bếp đã đạt cấp tối đa');
-    }
-    const lvl = profile.kitchenLevel;
-    const costExp = lvl <= 5 ? 1000 * lvl : 3000 * lvl;
-    if (profile.exp < costExp) throw new BadRequestException(`Cần ${costExp} EXP nông trại`);
-    await this.prisma.farmProfile.update({
-      where: { characterId: char.id },
-      data: {
-        exp: { decrement: costExp },
-        kitchenLevel: { increment: 1 },
-        level: this.farmLevel(profile.exp - costExp),
-      },
-    });
-    return { ok: true, kitchenLevel: lvl + 1, spentExp: costExp };
   }
 
   // ──────────────────────────────────────────────

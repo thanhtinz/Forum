@@ -102,32 +102,6 @@ export class FarmController {
     return this.farm.sellAnimal(userId, animalId);
   }
 
-  // ── Nhà bếp ──
-  @Get('recipes')
-  recipes(@CurrentUser('id') userId: string) {
-    return this.farm.listRecipes(userId);
-  }
-
-  @Post('kitchen/learn')
-  learn(@CurrentUser('id') userId: string, @Body('recipeSlug') recipeSlug: string) {
-    return this.farm.learnSkill(userId, recipeSlug);
-  }
-
-  @Post('kitchen/cook')
-  cook(@CurrentUser('id') userId: string, @Body('recipeSlug') recipeSlug: string) {
-    return this.farm.cook(userId, recipeSlug);
-  }
-
-  @Post('kitchen/collect')
-  collectDishes(@CurrentUser('id') userId: string) {
-    return this.farm.collectDishes(userId);
-  }
-
-  @Post('kitchen/upgrade')
-  upgradeKitchen(@CurrentUser('id') userId: string) {
-    return this.farm.upgradeKitchen(userId);
-  }
-
   // ── Chó / điểm danh / ăn trộm ──
   @Post('dog/buy')
   buyDog(@CurrentUser('id') userId: string) {

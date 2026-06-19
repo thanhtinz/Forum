@@ -9,8 +9,6 @@ interface Field { key: string; label: string; type: FieldType }
 
 // Các trường là ảnh — cho tải file lên thẳng thay vì dán URL
 const IMAGE_KEYS = new Set(['asset', 'iconUrl', 'spriteUrl']);
-interface IngredientOpt { slug: string; name: string; group: string }
-interface IngredientRow { cropSlug: string; name: string; quantity: number }
 
 const TYPES = [
   { id: 'crop', label: 'Cây trồng' },
@@ -20,7 +18,6 @@ const TYPES = [
   { id: 'fishingboat', label: 'Thuyền' },
   { id: 'fertilizer', label: 'Phân bón' },
   { id: 'animal', label: 'Vật nuôi' },
-  { id: 'recipe', label: 'Công thức' },
   { id: 'consumable', label: 'Đồ ăn (consumable)' },
   { id: 'gempackage', label: 'Gói nạp Gem' },
 ];
@@ -70,12 +67,6 @@ const SCHEMAS: Record<string, Field[]> = {
     { key: 'productYield', label: 'Sản lượng/lần', type: 'number' }, { key: 'productPrice', label: 'Giá sản phẩm', type: 'number' },
     { key: 'sellGrown', label: 'Bán khi lớn', type: 'number' }, { key: 'sellYoung', label: 'Bán khi non', type: 'number' },
     { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
-  ],
-  recipe: [
-    { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
-    { key: 'cookSeconds', label: 'Thời gian nấu (giây)', type: 'number' }, { key: 'reward', label: 'Phần thưởng (coin)', type: 'number' },
-    { key: 'skillExp', label: 'EXP để học', type: 'number' }, { key: 'needSkill', label: 'Cần học kỹ năng', type: 'boolean' },
-    { key: 'reqLevel', label: 'Cấp yêu cầu', type: 'number' }, { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
   ],
   consumable: [
     { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
@@ -138,37 +129,20 @@ export default function AdminTemplates() {
   const [rows, setRows] = useState<any[]>([]);
   const [editing, setEditing] = useState<any | null>(null);
   const [form, setForm] = useState<Record<string, any>>({});
-  const [ingredients, setIngredients] = useState<IngredientRow[]>([]);
-  const [ingOpts, setIngOpts] = useState<IngredientOpt[]>([]);
   const [msg, setMsg] = useState('');
 
   const fields = SCHEMAS[type] || [];
 
   function load() { api.get<any[]>(`/admin/templates/${type}`).then(setRows).catch((e) => setMsg(e.message)); }
   useEffect(() => { load(); setEditing(null); /* eslint-disable-next-line */ }, [type]);
-  // tải danh sách nguyên liệu cho công thức 1 lần
-  useEffect(() => { api.get<IngredientOpt[]>('/admin/templates/recipe-ingredients').then(setIngOpts).catch(() => {}); }, []);
 
   function fromRow(row: any) {
     const f: Record<string, any> = {};
     for (const fld of fields) f[fld.key] = row?.[fld.key] ?? (fld.type === 'boolean' ? false : '');
     return f;
   }
-  function openEdit(row: any) {
-    setEditing(row); setForm(fromRow(row)); setMsg('');
-    setIngredients((row?.ingredients || []).map((i: any) => ({ cropSlug: i.cropSlug, name: i.name, quantity: i.quantity })));
-  }
-  function openNew() { setEditing({}); setForm(fromRow({})); setIngredients([]); setMsg(''); }
-
-  function addIngredient() { setIngredients([...ingredients, { cropSlug: '', name: '', quantity: 1 }]); }
-  function setIngredient(idx: number, opt: IngredientOpt | null, qty?: number) {
-    setIngredients(ingredients.map((it, i) => i !== idx ? it : {
-      cropSlug: opt ? opt.slug : it.cropSlug,
-      name: opt ? opt.name : it.name,
-      quantity: qty != null ? Math.max(1, qty) : it.quantity,
-    }));
-  }
-  function removeIngredient(idx: number) { setIngredients(ingredients.filter((_, i) => i !== idx)); }
+  function openEdit(row: any) { setEditing(row); setForm(fromRow(row)); setMsg(''); }
+  function openNew() { setEditing({}); setForm(fromRow({})); setMsg(''); }
 
   async function save() {
     const data: Record<string, any> = {};
@@ -178,7 +152,6 @@ export default function AdminTemplates() {
       else if (fld.type === 'boolean') data[fld.key] = !!v;
       else data[fld.key] = v ?? '';
     }
-    if (type === 'recipe') data.ingredients = ingredients.filter((i) => i.cropSlug);
     try {
       if (editing?.id) await api.patch(`/admin/templates/${type}/${editing.id}`, data);
       else await api.post(`/admin/templates/${type}`, data);
@@ -238,44 +211,6 @@ export default function AdminTemplates() {
               </label>
             ))}
           </div>
-          {type === 'recipe' && (
-            <div className="mt-4 rounded-lg border border-ink-100 p-3 dark:border-ink-800">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-sm font-semibold">Nguyên liệu (sản phẩm cây/thú/cá)</span>
-                <button type="button" onClick={addIngredient} className="btn-outline !py-1 text-xs">+ Thêm nguyên liệu</button>
-              </div>
-              {ingredients.length === 0 && <p className="text-xs text-ink-400">Chưa có nguyên liệu. Bấm “Thêm nguyên liệu”.</p>}
-              <div className="space-y-2">
-                {ingredients.map((it, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <select
-                      className="input flex-1"
-                      value={it.cropSlug}
-                      onChange={(e) => setIngredient(idx, ingOpts.find((o) => o.slug === e.target.value) || null)}
-                    >
-                      <option value="">— chọn nguyên liệu —</option>
-                      {['Nông sản', 'Sản phẩm vật nuôi', 'Cá'].map((grp) => (
-                        <optgroup key={grp} label={grp}>
-                          {ingOpts.filter((o) => o.group === grp).map((o) => (
-                            <option key={o.slug} value={o.slug}>{o.name} ({o.slug})</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                      {/* giữ slug cũ nếu không còn trong danh sách */}
-                      {it.cropSlug && !ingOpts.some((o) => o.slug === it.cropSlug) && <option value={it.cropSlug}>{it.name || it.cropSlug}</option>}
-                    </select>
-                    <input
-                      type="number" min={1}
-                      className="input w-20"
-                      value={it.quantity}
-                      onChange={(e) => setIngredient(idx, null, Number(e.target.value))}
-                    />
-                    <button type="button" onClick={() => removeIngredient(idx)} className="btn-outline !py-1 text-xs text-red-600">Xóa</button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
           <div className="mt-3 flex gap-2">
             <button onClick={save} className="btn-primary">Lưu</button>
             <button onClick={() => setEditing(null)} className="btn-outline">Hủy</button>

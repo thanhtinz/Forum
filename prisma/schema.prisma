@@ -1886,8 +1886,6 @@ model GameCharacter {
   warehouse       WarehouseItem[]
   farmAnimals     FarmAnimal[]
   farmFertilizers FarmFertilizer[]
-  farmCooking     FarmCooking[]
-  farmSkills      FarmSkill[]
   avatarItems     UserAvatarItem[]
 
   @@index([level])
@@ -2646,35 +2644,6 @@ model AnimalTemplate {
   animals FarmAnimal[]
 }
 
-model RecipeTemplate {
-  id          String  @id @default(cuid())
-  slug        String  @unique @db.VarChar(60)
-  name        String  @db.VarChar(100)
-  cookSeconds Int
-  reward      Int // coin khi bán/nhận bánh
-  skillExp    Int     @default(0) // EXP cần để học (nếu needSkill)
-  needSkill   Boolean @default(false)
-  reqLevel    Int     @default(0)
-  asset       String? @db.VarChar(255)
-  sortOrder   Int     @default(0)
-
-  ingredients RecipeIngredient[]
-  cooking     FarmCooking[]
-  skills      FarmSkill[]
-}
-
-model RecipeIngredient {
-  id       String @id @default(cuid())
-  recipeId String
-  cropSlug String @db.VarChar(60) // slug nông sản/sản phẩm cần
-  name     String @db.VarChar(100)
-  quantity Int
-
-  recipe RecipeTemplate @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-
-  @@index([recipeId])
-}
-
 // Hồ sơ nông trại (level RIÊNG, tách hẳn level nhân vật)
 model FarmProfile {
   id             String    @id @default(cuid())
@@ -2683,7 +2652,6 @@ model FarmProfile {
   exp            Int       @default(0)
   plotCount      Int       @default(0)
   nextPlotPrice  Int       @default(5000) // giá ô đất kế tiếp (tăng dần)
-  kitchenLevel   Int       @default(1)
   dogUntil       DateTime? // chó bảo vệ tới khi nào
   lastCheckinAt  DateTime?
   kheLastWaterAt DateTime? // lần tưới cây khế gần nhất (mỗi ngày)
@@ -2759,30 +2727,6 @@ model FarmAnimal {
   animal    AnimalTemplate @relation(fields: [animalId], references: [id])
 
   @@index([characterId])
-}
-
-model FarmCooking {
-  id          String   @id @default(cuid())
-  characterId String
-  recipeId    String
-  doneAt      DateTime
-  createdAt   DateTime @default(now())
-
-  character GameCharacter  @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  recipe    RecipeTemplate @relation(fields: [recipeId], references: [id])
-
-  @@index([characterId])
-}
-
-model FarmSkill {
-  characterId String
-  recipeId    String
-  learnedAt   DateTime @default(now())
-
-  character GameCharacter  @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  recipe    RecipeTemplate @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-
-  @@id([characterId, recipeId])
 }
 
 // ============================================================

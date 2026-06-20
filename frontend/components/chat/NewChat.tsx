@@ -45,7 +45,7 @@ export function NewChat({ onClose, onCreated }: { onClose: () => void; onCreated
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={onClose}>
-      <div className="card w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
+      <div className="card w-full max-w-md p-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Tin nhắn mới</h2>
           <button onClick={onClose}><X size={18} /></button>

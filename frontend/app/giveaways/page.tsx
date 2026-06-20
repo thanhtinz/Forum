@@ -137,7 +137,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !busy && onClose()}>
-      <div className="card w-full max-w-lg p-5" onClick={(e) => e.stopPropagation()}>
+      <div className="card w-full max-w-lg p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-2 font-semibold"><Gift size={18} className="text-brand-600" /> Tạo giveaway</h3>
           <button onClick={onClose} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>

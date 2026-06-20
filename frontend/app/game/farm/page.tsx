@@ -252,7 +252,7 @@ export default function FarmPage() {
         const seeds = (s.warehouse || []).filter((w) => w.category === 'SEED' && w.quantity > 0);
         return (
           <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setPlanting(null)}>
-            <div className="card w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="card w-full max-w-sm p-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <h2 className="mb-3 font-semibold">Gieo hạt vào ô {planting + 1}</h2>
               {seeds.length === 0 ? (
                 <p className="text-sm text-ink-500">Chưa có hạt. Mua ở <a href="/game/shop" className="text-brand-600">Cửa hàng</a>.</p>
@@ -282,7 +282,7 @@ export default function FarmPage() {
         const plot = s.plots.find((p) => p.index === fertPlot);
         return (
           <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setFertPlot(null)}>
-            <div className="card w-full max-w-sm p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="card w-full max-w-sm p-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <h2 className="mb-1 font-semibold">Chăm sóc {plot?.crop ? plot.crop : `ô ${fertPlot + 1}`}</h2>
               <p className="mb-3 text-xs text-ink-500">Tưới nước giúp cây khoẻ (tăng sản lượng); bón phân giảm thời gian chín.</p>
 

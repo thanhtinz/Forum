@@ -348,7 +348,7 @@ export default function AiCompanionPage() {
       {/* Popup trang phục */}
       {showOutfits && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowOutfits(false)}>
-          <div onClick={(e) => e.stopPropagation()} className="card w-full max-w-md p-4">
+          <div onClick={(e) => e.stopPropagation()} className="card w-full max-w-md p-4 max-h-[90vh] overflow-y-auto">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-2 font-semibold"><Shirt size={18} /> Trang phục</h3>
               <button onClick={() => setShowOutfits(false)} className="text-ink-400 hover:text-ink-600"><X size={20} /></button>

@@ -193,7 +193,7 @@ export default function AdminForumCategoriesPage() {
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowForm(false)}>
-          <form onClick={(e) => e.stopPropagation()} onSubmit={save} className="card w-full max-w-lg space-y-3 p-5">
+          <form onClick={(e) => e.stopPropagation()} onSubmit={save} className="card w-full max-w-lg space-y-3 p-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">{editing ? 'Sửa danh mục' : 'Thêm danh mục'}</h2>
               <button type="button" onClick={() => setShowForm(false)} className="text-ink-400 hover:text-ink-600"><X size={20} /></button>
@@ -255,7 +255,7 @@ export default function AdminForumCategoriesPage() {
       {/* Modal quản lý tiền tố theo danh mục */}
       {prefixCat && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPrefixCat(null)}>
-          <div onClick={(e) => e.stopPropagation()} className="card w-full max-w-md space-y-3 p-5">
+          <div onClick={(e) => e.stopPropagation()} className="card w-full max-w-md space-y-3 p-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-semibold"><Tags size={18} /> Tiền tố · {prefixCat.name}</h2>
               <button onClick={() => setPrefixCat(null)} className="text-ink-400 hover:text-ink-600"><X size={20} /></button>

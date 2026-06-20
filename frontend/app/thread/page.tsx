@@ -560,7 +560,7 @@ function ThreadView() {
 
       {modModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !modBusy && setModModal(null)}>
-          <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="card w-full max-w-md p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             {modModal === 'move' ? (
               <>
                 <h3 className="flex items-center gap-2 font-semibold"><FolderInput size={16} /> Chuyển chủ đề sang chuyên mục khác</h3>

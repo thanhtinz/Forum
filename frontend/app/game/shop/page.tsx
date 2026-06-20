@@ -242,7 +242,7 @@ export default function GameShopPage() {
       {/* ───── Popup thông tin sản phẩm ───── */}
       {selected && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setSelected(null)}>
-          <div className="card w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="card w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-start justify-between gap-2">
               <h2 className="text-lg font-bold">{selected.kind === 'bait' ? 'Gói mồi câu' : selected.item.name}</h2>
               <button onClick={() => setSelected(null)} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>

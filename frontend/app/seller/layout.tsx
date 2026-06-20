@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Suspense, useEffect, useState } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Store, Package, Boxes, BadgePercent, ShoppingCart, Wallet,
   Banknote, MessagesSquare, Star, BarChart3, Megaphone, Bot, Users, ScrollText,
@@ -17,13 +17,13 @@ const GROUPS: { title: string; items: Item[] }[] = [
     title: 'Gian hàng',
     items: [
       { label: 'Tổng quan', href: '/seller', icon: LayoutDashboard },
-      { label: 'Hồ sơ gian hàng', href: '/seller/shop?tab=info', icon: Store },
-      { label: 'Sản phẩm', href: '/seller/shop?tab=products', icon: Package },
+      { label: 'Hồ sơ gian hàng', href: '/seller/shop', icon: Store },
+      { label: 'Sản phẩm', href: '/seller/products', icon: Package },
       { label: 'Kho hàng', href: '/seller/stock', icon: Boxes },
-      { label: 'Mã giảm giá', href: '/seller/shop?tab=coupons', icon: BadgePercent },
+      { label: 'Mã giảm giá', href: '/seller/coupons', icon: BadgePercent },
       { label: 'Đơn hàng', href: '/seller/orders', icon: ShoppingCart },
-      { label: 'Đơn & Thu nhập', href: '/seller/shop?tab=earnings', icon: Wallet },
-      { label: 'Hỗ trợ / Ticket', href: '/seller/shop?tab=tickets', icon: MessagesSquare },
+      { label: 'Đơn & Thu nhập', href: '/seller/earnings', icon: Wallet },
+      { label: 'Hỗ trợ / Ticket', href: '/seller/tickets', icon: MessagesSquare },
       { label: 'Chat khách hàng', href: '/chat', icon: MessagesSquare },
     ],
   },
@@ -56,14 +56,7 @@ const GROUPS: { title: string; items: Item[] }[] = [
 
 function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const path = usePathname();
-  const tab = useSearchParams().get('tab');
-  const isActive = (href: string) => {
-    const [base, query] = href.split('?');
-    if (path !== base) return false;
-    if (!query) return base !== '/seller/shop' || (!tab); // /seller/shop trống = Hồ sơ
-    const hrefTab = new URLSearchParams(query).get('tab');
-    return (tab || 'info') === hrefTab;
-  };
+  const isActive = (href: string) => path === href;
   return (
     <nav className="space-y-3">
       {GROUPS.map((g) => (
@@ -117,7 +110,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
         <div className="card p-2">
           <div className="px-3 py-2 text-sm font-bold text-brand-600">SELLER CENTER</div>
           <div className="max-h-[80vh] overflow-y-auto">
-            <Suspense fallback={null}><NavList /></Suspense>
+            <NavList />
           </div>
         </div>
       </aside>
@@ -138,7 +131,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
               <span className="text-sm font-bold text-brand-600">SELLER CENTER</span>
               <button onClick={() => setDrawer(false)} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={18} /></button>
             </div>
-            <Suspense fallback={null}><NavList onNavigate={() => setDrawer(false)} /></Suspense>
+            <NavList onNavigate={() => setDrawer(false)} />
           </div>
         </>
       )}

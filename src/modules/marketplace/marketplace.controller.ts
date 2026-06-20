@@ -254,7 +254,9 @@ export class MarketplaceController {
 
   // ── Sản phẩm ──
   @Get('products')
-  browse(@Query('category') c?: string, @Query('q') q?: string, @Query('page') page = 1) { return this.shop.browseProducts(c, q, Number(page)); }
+  browse(@Query('category') c?: string, @Query('q') q?: string, @Query('page') page = 1, @Query('sort') sort?: string, @Query('type') type?: string) {
+    return this.shop.browseProducts(c, q, Number(page), 20, sort, type);
+  }
 
   @Get('storefronts/:slug/products')
   storeProducts(@Param('slug') slug: string) { return this.shop.storeProducts(slug); }

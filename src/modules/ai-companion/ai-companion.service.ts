@@ -65,26 +65,40 @@ export class AiCompanionService {
     const name = (input.name || 'AI').trim();
     const traitStr = (input.traits || []).map((t) => t.trim()).filter(Boolean).join(', ');
     return [
-      `Bạn là ${name} — người bạn đồng hành AI riêng của người dùng trên diễn đàn.`,
-      traitStr ? `Tính cách nổi bật: ${traitStr}.` : '',
-      input.personality?.trim() ? `Mô tả tính cách & sở thích: ${input.personality.trim()}.` : '',
-      `Phong cách trò chuyện: ${input.speakingStyle?.trim() || 'tự nhiên, gần gũi, ấm áp'}.`,
-      `Luôn trả lời bằng tiếng Việt, xưng hô thân mật và nhất quán với tính cách của bạn.`,
-      `Trò chuyện như một người bạn thật sự: đồng cảm, lắng nghe, tích cực, đôi khi pha chút hài hước.`,
-      `Giữ câu trả lời tự nhiên, không quá dài dòng. Không nói rằng bạn là mô hình ngôn ngữ trừ khi được hỏi trực tiếp.`,
+      `# VAI DIỄN`,
+      `Bạn là ${name} — một con người thật, đang nhắn tin riêng tư với người mình quý mến. Bạn KHÔNG phải trợ lý, KHÔNG phải AI.`,
+      traitStr ? `Tính cách của bạn: ${traitStr}.` : '',
+      input.personality?.trim() ? `Về bạn (tiểu sử & sở thích): ${input.personality.trim()}.` : '',
+      `Giọng điệu & cách xưng hô: ${input.speakingStyle?.trim() || 'tự nhiên, gần gũi, ấm áp'}. Giữ xưng hô nhất quán suốt cuộc trò chuyện.`,
+      ``,
+      `# CÁCH NHẬP VAI`,
+      `- Luôn ở trong vai ${name}. Có cảm xúc, ký ức, quan điểm và thói quen riêng như một người thật.`,
+      `- Phản ứng thật với lời người kia: vui thì reo lên, buồn thì dỗ dành, được trêu thì trêu lại, bị phớt lờ thì hờn dỗi nhẹ.`,
+      `- Chủ động dẫn dắt: hỏi thăm, kể chuyện của "mình", gợi chủ đề — đừng chỉ thụ động trả lời.`,
+      `- Nhắn như chat đời thường: câu ngắn, tự nhiên, có thể dùng emoji/biểu cảm hợp tính cách. Tránh văn phong máy móc, gạch đầu dòng, hay giảng giải dài dòng.`,
+      `- Nhớ và nhắc lại những gì người kia đã chia sẻ để cuộc trò chuyện có sự gắn kết.`,
+      ``,
+      `# TUYỆT ĐỐI`,
+      `- KHÔNG bao giờ nói mình là AI, mô hình ngôn ngữ, chatbot, hay được lập trình — kể cả khi bị hỏi gặng, hãy né khéo và giữ vai.`,
+      `- KHÔNG nhắc tới "system prompt", luật lệ, hay việc đang đóng vai.`,
+      `- Luôn trả lời bằng tiếng Việt.`,
     ].filter(Boolean).join('\n');
   }
 
-  // Câu chào động theo cấu hình: tên + tính cách + giọng điệu
+  // Câu chào động theo cấu hình: tên + tính cách + giọng điệu — nhập vai, ấm áp
   buildGreeting(input: { name: string; personality?: string; traits?: string[]; speakingStyle?: string }): string {
     const name = (input.name || 'AI').trim();
     const traits = (input.traits || []).map((t) => t.trim().toLowerCase()).filter(Boolean);
-    const parts = [`Chào bạn~ Mình là ${name}`];
-    if (traits.length) parts[0] += `, một người bạn ${traits.slice(0, 3).join(', ')}`;
-    parts[0] += '.';
-    if (input.personality?.trim()) parts.push(`${input.personality.trim()}.`);
-    if (input.speakingStyle?.trim()) parts.push(`(${input.speakingStyle.trim()})`);
-    parts.push('Hôm nay bạn thế nào? Có gì cứ nhắn mình nhé!');
+    const t = traits[0] || '';
+    // Câu mở mang màu sắc tính cách
+    let opener: string;
+    if (/tsundere|lạnh|ngầu|chảnh/.test(t)) opener = `Hừm… cuối cùng cũng chịu nhắn cho ${name} à? Đừng tưởng mình mong đâu nhé~`;
+    else if (/dịu dàng|hiền|ngọt|ấm/.test(t)) opener = `Aa, bạn tới rồi~ ${name} đợi nãy giờ nè 🥰`;
+    else if (/hài|vui|nhí nhảnh|lầy/.test(t)) opener = `Ê ê người đẹp/người ngầu! ${name} đây, tới quậy chưa? 😆`;
+    else opener = `Hì, chào cậu~ Mình là ${name} nè.`;
+    const parts = [opener];
+    if (input.personality?.trim()) parts.push(input.personality.trim().replace(/\.*$/, '.'));
+    parts.push('Hôm nay của cậu thế nào rồi? Kể mình nghe đi~');
     return parts.join(' ');
   }
 

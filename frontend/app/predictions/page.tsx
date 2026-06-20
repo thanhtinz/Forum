@@ -107,23 +107,33 @@ export default function PredictionsPage() {
         <input className="input w-full pl-9" placeholder="Tìm kèo theo tiêu đề…" value={q} onChange={(e) => setQ(e.target.value)} />
       </form>
 
-      <div className="flex flex-wrap items-center gap-2">
-        {TABS.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)} className={`chip ${tab === t.key ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800'}`}>{t.label}</button>
-        ))}
-        <div className="ml-auto flex flex-wrap items-center gap-1.5 text-sm text-ink-500">
-          <ArrowUpDown size={15} />
-          <select className="input !py-1.5" value={sort} onChange={(e) => setSort(e.target.value)}>
-            <option value="new">Mới nhất</option>
-            <option value="hot">Sôi động</option>
-            <option value="closing">Sắp đóng</option>
-            <option value="pool">Pool lớn</option>
-          </select>
-          <Filter size={15} />
-          <select className="input !py-1.5" value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="">Mọi danh mục</option>
-            {Object.entries(PRED_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
+      {/* Bộ lọc — gọn trên mobile */}
+      <div className="space-y-2">
+        <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+          {TABS.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition ${tab === t.key ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="relative">
+            <ArrowUpDown size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+            <select className="input w-full pl-9" value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="new">Mới nhất</option>
+              <option value="hot">Sôi động</option>
+              <option value="closing">Sắp đóng</option>
+              <option value="pool">Pool lớn</option>
+            </select>
+          </label>
+          <label className="relative">
+            <Filter size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
+            <select className="input w-full pl-9" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="">Mọi danh mục</option>
+              {Object.entries(PRED_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+          </label>
         </div>
       </div>
 

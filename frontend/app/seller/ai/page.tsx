@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bot } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -17,6 +17,16 @@ export default function SellerAi() {
   const [out, setOut] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [perks, setPerks] = useState<any>(null);
+
+  useEffect(() => { api.get<any>('/marketplace/seller/perks').then(setPerks).catch(() => setPerks({})); }, []);
+  const aiActive = !!perks && (perks.aiForever || (perks.aiUntil && new Date(perks.aiUntil).getTime() > Date.now()));
+
+  async function buy(plan: 'month' | 'forever') {
+    setErr('');
+    try { await api.post('/marketplace/seller/perks/ai', { plan }); const p = await api.get<any>('/marketplace/seller/perks'); setPerks(p); }
+    catch (e: any) { setErr(e.message); }
+  }
 
   async function run() {
     setBusy(true); setErr(''); setOut('');
@@ -25,6 +35,28 @@ export default function SellerAi() {
     setBusy(false);
   }
   const cur = TASKS.find((t) => t.id === task)!;
+
+  if (perks === null) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
+
+  // Chưa mua gói AI -> hiện màn hình giới thiệu + mua
+  if (!aiActive) {
+    const price = perks?.prices?.aiShop || {};
+    return (
+      <div className="mx-auto max-w-lg space-y-4">
+        <h1 className="flex items-center gap-2 text-xl font-bold"><Bot /> Công cụ AI</h1>
+        <div className="card space-y-3 p-6 text-center">
+          <div className="text-4xl">🤖</div>
+          <p className="font-semibold">Trợ lý AI cho gian hàng</p>
+          <p className="text-sm text-ink-500">Viết mô tả sản phẩm, tiêu đề SEO, trả lời khách & phân tích doanh thu tự động. Cần mua gói AI shop để sử dụng.</p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <button onClick={() => buy('month')} className="btn-outline">Gói tháng{price.month != null ? ` · ${price.month} gem` : ''}</button>
+            <button onClick={() => buy('forever')} className="btn-primary">Vĩnh viễn{price.forever != null ? ` · ${price.forever} gem` : ''}</button>
+          </div>
+          {err && <p className="text-sm text-red-500">{err}</p>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

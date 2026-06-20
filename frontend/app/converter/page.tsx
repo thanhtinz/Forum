@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  Ruler, ArrowRightLeft, Copy, Star, Search, Share2, History as HistoryIcon, Trash2, Check,
+  Ruler, ArrowRightLeft, Copy, Star, Share2, History as HistoryIcon, Trash2, Check,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
@@ -144,7 +144,6 @@ function ConverterInner() {
   const [toId, setToId] = useState('ft');
   const [input, setInput] = useState('1');
   const [dp, setDp] = useState<number | 'auto'>('auto');
-  const [search, setSearch] = useState('');
   const [favs, setFavs] = useState<FavPair[]>([]);
   const [hist, setHist] = useState<HistItem[]>([]);
   const [copied, setCopied] = useState('');
@@ -174,7 +173,7 @@ function ConverterInner() {
   // Đổi danh mục → chọn 2 đơn vị đầu, xoá tìm kiếm
   function pickCategory(key: string) {
     const c = CATEGORIES.find((x) => x.key === key)!;
-    setCatKey(key); setFromId(c.units[0].id); setToId(c.units[1]?.id || c.units[0].id); setSearch('');
+    setCatKey(key); setFromId(c.units[0].id); setToId(c.units[1]?.id || c.units[0].id);
   }
   function swap() { setFromId(toId); setToId(fromId); }
 
@@ -206,7 +205,7 @@ function ConverterInner() {
     });
   }
   function loadPair(p: FavPair, v?: string) {
-    setCatKey(p.cat); setFromId(p.from); setToId(p.to); if (v != null) setInput(v); setSearch('');
+    setCatKey(p.cat); setFromId(p.from); setToId(p.to); if (v != null) setInput(v);
   }
   function clearHist() { setHist([]); try { localStorage.removeItem(HIST_KEY); } catch {} }
 
@@ -220,12 +219,6 @@ function ConverterInner() {
   const unitName = (catK: string, id: string) => {
     const c = CATEGORIES.find((x) => x.key === catK); const u = c?.units.find((x) => x.id === id); return u ? u.sym : id;
   };
-
-  // Lọc đơn vị theo tìm kiếm (áp dụng cho danh sách "tất cả đơn vị")
-  const q = search.trim().toLowerCase();
-  const filteredUnits = q
-    ? cat.units.filter((u) => u.name.toLowerCase().includes(q) || u.sym.toLowerCase().includes(q))
-    : cat.units;
 
   return (
     <div className="space-y-5">
@@ -300,34 +293,6 @@ function ConverterInner() {
           <button onClick={share} className="btn-outline flex items-center gap-1 !py-1.5 text-sm">
             {copied === 'share' ? <><Check size={15} className="text-emerald-500" /> Đã copy link</> : <><Share2 size={15} /> Chia sẻ</>}
           </button>
-        </div>
-      </section>
-
-      {/* Chuyển đổi sang TẤT CẢ đơn vị + tìm kiếm */}
-      <section className="card p-4">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h2 className="font-semibold">Quy đổi sang mọi đơn vị</h2>
-          <div className="relative w-44">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm đơn vị…" className="input !py-1.5 pl-8 text-sm" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-          {filteredUnits.map((u) => {
-            const v = hasVal ? convert(fromUnit, u, val) : NaN;
-            const text = hasVal ? String(fmt(v, dp)) : '';
-            return (
-              <button key={u.id} onClick={() => copyText(text, 'u' + u.id)}
-                className={`flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-sm transition ${u.id === toId ? 'border-brand-400 bg-brand-50/60 dark:bg-ink-800' : 'border-ink-200/70 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800/50'}`}>
-                <span className="min-w-0"><span className="text-ink-500">{u.name}</span> <span className="text-ink-400">({u.sym})</span></span>
-                <span className="flex items-center gap-1.5 font-semibold tabular-nums">
-                  {hasVal ? fmt(v, dp) : '—'}
-                  {copied === 'u' + u.id ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} className="text-ink-300" />}
-                </span>
-              </button>
-            );
-          })}
-          {filteredUnits.length === 0 && <p className="col-span-full py-4 text-center text-sm text-ink-400">Không tìm thấy đơn vị.</p>}
         </div>
       </section>
 

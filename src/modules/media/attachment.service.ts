@@ -1,8 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { createHash, createHmac } from 'crypto';
 import { createId } from '@paralleldrive/cuid2';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { extname, join } from 'path';
+import { extname } from 'path';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export interface AttachmentConfig {
@@ -17,7 +16,6 @@ export interface AttachmentConfig {
 }
 
 const CONFIG_KEY = 'attachment.config';
-const UPLOAD_DIR = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
 const MAX_SIZE = 50 * 1024 * 1024; // 50MB
 // Chặn các loại nguy hiểm (thực thi / có thể XSS khi mở trực tiếp)
 const BLOCKED_EXT = new Set(['exe', 'bat', 'cmd', 'sh', 'msi', 'js', 'html', 'htm', 'svg', 'php']);
@@ -67,24 +65,21 @@ export class AttachmentService {
     return c.enabled && !!c.endpoint && !!c.bucket && !!c.accessKey && !!c.secretKey;
   }
 
-  // folder: 'attachments' | 'images' | … — phân loại object trong bucket R2
+  // folder: 'attachments' | 'images' | 'host' … — phân loại object trong bucket R2.
+  // Toàn bộ upload BẮT BUỘC qua R2/S3 (không còn lưu local).
   async upload(buffer: Buffer, filename: string, mimetype: string, folder = 'attachments'): Promise<{ url: string; filename: string; size: number }> {
     if (buffer.length > MAX_SIZE) throw new BadRequestException('Tệp vượt quá giới hạn 50MB');
     const ext = (extname(filename || '').slice(1) || '').toLowerCase();
     if (BLOCKED_EXT.has(ext)) throw new BadRequestException(`Không cho phép tệp .${ext}`);
 
     const cfg = await this.getConfig();
-    if (cfg.enabled && cfg.endpoint && cfg.bucket && cfg.accessKey && cfg.secretKey) {
-      const key = this.buildKey(ext, folder);
-      await this.putObject(cfg, key, buffer, mimetype || 'application/octet-stream');
-      const url = cfg.publicUrl ? `${cfg.publicUrl}/${key}` : this.objectBase(cfg, key);
-      return { url, filename, size: buffer.length };
+    if (!(cfg.enabled && cfg.endpoint && cfg.bucket && cfg.accessKey && cfg.secretKey)) {
+      throw new BadRequestException('Chưa cấu hình kho lưu trữ Cloudflare R2. Vào Admin → Lưu trữ R2 để cấu hình.');
     }
-    // Fallback local
-    if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
-    const fn = `${createId()}${ext ? '.' + ext : ''}`;
-    writeFileSync(join(UPLOAD_DIR, fn), buffer);
-    return { url: `/uploads/${fn}`, filename, size: buffer.length };
+    const key = this.buildKey(ext, folder);
+    await this.putObject(cfg, key, buffer, mimetype || 'application/octet-stream');
+    const url = cfg.publicUrl ? `${cfg.publicUrl}/${key}` : this.objectBase(cfg, key);
+    return { url, filename, size: buffer.length };
   }
 
   private buildKey(ext: string, folder = 'attachments') {

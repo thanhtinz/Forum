@@ -13,16 +13,29 @@ function ProductView() {
   const [p, setP] = useState<any>(null);
   const [err, setErr] = useState('');
   const [img, setImg] = useState('');
+  const [pkgId, setPkgId] = useState('');
+  const [vals, setVals] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!slug) return;
-    api.get<any>(`/marketplace/product/${slug}`).then((d) => { setP(d); setImg(d.thumbnailUrl || d.screenshots?.[0]?.url || ''); }).catch((e) => setErr(e.message));
+    api.get<any>(`/marketplace/product/${slug}`).then((d) => {
+      setP(d); setImg(d.thumbnailUrl || d.screenshots?.[0]?.url || '');
+      if (d.packages?.length) setPkgId(d.packages[0].id);
+    }).catch((e) => setErr(e.message));
   }, [slug]);
+
+  const packages: any[] = p?.packages || [];
+  const selPkg = packages.find((x) => x.id === pkgId);
+  const price = selPkg ? selPkg.gemPrice : (p?.isFree ? 0 : p?.gemPrice);
 
   async function buy() {
     if (!user) { setErr('Đăng nhập để mua'); return; }
+    if (packages.length && !pkgId) { alert('Vui lòng chọn gói'); return; }
     const code = prompt('Mã giảm giá (bỏ trống nếu không):') || undefined;
-    try { const r = await api.post<any>(`/marketplace/products/${p.id}/buy`, { couponCode: code }); alert(`Mua thành công! Trả ${r.paid} gem.${r.deliveredContent ? '\nĐã giao: ' + r.deliveredContent : r.downloadUrl ? '\nTải: ' + r.downloadUrl : ''}`); }
+    try {
+      const r = await api.post<any>(`/marketplace/products/${p.id}/buy`, { couponCode: code, packageId: pkgId || undefined, fieldValues: vals });
+      alert(`Mua thành công! Trả ${r.paid} gem.${r.deliveredContent ? '\nĐã giao: ' + r.deliveredContent : r.downloadUrl ? '\nTải: ' + r.downloadUrl : ''}`);
+    }
     catch (e: any) { alert(e.message); }
   }
 
@@ -67,7 +80,35 @@ function ProductView() {
         <div className="card p-5">
           <h1 className="text-xl font-bold">{p.title}</h1>
           {p.category && <span className="chip mt-1 bg-ink-200 text-ink-600">{p.category.name}</span>}
-          <div className="my-3 inline-flex items-center gap-1.5 text-2xl font-bold text-brand-600">{p.isFree ? 'Miễn phí' : <>{p.gemPrice} <Gem size={20} /></>}</div>
+
+          {/* Chọn gói (nếu có) */}
+          {packages.length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-sm font-medium">Chọn gói</p>
+              {packages.map((pk) => (
+                <button key={pk.id} onClick={() => { setPkgId(pk.id); setVals({}); }}
+                  className={`flex w-full items-start justify-between gap-2 rounded-xl border-2 p-3 text-left transition ${pkgId === pk.id ? 'border-brand-600 bg-brand-50 dark:bg-ink-800' : 'border-ink-200 dark:border-ink-700'}`}>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">{pk.name}</span>
+                    {pk.description && <span className="mt-0.5 block text-xs text-ink-500">{pk.description}</span>}
+                  </span>
+                  <span className="shrink-0 font-bold text-brand-600">{pk.gemPrice ? `${pk.gemPrice}` : 'Free'}</span>
+                </button>
+              ))}
+              {/* Trường tuỳ chỉnh của gói đang chọn */}
+              {selPkg?.fields?.length > 0 && (
+                <div className="space-y-2 rounded-xl bg-ink-50 p-3 dark:bg-ink-800/50">
+                  {selPkg.fields.map((f: any) => (
+                    <label key={f.label} className="block text-sm">{f.label}{f.required && <span className="text-rose-500"> *</span>}
+                      <input className="input mt-1" value={vals[f.label] || ''} onChange={(e) => setVals({ ...vals, [f.label]: e.target.value })} />
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="my-3 inline-flex items-center gap-1.5 text-2xl font-bold text-brand-600">{price ? <>{price} <Gem size={20} /></> : 'Miễn phí'}</div>
           <button onClick={buy} className="btn-primary w-full"><ShoppingCart size={16} /> Mua ngay</button>
           <div className="mt-3 flex gap-4 text-xs text-ink-500">
             <span className="flex items-center gap-1"><Eye size={13} /> {p.viewCount}</span>

@@ -87,7 +87,7 @@ export class MarketplaceShopService {
     return this.prisma.product.findMany({
       where: { storefrontId: store.id, status: 'ACTIVE' },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, title: true, slug: true, gemPrice: true, isFree: true, thumbnailUrl: true, salesCount: true },
+      select: { id: true, title: true, slug: true, gemPrice: true, isFree: true, thumbnailUrl: true, salesCount: true, ratingAvg: true, categoryId: true },
     });
   }
 
@@ -101,6 +101,7 @@ export class MarketplaceShopService {
         storefront: { select: { slug: true, name: true, isVerified: true } },
         category: { select: { name: true, slug: true } },
         reviews: { orderBy: { createdAt: 'desc' }, take: 50 },
+        packages: { orderBy: { sortOrder: 'asc' } },
       },
     });
     if (!p || p.status !== 'ACTIVE') throw new NotFoundException('Sản phẩm không khả dụng');
@@ -156,6 +157,29 @@ export class MarketplaceShopService {
   async deleteProduct(userId: string, id: string) {
     await this.ownProduct(userId, id);
     await this.prisma.product.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  // ── Gói sản phẩm (giá theo gói + trường tuỳ chỉnh) ──
+  async listPackages(userId: string, productId: string) {
+    await this.ownProduct(userId, productId);
+    return this.prisma.productPackage.findMany({ where: { productId }, orderBy: { sortOrder: 'asc' } });
+  }
+
+  async savePackage(userId: string, productId: string, dto: { name: string; gemPrice?: number; description?: string; fields?: { label: string; required?: boolean }[] }) {
+    await this.ownProduct(userId, productId);
+    if (!dto.name?.trim()) throw new BadRequestException('Cần tên gói');
+    const fields = (dto.fields || []).filter((f) => f.label?.trim()).map((f) => ({ label: f.label.trim(), required: !!f.required })).slice(0, 12);
+    const count = await this.prisma.productPackage.count({ where: { productId } });
+    return this.prisma.productPackage.create({
+      data: { productId, name: dto.name.trim().slice(0, 150), gemPrice: Math.max(0, Math.floor(dto.gemPrice ?? 0)), description: dto.description?.slice(0, 1000) || null, fields: fields as any, sortOrder: count },
+    });
+  }
+
+  async deletePackage(userId: string, packageId: string) {
+    const pkg = await this.prisma.productPackage.findUnique({ where: { id: packageId }, include: { product: { select: { sellerId: true } } } });
+    if (!pkg || pkg.product.sellerId !== userId) throw new NotFoundException('Không tìm thấy gói');
+    await this.prisma.productPackage.delete({ where: { id: packageId } });
     return { ok: true };
   }
 

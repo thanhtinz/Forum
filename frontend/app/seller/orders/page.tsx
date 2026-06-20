@@ -33,9 +33,16 @@ export default function SellerOrders() {
         {list.map((o) => (
           <div key={o.id} className="card p-4">
             <div className="flex items-center justify-between text-sm">
-              <div><b>{o.product}</b> <span className="text-ink-400">· {o.buyer} · {o.gemSpent} gem · {o.escrowStatus}</span></div>
+              <div><b>{o.product}</b>{o.packageName && <span className="ml-1 rounded bg-brand-100 px-1.5 text-xs text-brand-700 dark:bg-brand-900/40">{o.packageName}</span>} <span className="text-ink-400">· {o.buyer} · {o.gemSpent} gem · {o.escrowStatus}</span></div>
               <span className={`chip ${o.delivered ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{o.delivered ? 'Đã giao' : 'Chưa giao'}</span>
             </div>
+            {o.fieldValues && Object.keys(o.fieldValues).length > 0 && (
+              <div className="mt-1.5 rounded-lg bg-ink-50 p-2 text-xs dark:bg-ink-800/50">
+                {Object.entries(o.fieldValues as Record<string, string>).map(([k, v]) => (
+                  <div key={k}><span className="text-ink-500">{k}:</span> <b>{v}</b></div>
+                ))}
+              </div>
+            )}
             {!o.delivered && (
               <div className="mt-2 flex gap-2">
                 <input className="input" placeholder="Nội dung giao (tài khoản/key/link)…" value={deliver[o.id] || ''} onChange={(e) => setDeliver({ ...deliver, [o.id]: e.target.value })} />

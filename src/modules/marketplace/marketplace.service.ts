@@ -108,7 +108,23 @@ export class MarketplaceService {
       isFollowing = !!follow;
     }
 
-    return { ...store, isFollowing };
+    // Danh mục shop này đang bán (để lọc)
+    const cats = await this.prisma.product.findMany({
+      where: { storefrontId: store.id, status: 'ACTIVE', categoryId: { not: null } },
+      select: { category: { select: { id: true, name: true, slug: true } } }, distinct: ['categoryId'],
+    });
+    const categories = cats.map((c) => c.category).filter(Boolean);
+
+    // Người đã mua gần đây (ẩn tên)
+    const orders = await this.prisma.order.findMany({
+      where: { status: 'COMPLETED', product: { storefrontId: store.id } },
+      orderBy: { createdAt: 'desc' }, take: 15,
+      select: { id: true, createdAt: true, buyer: { select: { username: true } }, product: { select: { title: true } } },
+    });
+    const mask = (u: string) => (u ? (u.length <= 2 ? u[0] + '***' : u.slice(0, 2) + '***' + u.slice(-1)) : 'ẩn danh');
+    const recentBuyers = orders.map((o) => ({ id: o.id, buyer: mask(o.buyer?.username || ''), product: o.product?.title || '', at: o.createdAt }));
+
+    return { ...store, isFollowing, categories, recentBuyers };
   }
 
   // ──────────────────────────────────────────────

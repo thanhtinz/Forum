@@ -5,8 +5,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Store, Package, Boxes, BadgePercent, ShoppingCart, Wallet,
-  Banknote, MessagesSquare, Star, BarChart3, Megaphone, Bot, Users, ScrollText,
-  ShieldCheck, Bell, Menu, X,
+  Banknote, MessagesSquare, Star, BarChart3, Megaphone, Bot, Users, Menu, X,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { api } from '@/lib/api';
@@ -24,7 +23,6 @@ const GROUPS: { title: string; items: Item[] }[] = [
       { label: 'Đơn hàng', href: '/seller/orders', icon: ShoppingCart },
       { label: 'Đơn & Thu nhập', href: '/seller/earnings', icon: Wallet },
       { label: 'Hỗ trợ / Ticket', href: '/seller/tickets', icon: MessagesSquare },
-      { label: 'Chat khách hàng', href: '/chat', icon: MessagesSquare },
     ],
   },
   {
@@ -42,14 +40,6 @@ const GROUPS: { title: string; items: Item[] }[] = [
       { label: 'Quảng bá (gem)', href: '/seller/boost', icon: Megaphone },
       { label: 'Công cụ AI', href: '/seller/ai', icon: Bot },
       { label: 'Nhân viên', href: '/seller/staff', icon: Users },
-    ],
-  },
-  {
-    title: 'Hệ thống',
-    items: [
-      { label: 'Nhật ký', href: '/seller/activity', icon: ScrollText },
-      { label: 'Bảo mật', href: '/seller/security', icon: ShieldCheck },
-      { label: 'Thông báo', href: '/notifications', icon: Bell },
     ],
   },
 ];

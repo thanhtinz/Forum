@@ -25,13 +25,31 @@ export class MarketplaceOrderService {
   // ──────────────────────────────────────────────
   // MUA SẢN PHẨM (tiền seller bị giam 3 ngày)
   // ──────────────────────────────────────────────
-  async buy(buyerId: string, productId: string, couponCode?: string) {
-    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+  async buy(buyerId: string, productId: string, opts: { couponCode?: string; packageId?: string; fieldValues?: Record<string, string> } = {}) {
+    const couponCode = opts.couponCode;
+    const product = await this.prisma.product.findUnique({ where: { id: productId }, include: { packages: true } });
     if (!product || product.status !== 'ACTIVE') throw new NotFoundException('Sản phẩm không khả dụng');
     if (product.sellerId === buyerId) throw new BadRequestException('Không thể mua sản phẩm của chính mình');
 
     let price = product.isFree ? 0 : product.gemPrice;
     let appliedCode: string | null = null;
+    let pkgName: string | null = null;
+    let pkgFieldValues: any = null;
+
+    // Nếu sản phẩm có gói: bắt buộc chọn gói, giá theo gói + kiểm tra trường tuỳ chỉnh
+    if (product.packages.length > 0) {
+      if (!opts.packageId) throw new BadRequestException('Vui lòng chọn gói trên trang sản phẩm');
+      const pkg = product.packages.find((p) => p.id === opts.packageId);
+      if (!pkg) throw new BadRequestException('Gói không hợp lệ');
+      price = pkg.gemPrice;
+      pkgName = pkg.name;
+      const fields = (pkg.fields as any as { label: string; required?: boolean }[]) || [];
+      const vals = opts.fieldValues || {};
+      for (const f of fields) {
+        if (f.required && !(vals[f.label] || '').toString().trim()) throw new BadRequestException(`Vui lòng điền "${f.label}"`);
+      }
+      pkgFieldValues = fields.length ? fields.reduce((o, f) => { o[f.label] = (vals[f.label] || '').toString().slice(0, 1000); return o; }, {} as Record<string, string>) : null;
+    }
 
     // Áp mã giảm giá (của shop)
     if (couponCode && product.storefrontId && price > 0) {
@@ -62,6 +80,7 @@ export class MarketplaceOrderService {
           escrowStatus: price > 0 ? 'HELD' : 'RELEASED',
           escrowReleaseAt: price > 0 ? new Date(now + HOLD_DAYS * 864e5) : null,
           couponCode: appliedCode, downloadUrl: product.fileUrl,
+          packageId: opts.packageId ?? null, packageName: pkgName, fieldValues: pkgFieldValues,
           deliveredContent: stock?.content ?? null,
         },
       });
@@ -126,6 +145,7 @@ export class MarketplaceOrderService {
     return rows.map((o) => ({
       id: o.id, product: o.product.title, buyer: o.buyer.username, gemSpent: o.gemSpent, sellerEarned: o.sellerEarned,
       status: o.status, escrowStatus: o.escrowStatus, delivered: !!o.deliveredContent, deliveredContent: o.deliveredContent, createdAt: o.createdAt,
+      packageName: o.packageName, fieldValues: o.fieldValues,
     }));
   }
 

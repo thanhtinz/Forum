@@ -7,17 +7,23 @@ import {
 } from 'lucide-react';
 import { useDraggable } from '@/lib/useDraggable';
 
-interface Track { kind: 'yt' | 'sp'; id: string; title: string; url: string }
+interface Track { kind: 'yt' | 'ytpl' | 'sp'; id: string; title: string; url: string; spType?: 'track' | 'playlist' | 'album' }
 const LS_KEY = 'mini-player-playlist';
+const VOL_KEY = 'mini-player-volume';
 
-// Parse link YouTube / Spotify -> track
+// Parse link YouTube (video/playlist) / Spotify (track/playlist/album) -> track
 function parseUrl(raw: string): Track | null {
   const u = raw.trim();
   if (!u) return null;
+  // YouTube — 1 video cụ thể (ưu tiên nếu có ?v=)
   const yt = u.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/embed\/|music\.youtube\.com\/watch\?v=)([\w-]{11})/);
   if (yt) return { kind: 'yt', id: yt[1], title: `YouTube • ${yt[1]}`, url: u };
-  const sp = u.match(/open\.spotify\.com\/(?:intl-\w+\/)?track\/([\w]+)/);
-  if (sp) return { kind: 'sp', id: sp[1], title: `Spotify • ${sp[1]}`, url: u };
+  // YouTube — playlist (link dạng .../playlist?list=... hoặc bất kỳ link YT có &list=)
+  const ytpl = u.match(/[?&]list=([\w-]+)/);
+  if (ytpl && /youtube\.com|youtu\.be/.test(u)) return { kind: 'ytpl', id: ytpl[1], title: 'YouTube Playlist', url: u };
+  // Spotify — track / playlist / album
+  const sp = u.match(/open\.spotify\.com\/(?:intl-\w+\/)?(track|playlist|album)\/([\w]+)/);
+  if (sp) return { kind: 'sp', id: sp[2], spType: sp[1] as 'track' | 'playlist' | 'album', title: `Spotify ${sp[1]}`, url: u };
   return null;
 }
 
@@ -64,9 +70,10 @@ export function FloatingDock() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  // tải playlist từ localStorage
+  // tải playlist + âm lượng đã lưu từ localStorage
   useEffect(() => {
     try { const s = localStorage.getItem(LS_KEY); if (s) setList(JSON.parse(s)); } catch {}
+    try { const v = localStorage.getItem(VOL_KEY); if (v != null) setVolume(Math.max(0, Math.min(100, Number(v)))); } catch {}
   }, []);
   useEffect(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(list)); } catch {} }, [list]);
 
@@ -78,7 +85,7 @@ export function FloatingDock() {
         height: '0', width: '0',
         playerVars: { autoplay: 0, controls: 0, disablekb: 1, playsinline: 1 },
         events: {
-          onReady: () => { ready.current = true; yt.current.setVolume(volume); },
+          onReady: () => { ready.current = true; if (!muted) yt.current.unMute(); yt.current.setVolume(muted ? 0 : volume); },
           onStateChange: (e: any) => {
             const YT = (window as any).YT;
             if (e.data === YT.PlayerState.PLAYING) { setPlaying(true); setDuration(yt.current.getDuration() || 0); }
@@ -114,6 +121,8 @@ export function FloatingDock() {
 
   function onEnded() {
     const { repeat: rp, shuffle: sf, list: ls, cur: c } = stateRef.current;
+    // Playlist YouTube tự động chuyển bài bên trong player — không tự nhảy entry ngoài.
+    if (ls[c]?.kind === 'ytpl') { if (rp === 'one') { yt.current?.seekTo(0); yt.current?.playVideo(); } return; }
     if (rp === 'one') { yt.current?.seekTo(0); yt.current?.playVideo(); return; }
     if (sf && ls.length > 1) { let n = c; while (n === c) n = Math.floor(Math.random() * ls.length); playIndex(n); return; }
     if (c < ls.length - 1) playIndex(c + 1);
@@ -124,8 +133,15 @@ export function FloatingDock() {
   function playIndex(i: number) {
     const t = list[i]; if (!t) return;
     setCur(i); setProgress(0); setDuration(0);
-    if (t.kind === 'yt') {
-      const start = () => { yt.current.loadVideoById(t.id); yt.current.setPlaybackRate(speed); yt.current.setVolume(muted ? 0 : volume); setPlaying(true); };
+    if (t.kind === 'yt' || t.kind === 'ytpl') {
+      const start = () => {
+        if (t.kind === 'ytpl') yt.current.loadPlaylist({ list: t.id, listType: 'playlist', index: 0 });
+        else yt.current.loadVideoById(t.id);
+        yt.current.unMute();                       // bỏ tắt tiếng (autoplay luôn bắt đầu ở chế độ muted)
+        yt.current.setVolume(muted ? 0 : volume);
+        yt.current.setPlaybackRate(speed);
+        setPlaying(true);
+      };
       if (yt.current && ready.current) start();
       else { const iv = setInterval(() => { if (yt.current && ready.current) { clearInterval(iv); start(); } }, 200); }
     } else {
@@ -138,19 +154,28 @@ export function FloatingDock() {
   function togglePlay() {
     if (cur < 0 && list.length) { playIndex(0); return; }
     const t = list[cur];
-    if (t?.kind !== 'yt' || !yt.current) return;
-    if (playing) yt.current.pauseVideo(); else yt.current.playVideo();
+    if ((t?.kind !== 'yt' && t?.kind !== 'ytpl') || !yt.current) return;
+    if (playing) yt.current.pauseVideo(); else { yt.current.unMute(); yt.current.setVolume(muted ? 0 : volume); yt.current.playVideo(); }
+  }
+  function prevTrack() {
+    if (list[cur]?.kind === 'ytpl' && yt.current?.previousVideo) { yt.current.previousVideo(); return; }
+    if (cur > 0) playIndex(cur - 1);
+  }
+  function nextTrack() {
+    if (list[cur]?.kind === 'ytpl' && yt.current?.nextVideo) { yt.current.nextVideo(); return; }
+    if (cur < list.length - 1) playIndex(cur + 1);
   }
   function changeVolume(v: number) {
     setVolume(v);
     setMuted(v === 0);
-    yt.current?.unMute?.();
+    try { localStorage.setItem(VOL_KEY, String(v)); } catch {}
+    if (v > 0) yt.current?.unMute?.();
     yt.current?.setVolume?.(v);
   }
   function toggleMute() {
     const next = !muted;
     setMuted(next);
-    if (next) { yt.current?.setVolume?.(0); }
+    if (next) { yt.current?.mute?.(); }
     else { yt.current?.unMute?.(); yt.current?.setVolume?.(volume || 50); }
   }
   function changeSpeed(s: number) { setSpeed(s); yt.current?.setPlaybackRate?.(s); }
@@ -226,7 +251,7 @@ export function FloatingDock() {
             <div className="rounded-xl bg-ink-50 p-2.5 dark:bg-ink-800/50">
               <div className="truncate text-sm font-medium">{track ? track.title : 'Chưa chọn bài'}</div>
               {track?.kind === 'sp' ? (
-                <iframe title="spotify" className="mt-2 w-full rounded-lg" height="80" src={`https://open.spotify.com/embed/track/${track.id}`} allow="encrypted-media" />
+                <iframe title="spotify" className="mt-2 w-full rounded-lg" height={track.spType === 'track' ? 80 : 152} src={`https://open.spotify.com/embed/${track.spType || 'track'}/${track.id}`} allow="encrypted-media" />
               ) : (
                 <>
                   <input type="range" min={0} max={duration || 0} value={progress} onChange={(e) => seek(Number(e.target.value))} className="mt-2 w-full accent-brand-600" />
@@ -236,9 +261,9 @@ export function FloatingDock() {
               {/* Điều khiển */}
               <div className="mt-1 flex items-center justify-center gap-3">
                 <button onClick={() => setShuffle((s) => !s)} title="Ngẫu nhiên" className={shuffle ? 'text-brand-600' : 'text-ink-400'}><Shuffle size={16} /></button>
-                <button onClick={() => cur > 0 && playIndex(cur - 1)} className="text-ink-600 dark:text-ink-300"><SkipBack size={20} /></button>
+                <button onClick={prevTrack} className="text-ink-600 dark:text-ink-300"><SkipBack size={20} /></button>
                 <button onClick={togglePlay} className="grid h-10 w-10 place-items-center rounded-full bg-brand-600 text-white">{playing ? <Pause size={20} /> : <Play size={20} />}</button>
-                <button onClick={() => cur < list.length - 1 && playIndex(cur + 1)} className="text-ink-600 dark:text-ink-300"><SkipForward size={20} /></button>
+                <button onClick={nextTrack} className="text-ink-600 dark:text-ink-300"><SkipForward size={20} /></button>
                 <button onClick={() => setRepeat(repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off')} title="Lặp lại" className={repeat !== 'off' ? 'text-brand-600' : 'text-ink-400'}>
                   {repeat === 'one' ? <Repeat1 size={16} /> : <Repeat size={16} />}
                 </button>
@@ -259,7 +284,7 @@ export function FloatingDock() {
 
             {/* Thêm bài + import playlist */}
             <div className="flex gap-1.5">
-              <input className="input flex-1 text-sm" placeholder="Dán link YouTube / Spotify…" value={input}
+              <input className="input flex-1 text-sm" placeholder="Dán link bài / playlist YouTube / Spotify…" value={input}
                 onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} />
               <button onClick={add} className="btn-outline px-2.5" title="Thêm bài"><Plus size={15} /></button>
               <button onClick={() => setImporting((v) => !v)} className={`btn-outline px-2.5 ${importing ? 'text-brand-600' : ''}`} title="Import playlist"><ListPlus size={15} /></button>
@@ -281,7 +306,7 @@ export function FloatingDock() {
               {list.map((t, i) => (
                 <div key={i} className={`flex items-center gap-2 rounded-lg px-2 py-1 text-sm ${i === cur ? 'bg-brand-50 dark:bg-ink-800' : 'hover:bg-ink-50 dark:hover:bg-ink-800/50'}`}>
                   <button onClick={() => playIndex(i)} className="min-w-0 flex-1 truncate text-left">
-                    <span className={`mr-1 text-[10px] ${t.kind === 'yt' ? 'text-rose-500' : 'text-emerald-500'}`}>{t.kind === 'yt' ? 'YT' : 'SP'}</span>
+                    <span className={`mr-1 text-[10px] ${t.kind === 'sp' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.kind === 'ytpl' ? 'YT≡' : t.kind === 'yt' ? 'YT' : 'SP'}</span>
                     {t.title}
                   </button>
                   <button onClick={() => remove(i)} className="text-ink-400 hover:text-rose-500"><Trash2 size={13} /></button>

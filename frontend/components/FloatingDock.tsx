@@ -5,6 +5,7 @@ import {
   ArrowUp, Music, X, Play, Pause, SkipBack, SkipForward, Repeat, Repeat1,
   Shuffle, Volume2, VolumeX, Plus, Trash2, Gauge, ListPlus,
 } from 'lucide-react';
+import { useDraggable } from '@/lib/useDraggable';
 
 interface Track { kind: 'yt' | 'sp'; id: string; title: string; url: string }
 const LS_KEY = 'mini-player-playlist';
@@ -46,6 +47,8 @@ export function FloatingDock() {
   const [importing, setImporting] = useState(false);
   const [bulk, setBulk] = useState('');
   const [msg, setMsg] = useState('');
+
+  const drag = useDraggable('music', { right: 16, bottom: 72 });
 
   const yt = useRef<any>(null);
   const ready = useRef(false);
@@ -203,9 +206,9 @@ export function FloatingDock() {
         </button>
       )}
       {!open && (
-        <button onClick={() => setOpen(true)} title="Trình phát nhạc"
-          className="fixed right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700"
-          style={{ bottom: showTop ? '4.25rem' : '1rem' }}>
+        <button onPointerDown={drag.onPointerDown} onClick={() => { if (drag.movedRef.current) return; setOpen(true); }} title="Trình phát nhạc (giữ & kéo để di chuyển)"
+          className={`z-40 grid h-11 w-11 cursor-grab place-items-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 ${drag.dragging ? 'cursor-grabbing scale-105' : ''}`}
+          style={drag.style}>
           <Music size={20} />
         </button>
       )}

@@ -1,22 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ShieldAlert, X, Search, AlertTriangle, MicOff, Ban, Unlock } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from './AuthProvider';
+import { useDraggable } from '@/lib/useDraggable';
 
 // Thanh kiểm duyệt nhanh cho admin/mod — nổi trên mọi trang client
 export function AdminModBar() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 320);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  const drag = useDraggable('admin-mod', { right: 16, bottom: 128 });
   const [username, setUsername] = useState('');
   const [info, setInfo] = useState<any>(null);
   const [reason, setReason] = useState('');
@@ -45,8 +39,8 @@ export function AdminModBar() {
     <>
       {/* Nút nổi */}
       {!open && (
-        <button onClick={() => setOpen(true)} title="Kiểm duyệt nhanh"
-          className="fixed right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-rose-600 text-white shadow-lg hover:bg-rose-700" style={{ bottom: scrolled ? '7.25rem' : '4rem' }}>
+        <button onPointerDown={drag.onPointerDown} onClick={() => { if (drag.movedRef.current) return; setOpen(true); }} title="Kiểm duyệt nhanh (giữ & kéo để di chuyển)"
+          className={`z-40 grid h-11 w-11 cursor-grab place-items-center rounded-full bg-rose-600 text-white shadow-lg hover:bg-rose-700 ${drag.dragging ? 'cursor-grabbing scale-105' : ''}`} style={drag.style}>
           <ShieldAlert size={20} />
         </button>
       )}

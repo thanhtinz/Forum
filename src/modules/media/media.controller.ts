@@ -14,7 +14,6 @@ import { createId } from '@paralleldrive/cuid2';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { extname, join } from 'path';
 import { MediaService } from './media.service';
-import { ImageHostService } from './image-host.service';
 import { AttachmentService } from './attachment.service';
 import { PresignUploadDto } from './media.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -29,7 +28,6 @@ const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/web
 export class MediaController {
   constructor(
     private readonly media: MediaService,
-    private readonly imageHost: ImageHostService,
     private readonly attachments: AttachmentService,
   ) {}
 
@@ -74,10 +72,7 @@ export class MediaController {
   )
   async uploadImage(@UploadedFile() file: any) {
     if (!file) throw new BadRequestException('Không có file được tải lên');
-    // Ưu tiên dịch vụ ảnh ngoài nếu admin chủ động bật (zpic/anh.moe), còn lại theo R2/local.
-    if (await this.imageHost.isEnabled()) {
-      return this.imageHost.upload(file.buffer, file.originalname, file.mimetype);
-    }
+    // Toàn bộ ảnh editor cũng đi qua R2 (fallback local) — thống nhất 1 kho lưu trữ.
     return this.saveImage(file);
   }
 
@@ -121,18 +116,4 @@ export class MediaController {
     return this.attachments.setConfig(body);
   }
 
-  // ── Admin: cấu hình dịch vụ lưu trữ ảnh ngoài ──
-  @Get('admin/imagehost')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
-  getImageHost() {
-    return this.imageHost.getConfig();
-  }
-
-  @Post('admin/imagehost')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
-  setImageHost(@Body() body: { enabled?: boolean; endpoint?: string; apiKey?: string }) {
-    return this.imageHost.setConfig(body);
-  }
 }

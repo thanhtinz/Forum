@@ -31,10 +31,11 @@ export default function AdminAttachment() {
 
   return (
     <div className="max-w-xl space-y-4">
-      <h1 className="flex items-center gap-2 text-xl font-bold"><Paperclip size={20} /> Tệp đính kèm (Cloudflare R2 / S3)</h1>
+      <h1 className="flex items-center gap-2 text-xl font-bold"><Paperclip size={20} /> Lưu trữ ảnh &amp; tệp (Cloudflare R2)</h1>
       <p className="text-sm text-ink-500">
-        Khi bật, tệp đính kèm trong bài viết sẽ được tải lên kho lưu trữ ngoài (Cloudflare R2 hoặc S3) thay vì lưu trên server.
-        Nếu tắt, tệp lưu local trên server (thư mục /uploads). R2 dùng region <code>auto</code> và endpoint dạng <code>https://&lt;account&gt;.r2.cloudflarestorage.com</code>.
+        Cấu hình kho lưu trữ duy nhất cho <b>toàn bộ ảnh và tệp</b> (ảnh bài viết, ảnh editor, tệp đính kèm, kho ảnh).
+        Khi bật, mọi upload sẽ lên Cloudflare R2 (hoặc S3); nếu tắt, lưu local trên server (thư mục /uploads).
+        R2 dùng region <code>auto</code> và endpoint dạng <code>https://&lt;account&gt;.r2.cloudflarestorage.com</code>.
       </p>
 
       <div className="card space-y-3 p-4">

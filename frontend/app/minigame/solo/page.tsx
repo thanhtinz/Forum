@@ -100,14 +100,16 @@ function SoloPlay() {
             <div className="space-y-1 rounded-xl border-4 border-amber-700/70 bg-gradient-to-b from-lime-600/30 to-green-700/30 p-2">
               {[1, 2, 3, 4, 5, 6, 7].map((n) => {
                 const winner = result?.winner === n;
-                const pos = animating ? Math.min(90, (frame * (3 + ((n * 7) % 4))) % 112) : winner ? 90 : 0;
+                const pos = animating ? Math.min(92, (frame * (3 + ((n * 7) % 4))) % 112) : winner ? 92 : 0;
                 return (
                   <div key={n} onClick={() => !animating && setDuaThu(n)}
-                    className={`relative h-9 cursor-pointer overflow-hidden rounded-md border-y border-dashed border-white/40 ${duaThu === n ? 'bg-amber-300/40 ring-2 ring-amber-500' : 'bg-black/5 hover:bg-black/10'}`}>
-                    <span className="absolute left-1 top-1/2 z-10 -translate-y-1/2 whitespace-nowrap text-[11px] font-bold text-ink-700">{n}. {RACE_NAMES[n]}</span>
-                    <span className="absolute right-1 top-1/2 -translate-y-1/2 text-lg">{winner && !animating ? '🏁🥇' : '🏁'}</span>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/game-assets/duathu/${n}.gif`} alt={`Thú ${n}`} className="absolute top-1/2 h-7 -translate-y-1/2 object-contain transition-all duration-100" style={{ left: `calc(${pos}% + 14px)` }} />
+                    className={`flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 ${duaThu === n ? 'bg-amber-300/50 ring-2 ring-amber-500' : 'bg-black/5 hover:bg-black/10'}`}>
+                    <span className="w-24 shrink-0 truncate text-[11px] font-bold text-ink-800">{n}. {RACE_NAMES[n]}</span>
+                    <div className="relative h-8 flex-1 overflow-hidden rounded border-y border-dashed border-white/50">
+                      <span className="absolute right-1 top-1/2 z-10 -translate-y-1/2 text-base">{winner && !animating ? '🏁🥇' : '🏁'}</span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={`/game-assets/duathu/${n}.gif`} alt={`Thú ${n}`} className="absolute top-1/2 h-7 -translate-y-1/2 object-contain transition-all duration-100" style={{ left: `${pos}%` }} />
+                    </div>
                   </div>
                 );
               })}

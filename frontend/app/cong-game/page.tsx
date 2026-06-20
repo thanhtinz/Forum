@@ -18,7 +18,7 @@ const WEB_GAMES = [
 const MINIGAMES = [
   { href: '/minigame/live?game=tai-xiu', label: 'Tài Xỉu (phòng chung)', color: 'from-rose-500 to-red-600', icon: Dices },
   { href: '/minigame/live?game=bau-cua', label: 'Bầu Cua (phòng chung)', color: 'from-amber-500 to-orange-600', icon: Fish },
-  { href: '/minigame/solo?game=dua-thu', label: 'Đua Thú', color: 'from-lime-500 to-green-600', icon: Rabbit },
+  { href: '/minigame/live?game=dua-thu', label: 'Đua Thú (phòng chung)', color: 'from-lime-500 to-green-600', icon: Rabbit },
   { href: '/minigame/solo?game=jackpot', label: 'Jackpot 777', color: 'from-purple-500 to-fuchsia-600', icon: Cherry },
   { href: '/minigame/tien-len', label: 'Tiến Lên (PvP)', color: 'from-sky-500 to-blue-600', icon: Spade },
   { href: '/minigame/caro', label: 'Cờ Caro (PvP)', color: 'from-teal-500 to-cyan-600', icon: Grid3x3 },

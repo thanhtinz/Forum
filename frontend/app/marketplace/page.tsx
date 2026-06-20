@@ -13,10 +13,6 @@ interface Product {
 interface Paginated { data: Product[]; meta: { total: number; page: number; limit: number; totalPages: number } }
 interface Category { id: string; name: string; slug: string; icon?: string | null }
 
-const TYPES: Record<string, string> = {
-  SOURCE_CODE: 'Source code', TOOL: 'Tool', SERVICE: 'Dịch vụ', ACCOUNT: 'Tài khoản', TEMPLATE: 'Template', DESIGN: 'Thiết kế',
-};
-
 function ProductCard({ p }: { p: Product }) {
   return (
     <Link href={`/product?slug=${p.slug}`} className="card group overflow-hidden p-0 transition hover:-translate-y-0.5 hover:shadow-lg">
@@ -44,7 +40,6 @@ export default function MarketplacePage() {
   const [q, setQ] = useState('');
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
-  const [type, setType] = useState('');
   const [sort, setSort] = useState('popular');
   const [page, setPage] = useState(1);
 
@@ -52,13 +47,12 @@ export default function MarketplacePage() {
 
   const params = new URLSearchParams();
   if (category) params.set('category', category);
-  if (type) params.set('type', type);
   if (sort) params.set('sort', sort);
   if (query.trim()) params.set('q', query.trim());
   params.set('page', String(page));
   const { data, isLoading } = useSWR<Paginated>(`/marketplace/products?${params}`, fetcher);
 
-  useEffect(() => { setPage(1); }, [category, type, sort, query]);
+  useEffect(() => { setPage(1); }, [category, sort, query]);
   const totalPages = data?.meta.totalPages || 1;
 
   return (
@@ -77,7 +71,7 @@ export default function MarketplacePage() {
         </form>
       </header>
 
-      {/* Danh mục */}
+      {/* Danh mục — chip nhanh */}
       {cats && cats.length > 0 && (
         <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
           <button onClick={() => setCategory('')} className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium ${!category ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800'}`}>Tất cả</button>
@@ -89,13 +83,13 @@ export default function MarketplacePage() {
         </div>
       )}
 
-      {/* Bộ lọc loại + sắp xếp */}
+      {/* Bộ lọc danh mục (dropdown) + sắp xếp */}
       <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
         <label className="relative">
           <SlidersHorizontal size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-          <select className="input w-full pl-9 sm:w-44" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="">Mọi loại</option>
-            {Object.entries(TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          <select className="input w-full pl-9 sm:w-48" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">Mọi danh mục</option>
+            {cats?.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
           </select>
         </label>
         <select className="input sm:w-44" value={sort} onChange={(e) => setSort(e.target.value)}>

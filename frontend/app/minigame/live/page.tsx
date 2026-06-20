@@ -18,7 +18,7 @@ const TAIXIU: [string, string][] = [['tai', 'TÀI (11-17)'], ['xiu', 'XỈU (4-1
 interface LiveState {
   game: Game; roundId: number; phase: 'betting' | 'rolling' | 'result'; timeLeft: number;
   result: any | null; pot: Record<string, number>; totalPot: number;
-  players: { name: string; total: number; net?: number; me?: boolean }[]; playerCount: number;
+  players: { name: string; avatar?: string | null; total: number; net?: number; me?: boolean }[]; playerCount: number;
   mine: { option: string; amount: number }[]; myNet?: number;
 }
 
@@ -132,7 +132,12 @@ function LiveRoom() {
           <div className="space-y-1">
             {st.players.map((p, i) => (
               <div key={i} className={`flex items-center justify-between rounded-lg px-2 py-1 text-sm ${p.me ? 'bg-brand-50 dark:bg-ink-800' : ''}`}>
-                <span className="truncate">{p.me ? '🫵 ' : ''}{p.name}</span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-full bg-ink-200 text-xs font-semibold text-ink-600 dark:bg-ink-700">
+                    {p.avatar ? <img src={p.avatar} alt="" className="h-full w-full object-cover" /> : (p.name?.[0] || '?').toUpperCase()}
+                  </span>
+                  <span className={`truncate ${p.me ? 'font-semibold text-brand-600' : ''}`}>{p.name}{p.me ? ' (bạn)' : ''}</span>
+                </span>
                 <span className="flex items-center gap-2">
                   <span className="text-ink-500">{formatCoin(p.total)}</span>
                   {p.net != null && <span className={p.net > 0 ? 'text-emerald-600' : p.net < 0 ? 'text-rose-600' : 'text-ink-400'}>{p.net > 0 ? '+' : ''}{formatCoin(p.net)}</span>}

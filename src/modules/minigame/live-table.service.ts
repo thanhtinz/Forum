@@ -15,6 +15,7 @@ const BAUCUA_OPTS = ['bau', 'cua', 'tom', 'ca', 'ga', 'nai'];
 
 interface PlayerBets {
   name: string;
+  avatar?: string | null;
   bets: { option: string; amount: number }[];
   net?: number;        // lãi/lỗ sau khi chốt vòng
 }
@@ -103,9 +104,9 @@ export class LiveTableService {
     if (!char) throw new BadRequestException('Bạn chưa tạo nhân vật game');
     await this.spendCoin(char.id, char.coinBalance, amount, `live_${game}`, `Cược ${game}`);
 
-    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { displayName: true, username: true } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { displayName: true, username: true, avatar: true } });
     const name = user?.displayName || user?.username || 'Người chơi';
-    const pb = r.players.get(userId) || { name, bets: [] };
+    const pb = r.players.get(userId) || { name, avatar: user?.avatar, bets: [] };
     const existing = pb.bets.find((b) => b.option === option);
     if (existing) existing.amount += amount;
     else pb.bets.push({ option, amount });
@@ -124,6 +125,7 @@ export class LiveTableService {
     for (const pb of r.players.values()) for (const b of pb.bets) { pot[b.option] = (pot[b.option] || 0) + b.amount; totalPot += b.amount; }
     const players = [...r.players.entries()].map(([uid, pb]) => ({
       name: pb.name,
+      avatar: pb.avatar ?? null,
       total: pb.bets.reduce((s, b) => s + b.amount, 0),
       net: pb.net,
       me: uid === userId,

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ArrowUp, Music, X, Play, Pause, SkipBack, SkipForward, Repeat, Repeat1,
-  Shuffle, Volume2, Plus, Search, Trash2, Gauge,
+  Shuffle, Volume2, VolumeX, Plus, Trash2, Gauge, ListPlus,
 } from 'lucide-react';
 
 interface Track { kind: 'yt' | 'sp'; id: string; title: string; url: string }
@@ -38,10 +38,13 @@ export function FloatingDock() {
   const [repeat, setRepeat] = useState<'off' | 'one' | 'all'>('off');
   const [shuffle, setShuffle] = useState(false);
   const [volume, setVolume] = useState(80);
+  const [muted, setMuted] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [input, setInput] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [bulk, setBulk] = useState('');
   const [msg, setMsg] = useState('');
 
   const yt = useRef<any>(null);
@@ -64,14 +67,13 @@ export function FloatingDock() {
   }, []);
   useEffect(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(list)); } catch {} }, [list]);
 
-  // nạp YouTube IFrame API + tạo player ẩn
+  // nạp YouTube IFrame API + tạo player ẩn NGAY KHI MOUNT (để phát nền, không phụ thuộc panel mở)
   useEffect(() => {
-    if (!open) return;
     function init() {
       if (yt.current || !(window as any).YT?.Player) return;
       yt.current = new (window as any).YT.Player('mini-yt', {
         height: '0', width: '0',
-        playerVars: { autoplay: 0, controls: 0, disablekb: 1 },
+        playerVars: { autoplay: 0, controls: 0, disablekb: 1, playsinline: 1 },
         events: {
           onReady: () => { ready.current = true; yt.current.setVolume(volume); },
           onStateChange: (e: any) => {
@@ -94,7 +96,7 @@ export function FloatingDock() {
       const iv = setInterval(() => { if ((window as any).YT?.Player) { clearInterval(iv); init(); } }, 300);
       return () => clearInterval(iv);
     }
-  }, [open]); // eslint-disable-line
+  }, []); // eslint-disable-line
 
   // theo dõi tiến độ
   useEffect(() => {
@@ -120,7 +122,7 @@ export function FloatingDock() {
     const t = list[i]; if (!t) return;
     setCur(i); setProgress(0); setDuration(0);
     if (t.kind === 'yt') {
-      const start = () => { yt.current.loadVideoById(t.id); yt.current.setPlaybackRate(speed); yt.current.setVolume(volume); setPlaying(true); };
+      const start = () => { yt.current.loadVideoById(t.id); yt.current.setPlaybackRate(speed); yt.current.setVolume(muted ? 0 : volume); setPlaying(true); };
       if (yt.current && ready.current) start();
       else { const iv = setInterval(() => { if (yt.current && ready.current) { clearInterval(iv); start(); } }, 200); }
     } else {
@@ -136,7 +138,18 @@ export function FloatingDock() {
     if (t?.kind !== 'yt' || !yt.current) return;
     if (playing) yt.current.pauseVideo(); else yt.current.playVideo();
   }
-  function changeVolume(v: number) { setVolume(v); yt.current?.setVolume?.(v); }
+  function changeVolume(v: number) {
+    setVolume(v);
+    setMuted(v === 0);
+    yt.current?.unMute?.();
+    yt.current?.setVolume?.(v);
+  }
+  function toggleMute() {
+    const next = !muted;
+    setMuted(next);
+    if (next) { yt.current?.setVolume?.(0); }
+    else { yt.current?.unMute?.(); yt.current?.setVolume?.(volume || 50); }
+  }
   function changeSpeed(s: number) { setSpeed(s); yt.current?.setPlaybackRate?.(s); }
   function seek(v: number) { setProgress(v); yt.current?.seekTo?.(v, true); }
 
@@ -148,6 +161,26 @@ export function FloatingDock() {
     setList((l) => [...l, { ...t, title: title || t.title }]);
     setInput('');
   }
+
+  // Import nhiều link cùng lúc (mỗi dòng / cách nhau bởi khoảng trắng hoặc dấu phẩy)
+  async function importBulk() {
+    setMsg('');
+    const parts = bulk.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean);
+    const parsed = parts.map(parseUrl).filter(Boolean) as Track[];
+    if (!parsed.length) { setMsg('Không tìm thấy link hợp lệ nào'); return; }
+    // thêm trước với tiêu đề tạm, rồi cập nhật tiêu đề thật dần
+    setList((l) => [...l, ...parsed]);
+    setBulk('');
+    setImporting(false);
+    setMsg(`Đã thêm ${parsed.length} bài`);
+    const titles = await Promise.all(parsed.map((t) => fetchTitle(t.url)));
+    setList((l) => l.map((t) => {
+      const idx = parsed.findIndex((p) => p.kind === t.kind && p.id === t.id && p.title === t.title);
+      if (idx >= 0 && titles[idx]) return { ...t, title: titles[idx]! };
+      return t;
+    }));
+  }
+
   function remove(i: number) {
     setList((l) => l.filter((_, idx) => idx !== i));
     if (i === cur) { setCur(-1); setPlaying(false); yt.current?.stopVideo?.(); }
@@ -159,20 +192,21 @@ export function FloatingDock() {
 
   return (
     <>
-      {/* Player ẩn của YouTube */}
+      {/* Player ẩn của YouTube — luôn tồn tại để phát nền */}
       <div className="pointer-events-none fixed -left-10 bottom-0 h-0 w-0 overflow-hidden"><div id="mini-yt" /></div>
 
-      {/* Cụm nút nổi góc phải (xếp chồng): nhạc dưới cùng, back-to-top trên, admin trên nữa */}
-      {!open && (
-        <button onClick={() => setOpen(true)} title="Trình phát nhạc"
-          className="fixed bottom-4 right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700">
-          <Music size={20} />
-        </button>
-      )}
+      {/* Cụm nút nổi góc phải (xếp chồng): back-to-top DƯỚI CÙNG, nhạc trên, admin trên nữa */}
       {showTop && (
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} title="Lên đầu trang"
-          className="fixed right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-ink-800 text-white shadow-lg hover:bg-ink-900 dark:bg-ink-700" style={{ bottom: '4.25rem' }}>
+          className="fixed bottom-4 right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-ink-800 text-white shadow-lg hover:bg-ink-900 dark:bg-ink-700">
           <ArrowUp size={20} />
+        </button>
+      )}
+      {!open && (
+        <button onClick={() => setOpen(true)} title="Trình phát nhạc"
+          className="fixed right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700"
+          style={{ bottom: showTop ? '4.25rem' : '1rem' }}>
+          <Music size={20} />
         </button>
       )}
 
@@ -208,8 +242,10 @@ export function FloatingDock() {
               </div>
               {/* Âm lượng + tốc độ (cho YouTube) */}
               <div className="mt-2 flex items-center gap-3 text-xs text-ink-500">
-                <Volume2 size={14} />
-                <input type="range" min={0} max={100} value={volume} onChange={(e) => changeVolume(Number(e.target.value))} className="flex-1 accent-brand-600" />
+                <button onClick={toggleMute} className="hover:text-brand-600" title={muted ? 'Bật tiếng' : 'Tắt tiếng'}>
+                  {muted || volume === 0 ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                </button>
+                <input type="range" min={0} max={100} value={muted ? 0 : volume} onChange={(e) => changeVolume(Number(e.target.value))} className="flex-1 accent-brand-600" />
                 <span className="inline-flex items-center gap-1"><Gauge size={14} />
                   <select value={speed} onChange={(e) => changeSpeed(Number(e.target.value))} className="rounded border border-ink-200 bg-transparent text-xs dark:border-ink-700">
                     {[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => <option key={s} value={s}>{s}x</option>)}
@@ -218,16 +254,22 @@ export function FloatingDock() {
               </div>
             </div>
 
-            {/* Thêm bài + tìm */}
+            {/* Thêm bài + import playlist */}
             <div className="flex gap-1.5">
               <input className="input flex-1 text-sm" placeholder="Dán link YouTube / Spotify…" value={input}
                 onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} />
-              <button onClick={add} className="btn-outline px-2.5"><Plus size={15} /></button>
+              <button onClick={add} className="btn-outline px-2.5" title="Thêm bài"><Plus size={15} /></button>
+              <button onClick={() => setImporting((v) => !v)} className={`btn-outline px-2.5 ${importing ? 'text-brand-600' : ''}`} title="Import playlist"><ListPlus size={15} /></button>
             </div>
-            <div className="flex gap-1.5 text-xs">
-              <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(input || 'nhạc')}`} target="_blank" rel="noreferrer" className="btn-outline flex-1 justify-center !py-1"><Search size={13} /> YouTube</a>
-              <a href={`https://open.spotify.com/search/${encodeURIComponent(input || '')}`} target="_blank" rel="noreferrer" className="btn-outline flex-1 justify-center !py-1"><Search size={13} /> Spotify</a>
-            </div>
+
+            {importing && (
+              <div className="space-y-1.5 rounded-lg border border-dashed border-ink-300 p-2 dark:border-ink-700">
+                <p className="text-[11px] text-ink-500">Dán nhiều link (mỗi dòng một link, hoặc cách nhau dấu phẩy/khoảng trắng):</p>
+                <textarea className="input min-h-[72px] text-xs" placeholder={'https://youtu.be/...\nhttps://open.spotify.com/track/...'} value={bulk} onChange={(e) => setBulk(e.target.value)} />
+                <button onClick={importBulk} className="btn-primary w-full !py-1 text-sm"><ListPlus size={14} /> Import tất cả</button>
+              </div>
+            )}
+
             {msg && <p className="text-xs text-rose-500">{msg}</p>}
 
             {/* Playlist */}

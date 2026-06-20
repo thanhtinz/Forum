@@ -50,12 +50,7 @@ export default function AdminFortune() {
       <h1 className="text-xl font-bold">Quản lý Bói toán & AI</h1>
 
       <section className="card p-5">
-        <h2 className="mb-3 font-semibold">Giá xem (coin/lần) — 0 = miễn phí</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Num label="Bát Tự" value={cfg.priceBazi} onChange={(v) => set('priceBazi', v)} />
-          <Num label="Tarot" value={cfg.priceTarot} onChange={(v) => set('priceTarot', v)} />
-          <Num label="Mai Hoa" value={cfg.priceMeihua} onChange={(v) => set('priceMeihua', v)} />
-        </div>
+        <p className="text-sm text-ink-500">Bói bài (Tarot) đã miễn phí — không thu coin.</p>
       </section>
 
       <section className="card p-5">

@@ -88,8 +88,7 @@ export class FortuneService {
   }
 
   async tarot(n: number, question: string | undefined, userId?: string, topic?: string) {
-    const cfg = await this.getConfig();
-    await this.charge(userId, cfg.priceTarot, 'fortune_tarot', 'Bốc Tarot');
+    // Bói Tarot miễn phí — không thu coin
     const cards = drawTarot(n);
     const result = { question: question ?? null, topic: topic ?? null, cards };
     await this.save('TAROT', { n, topic }, result, question, userId);

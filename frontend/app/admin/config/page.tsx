@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
+import ImageUpload from '@/components/ImageUpload';
 
 interface Setting { id: string; key: string; label: string; type: string; value: any; options?: any; validation?: any; isSecret?: boolean; }
 interface Group { id: string; key: string; name: string; description?: string; icon?: string; settings: Setting[]; }
@@ -79,6 +80,15 @@ function Field({ s, value, onChange }: { s: Setting; value: any; onChange: (v: a
       return <textarea className="input resize-y" rows={2} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
     case 'color':
       return <input type="color" className="h-9 w-16" value={value || '#000000'} onChange={(e) => onChange(e.target.value)} />;
+    case 'image':
+      return (
+        <div className="space-y-2">
+          {value && /^https?:|^\//.test(value) && <img src={value} alt="" className="h-12 w-auto rounded border border-ink-200 object-contain dark:border-ink-700" />}
+          <ImageUpload value={value} onUploaded={(url) => onChange(url)} label="Tải ảnh lên" />
+          <input className="input text-xs" placeholder="hoặc dán URL ảnh" value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
+          {value && <button type="button" onClick={() => onChange('')} className="text-xs text-red-500 hover:underline">Xoá ảnh</button>}
+        </div>
+      );
     case 'select':
       return (
         <select className="input" value={value ?? ''} onChange={(e) => onChange(e.target.value)}>

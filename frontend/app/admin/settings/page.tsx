@@ -14,15 +14,22 @@ export default function AdminSettings() {
   function load() { api.get<Group[]>('/admin/config').then(setGroups).catch((e) => setMsg(e.message)); }
   useEffect(() => { load(); }, []);
 
-  async function seed() { try { await api.post('/admin/config/seed'); setMsg('Đã khởi tạo cấu hình'); } catch (e: any) { setMsg(e.message); } load(); }
+  async function seed() {
+    try {
+      const r = await api.post<{ groups: number; removedSettings: number; removedGroups: number }>('/admin/config/seed');
+      const cleaned = (r.removedSettings || 0) + (r.removedGroups || 0);
+      setMsg(cleaned > 0 ? `Đã đồng bộ cấu hình & dọn ${r.removedSettings} mục + ${r.removedGroups} nhóm cũ.` : 'Đã đồng bộ cấu hình mặc định ✓');
+    } catch (e: any) { setMsg(e.message); }
+    load();
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Cấu hình hệ thống</h1>
-        <button onClick={seed} className="btn-outline text-xs">Khởi tạo cấu hình mặc định</button>
+        <button onClick={seed} className="btn-outline text-xs">Đồng bộ & dọn cấu hình cũ</button>
       </div>
-      <p className="text-sm text-ink-500">Mỗi nhóm cấu hình là một trang riêng cho gọn. Chọn nhóm để chỉnh.</p>
+      <p className="text-sm text-ink-500">Mỗi nhóm cấu hình là một trang riêng cho gọn. Chọn nhóm để chỉnh. Bấm "Đồng bộ & dọn cấu hình cũ" để cập nhật nhãn mới và xoá các mục của tính năng đã gỡ bỏ.</p>
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
       {groups.length === 0 && <div className="card p-6 text-center text-ink-500">Chưa có cấu hình. Bấm "Khởi tạo cấu hình mặc định".</div>}
 

@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
+import { useSiteConfig } from '@/lib/siteConfig';
+import { WeatherMenu } from './WeatherMenu';
 
 // Icon kiểu Messenger cho mục Chat
 function MessengerIcon({ size = 16 }: { size?: number }) {
@@ -39,6 +41,7 @@ const UTILS = [
 
 export function Header() {
   const { user, logout } = useAuth();
+  const cfg = useSiteConfig();
   const router = useRouter();
   const [q, setQ] = useState('');
   const [menu, setMenu] = useState(false);
@@ -82,8 +85,12 @@ export function Header() {
         </button>
 
         <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/15 text-lg">◆</span>
-          <span className="hidden sm:block text-lg">Forum<span className="text-brand-200">Hub</span></span>
+          {/* Icon hình thoi = logo thu gọn (luôn hiện) */}
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 text-lg">◆</span>
+          {/* Logo dài: dùng ảnh logo nếu admin đã cấu hình, nếu không thì tên site */}
+          {cfg.logo
+            ? <img src={cfg.logo} alt={cfg.name} className="hidden h-8 w-auto max-w-[160px] object-contain sm:block" />
+            : <span className="hidden text-lg sm:block">{cfg.name || <>Forum<span className="text-brand-200">Hub</span></>}</span>}
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 md:flex">
@@ -110,6 +117,8 @@ export function Header() {
               </div>
             )}
           </div>
+          {/* Thời tiết theo khu vực người dùng */}
+          <WeatherMenu />
         </nav>
 
         <form onSubmit={onSearch} className="ml-auto hidden flex-1 max-w-xs items-center sm:flex">
@@ -208,6 +217,8 @@ export function Header() {
                 ))}
               </div>
             )}
+            {/* Thời tiết theo khu vực */}
+            <WeatherMenu mobile />
           </div>
         </nav>
       )}

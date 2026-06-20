@@ -29,8 +29,17 @@ export class FortuneController {
 
   @Post('tarot')
   @UseGuards(OptionalJwtGuard)
-  tarot(@CurrentUser('id') userId: string | undefined, @Body() b: { n?: number; question?: string }) {
-    return this.fortune.tarot(Number(b.n ?? 3), b.question, userId);
+  tarot(@CurrentUser('id') userId: string | undefined, @Body() b: { n?: number; question?: string; topic?: string }) {
+    return this.fortune.tarot(Number(b.n ?? 3), b.question, userId, b.topic);
+  }
+
+  // 12 cung hoàng đạo
+  @Get('zodiac/list')
+  zodiacList() { return this.fortune.zodiacList(); }
+
+  @Get('zodiac')
+  zodiac(@Query('sign') sign?: string, @Query('date') date?: string) {
+    return this.fortune.zodiac({ sign, date });
   }
 
   @Post('meihua')

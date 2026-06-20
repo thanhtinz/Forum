@@ -106,15 +106,15 @@ export class QuizController {
     return this.predictions.get(id, userId);
   }
 
-  // Tạo kèo (mọi thành viên). Admin có thể bật isAdminMarket (nhà cái = hệ thống).
+  // Tạo kèo — CHỈ Admin (kèo do hệ thống/nhà cái tạo).
   @Post('predictions')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   predictionCreateUser(
     @CurrentUser('id') userId: string,
-    @CurrentUser('role') role: UserRole,
     @Body() dto: CreatePredictionDto,
   ) {
-    return this.predictions.create(dto, userId, role === UserRole.ADMIN);
+    return this.predictions.create(dto, userId, true);
   }
 
   @Post('predictions/:id/bet')

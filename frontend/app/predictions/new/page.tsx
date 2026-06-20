@@ -94,7 +94,8 @@ export default function NewPredictionPage() {
   }
 
   if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
-  if (!user) return <div className="card p-10 text-center text-ink-500">Vui lòng <a href="/login" className="text-brand-600 font-medium">đăng nhập</a> để tạo kèo.</div>;
+  if (!user) return <div className="card p-10 text-center text-ink-500">Vui lòng <a href="/login" className="text-brand-600 font-medium">đăng nhập</a>.</div>;
+  if (user.role !== 'ADMIN') return <div className="card p-10 text-center text-ink-500">Kèo dự đoán hiện chỉ do hệ thống (Admin) tạo.</div>;
 
   const showLine = marketType === 'HANDICAP' || marketType === 'OVERUNDER';
   const lineOptions = marketType === 'HANDICAP' ? HANDICAP_LINES : OVERUNDER_LINES;

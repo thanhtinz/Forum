@@ -78,7 +78,7 @@ function SoloPlay() {
         className={`card space-y-3 p-4 ${game !== 'jackpot' && game !== 'dua-thu' ? 'bg-cover bg-center' : ''}`}
         style={game !== 'jackpot' && game !== 'dua-thu' ? { backgroundImage: `linear-gradient(rgba(255,255,255,.72),rgba(255,255,255,.72)), url(${BOARD})` } : undefined}
       >
-        <label className="block text-sm">Tiền cược (coin)<input type="number" className="input mt-1 w-40" value={bet} onChange={(e) => setBet(Number(e.target.value))} /></label>
+        <label className="block text-sm">Tiền cược (coin)<input type="number" min={100} max={5000} className="input mt-1 w-40" value={bet} onChange={(e) => setBet(Math.min(5000, Number(e.target.value)))} /></label>
 
         {game === 'tai-xiu' && (
           <>

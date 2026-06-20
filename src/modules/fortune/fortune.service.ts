@@ -5,6 +5,7 @@ import { AiProviderService, AiChatMessage } from '../ai-companion/ai-provider.se
 import { computeBazi, BaziInput } from './engines/bazi.engine';
 import { drawTarot } from './engines/tarot.engine';
 import { computeMeihua, MeihuaInput } from './engines/meihua.engine';
+import { ZODIACS, ZodiacSign, signFromDate, dailyHoroscope } from './engines/zodiac.engine';
 
 const CONFIG_KEY = 'fortune';
 
@@ -86,13 +87,30 @@ export class FortuneService {
     return result;
   }
 
-  async tarot(n: number, question: string | undefined, userId?: string) {
+  async tarot(n: number, question: string | undefined, userId?: string, topic?: string) {
     const cfg = await this.getConfig();
     await this.charge(userId, cfg.priceTarot, 'fortune_tarot', 'Bốc Tarot');
     const cards = drawTarot(n);
-    const result = { question: question ?? null, cards };
-    await this.save('TAROT', { n }, result, question, userId);
+    const result = { question: question ?? null, topic: topic ?? null, cards };
+    await this.save('TAROT', { n, topic }, result, question, userId);
     return result;
+  }
+
+  // 12 cung hoàng đạo — thông tin chi tiết + tử vi hằng ngày (miễn phí)
+  zodiac(input: { sign?: string; date?: string }) {
+    let sign: ZodiacSign | undefined;
+    if (input.sign) sign = ZODIACS.find((z) => z.key === input.sign);
+    else if (input.date) {
+      const d = new Date(input.date);
+      if (!isNaN(d.getTime())) sign = signFromDate(d.getMonth() + 1, d.getDate());
+    }
+    if (!sign) throw new BadRequestException('Chọn cung hoàng đạo hoặc nhập ngày sinh hợp lệ');
+    const today = new Date().toISOString().slice(0, 10);
+    return { sign, daily: dailyHoroscope(sign.key, today) };
+  }
+
+  zodiacList() {
+    return ZODIACS.map((z) => ({ key: z.key, nameVi: z.nameVi, nameEn: z.nameEn, symbol: z.symbol, dateRange: z.dateRange, element: z.element }));
   }
 
   async meihua(input: MeihuaInput, userId?: string) {

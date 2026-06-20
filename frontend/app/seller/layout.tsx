@@ -1,39 +1,93 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import {
+  LayoutDashboard, Store, Package, Boxes, BadgePercent, ShoppingCart, Wallet,
+  Banknote, MessagesSquare, Star, BarChart3, Megaphone, Bot, Users, ScrollText,
+  ShieldCheck, Bell, Menu, X,
+} from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { api } from '@/lib/api';
 
-// 20 nhóm Seller Center. href != null = đã có trang; null = sắp có.
-const SECTIONS: { label: string; href: string | null }[] = [
-  { label: '1. Dashboard', href: '/seller' },
-  { label: '2. Sản phẩm', href: '/store/manage' },
-  { label: '3. Kho hàng', href: '/seller/stock' },
-  { label: '4. Đơn hàng', href: '/seller/orders' },
-  { label: '5. Chat khách hàng', href: '/chat' },
-  { label: '6. Hỗ trợ / Ticket', href: '/store/manage' },
-  { label: '7. Ví & Tài chính', href: '/seller/wallet' },
-  { label: '8. Rút tiền', href: '/seller/withdraw' },
-  { label: '9. Mã giảm giá', href: '/store/manage' },
-  { label: '11. Đánh giá', href: '/seller/reviews' },
-  { label: '14. Hồ sơ gian hàng', href: '/store/manage' },
-  { label: '17. Xếp hạng Seller', href: '/seller' },
-  { label: '16. Thông báo', href: '/notifications' },
-  { label: '18. Công cụ AI', href: '/seller/ai' },
-  { label: '10. Quảng bá (gem)', href: '/seller/boost' },
-  { label: '12. Thống kê', href: '/seller/analytics' },
-  { label: '13. Nhân viên', href: '/seller/staff' },
-  { label: '20. Nhật ký', href: '/seller/activity' },
-  { label: '15. Bảo mật', href: '/seller/security' },
-  { label: '19. Nâng cao', href: null },
+interface Item { label: string; href: string; icon: any }
+const GROUPS: { title: string; items: Item[] }[] = [
+  {
+    title: 'Gian hàng',
+    items: [
+      { label: 'Tổng quan', href: '/seller', icon: LayoutDashboard },
+      { label: 'Hồ sơ gian hàng', href: '/seller/shop?tab=info', icon: Store },
+      { label: 'Sản phẩm', href: '/seller/shop?tab=products', icon: Package },
+      { label: 'Kho hàng', href: '/seller/stock', icon: Boxes },
+      { label: 'Mã giảm giá', href: '/seller/shop?tab=coupons', icon: BadgePercent },
+      { label: 'Đơn hàng', href: '/seller/orders', icon: ShoppingCart },
+      { label: 'Đơn & Thu nhập', href: '/seller/shop?tab=earnings', icon: Wallet },
+      { label: 'Hỗ trợ / Ticket', href: '/seller/shop?tab=tickets', icon: MessagesSquare },
+      { label: 'Chat khách hàng', href: '/chat', icon: MessagesSquare },
+    ],
+  },
+  {
+    title: 'Tài chính',
+    items: [
+      { label: 'Ví & Tài chính', href: '/seller/wallet', icon: Wallet },
+      { label: 'Rút tiền', href: '/seller/withdraw', icon: Banknote },
+    ],
+  },
+  {
+    title: 'Phát triển',
+    items: [
+      { label: 'Đánh giá', href: '/seller/reviews', icon: Star },
+      { label: 'Thống kê', href: '/seller/analytics', icon: BarChart3 },
+      { label: 'Quảng bá (gem)', href: '/seller/boost', icon: Megaphone },
+      { label: 'Công cụ AI', href: '/seller/ai', icon: Bot },
+      { label: 'Nhân viên', href: '/seller/staff', icon: Users },
+    ],
+  },
+  {
+    title: 'Hệ thống',
+    items: [
+      { label: 'Nhật ký', href: '/seller/activity', icon: ScrollText },
+      { label: 'Bảo mật', href: '/seller/security', icon: ShieldCheck },
+      { label: 'Thông báo', href: '/notifications', icon: Bell },
+    ],
+  },
 ];
+
+function NavList({ onNavigate }: { onNavigate?: () => void }) {
+  const path = usePathname();
+  const tab = useSearchParams().get('tab');
+  const isActive = (href: string) => {
+    const [base, query] = href.split('?');
+    if (path !== base) return false;
+    if (!query) return base !== '/seller/shop' || (!tab); // /seller/shop trống = Hồ sơ
+    const hrefTab = new URLSearchParams(query).get('tab');
+    return (tab || 'info') === hrefTab;
+  };
+  return (
+    <nav className="space-y-3">
+      {GROUPS.map((g) => (
+        <div key={g.title}>
+          <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-400">{g.title}</div>
+          <div className="space-y-0.5">
+            {g.items.map((s) => (
+              <Link key={s.label} href={s.href} onClick={onNavigate}
+                className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${isActive(s.href) ? 'bg-brand-600 text-white' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
+                <s.icon size={16} className="shrink-0" /> {s.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+}
 
 export default function SellerLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const path = usePathname();
   const [hasStore, setHasStore] = useState<boolean | null>(null);
+  const [drawer, setDrawer] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -44,35 +98,51 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
   if (!user) return <div className="card p-10 text-center text-ink-500">Đăng nhập để vào Seller Center.</div>;
   if (hasStore === null) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
 
-  // Chưa có gian hàng -> không hiện phần quản lý, mời mở gian hàng
-  if (!hasStore) {
+  // Chưa có gian hàng: cho phép vào trang tạo gian hàng (/seller/shop), còn lại mời mở gian hàng
+  if (!hasStore && path !== '/seller/shop') {
     return (
       <div className="card mx-auto max-w-lg p-8 text-center">
         <div className="text-4xl">🏪</div>
         <h1 className="mt-3 text-lg font-bold">Bạn chưa có gian hàng</h1>
         <p className="mt-1 text-sm text-ink-500">Mở gian hàng để bắt đầu bán sản phẩm và dùng các công cụ quản lý của Seller Center.</p>
-        <Link href="/store/manage" className="btn-primary mt-4 inline-block">Mở gian hàng ngay</Link>
+        <Link href="/seller/shop" className="btn-primary mt-4 inline-block">Mở gian hàng ngay</Link>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr]">
-      <aside className="card h-fit p-2">
-        <div className="px-3 py-2 text-sm font-bold text-brand-600">SELLER CENTER</div>
-        <nav className="max-h-[70vh] space-y-0.5 overflow-y-auto">
-          {SECTIONS.map((s) =>
-            s.href ? (
-              <Link key={s.label} href={s.href}
-                className={`block rounded-lg px-3 py-2 text-sm ${path === s.href ? 'bg-brand-600 text-white' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
-                {s.label}
-              </Link>
-            ) : (
-              <span key={s.label} className="block cursor-not-allowed rounded-lg px-3 py-2 text-sm text-ink-400" title="Đang phát triển">{s.label} ·</span>
-            ),
-          )}
-        </nav>
+    <div className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-5">
+      {/* Sidebar cố định (desktop) */}
+      <aside className="hidden h-fit lg:block">
+        <div className="card p-2">
+          <div className="px-3 py-2 text-sm font-bold text-brand-600">SELLER CENTER</div>
+          <div className="max-h-[80vh] overflow-y-auto">
+            <Suspense fallback={null}><NavList /></Suspense>
+          </div>
+        </div>
       </aside>
+
+      {/* Nút mở menu (mobile) */}
+      <div className="mb-3 lg:hidden">
+        <button onClick={() => setDrawer(true)} className="btn-outline inline-flex items-center gap-2 text-sm">
+          <Menu size={16} /> Menu Seller Center
+        </button>
+      </div>
+
+      {/* Drawer trượt từ trái (mobile) */}
+      {drawer && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/40 lg:hidden" onClick={() => setDrawer(false)} />
+          <div className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85%] overflow-y-auto bg-white p-2 shadow-xl dark:bg-ink-900 lg:hidden">
+            <div className="flex items-center justify-between px-3 py-2">
+              <span className="text-sm font-bold text-brand-600">SELLER CENTER</span>
+              <button onClick={() => setDrawer(false)} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={18} /></button>
+            </div>
+            <Suspense fallback={null}><NavList onNavigate={() => setDrawer(false)} /></Suspense>
+          </div>
+        </>
+      )}
+
       <div>{children}</div>
     </div>
   );

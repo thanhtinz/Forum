@@ -1065,8 +1065,15 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
           <button type="button" onClick={dismissDraft} className="rounded-md px-2 py-0.5 font-medium text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/40">Bỏ</button>
         </div>
       )}
-      {/* Thanh công cụ */}
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-ink-200/70 p-1.5 dark:border-ink-800">
+      {/* Thanh công cụ — chặn mousedown trên nút để KHÔNG mất vùng chọn trong editor
+          (mất focus sẽ khiến các lệnh theo vùng chọn như Đậm/Màu/Heading không áp dụng) */}
+      <div
+        className="flex flex-wrap items-center gap-0.5 border-b border-ink-200/70 p-1.5 dark:border-ink-800"
+        onMouseDown={(e) => {
+          const el = e.target as HTMLElement;
+          if (el.closest('button') && !el.closest('input, select, textarea')) e.preventDefault();
+        }}
+      >
         <button type="button" className={cls(editor.isActive('bold'))} title="Đậm" onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={16} /></button>
         <button type="button" className={cls(editor.isActive('italic'))} title="Nghiêng" onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={16} /></button>
         <button type="button" className={cls(editor.isActive('underline'))} title="Gạch chân" onClick={() => editor.chain().focus().toggleUnderline().run()}><Underline size={16} /></button>

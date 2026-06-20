@@ -20,11 +20,11 @@ import type { SuggestionOptions, SuggestionProps, SuggestionKeyDownProps } from 
 import {
   Bold, Italic, Underline, Strikethrough, Code, Quote, Code2,
   List, ListOrdered, ListChecks, AlignLeft, AlignCenter, AlignRight,
-  Link as LinkIcon, Unlink, Image as ImageIcon, Table as TableIcon,
+  Link as LinkIcon, Image as ImageIcon, Table as TableIcon,
   Youtube as YoutubeIcon, Minus, Undo2, Redo2, Type, Palette, Highlighter,
   Rows, Columns, Trash2, EyeOff, Sparkles, ChevronDown,
-  Eye, Maximize2, Minimize2, Paperclip,
-  Plus, Info, Music, Smile, Clock, Hash,
+  Eye, Maximize2, Minimize2,
+  Plus, Info, Music, Clock, Hash,
 } from 'lucide-react';
 import { uploadEditorImage, uploadAttachment, api } from '@/lib/api';
 import { marked } from 'marked';
@@ -59,8 +59,16 @@ interface TipTapEditorProps {
 
 const FONT_SIZES = [12, 14, 16, 18, 24, 32];
 
-const SYMBOLS = ['→','←','↑','↓','★','☆','✓','✗','♥','♠','♦','♣','©','®','™','§','¶','…','—','·','✦','❤'];
-const EMOJIS = ['😀','😁','😂','🤣','😊','😍','😎','🤔','😢','😡','👍','👎','🙏','🎉','🔥','💯','❤️','✨','😅','🥰','😭','😏'];
+const SYMBOLS = [
+  '→','←','↑','↓','↔','↕','⇒','⇐','⇔','➤','➔','»','«',
+  '★','☆','✦','✧','✓','✔','✗','✘','☑','☒','❖','✚','✜',
+  '♥','♡','♠','♣','♦','❤','❥','♬','♪','☀','☁','☂','☮','☯','✿','❀',
+  '±','×','÷','≈','≠','≤','≥','∞','√','∑','∆','∏','π','µ','°','′','″','‰',
+  '₫','$','€','£','¥','¢','₿','№',
+  '…','—','–','·','•','‣','◦','‹','›','“','”','‘','’','«','»',
+  '©','®','™','§','¶','†','‡','✱','✲','✳',
+  '■','□','▲','△','▼','▽','●','○','◆','◇','◼','◻','▪','▫','➊','➋','➌','➍','➎',
+];
 
 // Coi nội dung là rỗng nếu trống hoặc chỉ là đoạn rỗng
 function isEmptyHtml(html: string): boolean {
@@ -618,23 +626,20 @@ const MentionTag = makeMentionExtension({
 });
 
 export default function TipTapEditor({ value, onChange, placeholder, autosaveKey }: TipTapEditorProps) {
-  const fileRef = useRef<HTMLInputElement>(null);
+  const mediaRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<any>(null);
-  const attachRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiErr, setAiErr] = useState('');
   const aiRef = useRef<HTMLDivElement>(null);
 
-  // Menu "Chèn" + popover ký hiệu/emoji
+  // Menu "Chèn" + popover ký hiệu
   const [insertOpen, setInsertOpen] = useState(false);
   const [calloutOpen, setCalloutOpen] = useState(false);
   const [symbolOpen, setSymbolOpen] = useState(false);
-  const [emojiOpen, setEmojiOpen] = useState(false);
   const insertRef = useRef<HTMLDivElement>(null);
   const symbolRef = useRef<HTMLDivElement>(null);
-  const emojiRef = useRef<HTMLDivElement>(null);
 
   // XenForo-style UX
   const [preview, setPreview] = useState(false);
@@ -655,7 +660,6 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
         setCalloutOpen(false);
       }
       if (symbolRef.current && !symbolRef.current.contains(t)) setSymbolOpen(false);
-      if (emojiRef.current && !emojiRef.current.contains(t)) setEmojiOpen(false);
     }
     document.addEventListener('mousedown', onDocClick);
     return () => document.removeEventListener('mousedown', onDocClick);
@@ -824,23 +828,19 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
     }
   }
 
-  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (file) await uploadAndInsert(file);
-  }
-
-  async function onPickAttachment(e: React.ChangeEvent<HTMLInputElement>) {
+  // Media gộp: ảnh -> chèn ảnh; tệp khác -> chèn liên kết tải về
+  async function onPickMedia(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file || !editor) return;
+    if (file.type.startsWith('image/')) { await uploadAndInsert(file); return; }
     setUploading(true);
     try {
       const r = await uploadAttachment(file);
       const sizeKb = Math.max(1, Math.round(r.size / 1024));
       const label = `${r.filename} (${sizeKb} KB)`;
       editor.chain().focus().insertContent(
-        `<p><a href="${r.url}" class="attachment" target="_blank" rel="noopener noreferrer">📎 ${label}</a></p>`.replace('📎 ', ''),
+        `<p><a href="${r.url}" class="attachment" target="_blank" rel="noopener noreferrer">${label}</a></p>`,
       ).run();
     } catch (err: any) {
       window.alert('Tải tệp thất bại: ' + (err?.message || 'lỗi không xác định'));
@@ -1136,11 +1136,9 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
 
         <Divider />
 
-        <button type="button" className={cls(editor.isActive('link'))} title="Liên kết" onClick={setLink}><LinkIcon size={16} /></button>
-        <button type="button" className={btn} title="Gỡ liên kết" onClick={() => editor.chain().focus().unsetLink().run()}><Unlink size={16} /></button>
-        <button type="button" className={btn} title="Chèn ảnh" disabled={uploading} onClick={() => fileRef.current?.click()}><ImageIcon size={16} /></button>
-        <button type="button" className={btn} title="Đính kèm tệp" disabled={uploading} onClick={() => attachRef.current?.click()}><Paperclip size={16} /></button>
-        <button type="button" className={btn} title="Nhúng video (YouTube / TikTok)" onClick={insertVideo}><YoutubeIcon size={16} /></button>
+        <button type="button" className={cls(editor.isActive('link'))} title="Liên kết (để trống ô link để gỡ)" onClick={setLink}><LinkIcon size={16} /></button>
+        <button type="button" className={btn} title="Chèn media (ảnh / tệp)" disabled={uploading} onClick={() => mediaRef.current?.click()}><ImageIcon size={16} /></button>
+        <button type="button" className={btn} title="Nhúng video (YouTube / TikTok / Vimeo / Bilibili)" onClick={insertVideo}><YoutubeIcon size={16} /></button>
         <button type="button" className={btn} title="Chèn bảng 3x3" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon size={16} /></button>
         <button type="button" className={btn} title="Spoiler (nội dung ẩn)" onClick={insertSpoiler}><EyeOff size={16} /></button>
 
@@ -1196,44 +1194,18 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
             type="button"
             className={`${btn} ${symbolOpen ? active : ''}`}
             title="Ký hiệu đặc biệt"
-            onClick={() => { setSymbolOpen((o) => !o); setEmojiOpen(false); }}
+            onClick={() => setSymbolOpen((o) => !o)}
           >
             <Hash size={16} />
           </button>
           {symbolOpen && (
-            <div className="absolute left-0 top-full z-20 mt-1 grid w-56 grid-cols-6 gap-0.5 rounded-md border border-ink-200 bg-white p-1.5 shadow-lg dark:border-ink-700 dark:bg-ink-800">
-              {SYMBOLS.map((s) => (
+            <div className="absolute left-0 top-full z-20 mt-1 grid max-h-64 w-60 grid-cols-7 gap-0.5 overflow-y-auto rounded-md border border-ink-200 bg-white p-1.5 shadow-lg dark:border-ink-700 dark:bg-ink-800">
+              {SYMBOLS.map((s, i) => (
                 <button
-                  key={s}
+                  key={`${s}-${i}`}
                   type="button"
                   className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-700"
                   onClick={() => { editor.chain().focus().insertContent(s).run(); setSymbolOpen(false); }}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Emoji */}
-        <div className="relative" ref={emojiRef}>
-          <button
-            type="button"
-            className={`${btn} ${emojiOpen ? active : ''}`}
-            title="Emoji"
-            onClick={() => { setEmojiOpen((o) => !o); setSymbolOpen(false); }}
-          >
-            <Smile size={16} />
-          </button>
-          {emojiOpen && (
-            <div className="absolute left-0 top-full z-20 mt-1 grid w-56 grid-cols-6 gap-0.5 rounded-md border border-ink-200 bg-white p-1.5 shadow-lg dark:border-ink-700 dark:bg-ink-800">
-              {EMOJIS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-700"
-                  onClick={() => { editor.chain().focus().insertContent(s).run(); setEmojiOpen(false); }}
                 >
                   {s}
                 </button>
@@ -1317,8 +1289,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
         {editor.storage.characterCount.characters()} ký tự
       </div>
 
-      <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
-      <input ref={attachRef} type="file" hidden onChange={onPickAttachment} />
+      <input ref={mediaRef} type="file" hidden onChange={onPickMedia} />
       </div>
     </div>
   );

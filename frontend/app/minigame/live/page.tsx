@@ -51,8 +51,8 @@ function HistoryCell({ game, result, roundId, latest }: { game: Game; result: an
     label = RACE_NAMES[result?.winner] || '';
   }
   return (
-    <div className={`relative flex flex-col items-center gap-0.5 rounded-xl px-2 pb-1 pt-2 ${latest ? 'bg-brand-50 ring-2 ring-brand-400 dark:bg-ink-800' : ''}`}>
-      {latest && <span className="absolute -top-2 rounded-full bg-brand-600 px-1.5 py-px text-[9px] font-bold text-white shadow">MỚI</span>}
+    <div className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 ${latest ? 'bg-brand-50 ring-2 ring-brand-400 dark:bg-ink-800' : ''}`}>
+      <span className={`rounded-full px-1.5 text-[9px] font-bold leading-4 ${latest ? 'bg-brand-600 text-white' : 'invisible'}`}>MỚI</span>
       {badge}
       <span className="max-w-[68px] truncate text-[10px] font-medium text-ink-600 dark:text-ink-300">{label}</span>
       <span className="text-[9px] text-ink-400">#{roundId}</span>

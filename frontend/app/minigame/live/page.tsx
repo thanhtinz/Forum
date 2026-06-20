@@ -31,31 +31,31 @@ interface LiveState {
   history?: { roundId: number; result: any }[];
 }
 
-// 1 ô kết quả lịch sử — gọn gàng, có nhãn
-function HistoryCell({ game, result }: { game: Game; result: any }) {
+// 1 ô kết quả lịch sử — có nhãn, số phiên, đánh dấu mới nhất
+function HistoryCell({ game, result, roundId, latest }: { game: Game; result: any; roundId: number; latest?: boolean }) {
+  let badge: React.ReactNode, label = '';
   if (game === 'tai-xiu') {
     const o = result?.outcome;
     const cls = o === 'tai' ? 'bg-rose-500' : o === 'xiu' ? 'bg-sky-500' : 'bg-ink-500';
-    return (
-      <div className="flex flex-col items-center gap-0.5">
-        <span className={`grid h-9 w-9 place-items-center rounded-full text-sm font-bold text-white ${cls}`}>{result?.total ?? '?'}</span>
-        <span className="text-[10px] font-medium text-ink-500">{o === 'tai' ? 'TÀI' : o === 'xiu' ? 'XỈU' : 'Bộ ba'}</span>
-      </div>
+    badge = <span className={`grid h-9 w-9 place-items-center rounded-full text-sm font-bold text-white ${cls}`}>{result?.total ?? '?'}</span>;
+    label = o === 'tai' ? 'TÀI' : o === 'xiu' ? 'XỈU' : 'Bộ ba';
+  } else if (game === 'bau-cua') {
+    badge = (
+      <span className="flex gap-0.5 rounded-lg border border-ink-200 bg-white p-1 dark:border-ink-700 dark:bg-ink-800">
+        {(result?.dice || []).map((d: string, i: number) => <img key={i} src={`/game-assets/baucua/${d}.png`} alt={d} className="h-6 w-6 object-contain" />)}
+      </span>
     );
-  }
-  if (game === 'bau-cua') {
-    return (
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="flex gap-0.5 rounded-lg border border-ink-200 bg-white p-1 dark:border-ink-700 dark:bg-ink-800">
-          {(result?.dice || []).map((d: string, i: number) => <img key={i} src={`/game-assets/baucua/${d}.png`} alt={d} className="h-6 w-6 object-contain" />)}
-        </span>
-      </div>
-    );
+    label = (result?.dice || []).map((d: string) => BAUCUA.find(([s]) => s === d)?.[1] || d).join(' ');
+  } else {
+    badge = <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-500 text-sm font-bold text-white">{result?.winner}</span>;
+    label = RACE_NAMES[result?.winner] || '';
   }
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-500 text-sm font-bold text-white">#{result?.winner}</span>
-      <span className="max-w-[64px] truncate text-[10px] font-medium text-ink-500">{RACE_NAMES[result?.winner]}</span>
+    <div className={`relative flex flex-col items-center gap-0.5 rounded-xl px-2 pb-1 pt-2 ${latest ? 'bg-brand-50 ring-2 ring-brand-400 dark:bg-ink-800' : ''}`}>
+      {latest && <span className="absolute -top-2 rounded-full bg-brand-600 px-1.5 py-px text-[9px] font-bold text-white shadow">MỚI</span>}
+      {badge}
+      <span className="max-w-[68px] truncate text-[10px] font-medium text-ink-600 dark:text-ink-300">{label}</span>
+      <span className="text-[9px] text-ink-400">#{roundId}</span>
     </div>
   );
 }
@@ -179,14 +179,18 @@ function LiveRoom() {
       {/* Lịch sử phiên trước */}
       {st?.history && st.history.length > 0 && (
         <div className="card p-3">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="flex items-center gap-1 text-sm font-semibold text-ink-600 dark:text-ink-300"><History size={14} /> Lịch sử phiên</h2>
             <HistorySummary game={game} history={st.history} />
           </div>
-          <div className="flex gap-3 overflow-x-auto rounded-xl bg-ink-50 p-2.5 dark:bg-ink-800/40">
-            {st.history.map((h) => (
-              <div key={h.roundId} className="shrink-0"><HistoryCell game={game} result={h.result} /></div>
-            ))}
+          <div className="flex items-stretch gap-1.5 rounded-xl bg-ink-50 p-2 dark:bg-ink-800/40">
+            <span className="flex shrink-0 items-center text-[10px] font-semibold text-brand-500">◄ Mới</span>
+            <div className="flex flex-1 gap-2 overflow-x-auto">
+              {st.history.map((h, i) => (
+                <div key={h.roundId} className="shrink-0"><HistoryCell game={game} result={h.result} roundId={h.roundId} latest={i === 0} /></div>
+              ))}
+            </div>
+            <span className="flex shrink-0 items-center text-[10px] text-ink-400">Cũ ►</span>
           </div>
         </div>
       )}

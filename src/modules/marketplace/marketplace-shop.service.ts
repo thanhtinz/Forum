@@ -41,16 +41,23 @@ export class MarketplaceShopService {
   // ──────────────────────────────────────────────
   // SẢN PHẨM
   // ──────────────────────────────────────────────
-  async browseProducts(categorySlug?: string, q?: string, page = 1, limit = 20) {
+  async browseProducts(categorySlug?: string, q?: string, page = 1, limit = 20, sort = 'popular', type?: string) {
     const where: Prisma.ProductWhereInput = {
       status: 'ACTIVE',
       ...(categorySlug ? { category: { slug: categorySlug } } : {}),
+      ...(type ? { type: type as any } : {}),
       ...(q ? { title: { contains: q, mode: 'insensitive' } } : {}),
     };
+    const orderBy: Prisma.ProductOrderByWithRelationInput =
+      sort === 'new' ? { createdAt: 'desc' }
+      : sort === 'rating' ? { ratingAvg: 'desc' }
+      : sort === 'price_asc' ? { gemPrice: 'asc' }
+      : sort === 'price_desc' ? { gemPrice: 'desc' }
+      : { salesCount: 'desc' };
     const skip = (page - 1) * limit;
     const [data, total] = await Promise.all([
-      this.prisma.product.findMany({ where, skip, take: limit, orderBy: { salesCount: 'desc' },
-        select: { id: true, title: true, slug: true, gemPrice: true, isFree: true, thumbnailUrl: true, salesCount: true, ratingAvg: true } }),
+      this.prisma.product.findMany({ where, skip, take: limit, orderBy,
+        select: { id: true, title: true, slug: true, gemPrice: true, isFree: true, thumbnailUrl: true, salesCount: true, ratingAvg: true, type: true } }),
       this.prisma.product.count({ where }),
     ]);
     return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };

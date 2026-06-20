@@ -105,36 +105,83 @@ function Bazi({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
   );
 }
 
+const TAROT_SPREADS: Record<number, { name: string; desc: string; positions: string[] }> = {
+  1: { name: 'Một lá', desc: 'Thông điệp nhanh cho hôm nay hoặc một câu hỏi.', positions: ['Thông điệp'] },
+  3: { name: 'Ba lá', desc: 'Dòng chảy thời gian của vấn đề.', positions: ['Quá khứ', 'Hiện tại', 'Tương lai'] },
+  5: { name: 'Năm lá', desc: 'Phân tích sâu một tình huống.', positions: ['Tình huống', 'Thử thách', 'Lời khuyên', 'Nền tảng', 'Kết quả'] },
+};
+
 function Tarot({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
   const [n, setN] = useState(3);
   const [q, setQ] = useState('');
   const [r, setR] = useState<any>(null);
   const [err, setErr] = useState('');
-  async function go() { setErr(''); try { setR(await api.post('/fortune/tarot', { n, question: q })); } catch (e: any) { setErr(e.message); } }
+  const [loading, setLoading] = useState(false);
+  async function go() { setErr(''); setLoading(true); try { setR(await api.post('/fortune/tarot', { n, question: q })); } catch (e: any) { setErr(e.message); } finally { setLoading(false); } }
+
+  const spread = TAROT_SPREADS[n] || TAROT_SPREADS[3];
 
   return (
     <div className="space-y-4">
-      <div className="card flex flex-wrap items-end gap-3 p-4">
-        <label className="text-xs">Số lá<select className="input mt-1 w-24" value={n} onChange={(e) => setN(Number(e.target.value))}>
-          {[1, 3, 5].map((x) => <option key={x} value={x}>{x}</option>)}</select></label>
-        <label className="flex-1 text-xs">Câu hỏi (tuỳ chọn)<input className="input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="VD: Tình duyên sắp tới?" /></label>
-        <button onClick={go} className="btn-primary">Bốc bài</button>
+      <div className="card space-y-3 p-4">
+        <div>
+          <p className="mb-1.5 text-sm font-medium">Chọn trải bài</p>
+          <div className="grid grid-cols-3 gap-2">
+            {[1, 3, 5].map((x) => (
+              <button key={x} onClick={() => setN(x)}
+                className={`rounded-xl border-2 p-2 text-center transition ${n === x ? 'border-brand-600 bg-brand-50 dark:bg-ink-800' : 'border-transparent bg-ink-100 dark:bg-ink-800'}`}>
+                <div className="text-lg font-bold">{x}</div>
+                <div className="text-[11px] text-ink-500">{TAROT_SPREADS[x].name}</div>
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-ink-400">{spread.desc} · Vị trí: {spread.positions.join(' · ')}</p>
+        </div>
+        <label className="block text-sm">Câu hỏi (tuỳ chọn)
+          <input className="input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="VD: Tình duyên sắp tới của mình thế nào?" />
+        </label>
+        <button onClick={go} disabled={loading} className="btn-primary w-full">{loading ? 'Đang bốc bài…' : '🔮 Bốc bài'}</button>
       </div>
       {err && <p className="text-sm text-red-500">{err}</p>}
       {r && (
-        <div className="card p-5">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {r.cards.map((c: any, i: number) => (
-              <div key={i} className="text-center">
-                <div className="mx-auto overflow-hidden rounded-xl border border-ink-200/70 dark:border-ink-800" style={{ maxWidth: 140 }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={c.image} alt={c.nameVi} className={`w-full object-cover ${c.reversedOrientation ? 'rotate-180' : ''}`} />
+        <div className="card space-y-4 p-5">
+          <div className="text-center">
+            <h3 className="text-lg font-bold">Trải bài {(TAROT_SPREADS[r.cards.length] || spread).name}</h3>
+            {r.question && <p className="text-sm text-ink-500">“{r.question}”</p>}
+          </div>
+          <div className={`grid gap-4 ${r.cards.length === 1 ? 'grid-cols-1 sm:max-w-xs sm:mx-auto' : r.cards.length === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2 sm:grid-cols-5'}`}>
+            {r.cards.map((c: any, i: number) => {
+              const pos = (TAROT_SPREADS[r.cards.length]?.positions || [])[i];
+              const rev = c.reversedOrientation;
+              return (
+                <div key={i} className="flex flex-col items-center text-center">
+                  {pos && <div className="mb-1 rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">{pos}</div>}
+                  <div className="overflow-hidden rounded-xl border border-ink-200/70 shadow-sm dark:border-ink-800">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={c.image} alt={c.nameVi} className={`w-full object-cover transition ${rev ? 'rotate-180' : ''}`} />
+                  </div>
+                  <div className="mt-2 font-semibold leading-tight">{c.nameVi}</div>
+                  <div className="text-[11px] text-ink-400">{c.name}</div>
+                  <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${rev ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>
+                    {rev ? '⟳ Ngược' : '↑ Xuôi'}
+                  </span>
+                  <div className="mt-1.5 flex flex-wrap justify-center gap-1">
+                    {c.meaning.map((m: string, k: number) => (
+                      <span key={k} className="rounded-md bg-ink-100 px-1.5 py-0.5 text-[11px] text-ink-600 dark:bg-ink-800 dark:text-ink-300">{m}</span>
+                    ))}
+                  </div>
                 </div>
-                <div className="mt-2 font-semibold">{c.nameVi}</div>
-                <div className="text-xs text-ink-500">{c.name} · {c.reversedOrientation ? 'Ngược' : 'Xuôi'}</div>
-                <div className="mt-1 text-sm text-brand-600">{c.meaning.join(', ')}</div>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+          <div className="rounded-xl bg-ink-50 p-3 text-sm dark:bg-ink-800/50">
+            <p className="font-medium">Tóm tắt nhanh</p>
+            <p className="mt-0.5 text-ink-600 dark:text-ink-300">
+              {r.cards.map((c: any, i: number) => {
+                const pos = (TAROT_SPREADS[r.cards.length]?.positions || [])[i];
+                return `${pos ? pos + ': ' : ''}${c.nameVi} (${c.reversedOrientation ? 'ngược' : 'xuôi'}) — ${c.meaning[0]}`;
+              }).join('. ')}.
+            </p>
           </div>
           <AiAnalyze type="TAROT" result={r} question={q} enabled={ai} price={aiPrice} />
         </div>

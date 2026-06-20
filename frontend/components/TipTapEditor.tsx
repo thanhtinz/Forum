@@ -1042,7 +1042,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
   const currentFontSize = (editor.getAttributes('textStyle').fontSize as string | undefined) || '';
 
   return (
-    <div className={fullscreen ? 'fixed inset-0 z-50 overflow-auto bg-white p-4 dark:bg-ink-950' : 'card overflow-hidden'}>
+    <div className={fullscreen ? 'fixed inset-0 z-50 overflow-auto bg-white p-4 dark:bg-ink-950' : 'card'}>
       <div className={fullscreen ? 'card mx-auto flex max-w-4xl flex-col overflow-hidden' : ''}>
       {/* Banner khôi phục bản nháp */}
       {showRecovery && (

@@ -198,7 +198,7 @@ function LiveRoom() {
 
       {/* Đặt cược */}
       <div className="card space-y-3 p-4">
-        <label className="block text-sm">Tiền cược<input type="number" min={100} className="input mt-1 w-40" value={bet} onChange={(e) => setBet(Number(e.target.value))} /></label>
+        <label className="block text-sm">Tiền cược<input type="number" min={100} max={5000} className="input mt-1 w-40" value={bet} onChange={(e) => setBet(Math.min(5000, Number(e.target.value)))} /></label>
         <div className={`grid gap-2 ${game === 'tai-xiu' ? 'grid-cols-2' : game === 'bau-cua' ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-4'}`}>
           {opts.map(([s, l]) => (
             <button key={s} onClick={() => setChoice(s)}

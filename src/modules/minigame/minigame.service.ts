@@ -31,7 +31,8 @@ export class MinigameService {
     const config = await this.prisma.minigameConfig.findUnique({ where: { type } });
     if (!config || !config.isActive) throw new NotFoundException('Game không khả dụng');
     if (betCoin < config.minBet) throw new BadRequestException(`Cược tối thiểu ${config.minBet} coin`);
-    if (betCoin > config.maxBet) throw new BadRequestException(`Cược tối đa ${config.maxBet} coin`);
+    const maxBet = Math.min(config.maxBet, 5000); // giới hạn cứng 5000 coin/ván
+    if (betCoin > maxBet) throw new BadRequestException(`Cược tối đa ${maxBet} coin`);
 
     const char = await this.prisma.gameCharacter.findUnique({ where: { userId } });
     if (!char) throw new NotFoundException('Chưa có nhân vật');

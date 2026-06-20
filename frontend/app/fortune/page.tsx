@@ -1,26 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Sparkles, Moon, Hash, Coins, Bot } from 'lucide-react';
+import { Sparkles, Moon, Coins, Bot, Star } from 'lucide-react';
 import { api } from '@/lib/api';
 
-type Tab = 'bazi' | 'tarot' | 'meihua';
+type Tab = 'tarot' | 'zodiac';
 interface Cfg { priceBazi: number; priceTarot: number; priceMeihua: number; aiEnabled: boolean; aiPrice: number; }
 
 export default function FortunePage() {
-  const [tab, setTab] = useState<Tab>('bazi');
+  const [tab, setTab] = useState<Tab>('tarot');
   const [cfg, setCfg] = useState<Cfg | null>(null);
   useEffect(() => { api.get<Cfg>('/fortune/config').then(setCfg).catch(() => {}); }, []);
 
   return (
     <div className="space-y-5">
       <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-violet-700 via-purple-700 to-fuchsia-700 p-6 text-white shadow-card">
-        <h1 className="flex items-center gap-2 text-2xl font-bold"><Sparkles /> Bói toán & Tử vi</h1>
-        <p className="text-white/85">Bát Tự · Tarot · Mai Hoa Dịch Số {cfg?.aiEnabled && '· có luận giải AI'}</p>
+        <h1 className="flex items-center gap-2 text-2xl font-bold"><Sparkles /> Tarot & Cung Hoàng Đạo</h1>
+        <p className="text-white/85">Bốc bài Tarot theo chủ đề · Tử vi 12 cung hoàng đạo {cfg?.aiEnabled && '· có luận giải AI'}</p>
       </header>
 
       <div className="flex gap-2">
-        {([['bazi', 'Bát Tự', Hash, cfg?.priceBazi], ['tarot', 'Tarot', Moon, cfg?.priceTarot], ['meihua', 'Mai Hoa', Sparkles, cfg?.priceMeihua]] as const).map(([id, label, Icon, price]) => (
+        {([['tarot', 'Tarot', Moon, cfg?.priceTarot], ['zodiac', 'Cung hoàng đạo', Star, 0]] as const).map(([id, label, Icon, price]) => (
           <button key={id} onClick={() => setTab(id)}
             className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium ${tab === id ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>
             <Icon size={16} /> {label}{price ? <span className="ml-1 flex items-center gap-0.5 text-xs opacity-80"><Coins size={11} />{price}</span> : null}
@@ -28,9 +28,8 @@ export default function FortunePage() {
         ))}
       </div>
 
-      {tab === 'bazi' && <Bazi ai={cfg?.aiEnabled} aiPrice={cfg?.aiPrice} />}
       {tab === 'tarot' && <Tarot ai={cfg?.aiEnabled} aiPrice={cfg?.aiPrice} />}
-      {tab === 'meihua' && <Meihua ai={cfg?.aiEnabled} aiPrice={cfg?.aiPrice} />}
+      {tab === 'zodiac' && <Zodiac ai={cfg?.aiEnabled} aiPrice={cfg?.aiPrice} />}
     </div>
   );
 }
@@ -59,51 +58,10 @@ function AiAnalyze({ type, result, question, enabled, price }: { type: string; r
   );
 }
 
-function Bazi({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
-  const [f, setF] = useState({ year: 1995, month: 8, day: 15, hour: 10, minute: 0 });
-  const [r, setR] = useState<any>(null);
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-  const num = (k: keyof typeof f) => (e: any) => setF({ ...f, [k]: Number(e.target.value) });
-  async function go() { setBusy(true); setErr(''); try { setR(await api.post('/fortune/bazi', f)); } catch (e: any) { setErr(e.message); } setBusy(false); }
-
-  return (
-    <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
-      <div className="card space-y-3 p-4">
-        <h2 className="font-semibold">Ngày giờ sinh (dương lịch)</h2>
-        <div className="grid grid-cols-3 gap-2">
-          <label className="text-xs">Năm<input className="input mt-1" type="number" value={f.year} onChange={num('year')} /></label>
-          <label className="text-xs">Tháng<input className="input mt-1" type="number" value={f.month} onChange={num('month')} /></label>
-          <label className="text-xs">Ngày<input className="input mt-1" type="number" value={f.day} onChange={num('day')} /></label>
-          <label className="text-xs">Giờ<input className="input mt-1" type="number" value={f.hour} onChange={num('hour')} /></label>
-          <label className="text-xs">Phút<input className="input mt-1" type="number" value={f.minute} onChange={num('minute')} /></label>
-        </div>
-        <button onClick={go} disabled={busy} className="btn-primary w-full">{busy ? '…' : 'Lập lá số'}</button>
-        {err && <p className="text-sm text-red-500">{err}</p>}
-      </div>
-      {r && (
-        <div className="card p-5">
-          <p className="text-sm text-ink-500">{r.lunarDate} · Con giáp: {r.zodiac}</p>
-          <div className="mt-3 grid grid-cols-4 gap-2 text-center">
-            {(['year', 'month', 'day', 'hour'] as const).map((k) => (
-              <div key={k} className="rounded-xl border border-ink-200/70 p-3 dark:border-ink-800">
-                <div className="text-xs text-ink-500">{({ year: 'Năm', month: 'Tháng', day: 'Ngày', hour: 'Giờ' })[k]}</div>
-                <div className="mt-1 text-lg font-bold">{r.pillars[k].ganZhi}</div>
-                <div className="text-xs">{r.pillars[k].canChi}</div>
-                <div className="mt-1 text-[11px] text-brand-600">{r.pillars[k].wuxing.join(' · ')}</div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 rounded-lg bg-ink-50 p-3 text-sm dark:bg-ink-900">
-            <b>Ngũ hành:</b> {Object.entries(r.wuxingCount).map(([k, v]) => `${k} ${v}`).join(' · ')}
-            <p className="mt-2 text-ink-600 dark:text-ink-300">{r.summary}</p>
-          </div>
-          <AiAnalyze type="BAZI" result={r} enabled={ai} price={aiPrice} />
-        </div>
-      )}
-    </div>
-  );
-}
+const TAROT_TOPICS: [string, string][] = [
+  ['general', '🔮 Tổng quát'], ['love', '❤️ Tình duyên'], ['career', '💼 Sự nghiệp'],
+  ['money', '💰 Tài chính'], ['health', '🌿 Sức khỏe'], ['study', '📚 Học tập'], ['decision', '⚖️ Quyết định'],
+];
 
 const TAROT_SPREADS: Record<number, { name: string; desc: string; positions: string[] }> = {
   1: { name: 'Một lá', desc: 'Thông điệp nhanh cho hôm nay hoặc một câu hỏi.', positions: ['Thông điệp'] },
@@ -113,17 +71,34 @@ const TAROT_SPREADS: Record<number, { name: string; desc: string; positions: str
 
 function Tarot({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
   const [n, setN] = useState(3);
+  const [topic, setTopic] = useState('general');
   const [q, setQ] = useState('');
   const [r, setR] = useState<any>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
-  async function go() { setErr(''); setLoading(true); try { setR(await api.post('/fortune/tarot', { n, question: q })); } catch (e: any) { setErr(e.message); } finally { setLoading(false); } }
+  async function go() {
+    setErr(''); setLoading(true);
+    const topicLabel = TAROT_TOPICS.find(([k]) => k === topic)?.[1]?.replace(/^\S+\s/, '') || '';
+    const question = q.trim() || topicLabel; // nếu không nhập câu hỏi, lấy chủ đề làm bối cảnh
+    try { setR(await api.post('/fortune/tarot', { n, question, topic })); } catch (e: any) { setErr(e.message); } finally { setLoading(false); }
+  }
 
   const spread = TAROT_SPREADS[n] || TAROT_SPREADS[3];
 
   return (
     <div className="space-y-4">
       <div className="card space-y-3 p-4">
+        <div>
+          <p className="mb-1.5 text-sm font-medium">Chọn chủ đề</p>
+          <div className="flex flex-wrap gap-1.5">
+            {TAROT_TOPICS.map(([k, label]) => (
+              <button key={k} onClick={() => setTopic(k)}
+                className={`rounded-full px-3 py-1.5 text-sm font-medium ${topic === k ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div>
           <p className="mb-1.5 text-sm font-medium">Chọn trải bài</p>
           <div className="grid grid-cols-3 gap-2">
@@ -196,38 +171,88 @@ function Tarot({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
   );
 }
 
-function Meihua({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
-  const [f, setF] = useState({ num1: '', num2: '', question: '' });
+function Stars({ n }: { n: number }) {
+  return <span className="text-amber-400">{'★'.repeat(n)}<span className="text-ink-300 dark:text-ink-600">{'★'.repeat(5 - n)}</span></span>;
+}
+
+function Zodiac({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
+  const [list, setList] = useState<any[]>([]);
+  const [date, setDate] = useState('');
   const [r, setR] = useState<any>(null);
   const [err, setErr] = useState('');
-  async function go() {
-    setErr('');
-    try { setR(await api.post('/fortune/meihua', { num1: f.num1 ? Number(f.num1) : undefined, num2: f.num2 ? Number(f.num2) : undefined, question: f.question })); }
-    catch (e: any) { setErr(e.message); }
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { api.get<any[]>('/fortune/zodiac/list').then(setList).catch(() => {}); }, []);
+
+  async function load(params: string) {
+    setErr(''); setBusy(true);
+    try { setR(await api.get<any>(`/fortune/zodiac?${params}`)); } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   }
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+    <div className="space-y-4">
       <div className="card space-y-3 p-4">
-        <h2 className="font-semibold">Gieo quẻ</h2>
-        <p className="text-xs text-ink-500">Nhập 2 số bất kỳ (để trống = dùng thời điểm hiện tại).</p>
-        <div className="grid grid-cols-2 gap-2">
-          <input className="input" type="number" placeholder="Số 1" value={f.num1} onChange={(e) => setF({ ...f, num1: e.target.value })} />
-          <input className="input" type="number" placeholder="Số 2" value={f.num2} onChange={(e) => setF({ ...f, num2: e.target.value })} />
+        <p className="text-sm font-medium">Chọn cung của bạn</p>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+          {list.map((z) => (
+            <button key={z.key} onClick={() => load(`sign=${z.key}`)}
+              className={`flex flex-col items-center rounded-xl border-2 p-2 transition ${r?.sign?.key === z.key ? 'border-brand-600 bg-brand-50 dark:bg-ink-800' : 'border-transparent bg-ink-100 hover:border-brand-300 dark:bg-ink-800'}`}>
+              <span className="text-2xl">{z.symbol}</span>
+              <span className="text-xs font-semibold">{z.nameVi}</span>
+              <span className="text-[10px] text-ink-400">{z.dateRange}</span>
+            </button>
+          ))}
         </div>
-        <input className="input" placeholder="Câu hỏi (tuỳ chọn)" value={f.question} onChange={(e) => setF({ ...f, question: e.target.value })} />
-        <button onClick={go} className="btn-primary w-full">Lập quẻ</button>
+        <div className="flex flex-wrap items-end gap-2 border-t border-ink-100 pt-3 dark:border-ink-800">
+          <label className="text-sm">Hoặc nhập ngày sinh<input type="date" className="input mt-1" value={date} onChange={(e) => setDate(e.target.value)} /></label>
+          <button onClick={() => date && load(`date=${date}`)} disabled={busy} className="btn-outline">Xem theo ngày sinh</button>
+        </div>
         {err && <p className="text-sm text-red-500">{err}</p>}
       </div>
+
       {r && (
-        <div className="card p-5 text-center">
-          <div className="whitespace-pre text-4xl leading-tight">{r.hexagram.symbol}</div>
-          <div className="mt-2 text-lg font-bold">{r.hexagram.name}</div>
-          <div className="text-sm text-ink-500">Hào động: {r.movingLine}</div>
-          <div className="mt-3 inline-block rounded-full bg-brand-100 px-4 py-1 font-semibold text-brand-700">{r.verdict}</div>
-          <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{r.analysis}</p>
-          <div className="text-left"><AiAnalyze type="MEIHUA" result={r} question={f.question} enabled={ai} price={aiPrice} /></div>
+        <div className="space-y-4">
+          {/* Hồ sơ cung */}
+          <div className="card p-5">
+            <div className="flex items-center gap-3">
+              <span className="text-5xl">{r.sign.symbol}</span>
+              <div>
+                <h3 className="text-xl font-bold">{r.sign.nameVi} <span className="text-sm font-normal text-ink-400">({r.sign.nameEn})</span></h3>
+                <p className="text-sm text-ink-500">{r.sign.dateRange} · {r.sign.element} · {r.sign.planet}</p>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{r.sign.overview}</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <Info label="Tính cách" value={r.sign.traits.join(', ')} />
+              <Info label="Hợp với" value={r.sign.compatible.join(', ')} />
+              <Info label="Điểm mạnh" value={r.sign.strengths.join(', ')} />
+              <Info label="Điểm yếu" value={r.sign.weaknesses.join(', ')} />
+              <Info label="Màu may mắn" value={r.sign.luckyColor} />
+              <Info label="Ngày may mắn" value={r.sign.luckyDay} />
+            </div>
+          </div>
+
+          {/* Tử vi hôm nay */}
+          <div className="card p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-semibold">Tử vi hôm nay</h3>
+              <span className="text-xs text-ink-400">{r.daily.date} · Tâm trạng: <b>{r.daily.mood}</b> · Số may mắn: <b className="text-brand-600">{r.daily.luckyNumber}</b></span>
+            </div>
+            <div className="space-y-2.5">
+              {([['❤️ Tình duyên', r.daily.love], ['💼 Sự nghiệp', r.daily.career], ['💰 Tài chính', r.daily.money], ['🌿 Sức khỏe', r.daily.health]] as const).map(([label, a]) => (
+                <div key={label} className="rounded-lg bg-ink-50 p-2.5 dark:bg-ink-800/50">
+                  <div className="flex items-center justify-between text-sm font-medium"><span>{label}</span><Stars n={a.star} /></div>
+                  <p className="mt-0.5 text-sm text-ink-600 dark:text-ink-300">{a.text}</p>
+                </div>
+              ))}
+            </div>
+            <AiAnalyze type="ZODIAC" result={r} question={`Tử vi cung ${r.sign.nameVi}`} enabled={ai} price={aiPrice} />
+          </div>
         </div>
       )}
     </div>
   );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return <div className="rounded-lg bg-ink-50 px-3 py-1.5 text-sm dark:bg-ink-800/50"><span className="text-ink-500">{label}: </span><span className="font-medium">{value}</span></div>;
 }

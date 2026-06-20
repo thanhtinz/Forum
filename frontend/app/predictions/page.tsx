@@ -98,7 +98,7 @@ export default function PredictionsPage() {
         <div className="flex flex-wrap gap-2">
           <Link href="/predictions/parlay" className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-4 py-2 text-sm font-medium hover:bg-white/25"><Layers size={16} /> Xiên</Link>
           {user && <Link href="/predictions/mine" className="inline-flex items-center gap-1 rounded-lg bg-white/15 px-4 py-2 text-sm font-medium hover:bg-white/25"><Users size={16} /> Của tôi</Link>}
-          {user && <Link href="/predictions/new" className="inline-flex items-center gap-1 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-white/90"><Plus size={16} /> Tạo kèo</Link>}
+          {user?.role === 'ADMIN' && <Link href="/predictions/new" className="inline-flex items-center gap-1 rounded-lg bg-white px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-white/90"><Plus size={16} /> Tạo kèo</Link>}
         </div>
       </header>
 

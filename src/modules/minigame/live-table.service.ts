@@ -122,6 +122,7 @@ export class LiveTableService {
     if (!this.options(game).includes(option)) throw new BadRequestException('Lựa chọn không hợp lệ');
     amount = Math.floor(amount);
     if (!Number.isFinite(amount) || amount < 100) throw new BadRequestException('Cược tối thiểu 100 coin');
+    if (amount > 5000) throw new BadRequestException('Cược tối đa 5000 coin');
 
     const char = await this.prisma.gameCharacter.findUnique({ where: { userId }, select: { id: true, coinBalance: true } });
     if (!char) throw new BadRequestException('Bạn chưa tạo nhân vật game');

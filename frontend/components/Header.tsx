@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  Store, ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, Package, TrendingUp, ShieldAlert,
+  Store, ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, Package, TrendingUp, ShieldAlert, Globe,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -31,6 +31,7 @@ const NAV = [
   { href: '/ai', label: 'AI Companion', icon: Sparkles },
   { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },
   { href: '/tools', label: 'Kho ảnh', icon: ImagePlus },
+  { href: '/netcheck', label: 'Công cụ mạng', icon: Globe },
 ];
 
 export function Header() {

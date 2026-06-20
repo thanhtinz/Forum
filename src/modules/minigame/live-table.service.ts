@@ -2,9 +2,9 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { DiceGames } from './games/dice-games';
 
-// Phòng chung theo vòng (nhiều người) cho Tài Xỉu & Bầu Cua.
-// Mỗi game 1 phòng duy nhất, vòng chạy liên tục: đặt cược -> xóc -> kết quả -> vòng mới.
-export type LiveGame = 'tai-xiu' | 'bau-cua';
+// Phòng chung theo vòng (nhiều người) cho Tài Xỉu, Bầu Cua & Đua Thú.
+// Mỗi game 1 phòng duy nhất, vòng chạy liên tục: đặt cược -> xóc/đua -> kết quả -> vòng mới.
+export type LiveGame = 'tai-xiu' | 'bau-cua' | 'dua-thu';
 type Phase = 'betting' | 'rolling' | 'result';
 const HOUSE_FEE = 0.05;
 const BET_SEC = 25;
@@ -12,6 +12,8 @@ const ROLL_SEC = 4;
 const RESULT_SEC = 6;
 const TAIXIU_OPTS = ['tai', 'xiu'];
 const BAUCUA_OPTS = ['bau', 'cua', 'tom', 'ca', 'ga', 'nai'];
+const DUATHU_OPTS = ['1', '2', '3', '4', '5', '6', '7']; // 7 làn thú
+const HISTORY_MAX = 12;
 
 interface PlayerBets {
   name: string;
@@ -19,12 +21,13 @@ interface PlayerBets {
   bets: { option: string; amount: number }[];
   net?: number;        // lãi/lỗ sau khi chốt vòng
 }
+export interface HistoryEntry { roundId: number; result: any; at: number }
 interface Round {
   game: LiveGame;
   roundId: number;
   phase: Phase;
   endsAt: number;
-  result: any | null;          // { dice, total, outcome } | { dice }
+  result: any | null;          // { dice, total, outcome } | { dice } | { winner }
   players: Map<string, PlayerBets>; // userId -> bets
 }
 
@@ -34,6 +37,10 @@ export class LiveTableService {
   private rounds: Record<LiveGame, Round> = {
     'tai-xiu': this.newRound('tai-xiu', 1),
     'bau-cua': this.newRound('bau-cua', 1),
+    'dua-thu': this.newRound('dua-thu', 1),
+  };
+  private history: Record<LiveGame, HistoryEntry[]> = {
+    'tai-xiu': [], 'bau-cua': [], 'dua-thu': [],
   };
 
   constructor(private readonly prisma: PrismaService) {}
@@ -42,22 +49,32 @@ export class LiveTableService {
     return { game, roundId, phase: 'betting', endsAt: Date.now() + BET_SEC * 1000, result: null, players: new Map() };
   }
 
-  options(game: LiveGame) { return game === 'tai-xiu' ? TAIXIU_OPTS : BAUCUA_OPTS; }
+  options(game: LiveGame) {
+    return game === 'tai-xiu' ? TAIXIU_OPTS : game === 'bau-cua' ? BAUCUA_OPTS : DUATHU_OPTS;
+  }
 
-  // Tick mỗi giây: chuyển pha khi hết giờ. Trả về { changed, settled } để gateway broadcast.
+  private roll(game: LiveGame) {
+    if (game === 'tai-xiu') return DiceGames.taiXiu();
+    if (game === 'bau-cua') return DiceGames.bauCua();
+    return { winner: 1 + Math.floor(Math.random() * 7) }; // đua thú: làn về nhất
+  }
+
+  // Tick mỗi giây: chuyển pha khi hết giờ. Trả về { changed } để gateway broadcast.
   async tick(game: LiveGame): Promise<{ changed: boolean }> {
     const r = this.rounds[game];
     if (Date.now() < r.endsAt) return { changed: false };
 
     if (r.phase === 'betting') {
-      // Xóc kết quả
-      r.result = game === 'tai-xiu' ? DiceGames.taiXiu() : DiceGames.bauCua();
+      r.result = this.roll(game);
       r.phase = 'rolling';
       r.endsAt = Date.now() + ROLL_SEC * 1000;
       return { changed: true };
     }
     if (r.phase === 'rolling') {
       await this.settle(r);
+      // lưu lịch sử phiên vừa xong
+      this.history[game].unshift({ roundId: r.roundId, result: r.result, at: Date.now() });
+      this.history[game] = this.history[game].slice(0, HISTORY_MAX);
       r.phase = 'result';
       r.endsAt = Date.now() + RESULT_SEC * 1000;
       return { changed: true };
@@ -77,11 +94,17 @@ export class LiveTableService {
         for (const b of pb.bets) {
           if (outcome !== 'house' && b.option === outcome) payout += Math.floor(b.amount * 2 * (1 - HOUSE_FEE));
         }
-      } else {
+      } else if (r.game === 'bau-cua') {
         const dice: string[] = r.result.dice;
         for (const b of pb.bets) {
           const matches = dice.filter((d) => d === b.option).length;
           if (matches > 0) payout += b.amount + Math.floor(b.amount * matches * (1 - HOUSE_FEE));
+        }
+      } else {
+        // đua thú: đặt 1 ăn 5
+        const winner = String(r.result.winner);
+        for (const b of pb.bets) {
+          if (b.option === winner) payout += Math.floor(b.amount * 5 * (1 - HOUSE_FEE));
         }
       }
       pb.net = payout - totalBet; // đã trừ cược lúc đặt; giờ cộng payout
@@ -136,6 +159,7 @@ export class LiveTableService {
       result: r.phase === 'betting' ? null : r.result,
       pot, totalPot, players, playerCount: r.players.size, mine,
       myNet: userId ? r.players.get(userId)?.net : undefined,
+      history: this.history[game],
     };
   }
 

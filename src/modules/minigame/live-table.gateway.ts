@@ -28,7 +28,7 @@ export class LiveTableGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   private async loop() {
-    for (const g of ['tai-xiu', 'bau-cua'] as LiveGame[]) {
+    for (const g of ['tai-xiu', 'bau-cua', 'dua-thu'] as LiveGame[]) {
       try { await this.live.tick(g); } catch (e) { this.logger.warn(`tick ${g}: ${(e as Error).message}`); }
     }
     for (const [sid, game] of this.socketGame) {
@@ -55,7 +55,7 @@ export class LiveTableGateway implements OnGatewayInit, OnGatewayConnection, OnG
   join(@ConnectedSocket() client: Socket, @MessageBody() data: { game: LiveGame }) {
     const uid = this.socketUser.get(client.id);
     if (!uid) { client.emit('error', { message: 'Chưa xác thực' }); return; }
-    if (data.game !== 'tai-xiu' && data.game !== 'bau-cua') return;
+    if (!['tai-xiu', 'bau-cua', 'dua-thu'].includes(data.game)) return;
     this.socketGame.set(client.id, data.game);
     return this.live.getState(data.game, uid);
   }

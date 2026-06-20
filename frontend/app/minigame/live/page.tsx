@@ -5,34 +5,55 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { mutate } from 'swr';
-import { Dices, Coins, ChevronLeft, Users, Trophy } from 'lucide-react';
+import { Dices, Coins, ChevronLeft, Users, Trophy, History } from 'lucide-react';
 import { getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin } from '@/lib/format';
 
-type Game = 'tai-xiu' | 'bau-cua';
+type Game = 'tai-xiu' | 'bau-cua' | 'dua-thu';
 const DICE_FACE = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 const BAUCUA: [string, string][] = [['bau', 'Bầu'], ['cua', 'Cua'], ['tom', 'Tôm'], ['ca', 'Cá'], ['ga', 'Gà'], ['nai', 'Nai']];
 const TAIXIU: [string, string][] = [['tai', 'TÀI (11-17)'], ['xiu', 'XỈU (4-10)']];
+const RACE_NAMES = ['', 'Thánh nhím', 'Rồng huyền thoại', 'Rắn thợ săn', 'Mini Totoro', 'Con bướm xinh', 'Người ngoài hành tinh', 'Khủng long phun nửa'];
+const DUATHU: [string, string][] = [1, 2, 3, 4, 5, 6, 7].map((n) => [String(n), `${n}. ${RACE_NAMES[n]}`]) as [string, string][];
+
+const GAMES: Record<Game, { label: string; opts: [string, string][]; defOpt: string }> = {
+  'tai-xiu': { label: 'Tài Xỉu', opts: TAIXIU, defOpt: 'tai' },
+  'bau-cua': { label: 'Bầu Cua', opts: BAUCUA, defOpt: 'bau' },
+  'dua-thu': { label: 'Đua Thú', opts: DUATHU, defOpt: '1' },
+};
 
 interface LiveState {
   game: Game; roundId: number; phase: 'betting' | 'rolling' | 'result'; timeLeft: number;
   result: any | null; pot: Record<string, number>; totalPot: number;
   players: { name: string; avatar?: string | null; total: number; net?: number; me?: boolean }[]; playerCount: number;
   mine: { option: string; amount: number }[]; myNet?: number;
+  history?: { roundId: number; result: any }[];
+}
+
+// Hiển thị 1 kết quả lịch sử gọn
+function HistoryBadge({ game, result }: { game: Game; result: any }) {
+  if (game === 'tai-xiu') {
+    const o = result?.outcome;
+    const cls = o === 'tai' ? 'bg-rose-500' : o === 'xiu' ? 'bg-sky-500' : 'bg-ink-500';
+    return <span className={`grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold text-white ${cls}`} title={`Tổng ${result?.total}`}>{o === 'tai' ? 'T' : o === 'xiu' ? 'X' : 'NC'}</span>;
+  }
+  if (game === 'bau-cua') {
+    return <span className="flex gap-0.5 rounded-lg bg-ink-100 p-0.5 dark:bg-ink-800">{(result?.dice || []).map((d: string, i: number) => <img key={i} src={`/game-assets/baucua/${d}.png`} alt={d} className="h-5 w-5 object-contain" />)}</span>;
+  }
+  return <span className="grid h-7 min-w-7 place-items-center rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-white" title={RACE_NAMES[result?.winner]}>#{result?.winner}</span>;
 }
 
 function LiveRoom() {
   const { user, loading } = useAuth();
-  const initial = (useSearchParams().get('game') as Game) || 'tai-xiu';
-  const game: Game = initial === 'bau-cua' ? 'bau-cua' : 'tai-xiu';
-  const label = game === 'tai-xiu' ? 'Tài Xỉu' : 'Bầu Cua';
-  const opts = game === 'tai-xiu' ? TAIXIU : BAUCUA;
+  const raw = (useSearchParams().get('game') as Game) || 'tai-xiu';
+  const game: Game = (['tai-xiu', 'bau-cua', 'dua-thu'] as Game[]).includes(raw) ? raw : 'tai-xiu';
+  const { label, opts } = GAMES[game];
 
   const sock = useRef<Socket | null>(null);
   const [st, setSt] = useState<LiveState | null>(null);
   const [bet, setBet] = useState(100);
-  const [choice, setChoice] = useState(game === 'tai-xiu' ? 'tai' : 'bau');
+  const [choice, setChoice] = useState(GAMES[game].defOpt);
   const [msg, setMsg] = useState('');
   const [frame, setFrame] = useState(0);
 
@@ -48,7 +69,6 @@ function LiveRoom() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, loading, game]);
 
-  // tick frame để lắc xúc xắc khi rolling
   useEffect(() => {
     if (st?.phase !== 'rolling') return;
     const id = setInterval(() => setFrame((f) => f + 1), 100);
@@ -78,39 +98,74 @@ function LiveRoom() {
         <div className="text-sm text-ink-500">Phiên hiện tại</div>
         <div className="mt-0.5 text-lg font-bold">
           {betting && <span className="text-emerald-600">Đặt cược: {st?.timeLeft}s</span>}
-          {phase === 'rolling' && <span className="text-amber-600">Đang xóc…</span>}
+          {phase === 'rolling' && <span className="text-amber-600">{game === 'dua-thu' ? 'Đang đua…' : 'Đang xóc…'}</span>}
           {phase === 'result' && <span className="text-brand-600">Kết quả!</span>}
         </div>
 
-        {/* Xúc xắc */}
-        <div className="mt-3 flex min-h-[64px] items-center justify-center gap-3">
-          {game === 'tai-xiu'
-            ? (phase === 'rolling'
-                ? [0, 1, 2].map((i) => <span key={i} className="animate-bounce text-5xl" style={{ animationDelay: `${i * 0.1}s` }}>{DICE_FACE[1 + ((frame + i * 2) % 6)]}</span>)
-                : (st?.result?.dice || []).map((d: number, i: number) => <span key={i} className="text-5xl">{DICE_FACE[d] || '🎲'}</span>))
-            : (phase === 'rolling'
-                ? [0, 1, 2].map((i) => { const s = BAUCUA[(frame + i * 2) % 6][0]; return <img key={i} src={`/game-assets/baucua/${s}.png`} alt="" className="h-14 w-14 animate-bounce object-contain" style={{ animationDelay: `${i * 0.1}s` }} />; })
-                : (st?.result?.dice || []).map((d: string, i: number) => <img key={i} src={`/game-assets/baucua/${d}.png`} alt={d} className="h-14 w-14 object-contain" />))}
-        </div>
+        {/* Khu kết quả / animation */}
+        {game === 'dua-thu' ? (
+          <div className="mx-auto mt-3 max-w-md space-y-1 rounded-xl border-4 border-amber-700/60 bg-gradient-to-b from-lime-600/20 to-green-700/20 p-2">
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => {
+              const winner = phase === 'result' && st?.result?.winner === n;
+              const pos = phase === 'rolling' ? Math.min(92, (frame * (3 + ((n * 7) % 4))) % 112) : winner ? 92 : (phase === 'result' ? 0 : 0);
+              return (
+                <div key={n} className={`flex items-center gap-2 rounded-md px-1.5 py-0.5 ${winner ? 'bg-amber-300/60' : ''}`}>
+                  <span className="w-24 shrink-0 truncate text-left text-[11px] font-bold text-ink-800 dark:text-ink-200">{n}. {RACE_NAMES[n]}</span>
+                  <div className="relative h-7 flex-1 overflow-hidden rounded border-y border-dashed border-white/50">
+                    <span className="absolute right-1 top-1/2 z-10 -translate-y-1/2 text-base">{winner ? '🏁🥇' : '🏁'}</span>
+                    <img src={`/game-assets/duathu/${n}.gif`} alt="" className="absolute top-1/2 h-6 -translate-y-1/2 object-contain transition-all duration-100" style={{ left: `${pos}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mt-3 flex min-h-[64px] items-center justify-center gap-3">
+            {game === 'tai-xiu'
+              ? (phase === 'rolling'
+                  ? [0, 1, 2].map((i) => <span key={i} className="animate-bounce text-5xl" style={{ animationDelay: `${i * 0.1}s` }}>{DICE_FACE[1 + ((frame + i * 2) % 6)]}</span>)
+                  : (st?.result?.dice || []).map((d: number, i: number) => <span key={i} className="text-5xl">{DICE_FACE[d] || '🎲'}</span>))
+              : (phase === 'rolling'
+                  ? [0, 1, 2].map((i) => { const s = BAUCUA[(frame + i * 2) % 6][0]; return <img key={i} src={`/game-assets/baucua/${s}.png`} alt="" className="h-14 w-14 animate-bounce object-contain" style={{ animationDelay: `${i * 0.1}s` }} />; })
+                  : (st?.result?.dice || []).map((d: string, i: number) => <img key={i} src={`/game-assets/baucua/${d}.png`} alt={d} className="h-14 w-14 object-contain" />))}
+          </div>
+        )}
+
         {phase === 'result' && game === 'tai-xiu' && st?.result && (
           <div className="text-sm text-ink-500">Tổng {st.result.total} · {st.result.outcome === 'house' ? 'Nhà cái (bộ ba)' : st.result.outcome === 'tai' ? 'TÀI' : 'XỈU'}</div>
         )}
+        {phase === 'result' && game === 'dua-thu' && st?.result && (
+          <div className="mt-1 text-sm text-ink-500">Về nhất: <b>{RACE_NAMES[st.result.winner]}</b></div>
+        )}
         {phase === 'result' && st?.myNet != null && (
           <div className={`mt-1 font-bold ${st.myNet > 0 ? 'text-emerald-600' : st.myNet < 0 ? 'text-rose-600' : 'text-ink-500'}`}>
-            {st.myNet > 0 ? <span className="inline-flex items-center gap-1"><Trophy size={16} /> +{formatCoin(st.myNet)}</span> : `${st.myNet === 0 ? '' : ''}${formatCoin(st.myNet)} coin`}
+            {st.myNet > 0 ? <span className="inline-flex items-center gap-1"><Trophy size={16} /> +{formatCoin(st.myNet)}</span> : `${formatCoin(st.myNet)} coin`}
           </div>
         )}
       </div>
 
+      {/* Lịch sử phiên trước */}
+      {st?.history && st.history.length > 0 && (
+        <div className="card p-3">
+          <h2 className="mb-2 flex items-center gap-1 text-sm font-semibold text-ink-500"><History size={14} /> Lịch sử phiên trước</h2>
+          <div className="flex gap-1.5 overflow-x-auto pb-1">
+            {st.history.map((h) => (
+              <div key={h.roundId} className="shrink-0"><HistoryBadge game={game} result={h.result} /></div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Đặt cược */}
       <div className="card space-y-3 p-4">
         <label className="block text-sm">Tiền cược<input type="number" min={100} className="input mt-1 w-40" value={bet} onChange={(e) => setBet(Number(e.target.value))} /></label>
-        <div className={`grid gap-2 ${game === 'tai-xiu' ? 'grid-cols-2' : 'grid-cols-3 sm:grid-cols-6'}`}>
+        <div className={`grid gap-2 ${game === 'tai-xiu' ? 'grid-cols-2' : game === 'bau-cua' ? 'grid-cols-3 sm:grid-cols-6' : 'grid-cols-2 sm:grid-cols-4'}`}>
           {opts.map(([s, l]) => (
             <button key={s} onClick={() => setChoice(s)}
               className={`flex flex-col items-center gap-1 rounded-lg border-2 py-2 text-sm font-medium ${choice === s ? 'border-brand-600 bg-brand-50 dark:bg-ink-800' : 'border-transparent bg-ink-100 dark:bg-ink-800'}`}>
               {game === 'bau-cua' && <img src={`/game-assets/baucua/${s}.png`} alt={l} className="h-9 w-9 object-contain" />}
-              <span>{l}</span>
+              {game === 'dua-thu' && <img src={`/game-assets/duathu/${s}.gif`} alt={l} className="h-8 object-contain" />}
+              <span className="text-center text-xs leading-tight">{l}</span>
               <span className="text-[11px] text-ink-400">cược: {formatCoin(st?.pot?.[s] ?? 0)}</span>
             </button>
           ))}
@@ -118,7 +173,6 @@ function LiveRoom() {
         <button onClick={placeBet} disabled={!betting} className="btn-primary w-full disabled:opacity-50">
           {betting ? <span className="inline-flex items-center gap-1"><Coins size={15} /> Đặt {formatCoin(bet)} vào {opts.find(([s]) => s === choice)?.[1]}</span> : 'Chờ vòng sau…'}
         </button>
-        {/* Cược của tôi vòng này */}
         {st && st.mine.length > 0 && (
           <p className="text-xs text-ink-500">Cược của bạn: {st.mine.map((b) => `${opts.find(([s]) => s === b.option)?.[1] || b.option} ${formatCoin(b.amount)}`).join(' · ')}</p>
         )}

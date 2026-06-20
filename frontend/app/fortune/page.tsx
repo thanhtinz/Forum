@@ -170,18 +170,24 @@ function Tarot({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
                       <span key={k} className="rounded-md bg-ink-100 px-1.5 py-0.5 text-[11px] text-ink-600 dark:bg-ink-800 dark:text-ink-300">{m}</span>
                     ))}
                   </div>
+                  {c.desc && <p className="mt-1.5 text-left text-xs leading-snug text-ink-500">{c.desc}</p>}
+                  {c.advice && <p className="mt-1 text-left text-xs leading-snug text-brand-600">💡 {c.advice}</p>}
                 </div>
               );
             })}
           </div>
-          <div className="rounded-xl bg-ink-50 p-3 text-sm dark:bg-ink-800/50">
-            <p className="font-medium">Tóm tắt nhanh</p>
-            <p className="mt-0.5 text-ink-600 dark:text-ink-300">
+          <div className="space-y-2 rounded-xl bg-ink-50 p-3 text-sm dark:bg-ink-800/50">
+            <p className="font-medium">🔮 Luận giải</p>
+            <ul className="space-y-1.5 text-ink-600 dark:text-ink-300">
               {r.cards.map((c: any, i: number) => {
                 const pos = (TAROT_SPREADS[r.cards.length]?.positions || [])[i];
-                return `${pos ? pos + ': ' : ''}${c.nameVi} (${c.reversedOrientation ? 'ngược' : 'xuôi'}) — ${c.meaning[0]}`;
-              }).join('. ')}.
-            </p>
+                return (
+                  <li key={i}>
+                    <b>{pos ? `${pos} — ` : ''}{c.nameVi} ({c.reversedOrientation ? 'ngược' : 'xuôi'}):</b> {c.advice || c.meaning.join(', ')}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
           <AiAnalyze type="TAROT" result={r} question={q} enabled={ai} price={aiPrice} />
         </div>

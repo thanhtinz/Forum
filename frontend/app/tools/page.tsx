@@ -2,8 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import useSWR from 'swr';
-import { Wrench, Search, ArrowRight, Sparkles, Flame } from 'lucide-react';
+import Link from 'next/link';
+import { Wrench, Search, ArrowRight, Sparkles, Flame, Star, Clock } from 'lucide-react';
 import { fetcher } from '@/lib/api';
+import { useAuth } from '@/components/AuthProvider';
 
 interface Tool { slug: string; name: string; description: string; isPro: boolean; usageCount: number }
 interface ToolCat { slug: string; name: string; description: string; icon: string; tools: Tool[] }
@@ -26,7 +28,10 @@ function ToolCard({ t }: { t: Tool }) {
 }
 
 export default function ToolsPage() {
+  const { user } = useAuth();
   const { data, isLoading } = useSWR<ToolCat[]>('/tools', fetcher);
+  const { data: favs } = useSWR<{ slug: string; name: string }[]>(user ? '/tools/me/favorites' : null, fetcher);
+  const { data: recent } = useSWR<{ id: string; toolSlug: string; toolName: string }[]>(user ? '/tools/me/history' : null, fetcher);
   const [q, setQ] = useState('');
   const [active, setActive] = useState('');
 
@@ -56,6 +61,30 @@ export default function ToolsPage() {
       </header>
 
       {isLoading && <div className="card p-10 text-center text-ink-500">Đang tải…</div>}
+
+      {/* Yêu thích + Gần đây (đăng nhập) */}
+      {user && ((favs && favs.length > 0) || (recent && recent.length > 0)) && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {favs && favs.length > 0 && (
+            <div className="card p-3">
+              <h2 className="mb-2 flex items-center gap-1 text-sm font-semibold text-amber-600"><Star size={15} className="fill-amber-400" /> Yêu thích</h2>
+              <div className="flex flex-wrap gap-1.5">
+                {favs.map((t) => <Link key={t.slug} href={`/tool?slug=${t.slug}`} className="rounded-full bg-ink-100 px-3 py-1 text-sm hover:bg-brand-100 hover:text-brand-700 dark:bg-ink-800">{t.name}</Link>)}
+              </div>
+            </div>
+          )}
+          {recent && recent.length > 0 && (
+            <div className="card p-3">
+              <h2 className="mb-2 flex items-center gap-1 text-sm font-semibold text-ink-500"><Clock size={15} /> Dùng gần đây</h2>
+              <div className="flex flex-wrap gap-1.5">
+                {[...new Map(recent.map((r) => [r.toolSlug, r])).values()].slice(0, 8).map((r) => (
+                  <Link key={r.id} href={`/tool?slug=${r.toolSlug}`} className="rounded-full bg-ink-100 px-3 py-1 text-sm hover:bg-brand-100 hover:text-brand-700 dark:bg-ink-800">{r.toolName}</Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Lọc danh mục */}
       {data && data.length > 0 && (

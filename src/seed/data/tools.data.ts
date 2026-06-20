@@ -5,15 +5,30 @@ export interface ToolCategorySeed {
 export interface ToolSeed {
   categorySlug: string; slug: string; name: string; description: string;
   icon: string; component: string; isPro?: boolean; sortOrder: number;
+  serverEngine?: string; // nếu set => chạy ở server
 }
 
 export const TOOL_CATEGORIES: ToolCategorySeed[] = [
-  { slug: 'formatters', name: 'Định dạng', description: 'Format & làm đẹp code/dữ liệu', icon: 'code', sortOrder: 0 },
-  { slug: 'validators', name: 'Kiểm tra', description: 'Validate dữ liệu, cú pháp', icon: 'check', sortOrder: 1 },
-  { slug: 'encoders', name: 'Mã hóa', description: 'Encode/decode, hash', icon: 'lock', sortOrder: 2 },
-  { slug: 'generators', name: 'Tạo dữ liệu', description: 'Sinh dữ liệu ngẫu nhiên', icon: 'sparkles', sortOrder: 3 },
-  { slug: 'converters', name: 'Chuyển đổi', description: 'Chuyển đổi định dạng/đơn vị', icon: 'refresh', sortOrder: 4 },
-  { slug: 'calculators', name: 'Tính toán', description: 'Máy tính & công cụ số học', icon: 'calculator', sortOrder: 5 },
+  { slug: 'ai', name: 'AI hỗ trợ', description: 'Công cụ chạy AI ở server', icon: 'sparkles', sortOrder: 0 },
+  { slug: 'formatters', name: 'Định dạng', description: 'Format & làm đẹp code/dữ liệu', icon: 'code', sortOrder: 1 },
+  { slug: 'validators', name: 'Kiểm tra', description: 'Validate dữ liệu, cú pháp', icon: 'check', sortOrder: 2 },
+  { slug: 'encoders', name: 'Mã hóa', description: 'Encode/decode, hash', icon: 'lock', sortOrder: 3 },
+  { slug: 'generators', name: 'Tạo dữ liệu', description: 'Sinh dữ liệu ngẫu nhiên', icon: 'sparkles', sortOrder: 4 },
+  { slug: 'converters', name: 'Chuyển đổi', description: 'Chuyển đổi định dạng/đơn vị', icon: 'refresh', sortOrder: 5 },
+  { slug: 'calculators', name: 'Tính toán', description: 'Máy tính & công cụ số học', icon: 'calculator', sortOrder: 6 },
+];
+
+// Công cụ chạy ở SERVER (engine = serverEngine). component 'ServerTool' = runner chung trên frontend.
+export const SERVER_TOOLS: ToolSeed[] = [
+  { categorySlug: 'ai', slug: 'ai-explain-code', name: 'AI Giải thích code', description: 'Dán code, AI giải thích cách hoạt động', icon: 'sparkles', component: 'ServerTool', serverEngine: 'ai-explain-code', sortOrder: 0 },
+  { categorySlug: 'ai', slug: 'ai-regex', name: 'AI Sinh Regex', description: 'Mô tả nhu cầu, AI tạo regex + giải thích', icon: 'search', component: 'ServerTool', serverEngine: 'ai-regex', sortOrder: 1 },
+  { categorySlug: 'ai', slug: 'ai-commit', name: 'AI Commit Message', description: 'Sinh commit message từ mô tả thay đổi', icon: 'git-branch', component: 'ServerTool', serverEngine: 'ai-commit', sortOrder: 2 },
+  { categorySlug: 'ai', slug: 'ai-translate', name: 'AI Dịch Việt–Anh', description: 'Tự nhận diện & dịch Việt ⇄ Anh', icon: 'languages', component: 'ServerTool', serverEngine: 'ai-translate', sortOrder: 3 },
+  { categorySlug: 'ai', slug: 'ai-sql', name: 'AI Sinh SQL', description: 'Mô tả truy vấn, AI viết câu lệnh SQL', icon: 'database', component: 'ServerTool', serverEngine: 'ai-sql', sortOrder: 4 },
+  { categorySlug: 'ai', slug: 'ai-name', name: 'AI Đặt tên biến', description: 'Gợi ý tên biến/hàm chuẩn từ mô tả', icon: 'tag', component: 'ServerTool', serverEngine: 'ai-name', sortOrder: 5 },
+  { categorySlug: 'ai', slug: 'ai-explain-error', name: 'AI Giải thích lỗi', description: 'Dán lỗi/stack trace, AI gợi ý cách sửa', icon: 'bug', component: 'ServerTool', serverEngine: 'ai-explain-error', sortOrder: 6 },
+  { categorySlug: 'encoders', slug: 'hash-server', name: 'Hash (server)', description: 'MD5/SHA1/SHA256/SHA512 tính ở server', icon: 'lock', component: 'ServerTool', serverEngine: 'hash-all', sortOrder: 20 },
+  { categorySlug: 'converters', slug: 'slugify', name: 'Slugify', description: 'Chuyển chữ có dấu thành slug URL', icon: 'link', component: 'ServerTool', serverEngine: 'slugify', sortOrder: 20 },
 ];
 
 export const TOOLS: ToolSeed[] = [

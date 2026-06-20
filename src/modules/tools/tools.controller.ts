@@ -2,7 +2,8 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } f
 import { UserRole } from '@prisma/client';
 import { ToolsService } from './tools.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { Roles, RolesGuard } from '../../common/decorators/roles.decorator';
+import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
+import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
 
 @Controller('tools')
 export class ToolsController {
@@ -17,6 +18,33 @@ export class ToolsController {
   popular(@Query('limit') limit = 10) {
     return this.tools.popular(Number(limit));
   }
+
+  // ── Chạy tool ở server + lịch sử + yêu thích ──
+  @Post('run/:slug')
+  @UseGuards(OptionalJwtGuard)
+  run(@Param('slug') slug: string, @Body() body: { input: string }, @CurrentUser('id') uid?: string) {
+    return this.tools.run(slug, body?.input ?? '', uid);
+  }
+
+  @Get('me/history')
+  @UseGuards(JwtAuthGuard)
+  history(@CurrentUser('id') uid: string) { return this.tools.history(uid); }
+
+  @Delete('me/history')
+  @UseGuards(JwtAuthGuard)
+  clearHistory(@CurrentUser('id') uid: string) { return this.tools.clearHistory(uid); }
+
+  @Get('me/favorites')
+  @UseGuards(JwtAuthGuard)
+  favorites(@CurrentUser('id') uid: string) { return this.tools.favorites(uid); }
+
+  @Get(':slug/favorite')
+  @UseGuards(JwtAuthGuard)
+  isFav(@Param('slug') slug: string, @CurrentUser('id') uid: string) { return this.tools.isFavorite(uid, slug); }
+
+  @Post(':slug/favorite')
+  @UseGuards(JwtAuthGuard)
+  toggleFav(@Param('slug') slug: string, @CurrentUser('id') uid: string) { return this.tools.toggleFavorite(uid, slug); }
 
   // ── ADMIN ──
   @Get('admin/all')

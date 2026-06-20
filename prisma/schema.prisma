@@ -353,6 +353,8 @@ model User {
   scamAppeals          ScamCaseAppeal[]
   scamEditLogs         ScamCaseEditLog[]
   scamBlacklistAdded   ScamBlacklist[]
+  toolRuns             ToolRun[]
+  toolFavorites        ToolFavorite[]
 
   @@index([email])
   @@index([username])
@@ -1907,23 +1909,50 @@ model ToolCategory {
 }
 
 model Tool {
-  id          String   @id @default(cuid())
-  categoryId  String
-  slug        String   @unique @db.VarChar(80)
-  name        String   @db.VarChar(120)
-  description String   @db.Text
-  icon        String?  @db.VarChar(50)
-  component   String   @db.VarChar(100) // tên React component
-  isActive    Boolean  @default(true)
-  isPro       Boolean  @default(false) // cần VIP/gem
-  usageCount  Int      @default(0)
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  categoryId   String
+  slug         String   @unique @db.VarChar(80)
+  name         String   @db.VarChar(120)
+  description  String   @db.Text
+  icon         String?  @db.VarChar(50)
+  component    String   @db.VarChar(100) // tên React component (tool chạy client)
+  serverEngine String?  @db.VarChar(60)  // key engine chạy ở server (nếu có)
+  isActive     Boolean  @default(true)
+  isPro        Boolean  @default(false) // cần VIP/gem
+  usageCount   Int      @default(0)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
 
   category ToolCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@index([categoryId])
   @@index([slug])
+}
+
+model ToolRun {
+  id        String   @id @default(cuid())
+  userId    String
+  toolSlug  String   @db.VarChar(80)
+  toolName  String   @db.VarChar(120)
+  input     String   @db.Text
+  output    String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model ToolFavorite {
+  id        String   @id @default(cuid())
+  userId    String
+  toolSlug  String   @db.VarChar(80)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, toolSlug])
+  @@index([userId])
 }
 
 // ============================================================

@@ -1,9 +1,66 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ToolEngineService } from './tool-engine.service';
 
 @Injectable()
 export class ToolsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly engine: ToolEngineService,
+  ) {}
+
+  // Chạy tool ở server (engine pure/AI). Lưu lịch sử nếu đăng nhập.
+  async run(slug: string, input: string, userId?: string) {
+    const tool = await this.prisma.tool.findUnique({
+      where: { slug }, select: { id: true, name: true, serverEngine: true, isActive: true },
+    });
+    if (!tool || !tool.isActive) throw new NotFoundException('Công cụ không tồn tại');
+    if (!tool.serverEngine || !this.engine.isServerEngine(tool.serverEngine)) {
+      throw new BadRequestException('Công cụ này chạy trên trình duyệt');
+    }
+    const output = await this.engine.run(tool.serverEngine, input);
+    await this.prisma.tool.update({ where: { id: tool.id }, data: { usageCount: { increment: 1 } } });
+    if (userId) {
+      await this.prisma.toolRun.create({
+        data: { userId, toolSlug: slug, toolName: tool.name, input: (input || '').slice(0, 10000), output: output.slice(0, 20000) },
+      }).catch(() => {});
+    }
+    return { output };
+  }
+
+  async history(userId: string, limit = 30) {
+    return this.prisma.toolRun.findMany({
+      where: { userId }, orderBy: { createdAt: 'desc' }, take: Math.min(limit, 100),
+      select: { id: true, toolSlug: true, toolName: true, input: true, output: true, createdAt: true },
+    });
+  }
+
+  async clearHistory(userId: string) {
+    await this.prisma.toolRun.deleteMany({ where: { userId } });
+    return { ok: true };
+  }
+
+  async favorites(userId: string) {
+    const favs = await this.prisma.toolFavorite.findMany({ where: { userId }, select: { toolSlug: true } });
+    const slugs = favs.map((f) => f.toolSlug);
+    if (!slugs.length) return [];
+    return this.prisma.tool.findMany({
+      where: { slug: { in: slugs }, isActive: true },
+      select: { slug: true, name: true, description: true, icon: true, isPro: true, usageCount: true },
+    });
+  }
+
+  async toggleFavorite(userId: string, slug: string) {
+    const existing = await this.prisma.toolFavorite.findUnique({ where: { userId_toolSlug: { userId, toolSlug: slug } } });
+    if (existing) { await this.prisma.toolFavorite.delete({ where: { id: existing.id } }); return { favorited: false }; }
+    await this.prisma.toolFavorite.create({ data: { userId, toolSlug: slug } });
+    return { favorited: true };
+  }
+
+  async isFavorite(userId: string, slug: string) {
+    const f = await this.prisma.toolFavorite.findUnique({ where: { userId_toolSlug: { userId, toolSlug: slug } }, select: { id: true } });
+    return { favorited: !!f };
+  }
 
   // Danh sách nhóm + công cụ (cho trang tools)
   async list() {

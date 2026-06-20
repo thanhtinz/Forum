@@ -753,6 +753,7 @@ model Product {
   screenshots ProductScreenshot[]
   tags        ProductTag[]
   stock       ProductStock[]
+  packages    ProductPackage[]
 
   @@index([sellerId])
   @@index([storefrontId])
@@ -760,6 +761,22 @@ model Product {
   @@index([slug])
   @@index([type])
   @@index([status])
+}
+
+// Gói bán của sản phẩm số: giá theo gói + trường tuỳ chỉnh khách điền khi mua
+model ProductPackage {
+  id          String   @id @default(cuid())
+  productId   String
+  name        String   @db.VarChar(150)
+  description String?  @db.Text
+  gemPrice    Int      @default(0)
+  fields      Json     @default("[]") // [{ label: string, required: boolean }]
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
 
 model ProductScreenshot {
@@ -798,6 +815,9 @@ model Order {
   escrowStatus     String?     @db.VarChar(20) // HELD | RELEASED | REFUNDED
   escrowReleaseAt  DateTime? // tiền seller được giải ngân sau khi giam 3 ngày
   couponCode       String?     @db.VarChar(40)
+  packageId        String?     @db.VarChar(40) // gói đã mua (nếu sản phẩm có gói)
+  packageName      String?     @db.VarChar(150)
+  fieldValues      Json? // giá trị khách điền vào trường tuỳ chỉnh của gói
   deliveredContent String?     @db.Text // nội dung giao tự động (tài khoản/key)
   completedAt      DateTime?
   refundedAt       DateTime?

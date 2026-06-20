@@ -155,9 +155,22 @@ export class MarketplaceController {
   // ── Mua hàng + escrow (giam 3 ngày) ──
   @Post('products/:id/buy')
   @UseGuards(JwtAuthGuard)
-  buy(@CurrentUser('id') userId: string, @Param('id') id: string, @Body('couponCode') couponCode?: string) {
-    return this.orders.buy(userId, id, couponCode);
+  buy(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() body: { couponCode?: string; packageId?: string; fieldValues?: Record<string, string> }) {
+    return this.orders.buy(userId, id, body || {});
   }
+
+  // ── Gói sản phẩm (seller) ──
+  @Get('me/products/:id/packages')
+  @UseGuards(JwtAuthGuard)
+  listPackages(@CurrentUser('id') uid: string, @Param('id') id: string) { return this.shop.listPackages(uid, id); }
+
+  @Post('me/products/:id/packages')
+  @UseGuards(JwtAuthGuard)
+  addPackage(@CurrentUser('id') uid: string, @Param('id') id: string, @Body() body: any) { return this.shop.savePackage(uid, id, body); }
+
+  @Delete('me/packages/:pkgId')
+  @UseGuards(JwtAuthGuard)
+  delPackage(@CurrentUser('id') uid: string, @Param('pkgId') pkgId: string) { return this.shop.deletePackage(uid, pkgId); }
 
   @Get('me/purchases')
   @UseGuards(JwtAuthGuard)

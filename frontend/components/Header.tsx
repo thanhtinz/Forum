@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  Store, ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, Package, TrendingUp, ShieldAlert, Globe,
+  Store, ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, Package, TrendingUp, ShieldAlert, Globe, Wrench,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -30,6 +30,10 @@ const NAV = [
   { href: '/predictions', label: 'Cá cược', icon: TrendingUp },
   { href: '/ai', label: 'AI Companion', icon: Sparkles },
   { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },
+];
+
+// Nhóm tiện ích gom vào dropdown
+const UTILS = [
   { href: '/tools', label: 'Kho ảnh', icon: ImagePlus },
   { href: '/netcheck', label: 'Công cụ mạng', icon: Globe },
 ];
@@ -40,6 +44,7 @@ export function Header() {
   const [q, setQ] = useState('');
   const [menu, setMenu] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [utilOpen, setUtilOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [unread, setUnread] = useState(0);
   const [hasStore, setHasStore] = useState<boolean | null>(null);
@@ -89,6 +94,23 @@ export function Header() {
               <n.icon size={16} /> {n.label}
             </Link>
           ))}
+          {/* Tiện ích — dropdown */}
+          <div className="relative" onMouseLeave={() => setUtilOpen(false)}>
+            <button onClick={() => setUtilOpen((o) => !o)}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+              <Wrench size={16} /> Tiện ích <ChevronDown size={13} />
+            </button>
+            {utilOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
+                {UTILS.map((u) => (
+                  <Link key={u.href} href={u.href} onClick={() => setUtilOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <u.icon size={15} /> {u.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
 
         <form onSubmit={onSearch} className="ml-auto hidden flex-1 max-w-xs items-center sm:flex">
@@ -165,7 +187,7 @@ export function Header() {
             </div>
           </form>
           <div className="flex flex-col gap-1">
-            {NAV.map((n) => (
+            {[...NAV, ...UTILS].map((n) => (
               <Link key={n.href} href={n.href} onClick={() => setNavOpen(false)}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
                 <n.icon size={16} /> {n.label}

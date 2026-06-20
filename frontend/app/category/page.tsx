@@ -36,25 +36,28 @@ function CategoryView() {
       </Link>
 
       <section className="card overflow-hidden">
-        <div className="flex items-center justify-between gap-3 border-b-2 border-ink-300 bg-ink-50 p-4 dark:border-ink-700 dark:bg-ink-800/60">
-          <div className="flex items-center gap-3">
-            {cat?.iconUrl
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={cat.iconUrl} alt="" className="h-11 w-11 rounded-xl object-cover" />
-              : <span className="grid h-11 w-11 place-items-center rounded-xl text-lg font-bold text-white" style={{ backgroundColor: cat?.color || '#6366f1' }}>{cat?.icon?.trim() || cat?.name?.[0]?.toUpperCase() || '#'}</span>}
-            <div>
-              <h1 className="text-xl font-bold">{cat?.name || 'Danh mục'}</h1>
-              {cat?.description && <p className="text-sm text-ink-500">{cat.description}</p>}
-            </div>
+        {/* Top: chỉ icon + tên + mô tả */}
+        <div className="flex items-center gap-3 border-b-2 border-ink-300 bg-ink-50 p-4 dark:border-ink-700 dark:bg-ink-800/60">
+          {cat?.iconUrl
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={cat.iconUrl} alt="" className="h-11 w-11 rounded-xl object-cover" />
+            : <span className="grid h-11 w-11 place-items-center rounded-xl text-lg font-bold text-white" style={{ backgroundColor: cat?.color || '#6366f1' }}>{cat?.icon?.trim() || cat?.name?.[0]?.toUpperCase() || '#'}</span>}
+          <div>
+            <h1 className="text-xl font-bold">{cat?.name || 'Danh mục'}</h1>
+            {cat?.description && <p className="text-sm text-ink-500">{cat.description}</p>}
           </div>
-          {canPost && (
-            <Link href={`/threads/new?cat=${id}`} className="btn-primary inline-flex shrink-0 items-center gap-1.5 text-sm"><PenSquare size={16} /> Đăng chủ đề mới</Link>
-          )}
         </div>
         {staffOnly && !canPost && (
           <p className="bg-amber-50 px-4 py-2 text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">Danh mục này chỉ Ban quản trị được đăng bài.</p>
         )}
       </section>
+
+      {/* Thanh hành động riêng */}
+      {canPost && (
+        <div className="flex justify-end">
+          <Link href={`/threads/new?cat=${id}`} className="btn-primary inline-flex items-center gap-1.5 text-sm"><PenSquare size={16} /> Đăng chủ đề mới</Link>
+        </div>
+      )}
 
       {id ? <ThreadList categoryId={id} hideHeader /> : <div className="card p-8 text-center text-ink-500">Không tìm thấy danh mục.</div>}
     </div>

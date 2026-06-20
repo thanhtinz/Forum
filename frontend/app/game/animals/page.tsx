@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { mutate } from 'swr';
-import { ChevronLeft, Beef, ShoppingBag } from 'lucide-react';
+import { ChevronLeft, PawPrint, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatDuration, secondsUntil } from '@/lib/format';
@@ -44,7 +44,7 @@ export default function AnimalsPage() {
       <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
       <header className="rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
         <div className="flex items-center gap-2">
-          <Beef />
+          <PawPrint />
           <div>
             <h1 className="text-2xl font-bold">Vật nuôi</h1>
             {barn && <p className="text-sm text-white/90">Chuồng cấp {barn.level}/{barn.maxLevel} · {barn.used}/{barn.slots} chỗ</p>}
@@ -106,7 +106,7 @@ export default function AnimalsPage() {
                   {(animalSprite(a.slug) || a.asset)
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={animalSprite(a.slug) || a.asset!} alt={a.name} className="h-12 w-12 object-contain" />
-                    : <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800"><Beef size={20} /></span>}
+                    : <span className="grid h-12 w-12 place-items-center rounded-lg bg-ink-100 text-ink-400 dark:bg-ink-800"><PawPrint size={20} /></span>}
                   <div>
                     <p className="font-medium">{a.name} {a.sick && <span className="rounded bg-rose-100 px-1 text-[10px] font-bold text-rose-600">🤒 Bệnh</span>}</p>
                     <p className="text-xs text-ink-400">

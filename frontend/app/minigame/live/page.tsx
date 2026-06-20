@@ -75,7 +75,7 @@ function LiveRoom() {
 
       {/* Trạng thái vòng */}
       <div className="card p-4 text-center">
-        <div className="text-sm text-ink-500">Ván #{st?.roundId ?? '—'}</div>
+        <div className="text-sm text-ink-500">Phiên hiện tại</div>
         <div className="mt-0.5 text-lg font-bold">
           {betting && <span className="text-emerald-600">Đặt cược: {st?.timeLeft}s</span>}
           {phase === 'rolling' && <span className="text-amber-600">Đang xóc…</span>}

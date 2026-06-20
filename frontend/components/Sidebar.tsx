@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Gamepad2, Fish, Sprout, Wrench, Store, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Disc3, Gift, HelpCircle, TrendingUp, Briefcase, Users2, Shield } from 'lucide-react';
+import { Gamepad2, Fish, Sprout, Wrench, Store, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Disc3, Gift, HelpCircle, Briefcase, Users2, Shield } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -13,7 +13,6 @@ const SHORTCUTS = [
   { href: '/cong-game', label: 'Cổng game', icon: Gamepad2, desc: 'Nông trại, câu cá, minigame…' },
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, desc: 'Trồng trọt & vật nuôi' },
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, desc: '3 khu, cá hiếm' },
-  { href: '/predictions', label: 'Cá cược & Dự đoán', icon: TrendingUp, desc: 'Đặt cược, dự đoán kèo' },
   { href: '/leaderboard', label: 'Xếp hạng', icon: Award, desc: 'Top danh hiệu & câu cá' },
   { href: '/guild', label: 'Bang hội', icon: Shield, desc: 'Cộng đồng — lập & gia nhập bang hội' },
   { href: '/marketplace', label: 'Chợ gian hàng', icon: Store, desc: 'Mua bán source' },
@@ -71,7 +70,6 @@ export function Sidebar() {
           <Link href="/spin" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Disc3 size={16} className="text-fuchsia-600" /> Vòng quay may mắn</Link>
           <Link href="/giveaways" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Gift size={16} className="text-rose-600" /> Giveaway / Lì xì</Link>
           <Link href="/trivia" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><HelpCircle size={16} className="text-sky-600" /> Đố vui</Link>
-          <Link href="/predictions" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><TrendingUp size={16} className="text-amber-600" /> Dự đoán</Link>
         </div>
       </div>
 

@@ -952,16 +952,6 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
     chain().setIframeEmbed({ src: `https://player.bilibili.com/player.html?bvid=${m[0]}&page=1` }).run();
   }
 
-  function addColorDivider() {
-    chain().setFxDivider().run();
-    closeInsert();
-  }
-
-  function addCenterHeading() {
-    chain().toggleHeading({ level: 2 }).setTextAlign('center').run();
-    closeInsert();
-  }
-
   function addDateTime() {
     closeInsert();
     chain().insertContent(new Date().toLocaleString('vi')).run();
@@ -1193,11 +1183,8 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
               <button type="button" className={aiMenuItem} onClick={addProgress}>Thanh tiến độ</button>
               <button type="button" className={aiMenuItem} onClick={addMarquee}>Chữ chạy (marquee)</button>
               <button type="button" className={aiMenuItem} onClick={() => addButton('btn')}>Nút bấm</button>
-              <button type="button" className={aiMenuItem} onClick={() => addButton('note')}>Nút ghi chú</button>
               <button type="button" className={aiMenuItem} onClick={addAudio}><span className="flex items-center gap-2"><Music size={14} /> Âm thanh (audio)</span></button>
               <button type="button" className={aiMenuItem} onClick={addBilibili}>Bilibili</button>
-              <button type="button" className={aiMenuItem} onClick={addColorDivider}>Đường kẻ màu</button>
-              <button type="button" className={aiMenuItem} onClick={addCenterHeading}>Tiêu đề căn giữa</button>
               <button type="button" className={aiMenuItem} onClick={addCard}>Thẻ card</button>
               <button type="button" className={aiMenuItem} onClick={addTimeline}>Dòng thời gian</button>
               <button type="button" className={aiMenuItem} onClick={addNetdisk}>Nút tải về</button>

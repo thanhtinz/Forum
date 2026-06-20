@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, HelpCircle, ImagePlus, Paperclip, Mail, ShieldCheck, KeyRound, BellRing, Gavel, FolderTree, Gamepad2, ArrowLeft, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Wrench, Sprout, Store, CreditCard, Settings, FileText, Ticket, BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, HelpCircle, Paperclip, Mail, ShieldCheck, KeyRound, BellRing, Gavel, FolderTree, Gamepad2, ArrowLeft, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
 // Menu quản trị gom theo nhóm (kiểu Flarum/XenForo) cho gọn, dễ tìm
@@ -56,8 +56,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
     title: 'Hệ thống',
     items: [
       { href: '/admin/tools', label: 'Công cụ', icon: Wrench },
-      { href: '/admin/imagehost', label: 'Lưu trữ ảnh', icon: ImagePlus },
-      { href: '/admin/attachment', label: 'Tệp đính kèm', icon: Paperclip },
+      { href: '/admin/attachment', label: 'Lưu trữ R2', icon: Paperclip },
       { href: '/admin/mail', label: 'Email / SMTP', icon: Mail },
       { href: '/admin/push', label: 'Web Push', icon: BellRing },
       { href: '/admin/security', label: 'Chống spam', icon: ShieldCheck },

@@ -117,8 +117,6 @@ export function Header() {
               </div>
             )}
           </div>
-          {/* Thời tiết theo khu vực người dùng */}
-          <WeatherMenu />
         </nav>
 
         <form onSubmit={onSearch} className="ml-auto hidden flex-1 max-w-xs items-center sm:flex">
@@ -128,6 +126,9 @@ export function Header() {
               className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
           </div>
         </form>
+
+        {/* Thời tiết hiện tại (luôn hiện) + dropdown dự báo — cạnh ô tìm kiếm */}
+        <div className="hidden lg:block"><WeatherMenu /></div>
 
         {/* Cụm điều khiển: số dư + đổi theme, thông báo, tài khoản — đặt ở góc phải */}
         <div className="ml-auto flex items-center gap-1 sm:ml-0">
@@ -194,6 +195,8 @@ export function Header() {
                 className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
             </div>
           </form>
+          {/* Thời tiết — ngay dưới ô tìm kiếm */}
+          <div className="mb-2"><WeatherMenu mobile /></div>
           <div className="flex flex-col gap-1">
             {NAV.map((n) => (
               <Link key={n.href} href={n.href} onClick={() => setNavOpen(false)}
@@ -217,8 +220,6 @@ export function Header() {
                 ))}
               </div>
             )}
-            {/* Thời tiết theo khu vực */}
-            <WeatherMenu mobile />
           </div>
         </nav>
       )}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Gamepad2, Star, Play, ChevronRight, Sprout, Fish, PawPrint, ShoppingBag, Dices, Warehouse } from 'lucide-react';
+import { Gamepad2, Star, Play, ChevronRight, Sprout, Fish, PawPrint, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3 } from 'lucide-react';
 import { gamePortal, GameItem } from '@/lib/gamePortal';
 
 // Game trên web — mỗi game là 1 trang riêng (không phải tab)
@@ -16,12 +16,12 @@ const WEB_GAMES = [
 
 // Từng minigame hiện thẳng ra ngoài — bấm vào chơi luôn
 const MINIGAMES = [
-  { href: '/minigame/live?game=tai-xiu', label: 'Tài Xỉu (phòng chung)', color: 'from-rose-500 to-red-600' },
-  { href: '/minigame/live?game=bau-cua', label: 'Bầu Cua (phòng chung)', color: 'from-amber-500 to-orange-600' },
-  { href: '/minigame/solo?game=dua-thu', label: 'Đua Thú', color: 'from-lime-500 to-green-600' },
-  { href: '/minigame/solo?game=jackpot', label: 'Jackpot 777', color: 'from-purple-500 to-fuchsia-600' },
-  { href: '/minigame/tien-len', label: 'Tiến Lên (PvP)', color: 'from-sky-500 to-blue-600' },
-  { href: '/minigame/caro', label: 'Cờ Caro (PvP)', color: 'from-teal-500 to-cyan-600' },
+  { href: '/minigame/live?game=tai-xiu', label: 'Tài Xỉu (phòng chung)', color: 'from-rose-500 to-red-600', icon: Dices },
+  { href: '/minigame/live?game=bau-cua', label: 'Bầu Cua (phòng chung)', color: 'from-amber-500 to-orange-600', icon: Fish },
+  { href: '/minigame/solo?game=dua-thu', label: 'Đua Thú', color: 'from-lime-500 to-green-600', icon: Rabbit },
+  { href: '/minigame/solo?game=jackpot', label: 'Jackpot 777', color: 'from-purple-500 to-fuchsia-600', icon: Cherry },
+  { href: '/minigame/tien-len', label: 'Tiến Lên (PvP)', color: 'from-sky-500 to-blue-600', icon: Spade },
+  { href: '/minigame/caro', label: 'Cờ Caro (PvP)', color: 'from-teal-500 to-cyan-600', icon: Grid3x3 },
 ];
 
 function GameIcon({ g, size = 'md' }: { g: GameItem; size?: 'md' | 'lg' }) {
@@ -82,7 +82,7 @@ export default function CongGamePage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
           {MINIGAMES.map((m) => (
             <Link key={m.href} href={m.href} className="card flex flex-col items-center gap-2 p-4 text-center transition hover:-translate-y-0.5 hover:shadow-lg">
-              <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${m.color} text-white`}><Dices size={22} /></span>
+              <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${m.color} text-white`}><m.icon size={22} /></span>
               <span className="text-sm font-semibold">{m.label}</span>
             </Link>
           ))}

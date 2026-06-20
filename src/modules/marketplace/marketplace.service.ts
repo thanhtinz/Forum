@@ -65,6 +65,31 @@ export class MarketplaceService {
   }
 
   // ──────────────────────────────────────────────
+  // ADMIN — tạo / xoá gian hàng cho user bất kỳ
+  // ──────────────────────────────────────────────
+  async adminCreateStorefront(identifier: string, name: string) {
+    const id = (identifier || '').trim();
+    if (!id) throw new BadRequestException('Nhập username hoặc ID người dùng');
+    if (!name?.trim()) throw new BadRequestException('Nhập tên gian hàng');
+    const user = await this.prisma.user.findFirst({
+      where: { OR: [{ username: id }, { id }] },
+      select: { id: true, username: true },
+    });
+    if (!user) throw new NotFoundException('Không tìm thấy người dùng');
+    const existing = await this.prisma.storefront.findUnique({ where: { ownerId: user.id }, select: { id: true } });
+    if (existing) throw new ConflictException(`@${user.username} đã có gian hàng`);
+    const slug = await this.generateUniqueSlug(name);
+    return this.prisma.storefront.create({ data: { ownerId: user.id, slug, name: name.trim() } });
+  }
+
+  async adminDeleteStorefront(id: string) {
+    const store = await this.prisma.storefront.findUnique({ where: { id }, select: { id: true } });
+    if (!store) throw new NotFoundException('Gian hàng không tồn tại');
+    await this.prisma.storefront.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  // ──────────────────────────────────────────────
   // PUBLIC — danh sách + trang storefront
   // ──────────────────────────────────────────────
   async listStorefronts(page = 1, limit = 20, q?: string) {

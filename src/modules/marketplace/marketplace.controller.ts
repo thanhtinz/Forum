@@ -218,6 +218,14 @@ export class MarketplaceController {
   @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
   adminToggleStore(@Param('id') id: string, @Body('field') field: 'isVerified' | 'isActive') { return this.orders.adminToggleStorefront(id, field); }
 
+  @Post('admin/storefronts')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminCreateStore(@Body() body: { user: string; name: string }) { return this.marketplace.adminCreateStorefront(body.user, body.name); }
+
+  @Delete('admin/storefronts/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
+  adminDeleteStore(@Param('id') id: string) { return this.marketplace.adminDeleteStorefront(id); }
+
   @Get('admin/products')
   @UseGuards(JwtAuthGuard, RolesGuard) @Roles(UserRole.ADMIN)
   adminProducts(@Query('q') q?: string) { return this.orders.adminProducts(q); }

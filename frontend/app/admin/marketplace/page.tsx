@@ -62,20 +62,46 @@ function Categories() {
 
 function Stores() {
   const [list, setList] = useState<any[]>([]);
+  const [form, setForm] = useState({ user: '', name: '' });
+  const [msg, setMsg] = useState('');
   function load() { api.get<any[]>('/marketplace/admin/storefronts').then(setList).catch(() => {}); }
   useEffect(() => { load(); }, []);
   const toggle = async (id: string, field: string) => { await api.post(`/marketplace/admin/storefronts/${id}/toggle`, { field }).catch(() => {}); load(); };
+  async function create() {
+    if (!form.user.trim() || !form.name.trim()) { setMsg('Nhập username người dùng và tên gian hàng'); return; }
+    try { await api.post('/marketplace/admin/storefronts', form); setMsg('Đã tạo gian hàng ✓'); setForm({ user: '', name: '' }); load(); }
+    catch (e: any) { setMsg(e.message); }
+  }
+  async function remove(s: any) {
+    if (!confirm(`XOÁ vĩnh viễn gian hàng "${s.name}"? Mọi sản phẩm/đơn liên quan có thể bị ảnh hưởng. Không thể hoàn tác.`)) return;
+    try { await api.del(`/marketplace/admin/storefronts/${s.id}`); setMsg('Đã xoá gian hàng'); load(); }
+    catch (e: any) { setMsg(e.message); }
+  }
   return (
-    <div className="card divide-y divide-ink-100 dark:divide-ink-800">
-      {list.map((s) => (
-        <div key={s.id} className="flex items-center justify-between p-3 text-sm">
-          <span className="inline-flex items-center gap-1"><b>{s.name}</b> {s.isVerified && <BadgeCheck size={16} className="text-brand-600" />} {!s.isActive && '· (ẩn)'} <span className="text-ink-400">· {s.totalSales} bán</span></span>
-          <div className="flex gap-2">
-            <button onClick={() => toggle(s.id, 'isVerified')} className="btn-outline !py-1 text-xs">{s.isVerified ? 'Bỏ verify' : 'Verify'}</button>
-            <button onClick={() => toggle(s.id, 'isActive')} className="btn-outline !py-1 text-xs">{s.isActive ? 'Ẩn' : 'Hiện'}</button>
+    <div className="space-y-3">
+      <div className="card flex flex-wrap items-end gap-2 p-4">
+        <label className="text-sm">Username / ID chủ gian hàng
+          <input className="input mt-1 w-48" placeholder="vd: nguyenvana" value={form.user} onChange={(e) => setForm({ ...form, user: e.target.value })} />
+        </label>
+        <label className="text-sm">Tên gian hàng
+          <input className="input mt-1 w-56" placeholder="vd: Shop Nguyễn Văn A" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        </label>
+        <button onClick={create} className="btn-primary">+ Tạo gian hàng</button>
+        {msg && <span className="text-sm text-brand-600">{msg}</span>}
+      </div>
+      <div className="card divide-y divide-ink-100 dark:divide-ink-800">
+        {list.map((s) => (
+          <div key={s.id} className="flex items-center justify-between p-3 text-sm">
+            <span className="inline-flex items-center gap-1"><b>{s.name}</b> {s.isVerified && <BadgeCheck size={16} className="text-brand-600" />} {!s.isActive && '· (ẩn)'} <span className="text-ink-400">· {s.totalSales} bán · /{s.slug}</span></span>
+            <div className="flex gap-2">
+              <button onClick={() => toggle(s.id, 'isVerified')} className="btn-outline !py-1 text-xs">{s.isVerified ? 'Bỏ verify' : 'Verify'}</button>
+              <button onClick={() => toggle(s.id, 'isActive')} className="btn-outline !py-1 text-xs">{s.isActive ? 'Ẩn' : 'Hiện'}</button>
+              <button onClick={() => remove(s)} className="btn-outline !py-1 text-xs text-red-600">Xoá</button>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+        {list.length === 0 && <div className="p-6 text-center text-ink-500">Chưa có gian hàng.</div>}
+      </div>
     </div>
   );
 }

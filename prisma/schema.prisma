@@ -2959,6 +2959,8 @@ model FarmProfile {
   kheLastWaterAt DateTime? // lần tưới cây khế gần nhất (mỗi ngày)
   kheFruit       Int       @default(0) // số quả khế đã tích (đã chốt tại kheUpdatedAt)
   kheUpdatedAt   DateTime? // mốc thời gian chốt số quả khế
+  wellWater      Int       @default(40) // nước trong giếng (đã chốt tại wellUpdatedAt) — KHÔNG vô hạn
+  wellUpdatedAt  DateTime? // mốc thời gian chốt mực nước giếng (nước tự hồi theo thời gian)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

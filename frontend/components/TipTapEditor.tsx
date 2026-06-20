@@ -1058,7 +1058,10 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
         className="flex flex-wrap items-center gap-0.5 border-b border-ink-200/70 p-1.5 dark:border-ink-800"
         onMouseDown={(e) => {
           const el = e.target as HTMLElement;
-          if (el.closest('button') && !el.closest('input, select, textarea')) e.preventDefault();
+          // Để select/ô nhập chữ nhận focus bình thường; còn nút bấm + bộ chọn màu thì
+          // giữ vùng chọn trong editor (không cho mất focus) để lệnh áp dụng đúng.
+          if (el.closest('select, textarea, input:not([type="color"])')) return;
+          e.preventDefault();
         }}
       >
         <button type="button" className={cls(editor.isActive('bold'))} title="Đậm" onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={16} /></button>

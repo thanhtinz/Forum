@@ -125,25 +125,14 @@ export default function FarmPage() {
         const status = empty ? 'Giếng đã cạn — chờ nước hồi lại' : full ? 'Giếng đầy nước' : 'Nước đang hồi…';
         return (
         <section className="card flex items-center gap-4 p-4">
-          {/* Giếng vẽ bằng CSS: thân giếng đá + mặt nước dâng theo mực nước (chưa có asset giếng trong nguồn) */}
-          <div className="relative h-24 w-20 shrink-0">
-            {/* mái giếng */}
-            <div className="absolute -top-1 left-1/2 z-10 h-2 w-24 -translate-x-1/2 rounded-full bg-amber-900/80 shadow" />
-            <div className="absolute top-0 left-1/2 z-0 h-3 w-1.5 -translate-x-[14px] bg-amber-800" />
-            <div className="absolute top-0 left-1/2 z-0 h-3 w-1.5 translate-x-[12px] bg-amber-800" />
-            {/* thân giếng (miệng giếng) */}
-            <div className="absolute bottom-0 left-1/2 h-20 w-20 -translate-x-1/2 overflow-hidden rounded-b-md rounded-t-2xl border-4 border-stone-500 bg-stone-300 shadow-inner dark:border-stone-700 dark:bg-stone-800">
-              {/* gạch đá */}
-              <div className="absolute inset-0 opacity-40 [background:repeating-linear-gradient(0deg,transparent,transparent_8px,rgba(0,0,0,.25)_9px),repeating-linear-gradient(90deg,transparent,transparent_12px,rgba(0,0,0,.25)_13px)]" />
-              {/* lòng giếng tối */}
-              <div className="absolute inset-x-1 bottom-1 top-2 overflow-hidden rounded-b-sm rounded-t-xl bg-stone-900/70">
-                {/* mặt nước dâng theo mực nước */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-sky-400/90 to-sky-600 transition-[height] duration-700"
-                  style={{ height: `${ratio * 100}%` }}>
-                  <div className="h-1 w-full animate-pulse bg-white/40" />
-                </div>
-              </div>
-            </div>
+          {/* Giếng (asset): ảnh giếng cạn làm nền, ảnh giếng có nước phủ lên, lộ dần từ dưới theo mực nước */}
+          <div className="relative h-24 w-[106px] shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/game-assets/nongtrai/img/gieng-can.png" alt="Giếng" className="absolute inset-0 h-full w-full object-contain" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/game-assets/nongtrai/img/gieng-nuoc.png" alt="" aria-hidden
+              className="absolute inset-0 h-full w-full object-contain transition-[clip-path] duration-700"
+              style={{ clipPath: `inset(${(1 - ratio) * 100}% 0 0 0)` }} />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold">Giếng nước</h2>

@@ -187,12 +187,28 @@ export function Header() {
             </div>
           </form>
           <div className="flex flex-col gap-1">
-            {[...NAV, ...UTILS].map((n) => (
+            {NAV.map((n) => (
               <Link key={n.href} href={n.href} onClick={() => setNavOpen(false)}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
                 <n.icon size={16} /> {n.label}
               </Link>
             ))}
+            {/* Tiện ích — thu gọn được trên mobile */}
+            <button onClick={() => setUtilOpen((o) => !o)}
+              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+              <span className="flex items-center gap-2"><Wrench size={16} /> Tiện ích</span>
+              <ChevronDown size={15} className={`transition ${utilOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {utilOpen && (
+              <div className="ml-3 flex flex-col gap-1 border-l border-white/15 pl-2">
+                {UTILS.map((u) => (
+                  <Link key={u.href} href={u.href} onClick={() => setNavOpen(false)}
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+                    <u.icon size={16} /> {u.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </nav>
       )}

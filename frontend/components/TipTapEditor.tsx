@@ -870,7 +870,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
   }
 
   function insertVideo() {
-    const url = window.prompt('Dán link YouTube hoặc TikTok:', 'https://');
+    const url = window.prompt('Dán link YouTube / TikTok / Vimeo / Bilibili:', 'https://');
     if (!url) return;
     const u = url.trim();
     // YouTube
@@ -888,6 +888,12 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
     const vimeo = u.match(/vimeo\.com\/(\d+)/i);
     if (vimeo) {
       (editor!.chain().focus() as any).setIframeEmbed({ src: `https://player.vimeo.com/video/${vimeo[1]}` }).run();
+      return;
+    }
+    // Bilibili (link hoặc mã BV)
+    const bv = u.match(/BV[0-9A-Za-z]+/);
+    if (bv) {
+      (editor!.chain().focus() as any).setIframeEmbed({ src: `https://player.bilibili.com/player.html?bvid=${bv[0]}&page=1` }).run();
       return;
     }
     // Khác → chèn liên kết
@@ -941,15 +947,6 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
     const src = window.prompt('Đường dẫn tệp âm thanh (mp3…):', 'https://');
     if (!src) return;
     chain().setFxAudio({ src }).run();
-  }
-
-  function addBilibili() {
-    closeInsert();
-    const u = window.prompt('Dán link Bilibili hoặc mã BV:', 'https://');
-    if (!u) return;
-    const m = u.match(/BV[0-9A-Za-z]+/);
-    if (!m) { window.alert('Không tìm thấy mã BV hợp lệ.'); return; }
-    chain().setIframeEmbed({ src: `https://player.bilibili.com/player.html?bvid=${m[0]}&page=1` }).run();
   }
 
   function addDateTime() {
@@ -1184,7 +1181,6 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
               <button type="button" className={aiMenuItem} onClick={addMarquee}>Chữ chạy (marquee)</button>
               <button type="button" className={aiMenuItem} onClick={() => addButton('btn')}>Nút bấm</button>
               <button type="button" className={aiMenuItem} onClick={addAudio}><span className="flex items-center gap-2"><Music size={14} /> Âm thanh (audio)</span></button>
-              <button type="button" className={aiMenuItem} onClick={addBilibili}>Bilibili</button>
               <button type="button" className={aiMenuItem} onClick={addCard}>Thẻ card</button>
               <button type="button" className={aiMenuItem} onClick={addTimeline}>Dòng thời gian</button>
               <button type="button" className={aiMenuItem} onClick={addNetdisk}>Nút tải về</button>

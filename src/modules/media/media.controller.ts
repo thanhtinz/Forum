@@ -10,9 +10,6 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { createId } from '@paralleldrive/cuid2';
-import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { extname, join } from 'path';
 import { MediaService } from './media.service';
 import { AttachmentService } from './attachment.service';
 import { PresignUploadDto } from './media.dto';
@@ -20,7 +17,6 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles, RolesGuard } from '../../common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 
-const UPLOAD_DIR = process.env.UPLOAD_DIR || join(process.cwd(), 'uploads');
 const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 
 @Controller('media')
@@ -37,7 +33,7 @@ export class MediaController {
     return this.media.presignUpload(dto);
   }
 
-  // Upload ảnh: ưu tiên Cloudflare R2 (nếu đã cấu hình), không thì lưu local.
+  // Upload ảnh — bắt buộc qua Cloudflare R2.
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -72,24 +68,16 @@ export class MediaController {
   )
   async uploadImage(@UploadedFile() file: any) {
     if (!file) throw new BadRequestException('Không có file được tải lên');
-    // Toàn bộ ảnh editor cũng đi qua R2 (fallback local) — thống nhất 1 kho lưu trữ.
     return this.saveImage(file);
   }
 
-  // Lưu ảnh: R2 nếu đã bật, không thì lưu local. Luôn trả { url, filename }.
+  // Lưu ảnh: BẮT BUỘC qua R2. Trả { url, filename }.
   private async saveImage(file: any) {
-    if (await this.attachments.isEnabled()) {
-      const r = await this.attachments.upload(file.buffer, file.originalname, file.mimetype, 'images');
-      return { url: r.url, filename: r.filename };
-    }
-    if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
-    const ext = extname(file.originalname || '').toLowerCase() || '.png';
-    const filename = `${createId()}${ext}`;
-    writeFileSync(join(UPLOAD_DIR, filename), file.buffer);
-    return { url: `/uploads/${filename}`, filename };
+    const r = await this.attachments.upload(file.buffer, file.originalname, file.mimetype, 'images');
+    return { url: r.url, filename: r.filename };
   }
 
-  // ── Tệp đính kèm (mọi loại file) lên R2/S3, fallback local ──
+  // ── Tệp đính kèm (mọi loại file) lên R2 ──
   @Post('upload-attachment')
   @UseInterceptors(
     FileInterceptor('file', {

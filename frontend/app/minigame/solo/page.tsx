@@ -193,18 +193,37 @@ function SoloPlay() {
             </div>
           )}
 
-          <div className="mt-2 text-sm text-ink-500">
-            {result.outcome && `Kết quả: ${String(result.outcome).toUpperCase()} `}{result.total != null && `(tổng ${result.total}) `}
-            {Array.isArray(result.dice) && `· [${result.dice.join(', ')}] `}
-            {result.multiplier != null && `· x${result.multiplier} `}
-            {result.isJackpot && ' · 🎰 JACKPOT!'}
+          {/* Chi tiết kết quả */}
+          <div className="mx-auto mt-3 max-w-xs space-y-1 rounded-xl bg-ink-50 p-3 text-sm dark:bg-ink-800/50">
+            {result.outcome && (
+              <Row label="Kết quả" value={`${String(result.outcome).toUpperCase()}${result.total != null ? ` (tổng ${result.total})` : ''}`} />
+            )}
+            {game === 'bau-cua' && Array.isArray(result.dice) && (
+              <Row label="Mặt xúc xắc" value={result.dice.map((d: string) => BAUCUA.find(([s]) => s === d)?.[1] || d).join(' · ')} />
+            )}
+            {game === 'tai-xiu' && Array.isArray(result.dice) && (
+              <Row label="Xúc xắc" value={`${result.dice.join(' + ')} = ${result.total ?? result.dice.reduce((a: number, b: number) => a + b, 0)}`} />
+            )}
+            {game === 'dua-thu' && result.winner != null && (
+              <Row label="Về nhất" value={`${RACE_NAMES[result.winner] || `Thú ${result.winner}`}`} />
+            )}
+            {result.multiplier != null && <Row label="Hệ số thắng" value={`x${result.multiplier}`} />}
+            {game === 'jackpot' && result.isJackpot && <Row label="Đặc biệt" value="🎰 JACKPOT 777!" />}
+            <Row label="Tiền cược" value={`${formatCoin(bet)} coin`} />
+            <div className="mt-1 flex items-center justify-between border-t border-ink-200 pt-1.5 font-bold dark:border-ink-700">
+              <span>{won ? 'Tiền thắng' : 'Kết quả'}</span>
+              <span className={won ? 'text-emerald-600' : 'text-rose-600'}>{(result.netCoin ?? 0) >= 0 ? '+' : ''}{formatCoin(result.netCoin ?? 0)} coin</span>
+            </div>
           </div>
-          <div className="mt-1 font-medium">{(result.netCoin ?? 0) >= 0 ? '+' : ''}{formatCoin(result.netCoin ?? 0)} coin</div>
           <button onClick={() => setResult(null)} className="btn-outline mt-3 text-xs">Chơi tiếp</button>
         </div>
       )}
     </div>
   );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return <div className="flex items-center justify-between gap-2"><span className="text-ink-500">{label}</span><span className="text-right font-medium">{value}</span></div>;
 }
 
 export default function SoloPage() {

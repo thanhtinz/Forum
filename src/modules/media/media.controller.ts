@@ -9,7 +9,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage, memoryStorage } from 'multer';
+import { memoryStorage } from 'multer';
 import { createId } from '@paralleldrive/cuid2';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { extname, join } from 'path';
@@ -39,41 +39,26 @@ export class MediaController {
     return this.media.presignUpload(dto);
   }
 
-  // Upload ảnh trực tiếp lên server (lưu local) — chạy được ngay trên mọi VPS.
+  // Upload ảnh: ưu tiên Cloudflare R2 (nếu đã cấu hình), không thì lưu local.
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: (_req, _file, cb) => {
-          mkdirSync(UPLOAD_DIR, { recursive: true });
-          cb(null, UPLOAD_DIR);
-        },
-        filename: (_req, file, cb) => {
-          const ext = extname(file.originalname).toLowerCase();
-          cb(null, `${createId()}${ext}`);
-        },
-      }),
+      storage: memoryStorage(),
       limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
       fileFilter: (_req, file, cb) => {
         if (!ALLOWED_MIME.has(file.mimetype)) {
-          return cb(
-            new BadRequestException('Chỉ chấp nhận ảnh PNG, JPEG, GIF hoặc WEBP'),
-            false,
-          );
+          return cb(new BadRequestException('Chỉ chấp nhận ảnh PNG, JPEG, GIF hoặc WEBP'), false);
         }
         cb(null, true);
       },
     }),
   )
-  upload(@UploadedFile() file: any) {
+  async upload(@UploadedFile() file: any) {
     if (!file) throw new BadRequestException('Không có file được tải lên');
-    // Đảm bảo thư mục tồn tại (phòng trường hợp bị xoá runtime).
-    if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
-    return { url: `/uploads/${file.filename}`, filename: file.filename };
+    return this.saveImage(file);
   }
 
-  // Upload ảnh cho trình soạn thảo: ưu tiên dịch vụ ngoài (zpic/anh.moe) nếu admin đã bật,
-  // không thì lưu local. Dùng cho nút chèn ảnh trong editor.
+  // Upload ảnh cho trình soạn thảo — cũng qua R2 (rồi imagehost, rồi local).
   @Post('upload-image')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -89,10 +74,19 @@ export class MediaController {
   )
   async uploadImage(@UploadedFile() file: any) {
     if (!file) throw new BadRequestException('Không có file được tải lên');
+    // Ưu tiên dịch vụ ảnh ngoài nếu admin chủ động bật (zpic/anh.moe), còn lại theo R2/local.
     if (await this.imageHost.isEnabled()) {
       return this.imageHost.upload(file.buffer, file.originalname, file.mimetype);
     }
-    // Fallback: lưu local
+    return this.saveImage(file);
+  }
+
+  // Lưu ảnh: R2 nếu đã bật, không thì lưu local. Luôn trả { url, filename }.
+  private async saveImage(file: any) {
+    if (await this.attachments.isEnabled()) {
+      const r = await this.attachments.upload(file.buffer, file.originalname, file.mimetype, 'images');
+      return { url: r.url, filename: r.filename };
+    }
     if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
     const ext = extname(file.originalname || '').toLowerCase() || '.png';
     const filename = `${createId()}${ext}`;

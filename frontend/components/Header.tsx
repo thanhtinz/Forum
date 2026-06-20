@@ -41,9 +41,11 @@ export function Header() {
   const [navOpen, setNavOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [hasStore, setHasStore] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!user) { setUnread(0); return; }
+    if (!user) { setUnread(0); setHasStore(null); return; }
+    api.get<{ hasStore: boolean }>('/marketplace/seller/my-store').then((r) => setHasStore(r.hasStore)).catch(() => setHasStore(null));
     api.get<{ meta: { unreadCount: number } }>('/notifications').then((r) => setUnread(r.meta.unreadCount)).catch(() => {});
     const base = process.env.NEXT_PUBLIC_API_URL || '';
     const s = io(`${base}/notif`, { auth: { token: getToken() }, transports: ['websocket', 'polling'] });
@@ -127,8 +129,8 @@ export function Header() {
                   <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <Package size={15} /> Đơn hàng của tôi
                   </Link>
-                  <Link href="/seller" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <Store size={15} /> Seller Center
+                  <Link href={hasStore === false ? '/store/manage' : '/seller'} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <Store size={15} /> {hasStore === false ? 'Đăng ký bán hàng' : 'Seller Center'}
                   </Link>
                   {user.role === 'ADMIN' && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">

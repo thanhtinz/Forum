@@ -62,6 +62,12 @@ export class SellerService {
     return s;
   }
 
+  // Kiểm tra nhanh user đã có gian hàng chưa (cho header dropdown)
+  async myStore(userId: string) {
+    const s = await this.prisma.storefront.findUnique({ where: { ownerId: userId }, select: { slug: true } });
+    return { hasStore: !!s, slug: s?.slug ?? null };
+  }
+
   // ── 1. Dashboard tổng quan ──
   async dashboard(userId: string) {
     await this.orders.releaseMatured(userId);

@@ -82,6 +82,10 @@ export class MarketplaceController {
   setPerkConfig(@Body() b: any) { return this.perks.setConfig(b); }
 
   // ── SELLER CENTER ──
+  @Get('seller/my-store')
+  @UseGuards(JwtAuthGuard)
+  myStore(@CurrentUser('id') uid: string) { return this.seller.myStore(uid); }
+
   @Get('seller/dashboard')
   @UseGuards(JwtAuthGuard)
   sellerDashboard(@CurrentUser('id') uid: string) { return this.seller.dashboard(uid); }

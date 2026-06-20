@@ -17,6 +17,8 @@ const BAUCUA: [string, string][] = [['bau', 'Bầu'], ['cua', 'Cua'], ['tom', 'T
 const BOARD = '/game-assets/avatar/gameroom/imgTable.png';
 const COIN = '/game-assets/jackpot/coin.png';
 const DICE_FACE = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+// Tên 7 con thú (khớp engine RaceGame), index theo lane 1..7
+const RACE_NAMES = ['', 'Thánh nhím', 'Rồng huyền thoại', 'Rắn thợ săn', 'Mini Totoro', 'Con bướm xinh', 'Người ngoài hành tinh', 'Khủng long phun nửa'];
 
 function SoloPlay() {
   const { user, loading } = useAuth();
@@ -102,7 +104,7 @@ function SoloPlay() {
                 return (
                   <div key={n} onClick={() => !animating && setDuaThu(n)}
                     className={`relative h-9 cursor-pointer overflow-hidden rounded-md border-y border-dashed border-white/40 ${duaThu === n ? 'bg-amber-300/40 ring-2 ring-amber-500' : 'bg-black/5 hover:bg-black/10'}`}>
-                    <span className="absolute left-1 top-1/2 z-10 -translate-y-1/2 text-xs font-bold text-ink-600">{n}</span>
+                    <span className="absolute left-1 top-1/2 z-10 -translate-y-1/2 whitespace-nowrap text-[11px] font-bold text-ink-700">{n}. {RACE_NAMES[n]}</span>
                     <span className="absolute right-1 top-1/2 -translate-y-1/2 text-lg">{winner && !animating ? '🏁🥇' : '🏁'}</span>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={`/game-assets/duathu/${n}.gif`} alt={`Thú ${n}`} className="absolute top-1/2 h-7 -translate-y-1/2 object-contain transition-all duration-100" style={{ left: `calc(${pos}% + 14px)` }} />
@@ -168,7 +170,7 @@ function SoloPlay() {
           {game === 'dua-thu' && result.winner != null && (
             <div className="mt-3 flex flex-col items-center">
               <img src={`/game-assets/duathu/${result.winner}.gif`} alt="winner" className="h-16 object-contain" />
-              <span className="text-xs text-ink-500">Thú thắng: {result.winner}</span>
+              <span className="text-sm font-medium text-ink-600">Về nhất: {RACE_NAMES[result.winner] || `Thú ${result.winner}`}</span>
             </div>
           )}
           {game === 'tai-xiu' && Array.isArray(result.dice) && (
@@ -192,7 +194,7 @@ function SoloPlay() {
           <div className="mt-2 text-sm text-ink-500">
             {result.outcome && `Kết quả: ${String(result.outcome).toUpperCase()} `}{result.total != null && `(tổng ${result.total}) `}
             {Array.isArray(result.dice) && `· [${result.dice.join(', ')}] `}
-            {result.multiplier != null && `· x${result.multiplier} `}{result.winner != null && `· thú thắng: ${result.winner}`}
+            {result.multiplier != null && `· x${result.multiplier} `}
             {result.isJackpot && ' · 🎰 JACKPOT!'}
           </div>
           <div className="mt-1 font-medium">{(result.netCoin ?? 0) >= 0 ? '+' : ''}{formatCoin(result.netCoin ?? 0)} coin</div>

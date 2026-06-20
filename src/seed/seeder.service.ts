@@ -5,7 +5,7 @@ import { FISH_SPECIES, FISH_DEPTHS, FISHING_RODS, FISHING_BOATS } from './data/f
 import { CROPS, FERTILIZERS, ANIMALS } from './data/farm.data';
 import { FOODS } from './data/foods.data';
 import { WARDROBE_ITEMS } from './data/wardrobe.data';
-import { TOOL_CATEGORIES, TOOLS } from './data/tools.data';
+import { TOOL_CATEGORIES, TOOLS, SERVER_TOOLS } from './data/tools.data';
 import { AI_CHARACTER, AI_OUTFITS } from './data/ai-character.data';
 import { DEFAULT_GROUPS } from '../modules/permissions/permission.service';
 import { AdminConfigService } from '../modules/admin/admin-config.service';
@@ -166,12 +166,12 @@ export class SeederService implements OnApplicationBootstrap {
       catId.set(c.slug, cat.id);
       n++;
     }
-    for (const t of TOOLS) {
+    for (const t of [...TOOLS, ...SERVER_TOOLS]) {
       const categoryId = catId.get(t.categorySlug);
       if (!categoryId) continue;
       const data = {
         categoryId, name: t.name, description: t.description, icon: t.icon,
-        component: t.component, isPro: t.isPro ?? false, sortOrder: t.sortOrder,
+        component: t.component, serverEngine: t.serverEngine ?? null, isPro: t.isPro ?? false, sortOrder: t.sortOrder,
       };
       await this.prisma.tool.upsert({ where: { slug: t.slug }, update: data, create: { ...data, slug: t.slug } });
       n++;

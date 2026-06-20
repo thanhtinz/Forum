@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import ImageUpload from '@/components/ImageUpload';
 
 interface GameApi {
   id: string; slug: string; name: string; baseUrl: string; apiKey?: string | null;
@@ -85,9 +86,11 @@ export default function AdminGameApi() {
           <label className="text-sm">Thể loại
             <input className="input mt-1" value={gForm.genre} onChange={(e) => setGForm({ ...gForm, genre: e.target.value })} />
           </label>
-          <label className="text-sm sm:col-span-2">Icon URL
-            <input className="input mt-1" value={gForm.iconUrl} onChange={(e) => setGForm({ ...gForm, iconUrl: e.target.value })} />
-          </label>
+          <div className="text-sm sm:col-span-2">Icon game
+            {gForm.iconUrl && /^https?:|^\//.test(gForm.iconUrl) && <img src={gForm.iconUrl} alt="" className="mt-1 h-12 w-12 rounded object-contain" />}
+            <div className="mt-1"><ImageUpload value={gForm.iconUrl} onUploaded={(url) => setGForm({ ...gForm, iconUrl: url })} label="Tải icon" /></div>
+            <input className="input mt-1 text-xs" placeholder="hoặc dán URL icon" value={gForm.iconUrl} onChange={(e) => setGForm({ ...gForm, iconUrl: e.target.value })} />
+          </div>
           <label className="text-sm sm:col-span-2">Mô tả ngắn
             <input className="input mt-1" value={gForm.shortDesc} onChange={(e) => setGForm({ ...gForm, shortDesc: e.target.value })} />
           </label>

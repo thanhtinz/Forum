@@ -186,6 +186,9 @@ export class AdminConfigService {
   // ──────────────────────────────────────────────
   async seedDefaults() {
     const groups = DEFAULT_CONFIG_GROUPS;
+    const validGroupKeys = groups.map((g) => g.key);
+    const validSettingKeys: string[] = [];
+
     for (const g of groups) {
       const group = await this.prisma.configGroup.upsert({
         where: { key: g.key },
@@ -193,9 +196,21 @@ export class AdminConfigService {
         create: { key: g.key, name: g.name, description: g.description, icon: g.icon, sortOrder: g.sortOrder },
       });
       for (const [i, s] of g.settings.entries()) {
+        validSettingKeys.push(s.key);
         await this.prisma.configSetting.upsert({
           where: { key: s.key },
-          update: {}, // không ghi đè value đã set
+          // Cập nhật metadata (label/type/options…) để đồng bộ với code, NHƯNG giữ nguyên `value` đã set.
+          update: {
+            groupId: group.id,
+            label: s.label,
+            description: s.description ?? null,
+            type: s.type,
+            defaultValue: s.value,
+            options: s.options ?? undefined,
+            validation: s.validation ?? undefined,
+            isSecret: s.isSecret ?? false,
+            sortOrder: i,
+          },
           create: {
             groupId: group.id,
             key: s.key,
@@ -212,8 +227,17 @@ export class AdminConfigService {
         });
       }
     }
+
+    // Dọn rác: xoá các cấu hình/nhóm không còn trong định nghĩa (tính năng đã bỏ).
+    const removedSettings = await this.prisma.configSetting.deleteMany({
+      where: { key: { notIn: validSettingKeys } },
+    });
+    const removedGroups = await this.prisma.configGroup.deleteMany({
+      where: { key: { notIn: validGroupKeys } },
+    });
+
     this.invalidateCache();
-    return { groups: groups.length };
+    return { groups: groups.length, removedSettings: removedSettings.count, removedGroups: removedGroups.count };
   }
 }
 
@@ -298,15 +322,12 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
   {
     key: 'gem',
     name: 'Hệ thống Gem',
-    description: 'Cấu hình tiền tệ Gem',
+    description: 'Gem là tiền tệ nạp bằng tiền thật (mua qua SePay/PayPal). Dùng để mua nội dung ẩn, sản phẩm trên chợ… Phần thưởng hoạt động (điểm danh, đăng bài) trả bằng Xu trong game, không phải Gem.',
     icon: 'gem',
     sortOrder: 4,
     settings: [
       { key: 'gem.name', label: 'Tên đơn vị', type: 'string', value: 'Gem' },
       { key: 'gem.icon', label: 'Icon Gem', type: 'image', value: '' },
-      { key: 'gem.registerBonus', label: 'Gem thưởng đăng ký', type: 'number', value: 50, validation: { min: 0 } },
-      { key: 'gem.dailyLoginBonus', label: 'Gem điểm danh ngày', type: 'number', value: 5, validation: { min: 0 } },
-      { key: 'gem.postReward', label: 'Gem thưởng mỗi bài viết', type: 'number', value: 1, validation: { min: 0 } },
       { key: 'gem.minWithdraw', label: 'Gem tối thiểu để rút', type: 'number', value: 1000, validation: { min: 0 } },
     ],
   },
@@ -392,9 +413,20 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
       { key: 'auth.requireEmailVerify', label: 'Bắt buộc xác thực email', type: 'boolean', value: false },
       { key: 'auth.requireAgeVerify', label: 'Bắt buộc xác minh tuổi', type: 'boolean', value: false },
       { key: 'auth.minUsernameLength', label: 'Độ dài username tối thiểu', type: 'number', value: 3, validation: { min: 2, max: 20 } },
-      { key: 'auth.googleEnabled', label: 'Bật đăng nhập Google', type: 'boolean', value: true },
-      { key: 'auth.discordEnabled', label: 'Bật đăng nhập Discord', type: 'boolean', value: true },
-      { key: 'auth.zaloEnabled', label: 'Bật đăng nhập Zalo', type: 'boolean', value: true },
+
+      { key: 'auth.googleEnabled', label: 'Bật đăng nhập Google', type: 'boolean', value: false },
+      { key: 'auth.googleClientId', label: 'Google Client ID', description: 'Lấy ở Google Cloud Console → OAuth 2.0', type: 'string', value: '', isSecret: true },
+      { key: 'auth.googleClientSecret', label: 'Google Client Secret', type: 'string', value: '', isSecret: true },
+
+      { key: 'auth.discordEnabled', label: 'Bật đăng nhập Discord', type: 'boolean', value: false },
+      { key: 'auth.discordClientId', label: 'Discord Client ID', description: 'Discord Developer Portal → OAuth2', type: 'string', value: '', isSecret: true },
+      { key: 'auth.discordClientSecret', label: 'Discord Client Secret', type: 'string', value: '', isSecret: true },
+
+      { key: 'auth.zaloEnabled', label: 'Bật đăng nhập Zalo', type: 'boolean', value: false },
+      { key: 'auth.zaloAppId', label: 'Zalo App ID', description: 'Zalo Developers → Ứng dụng', type: 'string', value: '', isSecret: true },
+      { key: 'auth.zaloAppSecret', label: 'Zalo App Secret', type: 'string', value: '', isSecret: true },
+
+      { key: 'auth.oauthRedirectUri', label: 'OAuth Redirect URI', description: 'URL callback dùng chung cho các nhà cung cấp (vd: https://yoursite.com/oauth/callback)', type: 'string', value: '' },
     ],
   },
   {

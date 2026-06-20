@@ -160,7 +160,7 @@ export default function FarmPage() {
         {s.plots.length === 0 ? (
           <p className="p-4 text-sm text-ink-700">Đang mở ô đất…</p>
         ) : (
-          <div className="relative w-full overflow-hidden" style={{ aspectRatio: '900 / 757', backgroundImage: `url(${FARM_BG})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          <div className="relative w-full overflow-hidden" style={{ aspectRatio: '838 / 757', backgroundImage: `url(${FARM_BG})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
             <DogCompanion active={s.profile.dogActive} />
             <div className="absolute inset-0 overflow-y-auto px-[8%] py-[11%]">
               <div className="flex flex-wrap content-start justify-center gap-2">

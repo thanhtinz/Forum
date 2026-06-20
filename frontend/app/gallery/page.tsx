@@ -131,7 +131,7 @@ export default function GalleryPage() {
 
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !busy && setShowCreate(false)}>
-          <form onSubmit={createAlbum} className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+          <form onSubmit={createAlbum} className="card w-full max-w-md p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-semibold">Tạo album mới</h3>
             <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tiêu đề album" className="input mt-3 w-full" />
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Mô tả (tuỳ chọn)" rows={3} className="input mt-2 w-full resize-y" />

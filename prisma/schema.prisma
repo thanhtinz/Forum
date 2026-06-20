@@ -355,6 +355,7 @@ model User {
   scamBlacklistAdded   ScamBlacklist[]
   toolRuns             ToolRun[]
   toolFavorites        ToolFavorite[]
+  hostedImages         HostedImage[]
 
   @@index([email])
   @@index([username])
@@ -1361,6 +1362,7 @@ model GalleryAlbum {
 
   owner User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   media GalleryMedia[]
+  hostedImages HostedImage[]
 
   @@index([ownerId, createdAt])
 }
@@ -1941,6 +1943,26 @@ model ToolRun {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+// Ảnh host kiểu imgbb: upload R2, có thể hẹn giờ tự xoá, mã nhúng, gom album
+model HostedImage {
+  id        String    @id @default(cuid())
+  ownerId   String
+  url       String    @db.VarChar(500)
+  title     String?   @db.VarChar(200)
+  size      Int       @default(0)
+  albumId   String?
+  expiresAt DateTime?
+  viewCount Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  owner User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  album GalleryAlbum? @relation(fields: [albumId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId, createdAt])
+  @@index([albumId])
+  @@index([expiresAt])
 }
 
 model ToolFavorite {

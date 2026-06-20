@@ -24,7 +24,7 @@ import {
   Youtube as YoutubeIcon, Minus, Undo2, Redo2, Type, Palette, Highlighter,
   Rows, Columns, Trash2, EyeOff, Sparkles, ChevronDown,
   Eye, Maximize2, Minimize2,
-  Plus, Info, Music, Clock, Hash,
+  Plus, Hash,
 } from 'lucide-react';
 import { uploadEditorImage, uploadAttachment, api } from '@/lib/api';
 import { marked } from 'marked';
@@ -1166,7 +1166,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
                   className={`${aiMenuItem} justify-between`}
                   onClick={() => setCalloutOpen((o) => !o)}
                 >
-                  <span className="flex items-center gap-2"><Info size={14} /> Khung thông báo</span>
+                  <span>Khung thông báo</span>
                   <ChevronDown size={12} />
                 </button>
                 {calloutOpen && (
@@ -1181,12 +1181,12 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
               <button type="button" className={aiMenuItem} onClick={addProgress}>Thanh tiến độ</button>
               <button type="button" className={aiMenuItem} onClick={addMarquee}>Chữ chạy (marquee)</button>
               <button type="button" className={aiMenuItem} onClick={() => addButton('btn')}>Nút bấm</button>
-              <button type="button" className={aiMenuItem} onClick={addAudio}><span className="flex items-center gap-2"><Music size={14} /> Âm thanh (audio)</span></button>
+              <button type="button" className={aiMenuItem} onClick={addAudio}>Âm thanh (audio)</button>
               <button type="button" className={aiMenuItem} onClick={addCard}>Thẻ card</button>
               <button type="button" className={aiMenuItem} onClick={addTimeline}>Dòng thời gian</button>
               <button type="button" className={aiMenuItem} onClick={addNetdisk}>Nút tải về</button>
               <button type="button" className={aiMenuItem} onClick={addCopy}>Bấm để copy</button>
-              <button type="button" className={aiMenuItem} onClick={addDateTime}><span className="flex items-center gap-2"><Clock size={14} /> Chèn thời gian</span></button>
+              <button type="button" className={aiMenuItem} onClick={addDateTime}>Chèn thời gian</button>
             </div>
           )}
         </div>

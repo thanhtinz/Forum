@@ -1,0 +1,253 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import {
+  ArrowUp, Music, X, Play, Pause, SkipBack, SkipForward, Repeat, Repeat1,
+  Shuffle, Volume2, Plus, Search, Trash2, Gauge,
+} from 'lucide-react';
+
+interface Track { kind: 'yt' | 'sp'; id: string; title: string; url: string }
+const LS_KEY = 'mini-player-playlist';
+
+// Parse link YouTube / Spotify -> track
+function parseUrl(raw: string): Track | null {
+  const u = raw.trim();
+  if (!u) return null;
+  const yt = u.match(/(?:youtube\.com\/.*[?&]v=|youtu\.be\/|youtube\.com\/embed\/|music\.youtube\.com\/watch\?v=)([\w-]{11})/);
+  if (yt) return { kind: 'yt', id: yt[1], title: `YouTube • ${yt[1]}`, url: u };
+  const sp = u.match(/open\.spotify\.com\/(?:intl-\w+\/)?track\/([\w]+)/);
+  if (sp) return { kind: 'sp', id: sp[1], title: `Spotify • ${sp[1]}`, url: u };
+  return null;
+}
+
+// Lấy tiêu đề bài hát (noembed hỗ trợ CORS)
+async function fetchTitle(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(url)}`);
+    const d = await r.json();
+    return d?.title || null;
+  } catch { return null; }
+}
+
+export function FloatingDock() {
+  const [showTop, setShowTop] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [list, setList] = useState<Track[]>([]);
+  const [cur, setCur] = useState(-1);
+  const [playing, setPlaying] = useState(false);
+  const [repeat, setRepeat] = useState<'off' | 'one' | 'all'>('off');
+  const [shuffle, setShuffle] = useState(false);
+  const [volume, setVolume] = useState(80);
+  const [speed, setSpeed] = useState(1);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [input, setInput] = useState('');
+  const [msg, setMsg] = useState('');
+
+  const yt = useRef<any>(null);
+  const ready = useRef(false);
+  const tick = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stateRef = useRef({ repeat, shuffle, list, cur });
+  stateRef.current = { repeat, shuffle, list, cur };
+
+  // hiện nút back-to-top khi cuộn
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 320);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // tải playlist từ localStorage
+  useEffect(() => {
+    try { const s = localStorage.getItem(LS_KEY); if (s) setList(JSON.parse(s)); } catch {}
+  }, []);
+  useEffect(() => { try { localStorage.setItem(LS_KEY, JSON.stringify(list)); } catch {} }, [list]);
+
+  // nạp YouTube IFrame API + tạo player ẩn
+  useEffect(() => {
+    if (!open) return;
+    function init() {
+      if (yt.current || !(window as any).YT?.Player) return;
+      yt.current = new (window as any).YT.Player('mini-yt', {
+        height: '0', width: '0',
+        playerVars: { autoplay: 0, controls: 0, disablekb: 1 },
+        events: {
+          onReady: () => { ready.current = true; yt.current.setVolume(volume); },
+          onStateChange: (e: any) => {
+            const YT = (window as any).YT;
+            if (e.data === YT.PlayerState.PLAYING) { setPlaying(true); setDuration(yt.current.getDuration() || 0); }
+            else if (e.data === YT.PlayerState.PAUSED) setPlaying(false);
+            else if (e.data === YT.PlayerState.ENDED) onEnded();
+          },
+        },
+      });
+    }
+    if ((window as any).YT?.Player) init();
+    else {
+      if (!document.getElementById('yt-iframe-api')) {
+        const s = document.createElement('script');
+        s.id = 'yt-iframe-api'; s.src = 'https://www.youtube.com/iframe_api';
+        document.body.appendChild(s);
+      }
+      (window as any).onYouTubeIframeAPIReady = init;
+      const iv = setInterval(() => { if ((window as any).YT?.Player) { clearInterval(iv); init(); } }, 300);
+      return () => clearInterval(iv);
+    }
+  }, [open]); // eslint-disable-line
+
+  // theo dõi tiến độ
+  useEffect(() => {
+    tick.current = setInterval(() => {
+      if (yt.current?.getCurrentTime && playing) {
+        setProgress(yt.current.getCurrentTime() || 0);
+        if (!duration) setDuration(yt.current.getDuration() || 0);
+      }
+    }, 1000);
+    return () => { if (tick.current) clearInterval(tick.current); };
+  }, [playing, duration]);
+
+  function onEnded() {
+    const { repeat: rp, shuffle: sf, list: ls, cur: c } = stateRef.current;
+    if (rp === 'one') { yt.current?.seekTo(0); yt.current?.playVideo(); return; }
+    if (sf && ls.length > 1) { let n = c; while (n === c) n = Math.floor(Math.random() * ls.length); playIndex(n); return; }
+    if (c < ls.length - 1) playIndex(c + 1);
+    else if (rp === 'all') playIndex(0);
+    else setPlaying(false);
+  }
+
+  function playIndex(i: number) {
+    const t = list[i]; if (!t) return;
+    setCur(i); setProgress(0); setDuration(0);
+    if (t.kind === 'yt') {
+      const start = () => { yt.current.loadVideoById(t.id); yt.current.setPlaybackRate(speed); yt.current.setVolume(volume); setPlaying(true); };
+      if (yt.current && ready.current) start();
+      else { const iv = setInterval(() => { if (yt.current && ready.current) { clearInterval(iv); start(); } }, 200); }
+    } else {
+      // Spotify: phát qua embed iframe (điều khiển riêng); dừng YouTube
+      if (yt.current?.pauseVideo) yt.current.pauseVideo();
+      setPlaying(false);
+    }
+  }
+
+  function togglePlay() {
+    if (cur < 0 && list.length) { playIndex(0); return; }
+    const t = list[cur];
+    if (t?.kind !== 'yt' || !yt.current) return;
+    if (playing) yt.current.pauseVideo(); else yt.current.playVideo();
+  }
+  function changeVolume(v: number) { setVolume(v); yt.current?.setVolume?.(v); }
+  function changeSpeed(s: number) { setSpeed(s); yt.current?.setPlaybackRate?.(s); }
+  function seek(v: number) { setProgress(v); yt.current?.seekTo?.(v, true); }
+
+  async function add() {
+    setMsg('');
+    const t = parseUrl(input);
+    if (!t) { setMsg('Chỉ nhận link YouTube hoặc Spotify track'); return; }
+    const title = await fetchTitle(t.url);
+    setList((l) => [...l, { ...t, title: title || t.title }]);
+    setInput('');
+  }
+  function remove(i: number) {
+    setList((l) => l.filter((_, idx) => idx !== i));
+    if (i === cur) { setCur(-1); setPlaying(false); yt.current?.stopVideo?.(); }
+    else if (i < cur) setCur((c) => c - 1);
+  }
+
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+  const track = list[cur];
+
+  return (
+    <>
+      {/* Player ẩn của YouTube */}
+      <div className="pointer-events-none fixed -left-10 bottom-0 h-0 w-0 overflow-hidden"><div id="mini-yt" /></div>
+
+      {/* Cụm nút nổi */}
+      <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
+        {showTop && (
+          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} title="Lên đầu trang"
+            className="grid h-11 w-11 place-items-center rounded-full bg-ink-800 text-white shadow-lg hover:bg-ink-900 dark:bg-ink-700">
+            <ArrowUp size={20} />
+          </button>
+        )}
+        {!open && (
+          <button onClick={() => setOpen(true)} title="Trình phát nhạc"
+            className="grid h-11 w-11 place-items-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700">
+            <Music size={20} />
+          </button>
+        )}
+      </div>
+
+      {/* Bảng trình phát nhạc */}
+      {open && (
+        <div className="fixed bottom-4 right-4 z-40 w-[340px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+          <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
+            <span className="flex items-center gap-1.5 text-sm font-bold text-brand-600"><Music size={16} /> Nhạc</span>
+            <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
+          </div>
+
+          <div className="space-y-3 p-3">
+            {/* Đang phát */}
+            <div className="rounded-xl bg-ink-50 p-2.5 dark:bg-ink-800/50">
+              <div className="truncate text-sm font-medium">{track ? track.title : 'Chưa chọn bài'}</div>
+              {track?.kind === 'sp' ? (
+                <iframe title="spotify" className="mt-2 w-full rounded-lg" height="80" src={`https://open.spotify.com/embed/track/${track.id}`} allow="encrypted-media" />
+              ) : (
+                <>
+                  <input type="range" min={0} max={duration || 0} value={progress} onChange={(e) => seek(Number(e.target.value))} className="mt-2 w-full accent-brand-600" />
+                  <div className="flex justify-between text-[10px] text-ink-400"><span>{fmt(progress)}</span><span>{fmt(duration)}</span></div>
+                </>
+              )}
+              {/* Điều khiển */}
+              <div className="mt-1 flex items-center justify-center gap-3">
+                <button onClick={() => setShuffle((s) => !s)} title="Ngẫu nhiên" className={shuffle ? 'text-brand-600' : 'text-ink-400'}><Shuffle size={16} /></button>
+                <button onClick={() => cur > 0 && playIndex(cur - 1)} className="text-ink-600 dark:text-ink-300"><SkipBack size={20} /></button>
+                <button onClick={togglePlay} className="grid h-10 w-10 place-items-center rounded-full bg-brand-600 text-white">{playing ? <Pause size={20} /> : <Play size={20} />}</button>
+                <button onClick={() => cur < list.length - 1 && playIndex(cur + 1)} className="text-ink-600 dark:text-ink-300"><SkipForward size={20} /></button>
+                <button onClick={() => setRepeat(repeat === 'off' ? 'all' : repeat === 'all' ? 'one' : 'off')} title="Lặp lại" className={repeat !== 'off' ? 'text-brand-600' : 'text-ink-400'}>
+                  {repeat === 'one' ? <Repeat1 size={16} /> : <Repeat size={16} />}
+                </button>
+              </div>
+              {/* Âm lượng + tốc độ (cho YouTube) */}
+              <div className="mt-2 flex items-center gap-3 text-xs text-ink-500">
+                <Volume2 size={14} />
+                <input type="range" min={0} max={100} value={volume} onChange={(e) => changeVolume(Number(e.target.value))} className="flex-1 accent-brand-600" />
+                <span className="inline-flex items-center gap-1"><Gauge size={14} />
+                  <select value={speed} onChange={(e) => changeSpeed(Number(e.target.value))} className="rounded border border-ink-200 bg-transparent text-xs dark:border-ink-700">
+                    {[0.5, 0.75, 1, 1.25, 1.5, 2].map((s) => <option key={s} value={s}>{s}x</option>)}
+                  </select>
+                </span>
+              </div>
+            </div>
+
+            {/* Thêm bài + tìm */}
+            <div className="flex gap-1.5">
+              <input className="input flex-1 text-sm" placeholder="Dán link YouTube / Spotify…" value={input}
+                onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} />
+              <button onClick={add} className="btn-outline px-2.5"><Plus size={15} /></button>
+            </div>
+            <div className="flex gap-1.5 text-xs">
+              <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(input || 'nhạc')}`} target="_blank" rel="noreferrer" className="btn-outline flex-1 justify-center !py-1"><Search size={13} /> YouTube</a>
+              <a href={`https://open.spotify.com/search/${encodeURIComponent(input || '')}`} target="_blank" rel="noreferrer" className="btn-outline flex-1 justify-center !py-1"><Search size={13} /> Spotify</a>
+            </div>
+            {msg && <p className="text-xs text-rose-500">{msg}</p>}
+
+            {/* Playlist */}
+            <div className="max-h-44 space-y-1 overflow-y-auto">
+              {list.length === 0 && <p className="py-3 text-center text-xs text-ink-400">Playlist trống — dán link để thêm.</p>}
+              {list.map((t, i) => (
+                <div key={i} className={`flex items-center gap-2 rounded-lg px-2 py-1 text-sm ${i === cur ? 'bg-brand-50 dark:bg-ink-800' : 'hover:bg-ink-50 dark:hover:bg-ink-800/50'}`}>
+                  <button onClick={() => playIndex(i)} className="min-w-0 flex-1 truncate text-left">
+                    <span className={`mr-1 text-[10px] ${t.kind === 'yt' ? 'text-rose-500' : 'text-emerald-500'}`}>{t.kind === 'yt' ? 'YT' : 'SP'}</span>
+                    {t.title}
+                  </button>
+                  <button onClick={() => remove(i)} className="text-ink-400 hover:text-rose-500"><Trash2 size={13} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

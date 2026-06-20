@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Header } from './Header';
 import { SiteFooter } from './SiteFooter';
 import { AdminModBar } from './AdminModBar';
+import { FloatingDock } from './FloatingDock';
 
 // Bọc nội dung bằng Header + footer của forum, TRỪ khu /admin (admin có shell riêng)
 export function ForumChrome({ children }: { children: React.ReactNode }) {
@@ -17,6 +18,7 @@ export function ForumChrome({ children }: { children: React.ReactNode }) {
       <Header />
       <main className="container-forum py-5">{children}</main>
       <SiteFooter />
+      <FloatingDock />
       <AdminModBar />
     </>
   );

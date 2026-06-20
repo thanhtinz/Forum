@@ -31,17 +31,49 @@ interface LiveState {
   history?: { roundId: number; result: any }[];
 }
 
-// Hiển thị 1 kết quả lịch sử gọn
-function HistoryBadge({ game, result }: { game: Game; result: any }) {
+// 1 ô kết quả lịch sử — gọn gàng, có nhãn
+function HistoryCell({ game, result }: { game: Game; result: any }) {
   if (game === 'tai-xiu') {
     const o = result?.outcome;
     const cls = o === 'tai' ? 'bg-rose-500' : o === 'xiu' ? 'bg-sky-500' : 'bg-ink-500';
-    return <span className={`grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold text-white ${cls}`} title={`Tổng ${result?.total}`}>{o === 'tai' ? 'T' : o === 'xiu' ? 'X' : 'NC'}</span>;
+    return (
+      <div className="flex flex-col items-center gap-0.5">
+        <span className={`grid h-9 w-9 place-items-center rounded-full text-sm font-bold text-white ${cls}`}>{result?.total ?? '?'}</span>
+        <span className="text-[10px] font-medium text-ink-500">{o === 'tai' ? 'TÀI' : o === 'xiu' ? 'XỈU' : 'Bộ ba'}</span>
+      </div>
+    );
   }
   if (game === 'bau-cua') {
-    return <span className="flex gap-0.5 rounded-lg bg-ink-100 p-0.5 dark:bg-ink-800">{(result?.dice || []).map((d: string, i: number) => <img key={i} src={`/game-assets/baucua/${d}.png`} alt={d} className="h-5 w-5 object-contain" />)}</span>;
+    return (
+      <div className="flex flex-col items-center gap-0.5">
+        <span className="flex gap-0.5 rounded-lg border border-ink-200 bg-white p-1 dark:border-ink-700 dark:bg-ink-800">
+          {(result?.dice || []).map((d: string, i: number) => <img key={i} src={`/game-assets/baucua/${d}.png`} alt={d} className="h-6 w-6 object-contain" />)}
+        </span>
+      </div>
+    );
   }
-  return <span className="grid h-7 min-w-7 place-items-center rounded-full bg-amber-500 px-1.5 text-[11px] font-bold text-white" title={RACE_NAMES[result?.winner]}>#{result?.winner}</span>;
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-500 text-sm font-bold text-white">#{result?.winner}</span>
+      <span className="max-w-[64px] truncate text-[10px] font-medium text-ink-500">{RACE_NAMES[result?.winner]}</span>
+    </div>
+  );
+}
+
+// Tóm tắt thống kê lịch sử
+function HistorySummary({ game, history }: { game: Game; history: { result: any }[] }) {
+  if (game === 'tai-xiu') {
+    const tai = history.filter((h) => h.result?.outcome === 'tai').length;
+    const xiu = history.filter((h) => h.result?.outcome === 'xiu').length;
+    return <span className="text-xs text-ink-500"><b className="text-rose-500">{tai}</b> Tài · <b className="text-sky-500">{xiu}</b> Xỉu</span>;
+  }
+  if (game === 'dua-thu') {
+    const counts: Record<number, number> = {};
+    history.forEach((h) => { const w = h.result?.winner; if (w) counts[w] = (counts[w] || 0) + 1; });
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    return top ? <span className="text-xs text-ink-500">Nhiều nhất: <b>{RACE_NAMES[Number(top[0])]}</b> ({top[1]})</span> : null;
+  }
+  return null;
 }
 
 function LiveRoom() {
@@ -147,10 +179,13 @@ function LiveRoom() {
       {/* Lịch sử phiên trước */}
       {st?.history && st.history.length > 0 && (
         <div className="card p-3">
-          <h2 className="mb-2 flex items-center gap-1 text-sm font-semibold text-ink-500"><History size={14} /> Lịch sử phiên trước</h2>
-          <div className="flex gap-1.5 overflow-x-auto pb-1">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="flex items-center gap-1 text-sm font-semibold text-ink-600 dark:text-ink-300"><History size={14} /> Lịch sử phiên</h2>
+            <HistorySummary game={game} history={st.history} />
+          </div>
+          <div className="flex gap-3 overflow-x-auto rounded-xl bg-ink-50 p-2.5 dark:bg-ink-800/40">
             {st.history.map((h) => (
-              <div key={h.roundId} className="shrink-0"><HistoryBadge game={game} result={h.result} /></div>
+              <div key={h.roundId} className="shrink-0"><HistoryCell game={game} result={h.result} /></div>
             ))}
           </div>
         </div>

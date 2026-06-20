@@ -67,17 +67,17 @@ export class AttachmentService {
     return c.enabled && !!c.endpoint && !!c.bucket && !!c.accessKey && !!c.secretKey;
   }
 
-  async upload(buffer: Buffer, filename: string, mimetype: string): Promise<{ url: string; filename: string; size: number }> {
+  // folder: 'attachments' | 'images' | … — phân loại object trong bucket R2
+  async upload(buffer: Buffer, filename: string, mimetype: string, folder = 'attachments'): Promise<{ url: string; filename: string; size: number }> {
     if (buffer.length > MAX_SIZE) throw new BadRequestException('Tệp vượt quá giới hạn 50MB');
     const ext = (extname(filename || '').slice(1) || '').toLowerCase();
     if (BLOCKED_EXT.has(ext)) throw new BadRequestException(`Không cho phép tệp .${ext}`);
 
     const cfg = await this.getConfig();
     if (cfg.enabled && cfg.endpoint && cfg.bucket && cfg.accessKey && cfg.secretKey) {
-      const key = this.buildKey(ext);
+      const key = this.buildKey(ext, folder);
       await this.putObject(cfg, key, buffer, mimetype || 'application/octet-stream');
-      const base = cfg.publicUrl || this.objectBase(cfg, key);
-      const url = cfg.publicUrl ? `${cfg.publicUrl}/${key}` : base;
+      const url = cfg.publicUrl ? `${cfg.publicUrl}/${key}` : this.objectBase(cfg, key);
       return { url, filename, size: buffer.length };
     }
     // Fallback local
@@ -87,10 +87,10 @@ export class AttachmentService {
     return { url: `/uploads/${fn}`, filename, size: buffer.length };
   }
 
-  private buildKey(ext: string) {
+  private buildKey(ext: string, folder = 'attachments') {
     const now = new Date();
     const datePath = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-    return `attachments/${datePath}/${createId()}${ext ? '.' + ext : ''}`;
+    return `${folder}/${datePath}/${createId()}${ext ? '.' + ext : ''}`;
   }
 
   private objectBase(cfg: AttachmentConfig, key: string) {

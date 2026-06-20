@@ -152,15 +152,15 @@ export default function FarmPage() {
         );
       })()}
 
-      <section className="card overflow-hidden p-4">
-        <div className="mb-3 flex items-center justify-between">
+      <section className="card overflow-hidden">
+        <div className="flex items-center justify-between p-3">
           <h2 className="font-semibold">Ô đất ({s.profile.plotCount}/{s.profile.maxPlots})</h2>
           <span className="text-xs text-ink-600">{s.profile.nextPlotLevel != null ? `Ô kế mở ở cấp ${s.profile.nextPlotLevel}` : 'Đã mở tối đa'}</span>
         </div>
         {s.plots.length === 0 ? (
-          <p className="text-sm text-ink-700">Đang mở ô đất…</p>
+          <p className="p-4 text-sm text-ink-700">Đang mở ô đất…</p>
         ) : (
-          <div className="relative w-full overflow-hidden rounded-xl border border-ink-200/60" style={{ aspectRatio: '900 / 757', backgroundImage: `url(${FARM_BG})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          <div className="relative w-full overflow-hidden" style={{ aspectRatio: '900 / 757', backgroundImage: `url(${FARM_BG})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
             <DogCompanion active={s.profile.dogActive} />
             <div className="absolute inset-0 overflow-y-auto px-[8%] py-[11%]">
               <div className="flex flex-wrap content-start justify-center gap-2">

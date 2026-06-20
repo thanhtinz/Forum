@@ -28,17 +28,24 @@ interface LiveState {
   result: any | null; pot: Record<string, number>; totalPot: number;
   players: { name: string; avatar?: string | null; total: number; net?: number; me?: boolean }[]; playerCount: number;
   mine: { option: string; amount: number }[]; myNet?: number;
-  history?: { roundId: number; result: any }[];
+  history?: { roundId: number; result: any; at?: number }[];
 }
 
-// 1 ô kết quả lịch sử — có nhãn, số phiên, đánh dấu mới nhất
-function HistoryCell({ game, result, roundId, latest }: { game: Game; result: any; roundId: number; latest?: boolean }) {
-  let badge: React.ReactNode, label = '';
+// 1 ô kết quả lịch sử — bấm vào để xem thời gian chi tiết
+function HistoryCell({ game, result, roundId, at }: { game: Game; result: any; roundId: number; at?: number }) {
+  const [open, setOpen] = useState(false);
+  let badge: React.ReactNode, label = '', extra: React.ReactNode = null;
   if (game === 'tai-xiu') {
     const o = result?.outcome;
     const cls = o === 'tai' ? 'bg-rose-500' : o === 'xiu' ? 'bg-sky-500' : 'bg-ink-500';
     badge = <span className={`grid h-9 w-9 place-items-center rounded-full text-sm font-bold text-white ${cls}`}>{result?.total ?? '?'}</span>;
     label = o === 'tai' ? 'TÀI' : o === 'xiu' ? 'XỈU' : 'Bộ ba';
+    // hiện 3 viên xúc xắc của phiên trước
+    if (Array.isArray(result?.dice)) extra = (
+      <span className="flex gap-0.5 text-base leading-none text-ink-700 dark:text-ink-200">
+        {result.dice.map((d: number, i: number) => <span key={i}>{DICE_FACE[d] || '🎲'}</span>)}
+      </span>
+    );
   } else if (game === 'bau-cua') {
     badge = (
       <span className="flex gap-0.5 rounded-lg border border-ink-200 bg-white p-1 dark:border-ink-700 dark:bg-ink-800">
@@ -47,17 +54,19 @@ function HistoryCell({ game, result, roundId, latest }: { game: Game; result: an
     );
     label = (result?.dice || []).map((d: string) => BAUCUA.find(([s]) => s === d)?.[1] || d).join(' ');
   } else {
-    badge = <span className="grid h-9 w-9 place-items-center rounded-full bg-amber-500 text-sm font-bold text-white">{result?.winner}</span>;
+    // đua thú: hiện ảnh con thú về nhất
+    badge = <img src={`/game-assets/duathu/${result?.winner}.gif`} alt={RACE_NAMES[result?.winner] || ''} className="h-10 w-10 object-contain" />;
     label = RACE_NAMES[result?.winner] || '';
   }
   return (
-    <div className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 ${latest ? 'bg-brand-50 ring-2 ring-brand-500 dark:bg-brand-900/20' : ''}`}>
+    <button type="button" onClick={() => setOpen((o) => !o)} title="Bấm xem thời gian"
+      className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 transition hover:bg-ink-100 dark:hover:bg-ink-800 ${open ? 'bg-ink-100 dark:bg-ink-800' : ''}`}>
       {badge}
-      <span className="max-w-[68px] truncate text-[10px] font-medium text-ink-600 dark:text-ink-300">{label}</span>
-      {latest
-        ? <span className="inline-flex items-center gap-0.5 rounded-full bg-brand-600 px-1.5 text-[9px] font-bold leading-4 text-white">● MỚI</span>
-        : <span className="text-[9px] text-ink-400">#{roundId}</span>}
-    </div>
+      {extra}
+      <span className="max-w-[72px] truncate text-[10px] font-medium text-ink-600 dark:text-ink-300">{label}</span>
+      <span className="text-[9px] text-ink-400">#{roundId}</span>
+      {open && at && <span className="text-[9px] font-medium text-brand-500">{new Date(at).toLocaleTimeString('vi-VN')}</span>}
+    </button>
   );
 }
 
@@ -187,8 +196,8 @@ function LiveRoom() {
           <div className="flex items-stretch gap-1.5 rounded-xl bg-ink-50 p-2 dark:bg-ink-800/40">
             <span className="flex shrink-0 items-center text-[10px] font-semibold text-brand-500">◄ Mới</span>
             <div className="flex flex-1 gap-2 overflow-x-auto">
-              {st.history.map((h, i) => (
-                <div key={h.roundId} className="shrink-0"><HistoryCell game={game} result={h.result} roundId={h.roundId} latest={i === 0} /></div>
+              {st.history.map((h) => (
+                <div key={h.roundId} className="shrink-0"><HistoryCell game={game} result={h.result} roundId={h.roundId} at={h.at} /></div>
               ))}
             </div>
             <span className="flex shrink-0 items-center text-[10px] text-ink-400">Cũ ►</span>

@@ -20,6 +20,18 @@ const DICE_FACE = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 // Tên 7 con thú (khớp engine RaceGame), index theo lane 1..7
 const RACE_NAMES = ['', 'Thánh nhím', 'Rồng huyền thoại', 'Rắn thợ săn', 'Mini Totoro', 'Con bướm xinh', 'Người ngoài hành tinh', 'Khủng long phun nửa'];
 
+// 5 dòng thắng của Jackpot 777 (khớp PAYLINES backend). Toạ độ [cột, hàng].
+const PAYLINE_CELLS: [number, number][][] = [
+  [[0, 1], [1, 1], [2, 1]], // giữa
+  [[0, 0], [1, 0], [2, 0]], // trên
+  [[0, 2], [1, 2], [2, 2]], // dưới
+  [[0, 0], [1, 1], [2, 2]], // chéo \
+  [[0, 2], [1, 1], [2, 0]], // chéo /
+];
+const PAYLINE_COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#a855f7'];
+// tâm ô theo % (lưới 3×3 có padding + gap nên xích nhẹ vào trong)
+const CELL_PCT = [18, 50, 82];
+
 function SoloPlay() {
   const { user, loading } = useAuth();
   const initial = (useSearchParams().get('game') as Game) || 'tai-xiu';
@@ -138,22 +150,50 @@ function SoloPlay() {
             )}
           </>
         )}
-        {game === 'jackpot' && (
+        {game === 'jackpot' && (() => {
+          const wins: any[] = !animating && Array.isArray(result?.paylines) ? result.paylines : [];
+          const winCells = new Set<string>();
+          wins.forEach((w) => (PAYLINE_CELLS[w.line] || []).forEach(([c, r]) => winCells.add(`${c}-${r}`)));
+          return (
           <div className="mx-auto w-fit rounded-2xl border-4 border-amber-500 bg-gradient-to-b from-red-700 to-red-900 p-3 shadow-lg">
             <div className="mb-2 text-center text-lg font-extrabold tracking-widest text-amber-300">🎰 777</div>
-            <div className="grid grid-cols-3 gap-1 rounded-lg bg-ink-950/70 p-2">
-              {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => {
-                const SYMS = ['seven', 'bar', 'bell', 'cherry', 'lemon', 'coin'];
-                // đang quay: đổi symbol liên tục theo frame (cột phải dừng trễ hơn -> cảm giác quay)
-                const sym = animating
-                  ? SYMS[(frame + c * 2 + r) % SYMS.length]
-                  : (result?.grid?.[c]?.[r] || SYMS[(r * 3 + c) % 6]);
-                return <img key={`${c}-${r}`} src={`/game-assets/jackpot/${sym}.png`} alt="" className={`h-12 w-12 rounded bg-white/90 object-contain p-0.5 ${animating ? 'blur-[1px]' : ''}`} />;
-              }))}
+            <div className="relative rounded-lg bg-ink-950/70 p-2">
+              <div className="grid grid-cols-3 gap-1">
+                {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => {
+                  const SYMS = ['seven', 'bar', 'bell', 'cherry', 'lemon', 'coin'];
+                  // đang quay: đổi symbol liên tục theo frame (cột phải dừng trễ hơn -> cảm giác quay)
+                  const sym = animating
+                    ? SYMS[(frame + c * 2 + r) % SYMS.length]
+                    : (result?.grid?.[c]?.[r] || SYMS[(r * 3 + c) % 6]);
+                  const hit = winCells.has(`${c}-${r}`);
+                  return <img key={`${c}-${r}`} src={`/game-assets/jackpot/${sym}.png`} alt="" className={`h-12 w-12 rounded bg-white/90 object-contain p-0.5 transition ${animating ? 'blur-[1px]' : ''} ${hit ? 'ring-4 ring-amber-300 ring-offset-1 ring-offset-ink-950' : ''}`} />;
+                }))}
+              </div>
+              {/* Đường highlight các dòng thắng */}
+              {wins.length > 0 && (
+                <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-2">
+                  {wins.map((w, i) => {
+                    const cells = PAYLINE_CELLS[w.line] || [];
+                    const pts = cells.map(([c, r]) => `${CELL_PCT[c]},${CELL_PCT[r]}`).join(' ');
+                    return <polyline key={i} points={pts} fill="none" stroke={PAYLINE_COLORS[w.line % PAYLINE_COLORS.length]} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" opacity={0.9} />;
+                  })}
+                </svg>
+              )}
             </div>
+            {wins.length > 0 && (
+              <div className="mt-2 flex flex-wrap justify-center gap-1">
+                {wins.map((w, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 rounded-full bg-black/30 px-2 py-0.5 text-[10px] font-semibold text-amber-100">
+                    <span className="inline-block h-2 w-2 rounded-full" style={{ background: PAYLINE_COLORS[w.line % PAYLINE_COLORS.length] }} />
+                    Dòng {w.line + 1} · {w.count}× · x{w.multiplier}
+                  </span>
+                ))}
+              </div>
+            )}
             <p className="mt-2 text-center text-[11px] text-amber-100/80">Quay 3×3 · 5 dòng thắng · cược mỗi dòng</p>
           </div>
-        )}
+          );
+        })()}
 
         <button onClick={play} disabled={busy} className="btn-primary">{busy ? 'Đang chơi…' : 'Chơi'}</button>
         {msg && <p className="text-sm text-red-500">{msg}</p>}

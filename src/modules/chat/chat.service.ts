@@ -202,6 +202,33 @@ export class ChatService {
   }
 
   // ──────────────────────────────────────────────
+  // XOÁ TIN NHẮN (chủ tin nhắn, hoặc admin/mod)
+  // ──────────────────────────────────────────────
+  private async isStaff(userId: string) {
+    const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    return !!u && (u.role === 'ADMIN' || u.role === 'MODERATOR');
+  }
+
+  async deleteMessage(userId: string, messageId: string) {
+    const msg = await this.prisma.chatMessage.findUnique({ where: { id: messageId } });
+    if (!msg) throw new NotFoundException('Tin nhắn không tồn tại');
+    if (msg.senderId !== userId && !(await this.isStaff(userId))) {
+      throw new ForbiddenException('Không có quyền xoá tin nhắn này');
+    }
+    await this.prisma.chatMessage.update({ where: { id: messageId }, data: { isDeleted: true } });
+    return { ok: true, id: messageId, channelId: msg.channelId };
+  }
+
+  // Xoá toàn bộ tin nhắn 1 kênh (reset) — chỉ admin/mod
+  async clearChannel(userId: string, channelId: string) {
+    if (!(await this.isStaff(userId))) throw new ForbiddenException('Chỉ admin/mod được xoá toàn bộ');
+    const channel = await this.prisma.chatChannel.findUnique({ where: { id: channelId } });
+    if (!channel) throw new NotFoundException('Kênh không tồn tại');
+    await this.prisma.chatMessage.updateMany({ where: { channelId, isDeleted: false }, data: { isDeleted: true } });
+    return { ok: true, channelId };
+  }
+
+  // ──────────────────────────────────────────────
   // DANH SÁCH KÊNH CỦA USER
   // ──────────────────────────────────────────────
   async getUserChannels(userId: string) {

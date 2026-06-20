@@ -7,16 +7,18 @@ interface GameApi {
   id: string; slug: string; name: string; baseUrl: string; apiKey?: string | null;
   identifierKind: string; active: boolean; lastTestAt?: string | null; lastTestOk?: boolean | null;
 }
+interface GameLinks { googlePlay?: string; appStore?: string; apk?: string }
 interface PortalGame {
   slug: string; name: string; publisher: string; genre: string; iconUrl: string;
   shortDesc?: string | null; featured: boolean; online: boolean; active: boolean; sortOrder: number;
+  links?: GameLinks | null;
 }
 const KINDS = [
   { v: 'character_name', l: 'Tên nhân vật' },
   { v: 'character_id', l: 'ID nhân vật' },
   { v: 'ingame_account', l: 'Tài khoản ingame' },
 ];
-const emptyGame = { slug: '', name: '', publisher: '', genre: '', iconUrl: '', shortDesc: '', featured: false, online: true, active: true, sortOrder: 0 };
+const emptyGame = { slug: '', name: '', publisher: '', genre: '', iconUrl: '', shortDesc: '', featured: false, online: true, active: true, sortOrder: 0, googlePlay: '', appStore: '', apk: '' };
 const emptyApi = { slug: '', name: '', baseUrl: '', apiKey: '', identifierKind: 'character_name', active: true };
 
 export default function AdminGameApi() {
@@ -37,7 +39,9 @@ export default function AdminGameApi() {
   // ── Game CRUD ──
   async function saveGame() {
     if (!gForm.slug || !gForm.name) { setMsg('Nhập slug và tên game'); return; }
-    try { await api.post('/game-portal/admin/games', gForm); setMsg('Đã lưu game'); setGForm(emptyGame); load(); }
+    const { googlePlay, appStore, apk, ...rest } = gForm;
+    const payload = { ...rest, links: { googlePlay, appStore, apk } };
+    try { await api.post('/game-portal/admin/games', payload); setMsg('Đã lưu game'); setGForm(emptyGame); load(); }
     catch (e: any) { setMsg(e.message); }
   }
   async function delGame(slug: string) {
@@ -87,6 +91,17 @@ export default function AdminGameApi() {
           <label className="text-sm sm:col-span-2">Mô tả ngắn
             <input className="input mt-1" value={gForm.shortDesc} onChange={(e) => setGForm({ ...gForm, shortDesc: e.target.value })} />
           </label>
+          <div className="grid grid-cols-1 gap-3 sm:col-span-2 sm:grid-cols-3">
+            <label className="text-sm">Link Google Play
+              <input className="input mt-1" placeholder="https://play.google.com/..." value={gForm.googlePlay} onChange={(e) => setGForm({ ...gForm, googlePlay: e.target.value })} />
+            </label>
+            <label className="text-sm">Link App Store
+              <input className="input mt-1" placeholder="https://apps.apple.com/..." value={gForm.appStore} onChange={(e) => setGForm({ ...gForm, appStore: e.target.value })} />
+            </label>
+            <label className="text-sm">Link tải APK
+              <input className="input mt-1" placeholder="https://.../game.apk" value={gForm.apk} onChange={(e) => setGForm({ ...gForm, apk: e.target.value })} />
+            </label>
+          </div>
           <div className="flex flex-wrap items-center gap-4 text-sm sm:col-span-2">
             <label className="flex items-center gap-2"><input type="checkbox" checked={gForm.featured} onChange={(e) => setGForm({ ...gForm, featured: e.target.checked })} /> Nổi bật</label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={gForm.online} onChange={(e) => setGForm({ ...gForm, online: e.target.checked })} /> Trực tuyến</label>
@@ -110,7 +125,7 @@ export default function AdminGameApi() {
                   <td className="p-3 text-ink-500">{g.publisher} · {g.genre}</td>
                   <td className="p-3">{g.active ? '✓' : '—'}{g.featured ? ' ⭐' : ''}</td>
                   <td className="p-3"><div className="flex gap-1">
-                    <button onClick={() => setGForm({ slug: g.slug, name: g.name, publisher: g.publisher, genre: g.genre, iconUrl: g.iconUrl, shortDesc: g.shortDesc || '', featured: g.featured, online: g.online, active: g.active, sortOrder: g.sortOrder })} className="btn-outline !py-1 text-xs">Sửa</button>
+                    <button onClick={() => setGForm({ slug: g.slug, name: g.name, publisher: g.publisher, genre: g.genre, iconUrl: g.iconUrl, shortDesc: g.shortDesc || '', featured: g.featured, online: g.online, active: g.active, sortOrder: g.sortOrder, googlePlay: g.links?.googlePlay || '', appStore: g.links?.appStore || '', apk: g.links?.apk || '' })} className="btn-outline !py-1 text-xs">Sửa</button>
                     <button onClick={() => delGame(g.slug)} className="btn-outline !py-1 text-xs text-red-600">Xoá</button>
                   </div></td>
                 </tr>

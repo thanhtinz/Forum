@@ -75,24 +75,23 @@ export default function ScamHomePage() {
 
   return (
     <div className="container-forum space-y-5 py-5">
-      {/* Hero */}
+      {/* Hero — chỉ tiêu đề + mô tả */}
       <div className="rounded-2xl bg-gradient-to-r from-rose-600 to-red-700 p-6 text-white shadow-card">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold"><ShieldAlert /> Tố Cáo Lừa Đảo</h1>
-            <p className="mt-1 text-sm text-white/80">Tra cứu &amp; cảnh báo scammer — bảo vệ cộng đồng bằng bằng chứng.</p>
-          </div>
-          <Link href="/scam/new" className="btn bg-white font-semibold text-rose-700 hover:bg-white/90"><Plus size={16} /> Tạo tố cáo</Link>
+        <h1 className="flex items-center gap-2 text-2xl font-bold"><ShieldAlert /> Tố Cáo Lừa Đảo</h1>
+        <p className="mt-1 text-sm text-white/80">Tra cứu &amp; cảnh báo scammer — bảo vệ cộng đồng bằng bằng chứng.</p>
+      </div>
+
+      {/* Thanh công cụ: tạo tố cáo · tìm kiếm · cẩm nang */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="pointer-events-none absolute left-3 top-2.5 text-ink-400" size={18} />
+          <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }}
+            placeholder="Tìm UID, email, SĐT, ví crypto, domain, Discord, Telegram…"
+            className="input w-full pl-10" />
         </div>
-        {/* Search */}
-        <div className="mt-4 flex gap-2">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-2.5 text-ink-400" size={18} />
-            <input value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }}
-              placeholder="Tìm UID, email, SĐT, ví crypto, domain, Discord, Telegram…"
-              className="input w-full pl-10 text-ink-900" />
-          </div>
-          <Link href="/scam/guide" className="btn bg-white/15 text-white hover:bg-white/25">Cẩm nang</Link>
+        <div className="flex gap-2">
+          <Link href="/scam/new" className="btn-primary flex-1 justify-center sm:flex-none"><Plus size={16} /> Tạo tố cáo</Link>
+          <Link href="/scam/guide" className="btn-outline flex-1 justify-center sm:flex-none">Cẩm nang</Link>
         </div>
       </div>
 

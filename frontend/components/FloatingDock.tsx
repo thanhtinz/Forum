@@ -162,21 +162,19 @@ export function FloatingDock() {
       {/* Player ẩn của YouTube */}
       <div className="pointer-events-none fixed -left-10 bottom-0 h-0 w-0 overflow-hidden"><div id="mini-yt" /></div>
 
-      {/* Cụm nút nổi */}
-      <div className="fixed bottom-4 right-4 z-40 flex flex-col items-end gap-2">
-        {showTop && (
-          <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} title="Lên đầu trang"
-            className="grid h-11 w-11 place-items-center rounded-full bg-ink-800 text-white shadow-lg hover:bg-ink-900 dark:bg-ink-700">
-            <ArrowUp size={20} />
-          </button>
-        )}
-        {!open && (
-          <button onClick={() => setOpen(true)} title="Trình phát nhạc"
-            className="grid h-11 w-11 place-items-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700">
-            <Music size={20} />
-          </button>
-        )}
-      </div>
+      {/* Cụm nút nổi góc phải (xếp chồng): nhạc dưới cùng, back-to-top trên, admin trên nữa */}
+      {!open && (
+        <button onClick={() => setOpen(true)} title="Trình phát nhạc"
+          className="fixed bottom-4 right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700">
+          <Music size={20} />
+        </button>
+      )}
+      {showTop && (
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} title="Lên đầu trang"
+          className="fixed right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-ink-800 text-white shadow-lg hover:bg-ink-900 dark:bg-ink-700" style={{ bottom: '4.25rem' }}>
+          <ArrowUp size={20} />
+        </button>
+      )}
 
       {/* Bảng trình phát nhạc */}
       {open && (

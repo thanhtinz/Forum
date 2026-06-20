@@ -38,13 +38,13 @@ export function AdminModBar() {
       {/* Nút nổi */}
       {!open && (
         <button onClick={() => setOpen(true)} title="Kiểm duyệt nhanh"
-          className="fixed bottom-4 left-4 z-50 grid h-12 w-12 place-items-center rounded-full bg-rose-600 text-white shadow-lg hover:bg-rose-700">
-          <ShieldAlert size={22} />
+          className="fixed right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-rose-600 text-white shadow-lg hover:bg-rose-700" style={{ bottom: '7.5rem' }}>
+          <ShieldAlert size={20} />
         </button>
       )}
 
       {open && (
-        <div className="fixed bottom-4 left-4 z-50 w-[330px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+        <div className="fixed bottom-4 right-4 z-50 w-[330px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
           <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
             <span className="flex items-center gap-1.5 text-sm font-bold text-rose-600"><ShieldAlert size={16} /> Kiểm duyệt</span>
             <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>

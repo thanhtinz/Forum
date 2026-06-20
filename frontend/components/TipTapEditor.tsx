@@ -1158,7 +1158,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
             <Plus size={16} /><ChevronDown size={12} />
           </button>
           {insertOpen && (
-            <div className="absolute left-0 top-full z-20 mt-1 w-52 rounded-md border border-ink-200 bg-white py-1 shadow-lg dark:border-ink-700 dark:bg-ink-800">
+            <div className="absolute left-0 top-full z-20 mt-1 max-h-[60vh] w-52 overflow-y-auto rounded-md border border-ink-200 bg-white py-1 shadow-lg dark:border-ink-700 dark:bg-ink-800">
               {/* Khung thông báo + submenu */}
               <div className="relative">
                 <button

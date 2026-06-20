@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ShieldAlert, X, Search, AlertTriangle, MicOff, Ban, Unlock } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from './AuthProvider';
@@ -9,6 +9,14 @@ import { useAuth } from './AuthProvider';
 export function AdminModBar() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 320);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
   const [username, setUsername] = useState('');
   const [info, setInfo] = useState<any>(null);
   const [reason, setReason] = useState('');
@@ -38,7 +46,7 @@ export function AdminModBar() {
       {/* Nút nổi */}
       {!open && (
         <button onClick={() => setOpen(true)} title="Kiểm duyệt nhanh"
-          className="fixed right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-rose-600 text-white shadow-lg hover:bg-rose-700" style={{ bottom: '7.5rem' }}>
+          className="fixed right-4 z-40 grid h-11 w-11 place-items-center rounded-full bg-rose-600 text-white shadow-lg hover:bg-rose-700" style={{ bottom: scrolled ? '7.25rem' : '4rem' }}>
           <ShieldAlert size={20} />
         </button>
       )}

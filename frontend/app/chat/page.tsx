@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Hash, Users, User, Plus, ArrowLeft, Reply } from 'lucide-react';
+import { Hash, Users, User, Plus, ArrowLeft, Reply, Trash2, Eraser } from 'lucide-react';
 import { api, getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
@@ -65,6 +65,12 @@ export default function ChatPage() {
         clearTimeout(typingTimer.current);
         typingTimer.current = setTimeout(() => setTyping(null), 2500);
       });
+      socket.on('messageDeleted', (d: { id: string; channelId: string }) => {
+        if (d.channelId === activeRef.current) setMessages((prev) => prev.filter((m) => m.id !== d.id));
+      });
+      socket.on('channelCleared', (d: { channelId: string }) => {
+        if (d.channelId === activeRef.current) setMessages([]);
+      });
     })();
     return () => { socket?.disconnect(); };
   }, [user, loading, loadChannels]);
@@ -90,9 +96,17 @@ export default function ChatPage() {
     socketRef.current?.emit('typing', { channelId: activeId });
   }
   function selectChannel(id: string) { setActiveId(id); setMobileList(false); }
+  function deleteMessage(id: string) {
+    socketRef.current?.emit('deleteMessage', { messageId: id, channelId: activeId });
+  }
+  function clearChannel() {
+    if (!confirm('Xoá toàn bộ tin nhắn trong kênh này? Không thể hoàn tác.')) return;
+    socketRef.current?.emit('clearChannel', { channelId: activeId });
+  }
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để vào chat.</div>;
 
+  const isStaff = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
   const active = channels.find((c) => c.id === activeId);
 
   return (
@@ -132,6 +146,12 @@ export default function ChatPage() {
                 <p className="truncate font-semibold">{active.title}</p>
                 <p className="text-xs text-ink-400">{connected ? 'Đang kết nối' : 'Ngoại tuyến'}{active.type === 'GROUP' ? ` · ${active.memberCount} thành viên` : ''}</p>
               </div>
+              {isStaff && (
+                <button onClick={clearChannel} title="Xoá toàn bộ tin nhắn (reset)"
+                  className="flex items-center gap-1 rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-950/30">
+                  <Eraser size={14} /> Reset
+                </button>
+              )}
             </div>
 
             <div className="flex-1 space-y-2 overflow-y-auto p-4">
@@ -144,7 +164,12 @@ export default function ChatPage() {
                     <div className="flex-1">
                       <MessageView m={m} mine={mine} showName={active.type !== 'PRIVATE'} />
                     </div>
-                    <button onClick={() => setReplyTo(m)} className="opacity-0 group-hover:opacity-100" title="Trả lời"><Reply size={14} className="text-ink-400" /></button>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                      <button onClick={() => setReplyTo(m)} title="Trả lời"><Reply size={14} className="text-ink-400 hover:text-brand-600" /></button>
+                      {(isStaff || mine) && (
+                        <button onClick={() => deleteMessage(m.id)} title="Xoá tin nhắn"><Trash2 size={14} className="text-ink-400 hover:text-rose-500" /></button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

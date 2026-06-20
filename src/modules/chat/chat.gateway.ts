@@ -82,4 +82,36 @@ export class ChatGateway implements OnGatewayConnection {
     const userId = this.socketUsers.get(client.id);
     client.to(`channel:${data.channelId}`).emit('typing', { userId, channelId: data.channelId });
   }
+
+  // Xoá 1 tin nhắn (chủ tin / admin / mod) → báo cả phòng
+  @SubscribeMessage('deleteMessage')
+  async handleDelete(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { messageId: string; channelId: string },
+  ) {
+    const userId = this.socketUsers.get(client.id);
+    if (!userId) return client.emit('error', { message: 'Chưa xác thực' });
+    try {
+      const res = await this.chat.deleteMessage(userId, data.messageId);
+      this.server.to(`channel:${res.channelId}`).emit('messageDeleted', { id: res.id, channelId: res.channelId });
+    } catch (err: any) {
+      client.emit('error', { message: err.message });
+    }
+  }
+
+  // Xoá toàn bộ kênh (reset) — admin/mod
+  @SubscribeMessage('clearChannel')
+  async handleClear(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { channelId: string },
+  ) {
+    const userId = this.socketUsers.get(client.id);
+    if (!userId) return client.emit('error', { message: 'Chưa xác thực' });
+    try {
+      await this.chat.clearChannel(userId, data.channelId);
+      this.server.to(`channel:${data.channelId}`).emit('channelCleared', { channelId: data.channelId });
+    } catch (err: any) {
+      client.emit('error', { message: err.message });
+    }
+  }
 }

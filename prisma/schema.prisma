@@ -3426,6 +3426,7 @@ model PortalGame {
   coverUrl    String?  @db.VarChar(500)
   shortDesc   String?  @db.VarChar(500)
   description String?  @db.Text
+  links       Json? // { googlePlay?, appStore?, apk? } — nút tải game
   rating      Float    @default(4)
   featured    Boolean  @default(false)
   online      Boolean  @default(true)

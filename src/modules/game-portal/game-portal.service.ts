@@ -27,6 +27,7 @@ export class GamePortalService {
       slug: g.slug, name: g.name, publisher: g.publisher, genre: g.genre,
       iconUrl: g.iconUrl, coverUrl: g.coverUrl || undefined, shortDesc: g.shortDesc || undefined,
       rating: g.rating, featured: g.featured, online: g.online,
+      links: g.links || undefined,
     };
   }
 
@@ -151,6 +152,7 @@ export class GamePortalService {
       coverUrl: body.coverUrl?.trim() || null,
       shortDesc: body.shortDesc?.trim() || null,
       description: body.description?.trim() || null,
+      links: this.cleanLinks(body.links),
       rating: typeof body.rating === 'number' ? body.rating : 4,
       featured: !!body.featured,
       online: body.online ?? true,
@@ -158,6 +160,17 @@ export class GamePortalService {
       sortOrder: Number(body.sortOrder) || 0,
     };
     return this.prisma.portalGame.upsert({ where: { slug }, update: data, create: { slug, ...data } });
+  }
+
+  // Chuẩn hoá link tải game; trả undefined nếu không có link nào.
+  private cleanLinks(links: any) {
+    if (!links || typeof links !== 'object') return undefined;
+    const out: Record<string, string> = {};
+    for (const k of ['googlePlay', 'appStore', 'apk'] as const) {
+      const v = typeof links[k] === 'string' ? links[k].trim() : '';
+      if (v) out[k] = v;
+    }
+    return Object.keys(out).length ? out : undefined;
   }
 
   async deleteGame(slug: string) {

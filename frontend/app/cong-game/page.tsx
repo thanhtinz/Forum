@@ -96,10 +96,10 @@ export default function CongGamePage() {
         </div>
         <div className="flex gap-4 overflow-x-auto pb-2">
           {featured.map((g) => (
-            <Link key={g.slug} href={`/cong-game/detail?slug=${g.slug}`} className="card group w-36 shrink-0 p-3 text-center transition hover:-translate-y-0.5 hover:shadow-lg">
+            <Link key={g.slug} href={`/cong-game/detail?slug=${g.slug}`} className="card group flex w-36 shrink-0 flex-col items-center p-3 text-center transition hover:-translate-y-0.5 hover:shadow-lg">
               <GameIcon g={g} size="lg" />
-              <p className="mt-2 truncate text-sm font-semibold">{g.name}</p>
-              <p className="truncate text-xs text-ink-400">{g.genre}</p>
+              <p className="mt-2 w-full truncate text-sm font-semibold">{g.name}</p>
+              <p className="w-full truncate text-xs text-ink-400">{g.genre}</p>
             </Link>
           ))}
           {featured.length === 0 && <p className="text-sm text-ink-400">Chưa có game nổi bật.</p>}

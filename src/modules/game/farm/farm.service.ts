@@ -43,6 +43,11 @@ const BARN_MAX_LEVEL = 21; // 3 + 21 = 24 slot
 const PLANT_BASE_HEALTH = 60; // mới gieo cần chăm sóc mới đạt full
 const WATER_HEALTH = 25;      // tưới nước +25
 const FERTILIZE_HEALTH = 15;  // bón phân +15
+// Giếng nước — nguồn nước CÓ HẠN, tự hồi theo thời gian (như cây khế ra quả)
+const WELL_MAX = 100;                 // sức chứa giếng (đầy = 100 đơn vị nước)
+const WELL_REGEN_MS = 3 * 60 * 1000;  // hồi 1 nước mỗi 3 phút (đầy giếng sau ~5 giờ)
+const WATER_COST_PLOT = 5;            // tưới 1 ô đất tốn 5 nước
+const WATER_COST_KHE = 10;            // tưới cây khế tốn 10 nước
 
 @Injectable()
 export class FarmService {
@@ -163,6 +168,7 @@ export class FarmService {
         reduceSeconds: f.fertilizer.reduceSeconds,
       })),
       khe: this.kheInfo(profile),
+      well: this.wellInfo(profile),
     };
   }
 
@@ -215,6 +221,8 @@ export class FarmService {
     const profile = await this.getProfile(char.id);
     const info = this.kheInfo(profile as any);
     if (!info.canWater) throw new BadRequestException('Cây khế đã được tưới hôm nay, quay lại sau.');
+    // Rút nước từ giếng (không còn vô hạn nước)
+    await this.drawFromWell(char.id, profile as any, WATER_COST_KHE);
     const fruit = Math.min(this.KHE_MAX, this.currentKheFruit(profile as any) + this.KHE_WATER_BONUS);
     await this.prisma.farmProfile.update({
       where: { characterId: char.id },
@@ -245,6 +253,58 @@ export class FarmService {
       }, fruit);
     });
     return { harvested: fruit };
+  }
+
+  // ──────────────────────────────────────────────
+  // GIẾNG NƯỚC — nguồn nước CÓ HẠN, tự hồi theo thời gian.
+  // Tưới ô đất / tưới cây khế đều rút nước từ giếng; hết nước thì phải chờ giếng đầy lại.
+  // ──────────────────────────────────────────────
+  // Mực nước hiện tại = đã chốt + hồi thêm theo thời gian (cap WELL_MAX)
+  private currentWellWater(profile: { wellWater: number; wellUpdatedAt: Date | null }) {
+    const base = profile.wellWater ?? 0;
+    const since = profile.wellUpdatedAt ? Date.now() - profile.wellUpdatedAt.getTime() : 0;
+    const grown = since > 0 ? Math.floor(since / WELL_REGEN_MS) : 0;
+    return Math.min(WELL_MAX, base + grown);
+  }
+
+  private wellInfo(profile: { wellWater: number; wellUpdatedAt: Date | null }) {
+    const water = this.currentWellWater(profile);
+    const now = Date.now();
+    const base = profile.wellWater ?? 0;
+    const lastUpd = profile.wellUpdatedAt ? profile.wellUpdatedAt.getTime() : now;
+    let nextDropAt: Date | null = null;
+    let fullAt: Date | null = null;
+    if (water < WELL_MAX) {
+      const sinceLast = (now - lastUpd) % WELL_REGEN_MS;
+      nextDropAt = new Date(now + (WELL_REGEN_MS - sinceLast));
+      fullAt = new Date(lastUpd + (WELL_MAX - base) * WELL_REGEN_MS);
+    }
+    return {
+      water,
+      max: WELL_MAX,
+      costPlot: WATER_COST_PLOT,
+      costKhe: WATER_COST_KHE,
+      nextDropAt,
+      fullAt,
+    };
+  }
+
+  // Rút nước khỏi giếng (chốt lại mực nước + mốc hồi). Hết nước -> báo lỗi.
+  private async drawFromWell(
+    characterId: string,
+    profile: { wellWater: number; wellUpdatedAt: Date | null },
+    cost: number,
+  ) {
+    const current = this.currentWellWater(profile);
+    if (current < cost) {
+      throw new BadRequestException(`Giếng không đủ nước (cần ${cost}, còn ${current}). Chờ giếng đầy lại rồi tưới.`);
+    }
+    const remaining = current - cost;
+    await this.prisma.farmProfile.update({
+      where: { characterId },
+      data: { wellWater: remaining, wellUpdatedAt: new Date() },
+    });
+    return remaining;
   }
 
   // ──────────────────────────────────────────────
@@ -333,12 +393,15 @@ export class FarmService {
 
   async water(userId: string, plotIndex: number) {
     const char = await this.getCharacter(userId);
+    const profile = await this.getProfile(char.id);
     const plot = await this.getPlot(char.id, plotIndex);
     if (!plot.cropId) throw new BadRequestException('Ô đất trống');
     if (plot.watered) return { ok: true, alreadyWatered: true, health: plot.health };
+    // Rút nước từ giếng (nguồn nước có hạn)
+    const wellLeft = await this.drawFromWell(char.id, profile as any, WATER_COST_PLOT);
     const health = Math.min(100, plot.health + WATER_HEALTH);
     await this.prisma.farmPlot.update({ where: { id: plot.id }, data: { watered: true, health } });
-    return { ok: true, health };
+    return { ok: true, health, wellWater: wellLeft };
   }
 
   async applyFertilizer(userId: string, plotIndex: number, fertilizerSlug: string) {

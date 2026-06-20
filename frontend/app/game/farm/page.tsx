@@ -23,6 +23,7 @@ interface FarmState {
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
   fertilizers?: { slug: string; name: string; quantity: number; reduceSeconds: number }[];
   khe?: { fruit: number; max: number; pricePerFruit: number; canWater: boolean; nextWaterAt: string | null; nextFruitAt: string | null; fullAt: string | null };
+  well?: { water: number; max: number; costPlot: number; costKhe: number; nextDropAt: string | null; fullAt: string | null };
 }
 
 export default function FarmPage() {
@@ -45,7 +46,7 @@ export default function FarmPage() {
   async function buyDog() { try { await api.post('/farm/dog/buy'); setMsg('Đã mua chó giữ nhà (30 ngày)!'); } catch (e: any) { setMsg(e.message); } load(); }
   async function till(i: number) { try { await api.post('/farm/till', { plotIndex: i }); setMsg('Đã xới đất, giờ gieo hạt được rồi!'); } catch (e: any) { setMsg(e.message); } load(); }
   async function harvest(i: number) { await api.post('/farm/harvest', { plotIndex: i }).catch(() => {}); load(); }
-  async function water(i: number) { await api.post('/farm/water', { plotIndex: i }).catch(() => {}); load(); }
+  async function water(i: number) { try { await api.post('/farm/water', { plotIndex: i }); setMsg('Đã tưới nước (rút từ giếng).'); } catch (e: any) { setMsg(e.message); } load(); }
   async function plant(plotIndex: number, cropSlug: string, name: string) {
     try { await api.post('/farm/plant', { plotIndex, cropSlug }); setMsg(`Đã gieo ${name}`); setPlanting(null); }
     catch (e: any) { setMsg(e.message); } load();
@@ -116,6 +117,49 @@ export default function FarmPage() {
         </a>
       </section>
 
+      {/* Giếng nước — nguồn nước CÓ HẠN, tự hồi theo thời gian. Mực nước dâng/cạn theo lượng còn lại. */}
+      {s.well && (() => {
+        const ratio = Math.min(1, s.well.water / s.well.max);
+        const empty = s.well.water <= 0;
+        const full = s.well.water >= s.well.max;
+        const status = empty ? 'Giếng đã cạn — chờ nước hồi lại' : full ? 'Giếng đầy nước' : 'Nước đang hồi…';
+        return (
+        <section className="card flex items-center gap-4 p-4">
+          {/* Giếng vẽ bằng CSS: thân giếng đá + mặt nước dâng theo mực nước (chưa có asset giếng trong nguồn) */}
+          <div className="relative h-24 w-20 shrink-0">
+            {/* mái giếng */}
+            <div className="absolute -top-1 left-1/2 z-10 h-2 w-24 -translate-x-1/2 rounded-full bg-amber-900/80 shadow" />
+            <div className="absolute top-0 left-1/2 z-0 h-3 w-1.5 -translate-x-[14px] bg-amber-800" />
+            <div className="absolute top-0 left-1/2 z-0 h-3 w-1.5 translate-x-[12px] bg-amber-800" />
+            {/* thân giếng (miệng giếng) */}
+            <div className="absolute bottom-0 left-1/2 h-20 w-20 -translate-x-1/2 overflow-hidden rounded-b-md rounded-t-2xl border-4 border-stone-500 bg-stone-300 shadow-inner dark:border-stone-700 dark:bg-stone-800">
+              {/* gạch đá */}
+              <div className="absolute inset-0 opacity-40 [background:repeating-linear-gradient(0deg,transparent,transparent_8px,rgba(0,0,0,.25)_9px),repeating-linear-gradient(90deg,transparent,transparent_12px,rgba(0,0,0,.25)_13px)]" />
+              {/* lòng giếng tối */}
+              <div className="absolute inset-x-1 bottom-1 top-2 overflow-hidden rounded-b-sm rounded-t-xl bg-stone-900/70">
+                {/* mặt nước dâng theo mực nước */}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-b from-sky-400/90 to-sky-600 transition-[height] duration-700"
+                  style={{ height: `${ratio * 100}%` }}>
+                  <div className="h-1 w-full animate-pulse bg-white/40" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold">Giếng nước</h2>
+            <p className={`text-xs font-medium ${empty ? 'text-rose-500' : full ? 'text-sky-600' : 'text-emerald-600'}`}>{status}</p>
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
+              <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${ratio * 100}%` }} />
+            </div>
+            <p className="mt-1 text-sm text-ink-500">Nước: <b>{s.well.water}</b>/{s.well.max} · tưới ô đất tốn {s.well.costPlot}, tưới khế tốn {s.well.costKhe}. Nước tự hồi theo thời gian — <b>không vô hạn</b>.</p>
+            {!full && s.well.nextDropAt && (
+              <p className="text-xs text-sky-600">⏳ +1 nước sau {formatDuration(secondsUntil(s.well.nextDropAt, now))}{s.well.fullAt ? ` · đầy giếng sau ${formatDuration(secondsUntil(s.well.fullAt, now))}` : ''}</p>
+            )}
+          </div>
+        </section>
+        );
+      })()}
+
       {/* Cây Khế — tự ra quả theo thời gian, tưới để thêm, có quả mới thu hoạch */}
       {s.khe && (() => {
         const ratio = Math.min(1, s.khe.fruit / s.khe.max);
@@ -146,7 +190,8 @@ export default function FarmPage() {
           </div>
           <div className="flex shrink-0 flex-col gap-2">
             <button onClick={harvestKhe} disabled={s.khe.fruit <= 0} className="btn-primary disabled:opacity-50">Thu hoạch ({s.khe.fruit})</button>
-            <button onClick={waterKhe} disabled={!s.khe.canWater} className="btn-outline disabled:opacity-50">{s.khe.canWater ? 'Tưới cây' : 'Đã tưới'}</button>
+            <button onClick={waterKhe} disabled={!s.khe.canWater || (!!s.well && s.well.water < s.well.costKhe)} className="btn-outline disabled:opacity-50"
+              title={s.well && s.well.water < s.well.costKhe ? 'Giếng không đủ nước' : ''}>{!s.khe.canWater ? 'Đã tưới' : s.well && s.well.water < s.well.costKhe ? 'Hết nước' : `Tưới cây (−${s.well?.costKhe ?? 0}💧)`}</button>
           </div>
         </section>
         );
@@ -241,9 +286,11 @@ export default function FarmPage() {
               <h2 className="mb-1 font-semibold">Chăm sóc {plot?.crop ? plot.crop : `ô ${fertPlot + 1}`}</h2>
               <p className="mb-3 text-xs text-ink-500">Tưới nước giúp cây khoẻ (tăng sản lượng); bón phân giảm thời gian chín.</p>
 
-              {/* Tưới nước */}
+              {/* Tưới nước — rút từ giếng (có hạn) */}
               {plot && !plot.watered
-                ? <button onClick={() => { water(fertPlot); setFertPlot(null); }} className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-sky-500 px-2 py-2 text-sm font-medium text-white hover:bg-sky-600">💧 Tưới nước</button>
+                ? (s.well && s.well.water < s.well.costPlot
+                    ? <p className="mb-3 rounded-lg bg-rose-50 px-2 py-1.5 text-center text-xs text-rose-500 dark:bg-rose-950/30">💧 Giếng đã cạn nước — chờ nước hồi rồi tưới</p>
+                    : <button onClick={() => { water(fertPlot); setFertPlot(null); }} className="mb-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-sky-500 px-2 py-2 text-sm font-medium text-white hover:bg-sky-600">💧 Tưới nước (−{s.well?.costPlot ?? 0} nước giếng)</button>)
                 : <p className="mb-3 rounded-lg bg-ink-100 px-2 py-1.5 text-center text-xs text-ink-500 dark:bg-ink-800">✓ Đã tưới nước</p>}
 
               <p className="mb-1 text-sm font-semibold">Bón phân</p>

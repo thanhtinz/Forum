@@ -99,11 +99,10 @@ function CardFace({ card, className = '' }: { card: any; className?: string }) {
 }
 
 type Step = 'topics' | 'intro' | 'pick' | 'result';
-const FAN = 18;            // số lá úp xếp trên vòng cung (ít lá → lớp GPU nhẹ)
-const WHEEL_R = 300;       // bán kính vòng cung (px) — nhỏ để lớp xoay gọn, mượt trên mobile
-const WHEEL_CY = WHEEL_R + 56; // tâm vòng nằm dưới khung
-const WHEEL_STEP = 11;     // góc giữa 2 lá (độ)
-const WHEEL_LIMIT = ((FAN - 1) / 2) * WHEEL_STEP; // giới hạn xoay để mọi lá tới được đỉnh
+const FAN = 22;            // số lá úp xếp dạng quạt (cuộn ngang)
+const CARD_W = 60;         // bề rộng 1 lá (px)
+const CARD_GAP = 22;       // bước giữa 2 lá → chồng nhau ~ CARD_W - CARD_GAP
+const FAN_PAD = 80;        // đệm 2 bên để lá đầu/cuối căn giữa được
 
 function Tarot() {
   const [step, setStep] = useState<Step>('topics');
@@ -117,30 +116,27 @@ function Tarot() {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const slotRef = useRef<HTMLDivElement>(null);
-  const wheelRef = useRef<HTMLDivElement>(null);  // vòng bài xoay (ghi transform trực tiếp)
-  const rotRef = useRef(0);                        // góc xoay hiện tại
-  const rafRef = useRef(0);
-  const pendingRot = useRef(0);
-  const dragSt = useRef({ down: false, startX: 0, startRot: 0, moved: false });
+  const fanRef = useRef<HTMLDivElement>(null);     // khung cuộn ngang gốc
+  const dragSt = useRef({ down: false, startX: 0, startScroll: 0, moved: false });
 
-  function applyRot(deg: number) {
-    rotRef.current = deg;
-    // translateZ(0) giữ vòng trên 1 lớp GPU → xoay chỉ là transform, không re-raster
-    if (wheelRef.current) wheelRef.current.style.transform = `translateZ(0) rotate(${deg}deg)`;
-  }
+  // Căn giữa bộ bài khi vào bước rút bài (cuộn ngang gốc → luôn mượt)
+  useEffect(() => {
+    if (step === 'pick' && !flipped && fanRef.current) {
+      const el = fanRef.current;
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+    }
+  }, [step, flipped]);
 
-  // Kéo để xoay vòng bài (chuột + cảm ứng) — ghi thẳng DOM qua rAF, không setState nên mượt
+  // Desktop: kéo chuột để cuộn (chỉ đổi scrollLeft — rất nhẹ). Mobile: vuốt gốc.
   function fanDown(e: React.PointerEvent) {
-    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* noop */ }
-    dragSt.current = { down: true, startX: e.clientX, startRot: rotRef.current, moved: false };
+    if (e.pointerType !== 'mouse' || !fanRef.current) return;
+    dragSt.current = { down: true, startX: e.clientX, startScroll: fanRef.current.scrollLeft, moved: false };
   }
   function fanMove(e: React.PointerEvent) {
-    if (!dragSt.current.down) return;
+    if (!dragSt.current.down || !fanRef.current) return;
     const dx = e.clientX - dragSt.current.startX;
     if (Math.abs(dx) > 4) dragSt.current.moved = true;
-    pendingRot.current = Math.max(-WHEEL_LIMIT, Math.min(WHEEL_LIMIT, dragSt.current.startRot + dx * 0.22));
-    if (rafRef.current) return; // gộp nhiều sự kiện vào 1 frame
-    rafRef.current = requestAnimationFrame(() => { rafRef.current = 0; applyRot(pendingRot.current); });
+    fanRef.current.scrollLeft = dragSt.current.startScroll - dx;
   }
   function fanUp() { dragSt.current.down = false; }
 
@@ -153,7 +149,7 @@ function Tarot() {
 
   function reset() {
     setStep('topics'); setTopic(null); setTipIdx(0); setPicked([]);
-    setFlipped(false); setQ(''); setR(null); setErr(''); setLoading(false); applyRot(0);
+    setFlipped(false); setQ(''); setR(null); setErr(''); setLoading(false);
   }
 
   function chooseTopic(t: Topic) {
@@ -164,7 +160,7 @@ function Tarot() {
   // Bắt đầu: vào bước rút bài + gọi API bốc bài (ẩn cho tới khi lật)
   async function begin() {
     if (!topic) return;
-    setPicked([]); setFlipped(false); setR(null); setErr(''); applyRot(0); setStep('pick');
+    setPicked([]); setFlipped(false); setR(null); setErr(''); setStep('pick');
     setLoading(true);
     try {
       const res = await api.post('/fortune/tarot', { n: topic.n, question: topic.title, topic: TAROT_CATS[cat].key });
@@ -296,27 +292,27 @@ function Tarot() {
                 Lật bài
               </button>
 
-              {/* Bộ bài úp xếp trên vòng cung — kéo để xoay cả vòng, chạm để chọn */}
-              <p className="text-center text-xs text-ink-400">Kéo để xoay vòng bài · chạm để chọn</p>
-              <div onPointerDown={fanDown} onPointerMove={fanMove} onPointerUp={fanUp} onPointerLeave={fanUp} onPointerCancel={fanUp}
-                className="relative mx-auto h-56 w-full max-w-lg cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing"
-                style={{ contain: 'paint' }}>
-                {/* tâm vòng nằm dưới khung; xoay cả div này qua ref nên không re-render */}
-                <div ref={wheelRef} className="absolute left-1/2 will-change-transform" style={{ top: WHEEL_CY, transformOrigin: '0 0', transform: 'translateZ(0)' }}>
+              {/* Bộ bài dạng quạt — cuộn/vuốt ngang (gốc trình duyệt → luôn mượt), chạm để chọn */}
+              <p className="text-center text-xs text-ink-400">Vuốt ngang để lướt bộ bài · chạm để chọn</p>
+              <div ref={fanRef} onPointerDown={fanDown} onPointerMove={fanMove} onPointerUp={fanUp} onPointerLeave={fanUp}
+                className="no-scrollbar w-full cursor-grab overflow-x-auto overflow-y-hidden active:cursor-grabbing"
+                style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
+                <div className="relative mx-auto h-52" style={{ width: FAN_PAD * 2 + (FAN - 1) * CARD_GAP + CARD_W }}>
                   {Array.from({ length: FAN }).map((_, i) => {
                     const mid = (FAN - 1) / 2;
-                    const a = (i - mid) * WHEEL_STEP;          // góc cố định của lá trên vòng
-                    const rad = (a * Math.PI) / 180;
-                    const x = WHEEL_R * Math.sin(rad);
-                    const y = -WHEEL_R * Math.cos(rad);
+                    const off = i - mid;
+                    const rot = off * 2;                 // nghiêng dần ra 2 bên (độ)
+                    const lift = Math.abs(off) * 3.4;    // 2 bên nhô cao → cong hình quạt
                     const isPicked = picked.includes(i);
                     return (
                       <button key={i} onClick={() => pickFan(i)} disabled={isPicked || picked.length >= topic.n}
                         aria-label={`Lá ${i + 1}`}
-                        className="absolute left-0 top-0 w-14 sm:w-[68px]"
+                        className="absolute bottom-3"
                         style={{
-                          transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${a}deg)`,
-                          zIndex: Math.round(100 - Math.abs(i - mid)),
+                          left: FAN_PAD + i * CARD_GAP, width: CARD_W,
+                          transform: `rotate(${rot}deg) translateY(${-lift}px)`,
+                          transformOrigin: 'bottom center',
+                          zIndex: i,
                           opacity: isPicked ? 0 : 1,
                           pointerEvents: isPicked ? 'none' : 'auto',
                         }}>

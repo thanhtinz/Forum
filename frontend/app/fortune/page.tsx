@@ -99,7 +99,7 @@ function CardFace({ card, className = '' }: { card: any; className?: string }) {
 }
 
 type Step = 'topics' | 'intro' | 'pick' | 'result';
-const FAN = 18; // số lá úp xòe ra để chọn
+const FAN = 30; // số lá úp xòe ra để chọn (kéo ngang để lướt)
 
 function Tarot() {
   const [step, setStep] = useState<Step>('topics');
@@ -113,6 +113,29 @@ function Tarot() {
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const slotRef = useRef<HTMLDivElement>(null);
+  const fanRef = useRef<HTMLDivElement>(null);
+  const dragSt = useRef({ down: false, startX: 0, startScroll: 0, moved: false });
+
+  // Căn giữa bộ bài xòe khi vào bước rút bài
+  useEffect(() => {
+    if (step === 'pick' && !flipped && fanRef.current) {
+      const el = fanRef.current;
+      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
+    }
+  }, [step, flipped]);
+
+  // Kéo bằng chuột để lướt bộ bài (cảm ứng dùng cuộn ngang gốc)
+  function fanDown(e: React.PointerEvent) {
+    if (e.pointerType !== 'mouse' || !fanRef.current) return;
+    dragSt.current = { down: true, startX: e.clientX, startScroll: fanRef.current.scrollLeft, moved: false };
+  }
+  function fanMove(e: React.PointerEvent) {
+    if (!dragSt.current.down || !fanRef.current) return;
+    const dx = e.clientX - dragSt.current.startX;
+    if (Math.abs(dx) > 4) dragSt.current.moved = true;
+    fanRef.current.scrollLeft = dragSt.current.startScroll - dx;
+  }
+  function fanUp() { dragSt.current.down = false; }
 
   function reset() {
     setStep('topics'); setTopic(null); setTipIdx(0); setPicked([]);
@@ -137,6 +160,7 @@ function Tarot() {
   }
 
   function pickFan(i: number) {
+    if (dragSt.current.moved) return; // vừa kéo thì không tính là chọn
     if (!topic || flipped) return;
     if (picked.includes(i)) return;
     if (picked.length >= topic.n) return;
@@ -257,17 +281,19 @@ function Tarot() {
                 Lật bài
               </button>
 
-              {/* Bộ bài úp xòe vòng cung */}
-              <div className="relative mx-auto h-44 w-full max-w-lg overflow-hidden">
+              {/* Bộ bài úp xòe — kéo/cuộn ngang để lướt qua các lá */}
+              <p className="text-center text-xs text-ink-400">Kéo ngang để lướt bộ bài · chạm để chọn</p>
+              <div ref={fanRef} onPointerDown={fanDown} onPointerMove={fanMove} onPointerUp={fanUp} onPointerLeave={fanUp}
+                className="no-scrollbar flex cursor-grab touch-pan-x select-none items-end overflow-x-auto overflow-y-hidden px-[40%] pb-4 pt-12 active:cursor-grabbing">
                 {Array.from({ length: FAN }).map((_, i) => {
                   const mid = (FAN - 1) / 2;
-                  const ang = (i - mid) * 5.2;
+                  const ang = (i - mid) * 2.4;
                   const isPicked = picked.includes(i);
                   return (
                     <button key={i} onClick={() => pickFan(i)} disabled={isPicked || picked.length >= topic.n}
                       aria-label={`Lá ${i + 1}`}
-                      className="absolute left-1/2 top-2 w-14 transition-all duration-300 hover:-translate-y-1 disabled:cursor-not-allowed sm:w-16"
-                      style={{ transform: `translateX(-50%) rotate(${ang}deg)`, transformOrigin: '50% 300px', zIndex: i, opacity: isPicked ? 0 : 1, pointerEvents: isPicked ? 'none' : 'auto' }}>
+                      className="w-14 shrink-0 transition-opacity disabled:cursor-not-allowed sm:w-[68px]"
+                      style={{ marginLeft: i === 0 ? 0 : '-26px', transform: `rotate(${ang}deg) translateY(${Math.abs(i - mid) * -3}px)`, transformOrigin: 'bottom center', zIndex: i, opacity: isPicked ? 0 : 1, pointerEvents: isPicked ? 'none' : 'auto' }}>
                       <CardBack />
                     </button>
                   );

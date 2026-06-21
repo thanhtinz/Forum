@@ -1,13 +1,44 @@
 'use client';
 
+import Link from 'next/link';
+import { Cookie, Contrast, Rss } from 'lucide-react';
 import { useSiteConfig } from '@/lib/siteConfig';
+
+function toggleTheme() {
+  const el = document.documentElement;
+  el.classList.toggle('dark');
+}
 
 export function SiteFooter() {
   const cfg = useSiteConfig();
   const text = (cfg.footerText || '').replace('{year}', String(new Date().getFullYear()));
+  const linkCls = 'text-white/80 transition hover:text-white';
+
   return (
-    <footer className="border-t border-ink-200/70 py-8 text-center text-sm text-ink-500 dark:border-ink-800">
-      <div className="container-forum whitespace-pre-line">{text}</div>
+    <footer className="mt-6 border-t border-black/10 bg-brand-700 text-white dark:bg-ink-900">
+      <div className="container-forum py-6">
+        {/* Hàng 1: Cookies + đổi giao diện */}
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+          <a href="/p?slug=cookies" className={`flex items-center gap-1.5 ${linkCls}`}><Cookie size={16} /> Cookies</a>
+          <button onClick={toggleTheme} aria-label="Đổi giao diện sáng/tối" className={`flex items-center ${linkCls}`}>
+            <Contrast size={16} />
+          </button>
+        </div>
+
+        {/* Hàng 2: liên kết + RSS */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+          <a href="/p?slug=noi-quy" className={linkCls}>Nội quy & quy định</a>
+          <a href="/p?slug=quyen-rieng-tu" className={linkCls}>Chính sách riêng tư</a>
+          <a href="/p?slug=tro-giup" className={linkCls}>Trợ giúp</a>
+          <Link href="/" className={linkCls}>Trang chủ</Link>
+          <a href="/rss.xml" title="RSS" className="grid h-6 w-6 place-items-center rounded bg-amber-500 text-white hover:bg-amber-600">
+            <Rss size={14} />
+          </a>
+        </div>
+
+        {/* Hàng 3: bản quyền (chỉnh trong Admin → Cấu hình) */}
+        {text && <p className="mt-4 whitespace-pre-line text-sm text-white/70">{text}</p>}
+      </div>
     </footer>
   );
 }

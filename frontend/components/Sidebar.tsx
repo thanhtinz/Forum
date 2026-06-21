@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Gamepad2, Fish, Sprout, Wrench, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Disc3, Gift, Briefcase, Users2, Shield } from 'lucide-react';
+import { Gamepad2, Fish, Sprout, Wrench, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Gift, Briefcase, Users2, Shield } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -66,7 +66,6 @@ export function Sidebar() {
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-500">Giải trí</h3>
         <div className="flex flex-col gap-1">
           <Link href="/checkin" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><CalendarCheck size={16} className="text-emerald-600" /> Điểm danh</Link>
-          <Link href="/spin" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Disc3 size={16} className="text-fuchsia-600" /> Vòng quay may mắn</Link>
           <Link href="/giveaways" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Gift size={16} className="text-rose-600" /> Giveaway / Lì xì</Link>
         </div>
       </div>

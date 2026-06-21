@@ -36,7 +36,6 @@ import { GalleryModule } from './modules/gallery/gallery.module';
 import { ProfileExtraModule } from './modules/profile-extra/profile-extra.module';
 import { CommunityModule } from './modules/community/community.module';
 import { CheckInModule } from './modules/checkin/checkin.module';
-import { SpinModule } from './modules/spin/spin.module';
 import { GiveawayModule } from './modules/giveaway/giveaway.module';
 import { MailModule } from './modules/mail/mail.module';
 import { SecurityModule } from './modules/security/security.module';
@@ -98,7 +97,6 @@ import { JobsModule } from './modules/jobs/jobs.module';
     BadgesModule,
     VerificationModule,
     CheckInModule,
-    SpinModule,
     GiveawayModule,
     MailModule,
     SecurityModule,

@@ -11,7 +11,7 @@ export class UsersService {
       select: {
         id: true, username: true, displayName: true, avatar: true, bio: true,
         role: true, reputationScore: true, threadCount: true, postCount: true,
-        verifiedBadge: true,
+        verifiedBadge: true, avatarFrameUrl: true, vipBadgeUrl: true, vipTierName: true,
         createdAt: true, lastSeenAt: true,
         badges: { include: { badge: true } },
       },

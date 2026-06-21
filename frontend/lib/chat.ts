@@ -30,7 +30,7 @@ export interface ChatChannel {
   lastMessage?: ChatMsg | null;
 }
 export interface StickerPack {
-  id: string; name: string; isOwned: boolean;
+  id: string; name: string; isOwned: boolean; thumbnailUrl?: string | null;
   stickers: { id: string; name: string; imageUrl: string }[];
 }
 

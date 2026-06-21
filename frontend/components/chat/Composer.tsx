@@ -21,6 +21,7 @@ export function Composer({ onSend, replyTo, onCancelReply, onTyping }: {
   const [musicOpen, setMusicOpen] = useState(false);
 
   const [packs, setPacks] = useState<StickerPack[]>([]);
+  const [activePack, setActivePack] = useState<string>('');
   const [gifQ, setGifQ] = useState('');
   const [gifs, setGifs] = useState<{ id: string; url: string; preview: string }[]>([]);
   const [gifNoKey, setGifNoKey] = useState(false);
@@ -34,7 +35,7 @@ export function Composer({ onSend, replyTo, onCancelReply, onTyping }: {
 
   useEffect(() => {
     if (!smiley) return;
-    if (tab === 'sticker' && packs.length === 0) api.get<StickerPack[]>('/chat/stickers').then(setPacks).catch(() => {});
+    if (tab === 'sticker' && packs.length === 0) api.get<StickerPack[]>('/chat/stickers').then((ps) => { setPacks(ps); if (ps[0]) setActivePack(ps[0].id); }).catch(() => {});
     if (tab === 'gif') searchGifs(gifQ).then((r) => { setGifs(r.results); setGifNoKey(!r.configured); });
   }, [smiley, tab]); // eslint-disable-line
 
@@ -112,22 +113,45 @@ export function Composer({ onSend, replyTo, onCancelReply, onTyping }: {
           )}
 
           {tab === 'sticker' && (
-            <div className="max-h-56 overflow-y-auto p-3">
-              {packs.length === 0 && <p className="text-center text-sm text-ink-400">Chưa có sticker.</p>}
-              {packs.map((p) => (
-                <div key={p.id} className="mb-3">
-                  <p className="mb-1 text-xs font-semibold text-ink-500">{p.name}{!p.isOwned && ' 🔒'}</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {p.stickers.map((s) => (
-                      <button key={s.id} disabled={!p.isOwned}
-                        onClick={() => { onSend({ type: 'STICKER', content: s.imageUrl, metadata: { packId: p.id } }); closeAll(); }}
-                        className="rounded-lg p-1 hover:bg-ink-100 disabled:opacity-40 dark:hover:bg-ink-800">
-                        <img src={s.imageUrl} alt={s.name} className="h-14 w-14 object-contain" />
-                      </button>
-                    ))}
+            <div>
+              {packs.length === 0 ? (
+                <p className="p-3 text-center text-sm text-ink-400">Chưa có sticker.</p>
+              ) : (
+                <>
+                  {/* Tab nhỏ theo từng pack */}
+                  <div className="flex gap-1 overflow-x-auto border-b border-ink-100 p-1.5 dark:border-ink-800">
+                    {packs.map((p) => {
+                      const thumb = p.thumbnailUrl || p.stickers[0]?.imageUrl;
+                      return (
+                        <button key={p.id} onClick={() => setActivePack(p.id)} title={p.name}
+                          className={`relative grid h-9 w-9 shrink-0 place-items-center rounded-lg ${activePack === p.id ? 'bg-brand-50 ring-1 ring-brand-300 dark:bg-ink-800' : 'hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
+                          {thumb ? <img src={thumb} alt={p.name} className="h-7 w-7 object-contain" /> : <span className="text-[10px] font-semibold">{p.name.slice(0, 2)}</span>}
+                          {!p.isOwned && <span className="absolute -right-0.5 -top-0.5 text-[9px]">🔒</span>}
+                        </button>
+                      );
+                    })}
                   </div>
-                </div>
-              ))}
+                  {/* Sticker của pack đang chọn */}
+                  {(() => {
+                    const p = packs.find((x) => x.id === activePack) || packs[0];
+                    if (!p) return null;
+                    return (
+                      <div className="max-h-48 overflow-y-auto p-3">
+                        {!p.isOwned && <p className="mb-2 text-center text-xs text-amber-600">🔒 Pack premium — cần sở hữu để gửi.</p>}
+                        <div className="grid grid-cols-4 gap-2">
+                          {p.stickers.map((s) => (
+                            <button key={s.id} disabled={!p.isOwned}
+                              onClick={() => { onSend({ type: 'STICKER', content: s.imageUrl, metadata: { packId: p.id } }); closeAll(); }}
+                              className="rounded-lg p-1 hover:bg-ink-100 disabled:opacity-40 dark:hover:bg-ink-800">
+                              <img src={s.imageUrl} alt={s.name} className="h-14 w-14 object-contain" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
             </div>
           )}
 

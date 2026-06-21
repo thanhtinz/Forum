@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CharacterService } from '../game/character/character.service';
 
 export interface GiftReward {
-  type: 'coin' | 'gem' | 'badge' | 'item' | 'special' | 'sticker';
+  type: 'coin' | 'gem' | 'badge' | 'item' | 'sticker';
   amount?: number;
   refId?: string;
   label?: string;
@@ -20,7 +20,7 @@ export interface CreateGiftCodeDto {
   note?: string;
 }
 
-const VALID_TYPES = ['coin', 'gem', 'badge', 'item', 'special', 'sticker'];
+const VALID_TYPES = ['coin', 'gem', 'badge', 'item', 'sticker'];
 
 @Injectable()
 export class GiftcodeService {
@@ -164,19 +164,17 @@ export class GiftcodeService {
         return { type: 'badge', label: `Huy hiệu ${b.name}` };
       }
       case 'item': {
+        // Vật phẩm = nông sản vào KHO nông trại (hiển thị ở /game/kho, bán được lấy Xu)
         if (!r.refId) return null;
-        const tpl = await this.prisma.itemTemplate.findUnique({ where: { id: r.refId }, select: { id: true, name: true } });
-        if (!tpl) return null;
+        const crop = await this.prisma.cropTemplate.findUnique({ where: { id: r.refId }, select: { slug: true, name: true, sellPrice: true, asset: true } });
+        if (!crop) return null;
         const charId = await this.ensureCharacterId(userId);
-        await this.prisma.inventoryItem.create({ data: { characterId: charId, templateId: tpl.id, quantity: amount } });
-        return { type: 'item', label: `${tpl.name} ×${amount}` };
-      }
-      case 'special': {
-        if (!r.refId) return null;
-        const tpl = await this.prisma.specialItemTemplate.findUnique({ where: { id: r.refId }, select: { id: true, name: true } });
-        if (!tpl) return null;
-        for (let i = 0; i < amount; i++) await this.prisma.userSpecialItem.create({ data: { userId, templateId: tpl.id } });
-        return { type: 'special', label: `${tpl.name} ×${amount}` };
+        await this.prisma.warehouseItem.upsert({
+          where: { characterId_slug_category: { characterId: charId, slug: crop.slug, category: 'CROP' } },
+          update: { quantity: { increment: amount }, unitSell: crop.sellPrice, asset: crop.asset ?? undefined },
+          create: { characterId: charId, slug: crop.slug, name: crop.name, category: 'CROP', unitSell: crop.sellPrice, asset: crop.asset ?? null, quantity: amount },
+        });
+        return { type: 'item', label: `${crop.name} ×${amount}` };
       }
       case 'sticker': {
         if (!r.refId) return null;

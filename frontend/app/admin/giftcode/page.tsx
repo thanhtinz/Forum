@@ -17,8 +17,7 @@ const TYPES: { v: string; label: string; needRef: boolean; needAmount: boolean }
   { v: 'coin', label: 'Xu (coin)', needRef: false, needAmount: true },
   { v: 'gem', label: 'Gem', needRef: false, needAmount: true },
   { v: 'badge', label: 'Huy hiệu', needRef: true, needAmount: false },
-  { v: 'item', label: 'Vật phẩm', needRef: true, needAmount: true },
-  { v: 'special', label: 'Vật phẩm đặc biệt', needRef: true, needAmount: true },
+  { v: 'item', label: 'Vật phẩm (nông sản → kho)', needRef: true, needAmount: true },
   { v: 'sticker', label: 'Gói sticker', needRef: true, needAmount: false },
 ];
 
@@ -36,22 +35,20 @@ export default function AdminGiftcode() {
   // catalogs
   const [badges, setBadges] = useState<Opt[]>([]);
   const [items, setItems] = useState<Opt[]>([]);
-  const [specials, setSpecials] = useState<Opt[]>([]);
   const [stickers, setStickers] = useState<Opt[]>([]);
 
   function load() { api.get<GiftCode[]>('/giftcode/admin').then(setList).catch((e) => setErr(e.message)); }
   useEffect(() => {
     load();
     api.get<any[]>('/badges/catalog').then((r) => setBadges(r.map((b) => ({ id: b.id, name: b.name })))).catch(() => {});
-    api.get<any[]>('/admin/shop/equipment').then((r) => setItems(r.map((i) => ({ id: i.id, name: i.name })))).catch(() => {});
-    api.get<any[]>('/admin/shop/special').then((r) => setSpecials(r.map((i) => ({ id: i.id, name: i.name })))).catch(() => {});
+    api.get<any[]>('/farm/crops').then((r) => setItems(r.map((i) => ({ id: i.id, name: i.name })))).catch(() => {});
     api.get<any[]>('/admin/stickers').then((r) => setStickers(r.map((p) => ({ id: p.id, name: p.name })))).catch(() => {});
   }, []);
 
   function optsFor(type: string): Opt[] {
-    return type === 'badge' ? badges : type === 'item' ? items : type === 'special' ? specials : type === 'sticker' ? stickers : [];
+    return type === 'badge' ? badges : type === 'item' ? items : type === 'sticker' ? stickers : [];
   }
-  const meta = (t: string) => TYPES.find((x) => x.v === t)!;
+  const meta = (t: string) => TYPES.find((x) => x.v === t) ?? TYPES[0];
 
   function setReward(i: number, patch: Partial<Reward>) {
     setRewards((rs) => rs.map((r, idx) => idx === i ? { ...r, ...patch } : r));
@@ -79,8 +76,10 @@ export default function AdminGiftcode() {
   async function remove(g: GiftCode) { if (!confirm(`Xoá mã "${g.code}"?`)) return; await api.del(`/giftcode/admin/${g.id}`).catch(() => {}); load(); }
 
   function rewardLabel(r: Reward): string {
-    const m = meta(r.type);
-    if (!m.needRef) return `${r.amount?.toLocaleString()} ${r.type === 'coin' ? 'Xu' : 'Gem'}`;
+    const known = TYPES.find((x) => x.v === r.type);
+    if (!known) return `${r.type}${r.amount ? ` ×${r.amount}` : ''}`;
+    if (!known.needRef) return `${r.amount?.toLocaleString()} ${r.type === 'coin' ? 'Xu' : 'Gem'}`;
+    const m = known;
     const name = optsFor(r.type).find((o) => o.id === r.refId)?.name || r.refId || '?';
     return `${m.label}: ${name}${m.needAmount && (r.amount ?? 1) > 1 ? ` ×${r.amount}` : ''}`;
   }

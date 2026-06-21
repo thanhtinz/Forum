@@ -301,6 +301,7 @@ model User {
   checkIns             CheckIn[]
   giveaways            Giveaway[]
   giveawayEntries      GiveawayEntry[]
+  giftRedemptions      GiftCodeRedemption[]
   aiPersonas           AiPersona[]
   authTokens           AuthToken[]
   groupMemberships     UserGroupMember[]
@@ -2895,4 +2896,37 @@ model PortalGame {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ============================================================
+// GIFTCODE — admin tạo mã quà tặng, người dùng nhập để nhận thưởng
+// (coin, gem, huy hiệu, vật phẩm, vật phẩm đặc biệt, gói sticker…)
+// ============================================================
+model GiftCode {
+  id           String    @id @default(cuid())
+  code         String    @unique @db.VarChar(40)
+  rewards      Json // [{ type, amount?, refId?, label? }]
+  maxUses      Int       @default(0) // 0 = không giới hạn tổng lượt
+  usedCount    Int       @default(0)
+  perUserLimit Int       @default(1) // số lần mỗi user
+  expiresAt    DateTime?
+  isActive     Boolean   @default(true)
+  note         String?   @db.VarChar(255)
+  createdAt    DateTime  @default(now())
+
+  redemptions GiftCodeRedemption[]
+}
+
+model GiftCodeRedemption {
+  id        String   @id @default(cuid())
+  codeId    String
+  userId    String
+  rewards   Json // snapshot phần thưởng đã trao
+  createdAt DateTime @default(now())
+
+  giftCode GiftCode @relation(fields: [codeId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([codeId])
+  @@index([userId])
 }

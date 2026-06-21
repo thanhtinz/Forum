@@ -30,6 +30,7 @@ import { ToolsModule } from './modules/tools/tools.module';
 import { ImgHostModule } from './modules/imghost/imghost.module';
 import { NetcheckModule } from './modules/netcheck/netcheck.module';
 import { FortuneModule } from './modules/fortune/fortune.module';
+import { GiftcodeModule } from './modules/giftcode/giftcode.module';
 import { SeederModule } from './seed/seeder.module';
 import { SocialModule } from './modules/social/social.module';
 import { GalleryModule } from './modules/gallery/gallery.module';
@@ -89,6 +90,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
     ImgHostModule,
     NetcheckModule,
     FortuneModule,
+    GiftcodeModule,
     SeederModule,
     SocialModule,
     GalleryModule,

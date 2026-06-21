@@ -6,7 +6,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Sprout, CreditCard, Settings, FileText, Ticket,
   BadgeInfo, Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
-  BellRing, Gavel, FolderTree, Gamepad2, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight,
+  BellRing, Gavel, FolderTree, Gamepad2, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -32,6 +32,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/game-api', label: 'Đấu API game', icon: Gamepad2 },
       { href: '/admin/fortune', label: 'Bói toán', icon: Sparkles },
       { href: '/admin/checkin', label: 'Điểm danh', icon: CalendarCheck },
+      { href: '/admin/giftcode', label: 'Giftcode', icon: Gift },
       { href: '/admin/stickers', label: 'Sticker chat', icon: Sticker },
     ],
   },

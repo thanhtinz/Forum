@@ -52,4 +52,13 @@ export class UsersService {
     await this.prisma.user.update({ where: { id: userId }, data: patch });
     return { ok: true };
   }
+
+  // Thư viện avatar công khai (các pack đang bật) để user chọn ảnh đại diện
+  avatarLibrary() {
+    return this.prisma.avatarPack.findMany({
+      where: { isActive: true },
+      include: { avatars: { orderBy: { sortOrder: 'asc' } } },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
 }

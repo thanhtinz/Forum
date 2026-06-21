@@ -22,6 +22,12 @@ export class UsersController {
     return this.usersService.updateAiSettings(userId, data);
   }
 
+  // Thư viện avatar công khai để user chọn ảnh đại diện
+  @Get('avatars/library')
+  avatarLibrary() {
+    return this.usersService.avatarLibrary();
+  }
+
   @Get(':username')
   getProfile(@Param('username') username: string) {
     return this.usersService.getProfile(username);

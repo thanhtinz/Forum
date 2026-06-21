@@ -100,4 +100,61 @@ export class AdminGameAssetService {
   async removeSticker(stickerId: string) {
     return this.prisma.sticker.delete({ where: { id: stickerId } });
   }
+
+  // ───────── Thư viện avatar (pack ảnh đại diện cho user chọn) ─────────
+  async listAvatarPacks() {
+    return this.prisma.avatarPack.findMany({
+      include: { avatars: { orderBy: { sortOrder: 'asc' } }, _count: { select: { avatars: true } } },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  async createAvatarPack(data: {
+    slug: string; name: string; description?: string; thumbnailUrl?: string;
+    avatars: { name?: string; imageUrl: string }[];
+  }) {
+    if (!data.avatars?.length) throw new BadRequestException('Pack phải có ít nhất 1 avatar');
+    return this.prisma.avatarPack.create({
+      data: {
+        slug: data.slug,
+        name: data.name,
+        description: data.description,
+        thumbnailUrl: data.thumbnailUrl ?? data.avatars[0].imageUrl,
+        avatars: {
+          create: data.avatars.map((a, i) => ({ name: a.name || `Avatar ${i + 1}`, imageUrl: a.imageUrl, sortOrder: i })),
+        },
+      },
+      include: { avatars: true },
+    });
+  }
+
+  async updateAvatarPack(id: string, data: any) {
+    return this.prisma.avatarPack.update({ where: { id }, data });
+  }
+
+  async deleteAvatarPack(id: string) {
+    return this.prisma.avatarPack.delete({ where: { id } });
+  }
+
+  async addAvatarToPack(packId: string, avatar: { name?: string; imageUrl: string }) {
+    const pack = await this.prisma.avatarPack.findUnique({ where: { id: packId } });
+    if (!pack) throw new NotFoundException('Pack không tồn tại');
+    const count = await this.prisma.avatarImage.count({ where: { packId } });
+    return this.prisma.avatarImage.create({
+      data: { packId, name: avatar.name || `Avatar ${count + 1}`, imageUrl: avatar.imageUrl, sortOrder: count },
+    });
+  }
+
+  async removeAvatar(avatarId: string) {
+    return this.prisma.avatarImage.delete({ where: { id: avatarId } });
+  }
+
+  // Công khai — danh sách avatar đang bật cho user chọn
+  async avatarLibrary() {
+    return this.prisma.avatarPack.findMany({
+      where: { isActive: true },
+      include: { avatars: { orderBy: { sortOrder: 'asc' } } },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
 }

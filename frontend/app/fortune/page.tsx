@@ -99,7 +99,11 @@ function CardFace({ card, className = '' }: { card: any; className?: string }) {
 }
 
 type Step = 'topics' | 'intro' | 'pick' | 'result';
-const FAN = 30; // số lá úp xòe ra để chọn (kéo ngang để lướt)
+const FAN = 30;            // số lá úp xếp trên vòng cung
+const WHEEL_R = 520;       // bán kính vòng cung (px)
+const WHEEL_CY = WHEEL_R + 72; // tâm vòng nằm dưới khung
+const WHEEL_STEP = 8;      // góc giữa 2 lá (độ)
+const WHEEL_LIMIT = ((FAN - 1) / 2) * WHEEL_STEP; // giới hạn xoay để mọi lá tới được đỉnh
 
 function Tarot() {
   const [step, setStep] = useState<Step>('topics');
@@ -112,34 +116,38 @@ function Tarot() {
   const [r, setR] = useState<any>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rot, setRot] = useState(0);     // góc xoay vòng cung (độ)
+  const [fanW, setFanW] = useState(360);
   const slotRef = useRef<HTMLDivElement>(null);
   const fanRef = useRef<HTMLDivElement>(null);
-  const dragSt = useRef({ down: false, startX: 0, startScroll: 0, moved: false });
+  const dragSt = useRef({ down: false, startX: 0, startRot: 0, moved: false });
 
-  // Căn giữa bộ bài xòe khi vào bước rút bài
+  // Đo bề ngang khung vòng cung để đặt tâm
   useEffect(() => {
-    if (step === 'pick' && !flipped && fanRef.current) {
-      const el = fanRef.current;
-      el.scrollLeft = (el.scrollWidth - el.clientWidth) / 2;
-    }
+    if (step !== 'pick' || flipped) return;
+    const measure = () => { if (fanRef.current) setFanW(fanRef.current.clientWidth); };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
   }, [step, flipped]);
 
-  // Kéo bằng chuột để lướt bộ bài (cảm ứng dùng cuộn ngang gốc)
+  // Kéo để xoay vòng cung (cả chuột lẫn cảm ứng)
   function fanDown(e: React.PointerEvent) {
-    if (e.pointerType !== 'mouse' || !fanRef.current) return;
-    dragSt.current = { down: true, startX: e.clientX, startScroll: fanRef.current.scrollLeft, moved: false };
+    try { fanRef.current?.setPointerCapture(e.pointerId); } catch { /* noop */ }
+    dragSt.current = { down: true, startX: e.clientX, startRot: rot, moved: false };
   }
   function fanMove(e: React.PointerEvent) {
-    if (!dragSt.current.down || !fanRef.current) return;
+    if (!dragSt.current.down) return;
     const dx = e.clientX - dragSt.current.startX;
     if (Math.abs(dx) > 4) dragSt.current.moved = true;
-    fanRef.current.scrollLeft = dragSt.current.startScroll - dx;
+    const next = Math.max(-WHEEL_LIMIT, Math.min(WHEEL_LIMIT, dragSt.current.startRot + dx * 0.18));
+    setRot(next);
   }
   function fanUp() { dragSt.current.down = false; }
 
   function reset() {
     setStep('topics'); setTopic(null); setTipIdx(0); setPicked([]);
-    setFlipped(false); setQ(''); setR(null); setErr(''); setLoading(false);
+    setFlipped(false); setQ(''); setR(null); setErr(''); setLoading(false); setRot(0);
   }
 
   function chooseTopic(t: Topic) {
@@ -150,7 +158,7 @@ function Tarot() {
   // Bắt đầu: vào bước rút bài + gọi API bốc bài (ẩn cho tới khi lật)
   async function begin() {
     if (!topic) return;
-    setPicked([]); setFlipped(false); setR(null); setErr(''); setStep('pick');
+    setPicked([]); setFlipped(false); setR(null); setErr(''); setRot(0); setStep('pick');
     setLoading(true);
     try {
       const res = await api.post('/fortune/tarot', { n: topic.n, question: topic.title, topic: TAROT_CATS[cat].key });
@@ -281,19 +289,30 @@ function Tarot() {
                 Lật bài
               </button>
 
-              {/* Bộ bài úp xòe — kéo/cuộn ngang để lướt qua các lá */}
-              <p className="text-center text-xs text-ink-400">Kéo ngang để lướt bộ bài · chạm để chọn</p>
-              <div ref={fanRef} onPointerDown={fanDown} onPointerMove={fanMove} onPointerUp={fanUp} onPointerLeave={fanUp}
-                className="no-scrollbar flex cursor-grab touch-pan-x select-none items-end overflow-x-auto overflow-y-hidden px-[40%] pb-4 pt-12 active:cursor-grabbing">
+              {/* Bộ bài úp xếp trên vòng cung — kéo để xoay, chạm để chọn */}
+              <p className="text-center text-xs text-ink-400">Kéo để xoay vòng bài · chạm để chọn</p>
+              <div ref={fanRef} onPointerDown={fanDown} onPointerMove={fanMove} onPointerUp={fanUp} onPointerLeave={fanUp} onPointerCancel={fanUp}
+                className="relative mx-auto h-60 w-full max-w-lg cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing">
                 {Array.from({ length: FAN }).map((_, i) => {
                   const mid = (FAN - 1) / 2;
-                  const ang = (i - mid) * 2.4;
+                  const angle = (i - mid) * WHEEL_STEP + rot;
+                  const rad = (angle * Math.PI) / 180;
+                  const x = fanW / 2 + WHEEL_R * Math.sin(rad);
+                  const y = WHEEL_CY - WHEEL_R * Math.cos(rad);
                   const isPicked = picked.includes(i);
+                  const hidden = Math.abs(angle) > 78;
                   return (
-                    <button key={i} onClick={() => pickFan(i)} disabled={isPicked || picked.length >= topic.n}
+                    <button key={i} onClick={() => pickFan(i)} disabled={isPicked || picked.length >= topic.n || hidden}
                       aria-label={`Lá ${i + 1}`}
-                      className="w-14 shrink-0 transition-opacity disabled:cursor-not-allowed sm:w-[68px]"
-                      style={{ marginLeft: i === 0 ? 0 : '-26px', transform: `rotate(${ang}deg) translateY(${Math.abs(i - mid) * -3}px)`, transformOrigin: 'bottom center', zIndex: i, opacity: isPicked ? 0 : 1, pointerEvents: isPicked ? 'none' : 'auto' }}>
+                      className="absolute w-14 sm:w-[68px]"
+                      style={{
+                        left: x, top: y,
+                        transform: `translate(-50%, -50%) rotate(${angle}deg)`,
+                        zIndex: Math.round(100 - Math.abs(angle)),
+                        opacity: isPicked || hidden ? 0 : 1,
+                        pointerEvents: isPicked || hidden ? 'none' : 'auto',
+                        transition: dragSt.current.down ? 'none' : 'opacity .2s ease',
+                      }}>
                       <CardBack />
                     </button>
                   );

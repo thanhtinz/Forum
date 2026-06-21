@@ -33,6 +33,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/checkin', label: 'Điểm danh', icon: CalendarCheck },
       { href: '/admin/giftcode', label: 'Giftcode', icon: Gift },
       { href: '/admin/stickers', label: 'Sticker chat', icon: Sticker },
+      { href: '/admin/avatars', label: 'Thư viện avatar', icon: Sticker },
     ],
   },
   {

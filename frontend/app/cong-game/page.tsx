@@ -1,15 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, Sprout, Fish, PawPrint, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3, ChevronRight } from 'lucide-react';
+import { Gamepad2, Sprout, Fish, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3, ChevronRight } from 'lucide-react';
 
 // Game trên web — mỗi game là 1 trang riêng
 const WEB_GAMES = [
   { href: '/game/farm', label: 'Nông trại', desc: 'Trồng trọt & thu hoạch', icon: Sprout, color: 'from-emerald-500 to-green-600' },
   { href: '/game/fishing', label: 'Câu cá', desc: 'Thuyền, độ sâu, cá lớn', icon: Fish, color: 'from-sky-500 to-cyan-600' },
-  { href: '/game/animals', label: 'Vật nuôi', desc: 'Nuôi thú lấy sản phẩm', icon: PawPrint, color: 'from-fuchsia-500 to-pink-600' },
-  { href: '/game/shop', label: 'Cửa hàng', desc: 'Hạt giống, vật nuôi, đồ câu', icon: ShoppingBag, color: 'from-teal-500 to-emerald-600' },
-  { href: '/game/kho', label: 'Kho chung', desc: 'Nông sản, sản phẩm, cá, món ăn', icon: Warehouse, color: 'from-amber-500 to-yellow-600' },
+  { href: '/game/shop', label: 'Cửa hàng', desc: 'Hạt giống, đồ câu', icon: ShoppingBag, color: 'from-teal-500 to-emerald-600' },
+  { href: '/game/kho', label: 'Kho chung', desc: 'Nông sản, cá, món ăn', icon: Warehouse, color: 'from-amber-500 to-yellow-600' },
 ];
 
 // Minigame

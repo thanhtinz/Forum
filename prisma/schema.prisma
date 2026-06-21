@@ -2368,6 +2368,34 @@ model Sticker {
   @@index([packId])
 }
 
+// ============================================================
+// THƯ VIỆN AVATAR — pack ảnh đại diện sẵn cho user chọn (quản lý như sticker)
+// ============================================================
+model AvatarPack {
+  id           String   @id @default(cuid())
+  slug         String   @unique @db.VarChar(80)
+  name         String   @db.VarChar(120)
+  description  String?  @db.Text
+  thumbnailUrl String?
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  avatars AvatarImage[]
+}
+
+model AvatarImage {
+  id        String @id @default(cuid())
+  packId    String
+  name      String @db.VarChar(80)
+  imageUrl  String @db.VarChar(255)
+  sortOrder Int    @default(0)
+
+  pack AvatarPack @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  @@index([packId])
+}
+
 // User sở hữu sticker pack (nếu premium)
 model UserStickerPack {
   userId     String

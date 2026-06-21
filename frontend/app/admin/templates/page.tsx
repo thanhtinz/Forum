@@ -17,7 +17,6 @@ const TYPES = [
   { id: 'fishingrod', label: 'Cần câu' },
   { id: 'fishingboat', label: 'Thuyền' },
   { id: 'fertilizer', label: 'Phân bón' },
-  { id: 'animal', label: 'Vật nuôi' },
   { id: 'consumable', label: 'Đồ ăn (consumable)' },
   { id: 'gempackage', label: 'Gói nạp Gem' },
 ];
@@ -58,16 +57,6 @@ const SCHEMAS: Record<string, Field[]> = {
     { key: 'price', label: 'Giá (coin)', type: 'number' }, { key: 'reduceSeconds', label: 'Giảm thời gian chín (giây)', type: 'number' },
     { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
   ],
-  animal: [
-    { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
-    { key: 'buyPrice', label: 'Giá mua (coin)', type: 'number' }, { key: 'growSeconds', label: 'Thời gian lớn (giây)', type: 'number' },
-    { key: 'lifeSeconds', label: 'Tuổi thọ (giây)', type: 'number' }, { key: 'feedCooldownSec', label: 'Cooldown cho ăn (giây)', type: 'number' },
-    { key: 'starveSeconds', label: 'Bỏ đói tối đa (giây)', type: 'number' },
-    { key: 'productSlug', label: 'Mã sản phẩm', type: 'text' }, { key: 'productName', label: 'Tên sản phẩm', type: 'text' },
-    { key: 'productYield', label: 'Sản lượng/lần', type: 'number' }, { key: 'productPrice', label: 'Giá sản phẩm', type: 'number' },
-    { key: 'sellGrown', label: 'Bán khi lớn', type: 'number' }, { key: 'sellYoung', label: 'Bán khi non', type: 'number' },
-    { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
-  ],
   consumable: [
     { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
     { key: 'description', label: 'Mô tả', type: 'text' }, { key: 'type', label: 'Loại (FOOD/DRINK/MEDICINE...)', type: 'text' },
@@ -104,11 +93,6 @@ function rowStats(r: any, type: string): string {
     if (r.growSeconds) parts.push(`chín ${humanDur(r.growSeconds)}`);
     if (r.yieldMin != null) parts.push(`SL ${r.yieldMin}-${r.yieldMax}`);
     if (r.sellPrice != null) parts.push(`bán ${r.sellPrice}/cái`);
-  } else if (type === 'animal') {
-    if (r.buyPrice != null) parts.push(`mua ${r.buyPrice} coin`);
-    if (r.growSeconds) parts.push(`lớn ${humanDur(r.growSeconds)}`);
-    if (r.lifeSeconds) parts.push(`thọ ${humanDur(r.lifeSeconds)}`);
-    if (r.productName) parts.push(`SP ${r.productName} x${r.productYield}`);
   } else if (type === 'fish') {
     parts.push(`khu ${r.zone}`);
     if (r.pricePerKg != null) parts.push(`${r.pricePerKg} coin/kg`);

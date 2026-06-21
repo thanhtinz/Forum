@@ -2,37 +2,30 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { mutate } from 'swr';
-import { ChevronLeft, Sprout, ShoppingBag, Coins, Beef, FlaskConical, Fish, Ship, Anchor, Loader2, X } from 'lucide-react';
+import { ChevronLeft, Sprout, ShoppingBag, Coins, FlaskConical, Fish, Ship, Anchor, Loader2, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatCoin, formatDuration } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
-import { cropFruit, animalSprite } from '@/lib/cropSprites';
+import { cropFruit } from '@/lib/cropSprites';
 
-type Tab = 'crop' | 'animal' | 'fishing';
+type Tab = 'crop' | 'fishing';
 
 interface Crop { slug: string; name: string; seedPrice: number; sellPrice?: number; growSeconds?: number; exp?: number; yieldMin?: number; yieldMax?: number; reqLevel?: number; asset?: string | null }
-interface Animal { slug: string; name: string; buyPrice: number; growSeconds?: number; lifeSeconds?: number; productName?: string | null; productYield?: number; productPrice?: number; sellGrown?: number; asset?: string | null }
 interface Fertilizer { slug: string; name: string; price: number; reduceSeconds?: number; asset?: string | null }
 interface Boat { slug: string; name: string; price: number; capacity: number; maxDepth: number; asset: string | null; owned: boolean }
 interface Rod { slug: string; name: string; tier: number; price: number; asset: string | null; owned: boolean }
 interface FishShop { profile: { bait: number; rodTier: number }; baitPack: { uses: number; price: number }; rods: Rod[]; boats: Boat[] }
-interface Supply { slug: string; name: string; price: number; kind: string }
 
 type Selected =
   | { kind: 'crop'; item: Crop }
-  | { kind: 'animal'; item: Animal }
   | { kind: 'fertilizer'; item: Fertilizer }
   | { kind: 'boat'; item: Boat }
   | { kind: 'rod'; item: Rod }
-  | { kind: 'bait' }
-  | { kind: 'supply'; item: Supply };
-
-const SUPPLY_ICON: Record<string, string> = { 'feed-poultry': '🌾', 'feed-livestock': '🥬', medicine: '💊' };
+  | { kind: 'bait' };
 
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: 'crop', label: 'Trồng trọt', icon: Sprout },
-  { key: 'animal', label: 'Vật nuôi', icon: Beef },
   { key: 'fishing', label: 'Câu cá', icon: Fish },
 ];
 
@@ -46,10 +39,8 @@ export default function GameShopPage() {
   const { user, loading } = useAuth();
   const [tab, setTab] = useState<Tab>('crop');
   const [crops, setCrops] = useState<Crop[]>([]);
-  const [animals, setAnimals] = useState<Animal[]>([]);
   const [ferts, setFerts] = useState<Fertilizer[]>([]);
   const [fish, setFish] = useState<FishShop | null>(null);
-  const [supplies, setSupplies] = useState<Supply[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [selected, setSelected] = useState<Selected | null>(null);
@@ -59,10 +50,8 @@ export default function GameShopPage() {
 
   const loadAll = useCallback(() => {
     api.get<Crop[]>('/farm/crops').then(setCrops).catch(() => {});
-    api.get<Animal[]>('/farm/animals').then(setAnimals).catch(() => {});
     api.get<Fertilizer[]>('/farm/fertilizers').then(setFerts).catch(() => {});
     api.get<FishShop>('/fishing/state').then(setFish).catch(() => {});
-    api.get<Supply[]>('/farm/supplies').then(setSupplies).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -83,9 +72,6 @@ export default function GameShopPage() {
       } else if (selected.kind === 'fertilizer') {
         await api.post('/farm/fertilizer/buy', { slug: selected.item.slug, qty });
         setMsg({ ok: true, text: `Đã mua ${qty} ${selected.item.name}` });
-      } else if (selected.kind === 'animal') {
-        await api.post('/farm/animal/buy', { slug: selected.item.slug });
-        setMsg({ ok: true, text: `Đã mua ${selected.item.name}` });
       } else if (selected.kind === 'boat') {
         await api.post('/fishing/boat/buy', { slug: selected.item.slug });
         setMsg({ ok: true, text: `Đã mua ${selected.item.name}` });
@@ -95,9 +81,6 @@ export default function GameShopPage() {
       } else if (selected.kind === 'bait') {
         await api.post('/fishing/bait/buy', { packs: qty });
         setMsg({ ok: true, text: `Đã mua ${qty} gói mồi` });
-      } else if (selected.kind === 'supply') {
-        await api.post('/farm/supply/buy', { slug: selected.item.slug, qty });
-        setMsg({ ok: true, text: `Đã mua ${qty} ${selected.item.name}` });
       }
       loadCoin();
       loadAll();
@@ -109,15 +92,13 @@ export default function GameShopPage() {
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để vào cửa hàng.</div>;
 
-  const canQty = selected?.kind === 'crop' || selected?.kind === 'fertilizer' || selected?.kind === 'bait' || selected?.kind === 'supply';
+  const canQty = selected?.kind === 'crop' || selected?.kind === 'fertilizer' || selected?.kind === 'bait';
   const unitPrice = !selected ? 0
     : selected.kind === 'crop' ? selected.item.seedPrice
     : selected.kind === 'fertilizer' ? selected.item.price
-    : selected.kind === 'animal' ? selected.item.buyPrice
     : selected.kind === 'boat' ? selected.item.price
     : selected.kind === 'rod' ? selected.item.price
     : selected.kind === 'bait' ? (fish?.baitPack.price ?? 0)
-    : selected.kind === 'supply' ? selected.item.price
     : 0;
   const total = unitPrice * (canQty ? qty : 1);
 
@@ -167,35 +148,6 @@ export default function GameShopPage() {
             </div>
           ))}
           {ferts.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có dụng cụ.</p>}
-        </div>
-      )}
-
-      {/* Vật nuôi */}
-      {tab === 'animal' && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {animals.map((a) => (
-            <div key={a.slug} className="card flex items-center gap-3 p-3">
-              <Asset src={animalSprite(a.slug) || a.asset} fallback={<Beef size={20} />} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{a.name}</p>
-                <p className="text-xs text-ink-400 inline-flex items-center gap-1"><Coins size={11} /> {formatCoin(a.buyPrice)}</p>
-              </div>
-              <button onClick={() => openView({ kind: 'animal', item: a })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
-            </div>
-          ))}
-          {animals.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có vật nuôi.</p>}
-          {/* Thức ăn & thuốc */}
-          <div className="col-span-full mt-2 mb-1 text-sm font-semibold">Thức ăn & thuốc</div>
-          {supplies.map((sp) => (
-            <div key={sp.slug} className="card flex items-center gap-3 p-3">
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-ink-100 text-2xl dark:bg-ink-800">{SUPPLY_ICON[sp.slug] || '📦'}</span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{sp.name}</p>
-                <p className="text-xs text-ink-400 inline-flex items-center gap-1"><Coins size={11} /> {formatCoin(sp.price)}</p>
-              </div>
-              <button onClick={() => openView({ kind: 'supply', item: sp })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
-            </div>
-          ))}
         </div>
       )}
 
@@ -250,15 +202,13 @@ export default function GameShopPage() {
 
             <div className="flex gap-3">
               <Asset
-                src={selected.kind === 'bait' || selected.kind === 'supply' ? null : selected.kind === 'crop' ? (cropFruit(selected.item.slug) || selected.item.asset) : selected.kind === 'animal' ? (animalSprite(selected.item.slug) || selected.item.asset) : selected.item.asset}
+                src={selected.kind === 'bait' ? null : selected.kind === 'crop' ? (cropFruit(selected.item.slug) || selected.item.asset) : selected.item.asset}
                 className="h-20 w-20"
                 fallback={
                   selected.kind === 'crop' ? <span className="text-3xl">{cropEmoji(selected.item.slug)}</span>
-                  : selected.kind === 'animal' ? <Beef size={28} />
                   : selected.kind === 'fertilizer' ? <FlaskConical size={28} />
                   : selected.kind === 'boat' ? <Ship size={28} />
                   : selected.kind === 'rod' ? <Anchor size={28} />
-                  : selected.kind === 'supply' ? <span className="text-3xl">{SUPPLY_ICON[selected.item.slug] || '📦'}</span>
                   : <span className="text-3xl">🪱</span>
                 }
               />
@@ -270,14 +220,6 @@ export default function GameShopPage() {
                     {(c.yieldMin != null) ? <p>Sản lượng: {c.yieldMin}–{c.yieldMax}</p> : null}
                     {c.sellPrice != null ? <p>Bán nông sản: {formatCoin(c.sellPrice)}/cái</p> : null}
                     {c.reqLevel ? <p>Yêu cầu: cấp nông trại {c.reqLevel}</p> : null}
-                  </>
-                ); })()}
-                {selected.kind === 'animal' && (() => { const a = selected.item; return (
-                  <>
-                    <p>Giá mua: <b>{formatCoin(a.buyPrice)}</b> coin</p>
-                    {a.growSeconds ? <p>Thời gian lớn: {formatDuration(a.growSeconds)}</p> : null}
-                    {a.lifeSeconds ? <p>Tuổi thọ: {formatDuration(a.lifeSeconds)}</p> : null}
-                    {a.productName ? <p>Sản phẩm: {a.productName}{a.productYield ? ` ×${a.productYield}` : ''}</p> : null}
                   </>
                 ); })()}
                 {selected.kind === 'fertilizer' && (() => { const f = selected.item; return (
@@ -308,14 +250,6 @@ export default function GameShopPage() {
                     <p>Đang có: {fish?.profile.bait ?? 0} lượt</p>
                   </>
                 )}
-                {selected.kind === 'supply' && (() => { const sp = selected.item; return (
-                  <>
-                    <p>Giá: <b>{formatCoin(sp.price)}</b> coin/cái</p>
-                    {sp.slug === 'feed-poultry' && <p>Cho <b>gà, vịt</b> ăn (gia cầm).</p>}
-                    {sp.slug === 'feed-livestock' && <p>Cho <b>bò, lợn</b> ăn (gia súc).</p>}
-                    {sp.slug === 'medicine' && <p>Chữa bệnh cho vật nuôi.</p>}
-                  </>
-                ); })()}
               </div>
             </div>
 

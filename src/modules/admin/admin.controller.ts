@@ -306,4 +306,29 @@ export class AdminController {
 
   @Post('stickers/sticker/:id/delete')
   removeSticker(@Param('id') id: string) { return this.gameAsset.removeSticker(id); }
+
+  // ════════════════════════════════════════════
+  // THƯ VIỆN AVATAR (pack ảnh đại diện cho user chọn)
+  // ════════════════════════════════════════════
+  @Get('avatars')
+  listAvatarPacks() { return this.gameAsset.listAvatarPacks(); }
+
+  @Post('avatars')
+  createAvatarPack(@Body() data: any) { return this.gameAsset.createAvatarPack(data); }
+
+  @Patch('avatars/:id')
+  updateAvatarPack(@Param('id') id: string, @Body() data: any) {
+    return this.gameAsset.updateAvatarPack(id, data);
+  }
+
+  @Post('avatars/:id/delete')
+  deleteAvatarPack(@Param('id') id: string) { return this.gameAsset.deleteAvatarPack(id); }
+
+  @Post('avatars/:packId/add')
+  addAvatar(@Param('packId') packId: string, @Body() avatar: any) {
+    return this.gameAsset.addAvatarToPack(packId, avatar);
+  }
+
+  @Post('avatars/image/:id/delete')
+  removeAvatar(@Param('id') id: string) { return this.gameAsset.removeAvatar(id); }
 }

@@ -29,8 +29,8 @@ const PAYLINE_CELLS: [number, number][][] = [
   [[0, 2], [1, 1], [2, 0]], // chéo /
 ];
 const PAYLINE_COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#a855f7'];
-// tâm ô theo % của vùng lưới (3 ô 48px + 2 khe 4px = 152px → tâm 24/76/128)
-const CELL_PCT = [15.79, 50, 84.21];
+// tâm ô = chính giữa mỗi cột 1/3 (lưới chia đều, khoảng cách nằm trong ô) → đúng mọi bề rộng
+const CELL_PCT = [16.667, 50, 83.333];
 
 function SoloPlay() {
   const { user, loading } = useAuth();
@@ -155,12 +155,12 @@ function SoloPlay() {
           const winCells = new Set<string>();
           wins.forEach((w) => (PAYLINE_CELLS[w.line] || []).forEach(([c, r]) => winCells.add(`${c}-${r}`)));
           return (
-          <div className="mx-auto w-fit rounded-2xl border-4 border-amber-500 bg-gradient-to-b from-red-700 to-red-900 p-3 shadow-lg">
+          <div className="mx-auto w-full max-w-sm rounded-2xl border-4 border-amber-500 bg-gradient-to-b from-red-700 to-red-900 p-3 shadow-lg">
             <div className="mb-2 text-center text-lg font-extrabold tracking-widest text-amber-300">🎰 777</div>
             <div className="rounded-lg bg-ink-950/70 p-2">
-              {/* bọc riêng + co khít đúng kích thước lưới để SVG đè CHÍNH XÁC (không bị giãn theo legend) */}
-              <div className="relative mx-auto w-fit">
-                <div className="grid grid-cols-3 gap-1">
+              {/* lưới chia đều đúng 1/3 (gap nằm trong ô) → tâm ô luôn ở 16.7/50/83.3% bất kể bề rộng */}
+              <div className="relative">
+                <div className="grid grid-cols-3">
                   {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => {
                     const SYMS = ['seven', 'bar', 'bell', 'cherry', 'lemon', 'coin'];
                     // đang quay: đổi symbol liên tục theo frame (cột phải dừng trễ hơn -> cảm giác quay)
@@ -168,7 +168,12 @@ function SoloPlay() {
                       ? SYMS[(frame + c * 2 + r) % SYMS.length]
                       : (result?.grid?.[c]?.[r] || SYMS[(r * 3 + c) % 6]);
                     const hit = winCells.has(`${c}-${r}`);
-                    return <img key={`${c}-${r}`} src={`/game-assets/jackpot/${sym}.png`} alt="" className={`h-12 w-12 rounded bg-white/90 object-contain p-0.5 transition ${animating ? 'blur-[1px]' : ''} ${hit ? 'ring-4 ring-amber-300 ring-offset-1 ring-offset-ink-950' : ''}`} />;
+                    return (
+                      <div key={`${c}-${r}`} className="aspect-square p-1">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={`/game-assets/jackpot/${sym}.png`} alt="" className={`h-full w-full rounded bg-white/90 object-contain p-1 transition ${animating ? 'blur-[1px]' : ''} ${hit ? 'ring-4 ring-amber-300' : ''}`} />
+                      </div>
+                    );
                   }))}
                 </div>
                 {/* Đường highlight các dòng thắng — đè khít lưới */}

@@ -33,6 +33,12 @@ export class FortuneController {
     return this.fortune.tarot(Number(b.n ?? 3), b.question, userId, b.topic);
   }
 
+  // AI luận giải Tarot — tổng quan chung + lời khuyên
+  @Post('tarot/ai')
+  tarotAi(@Body() b: { question?: string; topic?: string; cards: any[] }) {
+    return this.fortune.aiTarotReading(b);
+  }
+
   // 12 cung hoàng đạo
   @Get('zodiac/list')
   zodiacList() { return this.fortune.zodiacList(); }

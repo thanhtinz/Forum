@@ -38,7 +38,6 @@ import { CommunityModule } from './modules/community/community.module';
 import { CheckInModule } from './modules/checkin/checkin.module';
 import { SpinModule } from './modules/spin/spin.module';
 import { GiveawayModule } from './modules/giveaway/giveaway.module';
-import { QuizModule } from './modules/quiz/quiz.module';
 import { MailModule } from './modules/mail/mail.module';
 import { SecurityModule } from './modules/security/security.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
@@ -101,7 +100,6 @@ import { JobsModule } from './modules/jobs/jobs.module';
     CheckInModule,
     SpinModule,
     GiveawayModule,
-    QuizModule,
     MailModule,
     SecurityModule,
     PermissionsModule,

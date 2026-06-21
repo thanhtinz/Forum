@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Sprout, CreditCard, Settings, FileText, Ticket,
-  BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, HelpCircle, Paperclip, Mail, ShieldCheck, KeyRound,
+  BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, Paperclip, Mail, ShieldCheck, KeyRound,
   BellRing, Gavel, FolderTree, Gamepad2, Sticker, ArrowLeft, LogOut, Menu, X, Image as ImageIcon, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
@@ -33,7 +33,6 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/fortune', label: 'Bói toán & AI', icon: Sparkles },
       { href: '/admin/checkin', label: 'Điểm danh', icon: CalendarCheck },
       { href: '/admin/spin', label: 'Vòng quay', icon: Disc3 },
-      { href: '/admin/quiz', label: 'Đố vui', icon: HelpCircle },
       { href: '/admin/stickers', label: 'Sticker chat', icon: Sticker },
     ],
   },

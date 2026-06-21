@@ -163,13 +163,52 @@ export function FloatingDock({ open, onClose }: { open: boolean; onClose: () => 
   function changeSpeed(s: number) { setSpeed(s); yt.current?.setPlaybackRate?.(s); }
   function seek(v: number) { setProgress(v); yt.current?.seekTo?.(v, true); }
 
+  // Cập nhật tiêu đề thật cho các track vừa thêm (chạy nền)
+  function fillTitles(tracks: Track[]) {
+    Promise.all(tracks.slice(0, 80).map((t) => fetchTitle(t.url))).then((titles) => {
+      setList((l) => l.map((t) => {
+        const idx = tracks.findIndex((p) => p.kind === t.kind && p.id === t.id && p.title === t.title);
+        return idx >= 0 && titles[idx] ? { ...t, title: titles[idx]! } : t;
+      }));
+    }).catch(() => {});
+  }
+
+  // Bung 1 playlist YouTube thành TỪNG bài (dùng player ẩn đọc getPlaylist)
+  function expandPlaylist(listId: string) {
+    const run = () => {
+      try { yt.current.cuePlaylist({ list: listId, listType: 'playlist', index: 0 }); } catch {}
+      setMsg('Đang tải danh sách bài trong playlist…');
+      let tries = 0;
+      const iv = setInterval(() => {
+        tries++;
+        const ids: string[] | undefined = yt.current?.getPlaylist?.();
+        if (ids && ids.length) {
+          clearInterval(iv);
+          try { yt.current.stopVideo?.(); } catch {}
+          const tracks: Track[] = ids.map((id) => ({ kind: 'yt', id, title: `YouTube • ${id}`, url: `https://youtu.be/${id}` }));
+          setList((l) => [...l, ...tracks]);
+          setMsg(`Đã thêm ${ids.length} bài từ playlist`);
+          fillTitles(tracks);
+        } else if (tries > 30) {
+          clearInterval(iv);
+          // fallback: thêm cả playlist như 1 mục, dùng ⏭️ để chuyển bài
+          setList((l) => [...l, { kind: 'ytpl', id: listId, title: 'YouTube Playlist', url: `https://www.youtube.com/playlist?list=${listId}` }]);
+          setMsg('Không tải được danh sách bài — đã thêm cả playlist (dùng ⏭️ để chuyển bài).');
+        }
+      }, 300);
+    };
+    if (yt.current && ready.current) run();
+    else { const w = setInterval(() => { if (yt.current && ready.current) { clearInterval(w); run(); } }, 200); }
+  }
+
   async function add() {
     setMsg('');
     const t = parseUrl(input);
     if (!t) { setMsg('Link không hợp lệ. Hãy dán link video/playlist YouTube hoặc track/playlist/album Spotify.'); return; }
+    setInput('');
+    if (t.kind === 'ytpl') { expandPlaylist(t.id); return; }
     const title = await fetchTitle(t.url);
     setList((l) => [...l, { ...t, title: title || t.title }]);
-    setInput('');
   }
 
   // Import nhiều link cùng lúc (mỗi dòng / cách nhau bởi khoảng trắng hoặc dấu phẩy)
@@ -179,17 +218,13 @@ export function FloatingDock({ open, onClose }: { open: boolean; onClose: () => 
     const parsed = parts.map(parseUrl).filter(Boolean) as Track[];
     const failed = parts.length - parsed.length;
     if (!parsed.length) { setMsg(`Không nhận diện được link nào (${parts.length} dòng). Cần link YouTube/Spotify.`); return; }
-    // thêm trước với tiêu đề tạm, rồi cập nhật tiêu đề thật dần
-    setList((l) => [...l, ...parsed]);
+    const playlists = parsed.filter((t) => t.kind === 'ytpl');
+    const singles = parsed.filter((t) => t.kind !== 'ytpl');
+    if (singles.length) { setList((l) => [...l, ...singles]); fillTitles(singles); }
+    playlists.forEach((p) => expandPlaylist(p.id)); // bung từng playlist thành các bài
     setBulk('');
     setImporting(false);
-    setMsg(`Đã thêm ${parsed.length} mục${failed > 0 ? ` (bỏ qua ${failed} link không hợp lệ)` : ''}`);
-    const titles = await Promise.all(parsed.map((t) => fetchTitle(t.url)));
-    setList((l) => l.map((t) => {
-      const idx = parsed.findIndex((p) => p.kind === t.kind && p.id === t.id && p.title === t.title);
-      if (idx >= 0 && titles[idx]) return { ...t, title: titles[idx]! };
-      return t;
-    }));
+    if (!playlists.length) setMsg(`Đã thêm ${singles.length} mục${failed > 0 ? ` (bỏ qua ${failed} link không hợp lệ)` : ''}`);
   }
 
   function remove(i: number) {
@@ -215,7 +250,7 @@ export function FloatingDock({ open, onClose }: { open: boolean; onClose: () => 
       )}
       {/* Bảng trình phát nhạc */}
       {open && (
-        <div className="fixed bottom-4 right-4 z-40 w-[340px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+        <div className="fixed right-3 top-1/2 z-40 max-h-[88vh] w-[340px] max-w-[92vw] -translate-y-1/2 overflow-y-auto rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
           <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
             <span className="flex items-center gap-1.5 text-sm font-bold text-brand-600"><Music size={16} /> Nhạc</span>
             <button onClick={onClose} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>

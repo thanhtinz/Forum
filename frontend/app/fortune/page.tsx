@@ -52,6 +52,27 @@ function CardBack({ className = '', picked = false }: { className?: string; pick
   );
 }
 
+// Thẻ minh họa cho lá Ẩn Phụ (Minor Arcana — không có ảnh riêng), vẽ theo chất bài
+const SUIT_ART: Record<string, { icon: string; grad: string }> = {
+  wands: { icon: '🔥', grad: 'from-amber-500 to-orange-700' },
+  cups: { icon: '💧', grad: 'from-sky-500 to-blue-700' },
+  swords: { icon: '⚔️', grad: 'from-slate-500 to-slate-800' },
+  pentacles: { icon: '🪙', grad: 'from-emerald-500 to-green-700' },
+};
+function MinorCardArt({ suitKey, nameVi, reversed }: { suitKey?: string; nameVi: string; reversed: boolean }) {
+  const a = SUIT_ART[suitKey || ''] || { icon: '🔮', grad: 'from-violet-500 to-purple-700' };
+  const rank = nameVi.replace(/\s+\S+$/, ''); // "Át Gậy" → "Át"
+  return (
+    <div className={`relative grid aspect-[2/3] w-full place-items-center bg-gradient-to-br ${a.grad} text-white ${reversed ? 'rotate-180' : ''}`}>
+      <div className="absolute inset-1.5 rounded-lg border border-white/40" />
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-3xl drop-shadow sm:text-4xl">{a.icon}</span>
+        <span className="px-1 text-center text-[10px] font-bold leading-tight sm:text-xs">{rank}</span>
+      </div>
+    </div>
+  );
+}
+
 type Step = 'mode' | 'spread' | 'input' | 'shuffle' | 'result';
 const FAN = 78; // trải nguyên bộ bài úp cho user chọn (bộ Tarot đầy đủ)
 
@@ -249,8 +270,10 @@ function TarotResult({ r, mode, topicLabel }: { r: any; mode: 'question' | 'topi
             <div key={i} className="flex flex-col items-center text-center">
               {pos && <div className="mb-1 rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">{pos}</div>}
               <div className="overflow-hidden rounded-xl border border-ink-200/70 shadow-sm dark:border-ink-800">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={c.image} alt={c.nameVi} className={`w-full object-cover transition ${rev ? 'rotate-180' : ''}`} />
+                {c.image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={c.image} alt={c.nameVi} className={`w-full object-cover transition ${rev ? 'rotate-180' : ''}`} />
+                  : <MinorCardArt suitKey={c.suitKey} nameVi={c.nameVi} reversed={rev} />}
               </div>
               <div className="mt-2 font-semibold leading-tight">{c.nameVi}</div>
               <div className="text-[11px] text-ink-400">{c.name}</div>

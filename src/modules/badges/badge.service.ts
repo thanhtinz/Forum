@@ -130,7 +130,6 @@ export class BadgeService {
         postCount: true,
         threadCount: true,
         reputationScore: true,
-        storefront: { select: { id: true, isVerified: true } },
         badges: { include: { badge: true }, orderBy: { awardedAt: 'asc' } },
       },
     });
@@ -162,18 +161,7 @@ export class BadgeService {
       });
     }
 
-    // 3. Seller
-    if (user.storefront) {
-      out.push({
-        key: 'seller',
-        label: user.storefront.isVerified ? 'Người bán uy tín' : 'Người bán',
-        icon: 'Store',
-        color: 'green',
-        kind: 'seller',
-      });
-    }
-
-    // 4. Milestones
+    // 3. Milestones
     for (const ub of user.badges) {
       const b = ub.badge;
       out.push({
@@ -190,12 +178,7 @@ export class BadgeService {
     const sys = await this.getSystemIcons();
     if (Object.keys(sys).length) {
       for (const d of out) {
-        if (d.kind === 'seller') {
-          const key = user.storefront?.isVerified && sys['seller_verified'] ? 'seller_verified' : 'seller';
-          if (sys[key]) d.icon = sys[key];
-        } else if (sys[d.key]) {
-          d.icon = sys[d.key];
-        }
+        if (sys[d.key]) d.icon = sys[d.key];
       }
     }
 
@@ -212,7 +195,6 @@ export class BadgeService {
         id: true,
         role: true,
         verifiedBadge: true,
-        storefront: { select: { id: true, isVerified: true } },
       },
     });
     for (const u of users) {
@@ -220,15 +202,6 @@ export class BadgeService {
       if (u.verifiedBadge) list.push(VERIFY_BADGE);
       const rb = roleBadge(u.role);
       if (rb) list.push(rb);
-      if (u.storefront) {
-        list.push({
-          key: 'seller',
-          label: u.storefront.isVerified ? 'Người bán uy tín' : 'Người bán',
-          icon: 'Store',
-          color: 'green',
-          kind: 'seller',
-        });
-      }
       map[u.id] = list;
     }
     return map;

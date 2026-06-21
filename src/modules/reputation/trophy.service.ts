@@ -182,9 +182,7 @@ export class TrophyService {
       where: { userId },
     });
 
-    const productsSold = await this.prisma.order.count({
-      where: { product: { sellerId: userId }, status: 'COMPLETED' },
-    });
+    const productsSold = 0; // tính năng chợ đã gỡ bỏ
 
     const daysRegistered = user
       ? Math.floor((Date.now() - user.createdAt.getTime()) / 86400000)

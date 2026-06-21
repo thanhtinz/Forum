@@ -16,7 +16,7 @@ interface NotifyPayload {
 }
 
 // Loại thông báo gửi kèm email (tránh gửi mail cho mọi loại)
-const EMAIL_TYPES = ['THREAD_REPLY', 'POST_MENTION', 'BEST_ANSWER', 'GEM_RECEIVED', 'ORDER_COMPLETE'];
+const EMAIL_TYPES = ['THREAD_REPLY', 'POST_MENTION', 'BEST_ANSWER', 'GEM_RECEIVED'];
 
 @Injectable()
 export class NotificationsService {

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { MessageSquare, User, ShoppingBag, Store } from 'lucide-react';
+import { MessageSquare, User } from 'lucide-react';
 import { api } from '@/lib/api';
 
 function SearchView() {
@@ -18,7 +18,7 @@ function SearchView() {
   }, [q]);
 
   const r = data || {};
-  const empty = data && !r.threads?.length && !r.posts?.length && !r.users?.length && !r.products?.length && !r.storefronts?.length;
+  const empty = data && !r.threads?.length && !r.posts?.length && !r.users?.length;
 
   return (
     <div className="space-y-5">
@@ -32,24 +32,6 @@ function SearchView() {
           {r.threads.map((t: any) => (
             <Link key={t.id} href={`/thread?slug=${t.slug}`} className="flex justify-between border-b border-ink-100 py-2 text-sm hover:text-brand-600 dark:border-ink-800">
               <span>{t.title}</span><span className="text-xs text-ink-400">{t.replyCount} trả lời · {t.viewCount} xem</span>
-            </Link>
-          ))}
-        </Section>
-      )}
-      {r.products?.length > 0 && (
-        <Section title="Sản phẩm" icon={ShoppingBag}>
-          {r.products.map((p: any) => (
-            <Link key={p.id} href={`/product?slug=${p.slug}`} className="flex justify-between border-b border-ink-100 py-2 text-sm hover:text-brand-600 dark:border-ink-800">
-              <span>{p.title}</span><span className="text-xs text-brand-600">{p.isFree ? 'Miễn phí' : `${p.gemPrice} gem`}</span>
-            </Link>
-          ))}
-        </Section>
-      )}
-      {r.storefronts?.length > 0 && (
-        <Section title="Gian hàng" icon={Store}>
-          {r.storefronts.map((s: any) => (
-            <Link key={s.id} href={`/store?slug=${s.slug}`} className="flex justify-between border-b border-ink-100 py-2 text-sm hover:text-brand-600 dark:border-ink-800">
-              <span>{s.name}</span><span className="text-xs text-ink-400">{s.followerCount} theo dõi</span>
             </Link>
           ))}
         </Section>

@@ -12,7 +12,6 @@ import { ForumModule } from './modules/forum/forum.module';
 import { PagesModule } from './modules/pages/pages.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { GemModule } from './modules/gem/gem.module';
-import { MarketplaceModule } from './modules/marketplace/marketplace.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { AiCompanionModule } from './modules/ai-companion/ai-companion.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -76,7 +75,6 @@ import { JobsModule } from './modules/jobs/jobs.module';
     HiddenContentModule,
     NotificationsModule,
     GemModule,
-    MarketplaceModule,
     PaymentsModule,
     AiCompanionModule,
     ModerationModule,

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  Store, ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, Package, ShieldAlert, Globe, Wrench, Ruler,
+  ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -27,7 +27,6 @@ const NAV = [
   { href: '/', label: 'Diễn đàn', icon: MessageSquare },
   { href: '/chat', label: 'Chat', icon: MessengerIcon },
   { href: '/cong-game', label: 'Cổng game', icon: Gamepad2 },
-  { href: '/marketplace', label: 'Chợ', icon: Store },
   { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
   { href: '/ai', label: 'AI Companion', icon: Sparkles },
   { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },
@@ -50,11 +49,9 @@ export function Header() {
   const [utilOpen, setUtilOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [unread, setUnread] = useState(0);
-  const [hasStore, setHasStore] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!user) { setUnread(0); setHasStore(null); return; }
-    api.get<{ hasStore: boolean }>('/marketplace/seller/my-store').then((r) => setHasStore(r.hasStore)).catch(() => setHasStore(null));
+    if (!user) { setUnread(0); return; }
     api.get<{ meta: { unreadCount: number } }>('/notifications').then((r) => setUnread(r.meta.unreadCount)).catch(() => {});
     const base = process.env.NEXT_PUBLIC_API_URL || '';
     const s = io(`${base}/notif`, { auth: { token: getToken() }, transports: ['websocket', 'polling'] });
@@ -158,12 +155,6 @@ export function Header() {
                   </Link>
                   <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <Gem size={15} /> Nạp Gem
-                  </Link>
-                  <Link href="/orders" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <Package size={15} /> Đơn hàng của tôi
-                  </Link>
-                  <Link href={hasStore === false ? '/seller/shop' : '/seller'} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <Store size={15} /> {hasStore === false ? 'Đăng ký bán hàng' : 'Seller Center'}
                   </Link>
                   {user.role === 'ADMIN' && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">

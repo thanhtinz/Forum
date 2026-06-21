@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
-export type SearchType = 'all' | 'thread' | 'post' | 'user' | 'product' | 'storefront';
+export type SearchType = 'all' | 'thread' | 'post' | 'user';
 
 @Injectable()
 export class SearchService {
@@ -22,9 +22,6 @@ export class SearchService {
     if (wantAll || type === 'thread') tasks.threads = this.searchThreads(q, take);
     if (wantAll || type === 'post') tasks.posts = this.searchPosts(q, take);
     if (wantAll || type === 'user') tasks.users = this.searchUsers(q, take);
-    if (wantAll || type === 'product') tasks.products = this.searchProducts(q, take);
-    if (wantAll || type === 'storefront')
-      tasks.storefronts = this.searchStorefronts(q, take);
 
     const keys = Object.keys(tasks);
     const values = await Promise.all(keys.map((k) => tasks[k]));
@@ -79,52 +76,6 @@ export class SearchService {
       },
       take,
       select: { id: true, username: true, displayName: true, avatar: true, role: true },
-    });
-  }
-
-  private searchProducts(q: string, take: number) {
-    return this.prisma.product.findMany({
-      where: {
-        status: 'ACTIVE',
-        OR: [
-          { title: { contains: q, mode: 'insensitive' } },
-          { descriptionRaw: { contains: q, mode: 'insensitive' } },
-        ],
-      },
-      take,
-      orderBy: { salesCount: 'desc' },
-      select: {
-        id: true,
-        title: true,
-        slug: true,
-        gemPrice: true,
-        isFree: true,
-        thumbnailUrl: true,
-        salesCount: true,
-      },
-    });
-  }
-
-  private searchStorefronts(q: string, take: number) {
-    return this.prisma.storefront.findMany({
-      where: {
-        isActive: true,
-        OR: [
-          { name: { contains: q, mode: 'insensitive' } },
-          { tagline: { contains: q, mode: 'insensitive' } },
-        ],
-      },
-      take,
-      orderBy: { followerCount: 'desc' },
-      select: {
-        id: true,
-        slug: true,
-        name: true,
-        tagline: true,
-        logoUrl: true,
-        isVerified: true,
-        followerCount: true,
-      },
     });
   }
 }

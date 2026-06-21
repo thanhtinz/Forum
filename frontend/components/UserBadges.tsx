@@ -26,13 +26,11 @@ const COLOR_CLASS: Record<BadgeColor, string> = {
   violet: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300',
 };
 
-// Suy ra badge vai trò/verify/seller từ các trường có sẵn trên object user
+// Suy ra badge vai trò/verify từ các trường có sẵn trên object user
 // (dùng cho danh sách bài viết, tránh gọi API riêng cho từng người).
 export function roleBadgesFromUser(u: {
   role?: string | null;
   verifiedBadge?: boolean | null;
-  isSeller?: boolean | null;
-  sellerVerified?: boolean | null;
 }): BadgeDescriptor[] {
   const out: BadgeDescriptor[] = [];
   if (u.verifiedBadge) out.push({ key: 'verify', label: 'Đã xác minh', icon: 'BadgeCheck', color: 'blue', kind: 'verify' });
@@ -42,7 +40,6 @@ export function roleBadgesFromUser(u: {
     case 'VIP': out.push({ key: 'role:VIP', label: 'VIP', icon: 'Star', color: 'amber', kind: 'role' }); break;
     case 'MEMBER': out.push({ key: 'role:MEMBER', label: 'Thành viên', icon: 'User', color: 'gray', kind: 'role' }); break;
   }
-  if (u.isSeller) out.push({ key: 'seller', label: u.sellerVerified ? 'Người bán uy tín' : 'Người bán', icon: 'Store', color: 'green', kind: 'seller' });
   return out;
 }
 

@@ -2,10 +2,11 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRole, UserStatus, ReportStatus } from '@prisma/client';
+import { VipService } from '../vip/vip.service';
 
 @Injectable()
 export class AdminDashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly vip: VipService) {}
 
   // ──────────────────────────────────────────────
   // DASHBOARD STATS
@@ -138,13 +139,19 @@ export class AdminDashboardService {
   }
 
   async adjustGem(userId: string, amount: number, note: string, actorId: string) {
-    return this.prisma.$transaction(async (tx) => {
+    const res = await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.findUnique({ where: { id: userId }, select: { gemBalance: true } });
       if (!user) throw new NotFoundException('User không tồn tại');
       const balanceAfter = user.gemBalance + amount;
       if (balanceAfter < 0) throw new BadRequestException('Số dư không thể âm');
 
       await tx.user.update({ where: { id: userId }, data: { gemBalance: balanceAfter } });
+      // Đồng bộ ví + cộng admin cũng tính vào VIP (chỉ khi cộng thêm)
+      await tx.gemWallet.upsert({
+        where: { userId },
+        update: { balance: balanceAfter, totalTopup: amount > 0 ? { increment: amount } : undefined },
+        create: { userId, balance: balanceAfter, totalTopup: amount > 0 ? amount : 0 },
+      });
       await tx.gemTransaction.create({
         data: {
           userId, type: 'ADMIN_ADJUST', amount,
@@ -155,6 +162,8 @@ export class AdminDashboardService {
       await this.audit(actorId, 'user.gem_adjust', 'user', userId, null, { amount, note });
       return { balanceAfter };
     });
+    if (amount > 0) await this.vip.recompute(userId).catch(() => {});
+    return res;
   }
 
   // Điều chỉnh xu (coin game) trên nhân vật

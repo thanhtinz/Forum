@@ -34,6 +34,8 @@ export class AdminTemplateService {
 
   create(type: TemplateType, data: Record<string, unknown>) {
     delete data.id;
+    // Bỏ field null/undefined để Prisma dùng @default thay vì lỗi "must not be null"
+    for (const k of Object.keys(data)) if (data[k] === null || data[k] === undefined) delete data[k];
     return this.model(type).create({ data });
   }
 

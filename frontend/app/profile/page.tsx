@@ -76,7 +76,7 @@ function ProfileView() {
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-[320px_1fr]">
       <div className="card p-6 text-center">
-        <div className="mx-auto w-fit"><Avatar user={profile} size={96} /></div>
+        <div className="mx-auto w-fit"><Avatar user={profile} size={120} fit /></div>
         <h1 className="mt-3 text-xl font-bold">{profile.displayName || profile.username}</h1>
         <p className="text-sm text-ink-500">@{profile.username}</p>
         {badges.length > 0 && (

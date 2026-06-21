@@ -275,10 +275,11 @@ export function Header() {
   );
 }
 
-export function Avatar({ user, size = 32 }: { user: { username: string; avatar?: string | null; avatarFrameUrl?: string | null }; size?: number }) {
+export function Avatar({ user, size = 32, fit = false }: { user: { username: string; avatar?: string | null; avatarFrameUrl?: string | null }; size?: number; fit?: boolean }) {
   const inner = user.avatar
     // eslint-disable-next-line @next/next/no-img-element
-    ? <img src={user.avatar} alt={user.username} width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />
+    ? <img src={user.avatar} alt={user.username} width={size} height={size}
+        className={`rounded-full ${fit ? 'bg-ink-100 object-contain dark:bg-ink-800' : 'object-cover'}`} style={{ width: size, height: size }} />
     : <span className="grid place-items-center rounded-full bg-brand-500 font-semibold text-white" style={{ width: size, height: size, fontSize: size * 0.42 }}>{user.username?.[0]?.toUpperCase() || '?'}</span>;
   if (!user.avatarFrameUrl) return inner;
   // Khung avatar — vẽ chồng lên, lớn hơn ~38% để bao quanh ảnh

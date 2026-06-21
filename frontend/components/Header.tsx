@@ -156,7 +156,7 @@ export function Header() {
                     <UserIcon size={15} /> Trang cá nhân
                   </Link>
                   <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <Gem size={15} /> Nạp Gem
+                    <Gem size={15} /> Ví của tôi
                   </Link>
                   {user.role === 'ADMIN' && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
@@ -189,7 +189,7 @@ export function Header() {
               <Link href="/" onClick={() => setNavOpen(false)} className="flex items-center gap-2 font-bold text-white">
                 {cfg.logo ? (
                   // Có logo lớn → hiện to & rõ, bỏ icon hình thoi
-                  <img src={cfg.logo} alt={cfg.name} className="h-11 w-auto max-w-[200px] object-contain" />
+                  <img src={cfg.logo} alt={cfg.name} className="h-16 w-auto max-w-[230px] object-contain" />
                 ) : (
                   <>
                     {cfg.logoSmall

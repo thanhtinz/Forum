@@ -29,6 +29,11 @@ export class GameController {
     return this.character.getCharacter(userId);
   }
 
+  @Get('coin/transactions')
+  coinTransactions(@CurrentUser('id') userId: string, @Query('page') page = 1) {
+    return this.character.getCoinTransactions(userId, Number(page));
+  }
+
   // ── Guild ──
   @Get('guilds')
   listGuilds(@Query('page') page = 1) {

@@ -47,6 +47,17 @@ export class CharacterService {
   // ──────────────────────────────────────────────
   // LẤY NHÂN VẬT + trang bị + stats tổng
   // ──────────────────────────────────────────────
+  async getCoinTransactions(userId: string, page = 1, limit = 20) {
+    const char = await this.prisma.gameCharacter.findUnique({ where: { userId }, select: { id: true } });
+    if (!char) return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+    const skip = (Math.max(1, page) - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.coinTransaction.findMany({ where: { characterId: char.id }, orderBy: { createdAt: 'desc' }, skip, take: limit }),
+      this.prisma.coinTransaction.count({ where: { characterId: char.id } }),
+    ]);
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
   async getCharacter(userId: string) {
     const char = await this.prisma.gameCharacter.findUnique({
       where: { userId },

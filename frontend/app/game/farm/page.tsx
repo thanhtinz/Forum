@@ -69,7 +69,7 @@ export default function FarmPage() {
   return (
     <div className="space-y-5">
       <a href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</a>
-      <header className="rounded-2xl bg-gradient-to-r from-emerald-600 to-green-500 p-6 text-white shadow-card">
+      <header className="rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <div className="flex items-center gap-2">
           <Sprout />
           <div>

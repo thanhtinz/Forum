@@ -76,7 +76,7 @@ export default function ScamHomePage() {
   return (
     <div className="space-y-5">
       {/* Hero — chỉ tiêu đề + mô tả */}
-      <div className="rounded-2xl bg-gradient-to-r from-rose-600 to-red-700 p-6 text-white shadow-card">
+      <div className="rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <h1 className="flex items-center gap-2 text-2xl font-bold"><ShieldAlert /> Tố Cáo Lừa Đảo</h1>
         <p className="mt-1 text-sm text-white/80">Tra cứu &amp; cảnh báo scammer — bảo vệ cộng đồng bằng bằng chứng.</p>
       </div>

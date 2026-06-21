@@ -124,7 +124,7 @@ export default function GameShopPage() {
   return (
     <div className="space-y-4">
       <a href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</a>
-      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white shadow-card">
+      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <ShoppingBag /> <h1 className="text-2xl font-bold">Cửa hàng</h1>
       </header>
       <p className="text-sm text-ink-500">Bấm <b>Xem</b> ở mỗi sản phẩm để xem thông tin, chọn số lượng và mua.</p>

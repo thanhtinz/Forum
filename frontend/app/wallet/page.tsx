@@ -116,7 +116,7 @@ export default function WalletPage() {
             <button onClick={() => setTab('coin')} className={`rounded-md px-3 py-1 font-medium ${tab === 'coin' ? 'bg-white shadow-sm dark:bg-ink-700' : 'text-ink-500'}`}>Xu</button>
           </div>
         </div>
-        <div className="divide-y divide-ink-100 text-sm dark:divide-ink-800">
+        <div className="max-h-[60vh] divide-y divide-ink-100 overflow-y-auto text-sm dark:divide-ink-800">
           {tx.map((t) => (
             <div key={t.id} className="flex items-center justify-between gap-2 py-2">
               <span className="min-w-0 truncate">{t.note || t.type} <span className="text-ink-400">· {new Date(t.createdAt).toLocaleString('vi')}</span></span>

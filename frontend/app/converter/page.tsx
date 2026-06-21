@@ -222,7 +222,7 @@ function ConverterInner() {
 
   return (
     <div className="space-y-5">
-      <header className="rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-500 p-6 text-white shadow-card">
+      <header className="rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <div className="flex items-center gap-2">
           <Ruler />
           <div>

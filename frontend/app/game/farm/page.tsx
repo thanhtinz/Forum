@@ -128,7 +128,7 @@ export default function FarmPage() {
           {/* Giếng (asset): hết nước → giếng cạn; có nước → giếng đầy nước. Mức nước cụ thể xem ở thanh bên dưới. */}
           <div className="relative h-24 w-[106px] shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/game-assets/nongtrai/img/${empty ? 'gieng-can' : 'gieng-nuoc'}.png`} alt="Giếng" className="h-full w-full object-contain" />
+            <img src={`/game-assets/nongtrai/img/${empty ? 'gieng-can' : 'gieng-nuoc'}.png?v=2`} alt="Giếng" className="h-full w-full object-contain" />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold">Giếng nước</h2>

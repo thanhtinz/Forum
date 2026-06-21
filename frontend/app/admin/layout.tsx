@@ -6,7 +6,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Sprout, CreditCard, Settings, FileText, Ticket,
   BadgeInfo, Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
-  BellRing, Gavel, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift,
+  BellRing, Gavel, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -34,6 +34,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/giftcode', label: 'Giftcode', icon: Gift },
       { href: '/admin/stickers', label: 'Sticker chat', icon: Sticker },
       { href: '/admin/avatars', label: 'Thư viện avatar', icon: Sticker },
+      { href: '/admin/frames', label: 'Khung avatar', icon: Square },
     ],
   },
   {

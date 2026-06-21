@@ -331,4 +331,19 @@ export class AdminController {
 
   @Post('avatars/image/:id/delete')
   removeAvatar(@Param('id') id: string) { return this.gameAsset.removeAvatar(id); }
+
+  // ════════════════════════════════════════════
+  // KHUNG AVATAR (sản phẩm bán bằng coin/gem)
+  // ════════════════════════════════════════════
+  @Get('frames')
+  listFrames() { return this.gameAsset.listFrames(); }
+
+  @Post('frames')
+  createFrame(@Body() data: any) { return this.gameAsset.createFrame(data); }
+
+  @Patch('frames/:id')
+  updateFrame(@Param('id') id: string, @Body() data: any) { return this.gameAsset.updateFrame(id, data); }
+
+  @Post('frames/:id/delete')
+  deleteFrame(@Param('id') id: string) { return this.gameAsset.deleteFrame(id); }
 }

@@ -2,14 +2,21 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { mutate } from 'swr';
-import { ChevronLeft, Sprout, ShoppingBag, Coins, FlaskConical, Fish, Ship, Anchor, Loader2, X } from 'lucide-react';
+import { ChevronLeft, Sprout, ShoppingBag, Coins, FlaskConical, Fish, Ship, Anchor, Loader2, X, Gem, Square } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { Avatar } from '@/components/Header';
 import { formatCoin, formatDuration } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
 import { cropFruit } from '@/lib/cropSprites';
 
-type Tab = 'crop' | 'fishing';
+type Tab = 'crop' | 'fishing' | 'frame';
+
+interface Frame {
+  id: string; slug: string; name: string; description?: string | null; imageUrl: string;
+  priceCoin?: number | null; coinDays?: number | null; priceGem?: number | null; gemDays?: number | null;
+}
+const frameDur = (days?: number | null) => (days == null ? 'vĩnh viễn' : `${days} ngày`);
 
 interface Crop { slug: string; name: string; seedPrice: number; sellPrice?: number; growSeconds?: number; exp?: number; yieldMin?: number; yieldMax?: number; reqLevel?: number; asset?: string | null }
 interface Fertilizer { slug: string; name: string; price: number; reduceSeconds?: number; asset?: string | null }
@@ -27,6 +34,7 @@ type Selected =
 const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: 'crop', label: 'Trồng trọt', icon: Sprout },
   { key: 'fishing', label: 'Câu cá', icon: Fish },
+  { key: 'frame', label: 'Khung avatar', icon: Square },
 ];
 
 function Asset({ src, fallback, className = 'h-12 w-12' }: { src?: string | null; fallback: React.ReactNode; className?: string }) {
@@ -41,6 +49,8 @@ export default function GameShopPage() {
   const [crops, setCrops] = useState<Crop[]>([]);
   const [ferts, setFerts] = useState<Fertilizer[]>([]);
   const [fish, setFish] = useState<FishShop | null>(null);
+  const [frames, setFrames] = useState<Frame[]>([]);
+  const [frameSel, setFrameSel] = useState<Frame | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [selected, setSelected] = useState<Selected | null>(null);
@@ -52,7 +62,21 @@ export default function GameShopPage() {
     api.get<Crop[]>('/farm/crops').then(setCrops).catch(() => {});
     api.get<Fertilizer[]>('/farm/fertilizers').then(setFerts).catch(() => {});
     api.get<FishShop>('/fishing/state').then(setFish).catch(() => {});
+    api.get<Frame[]>('/avatar-frames').then(setFrames).catch(() => {});
   }, []);
+
+  async function buyFrame(currency: 'coin' | 'gem') {
+    if (!frameSel) return;
+    setBusy(true); setMsg(null);
+    try {
+      await api.post(`/avatar-frames/${frameSel.id}/buy`, { currency });
+      setMsg({ ok: true, text: `Đã mua khung "${frameSel.name}". Vào Ảnh đại diện để bật dùng.` });
+      setFrameSel(null);
+      loadCoin();
+    } catch (e: any) {
+      setMsg({ ok: false, text: e.message || 'Mua thất bại' });
+    } finally { setBusy(false); }
+  }
 
   useEffect(() => {
     if (loading || !user) return;
@@ -187,6 +211,70 @@ export default function GameShopPage() {
                 <button onClick={() => openView({ kind: 'bait' })} className="btn-outline shrink-0 !py-1.5 text-xs">Xem</button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Khung avatar */}
+      {tab === 'frame' && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {frames.map((f) => (
+            <button key={f.id} onClick={() => { setFrameSel(f); setMsg(null); }}
+              className="card flex flex-col items-center gap-2 p-3 text-center transition hover:border-brand-400 hover:shadow-card">
+              <div className="relative grid h-20 w-20 place-items-center">
+                <span className="h-14 w-14 rounded-full bg-ink-100 dark:bg-ink-800" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={f.imageUrl} alt={f.name} className="pointer-events-none absolute inset-0 h-full w-full object-contain" />
+              </div>
+              <p className="line-clamp-1 text-sm font-medium">{f.name}</p>
+              <p className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-ink-400">
+                {f.priceCoin != null && <span className="inline-flex items-center gap-0.5"><Coins size={11} />{formatCoin(f.priceCoin)}</span>}
+                {f.priceGem != null && <span className="inline-flex items-center gap-0.5 text-fuchsia-600"><Gem size={11} />{f.priceGem}</span>}
+              </p>
+            </button>
+          ))}
+          {frames.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có khung avatar nào.</p>}
+        </div>
+      )}
+
+      {/* ───── Popup khung avatar: demo + giá + mua ───── */}
+      {frameSel && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setFrameSel(null)}>
+          <div className="card w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <h2 className="text-lg font-bold">{frameSel.name}</h2>
+              <button onClick={() => setFrameSel(null)} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
+            </div>
+
+            {/* Demo thử khung trên avatar của bạn */}
+            <div className="flex flex-col items-center gap-2 rounded-xl bg-ink-50 py-5 dark:bg-ink-800/50">
+              <Avatar user={{ username: user?.username || 'me', avatar: user?.avatar, avatarFrameUrl: frameSel.imageUrl }} size={104} />
+              <p className="text-xs text-ink-400">Xem thử khung trên ảnh đại diện của bạn</p>
+            </div>
+            {frameSel.description && <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{frameSel.description}</p>}
+
+            {/* Giá & nút mua theo từng loại tiền */}
+            <div className="mt-4 space-y-2">
+              {frameSel.priceCoin != null && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-ink-200/70 p-3 dark:border-ink-700">
+                  <div className="text-sm">
+                    <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Coins size={14} /> {formatCoin(frameSel.priceCoin)} Xu</p>
+                    <p className="text-xs text-ink-400">Thời hạn: {frameDur(frameSel.coinDays)}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => buyFrame('coin')} className="btn-outline inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <Coins size={15} />} Mua</button>
+                </div>
+              )}
+              {frameSel.priceGem != null && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-fuchsia-200 p-3 dark:border-fuchsia-900/50">
+                  <div className="text-sm">
+                    <p className="inline-flex items-center gap-1 font-semibold text-fuchsia-600"><Gem size={14} /> {frameSel.priceGem} Gem</p>
+                    <p className="text-xs text-ink-400">Thời hạn: {frameDur(frameSel.gemDays)}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => buyFrame('gem')} className="btn-primary inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <Gem size={15} />} Mua</button>
+                </div>
+              )}
+            </div>
+            <p className="mt-3 text-center text-xs text-ink-400">Mua xong vào <b>Cài đặt → Ảnh đại diện</b> để bật khung.</p>
           </div>
         </div>
       )}

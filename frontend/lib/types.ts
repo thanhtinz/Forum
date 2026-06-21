@@ -3,6 +3,7 @@ export interface User {
   username: string;
   displayName?: string | null;
   avatar?: string | null;
+  avatarFrameUrl?: string | null;
   role: 'GUEST' | 'MEMBER' | 'VIP' | 'MODERATOR' | 'ADMIN';
 }
 

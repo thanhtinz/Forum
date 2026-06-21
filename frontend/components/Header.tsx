@@ -275,16 +275,20 @@ export function Header() {
   );
 }
 
-export function Avatar({ user, size = 32 }: { user: { username: string; avatar?: string | null }; size?: number }) {
-  if (user.avatar) {
+export function Avatar({ user, size = 32 }: { user: { username: string; avatar?: string | null; avatarFrameUrl?: string | null }; size?: number }) {
+  const inner = user.avatar
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={user.avatar} alt={user.username} width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />;
-  }
-  const letter = user.username?.[0]?.toUpperCase() || '?';
+    ? <img src={user.avatar} alt={user.username} width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />
+    : <span className="grid place-items-center rounded-full bg-brand-500 font-semibold text-white" style={{ width: size, height: size, fontSize: size * 0.42 }}>{user.username?.[0]?.toUpperCase() || '?'}</span>;
+  if (!user.avatarFrameUrl) return inner;
+  // Khung avatar — vẽ chồng lên, lớn hơn ~38% để bao quanh ảnh
+  const fs = Math.round(size * 1.4);
   return (
-    <span className="grid place-items-center rounded-full bg-brand-500 font-semibold text-white"
-      style={{ width: size, height: size, fontSize: size * 0.42 }}>
-      {letter}
+    <span className="relative inline-grid shrink-0 place-items-center" style={{ width: size, height: size }}>
+      {inner}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={user.avatarFrameUrl} alt="" aria-hidden draggable={false}
+        className="pointer-events-none absolute select-none object-contain" style={{ width: fs, height: fs, maxWidth: 'none' }} />
     </span>
   );
 }

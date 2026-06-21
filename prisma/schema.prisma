@@ -303,10 +303,6 @@ model User {
   giveaways            Giveaway[]
   giveawayEntries      GiveawayEntry[]
   triviaAnswers        TriviaAnswer[]
-  predictionBets       PredictionBet[]
-  predictionComments   PredictionComment[]
-  predictionReactions  PredictionReaction[]
-  parlayBets           ParlayBet[]
   aiPersonas           AiPersona[]
   authTokens           AuthToken[]
   groupMemberships     UserGroupMember[]
@@ -1384,135 +1380,7 @@ model TriviaAnswer {
   @@index([userId])
 }
 
-model Prediction {
-  id           String    @id @default(cuid())
-  title        String    @db.VarChar(200)
-  description  String?   @db.Text
-  options      Json // string[] outcomes
-  status       String    @default("OPEN") // OPEN | LOCKED | RESULT_PENDING | SETTLED | CANCELLED | DISPUTED
-  correctIndex Int?
-  closesAt     DateTime? // thời gian khoá cược (lock)
-  createdBy    String
-  createdAt    DateTime  @default(now())
-  settledAt    DateTime?
-
-  // ── Prediction Market v2 ──
-  category      String    @default("OTHER") // ANIME|MANGA|GAME|ESPORTS|SPORTS|TECH|CRYPTO|COMMUNITY|OTHER
-  marketType    String    @default("BINARY") // BINARY|MULTI|HANDICAP|OVERUNDER|ONEXTWO|ODDEVEN|EXACT|CUSTOM
-  oddsMode      String    @default("POOL") // POOL (pari-mutuel) | FIXED (nhà cái)
-  fixedOdds     Json? // number[] khớp options (chế độ FIXED)
-  line          Float? // mức chấp / tài xỉu (hiển thị)
-  isAdminMarket Boolean   @default(false) // kèo admin tổ chức (nhà = hệ thống)
-  creatorStake  Int       @default(0) // coin ký quỹ của người tạo (FIXED, kèo user)
-  creatorEscrow Int       @default(0) // thanh khoản còn lại của nhà cái
-  visibility    String    @default("PUBLIC") // PUBLIC|PRIVATE|FRIENDS|GUILD
-  joinPassword  String? // mật khẩu tham gia (PRIVATE)
-  guildId       String?
-  image         String?
-  banner        String?
-  tags          String[]
-  opensAt       DateTime?
-  resultAt      DateTime?
-  autoSettleAt  DateTime?
-  minBet        Int       @default(1)
-  maxBet        Int?
-  commissionBps Int       @default(0) // hoa hồng (basis points, 100 = 1%)
-  resultNote    String?   @db.Text
-  resultSource  String    @default("MANUAL") // MANUAL | EXTERNAL
-  externalRef   String? // mã tham chiếu nguồn kết quả ngoài (vd: trận đấu, ký hiệu)
-
-  bets       PredictionBet[]
-  comments   PredictionComment[]
-  parlayLegs ParlayLeg[]
-
-  @@index([status, createdAt])
-  @@index([category])
-  @@index([createdBy])
-}
-
-model PredictionComment {
-  id           String   @id @default(cuid())
-  predictionId String
-  userId       String
-  parentId     String?
-  content      String   @db.Text
-  isDeleted    Boolean  @default(false)
-  createdAt    DateTime @default(now())
-
-  prediction Prediction          @relation(fields: [predictionId], references: [id], onDelete: Cascade)
-  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  parent     PredictionComment?  @relation("PredCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies    PredictionComment[] @relation("PredCommentReplies")
-
-  @@index([predictionId, createdAt])
-}
-
-model PredictionReaction {
-  id         String   @id @default(cuid())
-  targetType String   @db.VarChar(20) // PREDICTION | COMMENT
-  targetId   String
-  userId     String
-  emoji      String   @db.VarChar(20)
-  createdAt  DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([targetType, targetId, userId, emoji])
-  @@index([targetType, targetId])
-}
-
 // Cược xiên: gộp nhiều kèo (nhà cái hệ thống, FIXED) vào 1 vé, nhân odds
-model ParlayBet {
-  id              String    @id @default(cuid())
-  userId          String
-  amount          Int
-  combinedOdds    Float
-  potentialPayout Int
-  status          String    @default("ACTIVE") // ACTIVE | WON | LOST | REFUNDED
-  payout          Int       @default(0)
-  createdAt       DateTime  @default(now())
-  settledAt       DateTime?
-
-  user User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  legs ParlayLeg[]
-
-  @@index([userId])
-  @@index([status])
-}
-
-model ParlayLeg {
-  id           String @id @default(cuid())
-  parlayId     String
-  predictionId String
-  optionIndex  Int
-  odds         Float
-  status       String @default("PENDING") // PENDING | WON | LOST | VOID
-
-  parlay     ParlayBet  @relation(fields: [parlayId], references: [id], onDelete: Cascade)
-  prediction Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
-
-  @@index([parlayId])
-  @@index([predictionId])
-}
-
-model PredictionBet {
-  id           String   @id @default(cuid())
-  predictionId String
-  userId       String
-  optionIndex  Int
-  amount       Int
-  odds         Float    @default(0) // odds khoá tại thời điểm cược (FIXED)
-  payout       Int      @default(0)
-  status       String   @default("ACTIVE") // ACTIVE|WON|LOST|REFUNDED
-  createdAt    DateTime @default(now())
-
-  prediction Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([predictionId])
-  @@index([userId])
-}
-
 // ============================================================
 // FREELANCE / JOB MARKETPLACE
 // ============================================================

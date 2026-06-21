@@ -302,7 +302,6 @@ model User {
   spinHistory          SpinHistory[]
   giveaways            Giveaway[]
   giveawayEntries      GiveawayEntry[]
-  triviaAnswers        TriviaAnswer[]
   aiPersonas           AiPersona[]
   authTokens           AuthToken[]
   groupMemberships     UserGroupMember[]
@@ -1348,35 +1347,6 @@ model GiveawayEntry {
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([giveawayId, userId])
-  @@index([userId])
-}
-
-model TriviaQuestion {
-  id           String    @id @default(cuid())
-  question     String    @db.Text
-  options      Json // string[]
-  correctIndex Int
-  reward       Int       @default(0) // coin
-  activeDate   DateTime? @db.Date
-  isActive     Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-
-  answers TriviaAnswer[]
-}
-
-model TriviaAnswer {
-  id          String   @id @default(cuid())
-  questionId  String
-  userId      String
-  choiceIndex Int
-  isCorrect   Boolean
-  rewardGiven Int      @default(0)
-  createdAt   DateTime @default(now())
-
-  question TriviaQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([questionId, userId])
   @@index([userId])
 }
 

@@ -5,7 +5,6 @@ import useSWR from 'swr';
 import { Newspaper, Users, BarChart3, Image, Tag, Award, MessageSquare, FileText, MessagesSquare, UserPlus } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import { Avatar } from './Header';
-import { AdBanner } from './AdBanner';
 
 interface ForumStats {
   totalMembers: number;
@@ -35,8 +34,6 @@ export function HomeSidebar() {
 
   return (
     <aside className="space-y-4">
-      {/* Banner quảng cáo sidebar */}
-      <AdBanner position="sidebar" className="h-40" />
       {/* Cộng đồng (giữ nguyên như cũ) */}
       <div className="card p-4">
         <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-500">Cộng đồng</h3>
@@ -76,8 +73,6 @@ export function HomeSidebar() {
           {(!members || members.data.length === 0) && <p className="text-sm text-ink-400">Chưa có dữ liệu.</p>}
         </div>
       </div>
-      {/* Banner quảng cáo dưới sidebar */}
-      <AdBanner position="sidebar_bottom" className="h-40" />
     </aside>
   );
 }

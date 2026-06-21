@@ -212,7 +212,7 @@ export default function AdminBadges() {
 
       {/* Icon badge hệ thống */}
       <h2 className="pt-2 text-lg font-bold">Icon badge hệ thống</h2>
-      <p className="text-sm text-ink-500">Tải ảnh icon riêng cho các badge tự động (vai trò, tích xanh, người bán). Bỏ trống = dùng icon mặc định.</p>
+      <p className="text-sm text-ink-500">Tải ảnh icon riêng cho các badge tự động (vai trò, tích xanh). Bỏ trống = dùng icon mặc định.</p>
       <div className="card grid grid-cols-2 gap-4 p-4 sm:grid-cols-3 lg:grid-cols-4">
         {[
           { key: 'verify', label: 'Tích xanh' },
@@ -220,8 +220,6 @@ export default function AdminBadges() {
           { key: 'role:MODERATOR', label: 'Điều hành viên' },
           { key: 'role:VIP', label: 'VIP' },
           { key: 'role:MEMBER', label: 'Thành viên' },
-          { key: 'seller', label: 'Người bán' },
-          { key: 'seller_verified', label: 'Người bán uy tín' },
         ].map((s) => (
           <div key={s.key} className="space-y-1">
             <div className="flex items-center gap-2 text-sm font-medium"><BadgeIcon icon={sysIcons[s.key]} size={18} /> {s.label}</div>

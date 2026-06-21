@@ -157,28 +157,31 @@ function SoloPlay() {
           return (
           <div className="mx-auto w-fit rounded-2xl border-4 border-amber-500 bg-gradient-to-b from-red-700 to-red-900 p-3 shadow-lg">
             <div className="mb-2 text-center text-lg font-extrabold tracking-widest text-amber-300">🎰 777</div>
-            <div className="relative rounded-lg bg-ink-950/70 p-2">
-              <div className="grid grid-cols-3 gap-1">
-                {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => {
-                  const SYMS = ['seven', 'bar', 'bell', 'cherry', 'lemon', 'coin'];
-                  // đang quay: đổi symbol liên tục theo frame (cột phải dừng trễ hơn -> cảm giác quay)
-                  const sym = animating
-                    ? SYMS[(frame + c * 2 + r) % SYMS.length]
-                    : (result?.grid?.[c]?.[r] || SYMS[(r * 3 + c) % 6]);
-                  const hit = winCells.has(`${c}-${r}`);
-                  return <img key={`${c}-${r}`} src={`/game-assets/jackpot/${sym}.png`} alt="" className={`h-12 w-12 rounded bg-white/90 object-contain p-0.5 transition ${animating ? 'blur-[1px]' : ''} ${hit ? 'ring-4 ring-amber-300 ring-offset-1 ring-offset-ink-950' : ''}`} />;
-                }))}
+            <div className="rounded-lg bg-ink-950/70 p-2">
+              {/* bọc riêng để SVG đè KHÍT lên lưới (không lệ thuộc padding) */}
+              <div className="relative">
+                <div className="grid grid-cols-3 gap-1">
+                  {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => {
+                    const SYMS = ['seven', 'bar', 'bell', 'cherry', 'lemon', 'coin'];
+                    // đang quay: đổi symbol liên tục theo frame (cột phải dừng trễ hơn -> cảm giác quay)
+                    const sym = animating
+                      ? SYMS[(frame + c * 2 + r) % SYMS.length]
+                      : (result?.grid?.[c]?.[r] || SYMS[(r * 3 + c) % 6]);
+                    const hit = winCells.has(`${c}-${r}`);
+                    return <img key={`${c}-${r}`} src={`/game-assets/jackpot/${sym}.png`} alt="" className={`h-12 w-12 rounded bg-white/90 object-contain p-0.5 transition ${animating ? 'blur-[1px]' : ''} ${hit ? 'ring-4 ring-amber-300 ring-offset-1 ring-offset-ink-950' : ''}`} />;
+                  }))}
+                </div>
+                {/* Đường highlight các dòng thắng — đè khít lưới */}
+                {wins.length > 0 && (
+                  <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
+                    {wins.map((w, i) => {
+                      const cells = PAYLINE_CELLS[w.line] || [];
+                      const pts = cells.map(([c, r]) => `${CELL_PCT[c]},${CELL_PCT[r]}`).join(' ');
+                      return <polyline key={i} points={pts} fill="none" stroke={PAYLINE_COLORS[w.line % PAYLINE_COLORS.length]} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" opacity={0.9} />;
+                    })}
+                  </svg>
+                )}
               </div>
-              {/* Đường highlight các dòng thắng */}
-              {wins.length > 0 && (
-                <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-2">
-                  {wins.map((w, i) => {
-                    const cells = PAYLINE_CELLS[w.line] || [];
-                    const pts = cells.map(([c, r]) => `${CELL_PCT[c]},${CELL_PCT[r]}`).join(' ');
-                    return <polyline key={i} points={pts} fill="none" stroke={PAYLINE_COLORS[w.line % PAYLINE_COLORS.length]} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" opacity={0.9} />;
-                  })}
-                </svg>
-              )}
             </div>
             {wins.length > 0 && (
               <div className="mt-2 flex flex-wrap justify-center gap-1">

@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { ThreadList } from '@/components/ThreadList';
 import { CategoryList } from '@/components/CategoryList';
 import { HomeSidebar } from '@/components/HomeSidebar';
+import { AdBanner } from '@/components/AdBanner';
 import { useSiteConfig } from '@/lib/siteConfig';
 
 function HomeContent() {
@@ -21,6 +22,9 @@ function HomeContent() {
           <p className="mt-1 max-w-xl whitespace-pre-line text-white/85">{cfg.heroDescription}</p>
         )}
       </section>
+
+      {/* Banner quảng cáo (admin gắn theo thời gian; trống thì hiện ô cho thuê) */}
+      <AdBanner position="home_top" className="h-28 sm:h-32" />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]">
         <div className="space-y-5">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Users, Store, CreditCard, Sprout, KeyRound, Settings, ShieldAlert, FolderTree, ChevronRight } from 'lucide-react';
+import { Users, CreditCard, Sprout, KeyRound, Settings, ShieldAlert, FolderTree, ChevronRight } from 'lucide-react';
 import { api } from '@/lib/api';
 
 // Nhãn tiếng Việt cho các khóa thống kê thường gặp
@@ -19,7 +19,6 @@ const QUICK = [
   { href: '/admin/forum-categories', label: 'Danh mục diễn đàn', icon: FolderTree },
   { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert },
   { href: '/admin/templates', label: 'Dữ liệu game', icon: Sprout },
-  { href: '/admin/marketplace', label: 'Quản lý Chợ', icon: Store },
   { href: '/admin/payments', label: 'Nạp tiền', icon: CreditCard },
   { href: '/admin/users', label: 'Người dùng', icon: Users },
   { href: '/admin/groups', label: 'Nhóm & Quyền', icon: KeyRound },

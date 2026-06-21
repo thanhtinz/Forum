@@ -89,18 +89,36 @@ export class HiddenContentService {
       userUnlocks = Object.fromEntries(
         unlocks.map((u) => [u.hiddenSectionId, { unlockedVia: u.unlockedVia }]),
       );
+
+      // KHOÁ TRẠNG THÁI MỞ VĨNH VIỄN: nếu điều kiện (like/comment) đã đạt mà chưa có record
+      // unlock → tạo ngay. Nhờ vậy về sau dù like/comment giảm xuống dưới ngưỡng, nội dung
+      // đã mở vẫn KHÔNG bị ẩn lại với user này.
+      const toPersist = sections.filter(
+        (s) => !userUnlocks[s.id] && this.checkConditionMet(s, currentLikes, currentComments),
+      );
+      if (toPersist.length) {
+        await Promise.all(
+          toPersist.map(async (s) => {
+            const via = this.resolveUnlockVia(s, currentLikes, currentComments);
+            const created = await this.prisma.hiddenContentUnlock.createMany({
+              data: [{ userId, hiddenSectionId: s.id, unlockedVia: via, gemSpent: 0 }],
+              skipDuplicates: true,
+            });
+            if (created.count > 0) {
+              await this.prisma.hiddenSection
+                .update({ where: { id: s.id }, data: { unlockCount: { increment: 1 } } })
+                .catch(() => undefined);
+            }
+            userUnlocks[s.id] = { unlockedVia: via };
+          }),
+        );
+      }
     }
 
     return sections.map((section) => {
       const existingUnlock = userUnlocks[section.id];
-      const conditionMet =
-        userId != null &&
-        this.checkConditionMet(section, currentLikes, currentComments);
-
-      const isUnlocked = !!existingUnlock || conditionMet;
-
-      // Nếu điều kiện vừa đủ nhưng chưa có record unlock → tự động tạo (lazy)
-      // Sẽ được xử lý bằng background job hoặc khi user request
+      // Đã có record unlock (gồm cả vừa khoá vĩnh viễn ở trên) => luôn mở.
+      const isUnlocked = !!existingUnlock;
       return {
         id: section.id,
         postId: section.postId,

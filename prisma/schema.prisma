@@ -44,29 +44,6 @@ enum ThreadStatus {
   ARCHIVED
 }
 
-enum ProductType {
-  SOURCE_CODE
-  TOOL
-  SERVICE
-  ACCOUNT
-  TEMPLATE
-  DESIGN
-}
-
-enum ProductStatus {
-  DRAFT
-  ACTIVE
-  SUSPENDED
-  SOLD_OUT
-}
-
-enum OrderStatus {
-  PENDING
-  COMPLETED
-  REFUNDED
-  DISPUTED
-}
-
 enum GemTxType {
   TOPUP_SEPAY
   TOPUP_PAYPAL
@@ -156,27 +133,27 @@ enum ScamTargetType {
 }
 
 enum ScamReason {
-  FRAUD          // Lừa đảo
-  NO_DELIVERY    // Không giao hàng
-  NO_PAYMENT     // Không thanh toán
-  CHARGEBACK     // Chargeback
-  FAKE_GOODS     // Bán hàng giả
+  FRAUD // Lừa đảo
+  NO_DELIVERY // Không giao hàng
+  NO_PAYMENT // Không thanh toán
+  CHARGEBACK // Chargeback
+  FAKE_GOODS // Bán hàng giả
   STOLEN_ACCOUNT // Tài khoản đánh cắp
   SPAM
-  IMPERSONATION  // Mạo danh
-  HARASSMENT     // Quấy rối
+  IMPERSONATION // Mạo danh
+  HARASSMENT // Quấy rối
   OTHER
 }
 
 enum ScamCaseStatus {
-  PENDING        // Chờ duyệt
-  VERIFYING      // Đang xác minh
-  NEED_EVIDENCE  // Cần bổ sung bằng chứng
-  CONFIRMED      // Đã xác nhận scam
-  INSUFFICIENT   // Không đủ bằng chứng
-  RESOLVED       // Đã giải quyết
-  CLOSED         // Đóng báo cáo
-  CLEARED        // Đã minh oan
+  PENDING // Chờ duyệt
+  VERIFYING // Đang xác minh
+  NEED_EVIDENCE // Cần bổ sung bằng chứng
+  CONFIRMED // Đã xác nhận scam
+  INSUFFICIENT // Không đủ bằng chứng
+  RESOLVED // Đã giải quyết
+  CLOSED // Đóng báo cáo
+  CLEARED // Đã minh oan
 }
 
 enum ScamRiskLevel {
@@ -214,7 +191,6 @@ enum NotifType {
   POST_MENTION
   POST_LIKE
   BEST_ANSWER
-  ORDER_COMPLETE
   GEM_RECEIVED
   SYSTEM
   AI_MESSAGE
@@ -264,8 +240,8 @@ model User {
   postCount       Int        @default(0)
   reputationScore Int        @default(0)
   gemBalance      Int        @default(0)
-  aiProvider      String?    @db.VarChar(20)  // OPENAI | GEMINI | OLLAMA | OPENAI_COMPAT
-  aiModel         String?    @db.VarChar(80)  // model user tự chọn
+  aiProvider      String?    @db.VarChar(20) // OPENAI | GEMINI | OLLAMA | OPENAI_COMPAT
+  aiModel         String?    @db.VarChar(80) // model user tự chọn
   aiApiKey        String?    @db.VarChar(500) // API key riêng của user
   aiBaseUrl       String?    @db.VarChar(300) // base URL cho nguồn OpenAI-compatible (OpenRouter, Groq, LM Studio…)
   lastSeenAt      DateTime?
@@ -283,8 +259,6 @@ model User {
   threadViews     ThreadView[]
   gemWallet       GemWallet?
   gemTransactions GemTransaction[]
-  orders          Order[]               @relation("BuyerOrders")
-  products        Product[]             @relation("SellerProducts")
   notifications   Notification[]
   reports         Report[]              @relation("ReporterReports")
   reportedReports Report[]              @relation("ReportedUserReports")
@@ -301,8 +275,6 @@ model User {
 
   aiBonds              AiBond[]
   aiOutfitUnlocks      AiOutfitUnlock[]
-  storefront           Storefront?
-  storefrontFollows    StorefrontFollow[]
   gameCharacter        GameCharacter?
   prisonRecords        Prison[]                @relation("UserPrison")
   fortuneRecords       FortuneRecord[]         @relation("UserFortune")
@@ -510,9 +482,8 @@ model Tag {
   usageCount Int      @default(0)
   createdAt  DateTime @default(now())
 
-  threadTags  ThreadTag[]
-  productTags ProductTag[]
-  followers   UserTagFollow[]
+  threadTags ThreadTag[]
+  followers  UserTagFollow[]
 
   @@index([slug])
 }
@@ -716,139 +687,7 @@ model HiddenContentUnlock {
 // MARKETPLACE
 // ============================================================
 
-model Product {
-  id             String        @id @default(cuid())
-  sellerId       String
-  storefrontId   String?
-  categoryId     String?
-  title          String        @db.VarChar(255)
-  slug           String        @unique @db.VarChar(280)
-  description    String        @db.Text
-  descriptionRaw String        @db.Text
-  type           ProductType
-  status         ProductStatus @default(DRAFT)
-  gemPrice       Int           @default(0)
-  isFree         Boolean       @default(false)
-  version        String?       @db.VarChar(50)
-  techStack      String[]
-  thumbnailUrl   String?
-  demoUrl        String?
-  fileUrl        String?
-  fileSize       Int?
-  downloadCount  Int           @default(0)
-  salesCount     Int           @default(0)
-  viewCount      Int           @default(0)
-  ratingAvg      Float         @default(0)
-  ratingCount    Int           @default(0)
-  pinnedUntil    DateTime? // ghim sản phẩm (trả gem)
-  featuredUntil  DateTime? // đề xuất sản phẩm (trả gem)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  seller      User                @relation("SellerProducts", fields: [sellerId], references: [id])
-  storefront  Storefront?         @relation(fields: [storefrontId], references: [id])
-  category    MarketCategory?     @relation(fields: [categoryId], references: [id])
-  orders      Order[]
-  reviews     ProductReview[]
-  screenshots ProductScreenshot[]
-  tags        ProductTag[]
-  stock       ProductStock[]
-  packages    ProductPackage[]
-
-  @@index([sellerId])
-  @@index([storefrontId])
-  @@index([categoryId])
-  @@index([slug])
-  @@index([type])
-  @@index([status])
-}
-
 // Gói bán của sản phẩm số: giá theo gói + trường tuỳ chỉnh khách điền khi mua
-model ProductPackage {
-  id          String   @id @default(cuid())
-  productId   String
-  name        String   @db.VarChar(150)
-  description String?  @db.Text
-  gemPrice    Int      @default(0)
-  fields      Json     @default("[]") // [{ label: string, required: boolean }]
-  sortOrder   Int      @default(0)
-  createdAt   DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
-}
-
-model ProductScreenshot {
-  id        String   @id @default(cuid())
-  productId String
-  url       String
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
-}
-
-model ProductTag {
-  productId String
-  tagId     String
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([productId, tagId])
-}
-
-model Order {
-  id               String      @id @default(cuid())
-  buyerId          String
-  productId        String
-  status           OrderStatus @default(PENDING)
-  gemSpent         Int
-  sellerEarned     Int
-  platformFee      Int
-  downloadUrl      String?
-  downloadCount    Int         @default(0)
-  downloadLimit    Int         @default(5)
-  escrowStatus     String?     @db.VarChar(20) // HELD | RELEASED | REFUNDED
-  escrowReleaseAt  DateTime? // tiền seller được giải ngân sau khi giam 3 ngày
-  couponCode       String?     @db.VarChar(40)
-  packageId        String?     @db.VarChar(40) // gói đã mua (nếu sản phẩm có gói)
-  packageName      String?     @db.VarChar(150)
-  fieldValues      Json? // giá trị khách điền vào trường tuỳ chỉnh của gói
-  deliveredContent String?     @db.Text // nội dung giao tự động (tài khoản/key)
-  completedAt      DateTime?
-  refundedAt       DateTime?
-  refundReason     String?
-  createdAt        DateTime    @default(now())
-
-  buyer   User    @relation("BuyerOrders", fields: [buyerId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-
-  @@index([buyerId])
-  @@index([productId])
-  @@index([status])
-}
-
-model ProductReview {
-  id          String   @id @default(cuid())
-  productId   String
-  userId      String
-  orderId     String?
-  rating      Int
-  content     String   @db.Text
-  sellerReply String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@unique([productId, userId])
-  @@index([productId])
-}
-
 // ============================================================
 // GEM / PAYMENTS
 // ============================================================
@@ -1020,12 +859,12 @@ model ScamReport {
 
 // ===== Hồ sơ Tố Cáo Scam (đầy đủ) =====
 model ScamCase {
-  id             String         @id @default(cuid())
-  reporterId     String
-  targetType     ScamTargetType
-  reason         ScamReason
-  status         ScamCaseStatus @default(PENDING)
-  riskLevel      ScamRiskLevel?
+  id         String         @id @default(cuid())
+  reporterId String
+  targetType ScamTargetType
+  reason     ScamReason
+  status     ScamCaseStatus @default(PENDING)
+  riskLevel  ScamRiskLevel?
 
   reportedUserId String? // nếu đối tượng là thành viên trên hệ thống
   targetName     String? @db.VarChar(150) // tên/handle đối tượng
@@ -1051,10 +890,10 @@ model ScamCase {
   commentCount  Int @default(0)
   viewCount     Int @default(0)
 
-  modNote      String?  @db.Text
+  modNote      String?   @db.Text
   resolvedById String?
   resolvedAt   DateTime?
-  hidden       Boolean  @default(false)
+  hidden       Boolean   @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1380,8 +1219,8 @@ model GalleryAlbum {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  owner User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  media GalleryMedia[]
+  owner        User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  media        GalleryMedia[]
   hostedImages HostedImage[]
 
   @@index([ownerId, createdAt])
@@ -1938,7 +1777,7 @@ model Tool {
   description  String   @db.Text
   icon         String?  @db.VarChar(50)
   component    String   @db.VarChar(100) // tên React component (tool chạy client)
-  serverEngine String?  @db.VarChar(60)  // key engine chạy ở server (nếu có)
+  serverEngine String?  @db.VarChar(60) // key engine chạy ở server (nếu có)
   isActive     Boolean  @default(true)
   isPro        Boolean  @default(false) // cần VIP/gem
   usageCount   Int      @default(0)
@@ -2000,54 +1839,6 @@ model ToolFavorite {
 // ============================================================
 // MARKETPLACE — STOREFRONT (gian hàng riêng)
 // ============================================================
-
-model Storefront {
-  id            String    @id @default(cuid())
-  ownerId       String    @unique
-  slug          String    @unique @db.VarChar(80)
-  name          String    @db.VarChar(120)
-  tagline       String?   @db.VarChar(255)
-  description   String?   @db.Text
-  bannerUrl     String?
-  logoUrl       String?
-  isVerified    Boolean   @default(false)
-  isActive      Boolean   @default(true)
-  totalSales    Int       @default(0)
-  totalRevenue  Int       @default(0)
-  ratingAvg     Float     @default(0)
-  ratingCount   Int       @default(0)
-  followerCount Int       @default(0)
-  policyRefund  String?   @db.Text
-  socialLinks   Json? // { facebook, discord, telegram }
-  featuredUntil DateTime? // đề xuất gian hàng (trả gem)
-  aiUntil       DateTime? // gói AI shop theo tháng
-  aiForever     Boolean   @default(false) // gói AI vĩnh viễn
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  owner        User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  followers    StorefrontFollow[]
-  products     Product[]
-  coupons      Coupon[]
-  tickets      ShopTicket[]
-  staff        StoreStaff[]
-  activityLogs StoreActivityLog[]
-
-  @@index([slug])
-  @@index([ownerId])
-}
-
-model StorefrontFollow {
-  userId       String
-  storefrontId String
-  createdAt    DateTime @default(now())
-
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
-
-  @@id([userId, storefrontId])
-  @@index([storefrontId])
-}
 
 // ============================================================
 // ADMIN — DYNAMIC CONFIG GROUPS
@@ -3123,138 +2914,12 @@ model FortuneRecord {
 // ============================================================
 // MARKETPLACE — danh mục (admin), mã giảm giá (seller), ticket hỗ trợ
 // ============================================================
-model MarketCategory {
-  id        String  @id @default(cuid())
-  slug      String  @unique @db.VarChar(80)
-  name      String  @db.VarChar(120)
-  icon      String? @db.VarChar(50)
-  sortOrder Int     @default(0)
-  isActive  Boolean @default(true)
-
-  products Product[]
-}
-
-model Coupon {
-  id              String    @id @default(cuid())
-  storefrontId    String
-  code            String    @db.VarChar(40)
-  discountPercent Int       @default(0) // 0-100
-  maxUses         Int       @default(0) // 0 = không giới hạn
-  usedCount       Int       @default(0)
-  expiresAt       DateTime?
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-
-  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
-
-  @@unique([storefrontId, code])
-  @@index([storefrontId])
-}
-
-model ShopTicket {
-  id           String   @id @default(cuid())
-  storefrontId String
-  userId       String // khách hàng tạo ticket
-  subject      String   @db.VarChar(200)
-  status       String   @default("OPEN") @db.VarChar(20) // OPEN | ANSWERED | CLOSED
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  storefront Storefront          @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
-  messages   ShopTicketMessage[]
-
-  @@index([storefrontId, status])
-  @@index([userId])
-}
-
-model ShopTicketMessage {
-  id        String   @id @default(cuid())
-  ticketId  String
-  senderId  String
-  body      String   @db.Text
-  createdAt DateTime @default(now())
-
-  ticket ShopTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-
-  @@index([ticketId])
-}
-
 // ============================================================
 // SELLER CENTER — kho hàng (giao tự động), rút tiền
 // ============================================================
-model ProductStock {
-  id          String   @id @default(cuid())
-  productId   String
-  content     String   @db.Text // tài khoản / key / link file (1 đơn vị)
-  isSold      Boolean  @default(false)
-  soldOrderId String?
-  createdAt   DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId, isSold])
-}
-
-model PayoutMethod {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String   @db.VarChar(20) // BANK | PAYPAL | MOMO
-  label     String   @db.VarChar(120)
-  detail    String   @db.Text // số tk / email...
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-}
-
-model Withdrawal {
-  id          String    @id @default(cuid())
-  userId      String
-  amount      Int // gem gộp (bị trừ khỏi ví)
-  feePercent  Float     @default(0) // % phí rút lúc tạo
-  feeAmount   Int       @default(0) // gem phí
-  netAmount   Int       @default(0) // gem thực nhận sau phí
-  methodLabel String    @db.VarChar(160)
-  status      String    @default("PENDING") @db.VarChar(20) // PENDING | APPROVED | PAID | REJECTED
-  note        String?   @db.Text
-  createdAt   DateTime  @default(now())
-  processedAt DateTime?
-
-  @@index([userId])
-  @@index([status])
-}
-
 // ============================================================
 // SELLER — nhân viên gian hàng + nhật ký hoạt động
 // ============================================================
-model StoreStaff {
-  id           String   @id @default(cuid())
-  storefrontId String
-  userId       String
-  role         String   @default("STAFF") @db.VarChar(20) // MANAGER | STAFF
-  permissions  String[] // products | orders | tickets | coupons | stock
-  createdAt    DateTime @default(now())
-
-  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
-
-  @@unique([storefrontId, userId])
-  @@index([storefrontId])
-  @@index([userId])
-}
-
-model StoreActivityLog {
-  id           String   @id @default(cuid())
-  storefrontId String
-  actorId      String
-  action       String   @db.VarChar(80)
-  detail       String?  @db.VarChar(255)
-  createdAt    DateTime @default(now())
-
-  storefront Storefront @relation(fields: [storefrontId], references: [id], onDelete: Cascade)
-
-  @@index([storefrontId])
-}
-
 // ============================================================
 // FORUM EXTENSIONS (lấy cảm hứng từ các extension Flarum nổi bật)
 // Polls · Best Answer · Subscriptions · Drafts

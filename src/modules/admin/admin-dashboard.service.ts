@@ -17,14 +17,13 @@ export class AdminDashboardService {
 
     const [
       totalUsers, newUsersToday, totalThreads, totalPosts,
-      totalProducts, pendingReports, totalGemCirculation,
+      pendingReports, totalGemCirculation,
       newUsersWeek, activeToday,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { createdAt: { gte: today } } }),
       this.prisma.thread.count(),
       this.prisma.post.count({ where: { isDeleted: false } }),
-      this.prisma.product.count({ where: { status: 'ACTIVE' } }),
       this.prisma.report.count({ where: { status: 'PENDING' } }),
       this.prisma.gemWallet.aggregate({ _sum: { balance: true } }),
       this.prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
@@ -34,7 +33,6 @@ export class AdminDashboardService {
     return {
       users: { total: totalUsers, newToday: newUsersToday, newWeek: newUsersWeek, activeToday },
       forum: { threads: totalThreads, posts: totalPosts },
-      marketplace: { products: totalProducts },
       moderation: { pendingReports },
       gem: { circulation: totalGemCirculation._sum.balance ?? 0 },
     };

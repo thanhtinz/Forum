@@ -15,7 +15,6 @@ const SHORTCUTS = [
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, desc: '3 khu, cá hiếm' },
   { href: '/leaderboard', label: 'Xếp hạng', icon: Award, desc: 'Top danh hiệu & câu cá' },
   { href: '/guild', label: 'Bang hội', icon: Shield, desc: 'Cộng đồng — lập & gia nhập bang hội' },
-  { href: '/marketplace', label: 'Chợ gian hàng', icon: Store, desc: 'Mua bán source' },
   { href: '/tools', label: 'Công cụ', icon: Wrench, desc: '44 tool dev' },
 ];
 

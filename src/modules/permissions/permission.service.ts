@@ -10,7 +10,6 @@ export const PERMISSION_CATALOG: { key: string; label: string; group: string }[]
   { key: 'forum.postHiddenContent', label: 'Đăng nội dung ẩn', group: 'Diễn đàn' },
   { key: 'forum.tipDonate', label: 'Donate/tip', group: 'Diễn đàn' },
   { key: 'ai.useWriting', label: 'Dùng công cụ AI', group: 'AI' },
-  { key: 'marketplace.sell', label: 'Bán hàng ở chợ', group: 'Chợ' },
   { key: 'mod.deletePost', label: 'Xoá bài (mod)', group: 'Kiểm duyệt' },
   { key: 'mod.lockThread', label: 'Khoá/ghim chủ đề (mod)', group: 'Kiểm duyệt' },
   { key: 'mod.approveContent', label: 'Duyệt nội dung (mod)', group: 'Kiểm duyệt' },
@@ -22,8 +21,8 @@ export const ALL_PERMISSION_KEYS = PERMISSION_CATALOG.map((p) => p.key);
 export const DEFAULT_GROUPS: { key: string; name: string; color: string; priority: number; permissions: string[] }[] = [
   { key: 'guest', name: 'Khách', color: 'gray', priority: 0, permissions: [] },
   { key: 'member', name: 'Thành viên', color: 'gray', priority: 10, permissions: ['forum.startThread', 'forum.reply', 'forum.uploadAttachment', 'forum.createPoll', 'forum.postHiddenContent', 'forum.tipDonate', 'ai.useWriting'] },
-  { key: 'vip', name: 'VIP', color: 'amber', priority: 20, permissions: ['forum.startThread', 'forum.reply', 'forum.uploadAttachment', 'forum.createPoll', 'forum.postHiddenContent', 'forum.tipDonate', 'ai.useWriting', 'marketplace.sell'] },
-  { key: 'moderator', name: 'Điều hành viên', color: 'violet', priority: 50, permissions: ['forum.startThread', 'forum.reply', 'forum.uploadAttachment', 'forum.createPoll', 'forum.postHiddenContent', 'forum.tipDonate', 'ai.useWriting', 'marketplace.sell', 'mod.deletePost', 'mod.lockThread', 'mod.approveContent'] },
+  { key: 'vip', name: 'VIP', color: 'amber', priority: 20, permissions: ['forum.startThread', 'forum.reply', 'forum.uploadAttachment', 'forum.createPoll', 'forum.postHiddenContent', 'forum.tipDonate', 'ai.useWriting'] },
+  { key: 'moderator', name: 'Điều hành viên', color: 'violet', priority: 50, permissions: ['forum.startThread', 'forum.reply', 'forum.uploadAttachment', 'forum.createPoll', 'forum.postHiddenContent', 'forum.tipDonate', 'ai.useWriting', 'mod.deletePost', 'mod.lockThread', 'mod.approveContent'] },
   { key: 'admin', name: 'Quản trị viên', color: 'red', priority: 100, permissions: ['*'] },
 ];
 

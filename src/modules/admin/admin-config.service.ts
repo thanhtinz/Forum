@@ -367,22 +367,6 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
     ],
   },
   {
-    key: 'marketplace',
-    name: 'Chợ Code',
-    description: 'Cấu hình marketplace',
-    icon: 'shopping-bag',
-    sortOrder: 6,
-    settings: [
-      { key: 'market.enabled', label: 'Bật marketplace', type: 'boolean', value: true },
-      { key: 'market.platformFee', label: 'Phí nền tảng (%)', type: 'number', value: 30, validation: { min: 0, max: 100 } },
-      { key: 'market.requireApproval', label: 'Duyệt sản phẩm trước khi bán', type: 'boolean', value: true },
-      { key: 'market.allowStorefront', label: 'Cho phép tạo gian hàng', type: 'boolean', value: true },
-      { key: 'market.minProductPrice', label: 'Giá sản phẩm tối thiểu (gem)', type: 'number', value: 0, validation: { min: 0 } },
-      { key: 'market.downloadLimit', label: 'Số lần tải mặc định', type: 'number', value: 5, validation: { min: 1 } },
-      { key: 'market.maxFileSize', label: 'Dung lượng file tối đa (MB)', type: 'number', value: 500, validation: { min: 1 } },
-    ],
-  },
-  {
     key: 'ai',
     name: 'AI Companion',
     description: 'Cấu hình trợ lý AI Live2D',

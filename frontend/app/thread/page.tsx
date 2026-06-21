@@ -435,8 +435,6 @@ function ThreadView() {
                       badges={roleBadgesFromUser({
                         role: (p.author as any).role,
                         verifiedBadge: (p.author as any).verifiedBadge,
-                        isSeller: !!(p.author as any).storefront,
-                        sellerVerified: (p.author as any).storefront?.isVerified,
                       })}
                     />
                   </div>

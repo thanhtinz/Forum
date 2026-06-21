@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRole, UserStatus, ReportStatus } from '@prisma/client';
@@ -105,6 +105,10 @@ export class AdminDashboardService {
   }
 
   async banUser(userId: string, reason: string, until: Date | null, actorId: string) {
+    if (userId === actorId) throw new BadRequestException('Không thể tự ban chính mình');
+    const target = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (!target) throw new NotFoundException('User không tồn tại');
+    if (target.role === 'ADMIN') throw new ForbiddenException('Không thể ban tài khoản Quản trị viên');
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { status: 'BANNED', banReason: reason, bannedUntil: until },

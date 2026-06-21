@@ -1,22 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Sparkles, Moon, Coins, Bot, Star } from 'lucide-react';
+import { Sparkles, Moon, Coins, Star } from 'lucide-react';
 import { api } from '@/lib/api';
 
 type Tab = 'tarot' | 'zodiac';
-interface Cfg { priceBazi: number; priceTarot: number; priceMeihua: number; aiEnabled: boolean; aiPrice: number; }
 
 export default function FortunePage() {
   const [tab, setTab] = useState<Tab>('tarot');
-  const [cfg, setCfg] = useState<Cfg | null>(null);
-  useEffect(() => { api.get<Cfg>('/fortune/config').then(setCfg).catch(() => {}); }, []);
 
   return (
     <div className="space-y-5">
       <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-violet-700 via-purple-700 to-fuchsia-700 p-6 text-white shadow-card">
         <h1 className="flex items-center gap-2 text-2xl font-bold"><Sparkles /> Tarot & Cung Hoàng Đạo</h1>
-        <p className="text-white/85">Bốc bài Tarot theo chủ đề · Tử vi 12 cung hoàng đạo {cfg?.aiEnabled && '· có luận giải AI'}</p>
+        <p className="text-white/85">Bốc bài Tarot theo chủ đề · Tử vi 12 cung hoàng đạo</p>
       </header>
 
       <div className="flex gap-2">
@@ -28,32 +25,8 @@ export default function FortunePage() {
         ))}
       </div>
 
-      {tab === 'tarot' && <Tarot ai={cfg?.aiEnabled} aiPrice={cfg?.aiPrice} />}
-      {tab === 'zodiac' && <Zodiac ai={cfg?.aiEnabled} aiPrice={cfg?.aiPrice} />}
-    </div>
-  );
-}
-
-function AiAnalyze({ type, result, question, enabled, price }: { type: string; result: any; question?: string; enabled?: boolean; price?: number }) {
-  const [text, setText] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-  if (!enabled) return null;
-  async function go() {
-    setBusy(true); setErr('');
-    try { const r = await api.post<{ analysis: string }>('/fortune/analyze', { type, result, question }); setText(r.analysis); }
-    catch (e: any) { setErr(e.message); }
-    setBusy(false);
-  }
-  return (
-    <div className="mt-4 border-t border-ink-200/70 pt-3 dark:border-ink-800">
-      {!text && (
-        <button onClick={go} disabled={busy} className="btn-outline">
-          <Bot size={16} /> {busy ? 'AI đang luận giải…' : `Luận giải bằng AI${price ? ` (${price} coin)` : ''}`}
-        </button>
-      )}
-      {err && <p className="mt-2 text-sm text-red-500">{err}</p>}
-      {text && <div className="prose prose-sm mt-2 max-w-none whitespace-pre-wrap rounded-lg bg-violet-50 p-3 dark:bg-ink-900">{text}</div>}
+      {tab === 'tarot' && <Tarot />}
+      {tab === 'zodiac' && <Zodiac />}
     </div>
   );
 }
@@ -82,7 +55,7 @@ function CardBack({ className = '', picked = false }: { className?: string; pick
 type Step = 'mode' | 'spread' | 'input' | 'shuffle' | 'result';
 const FAN = 9; // số lá úp cho user chọn
 
-function Tarot({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
+function Tarot() {
   const [step, setStep] = useState<Step>('mode');
   const [mode, setMode] = useState<'question' | 'topic'>('question');
   const [n, setN] = useState(3);
@@ -238,13 +211,13 @@ function Tarot({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
 
       {/* BƯỚC 5 — kết quả */}
       {step === 'result' && r && (
-        <TarotResult r={r} mode={mode} topicLabel={topicLabel} ai={ai} aiPrice={aiPrice} q={q} />
+        <TarotResult r={r} mode={mode} topicLabel={topicLabel} />
       )}
     </div>
   );
 }
 
-function TarotResult({ r, mode, topicLabel, ai, aiPrice, q }: { r: any; mode: 'question' | 'topic'; topicLabel: string; ai?: boolean; aiPrice?: number; q: string }) {
+function TarotResult({ r, mode, topicLabel }: { r: any; mode: 'question' | 'topic'; topicLabel: string }) {
   const cards: any[] = r.cards;
   const positions = TAROT_SPREADS[cards.length]?.positions || [];
   const ctx = mode === 'question' ? `“${r.question}”` : topicLabel;
@@ -325,8 +298,6 @@ function TarotResult({ r, mode, topicLabel, ai, aiPrice, q }: { r: any; mode: 'q
           <p className="mt-1 text-ink-700 dark:text-ink-200">{overallAdvice}</p>
         </div>
       )}
-
-      <AiAnalyze type="TAROT" result={r} question={q} enabled={ai} price={aiPrice} />
     </div>
   );
 }
@@ -335,7 +306,7 @@ function Stars({ n }: { n: number }) {
   return <span className="text-amber-400">{'★'.repeat(n)}<span className="text-ink-300 dark:text-ink-600">{'★'.repeat(5 - n)}</span></span>;
 }
 
-function Zodiac({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
+function Zodiac() {
   const [list, setList] = useState<any[]>([]);
   const [date, setDate] = useState('');
   const [r, setR] = useState<any>(null);
@@ -405,7 +376,6 @@ function Zodiac({ ai, aiPrice }: { ai?: boolean; aiPrice?: number }) {
                 </div>
               ))}
             </div>
-            <AiAnalyze type="ZODIAC" result={r} question={`Tử vi cung ${r.sign.nameVi}`} enabled={ai} price={aiPrice} />
           </div>
         </div>
       )}

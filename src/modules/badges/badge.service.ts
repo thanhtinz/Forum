@@ -19,7 +19,9 @@ export interface CreateBadgeDto {
   description?: string;
   icon: string;
   color: string;
-  condition?: Prisma.InputJsonValue;
+  condition?: Prisma.InputJsonValue | null;
+  isAuto?: boolean;
+  usableBy?: string;
 }
 
 export type UpdateBadgeDto = Partial<CreateBadgeDto>;
@@ -29,6 +31,8 @@ const ALLOWED_COLORS: BadgeColor[] = ['red', 'blue', 'amber', 'green', 'gray', '
 // Map an arbitrary stored color string to one of the 6 allowed colors.
 function normalizeColor(raw: string | null | undefined): BadgeColor {
   if (!raw) return 'amber';
+  // Màu hex tự chọn → giữ nguyên (frontend tự render bằng inline style)
+  if (raw.trim().startsWith('#')) return raw.trim() as BadgeColor;
   const c = raw.trim().toLowerCase();
   if ((ALLOWED_COLORS as string[]).includes(c)) return c as BadgeColor;
   const aliases: Record<string, BadgeColor> = {
@@ -212,28 +216,34 @@ export class BadgeService {
   }
 
   createBadge(dto: CreateBadgeDto) {
+    const isAuto = !!dto.isAuto && !!dto.condition;
     return this.prisma.badge.create({
       data: {
         name: dto.name,
         description: dto.description,
         icon: dto.icon,
         color: dto.color,
-        condition: dto.condition ?? {},
+        condition: isAuto ? (dto.condition as Prisma.InputJsonValue) : Prisma.JsonNull,
+        isAuto,
+        usableBy: dto.usableBy === 'staff' ? 'staff' : 'all',
       },
     });
   }
 
   updateBadge(id: string, dto: UpdateBadgeDto) {
-    return this.prisma.badge.update({
-      where: { id },
-      data: {
-        name: dto.name,
-        description: dto.description,
-        icon: dto.icon,
-        color: dto.color,
-        condition: dto.condition,
-      },
-    });
+    const data: Prisma.BadgeUpdateInput = {
+      name: dto.name,
+      description: dto.description,
+      icon: dto.icon,
+      color: dto.color,
+    };
+    if (dto.isAuto !== undefined || dto.condition !== undefined) {
+      const isAuto = !!dto.isAuto && !!dto.condition;
+      data.isAuto = isAuto;
+      data.condition = isAuto ? (dto.condition as Prisma.InputJsonValue) : Prisma.JsonNull;
+    }
+    if (dto.usableBy !== undefined) data.usableBy = dto.usableBy === 'staff' ? 'staff' : 'all';
+    return this.prisma.badge.update({ where: { id }, data });
   }
 
   deleteBadge(id: string) {

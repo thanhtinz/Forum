@@ -48,7 +48,19 @@ function ConfigGroupView() {
   const cur = (s: Setting) => (s.key in dirty ? dirty[s.key] : s.value);
   const dirtyCount = Object.keys(dirty).length;
 
-  const visibleSettings = group?.settings || [];
+  // Nhóm AI: chỉ hiện key/URL của provider đang chọn (Gemini → key Gemini; OpenAI → key OpenAI…)
+  const aiProvider = (() => {
+    const s = group?.settings.find((x) => x.key === 'ai.defaultProvider');
+    return s ? (s.key in dirty ? dirty[s.key] : s.value) : '';
+  })();
+  const visibleSettings = (group?.settings || []).filter((s) => {
+    if (group?.key !== 'ai') return true;
+    if (s.key === 'ai.geminiKey') return aiProvider === 'GEMINI';
+    if (s.key === 'ai.openaiKey') return aiProvider === 'OPENAI' || aiProvider === 'OPENAI_COMPAT';
+    if (s.key === 'ai.openaiBaseUrl') return aiProvider === 'OPENAI_COMPAT';
+    if (s.key === 'ai.ollamaUrl') return aiProvider === 'OLLAMA';
+    return true;
+  });
 
   return (
     <div className="space-y-5">

@@ -30,7 +30,7 @@ interface LevelTier {
 export default function AdminBadges() {
   const [catalog, setCatalog] = useState<Badge[]>([]);
   const [msg, setMsg] = useState('');
-  const [form, setForm] = useState({ name: '', description: '', icon: '', color: 'amber', condType: '', condGte: '' });
+  const [form, setForm] = useState({ name: '', description: '', icon: '', color: '#f59e0b', condType: '', condGte: '', usableBy: 'all', isAuto: false });
   const [editId, setEditId] = useState<string | null>(null);
   const [editTierId, setEditTierId] = useState<string | null>(null);
 
@@ -94,12 +94,13 @@ export default function AdminBadges() {
     try { await api.del(`/badges/admin/levels/${id}`); if (editTierId === id) resetTierForm(); loadTiers(); } catch (e: any) { setMsg(e.message); }
   }
 
-  function resetForm() { setForm({ name: '', description: '', icon: '', color: 'amber', condType: '', condGte: '' }); setEditId(null); }
+  function resetForm() { setForm({ name: '', description: '', icon: '', color: '#f59e0b', condType: '', condGte: '', usableBy: 'all', isAuto: false }); setEditId(null); }
   function startEdit(b: Badge) {
     setEditId(b.id);
     setForm({
-      name: b.name, description: b.description || '', icon: b.icon, color: b.color,
+      name: b.name, description: b.description || '', icon: b.icon, color: b.color?.startsWith('#') ? b.color : '#f59e0b',
       condType: b.condition?.type || '', condGte: b.condition?.gte != null ? String(b.condition.gte) : '',
+      usableBy: (b as any).usableBy || 'all', isAuto: !!b.isAuto,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -108,8 +109,8 @@ export default function AdminBadges() {
     e.preventDefault();
     setMsg('');
     try {
-      const condition = form.condType && form.condGte ? { type: form.condType, gte: Number(form.condGte) } : null;
-      const payload = { name: form.name, description: form.description || undefined, icon: form.icon, color: form.color, condition };
+      const condition = form.isAuto && form.condType && form.condGte ? { type: form.condType, gte: Number(form.condGte) } : null;
+      const payload = { name: form.name, description: form.description || undefined, icon: form.icon, color: form.color, condition, isAuto: form.isAuto, usableBy: form.usableBy };
       if (editId) await api.patch(`/badges/admin/catalog/${editId}`, payload);
       else await api.post('/badges/admin/catalog', payload);
       resetForm();
@@ -141,53 +142,47 @@ export default function AdminBadges() {
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Tạo badge mục tiêu */}
+        {/* Tạo badge — cấp cho user nằm ở Quản lý người dùng */}
         <div className="card p-4">
-          <h2 className="mb-2 flex items-center gap-1 font-semibold"><Plus size={16} /> {editId ? 'Sửa huy hiệu' : 'Tạo huy hiệu mục tiêu'}</h2>
+          <h2 className="mb-2 flex items-center gap-1 font-semibold"><Plus size={16} /> {editId ? 'Sửa huy hiệu' : 'Tạo huy hiệu'}</h2>
+          <p className="mb-2 text-xs text-ink-400">Tạo huy hiệu ở đây. Việc <b>cấp cho từng user</b> làm trong <a href="/admin/users" className="text-brand-600 hover:underline">Quản lý người dùng → Huy hiệu</a>.</p>
           <form onSubmit={create} className="space-y-2">
             <input className="input" placeholder="Tên huy hiệu" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             <input className="input" placeholder="Mô tả (tuỳ chọn)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-            <select className="input" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })}>
-              {COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <ImageUpload value={form.icon} onUploaded={(url: string) => setForm({ ...form, icon: url })} label="Tải ảnh icon huy hiệu" />
-            <div className="flex gap-2">
-              <select className="input" value={form.condType} onChange={(e) => setForm({ ...form, condType: e.target.value })}>
-                <option value="">— Tự trao theo cột mốc (tuỳ chọn) —</option>
-                <option value="postCount">Số bài viết ≥</option>
-                <option value="threadCount">Số chủ đề ≥</option>
-                <option value="reputationScore">Điểm uy tín ≥</option>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-ink-500">Màu sắc</span>
+              <input type="color" value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} className="h-9 w-14 cursor-pointer rounded border border-ink-200 dark:border-ink-700" />
+              <span className="font-mono text-xs text-ink-400">{form.color}</span>
+            </label>
+            <label className="block text-sm">
+              <span className="mb-1 block text-ink-500">Ai được dùng</span>
+              <select className="input" value={form.usableBy} onChange={(e) => setForm({ ...form, usableBy: e.target.value })}>
+                <option value="all">Mọi thành viên</option>
+                <option value="staff">Chỉ Admin / Mod</option>
               </select>
-              <input className="input w-28" type="number" placeholder="Mốc" value={form.condGte} onChange={(e) => setForm({ ...form, condGte: e.target.value })} disabled={!form.condType} />
-            </div>
+            </label>
+            <ImageUpload value={form.icon} onUploaded={(url: string) => setForm({ ...form, icon: url })} label="Tải ảnh icon huy hiệu" />
+            {/* Mốc nhận tự động — chỉ hiện khi tích chọn */}
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.isAuto} onChange={(e) => setForm({ ...form, isAuto: e.target.checked })} />
+              Tự động cấp khi đạt mốc
+            </label>
+            {form.isAuto && (
+              <div className="flex gap-2">
+                <select className="input" value={form.condType} onChange={(e) => setForm({ ...form, condType: e.target.value })}>
+                  <option value="">— Chọn điều kiện —</option>
+                  <option value="postCount">Số bài viết ≥</option>
+                  <option value="threadCount">Số chủ đề ≥</option>
+                  <option value="reputationScore">Điểm uy tín ≥</option>
+                </select>
+                <input className="input w-28" type="number" placeholder="Mốc" value={form.condGte} onChange={(e) => setForm({ ...form, condGte: e.target.value })} disabled={!form.condType} />
+              </div>
+            )}
             <div className="flex gap-2">
               <button className="btn-primary">{editId ? 'Lưu' : 'Tạo'}</button>
               {editId && <button type="button" onClick={resetForm} className="rounded-lg bg-ink-100 px-3 py-1.5 text-sm dark:bg-ink-800">Huỷ</button>}
             </div>
           </form>
-        </div>
-
-        {/* Trao thủ công + verify */}
-        <div className="card space-y-4 p-4">
-          <div>
-            <h2 className="mb-2 flex items-center gap-1 font-semibold"><Award size={16} /> Trao huy hiệu thủ công</h2>
-            <div className="space-y-2">
-              <input className="input" placeholder="User ID" value={awardUserId} onChange={(e) => setAwardUserId(e.target.value)} />
-              <select className="input" value={awardBadgeId} onChange={(e) => setAwardBadgeId(e.target.value)}>
-                <option value="">— Chọn huy hiệu —</option>
-                {catalog.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-              <button onClick={award} className="btn-outline">Trao</button>
-            </div>
-          </div>
-          <div className="border-t border-ink-200/70 pt-3 dark:border-ink-800">
-            <h2 className="mb-2 flex items-center gap-1 font-semibold"><BadgeCheck size={16} /> Tích xanh (Verify)</h2>
-            <div className="flex flex-wrap gap-2">
-              <input className="input flex-1" placeholder="User ID" value={verifyUserId} onChange={(e) => setVerifyUserId(e.target.value)} />
-              <button onClick={() => setVerify(true)} className="btn-primary !py-1.5 text-sm">Cấp</button>
-              <button onClick={() => setVerify(false)} className="rounded-lg bg-ink-100 px-3 py-1.5 text-sm dark:bg-ink-800">Gỡ</button>
-            </div>
-          </div>
         </div>
       </div>
 

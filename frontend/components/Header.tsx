@@ -33,7 +33,7 @@ const NAV = [
 
 // Nhóm tiện ích gom vào dropdown
 const UTILS = [
-  { href: '/tools', label: 'Kho ảnh', icon: ImagePlus },
+  { href: '/tools', label: 'Up ảnh', icon: ImagePlus },
   { href: '/netcheck', label: 'Công cụ mạng', icon: Globe },
   { href: '/converter', label: 'Đổi đơn vị', icon: Ruler },
 ];

@@ -105,7 +105,7 @@ export default function ImageHostPage() {
   return (
     <div className="space-y-5">
       <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
-        <h1 className="flex items-center gap-2 text-2xl font-bold"><ImagePlus /> Kho ảnh</h1>
+        <h1 className="flex items-center gap-2 text-2xl font-bold"><ImagePlus /> Up ảnh</h1>
         <p className="mt-1 text-white/85">Tải ảnh lên, hẹn giờ tự xoá, lấy mã nhúng & gom vào album.</p>
       </header>
 

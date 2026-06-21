@@ -29,8 +29,8 @@ const PAYLINE_CELLS: [number, number][][] = [
   [[0, 2], [1, 1], [2, 0]], // chéo /
 ];
 const PAYLINE_COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#3b82f6', '#a855f7'];
-// tâm ô theo % (lưới 3×3 có padding + gap nên xích nhẹ vào trong)
-const CELL_PCT = [18, 50, 82];
+// tâm ô theo % của vùng lưới (3 ô 48px + 2 khe 4px = 152px → tâm 24/76/128)
+const CELL_PCT = [15.79, 50, 84.21];
 
 function SoloPlay() {
   const { user, loading } = useAuth();

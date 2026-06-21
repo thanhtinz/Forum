@@ -46,6 +46,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
 import { AvatarFrameModule } from './modules/avatar-frame/avatar-frame.module';
 import { MarketModule } from './modules/market/market.module';
 import { PingModule } from './modules/ping/ping.module';
+import { BannerModule } from './modules/banner/banner.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { PingModule } from './modules/ping/ping.module';
     AvatarFrameModule,
     MarketModule,
     PingModule,
+    BannerModule,
     PaymentsModule,
     AiCompanionModule,
     ModerationModule,

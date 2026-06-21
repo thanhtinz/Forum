@@ -2431,6 +2431,24 @@ model UserAvatarFrame {
   @@index([userId])
 }
 
+// ============================================================
+// BANNER QUẢNG CÁO — admin gắn theo thời gian; chưa cấu hình thì hiện "cho thuê"
+// ============================================================
+model AdBanner {
+  id        String    @id @default(cuid())
+  title     String    @db.VarChar(150)
+  imageUrl  String    @db.VarChar(255)
+  linkUrl   String?   @db.VarChar(255)
+  position  String    @default("home_top") @db.VarChar(40) // home_top | sidebar
+  startAt   DateTime? // null = áp dụng ngay
+  endAt     DateTime? // null = vô thời hạn
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  @@index([position])
+}
+
 // User sở hữu sticker pack (nếu premium)
 model UserStickerPack {
   userId     String

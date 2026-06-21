@@ -1,27 +1,33 @@
 'use client';
 
 import Link from 'next/link';
-import { Cookie, Contrast, Rss } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Cookie, Sun, Moon, Rss } from 'lucide-react';
 import { useSiteConfig } from '@/lib/siteConfig';
-
-function toggleTheme() {
-  const el = document.documentElement;
-  el.classList.toggle('dark');
-}
 
 export function SiteFooter() {
   const cfg = useSiteConfig();
   const text = (cfg.footerText || '').replace('{year}', String(new Date().getFullYear()));
   const linkCls = 'text-white/80 transition hover:text-white';
 
+  const [dark, setDark] = useState(false);
+  useEffect(() => { setDark(document.documentElement.classList.contains('dark')); }, []);
+  function toggleTheme() {
+    const el = document.documentElement;
+    el.classList.toggle('dark');
+    setDark(el.classList.contains('dark'));
+  }
+
   return (
     <footer className="mt-6 border-t border-black/10 bg-brand-700 text-white dark:bg-ink-900">
       <div className="container-forum py-6">
-        {/* Hàng 1: Cookies + đổi giao diện */}
+        {/* Hàng 1: Cookies (mở bảng xác nhận) + đổi giao diện (icon khác nhau theo chế độ) */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-          <a href="/p?slug=cookies" className={`flex items-center gap-1.5 ${linkCls}`}><Cookie size={16} /> Cookies</a>
-          <button onClick={toggleTheme} aria-label="Đổi giao diện sáng/tối" className={`flex items-center ${linkCls}`}>
-            <Contrast size={16} />
+          <button onClick={() => window.dispatchEvent(new Event('open-cookie-consent'))} className={`flex items-center gap-1.5 ${linkCls}`}>
+            <Cookie size={16} /> Cookies
+          </button>
+          <button onClick={toggleTheme} aria-label={dark ? 'Chuyển giao diện sáng' : 'Chuyển giao diện tối'} title={dark ? 'Giao diện tối' : 'Giao diện sáng'} className={`flex items-center ${linkCls}`}>
+            {dark ? <Moon size={16} /> : <Sun size={16} />}
           </button>
         </div>
 

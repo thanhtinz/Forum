@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
 import { ForumChrome } from '@/components/ForumChrome';
 import { PwaRegister } from '@/components/PwaRegister';
+import { SiteMeta } from '@/components/SiteMeta';
 
 const SITE = 'Forum AI Platform';
 const DESC = 'Diễn đàn cộng đồng tích hợp game, chợ số — phong cách XenForo/Flarum.';
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="vi">
       <body>
+        <SiteMeta />
         <AuthProvider>
           <ForumChrome>{children}</ForumChrome>
         </AuthProvider>

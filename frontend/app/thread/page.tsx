@@ -13,6 +13,7 @@ import type { Thread, Post, Paginated } from '@/lib/types';
 import { interceptExternalLink } from '@/lib/externalLink';
 import TipTapEditor from '@/components/TipTapEditor';
 import ThreadJobPanel from '@/components/ThreadJobPanel';
+import { PingButton } from '@/components/PingButton';
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -361,7 +362,9 @@ function ThreadView() {
         <div className="mt-1 flex items-start justify-between gap-3">
           <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
           {user && (
-            <div className="flex shrink-0 gap-2">
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <PingButton link={`/thread?slug=${thread.slug}`} defaultTitle={`Bạn được nhắc trong: ${thread.title}`}
+                className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs font-medium hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700" />
               <button onClick={toggleBookmark} title="Lưu chủ đề"
                 className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${bookmarked ? 'bg-amber-500 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
                 {bookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />} {bookmarked ? 'Đã lưu' : 'Lưu'}

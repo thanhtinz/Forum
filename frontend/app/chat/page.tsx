@@ -8,6 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
 import { ChatChannel, ChatMsg } from '@/lib/chat';
 import { MessageView } from '@/components/chat/MessageView';
+import { PingButton } from '@/components/PingButton';
 import { Composer } from '@/components/chat/Composer';
 import { NewChat } from '@/components/chat/NewChat';
 
@@ -146,6 +147,8 @@ export default function ChatPage() {
                 <p className="truncate font-semibold">{active.title}</p>
                 <p className="text-xs text-ink-400">{connected ? 'Đang kết nối' : 'Ngoại tuyến'}{active.type === 'GROUP' ? ` · ${active.memberCount} thành viên` : ''}</p>
               </div>
+              <PingButton link="/chat" defaultTitle={`Bạn được mời vào phòng chat: ${active.title}`}
+                className="flex items-center gap-1 rounded-lg bg-ink-100 px-2 py-1 text-xs font-medium hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700" />
               {isStaff && (
                 <button onClick={clearChannel} title="Xoá toàn bộ tin nhắn (reset)"
                   className="flex items-center gap-1 rounded-lg border border-rose-300 px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-950/30">

@@ -143,6 +143,7 @@ function LineChartSvg({ points, up }: { points: { t: number; c: number | null }[
 export default function MarketPage() {
   const [catIdx, setCatIdx] = useState(0);
   const [showWatch, setShowWatch] = useState(false);
+  const [page, setPage] = useState(0);
   const [quotes, setQuotes] = useState<Record<string, Quote>>({});
   const [loading, setLoading] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<number>(0);
@@ -161,10 +162,22 @@ export default function MarketPage() {
   const saveWatch = (list: string[]) => { setWatch(list); localStorage.setItem(WATCH_KEY, JSON.stringify(list)); };
   const saveAlerts = (a: typeof alerts) => { setAlerts(a); localStorage.setItem(ALERT_KEY, JSON.stringify(a)); };
 
-  const visibleSymbols = useMemo(() => {
+  const allSymbols = useMemo(() => {
     if (showWatch) return watch;
     return CATS[catIdx].items.map((i) => i.symbol);
   }, [showWatch, watch, catIdx]);
+
+  const PER_PAGE = 10;
+  const pageCount = Math.max(1, Math.ceil(allSymbols.length / PER_PAGE));
+  const curPage = Math.min(page, pageCount - 1);
+  // Chỉ hiển thị + tải giá cho 10 mã của trang hiện tại
+  const visibleSymbols = useMemo(
+    () => allSymbols.slice(curPage * PER_PAGE, curPage * PER_PAGE + PER_PAGE),
+    [allSymbols, curPage],
+  );
+
+  // Đổi danh mục / watchlist → về trang 1
+  useEffect(() => { setPage(0); }, [catIdx, showWatch]);
 
   // Kiểm tra cảnh báo khi có giá mới
   const checkAlerts = useCallback((qs: Record<string, Quote>) => {
@@ -304,6 +317,22 @@ export default function MarketPage() {
           );
         })}
       </div>
+
+      {/* Phân trang — 10 mã/trang */}
+      {pageCount > 1 && (
+        <div className="flex items-center justify-center gap-1.5">
+          <button onClick={() => setPage(Math.max(0, curPage - 1))} disabled={curPage === 0}
+            className="rounded-lg border border-ink-200 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-ink-700">‹ Trước</button>
+          {Array.from({ length: pageCount }).map((_, i) => (
+            <button key={i} onClick={() => setPage(i)}
+              className={`grid h-8 w-8 place-items-center rounded-lg text-sm font-medium ${i === curPage ? 'bg-brand-600 text-white' : 'border border-ink-200 hover:bg-ink-100 dark:border-ink-700 dark:hover:bg-ink-800'}`}>
+              {i + 1}
+            </button>
+          ))}
+          <button onClick={() => setPage(Math.min(pageCount - 1, curPage + 1))} disabled={curPage === pageCount - 1}
+            className="rounded-lg border border-ink-200 px-3 py-1.5 text-sm disabled:opacity-40 dark:border-ink-700">Sau ›</button>
+        </div>
+      )}
 
       <p className="text-center text-xs text-ink-400">Dữ liệu từ Yahoo Finance · có thể trễ vài phút tùy sàn · không phải lời khuyên đầu tư.</p>
 

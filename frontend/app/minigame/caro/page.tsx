@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
-import { Coins, Users, RefreshCw, ArrowRight } from 'lucide-react';
+import { Coins, Users, RefreshCw, ArrowRight, ChevronLeft } from 'lucide-react';
 import { getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -45,6 +46,7 @@ export default function CaroPvP() {
   if (!roomId || !view?.board) {
     return (
       <div className="space-y-4">
+        <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Trò chơi khác</Link>
         <h1 className="text-2xl font-bold">Cờ Caro — Bàn PvP</h1>
         <div className="card flex flex-wrap items-end gap-3 p-4">
           <label className="text-xs">Mức cược<input type="number" className="input mt-1 w-32" value={bet} onChange={(e) => setBet(Number(e.target.value))} /></label>
@@ -71,6 +73,7 @@ export default function CaroPvP() {
   const marks = ['', '✕', '◯'];
   return (
     <div className="space-y-3">
+      <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Trò chơi khác</Link>
       <div className="card flex items-center justify-between p-4">
         <div>
           <h1 className="font-bold">Bàn Caro · Pot {view.potCoin}</h1>

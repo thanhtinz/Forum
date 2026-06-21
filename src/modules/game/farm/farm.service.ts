@@ -42,7 +42,7 @@ const BARN_EXP_PER_LEVEL = 500;
 const BARN_MAX_LEVEL = 21; // 3 + 21 = 24 slot
 // Sức khỏe ô đất (mô phỏng cơ chế sucKhoe của Avatar): sản lượng = raw × health/100
 const PLANT_BASE_HEALTH = 60; // mới gieo cần chăm sóc mới đạt full
-const WATER_HEALTH = 25;      // tưới nước +25
+const WATER_HEALTH = 40;      // tưới 1 lần là đủ 100 (60 + 40)
 const FERTILIZE_HEALTH = 15;  // bón phân +15
 // Giếng nước — nguồn nước CÓ HẠN, tự hồi theo thời gian (như cây khế ra quả)
 const WELL_MAX = 100;                 // sức chứa giếng (đầy = 100 đơn vị nước)

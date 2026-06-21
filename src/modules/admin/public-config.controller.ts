@@ -12,7 +12,7 @@ export class PublicConfigController {
   @Get()
   async getPublic() {
     const c = await this.config.getMany([
-      'site.name', 'site.tagline', 'site.description', 'site.logo', 'site.favicon',
+      'site.name', 'site.tagline', 'site.description', 'site.logo', 'site.logoSmall', 'site.favicon',
       'site.primaryColor', 'site.heroTitle', 'site.heroDescription', 'site.footerText',
     ]);
     return {
@@ -20,6 +20,7 @@ export class PublicConfigController {
       tagline: c['site.tagline'] ?? '',
       description: c['site.description'] ?? '',
       logo: c['site.logo'] ?? '',
+      logoSmall: c['site.logoSmall'] ?? '',
       favicon: c['site.favicon'] ?? '',
       primaryColor: c['site.primaryColor'] ?? '',
       heroTitle: c['site.heroTitle'] ?? 'Chào mừng đến ForumHub',

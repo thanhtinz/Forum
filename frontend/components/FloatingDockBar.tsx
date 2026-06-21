@@ -19,7 +19,7 @@ export function FloatingDockBar() {
   const isStaff = !!user && (user.role === 'ADMIN' || user.role === 'MODERATOR');
 
   const buttons = ([
-    { key: 'music', icon: Music, cls: 'bg-brand-800 hover:bg-brand-900', title: 'Nhạc', show: true },
+    { key: 'music', icon: Music, cls: 'bg-gradient-to-br from-violet-500 to-purple-700 hover:from-violet-600 hover:to-purple-800', title: 'Nhạc', show: true },
     { key: 'gift', icon: Gift, cls: 'bg-gradient-to-br from-amber-500 to-pink-600 hover:from-amber-600 hover:to-pink-700', title: 'Giftcode', show: !!user },
     { key: 'checkin', icon: CalendarCheck, cls: 'bg-amber-500 hover:bg-amber-600', title: 'Điểm danh', show: !!user },
     { key: 'admin', icon: ShieldAlert, cls: 'bg-rose-600 hover:bg-rose-700', title: 'Kiểm duyệt', show: isStaff },

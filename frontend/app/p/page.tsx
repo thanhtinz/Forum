@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import { interceptExternalLink } from '@/lib/externalLink';
 
 interface Page { title: string; html: string; updatedAt: string }
 
@@ -22,7 +23,7 @@ function PageView() {
   return (
     <article className="card p-6">
       <h1 className="text-2xl font-bold">{page.title}</h1>
-      <div className="prose prose-sm mt-4 max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: page.html }} />
+      <div className="prose prose-sm mt-4 max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: page.html }} />
     </article>
   );
 }

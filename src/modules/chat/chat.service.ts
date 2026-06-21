@@ -2,13 +2,55 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import { PrismaService } from '../../prisma/prisma.service';
 import { ChatChannelType, ChatMessageType } from '@prisma/client';
 import { PrisonService } from '../moderation/prison.service';
+import { AdminConfigService } from '../admin/admin-config.service';
 
 @Injectable()
 export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly prison: PrisonService,
+    private readonly config: AdminConfigService,
   ) {}
+
+  // ──────────────────────────────────────────────
+  // TÌM GIF (proxy server-side, dùng key cấu hình trong admin: Giphy/Tenor)
+  // ──────────────────────────────────────────────
+  async searchGifs(q: string) {
+    const provider = await this.config.get<string>('gif.provider', 'giphy');
+    const apiKey = await this.config.get<string>('gif.apiKey', '');
+    if (!apiKey) return { configured: false, results: [] as { id: string; url: string; preview: string }[] };
+    const term = (q || '').trim();
+    try {
+      if (provider === 'tenor') {
+        const url = `https://tenor.googleapis.com/v2/${term ? 'search' : 'featured'}?${term ? `q=${encodeURIComponent(term)}&` : ''}key=${apiKey}&limit=24&media_filter=gif,tinygif`;
+        const res = await fetch(url);
+        if (!res.ok) return { configured: true, results: [] };
+        const data: any = await res.json();
+        const results = (data.results || []).map((r: any) => ({
+          id: String(r.id),
+          url: r.media_formats?.gif?.url || r.media_formats?.tinygif?.url,
+          preview: r.media_formats?.tinygif?.url || r.media_formats?.gif?.url,
+        })).filter((g: any) => g.url);
+        return { configured: true, results };
+      }
+      // Giphy (mặc định)
+      const base = term
+        ? `https://api.giphy.com/v1/gifs/search?q=${encodeURIComponent(term)}`
+        : `https://api.giphy.com/v1/gifs/trending?`;
+      const url = `${base}${term ? '&' : ''}api_key=${apiKey}&limit=24&rating=pg-13`;
+      const res = await fetch(url);
+      if (!res.ok) return { configured: true, results: [] };
+      const data: any = await res.json();
+      const results = (data.data || []).map((g: any) => ({
+        id: String(g.id),
+        url: g.images?.downsized_medium?.url || g.images?.original?.url,
+        preview: g.images?.fixed_height_small?.url || g.images?.fixed_height?.url,
+      })).filter((g: any) => g.url);
+      return { configured: true, results };
+    } catch {
+      return { configured: true, results: [] };
+    }
+  }
 
   // Batch-lấy thông tin user (ChatMessage/ChatMember chỉ lưu id, không có relation)
   private async usersMap(ids: (string | null | undefined)[]) {

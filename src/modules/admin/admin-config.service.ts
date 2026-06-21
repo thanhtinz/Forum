@@ -427,6 +427,18 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
     ],
   },
   {
+    key: 'gif',
+    name: 'GIF (Chat)',
+    description: 'Cấu hình nguồn tìm GIF cho khung chat. Lấy API key miễn phí ở Giphy Developers hoặc Tenor (Google Cloud).',
+    icon: 'image',
+    sortOrder: 9,
+    settings: [
+      { key: 'gif.provider', label: 'Nhà cung cấp', type: 'select', value: 'giphy',
+        options: [{ value: 'giphy', label: 'Giphy' }, { value: 'tenor', label: 'Tenor' }] },
+      { key: 'gif.apiKey', label: 'API Key', description: 'Khoá API của nhà cung cấp đã chọn', type: 'string', value: '', isSecret: true },
+    ],
+  },
+  {
     key: 'tools',
     name: 'Công cụ',
     description: 'Cấu hình tools collection',

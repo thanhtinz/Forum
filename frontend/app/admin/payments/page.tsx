@@ -3,20 +3,72 @@
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 
+interface Setting { key: string; label: string; type: string; value: any; isSecret?: boolean; options?: { label: string; value: string }[] }
+
 export default function AdminPayments() {
   const [stats, setStats] = useState<any>(null);
   const [data, setData] = useState<any>(null);
   const [status, setStatus] = useState('');
+  const [settings, setSettings] = useState<Setting[]>([]);
+  const [vals, setVals] = useState<Record<string, any>>({});
+  const [cfgMsg, setCfgMsg] = useState('');
 
+  function loadCfg() {
+    api.get<{ settings: Setting[] }>('/admin/config/payments').then((g) => {
+      setSettings(g.settings || []);
+      const v: Record<string, any> = {}; (g.settings || []).forEach((s) => { v[s.key] = s.value; });
+      setVals(v);
+    }).catch(() => {});
+  }
   function load() { api.get(`/payments/admin/topups${status ? `?status=${status}` : ''}`).then(setData).catch(() => {}); }
   useEffect(() => {
     api.get('/payments/admin/stats').then(setStats).catch(() => {});
+    loadCfg();
   }, []);
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [status]);
+
+  async function saveCfg() {
+    setCfgMsg('');
+    try {
+      for (const s of settings) {
+        const v = vals[s.key];
+        if (s.isSecret && v === '••••••••') continue; // không đổi secret nếu còn mask
+        if (v !== s.value) await api.patch(`/admin/config/setting/${s.key}`, { value: v });
+      }
+      setCfgMsg('Đã lưu cấu hình ✓'); loadCfg(); setTimeout(() => setCfgMsg(''), 2500);
+    } catch (e: any) { setCfgMsg(e.message); }
+  }
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Nạp tiền</h1>
+
+      {/* Cấu hình cổng nạp & ngưỡng rút (gộp từ Cấu hình) */}
+      <div className="card space-y-3 p-4">
+        <h2 className="font-semibold">Cấu hình thanh toán & rút tiền</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {settings.map((s) => (
+            <label key={s.key} className="text-sm">
+              <span className="mb-1 block text-ink-500">{s.label}</span>
+              {s.type === 'boolean' ? (
+                <input type="checkbox" checked={!!vals[s.key]} onChange={(e) => setVals({ ...vals, [s.key]: e.target.checked })} />
+              ) : s.type === 'select' ? (
+                <select className="input" value={vals[s.key] ?? ''} onChange={(e) => setVals({ ...vals, [s.key]: e.target.value })}>
+                  {(s.options || []).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              ) : s.type === 'number' ? (
+                <input type="number" className="input" value={vals[s.key] ?? 0} onChange={(e) => setVals({ ...vals, [s.key]: Number(e.target.value) })} />
+              ) : (
+                <input type="text" className="input" value={vals[s.key] ?? ''} onChange={(e) => setVals({ ...vals, [s.key]: e.target.value })} />
+              )}
+            </label>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={saveCfg} className="btn-primary !py-1.5 text-sm">Lưu cấu hình</button>
+          {cfgMsg && <span className="text-sm text-emerald-600">{cfgMsg}</span>}
+        </div>
+      </div>
 
       {stats && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

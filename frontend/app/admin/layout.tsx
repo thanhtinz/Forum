@@ -115,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {cfgGroups.map((g) => {
               const active = path === '/admin/config' && groupKey === g.key;
               return (
-                <Link key={g.key} href={`/admin/config?group=${g.key}`} onClick={() => setOpen(false)}
+                <Link key={g.key} href={`/admin/config?group=${g.key}`} onClick={() => { setOpen(false); setGroupKey(g.key); }}
                   className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-brand-600 font-medium text-white shadow-sm' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
                   <SlidersHorizontal size={17} className={active ? '' : 'text-ink-400 group-hover:text-ink-600 dark:group-hover:text-ink-200'} />
                   <span className="flex-1 truncate">{g.name}</span>

@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, Settings, FileText, Ticket,
   BadgeInfo, Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
-  BellRing, Gavel, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square, Megaphone, Crown,
+  BellRing, Gavel, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square, Megaphone, Crown, SlidersHorizontal,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
+import { api } from '@/lib/api';
 
 const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: any }[] }[] = [
   {
@@ -61,7 +62,6 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/mail', label: 'Email / SMTP', icon: Mail },
       { href: '/admin/push', label: 'Web Push', icon: BellRing },
       { href: '/admin/security', label: 'Chống spam', icon: ShieldCheck },
-      { href: '/admin/settings', label: 'Cấu hình hệ thống', icon: Settings },
     ],
   },
 ];
@@ -72,6 +72,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { user, loading, logout } = useAuth();
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const [groupKey, setGroupKey] = useState('');
+  const [cfgGroups, setCfgGroups] = useState<{ key: string; name: string }[]>([]);
+
+  useEffect(() => { setGroupKey(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('group') || '' : ''); }, [path]);
+  useEffect(() => {
+    if (user?.role === 'ADMIN') api.get<{ key: string; name: string }[]>('/admin/config').then(setCfgGroups).catch(() => {});
+  }, [user]);
 
   if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
   if (!user || user.role !== 'ADMIN') {
@@ -99,6 +106,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
       ))}
+
+      {/* Cấu hình — mỗi nhóm là 1 mục riêng (không phải bấm vào danh sách) */}
+      {cfgGroups.length > 0 && (
+        <div>
+          <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-400">Cấu hình</div>
+          <div className="space-y-0.5">
+            {cfgGroups.map((g) => {
+              const active = path === '/admin/config' && groupKey === g.key;
+              return (
+                <Link key={g.key} href={`/admin/config?group=${g.key}`} onClick={() => setOpen(false)}
+                  className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-brand-600 font-medium text-white shadow-sm' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
+                  <SlidersHorizontal size={17} className={active ? '' : 'text-ink-400 group-hover:text-ink-600 dark:group-hover:text-ink-200'} />
+                  <span className="flex-1 truncate">{g.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </nav>
   );
 

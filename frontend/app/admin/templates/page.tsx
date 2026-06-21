@@ -17,7 +17,6 @@ const TYPES = [
   { id: 'fishingrod', label: 'Cần câu' },
   { id: 'fishingboat', label: 'Thuyền' },
   { id: 'fertilizer', label: 'Phân bón' },
-  { id: 'consumable', label: 'Đồ ăn (consumable)' },
   { id: 'gempackage', label: 'Gói nạp Gem' },
 ];
 
@@ -56,16 +55,6 @@ const SCHEMAS: Record<string, Field[]> = {
     { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
     { key: 'price', label: 'Giá (coin)', type: 'number' }, { key: 'reduceSeconds', label: 'Giảm thời gian chín (giây)', type: 'number' },
     { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
-  ],
-  consumable: [
-    { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
-    { key: 'description', label: 'Mô tả', type: 'text' }, { key: 'type', label: 'Loại (FOOD/DRINK/MEDICINE...)', type: 'text' },
-    { key: 'iconUrl', label: 'Icon', type: 'text' }, { key: 'spriteUrl', label: 'Sprite', type: 'text' },
-    { key: 'restoreHunger', label: 'Hồi đói', type: 'number' }, { key: 'restoreThirst', label: 'Hồi khát', type: 'number' },
-    { key: 'restoreHygiene', label: 'Hồi vệ sinh', type: 'number' }, { key: 'restoreEnergy', label: 'Hồi năng lượng', type: 'number' },
-    { key: 'restoreHealth', label: 'Hồi máu', type: 'number' }, { key: 'curesSickness', label: 'Chữa bệnh', type: 'boolean' },
-    { key: 'priceCoin', label: 'Giá (coin)', type: 'number' }, { key: 'priceGem', label: 'Giá (gem)', type: 'number' },
-    { key: 'isActive', label: 'Đang bán', type: 'boolean' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
   ],
   gempackage: [
     { key: 'name', label: 'Tên gói', type: 'text' }, { key: 'gemAmount', label: 'Số Gem', type: 'number' },
@@ -141,8 +130,11 @@ export default function AdminTemplates() {
     const data: Record<string, any> = {};
     for (const fld of fields) {
       const v = form[fld.key];
-      if (fld.type === 'number') data[fld.key] = v === '' || v == null ? null : Number(v);
-      else if (fld.type === 'boolean') data[fld.key] = !!v;
+      if (fld.type === 'number') {
+        // Để trống → BỎ QUA (không gửi null) để Prisma dùng @default hoặc cho phép null
+        if (v === '' || v == null) continue;
+        data[fld.key] = Number(v);
+      } else if (fld.type === 'boolean') data[fld.key] = !!v;
       else data[fld.key] = v ?? '';
     }
     try {

@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Header } from './Header';
 import { SiteFooter } from './SiteFooter';
 import { FloatingDockBar } from './FloatingDockBar';
+import { CookieConsent } from './CookieConsent';
 
 // Bọc nội dung bằng Header + footer của forum, TRỪ khu /admin (admin có shell riêng)
 export function ForumChrome({ children }: { children: React.ReactNode }) {
@@ -18,6 +19,7 @@ export function ForumChrome({ children }: { children: React.ReactNode }) {
       <main className="container-forum flex-1 py-5">{children}</main>
       <SiteFooter />
       <FloatingDockBar />
+      <CookieConsent />
     </div>
   );
 }

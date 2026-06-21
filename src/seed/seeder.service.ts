@@ -49,6 +49,62 @@ export class SeederService implements OnApplicationBootstrap {
       n++;
     }
 
+    // Trang tĩnh mặc định (nội quy, riêng tư, trợ giúp, cookie) — chỉ tạo khi thiếu, giữ bản admin đã sửa
+    try {
+      const DEFAULT_PAGES = [
+        { slug: 'noi-quy', title: 'Nội quy & quy định', sortOrder: 1, content:
+`# Nội quy & quy định
+
+Chào mừng bạn đến với cộng đồng! Vui lòng tuân thủ các quy định sau để giữ một môi trường lành mạnh:
+
+1. **Tôn trọng lẫn nhau** — không công kích, xúc phạm, phân biệt đối xử.
+2. **Không spam** — không đăng quảng cáo, liên kết rác, nội dung lặp lại.
+3. **Không lừa đảo** — nghiêm cấm mọi hành vi lừa đảo, chiếm đoạt tài sản.
+4. **Nội dung phù hợp** — không đăng nội dung vi phạm pháp luật, đồi trụy, bạo lực.
+5. **Bản quyền** — chỉ chia sẻ nội dung bạn có quyền chia sẻ.
+
+Vi phạm có thể bị **cảnh cáo, tắt tiếng hoặc cấm vĩnh viễn** tùy mức độ. Quyết định của Ban quản trị là cuối cùng.` },
+        { slug: 'quyen-rieng-tu', title: 'Chính sách quyền riêng tư', sortOrder: 2, content:
+`# Chính sách quyền riêng tư
+
+Chúng tôi tôn trọng quyền riêng tư của bạn.
+
+- **Dữ liệu thu thập**: tên đăng nhập, email, ảnh đại diện và nội dung bạn đăng.
+- **Mục đích**: vận hành diễn đàn, xác thực tài khoản, gửi thông báo bạn đã bật.
+- **Chia sẻ**: chúng tôi không bán dữ liệu cá nhân cho bên thứ ba.
+- **Cookie**: dùng cookie để duy trì đăng nhập và ghi nhớ tuỳ chọn giao diện.
+- **Quyền của bạn**: bạn có thể chỉnh sửa hồ sơ hoặc yêu cầu xoá tài khoản bất cứ lúc nào.
+
+Khi tiếp tục sử dụng website, bạn đồng ý với chính sách này.` },
+        { slug: 'tro-giup', title: 'Trợ giúp', sortOrder: 3, content:
+`# Trợ giúp
+
+**Câu hỏi thường gặp**
+
+- **Đăng ký / đăng nhập**: bấm "Đăng ký" ở góc phải, điền thông tin và xác thực email (nếu được bật).
+- **Đổi ảnh đại diện**: vào Cài đặt → Ảnh đại diện, tải ảnh lên hoặc chọn từ thư viện.
+- **Đăng bài**: vào một chuyên mục và bấm "Tạo chủ đề".
+- **Nhắc ai đó (@)**: gõ @ rồi chọn tên người dùng trong bài viết hoặc khung chat.
+- **Thông báo**: bật/tắt email thông báo trong phần cài đặt tài khoản.
+
+Cần hỗ trợ thêm? Hãy liên hệ Ban quản trị qua trang cá nhân của admin.` },
+        { slug: 'cookies', title: 'Chính sách Cookie', sortOrder: 4, content:
+`# Chính sách Cookie
+
+Website sử dụng cookie để:
+
+- Duy trì phiên đăng nhập của bạn.
+- Ghi nhớ tuỳ chọn giao diện (sáng/tối) và một số lựa chọn cá nhân.
+- Phục vụ thống kê ẩn danh nhằm cải thiện trải nghiệm.
+
+Bạn có thể chấp nhận cookie qua thanh thông báo, hoặc quản lý/xoá cookie trong cài đặt trình duyệt. Việc tắt cookie có thể khiến một số tính năng (như đăng nhập) không hoạt động.` },
+      ];
+      for (const p of DEFAULT_PAGES) {
+        await this.prisma.page.upsert({ where: { slug: p.slug }, update: {}, create: { ...p, isPublished: true, showInNav: false } });
+        n++;
+      }
+    } catch (e) { this.logger.warn(`Seed trang tĩnh lỗi: ${(e as Error).message}`); }
+
     // Bọc từng phần để 1 lỗi không chặn các phần seed sau (vd: icon/minigame không cập nhật)
     try {
       // update: {} -> chỉ thêm khi thiếu, KHÔNG ghi đè dữ liệu admin đã sửa

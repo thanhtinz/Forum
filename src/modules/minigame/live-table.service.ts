@@ -42,8 +42,14 @@ export class LiveTableService {
   private history: Record<LiveGame, HistoryEntry[]> = {
     'tai-xiu': [], 'bau-cua': [], 'dua-thu': [],
   };
+  // Ngày (giờ VN) của lịch sử hiện tại — đổi ngày thì reset lịch sử
+  private historyDay = this.dayKey();
 
   constructor(private readonly prisma: PrismaService) {}
+
+  private dayKey(): string {
+    return new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+  }
 
   private newRound(game: LiveGame, roundId: number): Round {
     return { game, roundId, phase: 'betting', endsAt: Date.now() + BET_SEC * 1000, result: null, players: new Map() };
@@ -61,6 +67,12 @@ export class LiveTableService {
 
   // Tick mỗi giây: chuyển pha khi hết giờ. Trả về { changed } để gateway broadcast.
   async tick(game: LiveGame): Promise<{ changed: boolean }> {
+    // Reset lịch sử mỗi ngày (theo giờ VN)
+    const today = this.dayKey();
+    if (today !== this.historyDay) {
+      this.history = { 'tai-xiu': [], 'bau-cua': [], 'dua-thu': [] };
+      this.historyDay = today;
+    }
     const r = this.rounds[game];
     if (Date.now() < r.endsAt) return { changed: false };
 

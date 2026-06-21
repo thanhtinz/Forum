@@ -98,6 +98,7 @@ function LiveRoom() {
   const [choice, setChoice] = useState(GAMES[game].defOpt);
   const [msg, setMsg] = useState('');
   const [frame, setFrame] = useState(0);
+  const [raceMs, setRaceMs] = useState(0);
 
   useEffect(() => {
     if (loading || !user) return;
@@ -116,6 +117,16 @@ function LiveRoom() {
     const id = setInterval(() => setFrame((f) => f + 1), 100);
     return () => clearInterval(id);
   }, [st?.phase]);
+
+  // Đua thú: chạy mượt 60fps bằng requestAnimationFrame
+  useEffect(() => {
+    if (st?.phase !== 'rolling' || game !== 'dua-thu') { setRaceMs(0); return; }
+    const start = performance.now();
+    let raf = 0;
+    const loop = (now: number) => { setRaceMs(now - start); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [st?.phase, game]);
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để chơi.</div>;
 
@@ -148,14 +159,25 @@ function LiveRoom() {
         {game === 'dua-thu' ? (
           <div className="mx-auto mt-3 max-w-md space-y-1 rounded-xl border-4 border-amber-700/60 bg-gradient-to-b from-lime-600/20 to-green-700/20 p-2">
             {[1, 2, 3, 4, 5, 6, 7].map((n) => {
-              const winner = phase === 'result' && st?.result?.winner === n;
-              const pos = phase === 'rolling' ? Math.min(92, (frame * (3 + ((n * 7) % 4))) % 112) : winner ? 92 : (phase === 'result' ? 0 : 0);
+              const winnerN = st?.result?.winner;
+              const winner = phase === 'result' && winnerN === n;
+              // hệ số "tốc độ" theo làn — người thắng về đích (92%), còn lại bám sát
+              const trail = winnerN === n ? 1 : 0.74 + ((n * 37) % 18) / 100; // 0.74..0.91
+              let pos = 0;
+              if (phase === 'rolling') {
+                const p = Math.min(1, raceMs / 4000);           // 0→1 trong 4s đua
+                const eased = 1 - Math.pow(1 - p, 1.7);          // tăng tốc mượt
+                const wobble = Math.sin(raceMs / 200 + n * 1.7) * 1.6; // nhấp nhô như đang chạy
+                pos = Math.max(0, Math.min(92, eased * 92 * trail + wobble));
+              } else if (phase === 'result') {
+                pos = Math.min(92, 92 * trail);
+              }
               return (
                 <div key={n} className={`flex items-center gap-2 rounded-md px-1.5 py-0.5 ${winner ? 'bg-amber-300/60' : ''}`}>
                   <span className="w-24 shrink-0 truncate text-left text-[11px] font-bold text-ink-800 dark:text-ink-200">{n}. {RACE_NAMES[n]}</span>
                   <div className="relative h-7 flex-1 overflow-hidden rounded border-y border-dashed border-white/50">
                     <span className="absolute right-1 top-1/2 z-10 -translate-y-1/2 text-base">{winner ? '🏁🥇' : '🏁'}</span>
-                    <img src={`/game-assets/duathu/${n}.gif`} alt="" className="absolute top-1/2 h-6 -translate-y-1/2 object-contain transition-all duration-100" style={{ left: `${pos}%` }} />
+                    <img src={`/game-assets/duathu/${n}.gif`} alt="" className="absolute top-1/2 h-6 -translate-y-1/2 object-contain will-change-transform" style={{ left: `${pos}%` }} />
                   </div>
                 </div>
               );

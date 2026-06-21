@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Sparkles, Moon, Coins, Star } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Sparkles, Moon, Coins, Star, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 
 type Tab = 'tarot' | 'zodiac';
@@ -17,10 +17,10 @@ export default function FortunePage() {
       </header>
 
       <div className="flex gap-2">
-        {([['tarot', 'Tarot', Moon, 0], ['zodiac', 'Cung hoàng đạo', Star, 0]] as const).map(([id, label, Icon, price]) => (
+        {([['tarot', 'Tarot', Moon], ['zodiac', 'Cung hoàng đạo', Star]] as const).map(([id, label, Icon]) => (
           <button key={id} onClick={() => setTab(id)}
             className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium ${tab === id ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>
-            <Icon size={16} /> {label}{price ? <span className="ml-1 flex items-center gap-0.5 text-xs opacity-80"><Coins size={11} />{price}</span> : null}
+            <Icon size={16} /> {label}
           </button>
         ))}
       </div>
@@ -31,298 +31,355 @@ export default function FortunePage() {
   );
 }
 
-const TAROT_TOPICS: [string, string][] = [
-  ['love', '❤️ Tình duyên'], ['career', '💼 Sự nghiệp'], ['money', '💰 Tài chính'],
-  ['health', '🌿 Sức khỏe'], ['study', '📚 Học tập'], ['decision', '⚖️ Quyết định'], ['general', '🔮 Tổng quát'],
+// ───────────────────────── TAROT ─────────────────────────
+
+type Topic = { id: string; title: string; desc: string; n: number; img: number };
+const TAROT_CATS: { key: string; label: string; topics: Topic[] }[] = [
+  { key: 'overview', label: 'Tổng quan', topics: [
+    { id: 'today', title: 'Tổng quan hôm nay', desc: 'Xem năng lượng tổng quan trong ngày của bạn', n: 3, img: 17 },
+    { id: 'yesno', title: 'CÓ hay KHÔNG', desc: 'Giải đáp vấn đề băn khoăn của bạn', n: 1, img: 13 },
+    { id: 'week', title: 'Tổng quan tuần này', desc: 'Xem năng lượng tổng quan trong tuần này của bạn', n: 5, img: 10 },
+  ] },
+  { key: 'love', label: 'Tình cảm', topics: [
+    { id: 'cur', title: 'Người yêu hiện tại', desc: 'Xem về người yêu hiện tại của bạn', n: 3, img: 17 },
+    { id: 'future', title: 'Người yêu tương lai', desc: 'Xem về người yêu tương lai của bạn', n: 3, img: 14 },
+    { id: 'ex', title: 'Người yêu cũ', desc: 'Trải bài về người yêu cũ của bạn', n: 3, img: 13 },
+    { id: 'crush', title: 'Người bạn thích', desc: 'Trải bài về người bạn thích (crush)', n: 3, img: 11 },
+    { id: 'situationship', title: 'Mối quan hệ mập mờ', desc: 'Trải bài về mối quan hệ mập mờ của bạn', n: 3, img: 10 },
+    { id: 'ldr', title: 'Yêu xa', desc: 'Trải bài về tình yêu xa', n: 3, img: 17 },
+    { id: 'nocontact', title: 'Ngừng liên lạc', desc: 'Trải bài về Ngừng liên lạc', n: 3, img: 10 },
+    { id: 'marriage', title: 'Hôn nhân gia đình', desc: 'Trải bài về Hôn nhân gia đình', n: 5, img: 14 },
+    { id: 'friends', title: 'Bạn bè, đồng nghiệp,...', desc: 'Trải bài về Bạn bè, đồng nghiệp,...', n: 3, img: 14 },
+  ] },
+  { key: 'work', label: 'Công việc', topics: [
+    { id: 'career', title: 'Công việc', desc: 'Trải bài về công việc', n: 3, img: 17 },
+    { id: 'money', title: 'Tài chính', desc: 'Trải bài về tài chính', n: 3, img: 14 },
+    { id: 'self', title: 'Định hướng bản thân', desc: 'Trải bài về Định hướng bản thân', n: 5, img: 13 },
+  ] },
+  { key: 'study', label: 'Học tập', topics: [
+    { id: 'study', title: 'Học tập', desc: 'Trải bài về học tập', n: 3, img: 17 },
+    { id: 'exam', title: 'Thi cử', desc: 'Trải bài về thi cử', n: 3, img: 14 },
+  ] },
 ];
 
-const TAROT_SPREADS: Record<number, { name: string; desc: string; positions: string[] }> = {
-  1: { name: 'Một lá', desc: 'Thông điệp nhanh cho hôm nay hoặc một câu hỏi.', positions: ['Thông điệp'] },
-  3: { name: 'Ba lá', desc: 'Dòng chảy thời gian của vấn đề.', positions: ['Quá khứ', 'Hiện tại', 'Tương lai'] },
+const SPREAD_POS: Record<number, string[]> = {
+  1: ['Thông điệp'],
+  3: ['Quá khứ', 'Hiện tại', 'Tương lai'],
+  5: ['Bản thân', 'Hoàn cảnh', 'Thử thách', 'Lời khuyên', 'Kết quả'],
 };
+const posList = (n: number) => SPREAD_POS[n] || Array.from({ length: n }, (_, i) => `Lá ${i + 1}`);
 
-// Mặt sau lá bài (ảnh thật của bộ bài) — dùng cho hiệu ứng xào & chọn bài
-function CardBack({ className = '', picked = false }: { className?: string; picked?: boolean }) {
+const TIPS = [
+  { title: 'Hít thở sâu', body: 'Trước mỗi trải bài, hãy hít một hơi thật sâu. Cố gắng thư giãn và tập trung vào câu hỏi của bạn. Hãy để những luồng suy nghĩ xung quanh đến và đi một lúc mà không cần phải bận tâm.' },
+  { title: 'Tập trung ý định', body: 'Giữ trong tâm trí điều bạn thật sự muốn biết. Một câu hỏi rõ ràng sẽ cho một thông điệp rõ ràng. Tránh hỏi quá nhiều việc trong cùng một lần trải bài.' },
+  { title: 'Giữ tâm thế cởi mở', body: 'Đón nhận thông điệp của lá bài một cách trung thực, kể cả khi nó khác với mong đợi. Tarot gợi mở góc nhìn để bạn tự quyết định, không phán xét đúng sai.' },
+];
+
+const tarotImg = (num: number) => `/game-assets/tarot/${num}.jpg`;
+
+// Mặt sau lá bài (ảnh thật của bộ bài)
+function CardBack({ className = '' }: { className?: string }) {
   return (
-    <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-lg border shadow-md transition ${picked ? 'border-amber-400 ring-2 ring-amber-300' : 'border-violet-300/30'} ${className}`}>
+    <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-lg border border-violet-300/30 shadow-md ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/game-assets/tarot/card-back.png" alt="" draggable={false} className="h-full w-full select-none object-cover" />
     </div>
   );
 }
 
-// Thẻ minh họa cho lá Ẩn Phụ (Minor Arcana — không có ảnh riêng), vẽ theo chất bài
-const SUIT_ART: Record<string, { icon: string; grad: string }> = {
-  wands: { icon: '🔥', grad: 'from-amber-500 to-orange-700' },
-  cups: { icon: '💧', grad: 'from-sky-500 to-blue-700' },
-  swords: { icon: '⚔️', grad: 'from-slate-500 to-slate-800' },
-  pentacles: { icon: '🪙', grad: 'from-emerald-500 to-green-700' },
-};
-function MinorCardArt({ suitKey, nameVi, reversed }: { suitKey?: string; nameVi: string; reversed: boolean }) {
-  const a = SUIT_ART[suitKey || ''] || { icon: '🔮', grad: 'from-violet-500 to-purple-700' };
-  const rank = nameVi.replace(/\s+\S+$/, ''); // "Át Gậy" → "Át"
+// Mặt trước lá bài (ảnh thật, lật ngược nếu lá ngược)
+function CardFace({ card, className = '' }: { card: any; className?: string }) {
   return (
-    <div className={`relative grid aspect-[2/3] w-full place-items-center bg-gradient-to-br ${a.grad} text-white ${reversed ? 'rotate-180' : ''}`}>
-      <div className="absolute inset-1.5 rounded-lg border border-white/40" />
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-3xl drop-shadow sm:text-4xl">{a.icon}</span>
-        <span className="px-1 text-center text-[10px] font-bold leading-tight sm:text-xs">{rank}</span>
-      </div>
+    <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-lg border border-ink-200/70 shadow-sm dark:border-ink-800 ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={card.image} alt={card.nameVi} draggable={false}
+        className={`h-full w-full select-none object-cover ${card.reversedOrientation ? 'rotate-180' : ''}`} />
     </div>
   );
 }
 
-type Step = 'mode' | 'spread' | 'input' | 'shuffle' | 'result';
-const FAN = 78; // trải nguyên bộ bài úp cho user chọn (bộ Tarot đầy đủ)
+type Step = 'topics' | 'intro' | 'pick' | 'result';
+const FAN = 18; // số lá úp xòe ra để chọn
 
 function Tarot() {
-  const [step, setStep] = useState<Step>('mode');
-  const [mode, setMode] = useState<'question' | 'topic'>('question');
-  const [n, setN] = useState(3);
-  const [topic, setTopic] = useState('love');
+  const [step, setStep] = useState<Step>('topics');
+  const [cat, setCat] = useState(0);
+  const [topic, setTopic] = useState<Topic | null>(null);
+  const [tipIdx, setTipIdx] = useState(0);
+  const [picked, setPicked] = useState<number[]>([]);
+  const [flipped, setFlipped] = useState(false);
   const [q, setQ] = useState('');
   const [r, setR] = useState<any>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
-  const [shuffling, setShuffling] = useState(false);
-  const [picked, setPicked] = useState<number[]>([]);
+  const slotRef = useRef<HTMLDivElement>(null);
 
   function reset() {
-    setStep('mode'); setMode('question'); setN(3); setTopic('love'); setQ('');
-    setR(null); setErr(''); setLoading(false); setShuffling(false); setPicked([]);
+    setStep('topics'); setTopic(null); setTipIdx(0); setPicked([]);
+    setFlipped(false); setQ(''); setR(null); setErr(''); setLoading(false);
   }
 
-  // Vào bước xào bài: chạy hiệu ứng xào rồi gọi API lấy bài thật (ẩn cho tới khi xem kết quả)
-  async function startShuffle() {
-    setErr(''); setPicked([]); setR(null); setStep('shuffle'); setShuffling(true);
-    const topicLabel = TAROT_TOPICS.find(([k]) => k === topic)?.[1]?.replace(/^\S+\s/, '') || '';
-    const question = mode === 'question' ? q.trim() : topicLabel;
+  function chooseTopic(t: Topic) {
+    setTopic(t); setTipIdx(0); setPicked([]); setFlipped(false); setR(null); setErr(''); setQ('');
+    setStep('intro');
+  }
+
+  // Bắt đầu: vào bước rút bài + gọi API bốc bài (ẩn cho tới khi lật)
+  async function begin() {
+    if (!topic) return;
+    setPicked([]); setFlipped(false); setR(null); setErr(''); setStep('pick');
     setLoading(true);
     try {
-      const res = await api.post('/fortune/tarot', { n, question, topic: mode === 'topic' ? topic : undefined });
+      const res = await api.post('/fortune/tarot', { n: topic.n, question: topic.title, topic: TAROT_CATS[cat].key });
       setR(res);
     } catch (e: any) { setErr(e.message); }
     finally { setLoading(false); }
-    setTimeout(() => setShuffling(false), 1300); // thời lượng hiệu ứng xào
   }
 
-  function pick(i: number) {
-    if (picked.includes(i)) { setPicked((p) => p.filter((x) => x !== i)); return; }
-    if (picked.length >= n) return;
+  function pickFan(i: number) {
+    if (!topic || flipped) return;
+    if (picked.includes(i)) return;
+    if (picked.length >= topic.n) return;
     setPicked((p) => [...p, i]);
   }
 
-  const spread = TAROT_SPREADS[n] || TAROT_SPREADS[3];
-  const topicLabel = TAROT_TOPICS.find(([k]) => k === topic)?.[1] || '';
+  function flip() {
+    if (!topic || picked.length !== topic.n || !r) return;
+    setFlipped(true);
+    setTimeout(() => slotRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60);
+  }
+
+  const cats = TAROT_CATS;
 
   return (
     <div className="space-y-4">
-      {/* Thanh tiến trình */}
-      {step !== 'mode' && (
-        <button onClick={reset} className="text-sm text-brand-600 hover:underline">← Bói lại từ đầu</button>
+      {step !== 'topics' && (
+        <button onClick={() => (step === 'intro' ? setStep('topics') : reset())}
+          className="inline-flex items-center gap-1 text-sm text-brand-600 hover:underline">
+          <ChevronLeft size={16} /> {step === 'intro' ? 'Chọn trải bài khác' : 'Trải bài lại từ đầu'}
+        </button>
       )}
 
-      {/* BƯỚC 1 — chọn hình thức bói */}
-      {step === 'mode' && (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {([
-            ['question', 'Bói Theo Câu Hỏi', '🗝️', 'Nhập câu hỏi riêng của bạn để xem Tarot giải đáp chi tiết. Phù hợp khi bạn muốn bói Tarot theo câu hỏi cụ thể về tình yêu, công việc, tài chính hoặc tương lai gần.'],
-            ['topic', 'Bói Theo Chủ Đề', '🎯', 'Chọn một chủ đề có sẵn để nhận thông điệp nhanh và chính xác. Hình thức bói Tarot theo chủ đề giúp bạn định hướng rõ hơn khi chưa biết phải hỏi gì.'],
-          ] as const).map(([m, title, icon, desc]) => (
-            <button key={m} onClick={() => { setMode(m); setStep('spread'); }}
-              className="card flex flex-col p-5 text-left transition hover:border-brand-400 hover:shadow-card">
-              <span className="text-3xl">{icon}</span>
-              <span className="mt-2 text-base font-bold">{title}</span>
-              <span className="mt-1 text-sm text-ink-500 dark:text-ink-400">{desc}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* BƯỚC 2 — chọn kiểu trải bài */}
-      {step === 'spread' && (
-        <div className="space-y-3">
-          <p className="text-sm font-medium">Chọn kiểu trải bài</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {([
-              [1, 'Trải 1 Lá Bài', 'Nhanh — trực tiếp — chính xác. Dành cho khi bạn cần câu trả lời nhanh hoặc lời khuyên tức thời về tình yêu, công việc, sức khỏe hoặc quyết định nhỏ.'],
-              [3, 'Trải 3 Lá Bài', 'Phân tích chiều sâu: quá khứ — hiện tại — tương lai hoặc tình huống — thử thách — lời khuyên. Phù hợp khi bạn cần nhìn rõ bức tranh tổng thể và giải thích chi tiết.'],
-            ] as const).map(([x, title, desc]) => (
-              <button key={x} onClick={() => { setN(x); setStep('input'); }}
-                className="card flex flex-col p-5 text-left transition hover:border-brand-400 hover:shadow-card">
-                <span className="text-2xl font-extrabold text-brand-600">{x} lá</span>
-                <span className="mt-1 text-base font-bold">{title}</span>
-                <span className="mt-1 text-sm text-ink-500 dark:text-ink-400">{desc}</span>
+      {/* ───── BƯỚC 1: chọn trải bài theo tab chủ đề ───── */}
+      {step === 'topics' && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-xl font-bold">Trải bài</h2>
+            <p className="text-sm text-ink-500">Hôm nay bạn muốn xem trải bài gì?</p>
+          </div>
+          {/* Tabs chủ đề */}
+          <div className="flex gap-5 overflow-x-auto border-b border-ink-200/70 text-sm dark:border-ink-800">
+            {cats.map((c, i) => (
+              <button key={c.key} onClick={() => setCat(i)}
+                className={`-mb-px shrink-0 border-b-2 pb-2 font-semibold transition ${cat === i ? 'border-brand-600 text-ink-900 dark:text-white' : 'border-transparent text-ink-400 hover:text-ink-600'}`}>
+                {c.label}
               </button>
+            ))}
+          </div>
+          {/* Danh sách trải bài */}
+          <div className="space-y-3">
+            {cats[cat].topics.map((t) => (
+              <div key={t.id} className="card flex items-center gap-3 p-4">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-bold">{t.title}</h3>
+                  <p className="mt-0.5 text-sm text-ink-500">{t.desc}</p>
+                  <button onClick={() => chooseTopic(t)}
+                    className="mt-3 rounded-lg bg-ink-900 px-4 py-2 text-sm font-semibold text-white hover:bg-ink-800 dark:bg-ink-700 dark:hover:bg-ink-600">
+                    Trải bài ngay
+                  </button>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={tarotImg(t.img)} alt="" className="h-24 w-16 shrink-0 rounded-md object-cover shadow-sm sm:h-28 sm:w-[74px]" />
+              </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* BƯỚC 3 — nhập câu hỏi / chọn chủ đề rồi xào bài */}
-      {step === 'input' && (
-        <div className="card space-y-3 p-4">
-          {mode === 'question' ? (
-            <label className="block text-sm font-medium">Nhập câu hỏi của bạn
-              <textarea className="input mt-1 min-h-[72px]" value={q} onChange={(e) => setQ(e.target.value)}
-                placeholder="VD: Tình duyên sắp tới của mình sẽ thế nào?" />
-            </label>
-          ) : (
+      {/* ───── BƯỚC 2: lưu ý + bắt đầu ───── */}
+      {step === 'intro' && topic && (
+        <div className="space-y-4">
+          <div className="card flex items-center gap-3 p-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={tarotImg(topic.img)} alt="" className="h-20 w-[54px] shrink-0 rounded-md object-cover shadow-sm" />
             <div>
-              <p className="mb-1.5 text-sm font-medium">Chọn chủ đề</p>
-              <div className="flex flex-wrap gap-1.5">
-                {TAROT_TOPICS.map(([k, label]) => (
-                  <button key={k} onClick={() => setTopic(k)}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium ${topic === k ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800'}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <h2 className="text-lg font-bold">{topic.title}</h2>
+              <p className="text-sm text-ink-500">{topic.desc} · trải {topic.n} lá</p>
             </div>
-          )}
-          <p className="text-xs text-ink-400">{spread.name} · {spread.desc}</p>
-          <button onClick={startShuffle} disabled={mode === 'question' && !q.trim()}
-            className="btn-primary w-full disabled:opacity-50">🔀 Xào bài</button>
+          </div>
+
+          <p className="font-bold">Một số lưu ý nhỏ</p>
+          <div className="card min-h-[160px] p-5">
+            <p className="font-semibold">{TIPS[tipIdx].title}</p>
+            <p className="mt-2 text-ink-600 dark:text-ink-300">{TIPS[tipIdx].body}</p>
+          </div>
+          <div className="flex justify-center gap-2">
+            {TIPS.map((_, i) => (
+              <button key={i} onClick={() => setTipIdx(i)} aria-label={`Lưu ý ${i + 1}`}
+                className={`grid h-8 w-8 place-items-center rounded-full text-sm font-bold ${tipIdx === i ? 'bg-ink-900 text-white dark:bg-ink-600' : 'bg-ink-100 text-ink-500 dark:bg-ink-800'}`}>
+                {i + 1}
+              </button>
+            ))}
+          </div>
+          <button onClick={begin} className="w-full rounded-xl bg-ink-900 py-3 font-semibold text-white hover:bg-ink-800 dark:bg-ink-700 dark:hover:bg-ink-600">
+            Bắt đầu
+          </button>
         </div>
       )}
 
-      {err && <p className="text-sm text-red-500">{err}</p>}
+      {/* ───── BƯỚC 3: rút bài từ bộ bài xòe ───── */}
+      {step === 'pick' && topic && (
+        <div className="space-y-5">
+          {/* Hàng ô bài đã chọn */}
+          <div ref={slotRef} className="flex justify-center gap-2">
+            {Array.from({ length: topic.n }).map((_, idx) => {
+              const filled = idx < picked.length;
+              const card = flipped && r ? r.cards[idx] : null;
+              return (
+                <div key={idx} className="w-[19%] max-w-[84px]">
+                  {card
+                    ? <CardFace card={card} className="animate-[flip-in_.5s_ease]" />
+                    : filled
+                      ? <CardBack />
+                      : <div className="aspect-[2/3] w-full rounded-lg border-2 border-dashed border-ink-300 dark:border-ink-700" />}
+                </div>
+              );
+            })}
+          </div>
 
-      {/* BƯỚC 4 — xào bài + chọn lá */}
-      {step === 'shuffle' && (
-        <div className="card space-y-4 p-5">
-          {shuffling ? (
-            <div className="flex flex-col items-center py-8">
-              <div className="relative h-40 w-28">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <div key={i} className="absolute left-1/2 top-0 w-24 -translate-x-1/2 animate-pulse"
-                    style={{ animationDelay: `${i * 120}ms`, transform: `translateX(-50%) rotate(${(i - 2) * 8}deg) translateY(${i * 2}px)` }}>
-                    <CardBack />
-                  </div>
-                ))}
-              </div>
-              <p className="mt-4 animate-pulse text-sm font-medium text-brand-600">Đang xào bài…</p>
-            </div>
-          ) : (
+          {!flipped ? (
             <>
-              <div className="text-center">
-                <h3 className="text-base font-bold">Chọn {n} lá bài</h3>
-                <p className="text-sm text-ink-500">Tập trung vào điều bạn muốn hỏi rồi chọn {n} lá ({picked.length}/{n})</p>
-              </div>
-              <div className="flex max-h-[52vh] flex-wrap justify-center gap-1.5 overflow-y-auto rounded-xl bg-ink-50/60 p-2 dark:bg-ink-800/40">
+              <p className="text-center text-sm text-ink-500">
+                {loading ? 'Đang chuẩn bị bộ bài…' : `Tập trung vào câu hỏi rồi chọn ${topic.n} lá (${picked.length}/${topic.n})`}
+              </p>
+              <button onClick={flip} disabled={picked.length !== topic.n || loading || !r}
+                className="mx-auto block rounded-xl bg-ink-900 px-10 py-3 font-semibold text-white enabled:hover:bg-ink-800 disabled:cursor-not-allowed disabled:bg-ink-400 dark:bg-ink-700 dark:disabled:bg-ink-800">
+                Lật bài
+              </button>
+
+              {/* Bộ bài úp xòe vòng cung */}
+              <div className="relative mx-auto h-44 w-full max-w-lg overflow-hidden">
                 {Array.from({ length: FAN }).map((_, i) => {
+                  const mid = (FAN - 1) / 2;
+                  const ang = (i - mid) * 5.2;
                   const isPicked = picked.includes(i);
                   return (
-                    <button key={i} onClick={() => pick(i)}
-                      className={`w-10 shrink-0 transition-transform sm:w-12 ${isPicked ? '-translate-y-2 sm:-translate-y-3' : 'hover:-translate-y-1.5'}`}>
-                      <CardBack picked={isPicked} />
+                    <button key={i} onClick={() => pickFan(i)} disabled={isPicked || picked.length >= topic.n}
+                      aria-label={`Lá ${i + 1}`}
+                      className="absolute left-1/2 top-2 w-14 transition-all duration-300 hover:-translate-y-1 disabled:cursor-not-allowed sm:w-16"
+                      style={{ transform: `translateX(-50%) rotate(${ang}deg)`, transformOrigin: '50% 300px', zIndex: i, opacity: isPicked ? 0 : 1, pointerEvents: isPicked ? 'none' : 'auto' }}>
+                      <CardBack />
                     </button>
                   );
                 })}
               </div>
-              <button onClick={() => setStep('result')} disabled={picked.length !== n || loading || !r}
-                className="btn-primary w-full disabled:opacity-50">
-                {loading ? 'Đang chuẩn bị…' : '🔮 Xem kết quả'}
-              </button>
             </>
+          ) : (
+            <div className="card space-y-3 p-4">
+              <p className="text-center font-semibold">Bạn có câu hỏi cụ thể nào không?</p>
+              <p className="text-center text-xs text-ink-500">Kết quả trải bài sẽ chính xác hơn nếu bạn có một câu hỏi rõ ràng.</p>
+              <textarea value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nhập câu hỏi của bạn…"
+                className="input min-h-[64px]" />
+              <button onClick={() => setStep('result')}
+                className="w-full rounded-xl bg-ink-900 py-3 font-semibold text-white hover:bg-ink-800 dark:bg-ink-700 dark:hover:bg-ink-600">
+                Xem kết quả
+              </button>
+            </div>
           )}
+
+          {err && <p className="text-center text-sm text-red-500">{err}</p>}
         </div>
       )}
 
-      {/* BƯỚC 5 — kết quả */}
-      {step === 'result' && r && (
-        <TarotResult r={r} mode={mode} topicLabel={topicLabel} />
+      {/* ───── BƯỚC 4: chi tiết trải bài ───── */}
+      {step === 'result' && r && topic && (
+        <TarotResult r={r} topic={topic} question={q.trim() || topic.title} onAgain={reset} />
       )}
     </div>
   );
 }
 
-function TarotResult({ r, mode, topicLabel }: { r: any; mode: 'question' | 'topic'; topicLabel: string }) {
-  const cards: any[] = r.cards;
-  const positions = TAROT_SPREADS[cards.length]?.positions || [];
-  const ctx = mode === 'question' ? `“${r.question}”` : topicLabel;
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <p className="text-sm leading-relaxed">
+      <span className="font-semibold">{label}: </span>
+      <span className="text-ink-600 dark:text-ink-300">{value}</span>
+    </p>
+  );
+}
 
-  // Tổng hợp thông điệp & lời khuyên chung từ các lá
-  const overallMessage = cards.map((c) => c.meaning?.join(', ')).filter(Boolean).join(' · ');
-  const overallAdvice = cards.map((c) => c.advice).filter(Boolean).join(' ');
+function TarotResult({ r, topic, question, onAgain }: { r: any; topic: Topic; question: string; onAgain: () => void }) {
+  const cards: any[] = r.cards;
+  const positions = posList(cards.length);
   const reversedCount = cards.filter((c) => c.reversedOrientation).length;
-  const overallOverview = `Trải bài ${TAROT_SPREADS[cards.length]?.name || ''} cho ${mode === 'question' ? 'câu hỏi của bạn' : `chủ đề ${topicLabel}`}: `
-    + cards.map((c, i) => `${positions[i] ? positions[i] + ' là ' : ''}${c.nameVi} (${c.reversedOrientation ? 'ngược' : 'xuôi'})`).join(', ') + '. '
+  const overview =
+    `Trải bài ${topic.title} (${cards.length} lá): `
+    + cards.map((c, i) => `${positions[i]} là ${c.nameVi} (${c.reversedOrientation ? 'ngược' : 'xuôi'})`).join(', ') + '. '
     + (reversedCount === 0 ? 'Năng lượng tổng thể thuận lợi, bạn đang đi đúng hướng.'
-      : reversedCount === cards.length ? 'Có nhiều lá ngược — hãy chậm lại, nhìn vào nội tâm trước khi hành động.'
+      : reversedCount === cards.length ? 'Nhiều lá ngược — hãy chậm lại, nhìn vào nội tâm trước khi hành động.'
       : 'Năng lượng pha trộn giữa thuận và nghịch — cần cân nhắc kỹ trước mỗi quyết định.');
+  const advice = cards.map((c) => c.advice).filter(Boolean).join(' ');
 
   return (
-    <div className="card space-y-5 p-5">
-      {/* Tổng quan */}
+    <div className="space-y-4">
       <div className="text-center">
-        <h3 className="text-lg font-bold">Kết quả · Trải bài {TAROT_SPREADS[cards.length]?.name}</h3>
-        {ctx && <p className="text-sm text-ink-500">{ctx}</p>}
+        <h2 className="text-xl font-bold">Chi tiết trải bài</h2>
+        <p className="text-sm text-ink-500">“{question}”</p>
       </div>
 
-      {/* Các lá bài */}
-      <div className={`grid gap-4 ${cards.length === 1 ? 'mx-auto grid-cols-1 sm:max-w-xs' : 'grid-cols-1 sm:grid-cols-3'}`}>
-        {cards.map((c, i) => {
-          const pos = positions[i];
-          const rev = c.reversedOrientation;
-          return (
-            <div key={i} className="flex flex-col items-center text-center">
-              {pos && <div className="mb-1 rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">{pos}</div>}
-              <div className="overflow-hidden rounded-xl border border-ink-200/70 shadow-sm dark:border-ink-800">
-                {c.image
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={c.image} alt={c.nameVi} className={`w-full object-cover transition ${rev ? 'rotate-180' : ''}`} />
-                  : <MinorCardArt suitKey={c.suitKey} nameVi={c.nameVi} reversed={rev} />}
+      {/* Từng lá bài */}
+      {cards.map((c, i) => {
+        const rev = c.reversedOrientation;
+        return (
+          <div key={i} className="card space-y-3 p-4">
+            <div className="flex gap-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={c.image} alt={c.nameVi} className={`h-40 w-[107px] shrink-0 rounded-lg border border-ink-200/70 object-cover shadow-sm dark:border-ink-800 ${rev ? 'rotate-180' : ''}`} />
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">{positions[i]}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${rev ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>{rev ? '⟳ Ngược' : '↑ Xuôi'}</span>
+                </div>
+                <h3 className="text-lg font-bold leading-tight">{c.nameVi}</h3>
+                <p className="-mt-1 text-xs text-ink-400">{c.name}</p>
+                <Row label="Nguyên tố" value={c.element} />
+                <Row label="Cung hoàng đạo" value={c.zodiac} />
+                <Row label="Chiêm tinh" value={c.astro} />
+                <div className="flex flex-wrap gap-1 pt-0.5">
+                  {c.meaning?.map((m: string, k: number) => (
+                    <span key={k} className="rounded-md border border-ink-200 px-2 py-0.5 text-[11px] text-ink-600 dark:border-ink-700 dark:text-ink-300">{m}</span>
+                  ))}
+                </div>
               </div>
-              <div className="mt-2 font-semibold leading-tight">{c.nameVi}</div>
-              <div className="text-[11px] text-ink-400">{c.name}</div>
-              <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${rev ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>
-                {rev ? '⟳ Ngược' : '↑ Xuôi'}
-              </span>
             </div>
-          );
-        })}
-      </div>
-
-      {/* Thông điệp từng lá */}
-      <div className="space-y-2">
-        <p className="text-sm font-bold">📜 Thông điệp từng lá</p>
-        {cards.map((c, i) => (
-          <div key={i} className="rounded-xl bg-ink-50 p-3 text-sm dark:bg-ink-800/50">
-            <p className="font-semibold">{positions[i] ? `${positions[i]} — ` : ''}{c.nameVi} ({c.reversedOrientation ? 'ngược' : 'xuôi'})</p>
-            {c.desc && <p className="mt-1 text-ink-600 dark:text-ink-300">{c.desc}</p>}
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {c.meaning?.map((m: string, k: number) => (
-                <span key={k} className="rounded-md bg-ink-100 px-1.5 py-0.5 text-[11px] text-ink-600 dark:bg-ink-700 dark:text-ink-300">{m}</span>
-              ))}
-            </div>
-            {c.advice && <p className="mt-1.5 text-brand-600">💡 {c.advice}</p>}
+            {c.desc && <p className="text-sm leading-relaxed text-ink-700 dark:text-ink-200"><b>{c.nameVi}:</b> {c.desc}</p>}
+            {c.advice && <p className="rounded-lg bg-brand-50 p-2.5 text-sm text-brand-700 dark:bg-ink-800/60 dark:text-brand-300">💡 {c.advice}</p>}
           </div>
-        ))}
-      </div>
+        );
+      })}
 
       {/* Tổng quan chung */}
-      <div className="rounded-xl border border-violet-200 bg-violet-50 p-3 text-sm dark:border-ink-700 dark:bg-ink-800/50">
-        <p className="font-bold text-violet-700 dark:text-violet-300">🌌 Tổng quan chung</p>
-        <p className="mt-1 text-ink-700 dark:text-ink-200">{overallOverview}</p>
-      </div>
-
-      {/* Thông điệp chung */}
-      <div className="rounded-xl bg-ink-50 p-3 text-sm dark:bg-ink-800/50">
-        <p className="font-bold">💬 Thông điệp chung</p>
-        <p className="mt-1 text-ink-600 dark:text-ink-300">{overallMessage}</p>
-      </div>
-
-      {/* Lời khuyên */}
-      {overallAdvice && (
-        <div className="rounded-xl border border-brand-200 bg-brand-50 p-3 text-sm dark:border-ink-700 dark:bg-ink-800/50">
-          <p className="font-bold text-brand-700 dark:text-brand-300">🧭 Lời khuyên</p>
-          <p className="mt-1 text-ink-700 dark:text-ink-200">{overallAdvice}</p>
+      <div className="card space-y-3 p-4">
+        <div>
+          <p className="font-bold">🌌 Tổng quan chung</p>
+          <p className="mt-1 text-sm text-ink-700 dark:text-ink-200">{overview}</p>
         </div>
-      )}
+        {advice && (
+          <div>
+            <p className="font-bold">🧭 Lời khuyên</p>
+            <p className="mt-1 text-sm text-ink-700 dark:text-ink-200">{advice}</p>
+          </div>
+        )}
+      </div>
+
+      <button onClick={onAgain} className="w-full rounded-xl bg-ink-900 py-3 font-semibold text-white hover:bg-ink-800 dark:bg-ink-700 dark:hover:bg-ink-600">
+        Trải bài khác
+      </button>
     </div>
   );
 }
+
+// ───────────────────────── ZODIAC ─────────────────────────
 
 function Stars({ n }: { n: number }) {
   return <span className="text-amber-400">{'★'.repeat(n)}<span className="text-ink-300 dark:text-ink-600">{'★'.repeat(5 - n)}</span></span>;

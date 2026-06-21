@@ -26,7 +26,7 @@ function MessengerIcon({ size = 16 }: { size?: number }) {
 const NAV = [
   { href: '/', label: 'Diễn đàn', icon: MessageSquare },
   { href: '/chat', label: 'Chat', icon: MessengerIcon },
-  { href: '/cong-game', label: 'Cổng game', icon: Gamepad2 },
+  { href: '/cong-game', label: 'Giải trí', icon: Gamepad2 },
   { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
   { href: '/ai', label: 'AI Companion', icon: Sparkles },
   { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },

@@ -18,6 +18,11 @@ export class ChatController {
     return this.chat.getGlobalChannel();
   }
 
+  @Get('gifs')
+  searchGifs(@Query('q') q: string) {
+    return this.chat.searchGifs(q || '');
+  }
+
   @Post('private')
   getPrivate(@CurrentUser('id') userId: string, @Body('targetUserId') targetUserId: string) {
     return this.chat.getOrCreatePrivateChannel(userId, targetUserId);

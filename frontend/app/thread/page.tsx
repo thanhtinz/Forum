@@ -10,6 +10,7 @@ import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 import type { Thread, Post, Paginated } from '@/lib/types';
+import { interceptExternalLink } from '@/lib/externalLink';
 import TipTapEditor from '@/components/TipTapEditor';
 import ThreadJobPanel from '@/components/ThreadJobPanel';
 
@@ -446,7 +447,7 @@ function ThreadView() {
                   <span>{(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}</span>
                   {isBest && <span className="flex items-center gap-1 font-medium text-emerald-600"><Award size={14} /> Câu trả lời hay nhất</span>}
                 </div>
-                <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: p.content }} />
+                <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: p.content }} />
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   {/* Các reaction đã có, gom theo emoji */}
                   {(() => {

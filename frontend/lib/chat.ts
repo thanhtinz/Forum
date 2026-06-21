@@ -34,23 +34,15 @@ export interface StickerPack {
   stickers: { id: string; name: string; imageUrl: string }[];
 }
 
-// Tìm GIF qua Tenor nếu có NEXT_PUBLIC_TENOR_KEY, không thì trả rỗng (UI cho dán link)
-export async function searchGifs(q: string): Promise<{ id: string; url: string; preview: string }[]> {
-  const key = process.env.NEXT_PUBLIC_TENOR_KEY;
-  if (!key) return [];
-  const term = q.trim() || 'trending';
-  const url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(term)}&key=${key}&limit=24&media_filter=gif,tinygif`;
+// Tìm GIF qua backend (admin cấu hình Giphy/Tenor + API key).
+// Trả { configured, results }: configured=false nghĩa là admin chưa nhập API key → UI cho dán link.
+export interface GifResult { id: string; url: string; preview: string }
+export async function searchGifs(q: string): Promise<{ configured: boolean; results: GifResult[] }> {
   try {
-    const res = await fetch(url);
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.results || []).map((r: any) => ({
-      id: r.id,
-      url: r.media_formats?.gif?.url || r.media_formats?.tinygif?.url,
-      preview: r.media_formats?.tinygif?.url || r.media_formats?.gif?.url,
-    })).filter((g: any) => g.url);
+    const { api } = await import('./api');
+    return await api.get<{ configured: boolean; results: GifResult[] }>(`/chat/gifs?q=${encodeURIComponent(q.trim())}`);
   } catch {
-    return [];
+    return { configured: false, results: [] };
   }
 }
 

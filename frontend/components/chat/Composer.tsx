@@ -35,7 +35,7 @@ export function Composer({ onSend, replyTo, onCancelReply, onTyping }: {
   useEffect(() => {
     if (!smiley) return;
     if (tab === 'sticker' && packs.length === 0) api.get<StickerPack[]>('/chat/stickers').then(setPacks).catch(() => {});
-    if (tab === 'gif') searchGifs(gifQ).then((g) => { setGifs(g); setGifNoKey(g.length === 0 && !process.env.NEXT_PUBLIC_TENOR_KEY); });
+    if (tab === 'gif') searchGifs(gifQ).then((r) => { setGifs(r.results); setGifNoKey(!r.configured); });
   }, [smiley, tab]); // eslint-disable-line
 
   function closeAll() { setSmiley(false); setMediaMenu(false); setMusicOpen(false); }
@@ -135,7 +135,7 @@ export function Composer({ onSend, replyTo, onCancelReply, onTyping }: {
             <div className="max-h-60 overflow-y-auto p-3">
               <input className="input mb-2" placeholder="Tìm GIF…" value={gifQ}
                 onChange={(e) => setGifQ(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && searchGifs(gifQ).then(setGifs)} />
+                onKeyDown={(e) => e.key === 'Enter' && searchGifs(gifQ).then((r) => { setGifs(r.results); setGifNoKey(!r.configured); })} />
               {gifNoKey ? (
                 <div className="space-y-2">
                   <p className="text-xs text-ink-400">Chưa cấu hình Tenor. Dán link GIF trực tiếp:</p>

@@ -303,4 +303,7 @@ export class AdminController {
   addSticker(@Param('packId') packId: string, @Body() sticker: any) {
     return this.gameAsset.addStickerToPack(packId, sticker);
   }
+
+  @Post('stickers/sticker/:id/delete')
+  removeSticker(@Param('id') id: string) { return this.gameAsset.removeSticker(id); }
 }

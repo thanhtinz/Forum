@@ -96,7 +96,7 @@ export function WeatherMenu({ mobile = false }: { mobile?: boolean }) {
           <div className="space-y-0.5">
             {data.daily.map((d, idx) => {
               const w = wmo(d.code);
-              const dow = idx === 0 ? 'Nay' : DOW[new Date(d.date).getDay()];
+              const dow = idx === 0 ? 'Nay' : DOW[new Date(d.date + 'T00:00:00Z').getUTCDay()];
               return (
                 <div key={d.date} className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm odd:bg-ink-50 dark:odd:bg-ink-700/40">
                   <span className="w-9 text-xs text-ink-500">{dow}</span>

@@ -53,7 +53,7 @@ function CardBack({ className = '', picked = false }: { className?: string; pick
 }
 
 type Step = 'mode' | 'spread' | 'input' | 'shuffle' | 'result';
-const FAN = 9; // số lá úp cho user chọn
+const FAN = 78; // trải nguyên bộ bài úp cho user chọn (bộ Tarot đầy đủ)
 
 function Tarot() {
   const [step, setStep] = useState<Step>('mode');
@@ -189,12 +189,12 @@ function Tarot() {
                 <h3 className="text-base font-bold">Chọn {n} lá bài</h3>
                 <p className="text-sm text-ink-500">Tập trung vào điều bạn muốn hỏi rồi chọn {n} lá ({picked.length}/{n})</p>
               </div>
-              <div className="flex flex-wrap justify-center gap-2">
+              <div className="flex max-h-[52vh] flex-wrap justify-center gap-1.5 overflow-y-auto rounded-xl bg-ink-50/60 p-2 dark:bg-ink-800/40">
                 {Array.from({ length: FAN }).map((_, i) => {
                   const isPicked = picked.includes(i);
                   return (
                     <button key={i} onClick={() => pick(i)}
-                      className={`w-16 transition-transform sm:w-20 ${isPicked ? '-translate-y-3' : 'hover:-translate-y-1.5'}`}>
+                      className={`w-10 shrink-0 transition-transform sm:w-12 ${isPicked ? '-translate-y-2 sm:-translate-y-3' : 'hover:-translate-y-1.5'}`}>
                       <CardBack picked={isPicked} />
                     </button>
                   );

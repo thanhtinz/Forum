@@ -101,6 +101,104 @@ export interface DrawnCard {
   arcana: 'major' | 'minor';
   suitKey?: string;
   suitVi?: string;
+  element: string;        // Nguyên tố: Lửa / Nước / Khí / Đất
+  zodiac: string;         // Cung hoàng đạo liên hệ
+  astro: string;          // Chiêm tinh (hành tinh trong cung / decan)
+}
+
+// ── Tương ứng chiêm tinh (hệ Golden Dawn) cho từng lá ──
+const PLANET_VI: Record<string, string> = {
+  Sun: 'Mặt Trời', Moon: 'Mặt Trăng', Mercury: 'Sao Thủy', Venus: 'Sao Kim',
+  Mars: 'Sao Hỏa', Jupiter: 'Sao Mộc', Saturn: 'Sao Thổ',
+  Uranus: 'Thiên Vương Tinh', Neptune: 'Hải Vương Tinh', Pluto: 'Diêm Vương Tinh',
+};
+const SIGN_VI: Record<string, string> = {
+  Aries: 'Bạch Dương', Taurus: 'Kim Ngưu', Gemini: 'Song Tử', Cancer: 'Cự Giải',
+  Leo: 'Sư Tử', Virgo: 'Xử Nữ', Libra: 'Thiên Bình', Scorpio: 'Bọ Cạp',
+  Sagittarius: 'Nhân Mã', Capricorn: 'Ma Kết', Aquarius: 'Bảo Bình', Pisces: 'Song Ngư',
+};
+const ELEMENT_VI: Record<string, string> = { fire: 'Lửa', water: 'Nước', air: 'Khí', earth: 'Đất' };
+const SUIT_ELEMENT: Record<string, 'fire' | 'water' | 'air' | 'earth'> = {
+  wands: 'fire', cups: 'water', swords: 'air', pentacles: 'earth',
+};
+const sgn = (en: string) => `${SIGN_VI[en]} (${en})`;
+const plt = (en: string) => `${PLANET_VI[en]} (${en})`;
+
+// Ẩn Chính 0–21: [element, planet?, sign?]
+const MAJOR_ASTRO: Record<number, { element: string; planet?: string; sign?: string }> = {
+  0: { element: 'air', planet: 'Uranus', sign: 'Aquarius' },
+  1: { element: 'air', planet: 'Mercury', sign: 'Gemini' },
+  2: { element: 'water', planet: 'Moon', sign: 'Cancer' },
+  3: { element: 'earth', planet: 'Venus', sign: 'Taurus' },
+  4: { element: 'fire', sign: 'Aries' },
+  5: { element: 'earth', sign: 'Taurus' },
+  6: { element: 'air', sign: 'Gemini' },
+  7: { element: 'water', sign: 'Cancer' },
+  8: { element: 'fire', sign: 'Leo' },
+  9: { element: 'earth', sign: 'Virgo' },
+  10: { element: 'fire', planet: 'Jupiter', sign: 'Sagittarius' },
+  11: { element: 'air', sign: 'Libra' },
+  12: { element: 'water', planet: 'Neptune', sign: 'Pisces' },
+  13: { element: 'water', sign: 'Scorpio' },
+  14: { element: 'fire', sign: 'Sagittarius' },
+  15: { element: 'earth', sign: 'Capricorn' },
+  16: { element: 'fire', planet: 'Mars', sign: 'Aries' },
+  17: { element: 'air', sign: 'Aquarius' },
+  18: { element: 'water', sign: 'Pisces' },
+  19: { element: 'fire', planet: 'Sun', sign: 'Leo' },
+  20: { element: 'fire', planet: 'Pluto', sign: 'Scorpio' },
+  21: { element: 'earth', planet: 'Saturn', sign: 'Capricorn' },
+};
+
+// Decan Ẩn Phụ pip (2–10) theo chất: [planet, sign, decan(0/1/2)]
+const PIP_DECAN: Record<string, Record<number, [string, string, number]>> = {
+  wands: { 2: ['Mars', 'Aries', 0], 3: ['Sun', 'Aries', 1], 4: ['Venus', 'Aries', 2], 5: ['Saturn', 'Leo', 0], 6: ['Jupiter', 'Leo', 1], 7: ['Mars', 'Leo', 2], 8: ['Mercury', 'Sagittarius', 0], 9: ['Moon', 'Sagittarius', 1], 10: ['Saturn', 'Sagittarius', 2] },
+  cups: { 2: ['Venus', 'Cancer', 0], 3: ['Mercury', 'Cancer', 1], 4: ['Moon', 'Cancer', 2], 5: ['Mars', 'Scorpio', 0], 6: ['Sun', 'Scorpio', 1], 7: ['Venus', 'Scorpio', 2], 8: ['Saturn', 'Pisces', 0], 9: ['Jupiter', 'Pisces', 1], 10: ['Mars', 'Pisces', 2] },
+  swords: { 2: ['Moon', 'Libra', 0], 3: ['Saturn', 'Libra', 1], 4: ['Jupiter', 'Libra', 2], 5: ['Venus', 'Aquarius', 0], 6: ['Mercury', 'Aquarius', 1], 7: ['Moon', 'Aquarius', 2], 8: ['Jupiter', 'Gemini', 0], 9: ['Mars', 'Gemini', 1], 10: ['Sun', 'Gemini', 2] },
+  pentacles: { 2: ['Jupiter', 'Capricorn', 0], 3: ['Mars', 'Capricorn', 1], 4: ['Sun', 'Capricorn', 2], 5: ['Mercury', 'Taurus', 0], 6: ['Moon', 'Taurus', 1], 7: ['Saturn', 'Taurus', 2], 8: ['Sun', 'Virgo', 0], 9: ['Venus', 'Virgo', 1], 10: ['Mercury', 'Virgo', 2] },
+};
+// Court (Thị Đồng/Hiệp Sĩ/Hoàng Hậu/Vua) → cung chính (hệ Golden Dawn)
+const COURT_SIGN: Record<string, Record<number, string>> = {
+  // rankIndex: 11=Hiệp Sĩ, 12=Hoàng Hậu, 13=Vua (Thị Đồng=10 chỉ theo nguyên tố)
+  wands: { 11: 'Sagittarius', 12: 'Aries', 13: 'Leo' },
+  cups: { 11: 'Pisces', 12: 'Cancer', 13: 'Scorpio' },
+  swords: { 11: 'Gemini', 12: 'Libra', 13: 'Aquarius' },
+  pentacles: { 11: 'Virgo', 12: 'Capricorn', 13: 'Taurus' },
+};
+const DECAN_DEG = ['0°–10°', '10°–20°', '20°–30°'];
+
+function cardAstro(card: TarotCard): { element: string; zodiac: string; astro: string } {
+  if (card.arcana !== 'minor') {
+    const a = MAJOR_ASTRO[card.number] || { element: 'air' };
+    const el = ELEMENT_VI[a.element];
+    if (a.sign && a.planet) {
+      // Ẩn Chính theo hành tinh: hành tinh cai quản cung
+      return { element: el, zodiac: sgn(a.sign), astro: `${plt(a.planet)} cai quản ${SIGN_VI[a.sign]}` };
+    }
+    if (a.sign) {
+      return { element: el, zodiac: sgn(a.sign), astro: `Cung ${sgn(a.sign)} · nguyên tố ${el}` };
+    }
+    return { element: el, zodiac: '—', astro: `Nguyên tố ${el}` };
+  }
+  const suit = card.suitKey || 'wands';
+  const el = ELEMENT_VI[SUIT_ELEMENT[suit]];
+  const ri = (card.number - 100) % 14; // 0=Át … 9=Mười, 10=Thị Đồng, 11=Hiệp Sĩ, 12=Hoàng Hậu, 13=Vua
+  const rankNum = ri + 1; // Át=1 … Mười=10
+  if (rankNum >= 2 && rankNum <= 10) {
+    const d = PIP_DECAN[suit]?.[rankNum];
+    if (d) {
+      const [planet, sign, decan] = d;
+      return { element: el, zodiac: sgn(sign), astro: `${plt(planet)} trong ${SIGN_VI[sign]} ${DECAN_DEG[decan]}` };
+    }
+  }
+  if (rankNum === 1) {
+    // Át — cội nguồn nguyên tố
+    return { element: el, zodiac: `Toàn cung nguyên tố ${el}`, astro: `Cội nguồn (Ace) của nguyên tố ${el}` };
+  }
+  // Court
+  const sign = COURT_SIGN[suit]?.[ri];
+  if (sign) return { element: el, zodiac: sgn(sign), astro: `Lá hình người · chủ về ${SIGN_VI[sign]} (nguyên tố ${el})` };
+  return { element: el, zodiac: `Nguyên tố ${el}`, astro: `Lá hình người · nguyên tố ${el}` };
 }
 
 // Bốc `n` lá không trùng từ nguyên bộ 78 lá
@@ -112,6 +210,7 @@ export function drawTarot(n = 3): DrawnCard[] {
     const idx = Math.floor(Math.random() * deck.length);
     const card = deck.splice(idx, 1)[0];
     const reversed = Math.random() < 0.5;
+    const astro = cardAstro(card);
     drawn.push({
       number: card.number,
       name: card.name,
@@ -128,6 +227,9 @@ export function drawTarot(n = 3): DrawnCard[] {
       arcana: card.arcana ?? 'major',
       suitKey: card.suitKey,
       suitVi: card.suitVi,
+      element: astro.element,
+      zodiac: astro.zodiac,
+      astro: astro.astro,
     });
   }
   return drawn;

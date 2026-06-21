@@ -14,7 +14,7 @@ const LS_KEY = 'mini-player-playlist';
 function parseUrl(raw: string): Track | null {
   const u = raw.trim();
   if (!u) return null;
-  const isYouTube = /(?:^|\.)youtube\.com|youtu\.be/i.test(u);
+  const isYouTube = /youtube\.com|youtu\.be/i.test(u);
   // YouTube — PLAYLIST: ưu tiên nếu link có tham số list= (kể cả watch?v=...&list=...)
   if (isYouTube) {
     const list = u.match(/[?&]list=([\w-]+)/);

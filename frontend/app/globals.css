@@ -248,3 +248,7 @@ html, body {
 .fa-lon-den { background-image: url(/game-assets/nongtrai/animals/lon-den.png); animation: fabolon 1s steps(8) infinite; }
 @keyframes fagachk { to { background-position-x: -192px; } }
 @keyframes fabolon { to { background-position-x: -384px; } }
+
+/* Drawer menu mobile: trượt từ trái sang */
+@keyframes drawer-in-left { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+.drawer-left { animation: drawer-in-left .22s ease-out; }

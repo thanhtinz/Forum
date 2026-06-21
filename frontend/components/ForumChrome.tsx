@@ -6,6 +6,7 @@ import { SiteFooter } from './SiteFooter';
 import { AdminModBar } from './AdminModBar';
 import { FloatingDock } from './FloatingDock';
 import { CheckInDock } from './CheckInDock';
+import { GiftcodeDock } from './GiftcodeDock';
 
 // Bọc nội dung bằng Header + footer của forum, TRỪ khu /admin (admin có shell riêng)
 export function ForumChrome({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,7 @@ export function ForumChrome({ children }: { children: React.ReactNode }) {
       <main className="container-forum py-5">{children}</main>
       <SiteFooter />
       <FloatingDock />
+      <GiftcodeDock />
       <CheckInDock />
       <AdminModBar />
     </>

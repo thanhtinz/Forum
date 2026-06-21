@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Moon, Coins, Star, ChevronLeft } from 'lucide-react';
+import { Sparkles, Moon, Coins, Star, ChevronLeft, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 
 type Tab = 'tarot' | 'zodiac';
@@ -77,12 +77,12 @@ const TIPS = [
 
 const tarotImg = (num: number) => `/game-assets/tarot/${num}.jpg`;
 
-// Mặt sau lá bài (ảnh thật của bộ bài)
+// Mặt sau lá bài (ảnh nhẹ cho bộ bài & ô slot)
 function CardBack({ className = '' }: { className?: string }) {
   return (
     <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-lg border border-violet-300/30 shadow-md ${className}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/game-assets/tarot/card-back.png" alt="" draggable={false} className="h-full w-full select-none object-cover" />
+      <img src="/game-assets/tarot/card-back-sm.png" alt="" draggable={false} className="h-full w-full select-none object-cover" />
     </div>
   );
 }
@@ -99,10 +99,10 @@ function CardFace({ card, className = '' }: { card: any; className?: string }) {
 }
 
 type Step = 'topics' | 'intro' | 'pick' | 'result';
-const FAN = 30;            // số lá úp xếp trên vòng cung
+const FAN = 24;            // số lá úp xếp trên vòng cung
 const WHEEL_R = 520;       // bán kính vòng cung (px)
 const WHEEL_CY = WHEEL_R + 72; // tâm vòng nằm dưới khung
-const WHEEL_STEP = 8;      // góc giữa 2 lá (độ)
+const WHEEL_STEP = 9;      // góc giữa 2 lá (độ)
 const WHEEL_LIMIT = ((FAN - 1) / 2) * WHEEL_STEP; // giới hạn xoay để mọi lá tới được đỉnh
 
 function Tarot() {
@@ -119,14 +119,17 @@ function Tarot() {
   const slotRef = useRef<HTMLDivElement>(null);
   const wheelRef = useRef<HTMLDivElement>(null);  // vòng bài xoay (ghi transform trực tiếp)
   const rotRef = useRef(0);                        // góc xoay hiện tại
+  const rafRef = useRef(0);
+  const pendingRot = useRef(0);
   const dragSt = useRef({ down: false, startX: 0, startRot: 0, moved: false });
 
   function applyRot(deg: number) {
     rotRef.current = deg;
-    if (wheelRef.current) wheelRef.current.style.transform = `rotate(${deg}deg)`;
+    // translateZ(0) giữ vòng trên 1 lớp GPU → xoay chỉ là transform, không re-raster
+    if (wheelRef.current) wheelRef.current.style.transform = `translateZ(0) rotate(${deg}deg)`;
   }
 
-  // Kéo để xoay vòng bài (chuột + cảm ứng) — ghi thẳng DOM, không setState nên mượt
+  // Kéo để xoay vòng bài (chuột + cảm ứng) — ghi thẳng DOM qua rAF, không setState nên mượt
   function fanDown(e: React.PointerEvent) {
     try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* noop */ }
     dragSt.current = { down: true, startX: e.clientX, startRot: rotRef.current, moved: false };
@@ -135,8 +138,9 @@ function Tarot() {
     if (!dragSt.current.down) return;
     const dx = e.clientX - dragSt.current.startX;
     if (Math.abs(dx) > 4) dragSt.current.moved = true;
-    const next = Math.max(-WHEEL_LIMIT, Math.min(WHEEL_LIMIT, dragSt.current.startRot + dx * 0.2));
-    applyRot(next);
+    pendingRot.current = Math.max(-WHEEL_LIMIT, Math.min(WHEEL_LIMIT, dragSt.current.startRot + dx * 0.22));
+    if (rafRef.current) return; // gộp nhiều sự kiện vào 1 frame
+    rafRef.current = requestAnimationFrame(() => { rafRef.current = 0; applyRot(pendingRot.current); });
   }
   function fanUp() { dragSt.current.down = false; }
 
@@ -177,6 +181,9 @@ function Tarot() {
   }
 
   const cats = TAROT_CATS;
+  // Chỉ số bước cho thanh tiến trình: chọn trải bài (1) · rút bài (2) · kết quả (3)
+  const stepNo = step === 'topics' || step === 'intro' ? 1 : step === 'pick' ? 2 : 3;
+  const STEP_LABELS = ['Chọn trải bài', 'Rút bài', 'Kết quả'];
 
   return (
     <div className="space-y-4">
@@ -186,6 +193,23 @@ function Tarot() {
           <ChevronLeft size={16} /> {step === 'intro' ? 'Chọn trải bài khác' : 'Trải bài lại từ đầu'}
         </button>
       )}
+
+      {/* Thanh tiến trình 3 bước */}
+      <div className="flex items-center justify-center gap-1.5">
+        {STEP_LABELS.map((label, i) => {
+          const n = i + 1;
+          const done = stepNo > n, active = stepNo === n;
+          return (
+            <div key={label} className="flex items-center gap-1.5">
+              <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition ${active ? 'bg-brand-600 text-white' : done ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'bg-ink-100 text-ink-400 dark:bg-ink-800'}`}>
+                <span className={`grid h-4 w-4 place-items-center rounded-full text-[10px] ${active || done ? 'bg-white/25' : 'bg-ink-300/60 dark:bg-ink-600'}`}>{n}</span>
+                <span className="hidden sm:inline">{label}</span>
+              </div>
+              {n < 3 && <span className={`h-px w-4 ${done ? 'bg-brand-400' : 'bg-ink-200 dark:bg-ink-700'}`} />}
+            </div>
+          );
+        })}
+      </div>
 
       {/* ───── BƯỚC 1: chọn trải bài theo tab chủ đề ───── */}
       {step === 'topics' && (
@@ -261,14 +285,15 @@ function Tarot() {
           <div ref={slotRef} className="flex justify-center gap-2">
             {Array.from({ length: topic.n }).map((_, idx) => {
               const filled = idx < picked.length;
-              const card = flipped && r ? r.cards[idx] : null;
+              const card = r ? r.cards[idx] : null;
+              if (!filled) return <div key={idx} className="w-[19%] max-w-[84px]"><div className="aspect-[2/3] w-full rounded-lg border-2 border-dashed border-ink-300 dark:border-ink-700" /></div>;
               return (
-                <div key={idx} className="w-[19%] max-w-[84px]">
-                  {card
-                    ? <CardFace card={card} className="animate-[flip-in_.5s_ease]" />
-                    : filled
-                      ? <CardBack />
-                      : <div className="aspect-[2/3] w-full rounded-lg border-2 border-dashed border-ink-300 dark:border-ink-700" />}
+                <div key={idx} className={`flip3d w-[19%] max-w-[84px] ${flipped ? 'is-flipped' : ''}`}>
+                  {/* lật lần lượt từng lá: trễ theo thứ tự */}
+                  <div className="flip3d-inner aspect-[2/3]" style={{ transitionDelay: `${idx * 180}ms` }}>
+                    <div className="flip3d-face"><CardBack /></div>
+                    <div className="flip3d-face flip3d-back">{card && <CardFace card={card} />}</div>
+                  </div>
                 </div>
               );
             })}
@@ -289,7 +314,7 @@ function Tarot() {
               <div onPointerDown={fanDown} onPointerMove={fanMove} onPointerUp={fanUp} onPointerLeave={fanUp} onPointerCancel={fanUp}
                 className="relative mx-auto h-60 w-full max-w-lg cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing">
                 {/* tâm vòng nằm dưới khung; xoay cả div này qua ref nên không re-render */}
-                <div ref={wheelRef} className="absolute left-1/2 will-change-transform" style={{ top: WHEEL_CY, transformOrigin: '0 0' }}>
+                <div ref={wheelRef} className="absolute left-1/2 will-change-transform" style={{ top: WHEEL_CY, transformOrigin: '0 0', transform: 'translateZ(0)' }}>
                   {Array.from({ length: FAN }).map((_, i) => {
                     const mid = (FAN - 1) / 2;
                     const a = (i - mid) * WHEEL_STEP;          // góc cố định của lá trên vòng
@@ -360,6 +385,27 @@ function TarotResult({ r, topic, question, onAgain }: { r: any; topic: Topic; qu
       : 'Năng lượng pha trộn giữa thuận và nghịch — cần cân nhắc kỹ trước mỗi quyết định.');
   const advice = cards.map((c) => c.advice).filter(Boolean).join(' ');
 
+  // AI luận giải tổng quan + lời khuyên (chuyên nghiệp); lỗi thì dùng bản mặc định
+  const [ai, setAi] = useState<{ overview: string; advice: string } | null>(null);
+  const [aiLoading, setAiLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    setAiLoading(true);
+    api.post<{ overview: string; advice: string }>('/fortune/tarot/ai', {
+      question, topic: topic.title,
+      cards: cards.map((c, i) => ({
+        position: positions[i], nameVi: c.nameVi, name: c.name, reversedOrientation: c.reversedOrientation,
+        meaning: c.meaning, element: c.element, zodiac: c.zodiac, astro: c.astro, desc: c.desc,
+      })),
+    }).then((res) => { if (alive) setAi(res); }).catch(() => { if (alive) setAi(null); })
+      .finally(() => { if (alive) setAiLoading(false); });
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const showOverview = ai?.overview || overview;
+  const showAdvice = ai?.advice || advice;
+
   return (
     <div className="space-y-4">
       <div className="text-center">
@@ -398,16 +444,23 @@ function TarotResult({ r, topic, question, onAgain }: { r: any; topic: Topic; qu
         );
       })}
 
-      {/* Tổng quan chung */}
+      {/* Tổng quan chung + Lời khuyên (AI luận giải) */}
       <div className="card space-y-3 p-4">
         <div>
-          <p className="font-bold">🌌 Tổng quan chung</p>
-          <p className="mt-1 text-sm text-ink-700 dark:text-ink-200">{overview}</p>
+          <p className="flex items-center gap-1.5 font-bold">🌌 Tổng quan chung
+            {aiLoading ? <span className="inline-flex items-center gap-1 text-xs font-normal text-brand-500"><Loader2 size={12} className="animate-spin" /> AI đang luận giải…</span>
+              : ai?.overview && <span className="rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">✨ AI</span>}
+          </p>
+          {aiLoading
+            ? <div className="mt-1.5 space-y-1.5"><div className="h-3 w-full animate-pulse rounded bg-ink-100 dark:bg-ink-800" /><div className="h-3 w-5/6 animate-pulse rounded bg-ink-100 dark:bg-ink-800" /><div className="h-3 w-4/6 animate-pulse rounded bg-ink-100 dark:bg-ink-800" /></div>
+            : <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-ink-700 dark:text-ink-200">{showOverview}</p>}
         </div>
-        {advice && (
+        {(showAdvice || aiLoading) && (
           <div>
             <p className="font-bold">🧭 Lời khuyên</p>
-            <p className="mt-1 text-sm text-ink-700 dark:text-ink-200">{advice}</p>
+            {aiLoading
+              ? <div className="mt-1.5 space-y-1.5"><div className="h-3 w-full animate-pulse rounded bg-ink-100 dark:bg-ink-800" /><div className="h-3 w-3/5 animate-pulse rounded bg-ink-100 dark:bg-ink-800" /></div>
+              : <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-ink-700 dark:text-ink-200">{showAdvice}</p>}
           </div>
         )}
       </div>

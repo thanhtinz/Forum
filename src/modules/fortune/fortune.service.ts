@@ -1,10 +1,13 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AiProviderService } from '../ai-companion/ai-provider.service';
 import { computeBazi, BaziInput } from './engines/bazi.engine';
 import { drawTarot } from './engines/tarot.engine';
 import { computeMeihua, MeihuaInput } from './engines/meihua.engine';
 import { ZODIACS, ZodiacSign, signFromDate, dailyHoroscope } from './engines/zodiac.engine';
+
+interface AiTarotCard { position?: string; nameVi: string; name: string; reversedOrientation: boolean; meaning?: string[]; element?: string; zodiac?: string; astro?: string; desc?: string }
 
 const CONFIG_KEY = 'fortune';
 
@@ -22,7 +25,52 @@ const DEFAULT_CONFIG: FortuneConfig = {
 
 @Injectable()
 export class FortuneService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ai: AiProviderService,
+  ) {}
+
+  // ── AI luận giải Tarot: tổng quan chung + lời khuyên (chuyên nghiệp) ──
+  async aiTarotReading(input: { question?: string; topic?: string; cards: AiTarotCard[] }) {
+    if (!input?.cards?.length) throw new BadRequestException('Thiếu dữ liệu lá bài');
+    const persona = await this.prisma.aiPersona.findFirst({ where: { isDefault: true } });
+    const provider = persona?.provider ?? 'GEMINI';
+    const modelId = persona?.modelId ?? 'gemini-2.0-flash';
+
+    const cardsText = input.cards.map((c, i) =>
+      `${i + 1}. ${c.position ? `[${c.position}] ` : ''}${c.nameVi} (${c.name}) — ${c.reversedOrientation ? 'NGƯỢC' : 'XUÔI'}`
+      + `${c.element ? ` · Nguyên tố ${c.element}` : ''}${c.zodiac ? ` · Cung ${c.zodiac}` : ''}`
+      + `${c.meaning?.length ? ` · Từ khóa: ${c.meaning.join(', ')}` : ''}`,
+    ).join('\n');
+
+    const system = 'Bạn là một reader Tarot chuyên nghiệp, ấm áp và sâu sắc, luận giải bằng tiếng Việt. '
+      + 'Dựa trên các lá bài đã rút (đã cố định, KHÔNG bịa thêm lá khác), hãy đưa ra luận giải mạch lạc, có chiều sâu nhưng dễ hiểu, '
+      + 'kết nối các lá với nhau và với câu hỏi. Tránh sáo rỗng, tránh mê tín cực đoan, giữ giọng tích cực và mang tính định hướng. '
+      + 'CHỈ trả về JSON đúng định dạng: {"overview":"...","advice":"..."} '
+      + '— "overview" là đoạn tổng quan chung (3-5 câu) liên kết các lá, "advice" là lời khuyên hành động cụ thể (2-4 câu). Không thêm chữ nào ngoài JSON.';
+    const user = `Câu hỏi/chủ đề: ${input.question || input.topic || 'Xem tổng quan'}\n\nCác lá bài:\n${cardsText}`;
+
+    let raw = '';
+    try {
+      raw = await this.ai.complete(provider, modelId, [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ]);
+    } catch (e: any) {
+      throw new BadRequestException('AI chưa sẵn sàng: ' + (e?.message || 'lỗi'));
+    }
+    const start = raw.indexOf('{'), end = raw.lastIndexOf('}');
+    if (start !== -1 && end > start) {
+      try {
+        const j = JSON.parse(raw.slice(start, end + 1));
+        const overview = String(j.overview || '').trim();
+        const advice = String(j.advice || '').trim();
+        if (overview || advice) return { overview, advice };
+      } catch { /* rơi xuống fallback */ }
+    }
+    // Không parse được JSON → trả nguyên văn vào overview
+    return { overview: raw.trim(), advice: '' };
+  }
 
   // ── Config (lưu trong SiteConfig) ──
   async getConfig(): Promise<FortuneConfig> {

@@ -16,6 +16,7 @@ export default function AvatarSettings() {
   const [avatar, setAvatar] = useState('');
   const [frameUrl, setFrameUrl] = useState<string | null>(null);
   const [packs, setPacks] = useState<Pack[]>([]);
+  const [libTab, setLibTab] = useState(0);
   const [frames, setFrames] = useState<OwnedFrame[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -94,34 +95,43 @@ export default function AvatarSettings() {
         </button>
       </div>
 
-      {/* Thư viện avatar có sẵn */}
-      {hasLibrary && (
-        <div className="card space-y-4 p-5">
-          <div>
-            <h2 className="font-semibold">Thư viện avatar</h2>
-            <p className="text-sm text-ink-500">Bấm một ảnh để dùng làm ảnh đại diện ngay.</p>
-          </div>
-          {packs.filter((p) => p.avatars.length > 0).map((p) => (
-            <div key={p.id} className="space-y-2">
-              <p className="text-sm font-medium">{p.name}</p>
-              <div className="flex flex-wrap gap-2.5">
-                {p.avatars.map((a) => {
-                  const active = avatar === a.imageUrl;
-                  return (
-                    <button key={a.id} onClick={() => save(a.imageUrl)} disabled={busy}
-                      title={a.name}
-                      className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition disabled:opacity-60 ${active ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={a.imageUrl} alt={a.name} className="h-full w-full object-cover" />
-                      {active && <span className="absolute inset-0 grid place-items-center bg-black/30 text-white"><Check size={20} /></span>}
-                    </button>
-                  );
-                })}
-              </div>
+      {/* Thư viện avatar có sẵn — mỗi pack một tab */}
+      {hasLibrary && (() => {
+        const libPacks = packs.filter((p) => p.avatars.length > 0);
+        const tab = Math.min(libTab, libPacks.length - 1);
+        const cur = libPacks[tab];
+        return (
+          <div className="card space-y-4 p-5">
+            <div>
+              <h2 className="font-semibold">Thư viện avatar</h2>
+              <p className="text-sm text-ink-500">Chọn bộ và bấm một ảnh để dùng làm ảnh đại diện ngay.</p>
             </div>
-          ))}
-        </div>
-      )}
+            {/* Tabs theo từng pack */}
+            <div className="flex flex-wrap gap-2 border-b border-ink-200/70 pb-2 dark:border-ink-800">
+              {libPacks.map((p, i) => (
+                <button key={p.id} onClick={() => setLibTab(i)}
+                  className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${tab === i ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300'}`}>
+                  {p.name} <span className="opacity-70">({p.avatars.length})</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2.5">
+              {cur?.avatars.map((a) => {
+                const active = avatar === a.imageUrl;
+                return (
+                  <button key={a.id} onClick={() => save(a.imageUrl)} disabled={busy}
+                    title={a.name}
+                    className={`relative h-16 w-16 overflow-hidden rounded-full border-2 transition disabled:opacity-60 ${active ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={a.imageUrl} alt={a.name} className="h-full w-full object-cover" />
+                    {active && <span className="absolute inset-0 grid place-items-center bg-black/30 text-white"><Check size={20} /></span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Kho khung avatar — bật/tắt khung đã mua */}
       <div className="card space-y-3 p-5">

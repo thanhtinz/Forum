@@ -99,10 +99,10 @@ function CardFace({ card, className = '' }: { card: any; className?: string }) {
 }
 
 type Step = 'topics' | 'intro' | 'pick' | 'result';
-const FAN = 24;            // số lá úp xếp trên vòng cung
-const WHEEL_R = 520;       // bán kính vòng cung (px)
-const WHEEL_CY = WHEEL_R + 72; // tâm vòng nằm dưới khung
-const WHEEL_STEP = 9;      // góc giữa 2 lá (độ)
+const FAN = 18;            // số lá úp xếp trên vòng cung (ít lá → lớp GPU nhẹ)
+const WHEEL_R = 300;       // bán kính vòng cung (px) — nhỏ để lớp xoay gọn, mượt trên mobile
+const WHEEL_CY = WHEEL_R + 56; // tâm vòng nằm dưới khung
+const WHEEL_STEP = 11;     // góc giữa 2 lá (độ)
 const WHEEL_LIMIT = ((FAN - 1) / 2) * WHEEL_STEP; // giới hạn xoay để mọi lá tới được đỉnh
 
 function Tarot() {
@@ -299,7 +299,8 @@ function Tarot() {
               {/* Bộ bài úp xếp trên vòng cung — kéo để xoay cả vòng, chạm để chọn */}
               <p className="text-center text-xs text-ink-400">Kéo để xoay vòng bài · chạm để chọn</p>
               <div onPointerDown={fanDown} onPointerMove={fanMove} onPointerUp={fanUp} onPointerLeave={fanUp} onPointerCancel={fanUp}
-                className="relative mx-auto h-60 w-full max-w-lg cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing">
+                className="relative mx-auto h-56 w-full max-w-lg cursor-grab touch-none select-none overflow-hidden active:cursor-grabbing"
+                style={{ contain: 'paint' }}>
                 {/* tâm vòng nằm dưới khung; xoay cả div này qua ref nên không re-render */}
                 <div ref={wheelRef} className="absolute left-1/2 will-change-transform" style={{ top: WHEEL_CY, transformOrigin: '0 0', transform: 'translateZ(0)' }}>
                   {Array.from({ length: FAN }).map((_, i) => {
@@ -312,7 +313,7 @@ function Tarot() {
                     return (
                       <button key={i} onClick={() => pickFan(i)} disabled={isPicked || picked.length >= topic.n}
                         aria-label={`Lá ${i + 1}`}
-                        className="absolute left-0 top-0 w-14 transition-opacity sm:w-[68px]"
+                        className="absolute left-0 top-0 w-14 sm:w-[68px]"
                         style={{
                           transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(${a}deg)`,
                           zIndex: Math.round(100 - Math.abs(i - mid)),

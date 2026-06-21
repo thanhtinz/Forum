@@ -5,7 +5,7 @@ import { ForumChrome } from '@/components/ForumChrome';
 import { PwaRegister } from '@/components/PwaRegister';
 
 const SITE = 'Forum AI Platform';
-const DESC = 'Diễn đàn cộng đồng tích hợp game, chợ số, AI Live2D — phong cách XenForo/Flarum.';
+const DESC = 'Diễn đàn cộng đồng tích hợp game, chợ số — phong cách XenForo/Flarum.';
 
 export const metadata: Metadata = {
   title: { default: `${SITE} — Diễn đàn cộng đồng`, template: `%s · ${SITE}` },

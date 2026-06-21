@@ -271,25 +271,6 @@ const userSuggestion: Omit<SuggestionOptions, 'editor'> = {
   async items({ query }: { query: string }) {
     const q = (query || '').trim();
     const results: SuggestItem[] = [];
-    // Nhân vật AI (global personas) — đứng đầu
-    try {
-      const personas = await api.get<Array<{ id: string; name: string; characterId?: string; live2dModel?: string }>>(
-        '/ai/personas',
-      );
-      const ql = q.toLowerCase();
-      personas
-        .filter((p) => !q || p.name?.toLowerCase().includes(ql))
-        .slice(0, 3)
-        .forEach((p) => {
-          results.push({
-            id: p.id,
-            label: p.name,
-            href: '/ai',
-            badge: 'AI',
-            secondary: 'Nhân vật AI',
-          });
-        });
-    } catch { /* bỏ qua nếu lỗi */ }
     // Thành viên
     try {
       const res = await api.get<{

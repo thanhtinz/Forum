@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X,
+  ImagePlus, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -27,7 +27,6 @@ const NAV = [
   { href: '/chat', label: 'Chat', icon: MessengerIcon },
   { href: '/cong-game', label: 'Giải trí', icon: Gamepad2 },
   { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
-  { href: '/ai', label: 'AI Companion', icon: Sparkles },
   { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },
 ];
 

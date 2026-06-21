@@ -158,8 +158,8 @@ function SoloPlay() {
           <div className="mx-auto w-fit rounded-2xl border-4 border-amber-500 bg-gradient-to-b from-red-700 to-red-900 p-3 shadow-lg">
             <div className="mb-2 text-center text-lg font-extrabold tracking-widest text-amber-300">🎰 777</div>
             <div className="rounded-lg bg-ink-950/70 p-2">
-              {/* bọc riêng để SVG đè KHÍT lên lưới (không lệ thuộc padding) */}
-              <div className="relative">
+              {/* bọc riêng + co khít đúng kích thước lưới để SVG đè CHÍNH XÁC (không bị giãn theo legend) */}
+              <div className="relative mx-auto w-fit">
                 <div className="grid grid-cols-3 gap-1">
                   {[0, 1, 2].flatMap((r) => [0, 1, 2].map((c) => {
                     const SYMS = ['seven', 'bar', 'bell', 'cherry', 'lemon', 'coin'];

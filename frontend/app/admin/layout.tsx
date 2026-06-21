@@ -33,7 +33,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/fortune', label: 'Bói toán & AI', icon: Sparkles },
       { href: '/admin/checkin', label: 'Điểm danh', icon: CalendarCheck },
       { href: '/admin/spin', label: 'Vòng quay', icon: Disc3 },
-      { href: '/admin/quiz', label: 'Đố vui & Dự đoán', icon: HelpCircle },
+      { href: '/admin/quiz', label: 'Đố vui', icon: HelpCircle },
       { href: '/admin/stickers', label: 'Sticker chat', icon: Sticker },
     ],
   },

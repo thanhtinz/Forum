@@ -44,6 +44,7 @@ import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { AvatarFrameModule } from './modules/avatar-frame/avatar-frame.module';
+import { MarketModule } from './modules/market/market.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { AvatarFrameModule } from './modules/avatar-frame/avatar-frame.module';
     NotificationsModule,
     GemModule,
     AvatarFrameModule,
+    MarketModule,
     PaymentsModule,
     AiCompanionModule,
     ModerationModule,

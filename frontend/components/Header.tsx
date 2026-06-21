@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  ImagePlus, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X,
+  ImagePlus, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X, LineChart,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -32,6 +32,7 @@ const NAV = [
 
 // Nhóm tiện ích gom vào dropdown
 const UTILS = [
+  { href: '/market', label: 'Live Market', icon: LineChart },
   { href: '/tools', label: 'Up ảnh', icon: ImagePlus },
   { href: '/netcheck', label: 'Công cụ mạng', icon: Globe },
   { href: '/converter', label: 'Đổi đơn vị', icon: Ruler },

@@ -1,8 +1,18 @@
 'use client';
 
+import Link from 'next/link';
 import { FileText, Reply, Music } from 'lucide-react';
 import { ChatMsg, musicEmbed } from '@/lib/chat';
 import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
+
+// Tách @username thành liên kết tới trang cá nhân
+function renderWithMentions(text: string) {
+  return text.split(/(@\w{1,30})/g).map((p, i) =>
+    /^@\w{1,30}$/.test(p)
+      ? <Link key={i} href={`/profile?u=${encodeURIComponent(p.slice(1))}`} className="font-medium text-brand-600 hover:underline">{p}</Link>
+      : <span key={i}>{p}</span>,
+  );
+}
 
 export function MessageBody({ m }: { m: ChatMsg }) {
   switch (m.type) {
@@ -32,7 +42,7 @@ export function MessageBody({ m }: { m: ChatMsg }) {
       return <a href={m.content} target="_blank" rel="noreferrer" className="flex items-center gap-1 underline"><Music size={15} /> {m.content}</a>;
     }
     default:
-      return <div className="whitespace-pre-wrap break-words">{m.content}</div>;
+      return <div className="whitespace-pre-wrap break-words">{renderWithMentions(m.content)}</div>;
   }
 }
 

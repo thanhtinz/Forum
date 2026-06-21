@@ -41,13 +41,12 @@ const TAROT_SPREADS: Record<number, { name: string; desc: string; positions: str
   3: { name: 'Ba lá', desc: 'Dòng chảy thời gian của vấn đề.', positions: ['Quá khứ', 'Hiện tại', 'Tương lai'] },
 };
 
-// Mặt sau lá bài (không cần ảnh) — dùng cho hiệu ứng xào & chọn bài
+// Mặt sau lá bài (ảnh thật của bộ bài) — dùng cho hiệu ứng xào & chọn bài
 function CardBack({ className = '', picked = false }: { className?: string; picked?: boolean }) {
   return (
-    <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-lg border shadow-md ${picked ? 'border-amber-400 ring-2 ring-amber-300' : 'border-violet-300/40'} ${className}`}
-      style={{ background: 'radial-gradient(circle at 30% 20%, #7c3aed 0%, #4c1d95 55%, #2e1065 100%)' }}>
-      <div className="absolute inset-1 rounded-md border border-violet-300/40" />
-      <div className="absolute inset-0 grid place-items-center text-2xl text-violet-100/80">✦</div>
+    <div className={`relative aspect-[2/3] w-full overflow-hidden rounded-lg border shadow-md transition ${picked ? 'border-amber-400 ring-2 ring-amber-300' : 'border-violet-300/30'} ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/game-assets/tarot/card-back.png" alt="" draggable={false} className="h-full w-full select-none object-cover" />
     </div>
   );
 }

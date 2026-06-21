@@ -7,6 +7,7 @@ export interface Draggable {
   onPointerDown: (e: ReactPointerEvent) => void;
   dragging: boolean;
   movedRef: React.MutableRefObject<boolean>;  // true nếu vừa kéo (để chặn onClick mở panel)
+  panelStyle: (w: number, h: number) => CSSProperties; // vị trí panel mở ra NGAY tại chỗ nút
 }
 
 // Cho phép nút nổi kéo thả tự do; lưu vị trí vào localStorage theo `key`.
@@ -74,5 +75,25 @@ export function useDraggable(key: string, def: { right: number; bottom: number }
     ? { position: 'fixed', left: pos.x, top: pos.y, right: 'auto', bottom: 'auto', touchAction: 'none' }
     : { position: 'fixed', right: def.right, bottom: def.bottom, touchAction: 'none' };
 
-  return { style, onPointerDown, dragging, movedRef };
+  // Panel mở ra ngay tại vị trí nút (neo theo góc nút, bung lên/sang trái), kẹp trong màn hình.
+  function panelStyle(w: number, h: number): CSSProperties {
+    const BTN = 44;
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 768;
+    // toạ độ góc trên-trái của nút
+    const bx = pos ? pos.x : vw - def.right - BTN;
+    const by = pos ? pos.y : vh - def.bottom - BTN;
+    const pw = Math.min(w, vw - 16);
+    const ph = Math.min(h, vh - 16);
+    // mặc định: căn mép phải panel ~ mép phải nút, panel nằm phía trên nút
+    let left = bx + BTN - pw;
+    let top = by - ph;
+    // nếu phía trên không đủ chỗ → mở xuống dưới nút
+    if (top < 8) top = Math.min(by + BTN, vh - ph - 8);
+    left = Math.max(8, Math.min(left, vw - pw - 8));
+    top = Math.max(8, Math.min(top, vh - ph - 8));
+    return { position: 'fixed', left, top, right: 'auto', bottom: 'auto' };
+  }
+
+  return { style, onPointerDown, dragging, movedRef, panelStyle };
 }

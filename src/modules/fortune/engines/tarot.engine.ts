@@ -1,4 +1,5 @@
-// Engine Tarot — 22 lá Ẩn Chính (Major Arcana). Nghĩa + mô tả + lời khuyên tiếng Việt.
+// Engine Tarot — bộ bài đầy đủ 78 lá: 22 Ẩn Chính (Major) + 56 Ẩn Phụ (Minor).
+// Nghĩa + mô tả + lời khuyên tiếng Việt.
 export interface TarotCard {
   number: number;
   name: string;
@@ -8,6 +9,9 @@ export interface TarotCard {
   desc: string;        // ý nghĩa tổng quát của lá bài
   adviceUp: string;    // lời khuyên khi xuôi
   adviceRev: string;   // lời khuyên khi ngược
+  arcana?: 'major' | 'minor';
+  suitKey?: 'wands' | 'cups' | 'swords' | 'pentacles';
+  suitVi?: string;
 }
 
 export const MAJOR_ARCANA: TarotCard[] = [
@@ -35,6 +39,52 @@ export const MAJOR_ARCANA: TarotCard[] = [
   { number: 21, name: 'The World', nameVi: 'Thế Giới', upright: ['hoàn thành', 'viên mãn', 'thành tựu'], reversed: ['dang dở', 'trì trệ', 'thiếu kết thúc'], desc: 'Một hành trình hoàn tất trọn vẹn và viên mãn.', adviceUp: 'Ăn mừng thành tựu — bạn đã đi đến đích của một chu kỳ.', adviceRev: 'Còn việc dang dở cần hoàn tất trước khi sang chương mới.' },
 ];
 
+// ── 56 lá Ẩn Phụ (Minor Arcana): 4 chất × 14 lá ──
+const SUITS = [
+  { key: 'wands' as const, vi: 'Gậy', en: 'Wands', theme: 'sự nghiệp, đam mê và hành động', up: ['nhiệt huyết', 'sáng tạo'], rev: ['mất động lực', 'nóng vội'] },
+  { key: 'cups' as const, vi: 'Cốc', en: 'Cups', theme: 'tình cảm và các mối quan hệ', up: ['cảm xúc', 'yêu thương'], rev: ['tổn thương', 'khép lòng'] },
+  { key: 'swords' as const, vi: 'Kiếm', en: 'Swords', theme: 'lý trí, sự thật và quyết định', up: ['rõ ràng', 'quyết đoán'], rev: ['mâu thuẫn', 'lo âu'] },
+  { key: 'pentacles' as const, vi: 'Tiền', en: 'Pentacles', theme: 'tiền bạc, công việc và vật chất', up: ['ổn định', 'thực tế'], rev: ['thiếu hụt', 'bất an'] },
+];
+
+const RANKS = [
+  { vi: 'Át', en: 'Ace', up: ['khởi đầu mới', 'cơ hội'], rev: ['lỡ cơ hội', 'khởi đầu chậm'], desc: 'Hạt giống mới đầy tiềm năng', adv: 'Nắm bắt cơ hội mới về' },
+  { vi: 'Hai', en: 'Two', up: ['lựa chọn', 'cân bằng'], rev: ['phân vân', 'mất cân bằng'], desc: 'Giai đoạn cân nhắc và lựa chọn', adv: 'Cân nhắc kỹ trước khi quyết định về' },
+  { vi: 'Ba', en: 'Three', up: ['phát triển', 'hợp tác'], rev: ['trì trệ', 'thiếu phối hợp'], desc: 'Sự phát triển và mở rộng bước đầu', adv: 'Hợp tác và mở rộng trong' },
+  { vi: 'Bốn', en: 'Four', up: ['ổn định', 'nền tảng'], rev: ['trì trệ', 'bảo thủ'], desc: 'Sự ổn định và củng cố', adv: 'Củng cố nền tảng cho' },
+  { vi: 'Năm', en: 'Five', up: ['thử thách', 'thay đổi'], rev: ['hồi phục', 'vượt khó'], desc: 'Khó khăn hoặc xung đột tạm thời', adv: 'Bình tĩnh vượt qua thử thách trong' },
+  { vi: 'Sáu', en: 'Six', up: ['hồi phục', 'hài hòa'], rev: ['trì hoãn', 'lệch nhịp'], desc: 'Sự phục hồi và tiến triển tích cực', adv: 'Đón nhận sự hài hòa đang trở lại với' },
+  { vi: 'Bảy', en: 'Seven', up: ['kiên trì', 'đánh giá'], rev: ['hoài nghi', 'bỏ cuộc'], desc: 'Thời điểm đánh giá lại và kiên trì', adv: 'Kiên nhẫn và xem lại hướng đi trong' },
+  { vi: 'Tám', en: 'Eight', up: ['tiến triển', 'nỗ lực'], rev: ['chậm trễ', 'mất tập trung'], desc: 'Sự chuyển động và tiến bộ nhanh', adv: 'Tập trung nỗ lực để tiến nhanh trong' },
+  { vi: 'Chín', en: 'Nine', up: ['gần thành công', 'sung túc'], rev: ['lo lắng', 'chưa trọn vẹn'], desc: 'Gần đạt được mục tiêu', adv: 'Giữ vững — thành quả đang đến gần về' },
+  { vi: 'Mười', en: 'Ten', up: ['hoàn tất', 'viên mãn'], rev: ['gánh nặng', 'dang dở'], desc: 'Đỉnh điểm và hoàn thành một chu kỳ', adv: 'Tận hưởng thành quả trọn vẹn của' },
+  { vi: 'Thị Đồng', en: 'Page', up: ['học hỏi', 'tin tức mới'], rev: ['thiếu chín chắn', 'tin chưa rõ'], desc: 'Tinh thần học hỏi và khám phá', adv: 'Mở lòng học hỏi điều mới về' },
+  { vi: 'Hiệp Sĩ', en: 'Knight', up: ['hành động', 'theo đuổi'], rev: ['hấp tấp', 'bốc đồng'], desc: 'Năng lượng hành động mạnh mẽ', adv: 'Chủ động theo đuổi mục tiêu trong' },
+  { vi: 'Hoàng Hậu', en: 'Queen', up: ['thấu hiểu', 'làm chủ'], rev: ['quá cảm tính', 'kiểm soát'], desc: 'Sự trưởng thành và làm chủ', adv: 'Dùng sự thấu hiểu để làm chủ' },
+  { vi: 'Vua', en: 'King', up: ['lãnh đạo', 'bản lĩnh'], rev: ['độc đoán', 'cứng nhắc'], desc: 'Bậc thầy và người dẫn dắt', adv: 'Lãnh đạo bằng bản lĩnh và kinh nghiệm trong' },
+];
+
+export const MINOR_ARCANA: TarotCard[] = SUITS.flatMap((s, si) =>
+  RANKS.map((r, ri) => ({
+    number: 100 + si * 14 + ri, // số nội bộ (không có ảnh riêng → hiển thị dạng thẻ màu)
+    name: `${r.en} of ${s.en}`,
+    nameVi: `${r.vi} ${s.vi}`,
+    upright: [...r.up, ...s.up],
+    reversed: [...r.rev, ...s.rev],
+    desc: `${r.desc} trong lĩnh vực ${s.theme}.`,
+    adviceUp: `${r.adv} ${s.theme}.`,
+    adviceRev: `Hãy chú ý: ${s.rev.join(', ')} có thể ảnh hưởng tới ${s.theme}.`,
+    arcana: 'minor' as const,
+    suitKey: s.key,
+    suitVi: s.vi,
+  })),
+);
+
+export const FULL_DECK: TarotCard[] = [
+  ...MAJOR_ARCANA.map((c) => ({ ...c, arcana: 'major' as const })),
+  ...MINOR_ARCANA,
+];
+
 export interface DrawnCard {
   number: number;
   name: string;
@@ -45,13 +95,16 @@ export interface DrawnCard {
   reversed: string[];
   desc: string;
   advice: string;         // lời khuyên theo hướng đang hiện
-  image: string;
+  image: string;          // chỉ Major Arcana có ảnh; Minor để rỗng (frontend vẽ thẻ màu)
+  arcana: 'major' | 'minor';
+  suitKey?: string;
+  suitVi?: string;
 }
 
-// Bốc `n` lá không trùng
+// Bốc `n` lá không trùng từ nguyên bộ 78 lá
 export function drawTarot(n = 3): DrawnCard[] {
   const count = Math.min(Math.max(n, 1), 10);
-  const deck = [...MAJOR_ARCANA];
+  const deck = [...FULL_DECK];
   const drawn: DrawnCard[] = [];
   for (let i = 0; i < count; i++) {
     const idx = Math.floor(Math.random() * deck.length);
@@ -67,7 +120,10 @@ export function drawTarot(n = 3): DrawnCard[] {
       reversed: card.reversed,
       desc: card.desc,
       advice: reversed ? card.adviceRev : card.adviceUp,
-      image: `/game-assets/tarot/${card.number}.jpg`,
+      image: card.arcana === 'major' ? `/game-assets/tarot/${card.number}.jpg` : '',
+      arcana: card.arcana ?? 'major',
+      suitKey: card.suitKey,
+      suitVi: card.suitVi,
     });
   }
   return drawn;

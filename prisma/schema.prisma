@@ -229,6 +229,8 @@ model User {
   passwordHash    String?
   displayName     String?    @db.VarChar(100)
   avatar          String?
+  avatarFrameId   String? // khung avatar đang dùng (id sản phẩm) — null = không bật
+  avatarFrameUrl  String? // ảnh khung đang dùng (denormalized để hiển thị nhanh)
   bio             String?    @db.Text
   role            UserRole   @default(MEMBER)
   status          UserStatus @default(ACTIVE)
@@ -2394,6 +2396,39 @@ model AvatarImage {
   pack AvatarPack @relation(fields: [packId], references: [id], onDelete: Cascade)
 
   @@index([packId])
+}
+
+// ============================================================
+// KHUNG AVATAR (avatar frame) — bán bằng coin/gem, mỗi loại tiền có thời hạn riêng
+// ============================================================
+model AvatarFrameProduct {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  imageUrl    String   @db.VarChar(255) // ảnh khung PNG (giữa trong suốt)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  priceCoin   Int? // null = không bán bằng Xu
+  coinDays    Int? // thời hạn khi mua bằng Xu (null = vĩnh viễn)
+  priceGem    Int? // null = không bán bằng Gem
+  gemDays     Int? // thời hạn khi mua bằng Gem (null = vĩnh viễn)
+  createdAt   DateTime @default(now())
+
+  owners UserAvatarFrame[]
+}
+
+model UserAvatarFrame {
+  id         String    @id @default(cuid())
+  userId     String
+  frameId    String
+  expiresAt  DateTime? // null = vĩnh viễn
+  acquiredAt DateTime  @default(now())
+
+  frame AvatarFrameProduct @relation(fields: [frameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, frameId])
+  @@index([userId])
 }
 
 // User sở hữu sticker pack (nếu premium)

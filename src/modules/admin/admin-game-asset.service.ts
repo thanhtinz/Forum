@@ -157,4 +157,35 @@ export class AdminGameAssetService {
       orderBy: { sortOrder: 'asc' },
     });
   }
+
+  // ───────── Khung avatar (sản phẩm) — quản trị ─────────
+  listFrames() {
+    return this.prisma.avatarFrameProduct.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  createFrame(data: {
+    slug: string; name: string; description?: string; imageUrl: string;
+    priceCoin?: number | null; coinDays?: number | null;
+    priceGem?: number | null; gemDays?: number | null;
+    isActive?: boolean; sortOrder?: number;
+  }) {
+    if (!data.slug || !data.name || !data.imageUrl) throw new BadRequestException('Thiếu slug, tên hoặc ảnh khung');
+    if (data.priceCoin == null && data.priceGem == null) throw new BadRequestException('Phải có ít nhất 1 giá (Xu hoặc Gem)');
+    return this.prisma.avatarFrameProduct.create({
+      data: {
+        slug: data.slug, name: data.name, description: data.description, imageUrl: data.imageUrl,
+        priceCoin: data.priceCoin ?? null, coinDays: data.coinDays ?? null,
+        priceGem: data.priceGem ?? null, gemDays: data.gemDays ?? null,
+        isActive: data.isActive ?? true, sortOrder: data.sortOrder ?? 0,
+      },
+    });
+  }
+
+  updateFrame(id: string, data: any) {
+    return this.prisma.avatarFrameProduct.update({ where: { id }, data });
+  }
+
+  deleteFrame(id: string) {
+    return this.prisma.avatarFrameProduct.delete({ where: { id } });
+  }
 }

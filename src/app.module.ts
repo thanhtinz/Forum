@@ -43,6 +43,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { JobsModule } from './modules/jobs/jobs.module';
+import { AvatarFrameModule } from './modules/avatar-frame/avatar-frame.module';
 
 @Module({
   imports: [
@@ -73,6 +74,7 @@ import { JobsModule } from './modules/jobs/jobs.module';
     HiddenContentModule,
     NotificationsModule,
     GemModule,
+    AvatarFrameModule,
     PaymentsModule,
     AiCompanionModule,
     ModerationModule,

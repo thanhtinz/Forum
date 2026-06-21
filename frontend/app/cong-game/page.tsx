@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, Sprout, Fish, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3, ChevronRight } from 'lucide-react';
+import { Gamepad2, Sprout, Fish, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3, ChevronRight, Shell } from 'lucide-react';
 
 // Game trên web — mỗi game là 1 trang riêng
 const WEB_GAMES = [
@@ -14,7 +14,7 @@ const WEB_GAMES = [
 // Minigame
 const MINIGAMES = [
   { href: '/minigame/live?game=tai-xiu', label: 'Tài Xỉu (phòng chung)', color: 'from-rose-500 to-red-600', icon: Dices },
-  { href: '/minigame/live?game=bau-cua', label: 'Bầu Cua (phòng chung)', color: 'from-amber-500 to-orange-600', icon: Fish },
+  { href: '/minigame/live?game=bau-cua', label: 'Bầu Cua (phòng chung)', color: 'from-amber-500 to-orange-600', icon: Shell },
   { href: '/minigame/live?game=dua-thu', label: 'Đua Thú (phòng chung)', color: 'from-lime-500 to-green-600', icon: Rabbit },
   { href: '/minigame/solo?game=jackpot', label: 'Jackpot 777', color: 'from-purple-500 to-fuchsia-600', icon: Cherry },
   { href: '/minigame/tien-len', label: 'Tiến Lên (PvP)', color: 'from-sky-500 to-blue-600', icon: Spade },

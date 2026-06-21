@@ -45,6 +45,7 @@ import { VerificationModule } from './modules/verification/verification.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { AvatarFrameModule } from './modules/avatar-frame/avatar-frame.module';
 import { MarketModule } from './modules/market/market.module';
+import { PingModule } from './modules/ping/ping.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { MarketModule } from './modules/market/market.module';
     GemModule,
     AvatarFrameModule,
     MarketModule,
+    PingModule,
     PaymentsModule,
     AiCompanionModule,
     ModerationModule,

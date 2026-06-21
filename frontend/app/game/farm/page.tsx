@@ -136,7 +136,7 @@ export default function FarmPage() {
             <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
               <div className="h-full rounded-full bg-sky-500 transition-all" style={{ width: `${ratio * 100}%` }} />
             </div>
-            <p className="mt-1 text-sm text-ink-500">Nước: <b>{s.well.water}</b>/{s.well.max} · tưới ô đất tốn {s.well.costPlot}, tưới khế tốn {s.well.costKhe}.</p>
+            <p className="mt-1 text-sm text-ink-500">Nước: <b>{s.well.water}</b>/{s.well.max}</p>
             {!full && s.well.nextDropAt && (
               <p className="text-xs text-sky-600">⏳ +1 nước sau {formatDuration(secondsUntil(s.well.nextDropAt, now))}{s.well.fullAt ? ` · đầy giếng sau ${formatDuration(secondsUntil(s.well.fullAt, now))}` : ''}</p>
             )}

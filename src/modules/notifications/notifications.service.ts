@@ -27,7 +27,7 @@ export class NotificationsService {
     private readonly mail: MailService,
   ) {}
 
-  async notify(userId: string, payload: NotifyPayload) {
+  async notify(userId: string, payload: NotifyPayload, opts: { email?: boolean } = {}) {
     const notif = await this.prisma.notification.create({
       data: {
         userId,
@@ -48,8 +48,9 @@ export class NotificationsService {
     const base = (process.env.FRONTEND_URL || '').split(',')[0].replace(/\/$/, '');
     this.push.sendToUser(userId, { title: payload.title, body: payload.body, link: payload.link ? `${base}${payload.link}` : (base || '/') }).catch(() => {});
 
-    // Email (fire-and-forget) — chỉ loại quan trọng + user bật + SMTP bật
-    if (EMAIL_TYPES.includes(payload.type)) this.sendNotifyEmail(userId, payload).catch(() => {});
+    // Email (fire-and-forget) — chỉ loại quan trọng + user bật + SMTP bật (có thể ép bật/tắt qua opts.email)
+    const wantEmail = opts.email ?? EMAIL_TYPES.includes(payload.type);
+    if (wantEmail) this.sendNotifyEmail(userId, payload).catch(() => {});
 
     return notif;
   }

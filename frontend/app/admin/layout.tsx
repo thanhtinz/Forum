@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
-  LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Sprout, CreditCard, Settings, FileText, Ticket,
+  LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, Settings, FileText, Ticket,
   BadgeInfo, Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
   BellRing, Gavel, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square,
 } from 'lucide-react';
@@ -48,7 +48,6 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/groups', label: 'Nhóm & Quyền', icon: KeyRound },
       { href: '/admin/verification', label: 'Xác minh', icon: BadgeCheck },
       { href: '/admin/badges', label: 'Huy hiệu', icon: Award },
-      { href: '/admin/prison', label: 'Nhà tù', icon: Lock },
       { href: '/admin/invites', label: 'Mã mời', icon: Ticket },
       { href: '/admin/profile-fields', label: 'Trường hồ sơ', icon: BadgeInfo },
     ],

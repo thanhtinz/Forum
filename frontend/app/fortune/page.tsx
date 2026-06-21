@@ -181,9 +181,6 @@ function Tarot() {
   }
 
   const cats = TAROT_CATS;
-  // Chỉ số bước cho thanh tiến trình: chọn trải bài (1) · rút bài (2) · kết quả (3)
-  const stepNo = step === 'topics' || step === 'intro' ? 1 : step === 'pick' ? 2 : 3;
-  const STEP_LABELS = ['Chọn trải bài', 'Rút bài', 'Kết quả'];
 
   return (
     <div className="space-y-4">
@@ -193,23 +190,6 @@ function Tarot() {
           <ChevronLeft size={16} /> {step === 'intro' ? 'Chọn trải bài khác' : 'Trải bài lại từ đầu'}
         </button>
       )}
-
-      {/* Thanh tiến trình 3 bước */}
-      <div className="flex items-center justify-center gap-1.5">
-        {STEP_LABELS.map((label, i) => {
-          const n = i + 1;
-          const done = stepNo > n, active = stepNo === n;
-          return (
-            <div key={label} className="flex items-center gap-1.5">
-              <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition ${active ? 'bg-brand-600 text-white' : done ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'bg-ink-100 text-ink-400 dark:bg-ink-800'}`}>
-                <span className={`grid h-4 w-4 place-items-center rounded-full text-[10px] ${active || done ? 'bg-white/25' : 'bg-ink-300/60 dark:bg-ink-600'}`}>{n}</span>
-                <span className="hidden sm:inline">{label}</span>
-              </div>
-              {n < 3 && <span className={`h-px w-4 ${done ? 'bg-brand-400' : 'bg-ink-200 dark:bg-ink-700'}`} />}
-            </div>
-          );
-        })}
-      </div>
 
       {/* ───── BƯỚC 1: chọn trải bài theo tab chủ đề ───── */}
       {step === 'topics' && (

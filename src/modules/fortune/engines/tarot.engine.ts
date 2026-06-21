@@ -12,6 +12,7 @@ export interface TarotCard {
   arcana?: 'major' | 'minor';
   suitKey?: 'wands' | 'cups' | 'swords' | 'pentacles';
   suitVi?: string;
+  imageSlug?: string; // tên file ảnh cho Ẩn Phụ (vd: aceofwands)
 }
 
 export const MAJOR_ARCANA: TarotCard[] = [
@@ -48,25 +49,25 @@ const SUITS = [
 ];
 
 const RANKS = [
-  { vi: 'Át', en: 'Ace', up: ['khởi đầu mới', 'cơ hội'], rev: ['lỡ cơ hội', 'khởi đầu chậm'], desc: 'Hạt giống mới đầy tiềm năng', adv: 'Nắm bắt cơ hội mới về' },
-  { vi: 'Hai', en: 'Two', up: ['lựa chọn', 'cân bằng'], rev: ['phân vân', 'mất cân bằng'], desc: 'Giai đoạn cân nhắc và lựa chọn', adv: 'Cân nhắc kỹ trước khi quyết định về' },
-  { vi: 'Ba', en: 'Three', up: ['phát triển', 'hợp tác'], rev: ['trì trệ', 'thiếu phối hợp'], desc: 'Sự phát triển và mở rộng bước đầu', adv: 'Hợp tác và mở rộng trong' },
-  { vi: 'Bốn', en: 'Four', up: ['ổn định', 'nền tảng'], rev: ['trì trệ', 'bảo thủ'], desc: 'Sự ổn định và củng cố', adv: 'Củng cố nền tảng cho' },
-  { vi: 'Năm', en: 'Five', up: ['thử thách', 'thay đổi'], rev: ['hồi phục', 'vượt khó'], desc: 'Khó khăn hoặc xung đột tạm thời', adv: 'Bình tĩnh vượt qua thử thách trong' },
-  { vi: 'Sáu', en: 'Six', up: ['hồi phục', 'hài hòa'], rev: ['trì hoãn', 'lệch nhịp'], desc: 'Sự phục hồi và tiến triển tích cực', adv: 'Đón nhận sự hài hòa đang trở lại với' },
-  { vi: 'Bảy', en: 'Seven', up: ['kiên trì', 'đánh giá'], rev: ['hoài nghi', 'bỏ cuộc'], desc: 'Thời điểm đánh giá lại và kiên trì', adv: 'Kiên nhẫn và xem lại hướng đi trong' },
-  { vi: 'Tám', en: 'Eight', up: ['tiến triển', 'nỗ lực'], rev: ['chậm trễ', 'mất tập trung'], desc: 'Sự chuyển động và tiến bộ nhanh', adv: 'Tập trung nỗ lực để tiến nhanh trong' },
-  { vi: 'Chín', en: 'Nine', up: ['gần thành công', 'sung túc'], rev: ['lo lắng', 'chưa trọn vẹn'], desc: 'Gần đạt được mục tiêu', adv: 'Giữ vững — thành quả đang đến gần về' },
-  { vi: 'Mười', en: 'Ten', up: ['hoàn tất', 'viên mãn'], rev: ['gánh nặng', 'dang dở'], desc: 'Đỉnh điểm và hoàn thành một chu kỳ', adv: 'Tận hưởng thành quả trọn vẹn của' },
-  { vi: 'Thị Đồng', en: 'Page', up: ['học hỏi', 'tin tức mới'], rev: ['thiếu chín chắn', 'tin chưa rõ'], desc: 'Tinh thần học hỏi và khám phá', adv: 'Mở lòng học hỏi điều mới về' },
-  { vi: 'Hiệp Sĩ', en: 'Knight', up: ['hành động', 'theo đuổi'], rev: ['hấp tấp', 'bốc đồng'], desc: 'Năng lượng hành động mạnh mẽ', adv: 'Chủ động theo đuổi mục tiêu trong' },
-  { vi: 'Hoàng Hậu', en: 'Queen', up: ['thấu hiểu', 'làm chủ'], rev: ['quá cảm tính', 'kiểm soát'], desc: 'Sự trưởng thành và làm chủ', adv: 'Dùng sự thấu hiểu để làm chủ' },
-  { vi: 'Vua', en: 'King', up: ['lãnh đạo', 'bản lĩnh'], rev: ['độc đoán', 'cứng nhắc'], desc: 'Bậc thầy và người dẫn dắt', adv: 'Lãnh đạo bằng bản lĩnh và kinh nghiệm trong' },
+  { vi: 'Át', en: 'Ace', slug: 'ace', up: ['khởi đầu mới', 'cơ hội'], rev: ['lỡ cơ hội', 'khởi đầu chậm'], desc: 'Hạt giống mới đầy tiềm năng', adv: 'Nắm bắt cơ hội mới về' },
+  { vi: 'Hai', en: 'Two', slug: 'two', up: ['lựa chọn', 'cân bằng'], rev: ['phân vân', 'mất cân bằng'], desc: 'Giai đoạn cân nhắc và lựa chọn', adv: 'Cân nhắc kỹ trước khi quyết định về' },
+  { vi: 'Ba', en: 'Three', slug: 'three', up: ['phát triển', 'hợp tác'], rev: ['trì trệ', 'thiếu phối hợp'], desc: 'Sự phát triển và mở rộng bước đầu', adv: 'Hợp tác và mở rộng trong' },
+  { vi: 'Bốn', en: 'Four', slug: 'four', up: ['ổn định', 'nền tảng'], rev: ['trì trệ', 'bảo thủ'], desc: 'Sự ổn định và củng cố', adv: 'Củng cố nền tảng cho' },
+  { vi: 'Năm', en: 'Five', slug: 'five', up: ['thử thách', 'thay đổi'], rev: ['hồi phục', 'vượt khó'], desc: 'Khó khăn hoặc xung đột tạm thời', adv: 'Bình tĩnh vượt qua thử thách trong' },
+  { vi: 'Sáu', en: 'Six', slug: 'six', up: ['hồi phục', 'hài hòa'], rev: ['trì hoãn', 'lệch nhịp'], desc: 'Sự phục hồi và tiến triển tích cực', adv: 'Đón nhận sự hài hòa đang trở lại với' },
+  { vi: 'Bảy', en: 'Seven', slug: 'seven', up: ['kiên trì', 'đánh giá'], rev: ['hoài nghi', 'bỏ cuộc'], desc: 'Thời điểm đánh giá lại và kiên trì', adv: 'Kiên nhẫn và xem lại hướng đi trong' },
+  { vi: 'Tám', en: 'Eight', slug: 'eight', up: ['tiến triển', 'nỗ lực'], rev: ['chậm trễ', 'mất tập trung'], desc: 'Sự chuyển động và tiến bộ nhanh', adv: 'Tập trung nỗ lực để tiến nhanh trong' },
+  { vi: 'Chín', en: 'Nine', slug: 'nine', up: ['gần thành công', 'sung túc'], rev: ['lo lắng', 'chưa trọn vẹn'], desc: 'Gần đạt được mục tiêu', adv: 'Giữ vững — thành quả đang đến gần về' },
+  { vi: 'Mười', en: 'Ten', slug: 'ten', up: ['hoàn tất', 'viên mãn'], rev: ['gánh nặng', 'dang dở'], desc: 'Đỉnh điểm và hoàn thành một chu kỳ', adv: 'Tận hưởng thành quả trọn vẹn của' },
+  { vi: 'Thị Đồng', en: 'Page', slug: 'page', up: ['học hỏi', 'tin tức mới'], rev: ['thiếu chín chắn', 'tin chưa rõ'], desc: 'Tinh thần học hỏi và khám phá', adv: 'Mở lòng học hỏi điều mới về' },
+  { vi: 'Hiệp Sĩ', en: 'Knight', slug: 'knight', up: ['hành động', 'theo đuổi'], rev: ['hấp tấp', 'bốc đồng'], desc: 'Năng lượng hành động mạnh mẽ', adv: 'Chủ động theo đuổi mục tiêu trong' },
+  { vi: 'Hoàng Hậu', en: 'Queen', slug: 'queen', up: ['thấu hiểu', 'làm chủ'], rev: ['quá cảm tính', 'kiểm soát'], desc: 'Sự trưởng thành và làm chủ', adv: 'Dùng sự thấu hiểu để làm chủ' },
+  { vi: 'Vua', en: 'King', slug: 'king', up: ['lãnh đạo', 'bản lĩnh'], rev: ['độc đoán', 'cứng nhắc'], desc: 'Bậc thầy và người dẫn dắt', adv: 'Lãnh đạo bằng bản lĩnh và kinh nghiệm trong' },
 ];
 
 export const MINOR_ARCANA: TarotCard[] = SUITS.flatMap((s, si) =>
   RANKS.map((r, ri) => ({
-    number: 100 + si * 14 + ri, // số nội bộ (không có ảnh riêng → hiển thị dạng thẻ màu)
+    number: 100 + si * 14 + ri,
     name: `${r.en} of ${s.en}`,
     nameVi: `${r.vi} ${s.vi}`,
     upright: [...r.up, ...s.up],
@@ -77,6 +78,7 @@ export const MINOR_ARCANA: TarotCard[] = SUITS.flatMap((s, si) =>
     arcana: 'minor' as const,
     suitKey: s.key,
     suitVi: s.vi,
+    imageSlug: `${r.slug}of${s.key}`,
   })),
 );
 
@@ -120,7 +122,9 @@ export function drawTarot(n = 3): DrawnCard[] {
       reversed: card.reversed,
       desc: card.desc,
       advice: reversed ? card.adviceRev : card.adviceUp,
-      image: card.arcana === 'major' ? `/game-assets/tarot/${card.number}.jpg` : '',
+      image: card.arcana === 'minor' && card.imageSlug
+        ? `/game-assets/tarot/${card.imageSlug}.jpg`
+        : `/game-assets/tarot/${card.number}.jpg`,
       arcana: card.arcana ?? 'major',
       suitKey: card.suitKey,
       suitVi: card.suitVi,

@@ -218,7 +218,6 @@ export default function AdminBadges() {
           { key: 'verify', label: 'Tích xanh' },
           { key: 'role:ADMIN', label: 'Quản trị viên' },
           { key: 'role:MODERATOR', label: 'Điều hành viên' },
-          { key: 'role:VIP', label: 'VIP' },
           { key: 'role:MEMBER', label: 'Thành viên' },
         ].map((s) => (
           <div key={s.key} className="space-y-1">

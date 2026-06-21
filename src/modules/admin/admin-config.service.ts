@@ -58,8 +58,12 @@ export class AdminConfigService {
   // ──────────────────────────────────────────────
   // LẤY TOÀN BỘ CONFIG THEO GROUP (cho admin UI)
   // ──────────────────────────────────────────────
+  // Nhóm đã gộp vào trang riêng (không hiện trong menu Cấu hình)
+  private readonly HIDDEN_GROUPS = ['payments'];
+
   async getAllGroups() {
     const groups = await this.prisma.configGroup.findMany({
+      where: { key: { notIn: this.HIDDEN_GROUPS } },
       orderBy: { sortOrder: 'asc' },
       include: {
         settings: { orderBy: { sortOrder: 'asc' } },
@@ -321,23 +325,11 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
     ],
   },
   {
-    key: 'gem',
-    name: 'Hệ thống Gem',
-    description: 'Gem là tiền tệ nạp bằng tiền thật (mua qua SePay/PayPal). Dùng để mua nội dung ẩn, sản phẩm trên chợ… Phần thưởng hoạt động (điểm danh, đăng bài) trả bằng Xu trong game, không phải Gem.',
-    icon: 'gem',
-    sortOrder: 4,
-    settings: [
-      { key: 'gem.name', label: 'Tên đơn vị', type: 'string', value: 'Gem' },
-      { key: 'gem.icon', label: 'Icon Gem', type: 'image', value: '' },
-      { key: 'gem.minWithdraw', label: 'Gem tối thiểu để rút', type: 'number', value: 1000, validation: { min: 0 } },
-    ],
-  },
-  {
     key: 'payments',
-    name: 'Thanh toán',
-    description: 'Cấu hình cổng thanh toán',
+    name: 'Thanh toán & Rút tiền',
+    description: 'Cấu hình cổng nạp (SePay/PayPal) và ngưỡng rút — quản lý ngay trong trang Nạp tiền.',
     icon: 'credit-card',
-    sortOrder: 5,
+    sortOrder: 4,
     settings: [
       { key: 'payment.sepayEnabled', label: 'Bật SePay', type: 'boolean', value: true },
       { key: 'payment.sepayBankAccount', label: 'Số tài khoản SePay', type: 'string', value: '' },
@@ -349,6 +341,7 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
         options: [{ label: 'Sandbox', value: 'sandbox' }, { label: 'Live', value: 'live' }] },
       { key: 'payment.paypalClientId', label: 'PayPal Client ID', type: 'string', value: '', isSecret: true },
       { key: 'payment.paypalSecret', label: 'PayPal Secret', type: 'string', value: '', isSecret: true },
+      { key: 'gem.minWithdraw', label: 'Gem tối thiểu để rút', type: 'number', value: 1000, validation: { min: 0 } },
     ],
   },
   {
@@ -418,18 +411,6 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
       { key: 'gif.provider', label: 'Nhà cung cấp', type: 'select', value: 'giphy',
         options: [{ value: 'giphy', label: 'Giphy' }, { value: 'tenor', label: 'Tenor' }] },
       { key: 'gif.apiKey', label: 'API Key', description: 'Khoá API của nhà cung cấp đã chọn', type: 'string', value: '', isSecret: true },
-    ],
-  },
-  {
-    key: 'tools',
-    name: 'Công cụ',
-    description: 'Cấu hình tools collection',
-    icon: 'wrench',
-    sortOrder: 10,
-    settings: [
-      { key: 'tools.enabled', label: 'Bật trang Tools', type: 'boolean', value: true },
-      { key: 'tools.requireLogin', label: 'Yêu cầu đăng nhập', type: 'boolean', value: false },
-      { key: 'tools.proRequireVip', label: 'Tool Pro cần VIP', type: 'boolean', value: true },
     ],
   },
 ];

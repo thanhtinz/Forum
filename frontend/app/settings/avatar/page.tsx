@@ -72,7 +72,7 @@ export default function AvatarSettings() {
 
       <div className="card space-y-4 p-5">
         <div className="flex items-center gap-3">
-          <Avatar user={{ ...user, avatar, avatarFrameUrl: frameUrl }} size={88} fit />
+          <Avatar user={{ ...user, avatar, avatarFrameUrl: frameUrl }} size={72} />
           <p className="text-sm text-ink-500">Chọn từ thư viện avatar, tải ảnh lên hoặc dán URL ảnh đại diện của bạn.</p>
         </div>
 

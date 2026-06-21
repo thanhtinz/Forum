@@ -275,16 +275,10 @@ export function Header() {
   );
 }
 
-export function Avatar({ user, size = 32, fit = false }: { user: { username: string; avatar?: string | null; avatarFrameUrl?: string | null }; size?: number; fit?: boolean }) {
+export function Avatar({ user, size = 32 }: { user: { username: string; avatar?: string | null; avatarFrameUrl?: string | null }; size?: number }) {
   const inner = user.avatar
-    ? (fit
-      // fit: ảnh nằm trọn trong vòng tròn (vùng nội tiếp ~74%) → không cắt góc, vẫn tròn
-      ? <span className="grid shrink-0 place-items-center overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800" style={{ width: size, height: size }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={user.avatar} alt={user.username} draggable={false} className="object-contain" style={{ width: Math.round(size * 0.74), height: Math.round(size * 0.74) }} />
-        </span>
-      // eslint-disable-next-line @next/next/no-img-element
-      : <img src={user.avatar} alt={user.username} width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />)
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img src={user.avatar} alt={user.username} width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />
     : <span className="grid place-items-center rounded-full bg-brand-500 font-semibold text-white" style={{ width: size, height: size, fontSize: size * 0.42 }}>{user.username?.[0]?.toUpperCase() || '?'}</span>;
   if (!user.avatarFrameUrl) return inner;
   // Khung avatar — vẽ chồng lên, lớn hơn ~38% để bao quanh ảnh

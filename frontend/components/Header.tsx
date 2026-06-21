@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler,
+  ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -179,8 +179,21 @@ export function Header() {
 
       {/* Menu xổ xuống cho màn hình nhỏ */}
       {navOpen && (
-        <nav className="border-t border-white/10 bg-brand-700 px-3 pb-3 pt-1 md:hidden dark:bg-ink-900">
-          <form onSubmit={(e) => { onSearch(e); setNavOpen(false); }} className="my-2 sm:hidden">
+        <div className="fixed inset-0 z-[60] md:hidden" onClick={() => setNavOpen(false)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <nav onClick={(e) => e.stopPropagation()}
+            className="drawer-left absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto bg-brand-700 px-3 pb-4 pt-3 shadow-2xl dark:bg-ink-900">
+            <div className="mb-2 flex items-center justify-between">
+              <Link href="/" onClick={() => setNavOpen(false)} className="flex items-center gap-2 font-bold text-white">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/15 text-lg">◆</span>
+                {cfg.logo
+                  ? <img src={cfg.logo} alt={cfg.name} className="h-7 w-auto max-w-[120px] object-contain" />
+                  : <span>{cfg.name || 'ForumHub'}</span>}
+              </Link>
+              <button onClick={() => setNavOpen(false)} className="rounded-lg p-1.5 text-white/85 hover:bg-white/10"><X size={18} /></button>
+            </div>
+
+            <form onSubmit={(e) => { onSearch(e); setNavOpen(false); }} className="my-2 sm:hidden">
             <div className="relative w-full">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm..."
@@ -213,7 +226,8 @@ export function Header() {
               </div>
             )}
           </div>
-        </nav>
+          </nav>
+        </div>
       )}
     </header>
   );

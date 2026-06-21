@@ -6,7 +6,7 @@ import { useState } from 'react';
 import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Sprout, CreditCard, Settings, FileText, Ticket,
   BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, Paperclip, Mail, ShieldCheck, KeyRound,
-  BellRing, Gavel, FolderTree, Gamepad2, Sticker, ArrowLeft, LogOut, Menu, X, Image as ImageIcon, ChevronRight,
+  BellRing, Gavel, FolderTree, Gamepad2, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -55,8 +55,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
   {
     title: 'Hệ thống',
     items: [
-      { href: '/admin/imagehost', label: 'Lưu trữ ảnh', icon: ImageIcon },
-      { href: '/admin/attachment', label: 'Lưu trữ R2', icon: Paperclip },
+      { href: '/admin/attachment', label: 'Lưu trữ ảnh & tệp (R2)', icon: Paperclip },
       { href: '/admin/mail', label: 'Email / SMTP', icon: Mail },
       { href: '/admin/push', label: 'Web Push', icon: BellRing },
       { href: '/admin/security', label: 'Chống spam', icon: ShieldCheck },

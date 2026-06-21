@@ -4,19 +4,15 @@ import { useState } from 'react';
 import { Gift, X, Loader2, Check, Ticket } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from './AuthProvider';
-import { useDraggable } from '@/lib/useDraggable';
 
 interface RewardOut { type: string; label: string }
 
-export function GiftcodeDock() {
+export function GiftcodeDock({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, loading } = useAuth();
-  const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [rewards, setRewards] = useState<RewardOut[] | null>(null);
-  // mặc định nằm ngay TRÊN trình phát nhạc (music ở bottom 72)
-  const drag = useDraggable('giftcode', { right: 16, bottom: 128 });
 
   if (loading || !user) return null;
 
@@ -31,22 +27,13 @@ export function GiftcodeDock() {
     finally { setBusy(false); }
   }
 
+  if (!open) return null;
   return (
     <>
-      {!open && (
-        <button onPointerDown={drag.onPointerDown} onClick={() => { if (drag.movedRef.current) return; setOpen(true); }}
-          title="Nhập giftcode (giữ & kéo để di chuyển)"
-          className={`z-40 grid h-11 w-11 cursor-grab place-items-center rounded-full bg-gradient-to-br from-amber-500 to-pink-600 text-white shadow-lg hover:from-amber-600 hover:to-pink-700 ${drag.dragging ? 'cursor-grabbing scale-105' : ''}`}
-          style={drag.style}>
-          <Gift size={20} />
-        </button>
-      )}
-
-      {open && (
-        <div data-drag-panel style={drag.panelStyle(320, 360)} className="fixed z-40 w-[320px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
-          <div onPointerDown={drag.panelPointerDown} style={{ touchAction: 'none' }} className="flex cursor-grab items-center justify-between border-b border-ink-200 px-4 py-2.5 select-none active:cursor-grabbing dark:border-ink-800">
+      <div className="fixed bottom-4 right-4 z-40 w-[320px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+          <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
             <span className="flex items-center gap-1.5 text-sm font-bold text-pink-600"><Gift size={16} /> Nhập Giftcode</span>
-            <button onClick={() => { setOpen(false); setRewards(null); setErr(''); }} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
+            <button onClick={() => { onClose(); setRewards(null); setErr(''); }} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
           </div>
 
           <div className="space-y-3 p-4">
@@ -74,8 +61,7 @@ export function GiftcodeDock() {
 
             <p className="text-center text-[11px] text-ink-400">Mỗi mã chỉ dùng được số lần giới hạn. Quà cộng thẳng vào tài khoản.</p>
           </div>
-        </div>
-      )}
+      </div>
     </>
   );
 }

@@ -4,13 +4,10 @@ import { useState } from 'react';
 import { ShieldAlert, X, Search, AlertTriangle, MicOff, Ban, Unlock } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from './AuthProvider';
-import { useDraggable } from '@/lib/useDraggable';
 
 // Thanh kiểm duyệt nhanh cho admin/mod — nổi trên mọi trang client
-export function AdminModBar() {
+export function AdminModBar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
-  const drag = useDraggable('admin-mod', { right: 16, bottom: 128 });
   const [username, setUsername] = useState('');
   const [info, setInfo] = useState<any>(null);
   const [reason, setReason] = useState('');
@@ -19,7 +16,7 @@ export function AdminModBar() {
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
 
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR')) return null;
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'MODERATOR') || !open) return null;
   const isAdmin = user.role === 'ADMIN';
 
   async function lookup() {
@@ -37,19 +34,10 @@ export function AdminModBar() {
 
   return (
     <>
-      {/* Nút nổi */}
-      {!open && (
-        <button onPointerDown={drag.onPointerDown} onClick={() => { if (drag.movedRef.current) return; setOpen(true); }} title="Kiểm duyệt nhanh (giữ & kéo để di chuyển)"
-          className={`z-40 grid h-11 w-11 cursor-grab place-items-center rounded-full bg-rose-600 text-white shadow-lg hover:bg-rose-700 ${drag.dragging ? 'cursor-grabbing scale-105' : ''}`} style={drag.style}>
-          <ShieldAlert size={20} />
-        </button>
-      )}
-
-      {open && (
-        <div data-drag-panel style={drag.panelStyle(330, 500)} className="fixed z-50 w-[330px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
-          <div onPointerDown={drag.panelPointerDown} style={{ touchAction: 'none' }} className="flex cursor-grab items-center justify-between border-b border-ink-200 px-4 py-2.5 select-none active:cursor-grabbing dark:border-ink-800">
+      <div className="fixed bottom-4 right-4 z-50 w-[330px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+          <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
             <span className="flex items-center gap-1.5 text-sm font-bold text-rose-600"><ShieldAlert size={16} /> Kiểm duyệt</span>
-            <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
+            <button onClick={onClose} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
           </div>
           <div className="space-y-3 p-4">
             <div className="flex gap-1.5">
@@ -96,8 +84,7 @@ export function AdminModBar() {
 
             {msg && <p className="text-sm text-brand-600">{msg}</p>}
           </div>
-        </div>
-      )}
+      </div>
     </>
   );
 }

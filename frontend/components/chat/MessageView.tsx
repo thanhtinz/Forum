@@ -5,16 +5,17 @@ import { FileText, Reply, Music } from 'lucide-react';
 import { ChatMsg, musicEmbed } from '@/lib/chat';
 import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 
-// Tách @username thành liên kết tới trang cá nhân
-function renderWithMentions(text: string) {
+// Tách @username thành liên kết tới trang cá nhân (đổi màu theo bong bóng để không mất chữ)
+function renderWithMentions(text: string, mine?: boolean) {
+  const cls = mine ? 'font-semibold text-amber-200 underline' : 'font-medium text-brand-600 hover:underline';
   return text.split(/(@\w{1,30})/g).map((p, i) =>
     /^@\w{1,30}$/.test(p)
-      ? <Link key={i} href={`/profile?u=${encodeURIComponent(p.slice(1))}`} className="font-medium text-brand-600 hover:underline">{p}</Link>
+      ? <Link key={i} href={`/profile?u=${encodeURIComponent(p.slice(1))}`} className={cls}>{p}</Link>
       : <span key={i}>{p}</span>,
   );
 }
 
-export function MessageBody({ m }: { m: ChatMsg }) {
+export function MessageBody({ m, mine }: { m: ChatMsg; mine?: boolean }) {
   switch (m.type) {
     case 'STICKER':
       return <img src={m.content} alt={m.type} className="h-24 w-24 object-contain" />;
@@ -42,7 +43,7 @@ export function MessageBody({ m }: { m: ChatMsg }) {
       return <a href={m.content} target="_blank" rel="noreferrer" className="flex items-center gap-1 underline"><Music size={15} /> {m.content}</a>;
     }
     default:
-      return <div className="whitespace-pre-wrap break-words">{renderWithMentions(m.content)}</div>;
+      return <div className="whitespace-pre-wrap break-words">{renderWithMentions(m.content, mine)}</div>;
   }
 }
 
@@ -65,7 +66,7 @@ export function MessageView({ m, mine, showName }: { m: ChatMsg; mine: boolean; 
             <Reply size={11} /> {m.replyTo.type === 'TEXT' ? m.replyTo.content.slice(0, 60) : m.replyTo.type}
           </div>
         )}
-        <MessageBody m={m} />
+        <MessageBody m={m} mine={mine} />
       </div>
     </div>
   );

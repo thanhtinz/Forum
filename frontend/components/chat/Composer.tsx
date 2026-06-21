@@ -15,6 +15,21 @@ export function Composer({ onSend, replyTo, onCancelReply, onTyping }: {
   onTyping?: () => void;
 }) {
   const [text, setText] = useState('');
+  const [mentionList, setMentionList] = useState<{ username: string; displayName?: string | null }[]>([]);
+
+  // Gõ @ trong khung chat → gợi ý người để nhắc (ping). Người được nhắc sẽ nhận thông báo.
+  function onTextChange(v: string) {
+    setText(v); onTyping?.();
+    const m = v.match(/@(\w{0,20})$/);
+    if (m) {
+      api.get<{ data: { username: string; displayName?: string | null }[] }>(`/social/members?q=${encodeURIComponent(m[1])}&limit=6`)
+        .then((r) => setMentionList(r.data || [])).catch(() => setMentionList([]));
+    } else setMentionList([]);
+  }
+  function pickMention(username: string) {
+    setText((t) => t.replace(/@(\w{0,20})$/, `@${username} `));
+    setMentionList([]);
+  }
   const [smiley, setSmiley] = useState(false);          // bảng mặt cười (emoji/sticker/gif)
   const [tab, setTab] = useState<SmileyTab>('emoji');
   const [mediaMenu, setMediaMenu] = useState(false);    // menu media (ảnh/file/nhạc/ghi âm)
@@ -202,7 +217,19 @@ export function Composer({ onSend, replyTo, onCancelReply, onTyping }: {
       )}
 
       {/* Thanh nhập */}
-      <div className="flex items-center gap-1 p-2">
+      <div className="relative flex items-center gap-1 p-2">
+        {/* Gợi ý @nhắc người */}
+        {mentionList.length > 0 && (
+          <div className="absolute bottom-full left-2 z-20 mb-1 max-h-48 w-60 overflow-y-auto rounded-xl border border-ink-200 bg-white shadow-lg dark:border-ink-700 dark:bg-ink-900">
+            {mentionList.map((m) => (
+              <button key={m.username} type="button" onClick={() => pickMention(m.username)}
+                className="flex w-full items-center gap-1 px-3 py-2 text-left text-sm hover:bg-ink-100 dark:hover:bg-ink-800">
+                <span className="font-medium">{m.displayName || m.username}</span>
+                <span className="text-ink-400">@{m.username}</span>
+              </button>
+            ))}
+          </div>
+        )}
         <input ref={imgInput} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && pickImage(e.target.files[0])} />
         <input ref={fileInput} type="file" hidden onChange={(e) => e.target.files?.[0] && pickFile(e.target.files[0])} />
 
@@ -217,8 +244,8 @@ export function Composer({ onSend, replyTo, onCancelReply, onTyping }: {
 
         <input
           value={text}
-          onChange={(e) => { setText(e.target.value); onTyping?.(); }}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } }}
+          onChange={(e) => onTextChange(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); setMentionList([]); sendText(); } }}
           onFocus={closeAll}
           placeholder={uploading ? 'Đang tải lên…' : recording ? 'Đang ghi âm…' : 'Nhập tin nhắn…'}
           disabled={uploading}

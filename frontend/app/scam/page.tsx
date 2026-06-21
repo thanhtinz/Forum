@@ -74,7 +74,7 @@ export default function ScamHomePage() {
   const totalPages = data ? Math.max(1, Math.ceil(data.meta.total / data.meta.limit)) : 1;
 
   return (
-    <div className="container-forum space-y-5 py-5">
+    <div className="space-y-5">
       {/* Hero — chỉ tiêu đề + mô tả */}
       <div className="rounded-2xl bg-gradient-to-r from-rose-600 to-red-700 p-6 text-white shadow-card">
         <h1 className="flex items-center gap-2 text-2xl font-bold"><ShieldAlert /> Tố Cáo Lừa Đảo</h1>

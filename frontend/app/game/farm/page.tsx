@@ -165,7 +165,7 @@ export default function FarmPage() {
             <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
               <div className="h-full rounded-full bg-amber-400 transition-all" style={{ width: `${ratio * 100}%` }} />
             </div>
-            <p className="mt-1 text-sm text-ink-500">Quả: <b>{s.khe.fruit}</b>/{s.khe.max} · {s.khe.pricePerFruit} coin/quả. Tưới mỗi ngày để ra thêm quả.</p>
+            <p className="mt-1 text-sm text-ink-500">Quả: <b>{s.khe.fruit}</b>/{s.khe.max} · {s.khe.pricePerFruit} coin/quả. Tưới liên tục để ra thêm quả.</p>
             {!ripe && s.khe.nextFruitAt && (
               <p className="text-xs text-emerald-600">⏳ Quả tiếp theo sau {formatDuration(secondsUntil(s.khe.nextFruitAt, now))}{s.khe.fullAt ? ` · đầy cây sau ${formatDuration(secondsUntil(s.khe.fullAt, now))}` : ''}</p>
             )}

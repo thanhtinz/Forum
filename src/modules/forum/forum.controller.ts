@@ -478,6 +478,12 @@ export class ForumController {
     return this.readingProgress.getBulkUnreadCounts(userId, threadIds || []);
   }
 
+  @Post('read-progress/mark-all')
+  @UseGuards(JwtAuthGuard)
+  markAllRead(@CurrentUser('id') userId: string) {
+    return this.readingProgress.markAllRead(userId);
+  }
+
   // ── Admin: Invite Codes (Mã mời) ──
   @Get('admin/invite-codes')
   @UseGuards(JwtAuthGuard, RolesGuard)

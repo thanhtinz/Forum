@@ -351,22 +351,6 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
     ],
   },
   {
-    key: 'media',
-    name: 'Lưu trữ Media (S3/MinIO)',
-    description: 'Cấu hình kho lưu file/ảnh ngoài cho upload trực tiếp (presign). Để trống sẽ dùng biến môi trường MEDIA_* hoặc lưu local.',
-    icon: 'image',
-    sortOrder: 6,
-    settings: [
-      { key: 'media.endpoint', label: 'Endpoint', description: 'VD: https://s3.amazonaws.com hoặc URL MinIO', type: 'string', value: '' },
-      { key: 'media.bucket', label: 'Bucket', type: 'string', value: '' },
-      { key: 'media.region', label: 'Region', type: 'string', value: 'us-east-1' },
-      { key: 'media.accessKey', label: 'Access Key', type: 'string', value: '', isSecret: true },
-      { key: 'media.secretKey', label: 'Secret Key', type: 'string', value: '', isSecret: true },
-      { key: 'media.forcePathStyle', label: 'Force Path Style (MinIO)', type: 'boolean', value: true },
-      { key: 'media.publicUrl', label: 'Public Base URL', description: 'URL công khai để truy cập file đã upload', type: 'string', value: '' },
-    ],
-  },
-  {
     key: 'ai',
     name: 'AI Companion',
     description: 'Cấu hình trợ lý AI Live2D',

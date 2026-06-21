@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { CalendarCheck, X, Gift, Flame, Check } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from './AuthProvider';
-import { useDraggable } from '@/lib/useDraggable';
 
 interface CheckInStatus {
   checkedInToday: boolean;
@@ -36,21 +35,20 @@ function weekDays(): Date[] {
   });
 }
 
-export function CheckInDock() {
+export function CheckInDock({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, loading } = useAuth();
-  const [open, setOpen] = useState(false);
   const [st, setSt] = useState<CheckInStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
-  const drag = useDraggable('checkin', { right: 16, bottom: 184 });
 
   const load = useCallback(() => {
     api.get<CheckInStatus>('/checkin/status').then(setSt).catch(() => {});
   }, []);
 
   useEffect(() => { if (!loading && user) load(); }, [user, loading, load]);
+  useEffect(() => { if (open) load(); }, [open, load]);
 
-  if (loading || !user) return null;
+  if (loading || !user || !open) return null;
 
   async function claim() {
     setBusy(true); setMsg('');
@@ -68,21 +66,10 @@ export function CheckInDock() {
 
   return (
     <>
-      {!open && (
-        <button onPointerDown={drag.onPointerDown} onClick={() => { if (drag.movedRef.current) return; setOpen(true); load(); }}
-          title="Điểm danh hàng ngày (giữ & kéo để di chuyển)"
-          className={`z-40 grid h-11 w-11 cursor-grab place-items-center rounded-full bg-amber-500 text-white shadow-lg hover:bg-amber-600 ${drag.dragging ? 'cursor-grabbing scale-105' : ''}`}
-          style={drag.style}>
-          <CalendarCheck size={20} />
-          {st && !st.checkedInToday && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full bg-rose-500 ring-2 ring-white dark:ring-ink-900" />}
-        </button>
-      )}
-
-      {open && (
-        <div data-drag-panel style={drag.panelStyle(330, 440)} className="fixed z-40 w-[330px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
-          <div onPointerDown={drag.panelPointerDown} style={{ touchAction: 'none' }} className="flex cursor-grab items-center justify-between border-b border-ink-200 px-4 py-2.5 select-none active:cursor-grabbing dark:border-ink-800">
+      <div className="fixed bottom-4 right-4 z-40 w-[330px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+          <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
             <span className="flex items-center gap-1.5 text-sm font-bold text-amber-600"><CalendarCheck size={16} /> Điểm danh hàng ngày</span>
-            <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
+            <button onClick={onClose} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
           </div>
 
           <div className="space-y-3 p-4">
@@ -129,8 +116,7 @@ export function CheckInDock() {
             {msg && <p className="text-center text-xs text-emerald-600">{msg}</p>}
             <p className="text-center text-[11px] text-ink-400">Điểm danh liên tục để nhận thưởng chuỗi; mỗi 7 ngày có thưởng tuần.</p>
           </div>
-        </div>
-      )}
+      </div>
     </>
   );
 }

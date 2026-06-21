@@ -5,7 +5,6 @@ import {
   ArrowUp, Music, X, Play, Pause, SkipBack, SkipForward, Repeat, Repeat1,
   Shuffle, Plus, Trash2, Gauge, ListPlus,
 } from 'lucide-react';
-import { useDraggable } from '@/lib/useDraggable';
 
 interface Track { kind: 'yt' | 'ytpl' | 'sp'; id: string; title: string; url: string; spType?: 'track' | 'playlist' | 'album' }
 const LS_KEY = 'mini-player-playlist';
@@ -38,9 +37,8 @@ async function fetchTitle(url: string): Promise<string | null> {
   } catch { return null; }
 }
 
-export function FloatingDock() {
+export function FloatingDock({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [showTop, setShowTop] = useState(false);
-  const [open, setOpen] = useState(false);
   const [list, setList] = useState<Track[]>([]);
   const [cur, setCur] = useState(-1);
   const [playing, setPlaying] = useState(false);
@@ -53,8 +51,6 @@ export function FloatingDock() {
   const [importing, setImporting] = useState(false);
   const [bulk, setBulk] = useState('');
   const [msg, setMsg] = useState('');
-
-  const drag = useDraggable('music', { right: 16, bottom: 72 });
 
   const yt = useRef<any>(null);
   const ready = useRef(false);
@@ -217,20 +213,12 @@ export function FloatingDock() {
           <ArrowUp size={20} />
         </button>
       )}
-      {!open && (
-        <button onPointerDown={drag.onPointerDown} onClick={() => { if (drag.movedRef.current) return; setOpen(true); }} title="Trình phát nhạc (giữ & kéo để di chuyển)"
-          className={`z-40 grid h-11 w-11 cursor-grab place-items-center rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 ${drag.dragging ? 'cursor-grabbing scale-105' : ''}`}
-          style={drag.style}>
-          <Music size={20} />
-        </button>
-      )}
-
       {/* Bảng trình phát nhạc */}
       {open && (
-        <div data-drag-panel style={drag.panelStyle(340, 480)} className="fixed z-40 w-[340px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
-          <div onPointerDown={drag.panelPointerDown} style={{ touchAction: 'none' }} className="flex cursor-grab items-center justify-between border-b border-ink-200 px-4 py-2.5 select-none active:cursor-grabbing dark:border-ink-800">
+        <div className="fixed bottom-4 right-4 z-40 w-[340px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+          <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
             <span className="flex items-center gap-1.5 text-sm font-bold text-brand-600"><Music size={16} /> Nhạc</span>
-            <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
+            <button onClick={onClose} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
           </div>
 
           <div className="space-y-3 p-3">

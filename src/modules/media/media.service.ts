@@ -8,6 +8,7 @@ import { createHash, createHmac } from 'crypto';
 import { createId } from '@paralleldrive/cuid2';
 import { PresignUploadDto } from './media.dto';
 import { AdminConfigService } from '../admin/admin-config.service';
+import { AttachmentService } from './attachment.service';
 
 // Cấu trúc sẵn cho S3 / MinIO. Tự ký SigV4 bằng `crypto` built-in,
 // không phụ thuộc aws-sdk. Nếu chưa cấu hình storage -> báo lỗi rõ ràng.
@@ -29,7 +30,10 @@ export class MediaService {
   ]);
   private readonly maxSize = 100 * 1024 * 1024; // 100MB
 
-  constructor(private readonly config: AdminConfigService) {}
+  constructor(
+    private readonly config: AdminConfigService,
+    private readonly attachment: AttachmentService,
+  ) {}
 
   // Trả về URL presigned PUT để client upload trực tiếp lên storage,
   // kèm publicUrl để lưu vào DB sau khi upload xong.
@@ -64,30 +68,22 @@ export class MediaService {
   // CONFIG
   // ──────────────────────────────────────────────
   private async getStorageConfig() {
-    // Ưu tiên cấu hình admin (nhóm "media"), fallback biến môi trường MEDIA_*
-    const endpoint = await this.config.resolve<string>('media.endpoint', 'MEDIA_ENDPOINT', '');
-    const bucket = await this.config.resolve<string>('media.bucket', 'MEDIA_BUCKET', '');
-    const accessKey = await this.config.resolve<string>('media.accessKey', 'MEDIA_ACCESS_KEY', '');
-    const secretKey = await this.config.resolve<string>('media.secretKey', 'MEDIA_SECRET_KEY', '');
-
-    if (!endpoint || !bucket || !accessKey || !secretKey) {
-      this.logger.warn('Storage (S3/MinIO) chưa được cấu hình đầy đủ');
+    // Dùng CHUNG cấu hình R2/S3 với "Lưu trữ ảnh & tệp (R2)" — một nơi cấu hình duy nhất.
+    const c = await this.attachment.getConfig();
+    if (!c.endpoint || !c.bucket || !c.accessKey || !c.secretKey) {
+      this.logger.warn('Storage (R2/S3) chưa được cấu hình đầy đủ');
       throw new ServiceUnavailableException(
-        'Dịch vụ lưu trữ chưa được cấu hình. Vào Admin → Cấu hình → Lưu trữ Media (S3/MinIO) hoặc đặt MEDIA_ENDPOINT, MEDIA_BUCKET, MEDIA_ACCESS_KEY, MEDIA_SECRET_KEY',
+        'Dịch vụ lưu trữ chưa được cấu hình. Vào Admin → Hệ thống → Lưu trữ ảnh & tệp (R2) để cấu hình.',
       );
     }
-
-    const forcePathStyle = await this.config.resolve<any>('media.forcePathStyle', 'MEDIA_FORCE_PATH_STYLE', true);
-
     return {
-      endpoint: endpoint.replace(/\/$/, ''),
-      bucket,
-      accessKey,
-      secretKey,
-      region: await this.config.resolve<string>('media.region', 'MEDIA_REGION', 'us-east-1'),
-      // MinIO mặc định dùng path-style. Chấp nhận cả boolean (admin) lẫn chuỗi 'false' (env)
-      forcePathStyle: forcePathStyle !== false && forcePathStyle !== 'false',
-      publicBaseUrl: await this.config.resolve<string>('media.publicUrl', 'MEDIA_PUBLIC_URL', ''),
+      endpoint: c.endpoint.replace(/\/$/, ''),
+      bucket: c.bucket,
+      accessKey: c.accessKey,
+      secretKey: c.secretKey,
+      region: c.region || 'auto',
+      forcePathStyle: c.forcePathStyle !== false,
+      publicBaseUrl: (c.publicUrl || '').replace(/\/$/, ''),
     };
   }
 

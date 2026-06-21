@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Users } from 'lucide-react';
 import { api } from '@/lib/api';
+import { PageHeader, Card, Btn, Notice } from '@/components/admin/ui';
 
 interface U {
   id: string; username: string; displayName?: string; email?: string;
@@ -53,14 +55,14 @@ export default function AdminUsers() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold">Quản lý người dùng</h1>
-      <div className="flex gap-2">
+    <div className="space-y-5">
+      <PageHeader icon={<Users size={20} />} title="Quản lý người dùng" desc="Tìm, phân quyền, điều chỉnh số dư, ban và quản lý huy hiệu." />
+      <Card pad={false} className="flex gap-2 p-3">
         <input className="input" placeholder="Tìm username/email…" value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} />
-        <button onClick={load} className="btn-primary">Tìm</button>
-      </div>
-      {msg && <p className="text-sm text-brand-600">{msg}</p>}
-      <div className="card overflow-x-auto">
+        <Btn onClick={load}>Tìm</Btn>
+      </Card>
+      {msg && <Notice kind="success">{msg}</Notice>}
+      <Card pad={false} className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="border-b border-ink-200/70 text-left text-ink-500 dark:border-ink-800">
             <tr><th className="p-3">User</th><th className="p-3">Vai trò</th><th className="p-3">Trạng thái</th><th className="p-3">Gem</th><th className="p-3">Xu</th><th className="p-3">Hành động</th></tr>
@@ -96,7 +98,7 @@ export default function AdminUsers() {
             {users.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-500">Không có người dùng.</td></tr>}
           </tbody>
         </table>
-      </div>
+      </Card>
 
       {badgeUser && <BadgeManager user={badgeUser} onClose={() => setBadgeUser(null)} />}
     </div>

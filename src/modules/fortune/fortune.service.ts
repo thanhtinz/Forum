@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiProviderService } from '../ai-companion/ai-provider.service';
+import { AdminConfigService } from '../admin/admin-config.service';
 import { computeBazi, BaziInput } from './engines/bazi.engine';
 import { drawTarot } from './engines/tarot.engine';
 import { computeMeihua, MeihuaInput } from './engines/meihua.engine';
@@ -28,14 +29,17 @@ export class FortuneService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly ai: AiProviderService,
+    private readonly config: AdminConfigService,
   ) {}
 
   // ── AI luận giải Tarot: tổng quan chung + lời khuyên (chuyên nghiệp) ──
   async aiTarotReading(input: { question?: string; topic?: string; cards: AiTarotCard[] }) {
     if (!input?.cards?.length) throw new BadRequestException('Thiếu dữ liệu lá bài');
-    const persona = await this.prisma.aiPersona.findFirst({ where: { isDefault: true } });
-    const provider = persona?.provider ?? 'GEMINI';
-    const modelId = persona?.modelId ?? 'gemini-2.0-flash';
+    const enabled = await this.config.resolve<boolean>('ai.enabled', undefined, true);
+    if (!enabled) throw new BadRequestException('AI đang tắt');
+    // Dùng cấu hình AI hệ thống (admin → Cấu hình → AI hệ thống)
+    const provider = await this.config.resolve<string>('ai.defaultProvider', undefined, 'GEMINI');
+    const modelId = await this.config.resolve<string>('ai.defaultModel', undefined, 'gemini-2.0-flash');
 
     const cardsText = input.cards.map((c, i) =>
       `${i + 1}. ${c.position ? `[${c.position}] ` : ''}${c.nameVi} (${c.name}) — ${c.reversedOrientation ? 'NGƯỢC' : 'XUÔI'}`

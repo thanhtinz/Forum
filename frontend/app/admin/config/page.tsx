@@ -48,8 +48,7 @@ function ConfigGroupView() {
   const cur = (s: Setting) => (s.key in dirty ? dirty[s.key] : s.value);
   const dirtyCount = Object.keys(dirty).length;
 
-  // Nhóm AI: chỉ hiện các mục điểm thân thiết (phần còn lại do người dùng tự đặt)
-  const visibleSettings = (group?.settings || []).filter((s) => group!.key !== 'ai' || s.key.includes('bond'));
+  const visibleSettings = group?.settings || [];
 
   return (
     <div className="space-y-5">

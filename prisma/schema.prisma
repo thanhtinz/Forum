@@ -763,8 +763,9 @@ model Badge {
   description String?
   icon        String   @db.VarChar(50)
   color       String   @db.VarChar(20)
-  condition   Json
-  isAuto      Boolean  @default(true)
+  condition   Json?
+  isAuto      Boolean  @default(false) // cấp tự động theo mốc (chỉ bật khi có điều kiện)
+  usableBy    String   @default("all") // "all" = mọi user · "staff" = chỉ admin/mod
   createdAt   DateTime @default(now())
 
   userBadges UserBadge[]

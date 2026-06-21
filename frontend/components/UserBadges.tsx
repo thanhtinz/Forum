@@ -12,7 +12,7 @@ export interface BadgeDescriptor {
   key: string;
   label: string;
   icon: string;
-  color: BadgeColor;
+  color: BadgeColor | string; // hỗ trợ cả màu hex tự chọn (#rrggbb)
   kind: BadgeKind;
   description?: string;
 }
@@ -69,16 +69,20 @@ export function UserBadges({
 
   return (
     <span className={`inline-flex flex-wrap items-center gap-1 ${className}`}>
-      {list.map((b) => (
-        <span
-          key={b.key}
-          title={b.description ? `${b.label} — ${b.description}` : b.label}
-          className={`inline-flex items-center gap-1 rounded-full font-medium ${pad} ${COLOR_CLASS[b.color] || COLOR_CLASS.gray}`}
-        >
-          <BadgeIcon icon={b.icon} size={iconSize} />
-          {!iconOnly && <span>{b.label}</span>}
-        </span>
-      ))}
+      {list.map((b) => {
+        const hex = typeof b.color === 'string' && b.color.startsWith('#');
+        return (
+          <span
+            key={b.key}
+            title={b.description ? `${b.label} — ${b.description}` : b.label}
+            className={`inline-flex items-center gap-1 rounded-full font-medium ${pad} ${hex ? '' : (COLOR_CLASS[b.color as BadgeColor] || COLOR_CLASS.gray)}`}
+            style={hex ? { color: b.color as string, backgroundColor: `${b.color}22` } : undefined}
+          >
+            <BadgeIcon icon={b.icon} size={iconSize} />
+            {!iconOnly && <span>{b.label}</span>}
+          </span>
+        );
+      })}
     </span>
   );
 }

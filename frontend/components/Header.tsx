@@ -82,7 +82,7 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-brand-700 text-white shadow-sm dark:border-ink-800 dark:bg-ink-900">
+    <header className="sticky top-0 z-50 border-b border-ink-200/70 bg-brand-700 text-white shadow-sm dark:border-ink-800 dark:bg-ink-900">
       <div className="container-forum flex h-14 items-center gap-3">
         {/* Hamburger: mở menu trên màn hình nhỏ */}
         <button
@@ -96,11 +96,11 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
           {/* Logo nhỏ (thu gọn) — thay icon hình thoi nếu admin đã tải logo nhỏ */}
           {cfg.logoSmall
-            ? <img src={cfg.logoSmall} alt={cfg.name} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
-            : <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 text-lg">◆</span>}
+            ? <img src={cfg.logoSmall} alt={cfg.name} className="h-11 w-11 shrink-0 rounded-lg object-contain" />
+            : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-white/15 text-2xl">◆</span>}
           {/* Logo dài: dùng ảnh logo nếu admin đã cấu hình, nếu không thì tên site */}
           {cfg.logo
-            ? <img src={cfg.logo} alt={cfg.name} className="hidden h-8 w-auto max-w-[160px] object-contain sm:block" />
+            ? <img src={cfg.logo} alt={cfg.name} className="hidden h-11 w-auto max-w-[200px] object-contain sm:block" />
             : <span className="hidden text-lg sm:block">{cfg.name || <>Forum<span className="text-brand-200">Hub</span></>}</span>}
         </Link>
 
@@ -216,21 +216,21 @@ export function Header() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <nav onClick={(e) => e.stopPropagation()}
             className="drawer-left absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto bg-brand-700 px-3 pb-4 pt-3 shadow-2xl dark:bg-ink-900">
-            <div className="mb-2 flex items-center justify-between">
-              <Link href="/" onClick={() => setNavOpen(false)} className="flex items-center gap-2 font-bold text-white">
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <Link href="/" onClick={() => setNavOpen(false)} className="flex min-w-0 flex-1 items-center gap-2 font-bold text-white">
                 {cfg.logo ? (
-                  // Có logo lớn → hiện to & rõ, bỏ icon hình thoi
-                  <img src={cfg.logo} alt={cfg.name} className="h-16 w-auto max-w-[230px] object-contain" />
+                  // Có logo lớn → hiện thật to & rõ, bỏ icon hình thoi
+                  <img src={cfg.logo} alt={cfg.name} className="h-24 w-auto max-w-full object-contain" />
                 ) : (
                   <>
                     {cfg.logoSmall
-                      ? <img src={cfg.logoSmall} alt={cfg.name} className="h-8 w-8 rounded-lg object-contain" />
-                      : <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/15 text-lg">◆</span>}
-                    <span>{cfg.name || 'ForumHub'}</span>
+                      ? <img src={cfg.logoSmall} alt={cfg.name} className="h-14 w-14 rounded-lg object-contain" />
+                      : <span className="grid h-14 w-14 place-items-center rounded-lg bg-white/15 text-3xl">◆</span>}
+                    <span className="text-lg">{cfg.name || 'ForumHub'}</span>
                   </>
                 )}
               </Link>
-              <button onClick={() => setNavOpen(false)} className="rounded-lg p-1.5 text-white/85 hover:bg-white/10"><X size={18} /></button>
+              <button onClick={() => setNavOpen(false)} className="shrink-0 rounded-lg p-1.5 text-white/85 hover:bg-white/10"><X size={18} /></button>
             </div>
 
             <form onSubmit={(e) => { onSearch(e); setNavOpen(false); }} className="my-2 sm:hidden">

@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ChatChannelType, ChatMessageType } from '@prisma/client';
 import { PrisonService } from '../moderation/prison.service';
 import { AdminConfigService } from '../admin/admin-config.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ChatService {
@@ -10,7 +11,25 @@ export class ChatService {
     private readonly prisma: PrismaService,
     private readonly prison: PrisonService,
     private readonly config: AdminConfigService,
+    private readonly notif: NotificationsService,
   ) {}
+
+  // Gõ @username trong chat → gửi thông báo (app + push + email) cho người được nhắc
+  private async notifyChatMentions(content: string, senderId: string) {
+    const names = Array.from(new Set((content.match(/@(\w{1,30})/g) || []).map((s) => s.slice(1))));
+    if (names.length === 0) return;
+    const users = await this.prisma.user.findMany({
+      where: { username: { in: names }, status: 'ACTIVE', id: { not: senderId } },
+      select: { id: true },
+    });
+    if (users.length === 0) return;
+    const sender = (await this.usersMap([senderId])).get(senderId) as any;
+    const who = sender?.displayName || sender?.username || 'Ai đó';
+    const body = content.length > 120 ? content.slice(0, 120) + '…' : content;
+    for (const u of users) {
+      this.notif.notify(u.id, { type: 'POST_MENTION', title: `${who} nhắc bạn trong chat`, body, link: '/chat', actorId: senderId }).catch(() => {});
+    }
+  }
 
   // ──────────────────────────────────────────────
   // TÌM GIF (proxy server-side, dùng key cấu hình trong admin: Giphy/Tenor)
@@ -203,6 +222,9 @@ export class ChatService {
       where: { id: data.channelId },
       data: { lastMessageAt: new Date() },
     });
+
+    // Nhắc người qua @username trong tin nhắn văn bản (fire-and-forget)
+    if (data.type === 'TEXT' && data.content) void this.notifyChatMentions(data.content, userId);
 
     const sender = (await this.usersMap([userId])).get(userId) || null;
     return { ...message, sender };

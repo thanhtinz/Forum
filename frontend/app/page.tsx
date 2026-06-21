@@ -33,12 +33,17 @@ function HomeContent() {
           )}
           {/* 1. Bài viết mới của tất cả danh mục */}
           <ThreadList categoryId={cat || undefined} />
+          {/* Banner giữa trang chủ */}
+          <AdBanner position="home_mid" className="h-24 sm:h-28" />
           {/* 2. Danh mục kiểu XenForo (ẩn khi đang lọc 1 danh mục) */}
           {!cat && <CategoryList />}
         </div>
 
         <HomeSidebar />
       </div>
+
+      {/* Banner dưới cùng trang chủ */}
+      <AdBanner position="home_bottom" className="h-24 sm:h-28" />
     </div>
   );
 }

@@ -14,6 +14,7 @@ import { interceptExternalLink } from '@/lib/externalLink';
 import TipTapEditor from '@/components/TipTapEditor';
 import ThreadJobPanel from '@/components/ThreadJobPanel';
 import { PingButton } from '@/components/PingButton';
+import { AdBanner } from '@/components/AdBanner';
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
 
@@ -407,6 +408,8 @@ function ThreadView() {
 
       {(thread as any).category?.moduleType === 'JOB' && <ThreadJobPanel threadId={thread.id} />}
 
+      <AdBanner position="thread_top" className="h-20 sm:h-24" />
+
       <div className="space-y-3">
         {ordered.map((p, idx) => {
           const isFirst = (p as any).isFirstPost;
@@ -506,6 +509,8 @@ function ThreadView() {
           );
         })}
       </div>
+
+      <AdBanner position="thread_bottom" className="h-20 sm:h-24" />
 
       <div className="card p-4" id="reply-box">
         {user ? (

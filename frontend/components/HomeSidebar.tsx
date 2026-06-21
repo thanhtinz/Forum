@@ -76,6 +76,8 @@ export function HomeSidebar() {
           {(!members || members.data.length === 0) && <p className="text-sm text-ink-400">Chưa có dữ liệu.</p>}
         </div>
       </div>
+      {/* Banner quảng cáo dưới sidebar */}
+      <AdBanner position="sidebar_bottom" className="h-40" />
     </aside>
   );
 }

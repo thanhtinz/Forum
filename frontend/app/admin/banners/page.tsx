@@ -12,8 +12,13 @@ interface Banner {
 }
 
 const POSITIONS = [
-  { key: 'home_top', label: 'Trang chủ (ngang trên cùng)' },
-  { key: 'sidebar', label: 'Thanh bên (sidebar)' },
+  { key: 'home_top', label: 'Trang chủ — ngang trên cùng' },
+  { key: 'home_mid', label: 'Trang chủ — giữa (dưới danh sách bài)' },
+  { key: 'home_bottom', label: 'Trang chủ — dưới cùng' },
+  { key: 'sidebar', label: 'Thanh bên — trên' },
+  { key: 'sidebar_bottom', label: 'Thanh bên — dưới' },
+  { key: 'thread_top', label: 'Bài viết — trên nội dung' },
+  { key: 'thread_bottom', label: 'Bài viết — dưới nội dung' },
 ];
 const empty = { title: '', imageUrl: '', linkUrl: '', position: 'home_top', startAt: '', endAt: '', sortOrder: '0' };
 const fmt = (d?: string | null) => (d ? new Date(d).toLocaleString('vi') : '—');

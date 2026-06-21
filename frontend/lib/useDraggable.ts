@@ -8,11 +8,13 @@ export interface Draggable {
   dragging: boolean;
   movedRef: React.MutableRefObject<boolean>;  // true nếu vừa kéo (để chặn onClick mở panel)
   panelStyle: (w: number, h: number) => CSSProperties; // vị trí panel mở ra NGAY tại chỗ nút
+  panelPointerDown: (e: ReactPointerEvent) => void;    // gắn vào header panel để kéo panel
 }
 
 // Cho phép nút nổi kéo thả tự do; lưu vị trí vào localStorage theo `key`.
 export function useDraggable(key: string, def: { right: number; bottom: number }): Draggable {
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [panelPos, setPanelPos] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
   const movedRef = useRef(false);
   const startRef = useRef({ px: 0, py: 0, x: 0, y: 0, w: 0, h: 0 });
@@ -59,6 +61,7 @@ export function useDraggable(key: string, def: { right: number; bottom: number }
       window.removeEventListener('pointermove', onMove);
       window.removeEventListener('pointerup', onUp);
       if (movedRef.current) {
+        setPanelPos(null); // di chuyển nút → panel mở lại bám theo nút
         setPos((p) => {
           if (p) { try { localStorage.setItem('drag:' + key, JSON.stringify(p)); } catch { /* ignore */ } }
           return p;
@@ -76,24 +79,49 @@ export function useDraggable(key: string, def: { right: number; bottom: number }
     : { position: 'fixed', right: def.right, bottom: def.bottom, touchAction: 'none' };
 
   // Panel mở ra ngay tại vị trí nút (neo theo góc nút, bung lên/sang trái), kẹp trong màn hình.
+  // Nếu người dùng đã kéo panel (panelPos) thì dùng vị trí đó.
   function panelStyle(w: number, h: number): CSSProperties {
-    const BTN = 44;
     const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
     const vh = typeof window !== 'undefined' ? window.innerHeight : 768;
-    // toạ độ góc trên-trái của nút
-    const bx = pos ? pos.x : vw - def.right - BTN;
-    const by = pos ? pos.y : vh - def.bottom - BTN;
     const pw = Math.min(w, vw - 16);
     const ph = Math.min(h, vh - 16);
-    // mặc định: căn mép phải panel ~ mép phải nút, panel nằm phía trên nút
+    if (panelPos) {
+      const left = Math.max(8, Math.min(panelPos.x, vw - pw - 8));
+      const top = Math.max(8, Math.min(panelPos.y, vh - ph - 8));
+      return { position: 'fixed', left, top, right: 'auto', bottom: 'auto' };
+    }
+    const BTN = 44;
+    const bx = pos ? pos.x : vw - def.right - BTN;
+    const by = pos ? pos.y : vh - def.bottom - BTN;
     let left = bx + BTN - pw;
     let top = by - ph;
-    // nếu phía trên không đủ chỗ → mở xuống dưới nút
     if (top < 8) top = Math.min(by + BTN, vh - ph - 8);
     left = Math.max(8, Math.min(left, vw - pw - 8));
     top = Math.max(8, Math.min(top, vh - ph - 8));
     return { position: 'fixed', left, top, right: 'auto', bottom: 'auto' };
   }
 
-  return { style, onPointerDown, dragging, movedRef, panelStyle };
+  // Kéo cả panel bằng header (gắn data-drag-panel lên gốc panel).
+  function panelPointerDown(e: ReactPointerEvent) {
+    if (e.button === 2) return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button,input,textarea,select,a')) return; // không kéo khi bấm nút/ô nhập
+    const panel = (e.currentTarget as HTMLElement).closest('[data-drag-panel]') as HTMLElement | null;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    const start = { px: e.clientX, py: e.clientY, x: rect.left, y: rect.top, w: rect.width, h: rect.height };
+    const onMove = (ev: PointerEvent) => {
+      const nx = Math.min(window.innerWidth - start.w - 4, Math.max(4, start.x + ev.clientX - start.px));
+      const ny = Math.min(window.innerHeight - start.h - 4, Math.max(4, start.y + ev.clientY - start.py));
+      setPanelPos({ x: nx, y: ny });
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  return { style, onPointerDown, dragging, movedRef, panelStyle, panelPointerDown };
 }

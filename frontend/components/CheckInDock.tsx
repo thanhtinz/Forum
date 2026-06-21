@@ -79,8 +79,8 @@ export function CheckInDock() {
       )}
 
       {open && (
-        <div style={drag.panelStyle(330, 440)} className="fixed z-40 w-[330px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
-          <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
+        <div data-drag-panel style={drag.panelStyle(330, 440)} className="fixed z-40 w-[330px] max-w-[92vw] rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+          <div onPointerDown={drag.panelPointerDown} style={{ touchAction: 'none' }} className="flex cursor-grab items-center justify-between border-b border-ink-200 px-4 py-2.5 select-none active:cursor-grabbing dark:border-ink-800">
             <span className="flex items-center gap-1.5 text-sm font-bold text-amber-600"><CalendarCheck size={16} /> Điểm danh hàng ngày</span>
             <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
           </div>

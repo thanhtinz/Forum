@@ -7,8 +7,9 @@ import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 export function MessageBody({ m }: { m: ChatMsg }) {
   switch (m.type) {
     case 'STICKER':
+      return <img src={m.content} alt={m.type} className="h-24 w-24 object-contain" />;
     case 'GIF':
-      return <img src={m.content} alt={m.type} className="max-h-48 rounded-lg" />;
+      return <img src={m.content} alt={m.type} className="max-h-36 max-w-[180px] rounded-lg" />;
     case 'IMAGE':
       return <a href={m.content} target="_blank" rel="noreferrer"><img src={m.content} alt="" className="max-h-64 rounded-lg" /></a>;
     case 'VIDEO':

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Lock, Sprout, CreditCard, Settings, FileText, Ticket,
-  BadgeInfo, Award, BadgeCheck, CalendarCheck, Disc3, Paperclip, Mail, ShieldCheck, KeyRound,
+  BadgeInfo, Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
   BellRing, Gavel, FolderTree, Gamepad2, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
@@ -30,9 +30,8 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
     items: [
       { href: '/admin/templates', label: 'Dữ liệu game', icon: Sprout },
       { href: '/admin/game-api', label: 'Đấu API game', icon: Gamepad2 },
-      { href: '/admin/fortune', label: 'Bói toán & AI', icon: Sparkles },
+      { href: '/admin/fortune', label: 'Bói toán', icon: Sparkles },
       { href: '/admin/checkin', label: 'Điểm danh', icon: CalendarCheck },
-      { href: '/admin/spin', label: 'Vòng quay', icon: Disc3 },
       { href: '/admin/stickers', label: 'Sticker chat', icon: Sticker },
     ],
   },

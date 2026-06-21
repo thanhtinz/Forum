@@ -51,16 +51,6 @@ export class FortuneController {
     );
   }
 
-  // Phân tích AI cho 1 kết quả
-  @Post('analyze')
-  @UseGuards(OptionalJwtGuard)
-  analyze(
-    @CurrentUser('id') userId: string | undefined,
-    @Body() b: { type: string; result: unknown; question?: string },
-  ) {
-    return this.fortune.analyze(b.type, b.result, b.question, userId);
-  }
-
   @Get('history')
   @UseGuards(JwtAuthGuard)
   history(@CurrentUser('id') userId: string, @Query('type') type?: string, @Query('page') page = 1) {

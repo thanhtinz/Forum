@@ -83,7 +83,7 @@ export default function AdminUsers() {
                   <div className="flex flex-wrap gap-1">
                     {u.status === 'BANNED'
                       ? <button onClick={() => act(() => api.post(`/admin/users/${u.id}/unban`), 'Đã gỡ ban')} className="btn-outline !py-1 text-xs">Gỡ ban</button>
-                      : <button onClick={() => act(() => api.post(`/admin/users/${u.id}/ban`, { reason: 'Vi phạm' }), 'Đã ban')} className="btn-outline !py-1 text-xs text-red-600">Ban</button>}
+                      : u.role !== 'ADMIN' && <button onClick={() => act(() => api.post(`/admin/users/${u.id}/ban`, { reason: 'Vi phạm' }), 'Đã ban')} className="btn-outline !py-1 text-xs text-red-600">Ban</button>}
                     <button onClick={() => adjustGem(u)} className="btn-outline !py-1 text-xs">+Gem</button>
                     <button onClick={() => adjustCoin(u)} className="btn-outline !py-1 text-xs">+Xu</button>
                     <button onClick={() => editInfo(u)} className="btn-outline !py-1 text-xs">Sửa</button>

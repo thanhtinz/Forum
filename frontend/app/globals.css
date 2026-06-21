@@ -212,15 +212,16 @@ html, body {
   100% { left: 4%; transform: scaleX(-1); }
 }
 .anim-walk { position: absolute; animation: walk-x linear infinite; }
-/* đi trong chuồng vuông (tránh hàng rào); sprite GHAP quay TRÁI mặc định -> lật khi đi phải */
-@keyframes walk-pen {
-  0% { left: 16%; transform: scaleX(1); }
-  48% { left: 70%; transform: scaleX(1); }
-  50% { left: 70%; transform: scaleX(-1); }
-  98% { left: 16%; transform: scaleX(-1); }
-  100% { left: 16%; transform: scaleX(1); }
+/* đi lảng vảng trong chuồng: di chuyển lên/xuống/ngang quanh vị trí gốc,
+   nghỉ lâu giữa các lần đi (không đi liên tục). Vị trí gốc + biên độ đặt qua inline style. */
+@keyframes wander-pen {
+  0%, 16%   { transform: translate(0, 0); }
+  28%       { transform: translate(var(--wx, 40px), var(--wy, -12px)); }
+  44%, 58%  { transform: translate(var(--wx, 40px), var(--wy, -12px)); }
+  70%       { transform: translate(0, 0); }
+  100%      { transform: translate(0, 0); }
 }
-.anim-walk-pen { position: absolute; animation: walk-pen linear infinite; }
+.anim-walk-pen { position: absolute; animation: wander-pen ease-in-out infinite; }
 .anim-walk-l { position: absolute; animation: walk-x-left linear infinite; }
 .anim-swim { position: absolute; animation: swim-x linear infinite; }
 .anim-bob { animation: bob-y ease-in-out infinite; }

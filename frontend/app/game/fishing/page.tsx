@@ -53,7 +53,7 @@ export default function FishingPage() {
   return (
     <div className="space-y-5">
       <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
-      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-sky-600 to-cyan-500 p-6 text-white shadow-card">
+      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <Fish />
         <div>
           <h1 className="text-2xl font-bold">Câu cá</h1>

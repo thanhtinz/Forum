@@ -24,7 +24,7 @@ export default function LeaderboardPage() {
 
   return (
     <div className="space-y-4">
-      <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-500 p-6 text-white shadow-card">
+      <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <h1 className="text-2xl font-bold">Bảng xếp hạng</h1>
         <p className="text-white/90">Vinh danh thành viên xuất sắc của cộng đồng.</p>
       </header>

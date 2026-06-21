@@ -44,7 +44,7 @@ export default function FreelancersPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 p-6 text-white shadow-card">
+      <header className="flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold"><Users2 size={24} /> Freelancer</h1>
           <p className="text-white/90">Tìm freelancer phù hợp cho dự án của bạn.</p>

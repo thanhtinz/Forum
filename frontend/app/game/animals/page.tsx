@@ -42,7 +42,7 @@ export default function AnimalsPage() {
   return (
     <div className="space-y-5">
       <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
-      <header className="rounded-2xl bg-gradient-to-r from-fuchsia-600 to-pink-600 p-6 text-white shadow-card">
+      <header className="rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <div className="flex items-center gap-2">
           <PawPrint />
           <div>
@@ -72,11 +72,21 @@ export default function AnimalsPage() {
             <h2 className="font-semibold text-white drop-shadow">Chuồng thú ({owned.length})</h2>
             <Link href="/game/shop?tab=animal" className="flex items-center gap-1 rounded-lg bg-white/25 px-3 py-1.5 text-xs font-medium text-white hover:bg-white/40"><ShoppingBag size={14} /> Mua thêm</Link>
           </div>
-          {/* các con thú đi lại trong sân cỏ (tránh hàng rào) */}
+          {/* các con thú đi lảng vảng trong sân cỏ — mỗi con một góc, đi rồi nghỉ */}
           {owned.slice(0, 12).map((a, i) => {
             const cls = animalAnimClass(a.slug);
+            const col = i % 4, row = Math.floor(i / 4) % 3;
+            const baseLeft = 16 + col * 20;       // 16 / 36 / 56 / 76 %
+            const baseBottom = 14 + row * 17;     // trải theo chiều dọc
+            const wx = (i % 2 ? 1 : -1) * (26 + (i % 3) * 12); // biên độ ngang (px)
+            const wy = (i % 3 - 1) * (12 + (i % 2) * 8);       // biên độ dọc (px)
             return (
-              <div key={a.id} className="anim-walk-pen" style={{ bottom: `${16 + (i % 4) * 9}%`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
+              <div key={a.id} className="anim-walk-pen" style={{
+                left: `${baseLeft}%`, bottom: `${baseBottom}%`,
+                ['--wx' as string]: `${wx}px`, ['--wy' as string]: `${wy}px`,
+                animationDuration: `${16 + (i % 5) * 3}s`,
+                animationDelay: `${-(i * 2.4)}s`,
+              } as React.CSSProperties}>
                 <div style={{ transform: `scale(1.8)${animalFacesLeft(a.slug) ? ' scaleX(-1)' : ''}`, transformOrigin: 'bottom center' }}>
                   {cls
                     ? <span className={`farmanim ${cls}`} />

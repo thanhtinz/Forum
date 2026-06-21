@@ -40,7 +40,7 @@ export default function GuildPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex items-center justify-between gap-2 rounded-2xl bg-gradient-to-r from-indigo-700 to-blue-600 p-6 text-white shadow-card">
+      <header className="flex items-center justify-between gap-2 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <div className="flex items-center gap-2"><Shield /> <h1 className="text-2xl font-bold">Bang hội</h1></div>
         {myMember && <Link href="/chat" className="flex items-center gap-1 rounded-lg bg-white/15 px-3 py-1.5 text-sm hover:bg-white/25"><MessageSquare size={15} /> Chat bang hội</Link>}
       </header>

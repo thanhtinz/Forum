@@ -39,7 +39,7 @@ export default function RaidPage() {
   return (
     <div className="space-y-4">
       <Link href="/game/farm" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Nông trại</Link>
-      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-rose-600 to-red-600 p-6 text-white shadow-card">
+      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <Swords /> <h1 className="text-2xl font-bold">Đi cướp nông trại</h1>
       </header>
       <p className="text-sm text-ink-500">Nhập tên thành viên để sang trộm cây đã chín (tốn 200 EXP nông trại/lần). Nếu nhà họ có chó, bạn có thể bị cắn mất coin!</p>

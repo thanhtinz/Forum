@@ -105,7 +105,7 @@ export default function NetcheckPage() {
 
   return (
     <div className="space-y-5">
-      <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-cyan-700 to-blue-700 p-6 text-white shadow-card">
+      <header className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <h1 className="flex items-center gap-2 text-2xl font-bold"><Globe /> Công cụ mạng</h1>
         <p className="mt-1 text-white/85">Chẩn đoán DNS, IP, HTTP, SSL, cổng, WHOIS — tra cứu nhanh.</p>
       </header>

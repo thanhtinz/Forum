@@ -58,7 +58,7 @@ export default function WarehousePage() {
   return (
     <div className="space-y-4">
       <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
-      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-500 p-6 text-white shadow-card">
+      <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <Warehouse /> <h1 className="text-2xl font-bold">Kho chung</h1>
       </header>
       <p className="text-sm text-ink-500">Toàn bộ hạt giống, nông sản, sản phẩm vật nuôi, món ăn và cá đều ở đây. Bán để kiếm coin.</p>

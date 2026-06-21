@@ -141,7 +141,7 @@ function LiveRoom() {
   return (
     <div className="space-y-4">
       <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Trò chơi khác</Link>
-      <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-rose-500 to-orange-500 p-5 text-white shadow-card">
+      <header className="flex items-center justify-between rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-5 text-white shadow-card">
         <div className="flex items-center gap-2"><Dices /> <h1 className="text-2xl font-bold">{label} <span className="text-sm font-normal opacity-80">· phòng chung</span></h1></div>
         <span className="inline-flex items-center gap-1 text-sm"><Users size={15} /> {st?.playerCount ?? 0}</span>
       </header>

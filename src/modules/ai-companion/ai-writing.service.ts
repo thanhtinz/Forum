@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { AiProvider } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiProviderService } from './ai-provider.service';
+import { AdminConfigService } from '../admin/admin-config.service';
 
 const MAX_LEN = 6000;
 
@@ -10,9 +11,14 @@ export class AiWritingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly aiProvider: AiProviderService,
+    private readonly config: AdminConfigService,
   ) {}
 
   private async pickModel(): Promise<{ provider: AiProvider; modelId: string }> {
+    // Ưu tiên cấu hình AI hệ thống (admin → Cấu hình → AI hệ thống)
+    const provider = await this.config.resolve<string>('ai.defaultProvider', undefined, '');
+    const modelId = await this.config.resolve<string>('ai.defaultModel', undefined, '');
+    if (provider && modelId) return { provider: provider as AiProvider, modelId };
     const persona = await this.prisma.aiPersona.findFirst({ where: { isDefault: true } });
     if (persona) return { provider: persona.provider, modelId: persona.modelId };
     return { provider: 'GEMINI' as AiProvider, modelId: 'gemini-2.0-flash' };

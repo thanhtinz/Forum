@@ -99,10 +99,10 @@ function CardFace({ card, className = '' }: { card: any; className?: string }) {
 }
 
 type Step = 'topics' | 'intro' | 'pick' | 'result';
-const FAN = 22;            // số lá úp xếp dạng quạt (cuộn ngang)
-const CARD_W = 60;         // bề rộng 1 lá (px)
-const CARD_GAP = 22;       // bước giữa 2 lá → chồng nhau ~ CARD_W - CARD_GAP
-const FAN_PAD = 80;        // đệm 2 bên để lá đầu/cuối căn giữa được
+const FAN = 78;            // nguyên bộ 78 lá để chọn
+const CARD_W = 58;         // bề rộng 1 lá (px)
+const CARD_GAP = 26;       // bước giữa 2 lá → chồng nhẹ
+const FAN_PAD = 70;        // đệm 2 bên để lá đầu/cuối căn giữa được
 
 function Tarot() {
   const [step, setStep] = useState<Step>('topics');
@@ -292,26 +292,20 @@ function Tarot() {
                 Lật bài
               </button>
 
-              {/* Bộ bài dạng quạt — cuộn/vuốt ngang (gốc trình duyệt → luôn mượt), chạm để chọn */}
-              <p className="text-center text-xs text-ink-400">Vuốt ngang để lướt bộ bài · chạm để chọn</p>
+              {/* Nguyên bộ 78 lá xếp thẳng hàng — cuộn/vuốt ngang (gốc trình duyệt → mượt), chạm để chọn */}
+              <p className="text-center text-xs text-ink-400">Vuốt ngang để lướt cả 78 lá · chạm để chọn</p>
               <div ref={fanRef} onPointerDown={fanDown} onPointerMove={fanMove} onPointerUp={fanUp} onPointerLeave={fanUp}
                 className="no-scrollbar w-full cursor-grab overflow-x-auto overflow-y-hidden active:cursor-grabbing"
                 style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-x' }}>
-                <div className="relative mx-auto h-52" style={{ width: FAN_PAD * 2 + (FAN - 1) * CARD_GAP + CARD_W }}>
+                <div className="relative mx-auto h-44 py-3" style={{ width: FAN_PAD * 2 + (FAN - 1) * CARD_GAP + CARD_W }}>
                   {Array.from({ length: FAN }).map((_, i) => {
-                    const mid = (FAN - 1) / 2;
-                    const off = i - mid;
-                    const rot = off * 2;                 // nghiêng dần ra 2 bên (độ)
-                    const lift = Math.abs(off) * 3.4;    // 2 bên nhô cao → cong hình quạt
                     const isPicked = picked.includes(i);
                     return (
                       <button key={i} onClick={() => pickFan(i)} disabled={isPicked || picked.length >= topic.n}
                         aria-label={`Lá ${i + 1}`}
-                        className="absolute bottom-3"
+                        className="absolute top-3 transition-transform hover:-translate-y-1.5"
                         style={{
                           left: FAN_PAD + i * CARD_GAP, width: CARD_W,
-                          transform: `rotate(${rot}deg) translateY(${-lift}px)`,
-                          transformOrigin: 'bottom center',
                           zIndex: i,
                           opacity: isPicked ? 0 : 1,
                           pointerEvents: isPicked ? 'none' : 'auto',

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, Sprout, Fish, PawPrint, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3, Moon, CalendarCheck, Gift, ChevronRight } from 'lucide-react';
+import { Gamepad2, Sprout, Fish, PawPrint, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3, ChevronRight } from 'lucide-react';
 
 // Game trên web — mỗi game là 1 trang riêng
 const WEB_GAMES = [
@@ -20,13 +20,6 @@ const MINIGAMES = [
   { href: '/minigame/solo?game=jackpot', label: 'Jackpot 777', color: 'from-purple-500 to-fuchsia-600', icon: Cherry },
   { href: '/minigame/tien-len', label: 'Tiến Lên (PvP)', color: 'from-sky-500 to-blue-600', icon: Spade },
   { href: '/minigame/caro', label: 'Cờ Caro (PvP)', color: 'from-teal-500 to-cyan-600', icon: Grid3x3 },
-];
-
-// Giải trí khác
-const EXTRAS = [
-  { href: '/fortune', label: 'Tarot & Cung hoàng đạo', desc: 'Bói bài, tử vi', icon: Moon, color: 'from-violet-500 to-purple-600' },
-  { href: '/checkin', label: 'Điểm danh', desc: 'Nhận thưởng mỗi ngày', icon: CalendarCheck, color: 'from-emerald-500 to-teal-600' },
-  { href: '/giveaways', label: 'Giveaway / Lì xì', desc: 'Sự kiện quà tặng', icon: Gift, color: 'from-rose-500 to-pink-600' },
 ];
 
 function Tile({ href, label, desc, icon: Icon, color }: { href: string; label: string; desc?: string; icon: any; color: string }) {
@@ -68,10 +61,6 @@ export default function GiaiTriPage() {
 
       <Section title="Minigame">
         {MINIGAMES.map((g) => <Tile key={g.href} {...g} />)}
-      </Section>
-
-      <Section title="Khác">
-        {EXTRAS.map((g) => <Tile key={g.href} {...g} />)}
       </Section>
     </div>
   );

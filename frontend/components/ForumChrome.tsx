@@ -13,11 +13,11 @@ export function ForumChrome({ children }: { children: React.ReactNode }) {
   if (isAdmin) return <>{children}</>;
 
   return (
-    <>
+    <div className="flex min-h-[100dvh] flex-col">
       <Header />
-      <main className="container-forum py-5">{children}</main>
+      <main className="container-forum flex-1 py-5">{children}</main>
       <SiteFooter />
       <FloatingDockBar />
-    </>
+    </div>
   );
 }

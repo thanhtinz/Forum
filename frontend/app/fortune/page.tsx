@@ -144,6 +144,13 @@ function Tarot() {
   }
   function fanUp() { dragSt.current.down = false; }
 
+  // Tự động chuyển lưu ý 1→2→3 luân phiên khi đang ở bước "Bắt đầu"
+  useEffect(() => {
+    if (step !== 'intro') return;
+    const t = setInterval(() => setTipIdx((i) => (i + 1) % TIPS.length), 4000);
+    return () => clearInterval(t);
+  }, [step]);
+
   function reset() {
     setStep('topics'); setTopic(null); setTipIdx(0); setPicked([]);
     setFlipped(false); setQ(''); setR(null); setErr(''); setLoading(false); applyRot(0);

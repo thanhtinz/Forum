@@ -138,7 +138,16 @@ export default function AdminTemplates() {
 
   function fromRow(row: any) {
     const f: Record<string, any> = {};
-    for (const fld of fields) f[fld.key] = row?.[fld.key] ?? (fld.type === 'boolean' ? false : '');
+    const isNew = !row?.id;
+    for (const fld of fields) {
+      if (row?.[fld.key] != null) { f[fld.key] = row[fld.key]; continue; }
+      if (fld.type === 'boolean') {
+        // Khi tạo MỚI: các cờ "đang bật/đang bán" mặc định BẬT để không bị ẩn ngoài ý muốn
+        f[fld.key] = isNew && /^(isActive|active|enabled|isAvailable|available)$/i.test(fld.key);
+      } else {
+        f[fld.key] = '';
+      }
+    }
     return f;
   }
   function openEdit(row: any) { setEditing(row); setForm(fromRow(row)); setMsg(''); }
@@ -223,6 +232,7 @@ export default function AdminTemplates() {
           <div key={r.id} className="flex items-center justify-between p-3 text-sm">
             <div className="min-w-0">
               <b>{r.name || r.slug}</b> {r.slug && <span className="text-ink-400">/{r.slug}</span>}
+              {r.isActive === false && <span className="ml-1.5 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-medium text-rose-600 dark:bg-rose-950/40">Đang ẩn</span>}
               <div className="text-xs text-ink-400">{rowStats(r, type)}</div>
             </div>
             <div className="flex gap-2">

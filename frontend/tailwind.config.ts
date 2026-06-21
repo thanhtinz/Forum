@@ -9,11 +9,11 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Bảng màu forum chuyên nghiệp (xanh đậm như XenForo/chiasemanguon)
+        // Bảng màu xanh thép trầm như XenForo gốc (dịu mắt, không chói)
         brand: {
-          50: '#eef6ff', 100: '#d9eaff', 200: '#bcd9ff', 300: '#8ec0ff',
-          400: '#599cff', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8',
-          800: '#1e40af', 900: '#1e3a8a', 950: '#172554',
+          50: '#eef4f9', 100: '#dbe7f1', 200: '#bcd1e3', 300: '#90b1cf',
+          400: '#5d8bb3', 500: '#3a6d99', 600: '#2e5a80', 700: '#274d6c',
+          800: '#23425b', 900: '#1d3447', 950: '#12212e',
         },
         ink: {
           50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1',

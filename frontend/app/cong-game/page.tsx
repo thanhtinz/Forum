@@ -1,11 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Gamepad2, Star, Play, ChevronRight, Sprout, Fish, PawPrint, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3 } from 'lucide-react';
-import { gamePortal, GameItem } from '@/lib/gamePortal';
+import { Gamepad2, Sprout, Fish, PawPrint, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3, Moon, CalendarCheck, Gift, ChevronRight } from 'lucide-react';
 
-// Game trên web — mỗi game là 1 trang riêng (không phải tab)
+// Game trên web — mỗi game là 1 trang riêng
 const WEB_GAMES = [
   { href: '/game/farm', label: 'Nông trại', desc: 'Trồng trọt & thu hoạch', icon: Sprout, color: 'from-emerald-500 to-green-600' },
   { href: '/game/fishing', label: 'Câu cá', desc: 'Thuyền, độ sâu, cá lớn', icon: Fish, color: 'from-sky-500 to-cyan-600' },
@@ -14,7 +12,7 @@ const WEB_GAMES = [
   { href: '/game/kho', label: 'Kho chung', desc: 'Nông sản, sản phẩm, cá, món ăn', icon: Warehouse, color: 'from-amber-500 to-yellow-600' },
 ];
 
-// Từng minigame hiện thẳng ra ngoài — bấm vào chơi luôn
+// Minigame
 const MINIGAMES = [
   { href: '/minigame/live?game=tai-xiu', label: 'Tài Xỉu (phòng chung)', color: 'from-rose-500 to-red-600', icon: Dices },
   { href: '/minigame/live?game=bau-cua', label: 'Bầu Cua (phòng chung)', color: 'from-amber-500 to-orange-600', icon: Fish },
@@ -24,125 +22,57 @@ const MINIGAMES = [
   { href: '/minigame/caro', label: 'Cờ Caro (PvP)', color: 'from-teal-500 to-cyan-600', icon: Grid3x3 },
 ];
 
-function GameIcon({ g, size = 'md' }: { g: GameItem; size?: 'md' | 'lg' }) {
-  const cls = size === 'lg' ? 'h-24 w-24 text-3xl' : 'h-14 w-14 text-lg';
-  if (g.iconUrl) return <img src={g.iconUrl} alt={g.name} className={`${cls} shrink-0 rounded-2xl object-cover`} />;
-  const initials = g.name.split(' ').slice(0, 2).map((w) => w[0]).join('');
+// Giải trí khác
+const EXTRAS = [
+  { href: '/fortune', label: 'Tarot & Cung hoàng đạo', desc: 'Bói bài, tử vi', icon: Moon, color: 'from-violet-500 to-purple-600' },
+  { href: '/checkin', label: 'Điểm danh', desc: 'Nhận thưởng mỗi ngày', icon: CalendarCheck, color: 'from-emerald-500 to-teal-600' },
+  { href: '/giveaways', label: 'Giveaway / Lì xì', desc: 'Sự kiện quà tặng', icon: Gift, color: 'from-rose-500 to-pink-600' },
+];
+
+function Tile({ href, label, desc, icon: Icon, color }: { href: string; label: string; desc?: string; icon: any; color: string }) {
   return (
-    <div className={`${cls} grid shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-brand-600 to-fuchsia-700 font-bold text-white`}>{initials}</div>
+    <Link href={href} className="group flex items-center gap-3 rounded-2xl border border-ink-200/70 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md dark:border-ink-800 dark:bg-ink-900">
+      <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-gradient-to-br ${color} text-white shadow`}><Icon size={22} /></span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">{label}</span>
+        {desc && <span className="block truncate text-xs text-ink-500">{desc}</span>}
+      </span>
+      <ChevronRight size={16} className="text-ink-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500" />
+    </Link>
   );
 }
 
-function Stars({ n = 0 }: { n?: number }) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((i) => <Star key={i} size={13} className={i <= n ? 'fill-amber-400 text-amber-400' : 'text-ink-300 dark:text-ink-600'} />)}
-    </div>
+    <section>
+      <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">{title}</h2>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+    </section>
   );
 }
 
-export default function CongGamePage() {
-  const [games, setGames] = useState<GameItem[]>([]);
-  const [err, setErr] = useState('');
-
-  useEffect(() => { gamePortal.listGames().then(setGames).catch((e) => setErr(e.message)); }, []);
-
-  const featured = games.filter((g) => g.featured);
-  const online = games.filter((g) => g.online);
-
+export default function GiaiTriPage() {
   return (
     <div className="space-y-6">
-      <header className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-indigo-700 via-brand-700 to-fuchsia-700 p-6 text-white shadow-card">
+      <header className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-brand-800 via-brand-700 to-brand-600 p-6 text-white shadow-card">
         <Gamepad2 size={28} />
         <div>
-          <h1 className="text-2xl font-bold">Cổng game</h1>
-          <p className="text-sm text-white/80">Chơi ngay, nhận giftcode & mua vật phẩm bằng Gem</p>
+          <h1 className="text-2xl font-bold">Giải trí</h1>
+          <p className="text-sm text-white/80">Trồng trọt, câu cá, minigame, bói toán… kiếm Xu và thư giãn ngay trên web.</p>
         </div>
       </header>
 
-      {err && <p className="text-sm text-rose-500">{err}</p>}
+      <Section title="Game trên web">
+        {WEB_GAMES.map((g) => <Tile key={g.href} {...g} />)}
+      </Section>
 
-      {/* Trò chơi trên web — vào thẳng từng game */}
-      <section>
-        <h2 className="mb-3 text-lg font-bold">Trò chơi trên web</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {WEB_GAMES.map((g) => (
-            <Link key={g.href} href={g.href} className="card flex flex-col items-center gap-2 p-4 text-center transition hover:-translate-y-0.5 hover:shadow-lg">
-              <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${g.color} text-white`}><g.icon size={22} /></span>
-              <span className="text-sm font-semibold">{g.label}</span>
-              <span className="text-[11px] text-ink-400">{g.desc}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <Section title="Minigame">
+        {MINIGAMES.map((g) => <Tile key={g.href} {...g} />)}
+      </Section>
 
-      {/* Minigame — từng game hiện thẳng, bấm vào chơi luôn */}
-      <section>
-        <h2 className="mb-3 text-lg font-bold">Minigame</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
-          {MINIGAMES.map((m) => (
-            <Link key={m.href} href={m.href} className="card flex flex-col items-center gap-2 p-4 text-center transition hover:-translate-y-0.5 hover:shadow-lg">
-              <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${m.color} text-white`}><m.icon size={22} /></span>
-              <span className="text-sm font-semibold">{m.label}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Có thể bạn quan tâm */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Có thể bạn quan tâm</h2>
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-2">
-          {featured.map((g) => (
-            <Link key={g.slug} href={`/cong-game/detail?slug=${g.slug}`} className="card group flex w-36 shrink-0 flex-col items-center p-3 text-center transition hover:-translate-y-0.5 hover:shadow-lg">
-              <GameIcon g={g} size="lg" />
-              <p className="mt-2 w-full truncate text-sm font-semibold">{g.name}</p>
-              <p className="w-full truncate text-xs text-ink-400">{g.genre}</p>
-            </Link>
-          ))}
-          {featured.length === 0 && <p className="text-sm text-ink-400">Chưa có game nổi bật.</p>}
-        </div>
-      </section>
-
-      {/* Trò chơi trực tuyến */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold">Trò chơi trực tuyến</h2>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {online.map((g) => (
-            <div key={g.slug} className="card flex items-center gap-3 p-3">
-              <Link href={`/cong-game/detail?slug=${g.slug}`}><GameIcon g={g} /></Link>
-              <div className="min-w-0 flex-1">
-                <Link href={`/cong-game/detail?slug=${g.slug}`} className="block truncate font-semibold hover:text-brand-600">{g.name}</Link>
-                <p className="text-xs text-ink-400">Thể loại: {g.genre}</p>
-                {g.shortDesc && <p className="mt-0.5 line-clamp-2 text-xs text-ink-500">{g.shortDesc}</p>}
-              </div>
-              <Link href={`/cong-game/detail?slug=${g.slug}`} className="btn-primary shrink-0 !px-3 !py-1.5 text-xs"><Play size={14} /> Chơi ngay</Link>
-            </div>
-          ))}
-          {online.length === 0 && <p className="text-sm text-ink-400">Chưa có game.</p>}
-        </div>
-      </section>
-
-      {/* Tất cả game */}
-      <section>
-        <h2 className="mb-3 text-lg font-bold">Tất cả game</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {games.map((g) => (
-            <Link key={g.slug} href={`/cong-game/detail?slug=${g.slug}`} className="card flex items-center gap-3 p-3 transition hover:shadow-lg">
-              <GameIcon g={g} />
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{g.name}</p>
-                <Stars n={g.rating} />
-                <p className="mt-0.5 flex items-center text-xs text-brand-500">Chi tiết <ChevronRight size={12} /></p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <Section title="Khác">
+        {EXTRAS.map((g) => <Tile key={g.href} {...g} />)}
+      </Section>
     </div>
   );
 }

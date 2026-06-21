@@ -23,7 +23,6 @@ import { MediaModule } from './modules/media/media.module';
 import { SearchModule } from './modules/search/search.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { GameModule } from './modules/game/game.module';
-import { GamePortalModule } from './modules/game-portal/game-portal.module';
 import { MinigameModule } from './modules/minigame/minigame.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { ToolsModule } from './modules/tools/tools.module';
@@ -83,7 +82,6 @@ import { JobsModule } from './modules/jobs/jobs.module';
     SearchModule,
     AdminModule,
     GameModule,
-    GamePortalModule,
     MinigameModule,
     ChatModule,
     ToolsModule,

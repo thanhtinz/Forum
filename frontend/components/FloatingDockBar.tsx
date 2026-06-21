@@ -39,7 +39,7 @@ export function FloatingDockBar() {
       {/* Cụm nút ở mép phải */}
       {!expanded ? (
         <button onClick={() => setExpanded(true)} title="Mở công cụ"
-          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 grid h-12 w-7 place-items-center rounded-l-xl bg-ink-800/90 text-white shadow-lg hover:bg-ink-900 dark:bg-ink-700/90">
+          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 grid h-12 w-7 place-items-center rounded-l-xl bg-brand-600 text-white shadow-lg hover:bg-brand-700">
           <ChevronLeft size={18} />
         </button>
       ) : (

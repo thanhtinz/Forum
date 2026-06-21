@@ -120,14 +120,6 @@ export class SeederService implements OnApplicationBootstrap {
       { type: 'CARO', name: 'Cờ Caro', minBet: 100, maxBet: 50000, minPlayers: 2, maxPlayers: 2, sortOrder: 9 },
     ];
     try {
-      // Không seed game cổng mẫu nữa — admin tự thêm game qua trang quản trị.
-      // Gỡ các game demo/đấu API cũ đã từng seed nếu còn sót lại.
-      const demoSlugs = ['nhat-kiem-mon', '3q-sieu-hung', 'sieu-chien-binh', 'tay-du-phuc-ma'];
-      await this.prisma.gameApi.deleteMany({ where: { slug: { in: demoSlugs } } });
-      await this.prisma.portalGame.deleteMany({ where: { slug: { in: demoSlugs } } });
-    } catch (e) { this.logger.warn(`Gỡ portalGame demo lỗi: ${(e as Error).message}`); }
-
-    try {
       for (const m of MINIGAMES) {
         await this.prisma.minigameConfig.upsert({
           where: { type: m.type },

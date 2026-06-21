@@ -10,7 +10,7 @@ interface NavPage { slug: string; title: string }
 interface NavLinkItem { id: string; label: string; url: string; openNewTab: boolean }
 
 const SHORTCUTS = [
-  { href: '/cong-game', label: 'Cổng game', icon: Gamepad2, desc: 'Nông trại, câu cá, minigame…' },
+  { href: '/cong-game', label: 'Giải trí', icon: Gamepad2, desc: 'Nông trại, câu cá, minigame…' },
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, desc: 'Trồng trọt & vật nuôi' },
   { href: '/game/fishing', label: 'Câu cá', icon: Fish, desc: '3 khu, cá hiếm' },
   { href: '/leaderboard', label: 'Xếp hạng', icon: Award, desc: 'Top danh hiệu & câu cá' },

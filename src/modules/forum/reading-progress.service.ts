@@ -15,6 +15,28 @@ export class ReadingProgressService {
     return { success: true };
   }
 
+  /** Đánh dấu đã đọc tất cả chủ đề (kiểu XenForo "Mark forums read") */
+  async markAllRead(userId: string) {
+    // Bài mới nhất của mỗi chủ đề (chưa xoá, đã duyệt)
+    const latest = await this.prisma.post.findMany({
+      where: { isDeleted: false, isApproved: true },
+      distinct: ['threadId'],
+      orderBy: [{ threadId: 'asc' }, { createdAt: 'desc' }],
+      select: { id: true, threadId: true },
+    });
+    const now = new Date();
+    await this.prisma.$transaction(
+      latest.map((p) =>
+        this.prisma.threadView.upsert({
+          where: { userId_threadId: { userId, threadId: p.threadId } },
+          update: { lastReadPostId: p.id, lastReadAt: now, viewedAt: now },
+          create: { userId, threadId: p.threadId, lastReadPostId: p.id },
+        }),
+      ),
+    );
+    return { success: true, marked: latest.length };
+  }
+
   /** Get reading progress for a single thread */
   async getProgress(userId: string, threadId: string) {
     const view = await this.prisma.threadView.findUnique({

@@ -49,4 +49,10 @@ export function animalSprite(slug: string): string | null {
 export function animalAnimClass(slug: string): string | null {
   return ANIMAL_ANIM[slug] || null;
 }
+// Bò & lợn vẽ mặt quay TRÁI, gà & vịt quay PHẢI. Keyframe walk-pen mặc định
+// cho hướng phải, nên các con quay trái cần lật ngang (scaleX -1) làm gốc.
+const ANIMAL_FACES_LEFT = new Set(['bo', 'bo-nau', 'lon', 'lon-den']);
+export function animalFacesLeft(slug: string): boolean {
+  return ANIMAL_FACES_LEFT.has(slug);
+}
 

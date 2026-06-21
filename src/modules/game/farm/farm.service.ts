@@ -33,7 +33,8 @@ const SUPPLIES = [
   { slug: 'feed-livestock', name: 'Thức ăn gia súc', price: 200, kind: 'feed' },
   { slug: 'medicine', name: 'Thuốc thú y', price: 500, kind: 'medicine' },
 ];
-const SICK_CHANCE = 0.12; // tỉ lệ vật nuôi bị bệnh sau mỗi lần cho ăn
+// Bỏ đói quá lâu (quá 3 lần cooldown cho ăn) → vật nuôi đổ bệnh theo thời gian, cần Thuốc thú y
+const SICK_AFTER_FEED_MULT = 3;
 // Chuồng thú: level riêng (như nông trại), lên cấp mở thêm slot nuôi
 const BARN_START_SLOTS = 3;
 const BARN_MAX_SLOTS = 24;
@@ -60,6 +61,7 @@ export class FarmService {
     const char = await this.getCharacter(userId);
     const profile = await this.getProfile(char.id);
     await this.cleanupDeadAnimals(char.id);
+    await this.maybeSickenAnimals(char.id);
     // Mở ô đất theo cấp: đảm bảo đã có đủ ô được mở khoá (5 + level, tối đa 50)
     await this.ensurePlots(char.id, profile.level);
 
@@ -113,7 +115,8 @@ export class FarmService {
           slug: p.crop?.slug ?? null,
           crop: p.crop?.name ?? null,
           asset: p.crop?.asset ?? null,
-          watered: p.watered,
+          // "Đã tưới đủ" khi sức khỏe đạt 100; còn dưới 100 vẫn tưới tiếp được (tưới liên tục)
+          watered: p.health >= 100,
           tilled: p.tilled,
           health: p.health,
           ready: p.readyAt ? p.readyAt.getTime() <= now : false,
@@ -178,7 +181,8 @@ export class FarmService {
   // ──────────────────────────────────────────────
   private readonly KHE_MAX = 180;
   private readonly KHE_REGEN_MS = 8 * 60 * 1000; // 1 quả / 8 phút (~180 quả/ngày)
-  private readonly KHE_WATER_BONUS = 30;         // tưới mỗi ngày +30 quả
+  private readonly KHE_WATER_BONUS = 10;         // mỗi lần tưới +10 quả
+  private readonly KHE_WATER_COOLDOWN_MS = 5 * 60 * 1000; // tưới lại sau 5 phút (tưới liên tục)
   private readonly KHE_PRICE = 50;               // coin / quả khi thu hoạch
 
   // Số quả khế hiện tại = đã chốt + sinh thêm theo thời gian (cap KHE_MAX)
@@ -190,9 +194,8 @@ export class FarmService {
   }
 
   private kheInfo(profile: { kheFruit: number; kheUpdatedAt: Date | null; kheLastWaterAt: Date | null }) {
-    const DAY = 24 * 3600 * 1000;
     const last = profile.kheLastWaterAt ? profile.kheLastWaterAt.getTime() : 0;
-    const nextWaterAt = last ? new Date(last + DAY) : null;
+    const nextWaterAt = last ? new Date(last + this.KHE_WATER_COOLDOWN_MS) : null;
     const fruit = this.currentKheFruit(profile);
     const now = Date.now();
     const base = profile.kheFruit || 0;
@@ -220,7 +223,7 @@ export class FarmService {
     const char = await this.getCharacter(userId);
     const profile = await this.getProfile(char.id);
     const info = this.kheInfo(profile as any);
-    if (!info.canWater) throw new BadRequestException('Cây khế đã được tưới hôm nay, quay lại sau.');
+    if (!info.canWater) throw new BadRequestException('Cây khế vừa được tưới, chờ chút rồi tưới tiếp.');
     // Rút nước từ giếng (không còn vô hạn nước)
     await this.drawFromWell(char.id, profile as any, WATER_COST_KHE);
     const fruit = Math.min(this.KHE_MAX, this.currentKheFruit(profile as any) + this.KHE_WATER_BONUS);
@@ -396,7 +399,8 @@ export class FarmService {
     const profile = await this.getProfile(char.id);
     const plot = await this.getPlot(char.id, plotIndex);
     if (!plot.cropId) throw new BadRequestException('Ô đất trống');
-    if (plot.watered) return { ok: true, alreadyWatered: true, health: plot.health };
+    // Tưới liên tục: mỗi lần tưới +sức khỏe (tốn nước giếng) cho tới khi đầy 100.
+    if (plot.health >= 100) return { ok: true, alreadyWatered: true, health: plot.health };
     // Rút nước từ giếng (nguồn nước có hạn)
     const wellLeft = await this.drawFromWell(char.id, profile as any, WATER_COST_PLOT);
     const health = Math.min(100, plot.health + WATER_HEALTH);
@@ -555,19 +559,21 @@ export class FarmService {
     if (a.lastFedAt.getTime() + a.animal.feedCooldownSec * 1000 > now) {
       throw new BadRequestException('Chưa tới giờ cho ăn lại');
     }
-    if (a.fedCount >= MAX_FEED) throw new BadRequestException('Đã cho ăn tối đa, hãy thu hoạch sản phẩm');
     const feedSlug = feedSlugFor(a.animal.slug);
     const feedName = feedSlug === 'feed-poultry' ? 'Thức ăn gia cầm' : 'Thức ăn gia súc';
-    const productReadyAt = a.productReadyAt ?? new Date(Math.max(now, a.grownAt.getTime()));
-    const gotSick = Math.random() < SICK_CHANCE;
+    // Cho ăn để bắt đầu/duy trì chu kỳ ra sản phẩm: sản phẩm chín sau feedCooldownSec (mốc cố định).
+    const interval = a.animal.feedCooldownSec * 1000;
+    const productReadyAt = a.productReadyAt ?? new Date(Math.max(now, a.grownAt.getTime()) + interval);
+    // Cho ăn liên tục: fedCount tích thêm (giới hạn MAX_FEED cho mỗi lần thu) chứ không chặn.
+    const fedCount = Math.min(MAX_FEED, a.fedCount + 1);
     await this.prisma.$transaction(async (tx) => {
       await this.consumeWarehouse(tx, char.id, feedSlug, 'SUPPLY', 1, `Hết ${feedName} — mua ở cửa hàng`);
       await tx.farmAnimal.update({
         where: { id: a.id },
-        data: { fedCount: { increment: 1 }, lastFedAt: new Date(), productReadyAt, sickAt: gotSick ? new Date() : undefined },
+        data: { fedCount, lastFedAt: new Date(), productReadyAt },
       });
     });
-    return { ok: true, fedCount: a.fedCount + 1, sick: gotSick };
+    return { ok: true, fedCount };
   }
 
   // Chữa bệnh bằng Thuốc thú y
@@ -577,7 +583,8 @@ export class FarmService {
     if (!a.sickAt) throw new BadRequestException('Vật nuôi không bị bệnh');
     await this.prisma.$transaction(async (tx) => {
       await this.consumeWarehouse(tx, char.id, 'medicine', 'SUPPLY', 1, 'Hết Thuốc thú y — mua ở cửa hàng');
-      await tx.farmAnimal.update({ where: { id: a.id }, data: { sickAt: null } });
+      // Chữa xong coi như được chăm sóc lại → dời mốc cho ăn để không bệnh lại ngay
+      await tx.farmAnimal.update({ where: { id: a.id }, data: { sickAt: null, lastFedAt: new Date() } });
     });
     return { ok: true };
   }
@@ -833,6 +840,26 @@ export class FarmService {
       .map((a) => a.id);
     if (deadIds.length > 0) {
       await this.prisma.farmAnimal.deleteMany({ where: { id: { in: deadIds } } });
+    }
+  }
+
+  // Vật nuôi bỏ đói quá lâu → đổ bệnh theo thời gian (deterministic, không random spam)
+  private async maybeSickenAnimals(characterId: string) {
+    const now = Date.now();
+    const animals = await this.prisma.farmAnimal.findMany({
+      where: { characterId, sickAt: null },
+      include: { animal: { select: { feedCooldownSec: true, productSlug: true } } },
+    });
+    const sickIds = animals
+      .filter(
+        (a) =>
+          !!a.animal.productSlug &&                    // chỉ thú cho sản phẩm mới bệnh
+          a.grownAt.getTime() <= now &&                // đã trưởng thành
+          a.lastFedAt.getTime() + a.animal.feedCooldownSec * 1000 * SICK_AFTER_FEED_MULT <= now,
+      )
+      .map((a) => a.id);
+    if (sickIds.length > 0) {
+      await this.prisma.farmAnimal.updateMany({ where: { id: { in: sickIds } }, data: { sickAt: new Date() } });
     }
   }
 

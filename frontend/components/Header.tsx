@@ -8,6 +8,7 @@ import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
   ImagePlus, Sparkles, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X,
+  Newspaper, Star, Hash, CheckCheck, ListTree,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -24,7 +25,6 @@ function MessengerIcon({ size = 16 }: { size?: number }) {
 }
 
 const NAV = [
-  { href: '/', label: 'Diễn đàn', icon: MessageSquare },
   { href: '/chat', label: 'Chat', icon: MessengerIcon },
   { href: '/cong-game', label: 'Giải trí', icon: Gamepad2 },
   { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
@@ -47,6 +47,8 @@ export function Header() {
   const [menu, setMenu] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [utilOpen, setUtilOpen] = useState(false);
+  const [forumOpen, setForumOpen] = useState(false);
+  const [markMsg, setMarkMsg] = useState('');
   const [dark, setDark] = useState(false);
   const [unread, setUnread] = useState(0);
 
@@ -68,6 +70,15 @@ export function Header() {
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
     if (q.trim()) router.push(`/search?q=${encodeURIComponent(q)}`);
+  }
+
+  async function markAllRead() {
+    setForumOpen(false); setNavOpen(false);
+    try {
+      await api.post('/forum/read-progress/mark-all');
+      setMarkMsg('Đã đánh dấu tất cả là đã đọc');
+      setTimeout(() => setMarkMsg(''), 2500);
+    } catch { /* bỏ qua nếu chưa đăng nhập */ }
   }
 
   return (
@@ -94,6 +105,26 @@ export function Header() {
         </Link>
 
         <nav className="ml-2 hidden items-center gap-1 md:flex">
+          {/* Diễn đàn — dropdown kiểu XenForo */}
+          <div className="relative" onMouseLeave={() => setForumOpen(false)}>
+            <button onClick={() => setForumOpen((o) => !o)}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+              <MessageSquare size={16} /> Diễn đàn <ChevronDown size={13} />
+            </button>
+            {forumOpen && (
+              <div className="absolute left-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
+                <Link href="/" onClick={() => setForumOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700"><ListTree size={15} /> Tất cả diễn đàn</Link>
+                <Link href="/feed" onClick={() => setForumOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700"><Newspaper size={15} /> Bài viết mới</Link>
+                <div className="my-1 border-t border-ink-200/70 dark:border-ink-700" />
+                <p className="flex items-center gap-2 px-4 pb-0.5 pt-1 text-xs font-semibold text-ink-400"><Star size={13} /> Quan tâm</p>
+                <Link href="/subscriptions" onClick={() => setForumOpen(false)} className="flex items-center gap-2 px-4 py-2 pl-8 text-sm hover:bg-ink-100 dark:hover:bg-ink-700"><MessageSquare size={14} /> Chủ đề quan tâm</Link>
+                <Link href="/tags" onClick={() => setForumOpen(false)} className="flex items-center gap-2 px-4 py-2 pl-8 text-sm hover:bg-ink-100 dark:hover:bg-ink-700"><Hash size={14} /> Diễn đàn quan tâm</Link>
+                <div className="my-1 border-t border-ink-200/70 dark:border-ink-700" />
+                <Link href="/search" onClick={() => setForumOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700"><Search size={15} /> Tìm chủ đề</Link>
+                {user && <button onClick={markAllRead} className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm hover:bg-ink-100 dark:hover:bg-ink-700"><CheckCheck size={15} /> Đánh dấu đã đọc</button>}
+              </div>
+            )}
+          </div>
           {NAV.map((n) => (
             <Link key={n.href} href={n.href}
               className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
@@ -212,6 +243,23 @@ export function Header() {
           {/* Thời tiết — ngay dưới ô tìm kiếm */}
           <div className="mb-2"><WeatherMenu mobile /></div>
           <div className="flex flex-col gap-1">
+            {/* Diễn đàn — nhóm thu gọn kiểu XenForo */}
+            <button onClick={() => setForumOpen((o) => !o)}
+              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+              <span className="flex items-center gap-2"><MessageSquare size={16} /> Diễn đàn</span>
+              <ChevronDown size={15} className={`transition ${forumOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {forumOpen && (
+              <div className="ml-3 flex flex-col gap-1 border-l border-white/15 pl-2">
+                <Link href="/" onClick={() => setNavOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"><ListTree size={16} /> Tất cả diễn đàn</Link>
+                <Link href="/feed" onClick={() => setNavOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"><Newspaper size={16} /> Bài viết mới</Link>
+                <p className="flex items-center gap-2 px-3 pt-1 text-xs font-semibold text-white/55"><Star size={13} /> Quan tâm</p>
+                <Link href="/subscriptions" onClick={() => setNavOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 pl-6 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"><MessageSquare size={15} /> Chủ đề quan tâm</Link>
+                <Link href="/tags" onClick={() => setNavOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 pl-6 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"><Hash size={15} /> Diễn đàn quan tâm</Link>
+                <Link href="/search" onClick={() => setNavOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"><Search size={16} /> Tìm chủ đề</Link>
+                {user && <button onClick={markAllRead} className="flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"><CheckCheck size={16} /> Đánh dấu đã đọc</button>}
+              </div>
+            )}
             {NAV.map((n) => (
               <Link key={n.href} href={n.href} onClick={() => setNavOpen(false)}
                 className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
@@ -236,6 +284,12 @@ export function Header() {
             )}
           </div>
           </nav>
+        </div>
+      )}
+
+      {markMsg && (
+        <div className="fixed bottom-5 left-1/2 z-[70] -translate-x-1/2 rounded-full bg-ink-900 px-4 py-2 text-sm font-medium text-white shadow-lg dark:bg-ink-700">
+          {markMsg}
         </div>
       )}
     </header>

@@ -7,7 +7,7 @@ import { ChevronLeft, PawPrint, ShoppingBag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { formatDuration, secondsUntil } from '@/lib/format';
-import { animalSprite, animalAnimClass } from '@/lib/cropSprites';
+import { animalSprite, animalAnimClass, animalFacesLeft } from '@/lib/cropSprites';
 import { useNow } from '@/lib/useNow';
 
 interface Owned { id: string; slug: string; name: string; grown: boolean; grownAt: string | null; productReady: boolean; productReadyAt: string | null; hasProduct: boolean; diesAt: string | null; sick?: boolean; asset?: string | null }
@@ -77,7 +77,7 @@ export default function AnimalsPage() {
             const cls = animalAnimClass(a.slug);
             return (
               <div key={a.id} className="anim-walk-pen" style={{ bottom: `${16 + (i % 4) * 9}%`, animationDuration: `${9 + (i % 5) * 2}s`, animationDelay: `${-(i * 1.3)}s` }}>
-                <div style={{ transform: 'scale(1.8)', transformOrigin: 'bottom center' }}>
+                <div style={{ transform: `scale(1.8)${animalFacesLeft(a.slug) ? ' scaleX(-1)' : ''}`, transformOrigin: 'bottom center' }}>
                   {cls
                     ? <span className={`farmanim ${cls}`} />
                     // eslint-disable-next-line @next/next/no-img-element

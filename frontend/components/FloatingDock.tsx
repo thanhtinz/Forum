@@ -5,6 +5,7 @@ import {
   ArrowUp, Music, X, Play, Pause, SkipBack, SkipForward, Repeat, Repeat1,
   Shuffle, Plus, Trash2, Gauge, ListPlus,
 } from 'lucide-react';
+import { usePanelDrag } from '@/lib/usePanelDrag';
 
 interface Track { kind: 'yt' | 'ytpl' | 'sp'; id: string; title: string; url: string; spType?: 'track' | 'playlist' | 'album' }
 const LS_KEY = 'mini-player-playlist';
@@ -38,6 +39,7 @@ async function fetchTitle(url: string): Promise<string | null> {
 }
 
 export function FloatingDock({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const drag = usePanelDrag();
   const [showTop, setShowTop] = useState(false);
   const [list, setList] = useState<Track[]>([]);
   const [cur, setCur] = useState(-1);
@@ -250,8 +252,8 @@ export function FloatingDock({ open, onClose }: { open: boolean; onClose: () => 
       )}
       {/* Bảng trình phát nhạc */}
       {open && (
-        <div className="fixed right-3 top-1/2 z-40 max-h-[88vh] w-[340px] max-w-[92vw] -translate-y-1/2 overflow-y-auto rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
-          <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
+        <div data-drag-panel style={drag.style} className="fixed right-3 top-1/2 z-40 max-h-[88vh] w-[340px] max-w-[92vw] -translate-y-1/2 overflow-y-auto rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+          <div onPointerDown={drag.onPointerDown} style={{ touchAction: 'none' }} className="flex cursor-grab select-none items-center justify-between border-b border-ink-200 px-4 py-2.5 active:cursor-grabbing dark:border-ink-800">
             <span className="flex items-center gap-1.5 text-sm font-bold text-brand-600"><Music size={16} /> Nhạc</span>
             <button onClick={onClose} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
           </div>

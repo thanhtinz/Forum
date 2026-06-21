@@ -125,14 +125,10 @@ export default function FarmPage() {
         const status = empty ? 'Giếng đã cạn — chờ nước hồi lại' : full ? 'Giếng đầy nước' : 'Nước đang hồi…';
         return (
         <section className="card flex items-center gap-4 p-4">
-          {/* Giếng (asset): ảnh giếng cạn làm nền, ảnh giếng có nước phủ lên, lộ dần từ dưới theo mực nước */}
+          {/* Giếng (asset): hết nước → giếng cạn; có nước → giếng đầy nước. Mức nước cụ thể xem ở thanh bên dưới. */}
           <div className="relative h-24 w-[106px] shrink-0">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/game-assets/nongtrai/img/gieng-can.png" alt="Giếng" className="absolute inset-0 h-full w-full object-contain" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/game-assets/nongtrai/img/gieng-nuoc.png" alt="" aria-hidden
-              className="absolute inset-0 h-full w-full object-contain transition-[clip-path] duration-700"
-              style={{ clipPath: `inset(${(1 - ratio) * 100}% 0 0 0)` }} />
+            <img src={`/game-assets/nongtrai/img/${empty ? 'gieng-can' : 'gieng-nuoc'}.png`} alt="Giếng" className="h-full w-full object-contain" />
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold">Giếng nước</h2>

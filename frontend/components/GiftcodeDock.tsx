@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { Gift, X, Loader2, Check, Ticket } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from './AuthProvider';
+import { usePanelDrag } from '@/lib/usePanelDrag';
 
 interface RewardOut { type: string; label: string }
 
 export function GiftcodeDock({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user, loading } = useAuth();
+  const drag = usePanelDrag();
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -30,8 +32,8 @@ export function GiftcodeDock({ open, onClose }: { open: boolean; onClose: () => 
   if (!open) return null;
   return (
     <>
-      <div className="fixed right-3 top-1/2 z-40 max-h-[88vh] w-[320px] max-w-[92vw] -translate-y-1/2 overflow-y-auto rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
-          <div className="flex items-center justify-between border-b border-ink-200 px-4 py-2.5 dark:border-ink-800">
+      <div data-drag-panel style={drag.style} className="fixed right-3 top-1/2 z-40 max-h-[88vh] w-[320px] max-w-[92vw] -translate-y-1/2 overflow-y-auto rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900">
+          <div onPointerDown={drag.onPointerDown} style={{ touchAction: 'none' }} className="flex cursor-grab select-none items-center justify-between border-b border-ink-200 px-4 py-2.5 active:cursor-grabbing dark:border-ink-800">
             <span className="flex items-center gap-1.5 text-sm font-bold text-pink-600"><Gift size={16} /> Nhập Giftcode</span>
             <button onClick={() => { onClose(); setRewards(null); setErr(''); }} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={16} /></button>
           </div>

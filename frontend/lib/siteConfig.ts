@@ -8,6 +8,7 @@ export interface SiteConfig {
   tagline: string;
   description: string;
   logo: string;
+  logoSmall: string;
   favicon: string;
   primaryColor: string;
   heroTitle: string;
@@ -20,6 +21,7 @@ const DEFAULTS: SiteConfig = {
   tagline: '',
   description: '',
   logo: '',
+  logoSmall: '',
   favicon: '',
   primaryColor: '',
   heroTitle: 'Chào mừng đến ForumHub',

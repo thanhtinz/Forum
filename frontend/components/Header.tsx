@@ -83,8 +83,10 @@ export function Header() {
         </button>
 
         <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-          {/* Icon hình thoi = logo thu gọn (luôn hiện) */}
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 text-lg">◆</span>
+          {/* Logo nhỏ (thu gọn) — thay icon hình thoi nếu admin đã tải logo nhỏ */}
+          {cfg.logoSmall
+            ? <img src={cfg.logoSmall} alt={cfg.name} className="h-8 w-8 shrink-0 rounded-lg object-contain" />
+            : <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white/15 text-lg">◆</span>}
           {/* Logo dài: dùng ảnh logo nếu admin đã cấu hình, nếu không thì tên site */}
           {cfg.logo
             ? <img src={cfg.logo} alt={cfg.name} className="hidden h-8 w-auto max-w-[160px] object-contain sm:block" />
@@ -185,10 +187,17 @@ export function Header() {
             className="drawer-left absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto bg-brand-700 px-3 pb-4 pt-3 shadow-2xl dark:bg-ink-900">
             <div className="mb-2 flex items-center justify-between">
               <Link href="/" onClick={() => setNavOpen(false)} className="flex items-center gap-2 font-bold text-white">
-                <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/15 text-lg">◆</span>
-                {cfg.logo
-                  ? <img src={cfg.logo} alt={cfg.name} className="h-7 w-auto max-w-[120px] object-contain" />
-                  : <span>{cfg.name || 'ForumHub'}</span>}
+                {cfg.logo ? (
+                  // Có logo lớn → hiện to & rõ, bỏ icon hình thoi
+                  <img src={cfg.logo} alt={cfg.name} className="h-11 w-auto max-w-[200px] object-contain" />
+                ) : (
+                  <>
+                    {cfg.logoSmall
+                      ? <img src={cfg.logoSmall} alt={cfg.name} className="h-8 w-8 rounded-lg object-contain" />
+                      : <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/15 text-lg">◆</span>}
+                    <span>{cfg.name || 'ForumHub'}</span>
+                  </>
+                )}
               </Link>
               <button onClick={() => setNavOpen(false)} className="rounded-lg p-1.5 text-white/85 hover:bg-white/10"><X size={18} /></button>
             </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Sparkles } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
@@ -48,12 +48,7 @@ export default function AvatarSettings() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold">Ảnh đại diện</h1>
-        <a href="/settings/decorations" className="inline-flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-1.5 text-sm font-medium hover:bg-ink-200 dark:bg-ink-800">
-          <Sparkles size={15} /> Trang trí (khung & huy hiệu)
-        </a>
-      </div>
+      <h1 className="text-xl font-bold">Ảnh đại diện</h1>
 
       <div className="card space-y-4 p-5">
         <div className="flex items-center gap-3">

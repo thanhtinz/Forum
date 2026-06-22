@@ -114,7 +114,11 @@ function Player(props: PlayerProps) {
   if (yt) return <iframe src={`https://www.youtube.com/embed/${yt}?autoplay=1`} className="h-full w-full" allowFullScreen title="Player" />;
   if (/\.m3u8(\?|$)/i.test(url)) return <VideoPlayer {...props} isHls />;
   if (/\.(mp4|webm)(\?|$)/i.test(url)) return <VideoPlayer {...props} isHls={false} />;
-  return <iframe src={url} className="h-full w-full" allow="autoplay; fullscreen; encrypted-media; picture-in-picture" allowFullScreen title="Player" />;
+  // Nguồn iframe (abyss…): sandbox chặn popup/mở tab/redirect quảng cáo, vẫn cho script + phát video.
+  // (Không chặn được banner BÊN TRONG iframe vì khác origin — đó là giới hạn của trình duyệt.)
+  return <iframe src={url} className="h-full w-full" allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+    sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-pointer-lock allow-orientation-lock"
+    allowFullScreen title="Player" />;
 }
 
 interface CommentT { id: string; content: string; createdAt: string; authorId: string; author: { id: string; username: string; displayName?: string | null; avatar?: string | null } }

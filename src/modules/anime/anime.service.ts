@@ -267,6 +267,58 @@ export class AnimeService {
     return { ok: true, id: work.id, slug: work.slug, title: work.title };
   }
 
+  // ───────── DANH SÁCH CÁ NHÂN + ĐÁNH GIÁ + YÊU THÍCH ─────────
+  async getEntry(userId: string, mediaId: string) {
+    return this.prisma.mediaListEntry.findUnique({ where: { userId_mediaId: { userId, mediaId } } });
+  }
+
+  async upsertEntry(userId: string, mediaId: string, dto: { status?: string; score?: number | null; progress?: number; favorite?: boolean; note?: string }) {
+    const media = await this.prisma.mediaWork.findUnique({ where: { id: mediaId }, select: { id: true } });
+    if (!media) throw new NotFoundException('Không tìm thấy tác phẩm');
+    const data: any = {};
+    if (dto.status && ['WATCHING', 'COMPLETED', 'PLANNING', 'PAUSED', 'DROPPED'].includes(dto.status)) data.status = dto.status;
+    if (dto.score !== undefined) data.score = dto.score == null || dto.score === 0 ? null : Math.min(Math.max(Math.round(Number(dto.score)), 1), 10);
+    if (dto.progress !== undefined) data.progress = Math.max(0, Number(dto.progress) || 0);
+    if (dto.favorite !== undefined) data.favorite = !!dto.favorite;
+    if (dto.note !== undefined) data.note = (dto.note || '').slice(0, 500) || null;
+
+    const entry = await this.prisma.mediaListEntry.upsert({
+      where: { userId_mediaId: { userId, mediaId } },
+      create: { userId, mediaId, status: data.status || 'PLANNING', ...data },
+      update: data,
+    });
+    await this.recomputeStats(mediaId);
+    return entry;
+  }
+
+  async removeEntry(userId: string, mediaId: string) {
+    await this.prisma.mediaListEntry.deleteMany({ where: { userId, mediaId } });
+    await this.recomputeStats(mediaId);
+    return { ok: true };
+  }
+
+  async myList(userId: string, q: { status?: string; type?: string; favorite?: string }) {
+    const where: Prisma.MediaListEntryWhereInput = { userId };
+    if (q.status && ['WATCHING', 'COMPLETED', 'PLANNING', 'PAUSED', 'DROPPED'].includes(q.status)) where.status = q.status as any;
+    if (q.favorite === 'true') where.favorite = true;
+    if (q.type) where.media = { type: q.type as MediaType };
+    return this.prisma.mediaListEntry.findMany({
+      where, orderBy: { updatedAt: 'desc' },
+      include: { media: { select: { id: true, type: true, slug: true, title: true, titleEnglish: true, coverUrl: true, format: true, episodes: true, chapters: true, avgScore: true } } },
+    });
+  }
+
+  private async recomputeStats(mediaId: string) {
+    const [agg, favs] = await Promise.all([
+      this.prisma.mediaListEntry.aggregate({ where: { mediaId, score: { not: null } }, _avg: { score: true }, _count: { score: true } }),
+      this.prisma.mediaListEntry.count({ where: { mediaId, favorite: true } }),
+    ]);
+    await this.prisma.mediaWork.update({
+      where: { id: mediaId },
+      data: { avgScore: agg._avg.score ? Math.round(agg._avg.score * 10) / 10 : 0, ratingCount: agg._count.score || 0, favoriteCount: favs },
+    });
+  }
+
   private async entitySlug(model: 'studio' | 'person' | 'character', name: string, anilistId: number): Promise<string> {
     const root = slugify(name, { lower: true, strict: true }).slice(0, 100) || `${model}-${anilistId}`;
     const delegate = (this.prisma as any)[model];

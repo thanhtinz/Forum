@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Star, Calendar, Film, Clapperboard, Users } from 'lucide-react';
 import { api } from '@/lib/api';
+import EntryControls from '@/components/anime/EntryControls';
 
 const STATUS_LABEL: Record<string, string> = {
   RELEASING: 'Đang phát hành', FINISHED: 'Hoàn thành', NOT_YET_RELEASED: 'Sắp ra mắt', HIATUS: 'Tạm ngưng', CANCELLED: 'Đã huỷ',
@@ -37,6 +38,7 @@ function Detail() {
           <div className="aspect-[3/4] overflow-hidden rounded-xl bg-ink-100 dark:bg-ink-800">
             {w.coverUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={w.coverUrl} alt={w.title} className="h-full w-full object-cover" />}
           </div>
+          <EntryControls mediaId={w.id} max={w.episodes ?? w.chapters} />
           <div className="card space-y-1.5 p-4 text-sm">
             {w.avgScore > 0 && <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Star size={15} /> {w.avgScore.toFixed(1)}/10 ({w.ratingCount})</p>}
             <Row label="Loại" value={w.type === 'LIGHT_NOVEL' ? 'Light Novel' : w.type} />

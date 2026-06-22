@@ -70,7 +70,7 @@ export default function AccountSettings() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Mật khẩu & Bảo mật</h1>
+      <h1 className="text-xl font-bold">Cài đặt</h1>
 
       {/* Đổi mật khẩu */}
       <div className="card space-y-3 p-5">

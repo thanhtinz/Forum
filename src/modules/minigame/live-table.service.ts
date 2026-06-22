@@ -135,6 +135,9 @@ export class LiveTableService {
     amount = Math.floor(amount);
     if (!Number.isFinite(amount) || amount < 100) throw new BadRequestException('Cược tối thiểu 100 coin');
     if (amount > 5000) throw new BadRequestException('Cược tối đa 5000 coin');
+    // Tổng cược mỗi người mỗi vòng tối đa 5000 coin (cộng dồn mọi lựa chọn)
+    const curTotal = (r.players.get(userId)?.bets ?? []).reduce((s, b) => s + b.amount, 0);
+    if (curTotal + amount > 5000) throw new BadRequestException(`Tổng cược mỗi vòng tối đa 5000 coin (đang cược ${curTotal})`);
 
     const char = await this.prisma.gameCharacter.findUnique({ where: { userId }, select: { id: true, coinBalance: true } });
     if (!char) throw new BadRequestException('Bạn chưa tạo nhân vật game');

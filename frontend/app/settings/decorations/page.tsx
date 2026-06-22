@@ -78,7 +78,7 @@ export default function DecorationsSettings() {
       <div className="card space-y-3 p-5">
         <div>
           <h2 className="font-semibold">Khung avatar của tôi</h2>
-          <p className="text-sm text-ink-500">Bấm vào khung để bật; bấm lại để tắt. Mua thêm ở <a href="/game/shop?tab=frame" className="text-brand-600 hover:underline">Cửa hàng</a>.</p>
+          <p className="text-sm text-ink-500">Bấm để ẩn/hiện cạnh tên.</p>
         </div>
         {frames.length === 0 ? (
           <p className="text-sm text-ink-500">Bạn chưa có khung nào. Ghé <a href="/game/shop?tab=frame" className="text-brand-600 hover:underline">Cửa hàng → Khung avatar</a>.</p>
@@ -103,7 +103,7 @@ export default function DecorationsSettings() {
         <div className="card space-y-3 p-5">
           <div>
             <h2 className="font-semibold">Huy hiệu của tôi</h2>
-            <p className="text-sm text-ink-500">Toàn bộ huy hiệu bạn đang có (vai trò, xác minh, cấp độ, thành tích). Bấm để ẩn/hiện cạnh tên.</p>
+            <p className="text-sm text-ink-500">Bấm để ẩn/hiện cạnh tên.</p>
           </div>
           <div className="flex flex-wrap gap-2.5">
             {allBadges.map((b) => {
@@ -129,7 +129,7 @@ export default function DecorationsSettings() {
         <div className="card space-y-3 p-5">
           <div>
             <h2 className="font-semibold">Huy hiệu VIP của tôi</h2>
-            <p className="text-sm text-ink-500">Mọi mốc VIP đã đạt được giữ vĩnh viễn. Bấm để bật huy hiệu cạnh tên; bấm lại để tắt.</p>
+            <p className="text-sm text-ink-500">Bấm để ẩn/hiện cạnh tên.</p>
           </div>
           <div className="flex flex-wrap gap-3">
             {vipRewards.filter((v) => v.badgeUrl).map((v) => (

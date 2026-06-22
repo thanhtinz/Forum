@@ -81,6 +81,8 @@ export class AnimeService {
           },
         },
         relatedFrom: { include: { to: { select: { slug: true, title: true, coverUrl: true, type: true, format: true } } } },
+        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, thumbnail: true, duration: true } },
+        chapterList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true } },
       },
     });
     if (!work) throw new NotFoundException('Không tìm thấy');
@@ -265,6 +267,84 @@ export class AnimeService {
     }
 
     return { ok: true, id: work.id, slug: work.slug, title: work.title };
+  }
+
+  // ───────── ADMIN: SỬA CHI TIẾT + TẬP PHIM + CHƯƠNG ─────────
+  async getForEdit(id: string) {
+    const work = await this.prisma.mediaWork.findUnique({
+      where: { id },
+      include: {
+        genres: { select: { name: true } },
+        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, videoUrl: true, thumbnail: true, duration: true } },
+        chapterList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, content: true, pages: true } },
+      },
+    });
+    if (!work) throw new NotFoundException('Không tồn tại');
+    return work;
+  }
+
+  private parsePages(pages: any): string[] {
+    if (Array.isArray(pages)) return pages.map((p) => String(p).trim()).filter(Boolean).slice(0, 500);
+    if (typeof pages === 'string') return pages.split(/[\n,]+/).map((p) => p.trim()).filter(Boolean).slice(0, 500);
+    return [];
+  }
+
+  async addEpisode(mediaId: string, dto: any) {
+    if (dto.number == null || dto.number === '') throw new BadRequestException('Thiếu số tập');
+    return this.prisma.episode.create({
+      data: {
+        mediaId, number: Number(dto.number), title: dto.title || null,
+        videoUrl: dto.videoUrl || null, thumbnail: dto.thumbnail || null,
+        duration: dto.duration ? Number(dto.duration) : null,
+      },
+    }).catch(() => { throw new BadRequestException('Số tập đã tồn tại'); });
+  }
+  async updateEpisode(id: string, dto: any) {
+    const data: any = {};
+    if (dto.number != null && dto.number !== '') data.number = Number(dto.number);
+    for (const k of ['title', 'videoUrl', 'thumbnail']) if (dto[k] !== undefined) data[k] = dto[k] || null;
+    if (dto.duration !== undefined) data.duration = dto.duration ? Number(dto.duration) : null;
+    return this.prisma.episode.update({ where: { id }, data });
+  }
+  async deleteEpisode(id: string) { await this.prisma.episode.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
+
+  async addChapter(mediaId: string, dto: any) {
+    if (dto.number == null || dto.number === '') throw new BadRequestException('Thiếu số chương');
+    return this.prisma.chapter.create({
+      data: {
+        mediaId, number: Number(dto.number), title: dto.title || null,
+        pages: this.parsePages(dto.pages), content: dto.content || null,
+      },
+    }).catch(() => { throw new BadRequestException('Số chương đã tồn tại'); });
+  }
+  async updateChapter(id: string, dto: any) {
+    const data: any = {};
+    if (dto.number != null && dto.number !== '') data.number = Number(dto.number);
+    if (dto.title !== undefined) data.title = dto.title || null;
+    if (dto.content !== undefined) data.content = dto.content || null;
+    if (dto.pages !== undefined) data.pages = this.parsePages(dto.pages);
+    return this.prisma.chapter.update({ where: { id }, data });
+  }
+  async deleteChapter(id: string) { await this.prisma.chapter.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
+
+  // ───────── CÔNG KHAI: XEM TẬP / ĐỌC CHƯƠNG ─────────
+  private async neighbours(model: 'episode' | 'chapter', mediaId: string, number: number) {
+    const delegate = (this.prisma as any)[model];
+    const [prev, next] = await Promise.all([
+      delegate.findFirst({ where: { mediaId, number: { lt: number } }, orderBy: { number: 'desc' }, select: { id: true, number: true } }),
+      delegate.findFirst({ where: { mediaId, number: { gt: number } }, orderBy: { number: 'asc' }, select: { id: true, number: true } }),
+    ]);
+    return { prev, next };
+  }
+  async getEpisode(id: string) {
+    const ep = await this.prisma.episode.findUnique({ where: { id }, include: { media: { select: { slug: true, title: true, titleEnglish: true, type: true } } } });
+    if (!ep) throw new NotFoundException('Không tìm thấy tập');
+    return { ...ep, ...(await this.neighbours('episode', ep.mediaId, ep.number)) };
+  }
+  async getChapter(id: string) {
+    const ch = await this.prisma.chapter.findUnique({ where: { id }, include: { media: { select: { slug: true, title: true, titleEnglish: true, type: true } } } });
+    if (!ch) throw new NotFoundException('Không tìm thấy chương');
+    return { ...ch, ...(await this.neighbours('chapter', ch.mediaId, ch.number)) };
   }
 
   // ───────── DANH SÁCH CÁ NHÂN + ĐÁNH GIÁ + YÊU THÍCH ─────────

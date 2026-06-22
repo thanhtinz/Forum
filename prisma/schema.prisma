@@ -2764,6 +2764,8 @@ model MediaWork {
   relatedFrom MediaRelation[]  @relation("RelFrom")
   relatedTo   MediaRelation[]  @relation("RelTo")
   listEntries MediaListEntry[]
+  episodeList Episode[]
+  chapterList Chapter[]
 
   @@index([type])
   @@index([status])
@@ -2841,4 +2843,38 @@ model MediaListEntry {
   @@unique([userId, mediaId])
   @@index([mediaId])
   @@index([userId, status])
+}
+
+// Tập phim (cho ANIME): link xem (embed/iframe/mp4/hls)
+model Episode {
+  id        String    @id @default(cuid())
+  mediaId   String
+  number    Float // số tập (cho phép 5.5 cho tập đặc biệt)
+  title     String?   @db.VarChar(200)
+  thumbnail String?   @db.VarChar(255)
+  videoUrl  String?   @db.VarChar(500) // link embed/video
+  duration  Int? // phút
+  airedAt   DateTime?
+  createdAt DateTime  @default(now())
+
+  media MediaWork @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, number])
+  @@index([mediaId])
+}
+
+// Chương (cho MANGA: ảnh trang; LIGHT_NOVEL: nội dung text)
+model Chapter {
+  id        String   @id @default(cuid())
+  mediaId   String
+  number    Float
+  title     String?  @db.VarChar(200)
+  pages     String[] @default([]) // URL ảnh trang (manga)
+  content   String?  @db.Text // nội dung text (light novel)
+  createdAt DateTime @default(now())
+
+  media MediaWork @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, number])
+  @@index([mediaId])
 }

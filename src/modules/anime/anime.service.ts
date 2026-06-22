@@ -494,7 +494,7 @@ export class AnimeService {
 
     // Chế độ chẩn đoán: thử nhiều Referer và báo cáo trạng thái upstream (không phát video)
     if (debug) {
-      const tries: { referer: string | null; status?: number; ct?: string | null; err?: string }[] = [];
+      const tries: { referer: string | null; status?: number; ct?: string | null; finalUrl?: string; body?: string; err?: string }[] = [];
       const cands: (string | null)[] = [r || null, `${target.protocol}//${target.host}/`, 'https://vuighe.live/', null];
       const seen = new Set<string>();
       for (const ref of cands) {
@@ -505,7 +505,8 @@ export class AnimeService {
           const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 12000);
           const up = await fetch(u, { signal: ctrl.signal, headers: h, redirect: 'follow' });
           clearTimeout(t);
-          tries.push({ referer: ref, status: up.status, ct: up.headers.get('content-type') });
+          const body = (await up.text().catch(() => '')).slice(0, 300);
+          tries.push({ referer: ref, status: up.status, ct: up.headers.get('content-type'), finalUrl: up.url, body });
         } catch (e: any) { tries.push({ referer: ref, err: String(e?.message || e) }); }
       }
       res.json({ url: u, tries });

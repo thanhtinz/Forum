@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
 interface Srv { id: string; name: string; videoUrl: string; referer?: string | null }
-interface Ep { id: string; number: number; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; servers?: Srv[] }
+interface Ep { id: string; number: number; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; servers?: Srv[] }
 interface Ch { id: string; number: number; title?: string | null; content?: string | null; pages: string[] }
 
 function EditInner() {
@@ -26,7 +26,6 @@ function EditInner() {
         title: w.title, titleEnglish: w.titleEnglish, titleNative: w.titleNative, type: w.type, status: w.status,
         format: w.format, season: w.season, seasonYear: w.seasonYear, episodes: w.episodes, duration: w.duration,
         chapters: w.chapters, volumes: w.volumes, source: w.source, trailerUrl: w.trailerUrl,
-        introStart: w.introStart, introEnd: w.introEnd,
         coverUrl: w.coverUrl, bannerUrl: w.bannerUrl, description: w.description, isAdult: w.isAdult,
         genreNames: (w._genres ?? (w.genres || []).map((g: any) => g.name).join(', ')).split(',').map((x: string) => x.trim()).filter(Boolean),
       });
@@ -64,8 +63,6 @@ function EditInner() {
           <Field label="Trailer URL"><input className="input" value={w.trailerUrl || ''} onChange={(e) => set('trailerUrl', e.target.value)} /></Field>
           <Field label="Ảnh bìa (cover)"><input className="input" value={w.coverUrl || ''} onChange={(e) => set('coverUrl', e.target.value)} /></Field>
           <Field label="Ảnh banner"><input className="input" value={w.bannerUrl || ''} onChange={(e) => set('bannerUrl', e.target.value)} /></Field>
-          <Field label="Giới thiệu: giây bắt đầu" hint="Để bỏ qua intro"><input type="number" className="input" value={w.introStart ?? ''} onChange={(e) => set('introStart', e.target.value)} placeholder="vd 0" /></Field>
-          <Field label="Giới thiệu: giây kết thúc" hint="User bật 'Bỏ qua giới thiệu' sẽ nhảy tới đây"><input type="number" className="input" value={w.introEnd ?? ''} onChange={(e) => set('introEnd', e.target.value)} placeholder="vd 90" /></Field>
         </div>
         <Field label="Thể loại (phân cách bằng dấu phẩy)"><input className="input" defaultValue={(w.genres || []).map((g: any) => g.name).join(', ')} onChange={(e) => set('_genres', e.target.value)} /></Field>
         <Field label="Mô tả"><textarea className="input min-h-[120px]" value={w.description || ''} onChange={(e) => set('description', e.target.value)} /></Field>
@@ -81,13 +78,13 @@ function EditInner() {
 }
 
 function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: string; episodes: Ep[]; onChange: () => void; setErr: (s: string) => void }) {
-  const [add, setAdd] = useState({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '' });
+  const [add, setAdd] = useState({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '' });
   const [embedInput, setEmbedInput] = useState('');
   const [embedBusy, setEmbedBusy] = useState(false);
   const [embedCands, setEmbedCands] = useState<{ url: string; referer?: string; status?: number | null }[]>([]);
   async function create() {
     if (!add.number) { setErr('Nhập số tập'); return; }
-    try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '' }); onChange(); }
+    try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '' }); onChange(); }
     catch (e: any) { setErr(e.message); }
   }
   async function getEmbed() {
@@ -132,7 +129,8 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
         <input className="input sm:col-span-1" placeholder="Tập #" value={add.number} onChange={(e) => setAdd({ ...add, number: e.target.value })} />
         <input className="input sm:col-span-2" placeholder="Tiêu đề" value={add.title} onChange={(e) => setAdd({ ...add, title: e.target.value })} />
         <input className="input sm:col-span-2" placeholder="Link video / embed" value={add.videoUrl} onChange={(e) => setAdd({ ...add, videoUrl: e.target.value })} />
-        <input className="input sm:col-span-5" placeholder="Referer (tuỳ chọn — nếu nguồn chặn hotlink, vd https://vuighe.live/)" value={add.referer} onChange={(e) => setAdd({ ...add, referer: e.target.value })} />
+        <input className="input sm:col-span-1" type="number" placeholder="Bỏ intro (giây)" title="Bỏ qua đoạn đầu đến giây này (vd 90)" value={add.introEnd} onChange={(e) => setAdd({ ...add, introEnd: e.target.value })} />
+        <input className="input sm:col-span-4" placeholder="Referer (tuỳ chọn — nếu nguồn chặn hotlink, vd https://vuighe.live/)" value={add.referer} onChange={(e) => setAdd({ ...add, referer: e.target.value })} />
         <Btn onClick={create}><Plus size={15} /> Thêm</Btn>
       </div>
       <div className="space-y-2">
@@ -143,7 +141,7 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
   );
 }
 function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; setErr: (s: string) => void }) {
-  const [v, setV] = useState({ number: String(ep.number), title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '' });
+  const [v, setV] = useState({ number: String(ep.number), title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '' });
   const [srvOpen, setSrvOpen] = useState(false);
   const [newSrv, setNewSrv] = useState({ name: '', videoUrl: '', referer: '' });
   const [saving, setSaving] = useState(false);
@@ -168,7 +166,8 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
         <input className="input sm:col-span-1" value={v.number} onChange={(e) => setV({ ...v, number: e.target.value })} />
         <input className="input sm:col-span-2" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Tiêu đề" />
         <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link Server 1" />
-        <input className="input sm:col-span-6" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer Server 1 (tuỳ chọn)" />
+        <input className="input sm:col-span-1" type="number" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (giây)" title="Bỏ qua đoạn đầu đến giây này (vd 90). Để trống = không bỏ." />
+        <input className="input sm:col-span-5" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer Server 1 (tuỳ chọn)" />
         <div className="flex items-center gap-1">
           <Btn size="sm" onClick={save} disabled={saving} title="Lưu tập">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}</Btn>
           <Btn size="sm" variant="danger" onClick={async () => { if (confirm('Xoá tập?')) { await api.post(`/admin/anime/episode/${ep.id}/delete`); onChange(); } }}><Trash2 size={14} /></Btn>

@@ -2858,6 +2858,7 @@ model Episode {
   videoUrl  String?   @db.VarChar(500) // link embed/video
   referer   String?   @db.VarChar(255) // Referer gửi kèm khi proxy (nếu nguồn chặn hotlink)
   duration  Int? // phút
+  introEnd  Int? // giây kết thúc đoạn intro của RIÊNG tập này (bỏ qua đoạn đầu 0→introEnd)
   airedAt   DateTime?
   createdAt DateTime  @default(now())
 

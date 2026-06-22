@@ -34,20 +34,21 @@ function PlayerError({ msg }: { msg: string }) {
   );
 }
 
-interface PlayerProps { url: string; referer?: string | null; introStart?: number | null; introEnd?: number | null; skipIntro: boolean; autoNext: boolean; onEnded: () => void }
+interface PlayerProps { url: string; referer?: string | null; introEnd?: number | null; skipIntro: boolean; autoNext: boolean; onEnded: () => void }
 
 // Player chính (ArtPlayer) cho nguồn m3u8/mp4 — qua proxy HLS, hỗ trợ hls.js, bỏ qua intro, tự next.
-function VideoPlayer({ url, referer, isHls, introStart, introEnd, skipIntro, autoNext, onEnded }: PlayerProps & { isHls: boolean }) {
+function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnded }: PlayerProps & { isHls: boolean }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
   const src = proxy(url, referer);
   // Giữ giá trị mới nhất mà không tạo lại player
-  const introRef = useRef({ introStart, introEnd, skipIntro }); introRef.current = { introStart, introEnd, skipIntro };
+  const introRef = useRef({ introEnd, skipIntro }); introRef.current = { introEnd, skipIntro };
   const nextRef = useRef({ autoNext, onEnded }); nextRef.current = { autoNext, onEnded };
+  const skippedRef = useRef(false); // chỉ nhảy intro MỘT lần ở đầu tập
 
   useEffect(() => {
     const el = boxRef.current; if (!el) return;
-    setError('');
+    setError(''); skippedRef.current = false;
     let art: any; let cancelled = false;
     Promise.all([import('artplayer'), isHls ? import('hls.js') : Promise.resolve(null)]).then(([artMod, hlsMod]) => {
       if (cancelled) return;
@@ -89,8 +90,12 @@ function VideoPlayer({ url, referer, isHls, introStart, introEnd, skipIntro, aut
           : undefined,
       });
       art.on('video:timeupdate', () => {
-        const { introStart, introEnd, skipIntro } = introRef.current;
-        if (skipIntro && introEnd && art.currentTime >= (introStart || 0) && art.currentTime < introEnd) art.currentTime = introEnd;
+        const { introEnd, skipIntro } = introRef.current;
+        // Bỏ qua đoạn đầu (0 → introEnd) đúng một lần khi mới vào tập; sau đó user tua lại thoải mái.
+        if (skipIntro && introEnd && !skippedRef.current && art.currentTime < introEnd) {
+          skippedRef.current = true;
+          art.currentTime = introEnd;
+        }
       });
       art.on('video:ended', () => { if (nextRef.current.autoNext) nextRef.current.onEnded(); });
       art.on('error', () => setError('Trình duyệt không tải được (CORS/403).'));
@@ -194,7 +199,7 @@ function Watch() {
       {/* Player */}
       <div className="overflow-hidden rounded-xl bg-black shadow-card">
         <div className="aspect-video w-full">
-          <Player url={cur?.videoUrl || ''} referer={cur?.referer} introStart={ep.media.introStart} introEnd={ep.media.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
+          <Player url={cur?.videoUrl || ''} referer={cur?.referer} introEnd={ep.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
         </div>
         {/* Thanh hành động */}
         <div className="grid grid-cols-5 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
@@ -216,10 +221,10 @@ function Watch() {
               <span onClick={toggleAutoNext} className={`relative h-6 w-11 rounded-full transition ${autoNext ? 'bg-brand-500' : 'bg-white/20'}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${autoNext ? 'left-[22px]' : 'left-0.5'}`} /></span>
             </label>
             <label className="flex cursor-pointer items-center justify-between text-sm">
-              <span>Bỏ qua giới thiệu {ep.media.introEnd ? `(${ep.media.introStart || 0}s–${ep.media.introEnd}s)` : '(chưa cấu hình)'}</span>
+              <span>Bỏ qua đoạn đầu {ep.introEnd ? `(0s–${ep.introEnd}s)` : '(tập này chưa đặt)'}</span>
               <span onClick={toggleSkipIntro} className={`relative h-6 w-11 rounded-full transition ${skipIntro ? 'bg-brand-500' : 'bg-white/20'}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${skipIntro ? 'left-[22px]' : 'left-0.5'}`} /></span>
             </label>
-            {!ep.media.introEnd && <p className="text-xs text-white/40">Admin cần đặt thời gian giới thiệu thì tính năng bỏ qua mới hoạt động.</p>}
+            {!ep.introEnd && <p className="text-xs text-white/40">Admin cần đặt "Bỏ intro (giây)" cho riêng tập này thì tính năng mới hoạt động.</p>}
           </div>
         )}
       </div>

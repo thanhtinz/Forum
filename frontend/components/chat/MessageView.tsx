@@ -18,9 +18,9 @@ function renderWithMentions(text: string, mine?: boolean) {
 export function MessageBody({ m, mine }: { m: ChatMsg; mine?: boolean }) {
   switch (m.type) {
     case 'STICKER':
-      return <img src={m.content} alt={m.type} className="h-24 w-24 object-contain" />;
+      return <img src={m.content} alt={m.type} className="h-20 w-20 object-contain" />;
     case 'GIF':
-      return <img src={m.content} alt={m.type} className="max-h-36 max-w-[180px] rounded-lg" />;
+      return <img src={m.content} alt={m.type} className="max-h-32 max-w-[160px] rounded-lg" />;
     case 'IMAGE':
       return <a href={m.content} target="_blank" rel="noreferrer"><img src={m.content} alt="" className="max-h-64 rounded-lg" /></a>;
     case 'VIDEO':
@@ -53,21 +53,19 @@ export function MessageView({ m, mine, showName }: { m: ChatMsg; mine: boolean; 
     ? 'bg-transparent p-0'
     : mine ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800';
   return (
-    <div className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[78%] rounded-2xl px-3 py-2 text-sm ${bubble}`}>
-        {!mine && showName && (
-          <div className="mb-0.5 flex items-center gap-1 text-[11px] font-medium opacity-80">
-            {name}
-            <UserBadges badges={roleBadgesFromUser({ role: m.sender?.role, verifiedBadge: m.sender?.verifiedBadge })} size="xs" iconOnly />
-          </div>
-        )}
-        {m.replyTo && (
-          <div className="mb-1 flex items-center gap-1 rounded-md border-l-2 border-current/40 bg-black/5 px-2 py-1 text-[11px] opacity-80 dark:bg-white/10">
-            <Reply size={11} /> {m.replyTo.type === 'TEXT' ? m.replyTo.content.slice(0, 60) : m.replyTo.type}
-          </div>
-        )}
-        <MessageBody m={m} mine={mine} />
-      </div>
+    <div className={`inline-block max-w-full rounded-2xl px-3 py-2 text-sm ${bubble}`}>
+      {!mine && showName && (
+        <div className="mb-0.5 flex items-center gap-1 text-[11px] font-medium opacity-80">
+          {name}
+          <UserBadges badges={roleBadgesFromUser({ role: m.sender?.role, verifiedBadge: m.sender?.verifiedBadge })} size="xs" iconOnly />
+        </div>
+      )}
+      {m.replyTo && (
+        <div className="mb-1 flex items-center gap-1 rounded-md border-l-2 border-current/40 bg-black/5 px-2 py-1 text-[11px] opacity-80 dark:bg-white/10">
+          <Reply size={11} /> {m.replyTo.type === 'TEXT' ? m.replyTo.content.slice(0, 60) : m.replyTo.type}
+        </div>
+      )}
+      <MessageBody m={m} mine={mine} />
     </div>
   );
 }

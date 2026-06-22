@@ -48,8 +48,9 @@ export function SiteFooter() {
         {/* Miễn trừ trách nhiệm + liên hệ */}
         <p className="mt-3 text-xs leading-relaxed text-white/60">
           Nội dung được gửi bởi thành viên. Chúng tôi sẽ không chịu trách nhiệm với các thông tin do thành viên đưa lên trừ thông tin nội bộ.
-          <br />
-          Contact: <a href="mailto:admin@tramgenz.forum" className="hover:text-white hover:underline">admin@tramgenz.forum</a> | TramGenz.Forum phiên bản thử nghiệm.
+          {(cfg.contactEmail || cfg.name) && <br />}
+          {cfg.contactEmail && <>Liên hệ: <a href={`mailto:${cfg.contactEmail}`} className="hover:text-white hover:underline">{cfg.contactEmail}</a>{cfg.name ? ' | ' : ''}</>}
+          {cfg.name && <>{cfg.name}</>}
         </p>
       </div>
     </footer>

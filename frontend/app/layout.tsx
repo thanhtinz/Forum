@@ -5,7 +5,9 @@ import { ForumChrome } from '@/components/ForumChrome';
 import { PwaRegister } from '@/components/PwaRegister';
 import { SiteMeta } from '@/components/SiteMeta';
 
-const SITE = 'Forum AI Platform';
+// Giá trị mặc định lúc build (static export). Tiêu đề/meta thực tế do <SiteMeta> cập nhật
+// theo cấu hình admin (site.name…) ở phía client.
+const SITE = 'ForumHub';
 const DESC = 'Diễn đàn cộng đồng tích hợp game, chợ số — phong cách XenForo/Flarum.';
 
 export const metadata: Metadata = {
@@ -13,7 +15,7 @@ export const metadata: Metadata = {
   description: DESC,
   applicationName: SITE,
   manifest: '/manifest.webmanifest',
-  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'ForumHub' },
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: SITE },
   icons: { icon: '/icon-192.png', apple: '/apple-touch-icon.png' },
   openGraph: { title: SITE, description: DESC, type: 'website', siteName: SITE },
   twitter: { card: 'summary_large_image', title: SITE, description: DESC },

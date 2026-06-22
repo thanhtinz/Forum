@@ -275,9 +275,10 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
     icon: 'settings',
     sortOrder: 1,
     settings: [
-      { key: 'site.name', label: 'Tên website', type: 'string', value: 'Forum AI', validation: { required: true } },
+      { key: 'site.name', label: 'Tên website', type: 'string', value: 'ForumHub', validation: { required: true } },
       { key: 'site.tagline', label: 'Slogan', type: 'string', value: 'Cộng đồng chia sẻ mã nguồn' },
       { key: 'site.description', label: 'Mô tả (SEO)', type: 'textarea', value: '' },
+      { key: 'site.contactEmail', label: 'Email liên hệ', type: 'string', value: '' },
       { key: 'site.heroTitle', label: 'Tiêu đề Hero (trang chủ)', type: 'string', value: 'Chào mừng đến ForumHub' },
       { key: 'site.heroDescription', label: 'Mô tả Hero (trang chủ)', type: 'textarea', value: 'Diễn đàn cộng đồng tích hợp game hoá — chia sẻ, thảo luận, chơi game và mua bán source code.' },
       { key: 'site.footerText', label: 'Nội dung Footer', type: 'textarea', value: '© {year} ForumHub · NestJS + Next.js' },

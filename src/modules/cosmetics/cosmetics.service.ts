@@ -119,17 +119,18 @@ export class CosmeticsService {
   async bubbleInventory(userId: string) {
     const [rows, user] = await Promise.all([
       this.prisma.userChatBubble.findMany({ where: { userId }, include: { bubble: true }, orderBy: { acquiredAt: 'desc' } }),
-      this.prisma.user.findUnique({ where: { id: userId }, select: { chatBubbleCss: true } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { chatBubbleUrl: true } }),
     ]);
     const now = new Date();
     return rows.map((r) => ({
       id: r.id,
       bubbleId: r.bubbleId,
       name: r.bubble.name,
-      css: r.bubble.css,
+      imageUrl: r.bubble.imageUrl,
+      textColor: r.bubble.textColor,
       expiresAt: r.expiresAt as Date | null,
       expired: r.expiresAt ? r.expiresAt < now : false,
-      equipped: user?.chatBubbleCss === r.bubble.css,
+      equipped: user?.chatBubbleUrl === r.bubble.imageUrl,
     }));
   }
 
@@ -152,13 +153,13 @@ export class CosmeticsService {
 
   async equipBubble(userId: string, bubbleId: string | null) {
     if (!bubbleId) {
-      await this.prisma.user.update({ where: { id: userId }, data: { chatBubbleCss: null } });
+      await this.prisma.user.update({ where: { id: userId }, data: { chatBubbleUrl: null, chatBubbleColor: null } });
       return { ok: true };
     }
     const owned = await this.prisma.userChatBubble.findUnique({ where: { userId_bubbleId: { userId, bubbleId } }, include: { bubble: true } });
     if (!owned) throw new BadRequestException('Bạn chưa sở hữu bong bóng này');
     if (owned.expiresAt && owned.expiresAt < new Date()) throw new BadRequestException('Bong bóng đã hết hạn, hãy gia hạn để dùng tiếp');
-    await this.prisma.user.update({ where: { id: userId }, data: { chatBubbleCss: owned.bubble.css } });
+    await this.prisma.user.update({ where: { id: userId }, data: { chatBubbleUrl: owned.bubble.imageUrl, chatBubbleColor: owned.bubble.textColor } });
     return { ok: true };
   }
 

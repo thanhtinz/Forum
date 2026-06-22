@@ -193,7 +193,8 @@ model User {
   location        String?    @db.VarChar(120) // nơi ở
   shopBadgeUrl    String? // ảnh badge cửa hàng đang đeo (denormalized)
   nameEffectCss   String?    @db.Text // CSS hiệu ứng tên đang dùng (denormalized)
-  chatBubbleCss   String?    @db.Text // CSS bong bóng chat đang dùng (denormalized)
+  chatBubbleUrl   String? // ảnh nền bong bóng chat đang dùng (denormalized)
+  chatBubbleColor String?    @db.VarChar(20) // màu chữ bong bóng chat đang dùng
   role            UserRole   @default(MEMBER)
   status          UserStatus @default(ACTIVE)
   isVerified      Boolean    @default(false)
@@ -2295,7 +2296,8 @@ model ChatBubbleProduct {
   slug        String   @unique @db.VarChar(80)
   name        String   @db.VarChar(120)
   description String?  @db.Text
-  css         String   @db.Text // khai báo CSS áp lên bong bóng chat (background, border, color…)
+  imageUrl    String   @db.VarChar(255) // ảnh nền bong bóng chat (PNG, co giãn theo nội dung)
+  textColor   String?  @db.VarChar(20) // màu chữ phù hợp với ảnh (tuỳ chọn)
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
   priceCoin   Int?

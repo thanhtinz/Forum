@@ -2,10 +2,11 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Heart, Star, SkipBack, SkipForward, ArrowLeft, Search, ArrowDownUp, Send, Trash2, Play, MoreHorizontal, Server, X } from 'lucide-react';
+import { Heart, Star, SkipBack, SkipForward, ArrowLeft, Search, ArrowDownUp, Send, Trash2, Play, MoreHorizontal, Server, X, Smile } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
+import { EmojiStickerPicker, isStickerContent } from '@/components/EmojiStickerPicker';
 
 const ytId = (u: string) => u.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/)?.[1] || null;
 const proxy = (u: string, ref?: string | null) =>
@@ -47,7 +48,13 @@ function VideoPlayer({ url, referer, isHls, introStart, introEnd, skipIntro, aut
         if (Hls.isSupported()) {
           hls = new Hls({ maxBufferLength: 30 });
           hls.loadSource(src); hls.attachMedia(video);
-          hls.on(Hls.Events.ERROR, (_e: any, data: any) => { if (data?.fatal) setError(`Lỗi tải luồng (${data.type || 'network'}).`); });
+          let recover = 0;
+          hls.on(Hls.Events.ERROR, (_e: any, data: any) => {
+            if (!data?.fatal) return;
+            if (data.type === Hls.ErrorTypes.NETWORK_ERROR && recover < 3) { recover++; hls.startLoad(); return; }
+            if (data.type === Hls.ErrorTypes.MEDIA_ERROR && recover < 3) { recover++; hls.recoverMediaError(); return; }
+            setError(`Lỗi tải luồng (${data.type || 'network'}).`);
+          });
         } else { video.src = src; }
       });
     } else { video.src = src; }
@@ -95,6 +102,7 @@ function Watch() {
   const [comments, setComments] = useState<CommentT[]>([]);
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
+  const [picker, setPicker] = useState(false);
 
   useEffect(() => {
     setAutoNext(localStorage.getItem('anime_autonext') !== '0');
@@ -127,14 +135,14 @@ function Watch() {
     try { await api.put(`/anime/me/entry/${ep.media.id}`, patch); } catch {}
   }
   function goNext() { if (ep?.next) router.push(`/anime/watch?ep=${ep.next.id}`); }
-  async function submitComment(e: React.FormEvent) {
-    e.preventDefault();
-    if (!text.trim()) return;
+  async function postComment(content: string) {
+    if (!content.trim()) return;
     if (!user) { router.push('/login'); return; }
     setPosting(true);
-    try { const c = await api.post<CommentT>(`/anime/episode/${id}/comments`, { content: text }); setComments([c, ...comments]); setText(''); }
+    try { const c = await api.post<CommentT>(`/anime/episode/${id}/comments`, { content }); setComments((cs) => [c, ...cs]); setText(''); }
     catch (e: any) { setErr(e.message); } finally { setPosting(false); }
   }
+  function submitComment(e: React.FormEvent) { e.preventDefault(); postComment(text); }
   async function delComment(cid: string) {
     if (!confirm('Xoá bình luận?')) return;
     try { await api.del(`/anime/comment/${cid}`); setComments(comments.filter((c) => c.id !== cid)); } catch {}
@@ -218,9 +226,19 @@ function Watch() {
       <div className="card p-5">
         <h2 className="mb-3 font-semibold">Bình luận tập {ep.number} ({comments.length})</h2>
         {user ? (
-          <form onSubmit={submitComment} className="mb-4 flex items-start gap-2">
+          <form onSubmit={submitComment} className="relative mb-4 flex items-start gap-2">
             <Avatar user={user} size={32} />
-            <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="Viết bình luận về tập này…" className="input flex-1 resize-none" />
+            <div className="relative flex-1">
+              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="Viết bình luận về tập này…" className="input w-full resize-none pr-9" />
+              <button type="button" onClick={() => setPicker((v) => !v)} className={`absolute right-2 top-2 rounded p-1 hover:bg-ink-100 dark:hover:bg-ink-800 ${picker ? 'text-brand-600' : 'text-ink-400'}`} title="Emoji / Sticker"><Smile size={18} /></button>
+              {picker && (
+                <EmojiStickerPicker
+                  onEmoji={(e) => setText((t) => t + e)}
+                  onSticker={(url) => { setPicker(false); postComment(url); }}
+                  onClose={() => setPicker(false)}
+                />
+              )}
+            </div>
             <button type="submit" disabled={posting || !text.trim()} className="flex w-12 shrink-0 items-center justify-center self-stretch rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-50"><Send size={18} /></button>
           </form>
         ) : (
@@ -237,7 +255,9 @@ function Watch() {
                   <span className="text-[11px] text-ink-400">{new Date(c.createdAt).toLocaleDateString('vi')}</span>
                   {user && (c.authorId === user.id || isMod) && <button onClick={() => delComment(c.id)} className="ml-auto text-ink-400 hover:text-red-500"><Trash2 size={13} /></button>}
                 </div>
-                <p className="whitespace-pre-line break-words text-sm text-ink-700 dark:text-ink-200">{c.content}</p>
+                {isStickerContent(c.content)
+                  ? <img src={c.content.trim()} alt="sticker" className="mt-1 h-24 w-24 object-contain" />
+                  : <p className="whitespace-pre-line break-words text-sm text-ink-700 dark:text-ink-200">{c.content}</p>}
               </div>
             </div>
           ))}

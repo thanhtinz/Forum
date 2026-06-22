@@ -51,13 +51,16 @@ export function MessageBody({ m, mine }: { m: ChatMsg; mine?: boolean }) {
 export function MessageView({ m, mine, showName }: { m: ChatMsg; mine: boolean; showName: boolean }) {
   const name = m.sender?.displayName || m.sender?.username || m.senderId.slice(0, 6);
   const isMedia = m.type === 'STICKER' || m.type === 'GIF' || m.type === 'IMAGE';
-  // Bong bóng chat tùy chỉnh (CSS mua ở cửa hàng) — không áp cho media (nền trong suốt)
-  const bubbleCss = !isMedia ? cssToStyle(m.sender?.chatBubbleCss) : undefined;
+  // Bong bóng chat ảnh (mua ở cửa hàng) — co giãn theo nội dung; không áp cho media (nền trong suốt)
+  const bubbleUrl = !isMedia ? m.sender?.chatBubbleUrl : null;
+  const bubbleStyle = bubbleUrl
+    ? { backgroundImage: `url(${bubbleUrl})`, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: m.sender?.chatBubbleColor || undefined }
+    : undefined;
   const bubble = isMedia
     ? 'bg-transparent p-0'
-    : bubbleCss ? '' : mine ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800';
+    : bubbleUrl ? '' : mine ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800';
   return (
-    <div className={`inline-block max-w-full rounded-2xl px-3 py-2 text-sm ${bubble}`} style={bubbleCss}>
+    <div className={`inline-block max-w-full rounded-2xl px-3 py-2 text-sm ${bubble}`} style={bubbleStyle}>
       {!mine && showName && (
         <div className="mb-0.5 flex items-center gap-1 text-[11px] font-medium opacity-80">
           <span style={cssToStyle(m.sender?.nameEffectCss)}>{name}</span>

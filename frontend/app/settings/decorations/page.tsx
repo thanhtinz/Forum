@@ -12,7 +12,7 @@ interface OwnedFrame { id: string; frameId: string; name: string; imageUrl: stri
 interface ManageBadge { key: string; label: string; icon: string; color: string; kind: string; description?: string; hidden: boolean }
 interface OwnedShopBadge { id: string; badgeId: string; name: string; imageUrl: string; expiresAt: string | null; expired: boolean; equipped: boolean }
 interface OwnedEffect { id: string; effectId: string; name: string; css: string; expiresAt: string | null; expired: boolean; equipped: boolean }
-interface OwnedBubble { id: string; bubbleId: string; name: string; css: string; expiresAt: string | null; expired: boolean; equipped: boolean }
+interface OwnedBubble { id: string; bubbleId: string; name: string; imageUrl: string; textColor?: string | null; expiresAt: string | null; expired: boolean; equipped: boolean }
 
 const dur = (d: string | null, expired: boolean) => (expired ? 'Hết hạn' : d ? `Đến ${new Date(d).toLocaleDateString('vi')}` : 'Vĩnh viễn');
 
@@ -218,7 +218,7 @@ export default function DecorationsSettings() {
               <button key={b.id} onClick={() => !b.expired && equipBubble(b.equipped ? null : b.bubbleId)} disabled={busy || b.expired}
                 title={b.equipped ? 'Bấm để tắt bong bóng' : b.name}
                 className={`relative flex min-w-[9rem] flex-col items-center gap-1 rounded-xl border-2 p-3 transition disabled:opacity-50 ${b.equipped ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
-                <span className="inline-block max-w-full rounded-2xl px-3 py-1.5 text-sm" style={cssToStyle(b.css)}>Tin nhắn 👋</span>
+                <span className="inline-block max-w-full rounded-2xl px-3 py-1.5 text-sm" style={{ backgroundImage: `url(${b.imageUrl})`, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: b.textColor || undefined }}>Tin nhắn 👋</span>
                 <span className="line-clamp-1 text-xs font-medium text-ink-500">{b.name}</span>
                 <span className="text-[10px] text-ink-400">{dur(b.expiresAt, b.expired)}</span>
                 {b.equipped && <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-brand-600 text-white"><Check size={12} /></span>}

@@ -26,9 +26,10 @@ interface ShopEffect {
   priceCoin?: number | null; coinDays?: number | null; priceGem?: number | null; gemDays?: number | null;
 }
 interface ShopBubble {
-  id: string; slug: string; name: string; description?: string | null; css: string;
+  id: string; slug: string; name: string; description?: string | null; imageUrl: string; textColor?: string | null;
   priceCoin?: number | null; coinDays?: number | null; priceGem?: number | null; gemDays?: number | null;
 }
+const bubbleStyle = (url?: string | null, color?: string | null) => (url ? { backgroundImage: `url(${url})`, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', color: color || undefined } as const : undefined);
 const frameDur = (days?: number | null) => (days == null ? 'vĩnh viễn' : `${days} ngày`);
 
 interface Crop { slug: string; name: string; seedPrice: number; sellPrice?: number; growSeconds?: number; exp?: number; yieldMin?: number; yieldMax?: number; reqLevel?: number; asset?: string | null }
@@ -346,7 +347,7 @@ export default function GameShopPage() {
           {bubbles.map((b) => (
             <button key={b.id} onClick={() => { setBubbleSel(b); setMsg(null); }}
               className="card flex flex-col items-center gap-2 p-4 text-center transition hover:border-brand-400 hover:shadow-card">
-              <span className="inline-block max-w-full rounded-2xl px-3 py-2 text-sm" style={cssToStyle(b.css)}>Tin nhắn ví dụ 👋</span>
+              <span className="inline-block max-w-full rounded-2xl px-3 py-2 text-sm" style={bubbleStyle(b.imageUrl, b.textColor)}>Tin nhắn ví dụ 👋</span>
               <p className="line-clamp-1 text-sm font-medium text-ink-500">{b.name}</p>
               <p className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-ink-400">
                 {b.priceCoin != null && <span className="inline-flex items-center gap-0.5"><Coins size={11} />{formatCoin(b.priceCoin)}</span>}
@@ -490,7 +491,7 @@ export default function GameShopPage() {
             </div>
             <div className="flex flex-col gap-2 rounded-xl bg-ink-50 py-6 px-4 dark:bg-ink-800/50">
               <div className="flex justify-end">
-                <span className="inline-block max-w-[78%] rounded-2xl px-3 py-2 text-sm" style={cssToStyle(bubbleSel.css)}>Tin nhắn của bạn 👋</span>
+                <span className="inline-block max-w-[78%] rounded-2xl px-3 py-2 text-sm" style={bubbleStyle(bubbleSel.imageUrl, bubbleSel.textColor)}>Tin nhắn của bạn 👋</span>
               </div>
               <p className="text-center text-xs text-ink-400">Xem thử bong bóng chat của bạn</p>
             </div>

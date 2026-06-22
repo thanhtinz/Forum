@@ -257,16 +257,16 @@ export class AdminGameAssetService {
   }
 
   createChatBubble(data: {
-    slug: string; name: string; description?: string; css: string;
+    slug: string; name: string; description?: string; imageUrl: string; textColor?: string | null;
     priceCoin?: number | null; coinDays?: number | null;
     priceGem?: number | null; gemDays?: number | null;
     isActive?: boolean; sortOrder?: number;
   }) {
-    if (!data.slug || !data.name || !data.css) throw new BadRequestException('Thiếu slug, tên hoặc CSS bong bóng');
+    if (!data.slug || !data.name || !data.imageUrl) throw new BadRequestException('Thiếu slug, tên hoặc ảnh bong bóng');
     if (data.priceCoin == null && data.priceGem == null) throw new BadRequestException('Phải có ít nhất 1 giá (Xu hoặc Gem)');
     return this.prisma.chatBubbleProduct.create({
       data: {
-        slug: data.slug, name: data.name, description: data.description, css: data.css,
+        slug: data.slug, name: data.name, description: data.description, imageUrl: data.imageUrl, textColor: data.textColor || null,
         priceCoin: data.priceCoin ?? null, coinDays: data.coinDays ?? null,
         priceGem: data.priceGem ?? null, gemDays: data.gemDays ?? null,
         isActive: data.isActive ?? true, sortOrder: data.sortOrder ?? 0,

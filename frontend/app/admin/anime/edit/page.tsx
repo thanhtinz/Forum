@@ -146,7 +146,18 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
   const [v, setV] = useState({ number: String(ep.number), title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '' });
   const [srvOpen, setSrvOpen] = useState(false);
   const [newSrv, setNewSrv] = useState({ name: '', videoUrl: '', referer: '' });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [rowErr, setRowErr] = useState('');
   const extra = ep.servers || [];
+  async function save() {
+    setSaving(true); setSaved(false); setRowErr(''); setErr('');
+    try {
+      await api.patch(`/admin/anime/episode/${ep.id}`, v);
+      setSaved(true); setTimeout(() => setSaved(false), 2000); onChange();
+    } catch (e: any) { setRowErr(e.message || 'Lưu thất bại'); setErr(e.message); }
+    finally { setSaving(false); }
+  }
   async function addSrv() {
     if (!newSrv.name.trim() || !newSrv.videoUrl.trim()) { setErr('Nhập tên server và link'); return; }
     try { await api.post(`/admin/anime/episode/${ep.id}/server`, newSrv); setNewSrv({ name: '', videoUrl: '', referer: '' }); onChange(); } catch (e: any) { setErr(e.message); }
@@ -158,11 +169,13 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
         <input className="input sm:col-span-2" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Tiêu đề" />
         <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link Server 1" />
         <input className="input sm:col-span-6" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer Server 1 (tuỳ chọn)" />
-        <div className="flex gap-1">
-          <Btn size="sm" onClick={async () => { try { await api.patch(`/admin/anime/episode/${ep.id}`, v); onChange(); } catch (e: any) { setErr(e.message); } }}><Save size={14} /></Btn>
+        <div className="flex items-center gap-1">
+          <Btn size="sm" onClick={save} disabled={saving} title="Lưu tập">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}</Btn>
           <Btn size="sm" variant="danger" onClick={async () => { if (confirm('Xoá tập?')) { await api.post(`/admin/anime/episode/${ep.id}/delete`); onChange(); } }}><Trash2 size={14} /></Btn>
+          {saved && <span className="text-xs font-medium text-emerald-600">Đã lưu ✓</span>}
         </div>
       </div>
+      {rowErr && <p className="mt-1 text-xs text-rose-600">⚠ {rowErr}</p>}
       <button onClick={() => setSrvOpen((o) => !o)} className="mt-2 text-xs font-medium text-brand-600 hover:underline">{srvOpen ? 'Ẩn server phụ' : `Server phụ (${extra.length})`}</button>
       {srvOpen && (
         <div className="mt-2 space-y-2 border-t border-ink-100 pt-2 dark:border-ink-800">
@@ -180,14 +193,22 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
 }
 function ServerRow({ s, onChange, setErr }: { s: Srv; onChange: () => void; setErr: (m: string) => void }) {
   const [v, setV] = useState({ name: s.name, videoUrl: s.videoUrl, referer: s.referer || '' });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  async function save() {
+    setSaving(true); setSaved(false); setErr('');
+    try { await api.patch(`/admin/anime/server/${s.id}`, v); setSaved(true); setTimeout(() => setSaved(false), 2000); onChange(); }
+    catch (e: any) { setErr(e.message); } finally { setSaving(false); }
+  }
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-8">
       <input className="input sm:col-span-2" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} />
       <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} />
       <input className="input sm:col-span-2" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer" />
-      <div className="flex gap-1">
-        <Btn size="sm" onClick={async () => { try { await api.patch(`/admin/anime/server/${s.id}`, v); onChange(); } catch (e: any) { setErr(e.message); } }}><Save size={13} /></Btn>
+      <div className="flex items-center gap-1">
+        <Btn size="sm" onClick={save} disabled={saving} title="Lưu server">{saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}</Btn>
         <Btn size="sm" variant="danger" onClick={async () => { if (confirm('Xoá server?')) { await api.post(`/admin/anime/server/${s.id}/delete`); onChange(); } }}><Trash2 size={13} /></Btn>
+        {saved && <span className="text-xs font-medium text-emerald-600">✓</span>}
       </div>
     </div>
   );

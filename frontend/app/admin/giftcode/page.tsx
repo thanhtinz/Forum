@@ -19,6 +19,9 @@ const TYPES: { v: string; label: string; needRef: boolean; needAmount: boolean }
   { v: 'badge', label: 'Huy hiệu', needRef: true, needAmount: false },
   { v: 'item', label: 'Vật phẩm (nông sản → kho)', needRef: true, needAmount: true },
   { v: 'sticker', label: 'Gói sticker', needRef: true, needAmount: false },
+  { v: 'frame', label: 'Khung avatar', needRef: true, needAmount: false },
+  { v: 'bubble', label: 'Bong bóng chat', needRef: true, needAmount: false },
+  { v: 'shopbadge', label: 'Badge trang trí', needRef: true, needAmount: false },
 ];
 
 export default function AdminGiftcode() {
@@ -36,6 +39,9 @@ export default function AdminGiftcode() {
   const [badges, setBadges] = useState<Opt[]>([]);
   const [items, setItems] = useState<Opt[]>([]);
   const [stickers, setStickers] = useState<Opt[]>([]);
+  const [frames, setFrames] = useState<Opt[]>([]);
+  const [bubbles, setBubbles] = useState<Opt[]>([]);
+  const [shopBadges, setShopBadges] = useState<Opt[]>([]);
 
   function load() { api.get<GiftCode[]>('/giftcode/admin').then(setList).catch((e) => setErr(e.message)); }
   useEffect(() => {
@@ -43,10 +49,14 @@ export default function AdminGiftcode() {
     api.get<any[]>('/badges/catalog').then((r) => setBadges(r.map((b) => ({ id: b.id, name: b.name })))).catch(() => {});
     api.get<any[]>('/farm/crops').then((r) => setItems(r.map((i) => ({ id: i.id, name: i.name })))).catch(() => {});
     api.get<any[]>('/admin/stickers').then((r) => setStickers(r.map((p) => ({ id: p.id, name: p.name })))).catch(() => {});
+    api.get<any[]>('/admin/frames').then((r) => setFrames(r.map((p) => ({ id: p.id, name: p.name })))).catch(() => {});
+    api.get<any[]>('/admin/chat-bubbles').then((r) => setBubbles(r.map((p) => ({ id: p.id, name: p.name })))).catch(() => {});
+    api.get<any[]>('/admin/badge-products').then((r) => setShopBadges(r.map((p) => ({ id: p.id, name: p.name })))).catch(() => {});
   }, []);
 
   function optsFor(type: string): Opt[] {
-    return type === 'badge' ? badges : type === 'item' ? items : type === 'sticker' ? stickers : [];
+    return type === 'badge' ? badges : type === 'item' ? items : type === 'sticker' ? stickers
+      : type === 'frame' ? frames : type === 'bubble' ? bubbles : type === 'shopbadge' ? shopBadges : [];
   }
   const meta = (t: string) => TYPES.find((x) => x.v === t) ?? TYPES[0];
 

@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CharacterService } from '../game/character/character.service';
 
 export interface GiftReward {
-  type: 'coin' | 'gem' | 'badge' | 'item' | 'sticker';
+  type: 'coin' | 'gem' | 'badge' | 'item' | 'sticker' | 'frame' | 'bubble' | 'shopbadge';
   amount?: number;
   refId?: string;
   label?: string;
@@ -20,7 +20,7 @@ export interface CreateGiftCodeDto {
   note?: string;
 }
 
-const VALID_TYPES = ['coin', 'gem', 'badge', 'item', 'sticker'];
+const VALID_TYPES = ['coin', 'gem', 'badge', 'item', 'sticker', 'frame', 'bubble', 'shopbadge'];
 
 @Injectable()
 export class GiftcodeService {
@@ -185,6 +185,39 @@ export class GiftcodeService {
           create: { userId, packId: r.refId }, update: {},
         });
         return { type: 'sticker', label: `Gói sticker ${pack.name}` };
+      }
+      case 'frame': {
+        if (!r.refId) return null;
+        const f = await this.prisma.avatarFrameProduct.findUnique({ where: { id: r.refId }, select: { name: true } });
+        if (!f) return null;
+        await this.prisma.userAvatarFrame.upsert({
+          where: { userId_frameId: { userId, frameId: r.refId } },
+          create: { userId, frameId: r.refId, expiresAt: null },
+          update: { expiresAt: null }, // quà = vĩnh viễn
+        });
+        return { type: 'frame', label: `Khung avatar ${f.name}` };
+      }
+      case 'bubble': {
+        if (!r.refId) return null;
+        const b = await this.prisma.chatBubbleProduct.findUnique({ where: { id: r.refId }, select: { name: true } });
+        if (!b) return null;
+        await this.prisma.userChatBubble.upsert({
+          where: { userId_bubbleId: { userId, bubbleId: r.refId } },
+          create: { userId, bubbleId: r.refId, expiresAt: null },
+          update: { expiresAt: null },
+        });
+        return { type: 'bubble', label: `Bong bóng chat ${b.name}` };
+      }
+      case 'shopbadge': {
+        if (!r.refId) return null;
+        const b = await this.prisma.badgeProduct.findUnique({ where: { id: r.refId }, select: { name: true } });
+        if (!b) return null;
+        await this.prisma.userBadgeProduct.upsert({
+          where: { userId_badgeId: { userId, badgeId: r.refId } },
+          create: { userId, badgeId: r.refId, expiresAt: null },
+          update: { expiresAt: null },
+        });
+        return { type: 'shopbadge', label: `Badge ${b.name}` };
       }
     }
     return null;

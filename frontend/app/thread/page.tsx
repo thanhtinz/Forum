@@ -12,7 +12,6 @@ import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 import type { Thread, Post, Paginated } from '@/lib/types';
 import { interceptExternalLink } from '@/lib/externalLink';
 import TipTapEditor from '@/components/TipTapEditor';
-import ThreadJobPanel from '@/components/ThreadJobPanel';
 import { PingButton } from '@/components/PingButton';
 import { AdBanner } from '@/components/AdBanner';
 
@@ -405,8 +404,6 @@ function ThreadView() {
       </div>
 
       <PollCard threadId={thread.id} />
-
-      {(thread as any).category?.moduleType === 'JOB' && <ThreadJobPanel threadId={thread.id} />}
 
       <AdBanner position="thread_top" className="h-20 sm:h-24" />
 

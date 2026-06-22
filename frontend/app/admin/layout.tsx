@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, Settings, FileText, Ticket,
-  BadgeInfo, Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
-  BellRing, Gavel, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square, Megaphone, Crown, SlidersHorizontal,
+  Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
+  BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square, Megaphone, Crown, SlidersHorizontal,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { api } from '@/lib/api';
@@ -23,7 +23,6 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/pages', label: 'Trang & Menu', icon: FileText },
       { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert },
       { href: '/admin/scam', label: 'Tố cáo scam', icon: ShieldAlert },
-      { href: '/admin/disputes', label: 'Tranh chấp', icon: Gavel },
     ],
   },
   {
@@ -52,7 +51,6 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/verification', label: 'Xác minh', icon: BadgeCheck },
       { href: '/admin/badges', label: 'Huy hiệu', icon: Award },
       { href: '/admin/invites', label: 'Mã mời', icon: Ticket },
-      { href: '/admin/profile-fields', label: 'Trường hồ sơ', icon: BadgeInfo },
     ],
   },
   {

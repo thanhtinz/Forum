@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Gamepad2, Fish, Sprout, Wrench, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Gift, Briefcase, Users2, Shield } from 'lucide-react';
+import { Gamepad2, Fish, Sprout, Wrench, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Gift, Shield } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -51,14 +51,6 @@ export function Sidebar() {
           <Link href="/gallery" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Image size={16} className="text-rose-600" /> Thư viện ảnh</Link>
           <Link href="/tags" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Tag size={16} className="text-fuchsia-600" /> Thẻ</Link>
           <Link href="/levels" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Award size={16} className="text-amber-600" /> Cấp độ</Link>
-        </div>
-      </div>
-
-      <div className="card p-4">
-        <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-ink-500">Việc làm</h3>
-        <div className="flex flex-col gap-1">
-          <Link href="/jobs" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Briefcase size={16} className="text-emerald-600" /> Việc làm</Link>
-          <Link href="/freelancers" className="flex items-center gap-2 rounded-lg p-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-800"><Users2 size={16} className="text-violet-600" /> Freelancer</Link>
         </div>
       </div>
 

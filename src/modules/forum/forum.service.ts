@@ -204,7 +204,7 @@ export class ForumService {
   }
 
   private normalizeModuleType(v?: string): string {
-    const allowed = ['NONE', 'JOB'];
+    const allowed = ['NONE'];
     const up = (v ?? 'NONE').toUpperCase();
     return allowed.includes(up) ? up : 'NONE';
   }

@@ -239,7 +239,7 @@ function Watch() {
                 />
               )}
             </div>
-            <button type="submit" disabled={posting || !text.trim()} className="flex w-12 shrink-0 items-center justify-center self-stretch rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-50"><Send size={18} /></button>
+            <button type="submit" disabled={posting || !text.trim()} className="flex h-10 w-10 shrink-0 items-center justify-center self-end rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-50"><Send size={18} /></button>
           </form>
         ) : (
           <p className="mb-4 text-sm text-ink-500"><a href="/login" className="text-brand-600 hover:underline">Đăng nhập</a> để bình luận.</p>

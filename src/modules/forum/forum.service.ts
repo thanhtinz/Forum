@@ -203,6 +203,19 @@ export class ForumService {
     return { ok: true };
   }
 
+  // Bài viết (post/reply) gần đây của 1 user — cho tab "Hoạt động mới nhất"
+  async listUserPosts(authorId: string, limit = 20) {
+    return this.prisma.post.findMany({
+      where: { authorId, isDeleted: false, isApproved: true },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Math.max(Number(limit) || 20, 1), 50),
+      select: {
+        id: true, content: true, createdAt: true, isFirstPost: true,
+        thread: { select: { title: true, slug: true } },
+      },
+    });
+  }
+
   private normalizeModuleType(v?: string): string {
     const allowed = ['NONE'];
     const up = (v ?? 'NONE').toUpperCase();

@@ -46,4 +46,24 @@ export class CosmeticsController {
   buyEffect(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() body: { currency: 'coin' | 'gem' }) {
     return this.svc.buyEffect(userId, id, body.currency);
   }
+
+  // ── Bong bóng chat ──
+  @Get('chat-bubbles')
+  listBubbles() { return this.svc.listBubbles(); }
+
+  @Get('chat-bubbles/inventory')
+  @UseGuards(JwtAuthGuard)
+  bubbleInventory(@CurrentUser('id') userId: string) { return this.svc.bubbleInventory(userId); }
+
+  @Post('chat-bubbles/equip')
+  @UseGuards(JwtAuthGuard)
+  equipBubble(@CurrentUser('id') userId: string, @Body() body: { bubbleId: string | null }) {
+    return this.svc.equipBubble(userId, body.bubbleId);
+  }
+
+  @Post('chat-bubbles/:id/buy')
+  @UseGuards(JwtAuthGuard)
+  buyBubble(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() body: { currency: 'coin' | 'gem' }) {
+    return this.svc.buyBubble(userId, id, body.currency);
+  }
 }

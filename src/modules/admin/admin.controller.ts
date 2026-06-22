@@ -376,4 +376,19 @@ export class AdminController {
 
   @Post('name-effects/:id/delete')
   deleteNameEffect(@Param('id') id: string) { return this.gameAsset.deleteNameEffect(id); }
+
+  // ════════════════════════════════════════════
+  // BONG BÓNG CHAT (sản phẩm bán bằng coin/gem)
+  // ════════════════════════════════════════════
+  @Get('chat-bubbles')
+  listChatBubbles() { return this.gameAsset.listChatBubbles(); }
+
+  @Post('chat-bubbles')
+  createChatBubble(@Body() data: any) { return this.gameAsset.createChatBubble(data); }
+
+  @Patch('chat-bubbles/:id')
+  updateChatBubble(@Param('id') id: string, @Body() data: any) { return this.gameAsset.updateChatBubble(id, data); }
+
+  @Post('chat-bubbles/:id/delete')
+  deleteChatBubble(@Param('id') id: string) { return this.gameAsset.deleteChatBubble(id); }
 }

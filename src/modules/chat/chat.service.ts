@@ -77,7 +77,7 @@ export class ChatService {
     if (!uniq.length) return new Map<string, any>();
     const users = await this.prisma.user.findMany({
       where: { id: { in: uniq } },
-      select: { id: true, username: true, displayName: true, avatar: true, role: true, verifiedBadge: true },
+      select: { id: true, username: true, displayName: true, avatar: true, role: true, verifiedBadge: true, nameEffectCss: true, chatBubbleCss: true },
     });
     return new Map(users.map((u) => [u.id, u]));
   }

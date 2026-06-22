@@ -250,4 +250,35 @@ export class AdminGameAssetService {
   deleteNameEffect(id: string) {
     return this.prisma.nameEffectProduct.delete({ where: { id } });
   }
+
+  // ───────── Bong bóng chat (sản phẩm) — quản trị ─────────
+  listChatBubbles() {
+    return this.prisma.chatBubbleProduct.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  createChatBubble(data: {
+    slug: string; name: string; description?: string; css: string;
+    priceCoin?: number | null; coinDays?: number | null;
+    priceGem?: number | null; gemDays?: number | null;
+    isActive?: boolean; sortOrder?: number;
+  }) {
+    if (!data.slug || !data.name || !data.css) throw new BadRequestException('Thiếu slug, tên hoặc CSS bong bóng');
+    if (data.priceCoin == null && data.priceGem == null) throw new BadRequestException('Phải có ít nhất 1 giá (Xu hoặc Gem)');
+    return this.prisma.chatBubbleProduct.create({
+      data: {
+        slug: data.slug, name: data.name, description: data.description, css: data.css,
+        priceCoin: data.priceCoin ?? null, coinDays: data.coinDays ?? null,
+        priceGem: data.priceGem ?? null, gemDays: data.gemDays ?? null,
+        isActive: data.isActive ?? true, sortOrder: data.sortOrder ?? 0,
+      },
+    });
+  }
+
+  updateChatBubble(id: string, data: any) {
+    return this.prisma.chatBubbleProduct.update({ where: { id }, data });
+  }
+
+  deleteChatBubble(id: string) {
+    return this.prisma.chatBubbleProduct.delete({ where: { id } });
+  }
 }

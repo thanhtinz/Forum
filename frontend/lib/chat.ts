@@ -8,7 +8,7 @@ export const EMOJIS: string[] = [
   '🍕','🍔','🍟','🍜','🍣','🍰','☕','🍺','🥤','🍎','🍉','🍓','⚽','🎮','🎵','💰',
 ];
 
-export interface ChatUser { id: string; username: string; displayName?: string | null; avatar?: string | null; role?: string | null; verifiedBadge?: boolean | null }
+export interface ChatUser { id: string; username: string; displayName?: string | null; avatar?: string | null; role?: string | null; verifiedBadge?: boolean | null; nameEffectCss?: string | null; chatBubbleCss?: string | null }
 export interface ChatMsg {
   id: string;
   channelId: string;

@@ -98,6 +98,11 @@ export class AnimeController {
   @Roles(UserRole.ADMIN)
   deleteEpisode(@Param('epId') epId: string) { return this.svc.deleteEpisode(epId); }
 
+  @Post('admin/anime/extract-embed')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  extractEmbed(@Body('input') input: string) { return this.svc.extractEmbed(input); }
+
   // Chương (manga / light novel)
   @Post('admin/anime/:id/chapter')
   @UseGuards(JwtAuthGuard, RolesGuard)

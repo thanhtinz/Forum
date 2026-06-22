@@ -308,6 +308,51 @@ export class AnimeService {
   }
   async deleteEpisode(id: string) { await this.prisma.episode.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
 
+  // Trích xuất link embed từ mã iframe hoặc URL trang phát (vd: vuighe.live)
+  async extractEmbed(input: string): Promise<{ candidates: string[] }> {
+    const raw = (input || '').trim();
+    if (!raw) throw new BadRequestException('Nhập link hoặc mã nhúng');
+    const found = new Set<string>();
+
+    // 1) Mã iframe/embed dán trực tiếp → lấy src (không cần mạng)
+    for (const m of raw.matchAll(/<iframe[^>]*\ssrc=["']([^"']+)["']/gi)) found.add(m[1]);
+    // 2) Bản thân input đã là URL embed
+    if (!found.size && /^https?:\/\/\S+$/i.test(raw) && /(embed|player|\.m3u8|\.mp4|iframe)/i.test(raw)) found.add(raw);
+
+    // 3) Là URL trang tập → tải HTML và dò iframe / nguồn video
+    if (!found.size && /^https?:\/\//i.test(raw)) {
+      let html = '';
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 12000);
+        const res = await fetch(raw, {
+          signal: ctrl.signal,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
+            Accept: 'text/html,application/xhtml+xml',
+            'Accept-Language': 'vi,en;q=0.9',
+            Referer: new URL(raw).origin,
+          },
+        });
+        clearTimeout(t);
+        if (!res.ok) throw new BadRequestException(`Nguồn trả về ${res.status} — thử dán trực tiếp mã iframe.`);
+        html = await res.text();
+      } catch (e: any) {
+        if (e instanceof BadRequestException) throw e;
+        throw new BadRequestException('Không tải được trang (nguồn có thể chặn hoặc cần dán mã iframe).');
+      }
+      const origin = new URL(raw).origin;
+      const abs = (u: string) => (u.startsWith('//') ? `https:${u}` : u.startsWith('/') ? origin + u : u);
+      for (const m of html.matchAll(/<iframe[^>]*\ssrc=["']([^"']+)["']/gi)) found.add(abs(m[1]));
+      for (const m of html.matchAll(/["'](https?:\/\/[^"']+?\.(?:m3u8|mp4)(?:\?[^"']*)?)["']/gi)) found.add(m[1]);
+      for (const m of html.matchAll(/(?:file|source|src)\s*[:=]\s*["'](https?:\/\/[^"']+?\.(?:m3u8|mp4)[^"']*)["']/gi)) found.add(m[1]);
+    }
+
+    const candidates = [...found].filter((u) => /^https?:\/\//i.test(u)).slice(0, 12);
+    if (!candidates.length) throw new BadRequestException('Không tìm thấy link nhúng. Hãy dán trực tiếp mã <iframe …> từ nguồn.');
+    return { candidates };
+  }
+
   async addChapter(mediaId: string, dto: any) {
     if (dto.number == null || dto.number === '') throw new BadRequestException('Thiếu số chương');
     return this.prisma.chapter.create({

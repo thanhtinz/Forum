@@ -191,6 +191,7 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
   const [posts, setPosts] = useState<any[]>([]);
   const [content, setContent] = useState('');
   const [editorKey, setEditorKey] = useState(0);
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -200,12 +201,16 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
 
   const isEmpty = !content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim();
 
+  function collapse() {
+    setOpen(false); setContent(''); setEditorKey((k) => k + 1);
+  }
+
   async function post() {
     if (isEmpty) return;
     setBusy(true);
     try {
       await api.post(`/social/wall/${wallId}`, { content });
-      setContent(''); setEditorKey((k) => k + 1);
+      collapse();
       load();
     } catch (e: any) { alert(e.message); } finally { setBusy(false); }
   }
@@ -214,10 +219,20 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
     <div className="space-y-4">
       {canPost && (
         <div className="card p-4">
-          <TipTapEditor key={editorKey} value={content} onChange={setContent} placeholder="Viết gì đó lên tường…" />
-          <div className="mt-2 flex justify-end">
-            <button className="btn-primary !py-1.5 text-sm" onClick={post} disabled={busy || isEmpty}>{busy ? 'Đang đăng…' : 'Đăng'}</button>
-          </div>
+          {open ? (
+            <>
+              <TipTapEditor key={editorKey} value={content} onChange={setContent} placeholder="Viết gì đó lên tường…" />
+              <div className="mt-2 flex justify-end gap-2">
+                <button className="btn-outline !py-1.5 text-sm" onClick={collapse} disabled={busy}>Huỷ</button>
+                <button className="btn-primary !py-1.5 text-sm" onClick={post} disabled={busy || isEmpty}>{busy ? 'Đang đăng…' : 'Đăng'}</button>
+              </div>
+            </>
+          ) : (
+            <button onClick={() => setOpen(true)}
+              className="w-full rounded-lg border border-ink-200 bg-ink-50 px-4 py-2.5 text-left text-sm text-ink-400 hover:border-brand-400 dark:border-ink-700 dark:bg-ink-800/50">
+              Viết gì đó lên tường…
+            </button>
+          )}
         </div>
       )}
       <div className="card p-5">

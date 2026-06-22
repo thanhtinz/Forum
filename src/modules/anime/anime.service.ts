@@ -316,6 +316,7 @@ export class AnimeService {
           mediaId, number, title: dto.title || null,
           videoUrl: dto.videoUrl || null, thumbnail: dto.thumbnail || null, referer: dto.referer || null,
           duration: dto.duration ? Number(dto.duration) : null,
+          introEnd: dto.introEnd ? Number(dto.introEnd) : null,
         },
       });
     } catch (e) {
@@ -328,6 +329,7 @@ export class AnimeService {
     if (dto.number != null && dto.number !== '') { const n = this.parseNum(dto.number); if (n != null) data.number = n; }
     for (const k of ['title', 'videoUrl', 'thumbnail', 'referer']) if (dto[k] !== undefined) data[k] = dto[k] || null;
     if (dto.duration !== undefined) data.duration = dto.duration ? Number(dto.duration) : null;
+    if (dto.introEnd !== undefined) data.introEnd = dto.introEnd ? Number(dto.introEnd) : null;
     return this.prisma.episode.update({ where: { id }, data });
   }
   async deleteEpisode(id: string) { await this.prisma.episode.delete({ where: { id } }).catch(() => {}); return { ok: true }; }

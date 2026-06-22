@@ -200,7 +200,7 @@ export default function FarmPage() {
               const left = !p.empty && !p.ready && p.readyAt ? secondsUntil(p.readyAt, now) : 0;
               return (
               <button key={p.index} onClick={() => onPlotTap(p)} title={p.crop || (p.tilled ? 'Đã xới — bấm để gieo' : 'Bấm để xới đất')}
-                className="relative grid h-[72px] w-[64px] shrink-0 place-items-center bg-contain bg-bottom bg-no-repeat transition active:scale-95"
+                className="relative grid h-[72px] w-[64px] shrink-0 place-items-center bg-contain bg-center bg-no-repeat transition active:scale-95"
                 style={{ backgroundImage: `url(${p.empty && !p.tilled ? SOIL_UNTILLED : SOIL_TILLED})` }}>
                 {/* cây lớn dần */}
                 {!p.empty && (stageSrc

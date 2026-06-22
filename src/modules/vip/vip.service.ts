@@ -20,9 +20,11 @@ export class VipService {
       orderBy: { gemRequired: 'desc' },
     });
     if (!tier) return null;
-    const data: any = { vipTierName: tier.name, vipBadgeUrl: tier.badgeUrl ?? null };
-    if (tier.frameUrl) data.avatarFrameUrl = tier.frameUrl; // tự gắn khung VIP
-    await this.prisma.user.update({ where: { id: userId }, data });
+    // Lưu badge + khung VIP. Khung KHÔNG tự gắn — nó nằm trong kho khung để user tự bật/tắt.
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { vipTierName: tier.name, vipBadgeUrl: tier.badgeUrl ?? null, vipFrameUrl: tier.frameUrl ?? null },
+    });
     return tier;
   }
 

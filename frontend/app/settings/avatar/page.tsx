@@ -10,6 +10,7 @@ import ImageUpload from '@/components/ImageUpload';
 interface AvatarImg { id: string; name: string; imageUrl: string }
 interface Pack { id: string; name: string; description?: string; avatars: AvatarImg[] }
 interface OwnedFrame { id: string; frameId: string; name: string; imageUrl: string; expiresAt: string | null; expired: boolean; equipped: boolean }
+interface VipReward { tierId: string; tierName: string; badgeUrl: string | null; frameUrl: string | null; color: string | null; gemRequired: number; badgeEquipped: boolean }
 
 export default function AvatarSettings() {
   const { user, loading: authLoading } = useAuth();
@@ -18,6 +19,7 @@ export default function AvatarSettings() {
   const [packs, setPacks] = useState<Pack[]>([]);
   const [libTab, setLibTab] = useState(0);
   const [frames, setFrames] = useState<OwnedFrame[]>([]);
+  const [vipRewards, setVipRewards] = useState<VipReward[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -33,7 +35,19 @@ export default function AvatarSettings() {
   function loadFrames() {
     api.get<OwnedFrame[]>('/avatar-frames/inventory').then(setFrames).catch(() => {});
   }
-  useEffect(() => { loadFrames(); }, []);
+  function loadVipRewards() {
+    api.get<VipReward[]>('/vip/my-rewards').then(setVipRewards).catch(() => {});
+  }
+  useEffect(() => { loadFrames(); loadVipRewards(); }, []);
+
+  async function equipBadge(tierId: string | null) {
+    setBusy(true); setMsg('');
+    try {
+      await api.post('/vip/equip-badge', { tierId });
+      setVipRewards((list) => list.map((x) => ({ ...x, badgeEquipped: x.tierId === tierId })));
+      setMsg(tierId ? 'Đã bật huy hiệu VIP. Tải lại trang để thấy ở mọi nơi.' : 'Đã tắt huy hiệu VIP.');
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  }
 
   async function equipFrame(frameId: string | null) {
     setBusy(true); setMsg('');
@@ -120,6 +134,28 @@ export default function AvatarSettings() {
           </div>
         )}
       </div>
+
+      {/* Kho huy hiệu VIP — bật/tắt badge đã nhận */}
+      {vipRewards.length > 0 && (
+        <div className="card space-y-3 p-5">
+          <div>
+            <h2 className="font-semibold">Huy hiệu VIP của tôi</h2>
+            <p className="text-sm text-ink-500">Mọi mốc VIP đã đạt được giữ vĩnh viễn. Bấm để bật huy hiệu cạnh tên; bấm lại để tắt.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {vipRewards.filter((v) => v.badgeUrl).map((v) => (
+              <button key={v.tierId} onClick={() => equipBadge(v.badgeEquipped ? null : v.tierId)} disabled={busy}
+                title={v.badgeEquipped ? 'Bấm để tắt huy hiệu' : v.tierName}
+                className={`relative flex w-24 flex-col items-center gap-1 rounded-xl border-2 p-2 transition disabled:opacity-50 ${v.badgeEquipped ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={v.badgeUrl!} alt={v.tierName} className="h-14 w-14 object-contain" />
+                <span className="line-clamp-1 text-xs font-medium" style={v.color ? { color: v.color } : undefined}>{v.tierName}</span>
+                {v.badgeEquipped && <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-brand-600 text-white"><Check size={12} /></span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Thư viện avatar có sẵn — mỗi pack một tab */}
       {hasLibrary && (() => {

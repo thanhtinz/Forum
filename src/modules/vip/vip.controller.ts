@@ -15,6 +15,20 @@ export class VipController {
     return this.vip.listForUser(userId);
   }
 
+  // Kho VIP của user: các badge đã nhận
+  @Get('vip/my-rewards')
+  @UseGuards(JwtAuthGuard)
+  myRewards(@CurrentUser('id') userId: string) {
+    return this.vip.myRewards(userId);
+  }
+
+  // Bật/tắt badge VIP
+  @Post('vip/equip-badge')
+  @UseGuards(JwtAuthGuard)
+  equipBadge(@CurrentUser('id') userId: string, @Body() body: { tierId?: string | null }) {
+    return this.vip.equipBadge(userId, body?.tierId ?? null);
+  }
+
   // ── Admin ──
   @Get('admin/vip')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -35,4 +49,10 @@ export class VipController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   remove(@Param('id') id: string) { return this.vip.remove(id); }
+
+  // Tính lại VIP cho toàn bộ user — áp ngay
+  @Post('admin/vip/recompute-all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  recomputeAll() { return this.vip.recomputeAll(); }
 }

@@ -56,12 +56,9 @@ export default function AnimeListPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-indigo-600 to-fuchsia-600 p-6 text-white shadow-card">
-        <div>
-          <h1 className="text-2xl font-bold">Cơ sở dữ liệu Anime & Manga</h1>
-          <p className="mt-1 text-sm text-white/80">Khám phá Anime, Manga, Light Novel — lọc theo thể loại, studio, mùa, năm.</p>
-        </div>
-        <a href="/anime/me" className="shrink-0 rounded-full bg-white/20 px-4 py-2 text-sm font-medium backdrop-blur hover:bg-white/30">Danh sách của tôi</a>
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
+        <h1 className="text-2xl font-bold">Cơ sở dữ liệu Anime & Manga</h1>
+        <p className="mt-1 text-sm text-white/80">Khám phá Anime, Manga, Light Novel — lọc theo thể loại, studio, mùa, năm.</p>
       </div>
 
       {/* Type tabs */}

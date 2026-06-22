@@ -176,6 +176,9 @@ export function Header() {
                   <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <Gem size={15} /> Ví của tôi
                   </Link>
+                  <Link href="/anime/me" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <Tv size={15} /> Danh sách Anime
+                  </Link>
                   {user.role === 'ADMIN' && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                       <UserIcon size={15} /> Trang quản trị

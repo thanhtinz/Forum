@@ -19,9 +19,17 @@ export default function AdminAnime() {
   const [importingId, setImportingId] = useState<number | null>(null);
   // manual
   const [form, setForm] = useState({ title: '', type: 'ANIME', status: 'FINISHED' });
+  // bộ lọc danh sách đã có
+  const [tab, setTab] = useState(''); // '' | 'ANIME' | 'MANGA,LIGHT_NOVEL'
+  const [listSearch, setListSearch] = useState('');
 
-  function load() { api.get<{ data: Work[] }>('/admin/anime?limit=60').then((r) => setList(r.data || [])).catch((e) => setErr(e.message)); }
-  useEffect(() => { load(); }, []);
+  function load() {
+    const qs = new URLSearchParams({ limit: '60' });
+    if (tab) qs.set('type', tab);
+    if (listSearch.trim()) qs.set('search', listSearch.trim());
+    api.get<{ data: Work[] }>(`/admin/anime?${qs}`).then((r) => setList(r.data || [])).catch((e) => setErr(e.message));
+  }
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [tab]);
 
   async function search() {
     if (!impQuery.trim()) return;
@@ -96,6 +104,15 @@ export default function AdminAnime() {
       </Card>
 
       <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {[{ v: '', l: 'Tất cả' }, { v: 'ANIME', l: 'Anime' }, { v: 'MANGA,LIGHT_NOVEL', l: 'Truyện' }].map((t) => (
+            <button key={t.v} onClick={() => setTab(t.v)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t.v ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{t.l}</button>
+          ))}
+          <form onSubmit={(e) => { e.preventDefault(); load(); }} className="ml-auto flex min-w-[180px] flex-1 items-center gap-1 rounded-lg border border-ink-200 px-2 dark:border-ink-700 sm:max-w-xs">
+            <Search size={15} className="text-ink-400" />
+            <input value={listSearch} onChange={(e) => setListSearch(e.target.value)} placeholder="Tìm trong danh sách…" className="w-full bg-transparent py-1.5 text-sm outline-none" />
+          </form>
+        </div>
         <h2 className="text-xs font-bold uppercase tracking-wide text-ink-400">Đã có ({list.length})</h2>
         {list.length === 0 && <Card><Empty icon={<Tv size={28} />} title="Chưa có dữ liệu" /></Card>}
         {list.map((w) => (

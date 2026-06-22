@@ -132,7 +132,7 @@ function Watch() {
       <h1 className="text-lg font-bold">Tập {ep.number}{ep.title ? `: ${ep.title}` : ''}</h1>
 
       {/* Chọn tập */}
-      {ep.episodes?.length > 1 && (
+      {ep.episodes?.length > 0 && (
         <div className="card space-y-3 p-4">
           <div className="flex items-center gap-2">
             <h2 className="flex items-center gap-1.5 font-semibold"><Search size={16} /> Chọn tập</h2>

@@ -35,7 +35,11 @@ export class AnimeService {
     const take = Math.min(Math.max(Number(q.limit) || 24, 1), 60);
     const skip = (Math.max(Number(q.page) || 1, 1) - 1) * take;
     const where: Prisma.MediaWorkWhereInput = {};
-    if (q.type && ['ANIME', 'MANGA', 'LIGHT_NOVEL'].includes(q.type)) where.type = q.type as MediaType;
+    if (q.type) {
+      const types = q.type.split(',').map((t) => t.trim()).filter((t) => ['ANIME', 'MANGA', 'LIGHT_NOVEL'].includes(t)) as MediaType[];
+      if (types.length === 1) where.type = types[0];
+      else if (types.length > 1) where.type = { in: types };
+    }
     if (q.status) where.status = q.status as any;
     if (q.season) where.season = q.season as any;
     if (q.year) where.seasonYear = Number(q.year) || undefined;

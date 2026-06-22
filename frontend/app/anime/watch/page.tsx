@@ -2,15 +2,22 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Heart, Star, SkipBack, SkipForward, ArrowLeft, Search, ArrowDownUp, Send, Trash2, Play } from 'lucide-react';
+import { Heart, Star, SkipBack, SkipForward, ArrowLeft, Search, ArrowDownUp, Send, Trash2, Play, MoreHorizontal, Server, X } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
 
 const ytId = (u: string) => u.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/)?.[1] || null;
-// Đưa link qua proxy server (gắn Referer đúng, thêm CORS) để vượt chặn hotlink
 const proxy = (u: string, ref?: string | null) =>
   `${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/anime/hls?u=${encodeURIComponent(u)}${ref ? `&r=${encodeURIComponent(ref)}` : ''}`;
+
+const RATINGS = [
+  { v: 5, label: 'Đỉnh nóc', emoji: '😍' },
+  { v: 4, label: 'Hay ho', emoji: '😙' },
+  { v: 3, label: 'Tạm ổn', emoji: '🙂' },
+  { v: 2, label: 'Nhạt nhòa', emoji: '🙁' },
+  { v: 1, label: 'Thảm họa', emoji: '🤮' },
+];
 
 function PlayerError({ msg }: { msg: string }) {
   return (
@@ -18,50 +25,55 @@ function PlayerError({ msg }: { msg: string }) {
       <div>
         <p className="text-sm font-medium">Không phát được nguồn này</p>
         <p className="mt-1 text-xs text-white/50">{msg}</p>
-        <p className="mt-2 text-xs text-white/50">Nguồn có thể chặn hotlink — admin thử đặt <b>Referer</b> cho tập, hoặc đổi nguồn khác.</p>
+        <p className="mt-2 text-xs text-white/50">Thử đổi <b>server</b> bên dưới, hoặc admin đặt <b>Referer</b> cho tập.</p>
       </div>
     </div>
   );
 }
 
-function HlsVideo({ src }: { src: string }) {
+interface PlayerProps { url: string; referer?: string | null; introStart?: number | null; introEnd?: number | null; skipIntro: boolean; autoNext: boolean; onEnded: () => void }
+
+function VideoPlayer({ url, referer, isHls, introStart, introEnd, skipIntro, autoNext, onEnded }: PlayerProps & { isHls: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState('');
+  const src = proxy(url, referer);
   useEffect(() => {
-    const video = ref.current;
-    if (!video) return;
+    const video = ref.current; if (!video) return;
     setError('');
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = src;
-      const onErr = () => setError('Trình duyệt không tải được luồng (CORS/403).');
-      video.addEventListener('error', onErr);
-      return () => video.removeEventListener('error', onErr);
-    }
     let hls: any; let cancelled = false;
-    import('hls.js').then(({ default: Hls }) => {
-      if (cancelled) return;
-      if (Hls.isSupported()) {
-        hls = new Hls({ maxBufferLength: 30 });
-        hls.loadSource(src); hls.attachMedia(video);
-        hls.on(Hls.Events.ERROR, (_e: any, data: any) => { if (data?.fatal) setError(`Lỗi tải luồng (${data.type || 'network'}).`); });
-      } else { video.src = src; }
-    });
+    if (isHls && !video.canPlayType('application/vnd.apple.mpegurl')) {
+      import('hls.js').then(({ default: Hls }) => {
+        if (cancelled) return;
+        if (Hls.isSupported()) {
+          hls = new Hls({ maxBufferLength: 30 });
+          hls.loadSource(src); hls.attachMedia(video);
+          hls.on(Hls.Events.ERROR, (_e: any, data: any) => { if (data?.fatal) setError(`Lỗi tải luồng (${data.type || 'network'}).`); });
+        } else { video.src = src; }
+      });
+    } else { video.src = src; }
     return () => { cancelled = true; if (hls) hls.destroy(); };
-  }, [src]);
+  }, [src, isHls]);
+
+  function onTime() {
+    const v = ref.current; if (!v) return;
+    if (skipIntro && introEnd && v.currentTime >= (introStart || 0) && v.currentTime < introEnd) v.currentTime = introEnd;
+  }
   if (error) return <PlayerError msg={error} />;
-  return <video ref={ref} controls autoPlay className="h-full w-full" />;
+  return <video ref={ref} controls autoPlay onTimeUpdate={onTime} onError={() => setError('Trình duyệt không tải được (CORS/403).')} onEnded={() => autoNext && onEnded()} className="h-full w-full" />;
 }
 
-function Player({ url, referer }: { url: string; referer?: string | null }) {
+function Player(props: PlayerProps) {
+  const { url } = props;
   if (!url) return <div className="grid h-full place-items-center text-ink-400"><div className="text-center"><Play size={40} className="mx-auto opacity-50" /><p className="mt-2 text-sm">Tập này chưa có link xem</p></div></div>;
   const yt = ytId(url);
   if (yt) return <iframe src={`https://www.youtube.com/embed/${yt}?autoplay=1`} className="h-full w-full" allowFullScreen title="Player" />;
-  if (/\.m3u8(\?|$)/i.test(url)) return <HlsVideo src={proxy(url, referer)} />;
-  if (/\.(mp4|webm)(\?|$)/i.test(url)) return <video src={proxy(url, referer)} controls autoPlay className="h-full w-full" />;
+  if (/\.m3u8(\?|$)/i.test(url)) return <VideoPlayer {...props} isHls />;
+  if (/\.(mp4|webm)(\?|$)/i.test(url)) return <VideoPlayer {...props} isHls={false} />;
   return <iframe src={url} className="h-full w-full" allowFullScreen title="Player" />;
 }
 
 interface CommentT { id: string; content: string; createdAt: string; authorId: string; author: { id: string; username: string; displayName?: string | null; avatar?: string | null } }
+interface ServerT { id: string; name: string; videoUrl: string; referer?: string | null }
 
 function Watch() {
   const id = useSearchParams().get('ep') || '';
@@ -69,9 +81,13 @@ function Watch() {
   const { user } = useAuth();
   const [ep, setEp] = useState<any>(null);
   const [err, setErr] = useState('');
-  // entry (theo dõi / đánh giá)
   const [entry, setEntry] = useState<{ favorite: boolean; score: number | null } | null>(null);
   const [rateOpen, setRateOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [serverIdx, setServerIdx] = useState(0);
+  // tuỳ chọn (lưu localStorage)
+  const [autoNext, setAutoNext] = useState(true);
+  const [skipIntro, setSkipIntro] = useState(false);
   // chọn tập
   const [q, setQ] = useState('');
   const [asc, setAsc] = useState(false);
@@ -81,15 +97,21 @@ function Watch() {
   const [posting, setPosting] = useState(false);
 
   useEffect(() => {
+    setAutoNext(localStorage.getItem('anime_autonext') !== '0');
+    setSkipIntro(localStorage.getItem('anime_skipintro') === '1');
+  }, []);
+  useEffect(() => {
     if (!id) return;
-    setErr('');
+    setErr(''); setServerIdx(0);
     api.get<any>(`/anime/episode/${id}`).then((e) => { setEp(e); setComments(e.comments || []); window.scrollTo(0, 0); }).catch((e) => setErr(e.message));
   }, [id]);
-
   useEffect(() => {
     if (!user || !ep?.media?.id) { setEntry(null); return; }
     api.get<any>(`/anime/me/entry/${ep.media.id}`).then((en) => setEntry(en ? { favorite: en.favorite, score: en.score } : { favorite: false, score: null })).catch(() => {});
   }, [user, ep?.media?.id]);
+
+  function toggleAutoNext() { setAutoNext((v) => { localStorage.setItem('anime_autonext', v ? '0' : '1'); return !v; }); }
+  function toggleSkipIntro() { setSkipIntro((v) => { localStorage.setItem('anime_skipintro', v ? '0' : '1'); return !v; }); }
 
   const episodes = useMemo(() => {
     const list = [...(ep?.episodes || [])];
@@ -104,6 +126,7 @@ function Watch() {
     setEntry(next);
     try { await api.put(`/anime/me/entry/${ep.media.id}`, patch); } catch {}
   }
+  function goNext() { if (ep?.next) router.push(`/anime/watch?ep=${ep.next.id}`); }
   async function submitComment(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
@@ -120,6 +143,8 @@ function Watch() {
   if (err) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!ep) return <p className="p-10 text-center text-ink-500">Đang tải…</p>;
   const isMod = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
+  const servers: ServerT[] = ep.servers || [];
+  const cur = servers[serverIdx] || servers[0] || null;
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
@@ -127,31 +152,46 @@ function Watch() {
 
       {/* Player */}
       <div className="overflow-hidden rounded-xl bg-black shadow-card">
-        <div className="aspect-video w-full"><Player url={ep.videoUrl || ''} referer={ep.referer} /></div>
+        <div className="aspect-video w-full">
+          <Player url={cur?.videoUrl || ''} referer={cur?.referer} introStart={ep.media.introStart} introEnd={ep.media.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
+        </div>
         {/* Thanh hành động */}
-        <div className="grid grid-cols-4 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
+        <div className="grid grid-cols-5 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
           <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-1 py-3 text-xs hover:bg-white/5">
             <Heart size={20} className={entry?.favorite ? 'fill-rose-500 text-rose-500' : ''} /> Theo dõi
           </button>
-          <button onClick={() => setRateOpen((o) => !o)} className="flex flex-col items-center gap-1 py-3 text-xs hover:bg-white/5">
+          <button onClick={() => setRateOpen(true)} className="flex flex-col items-center gap-1 py-3 text-xs hover:bg-white/5">
             <Star size={20} className={entry?.score ? 'fill-amber-400 text-amber-400' : ''} /> {entry?.score ? `Đã chấm ${entry.score}` : 'Đánh giá'}
           </button>
-          <a href={ep.prev ? `/anime/watch?ep=${ep.prev.id}` : undefined} className={`flex flex-col items-center gap-1 py-3 text-xs ${ep.prev ? 'hover:bg-white/5' : 'opacity-40'}`}>
-            <SkipBack size={20} /> Trước
-          </a>
-          <a href={ep.next ? `/anime/watch?ep=${ep.next.id}` : undefined} className={`flex flex-col items-center gap-1 py-3 text-xs ${ep.next ? 'hover:bg-white/5' : 'opacity-40'}`}>
-            <SkipForward size={20} /> Tiếp
-          </a>
+          <a href={ep.prev ? `/anime/watch?ep=${ep.prev.id}` : undefined} className={`flex flex-col items-center gap-1 py-3 text-xs ${ep.prev ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipBack size={20} /> Trước</a>
+          <a href={ep.next ? `/anime/watch?ep=${ep.next.id}` : undefined} className={`flex flex-col items-center gap-1 py-3 text-xs ${ep.next ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipForward size={20} /> Tiếp</a>
+          <button onClick={() => setMoreOpen((o) => !o)} className="flex flex-col items-center gap-1 py-3 text-xs hover:bg-white/5"><MoreHorizontal size={20} /> Khác</button>
         </div>
-        {rateOpen && (
-          <div className="flex flex-wrap justify-center gap-1.5 border-t border-white/10 bg-ink-900 p-3">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-              <button key={n} onClick={() => { saveEntry({ score: entry?.score === n ? null : n }); setRateOpen(false); }}
-                className={`grid h-8 w-8 place-items-center rounded text-sm font-semibold ${entry?.score && n <= entry.score ? 'bg-amber-400 text-amber-950' : 'bg-white/10 text-white'}`}>{n}</button>
-            ))}
+        {/* Panel "Khác" */}
+        {moreOpen && (
+          <div className="space-y-2 border-t border-white/10 bg-ink-900 p-4 text-white">
+            <label className="flex cursor-pointer items-center justify-between text-sm">
+              <span>Tự chuyển tập tiếp theo</span>
+              <span onClick={toggleAutoNext} className={`relative h-6 w-11 rounded-full transition ${autoNext ? 'bg-brand-500' : 'bg-white/20'}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${autoNext ? 'left-[22px]' : 'left-0.5'}`} /></span>
+            </label>
+            <label className="flex cursor-pointer items-center justify-between text-sm">
+              <span>Bỏ qua giới thiệu {ep.media.introEnd ? `(${ep.media.introStart || 0}s–${ep.media.introEnd}s)` : '(chưa cấu hình)'}</span>
+              <span onClick={toggleSkipIntro} className={`relative h-6 w-11 rounded-full transition ${skipIntro ? 'bg-brand-500' : 'bg-white/20'}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${skipIntro ? 'left-[22px]' : 'left-0.5'}`} /></span>
+            </label>
+            {!ep.media.introEnd && <p className="text-xs text-white/40">Admin cần đặt thời gian giới thiệu thì tính năng bỏ qua mới hoạt động.</p>}
           </div>
         )}
       </div>
+
+      {/* Đổi server */}
+      {servers.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-ink-500"><Server size={15} /> Đổi server:</span>
+          {servers.map((s, i) => (
+            <button key={s.id} onClick={() => setServerIdx(i)} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{s.name}</button>
+          ))}
+        </div>
+      )}
 
       <h1 className="text-lg font-bold">Tập {ep.number}{ep.title ? `: ${ep.title}` : ''}</h1>
 
@@ -168,10 +208,7 @@ function Watch() {
           </div>
           <div className="grid max-h-72 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5">
             {episodes.map((e: any) => (
-              <a key={e.id} href={`/anime/watch?ep=${e.id}`}
-                className={`grid place-items-center rounded-lg py-2.5 text-sm font-medium ${e.id === id ? 'bg-brand-600 text-white' : 'bg-ink-100 hover:bg-brand-50 dark:bg-ink-800 dark:hover:bg-ink-700'}`}>
-                {e.number}
-              </a>
+              <a key={e.id} href={`/anime/watch?ep=${e.id}`} className={`grid place-items-center rounded-lg py-2.5 text-sm font-medium ${e.id === id ? 'bg-brand-600 text-white' : 'bg-ink-100 hover:bg-brand-50 dark:bg-ink-800 dark:hover:bg-ink-700'}`}>{e.number}</a>
             ))}
           </div>
         </div>
@@ -204,6 +241,45 @@ function Watch() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* Modal đánh giá */}
+      {rateOpen && (
+        <RateModal
+          title={ep.media.titleEnglish || ep.media.title}
+          avg={ep.media.avgScore} count={ep.media.ratingCount} current={entry?.score ?? null}
+          onClose={() => setRateOpen(false)}
+          onSubmit={(v) => { saveEntry({ score: v }); setRateOpen(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function RateModal({ title, avg, count, current, onClose, onSubmit }: { title: string; avg: number; count: number; current: number | null; onClose: () => void; onSubmit: (v: number) => void }) {
+  const [sel, setSel] = useState<number | null>(current);
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-md overflow-hidden rounded-2xl bg-ink-900 text-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="relative bg-gradient-to-r from-indigo-600 via-fuchsia-500 to-orange-400 p-6 text-center">
+          <button onClick={onClose} className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-full bg-white/20 hover:bg-white/30"><X size={16} /></button>
+          <h3 className="text-xl font-bold">{title}</h3>
+          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-black/20 px-4 py-1.5 text-sm font-medium"><Star size={16} className="fill-amber-300 text-amber-300" /> {avg ? avg.toFixed(2) : '0'}/5 ({count} lượt đánh giá)</span>
+        </div>
+        <div className="p-5">
+          <p className="mb-4 text-center text-lg">Bạn đánh giá phim này thế nào?</p>
+          <div className="grid grid-cols-2 gap-3">
+            {RATINGS.map((r) => (
+              <button key={r.v} onClick={() => setSel(r.v)} className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition ${sel === r.v ? 'border-brand-400 bg-white/10' : 'border-transparent bg-white/5 hover:bg-white/10'}`}>
+                <span className="text-2xl">{r.emoji}</span> <span className="font-medium">{r.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="mt-6 flex justify-center gap-3">
+            <button onClick={() => sel && onSubmit(sel)} disabled={!sel} className="rounded-xl bg-gradient-to-r from-rose-500 to-orange-400 px-6 py-2.5 font-semibold disabled:opacity-50">Gửi đánh giá</button>
+            <button onClick={onClose} className="rounded-xl bg-white/10 px-6 py-2.5 font-medium hover:bg-white/20">Đóng</button>
+          </div>
         </div>
       </div>
     </div>

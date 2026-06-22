@@ -40,7 +40,7 @@ function Detail() {
           </div>
           <EntryControls mediaId={w.id} max={w.episodes ?? w.chapters} />
           <div className="card space-y-1.5 p-4 text-sm">
-            {w.avgScore > 0 && <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Star size={15} /> {w.avgScore.toFixed(1)}/10 ({w.ratingCount})</p>}
+            {w.avgScore > 0 && <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Star size={15} /> {w.avgScore.toFixed(2)}/5 ({w.ratingCount})</p>}
             <Row label="Loại" value={w.type === 'LIGHT_NOVEL' ? 'Light Novel' : w.type} />
             {w.format && <Row label="Định dạng" value={w.format} />}
             <Row label="Trạng thái" value={STATUS_LABEL[w.status] || w.status} />

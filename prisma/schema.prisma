@@ -2750,8 +2750,10 @@ model MediaWork {
   source        String?      @db.VarChar(40) // ORIGINAL/MANGA/LIGHT_NOVEL…
   isAdult       Boolean      @default(false)
   anilistId     Int?         @unique
-  avgScore      Float        @default(0) // điểm cộng đồng (0-10)
+  avgScore      Float        @default(0) // điểm cộng đồng (0-5)
   ratingCount   Int          @default(0)
+  introStart    Int? // giây bắt đầu đoạn giới thiệu (để bỏ qua)
+  introEnd      Int? // giây kết thúc đoạn giới thiệu
   popularity    Int          @default(0) // import từ AniList
   viewCount     Int          @default(0)
   favoriteCount Int          @default(0)
@@ -2861,9 +2863,25 @@ model Episode {
 
   media    MediaWork        @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   comments EpisodeComment[]
+  servers  EpisodeServer[]
 
   @@unique([mediaId, number])
   @@index([mediaId])
+}
+
+// Server phụ cho mỗi tập (để user chuyển khi server lỗi)
+model EpisodeServer {
+  id        String   @id @default(cuid())
+  episodeId String
+  name      String   @db.VarChar(60)
+  videoUrl  String   @db.VarChar(500)
+  referer   String?  @db.VarChar(255)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@index([episodeId])
 }
 
 model EpisodeComment {

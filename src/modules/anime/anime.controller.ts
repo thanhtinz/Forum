@@ -116,6 +116,22 @@ export class AnimeController {
   @Roles(UserRole.ADMIN)
   deleteEpisode(@Param('epId') epId: string) { return this.svc.deleteEpisode(epId); }
 
+  // Server phụ cho tập
+  @Post('admin/anime/episode/:epId/server')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  addServer(@Param('epId') epId: string, @Body() dto: any) { return this.svc.addServer(epId, dto); }
+
+  @Patch('admin/anime/server/:sid')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateServer(@Param('sid') sid: string, @Body() dto: any) { return this.svc.updateServer(sid, dto); }
+
+  @Post('admin/anime/server/:sid/delete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteServer(@Param('sid') sid: string) { return this.svc.deleteServer(sid); }
+
   @Post('admin/anime/extract-embed')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)

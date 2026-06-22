@@ -6,7 +6,8 @@ import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen, Loader2, Link as Lin
 import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
-interface Ep { id: string; number: number; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null }
+interface Srv { id: string; name: string; videoUrl: string; referer?: string | null }
+interface Ep { id: string; number: number; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; servers?: Srv[] }
 interface Ch { id: string; number: number; title?: string | null; content?: string | null; pages: string[] }
 
 function EditInner() {
@@ -25,6 +26,7 @@ function EditInner() {
         title: w.title, titleEnglish: w.titleEnglish, titleNative: w.titleNative, type: w.type, status: w.status,
         format: w.format, season: w.season, seasonYear: w.seasonYear, episodes: w.episodes, duration: w.duration,
         chapters: w.chapters, volumes: w.volumes, source: w.source, trailerUrl: w.trailerUrl,
+        introStart: w.introStart, introEnd: w.introEnd,
         coverUrl: w.coverUrl, bannerUrl: w.bannerUrl, description: w.description, isAdult: w.isAdult,
         genreNames: (w._genres ?? (w.genres || []).map((g: any) => g.name).join(', ')).split(',').map((x: string) => x.trim()).filter(Boolean),
       });
@@ -62,6 +64,8 @@ function EditInner() {
           <Field label="Trailer URL"><input className="input" value={w.trailerUrl || ''} onChange={(e) => set('trailerUrl', e.target.value)} /></Field>
           <Field label="Ảnh bìa (cover)"><input className="input" value={w.coverUrl || ''} onChange={(e) => set('coverUrl', e.target.value)} /></Field>
           <Field label="Ảnh banner"><input className="input" value={w.bannerUrl || ''} onChange={(e) => set('bannerUrl', e.target.value)} /></Field>
+          <Field label="Giới thiệu: giây bắt đầu" hint="Để bỏ qua intro"><input type="number" className="input" value={w.introStart ?? ''} onChange={(e) => set('introStart', e.target.value)} placeholder="vd 0" /></Field>
+          <Field label="Giới thiệu: giây kết thúc" hint="User bật 'Bỏ qua giới thiệu' sẽ nhảy tới đây"><input type="number" className="input" value={w.introEnd ?? ''} onChange={(e) => set('introEnd', e.target.value)} placeholder="vd 90" /></Field>
         </div>
         <Field label="Thể loại (phân cách bằng dấu phẩy)"><input className="input" defaultValue={(w.genres || []).map((g: any) => g.name).join(', ')} onChange={(e) => set('_genres', e.target.value)} /></Field>
         <Field label="Mô tả"><textarea className="input min-h-[120px]" value={w.description || ''} onChange={(e) => set('description', e.target.value)} /></Field>
@@ -131,15 +135,50 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
 }
 function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; setErr: (s: string) => void }) {
   const [v, setV] = useState({ number: String(ep.number), title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '' });
+  const [srvOpen, setSrvOpen] = useState(false);
+  const [newSrv, setNewSrv] = useState({ name: '', videoUrl: '', referer: '' });
+  const extra = ep.servers || [];
+  async function addSrv() {
+    if (!newSrv.name.trim() || !newSrv.videoUrl.trim()) { setErr('Nhập tên server và link'); return; }
+    try { await api.post(`/admin/anime/episode/${ep.id}/server`, newSrv); setNewSrv({ name: '', videoUrl: '', referer: '' }); onChange(); } catch (e: any) { setErr(e.message); }
+  }
   return (
-    <div className="grid grid-cols-1 gap-2 rounded-lg border border-ink-200/70 p-2 dark:border-ink-700 sm:grid-cols-7">
-      <input className="input sm:col-span-1" value={v.number} onChange={(e) => setV({ ...v, number: e.target.value })} />
-      <input className="input sm:col-span-2" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Tiêu đề" />
-      <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link video" />
-      <input className="input sm:col-span-6" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer (tuỳ chọn)" />
+    <div className="rounded-lg border border-ink-200/70 p-2 dark:border-ink-700">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-7">
+        <input className="input sm:col-span-1" value={v.number} onChange={(e) => setV({ ...v, number: e.target.value })} />
+        <input className="input sm:col-span-2" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Tiêu đề" />
+        <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link Server 1" />
+        <input className="input sm:col-span-6" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer Server 1 (tuỳ chọn)" />
+        <div className="flex gap-1">
+          <Btn size="sm" onClick={async () => { try { await api.patch(`/admin/anime/episode/${ep.id}`, v); onChange(); } catch (e: any) { setErr(e.message); } }}><Save size={14} /></Btn>
+          <Btn size="sm" variant="danger" onClick={async () => { if (confirm('Xoá tập?')) { await api.post(`/admin/anime/episode/${ep.id}/delete`); onChange(); } }}><Trash2 size={14} /></Btn>
+        </div>
+      </div>
+      <button onClick={() => setSrvOpen((o) => !o)} className="mt-2 text-xs font-medium text-brand-600 hover:underline">{srvOpen ? 'Ẩn server phụ' : `Server phụ (${extra.length})`}</button>
+      {srvOpen && (
+        <div className="mt-2 space-y-2 border-t border-ink-100 pt-2 dark:border-ink-800">
+          {extra.map((s) => <ServerRow key={s.id} s={s} onChange={onChange} setErr={setErr} />)}
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-8">
+            <input className="input sm:col-span-2" placeholder="Tên (VIP 2…)" value={newSrv.name} onChange={(e) => setNewSrv({ ...newSrv, name: e.target.value })} />
+            <input className="input sm:col-span-3" placeholder="Link video" value={newSrv.videoUrl} onChange={(e) => setNewSrv({ ...newSrv, videoUrl: e.target.value })} />
+            <input className="input sm:col-span-2" placeholder="Referer" value={newSrv.referer} onChange={(e) => setNewSrv({ ...newSrv, referer: e.target.value })} />
+            <Btn size="sm" onClick={addSrv}><Plus size={14} /></Btn>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+function ServerRow({ s, onChange, setErr }: { s: Srv; onChange: () => void; setErr: (m: string) => void }) {
+  const [v, setV] = useState({ name: s.name, videoUrl: s.videoUrl, referer: s.referer || '' });
+  return (
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-8">
+      <input className="input sm:col-span-2" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} />
+      <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} />
+      <input className="input sm:col-span-2" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer" />
       <div className="flex gap-1">
-        <Btn size="sm" onClick={async () => { try { await api.patch(`/admin/anime/episode/${ep.id}`, v); onChange(); } catch (e: any) { setErr(e.message); } }}><Save size={14} /></Btn>
-        <Btn size="sm" variant="danger" onClick={async () => { if (confirm('Xoá tập?')) { await api.post(`/admin/anime/episode/${ep.id}/delete`); onChange(); } }}><Trash2 size={14} /></Btn>
+        <Btn size="sm" onClick={async () => { try { await api.patch(`/admin/anime/server/${s.id}`, v); onChange(); } catch (e: any) { setErr(e.message); } }}><Save size={13} /></Btn>
+        <Btn size="sm" variant="danger" onClick={async () => { if (confirm('Xoá server?')) { await api.post(`/admin/anime/server/${s.id}/delete`); onChange(); } }}><Trash2 size={13} /></Btn>
       </div>
     </div>
   );

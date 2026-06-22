@@ -114,7 +114,7 @@ export class AnimeService {
     for (const k of ['title', 'titleEnglish', 'titleNative', 'description', 'coverUrl', 'bannerUrl', 'format', 'trailerUrl', 'source']) {
       if (data[k] !== undefined) patch[k] = data[k] || null;
     }
-    for (const k of ['episodes', 'duration', 'chapters', 'volumes', 'seasonYear']) {
+    for (const k of ['episodes', 'duration', 'chapters', 'volumes', 'seasonYear', 'introStart', 'introEnd']) {
       if (data[k] !== undefined) patch[k] = data[k] === '' || data[k] == null ? null : Number(data[k]);
     }
     if (data.type) patch.type = data.type;
@@ -284,7 +284,7 @@ export class AnimeService {
       where: { id },
       include: {
         genres: { select: { name: true } },
-        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, videoUrl: true, thumbnail: true, duration: true, referer: true } },
+        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, videoUrl: true, thumbnail: true, duration: true, referer: true, servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true } } } },
         chapterList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, content: true, pages: true } },
       },
     });
@@ -331,6 +331,22 @@ export class AnimeService {
     return this.prisma.episode.update({ where: { id }, data });
   }
   async deleteEpisode(id: string) { await this.prisma.episode.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
+
+  async addServer(episodeId: string, dto: any) {
+    if (!dto.name?.trim() || !dto.videoUrl?.trim()) throw new BadRequestException('Nhập tên server và link');
+    const count = await this.prisma.episodeServer.count({ where: { episodeId } });
+    return this.prisma.episodeServer.create({
+      data: { episodeId, name: dto.name.trim().slice(0, 60), videoUrl: dto.videoUrl.trim(), referer: dto.referer || null, order: count },
+    });
+  }
+  async updateServer(id: string, dto: any) {
+    const data: any = {};
+    if (dto.name !== undefined) data.name = (dto.name || '').slice(0, 60);
+    if (dto.videoUrl !== undefined) data.videoUrl = dto.videoUrl || '';
+    if (dto.referer !== undefined) data.referer = dto.referer || null;
+    return this.prisma.episodeServer.update({ where: { id }, data });
+  }
+  async deleteServer(id: string) { await this.prisma.episodeServer.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
 
   // Trích xuất link embed từ mã iframe hoặc URL trang phát (vd: vuighe.live)
   async extractEmbed(input: string): Promise<{ candidates: string[] }> {
@@ -486,13 +502,19 @@ export class AnimeService {
     const ep = await this.prisma.episode.findUnique({
       where: { id },
       include: {
-        media: { select: { id: true, slug: true, title: true, titleEnglish: true, type: true, coverUrl: true } },
+        media: { select: { id: true, slug: true, title: true, titleEnglish: true, type: true, coverUrl: true, introStart: true, introEnd: true, avgScore: true, ratingCount: true } },
         comments: { orderBy: { createdAt: 'desc' }, take: 100, include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } } },
+        servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true } },
       },
     });
     if (!ep) throw new NotFoundException('Không tìm thấy tập');
     const episodes = await this.prisma.episode.findMany({ where: { mediaId: ep.mediaId }, orderBy: { number: 'asc' }, select: { id: true, number: true, title: true } });
-    return { ...ep, episodes, ...(await this.neighbours('episode', ep.mediaId, ep.number)) };
+    // Gộp server: link chính (videoUrl) là "Server 1" + các server phụ
+    const servers = [
+      ...(ep.videoUrl ? [{ id: 'main', name: 'Server 1', videoUrl: ep.videoUrl, referer: ep.referer }] : []),
+      ...ep.servers,
+    ];
+    return { ...ep, servers, episodes, ...(await this.neighbours('episode', ep.mediaId, ep.number)) };
   }
 
   async addEpisodeComment(episodeId: string, authorId: string, content: string) {
@@ -530,7 +552,7 @@ export class AnimeService {
     if (!media) throw new NotFoundException('Không tìm thấy tác phẩm');
     const data: any = {};
     if (dto.status && ['WATCHING', 'COMPLETED', 'PLANNING', 'PAUSED', 'DROPPED'].includes(dto.status)) data.status = dto.status;
-    if (dto.score !== undefined) data.score = dto.score == null || dto.score === 0 ? null : Math.min(Math.max(Math.round(Number(dto.score)), 1), 10);
+    if (dto.score !== undefined) data.score = dto.score == null || dto.score === 0 ? null : Math.min(Math.max(Math.round(Number(dto.score)), 1), 5);
     if (dto.progress !== undefined) data.progress = Math.max(0, Number(dto.progress) || 0);
     if (dto.favorite !== undefined) data.favorite = !!dto.favorite;
     if (dto.note !== undefined) data.note = (dto.note || '').slice(0, 500) || null;

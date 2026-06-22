@@ -71,14 +71,14 @@ export default function EntryControls({ mediaId, max }: { mediaId: string; max?:
 
       {entry && (
         <>
-          {/* Chấm điểm */}
+          {/* Chấm điểm (1-5 sao) */}
           <div>
             <p className="mb-1 text-xs font-medium text-ink-500">Điểm của bạn</p>
-            <div className="flex flex-wrap gap-1">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                <button key={n} onClick={() => save({ score: entry.score === n ? null : n })} disabled={saving}
-                  className={`grid h-7 w-7 place-items-center rounded text-xs font-semibold ${entry.score && n <= entry.score ? 'bg-amber-400 text-amber-950' : 'bg-ink-100 text-ink-500 dark:bg-ink-800'}`}>
-                  {n}
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} onClick={() => save({ score: entry.score === n ? null : n })} disabled={saving} aria-label={`${n} sao`}
+                  className="text-2xl leading-none transition hover:scale-110">
+                  <Star size={26} className={entry.score && n <= entry.score ? 'fill-amber-400 text-amber-400' : 'text-ink-300 dark:text-ink-600'} />
                 </button>
               ))}
             </div>

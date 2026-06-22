@@ -384,11 +384,12 @@ export class AnimeService {
     return { iframes: [...iframes], media: [...media] };
   }
 
-  async extractEmbed(input: string): Promise<{ candidates: string[] }> {
+  async extractEmbed(input: string): Promise<{ candidates: { url: string; referer?: string }[] }> {
     const raw = (input || '').trim();
     if (!raw) throw new BadRequestException('Nhập link hoặc mã nhúng');
     const media = new Set<string>();
     const embeds = new Set<string>();
+    const refOf = new Map<string, string>(); // gợi ý Referer cho từng link video
 
     // 1) Mã iframe/embed dán trực tiếp → lấy src (không cần mạng)
     for (const m of raw.matchAll(/<iframe[^>]*\ssrc=["']([^"']+)["']/gi)) embeds.add(m[1]);
@@ -405,26 +406,32 @@ export class AnimeService {
       }
       const origin = new URL(raw).origin;
       const top = this.scanHtml(html, origin);
-      top.media.forEach((u) => media.add(u));
+      top.media.forEach((u) => { media.add(u); if (!refOf.has(u)) refOf.set(u, origin + '/'); });
       top.iframes.forEach((u) => embeds.add(u));
 
-      // Chưa thấy link video → vào trong iframe (tối đa 3) tìm tiếp
+      // Chưa thấy link video → vào trong iframe (tối đa 3) tìm tiếp.
+      // Referer của link video = origin của iframe (đây là cái nguồn chặn hotlink kiểm tra).
       if (!media.size) {
         for (const ifr of top.iframes.slice(0, 3)) {
           if (!/^https?:\/\//i.test(ifr)) continue;
+          let ifrOrigin: string;
+          try { ifrOrigin = new URL(ifr).origin; } catch { continue; }
           if (this.hostBlocked(new URL(ifr).hostname)) continue;
           try {
             const inner = await this.fetchHtml(ifr, raw); // Referer = trang gốc
-            const sub = this.scanHtml(inner, new URL(ifr).origin);
-            sub.media.forEach((u) => media.add(u));
+            const sub = this.scanHtml(inner, ifrOrigin);
+            sub.media.forEach((u) => { media.add(u); if (!refOf.has(u)) refOf.set(u, ifrOrigin + '/'); });
             sub.iframes.forEach((u) => embeds.add(u));
           } catch { /* bỏ qua iframe lỗi */ }
         }
       }
     }
 
-    // Ưu tiên link video trực tiếp (.m3u8/.mp4) — đây là link đi qua proxy được; rồi mới tới embed
-    const candidates = [...media, ...embeds].filter((u) => /^https?:\/\//i.test(u)).slice(0, 12);
+    // Ưu tiên link video trực tiếp (.m3u8/.mp4) kèm Referer gợi ý; rồi mới tới embed
+    const candidates = [
+      ...[...media].map((url) => ({ url, referer: refOf.get(url) })),
+      ...[...embeds].map((url) => ({ url })),
+    ].filter((c) => /^https?:\/\//i.test(c.url)).slice(0, 12);
     if (!candidates.length) throw new BadRequestException('Không tìm thấy link nhúng. Hãy dán trực tiếp mã <iframe …> từ nguồn.');
     return { candidates };
   }

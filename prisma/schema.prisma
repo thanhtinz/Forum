@@ -2652,3 +2652,162 @@ model GiftCodeRedemption {
   @@index([codeId])
   @@index([userId])
 }
+
+// ============================================================
+// ANIME / MANGA DATABASE (Cơ sở dữ liệu Anime & Manga)
+// ============================================================
+enum MediaType {
+  ANIME
+  MANGA
+  LIGHT_NOVEL
+}
+
+enum MediaStatus {
+  RELEASING
+  FINISHED
+  NOT_YET_RELEASED
+  CANCELLED
+  HIATUS
+}
+
+enum MediaSeason {
+  WINTER
+  SPRING
+  SUMMER
+  FALL
+}
+
+model Genre {
+  id    String      @id @default(cuid())
+  slug  String      @unique @db.VarChar(80)
+  name  String      @unique @db.VarChar(80)
+  works MediaWork[] @relation("MediaGenres")
+}
+
+model Studio {
+  id          String      @id @default(cuid())
+  slug        String      @unique @db.VarChar(120)
+  name        String      @db.VarChar(160)
+  anilistId   Int?        @unique
+  description String?     @db.Text
+  works       MediaWork[] @relation("MediaStudios")
+}
+
+// Người: tác giả, hoạ sĩ, đạo diễn, seiyuu (lồng tiếng)…
+model Person {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(120)
+  name        String   @db.VarChar(160)
+  nativeName  String?  @db.VarChar(160)
+  anilistId   Int?     @unique
+  imageUrl    String?  @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  staffRoles       MediaStaff[]
+  voicedCharacters MediaCharacter[]
+}
+
+model Character {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(120)
+  name        String   @db.VarChar(160)
+  nativeName  String?  @db.VarChar(160)
+  anilistId   Int?     @unique
+  imageUrl    String?  @db.VarChar(255)
+  description String?  @db.Text
+  age         String?  @db.VarChar(40)
+  gender      String?  @db.VarChar(30)
+  createdAt   DateTime @default(now())
+
+  appearances MediaCharacter[]
+}
+
+model MediaWork {
+  id            String       @id @default(cuid())
+  type          MediaType
+  slug          String       @unique @db.VarChar(200)
+  title         String       @db.VarChar(300) // romaji / tên chính
+  titleEnglish  String?      @db.VarChar(300)
+  titleNative   String?      @db.VarChar(300)
+  synonyms      String[]     @default([])
+  description   String?      @db.Text
+  coverUrl      String?      @db.VarChar(255)
+  bannerUrl     String?      @db.VarChar(255)
+  status        MediaStatus  @default(FINISHED)
+  format        String?      @db.VarChar(30) // TV/MOVIE/OVA/MANGA/NOVEL…
+  season        MediaSeason?
+  seasonYear    Int?
+  startDate     DateTime?
+  endDate       DateTime?
+  episodes      Int?
+  duration      Int? // phút/tập
+  chapters      Int?
+  volumes       Int?
+  trailerUrl    String?      @db.VarChar(255)
+  source        String?      @db.VarChar(40) // ORIGINAL/MANGA/LIGHT_NOVEL…
+  isAdult       Boolean      @default(false)
+  anilistId     Int?         @unique
+  avgScore      Float        @default(0) // điểm cộng đồng (0-10)
+  ratingCount   Int          @default(0)
+  popularity    Int          @default(0) // import từ AniList
+  viewCount     Int          @default(0)
+  favoriteCount Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  genres      Genre[]          @relation("MediaGenres")
+  studios     Studio[]         @relation("MediaStudios")
+  characters  MediaCharacter[]
+  staff       MediaStaff[]
+  relatedFrom MediaRelation[]  @relation("RelFrom")
+  relatedTo   MediaRelation[]  @relation("RelTo")
+
+  @@index([type])
+  @@index([status])
+  @@index([seasonYear, season])
+  @@index([avgScore])
+  @@index([popularity])
+}
+
+model MediaCharacter {
+  id           String  @id @default(cuid())
+  mediaId      String
+  characterId  String
+  role         String  @default("SUPPORTING") // MAIN/SUPPORTING/BACKGROUND
+  voiceActorId String?
+
+  media      MediaWork @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  character  Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  voiceActor Person?   @relation(fields: [voiceActorId], references: [id])
+
+  @@unique([mediaId, characterId])
+  @@index([characterId])
+}
+
+model MediaStaff {
+  id       String @id @default(cuid())
+  mediaId  String
+  personId String
+  role     String @db.VarChar(80) // Author/Art/Director/Story…
+
+  media  MediaWork @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  person Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, personId, role])
+  @@index([mediaId])
+  @@index([personId])
+}
+
+model MediaRelation {
+  id     String @id @default(cuid())
+  fromId String
+  toId   String
+  type   String @db.VarChar(40) // SEQUEL/PREQUEL/ADAPTATION/SIDE_STORY/ALTERNATIVE…
+
+  from MediaWork @relation("RelFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to   MediaWork @relation("RelTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@unique([fromId, toId, type])
+  @@index([fromId])
+}

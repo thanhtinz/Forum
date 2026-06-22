@@ -20,6 +20,7 @@ function ProfileView() {
   const [following, setFollowing] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [badges, setBadges] = useState<BadgeDescriptor[]>([]);
+  const [tab, setTab] = useState<'about' | 'activity' | 'posts'>('about');
 
   useEffect(() => {
     if (!name) return;
@@ -120,38 +121,123 @@ function ProfileView() {
       </div>
 
       <div className="space-y-5">
-        <div className="card p-5">
-          <h2 className="mb-2 font-semibold">Giới thiệu</h2>
-          {profile.bio && <p className="mb-3 whitespace-pre-wrap text-sm text-ink-600 dark:text-ink-300">{profile.bio}</p>}
-          <dl className="space-y-1.5 text-sm">
-            {profile.location && (
-              <div className="flex items-center gap-2"><MapPin size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">{profile.location}</span></div>
-            )}
-            {profile.birthdayDisplay && (
-              <div className="flex items-center gap-2"><Cake size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Sinh nhật {profile.birthdayDisplay}</span></div>
-            )}
-            <div className="flex items-center gap-2"><CalendarDays size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Tham gia từ {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('vi') : '—'}</span></div>
-          </dl>
+        {/* Tabs kiểu XenForo */}
+        <div className="card flex flex-wrap gap-1 p-1.5">
+          {([
+            { key: 'activity', label: 'Hoạt động gần đây' },
+            { key: 'posts', label: 'Bài viết' },
+            { key: 'about', label: 'Giới thiệu' },
+          ] as const).map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${tab === t.key ? 'bg-brand-600 text-white shadow-sm' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {trophies && (
-          <div className="card p-5">
-            <h2 className="mb-3 font-semibold">Danh hiệu ({trophies.earned}/{trophies.total})</h2>
-            {trophies.trophies.length === 0 ? <p className="text-sm text-ink-500">Chưa có danh hiệu nào.</p> : (
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-                {trophies.trophies.map((t: any) => (
-                  <div key={t.id} className="rounded-xl border border-amber-200/60 p-3 text-center dark:border-ink-800" title={t.description || ''}>
-                    <div className="flex justify-center text-2xl">{t.icon ? t.icon : <Trophy size={24} className="text-amber-500" />}</div>
-                    <div className="mt-1 truncate text-xs font-medium">{t.name}</div>
-                    {t.points ? <div className="text-[11px] text-amber-600">{t.points}đ</div> : null}
+        {tab === 'about' && (
+          <>
+            <div className="card p-5">
+              <h2 className="mb-2 font-semibold">Giới thiệu</h2>
+              {profile.bio && <p className="mb-3 whitespace-pre-wrap text-sm text-ink-600 dark:text-ink-300">{profile.bio}</p>}
+              <dl className="space-y-1.5 text-sm">
+                {profile.location && (
+                  <div className="flex items-center gap-2"><MapPin size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">{profile.location}</span></div>
+                )}
+                {profile.birthdayDisplay && (
+                  <div className="flex items-center gap-2"><Cake size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Sinh nhật {profile.birthdayDisplay}</span></div>
+                )}
+                <div className="flex items-center gap-2"><CalendarDays size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Tham gia từ {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('vi') : '—'}</span></div>
+              </dl>
+            </div>
+
+            {trophies && (
+              <div className="card p-5">
+                <h2 className="mb-3 font-semibold">Danh hiệu ({trophies.earned}/{trophies.total})</h2>
+                {trophies.trophies.length === 0 ? <p className="text-sm text-ink-500">Chưa có danh hiệu nào.</p> : (
+                  <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                    {trophies.trophies.map((t: any) => (
+                      <div key={t.id} className="rounded-xl border border-amber-200/60 p-3 text-center dark:border-ink-800" title={t.description || ''}>
+                        <div className="flex justify-center text-2xl">{t.icon ? t.icon : <Trophy size={24} className="text-amber-500" />}</div>
+                        <div className="mt-1 truncate text-xs font-medium">{t.name}</div>
+                        {t.points ? <div className="text-[11px] text-amber-600">{t.points}đ</div> : null}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
 
-        <Wall wallId={profile.id} />
+        {tab === 'activity' && <ActivityWall wallId={profile.id} canPost={!!user} />}
+
+        {tab === 'posts' && <Wall wallId={profile.id} />}
+      </div>
+    </div>
+  );
+}
+
+function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean }) {
+  const [posts, setPosts] = useState<any[]>([]);
+  const [content, setContent] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  function load() {
+    api.get<{ data: any[] }>(`/social/wall/${wallId}`).then((r) => setPosts(r.data || [])).catch(() => {});
+  }
+  useEffect(() => { if (wallId) load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [wallId]);
+
+  async function post() {
+    if (!content.trim()) return;
+    setBusy(true);
+    try {
+      await api.post(`/social/wall/${wallId}`, { content: content.trim() });
+      setContent('');
+      load();
+    } catch (e: any) { alert(e.message); } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="space-y-4">
+      {canPost && (
+        <div className="card p-4">
+          <textarea className="input w-full" rows={2} placeholder="Viết gì đó lên tường…" value={content} onChange={(e) => setContent(e.target.value)} maxLength={1000} />
+          <div className="mt-2 flex justify-end">
+            <button className="btn-primary !py-1.5 text-sm" onClick={post} disabled={busy || !content.trim()}>{busy ? 'Đang đăng…' : 'Đăng'}</button>
+          </div>
+        </div>
+      )}
+      <div className="card p-5">
+        <h2 className="mb-3 font-semibold">Hoạt động gần đây</h2>
+        {posts.length === 0 ? (
+          <p className="text-sm text-ink-500">Chưa có hoạt động nào.</p>
+        ) : (
+          <ul className="space-y-4">
+            {posts.map((p) => (
+              <li key={p.id} className="flex gap-3">
+                <div className="shrink-0"><Avatar user={p.author} size={40} /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm">
+                    <a href={`/profile?u=${p.author?.username}`} className="font-semibold hover:text-brand-600">{p.author?.displayName || p.author?.username}</a>
+                    <span className="ml-2 text-xs text-ink-400">{p.createdAt ? new Date(p.createdAt).toLocaleString('vi') : ''}</span>
+                  </div>
+                  <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-ink-700 dark:text-ink-200">{p.content}</p>
+                  {p.comments?.length > 0 && (
+                    <ul className="mt-2 space-y-1.5 border-l-2 border-ink-100 pl-3 dark:border-ink-800">
+                      {p.comments.map((c: any) => (
+                        <li key={c.id} className="text-xs">
+                          <span className="font-medium">{c.author?.displayName || c.author?.username}</span>
+                          <span className="ml-1 text-ink-600 dark:text-ink-300">{c.content}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

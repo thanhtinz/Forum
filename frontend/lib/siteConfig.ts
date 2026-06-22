@@ -7,6 +7,7 @@ export interface SiteConfig {
   name: string;
   tagline: string;
   description: string;
+  contactEmail: string;
   logo: string;
   logoSmall: string;
   favicon: string;
@@ -20,6 +21,7 @@ const DEFAULTS: SiteConfig = {
   name: 'ForumHub',
   tagline: '',
   description: '',
+  contactEmail: '',
   logo: '',
   logoSmall: '',
   favicon: '',

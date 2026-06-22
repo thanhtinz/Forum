@@ -4,9 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
+import { useSiteConfig } from '@/lib/siteConfig';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const cfg = useSiteConfig();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setP] = useState('');
@@ -30,7 +32,7 @@ export default function LoginPage() {
     <div className="mx-auto max-w-sm py-8">
       <div className="card p-6">
         <h1 className="mb-1 text-xl font-bold">Đăng nhập</h1>
-        <p className="mb-5 text-sm text-ink-500">Chào mừng quay lại ForumHub</p>
+        <p className="mb-5 text-sm text-ink-500">Chào mừng quay lại {cfg.name}</p>
         <form onSubmit={submit} className="space-y-3">
           <input className="input" type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <input className="input" type="password" placeholder="Mật khẩu" value={password} onChange={(e) => setP(e.target.value)} />

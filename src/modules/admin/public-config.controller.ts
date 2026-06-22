@@ -13,12 +13,13 @@ export class PublicConfigController {
   async getPublic() {
     const c = await this.config.getMany([
       'site.name', 'site.tagline', 'site.description', 'site.logo', 'site.logoSmall', 'site.favicon',
-      'site.primaryColor', 'site.heroTitle', 'site.heroDescription', 'site.footerText',
+      'site.primaryColor', 'site.heroTitle', 'site.heroDescription', 'site.footerText', 'site.contactEmail',
     ]);
     return {
       name: c['site.name'] ?? 'ForumHub',
       tagline: c['site.tagline'] ?? '',
       description: c['site.description'] ?? '',
+      contactEmail: c['site.contactEmail'] ?? '',
       logo: c['site.logo'] ?? '',
       logoSmall: c['site.logoSmall'] ?? '',
       favicon: c['site.favicon'] ?? '',

@@ -15,6 +15,12 @@ export class SeoController {
     return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  private async siteName(): Promise<string> {
+    const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'site.name' } }).catch(() => null);
+    const v = cfg?.value;
+    return (typeof v === 'string' && v.trim()) ? v : 'ForumHub';
+  }
+
   @Get('robots.txt')
   @Header('Content-Type', 'text/plain')
   robots(): string {
@@ -48,6 +54,7 @@ export class SeoController {
   @Header('Content-Type', 'application/rss+xml')
   async rss(): Promise<string> {
     const base = this.base();
+    const name = await this.siteName();
     const threads = await this.prisma.thread.findMany({
       where: { isApproved: true },
       select: { title: true, slug: true, createdAt: true, author: { select: { username: true, displayName: true } }, category: { select: { name: true } } },
@@ -65,9 +72,9 @@ export class SeoController {
     return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
-    <title>Forum AI Platform</title>
+    <title>${this.esc(name)}</title>
     <link>${base}</link>
-    <description>Bài viết mới nhất</description>
+    <description>Bài viết mới nhất · ${this.esc(name)}</description>
     <language>vi</language>
 ${items}
   </channel>

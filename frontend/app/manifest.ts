@@ -4,7 +4,7 @@ export const dynamic = 'force-static';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Forum AI Platform',
+    name: 'ForumHub',
     short_name: 'ForumHub',
     description: 'Diễn đàn cộng đồng tích hợp game, chợ số, AI — cài như app.',
     start_url: '/',

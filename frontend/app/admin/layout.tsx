@@ -9,6 +9,7 @@ import {
   BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square, Megaphone, MessageCircle, SlidersHorizontal,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
+import { useSiteConfig } from '@/lib/siteConfig';
 import { api } from '@/lib/api';
 
 const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: any }[] }[] = [
@@ -70,6 +71,7 @@ const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
+  const cfg = useSiteConfig();
   const path = usePathname();
   const [open, setOpen] = useState(false);
   const [groupKey, setGroupKey] = useState('');
@@ -175,7 +177,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       )}
 
       <footer className="border-t border-ink-200/70 py-4 text-center text-xs text-ink-400 dark:border-ink-800">
-        Trang quản trị · ForumHub
+        Trang quản trị · {cfg.name}
       </footer>
     </div>
   );

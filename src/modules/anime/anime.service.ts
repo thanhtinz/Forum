@@ -289,10 +289,18 @@ export class AnimeService {
     return [];
   }
 
+  // Tách số từ chuỗi: "Tập 1" -> 1, "Chương 5.5" -> 5.5, "12" -> 12
+  private parseNum(v: any): number | null {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+    const m = String(v ?? '').match(/-?\d+(?:[.,]\d+)?/);
+    if (!m) return null;
+    const n = Number(m[0].replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  }
+
   async addEpisode(mediaId: string, dto: any) {
-    if (dto.number == null || dto.number === '') throw new BadRequestException('Thiếu số tập');
-    const number = Number(dto.number);
-    if (!Number.isFinite(number)) throw new BadRequestException('Số tập không hợp lệ');
+    const number = this.parseNum(dto.number);
+    if (number == null) throw new BadRequestException('Thiếu số tập (chỉ nhập số, vd 1 hoặc 5.5)');
     try {
       return await this.prisma.episode.create({
         data: {
@@ -308,7 +316,7 @@ export class AnimeService {
   }
   async updateEpisode(id: string, dto: any) {
     const data: any = {};
-    if (dto.number != null && dto.number !== '') data.number = Number(dto.number);
+    if (dto.number != null && dto.number !== '') { const n = this.parseNum(dto.number); if (n != null) data.number = n; }
     for (const k of ['title', 'videoUrl', 'thumbnail']) if (dto[k] !== undefined) data[k] = dto[k] || null;
     if (dto.duration !== undefined) data.duration = dto.duration ? Number(dto.duration) : null;
     return this.prisma.episode.update({ where: { id }, data });
@@ -361,9 +369,8 @@ export class AnimeService {
   }
 
   async addChapter(mediaId: string, dto: any) {
-    if (dto.number == null || dto.number === '') throw new BadRequestException('Thiếu số chương');
-    const number = Number(dto.number);
-    if (!Number.isFinite(number)) throw new BadRequestException('Số chương không hợp lệ');
+    const number = this.parseNum(dto.number);
+    if (number == null) throw new BadRequestException('Thiếu số chương (chỉ nhập số, vd 1 hoặc 5.5)');
     try {
       return await this.prisma.chapter.create({
         data: {
@@ -378,7 +385,7 @@ export class AnimeService {
   }
   async updateChapter(id: string, dto: any) {
     const data: any = {};
-    if (dto.number != null && dto.number !== '') data.number = Number(dto.number);
+    if (dto.number != null && dto.number !== '') { const n = this.parseNum(dto.number); if (n != null) data.number = n; }
     if (dto.title !== undefined) data.title = dto.title || null;
     if (dto.content !== undefined) data.content = dto.content || null;
     if (dto.pages !== undefined) data.pages = this.parsePages(dto.pages);

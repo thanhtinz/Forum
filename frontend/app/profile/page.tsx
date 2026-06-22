@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck } from 'lucide-react';
+import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck, CalendarDays } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -130,7 +130,7 @@ function ProfileView() {
             {profile.birthdayDisplay && (
               <div className="flex items-center gap-2"><Cake size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Sinh nhật {profile.birthdayDisplay}</span></div>
             )}
-            <div className="flex items-center gap-2"><Medal size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Tham gia từ {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('vi') : '—'}</span></div>
+            <div className="flex items-center gap-2"><CalendarDays size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Tham gia từ {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('vi') : '—'}</span></div>
           </dl>
         </div>
 

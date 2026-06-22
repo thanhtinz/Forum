@@ -233,6 +233,7 @@ model User {
   avatarFrameUrl  String? // ảnh khung đang dùng (denormalized để hiển thị nhanh)
   vipTierName     String? // tên mốc VIP hiện tại (đạt theo gem nạp tích lũy)
   vipBadgeUrl     String? // ảnh badge VIP (denormalized để hiển thị)
+  vipFrameUrl     String? // ảnh khung VIP user được dùng (nằm trong kho khung, bật/tắt được)
   bio             String?    @db.Text
   role            UserRole   @default(MEMBER)
   status          UserStatus @default(ACTIVE)

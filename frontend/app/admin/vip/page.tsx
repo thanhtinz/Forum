@@ -16,22 +16,32 @@ const empty = { name: '', gemRequired: '', badgeUrl: '', frameUrl: '', color: ''
 export default function AdminVip() {
   const [list, setList] = useState<Tier[]>([]);
   const [form, setForm] = useState<typeof empty>(empty);
+  const [editId, setEditId] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
   function load() { api.get<Tier[]>('/admin/vip').then(setList).catch((e) => setErr(e.message)); }
   useEffect(() => { load(); }, []);
 
-  async function create() {
+  function startEdit(t: Tier) {
+    setEditId(t.id);
+    setForm({ name: t.name, gemRequired: String(t.gemRequired), badgeUrl: t.badgeUrl || '', frameUrl: t.frameUrl || '', color: t.color || '', sortOrder: String(t.sortOrder) });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function cancelEdit() { setEditId(null); setForm(empty); }
+
+  async function save() {
     setErr(''); setMsg('');
     if (!form.name.trim() || form.gemRequired === '') { setErr('Nhập tên mốc và số gem yêu cầu'); return; }
+    const payload = {
+      name: form.name.trim(), gemRequired: Number(form.gemRequired) || 0,
+      badgeUrl: form.badgeUrl || null, frameUrl: form.frameUrl || null,
+      color: form.color || null, sortOrder: Number(form.sortOrder) || 0,
+    };
     try {
-      await api.post('/admin/vip', {
-        name: form.name.trim(), gemRequired: Number(form.gemRequired) || 0,
-        badgeUrl: form.badgeUrl || null, frameUrl: form.frameUrl || null,
-        color: form.color || null, sortOrder: Number(form.sortOrder) || 0,
-      });
-      setMsg('Đã tạo mốc VIP ✓'); setForm(empty); load();
+      if (editId) { await api.patch(`/admin/vip/${editId}`, payload); setMsg('Đã lưu mốc VIP ✓'); }
+      else { await api.post('/admin/vip', payload); setMsg('Đã tạo mốc VIP ✓'); }
+      setForm(empty); setEditId(null); load();
     } catch (e: any) { setErr(e.message); }
   }
   async function toggle(t: Tier) {
@@ -49,7 +59,7 @@ export default function AdminVip() {
       {msg && <Notice kind="success">{msg}</Notice>}
 
       <Card className="space-y-4">
-        <SectionTitle hint="Mốc dựa trên TỔNG gem đã nạp (tích lũy), không phải số dư hiện tại.">Tạo mốc VIP</SectionTitle>
+        <SectionTitle hint="Mốc dựa trên TỔNG gem đã nạp (tích lũy), không phải số dư hiện tại.">{editId ? 'Sửa mốc VIP' : 'Tạo mốc VIP'}</SectionTitle>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label="Tên mốc (vd: VIP Bạc)"><input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
           <Field label="Gem nạp tích lũy yêu cầu"><input type="number" className="input" value={form.gemRequired} onChange={(e) => setForm({ ...form, gemRequired: e.target.value })} /></Field>
@@ -72,7 +82,10 @@ export default function AdminVip() {
             <ImageUpload label="Tải khung avatar VIP" onUploaded={(url) => setForm((f) => ({ ...f, frameUrl: url }))} />
           </div>
         </div>
-        <Btn onClick={create}>Tạo mốc</Btn>
+        <div className="flex gap-2">
+          <Btn onClick={save}>{editId ? 'Lưu thay đổi' : 'Tạo mốc'}</Btn>
+          {editId && <Btn variant="outline" onClick={cancelEdit}>Huỷ</Btn>}
+        </div>
       </Card>
 
       <div className="space-y-3">
@@ -90,6 +103,7 @@ export default function AdminVip() {
                 <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-500"><Gem size={12} /> Cần nạp tích lũy ≥ {t.gemRequired} gem{t.frameUrl ? ' · có khung VIP' : ''}</p>
               </div>
               <div className="flex shrink-0 gap-2">
+                <Btn variant="outline" size="sm" onClick={() => startEdit(t)}>Sửa</Btn>
                 <Btn variant="outline" size="sm" onClick={() => toggle(t)}>{t.isActive ? 'Ẩn' : 'Hiện'}</Btn>
                 <Btn variant="danger" size="sm" onClick={() => del(t)}>Xoá</Btn>
               </div>

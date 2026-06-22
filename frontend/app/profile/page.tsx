@@ -78,7 +78,7 @@ function ProfileView() {
       <div className="card p-6 text-center">
         <div className="mx-auto w-fit"><Avatar user={profile} size={96} /></div>
         <h1 className="mt-3 flex items-center justify-center gap-1.5 text-xl font-bold">
-          {profile.vipBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={profile.vipBadgeUrl} alt={profile.vipTierName || 'VIP'} title={profile.vipTierName || 'VIP'} className="h-6 w-6 object-contain" />}
+          {profile.vipBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={profile.vipBadgeUrl} alt={profile.vipTierName || 'VIP'} title={profile.vipTierName || 'VIP'} className="h-9 w-9 object-contain" />}
           <span>{profile.displayName || profile.username}</span>
         </h1>
         <p className="text-sm text-ink-500">@{profile.username}{profile.vipTierName ? ` · ${profile.vipTierName}` : ''}</p>

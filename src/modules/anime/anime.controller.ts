@@ -29,6 +29,12 @@ export class AnimeController {
   @UseGuards(JwtAuthGuard)
   removeEntry(@CurrentUser('id') userId: string, @Param('mediaId') mediaId: string) { return this.svc.removeEntry(userId, mediaId); }
 
+  @Get('anime/episode/:id')
+  episode(@Param('id') id: string) { return this.svc.getEpisode(id); }
+
+  @Get('anime/chapter/:id')
+  chapter(@Param('id') id: string) { return this.svc.getChapter(id); }
+
   @Get('anime')
   list(@Query() q: any) { return this.svc.list(q); }
 
@@ -69,4 +75,42 @@ export class AnimeController {
   importAnilist(@Body('anilistId') anilistId: number) {
     return this.svc.importFromAnilist(Number(anilistId));
   }
+
+  // Lấy đầy đủ để sửa (đặt sau các route admin/anime/* tĩnh)
+  @Get('admin/anime/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getForEdit(@Param('id') id: string) { return this.svc.getForEdit(id); }
+
+  // Tập phim (anime)
+  @Post('admin/anime/:id/episode')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  addEpisode(@Param('id') id: string, @Body() dto: any) { return this.svc.addEpisode(id, dto); }
+
+  @Patch('admin/anime/episode/:epId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateEpisode(@Param('epId') epId: string, @Body() dto: any) { return this.svc.updateEpisode(epId, dto); }
+
+  @Post('admin/anime/episode/:epId/delete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteEpisode(@Param('epId') epId: string) { return this.svc.deleteEpisode(epId); }
+
+  // Chương (manga / light novel)
+  @Post('admin/anime/:id/chapter')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  addChapter(@Param('id') id: string, @Body() dto: any) { return this.svc.addChapter(id, dto); }
+
+  @Patch('admin/anime/chapter/:chId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  updateChapter(@Param('chId') chId: string, @Body() dto: any) { return this.svc.updateChapter(chId, dto); }
+
+  @Post('admin/anime/chapter/:chId/delete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteChapter(@Param('chId') chId: string) { return this.svc.deleteChapter(chId); }
 }

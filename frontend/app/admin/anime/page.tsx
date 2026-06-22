@@ -106,6 +106,7 @@ export default function AdminAnime() {
                 <a href={`/anime/detail?slug=${w.slug}`} target="_blank" className="font-semibold hover:text-brand-600">{w.title}</a>
                 <p className="mt-0.5 text-xs text-ink-500">{w.type} · {w.format || ''} {w.seasonYear || ''} {w.avgScore > 0 ? <span className="inline-flex items-center gap-0.5 text-amber-600"><Star size={11} /> {w.avgScore.toFixed(1)}</span> : ''}</p>
               </div>
+              <a href={`/admin/anime/edit?id=${w.id}`}><Btn size="sm">Sửa</Btn></a>
               <Btn variant="danger" size="sm" onClick={() => del(w)}><Trash2 size={14} /></Btn>
             </div>
           </Card>

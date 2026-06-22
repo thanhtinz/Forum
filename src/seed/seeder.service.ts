@@ -1,10 +1,10 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { AvatarSlot, ConsumableType, MinigameType } from '@prisma/client';
+import { ConsumableType, MinigameType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FISH_SPECIES, FISH_DEPTHS, FISHING_RODS, FISHING_BOATS } from './data/fishing.data';
 import { CROPS, FERTILIZERS, ANIMALS } from './data/farm.data';
 import { FOODS } from './data/foods.data';
-import { WARDROBE_ITEMS } from './data/wardrobe.data';
+
 import { TOOL_CATEGORIES, TOOLS, SERVER_TOOLS } from './data/tools.data';
 import { DEFAULT_GROUPS } from '../modules/permissions/permission.service';
 import { AdminConfigService } from '../modules/admin/admin-config.service';
@@ -188,12 +188,6 @@ Bạn có thể chấp nhận cookie qua thanh thông báo, hoặc quản lý/xo
     for (const food of FOODS) {
       const data = { ...food, type: food.type as ConsumableType };
       await this.prisma.consumableTemplate.upsert({ where: { slug: food.slug }, update: {}, create: data });
-      n++;
-    }
-
-    for (const w of WARDROBE_ITEMS) {
-      const data = { ...w, slot: w.slot as AvatarSlot };
-      await this.prisma.avatarItemTemplate.upsert({ where: { slug: w.slug }, update: data, create: data });
       n++;
     }
 

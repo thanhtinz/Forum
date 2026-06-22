@@ -199,10 +199,6 @@ model User {
   postCount       Int        @default(0)
   reputationScore Int        @default(0)
   gemBalance      Int        @default(0)
-  aiProvider      String?    @db.VarChar(20) // OPENAI | GEMINI | OLLAMA | OPENAI_COMPAT
-  aiModel         String?    @db.VarChar(80) // model user tự chọn
-  aiApiKey        String?    @db.VarChar(500) // API key riêng của user
-  aiBaseUrl       String?    @db.VarChar(300) // base URL cho nguồn OpenAI-compatible (OpenRouter, Groq, LM Studio…)
   lastSeenAt      DateTime?
   bannedUntil     DateTime?
   banReason       String?
@@ -1446,7 +1442,6 @@ model GameCharacter {
   inventory       InventoryItem[]
   equipped        EquippedItem[]
   guildMember     GuildMember?
-  skills          CharacterSkill[]
   survival        CharacterSurvival?
   fishingProfile  FishingProfile?
   fishCatches     FishCatch[]
@@ -1455,7 +1450,6 @@ model GameCharacter {
   warehouse       WarehouseItem[]
   farmAnimals     FarmAnimal[]
   farmFertilizers FarmFertilizer[]
-  avatarItems     UserAvatarItem[]
 
   @@index([level])
   @@index([pvpRank])
@@ -1531,40 +1525,6 @@ model EquippedItem {
   inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
 
   @@unique([characterId, slot])
-  @@index([characterId])
-}
-
-// ── Skill ──
-model SkillTemplate {
-  id               String  @id @default(cuid())
-  slug             String  @unique @db.VarChar(80)
-  name             String  @db.VarChar(120)
-  description      String? @db.Text
-  iconUrl          String? @db.VarChar(255)
-  reqLevel         Int     @default(1)
-  manaCost         Int     @default(0)
-  cooldown         Int     @default(0) // số turn
-  damageMultiplier Float   @default(1.0)
-  effectType       String? @db.VarChar(50) // stun|heal|buff|dot
-  effectValue      Int     @default(0)
-  priceCoin        Int?
-  priceGem         Int?
-  isActive         Boolean @default(true)
-
-  characterSkills CharacterSkill[]
-}
-
-model CharacterSkill {
-  id          String   @id @default(cuid())
-  characterId String
-  skillId     String
-  slotIndex   Int // vị trí trên thanh skill (0-3)
-  learnedAt   DateTime @default(now())
-
-  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  skill     SkillTemplate @relation(fields: [skillId], references: [id])
-
-  @@unique([characterId, skillId])
   @@index([characterId])
 }
 
@@ -1762,19 +1722,6 @@ model UserSpecialItem {
   template SpecialItemTemplate @relation(fields: [templateId], references: [id])
 
   @@index([userId])
-}
-
-// User cosmetic state (đang active gì)
-model UserCosmetic {
-  userId             String    @id
-  nameColor          String?   @db.VarChar(20)
-  nameHighlight      String?   @db.VarChar(40) // gradient/glow/rainbow
-  nameHighlightUntil DateTime?
-  avatarFrame        String?   @db.VarChar(60)
-  profileBanner      String?   @db.VarChar(255)
-  hasRenameCard      Boolean   @default(false) // đã mua thẻ đổi tên chưa dùng
-  renameCount        Int       @default(0) // số lần đã đổi tên
-  updatedAt          DateTime  @updatedAt
 }
 
 // ============================================================
@@ -2496,54 +2443,6 @@ model Prison {
 
   @@index([userId, released])
   @@index([releaseAt])
-}
-
-// ============================================================
-// WARDROBE / PET / MOUNT — cosmetic avatar (port từ Avatar, chỉ coin)
-// ============================================================
-enum AvatarSlot {
-  HAIR // tóc
-  FACE // mặt/râu
-  TOP // áo
-  BOTTOM // quần
-  HAT // mũ
-  WING // cánh
-  ACCESSORY // phụ kiện
-  PET // thú cưng
-  MOUNT // thú cưỡi
-}
-
-model AvatarItemTemplate {
-  id         String     @id @default(cuid())
-  slug       String     @unique @db.VarChar(80)
-  name       String     @db.VarChar(120)
-  slot       AvatarSlot
-  gender     Int        @default(0) // 0 unisex, 1 nam, 2 nữ
-  priceCoin  Int        @default(0)
-  reqLevel   Int        @default(0)
-  expiredDay Int        @default(0) // 0 = vĩnh viễn
-  zorder     Int        @default(0) // lớp vẽ (layered avatar)
-  asset      String?    @db.VarChar(255)
-  sortOrder  Int        @default(0)
-
-  owned UserAvatarItem[]
-
-  @@index([slot])
-}
-
-model UserAvatarItem {
-  id          String    @id @default(cuid())
-  characterId String
-  templateId  String
-  equipped    Boolean   @default(false)
-  expiresAt   DateTime?
-  acquiredAt  DateTime  @default(now())
-
-  character GameCharacter      @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  template  AvatarItemTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-
-  @@unique([characterId, templateId])
-  @@index([characterId])
 }
 
 // ============================================================

@@ -68,7 +68,6 @@ export class CharacterService {
           },
         },
         guildMember: { include: { guild: { select: { id: true, name: true, tag: true } } } },
-        skills: { include: { skill: true }, orderBy: { slotIndex: 'asc' } },
       },
     });
     if (!char) throw new NotFoundException('Chưa có nhân vật. Hãy tạo nhân vật trước.');

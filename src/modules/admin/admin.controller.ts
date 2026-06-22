@@ -346,4 +346,34 @@ export class AdminController {
 
   @Post('frames/:id/delete')
   deleteFrame(@Param('id') id: string) { return this.gameAsset.deleteFrame(id); }
+
+  // ════════════════════════════════════════════
+  // BADGE TRANG TRÍ (sản phẩm bán bằng coin/gem)
+  // ════════════════════════════════════════════
+  @Get('badge-products')
+  listBadgeProducts() { return this.gameAsset.listBadgeProducts(); }
+
+  @Post('badge-products')
+  createBadgeProduct(@Body() data: any) { return this.gameAsset.createBadgeProduct(data); }
+
+  @Patch('badge-products/:id')
+  updateBadgeProduct(@Param('id') id: string, @Body() data: any) { return this.gameAsset.updateBadgeProduct(id, data); }
+
+  @Post('badge-products/:id/delete')
+  deleteBadgeProduct(@Param('id') id: string) { return this.gameAsset.deleteBadgeProduct(id); }
+
+  // ════════════════════════════════════════════
+  // HIỆU ỨNG TÊN (sản phẩm bán bằng coin/gem)
+  // ════════════════════════════════════════════
+  @Get('name-effects')
+  listNameEffects() { return this.gameAsset.listNameEffects(); }
+
+  @Post('name-effects')
+  createNameEffect(@Body() data: any) { return this.gameAsset.createNameEffect(data); }
+
+  @Patch('name-effects/:id')
+  updateNameEffect(@Param('id') id: string, @Body() data: any) { return this.gameAsset.updateNameEffect(id, data); }
+
+  @Post('name-effects/:id/delete')
+  deleteNameEffect(@Param('id') id: string) { return this.gameAsset.deleteNameEffect(id); }
 }

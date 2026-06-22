@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save } from 'lucide-react';
 import { api } from '@/lib/api';
+import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
@@ -433,7 +434,8 @@ function ThreadView() {
                 {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
                 <div className="mt-2 flex items-center justify-center gap-1 truncate text-sm font-semibold">
                   {(p.author as any)?.vipBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).vipBadgeUrl} alt="VIP" title={(p.author as any).vipTierName || 'VIP'} className="h-6 w-6 shrink-0 object-contain" />}
-                  <span className="truncate">{p.author?.displayName || p.author?.username}</span>
+                  <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
+                  {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-5 w-5 shrink-0 object-contain" />}
                 </div>
                 {p.author && (
                   <div className="mt-1 flex flex-wrap justify-center gap-1">

@@ -43,6 +43,7 @@ import { PermissionsModule } from './modules/permissions/permissions.module';
 import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { AvatarFrameModule } from './modules/avatar-frame/avatar-frame.module';
+import { CosmeticsModule } from './modules/cosmetics/cosmetics.module';
 import { MarketModule } from './modules/market/market.module';
 import { PingModule } from './modules/ping/ping.module';
 import { BannerModule } from './modules/banner/banner.module';
@@ -78,6 +79,7 @@ import { VipModule } from './modules/vip/vip.module';
     NotificationsModule,
     GemModule,
     AvatarFrameModule,
+    CosmeticsModule,
     MarketModule,
     PingModule,
     BannerModule,

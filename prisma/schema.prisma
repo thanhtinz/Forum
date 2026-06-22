@@ -188,11 +188,13 @@ model User {
   vipTierName     String? // tên mốc VIP hiện tại (đạt theo gem nạp tích lũy)
   vipBadgeUrl     String? // ảnh badge VIP (denormalized để hiển thị)
   vipFrameUrl     String? // ảnh khung VIP user được dùng (nằm trong kho khung, bật/tắt được)
-  hiddenBadges    String[] @default([]) // key các huy hiệu user chọn ẩn (role/verify/level/milestone)
+  hiddenBadges    String[]   @default([]) // key các huy hiệu user chọn ẩn (role/verify/level/milestone)
   bio             String?    @db.Text
   birthday        DateTime? // ngày sinh
   showBirthday    Boolean    @default(false) // có hiển thị ngày sinh công khai không
   location        String?    @db.VarChar(120) // nơi ở
+  shopBadgeUrl    String? // ảnh badge cửa hàng đang đeo (denormalized)
+  nameEffectCss   String?    @db.Text // CSS hiệu ứng tên đang dùng (denormalized)
   role            UserRole   @default(MEMBER)
   status          UserStatus @default(ACTIVE)
   isVerified      Boolean    @default(false)
@@ -239,23 +241,23 @@ model User {
   aiBonds              AiBond[]
   aiOutfitUnlocks      AiOutfitUnlock[]
   gameCharacter        GameCharacter?
-  prisonRecords        Prison[]                @relation("UserPrison")
-  fortuneRecords       FortuneRecord[]         @relation("UserFortune")
+  prisonRecords        Prison[]              @relation("UserPrison")
+  fortuneRecords       FortuneRecord[]       @relation("UserFortune")
   pollVotes            PollVote[]
   threadSubs           ThreadSubscription[]
   postDrafts           PostDraft[]
   bookmarks            Bookmark[]
-  tipsSent             Tip[]                   @relation("TipFrom")
-  tipsReceived         Tip[]                   @relation("TipTo")
-  inviteCodesCreated   InviteCode[]            @relation("InviteCodesCreated")
+  tipsSent             Tip[]                 @relation("TipFrom")
+  tipsReceived         Tip[]                 @relation("TipTo")
+  inviteCodesCreated   InviteCode[]          @relation("InviteCodesCreated")
   inviteCodeUses       InviteCodeUse[]
-  following            UserFollow[]            @relation("Follower")
-  followers            UserFollow[]            @relation("Following")
-  profilePosts         ProfilePost[]           @relation("ProfilePostAuthor")
-  profilePostsOnWall   ProfilePost[]           @relation("ProfilePostWall")
+  following            UserFollow[]          @relation("Follower")
+  followers            UserFollow[]          @relation("Following")
+  profilePosts         ProfilePost[]         @relation("ProfilePostAuthor")
+  profilePostsOnWall   ProfilePost[]         @relation("ProfilePostWall")
   profilePostComments  ProfilePostComment[]
-  blocking             UserBlock[]             @relation("Blocker")
-  blockedBy            UserBlock[]             @relation("Blocked")
+  blocking             UserBlock[]           @relation("Blocker")
+  blockedBy            UserBlock[]           @relation("Blocked")
   galleryAlbums        GalleryAlbum[]
   galleryMedia         GalleryMedia[]
   galleryComments      GalleryComment[]
@@ -268,8 +270,8 @@ model User {
   authTokens           AuthToken[]
   groupMemberships     UserGroupMember[]
   pushSubscriptions    PushSubscription[]
-  scamCasesReported    ScamCase[]              @relation("ScamCaseReporter")
-  scamCasesAgainst     ScamCase[]              @relation("ScamCaseReported")
+  scamCasesReported    ScamCase[]            @relation("ScamCaseReporter")
+  scamCasesAgainst     ScamCase[]            @relation("ScamCaseReported")
   scamComments         ScamCaseComment[]
   scamVotes            ScamCaseVote[]
   scamFollows          ScamCaseFollow[]
@@ -2225,6 +2227,68 @@ model UserAvatarFrame {
   @@index([userId])
 }
 
+// ───────── Badge trang trí (sản phẩm bán bằng coin/gem, ảnh đeo cạnh tên) ─────────
+model BadgeProduct {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  imageUrl    String   @db.VarChar(255) // ảnh badge
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  priceCoin   Int?
+  coinDays    Int?
+  priceGem    Int?
+  gemDays     Int?
+  createdAt   DateTime @default(now())
+
+  owners UserBadgeProduct[]
+}
+
+model UserBadgeProduct {
+  id         String    @id @default(cuid())
+  userId     String
+  badgeId    String
+  expiresAt  DateTime?
+  acquiredAt DateTime  @default(now())
+
+  badge BadgeProduct @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+}
+
+// ───────── Hiệu ứng tên (sản phẩm bán bằng coin/gem, CSS do admin nhập) ─────────
+model NameEffectProduct {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  css         String   @db.Text // khai báo CSS áp lên tên (vd: color, background gradient, text-shadow…)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  priceCoin   Int?
+  coinDays    Int?
+  priceGem    Int?
+  gemDays     Int?
+  createdAt   DateTime @default(now())
+
+  owners UserNameEffect[]
+}
+
+model UserNameEffect {
+  id         String    @id @default(cuid())
+  userId     String
+  effectId   String
+  expiresAt  DateTime?
+  acquiredAt DateTime  @default(now())
+
+  effect NameEffectProduct @relation(fields: [effectId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, effectId])
+  @@index([userId])
+}
+
 // ============================================================
 // BANNER QUẢNG CÁO — admin gắn theo thời gian; chưa cấu hình thì hiện "cho thuê"
 // ============================================================
@@ -2237,7 +2301,7 @@ model VipTier {
   gemRequired Int // mốc gem nạp tích lũy để đạt
   badgeUrl    String?  @db.VarChar(255) // ảnh badge VIP
   frameUrl    String?  @db.VarChar(255) // ảnh khung avatar VIP
-  color       String?  @db.VarChar(20)  // màu tên (tuỳ chọn)
+  color       String?  @db.VarChar(20) // màu tên (tuỳ chọn)
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -2246,15 +2310,15 @@ model VipTier {
 // Mỗi mốc VIP user đã đạt — giữ vĩnh viễn badge + khung, không mất khi nạp thêm.
 // User tự bật/tắt badge/khung từ kho.
 model UserVipReward {
-  id       String   @id @default(cuid())
-  userId   String
-  tierId   String
-  tierName String   @db.VarChar(80)
-  badgeUrl String?  @db.VarChar(255)
-  frameUrl String?  @db.VarChar(255)
-  color    String?  @db.VarChar(20)
-  gemRequired Int    @default(0)
-  earnedAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  tierId      String
+  tierName    String   @db.VarChar(80)
+  badgeUrl    String?  @db.VarChar(255)
+  frameUrl    String?  @db.VarChar(255)
+  color       String?  @db.VarChar(20)
+  gemRequired Int      @default(0)
+  earnedAt    DateTime @default(now())
 
   @@unique([userId, tierId])
   @@index([userId])

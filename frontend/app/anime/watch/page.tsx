@@ -12,12 +12,14 @@ const ytId = (u: string) => u.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/)?.[1
 const proxy = (u: string, ref?: string | null) =>
   `${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/anime/hls?u=${encodeURIComponent(u)}${ref ? `&r=${encodeURIComponent(ref)}` : ''}`;
 
+// Emoji động (Google Noto Animated Emoji) – cp = mã codepoint
+const animEmoji = (cp: string) => `https://fonts.gstatic.com/s/e/notoemoji/latest/${cp}/512.gif`;
 const RATINGS = [
-  { v: 5, label: 'Đỉnh nóc', emoji: '😍' },
-  { v: 4, label: 'Hay ho', emoji: '😙' },
-  { v: 3, label: 'Tạm ổn', emoji: '🙂' },
-  { v: 2, label: 'Nhạt nhòa', emoji: '🙁' },
-  { v: 1, label: 'Thảm họa', emoji: '🤮' },
+  { v: 5, label: 'Đỉnh nóc', cp: '1f60d' }, // 😍
+  { v: 4, label: 'Hay ho', cp: '1f618' },   // 😘
+  { v: 3, label: 'Tạm ổn', cp: '1f642' },   // 🙂
+  { v: 2, label: 'Nhạt nhòa', cp: '1f641' },// 🙁
+  { v: 1, label: 'Thảm họa', cp: '1f92e' }, // 🤮
 ];
 
 function PlayerError({ msg }: { msg: string }) {
@@ -239,7 +241,7 @@ function Watch() {
                 />
               )}
             </div>
-            <button type="submit" disabled={posting || !text.trim()} className="flex h-10 w-10 shrink-0 items-center justify-center self-end rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-50"><Send size={18} /></button>
+            <button type="submit" disabled={posting || !text.trim()} className="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-50"><Send size={18} /></button>
           </form>
         ) : (
           <p className="mb-4 text-sm text-ink-500"><a href="/login" className="text-brand-600 hover:underline">Đăng nhập</a> để bình luận.</p>
@@ -292,7 +294,7 @@ function RateModal({ title, avg, count, current, onClose, onSubmit }: { title: s
           <div className="grid grid-cols-2 gap-3">
             {RATINGS.map((r) => (
               <button key={r.v} onClick={() => setSel(r.v)} className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3 text-left transition ${sel === r.v ? 'border-brand-400 bg-white/10' : 'border-transparent bg-white/5 hover:bg-white/10'}`}>
-                <span className="text-2xl">{r.emoji}</span> <span className="font-medium">{r.label}</span>
+                <img src={animEmoji(r.cp)} alt={r.label} className="h-9 w-9 shrink-0" loading="lazy" /> <span className="font-medium">{r.label}</span>
               </button>
             ))}
           </div>

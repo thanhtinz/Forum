@@ -486,11 +486,31 @@ export class AnimeService {
     }).join('\n');
   }
 
-  async proxyHls(u: string, r: string | undefined, range: string | undefined, res: Response) {
+  async proxyHls(u: string, r: string | undefined, range: string | undefined, res: Response, debug = false) {
     if (!u || !/^https?:\/\//i.test(u)) { res.status(400).send('URL không hợp lệ'); return; }
     let target: URL;
     try { target = new URL(u); } catch { res.status(400).send('URL không hợp lệ'); return; }
     if (this.hostBlocked(target.hostname)) { res.status(403).send('Host bị chặn'); return; }
+
+    // Chế độ chẩn đoán: thử nhiều Referer và báo cáo trạng thái upstream (không phát video)
+    if (debug) {
+      const tries: { referer: string | null; status?: number; ct?: string | null; err?: string }[] = [];
+      const cands: (string | null)[] = [r || null, `${target.protocol}//${target.host}/`, 'https://vuighe.live/', null];
+      const seen = new Set<string>();
+      for (const ref of cands) {
+        const key = ref || '<none>'; if (seen.has(key)) continue; seen.add(key);
+        const h: Record<string, string> = { 'User-Agent': BROWSER_UA, Accept: '*/*' };
+        if (ref) { h.Referer = ref; try { h.Origin = new URL(ref).origin; } catch {} }
+        try {
+          const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 12000);
+          const up = await fetch(u, { signal: ctrl.signal, headers: h, redirect: 'follow' });
+          clearTimeout(t);
+          tries.push({ referer: ref, status: up.status, ct: up.headers.get('content-type') });
+        } catch (e: any) { tries.push({ referer: ref, err: String(e?.message || e) }); }
+      }
+      res.json({ url: u, tries });
+      return;
+    }
 
     const referer = r && /^https?:\/\//i.test(r) ? r : `${target.protocol}//${target.host}/`;
     const headers: Record<string, string> = {

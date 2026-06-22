@@ -349,46 +349,82 @@ export class AnimeService {
   async deleteServer(id: string) { await this.prisma.episodeServer.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
 
   // Trích xuất link embed từ mã iframe hoặc URL trang phát (vd: vuighe.live)
+  // Tải HTML 1 trang (cho phép đặt Referer)
+  private async fetchHtml(url: string, referer?: string): Promise<string> {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 12000);
+    try {
+      const res = await fetch(url, {
+        signal: ctrl.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,*/*',
+          'Accept-Language': 'vi,en;q=0.9',
+          Referer: referer || new URL(url).origin,
+        },
+        redirect: 'follow',
+      });
+      if (!res.ok) throw new BadRequestException(`Nguồn trả về ${res.status} — thử dán trực tiếp mã iframe.`);
+      return await res.text();
+    } finally { clearTimeout(t); }
+  }
+
+  // Dò iframe + link video (.m3u8/.mp4) trong 1 đoạn HTML/JS
+  private scanHtml(html: string, origin: string): { iframes: string[]; media: string[] } {
+    const abs = (u: string) => (u.startsWith('//') ? `https:${u}` : u.startsWith('/') ? origin + u : u);
+    // unescape \/ trong JS (nhiều player để link dạng https:\/\/...m3u8)
+    const unesc = html.replace(/\\\//g, '/');
+    const iframes = new Set<string>();
+    const media = new Set<string>();
+    for (const m of html.matchAll(/<iframe[^>]*\ssrc=["']([^"']+)["']/gi)) iframes.add(abs(m[1]));
+    for (const src of [html, unesc]) {
+      for (const m of src.matchAll(/["'](https?:\/\/[^"'\\\s]+?\.(?:m3u8|mp4)(?:\?[^"'\\\s]*)?)["']/gi)) media.add(m[1]);
+      for (const m of src.matchAll(/(?:file|source|src|url)\s*[:=]\s*["'](https?:\/\/[^"'\\\s]+?\.(?:m3u8|mp4)[^"'\\\s]*)["']/gi)) media.add(m[1]);
+    }
+    return { iframes: [...iframes], media: [...media] };
+  }
+
   async extractEmbed(input: string): Promise<{ candidates: string[] }> {
     const raw = (input || '').trim();
     if (!raw) throw new BadRequestException('Nhập link hoặc mã nhúng');
-    const found = new Set<string>();
+    const media = new Set<string>();
+    const embeds = new Set<string>();
 
     // 1) Mã iframe/embed dán trực tiếp → lấy src (không cần mạng)
-    for (const m of raw.matchAll(/<iframe[^>]*\ssrc=["']([^"']+)["']/gi)) found.add(m[1]);
-    // 2) Bản thân input đã là URL embed
-    if (!found.size && /^https?:\/\/\S+$/i.test(raw) && /(embed|player|\.m3u8|\.mp4|iframe)/i.test(raw)) found.add(raw);
+    for (const m of raw.matchAll(/<iframe[^>]*\ssrc=["']([^"']+)["']/gi)) embeds.add(m[1]);
+    // 2) Bản thân input đã là link m3u8/mp4
+    if (/^https?:\/\/\S+\.(?:m3u8|mp4)(?:\?\S*)?$/i.test(raw)) media.add(raw);
 
-    // 3) Là URL trang tập → tải HTML và dò iframe / nguồn video
-    if (!found.size && /^https?:\/\//i.test(raw)) {
+    // 3) Là URL trang/embed → tải HTML, dò media + iframe; chui thêm 1 tầng iframe để lấy .m3u8
+    if (!media.size && /^https?:\/\//i.test(raw)) {
       let html = '';
-      try {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), 12000);
-        const res = await fetch(raw, {
-          signal: ctrl.signal,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
-            Accept: 'text/html,application/xhtml+xml',
-            'Accept-Language': 'vi,en;q=0.9',
-            Referer: new URL(raw).origin,
-          },
-        });
-        clearTimeout(t);
-        if (!res.ok) throw new BadRequestException(`Nguồn trả về ${res.status} — thử dán trực tiếp mã iframe.`);
-        html = await res.text();
-      } catch (e: any) {
+      try { html = await this.fetchHtml(raw); }
+      catch (e: any) {
         if (e instanceof BadRequestException) throw e;
         throw new BadRequestException('Không tải được trang (nguồn có thể chặn hoặc cần dán mã iframe).');
       }
       const origin = new URL(raw).origin;
-      const abs = (u: string) => (u.startsWith('//') ? `https:${u}` : u.startsWith('/') ? origin + u : u);
-      for (const m of html.matchAll(/<iframe[^>]*\ssrc=["']([^"']+)["']/gi)) found.add(abs(m[1]));
-      for (const m of html.matchAll(/["'](https?:\/\/[^"']+?\.(?:m3u8|mp4)(?:\?[^"']*)?)["']/gi)) found.add(m[1]);
-      for (const m of html.matchAll(/(?:file|source|src)\s*[:=]\s*["'](https?:\/\/[^"']+?\.(?:m3u8|mp4)[^"']*)["']/gi)) found.add(m[1]);
+      const top = this.scanHtml(html, origin);
+      top.media.forEach((u) => media.add(u));
+      top.iframes.forEach((u) => embeds.add(u));
+
+      // Chưa thấy link video → vào trong iframe (tối đa 3) tìm tiếp
+      if (!media.size) {
+        for (const ifr of top.iframes.slice(0, 3)) {
+          if (!/^https?:\/\//i.test(ifr)) continue;
+          if (this.hostBlocked(new URL(ifr).hostname)) continue;
+          try {
+            const inner = await this.fetchHtml(ifr, raw); // Referer = trang gốc
+            const sub = this.scanHtml(inner, new URL(ifr).origin);
+            sub.media.forEach((u) => media.add(u));
+            sub.iframes.forEach((u) => embeds.add(u));
+          } catch { /* bỏ qua iframe lỗi */ }
+        }
+      }
     }
 
-    const candidates = [...found].filter((u) => /^https?:\/\//i.test(u)).slice(0, 12);
+    // Ưu tiên link video trực tiếp (.m3u8/.mp4) — đây là link đi qua proxy được; rồi mới tới embed
+    const candidates = [...media, ...embeds].filter((u) => /^https?:\/\//i.test(u)).slice(0, 12);
     if (!candidates.length) throw new BadRequestException('Không tìm thấy link nhúng. Hãy dán trực tiếp mã <iframe …> từ nguồn.');
     return { candidates };
   }

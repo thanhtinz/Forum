@@ -84,7 +84,7 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
   const [add, setAdd] = useState({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '' });
   const [embedInput, setEmbedInput] = useState('');
   const [embedBusy, setEmbedBusy] = useState(false);
-  const [embedCands, setEmbedCands] = useState<{ url: string; referer?: string }[]>([]);
+  const [embedCands, setEmbedCands] = useState<{ url: string; referer?: string; status?: number | null }[]>([]);
   async function create() {
     if (!add.number) { setErr('Nhập số tập'); return; }
     try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '' }); onChange(); }
@@ -94,9 +94,11 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
     if (!embedInput.trim()) return;
     setEmbedBusy(true); setErr(''); setEmbedCands([]);
     try {
-      const r = await api.post<{ candidates: { url: string; referer?: string }[] }>('/admin/anime/extract-embed', { input: embedInput });
+      const r = await api.post<{ candidates: { url: string; referer?: string; status?: number | null }[] }>('/admin/anime/extract-embed', { input: embedInput });
       setEmbedCands(r.candidates);
-      if (r.candidates[0]) setAdd((s) => ({ ...s, videoUrl: r.candidates[0].url, referer: r.candidates[0].referer || s.referer }));
+      // Tự chọn link sống đầu tiên (nếu có), nếu không thì link đầu
+      const best = r.candidates.find((c) => c.status && c.status < 400) || r.candidates[0];
+      if (best) setAdd((s) => ({ ...s, videoUrl: best.url, referer: best.referer || s.referer }));
     } catch (e: any) { setErr(e.message); } finally { setEmbedBusy(false); }
   }
   return (
@@ -111,12 +113,17 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
         </div>
         {embedCands.length > 0 && (
           <div className="mt-2 space-y-1">
-            {embedCands.map((c) => (
-              <button key={c.url} onClick={() => setAdd((s) => ({ ...s, videoUrl: c.url, referer: c.referer || s.referer }))}
-                className={`block w-full truncate rounded px-2 py-1 text-left text-xs ${add.videoUrl === c.url ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'bg-ink-100 dark:bg-ink-800'}`}>
-                {c.url}{c.referer && <span className="ml-1 text-ink-400">· ref: {c.referer}</span>}
-              </button>
-            ))}
+            {embedCands.map((c) => {
+              const live = c.status != null ? c.status < 400 : null;
+              return (
+                <button key={c.url} onClick={() => setAdd((s) => ({ ...s, videoUrl: c.url, referer: c.referer || s.referer }))}
+                  className={`block w-full truncate rounded px-2 py-1 text-left text-xs ${add.videoUrl === c.url ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'bg-ink-100 dark:bg-ink-800'}`}>
+                  {live === true && <span className="mr-1 text-emerald-600">● sống</span>}
+                  {live === false && <span className="mr-1 text-red-500">● chết {c.status}</span>}
+                  {c.url}{c.referer && <span className="ml-1 text-ink-400">· ref: {c.referer}</span>}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>

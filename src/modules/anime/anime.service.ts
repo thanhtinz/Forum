@@ -413,11 +413,8 @@ export class AnimeService {
     // 3) Là URL trang/embed → tải HTML, dò media + iframe; chui thêm 1 tầng iframe để lấy .m3u8
     if (!media.size && /^https?:\/\//i.test(raw)) {
       let html = '';
-      try { html = await this.fetchHtml(raw); }
-      catch (e: any) {
-        if (e instanceof BadRequestException) throw e;
-        throw new BadRequestException('Không tải được trang (nguồn có thể chặn hoặc cần dán mã iframe).');
-      }
+      // Không tải được trang (bị chặn / cần token như abyss) → bỏ qua, vẫn dùng URL làm iframe embed bên dưới
+      try { html = await this.fetchHtml(raw); } catch { html = ''; }
       const origin = new URL(raw).origin;
       const top = this.scanHtml(html, origin);
       top.media.forEach((u) => { media.add(u); if (!refOf.has(u)) refOf.set(u, origin + '/'); });
@@ -447,10 +444,12 @@ export class AnimeService {
     const probed = await Promise.all(mediaList.map(async (url) => ({ url, referer: refOf.get(url), status: await this.probe(url, refOf.get(url)) })));
     // Link sống (2xx) lên đầu, link chết (vd 404) xuống cuối kèm status để admin biết
     probed.sort((a, b) => Number(b.status && b.status < 400) - Number(a.status && a.status < 400));
-    const candidates = [
+    let candidates = [
       ...probed,
       ...[...embeds].map((url) => ({ url, referer: undefined as string | undefined, status: undefined as number | null | undefined })),
     ].filter((c) => /^https?:\/\//i.test(c.url)).slice(0, 12);
+    // Không rút được link trực tiếp → nếu input là URL player tự chứa (vd abyssplayer.com), dùng chính nó làm iframe embed
+    if (!candidates.length && /^https?:\/\//i.test(raw)) candidates = [{ url: raw, referer: undefined, status: undefined }];
     if (!candidates.length) throw new BadRequestException('Không tìm thấy link nhúng. Hãy dán trực tiếp mã <iframe …> từ nguồn.');
     return { candidates };
   }

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Star, Calendar, Film, Clapperboard, Users } from 'lucide-react';
+import { Star, Calendar, Film, Clapperboard, Users, Play, BookOpen } from 'lucide-react';
 import { api } from '@/lib/api';
 import EntryControls from '@/components/anime/EntryControls';
 
@@ -66,34 +66,18 @@ function Detail() {
             )}
           </div>
 
-          {w.description && <div className="card p-5"><h2 className="mb-2 font-semibold">Nội dung</h2><p className="whitespace-pre-line text-sm leading-relaxed text-ink-700 dark:text-ink-200">{w.description}</p></div>}
-
           {w.episodeList?.length > 0 && (
-            <div className="card p-5">
-              <h2 className="mb-3 flex items-center gap-1.5 font-semibold"><Film size={16} /> Danh sách tập ({w.episodeList.length})</h2>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                {w.episodeList.map((ep: any) => (
-                  <a key={ep.id} href={`/anime/watch?ep=${ep.id}`} className="rounded-lg border border-ink-200 p-2 text-sm hover:border-brand-400 hover:bg-brand-50 dark:border-ink-700 dark:hover:bg-ink-800">
-                    <span className="font-medium">Tập {ep.number}</span>{ep.title ? <span className="block truncate text-xs text-ink-400">{ep.title}</span> : null}
-                  </a>
-                ))}
-              </div>
-            </div>
+            <a href={`/anime/watch?ep=${w.episodeList[0].id}`} className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-base font-semibold text-white shadow-card transition hover:bg-brand-700">
+              <Play size={20} className="fill-white" /> Xem phim ({w.episodeList.length} tập)
+            </a>
+          )}
+          {w.chapterList?.length > 0 && (
+            <a href={`/anime/read?ch=${w.chapterList[0].id}`} className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-base font-semibold text-white shadow-card transition hover:bg-brand-700">
+              <BookOpen size={20} /> Đọc truyện ({w.chapterList.length} chương)
+            </a>
           )}
 
-          {w.chapterList?.length > 0 && (
-            <div className="card p-5">
-              <h2 className="mb-3 flex items-center gap-1.5 font-semibold"><Film size={16} /> Danh sách chương ({w.chapterList.length})</h2>
-              <div className="divide-y divide-ink-100 dark:divide-ink-800">
-                {w.chapterList.map((ch: any) => (
-                  <a key={ch.id} href={`/anime/read?ch=${ch.id}`} className="flex items-center justify-between py-2 text-sm hover:text-brand-600">
-                    <span className="font-medium">Chương {ch.number}</span>
-                    {ch.title ? <span className="truncate text-ink-400">{ch.title}</span> : null}
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
+          {w.description && <div className="card p-5"><h2 className="mb-2 font-semibold">Nội dung</h2><p className="whitespace-pre-line text-sm leading-relaxed text-ink-700 dark:text-ink-200">{w.description}</p></div>}
 
           {yt && (
             <div className="card p-5">

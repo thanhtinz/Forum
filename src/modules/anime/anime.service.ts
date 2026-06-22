@@ -472,9 +472,36 @@ export class AnimeService {
     return { prev, next };
   }
   async getEpisode(id: string) {
-    const ep = await this.prisma.episode.findUnique({ where: { id }, include: { media: { select: { slug: true, title: true, titleEnglish: true, type: true } } } });
+    const ep = await this.prisma.episode.findUnique({
+      where: { id },
+      include: {
+        media: { select: { id: true, slug: true, title: true, titleEnglish: true, type: true, coverUrl: true } },
+        comments: { orderBy: { createdAt: 'desc' }, take: 100, include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } } },
+      },
+    });
     if (!ep) throw new NotFoundException('Không tìm thấy tập');
-    return { ...ep, ...(await this.neighbours('episode', ep.mediaId, ep.number)) };
+    const episodes = await this.prisma.episode.findMany({ where: { mediaId: ep.mediaId }, orderBy: { number: 'asc' }, select: { id: true, number: true, title: true } });
+    return { ...ep, episodes, ...(await this.neighbours('episode', ep.mediaId, ep.number)) };
+  }
+
+  async addEpisodeComment(episodeId: string, authorId: string, content: string) {
+    const text = (content || '').trim();
+    if (!text) throw new BadRequestException('Bình luận không được để trống');
+    const ep = await this.prisma.episode.findUnique({ where: { id: episodeId }, select: { id: true } });
+    if (!ep) throw new NotFoundException('Không tìm thấy tập');
+    return this.prisma.episodeComment.create({
+      data: { episodeId, authorId, content: text.slice(0, 5000) },
+      include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } },
+    });
+  }
+
+  async deleteEpisodeComment(id: string, userId: string, role?: string) {
+    const c = await this.prisma.episodeComment.findUnique({ where: { id } });
+    if (!c) throw new NotFoundException('Không tìm thấy bình luận');
+    const isMod = role === 'ADMIN' || role === 'MODERATOR';
+    if (c.authorId !== userId && !isMod) throw new BadRequestException('Không có quyền xoá');
+    await this.prisma.episodeComment.delete({ where: { id } });
+    return { ok: true };
   }
   async getChapter(id: string) {
     const ch = await this.prisma.chapter.findUnique({ where: { id }, include: { media: { select: { slug: true, title: true, titleEnglish: true, type: true } } } });

@@ -4,8 +4,6 @@ export interface User {
   displayName?: string | null;
   avatar?: string | null;
   avatarFrameUrl?: string | null;
-  vipBadgeUrl?: string | null;
-  vipTierName?: string | null;
   shopBadgeUrl?: string | null;
   nameEffectCss?: string | null;
   role: 'GUEST' | 'MEMBER' | 'VIP' | 'MODERATOR' | 'ADMIN';

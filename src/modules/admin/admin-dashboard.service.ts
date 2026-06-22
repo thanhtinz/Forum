@@ -2,11 +2,10 @@ import { Injectable, NotFoundException, BadRequestException, ForbiddenException 
 import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserRole, UserStatus, ReportStatus } from '@prisma/client';
-import { VipService } from '../vip/vip.service';
 
 @Injectable()
 export class AdminDashboardService {
-  constructor(private readonly prisma: PrismaService, private readonly vip: VipService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // ──────────────────────────────────────────────
   // DASHBOARD STATS
@@ -166,7 +165,6 @@ export class AdminDashboardService {
       await this.audit(actorId, 'user.gem_adjust', 'user', userId, null, { amount, note });
       return { balanceAfter };
     });
-    if (amount > 0) await this.vip.recompute(userId).catch(() => {});
     return res;
   }
 

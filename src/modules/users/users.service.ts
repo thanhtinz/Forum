@@ -25,7 +25,7 @@ export class UsersService {
         id: true, username: true, displayName: true, avatar: true, bio: true,
         location: true, birthday: true, showBirthday: true, birthdayFormat: true,
         role: true, reputationScore: true, threadCount: true, postCount: true,
-        verifiedBadge: true, avatarFrameUrl: true, vipBadgeUrl: true, vipTierName: true, shopBadgeUrl: true, nameEffectCss: true,
+        verifiedBadge: true, avatarFrameUrl: true, shopBadgeUrl: true, nameEffectCss: true,
         createdAt: true, lastSeenAt: true,
         badges: { include: { badge: true } },
       },

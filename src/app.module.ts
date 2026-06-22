@@ -47,7 +47,6 @@ import { CosmeticsModule } from './modules/cosmetics/cosmetics.module';
 import { MarketModule } from './modules/market/market.module';
 import { PingModule } from './modules/ping/ping.module';
 import { BannerModule } from './modules/banner/banner.module';
-import { VipModule } from './modules/vip/vip.module';
 
 @Module({
   imports: [
@@ -83,7 +82,6 @@ import { VipModule } from './modules/vip/vip.module';
     MarketModule,
     PingModule,
     BannerModule,
-    VipModule,
     PaymentsModule,
     AiCompanionModule,
     ModerationModule,

@@ -16,10 +16,9 @@ export class AvatarFrameService {
 
   // ───────── Kho của user (khung đã sở hữu) ─────────
   async inventory(userId: string) {
-    const [rows, user, vipRewards] = await Promise.all([
+    const [rows, user] = await Promise.all([
       this.prisma.userAvatarFrame.findMany({ where: { userId }, include: { frame: true }, orderBy: { acquiredAt: 'desc' } }),
       this.prisma.user.findUnique({ where: { id: userId }, select: { avatarFrameId: true, avatarFrameUrl: true } }),
-      this.prisma.userVipReward.findMany({ where: { userId, frameUrl: { not: null } }, orderBy: { gemRequired: 'asc' } }),
     ]);
     const now = new Date();
     const list = rows.map((r) => ({
@@ -31,15 +30,6 @@ export class AvatarFrameService {
       expired: r.expiresAt ? r.expiresAt < now : false,
       equipped: user?.avatarFrameId === r.frameId,
     }));
-    // Khung VIP (mọi mốc đã đạt) — luôn nằm trong kho, vĩnh viễn, bật/tắt được như khung thường
-    for (const v of vipRewards) {
-      if (!v.frameUrl) continue;
-      list.unshift({
-        id: `vip:${v.tierId}`, frameId: `vip:${v.tierId}`, name: `Khung ${v.tierName}`, imageUrl: v.frameUrl,
-        expiresAt: null, expired: false,
-        equipped: user?.avatarFrameId == null && user?.avatarFrameUrl === v.frameUrl,
-      });
-    }
     return list;
   }
 
@@ -82,14 +72,6 @@ export class AvatarFrameService {
   async equip(userId: string, frameId: string | null) {
     if (!frameId) {
       await this.prisma.user.update({ where: { id: userId }, data: { avatarFrameId: null, avatarFrameUrl: null } });
-      return { ok: true };
-    }
-    // Khung VIP (không phải sản phẩm) — gắn theo mốc đã đạt: frameId = "vip:<tierId>"
-    if (frameId.startsWith('vip:')) {
-      const tierId = frameId.slice(4);
-      const reward = await this.prisma.userVipReward.findUnique({ where: { userId_tierId: { userId, tierId } } });
-      if (!reward?.frameUrl) throw new BadRequestException('Bạn chưa có khung VIP này');
-      await this.prisma.user.update({ where: { id: userId }, data: { avatarFrameId: null, avatarFrameUrl: reward.frameUrl } });
       return { ok: true };
     }
     const owned = await this.prisma.userAvatarFrame.findUnique({ where: { userId_frameId: { userId, frameId } }, include: { frame: true } });

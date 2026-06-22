@@ -171,41 +171,42 @@ enum AiProvider {
 // ============================================================
 
 model User {
-  id              String     @id @default(cuid())
-  username        String     @unique @db.VarChar(50)
-  email           String     @unique @db.VarChar(255)
-  passwordHash    String?
-  displayName     String?    @db.VarChar(100)
-  avatar          String?
-  avatarFrameId   String? // khung avatar đang dùng (id sản phẩm) — null = không bật
-  avatarFrameUrl  String? // ảnh khung đang dùng (denormalized để hiển thị nhanh)
-  hiddenBadges    String[]   @default([]) // key các huy hiệu user chọn ẩn (role/verify/level/milestone)
-  bio             String?    @db.Text
-  birthday        DateTime? // ngày sinh
-  showBirthday    Boolean    @default(false) // có hiển thị ngày sinh công khai không
-  birthdayFormat  String     @default("full") // full | day_month | month_year | year — phần ngày sinh hiển thị công khai
-  location        String?    @db.VarChar(120) // nơi ở
-  shopBadgeUrl    String? // ảnh badge cửa hàng đang đeo (denormalized)
-  nameEffectCss   String?    @db.Text // CSS hiệu ứng tên đang dùng (denormalized)
-  chatBubbleUrl   String? // ảnh nền bong bóng chat đang dùng (denormalized)
-  chatBubbleColor String?    @db.VarChar(20) // màu chữ bong bóng chat đang dùng
-  role            UserRole   @default(MEMBER)
-  status          UserStatus @default(ACTIVE)
-  isVerified      Boolean    @default(false)
-  verifiedBadge   Boolean    @default(false)
-  emailNotify     Boolean    @default(true)
-  ageVerified     Boolean    @default(false)
-  threadCount     Int        @default(0)
-  postCount       Int        @default(0)
-  reputationScore Int        @default(0)
-  gemBalance      Int        @default(0)
-  lastSeenAt      DateTime?
-  bannedUntil     DateTime?
-  banReason       String?
-  twoFaSecret     String?
-  twoFaEnabled    Boolean    @default(false)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  id               String           @id @default(cuid())
+  mediaListEntries MediaListEntry[]
+  username         String           @unique @db.VarChar(50)
+  email            String           @unique @db.VarChar(255)
+  passwordHash     String?
+  displayName      String?          @db.VarChar(100)
+  avatar           String?
+  avatarFrameId    String? // khung avatar đang dùng (id sản phẩm) — null = không bật
+  avatarFrameUrl   String? // ảnh khung đang dùng (denormalized để hiển thị nhanh)
+  hiddenBadges     String[]         @default([]) // key các huy hiệu user chọn ẩn (role/verify/level/milestone)
+  bio              String?          @db.Text
+  birthday         DateTime? // ngày sinh
+  showBirthday     Boolean          @default(false) // có hiển thị ngày sinh công khai không
+  birthdayFormat   String           @default("full") // full | day_month | month_year | year — phần ngày sinh hiển thị công khai
+  location         String?          @db.VarChar(120) // nơi ở
+  shopBadgeUrl     String? // ảnh badge cửa hàng đang đeo (denormalized)
+  nameEffectCss    String?          @db.Text // CSS hiệu ứng tên đang dùng (denormalized)
+  chatBubbleUrl    String? // ảnh nền bong bóng chat đang dùng (denormalized)
+  chatBubbleColor  String?          @db.VarChar(20) // màu chữ bong bóng chat đang dùng
+  role             UserRole         @default(MEMBER)
+  status           UserStatus       @default(ACTIVE)
+  isVerified       Boolean          @default(false)
+  verifiedBadge    Boolean          @default(false)
+  emailNotify      Boolean          @default(true)
+  ageVerified      Boolean          @default(false)
+  threadCount      Int              @default(0)
+  postCount        Int              @default(0)
+  reputationScore  Int              @default(0)
+  gemBalance       Int              @default(0)
+  lastSeenAt       DateTime?
+  bannedUntil      DateTime?
+  banReason        String?
+  twoFaSecret      String?
+  twoFaEnabled     Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   oauthProviders  OAuthProvider[]
   threads         Thread[]
@@ -2762,6 +2763,7 @@ model MediaWork {
   staff       MediaStaff[]
   relatedFrom MediaRelation[]  @relation("RelFrom")
   relatedTo   MediaRelation[]  @relation("RelTo")
+  listEntries MediaListEntry[]
 
   @@index([type])
   @@index([status])
@@ -2810,4 +2812,33 @@ model MediaRelation {
 
   @@unique([fromId, toId, type])
   @@index([fromId])
+}
+
+enum MediaListStatus {
+  WATCHING // đang xem/đọc
+  COMPLETED // đã hoàn thành
+  PLANNING // dự định
+  PAUSED // tạm dừng
+  DROPPED // bỏ dở
+}
+
+// Mục trong danh sách cá nhân: gộp trạng thái theo dõi + chấm điểm + yêu thích
+model MediaListEntry {
+  id        String          @id @default(cuid())
+  userId    String
+  mediaId   String
+  status    MediaListStatus @default(PLANNING)
+  score     Int? // 1-10
+  progress  Int             @default(0) // tập/chương đã xem
+  favorite  Boolean         @default(false)
+  note      String?         @db.VarChar(500)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  user  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  media MediaWork @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaId])
+  @@index([mediaId])
+  @@index([userId, status])
 }

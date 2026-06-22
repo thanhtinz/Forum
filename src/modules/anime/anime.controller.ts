@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { AnimeService } from './anime.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { Roles, RolesGuard } from '../../common/decorators/roles.decorator';
+import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
 
 @Controller()
 export class AnimeController {
@@ -11,6 +11,23 @@ export class AnimeController {
   // ── Công khai ──
   @Get('anime/genres')
   genres() { return this.svc.listGenres(); }
+
+  // ── Danh sách cá nhân (đặt trước :slug để không bị nuốt route) ──
+  @Get('anime/me/list')
+  @UseGuards(JwtAuthGuard)
+  myList(@CurrentUser('id') userId: string, @Query() q: any) { return this.svc.myList(userId, q); }
+
+  @Get('anime/me/entry/:mediaId')
+  @UseGuards(JwtAuthGuard)
+  getEntry(@CurrentUser('id') userId: string, @Param('mediaId') mediaId: string) { return this.svc.getEntry(userId, mediaId); }
+
+  @Put('anime/me/entry/:mediaId')
+  @UseGuards(JwtAuthGuard)
+  upsertEntry(@CurrentUser('id') userId: string, @Param('mediaId') mediaId: string, @Body() dto: any) { return this.svc.upsertEntry(userId, mediaId, dto); }
+
+  @Delete('anime/me/entry/:mediaId')
+  @UseGuards(JwtAuthGuard)
+  removeEntry(@CurrentUser('id') userId: string, @Param('mediaId') mediaId: string) { return this.svc.removeEntry(userId, mediaId); }
 
   @Get('anime')
   list(@Query() q: any) { return this.svc.list(q); }

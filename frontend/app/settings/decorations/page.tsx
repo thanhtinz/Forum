@@ -9,7 +9,6 @@ import { BadgeIcon } from '@/lib/icons';
 import { cssToStyle } from '@/lib/nameEffect';
 
 interface OwnedFrame { id: string; frameId: string; name: string; imageUrl: string; expiresAt: string | null; expired: boolean; equipped: boolean }
-interface VipReward { tierId: string; tierName: string; badgeUrl: string | null; frameUrl: string | null; color: string | null; gemRequired: number; badgeEquipped: boolean }
 interface ManageBadge { key: string; label: string; icon: string; color: string; kind: string; description?: string; hidden: boolean }
 interface OwnedShopBadge { id: string; badgeId: string; name: string; imageUrl: string; expiresAt: string | null; expired: boolean; equipped: boolean }
 interface OwnedEffect { id: string; effectId: string; name: string; css: string; expiresAt: string | null; expired: boolean; equipped: boolean }
@@ -22,7 +21,6 @@ export default function DecorationsSettings() {
   const { user, loading: authLoading } = useAuth();
   const [avatar, setAvatar] = useState('');
   const [frames, setFrames] = useState<OwnedFrame[]>([]);
-  const [vipRewards, setVipRewards] = useState<VipReward[]>([]);
   const [allBadges, setAllBadges] = useState<ManageBadge[]>([]);
   const [shopBadges, setShopBadges] = useState<OwnedShopBadge[]>([]);
   const [effects, setEffects] = useState<OwnedEffect[]>([]);
@@ -34,9 +32,6 @@ export default function DecorationsSettings() {
   function loadFrames() {
     api.get<OwnedFrame[]>('/avatar-frames/inventory').then(setFrames).catch(() => {});
   }
-  function loadVipRewards() {
-    api.get<VipReward[]>('/vip/my-rewards').then(setVipRewards).catch(() => {});
-  }
   function loadBadges() {
     api.get<ManageBadge[]>('/badges/me/manage').then(setAllBadges).catch(() => {});
   }
@@ -46,7 +41,7 @@ export default function DecorationsSettings() {
   function loadEffects() {
     api.get<OwnedEffect[]>('/name-effects/inventory').then(setEffects).catch(() => {});
   }
-  useEffect(() => { loadFrames(); loadVipRewards(); loadBadges(); loadShopBadges(); loadEffects(); }, []);
+  useEffect(() => { loadFrames(); loadBadges(); loadShopBadges(); loadEffects(); }, []);
 
   async function equipShopBadge(badgeId: string | null) {
     setBusy(true); setMsg('');
@@ -73,15 +68,6 @@ export default function DecorationsSettings() {
       await api.post('/badges/me/visibility', { key: b.key, hidden });
       setAllBadges((list) => list.map((x) => (x.key === b.key ? { ...x, hidden } : x)));
       setMsg(hidden ? 'Đã ẩn huy hiệu.' : 'Đã hiện huy hiệu.');
-    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
-  }
-
-  async function equipBadge(tierId: string | null) {
-    setBusy(true); setMsg('');
-    try {
-      await api.post('/vip/equip-badge', { tierId });
-      setVipRewards((list) => list.map((x) => ({ ...x, badgeEquipped: x.tierId === tierId })));
-      setMsg(tierId ? 'Đã bật huy hiệu VIP. Tải lại trang để thấy ở mọi nơi.' : 'Đã tắt huy hiệu VIP.');
     } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
   }
 
@@ -151,28 +137,6 @@ export default function DecorationsSettings() {
                 </button>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* Kho huy hiệu VIP — bật/tắt badge đã nhận */}
-      {vipRewards.length > 0 && (
-        <div className="card space-y-3 p-5">
-          <div>
-            <h2 className="font-semibold">Huy hiệu VIP của tôi</h2>
-            <p className="text-sm text-ink-500">Bấm để ẩn/hiện cạnh tên.</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {vipRewards.filter((v) => v.badgeUrl).map((v) => (
-              <button key={v.tierId} onClick={() => equipBadge(v.badgeEquipped ? null : v.tierId)} disabled={busy}
-                title={v.badgeEquipped ? 'Bấm để tắt huy hiệu' : v.tierName}
-                className={`relative flex w-24 flex-col items-center gap-1 rounded-xl border-2 p-2 transition disabled:opacity-50 ${v.badgeEquipped ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={v.badgeUrl!} alt={v.tierName} className="h-14 w-14 object-contain" />
-                <span className="line-clamp-1 text-xs font-medium" style={v.color ? { color: v.color } : undefined}>{v.tierName}</span>
-                {v.badgeEquipped && <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-brand-600 text-white"><Check size={12} /></span>}
-              </button>
-            ))}
           </div>
         </div>
       )}

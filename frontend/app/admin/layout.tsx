@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, Settings, FileText, Ticket,
   Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
-  BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square, Megaphone, Crown, SlidersHorizontal,
+  BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square, Megaphone, SlidersHorizontal,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { api } from '@/lib/api';
@@ -38,7 +38,6 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/shop-badges', label: 'Badge trang trí', icon: Award },
       { href: '/admin/name-effects', label: 'Hiệu ứng tên', icon: Sparkles },
       { href: '/admin/banners', label: 'Banner quảng cáo', icon: Megaphone },
-      { href: '/admin/vip', label: 'Hệ thống VIP', icon: Crown },
     ],
   },
   {

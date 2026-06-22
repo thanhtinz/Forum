@@ -5,11 +5,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GemTxType } from '@prisma/client';
-import { VipService } from '../vip/vip.service';
 
 @Injectable()
 export class GemService {
-  constructor(private readonly prisma: PrismaService, private readonly vip: VipService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getWallet(userId: string) {
     let wallet = await this.prisma.gemWallet.findUnique({ where: { userId } });
@@ -80,10 +79,6 @@ export class GemService {
       });
 
       return { balanceAfter, transaction };
-    }).then(async (res) => {
-      // Nạp gem → tính lại VIP (đạt mốc thì gắn badge + khung avatar)
-      if (type.startsWith('TOPUP')) await this.vip.recompute(userId).catch(() => {});
-      return res;
     });
   }
 

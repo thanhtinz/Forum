@@ -185,9 +185,6 @@ model User {
   avatar          String?
   avatarFrameId   String? // khung avatar đang dùng (id sản phẩm) — null = không bật
   avatarFrameUrl  String? // ảnh khung đang dùng (denormalized để hiển thị nhanh)
-  vipTierName     String? // tên mốc VIP hiện tại (đạt theo gem nạp tích lũy)
-  vipBadgeUrl     String? // ảnh badge VIP (denormalized để hiển thị)
-  vipFrameUrl     String? // ảnh khung VIP user được dùng (nằm trong kho khung, bật/tắt được)
   hiddenBadges    String[]   @default([]) // key các huy hiệu user chọn ẩn (role/verify/level/milestone)
   bio             String?    @db.Text
   birthday        DateTime? // ngày sinh
@@ -2293,38 +2290,6 @@ model UserNameEffect {
 // ============================================================
 // BANNER QUẢNG CÁO — admin gắn theo thời gian; chưa cấu hình thì hiện "cho thuê"
 // ============================================================
-// ============================================================
-// VIP — mốc gem nạp tích lũy; đạt mốc nhận badge + khung avatar (admin tạo, không seed)
-// ============================================================
-model VipTier {
-  id          String   @id @default(cuid())
-  name        String   @db.VarChar(80)
-  gemRequired Int // mốc gem nạp tích lũy để đạt
-  badgeUrl    String?  @db.VarChar(255) // ảnh badge VIP
-  frameUrl    String?  @db.VarChar(255) // ảnh khung avatar VIP
-  color       String?  @db.VarChar(20) // màu tên (tuỳ chọn)
-  sortOrder   Int      @default(0)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-}
-
-// Mỗi mốc VIP user đã đạt — giữ vĩnh viễn badge + khung, không mất khi nạp thêm.
-// User tự bật/tắt badge/khung từ kho.
-model UserVipReward {
-  id          String   @id @default(cuid())
-  userId      String
-  tierId      String
-  tierName    String   @db.VarChar(80)
-  badgeUrl    String?  @db.VarChar(255)
-  frameUrl    String?  @db.VarChar(255)
-  color       String?  @db.VarChar(20)
-  gemRequired Int      @default(0)
-  earnedAt    DateTime @default(now())
-
-  @@unique([userId, tierId])
-  @@index([userId])
-}
-
 model AdBanner {
   id        String    @id @default(cuid())
   title     String    @db.VarChar(150)

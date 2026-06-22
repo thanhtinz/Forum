@@ -7,9 +7,13 @@ import { api } from '@/lib/api';
 
 const ytId = (u: string) => u.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/)?.[1] || null;
 
+// Đưa link HLS qua proxy server để vượt chặn hotlink (CORS/Referer)
+const hlsProxy = (u: string) => `${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/anime/hls?u=${encodeURIComponent(u)}`;
+
 // Trình phát hỗ trợ HLS (.m3u8) qua hls.js cho Chrome/Firefox, native cho Safari/iOS
-function HlsVideo({ src }: { src: string }) {
+function HlsVideo({ src: rawSrc }: { src: string }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const src = hlsProxy(rawSrc);
   useEffect(() => {
     const video = ref.current;
     if (!video) return;

@@ -2,9 +2,14 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { Prisma, MediaType } from '@prisma/client';
 import slugify from 'slugify';
 import { createId } from '@paralleldrive/cuid2';
+import { Readable } from 'stream';
+import type { Response } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
 const ANILIST_URL = 'https://graphql.anilist.co';
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36';
+// Tuỳ chọn giới hạn host được proxy (phòng lạm dụng) — đặt qua env, phân cách bằng dấu phẩy
+const HLS_ALLOW = (process.env.ANIME_HLS_ALLOW || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 
 @Injectable()
 export class AnimeService {
@@ -392,6 +397,70 @@ export class AnimeService {
     return this.prisma.chapter.update({ where: { id }, data });
   }
   async deleteChapter(id: string) { await this.prisma.chapter.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
+
+  // ───────── PROXY HLS (vượt chặn hotlink CORS/Referer) ─────────
+  private hostBlocked(host: string): boolean {
+    const h = host.toLowerCase().replace(/^\[|\]$/g, '');
+    if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return true;
+    const m = h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (m) {
+      const a = +m[1], b = +m[2];
+      if (a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)) return true;
+    }
+    if (h === '::1' || h.startsWith('fc') || h.startsWith('fd') || h.startsWith('fe80') || h.startsWith('169.254')) return true;
+    if (HLS_ALLOW.length && !HLS_ALLOW.some((d) => h === d || h.endsWith('.' + d))) return true;
+    return false;
+  }
+
+  private rewritePlaylist(text: string, base: URL, referer: string): string {
+    const prox = (abs: string) => `/api/anime/hls?u=${encodeURIComponent(abs)}&r=${encodeURIComponent(referer)}`;
+    const absolutize = (uri: string) => { try { return new URL(uri, base).toString(); } catch { return uri; } };
+    return text.split('\n').map((line) => {
+      const t = line.trim();
+      if (!t) return line;
+      if (t.startsWith('#')) return line.replace(/URI="([^"]+)"/g, (_m, uri) => `URI="${prox(absolutize(uri))}"`);
+      return prox(absolutize(t));
+    }).join('\n');
+  }
+
+  async proxyHls(u: string, r: string | undefined, range: string | undefined, res: Response) {
+    if (!u || !/^https?:\/\//i.test(u)) { res.status(400).send('URL không hợp lệ'); return; }
+    let target: URL;
+    try { target = new URL(u); } catch { res.status(400).send('URL không hợp lệ'); return; }
+    if (this.hostBlocked(target.hostname)) { res.status(403).send('Host bị chặn'); return; }
+
+    const referer = r && /^https?:\/\//i.test(r) ? r : `${target.protocol}//${target.host}/`;
+    const headers: Record<string, string> = {
+      'User-Agent': BROWSER_UA, Referer: referer, Origin: new URL(referer).origin, Accept: '*/*', 'Accept-Language': 'vi,en;q=0.9',
+    };
+    if (range) headers.Range = range;
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 25000);
+    let up: globalThis.Response;
+    try { up = await fetch(u, { signal: ctrl.signal, headers, redirect: 'follow' }); }
+    catch { clearTimeout(timer); if (!res.headersSent) res.status(502).send('Không tải được nguồn'); return; }
+    clearTimeout(timer);
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-store');
+    const ct = up.headers.get('content-type') || '';
+    const isPlaylist = /mpegurl|m3u8/i.test(ct) || /\.m3u8($|\?)/i.test(target.pathname + target.search);
+
+    if (isPlaylist) {
+      const text = await up.text();
+      res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+      res.status(up.status === 206 ? 200 : up.status).send(this.rewritePlaylist(text, target, referer));
+      return;
+    }
+    if (ct) res.setHeader('Content-Type', ct);
+    for (const h of ['content-length', 'content-range', 'accept-ranges']) {
+      const v = up.headers.get(h); if (v) res.setHeader(h, v);
+    }
+    res.status(up.status);
+    if (up.body) Readable.fromWeb(up.body as any).pipe(res);
+    else res.end();
+  }
 
   // ───────── CÔNG KHAI: XEM TẬP / ĐỌC CHƯƠNG ─────────
   private async neighbours(model: 'episode' | 'chapter', mediaId: string, number: number) {

@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
+import type { Response } from 'express';
 import { UserRole } from '@prisma/client';
 import { AnimeService } from './anime.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -28,6 +29,11 @@ export class AnimeController {
   @Delete('anime/me/entry/:mediaId')
   @UseGuards(JwtAuthGuard)
   removeEntry(@CurrentUser('id') userId: string, @Param('mediaId') mediaId: string) { return this.svc.removeEntry(userId, mediaId); }
+
+  @Get('anime/hls')
+  hls(@Query('u') u: string, @Query('r') r: string, @Headers('range') range: string, @Res() res: Response) {
+    return this.svc.proxyHls(u, r, range, res);
+  }
 
   @Get('anime/episode/:id')
   episode(@Param('id') id: string) { return this.svc.getEpisode(id); }

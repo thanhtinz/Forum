@@ -291,13 +291,20 @@ export class AnimeService {
 
   async addEpisode(mediaId: string, dto: any) {
     if (dto.number == null || dto.number === '') throw new BadRequestException('Thiếu số tập');
-    return this.prisma.episode.create({
-      data: {
-        mediaId, number: Number(dto.number), title: dto.title || null,
-        videoUrl: dto.videoUrl || null, thumbnail: dto.thumbnail || null,
-        duration: dto.duration ? Number(dto.duration) : null,
-      },
-    }).catch(() => { throw new BadRequestException('Số tập đã tồn tại'); });
+    const number = Number(dto.number);
+    if (!Number.isFinite(number)) throw new BadRequestException('Số tập không hợp lệ');
+    try {
+      return await this.prisma.episode.create({
+        data: {
+          mediaId, number, title: dto.title || null,
+          videoUrl: dto.videoUrl || null, thumbnail: dto.thumbnail || null,
+          duration: dto.duration ? Number(dto.duration) : null,
+        },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new BadRequestException(`Tập ${number} đã tồn tại`);
+      throw e;
+    }
   }
   async updateEpisode(id: string, dto: any) {
     const data: any = {};
@@ -355,12 +362,19 @@ export class AnimeService {
 
   async addChapter(mediaId: string, dto: any) {
     if (dto.number == null || dto.number === '') throw new BadRequestException('Thiếu số chương');
-    return this.prisma.chapter.create({
-      data: {
-        mediaId, number: Number(dto.number), title: dto.title || null,
-        pages: this.parsePages(dto.pages), content: dto.content || null,
-      },
-    }).catch(() => { throw new BadRequestException('Số chương đã tồn tại'); });
+    const number = Number(dto.number);
+    if (!Number.isFinite(number)) throw new BadRequestException('Số chương không hợp lệ');
+    try {
+      return await this.prisma.chapter.create({
+        data: {
+          mediaId, number, title: dto.title || null,
+          pages: this.parsePages(dto.pages), content: dto.content || null,
+        },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new BadRequestException(`Chương ${number} đã tồn tại`);
+      throw e;
+    }
   }
   async updateChapter(id: string, dto: any) {
     const data: any = {};

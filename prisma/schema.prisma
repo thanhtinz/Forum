@@ -2877,6 +2877,7 @@ model EpisodeServer {
   name      String   @db.VarChar(60)
   videoUrl  String   @db.VarChar(500)
   referer   String?  @db.VarChar(255)
+  introEnd  Int? // giây kết thúc intro của RIÊNG server này (bỏ qua đoạn đầu 0→introEnd)
   order     Int      @default(0)
   createdAt DateTime @default(now())
 

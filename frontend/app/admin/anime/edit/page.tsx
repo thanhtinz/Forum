@@ -6,7 +6,7 @@ import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen, Loader2, Link as Lin
 import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
-interface Srv { id: string; name: string; videoUrl: string; referer?: string | null }
+interface Srv { id: string; name: string; videoUrl: string; referer?: string | null; introEnd?: number | null }
 interface Ep { id: string; number: number; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; servers?: Srv[] }
 interface Ch { id: string; number: number; title?: string | null; content?: string | null; pages: string[] }
 
@@ -143,7 +143,7 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
 function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; setErr: (s: string) => void }) {
   const [v, setV] = useState({ number: String(ep.number), title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '' });
   const [srvOpen, setSrvOpen] = useState(false);
-  const [newSrv, setNewSrv] = useState({ name: '', videoUrl: '', referer: '' });
+  const [newSrv, setNewSrv] = useState({ name: '', videoUrl: '', referer: '', introEnd: '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [rowErr, setRowErr] = useState('');
@@ -158,7 +158,7 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
   }
   async function addSrv() {
     if (!newSrv.name.trim() || !newSrv.videoUrl.trim()) { setErr('Nhập tên server và link'); return; }
-    try { await api.post(`/admin/anime/episode/${ep.id}/server`, newSrv); setNewSrv({ name: '', videoUrl: '', referer: '' }); onChange(); } catch (e: any) { setErr(e.message); }
+    try { await api.post(`/admin/anime/episode/${ep.id}/server`, newSrv); setNewSrv({ name: '', videoUrl: '', referer: '', introEnd: '' }); onChange(); } catch (e: any) { setErr(e.message); }
   }
   return (
     <div className="rounded-lg border border-ink-200/70 p-2 dark:border-ink-700">
@@ -166,7 +166,7 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
         <input className="input sm:col-span-1" value={v.number} onChange={(e) => setV({ ...v, number: e.target.value })} />
         <input className="input sm:col-span-2" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Tiêu đề" />
         <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link Server 1" />
-        <input className="input sm:col-span-1" type="number" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (giây)" title="Bỏ qua đoạn đầu đến giây này (vd 90). Để trống = không bỏ." />
+        <input className="input sm:col-span-1" type="number" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (giây)" title="Bỏ qua đoạn đầu đến giây này cho Server 1 (vd 90). Mỗi server phụ đặt riêng ở mục bên dưới. Để trống = không bỏ." />
         <input className="input sm:col-span-5" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer Server 1 (tuỳ chọn)" />
         <div className="flex items-center gap-1">
           <Btn size="sm" onClick={save} disabled={saving} title="Lưu tập">{saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}</Btn>
@@ -182,7 +182,8 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-8">
             <input className="input sm:col-span-2" placeholder="Tên (VIP 2…)" value={newSrv.name} onChange={(e) => setNewSrv({ ...newSrv, name: e.target.value })} />
             <input className="input sm:col-span-3" placeholder="Link video" value={newSrv.videoUrl} onChange={(e) => setNewSrv({ ...newSrv, videoUrl: e.target.value })} />
-            <input className="input sm:col-span-2" placeholder="Referer" value={newSrv.referer} onChange={(e) => setNewSrv({ ...newSrv, referer: e.target.value })} />
+            <input className="input sm:col-span-1" type="number" placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này (chỉ áp cho link m3u8/mp4)" value={newSrv.introEnd} onChange={(e) => setNewSrv({ ...newSrv, introEnd: e.target.value })} />
+            <input className="input sm:col-span-1" placeholder="Referer" value={newSrv.referer} onChange={(e) => setNewSrv({ ...newSrv, referer: e.target.value })} />
             <Btn size="sm" onClick={addSrv}><Plus size={14} /></Btn>
           </div>
         </div>
@@ -191,7 +192,7 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
   );
 }
 function ServerRow({ s, onChange, setErr }: { s: Srv; onChange: () => void; setErr: (m: string) => void }) {
-  const [v, setV] = useState({ name: s.name, videoUrl: s.videoUrl, referer: s.referer || '' });
+  const [v, setV] = useState({ name: s.name, videoUrl: s.videoUrl, referer: s.referer || '', introEnd: s.introEnd != null ? String(s.introEnd) : '' });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   async function save() {
@@ -203,7 +204,8 @@ function ServerRow({ s, onChange, setErr }: { s: Srv; onChange: () => void; setE
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-8">
       <input className="input sm:col-span-2" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} />
       <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} />
-      <input className="input sm:col-span-2" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer" />
+      <input className="input sm:col-span-1" type="number" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này (chỉ áp cho link m3u8/mp4)" />
+      <input className="input sm:col-span-1" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer" />
       <div className="flex items-center gap-1">
         <Btn size="sm" onClick={save} disabled={saving} title="Lưu server">{saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}</Btn>
         <Btn size="sm" variant="danger" onClick={async () => { if (confirm('Xoá server?')) { await api.post(`/admin/anime/server/${s.id}/delete`); onChange(); } }}><Trash2 size={13} /></Btn>

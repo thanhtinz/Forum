@@ -338,7 +338,7 @@ export class AnimeService {
     if (!dto.name?.trim() || !dto.videoUrl?.trim()) throw new BadRequestException('Nhập tên server và link');
     const count = await this.prisma.episodeServer.count({ where: { episodeId } });
     return this.prisma.episodeServer.create({
-      data: { episodeId, name: dto.name.trim().slice(0, 60), videoUrl: dto.videoUrl.trim(), referer: dto.referer || null, order: count },
+      data: { episodeId, name: dto.name.trim().slice(0, 60), videoUrl: dto.videoUrl.trim(), referer: dto.referer || null, introEnd: dto.introEnd ? Number(dto.introEnd) : null, order: count },
     });
   }
   async updateServer(id: string, dto: any) {
@@ -346,6 +346,7 @@ export class AnimeService {
     if (dto.name !== undefined) data.name = (dto.name || '').slice(0, 60);
     if (dto.videoUrl !== undefined) data.videoUrl = dto.videoUrl || '';
     if (dto.referer !== undefined) data.referer = dto.referer || null;
+    if (dto.introEnd !== undefined) data.introEnd = dto.introEnd ? Number(dto.introEnd) : null;
     return this.prisma.episodeServer.update({ where: { id }, data });
   }
   async deleteServer(id: string) { await this.prisma.episodeServer.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
@@ -589,14 +590,14 @@ export class AnimeService {
       include: {
         media: { select: { id: true, slug: true, title: true, titleEnglish: true, type: true, coverUrl: true, introStart: true, introEnd: true, avgScore: true, ratingCount: true } },
         comments: { orderBy: { createdAt: 'desc' }, take: 100, include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } } },
-        servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true } },
+        servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true, introEnd: true } },
       },
     });
     if (!ep) throw new NotFoundException('Không tìm thấy tập');
     const episodes = await this.prisma.episode.findMany({ where: { mediaId: ep.mediaId }, orderBy: { number: 'asc' }, select: { id: true, number: true, title: true } });
     // Gộp server: link chính (videoUrl) là "Server 1" + các server phụ
     const servers = [
-      ...(ep.videoUrl ? [{ id: 'main', name: 'Server 1', videoUrl: ep.videoUrl, referer: ep.referer }] : []),
+      ...(ep.videoUrl ? [{ id: 'main', name: 'Server 1', videoUrl: ep.videoUrl, referer: ep.referer, introEnd: ep.introEnd }] : []),
       ...ep.servers,
     ];
     return { ...ep, servers, episodes, ...(await this.neighbours('episode', ep.mediaId, ep.number)) };

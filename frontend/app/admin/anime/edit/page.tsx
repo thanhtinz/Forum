@@ -6,7 +6,7 @@ import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen, Loader2, Link as Lin
 import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
-interface Ep { id: string; number: number; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null }
+interface Ep { id: string; number: number; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null }
 interface Ch { id: string; number: number; title?: string | null; content?: string | null; pages: string[] }
 
 function EditInner() {
@@ -77,13 +77,13 @@ function EditInner() {
 }
 
 function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: string; episodes: Ep[]; onChange: () => void; setErr: (s: string) => void }) {
-  const [add, setAdd] = useState({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '' });
+  const [add, setAdd] = useState({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '' });
   const [embedInput, setEmbedInput] = useState('');
   const [embedBusy, setEmbedBusy] = useState(false);
   const [embedCands, setEmbedCands] = useState<string[]>([]);
   async function create() {
     if (!add.number) { setErr('Nhập số tập'); return; }
-    try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '' }); onChange(); }
+    try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '' }); onChange(); }
     catch (e: any) { setErr(e.message); }
   }
   async function getEmbed() {
@@ -119,6 +119,7 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
         <input className="input sm:col-span-1" placeholder="Tập #" value={add.number} onChange={(e) => setAdd({ ...add, number: e.target.value })} />
         <input className="input sm:col-span-2" placeholder="Tiêu đề" value={add.title} onChange={(e) => setAdd({ ...add, title: e.target.value })} />
         <input className="input sm:col-span-2" placeholder="Link video / embed" value={add.videoUrl} onChange={(e) => setAdd({ ...add, videoUrl: e.target.value })} />
+        <input className="input sm:col-span-5" placeholder="Referer (tuỳ chọn — nếu nguồn chặn hotlink, vd https://vuighe.live/)" value={add.referer} onChange={(e) => setAdd({ ...add, referer: e.target.value })} />
         <Btn onClick={create}><Plus size={15} /> Thêm</Btn>
       </div>
       <div className="space-y-2">
@@ -129,12 +130,13 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
   );
 }
 function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; setErr: (s: string) => void }) {
-  const [v, setV] = useState({ number: String(ep.number), title: ep.title || '', videoUrl: ep.videoUrl || '' });
+  const [v, setV] = useState({ number: String(ep.number), title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '' });
   return (
     <div className="grid grid-cols-1 gap-2 rounded-lg border border-ink-200/70 p-2 dark:border-ink-700 sm:grid-cols-7">
       <input className="input sm:col-span-1" value={v.number} onChange={(e) => setV({ ...v, number: e.target.value })} />
       <input className="input sm:col-span-2" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Tiêu đề" />
       <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link video" />
+      <input className="input sm:col-span-6" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer (tuỳ chọn)" />
       <div className="flex gap-1">
         <Btn size="sm" onClick={async () => { try { await api.patch(`/admin/anime/episode/${ep.id}`, v); onChange(); } catch (e: any) { setErr(e.message); } }}><Save size={14} /></Btn>
         <Btn size="sm" variant="danger" onClick={async () => { if (confirm('Xoá tập?')) { await api.post(`/admin/anime/episode/${ep.id}/delete`); onChange(); } }}><Trash2 size={14} /></Btn>

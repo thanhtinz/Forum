@@ -159,6 +159,12 @@ export class ForumController {
     return this.tags.toggleFollow(userId, tagId);
   }
 
+  // Bài viết (post/reply) gần đây của 1 user — cho tab "Hoạt động mới nhất"
+  @Get('users/:userId/posts')
+  listUserPosts(@Param('userId') userId: string, @Query('limit') limit = 20) {
+    return this.forum.listUserPosts(userId, Number(limit));
+  }
+
   // ── Threads ──
   @Get('threads')
   listThreads(

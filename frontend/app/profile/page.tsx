@@ -22,7 +22,7 @@ function ProfileView() {
   const [following, setFollowing] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [badges, setBadges] = useState<BadgeDescriptor[]>([]);
-  const [tab, setTab] = useState<'about' | 'activity' | 'wall'>('activity');
+  const [tab, setTab] = useState<'about' | 'activity' | 'wall' | 'posts'>('activity');
 
   useEffect(() => {
     if (!name) return;
@@ -131,6 +131,7 @@ function ProfileView() {
             {([
               { key: 'activity', label: 'Hoạt động mới nhất' },
               { key: 'wall', label: 'Bài viết hồ sơ' },
+              { key: 'posts', label: 'Các bài viết' },
               { key: 'about', label: 'Giới thiệu' },
             ] as const).map((t) => (
               <button key={t.key} onClick={() => setTab(t.key)}
@@ -179,9 +180,11 @@ function ProfileView() {
           </>
         )}
 
-        {tab === 'activity' && <Wall wallId={profile.id} />}
+        {tab === 'activity' && <ActivityFeed userId={profile.id} />}
 
         {tab === 'wall' && <ActivityWall wallId={profile.id} canPost={!!user} />}
+
+        {tab === 'posts' && <Wall wallId={profile.id} />}
       </div>
     </div>
   );
@@ -266,6 +269,37 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+function ActivityFeed({ userId }: { userId: string }) {
+  const [posts, setPosts] = useState<any[]>([]);
+  useEffect(() => {
+    if (!userId) return;
+    api.get<any[]>(`/forum/users/${userId}/posts?limit=30`).then((r) => setPosts(r || [])).catch(() => {});
+  }, [userId]);
+
+  const snippet = (html: string) => (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
+
+  return (
+    <div className="card p-5">
+      <h2 className="mb-3 font-semibold">Hoạt động mới nhất</h2>
+      {posts.length === 0 ? (
+        <p className="text-sm text-ink-500">Chưa có hoạt động nào trên diễn đàn.</p>
+      ) : (
+        <ul className="divide-y divide-ink-100 dark:divide-ink-800">
+          {posts.map((p) => (
+            <li key={p.id} className="py-2.5">
+              <p className="text-xs text-ink-400">
+                {p.isFirstPost ? 'Đã đăng chủ đề' : 'Đã trả lời'} · {p.createdAt ? new Date(p.createdAt).toLocaleString('vi') : ''}
+              </p>
+              <a href={`/thread?slug=${p.thread?.slug}`} className="font-medium hover:text-brand-600 hover:underline">{p.thread?.title || '(chủ đề)'}</a>
+              {!p.isFirstPost && <p className="mt-0.5 line-clamp-2 text-sm text-ink-500">{snippet(p.content)}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

@@ -308,7 +308,7 @@ export class AuthService {
       where: { id: userId },
       select: {
         id: true, username: true, displayName: true, email: true,
-        avatar: true, avatarFrameUrl: true, shopBadgeUrl: true, nameEffectCss: true, role: true, status: true, gemBalance: true,
+        avatar: true, avatarFrameUrl: true, shopBadgeUrl: true, nameEffectCss: true, chatBubbleCss: true, role: true, status: true, gemBalance: true,
       },
     });
     if (!user || user.status === 'BANNED') return null;

@@ -111,10 +111,61 @@ export class CosmeticsService {
     return { ok: true };
   }
 
+  // ───────────────── BONG BÓNG CHAT (CSS) ─────────────────
+  listBubbles() {
+    return this.prisma.chatBubbleProduct.findMany({ where: { isActive: true }, orderBy: { sortOrder: 'asc' } });
+  }
+
+  async bubbleInventory(userId: string) {
+    const [rows, user] = await Promise.all([
+      this.prisma.userChatBubble.findMany({ where: { userId }, include: { bubble: true }, orderBy: { acquiredAt: 'desc' } }),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { chatBubbleCss: true } }),
+    ]);
+    const now = new Date();
+    return rows.map((r) => ({
+      id: r.id,
+      bubbleId: r.bubbleId,
+      name: r.bubble.name,
+      css: r.bubble.css,
+      expiresAt: r.expiresAt as Date | null,
+      expired: r.expiresAt ? r.expiresAt < now : false,
+      equipped: user?.chatBubbleCss === r.bubble.css,
+    }));
+  }
+
+  async buyBubble(userId: string, productId: string, currency: Currency) {
+    const p = await this.prisma.chatBubbleProduct.findUnique({ where: { id: productId } });
+    if (!p || !p.isActive) throw new NotFoundException('Bong bóng chat không tồn tại');
+    const price = currency === 'coin' ? p.priceCoin : p.priceGem;
+    const days = currency === 'coin' ? p.coinDays : p.gemDays;
+    if (price == null) throw new BadRequestException(`Bong bóng này không bán bằng ${currency === 'coin' ? 'Xu' : 'Gem'}`);
+
+    if (currency === 'gem') await this.gem.debit(userId, price, 'SPEND_PRODUCT', p.id, `Mua bong bóng chat ${p.name}`);
+    else await this.spendCoin(userId, price, `Mua bong bóng chat ${p.name}`, p.id);
+
+    const expiresAt = await this.computeExpiry(this.prisma.userChatBubble, { userId, bubbleId: p.id }, days);
+    const existing = await this.prisma.userChatBubble.findUnique({ where: { userId_bubbleId: { userId, bubbleId: p.id } } });
+    if (existing) await this.prisma.userChatBubble.update({ where: { id: existing.id }, data: { expiresAt } });
+    else await this.prisma.userChatBubble.create({ data: { userId, bubbleId: p.id, expiresAt } });
+    return { ok: true, expiresAt };
+  }
+
+  async equipBubble(userId: string, bubbleId: string | null) {
+    if (!bubbleId) {
+      await this.prisma.user.update({ where: { id: userId }, data: { chatBubbleCss: null } });
+      return { ok: true };
+    }
+    const owned = await this.prisma.userChatBubble.findUnique({ where: { userId_bubbleId: { userId, bubbleId } }, include: { bubble: true } });
+    if (!owned) throw new BadRequestException('Bạn chưa sở hữu bong bóng này');
+    if (owned.expiresAt && owned.expiresAt < new Date()) throw new BadRequestException('Bong bóng đã hết hạn, hãy gia hạn để dùng tiếp');
+    await this.prisma.user.update({ where: { id: userId }, data: { chatBubbleCss: owned.bubble.css } });
+    return { ok: true };
+  }
+
   // ───────────────── helpers ─────────────────
   // Gia hạn cộng dồn; bản vĩnh viễn (days=null) thì luôn vĩnh viễn
   private async computeExpiry(model: any, where: any, days: number | null | undefined): Promise<Date | null> {
-    const key = where.badgeId ? { userId_badgeId: where } : { userId_effectId: where };
+    const key = where.badgeId ? { userId_badgeId: where } : where.bubbleId ? { userId_bubbleId: where } : { userId_effectId: where };
     const existing = await model.findUnique({ where: key });
     if (days == null) return null;
     if (existing && existing.expiresAt == null) return null;

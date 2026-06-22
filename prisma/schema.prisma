@@ -193,6 +193,7 @@ model User {
   location        String?    @db.VarChar(120) // nơi ở
   shopBadgeUrl    String? // ảnh badge cửa hàng đang đeo (denormalized)
   nameEffectCss   String?    @db.Text // CSS hiệu ứng tên đang dùng (denormalized)
+  chatBubbleCss   String?    @db.Text // CSS bong bóng chat đang dùng (denormalized)
   role            UserRole   @default(MEMBER)
   status          UserStatus @default(ACTIVE)
   isVerified      Boolean    @default(false)
@@ -2285,6 +2286,37 @@ model UserNameEffect {
   effect NameEffectProduct @relation(fields: [effectId], references: [id], onDelete: Cascade)
 
   @@unique([userId, effectId])
+  @@index([userId])
+}
+
+// ───────── Bong bóng chat (sản phẩm bán bằng coin/gem, CSS do admin nhập) ─────────
+model ChatBubbleProduct {
+  id          String   @id @default(cuid())
+  slug        String   @unique @db.VarChar(80)
+  name        String   @db.VarChar(120)
+  description String?  @db.Text
+  css         String   @db.Text // khai báo CSS áp lên bong bóng chat (background, border, color…)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  priceCoin   Int?
+  coinDays    Int?
+  priceGem    Int?
+  gemDays     Int?
+  createdAt   DateTime @default(now())
+
+  owners UserChatBubble[]
+}
+
+model UserChatBubble {
+  id         String    @id @default(cuid())
+  userId     String
+  bubbleId   String
+  expiresAt  DateTime?
+  acquiredAt DateTime  @default(now())
+
+  bubble ChatBubbleProduct @relation(fields: [bubbleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bubbleId])
   @@index([userId])
 }
 

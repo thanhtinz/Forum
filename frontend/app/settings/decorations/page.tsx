@@ -12,6 +12,7 @@ interface OwnedFrame { id: string; frameId: string; name: string; imageUrl: stri
 interface ManageBadge { key: string; label: string; icon: string; color: string; kind: string; description?: string; hidden: boolean }
 interface OwnedShopBadge { id: string; badgeId: string; name: string; imageUrl: string; expiresAt: string | null; expired: boolean; equipped: boolean }
 interface OwnedEffect { id: string; effectId: string; name: string; css: string; expiresAt: string | null; expired: boolean; equipped: boolean }
+interface OwnedBubble { id: string; bubbleId: string; name: string; css: string; expiresAt: string | null; expired: boolean; equipped: boolean }
 
 const dur = (d: string | null, expired: boolean) => (expired ? 'Hết hạn' : d ? `Đến ${new Date(d).toLocaleDateString('vi')}` : 'Vĩnh viễn');
 
@@ -24,6 +25,7 @@ export default function DecorationsSettings() {
   const [allBadges, setAllBadges] = useState<ManageBadge[]>([]);
   const [shopBadges, setShopBadges] = useState<OwnedShopBadge[]>([]);
   const [effects, setEffects] = useState<OwnedEffect[]>([]);
+  const [bubbles, setBubbles] = useState<OwnedBubble[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -41,7 +43,19 @@ export default function DecorationsSettings() {
   function loadEffects() {
     api.get<OwnedEffect[]>('/name-effects/inventory').then(setEffects).catch(() => {});
   }
-  useEffect(() => { loadFrames(); loadBadges(); loadShopBadges(); loadEffects(); }, []);
+  function loadBubbles() {
+    api.get<OwnedBubble[]>('/chat-bubbles/inventory').then(setBubbles).catch(() => {});
+  }
+  useEffect(() => { loadFrames(); loadBadges(); loadShopBadges(); loadEffects(); loadBubbles(); }, []);
+
+  async function equipBubble(bubbleId: string | null) {
+    setBusy(true); setMsg('');
+    try {
+      await api.post('/chat-bubbles/equip', { bubbleId });
+      setBubbles((list) => list.map((x) => ({ ...x, equipped: x.bubbleId === bubbleId })));
+      setMsg(bubbleId ? 'Đã bật bong bóng chat. Tải lại trang để thấy ở mọi nơi.' : 'Đã tắt bong bóng chat.');
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  }
 
   async function equipShopBadge(badgeId: string | null) {
     setBusy(true); setMsg('');
@@ -184,6 +198,30 @@ export default function DecorationsSettings() {
                 <span className="line-clamp-1 text-xs font-medium text-ink-500">{ef.name}</span>
                 <span className="text-[10px] text-ink-400">{dur(ef.expiresAt, ef.expired)}</span>
                 {ef.equipped && <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-brand-600 text-white"><Check size={12} /></span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Kho bong bóng chat — bật/tắt bong bóng đã mua */}
+      <div className="card space-y-3 p-5">
+        <div>
+          <h2 className="font-semibold">Bong bóng chat của tôi</h2>
+          <p className="text-sm text-ink-500">Bấm để bật; bấm lại để tắt. Mua thêm ở <a href="/game/shop?tab=bubble" className="text-brand-600 hover:underline">Cửa hàng</a>.</p>
+        </div>
+        {bubbles.length === 0 ? (
+          <p className="text-sm text-ink-500">Bạn chưa có bong bóng nào. Ghé <a href="/game/shop?tab=bubble" className="text-brand-600 hover:underline">Cửa hàng → Bong bóng chat</a>.</p>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {bubbles.map((b) => (
+              <button key={b.id} onClick={() => !b.expired && equipBubble(b.equipped ? null : b.bubbleId)} disabled={busy || b.expired}
+                title={b.equipped ? 'Bấm để tắt bong bóng' : b.name}
+                className={`relative flex min-w-[9rem] flex-col items-center gap-1 rounded-xl border-2 p-3 transition disabled:opacity-50 ${b.equipped ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
+                <span className="inline-block max-w-full rounded-2xl px-3 py-1.5 text-sm" style={cssToStyle(b.css)}>Tin nhắn 👋</span>
+                <span className="line-clamp-1 text-xs font-medium text-ink-500">{b.name}</span>
+                <span className="text-[10px] text-ink-400">{dur(b.expiresAt, b.expired)}</span>
+                {b.equipped && <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-brand-600 text-white"><Check size={12} /></span>}
               </button>
             ))}
           </div>

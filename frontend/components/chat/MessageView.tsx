@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FileText, Reply, Music } from 'lucide-react';
 import { ChatMsg, musicEmbed } from '@/lib/chat';
 import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
+import { cssToStyle } from '@/lib/nameEffect';
 
 // Tách @username thành liên kết tới trang cá nhân (đổi màu theo bong bóng để không mất chữ)
 function renderWithMentions(text: string, mine?: boolean) {
@@ -49,14 +50,17 @@ export function MessageBody({ m, mine }: { m: ChatMsg; mine?: boolean }) {
 
 export function MessageView({ m, mine, showName }: { m: ChatMsg; mine: boolean; showName: boolean }) {
   const name = m.sender?.displayName || m.sender?.username || m.senderId.slice(0, 6);
-  const bubble = m.type === 'STICKER' || m.type === 'GIF' || m.type === 'IMAGE'
+  const isMedia = m.type === 'STICKER' || m.type === 'GIF' || m.type === 'IMAGE';
+  // Bong bóng chat tùy chỉnh (CSS mua ở cửa hàng) — không áp cho media (nền trong suốt)
+  const bubbleCss = !isMedia ? cssToStyle(m.sender?.chatBubbleCss) : undefined;
+  const bubble = isMedia
     ? 'bg-transparent p-0'
-    : mine ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800';
+    : bubbleCss ? '' : mine ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800';
   return (
-    <div className={`inline-block max-w-full rounded-2xl px-3 py-2 text-sm ${bubble}`}>
+    <div className={`inline-block max-w-full rounded-2xl px-3 py-2 text-sm ${bubble}`} style={bubbleCss}>
       {!mine && showName && (
         <div className="mb-0.5 flex items-center gap-1 text-[11px] font-medium opacity-80">
-          {name}
+          <span style={cssToStyle(m.sender?.nameEffectCss)}>{name}</span>
           <UserBadges badges={roleBadgesFromUser({ role: m.sender?.role, verifiedBadge: m.sender?.verifiedBadge })} size="xs" iconOnly />
         </div>
       )}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { mutate } from 'swr';
-import { ChevronLeft, Sprout, ShoppingBag, Coins, FlaskConical, Fish, Ship, Anchor, Loader2, X, Gem, Square, Award, Sparkles } from 'lucide-react';
+import { ChevronLeft, Sprout, ShoppingBag, Coins, FlaskConical, Fish, Ship, Anchor, Loader2, X, Gem, Square, Award, Sparkles, MessageCircle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
@@ -11,7 +11,7 @@ import { cropEmoji } from '@/lib/gameIcons';
 import { cropFruit } from '@/lib/cropSprites';
 import { cssToStyle } from '@/lib/nameEffect';
 
-type Tab = 'crop' | 'fishing' | 'frame' | 'badge' | 'effect';
+type Tab = 'crop' | 'fishing' | 'frame' | 'badge' | 'effect' | 'bubble';
 
 interface Frame {
   id: string; slug: string; name: string; description?: string | null; imageUrl: string;
@@ -22,6 +22,10 @@ interface ShopBadge {
   priceCoin?: number | null; coinDays?: number | null; priceGem?: number | null; gemDays?: number | null;
 }
 interface ShopEffect {
+  id: string; slug: string; name: string; description?: string | null; css: string;
+  priceCoin?: number | null; coinDays?: number | null; priceGem?: number | null; gemDays?: number | null;
+}
+interface ShopBubble {
   id: string; slug: string; name: string; description?: string | null; css: string;
   priceCoin?: number | null; coinDays?: number | null; priceGem?: number | null; gemDays?: number | null;
 }
@@ -46,6 +50,7 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: 'frame', label: 'Khung avatar', icon: Square },
   { key: 'badge', label: 'Badge', icon: Award },
   { key: 'effect', label: 'Hiệu ứng tên', icon: Sparkles },
+  { key: 'bubble', label: 'Bong bóng chat', icon: MessageCircle },
 ];
 
 function Asset({ src, fallback, className = 'h-12 w-12' }: { src?: string | null; fallback: React.ReactNode; className?: string }) {
@@ -66,6 +71,8 @@ export default function GameShopPage() {
   const [badgeSel, setBadgeSel] = useState<ShopBadge | null>(null);
   const [effects, setEffects] = useState<ShopEffect[]>([]);
   const [effectSel, setEffectSel] = useState<ShopEffect | null>(null);
+  const [bubbles, setBubbles] = useState<ShopBubble[]>([]);
+  const [bubbleSel, setBubbleSel] = useState<ShopBubble | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [selected, setSelected] = useState<Selected | null>(null);
@@ -80,6 +87,7 @@ export default function GameShopPage() {
     api.get<Frame[]>('/avatar-frames').then(setFrames).catch(() => {});
     api.get<ShopBadge[]>('/badge-products').then(setBadges).catch(() => {});
     api.get<ShopEffect[]>('/name-effects').then(setEffects).catch(() => {});
+    api.get<ShopBubble[]>('/chat-bubbles').then(setBubbles).catch(() => {});
   }, []);
 
   async function buyFrame(currency: 'coin' | 'gem') {
@@ -115,6 +123,19 @@ export default function GameShopPage() {
       await api.post(`/name-effects/${effectSel.id}/buy`, { currency });
       setMsg({ ok: true, text: `Đã mua hiệu ứng "${effectSel.name}". Vào Trang trí để bật.` });
       setEffectSel(null);
+      loadCoin();
+    } catch (e: any) {
+      setMsg({ ok: false, text: e.message || 'Mua thất bại' });
+    } finally { setBusy(false); }
+  }
+
+  async function buyBubble(currency: 'coin' | 'gem') {
+    if (!bubbleSel) return;
+    setBusy(true); setMsg(null);
+    try {
+      await api.post(`/chat-bubbles/${bubbleSel.id}/buy`, { currency });
+      setMsg({ ok: true, text: `Đã mua bong bóng "${bubbleSel.name}". Vào Trang trí để bật.` });
+      setBubbleSel(null);
       loadCoin();
     } catch (e: any) {
       setMsg({ ok: false, text: e.message || 'Mua thất bại' });
@@ -319,6 +340,24 @@ export default function GameShopPage() {
         </div>
       )}
 
+      {/* Bong bóng chat */}
+      {tab === 'bubble' && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {bubbles.map((b) => (
+            <button key={b.id} onClick={() => { setBubbleSel(b); setMsg(null); }}
+              className="card flex flex-col items-center gap-2 p-4 text-center transition hover:border-brand-400 hover:shadow-card">
+              <span className="inline-block max-w-full rounded-2xl px-3 py-2 text-sm" style={cssToStyle(b.css)}>Tin nhắn ví dụ 👋</span>
+              <p className="line-clamp-1 text-sm font-medium text-ink-500">{b.name}</p>
+              <p className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-ink-400">
+                {b.priceCoin != null && <span className="inline-flex items-center gap-0.5"><Coins size={11} />{formatCoin(b.priceCoin)}</span>}
+                {b.priceGem != null && <span className="inline-flex items-center gap-0.5 text-fuchsia-600"><Gem size={11} />{b.priceGem}</span>}
+              </p>
+            </button>
+          ))}
+          {bubbles.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có bong bóng nào.</p>}
+        </div>
+      )}
+
       {/* ───── Popup khung avatar: demo + giá + mua ───── */}
       {frameSel && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setFrameSel(null)}>
@@ -437,6 +476,46 @@ export default function GameShopPage() {
               )}
             </div>
             <p className="mt-3 text-center text-xs text-ink-400">Mua xong vào <b>Cài đặt → Trang trí</b> để bật hiệu ứng.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ───── Popup bong bóng chat: demo + giá + mua ───── */}
+      {bubbleSel && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setBubbleSel(null)}>
+          <div className="card w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <h2 className="text-lg font-bold">{bubbleSel.name}</h2>
+              <button onClick={() => setBubbleSel(null)} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
+            </div>
+            <div className="flex flex-col gap-2 rounded-xl bg-ink-50 py-6 px-4 dark:bg-ink-800/50">
+              <div className="flex justify-end">
+                <span className="inline-block max-w-[78%] rounded-2xl px-3 py-2 text-sm" style={cssToStyle(bubbleSel.css)}>Tin nhắn của bạn 👋</span>
+              </div>
+              <p className="text-center text-xs text-ink-400">Xem thử bong bóng chat của bạn</p>
+            </div>
+            {bubbleSel.description && <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{bubbleSel.description}</p>}
+            <div className="mt-4 space-y-2">
+              {bubbleSel.priceCoin != null && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-ink-200/70 p-3 dark:border-ink-700">
+                  <div className="text-sm">
+                    <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Coins size={14} /> {formatCoin(bubbleSel.priceCoin)} Xu</p>
+                    <p className="text-xs text-ink-400">Thời hạn: {frameDur(bubbleSel.coinDays)}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => buyBubble('coin')} className="btn-outline inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <Coins size={15} />} Mua</button>
+                </div>
+              )}
+              {bubbleSel.priceGem != null && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-fuchsia-200 p-3 dark:border-fuchsia-900/50">
+                  <div className="text-sm">
+                    <p className="inline-flex items-center gap-1 font-semibold text-fuchsia-600"><Gem size={14} /> {bubbleSel.priceGem} Gem</p>
+                    <p className="text-xs text-ink-400">Thời hạn: {frameDur(bubbleSel.gemDays)}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => buyBubble('gem')} className="btn-primary inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <Gem size={15} />} Mua</button>
+                </div>
+              )}
+            </div>
+            <p className="mt-3 text-center text-xs text-ink-400">Mua xong vào <b>Cài đặt → Trang trí</b> để bật bong bóng.</p>
           </div>
         </div>
       )}

@@ -472,12 +472,15 @@ export class AnimeService {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Cache-Control', 'no-store');
     const ct = up.headers.get('content-type') || '';
-    const isPlaylist = /mpegurl|m3u8/i.test(ct) || /\.m3u8($|\?)/i.test(target.pathname + target.search);
+    // Dùng URL cuối cùng (sau redirect) làm gốc để resolve segment, tránh 404/403
+    let finalUrl = target;
+    try { finalUrl = new URL(up.url || u); } catch {}
+    const isPlaylist = /mpegurl|m3u8/i.test(ct) || /\.m3u8($|\?)/i.test(finalUrl.pathname + finalUrl.search);
 
     if (isPlaylist) {
       const text = await up.text();
       res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
-      res.status(up.status === 206 ? 200 : up.status).send(this.rewritePlaylist(text, target, referer));
+      res.status(up.status === 206 ? 200 : up.status).send(this.rewritePlaylist(text, finalUrl, referer));
       return;
     }
     if (ct) res.setHeader('Content-Type', ct);

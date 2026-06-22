@@ -40,7 +40,13 @@ interface PlayerProps { url: string; referer?: string | null; introEnd?: number 
 function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnded }: PlayerProps & { isHls: boolean }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
-  const src = proxy(url, referer);
+  // mp4/webm: thử phát TRỰC TIẾP trước (nhiều host cho hotlink → nhanh hơn, đỡ tốn proxy server);
+  // nếu lỗi (CORS/403/hotlink) thì tự fallback sang proxy. HLS luôn qua proxy vì hls.js cần CORS.
+  const [viaProxy, setViaProxy] = useState(isHls);
+  const viaProxyRef = useRef(viaProxy); viaProxyRef.current = viaProxy;
+  const src = viaProxy ? proxy(url, referer) : url;
+  // Khi đổi tập/đổi server: reset lại về phát trực tiếp (cho nguồn mp4) và xoá lỗi cũ.
+  useEffect(() => { setViaProxy(isHls); setError(''); }, [url, isHls]);
   // Giữ giá trị mới nhất mà không tạo lại player
   const introRef = useRef({ introEnd, skipIntro }); introRef.current = { introEnd, skipIntro };
   const nextRef = useRef({ autoNext, onEnded }); nextRef.current = { autoNext, onEnded };
@@ -98,7 +104,11 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
         }
       });
       art.on('video:ended', () => { if (nextRef.current.autoNext) nextRef.current.onEnded(); });
-      art.on('error', () => setError('Trình duyệt không tải được (CORS/403).'));
+      art.on('error', () => {
+        // Phát trực tiếp thất bại (host chặn hotlink) → thử lại MỘT lần qua proxy backend.
+        if (!isHls && !viaProxyRef.current) { setViaProxy(true); return; }
+        setError('Trình duyệt không tải được (CORS/403).');
+      });
     }).catch(() => setError('Không tải được trình phát.'));
     return () => { cancelled = true; if (art?.destroy) art.destroy(false); };
   }, [src, isHls]);

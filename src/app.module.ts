@@ -42,7 +42,6 @@ import { SecurityModule } from './modules/security/security.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
-import { JobsModule } from './modules/jobs/jobs.module';
 import { AvatarFrameModule } from './modules/avatar-frame/avatar-frame.module';
 import { MarketModule } from './modules/market/market.module';
 import { PingModule } from './modules/ping/ping.module';
@@ -111,7 +110,6 @@ import { VipModule } from './modules/vip/vip.module';
     MailModule,
     SecurityModule,
     PermissionsModule,
-    JobsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

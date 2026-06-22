@@ -60,52 +60,6 @@ enum GemTxType {
   ESCROW_REFUND
 }
 
-enum JobCategory {
-  DESIGN
-  PROGRAMMING
-  TRANSLATION
-  MARKETING
-  CONTENT
-  VIDEO
-  AI_PROMPT
-  OTHER
-}
-
-enum JobBudgetType {
-  FIXED
-  HOURLY
-}
-
-enum JobStatus {
-  OPEN
-  IN_PROGRESS
-  SUBMITTED
-  COMPLETED
-  CANCELLED
-  DISPUTED
-}
-
-enum ProposalStatus {
-  PENDING
-  INVITED
-  ACCEPTED
-  REJECTED
-  WITHDRAWN
-}
-
-enum EscrowStatus {
-  FUNDED
-  RELEASED
-  REFUNDED
-  DISPUTED
-}
-
-enum JobDisputeStatus {
-  OPEN
-  RESOLVED_REFUND
-  RESOLVED_RELEASE
-}
-
 enum ReportType {
   SPAM
   SCAM
@@ -236,6 +190,9 @@ model User {
   vipFrameUrl     String? // ảnh khung VIP user được dùng (nằm trong kho khung, bật/tắt được)
   hiddenBadges    String[] @default([]) // key các huy hiệu user chọn ẩn (role/verify/level/milestone)
   bio             String?    @db.Text
+  birthday        DateTime? // ngày sinh
+  showBirthday    Boolean    @default(false) // có hiển thị ngày sinh công khai không
+  location        String?    @db.VarChar(120) // nơi ở
   role            UserRole   @default(MEMBER)
   status          UserStatus @default(ACTIVE)
   isVerified      Boolean    @default(false)
@@ -299,7 +256,6 @@ model User {
   profilePostComments  ProfilePostComment[]
   blocking             UserBlock[]             @relation("Blocker")
   blockedBy            UserBlock[]             @relation("Blocked")
-  profileFieldValues   UserProfileFieldValue[]
   galleryAlbums        GalleryAlbum[]
   galleryMedia         GalleryMedia[]
   galleryComments      GalleryComment[]
@@ -312,12 +268,6 @@ model User {
   authTokens           AuthToken[]
   groupMemberships     UserGroupMember[]
   pushSubscriptions    PushSubscription[]
-  freelancerProfile    FreelancerProfile?
-  jobsPosted           Job[]                   @relation("JobEmployer")
-  jobProposals         JobProposal[]           @relation("ProposalFreelancer")
-  jobReviewsGiven      JobReview[]             @relation("JobReviewFrom")
-  jobReviewsGot        JobReview[]             @relation("JobReviewTo")
-  jobBookmarks         JobBookmark[]
   scamCasesReported    ScamCase[]              @relation("ScamCaseReporter")
   scamCasesAgainst     ScamCase[]              @relation("ScamCaseReported")
   scamComments         ScamCaseComment[]
@@ -1182,31 +1132,6 @@ model UserBlock {
   @@index([blockedId])
 }
 
-// Trường hồ sơ tuỳ chỉnh (admin định nghĩa)
-model ProfileField {
-  id        String   @id @default(cuid())
-  key       String   @unique @db.VarChar(50)
-  label     String   @db.VarChar(100)
-  type      String   @default("text") // text | textarea | url | select
-  options   Json? // cho type=select
-  required  Boolean  @default(false)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-
-  values UserProfileFieldValue[]
-}
-
-model UserProfileFieldValue {
-  userId  String
-  fieldId String
-  value   String @db.Text
-
-  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  field ProfileField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
-
-  @@id([userId, fieldId])
-}
-
 // ============================================================
 // MEDIA GALLERY (kiểu XenForo Media Gallery / XFMG)
 // ============================================================
@@ -1316,142 +1241,6 @@ model GiveawayEntry {
 
 // Cược xiên: gộp nhiều kèo (nhà cái hệ thống, FIXED) vào 1 vé, nhân odds
 // ============================================================
-// FREELANCE / JOB MARKETPLACE
-// ============================================================
-
-model FreelancerProfile {
-  userId         String   @id
-  headline       String?  @db.VarChar(160)
-  bio            String?  @db.Text
-  skills         String[]
-  hourlyRate     Int? // theo gem
-  country        String?  @db.VarChar(60)
-  languages      String[]
-  portfolio      Json? // [{ title, url, image }]
-  experience     String?  @db.Text
-  certifications String[]
-  available      Boolean  @default(true)
-  ratingAvg      Float    @default(0)
-  ratingCount    Int      @default(0)
-  jobsDone       Int      @default(0)
-  earned         Int      @default(0) // tổng gem đã kiếm
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Job {
-  id                String        @id @default(cuid())
-  employerId        String
-  threadId          String?       @unique // liên kết với bài forum (nếu đăng qua danh mục module JOB)
-  title             String        @db.VarChar(200)
-  category          JobCategory   @default(OTHER)
-  description       String        @db.Text
-  budgetType        JobBudgetType @default(FIXED)
-  budgetMin         Int?
-  budgetMax         Int?
-  deadline          DateTime?
-  attachments       Json? // [{ url, name }]
-  skills            String[]
-  country           String?       @db.VarChar(60)
-  language          String?       @db.VarChar(40)
-  status            JobStatus     @default(OPEN)
-  hiredFreelancerId String?
-  submittedNote     String?       @db.Text
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-
-  employer  User          @relation("JobEmployer", fields: [employerId], references: [id], onDelete: Cascade)
-  proposals JobProposal[]
-  escrow    JobEscrow?
-  disputes  JobDispute[]
-  reviews   JobReview[]
-  bookmarks JobBookmark[]
-
-  @@index([status, createdAt])
-  @@index([category])
-  @@index([employerId])
-}
-
-model JobProposal {
-  id           String         @id @default(cuid())
-  jobId        String
-  freelancerId String
-  coverLetter  String         @db.Text
-  bidAmount    Int
-  days         Int            @default(7)
-  portfolioUrl String?
-  status       ProposalStatus @default(PENDING)
-  createdAt    DateTime       @default(now())
-
-  job        Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  freelancer User @relation("ProposalFreelancer", fields: [freelancerId], references: [id], onDelete: Cascade)
-
-  @@unique([jobId, freelancerId])
-  @@index([freelancerId])
-}
-
-model JobEscrow {
-  id           String       @id @default(cuid())
-  jobId        String       @unique
-  employerId   String
-  freelancerId String
-  amount       Int
-  status       EscrowStatus @default(FUNDED)
-  fundedAt     DateTime     @default(now())
-  releasedAt   DateTime?
-
-  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
-}
-
-model JobDispute {
-  id           String           @id @default(cuid())
-  jobId        String
-  openedById   String
-  reason       String           @db.Text
-  evidence     String[]
-  status       JobDisputeStatus @default(OPEN)
-  resolvedById String?
-  resolution   String?          @db.Text
-  createdAt    DateTime         @default(now())
-  resolvedAt   DateTime?
-
-  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  @@index([status])
-}
-
-model JobReview {
-  id           String   @id @default(cuid())
-  jobId        String
-  fromId       String
-  toId         String
-  rating       Int // 1-5
-  comment      String?  @db.Text
-  fromEmployer Boolean  @default(true)
-  createdAt    DateTime @default(now())
-
-  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  from User @relation("JobReviewFrom", fields: [fromId], references: [id], onDelete: Cascade)
-  to   User @relation("JobReviewTo", fields: [toId], references: [id], onDelete: Cascade)
-
-  @@unique([jobId, fromId])
-  @@index([toId])
-}
-
-model JobBookmark {
-  userId    String
-  jobId     String
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  @@id([userId, jobId])
-  @@index([jobId])
-}
-
 // ============================================================
 // SYSTEM
 // ============================================================

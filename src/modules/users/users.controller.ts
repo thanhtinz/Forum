@@ -28,6 +28,13 @@ export class UsersController {
     return this.usersService.avatarLibrary();
   }
 
+  // Thông tin giới thiệu của chính mình (cho trang cài đặt)
+  @Get('me/about')
+  @UseGuards(JwtAuthGuard)
+  getMyAbout(@CurrentUser('id') userId: string) {
+    return this.usersService.getMyAbout(userId);
+  }
+
   @Get(':username')
   getProfile(@Param('username') username: string) {
     return this.usersService.getProfile(username);
@@ -37,7 +44,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   updateProfile(
     @CurrentUser('id') userId: string,
-    @Body() data: { displayName?: string; bio?: string; avatar?: string },
+    @Body() data: { displayName?: string; bio?: string; avatar?: string; location?: string; birthday?: string | null; showBirthday?: boolean },
   ) {
     return this.usersService.updateProfile(userId, data);
   }

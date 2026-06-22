@@ -10,6 +10,7 @@ export class UsersService {
       where: { username },
       select: {
         id: true, username: true, displayName: true, avatar: true, bio: true,
+        location: true, birthday: true, showBirthday: true,
         role: true, reputationScore: true, threadCount: true, postCount: true,
         verifiedBadge: true, avatarFrameUrl: true, vipBadgeUrl: true, vipTierName: true,
         createdAt: true, lastSeenAt: true,
@@ -17,14 +18,36 @@ export class UsersService {
       },
     });
     if (!user) throw new NotFoundException('Người dùng không tồn tại');
-    return user;
+    // Chỉ công khai ngày sinh khi user bật hiển thị
+    const { showBirthday, birthday, ...rest } = user;
+    return { ...rest, birthday: showBirthday ? birthday : null };
   }
 
-  async updateProfile(userId: string, data: { displayName?: string; bio?: string; avatar?: string }) {
+  // Thông tin "Giới thiệu" của chính user (đầy đủ, kể cả ngày sinh đang ẩn) — cho trang cài đặt
+  async getMyAbout(userId: string) {
+    const u = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { displayName: true, bio: true, location: true, birthday: true, showBirthday: true },
+    });
+    if (!u) throw new NotFoundException('Người dùng không tồn tại');
+    return u;
+  }
+
+  async updateProfile(
+    userId: string,
+    data: { displayName?: string; bio?: string; avatar?: string; location?: string; birthday?: string | null; showBirthday?: boolean },
+  ) {
+    const patch: any = {};
+    if (data.displayName !== undefined) patch.displayName = data.displayName;
+    if (data.bio !== undefined) patch.bio = data.bio;
+    if (data.avatar !== undefined) patch.avatar = data.avatar;
+    if (data.location !== undefined) patch.location = data.location?.trim() || null;
+    if (data.showBirthday !== undefined) patch.showBirthday = !!data.showBirthday;
+    if (data.birthday !== undefined) patch.birthday = data.birthday ? new Date(data.birthday) : null;
     return this.prisma.user.update({
       where: { id: userId },
-      data,
-      select: { id: true, username: true, displayName: true, bio: true, avatar: true },
+      data: patch,
+      select: { id: true, username: true, displayName: true, bio: true, avatar: true, location: true, birthday: true, showBirthday: true },
     });
   }
 

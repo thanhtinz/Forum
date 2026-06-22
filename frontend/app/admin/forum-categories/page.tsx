@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FolderTree, Plus, Trash2, Pencil, Briefcase, X, Tags } from 'lucide-react';
+import { FolderTree, Plus, Trash2, Pencil, X, Tags } from 'lucide-react';
 import { api } from '@/lib/api';
 import ImageUpload from '@/components/ImageUpload';
 
@@ -22,11 +22,6 @@ interface Category {
   threadCount?: number;
   _count?: { threads: number };
 }
-
-const MODULES: { value: string; label: string }[] = [
-  { value: 'NONE', label: 'Thường (diễn đàn)' },
-  { value: 'JOB', label: 'Việc làm (freelance)' },
-];
 
 const EMPTY = { name: '', slug: '', description: '', icon: '', iconUrl: '', color: '', sortOrder: 0, moduleType: 'NONE', parentId: '', staffOnlyPost: false, isPrivate: false };
 
@@ -137,11 +132,6 @@ export default function AdminForumCategoriesPage() {
         <button onClick={openNew} className="btn-primary inline-flex items-center gap-1 text-sm"><Plus size={16} /> Thêm danh mục</button>
       </div>
 
-      <p className="text-sm text-ink-500">
-        Đánh dấu một danh mục là <strong>module Việc làm</strong> để các bài đăng trong danh mục đó có thêm tính năng tuyển dụng:
-        ngân sách, đề xuất ứng tuyển, ký quỹ (escrow) và đánh giá.
-      </p>
-
       {loading && <div className="p-10 text-center text-ink-500">Đang tải…</div>}
 
       {!loading && (
@@ -154,9 +144,6 @@ export default function AdminForumCategoriesPage() {
                   {c.parentId && <span className="text-ink-400">↳</span>}
                   <span className="font-semibold">{c.name}</span>
                   {c.parentId && <span className="chip bg-ink-100 text-ink-500">con của {cats.find((p) => p.id === c.parentId)?.name || '—'}</span>}
-                  {c.moduleType === 'JOB' && (
-                    <span className="chip inline-flex items-center gap-1 bg-emerald-100 text-emerald-700"><Briefcase size={12} /> Việc làm</span>
-                  )}
                   {(c.minRolePost === 'MODERATOR' || c.minRolePost === 'ADMIN') && <span className="chip bg-amber-100 text-amber-700">BQT đăng</span>}
                   {c.isPrivate && <span className="chip bg-rose-100 text-rose-700">Riêng tư</span>}
                 </div>
@@ -229,20 +216,10 @@ export default function AdminForumCategoriesPage() {
                 {cats.filter((c) => !editing || c.id !== editing.id).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </label>
-            <label className="block text-sm">Module đặc biệt
-              <select className="input mt-1" value={form.moduleType} onChange={(e) => setForm({ ...form, moduleType: e.target.value })}>
-                {MODULES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-            </label>
             <div className="space-y-1.5 rounded-lg bg-ink-50 p-3 dark:bg-ink-900">
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.staffOnlyPost} onChange={(e) => setForm({ ...form, staffOnlyPost: e.target.checked })} /> Chỉ Ban quản trị được đăng bài</label>
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isPrivate} onChange={(e) => setForm({ ...form, isPrivate: e.target.checked })} /> Danh mục riêng tư (ẩn với khách)</label>
             </div>
-            {form.moduleType === 'JOB' && (
-              <p className="rounded-lg bg-emerald-50 p-2 text-xs text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-                <Briefcase size={12} className="mr-1 inline" /> Bài đăng trong danh mục này sẽ có thêm: ngân sách, đề xuất ứng tuyển, ký quỹ &amp; đánh giá.
-              </p>
-            )}
             {err && <p className="text-sm text-red-500">{err}</p>}
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setShowForm(false)} className="btn-outline">Huỷ</button>

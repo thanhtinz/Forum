@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserPlus, UserMinus, Ban, ExternalLink, Medal, Trophy, BadgeCheck } from 'lucide-react';
+import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
@@ -19,7 +19,6 @@ function ProfileView() {
   const [following, setFollowing] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [badges, setBadges] = useState<BadgeDescriptor[]>([]);
-  const [fields, setFields] = useState<{ field: { id: string; label: string; type: string }; value: string }[]>([]);
 
   useEffect(() => {
     if (!name) return;
@@ -29,7 +28,6 @@ function ProfileView() {
         api.get<any>(`/trophies/user/${p.id}`).then(setTrophies).catch(() => {});
         api.get<{ followers: number; following: number }>(`/social/users/${p.id}/follow-counts`).then(setCounts).catch(() => {});
         api.get<{ badges: BadgeDescriptor[] }>(`/badges/user/${p.id}`).then((r) => setBadges(r.badges || [])).catch(() => {});
-        api.get<{ field: { id: string; label: string; type: string }; value: string }[]>(`/profile-extra/users/${p.id}/fields`).then((r) => setFields((r || []).filter((f) => f.value?.trim()))).catch(() => {});
         if (user && user.id !== p.id) {
           api.get<{ following: boolean }>(`/social/users/${p.id}/follow-state`).then((r) => setFollowing(r.following)).catch(() => {});
           api.get<{ blocked: boolean }>(`/profile-extra/block/${p.id}/state`).then((r) => setBlocked(r.blocked)).catch(() => {});
@@ -85,7 +83,13 @@ function ProfileView() {
         {badges.length > 0 && (
           <div className="mt-2 flex justify-center"><UserBadges badges={badges} /></div>
         )}
-        {profile.bio && <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{profile.bio}</p>}
+        {profile.bio && <p className="mt-3 whitespace-pre-wrap text-sm text-ink-600 dark:text-ink-300">{profile.bio}</p>}
+        {(profile.location || profile.birthday) && (
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-ink-500">
+            {profile.location && <span className="inline-flex items-center gap-1"><MapPin size={14} /> {profile.location}</span>}
+            {profile.birthday && <span className="inline-flex items-center gap-1"><Cake size={14} /> {new Date(profile.birthday).toLocaleDateString('vi')}</span>}
+          </div>
+        )}
         {trophies && <p className="mt-2 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-amber-600"><Medal size={16} /> {trophies.currentTitle} · {trophies.totalPoints} điểm</p>}
 
         <div className="mt-3 flex items-center justify-center gap-5 text-sm">
@@ -118,7 +122,7 @@ function ProfileView() {
             )}
             <a href="/settings/avatar" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Đổi ảnh đại diện</a>
             <a href="/settings/decorations" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Trang trí</a>
-            <a href="/settings/profile-fields" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Thông tin thêm</a>
+            <a href="/settings/about" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Giới thiệu</a>
           </div>
         )}
 
@@ -144,23 +148,6 @@ function ProfileView() {
                 ))}
               </div>
             )}
-          </div>
-        )}
-        {fields.length > 0 && (
-          <div className="card p-5">
-            <h2 className="mb-3 font-semibold">Thông tin thêm</h2>
-            <dl className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {fields.map((f) => (
-                <div key={f.field.id} className="rounded-lg bg-ink-50 p-3 dark:bg-ink-900">
-                  <dt className="text-xs text-ink-500">{f.field.label}</dt>
-                  <dd className="mt-0.5 break-words text-sm">
-                    {f.field.type === 'url'
-                      ? <a href={f.value} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-brand-600 hover:underline">{f.value} <ExternalLink size={12} /></a>
-                      : <span className="whitespace-pre-wrap">{f.value}</span>}
-                  </dd>
-                </div>
-              ))}
-            </dl>
           </div>
         )}
 

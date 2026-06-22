@@ -31,8 +31,8 @@ export class AnimeController {
   removeEntry(@CurrentUser('id') userId: string, @Param('mediaId') mediaId: string) { return this.svc.removeEntry(userId, mediaId); }
 
   @Get('anime/hls')
-  hls(@Query('u') u: string, @Query('r') r: string, @Headers('range') range: string, @Res() res: Response) {
-    return this.svc.proxyHls(u, r, range, res);
+  hls(@Query('u') u: string, @Query('r') r: string, @Query('debug') debug: string, @Headers('range') range: string, @Res() res: Response) {
+    return this.svc.proxyHls(u, r, range, res, !!debug);
   }
 
   @Get('anime/episode/:id')

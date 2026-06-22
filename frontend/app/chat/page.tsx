@@ -173,17 +173,17 @@ export default function ChatPage() {
               )}
             </div>
 
-            <div className="flex-1 space-y-2 overflow-y-auto p-4">
+            <div className="flex-1 space-y-1 overflow-y-auto p-4">
               {messages.length === 0 && <p className="text-center text-sm text-ink-400">Chưa có tin nhắn. Bắt đầu trò chuyện!</p>}
               {messages.map((m) => {
                 const mine = m.senderId === user?.id;
                 return (
-                  <div key={m.id} className="group flex items-end gap-1">
-                    {!mine && <Avatar user={m.sender || { username: m.senderId }} size={24} />}
-                    <div className="flex-1">
+                  <div key={m.id} className={`group flex items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
+                    {!mine && <Avatar user={m.sender || { username: m.senderId }} size={28} />}
+                    <div className="min-w-0 max-w-[78%]">
                       <MessageView m={m} mine={mine} showName={active.type !== 'PRIVATE'} />
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                    <div className="flex items-center gap-1 self-center opacity-0 group-hover:opacity-100">
                       <button onClick={() => setReplyTo(m)} title="Trả lời"><Reply size={14} className="text-ink-400 hover:text-brand-600" /></button>
                       {(isStaff || mine) && (
                         <button onClick={() => deleteMessage(m.id)} title="Xoá tin nhắn"><Trash2 size={14} className="text-ink-400 hover:text-rose-500" /></button>

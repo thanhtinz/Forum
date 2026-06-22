@@ -160,7 +160,7 @@ function Watch() {
           <form onSubmit={submitComment} className="mb-4 flex items-start gap-2">
             <Avatar user={user} size={32} />
             <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="Viết bình luận về tập này…" className="input flex-1 resize-none" />
-            <button type="submit" disabled={posting || !text.trim()} className="rounded-lg bg-brand-600 p-2.5 text-white disabled:opacity-50"><Send size={16} /></button>
+            <button type="submit" disabled={posting || !text.trim()} className="flex w-12 shrink-0 items-center justify-center self-stretch rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-50"><Send size={18} /></button>
           </form>
         ) : (
           <p className="mb-4 text-sm text-ink-500"><a href="/login" className="text-brand-600 hover:underline">Đăng nhập</a> để bình luận.</p>

@@ -21,7 +21,7 @@ import {
 } from './level.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
-import { Roles, RolesGuard } from '../../common/decorators/roles.decorator';
+import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
 
 @Controller('badges')
 export class BadgeController {
@@ -36,6 +36,20 @@ export class BadgeController {
     // Best-effort lazy recompute of auto milestones; never block the response.
     await this.badges.recomputeMilestones(userId).catch(() => undefined);
     return { badges: await this.badges.getUserBadges(userId) };
+  }
+
+  // Huy hiệu của tôi để quản lý ẩn/hiện
+  @Get('me/manage')
+  @UseGuards(JwtAuthGuard)
+  myManage(@CurrentUser('id') userId: string) {
+    return this.badges.getManageBadges(userId);
+  }
+
+  // Bật/tắt hiển thị một huy hiệu
+  @Post('me/visibility')
+  @UseGuards(JwtAuthGuard)
+  setVisibility(@CurrentUser('id') userId: string, @Body() body: { key: string; hidden: boolean }) {
+    return this.badges.setBadgeVisibility(userId, body.key, !!body.hidden);
   }
 
   @Get('catalog')

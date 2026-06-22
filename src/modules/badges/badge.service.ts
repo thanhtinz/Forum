@@ -124,7 +124,7 @@ export class BadgeService {
     return clean;
   }
 
-  async getUserBadges(userId: string): Promise<BadgeDescriptor[]> {
+  async getUserBadges(userId: string, includeHidden = false): Promise<BadgeDescriptor[]> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -134,6 +134,7 @@ export class BadgeService {
         postCount: true,
         threadCount: true,
         reputationScore: true,
+        hiddenBadges: true,
         badges: { include: { badge: true }, orderBy: { awardedAt: 'asc' } },
       },
     });
@@ -186,7 +187,32 @@ export class BadgeService {
       }
     }
 
+    // Ẩn các huy hiệu user chọn tắt (trừ khi gọi cho trang quản lý)
+    if (!includeHidden) {
+      const hidden = new Set(user.hiddenBadges ?? []);
+      return out.filter((d) => !hidden.has(d.key));
+    }
+
     return out;
+  }
+
+  // Danh sách huy hiệu cho trang quản lý của user — kèm trạng thái ẩn/hiện
+  async getManageBadges(userId: string): Promise<(BadgeDescriptor & { hidden: boolean })[]> {
+    const [all, user] = await Promise.all([
+      this.getUserBadges(userId, true),
+      this.prisma.user.findUnique({ where: { id: userId }, select: { hiddenBadges: true } }),
+    ]);
+    const hidden = new Set(user?.hiddenBadges ?? []);
+    return all.map((d) => ({ ...d, hidden: hidden.has(d.key) }));
+  }
+
+  // Bật/tắt hiển thị một huy hiệu
+  async setBadgeVisibility(userId: string, key: string, hidden: boolean) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { hiddenBadges: true } });
+    const set = new Set(user?.hiddenBadges ?? []);
+    if (hidden) set.add(key); else set.delete(key);
+    await this.prisma.user.update({ where: { id: userId }, data: { hiddenBadges: [...set] } });
+    return { ok: true, hidden };
   }
 
   // Cheap bulk helper for lists: returns only role/verify/seller badges (no milestones).
@@ -199,14 +225,16 @@ export class BadgeService {
         id: true,
         role: true,
         verifiedBadge: true,
+        hiddenBadges: true,
       },
     });
     for (const u of users) {
+      const hidden = new Set(u.hiddenBadges ?? []);
       const list: BadgeDescriptor[] = [];
       if (u.verifiedBadge) list.push(VERIFY_BADGE);
       const rb = roleBadge(u.role);
       if (rb) list.push(rb);
-      map[u.id] = list;
+      map[u.id] = list.filter((d) => !hidden.has(d.key));
     }
     return map;
   }

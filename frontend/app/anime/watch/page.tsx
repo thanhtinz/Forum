@@ -1,11 +1,30 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 
 const ytId = (u: string) => u.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/)?.[1] || null;
+
+// Trình phát hỗ trợ HLS (.m3u8) qua hls.js cho Chrome/Firefox, native cho Safari/iOS
+function HlsVideo({ src }: { src: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+    if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = src; return; }
+    let hls: any;
+    let cancelled = false;
+    import('hls.js').then(({ default: Hls }) => {
+      if (cancelled) return;
+      if (Hls.isSupported()) { hls = new Hls(); hls.loadSource(src); hls.attachMedia(video); }
+      else { video.src = src; }
+    });
+    return () => { cancelled = true; if (hls) hls.destroy(); };
+  }, [src]);
+  return <video ref={ref} controls className="h-full w-full" />;
+}
 
 function Watch() {
   const id = useSearchParams().get('ep') || '';
@@ -18,7 +37,8 @@ function Watch() {
 
   const url: string = ep.videoUrl || '';
   const yt = url ? ytId(url) : null;
-  const isMp4 = /\.(mp4|webm|m3u8)(\?|$)/i.test(url);
+  const isHls = /\.m3u8(\?|$)/i.test(url);
+  const isFile = /\.(mp4|webm)(\?|$)/i.test(url);
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
@@ -28,7 +48,8 @@ function Watch() {
       <div className="aspect-video w-full overflow-hidden rounded-xl bg-black">
         {!url ? <div className="grid h-full place-items-center text-ink-400">Chưa có link xem</div>
           : yt ? <iframe src={`https://www.youtube.com/embed/${yt}`} className="h-full w-full" allowFullScreen title="Player" />
-          : isMp4 ? <video src={url} controls className="h-full w-full" />
+          : isHls ? <HlsVideo src={url} />
+          : isFile ? <video src={url} controls className="h-full w-full" />
           : <iframe src={url} className="h-full w-full" allowFullScreen title="Player" />}
       </div>
 

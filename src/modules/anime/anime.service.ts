@@ -442,8 +442,15 @@ export class AnimeService {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 25000);
     let up: globalThis.Response;
-    try { up = await fetch(u, { signal: ctrl.signal, headers, redirect: 'follow' }); }
-    catch { clearTimeout(timer); if (!res.headersSent) res.status(502).send('Không tải được nguồn'); return; }
+    try {
+      up = await fetch(u, { signal: ctrl.signal, headers, redirect: 'follow' });
+      // Nếu nguồn từ chối vì Referer (401/403), thử lại 1 lần không gửi Referer/Origin
+      if ((up.status === 401 || up.status === 403) && (headers.Referer || headers.Origin)) {
+        const { Referer, Origin, ...bare } = headers;
+        const retry = await fetch(u, { signal: ctrl.signal, headers: bare, redirect: 'follow' }).catch(() => null);
+        if (retry && retry.ok) up = retry;
+      }
+    } catch { clearTimeout(timer); if (!res.headersSent) res.status(502).send('Không tải được nguồn'); return; }
     clearTimeout(timer);
 
     res.setHeader('Access-Control-Allow-Origin', '*');

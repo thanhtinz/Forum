@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck, CalendarDays } from 'lucide-react';
+import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck, CalendarDays, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -121,18 +121,23 @@ function ProfileView() {
       </div>
 
       <div className="space-y-5">
-        {/* Tabs kiểu XenForo */}
-        <div className="card flex flex-wrap gap-1 p-1.5">
-          {([
-            { key: 'activity', label: 'Hoạt động gần đây' },
-            { key: 'posts', label: 'Bài viết' },
-            { key: 'about', label: 'Giới thiệu' },
-          ] as const).map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${tab === t.key ? 'bg-brand-600 text-white shadow-sm' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
-              {t.label}
+        {/* Tabs kiểu XenForo: gạch chân tab đang chọn */}
+        <div className="card overflow-x-auto p-0">
+          <div className="flex items-center gap-1 border-b border-ink-200/70 px-2 dark:border-ink-800">
+            <button onClick={() => history.back()} className="shrink-0 px-2 py-3 text-ink-400 hover:text-brand-600" title="Quay lại">
+              <ChevronLeft size={20} />
             </button>
-          ))}
+            {([
+              { key: 'activity', label: 'Hoạt động mới nhất' },
+              { key: 'posts', label: 'Các bài viết' },
+              { key: 'about', label: 'Giới thiệu' },
+            ] as const).map((t) => (
+              <button key={t.key} onClick={() => setTab(t.key)}
+                className={`shrink-0 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-bold uppercase tracking-wide transition ${tab === t.key ? 'border-brand-600 text-ink-900 dark:text-white' : 'border-transparent text-ink-500 hover:text-ink-800 dark:hover:text-ink-200'}`}>
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {tab === 'about' && (

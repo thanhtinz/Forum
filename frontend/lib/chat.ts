@@ -19,7 +19,6 @@ export interface ChatMsg {
   replyToId?: string | null;
   replyTo?: { id: string; content: string; type: string; senderId: string; sender?: ChatUser | null } | null;
   sender?: ChatUser | null;
-  isPinned?: boolean;
   createdAt: string;
 }
 export interface ChatChannel {
@@ -28,6 +27,7 @@ export interface ChatChannel {
   title: string;
   avatarUrl?: string | null;
   memberCount?: number;
+  pinned?: boolean;
   lastMessage?: ChatMsg | null;
 }
 export interface StickerPack {

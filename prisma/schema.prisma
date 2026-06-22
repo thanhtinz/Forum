@@ -2106,6 +2106,7 @@ model ChatMember {
   userId     String
   isAdmin    Boolean  @default(false) // admin nhóm
   isMuted    Boolean  @default(false)
+  isPinned   Boolean  @default(false) // user tự ghim cuộc trò chuyện này lên đầu
   lastReadAt DateTime @default(now())
   joinedAt   DateTime @default(now())
 
@@ -2125,7 +2126,6 @@ model ChatMessage {
   replyToId String?
   isDeleted Boolean         @default(false)
   isEdited  Boolean         @default(false)
-  isPinned  Boolean         @default(false) // ghim lên đầu kênh (admin/mod)
   createdAt DateTime        @default(now())
 
   channel ChatChannel   @relation(fields: [channelId], references: [id], onDelete: Cascade)

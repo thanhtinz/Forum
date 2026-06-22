@@ -50,9 +50,13 @@ export class ChatController {
     return this.chat.getMessages(channelId, userId, before);
   }
 
-  @Get('channels/:channelId/pinned')
-  getPinned(@Param('channelId') channelId: string) {
-    return this.chat.getPinned(channelId);
+  @Post('channels/:channelId/pin')
+  pinChannel(
+    @CurrentUser('id') userId: string,
+    @Param('channelId') channelId: string,
+    @Body('pinned') pinned: boolean,
+  ) {
+    return this.chat.pinChannel(userId, channelId, !!pinned);
   }
 
   @Get('stickers')

@@ -295,28 +295,18 @@ export class ChatService {
   // ──────────────────────────────────────────────
   // GHIM TIN NHẮN (admin/mod) — mỗi kênh chỉ 1 tin được ghim
   // ──────────────────────────────────────────────
-  async getPinned(channelId: string) {
-    const m = await this.prisma.chatMessage.findFirst({
-      where: { channelId, isPinned: true, isDeleted: false },
-      include: { replyTo: { select: { id: true, content: true, type: true, senderId: true } } },
+  // User tự ghim/bỏ ghim một cuộc trò chuyện (DM/nhóm/guild) lên đầu danh sách.
+  // Chat Tổng (GLOBAL) luôn nằm trên cùng nên không cần ghim.
+  async pinChannel(userId: string, channelId: string, pinned: boolean) {
+    const member = await this.prisma.chatMember.findUnique({
+      where: { channelId_userId: { channelId, userId } },
     });
-    if (!m) return null;
-    const map = await this.usersMap([m.senderId]);
-    return { ...m, sender: map.get(m.senderId) || null };
-  }
-
-  async pinMessage(userId: string, messageId: string, pinned: boolean) {
-    if (!(await this.isStaff(userId))) throw new ForbiddenException('Chỉ admin/mod được ghim tin nhắn');
-    const msg = await this.prisma.chatMessage.findUnique({ where: { id: messageId } });
-    if (!msg || msg.isDeleted) throw new NotFoundException('Tin nhắn không tồn tại');
-    if (pinned) {
-      // Mỗi kênh chỉ giữ 1 tin ghim
-      await this.prisma.chatMessage.updateMany({ where: { channelId: msg.channelId, isPinned: true }, data: { isPinned: false } });
-      await this.prisma.chatMessage.update({ where: { id: messageId }, data: { isPinned: true } });
-    } else {
-      await this.prisma.chatMessage.update({ where: { id: messageId }, data: { isPinned: false } });
-    }
-    return { channelId: msg.channelId };
+    if (!member) throw new ForbiddenException('Bạn không thể ghim cuộc trò chuyện này');
+    await this.prisma.chatMember.update({
+      where: { channelId_userId: { channelId, userId } },
+      data: { isPinned: pinned },
+    });
+    return { ok: true, channelId, pinned };
   }
 
   // ──────────────────────────────────────────────
@@ -339,13 +329,14 @@ export class ChatService {
     });
 
     const map = await this.usersMap(channels.flatMap((c) => c.members.map((m) => m.userId)));
-    return channels.map((c) => {
+    const mapped = channels.map((c) => {
       const members = c.members.map((m) => ({ ...m, user: map.get(m.userId) || null }));
       // Với chat riêng: tên & avatar lấy theo người còn lại
       const other = c.type === 'PRIVATE' ? members.find((m) => m.userId !== userId)?.user : null;
       const title = c.type === 'PRIVATE'
         ? (other?.displayName || other?.username || 'Chat riêng')
         : (c.name || (c.type === 'GLOBAL' ? 'Chat Tổng' : 'Nhóm'));
+      const pinned = c.members.find((m) => m.userId === userId)?.isPinned ?? false;
       return {
         id: c.id,
         type: c.type,
@@ -354,9 +345,13 @@ export class ChatService {
         lastMessageAt: c.lastMessageAt,
         memberCount: members.length,
         members,
+        pinned,
         lastMessage: c.messages[0] || null,
       };
     });
+    // Sắp xếp: Chat Tổng trên cùng → cuộc trò chuyện đã ghim → còn lại theo tin mới nhất
+    const rank = (c: typeof mapped[number]) => (c.type === 'GLOBAL' ? 0 : c.pinned ? 1 : 2);
+    return mapped.sort((a, b) => rank(a) - rank(b) || new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
   }
 
   // ──────────────────────────────────────────────

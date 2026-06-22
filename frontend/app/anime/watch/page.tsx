@@ -36,39 +36,70 @@ function PlayerError({ msg }: { msg: string }) {
 
 interface PlayerProps { url: string; referer?: string | null; introStart?: number | null; introEnd?: number | null; skipIntro: boolean; autoNext: boolean; onEnded: () => void }
 
+// Player chính (ArtPlayer) cho nguồn m3u8/mp4 — qua proxy HLS, hỗ trợ hls.js, bỏ qua intro, tự next.
 function VideoPlayer({ url, referer, isHls, introStart, introEnd, skipIntro, autoNext, onEnded }: PlayerProps & { isHls: boolean }) {
-  const ref = useRef<HTMLVideoElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
   const src = proxy(url, referer);
+  // Giữ giá trị mới nhất mà không tạo lại player
+  const introRef = useRef({ introStart, introEnd, skipIntro }); introRef.current = { introStart, introEnd, skipIntro };
+  const nextRef = useRef({ autoNext, onEnded }); nextRef.current = { autoNext, onEnded };
+
   useEffect(() => {
-    const video = ref.current; if (!video) return;
+    const el = boxRef.current; if (!el) return;
     setError('');
-    let hls: any; let cancelled = false;
-    if (isHls && !video.canPlayType('application/vnd.apple.mpegurl')) {
-      import('hls.js').then(({ default: Hls }) => {
-        if (cancelled) return;
-        if (Hls.isSupported()) {
-          hls = new Hls({ maxBufferLength: 30 });
-          hls.loadSource(src); hls.attachMedia(video);
-          let recover = 0;
-          hls.on(Hls.Events.ERROR, (_e: any, data: any) => {
-            if (!data?.fatal) return;
-            if (data.type === Hls.ErrorTypes.NETWORK_ERROR && recover < 3) { recover++; hls.startLoad(); return; }
-            if (data.type === Hls.ErrorTypes.MEDIA_ERROR && recover < 3) { recover++; hls.recoverMediaError(); return; }
-            setError(`Lỗi tải luồng (${data.type || 'network'}).`);
-          });
-        } else { video.src = src; }
+    let art: any; let cancelled = false;
+    Promise.all([import('artplayer'), isHls ? import('hls.js') : Promise.resolve(null)]).then(([artMod, hlsMod]) => {
+      if (cancelled) return;
+      const Artplayer = artMod.default;
+      const Hls = hlsMod?.default;
+      art = new Artplayer({
+        container: el,
+        url: src,
+        type: isHls ? 'm3u8' : '',
+        autoplay: true,
+        setting: true,
+        playbackRate: true,
+        aspectRatio: true,
+        fullscreen: true,
+        fullscreenWeb: true,
+        pip: true,
+        miniProgressBar: true,
+        autoOrientation: true,
+        theme: '#6366f1',
+        customType: isHls
+          ? {
+              m3u8: (video: HTMLVideoElement, u: string, instance: any) => {
+                if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = u; return; }
+                if (Hls && Hls.isSupported()) {
+                  const hls = new Hls({ maxBufferLength: 30 });
+                  hls.loadSource(u); hls.attachMedia(video);
+                  let recover = 0;
+                  hls.on(Hls.Events.ERROR, (_e: any, data: any) => {
+                    if (!data?.fatal) return;
+                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR && recover < 3) { recover++; hls.startLoad(); return; }
+                    if (data.type === Hls.ErrorTypes.MEDIA_ERROR && recover < 3) { recover++; hls.recoverMediaError(); return; }
+                    setError(`Lỗi tải luồng (${data.type || 'network'}).`);
+                  });
+                  instance.hls = hls;
+                  instance.on('destroy', () => hls.destroy());
+                } else { setError('Trình duyệt không hỗ trợ HLS.'); }
+              },
+            }
+          : undefined,
       });
-    } else { video.src = src; }
-    return () => { cancelled = true; if (hls) hls.destroy(); };
+      art.on('video:timeupdate', () => {
+        const { introStart, introEnd, skipIntro } = introRef.current;
+        if (skipIntro && introEnd && art.currentTime >= (introStart || 0) && art.currentTime < introEnd) art.currentTime = introEnd;
+      });
+      art.on('video:ended', () => { if (nextRef.current.autoNext) nextRef.current.onEnded(); });
+      art.on('error', () => setError('Trình duyệt không tải được (CORS/403).'));
+    }).catch(() => setError('Không tải được trình phát.'));
+    return () => { cancelled = true; if (art?.destroy) art.destroy(false); };
   }, [src, isHls]);
 
-  function onTime() {
-    const v = ref.current; if (!v) return;
-    if (skipIntro && introEnd && v.currentTime >= (introStart || 0) && v.currentTime < introEnd) v.currentTime = introEnd;
-  }
   if (error) return <PlayerError msg={error} />;
-  return <video ref={ref} controls autoPlay onTimeUpdate={onTime} onError={() => setError('Trình duyệt không tải được (CORS/403).')} onEnded={() => autoNext && onEnded()} className="h-full w-full" />;
+  return <div ref={boxRef} className="h-full w-full" />;
 }
 
 function Player(props: PlayerProps) {

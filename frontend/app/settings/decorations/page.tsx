@@ -6,10 +6,15 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
 import { BadgeIcon } from '@/lib/icons';
+import { cssToStyle } from '@/lib/nameEffect';
 
 interface OwnedFrame { id: string; frameId: string; name: string; imageUrl: string; expiresAt: string | null; expired: boolean; equipped: boolean }
 interface VipReward { tierId: string; tierName: string; badgeUrl: string | null; frameUrl: string | null; color: string | null; gemRequired: number; badgeEquipped: boolean }
 interface ManageBadge { key: string; label: string; icon: string; color: string; kind: string; description?: string; hidden: boolean }
+interface OwnedShopBadge { id: string; badgeId: string; name: string; imageUrl: string; expiresAt: string | null; expired: boolean; equipped: boolean }
+interface OwnedEffect { id: string; effectId: string; name: string; css: string; expiresAt: string | null; expired: boolean; equipped: boolean }
+
+const dur = (d: string | null, expired: boolean) => (expired ? 'Hết hạn' : d ? `Đến ${new Date(d).toLocaleDateString('vi')}` : 'Vĩnh viễn');
 
 const KIND_LABEL: Record<string, string> = { role: 'Vai trò', verify: 'Xác minh', level: 'Cấp độ', milestone: 'Thành tích', seller: 'Người bán' };
 
@@ -19,6 +24,8 @@ export default function DecorationsSettings() {
   const [frames, setFrames] = useState<OwnedFrame[]>([]);
   const [vipRewards, setVipRewards] = useState<VipReward[]>([]);
   const [allBadges, setAllBadges] = useState<ManageBadge[]>([]);
+  const [shopBadges, setShopBadges] = useState<OwnedShopBadge[]>([]);
+  const [effects, setEffects] = useState<OwnedEffect[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -33,7 +40,31 @@ export default function DecorationsSettings() {
   function loadBadges() {
     api.get<ManageBadge[]>('/badges/me/manage').then(setAllBadges).catch(() => {});
   }
-  useEffect(() => { loadFrames(); loadVipRewards(); loadBadges(); }, []);
+  function loadShopBadges() {
+    api.get<OwnedShopBadge[]>('/badge-products/inventory').then(setShopBadges).catch(() => {});
+  }
+  function loadEffects() {
+    api.get<OwnedEffect[]>('/name-effects/inventory').then(setEffects).catch(() => {});
+  }
+  useEffect(() => { loadFrames(); loadVipRewards(); loadBadges(); loadShopBadges(); loadEffects(); }, []);
+
+  async function equipShopBadge(badgeId: string | null) {
+    setBusy(true); setMsg('');
+    try {
+      await api.post('/badge-products/equip', { badgeId });
+      setShopBadges((list) => list.map((x) => ({ ...x, equipped: x.badgeId === badgeId })));
+      setMsg(badgeId ? 'Đã đeo badge. Tải lại trang để thấy ở mọi nơi.' : 'Đã gỡ badge.');
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  }
+
+  async function equipEffect(effectId: string | null) {
+    setBusy(true); setMsg('');
+    try {
+      await api.post('/name-effects/equip', { effectId });
+      setEffects((list) => list.map((x) => ({ ...x, equipped: x.effectId === effectId })));
+      setMsg(effectId ? 'Đã bật hiệu ứng tên. Tải lại trang để thấy ở mọi nơi.' : 'Đã tắt hiệu ứng tên.');
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  }
 
   async function toggleBadge(b: ManageBadge) {
     setBusy(true); setMsg('');
@@ -145,6 +176,55 @@ export default function DecorationsSettings() {
           </div>
         </div>
       )}
+
+      {/* Kho badge cửa hàng — đeo/gỡ badge đã mua */}
+      <div className="card space-y-3 p-5">
+        <div>
+          <h2 className="font-semibold">Badge cửa hàng của tôi</h2>
+          <p className="text-sm text-ink-500">Bấm để đeo cạnh tên; bấm lại để gỡ. Mua thêm ở <a href="/game/shop?tab=badge" className="text-brand-600 hover:underline">Cửa hàng</a>.</p>
+        </div>
+        {shopBadges.length === 0 ? (
+          <p className="text-sm text-ink-500">Bạn chưa có badge nào. Ghé <a href="/game/shop?tab=badge" className="text-brand-600 hover:underline">Cửa hàng → Badge</a>.</p>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {shopBadges.map((b) => (
+              <button key={b.id} onClick={() => !b.expired && equipShopBadge(b.equipped ? null : b.badgeId)} disabled={busy || b.expired}
+                title={b.equipped ? 'Bấm để gỡ badge' : b.name}
+                className={`relative flex w-24 flex-col items-center gap-1 rounded-xl border-2 p-2 transition disabled:opacity-50 ${b.equipped ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={b.imageUrl} alt={b.name} className="h-14 w-14 object-contain" />
+                <span className="line-clamp-1 text-xs font-medium">{b.name}</span>
+                <span className="text-[10px] text-ink-400">{dur(b.expiresAt, b.expired)}</span>
+                {b.equipped && <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-brand-600 text-white"><Check size={12} /></span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Kho hiệu ứng tên — bật/tắt hiệu ứng đã mua */}
+      <div className="card space-y-3 p-5">
+        <div>
+          <h2 className="font-semibold">Hiệu ứng tên của tôi</h2>
+          <p className="text-sm text-ink-500">Bấm để bật; bấm lại để tắt. Mua thêm ở <a href="/game/shop?tab=effect" className="text-brand-600 hover:underline">Cửa hàng</a>.</p>
+        </div>
+        {effects.length === 0 ? (
+          <p className="text-sm text-ink-500">Bạn chưa có hiệu ứng nào. Ghé <a href="/game/shop?tab=effect" className="text-brand-600 hover:underline">Cửa hàng → Hiệu ứng tên</a>.</p>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {effects.map((ef) => (
+              <button key={ef.id} onClick={() => !ef.expired && equipEffect(ef.equipped ? null : ef.effectId)} disabled={busy || ef.expired}
+                title={ef.equipped ? 'Bấm để tắt hiệu ứng' : ef.name}
+                className={`relative flex min-w-[8rem] flex-col items-center gap-1 rounded-xl border-2 p-3 transition disabled:opacity-50 ${ef.equipped ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
+                <span className="text-base font-bold" style={cssToStyle(ef.css)}>{user.displayName || user.username}</span>
+                <span className="line-clamp-1 text-xs font-medium text-ink-500">{ef.name}</span>
+                <span className="text-[10px] text-ink-400">{dur(ef.expiresAt, ef.expired)}</span>
+                {ef.equipped && <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-brand-600 text-white"><Check size={12} /></span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -35,6 +35,8 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
       { href: '/admin/stickers', label: 'Sticker chat', icon: Sticker },
       { href: '/admin/avatars', label: 'Thư viện avatar', icon: Sticker },
       { href: '/admin/frames', label: 'Khung avatar', icon: Square },
+      { href: '/admin/shop-badges', label: 'Badge trang trí', icon: Award },
+      { href: '/admin/name-effects', label: 'Hiệu ứng tên', icon: Sparkles },
       { href: '/admin/banners', label: 'Banner quảng cáo', icon: Megaphone },
       { href: '/admin/vip', label: 'Hệ thống VIP', icon: Crown },
     ],

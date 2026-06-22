@@ -2,18 +2,27 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { mutate } from 'swr';
-import { ChevronLeft, Sprout, ShoppingBag, Coins, FlaskConical, Fish, Ship, Anchor, Loader2, X, Gem, Square } from 'lucide-react';
+import { ChevronLeft, Sprout, ShoppingBag, Coins, FlaskConical, Fish, Ship, Anchor, Loader2, X, Gem, Square, Award, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
 import { formatCoin, formatDuration } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
 import { cropFruit } from '@/lib/cropSprites';
+import { cssToStyle } from '@/lib/nameEffect';
 
-type Tab = 'crop' | 'fishing' | 'frame';
+type Tab = 'crop' | 'fishing' | 'frame' | 'badge' | 'effect';
 
 interface Frame {
   id: string; slug: string; name: string; description?: string | null; imageUrl: string;
+  priceCoin?: number | null; coinDays?: number | null; priceGem?: number | null; gemDays?: number | null;
+}
+interface ShopBadge {
+  id: string; slug: string; name: string; description?: string | null; imageUrl: string;
+  priceCoin?: number | null; coinDays?: number | null; priceGem?: number | null; gemDays?: number | null;
+}
+interface ShopEffect {
+  id: string; slug: string; name: string; description?: string | null; css: string;
   priceCoin?: number | null; coinDays?: number | null; priceGem?: number | null; gemDays?: number | null;
 }
 const frameDur = (days?: number | null) => (days == null ? 'vĩnh viễn' : `${days} ngày`);
@@ -35,6 +44,8 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: 'crop', label: 'Trồng trọt', icon: Sprout },
   { key: 'fishing', label: 'Câu cá', icon: Fish },
   { key: 'frame', label: 'Khung avatar', icon: Square },
+  { key: 'badge', label: 'Badge', icon: Award },
+  { key: 'effect', label: 'Hiệu ứng tên', icon: Sparkles },
 ];
 
 function Asset({ src, fallback, className = 'h-12 w-12' }: { src?: string | null; fallback: React.ReactNode; className?: string }) {
@@ -51,6 +62,10 @@ export default function GameShopPage() {
   const [fish, setFish] = useState<FishShop | null>(null);
   const [frames, setFrames] = useState<Frame[]>([]);
   const [frameSel, setFrameSel] = useState<Frame | null>(null);
+  const [badges, setBadges] = useState<ShopBadge[]>([]);
+  const [badgeSel, setBadgeSel] = useState<ShopBadge | null>(null);
+  const [effects, setEffects] = useState<ShopEffect[]>([]);
+  const [effectSel, setEffectSel] = useState<ShopEffect | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [selected, setSelected] = useState<Selected | null>(null);
@@ -63,6 +78,8 @@ export default function GameShopPage() {
     api.get<Fertilizer[]>('/farm/fertilizers').then(setFerts).catch(() => {});
     api.get<FishShop>('/fishing/state').then(setFish).catch(() => {});
     api.get<Frame[]>('/avatar-frames').then(setFrames).catch(() => {});
+    api.get<ShopBadge[]>('/badge-products').then(setBadges).catch(() => {});
+    api.get<ShopEffect[]>('/name-effects').then(setEffects).catch(() => {});
   }, []);
 
   async function buyFrame(currency: 'coin' | 'gem') {
@@ -70,8 +87,34 @@ export default function GameShopPage() {
     setBusy(true); setMsg(null);
     try {
       await api.post(`/avatar-frames/${frameSel.id}/buy`, { currency });
-      setMsg({ ok: true, text: `Đã mua khung "${frameSel.name}". Vào Ảnh đại diện để bật dùng.` });
+      setMsg({ ok: true, text: `Đã mua khung "${frameSel.name}". Vào Trang trí để bật dùng.` });
       setFrameSel(null);
+      loadCoin();
+    } catch (e: any) {
+      setMsg({ ok: false, text: e.message || 'Mua thất bại' });
+    } finally { setBusy(false); }
+  }
+
+  async function buyBadge(currency: 'coin' | 'gem') {
+    if (!badgeSel) return;
+    setBusy(true); setMsg(null);
+    try {
+      await api.post(`/badge-products/${badgeSel.id}/buy`, { currency });
+      setMsg({ ok: true, text: `Đã mua badge "${badgeSel.name}". Vào Trang trí để đeo.` });
+      setBadgeSel(null);
+      loadCoin();
+    } catch (e: any) {
+      setMsg({ ok: false, text: e.message || 'Mua thất bại' });
+    } finally { setBusy(false); }
+  }
+
+  async function buyEffect(currency: 'coin' | 'gem') {
+    if (!effectSel) return;
+    setBusy(true); setMsg(null);
+    try {
+      await api.post(`/name-effects/${effectSel.id}/buy`, { currency });
+      setMsg({ ok: true, text: `Đã mua hiệu ứng "${effectSel.name}". Vào Trang trí để bật.` });
+      setEffectSel(null);
       loadCoin();
     } catch (e: any) {
       setMsg({ ok: false, text: e.message || 'Mua thất bại' });
@@ -237,6 +280,45 @@ export default function GameShopPage() {
         </div>
       )}
 
+      {/* Badge trang trí */}
+      {tab === 'badge' && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {badges.map((b) => (
+            <button key={b.id} onClick={() => { setBadgeSel(b); setMsg(null); }}
+              className="card flex flex-col items-center gap-2 p-3 text-center transition hover:border-brand-400 hover:shadow-card">
+              <div className="grid h-20 w-20 place-items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={b.imageUrl} alt={b.name} className="h-16 w-16 object-contain" />
+              </div>
+              <p className="line-clamp-1 text-sm font-medium">{b.name}</p>
+              <p className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-ink-400">
+                {b.priceCoin != null && <span className="inline-flex items-center gap-0.5"><Coins size={11} />{formatCoin(b.priceCoin)}</span>}
+                {b.priceGem != null && <span className="inline-flex items-center gap-0.5 text-fuchsia-600"><Gem size={11} />{b.priceGem}</span>}
+              </p>
+            </button>
+          ))}
+          {badges.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có badge nào.</p>}
+        </div>
+      )}
+
+      {/* Hiệu ứng tên */}
+      {tab === 'effect' && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {effects.map((ef) => (
+            <button key={ef.id} onClick={() => { setEffectSel(ef); setMsg(null); }}
+              className="card flex flex-col items-center gap-2 p-4 text-center transition hover:border-brand-400 hover:shadow-card">
+              <span className="text-xl font-bold" style={cssToStyle(ef.css)}>{user?.displayName || user?.username || 'TênCủaBạn'}</span>
+              <p className="line-clamp-1 text-sm font-medium text-ink-500">{ef.name}</p>
+              <p className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-ink-400">
+                {ef.priceCoin != null && <span className="inline-flex items-center gap-0.5"><Coins size={11} />{formatCoin(ef.priceCoin)}</span>}
+                {ef.priceGem != null && <span className="inline-flex items-center gap-0.5 text-fuchsia-600"><Gem size={11} />{ef.priceGem}</span>}
+              </p>
+            </button>
+          ))}
+          {effects.length === 0 && <p className="col-span-full text-center text-ink-500">Chưa có hiệu ứng nào.</p>}
+        </div>
+      )}
+
       {/* ───── Popup khung avatar: demo + giá + mua ───── */}
       {frameSel && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setFrameSel(null)}>
@@ -274,7 +356,87 @@ export default function GameShopPage() {
                 </div>
               )}
             </div>
-            <p className="mt-3 text-center text-xs text-ink-400">Mua xong vào <b>Cài đặt → Ảnh đại diện</b> để bật khung.</p>
+            <p className="mt-3 text-center text-xs text-ink-400">Mua xong vào <b>Cài đặt → Trang trí</b> để bật khung.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ───── Popup badge: demo + giá + mua ───── */}
+      {badgeSel && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setBadgeSel(null)}>
+          <div className="card w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <h2 className="text-lg font-bold">{badgeSel.name}</h2>
+              <button onClick={() => setBadgeSel(null)} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
+            </div>
+            <div className="flex flex-col items-center gap-2 rounded-xl bg-ink-50 py-5 dark:bg-ink-800/50">
+              <span className="inline-flex items-center gap-1.5 text-lg font-bold">
+                {user?.displayName || user?.username || 'Bạn'}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={badgeSel.imageUrl} alt="" className="h-7 w-7 object-contain" />
+              </span>
+              <p className="text-xs text-ink-400">Xem thử badge cạnh tên của bạn</p>
+            </div>
+            {badgeSel.description && <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{badgeSel.description}</p>}
+            <div className="mt-4 space-y-2">
+              {badgeSel.priceCoin != null && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-ink-200/70 p-3 dark:border-ink-700">
+                  <div className="text-sm">
+                    <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Coins size={14} /> {formatCoin(badgeSel.priceCoin)} Xu</p>
+                    <p className="text-xs text-ink-400">Thời hạn: {frameDur(badgeSel.coinDays)}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => buyBadge('coin')} className="btn-outline inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <Coins size={15} />} Mua</button>
+                </div>
+              )}
+              {badgeSel.priceGem != null && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-fuchsia-200 p-3 dark:border-fuchsia-900/50">
+                  <div className="text-sm">
+                    <p className="inline-flex items-center gap-1 font-semibold text-fuchsia-600"><Gem size={14} /> {badgeSel.priceGem} Gem</p>
+                    <p className="text-xs text-ink-400">Thời hạn: {frameDur(badgeSel.gemDays)}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => buyBadge('gem')} className="btn-primary inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <Gem size={15} />} Mua</button>
+                </div>
+              )}
+            </div>
+            <p className="mt-3 text-center text-xs text-ink-400">Mua xong vào <b>Cài đặt → Trang trí</b> để đeo badge.</p>
+          </div>
+        </div>
+      )}
+
+      {/* ───── Popup hiệu ứng tên: demo + giá + mua ───── */}
+      {effectSel && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setEffectSel(null)}>
+          <div className="card w-full max-w-sm p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <h2 className="text-lg font-bold">{effectSel.name}</h2>
+              <button onClick={() => setEffectSel(null)} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
+            </div>
+            <div className="flex flex-col items-center gap-2 rounded-xl bg-ink-50 py-6 dark:bg-ink-800/50">
+              <span className="text-2xl font-bold" style={cssToStyle(effectSel.css)}>{user?.displayName || user?.username || 'TênCủaBạn'}</span>
+              <p className="text-xs text-ink-400">Xem thử hiệu ứng trên tên của bạn</p>
+            </div>
+            {effectSel.description && <p className="mt-3 text-sm text-ink-600 dark:text-ink-300">{effectSel.description}</p>}
+            <div className="mt-4 space-y-2">
+              {effectSel.priceCoin != null && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-ink-200/70 p-3 dark:border-ink-700">
+                  <div className="text-sm">
+                    <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Coins size={14} /> {formatCoin(effectSel.priceCoin)} Xu</p>
+                    <p className="text-xs text-ink-400">Thời hạn: {frameDur(effectSel.coinDays)}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => buyEffect('coin')} className="btn-outline inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <Coins size={15} />} Mua</button>
+                </div>
+              )}
+              {effectSel.priceGem != null && (
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-fuchsia-200 p-3 dark:border-fuchsia-900/50">
+                  <div className="text-sm">
+                    <p className="inline-flex items-center gap-1 font-semibold text-fuchsia-600"><Gem size={14} /> {effectSel.priceGem} Gem</p>
+                    <p className="text-xs text-ink-400">Thời hạn: {frameDur(effectSel.gemDays)}</p>
+                  </div>
+                  <button disabled={busy} onClick={() => buyEffect('gem')} className="btn-primary inline-flex items-center gap-1 disabled:opacity-50">{busy ? <Loader2 size={15} className="animate-spin" /> : <Gem size={15} />} Mua</button>
+                </div>
+              )}
+            </div>
+            <p className="mt-3 text-center text-xs text-ink-400">Mua xong vào <b>Cài đặt → Trang trí</b> để bật hiệu ứng.</p>
           </div>
         </div>
       )}

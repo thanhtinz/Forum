@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck } from 'lucide-react';
 import { api } from '@/lib/api';
+import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
 import { UserBadges, type BadgeDescriptor } from '@/components/UserBadges';
@@ -77,7 +78,8 @@ function ProfileView() {
         <div className="mx-auto w-fit"><Avatar user={profile} size={96} /></div>
         <h1 className="mt-3 flex items-center justify-center gap-1.5 text-xl font-bold">
           {profile.vipBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={profile.vipBadgeUrl} alt={profile.vipTierName || 'VIP'} title={profile.vipTierName || 'VIP'} className="h-9 w-9 object-contain" />}
-          <span>{profile.displayName || profile.username}</span>
+          <span style={cssToStyle(profile.nameEffectCss)}>{profile.displayName || profile.username}</span>
+          {profile.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={profile.shopBadgeUrl} alt="" className="h-7 w-7 object-contain" />}
         </h1>
         <p className="text-sm text-ink-500">@{profile.username}</p>
         {badges.length > 0 && (

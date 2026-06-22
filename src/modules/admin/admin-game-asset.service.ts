@@ -188,4 +188,66 @@ export class AdminGameAssetService {
   deleteFrame(id: string) {
     return this.prisma.avatarFrameProduct.delete({ where: { id } });
   }
+
+  // ───────── Badge trang trí (sản phẩm) — quản trị ─────────
+  listBadgeProducts() {
+    return this.prisma.badgeProduct.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  createBadgeProduct(data: {
+    slug: string; name: string; description?: string; imageUrl: string;
+    priceCoin?: number | null; coinDays?: number | null;
+    priceGem?: number | null; gemDays?: number | null;
+    isActive?: boolean; sortOrder?: number;
+  }) {
+    if (!data.slug || !data.name || !data.imageUrl) throw new BadRequestException('Thiếu slug, tên hoặc ảnh badge');
+    if (data.priceCoin == null && data.priceGem == null) throw new BadRequestException('Phải có ít nhất 1 giá (Xu hoặc Gem)');
+    return this.prisma.badgeProduct.create({
+      data: {
+        slug: data.slug, name: data.name, description: data.description, imageUrl: data.imageUrl,
+        priceCoin: data.priceCoin ?? null, coinDays: data.coinDays ?? null,
+        priceGem: data.priceGem ?? null, gemDays: data.gemDays ?? null,
+        isActive: data.isActive ?? true, sortOrder: data.sortOrder ?? 0,
+      },
+    });
+  }
+
+  updateBadgeProduct(id: string, data: any) {
+    return this.prisma.badgeProduct.update({ where: { id }, data });
+  }
+
+  deleteBadgeProduct(id: string) {
+    return this.prisma.badgeProduct.delete({ where: { id } });
+  }
+
+  // ───────── Hiệu ứng tên (sản phẩm) — quản trị ─────────
+  listNameEffects() {
+    return this.prisma.nameEffectProduct.findMany({ orderBy: { sortOrder: 'asc' } });
+  }
+
+  createNameEffect(data: {
+    slug: string; name: string; description?: string; css: string;
+    priceCoin?: number | null; coinDays?: number | null;
+    priceGem?: number | null; gemDays?: number | null;
+    isActive?: boolean; sortOrder?: number;
+  }) {
+    if (!data.slug || !data.name || !data.css) throw new BadRequestException('Thiếu slug, tên hoặc CSS hiệu ứng');
+    if (data.priceCoin == null && data.priceGem == null) throw new BadRequestException('Phải có ít nhất 1 giá (Xu hoặc Gem)');
+    return this.prisma.nameEffectProduct.create({
+      data: {
+        slug: data.slug, name: data.name, description: data.description, css: data.css,
+        priceCoin: data.priceCoin ?? null, coinDays: data.coinDays ?? null,
+        priceGem: data.priceGem ?? null, gemDays: data.gemDays ?? null,
+        isActive: data.isActive ?? true, sortOrder: data.sortOrder ?? 0,
+      },
+    });
+  }
+
+  updateNameEffect(id: string, data: any) {
+    return this.prisma.nameEffectProduct.update({ where: { id }, data });
+  }
+
+  deleteNameEffect(id: string) {
+    return this.prisma.nameEffectProduct.delete({ where: { id } });
+  }
 }

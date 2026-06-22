@@ -7,21 +7,6 @@ import { CurrentUser } from '../../common/decorators/roles.decorator';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get('me/ai')
-  @UseGuards(JwtAuthGuard)
-  getAiSettings(@CurrentUser('id') userId: string) {
-    return this.usersService.getAiSettings(userId);
-  }
-
-  @Patch('me/ai')
-  @UseGuards(JwtAuthGuard)
-  updateAiSettings(
-    @CurrentUser('id') userId: string,
-    @Body() data: { provider?: string; model?: string; apiKey?: string; baseUrl?: string },
-  ) {
-    return this.usersService.updateAiSettings(userId, data);
-  }
-
   // Thư viện avatar công khai để user chọn ảnh đại diện
   @Get('avatars/library')
   avatarLibrary() {

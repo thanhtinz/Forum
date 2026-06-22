@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // CRUD chung cho các bảng template game (admin quản lý dữ liệu auto-seed).
-export type TemplateType = 'crop' | 'fish' | 'fishdepth' | 'fishingrod' | 'fishingboat' | 'fertilizer' | 'animal' | 'avatar' | 'gempackage' | 'consumable';
+export type TemplateType = 'crop' | 'fish' | 'fishdepth' | 'fishingrod' | 'fishingboat' | 'fertilizer' | 'animal' | 'gempackage' | 'consumable';
 
 const DELEGATE: Record<TemplateType, string> = {
   crop: 'cropTemplate',
@@ -12,7 +12,6 @@ const DELEGATE: Record<TemplateType, string> = {
   fishingboat: 'fishingBoat',
   fertilizer: 'fertilizerTemplate',
   animal: 'animalTemplate',
-  avatar: 'avatarItemTemplate',
   gempackage: 'gemPackage',
   consumable: 'consumableTemplate',
 };

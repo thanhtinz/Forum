@@ -232,8 +232,8 @@ export class ForumController {
 
   // ── Mod actions ──
   @Post('threads/:id/pin')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.MODERATOR)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('mod.lockThread')
   pin(@Param('id') id: string, @Body('pin') pin = true) {
     return this.forum.pinThread(id, pin);
   }
@@ -251,22 +251,22 @@ export class ForumController {
   }
 
   @Post('threads/:id/move')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.MODERATOR)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('mod.lockThread')
   move(@Param('id') id: string, @Body('categoryId') categoryId: string) {
     return this.forum.moveThread(id, categoryId);
   }
 
   @Post('threads/:id/merge')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.MODERATOR)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('mod.lockThread')
   merge(@Param('id') sourceId: string, @Body('targetId') targetId: string) {
     return this.forum.mergeThreads(sourceId, targetId);
   }
 
   @Post('threads/:id/split')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.MODERATOR)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('mod.lockThread')
   split(
     @Param('id') id: string,
     @CurrentUser('id') userId: string,

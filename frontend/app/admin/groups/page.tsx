@@ -4,7 +4,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { Plus, Trash2, Check } from 'lucide-react';
 
-interface Group { id: string; key: string; name: string; color?: string; priority: number; isSystem: boolean; permissions: string[]; autoPromote?: boolean; minPosts?: number; minReputation?: number; minDays?: number; _count?: { members: number } }
+interface Group { id: string; key: string; name: string; color?: string; priority: number; isSystem: boolean; permissions: string[]; autoPromote?: boolean; minPosts?: number; minReputation?: number; minDays?: number; _count?: { members: number }; memberCount?: number }
 interface CatItem { key: string; label: string; group: string }
 const COLORS = ['red', 'blue', 'amber', 'green', 'gray', 'violet'];
 
@@ -68,7 +68,7 @@ export default function AdminGroups() {
               {groups.map((g) => (
                 <th key={g.id} className="p-3 text-center">
                   <div className="font-semibold">{g.name}</div>
-                  <div className="text-[10px] font-normal text-ink-400">{g._count?.members ?? 0} TV{!g.isSystem && ' · phụ'}</div>
+                  <div className="text-[10px] font-normal text-ink-400">{g.memberCount ?? g._count?.members ?? 0} TV{!g.isSystem && ' · phụ'}</div>
                   {!g.isSystem && <button onClick={() => removeGroup(g.id)} className="mt-0.5 text-red-500" title="Xoá nhóm"><Trash2 size={12} /></button>}
                 </th>
               ))}

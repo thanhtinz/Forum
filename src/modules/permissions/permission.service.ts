@@ -82,10 +82,18 @@ export class PermissionService {
   listCatalog() { return { catalog: PERMISSION_CATALOG }; }
 
   async listGroups() {
-    return this.prisma.userGroup.findMany({
+    const groups = await this.prisma.userGroup.findMany({
       orderBy: { priority: 'asc' },
       include: { _count: { select: { members: true } } },
     });
+    // Nhóm hệ thống map theo User.role (ngầm định) → đếm thêm user theo role
+    const roleCounts = await this.prisma.user.groupBy({ by: ['role'], _count: { _all: true } });
+    const byRole: Record<string, number> = {};
+    roleCounts.forEach((r) => { byRole[String(r.role).toLowerCase()] = r._count._all; });
+    return groups.map((g) => ({
+      ...g,
+      memberCount: (g.isSystem ? (byRole[g.key] || 0) : 0) + (g._count?.members || 0),
+    }));
   }
 
   async createGroup(dto: any) {

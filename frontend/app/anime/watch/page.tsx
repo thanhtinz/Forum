@@ -8,32 +8,56 @@ import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
 
 const ytId = (u: string) => u.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/)?.[1] || null;
-const hlsProxy = (u: string) => `${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/anime/hls?u=${encodeURIComponent(u)}`;
+// Đưa link qua proxy server (gắn Referer đúng, thêm CORS) để vượt chặn hotlink
+const proxy = (u: string, ref?: string | null) =>
+  `${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/anime/hls?u=${encodeURIComponent(u)}${ref ? `&r=${encodeURIComponent(ref)}` : ''}`;
 
-function HlsVideo({ src: rawSrc }: { src: string }) {
+function PlayerError({ msg }: { msg: string }) {
+  return (
+    <div className="grid h-full place-items-center p-4 text-center text-white/80">
+      <div>
+        <p className="text-sm font-medium">Không phát được nguồn này</p>
+        <p className="mt-1 text-xs text-white/50">{msg}</p>
+        <p className="mt-2 text-xs text-white/50">Nguồn có thể chặn hotlink — admin thử đặt <b>Referer</b> cho tập, hoặc đổi nguồn khác.</p>
+      </div>
+    </div>
+  );
+}
+
+function HlsVideo({ src }: { src: string }) {
   const ref = useRef<HTMLVideoElement>(null);
-  const src = hlsProxy(rawSrc);
+  const [error, setError] = useState('');
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
-    if (video.canPlayType('application/vnd.apple.mpegurl')) { video.src = src; return; }
+    setError('');
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src;
+      const onErr = () => setError('Trình duyệt không tải được luồng (CORS/403).');
+      video.addEventListener('error', onErr);
+      return () => video.removeEventListener('error', onErr);
+    }
     let hls: any; let cancelled = false;
     import('hls.js').then(({ default: Hls }) => {
       if (cancelled) return;
-      if (Hls.isSupported()) { hls = new Hls(); hls.loadSource(src); hls.attachMedia(video); }
-      else { video.src = src; }
+      if (Hls.isSupported()) {
+        hls = new Hls({ maxBufferLength: 30 });
+        hls.loadSource(src); hls.attachMedia(video);
+        hls.on(Hls.Events.ERROR, (_e: any, data: any) => { if (data?.fatal) setError(`Lỗi tải luồng (${data.type || 'network'}).`); });
+      } else { video.src = src; }
     });
     return () => { cancelled = true; if (hls) hls.destroy(); };
   }, [src]);
+  if (error) return <PlayerError msg={error} />;
   return <video ref={ref} controls autoPlay className="h-full w-full" />;
 }
 
-function Player({ url }: { url: string }) {
+function Player({ url, referer }: { url: string; referer?: string | null }) {
   if (!url) return <div className="grid h-full place-items-center text-ink-400"><div className="text-center"><Play size={40} className="mx-auto opacity-50" /><p className="mt-2 text-sm">Tập này chưa có link xem</p></div></div>;
   const yt = ytId(url);
   if (yt) return <iframe src={`https://www.youtube.com/embed/${yt}?autoplay=1`} className="h-full w-full" allowFullScreen title="Player" />;
-  if (/\.m3u8(\?|$)/i.test(url)) return <HlsVideo src={url} />;
-  if (/\.(mp4|webm)(\?|$)/i.test(url)) return <video src={url} controls autoPlay className="h-full w-full" />;
+  if (/\.m3u8(\?|$)/i.test(url)) return <HlsVideo src={proxy(url, referer)} />;
+  if (/\.(mp4|webm)(\?|$)/i.test(url)) return <video src={proxy(url, referer)} controls autoPlay className="h-full w-full" />;
   return <iframe src={url} className="h-full w-full" allowFullScreen title="Player" />;
 }
 
@@ -103,7 +127,7 @@ function Watch() {
 
       {/* Player */}
       <div className="overflow-hidden rounded-xl bg-black shadow-card">
-        <div className="aspect-video w-full"><Player url={ep.videoUrl || ''} /></div>
+        <div className="aspect-video w-full"><Player url={ep.videoUrl || ''} referer={ep.referer} /></div>
         {/* Thanh hành động */}
         <div className="grid grid-cols-4 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
           <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-1 py-3 text-xs hover:bg-white/5">

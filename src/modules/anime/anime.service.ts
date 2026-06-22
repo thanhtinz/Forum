@@ -284,7 +284,7 @@ export class AnimeService {
       where: { id },
       include: {
         genres: { select: { name: true } },
-        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, videoUrl: true, thumbnail: true, duration: true } },
+        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, videoUrl: true, thumbnail: true, duration: true, referer: true } },
         chapterList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, content: true, pages: true } },
       },
     });
@@ -314,7 +314,7 @@ export class AnimeService {
       return await this.prisma.episode.create({
         data: {
           mediaId, number, title: dto.title || null,
-          videoUrl: dto.videoUrl || null, thumbnail: dto.thumbnail || null,
+          videoUrl: dto.videoUrl || null, thumbnail: dto.thumbnail || null, referer: dto.referer || null,
           duration: dto.duration ? Number(dto.duration) : null,
         },
       });
@@ -326,7 +326,7 @@ export class AnimeService {
   async updateEpisode(id: string, dto: any) {
     const data: any = {};
     if (dto.number != null && dto.number !== '') { const n = this.parseNum(dto.number); if (n != null) data.number = n; }
-    for (const k of ['title', 'videoUrl', 'thumbnail']) if (dto[k] !== undefined) data[k] = dto[k] || null;
+    for (const k of ['title', 'videoUrl', 'thumbnail', 'referer']) if (dto[k] !== undefined) data[k] = dto[k] || null;
     if (dto.duration !== undefined) data.duration = dto.duration ? Number(dto.duration) : null;
     return this.prisma.episode.update({ where: { id }, data });
   }

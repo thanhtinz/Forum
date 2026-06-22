@@ -2854,6 +2854,7 @@ model Episode {
   title     String?   @db.VarChar(200)
   thumbnail String?   @db.VarChar(255)
   videoUrl  String?   @db.VarChar(500) // link embed/video
+  referer   String?   @db.VarChar(255) // Referer gửi kèm khi proxy (nếu nguồn chặn hotlink)
   duration  Int? // phút
   airedAt   DateTime?
   createdAt DateTime  @default(now())

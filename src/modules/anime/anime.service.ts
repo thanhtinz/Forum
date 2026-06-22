@@ -384,7 +384,19 @@ export class AnimeService {
     return { iframes: [...iframes], media: [...media] };
   }
 
-  async extractEmbed(input: string): Promise<{ candidates: { url: string; referer?: string }[] }> {
+  // Kiểm tra nhanh link video còn sống không (trả status; 200/206 = ổn)
+  private async probe(url: string, referer?: string): Promise<number | null> {
+    try {
+      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8000);
+      const h: Record<string, string> = { 'User-Agent': BROWSER_UA, Accept: '*/*', Range: 'bytes=0-1' };
+      if (referer) { h.Referer = referer; try { h.Origin = new URL(referer).origin; } catch {} }
+      const res = await fetch(url, { signal: ctrl.signal, headers: h, redirect: 'follow' });
+      clearTimeout(t);
+      return res.status;
+    } catch { return null; }
+  }
+
+  async extractEmbed(input: string): Promise<{ candidates: { url: string; referer?: string; status?: number | null }[] }> {
     const raw = (input || '').trim();
     if (!raw) throw new BadRequestException('Nhập link hoặc mã nhúng');
     const media = new Set<string>();
@@ -428,9 +440,14 @@ export class AnimeService {
     }
 
     // Ưu tiên link video trực tiếp (.m3u8/.mp4) kèm Referer gợi ý; rồi mới tới embed
+    const mediaList = [...media].slice(0, 6);
+    // Kiểm tra link video còn sống không (song song) để loại link 404/chết
+    const probed = await Promise.all(mediaList.map(async (url) => ({ url, referer: refOf.get(url), status: await this.probe(url, refOf.get(url)) })));
+    // Link sống (2xx) lên đầu, link chết (vd 404) xuống cuối kèm status để admin biết
+    probed.sort((a, b) => Number(b.status && b.status < 400) - Number(a.status && a.status < 400));
     const candidates = [
-      ...[...media].map((url) => ({ url, referer: refOf.get(url) })),
-      ...[...embeds].map((url) => ({ url })),
+      ...probed,
+      ...[...embeds].map((url) => ({ url, referer: undefined as string | undefined, status: undefined as number | null | undefined })),
     ].filter((c) => /^https?:\/\//i.test(c.url)).slice(0, 12);
     if (!candidates.length) throw new BadRequestException('Không tìm thấy link nhúng. Hãy dán trực tiếp mã <iframe …> từ nguồn.');
     return { candidates };

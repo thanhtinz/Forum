@@ -51,10 +51,21 @@ export default function AdminVip() {
     if (!confirm(`Xoá mốc "${t.name}"?`)) return;
     try { await api.post(`/admin/vip/${t.id}/delete`); load(); } catch (e: any) { setErr(e.message); }
   }
+  async function recomputeAll() {
+    setErr(''); setMsg('');
+    if (!confirm('Tính lại VIP cho toàn bộ user theo gem nạp tích lũy? Áp dụng ngay.')) return;
+    try {
+      const r = await api.post<{ scanned: number; updated: number }>('/admin/vip/recompute-all');
+      setMsg(`Đã tính lại VIP: quét ${r.scanned} user, cập nhật ${r.updated} user ✓`);
+    } catch (e: any) { setErr(e.message); }
+  }
 
   return (
     <div className="space-y-6">
       <PageHeader icon={<Crown size={20} />} title="Hệ thống VIP" desc="Tạo mốc theo gem nạp tích lũy. User đạt mốc tự nhận badge + khung avatar VIP. (Không seed — admin tự tạo.)" />
+      <div className="flex justify-end">
+        <Btn variant="outline" onClick={recomputeAll}>Tính lại VIP toàn bộ</Btn>
+      </div>
       {err && <Notice kind="error">{err}</Notice>}
       {msg && <Notice kind="success">{msg}</Notice>}
 

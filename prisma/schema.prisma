@@ -2453,6 +2453,23 @@ model VipTier {
   createdAt   DateTime @default(now())
 }
 
+// Mỗi mốc VIP user đã đạt — giữ vĩnh viễn badge + khung, không mất khi nạp thêm.
+// User tự bật/tắt badge/khung từ kho.
+model UserVipReward {
+  id       String   @id @default(cuid())
+  userId   String
+  tierId   String
+  tierName String   @db.VarChar(80)
+  badgeUrl String?  @db.VarChar(255)
+  frameUrl String?  @db.VarChar(255)
+  color    String?  @db.VarChar(20)
+  gemRequired Int    @default(0)
+  earnedAt DateTime @default(now())
+
+  @@unique([userId, tierId])
+  @@index([userId])
+}
+
 model AdBanner {
   id        String    @id @default(cuid())
   title     String    @db.VarChar(150)

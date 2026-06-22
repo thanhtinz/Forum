@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BlockService } from '../profile-extra/block.service';
+import { sanitizeRichHtml } from '../../common/html.util';
 import { NotifType, UserRole } from '@prisma/client';
 
 const AUTHOR_CARD = {
@@ -26,9 +27,9 @@ export class ProfilePostService {
   ) {}
 
   async create(authorId: string, wallId: string, content: string) {
-    const text = (content || '').trim();
-    if (!text) throw new BadRequestException('Nội dung không được để trống');
-    if (text.length > 2000) throw new BadRequestException('Nội dung tối đa 2000 ký tự');
+    const text = sanitizeRichHtml((content || '').trim());
+    if (!text || !text.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim()) throw new BadRequestException('Nội dung không được để trống');
+    if (text.length > 8000) throw new BadRequestException('Nội dung quá dài');
 
     const wall = await this.prisma.user.findUnique({
       where: { id: wallId },

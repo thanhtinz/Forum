@@ -2,11 +2,13 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck, CalendarDays, ChevronLeft } from 'lucide-react';
+import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
+import { interceptExternalLink } from '@/lib/externalLink';
 import { Avatar } from '@/components/Header';
 import { useAuth } from '@/components/AuthProvider';
+import TipTapEditor from '@/components/TipTapEditor';
 import { UserBadges, type BadgeDescriptor } from '@/components/UserBadges';
 
 function ProfileView() {
@@ -137,6 +139,9 @@ function ProfileView() {
                 {t.label}
               </button>
             ))}
+            <button onClick={() => history.forward()} className="ml-auto shrink-0 px-2 py-3 text-ink-400 hover:text-brand-600" title="Tiến tới">
+              <ChevronRight size={20} />
+            </button>
           </div>
         </div>
 
@@ -186,6 +191,7 @@ function ProfileView() {
 function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean }) {
   const [posts, setPosts] = useState<any[]>([]);
   const [content, setContent] = useState('');
+  const [editorKey, setEditorKey] = useState(0);
   const [busy, setBusy] = useState(false);
 
   function load() {
@@ -193,12 +199,14 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
   }
   useEffect(() => { if (wallId) load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [wallId]);
 
+  const isEmpty = !content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim();
+
   async function post() {
-    if (!content.trim()) return;
+    if (isEmpty) return;
     setBusy(true);
     try {
-      await api.post(`/social/wall/${wallId}`, { content: content.trim() });
-      setContent('');
+      await api.post(`/social/wall/${wallId}`, { content });
+      setContent(''); setEditorKey((k) => k + 1);
       load();
     } catch (e: any) { alert(e.message); } finally { setBusy(false); }
   }
@@ -207,9 +215,9 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
     <div className="space-y-4">
       {canPost && (
         <div className="card p-4">
-          <textarea className="input w-full" rows={2} placeholder="Viết gì đó lên tường…" value={content} onChange={(e) => setContent(e.target.value)} maxLength={1000} />
+          <TipTapEditor key={editorKey} value={content} onChange={setContent} placeholder="Viết gì đó lên tường…" />
           <div className="mt-2 flex justify-end">
-            <button className="btn-primary !py-1.5 text-sm" onClick={post} disabled={busy || !content.trim()}>{busy ? 'Đang đăng…' : 'Đăng'}</button>
+            <button className="btn-primary !py-1.5 text-sm" onClick={post} disabled={busy || isEmpty}>{busy ? 'Đang đăng…' : 'Đăng'}</button>
           </div>
         </div>
       )}
@@ -227,7 +235,7 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
                     <a href={`/profile?u=${p.author?.username}`} className="font-semibold hover:text-brand-600">{p.author?.displayName || p.author?.username}</a>
                     <span className="ml-2 text-xs text-ink-400">{p.createdAt ? new Date(p.createdAt).toLocaleString('vi') : ''}</span>
                   </div>
-                  <p className="mt-0.5 whitespace-pre-wrap break-words text-sm text-ink-700 dark:text-ink-200">{p.content}</p>
+                  <div className="prose prose-sm mt-0.5 max-w-none break-words dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: p.content }} />
                   {p.comments?.length > 0 && (
                     <ul className="mt-2 space-y-1.5 border-l-2 border-ink-100 pl-3 dark:border-ink-800">
                       {p.comments.map((c: any) => (

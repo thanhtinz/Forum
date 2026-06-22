@@ -43,19 +43,15 @@ async function main() {
   if (!personaExists) {
     await prisma.aiPersona.create({
       data: {
-        name: 'Minori',
-        systemPrompt: `Bạn là Minori, một trợ lý AI anime dễ thương và thân thiện của diễn đàn.
-Bạn nói tiếng Việt, vui vẻ, hay giúp đỡ thành viên về các vấn đề kỹ thuật, lập trình, game.
-Tính cách: năng động, đáng yêu, đôi khi nghịch ngợm nhưng luôn nhiệt tình giúp đỡ.`,
+        name: 'Trợ lý AI',
+        systemPrompt: `Bạn là trợ lý AI của diễn đàn. Trả lời bằng tiếng Việt, ngắn gọn, hữu ích, lịch sự.`,
         provider: 'GEMINI',
         modelId: 'gemini-2.0-flash',
-        greetingText: 'Xin chào! Mình là Minori~ Có gì mình giúp được không nè? 🌸',
-        live2dModel: '/models/minori/normal/05minori_normal_3.0_f_t05.model3.json',
         isDefault: true,
         isActive: true,
       },
     });
-    console.log('✓ Default AI persona (Neko-chan)');
+    console.log('✓ Default AI persona');
   }
 
   // ── Badges ──

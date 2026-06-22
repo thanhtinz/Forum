@@ -1,18 +1,14 @@
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
-import { AiCompanionService } from './ai-companion.service';
-import { AiCompanionController } from './ai-companion.controller';
 import { AiProviderService } from './ai-provider.service';
-import { EmotionService } from './emotion.service';
-import { AiGateway } from './ai.gateway';
-import { OutfitService } from './outfit.service';
 import { AiWritingService } from './ai-writing.service';
 import { AiWritingController } from './ai-writing.controller';
 
+// Tính năng "AI companion" (chat Live2D, bond, outfit) đã gỡ bỏ.
+// Module này chỉ còn giữ tiện ích AI dùng chung: nhà cung cấp AI + trợ lý viết bài
+// (dùng bởi diễn đàn, công cụ, bói toán…).
 @Module({
-  imports: [JwtModule.register({})],
-  controllers: [AiCompanionController, AiWritingController],
-  providers: [AiCompanionService, AiProviderService, EmotionService, AiGateway, OutfitService, AiWritingService],
-  exports: [AiCompanionService, OutfitService, AiProviderService],
+  controllers: [AiWritingController],
+  providers: [AiProviderService, AiWritingService],
+  exports: [AiProviderService],
 })
 export class AiCompanionModule {}

@@ -122,7 +122,7 @@ function Player(props: PlayerProps) {
 }
 
 interface CommentT { id: string; content: string; createdAt: string; authorId: string; author: { id: string; username: string; displayName?: string | null; avatar?: string | null } }
-interface ServerT { id: string; name: string; videoUrl: string; referer?: string | null }
+interface ServerT { id: string; name: string; videoUrl: string; referer?: string | null; introEnd?: number | null }
 
 function Watch() {
   const id = useSearchParams().get('ep') || '';
@@ -203,7 +203,7 @@ function Watch() {
       {/* Player */}
       <div className="overflow-hidden rounded-xl bg-black shadow-card">
         <div className="aspect-video w-full">
-          <Player url={cur?.videoUrl || ''} referer={cur?.referer} introEnd={ep.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
+          <Player url={cur?.videoUrl || ''} referer={cur?.referer} introEnd={cur?.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
         </div>
         {/* Thanh hành động */}
         <div className="grid grid-cols-5 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
@@ -225,10 +225,10 @@ function Watch() {
               <span onClick={toggleAutoNext} className={`relative h-6 w-11 rounded-full transition ${autoNext ? 'bg-brand-500' : 'bg-white/20'}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${autoNext ? 'left-[22px]' : 'left-0.5'}`} /></span>
             </label>
             <label className="flex cursor-pointer items-center justify-between text-sm">
-              <span>Bỏ qua đoạn đầu {ep.introEnd ? `(0s–${ep.introEnd}s)` : '(tập này chưa đặt)'}</span>
+              <span>Bỏ qua đoạn đầu {cur?.introEnd ? `(0s–${cur.introEnd}s)` : '(server này chưa đặt)'}</span>
               <span onClick={toggleSkipIntro} className={`relative h-6 w-11 rounded-full transition ${skipIntro ? 'bg-brand-500' : 'bg-white/20'}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${skipIntro ? 'left-[22px]' : 'left-0.5'}`} /></span>
             </label>
-            {!ep.introEnd && <p className="text-xs text-white/40">Admin cần đặt "Bỏ intro (giây)" cho riêng tập này thì tính năng mới hoạt động.</p>}
+            {!cur?.introEnd && <p className="text-xs text-white/40">Admin cần đặt "Bỏ intro (giây)" cho server này thì tính năng mới hoạt động (chỉ áp link m3u8/mp4, không áp iframe).</p>}
           </div>
         )}
       </div>

@@ -22,13 +22,12 @@ const RATINGS = [
   { v: 1, label: 'Thảm họa', cp: '1f92e' }, // 🤮
 ];
 
-function PlayerError({ msg }: { msg: string }) {
+function PlayerError(_props: { msg?: string }) {
   return (
     <div className="grid h-full place-items-center p-4 text-center text-white/80">
       <div>
-        <p className="text-sm font-medium">Không phát được nguồn này</p>
-        <p className="mt-1 text-xs text-white/50">{msg}</p>
-        <p className="mt-2 text-xs text-white/50">Thử đổi <b>server</b> bên dưới, hoặc admin đặt <b>Referer</b> cho tập.</p>
+        <p className="text-sm font-medium">Video không thể phát ngay lúc này</p>
+        <p className="mt-1 text-xs text-white/50">Vui lòng đổi <b>server</b> bên dưới.</p>
       </div>
     </div>
   );

@@ -234,6 +234,7 @@ model User {
   vipTierName     String? // tên mốc VIP hiện tại (đạt theo gem nạp tích lũy)
   vipBadgeUrl     String? // ảnh badge VIP (denormalized để hiển thị)
   vipFrameUrl     String? // ảnh khung VIP user được dùng (nằm trong kho khung, bật/tắt được)
+  hiddenBadges    String[] @default([]) // key các huy hiệu user chọn ẩn (role/verify/level/milestone)
   bio             String?    @db.Text
   role            UserRole   @default(MEMBER)
   status          UserStatus @default(ACTIVE)

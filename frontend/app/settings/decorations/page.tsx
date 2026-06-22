@@ -1,19 +1,24 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Image as ImageIcon } from 'lucide-react';
+import { Check, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
+import { BadgeIcon } from '@/lib/icons';
 
 interface OwnedFrame { id: string; frameId: string; name: string; imageUrl: string; expiresAt: string | null; expired: boolean; equipped: boolean }
 interface VipReward { tierId: string; tierName: string; badgeUrl: string | null; frameUrl: string | null; color: string | null; gemRequired: number; badgeEquipped: boolean }
+interface ManageBadge { key: string; label: string; icon: string; color: string; kind: string; description?: string; hidden: boolean }
+
+const KIND_LABEL: Record<string, string> = { role: 'Vai trò', verify: 'Xác minh', level: 'Cấp độ', milestone: 'Thành tích', seller: 'Người bán' };
 
 export default function DecorationsSettings() {
   const { user, loading: authLoading } = useAuth();
   const [avatar, setAvatar] = useState('');
   const [frames, setFrames] = useState<OwnedFrame[]>([]);
   const [vipRewards, setVipRewards] = useState<VipReward[]>([]);
+  const [allBadges, setAllBadges] = useState<ManageBadge[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -25,7 +30,20 @@ export default function DecorationsSettings() {
   function loadVipRewards() {
     api.get<VipReward[]>('/vip/my-rewards').then(setVipRewards).catch(() => {});
   }
-  useEffect(() => { loadFrames(); loadVipRewards(); }, []);
+  function loadBadges() {
+    api.get<ManageBadge[]>('/badges/me/manage').then(setAllBadges).catch(() => {});
+  }
+  useEffect(() => { loadFrames(); loadVipRewards(); loadBadges(); }, []);
+
+  async function toggleBadge(b: ManageBadge) {
+    setBusy(true); setMsg('');
+    const hidden = !b.hidden;
+    try {
+      await api.post('/badges/me/visibility', { key: b.key, hidden });
+      setAllBadges((list) => list.map((x) => (x.key === b.key ? { ...x, hidden } : x)));
+      setMsg(hidden ? 'Đã ẩn huy hiệu.' : 'Đã hiện huy hiệu.');
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  }
 
   async function equipBadge(tierId: string | null) {
     setBusy(true); setMsg('');
@@ -82,6 +100,32 @@ export default function DecorationsSettings() {
           </div>
         )}
       </div>
+
+      {/* Tất cả huy hiệu — bật/tắt hiển thị cạnh tên */}
+      {allBadges.length > 0 && (
+        <div className="card space-y-3 p-5">
+          <div>
+            <h2 className="font-semibold">Huy hiệu của tôi</h2>
+            <p className="text-sm text-ink-500">Toàn bộ huy hiệu bạn đang có (vai trò, xác minh, cấp độ, thành tích). Bấm để ẩn/hiện cạnh tên.</p>
+          </div>
+          <div className="flex flex-wrap gap-2.5">
+            {allBadges.map((b) => {
+              const hex = typeof b.color === 'string' && b.color.startsWith('#');
+              return (
+                <button key={b.key} onClick={() => toggleBadge(b)} disabled={busy}
+                  title={`${b.label}${b.description ? ` — ${b.description}` : ''} · ${KIND_LABEL[b.kind] || b.kind}`}
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:opacity-50 ${b.hidden ? 'border-dashed border-ink-300 text-ink-400 dark:border-ink-700' : 'border-brand-400 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300'}`}>
+                  {hex
+                    ? <span style={{ color: b.color }}><BadgeIcon icon={b.icon} size={14} /></span>
+                    : <BadgeIcon icon={b.icon} size={14} />}
+                  <span className={b.hidden ? 'line-through' : ''}>{b.label}</span>
+                  {b.hidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Kho huy hiệu VIP — bật/tắt badge đã nhận */}
       {vipRewards.length > 0 && (

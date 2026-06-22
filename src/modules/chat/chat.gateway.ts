@@ -99,6 +99,23 @@ export class ChatGateway implements OnGatewayConnection {
     }
   }
 
+  // Ghim / bỏ ghim tin nhắn (admin/mod) → báo cả phòng tin đang ghim
+  @SubscribeMessage('pinMessage')
+  async handlePin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { messageId: string; channelId: string; pinned: boolean },
+  ) {
+    const userId = this.socketUsers.get(client.id);
+    if (!userId) return client.emit('error', { message: 'Chưa xác thực' });
+    try {
+      const res = await this.chat.pinMessage(userId, data.messageId, data.pinned);
+      const pinned = await this.chat.getPinned(res.channelId);
+      this.server.to(`channel:${res.channelId}`).emit('messagePinned', { channelId: res.channelId, pinned });
+    } catch (err: any) {
+      client.emit('error', { message: err.message });
+    }
+  }
+
   // Xoá toàn bộ kênh (reset) — admin/mod
   @SubscribeMessage('clearChannel')
   async handleClear(

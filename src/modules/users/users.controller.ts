@@ -44,7 +44,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   updateProfile(
     @CurrentUser('id') userId: string,
-    @Body() data: { displayName?: string; bio?: string; avatar?: string; location?: string; birthday?: string | null; showBirthday?: boolean },
+    @Body() data: { displayName?: string; bio?: string; avatar?: string; location?: string; birthday?: string | null; showBirthday?: boolean; birthdayFormat?: string },
   ) {
     return this.usersService.updateProfile(userId, data);
   }

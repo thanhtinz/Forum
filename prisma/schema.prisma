@@ -166,12 +166,6 @@ enum AiProvider {
   OLLAMA
 }
 
-enum AiMessageRole {
-  USER
-  ASSISTANT
-  SYSTEM
-}
-
 // ============================================================
 // USERS
 // ============================================================
@@ -230,7 +224,6 @@ model User {
   badges          UserBadge[]
   warnHistory     UserWarning[]         @relation("WarnedUser")
   warnedBy        UserWarning[]         @relation("WarnedByUser")
-  aiSessions      AiSession[]
   hiddenUnlocks   HiddenContentUnlock[]
   scamReports     ScamReport[]          @relation("ScamReporter")
   scamReported    ScamReport[]          @relation("ScamReported")
@@ -238,8 +231,6 @@ model User {
   friendOf        Friendship[]          @relation("FriendOf")
   followedTags    UserTagFollow[]
 
-  aiBonds              AiBond[]
-  aiOutfitUnlocks      AiOutfitUnlock[]
   gameCharacter        GameCharacter?
   prisonRecords        Prison[]              @relation("UserPrison")
   fortuneRecords       FortuneRecord[]       @relation("UserFortune")
@@ -1012,7 +1003,6 @@ model Notification {
 
 model AiPersona {
   id           String     @id @default(cuid())
-  characterId  String?
   userId       String? // null = persona toàn cục (admin); có giá trị = persona riêng của user
   name         String     @db.VarChar(100)
   personality  String?    @db.Text // tính cách thô do user nhập (để sửa lại)
@@ -1020,47 +1010,14 @@ model AiPersona {
   provider     AiProvider @default(GEMINI)
   modelId      String     @db.VarChar(100)
   greetingText String?    @db.Text
-  live2dModel  String?    @db.VarChar(255)
   isDefault    Boolean    @default(false)
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
-  character AiCharacter? @relation(fields: [characterId], references: [id])
-  user      User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sessions  AiSession[]
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-}
-
-model AiSession {
-  id        String   @id @default(cuid())
-  userId    String
-  personaId String
-  title     String?  @db.VarChar(255)
-  context   Json?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  persona  AiPersona   @relation(fields: [personaId], references: [id])
-  messages AiMessage[]
-
-  @@index([userId])
-}
-
-model AiMessage {
-  id        String        @id @default(cuid())
-  sessionId String
-  role      AiMessageRole
-  content   String        @db.Text
-  emotion   String?       @db.VarChar(30)
-  tokens    Int?
-  createdAt DateTime      @default(now())
-
-  session AiSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@index([sessionId])
 }
 
 // ============================================================
@@ -1273,78 +1230,6 @@ model AuditLog {
 // ============================================================
 // AI COMPANION — OUTFIT & BONDING SYSTEM
 // ============================================================
-
-model AiCharacter {
-  id            String   @id @default(cuid())
-  slug          String   @unique @db.VarChar(60)
-  name          String   @db.VarChar(100)
-  description   String?  @db.Text
-  defaultOutfit String   @db.VarChar(60)
-  emotionMap    Json // emotion → motion names
-  isActive      Boolean  @default(true)
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  outfits  AiOutfit[]
-  bonds    AiBond[]
-  personas AiPersona[]
-}
-
-model AiOutfit {
-  id              String   @id @default(cuid())
-  characterId     String
-  slug            String   @db.VarChar(60)
-  name            String   @db.VarChar(100)
-  nameEn          String?  @db.VarChar(100)
-  modelPath       String   @db.VarChar(255)
-  thumbnail       String?  @db.VarChar(255)
-  description     String?  @db.Text
-  unlockBondLevel Int      @default(0)
-  rarity          String   @default("common") @db.VarChar(20) // common|rare|legendary
-  isDefault       Boolean  @default(false)
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
-
-  character AiCharacter      @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  unlocks   AiOutfitUnlock[]
-
-  @@unique([characterId, slug])
-  @@index([characterId])
-}
-
-// Thiện cảm/bond giữa user và character
-model AiBond {
-  id             String   @id @default(cuid())
-  userId         String
-  characterId    String
-  bondLevel      Int      @default(0)
-  bondPoints     Int      @default(0) // tích lũy → lên level
-  totalMessages  Int      @default(0)
-  currentOutfit  String   @db.VarChar(60) // outfit đang chọn
-  lastInteractAt DateTime @default(now())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  character AiCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, characterId])
-  @@index([userId])
-}
-
-model AiOutfitUnlock {
-  id         String   @id @default(cuid())
-  userId     String
-  outfitId   String
-  unlockedAt DateTime @default(now())
-
-  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  outfit AiOutfit @relation(fields: [outfitId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, outfitId])
-  @@index([userId])
-}
 
 // ============================================================
 // TOOLS SYSTEM

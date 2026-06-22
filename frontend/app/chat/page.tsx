@@ -143,7 +143,7 @@ export default function ChatPage() {
               </button>
               {c.type !== 'GLOBAL' && (
                 <button onClick={() => togglePinChannel(c.id, !c.pinned)} title={c.pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
-                  className={`shrink-0 ${c.pinned ? 'text-amber-500' : 'text-ink-300 opacity-0 group-hover:opacity-100'}`}>
+                  className={`shrink-0 p-1 ${c.pinned ? 'text-amber-500' : 'text-ink-300 sm:opacity-0 sm:group-hover:opacity-100'}`}>
                   {c.pinned ? <PinOff size={15} /> : <Pin size={15} />}
                 </button>
               )}

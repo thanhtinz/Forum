@@ -81,7 +81,7 @@ function ProfileView() {
           {profile.vipBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={profile.vipBadgeUrl} alt={profile.vipTierName || 'VIP'} title={profile.vipTierName || 'VIP'} className="h-9 w-9 object-contain" />}
           <span>{profile.displayName || profile.username}</span>
         </h1>
-        <p className="text-sm text-ink-500">@{profile.username}{profile.vipTierName ? ` · ${profile.vipTierName}` : ''}</p>
+        <p className="text-sm text-ink-500">@{profile.username}</p>
         {badges.length > 0 && (
           <div className="mt-2 flex justify-center"><UserBadges badges={badges} /></div>
         )}

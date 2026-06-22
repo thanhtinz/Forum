@@ -95,6 +95,32 @@ export default function AvatarSettings() {
         </button>
       </div>
 
+      {/* Kho khung avatar — bật/tắt khung đã mua (đưa lên trên cho dễ thấy) */}
+      <div className="card space-y-3 p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">Khung avatar của tôi</h2>
+            <p className="text-sm text-ink-500">Bấm vào khung để bật; bấm lại để tắt. Mua thêm ở <a href="/game/shop?tab=frame" className="text-brand-600 hover:underline">Cửa hàng</a>.</p>
+          </div>
+        </div>
+        {frames.length === 0 ? (
+          <p className="text-sm text-ink-500">Bạn chưa có khung nào. Ghé <a href="/game/shop?tab=frame" className="text-brand-600 hover:underline">Cửa hàng → Khung avatar</a>.</p>
+        ) : (
+          <div className="flex flex-wrap gap-3">
+            {frames.map((f) => (
+              <button key={f.id} onClick={() => !f.expired && equipFrame(f.equipped ? null : f.frameId)} disabled={busy || f.expired}
+                title={f.equipped ? 'Bấm để tắt khung' : f.name}
+                className={`relative flex w-24 flex-col items-center gap-1 rounded-xl border-2 p-2 transition disabled:opacity-50 ${f.equipped ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
+                <Avatar user={{ username: user.username, avatar, avatarFrameUrl: f.imageUrl }} size={56} />
+                <span className="line-clamp-1 text-xs font-medium">{f.name}</span>
+                <span className="text-[10px] text-ink-400">{f.expired ? 'Hết hạn' : f.expiresAt ? `Đến ${new Date(f.expiresAt).toLocaleDateString('vi')}` : 'Vĩnh viễn'}</span>
+                {f.equipped && <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-brand-600 text-white"><Check size={12} /></span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Thư viện avatar có sẵn — mỗi pack một tab */}
       {hasLibrary && (() => {
         const libPacks = packs.filter((p) => p.avatars.length > 0);
@@ -132,33 +158,6 @@ export default function AvatarSettings() {
           </div>
         );
       })()}
-
-      {/* Kho khung avatar — bật/tắt khung đã mua */}
-      <div className="card space-y-3 p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-semibold">Khung avatar của tôi</h2>
-            <p className="text-sm text-ink-500">Bật/tắt khung đã mua. Mua thêm ở <a href="/game/shop?tab=frame" className="text-brand-600 hover:underline">Cửa hàng</a>.</p>
-          </div>
-          {frameUrl && <button onClick={() => equipFrame(null)} disabled={busy} className="btn-outline !py-1.5 text-xs">Tắt khung</button>}
-        </div>
-        {frames.length === 0 ? (
-          <p className="text-sm text-ink-500">Bạn chưa có khung nào. Ghé <a href="/game/shop?tab=frame" className="text-brand-600 hover:underline">Cửa hàng → Khung avatar</a>.</p>
-        ) : (
-          <div className="flex flex-wrap gap-3">
-            {frames.map((f) => (
-              <button key={f.id} onClick={() => !f.expired && equipFrame(f.frameId)} disabled={busy || f.expired}
-                title={f.name}
-                className={`relative flex w-24 flex-col items-center gap-1 rounded-xl border-2 p-2 transition disabled:opacity-50 ${f.equipped ? 'border-brand-600 ring-2 ring-brand-300' : 'border-ink-200 hover:border-brand-400 dark:border-ink-700'}`}>
-                <Avatar user={{ username: user.username, avatar, avatarFrameUrl: f.imageUrl }} size={56} />
-                <span className="line-clamp-1 text-xs font-medium">{f.name}</span>
-                <span className="text-[10px] text-ink-400">{f.expired ? 'Hết hạn' : f.expiresAt ? `Đến ${new Date(f.expiresAt).toLocaleDateString('vi')}` : 'Vĩnh viễn'}</span>
-                {f.equipped && <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-brand-600 text-white"><Check size={12} /></span>}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }

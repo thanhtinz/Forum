@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen } from 'lucide-react';
+import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen, Loader2, Link as LinkIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
@@ -78,14 +78,43 @@ function EditInner() {
 
 function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: string; episodes: Ep[]; onChange: () => void; setErr: (s: string) => void }) {
   const [add, setAdd] = useState({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '' });
+  const [embedInput, setEmbedInput] = useState('');
+  const [embedBusy, setEmbedBusy] = useState(false);
+  const [embedCands, setEmbedCands] = useState<string[]>([]);
   async function create() {
     if (!add.number) { setErr('Nhập số tập'); return; }
     try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '' }); onChange(); }
     catch (e: any) { setErr(e.message); }
   }
+  async function getEmbed() {
+    if (!embedInput.trim()) return;
+    setEmbedBusy(true); setErr(''); setEmbedCands([]);
+    try {
+      const r = await api.post<{ candidates: string[] }>('/admin/anime/extract-embed', { input: embedInput });
+      setEmbedCands(r.candidates);
+      if (r.candidates[0]) setAdd((s) => ({ ...s, videoUrl: r.candidates[0] }));
+    } catch (e: any) { setErr(e.message); } finally { setEmbedBusy(false); }
+  }
   return (
     <Card className="space-y-3">
       <SectionTitle hint="Mỗi tập có link xem (embed YouTube/iframe/mp4).">Tập phim ({episodes.length})</SectionTitle>
+
+      <div className="rounded-lg border border-dashed border-ink-300 p-3 dark:border-ink-600">
+        <p className="mb-1.5 text-xs font-medium text-ink-500">Lấy embed tự động — dán link trang tập (vd: vuighe.live/…) hoặc dán nguyên mã &lt;iframe&gt;</p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input className="input flex-1" placeholder="https://vuighe.live/… hoặc <iframe src=…>" value={embedInput} onChange={(e) => setEmbedInput(e.target.value)} />
+          <Btn onClick={getEmbed} disabled={embedBusy}>{embedBusy ? <Loader2 size={15} className="animate-spin" /> : <><LinkIcon size={15} /> Lấy embed</>}</Btn>
+        </div>
+        {embedCands.length > 0 && (
+          <div className="mt-2 space-y-1">
+            {embedCands.map((c) => (
+              <button key={c} onClick={() => setAdd((s) => ({ ...s, videoUrl: c }))}
+                className={`block w-full truncate rounded px-2 py-1 text-left text-xs ${add.videoUrl === c ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300' : 'bg-ink-100 dark:bg-ink-800'}`}>{c}</button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-6">
         <input className="input sm:col-span-1" placeholder="Tập #" value={add.number} onChange={(e) => setAdd({ ...add, number: e.target.value })} />
         <input className="input sm:col-span-2" placeholder="Tiêu đề" value={add.title} onChange={(e) => setAdd({ ...add, title: e.target.value })} />

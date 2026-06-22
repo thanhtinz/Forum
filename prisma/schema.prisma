@@ -173,6 +173,7 @@ enum AiProvider {
 model User {
   id               String           @id @default(cuid())
   mediaListEntries MediaListEntry[]
+  episodeComments  EpisodeComment[]
   username         String           @unique @db.VarChar(50)
   email            String           @unique @db.VarChar(255)
   passwordHash     String?
@@ -2857,10 +2858,24 @@ model Episode {
   airedAt   DateTime?
   createdAt DateTime  @default(now())
 
-  media MediaWork @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  media    MediaWork        @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  comments EpisodeComment[]
 
   @@unique([mediaId, number])
   @@index([mediaId])
+}
+
+model EpisodeComment {
+  id        String   @id @default(cuid())
+  episodeId String
+  authorId  String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([episodeId, createdAt])
 }
 
 // Chương (cho MANGA: ảnh trang; LIGHT_NOVEL: nội dung text)

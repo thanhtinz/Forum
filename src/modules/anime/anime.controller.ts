@@ -38,6 +38,18 @@ export class AnimeController {
   @Get('anime/episode/:id')
   episode(@Param('id') id: string) { return this.svc.getEpisode(id); }
 
+  @Post('anime/episode/:id/comments')
+  @UseGuards(JwtAuthGuard)
+  addEpComment(@Param('id') id: string, @CurrentUser('id') userId: string, @Body('content') content: string) {
+    return this.svc.addEpisodeComment(id, userId, content);
+  }
+
+  @Delete('anime/comment/:id')
+  @UseGuards(JwtAuthGuard)
+  delEpComment(@Param('id') id: string, @CurrentUser('id') userId: string, @CurrentUser('role') role: string) {
+    return this.svc.deleteEpisodeComment(id, userId, role);
+  }
+
   @Get('anime/chapter/:id')
   chapter(@Param('id') id: string) { return this.svc.getChapter(id); }
 

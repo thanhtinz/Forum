@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
+import { Check, Eye, EyeOff } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
@@ -70,9 +70,6 @@ export default function DecorationsSettings() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold">Trang trí</h1>
-        <a href="/settings/avatar" className="inline-flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-1.5 text-sm font-medium hover:bg-ink-200 dark:bg-ink-800">
-          <ImageIcon size={15} /> Ảnh đại diện
-        </a>
       </div>
 
       {msg && <p className="text-sm text-brand-600">{msg}</p>}

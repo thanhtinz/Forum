@@ -22,7 +22,7 @@ function ProfileView() {
   const [following, setFollowing] = useState(false);
   const [blocked, setBlocked] = useState(false);
   const [badges, setBadges] = useState<BadgeDescriptor[]>([]);
-  const [tab, setTab] = useState<'about' | 'activity' | 'posts'>('about');
+  const [tab, setTab] = useState<'about' | 'activity' | 'wall'>('activity');
 
   useEffect(() => {
     if (!name) return;
@@ -130,7 +130,7 @@ function ProfileView() {
             </button>
             {([
               { key: 'activity', label: 'Hoạt động mới nhất' },
-              { key: 'posts', label: 'Các bài viết' },
+              { key: 'wall', label: 'Bài viết hồ sơ' },
               { key: 'about', label: 'Giới thiệu' },
             ] as const).map((t) => (
               <button key={t.key} onClick={() => setTab(t.key)}
@@ -179,9 +179,9 @@ function ProfileView() {
           </>
         )}
 
-        {tab === 'activity' && <ActivityWall wallId={profile.id} canPost={!!user} />}
+        {tab === 'activity' && <Wall wallId={profile.id} />}
 
-        {tab === 'posts' && <Wall wallId={profile.id} />}
+        {tab === 'wall' && <ActivityWall wallId={profile.id} canPost={!!user} />}
       </div>
     </div>
   );
@@ -236,7 +236,7 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
         </div>
       )}
       <div className="card p-5">
-        <h2 className="mb-3 font-semibold">Hoạt động gần đây</h2>
+        <h2 className="mb-3 font-semibold">Bài viết hồ sơ</h2>
         {posts.length === 0 ? (
           <p className="text-sm text-ink-500">Chưa có hoạt động nào.</p>
         ) : (

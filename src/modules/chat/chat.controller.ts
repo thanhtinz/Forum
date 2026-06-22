@@ -50,6 +50,11 @@ export class ChatController {
     return this.chat.getMessages(channelId, userId, before);
   }
 
+  @Get('channels/:channelId/pinned')
+  getPinned(@Param('channelId') channelId: string) {
+    return this.chat.getPinned(channelId);
+  }
+
   @Get('stickers')
   getStickerPacks(@CurrentUser('id') userId: string) {
     return this.chat.getStickerPacks(userId);

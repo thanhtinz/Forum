@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Hash, Users, User, Plus, ArrowLeft, Reply, Trash2, Eraser } from 'lucide-react';
+import { Hash, Users, User, Plus, ArrowLeft, Reply, Trash2, Eraser, Pin, PinOff, X } from 'lucide-react';
 import { api, getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
@@ -22,6 +22,7 @@ export default function ChatPage() {
   const [channels, setChannels] = useState<ChatChannel[]>([]);
   const [activeId, setActiveId] = useState('');
   const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [pinned, setPinned] = useState<ChatMsg | null>(null);
   const [connected, setConnected] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMsg | null>(null);
   const [typing, setTyping] = useState<string | null>(null);
@@ -69,7 +70,10 @@ export default function ChatPage() {
         if (d.channelId === activeRef.current) setMessages((prev) => prev.filter((m) => m.id !== d.id));
       });
       socket.on('channelCleared', (d: { channelId: string }) => {
-        if (d.channelId === activeRef.current) setMessages([]);
+        if (d.channelId === activeRef.current) { setMessages([]); setPinned(null); }
+      });
+      socket.on('messagePinned', (d: { channelId: string; pinned: ChatMsg | null }) => {
+        if (d.channelId === activeRef.current) setPinned(d.pinned);
       });
     })();
     return () => { socket?.disconnect(); };
@@ -82,6 +86,7 @@ export default function ChatPage() {
     socket?.emit('join', { channelId: activeId });
     setReplyTo(null); setTyping(null);
     api.get<ChatMsg[]>(`/chat/channels/${activeId}/messages`).then(setMessages).catch(() => setMessages([]));
+    api.get<ChatMsg | null>(`/chat/channels/${activeId}/pinned`).then(setPinned).catch(() => setPinned(null));
     return () => { socket?.emit('leave', { channelId: activeId }); };
   }, [activeId]);
 
@@ -98,6 +103,9 @@ export default function ChatPage() {
   function selectChannel(id: string) { setActiveId(id); setMobileList(false); }
   function deleteMessage(id: string) {
     socketRef.current?.emit('deleteMessage', { messageId: id, channelId: activeId });
+  }
+  function pinMessage(id: string, pin: boolean) {
+    socketRef.current?.emit('pinMessage', { messageId: id, channelId: activeId, pinned: pin });
   }
   function clearChannel() {
     if (!confirm('Xoá toàn bộ tin nhắn trong kênh này? Không thể hoàn tác.')) return;
@@ -154,6 +162,21 @@ export default function ChatPage() {
               )}
             </div>
 
+            {pinned && (
+              <div className="flex items-start gap-2 border-b border-amber-200/70 bg-amber-50 px-3 py-2 text-sm dark:border-amber-900/40 dark:bg-amber-950/30">
+                <Pin size={15} className="mt-0.5 shrink-0 text-amber-600" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium text-amber-700 dark:text-amber-300">Tin đã ghim · {pinned.sender?.displayName || pinned.sender?.username || ''}</p>
+                  <div className="truncate text-ink-700 dark:text-ink-200">
+                    {pinned.type === 'TEXT' || pinned.type === 'EMOJI' ? pinned.content : <span className="italic text-ink-400">[{pinned.type.toLowerCase()}]</span>}
+                  </div>
+                </div>
+                {isStaff && (
+                  <button onClick={() => pinMessage(pinned.id, false)} title="Bỏ ghim" className="shrink-0 text-amber-600 hover:text-amber-800"><X size={15} /></button>
+                )}
+              </div>
+            )}
+
             <div className="flex-1 space-y-2 overflow-y-auto p-4">
               {messages.length === 0 && <p className="text-center text-sm text-ink-400">Chưa có tin nhắn. Bắt đầu trò chuyện!</p>}
               {messages.map((m) => {
@@ -166,6 +189,11 @@ export default function ChatPage() {
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
                       <button onClick={() => setReplyTo(m)} title="Trả lời"><Reply size={14} className="text-ink-400 hover:text-brand-600" /></button>
+                      {isStaff && (
+                        pinned?.id === m.id
+                          ? <button onClick={() => pinMessage(m.id, false)} title="Bỏ ghim"><PinOff size={14} className="text-amber-500 hover:text-amber-700" /></button>
+                          : <button onClick={() => pinMessage(m.id, true)} title="Ghim lên đầu"><Pin size={14} className="text-ink-400 hover:text-amber-500" /></button>
+                      )}
                       {(isStaff || mine) && (
                         <button onClick={() => deleteMessage(m.id)} title="Xoá tin nhắn"><Trash2 size={14} className="text-ink-400 hover:text-rose-500" /></button>
                       )}

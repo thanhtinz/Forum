@@ -293,6 +293,33 @@ export class ChatService {
   }
 
   // ──────────────────────────────────────────────
+  // GHIM TIN NHẮN (admin/mod) — mỗi kênh chỉ 1 tin được ghim
+  // ──────────────────────────────────────────────
+  async getPinned(channelId: string) {
+    const m = await this.prisma.chatMessage.findFirst({
+      where: { channelId, isPinned: true, isDeleted: false },
+      include: { replyTo: { select: { id: true, content: true, type: true, senderId: true } } },
+    });
+    if (!m) return null;
+    const map = await this.usersMap([m.senderId]);
+    return { ...m, sender: map.get(m.senderId) || null };
+  }
+
+  async pinMessage(userId: string, messageId: string, pinned: boolean) {
+    if (!(await this.isStaff(userId))) throw new ForbiddenException('Chỉ admin/mod được ghim tin nhắn');
+    const msg = await this.prisma.chatMessage.findUnique({ where: { id: messageId } });
+    if (!msg || msg.isDeleted) throw new NotFoundException('Tin nhắn không tồn tại');
+    if (pinned) {
+      // Mỗi kênh chỉ giữ 1 tin ghim
+      await this.prisma.chatMessage.updateMany({ where: { channelId: msg.channelId, isPinned: true }, data: { isPinned: false } });
+      await this.prisma.chatMessage.update({ where: { id: messageId }, data: { isPinned: true } });
+    } else {
+      await this.prisma.chatMessage.update({ where: { id: messageId }, data: { isPinned: false } });
+    }
+    return { channelId: msg.channelId };
+  }
+
+  // ──────────────────────────────────────────────
   // DANH SÁCH KÊNH CỦA USER
   // ──────────────────────────────────────────────
   async getUserChannels(userId: string) {

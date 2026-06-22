@@ -118,7 +118,7 @@ function ProfileView() {
         <div className="mt-4 grid grid-cols-3 gap-2 text-center">
           <Stat label="Bài" value={profile.threadCount ?? 0} />
           <Stat label="Trả lời" value={profile.postCount ?? 0} />
-          <Stat label="Uy tín" value={profile.reputationScore ?? 0} />
+          <Stat label="Danh hiệu" value={trophies?.earned ?? 0} />
         </div>
       </div>
 

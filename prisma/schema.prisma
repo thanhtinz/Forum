@@ -192,6 +192,7 @@ model User {
   bio             String?    @db.Text
   birthday        DateTime? // ngày sinh
   showBirthday    Boolean    @default(false) // có hiển thị ngày sinh công khai không
+  birthdayFormat  String     @default("full") // full | day_month | month_year | year — phần ngày sinh hiển thị công khai
   location        String?    @db.VarChar(120) // nơi ở
   shopBadgeUrl    String? // ảnh badge cửa hàng đang đeo (denormalized)
   nameEffectCss   String?    @db.Text // CSS hiệu ứng tên đang dùng (denormalized)

@@ -58,15 +58,6 @@ function ProfileView() {
     }
   }
 
-  async function editName() {
-    const displayName = prompt('Tên hiển thị mới:', profile?.displayName || '');
-    if (displayName === null) return;
-    try {
-      await api.patch('/users/me', { displayName: displayName.trim() });
-      setProfile((p: any) => ({ ...p, displayName: displayName.trim() }));
-    } catch (e: any) { alert(e.message); }
-  }
-
   if (err) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!profile) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
 
@@ -85,14 +76,7 @@ function ProfileView() {
         {badges.length > 0 && (
           <div className="mt-2 flex justify-center"><UserBadges badges={badges} /></div>
         )}
-        {profile.bio && <p className="mt-3 whitespace-pre-wrap text-sm text-ink-600 dark:text-ink-300">{profile.bio}</p>}
-        {(profile.location || profile.birthday) && (
-          <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-ink-500">
-            {profile.location && <span className="inline-flex items-center gap-1"><MapPin size={14} /> {profile.location}</span>}
-            {profile.birthday && <span className="inline-flex items-center gap-1"><Cake size={14} /> {new Date(profile.birthday).toLocaleDateString('vi')}</span>}
-          </div>
-        )}
-        {trophies && <p className="mt-2 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-amber-600"><Medal size={16} /> {trophies.currentTitle} · {trophies.totalPoints} điểm</p>}
+        {trophies && <p className="mt-3 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-amber-600"><Medal size={16} /> {trophies.currentTitle} · {trophies.totalPoints} điểm</p>}
 
         <div className="mt-3 flex items-center justify-center gap-5 text-sm">
           <span><b>{counts.followers}</b> <span className="text-ink-500">người theo dõi</span></span>
@@ -118,13 +102,13 @@ function ProfileView() {
 
         {isSelf && (
           <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs">
-            <button onClick={editName} className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Đổi tên hiển thị</button>
+            <a href="/settings/about" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Sửa thông tin</a>
             {!profile.verifiedBadge && (
               <a href="/settings/verify" className="inline-flex items-center gap-1.5 rounded-lg bg-sky-100 px-3 py-1.5 font-medium text-sky-700 hover:bg-sky-200 dark:bg-sky-900/30 dark:text-sky-300"><BadgeCheck size={14} /> Đăng ký tích xanh</a>
             )}
             <a href="/settings/avatar" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Đổi ảnh đại diện</a>
             <a href="/settings/decorations" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Trang trí</a>
-            <a href="/settings/about" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Giới thiệu</a>
+            <a href="/settings/account" className="rounded-lg bg-ink-100 px-3 py-1.5 font-medium hover:bg-ink-200 dark:bg-ink-800">Mật khẩu & 2FA</a>
           </div>
         )}
 
@@ -154,8 +138,17 @@ function ProfileView() {
         )}
 
         <div className="card p-5">
-          <h2 className="mb-1 font-semibold">Hoạt động</h2>
-          <p className="text-sm text-ink-500">Tham gia từ {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('vi') : '—'}</p>
+          <h2 className="mb-2 font-semibold">Giới thiệu</h2>
+          {profile.bio && <p className="mb-3 whitespace-pre-wrap text-sm text-ink-600 dark:text-ink-300">{profile.bio}</p>}
+          <dl className="space-y-1.5 text-sm">
+            {profile.location && (
+              <div className="flex items-center gap-2"><MapPin size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">{profile.location}</span></div>
+            )}
+            {profile.birthdayDisplay && (
+              <div className="flex items-center gap-2"><Cake size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Sinh nhật {profile.birthdayDisplay}</span></div>
+            )}
+            <div className="flex items-center gap-2"><Medal size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Tham gia từ {profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('vi') : '—'}</span></div>
+          </dl>
         </div>
 
         <Wall wallId={profile.id} />

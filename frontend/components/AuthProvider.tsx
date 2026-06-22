@@ -10,6 +10,7 @@ interface AuthCtx {
   login: (email: string, password: string, code?: string) => Promise<void>;
   register: (data: { username: string; email: string; password: string; inviteCode?: string; captchaToken?: string }) => Promise<void>;
   logout: () => void;
+  refresh: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx>(null as never);
@@ -58,5 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }
 
-  return <Ctx.Provider value={{ user, loading, login, register, logout }}>{children}</Ctx.Provider>;
+  async function refresh() {
+    try { setUser(await api.get<User>('/auth/me')); } catch { /* giữ nguyên */ }
+  }
+
+  return <Ctx.Provider value={{ user, loading, login, register, logout, refresh }}>{children}</Ctx.Provider>;
 }

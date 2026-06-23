@@ -17,6 +17,7 @@ export default function NewSeriesPage() {
     description: '', language: 'vi', ageRating: '0',
   });
   const [isOneShot, setIsOneShot] = useState(false);
+  const [mediaType, setMediaType] = useState<'MANGA' | 'MANHUA'>('MANGA');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -29,6 +30,7 @@ export default function NewSeriesPage() {
     try {
       const r = await api.post<{ id: string }>('/creator/manga', {
         ...form,
+        type: mediaType,
         ageRating: Number(form.ageRating),
         format: isOneShot ? 'ONE_SHOT' : undefined,
         titleEnglish: form.titleEnglish || undefined,
@@ -112,6 +114,23 @@ export default function NewSeriesPage() {
                 <option value="18">18+ (người lớn)</option>
               </select>
             </Field>
+          </div>
+
+          {/* Media type */}
+          <div className="rounded-lg border border-ink-100 p-3 dark:border-ink-800">
+            <p className="mb-2 text-xs font-medium text-ink-500">Loại truyện</p>
+            <div className="flex gap-3">
+              {(['MANGA', 'MANHUA'] as const).map((t) => (
+                <label key={t} className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition ${mediaType === t ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-700'}`}>
+                  <input type="radio" name="mediatype" checked={mediaType === t} onChange={() => setMediaType(t)} className="hidden" />
+                  <BookOpen size={18} className={mediaType === t ? 'text-brand-600' : 'text-ink-400'} />
+                  <div>
+                    <p className="text-sm font-medium">{t === 'MANGA' ? 'Manga' : 'Manhua'}</p>
+                    <p className="text-xs text-ink-400">{t === 'MANGA' ? 'Truyện tranh Nhật' : 'Truyện tranh Trung Quốc'}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
           </div>
 
           {/* Format */}

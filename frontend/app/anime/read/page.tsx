@@ -35,7 +35,7 @@ function Reader() {
           {pages.map((src, i) => /* eslint-disable-next-line @next/next/no-img-element */ <img key={i} src={src} alt={`Trang ${i + 1}`} className="mx-auto block max-w-full" loading="lazy" />)}
         </div>
       ) : ch.content ? (
-        <article className="card prose prose-sm max-w-none whitespace-pre-line p-6 leading-relaxed dark:prose-invert">{ch.content}</article>
+        <article className="card prose prose-sm max-w-none p-6 leading-relaxed dark:prose-invert" dangerouslySetInnerHTML={{ __html: ch.content }} />
       ) : (
         <p className="card p-10 text-center text-ink-500">Chương này chưa có nội dung.</p>
       )}

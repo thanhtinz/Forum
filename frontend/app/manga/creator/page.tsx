@@ -15,6 +15,7 @@ interface Series {
   coverUrl?: string | null;
   publishStatus?: string | null;
   format?: string | null;
+  type?: string | null;
   language?: string | null;
   ageRating: number;
   updatedAt: string;
@@ -121,6 +122,7 @@ export default function CreatorDashboard() {
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${st.cls}`}>{st.label}</span>
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5">
+                      {s.type === 'MANHUA' && <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-400">Manhua</span>}
                       {isOneShot && <span className="rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium text-brand-700 dark:bg-brand-950/40 dark:text-brand-400">One-shot</span>}
                       <p className="text-xs text-ink-400">{s._count.chapterList} chương</p>
                     </div>

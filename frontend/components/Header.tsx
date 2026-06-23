@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
@@ -42,6 +42,7 @@ export function Header() {
   const { user, logout } = useAuth();
   const cfg = useSiteConfig();
   const router = useRouter();
+  const pathname = usePathname();
   const [q, setQ] = useState('');
   const [menu, setMenu] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
@@ -70,43 +71,61 @@ export function Header() {
     if (q.trim()) router.push(`/search?q=${encodeURIComponent(q)}`);
   }
 
+  function tabCls(href: string) {
+    const active = href === '/' ? pathname === '/' : pathname?.startsWith(href);
+    return [
+      'flex h-full items-center gap-1.5 border-b-2 px-4 text-sm font-medium transition-colors select-none whitespace-nowrap',
+      active
+        ? 'border-brand-200 text-white'
+        : 'border-transparent text-white/70 hover:border-white/40 hover:text-white',
+    ].join(' ');
+  }
+
+  function dropTabCls(active = false) {
+    return [
+      'flex h-full items-center gap-1.5 border-b-2 px-4 text-sm font-medium transition-colors select-none whitespace-nowrap',
+      active
+        ? 'border-brand-200 text-white'
+        : 'border-transparent text-white/70 hover:border-white/40 hover:text-white',
+    ].join(' ');
+  }
+
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-brand-700 shadow-md dark:bg-ink-900">
+    <header className="sticky top-0 z-50 bg-brand-700 shadow-md dark:bg-ink-900">
       {/* ── Row 1: logo + search + user controls ── */}
-      <div className="container-forum flex h-13 items-center gap-3 py-2">
+      <div className="container-forum flex h-14 items-center gap-3">
         {/* Hamburger mobile */}
         <button
           onClick={() => setNavOpen((o) => !o)}
-          className="rounded-lg p-2 text-white/85 hover:bg-white/10 md:hidden"
+          className="rounded p-2 text-white/80 hover:bg-white/10 hover:text-white md:hidden"
           aria-label="menu"
         >
           <Menu size={20} />
         </button>
 
         {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center gap-2 font-bold tracking-tight">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5 font-bold">
           {cfg.logoSmall
             ? <img src={cfg.logoSmall} alt={cfg.name} className="h-9 w-9 rounded-lg object-contain" />
             : <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-xl">◆</span>}
           {cfg.logo
             ? <img src={cfg.logo} alt={cfg.name} className="hidden h-9 w-auto max-w-[180px] object-contain sm:block" />
-            : <span className="hidden text-base font-semibold text-white sm:block">{cfg.name || <>Forum<span className="text-brand-200">Hub</span></>}</span>}
+            : <span className="hidden text-[15px] font-bold tracking-tight text-white sm:block">{cfg.name || <>Forum<span className="text-brand-200">Hub</span></>}</span>}
         </Link>
 
-        {/* Search — desktop only, expands to fill space */}
-        <form onSubmit={onSearch} className="ml-4 hidden flex-1 max-w-sm items-center md:flex">
+        {/* Search — desktop */}
+        <form onSubmit={onSearch} className="ml-4 hidden flex-1 max-w-xs items-center md:flex">
           <div className="relative w-full">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Tìm kiếm..."
-              className="w-full rounded-full border border-white/20 bg-white/10 py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-white/50 outline-none focus:bg-white/15 focus:border-white/40 transition"
+              className="w-full rounded border border-white/20 bg-white/10 py-1.5 pl-8 pr-3 text-sm text-white placeholder:text-white/45 outline-none focus:bg-white/15 focus:border-white/40 transition"
             />
           </div>
         </form>
 
-        {/* Spacer on mobile */}
         <div className="flex-1 md:hidden" />
 
         {/* Weather */}
@@ -115,11 +134,11 @@ export function Header() {
         {/* Right controls */}
         <div className="flex items-center gap-0.5">
           <WalletChips />
-          <button onClick={toggleTheme} className="rounded-lg p-2 text-white/80 hover:bg-white/10 hover:text-white" aria-label="theme">
+          <button onClick={toggleTheme} className="rounded p-2 text-white/75 hover:bg-white/10 hover:text-white" aria-label="theme">
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           {user && (
-            <Link href="/notifications" onClick={() => setUnread(0)} className="relative rounded-lg p-2 text-white/80 hover:bg-white/10 hover:text-white" aria-label="notifications">
+            <Link href="/notifications" onClick={() => setUnread(0)} className="relative rounded p-2 text-white/75 hover:bg-white/10 hover:text-white" aria-label="notifications">
               <Bell size={18} />
               {unread > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
@@ -132,14 +151,14 @@ export function Header() {
             <div className="relative ml-1">
               <button
                 onClick={() => setMenu((m) => !m)}
-                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 hover:bg-white/10"
+                className="flex items-center gap-1.5 rounded px-2 py-1.5 text-white hover:bg-white/10"
               >
                 <Avatar user={user} size={28} />
-                <span className="hidden text-sm font-medium text-white sm:block">{user.displayName || user.username}</span>
-                <ChevronDown size={13} className="text-white/70" />
+                <span className="hidden text-sm font-medium sm:block">{user.displayName || user.username}</span>
+                <ChevronDown size={13} className="text-white/60" />
               </button>
               {menu && (
-                <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
+                <div className="absolute right-0 top-full mt-1 w-48 overflow-hidden rounded-lg border border-ink-200/40 bg-white py-1 text-ink-700 shadow-xl dark:border-ink-700 dark:bg-ink-800 dark:text-ink-200">
                   <Link href={`/profile?u=${user.username}`} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <UserIcon size={15} /> Trang cá nhân
                   </Link>
@@ -154,6 +173,7 @@ export function Header() {
                       <UserIcon size={15} /> Trang quản trị
                     </Link>
                   )}
+                  <div className="my-1 border-t border-ink-200/60 dark:border-ink-700" />
                   <button
                     onClick={() => { logout(); setMenu(false); }}
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-ink-100 dark:hover:bg-ink-700"
@@ -165,72 +185,68 @@ export function Header() {
             </div>
           ) : (
             <div className="flex items-center gap-1.5 ml-1">
-              <Link href="/login" className="rounded-lg px-3 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10">Đăng nhập</Link>
-              <Link href="/register" className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">Đăng ký</Link>
+              <Link href="/login" className="rounded px-3 py-1.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Đăng nhập</Link>
+              <Link href="/register" className="rounded bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">Đăng ký</Link>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Row 2: navigation bar (desktop only) ── */}
-      <div className="hidden border-t border-white/10 bg-black/20 md:block">
-        <div className="container-forum flex h-10 items-center gap-0.5">
-          {/* Diễn đàn dropdown */}
-          <div className="relative" onMouseLeave={() => setForumOpen(false)}>
+      {/* ── Row 2: XenForo-style tab nav (desktop only) ── */}
+      <div className="hidden border-t border-black/25 bg-black/20 md:block dark:border-black/40 dark:bg-black/30">
+        <div className="container-forum flex h-10 items-stretch overflow-x-auto [&::-webkit-scrollbar]:hidden">
+
+          {/* Diễn đàn tab + dropdown */}
+          <div className="relative flex items-stretch" onMouseLeave={() => setForumOpen(false)}>
             <button
               onClick={() => setForumOpen((o) => !o)}
-              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+              className={dropTabCls(pathname === '/' || pathname?.startsWith('/feed') || pathname?.startsWith('/subscriptions'))}
             >
-              <MessageSquare size={15} />
+              <MessageSquare size={14} />
               <span>Diễn đàn</span>
-              <ChevronDown size={12} className={`transition-transform ${forumOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={11} className={`transition-transform duration-150 ${forumOpen ? 'rotate-180' : ''}`} />
             </button>
             {forumOpen && (
-              <div className="absolute left-0 top-full z-50 mt-0.5 w-52 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-xl dark:bg-ink-800 dark:text-ink-200">
-                <Link href="/" onClick={() => setForumOpen(false)} className="block px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Tất cả diễn đàn</Link>
-                <Link href="/feed" onClick={() => setForumOpen(false)} className="block px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Bài viết mới</Link>
-                <div className="my-1 border-t border-ink-200/70 dark:border-ink-700" />
-                <p className="px-4 pb-0.5 pt-1 text-xs font-semibold text-ink-400">Quan tâm</p>
-                <Link href="/subscriptions" onClick={() => setForumOpen(false)} className="block px-4 py-2 pl-6 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Chủ đề quan tâm</Link>
-                <Link href="/tags" onClick={() => setForumOpen(false)} className="block px-4 py-2 pl-6 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Diễn đàn quan tâm</Link>
+              <div className="absolute left-0 top-full z-50 w-52 overflow-hidden rounded-b-lg border-t-2 border-brand-200 bg-white py-1 text-ink-700 shadow-xl dark:bg-ink-800 dark:text-ink-200">
+                <Link href="/" onClick={() => setForumOpen(false)} className="block px-4 py-2 text-sm hover:bg-ink-50 dark:hover:bg-ink-700">Tất cả diễn đàn</Link>
+                <Link href="/feed" onClick={() => setForumOpen(false)} className="block px-4 py-2 text-sm hover:bg-ink-50 dark:hover:bg-ink-700">Bài viết mới</Link>
+                <div className="my-1 border-t border-ink-100 dark:border-ink-700" />
+                <p className="px-4 pb-1 pt-0.5 text-xs font-semibold uppercase tracking-wide text-ink-400">Quan tâm</p>
+                <Link href="/subscriptions" onClick={() => setForumOpen(false)} className="block px-4 py-2 pl-6 text-sm hover:bg-ink-50 dark:hover:bg-ink-700">Chủ đề quan tâm</Link>
+                <Link href="/tags" onClick={() => setForumOpen(false)} className="block px-4 py-2 pl-6 text-sm hover:bg-ink-50 dark:hover:bg-ink-700">Diễn đàn quan tâm</Link>
               </div>
             )}
           </div>
 
           {/* Divider */}
-          <span className="mx-1 h-4 w-px bg-white/20" />
+          <span className="my-2.5 w-px bg-white/15" />
 
-          {/* Main nav items */}
+          {/* Main nav tabs */}
           {NAV.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
-            >
-              <n.icon size={15} />
+            <Link key={n.href} href={n.href} className={tabCls(n.href)}>
+              <n.icon size={14} />
               <span>{n.label}</span>
             </Link>
           ))}
 
-          {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Tiện ích dropdown — pushed to right */}
-          <div className="relative" onMouseLeave={() => setUtilOpen(false)}>
+          {/* Tiện ích tab + dropdown (right-aligned) */}
+          <div className="relative flex items-stretch" onMouseLeave={() => setUtilOpen(false)}>
             <button
               onClick={() => setUtilOpen((o) => !o)}
-              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+              className={dropTabCls(pathname?.startsWith('/market') || pathname?.startsWith('/tools') || pathname?.startsWith('/netcheck') || pathname?.startsWith('/converter'))}
             >
-              <Wrench size={15} />
+              <Wrench size={14} />
               <span>Tiện ích</span>
-              <ChevronDown size={12} className={`transition-transform ${utilOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={11} className={`transition-transform duration-150 ${utilOpen ? 'rotate-180' : ''}`} />
             </button>
             {utilOpen && (
-              <div className="absolute right-0 top-full z-50 mt-0.5 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-xl dark:bg-ink-800 dark:text-ink-200">
+              <div className="absolute right-0 top-full z-50 w-48 overflow-hidden rounded-b-lg border-t-2 border-brand-200 bg-white py-1 text-ink-700 shadow-xl dark:bg-ink-800 dark:text-ink-200">
                 {UTILS.map((u) => (
                   <Link key={u.href} href={u.href} onClick={() => setUtilOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <u.icon size={15} /> {u.label}
+                    className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-50 dark:hover:bg-ink-700">
+                    <u.icon size={14} /> {u.label}
                   </Link>
                 ))}
               </div>
@@ -260,55 +276,59 @@ export function Header() {
                   </>
                 )}
               </Link>
-              <button onClick={() => setNavOpen(false)} className="shrink-0 rounded-lg p-1.5 text-white/85 hover:bg-white/10"><X size={18} /></button>
+              <button onClick={() => setNavOpen(false)} className="shrink-0 rounded p-1.5 text-white/80 hover:bg-white/10"><X size={18} /></button>
             </div>
 
             <form onSubmit={(e) => { onSearch(e); setNavOpen(false); }} className="my-2 sm:hidden">
               <div className="relative w-full">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm..."
-                  className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
+                  className="w-full rounded border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/50 outline-none focus:bg-white/15" />
               </div>
             </form>
 
             <div className="mb-2"><WeatherMenu mobile /></div>
 
-            <div className="flex flex-col gap-1">
-              <button
-                onClick={() => setForumOpen((o) => !o)}
-                className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"
-              >
-                <span className="flex items-center gap-2"><MessageSquare size={16} /> Diễn đàn</span>
-                <ChevronDown size={15} className={`transition ${forumOpen ? 'rotate-180' : ''}`} />
+            <div className="flex flex-col gap-0.5">
+              {/* Diễn đàn */}
+              <button onClick={() => setForumOpen((o) => !o)}
+                className="flex items-center justify-between rounded px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+                <span className="flex items-center gap-2.5"><MessageSquare size={16} /> Diễn đàn</span>
+                <ChevronDown size={14} className={`transition-transform ${forumOpen ? 'rotate-180' : ''}`} />
               </button>
               {forumOpen && (
-                <div className="ml-3 flex flex-col gap-1 border-l border-white/15 pl-2">
-                  <Link href="/" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Tất cả diễn đàn</Link>
-                  <Link href="/feed" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Bài viết mới</Link>
-                  <p className="px-3 pt-1 text-xs font-semibold text-white/55">Quan tâm</p>
-                  <Link href="/subscriptions" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 pl-5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Chủ đề quan tâm</Link>
-                  <Link href="/tags" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 pl-5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Diễn đàn quan tâm</Link>
+                <div className="ml-4 flex flex-col gap-0.5 border-l-2 border-brand-200/50 pl-3">
+                  <Link href="/" onClick={() => setNavOpen(false)} className="rounded px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white">Tất cả diễn đàn</Link>
+                  <Link href="/feed" onClick={() => setNavOpen(false)} className="rounded px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white">Bài viết mới</Link>
+                  <p className="px-3 pt-1 text-[11px] font-semibold uppercase tracking-wide text-white/45">Quan tâm</p>
+                  <Link href="/subscriptions" onClick={() => setNavOpen(false)} className="rounded px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white">Chủ đề quan tâm</Link>
+                  <Link href="/tags" onClick={() => setNavOpen(false)} className="rounded px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white">Diễn đàn quan tâm</Link>
                 </div>
               )}
+
               {NAV.map((n) => (
                 <Link key={n.href} href={n.href} onClick={() => setNavOpen(false)}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+                  className={`flex items-center gap-2.5 rounded px-3 py-2.5 text-sm font-medium transition-colors ${
+                    pathname?.startsWith(n.href) ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  }`}>
                   <n.icon size={16} /> {n.label}
                 </Link>
               ))}
-              <button
-                onClick={() => setUtilOpen((o) => !o)}
-                className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"
-              >
-                <span className="flex items-center gap-2"><Wrench size={16} /> Tiện ích</span>
-                <ChevronDown size={15} className={`transition ${utilOpen ? 'rotate-180' : ''}`} />
+
+              <div className="my-1 border-t border-white/10" />
+
+              {/* Tiện ích */}
+              <button onClick={() => setUtilOpen((o) => !o)}
+                className="flex items-center justify-between rounded px-3 py-2.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+                <span className="flex items-center gap-2.5"><Wrench size={16} /> Tiện ích</span>
+                <ChevronDown size={14} className={`transition-transform ${utilOpen ? 'rotate-180' : ''}`} />
               </button>
               {utilOpen && (
-                <div className="ml-3 flex flex-col gap-1 border-l border-white/15 pl-2">
+                <div className="ml-4 flex flex-col gap-0.5 border-l-2 border-brand-200/50 pl-3">
                   {UTILS.map((u) => (
                     <Link key={u.href} href={u.href} onClick={() => setNavOpen(false)}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
-                      <u.icon size={16} /> {u.label}
+                      className="flex items-center gap-2.5 rounded px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white">
+                      <u.icon size={15} /> {u.label}
                     </Link>
                   ))}
                 </div>

@@ -6,9 +6,11 @@ import { AdminGameAssetService } from './admin-game-asset.service';
 import { AdminTemplateService } from './admin-template.service';
 import { AdminController } from './admin.controller';
 import { PublicConfigController } from './public-config.controller';
+import { MediaModule } from '../media/media.module';
 
 @Global()
 @Module({
+  imports: [MediaModule],
   controllers: [AdminController, PublicConfigController],
   providers: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService, AdminTemplateService],
   exports: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService, AdminTemplateService],

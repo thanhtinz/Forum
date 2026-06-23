@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AttachmentService } from '../media/attachment.service';
 import { MinigameType } from '@prisma/client';
 
 @Injectable()
 export class AdminGameAssetService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly attachment: AttachmentService,
+  ) {}
 
   // ════════════════════════════════════════════
   // MINIGAME CONFIG — cấu hình + asset
@@ -74,6 +78,62 @@ export class AdminGameAssetService {
       },
       include: { stickers: true },
     });
+  }
+
+  async importStickerPackFromUrls(data: {
+    slug: string; name: string; description?: string;
+    isPremium?: boolean; urls: string[];
+  }) {
+    const existing = await this.prisma.stickerPack.findUnique({ where: { slug: data.slug } });
+    if (existing) throw new BadRequestException(`Pack "${data.slug}" đã tồn tại (id: ${existing.id})`);
+    if (!data.urls?.length) throw new BadRequestException('Cần ít nhất 1 URL');
+
+    const uploaded: { name: string; imageUrl: string }[] = [];
+    const failed: string[] = [];
+
+    for (let i = 0; i < data.urls.length; i++) {
+      const url = data.urls[i];
+      try {
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+            'Referer': new URL(url).origin + '/',
+            'Accept': 'image/webp,image/avif,image/apng,image/*,*/*;q=0.8',
+          },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const arrayBuffer = await res.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const rawExt = url.split('.').pop()?.split('?')[0]?.toLowerCase() || 'webp';
+        const ext = ['gif', 'webp', 'png', 'jpg', 'jpeg'].includes(rawExt) ? rawExt : 'webp';
+        const filename = `${data.slug}-${i + 1}.${ext}`;
+        const mimetype = ext === 'gif' ? 'image/gif' : ext === 'webp' ? 'image/webp' : ext === 'png' ? 'image/png' : 'image/jpeg';
+        const result = await this.attachment.upload(buffer, filename, mimetype, 'stickers');
+        uploaded.push({ name: `${data.slug}-${i + 1}`, imageUrl: result.url });
+      } catch {
+        failed.push(url);
+      }
+    }
+
+    if (!uploaded.length) throw new BadRequestException('Không tải được ảnh nào từ các URL đã cung cấp');
+
+    const pack = await this.prisma.stickerPack.create({
+      data: {
+        slug: data.slug,
+        name: data.name,
+        description: data.description,
+        thumbnailUrl: uploaded[0].imageUrl,
+        isPremium: data.isPremium ?? false,
+        isActive: true,
+        sortOrder: 0,
+        stickers: {
+          create: uploaded.map((s, i) => ({ name: s.name, imageUrl: s.imageUrl, sortOrder: i })),
+        },
+      },
+      include: { _count: { select: { stickers: true } } },
+    });
+
+    return { pack, uploaded: uploaded.length, failed: failed.length, failedUrls: failed };
   }
 
   async updateStickerPack(id: string, data: any) {

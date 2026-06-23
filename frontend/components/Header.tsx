@@ -105,12 +105,14 @@ export function Header() {
 
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2.5 font-bold">
+          {/* Mobile: icon nhỏ */}
           {cfg.logoSmall
-            ? <img src={cfg.logoSmall} alt={cfg.name} className="h-9 w-9 rounded-lg object-contain" />
-            : <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-xl">◆</span>}
+            ? <img src={cfg.logoSmall} alt={cfg.name} className="h-9 w-9 rounded-lg object-contain md:hidden" />
+            : <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-xl md:hidden">◆</span>}
+          {/* PC: logo lớn */}
           {cfg.logo
-            ? <img src={cfg.logo} alt={cfg.name} className="hidden h-9 w-auto max-w-[180px] object-contain sm:block" />
-            : <span className="hidden text-[15px] font-bold tracking-tight text-white sm:block">{cfg.name || <>Forum<span className="text-brand-200">Hub</span></>}</span>}
+            ? <img src={cfg.logo} alt={cfg.name} className="hidden h-10 w-auto max-w-[220px] object-contain md:block" />
+            : <span className="hidden text-[15px] font-bold tracking-tight text-white md:block">{cfg.name || <>Forum<span className="text-brand-200">Hub</span></>}</span>}
         </Link>
 
         {/* Search — desktop */}

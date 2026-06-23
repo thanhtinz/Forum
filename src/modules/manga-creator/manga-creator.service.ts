@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AttachmentService } from '../media/attachment.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import {
   MangaPublishStatus,
   ChapterPublishStatus,
@@ -99,6 +100,7 @@ export class MangaCreatorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly attachment: AttachmentService,
+    private readonly notif: NotificationsService,
   ) {}
 
   // ── Creator: Series ──────────────────────────────────────────────────────
@@ -338,14 +340,24 @@ export class MangaCreatorService {
       action === 'approve'
         ? MangaPublishStatus.PUBLISHED
         : MangaPublishStatus.REJECTED;
-    return this.prisma.mediaWork.update({
+    const updated = await this.prisma.mediaWork.update({
       where: { id },
       data: {
         publishStatus,
         ...(adminNote !== undefined && { description: adminNote }),
       },
-      select: { id: true, publishStatus: true },
+      select: { id: true, publishStatus: true, title: true, slug: true, creatorId: true },
     });
+    if (updated.creatorId) {
+      const approved = action === 'approve';
+      this.notif.notify(updated.creatorId, {
+        type: 'SYSTEM',
+        title: approved ? `Series "${updated.title}" đã được duyệt ✓` : `Series "${updated.title}" bị từ chối`,
+        body: adminNote || (approved ? 'Series của bạn đã được xuất bản.' : 'Vui lòng chỉnh sửa và gửi lại.'),
+        link: `/manga/creator/edit?id=${updated.id}`,
+      }).catch(() => {});
+    }
+    return updated;
   }
 
   async listPendingChapters() {
@@ -368,11 +380,23 @@ export class MangaCreatorService {
       action === 'approve'
         ? ChapterPublishStatus.PUBLISHED
         : ChapterPublishStatus.DRAFT;
-    return this.prisma.chapter.update({
+    const updated = await this.prisma.chapter.update({
       where: { id },
       data: { chapterStatus },
-      select: { id: true, chapterStatus: true },
+      select: { id: true, chapterStatus: true, number: true, uploaderId: true, mediaId: true, media: { select: { id: true, title: true } } },
     });
+    if (updated.uploaderId) {
+      const approved = action === 'approve';
+      this.notif.notify(updated.uploaderId, {
+        type: 'SYSTEM',
+        title: approved
+          ? `Chương ${updated.number} của "${(updated as any).media?.title}" đã được duyệt ✓`
+          : `Chương ${updated.number} của "${(updated as any).media?.title}" bị từ chối`,
+        body: approved ? 'Chương của bạn đã được xuất bản.' : 'Chương bị từ chối. Vui lòng chỉnh sửa lại.',
+        link: `/manga/creator/chapter/new?chapterId=${updated.id}&mediaId=${updated.mediaId}`,
+      }).catch(() => {});
+    }
+    return updated;
   }
 
   async getChapter(id: string, userId: string) {

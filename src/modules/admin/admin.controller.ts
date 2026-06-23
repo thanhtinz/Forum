@@ -296,6 +296,11 @@ export class AdminController {
     return this.gameAsset.importStickerPackFromUrls(data);
   }
 
+  @Post('stickers/import-wpdiscuz')
+  importFromWpDiscuz(@Body('searchUrls') searchUrls: string[]) {
+    return this.gameAsset.importFromWpDiscuzSearch(searchUrls);
+  }
+
   @Patch('stickers/:id')
   updateStickerPack(@Param('id') id: string, @Body() data: any) {
     return this.gameAsset.updateStickerPack(id, data);

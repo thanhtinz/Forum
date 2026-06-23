@@ -208,6 +208,14 @@ export class AdminGameAssetService {
     });
   }
 
+  async hardDeleteStickerPack(id: string) {
+    const pack = await this.prisma.stickerPack.findUnique({ where: { id } });
+    if (!pack) throw new NotFoundException('Pack không tồn tại');
+    await this.prisma.sticker.deleteMany({ where: { packId: id } });
+    await this.prisma.stickerPack.delete({ where: { id } });
+    return { ok: true };
+  }
+
   // Thêm sticker vào pack đã có
   async addStickerToPack(packId: string, sticker: { name: string; imageUrl: string }) {
     const pack = await this.prisma.stickerPack.findUnique({ where: { id: packId } });

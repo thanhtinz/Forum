@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Trash2, Package, Upload, Loader2, ImagePlus } from 'lucide-react';
+import { Trash2, Package, Upload, Loader2, ImagePlus, Link2, RefreshCw } from 'lucide-react';
 import { unzipSync } from 'fflate';
 import { api, uploadImage } from '@/lib/api';
 import ImageUpload from '@/components/ImageUpload';
@@ -18,6 +18,8 @@ const emptyForm = { slug: '', name: '', description: '', isPremium: false, price
 const IMG_RE = /\.(png|jpe?g|gif|webp)$/i;
 const mimeOf = (n: string) => n.toLowerCase().endsWith('.png') ? 'image/png' : n.toLowerCase().endsWith('.gif') ? 'image/gif' : n.toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg';
 
+type Tab = 'zip' | 'url';
+
 export default function AdminStickers() {
   const [packs, setPacks] = useState<Pack[]>([]);
   const [form, setForm] = useState<typeof emptyForm>(emptyForm);
@@ -25,12 +27,18 @@ export default function AdminStickers() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [zipBusy, setZipBusy] = useState('');
+  const [tab, setTab] = useState<Tab>('zip');
+
+  // Import-from-wpdiscuz state
+  const [importUrls, setImportUrls] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<any[]>([]);
+
   const zipRef = useRef<HTMLInputElement>(null);
 
   function load() { api.get<Pack[]>('/admin/stickers').then(setPacks).catch((e) => setErr(e.message)); }
   useEffect(() => { load(); }, []);
 
-  // Tải nguyên file .zip → giải nén ngay trên trình duyệt → upload từng ảnh
   async function onZip(file: File) {
     setErr(''); setMsg('');
     try {
@@ -38,7 +46,6 @@ export default function AdminStickers() {
       const entries = unzipSync(buf);
       const names = Object.keys(entries).filter((n) => IMG_RE.test(n) && !n.includes('__MACOSX') && !n.endsWith('/'));
       if (names.length === 0) { setErr('File zip không có ảnh (png/jpg/gif/webp).'); return; }
-      // gợi ý tên/slug từ tên file zip nếu chưa nhập
       const base = file.name.replace(/\.zip$/i, '');
       setForm((f) => ({ ...f, slug: f.slug || base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), name: f.name || base }));
       let done = 0;
@@ -73,70 +80,155 @@ export default function AdminStickers() {
       setMsg('Đã tạo pack sticker ✓'); setForm(emptyForm); setStaged([]); load();
     } catch (e: any) { setErr(e.message); }
   }
-  async function delPack(p: Pack) {
+
+  async function importFromWpdiscuz() {
+    setErr(''); setMsg(''); setImportResults([]);
+    const lines = importUrls.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (!lines.length) { setErr('Dán ít nhất 1 URL vào ô bên dưới'); return; }
+    setImporting(true);
+    try {
+      const res = await api.post<any[]>('/admin/stickers/import-wpdiscuz', { searchUrls: lines });
+      setImportResults(res);
+      const ok = res.filter((r: any) => r.status === 'ok').length;
+      const skipped = res.filter((r: any) => r.status === 'skipped').length;
+      const failed = res.filter((r: any) => r.status === 'error' || r.error).length;
+      setMsg(`Hoàn tất: ${ok} tạo mới, ${skipped} đã tồn tại, ${failed} lỗi.`);
+      load();
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  async function hidePack(p: Pack) {
     if (!confirm(`Ẩn pack "${p.name}"?`)) return;
     try { await api.post(`/admin/stickers/${p.id}/delete`); load(); } catch (e: any) { setErr(e.message); }
   }
+
+  async function delPack(p: Pack) {
+    if (!confirm(`XOÁ HẲN pack "${p.name}" và toàn bộ ${p._count?.stickers ?? p.stickers.length} sticker? Không thể khôi phục!`)) return;
+    try { await api.post(`/admin/stickers/${p.id}/hard-delete`); load(); } catch (e: any) { setErr(e.message); }
+  }
+
   async function addSticker(packId: string, imageUrl: string) {
     try { await api.post(`/admin/stickers/${packId}/add`, { name: 'sticker', imageUrl }); load(); } catch (e: any) { setErr(e.message); }
   }
+
   async function delSticker(id: string) {
     try { await api.post(`/admin/stickers/sticker/${id}/delete`); load(); } catch (e: any) { setErr(e.message); }
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={<Package size={20} />} title="Sticker chat" desc="Tải lên cả pack bằng file .zip, hoặc thêm từng ảnh." />
+      <PageHeader icon={<Package size={20} />} title="Sticker chat" desc="Tạo pack bằng file .zip hoặc import từ URL wpDiscuz." />
       {err && <Notice kind="error">{err}</Notice>}
       {msg && <Notice kind="success">{msg}</Notice>}
 
       {/* Tạo pack mới */}
       <Card className="space-y-4">
-        <SectionTitle hint="Cách nhanh nhất: nén tất cả ảnh sticker thành 1 file .zip rồi tải lên.">Tạo pack mới</SectionTitle>
+        <SectionTitle>Tạo pack mới</SectionTitle>
 
-        {/* Tải zip */}
-        <div className="rounded-xl border-2 border-dashed border-ink-300 p-4 text-center dark:border-ink-700">
-          <input ref={zipRef} type="file" accept=".zip,application/zip" hidden onChange={(e) => e.target.files?.[0] && onZip(e.target.files[0])} />
-          <ImagePlus className="mx-auto mb-1 text-ink-400" size={26} />
-          <p className="text-sm font-medium">Tải lên file .zip chứa ảnh sticker</p>
-          <p className="mb-2 text-xs text-ink-400">Hỗ trợ PNG/JPG/GIF/WEBP — giải nén & upload tự động.</p>
-          <Btn variant="outline" size="sm" disabled={!!zipBusy} onClick={() => zipRef.current?.click()}>
-            {zipBusy ? <><Loader2 size={14} className="animate-spin" /> {zipBusy}</> : <><Upload size={14} /> Chọn file .zip</>}
-          </Btn>
+        {/* Tab switch */}
+        <div className="flex gap-1 rounded-lg bg-ink-100 p-1 text-sm dark:bg-ink-800">
+          <button onClick={() => setTab('zip')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-colors ${tab === 'zip' ? 'bg-white shadow dark:bg-ink-700' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}>
+            <Upload size={14} /> Upload ZIP
+          </button>
+          <button onClick={() => setTab('url')} className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-colors ${tab === 'url' ? 'bg-white shadow dark:bg-ink-700' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}>
+            <Link2 size={14} /> Import từ URL
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Field label="Slug (định danh)"><input className="input" placeholder="vd: meo-cute" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} /></Field>
-          <Field label="Tên pack"><input className="input" placeholder="vd: Mèo dễ thương" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
-          <Field label="Mô tả" className="sm:col-span-2"><input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-sm">
-          <label className="flex items-center gap-2"><input type="checkbox" checked={form.isPremium} onChange={(e) => setForm({ ...form, isPremium: e.target.checked })} /> Premium (phải mua)</label>
-          {form.isPremium && (
-            <>
-              <label className="flex items-center gap-1">Giá Xu <input type="number" className="input w-24 !py-1" value={form.priceCoin} onChange={(e) => setForm({ ...form, priceCoin: Number(e.target.value) })} /></label>
-              <label className="flex items-center gap-1">Giá Gem <input type="number" className="input w-24 !py-1" value={form.priceGem} onChange={(e) => setForm({ ...form, priceGem: Number(e.target.value) })} /></label>
-            </>
-          )}
-        </div>
-
-        {/* Ảnh đã nạp */}
-        <div>
-          <p className="mb-1.5 text-sm font-medium">Ảnh trong pack ({staged.length})</p>
-          <div className="flex flex-wrap gap-2">
-            {staged.map((s, i) => (
-              <div key={i} className="relative">
-                <img src={s.imageUrl} alt="" className="h-16 w-16 rounded-lg border border-ink-200 object-contain dark:border-ink-700" />
-                <button onClick={() => setStaged((l) => l.filter((_, idx) => idx !== i))} className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-rose-500 text-white"><Trash2 size={11} /></button>
-              </div>
-            ))}
-            <div className="grid h-16 w-16 place-items-center rounded-lg border border-dashed border-ink-300 dark:border-ink-700">
-              <ImageUpload label="" onUploaded={(url) => setStaged((l) => [...l, { name: 'sticker', imageUrl: url }])} />
+        {tab === 'zip' && (
+          <>
+            <div className="rounded-xl border-2 border-dashed border-ink-300 p-4 text-center dark:border-ink-700">
+              <input ref={zipRef} type="file" accept=".zip,application/zip" hidden onChange={(e) => e.target.files?.[0] && onZip(e.target.files[0])} />
+              <ImagePlus className="mx-auto mb-1 text-ink-400" size={26} />
+              <p className="text-sm font-medium">Tải lên file .zip chứa ảnh sticker</p>
+              <p className="mb-2 text-xs text-ink-400">Hỗ trợ PNG/JPG/GIF/WEBP — giải nén & upload tự động.</p>
+              <Btn variant="outline" size="sm" disabled={!!zipBusy} onClick={() => zipRef.current?.click()}>
+                {zipBusy ? <><Loader2 size={14} className="animate-spin" /> {zipBusy}</> : <><Upload size={14} /> Chọn file .zip</>}
+              </Btn>
             </div>
-          </div>
-        </div>
 
-        <Btn onClick={createPack} disabled={!!zipBusy}>Tạo pack</Btn>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Field label="Slug (định danh)"><input className="input" placeholder="vd: meo-cute" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} /></Field>
+              <Field label="Tên pack"><input className="input" placeholder="vd: Mèo dễ thương" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+              <Field label="Mô tả" className="sm:col-span-2"><input className="input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.isPremium} onChange={(e) => setForm({ ...form, isPremium: e.target.checked })} /> Premium (phải mua)</label>
+              {form.isPremium && (
+                <>
+                  <label className="flex items-center gap-1">Giá Xu <input type="number" className="input w-24 !py-1" value={form.priceCoin} onChange={(e) => setForm({ ...form, priceCoin: Number(e.target.value) })} /></label>
+                  <label className="flex items-center gap-1">Giá Gem <input type="number" className="input w-24 !py-1" value={form.priceGem} onChange={(e) => setForm({ ...form, priceGem: Number(e.target.value) })} /></label>
+                </>
+              )}
+            </div>
+
+            <div>
+              <p className="mb-1.5 text-sm font-medium">Ảnh trong pack ({staged.length})</p>
+              <div className="flex flex-wrap gap-2">
+                {staged.map((s, i) => (
+                  <div key={i} className="relative">
+                    <img src={s.imageUrl} alt="" className="h-16 w-16 rounded-lg border border-ink-200 object-contain dark:border-ink-700" />
+                    <button onClick={() => setStaged((l) => l.filter((_, idx) => idx !== i))} className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-rose-500 text-white"><Trash2 size={11} /></button>
+                  </div>
+                ))}
+                <div className="grid h-16 w-16 place-items-center rounded-lg border border-dashed border-ink-300 dark:border-ink-700">
+                  <ImageUpload label="" onUploaded={(url) => setStaged((l) => [...l, { name: 'sticker', imageUrl: url }])} />
+                </div>
+              </div>
+            </div>
+
+            <Btn onClick={createPack} disabled={!!zipBusy}>Tạo pack</Btn>
+          </>
+        )}
+
+        {tab === 'url' && (
+          <div className="space-y-3">
+            <p className="text-sm text-ink-500">
+              Dán các URL tìm kiếm wpDiscuz (mỗi URL một dòng). Server sẽ tự tải ảnh và lưu vào R2.
+            </p>
+            <textarea
+              rows={10}
+              className="input w-full font-mono text-xs"
+              placeholder={"https://hoathinh3d.co/wp-json/wpdiscuz-stickers/v1/search?q=Pepe\nhttps://hoathinh3d.co/wp-json/wpdiscuz-stickers/v1/search?q=Panda\n..."}
+              value={importUrls}
+              onChange={(e) => setImportUrls(e.target.value)}
+            />
+            <Btn onClick={importFromWpdiscuz} disabled={importing}>
+              {importing ? <><Loader2 size={14} className="animate-spin" /> Đang import…</> : <><RefreshCw size={14} /> Import tất cả</>}
+            </Btn>
+
+            {importResults.length > 0 && (
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-ink-200 dark:border-ink-700">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-ink-50 dark:bg-ink-800">
+                    <tr>
+                      <th className="px-3 py-2 text-left">Slug</th>
+                      <th className="px-3 py-2 text-left">Trạng thái</th>
+                      <th className="px-3 py-2 text-left">Chi tiết</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {importResults.map((r, i) => (
+                      <tr key={i} className="border-t border-ink-100 dark:border-ink-700">
+                        <td className="px-3 py-1.5 font-mono">{r.slug ?? '—'}</td>
+                        <td className="px-3 py-1.5">
+                          <span className={`rounded px-1.5 py-0.5 font-medium ${r.status === 'ok' ? 'bg-green-100 text-green-700' : r.status === 'skipped' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                            {r.status ?? 'error'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-1.5 text-ink-400">{r.status === 'ok' ? `${r.uploaded} ảnh (${r.failed} lỗi)` : r.reason ?? r.error ?? ''}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       {/* Danh sách pack */}
@@ -145,12 +237,15 @@ export default function AdminStickers() {
         {packs.length === 0 && <Card><Empty icon={<Package size={28} />} title="Chưa có pack nào" /></Card>}
         {packs.map((p) => (
           <Card key={p.id} className={!p.isActive ? 'opacity-60' : ''}>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
                 <span className="font-semibold">{p.name}</span>
                 <span className="ml-1 text-xs text-ink-400">/{p.slug} · {p._count?.stickers ?? p.stickers.length} sticker · {p.isPremium ? `Premium (${p.priceGem || 0} gem)` : 'Miễn phí'}{!p.isActive ? ' · (ẩn)' : ''}</span>
               </div>
-              <Btn variant="danger" size="sm" onClick={() => delPack(p)}>Ẩn pack</Btn>
+              <div className="flex shrink-0 gap-2">
+                {p.isActive && <Btn variant="outline" size="sm" onClick={() => hidePack(p)}>Ẩn</Btn>}
+                <Btn variant="danger" size="sm" onClick={() => delPack(p)}>Xoá hẳn</Btn>
+              </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {p.stickers.map((s) => (

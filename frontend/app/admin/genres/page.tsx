@@ -8,13 +8,11 @@ import { PageHeader, Card, Btn, Notice } from '@/components/admin/ui';
 interface Genre { id: string; name: string; slug: string; types: string[] }
 
 const MEDIA_TYPES = [
-  { v: 'MANGA',   l: 'Manga (Nhật)' },
-  { v: 'MANHUA',  l: 'Manhua (TQ)' },
-  { v: 'DONGHUA', l: 'Donghua (TQ)' },
+  { v: 'MANHUA',  l: 'Manhua (Truyện TQ)' },
+  { v: 'DONGHUA', l: 'Donghua (Hoạt hình TQ)' },
 ];
 
 const TYPE_CLS: Record<string, string> = {
-  MANGA:   'bg-brand-100 text-brand-700 dark:bg-brand-950/40 dark:text-brand-400',
   MANHUA:  'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
   DONGHUA: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
 };

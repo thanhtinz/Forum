@@ -10,7 +10,7 @@ interface Candidate { anilistId: number; title: string; cover?: string | null; f
 interface Genre { id: string; slug: string; name: string; types: string[] }
 
 const FORMATS_DONGHUA = ['TV', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
-const FORMATS_MANGA = ['MANGA', 'ONE_SHOT', 'NOVEL', 'MANHUA'];
+const FORMATS_MANHUA = ['ONE_SHOT', 'NOVEL', 'MANHUA'];
 const EMPTY_FORM = {
   title: '', titleEnglish: '', titleNative: '',
   type: 'MANHUA', status: 'RELEASING', format: '',
@@ -41,7 +41,7 @@ export default function AdminAnime() {
   const [listSearch, setListSearch] = useState('');
 
   const isDonghua = form.type === 'DONGHUA';
-  const formatOptions = isDonghua ? FORMATS_DONGHUA : FORMATS_MANGA;
+  const formatOptions = isDonghua ? FORMATS_DONGHUA : FORMATS_MANHUA;
 
   function load() {
     const qs = new URLSearchParams({ limit: '60' });
@@ -179,7 +179,6 @@ export default function AdminAnime() {
               <Field label="Loại">
                 <select className="input w-full" value={form.type} onChange={(e) => set('type', e.target.value)}>
                   <option value="MANHUA">Manhua (Truyện TQ)</option>
-                  <option value="MANGA">Manga (Truyện Nhật)</option>
                   <option value="DONGHUA">Donghua (Hoạt hình TQ)</option>
                 </select>
               </Field>
@@ -279,7 +278,7 @@ export default function AdminAnime() {
       {/* List */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          {[{ v: '', l: 'Tất cả' }, { v: 'MANHUA', l: 'Manhua' }, { v: 'MANGA', l: 'Manga' }, { v: 'DONGHUA', l: 'Donghua' }].map((t) => (
+          {[{ v: '', l: 'Tất cả' }, { v: 'MANHUA', l: 'Manhua' }, { v: 'DONGHUA', l: 'Donghua' }].map((t) => (
             <button key={t.v} onClick={() => setTab(t.v)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t.v ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{t.l}</button>
           ))}
           <form onSubmit={(e) => { e.preventDefault(); load(); }} className="ml-auto flex min-w-[180px] flex-1 items-center gap-1 rounded-lg border border-ink-200 px-2 dark:border-ink-700 sm:max-w-xs">

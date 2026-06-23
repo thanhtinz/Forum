@@ -6,25 +6,6 @@ import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen, Loader2, Link as Lin
 import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
-const MANGA_ANIME_GENRES = [
-  'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Romance', 'Slice of Life',
-  'Supernatural', 'Mystery', 'Psychological', 'Thriller', 'Horror', 'Sci-fi',
-  'Shounen', 'Shoujo', 'Seinen', 'Josei', 'Ecchi', 'Harem',
-  'Martial Arts', 'School Life', 'Webtoon',
-  'Ngôn Tình', 'Cổ Đại', 'Xuyên Không', 'Chuyển Sinh',
-  'Manhua', 'Manhwa', 'Manga',
-];
-const MANHUA_DONGHUA_GENRES = [
-  'Huyền Huyễn', 'Xuyên Không', 'Trùng Sinh', 'Tiên Hiệp',
-  'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại',
-];
-
-const GENRE_PRESETS: Record<string, string[]> = {
-  ANIME:   MANGA_ANIME_GENRES,
-  MANGA:   [...MANGA_ANIME_GENRES, 'One-shot', 'Truyện màu', 'Truyện chữ'],
-  MANHUA:  [...MANHUA_DONGHUA_GENRES, 'One-shot', 'Truyện màu', 'Truyện chữ'],
-  DONGHUA: MANHUA_DONGHUA_GENRES,
-};
 
 interface Srv { id: string; name: string; videoUrl: string; referer?: string | null; introEnd?: number | null }
 interface Ep { id: string; number: number; part: number; kind: string; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; showNextAt?: number | null; servers?: Srv[] }
@@ -98,9 +79,14 @@ function EditInner() {
 }
 
 function GenreField({ w, set }: { w: any; set: (k: string, v: any) => void }) {
+  const [dbGenres, setDbGenres] = useState<{ id: string; name: string; slug: string }[]>([]);
+
+  useEffect(() => {
+    api.get<any[]>(`/anime/genres?type=${w.type}`).then(setDbGenres).catch(() => {});
+  }, [w.type]);
+
   const current: string = w._genres ?? (w.genres || []).map((g: any) => g.name).join(', ');
   const selected = current.split(',').map((x) => x.trim()).filter(Boolean);
-  const presets = GENRE_PRESETS[w.type] || [];
 
   function toggle(name: string) {
     const exists = selected.some((g) => g.toLowerCase() === name.toLowerCase());
@@ -111,29 +97,28 @@ function GenreField({ w, set }: { w: any; set: (k: string, v: any) => void }) {
   }
 
   return (
-    <Field label="Thể loại (phân cách bằng dấu phẩy)">
-      {presets.length > 0 && (
+    <Field label="Thể loại">
+      {dbGenres.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-1.5">
-          {presets.map((g) => {
-            const on = selected.some((s) => s.toLowerCase() === g.toLowerCase());
+          {dbGenres.map((g) => {
+            const on = selected.some((s) => s.toLowerCase() === g.name.toLowerCase());
             return (
-              <button
-                key={g}
-                type="button"
-                onClick={() => toggle(g)}
+              <button key={g.id} type="button" onClick={() => toggle(g.name)}
                 className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                   on
-                    ? 'border-brand-500 bg-brand-500 text-white dark:border-brand-400 dark:bg-brand-600'
-                    : 'border-ink-200 bg-white text-ink-600 hover:border-brand-300 hover:bg-brand-50 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300'
-                }`}
-              >
-                {g}
+                    ? 'border-brand-500 bg-brand-500 text-white'
+                    : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300'
+                }`}>
+                {g.name}
               </button>
             );
           })}
         </div>
       )}
-      <input className="input" value={current} onChange={(e) => set('_genres', e.target.value)} placeholder="Huyền Huyễn, Truyện màu…" />
+      {dbGenres.length === 0 && (
+        <p className="mb-1 text-xs text-ink-400">Chưa có thể loại. Vào <a href="/admin/genres" className="text-brand-600 hover:underline">Thể loại</a> để tạo trước.</p>
+      )}
+      <input className="input" value={current} onChange={(e) => set('_genres', e.target.value)} placeholder="Hoặc nhập tay: Action, Fantasy…" />
     </Field>
   );
 }

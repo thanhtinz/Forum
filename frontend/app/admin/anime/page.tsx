@@ -7,6 +7,7 @@ import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/com
 
 interface Work { id: string; type: string; slug: string; title: string; coverUrl?: string | null; seasonYear?: number | null; format?: string | null; avgScore: number }
 interface Candidate { anilistId: number; title: string; cover?: string | null; format?: string | null; year?: number | null; score?: number | null }
+interface Genre { id: string; slug: string; name: string; types: string[] }
 
 export default function AdminAnime() {
   const [list, setList] = useState<Work[]>([]);
@@ -19,8 +20,10 @@ export default function AdminAnime() {
   const [importingId, setImportingId] = useState<number | null>(null);
   // manual
   const [form, setForm] = useState({ title: '', type: 'ANIME', status: 'FINISHED' });
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [genres, setGenres] = useState<Genre[]>([]);
   // bộ lọc danh sách đã có
-  const [tab, setTab] = useState(''); // '' | 'ANIME' | 'MANGA,LIGHT_NOVEL'
+  const [tab, setTab] = useState('');
   const [listSearch, setListSearch] = useState('');
 
   function load() {
@@ -30,6 +33,11 @@ export default function AdminAnime() {
     api.get<{ data: Work[] }>(`/admin/anime?${qs}`).then((r) => setList(r.data || [])).catch((e) => setErr(e.message));
   }
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [tab]);
+
+  useEffect(() => {
+    api.get<Genre[]>(`/anime/genres?type=${form.type}`).then(setGenres).catch(() => {});
+    setSelectedGenres([]);
+  }, [form.type]);
 
   async function search() {
     if (!impQuery.trim()) return;
@@ -47,12 +55,21 @@ export default function AdminAnime() {
   async function createManual() {
     if (!form.title.trim()) { setErr('Nhập tên'); return; }
     setErr(''); setMsg('');
-    try { await api.post('/admin/anime', form); setMsg('Đã tạo ✓'); setForm({ title: '', type: 'ANIME', status: 'FINISHED' }); load(); }
-    catch (e: any) { setErr(e.message); }
+    try {
+      await api.post('/admin/anime', { ...form, genreNames: selectedGenres });
+      setMsg('Đã tạo ✓');
+      setForm({ title: '', type: 'ANIME', status: 'FINISHED' });
+      setSelectedGenres([]);
+      load();
+    } catch (e: any) { setErr(e.message); }
   }
   async function del(w: Work) {
     if (!confirm(`Xoá "${w.title}"?`)) return;
     try { await api.post(`/admin/anime/${w.id}/delete`); load(); } catch (e: any) { setErr(e.message); }
+  }
+
+  function toggleGenre(name: string) {
+    setSelectedGenres((prev) => prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]);
   }
 
   return (
@@ -97,10 +114,43 @@ export default function AdminAnime() {
         <SectionTitle>Tạo thủ công</SectionTitle>
         <div className="flex flex-wrap items-end gap-2">
           <Field label="Tên"><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
-          <Field label="Loại"><select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="ANIME">Anime</option><option value="DONGHUA">Donghua</option><option value="MANGA">Manga</option><option value="MANHUA">Manhua</option></select></Field>
-          <Field label="Trạng thái"><select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="FINISHED">Hoàn thành</option><option value="RELEASING">Đang phát hành</option><option value="NOT_YET_RELEASED">Sắp ra mắt</option></select></Field>
-          <Btn onClick={createManual}>Tạo</Btn>
+          <Field label="Loại">
+            <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              <option value="ANIME">Anime</option>
+              <option value="DONGHUA">Donghua</option>
+              <option value="MANGA">Manga</option>
+              <option value="MANHUA">Manhua</option>
+            </select>
+          </Field>
+          <Field label="Trạng thái">
+            <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+              <option value="FINISHED">Hoàn thành</option>
+              <option value="RELEASING">Đang phát hành</option>
+              <option value="NOT_YET_RELEASED">Sắp ra mắt</option>
+            </select>
+          </Field>
         </div>
+        {genres.length > 0 && (
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-ink-500">Thể loại</p>
+            <div className="flex flex-wrap gap-1.5">
+              {genres.map((g) => (
+                <button key={g.id} type="button" onClick={() => toggleGenre(g.name)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    selectedGenres.includes(g.name)
+                      ? 'border-brand-500 bg-brand-500 text-white'
+                      : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300'
+                  }`}>
+                  {g.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {genres.length === 0 && (
+          <p className="text-xs text-ink-400">Chưa có thể loại cho loại này. Vào <a href="/admin/genres" className="text-brand-600 hover:underline">Thể loại</a> để tạo trước.</p>
+        )}
+        <Btn onClick={createManual}>Tạo</Btn>
       </Card>
 
       <div className="space-y-3">

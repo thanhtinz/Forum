@@ -25,6 +25,11 @@ const STATUS = [
   { v: 'CANCELLED', label: 'Đã huỷ' },
 ];
 const SEASONS = [{ v: '', label: 'Mọi mùa' }, { v: 'WINTER', label: 'Đông' }, { v: 'SPRING', label: 'Xuân' }, { v: 'SUMMER', label: 'Hạ' }, { v: 'FALL', label: 'Thu' }];
+const FORMATS = [
+  { v: '', label: 'Mọi dạng' },
+  { v: 'TV', label: 'TV / Series' },
+  { v: 'MOVIE,OVA', label: 'Movie / OVA' },
+];
 const SORTS = [{ v: 'popularity', label: 'Phổ biến' }, { v: 'score', label: 'Điểm cao' }, { v: 'newest', label: 'Mới thêm' }, { v: 'views', label: 'Lượt xem' }];
 
 const typeIcon = (t: string) => (t === 'MANGA' ? <BookOpen size={12} /> : <Film size={12} />);
@@ -34,7 +39,7 @@ export default function AnimeListPage() {
   const [genres, setGenres] = useState<Genre[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [f, setF] = useState({ type: 'ANIME', genre: '', status: '', season: '', year: '', sort: 'popularity', search: '' });
+  const [f, setF] = useState({ type: 'ANIME', genre: '', status: '', format: '', season: '', year: '', sort: 'popularity', search: '' });
   const [searchInput, setSearchInput] = useState('');
 
   useEffect(() => { api.get<Genre[]>('/anime/genres').then(setGenres).catch(() => {}); }, []);
@@ -62,7 +67,7 @@ export default function AnimeListPage() {
       {/* Type tabs */}
       <div className="flex gap-2">
         {TYPE_TABS.map((t) => (
-          <button key={t.v} onClick={() => setF((s) => ({ ...s, type: t.v }))}
+          <button key={t.v} onClick={() => setF((s) => ({ ...s, type: t.v, format: '' }))}
             className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${f.type === t.v ? 'bg-brand-600 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>{t.label}</button>
         ))}
       </div>
@@ -77,6 +82,11 @@ export default function AnimeListPage() {
           <option value="">Mọi thể loại</option>
           {genres.map((g) => <option key={g.id} value={g.slug}>{g.name}</option>)}
         </select>
+        {f.type === 'ANIME' && (
+          <select className="input !w-auto" value={f.format} onChange={(e) => setF((s) => ({ ...s, format: e.target.value }))}>
+            {FORMATS.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
+          </select>
+        )}
         <select className="input !w-auto" value={f.status} onChange={(e) => setF((s) => ({ ...s, status: e.target.value }))}>
           {STATUS.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
         </select>

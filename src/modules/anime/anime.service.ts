@@ -28,7 +28,7 @@ export class AnimeService {
   }
 
   async list(q: {
-    type?: string; genre?: string; studio?: string; status?: string;
+    type?: string; genre?: string; studio?: string; status?: string; format?: string;
     season?: string; year?: string; search?: string; sort?: string;
     page?: number; limit?: number;
   }) {
@@ -39,6 +39,11 @@ export class AnimeService {
       const types = q.type.split(',').map((t) => t.trim()).filter((t) => ['ANIME', 'MANGA', 'MANHUA', 'DONGHUA'].includes(t)) as MediaType[];
       if (types.length === 1) where.type = types[0];
       else if (types.length > 1) where.type = { in: types };
+    }
+    if (q.format) {
+      const fmts = q.format.split(',').map((f) => f.trim()).filter(Boolean);
+      if (fmts.length === 1) where.format = { equals: fmts[0], mode: 'insensitive' };
+      else if (fmts.length > 1) where.format = { in: fmts, mode: 'insensitive' } as any;
     }
     if (q.status) where.status = q.status as any;
     if (q.season) where.season = q.season as any;

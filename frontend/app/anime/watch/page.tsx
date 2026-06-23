@@ -220,6 +220,8 @@ function Watch() {
   // countdown tự chuyển tập (như Netflix)
   const [nextCountdown, setNextCountdown] = useState<number | null>(null);
   const [nextDismissed, setNextDismissed] = useState(false);
+  // Ref lưu timer ID để cancel chính xác kể cả khi React re-render
+  const nextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setAutoNext(localStorage.getItem('anime_autonext') !== '0');
@@ -238,24 +240,26 @@ function Watch() {
   function toggleAutoNext() { setAutoNext((v) => { localStorage.setItem('anime_autonext', v ? '0' : '1'); return !v; }); }
   function toggleSkipIntro() { setSkipIntro((v) => { localStorage.setItem('anime_skipintro', v ? '0' : '1'); return !v; }); }
 
-  // Countdown timer: bắt đầu đếm tại thời điểm cấu hình (showNextAt) hoặc ước tính gần hết tập
+  // Countdown timer: dùng ref để tránh bị React cleanup cancel nhầm
   useEffect(() => {
+    // Cancel timer cũ nếu có
+    if (nextTimerRef.current) { clearTimeout(nextTimerRef.current); nextTimerRef.current = null; }
     setNextCountdown(null);
-    setNextDismissed(false); // Reset dismiss khi đổi tập/server
-    if (!ep?.next) return; // Không có tập tiếp → không đếm
-    // showNextAt (giây) được admin cấu hình per-episode → ưu tiên cao nhất
-    // Nếu không có: dùng duration - 90s. Nếu không có duration: mặc định 5 giây
+    setNextDismissed(false);
+    if (!ep?.id || !ep?.next) return;
     let triggerSec: number;
     if (ep.showNextAt != null && ep.showNextAt > 0) {
       triggerSec = ep.showNextAt;
     } else if (ep.duration) {
       triggerSec = Math.max(ep.duration * 60 - 90, 5);
     } else {
-      triggerSec = 5; // Không có cấu hình → hiện sau 5s
+      triggerSec = 5;
     }
-    const t = setTimeout(() => setNextCountdown(15), triggerSec * 1000);
-    return () => clearTimeout(t);
+    nextTimerRef.current = setTimeout(() => { nextTimerRef.current = null; setNextCountdown(15); }, triggerSec * 1000);
   }, [ep?.id, serverIdx]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Dọn dẹp khi unmount
+  useEffect(() => () => { if (nextTimerRef.current) clearTimeout(nextTimerRef.current); }, []);
 
   // Tick đếm ngược — dependency array [nextCountdown] để không bị cancel mỗi render
   useEffect(() => {
@@ -378,24 +382,17 @@ function Watch() {
         <div className="aspect-video w-full">
           <Player url={curUrl} referer={cur?.referer} introEnd={cur?.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
         </div>
-        {/* Banner tập tiếp theo — luôn hiện khi có tập tiếp (trừ khi user bấm X) */}
-        {ep?.next && !nextDismissed && (
+        {/* Banner tập tiếp theo — hiện khi timer kích hoạt (showNextAt), ẩn khi bấm X */}
+        {nextCountdown !== null && ep?.next && !nextDismissed && (
           <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-ink-800 px-4 py-2.5 text-white">
             <div className="min-w-0">
               <span className="text-[10px] text-white/50">Tập tiếp theo · </span>
               <span className="text-sm font-semibold">Tập {ep.next.number}{ep.next.title ? ` — ${ep.next.title}` : ''}</span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <button onClick={goNext}
-                className="rounded-lg bg-brand-600 px-3 py-1 text-xs font-medium hover:bg-brand-500">
-                Xem ngay
-              </button>
-              {nextCountdown !== null && (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-brand-500 text-sm font-bold tabular-nums">
-                  {nextCountdown}
-                </div>
-              )}
-              <button onClick={() => { setNextDismissed(true); setNextCountdown(null); }} className="text-white/40 hover:text-white"><X size={14} /></button>
+              <button onClick={goNext} className="rounded-lg bg-brand-600 px-3 py-1 text-xs font-medium hover:bg-brand-500">Xem ngay</button>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-brand-500 text-sm font-bold tabular-nums">{nextCountdown}</div>
+              <button onClick={() => { setNextDismissed(true); setNextCountdown(null); if (nextTimerRef.current) { clearTimeout(nextTimerRef.current); nextTimerRef.current = null; } }} className="text-white/40 hover:text-white"><X size={14} /></button>
             </div>
           </div>
         )}

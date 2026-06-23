@@ -240,20 +240,16 @@ function Watch() {
   // Countdown timer: bắt đầu đếm tại thời điểm cấu hình (showNextAt) hoặc ước tính gần hết tập
   useEffect(() => {
     setNextCountdown(null);
-    if (!ep?.next) return;
-    const servers: ServerT[] = ep.servers || [];
-    const curUrl = (servers[serverIdx] ?? servers[0])?.videoUrl ?? '';
-    const isIframe = !!curUrl && !/\.m3u8(\?|$)/i.test(curUrl) && !/\.(mp4|webm)(\?|$)/i.test(curUrl);
-    if (!isIframe) return;
+    if (!ep?.next) return; // Không có tập tiếp → không đếm
     // showNextAt (giây) được admin cấu hình per-episode → ưu tiên cao nhất
-    // Nếu không có: dùng duration - 90s. Nếu không có duration: mặc định 10 giây (để test)
+    // Nếu không có: dùng duration - 90s. Nếu không có duration: mặc định 5 giây
     let triggerSec: number;
     if (ep.showNextAt != null && ep.showNextAt > 0) {
       triggerSec = ep.showNextAt;
     } else if (ep.duration) {
-      triggerSec = Math.max(ep.duration * 60 - 90, 10);
+      triggerSec = Math.max(ep.duration * 60 - 90, 5);
     } else {
-      triggerSec = 10; // Không có cấu hình → hiện nhanh sau 10s để dễ test
+      triggerSec = 5; // Không có cấu hình → hiện sau 5s
     }
     const t = setTimeout(() => setNextCountdown(15), triggerSec * 1000);
     return () => clearTimeout(t);

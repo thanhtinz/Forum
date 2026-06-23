@@ -135,8 +135,33 @@ function Player(props: PlayerProps) {
   if (yt) return <iframe src={`https://www.youtube.com/embed/${yt}?autoplay=1`} className="h-full w-full" allowFullScreen title="Player" />;
   if (/\.m3u8(\?|$)/i.test(url)) return <VideoPlayer {...props} isHls />;
   if (/\.(mp4|webm)(\?|$)/i.test(url)) return <VideoPlayer {...props} isHls={false} />;
-  // Nguồn iframe (abyss…): sandbox chặn popup/mở tab/redirect quảng cáo, vẫn cho script + phát video.
-  // (Không chặn được banner BÊN TRONG iframe vì khác origin — đó là giới hạn của trình duyệt.)
+  // Nguồn iframe: lắng nghe postMessage để bắt sự kiện ended từ các player phổ biến
+  return <IframePlayer {...props} url={url} />;
+}
+
+function IframePlayer({ url, autoNext, onEnded }: PlayerProps) {
+  const nextRef = useRef({ autoNext, onEnded });
+  nextRef.current = { autoNext, onEnded };
+
+  useEffect(() => {
+    function onMsg(e: MessageEvent) {
+      try {
+        const d = e.data;
+        if (!d) return;
+        const str = typeof d === 'string' ? d.toLowerCase() : '';
+        const isEnded =
+          str === 'ended' ||
+          d?.event === 'ended' || d?.type === 'ended' || d?.action === 'ended' ||
+          d?.status === 'ended' || d?.state === 'ended' ||
+          d?.event === 'video:ended' || d?.event === 'complete' ||
+          (str && (str.includes('"ended"') || str.includes('"complete"')));
+        if (isEnded && nextRef.current.autoNext) nextRef.current.onEnded();
+      } catch {}
+    }
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
   return <iframe src={url} className="h-full w-full" allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
     sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-pointer-lock allow-orientation-lock"
     allowFullScreen title="Player" />;

@@ -3,10 +3,24 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, ChevronLeft, FileText } from 'lucide-react';
+import { BookOpen, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Card, Btn, Field, Notice } from '@/components/admin/ui';
+
+type MediaTypeKey = 'MANGA' | 'MANHWA' | 'MANHUA';
+
+const MEDIA_TYPES: { key: MediaTypeKey; label: string; desc: string }[] = [
+  { key: 'MANGA',  label: 'Manga',  desc: 'Truyện tranh Nhật Bản' },
+  { key: 'MANHWA', label: 'Manhwa / Truyện', desc: 'Truyện tranh Hàn Quốc' },
+  { key: 'MANHUA', label: 'Manhua', desc: 'Truyện tranh Trung Quốc' },
+];
+
+const GENRE_PRESETS: Record<MediaTypeKey, string[]> = {
+  MANGA:  ['Truyện màu', 'Truyện chữ', 'One-shot'],
+  MANHWA: ['Truyện màu', 'One-shot', 'Truyện chữ'],
+  MANHUA: ['Huyền Huyễn', 'Xuyên Không', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại'],
+};
 
 export default function NewSeriesPage() {
   const { user, loading } = useAuth();
@@ -16,23 +30,36 @@ export default function NewSeriesPage() {
     title: '', titleEnglish: '', titleNative: '',
     description: '', language: 'vi', ageRating: '0',
   });
-  const [isOneShot, setIsOneShot] = useState(false);
-  const [mediaType, setMediaType] = useState<'MANGA' | 'MANHUA'>('MANGA');
+  const [mediaType, setMediaType] = useState<MediaTypeKey>('MANGA');
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
   function set(k: keyof typeof form, v: string) { setForm((f) => ({ ...f, [k]: v })); }
+
+  function toggleGenre(g: string) {
+    setSelectedGenres((prev) =>
+      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
+    );
+  }
+
+  function handleTypeChange(t: MediaTypeKey) {
+    setMediaType(t);
+    setSelectedGenres([]);
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.title.trim()) { setErr('Nhập tên truyện'); return; }
     setBusy(true); setErr('');
     try {
+      const isOneShot = selectedGenres.includes('One-shot');
       const r = await api.post<{ id: string }>('/creator/manga', {
         ...form,
         type: mediaType,
         ageRating: Number(form.ageRating),
         format: isOneShot ? 'ONE_SHOT' : undefined,
+        genreNames: selectedGenres.length ? selectedGenres : undefined,
         titleEnglish: form.titleEnglish || undefined,
         titleNative: form.titleNative || undefined,
         description: form.description || undefined,
@@ -43,6 +70,8 @@ export default function NewSeriesPage() {
 
   if (loading) return null;
   if (!user) return <div className="p-10 text-center">Đăng nhập để tiếp tục.</div>;
+
+  const presets = GENRE_PRESETS[mediaType];
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 sm:p-6">
@@ -69,31 +98,15 @@ export default function NewSeriesPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Tên tiếng Anh">
-              <input
-                value={form.titleEnglish}
-                onChange={(e) => set('titleEnglish', e.target.value)}
-                className="input w-full"
-                placeholder="English title"
-              />
+              <input value={form.titleEnglish} onChange={(e) => set('titleEnglish', e.target.value)} className="input w-full" placeholder="English title" />
             </Field>
             <Field label="Tên gốc (Nhật / Hàn / ...)">
-              <input
-                value={form.titleNative}
-                onChange={(e) => set('titleNative', e.target.value)}
-                className="input w-full"
-                placeholder="原作タイトル"
-              />
+              <input value={form.titleNative} onChange={(e) => set('titleNative', e.target.value)} className="input w-full" placeholder="原作タイトル" />
             </Field>
           </div>
 
           <Field label="Mô tả / Tóm tắt">
-            <textarea
-              value={form.description}
-              onChange={(e) => set('description', e.target.value)}
-              rows={4}
-              className="input w-full"
-              placeholder="Tóm tắt nội dung series..."
-            />
+            <textarea value={form.description} onChange={(e) => set('description', e.target.value)} rows={3} className="input w-full" placeholder="Tóm tắt nội dung series..." />
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
@@ -116,44 +129,42 @@ export default function NewSeriesPage() {
             </Field>
           </div>
 
-          {/* Media type */}
+          {/* Loại truyện */}
           <div className="rounded-lg border border-ink-100 p-3 dark:border-ink-800">
             <p className="mb-2 text-xs font-medium text-ink-500">Loại truyện</p>
-            <div className="flex gap-3">
-              {(['MANGA', 'MANHUA'] as const).map((t) => (
-                <label key={t} className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition ${mediaType === t ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-700'}`}>
-                  <input type="radio" name="mediatype" checked={mediaType === t} onChange={() => setMediaType(t)} className="hidden" />
-                  <BookOpen size={18} className={mediaType === t ? 'text-brand-600' : 'text-ink-400'} />
-                  <div>
-                    <p className="text-sm font-medium">{t === 'MANGA' ? 'Manga' : 'Manhua'}</p>
-                    <p className="text-xs text-ink-400">{t === 'MANGA' ? 'Truyện tranh Nhật' : 'Truyện tranh Trung Quốc'}</p>
-                  </div>
+            <div className="flex gap-2">
+              {MEDIA_TYPES.map((t) => (
+                <label key={t.key} className={`flex flex-1 cursor-pointer flex-col gap-0.5 rounded-lg border-2 p-2.5 transition ${mediaType === t.key ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-700'}`}>
+                  <input type="radio" name="mediatype" checked={mediaType === t.key} onChange={() => handleTypeChange(t.key)} className="hidden" />
+                  <span className={`text-sm font-semibold ${mediaType === t.key ? 'text-brand-700 dark:text-brand-400' : ''}`}>{t.label}</span>
+                  <span className="text-[11px] text-ink-400">{t.desc}</span>
                 </label>
               ))}
             </div>
           </div>
 
-          {/* Format */}
+          {/* Thể loại */}
           <div className="rounded-lg border border-ink-100 p-3 dark:border-ink-800">
-            <p className="mb-2 text-xs font-medium text-ink-500">Định dạng series</p>
-            <div className="flex gap-3">
-              <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition ${!isOneShot ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-700'}`}>
-                <input type="radio" name="format" checked={!isOneShot} onChange={() => setIsOneShot(false)} className="hidden" />
-                <BookOpen size={18} className={!isOneShot ? 'text-brand-600' : 'text-ink-400'} />
-                <div>
-                  <p className="text-sm font-medium">Series thông thường</p>
-                  <p className="text-xs text-ink-400">Nhiều chương, cập nhật liên tục</p>
-                </div>
-              </label>
-              <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition ${isOneShot ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-700'}`}>
-                <input type="radio" name="format" checked={isOneShot} onChange={() => setIsOneShot(true)} className="hidden" />
-                <FileText size={18} className={isOneShot ? 'text-brand-600' : 'text-ink-400'} />
-                <div>
-                  <p className="text-sm font-medium">One-shot</p>
-                  <p className="text-xs text-ink-400">Truyện ngắn, chỉ một chương</p>
-                </div>
-              </label>
+            <p className="mb-2 text-xs font-medium text-ink-500">Thể loại</p>
+            <div className="flex flex-wrap gap-2">
+              {presets.map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => toggleGenre(g)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    selectedGenres.includes(g)
+                      ? 'border-brand-500 bg-brand-500 text-white dark:border-brand-400 dark:bg-brand-600'
+                      : 'border-ink-200 bg-white text-ink-600 hover:border-brand-300 hover:bg-brand-50 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
             </div>
+            {selectedGenres.length > 0 && (
+              <p className="mt-2 text-[11px] text-ink-400">Đã chọn: {selectedGenres.join(', ')}</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 border-t border-ink-100 pt-4 dark:border-ink-800">

@@ -6,6 +6,13 @@ import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen, Loader2, Link as Lin
 import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
+const GENRE_PRESETS: Record<string, string[]> = {
+  MANGA: ['Truyện màu', 'Truyện chữ', 'One-shot'],
+  MANHWA: ['Truyện màu', 'One-shot', 'Truyện chữ'],
+  MANHUA: ['Huyền Huyễn', 'Xuyên Không', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại'],
+  DONGHUA: ['Huyền Huyễn', 'Xuyên Không', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại'],
+};
+
 interface Srv { id: string; name: string; videoUrl: string; referer?: string | null; introEnd?: number | null }
 interface Ep { id: string; number: number; part: number; kind: string; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; showNextAt?: number | null; servers?: Srv[] }
 interface Ch { id: string; number: number; title?: string | null; content?: string | null; pages: string[] }
@@ -50,7 +57,7 @@ function EditInner() {
           <Field label="Tên chính"><input className="input" value={w.title || ''} onChange={(e) => set('title', e.target.value)} /></Field>
           <Field label="Tên tiếng Anh"><input className="input" value={w.titleEnglish || ''} onChange={(e) => set('titleEnglish', e.target.value)} /></Field>
           <Field label="Tên gốc (Nhật)"><input className="input" value={w.titleNative || ''} onChange={(e) => set('titleNative', e.target.value)} /></Field>
-          <Field label="Loại"><select className="input" value={w.type} onChange={(e) => set('type', e.target.value)}><option value="ANIME">Anime</option><option value="DONGHUA">Donghua</option><option value="MANGA">Manga</option><option value="MANHUA">Manhua</option></select></Field>
+          <Field label="Loại"><select className="input" value={w.type} onChange={(e) => set('type', e.target.value)}><option value="ANIME">Anime</option><option value="DONGHUA">Donghua</option><option value="MANGA">Manga</option><option value="MANHWA">Manhwa / Truyện</option><option value="MANHUA">Manhua</option></select></Field>
           <Field label="Trạng thái"><select className="input" value={w.status} onChange={(e) => set('status', e.target.value)}><option value="RELEASING">Đang phát hành</option><option value="FINISHED">Hoàn thành</option><option value="NOT_YET_RELEASED">Sắp ra mắt</option><option value="HIATUS">Tạm ngưng</option><option value="CANCELLED">Đã huỷ</option></select></Field>
           <Field label="Định dạng"><input className="input" value={w.format || ''} onChange={(e) => set('format', e.target.value)} placeholder="TV / MOVIE / MANGA…" /></Field>
           <Field label="Mùa"><select className="input" value={w.season || ''} onChange={(e) => set('season', e.target.value || null)}><option value="">—</option><option value="WINTER">Đông</option><option value="SPRING">Xuân</option><option value="SUMMER">Hạ</option><option value="FALL">Thu</option></select></Field>
@@ -64,7 +71,7 @@ function EditInner() {
           <Field label="Ảnh bìa (cover)"><input className="input" value={w.coverUrl || ''} onChange={(e) => set('coverUrl', e.target.value)} /></Field>
           <Field label="Ảnh banner"><input className="input" value={w.bannerUrl || ''} onChange={(e) => set('bannerUrl', e.target.value)} /></Field>
         </div>
-        <Field label="Thể loại (phân cách bằng dấu phẩy)"><input className="input" defaultValue={(w.genres || []).map((g: any) => g.name).join(', ')} onChange={(e) => set('_genres', e.target.value)} /></Field>
+        <GenreField w={w} set={set} />
         <Field label="Mô tả"><textarea className="input min-h-[120px]" value={w.description || ''} onChange={(e) => set('description', e.target.value)} /></Field>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={!!w.isAdult} onChange={(e) => set('isAdult', e.target.checked)} /> Nội dung 18+</label>
         <Btn onClick={saveInfo}><Save size={15} /> Lưu thông tin</Btn>
@@ -74,6 +81,47 @@ function EditInner() {
         ? <EpisodeManager mediaId={id} episodes={w.episodeList || []} onChange={load} setErr={setErr} />
         : <ChapterManager mediaId={id} chapters={w.chapterList || []} isNovel={false} onChange={load} setErr={setErr} />}
     </div>
+  );
+}
+
+function GenreField({ w, set }: { w: any; set: (k: string, v: any) => void }) {
+  const current: string = w._genres ?? (w.genres || []).map((g: any) => g.name).join(', ');
+  const selected = current.split(',').map((x) => x.trim()).filter(Boolean);
+  const presets = GENRE_PRESETS[w.type] || [];
+
+  function toggle(name: string) {
+    const exists = selected.some((g) => g.toLowerCase() === name.toLowerCase());
+    const next = exists
+      ? selected.filter((g) => g.toLowerCase() !== name.toLowerCase())
+      : [...selected, name];
+    set('_genres', next.join(', '));
+  }
+
+  return (
+    <Field label="Thể loại (phân cách bằng dấu phẩy)">
+      {presets.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {presets.map((g) => {
+            const on = selected.some((s) => s.toLowerCase() === g.toLowerCase());
+            return (
+              <button
+                key={g}
+                type="button"
+                onClick={() => toggle(g)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  on
+                    ? 'border-brand-500 bg-brand-500 text-white dark:border-brand-400 dark:bg-brand-600'
+                    : 'border-ink-200 bg-white text-ink-600 hover:border-brand-300 hover:bg-brand-50 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300'
+                }`}
+              >
+                {g}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      <input className="input" value={current} onChange={(e) => set('_genres', e.target.value)} placeholder="Huyền Huyễn, Truyện màu…" />
+    </Field>
   );
 }
 

@@ -97,7 +97,7 @@ export default function AdminAnime() {
         <SectionTitle>Tạo thủ công</SectionTitle>
         <div className="flex flex-wrap items-end gap-2">
           <Field label="Tên"><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
-          <Field label="Loại"><select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="ANIME">Anime</option><option value="DONGHUA">Donghua</option><option value="MANGA">Manga</option><option value="MANHUA">Manhua</option></select></Field>
+          <Field label="Loại"><select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}><option value="ANIME">Anime</option><option value="DONGHUA">Donghua</option><option value="MANGA">Manga</option><option value="MANHWA">Manhwa / Truyện</option><option value="MANHUA">Manhua</option></select></Field>
           <Field label="Trạng thái"><select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}><option value="FINISHED">Hoàn thành</option><option value="RELEASING">Đang phát hành</option><option value="NOT_YET_RELEASED">Sắp ra mắt</option></select></Field>
           <Btn onClick={createManual}>Tạo</Btn>
         </div>
@@ -105,7 +105,7 @@ export default function AdminAnime() {
 
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          {[{ v: '', l: 'Tất cả' }, { v: 'ANIME', l: 'Anime' }, { v: 'DONGHUA', l: 'Donghua' }, { v: 'MANGA', l: 'Manga' }, { v: 'MANHUA', l: 'Manhua' }].map((t) => (
+          {[{ v: '', l: 'Tất cả' }, { v: 'ANIME', l: 'Anime' }, { v: 'DONGHUA', l: 'Donghua' }, { v: 'MANGA', l: 'Manga' }, { v: 'MANHWA', l: 'Manhwa' }, { v: 'MANHUA', l: 'Manhua' }].map((t) => (
             <button key={t.v} onClick={() => setTab(t.v)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t.v ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{t.l}</button>
           ))}
           <form onSubmit={(e) => { e.preventDefault(); load(); }} className="ml-auto flex min-w-[180px] flex-1 items-center gap-1 rounded-lg border border-ink-200 px-2 dark:border-ink-700 sm:max-w-xs">

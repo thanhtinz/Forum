@@ -309,6 +309,9 @@ export class AdminController {
   @Post('stickers/:id/delete')
   deleteStickerPack(@Param('id') id: string) { return this.gameAsset.deleteStickerPack(id); }
 
+  @Post('stickers/:id/hard-delete')
+  hardDeleteStickerPack(@Param('id') id: string) { return this.gameAsset.hardDeleteStickerPack(id); }
+
   @Post('stickers/:packId/add')
   addSticker(@Param('packId') packId: string, @Body() sticker: any) {
     return this.gameAsset.addStickerToPack(packId, sticker);

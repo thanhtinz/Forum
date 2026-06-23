@@ -15,7 +15,9 @@ interface Genre { id: string; slug: string; name: string }
 const TYPE_TABS = [
   { v: '', label: 'Tất cả' },
   { v: 'ANIME', label: 'Anime' },
+  { v: 'DONGHUA', label: 'Donghua' },
   { v: 'MANGA', label: 'Manga' },
+  { v: 'MANHUA', label: 'Manhua' },
   { v: 'LIGHT_NOVEL', label: 'Light Novel' },
 ];
 const STATUS = [
@@ -29,7 +31,7 @@ const STATUS = [
 const SEASONS = [{ v: '', label: 'Mọi mùa' }, { v: 'WINTER', label: 'Đông' }, { v: 'SPRING', label: 'Xuân' }, { v: 'SUMMER', label: 'Hạ' }, { v: 'FALL', label: 'Thu' }];
 const SORTS = [{ v: 'popularity', label: 'Phổ biến' }, { v: 'score', label: 'Điểm cao' }, { v: 'newest', label: 'Mới thêm' }, { v: 'views', label: 'Lượt xem' }];
 
-const typeIcon = (t: string) => (t === 'MANGA' ? <BookOpen size={12} /> : t === 'LIGHT_NOVEL' ? <BookText size={12} /> : <Film size={12} />);
+const typeIcon = (t: string) => (t === 'MANGA' || t === 'MANHUA' ? <BookOpen size={12} /> : t === 'LIGHT_NOVEL' ? <BookText size={12} /> : <Film size={12} />);
 
 export default function AnimeListPage() {
   const [works, setWorks] = useState<Work[]>([]);

@@ -35,7 +35,7 @@ function EditInner() {
 
   if (err && !w) return <Notice kind="error">{err}</Notice>;
   if (!w) return <p className="p-10 text-center text-ink-500">Đang tải…</p>;
-  const isStory = w.type === 'MANGA' || w.type === 'LIGHT_NOVEL';
+  const isStory = w.type === 'MANGA' || w.type === 'LIGHT_NOVEL' || w.type === 'MANHUA';
 
   return (
     <div className="space-y-6">
@@ -50,7 +50,7 @@ function EditInner() {
           <Field label="Tên chính"><input className="input" value={w.title || ''} onChange={(e) => set('title', e.target.value)} /></Field>
           <Field label="Tên tiếng Anh"><input className="input" value={w.titleEnglish || ''} onChange={(e) => set('titleEnglish', e.target.value)} /></Field>
           <Field label="Tên gốc (Nhật)"><input className="input" value={w.titleNative || ''} onChange={(e) => set('titleNative', e.target.value)} /></Field>
-          <Field label="Loại"><select className="input" value={w.type} onChange={(e) => set('type', e.target.value)}><option value="ANIME">Anime</option><option value="MANGA">Manga</option><option value="LIGHT_NOVEL">Light Novel</option></select></Field>
+          <Field label="Loại"><select className="input" value={w.type} onChange={(e) => set('type', e.target.value)}><option value="ANIME">Anime</option><option value="DONGHUA">Donghua</option><option value="MANGA">Manga</option><option value="MANHUA">Manhua</option><option value="LIGHT_NOVEL">Light Novel</option></select></Field>
           <Field label="Trạng thái"><select className="input" value={w.status} onChange={(e) => set('status', e.target.value)}><option value="RELEASING">Đang phát hành</option><option value="FINISHED">Hoàn thành</option><option value="NOT_YET_RELEASED">Sắp ra mắt</option><option value="HIATUS">Tạm ngưng</option><option value="CANCELLED">Đã huỷ</option></select></Field>
           <Field label="Định dạng"><input className="input" value={w.format || ''} onChange={(e) => set('format', e.target.value)} placeholder="TV / MOVIE / MANGA…" /></Field>
           <Field label="Mùa"><select className="input" value={w.season || ''} onChange={(e) => set('season', e.target.value || null)}><option value="">—</option><option value="WINTER">Đông</option><option value="SPRING">Xuân</option><option value="SUMMER">Hạ</option><option value="FALL">Thu</option></select></Field>
@@ -70,7 +70,7 @@ function EditInner() {
         <Btn onClick={saveInfo}><Save size={15} /> Lưu thông tin</Btn>
       </Card>
 
-      {w.type === 'ANIME'
+      {(w.type === 'ANIME' || w.type === 'DONGHUA')
         ? <EpisodeManager mediaId={id} episodes={w.episodeList || []} onChange={load} setErr={setErr} />
         : <ChapterManager mediaId={id} chapters={w.chapterList || []} isNovel={w.type === 'LIGHT_NOVEL'} onChange={load} setErr={setErr} />}
     </div>

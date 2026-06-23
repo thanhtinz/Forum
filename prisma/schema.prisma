@@ -2662,6 +2662,8 @@ enum MediaType {
   ANIME
   MANGA
   LIGHT_NOVEL
+  MANHUA
+  DONGHUA
 }
 
 enum MediaStatus {

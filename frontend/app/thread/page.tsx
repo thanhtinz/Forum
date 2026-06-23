@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save, Reply, X as XIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -99,6 +99,7 @@ function ThreadView() {
   const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
+  const [replyToPost, setReplyToPost] = useState<{ id: string; authorName: string } | null>(null);
   const [splitMode, setSplitMode] = useState(false);
   const [splitSelected, setSplitSelected] = useState<string[]>([]);
   const [splitTitle, setSplitTitle] = useState('');
@@ -178,8 +179,8 @@ function ThreadView() {
     e.preventDefault();
     if (!thread || !reply.trim()) return;
     try {
-      const r = await api.post<any>('/forum/posts', { threadId: thread.id, content: reply });
-      setReply('');
+      const r = await api.post<any>('/forum/posts', { threadId: thread.id, content: reply, parentId: replyToPost?.id || null });
+      setReply(''); setReplyToPost(null);
       if (r?.pendingApproval) { setErr(''); alert('Trả lời của bạn đang chờ kiểm duyệt và sẽ hiển thị sau khi được duyệt.'); return; }
       // Nội dung ẩn cho bài trả lời
       if (hiddenOn && hidden.content.trim() && r?.id) {
@@ -345,10 +346,30 @@ function ThreadView() {
   if (!thread) return null;
 
   // Đưa best answer lên đầu (sau bài gốc) nếu có
-  const ordered = bestAnswerId ? [...posts].sort((a, b) => {
+  const sortedPosts = bestAnswerId ? [...posts].sort((a, b) => {
     if ((a as any).isFirstPost) return -1; if ((b as any).isFirstPost) return 1;
     if (a.id === bestAnswerId) return -1; if (b.id === bestAnswerId) return 1; return 0;
   }) : posts;
+
+  // Xây dựng cây bài viết (threading) và làm phẳng theo DFS
+  type PostWithDepth = Post & { _depth: number };
+  function flattenPostTree(list: Post[]): PostWithDepth[] {
+    const map = new Map<string, Post & { _children: Post[] }>();
+    const roots: (Post & { _children: Post[] })[] = [];
+    for (const p of list) map.set(p.id, { ...p, _children: [] });
+    for (const p of list) {
+      const node = map.get(p.id)!;
+      if (p.parentId && map.has(p.parentId)) map.get(p.parentId)!._children.push(node);
+      else roots.push(node);
+    }
+    const result: PostWithDepth[] = [];
+    function dfs(nodes: (Post & { _children: Post[] })[], depth: number) {
+      for (const n of nodes) { result.push({ ...n, _depth: depth }); if ((n as any)._children.length) dfs((n as any)._children, depth + 1); }
+    }
+    dfs(roots, 0);
+    return result;
+  }
+  const ordered = flattenPostTree(sortedPosts);
 
   return (
     <div className="space-y-4">
@@ -412,10 +433,11 @@ function ThreadView() {
         {ordered.map((p, idx) => {
           const isFirst = (p as any).isFirstPost;
           const isBest = p.id === bestAnswerId;
+          const depth = (p as any)._depth || 0;
           // Show "Bai moi" divider between last-read post and the next unread posts
           const showNewDivider = user && initialLastReadPostId && idx > 0 && ordered[idx - 1].id === initialLastReadPostId && p.id !== initialLastReadPostId;
           return (
-            <div key={p.id}>
+            <div key={p.id} style={depth > 0 ? { marginLeft: `${Math.min(depth, 4) * 1.5}rem` } : undefined}>
               {showNewDivider && (
                 <div className="my-3 flex items-center gap-3">
                   <div className="h-px flex-1 bg-blue-400" />
@@ -423,7 +445,7 @@ function ThreadView() {
                   <div className="h-px flex-1 bg-blue-400" />
                 </div>
               )}
-            <article data-post-id={p.id} id={`post-${p.id}`} className={`card flex overflow-hidden ${isBest ? 'ring-2 ring-emerald-400' : ''} ${splitMode && splitSelected.includes(p.id) ? 'ring-2 ring-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
+            <article data-post-id={p.id} id={`post-${p.id}`} className={`card flex overflow-hidden ${depth > 0 ? 'border-l-4 border-brand-200 dark:border-brand-900' : ''} ${isBest ? 'ring-2 ring-emerald-400' : ''} ${splitMode && splitSelected.includes(p.id) ? 'ring-2 ring-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
               {splitMode && !isFirst && (
                 <div className="flex items-center justify-center border-r border-ink-200/70 px-3 dark:border-ink-800">
                   <input type="checkbox" checked={splitSelected.includes(p.id)} onChange={() => toggleSplitPost(p.id)}
@@ -493,6 +515,12 @@ function ThreadView() {
                       <Quote size={14} /> Trích
                     </button>
                   )}
+                  {user && !thread.isLocked && !isFirst && (
+                    <button onClick={() => { setReplyToPost({ id: p.id, authorName: p.author?.displayName || p.author?.username || 'ẩn danh' }); document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' }); }}
+                      className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
+                      <Reply size={14} /> Trả lời
+                    </button>
+                  )}
                   {user && p.author && user.id !== p.author.id && (
                     <button onClick={() => donate(p.id)} className="flex items-center gap-1 text-fuchsia-600 hover:text-fuchsia-700">
                       <Gem size={14} /> Donate
@@ -519,6 +547,12 @@ function ThreadView() {
             <p className="text-center text-sm text-ink-500">Chủ đề đã bị khoá.</p>
           ) : (
             <form onSubmit={submitReply} className="space-y-2">
+              {replyToPost && (
+                <div className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800 dark:bg-brand-950/30 dark:text-brand-200">
+                  <Reply size={13} /> <span>Đang trả lời bài của <strong>@{replyToPost.authorName}</strong></span>
+                  <button type="button" onClick={() => setReplyToPost(null)} className="ml-auto rounded p-0.5 hover:bg-brand-200/50"><XIcon size={13} /></button>
+                </div>
+              )}
               {replyDraft && !reply && (
                 <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
                   <span>Có nháp trả lời đã lưu.</span>

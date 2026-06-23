@@ -598,7 +598,7 @@ export class AnimeService {
       where: { id },
       include: {
         media: { select: { id: true, slug: true, title: true, titleEnglish: true, type: true, coverUrl: true, introStart: true, introEnd: true, avgScore: true, ratingCount: true } },
-        comments: { orderBy: { createdAt: 'desc' }, take: 100, include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } } },
+        comments: { orderBy: { createdAt: 'asc' }, take: 200, include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } } },
         servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true, introEnd: true } },
       },
     });
@@ -628,13 +628,17 @@ export class AnimeService {
     return { ...ep, servers, episodes, prev, next };
   }
 
-  async addEpisodeComment(episodeId: string, authorId: string, content: string) {
+  async addEpisodeComment(episodeId: string, authorId: string, content: string, parentId?: string | null) {
     const text = (content || '').trim();
     if (!text) throw new BadRequestException('Bình luận không được để trống');
     const ep = await this.prisma.episode.findUnique({ where: { id: episodeId }, select: { id: true } });
     if (!ep) throw new NotFoundException('Không tìm thấy tập');
+    if (parentId) {
+      const parent = await this.prisma.episodeComment.findUnique({ where: { id: parentId }, select: { id: true, episodeId: true } });
+      if (!parent || parent.episodeId !== episodeId) throw new BadRequestException('Bình luận gốc không hợp lệ');
+    }
     return this.prisma.episodeComment.create({
-      data: { episodeId, authorId, content: text.slice(0, 5000) },
+      data: { episodeId, authorId, content: text.slice(0, 5000), parentId: parentId || null },
       include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } },
     });
   }
@@ -644,8 +648,17 @@ export class AnimeService {
     if (!c) throw new NotFoundException('Không tìm thấy bình luận');
     const isMod = role === 'ADMIN' || role === 'MODERATOR';
     if (c.authorId !== userId && !isMod) throw new BadRequestException('Không có quyền xoá');
+    await this.deleteCommentReplies(id);
     await this.prisma.episodeComment.delete({ where: { id } });
     return { ok: true };
+  }
+
+  private async deleteCommentReplies(commentId: string) {
+    const replies = await this.prisma.episodeComment.findMany({ where: { parentId: commentId }, select: { id: true } });
+    for (const r of replies) {
+      await this.deleteCommentReplies(r.id);
+      await this.prisma.episodeComment.delete({ where: { id: r.id } });
+    }
   }
   async getChapter(id: string) {
     const ch = await this.prisma.chapter.findUnique({ where: { id }, include: { media: { select: { slug: true, title: true, titleEnglish: true, type: true } } } });

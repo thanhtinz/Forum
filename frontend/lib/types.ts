@@ -37,6 +37,7 @@ export interface Post {
   content: string;
   likeCount: number;
   isFirstPost?: boolean;
+  parentId?: string | null;
   createdAt: string;
   author?: ThreadAuthor;
   reactions?: { emoji: string; userId: string }[];

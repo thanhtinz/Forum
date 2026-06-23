@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma, MediaType } from '@prisma/client';
 import slugify from 'slugify';
 import { createId } from '@paralleldrive/cuid2';
@@ -6,43 +6,14 @@ import { Readable } from 'stream';
 import type { Response } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 
-const CANONICAL_GENRES = [
-  // Anime / Manga
-  'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Romance', 'Slice of Life',
-  'Supernatural', 'Mystery', 'Psychological', 'Thriller', 'Horror', 'Sci-fi',
-  'Shounen', 'Shoujo', 'Seinen', 'Josei', 'Ecchi', 'Harem',
-  'Martial Arts', 'School Life', 'Webtoon', 'Tragedy',
-  'Ngôn Tình', 'Cổ Đại', 'Xuyên Không', 'Chuyển Sinh',
-  'Manhua', 'Manhwa', 'Manga',
-  // Manga extra
-  'One-shot', 'Truyện màu', 'Truyện chữ',
-  // Manhua / Donghua
-  'Huyền Huyễn', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại',
-];
-
 const ANILIST_URL = 'https://graphql.anilist.co';
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36';
 // Tuỳ chọn giới hạn host được proxy (phòng lạm dụng) — đặt qua env, phân cách bằng dấu phẩy
 const HLS_ALLOW = (process.env.ANIME_HLS_ALLOW || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 
 @Injectable()
-export class AnimeService implements OnModuleInit {
+export class AnimeService {
   constructor(private readonly prisma: PrismaService) {}
-
-  async onModuleInit() {
-    const makeSlug = (n: string) =>
-      n.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    const keepSlugs = CANONICAL_GENRES.map(makeSlug);
-    // Xoá genre cũ không còn trong danh sách (chỉ xoá nếu chưa gắn với work nào)
-    await this.prisma.genre.deleteMany({
-      where: { slug: { notIn: keepSlugs }, works: { none: {} } },
-    });
-    // Upsert toàn bộ genre chuẩn
-    for (const name of CANONICAL_GENRES) {
-      const slug = makeSlug(name);
-      await this.prisma.genre.upsert({ where: { slug }, update: { name }, create: { name, slug } });
-    }
-  }
 
   private async uniqueSlug(base: string): Promise<string> {
     const root = slugify(base || '', { lower: true, strict: true }).slice(0, 180) || createId().slice(0, 8);
@@ -54,6 +25,15 @@ export class AnimeService implements OnModuleInit {
   // ───────── CÔNG KHAI ─────────
   listGenres() {
     return this.prisma.genre.findMany({ orderBy: { name: 'asc' } });
+  }
+
+  async createGenre(name: string) {
+    const slug = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    return this.prisma.genre.upsert({ where: { slug }, update: { name: name.trim() }, create: { name: name.trim(), slug } });
+  }
+
+  async deleteGenre(id: string) {
+    return this.prisma.genre.delete({ where: { id } });
   }
 
   async list(q: {

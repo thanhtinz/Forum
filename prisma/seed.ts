@@ -173,46 +173,8 @@ async function main() {
   console.log('🎉 Seed complete!');
 }
 
-// ── Thể loại anime/manga/donghua/manhua ──
-async function seedAnimeGenres() {
-  const genres = [
-    // Anime / Manga
-    'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Romance', 'Slice of Life',
-    'Supernatural', 'Mystery', 'Psychological', 'Thriller', 'Horror', 'Sci-fi',
-    'Shounen', 'Shoujo', 'Seinen', 'Josei', 'Ecchi', 'Harem',
-    'Martial Arts', 'School Life', 'Webtoon', 'Tragedy',
-    'Ngôn Tình', 'Cổ Đại', 'Xuyên Không', 'Chuyển Sinh',
-    'Manhua', 'Manhwa', 'Manga',
-    // Manga extra
-    'One-shot', 'Truyện màu', 'Truyện chữ',
-    // Manhua / Donghua
-    'Huyền Huyễn', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại',
-  ];
-
-  const makeSlug = (name: string) =>
-    name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
-
-  const keepSlugs = genres.map(makeSlug);
-
-  // Xoá genre cũ không còn trong danh sách (và không gắn với work nào)
-  await prisma.genre.deleteMany({
-    where: {
-      slug: { notIn: keepSlugs },
-      works: { none: {} },
-    },
-  });
-
-  // Upsert genre mới
-  for (const name of genres) {
-    const slug = makeSlug(name);
-    await prisma.genre.upsert({ where: { slug }, update: { name }, create: { name, slug } });
-  }
-  console.log(`✓ ${genres.length} anime genres`);
-}
-
 async function runAll() {
   await main();
-  await seedAnimeGenres();
   await prisma.$disconnect();
 }
 

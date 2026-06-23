@@ -13,6 +13,17 @@ export class AnimeController {
   @Get('anime/genres')
   genres() { return this.svc.listGenres(); }
 
+  // ── Admin quản lý thể loại ──
+  @Post('admin/anime/genres')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  createGenre(@Body() dto: { name: string }) { return this.svc.createGenre(dto.name); }
+
+  @Delete('admin/anime/genres/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  deleteGenre(@Param('id') id: string) { return this.svc.deleteGenre(id); }
+
   // ── Danh sách cá nhân (đặt trước :slug để không bị nuốt route) ──
   @Get('anime/me/list')
   @UseGuards(JwtAuthGuard)

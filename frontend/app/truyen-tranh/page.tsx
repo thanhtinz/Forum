@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Star, BookOpen, PenSquare } from 'lucide-react';
+import { Search, Star, BookOpen } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface Work {
@@ -52,17 +52,9 @@ export default function TruyenTranhPage() {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 p-6 text-white shadow-card">
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-800 to-brand-600 p-6 text-white shadow-card">
         <h1 className="text-2xl font-bold">Truyện Tranh Trung Quốc</h1>
         <p className="mt-1 text-sm text-white/80">Kho tàng manhua — truyện tranh Trung Quốc được tuyển chọn bởi Trạm GenZ.</p>
-      </div>
-
-      {/* Creator CTA */}
-      <div className="flex items-center justify-between rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 dark:border-violet-800/40 dark:bg-violet-950/30">
-        <p className="text-sm font-medium text-violet-800 dark:text-violet-300">Bạn muốn đăng truyện của mình lên đây?</p>
-        <a href="/manga/creator" className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-violet-700 transition">
-          <PenSquare size={14} /> Đăng truyện
-        </a>
       </div>
 
       <div className="card flex flex-wrap items-center gap-2 p-3">

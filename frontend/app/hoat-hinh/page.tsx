@@ -59,7 +59,7 @@ export default function HoatHinhPage() {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-rose-700 to-orange-600 p-6 text-white shadow-card">
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-800 to-brand-600 p-6 text-white shadow-card">
         <h1 className="text-2xl font-bold">Hoạt hình Trung Quốc</h1>
         <p className="mt-1 text-sm text-white/80">Kho tàng donghua — hoạt hình Trung Quốc được tuyển chọn bởi Trạm GenZ.</p>
       </div>

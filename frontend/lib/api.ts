@@ -128,3 +128,31 @@ export async function uploadEditorImage(file: File): Promise<{ url: string }> {
   }
   return { url: absolutizeUrl((body as { url: string }).url) };
 }
+
+// Upload nhiều file cùng lúc (multipart/form-data) — dùng cho trang manga
+export async function postFiles<T>(path: string, files: File[], fieldName = 'files'): Promise<T> {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '';
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const form = new FormData();
+  for (const f of files) form.append(fieldName, f);
+  const res = await fetch(`${base}/api${path}`, { method: 'POST', headers, body: form, cache: 'no-store' });
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : null;
+  if (!res.ok) { const msg = body?.message || res.statusText; throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg); }
+  return body as T;
+}
+
+// Upload một file FormData đến path bất kỳ
+export async function postFormData<T>(path: string, form: FormData): Promise<T> {
+  const base = process.env.NEXT_PUBLIC_API_URL ?? '';
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${base}/api${path}`, { method: 'POST', headers, body: form, cache: 'no-store' });
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : null;
+  if (!res.ok) { const msg = body?.message || res.statusText; throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg); }
+  return body as T;
+}

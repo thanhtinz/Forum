@@ -36,7 +36,7 @@ export class AnimeService {
     const skip = (Math.max(Number(q.page) || 1, 1) - 1) * take;
     const where: Prisma.MediaWorkWhereInput = {};
     if (q.type) {
-      const types = q.type.split(',').map((t) => t.trim()).filter((t) => ['ANIME', 'MANGA', 'LIGHT_NOVEL', 'MANHUA', 'DONGHUA'].includes(t)) as MediaType[];
+      const types = q.type.split(',').map((t) => t.trim()).filter((t) => ['ANIME', 'MANGA', 'MANHUA', 'DONGHUA'].includes(t)) as MediaType[];
       if (types.length === 1) where.type = types[0];
       else if (types.length > 1) where.type = { in: types };
     }

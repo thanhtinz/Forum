@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Star, BookOpen } from 'lucide-react';
+import { Search, Star, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface Work {
@@ -10,6 +10,8 @@ interface Work {
   episodes?: number | null; avgScore: number;
 }
 interface Genre { id: string; slug: string; name: string }
+
+const LIMIT = 30;
 
 const STATUS = [
   { v: '', label: 'Mọi trạng thái' },
@@ -26,13 +28,26 @@ const SORTS = [
   { v: 'views', label: 'Lượt xem' },
 ];
 
+function getPageNums(cur: number, total: number): (number | '...')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages: (number | '...')[] = [1];
+  if (cur > 3) pages.push('...');
+  for (let i = Math.max(2, cur - 1); i <= Math.min(total - 1, cur + 1); i++) pages.push(i);
+  if (cur < total - 2) pages.push('...');
+  pages.push(total);
+  return pages;
+}
+
 export default function TruyenTranhPage() {
   const [works, setWorks] = useState<Work[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
   const [f, setF] = useState({ genre: '', status: '', year: '', sort: 'popularity', search: '' });
   const [searchInput, setSearchInput] = useState('');
+
+  const totalPages = Math.ceil(total / LIMIT);
 
   useEffect(() => {
     api.get<Genre[]>('/anime/genres?type=MANHUA').then(setGenres).catch(() => {});
@@ -40,15 +55,29 @@ export default function TruyenTranhPage() {
 
   useEffect(() => {
     setLoading(true);
-    const qs = new URLSearchParams({ type: 'MANHUA', limit: '30' });
+    const qs = new URLSearchParams({ type: 'MANHUA', limit: String(LIMIT), page: String(page) });
     Object.entries(f).forEach(([k, v]) => { if (v) qs.set(k, v); });
     api.get<{ data: Work[]; meta: { total: number } }>(`/anime?${qs}`)
       .then((r) => { setWorks(r.data || []); setTotal(r.meta?.total || 0); })
       .catch(() => setWorks([]))
       .finally(() => setLoading(false));
-  }, [f]);
+  }, [f, page]);
 
-  function submitSearch(e: React.FormEvent) { e.preventDefault(); setF((s) => ({ ...s, search: searchInput.trim() })); }
+  function updateF(updater: (s: typeof f) => typeof f) {
+    setPage(1);
+    setF(updater);
+  }
+
+  function submitSearch(e: React.FormEvent) {
+    e.preventDefault();
+    setPage(1);
+    setF((s) => ({ ...s, search: searchInput.trim() }));
+  }
+
+  function goPage(p: number) {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   return (
     <div className="space-y-4">
@@ -62,15 +91,15 @@ export default function TruyenTranhPage() {
           <Search size={16} className="text-ink-400" />
           <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Tìm truyện tranh…" className="w-full bg-transparent py-1.5 text-sm outline-none" />
         </form>
-        <select className="input !w-auto" value={f.genre} onChange={(e) => setF((s) => ({ ...s, genre: e.target.value }))}>
+        <select className="input !w-auto" value={f.genre} onChange={(e) => updateF((s) => ({ ...s, genre: e.target.value }))}>
           <option value="">Mọi thể loại</option>
           {genres.map((g) => <option key={g.id} value={g.slug}>{g.name}</option>)}
         </select>
-        <select className="input !w-auto" value={f.status} onChange={(e) => setF((s) => ({ ...s, status: e.target.value }))}>
+        <select className="input !w-auto" value={f.status} onChange={(e) => updateF((s) => ({ ...s, status: e.target.value }))}>
           {STATUS.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
         </select>
-        <input type="number" placeholder="Năm" className="input !w-24" value={f.year} onChange={(e) => setF((s) => ({ ...s, year: e.target.value }))} />
-        <select className="input !w-auto" value={f.sort} onChange={(e) => setF((s) => ({ ...s, sort: e.target.value }))}>
+        <input type="number" placeholder="Năm" className="input !w-24" value={f.year} onChange={(e) => updateF((s) => ({ ...s, year: e.target.value }))} />
+        <select className="input !w-auto" value={f.sort} onChange={(e) => updateF((s) => ({ ...s, sort: e.target.value }))}>
           {SORTS.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
         </select>
       </div>
@@ -102,6 +131,43 @@ export default function TruyenTranhPage() {
               </a>
             ))}
           </div>
+
+          {/* Phân trang */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-1 pt-2">
+              <button
+                onClick={() => goPage(page - 1)}
+                disabled={page === 1}
+                className="flex items-center gap-1 rounded px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-700"
+              >
+                <ChevronLeft size={15} /> Trước
+              </button>
+              {getPageNums(page, totalPages).map((p, i) =>
+                p === '...'
+                  ? <span key={`e${i}`} className="px-2 text-ink-400 select-none">…</span>
+                  : (
+                    <button
+                      key={p}
+                      onClick={() => goPage(p as number)}
+                      className={`min-w-[36px] rounded px-2 py-1.5 text-sm font-medium transition-colors ${
+                        p === page
+                          ? 'bg-brand-700 text-white'
+                          : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-700'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+              )}
+              <button
+                onClick={() => goPage(page + 1)}
+                disabled={page === totalPages}
+                className="flex items-center gap-1 rounded px-3 py-1.5 text-sm font-medium text-ink-600 hover:bg-ink-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-700"
+              >
+                Sau <ChevronRight size={15} />
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

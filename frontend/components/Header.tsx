@@ -14,7 +14,6 @@ import { WalletChips } from './WalletChips';
 import { useSiteConfig } from '@/lib/siteConfig';
 import { WeatherMenu } from './WeatherMenu';
 
-// Icon kiểu Messenger cho mục Chat
 function MessengerIcon({ size = 16 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="currentColor" aria-hidden>
@@ -32,7 +31,6 @@ const NAV = [
   { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },
 ];
 
-// Nhóm tiện ích gom vào dropdown
 const UTILS = [
   { href: '/market', label: 'Live Market', icon: LineChart },
   { href: '/tools', label: 'Up ảnh', icon: ImagePlus },
@@ -73,9 +71,10 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-ink-200/70 bg-brand-700 text-white shadow-sm dark:border-ink-800 dark:bg-ink-900">
-      <div className="container-forum flex h-14 items-center gap-3">
-        {/* Hamburger: mở menu trên màn hình nhỏ */}
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-brand-700 shadow-md dark:bg-ink-900">
+      {/* ── Row 1: logo + search + user controls ── */}
+      <div className="container-forum flex h-13 items-center gap-3 py-2">
+        {/* Hamburger mobile */}
         <button
           onClick={() => setNavOpen((o) => !o)}
           className="rounded-lg p-2 text-white/85 hover:bg-white/10 md:hidden"
@@ -84,90 +83,60 @@ export function Header() {
           <Menu size={20} />
         </button>
 
-        <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
-          {/* Logo nhỏ (thu gọn) — thay icon hình thoi nếu admin đã tải logo nhỏ */}
+        {/* Logo */}
+        <Link href="/" className="flex shrink-0 items-center gap-2 font-bold tracking-tight">
           {cfg.logoSmall
-            ? <img src={cfg.logoSmall} alt={cfg.name} className="h-11 w-11 shrink-0 rounded-lg object-contain" />
-            : <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-white/15 text-2xl">◆</span>}
-          {/* Logo dài: dùng ảnh logo nếu admin đã cấu hình, nếu không thì tên site */}
+            ? <img src={cfg.logoSmall} alt={cfg.name} className="h-9 w-9 rounded-lg object-contain" />
+            : <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15 text-xl">◆</span>}
           {cfg.logo
-            ? <img src={cfg.logo} alt={cfg.name} className="hidden h-11 w-auto max-w-[200px] object-contain sm:block" />
-            : <span className="hidden text-lg sm:block">{cfg.name || <>Forum<span className="text-brand-200">Hub</span></>}</span>}
+            ? <img src={cfg.logo} alt={cfg.name} className="hidden h-9 w-auto max-w-[180px] object-contain sm:block" />
+            : <span className="hidden text-base font-semibold text-white sm:block">{cfg.name || <>Forum<span className="text-brand-200">Hub</span></>}</span>}
         </Link>
 
-        <nav className="ml-2 hidden items-center gap-1 md:flex">
-          {/* Diễn đàn — dropdown kiểu XenForo */}
-          <div className="relative" onMouseLeave={() => setForumOpen(false)}>
-            <button onClick={() => setForumOpen((o) => !o)}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
-              <MessageSquare size={16} /> Diễn đàn <ChevronDown size={13} />
-            </button>
-            {forumOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-56 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
-                <Link href="/" onClick={() => setForumOpen(false)} className="block px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Tất cả diễn đàn</Link>
-                <Link href="/feed" onClick={() => setForumOpen(false)} className="block px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Bài viết mới</Link>
-                <div className="my-1 border-t border-ink-200/70 dark:border-ink-700" />
-                <p className="px-4 pb-0.5 pt-1 text-xs font-semibold text-ink-400">Quan tâm</p>
-                <Link href="/subscriptions" onClick={() => setForumOpen(false)} className="block px-4 py-2 pl-6 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Chủ đề quan tâm</Link>
-                <Link href="/tags" onClick={() => setForumOpen(false)} className="block px-4 py-2 pl-6 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Diễn đàn quan tâm</Link>
-              </div>
-            )}
-          </div>
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
-              <n.icon size={16} /> {n.label}
-            </Link>
-          ))}
-          {/* Tiện ích — dropdown */}
-          <div className="relative" onMouseLeave={() => setUtilOpen(false)}>
-            <button onClick={() => setUtilOpen((o) => !o)}
-              className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
-              <Wrench size={16} /> Tiện ích <ChevronDown size={13} />
-            </button>
-            {utilOpen && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
-                {UTILS.map((u) => (
-                  <Link key={u.href} href={u.href} onClick={() => setUtilOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <u.icon size={15} /> {u.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </nav>
-
-        <form onSubmit={onSearch} className="ml-auto hidden flex-1 max-w-xs items-center sm:flex">
+        {/* Search — desktop only, expands to fill space */}
+        <form onSubmit={onSearch} className="ml-4 hidden flex-1 max-w-sm items-center md:flex">
           <div className="relative w-full">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm..."
-              className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Tìm kiếm..."
+              className="w-full rounded-full border border-white/20 bg-white/10 py-1.5 pl-9 pr-4 text-sm text-white placeholder:text-white/50 outline-none focus:bg-white/15 focus:border-white/40 transition"
+            />
           </div>
         </form>
 
-        {/* Thời tiết hiện tại (luôn hiện) + dropdown dự báo — cạnh ô tìm kiếm */}
+        {/* Spacer on mobile */}
+        <div className="flex-1 md:hidden" />
+
+        {/* Weather */}
         <div className="hidden lg:block"><WeatherMenu /></div>
 
-        {/* Cụm điều khiển: số dư + đổi theme, thông báo, tài khoản — đặt ở góc phải */}
-        <div className="ml-auto flex items-center gap-1 sm:ml-0">
+        {/* Right controls */}
+        <div className="flex items-center gap-0.5">
           <WalletChips />
-          <button onClick={toggleTheme} className="rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="theme">
+          <button onClick={toggleTheme} className="rounded-lg p-2 text-white/80 hover:bg-white/10 hover:text-white" aria-label="theme">
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           {user && (
-            <Link href="/notifications" onClick={() => setUnread(0)} className="relative rounded-lg p-2 text-white/85 hover:bg-white/10" aria-label="notifications">
+            <Link href="/notifications" onClick={() => setUnread(0)} className="relative rounded-lg p-2 text-white/80 hover:bg-white/10 hover:text-white" aria-label="notifications">
               <Bell size={18} />
-              {unread > 0 && <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}
+              {unread > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
             </Link>
           )}
           {user ? (
-            <div className="relative">
-              <button onClick={() => setMenu((m) => !m)}
-                className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-white/10">
+            <div className="relative ml-1">
+              <button
+                onClick={() => setMenu((m) => !m)}
+                className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 hover:bg-white/10"
+              >
                 <Avatar user={user} size={28} />
-                <span className="hidden text-sm font-medium sm:block">{user.displayName || user.username}</span>
-                <ChevronDown size={14} />
+                <span className="hidden text-sm font-medium text-white sm:block">{user.displayName || user.username}</span>
+                <ChevronDown size={13} className="text-white/70" />
               </button>
               {menu && (
                 <div className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-lg dark:bg-ink-800 dark:text-ink-200">
@@ -185,15 +154,17 @@ export function Header() {
                       <UserIcon size={15} /> Trang quản trị
                     </Link>
                   )}
-                  <button onClick={() => { logout(); setMenu(false); }}
-                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-ink-100 dark:hover:bg-ink-700">
+                  <button
+                    onClick={() => { logout(); setMenu(false); }}
+                    className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-ink-100 dark:hover:bg-ink-700"
+                  >
                     <LogOut size={15} /> Đăng xuất
                   </button>
                 </div>
               )}
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 ml-1">
               <Link href="/login" className="rounded-lg px-3 py-1.5 text-sm font-medium text-white/90 hover:bg-white/10">Đăng nhập</Link>
               <Link href="/register" className="rounded-lg bg-white px-3 py-1.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">Đăng ký</Link>
             </div>
@@ -201,16 +172,84 @@ export function Header() {
         </div>
       </div>
 
-      {/* Menu xổ xuống cho màn hình nhỏ */}
+      {/* ── Row 2: navigation bar (desktop only) ── */}
+      <div className="hidden border-t border-white/10 bg-black/20 md:block">
+        <div className="container-forum flex h-10 items-center gap-0.5">
+          {/* Diễn đàn dropdown */}
+          <div className="relative" onMouseLeave={() => setForumOpen(false)}>
+            <button
+              onClick={() => setForumOpen((o) => !o)}
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <MessageSquare size={15} />
+              <span>Diễn đàn</span>
+              <ChevronDown size={12} className={`transition-transform ${forumOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {forumOpen && (
+              <div className="absolute left-0 top-full z-50 mt-0.5 w-52 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-xl dark:bg-ink-800 dark:text-ink-200">
+                <Link href="/" onClick={() => setForumOpen(false)} className="block px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Tất cả diễn đàn</Link>
+                <Link href="/feed" onClick={() => setForumOpen(false)} className="block px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Bài viết mới</Link>
+                <div className="my-1 border-t border-ink-200/70 dark:border-ink-700" />
+                <p className="px-4 pb-0.5 pt-1 text-xs font-semibold text-ink-400">Quan tâm</p>
+                <Link href="/subscriptions" onClick={() => setForumOpen(false)} className="block px-4 py-2 pl-6 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Chủ đề quan tâm</Link>
+                <Link href="/tags" onClick={() => setForumOpen(false)} className="block px-4 py-2 pl-6 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">Diễn đàn quan tâm</Link>
+              </div>
+            )}
+          </div>
+
+          {/* Divider */}
+          <span className="mx-1 h-4 w-px bg-white/20" />
+
+          {/* Main nav items */}
+          {NAV.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <n.icon size={15} />
+              <span>{n.label}</span>
+            </Link>
+          ))}
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Tiện ích dropdown — pushed to right */}
+          <div className="relative" onMouseLeave={() => setUtilOpen(false)}>
+            <button
+              onClick={() => setUtilOpen((o) => !o)}
+              className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <Wrench size={15} />
+              <span>Tiện ích</span>
+              <ChevronDown size={12} className={`transition-transform ${utilOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {utilOpen && (
+              <div className="absolute right-0 top-full z-50 mt-0.5 w-48 overflow-hidden rounded-xl bg-white py-1 text-ink-700 shadow-xl dark:bg-ink-800 dark:text-ink-200">
+                {UTILS.map((u) => (
+                  <Link key={u.href} href={u.href} onClick={() => setUtilOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <u.icon size={15} /> {u.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Mobile drawer ── */}
       {navOpen && (
         <div className="fixed inset-0 z-[60] md:hidden" onClick={() => setNavOpen(false)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <nav onClick={(e) => e.stopPropagation()}
-            className="drawer-left absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto bg-brand-700 px-3 pb-4 pt-3 shadow-2xl dark:bg-ink-900">
+          <nav
+            onClick={(e) => e.stopPropagation()}
+            className="drawer-left absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col overflow-y-auto bg-brand-700 px-3 pb-4 pt-3 shadow-2xl dark:bg-ink-900"
+          >
             <div className="mb-2 flex items-start justify-between gap-2">
               <Link href="/" onClick={() => setNavOpen(false)} className="flex min-w-0 flex-1 items-center gap-2 font-bold text-white">
                 {cfg.logo ? (
-                  // Có logo lớn → hiện thật to & rõ, bỏ icon hình thoi
                   <img src={cfg.logo} alt={cfg.name} className="h-24 w-auto max-w-full object-contain" />
                 ) : (
                   <>
@@ -225,57 +264,59 @@ export function Header() {
             </div>
 
             <form onSubmit={(e) => { onSearch(e); setNavOpen(false); }} className="my-2 sm:hidden">
-            <div className="relative w-full">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm..."
-                className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
+              <div className="relative w-full">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm kiếm..."
+                  className="w-full rounded-lg border border-white/20 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/60 outline-none focus:bg-white/15" />
+              </div>
+            </form>
+
+            <div className="mb-2"><WeatherMenu mobile /></div>
+
+            <div className="flex flex-col gap-1">
+              <button
+                onClick={() => setForumOpen((o) => !o)}
+                className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"
+              >
+                <span className="flex items-center gap-2"><MessageSquare size={16} /> Diễn đàn</span>
+                <ChevronDown size={15} className={`transition ${forumOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {forumOpen && (
+                <div className="ml-3 flex flex-col gap-1 border-l border-white/15 pl-2">
+                  <Link href="/" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Tất cả diễn đàn</Link>
+                  <Link href="/feed" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Bài viết mới</Link>
+                  <p className="px-3 pt-1 text-xs font-semibold text-white/55">Quan tâm</p>
+                  <Link href="/subscriptions" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 pl-5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Chủ đề quan tâm</Link>
+                  <Link href="/tags" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 pl-5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Diễn đàn quan tâm</Link>
+                </div>
+              )}
+              {NAV.map((n) => (
+                <Link key={n.href} href={n.href} onClick={() => setNavOpen(false)}
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+                  <n.icon size={16} /> {n.label}
+                </Link>
+              ))}
+              <button
+                onClick={() => setUtilOpen((o) => !o)}
+                className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white"
+              >
+                <span className="flex items-center gap-2"><Wrench size={16} /> Tiện ích</span>
+                <ChevronDown size={15} className={`transition ${utilOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {utilOpen && (
+                <div className="ml-3 flex flex-col gap-1 border-l border-white/15 pl-2">
+                  {UTILS.map((u) => (
+                    <Link key={u.href} href={u.href} onClick={() => setNavOpen(false)}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
+                      <u.icon size={16} /> {u.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
-          </form>
-          {/* Thời tiết — ngay dưới ô tìm kiếm */}
-          <div className="mb-2"><WeatherMenu mobile /></div>
-          <div className="flex flex-col gap-1">
-            {/* Diễn đàn — nhóm thu gọn kiểu XenForo */}
-            <button onClick={() => setForumOpen((o) => !o)}
-              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
-              <span className="flex items-center gap-2"><MessageSquare size={16} /> Diễn đàn</span>
-              <ChevronDown size={15} className={`transition ${forumOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {forumOpen && (
-              <div className="ml-3 flex flex-col gap-1 border-l border-white/15 pl-2">
-                <Link href="/" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Tất cả diễn đàn</Link>
-                <Link href="/feed" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Bài viết mới</Link>
-                <p className="px-3 pt-1 text-xs font-semibold text-white/55">Quan tâm</p>
-                <Link href="/subscriptions" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 pl-5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Chủ đề quan tâm</Link>
-                <Link href="/tags" onClick={() => setNavOpen(false)} className="rounded-lg px-3 py-2 pl-5 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">Diễn đàn quan tâm</Link>
-              </div>
-            )}
-            {NAV.map((n) => (
-              <Link key={n.href} href={n.href} onClick={() => setNavOpen(false)}
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
-                <n.icon size={16} /> {n.label}
-              </Link>
-            ))}
-            {/* Tiện ích — thu gọn được trên mobile */}
-            <button onClick={() => setUtilOpen((o) => !o)}
-              className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
-              <span className="flex items-center gap-2"><Wrench size={16} /> Tiện ích</span>
-              <ChevronDown size={15} className={`transition ${utilOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {utilOpen && (
-              <div className="ml-3 flex flex-col gap-1 border-l border-white/15 pl-2">
-                {UTILS.map((u) => (
-                  <Link key={u.href} href={u.href} onClick={() => setNavOpen(false)}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white/85 hover:bg-white/10 hover:text-white">
-                    <u.icon size={16} /> {u.label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
           </nav>
         </div>
       )}
-
     </header>
   );
 }
@@ -286,7 +327,6 @@ export function Avatar({ user, size = 32 }: { user: { username: string; avatar?:
     ? <img src={user.avatar} alt={user.username} width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />
     : <span className="grid place-items-center rounded-full bg-brand-500 font-semibold text-white" style={{ width: size, height: size, fontSize: size * 0.42 }}>{user.username?.[0]?.toUpperCase() || '?'}</span>;
   if (!user.avatarFrameUrl) return inner;
-  // Khung avatar — vẽ chồng lên, lớn hơn ~38% để bao quanh ảnh
   const fs = Math.round(size * 1.4);
   return (
     <span className="relative inline-grid shrink-0 place-items-center" style={{ width: size, height: size }}>

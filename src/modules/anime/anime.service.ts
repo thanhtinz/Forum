@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma, MediaType } from '@prisma/client';
 import slugify from 'slugify';
 import { createId } from '@paralleldrive/cuid2';
@@ -12,13 +12,8 @@ const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 const HLS_ALLOW = (process.env.ANIME_HLS_ALLOW || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 
 @Injectable()
-export class AnimeService implements OnModuleInit {
+export class AnimeService {
   constructor(private readonly prisma: PrismaService) {}
-
-  // Xoá toàn bộ genre cũ do seed tạo ra — chạy 1 lần khi deploy
-  async onModuleInit() {
-    await this.prisma.genre.deleteMany({ where: { works: { none: {} } } });
-  }
 
   private async uniqueSlug(base: string): Promise<string> {
     const root = slugify(base || '', { lower: true, strict: true }).slice(0, 180) || createId().slice(0, 8);

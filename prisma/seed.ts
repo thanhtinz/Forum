@@ -5,25 +5,6 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding...');
 
-  // ── Categories (giống chiasemanguon.com) ──
-  const categories = [
-    { name: 'Thông Báo', slug: 'thong-bao', description: 'Thông báo chính thức và cập nhật', icon: 'bell', sortOrder: 1 },
-    { name: 'Thảo Luận Chung', slug: 'thao-luan-chung', description: 'Các chủ đề và thảo luận chung', icon: 'message-circle', sortOrder: 2 },
-    { name: 'Hướng Dẫn', slug: 'huong-dan', description: 'Hướng dẫn & tài liệu', icon: 'book-open', sortOrder: 3 },
-    { name: 'Hỏi Đáp & Kỹ Thuật', slug: 'hoi-dap-ky-thuat', description: 'Đặt câu hỏi & nhận trợ giúp', icon: 'help-circle', sortOrder: 4 },
-    { name: 'Showcase', slug: 'showcase', description: 'Giới thiệu dự án & sản phẩm', icon: 'star', sortOrder: 5 },
-    { name: 'Feedback', slug: 'feedback', description: 'Phản hồi & đề xuất', icon: 'thumbs-up', sortOrder: 6 },
-  ];
-
-  for (const cat of categories) {
-    await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: {},
-      create: cat,
-    });
-  }
-  console.log(`✓ ${categories.length} categories`);
-
   // ── Gem packages ──
   const packages = [
     { name: 'Gói Khởi Đầu', gemAmount: 100, priceVnd: 20000, priceUsd: 0.99, bonus: 0, sortOrder: 1 },
@@ -195,12 +176,17 @@ async function main() {
 // ── Thể loại anime/manga/donghua/manhua ──
 async function seedAnimeGenres() {
   const genres = [
-    'Action','Adventure','Boys Love','Cartoon','Cổ Trang','Comedy','Dementia','Demons',
+    // Tiêu chuẩn quốc tế
+    'Action','Adventure','Boys Love','Cartoon','Comedy','Dementia','Demons',
     'Drama','Ecchi','Fantasy','Game','Harem','Historical','Horror','Josei','Kids',
     'Live Action','Magic','Martial Arts','Mecha','Military','Music','Mystery','Parody',
     'Police','Psychological','Romance','Samurai','School','Sci-Fi','Seinen','Shoujo',
     'Shoujo Ai','Shounen','Shounen Ai','Slice of Life','Space','Sports','Super Power',
     'Supernatural','Suspense','Thriller','Tokusatsu','Vampire','Yaoi','Yuri',
+    // Manga / Manhwa
+    'Truyện màu','Truyện chữ','One-shot',
+    // Manhua / Donghua
+    'Huyền Huyễn','Xuyên Không','Trùng Sinh','Tiên Hiệp','Cổ Trang','Hài Hước','Kiếm Hiệp','Hiện Đại',
   ];
   for (const name of genres) {
     const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');

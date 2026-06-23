@@ -31,7 +31,7 @@ export class AnimeService {
   }
 
   async createGenre(name: string, types: string[]) {
-    const slug = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const slug = slugify(name.trim(), { lower: true, strict: true });
     return this.prisma.genre.upsert({
       where: { slug },
       update: { name: name.trim(), types },

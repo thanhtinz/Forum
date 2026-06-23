@@ -286,6 +286,10 @@ function Watch() {
   const isMod = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
   const servers: ServerT[] = ep.servers || [];
   const cur = servers[serverIdx] || servers[0] || null;
+  const isIframePlayer = useMemo(() => {
+    const u = cur?.videoUrl || '';
+    return !!u && !ytId(u) && !/\.m3u8(\?|$)/i.test(u) && !/\.(mp4|webm)(\?|$)/i.test(u);
+  }, [cur?.videoUrl]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
@@ -298,16 +302,21 @@ function Watch() {
         </div>
         {/* Thanh hành động */}
         <div className="grid grid-cols-5 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
-          <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-1.5 py-4 text-xs hover:bg-white/5">
-            <Heart size={24} className={entry?.favorite ? 'fill-rose-500 text-rose-500' : ''} /> Theo dõi
+          <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-1 py-2.5 text-[11px] hover:bg-white/5">
+            <Heart size={20} className={entry?.favorite ? 'fill-rose-500 text-rose-500' : ''} /> Theo dõi
           </button>
-          <button onClick={() => setRateOpen(true)} className="flex flex-col items-center gap-1.5 py-4 text-xs hover:bg-white/5">
-            <Star size={24} className={entry?.score ? 'fill-amber-400 text-amber-400' : ''} /> {entry?.score ? `Đã chấm ${entry.score}` : 'Đánh giá'}
+          <button onClick={() => setRateOpen(true)} className="flex flex-col items-center gap-1 py-2.5 text-[11px] hover:bg-white/5">
+            <Star size={20} className={entry?.score ? 'fill-amber-400 text-amber-400' : ''} /> {entry?.score ? `Đã chấm ${entry.score}` : 'Đánh giá'}
           </button>
-          <a href={ep.prev ? `/anime/watch?ep=${ep.prev.id}` : undefined} className={`flex flex-col items-center gap-1.5 py-4 text-xs ${ep.prev ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipBack size={24} /> Trước</a>
-          <a href={ep.next ? `/anime/watch?ep=${ep.next.id}` : undefined} className={`flex flex-col items-center gap-1.5 py-4 text-xs ${ep.next ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipForward size={24} /> Tiếp</a>
-          <button onClick={() => setMoreOpen((o) => !o)} className="flex flex-col items-center gap-1.5 py-4 text-xs hover:bg-white/5"><MoreHorizontal size={24} /> Khác</button>
+          <a href={ep.prev ? `/anime/watch?ep=${ep.prev.id}` : undefined} className={`flex flex-col items-center gap-1 py-2.5 text-[11px] ${ep.prev ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipBack size={20} /> Trước</a>
+          <a href={ep.next ? `/anime/watch?ep=${ep.next.id}` : undefined} className={`flex flex-col items-center gap-1 py-2.5 text-[11px] ${ep.next ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipForward size={20} /> Tiếp</a>
+          <button onClick={() => setMoreOpen((o) => !o)} className="flex flex-col items-center gap-1 py-2.5 text-[11px] hover:bg-white/5"><MoreHorizontal size={20} /> Khác</button>
         </div>
+        {isIframePlayer && (
+          <p className="bg-ink-950 px-3 py-1 text-center text-[10px] text-white/30">
+            Server báo &quot;lỗi bảo mật&quot;? Đóng DevTools (F12) rồi tải lại — hoặc đổi server khác.
+          </p>
+        )}
         {/* Panel "Khác" */}
         {moreOpen && (
           <div className="space-y-2 border-t border-white/10 bg-ink-900 p-4 text-white">

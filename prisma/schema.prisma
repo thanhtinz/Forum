@@ -2661,7 +2661,6 @@ model GiftCodeRedemption {
 enum MediaType {
   ANIME
   MANGA
-  LIGHT_NOVEL
   MANHUA
   DONGHUA
 }

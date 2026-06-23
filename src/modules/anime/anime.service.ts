@@ -191,7 +191,7 @@ export class AnimeService {
     const m = d.Media;
     if (!m) throw new NotFoundException('Không tìm thấy trên AniList');
 
-    const type: MediaType = m.type === 'MANGA' ? (m.format === 'NOVEL' ? 'LIGHT_NOVEL' : 'MANGA') : 'ANIME';
+    const type: MediaType = m.type === 'MANGA' ? 'MANGA' : 'ANIME';
     const statusMap: Record<string, string> = { RELEASING: 'RELEASING', FINISHED: 'FINISHED', NOT_YET_RELEASED: 'NOT_YET_RELEASED', CANCELLED: 'CANCELLED', HIATUS: 'HIATUS' };
     const toDate = (x: any) => (x?.year ? new Date(Date.UTC(x.year, (x.month || 1) - 1, x.day || 1)) : null);
     const trailer = m.trailer?.site === 'youtube' && m.trailer?.id ? `https://www.youtube.com/watch?v=${m.trailer.id}` : null;

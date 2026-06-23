@@ -95,7 +95,7 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
           : {
               // Set referrerPolicy TRƯỚC khi gán src để browser không gửi Referer (bypass hotlink)
               mp4: (video: HTMLVideoElement, u: string) => {
-                video.referrerPolicy = 'no-referrer';
+                (video as any).referrerPolicy = 'no-referrer';
                 video.src = u;
               },
             },

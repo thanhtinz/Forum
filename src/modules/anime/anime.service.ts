@@ -488,7 +488,7 @@ export class AnimeService {
     }
   }
   async updateChapter(id: string, dto: any) {
-    const data: any = {};
+    const data: any = { chapterStatus: 'PUBLISHED' };
     if (dto.number != null && dto.number !== '') { const n = this.parseNum(dto.number); if (n != null) data.number = n; }
     if (dto.title !== undefined) data.title = dto.title || null;
     if (dto.content !== undefined) data.content = dto.content || null;

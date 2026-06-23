@@ -62,7 +62,7 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
       art = new Artplayer({
         container: el,
         url: src,
-        type: isHls ? 'm3u8' : '',
+        type: isHls ? 'm3u8' : 'mp4',
         autoplay: true,
         setting: true,
         playbackRate: true,
@@ -92,9 +92,14 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
                 } else { setError('Trình duyệt không hỗ trợ HLS.'); }
               },
             }
-          : undefined,
+          : {
+              // Set referrerPolicy TRƯỚC khi gán src để browser không gửi Referer (bypass hotlink)
+              mp4: (video: HTMLVideoElement, u: string) => {
+                video.referrerPolicy = 'no-referrer';
+                video.src = u;
+              },
+            },
       });
-      if (art.video) art.video.referrerPolicy = 'no-referrer';
       art.on('video:timeupdate', () => {
         const { introEnd, skipIntro } = introRef.current;
         if (skipIntro && introEnd && !skippedRef.current && art.currentTime < introEnd) {

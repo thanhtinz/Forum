@@ -9,11 +9,11 @@ interface Work { id: string; type: string; slug: string; title: string; coverUrl
 interface Candidate { anilistId: number; title: string; cover?: string | null; format?: string | null; year?: number | null; score?: number | null }
 interface Genre { id: string; slug: string; name: string; types: string[] }
 
-const FORMATS_ANIME = ['TV', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
+const FORMATS_DONGHUA = ['TV', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
 const FORMATS_MANGA = ['MANGA', 'ONE_SHOT', 'NOVEL', 'MANHUA'];
 const EMPTY_FORM = {
   title: '', titleEnglish: '', titleNative: '',
-  type: 'DONGHUA', status: 'RELEASING', format: '',
+  type: 'MANHUA', status: 'RELEASING', format: '',
   season: '', seasonYear: '', episodes: '', chapters: '', duration: '',
   description: '', coverUrl: '', trailerUrl: '',
 };
@@ -40,8 +40,8 @@ export default function AdminAnime() {
   const [tab, setTab] = useState('');
   const [listSearch, setListSearch] = useState('');
 
-  const isStory = form.type === 'MANGA' || form.type === 'MANHUA';
-  const formatOptions = isStory ? FORMATS_MANGA : FORMATS_ANIME;
+  const isDonghua = form.type === 'DONGHUA';
+  const formatOptions = isDonghua ? FORMATS_DONGHUA : FORMATS_MANGA;
 
   function load() {
     const qs = new URLSearchParams({ limit: '60' });
@@ -112,17 +112,17 @@ export default function AdminAnime() {
 
   return (
     <div className="space-y-6">
-      <PageHeader icon={<Tv size={20} />} title="Anime / Manga / Manhua / Donghua" desc="Quản lý cơ sở dữ liệu. Import nhanh từ AniList." />
+      <PageHeader icon={<Tv size={20} />} title="Truyện & Hoạt hình" desc="Quản lý Manga, Manhua và Hoạt hình Trung Quốc (Donghua). Import nhanh từ AniList." />
       {err && <Notice kind="error">{err}</Notice>}
       {msg && <Notice kind="success">{msg}</Notice>}
 
       {/* AniList Import */}
       <Card className="space-y-4">
-        <SectionTitle hint="Tìm trên AniList rồi bấm Import — tự kéo poster, mô tả, thể loại, studio, nhân vật, seiyuu, ê-kíp.">Import từ AniList</SectionTitle>
+        <SectionTitle hint="Tìm trên AniList rồi bấm Import — tự kéo poster, mô tả, thể loại, studio, nhân vật.">Import từ AniList</SectionTitle>
         <div className="flex flex-wrap items-center gap-2">
           <select className="input !w-auto" value={impType} onChange={(e) => setImpType(e.target.value as any)}>
-            <option value="ANIME">Anime</option>
-            <option value="MANGA">Manga / Light Novel</option>
+            <option value="ANIME">Donghua / Hoạt hình</option>
+            <option value="MANGA">Manga / Manhua / Novel</option>
           </select>
           <div className="flex min-w-[200px] flex-1 items-center gap-1 rounded-lg border border-ink-200 px-2 dark:border-ink-700">
             <Search size={16} className="text-ink-400" />
@@ -178,10 +178,9 @@ export default function AdminAnime() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Field label="Loại">
                 <select className="input w-full" value={form.type} onChange={(e) => set('type', e.target.value)}>
-                  <option value="ANIME">Anime</option>
-                  <option value="DONGHUA">Donghua</option>
-                  <option value="MANGA">Manga</option>
-                  <option value="MANHUA">Manhua</option>
+                  <option value="MANHUA">Manhua (Truyện TQ)</option>
+                  <option value="MANGA">Manga (Truyện Nhật)</option>
+                  <option value="DONGHUA">Donghua (Hoạt hình TQ)</option>
                 </select>
               </Field>
               <Field label="Trạng thái">
@@ -215,7 +214,7 @@ export default function AdminAnime() {
               <Field label="Năm">
                 <input type="number" className="input w-full" value={form.seasonYear} onChange={(e) => set('seasonYear', e.target.value)} placeholder="2024" min="1950" max="2099" />
               </Field>
-              {!isStory ? (
+              {isDonghua ? (
                 <>
                   <Field label="Số tập">
                     <input type="number" className="input w-full" value={form.episodes} onChange={(e) => set('episodes', e.target.value)} placeholder="12" min="1" />
@@ -280,7 +279,7 @@ export default function AdminAnime() {
       {/* List */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          {[{ v: '', l: 'Tất cả' }, { v: 'ANIME', l: 'Anime' }, { v: 'DONGHUA', l: 'Donghua' }, { v: 'MANGA', l: 'Manga' }, { v: 'MANHUA', l: 'Manhua' }].map((t) => (
+          {[{ v: '', l: 'Tất cả' }, { v: 'MANHUA', l: 'Manhua' }, { v: 'MANGA', l: 'Manga' }, { v: 'DONGHUA', l: 'Donghua' }].map((t) => (
             <button key={t.v} onClick={() => setTab(t.v)} className={`rounded-full px-4 py-1.5 text-sm font-medium ${tab === t.v ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{t.l}</button>
           ))}
           <form onSubmit={(e) => { e.preventDefault(); load(); }} className="ml-auto flex min-w-[180px] flex-1 items-center gap-1 rounded-lg border border-ink-200 px-2 dark:border-ink-700 sm:max-w-xs">

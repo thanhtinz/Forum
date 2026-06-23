@@ -94,6 +94,8 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
             }
           : undefined,
       });
+      // Ngăn browser gửi Referer khi tải video (tránh bị chặn hotlink như s3cloud.vn)
+      if (art.video) art.video.referrerPolicy = 'no-referrer';
       art.on('video:timeupdate', () => {
         const { introEnd, skipIntro } = introRef.current;
         // Bỏ qua đoạn đầu (0 → introEnd) đúng một lần khi mới vào tập; sau đó user tua lại thoải mái.

@@ -54,7 +54,7 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
   useEffect(() => {
     const el = boxRef.current; if (!el) return;
     setError(''); skippedRef.current = false;
-    let art: any; let cancelled = false;
+    let art: any; let cancelled = false; let nativeEndedHandler: (() => void) | null = null;
     Promise.all([import('artplayer'), isHls ? import('hls.js') : Promise.resolve(null)]).then(([artMod, hlsMod]) => {
       if (cancelled) return;
       const Artplayer = artMod.default;
@@ -94,24 +94,29 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
             }
           : undefined,
       });
-      // Ngăn browser gửi Referer khi tải video (tránh bị chặn hotlink như s3cloud.vn)
       if (art.video) art.video.referrerPolicy = 'no-referrer';
       art.on('video:timeupdate', () => {
         const { introEnd, skipIntro } = introRef.current;
-        // Bỏ qua đoạn đầu (0 → introEnd) đúng một lần khi mới vào tập; sau đó user tua lại thoải mái.
         if (skipIntro && introEnd && !skippedRef.current && art.currentTime < introEnd) {
           skippedRef.current = true;
           art.currentTime = introEnd;
         }
       });
-      art.on('video:ended', () => { if (nextRef.current.autoNext) nextRef.current.onEnded(); });
+      // Dùng native ended trực tiếp trên video element (đáng tin hơn ArtPlayer event với HLS/proxy)
+      let endedFired = false;
+      nativeEndedHandler = () => {
+        if (endedFired) return;
+        endedFired = true;
+        if (nextRef.current.autoNext) nextRef.current.onEnded();
+      };
+      art.on('video:ended', nativeEndedHandler);
+      if (art.video) art.video.addEventListener('ended', nativeEndedHandler);
       art.on('error', () => {
-        // Phát trực tiếp thất bại (host chặn hotlink) → thử lại MỘT lần qua proxy backend.
         if (!isHls && !viaProxyRef.current) { setViaProxy(true); return; }
         setError('Trình duyệt không tải được (CORS/403).');
       });
     }).catch(() => setError('Không tải được trình phát.'));
-    return () => { cancelled = true; if (art?.destroy) art.destroy(false); };
+    return () => { cancelled = true; if (nativeEndedHandler && art?.video) art.video.removeEventListener('ended', nativeEndedHandler); if (art?.destroy) art.destroy(false); };
   }, [src, isHls]);
 
   if (error) return <PlayerError msg={error} />;
@@ -239,7 +244,7 @@ function Watch() {
               <span>Bỏ qua đoạn đầu {cur?.introEnd ? `(0s–${cur.introEnd}s)` : '(server này chưa đặt)'}</span>
               <span onClick={toggleSkipIntro} className={`relative h-6 w-11 rounded-full transition ${skipIntro ? 'bg-brand-500' : 'bg-white/20'}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${skipIntro ? 'left-[22px]' : 'left-0.5'}`} /></span>
             </label>
-            {!cur?.introEnd && <p className="text-xs text-white/40">Admin cần đặt "Bỏ intro (giây)" cho server này thì tính năng mới hoạt động (chỉ áp link m3u8/mp4, không áp iframe).</p>}
+
           </div>
         )}
       </div>

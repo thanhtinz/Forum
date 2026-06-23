@@ -195,7 +195,7 @@ export default function ApplyCreatorPage() {
       {/* Info block for people without application */}
       {!isCreator && !app && (
         <Card className="bg-brand-50/50 dark:bg-brand-950/20">
-          <h2 className="mb-2 font-semibold">Quyền lợi tác giả</h2>
+          <h2 className="mb-2 font-semibold">Tính năng dành cho tác giả</h2>
           <ul className="space-y-1.5 text-sm text-ink-600 dark:text-ink-300">
             <li className="flex items-start gap-2"><CheckCircle size={15} className="mt-0.5 shrink-0 text-brand-500" /> Đăng series truyện tranh hoặc truyện chữ lên nền tảng</li>
             <li className="flex items-start gap-2"><CheckCircle size={15} className="mt-0.5 shrink-0 text-brand-500" /> Upload ảnh trang hoặc file ZIP/CBZ, hỗ trợ kéo thả sắp xếp</li>

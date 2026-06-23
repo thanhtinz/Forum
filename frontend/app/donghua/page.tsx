@@ -54,7 +54,7 @@ export default function DonghuaManhuaPage() {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-rose-600 to-emerald-500 p-6 text-white shadow-card">
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
         <h1 className="text-2xl font-bold">Donghua &amp; Manhua</h1>
         <p className="mt-1 text-sm text-white/80">Khám phá kho tàng hoạt hình và truyện tranh Trung Quốc cung cấp bởi Trạm GenZ.</p>
       </div>

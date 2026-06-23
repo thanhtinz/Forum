@@ -291,6 +291,11 @@ export class AdminController {
   @Post('stickers')
   createStickerPack(@Body() data: any) { return this.gameAsset.createStickerPack(data); }
 
+  @Post('stickers/import-urls')
+  importStickerPackFromUrls(@Body() data: { slug: string; name: string; description?: string; isPremium?: boolean; urls: string[] }) {
+    return this.gameAsset.importStickerPackFromUrls(data);
+  }
+
   @Patch('stickers/:id')
   updateStickerPack(@Param('id') id: string, @Body() data: any) {
     return this.gameAsset.updateStickerPack(id, data);

@@ -33,10 +33,14 @@ export interface UpdateSeriesDto {
   title?: string;
   titleEnglish?: string;
   titleNative?: string;
+  synonyms?: string[];
   description?: string;
   language?: string;
   ageRating?: number;
+  seasonYear?: number;
   status?: MediaStatus;
+  publisher?: string;
+  countryOfOrigin?: string;
   genreNames?: string[];
 }
 
@@ -199,9 +203,13 @@ export class MangaCreatorService {
         ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.titleEnglish !== undefined && { titleEnglish: dto.titleEnglish }),
         ...(dto.titleNative !== undefined && { titleNative: dto.titleNative }),
+        ...(dto.synonyms !== undefined && { synonyms: dto.synonyms }),
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.language !== undefined && { language: dto.language }),
         ...(dto.status !== undefined && { status: dto.status }),
+        ...(dto.seasonYear !== undefined && { seasonYear: dto.seasonYear || null }),
+        ...(dto.publisher !== undefined && { publisher: dto.publisher || null }),
+        ...(dto.countryOfOrigin !== undefined && { countryOfOrigin: dto.countryOfOrigin || null }),
         ...(ageRating !== undefined && {
           ageRating,
           isAdult: ageRating >= 18,
@@ -241,6 +249,31 @@ export class MangaCreatorService {
     await this.assertSeriesOwner(id, userId);
     await this.prisma.mediaWork.delete({ where: { id } });
     return { success: true };
+  }
+
+  async toggleVisibility(id: string, userId: string) {
+    const work = await this.assertSeriesOwner(id, userId);
+    const isHidden = work.publishStatus === MangaPublishStatus.DRAFT;
+    const next = isHidden ? MangaPublishStatus.PUBLISHED : MangaPublishStatus.DRAFT;
+    await this.prisma.mediaWork.update({ where: { id }, data: { publishStatus: next } });
+    return { hidden: next === MangaPublishStatus.DRAFT };
+  }
+
+  async getCreatorStats(id: string, userId: string) {
+    await this.assertSeriesOwner(id, userId);
+    const [work, chapters] = await Promise.all([
+      this.prisma.mediaWork.findUnique({ where: { id }, select: { viewCount: true, favoriteCount: true, ratingCount: true, avgScore: true } }),
+      this.prisma.chapter.findMany({ where: { mediaId: id }, select: { viewCount: true, chapterStatus: true } }),
+    ]);
+    const totalViews = (work?.viewCount ?? 0) + chapters.reduce((s, c) => s + (c.viewCount ?? 0), 0);
+    return {
+      totalViews,
+      chapterCount: chapters.length,
+      publishedChapters: chapters.filter((c) => c.chapterStatus === 'PUBLISHED').length,
+      favoriteCount: work?.favoriteCount ?? 0,
+      ratingCount: work?.ratingCount ?? 0,
+      avgScore: work?.avgScore ?? 0,
+    };
   }
 
   // ── Creator: Chapters ────────────────────────────────────────────────────
@@ -500,7 +533,7 @@ export class MangaCreatorService {
   private async assertSeriesOwner(id: string, userId: string) {
     const media = await this.prisma.mediaWork.findUnique({
       where: { id },
-      select: { creatorId: true },
+      select: { creatorId: true, publishStatus: true },
     });
     if (!media) throw new NotFoundException('Không tìm thấy series');
     if (media.creatorId !== userId)

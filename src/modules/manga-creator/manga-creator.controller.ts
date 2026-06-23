@@ -88,6 +88,16 @@ export class MangaCreatorController {
     return this.svc.submitForReview(id, userId);
   }
 
+  @Post('manga/:id/visibility')
+  toggleVisibility(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.svc.toggleVisibility(id, userId);
+  }
+
+  @Get('manga/:id/stats')
+  getStats(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.svc.getCreatorStats(id, userId);
+  }
+
   @Delete('manga/:id')
   deleteSeries(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.svc.deleteSeries(id, userId);

@@ -237,7 +237,7 @@ function Watch() {
   function toggleAutoNext() { setAutoNext((v) => { localStorage.setItem('anime_autonext', v ? '0' : '1'); return !v; }); }
   function toggleSkipIntro() { setSkipIntro((v) => { localStorage.setItem('anime_skipintro', v ? '0' : '1'); return !v; }); }
 
-  // Duration-based countdown: bắt đầu đếm khi ước tính gần hết tập
+  // Countdown timer: bắt đầu đếm tại thời điểm cấu hình (showNextAt) hoặc ước tính gần hết tập
   useEffect(() => {
     setNextCountdown(null);
     if (!ep?.next) return;
@@ -245,10 +245,17 @@ function Watch() {
     const curUrl = (servers[serverIdx] ?? servers[0])?.videoUrl ?? '';
     const isIframe = !!curUrl && !/\.m3u8(\?|$)/i.test(curUrl) && !/\.(mp4|webm)(\?|$)/i.test(curUrl);
     if (!isIframe) return;
-    // Nếu DB có duration: bắt 90s trước khi hết. Không có: mặc định 20 phút
-    const durationSec = ep.duration ? ep.duration * 60 : 20 * 60;
-    const triggerAt = Math.max(durationSec - 90, 10) * 1000;
-    const t = setTimeout(() => setNextCountdown(15), triggerAt);
+    // showNextAt (giây) được admin cấu hình per-episode → ưu tiên cao nhất
+    // Nếu không có: dùng duration - 90s. Nếu không có duration: mặc định 10 giây (để test)
+    let triggerSec: number;
+    if (ep.showNextAt != null && ep.showNextAt > 0) {
+      triggerSec = ep.showNextAt;
+    } else if (ep.duration) {
+      triggerSec = Math.max(ep.duration * 60 - 90, 10);
+    } else {
+      triggerSec = 10; // Không có cấu hình → hiện nhanh sau 10s để dễ test
+    }
+    const t = setTimeout(() => setNextCountdown(15), triggerSec * 1000);
     return () => clearTimeout(t);
   }, [ep?.id, serverIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 

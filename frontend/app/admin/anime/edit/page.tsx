@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
 interface Srv { id: string; name: string; videoUrl: string; referer?: string | null; introEnd?: number | null }
-interface Ep { id: string; number: number; part: number; kind: string; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; servers?: Srv[] }
+interface Ep { id: string; number: number; part: number; kind: string; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; showNextAt?: number | null; servers?: Srv[] }
 interface Ch { id: string; number: number; title?: string | null; content?: string | null; pages: string[] }
 
 function EditInner() {
@@ -80,7 +80,7 @@ function EditInner() {
 const PAGE_SIZE = 30;
 
 function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: string; episodes: Ep[]; onChange: () => void; setErr: (s: string) => void }) {
-  const [add, setAdd] = useState({ number: '', part: '1', kind: 'episode', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '' });
+  const [add, setAdd] = useState({ number: '', part: '1', kind: 'episode', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '', showNextAt: '' });
   const [embedInput, setEmbedInput] = useState('');
   const [embedBusy, setEmbedBusy] = useState(false);
   const [embedCands, setEmbedCands] = useState<{ url: string; referer?: string; status?: number | null }[]>([]);
@@ -90,7 +90,7 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
 
   async function create() {
     if (!add.number) { setErr('Nhập số tập'); return; }
-    try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', part: '1', kind: 'episode', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '' }); onChange(); }
+    try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', part: '1', kind: 'episode', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '', showNextAt: '' }); onChange(); }
     catch (e: any) { setErr(e.message); }
   }
   async function getEmbed() {
@@ -157,7 +157,8 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
             <input className="input sm:col-span-2" placeholder="Tiêu đề" value={add.title} onChange={(e) => setAdd({ ...add, title: e.target.value })} />
             <input className="input sm:col-span-2" placeholder="Link video / embed" value={add.videoUrl} onChange={(e) => setAdd({ ...add, videoUrl: e.target.value })} />
             <input className="input sm:col-span-1" type="number" placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này (vd 90)" value={add.introEnd} onChange={(e) => setAdd({ ...add, introEnd: e.target.value })} />
-            <input className="input sm:col-span-6" placeholder="Referer (tuỳ chọn — nếu nguồn chặn hotlink, vd https://vuighe.live/)" value={add.referer} onChange={(e) => setAdd({ ...add, referer: e.target.value })} />
+            <input className="input sm:col-span-1" type="number" placeholder="Hiện next (s)" title="Giây từ đầu video để hiện nút tập tiếp theo (vd 1300)" value={add.showNextAt} onChange={(e) => setAdd({ ...add, showNextAt: e.target.value })} />
+            <input className="input sm:col-span-5" placeholder="Referer (tuỳ chọn — nếu nguồn chặn hotlink, vd https://vuighe.live/)" value={add.referer} onChange={(e) => setAdd({ ...add, referer: e.target.value })} />
             <Btn onClick={create} className="sm:col-span-1"><Plus size={15} /> Thêm</Btn>
           </div>
         </div>
@@ -189,7 +190,7 @@ const KIND_LABELS: Record<string, string> = { episode: 'Tập', movie: 'Movie', 
 
 function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; setErr: (s: string) => void }) {
   const [open, setOpen] = useState(false);
-  const [v, setV] = useState({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '' });
+  const [v, setV] = useState({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '', showNextAt: ep.showNextAt != null ? String(ep.showNextAt) : '' });
   const [srvOpen, setSrvOpen] = useState(false);
   const [newSrv, setNewSrv] = useState({ name: '', videoUrl: '', referer: '', introEnd: '' });
   const [saving, setSaving] = useState(false);
@@ -250,6 +251,7 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
             <input className="input sm:col-span-1" type="number" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này cho Server 1 (vd 90)." />
           </div>
           <div className="flex gap-2">
+            <input className="input w-40 shrink-0" type="number" value={v.showNextAt} onChange={(e) => setV({ ...v, showNextAt: e.target.value })} placeholder="Hiện next (s)" title="Giây từ đầu video để hiện nút tập tiếp theo (vd 1300). Để trống = tự tính theo thời lượng." />
             <input className="input flex-1" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer Server 1 (tuỳ chọn)" />
             <Btn size="sm" onClick={save} disabled={saving} title="Lưu tập">{saving ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> Lưu</>}</Btn>
           </div>

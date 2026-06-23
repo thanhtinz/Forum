@@ -46,7 +46,7 @@ function Detail() {
           <div className="card space-y-1.5 p-4 text-sm">
             {w.avgScore > 0 && <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Star size={15} /> {w.avgScore.toFixed(2)}/5 ({w.ratingCount})</p>}
             <Row label="Loại" value={{ MANGA: 'Manga', ANIME: 'Anime', MANHUA: 'Manhua', MANHWA: 'Manhwa', DONGHUA: 'Donghua' }[w.type as string] ?? w.type} />
-            {w.format && <Row label="Định dạng" value={FORMAT_LABEL[w.format] ?? w.format} />
+            {w.format && <Row label="Định dạng" value={FORMAT_LABEL[w.format] ?? w.format} />}
             <Row label="Trạng thái" value={STATUS_LABEL[w.status] || w.status} />
             {w.episodes != null && <Row label="Số tập" value={String(w.episodes)} />}
             {w.duration != null && <Row label="Thời lượng" value={`${w.duration} phút`} />}

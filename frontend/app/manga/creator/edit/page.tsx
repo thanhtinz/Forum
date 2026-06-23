@@ -30,6 +30,8 @@ interface Series {
   language?: string | null;
   ageRating: number;
   status: string;
+  type?: string | null;
+  genres?: { name: string; slug: string }[];
   chapterList: Chapter[];
 }
 
@@ -54,6 +56,7 @@ function EditSeriesInner() {
 
   const [series, setSeries] = useState<Series | null>(null);
   const [form, setForm] = useState({ title: '', titleEnglish: '', titleNative: '', description: '', language: 'vi', ageRating: '0' });
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [msg, setMsg] = useState('');
@@ -75,6 +78,7 @@ function EditSeriesInner() {
         language: s.language ?? 'vi',
         ageRating: String(s.ageRating),
       });
+      setSelectedGenres((s.genres ?? []).map((g) => g.name));
     } catch (e: any) { setErr(e.message); } finally { setLoading(false); }
   }
 
@@ -93,6 +97,7 @@ function EditSeriesInner() {
         titleEnglish: form.titleEnglish || undefined,
         titleNative: form.titleNative || undefined,
         description: form.description || undefined,
+        genreNames: selectedGenres,
       });
       setMsg('Đã lưu ✓');
       await load();
@@ -269,6 +274,35 @@ function EditSeriesInner() {
               </select>
             </Field>
           </div>
+          {/* Genre tags */}
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-ink-700 dark:text-ink-200">Thể loại</p>
+            {selectedGenres.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {selectedGenres.map((g) => (
+                  <span key={g} className="flex items-center gap-1 rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-950/40 dark:text-brand-400">
+                    {g}
+                    <button type="button" onClick={() => setSelectedGenres((prev) => prev.filter((x) => x !== g))} className="text-brand-400 hover:text-brand-700">×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <input
+              className="input w-full text-sm"
+              placeholder="Nhập thể loại rồi nhấn Enter (vd: Huyền Huyễn, Truyện màu...)"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const val = (e.target as HTMLInputElement).value.trim();
+                  if (val && !selectedGenres.includes(val)) {
+                    setSelectedGenres((prev) => [...prev, val]);
+                  }
+                  (e.target as HTMLInputElement).value = '';
+                }
+              }}
+            />
+          </div>
+
           <div className="flex justify-end border-t border-ink-100 pt-3 dark:border-ink-800">
             <Btn type="submit" disabled={busy}>{busy ? 'Đang lưu...' : 'Lưu thay đổi'}</Btn>
           </div>

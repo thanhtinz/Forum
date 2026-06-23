@@ -26,6 +26,7 @@ export interface CreateSeriesDto {
   ageRating?: number;
   format?: string;
   type?: string;
+  genreNames?: string[];
 }
 
 export interface UpdateSeriesDto {
@@ -36,6 +37,7 @@ export interface UpdateSeriesDto {
   language?: string;
   ageRating?: number;
   status?: MediaStatus;
+  genreNames?: string[];
 }
 
 export interface CreateChapterDto {
@@ -137,6 +139,7 @@ export class MangaCreatorService {
     const media = await this.prisma.mediaWork.findUnique({
       where: { id },
       include: {
+        genres: { select: { name: true, slug: true } },
         chapterList: {
           orderBy: { number: 'asc' },
           select: {
@@ -162,7 +165,12 @@ export class MangaCreatorService {
     await this.assertIsCreator(userId);
     const slug = `${makeSlug(dto.title)}-${Date.now()}`;
     const ageRating = dto.ageRating ?? 0;
-    const mediaType = (dto.type === 'MANHUA' ? MediaType.MANHUA : MediaType.MANGA);
+    const mediaType = dto.type === 'MANHUA' ? MediaType.MANHUA
+      : dto.type === 'MANHWA' ? MediaType.MANHWA
+      : MediaType.MANGA;
+    const genres = dto.genreNames?.length
+      ? { connectOrCreate: this.genreConnect(dto.genreNames) }
+      : undefined;
     return this.prisma.mediaWork.create({
       data: {
         type: mediaType,
@@ -177,6 +185,7 @@ export class MangaCreatorService {
         format: dto.format,
         publishStatus: MangaPublishStatus.DRAFT,
         creatorId: userId,
+        ...(genres && { genres }),
       },
     });
   }
@@ -196,6 +205,9 @@ export class MangaCreatorService {
         ...(ageRating !== undefined && {
           ageRating,
           isAdult: ageRating >= 18,
+        }),
+        ...(dto.genreNames !== undefined && {
+          genres: { set: [], connectOrCreate: this.genreConnect(dto.genreNames) },
         }),
       },
     });
@@ -505,5 +517,13 @@ export class MangaCreatorService {
     if (chapter.uploaderId !== userId)
       throw new ForbiddenException('Bạn không có quyền thực hiện hành động này');
     return chapter;
+  }
+
+  private genreConnect(names: string[]) {
+    return names.filter((n) => n?.trim()).map((n) => {
+      const name = n.trim();
+      const slug = makeSlug(name);
+      return { where: { slug }, create: { slug, name } };
+    });
   }
 }

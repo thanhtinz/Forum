@@ -136,6 +136,67 @@ export class AdminGameAssetService {
     return { pack, uploaded: uploaded.length, failed: failed.length, failedUrls: failed };
   }
 
+  async importFromWpDiscuzSearch(searchUrls: string[]) {
+    const FETCH_HEADERS = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      'Referer': 'https://hoathinh3d.co/',
+      'Accept': 'application/json, */*;q=0.8',
+    };
+
+    const results: any[] = [];
+
+    for (const searchUrl of searchUrls) {
+      let json: any;
+      try {
+        const res = await fetch(searchUrl, { headers: FETCH_HEADERS });
+        if (!res.ok) { results.push({ url: searchUrl, error: `HTTP ${res.status}` }); continue; }
+        json = await res.json();
+      } catch (e: any) {
+        results.push({ url: searchUrl, error: `Fetch failed: ${e?.message}` });
+        continue;
+      }
+
+      const packs = this.parseWpDiscuzJson(json);
+      if (!packs.length) { results.push({ url: searchUrl, error: 'No packs parsed from response' }); continue; }
+
+      for (const pack of packs) {
+        const existing = await this.prisma.stickerPack.findUnique({ where: { slug: pack.slug } });
+        if (existing) { results.push({ url: searchUrl, slug: pack.slug, status: 'skipped', reason: 'already exists' }); continue; }
+        try {
+          const r = await this.importStickerPackFromUrls(pack);
+          results.push({ url: searchUrl, slug: pack.slug, status: 'ok', uploaded: r.uploaded, failed: r.failed });
+        } catch (e: any) {
+          results.push({ url: searchUrl, slug: pack.slug, status: 'error', error: e?.message });
+        }
+      }
+    }
+
+    return results;
+  }
+
+  private parseWpDiscuzJson(json: any): { slug: string; name: string; description?: string; urls: string[] }[] {
+    const items: any[] = Array.isArray(json)
+      ? json
+      : json?.data?.packs ?? json?.packs ?? json?.results ?? json?.data ?? [];
+
+    if (!Array.isArray(items) || !items.length) return [];
+
+    return items.flatMap((item: any) => {
+      const name: string = item.post_title ?? item.name ?? item.title ?? '';
+      const rawSlug: string = item.post_name ?? item.slug ?? name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      if (!name || !rawSlug) return [];
+
+      // Collect all sticker image URLs from various known field shapes
+      const stickerList: any[] = item.stickers ?? item.images ?? item.meta?.stickers ?? item.items ?? [];
+      const urls: string[] = stickerList
+        .map((s: any) => (typeof s === 'string' ? s : s.url ?? s.image ?? s.src ?? s.file ?? ''))
+        .filter((u: string) => u && /^https?:\/\/.+\.(webp|gif|png|jpe?g)(\?.*)?$/i.test(u));
+
+      if (!urls.length) return [];
+      return [{ slug: rawSlug, name, urls }];
+    });
+  }
+
   async updateStickerPack(id: string, data: any) {
     return this.prisma.stickerPack.update({ where: { id }, data });
   }

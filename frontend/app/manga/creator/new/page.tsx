@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   BookOpen, ChevronLeft, ImagePlus, ChevronDown, ChevronUp, Info,
-  Globe, Tag, Settings, Search,
+  Tag, Settings, X,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
@@ -84,7 +84,6 @@ export default function NewSeriesPage() {
     format: '', status: 'RELEASING', seasonYear: '',
     countryOfOrigin: 'CN',
     tagsRaw: '',
-    seoTitle: '', seoDescription: '', seoKeywordsRaw: '',
   });
   const [mediaType] = useState<MediaTypeKey>('MANHUA');
   const [allowComments, setAllowComments] = useState(true);
@@ -145,9 +144,6 @@ export default function NewSeriesPage() {
         allowComments,
         allowRating,
         allowFollow,
-        seoTitle: form.seoTitle.trim() || undefined,
-        seoDescription: form.seoDescription.trim() || undefined,
-        seoKeywords: form.seoKeywordsRaw.split(',').map((x) => x.trim()).filter(Boolean),
       });
 
       const base = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -189,41 +185,57 @@ export default function NewSeriesPage() {
 
         {/* 1. Ảnh & Banner */}
         <Section title="Hình ảnh" icon={<ImagePlus size={15} />}>
-          {/* Banner */}
-          <div className="mb-4">
-            <p className="mb-1.5 text-xs font-medium text-ink-500">Banner (tuỳ chọn, tỉ lệ 16:5)</p>
-            <button type="button" onClick={() => bannerRef.current?.click()}
-              className="relative flex h-24 w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 text-ink-400 transition hover:border-brand-400 dark:border-ink-700 dark:bg-ink-800">
-              {bannerPreview
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={bannerPreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                : <span className="flex flex-col items-center gap-1"><ImagePlus size={20} /><span className="text-[11px]">Chọn banner</span></span>}
-            </button>
-            <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={pickBanner} />
-          </div>
-
-          {/* Cover */}
-          <p className="mb-1.5 text-xs font-medium text-ink-500">Ảnh bìa (tỉ lệ 3:4, tối đa 5 MB)</p>
-          <div className="flex items-start gap-4">
-            <button type="button" onClick={() => coverRef.current?.click()}
-              className="relative flex h-40 w-28 shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 text-ink-400 transition hover:border-brand-400 dark:border-ink-700 dark:bg-ink-800">
-              {coverPreview
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={coverPreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                : <><ImagePlus size={22} /><span className="text-[11px]">Chọn ảnh</span></>}
-            </button>
-            <div className="flex-1 space-y-2 text-xs text-ink-500">
-              <p>Ảnh bìa giúp series nổi bật hơn.</p>
-              <Btn type="button" size="sm" variant="outline" onClick={() => coverRef.current?.click()}>
-                <ImagePlus size={13} /> {coverPreview ? 'Đổi ảnh bìa' : 'Chọn ảnh bìa'}
-              </Btn>
+          <div className="flex gap-3">
+            {/* Cover — 3:4 */}
+            <div className="shrink-0">
+              <p className="mb-1 text-[11px] font-medium text-ink-500">Ảnh bìa (3:4)</p>
+              <button type="button" onClick={() => coverRef.current?.click()}
+                className="group relative flex h-36 w-24 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 text-ink-400 transition hover:border-brand-400 hover:bg-brand-50/40 dark:border-ink-700 dark:bg-ink-800">
+                {coverPreview
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={coverPreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  : <><ImagePlus size={20} /><span className="text-[10px]">Chọn ảnh</span></>}
+                {coverPreview && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 opacity-0 transition group-hover:opacity-100">
+                    <ImagePlus size={16} className="text-white" />
+                    <span className="text-[10px] text-white">Đổi ảnh</span>
+                  </div>
+                )}
+              </button>
               {coverPreview && (
                 <button type="button" onClick={() => { setCoverFile(null); setCoverPreview(null); }}
-                  className="block text-rose-500 hover:underline">Bỏ ảnh</button>
+                  className="mt-1 flex w-full items-center justify-center gap-0.5 text-[10px] text-rose-500 hover:underline">
+                  <X size={9} /> Bỏ
+                </button>
+              )}
+            </div>
+
+            {/* Banner — full width */}
+            <div className="flex-1">
+              <p className="mb-1 text-[11px] font-medium text-ink-500">Banner (tuỳ chọn, 16:5)</p>
+              <button type="button" onClick={() => bannerRef.current?.click()}
+                className="group relative flex h-36 w-full cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 text-ink-400 transition hover:border-brand-400 hover:bg-brand-50/40 dark:border-ink-700 dark:bg-ink-800">
+                {bannerPreview
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={bannerPreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  : <><ImagePlus size={20} /><span className="text-[10px]">Chọn banner</span></>}
+                {bannerPreview && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 opacity-0 transition group-hover:opacity-100">
+                    <ImagePlus size={16} className="text-white" />
+                    <span className="text-[10px] text-white">Đổi banner</span>
+                  </div>
+                )}
+              </button>
+              {bannerPreview && (
+                <button type="button" onClick={() => { setBannerFile(null); setBannerPreview(null); }}
+                  className="mt-1 flex items-center gap-0.5 text-[10px] text-rose-500 hover:underline">
+                  <X size={9} /> Bỏ banner
+                </button>
               )}
             </div>
           </div>
           <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={pickCover} />
+          <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={pickBanner} />
         </Section>
 
         {/* 2. Thông tin cơ bản */}
@@ -348,24 +360,6 @@ export default function NewSeriesPage() {
                 <Info size={13} /> Truyện 18+ sẽ được đánh dấu và chỉ hiển thị với người dùng đủ tuổi.
               </div>
             )}
-          </div>
-        </Section>
-
-        {/* 6. SEO */}
-        <Section title="SEO & Tìm kiếm" icon={<Search size={15} />} defaultOpen={false}>
-          <div className="space-y-3">
-            <Field label="URL Slug" hint="Tự động tạo từ tên truyện nếu để trống">
-              <input value={form.seoTitle} onChange={(e) => set('seoTitle', e.target.value)} className="input w-full" placeholder="ten-truyen-cua-ban" />
-            </Field>
-            <Field label="Meta Title" hint="Tiêu đề hiển thị trên Google (≤ 60 ký tự)">
-              <input value={form.seoTitle} onChange={(e) => set('seoTitle', e.target.value)} className="input w-full" placeholder="Tiêu đề SEO..." maxLength={200} />
-            </Field>
-            <Field label="Meta Description" hint="Mô tả ngắn cho Google (≤ 160 ký tự)">
-              <textarea value={form.seoDescription} onChange={(e) => set('seoDescription', e.target.value)} rows={2} className="input w-full" placeholder="Mô tả SEO..." maxLength={500} />
-            </Field>
-            <Field label="Từ khóa SEO" hint="Phân cách bằng dấu phẩy">
-              <input value={form.seoKeywordsRaw} onChange={(e) => set('seoKeywordsRaw', e.target.value)} className="input w-full" placeholder="từ khoá 1, từ khoá 2..." />
-            </Field>
           </div>
         </Section>
 

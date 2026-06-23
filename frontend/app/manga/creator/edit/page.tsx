@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   BookOpen, ChevronLeft, Upload, Plus, Trash2, CheckCircle,
-  Send, Eye, EyeOff, BarChart2, Info, Tag, Settings, Search,
+  Send, Eye, EyeOff, BarChart2, Info, Tag, Settings,
   ExternalLink, Calendar,
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -76,12 +76,11 @@ function Toggle({ label, hint, checked, onChange }: { label: string; hint?: stri
   );
 }
 
-type Tab = 'info' | 'classify' | 'settings' | 'seo' | 'chapters';
+type Tab = 'info' | 'classify' | 'settings' | 'chapters';
 const TABS: { id: Tab; label: string }[] = [
   { id: 'info', label: 'Thông tin' },
   { id: 'classify', label: 'Phân loại' },
   { id: 'settings', label: 'Cài đặt' },
-  { id: 'seo', label: 'SEO' },
   { id: 'chapters', label: 'Chương' },
 ];
 
@@ -490,25 +489,6 @@ function EditSeriesInner() {
                 <Info size={13} /> Truyện 18+ đã được đánh dấu. Chỉ hiển thị với người dùng đủ tuổi.
               </div>
             )}
-          </Card>
-        )}
-
-        {/* Tab: SEO */}
-        {activeTab === 'seo' && (
-          <Card className="space-y-3">
-            <SectionTitle><Search size={14} className="inline mr-1" />SEO & Tìm kiếm</SectionTitle>
-            <div className="rounded-lg bg-ink-50 px-3 py-2 text-[11px] text-ink-500 dark:bg-ink-800">
-              URL hiện tại: <span className="font-mono text-brand-600">/anime/detail?slug={series.slug}</span>
-            </div>
-            <Field label="Meta Title" hint="Tiêu đề hiển thị trên Google (để trống = dùng tên truyện)">
-              <input value={form.seoTitle} onChange={(e) => set('seoTitle', e.target.value)} className="input w-full" placeholder="Tiêu đề SEO..." maxLength={200} />
-            </Field>
-            <Field label="Meta Description" hint="Mô tả ngắn cho Google (≤ 160 ký tự)">
-              <textarea value={form.seoDescription} onChange={(e) => set('seoDescription', e.target.value)} rows={3} className="input w-full" placeholder="Mô tả SEO..." maxLength={500} />
-            </Field>
-            <Field label="Từ khóa SEO" hint="Phân cách bằng dấu phẩy">
-              <input value={form.seoKeywordsRaw} onChange={(e) => set('seoKeywordsRaw', e.target.value)} className="input w-full" placeholder="từ khoá 1, từ khoá 2..." />
-            </Field>
           </Card>
         )}
 

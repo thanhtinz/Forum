@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, ChevronLeft } from 'lucide-react';
+import { BookOpen, ChevronLeft, ImagePlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Card, Btn, Field, Notice } from '@/components/admin/ui';
@@ -18,6 +18,7 @@ const MEDIA_TYPES: { key: MediaTypeKey; label: string; desc: string }[] = [
 export default function NewSeriesPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     title: '', titleEnglish: '', titleNative: '',
@@ -26,6 +27,8 @@ export default function NewSeriesPage() {
   const [mediaType, setMediaType] = useState<MediaTypeKey>('MANGA');
   const [genres, setGenres] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -35,6 +38,13 @@ export default function NewSeriesPage() {
   }, [mediaType]);
 
   function set(k: keyof typeof form, v: string) { setForm((f) => ({ ...f, [k]: v })); }
+
+  function pickCover(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setCoverFile(f);
+    setCoverPreview(URL.createObjectURL(f));
+  }
 
   function toggleGenre(g: string) {
     setSelectedGenres((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
@@ -56,6 +66,20 @@ export default function NewSeriesPage() {
         titleNative: form.titleNative || undefined,
         description: form.description || undefined,
       });
+
+      // Upload cover nếu có chọn ảnh
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append('file', coverFile);
+        const base = process.env.NEXT_PUBLIC_API_URL ?? '';
+        const token = typeof window !== 'undefined' ? localStorage.getItem('forum_token') : null;
+        await fetch(`${base}/api/creator/manga/${r.id}/cover`, {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: fd,
+        }).catch(() => {});
+      }
+
       router.push(`/manga/creator/edit?id=${r.id}`);
     } catch (e: any) { setErr(e.message); setBusy(false); }
   }
@@ -76,6 +100,31 @@ export default function NewSeriesPage() {
 
       <Card>
         <form onSubmit={submit} className="space-y-4">
+
+          {/* Ảnh bìa */}
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-ink-700 dark:text-ink-200">Ảnh bìa</p>
+            <div className="flex items-start gap-4">
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="relative flex h-36 w-24 shrink-0 cursor-pointer flex-col items-center justify-center gap-1.5 overflow-hidden rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 text-ink-400 transition hover:border-brand-400 hover:bg-brand-50 dark:border-ink-700 dark:bg-ink-800 dark:hover:border-brand-500">
+                {coverPreview
+                  ? <img src={coverPreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                  : <><ImagePlus size={22} /><span className="text-[11px]">Chọn ảnh</span></>}
+              </button>
+              <div className="flex-1 space-y-1">
+                <p className="text-xs text-ink-500">Ảnh bìa giúp series nổi bật hơn. Tỉ lệ 3:4 (vd: 300×400px), tối đa 5 MB.</p>
+                <Btn type="button" size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
+                  <ImagePlus size={13} /> {coverPreview ? 'Đổi ảnh' : 'Chọn ảnh'}
+                </Btn>
+                {coverPreview && (
+                  <button type="button" onClick={() => { setCoverFile(null); setCoverPreview(null); }}
+                    className="block text-xs text-rose-500 hover:underline">Bỏ ảnh</button>
+                )}
+              </div>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickCover} />
+          </div>
+
           <Field label="Tên truyện *" hint="Tên hiển thị chính của series">
             <input value={form.title} onChange={(e) => set('title', e.target.value)} required className="input w-full" placeholder="Nhập tên truyện..." />
           </Field>
@@ -144,7 +193,7 @@ export default function NewSeriesPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-ink-400">Chưa có thể loại cho loại này. Admin cần tạo trong <a href="/admin/genres" className="text-brand-600 hover:underline">Thể loại</a>.</p>
+              <p className="text-xs text-ink-400">Chưa có thể loại. Admin cần tạo trong <a href="/admin/genres" className="text-brand-600 hover:underline">Thể loại</a>.</p>
             )}
             {selectedGenres.length > 0 && (
               <p className="mt-2 text-[11px] text-ink-400">Đã chọn: {selectedGenres.join(', ')}</p>

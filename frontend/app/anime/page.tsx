@@ -72,6 +72,17 @@ export default function AnimeListPage() {
         ))}
       </div>
 
+      {/* CTA đăng truyện — chỉ hiện khi đang xem tab Manga */}
+      {f.type === 'MANGA' && (
+        <a href="/manga/creator" className="flex items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700 transition hover:bg-brand-100 dark:border-brand-900/40 dark:bg-brand-950/30 dark:text-brand-300">
+          <div className="flex items-center gap-2">
+            <BookOpen size={18} />
+            <span><span className="font-semibold">Bạn có truyện muốn đăng?</span> — Tạo series và upload chương của bạn</span>
+          </div>
+          <span className="shrink-0 rounded-lg bg-brand-600 px-3 py-1 text-xs font-semibold text-white">Đăng ngay</span>
+        </a>
+      )}
+
       {/* Filters */}
       <div className="card flex flex-wrap items-center gap-2 p-3">
         <form onSubmit={submitSearch} className="flex min-w-[180px] flex-1 items-center gap-1 rounded-lg border border-ink-200 px-2 dark:border-ink-700">

@@ -2860,9 +2860,10 @@ model Episode {
   thumbnail String?   @db.VarChar(255)
   videoUrl  String?   @db.VarChar(500) // link embed/video
   referer   String?   @db.VarChar(255) // Referer gửi kèm khi proxy (nếu nguồn chặn hotlink)
-  duration  Int? // phút
-  introEnd  Int? // giây kết thúc đoạn intro của RIÊNG tập này (bỏ qua đoạn đầu 0→introEnd)
-  airedAt   DateTime?
+  duration    Int? // phút
+  introEnd    Int? // giây kết thúc đoạn intro của RIÊNG tập này (bỏ qua đoạn đầu 0→introEnd)
+  showNextAt  Int? // giây từ đầu video để hiện banner "tập tiếp theo" (null = tự tính theo duration)
+  airedAt     DateTime?
   createdAt DateTime  @default(now())
 
   media    MediaWork        @relation(fields: [mediaId], references: [id], onDelete: Cascade)

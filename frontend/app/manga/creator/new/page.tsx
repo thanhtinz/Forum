@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, ChevronLeft } from 'lucide-react';
+import { BookOpen, ChevronLeft, FileText } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Card, Btn, Field, Notice } from '@/components/admin/ui';
@@ -16,6 +16,7 @@ export default function NewSeriesPage() {
     title: '', titleEnglish: '', titleNative: '',
     description: '', language: 'vi', ageRating: '0',
   });
+  const [isOneShot, setIsOneShot] = useState(false);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -29,6 +30,7 @@ export default function NewSeriesPage() {
       const r = await api.post<{ id: string }>('/creator/manga', {
         ...form,
         ageRating: Number(form.ageRating),
+        format: isOneShot ? 'ONE_SHOT' : undefined,
         titleEnglish: form.titleEnglish || undefined,
         titleNative: form.titleNative || undefined,
         description: form.description || undefined,
@@ -110,6 +112,29 @@ export default function NewSeriesPage() {
                 <option value="18">18+ (người lớn)</option>
               </select>
             </Field>
+          </div>
+
+          {/* Format */}
+          <div className="rounded-lg border border-ink-100 p-3 dark:border-ink-800">
+            <p className="mb-2 text-xs font-medium text-ink-500">Định dạng series</p>
+            <div className="flex gap-3">
+              <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition ${!isOneShot ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-700'}`}>
+                <input type="radio" name="format" checked={!isOneShot} onChange={() => setIsOneShot(false)} className="hidden" />
+                <BookOpen size={18} className={!isOneShot ? 'text-brand-600' : 'text-ink-400'} />
+                <div>
+                  <p className="text-sm font-medium">Series thông thường</p>
+                  <p className="text-xs text-ink-400">Nhiều chương, cập nhật liên tục</p>
+                </div>
+              </label>
+              <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition ${isOneShot ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-700'}`}>
+                <input type="radio" name="format" checked={isOneShot} onChange={() => setIsOneShot(true)} className="hidden" />
+                <FileText size={18} className={isOneShot ? 'text-brand-600' : 'text-ink-400'} />
+                <div>
+                  <p className="text-sm font-medium">One-shot</p>
+                  <p className="text-xs text-ink-400">Truyện ngắn, chỉ một chương</p>
+                </div>
+              </label>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 border-t border-ink-100 pt-4 dark:border-ink-800">

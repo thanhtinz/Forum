@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, ChevronLeft, Upload, Trash2, CheckCircle, GripVertical, FileArchive, X } from 'lucide-react';
+import { BookOpen, ChevronLeft, Upload, Trash2, CheckCircle, GripVertical, FileArchive, X, Image, AlignLeft } from 'lucide-react';
 import { unzipSync } from 'fflate';
 import { api, postFiles } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
@@ -27,8 +27,12 @@ function ChapterEditorInner() {
 
   const { user, loading: authLoading } = useAuth();
 
+  // Chapter type: 'image' | 'text'
+  const [chapterType, setChapterType] = useState<'image' | 'text'>('image');
   // Chapter metadata
   const [chapForm, setChapForm] = useState({ number: '', title: '', volume: '' });
+  // Text content for text-type chapters
+  const [textContent, setTextContent] = useState('');
   // Local files waiting to be uploaded
   const [localPages, setLocalPages] = useState<LocalPage[]>([]);
   // Pages already on server
@@ -53,6 +57,7 @@ function ChapterEditorInner() {
         setChapForm({ number: String(ch.number), title: ch.title ?? '', volume: ch.volume ? String(ch.volume) : '' });
         setServerPages(ch.pages ?? []);
         setResolvedChapterId(chapterId);
+        if (ch.content) { setTextContent(ch.content); setChapterType('text'); }
       })
       .catch((e: any) => setErr(e.message))
       .finally(() => setLoading(false));
@@ -137,54 +142,50 @@ function ChapterEditorInner() {
   // ── Save / upload ────────────────────────────────────────────────────────
 
   async function ensureChapter(): Promise<string> {
+    const meta = {
+      number: Number(chapForm.number),
+      title: chapForm.title || undefined,
+      volume: chapForm.volume ? Number(chapForm.volume) : undefined,
+    };
     if (resolvedChapterId) {
-      // Update metadata
-      await api.patch(`/creator/chapter/${resolvedChapterId}`, {
-        number: Number(chapForm.number),
-        title: chapForm.title || undefined,
-        volume: chapForm.volume ? Number(chapForm.volume) : undefined,
-      });
+      await api.patch(`/creator/chapter/${resolvedChapterId}`, meta);
       return resolvedChapterId;
     }
     if (!mediaId) throw new Error('Thiếu mediaId');
     if (!chapForm.number) throw new Error('Nhập số chương');
-    const ch = await api.post<{ id: string }>(`/creator/manga/${mediaId}/chapters`, {
-      number: Number(chapForm.number),
-      title: chapForm.title || undefined,
-      volume: chapForm.volume ? Number(chapForm.volume) : undefined,
-    });
+    const ch = await api.post<{ id: string }>(`/creator/manga/${mediaId}/chapters`, meta);
     setResolvedChapterId(ch.id);
     return ch.id;
   }
 
   async function save() {
     if (!chapForm.number) { setErr('Nhập số chương'); return; }
+    if (chapterType === 'text' && !textContent.trim()) { setErr('Nhập nội dung chương'); return; }
     setBusy(true); setErr(''); setMsg('');
     try {
       const cid = await ensureChapter();
 
-      // Upload new local pages
-      if (localPages.length > 0) {
-        setUploading(true);
-        const files = localPages.map((p) => p.file);
-        const result = await postFiles<{ id: string; pages: string[] }>(
-          `/creator/chapter/${cid}/pages`,
-          files,
-          'files',
-        );
-        // result.pages is the FULL array (existing + newly uploaded), sorted in server order.
-        // Reorder: keep user's desired serverPages order + append the new ones at the end.
-        const newUrls = result.pages.slice(-(files.length));
-        const merged = [...serverPages, ...newUrls];
-        setServerPages(merged);
-        setLocalPages([]);
-        setUploading(false);
-
-        // Persist the order the user arranged
-        await api.post(`/creator/chapter/${cid}/pages/order`, { pages: merged });
-      } else if (serverPages.length > 0) {
-        // Just persist current order
-        await api.post(`/creator/chapter/${cid}/pages/order`, { pages: serverPages });
+      if (chapterType === 'text') {
+        await api.patch(`/creator/chapter/${cid}`, { content: textContent });
+      } else {
+        // Upload new local pages
+        if (localPages.length > 0) {
+          setUploading(true);
+          const files = localPages.map((p) => p.file);
+          const result = await postFiles<{ id: string; pages: string[] }>(
+            `/creator/chapter/${cid}/pages`,
+            files,
+            'files',
+          );
+          const newUrls = result.pages.slice(-(files.length));
+          const merged = [...serverPages, ...newUrls];
+          setServerPages(merged);
+          setLocalPages([]);
+          setUploading(false);
+          await api.post(`/creator/chapter/${cid}/pages/order`, { pages: merged });
+        } else if (serverPages.length > 0) {
+          await api.post(`/creator/chapter/${cid}/pages/order`, { pages: serverPages });
+        }
       }
 
       setMsg('Đã lưu ✓');
@@ -257,7 +258,46 @@ function ChapterEditorInner() {
         </div>
       </Card>
 
-      {/* Upload zone */}
+      {/* Chapter type toggle */}
+      <Card>
+        <SectionTitle>Loại chương</SectionTitle>
+        <div className="flex gap-3">
+          <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition ${chapterType === 'image' ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-700'}`}>
+            <input type="radio" name="chtype" checked={chapterType === 'image'} onChange={() => setChapterType('image')} className="hidden" />
+            <Image size={18} className={chapterType === 'image' ? 'text-brand-600' : 'text-ink-400'} />
+            <div>
+              <p className="text-sm font-medium">Truyện tranh</p>
+              <p className="text-xs text-ink-400">Upload ảnh trang, ZIP / CBZ</p>
+            </div>
+          </label>
+          <label className={`flex flex-1 cursor-pointer items-center gap-2 rounded-lg border-2 p-3 transition ${chapterType === 'text' ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/20' : 'border-ink-200 dark:border-ink-700'}`}>
+            <input type="radio" name="chtype" checked={chapterType === 'text'} onChange={() => setChapterType('text')} className="hidden" />
+            <AlignLeft size={18} className={chapterType === 'text' ? 'text-brand-600' : 'text-ink-400'} />
+            <div>
+              <p className="text-sm font-medium">Truyện chữ</p>
+              <p className="text-xs text-ink-400">Light novel, truyện văn xuôi</p>
+            </div>
+          </label>
+        </div>
+      </Card>
+
+      {/* Text content (for text chapters) */}
+      {chapterType === 'text' && (
+        <Card>
+          <SectionTitle hint="Nội dung văn bản của chương">Nội dung chương</SectionTitle>
+          <textarea
+            value={textContent}
+            onChange={(e) => setTextContent(e.target.value)}
+            rows={20}
+            className="input w-full font-mono text-sm leading-relaxed"
+            placeholder="Nhập nội dung chương tại đây..."
+          />
+          <p className="mt-1 text-right text-xs text-ink-400">{textContent.length} ký tự</p>
+        </Card>
+      )}
+
+      {/* Upload zone (for image chapters) */}
+      {chapterType === 'image' && (
       <Card>
         <SectionTitle hint="Chọn file ảnh hoặc kéo thả vào đây. Hỗ trợ ZIP / CBZ.">
           Tải trang lên
@@ -291,9 +331,10 @@ function ChapterEditorInner() {
           </div>
         )}
       </Card>
+      )}
 
       {/* Page list */}
-      {totalPages > 0 && (
+      {chapterType === 'image' && totalPages > 0 && (
         <Card>
           <SectionTitle hint="Kéo để sắp xếp lại thứ tự trang">
             Danh sách trang ({totalPages})

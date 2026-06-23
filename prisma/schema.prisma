@@ -272,6 +272,8 @@ model User {
   hostedImages         HostedImage[]
   createdMedia         MediaWork[]        @relation("UserCreatedMedia")
   uploadedChapters     Chapter[]          @relation("UserUploadedChapters")
+  isCreator            Boolean              @default(false)
+  creatorApplication   CreatorApplication?
 
   @@index([email])
   @@index([username])
@@ -2742,6 +2744,12 @@ enum ChapterPublishStatus {
   SCHEDULED
 }
 
+enum CreatorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model MediaWork {
   id            String       @id @default(cuid())
   type          MediaType
@@ -2950,4 +2958,18 @@ model Chapter {
   @@unique([mediaId, number])
   @@index([mediaId])
   @@index([uploaderId])
+}
+
+model CreatorApplication {
+  id        String        @id @default(cuid())
+  userId    String        @unique
+  status    CreatorStatus @default(PENDING)
+  reason    String        @db.Text
+  portfolio String?       @db.VarChar(500)
+  adminNote String?       @db.VarChar(500)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
 }

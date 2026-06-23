@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, Plus, Edit2, Trash2, Clock, FileText } from 'lucide-react';
+import { BookOpen, Plus, Edit2, Trash2, Clock, FileText, PenSquare } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
-import { PageHeader, Card, Btn, Empty, Notice } from '@/components/admin/ui';
+import { Btn, Notice } from '@/components/admin/ui';
 
 interface AppStatus { isCreator: boolean; application: { status: string } | null }
 
@@ -61,9 +61,17 @@ export default function CreatorDashboard() {
     const hasApp = !!appStatus.application;
     const isPending = appStatus.application?.status === 'PENDING';
     return (
-      <div className="mx-auto max-w-2xl p-4 sm:p-6">
-        <PageHeader icon={<BookOpen size={20} />} title="Đăng truyện" />
-        <div className="mt-6 rounded-2xl border border-ink-200/70 bg-white p-8 text-center dark:border-ink-800 dark:bg-ink-900">
+      <div className="space-y-4">
+        <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-800 to-brand-600 p-6 text-white shadow-card">
+          <div className="flex items-center gap-3">
+            <PenSquare size={28} />
+            <div>
+              <h1 className="text-2xl font-bold">Đăng truyện</h1>
+              <p className="mt-0.5 text-sm text-white/80">Chia sẻ tác phẩm của bạn với cộng đồng Trạm GenZ.</p>
+            </div>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-ink-200/70 bg-white p-8 text-center dark:border-ink-800 dark:bg-ink-900">
           <BookOpen size={48} className="mx-auto mb-4 text-ink-200" />
           {isPending ? (
             <>
@@ -83,33 +91,40 @@ export default function CreatorDashboard() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
-      <PageHeader
-        icon={<BookOpen size={20} />}
-        title="Tác phẩm của tôi"
-        desc="Quản lý truyện bạn đã tạo và đăng tải"
-        actions={
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-brand-800 to-brand-600 p-6 text-white shadow-card">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <PenSquare size={28} />
+            <div>
+              <h1 className="text-2xl font-bold">Tác phẩm của tôi</h1>
+              <p className="mt-0.5 text-sm text-white/80">Quản lý truyện bạn đã tạo và đăng tải</p>
+            </div>
+          </div>
           <Link href="/manga/creator/new">
-            <Btn><Plus size={14} /> Tạo mới</Btn>
+            <Btn className="!bg-white !text-brand-700 hover:!bg-brand-50"><Plus size={14} /> Tạo mới</Btn>
           </Link>
-        }
-      />
+        </div>
+      </div>
 
       {err && <Notice kind="error">{err}</Notice>}
 
       {list.length === 0 ? (
-        <Card>
-          <Empty icon={<BookOpen size={40} />} title="Chưa có tác phẩm nào" desc="Nhấn 'Tạo mới' để bắt đầu đăng truyện của bạn." />
-        </Card>
+        <div className="card p-10 text-center">
+          <BookOpen size={40} className="mx-auto mb-3 text-ink-200" />
+          <p className="font-medium text-ink-600 dark:text-ink-300">Chưa có tác phẩm nào</p>
+          <p className="mt-1 text-sm text-ink-400">Nhấn &apos;Tạo mới&apos; để bắt đầu đăng truyện của bạn.</p>
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {list.map((s) => {
             const st = PUBLISH_LABELS[s.publishStatus ?? 'DRAFT'] ?? PUBLISH_LABELS.DRAFT;
             const isOneShot = s.format === 'ONE_SHOT';
             return (
-              <Card key={s.id} pad={false} className="overflow-hidden">
+              <div key={s.id} className="card overflow-hidden p-0">
                 <div className="flex gap-3 p-4">
                   {s.coverUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={s.coverUrl} alt="" className="h-24 w-16 flex-none rounded object-cover" />
                   ) : (
                     <div className="grid h-24 w-16 flex-none place-items-center rounded bg-ink-100 text-ink-300 dark:bg-ink-800">
@@ -136,7 +151,7 @@ export default function CreatorDashboard() {
                     </div>
                   </div>
                 </div>
-              </Card>
+              </div>
             );
           })}
         </div>

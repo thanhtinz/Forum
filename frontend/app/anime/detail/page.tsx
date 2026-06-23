@@ -81,9 +81,24 @@ function Detail() {
             </a>
           )}
           {w.chapterList?.length > 0 && (
-            <a href={`/anime/read?ch=${w.chapterList[0].id}`} className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-base font-semibold text-white shadow-card transition hover:bg-brand-700">
+            <a href={`/manga/read?id=${w.chapterList[0].id}`} className="flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-3 text-base font-semibold text-white shadow-card transition hover:bg-brand-700">
               <BookOpen size={20} /> Đọc truyện ({w.chapterList.length} chương)
             </a>
+          )}
+          {w.chapterList?.length > 0 && (
+            <div className="card p-4">
+              <h2 className="mb-3 font-semibold">Danh sách chương</h2>
+              <div className="max-h-64 overflow-y-auto divide-y divide-ink-100 dark:divide-ink-800">
+                {w.chapterList.map((ch: any) => (
+                  <a key={ch.id} href={`/manga/read?id=${ch.id}`}
+                    className="flex items-center gap-2 py-2 hover:text-brand-600 transition">
+                    <span className="min-w-[3.5rem] text-sm font-semibold">Tập {ch.number}</span>
+                    <span className="flex-1 truncate text-sm text-ink-500">{ch.title ?? ''}</span>
+                    <BookOpen size={13} className="shrink-0 text-ink-300" />
+                  </a>
+                ))}
+              </div>
+            </div>
           )}
 
           {w.description && <div className="card p-5"><h2 className="mb-2 font-semibold">Nội dung</h2><p className="whitespace-pre-line text-sm leading-relaxed text-ink-700 dark:text-ink-200">{w.description}</p></div>}

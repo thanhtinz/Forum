@@ -63,7 +63,7 @@ export default function AnimeListPage() {
       <div className="flex gap-2">
         {TYPE_TABS.map((t) => (
           <button key={t.v} onClick={() => setF((s) => ({ ...s, type: t.v }))}
-            className={`rounded-full px-5 py-1.5 text-sm font-semibold transition ${f.type === t.v ? 'bg-brand-600 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>{t.label}</button>
+            className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${f.type === t.v ? 'bg-brand-600 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>{t.label}</button>
         ))}
       </div>
 

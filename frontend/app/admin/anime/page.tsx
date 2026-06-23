@@ -10,7 +10,7 @@ interface Candidate { anilistId: number; title: string; cover?: string | null; f
 interface Genre { id: string; slug: string; name: string; types: string[] }
 
 const FORMATS_DONGHUA = ['TV', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
-const FORMATS_MANHUA = ['ONE_SHOT', 'NOVEL', 'MANHUA'];
+const FORMATS_MANHUA = ['NOVEL', 'MANHUA'];
 const EMPTY_FORM = {
   title: '', titleEnglish: '', titleNative: '',
   type: 'MANHUA', status: 'RELEASING', format: '',

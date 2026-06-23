@@ -16,7 +16,6 @@ type MediaTypeKey = 'MANHUA';
 const FORMAT_OPTIONS: { v: string; l: string }[] = [
   { v: 'MANHUA',   l: 'Truyện tranh (Manhua)' },
   { v: 'MANHWA',   l: 'Webtoon (Manhwa)' },
-  { v: 'ONE_SHOT', l: 'One-shot' },
   { v: 'NOVEL',    l: 'Tiểu thuyết / Novel' },
 ];
 

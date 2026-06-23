@@ -83,22 +83,68 @@ export default function AdminStickers() {
 
   async function importFromWpdiscuz() {
     setErr(''); setMsg(''); setImportResults([]);
-    const lines = importUrls.split('\n').map((l) => l.trim()).filter(Boolean);
-    if (!lines.length) { setErr('Dán ít nhất 1 URL vào ô bên dưới'); return; }
+    const raw = importUrls.trim();
+    if (!raw) { setErr('Dán URL hoặc JSON vào ô bên dưới'); return; }
     setImporting(true);
     try {
-      const res = await api.post<any[]>('/admin/stickers/import-wpdiscuz', { searchUrls: lines });
-      setImportResults(res);
-      const ok = res.filter((r: any) => r.status === 'ok').length;
-      const skipped = res.filter((r: any) => r.status === 'skipped').length;
-      const failed = res.filter((r: any) => r.status === 'error' || r.error).length;
-      setMsg(`Hoàn tất: ${ok} tạo mới, ${skipped} đã tồn tại, ${failed} lỗi.`);
-      load();
+      // Thử parse JSON trước (hỗ trợ dán thẳng response từ wpdiscuz API, kể cả dấu \/)
+      let parsed: any = null;
+      try { parsed = JSON.parse(raw); } catch {}
+
+      if (parsed !== null) {
+        // JSON mode — parse client-side, gọi import-urls cho từng pack
+        const packs = parseWpDiscuzJsonClient(parsed);
+        if (!packs.length) { setErr('Không tìm thấy pack/sticker nào trong JSON vừa dán.'); return; }
+        const results: any[] = [];
+        for (const pack of packs) {
+          try {
+            const r = await api.post<any>('/admin/stickers/import-urls', pack);
+            results.push({ slug: pack.slug, status: 'ok', uploaded: r.uploaded, failed: r.failed });
+          } catch (e: any) {
+            const msg: string = e?.message || '';
+            results.push({ slug: pack.slug, status: msg.includes('đã tồn tại') ? 'skipped' : 'error', error: msg });
+          }
+        }
+        setImportResults(results);
+        const ok = results.filter((r) => r.status === 'ok').length;
+        const skipped = results.filter((r) => r.status === 'skipped').length;
+        const failed = results.filter((r) => r.status === 'error').length;
+        setMsg(`Hoàn tất: ${ok} tạo mới, ${skipped} đã tồn tại, ${failed} lỗi.`);
+        load();
+      } else {
+        // URL mode — mỗi dòng là 1 wpdiscuz search URL
+        const lines = raw.split('\n').map((l) => l.trim()).filter(Boolean);
+        const res = await api.post<any[]>('/admin/stickers/import-wpdiscuz', { searchUrls: lines });
+        setImportResults(res);
+        const ok = res.filter((r: any) => r.status === 'ok').length;
+        const skipped = res.filter((r: any) => r.status === 'skipped').length;
+        const failed = res.filter((r: any) => r.status === 'error' || r.error).length;
+        setMsg(`Hoàn tất: ${ok} tạo mới, ${skipped} đã tồn tại, ${failed} lỗi.`);
+        load();
+      }
     } catch (e: any) {
       setErr(e.message);
     } finally {
       setImporting(false);
     }
+  }
+
+  function parseWpDiscuzJsonClient(json: any): { slug: string; name: string; urls: string[] }[] {
+    const items: any[] = Array.isArray(json)
+      ? json
+      : json?.data?.packs ?? json?.packs ?? json?.results ?? json?.data ?? [];
+    if (!Array.isArray(items) || !items.length) return [];
+    return items.flatMap((item: any) => {
+      const name: string = item.post_title ?? item.name ?? item.title ?? '';
+      const rawSlug: string = item.post_name ?? item.slug ?? name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      if (!name || !rawSlug) return [];
+      const stickerList: any[] = item.stickers ?? item.images ?? item.meta?.stickers ?? item.items ?? [];
+      const urls: string[] = stickerList
+        .map((s: any) => (typeof s === 'string' ? s : s.url ?? s.image ?? s.src ?? s.file ?? ''))
+        .filter((u: string) => !!u && /^https?:\/\/.+\.(webp|gif|png|jpe?g)(\?.*)?$/i.test(u));
+      if (!urls.length) return [];
+      return [{ slug: rawSlug, name, urls }];
+    });
   }
 
   async function hidePack(p: Pack) {
@@ -188,12 +234,12 @@ export default function AdminStickers() {
         {tab === 'url' && (
           <div className="space-y-3">
             <p className="text-sm text-ink-500">
-              Dán các URL tìm kiếm wpDiscuz (mỗi URL một dòng). Server sẽ tự tải ảnh và lưu vào R2.
+              Dán <strong>JSON</strong> từ API wpDiscuz (tự nhận dấu <code className="rounded bg-ink-100 px-1 dark:bg-ink-800">{'\/'}</code>) hoặc danh sách URL search mỗi dòng một link.
             </p>
             <textarea
               rows={10}
               className="input w-full font-mono text-xs"
-              placeholder={"https://hoathinh3d.co/wp-json/wpdiscuz-stickers/v1/search?q=Pepe\nhttps://hoathinh3d.co/wp-json/wpdiscuz-stickers/v1/search?q=Panda\n..."}
+              placeholder={"Dán JSON từ API wpdiscuz:\n[{\"post_title\":\"Pepe\",\"post_name\":\"pepe\",\"stickers\":[{\"url\":\"https://...\"}]}]\n\nHoặc danh sách URL search (mỗi dòng 1 link):\nhttps://hoathinh3d.co/wp-json/wpdiscuz-stickers/v1/search?q=Pepe\nhttps://hoathinh3d.co/wp-json/wpdiscuz-stickers/v1/search?q=Panda"}
               value={importUrls}
               onChange={(e) => setImportUrls(e.target.value)}
             />

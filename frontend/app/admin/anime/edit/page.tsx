@@ -6,10 +6,24 @@ import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen, Loader2, Link as Lin
 import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
+const MANGA_ANIME_GENRES = [
+  'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Romance', 'Slice of Life',
+  'Supernatural', 'Mystery', 'Psychological', 'Thriller', 'Horror', 'Sci-fi',
+  'Shounen', 'Shoujo', 'Seinen', 'Josei', 'Ecchi', 'Harem',
+  'Martial Arts', 'School Life', 'Webtoon',
+  'Ngôn Tình', 'Cổ Đại', 'Xuyên Không', 'Chuyển Sinh',
+  'Manhua', 'Manhwa', 'Manga',
+];
+const MANHUA_DONGHUA_GENRES = [
+  'Huyền Huyễn', 'Xuyên Không', 'Trùng Sinh', 'Tiên Hiệp',
+  'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại',
+];
+
 const GENRE_PRESETS: Record<string, string[]> = {
-  MANGA: ['Truyện màu', 'Truyện chữ', 'One-shot'],
-  MANHUA: ['Huyền Huyễn', 'Xuyên Không', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại'],
-  DONGHUA: ['Huyền Huyễn', 'Xuyên Không', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại'],
+  ANIME:   MANGA_ANIME_GENRES,
+  MANGA:   [...MANGA_ANIME_GENRES, 'One-shot', 'Truyện màu', 'Truyện chữ'],
+  MANHUA:  [...MANHUA_DONGHUA_GENRES, 'One-shot', 'Truyện màu', 'Truyện chữ'],
+  DONGHUA: MANHUA_DONGHUA_GENRES,
 };
 
 interface Srv { id: string; name: string; videoUrl: string; referer?: string | null; introEnd?: number | null }

@@ -176,17 +176,17 @@ async function main() {
 // ── Thể loại anime/manga/donghua/manhua ──
 async function seedAnimeGenres() {
   const genres = [
-    // Tiêu chuẩn quốc tế
-    'Action','Adventure','Boys Love','Cartoon','Comedy','Dementia','Demons',
-    'Drama','Ecchi','Fantasy','Game','Harem','Historical','Horror','Josei','Kids',
-    'Live Action','Magic','Martial Arts','Mecha','Military','Music','Mystery','Parody',
-    'Police','Psychological','Romance','Samurai','School','Sci-Fi','Seinen','Shoujo',
-    'Shoujo Ai','Shounen','Shounen Ai','Slice of Life','Space','Sports','Super Power',
-    'Supernatural','Suspense','Thriller','Tokusatsu','Vampire','Yaoi','Yuri',
-    // Manga / Manhwa
-    'Truyện màu','Truyện chữ','One-shot',
+    // Anime / Manga
+    'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Romance', 'Slice of Life',
+    'Supernatural', 'Mystery', 'Psychological', 'Thriller', 'Horror', 'Sci-fi',
+    'Shounen', 'Shoujo', 'Seinen', 'Josei', 'Ecchi', 'Harem',
+    'Martial Arts', 'School Life', 'Webtoon', 'Tragedy',
+    'Ngôn Tình', 'Cổ Đại', 'Xuyên Không', 'Chuyển Sinh',
+    'Manhua', 'Manhwa', 'Manga',
+    // Manga extra
+    'One-shot', 'Truyện màu', 'Truyện chữ',
     // Manhua / Donghua
-    'Huyền Huyễn','Xuyên Không','Trùng Sinh','Tiên Hiệp','Cổ Trang','Hài Hước','Kiếm Hiệp','Hiện Đại',
+    'Huyền Huyễn', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại',
   ];
   for (const name of genres) {
     const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');

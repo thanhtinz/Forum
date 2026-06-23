@@ -16,10 +16,23 @@ const MEDIA_TYPES: { key: MediaTypeKey; label: string; desc: string }[] = [
   { key: 'MANHUA', label: 'Manhua', desc: 'Truyện tranh Trung Quốc' },
 ];
 
+const MANGA_ANIME_GENRES = [
+  'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Romance', 'Slice of Life',
+  'Supernatural', 'Mystery', 'Psychological', 'Thriller', 'Horror', 'Sci-fi',
+  'Shounen', 'Shoujo', 'Seinen', 'Josei', 'Ecchi', 'Harem',
+  'Martial Arts', 'School Life', 'Webtoon',
+  'Ngôn Tình', 'Cổ Đại', 'Xuyên Không', 'Chuyển Sinh',
+  'Manhua', 'Manhwa', 'Manga',
+];
+const MANHUA_DONGHUA_GENRES = [
+  'Huyền Huyễn', 'Xuyên Không', 'Trùng Sinh', 'Tiên Hiệp',
+  'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại',
+];
+
 const GENRE_PRESETS: Record<MediaTypeKey, string[]> = {
-  MANGA:  ['Truyện màu', 'Truyện chữ', 'One-shot'],
-  MANHWA: ['Truyện màu', 'One-shot', 'Truyện chữ'],
-  MANHUA: ['Huyền Huyễn', 'Xuyên Không', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại'],
+  MANGA:  [...MANGA_ANIME_GENRES, 'One-shot', 'Truyện màu', 'Truyện chữ'],
+  MANHWA: [...MANGA_ANIME_GENRES, 'One-shot', 'Truyện màu', 'Truyện chữ'],
+  MANHUA: [...MANHUA_DONGHUA_GENRES, 'One-shot', 'Truyện màu', 'Truyện chữ'],
 };
 
 export default function NewSeriesPage() {

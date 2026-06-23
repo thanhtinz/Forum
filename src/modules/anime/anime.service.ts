@@ -23,13 +23,20 @@ export class AnimeService {
   }
 
   // ───────── CÔNG KHAI ─────────
-  listGenres() {
-    return this.prisma.genre.findMany({ orderBy: { name: 'asc' } });
+  listGenres(type?: string) {
+    return this.prisma.genre.findMany({
+      where: type ? { types: { has: type } } : undefined,
+      orderBy: { name: 'asc' },
+    });
   }
 
-  async createGenre(name: string) {
+  async createGenre(name: string, types: string[]) {
     const slug = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-    return this.prisma.genre.upsert({ where: { slug }, update: { name: name.trim() }, create: { name: name.trim(), slug } });
+    return this.prisma.genre.upsert({
+      where: { slug },
+      update: { name: name.trim(), types },
+      create: { name: name.trim(), slug, types },
+    });
   }
 
   async deleteGenre(id: string) {

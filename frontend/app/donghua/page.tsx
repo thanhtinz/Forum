@@ -37,7 +37,9 @@ export default function DonghuaManhuaPage() {
   const [f, setF] = useState({ type: 'DONGHUA', genre: '', status: '', season: '', year: '', sort: 'popularity', search: '' });
   const [searchInput, setSearchInput] = useState('');
 
-  useEffect(() => { api.get<Genre[]>('/anime/genres').then(setGenres).catch(() => {}); }, []);
+  useEffect(() => {
+    api.get<Genre[]>(`/anime/genres?type=${f.type}`).then(setGenres).catch(() => {});
+  }, [f.type]);
 
   useEffect(() => {
     setLoading(true);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Tv, Search, Download, Loader2, Trash2, Star } from 'lucide-react';
+import { Tv, Search, Download, Loader2, Trash2, Star, ChevronDown, ChevronUp } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
@@ -9,22 +9,39 @@ interface Work { id: string; type: string; slug: string; title: string; coverUrl
 interface Candidate { anilistId: number; title: string; cover?: string | null; format?: string | null; year?: number | null; score?: number | null }
 interface Genre { id: string; slug: string; name: string; types: string[] }
 
+const FORMATS_ANIME = ['TV', 'MOVIE', 'OVA', 'ONA', 'SPECIAL'];
+const FORMATS_MANGA = ['MANGA', 'ONE_SHOT', 'NOVEL', 'MANHUA'];
+const EMPTY_FORM = {
+  title: '', titleEnglish: '', titleNative: '',
+  type: 'DONGHUA', status: 'RELEASING', format: '',
+  season: '', seasonYear: '', episodes: '', chapters: '', duration: '',
+  description: '', coverUrl: '', trailerUrl: '',
+};
+
 export default function AdminAnime() {
   const [list, setList] = useState<Work[]>([]);
   const [msg, setMsg] = useState(''); const [err, setErr] = useState('');
-  // import
+
+  // AniList import
   const [impType, setImpType] = useState<'ANIME' | 'MANGA'>('ANIME');
   const [impQuery, setImpQuery] = useState('');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [searching, setSearching] = useState(false);
   const [importingId, setImportingId] = useState<number | null>(null);
-  // manual
-  const [form, setForm] = useState({ title: '', type: 'ANIME', status: 'FINISHED' });
+
+  // Manual create
+  const [form, setForm] = useState(EMPTY_FORM);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
-  // bộ lọc danh sách đã có
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+
+  // List filters
   const [tab, setTab] = useState('');
   const [listSearch, setListSearch] = useState('');
+
+  const isStory = form.type === 'MANGA' || form.type === 'MANHUA';
+  const formatOptions = isStory ? FORMATS_MANGA : FORMATS_ANIME;
 
   function load() {
     const qs = new URLSearchParams({ limit: '60' });
@@ -37,6 +54,7 @@ export default function AdminAnime() {
   useEffect(() => {
     api.get<Genre[]>(`/anime/genres?type=${form.type}`).then(setGenres).catch(() => {});
     setSelectedGenres([]);
+    setForm((f) => ({ ...f, format: '' }));
   }, [form.type]);
 
   async function search() {
@@ -45,6 +63,7 @@ export default function AdminAnime() {
     try { setCandidates(await api.get<Candidate[]>(`/admin/anime/anilist/search?type=${impType}&q=${encodeURIComponent(impQuery.trim())}`)); }
     catch (e: any) { setErr(e.message); } finally { setSearching(false); }
   }
+
   async function importOne(anilistId: number) {
     setImportingId(anilistId); setErr(''); setMsg('');
     try {
@@ -52,25 +71,44 @@ export default function AdminAnime() {
       setMsg(`Đã import "${r.title}" ✓`); load();
     } catch (e: any) { setErr(e.message); } finally { setImportingId(null); }
   }
+
   async function createManual() {
-    if (!form.title.trim()) { setErr('Nhập tên'); return; }
-    setErr(''); setMsg('');
+    if (!form.title.trim()) { setErr('Nhập tên truyện'); return; }
+    setCreating(true); setErr(''); setMsg('');
     try {
-      await api.post('/admin/anime', { ...form, genreNames: selectedGenres });
+      const payload: any = {
+        title: form.title.trim(),
+        type: form.type,
+        status: form.status,
+        genreNames: selectedGenres,
+      };
+      if (form.titleEnglish.trim()) payload.titleEnglish = form.titleEnglish.trim();
+      if (form.titleNative.trim()) payload.titleNative = form.titleNative.trim();
+      if (form.format) payload.format = form.format;
+      if (form.season) payload.season = form.season;
+      if (form.seasonYear) payload.seasonYear = Number(form.seasonYear);
+      if (form.episodes) payload.episodes = Number(form.episodes);
+      if (form.chapters) payload.chapters = Number(form.chapters);
+      if (form.duration) payload.duration = Number(form.duration);
+      if (form.description.trim()) payload.description = form.description.trim();
+      if (form.coverUrl.trim()) payload.coverUrl = form.coverUrl.trim();
+      if (form.trailerUrl.trim()) payload.trailerUrl = form.trailerUrl.trim();
+      await api.post('/admin/anime', payload);
       setMsg('Đã tạo ✓');
-      setForm({ title: '', type: 'ANIME', status: 'FINISHED' });
+      setForm(EMPTY_FORM);
       setSelectedGenres([]);
+      setCreateOpen(false);
       load();
-    } catch (e: any) { setErr(e.message); }
+    } catch (e: any) { setErr(e.message); } finally { setCreating(false); }
   }
+
   async function del(w: Work) {
     if (!confirm(`Xoá "${w.title}"?`)) return;
     try { await api.post(`/admin/anime/${w.id}/delete`); load(); } catch (e: any) { setErr(e.message); }
   }
 
-  function toggleGenre(name: string) {
-    setSelectedGenres((prev) => prev.includes(name) ? prev.filter((x) => x !== name) : [...prev, name]);
-  }
+  function set(k: keyof typeof EMPTY_FORM, v: string) { setForm((f) => ({ ...f, [k]: v })); }
+  function toggleGenre(name: string) { setSelectedGenres((p) => p.includes(name) ? p.filter((x) => x !== name) : [...p, name]); }
 
   return (
     <div className="space-y-6">
@@ -78,6 +116,7 @@ export default function AdminAnime() {
       {err && <Notice kind="error">{err}</Notice>}
       {msg && <Notice kind="success">{msg}</Notice>}
 
+      {/* AniList Import */}
       <Card className="space-y-4">
         <SectionTitle hint="Tìm trên AniList rồi bấm Import — tự kéo poster, mô tả, thể loại, studio, nhân vật, seiyuu, ê-kíp.">Import từ AniList</SectionTitle>
         <div className="flex flex-wrap items-center gap-2">
@@ -110,49 +149,135 @@ export default function AdminAnime() {
         )}
       </Card>
 
-      <Card className="space-y-3">
-        <SectionTitle>Tạo thủ công</SectionTitle>
-        <div className="flex flex-wrap items-end gap-2">
-          <Field label="Tên"><input className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
-          <Field label="Loại">
-            <select className="input" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-              <option value="ANIME">Anime</option>
-              <option value="DONGHUA">Donghua</option>
-              <option value="MANGA">Manga</option>
-              <option value="MANHUA">Manhua</option>
-            </select>
-          </Field>
-          <Field label="Trạng thái">
-            <select className="input" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
-              <option value="FINISHED">Hoàn thành</option>
-              <option value="RELEASING">Đang phát hành</option>
-              <option value="NOT_YET_RELEASED">Sắp ra mắt</option>
-            </select>
-          </Field>
-        </div>
-        {genres.length > 0 && (
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-ink-500">Thể loại</p>
-            <div className="flex flex-wrap gap-1.5">
-              {genres.map((g) => (
-                <button key={g.id} type="button" onClick={() => toggleGenre(g.name)}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                    selectedGenres.includes(g.name)
-                      ? 'border-brand-500 bg-brand-500 text-white'
-                      : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300'
-                  }`}>
-                  {g.name}
-                </button>
-              ))}
+      {/* Manual Create — collapsible */}
+      <Card className="space-y-4">
+        <button
+          className="flex w-full items-center justify-between"
+          onClick={() => setCreateOpen((o) => !o)}
+        >
+          <p className="text-sm font-semibold text-ink-700 dark:text-ink-200">Tạo thủ công</p>
+          {createOpen ? <ChevronUp size={18} className="text-ink-400" /> : <ChevronDown size={18} className="text-ink-400" />}
+        </button>
+
+        {createOpen && (
+          <div className="space-y-4 border-t border-ink-100 pt-4 dark:border-ink-800">
+            {/* Row 1: titles */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <Field label="Tên chính *">
+                <input className="input w-full" value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Tên hiển thị chính..." />
+              </Field>
+              <Field label="Tên tiếng Anh">
+                <input className="input w-full" value={form.titleEnglish} onChange={(e) => set('titleEnglish', e.target.value)} placeholder="English title" />
+              </Field>
+              <Field label="Tên gốc">
+                <input className="input w-full" value={form.titleNative} onChange={(e) => set('titleNative', e.target.value)} placeholder="原作タイトル / 原名" />
+              </Field>
+            </div>
+
+            {/* Row 2: type / status / format */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Field label="Loại">
+                <select className="input w-full" value={form.type} onChange={(e) => set('type', e.target.value)}>
+                  <option value="ANIME">Anime</option>
+                  <option value="DONGHUA">Donghua</option>
+                  <option value="MANGA">Manga</option>
+                  <option value="MANHUA">Manhua</option>
+                </select>
+              </Field>
+              <Field label="Trạng thái">
+                <select className="input w-full" value={form.status} onChange={(e) => set('status', e.target.value)}>
+                  <option value="RELEASING">Đang phát hành</option>
+                  <option value="FINISHED">Hoàn thành</option>
+                  <option value="NOT_YET_RELEASED">Sắp ra mắt</option>
+                  <option value="HIATUS">Tạm ngưng</option>
+                  <option value="CANCELLED">Đã huỷ</option>
+                </select>
+              </Field>
+              <Field label="Định dạng">
+                <select className="input w-full" value={form.format} onChange={(e) => set('format', e.target.value)}>
+                  <option value="">— Chọn —</option>
+                  {formatOptions.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </Field>
+              <Field label="Mùa">
+                <select className="input w-full" value={form.season} onChange={(e) => set('season', e.target.value)}>
+                  <option value="">— Chọn —</option>
+                  <option value="WINTER">Đông</option>
+                  <option value="SPRING">Xuân</option>
+                  <option value="SUMMER">Hạ</option>
+                  <option value="FALL">Thu</option>
+                </select>
+              </Field>
+            </div>
+
+            {/* Row 3: numbers */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <Field label="Năm">
+                <input type="number" className="input w-full" value={form.seasonYear} onChange={(e) => set('seasonYear', e.target.value)} placeholder="2024" min="1950" max="2099" />
+              </Field>
+              {!isStory ? (
+                <>
+                  <Field label="Số tập">
+                    <input type="number" className="input w-full" value={form.episodes} onChange={(e) => set('episodes', e.target.value)} placeholder="12" min="1" />
+                  </Field>
+                  <Field label="Thời lượng (phút)">
+                    <input type="number" className="input w-full" value={form.duration} onChange={(e) => set('duration', e.target.value)} placeholder="24" min="1" />
+                  </Field>
+                </>
+              ) : (
+                <Field label="Số chương">
+                  <input type="number" className="input w-full" value={form.chapters} onChange={(e) => set('chapters', e.target.value)} placeholder="100" min="1" />
+                </Field>
+              )}
+              <Field label="Ảnh bìa (URL)">
+                <input className="input w-full" value={form.coverUrl} onChange={(e) => set('coverUrl', e.target.value)} placeholder="https://..." />
+              </Field>
+            </div>
+
+            {/* Trailer */}
+            <Field label="Trailer URL (YouTube)">
+              <input className="input w-full" value={form.trailerUrl} onChange={(e) => set('trailerUrl', e.target.value)} placeholder="https://www.youtube.com/watch?v=..." />
+            </Field>
+
+            {/* Description */}
+            <Field label="Mô tả / Tóm tắt">
+              <textarea className="input w-full" rows={3} value={form.description} onChange={(e) => set('description', e.target.value)} placeholder="Mô tả nội dung..." />
+            </Field>
+
+            {/* Genres */}
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-ink-500">Thể loại</p>
+              {genres.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {genres.map((g) => (
+                    <button key={g.id} type="button" onClick={() => toggleGenre(g.name)}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                        selectedGenres.includes(g.name)
+                          ? 'border-brand-500 bg-brand-500 text-white'
+                          : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300'
+                      }`}>
+                      {g.name}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-ink-400">Chưa có thể loại. Vào <a href="/admin/genres" className="text-brand-600 hover:underline">Thể loại</a> để tạo trước.</p>
+              )}
+              {selectedGenres.length > 0 && (
+                <p className="mt-1.5 text-[11px] text-ink-400">Đã chọn: {selectedGenres.join(', ')}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end border-t border-ink-100 pt-3 dark:border-ink-800">
+              <Btn onClick={createManual} disabled={creating}>
+                {creating ? <Loader2 size={14} className="animate-spin" /> : null} Tạo
+              </Btn>
             </div>
           </div>
         )}
-        {genres.length === 0 && (
-          <p className="text-xs text-ink-400">Chưa có thể loại cho loại này. Vào <a href="/admin/genres" className="text-brand-600 hover:underline">Thể loại</a> để tạo trước.</p>
-        )}
-        <Btn onClick={createManual}>Tạo</Btn>
       </Card>
 
+      {/* List */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           {[{ v: '', l: 'Tất cả' }, { v: 'ANIME', l: 'Anime' }, { v: 'DONGHUA', l: 'Donghua' }, { v: 'MANGA', l: 'Manga' }, { v: 'MANHUA', l: 'Manhua' }].map((t) => (

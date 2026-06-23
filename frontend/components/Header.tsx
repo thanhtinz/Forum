@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  ImagePlus, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X, LineChart, Tv, Film,
+  ImagePlus, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X, LineChart, Tv, Film, BookOpen,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -179,6 +179,9 @@ export function Header() {
                   </Link>
                   <Link href="/anime/me" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <Tv size={15} /> Danh sách của tôi
+                  </Link>
+                  <Link href="/manga/creator" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                    <BookOpen size={15} /> Đăng truyện
                   </Link>
                   {user.role === 'ADMIN' && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">

@@ -131,11 +131,9 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
 function Player(props: PlayerProps) {
   const { url } = props;
   if (!url) return <div className="grid h-full place-items-center text-ink-400"><div className="text-center"><Play size={40} className="mx-auto opacity-50" /><p className="mt-2 text-sm">Tập này chưa có link xem</p></div></div>;
-  const yt = ytId(url);
-  if (yt) return <iframe src={`https://www.youtube.com/embed/${yt}?autoplay=1`} className="h-full w-full" allowFullScreen title="Player" />;
   if (/\.m3u8(\?|$)/i.test(url)) return <VideoPlayer {...props} isHls />;
   if (/\.(mp4|webm)(\?|$)/i.test(url)) return <VideoPlayer {...props} isHls={false} />;
-  // Nguồn iframe: lắng nghe postMessage để bắt sự kiện ended từ các player phổ biến
+  // YouTube + mọi nguồn iframe khác đều đi qua IframePlayer để bắt postMessage ended
   return <IframePlayer {...props} url={url} />;
 }
 
@@ -146,21 +144,45 @@ function IframePlayer({ url, autoNext, onEnded }: PlayerProps) {
   useEffect(() => {
     function onMsg(e: MessageEvent) {
       try {
-        const d = e.data;
-        if (!d) return;
+        const raw = e.data;
+        if (!raw) return;
+
+        // Parse chuỗi JSON nếu cần
+        let d: any = raw;
+        if (typeof raw === 'string') {
+          try { d = JSON.parse(raw); } catch { d = raw; }
+        }
+
         const str = typeof d === 'string' ? d.toLowerCase() : '';
+
+        // YouTube IFrame API: state=0 là ended
+        if (d?.event === 'onStateChange' && (d?.info === 0 || d?.info === '0')) {
+          if (nextRef.current.autoNext) nextRef.current.onEnded();
+          return;
+        }
+
+        // Các player phổ biến (VidStream, MyCloud, Filemoon, Streamtape…)
         const isEnded =
           str === 'ended' ||
-          d?.event === 'ended' || d?.type === 'ended' || d?.action === 'ended' ||
-          d?.status === 'ended' || d?.state === 'ended' ||
+          d?.event === 'ended'       || d?.type === 'ended'   || d?.action === 'ended' ||
+          d?.status === 'ended'      || d?.state === 'ended'  ||
           d?.event === 'video:ended' || d?.event === 'complete' ||
-          (str && (str.includes('"ended"') || str.includes('"complete"')));
+          d?.player === 'ended'      || d?.message === 'ended' ||
+          // JSON nhúng trong chuỗi
+          (str.includes('"ended"') || str.includes('"complete"') || str.includes('"finished"'));
+
         if (isEnded && nextRef.current.autoNext) nextRef.current.onEnded();
       } catch {}
     }
     window.addEventListener('message', onMsg);
     return () => window.removeEventListener('message', onMsg);
   }, []);
+
+  const yt = ytId(url);
+  if (yt) {
+    // enablejsapi=1 để YouTube gửi postMessage state changes
+    return <iframe src={`https://www.youtube.com/embed/${yt}?autoplay=1&enablejsapi=1`} className="h-full w-full" allowFullScreen title="Player" />;
+  }
 
   return <iframe src={url} className="h-full w-full" allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
     sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-pointer-lock allow-orientation-lock"
@@ -195,6 +217,8 @@ function Watch() {
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
   const [replyPosting, setReplyPosting] = useState(false);
+  // countdown tự chuyển tập (như Netflix)
+  const [nextCountdown, setNextCountdown] = useState<number | null>(null);
 
   useEffect(() => {
     setAutoNext(localStorage.getItem('anime_autonext') !== '0');
@@ -212,6 +236,28 @@ function Watch() {
 
   function toggleAutoNext() { setAutoNext((v) => { localStorage.setItem('anime_autonext', v ? '0' : '1'); return !v; }); }
   function toggleSkipIntro() { setSkipIntro((v) => { localStorage.setItem('anime_skipintro', v ? '0' : '1'); return !v; }); }
+
+  // Duration-based countdown: bắt đầu đếm khi ước tính gần hết tập
+  useEffect(() => {
+    setNextCountdown(null);
+    if (!ep?.next) return;
+    const curUrl = (ep?.servers?.[serverIdx] ?? ep?.servers?.[0])?.videoUrl ?? ep?.videoUrl ?? '';
+    // Chỉ áp dụng cho iframe (ArtPlayer đã tự xử lý ended cho m3u8/mp4)
+    const isIframe = !!curUrl && !/\.m3u8(\?|$)/i.test(curUrl) && !/\.(mp4|webm)(\?|$)/i.test(curUrl);
+    if (!isIframe) return;
+    const durationSec = ep.duration ? ep.duration * 60 : 23 * 60;
+    const triggerAt = Math.max(durationSec - 60, 30) * 1000; // 60s trước khi hết
+    const t = setTimeout(() => setNextCountdown(15), triggerAt);
+    return () => clearTimeout(t);
+  }, [ep?.id, serverIdx]);
+
+  // Tick đếm ngược
+  useEffect(() => {
+    if (nextCountdown === null) return;
+    if (nextCountdown <= 0) { if (autoNext && ep?.next) goNext(); setNextCountdown(null); return; }
+    const t = setTimeout(() => setNextCountdown((n) => (n ?? 1) - 1), 1000);
+    return () => clearTimeout(t);
+  });
 
   const tabGroups = useMemo(() => {
     const allEps: any[] = ep?.episodes || [];
@@ -319,8 +365,25 @@ function Watch() {
 
       {/* Player */}
       <div className="overflow-hidden rounded-xl bg-black shadow-card">
-        <div className="aspect-video w-full">
-          <Player url={cur?.videoUrl || ''} referer={cur?.referer} introEnd={cur?.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
+        <div className="relative aspect-video w-full">
+          <Player url={curUrl} referer={cur?.referer} introEnd={cur?.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
+          {/* Overlay đếm ngược tự chuyển tập (như Netflix) */}
+          {nextCountdown !== null && ep?.next && (
+            <div className="absolute bottom-4 right-4 z-20 flex items-center gap-3 rounded-2xl bg-black/75 px-4 py-3 text-white shadow-xl backdrop-blur-sm">
+              <div className="min-w-0">
+                <p className="text-[10px] uppercase tracking-wide text-white/50">Tập tiếp theo</p>
+                <p className="truncate text-sm font-semibold">Tập {ep.next.number}{ep.next.title ? ` — ${ep.next.title}` : ''}</p>
+              </div>
+              <button onClick={() => { setNextCountdown(null); goNext(); }}
+                className="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium hover:bg-brand-500">
+                Xem ngay
+              </button>
+              <div className="flex shrink-0 flex-col items-center">
+                <span className="text-2xl font-bold tabular-nums leading-none">{nextCountdown}</span>
+                <button onClick={() => setNextCountdown(null)} className="mt-0.5 text-[9px] text-white/40 hover:text-white/80">Huỷ</button>
+              </div>
+            </div>
+          )}
         </div>
         {/* Thanh hành động */}
         <div className="grid grid-cols-5 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">

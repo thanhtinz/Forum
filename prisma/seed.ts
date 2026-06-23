@@ -188,8 +188,23 @@ async function seedAnimeGenres() {
     // Manhua / Donghua
     'Huyền Huyễn', 'Trùng Sinh', 'Tiên Hiệp', 'Cổ Trang', 'Hài Hước', 'Kiếm Hiệp', 'Hiện Đại',
   ];
+
+  const makeSlug = (name: string) =>
+    name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+
+  const keepSlugs = genres.map(makeSlug);
+
+  // Xoá genre cũ không còn trong danh sách (và không gắn với work nào)
+  await prisma.genre.deleteMany({
+    where: {
+      slug: { notIn: keepSlugs },
+      works: { none: {} },
+    },
+  });
+
+  // Upsert genre mới
   for (const name of genres) {
-    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+    const slug = makeSlug(name);
     await prisma.genre.upsert({ where: { slug }, update: { name }, create: { name, slug } });
   }
   console.log(`✓ ${genres.length} anime genres`);

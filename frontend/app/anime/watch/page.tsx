@@ -219,6 +219,7 @@ function Watch() {
   const [replyPosting, setReplyPosting] = useState(false);
   // countdown tự chuyển tập (như Netflix)
   const [nextCountdown, setNextCountdown] = useState<number | null>(null);
+  const [nextDismissed, setNextDismissed] = useState(false);
 
   useEffect(() => {
     setAutoNext(localStorage.getItem('anime_autonext') !== '0');
@@ -240,6 +241,7 @@ function Watch() {
   // Countdown timer: bắt đầu đếm tại thời điểm cấu hình (showNextAt) hoặc ước tính gần hết tập
   useEffect(() => {
     setNextCountdown(null);
+    setNextDismissed(false); // Reset dismiss khi đổi tập/server
     if (!ep?.next) return; // Không có tập tiếp → không đếm
     // showNextAt (giây) được admin cấu hình per-episode → ưu tiên cao nhất
     // Nếu không có: dùng duration - 90s. Nếu không có duration: mặc định 5 giây
@@ -376,8 +378,8 @@ function Watch() {
         <div className="aspect-video w-full">
           <Player url={curUrl} referer={cur?.referer} introEnd={cur?.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
         </div>
-        {/* Banner tập tiếp theo — luôn hiện khi có tập tiếp, countdown chỉ khi gần hết */}
-        {ep?.next && (
+        {/* Banner tập tiếp theo — luôn hiện khi có tập tiếp (trừ khi user bấm X) */}
+        {ep?.next && !nextDismissed && (
           <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-ink-800 px-4 py-2.5 text-white">
             <div className="min-w-0">
               <span className="text-[10px] text-white/50">Tập tiếp theo · </span>
@@ -393,6 +395,7 @@ function Watch() {
                   {nextCountdown}
                 </div>
               )}
+              <button onClick={() => { setNextDismissed(true); setNextCountdown(null); }} className="text-white/40 hover:text-white"><X size={14} /></button>
             </div>
           </div>
         )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Star, Film, BookOpen } from 'lucide-react';
+import { Search, Star, Film, BookOpen, PenSquare } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface Work {
@@ -68,6 +68,17 @@ export default function DonghuaManhuaPage() {
             className={`flex-1 rounded-full py-2 text-sm font-semibold transition ${f.type === t.v ? 'bg-brand-600 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>{t.label}</button>
         ))}
       </div>
+
+      {/* CTA đăng truyện — chỉ hiện khi đang xem tab Manhua */}
+      {f.type === 'MANHUA' && (
+        <a href="/manga/creator" className="flex items-center justify-between gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm text-brand-700 transition hover:bg-brand-100 dark:border-brand-900/40 dark:bg-brand-950/30 dark:text-brand-300">
+          <div className="flex items-center gap-2">
+            <PenSquare size={18} />
+            <span><span className="font-semibold">Bạn có truyện muốn đăng?</span> — Tạo series và upload chương của bạn</span>
+          </div>
+          <span className="shrink-0 rounded-lg bg-brand-600 px-3 py-1 text-xs font-semibold text-white">Đăng ngay</span>
+        </a>
+      )}
 
       {/* Filters */}
       <div className="card flex flex-wrap items-center gap-2 p-3">

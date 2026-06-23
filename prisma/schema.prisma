@@ -2776,6 +2776,9 @@ model MediaWork {
   trailerUrl    String?      @db.VarChar(255)
   source        String?      @db.VarChar(40) // ORIGINAL/MANGA/LIGHT_NOVEL…
   isAdult       Boolean      @default(false)
+  publisher      String?      @db.VarChar(160)
+  countryOfOrigin String?     @db.VarChar(10)
+  isLocked       Boolean      @default(false)
   creatorId      String?
   publishStatus  MangaPublishStatus?
   language       String?              @default("vi") @db.VarChar(10)

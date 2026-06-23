@@ -300,15 +300,15 @@ function Watch() {
         </div>
         {/* Thanh hành động */}
         <div className="grid grid-cols-5 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
-          <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-1 py-2.5 text-[11px] hover:bg-white/5">
-            <Heart size={20} className={entry?.favorite ? 'fill-rose-500 text-rose-500' : ''} /> Theo dõi
+          <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-0.5 py-2 text-[10px] hover:bg-white/5">
+            <Heart size={17} className={entry?.favorite ? 'fill-rose-500 text-rose-500' : ''} /> Theo dõi
           </button>
-          <button onClick={() => setRateOpen(true)} className="flex flex-col items-center gap-1 py-2.5 text-[11px] hover:bg-white/5">
-            <Star size={20} className={entry?.score ? 'fill-amber-400 text-amber-400' : ''} /> {entry?.score ? `Đã chấm ${entry.score}` : 'Đánh giá'}
+          <button onClick={() => setRateOpen(true)} className="flex flex-col items-center gap-0.5 py-2 text-[10px] hover:bg-white/5">
+            <Star size={17} className={entry?.score ? 'fill-amber-400 text-amber-400' : ''} /> {entry?.score ? `Đã chấm ${entry.score}` : 'Đánh giá'}
           </button>
-          <a href={ep.prev ? `/anime/watch?ep=${ep.prev.id}` : undefined} className={`flex flex-col items-center gap-1 py-2.5 text-[11px] ${ep.prev ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipBack size={20} /> Trước</a>
-          <a href={ep.next ? `/anime/watch?ep=${ep.next.id}` : undefined} className={`flex flex-col items-center gap-1 py-2.5 text-[11px] ${ep.next ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipForward size={20} /> Tiếp</a>
-          <button onClick={() => setMoreOpen((o) => !o)} className="flex flex-col items-center gap-1 py-2.5 text-[11px] hover:bg-white/5"><MoreHorizontal size={20} /> Khác</button>
+          <a href={ep.prev ? `/anime/watch?ep=${ep.prev.id}` : undefined} className={`flex flex-col items-center gap-0.5 py-2 text-[10px] ${ep.prev ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipBack size={17} /> Trước</a>
+          <a href={ep.next ? `/anime/watch?ep=${ep.next.id}` : undefined} className={`flex flex-col items-center gap-0.5 py-2 text-[10px] ${ep.next ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipForward size={17} /> Tiếp</a>
+          <button onClick={() => setMoreOpen((o) => !o)} className="flex flex-col items-center gap-0.5 py-2 text-[10px] hover:bg-white/5"><MoreHorizontal size={17} /> Khác</button>
         </div>
         {isIframePlayer && (
           <p className="bg-ink-950 px-3 py-1 text-center text-[10px] text-white/30">

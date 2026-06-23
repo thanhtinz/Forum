@@ -184,27 +184,52 @@ function Watch() {
   function toggleAutoNext() { setAutoNext((v) => { localStorage.setItem('anime_autonext', v ? '0' : '1'); return !v; }); }
   function toggleSkipIntro() { setSkipIntro((v) => { localStorage.setItem('anime_skipintro', v ? '0' : '1'); return !v; }); }
 
-  const episodes = useMemo(() => {
-    const list = [...(ep?.episodes || [])];
-    list.sort((a, b) => {
-      const pd = asc ? a.part - b.part : b.part - a.part;
-      if (pd !== 0) return pd;
-      return asc ? a.number - b.number : b.number - a.number;
-    });
-    if (!q.trim()) return list;
-    return list.filter((e: any) => String(e.number).includes(q.trim()) || String(e.part).includes(q.trim()));
-  }, [ep?.episodes, q, asc]);
-
-  const grouped = useMemo(() => {
-    const parts = new Map<number, typeof episodes>();
-    for (const e of episodes) {
-      const p = e.part ?? 1;
-      if (!parts.has(p)) parts.set(p, []);
-      parts.get(p)!.push(e);
+  const tabGroups = useMemo(() => {
+    const allEps: any[] = ep?.episodes || [];
+    const KIND_MAP: Record<string, string> = { movie: 'Movie', ova: 'OVA', special: 'Special', recap: 'Recap' };
+    const groups: Array<{ key: string; label: string; kind: 'part' | 'single'; items?: any[]; epId?: string }> = [];
+    const partMap = new Map<number, any[]>();
+    const singles: any[] = [];
+    for (const e of allEps) {
+      if (!e.kind || e.kind === 'episode') {
+        const p = e.part ?? 1;
+        if (!partMap.has(p)) partMap.set(p, []);
+        partMap.get(p)!.push(e);
+      } else { singles.push(e); }
     }
-    return [...parts.entries()].sort((a, b) => asc ? a[0] - b[0] : b[0] - a[0]);
-  }, [episodes, asc]);
-  const multiPart = grouped.length > 1;
+    [...partMap.entries()].sort((a, b) => a[0] - b[0]).forEach(([part, items]) => {
+      groups.push({ key: `part-${part}`, label: `Phần ${part}`, kind: 'part', items });
+    });
+    const kindCount: Record<string, number> = {};
+    for (const e of singles) kindCount[e.kind] = (kindCount[e.kind] || 0) + 1;
+    const kindSeen: Record<string, number> = {};
+    for (const e of singles) {
+      const seen = (kindSeen[e.kind] = (kindSeen[e.kind] || 0) + 1);
+      const base = KIND_MAP[e.kind] || e.kind;
+      groups.push({ key: `ep-${e.id}`, label: kindCount[e.kind] > 1 ? `${base} ${seen}` : base, kind: 'single', epId: e.id });
+    }
+    return groups;
+  }, [ep?.episodes]);
+
+  const currentTabKey = useMemo(() => {
+    if (!ep) return tabGroups[0]?.key ?? '';
+    if (!ep.kind || ep.kind === 'episode') return `part-${ep.part ?? 1}`;
+    return `ep-${ep.id}`;
+  }, [ep, tabGroups]);
+
+  const [activeTab, setActiveTab] = useState('');
+  useEffect(() => { setActiveTab(currentTabKey); }, [currentTabKey]);
+
+  const showTabs = tabGroups.length > 1;
+  const activeGroup = tabGroups.find((g) => g.key === activeTab) ?? tabGroups[0];
+
+  const tabEpisodes = useMemo(() => {
+    if (activeGroup?.kind !== 'part') return [];
+    let list = [...(activeGroup.items || [])];
+    list.sort((a, b) => asc ? a.number - b.number : b.number - a.number);
+    if (q.trim()) list = list.filter((e: any) => String(e.number).includes(q.trim()));
+    return list;
+  }, [activeGroup, asc, q]);
 
   async function saveEntry(patch: { favorite?: boolean; score?: number | null }) {
     if (!user) { router.push('/login'); return; }
@@ -269,16 +294,6 @@ function Watch() {
         )}
       </div>
 
-      {/* Đổi server */}
-      {servers.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-ink-500"><Server size={15} /> Đổi server:</span>
-          {servers.map((s, i) => (
-            <button key={s.id} onClick={() => setServerIdx(i)} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{s.name}</button>
-          ))}
-        </div>
-      )}
-
       <h1 className="text-lg font-bold">
         {ep.kind && ep.kind !== 'episode'
           ? ({ movie: 'Movie', ova: 'OVA', special: 'Special', recap: 'Recap' }[ep.kind as string] ?? ep.kind)
@@ -286,35 +301,76 @@ function Watch() {
         {ep.title ? `: ${ep.title}` : ''}
       </h1>
 
-      {/* Chọn tập */}
+      {/* Chọn tập / phần / movie */}
       {ep.episodes?.length > 0 && (
         <div className="card space-y-3 p-4">
-          <div className="flex items-center gap-2">
-            <h2 className="flex items-center gap-1.5 font-semibold"><Search size={16} /> Chọn tập</h2>
-            <button onClick={() => setAsc((a) => !a)} className="ml-auto inline-flex items-center gap-1 rounded-lg bg-ink-100 px-2.5 py-1 text-xs dark:bg-ink-800"><ArrowDownUp size={13} /> {asc ? 'Tăng dần' : 'Giảm dần'}</button>
-          </div>
-          <div className="flex items-center gap-1 rounded-lg border border-ink-200 px-2 dark:border-ink-700">
-            <Search size={15} className="text-ink-400" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nhập số tập…" className="w-full bg-transparent py-2 text-sm outline-none" />
-          </div>
-          <div className="max-h-72 space-y-3 overflow-y-auto">
-            {grouped.map(([part, epList]) => (
-              <div key={part}>
-                {multiPart && <p className="mb-1.5 text-xs font-bold uppercase text-ink-500">Phần {part}</p>}
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
-                  {epList.map((e: any) => {
-                    const kl = e.kind === 'movie' ? 'Movie' : e.kind === 'ova' ? 'OVA' : e.kind === 'special' ? 'Sp.' : e.kind === 'recap' ? 'Recap' : null;
-                    return (
-                      <a key={e.id} href={`/anime/watch?ep=${e.id}`}
-                        className={`grid place-items-center rounded-lg py-2.5 text-sm font-medium leading-none ${e.id === id ? 'bg-brand-600 text-white' : 'bg-ink-100 hover:bg-brand-50 dark:bg-ink-800 dark:hover:bg-ink-700'}`}>
-                        {kl ? <><span className="text-[10px] font-bold">{kl}</span><span>{e.number > 1 ? ` ${e.number}` : ''}</span></> : e.number}
-                      </a>
-                    );
-                  })}
-                </div>
+          {/* Tab bar */}
+          {showTabs && (
+            <div className="flex flex-wrap gap-1.5">
+              {tabGroups.map((g) =>
+                g.kind === 'part' ? (
+                  <button key={g.key} onClick={() => setActiveTab(g.key)}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${activeTab === g.key ? 'bg-brand-600 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>
+                    {g.label}
+                  </button>
+                ) : (
+                  <a key={g.key} href={`/anime/watch?ep=${g.epId}`}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${currentTabKey === g.key ? 'bg-amber-500 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>
+                    {g.label}
+                  </a>
+                )
+              )}
+            </div>
+          )}
+
+          {/* Phần tab: danh sách tập + tìm kiếm */}
+          {activeGroup?.kind === 'part' && (
+            <>
+              <div className="flex items-center gap-2">
+                {!showTabs && <h2 className="flex items-center gap-1.5 font-semibold"><Search size={16} /> Chọn tập</h2>}
+                <button onClick={() => setAsc((a) => !a)} className="ml-auto inline-flex items-center gap-1 rounded-lg bg-ink-100 px-2.5 py-1 text-xs dark:bg-ink-800"><ArrowDownUp size={13} /> {asc ? 'Tăng dần' : 'Giảm dần'}</button>
               </div>
-            ))}
-          </div>
+              <div className="flex items-center gap-1 rounded-lg border border-ink-200 px-2 dark:border-ink-700">
+                <Search size={15} className="text-ink-400" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nhập số tập…" className="w-full bg-transparent py-2 text-sm outline-none" />
+              </div>
+              <div className="grid max-h-72 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5">
+                {tabEpisodes.map((e: any) => (
+                  <a key={e.id} href={`/anime/watch?ep=${e.id}`}
+                    className={`grid place-items-center rounded-lg py-2.5 text-sm font-medium ${e.id === id ? 'bg-brand-600 text-white' : 'bg-ink-100 hover:bg-brand-50 dark:bg-ink-800 dark:hover:bg-ink-700'}`}>
+                    {e.number}
+                  </a>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Movie / OVA / Special tab: server switcher nếu đang xem, gợi ý nếu chưa */}
+          {activeGroup?.kind === 'single' && (
+            activeGroup.epId === id
+              ? servers.length > 1
+                ? <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-ink-500"><Server size={15} /> Đổi server:</span>
+                    {servers.map((s, i) => (
+                      <button key={s.id} onClick={() => setServerIdx(i)}
+                        className={`rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                : <p className="py-1 text-sm text-ink-500">Đang xem.</p>
+              : <p className="py-1 text-sm text-ink-500">Nhấn tab để xem ngay.</p>
+          )}
+        </div>
+      )}
+
+      {/* Đổi server (chỉ hiện cho tập thường, khi không dùng tab đơn) */}
+      {(!showTabs || activeGroup?.kind === 'part') && servers.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-sm font-medium text-ink-500"><Server size={15} /> Đổi server:</span>
+          {servers.map((s, i) => (
+            <button key={s.id} onClick={() => setServerIdx(i)} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{s.name}</button>
+          ))}
         </div>
       )}
 

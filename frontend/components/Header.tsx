@@ -178,7 +178,7 @@ export function Header() {
                     <Gem size={15} /> Ví của tôi
                   </Link>
                   <Link href="/anime/me" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <Tv size={15} /> Danh sách Anime
+                    <Tv size={15} /> Danh sách của tôi
                   </Link>
                   {user.role === 'ADMIN' && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">

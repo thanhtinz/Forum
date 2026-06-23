@@ -142,7 +142,7 @@ function Player(props: PlayerProps) {
     allowFullScreen title="Player" />;
 }
 
-interface CommentT { id: string; content: string; createdAt: string; authorId: string; author: { id: string; username: string; displayName?: string | null; avatar?: string | null } }
+interface CommentT { id: string; content: string; createdAt: string; authorId: string; parentId?: string | null; author: { id: string; username: string; displayName?: string | null; avatar?: string | null }; replies?: CommentT[] }
 interface ServerT { id: string; name: string; videoUrl: string; referer?: string | null; introEnd?: number | null }
 
 function Watch() {
@@ -166,6 +166,10 @@ function Watch() {
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
   const [picker, setPicker] = useState(false);
+  // reply
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
+  const [replyPosting, setReplyPosting] = useState(false);
 
   useEffect(() => {
     setAutoNext(localStorage.getItem('anime_autonext') !== '0');
@@ -238,17 +242,43 @@ function Watch() {
     try { await api.put(`/anime/me/entry/${ep.media.id}`, patch); } catch {}
   }
   function goNext() { if (ep?.next) router.push(`/anime/watch?ep=${ep.next.id}`); }
-  async function postComment(content: string) {
+  function buildCommentTree(flat: CommentT[]): CommentT[] {
+    const map = new Map<string, CommentT & { replies: CommentT[] }>();
+    const roots: (CommentT & { replies: CommentT[] })[] = [];
+    for (const c of flat) map.set(c.id, { ...c, replies: [] });
+    for (const c of flat) {
+      const node = map.get(c.id)!;
+      if (c.parentId && map.has(c.parentId)) map.get(c.parentId)!.replies.push(node);
+      else roots.push(node);
+    }
+    return roots;
+  }
+  function getDescendantIds(cid: string, flat: CommentT[]): string[] {
+    const children = flat.filter((c) => c.parentId === cid);
+    return [cid, ...children.flatMap((c) => getDescendantIds(c.id, flat))];
+  }
+
+  async function postComment(content: string, parentId?: string | null) {
     if (!content.trim()) return;
     if (!user) { router.push('/login'); return; }
-    setPosting(true);
-    try { const c = await api.post<CommentT>(`/anime/episode/${id}/comments`, { content }); setComments((cs) => [c, ...cs]); setText(''); }
-    catch (e: any) { setErr(e.message); } finally { setPosting(false); }
+    if (parentId) { setReplyPosting(true); } else { setPosting(true); }
+    try {
+      const c = await api.post<CommentT>(`/anime/episode/${id}/comments`, { content, parentId: parentId || undefined });
+      setComments((cs) => [...cs, c]);
+      if (parentId) { setReplyTexts((t) => ({ ...t, [parentId]: '' })); setReplyingToId(null); }
+      else setText('');
+    }
+    catch (e: any) { setErr(e.message); }
+    finally { setPosting(false); setReplyPosting(false); }
   }
   function submitComment(e: React.FormEvent) { e.preventDefault(); postComment(text); }
   async function delComment(cid: string) {
     if (!confirm('Xoá bình luận?')) return;
-    try { await api.del(`/anime/comment/${cid}`); setComments(comments.filter((c) => c.id !== cid)); } catch {}
+    try {
+      await api.del(`/anime/comment/${cid}`);
+      const toRemove = new Set(getDescendantIds(cid, comments));
+      setComments((cs) => cs.filter((c) => !toRemove.has(c.id)));
+    } catch {}
   }
 
   if (err) return <div className="card p-8 text-center text-red-500">{err}</div>;
@@ -268,15 +298,15 @@ function Watch() {
         </div>
         {/* Thanh hành động */}
         <div className="grid grid-cols-5 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
-          <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-1 py-3 text-xs hover:bg-white/5">
-            <Heart size={20} className={entry?.favorite ? 'fill-rose-500 text-rose-500' : ''} /> Theo dõi
+          <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-1.5 py-4 text-xs hover:bg-white/5">
+            <Heart size={24} className={entry?.favorite ? 'fill-rose-500 text-rose-500' : ''} /> Theo dõi
           </button>
-          <button onClick={() => setRateOpen(true)} className="flex flex-col items-center gap-1 py-3 text-xs hover:bg-white/5">
-            <Star size={20} className={entry?.score ? 'fill-amber-400 text-amber-400' : ''} /> {entry?.score ? `Đã chấm ${entry.score}` : 'Đánh giá'}
+          <button onClick={() => setRateOpen(true)} className="flex flex-col items-center gap-1.5 py-4 text-xs hover:bg-white/5">
+            <Star size={24} className={entry?.score ? 'fill-amber-400 text-amber-400' : ''} /> {entry?.score ? `Đã chấm ${entry.score}` : 'Đánh giá'}
           </button>
-          <a href={ep.prev ? `/anime/watch?ep=${ep.prev.id}` : undefined} className={`flex flex-col items-center gap-1 py-3 text-xs ${ep.prev ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipBack size={20} /> Trước</a>
-          <a href={ep.next ? `/anime/watch?ep=${ep.next.id}` : undefined} className={`flex flex-col items-center gap-1 py-3 text-xs ${ep.next ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipForward size={20} /> Tiếp</a>
-          <button onClick={() => setMoreOpen((o) => !o)} className="flex flex-col items-center gap-1 py-3 text-xs hover:bg-white/5"><MoreHorizontal size={20} /> Khác</button>
+          <a href={ep.prev ? `/anime/watch?ep=${ep.prev.id}` : undefined} className={`flex flex-col items-center gap-1.5 py-4 text-xs ${ep.prev ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipBack size={24} /> Trước</a>
+          <a href={ep.next ? `/anime/watch?ep=${ep.next.id}` : undefined} className={`flex flex-col items-center gap-1.5 py-4 text-xs ${ep.next ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipForward size={24} /> Tiếp</a>
+          <button onClick={() => setMoreOpen((o) => !o)} className="flex flex-col items-center gap-1.5 py-4 text-xs hover:bg-white/5"><MoreHorizontal size={24} /> Khác</button>
         </div>
         {/* Panel "Khác" */}
         {moreOpen && (
@@ -398,20 +428,14 @@ function Watch() {
         )}
         <div className="space-y-3">
           {comments.length === 0 && <p className="text-sm text-ink-500">Chưa có bình luận nào.</p>}
-          {comments.map((c) => (
-            <div key={c.id} className="flex items-start gap-2">
-              <Avatar user={c.author} size={32} />
-              <div className="min-w-0 flex-1 rounded-lg bg-ink-50 px-3 py-2 dark:bg-ink-800">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-ink-700 dark:text-ink-200">{c.author.displayName || c.author.username}</span>
-                  <span className="text-[11px] text-ink-400">{new Date(c.createdAt).toLocaleDateString('vi')}</span>
-                  {user && (c.authorId === user.id || isMod) && <button onClick={() => delComment(c.id)} className="ml-auto text-ink-400 hover:text-red-500"><Trash2 size={13} /></button>}
-                </div>
-                {isStickerContent(c.content)
-                  ? <img src={c.content.trim()} alt="sticker" className="mt-1 h-24 w-24 object-contain" />
-                  : <p className="whitespace-pre-line break-words text-sm text-ink-700 dark:text-ink-200">{c.content}</p>}
-              </div>
-            </div>
+          {buildCommentTree(comments).map((c) => (
+            <CommentNode key={c.id} c={c} depth={0}
+              user={user} isMod={isMod}
+              replyingToId={replyingToId} setReplyingToId={setReplyingToId}
+              replyTexts={replyTexts} setReplyTexts={setReplyTexts}
+              replyPosting={replyPosting}
+              onDel={delComment} onReply={postComment}
+            />
           ))}
         </div>
       </div>
@@ -424,6 +448,77 @@ function Watch() {
           onClose={() => setRateOpen(false)}
           onSubmit={(v) => { saveEntry({ score: v }); setRateOpen(false); }}
         />
+      )}
+    </div>
+  );
+}
+
+interface CommentNodeProps {
+  c: CommentT; depth: number;
+  user: any; isMod: boolean;
+  replyingToId: string | null; setReplyingToId: (id: string | null) => void;
+  replyTexts: Record<string, string>; setReplyTexts: (fn: (t: Record<string, string>) => Record<string, string>) => void;
+  replyPosting: boolean;
+  onDel: (id: string) => void; onReply: (content: string, parentId: string) => void;
+}
+function CommentNode({ c, depth, user, isMod, replyingToId, setReplyingToId, replyTexts, setReplyTexts, replyPosting, onDel, onReply }: CommentNodeProps) {
+  const MAX_INDENT = 4;
+  const indent = Math.min(depth, MAX_INDENT);
+  return (
+    <div className={indent > 0 ? 'ml-6 border-l-2 border-ink-200 pl-3 dark:border-ink-700' : ''}>
+      <div className="flex items-start gap-2">
+        <Avatar user={c.author} size={depth > 0 ? 26 : 32} />
+        <div className="min-w-0 flex-1 rounded-lg bg-ink-50 px-3 py-2 dark:bg-ink-800">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-ink-700 dark:text-ink-200">{c.author.displayName || c.author.username}</span>
+            <span className="text-[11px] text-ink-400">{new Date(c.createdAt).toLocaleDateString('vi')}</span>
+            {user && (c.authorId === user.id || isMod) && <button onClick={() => onDel(c.id)} className="ml-auto text-ink-400 hover:text-red-500"><Trash2 size={13} /></button>}
+          </div>
+          {isStickerContent(c.content)
+            ? <img src={c.content.trim()} alt="sticker" className="mt-1 h-24 w-24 object-contain" />
+            : <p className="whitespace-pre-line break-words text-sm text-ink-700 dark:text-ink-200">{c.content}</p>}
+        </div>
+      </div>
+      {user && (
+        <div className="ml-9 mt-1">
+          {replyingToId !== c.id && (
+            <button onClick={() => setReplyingToId(c.id)} className="text-[11px] text-ink-400 hover:text-brand-600">Trả lời</button>
+          )}
+          {replyingToId === c.id && (
+            <div className="mt-1.5 flex items-start gap-2">
+              <Avatar user={user} size={24} />
+              <div className="flex-1">
+                <textarea
+                  autoFocus rows={2}
+                  value={replyTexts[c.id] || ''}
+                  onChange={(e) => setReplyTexts((t) => ({ ...t, [c.id]: e.target.value }))}
+                  placeholder={`Trả lời @${c.author.displayName || c.author.username}…`}
+                  className="input w-full resize-none text-sm"
+                />
+                <div className="mt-1 flex gap-2">
+                  <button disabled={replyPosting || !(replyTexts[c.id] || '').trim()} onClick={() => onReply(replyTexts[c.id] || '', c.id)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1 text-xs text-white hover:bg-brand-700 disabled:opacity-50">
+                    <Send size={12} /> Gửi
+                  </button>
+                  <button onClick={() => setReplyingToId(null)} className="rounded-lg bg-ink-100 px-3 py-1 text-xs dark:bg-ink-800">Huỷ</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {(c.replies || []).length > 0 && (
+        <div className="mt-2 space-y-2">
+          {(c.replies || []).map((r) => (
+            <CommentNode key={r.id} c={r} depth={depth + 1}
+              user={user} isMod={isMod}
+              replyingToId={replyingToId} setReplyingToId={setReplyingToId}
+              replyTexts={replyTexts} setReplyTexts={setReplyTexts}
+              replyPosting={replyPosting}
+              onDel={onDel} onReply={onReply}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

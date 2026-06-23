@@ -40,8 +40,8 @@ export class AnimeController {
 
   @Post('anime/episode/:id/comments')
   @UseGuards(JwtAuthGuard)
-  addEpComment(@Param('id') id: string, @CurrentUser('id') userId: string, @Body('content') content: string) {
-    return this.svc.addEpisodeComment(id, userId, content);
+  addEpComment(@Param('id') id: string, @CurrentUser('id') userId: string, @Body('content') content: string, @Body('parentId') parentId?: string) {
+    return this.svc.addEpisodeComment(id, userId, content, parentId || null);
   }
 
   @Delete('anime/comment/:id')

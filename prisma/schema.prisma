@@ -270,6 +270,8 @@ model User {
   toolRuns             ToolRun[]
   toolFavorites        ToolFavorite[]
   hostedImages         HostedImage[]
+  createdMedia         MediaWork[]        @relation("UserCreatedMedia")
+  uploadedChapters     Chapter[]          @relation("UserUploadedChapters")
 
   @@index([email])
   @@index([username])
@@ -2726,6 +2728,20 @@ model Character {
   appearances MediaCharacter[]
 }
 
+enum MangaPublishStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+}
+
+enum ChapterPublishStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  SCHEDULED
+}
+
 model MediaWork {
   id            String       @id @default(cuid())
   type          MediaType
@@ -2750,6 +2766,10 @@ model MediaWork {
   trailerUrl    String?      @db.VarChar(255)
   source        String?      @db.VarChar(40) // ORIGINAL/MANGA/LIGHT_NOVEL…
   isAdult       Boolean      @default(false)
+  creatorId      String?
+  publishStatus  MangaPublishStatus?
+  language       String?              @default("vi") @db.VarChar(10)
+  ageRating      Int                  @default(0)
   anilistId     Int?         @unique
   avgScore      Float        @default(0) // điểm cộng đồng (0-5)
   ratingCount   Int          @default(0)
@@ -2770,12 +2790,14 @@ model MediaWork {
   listEntries MediaListEntry[]
   episodeList Episode[]
   chapterList Chapter[]
+  creator     User?            @relation("UserCreatedMedia", fields: [creatorId], references: [id])
 
   @@index([type])
   @@index([status])
   @@index([seasonYear, season])
   @@index([avgScore])
   @@index([popularity])
+  @@index([creatorId])
 }
 
 model MediaCharacter {
@@ -2916,9 +2938,16 @@ model Chapter {
   pages     String[] @default([]) // URL ảnh trang (manga)
   content   String?  @db.Text // nội dung text (light novel)
   createdAt DateTime @default(now())
+  uploaderId     String?
+  chapterStatus  ChapterPublishStatus @default(DRAFT)
+  scheduledAt    DateTime?
+  volume         Int?
+  viewCount      Int                  @default(0)
 
-  media MediaWork @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  media    MediaWork @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  uploader User?     @relation("UserUploadedChapters", fields: [uploaderId], references: [id])
 
   @@unique([mediaId, number])
   @@index([mediaId])
+  @@index([uploaderId])
 }

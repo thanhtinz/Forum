@@ -48,6 +48,7 @@ import { AnimeModule } from './modules/anime/anime.module';
 import { MarketModule } from './modules/market/market.module';
 import { PingModule } from './modules/ping/ping.module';
 import { BannerModule } from './modules/banner/banner.module';
+import { MangaCreatorModule } from './modules/manga-creator/manga-creator.module';
 
 @Module({
   imports: [
@@ -112,6 +113,7 @@ import { BannerModule } from './modules/banner/banner.module';
     MailModule,
     SecurityModule,
     PermissionsModule,
+    MangaCreatorModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

@@ -294,6 +294,7 @@ function EditSeriesInner() {
                 <div key={ch.id} className="flex items-center gap-3 py-2.5">
                   <span className="min-w-[3.5rem] text-sm font-semibold">Tập {ch.number}</span>
                   <span className="flex-1 truncate text-sm text-ink-500">{ch.title ?? ''}</span>
+                  {ch.viewCount > 0 && <span className="text-xs text-ink-400">{ch.viewCount} lượt đọc</span>}
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${cs.cls}`}>{cs.label}</span>
                   <Link href={`/manga/creator/chapter/new?chapterId=${ch.id}&mediaId=${id}`}>
                     <Btn size="sm" variant="outline" title="Quản lý trang"><Eye size={12} /></Btn>

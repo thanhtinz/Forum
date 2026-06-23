@@ -86,8 +86,12 @@ function ChapterEditorInner() {
       const newPages: LocalPage[] = imageEntries.map(([name, data]) => {
         const parts = name.split('/');
         const filename = parts[parts.length - 1];
-        const blob = new Blob([data], { type: 'image/jpeg' });
-        const file = new File([blob], filename, { type: 'image/jpeg' });
+        const mime = /\.png$/i.test(filename) ? 'image/png'
+          : /\.(gif)$/i.test(filename) ? 'image/gif'
+          : /\.(webp)$/i.test(filename) ? 'image/webp'
+          : 'image/jpeg';
+        const blob = new Blob([data], { type: mime });
+        const file = new File([blob], filename, { type: mime });
         return { uid: `${Date.now()}-${Math.random()}-${filename}`, file, preview: URL.createObjectURL(blob) };
       });
       setLocalPages((prev) => [...prev, ...newPages]);
@@ -168,13 +172,15 @@ function ChapterEditorInner() {
           files,
           'files',
         );
-        // After upload, merge server pages + new uploaded pages
-        const merged = [...serverPages, ...result.pages.slice(-(files.length))];
+        // result.pages is the FULL array (existing + newly uploaded), sorted in server order.
+        // Reorder: keep user's desired serverPages order + append the new ones at the end.
+        const newUrls = result.pages.slice(-(files.length));
+        const merged = [...serverPages, ...newUrls];
         setServerPages(merged);
         setLocalPages([]);
         setUploading(false);
 
-        // Save order
+        // Persist the order the user arranged
         await api.post(`/creator/chapter/${cid}/pages/order`, { pages: merged });
       } else if (serverPages.length > 0) {
         // Just persist current order

@@ -21,12 +21,26 @@ export interface CreateSeriesDto {
   title: string;
   titleEnglish?: string;
   titleNative?: string;
+  synonyms?: string[];
   description?: string;
   language?: string;
   ageRating?: number;
   format?: string;
   type?: string;
   genreNames?: string[];
+  tags?: string[];
+  author?: string;
+  artist?: string;
+  publisher?: string;
+  countryOfOrigin?: string;
+  seasonYear?: number;
+  status?: string;
+  allowComments?: boolean;
+  allowRating?: boolean;
+  allowFollow?: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string[];
 }
 
 export interface UpdateSeriesDto {
@@ -40,8 +54,17 @@ export interface UpdateSeriesDto {
   seasonYear?: number;
   status?: MediaStatus;
   publisher?: string;
+  author?: string;
+  artist?: string;
+  tags?: string[];
   countryOfOrigin?: string;
   genreNames?: string[];
+  allowComments?: boolean;
+  allowRating?: boolean;
+  allowFollow?: boolean;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string[];
 }
 
 export interface CreateChapterDto {
@@ -162,16 +185,28 @@ export class MangaCreatorService {
     if (!media) throw new NotFoundException('Không tìm thấy series');
     if (media.creatorId !== userId)
       throw new ForbiddenException('Bạn không có quyền xem series này');
-    return media;
+    return {
+      ...media,
+      tags: (media as any).tags ?? [],
+      allowComments: (media as any).allowComments ?? true,
+      allowRating: (media as any).allowRating ?? true,
+      allowFollow: (media as any).allowFollow ?? true,
+      seoTitle: (media as any).seoTitle ?? null,
+      seoDescription: (media as any).seoDescription ?? null,
+      seoKeywords: (media as any).seoKeywords ?? [],
+      author: (media as any).author ?? null,
+      artist: (media as any).artist ?? null,
+    };
   }
 
   async createSeries(userId: string, dto: CreateSeriesDto) {
     await this.assertIsCreator(userId);
     const slug = `${makeSlug(dto.title)}-${Date.now()}`;
     const ageRating = dto.ageRating ?? 0;
-    const mediaType = dto.type === 'MANHUA' ? MediaType.MANHUA
+    const mediaType = dto.type === 'DONGHUA' ? MediaType.DONGHUA
       : dto.type === 'MANHWA' ? MediaType.MANHWA
-      : MediaType.MANGA;
+      : dto.type === 'MANGA' ? MediaType.MANGA
+      : MediaType.MANHUA;
     const genres = dto.genreNames?.length
       ? { connectOrCreate: this.genreConnect(dto.genreNames) }
       : undefined;
@@ -182,11 +217,25 @@ export class MangaCreatorService {
         title: dto.title,
         titleEnglish: dto.titleEnglish,
         titleNative: dto.titleNative,
+        synonyms: dto.synonyms ?? [],
         description: dto.description,
         language: dto.language ?? 'vi',
         ageRating,
         isAdult: ageRating >= 18,
         format: dto.format,
+        status: (dto.status as MediaStatus) ?? MediaStatus.RELEASING,
+        seasonYear: dto.seasonYear,
+        publisher: dto.publisher,
+        author: dto.author,
+        artist: dto.artist,
+        tags: dto.tags ?? [],
+        countryOfOrigin: dto.countryOfOrigin,
+        allowComments: dto.allowComments ?? true,
+        allowRating: dto.allowRating ?? true,
+        allowFollow: dto.allowFollow ?? true,
+        seoTitle: dto.seoTitle,
+        seoDescription: dto.seoDescription,
+        seoKeywords: dto.seoKeywords ?? [],
         publishStatus: MangaPublishStatus.DRAFT,
         creatorId: userId,
         ...(genres && { genres }),
@@ -209,7 +258,16 @@ export class MangaCreatorService {
         ...(dto.status !== undefined && { status: dto.status }),
         ...(dto.seasonYear !== undefined && { seasonYear: dto.seasonYear || null }),
         ...(dto.publisher !== undefined && { publisher: dto.publisher || null }),
+        ...(dto.author !== undefined && { author: dto.author || null }),
+        ...(dto.artist !== undefined && { artist: dto.artist || null }),
+        ...(dto.tags !== undefined && { tags: dto.tags }),
         ...(dto.countryOfOrigin !== undefined && { countryOfOrigin: dto.countryOfOrigin || null }),
+        ...(dto.allowComments !== undefined && { allowComments: dto.allowComments }),
+        ...(dto.allowRating !== undefined && { allowRating: dto.allowRating }),
+        ...(dto.allowFollow !== undefined && { allowFollow: dto.allowFollow }),
+        ...(dto.seoTitle !== undefined && { seoTitle: dto.seoTitle || null }),
+        ...(dto.seoDescription !== undefined && { seoDescription: dto.seoDescription || null }),
+        ...(dto.seoKeywords !== undefined && { seoKeywords: dto.seoKeywords }),
         ...(ageRating !== undefined && {
           ageRating,
           isAdult: ageRating >= 18,
@@ -218,6 +276,21 @@ export class MangaCreatorService {
           genres: { set: [], connectOrCreate: this.genreConnect(dto.genreNames) },
         }),
       },
+    });
+  }
+
+  async uploadBanner(id: string, userId: string, file: any) {
+    await this.assertSeriesOwner(id, userId);
+    const result = await this.attachment.upload(
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+      'manga-covers',
+    );
+    return this.prisma.mediaWork.update({
+      where: { id },
+      data: { bannerUrl: result.url },
+      select: { id: true, bannerUrl: true },
     });
   }
 

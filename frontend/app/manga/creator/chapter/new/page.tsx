@@ -31,7 +31,7 @@ function ChapterEditorInner() {
   // Chapter type: 'image' | 'text'
   const [chapterType, setChapterType] = useState<'image' | 'text'>('image');
   // Chapter metadata
-  const [chapForm, setChapForm] = useState({ number: '', title: '', volume: '' });
+  const [chapForm, setChapForm] = useState({ number: '', title: '', volume: '', scheduledAt: '' });
   // Text content for text-type chapters
   const [textContent, setTextContent] = useState('');
   // Local files waiting to be uploaded
@@ -55,7 +55,7 @@ function ChapterEditorInner() {
     api
       .get<any>(`/creator/chapter/${chapterId}`)
       .then((ch) => {
-        setChapForm({ number: String(ch.number), title: ch.title ?? '', volume: ch.volume ? String(ch.volume) : '' });
+        setChapForm({ number: String(ch.number), title: ch.title ?? '', volume: ch.volume ? String(ch.volume) : '', scheduledAt: ch.scheduledAt ? new Date(ch.scheduledAt).toISOString().slice(0, 16) : '' });
         setServerPages(ch.pages ?? []);
         setResolvedChapterId(chapterId);
         if (ch.content) { setTextContent(ch.content); setChapterType('text'); }
@@ -147,6 +147,7 @@ function ChapterEditorInner() {
       number: Number(chapForm.number),
       title: chapForm.title || undefined,
       volume: chapForm.volume ? Number(chapForm.volume) : undefined,
+      scheduledAt: chapForm.scheduledAt || undefined,
     };
     if (resolvedChapterId) {
       await api.patch(`/creator/chapter/${resolvedChapterId}`, meta);
@@ -226,37 +227,42 @@ function ChapterEditorInner() {
       {/* Chapter info */}
       <Card>
         <SectionTitle>Thông tin chương</SectionTitle>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <Field label="Số chương *">
             <input
-              type="number"
-              min={0}
-              step={0.1}
+              type="number" min={0} step={0.1}
               value={chapForm.number}
               onChange={(e) => setField('number', e.target.value)}
-              className="input w-full"
-              placeholder="1"
+              className="input w-full" placeholder="1"
             />
           </Field>
-          <Field label="Volume (tuỳ chọn)">
+          <Field label="Volume">
             <input
-              type="number"
-              min={1}
+              type="number" min={1}
               value={chapForm.volume}
               onChange={(e) => setField('volume', e.target.value)}
-              className="input w-full"
-              placeholder="1"
+              className="input w-full" placeholder="1"
             />
           </Field>
-          <Field label="Tiêu đề (tuỳ chọn)">
+          <Field label="Tiêu đề">
             <input
               value={chapForm.title}
               onChange={(e) => setField('title', e.target.value)}
+              className="input w-full" placeholder="Tiêu đề chương..."
+            />
+          </Field>
+          <Field label="Lịch đăng" hint="Để trống = đăng ngay">
+            <input
+              type="datetime-local"
+              value={chapForm.scheduledAt}
+              onChange={(e) => setField('scheduledAt', e.target.value)}
               className="input w-full"
-              placeholder="Tiêu đề chương..."
             />
           </Field>
         </div>
+        {chapForm.scheduledAt && (
+          <p className="mt-2 text-xs text-sky-500">Chương sẽ tự đăng vào {new Date(chapForm.scheduledAt).toLocaleString('vi')}</p>
+        )}
       </Card>
 
       {/* Chapter type toggle */}

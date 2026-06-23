@@ -2777,7 +2777,16 @@ model MediaWork {
   source        String?      @db.VarChar(40) // ORIGINAL/MANGA/LIGHT_NOVEL…
   isAdult       Boolean      @default(false)
   publisher      String?      @db.VarChar(160)
+  author         String?      @db.VarChar(200)
+  artist         String?      @db.VarChar(200)
+  tags           String[]     @default([])
   countryOfOrigin String?     @db.VarChar(10)
+  allowComments  Boolean      @default(true)
+  allowRating    Boolean      @default(true)
+  allowFollow    Boolean      @default(true)
+  seoTitle       String?      @db.VarChar(200)
+  seoDescription String?      @db.Text
+  seoKeywords    String[]     @default([])
   isLocked       Boolean      @default(false)
   creatorId      String?
   publishStatus  MangaPublishStatus?

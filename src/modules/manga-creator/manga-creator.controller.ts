@@ -80,6 +80,21 @@ export class MangaCreatorController {
     return this.svc.uploadCover(id, userId, file);
   }
 
+  @Post('manga/:id/banner')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
+  uploadBanner(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @UploadedFile() file: any,
+  ) {
+    return this.svc.uploadBanner(id, userId, file);
+  }
+
   @Post('manga/:id/submit')
   submitForReview(
     @Param('id') id: string,

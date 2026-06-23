@@ -28,6 +28,7 @@ interface Series {
   author?: string | null; artist?: string | null;
   tags?: string[];
   countryOfOrigin?: string | null; type?: string | null;
+  format?: string | null;
   genres?: { name: string; slug: string }[];
   chapterList: Chapter[];
   allowComments?: boolean; allowRating?: boolean; allowFollow?: boolean;
@@ -400,9 +401,11 @@ function EditSeriesInner() {
               <Field label="Tác giả (Author)">
                 <input value={form.author} onChange={(e) => set('author', e.target.value)} className="input w-full" placeholder="Tên tác giả" />
               </Field>
-              <Field label="Họa sĩ (Artist)">
-                <input value={form.artist} onChange={(e) => set('artist', e.target.value)} className="input w-full" placeholder="Tên họa sĩ" />
-              </Field>
+              {series.format !== 'NOVEL' && (
+                <Field label="Họa sĩ (Artist)">
+                  <input value={form.artist} onChange={(e) => set('artist', e.target.value)} className="input w-full" placeholder="Tên họa sĩ" />
+                </Field>
+              )}
               <Field label="Nhóm dịch / NXB">
                 <input value={form.publisher} onChange={(e) => set('publisher', e.target.value)} className="input w-full" placeholder="Nhóm scan / NXB…" />
               </Field>

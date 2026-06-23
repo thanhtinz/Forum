@@ -103,6 +103,8 @@ export class AnimeService {
       },
     });
     if (!work) throw new NotFoundException('Không tìm thấy');
+    if (work.creatorId && (work as any).publishStatus !== 'PUBLISHED')
+      throw new NotFoundException('Series chưa được xuất bản');
     await this.prisma.mediaWork.update({ where: { id: work.id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
     return work;
   }
@@ -477,6 +479,7 @@ export class AnimeService {
         data: {
           mediaId, number, title: dto.title || null,
           pages: this.parsePages(dto.pages), content: dto.content || null,
+          chapterStatus: 'PUBLISHED',
         },
       });
     } catch (e) {
@@ -673,6 +676,7 @@ export class AnimeService {
     // Creator chapters must be published before public access
     if (ch.uploaderId && ch.chapterStatus !== 'PUBLISHED')
       throw new NotFoundException('Chương chưa được xuất bản');
+    this.prisma.chapter.update({ where: { id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
     return { ...ch, ...(await this.neighbours('chapter', ch.mediaId, ch.number)) };
   }
 

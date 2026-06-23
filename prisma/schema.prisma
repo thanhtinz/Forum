@@ -2689,6 +2689,7 @@ model Genre {
   id    String      @id @default(cuid())
   slug  String      @unique @db.VarChar(80)
   name  String      @unique @db.VarChar(80)
+  types String[]    @default([])
   works MediaWork[] @relation("MediaGenres")
 }
 

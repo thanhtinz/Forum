@@ -42,7 +42,9 @@ export default function AnimeListPage() {
   const [f, setF] = useState({ type: 'ANIME', genre: '', status: '', format: '', season: '', year: '', sort: 'popularity', search: '' });
   const [searchInput, setSearchInput] = useState('');
 
-  useEffect(() => { api.get<Genre[]>('/anime/genres').then(setGenres).catch(() => {}); }, []);
+  useEffect(() => {
+    api.get<Genre[]>(`/anime/genres?type=${f.type}`).then(setGenres).catch(() => {});
+  }, [f.type]);
 
   useEffect(() => {
     setLoading(true);

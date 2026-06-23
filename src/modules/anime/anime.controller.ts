@@ -11,13 +11,13 @@ export class AnimeController {
 
   // ── Công khai ──
   @Get('anime/genres')
-  genres() { return this.svc.listGenres(); }
+  genres(@Query('type') type?: string) { return this.svc.listGenres(type); }
 
   // ── Admin quản lý thể loại ──
   @Post('admin/anime/genres')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  createGenre(@Body() dto: { name: string }) { return this.svc.createGenre(dto.name); }
+  createGenre(@Body() dto: { name: string; types: string[] }) { return this.svc.createGenre(dto.name, dto.types ?? []); }
 
   @Delete('admin/anime/genres/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)

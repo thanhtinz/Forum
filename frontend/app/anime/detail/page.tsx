@@ -10,6 +10,10 @@ const STATUS_LABEL: Record<string, string> = {
   RELEASING: 'Đang phát hành', FINISHED: 'Hoàn thành', NOT_YET_RELEASED: 'Sắp ra mắt', HIATUS: 'Tạm ngưng', CANCELLED: 'Đã huỷ',
 };
 const SEASON_LABEL: Record<string, string> = { WINTER: 'Đông', SPRING: 'Xuân', SUMMER: 'Hạ', FALL: 'Thu' };
+const FORMAT_LABEL: Record<string, string> = {
+  TV: 'TV', MOVIE: 'Phim lẻ', OVA: 'OVA', ONA: 'ONA', SPECIAL: 'Special',
+  MANGA: 'Manga', ONE_SHOT: 'One-shot', NOVEL: 'Light Novel', MANHWA: 'Manhwa', MANHUA: 'Manhua',
+};
 const ytId = (url?: string | null) => url?.match(/[?&]v=([\w-]+)/)?.[1] || null;
 
 function Detail() {
@@ -41,8 +45,8 @@ function Detail() {
           <EntryControls mediaId={w.id} max={w.episodes ?? w.chapters} />
           <div className="card space-y-1.5 p-4 text-sm">
             {w.avgScore > 0 && <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Star size={15} /> {w.avgScore.toFixed(2)}/5 ({w.ratingCount})</p>}
-            <Row label="Loại" value={{ MANGA: 'Manga', ANIME: 'Anime', MANHUA: 'Manhua', DONGHUA: 'Donghua' }[w.type as string] ?? w.type} />
-            {w.format && <Row label="Định dạng" value={w.format} />}
+            <Row label="Loại" value={{ MANGA: 'Manga', ANIME: 'Anime', MANHUA: 'Manhua', MANHWA: 'Manhwa', DONGHUA: 'Donghua' }[w.type as string] ?? w.type} />
+            {w.format && <Row label="Định dạng" value={FORMAT_LABEL[w.format] ?? w.format} />
             <Row label="Trạng thái" value={STATUS_LABEL[w.status] || w.status} />
             {w.episodes != null && <Row label="Số tập" value={String(w.episodes)} />}
             {w.duration != null && <Row label="Thời lượng" value={`${w.duration} phút`} />}
@@ -57,7 +61,12 @@ function Detail() {
 
         <div className="space-y-5">
           <div>
-            <h1 className="text-2xl font-bold">{w.titleEnglish || w.title}</h1>
+            <div className="flex flex-wrap items-start gap-2">
+              <h1 className="text-2xl font-bold">{w.titleEnglish || w.title}</h1>
+              {w.format === 'ONE_SHOT' && (
+                <span className="mt-1 shrink-0 rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700 dark:bg-brand-950/40 dark:text-brand-400">One-shot</span>
+              )}
+            </div>
             <p className="text-sm text-ink-500">{w.title}{w.titleNative ? ` · ${w.titleNative}` : ''}</p>
             {w.genres?.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">

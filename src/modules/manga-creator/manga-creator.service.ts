@@ -25,6 +25,7 @@ export interface CreateSeriesDto {
   language?: string;
   ageRating?: number;
   format?: string;
+  type?: string;
 }
 
 export interface UpdateSeriesDto {
@@ -120,6 +121,8 @@ export class MangaCreatorService {
         titleEnglish: true,
         coverUrl: true,
         publishStatus: true,
+        format: true,
+        type: true,
         language: true,
         ageRating: true,
         status: true,
@@ -159,9 +162,10 @@ export class MangaCreatorService {
     await this.assertIsCreator(userId);
     const slug = `${makeSlug(dto.title)}-${Date.now()}`;
     const ageRating = dto.ageRating ?? 0;
+    const mediaType = (dto.type === 'MANHUA' ? MediaType.MANHUA : MediaType.MANGA);
     return this.prisma.mediaWork.create({
       data: {
-        type: MediaType.MANGA,
+        type: mediaType,
         slug,
         title: dto.title,
         titleEnglish: dto.titleEnglish,

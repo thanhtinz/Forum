@@ -8,6 +8,7 @@ import { unzipSync } from 'fflate';
 import { api, postFiles } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Card, SectionTitle, Btn, Field, Notice } from '@/components/admin/ui';
+import TipTapEditor from '@/components/TipTapEditor';
 
 // A local page entry (before upload)
 interface LocalPage {
@@ -284,15 +285,12 @@ function ChapterEditorInner() {
       {/* Text content (for text chapters) */}
       {chapterType === 'text' && (
         <Card>
-          <SectionTitle hint="Nội dung văn bản của chương">Nội dung chương</SectionTitle>
-          <textarea
+          <SectionTitle hint="Nội dung chương (hỗ trợ định dạng)">Nội dung chương</SectionTitle>
+          <TipTapEditor
             value={textContent}
-            onChange={(e) => setTextContent(e.target.value)}
-            rows={20}
-            className="input w-full font-mono text-sm leading-relaxed"
-            placeholder="Nhập nội dung chương tại đây..."
+            onChange={setTextContent}
+            placeholder="Viết nội dung chương tại đây..."
           />
-          <p className="mt-1 text-right text-xs text-ink-400">{textContent.length} ký tự</p>
         </Card>
       )}
 

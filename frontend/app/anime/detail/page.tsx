@@ -12,7 +12,7 @@ const STATUS_LABEL: Record<string, string> = {
 const SEASON_LABEL: Record<string, string> = { WINTER: 'Đông', SPRING: 'Xuân', SUMMER: 'Hạ', FALL: 'Thu' };
 const FORMAT_LABEL: Record<string, string> = {
   TV: 'TV', MOVIE: 'Phim lẻ', OVA: 'OVA', ONA: 'ONA', SPECIAL: 'Special',
-  MANGA: 'Manga', ONE_SHOT: 'One-shot', NOVEL: 'Light Novel', MANHWA: 'Manhwa', MANHUA: 'Manhua',
+  ONE_SHOT: 'One-shot', NOVEL: 'Light Novel', MANHUA: 'Manhua',
 };
 const ytId = (url?: string | null) => url?.match(/[?&]v=([\w-]+)/)?.[1] || null;
 
@@ -45,7 +45,7 @@ function Detail() {
           <EntryControls mediaId={w.id} max={w.episodes ?? w.chapters} />
           <div className="card space-y-1.5 p-4 text-sm">
             {w.avgScore > 0 && <p className="inline-flex items-center gap-1 font-semibold text-amber-600"><Star size={15} /> {w.avgScore.toFixed(2)}/5 ({w.ratingCount})</p>}
-            <Row label="Loại" value={{ MANGA: 'Manga', ANIME: 'Anime', MANHUA: 'Manhua', MANHWA: 'Manhwa', DONGHUA: 'Donghua' }[w.type as string] ?? w.type} />
+            <Row label="Loại" value={{ MANHUA: 'Manhua (Truyện TQ)', MANHWA: 'Manhwa', DONGHUA: 'Donghua (Hoạt hình TQ)' }[w.type as string] ?? w.type} />
             {w.format && <Row label="Định dạng" value={FORMAT_LABEL[w.format] ?? w.format} />}
             <Row label="Trạng thái" value={STATUS_LABEL[w.status] || w.status} />
             {w.episodes != null && <Row label="Số tập" value={String(w.episodes)} />}

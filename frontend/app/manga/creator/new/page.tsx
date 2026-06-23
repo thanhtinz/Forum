@@ -8,10 +8,9 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader, Card, Btn, Field, Notice } from '@/components/admin/ui';
 
-type MediaTypeKey = 'MANGA' | 'MANHUA';
+type MediaTypeKey = 'MANHUA';
 
 const MEDIA_TYPES: { key: MediaTypeKey; label: string; desc: string }[] = [
-  { key: 'MANGA',  label: 'Manga',  desc: 'Truyện tranh Nhật Bản' },
   { key: 'MANHUA', label: 'Manhua', desc: 'Truyện tranh Trung Quốc' },
 ];
 
@@ -24,7 +23,7 @@ export default function NewSeriesPage() {
     title: '', titleEnglish: '', titleNative: '',
     description: '', language: 'vi', ageRating: '0',
   });
-  const [mediaType, setMediaType] = useState<MediaTypeKey>('MANGA');
+  const [mediaType, setMediaType] = useState<MediaTypeKey>('MANHUA');
   const [genres, setGenres] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [coverFile, setCoverFile] = useState<File | null>(null);

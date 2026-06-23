@@ -34,7 +34,10 @@ export class AnimeService {
   }) {
     const take = Math.min(Math.max(Number(q.limit) || 24, 1), 60);
     const skip = (Math.max(Number(q.page) || 1, 1) - 1) * take;
-    const where: Prisma.MediaWorkWhereInput = {};
+    // Only show admin works (no creatorId) or published creator works
+    const where: Prisma.MediaWorkWhereInput = {
+      OR: [{ creatorId: null }, { publishStatus: 'PUBLISHED' }],
+    };
     if (q.type) {
       const types = q.type.split(',').map((t) => t.trim()).filter((t) => ['ANIME', 'MANGA', 'MANHUA', 'DONGHUA'].includes(t)) as MediaType[];
       if (types.length === 1) where.type = types[0];
@@ -96,7 +99,7 @@ export class AnimeService {
         },
         relatedFrom: { include: { to: { select: { slug: true, title: true, coverUrl: true, type: true, format: true } } } },
         episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, thumbnail: true, duration: true } },
-        chapterList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true } },
+        chapterList: { where: { OR: [{ uploaderId: null }, { chapterStatus: 'PUBLISHED' }] }, orderBy: { number: 'asc' }, select: { id: true, number: true, title: true } },
       },
     });
     if (!work) throw new NotFoundException('Không tìm thấy');
@@ -589,9 +592,11 @@ export class AnimeService {
   // ───────── CÔNG KHAI: XEM TẬP / ĐỌC CHƯƠNG ─────────
   private async neighbours(model: 'chapter', mediaId: string, number: number) {
     const delegate = (this.prisma as any)[model];
+    // Only show published creator chapters (or admin chapters with no uploaderId) as neighbours
+    const visibleWhere = { OR: [{ uploaderId: null }, { chapterStatus: 'PUBLISHED' }] };
     const [prev, next] = await Promise.all([
-      delegate.findFirst({ where: { mediaId, number: { lt: number } }, orderBy: { number: 'desc' }, select: { id: true, number: true } }),
-      delegate.findFirst({ where: { mediaId, number: { gt: number } }, orderBy: { number: 'asc' }, select: { id: true, number: true } }),
+      delegate.findFirst({ where: { mediaId, number: { lt: number }, ...visibleWhere }, orderBy: { number: 'desc' }, select: { id: true, number: true } }),
+      delegate.findFirst({ where: { mediaId, number: { gt: number }, ...visibleWhere }, orderBy: { number: 'asc' }, select: { id: true, number: true } }),
     ]);
     return { prev, next };
   }
@@ -665,6 +670,9 @@ export class AnimeService {
   async getChapter(id: string) {
     const ch = await this.prisma.chapter.findUnique({ where: { id }, include: { media: { select: { slug: true, title: true, titleEnglish: true, type: true } } } });
     if (!ch) throw new NotFoundException('Không tìm thấy chương');
+    // Creator chapters must be published before public access
+    if (ch.uploaderId && ch.chapterStatus !== 'PUBLISHED')
+      throw new NotFoundException('Chương chưa được xuất bản');
     return { ...ch, ...(await this.neighbours('chapter', ch.mediaId, ch.number)) };
   }
 

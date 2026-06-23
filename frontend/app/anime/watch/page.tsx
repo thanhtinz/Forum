@@ -241,23 +241,28 @@ function Watch() {
   useEffect(() => {
     setNextCountdown(null);
     if (!ep?.next) return;
-    const curUrl = (ep?.servers?.[serverIdx] ?? ep?.servers?.[0])?.videoUrl ?? ep?.videoUrl ?? '';
-    // Chỉ áp dụng cho iframe (ArtPlayer đã tự xử lý ended cho m3u8/mp4)
+    const servers: ServerT[] = ep.servers || [];
+    const curUrl = (servers[serverIdx] ?? servers[0])?.videoUrl ?? '';
     const isIframe = !!curUrl && !/\.m3u8(\?|$)/i.test(curUrl) && !/\.(mp4|webm)(\?|$)/i.test(curUrl);
     if (!isIframe) return;
-    const durationSec = ep.duration ? ep.duration * 60 : 23 * 60;
-    const triggerAt = Math.max(durationSec - 60, 30) * 1000; // 60s trước khi hết
+    // Nếu DB có duration: bắt 90s trước khi hết. Không có: mặc định 20 phút
+    const durationSec = ep.duration ? ep.duration * 60 : 20 * 60;
+    const triggerAt = Math.max(durationSec - 90, 10) * 1000;
     const t = setTimeout(() => setNextCountdown(15), triggerAt);
     return () => clearTimeout(t);
-  }, [ep?.id, serverIdx]);
+  }, [ep?.id, serverIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Tick đếm ngược
+  // Tick đếm ngược — dependency array [nextCountdown] để không bị cancel mỗi render
   useEffect(() => {
     if (nextCountdown === null) return;
-    if (nextCountdown <= 0) { if (autoNext && ep?.next) goNext(); setNextCountdown(null); return; }
+    if (nextCountdown <= 0) {
+      if (autoNext && ep?.next) goNext();
+      setNextCountdown(null);
+      return;
+    }
     const t = setTimeout(() => setNextCountdown((n) => (n ?? 1) - 1), 1000);
     return () => clearTimeout(t);
-  });
+  }, [nextCountdown]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tabGroups = useMemo(() => {
     const allEps: any[] = ep?.episodes || [];
@@ -365,26 +370,28 @@ function Watch() {
 
       {/* Player */}
       <div className="overflow-hidden rounded-xl bg-black shadow-card">
-        <div className="relative aspect-video w-full">
+        <div className="aspect-video w-full">
           <Player url={curUrl} referer={cur?.referer} introEnd={cur?.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
-          {/* Overlay đếm ngược tự chuyển tập (như Netflix) */}
-          {nextCountdown !== null && ep?.next && (
-            <div className="absolute bottom-4 right-4 z-20 flex items-center gap-3 rounded-2xl bg-black/75 px-4 py-3 text-white shadow-xl backdrop-blur-sm">
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-wide text-white/50">Tập tiếp theo</p>
-                <p className="truncate text-sm font-semibold">Tập {ep.next.number}{ep.next.title ? ` — ${ep.next.title}` : ''}</p>
-              </div>
+        </div>
+        {/* Banner tự chuyển tập — đặt DƯỚI player (ngoài iframe) để tránh bị che */}
+        {nextCountdown !== null && ep?.next && (
+          <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-ink-800 px-4 py-2.5 text-white">
+            <div className="min-w-0">
+              <span className="text-[10px] text-white/50">Tập tiếp theo · </span>
+              <span className="text-sm font-semibold">Tập {ep.next.number}{ep.next.title ? ` — ${ep.next.title}` : ''}</span>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
               <button onClick={() => { setNextCountdown(null); goNext(); }}
-                className="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium hover:bg-brand-500">
+                className="rounded-lg bg-brand-600 px-3 py-1 text-xs font-medium hover:bg-brand-500">
                 Xem ngay
               </button>
-              <div className="flex shrink-0 flex-col items-center">
-                <span className="text-2xl font-bold tabular-nums leading-none">{nextCountdown}</span>
-                <button onClick={() => setNextCountdown(null)} className="mt-0.5 text-[9px] text-white/40 hover:text-white/80">Huỷ</button>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-brand-500 text-sm font-bold tabular-nums">
+                {nextCountdown}
               </div>
+              <button onClick={() => setNextCountdown(null)} className="text-white/40 hover:text-white"><X size={14} /></button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
         {/* Thanh hành động */}
         <div className="grid grid-cols-5 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
           <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-0.5 py-2 text-[10px] hover:bg-white/5">

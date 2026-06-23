@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
 interface Srv { id: string; name: string; videoUrl: string; referer?: string | null; introEnd?: number | null }
-interface Ep { id: string; number: number; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; servers?: Srv[] }
+interface Ep { id: string; number: number; part: number; kind: string; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; servers?: Srv[] }
 interface Ch { id: string; number: number; title?: string | null; content?: string | null; pages: string[] }
 
 function EditInner() {
@@ -80,7 +80,7 @@ function EditInner() {
 const PAGE_SIZE = 30;
 
 function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: string; episodes: Ep[]; onChange: () => void; setErr: (s: string) => void }) {
-  const [add, setAdd] = useState({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '' });
+  const [add, setAdd] = useState({ number: '', part: '1', kind: 'episode', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '' });
   const [embedInput, setEmbedInput] = useState('');
   const [embedBusy, setEmbedBusy] = useState(false);
   const [embedCands, setEmbedCands] = useState<{ url: string; referer?: string; status?: number | null }[]>([]);
@@ -90,7 +90,7 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
 
   async function create() {
     if (!add.number) { setErr('Nhập số tập'); return; }
-    try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '' }); onChange(); }
+    try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', part: '1', kind: 'episode', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '' }); onChange(); }
     catch (e: any) { setErr(e.message); }
   }
   async function getEmbed() {
@@ -144,13 +144,21 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
               </div>
             )}
           </div>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-6">
-            <input className="input sm:col-span-1" placeholder="Tập #" value={add.number} onChange={(e) => setAdd({ ...add, number: e.target.value })} />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-8">
+            <input className="input sm:col-span-1" placeholder="Phần #" type="number" min="1" value={add.part} onChange={(e) => setAdd({ ...add, part: e.target.value })} title="Phần (1, 2, 3...)" />
+            <select className="input sm:col-span-2" value={add.kind} onChange={(e) => setAdd({ ...add, kind: e.target.value })}>
+              <option value="episode">Tập thường</option>
+              <option value="movie">Movie</option>
+              <option value="ova">OVA</option>
+              <option value="special">Special</option>
+              <option value="recap">Recap</option>
+            </select>
+            <input className="input sm:col-span-1" placeholder="Số #" value={add.number} onChange={(e) => setAdd({ ...add, number: e.target.value })} />
             <input className="input sm:col-span-2" placeholder="Tiêu đề" value={add.title} onChange={(e) => setAdd({ ...add, title: e.target.value })} />
             <input className="input sm:col-span-2" placeholder="Link video / embed" value={add.videoUrl} onChange={(e) => setAdd({ ...add, videoUrl: e.target.value })} />
-            <input className="input sm:col-span-1" type="number" placeholder="Bỏ intro (giây)" title="Bỏ qua đoạn đầu đến giây này (vd 90)" value={add.introEnd} onChange={(e) => setAdd({ ...add, introEnd: e.target.value })} />
-            <input className="input sm:col-span-4" placeholder="Referer (tuỳ chọn — nếu nguồn chặn hotlink, vd https://vuighe.live/)" value={add.referer} onChange={(e) => setAdd({ ...add, referer: e.target.value })} />
-            <Btn onClick={create}><Plus size={15} /> Thêm</Btn>
+            <input className="input sm:col-span-1" type="number" placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này (vd 90)" value={add.introEnd} onChange={(e) => setAdd({ ...add, introEnd: e.target.value })} />
+            <input className="input sm:col-span-6" placeholder="Referer (tuỳ chọn — nếu nguồn chặn hotlink, vd https://vuighe.live/)" value={add.referer} onChange={(e) => setAdd({ ...add, referer: e.target.value })} />
+            <Btn onClick={create} className="sm:col-span-1"><Plus size={15} /> Thêm</Btn>
           </div>
         </div>
       )}
@@ -177,9 +185,11 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
     </Card>
   );
 }
+const KIND_LABELS: Record<string, string> = { episode: 'Tập', movie: 'Movie', ova: 'OVA', special: 'Special', recap: 'Recap' };
+
 function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; setErr: (s: string) => void }) {
   const [open, setOpen] = useState(false);
-  const [v, setV] = useState({ number: String(ep.number), title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '' });
+  const [v, setV] = useState({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '' });
   const [srvOpen, setSrvOpen] = useState(false);
   const [newSrv, setNewSrv] = useState({ name: '', videoUrl: '', referer: '', introEnd: '' });
   const [saving, setSaving] = useState(false);
@@ -198,15 +208,18 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
     if (!newSrv.name.trim() || !newSrv.videoUrl.trim()) { setErr('Nhập tên server và link'); return; }
     try { await api.post(`/admin/anime/episode/${ep.id}/server`, newSrv); setNewSrv({ name: '', videoUrl: '', referer: '', introEnd: '' }); onChange(); } catch (e: any) { setErr(e.message); }
   }
+  const kindLabel = KIND_LABELS[ep.kind] || ep.kind;
+  const partLabel = (ep.part ?? 1) > 1 ? `P${ep.part} ` : '';
   return (
     <div className="rounded-lg border border-ink-200/70 dark:border-ink-700 overflow-hidden">
       {/* Collapsed header — always visible */}
       <div className="flex items-center gap-2 px-2 py-1.5">
         <button onClick={() => setOpen((o) => !o)} className="flex flex-1 items-center gap-2 text-left min-w-0">
           <span className="shrink-0 rounded bg-ink-100 px-2 py-0.5 text-xs font-bold tabular-nums dark:bg-ink-800">
-            Tập {ep.number}
+            {partLabel}{kindLabel} {ep.number}
           </span>
           <span className="truncate text-sm text-ink-700 dark:text-ink-300">{ep.title || <span className="text-ink-400 italic">Chưa có tiêu đề</span>}</span>
+          {ep.kind !== 'episode' && <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{kindLabel}</span>}
           {extra.length > 0 && <span className="shrink-0 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">+{extra.length} server</span>}
           {ep.videoUrl && <span className="shrink-0 text-[10px] text-emerald-600">● Link</span>}
         </button>
@@ -222,10 +235,18 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
       {/* Expanded edit fields */}
       {open && (
         <div className="border-t border-ink-100 px-2 pb-2 pt-2 dark:border-ink-800 space-y-2">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-7">
-            <input className="input sm:col-span-1" value={v.number} onChange={(e) => setV({ ...v, number: e.target.value })} placeholder="Tập #" />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-9">
+            <input className="input sm:col-span-1" type="number" min="1" value={v.part} onChange={(e) => setV({ ...v, part: e.target.value })} placeholder="Phần #" title="Phần (1, 2, 3...)" />
+            <select className="input sm:col-span-2" value={v.kind} onChange={(e) => setV({ ...v, kind: e.target.value })}>
+              <option value="episode">Tập thường</option>
+              <option value="movie">Movie</option>
+              <option value="ova">OVA</option>
+              <option value="special">Special</option>
+              <option value="recap">Recap</option>
+            </select>
+            <input className="input sm:col-span-1" value={v.number} onChange={(e) => setV({ ...v, number: e.target.value })} placeholder="Số #" />
             <input className="input sm:col-span-2" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Tiêu đề" />
-            <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link Server 1" />
+            <input className="input sm:col-span-2" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link Server 1" />
             <input className="input sm:col-span-1" type="number" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này cho Server 1 (vd 90)." />
           </div>
           <div className="flex gap-2">

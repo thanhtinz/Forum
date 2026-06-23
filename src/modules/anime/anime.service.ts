@@ -315,23 +315,27 @@ export class AnimeService {
   async addEpisode(mediaId: string, dto: any) {
     const number = this.parseNum(dto.number);
     if (number == null) throw new BadRequestException('Thiếu số tập (chỉ nhập số, vd 1 hoặc 5.5)');
+    const part = dto.part ? Number(dto.part) : 1;
+    const kind = dto.kind || 'episode';
     try {
       return await this.prisma.episode.create({
         data: {
-          mediaId, number, title: dto.title || null,
+          mediaId, number, part, kind, title: dto.title || null,
           videoUrl: dto.videoUrl || null, thumbnail: dto.thumbnail || null, referer: dto.referer || null,
           duration: dto.duration ? Number(dto.duration) : null,
           introEnd: dto.introEnd ? Number(dto.introEnd) : null,
         },
       });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new BadRequestException(`Tập ${number} đã tồn tại`);
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new BadRequestException(`Tập ${number} (phần ${part}) đã tồn tại`);
       throw e;
     }
   }
   async updateEpisode(id: string, dto: any) {
     const data: any = {};
     if (dto.number != null && dto.number !== '') { const n = this.parseNum(dto.number); if (n != null) data.number = n; }
+    if (dto.part != null && dto.part !== '') { const p = Number(dto.part); if (Number.isFinite(p) && p > 0) data.part = p; }
+    if (dto.kind) data.kind = dto.kind;
     for (const k of ['title', 'videoUrl', 'thumbnail', 'referer']) if (dto[k] !== undefined) data[k] = dto[k] || null;
     if (dto.duration !== undefined) data.duration = dto.duration ? Number(dto.duration) : null;
     if (dto.introEnd !== undefined) data.introEnd = dto.introEnd ? Number(dto.introEnd) : null;
@@ -581,7 +585,7 @@ export class AnimeService {
   }
 
   // ───────── CÔNG KHAI: XEM TẬP / ĐỌC CHƯƠNG ─────────
-  private async neighbours(model: 'episode' | 'chapter', mediaId: string, number: number) {
+  private async neighbours(model: 'chapter', mediaId: string, number: number) {
     const delegate = (this.prisma as any)[model];
     const [prev, next] = await Promise.all([
       delegate.findFirst({ where: { mediaId, number: { lt: number } }, orderBy: { number: 'desc' }, select: { id: true, number: true } }),
@@ -599,13 +603,29 @@ export class AnimeService {
       },
     });
     if (!ep) throw new NotFoundException('Không tìm thấy tập');
-    const episodes = await this.prisma.episode.findMany({ where: { mediaId: ep.mediaId }, orderBy: { number: 'asc' }, select: { id: true, number: true, title: true } });
+    const episodes = await this.prisma.episode.findMany({
+      where: { mediaId: ep.mediaId },
+      orderBy: [{ part: 'asc' }, { number: 'asc' }],
+      select: { id: true, number: true, title: true, part: true, kind: true },
+    });
+    const [prev, next] = await Promise.all([
+      this.prisma.episode.findFirst({
+        where: { mediaId: ep.mediaId, OR: [{ part: { lt: ep.part } }, { part: ep.part, number: { lt: ep.number } }] },
+        orderBy: [{ part: 'desc' }, { number: 'desc' }],
+        select: { id: true, number: true, part: true, kind: true },
+      }),
+      this.prisma.episode.findFirst({
+        where: { mediaId: ep.mediaId, OR: [{ part: { gt: ep.part } }, { part: ep.part, number: { gt: ep.number } }] },
+        orderBy: [{ part: 'asc' }, { number: 'asc' }],
+        select: { id: true, number: true, part: true, kind: true },
+      }),
+    ]);
     // Gộp server: link chính (videoUrl) là "Server 1" + các server phụ
     const servers = [
       ...(ep.videoUrl ? [{ id: 'main', name: 'Server 1', videoUrl: ep.videoUrl, referer: ep.referer, introEnd: ep.introEnd }] : []),
       ...ep.servers,
     ];
-    return { ...ep, servers, episodes, ...(await this.neighbours('episode', ep.mediaId, ep.number)) };
+    return { ...ep, servers, episodes, prev, next };
   }
 
   async addEpisodeComment(episodeId: string, authorId: string, content: string) {

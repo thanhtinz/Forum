@@ -287,7 +287,6 @@ function Watch() {
   const servers: ServerT[] = ep.servers || [];
   const cur = servers[serverIdx] || servers[0] || null;
   const curUrl = cur?.videoUrl || '';
-  const isIframePlayer = !!curUrl && !ytId(curUrl) && !/\.m3u8(\?|$)/i.test(curUrl) && !/\.(mp4|webm)(\?|$)/i.test(curUrl);
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
@@ -310,11 +309,6 @@ function Watch() {
           <a href={ep.next ? `/anime/watch?ep=${ep.next.id}` : undefined} className={`flex flex-col items-center gap-0.5 py-2 text-[10px] ${ep.next ? 'hover:bg-white/5' : 'opacity-40'}`}><SkipForward size={17} /> Tiếp</a>
           <button onClick={() => setMoreOpen((o) => !o)} className="flex flex-col items-center gap-0.5 py-2 text-[10px] hover:bg-white/5"><MoreHorizontal size={17} /> Khác</button>
         </div>
-        {isIframePlayer && (
-          <p className="bg-ink-950 px-3 py-1 text-center text-[10px] text-white/30">
-            Server báo &quot;lỗi bảo mật&quot;? Đóng DevTools (F12) rồi tải lại — hoặc đổi server khác.
-          </p>
-        )}
         {/* Panel "Khác" */}
         {moreOpen && (
           <div className="space-y-2 border-t border-white/10 bg-ink-900 p-4 text-white">

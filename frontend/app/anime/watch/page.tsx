@@ -186,10 +186,25 @@ function Watch() {
 
   const episodes = useMemo(() => {
     const list = [...(ep?.episodes || [])];
-    list.sort((a, b) => (asc ? a.number - b.number : b.number - a.number));
+    list.sort((a, b) => {
+      const pd = asc ? a.part - b.part : b.part - a.part;
+      if (pd !== 0) return pd;
+      return asc ? a.number - b.number : b.number - a.number;
+    });
     if (!q.trim()) return list;
-    return list.filter((e: any) => String(e.number).includes(q.trim()));
+    return list.filter((e: any) => String(e.number).includes(q.trim()) || String(e.part).includes(q.trim()));
   }, [ep?.episodes, q, asc]);
+
+  const grouped = useMemo(() => {
+    const parts = new Map<number, typeof episodes>();
+    for (const e of episodes) {
+      const p = e.part ?? 1;
+      if (!parts.has(p)) parts.set(p, []);
+      parts.get(p)!.push(e);
+    }
+    return [...parts.entries()].sort((a, b) => asc ? a[0] - b[0] : b[0] - a[0]);
+  }, [episodes, asc]);
+  const multiPart = grouped.length > 1;
 
   async function saveEntry(patch: { favorite?: boolean; score?: number | null }) {
     if (!user) { router.push('/login'); return; }
@@ -264,7 +279,12 @@ function Watch() {
         </div>
       )}
 
-      <h1 className="text-lg font-bold">Tập {ep.number}{ep.title ? `: ${ep.title}` : ''}</h1>
+      <h1 className="text-lg font-bold">
+        {ep.kind && ep.kind !== 'episode'
+          ? ({ movie: 'Movie', ova: 'OVA', special: 'Special', recap: 'Recap' }[ep.kind as string] ?? ep.kind)
+          : `Tập ${ep.number}`}
+        {ep.title ? `: ${ep.title}` : ''}
+      </h1>
 
       {/* Chọn tập */}
       {ep.episodes?.length > 0 && (
@@ -277,9 +297,22 @@ function Watch() {
             <Search size={15} className="text-ink-400" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nhập số tập…" className="w-full bg-transparent py-2 text-sm outline-none" />
           </div>
-          <div className="grid max-h-72 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5">
-            {episodes.map((e: any) => (
-              <a key={e.id} href={`/anime/watch?ep=${e.id}`} className={`grid place-items-center rounded-lg py-2.5 text-sm font-medium ${e.id === id ? 'bg-brand-600 text-white' : 'bg-ink-100 hover:bg-brand-50 dark:bg-ink-800 dark:hover:bg-ink-700'}`}>{e.number}</a>
+          <div className="max-h-72 space-y-3 overflow-y-auto">
+            {grouped.map(([part, epList]) => (
+              <div key={part}>
+                {multiPart && <p className="mb-1.5 text-xs font-bold uppercase text-ink-500">Phần {part}</p>}
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                  {epList.map((e: any) => {
+                    const kl = e.kind === 'movie' ? 'Movie' : e.kind === 'ova' ? 'OVA' : e.kind === 'special' ? 'Sp.' : e.kind === 'recap' ? 'Recap' : null;
+                    return (
+                      <a key={e.id} href={`/anime/watch?ep=${e.id}`}
+                        className={`grid place-items-center rounded-lg py-2.5 text-sm font-medium leading-none ${e.id === id ? 'bg-brand-600 text-white' : 'bg-ink-100 hover:bg-brand-50 dark:bg-ink-800 dark:hover:bg-ink-700'}`}>
+                        {kl ? <><span className="text-[10px] font-bold">{kl}</span><span>{e.number > 1 ? ` ${e.number}` : ''}</span></> : e.number}
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         </div>
@@ -287,7 +320,7 @@ function Watch() {
 
       {/* Bình luận tập này */}
       <div className="card p-5">
-        <h2 className="mb-3 font-semibold">Bình luận tập {ep.number} ({comments.length})</h2>
+        <h2 className="mb-3 font-semibold">Bình luận {ep.kind && ep.kind !== 'episode' ? ({ movie: 'Movie', ova: 'OVA', special: 'Special', recap: 'Recap' }[ep.kind as string] ?? ep.kind) : `tập ${ep.number}`} ({comments.length})</h2>
         {user ? (
           <form onSubmit={submitComment} className="relative mb-4 flex items-start gap-2">
             <Avatar user={user} size={32} />

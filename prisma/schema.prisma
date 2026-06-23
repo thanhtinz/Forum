@@ -2853,6 +2853,8 @@ model MediaListEntry {
 model Episode {
   id        String    @id @default(cuid())
   mediaId   String
+  part      Int       @default(1) // Phần 1, 2, 3...
+  kind      String    @default("episode") // episode | movie | ova | special | recap
   number    Float // số tập (cho phép 5.5 cho tập đặc biệt)
   title     String?   @db.VarChar(200)
   thumbnail String?   @db.VarChar(255)
@@ -2867,7 +2869,7 @@ model Episode {
   comments EpisodeComment[]
   servers  EpisodeServer[]
 
-  @@unique([mediaId, number])
+  @@unique([mediaId, part, number])
   @@index([mediaId])
 }
 

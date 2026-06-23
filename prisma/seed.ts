@@ -70,9 +70,27 @@ async function main() {
   console.log('🎉 Seed complete!');
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+// ── Thể loại anime/manga/donghua/manhua ──
+async function seedAnimeGenres() {
+  const genres = [
+    'Action','Adventure','Boys Love','Cartoon','Cổ Trang','Comedy','Dementia','Demons',
+    'Drama','Ecchi','Fantasy','Game','Harem','Historical','Horror','Josei','Kids',
+    'Live Action','Magic','Martial Arts','Mecha','Military','Music','Mystery','Parody',
+    'Police','Psychological','Romance','Samurai','School','Sci-Fi','Seinen','Shoujo',
+    'Shoujo Ai','Shounen','Shounen Ai','Slice of Life','Space','Sports','Super Power',
+    'Supernatural','Suspense','Thriller','Tokusatsu','Vampire','Yaoi','Yuri',
+  ];
+  for (const name of genres) {
+    const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+    await prisma.genre.upsert({ where: { slug }, update: { name }, create: { name, slug } });
+  }
+  console.log(`✓ ${genres.length} anime genres`);
+}
+
+async function runAll() {
+  await main();
+  await seedAnimeGenres();
+  await prisma.$disconnect();
+}
+
+runAll().catch((e) => { console.error(e); process.exit(1); });

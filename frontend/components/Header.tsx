@@ -25,7 +25,8 @@ function MessengerIcon({ size = 16 }: { size?: number }) {
 
 const NAV = [
   { href: '/chat', label: 'Chat', icon: MessengerIcon },
-  { href: '/donghua', label: 'Donghua & Manhua', icon: Film },
+  { href: '/hoat-hinh', label: 'Hoạt hình TQ', icon: Film },
+  { href: '/truyen-tranh', label: 'Truyện Tranh', icon: BookOpen },
   { href: '/cong-game', label: 'Giải trí', icon: Gamepad2 },
   { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
   { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },

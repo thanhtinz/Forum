@@ -1,0 +1,117 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Search, Star, BookOpen, PenSquare } from 'lucide-react';
+import { api } from '@/lib/api';
+
+interface Work {
+  id: string; slug: string; title: string; titleEnglish?: string | null; coverUrl?: string | null;
+  format?: string | null; status: string; season?: string | null; seasonYear?: number | null;
+  episodes?: number | null; avgScore: number;
+}
+interface Genre { id: string; slug: string; name: string }
+
+const STATUS = [
+  { v: '', label: 'Mọi trạng thái' },
+  { v: 'RELEASING', label: 'Đang ra' },
+  { v: 'FINISHED', label: 'Hoàn thành' },
+  { v: 'NOT_YET_RELEASED', label: 'Sắp ra mắt' },
+  { v: 'HIATUS', label: 'Tạm ngưng' },
+  { v: 'CANCELLED', label: 'Đã huỷ' },
+];
+const SORTS = [
+  { v: 'popularity', label: 'Phổ biến' },
+  { v: 'score', label: 'Điểm cao' },
+  { v: 'newest', label: 'Mới thêm' },
+  { v: 'views', label: 'Lượt xem' },
+];
+
+export default function TruyenTranhPage() {
+  const [works, setWorks] = useState<Work[]>([]);
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [f, setF] = useState({ genre: '', status: '', year: '', sort: 'popularity', search: '' });
+  const [searchInput, setSearchInput] = useState('');
+
+  useEffect(() => {
+    api.get<Genre[]>('/anime/genres?type=MANHUA').then(setGenres).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    const qs = new URLSearchParams({ type: 'MANHUA', limit: '30' });
+    Object.entries(f).forEach(([k, v]) => { if (v) qs.set(k, v); });
+    api.get<{ data: Work[]; meta: { total: number } }>(`/anime?${qs}`)
+      .then((r) => { setWorks(r.data || []); setTotal(r.meta?.total || 0); })
+      .catch(() => setWorks([]))
+      .finally(() => setLoading(false));
+  }, [f]);
+
+  function submitSearch(e: React.FormEvent) { e.preventDefault(); setF((s) => ({ ...s, search: searchInput.trim() })); }
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-violet-700 to-fuchsia-600 p-6 text-white shadow-card">
+        <h1 className="text-2xl font-bold">Truyện Tranh Trung Quốc</h1>
+        <p className="mt-1 text-sm text-white/80">Kho tàng manhua — truyện tranh Trung Quốc được tuyển chọn bởi Trạm GenZ.</p>
+      </div>
+
+      {/* Creator CTA */}
+      <div className="flex items-center justify-between rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 dark:border-violet-800/40 dark:bg-violet-950/30">
+        <p className="text-sm font-medium text-violet-800 dark:text-violet-300">Bạn muốn đăng truyện của mình lên đây?</p>
+        <a href="/manga/creator" className="flex items-center gap-1.5 rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-violet-700 transition">
+          <PenSquare size={14} /> Đăng truyện
+        </a>
+      </div>
+
+      <div className="card flex flex-wrap items-center gap-2 p-3">
+        <form onSubmit={submitSearch} className="flex min-w-[180px] flex-1 items-center gap-1 rounded-lg border border-ink-200 px-2 dark:border-ink-700">
+          <Search size={16} className="text-ink-400" />
+          <input value={searchInput} onChange={(e) => setSearchInput(e.target.value)} placeholder="Tìm truyện tranh…" className="w-full bg-transparent py-1.5 text-sm outline-none" />
+        </form>
+        <select className="input !w-auto" value={f.genre} onChange={(e) => setF((s) => ({ ...s, genre: e.target.value }))}>
+          <option value="">Mọi thể loại</option>
+          {genres.map((g) => <option key={g.id} value={g.slug}>{g.name}</option>)}
+        </select>
+        <select className="input !w-auto" value={f.status} onChange={(e) => setF((s) => ({ ...s, status: e.target.value }))}>
+          {STATUS.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
+        </select>
+        <input type="number" placeholder="Năm" className="input !w-24" value={f.year} onChange={(e) => setF((s) => ({ ...s, year: e.target.value }))} />
+        <select className="input !w-auto" value={f.sort} onChange={(e) => setF((s) => ({ ...s, sort: e.target.value }))}>
+          {SORTS.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
+        </select>
+      </div>
+
+      {loading ? (
+        <p className="p-10 text-center text-ink-500">Đang tải…</p>
+      ) : works.length === 0 ? (
+        <p className="card p-10 text-center text-ink-500">Chưa có dữ liệu phù hợp.</p>
+      ) : (
+        <>
+          <p className="text-sm text-ink-500">{total} kết quả</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            {works.map((w) => (
+              <a key={w.id} href={`/anime/detail?slug=${w.slug}`} className="card group overflow-hidden p-0 transition hover:shadow-card">
+                <div className="relative aspect-[3/4] bg-ink-100 dark:bg-ink-800">
+                  {w.coverUrl
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={w.coverUrl} alt={w.title} className="h-full w-full object-cover transition group-hover:scale-105" />
+                    : <span className="grid h-full place-items-center text-ink-400"><BookOpen size={24} /></span>}
+                  {w.avgScore > 0 && (
+                    <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-bold text-amber-300"><Star size={10} /> {w.avgScore.toFixed(1)}</span>
+                  )}
+                  <span className="absolute right-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">{w.format || 'MANHUA'}</span>
+                </div>
+                <div className="p-2">
+                  <p className="line-clamp-2 text-sm font-medium leading-tight" title={w.title}>{w.titleEnglish || w.title}</p>
+                  <p className="mt-0.5 text-[11px] text-ink-400">{w.seasonYear || ''}{w.episodes ? ` · ${w.episodes} chương` : ''}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

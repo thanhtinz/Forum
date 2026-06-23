@@ -27,6 +27,18 @@ import { MangaCreatorService } from './manga-creator.service';
 export class MangaCreatorController {
   constructor(private readonly svc: MangaCreatorService) {}
 
+  // ── Creator Registration ───────────────────────────────────────────────────
+
+  @Get('apply/status')
+  getApplicationStatus(@CurrentUser('id') userId: string) {
+    return this.svc.getMyApplicationStatus(userId);
+  }
+
+  @Post('apply')
+  submitApplication(@CurrentUser('id') userId: string, @Body() dto: any) {
+    return this.svc.submitApplication(userId, dto);
+  }
+
   // ── Series ────────────────────────────────────────────────────────────────
 
   @Get('manga')
@@ -155,6 +167,24 @@ export class MangaCreatorController {
   }
 
   // ── Admin moderation ──────────────────────────────────────────────────────
+
+  @Get('admin/applications')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  listApplications() {
+    return this.svc.listPendingApplications();
+  }
+
+  @Post('admin/applications/:id/moderate')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  moderateApplication(
+    @Param('id') id: string,
+    @Body('action') action: 'approve' | 'reject',
+    @Body('adminNote') adminNote?: string,
+  ) {
+    return this.svc.moderateApplication(id, action, adminNote);
+  }
 
   @Get('admin/pending-series')
   @UseGuards(RolesGuard)

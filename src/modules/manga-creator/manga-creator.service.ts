@@ -12,6 +12,8 @@ import {
   MediaType,
   MediaStatus,
 } from '@prisma/client';
+// CreatorStatus is used as string literals ('PENDING'|'APPROVED'|'REJECTED') to avoid
+// circular import issues at compile time; the enum is validated by Prisma at runtime.
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -22,6 +24,7 @@ export interface CreateSeriesDto {
   description?: string;
   language?: string;
   ageRating?: number;
+  format?: string;
 }
 
 export interface UpdateSeriesDto {
@@ -46,6 +49,7 @@ export interface UpdateChapterDto {
   title?: string;
   volume?: number;
   scheduledAt?: string;
+  content?: string;
 }
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
@@ -152,6 +156,7 @@ export class MangaCreatorService {
   }
 
   async createSeries(userId: string, dto: CreateSeriesDto) {
+    await this.assertIsCreator(userId);
     const slug = `${makeSlug(dto.title)}-${Date.now()}`;
     const ageRating = dto.ageRating ?? 0;
     return this.prisma.mediaWork.create({
@@ -165,6 +170,7 @@ export class MangaCreatorService {
         language: dto.language ?? 'vi',
         ageRating,
         isAdult: ageRating >= 18,
+        format: dto.format,
         publishStatus: MangaPublishStatus.DRAFT,
         creatorId: userId,
       },
@@ -232,6 +238,7 @@ export class MangaCreatorService {
   }
 
   async createChapter(mediaId: string, userId: string, dto: CreateChapterDto) {
+    await this.assertIsCreator(userId);
     await this.assertSeriesOwner(mediaId, userId);
     return this.prisma.chapter.create({
       data: {
@@ -257,6 +264,7 @@ export class MangaCreatorService {
         ...(dto.scheduledAt !== undefined && {
           scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
         }),
+        ...(dto.content !== undefined && { content: dto.content }),
       },
     });
   }
@@ -318,6 +326,32 @@ export class MangaCreatorService {
       where: { id: chapterId },
       data: { chapterStatus: newStatus },
       select: { id: true, chapterStatus: true },
+    });
+  }
+
+  // ── Creator Registration ──────────────────────────────────────────────────
+
+  async getMyApplicationStatus(userId: string) {
+    const app = await this.prisma.creatorApplication.findUnique({
+      where: { userId },
+      select: { id: true, status: true, reason: true, portfolio: true, adminNote: true, createdAt: true },
+    });
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isCreator: true } });
+    return { application: app, isCreator: user?.isCreator ?? false };
+  }
+
+  async submitApplication(userId: string, dto: { reason: string; portfolio?: string }) {
+    if (!dto.reason?.trim()) throw new Error('Vui lòng điền lý do muốn trở thành tác giả');
+    // Check if user is already a creator
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isCreator: true } });
+    if (user?.isCreator) return { alreadyCreator: true };
+
+    // Upsert application (allow re-apply after rejection)
+    return this.prisma.creatorApplication.upsert({
+      where: { userId },
+      create: { userId, reason: dto.reason.trim(), portfolio: dto.portfolio?.trim() || null, status: 'PENDING' },
+      update: { reason: dto.reason.trim(), portfolio: dto.portfolio?.trim() || null, status: 'PENDING', adminNote: null },
+      select: { id: true, status: true, createdAt: true },
     });
   }
 
@@ -399,6 +433,38 @@ export class MangaCreatorService {
     return updated;
   }
 
+  async listPendingApplications() {
+    return this.prisma.creatorApplication.findMany({
+      where: { status: 'PENDING' },
+      include: { user: { select: { id: true, username: true, displayName: true, avatar: true, createdAt: true, postCount: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async moderateApplication(id: string, action: 'approve' | 'reject', adminNote?: string) {
+    const app = await this.prisma.creatorApplication.findUnique({ where: { id }, select: { userId: true, user: { select: { displayName: true, username: true } } } });
+    if (!app) throw new NotFoundException('Không tìm thấy đơn đăng ký');
+
+    const status = action === 'approve' ? 'APPROVED' : 'REJECTED';
+    await this.prisma.creatorApplication.update({
+      where: { id },
+      data: { status, adminNote: adminNote?.trim() || null },
+    });
+
+    if (action === 'approve') {
+      await this.prisma.user.update({ where: { id: app.userId }, data: { isCreator: true } });
+    }
+
+    this.notif.notify(app.userId, {
+      type: 'SYSTEM',
+      title: action === 'approve' ? 'Đơn đăng ký tác giả được duyệt ✓' : 'Đơn đăng ký tác giả bị từ chối',
+      body: adminNote || (action === 'approve' ? 'Bạn đã được duyệt làm tác giả. Bắt đầu đăng truyện ngay!' : 'Đơn của bạn chưa được chấp thuận. Vui lòng thử lại sau.'),
+      link: '/manga/creator',
+    }).catch(() => {});
+
+    return { id, status };
+  }
+
   async getChapter(id: string, userId: string) {
     const chapter = await this.prisma.chapter.findUnique({ where: { id } });
     if (!chapter) throw new NotFoundException('Không tìm thấy chapter');
@@ -408,6 +474,12 @@ export class MangaCreatorService {
   }
 
   // ── Private helpers ───────────────────────────────────────────────────────
+
+  private async assertIsCreator(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { isCreator: true, role: true } });
+    if (!user?.isCreator && user?.role !== 'ADMIN')
+      throw new ForbiddenException('Bạn chưa được duyệt làm tác giả. Vui lòng đăng ký trước.');
+  }
 
   private async assertSeriesOwner(id: string, userId: string) {
     const media = await this.prisma.mediaWork.findUnique({

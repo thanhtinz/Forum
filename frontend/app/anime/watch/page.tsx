@@ -376,22 +376,23 @@ function Watch() {
         <div className="aspect-video w-full">
           <Player url={curUrl} referer={cur?.referer} introEnd={cur?.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
         </div>
-        {/* Banner tự chuyển tập — đặt DƯỚI player (ngoài iframe) để tránh bị che */}
-        {nextCountdown !== null && ep?.next && (
+        {/* Banner tập tiếp theo — luôn hiện khi có tập tiếp, countdown chỉ khi gần hết */}
+        {ep?.next && (
           <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-ink-800 px-4 py-2.5 text-white">
             <div className="min-w-0">
               <span className="text-[10px] text-white/50">Tập tiếp theo · </span>
               <span className="text-sm font-semibold">Tập {ep.next.number}{ep.next.title ? ` — ${ep.next.title}` : ''}</span>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              <button onClick={() => { setNextCountdown(null); goNext(); }}
+              <button onClick={goNext}
                 className="rounded-lg bg-brand-600 px-3 py-1 text-xs font-medium hover:bg-brand-500">
                 Xem ngay
               </button>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-brand-500 text-sm font-bold tabular-nums">
-                {nextCountdown}
-              </div>
-              <button onClick={() => setNextCountdown(null)} className="text-white/40 hover:text-white"><X size={14} /></button>
+              {nextCountdown !== null && (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-brand-500 text-sm font-bold tabular-nums">
+                  {nextCountdown}
+                </div>
+              )}
             </div>
           </div>
         )}

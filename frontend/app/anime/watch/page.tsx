@@ -286,10 +286,8 @@ function Watch() {
   const isMod = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
   const servers: ServerT[] = ep.servers || [];
   const cur = servers[serverIdx] || servers[0] || null;
-  const isIframePlayer = useMemo(() => {
-    const u = cur?.videoUrl || '';
-    return !!u && !ytId(u) && !/\.m3u8(\?|$)/i.test(u) && !/\.(mp4|webm)(\?|$)/i.test(u);
-  }, [cur?.videoUrl]);
+  const curUrl = cur?.videoUrl || '';
+  const isIframePlayer = !!curUrl && !ytId(curUrl) && !/\.m3u8(\?|$)/i.test(curUrl) && !/\.(mp4|webm)(\?|$)/i.test(curUrl);
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">

@@ -52,6 +52,8 @@ function VideoPlayer({ url, referer, isHls, introEnd, showNextAt, episodeDuratio
   const nextRef = useRef({ autoNext, onEnded, onNextAt }); nextRef.current = { autoNext, onEnded, onNextAt };
   const nextTriggerRef = useRef({ showNextAt, episodeDurationMin }); nextTriggerRef.current = { showNextAt, episodeDurationMin };
   const skippedRef = useRef(false); // chỉ nhảy intro MỘT lần ở đầu tập
+  // Khi bật lại skipIntro, reset skippedRef để intro có thể bị skip lại
+  useEffect(() => { if (skipIntro) skippedRef.current = false; }, [skipIntro]);
 
   useEffect(() => {
     const el = boxRef.current; if (!el) return;

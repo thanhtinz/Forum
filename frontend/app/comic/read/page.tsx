@@ -117,8 +117,8 @@ function ComicReaderInner() {
         </NavBtn>
       </div>
 
-      {/* Title banner */}
-      <div className="pt-[44px] bg-[#0f0f1a] py-3 text-center">
+      {/* Title banner — push below fixed top bar */}
+      <div className="bg-[#0f0f1a] pb-3 pt-[52px] text-center">
         <p className="text-sm font-bold text-brand-400">{seriesTitle}</p>
         <p className="text-xs text-white/50">{chapterLabel}</p>
       </div>

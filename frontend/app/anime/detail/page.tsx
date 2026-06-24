@@ -37,9 +37,9 @@ function Detail() {
     <div className="space-y-5">
       {w.bannerUrl && <div className="h-40 w-full overflow-hidden rounded-2xl sm:h-56">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={w.bannerUrl} alt="" className="h-full w-full object-cover" /></div>}
 
-      <div className="grid grid-cols-[130px_1fr] gap-4 md:grid-cols-[220px_1fr] md:gap-5">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-[220px_1fr]">
         <div className="space-y-3">
-          <div className="aspect-[3/4] overflow-hidden rounded-xl bg-ink-100 dark:bg-ink-800">
+          <div className="mx-auto aspect-[3/4] w-[160px] overflow-hidden rounded-xl bg-ink-100 dark:bg-ink-800 md:w-full">
             {w.coverUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={w.coverUrl} alt={w.title} className="h-full w-full object-cover" />}
           </div>
           <EntryControls mediaId={w.id} max={w.episodes ?? w.chapters} />

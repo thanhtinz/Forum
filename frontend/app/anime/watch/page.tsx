@@ -464,11 +464,11 @@ function Watch() {
                 <Search size={15} className="text-ink-400" />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nhập số tập…" className="w-full bg-transparent py-2 text-sm outline-none" />
               </div>
-              <div className="grid max-h-72 grid-cols-4 gap-2 overflow-y-auto sm:grid-cols-5">
+              <div className="grid max-h-72 grid-cols-3 gap-2 overflow-y-auto">
                 {tabEpisodes.map((e: any) => (
                   <a key={e.id} href={`/anime/watch?ep=${e.id}`}
-                    className={`grid place-items-center rounded-lg py-2.5 text-sm font-medium ${e.id === id ? 'bg-brand-600 text-white' : 'bg-ink-100 hover:bg-brand-50 dark:bg-ink-800 dark:hover:bg-ink-700'}`}>
-                    {e.number}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${e.id === id ? 'bg-amber-500 text-white' : 'bg-ink-100 hover:bg-amber-500 hover:text-white dark:bg-ink-800 dark:hover:bg-amber-500'}`}>
+                    <Play size={11} className="shrink-0" /><span className="truncate">Tập {e.number}</span>
                   </a>
                 ))}
               </div>

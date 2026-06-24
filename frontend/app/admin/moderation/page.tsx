@@ -7,6 +7,8 @@ interface Report { id: string; type: string; reason: string; targetType: string;
   reporter?: { username: string }; reportedUser?: { username: string }; }
 const STATUSES = ['PENDING', 'REVIEWING', 'RESOLVED', 'DISMISSED'];
 
+interface Warning { id: string; reason: string; points: number; createdAt: string; isExpired: boolean; warnedBy?: { username: string; displayName?: string | null }; }
+
 export default function AdminModeration() {
   const [status, setStatus] = useState('PENDING');
   const [reports, setReports] = useState<Report[]>([]);
@@ -18,6 +20,15 @@ export default function AdminModeration() {
   const [queue, setQueue] = useState<{ threads: any[]; posts: any[] }>({ threads: [], posts: [] });
   const [approvalThr, setApprovalThr] = useState(0);
   const [approvalMsg, setApprovalMsg] = useState('');
+  // ── Warnings ──
+  const [warnUserId, setWarnUserId] = useState('');
+  const [warnings, setWarnings] = useState<Warning[]>([]);
+  const [warnLoading, setWarnLoading] = useState(false);
+  // ── Batch actions ──
+  const [batchPostIds, setBatchPostIds] = useState('');
+  const [batchThreadIds, setBatchThreadIds] = useState('');
+  const [batchCategoryId, setBatchCategoryId] = useState('');
+  const [batchMsg, setBatchMsg] = useState('');
 
   function load() {
     api.get<{ data: Report[] }>(`/admin/reports?status=${status}`).then((r) => setReports(r.data)).catch((e) => setMsg(e.message));
@@ -47,6 +58,37 @@ export default function AdminModeration() {
   async function saveAutoBest() {
     try { const r = await api.post<{ threshold: number }>('/forum/admin/auto-best', { threshold: autoBest }); setAutoBest(r.threshold); setAutoBestMsg('Đã lưu ✓'); setTimeout(() => setAutoBestMsg(''), 2500); }
     catch (e: any) { setAutoBestMsg(e.message); }
+  }
+
+  async function loadWarnings() {
+    if (!warnUserId.trim()) return;
+    setWarnLoading(true);
+    try { const r = await api.get<Warning[]>(`/forum/admin/warnings/${warnUserId.trim()}`); setWarnings(r || []); }
+    catch { setWarnings([]); }
+    finally { setWarnLoading(false); }
+  }
+
+  async function batchAction(action: 'deletePosts' | 'approvePosts' | 'moveThreads' | 'deleteThreads') {
+    try {
+      if (action === 'deletePosts') {
+        const ids = batchPostIds.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
+        await api.post('/forum/admin/batch/posts/delete', { postIds: ids });
+        setBatchMsg(`Đã xoá ${ids.length} bài viết.`);
+      } else if (action === 'approvePosts') {
+        const ids = batchPostIds.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
+        await api.post('/forum/admin/batch/posts/approve', { postIds: ids });
+        setBatchMsg(`Đã duyệt ${ids.length} bài viết.`);
+      } else if (action === 'moveThreads') {
+        const ids = batchThreadIds.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
+        if (!batchCategoryId.trim()) { setBatchMsg('Chưa nhập ID danh mục đích.'); return; }
+        await api.post('/forum/admin/batch/threads/move', { threadIds: ids, categoryId: batchCategoryId.trim() });
+        setBatchMsg(`Đã chuyển ${ids.length} chủ đề.`);
+      } else if (action === 'deleteThreads') {
+        const ids = batchThreadIds.split(/[\n,]/).map((s) => s.trim()).filter(Boolean);
+        await api.post('/forum/admin/batch/threads/delete', { threadIds: ids });
+        setBatchMsg(`Đã ẩn ${ids.length} chủ đề.`);
+      }
+    } catch (e: any) { setBatchMsg(e.message); }
   }
 
   const resolve = async (id: string, action: 'resolve' | 'dismiss') => {
@@ -118,6 +160,59 @@ export default function AdminModeration() {
           {censorMsg && <span className="text-sm text-emerald-600">{censorMsg}</span>}
         </div>
       </div>
+      {/* Batch Moderation */}
+      <div className="card p-4">
+        <h2 className="font-semibold">Xử lý hàng loạt</h2>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-xs font-medium text-ink-500 mb-1">ID bài viết (phân cách bằng dấu phẩy hoặc xuống dòng)</label>
+            <textarea className="input w-full resize-none" rows={3} placeholder="id1, id2, id3…" value={batchPostIds} onChange={(e) => setBatchPostIds(e.target.value)} />
+            <div className="mt-1 flex gap-2">
+              <button onClick={() => batchAction('deletePosts')} className="rounded bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600">Xoá hàng loạt</button>
+              <button onClick={() => batchAction('approvePosts')} className="rounded bg-emerald-600 px-3 py-1 text-xs text-white hover:bg-emerald-700">Duyệt hàng loạt</button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-ink-500 mb-1">ID chủ đề</label>
+            <textarea className="input w-full resize-none" rows={2} placeholder="id1, id2…" value={batchThreadIds} onChange={(e) => setBatchThreadIds(e.target.value)} />
+            <input className="input w-full mt-1" placeholder="ID danh mục đích (để chuyển)" value={batchCategoryId} onChange={(e) => setBatchCategoryId(e.target.value)} />
+            <div className="mt-1 flex gap-2">
+              <button onClick={() => batchAction('moveThreads')} className="rounded bg-amber-500 px-3 py-1 text-xs text-white hover:bg-amber-600">Chuyển chủ đề</button>
+              <button onClick={() => batchAction('deleteThreads')} className="rounded bg-red-500 px-3 py-1 text-xs text-white hover:bg-red-600">Ẩn chủ đề</button>
+            </div>
+          </div>
+        </div>
+        {batchMsg && <p className="mt-2 text-sm text-emerald-600">{batchMsg}</p>}
+      </div>
+
+      {/* User Warnings */}
+      <div className="card p-4">
+        <h2 className="font-semibold">Lịch sử cảnh cáo người dùng</h2>
+        <div className="mt-2 flex gap-2">
+          <input className="input flex-1" placeholder="ID hoặc username người dùng…" value={warnUserId} onChange={(e) => setWarnUserId(e.target.value)} />
+          <button onClick={loadWarnings} className="btn-primary !py-1.5 text-sm">Xem</button>
+        </div>
+        {warnLoading && <p className="mt-2 text-sm text-ink-500">Đang tải…</p>}
+        {warnings.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {warnings.map((w) => (
+              <div key={w.id} className={`rounded-lg border p-3 ${w.isExpired ? 'border-ink-200 opacity-60' : 'border-amber-300 dark:border-amber-700'}`}>
+                <div className="flex items-center gap-2 text-xs text-ink-500">
+                  <span className="font-medium text-amber-600">{w.points} điểm</span>
+                  <span>·</span>
+                  <span>{new Date(w.createdAt).toLocaleString('vi')}</span>
+                  <span>·</span>
+                  <span>bởi {w.warnedBy?.displayName || w.warnedBy?.username}</span>
+                  {w.isExpired && <span className="ml-auto rounded bg-ink-100 px-1.5 py-0.5 text-[10px] dark:bg-ink-800">Hết hạn</span>}
+                </div>
+                <p className="mt-1 text-sm">{w.reason}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {!warnLoading && warnings.length === 0 && warnUserId && <p className="mt-2 text-sm text-ink-500">Không có cảnh cáo.</p>}
+      </div>
+
       <div className="flex flex-wrap gap-2">
         {STATUSES.map((s) => (
           <button key={s} onClick={() => setStatus(s)} className={`rounded-lg px-3 py-1.5 text-sm ${status === s ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{s}</button>

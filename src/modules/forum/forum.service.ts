@@ -476,6 +476,7 @@ export class ForumService {
     const thread = await this.prisma.thread.findUnique({ where: { id: dto.threadId } });
     if (!thread) throw new NotFoundException('Thread không tồn tại');
     if (thread.isLocked) throw new ForbiddenException('Thread đã bị khoá');
+    if (await this.isReplyBanned(dto.threadId, authorId)) throw new ForbiddenException('Bạn bị cấm trả lời trong chủ đề này');
 
     const { html: content, mentioned } = await this.buildContent(dto.content, authorId);
     const pending = await this.needsApproval(authorId);
@@ -990,13 +991,225 @@ export class ForumService {
   }
 
   async deletePost(postId: string, deletedById: string, reason?: string) {
-    return this.prisma.post.update({
+    const post = await this.prisma.post.findUnique({
       where: { id: postId },
-      data: {
-        isDeleted: true,
-        deletedAt: new Date(),
-        deletedById,
+      select: { id: true, threadId: true, isFirstPost: true, thread: { select: { categoryId: true, replyCount: true } } },
+    });
+    if (!post) throw new NotFoundException('Bài viết không tồn tại');
+    const updated = await this.prisma.post.update({
+      where: { id: postId },
+      data: { isDeleted: true, deletedAt: new Date(), deletedById },
+    });
+    if (!post.isFirstPost && post.thread) {
+      await this.prisma.thread.update({
+        where: { id: post.threadId },
+        data: { replyCount: { decrement: 1 } },
+      }).catch(() => {});
+    }
+    return updated;
+  }
+
+  // ──────────────────────────────────────────────
+  // EDIT POST (+ lịch sử chỉnh sửa)
+  // ──────────────────────────────────────────────
+
+  async editPost(postId: string, editorId: string, newRaw: string, reason?: string, editorRole?: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, authorId: true, content: true, contentRaw: true, isDeleted: true, thread: { select: { isLocked: true, slug: true } } },
+    });
+    if (!post || post.isDeleted) throw new NotFoundException('Bài viết không tồn tại');
+    const isMod = editorRole === 'ADMIN' || editorRole === 'MODERATOR';
+    if (post.authorId !== editorId && !isMod) throw new ForbiddenException('Không có quyền sửa bài này');
+    if (post.thread?.isLocked && !isMod) throw new ForbiddenException('Thread đã bị khoá');
+
+    const { html: newContent } = await this.buildContent(newRaw, editorId);
+
+    await this.prisma.$transaction([
+      // Lưu lịch sử cũ
+      this.prisma.postEditHistory.create({
+        data: { postId, editorId, oldContent: post.content, oldContentRaw: post.contentRaw, editReason: reason ?? null },
+      }),
+      // Cập nhật nội dung
+      this.prisma.post.update({
+        where: { id: postId },
+        data: { content: newContent, contentRaw: newRaw, editCount: { increment: 1 }, lastEditAt: new Date() },
+      }),
+    ]);
+    return { id: postId, content: newContent, contentRaw: newRaw };
+  }
+
+  async getPostEditHistory(postId: string) {
+    return this.prisma.postEditHistory.findMany({
+      where: { postId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true, editReason: true, createdAt: true,
+        oldContentRaw: true,
+        editor: { select: { id: true, username: true, displayName: true, avatar: true } },
       },
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  // THREAD REPLY BAN
+  // ──────────────────────────────────────────────
+
+  async banReply(threadId: string, userId: string, bannedById: string, reason?: string, expiresAt?: Date) {
+    const thread = await this.prisma.thread.findUnique({ where: { id: threadId }, select: { id: true } });
+    if (!thread) throw new NotFoundException('Thread không tồn tại');
+    return this.prisma.threadReplyBan.upsert({
+      where: { threadId_userId: { threadId, userId } },
+      create: { threadId, userId, bannedById, reason: reason ?? null, expiresAt: expiresAt ?? null },
+      update: { bannedById, reason: reason ?? null, expiresAt: expiresAt ?? null, createdAt: new Date() },
+    });
+  }
+
+  async unbanReply(threadId: string, userId: string) {
+    await this.prisma.threadReplyBan.deleteMany({ where: { threadId, userId } });
+    return { ok: true };
+  }
+
+  async getThreadReplyBans(threadId: string) {
+    return this.prisma.threadReplyBan.findMany({
+      where: { threadId },
+      include: {
+        user: { select: { id: true, username: true, displayName: true, avatar: true } },
+        bannedBy: { select: { id: true, username: true, displayName: true } },
+      },
+    });
+  }
+
+  private async isReplyBanned(threadId: string, userId: string): Promise<boolean> {
+    const ban = await this.prisma.threadReplyBan.findUnique({
+      where: { threadId_userId: { threadId, userId } },
+      select: { expiresAt: true },
+    });
+    if (!ban) return false;
+    if (ban.expiresAt && ban.expiresAt < new Date()) {
+      // Hết hạn — tự xoá
+      await this.prisma.threadReplyBan.deleteMany({ where: { threadId, userId } }).catch(() => {});
+      return false;
+    }
+    return true;
+  }
+
+  // ──────────────────────────────────────────────
+  // BATCH MODERATION (bulk actions on posts)
+  // ──────────────────────────────────────────────
+
+  async batchDeletePosts(postIds: string[], deletedById: string) {
+    await this.prisma.post.updateMany({
+      where: { id: { in: postIds } },
+      data: { isDeleted: true, deletedAt: new Date(), deletedById },
+    });
+    return { deleted: postIds.length };
+  }
+
+  async batchApprovePosts(postIds: string[]) {
+    await this.prisma.post.updateMany({
+      where: { id: { in: postIds }, isApproved: false },
+      data: { isApproved: true },
+    });
+    return { approved: postIds.length };
+  }
+
+  async batchMoveThreads(threadIds: string[], categoryId: string) {
+    const cat = await this.prisma.category.findUnique({ where: { id: categoryId }, select: { id: true } });
+    if (!cat) throw new NotFoundException('Danh mục không tồn tại');
+    await this.prisma.thread.updateMany({
+      where: { id: { in: threadIds } },
+      data: { categoryId },
+    });
+    return { moved: threadIds.length };
+  }
+
+  async batchDeleteThreads(threadIds: string[], deletedById: string) {
+    await this.prisma.thread.updateMany({
+      where: { id: { in: threadIds } },
+      data: { isHidden: true },
+    });
+    return { deleted: threadIds.length };
+  }
+
+  // ──────────────────────────────────────────────
+  // MOVE POST to another thread
+  // ──────────────────────────────────────────────
+
+  async movePost(postId: string, targetThreadId: string, movedById: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, threadId: true, isFirstPost: true },
+    });
+    if (!post) throw new NotFoundException('Bài viết không tồn tại');
+    if (post.isFirstPost) throw new BadRequestException('Không thể chuyển bài gốc của thread');
+    const target = await this.prisma.thread.findUnique({ where: { id: targetThreadId }, select: { id: true } });
+    if (!target) throw new NotFoundException('Thread đích không tồn tại');
+
+    await this.prisma.$transaction([
+      this.prisma.post.update({ where: { id: postId }, data: { threadId: targetThreadId, parentId: null } }),
+      this.prisma.thread.update({ where: { id: post.threadId }, data: { replyCount: { decrement: 1 } } }),
+      this.prisma.thread.update({ where: { id: targetThreadId }, data: { replyCount: { increment: 1 }, lastPostAt: new Date() } }),
+    ]);
+    return { ok: true, newThreadId: targetThreadId };
+  }
+
+  // ──────────────────────────────────────────────
+  // WARNING AUTO-BAN
+  // ──────────────────────────────────────────────
+
+  async warnUser(dto: { userId: string; warnedById: string; reason: string; points?: number; postId?: string; threadId?: string; expiresAt?: Date }) {
+    const warning = await this.prisma.userWarning.create({
+      data: {
+        userId: dto.userId,
+        warnedById: dto.warnedById,
+        reason: dto.reason,
+        points: dto.points ?? 1,
+        postId: dto.postId ?? null,
+        threadId: dto.threadId ?? null,
+        expiresAt: dto.expiresAt ?? null,
+      },
+    });
+
+    // Tính tổng điểm cảnh cáo còn hiệu lực
+    const activeWarnings = await this.prisma.userWarning.findMany({
+      where: { userId: dto.userId, isExpired: false, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
+      select: { points: true },
+    });
+    const totalPoints = activeWarnings.reduce((sum, w) => sum + w.points, 0);
+
+    // Auto-ban nếu vượt ngưỡng (cấu hình từ DB, mặc định 10 điểm = ban 7 ngày)
+    if (totalPoints >= 10) {
+      const bannedUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await this.prisma.user.update({
+        where: { id: dto.userId },
+        data: { bannedUntil, banReason: `Tự động cấm vì tích lũy ${totalPoints} điểm cảnh cáo` },
+      });
+      await this.notifications.notify(dto.userId, {
+        type: 'SYSTEM',
+        title: 'Tài khoản bị đình chỉ',
+        body: `Bạn đã tích lũy ${totalPoints} điểm cảnh cáo. Tài khoản bị đình chỉ đến ${bannedUntil.toLocaleDateString('vi')}.`,
+        link: '/settings/account',
+      }).catch(() => {});
+    } else {
+      // Gửi thông báo cảnh cáo
+      await this.notifications.notify(dto.userId, {
+        type: 'SYSTEM',
+        title: '⚠️ Bạn nhận được cảnh cáo',
+        body: dto.reason,
+        link: '/settings/account',
+        actorId: dto.warnedById,
+      }).catch(() => {});
+    }
+
+    return { warning, totalPoints };
+  }
+
+  async getUserWarnings(userId: string) {
+    return this.prisma.userWarning.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      include: { warnedBy: { select: { id: true, username: true, displayName: true } } },
     });
   }
 

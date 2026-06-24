@@ -2,10 +2,11 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Play, Heart, Star, BookOpen, Clapperboard, RefreshCw, AlignJustify, ChevronDown, MessageCircle, Send, Trash2 } from 'lucide-react';
+import { Play, Heart, Star, BookOpen, Clapperboard, RefreshCw, Send, Trash2, Smile } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
+import { EmojiStickerPicker, isStickerContent } from '@/components/EmojiStickerPicker';
 
 const STATUS_LABEL: Record<string, string> = {
   RELEASING: 'Đang phát hành', FINISHED: 'Hoàn thành', NOT_YET_RELEASED: 'Sắp ra mắt', HIATUS: 'Tạm ngưng', CANCELLED: 'Đã huỷ',
@@ -16,7 +17,28 @@ const FORMAT_LABEL: Record<string, string> = {
 };
 const TYPE_COUNTRY: Record<string, string> = { DONGHUA: 'Trung Quốc', MANHUA: 'Trung Quốc', MANHWA: 'Hàn Quốc' };
 
-type TabId = 'episodes' | 'cast';
+interface CommentT {
+  id: string; content: string; createdAt: string; authorId: string; parentId?: string | null;
+  episodeId?: string; episodeNumber?: number;
+  author: { id: string; username: string; displayName?: string | null; avatar?: string | null };
+  replies?: CommentT[];
+}
+
+function buildCommentTree(flat: CommentT[]): CommentT[] {
+  const map = new Map<string, CommentT & { replies: CommentT[] }>();
+  const roots: (CommentT & { replies: CommentT[] })[] = [];
+  for (const c of flat) map.set(c.id, { ...c, replies: [] });
+  for (const c of flat) {
+    if (c.parentId && map.has(c.parentId)) map.get(c.parentId)!.replies.push(map.get(c.id)!);
+    else roots.push(map.get(c.id)!);
+  }
+  return roots;
+}
+
+function getDescendantIds(cid: string, flat: CommentT[]): string[] {
+  const children = flat.filter((c) => c.parentId === cid);
+  return [cid, ...children.flatMap((c) => getDescendantIds(c.id, flat))];
+}
 
 function Detail() {
   const slug = useSearchParams().get('slug') || '';
@@ -24,18 +46,21 @@ function Detail() {
   const router = useRouter();
   const [w, setW] = useState<any>(null);
   const [err, setErr] = useState('');
-  const [tab, setTab] = useState<TabId>('episodes');
   const [fav, setFav] = useState(false);
-  const [activePart, setActivePart] = useState(1);
-  const [partOpen, setPartOpen] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<CommentT[]>([]);
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
+  const [picker, setPicker] = useState(false);
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
+  const [replyPosting, setReplyPosting] = useState(false);
+
+  const isMod = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
 
   useEffect(() => {
     if (!slug) return;
     api.get<any>(`/anime/${slug}`).then(setW).catch((e) => setErr(e.message));
-    api.get<any[]>(`/anime/${slug}/comments`).then((r) => setComments(r || [])).catch(() => {});
+    api.get<CommentT[]>(`/anime/${slug}/comments`).then((r) => setComments(r || [])).catch(() => {});
   }, [slug]);
 
   useEffect(() => {
@@ -49,40 +74,37 @@ function Detail() {
     try { await api.put(`/anime/me/entry/${w.id}`, { favorite: next }); } catch {}
   }
 
-  async function postComment(e: React.FormEvent) {
-    e.preventDefault();
-    if (!text.trim() || !user) return;
-    const firstEpId = w?.episodeList?.[0]?.id;
-    if (!firstEpId) return;
-    setPosting(true);
+  async function postComment(content: string, parentId?: string | null) {
+    if (!content.trim()) return;
+    if (!user) { router.push('/login'); return; }
+    const epId = parentId
+      ? (comments.find((c) => c.id === parentId)?.episodeId ?? w?.episodeList?.[0]?.id)
+      : w?.episodeList?.[0]?.id;
+    if (!epId) return;
+    if (parentId) setReplyPosting(true); else setPosting(true);
     try {
-      const c = await api.post<any>(`/anime/episode/${firstEpId}/comments`, { content: text.trim() });
-      setComments((prev) => [{ ...c, episodeNumber: w.episodeList[0].number, episodeId: firstEpId }, ...prev]);
-      setText('');
+      const c = await api.post<CommentT>(`/anime/episode/${epId}/comments`, { content, parentId: parentId || undefined });
+      const ep = w?.episodeList?.find((e: any) => e.id === epId);
+      setComments((cs) => [...cs, { ...c, episodeId: epId, episodeNumber: ep?.number }]);
+      if (parentId) { setReplyTexts((t) => ({ ...t, [parentId]: '' })); setReplyingToId(null); }
+      else setText('');
     } catch {}
-    finally { setPosting(false); }
+    finally { setPosting(false); setReplyPosting(false); }
   }
 
-  async function delComment(id: string) {
+  function submitComment(e: React.FormEvent) { e.preventDefault(); postComment(text); }
+
+  async function delComment(cid: string) {
     if (!confirm('Xoá bình luận?')) return;
     try {
-      await api.del(`/anime/comment/${id}`);
-      setComments((prev) => prev.filter((c) => c.id !== id));
+      await api.del(`/anime/comment/${cid}`);
+      const toRemove = new Set(getDescendantIds(cid, comments));
+      setComments((cs) => cs.filter((c) => !toRemove.has(c.id)));
     } catch {}
   }
 
   if (err) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!w) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
-
-  const partMap = new Map<number, any[]>();
-  for (const ep of (w.episodeList || [])) {
-    const p = ep.part ?? 1;
-    if (!partMap.has(p)) partMap.set(p, []);
-    partMap.get(p)!.push(ep);
-  }
-  const parts = [...partMap.keys()].sort((a, b) => a - b);
-  const multiPart = parts.length > 1;
-  const visibleEps = partMap.get(activePart) ?? (w.episodeList || []);
 
   const firstEp = w.episodeList?.[0];
   const firstCh = w.chapterList?.[0];
@@ -90,15 +112,6 @@ function Detail() {
   const heroBg = w.bannerUrl || w.coverUrl;
   const airedCount = w.episodeList?.length ?? 0;
   const ytId = w.trailerUrl?.match(/[?&]v=([\w-]+)/)?.[1];
-
-  const tabs: Array<{ id: TabId; label: string }> = [
-    w.episodeList?.length > 0 || w.chapterList?.length > 0
-      ? { id: 'episodes', label: w.episodeList?.length > 0 ? 'Tập phim' : 'Chương' }
-      : null,
-    chars.length > 0 ? { id: 'cast', label: 'Diễn viên' } : null,
-  ].filter(Boolean) as Array<{ id: TabId; label: string }>;
-
-  const activeTab = tabs.find((t) => t.id === tab)?.id ?? tabs[0]?.id ?? 'episodes';
 
   return (
     <div className="space-y-4">
@@ -111,6 +124,14 @@ function Detail() {
             : <div className="h-full bg-gradient-to-br from-brand-800 to-brand-600" />}
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/50 to-black/85" />
+        {/* Nút yêu thích – góc trên phải */}
+        <button
+          onClick={toggleFav}
+          className={`absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-black/40 backdrop-blur-sm transition hover:bg-black/60 ${fav ? 'text-rose-500' : 'text-white'}`}
+          title={fav ? 'Bỏ yêu thích' : 'Yêu thích'}
+        >
+          <Heart size={18} className={fav ? 'fill-rose-500' : ''} />
+        </button>
         <div className="absolute inset-x-0 bottom-0 flex flex-col items-center px-4 pb-4">
           <div className="h-32 w-[88px] overflow-hidden rounded-xl border border-white/25 shadow-2xl">
             {w.coverUrl
@@ -199,161 +220,48 @@ function Detail() {
         </a>
       )}
 
-      {/* ── Action row (chỉ Yêu thích + điểm) ── */}
-      <div className="flex items-center justify-around border-y border-ink-200/70 py-3 dark:border-ink-700">
-        <button onClick={toggleFav} className="flex flex-col items-center gap-1 text-xs text-ink-600 dark:text-ink-300">
-          <Heart size={22} className={fav ? 'fill-rose-500 text-rose-500' : ''} />
-          <span>{fav ? 'Đã thích' : 'Yêu thích'}</span>
-        </button>
-        {w.avgScore > 0 && (
-          <div className="flex flex-col items-center gap-1 text-xs text-amber-500">
-            <Star size={20} className="fill-amber-500" />
-            <span className="font-bold">{w.avgScore.toFixed(1)}</span>
-          </div>
-        )}
-      </div>
-
-      {/* ── Episodes / Cast tabs ── */}
-      {tabs.length > 0 && (
-        <>
-          <div className="flex border-b border-ink-200 dark:border-ink-700">
-            {tabs.map((t) => (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                className={`border-b-2 px-5 py-2.5 text-sm font-medium transition-colors ${
-                  activeTab === t.id
-                    ? 'border-amber-500 text-amber-500'
-                    : 'border-transparent text-ink-500 hover:text-ink-700 dark:hover:text-ink-200'
-                }`}>
-                {t.label}
+      {/* ── Bình luận ── */}
+      <div className="card p-5">
+        <h2 className="mb-3 font-semibold">Bình luận ({comments.length})</h2>
+        {user ? (
+          <form onSubmit={submitComment} className="relative mb-4 flex items-start gap-2">
+            <Avatar user={user} size={32} />
+            <div className="relative flex-1">
+              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="Viết bình luận…" className="input w-full resize-none pr-9" />
+              <button type="button" onClick={() => setPicker((v) => !v)}
+                className={`absolute right-2 top-2 rounded p-1 hover:bg-ink-100 dark:hover:bg-ink-800 ${picker ? 'text-brand-600' : 'text-ink-400'}`}
+                title="Emoji / Sticker">
+                <Smile size={18} />
               </button>
-            ))}
-          </div>
-
-          {activeTab === 'episodes' && (
-            <div className="space-y-3 pt-1">
-              {multiPart && (
-                <div className="relative">
-                  <button onClick={() => setPartOpen((o) => !o)}
-                    className="flex items-center gap-2 rounded-lg bg-ink-900 px-3 py-2 text-sm font-semibold text-white dark:bg-ink-800">
-                    <AlignJustify size={15} /> Phần {activePart}
-                    <ChevronDown size={14} className={`transition-transform ${partOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                  {partOpen && (
-                    <div className="absolute left-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-xl border border-ink-200 bg-white shadow-xl dark:border-ink-700 dark:bg-ink-900">
-                      <p className="border-b border-ink-100 px-3 py-2 text-xs text-ink-400 dark:border-ink-800">Danh sách phần</p>
-                      {parts.map((p) => (
-                        <button key={p} onClick={() => { setActivePart(p); setPartOpen(false); }}
-                          className={`block w-full px-4 py-2.5 text-left text-sm font-medium transition ${activePart === p ? 'bg-amber-100 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'hover:bg-ink-50 dark:hover:bg-ink-800'}`}>
-                          Phần {p}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+              {picker && (
+                <EmojiStickerPicker
+                  onEmoji={(e) => setText((t) => t + e)}
+                  onSticker={(url) => { setPicker(false); postComment(url); }}
+                  onClose={() => setPicker(false)}
+                />
               )}
-              <div className="grid grid-cols-3 gap-2">
-                {visibleEps.map((ep: any) => (
-                  <a key={ep.id} href={`/anime/watch?ep=${ep.id}`}
-                    className="flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-amber-500 hover:text-white dark:bg-ink-800 dark:hover:bg-amber-500">
-                    <Play size={11} className="shrink-0" /><span className="truncate">Tập {ep.number}</span>
-                  </a>
-                ))}
-                {w.chapterList?.map((ch: any) => (
-                  <a key={ch.id} href={`/manga/read?id=${ch.id}`}
-                    className="flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-amber-500 hover:text-white dark:bg-ink-800 dark:hover:bg-amber-500">
-                    <BookOpen size={11} className="shrink-0" /><span className="truncate">Ch. {ch.number}</span>
-                  </a>
-                ))}
-              </div>
             </div>
-          )}
-
-          {activeTab === 'cast' && chars.length > 0 && (
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              {chars.slice(0, 20).map((mc: any) => (
-                <div key={mc.id} className="flex items-center gap-2 rounded-lg border border-ink-100 p-2 dark:border-ink-800">
-                  {mc.character.imageUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={mc.character.imageUrl} alt="" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
-                  )}
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{mc.character.name}</p>
-                    <p className="text-[11px] text-ink-400">{mc.role === 'MAIN' ? 'Chính' : 'Phụ'}</p>
-                    {mc.voiceActor && <p className="truncate text-[11px] text-ink-400">{mc.voiceActor.name}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* ── Bình luận tổng (tất cả tập) ── */}
-      {w.episodeList?.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="flex items-center gap-1.5 font-semibold">
-            <MessageCircle size={16} /> Bình luận{comments.length > 0 ? ` (${comments.length})` : ''}
-          </h2>
-
-          {user ? (
-            <form onSubmit={postComment} className="flex gap-2.5">
-              <div className="shrink-0"><Avatar user={user} size={34} /></div>
-              <div className="flex-1">
-                <textarea value={text} onChange={(e) => setText(e.target.value)}
-                  placeholder="Viết bình luận…" rows={2}
-                  className="w-full resize-none rounded-xl border border-ink-200 px-3 py-2 text-sm outline-none focus:border-brand-500 dark:border-ink-700 dark:bg-ink-800" />
-                <button type="submit" disabled={posting || !text.trim()}
-                  className="mt-1.5 flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 hover:bg-brand-500">
-                  <Send size={13} /> Gửi
-                </button>
-              </div>
-            </form>
-          ) : (
-            <a href="/login"
-              className="block rounded-xl border border-dashed border-ink-300 py-3 text-center text-sm text-ink-400 hover:border-brand-400 hover:text-brand-500 dark:border-ink-700">
-              Đăng nhập để bình luận
-            </a>
-          )}
-
-          <div className="space-y-4">
-            {comments.length === 0 && (
-              <p className="py-6 text-center text-sm text-ink-400">Chưa có bình luận. Hãy là người đầu tiên!</p>
-            )}
-            {comments.map((c: any) => (
-              <div key={c.id} className="flex gap-2.5">
-                <div className="shrink-0"><Avatar user={c.author} size={34} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="text-sm font-semibold">{c.author.displayName || c.author.username}</span>
-                    <span className="rounded bg-ink-100 px-1.5 py-0.5 text-[10px] text-ink-500 dark:bg-ink-800">Tập {c.episodeNumber}</span>
-                    <span className="text-[11px] text-ink-400">{new Date(c.createdAt).toLocaleDateString('vi')}</span>
-                    {(user?.id === c.authorId || user?.role === 'ADMIN' || user?.role === 'MODERATOR') && (
-                      <button onClick={() => delComment(c.id)} className="ml-auto text-ink-300 hover:text-red-500">
-                        <Trash2 size={12} />
-                      </button>
-                    )}
-                  </div>
-                  <p className="mt-0.5 text-sm leading-relaxed">{c.content}</p>
-                  {c.replies?.length > 0 && (
-                    <div className="mt-2.5 space-y-2 border-l-2 border-ink-200 pl-3 dark:border-ink-700">
-                      {c.replies.map((r: any) => (
-                        <div key={r.id} className="flex gap-2">
-                          <div className="shrink-0"><Avatar user={r.author} size={24} /></div>
-                          <div className="min-w-0">
-                            <span className="text-xs font-semibold">{r.author.displayName || r.author.username} </span>
-                            <span className="text-xs text-ink-400">{new Date(r.createdAt).toLocaleDateString('vi')}</span>
-                            <p className="text-sm leading-relaxed">{r.content}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+            <button type="submit" disabled={posting || !text.trim()}
+              className="mt-1 inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-sm text-white disabled:opacity-50 hover:bg-brand-700">
+              <Send size={14} />
+            </button>
+          </form>
+        ) : (
+          <p className="mb-4 text-sm text-ink-500"><a href="/login" className="text-brand-600 hover:underline">Đăng nhập</a> để bình luận.</p>
+        )}
+        <div className="space-y-3">
+          {comments.length === 0 && <p className="text-sm text-ink-500">Chưa có bình luận nào.</p>}
+          {buildCommentTree(comments).map((c) => (
+            <CommentNode key={c.id} c={c} depth={0}
+              user={user} isMod={isMod}
+              replyingToId={replyingToId} setReplyingToId={setReplyingToId}
+              replyTexts={replyTexts} setReplyTexts={setReplyTexts}
+              replyPosting={replyPosting}
+              onDel={delComment} onReply={postComment}
+            />
+          ))}
         </div>
-      )}
+      </div>
 
       {/* ── Phim liên quan ── */}
       {w.relatedFrom?.length > 0 && (
@@ -389,6 +297,82 @@ function Detail() {
           <div className="aspect-video overflow-hidden rounded-lg">
             <iframe src={`https://www.youtube.com/embed/${ytId}`} className="h-full w-full" allowFullScreen title="Trailer" />
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface CommentNodeProps {
+  c: CommentT; depth: number;
+  user: any; isMod: boolean;
+  replyingToId: string | null; setReplyingToId: (id: string | null) => void;
+  replyTexts: Record<string, string>; setReplyTexts: (fn: (t: Record<string, string>) => Record<string, string>) => void;
+  replyPosting: boolean;
+  onDel: (id: string) => void; onReply: (content: string, parentId: string) => void;
+}
+function CommentNode({ c, depth, user, isMod, replyingToId, setReplyingToId, replyTexts, setReplyTexts, replyPosting, onDel, onReply }: CommentNodeProps) {
+  const MAX_INDENT = 4;
+  const indent = Math.min(depth, MAX_INDENT);
+  return (
+    <div className={indent > 0 ? 'ml-6 border-l-2 border-ink-200 pl-3 dark:border-ink-700' : ''}>
+      <div className="flex items-start gap-2">
+        <Avatar user={c.author} size={depth > 0 ? 26 : 32} />
+        <div className="min-w-0 flex-1 rounded-lg bg-ink-50 px-3 py-2 dark:bg-ink-800">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="text-sm font-medium text-ink-700 dark:text-ink-200">{c.author.displayName || c.author.username}</span>
+            {c.episodeNumber != null && depth === 0 && (
+              <span className="rounded bg-ink-200 px-1.5 py-0.5 text-[10px] text-ink-500 dark:bg-ink-700">Tập {c.episodeNumber}</span>
+            )}
+            <span className="text-[11px] text-ink-400">{new Date(c.createdAt).toLocaleDateString('vi')}</span>
+            {user && (c.authorId === user.id || isMod) && (
+              <button onClick={() => onDel(c.id)} className="ml-auto text-ink-400 hover:text-red-500"><Trash2 size={13} /></button>
+            )}
+          </div>
+          {isStickerContent(c.content)
+            ? <img src={c.content.trim()} alt="sticker" className="mt-1 h-24 w-24 object-contain" />
+            : <p className="whitespace-pre-line break-words text-sm text-ink-700 dark:text-ink-200">{c.content}</p>}
+        </div>
+      </div>
+      {user && (
+        <div className="ml-9 mt-1">
+          {replyingToId !== c.id && (
+            <button onClick={() => setReplyingToId(c.id)} className="text-[11px] text-ink-400 hover:text-brand-600">Trả lời</button>
+          )}
+          {replyingToId === c.id && (
+            <div className="mt-1.5 flex items-start gap-2">
+              <Avatar user={user} size={24} />
+              <div className="flex-1">
+                <textarea
+                  autoFocus rows={2}
+                  value={replyTexts[c.id] || ''}
+                  onChange={(e) => setReplyTexts((t) => ({ ...t, [c.id]: e.target.value }))}
+                  placeholder={`Trả lời @${c.author.displayName || c.author.username}…`}
+                  className="input w-full resize-none text-sm"
+                />
+                <div className="mt-1 flex gap-2">
+                  <button disabled={replyPosting || !(replyTexts[c.id] || '').trim()} onClick={() => onReply(replyTexts[c.id] || '', c.id)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1 text-xs text-white hover:bg-brand-700 disabled:opacity-50">
+                    <Send size={12} /> Gửi
+                  </button>
+                  <button onClick={() => setReplyingToId(null)} className="rounded-lg bg-ink-100 px-3 py-1 text-xs dark:bg-ink-800">Huỷ</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      {(c.replies || []).length > 0 && (
+        <div className="mt-2 space-y-2">
+          {(c.replies || []).map((r) => (
+            <CommentNode key={r.id} c={r} depth={depth + 1}
+              user={user} isMod={isMod}
+              replyingToId={replyingToId} setReplyingToId={setReplyingToId}
+              replyTexts={replyTexts} setReplyTexts={setReplyTexts}
+              replyPosting={replyPosting}
+              onDel={onDel} onReply={onReply}
+            />
+          ))}
         </div>
       )}
     </div>

@@ -18,17 +18,17 @@ export interface SiteConfig {
 }
 
 const DEFAULTS: SiteConfig = {
-  name: 'ForumHub',
-  tagline: '',
-  description: '',
+  name: 'Trạm GenZ',
+  tagline: 'Cộng đồng anime & manga Việt Nam',
+  description: 'Cộng đồng anime, manga, hoạt hình — xem phim, đọc truyện, thảo luận tại Trạm GenZ.',
   contactEmail: '',
   logo: '',
   logoSmall: '',
   favicon: '',
   primaryColor: '',
-  heroTitle: 'Chào mừng đến ForumHub',
-  heroDescription: 'Diễn đàn cộng đồng tích hợp game hoá — chia sẻ, thảo luận, chơi game và mua bán source code.',
-  footerText: '© {year} ForumHub · NestJS + Next.js',
+  heroTitle: 'Chào mừng đến Trạm GenZ',
+  heroDescription: 'Cộng đồng anime & manga — xem hoạt hình, đọc truyện, thảo luận cùng bạn bè.',
+  footerText: '© {year} Trạm GenZ',
 };
 
 export function useSiteConfig(): SiteConfig {

@@ -237,7 +237,7 @@ export default function AdminAnime() {
             <div className="flex items-center gap-3">
               {w.coverUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={w.coverUrl} alt="" className="h-14 w-10 shrink-0 rounded object-cover" />}
               <div className="min-w-0 flex-1">
-                <a href={`/anime/detail?slug=${w.slug}`} target="_blank" className="font-semibold hover:text-brand-600">{w.title}</a>
+                <a href={w.type === 'MANHUA' ? `/manga/detail?slug=${w.slug}` : `/anime/detail?slug=${w.slug}`} target="_blank" className="font-semibold hover:text-brand-600">{w.title}</a>
                 <p className="mt-0.5 text-xs text-ink-500">{w.type} · {w.format || ''} {w.seasonYear || ''} {w.avgScore > 0 ? <span className="inline-flex items-center gap-0.5 text-amber-600"><Star size={11} /> {w.avgScore.toFixed(1)}</span> : ''}</p>
               </div>
               <a href={`/admin/anime/edit?id=${w.id}`}><Btn size="sm">Sửa</Btn></a>

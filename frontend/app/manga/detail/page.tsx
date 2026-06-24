@@ -271,7 +271,7 @@ function MangaDetail() {
           <h2 className="mb-2 font-semibold">Truyện liên quan</h2>
           <div className="flex gap-3 overflow-x-auto pb-1">
             {w.relatedFrom.map((r: any) => (
-              <a key={r.id} href={`/manga/detail?slug=${r.to.slug}`}
+              <a key={r.id} href={r.to.type === 'MANHUA' ? `/manga/detail?slug=${r.to.slug}` : `/anime/detail?slug=${r.to.slug}`}
                 className="flex w-28 shrink-0 flex-col gap-1 rounded-xl border border-ink-100 p-1.5 transition hover:border-brand-300 dark:border-ink-700">
                 <div className="aspect-[3/4] overflow-hidden rounded-lg bg-ink-100 dark:bg-ink-800">
                   {r.to.coverUrl && (

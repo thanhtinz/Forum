@@ -288,7 +288,7 @@ function Detail() {
           <h2 className="mb-3 font-semibold">Phim liên quan</h2>
           <div className="space-y-2">
             {w.relatedFrom.map((r: any) => (
-              <a key={r.id} href={`/anime/detail?slug=${r.to.slug}`}
+              <a key={r.id} href={r.to.type === 'MANHUA' ? `/manga/detail?slug=${r.to.slug}` : `/anime/detail?slug=${r.to.slug}`}
                 className="flex items-center gap-3 rounded-xl border border-ink-200 p-2.5 transition-colors hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800">
                 <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-ink-100 dark:bg-ink-800">
                   {r.to.coverUrl && (

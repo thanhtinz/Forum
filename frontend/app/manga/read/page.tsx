@@ -82,7 +82,7 @@ function MangaReaderInner() {
 
   const seriesTitle = chapter.media.titleEnglish || chapter.media.title;
   const chapterLabel = `Chương ${chapter.number}${chapter.title ? `: ${chapter.title}` : ''}`;
-  const backHref = `/anime/detail?slug=${chapter.media.slug}`;
+  const backHref = `/manga/detail?slug=${chapter.media.slug}`;
   const isText = !!chapter.content && chapter.pages.length === 0;
 
   // Text chapter

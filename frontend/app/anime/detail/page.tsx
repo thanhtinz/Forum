@@ -314,6 +314,7 @@ interface CommentNodeProps {
 function CommentNode({ c, depth, user, isMod, replyingToId, setReplyingToId, replyTexts, setReplyTexts, replyPosting, onDel, onReply }: CommentNodeProps) {
   const MAX_INDENT = 4;
   const indent = Math.min(depth, MAX_INDENT);
+  const [replyPicker, setReplyPicker] = useState(false);
   return (
     <div className={indent > 0 ? 'ml-6 border-l-2 border-ink-200 pl-3 dark:border-ink-700' : ''}>
       <div className="flex items-start gap-2">
@@ -343,13 +344,26 @@ function CommentNode({ c, depth, user, isMod, replyingToId, setReplyingToId, rep
             <div className="mt-1.5 flex items-start gap-2">
               <Avatar user={user} size={24} />
               <div className="flex-1">
-                <textarea
-                  autoFocus rows={2}
-                  value={replyTexts[c.id] || ''}
-                  onChange={(e) => setReplyTexts((t) => ({ ...t, [c.id]: e.target.value }))}
-                  placeholder={`Trả lời @${c.author.displayName || c.author.username}…`}
-                  className="input w-full resize-none text-sm"
-                />
+                <div className="relative">
+                  <textarea
+                    autoFocus rows={2}
+                    value={replyTexts[c.id] || ''}
+                    onChange={(e) => setReplyTexts((t) => ({ ...t, [c.id]: e.target.value }))}
+                    placeholder={`Trả lời @${c.author.displayName || c.author.username}…`}
+                    className="input w-full resize-none pr-8 text-sm"
+                  />
+                  <button type="button" onClick={() => setReplyPicker((v) => !v)}
+                    className={`absolute right-2 top-2 rounded p-0.5 hover:bg-ink-100 dark:hover:bg-ink-700 ${replyPicker ? 'text-brand-600' : 'text-ink-400'}`}>
+                    <Smile size={15} />
+                  </button>
+                  {replyPicker && (
+                    <EmojiStickerPicker
+                      onEmoji={(e) => setReplyTexts((t) => ({ ...t, [c.id]: (t[c.id] || '') + e }))}
+                      onSticker={(url) => { setReplyPicker(false); onReply(url, c.id); }}
+                      onClose={() => setReplyPicker(false)}
+                    />
+                  )}
+                </div>
                 <div className="mt-1 flex gap-2">
                   <button disabled={replyPosting || !(replyTexts[c.id] || '').trim()} onClick={() => onReply(replyTexts[c.id] || '', c.id)}
                     className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1 text-xs text-white hover:bg-brand-700 disabled:opacity-50">

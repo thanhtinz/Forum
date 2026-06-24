@@ -470,19 +470,17 @@ function ChapterList({ chapters }: { chapters: any[] }) {
         />
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 gap-px bg-ink-100 dark:bg-ink-700/30">
+      {/* List */}
+      <div className="divide-y divide-ink-100 dark:divide-ink-700/50">
         {visible.map((ch: any) => (
           <a
             key={ch.id}
             href={`/comic/read?id=${ch.id}`}
-            className="flex items-center justify-between bg-white px-3 py-2.5 text-sm transition-colors hover:bg-brand-50 hover:text-brand-700 dark:bg-ink-900 dark:hover:bg-brand-950/30 dark:hover:text-brand-400"
+            className="flex items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/20 dark:hover:text-brand-400"
           >
-            <span className="font-medium truncate">
-              Ch.{ch.number}{ch.title ? ` ${ch.title}` : ''}
-            </span>
+            <span className="font-medium">Chương {ch.number}{ch.title ? `: ${ch.title}` : ''}</span>
             {ch.createdAt && (
-              <span className="ml-1 shrink-0 text-[10px] text-ink-400">
+              <span className="shrink-0 text-xs text-ink-400">
                 {new Date(ch.createdAt).toLocaleDateString('vi')}
               </span>
             )}

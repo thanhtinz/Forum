@@ -22,6 +22,10 @@ interface Series {
   _count: { chapterList: number };
 }
 
+const FORMAT_LABEL: Record<string, string> = {
+  MANHUA: 'Manhua', MANGA: 'Manga', MANHWA: 'Manhwa', NOVEL: 'Tiểu thuyết', ONE_SHOT: 'One-shot',
+};
+
 const PUBLISH_LABELS: Record<string, { label: string; cls: string }> = {
   DRAFT: { label: 'Nháp', cls: 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-400' },
   PENDING: { label: 'Đang duyệt', cls: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' },
@@ -137,8 +141,7 @@ export default function CreatorDashboard() {
                       <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${st.cls}`}>{st.label}</span>
                     </div>
                     <div className="mt-0.5 flex items-center gap-1.5">
-                      {s.type === 'MANHUA' && <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-400">Manhua</span>}
-                      {isOneShot && <span className="rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium text-brand-700 dark:bg-brand-950/40 dark:text-brand-400">One-shot</span>}
+                      {s.format && <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-950/40 dark:text-sky-400">{FORMAT_LABEL[s.format] ?? s.format}</span>}
                       <p className="text-xs text-ink-400">{s._count.chapterList} chương</p>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-1.5">

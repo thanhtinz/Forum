@@ -161,9 +161,24 @@ function Player(props: PlayerProps) {
   return <IframePlayer {...props} url={url} />;
 }
 
-function IframePlayer({ url, autoNext, onNextAt, onEnded }: PlayerProps) {
+function IframePlayer({ url, showNextAt, episodeDurationMin, autoNext, onNextAt, onEnded }: PlayerProps) {
   const nextRef = useRef({ autoNext, onNextAt, onEnded });
   nextRef.current = { autoNext, onNextAt, onEnded };
+  const nextAtFiredRef = useRef(false);
+
+  // Wall-clock fallback: iframe không cho đọc currentTime nên dùng đồng hồ thực từ lúc tải
+  useEffect(() => {
+    nextAtFiredRef.current = false;
+    const triggerSec =
+      showNextAt != null && showNextAt > 0 ? showNextAt
+      : episodeDurationMin ? episodeDurationMin * 60 - 90
+      : null;
+    if (!triggerSec || triggerSec <= 0 || triggerSec > 14400) return;
+    const t = setTimeout(() => {
+      if (!nextAtFiredRef.current) { nextAtFiredRef.current = true; nextRef.current.onNextAt(); }
+    }, triggerSec * 1000);
+    return () => clearTimeout(t);
+  }, [url, showNextAt, episodeDurationMin]);
 
   useEffect(() => {
     function onMsg(e: MessageEvent) {
@@ -195,7 +210,10 @@ function IframePlayer({ url, autoNext, onNextAt, onEnded }: PlayerProps) {
           // JSON nhúng trong chuỗi
           (str.includes('"ended"') || str.includes('"complete"') || str.includes('"finished"'));
 
-        if (isEnded) { nextRef.current.onNextAt(); if (nextRef.current.autoNext) nextRef.current.onEnded(); }
+        if (isEnded) {
+          if (!nextAtFiredRef.current) { nextAtFiredRef.current = true; nextRef.current.onNextAt(); }
+          if (nextRef.current.autoNext) nextRef.current.onEnded();
+        }
       } catch {}
     }
     window.addEventListener('message', onMsg);
@@ -409,8 +427,19 @@ function Watch() {
                     Tập {ep.next.number}{ep.next.title ? ` — ${ep.next.title}` : ''}
                   </p>
                   <div className="mt-2.5 flex items-center gap-2">
+                    {/* Circular countdown ring */}
+                    <div className="relative flex h-9 w-9 shrink-0 items-center justify-center">
+                      <svg className="absolute inset-0 -rotate-90" viewBox="0 0 36 36">
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="white" strokeOpacity="0.2" strokeWidth="3" />
+                        <circle cx="18" cy="18" r="14" fill="none" stroke="white" strokeWidth="3"
+                          strokeDasharray={String(2 * Math.PI * 14)}
+                          strokeDashoffset={String(2 * Math.PI * 14 * (1 - (nextCountdown ?? 0) / 15))}
+                          strokeLinecap="round" />
+                      </svg>
+                      <span className="text-[11px] font-bold text-white">{nextCountdown}</span>
+                    </div>
                     <button onClick={goNext} className="flex-1 rounded-lg bg-white py-1.5 text-xs font-bold text-black hover:bg-white/90">
-                      Xem ngay ({nextCountdown}s)
+                      Xem ngay
                     </button>
                     <button onClick={() => { setNextDismissed(true); setNextCountdown(null); }} className="shrink-0 text-white/50 hover:text-white"><X size={16} /></button>
                   </div>

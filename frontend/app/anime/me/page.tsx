@@ -12,8 +12,8 @@ interface Entry {
 
 const TYPE_TABS = [
   { v: '', label: 'Tất cả' },
-  { v: 'MANHUA', label: 'Manhua' },
-  { v: 'DONGHUA', label: 'Donghua' },
+  { v: 'MANHUA', label: 'Truyện tranh' },
+  { v: 'DONGHUA', label: 'Hoạt hình' },
   { v: 'FAV', label: '❤ Yêu thích' },
 ];
 
@@ -54,13 +54,13 @@ export default function MyList() {
       {busy ? <p className="p-8 text-center text-ink-500">Đang tải…</p>
         : entries.length === 0
           ? <p className="card p-10 text-center text-ink-500">Chưa có mục nào.{' '}
-              Vào <a href="/hoat-hinh" className="text-brand-600 hover:underline">Hoạt hình TQ</a>{' '}
-              hoặc <a href="/truyen-tranh" className="text-brand-600 hover:underline">Truyện Tranh</a> để khám phá.
+              Vào <a href="/movie" className="text-brand-600 hover:underline">Hoạt hình TQ</a>{' '}
+              hoặc <a href="/comic" className="text-brand-600 hover:underline">Truyện Tranh</a> để khám phá.
             </p>
           : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {entries.map((e) => (
-                <a key={e.id} href={e.media.type === 'MANHUA' ? `/manga/detail?slug=${e.media.slug}` : `/anime/detail?slug=${e.media.slug}`} className="card group overflow-hidden p-0 transition hover:shadow-card">
+                <a key={e.id} href={e.media.type === 'MANHUA' ? `/comic/detail?slug=${e.media.slug}` : `/movie/detail?slug=${e.media.slug}`} className="card group overflow-hidden p-0 transition hover:shadow-card">
                   <div className="relative aspect-[3/4] bg-ink-100 dark:bg-ink-800">
                     {e.media.coverUrl
                       // eslint-disable-next-line @next/next/no-img-element
@@ -71,7 +71,7 @@ export default function MyList() {
                   </div>
                   <div className="p-2">
                     <p className="line-clamp-2 text-sm font-medium leading-tight">{e.media.titleEnglish || e.media.title}</p>
-                    <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-400">{typeIcon(e.media.type)} {e.media.type}{e.media.episodes ? ` · ${e.media.episodes} tập` : e.media.chapters ? ` · ${e.media.chapters} ch.` : ''}</p>
+                    <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-400">{typeIcon(e.media.type)} {e.media.type === 'MANHUA' ? 'Truyện tranh' : 'Hoạt hình'}{e.media.episodes ? ` · ${e.media.episodes} tập` : e.media.chapters ? ` · ${e.media.chapters} ch.` : ''}</p>
                   </div>
                 </a>
               ))}

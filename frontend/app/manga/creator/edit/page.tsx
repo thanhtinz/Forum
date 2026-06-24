@@ -286,7 +286,7 @@ function EditSeriesInner() {
           <h1 className="truncate text-base font-bold">{series.title}</h1>
           <p className="text-xs text-ink-500">Trạng thái: <span className="font-medium text-ink-700 dark:text-ink-300">{PUBLISH_LABELS[ps] ?? ps}</span></p>
         </div>
-        <a href={`/anime/detail?slug=${series.slug}`} target="_blank"
+        <a href={`/manga/detail?slug=${series.slug}`} target="_blank"
           className="flex items-center gap-1 text-xs text-brand-600 hover:underline">
           <ExternalLink size={12} /> Xem trang
         </a>

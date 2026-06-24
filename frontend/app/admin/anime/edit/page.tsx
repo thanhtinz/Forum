@@ -1,9 +1,9 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen, Loader2, Link as LinkIcon } from 'lucide-react';
-import { api } from '@/lib/api';
+import { Tv, Save, Plus, Trash2, ArrowLeft, Film, BookOpen, Loader2, Link as LinkIcon, Upload } from 'lucide-react';
+import { api, postFormData } from '@/lib/api';
 import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/components/admin/ui';
 
 
@@ -61,8 +61,8 @@ function EditInner() {
           {isStory && <Field label="Số chương (tổng)"><input type="number" className="input" value={w.chapters ?? ''} onChange={(e) => set('chapters', e.target.value)} /></Field>}
           <Field label="Nguồn"><input className="input" value={w.source || ''} onChange={(e) => set('source', e.target.value)} /></Field>
           <Field label="Trailer URL"><input className="input" value={w.trailerUrl || ''} onChange={(e) => set('trailerUrl', e.target.value)} /></Field>
-          <Field label="Ảnh bìa (cover)"><input className="input" value={w.coverUrl || ''} onChange={(e) => set('coverUrl', e.target.value)} /></Field>
-          <Field label="Ảnh banner"><input className="input" value={w.bannerUrl || ''} onChange={(e) => set('bannerUrl', e.target.value)} /></Field>
+          <ImageUploadField label="Ảnh bìa (cover)" url={w.coverUrl} endpoint={`/admin/anime/${id}/cover`} onDone={(url) => set('coverUrl', url)} aspect="cover" />
+          <ImageUploadField label="Ảnh banner" url={w.bannerUrl} endpoint={`/admin/anime/${id}/banner`} onDone={(url) => set('bannerUrl', url)} aspect="banner" />
         </div>
         <GenreField w={w} set={set} />
         <Field label="Mô tả"><textarea className="input min-h-[120px]" value={w.description || ''} onChange={(e) => set('description', e.target.value)} /></Field>
@@ -74,6 +74,47 @@ function EditInner() {
         ? <EpisodeManager mediaId={id} episodes={w.episodeList || []} onChange={load} setErr={setErr} />
         : <ChapterManager mediaId={id} chapters={w.chapterList || []} isNovel={false} onChange={load} setErr={setErr} />}
     </div>
+  );
+}
+
+function ImageUploadField({ label, url, endpoint, onDone, aspect }: { label: string; url?: string | null; endpoint: string; onDone: (url: string) => void; aspect: 'cover' | 'banner' }) {
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState('');
+  const ref = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true); setErr('');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const r = await postFormData<{ coverUrl?: string; bannerUrl?: string }>(endpoint, form);
+      onDone(r.coverUrl ?? r.bannerUrl ?? '');
+    } catch (e: any) { setErr(e.message); }
+    finally { setUploading(false); if (ref.current) ref.current.value = ''; }
+  }
+
+  return (
+    <Field label={label}>
+      <div className="flex items-start gap-3">
+        {url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="" className={`rounded-lg object-cover ${aspect === 'cover' ? 'h-28 w-20' : 'h-16 w-36'}`} />
+        ) : (
+          <div className={`rounded-lg bg-ink-100 dark:bg-ink-800 ${aspect === 'cover' ? 'h-28 w-20' : 'h-16 w-36'}`} />
+        )}
+        <div className="flex flex-col gap-1.5">
+          <Btn size="sm" onClick={() => ref.current?.click()} disabled={uploading}>
+            {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+            {uploading ? 'Đang tải…' : 'Tải ảnh lên'}
+          </Btn>
+          {url && <input className="input text-xs" value={url} readOnly />}
+          {err && <p className="text-xs text-rose-500">{err}</p>}
+          <input ref={ref} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        </div>
+      </div>
+    </Field>
   );
 }
 

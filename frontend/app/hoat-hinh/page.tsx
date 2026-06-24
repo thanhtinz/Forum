@@ -8,6 +8,7 @@ interface Work {
   id: string; slug: string; title: string; titleEnglish?: string | null; coverUrl?: string | null;
   format?: string | null; status: string; season?: string | null; seasonYear?: number | null;
   episodes?: number | null; avgScore: number;
+  episodeList?: { number: number }[];
 }
 interface Genre { id: string; slug: string; name: string }
 
@@ -122,24 +123,30 @@ export default function HoatHinhPage() {
         <>
           <p className="text-sm text-ink-500">{total} kết quả</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {works.map((w) => (
-              <a key={w.id} href={`/anime/detail?slug=${w.slug}`} className="card group overflow-hidden p-0 transition hover:shadow-card">
-                <div className="relative aspect-[3/4] bg-ink-100 dark:bg-ink-800">
+            {works.map((w) => {
+              const latestEp = w.episodeList?.[0]?.number;
+              return (
+                <a key={w.id} href={`/anime/detail?slug=${w.slug}`}
+                  className="group relative block aspect-[3/4] overflow-hidden rounded-lg bg-ink-100 shadow transition hover:shadow-card dark:bg-ink-800">
                   {w.coverUrl
                     // eslint-disable-next-line @next/next/no-img-element
-                    ? <img src={w.coverUrl} alt={w.title} className="h-full w-full object-cover transition group-hover:scale-105" />
+                    ? <img src={w.coverUrl} alt={w.title} className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
                     : <span className="grid h-full place-items-center text-ink-400"><Film size={24} /></span>}
-                  {w.avgScore > 0 && (
-                    <span className="absolute left-1 top-1 inline-flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-bold text-amber-300"><Star size={10} /> {w.avgScore.toFixed(1)}</span>
+                  {latestEp != null && (
+                    <span className="absolute left-1.5 top-1.5 rounded bg-orange-500 px-1.5 py-0.5 text-[11px] font-bold text-white">Tập {latestEp}</span>
                   )}
-                  <span className="absolute right-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">{w.format || 'DONGHUA'}</span>
-                </div>
-                <div className="p-2">
-                  <p className="line-clamp-2 text-sm font-medium leading-tight" title={w.title}>{w.titleEnglish || w.title}</p>
-                  <p className="mt-0.5 text-[11px] text-ink-400">{w.seasonYear || ''}{w.episodes ? ` · ${w.episodes} tập` : ''}</p>
-                </div>
-              </a>
-            ))}
+                  {w.avgScore > 0 && (
+                    <span className="absolute right-1.5 top-1.5 inline-flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-bold text-amber-300"><Star size={10} /> {w.avgScore.toFixed(1)}</span>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/55 to-transparent px-2.5 pb-2.5 pt-10">
+                    <p className="line-clamp-2 text-sm font-semibold leading-tight text-white" title={w.title}>{w.title}</p>
+                    {w.titleEnglish && (
+                      <p className="mt-0.5 line-clamp-1 text-[11px] text-gray-400">{w.titleEnglish}</p>
+                    )}
+                  </div>
+                </a>
+              );
+            })}
           </div>
 
           {/* Phân trang */}

@@ -92,6 +92,7 @@ export class AnimeService {
           format: true, status: true, season: true, seasonYear: true, episodes: true, chapters: true,
           avgScore: true, ratingCount: true, favoriteCount: true,
           genres: { select: { name: true, slug: true } },
+          episodeList: { orderBy: { number: 'desc' }, take: 1, select: { number: true } },
         },
       }),
       this.prisma.mediaWork.count({ where }),

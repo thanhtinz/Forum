@@ -67,6 +67,9 @@ export class AnimeController {
   @Get('anime')
   list(@Query() q: any) { return this.svc.list(q); }
 
+  @Get('anime/:slug/comments')
+  mediaComments(@Param('slug') slug: string) { return this.svc.getMediaComments(slug); }
+
   @Get('anime/:slug')
   detail(@Param('slug') slug: string) { return this.svc.getBySlug(slug); }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { BookOpen, Heart, Send, Smile, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -11,6 +11,10 @@ import { EmojiStickerPicker, isStickerContent } from '@/components/EmojiStickerP
 const STATUS_LABEL: Record<string, string> = {
   RELEASING: 'Đang tiến hành', FINISHED: 'Hoàn thành', NOT_YET_RELEASED: 'Sắp ra mắt', HIATUS: 'Tạm ngưng', CANCELLED: 'Đã drop',
 };
+const FORMAT_LABEL: Record<string, string> = {
+  MANHUA: 'Manhua', MANHWA: 'Manhwa', NOVEL: 'Light Novel', ONE_SHOT: 'One Shot', DOUJINSHI: 'Doujinshi',
+};
+const TYPE_COUNTRY: Record<string, string> = { MANHUA: 'Trung Quốc', MANHWA: 'Hàn Quốc', MANGA: 'Nhật Bản' };
 
 interface CommentT {
   id: string; content: string; createdAt: string; authorId: string; parentId?: string | null;
@@ -162,6 +166,18 @@ function MangaDetail() {
                 </span>
               </td>
             </tr>
+            {w.format && (
+              <tr>
+                <td className="w-28 px-3 py-2 font-semibold text-ink-500">Định dạng</td>
+                <td className="px-3 py-2">{FORMAT_LABEL[w.format] ?? w.format}</td>
+              </tr>
+            )}
+            {TYPE_COUNTRY[w.type] && (
+              <tr>
+                <td className="w-28 px-3 py-2 font-semibold text-ink-500">Quốc gia</td>
+                <td className="px-3 py-2">{TYPE_COUNTRY[w.type]}</td>
+              </tr>
+            )}
             <tr>
               <td className="w-28 px-3 py-2 font-semibold text-ink-500">Lượt xem</td>
               <td className="px-3 py-2">{viewCount.toLocaleString('vi')}</td>

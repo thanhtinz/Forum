@@ -446,18 +446,18 @@ function Watch() {
       {/* Chọn tập / phần / movie */}
       {ep.episodes?.length > 0 && (
         <div className="card space-y-3 p-4">
-          {/* Tab bar */}
+          {/* Tab bar — cuộn ngang khi nhiều phần */}
           {showTabs && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {tabGroups.map((g) =>
                 g.kind === 'part' ? (
                   <button key={g.key} onClick={() => setActiveTab(g.key)}
-                    className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${activeTab === g.key ? 'bg-brand-600 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>
+                    className={`flex-none rounded-full px-3.5 py-1.5 text-sm font-medium transition ${activeTab === g.key ? 'bg-brand-600 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>
                     {g.label}
                   </button>
                 ) : (
                   <a key={g.key} href={`/anime/watch?ep=${g.epId}`}
-                    className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition ${currentTabKey === g.key ? 'bg-amber-500 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>
+                    className={`flex-none rounded-full px-3.5 py-1.5 text-sm font-medium transition ${currentTabKey === g.key ? 'bg-amber-500 text-white shadow' : 'bg-ink-100 dark:bg-ink-800'}`}>
                     {g.label}
                   </a>
                 )

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Play, Heart, Plus, Share2, Star, BookOpen, Clapperboard, RefreshCw } from 'lucide-react';
+import { Play, Heart, Plus, Share2, Star, BookOpen, Clapperboard, RefreshCw, AlignJustify, ChevronDown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -25,6 +25,8 @@ function Detail() {
   const [err, setErr] = useState('');
   const [tab, setTab] = useState<TabId>('episodes');
   const [fav, setFav] = useState(false);
+  const [activePart, setActivePart] = useState(1);
+  const [partOpen, setPartOpen] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -44,6 +46,17 @@ function Detail() {
 
   if (err) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!w) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
+
+  // Nhóm tập theo phần
+  const partMap = new Map<number, any[]>();
+  for (const ep of (w.episodeList || [])) {
+    const p = ep.part ?? 1;
+    if (!partMap.has(p)) partMap.set(p, []);
+    partMap.get(p)!.push(ep);
+  }
+  const parts = [...partMap.keys()].sort((a, b) => a - b);
+  const multiPart = parts.length > 1;
+  const visibleEps = partMap.get(activePart) ?? (w.episodeList || []);
 
   const firstEp = w.episodeList?.[0];
   const firstCh = w.chapterList?.[0];
@@ -205,19 +218,43 @@ function Detail() {
           </div>
 
           {activeTab === 'episodes' && (
-            <div className="grid grid-cols-3 gap-2 pt-1">
-              {w.episodeList?.map((ep: any) => (
-                <a key={ep.id} href={`/anime/watch?ep=${ep.id}`}
-                  className="flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-amber-500 hover:text-white dark:bg-ink-800 dark:hover:bg-amber-500">
-                  <Play size={11} className="shrink-0" /><span className="truncate">Tập {ep.number}</span>
-                </a>
-              ))}
-              {w.chapterList?.map((ch: any) => (
-                <a key={ch.id} href={`/manga/read?id=${ch.id}`}
-                  className="flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-amber-500 hover:text-white dark:bg-ink-800 dark:hover:bg-amber-500">
-                  <BookOpen size={11} className="shrink-0" /><span className="truncate">Ch. {ch.number}</span>
-                </a>
-              ))}
+            <div className="space-y-3 pt-1">
+              {/* Dropdown đổi phần — chỉ hiện khi có nhiều phần */}
+              {multiPart && (
+                <div className="relative">
+                  <button onClick={() => setPartOpen((o) => !o)}
+                    className="flex items-center gap-2 rounded-lg bg-ink-900 px-3 py-2 text-sm font-semibold text-white dark:bg-ink-800">
+                    <AlignJustify size={15} /> Phần {activePart}
+                    <ChevronDown size={14} className={`transition-transform ${partOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {partOpen && (
+                    <div className="absolute left-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-xl border border-ink-200 bg-white shadow-xl dark:border-ink-700 dark:bg-ink-900">
+                      <p className="border-b border-ink-100 px-3 py-2 text-xs text-ink-400 dark:border-ink-800">Danh sách phần</p>
+                      {parts.map((p) => (
+                        <button key={p} onClick={() => { setActivePart(p); setPartOpen(false); }}
+                          className={`block w-full px-4 py-2.5 text-left text-sm font-medium transition ${activePart === p ? 'bg-amber-100 font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'hover:bg-ink-50 dark:hover:bg-ink-800'}`}>
+                          Phần {p}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-3 gap-2">
+                {visibleEps.map((ep: any) => (
+                  <a key={ep.id} href={`/anime/watch?ep=${ep.id}`}
+                    className="flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-amber-500 hover:text-white dark:bg-ink-800 dark:hover:bg-amber-500">
+                    <Play size={11} className="shrink-0" /><span className="truncate">Tập {ep.number}</span>
+                  </a>
+                ))}
+                {w.chapterList?.map((ch: any) => (
+                  <a key={ch.id} href={`/manga/read?id=${ch.id}`}
+                    className="flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-amber-500 hover:text-white dark:bg-ink-800 dark:hover:bg-amber-500">
+                    <BookOpen size={11} className="shrink-0" /><span className="truncate">Ch. {ch.number}</span>
+                  </a>
+                ))}
+              </div>
             </div>
           )}
 

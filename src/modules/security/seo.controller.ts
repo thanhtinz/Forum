@@ -18,7 +18,7 @@ export class SeoController {
   private async siteName(): Promise<string> {
     const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'site.name' } }).catch(() => null);
     const v = cfg?.value;
-    return (typeof v === 'string' && v.trim()) ? v : 'ForumHub';
+    return (typeof v === 'string' && v.trim()) ? v : (process.env.SITE_NAME ?? 'Trạm GenZ');
   }
 
   @Get('robots.txt')

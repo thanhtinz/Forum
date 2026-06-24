@@ -4,9 +4,9 @@ export const dynamic = 'force-static';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ForumHub',
-    short_name: 'ForumHub',
-    description: 'Diễn đàn cộng đồng tích hợp game, chợ số, AI — cài như app.',
+    name: 'Trạm GenZ',
+    short_name: 'TramGenZ',
+    description: 'Cộng đồng anime, manga, hoạt hình — xem phim, đọc truyện, thảo luận.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

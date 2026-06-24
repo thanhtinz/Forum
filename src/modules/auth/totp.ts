@@ -45,6 +45,6 @@ export function verifyTotp(secretBase32: string, token: string, window = 1): boo
   return false;
 }
 
-export function otpauthUrl(secret: string, account: string, issuer = 'ForumHub'): string {
+export function otpauthUrl(secret: string, account: string, issuer = process.env.SITE_NAME || 'Trạm GenZ'): string {
   return `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(account)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`;
 }

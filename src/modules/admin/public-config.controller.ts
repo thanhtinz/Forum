@@ -16,7 +16,7 @@ export class PublicConfigController {
       'site.primaryColor', 'site.heroTitle', 'site.heroDescription', 'site.footerText', 'site.contactEmail',
     ]);
     return {
-      name: c['site.name'] ?? 'ForumHub',
+      name: c['site.name'] ?? process.env.SITE_NAME ?? 'Trạm GenZ',
       tagline: c['site.tagline'] ?? '',
       description: c['site.description'] ?? '',
       contactEmail: c['site.contactEmail'] ?? '',
@@ -24,9 +24,9 @@ export class PublicConfigController {
       logoSmall: c['site.logoSmall'] ?? '',
       favicon: c['site.favicon'] ?? '',
       primaryColor: c['site.primaryColor'] ?? '',
-      heroTitle: c['site.heroTitle'] ?? 'Chào mừng đến ForumHub',
-      heroDescription: c['site.heroDescription'] ?? 'Diễn đàn cộng đồng tích hợp game hoá — chia sẻ, thảo luận, chơi game và mua bán source code.',
-      footerText: c['site.footerText'] ?? '© {year} ForumHub · NestJS + Next.js',
+      heroTitle: c['site.heroTitle'] ?? 'Chào mừng đến Trạm GenZ',
+      heroDescription: c['site.heroDescription'] ?? 'Cộng đồng anime & manga — xem hoạt hình, đọc truyện, thảo luận cùng bạn bè.',
+      footerText: c['site.footerText'] ?? '© {year} Trạm GenZ',
     };
   }
 }

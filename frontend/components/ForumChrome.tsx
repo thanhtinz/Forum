@@ -10,7 +10,7 @@ import { CookieConsent } from './CookieConsent';
 export function ForumChrome({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const isAdmin = path?.startsWith('/admin');
-  const isReader = path?.startsWith('/comic/read') || path?.startsWith('/movie/watch');
+  const isReader = path?.startsWith('/comic/read');
 
   if (isAdmin || isReader) return <>{children}</>;
 

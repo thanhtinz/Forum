@@ -100,7 +100,7 @@ export default function AdminComicPage() {
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <a href={`/comic/detail?slug=${w.slug}`} target="_blank" rel="noopener noreferrer">
-                  <Btn size="sm" variant="secondary"><ExternalLink size={13} /> Xem</Btn>
+                  <Btn size="sm" variant="outline"><ExternalLink size={13} /> Xem</Btn>
                 </a>
                 {w.status === 'PENDING' && (
                   <>

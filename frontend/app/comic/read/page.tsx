@@ -137,8 +137,11 @@ function ComicReaderInner() {
         ))}
       </div>
 
+      {/* Separator */}
+      <div className="bg-[#0f0f1a] py-5 text-center text-xs text-white/30">— Hết chương —</div>
+
       {/* Bottom actions */}
-      <div className="flex gap-3 border-t border-white/10 bg-[#1a1a2e] p-4">
+      <div className="flex gap-3 bg-[#1a1a2e] p-4">
         {chapter.prevId ? (
           <a href={`/comic/read?id=${chapter.prevId}`}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/20 bg-white/5 py-3 text-sm font-medium text-white hover:bg-white/10">

@@ -419,18 +419,14 @@ function Watch() {
             skipIntro={skipIntro} autoNext={autoNext} onNextAt={handleNextAt} onEnded={goNext} />
           {/* Next-episode overlay — bottom-right */}
           {nextCountdown !== null && ep?.next && !nextDismissed && (
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end gap-2 p-4 pb-16">
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-3">
               <button onClick={goNext}
-                className="pointer-events-auto relative overflow-hidden rounded-full px-5 py-2.5 text-sm font-semibold text-black shadow-xl"
-                style={{ background: `linear-gradient(to right, #ffffff ${(nextCountdown / 15) * 100}%, #d1d5db ${(nextCountdown / 15) * 100}%)` }}>
-                <span className="relative flex items-center gap-2">
+                className="pointer-events-auto relative overflow-hidden text-sm font-semibold text-black shadow-xl"
+                style={{ background: `linear-gradient(to right, #ffffff ${((15 - nextCountdown) / 15) * 100}%, #d1d5db ${((15 - nextCountdown) / 15) * 100}%)` }}>
+                <span className="relative flex items-center gap-2 px-5 py-2.5">
                   <Play size={14} fill="currentColor" className="shrink-0" />
                   Tập tiếp theo
                 </span>
-              </button>
-              <button onClick={() => { setNextDismissed(true); setNextCountdown(null); }}
-                className="pointer-events-auto text-white/60 hover:text-white">
-                <X size={18} />
               </button>
             </div>
           )}

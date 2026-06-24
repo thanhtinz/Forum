@@ -97,7 +97,8 @@ function EditSeriesInner() {
     author: '', artist: '', publisher: '',
     language: 'vi', ageRating: '0',
     status: 'RELEASING', seasonYear: '',
-    countryOfOrigin: '',
+    countryOfOrigin: '', format: '',
+    slug: '',
     tagsRaw: '',
     seoTitle: '', seoDescription: '', seoKeywordsRaw: '',
   });
@@ -138,6 +139,8 @@ function EditSeriesInner() {
         status: s.status ?? 'RELEASING',
         seasonYear: s.seasonYear ? String(s.seasonYear) : '',
         countryOfOrigin: s.countryOfOrigin ?? '',
+        format: s.format ?? '',
+        slug: s.slug ?? '',
         tagsRaw: (s.tags ?? []).join(', '),
         seoTitle: s.seoTitle ?? '',
         seoDescription: s.seoDescription ?? '',
@@ -161,7 +164,31 @@ function EditSeriesInner() {
     api.get<any[]>(`/anime/genres?type=${series.type}`).then(setDbGenres).catch(() => {});
   }, [series?.type]);
 
-  function set(k: keyof typeof form, v: string) { setForm((f) => ({ ...f, [k]: v })); }
+  function slugify(s: string): string {
+    const map: Record<string, string> = {
+      à:'a',á:'a',â:'a',ã:'a',ả:'a',ạ:'a',ă:'a',ắ:'a',ặ:'a',ằ:'a',ẳ:'a',ẵ:'a',
+      ấ:'a',ầ:'a',ẩ:'a',ẫ:'a',ậ:'a',è:'e',é:'e',ê:'e',ẻ:'e',ẽ:'e',ẹ:'e',
+      ế:'e',ề:'e',ể:'e',ễ:'e',ệ:'e',ì:'i',í:'i',ỉ:'i',ĩ:'i',ị:'i',
+      ò:'o',ó:'o',ô:'o',õ:'o',ỏ:'o',ọ:'o',ố:'o',ồ:'o',ổ:'o',ỗ:'o',ộ:'o',
+      ơ:'o',ớ:'o',ờ:'o',ở:'o',ỡ:'o',ợ:'o',ù:'u',ú:'u',ư:'u',ủ:'u',ũ:'u',
+      ụ:'u',ứ:'u',ừ:'u',ử:'u',ữ:'u',ự:'u',ỳ:'y',ý:'y',ỷ:'y',ỹ:'y',ỵ:'y',đ:'d',
+      À:'a',Á:'a',Â:'a',Ã:'a',Ả:'a',Ạ:'a',Ă:'a',Ắ:'a',Ặ:'a',Ằ:'a',Ẳ:'a',Ẵ:'a',
+      Ấ:'a',Ầ:'a',Ẩ:'a',Ẫ:'a',Ậ:'a',È:'e',É:'e',Ê:'e',Ẻ:'e',Ẽ:'e',Ẹ:'e',
+      Ế:'e',Ề:'e',Ể:'e',Ễ:'e',Ệ:'e',Ì:'i',Í:'i',Ỉ:'i',Ĩ:'i',Ị:'i',
+      Ò:'o',Ó:'o',Ô:'o',Õ:'o',Ỏ:'o',Ọ:'o',Ố:'o',Ồ:'o',Ổ:'o',Ỗ:'o',Ộ:'o',
+      Ơ:'o',Ớ:'o',Ờ:'o',Ở:'o',Ỡ:'o',Ợ:'o',Ù:'u',Ú:'u',Ư:'u',Ủ:'u',Ũ:'u',
+      Ụ:'u',Ứ:'u',Ừ:'u',Ử:'u',Ữ:'u',Ự:'u',Ỳ:'y',Ý:'y',Ỷ:'y',Ỹ:'y',Ỵ:'y',Đ:'d',
+    };
+    return s.split('').map((c) => map[c] ?? c).join('').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+  }
+
+  function set(k: keyof typeof form, v: string) {
+    setForm((f) => {
+      const next = { ...f, [k]: v };
+      if (k === 'title') next.slug = slugify(v);
+      return next;
+    });
+  }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -170,6 +197,7 @@ function EditSeriesInner() {
     try {
       await api.patch(`/creator/manga/${id}`, {
         title: form.title,
+        slug: form.slug || undefined,
         titleEnglish: form.titleEnglish || undefined,
         titleNative: form.titleNative || undefined,
         synonyms: form.synonymsRaw.split(',').map((x) => x.trim()).filter(Boolean),
@@ -179,6 +207,7 @@ function EditSeriesInner() {
         publisher: form.publisher || undefined,
         language: form.language,
         ageRating: Number(form.ageRating),
+        format: form.format || undefined,
         status: form.status,
         seasonYear: form.seasonYear ? Number(form.seasonYear) : undefined,
         countryOfOrigin: form.countryOfOrigin || undefined,
@@ -390,7 +419,7 @@ function EditSeriesInner() {
             </Btn>
           )}
           <div className="mt-auto rounded-lg bg-ink-50 px-3 py-2 text-[11px] text-ink-400 dark:bg-ink-800">
-            Slug: <span className="font-mono">{series.slug}</span>
+            Slug: <span className="font-mono">{form.slug || series.slug}</span>
           </div>
         </Card>
       </div>
@@ -414,6 +443,10 @@ function EditSeriesInner() {
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Tên truyện *">
                 <input value={form.title} onChange={(e) => set('title', e.target.value)} required className="input w-full" />
+              </Field>
+              <Field label="Slug (URL)">
+                <input value={form.slug} onChange={(e) => set('slug', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-'))}
+                  className="input w-full font-mono text-sm" placeholder="ten-truyen-cua-ban" />
               </Field>
               <Field label="Tên tiếng Anh">
                 <input value={form.titleEnglish} onChange={(e) => set('titleEnglish', e.target.value)} className="input w-full" placeholder="English title" />
@@ -450,6 +483,14 @@ function EditSeriesInner() {
           <Card className="space-y-4">
             <SectionTitle><Tag size={14} className="inline mr-1" />Phân loại</SectionTitle>
             <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Định dạng">
+                <select value={form.format} onChange={(e) => set('format', e.target.value)} className="input w-full">
+                  <option value="">— Chọn định dạng —</option>
+                  <option value="MANHUA">Truyện tranh (Manhua)</option>
+                  <option value="MANHWA">Webtoon (Manhwa)</option>
+                  <option value="NOVEL">Tiểu thuyết / Novel</option>
+                </select>
+              </Field>
               <Field label="Quốc gia">
                 <select value={form.countryOfOrigin} onChange={(e) => set('countryOfOrigin', e.target.value)} className="input w-full">
                   {COUNTRY_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.l}</option>)}

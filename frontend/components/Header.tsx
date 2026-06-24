@@ -24,8 +24,8 @@ function MessengerIcon({ size = 16 }: { size?: number }) {
 
 const NAV = [
   { href: '/chat', label: 'Chat', icon: MessengerIcon },
-  { href: '/hoat-hinh', label: 'Hoạt hình TQ', icon: Film },
-  { href: '/truyen-tranh', label: 'Truyện Tranh', icon: BookOpen },
+  { href: '/movie', label: 'Hoạt hình TQ', icon: Film },
+  { href: '/comic', label: 'Truyện Tranh', icon: BookOpen },
   { href: '/cong-game', label: 'Giải trí', icon: Gamepad2 },
   { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
   { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },
@@ -167,7 +167,7 @@ export function Header() {
                   <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <Gem size={15} /> Ví của tôi
                   </Link>
-                  <Link href="/manga/creator" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
+                  <Link href="/comic/creator" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <BookOpen size={15} /> Đăng truyện
                   </Link>
                   {user.role === 'ADMIN' && (

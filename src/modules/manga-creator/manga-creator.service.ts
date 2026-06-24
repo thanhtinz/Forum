@@ -45,12 +45,14 @@ export interface CreateSeriesDto {
 
 export interface UpdateSeriesDto {
   title?: string;
+  slug?: string;
   titleEnglish?: string;
   titleNative?: string;
   synonyms?: string[];
   description?: string;
   language?: string;
   ageRating?: number;
+  format?: string;
   seasonYear?: number;
   status?: MediaStatus;
   publisher?: string;
@@ -246,9 +248,17 @@ export class MangaCreatorService {
   async updateSeries(id: string, userId: string, dto: UpdateSeriesDto) {
     await this.assertSeriesOwner(id, userId);
     const ageRating = dto.ageRating;
+    // Validate slug uniqueness if provided
+    if (dto.slug) {
+      const clean = dto.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      const existing = await this.prisma.mediaWork.findFirst({ where: { slug: clean, NOT: { id } } });
+      if (existing) throw new Error('Slug này đã được sử dụng, hãy chọn slug khác');
+      dto.slug = clean;
+    }
     return this.prisma.mediaWork.update({
       where: { id },
       data: {
+        ...(dto.slug !== undefined && { slug: dto.slug }),
         ...(dto.title !== undefined && { title: dto.title }),
         ...(dto.titleEnglish !== undefined && { titleEnglish: dto.titleEnglish }),
         ...(dto.titleNative !== undefined && { titleNative: dto.titleNative }),
@@ -256,6 +266,7 @@ export class MangaCreatorService {
         ...(dto.description !== undefined && { description: dto.description }),
         ...(dto.language !== undefined && { language: dto.language }),
         ...(dto.status !== undefined && { status: dto.status }),
+        ...(dto.format !== undefined && { format: dto.format || null }),
         ...(dto.seasonYear !== undefined && { seasonYear: dto.seasonYear || null }),
         ...(dto.publisher !== undefined && { publisher: dto.publisher || null }),
         ...(dto.author !== undefined && { author: dto.author || null }),

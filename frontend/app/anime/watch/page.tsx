@@ -166,18 +166,25 @@ function IframePlayer({ url, showNextAt, episodeDurationMin, autoNext, onNextAt,
   nextRef.current = { autoNext, onNextAt, onEnded };
   const nextAtFiredRef = useRef(false);
 
-  // Wall-clock fallback: iframe không cho đọc currentTime, nên ước tính dựa vào tổng thời lượng —
-  // bắn banner "tập tiếp theo" khoảng 90 giây trước khi tập kết thúc.
-  // Không dùng showNextAt vì đó là timestamp tuyệt đối trong video, không đồng bộ với đồng hồ thực.
+  // Wall-clock fallback cho iframe (không thể đọc currentTime):
+  // Timer 1: hiện overlay "tập tiếp theo" trước ~90s khi hết tập
+  // Timer 2: kích hoạt onEnded đúng khi tập kết thúc (để autoNext hoạt động)
   useEffect(() => {
     nextAtFiredRef.current = false;
     if (!episodeDurationMin || episodeDurationMin <= 3) return;
-    const triggerSec = episodeDurationMin * 60 - 90;
-    if (triggerSec <= 0) return;
-    const t = setTimeout(() => {
-      if (!nextAtFiredRef.current) { nextAtFiredRef.current = true; nextRef.current.onNextAt(); }
-    }, triggerSec * 1000);
-    return () => clearTimeout(t);
+    const totalSec = episodeDurationMin * 60;
+    const bannerSec = totalSec - 90;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    if (bannerSec > 0) {
+      timers.push(setTimeout(() => {
+        if (!nextAtFiredRef.current) { nextAtFiredRef.current = true; nextRef.current.onNextAt(); }
+      }, bannerSec * 1000));
+    }
+    // Timer kết thúc tập — chỉ auto-jump nếu autoNext bật
+    timers.push(setTimeout(() => {
+      if (nextRef.current.autoNext) nextRef.current.onEnded();
+    }, totalSec * 1000));
+    return () => timers.forEach(clearTimeout);
   }, [url, episodeDurationMin]);
 
   useEffect(() => {
@@ -283,17 +290,14 @@ function Watch() {
   // Reset banner khi đổi tập / đổi server
   useEffect(() => { setNextCountdown(null); setNextDismissed(false); }, [ep?.id, serverIdx]);
 
-  // Tick đếm ngược — dependency array [nextCountdown] để không bị cancel mỗi render
+  // Tick đếm ngược — chỉ hiển thị, KHÔNG tự nhảy tập khi về 0.
+  // Auto-jump chỉ xảy ra qua onEnded (video kết thúc thực sự).
   useEffect(() => {
     if (nextCountdown === null) return;
-    if (nextCountdown <= 0) {
-      if (autoNext && ep?.next) goNext();
-      setNextCountdown(null);
-      return;
-    }
+    if (nextCountdown <= 0) { setNextCountdown(null); return; }
     const t = setTimeout(() => setNextCountdown((n) => (n ?? 1) - 1), 1000);
     return () => clearTimeout(t);
-  }, [nextCountdown]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [nextCountdown]);
 
   const tabGroups = useMemo(() => {
     const allEps: any[] = ep?.episodes || [];

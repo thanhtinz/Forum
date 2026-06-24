@@ -310,7 +310,7 @@ export class AnimeService {
       where: { id },
       include: {
         genres: { select: { name: true } },
-        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, part: true, kind: true, title: true, videoUrl: true, thumbnail: true, duration: true, referer: true, introEnd: true, showNextAt: true, servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true, introEnd: true } } } },
+        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, part: true, kind: true, title: true, videoUrl: true, serverName: true, thumbnail: true, duration: true, referer: true, introEnd: true, showNextAt: true, servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true, introEnd: true } } } },
         chapterList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, content: true, pages: true } },
       },
     });
@@ -342,7 +342,7 @@ export class AnimeService {
       return await this.prisma.episode.create({
         data: {
           mediaId, number, part, kind, title: dto.title || null,
-          videoUrl: dto.videoUrl || null, thumbnail: dto.thumbnail || null, referer: dto.referer || null,
+          videoUrl: dto.videoUrl || null, serverName: dto.serverName || null, thumbnail: dto.thumbnail || null, referer: dto.referer || null,
           duration: dto.duration ? Number(dto.duration) : null,
           introEnd: dto.introEnd ? Number(dto.introEnd) : null,
           showNextAt: dto.showNextAt ? Number(dto.showNextAt) : null,
@@ -358,7 +358,7 @@ export class AnimeService {
     if (dto.number != null && dto.number !== '') { const n = this.parseNum(dto.number); if (n != null) data.number = n; }
     if (dto.part != null && dto.part !== '') { const p = Number(dto.part); if (Number.isFinite(p) && p > 0) data.part = p; }
     if (dto.kind) data.kind = dto.kind;
-    for (const k of ['title', 'videoUrl', 'thumbnail', 'referer']) if (dto[k] !== undefined) data[k] = dto[k] || null;
+    for (const k of ['title', 'videoUrl', 'serverName', 'thumbnail', 'referer']) if (dto[k] !== undefined) data[k] = dto[k] || null;
     if (dto.duration !== undefined) data.duration = dto.duration ? Number(dto.duration) : null;
     if (dto.introEnd !== undefined) data.introEnd = dto.introEnd ? Number(dto.introEnd) : null;
     if (dto.showNextAt !== undefined) data.showNextAt = dto.showNextAt ? Number(dto.showNextAt) : null;
@@ -648,7 +648,7 @@ export class AnimeService {
     ]);
     // Gộp server: link chính (videoUrl) là "Server 1" + các server phụ
     const servers = [
-      ...(ep.videoUrl ? [{ id: 'main', name: 'VIP', videoUrl: ep.videoUrl, referer: ep.referer, introEnd: ep.introEnd }] : []),
+      ...(ep.videoUrl ? [{ id: 'main', name: (ep as any).serverName || 'VIP', videoUrl: ep.videoUrl, referer: ep.referer, introEnd: ep.introEnd }] : []),
       ...ep.servers,
     ];
     return { ...ep, servers, episodes, prev, next };

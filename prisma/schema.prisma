@@ -2902,8 +2902,9 @@ model Episode {
   number    Float // số tập (cho phép 5.5 cho tập đặc biệt)
   title     String?   @db.VarChar(200)
   thumbnail String?   @db.VarChar(255)
-  videoUrl  String?   @db.VarChar(500) // link embed/video
-  referer   String?   @db.VarChar(255) // Referer gửi kèm khi proxy (nếu nguồn chặn hotlink)
+  videoUrl    String?   @db.VarChar(500) // link embed/video
+  serverName  String?   @db.VarChar(60)  // tên server chính (mặc định "VIP")
+  referer     String?   @db.VarChar(255) // Referer gửi kèm khi proxy (nếu nguồn chặn hotlink)
   duration    Int? // phút
   introEnd    Int? // giây kết thúc đoạn intro của RIÊNG tập này (bỏ qua đoạn đầu 0→introEnd)
   showNextAt  Int? // giây từ đầu video để hiện banner "tập tiếp theo" (null = tự tính theo duration)

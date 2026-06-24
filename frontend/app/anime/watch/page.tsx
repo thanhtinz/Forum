@@ -432,7 +432,7 @@ function Watch() {
 
       {/* Đổi server — ngay dưới player */}
       {servers.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <span className="flex items-center gap-1 text-sm text-ink-500"><Server size={14} /> Đổi server</span>
           {servers.map((s, i) => (
             <button key={s.id} onClick={() => setServerIdx(i)}

@@ -191,7 +191,7 @@ function IframePlayer({ url, autoNext, onEnded }: PlayerProps) {
   }
 
   return <iframe src={url} className="h-full w-full" allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-    sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-pointer-lock allow-orientation-lock allow-popups allow-popups-to-escape-sandbox allow-downloads"
+    sandbox="allow-scripts allow-same-origin allow-presentation allow-forms allow-pointer-lock allow-orientation-lock allow-downloads"
     allowFullScreen title="Player" />;
 }
 

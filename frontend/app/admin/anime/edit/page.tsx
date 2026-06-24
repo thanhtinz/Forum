@@ -236,6 +236,10 @@ const KIND_LABELS: Record<string, string> = { episode: 'Tập', movie: 'Movie', 
 function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; setErr: (s: string) => void }) {
   const [open, setOpen] = useState(false);
   const [v, setV] = useState({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '', showNextAt: ep.showNextAt != null ? String(ep.showNextAt) : '' });
+  useEffect(() => {
+    setV({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '', showNextAt: ep.showNextAt != null ? String(ep.showNextAt) : '' });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ep.id, ep.number, ep.part, ep.kind, ep.title, ep.videoUrl, ep.referer, ep.introEnd, ep.showNextAt]);
   const [srvOpen, setSrvOpen] = useState(false);
   const [newSrv, setNewSrv] = useState({ name: '', videoUrl: '', referer: '', introEnd: '' });
   const [saving, setSaving] = useState(false);

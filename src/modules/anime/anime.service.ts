@@ -310,7 +310,7 @@ export class AnimeService {
       where: { id },
       include: {
         genres: { select: { name: true } },
-        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, videoUrl: true, thumbnail: true, duration: true, referer: true, servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true } } } },
+        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, part: true, kind: true, title: true, videoUrl: true, thumbnail: true, duration: true, referer: true, introEnd: true, showNextAt: true, servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true, introEnd: true } } } },
         chapterList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, content: true, pages: true } },
       },
     });

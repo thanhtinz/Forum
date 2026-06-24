@@ -74,7 +74,6 @@ export default function NewSeriesPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const coverRef = useRef<HTMLInputElement>(null);
-  const bannerRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     title: '', titleEnglish: '', titleNative: '',
@@ -94,8 +93,6 @@ export default function NewSeriesPage() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -108,11 +105,6 @@ export default function NewSeriesPage() {
   function pickCover(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]; if (!f) return;
     setCoverFile(f); setCoverPreview(URL.createObjectURL(f));
-  }
-
-  function pickBanner(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]; if (!f) return;
-    setBannerFile(f); setBannerPreview(URL.createObjectURL(f));
   }
 
   function toggleGenre(g: string) {
@@ -155,11 +147,6 @@ export default function NewSeriesPage() {
         const fd = new FormData(); fd.append('file', coverFile);
         await fetch(`${base}/api/creator/manga/${r.id}/cover`, { method: 'POST', headers: authHeaders, body: fd }).catch(() => {});
       }
-      if (bannerFile) {
-        const fd = new FormData(); fd.append('file', bannerFile);
-        await fetch(`${base}/api/creator/manga/${r.id}/banner`, { method: 'POST', headers: authHeaders, body: fd }).catch(() => {});
-      }
-
       router.push(`/comic/creator/edit?id=${r.id}`);
     } catch (e: any) { setErr(e.message); setBusy(false); }
   }
@@ -211,32 +198,8 @@ export default function NewSeriesPage() {
               )}
             </div>
 
-            {/* Banner — full width */}
-            <div className="flex-1">
-              <p className="mb-1 text-[11px] font-medium text-ink-500">Banner (tuỳ chọn, 16:5)</p>
-              <button type="button" onClick={() => bannerRef.current?.click()}
-                className="group relative flex h-36 w-full cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-lg border-2 border-dashed border-ink-300 bg-ink-50 text-ink-400 transition hover:border-brand-400 hover:bg-brand-50/40 dark:border-ink-700 dark:bg-ink-800">
-                {bannerPreview
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={bannerPreview} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                  : <><ImagePlus size={20} /><span className="text-[10px]">Chọn banner</span></>}
-                {bannerPreview && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 opacity-0 transition group-hover:opacity-100">
-                    <ImagePlus size={16} className="text-white" />
-                    <span className="text-[10px] text-white">Đổi banner</span>
-                  </div>
-                )}
-              </button>
-              {bannerPreview && (
-                <button type="button" onClick={() => { setBannerFile(null); setBannerPreview(null); }}
-                  className="mt-1 flex items-center gap-0.5 text-[10px] text-rose-500 hover:underline">
-                  <X size={9} /> Bỏ banner
-                </button>
-              )}
-            </div>
           </div>
           <input ref={coverRef} type="file" accept="image/*" className="hidden" onChange={pickCover} />
-          <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={pickBanner} />
         </Section>
 
         {/* 2. Thông tin cơ bản */}

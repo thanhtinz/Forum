@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BookOpen, Heart, Send, Smile, Trash2, ChevronDown, ChevronUp, ChevronLeft } from 'lucide-react';
+import { BookOpen, Heart, Send, Smile, Trash2, ChevronDown, ChevronUp, ChevronLeft, Search, ArrowUpDown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
@@ -270,29 +270,7 @@ function ComicDetail() {
       )}
 
       {/* ── Chapter list ── */}
-      {chapters.length > 0 && (
-        <div className="card overflow-hidden">
-          <div className="flex items-center justify-between px-4 py-3 font-semibold">
-            <span>Danh sách chương</span>
-            <span className="text-sm text-ink-500">{chapters.length} chương</span>
-          </div>
-          <div className="max-h-80 divide-y divide-ink-100 overflow-y-auto dark:divide-ink-700/50">
-            {chapters.map((ch: any) => (
-              <a key={ch.id} href={`/comic/read?id=${ch.id}`}
-                className="flex items-center justify-between px-4 py-2.5 text-sm transition-colors hover:bg-ink-50 dark:hover:bg-ink-800">
-                <span className="font-medium">
-                  Chương {ch.number}{ch.title ? `: ${ch.title}` : ''}
-                </span>
-                {ch.createdAt && (
-                  <span className="ml-2 shrink-0 text-xs text-ink-400">
-                    {new Date(ch.createdAt).toLocaleDateString('vi')}
-                  </span>
-                )}
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
+      {chapters.length > 0 && <ChapterList chapters={chapters} />}
 
       {/* ── Related manga (horizontal scroll) ── */}
       {w.relatedFrom?.length > 0 && (
@@ -443,6 +421,82 @@ function CommentNode({ c, depth, user, isMod, replyingToId, setReplyingToId, rep
             />
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+const PAGE_SIZE = 50;
+
+function ChapterList({ chapters }: { chapters: any[] }) {
+  const [query, setQuery] = useState('');
+  const [asc, setAsc] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const filtered = chapters
+    .filter((ch) => !query || String(ch.number).includes(query.trim()))
+    .slice(asc ? 0 : undefined, asc ? undefined : undefined);
+
+  const sorted = asc ? [...filtered].reverse() : filtered;
+  const total = sorted.length;
+  const visible = sorted.slice(0, page * PAGE_SIZE);
+  const hasMore = visible.length < total;
+
+  return (
+    <div className="card overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2 border-b border-ink-100 px-4 py-3 dark:border-ink-700/50">
+        <BookOpen size={15} className="shrink-0 text-ink-400" />
+        <span className="font-semibold">Danh Sách Chương</span>
+        <span className="ml-auto text-sm text-ink-400">{total} chương</span>
+        <button
+          onClick={() => { setAsc((v) => !v); setPage(1); }}
+          className="flex items-center gap-1 rounded-lg border border-ink-200 px-2 py-1 text-xs text-ink-500 hover:border-brand-400 hover:text-brand-600 dark:border-ink-700"
+          title={asc ? 'Cũ → Mới' : 'Mới → Cũ'}
+        >
+          <ArrowUpDown size={12} /> {asc ? 'Cũ → Mới' : 'Mới → Cũ'}
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center gap-1.5 border-b border-ink-100 px-4 py-2 dark:border-ink-700/50">
+        <Search size={13} className="shrink-0 text-ink-400" />
+        <input
+          type="number"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+          placeholder="Nhảy đến chương..."
+          className="w-full bg-transparent text-sm outline-none placeholder:text-ink-300"
+        />
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-2 gap-px bg-ink-100 dark:bg-ink-700/30">
+        {visible.map((ch: any) => (
+          <a
+            key={ch.id}
+            href={`/comic/read?id=${ch.id}`}
+            className="flex items-center justify-between bg-white px-3 py-2.5 text-sm transition-colors hover:bg-brand-50 hover:text-brand-700 dark:bg-ink-900 dark:hover:bg-brand-950/30 dark:hover:text-brand-400"
+          >
+            <span className="font-medium truncate">
+              Ch.{ch.number}{ch.title ? ` ${ch.title}` : ''}
+            </span>
+            {ch.createdAt && (
+              <span className="ml-1 shrink-0 text-[10px] text-ink-400">
+                {new Date(ch.createdAt).toLocaleDateString('vi')}
+              </span>
+            )}
+          </a>
+        ))}
+      </div>
+
+      {hasMore && (
+        <button
+          onClick={() => setPage((p) => p + 1)}
+          className="w-full py-2.5 text-sm text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-950/20"
+        >
+          Xem thêm ({total - visible.length} chương còn lại)
+        </button>
       )}
     </div>
   );

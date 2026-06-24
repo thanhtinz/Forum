@@ -100,6 +100,37 @@ export class AnimeService {
     return { data, meta: { total, page: Number(q.page) || 1, limit: take } };
   }
 
+  async getMediaComments(slug: string) {
+    const media = await this.prisma.mediaWork.findUnique({
+      where: { slug },
+      select: {
+        episodeList: {
+          select: {
+            id: true, number: true,
+            comments: {
+              where: { parentId: null },
+              orderBy: { createdAt: 'desc' },
+              take: 300,
+              include: {
+                author: { select: { id: true, username: true, displayName: true, avatar: true } },
+                replies: {
+                  orderBy: { createdAt: 'asc' },
+                  include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!media) throw new NotFoundException('Không tìm thấy');
+    const all = media.episodeList.flatMap((ep) =>
+      ep.comments.map((c) => ({ ...c, episodeNumber: ep.number, episodeId: ep.id })),
+    );
+    all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return all;
+  }
+
   async getBySlug(slug: string) {
     const work = await this.prisma.mediaWork.findUnique({
       where: { slug },

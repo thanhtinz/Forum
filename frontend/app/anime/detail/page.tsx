@@ -2,9 +2,10 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Play, Heart, Plus, Share2, Star, BookOpen, Clapperboard, RefreshCw, AlignJustify, ChevronDown } from 'lucide-react';
+import { Play, Heart, Star, BookOpen, Clapperboard, RefreshCw, AlignJustify, ChevronDown, MessageCircle, Send, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { Avatar } from '@/components/Header';
 
 const STATUS_LABEL: Record<string, string> = {
   RELEASING: 'Đang phát hành', FINISHED: 'Hoàn thành', NOT_YET_RELEASED: 'Sắp ra mắt', HIATUS: 'Tạm ngưng', CANCELLED: 'Đã huỷ',
@@ -27,10 +28,14 @@ function Detail() {
   const [fav, setFav] = useState(false);
   const [activePart, setActivePart] = useState(1);
   const [partOpen, setPartOpen] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [text, setText] = useState('');
+  const [posting, setPosting] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
     api.get<any>(`/anime/${slug}`).then(setW).catch((e) => setErr(e.message));
+    api.get<any[]>(`/anime/${slug}/comments`).then((r) => setComments(r || [])).catch(() => {});
   }, [slug]);
 
   useEffect(() => {
@@ -44,10 +49,31 @@ function Detail() {
     try { await api.put(`/anime/me/entry/${w.id}`, { favorite: next }); } catch {}
   }
 
+  async function postComment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!text.trim() || !user) return;
+    const firstEpId = w?.episodeList?.[0]?.id;
+    if (!firstEpId) return;
+    setPosting(true);
+    try {
+      const c = await api.post<any>(`/anime/episode/${firstEpId}/comments`, { content: text.trim() });
+      setComments((prev) => [{ ...c, episodeNumber: w.episodeList[0].number, episodeId: firstEpId }, ...prev]);
+      setText('');
+    } catch {}
+    finally { setPosting(false); }
+  }
+
+  async function delComment(id: string) {
+    if (!confirm('Xoá bình luận?')) return;
+    try {
+      await api.del(`/anime/comment/${id}`);
+      setComments((prev) => prev.filter((c) => c.id !== id));
+    } catch {}
+  }
+
   if (err) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!w) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
 
-  // Nhóm tập theo phần
   const partMap = new Map<number, any[]>();
   for (const ep of (w.episodeList || [])) {
     const p = ep.part ?? 1;
@@ -76,7 +102,7 @@ function Detail() {
 
   return (
     <div className="space-y-4">
-      {/* ── Hero: banner + cover + title ── */}
+      {/* ── Hero ── */}
       <div className="relative overflow-hidden rounded-2xl">
         <div className="h-52 w-full sm:h-64">
           {heroBg
@@ -92,9 +118,7 @@ function Detail() {
               ? <img src={w.coverUrl} alt={w.title} className="h-full w-full object-cover" />
               : <div className="h-full bg-ink-700" />}
           </div>
-          <h1 className="mt-2 text-center text-xl font-bold leading-tight text-white drop-shadow-md">
-            {w.title}
-          </h1>
+          <h1 className="mt-2 text-center text-xl font-bold leading-tight text-white drop-shadow-md">{w.title}</h1>
           {w.titleEnglish && w.titleEnglish !== w.title && (
             <p className="text-center text-sm leading-tight text-white/70">{w.titleEnglish}</p>
           )}
@@ -109,14 +133,10 @@ function Detail() {
           </span>
         )}
         {w.avgScore > 0 && (
-          <span className="rounded-md border border-amber-400 px-2 py-0.5 text-xs font-bold text-amber-500">
-            ★ {w.avgScore.toFixed(1)}
-          </span>
+          <span className="rounded-md border border-amber-400 px-2 py-0.5 text-xs font-bold text-amber-500">★ {w.avgScore.toFixed(1)}</span>
         )}
         {w.seasonYear && (
-          <span className="rounded-md border border-ink-300 px-2 py-0.5 text-xs text-ink-500 dark:border-ink-600 dark:text-ink-400">
-            {w.seasonYear}
-          </span>
+          <span className="rounded-md border border-ink-300 px-2 py-0.5 text-xs text-ink-500 dark:border-ink-600 dark:text-ink-400">{w.seasonYear}</span>
         )}
         {w.episodes != null && (
           <span className="rounded-md border border-ink-300 px-2 py-0.5 text-xs text-ink-500 dark:border-ink-600 dark:text-ink-400">
@@ -137,7 +157,7 @@ function Detail() {
         </div>
       )}
 
-      {/* ── Airing status pill ── */}
+      {/* ── Status pill ── */}
       {w.status === 'RELEASING' && airedCount > 0 && w.episodes && (
         <div className="flex justify-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-4 py-1.5 text-sm font-medium text-amber-600 dark:text-amber-400">
@@ -179,19 +199,11 @@ function Detail() {
         </a>
       )}
 
-      {/* ── Action row ── */}
+      {/* ── Action row (chỉ Yêu thích + điểm) ── */}
       <div className="flex items-center justify-around border-y border-ink-200/70 py-3 dark:border-ink-700">
         <button onClick={toggleFav} className="flex flex-col items-center gap-1 text-xs text-ink-600 dark:text-ink-300">
           <Heart size={22} className={fav ? 'fill-rose-500 text-rose-500' : ''} />
           <span>{fav ? 'Đã thích' : 'Yêu thích'}</span>
-        </button>
-        <button className="flex flex-col items-center gap-1 text-xs text-ink-600 dark:text-ink-300">
-          <Plus size={22} /><span>Thêm vào</span>
-        </button>
-        <button
-          onClick={() => { if (navigator.share) navigator.share({ title: w.title, url: window.location.href }).catch(() => {}); }}
-          className="flex flex-col items-center gap-1 text-xs text-ink-600 dark:text-ink-300">
-          <Share2 size={22} /><span>Chia sẻ</span>
         </button>
         {w.avgScore > 0 && (
           <div className="flex flex-col items-center gap-1 text-xs text-amber-500">
@@ -219,7 +231,6 @@ function Detail() {
 
           {activeTab === 'episodes' && (
             <div className="space-y-3 pt-1">
-              {/* Dropdown đổi phần — chỉ hiện khi có nhiều phần */}
               {multiPart && (
                 <div className="relative">
                   <button onClick={() => setPartOpen((o) => !o)}
@@ -240,7 +251,6 @@ function Detail() {
                   )}
                 </div>
               )}
-
               <div className="grid grid-cols-3 gap-2">
                 {visibleEps.map((ep: any) => (
                   <a key={ep.id} href={`/anime/watch?ep=${ep.id}`}
@@ -278,12 +288,69 @@ function Detail() {
         </>
       )}
 
-      {/* ── Trailer ── */}
-      {ytId && (
-        <div className="card p-4">
-          <h2 className="mb-3 flex items-center gap-1.5 font-semibold"><Clapperboard size={16} /> Trailer</h2>
-          <div className="aspect-video overflow-hidden rounded-lg">
-            <iframe src={`https://www.youtube.com/embed/${ytId}`} className="h-full w-full" allowFullScreen title="Trailer" />
+      {/* ── Bình luận tổng (tất cả tập) ── */}
+      {w.episodeList?.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="flex items-center gap-1.5 font-semibold">
+            <MessageCircle size={16} /> Bình luận{comments.length > 0 ? ` (${comments.length})` : ''}
+          </h2>
+
+          {user ? (
+            <form onSubmit={postComment} className="flex gap-2.5">
+              <div className="shrink-0"><Avatar user={user} size={34} /></div>
+              <div className="flex-1">
+                <textarea value={text} onChange={(e) => setText(e.target.value)}
+                  placeholder="Viết bình luận…" rows={2}
+                  className="w-full resize-none rounded-xl border border-ink-200 px-3 py-2 text-sm outline-none focus:border-brand-500 dark:border-ink-700 dark:bg-ink-800" />
+                <button type="submit" disabled={posting || !text.trim()}
+                  className="mt-1.5 flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 hover:bg-brand-500">
+                  <Send size={13} /> Gửi
+                </button>
+              </div>
+            </form>
+          ) : (
+            <a href="/login"
+              className="block rounded-xl border border-dashed border-ink-300 py-3 text-center text-sm text-ink-400 hover:border-brand-400 hover:text-brand-500 dark:border-ink-700">
+              Đăng nhập để bình luận
+            </a>
+          )}
+
+          <div className="space-y-4">
+            {comments.length === 0 && (
+              <p className="py-6 text-center text-sm text-ink-400">Chưa có bình luận. Hãy là người đầu tiên!</p>
+            )}
+            {comments.map((c: any) => (
+              <div key={c.id} className="flex gap-2.5">
+                <div className="shrink-0"><Avatar user={c.author} size={34} /></div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="text-sm font-semibold">{c.author.displayName || c.author.username}</span>
+                    <span className="rounded bg-ink-100 px-1.5 py-0.5 text-[10px] text-ink-500 dark:bg-ink-800">Tập {c.episodeNumber}</span>
+                    <span className="text-[11px] text-ink-400">{new Date(c.createdAt).toLocaleDateString('vi')}</span>
+                    {(user?.id === c.authorId || user?.role === 'ADMIN' || user?.role === 'MODERATOR') && (
+                      <button onClick={() => delComment(c.id)} className="ml-auto text-ink-300 hover:text-red-500">
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-sm leading-relaxed">{c.content}</p>
+                  {c.replies?.length > 0 && (
+                    <div className="mt-2.5 space-y-2 border-l-2 border-ink-200 pl-3 dark:border-ink-700">
+                      {c.replies.map((r: any) => (
+                        <div key={r.id} className="flex gap-2">
+                          <div className="shrink-0"><Avatar user={r.author} size={24} /></div>
+                          <div className="min-w-0">
+                            <span className="text-xs font-semibold">{r.author.displayName || r.author.username} </span>
+                            <span className="text-xs text-ink-400">{new Date(r.createdAt).toLocaleDateString('vi')}</span>
+                            <p className="text-sm leading-relaxed">{r.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -303,12 +370,24 @@ function Detail() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold leading-tight">{r.to.titleEnglish || r.to.title}</p>
-                  <p className="truncate text-sm text-ink-500">{r.to.title}</p>
+                  <p className="truncate font-semibold leading-tight">{r.to.title}</p>
+                  {r.to.titleEnglish && r.to.titleEnglish !== r.to.title && (
+                    <p className="truncate text-sm text-ink-500">{r.to.titleEnglish}</p>
+                  )}
                   <p className="mt-0.5 text-xs text-ink-400">{r.type}</p>
                 </div>
               </a>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Trailer ── */}
+      {ytId && (
+        <div className="card p-4">
+          <h2 className="mb-3 flex items-center gap-1.5 font-semibold"><Clapperboard size={16} /> Trailer</h2>
+          <div className="aspect-video overflow-hidden rounded-lg">
+            <iframe src={`https://www.youtube.com/embed/${ytId}`} className="h-full w-full" allowFullScreen title="Trailer" />
           </div>
         </div>
       )}

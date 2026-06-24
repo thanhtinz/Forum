@@ -296,45 +296,72 @@ function EditSeriesInner() {
       {/* Cover + Banner + Publish */}
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Images */}
-        <Card className="space-y-3">
+        <Card className="space-y-4">
           <SectionTitle>Hình ảnh</SectionTitle>
 
           {/* Banner */}
           <div>
-            <p className="mb-1 text-[11px] font-medium text-ink-500">Banner (16:5)</p>
-            <div className="relative h-16 w-full overflow-hidden rounded-lg bg-ink-100 dark:bg-ink-800">
-              {(bannerPreview ?? series.bannerUrl) && (
+            <p className="mb-1.5 text-xs font-medium text-ink-500">Banner (16:5)</p>
+            <button type="button" onClick={() => bannerRef.current?.click()}
+              className="group relative flex w-full items-center justify-center overflow-hidden rounded-xl bg-ink-100 dark:bg-ink-800"
+              style={{ aspectRatio: '16/5' }}>
+              {(bannerPreview ?? series?.bannerUrl)
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={bannerPreview ?? series.bannerUrl!} alt="" className="h-full w-full object-cover" />
+                ? <img src={bannerPreview ?? series.bannerUrl!} alt="" className="h-full w-full object-cover transition group-hover:brightness-75" />
+                : <div className="flex flex-col items-center gap-1.5 text-ink-400">
+                    <Upload size={20} />
+                    <span className="text-xs">Nhấn để tải lên</span>
+                  </div>
+              }
+              {(bannerPreview ?? series?.bannerUrl) && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
+                  <span className="flex items-center gap-1.5 rounded-lg bg-black/60 px-3 py-1.5 text-sm text-white"><Upload size={14} /> Thay ảnh</span>
+                </div>
               )}
-              <button type="button" onClick={() => bannerRef.current?.click()}
-                className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition hover:opacity-100">
-                <Upload size={16} className="text-white" />
-              </button>
-            </div>
+            </button>
             <input ref={bannerRef} type="file" accept="image/*" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; setBannerFile(f); setBannerPreview(URL.createObjectURL(f)); }} />
-            {bannerFile && <Btn size="sm" className="mt-1 w-full" onClick={() => uploadImage('banner', bannerFile, () => { setBannerFile(null); setBannerPreview(null); })} disabled={busy}>Lưu banner</Btn>}
+            {bannerFile && (
+              <Btn size="sm" className="mt-2 w-full" onClick={() => uploadImage('banner', bannerFile, () => { setBannerFile(null); setBannerPreview(null); })} disabled={busy}>
+                Lưu banner
+              </Btn>
+            )}
           </div>
 
           {/* Cover */}
-          <div className="flex items-start gap-3">
-            <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-lg bg-ink-100 dark:bg-ink-800">
-              {(coverPreview ?? series.coverUrl) && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={coverPreview ?? series.coverUrl!} alt="" className="h-full w-full object-cover" />
-              )}
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-ink-500">Ảnh bìa (3:4, max 5MB)</p>
+            <div className="flex items-start gap-4">
               <button type="button" onClick={() => coverRef.current?.click()}
-                className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition hover:opacity-100">
-                <Upload size={14} className="text-white" />
+                className="group relative h-36 w-[108px] shrink-0 overflow-hidden rounded-xl bg-ink-100 dark:bg-ink-800">
+                {(coverPreview ?? series?.coverUrl)
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={coverPreview ?? series.coverUrl!} alt="" className="h-full w-full object-cover transition group-hover:brightness-75" />
+                  : <div className="flex h-full flex-col items-center justify-center gap-1.5 text-ink-400">
+                      <Upload size={18} />
+                      <span className="text-[11px]">Chọn ảnh</span>
+                    </div>
+                }
+                {(coverPreview ?? series?.coverUrl) && (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
+                    <Upload size={16} className="text-white drop-shadow" />
+                  </div>
+                )}
               </button>
-            </div>
-            <div className="flex-1 space-y-1.5 pt-1">
-              <p className="text-xs text-ink-500">Ảnh bìa (3:4, max 5MB)</p>
-              <Btn size="sm" variant="outline" onClick={() => coverRef.current?.click()}><Upload size={12} /> Chọn ảnh</Btn>
-              {coverFile && <Btn size="sm" onClick={() => uploadImage('cover', coverFile, () => { setCoverFile(null); setCoverPreview(null); })} disabled={busy}>Lưu ảnh bìa</Btn>}
+              <div className="flex flex-1 flex-col gap-2 pt-1">
+                <Btn size="sm" variant="outline" onClick={() => coverRef.current?.click()}>
+                  <Upload size={12} /> Chọn ảnh bìa
+                </Btn>
+                {coverFile && (
+                  <Btn size="sm" onClick={() => uploadImage('cover', coverFile, () => { setCoverFile(null); setCoverPreview(null); })} disabled={busy}>
+                    Lưu ảnh bìa
+                  </Btn>
+                )}
+                <p className="text-[11px] text-ink-400 leading-relaxed">Tỷ lệ 3:4, nền trắng hoặc trong suốt, định dạng JPG/PNG/WebP, tối đa 5MB.</p>
+              </div>
             </div>
           </div>
+
           <input ref={coverRef} type="file" accept="image/*" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; setCoverFile(f); setCoverPreview(URL.createObjectURL(f)); }} />
         </Card>

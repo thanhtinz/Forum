@@ -8,7 +8,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
 import { EmojiStickerPicker, isStickerContent } from '@/components/EmojiStickerPicker';
 
-const ytId = (u: string) => u.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{6,})/)?.[1] || null;
+const ytId = (u: string) => /(?:youtube\.com|youtu\.be)/i.test(u) ? (u.match(/(?:[?&]v=|youtu\.be\/|embed\/)([\w-]{6,})/)?.[1] || null) : null;
 const proxy = (u: string, ref?: string | null) =>
   `${process.env.NEXT_PUBLIC_API_URL ?? ''}/api/anime/hls?u=${encodeURIComponent(u)}${ref ? `&r=${encodeURIComponent(ref)}` : ''}`;
 

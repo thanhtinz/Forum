@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, ChevronLeft, Upload, Trash2, CheckCircle, GripVertical, FileArchive, X, Image, AlignLeft, Link2, Plus } from 'lucide-react';
+import { BookOpen, ChevronLeft, Upload, GripVertical, X, Image, AlignLeft, Link2, Plus } from 'lucide-react';
 import { unzipSync } from 'fflate';
 import { api, postFiles } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
@@ -36,8 +36,6 @@ function ChapterEditorInner() {
   const [schedDay, setSchedDay] = useState('');
   const [schedMonth, setSchedMonth] = useState('');
   const [schedYear, setSchedYear] = useState('');
-  // Track if chapter was already published (skip re-approval on save)
-  const [wasPublished, setWasPublished] = useState(false);
   // Text content for text-type chapters
   const [textContent, setTextContent] = useState('');
   // Local files waiting to be uploaded
@@ -71,7 +69,6 @@ function ChapterEditorInner() {
           setSchedMonth(String(d.getMonth() + 1));
           setSchedYear(String(d.getFullYear()));
         }
-        setWasPublished(ch.chapterStatus === 'PUBLISHED');
         setServerPages(ch.pages ?? []);
         setResolvedChapterId(chapterId);
         if (ch.content) { setTextContent(ch.content); setChapterType('text'); }
@@ -223,22 +220,9 @@ function ChapterEditorInner() {
         }
       }
 
-      if (wasPublished) {
-        await api.post(`/creator/chapter/${cid}/publish`);
-        setMsg('Đã lưu & xuất bản lại ✓');
-      } else {
-        setMsg('Đã lưu ✓');
-      }
+      await api.post(`/creator/chapter/${cid}/publish`);
+      setMsg('Đã lưu & xuất bản ✓');
     } catch (e: any) { setErr(e.message); setUploading(false); } finally { setBusy(false); }
-  }
-
-  async function publish() {
-    if (!resolvedChapterId) { setErr('Lưu chương trước khi xuất bản'); return; }
-    setBusy(true); setErr(''); setMsg('');
-    try {
-      await api.post(`/creator/chapter/${resolvedChapterId}/publish`);
-      setMsg('Đã gửi kiểm duyệt / xuất bản ✓');
-    } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   }
 
   if (authLoading || loading) return <div className="p-10 text-center text-ink-400">Đang tải...</div>;
@@ -299,9 +283,6 @@ function ChapterEditorInner() {
         </div>
         {schedDay && schedMonth && schedYear && (
           <p className="mt-2 text-xs text-sky-500">Chương sẽ tự đăng vào {schedDay}/{schedMonth}/{schedYear}</p>
-        )}
-        {wasPublished && (
-          <p className="mt-2 text-xs text-emerald-500">Chương đã xuất bản — lưu sẽ tự xuất bản lại, không cần duyệt.</p>
         )}
       </Card>
 
@@ -490,13 +471,8 @@ function ChapterEditorInner() {
       <div className="flex flex-wrap justify-end gap-3 pb-8">
         <Link href={backHref}><Btn variant="outline">Quay lại</Btn></Link>
         <Btn onClick={save} disabled={busy || uploading}>
-          {uploading ? 'Đang tải lên...' : busy ? 'Đang lưu...' : 'Lưu chương'}
+          {uploading ? 'Đang tải lên...' : busy ? 'Đang lưu...' : 'Lưu & Đăng'}
         </Btn>
-        {resolvedChapterId && (
-          <Btn variant="outline" onClick={publish} disabled={busy}>
-            <CheckCircle size={14} /> Xuất bản
-          </Btn>
-        )}
       </div>
     </div>
   );

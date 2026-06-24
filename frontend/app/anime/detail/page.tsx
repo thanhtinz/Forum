@@ -170,7 +170,7 @@ function Detail() {
       {w.genres?.length > 0 && (
         <div className="flex flex-wrap justify-center gap-1.5">
           {w.genres.slice(0, 6).map((g: any) => (
-            <a key={g.slug} href={`/anime?genre=${g.slug}`}
+            <a key={g.slug} href={`/hoat-hinh?genre=${g.slug}`}
               className="rounded-full border border-ink-200 px-3 py-1 text-sm text-ink-600 hover:border-amber-400 hover:text-amber-500 dark:border-ink-700 dark:text-ink-300">
               {g.name}
             </a>

@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, ChevronLeft, Upload, Trash2, CheckCircle, GripVertical, FileArchive, X, Image, AlignLeft } from 'lucide-react';
+import { BookOpen, ChevronLeft, Upload, Trash2, CheckCircle, GripVertical, FileArchive, X, Image, AlignLeft, Link2, Plus } from 'lucide-react';
 import { unzipSync } from 'fflate';
 import { api, postFiles } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
@@ -40,6 +40,9 @@ function ChapterEditorInner() {
   const [serverPages, setServerPages] = useState<ServerPages>([]);
   // Drag-drop reorder state
   const dragIdx = useRef<number | null>(null);
+
+  const [uploadTab, setUploadTab] = useState<'file' | 'link'>('file');
+  const [bulkText, setBulkText] = useState('');
 
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -138,6 +141,17 @@ function ChapterEditorInner() {
 
   function removeServerPage(idx: number) {
     setServerPages((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function addBulkLinks() {
+    const urls = bulkText
+      .split(/[\n,\s]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.startsWith('http'));
+    if (!urls.length) { setErr('Không tìm thấy URL hợp lệ (cần bắt đầu bằng http)'); return; }
+    setServerPages((prev) => [...prev, ...urls]);
+    setBulkText('');
+    setMsg(`Đã thêm ${urls.length} ảnh từ link ✓`);
   }
 
   // ── Save / upload ────────────────────────────────────────────────────────
@@ -303,35 +317,75 @@ function ChapterEditorInner() {
       {/* Upload zone (for image chapters) */}
       {chapterType === 'image' && (
       <Card>
-        <SectionTitle hint="Chọn file ảnh hoặc kéo thả vào đây. Hỗ trợ ZIP / CBZ.">
-          Tải trang lên
-        </SectionTitle>
+        <SectionTitle>Tải trang lên</SectionTitle>
 
-        <div
-          className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-ink-200 bg-ink-50 p-8 text-center transition hover:border-brand-400 hover:bg-brand-50/30 dark:border-ink-700 dark:bg-ink-900/50 dark:hover:border-brand-600"
-          onDrop={onZoneDrop}
-          onDragOver={(e) => e.preventDefault()}
-          onClick={() => document.getElementById('page-file-input')?.click()}
-        >
-          <Upload size={32} className="text-ink-300" />
-          <div>
-            <p className="font-medium text-ink-600 dark:text-ink-300">Kéo ảnh vào đây hoặc nhấn để chọn</p>
-            <p className="mt-1 text-xs text-ink-400">JPG, PNG, WebP — hoặc file ZIP / CBZ</p>
-          </div>
-          <input
-            id="page-file-input"
-            type="file"
-            multiple
-            accept="image/*,.zip,.cbz"
-            className="hidden"
-            onChange={(e) => { if (e.target.files) { addFiles(e.target.files); e.target.value = ''; } }}
-          />
+        {/* Tab switcher */}
+        <div className="mb-3 flex gap-1 rounded-lg border border-ink-100 bg-ink-50 p-1 dark:border-ink-800 dark:bg-ink-900/50">
+          <button
+            onClick={() => setUploadTab('file')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${uploadTab === 'file' ? 'bg-white shadow-sm dark:bg-ink-800' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
+          >
+            <Upload size={14} /> Upload file
+          </button>
+          <button
+            onClick={() => setUploadTab('link')}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${uploadTab === 'link' ? 'bg-white shadow-sm dark:bg-ink-800' : 'text-ink-500 hover:text-ink-700 dark:hover:text-ink-300'}`}
+          >
+            <Link2 size={14} /> Dán link hàng loạt
+          </button>
         </div>
 
-        {localPages.length > 0 && (
-          <div className="mt-3 flex items-center justify-between text-xs text-ink-500">
-            <span>{localPages.length} trang chờ tải lên</span>
-            <button onClick={() => setLocalPages([])} className="text-rose-500 hover:underline">Xoá tất cả</button>
+        {uploadTab === 'file' ? (
+          <>
+            <div
+              className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-ink-200 bg-ink-50 p-8 text-center transition hover:border-brand-400 hover:bg-brand-50/30 dark:border-ink-700 dark:bg-ink-900/50 dark:hover:border-brand-600"
+              onDrop={onZoneDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={() => document.getElementById('page-file-input')?.click()}
+            >
+              <Upload size={32} className="text-ink-300" />
+              <div>
+                <p className="font-medium text-ink-600 dark:text-ink-300">Kéo ảnh vào đây hoặc nhấn để chọn</p>
+                <p className="mt-1 text-xs text-ink-400">JPG, PNG, WebP — hoặc file ZIP / CBZ</p>
+              </div>
+              <input
+                id="page-file-input"
+                type="file"
+                multiple
+                accept="image/*,.zip,.cbz"
+                className="hidden"
+                onChange={(e) => { if (e.target.files) { addFiles(e.target.files); e.target.value = ''; } }}
+              />
+            </div>
+            {localPages.length > 0 && (
+              <div className="mt-3 flex items-center justify-between text-xs text-ink-500">
+                <span>{localPages.length} trang chờ tải lên</span>
+                <button onClick={() => setLocalPages([])} className="text-rose-500 hover:underline">Xoá tất cả</button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-ink-400">Dán danh sách link ảnh — mỗi link một dòng (hoặc cách nhau bởi dấu phẩy / khoảng trắng).</p>
+            <textarea
+              value={bulkText}
+              onChange={(e) => setBulkText(e.target.value)}
+              rows={8}
+              className="input w-full resize-y font-mono text-xs"
+              placeholder={"https://cdn.example.com/page1.jpg\nhttps://cdn.example.com/page2.jpg\nhttps://cdn.example.com/page3.jpg\n..."}
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-ink-400">
+                {bulkText.split(/[\n,\s]+/).filter((s) => s.trim().startsWith('http')).length} link hợp lệ
+              </span>
+              <button
+                onClick={addBulkLinks}
+                disabled={!bulkText.trim()}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700 disabled:opacity-40"
+              >
+                <Plus size={14} /> Thêm vào danh sách
+              </button>
+            </div>
           </div>
         )}
       </Card>

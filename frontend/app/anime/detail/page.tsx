@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Play, Heart, Plus, Share2, ChevronDown, ChevronUp, Star, BookOpen, Clapperboard } from 'lucide-react';
+import { Play, Heart, Plus, Share2, Star, BookOpen, Clapperboard, RefreshCw } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -11,10 +11,11 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const SEASON_LABEL: Record<string, string> = { WINTER: 'Đông', SPRING: 'Xuân', SUMMER: 'Hạ', FALL: 'Thu' };
 const FORMAT_LABEL: Record<string, string> = {
-  TV: 'TV', MOVIE: 'Phim lẻ', OVA: 'OVA', ONA: 'ONA', SPECIAL: 'Special', NOVEL: 'Light Novel', MANHUA: 'Manhua',
+  TV: 'TV', MOVIE: 'Phim lẻ', OVA: 'OVA', ONA: 'ONA', SPECIAL: 'Special', NOVEL: 'Light Novel', MANHUA: 'Manhua', DONGHUA: 'Donghua',
 };
+const TYPE_COUNTRY: Record<string, string> = { DONGHUA: 'Trung Quốc', MANHUA: 'Trung Quốc', MANHWA: 'Hàn Quốc' };
 
-type TabId = 'episodes' | 'cast' | 'suggest';
+type TabId = 'episodes' | 'cast';
 
 function Detail() {
   const slug = useSearchParams().get('slug') || '';
@@ -22,7 +23,6 @@ function Detail() {
   const router = useRouter();
   const [w, setW] = useState<any>(null);
   const [err, setErr] = useState('');
-  const [infoOpen, setInfoOpen] = useState(false);
   const [tab, setTab] = useState<TabId>('episodes');
   const [fav, setFav] = useState(false);
 
@@ -49,17 +49,17 @@ function Detail() {
   const firstCh = w.chapterList?.[0];
   const chars = w.characters || [];
   const heroBg = w.bannerUrl || w.coverUrl;
+  const airedCount = w.episodeList?.length ?? 0;
+  const ytId = w.trailerUrl?.match(/[?&]v=([\w-]+)/)?.[1];
 
   const tabs: Array<{ id: TabId; label: string }> = [
     w.episodeList?.length > 0 || w.chapterList?.length > 0
       ? { id: 'episodes', label: w.episodeList?.length > 0 ? 'Tập phim' : 'Chương' }
       : null,
     chars.length > 0 ? { id: 'cast', label: 'Diễn viên' } : null,
-    w.relatedFrom?.length > 0 ? { id: 'suggest', label: 'Đề xuất' } : null,
   ].filter(Boolean) as Array<{ id: TabId; label: string }>;
 
   const activeTab = tabs.find((t) => t.id === tab)?.id ?? tabs[0]?.id ?? 'episodes';
-  const ytId = w.trailerUrl?.match(/[?&]v=([\w-]+)/)?.[1];
 
   return (
     <div className="space-y-4">
@@ -67,7 +67,8 @@ function Detail() {
       <div className="relative overflow-hidden rounded-2xl">
         <div className="h-52 w-full sm:h-64">
           {heroBg
-            ? <img src={heroBg} alt="" className="h-full w-full object-cover object-top" /> // eslint-disable-line @next/next/no-img-element
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={heroBg} alt="" className="h-full w-full object-cover object-top" />
             : <div className="h-full bg-gradient-to-br from-brand-800 to-brand-600" />}
         </div>
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/50 to-black/85" />
@@ -87,44 +88,69 @@ function Detail() {
         </div>
       </div>
 
-      {/* ── Genres + info toggle ── */}
-      <div className="flex flex-col items-center gap-2">
-        {w.genres?.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-1.5">
-            {w.genres.slice(0, 6).map((g: any) => (
-              <a key={g.slug} href={`/anime?genre=${g.slug}`}
-                className="chip bg-brand-50 text-brand-700 hover:bg-brand-100 dark:bg-ink-800 dark:text-brand-300">
-                {g.name}
-              </a>
-            ))}
-          </div>
+      {/* ── Meta badges ── */}
+      <div className="flex flex-wrap justify-center gap-1.5">
+        {w.format && (
+          <span className="rounded-md border border-ink-300 px-2 py-0.5 text-xs font-bold uppercase text-ink-600 dark:border-ink-600 dark:text-ink-300">
+            {FORMAT_LABEL[w.format] ?? w.format}
+          </span>
         )}
-        <button onClick={() => setInfoOpen((o) => !o)}
-          className="flex items-center gap-1 text-sm font-semibold text-amber-500 hover:text-amber-400">
-          Thông tin phim
-          {infoOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
+        {w.avgScore > 0 && (
+          <span className="rounded-md border border-amber-400 px-2 py-0.5 text-xs font-bold text-amber-500">
+            ★ {w.avgScore.toFixed(1)}
+          </span>
+        )}
+        {w.seasonYear && (
+          <span className="rounded-md border border-ink-300 px-2 py-0.5 text-xs text-ink-500 dark:border-ink-600 dark:text-ink-400">
+            {w.seasonYear}
+          </span>
+        )}
+        {w.episodes != null && (
+          <span className="rounded-md border border-ink-300 px-2 py-0.5 text-xs text-ink-500 dark:border-ink-600 dark:text-ink-400">
+            {w.episodeList?.length > 0 ? `Tập ${w.episodeList.length}` : `${w.episodes} tập`}
+          </span>
+        )}
       </div>
 
-      {/* ── Collapsible info ── */}
-      {infoOpen && (
-        <div className="card space-y-1.5 p-4 text-sm">
-          {w.avgScore > 0 && (
-            <p className="mb-2 inline-flex items-center gap-1 font-semibold text-amber-600">
-              <Star size={14} /> {w.avgScore.toFixed(2)}/5 ({w.ratingCount} lượt)
-            </p>
-          )}
-          <InfoRow label="Loại" value={{ MANHUA: 'Manhua (Truyện TQ)', MANHWA: 'Manhwa', DONGHUA: 'Donghua (Hoạt hình TQ)' }[w.type as string] ?? w.type} />
-          {w.format && <InfoRow label="Định dạng" value={FORMAT_LABEL[w.format] ?? w.format} />}
-          <InfoRow label="Trạng thái" value={STATUS_LABEL[w.status] || w.status} />
-          {w.episodes != null && <InfoRow label="Số tập" value={`${w.episodes} tập`} />}
-          {w.duration != null && <InfoRow label="Thời lượng" value={`${w.duration} phút`} />}
-          {w.chapters != null && <InfoRow label="Số chương" value={`${w.chapters} chương`} />}
-          {w.seasonYear && <InfoRow label="Mùa" value={`${w.season ? SEASON_LABEL[w.season] + ' ' : ''}${w.seasonYear}`} />}
-          {w.studios?.length > 0 && <InfoRow label="Studio" value={w.studios.map((s: any) => s.name).join(', ')} />}
-          {w.source && <InfoRow label="Nguồn" value={w.source} />}
+      {/* ── Genres ── */}
+      {w.genres?.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-1.5">
+          {w.genres.slice(0, 6).map((g: any) => (
+            <a key={g.slug} href={`/anime?genre=${g.slug}`}
+              className="rounded-full border border-ink-200 px-3 py-1 text-sm text-ink-600 hover:border-amber-400 hover:text-amber-500 dark:border-ink-700 dark:text-ink-300">
+              {g.name}
+            </a>
+          ))}
         </div>
       )}
+
+      {/* ── Airing status pill ── */}
+      {w.status === 'RELEASING' && airedCount > 0 && w.episodes && (
+        <div className="flex justify-center">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-4 py-1.5 text-sm font-medium text-amber-600 dark:text-amber-400">
+            <RefreshCw size={13} /> Đã chiếu: {airedCount} / {w.episodes} tập
+          </span>
+        </div>
+      )}
+
+      {/* ── Description ── */}
+      {w.description && (
+        <div>
+          <p className="mb-1 font-bold">Giới thiệu:</p>
+          <p className="text-sm leading-relaxed text-ink-600 dark:text-ink-300">{w.description}</p>
+        </div>
+      )}
+
+      {/* ── Info rows ── */}
+      <div className="space-y-1.5 text-sm">
+        {w.duration != null && <MetaRow label="Thời lượng" value={`${w.duration}m`} />}
+        {TYPE_COUNTRY[w.type] && <MetaRow label="Quốc gia" value={TYPE_COUNTRY[w.type]} />}
+        {w.seasonYear && w.season && (
+          <MetaRow label="Mùa" value={`${SEASON_LABEL[w.season] ?? w.season} ${w.seasonYear}`} />
+        )}
+        {w.studios?.length > 0 && <MetaRow label="Studio" value={w.studios.map((s: any) => s.name).join(', ')} />}
+        {w.source && <MetaRow label="Nguồn" value={w.source} />}
+      </div>
 
       {/* ── CTA ── */}
       {firstEp && (
@@ -162,12 +188,7 @@ function Detail() {
         )}
       </div>
 
-      {/* ── Description ── */}
-      {w.description && (
-        <p className="text-sm leading-relaxed text-ink-700 dark:text-ink-300">{w.description}</p>
-      )}
-
-      {/* ── Tab bar ── */}
+      {/* ── Episodes / Cast tabs ── */}
       {tabs.length > 0 && (
         <>
           <div className="flex border-b border-ink-200 dark:border-ink-700">
@@ -183,7 +204,6 @@ function Detail() {
             ))}
           </div>
 
-          {/* Tab: Tập phim / Chương */}
           {activeTab === 'episodes' && (
             <div className="grid grid-cols-3 gap-2 pt-1">
               {w.episodeList?.map((ep: any) => (
@@ -201,7 +221,6 @@ function Detail() {
             </div>
           )}
 
-          {/* Tab: Diễn viên */}
           {activeTab === 'cast' && chars.length > 0 && (
             <div className="grid grid-cols-2 gap-3 pt-1">
               {chars.slice(0, 20).map((mc: any) => (
@@ -219,28 +238,6 @@ function Detail() {
               ))}
             </div>
           )}
-
-          {/* Tab: Đề xuất */}
-          {activeTab === 'suggest' && w.relatedFrom?.length > 0 && (
-            <div className="space-y-2 pt-1">
-              {w.relatedFrom.map((r: any) => (
-                <a key={r.id} href={`/anime/detail?slug=${r.to.slug}`}
-                  className="flex items-center gap-3 rounded-xl border border-ink-200 p-2.5 transition-colors hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800">
-                  <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-ink-100 dark:bg-ink-800">
-                    {r.to.coverUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.to.coverUrl} alt="" className="h-full w-full object-cover" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold leading-tight">{r.to.titleEnglish || r.to.title}</p>
-                    <p className="truncate text-sm text-ink-500">{r.to.title}</p>
-                    <p className="mt-0.5 text-xs text-ink-400">{r.type}</p>
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
         </>
       )}
 
@@ -253,15 +250,40 @@ function Detail() {
           </div>
         </div>
       )}
+
+      {/* ── Phim liên quan ── */}
+      {w.relatedFrom?.length > 0 && (
+        <div>
+          <h2 className="mb-3 font-semibold">Phim liên quan</h2>
+          <div className="space-y-2">
+            {w.relatedFrom.map((r: any) => (
+              <a key={r.id} href={`/anime/detail?slug=${r.to.slug}`}
+                className="flex items-center gap-3 rounded-xl border border-ink-200 p-2.5 transition-colors hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800">
+                <div className="h-16 w-11 shrink-0 overflow-hidden rounded-lg bg-ink-100 dark:bg-ink-800">
+                  {r.to.coverUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={r.to.coverUrl} alt="" className="h-full w-full object-cover" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold leading-tight">{r.to.titleEnglish || r.to.title}</p>
+                  <p className="truncate text-sm text-ink-500">{r.to.title}</p>
+                  <p className="mt-0.5 text-xs text-ink-400">{r.type}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function MetaRow({ label, value }: { label: string; value: string }) {
   return (
-    <p className="flex justify-between gap-2">
-      <span className="text-ink-500">{label}</span>
-      <span className="text-right font-medium">{value}</span>
+    <p>
+      <span className="font-bold">{label}: </span>
+      <span className="text-ink-500">{value}</span>
     </p>
   );
 }

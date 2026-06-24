@@ -26,7 +26,7 @@ function Reader() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <a href={`/anime/detail?slug=${ch.media.slug}`} className="inline-flex items-center gap-1 text-sm text-ink-500 hover:text-brand-600"><ArrowLeft size={15} /> {ch.media.titleEnglish || ch.media.title}</a>
+      <a href={ch.media.type === 'MANHUA' ? `/manga/detail?slug=${ch.media.slug}` : `/anime/detail?slug=${ch.media.slug}`} className="inline-flex items-center gap-1 text-sm text-ink-500 hover:text-brand-600"><ArrowLeft size={15} /> {ch.media.titleEnglish || ch.media.title}</a>
       <h1 className="text-xl font-bold">Chương {ch.number}{ch.title ? `: ${ch.title}` : ''}</h1>
       <Nav />
 

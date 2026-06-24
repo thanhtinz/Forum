@@ -113,7 +113,7 @@ export default function TruyenTranhPage() {
           <p className="text-sm text-ink-500">{total} kết quả</p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {works.map((w) => (
-              <a key={w.id} href={`/anime/detail?slug=${w.slug}`} className="card group overflow-hidden p-0 transition hover:shadow-card">
+              <a key={w.id} href={`/manga/detail?slug=${w.slug}`} className="card group overflow-hidden p-0 transition hover:shadow-card">
                 <div className="relative aspect-[3/4] bg-ink-100 dark:bg-ink-800">
                   {w.coverUrl
                     // eslint-disable-next-line @next/next/no-img-element

@@ -60,7 +60,7 @@ export default function MyList() {
           : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {entries.map((e) => (
-                <a key={e.id} href={`/anime/detail?slug=${e.media.slug}`} className="card group overflow-hidden p-0 transition hover:shadow-card">
+                <a key={e.id} href={e.media.type === 'MANHUA' ? `/manga/detail?slug=${e.media.slug}` : `/anime/detail?slug=${e.media.slug}`} className="card group overflow-hidden p-0 transition hover:shadow-card">
                   <div className="relative aspect-[3/4] bg-ink-100 dark:bg-ink-800">
                     {e.media.coverUrl
                       // eslint-disable-next-line @next/next/no-img-element

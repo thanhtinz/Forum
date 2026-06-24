@@ -8,7 +8,7 @@ import { PageHeader, Card, SectionTitle, Notice, Btn, Field, Empty } from '@/com
 
 
 interface Srv { id: string; name: string; videoUrl: string; referer?: string | null; introEnd?: number | null }
-interface Ep { id: string; number: number; part: number; kind: string; title?: string | null; videoUrl?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; showNextAt?: number | null; servers?: Srv[] }
+interface Ep { id: string; number: number; part: number; kind: string; title?: string | null; videoUrl?: string | null; serverName?: string | null; thumbnail?: string | null; duration?: number | null; referer?: string | null; introEnd?: number | null; showNextAt?: number | null; servers?: Srv[] }
 interface Ch { id: string; number: number; title?: string | null; content?: string | null; pages: string[] }
 
 function EditInner() {
@@ -235,11 +235,11 @@ const KIND_LABELS: Record<string, string> = { episode: 'Tập', movie: 'Movie', 
 
 function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; setErr: (s: string) => void }) {
   const [open, setOpen] = useState(false);
-  const [v, setV] = useState({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '', showNextAt: ep.showNextAt != null ? String(ep.showNextAt) : '' });
+  const [v, setV] = useState({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', serverName: ep.serverName || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '', showNextAt: ep.showNextAt != null ? String(ep.showNextAt) : '' });
   useEffect(() => {
-    setV({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '', showNextAt: ep.showNextAt != null ? String(ep.showNextAt) : '' });
+    setV({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', serverName: ep.serverName || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '', showNextAt: ep.showNextAt != null ? String(ep.showNextAt) : '' });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ep.id, ep.number, ep.part, ep.kind, ep.title, ep.videoUrl, ep.referer, ep.introEnd, ep.showNextAt]);
+  }, [ep.id, ep.number, ep.part, ep.kind, ep.title, ep.videoUrl, ep.serverName, ep.referer, ep.introEnd, ep.showNextAt]);
   const [srvOpen, setSrvOpen] = useState(false);
   const [newSrv, setNewSrv] = useState({ name: '', videoUrl: '', referer: '', introEnd: '' });
   const [saving, setSaving] = useState(false);
@@ -296,7 +296,8 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
             </select>
             <input className="input sm:col-span-1" value={v.number} onChange={(e) => setV({ ...v, number: e.target.value })} placeholder="Số #" />
             <input className="input sm:col-span-2" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Tiêu đề" />
-            <input className="input sm:col-span-2" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link Server 1" />
+            <input className="input sm:col-span-1" value={v.serverName} onChange={(e) => setV({ ...v, serverName: e.target.value })} placeholder="Tên server (VIP)" title="Tên hiển thị server chính, mặc định VIP" />
+            <input className="input sm:col-span-1" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link video" />
             <input className="input sm:col-span-1" type="number" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này cho Server 1 (vd 90)." />
           </div>
           <div className="flex gap-2">

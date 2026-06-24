@@ -9,7 +9,7 @@ export class RssController {
   constructor(private readonly prisma: PrismaService) {}
 
   private base() {
-    return (process.env.SITE_URL || 'https://tramgenz.com').replace(/\/$/, '');
+    return (process.env.SITE_URL || 'https://tramgenz.forum').replace(/\/$/, '');
   }
 
   // ──────────────── RSS 2.0 ────────────────

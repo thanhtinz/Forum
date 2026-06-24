@@ -430,12 +430,18 @@ function Watch() {
         )}
       </div>
 
-      <h1 className="text-lg font-bold">
-        {ep.kind && ep.kind !== 'episode'
-          ? ({ movie: 'Movie', ova: 'OVA', special: 'Special', recap: 'Recap' }[ep.kind as string] ?? ep.kind)
-          : `Tập ${ep.number}`}
-        {ep.title ? `: ${ep.title}` : ''}
-      </h1>
+      {/* Đổi server — ngay dưới player */}
+      {servers.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1 text-sm text-ink-500"><Server size={14} /> Đổi server</span>
+          {servers.map((s, i) => (
+            <button key={s.id} onClick={() => setServerIdx(i)}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>
+              {s.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Chọn tập / phần / movie */}
       {ep.episodes?.length > 0 && (
@@ -481,32 +487,10 @@ function Watch() {
             </>
           )}
 
-          {/* Movie / OVA / Special tab: server switcher nếu đang xem, gợi ý nếu chưa */}
-          {activeGroup?.kind === 'single' && (
-            activeGroup.epId === id
-              ? servers.length > 1
-                ? <div className="flex flex-wrap gap-2">
-                    {servers.map((s, i) => (
-                      <button key={s.id} onClick={() => setServerIdx(i)}
-                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>
-                        <Server size={13} />{s.name}
-                      </button>
-                    ))}
-                  </div>
-                : <p className="py-1 text-sm text-ink-500">Đang xem.</p>
-              : <p className="py-1 text-sm text-ink-500">Nhấn tab để xem ngay.</p>
+          {/* Movie / OVA / Special tab */}
+          {activeGroup?.kind === 'single' && activeGroup.epId !== id && (
+            <p className="py-1 text-sm text-ink-500">Nhấn tab để xem ngay.</p>
           )}
-        </div>
-      )}
-
-      {/* Đổi server (chỉ hiện cho tập thường, khi không dùng tab đơn) */}
-      {(!showTabs || activeGroup?.kind === 'part') && servers.length > 1 && (
-        <div className="flex flex-wrap gap-2">
-          {servers.map((s, i) => (
-            <button key={s.id} onClick={() => setServerIdx(i)} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>
-              <Server size={13} />{s.name}
-            </button>
-          ))}
         </div>
       )}
 

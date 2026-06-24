@@ -155,13 +155,13 @@ function Detail() {
       {/* ── CTA ── */}
       {firstEp && (
         <a href={`/anime/watch?ep=${firstEp.id}`}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-amber-400 active:scale-95">
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-brand-600 active:scale-95">
           <Play size={20} className="fill-white" /> Xem Ngay
         </a>
       )}
       {firstCh && !firstEp && (
         <a href={`/manga/read?id=${firstCh.id}`}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-amber-500 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-amber-400 active:scale-95">
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-brand-600 active:scale-95">
           <BookOpen size={20} /> Đọc Ngay
         </a>
       )}

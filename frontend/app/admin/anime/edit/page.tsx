@@ -56,10 +56,9 @@ function EditInner() {
           <Field label="Định dạng"><input className="input" value={w.format || ''} onChange={(e) => set('format', e.target.value)} placeholder="TV / MOVIE / ONE_SHOT…" /></Field>
           <Field label="Mùa"><select className="input" value={w.season || ''} onChange={(e) => set('season', e.target.value || null)}><option value="">—</option><option value="WINTER">Đông</option><option value="SPRING">Xuân</option><option value="SUMMER">Hạ</option><option value="FALL">Thu</option></select></Field>
           <Field label="Năm"><input type="number" className="input" value={w.seasonYear || ''} onChange={(e) => set('seasonYear', e.target.value)} /></Field>
-          <Field label="Số tập (tổng)"><input type="number" className="input" value={w.episodes ?? ''} onChange={(e) => set('episodes', e.target.value)} /></Field>
-          <Field label="Thời lượng (phút)"><input type="number" className="input" value={w.duration ?? ''} onChange={(e) => set('duration', e.target.value)} /></Field>
-          <Field label="Số chương (tổng)"><input type="number" className="input" value={w.chapters ?? ''} onChange={(e) => set('chapters', e.target.value)} /></Field>
-          <Field label="Số volume"><input type="number" className="input" value={w.volumes ?? ''} onChange={(e) => set('volumes', e.target.value)} /></Field>
+          {!isStory && <Field label="Số tập (tổng)"><input type="number" className="input" value={w.episodes ?? ''} onChange={(e) => set('episodes', e.target.value)} /></Field>}
+          {!isStory && <Field label="Thời lượng (phút)"><input type="number" className="input" value={w.duration ?? ''} onChange={(e) => set('duration', e.target.value)} /></Field>}
+          {isStory && <Field label="Số chương (tổng)"><input type="number" className="input" value={w.chapters ?? ''} onChange={(e) => set('chapters', e.target.value)} /></Field>}
           <Field label="Nguồn"><input className="input" value={w.source || ''} onChange={(e) => set('source', e.target.value)} /></Field>
           <Field label="Trailer URL"><input className="input" value={w.trailerUrl || ''} onChange={(e) => set('trailerUrl', e.target.value)} /></Field>
           <Field label="Ảnh bìa (cover)"><input className="input" value={w.coverUrl || ''} onChange={(e) => set('coverUrl', e.target.value)} /></Field>

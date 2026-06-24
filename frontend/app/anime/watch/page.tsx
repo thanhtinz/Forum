@@ -417,33 +417,21 @@ function Watch() {
           <Player url={curUrl} referer={cur?.referer} introEnd={cur?.introEnd}
             showNextAt={ep?.showNextAt} episodeDurationMin={ep?.duration}
             skipIntro={skipIntro} autoNext={autoNext} onNextAt={handleNextAt} onEnded={goNext} />
-          {/* Netflix-style overlay — bottom-right góc video */}
+          {/* Next-episode overlay — bottom-right */}
           {nextCountdown !== null && ep?.next && !nextDismissed && (
-            <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-3 pb-16">
-              <div className="pointer-events-auto w-56 overflow-hidden rounded-xl bg-black/90 shadow-2xl ring-1 ring-white/10">
-                {ep.next.thumbnail && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={ep.next.thumbnail} alt="" className="h-28 w-full object-cover" />
-                )}
-                <div className="p-3">
-                  <div className="flex items-center gap-2">
-                    <button onClick={goNext} className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-white py-2 text-xs font-bold text-black hover:bg-white/90">
-                      <div className="relative flex h-5 w-5 shrink-0 items-center justify-center">
-                        <svg className="absolute inset-0 -rotate-90" viewBox="0 0 36 36">
-                          <circle cx="18" cy="18" r="14" fill="none" stroke="black" strokeOpacity="0.2" strokeWidth="4" />
-                          <circle cx="18" cy="18" r="14" fill="none" stroke="black" strokeWidth="4"
-                            strokeDasharray={String(2 * Math.PI * 14)}
-                            strokeDashoffset={String(2 * Math.PI * 14 * (1 - (nextCountdown ?? 0) / 15))}
-                            strokeLinecap="round" />
-                        </svg>
-                        <span className="text-[9px] font-bold text-black leading-none">{nextCountdown}</span>
-                      </div>
-                      Xem ngay
-                    </button>
-                    <button onClick={() => { setNextDismissed(true); setNextCountdown(null); }} className="shrink-0 text-white/50 hover:text-white"><X size={16} /></button>
-                  </div>
-                </div>
-              </div>
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end gap-2 p-4 pb-16">
+              <button onClick={goNext}
+                className="pointer-events-auto relative overflow-hidden rounded-full px-5 py-2.5 text-sm font-semibold text-black shadow-xl"
+                style={{ background: `linear-gradient(to right, #ffffff ${(nextCountdown / 15) * 100}%, #d1d5db ${(nextCountdown / 15) * 100}%)` }}>
+                <span className="relative flex items-center gap-2">
+                  <Play size={14} fill="currentColor" className="shrink-0" />
+                  Tập tiếp theo
+                </span>
+              </button>
+              <button onClick={() => { setNextDismissed(true); setNextCountdown(null); }}
+                className="pointer-events-auto text-white/60 hover:text-white">
+                <X size={18} />
+              </button>
             </div>
           )}
         </div>

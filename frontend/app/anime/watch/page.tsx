@@ -419,7 +419,7 @@ function Watch() {
             skipIntro={skipIntro} autoNext={autoNext} onNextAt={handleNextAt} onEnded={goNext} />
           {/* Netflix-style overlay — bottom-right góc video */}
           {nextCountdown !== null && ep?.next && !nextDismissed && (
-            <div className="pointer-events-none absolute inset-0 flex items-end justify-end p-3 pb-16">
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-3 pb-16">
               <div className="pointer-events-auto w-56 overflow-hidden rounded-xl bg-black/90 shadow-2xl ring-1 ring-white/10">
                 {ep.next.thumbnail && (
                   // eslint-disable-next-line @next/next/no-img-element

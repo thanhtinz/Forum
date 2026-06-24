@@ -80,10 +80,10 @@ function Detail() {
               : <div className="h-full bg-ink-700" />}
           </div>
           <h1 className="mt-2 text-center text-xl font-bold leading-tight text-white drop-shadow-md">
-            {w.titleEnglish || w.title}
+            {w.title}
           </h1>
-          {w.titleEnglish && w.title && w.title !== w.titleEnglish && (
-            <p className="text-center text-sm leading-tight text-white/70">{w.title}</p>
+          {w.titleEnglish && w.titleEnglish !== w.title && (
+            <p className="text-center text-sm leading-tight text-white/70">{w.titleEnglish}</p>
           )}
         </div>
       </div>

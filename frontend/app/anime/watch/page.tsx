@@ -431,7 +431,7 @@ function Watch() {
       </div>
 
       {/* Đổi server — ngay dưới player */}
-      {servers.length > 1 && (
+      {servers.length >= 1 && (
         <div className="flex flex-wrap items-center justify-center gap-2">
           <span className="flex items-center gap-1 text-sm text-ink-500"><Server size={14} /> Đổi server</span>
           {servers.map((s, i) => (

@@ -300,6 +300,10 @@ function Watch() {
   function toggleAutoNext() { setAutoNext((v) => { localStorage.setItem('anime_autonext', v ? '0' : '1'); return !v; }); }
   function toggleSkipIntro() { setSkipIntro((v) => { localStorage.setItem('anime_skipintro', v ? '0' : '1'); return !v; }); }
 
+  // Ref để luôn có giá trị autoNext mới nhất trong setTimeout closure
+  const autoNextRef = useRef(autoNext);
+  autoNextRef.current = autoNext;
+
   // Reset banner khi đổi tập / đổi server
   useEffect(() => { setNextCountdown(null); setNextDismissed(false); }, [ep?.id, serverIdx]);
 
@@ -307,7 +311,7 @@ function Watch() {
   useEffect(() => {
     if (nextCountdown === null) return;
     if (nextCountdown <= 0) {
-      if (autoNext && ep?.next) goNext();
+      if (autoNextRef.current && ep?.next) goNext();
       setNextCountdown(null);
       return;
     }
@@ -469,7 +473,7 @@ function Watch() {
               <span onClick={toggleAutoNext} className={`relative h-6 w-11 rounded-full transition ${autoNext ? 'bg-brand-500' : 'bg-white/20'}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${autoNext ? 'left-[22px]' : 'left-0.5'}`} /></span>
             </label>
             <label className="flex cursor-pointer items-center justify-between text-sm">
-              <span>Bỏ qua đoạn đầu {cur?.introEnd ? `(0s–${cur.introEnd}s)` : '(server này chưa đặt)'}</span>
+              <span>Bỏ qua đoạn đầu</span>
               <span onClick={toggleSkipIntro} className={`relative h-6 w-11 rounded-full transition ${skipIntro ? 'bg-brand-500' : 'bg-white/20'}`}><span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${skipIntro ? 'left-[22px]' : 'left-0.5'}`} /></span>
             </label>
 

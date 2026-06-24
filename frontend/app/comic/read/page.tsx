@@ -1,9 +1,8 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { ChevronLeft, ChevronRight, List, ArrowLeft, Settings2, AlignJustify } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, List } from 'lucide-react';
 import { api } from '@/lib/api';
 
 interface Chapter {
@@ -17,8 +16,6 @@ interface Chapter {
   media: { slug: string; title: string; titleEnglish?: string | null; type: string };
 }
 
-type ReadMode = 'vertical' | 'horizontal';
-
 function ComicReaderInner() {
   const params = useSearchParams();
   const chapterId = params.get('id') ?? '';
@@ -26,57 +23,26 @@ function ComicReaderInner() {
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [mode, setMode] = useState<ReadMode>('vertical');
-  const [currentPage, setCurrentPage] = useState(0);
-  const [showControls, setShowControls] = useState(true);
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!chapterId) { setErr('Thiếu ID chương'); setLoading(false); return; }
     setLoading(true); setErr('');
     api.get<Chapter>(`/anime/chapter/${chapterId}`)
-      .then((ch) => { setChapter(ch); setCurrentPage(0); })
+      .then((ch) => { setChapter(ch); })
       .catch((e: any) => setErr(e.message))
       .finally(() => setLoading(false));
   }, [chapterId]);
 
-  function showBar() {
-    setShowControls(true);
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    hideTimer.current = setTimeout(() => setShowControls(false), 3000);
-  }
-
-  useEffect(() => {
-    if (mode === 'horizontal') { showBar(); }
-    return () => { if (hideTimer.current) clearTimeout(hideTimer.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, chapterId]);
-
-  function prevPage() { if (currentPage > 0) { setCurrentPage((p) => p - 1); showBar(); } }
-  function nextPage() { if (chapter && currentPage < chapter.pages.length - 1) { setCurrentPage((p) => p + 1); showBar(); } }
-
-  function handleKeyDown(e: KeyboardEvent) {
-    if (mode !== 'horizontal') return;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevPage();
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
-  }
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, currentPage, chapter]);
-
   if (loading) return (
-    <div className="flex h-screen items-center justify-center">
-      <p className="text-ink-400">Đang tải chương...</p>
+    <div className="flex h-screen items-center justify-center bg-[#111]">
+      <p className="text-white/50">Đang tải chương...</p>
     </div>
   );
 
   if (err || !chapter) return (
-    <div className="flex h-screen flex-col items-center justify-center gap-4">
-      <p className="text-rose-500">{err || 'Không tìm thấy chương'}</p>
-      <Link href="/comic" className="text-sm text-brand-600 hover:underline">← Về trang truyện tranh</Link>
+    <div className="flex h-screen flex-col items-center justify-center gap-4 bg-[#111]">
+      <p className="text-rose-400">{err || 'Không tìm thấy chương'}</p>
+      <a href="/comic" className="text-sm text-brand-400 hover:underline">← Về trang truyện tranh</a>
     </div>
   );
 
@@ -85,109 +51,108 @@ function ComicReaderInner() {
   const backHref = `/comic/detail?slug=${chapter.media.slug}`;
   const isText = !!chapter.content && chapter.pages.length === 0;
 
-  // Text chapter
+  const NavBtn = ({ href, children, disabled }: { href?: string; children: React.ReactNode; disabled?: boolean }) =>
+    disabled || !href ? (
+      <span className="flex items-center gap-1 rounded bg-white/5 px-3 py-1.5 text-sm text-white/30 select-none">{children}</span>
+    ) : (
+      <a href={href} className="flex items-center gap-1 rounded bg-white/10 px-3 py-1.5 text-sm text-white hover:bg-white/20 active:bg-white/30">{children}</a>
+    );
+
+  // ── Text chapter ─────────────────────────────────────────────────────────
   if (isText) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        <div className="mb-6 flex items-center gap-3">
-          <Link href={backHref} className="flex items-center gap-1 text-sm text-ink-400 hover:text-ink-600">
-            <ArrowLeft size={16} /> {seriesTitle}
-          </Link>
-        </div>
-        <h1 className="mb-2 text-xl font-bold">{chapterLabel}</h1>
-        <div className="prose prose-ink max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: chapter.content! }} />
-        <div className="mt-8 flex justify-between border-t border-ink-100 pt-4 dark:border-ink-800">
-          {chapter.prevId
-            ? <Link href={`/comic/read?id=${chapter.prevId}`} className="flex items-center gap-1 text-sm text-brand-600 hover:underline"><ChevronLeft size={16} /> Chương trước</Link>
-            : <span />}
-          {chapter.nextId
-            ? <Link href={`/comic/read?id=${chapter.nextId}`} className="flex items-center gap-1 text-sm text-brand-600 hover:underline">Chương tiếp <ChevronRight size={16} /></Link>
-            : <span />}
-        </div>
-      </div>
-    );
-  }
-
-  // Image chapter — vertical scroll
-  if (mode === 'vertical') {
-    return (
-      <div className="bg-black min-h-screen" onClick={showBar}>
+      <div className="min-h-screen bg-[#111] text-white">
         {/* Top bar */}
-        <div className={`fixed top-0 left-0 right-0 z-50 flex items-center gap-3 bg-black/80 px-4 py-2.5 text-white backdrop-blur transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          <Link href={backHref} className="text-white/70 hover:text-white"><ArrowLeft size={18} /></Link>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold">{seriesTitle}</p>
-            <p className="truncate text-xs text-white/60">{chapterLabel}</p>
-          </div>
-          <button onClick={() => setMode('horizontal')} title="Đọc ngang" className="rounded p-1 text-white/70 hover:bg-white/10 hover:text-white">
-            <List size={18} />
-          </button>
+        <div className="fixed top-0 left-0 right-0 z-50 flex items-center gap-2 border-b border-white/10 bg-[#1a1a2e] px-3 py-2">
+          <a href={backHref} className="grid h-8 w-8 shrink-0 place-items-center rounded text-white hover:bg-white/10">
+            <Home size={18} />
+          </a>
+          <div className="min-w-0 flex-1 truncate text-center text-sm font-medium">{chapterLabel}</div>
+          <NavBtn href={chapter.prevId ? `/comic/read?id=${chapter.prevId}` : undefined} disabled={!chapter.prevId}>
+            <ChevronLeft size={14} /> Trước
+          </NavBtn>
+          <NavBtn href={chapter.nextId ? `/comic/read?id=${chapter.nextId}` : undefined} disabled={!chapter.nextId}>
+            Sau <ChevronRight size={14} />
+          </NavBtn>
         </div>
 
-        {/* Pages */}
-        <div className="flex flex-col items-center pt-12 pb-16">
-          {chapter.pages.map((url, i) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={i} src={url} alt={`Trang ${i + 1}`} className="w-full max-w-2xl block" loading={i < 3 ? 'eager' : 'lazy'} />
-          ))}
+        <div className="mx-auto max-w-2xl px-4 pb-12 pt-16">
+          <h1 className="mb-1 text-center text-xl font-bold text-brand-400">{seriesTitle}</h1>
+          <p className="mb-6 text-center text-sm text-white/50">{chapterLabel}</p>
+          <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: chapter.content! }} />
         </div>
 
-        {/* Bottom nav */}
-        <div className={`fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between bg-black/80 px-4 py-3 text-white backdrop-blur transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-          {chapter.prevId
-            ? <Link href={`/comic/read?id=${chapter.prevId}`} className="flex items-center gap-1 text-sm hover:text-brand-300"><ChevronLeft size={16} /> Trước</Link>
-            : <span />}
-          <p className="text-xs text-white/60">{chapter.pages.length} trang</p>
-          {chapter.nextId
-            ? <Link href={`/comic/read?id=${chapter.nextId}`} className="flex items-center gap-1 text-sm hover:text-brand-300">Tiếp <ChevronRight size={16} /></Link>
-            : <span />}
+        {/* Bottom */}
+        <div className="flex gap-3 border-t border-white/10 bg-[#1a1a2e] p-4">
+          <NavBtn href={chapter.prevId ? `/comic/read?id=${chapter.prevId}` : undefined} disabled={!chapter.prevId}>
+            <ChevronLeft size={14} /> Chương Trước
+          </NavBtn>
+          <a href={backHref} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-600 py-2.5 text-sm font-medium text-white hover:bg-brand-700">
+            <List size={15} /> Chương Khác
+          </a>
+          <NavBtn href={chapter.nextId ? `/comic/read?id=${chapter.nextId}` : undefined} disabled={!chapter.nextId}>
+            Sau <ChevronRight size={14} />
+          </NavBtn>
         </div>
       </div>
     );
   }
 
-  // Horizontal / page-flip mode
-  const total = chapter.pages.length;
+  // ── Image chapter ─────────────────────────────────────────────────────────
   return (
-    <div className="relative flex h-screen items-center justify-center bg-black select-none" onClick={showBar}>
-      {/* Top bar */}
-      <div className={`fixed top-0 left-0 right-0 z-50 flex items-center gap-3 bg-black/80 px-4 py-2.5 text-white backdrop-blur transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        <Link href={backHref} className="text-white/70 hover:text-white"><ArrowLeft size={18} /></Link>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">{seriesTitle}</p>
-          <p className="truncate text-xs text-white/60">{chapterLabel}</p>
+    <div className="min-h-screen bg-[#111]">
+      {/* Top bar — always visible */}
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center gap-2 border-b border-white/10 bg-[#1a1a2e] px-3 py-2">
+        <a href={backHref} className="grid h-8 w-8 shrink-0 place-items-center rounded text-white hover:bg-white/10">
+          <Home size={18} />
+        </a>
+        <div className="min-w-0 flex-1 truncate rounded border border-white/20 bg-white/10 px-2 py-1 text-center text-sm text-white">
+          {chapterLabel}
         </div>
-        <button onClick={(e) => { e.stopPropagation(); setMode('vertical'); }} title="Đọc dọc" className="rounded p-1 text-white/70 hover:bg-white/10 hover:text-white">
-          <AlignJustify size={18} />
-        </button>
+        <NavBtn href={chapter.prevId ? `/comic/read?id=${chapter.prevId}` : undefined} disabled={!chapter.prevId}>
+          <ChevronLeft size={14} /> Trước
+        </NavBtn>
+        <NavBtn href={chapter.nextId ? `/comic/read?id=${chapter.nextId}` : undefined} disabled={!chapter.nextId}>
+          Sau <ChevronRight size={14} />
+        </NavBtn>
       </div>
 
-      {/* Page image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        key={currentPage}
-        src={chapter.pages[currentPage]}
-        alt={`Trang ${currentPage + 1}`}
-        className="max-h-screen max-w-full object-contain"
-      />
+      {/* Title banner */}
+      <div className="pt-[44px] bg-[#0f0f1a] py-3 text-center">
+        <p className="text-sm font-bold text-brand-400">{seriesTitle}</p>
+        <p className="text-xs text-white/50">{chapterLabel}</p>
+      </div>
 
-      {/* Click zones */}
-      <button className="absolute left-0 top-0 h-full w-1/3" onClick={(e) => { e.stopPropagation(); prevPage(); }} aria-label="Trang trước" />
-      <button className="absolute right-0 top-0 h-full w-1/3" onClick={(e) => { e.stopPropagation(); nextPage(); }} aria-label="Trang tiếp" />
+      {/* Pages — full width, no gap */}
+      <div className="flex flex-col">
+        {chapter.pages.map((url, i) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            key={i}
+            src={url}
+            alt={`Trang ${i + 1}`}
+            className="block w-full"
+            loading={i < 3 ? 'eager' : 'lazy'}
+          />
+        ))}
+      </div>
 
-      {/* Bottom bar */}
-      <div className={`fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-3 bg-black/80 px-4 py-3 text-white backdrop-blur transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        {chapter.prevId
-          ? <Link href={`/comic/read?id=${chapter.prevId}`} className="flex items-center gap-1 text-sm hover:text-brand-300" onClick={(e) => e.stopPropagation()}><ChevronLeft size={16} /> Trước</Link>
-          : <span />}
-        <div className="flex items-center gap-2 text-xs text-white/60">
-          <button onClick={(e) => { e.stopPropagation(); prevPage(); }} disabled={currentPage === 0} className="rounded p-1 hover:bg-white/10 disabled:opacity-30"><ChevronLeft size={16} /></button>
-          <span>{currentPage + 1} / {total}</span>
-          <button onClick={(e) => { e.stopPropagation(); nextPage(); }} disabled={currentPage >= total - 1} className="rounded p-1 hover:bg-white/10 disabled:opacity-30"><ChevronRight size={16} /></button>
-        </div>
-        {chapter.nextId
-          ? <Link href={`/comic/read?id=${chapter.nextId}`} className="flex items-center gap-1 text-sm hover:text-brand-300" onClick={(e) => e.stopPropagation()}>Tiếp <ChevronRight size={16} /></Link>
-          : <span />}
+      {/* Bottom actions */}
+      <div className="flex gap-3 border-t border-white/10 bg-[#1a1a2e] p-4">
+        {chapter.prevId ? (
+          <a href={`/comic/read?id=${chapter.prevId}`}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/20 bg-white/5 py-3 text-sm font-medium text-white hover:bg-white/10">
+            <ChevronLeft size={16} /> Chương Trước
+          </a>
+        ) : (
+          <span className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/10 py-3 text-sm text-white/20">
+            <ChevronLeft size={16} /> Chương Trước
+          </span>
+        )}
+        <a href={backHref}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-600 py-3 text-sm font-medium text-white hover:bg-brand-700">
+          <List size={16} /> Chương Khác
+        </a>
       </div>
     </div>
   );
@@ -195,7 +160,7 @@ function ComicReaderInner() {
 
 export default function ComicReadPage() {
   return (
-    <Suspense fallback={<div className="flex h-screen items-center justify-center text-ink-400">Đang tải...</div>}>
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[#111] text-white/50">Đang tải...</div>}>
       <ComicReaderInner />
     </Suspense>
   );

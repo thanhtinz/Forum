@@ -75,6 +75,22 @@ function VideoPlayer({ url, referer, isHls, introEnd, showNextAt, episodeDuratio
         miniProgressBar: true,
         autoOrientation: true,
         theme: '#6366f1',
+        controls: [
+          {
+            position: 'left',
+            name: 'backward10',
+            html: `<svg xmlns="http://www.w3.org/2000/svg" height="22" width="22" viewBox="0 0 24 24" fill="white"><path d="M11.99 5V1l-5 5 5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6h-2c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8zm-1.1 11H9.9v-3.26L9 12.16l.77-.54.88-.62V16zm4.17 0h-2.89v-.88h.98v-3.3h-.96v-.85c.32-.05.56-.14.73-.26.17-.13.29-.29.36-.51h.89V15.12h.89V16z"/></svg>`,
+            tooltip: 'Lùi 10 giây',
+            click: function() { art.backward = 10; },
+          },
+          {
+            position: 'left',
+            name: 'forward10',
+            html: `<svg xmlns="http://www.w3.org/2000/svg" height="22" width="22" viewBox="0 0 24 24" fill="white"><path d="M18 13c0 3.31-2.69 6-6 6s-6-2.69-6-6 2.69-6 6-6v4l5-5-5-5v4c-4.42 0-8 3.58-8 8s3.58 8 8 8 8-3.58 8-8h-2zm-4.5 3h-1.1v-3.26l-.9-.58.77-1.16 1.23.82V16zm3.17 0H13.78v-.88h.98v-3.3h-.96v-.85c.32-.05.56-.14.73-.26.17-.13.29-.29.36-.51h.89v4.92h.89V16z"/></svg>`,
+            tooltip: 'Tới 10 giây',
+            click: function() { art.forward = 10; },
+          },
+        ],
         customType: isHls
           ? {
               m3u8: (video: HTMLVideoElement, u: string, instance: any) => {

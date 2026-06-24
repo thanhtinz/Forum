@@ -183,11 +183,7 @@ function EditSeriesInner() {
   }
 
   function set(k: keyof typeof form, v: string) {
-    setForm((f) => {
-      const next = { ...f, [k]: v };
-      if (k === 'title') next.slug = slugify(v);
-      return next;
-    });
+    setForm((f) => ({ ...f, [k]: v }));
   }
 
   async function save(e: React.FormEvent) {

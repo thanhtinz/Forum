@@ -202,6 +202,9 @@ function Detail() {
         {w.seasonYear && w.season && (
           <MetaRow label="Mùa" value={`${SEASON_LABEL[w.season] ?? w.season} ${w.seasonYear}`} />
         )}
+        {w.author && <MetaRow label="Tác giả" value={w.author} />}
+        {w.artist && w.artist !== w.author && <MetaRow label="Họa sĩ" value={w.artist} />}
+        {w.publisher && <MetaRow label="Nhóm dịch" value={w.publisher} />}
         {w.studios?.length > 0 && <MetaRow label="Studio" value={w.studios.map((s: any) => s.name).join(', ')} />}
         {w.source && <MetaRow label="Nguồn" value={w.source} />}
       </div>
@@ -218,6 +221,22 @@ function Detail() {
           className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-brand-600 active:scale-95">
           <BookOpen size={20} /> Đọc Ngay
         </a>
+      )}
+
+      {/* ── Chapter list (manga only) ── */}
+      {w.chapterList?.length > 0 && !firstEp && (
+        <div>
+          <h2 className="mb-2 font-semibold">Danh sách chương ({w.chapterList.length})</h2>
+          <div className="grid grid-cols-3 gap-2">
+            {w.chapterList.map((ch: any) => (
+              <a key={ch.id} href={`/manga/read?id=${ch.id}`}
+                className="flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-2.5 text-sm font-medium transition-colors hover:bg-brand-600 hover:text-white dark:bg-ink-800 dark:hover:bg-brand-600">
+                <BookOpen size={11} className="shrink-0" />
+                <span className="truncate">Ch. {ch.number}{ch.title ? ` - ${ch.title}` : ''}</span>
+              </a>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* ── Bình luận ── */}

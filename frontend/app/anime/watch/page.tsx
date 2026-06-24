@@ -421,8 +421,10 @@ function Watch() {
           {nextCountdown !== null && ep?.next && !nextDismissed && (
             <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-3">
               <button onClick={goNext}
-                className="pointer-events-auto relative overflow-hidden text-sm font-semibold text-black shadow-xl"
-                style={{ background: `linear-gradient(to right, #ffffff ${((15 - nextCountdown) / 15) * 100}%, #d1d5db ${((15 - nextCountdown) / 15) * 100}%)` }}>
+                className="pointer-events-auto relative overflow-hidden bg-[#d1d5db] text-sm font-semibold text-black shadow-xl">
+                {/* White fill — grows smoothly from left, CSS transition handles the animation */}
+                <div className="absolute inset-y-0 left-0 bg-white"
+                  style={{ width: `${((15 - nextCountdown) / 15) * 100}%`, transition: 'width 1s linear' }} />
                 <span className="relative flex items-center gap-2 px-5 py-2.5">
                   <Play size={14} fill="currentColor" className="shrink-0" />
                   Tập tiếp theo

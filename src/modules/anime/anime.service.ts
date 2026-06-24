@@ -5,6 +5,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { Readable } from 'stream';
 import type { Response } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AttachmentService } from '../media/attachment.service';
 
 const ANILIST_URL = 'https://graphql.anilist.co';
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36';
@@ -13,7 +14,7 @@ const HLS_ALLOW = (process.env.ANIME_HLS_ALLOW || '').split(',').map((s) => s.tr
 
 @Injectable()
 export class AnimeService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly attachment: AttachmentService) {}
 
   private async uniqueSlug(base: string): Promise<string> {
     const root = slugify(base || '', { lower: true, strict: true }).slice(0, 180) || createId().slice(0, 8);
@@ -160,6 +161,18 @@ export class AnimeService {
   // ───────── ADMIN ─────────
   adminList(q: { type?: string; search?: string; page?: number }) {
     return this.list({ ...q, sort: 'newest', limit: 40 });
+  }
+
+  async uploadAdminCover(id: string, file: any) {
+    if (!file) throw new BadRequestException('Thiếu file');
+    const result = await this.attachment.upload(file.buffer, file.originalname, file.mimetype, 'anime-covers');
+    return this.prisma.mediaWork.update({ where: { id }, data: { coverUrl: result.url }, select: { id: true, coverUrl: true } });
+  }
+
+  async uploadAdminBanner(id: string, file: any) {
+    if (!file) throw new BadRequestException('Thiếu file');
+    const result = await this.attachment.upload(file.buffer, file.originalname, file.mimetype, 'anime-covers');
+    return this.prisma.mediaWork.update({ where: { id }, data: { bannerUrl: result.url }, select: { id: true, bannerUrl: true } });
   }
 
   async deleteWork(id: string) {

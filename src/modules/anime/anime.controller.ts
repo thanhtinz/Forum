@@ -1,4 +1,6 @@
-import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Put, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Put, Query, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import type { Response } from 'express';
 import { UserRole } from '@prisma/client';
 import { AnimeService } from './anime.service';
@@ -88,6 +90,18 @@ export class AnimeController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   update(@Param('id') id: string, @Body() data: any) { return this.svc.updateWork(id, data); }
+
+  @Post('admin/anime/:id/cover')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } }))
+  uploadCover(@Param('id') id: string, @UploadedFile() file: any) { return this.svc.uploadAdminCover(id, file); }
+
+  @Post('admin/anime/:id/banner')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } }))
+  uploadBanner(@Param('id') id: string, @UploadedFile() file: any) { return this.svc.uploadAdminBanner(id, file); }
 
   @Post('admin/anime/:id/delete')
   @UseGuards(JwtAuthGuard, RolesGuard)

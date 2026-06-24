@@ -166,19 +166,19 @@ function IframePlayer({ url, showNextAt, episodeDurationMin, autoNext, onNextAt,
   nextRef.current = { autoNext, onNextAt, onEnded };
   const nextAtFiredRef = useRef(false);
 
-  // Wall-clock fallback: iframe không cho đọc currentTime nên dùng đồng hồ thực từ lúc tải
+  // Wall-clock fallback: iframe không cho đọc currentTime, nên ước tính dựa vào tổng thời lượng —
+  // bắn banner "tập tiếp theo" khoảng 90 giây trước khi tập kết thúc.
+  // Không dùng showNextAt vì đó là timestamp tuyệt đối trong video, không đồng bộ với đồng hồ thực.
   useEffect(() => {
     nextAtFiredRef.current = false;
-    const triggerSec =
-      showNextAt != null && showNextAt > 0 ? showNextAt
-      : episodeDurationMin ? episodeDurationMin * 60 - 90
-      : null;
-    if (!triggerSec || triggerSec <= 0 || triggerSec > 14400) return;
+    if (!episodeDurationMin || episodeDurationMin <= 3) return;
+    const triggerSec = episodeDurationMin * 60 - 90;
+    if (triggerSec <= 0) return;
     const t = setTimeout(() => {
       if (!nextAtFiredRef.current) { nextAtFiredRef.current = true; nextRef.current.onNextAt(); }
     }, triggerSec * 1000);
     return () => clearTimeout(t);
-  }, [url, showNextAt, episodeDurationMin]);
+  }, [url, episodeDurationMin]);
 
   useEffect(() => {
     function onMsg(e: MessageEvent) {

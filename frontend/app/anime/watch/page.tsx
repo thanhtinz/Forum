@@ -35,17 +35,17 @@ function PlayerError(_props: { msg?: string }) {
 
 interface PlayerProps { url: string; referer?: string | null; introEnd?: number | null; skipIntro: boolean; autoNext: boolean; onEnded: () => void }
 
-// Player chính (ArtPlayer) cho nguồn m3u8/mp4 — qua proxy HLS, hỗ trợ hls.js, bỏ qua intro, tự next.
+// Player chính (ArtPlayer) cho nguồn m3u8/mp4 — thử trực tiếp trước, fallback sang proxy nếu lỗi CORS/IP-block.
 function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnded }: PlayerProps & { isHls: boolean }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
-  // mp4/webm: thử phát TRỰC TIẾP trước (nhiều host cho hotlink → nhanh hơn, đỡ tốn proxy server);
-  // nếu lỗi (CORS/403/hotlink) thì tự fallback sang proxy. HLS luôn qua proxy vì hls.js cần CORS.
-  const [viaProxy, setViaProxy] = useState(isHls);
+  // Thử phát TRỰC TIẾP trước cho cả HLS lẫn mp4 (tránh bị CDN chặn IP server);
+  // fallback sang proxy nếu lỗi CORS hoặc CDN chặn.
+  const [viaProxy, setViaProxy] = useState(false);
   const viaProxyRef = useRef(viaProxy); viaProxyRef.current = viaProxy;
   const src = viaProxy ? proxy(url, referer) : url;
-  // Khi đổi tập/đổi server: reset lại về phát trực tiếp (cho nguồn mp4) và xoá lỗi cũ.
-  useEffect(() => { setViaProxy(isHls); setError(''); }, [url, isHls]);
+  // Khi đổi tập/đổi server: reset về direct và xoá lỗi cũ.
+  useEffect(() => { setViaProxy(false); setError(''); }, [url, isHls]);
   // Giữ giá trị mới nhất mà không tạo lại player
   const introRef = useRef({ introEnd, skipIntro }); introRef.current = { introEnd, skipIntro };
   const nextRef = useRef({ autoNext, onEnded }); nextRef.current = { autoNext, onEnded };
@@ -83,6 +83,12 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
                   let recover = 0;
                   hls.on(Hls.Events.ERROR, (_e: any, data: any) => {
                     if (!data?.fatal) return;
+                    // Nếu đang phát trực tiếp mà lỗi network (CORS/IP-block) → fallback sang proxy
+                    if (data.type === Hls.ErrorTypes.NETWORK_ERROR && !viaProxyRef.current) {
+                      hls.destroy();
+                      setViaProxy(true);
+                      return;
+                    }
                     if (data.type === Hls.ErrorTypes.NETWORK_ERROR && recover < 3) { recover++; hls.startLoad(); return; }
                     if (data.type === Hls.ErrorTypes.MEDIA_ERROR && recover < 3) { recover++; hls.recoverMediaError(); return; }
                     setError(`Lỗi tải luồng (${data.type || 'network'}).`);

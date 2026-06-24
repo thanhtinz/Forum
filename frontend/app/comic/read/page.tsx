@@ -125,10 +125,10 @@ function ComicReaderInner() {
         </div>
 
         {/* Pages */}
-        <div className="flex flex-col items-center pt-12">
+        <div className="flex flex-col items-center pt-12 pb-16">
           {chapter.pages.map((url, i) => (
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={i} src={url} alt={`Trang ${i + 1}`} className="w-full max-w-2xl" loading={i < 3 ? 'eager' : 'lazy'} />
+            <img key={i} src={url} alt={`Trang ${i + 1}`} className="w-full max-w-2xl block" loading={i < 3 ? 'eager' : 'lazy'} />
           ))}
         </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Search, Star, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -38,13 +39,14 @@ function getPageNums(cur: number, total: number): (number | '...')[] {
   return pages;
 }
 
-export default function TruyenTranhPage() {
+function TruyenTranhContent() {
+  const searchParams = useSearchParams();
   const [works, setWorks] = useState<Work[]>([]);
   const [genres, setGenres] = useState<Genre[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [f, setF] = useState({ genre: '', status: '', year: '', sort: 'popularity', search: '' });
+  const [f, setF] = useState({ genre: searchParams.get('genre') || '', status: '', year: '', sort: 'popularity', search: '' });
   const [searchInput, setSearchInput] = useState('');
 
   const totalPages = Math.ceil(total / LIMIT);
@@ -172,4 +174,8 @@ export default function TruyenTranhPage() {
       )}
     </div>
   );
+}
+
+export default function TruyenTranhPage() {
+  return <Suspense fallback={<p className="p-10 text-center text-ink-500">Đang tải…</p>}><TruyenTranhContent /></Suspense>;
 }

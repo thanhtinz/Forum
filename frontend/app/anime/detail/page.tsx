@@ -13,9 +13,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const SEASON_LABEL: Record<string, string> = { WINTER: 'Đông', SPRING: 'Xuân', SUMMER: 'Hạ', FALL: 'Thu' };
 const FORMAT_LABEL: Record<string, string> = {
-  TV: 'TV', MOVIE: 'Phim lẻ', OVA: 'OVA', ONA: 'ONA', SPECIAL: 'Special', NOVEL: 'Light Novel', MANHUA: 'Manhua', DONGHUA: 'Donghua',
+  TV: 'TV', MOVIE: 'Phim lẻ', OVA: 'OVA', ONA: 'ONA', SPECIAL: 'Special',
+  NOVEL: 'Light Novel', MANHUA: 'Manhua', MANHWA: 'Manhwa', DONGHUA: 'Donghua',
 };
-const TYPE_COUNTRY: Record<string, string> = { DONGHUA: 'Trung Quốc', MANHUA: 'Trung Quốc', MANHWA: 'Hàn Quốc' };
 
 interface CommentT {
   id: string; content: string; createdAt: string; authorId: string; parentId?: string | null;
@@ -63,6 +63,13 @@ function Detail() {
     api.get<CommentT[]>(`/anime/${slug}/comments`).then((r) => setComments(r || [])).catch(() => {});
   }, [slug]);
 
+  // Tự động chuyển hướng truyện tranh sang trang chi tiết đúng
+  useEffect(() => {
+    if (w && w.type === 'MANHUA') {
+      router.replace(`/manga/detail?slug=${slug}`);
+    }
+  }, [w, slug, router]);
+
   useEffect(() => {
     if (!user || !w?.id) return;
     api.get<any>(`/anime/me/entry/${w.id}`).then((e) => setFav(!!e?.favorite)).catch(() => {});
@@ -104,7 +111,7 @@ function Detail() {
   }
 
   if (err) return <div className="card p-8 text-center text-red-500">{err}</div>;
-  if (!w) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
+  if (!w || w.type === 'MANHUA') return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
 
   const firstEp = w.episodeList?.[0];
   const firstCh = w.chapterList?.[0];

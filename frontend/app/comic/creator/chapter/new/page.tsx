@@ -31,7 +31,13 @@ function ChapterEditorInner() {
   // Chapter type: 'image' | 'text'
   const [chapterType, setChapterType] = useState<'image' | 'text'>('image');
   // Chapter metadata
-  const [chapForm, setChapForm] = useState({ number: '', title: '', volume: '', scheduledAt: '' });
+  const [chapForm, setChapForm] = useState({ number: '', title: '', volume: '' });
+  // Scheduled publish — split into 3 inputs
+  const [schedDay, setSchedDay] = useState('');
+  const [schedMonth, setSchedMonth] = useState('');
+  const [schedYear, setSchedYear] = useState('');
+  // Track if chapter was already published (skip re-approval on save)
+  const [wasPublished, setWasPublished] = useState(false);
   // Text content for text-type chapters
   const [textContent, setTextContent] = useState('');
   // Local files waiting to be uploaded
@@ -58,7 +64,14 @@ function ChapterEditorInner() {
     api
       .get<any>(`/creator/chapter/${chapterId}`)
       .then((ch) => {
-        setChapForm({ number: String(ch.number), title: ch.title ?? '', volume: ch.volume ? String(ch.volume) : '', scheduledAt: ch.scheduledAt ? new Date(ch.scheduledAt).toISOString().slice(0, 16) : '' });
+        setChapForm({ number: String(ch.number), title: ch.title ?? '', volume: ch.volume ? String(ch.volume) : '' });
+        if (ch.scheduledAt) {
+          const d = new Date(ch.scheduledAt);
+          setSchedDay(String(d.getDate()));
+          setSchedMonth(String(d.getMonth() + 1));
+          setSchedYear(String(d.getFullYear()));
+        }
+        setWasPublished(ch.chapterStatus === 'PUBLISHED');
         setServerPages(ch.pages ?? []);
         setResolvedChapterId(chapterId);
         if (ch.content) { setTextContent(ch.content); setChapterType('text'); }
@@ -68,6 +81,12 @@ function ChapterEditorInner() {
   }, [chapterId]);
 
   function setField(k: keyof typeof chapForm, v: string) { setChapForm((f) => ({ ...f, [k]: v })); }
+
+  function buildScheduledAt(): string | undefined {
+    if (!schedDay || !schedMonth || !schedYear) return undefined;
+    const d = new Date(Number(schedYear), Number(schedMonth) - 1, Number(schedDay));
+    return isNaN(d.getTime()) ? undefined : d.toISOString();
+  }
 
   // ── File / ZIP handling ──────────────────────────────────────────────────
 
@@ -161,7 +180,7 @@ function ChapterEditorInner() {
       number: Number(chapForm.number),
       title: chapForm.title || undefined,
       volume: chapForm.volume ? Number(chapForm.volume) : undefined,
-      scheduledAt: chapForm.scheduledAt || undefined,
+      scheduledAt: buildScheduledAt(),
     };
     if (resolvedChapterId) {
       await api.patch(`/creator/chapter/${resolvedChapterId}`, meta);
@@ -204,7 +223,12 @@ function ChapterEditorInner() {
         }
       }
 
-      setMsg('Đã lưu ✓');
+      if (wasPublished) {
+        await api.post(`/creator/chapter/${cid}/publish`);
+        setMsg('Đã lưu & xuất bản lại ✓');
+      } else {
+        setMsg('Đã lưu ✓');
+      }
     } catch (e: any) { setErr(e.message); setUploading(false); } finally { setBusy(false); }
   }
 
@@ -266,16 +290,18 @@ function ChapterEditorInner() {
             />
           </Field>
           <Field label="Lịch đăng" hint="Để trống = đăng ngay">
-            <input
-              type="datetime-local"
-              value={chapForm.scheduledAt}
-              onChange={(e) => setField('scheduledAt', e.target.value)}
-              className="input w-full"
-            />
+            <div className="flex gap-1">
+              <input type="number" min={1} max={31} value={schedDay} onChange={(e) => setSchedDay(e.target.value)} className="input w-full" placeholder="Ngày" />
+              <input type="number" min={1} max={12} value={schedMonth} onChange={(e) => setSchedMonth(e.target.value)} className="input w-full" placeholder="Tháng" />
+              <input type="number" min={2024} max={2099} value={schedYear} onChange={(e) => setSchedYear(e.target.value)} className="input w-full" placeholder="Năm" />
+            </div>
           </Field>
         </div>
-        {chapForm.scheduledAt && (
-          <p className="mt-2 text-xs text-sky-500">Chương sẽ tự đăng vào {new Date(chapForm.scheduledAt).toLocaleString('vi')}</p>
+        {schedDay && schedMonth && schedYear && (
+          <p className="mt-2 text-xs text-sky-500">Chương sẽ tự đăng vào {schedDay}/{schedMonth}/{schedYear}</p>
+        )}
+        {wasPublished && (
+          <p className="mt-2 text-xs text-emerald-500">Chương đã xuất bản — lưu sẽ tự xuất bản lại, không cần duyệt.</p>
         )}
       </Card>
 

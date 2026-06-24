@@ -109,15 +109,12 @@ function EditSeriesInner() {
   const [dbGenres, setDbGenres] = useState<{ id: string; name: string }[]>([]);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const coverRef = useRef<HTMLInputElement>(null);
-  const bannerRef = useRef<HTMLInputElement>(null);
 
   async function load() {
     if (!id) return;
@@ -323,35 +320,6 @@ function EditSeriesInner() {
         {/* Images */}
         <Card className="space-y-4">
           <SectionTitle>Hình ảnh</SectionTitle>
-
-          {/* Banner */}
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-ink-500">Banner (16:5)</p>
-            <button type="button" onClick={() => bannerRef.current?.click()}
-              className="group relative flex w-full items-center justify-center overflow-hidden rounded-xl bg-ink-100 dark:bg-ink-800"
-              style={{ aspectRatio: '16/5' }}>
-              {(bannerPreview ?? series?.bannerUrl)
-                // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={bannerPreview ?? series.bannerUrl!} alt="" className="h-full w-full object-cover transition group-hover:brightness-75" />
-                : <div className="flex flex-col items-center gap-1.5 text-ink-400">
-                    <Upload size={20} />
-                    <span className="text-xs">Nhấn để tải lên</span>
-                  </div>
-              }
-              {(bannerPreview ?? series?.bannerUrl) && (
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
-                  <span className="flex items-center gap-1.5 rounded-lg bg-black/60 px-3 py-1.5 text-sm text-white"><Upload size={14} /> Thay ảnh</span>
-                </div>
-              )}
-            </button>
-            <input ref={bannerRef} type="file" accept="image/*" className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; setBannerFile(f); setBannerPreview(URL.createObjectURL(f)); }} />
-            {bannerFile && (
-              <Btn size="sm" className="mt-2 w-full" onClick={() => uploadImage('banner', bannerFile, () => { setBannerFile(null); setBannerPreview(null); })} disabled={busy}>
-                Lưu banner
-              </Btn>
-            )}
-          </div>
 
           {/* Cover */}
           <div>

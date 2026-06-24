@@ -375,7 +375,7 @@ function Watch() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
-      <a href={`/anime/detail?slug=${ep.media.slug}`} className="inline-flex items-center gap-1 text-sm text-ink-500 hover:text-brand-600"><ArrowLeft size={15} /> {ep.media.titleEnglish || ep.media.title}</a>
+      <a href={`/anime/detail?slug=${ep.media.slug}`} className="inline-flex items-center gap-1 text-sm text-ink-500 hover:text-brand-600"><ArrowLeft size={15} /> {ep.media.title}</a>
 
       {/* Player */}
       <div className="overflow-hidden rounded-xl bg-black shadow-card">

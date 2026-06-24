@@ -33,10 +33,10 @@ function PlayerError(_props: { msg?: string }) {
   );
 }
 
-interface PlayerProps { url: string; referer?: string | null; introEnd?: number | null; skipIntro: boolean; autoNext: boolean; onEnded: () => void }
+interface PlayerProps { url: string; referer?: string | null; introEnd?: number | null; showNextAt?: number | null; episodeDurationMin?: number | null; skipIntro: boolean; autoNext: boolean; onNextAt: () => void; onEnded: () => void }
 
 // Player chính (ArtPlayer) cho nguồn m3u8/mp4 — thử trực tiếp trước, fallback sang proxy nếu lỗi CORS/IP-block.
-function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnded }: PlayerProps & { isHls: boolean }) {
+function VideoPlayer({ url, referer, isHls, introEnd, showNextAt, episodeDurationMin, skipIntro, autoNext, onNextAt, onEnded }: PlayerProps & { isHls: boolean }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
   // Thử phát TRỰC TIẾP trước cho cả HLS lẫn mp4 (tránh bị CDN chặn IP server);
@@ -45,10 +45,12 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
   const viaProxyRef = useRef(viaProxy); viaProxyRef.current = viaProxy;
   const src = viaProxy ? proxy(url, referer) : url;
   // Khi đổi tập/đổi server: reset về direct và xoá lỗi cũ.
-  useEffect(() => { setViaProxy(false); setError(''); }, [url, isHls]);
+  const nextAtFiredRef = useRef(false);
+  useEffect(() => { setViaProxy(false); setError(''); nextAtFiredRef.current = false; }, [url, isHls]);
   // Giữ giá trị mới nhất mà không tạo lại player
   const introRef = useRef({ introEnd, skipIntro }); introRef.current = { introEnd, skipIntro };
-  const nextRef = useRef({ autoNext, onEnded }); nextRef.current = { autoNext, onEnded };
+  const nextRef = useRef({ autoNext, onEnded, onNextAt }); nextRef.current = { autoNext, onEnded, onNextAt };
+  const nextTriggerRef = useRef({ showNextAt, episodeDurationMin }); nextTriggerRef.current = { showNextAt, episodeDurationMin };
   const skippedRef = useRef(false); // chỉ nhảy intro MỘT lần ở đầu tập
 
   useEffect(() => {
@@ -112,12 +114,28 @@ function VideoPlayer({ url, referer, isHls, introEnd, skipIntro, autoNext, onEnd
           skippedRef.current = true;
           art.currentTime = introEnd;
         }
+        // Netflix-style: kích hoạt banner "tập tiếp theo" dựa vào vị trí thực tế của video
+        if (!nextAtFiredRef.current) {
+          const { showNextAt, episodeDurationMin } = nextTriggerRef.current;
+          const vidDur = art.video?.duration; // giây, từ browser
+          const triggerAt =
+            (showNextAt != null && showNextAt > 0) ? showNextAt
+            : episodeDurationMin ? episodeDurationMin * 60 - 90
+            : (vidDur && vidDur > 120) ? vidDur - 90
+            : null;
+          if (triggerAt != null && art.currentTime >= triggerAt) {
+            nextAtFiredRef.current = true;
+            nextRef.current.onNextAt();
+          }
+        }
       });
       // Dùng native ended trực tiếp trên video element (đáng tin hơn ArtPlayer event với HLS/proxy)
       let endedFired = false;
       nativeEndedHandler = () => {
         if (endedFired) return;
         endedFired = true;
+        // Fallback: hiện banner nếu timeupdate chưa kịp kích hoạt
+        if (!nextAtFiredRef.current) { nextAtFiredRef.current = true; nextRef.current.onNextAt(); }
         if (nextRef.current.autoNext) nextRef.current.onEnded();
       };
       art.on('video:ended', nativeEndedHandler);
@@ -143,9 +161,9 @@ function Player(props: PlayerProps) {
   return <IframePlayer {...props} url={url} />;
 }
 
-function IframePlayer({ url, autoNext, onEnded }: PlayerProps) {
-  const nextRef = useRef({ autoNext, onEnded });
-  nextRef.current = { autoNext, onEnded };
+function IframePlayer({ url, autoNext, onNextAt, onEnded }: PlayerProps) {
+  const nextRef = useRef({ autoNext, onNextAt, onEnded });
+  nextRef.current = { autoNext, onNextAt, onEnded };
 
   useEffect(() => {
     function onMsg(e: MessageEvent) {
@@ -177,7 +195,7 @@ function IframePlayer({ url, autoNext, onEnded }: PlayerProps) {
           // JSON nhúng trong chuỗi
           (str.includes('"ended"') || str.includes('"complete"') || str.includes('"finished"'));
 
-        if (isEnded && nextRef.current.autoNext) nextRef.current.onEnded();
+        if (isEnded) { nextRef.current.onNextAt(); if (nextRef.current.autoNext) nextRef.current.onEnded(); }
       } catch {}
     }
     window.addEventListener('message', onMsg);
@@ -226,8 +244,6 @@ function Watch() {
   // countdown tự chuyển tập (như Netflix)
   const [nextCountdown, setNextCountdown] = useState<number | null>(null);
   const [nextDismissed, setNextDismissed] = useState(false);
-  // Ref lưu timer ID để cancel chính xác kể cả khi React re-render
-  const nextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setAutoNext(localStorage.getItem('anime_autonext') !== '0');
@@ -246,26 +262,8 @@ function Watch() {
   function toggleAutoNext() { setAutoNext((v) => { localStorage.setItem('anime_autonext', v ? '0' : '1'); return !v; }); }
   function toggleSkipIntro() { setSkipIntro((v) => { localStorage.setItem('anime_skipintro', v ? '0' : '1'); return !v; }); }
 
-  // Countdown timer: dùng ref để tránh bị React cleanup cancel nhầm
-  useEffect(() => {
-    // Cancel timer cũ nếu có
-    if (nextTimerRef.current) { clearTimeout(nextTimerRef.current); nextTimerRef.current = null; }
-    setNextCountdown(null);
-    setNextDismissed(false);
-    if (!ep?.id || !ep?.next) return;
-    let triggerSec: number;
-    if (ep.showNextAt != null && ep.showNextAt > 0) {
-      triggerSec = ep.showNextAt;
-    } else if (ep.duration) {
-      triggerSec = Math.max(ep.duration * 60 - 90, 5);
-    } else {
-      triggerSec = 5;
-    }
-    nextTimerRef.current = setTimeout(() => { nextTimerRef.current = null; setNextCountdown(15); }, triggerSec * 1000);
-  }, [ep?.id, serverIdx]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Dọn dẹp khi unmount
-  useEffect(() => () => { if (nextTimerRef.current) clearTimeout(nextTimerRef.current); }, []);
+  // Reset banner khi đổi tập / đổi server
+  useEffect(() => { setNextCountdown(null); setNextDismissed(false); }, [ep?.id, serverIdx]);
 
   // Tick đếm ngược — dependency array [nextCountdown] để không bị cancel mỗi render
   useEffect(() => {
@@ -332,7 +330,15 @@ function Watch() {
     setEntry(next);
     try { await api.put(`/anime/me/entry/${ep.media.id}`, patch); } catch {}
   }
-  function goNext() { if (ep?.next) router.push(`/anime/watch?ep=${ep.next.id}`); }
+  function goNext() {
+    if (!ep?.next) return;
+    setNextCountdown(null); setNextDismissed(true); // tránh double-navigate
+    router.push(`/anime/watch?ep=${ep.next.id}`);
+  }
+  function handleNextAt() {
+    if (nextDismissed || nextCountdown !== null || !ep?.next) return;
+    setNextCountdown(15);
+  }
   function buildCommentTree(flat: CommentT[]): CommentT[] {
     const map = new Map<string, CommentT & { replies: CommentT[] }>();
     const roots: (CommentT & { replies: CommentT[] })[] = [];
@@ -385,23 +391,34 @@ function Watch() {
 
       {/* Player */}
       <div className="overflow-hidden rounded-xl bg-black shadow-card">
-        <div className="aspect-video w-full">
-          <Player url={curUrl} referer={cur?.referer} introEnd={cur?.introEnd} skipIntro={skipIntro} autoNext={autoNext} onEnded={goNext} />
+        <div className="relative aspect-video w-full">
+          <Player url={curUrl} referer={cur?.referer} introEnd={cur?.introEnd}
+            showNextAt={ep?.showNextAt} episodeDurationMin={ep?.duration}
+            skipIntro={skipIntro} autoNext={autoNext} onNextAt={handleNextAt} onEnded={goNext} />
+          {/* Netflix-style overlay — bottom-right góc video */}
+          {nextCountdown !== null && ep?.next && !nextDismissed && (
+            <div className="pointer-events-none absolute inset-0 flex items-end justify-end p-3 pb-16">
+              <div className="pointer-events-auto w-56 overflow-hidden rounded-xl bg-black/90 shadow-2xl ring-1 ring-white/10">
+                {ep.next.thumbnail && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={ep.next.thumbnail} alt="" className="h-28 w-full object-cover" />
+                )}
+                <div className="p-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-white/50">Tập tiếp theo</p>
+                  <p className="mt-0.5 line-clamp-1 text-sm font-semibold text-white">
+                    Tập {ep.next.number}{ep.next.title ? ` — ${ep.next.title}` : ''}
+                  </p>
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <button onClick={goNext} className="flex-1 rounded-lg bg-white py-1.5 text-xs font-bold text-black hover:bg-white/90">
+                      Xem ngay ({nextCountdown}s)
+                    </button>
+                    <button onClick={() => { setNextDismissed(true); setNextCountdown(null); }} className="shrink-0 text-white/50 hover:text-white"><X size={16} /></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-        {/* Banner tập tiếp theo — hiện khi timer kích hoạt (showNextAt), ẩn khi bấm X */}
-        {nextCountdown !== null && ep?.next && !nextDismissed && (
-          <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-ink-800 px-4 py-2.5 text-white">
-            <div className="min-w-0">
-              <span className="text-[10px] text-white/50">Tập tiếp theo · </span>
-              <span className="text-sm font-semibold">Tập {ep.next.number}{ep.next.title ? ` — ${ep.next.title}` : ''}</span>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button onClick={goNext} className="rounded-lg bg-brand-600 px-3 py-1 text-xs font-medium hover:bg-brand-500">Xem ngay</button>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-brand-500 text-sm font-bold tabular-nums">{nextCountdown}</div>
-              <button onClick={() => { setNextDismissed(true); setNextCountdown(null); if (nextTimerRef.current) { clearTimeout(nextTimerRef.current); nextTimerRef.current = null; } }} className="text-white/40 hover:text-white"><X size={14} /></button>
-            </div>
-          </div>
-        )}
         {/* Thanh hành động */}
         <div className="grid grid-cols-5 divide-x divide-white/10 border-t border-white/10 bg-ink-900 text-white">
           <button onClick={() => saveEntry({ favorite: !entry?.favorite })} className="flex flex-col items-center gap-0.5 py-2 text-[10px] hover:bg-white/5">

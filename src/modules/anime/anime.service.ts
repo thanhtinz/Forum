@@ -638,12 +638,12 @@ export class AnimeService {
       this.prisma.episode.findFirst({
         where: { mediaId: ep.mediaId, OR: [{ part: { lt: ep.part } }, { part: ep.part, number: { lt: ep.number } }] },
         orderBy: [{ part: 'desc' }, { number: 'desc' }],
-        select: { id: true, number: true, part: true, kind: true },
+        select: { id: true, number: true, part: true, kind: true, title: true, thumbnail: true },
       }),
       this.prisma.episode.findFirst({
         where: { mediaId: ep.mediaId, OR: [{ part: { gt: ep.part } }, { part: ep.part, number: { gt: ep.number } }] },
         orderBy: [{ part: 'asc' }, { number: 'asc' }],
-        select: { id: true, number: true, part: true, kind: true },
+        select: { id: true, number: true, part: true, kind: true, title: true, thumbnail: true },
       }),
     ]);
     // Gộp server: link chính (videoUrl) là "Server 1" + các server phụ

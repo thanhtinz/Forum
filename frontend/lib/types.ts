@@ -35,10 +35,13 @@ export interface Thread {
 export interface Post {
   id: string;
   content: string;
+  contentRaw?: string | null;
   likeCount: number;
   isFirstPost?: boolean;
   parentId?: string | null;
   createdAt: string;
+  editCount?: number;
+  lastEditAt?: string | null;
   author?: ThreadAuthor;
   reactions?: { emoji: string; userId: string }[];
   tipTotal?: number;

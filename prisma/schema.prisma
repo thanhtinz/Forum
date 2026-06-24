@@ -274,6 +274,9 @@ model User {
   uploadedChapters     Chapter[]          @relation("UserUploadedChapters")
   isCreator            Boolean              @default(false)
   creatorApplication   CreatorApplication?
+  postEditHistory      PostEditHistory[]
+  threadReplyBans      ThreadReplyBan[]   @relation("ThreadReplyBanUser")
+  threadReplyBansMod   ThreadReplyBan[]   @relation("ThreadReplyBanMod")
 
   @@index([email])
   @@index([username])
@@ -477,6 +480,7 @@ model Thread {
   poll          Poll?
   subscriptions ThreadSubscription[]
   bookmarks     Bookmark[]
+  replyBans     ThreadReplyBan[]
 
   @@index([categoryId])
   @@index([authorId])
@@ -550,6 +554,7 @@ model Post {
   reactions      PostReaction[]
   hiddenSections HiddenSection[]
   attachments    PostAttachment[]
+  editHistory    PostEditHistory[]
 
   @@index([threadId])
   @@index([authorId])
@@ -967,11 +972,50 @@ model UserWarning {
   reason     String    @db.Text
   points     Int       @default(1)
   expiresAt  DateTime?
+  isExpired  Boolean   @default(false)
+  postId     String?
+  threadId   String?
   createdAt  DateTime  @default(now())
 
   user     User @relation("WarnedUser", fields: [userId], references: [id])
   warnedBy User @relation("WarnedByUser", fields: [warnedById], references: [id])
 
+  @@index([userId])
+}
+
+// ── Lịch sử chỉnh sửa bài viết ──────────────────────────────
+model PostEditHistory {
+  id           String   @id @default(cuid())
+  postId       String
+  editorId     String
+  oldContent   String   @db.Text
+  oldContentRaw String  @db.Text
+  editReason   String?  @db.VarChar(255)
+  createdAt    DateTime @default(now())
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  editor User @relation(fields: [editorId], references: [id])
+
+  @@index([postId])
+  @@index([editorId])
+}
+
+// ── Cấm user reply trong 1 thread cụ thể ────────────────────
+model ThreadReplyBan {
+  id          String    @id @default(cuid())
+  threadId    String
+  userId      String
+  bannedById  String
+  reason      String?   @db.VarChar(500)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  thread    Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user      User   @relation("ThreadReplyBanUser", fields: [userId], references: [id])
+  bannedBy  User   @relation("ThreadReplyBanMod", fields: [bannedById], references: [id])
+
+  @@unique([threadId, userId])
+  @@index([threadId])
   @@index([userId])
 }
 

@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save, Reply, X as XIcon } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -111,6 +111,31 @@ function ThreadView() {
   const [mergeResults, setMergeResults] = useState<Thread[]>([]);
   const [modBusy, setModBusy] = useState(false);
   const [lastReadPostId, setLastReadPostId] = useState<string | null>(null);
+
+  // ── Post edit ──
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [editReason, setEditReason] = useState('');
+  const [editBusy, setEditBusy] = useState(false);
+  // ── Edit history modal ──
+  const [historyPostId, setHistoryPostId] = useState<string | null>(null);
+  const [historyItems, setHistoryItems] = useState<any[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  // ── Warn user modal ──
+  const [warnModal, setWarnModal] = useState<{ postId: string; userId: string; username: string } | null>(null);
+  const [warnReason, setWarnReason] = useState('');
+  const [warnPoints, setWarnPoints] = useState(1);
+  const [warnBusy, setWarnBusy] = useState(false);
+  // ── Reply ban modal ──
+  const [replyBanModal, setReplyBanModal] = useState<{ userId: string; username: string } | null>(null);
+  const [replyBanReason, setReplyBanReason] = useState('');
+  const [replyBanExpiry, setReplyBanExpiry] = useState('');
+  const [replyBanBusy, setReplyBanBusy] = useState(false);
+  // ── Move post modal ──
+  const [movePostModal, setMovePostModal] = useState<string | null>(null);
+  const [movePostTarget, setMovePostTarget] = useState('');
+  const [movePostResults, setMovePostResults] = useState<Thread[]>([]);
+  const [movePostBusy, setMovePostBusy] = useState(false);
   const [initialLastReadPostId, setInitialLastReadPostId] = useState<string | null>(null);
   const lastSentPostIdRef = useRef<string | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -341,6 +366,74 @@ function ThreadView() {
     } catch (e: any) { setErr(e.message); setSplitBusy(false); }
   }
 
+  // ── Post edit actions ──
+  function startEdit(p: Post) {
+    setEditingPostId(p.id);
+    setEditContent((p as any).contentRaw || p.content);
+    setEditReason('');
+  }
+  async function submitEdit() {
+    if (!editingPostId || !editContent.trim()) return;
+    setEditBusy(true);
+    try {
+      await api.patch(`/forum/posts/${editingPostId}`, { content: editContent, reason: editReason || undefined });
+      setEditingPostId(null);
+      load();
+    } catch (e: any) { setErr(e.message); }
+    finally { setEditBusy(false); }
+  }
+  async function loadHistory(postId: string) {
+    setHistoryPostId(postId); setHistoryLoading(true);
+    try { const h = await api.get<any[]>(`/forum/posts/${postId}/history`); setHistoryItems(h || []); }
+    catch { setHistoryItems([]); }
+    finally { setHistoryLoading(false); }
+  }
+  async function deletePostAction(postId: string) {
+    if (!confirm('Xoá bài viết này?')) return;
+    try { await api.del(`/forum/posts/${postId}`); load(); } catch (e: any) { setErr(e.message); }
+  }
+  async function submitWarn() {
+    if (!warnModal || !warnReason.trim()) return;
+    setWarnBusy(true);
+    try {
+      await api.post(`/forum/admin/warn/${warnModal.userId}`, { reason: warnReason, points: warnPoints, postId: warnModal.postId });
+      setWarnModal(null); setWarnReason(''); setWarnPoints(1);
+      alert('Đã gửi cảnh cáo!');
+    } catch (e: any) { setErr(e.message); }
+    finally { setWarnBusy(false); }
+  }
+  async function submitReplyBan() {
+    if (!replyBanModal || !thread) return;
+    setReplyBanBusy(true);
+    try {
+      await api.post(`/forum/threads/${thread.id}/reply-ban`, {
+        userId: replyBanModal.userId,
+        reason: replyBanReason || undefined,
+        expiresAt: replyBanExpiry || undefined,
+      });
+      setReplyBanModal(null); setReplyBanReason(''); setReplyBanExpiry('');
+      alert('Đã cấm trả lời trong chủ đề này.');
+    } catch (e: any) { setErr(e.message); }
+    finally { setReplyBanBusy(false); }
+  }
+  async function searchMovePostTargets(q: string) {
+    setMovePostTarget(q);
+    if (q.trim().length < 2) { setMovePostResults([]); return; }
+    try {
+      const r = await api.get<any>(`/forum/threads?limit=10&q=${encodeURIComponent(q)}`);
+      setMovePostResults((r.data || []).filter((t: Thread) => t.id !== thread?.id));
+    } catch { setMovePostResults([]); }
+  }
+  async function confirmMovePost(targetThreadId: string) {
+    if (!movePostModal) return;
+    setMovePostBusy(true);
+    try {
+      await api.post(`/forum/posts/${movePostModal}/move`, { targetThreadId });
+      setMovePostModal(null); setMovePostTarget(''); setMovePostResults([]);
+      load();
+    } catch (e: any) { setErr(e.message); setMovePostBusy(false); }
+  }
+
   if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
   if (err && !thread) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!thread) return null;
@@ -476,7 +569,23 @@ function ThreadView() {
                   <span>{(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}</span>
                   {isBest && <span className="flex items-center gap-1 font-medium text-emerald-600"><Award size={14} /> Câu trả lời hay nhất</span>}
                 </div>
-                <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: p.content }} />
+                {editingPostId === p.id ? (
+                  <div className="space-y-2">
+                    <TipTapEditor value={editContent} onChange={setEditContent} placeholder="Nội dung bài viết…" />
+                    <input className="input w-full text-sm" placeholder="Lý do chỉnh sửa (tuỳ chọn)…" value={editReason} onChange={(e) => setEditReason(e.target.value)} />
+                    <div className="flex gap-2">
+                      <button onClick={submitEdit} disabled={editBusy} className="btn-primary !py-1 text-xs">{editBusy ? 'Đang lưu…' : 'Lưu'}</button>
+                      <button onClick={() => setEditingPostId(null)} className="rounded bg-ink-100 px-3 py-1 text-xs dark:bg-ink-800">Hủy</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: p.content }} />
+                )}
+                {(p as any).editCount > 0 && editingPostId !== p.id && (
+                  <button onClick={() => loadHistory(p.id)} className="mt-1 flex items-center gap-1 text-[11px] text-ink-400 hover:text-ink-600">
+                    <History size={11} /> Đã sửa {(p as any).editCount} lần
+                  </button>
+                )}
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   {/* Các reaction đã có, gom theo emoji */}
                   {(() => {
@@ -525,6 +634,33 @@ function ThreadView() {
                     <button onClick={() => donate(p.id)} className="flex items-center gap-1 text-fuchsia-600 hover:text-fuchsia-700">
                       <Gem size={14} /> Donate
                     </button>
+                  )}
+                  {/* Edit button — author or mod */}
+                  {user && p.author && (user.id === p.author.id || isMod) && !thread.isLocked && editingPostId !== p.id && (
+                    <button onClick={() => startEdit(p)} className="flex items-center gap-1 text-ink-500 hover:text-blue-600">
+                      <Pencil size={13} /> Sửa
+                    </button>
+                  )}
+                  {/* Mod-only per-post actions */}
+                  {isMod && !isFirst && (
+                    <>
+                      <button onClick={() => deletePostAction(p.id)} className="flex items-center gap-1 text-red-500 hover:text-red-700">
+                        <Trash2 size={13} /> Xoá
+                      </button>
+                      <button onClick={() => { setMovePostModal(p.id); setMovePostTarget(''); setMovePostResults([]); }} className="flex items-center gap-1 text-ink-500 hover:text-amber-600">
+                        <Shuffle size={13} /> Chuyển bài
+                      </button>
+                      {p.author && p.author.id !== user.id && (
+                        <>
+                          <button onClick={() => { setWarnModal({ postId: p.id, userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setWarnReason(''); setWarnPoints(1); }} className="flex items-center gap-1 text-amber-600 hover:text-amber-700">
+                            <AlertTriangle size={13} /> Cảnh cáo
+                          </button>
+                          <button onClick={() => { setReplyBanModal({ userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setReplyBanReason(''); setReplyBanExpiry(''); }} className="flex items-center gap-1 text-orange-600 hover:text-orange-700">
+                            <UserX size={13} /> Cấm trả lời
+                          </button>
+                        </>
+                      )}
+                    </>
                   )}
                   {canManage && !isFirst && (
                     <button onClick={() => markBest(p.id)} className={`ml-auto flex items-center gap-1 ${isBest ? 'text-emerald-600' : 'text-ink-500 hover:text-emerald-600'}`}>
@@ -660,6 +796,91 @@ function ThreadView() {
             <button onClick={cancelSplit} className="shrink-0 rounded-lg bg-ink-100 px-3 py-1.5 text-sm hover:bg-ink-200 dark:bg-ink-800">
               Hủy
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit History Modal ── */}
+      {historyPostId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setHistoryPostId(null)}>
+          <div className="card w-full max-w-lg max-h-[80vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="flex items-center gap-2 font-semibold"><History size={16} /> Lịch sử chỉnh sửa</h3>
+            {historyLoading ? <p className="mt-3 text-center text-sm text-ink-500">Đang tải…</p> : historyItems.length === 0 ? (
+              <p className="mt-3 text-center text-sm text-ink-500">Chưa có lịch sử chỉnh sửa.</p>
+            ) : (
+              <div className="mt-3 space-y-3">
+                {historyItems.map((h) => (
+                  <div key={h.id} className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
+                    <div className="flex items-center gap-2 text-xs text-ink-500">
+                      <span className="font-medium text-ink-700 dark:text-ink-300">{h.editor?.displayName || h.editor?.username}</span>
+                      <span>·</span>
+                      <span>{new Date(h.createdAt).toLocaleString('vi')}</span>
+                      {h.editReason && <span className="ml-auto italic">{h.editReason}</span>}
+                    </div>
+                    <div className="prose prose-xs mt-2 max-w-none dark:prose-invert line-clamp-4 text-xs opacity-70" dangerouslySetInnerHTML={{ __html: h.oldContentRaw?.slice(0, 500) || '' }} />
+                  </div>
+                ))}
+              </div>
+            )}
+            <button onClick={() => setHistoryPostId(null)} className="mt-4 rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Warn User Modal ── */}
+      {warnModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !warnBusy && setWarnModal(null)}>
+          <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="flex items-center gap-2 font-semibold text-amber-600"><AlertTriangle size={16} /> Cảnh cáo người dùng</h3>
+            <p className="mt-1 text-sm text-ink-500">Cảnh cáo <strong>{warnModal.username}</strong></p>
+            <textarea className="input mt-3 w-full" rows={3} placeholder="Lý do cảnh cáo…" value={warnReason} onChange={(e) => setWarnReason(e.target.value)} />
+            <label className="mt-2 block text-xs text-ink-500">Điểm cảnh cáo (≥10 tự động ban 7 ngày)
+              <input type="number" min={1} max={10} className="input mt-1 w-24 ml-2" value={warnPoints} onChange={(e) => setWarnPoints(Number(e.target.value))} />
+            </label>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setWarnModal(null)} className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Hủy</button>
+              <button onClick={submitWarn} disabled={warnBusy || !warnReason.trim()} className="rounded-lg bg-amber-500 px-4 py-1.5 text-sm text-white disabled:opacity-50">{warnBusy ? 'Đang gửi…' : 'Gửi cảnh cáo'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Reply Ban Modal ── */}
+      {replyBanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !replyBanBusy && setReplyBanModal(null)}>
+          <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="flex items-center gap-2 font-semibold text-orange-600"><UserX size={16} /> Cấm trả lời trong chủ đề</h3>
+            <p className="mt-1 text-sm text-ink-500">Cấm <strong>{replyBanModal.username}</strong> trả lời trong chủ đề này</p>
+            <input className="input mt-3 w-full" placeholder="Lý do (tuỳ chọn)…" value={replyBanReason} onChange={(e) => setReplyBanReason(e.target.value)} />
+            <label className="mt-2 block text-xs text-ink-500">Hết hạn (để trống = vĩnh viễn)
+              <input type="datetime-local" className="input mt-1 w-full" value={replyBanExpiry} onChange={(e) => setReplyBanExpiry(e.target.value)} />
+            </label>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setReplyBanModal(null)} className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Hủy</button>
+              <button onClick={submitReplyBan} disabled={replyBanBusy} className="rounded-lg bg-orange-500 px-4 py-1.5 text-sm text-white disabled:opacity-50">{replyBanBusy ? 'Đang cấm…' : 'Cấm trả lời'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Move Post Modal ── */}
+      {movePostModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !movePostBusy && setMovePostModal(null)}>
+          <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="flex items-center gap-2 font-semibold"><Shuffle size={16} /> Chuyển bài viết sang chủ đề khác</h3>
+            <input autoFocus className="input mt-3 w-full" placeholder="Tìm chủ đề đích…" value={movePostTarget} onChange={(e) => searchMovePostTargets(e.target.value)} />
+            <div className="mt-2 max-h-60 space-y-1 overflow-y-auto">
+              {movePostResults.map((t) => (
+                <button key={t.id} onClick={() => confirmMovePost(t.id)} disabled={movePostBusy}
+                  className="block w-full truncate rounded-lg border border-ink-200 px-3 py-2 text-left text-sm hover:bg-ink-50 disabled:opacity-50 dark:border-ink-800 dark:hover:bg-ink-800/50">
+                  {t.title}
+                </button>
+              ))}
+              {movePostTarget.trim().length >= 2 && movePostResults.length === 0 && <p className="py-2 text-center text-xs text-ink-500">Không tìm thấy chủ đề.</p>}
+            </div>
+            <div className="mt-3 flex justify-end">
+              <button onClick={() => setMovePostModal(null)} className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Hủy</button>
+            </div>
           </div>
         </div>
       )}

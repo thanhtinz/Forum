@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -517,5 +518,119 @@ export class ForumController {
   @UseGuards(JwtAuthGuard)
   redeemInviteCode(@CurrentUser('id') userId: string, @Body('code') code: string) {
     return this.invites.redeemCode(userId, code);
+  }
+
+  // ── Edit post (sửa bài viết) ──
+  @Patch('posts/:id')
+  @UseGuards(JwtAuthGuard)
+  editPost(
+    @Param('id') postId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+    @Body('content') content: string,
+    @Body('reason') reason?: string,
+  ) {
+    return this.forum.editPost(postId, userId, content, reason, role);
+  }
+
+  // ── Post edit history (lịch sử chỉnh sửa) ──
+  @Get('posts/:id/history')
+  @UseGuards(JwtAuthGuard)
+  getPostEditHistory(@Param('id') postId: string) {
+    return this.forum.getPostEditHistory(postId);
+  }
+
+  // ── Move post to another thread ──
+  @Post('posts/:id/move')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('mod.lockThread')
+  movePost(
+    @Param('id') postId: string,
+    @CurrentUser('id') userId: string,
+    @Body('targetThreadId') targetThreadId: string,
+  ) {
+    return this.forum.movePost(postId, targetThreadId, userId);
+  }
+
+  // ── Thread reply bans ──
+  @Post('threads/:id/reply-ban')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('mod.lockThread')
+  banReply(
+    @Param('id') threadId: string,
+    @CurrentUser('id') modId: string,
+    @Body() body: { userId: string; reason?: string; expiresAt?: string },
+  ) {
+    return this.forum.banReply(threadId, body.userId, modId, body.reason, body.expiresAt ? new Date(body.expiresAt) : undefined);
+  }
+
+  @Delete('threads/:id/reply-ban/:userId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('mod.lockThread')
+  unbanReply(@Param('id') threadId: string, @Param('userId') userId: string) {
+    return this.forum.unbanReply(threadId, userId);
+  }
+
+  @Get('threads/:id/reply-bans')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermission('mod.lockThread')
+  getThreadReplyBans(@Param('id') threadId: string) {
+    return this.forum.getThreadReplyBans(threadId);
+  }
+
+  // ── Batch moderation ──
+  @Post('admin/batch/posts/delete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  batchDeletePosts(@CurrentUser('id') userId: string, @Body('postIds') postIds: string[]) {
+    return this.forum.batchDeletePosts(postIds || [], userId);
+  }
+
+  @Post('admin/batch/posts/approve')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  batchApprovePosts(@Body('postIds') postIds: string[]) {
+    return this.forum.batchApprovePosts(postIds || []);
+  }
+
+  @Post('admin/batch/threads/move')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  batchMoveThreads(@Body('threadIds') threadIds: string[], @Body('categoryId') categoryId: string) {
+    return this.forum.batchMoveThreads(threadIds || [], categoryId);
+  }
+
+  @Post('admin/batch/threads/delete')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  batchDeleteThreads(@CurrentUser('id') userId: string, @Body('threadIds') threadIds: string[]) {
+    return this.forum.batchDeleteThreads(threadIds || [], userId);
+  }
+
+  // ── Warnings ──
+  @Post('admin/warn/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  warnUser(
+    @Param('userId') userId: string,
+    @CurrentUser('id') warnedById: string,
+    @Body() body: { reason: string; points?: number; postId?: string; threadId?: string; expiresAt?: string },
+  ) {
+    return this.forum.warnUser({
+      userId,
+      warnedById,
+      reason: body.reason,
+      points: body.points,
+      postId: body.postId,
+      threadId: body.threadId,
+      expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+    });
+  }
+
+  @Get('admin/warnings/:userId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  getUserWarnings(@Param('userId') userId: string) {
+    return this.forum.getUserWarnings(userId);
   }
 }

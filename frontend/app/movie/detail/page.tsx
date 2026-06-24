@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Play, Heart, Star, BookOpen, Clapperboard, RefreshCw, Send, Trash2, Smile } from 'lucide-react';
+import { Play, Heart, Star, BookOpen, Clapperboard, RefreshCw, Send, Trash2, Smile, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
@@ -122,6 +122,14 @@ function MovieDetail() {
 
   return (
     <div className="space-y-4">
+      {/* ── Nav ── */}
+      <div className="sticky top-0 z-20 -mx-4 flex items-center gap-2 border-b border-ink-100 bg-white/90 px-4 py-2.5 backdrop-blur-sm dark:border-ink-800 dark:bg-ink-950/90">
+        <a href="/movie" className="flex items-center gap-1 text-sm text-ink-500 hover:text-ink-900 dark:hover:text-ink-100">
+          <ChevronLeft size={16} /> Hoạt hình TQ
+        </a>
+        {w.title && <span className="ml-1 truncate text-sm font-medium text-ink-700 dark:text-ink-200">{w.title}</span>}
+      </div>
+
       {/* ── Hero ── */}
       <div className="relative overflow-hidden rounded-2xl">
         <div className="h-52 w-full sm:h-64">

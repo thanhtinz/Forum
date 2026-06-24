@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BookOpen, Heart, Send, Smile, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { BookOpen, Heart, Send, Smile, Trash2, ChevronDown, ChevronUp, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
@@ -121,6 +121,14 @@ function ComicDetail() {
 
   return (
     <div className="space-y-4 pb-8">
+      {/* ── Nav ── */}
+      <div className="sticky top-0 z-20 -mx-4 flex items-center gap-2 border-b border-ink-100 bg-white/90 px-4 py-2.5 backdrop-blur-sm dark:border-ink-800 dark:bg-ink-950/90">
+        <a href="/comic" className="flex items-center gap-1 text-sm text-ink-500 hover:text-ink-900 dark:hover:text-ink-100">
+          <ChevronLeft size={16} /> Truyện tranh
+        </a>
+        {w.title && <span className="ml-1 truncate text-sm font-medium text-ink-700 dark:text-ink-200">{w.title}</span>}
+      </div>
+
       {/* ── Cover + Title ── */}
       <div className="flex flex-col items-center pt-2">
         <div className="group relative h-52 w-36 overflow-hidden rounded-xl shadow-lg">

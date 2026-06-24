@@ -114,14 +114,16 @@ function VideoPlayer({ url, referer, isHls, introEnd, showNextAt, episodeDuratio
           skippedRef.current = true;
           art.currentTime = introEnd;
         }
-        // Netflix-style: kích hoạt banner "tập tiếp theo" dựa vào vị trí thực tế của video
+        // Netflix-style: kích hoạt banner "tập tiếp theo" 15 giây trước showNextAt
+        // để countdown 15s kết thúc đúng tại showNextAt
         if (!nextAtFiredRef.current) {
           const { showNextAt, episodeDurationMin } = nextTriggerRef.current;
-          const vidDur = art.video?.duration; // giây, từ browser
+          const vidDur = art.video?.duration;
+          const LEAD = 15; // giây đếm ngược
           const triggerAt =
-            (showNextAt != null && showNextAt > 0) ? showNextAt
-            : episodeDurationMin ? episodeDurationMin * 60 - 90
-            : (vidDur && vidDur > 120) ? vidDur - 90
+            (showNextAt != null && showNextAt > LEAD) ? showNextAt - LEAD
+            : episodeDurationMin ? episodeDurationMin * 60 - 90 - LEAD
+            : (vidDur && vidDur > 120) ? vidDur - 90 - LEAD
             : null;
           if (triggerAt != null && art.currentTime >= triggerAt) {
             nextAtFiredRef.current = true;
@@ -167,17 +169,20 @@ function IframePlayer({ url, showNextAt, episodeDurationMin, autoNext, onNextAt,
   const nextAtFiredRef = useRef(false);
 
   // Wall-clock fallback cho iframe (không thể đọc currentTime):
-  // Hiện overlay "tập tiếp theo" ~90s trước khi hết tập, rồi countdown tự nhảy.
+  // Hiện overlay 15s trước showNextAt để countdown kết thúc đúng tại showNextAt.
   useEffect(() => {
     nextAtFiredRef.current = false;
-    if (!episodeDurationMin || episodeDurationMin <= 3) return;
-    const bannerSec = episodeDurationMin * 60 - 90;
-    if (bannerSec <= 0) return;
+    const LEAD = 15;
+    const bannerSec =
+      showNextAt != null && showNextAt > LEAD ? showNextAt - LEAD
+      : episodeDurationMin && episodeDurationMin > 3 ? episodeDurationMin * 60 - 90 - LEAD
+      : null;
+    if (!bannerSec || bannerSec <= 0) return;
     const t = setTimeout(() => {
       if (!nextAtFiredRef.current) { nextAtFiredRef.current = true; nextRef.current.onNextAt(); }
     }, bannerSec * 1000);
     return () => clearTimeout(t);
-  }, [url, episodeDurationMin]);
+  }, [url, showNextAt, episodeDurationMin]);
 
   useEffect(() => {
     function onMsg(e: MessageEvent) {

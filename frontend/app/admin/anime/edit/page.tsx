@@ -122,6 +122,22 @@ function GenreField({ w, set }: { w: any; set: (k: string, v: any) => void }) {
   );
 }
 
+// "2p40" → 160s, "22p30" → 1350s, "90" → 90s, "2:40" → 160s
+function parseTs(s: string): number | null {
+  const t = s.trim();
+  if (!t) return null;
+  const pm = t.match(/^(\d+)p(\d+)$/i);
+  if (pm) return parseInt(pm[1]) * 60 + parseInt(pm[2]);
+  const cm = t.match(/^(\d+):(\d+)$/);
+  if (cm) return parseInt(cm[1]) * 60 + parseInt(cm[2]);
+  const n = parseInt(t);
+  return isNaN(n) ? null : n;
+}
+function secToTs(sec: number | null | undefined): string {
+  if (sec == null) return '';
+  return `${Math.floor(sec / 60)}p${String(sec % 60).padStart(2, '0')}`;
+}
+
 const PAGE_SIZE = 30;
 
 function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: string; episodes: Ep[]; onChange: () => void; setErr: (s: string) => void }) {
@@ -135,8 +151,10 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
 
   async function create() {
     if (!add.number) { setErr('Nhập số tập'); return; }
-    try { await api.post(`/admin/anime/${mediaId}/episode`, add); setAdd({ number: '', part: '1', kind: 'episode', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '', showNextAt: '' }); onChange(); }
-    catch (e: any) { setErr(e.message); }
+    try {
+      await api.post(`/admin/anime/${mediaId}/episode`, { ...add, introEnd: parseTs(add.introEnd), showNextAt: parseTs(add.showNextAt) });
+      setAdd({ number: '', part: '1', kind: 'episode', title: '', videoUrl: '', thumbnail: '', duration: '', referer: '', introEnd: '', showNextAt: '' }); onChange();
+    } catch (e: any) { setErr(e.message); }
   }
   async function getEmbed() {
     if (!embedInput.trim()) return;
@@ -201,8 +219,8 @@ function EpisodeManager({ mediaId, episodes, onChange, setErr }: { mediaId: stri
             <input className="input sm:col-span-1" placeholder="Số #" value={add.number} onChange={(e) => setAdd({ ...add, number: e.target.value })} />
             <input className="input sm:col-span-2" placeholder="Tiêu đề" value={add.title} onChange={(e) => setAdd({ ...add, title: e.target.value })} />
             <input className="input sm:col-span-2" placeholder="Link video / embed" value={add.videoUrl} onChange={(e) => setAdd({ ...add, videoUrl: e.target.value })} />
-            <input className="input sm:col-span-1" type="number" placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này (vd 90)" value={add.introEnd} onChange={(e) => setAdd({ ...add, introEnd: e.target.value })} />
-            <input className="input sm:col-span-1" type="number" placeholder="Hiện next (s)" title="Giây từ đầu video để hiện nút tập tiếp theo (vd 1300)" value={add.showNextAt} onChange={(e) => setAdd({ ...add, showNextAt: e.target.value })} />
+            <input className="input sm:col-span-1" placeholder="Bỏ intro (vd 2p40)" title="Bỏ qua đoạn đầu đến mốc này, vd 2p40 = 2 phút 40 giây" value={add.introEnd} onChange={(e) => setAdd({ ...add, introEnd: e.target.value })} />
+            <input className="input sm:col-span-1" placeholder="Hiện next (vd 22p30)" title="Hiện banner tập tiếp theo tại mốc này, vd 22p30 = 22 phút 30 giây" value={add.showNextAt} onChange={(e) => setAdd({ ...add, showNextAt: e.target.value })} />
             <input className="input sm:col-span-5" placeholder="Referer (tuỳ chọn — nếu nguồn chặn hotlink, vd https://vuighe.live/)" value={add.referer} onChange={(e) => setAdd({ ...add, referer: e.target.value })} />
             <Btn onClick={create} className="sm:col-span-1"><Plus size={15} /> Thêm</Btn>
           </div>
@@ -235,9 +253,9 @@ const KIND_LABELS: Record<string, string> = { episode: 'Tập', movie: 'Movie', 
 
 function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; setErr: (s: string) => void }) {
   const [open, setOpen] = useState(false);
-  const [v, setV] = useState({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', serverName: ep.serverName || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '', showNextAt: ep.showNextAt != null ? String(ep.showNextAt) : '' });
+  const [v, setV] = useState({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', serverName: ep.serverName || '', referer: ep.referer || '', introEnd: secToTs(ep.introEnd), showNextAt: secToTs(ep.showNextAt) });
   useEffect(() => {
-    setV({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', serverName: ep.serverName || '', referer: ep.referer || '', introEnd: ep.introEnd != null ? String(ep.introEnd) : '', showNextAt: ep.showNextAt != null ? String(ep.showNextAt) : '' });
+    setV({ number: String(ep.number), part: String(ep.part ?? 1), kind: ep.kind || 'episode', title: ep.title || '', videoUrl: ep.videoUrl || '', serverName: ep.serverName || '', referer: ep.referer || '', introEnd: secToTs(ep.introEnd), showNextAt: secToTs(ep.showNextAt) });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ep.id, ep.number, ep.part, ep.kind, ep.title, ep.videoUrl, ep.serverName, ep.referer, ep.introEnd, ep.showNextAt]);
   const [srvOpen, setSrvOpen] = useState(false);
@@ -249,7 +267,7 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
   async function save() {
     setSaving(true); setSaved(false); setRowErr(''); setErr('');
     try {
-      await api.patch(`/admin/anime/episode/${ep.id}`, v);
+      await api.patch(`/admin/anime/episode/${ep.id}`, { ...v, introEnd: parseTs(v.introEnd), showNextAt: parseTs(v.showNextAt) });
       setSaved(true); setTimeout(() => setSaved(false), 2000); onChange();
     } catch (e: any) { setRowErr(e.message || 'Lưu thất bại'); setErr(e.message); }
     finally { setSaving(false); }
@@ -298,10 +316,10 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
             <input className="input sm:col-span-2" value={v.title} onChange={(e) => setV({ ...v, title: e.target.value })} placeholder="Tiêu đề" />
             <input className="input sm:col-span-1" value={v.serverName} onChange={(e) => setV({ ...v, serverName: e.target.value })} placeholder="Tên server (VIP)" title="Tên hiển thị server chính, mặc định VIP" />
             <input className="input sm:col-span-1" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} placeholder="Link video" />
-            <input className="input sm:col-span-1" type="number" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này cho Server 1 (vd 90)." />
+            <input className="input sm:col-span-1" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (2p40)" title="Bỏ qua đoạn đầu đến mốc này, vd 2p40 = 2 phút 40 giây" />
           </div>
           <div className="flex gap-2">
-            <input className="input w-40 shrink-0" type="number" value={v.showNextAt} onChange={(e) => setV({ ...v, showNextAt: e.target.value })} placeholder="Hiện next (s)" title="Giây từ đầu video để hiện nút tập tiếp theo (vd 1300). Để trống = tự tính theo thời lượng." />
+            <input className="input w-40 shrink-0" value={v.showNextAt} onChange={(e) => setV({ ...v, showNextAt: e.target.value })} placeholder="Hiện next (22p30)" title="Hiện banner tập tiếp theo tại mốc này, vd 22p30 = 22 phút 30 giây" />
             <input className="input flex-1" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer Server 1 (tuỳ chọn)" />
             <Btn size="sm" onClick={save} disabled={saving} title="Lưu tập">{saving ? <Loader2 size={14} className="animate-spin" /> : <><Save size={14} /> Lưu</>}</Btn>
           </div>
@@ -314,7 +332,7 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-8">
                 <input className="input sm:col-span-2" placeholder="Tên (VIP 2…)" value={newSrv.name} onChange={(e) => setNewSrv({ ...newSrv, name: e.target.value })} />
                 <input className="input sm:col-span-3" placeholder="Link video" value={newSrv.videoUrl} onChange={(e) => setNewSrv({ ...newSrv, videoUrl: e.target.value })} />
-                <input className="input sm:col-span-1" type="number" placeholder="Bỏ intro (s)" value={newSrv.introEnd} onChange={(e) => setNewSrv({ ...newSrv, introEnd: e.target.value })} />
+                <input className="input sm:col-span-1" placeholder="Bỏ intro (2p40)" value={newSrv.introEnd} onChange={(e) => setNewSrv({ ...newSrv, introEnd: e.target.value })} />
                 <input className="input sm:col-span-1" placeholder="Referer" value={newSrv.referer} onChange={(e) => setNewSrv({ ...newSrv, referer: e.target.value })} />
                 <Btn size="sm" onClick={addSrv}><Plus size={14} /></Btn>
               </div>
@@ -326,19 +344,19 @@ function EpisodeRow({ ep, onChange, setErr }: { ep: Ep; onChange: () => void; se
   );
 }
 function ServerRow({ s, onChange, setErr }: { s: Srv; onChange: () => void; setErr: (m: string) => void }) {
-  const [v, setV] = useState({ name: s.name, videoUrl: s.videoUrl, referer: s.referer || '', introEnd: s.introEnd != null ? String(s.introEnd) : '' });
+  const [v, setV] = useState({ name: s.name, videoUrl: s.videoUrl, referer: s.referer || '', introEnd: secToTs(s.introEnd) });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   async function save() {
     setSaving(true); setSaved(false); setErr('');
-    try { await api.patch(`/admin/anime/server/${s.id}`, v); setSaved(true); setTimeout(() => setSaved(false), 2000); onChange(); }
+    try { await api.patch(`/admin/anime/server/${s.id}`, { ...v, introEnd: parseTs(v.introEnd) }); setSaved(true); setTimeout(() => setSaved(false), 2000); onChange(); }
     catch (e: any) { setErr(e.message); } finally { setSaving(false); }
   }
   return (
     <div className="grid grid-cols-1 gap-2 sm:grid-cols-8">
       <input className="input sm:col-span-2" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} />
       <input className="input sm:col-span-3" value={v.videoUrl} onChange={(e) => setV({ ...v, videoUrl: e.target.value })} />
-      <input className="input sm:col-span-1" type="number" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (s)" title="Bỏ qua đoạn đầu đến giây này (chỉ áp cho link m3u8/mp4)" />
+      <input className="input sm:col-span-1" value={v.introEnd} onChange={(e) => setV({ ...v, introEnd: e.target.value })} placeholder="Bỏ intro (2p40)" title="Bỏ qua đoạn đầu đến mốc này (chỉ áp cho link m3u8/mp4)" />
       <input className="input sm:col-span-1" value={v.referer} onChange={(e) => setV({ ...v, referer: e.target.value })} placeholder="Referer" />
       <div className="flex items-center gap-1">
         <Btn size="sm" onClick={save} disabled={saving} title="Lưu server">{saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}</Btn>

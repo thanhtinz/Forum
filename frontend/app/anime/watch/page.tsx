@@ -485,12 +485,11 @@ function Watch() {
           {activeGroup?.kind === 'single' && (
             activeGroup.epId === id
               ? servers.length > 1
-                ? <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center gap-1 text-sm font-medium text-ink-500"><Server size={15} /> Đổi server:</span>
+                ? <div className="flex flex-wrap gap-2">
                     {servers.map((s, i) => (
                       <button key={s.id} onClick={() => setServerIdx(i)}
-                        className={`rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
-                        {s.name}
+                        className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>
+                        <Server size={13} />{s.name}
                       </button>
                     ))}
                   </div>
@@ -502,17 +501,18 @@ function Watch() {
 
       {/* Đổi server (chỉ hiện cho tập thường, khi không dùng tab đơn) */}
       {(!showTabs || activeGroup?.kind === 'part') && servers.length > 1 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-sm font-medium text-ink-500"><Server size={15} /> Đổi server:</span>
+        <div className="flex flex-wrap gap-2">
           {servers.map((s, i) => (
-            <button key={s.id} onClick={() => setServerIdx(i)} className={`rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>{s.name}</button>
+            <button key={s.id} onClick={() => setServerIdx(i)} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ${i === serverIdx ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>
+              <Server size={13} />{s.name}
+            </button>
           ))}
         </div>
       )}
 
       {/* Bình luận tập này */}
       <div className="card p-5">
-        <h2 className="mb-3 font-semibold">Bình luận {ep.kind && ep.kind !== 'episode' ? ({ movie: 'Movie', ova: 'OVA', special: 'Special', recap: 'Recap' }[ep.kind as string] ?? ep.kind) : `tập ${ep.number}`} ({comments.length})</h2>
+        <h2 className="mb-3 font-semibold">Bình luận ({comments.length})</h2>
         {user ? (
           <form onSubmit={submitComment} className="relative mb-4 flex items-start gap-2">
             <Avatar user={user} size={32} />

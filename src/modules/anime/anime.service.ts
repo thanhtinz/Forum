@@ -148,7 +148,7 @@ export class AnimeService {
         },
         relatedFrom: { include: { to: { select: { slug: true, title: true, coverUrl: true, type: true, format: true } } } },
         episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, part: true, kind: true, title: true, thumbnail: true, duration: true } },
-        chapterList: { where: { OR: [{ uploaderId: null }, { chapterStatus: 'PUBLISHED' }] }, orderBy: { number: 'asc' }, select: { id: true, number: true, title: true } },
+        chapterList: { where: { OR: [{ uploaderId: null }, { chapterStatus: 'PUBLISHED' }] }, orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, createdAt: true } },
       },
     });
     if (!work) throw new NotFoundException('Không tìm thấy');

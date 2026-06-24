@@ -11,8 +11,8 @@ interface Chapter {
   title?: string | null;
   pages: string[];
   content?: string | null;
-  prevId?: string | null;
-  nextId?: string | null;
+  prev?: { id: string; number: number } | null;
+  next?: { id: string; number: number } | null;
   media: { slug: string; title: string; titleEnglish?: string | null; type: string };
 }
 
@@ -50,6 +50,8 @@ function ComicReaderInner() {
   const chapterLabel = `Chương ${chapter.number}${chapter.title ? `: ${chapter.title}` : ''}`;
   const backHref = `/comic/detail?slug=${chapter.media.slug}`;
   const isText = !!chapter.content && chapter.pages.length === 0;
+  const prevId = chapter.prev?.id;
+  const nextId = chapter.next?.id;
 
   const NavBtn = ({ href, children, disabled }: { href?: string; children: React.ReactNode; disabled?: boolean }) =>
     disabled || !href ? (
@@ -68,10 +70,10 @@ function ComicReaderInner() {
             <Home size={18} />
           </a>
           <div className="min-w-0 flex-1 truncate text-center text-sm font-medium">{chapterLabel}</div>
-          <NavBtn href={chapter.prevId ? `/comic/read?id=${chapter.prevId}` : undefined} disabled={!chapter.prevId}>
+          <NavBtn href={prevId ? `/comic/read?id=${prevId}` : undefined} disabled={!prevId}>
             <ChevronLeft size={14} /> Trước
           </NavBtn>
-          <NavBtn href={chapter.nextId ? `/comic/read?id=${chapter.nextId}` : undefined} disabled={!chapter.nextId}>
+          <NavBtn href={nextId ? `/comic/read?id=${nextId}` : undefined} disabled={!nextId}>
             Sau <ChevronRight size={14} />
           </NavBtn>
         </div>
@@ -84,13 +86,13 @@ function ComicReaderInner() {
 
         {/* Bottom */}
         <div className="flex gap-3 border-t border-white/10 bg-[#1a1a2e] p-4">
-          <NavBtn href={chapter.prevId ? `/comic/read?id=${chapter.prevId}` : undefined} disabled={!chapter.prevId}>
+          <NavBtn href={prevId ? `/comic/read?id=${prevId}` : undefined} disabled={!prevId}>
             <ChevronLeft size={14} /> Chương Trước
           </NavBtn>
           <a href={backHref} className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-600 py-2.5 text-sm font-medium text-white hover:bg-brand-700">
             <List size={15} /> Chương Khác
           </a>
-          <NavBtn href={chapter.nextId ? `/comic/read?id=${chapter.nextId}` : undefined} disabled={!chapter.nextId}>
+          <NavBtn href={nextId ? `/comic/read?id=${nextId}` : undefined} disabled={!nextId}>
             Sau <ChevronRight size={14} />
           </NavBtn>
         </div>
@@ -109,10 +111,10 @@ function ComicReaderInner() {
         <div className="min-w-0 flex-1 truncate rounded border border-white/20 bg-white/10 px-2 py-1 text-center text-sm text-white">
           {chapterLabel}
         </div>
-        <NavBtn href={chapter.prevId ? `/comic/read?id=${chapter.prevId}` : undefined} disabled={!chapter.prevId}>
+        <NavBtn href={prevId ? `/comic/read?id=${prevId}` : undefined} disabled={!prevId}>
           <ChevronLeft size={14} /> Trước
         </NavBtn>
-        <NavBtn href={chapter.nextId ? `/comic/read?id=${chapter.nextId}` : undefined} disabled={!chapter.nextId}>
+        <NavBtn href={nextId ? `/comic/read?id=${nextId}` : undefined} disabled={!nextId}>
           Sau <ChevronRight size={14} />
         </NavBtn>
       </div>
@@ -142,8 +144,8 @@ function ComicReaderInner() {
 
       {/* Bottom actions */}
       <div className="flex gap-3 bg-[#1a1a2e] p-4">
-        {chapter.prevId ? (
-          <a href={`/comic/read?id=${chapter.prevId}`}
+        {prevId ? (
+          <a href={`/comic/read?id=${prevId}`}
             className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/20 bg-white/5 py-3 text-sm font-medium text-white hover:bg-white/10">
             <ChevronLeft size={16} /> Chương Trước
           </a>

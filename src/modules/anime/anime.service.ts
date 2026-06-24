@@ -648,7 +648,7 @@ export class AnimeService {
     ]);
     // Gộp server: link chính (videoUrl) là "Server 1" + các server phụ
     const servers = [
-      ...(ep.videoUrl ? [{ id: 'main', name: 'Server 1', videoUrl: ep.videoUrl, referer: ep.referer, introEnd: ep.introEnd }] : []),
+      ...(ep.videoUrl ? [{ id: 'main', name: 'VIP', videoUrl: ep.videoUrl, referer: ep.referer, introEnd: ep.introEnd }] : []),
       ...ep.servers,
     ];
     return { ...ep, servers, episodes, prev, next };

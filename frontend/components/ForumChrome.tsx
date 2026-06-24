@@ -10,8 +10,9 @@ import { CookieConsent } from './CookieConsent';
 export function ForumChrome({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const isAdmin = path?.startsWith('/admin');
+  const isReader = path === '/comic/read' || path === '/movie/watch';
 
-  if (isAdmin) return <>{children}</>;
+  if (isAdmin || isReader) return <>{children}</>;
 
   return (
     <div className="flex min-h-[100dvh] flex-col">

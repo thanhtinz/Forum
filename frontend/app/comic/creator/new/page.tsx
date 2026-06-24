@@ -14,9 +14,10 @@ import { Card, Btn, Field, Notice } from '@/components/admin/ui';
 type MediaTypeKey = 'MANHUA';
 
 const FORMAT_OPTIONS: { v: string; l: string }[] = [
-  { v: 'MANHUA',   l: 'Truyện tranh (Manhua)' },
-  { v: 'MANHWA',   l: 'Webtoon (Manhwa)' },
-  { v: 'NOVEL',    l: 'Tiểu thuyết / Novel' },
+  { v: 'MANHUA', l: 'Manhua (Trung Quốc)' },
+  { v: 'MANGA',  l: 'Manga (Nhật Bản)' },
+  { v: 'MANHWA', l: 'Manhwa / Webtoon (Hàn Quốc)' },
+  { v: 'NOVEL',  l: 'Tiểu thuyết / Novel' },
 ];
 
 const STATUS_OPTIONS = [

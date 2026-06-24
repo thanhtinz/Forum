@@ -16,6 +16,7 @@ const FORMAT_LABEL: Record<string, string> = {
   TV: 'TV', MOVIE: 'Phim lẻ', OVA: 'OVA', ONA: 'ONA', SPECIAL: 'Special', DONGHUA: 'Donghua',
 };
 const TYPE_COUNTRY: Record<string, string> = { DONGHUA: 'Trung Quốc' };
+const COUNTRY_LABEL: Record<string, string> = { CN: 'Trung Quốc', JP: 'Nhật Bản', KR: 'Hàn Quốc', VN: 'Việt Nam', US: 'Mỹ', OTHER: 'Khác' };
 
 interface CommentT {
   id: string; content: string; createdAt: string; authorId: string; parentId?: string | null;
@@ -204,7 +205,7 @@ function MovieDetail() {
       {/* ── Info rows ── */}
       <div className="space-y-1.5 text-sm">
         {w.duration != null && <MetaRow label="Thời lượng" value={`${w.duration}m`} />}
-        {TYPE_COUNTRY[w.type] && <MetaRow label="Quốc gia" value={TYPE_COUNTRY[w.type]} />}
+        {(w.countryOfOrigin || TYPE_COUNTRY[w.type]) && <MetaRow label="Quốc gia" value={w.countryOfOrigin ? (COUNTRY_LABEL[w.countryOfOrigin] ?? w.countryOfOrigin) : TYPE_COUNTRY[w.type]} />}
         {w.seasonYear && w.season && (
           <MetaRow label="Mùa" value={`${SEASON_LABEL[w.season] ?? w.season} ${w.seasonYear}`} />
         )}

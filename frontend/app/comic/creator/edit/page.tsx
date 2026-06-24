@@ -482,8 +482,9 @@ function EditSeriesInner() {
               <Field label="Định dạng">
                 <select value={form.format} onChange={(e) => set('format', e.target.value)} className="input w-full">
                   <option value="">— Chọn định dạng —</option>
-                  <option value="MANHUA">Truyện tranh (Manhua)</option>
-                  <option value="MANHWA">Webtoon (Manhwa)</option>
+                  <option value="MANHUA">Manhua (Trung Quốc)</option>
+                  <option value="MANGA">Manga (Nhật Bản)</option>
+                  <option value="MANHWA">Manhwa / Webtoon (Hàn Quốc)</option>
                   <option value="NOVEL">Tiểu thuyết / Novel</option>
                 </select>
               </Field>

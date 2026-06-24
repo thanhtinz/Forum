@@ -15,6 +15,7 @@ const FORMAT_LABEL: Record<string, string> = {
   MANHUA: 'Manhua', MANHWA: 'Manhwa', MANGA: 'Manga', NOVEL: 'Tiểu thuyết', ONE_SHOT: 'One Shot', DOUJINSHI: 'Doujinshi',
 };
 const TYPE_COUNTRY: Record<string, string> = { MANHUA: 'Trung Quốc', MANHWA: 'Hàn Quốc', MANGA: 'Nhật Bản' };
+const COUNTRY_LABEL: Record<string, string> = { CN: 'Trung Quốc', JP: 'Nhật Bản', KR: 'Hàn Quốc', VN: 'Việt Nam', US: 'Mỹ', OTHER: 'Khác' };
 
 interface CommentT {
   id: string; content: string; createdAt: string; authorId: string; parentId?: string | null;
@@ -178,10 +179,10 @@ function ComicDetail() {
                 <td className="px-3 py-2">{FORMAT_LABEL[w.format] ?? w.format}</td>
               </tr>
             )}
-            {TYPE_COUNTRY[w.type] && (
+            {(w.countryOfOrigin || TYPE_COUNTRY[w.type]) && (
               <tr>
                 <td className="w-28 px-3 py-2 font-semibold text-ink-500">Quốc gia</td>
-                <td className="px-3 py-2">{TYPE_COUNTRY[w.type]}</td>
+                <td className="px-3 py-2">{w.countryOfOrigin ? (COUNTRY_LABEL[w.countryOfOrigin] ?? w.countryOfOrigin) : TYPE_COUNTRY[w.type]}</td>
               </tr>
             )}
             <tr>

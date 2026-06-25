@@ -532,6 +532,24 @@ function ThreadView() {
             </div>
           )}
         </div>
+        {/* Prefix + Tags */}
+        {((thread as any).prefix && (thread as any).prefix !== 'NONE') || (thread as any).tags?.length > 0 ? (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {(thread as any).prefixRef ? (
+              <span className="chip text-white text-xs" style={{ backgroundColor: (thread as any).prefixRef.color || '#6366f1' }}>{(thread as any).prefixRef.label}</span>
+            ) : (thread as any).prefix && (thread as any).prefix !== 'NONE' ? (
+              <span className="chip bg-ink-200 text-ink-700 text-xs">{(thread as any).prefix}</span>
+            ) : null}
+            {((thread as any).tags || []).map((tt: any) => (
+              <Link key={tt.tag.id} href={`/tag?slug=${tt.tag.slug}`}
+                className="rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{ backgroundColor: tt.tag.color ? tt.tag.color + '22' : '#6366f111', color: tt.tag.color || '#6366f1' }}
+              >
+                #{tt.tag.name}
+              </Link>
+            ))}
+          </div>
+        ) : null}
         <div className="mt-2 flex flex-wrap gap-4 text-xs text-ink-500">
           <span className="flex items-center gap-1"><MessageCircle size={14} /> {thread.replyCount} trả lời</span>
           <span className="flex items-center gap-1"><Eye size={14} /> {thread.viewCount} lượt xem</span>

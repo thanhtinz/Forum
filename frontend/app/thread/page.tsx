@@ -831,12 +831,6 @@ function ThreadView() {
                         <Gem size={13} /> Donate
                       </button>
                     )}
-                    {/* Like */}
-                    {user && (
-                      <button onClick={() => react(p.id, 'like')} className="flex items-center gap-1 rounded-full border border-ink-200 px-2 py-0.5 text-ink-600 hover:border-brand-400 hover:text-brand-600 dark:border-ink-800 dark:text-ink-300">
-                        <ThumbsUp size={13} /> Like
-                      </button>
-                    )}
                     {/* Quote */}
                     {user && !thread.isLocked && (
                       <button onClick={() => quotePost(p)} className="flex items-center gap-1 text-ink-500 hover:text-brand-600">

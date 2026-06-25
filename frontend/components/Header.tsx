@@ -23,7 +23,6 @@ function MessengerIcon({ size = 16 }: { size?: number }) {
 }
 
 const NAV = [
-  { href: '/chat', label: 'Chat', icon: MessengerIcon },
   { href: '/movie', label: 'Hoạt hình TQ', icon: Film },
   { href: '/comic', label: 'Truyện Tranh', icon: BookOpen },
   { href: '/cong-game', label: 'Giải trí', icon: Gamepad2 },
@@ -169,7 +168,6 @@ export function Header() {
               >
                 <Avatar user={user} size={28} />
                 <span className="hidden text-sm font-medium sm:block">{user.displayName || user.username}</span>
-                <ChevronDown size={13} className="text-white/60" />
               </button>
               {menu && (
                 <div className="absolute right-0 top-full mt-1 w-48 overflow-hidden rounded-lg border border-ink-200/40 bg-white py-1 text-ink-700 shadow-xl dark:border-ink-700 dark:bg-ink-800 dark:text-ink-200">

@@ -88,7 +88,7 @@ export class ForumService {
       orderBy: { sortOrder: 'asc' },
       select: {
         id: true, name: true, slug: true, icon: true, iconUrl: true, color: true,
-        threadCount: true, description: true, moduleType: true, parentId: true, minRolePost: true,
+        threadCount: true, postCount: true, description: true, moduleType: true, parentId: true, minRolePost: true,
         threads: {
           where: { isApproved: true, isHidden: false },
           orderBy: { lastPostAt: 'desc' },
@@ -96,7 +96,7 @@ export class ForumService {
           select: {
             title: true, slug: true, lastPostAt: true, createdAt: true,
             prefixRef: { select: { label: true, color: true } },
-            author: { select: { username: true, displayName: true } },
+            author: { select: { username: true, displayName: true, avatar: true } },
           },
         },
       },
@@ -104,7 +104,16 @@ export class ForumService {
     return cats.map((c) => {
       const t = c.threads[0];
       const { threads, ...rest } = c;
-      return { ...rest, latest: t ? { title: t.title, slug: t.slug, at: t.lastPostAt ?? t.createdAt, prefix: t.prefixRef?.label ?? null, author: t.author?.displayName || t.author?.username || null } : null };
+      return {
+        ...rest,
+        latest: t ? {
+          title: t.title, slug: t.slug, at: t.lastPostAt ?? t.createdAt,
+          prefixLabel: t.prefixRef?.label ?? null,
+          prefixColor: t.prefixRef?.color ?? null,
+          author: t.author?.displayName || t.author?.username || null,
+          authorAvatar: t.author?.avatar ?? null,
+        } : null,
+      };
     });
   }
 

@@ -259,13 +259,9 @@ export default function NewThreadPage() {
         </div>
 
         {/* ── Nội dung ── */}
-        <div className="card overflow-hidden">
-          <div className="border-b border-ink-200/70 px-4 py-2.5 dark:border-ink-800">
-            <p className="text-xs font-bold uppercase tracking-wide text-ink-400">Nội dung</p>
-          </div>
-          <div className="p-1">
-            <TipTapEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} placeholder="Viết nội dung bài đăng…" autosaveKey="new-thread" />
-          </div>
+        <div className="card p-4">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-400">Nội dung</p>
+          <TipTapEditor value={form.content} onChange={(html) => setForm({ ...form, content: html })} placeholder="Viết nội dung bài đăng…" autosaveKey="new-thread" />
         </div>
 
         {/* ── Tags ── */}

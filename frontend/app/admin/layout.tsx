@@ -4,21 +4,25 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, Settings, FileText, Ticket,
+  LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, FileText, Ticket,
   Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
-  BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronRight, Gift, Square, Megaphone, MessageCircle, Tv, SlidersHorizontal, BookOpen, Tag,
+  BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronDown, ChevronRight,
+  Gift, Square, Megaphone, MessageCircle, Tv, SlidersHorizontal, BookOpen, Tag,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSiteConfig } from '@/lib/siteConfig';
 import { api } from '@/lib/api';
 
-const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: any }[] }[] = [
+interface NavItem { href: string; label: string; icon: any }
+interface NavGroup { title: string; color: string; items: NavItem[] }
+
+const NAV_GROUPS: NavGroup[] = [
   {
-    title: 'Tổng quan',
+    title: 'Tổng quan', color: 'text-sky-400',
     items: [{ href: '/admin', label: 'Bảng điều khiển', icon: LayoutDashboard }],
   },
   {
-    title: 'Nội dung',
+    title: 'Nội dung', color: 'text-emerald-400',
     items: [
       { href: '/admin/forum-categories', label: 'Danh mục diễn đàn', icon: FolderTree },
       { href: '/admin/pages', label: 'Trang & Menu', icon: FileText },
@@ -31,7 +35,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
     ],
   },
   {
-    title: 'Game & Giải trí',
+    title: 'Game & Giải trí', color: 'text-violet-400',
     items: [
       { href: '/admin/templates', label: 'Dữ liệu game', icon: Sprout },
       { href: '/admin/fortune', label: 'Bói toán', icon: Sparkles },
@@ -47,11 +51,11 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
     ],
   },
   {
-    title: 'Thương mại',
+    title: 'Thương mại', color: 'text-amber-400',
     items: [{ href: '/admin/payments', label: 'Nạp tiền', icon: CreditCard }],
   },
   {
-    title: 'Thành viên',
+    title: 'Thành viên', color: 'text-rose-400',
     items: [
       { href: '/admin/users', label: 'Người dùng', icon: Users },
       { href: '/admin/groups', label: 'Nhóm & Quyền', icon: KeyRound },
@@ -61,7 +65,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
     ],
   },
   {
-    title: 'Hệ thống',
+    title: 'Hệ thống', color: 'text-slate-400',
     items: [
       { href: '/admin/attachment', label: 'Lưu trữ ảnh & tệp (R2)', icon: Paperclip },
       { href: '/admin/mail', label: 'Email / SMTP', icon: Mail },
@@ -73,116 +77,208 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string; icon: a
 
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
+function NavGroupSection({
+  group, path, onNav, collapsed, onToggle,
+}: {
+  group: NavGroup; path: string; onNav: () => void; collapsed: boolean; onToggle: () => void;
+}) {
+  const hasActive = group.items.some((i) => i.href === path);
+  return (
+    <div>
+      <button
+        onClick={onToggle}
+        className={`flex w-full items-center gap-2 px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest transition hover:bg-white/5 ${group.color}`}
+      >
+        <span className="flex-1">{group.title}</span>
+        <ChevronDown size={12} className={`shrink-0 transition-transform ${collapsed ? '-rotate-90' : ''}`} />
+      </button>
+      {!collapsed && (
+        <div className="pb-1">
+          {group.items.map((n) => {
+            const active = path === n.href;
+            return (
+              <Link
+                key={n.href}
+                href={n.href}
+                onClick={onNav}
+                className={`group flex items-center gap-2.5 border-l-2 py-1.5 pl-5 pr-4 text-sm transition ${
+                  active
+                    ? 'border-sky-400 bg-white/10 font-semibold text-white'
+                    : 'border-transparent text-slate-300 hover:border-slate-500 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <n.icon size={15} className={active ? 'text-sky-400' : 'text-slate-400 group-hover:text-slate-200'} />
+                <span className="truncate">{n.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const cfg = useSiteConfig();
   const path = usePathname();
-  const [open, setOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [groupKey, setGroupKey] = useState('');
   const [cfgGroups, setCfgGroups] = useState<{ key: string; name: string }[]>([]);
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  useEffect(() => { setGroupKey(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('group') || '' : ''); }, [path]);
+  useEffect(() => {
+    setGroupKey(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('group') || '' : '');
+  }, [path]);
+
   useEffect(() => {
     if (user?.role === 'ADMIN') api.get<{ key: string; name: string }[]>('/admin/config').then(setCfgGroups).catch(() => {});
   }, [user]);
 
-  if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
-  if (!user || user.role !== 'ADMIN') {
-    return <div className="m-6 rounded-2xl border border-ink-200/70 bg-white p-10 text-center text-ink-500 dark:border-ink-800 dark:bg-ink-900">Khu vực quản trị — chỉ dành cho Admin.</div>;
-  }
+  const toggleGroup = (title: string) => setCollapsed((c) => ({ ...c, [title]: !c[title] }));
+
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center bg-[#0f1923]">
+      <div className="text-slate-400 text-sm">Đang tải…</div>
+    </div>
+  );
+  if (!user || user.role !== 'ADMIN') return (
+    <div className="flex min-h-screen items-center justify-center bg-[#0f1923]">
+      <div className="rounded-xl border border-slate-700 bg-[#1a2535] p-10 text-center text-slate-300">
+        Khu vực quản trị — chỉ dành cho Admin.
+      </div>
+    </div>
+  );
 
   const current = ALL_ITEMS.find((i) => i.href === path) || (path?.startsWith('/admin/config') ? { label: 'Cấu hình' } : null);
 
-  const SidebarNav = (
-    <nav className="space-y-5">
-      {NAV_GROUPS.map((g) => (
-        <div key={g.title}>
-          <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-400">{g.title}</div>
-          <div className="space-y-0.5">
-            {g.items.map((n) => {
-              const active = path === n.href;
-              return (
-                <Link key={n.href} href={n.href} onClick={() => setOpen(false)}
-                  className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-brand-600 font-medium text-white shadow-sm' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
-                  <n.icon size={17} className={active ? '' : 'text-ink-400 group-hover:text-ink-600 dark:group-hover:text-ink-200'} />
-                  <span className="flex-1 truncate">{n.label}</span>
-                </Link>
-              );
-            })}
-          </div>
+  const SidebarContent = (
+    <div className="flex h-full flex-col">
+      {/* Sidebar branding */}
+      <div className="flex items-center gap-3 border-b border-white/10 px-4 py-3.5">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-sky-500 text-base font-bold text-white shadow">⚙</span>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-bold text-white">{cfg.name}</div>
+          <div className="text-[10px] text-slate-400">Admin Control Panel</div>
         </div>
-      ))}
+      </div>
 
-      {/* Cấu hình — mỗi nhóm là 1 mục riêng (không phải bấm vào danh sách) */}
-      {cfgGroups.length > 0 && (
-        <div>
-          <div className="px-3 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-400">Cấu hình</div>
-          <div className="space-y-0.5">
-            {cfgGroups.map((g) => {
-              const active = path === '/admin/config' && groupKey === g.key;
-              return (
-                <Link key={g.key} href={`/admin/config?group=${g.key}`} onClick={() => { setOpen(false); setGroupKey(g.key); }}
-                  className={`group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition ${active ? 'bg-brand-600 font-medium text-white shadow-sm' : 'text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800'}`}>
-                  <SlidersHorizontal size={17} className={active ? '' : 'text-ink-400 group-hover:text-ink-600 dark:group-hover:text-ink-200'} />
-                  <span className="flex-1 truncate">{g.name}</span>
-                </Link>
-              );
-            })}
+      {/* Nav */}
+      <div className="flex-1 overflow-y-auto py-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
+        {NAV_GROUPS.map((g) => (
+          <NavGroupSection
+            key={g.title}
+            group={g}
+            path={path}
+            onNav={() => setDrawerOpen(false)}
+            collapsed={!!collapsed[g.title]}
+            onToggle={() => toggleGroup(g.title)}
+          />
+        ))}
+
+        {cfgGroups.length > 0 && (
+          <div>
+            <button
+              onClick={() => toggleGroup('__cfg')}
+              className="flex w-full items-center gap-2 px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-orange-400 transition hover:bg-white/5"
+            >
+              <span className="flex-1">Cấu hình</span>
+              <ChevronDown size={12} className={`shrink-0 transition-transform ${collapsed['__cfg'] ? '-rotate-90' : ''}`} />
+            </button>
+            {!collapsed['__cfg'] && (
+              <div className="pb-1">
+                {cfgGroups.map((g) => {
+                  const active = path === '/admin/config' && groupKey === g.key;
+                  return (
+                    <Link
+                      key={g.key}
+                      href={`/admin/config?group=${g.key}`}
+                      onClick={() => { setDrawerOpen(false); setGroupKey(g.key); }}
+                      className={`group flex items-center gap-2.5 border-l-2 py-1.5 pl-5 pr-4 text-sm transition ${
+                        active
+                          ? 'border-sky-400 bg-white/10 font-semibold text-white'
+                          : 'border-transparent text-slate-300 hover:border-slate-500 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <SlidersHorizontal size={15} className={active ? 'text-sky-400' : 'text-slate-400 group-hover:text-slate-200'} />
+                      <span className="truncate">{g.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
+        )}
+      </div>
+
+      {/* Sidebar footer */}
+      <div className="border-t border-white/10 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-sky-600 text-xs font-bold text-white">
+            {(user.displayName || user.username || '?').slice(0, 1).toUpperCase()}
+          </span>
+          <span className="min-w-0 flex-1 truncate text-xs font-medium text-slate-300">{user.displayName || user.username}</span>
         </div>
-      )}
-    </nav>
+      </div>
+    </div>
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-ink-100/60 dark:bg-ink-950">
+    <div className="flex min-h-screen flex-col bg-[#f0f2f5] dark:bg-[#0f1923]">
       {/* Top bar */}
-      <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b border-ink-800/80 bg-gradient-to-r from-ink-900 to-ink-800 px-4 text-white">
-        <button onClick={() => setOpen((o) => !o)} className="rounded-lg p-1.5 hover:bg-white/10 lg:hidden"><Menu size={20} /></button>
-        <Link href="/admin" className="flex items-center gap-2 font-bold">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm shadow">⚙</span>
-          <span className="hidden sm:block">Quản trị</span>
-        </Link>
-        {current && (
-          <span className="hidden items-center gap-1.5 text-sm text-white/60 md:flex">
-            <ChevronRight size={14} /> <span className="text-white/90">{current.label}</span>
-          </span>
-        )}
-        <div className="ml-auto flex items-center gap-1 text-sm">
-          <Link href="/" className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-white/85 hover:bg-white/10"><ArrowLeft size={15} /> <span className="hidden sm:inline">Trang chủ</span></Link>
-          <span className="hidden items-center gap-2 rounded-lg px-2 py-1 text-white/70 md:flex">
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-brand-600 text-[11px] font-bold">{(user.displayName || user.username || '?').slice(0, 1).toUpperCase()}</span>
-            {user.displayName || user.username}
-          </span>
-          <button onClick={logout} className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-white/85 hover:bg-white/10"><LogOut size={15} /> <span className="hidden sm:inline">Đăng xuất</span></button>
+      <header className="sticky top-0 z-40 flex h-12 items-center gap-3 border-b border-white/5 bg-[#1a2535] px-4 shadow-lg">
+        <button onClick={() => setDrawerOpen((o) => !o)} className="rounded-md p-1.5 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden">
+          <Menu size={18} />
+        </button>
+        <div className="hidden items-center gap-1.5 text-sm text-slate-400 lg:flex">
+          <Link href="/admin" className="text-white/80 hover:text-white">Admin</Link>
+          {current && (
+            <>
+              <ChevronRight size={13} />
+              <span className="text-slate-200">{current.label}</span>
+            </>
+          )}
+        </div>
+        <div className="ml-auto flex items-center gap-1">
+          <Link href="/" className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white">
+            <ArrowLeft size={13} /> Trang chủ
+          </Link>
+          <button onClick={logout} className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white">
+            <LogOut size={13} /> Đăng xuất
+          </button>
         </div>
       </header>
 
       {/* Body */}
-      <div className="mx-auto flex w-full max-w-[1440px] flex-1 gap-6 px-4 py-6">
-        <aside className="hidden w-60 shrink-0 lg:block">
-          <div className="sticky top-20 rounded-2xl border border-ink-200/70 bg-white p-3 shadow-sm dark:border-ink-800 dark:bg-ink-900">{SidebarNav}</div>
+      <div className="flex flex-1">
+        {/* Desktop sidebar */}
+        <aside className="hidden w-60 shrink-0 bg-[#1a2535] lg:flex lg:flex-col">
+          <div className="sticky top-12 h-[calc(100vh-3rem)] overflow-hidden">
+            {SidebarContent}
+          </div>
         </aside>
-        <div className="min-w-0 flex-1 space-y-5">{children}</div>
+
+        {/* Main content */}
+        <main className="min-w-0 flex-1 p-5 lg:p-6">
+          {children}
+        </main>
       </div>
 
       {/* Mobile drawer */}
-      {open && (
-        <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="absolute left-0 top-0 h-full w-72 overflow-y-auto bg-white p-3 shadow-xl dark:bg-ink-900" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between px-1">
-              <span className="font-semibold">Quản trị</span>
-              <button onClick={() => setOpen(false)} className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={18} /></button>
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
+          <div className="absolute left-0 top-0 h-full w-64 overflow-hidden bg-[#1a2535] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex h-12 items-center justify-between border-b border-white/10 px-4">
+              <span className="text-sm font-semibold text-white">Menu quản trị</span>
+              <button onClick={() => setDrawerOpen(false)} className="rounded-md p-1 text-slate-400 hover:bg-white/10 hover:text-white">
+                <X size={16} />
+              </button>
             </div>
-            {SidebarNav}
+            <div className="h-[calc(100%-3rem)] overflow-y-auto">{SidebarContent}</div>
           </div>
         </div>
       )}
-
-      <footer className="border-t border-ink-200/70 py-4 text-center text-xs text-ink-400 dark:border-ink-800">
-        Trang quản trị · {cfg.name}
-      </footer>
     </div>
   );
 }

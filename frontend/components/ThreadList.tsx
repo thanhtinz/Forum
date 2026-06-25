@@ -5,7 +5,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Pin, Lock, MessageCircle, Eye, ThumbsUp, Flame, Sparkles } from 'lucide-react';
+import { Pin, Lock, MessageCircle, Eye, ThumbsUp, Flame, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
 import { Avatar } from './Header';
 import { useAuth } from './AuthProvider';
@@ -160,6 +160,11 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                       <Sparkles size={9} /> MỚI
                     </span>
                   )}
+                  {(t as any).bestAnswerId && (
+                    <span className="inline-flex h-5 items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      <CheckCircle2 size={9} /> Đã giải
+                    </span>
+                  )}
                   {t.isPinned && <Pin size={14} className="text-amber-500" />}
                   {t.isLocked && <Lock size={14} className="text-ink-400" />}
                   {(t as any).prefixRef ? (
@@ -208,6 +213,15 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                   <span className="flex items-center gap-1"><MessageCircle size={13} /> {t.replyCount}</span>
                   <span className="flex items-center gap-1"><Eye size={13} /> {t.viewCount}</span>
                   <span className="flex items-center gap-1"><ThumbsUp size={13} /> {t.likeCount}</span>
+                  {t.replyCount > 0 && (() => {
+                    const lastPage = Math.ceil((t.replyCount + 1) / 20);
+                    return (
+                      <Link href={`/thread?slug=${t.slug}&page=${lastPage}`} onClick={(e) => e.stopPropagation()}
+                        title="Đến bài mới nhất" className="rounded p-0.5 hover:bg-ink-100 dark:hover:bg-ink-800 text-ink-400 hover:text-brand-600">
+                        <ArrowRight size={13} />
+                      </Link>
+                    );
+                  })()}
                 </div>
                 {t.lastPostAt && t.replyCount > 0 && (
                   <span className="text-[11px] text-ink-400">{timeAgo(t.lastPostAt)}</span>

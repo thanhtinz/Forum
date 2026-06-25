@@ -769,7 +769,7 @@ function ThreadView() {
                   <div className="h-px flex-1 bg-blue-400" />
                 </div>
               )}
-            <article data-post-id={p.id} id={`post-${p.id}`} className={`card overflow-hidden ${depth > 0 ? 'border-l-4 border-brand-200 dark:border-brand-900' : ''} ${isBest ? 'ring-2 ring-emerald-400' : ''} ${splitMode && splitSelected.includes(p.id) ? 'ring-2 ring-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
+            <article data-post-id={p.id} id={`post-${p.id}`} className={`card overflow-hidden ${showCommentDivider ? 'mt-3' : ''} ${depth > 0 ? 'border-l-4 border-brand-200 dark:border-brand-900' : ''} ${isBest ? 'ring-2 ring-emerald-400' : ''} ${splitMode && splitSelected.includes(p.id) ? 'ring-2 ring-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
               {splitMode && !isFirst && (
                 <div className="flex items-center gap-2 border-b border-ink-200/70 px-3 py-2 dark:border-ink-800">
                   <input type="checkbox" checked={splitSelected.includes(p.id)} onChange={() => toggleSplitPost(p.id)}

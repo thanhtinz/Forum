@@ -29,6 +29,7 @@ export default function NewScamPage() {
   const [description, setDescription] = useState('');
   const [sourceLink, setSourceLink] = useState('');
   const [images, setImages] = useState<{ url: string; uploading?: boolean }[]>([]);
+  const [role, setRole] = useState<'proxy' | 'victim'>('victim');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
@@ -190,6 +191,20 @@ export default function NewScamPage() {
           <div>
             <label className="mb-1 block text-sm font-semibold">Link nguồn (nếu có)</label>
             <input className="input w-full" placeholder="http://" value={sourceLink} onChange={(e) => setSourceLink(e.target.value)} />
+          </div>
+
+          {/* Vai trò người tố cáo */}
+          <div className="space-y-2 pt-1">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input type="radio" name="role" value="proxy" checked={role === 'proxy'} onChange={() => setRole('proxy')}
+                className="mt-0.5 accent-rose-600" />
+              <span className="text-sm">Phốt này trên group tôi chỉ đăng hộ</span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input type="radio" name="role" value="victim" checked={role === 'victim'} onChange={() => setRole('victim')}
+                className="mt-0.5 accent-rose-600" />
+              <span className="text-sm">Tôi chính là nạn nhân, tôi đồng ý và sẵn sàng chịu trách nhiệm trước pháp luật về nội dung</span>
+            </label>
           </div>
         </div>
 

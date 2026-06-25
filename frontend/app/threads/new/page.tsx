@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import TipTapEditor from '@/components/TipTapEditor';
-import { Sparkles, Lock, FileClock, Trash2, HelpCircle, BarChart2, BookOpen, Lightbulb, MessagesSquare } from 'lucide-react';
+import { Sparkles, Lock, FileClock, Trash2 } from 'lucide-react';
 import { GATE_OPTIONS, needLike, needComment, needGem } from '@/lib/constants';
 
 // Tạo body cho section nội dung ẩn theo gateType
@@ -29,14 +29,6 @@ function htmlToText(html: string): string {
 interface Prefix { id: string; label: string; color?: string | null }
 
 type ThreadType = 'DISCUSSION' | 'QUESTION' | 'POLL' | 'ARTICLE' | 'SUGGESTION';
-
-const THREAD_TYPES: { value: ThreadType; label: string; desc: string; icon: React.ReactNode }[] = [
-  { value: 'DISCUSSION', label: 'Thảo luận', desc: 'Chủ đề thảo luận chung', icon: <MessagesSquare size={15} /> },
-  { value: 'QUESTION', label: 'Hỏi đáp', desc: 'Đặt câu hỏi, nhận câu trả lời hay nhất', icon: <HelpCircle size={15} /> },
-  { value: 'POLL', label: 'Thăm dò', desc: 'Tạo bình chọn kèm nội dung', icon: <BarChart2 size={15} /> },
-  { value: 'ARTICLE', label: 'Bài viết', desc: 'Hướng dẫn, chia sẻ kiến thức', icon: <BookOpen size={15} /> },
-  { value: 'SUGGESTION', label: 'Đề xuất', desc: 'Góp ý, yêu cầu tính năng', icon: <Lightbulb size={15} /> },
-];
 
 export default function NewThreadPage() {
   const { user, loading } = useAuth();
@@ -210,22 +202,6 @@ export default function NewThreadPage() {
       </div>
 
       <form onSubmit={submit} className="space-y-4">
-        {/* ── Kiểu chủ đề ── */}
-        <div className="card p-4">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-400">Kiểu chủ đề</p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {THREAD_TYPES.map((t) => (
-              <button
-                key={t.value} type="button"
-                onClick={() => setThreadType(t.value)}
-                className={`flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-2.5 text-center text-xs font-semibold transition ${threadType === t.value ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/20 dark:text-brand-300' : 'border-ink-200 text-ink-500 hover:border-ink-300 dark:border-ink-700 dark:hover:border-ink-600'}`}>
-                {t.icon}
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* ── Danh mục & Tiền tố ── */}
         <div className="card p-4">
           <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-400">Phân loại</p>

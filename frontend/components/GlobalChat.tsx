@@ -2,36 +2,26 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Send, Hash } from 'lucide-react';
+import { Hash, Reply, Trash2 } from 'lucide-react';
 import { api, getToken } from '@/lib/api';
 import { useAuth } from './AuthProvider';
 import { Avatar } from './Header';
 import type { ChatMsg } from '@/lib/chat';
+import { MessageView } from './chat/MessageView';
+import { Composer } from './chat/Composer';
 import Link from 'next/link';
-
-function timeShort(s: string) {
-  try {
-    const d = new Date(s);
-    const now = new Date();
-    const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
-    if (diffMin < 1) return 'vừa xong';
-    if (diffMin < 60) return `${diffMin} phút`;
-    const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `${diffH}h`;
-    return d.toLocaleDateString('vi');
-  } catch { return ''; }
-}
 
 export function GlobalChat() {
   const { user, loading } = useAuth();
   const [channelId, setChannelId] = useState('');
   const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMsg | null>(null);
+  const [typing, setTyping] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const channelRef = useRef('');
+  const typingTimer = useRef<any>(null);
   channelRef.current = channelId;
 
   const scrollBottom = useCallback(() => {
@@ -43,17 +33,14 @@ export function GlobalChat() {
 
     let socket: Socket;
     (async () => {
-      // Lấy global channel
       const ch = await api.get<{ id: string }>('/chat/global').catch(() => null);
       if (!ch?.id) return;
       setChannelId(ch.id);
 
-      // Tải tin nhắn gần nhất
       const msgs = await api.get<ChatMsg[]>(`/chat/channels/${ch.id}/messages`).catch(() => []);
-      setMessages(msgs.slice(-30).reverse());
+      setMessages(msgs);
       scrollBottom();
 
-      // Kết nối socket
       const base = process.env.NEXT_PUBLIC_API_URL || '';
       socket = io(`${base}/chat`, {
         auth: { token: getToken() },
@@ -71,6 +58,12 @@ export function GlobalChat() {
         setMessages((prev) => [...prev, m]);
         scrollBottom();
       });
+      socket.on('typing', (d: { userId: string; channelId: string }) => {
+        if (d.channelId !== channelRef.current || d.userId === user.id) return;
+        setTyping(d.userId);
+        clearTimeout(typingTimer.current);
+        typingTimer.current = setTimeout(() => setTyping(null), 2500);
+      });
       socket.on('messageDeleted', (d: { id: string }) => {
         setMessages((prev) => prev.filter((m) => m.id !== d.id));
       });
@@ -80,24 +73,22 @@ export function GlobalChat() {
     return () => { socket?.disconnect(); };
   }, [user, loading, scrollBottom]);
 
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
-    const content = text.trim();
-    if (!content || !channelId || sending) return;
-    setSending(true);
-    try {
-      socketRef.current?.emit('message', { channelId, content, type: 'TEXT' });
-      setText('');
-    } finally {
-      setSending(false);
-    }
+  function handleSend(payload: { type: ChatMsg['type']; content: string; metadata?: any }) {
+    if (!channelId || !socketRef.current) return;
+    socketRef.current.emit('message', { channelId, replyToId: replyTo?.id, ...payload });
+    setReplyTo(null);
+  }
+
+  function deleteMessage(id: string) {
+    socketRef.current?.emit('deleteMessage', { messageId: id, channelId });
   }
 
   if (loading) return null;
 
+  const isStaff = user?.role === 'ADMIN' || user?.role === 'MODERATOR';
+
   return (
     <section className="card overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
         <div className="flex items-center gap-2">
           <Hash size={15} className="text-brand-500" />
@@ -105,12 +96,11 @@ export function GlobalChat() {
         </div>
         <div className="flex items-center gap-1.5">
           <span className={`h-1.5 w-1.5 rounded-full ${connected ? 'bg-emerald-400' : 'bg-ink-400'}`} />
-          <Link href="/chat" className="text-xs text-ink-400 hover:text-brand-600">Mở chat</Link>
+          <span className="text-xs text-ink-400">{connected ? 'Trực tuyến' : 'Ngoại tuyến'}</span>
         </div>
       </div>
 
       {!user ? (
-        /* Guest placeholder */
         <div className="flex flex-col items-center justify-center gap-2 px-4 py-8 text-center">
           <Hash size={28} className="text-ink-300" />
           <p className="text-sm text-ink-500">
@@ -120,51 +110,45 @@ export function GlobalChat() {
         </div>
       ) : (
         <>
-          {/* Messages */}
-          <div className="flex h-64 flex-col gap-0 overflow-y-auto px-3 py-2 scroll-smooth">
+          <div className="h-72 space-y-1 overflow-y-auto p-4">
             {messages.length === 0 && (
-              <p className="m-auto text-xs text-ink-400">Chưa có tin nhắn nào. Hãy là người đầu tiên!</p>
+              <p className="text-center text-sm text-ink-400">Chưa có tin nhắn nào. Hãy là người đầu tiên!</p>
             )}
-            {messages.map((m) => (
-              <div key={m.id} className={`flex items-start gap-2 rounded-lg px-1 py-1 hover:bg-ink-50/60 dark:hover:bg-ink-800/30 ${m.senderId === user.id ? 'flex-row-reverse' : ''}`}>
-                <div className="mt-0.5 shrink-0">
-                  <Avatar user={{ username: m.sender?.username || '?', avatar: m.sender?.avatar }} size={24} />
-                </div>
-                <div className={`max-w-[75%] ${m.senderId === user.id ? 'items-end' : 'items-start'} flex flex-col`}>
-                  {m.senderId !== user.id && (
-                    <span className="mb-0.5 text-[10px] font-semibold text-ink-500">
-                      {m.sender?.displayName || m.sender?.username}
-                    </span>
+            {messages.map((m) => {
+              const mine = m.senderId === user.id;
+              return (
+                <div key={m.id} className={`group flex items-end gap-2 ${mine ? 'flex-row-reverse' : ''}`}>
+                  {!mine && (
+                    <div className="shrink-0">
+                      <Avatar user={m.sender || { username: m.senderId }} size={28} />
+                    </div>
                   )}
-                  <div className={`rounded-2xl px-3 py-1.5 text-sm leading-relaxed ${m.senderId === user.id ? 'bg-brand-600 text-white' : 'bg-ink-100 text-ink-800 dark:bg-ink-800 dark:text-ink-100'}`}>
-                    {m.content}
+                  <div className="min-w-0 max-w-[78%]">
+                    <MessageView m={m} mine={mine} showName />
                   </div>
-                  <span className="mt-0.5 text-[10px] text-ink-400">{timeShort(m.createdAt)}</span>
+                  <div className="flex items-center gap-1 self-center opacity-0 group-hover:opacity-100">
+                    <button onClick={() => setReplyTo(m)} title="Trả lời">
+                      <Reply size={14} className="text-ink-400 hover:text-brand-600" />
+                    </button>
+                    {(isStaff || mine) && (
+                      <button onClick={() => deleteMessage(m.id)} title="Xoá">
+                        <Trash2 size={14} className="text-ink-400 hover:text-rose-500" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
+            {typing && <p className="text-xs italic text-ink-400">Đang nhập…</p>}
             <div ref={bottomRef} />
           </div>
 
-          {/* Input */}
-          <form onSubmit={send}
-            className="flex items-center gap-2 border-t border-ink-200/70 px-3 py-2 dark:border-ink-800">
-            <div className="shrink-0">
-              <Avatar user={{ username: user.username, avatar: user.avatar }} size={28} />
-            </div>
-            <input
-              className="input flex-1 text-sm !py-1.5"
-              placeholder="Nhắn gì đó…"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              maxLength={500}
-              autoComplete="off"
-            />
-            <button type="submit" disabled={!text.trim() || sending || !connected}
-              className="btn-primary !p-2 disabled:opacity-40">
-              <Send size={14} />
-            </button>
-          </form>
+          <Composer
+            onSend={handleSend}
+            replyTo={replyTo}
+            onCancelReply={() => setReplyTo(null)}
+            onTyping={() => socketRef.current?.emit('typing', { channelId })}
+          />
         </>
       )}
     </section>

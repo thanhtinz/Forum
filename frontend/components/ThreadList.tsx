@@ -5,21 +5,11 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Pin, Lock, MessageCircle, Eye, HelpCircle, BarChart2, BookOpen, Lightbulb, CheckCircle2 } from 'lucide-react';
+import { Pin, Lock, HelpCircle, BarChart2, BookOpen, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
 import { Avatar } from './Header';
 import { useAuth } from './AuthProvider';
-import type { Paginated, Thread, ThreadPrefix, ThreadType } from '@/lib/types';
-
-type SortBy = 'lastPost' | 'createdAt' | 'views' | 'likes' | 'replies';
-
-const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: 'lastPost', label: 'Hoạt động' },
-  { value: 'createdAt', label: 'Mới nhất' },
-  { value: 'replies', label: 'Trả lời nhiều' },
-  { value: 'views', label: 'Lượt xem' },
-  { value: 'likes', label: 'Lượt thích' },
-];
+import type { Paginated, Thread, ThreadType } from '@/lib/types';
 
 const THREAD_TYPE_ICONS: Partial<Record<ThreadType, React.ReactNode>> = {
   QUESTION:   <HelpCircle  size={13} className="shrink-0 text-blue-500" />,
@@ -37,26 +27,11 @@ const POST_PER_PAGE = 20;
 
 export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hideHeader?: boolean } = {}) {
   const { user } = useAuth();
-  const [sort, setSort]         = useState<SortBy>('lastPost');
-  const [unanswered, setUnanswered] = useState(false);
-  const [prefixId, setPrefixId] = useState('');
-  const [threadType, setThreadType] = useState<ThreadType | ''>('');
-  const [page, setPage]         = useState(1);
-  const [prefixes, setPrefixes] = useState<ThreadPrefix[]>([]);
+  const [page, setPage] = useState(1);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
-  useEffect(() => {
-    if (!categoryId) { setPrefixes([]); return; }
-    api.get<ThreadPrefix[]>(`/forum/categories/${categoryId}/prefixes`)
-      .then((p) => setPrefixes(p || []))
-      .catch(() => setPrefixes([]));
-  }, [categoryId]);
-
-  const params = new URLSearchParams({ limit: String(POST_PER_PAGE), sortBy: sort, page: String(page) });
-  if (categoryId)  params.set('categoryId', categoryId);
-  if (unanswered)  params.set('unanswered', '1');
-  if (prefixId)    params.set('prefixId', prefixId);
-  if (threadType)  params.set('type', threadType);
+  const params = new URLSearchParams({ limit: String(POST_PER_PAGE), sortBy: 'lastPost', page: String(page) });
+  if (categoryId) params.set('categoryId', categoryId);
 
   const { data, error, isLoading } = useSWR<Paginated<Thread>>(`/forum/threads?${params}`, fetcher);
   const totalPages = data?.meta?.totalPages ?? 1;
@@ -86,50 +61,6 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
           </div>
         </div>
       )}
-
-      {/* Filter toolbar */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-ink-200/70 bg-ink-50/50 px-4 py-2 dark:border-ink-800 dark:bg-ink-800/30">
-        {/* Sort */}
-        <div className="flex items-center gap-1">
-          {SORT_OPTIONS.map((o) => (
-            <button key={o.value}
-              onClick={() => { setSort(o.value); setPage(1); }}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${sort === o.value ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
-              {o.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="ml-auto flex flex-wrap items-center gap-1">
-          {/* Prefix chips */}
-          {prefixes.map((p) => (
-            <button key={p.id}
-              onClick={() => { setPrefixId(prefixId === p.id ? '' : p.id); setPage(1); }}
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white transition ${prefixId === p.id ? 'ring-2 ring-offset-1 ring-white/60' : 'opacity-70 hover:opacity-100'}`}
-              style={{ backgroundColor: p.color || '#6366f1' }}>
-              {p.label}
-            </button>
-          ))}
-          {/* Thread type filter */}
-          {(['QUESTION', 'ARTICLE', 'POLL', 'SUGGESTION'] as ThreadType[]).map((type) => {
-            const icon = THREAD_TYPE_ICONS[type];
-            const labels: Record<string, string> = { QUESTION: 'Hỏi đáp', ARTICLE: 'Bài viết', POLL: 'Thăm dò', SUGGESTION: 'Đề xuất' };
-            return (
-              <button key={type}
-                onClick={() => { setThreadType(threadType === type ? '' : type); setPage(1); }}
-                className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${threadType === type ? 'bg-ink-700 text-white dark:bg-ink-200 dark:text-ink-900' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
-                {icon}{labels[type]}
-              </button>
-            );
-          })}
-          {/* Unanswered */}
-          <button
-            onClick={() => { setUnanswered((v) => !v); setPage(1); }}
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
-            Chưa trả lời
-          </button>
-        </div>
-      </div>
 
       {/* Column headers — desktop */}
       <div className="hidden border-b border-ink-100 bg-ink-50/30 dark:border-ink-800 dark:bg-ink-800/20 sm:grid"

@@ -151,10 +151,15 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                   {t.category && <> · trong <span className="text-brand-600">{t.category.name}</span></>}
                 </div>
               </div>
-              <div className="hidden shrink-0 items-center gap-4 text-xs text-ink-500 sm:flex">
-                <span className="flex items-center gap-1"><MessageCircle size={14} /> {t.replyCount}</span>
-                <span className="flex items-center gap-1"><Eye size={14} /> {t.viewCount}</span>
-                <span className="flex items-center gap-1"><ThumbsUp size={14} /> {t.likeCount}</span>
+              <div className="hidden shrink-0 flex-col items-end gap-0.5 text-xs text-ink-500 sm:flex">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1"><MessageCircle size={13} /> {t.replyCount}</span>
+                  <span className="flex items-center gap-1"><Eye size={13} /> {t.viewCount}</span>
+                  <span className="flex items-center gap-1"><ThumbsUp size={13} /> {t.likeCount}</span>
+                </div>
+                {t.lastPostAt && t.replyCount > 0 && (
+                  <span className="text-[11px] text-ink-400">{timeAgo(t.lastPostAt)}</span>
+                )}
               </div>
             </li>
           );

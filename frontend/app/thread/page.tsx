@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreHorizontal, Crown } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -533,19 +533,18 @@ function ThreadView() {
   return (
     <div className="space-y-4">
       {copyToast && <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg bg-ink-900 px-4 py-2 text-sm text-white shadow-card dark:bg-white dark:text-ink-900">{copyToast}</div>}
+      <nav className="flex flex-wrap items-center gap-1 text-xs text-ink-400">
+        <Link href="/" className="hover:text-brand-600">Trang chủ</Link>
+        {thread.category && (
+          <>
+            <span>/</span>
+            <Link href={`/category?id=${(thread as any).category.id}`} className="hover:text-brand-600 text-brand-500">{thread.category.name}</Link>
+          </>
+        )}
+        <span>/</span>
+        <span className="truncate max-w-[200px] text-ink-500">{thread.title}</span>
+      </nav>
       <div className="card p-5">
-        {/* Breadcrumb */}
-        <nav className="mb-2 flex flex-wrap items-center gap-1 text-xs text-ink-400">
-          <Link href="/" className="hover:text-brand-600">Trang chủ</Link>
-          {thread.category && (
-            <>
-              <span>/</span>
-              <Link href={`/category?id=${(thread as any).category.id}`} className="hover:text-brand-600 text-brand-500">{thread.category.name}</Link>
-            </>
-          )}
-          <span>/</span>
-          <span className="truncate max-w-[200px] text-ink-500">{thread.title}</span>
-        </nav>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-ink-500">
             {thread.isPinned && <Pin size={14} className="text-amber-500" />}
@@ -557,7 +556,7 @@ function ThreadView() {
             <div className="relative" ref={threadMenuRef}>
               <button onClick={() => setThreadMenu((v) => !v)}
                 className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800">
-                <MoreHorizontal size={18} />
+                <MoreVertical size={18} />
               </button>
               {threadMenu && (
                 <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] overflow-hidden rounded-xl border border-ink-200 bg-white py-1 shadow-card dark:border-ink-800 dark:bg-ink-900">
@@ -708,7 +707,7 @@ function ThreadView() {
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1">
                     {p.author && <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />}
-                    {isFirst && <span className="chip bg-brand-100 text-brand-700 text-[10px] inline-flex items-center gap-0.5"><Crown size={9} />Tác giả</span>}
+                    {isFirst && <span className="chip bg-brand-100 text-brand-700 text-[10px] inline-flex items-center gap-0.5"><Feather size={9} />Tác giả</span>}
                   </div>
                 </div>
               </div>
@@ -725,7 +724,7 @@ function ThreadView() {
                       <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />
                     </div>
                   )}
-                  {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700 inline-flex items-center gap-1"><Crown size={10} />Tác giả</span>}
+                  {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700 inline-flex items-center gap-1"><Feather size={10} />Tác giả</span>}
                 </div>
                 <div className="min-w-0 flex-1 p-4">
                 <div className="mb-2 flex items-center justify-between text-xs text-ink-500">

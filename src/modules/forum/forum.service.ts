@@ -56,7 +56,8 @@ export interface ThreadListQuery {
   tagId?: string;
   page?: number;
   limit?: number;
-  sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes';
+  sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes' | 'replies';
+  unanswered?: boolean;
   q?: string;
   authorId?: string;
 }
@@ -247,6 +248,9 @@ export class ForumService {
     if (query.q?.trim()) {
       where.title = { contains: query.q.trim(), mode: 'insensitive' };
     }
+    if (query.unanswered) {
+      where.replyCount = 0;
+    }
 
     const orderBy: any =
       query.sortBy === 'createdAt'
@@ -255,6 +259,8 @@ export class ForumService {
         ? { viewCount: 'desc' }
         : query.sortBy === 'likes'
         ? { likeCount: 'desc' }
+        : query.sortBy === 'replies'
+        ? { replyCount: 'desc' }
         : { lastPostAt: 'desc' };
 
     const [threads, total] = await Promise.all([

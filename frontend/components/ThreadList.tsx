@@ -5,7 +5,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Pin, Lock, MessageCircle, Eye, ThumbsUp } from 'lucide-react';
+import { Pin, Lock, MessageCircle, Eye, ThumbsUp, Flame, Sparkles } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
 import { Avatar } from './Header';
 import { useAuth } from './AuthProvider';
@@ -21,18 +21,44 @@ const PREFIX_STYLE: Record<string, string> = {
   DISCUSSION: 'bg-ink-200 text-ink-700',
 };
 
+type SortBy = 'lastPost' | 'createdAt' | 'views' | 'likes' | 'replies';
+
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: 'lastPost', label: 'Hoạt động' },
+  { value: 'createdAt', label: 'Mới nhất' },
+  { value: 'replies', label: 'Trả lời' },
+  { value: 'views', label: 'Lượt xem' },
+  { value: 'likes', label: 'Lượt thích' },
+];
+
 function timeAgo(d?: string) {
   if (!d) return '';
   try { return formatDistanceToNow(new Date(d), { addSuffix: true, locale: vi }); } catch { return ''; }
 }
 
+function isHot(t: Thread) {
+  return t.replyCount >= 15 || t.viewCount >= 300;
+}
+
+function isNew(t: Thread) {
+  if (!t.createdAt) return false;
+  const age = Date.now() - new Date(t.createdAt).getTime();
+  return age < 48 * 60 * 60 * 1000;
+}
+
 export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hideHeader?: boolean } = {}) {
   const { user } = useAuth();
-  const url = categoryId ? `/forum/threads?limit=20&categoryId=${categoryId}` : '/forum/threads?limit=20';
+  const [sort, setSort] = useState<SortBy>('lastPost');
+  const [unanswered, setUnanswered] = useState(false);
+
+  const params = new URLSearchParams({ limit: '20', sortBy: sort });
+  if (categoryId) params.set('categoryId', categoryId);
+  if (unanswered) params.set('unanswered', '1');
+  const url = `/forum/threads?${params.toString()}`;
+
   const { data, error, isLoading } = useSWR<Paginated<Thread>>(url, fetcher);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
-  // Fetch bulk unread counts when threads load
   useEffect(() => {
     if (!user || !data?.data?.length) return;
     const threadIds = data.data.map((t) => t.id);
@@ -50,17 +76,43 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
         </div>
       )}
 
+      {/* Sort / Filter bar */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-ink-200/70 px-4 py-2 dark:border-ink-800">
+        <div className="flex items-center gap-1">
+          {SORT_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              onClick={() => setSort(o.value)}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${sort === o.value ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto">
+          <button
+            onClick={() => setUnanswered((v) => !v)}
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}
+          >
+            Chưa có trả lời
+          </button>
+        </div>
+      </div>
+
       {isLoading && <div className="p-8 text-center text-ink-500">Đang tải…</div>}
       {error && <div className="p-8 text-center text-red-500">Không tải được dữ liệu (kiểm tra API).</div>}
       {data && data.data.length === 0 && (
-        <div className="p-10 text-center text-ink-500">Chưa có bài viết nào. Hãy là người đầu tiên!</div>
+        <div className="p-10 text-center text-ink-500">
+          {unanswered ? 'Không có bài viết nào chưa được trả lời.' : 'Chưa có bài viết nào. Hãy là người đầu tiên!'}
+        </div>
       )}
 
       <ul className="divide-y divide-ink-200/70 dark:divide-ink-800">
         {data?.data.map((t) => {
           const unread = unreadCounts[t.id];
-          // unread > 0 means new posts since last read; -1 means never read (show nothing special for never-read)
           const hasUnread = typeof unread === 'number' && unread > 0;
+          const hot = isHot(t);
+          const fresh = isNew(t);
           return (
             <li key={t.id} className="flex items-start gap-3 px-4 py-3 hover:bg-ink-50/70 dark:hover:bg-ink-800/40">
               {t.author && <Avatar user={t.author} size={40} />}
@@ -69,6 +121,16 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                   {hasUnread && (
                     <span className="inline-flex h-5 items-center rounded-full bg-blue-500 px-1.5 text-[10px] font-bold text-white" title={`${unread} bài mới`}>
                       {unread} mới
+                    </span>
+                  )}
+                  {hot && !hasUnread && (
+                    <span className="inline-flex h-5 items-center gap-0.5 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                      <Flame size={9} /> HOT
+                    </span>
+                  )}
+                  {fresh && !hot && !hasUnread && (
+                    <span className="inline-flex h-5 items-center gap-0.5 rounded-full bg-emerald-500 px-1.5 text-[10px] font-bold text-white">
+                      <Sparkles size={9} /> MỚI
                     </span>
                   )}
                   {t.isPinned && <Pin size={14} className="text-amber-500" />}

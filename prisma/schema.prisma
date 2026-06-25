@@ -27,15 +27,13 @@ enum UserStatus {
   PENDING_VERIFY
 }
 
-enum ThreadPrefix {
-  NONE
-  FREE
-  PAID
-  REQUEST
-  GUIDE
-  DISCUSSION
-  SHOWCASE
-  ANNOUNCEMENT
+// Kiểu chủ đề (XenForo discussion_type)
+enum ThreadType {
+  DISCUSSION   // Thảo luận chung (mặc định)
+  QUESTION     // Hỏi đáp — có chức năng chọn câu trả lời hay nhất
+  POLL         // Thăm dò ý kiến
+  ARTICLE      // Bài viết/hướng dẫn
+  SUGGESTION   // Đề xuất / yêu cầu tính năng
 }
 
 enum ThreadStatus {
@@ -410,11 +408,16 @@ model Category {
   isPrivate   Boolean  @default(false)
   minRoleView UserRole @default(GUEST)
   minRolePost UserRole @default(MEMBER)
-  moduleType  String   @default("NONE") // NONE | JOB — danh mục dạng module đặc biệt
-  threadCount Int      @default(0)
-  postCount   Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  moduleType      String   @default("NONE") // NONE | JOB — danh mục dạng module đặc biệt
+  requirePrefix   Boolean  @default(false)   // bắt buộc chọn tiền tố khi đăng bài
+  minTags         Int      @default(0)       // số thẻ tối thiểu khi đăng bài (0 = không bắt buộc)
+  defaultSortOrder String  @default("lastPost") // thứ tự mặc định: lastPost | createdAt | replies | views
+  countMessages   Boolean  @default(true)    // bài trong diễn đàn này có tính vào tổng bài của user không
+  findNew         Boolean  @default(true)    // hiển thị trong trang "Bài viết mới" không
+  threadCount     Int      @default(0)
+  postCount       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   parent   Category?        @relation("SubCategories", fields: [parentId], references: [id])
   children Category[]       @relation("SubCategories")
@@ -456,16 +459,16 @@ model Thread {
   authorId       String
   title          String       @db.VarChar(255)
   slug           String       @unique @db.VarChar(280)
-  prefix         ThreadPrefix @default(NONE)
-  prefixId       String? // tiền tố do admin tạo theo từng danh mục
+  threadType     ThreadType   @default(DISCUSSION) // kiểu chủ đề (XenForo discussion_type)
+  prefixId       String?      // tiền tố do admin tạo theo từng danh mục
   status         ThreadStatus @default(OPEN)
   isPinned       Boolean      @default(false)
   isFeatured     Boolean      @default(false)
   isLocked       Boolean      @default(false)
   isHidden       Boolean      @default(false) // ẩn bài (không xoá) — tác giả/BQT ẩn
-  isApproved     Boolean      @default(true) // FoF Approval: chờ duyệt nếu false
-  bestAnswerId   String? // post được chọn là câu trả lời hay nhất (Q&A)
-  bestAnswerAuto Boolean      @default(false) // true nếu hệ thống tự chọn theo lượt reaction
+  isApproved     Boolean      @default(true)  // FoF Approval: chờ duyệt nếu false
+  bestAnswerId   String?      // post được chọn là câu trả lời hay nhất (Q&A)
+  bestAnswerAuto Boolean      @default(false)  // true nếu hệ thống tự chọn theo lượt reaction
   viewCount      Int          @default(0)
   replyCount     Int          @default(0)
   likeCount      Int          @default(0)
@@ -489,7 +492,7 @@ model Thread {
   @@index([authorId])
   @@index([slug])
   @@index([lastPostAt])
-  @@index([prefix])
+  @@index([threadType])
   @@index([prefixId])
 }
 
@@ -539,6 +542,7 @@ model Post {
   content     String    @db.Text
   contentRaw  String    @db.Text
   isFirstPost Boolean   @default(false)
+  position    Int       @default(0)   // vị trí 0-indexed của bài trong thread (XenForo message position)
   isApproved  Boolean   @default(true) // FoF Approval: chờ duyệt nếu false
   isDeleted   Boolean   @default(false)
   deletedAt   DateTime?

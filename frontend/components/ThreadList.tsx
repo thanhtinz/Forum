@@ -5,11 +5,11 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Pin, Lock, MessageCircle, Eye, ThumbsUp, Flame, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Pin, Lock, MessageCircle, Eye, ThumbsUp, Flame, Sparkles, CheckCircle2, ArrowRight, HelpCircle, BarChart2, BookOpen, Lightbulb } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
 import { Avatar } from './Header';
 import { useAuth } from './AuthProvider';
-import type { Paginated, Thread, ThreadPrefix } from '@/lib/types';
+import type { Paginated, Thread, ThreadPrefix, ThreadType } from '@/lib/types';
 
 type SortBy = 'lastPost' | 'createdAt' | 'views' | 'likes' | 'replies';
 
@@ -41,6 +41,22 @@ function PrefixChip({ prefix }: { prefix: ThreadPrefix }) {
   );
 }
 
+const THREAD_TYPE_META: Record<ThreadType, { icon: React.ReactNode; label: string; color: string }> = {
+  DISCUSSION: { icon: null, label: '', color: '' },
+  QUESTION: { icon: <HelpCircle size={10} />, label: 'Hỏi đáp', color: '#3b82f6' },
+  POLL: { icon: <BarChart2 size={10} />, label: 'Thăm dò', color: '#8b5cf6' },
+  ARTICLE: { icon: <BookOpen size={10} />, label: 'Bài viết', color: '#10b981' },
+  SUGGESTION: { icon: <Lightbulb size={10} />, label: 'Đề xuất', color: '#f59e0b' },
+};
+
+const TYPE_OPTIONS: { value: ThreadType | ''; label: string }[] = [
+  { value: '', label: 'Tất cả' },
+  { value: 'QUESTION', label: 'Hỏi đáp' },
+  { value: 'POLL', label: 'Thăm dò' },
+  { value: 'ARTICLE', label: 'Bài viết' },
+  { value: 'SUGGESTION', label: 'Đề xuất' },
+];
+
 const POST_PER_PAGE = 20;
 
 export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hideHeader?: boolean } = {}) {
@@ -48,6 +64,7 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
   const [sort, setSort] = useState<SortBy>('lastPost');
   const [unanswered, setUnanswered] = useState(false);
   const [prefixId, setPrefixId] = useState('');
+  const [threadType, setThreadType] = useState<ThreadType | ''>('');
   const [page, setPage] = useState(1);
   const [prefixes, setPrefixes] = useState<ThreadPrefix[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
@@ -64,6 +81,7 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
   if (categoryId) params.set('categoryId', categoryId);
   if (unanswered) params.set('unanswered', '1');
   if (prefixId) params.set('prefixId', prefixId);
+  if (threadType) params.set('type', threadType);
 
   const { data, error, isLoading } = useSWR<Paginated<Thread>>(`/forum/threads?${params}`, fetcher);
   const totalPages = data?.meta?.totalPages ?? 1;
@@ -105,29 +123,27 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
             </button>
           ))}
         </div>
-        {prefixes.length > 0 && (
-          <div className="ml-auto flex flex-wrap items-center gap-1">
-            {prefixes.map((p) => (
-              <button key={p.id} onClick={() => { setPrefixId(prefixId === p.id ? '' : p.id); setPage(1); }}
-                className={`chip text-[11px] font-semibold text-white transition ${prefixId === p.id ? 'ring-2 ring-offset-1 ring-white/60' : 'opacity-70 hover:opacity-100'}`}
-                style={{ backgroundColor: p.color || '#6366f1' }}>
-                {p.label}
-              </button>
-            ))}
-            <button onClick={() => { setUnanswered((v) => !v); setPage(1); }}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
-              Chưa trả lời
+        <div className="ml-auto flex flex-wrap items-center gap-1">
+          {/* Type filter */}
+          {TYPE_OPTIONS.filter((o) => o.value !== '').map((o) => (
+            <button key={o.value} onClick={() => { setThreadType(threadType === o.value ? '' : o.value as ThreadType); setPage(1); }}
+              className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition flex items-center gap-1 ${threadType === o.value ? 'bg-ink-700 text-white dark:bg-ink-200 dark:text-ink-900' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
+              {o.label}
             </button>
-          </div>
-        )}
-        {prefixes.length === 0 && (
-          <div className="ml-auto">
-            <button onClick={() => { setUnanswered((v) => !v); setPage(1); }}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
-              Chưa trả lời
+          ))}
+          {/* Prefix filter */}
+          {prefixes.map((p) => (
+            <button key={p.id} onClick={() => { setPrefixId(prefixId === p.id ? '' : p.id); setPage(1); }}
+              className={`chip text-[11px] font-semibold text-white transition ${prefixId === p.id ? 'ring-2 ring-offset-1 ring-white/60' : 'opacity-70 hover:opacity-100'}`}
+              style={{ backgroundColor: p.color || '#6366f1' }}>
+              {p.label}
             </button>
-          </div>
-        )}
+          ))}
+          <button onClick={() => { setUnanswered((v) => !v); setPage(1); }}
+            className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
+            Chưa trả lời
+          </button>
+        </div>
       </div>
 
       {isLoading && <div className="p-8 text-center text-ink-500">Đang tải…</div>}
@@ -171,6 +187,14 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                   )}
                   {t.isPinned && <Pin size={14} className="text-amber-500" />}
                   {t.isLocked && <Lock size={14} className="text-ink-400" />}
+                  {t.threadType && t.threadType !== 'DISCUSSION' && (() => {
+                    const m = THREAD_TYPE_META[t.threadType!];
+                    return m.label ? (
+                      <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: m.color }}>
+                        {m.icon}{m.label}
+                      </span>
+                    ) : null;
+                  })()}
                   {t.prefixRef && <PrefixChip prefix={t.prefixRef} />}
                   <Link href={`/thread?slug=${t.slug}`} className={`truncate font-semibold hover:text-brand-600 dark:text-ink-100 ${hasUnread ? 'text-ink-900 dark:text-white' : 'text-ink-800'}`}>
                     {t.title}

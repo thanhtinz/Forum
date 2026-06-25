@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ThreadPrefix, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import {
   ForumService,
   CreateThreadDto,
@@ -170,7 +170,7 @@ export class ForumController {
   @Get('threads')
   listThreads(
     @Query('categoryId') categoryId?: string,
-    @Query('prefix') prefix?: ThreadPrefix,
+    @Query('type') threadType?: string,
     @Query('prefixId') prefixId?: string,
     @Query('tagId') tagId?: string,
     @Query('page') page = 1,
@@ -181,7 +181,7 @@ export class ForumController {
     @Query('authorId') authorId?: string,
   ) {
     return this.forum.getThreadList({
-      categoryId, prefix, prefixId, tagId, page: Number(page), limit: Number(limit), sortBy,
+      categoryId, threadType, prefixId, tagId, page: Number(page), limit: Number(limit), sortBy,
       unanswered: unanswered === '1' || unanswered === 'true',
       q, authorId,
     });

@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { HiddenContentService } from '../hidden-content/hidden-content.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { ThreadPrefix, ThreadStatus, UserRole } from '@prisma/client';
+import { ThreadType, ThreadStatus, UserRole } from '@prisma/client';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { marked } from 'marked';
 import slugify from 'slugify';
@@ -25,7 +25,7 @@ export interface CreateThreadDto {
   categoryId: string;
   title: string;
   content: string; // raw BBCode/MD
-  prefix?: ThreadPrefix;
+  threadType?: ThreadType; // kiểu chủ đề (DISCUSSION | QUESTION | POLL | ARTICLE | SUGGESTION)
   prefixId?: string; // tiền tố do admin tạo theo danh mục
   tagIds?: string[];
 }
@@ -48,11 +48,16 @@ export interface CategoryDto {
   parentId?: string | null; // danh mục cha (null = cấp gốc)
   staffOnlyPost?: boolean;  // chỉ Ban quản trị được đăng
   isPrivate?: boolean;
+  requirePrefix?: boolean;  // bắt buộc chọn tiền tố khi đăng bài
+  minTags?: number;         // số thẻ tối thiểu khi đăng bài
+  defaultSortOrder?: string; // thứ tự mặc định bài viết
+  countMessages?: boolean;  // tính số bài của user trong diễn đàn này
+  findNew?: boolean;        // hiển thị trong trang "Bài viết mới"
 }
 
 export interface ThreadListQuery {
   categoryId?: string;
-  prefix?: ThreadPrefix;
+  threadType?: string;  // lọc theo kiểu chủ đề (DISCUSSION | QUESTION | POLL | ARTICLE | SUGGESTION)
   prefixId?: string;
   tagId?: string;
   page?: number;
@@ -185,6 +190,11 @@ export class ForumService {
         parentId: dto.parentId || null,
         isPrivate: dto.isPrivate ?? false,
         minRolePost: dto.staffOnlyPost ? 'MODERATOR' : 'MEMBER',
+        requirePrefix: dto.requirePrefix ?? false,
+        minTags: dto.minTags ?? 0,
+        defaultSortOrder: dto.defaultSortOrder ?? 'lastPost',
+        countMessages: dto.countMessages ?? true,
+        findNew: dto.findNew ?? true,
       },
     });
   }
@@ -204,6 +214,11 @@ export class ForumService {
     if (dto.parentId !== undefined) data.parentId = dto.parentId && dto.parentId !== id ? dto.parentId : null;
     if (dto.isPrivate !== undefined) data.isPrivate = dto.isPrivate;
     if (dto.staffOnlyPost !== undefined) data.minRolePost = dto.staffOnlyPost ? 'MODERATOR' : 'MEMBER';
+    if (dto.requirePrefix !== undefined) data.requirePrefix = dto.requirePrefix;
+    if (dto.minTags !== undefined) data.minTags = dto.minTags;
+    if (dto.defaultSortOrder !== undefined) data.defaultSortOrder = dto.defaultSortOrder;
+    if (dto.countMessages !== undefined) data.countMessages = dto.countMessages;
+    if (dto.findNew !== undefined) data.findNew = dto.findNew;
     return this.prisma.category.update({ where: { id }, data });
   }
 
@@ -251,7 +266,7 @@ export class ForumService {
     const where: any = { isApproved: true, isHidden: false };
     if (query.authorId) where.authorId = query.authorId;
     if (query.categoryId) where.categoryId = query.categoryId;
-    if (query.prefix) where.prefix = query.prefix;
+    if (query.threadType) where.threadType = query.threadType;
     if (query.prefixId) where.prefixId = query.prefixId;
     if (query.tagId) {
       where.tags = { some: { tagId: query.tagId } };
@@ -356,7 +371,7 @@ export class ForumService {
           authorId,
           title: dto.title,
           slug,
-          prefix: dto.prefix ?? ThreadPrefix.NONE,
+          threadType: dto.threadType ?? ThreadType.DISCUSSION,
           prefixId: dto.prefixId ?? null,
           isApproved: !pending,
           lastPostAt: new Date(),
@@ -364,7 +379,7 @@ export class ForumService {
         },
       });
 
-      // Tạo post đầu tiên (= nội dung thread)
+      // Tạo post đầu tiên (= nội dung thread), position = 0
       await tx.post.create({
         data: {
           threadId: t.id,
@@ -372,6 +387,7 @@ export class ForumService {
           content,
           contentRaw: dto.content,
           isFirstPost: true,
+          position: 0,
           isApproved: !pending,
         },
       });
@@ -523,6 +539,11 @@ export class ForumService {
     const pending = await this.needsApproval(authorId);
 
     const post = await this.prisma.$transaction(async (tx) => {
+      // position = số bài visible trong thread này (0-indexed: bài mới có position = hiện tại count)
+      const existingCount = await tx.post.count({
+        where: { threadId: dto.threadId, isApproved: true, isDeleted: false },
+      });
+
       const p = await tx.post.create({
         data: {
           threadId: dto.threadId,
@@ -530,6 +551,7 @@ export class ForumService {
           content,
           contentRaw: dto.content,
           parentId: dto.parentId ?? null,
+          position: existingCount,
           isApproved: !pending,
         },
       });
@@ -539,8 +561,12 @@ export class ForumService {
           where: { id: dto.threadId },
           data: { replyCount: { increment: 1 }, lastPostAt: new Date(), lastPostUserId: authorId },
         });
+        // Lấy cấu hình countMessages của danh mục
+        const cat = await tx.category.findUnique({ where: { id: thread.categoryId }, select: { id: true, countMessages: true } });
         await tx.category.update({ where: { id: thread.categoryId }, data: { postCount: { increment: 1 } } });
-        await tx.user.update({ where: { id: authorId }, data: { postCount: { increment: 1 } } });
+        if (cat?.countMessages !== false) {
+          await tx.user.update({ where: { id: authorId }, data: { postCount: { increment: 1 } } });
+        }
       }
 
       return p;
@@ -880,11 +906,12 @@ export class ForumService {
     if (!post) throw new NotFoundException('Post không tồn tại');
     if (post.isApproved) return post;
 
+    const approveCat = await this.prisma.category.findUnique({ where: { id: post.thread.categoryId }, select: { countMessages: true } });
     await this.prisma.$transaction([
       this.prisma.post.update({ where: { id: postId }, data: { isApproved: true } }),
       this.prisma.thread.update({ where: { id: post.threadId }, data: { replyCount: { increment: 1 }, lastPostAt: new Date(), lastPostUserId: post.authorId } }),
       this.prisma.category.update({ where: { id: post.thread.categoryId }, data: { postCount: { increment: 1 } } }),
-      this.prisma.user.update({ where: { id: post.authorId }, data: { postCount: { increment: 1 } } }),
+      ...(approveCat?.countMessages !== false ? [this.prisma.user.update({ where: { id: post.authorId }, data: { postCount: { increment: 1 } } })] : []),
     ]);
 
     await this.character.addForumExp(post.authorId, 5, 'create_post').catch(() => {});
@@ -987,7 +1014,7 @@ export class ForumService {
           authorId: firstSplitPost.authorId,
           title: newTitle,
           slug,
-          prefix: ThreadPrefix.NONE,
+          threadType: ThreadType.DISCUSSION,
           isApproved: true,
           lastPostAt: new Date(),
           lastPostUserId: postsToMove[postsToMove.length - 1].authorId,

@@ -22,11 +22,13 @@ export interface ThreadPrefix {
   color?: string | null;
 }
 
+export type ThreadType = 'DISCUSSION' | 'QUESTION' | 'POLL' | 'ARTICLE' | 'SUGGESTION';
+
 export interface Thread {
   id: string;
   title: string;
   slug: string;
-  prefix?: string;
+  threadType?: ThreadType;
   prefixRef?: ThreadPrefix | null;
   bestAnswerId?: string | null;
   isPinned?: boolean;

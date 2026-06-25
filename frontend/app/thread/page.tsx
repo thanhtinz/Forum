@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather, AtSign } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather, AtSign, ImageIcon, SendHorizonal } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -675,15 +675,36 @@ function ThreadView() {
         </div>
       )}
 
-      {/* "Bình luận" header on pages after page 1 (no first post present) */}
-      {postPage > 1 && thread.replyCount > 0 && (
-        <div className="flex items-center gap-3 py-1">
-          <div className="h-px flex-1 bg-ink-200 dark:bg-ink-700" />
-          <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-500 dark:text-ink-400">
-            <MessageCircle size={15} />
-            {thread.replyCount} bình luận
-          </span>
-          <div className="h-px flex-1 bg-ink-200 dark:bg-ink-700" />
+      {/* "Bình luận" card — page 1 with 0 replies, or pages 2+ */}
+      {((postPage === 1 && thread.replyCount === 0) || postPage > 1) && (
+        <div className="card overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
+            <MessageCircle size={18} className="text-orange-500" />
+            <h2 className="font-bold">Bình luận ( {thread.replyCount} )</h2>
+          </div>
+          {user && !thread.isLocked && (
+            <div className="flex items-center gap-3 border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
+              <div className="shrink-0"><Avatar user={user} size={36} /></div>
+              <button
+                type="button"
+                onClick={() => document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' })}
+                className="flex flex-1 items-center gap-3 rounded-full bg-ink-100 px-4 py-2.5 text-sm text-ink-400 hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700"
+              >
+                <span className="flex-1 text-left">Viết bình luận......</span>
+                <SmilePlus size={17} />
+                <ImageIcon size={17} />
+                <SendHorizonal size={17} />
+              </button>
+            </div>
+          )}
+          {thread.replyCount === 0 && (
+            <div className="flex flex-col items-center gap-3 py-12 text-ink-400">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink-100 dark:bg-ink-800">
+                <MessageCircle size={32} className="text-ink-300 dark:text-ink-600" />
+              </div>
+              <span className="text-sm">Chưa có bình luận nào</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -700,13 +721,26 @@ function ThreadView() {
           return (
             <div key={p.id} style={depth > 0 ? { marginLeft: `${Math.min(depth, 4) * 1.5}rem` } : undefined}>
               {showCommentDivider && (
-                <div className="flex items-center gap-3 py-1">
-                  <div className="h-px flex-1 bg-ink-200 dark:bg-ink-700" />
-                  <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-500 dark:text-ink-400">
-                    <MessageCircle size={15} />
-                    {thread.replyCount} bình luận
-                  </span>
-                  <div className="h-px flex-1 bg-ink-200 dark:bg-ink-700" />
+                <div className="card overflow-hidden">
+                  <div className="flex items-center gap-2 border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
+                    <MessageCircle size={18} className="text-orange-500" />
+                    <h2 className="font-bold">Bình luận ( {thread.replyCount} )</h2>
+                  </div>
+                  {user && !thread.isLocked && (
+                    <div className="flex items-center gap-3 px-4 py-3">
+                      <div className="shrink-0"><Avatar user={user} size={36} /></div>
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' })}
+                        className="flex flex-1 items-center gap-3 rounded-full bg-ink-100 px-4 py-2.5 text-sm text-ink-400 hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700"
+                      >
+                        <span className="flex-1 text-left">Viết bình luận......</span>
+                        <SmilePlus size={17} />
+                        <ImageIcon size={17} />
+                        <SendHorizonal size={17} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
               {showNewDivider && (

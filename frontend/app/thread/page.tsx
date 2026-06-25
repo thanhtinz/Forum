@@ -785,7 +785,10 @@ function ThreadView() {
                     {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-4 w-4 shrink-0 object-contain" />}
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                    {p.author && <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />}
+                    {p.author && <UserBadges size="xs" badges={[
+                      ...roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge }),
+                      ...((p.author as any)?.levelName ? [{ key: 'level', label: (p.author as any).levelName, icon: (p.author as any).levelIcon || 'Star', color: (p.author as any).levelColor || 'gray', kind: 'level' as const }] : []),
+                    ]} />}
                     {isFirst && <span className="chip bg-brand-100 text-brand-700 text-[10px] inline-flex items-center gap-0.5"><Feather size={9} />Tác giả</span>}
                   </div>
                 </div>
@@ -800,7 +803,10 @@ function ThreadView() {
                   </div>
                   {p.author && (
                     <div className="mt-1 flex flex-wrap justify-center gap-1">
-                      <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />
+                      <UserBadges size="xs" badges={[
+                        ...roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge }),
+                        ...((p.author as any)?.levelName ? [{ key: 'level', label: (p.author as any).levelName, icon: (p.author as any).levelIcon || 'Star', color: (p.author as any).levelColor || 'gray', kind: 'level' as const }] : []),
+                      ]} />
                     </div>
                   )}
                   {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700 inline-flex items-center gap-1"><Feather size={10} />Tác giả</span>}

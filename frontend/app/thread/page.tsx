@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather, AtSign } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -545,17 +545,22 @@ function ThreadView() {
         <span className="truncate max-w-[200px] text-ink-500">{thread.title}</span>
       </nav>
       <div className="card p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-ink-500">
+        {/* Status badges */}
+        {(thread.isPinned || thread.isLocked || (thread as any).isHidden) && (
+          <div className="mb-2 flex items-center gap-2 text-sm text-ink-500">
             {thread.isPinned && <Pin size={14} className="text-amber-500" />}
             {thread.isLocked && <Lock size={14} />}
             {(thread as any).isHidden && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">Đã ẩn</span>}
           </div>
+        )}
+        {/* Title + 3-dot on same line */}
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
           {/* 3-dot menu */}
           {(canManage || isMod) && (
-            <div className="relative" ref={threadMenuRef}>
+            <div className="relative shrink-0" ref={threadMenuRef}>
               <button onClick={() => setThreadMenu((v) => !v)}
-                className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800">
+                className="mt-0.5 rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800">
                 <MoreVertical size={18} />
               </button>
               {threadMenu && (
@@ -602,10 +607,8 @@ function ThreadView() {
             </div>
           )}
         </div>
-        <div className="mt-1 flex flex-col gap-2">
-          <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
-          {user && (
-            <div className="flex flex-wrap gap-2">
+        {user && (
+          <div className="mt-2 flex flex-wrap gap-2">
               <button onClick={toggleBookmark} title="Lưu chủ đề"
                 className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${bookmarked ? 'bg-amber-500 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
                 {bookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />} {bookmarked ? 'Đã lưu' : 'Lưu'}
@@ -760,93 +763,114 @@ function ThreadView() {
                     {(p.author as any).signature}
                   </div>
                 )}
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                  {/* Các reaction đã có, gom theo emoji */}
-                  {(() => {
-                    const groups: Record<string, string[]> = {};
-                    (p.reactions || []).forEach((r) => { (groups[r.emoji] ||= []).push(r.userId); });
-                    return Object.entries(groups).map(([emoji, uids]) => {
-                      const mine = !!user && uids.includes(user.id);
-                      const label = emoji === 'like' ? '👍' : emoji;
-                      return (
-                        <button key={emoji} onClick={() => user && react(p.id, emoji)}
-                          className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${mine ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30' : 'border-ink-200 dark:border-ink-800'}`}>
-                          <span>{label}</span> <span className="text-ink-500">{uids.length}</span>
+                <div className="mt-3 flex items-center justify-between gap-2 border-t border-ink-100 pt-3 text-xs dark:border-ink-800/60">
+                  {/* Left: Report + mod actions */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {user && p.author && user.id !== p.author.id && (
+                      <button onClick={() => { setReportModal({ targetType: 'post', targetId: p.id, reportedUserId: p.author?.id }); setReportReason(''); setReportType('SPAM'); }} className="flex items-center gap-1 text-ink-400 hover:text-red-500">
+                        <Flag size={13} /> Report
+                      </button>
+                    )}
+                    {isMod && !isFirst && (
+                      <>
+                        <button onClick={() => deletePostAction(p.id)} className="flex items-center gap-1 text-red-400 hover:text-red-600">
+                          <Trash2 size={13} /> Xoá
                         </button>
-                      );
-                    });
-                  })()}
-                  {/* Bộ chọn thêm reaction */}
-                  {user && (
-                    <div className="group relative">
-                      <button className="flex items-center gap-1 rounded-full border border-dashed border-ink-300 px-2 py-0.5 text-ink-500 hover:text-brand-600 dark:border-ink-700"><SmilePlus size={14} /></button>
-                      <div className="absolute left-0 bottom-full z-10 mb-1 hidden gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card group-hover:flex dark:border-ink-800 dark:bg-ink-900">
-                        {REACTIONS.map((e) => (
-                          <button key={e} onClick={() => react(p.id, e)} className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-800">{e}</button>
-                        ))}
+                        <button onClick={() => { setMovePostModal(p.id); setMovePostTarget(''); setMovePostResults([]); }} className="flex items-center gap-1 text-ink-400 hover:text-amber-600">
+                          <Shuffle size={13} /> Chuyển bài
+                        </button>
+                        {p.author && p.author.id !== user.id && (
+                          <>
+                            <button onClick={() => { setWarnModal({ postId: p.id, userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setWarnReason(''); setWarnPoints(1); }} className="flex items-center gap-1 text-amber-500 hover:text-amber-700">
+                              <AlertTriangle size={13} /> Cảnh cáo
+                            </button>
+                            <button onClick={() => { setReplyBanModal({ userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setReplyBanReason(''); setReplyBanExpiry(''); }} className="flex items-center gap-1 text-orange-500 hover:text-orange-700">
+                              <UserX size={13} /> Cấm trả lời
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {/* Right: reaction bubbles + main actions */}
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {/* Existing reaction bubbles */}
+                    {(() => {
+                      const groups: Record<string, string[]> = {};
+                      (p.reactions || []).forEach((r) => { (groups[r.emoji] ||= []).push(r.userId); });
+                      return Object.entries(groups).map(([emoji, uids]) => {
+                        const mine = !!user && uids.includes(user.id);
+                        const label = emoji === 'like' ? '👍' : emoji;
+                        return (
+                          <button key={emoji} onClick={() => user && react(p.id, emoji)}
+                            className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${mine ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30' : 'border-ink-200 dark:border-ink-800'}`}>
+                            <span>{label}</span> <span className="text-ink-500">{uids.length}</span>
+                          </button>
+                        );
+                      });
+                    })()}
+                    {/* Emoji picker */}
+                    {user && (
+                      <div className="group relative">
+                        <button className="flex items-center gap-1 rounded-full border border-dashed border-ink-300 px-2 py-0.5 text-ink-500 hover:text-brand-600 dark:border-ink-700"><SmilePlus size={14} /></button>
+                        <div className="absolute right-0 bottom-full z-10 mb-1 hidden gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card group-hover:flex dark:border-ink-800 dark:bg-ink-900">
+                          {REACTIONS.map((e) => (
+                            <button key={e} onClick={() => react(p.id, e)} className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-800">{e}</button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {/* Tổng donate + nút donate (không tự donate cho mình) */}
-                  {(p.tipTotal ?? 0) > 0 && (
-                    <span className="flex items-center gap-1 rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-300" title={`${p.tipCount} lượt donate`}>
-                      <Gem size={12} /> {p.tipTotal}
-                    </span>
-                  )}
-                  {user && !thread.isLocked && (
-                    <button onClick={() => quotePost(p)} className="flex items-center gap-1 text-ink-500 hover:text-brand-600" title="Trích dẫn bài này">
-                      <Quote size={14} /> Trích
-                    </button>
-                  )}
-                  {user && !thread.isLocked && !isFirst && (
-                    <button onClick={() => { setReplyToPost({ id: p.id, authorName: p.author?.displayName || p.author?.username || 'ẩn danh' }); document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' }); }}
-                      className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
-                      <Reply size={14} /> Trả lời
-                    </button>
-                  )}
-                  {user && p.author && user.id !== p.author.id && (
-                    <button onClick={() => donate(p.id)} className="flex items-center gap-1 text-fuchsia-600 hover:text-fuchsia-700">
-                      <Gem size={14} /> Donate
-                    </button>
-                  )}
-                  {/* Report button — logged in non-author */}
-                  {user && p.author && user.id !== p.author.id && (
-                    <button onClick={() => { setReportModal({ targetType: 'post', targetId: p.id, reportedUserId: p.author?.id }); setReportReason(''); setReportType('SPAM'); }} className="flex items-center gap-1 text-ink-500 hover:text-red-500">
-                      <Flag size={13} /> Báo cáo
-                    </button>
-                  )}
-                  {/* Edit button — author or mod */}
-                  {user && p.author && (user.id === p.author.id || isMod) && !thread.isLocked && editingPostId !== p.id && (
-                    <button onClick={() => startEdit(p)} className="flex items-center gap-1 text-ink-500 hover:text-blue-600">
-                      <Pencil size={13} /> Sửa
-                    </button>
-                  )}
-                  {/* Mod-only per-post actions */}
-                  {isMod && !isFirst && (
-                    <>
-                      <button onClick={() => deletePostAction(p.id)} className="flex items-center gap-1 text-red-500 hover:text-red-700">
-                        <Trash2 size={13} /> Xoá
+                    )}
+                    {/* Tip total */}
+                    {(p.tipTotal ?? 0) > 0 && (
+                      <span className="flex items-center gap-1 rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-300" title={`${p.tipCount} lượt donate`}>
+                        <Gem size={12} /> {p.tipTotal}
+                      </span>
+                    )}
+                    {/* Donate */}
+                    {user && p.author && user.id !== p.author.id && (
+                      <button onClick={() => donate(p.id)} className="flex items-center gap-1 text-fuchsia-500 hover:text-fuchsia-700">
+                        <Gem size={13} /> Donate
                       </button>
-                      <button onClick={() => { setMovePostModal(p.id); setMovePostTarget(''); setMovePostResults([]); }} className="flex items-center gap-1 text-ink-500 hover:text-amber-600">
-                        <Shuffle size={13} /> Chuyển bài
+                    )}
+                    {/* Like */}
+                    {user && (
+                      <button onClick={() => react(p.id, 'like')} className="flex items-center gap-1 rounded-full border border-ink-200 px-2 py-0.5 text-ink-600 hover:border-brand-400 hover:text-brand-600 dark:border-ink-800 dark:text-ink-300">
+                        <ThumbsUp size={13} /> Like
                       </button>
-                      {p.author && p.author.id !== user.id && (
-                        <>
-                          <button onClick={() => { setWarnModal({ postId: p.id, userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setWarnReason(''); setWarnPoints(1); }} className="flex items-center gap-1 text-amber-600 hover:text-amber-700">
-                            <AlertTriangle size={13} /> Cảnh cáo
-                          </button>
-                          <button onClick={() => { setReplyBanModal({ userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setReplyBanReason(''); setReplyBanExpiry(''); }} className="flex items-center gap-1 text-orange-600 hover:text-orange-700">
-                            <UserX size={13} /> Cấm trả lời
-                          </button>
-                        </>
-                      )}
-                    </>
-                  )}
-                  {canManage && !isFirst && (
-                    <button onClick={() => markBest(p.id)} className={`ml-auto flex items-center gap-1 ${isBest ? 'text-emerald-600' : 'text-ink-500 hover:text-emerald-600'}`}>
-                      <Award size={14} /> {isBest ? 'Bỏ chọn' : 'Chọn là câu trả lời hay nhất'}
-                    </button>
-                  )}
+                    )}
+                    {/* Quote */}
+                    {user && !thread.isLocked && (
+                      <button onClick={() => quotePost(p)} className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
+                        <Quote size={13} /> Trích dẫn
+                      </button>
+                    )}
+                    {/* Reply */}
+                    {user && !thread.isLocked && !isFirst && (
+                      <button onClick={() => { setReplyToPost({ id: p.id, authorName: p.author?.displayName || p.author?.username || 'ẩn danh' }); document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' }); }}
+                        className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
+                        <Reply size={13} /> Trả lời
+                      </button>
+                    )}
+                    {/* Tag */}
+                    {user && !thread.isLocked && p.author && user.id !== p.author.id && (
+                      <button onClick={() => { const name = p.author?.displayName || p.author?.username || ''; setReply((prev) => (prev || '') + `<p><strong>@${name}</strong> </p>`); document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' }); }}
+                        className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
+                        <AtSign size={13} /> Tag
+                      </button>
+                    )}
+                    {/* Edit */}
+                    {user && p.author && (user.id === p.author.id || isMod) && !thread.isLocked && editingPostId !== p.id && (
+                      <button onClick={() => startEdit(p)} className="flex items-center gap-1 text-ink-500 hover:text-blue-600">
+                        <Pencil size={13} /> Sửa
+                      </button>
+                    )}
+                    {/* Best answer */}
+                    {canManage && !isFirst && (
+                      <button onClick={() => markBest(p.id)} className={`flex items-center gap-1 ${isBest ? 'text-emerald-600' : 'text-ink-500 hover:text-emerald-600'}`}>
+                        <Award size={13} /> {isBest ? 'Bỏ chọn' : 'Hay nhất'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>{/* end flex-1 content */}
               </div>{/* end flex row */}

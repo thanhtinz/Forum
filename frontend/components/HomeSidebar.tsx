@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import useSWR from 'swr';
-import { Newspaper, Users, BarChart3, Image, Tag, Award, MessageSquare, FileText, MessagesSquare, UserPlus, Mail } from 'lucide-react';
+import { Newspaper, Users, BarChart3, Image, Tag, Award, MessageSquare, FileText, MessagesSquare, UserPlus, Mail, Flame, Eye } from 'lucide-react';
 import { fetcher } from '@/lib/api';
 import { Avatar } from './Header';
 
@@ -26,9 +26,14 @@ function StatRow({ icon, label, value }: { icon: React.ReactNode; label: string;
   );
 }
 
+interface TrendingThread {
+  id: string; title: string; slug: string; replyCount: number; viewCount: number;
+}
+
 export function HomeSidebar() {
   const { data: stats } = useSWR<ForumStats>('/community/stats', fetcher);
   const { data: members } = useSWR<{ data: MemberCard[] }>('/social/members?page=1&limit=6&sortBy=recent', fetcher);
+  const { data: trending } = useSWR<{ data: TrendingThread[] }>('/forum/threads?limit=5&sortBy=views', fetcher);
 
   const comments = stats ? Math.max(0, stats.totalPosts - stats.totalThreads) : 0;
 
@@ -58,6 +63,26 @@ export function HomeSidebar() {
           <StatRow icon={<Users size={15} className="text-amber-600" />} label="Thành viên" value={stats?.totalMembers ?? '—'} />
         </div>
       </div>
+
+      {/* Bài viết nổi bật */}
+      {trending?.data?.length > 0 && (
+        <div className="card p-4">
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-500">
+            <Flame size={15} className="text-red-500" /> Nổi bật
+          </h3>
+          <div className="flex flex-col gap-1">
+            {trending.data.map((t) => (
+              <Link key={t.id} href={`/thread?slug=${t.slug}`} className="group rounded-lg p-1.5 hover:bg-ink-100 dark:hover:bg-ink-800">
+                <p className="truncate text-sm font-medium group-hover:text-brand-600">{t.title}</p>
+                <div className="mt-0.5 flex items-center gap-2 text-[11px] text-ink-400">
+                  <span className="flex items-center gap-0.5"><Eye size={10} /> {t.viewCount}</span>
+                  <span className="flex items-center gap-0.5"><MessageSquare size={10} /> {t.replyCount}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Thành viên mới */}
       <div className="card p-4">

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Pin, Lock, MessageCircle, Eye, ThumbsUp, Flame, Sparkles, CheckCircle2, ArrowRight, HelpCircle, BarChart2, BookOpen, Lightbulb } from 'lucide-react';
+import { Pin, Lock, MessageCircle, Eye, HelpCircle, BarChart2, BookOpen, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
 import { Avatar } from './Header';
 import { useAuth } from './AuthProvider';
@@ -16,60 +16,35 @@ type SortBy = 'lastPost' | 'createdAt' | 'views' | 'likes' | 'replies';
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
   { value: 'lastPost', label: 'Hoạt động' },
   { value: 'createdAt', label: 'Mới nhất' },
-  { value: 'replies', label: 'Trả lời' },
+  { value: 'replies', label: 'Trả lời nhiều' },
   { value: 'views', label: 'Lượt xem' },
   { value: 'likes', label: 'Lượt thích' },
 ];
+
+const THREAD_TYPE_ICONS: Partial<Record<ThreadType, React.ReactNode>> = {
+  QUESTION:   <HelpCircle  size={13} className="shrink-0 text-blue-500" />,
+  POLL:       <BarChart2   size={13} className="shrink-0 text-violet-500" />,
+  ARTICLE:    <BookOpen    size={13} className="shrink-0 text-emerald-500" />,
+  SUGGESTION: <Lightbulb  size={13} className="shrink-0 text-amber-500" />,
+};
 
 function timeAgo(d?: string) {
   if (!d) return '';
   try { return formatDistanceToNow(new Date(d), { addSuffix: true, locale: vi }); } catch { return ''; }
 }
 
-function isHot(t: Thread) { return t.replyCount >= 15 || t.viewCount >= 300; }
-function isNew(t: Thread) {
-  if (!t.createdAt) return false;
-  return Date.now() - new Date(t.createdAt).getTime() < 48 * 60 * 60 * 1000;
-}
-
-function PrefixChip({ prefix }: { prefix: ThreadPrefix }) {
-  const bg = prefix.color || '#6366f1';
-  return (
-    <span className="chip text-[11px] font-semibold text-white" style={{ backgroundColor: bg }}>
-      {prefix.label}
-    </span>
-  );
-}
-
-const THREAD_TYPE_META: Record<ThreadType, { icon: React.ReactNode; label: string; color: string }> = {
-  DISCUSSION: { icon: null, label: '', color: '' },
-  QUESTION: { icon: <HelpCircle size={10} />, label: 'Hỏi đáp', color: '#3b82f6' },
-  POLL: { icon: <BarChart2 size={10} />, label: 'Thăm dò', color: '#8b5cf6' },
-  ARTICLE: { icon: <BookOpen size={10} />, label: 'Bài viết', color: '#10b981' },
-  SUGGESTION: { icon: <Lightbulb size={10} />, label: 'Đề xuất', color: '#f59e0b' },
-};
-
-const TYPE_OPTIONS: { value: ThreadType | ''; label: string }[] = [
-  { value: '', label: 'Tất cả' },
-  { value: 'QUESTION', label: 'Hỏi đáp' },
-  { value: 'POLL', label: 'Thăm dò' },
-  { value: 'ARTICLE', label: 'Bài viết' },
-  { value: 'SUGGESTION', label: 'Đề xuất' },
-];
-
 const POST_PER_PAGE = 20;
 
 export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hideHeader?: boolean } = {}) {
   const { user } = useAuth();
-  const [sort, setSort] = useState<SortBy>('lastPost');
+  const [sort, setSort]         = useState<SortBy>('lastPost');
   const [unanswered, setUnanswered] = useState(false);
   const [prefixId, setPrefixId] = useState('');
   const [threadType, setThreadType] = useState<ThreadType | ''>('');
-  const [page, setPage] = useState(1);
+  const [page, setPage]         = useState(1);
   const [prefixes, setPrefixes] = useState<ThreadPrefix[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
-  // Fetch category prefixes dynamically
   useEffect(() => {
     if (!categoryId) { setPrefixes([]); return; }
     api.get<ThreadPrefix[]>(`/forum/categories/${categoryId}/prefixes`)
@@ -78,24 +53,23 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
   }, [categoryId]);
 
   const params = new URLSearchParams({ limit: String(POST_PER_PAGE), sortBy: sort, page: String(page) });
-  if (categoryId) params.set('categoryId', categoryId);
-  if (unanswered) params.set('unanswered', '1');
-  if (prefixId) params.set('prefixId', prefixId);
-  if (threadType) params.set('type', threadType);
+  if (categoryId)  params.set('categoryId', categoryId);
+  if (unanswered)  params.set('unanswered', '1');
+  if (prefixId)    params.set('prefixId', prefixId);
+  if (threadType)  params.set('type', threadType);
 
   const { data, error, isLoading } = useSWR<Paginated<Thread>>(`/forum/threads?${params}`, fetcher);
   const totalPages = data?.meta?.totalPages ?? 1;
 
   useEffect(() => {
     if (!user || !data?.data?.length) return;
-    const threadIds = data.data.map((t) => t.id);
-    api.post<Record<string, number>>('/forum/read-progress/bulk', { threadIds })
-      .then(setUnreadCounts)
-      .catch(() => {});
+    api.post<Record<string, number>>('/forum/read-progress/bulk', { threadIds: data.data.map((t) => t.id) })
+      .then(setUnreadCounts).catch(() => {});
   }, [user, data]);
 
   return (
     <section className="card overflow-hidden">
+      {/* Card header */}
       {!hideHeader && (
         <div className="flex items-center justify-between border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
           <h2 className="font-semibold">Bài viết mới nhất</h2>
@@ -113,37 +87,57 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
         </div>
       )}
 
-      {/* Sort / Filter bar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-ink-200/70 px-4 py-2 dark:border-ink-800">
-        <div className="flex flex-wrap items-center gap-1">
+      {/* Filter toolbar */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-ink-200/70 bg-ink-50/50 px-4 py-2 dark:border-ink-800 dark:bg-ink-800/30">
+        {/* Sort */}
+        <div className="flex items-center gap-1">
           {SORT_OPTIONS.map((o) => (
-            <button key={o.value} onClick={() => { setSort(o.value); setPage(1); }}
+            <button key={o.value}
+              onClick={() => { setSort(o.value); setPage(1); }}
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${sort === o.value ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
               {o.label}
             </button>
           ))}
         </div>
+
         <div className="ml-auto flex flex-wrap items-center gap-1">
-          {/* Type filter */}
-          {TYPE_OPTIONS.filter((o) => o.value !== '').map((o) => (
-            <button key={o.value} onClick={() => { setThreadType(threadType === o.value ? '' : o.value as ThreadType); setPage(1); }}
-              className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition flex items-center gap-1 ${threadType === o.value ? 'bg-ink-700 text-white dark:bg-ink-200 dark:text-ink-900' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
-              {o.label}
-            </button>
-          ))}
-          {/* Prefix filter */}
+          {/* Prefix chips */}
           {prefixes.map((p) => (
-            <button key={p.id} onClick={() => { setPrefixId(prefixId === p.id ? '' : p.id); setPage(1); }}
-              className={`chip text-[11px] font-semibold text-white transition ${prefixId === p.id ? 'ring-2 ring-offset-1 ring-white/60' : 'opacity-70 hover:opacity-100'}`}
+            <button key={p.id}
+              onClick={() => { setPrefixId(prefixId === p.id ? '' : p.id); setPage(1); }}
+              className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white transition ${prefixId === p.id ? 'ring-2 ring-offset-1 ring-white/60' : 'opacity-70 hover:opacity-100'}`}
               style={{ backgroundColor: p.color || '#6366f1' }}>
               {p.label}
             </button>
           ))}
-          <button onClick={() => { setUnanswered((v) => !v); setPage(1); }}
+          {/* Thread type filter */}
+          {(['QUESTION', 'ARTICLE', 'POLL', 'SUGGESTION'] as ThreadType[]).map((type) => {
+            const icon = THREAD_TYPE_ICONS[type];
+            const labels: Record<string, string> = { QUESTION: 'Hỏi đáp', ARTICLE: 'Bài viết', POLL: 'Thăm dò', SUGGESTION: 'Đề xuất' };
+            return (
+              <button key={type}
+                onClick={() => { setThreadType(threadType === type ? '' : type); setPage(1); }}
+                className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium transition ${threadType === type ? 'bg-ink-700 text-white dark:bg-ink-200 dark:text-ink-900' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
+                {icon}{labels[type]}
+              </button>
+            );
+          })}
+          {/* Unanswered */}
+          <button
+            onClick={() => { setUnanswered((v) => !v); setPage(1); }}
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
             Chưa trả lời
           </button>
         </div>
+      </div>
+
+      {/* Column headers — desktop */}
+      <div className="hidden border-b border-ink-100 bg-ink-50/30 dark:border-ink-800 dark:bg-ink-800/20 sm:grid"
+        style={{ gridTemplateColumns: '1fr 72px 72px 176px' }}>
+        <span className="px-4 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-400">Chủ đề</span>
+        <span className="px-2 py-1.5 text-center text-[11px] font-semibold uppercase tracking-wider text-ink-400">Trả lời</span>
+        <span className="px-2 py-1.5 text-center text-[11px] font-semibold uppercase tracking-wider text-ink-400">Xem</span>
+        <span className="px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-400">Bài mới nhất</span>
       </div>
 
       {isLoading && <div className="p-8 text-center text-ink-500">Đang tải…</div>}
@@ -154,99 +148,118 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
         </div>
       )}
 
-      <ul className="divide-y divide-ink-200/70 dark:divide-ink-800">
+      <ul className="divide-y divide-ink-100 dark:divide-ink-800">
         {data?.data.map((t) => {
-          const unread = unreadCounts[t.id];
+          const unread   = unreadCounts[t.id];
           const hasUnread = typeof unread === 'number' && unread > 0;
-          const hot = isHot(t);
-          const fresh = isNew(t);
+          const typeIcon  = t.threadType ? THREAD_TYPE_ICONS[t.threadType] : null;
+
           return (
-            <li key={t.id} className="flex items-start gap-3 px-4 py-3 hover:bg-ink-50/70 dark:hover:bg-ink-800/40">
-              {t.author && <Avatar user={t.author} size={40} />}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  {hasUnread && (
-                    <span className="inline-flex h-5 items-center rounded-full bg-blue-500 px-1.5 text-[10px] font-bold text-white" title={`${unread} bài mới`}>
-                      {unread} mới
-                    </span>
-                  )}
-                  {hot && !hasUnread && (
-                    <span className="inline-flex h-5 items-center gap-0.5 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                      <Flame size={9} /> HOT
-                    </span>
-                  )}
-                  {fresh && !hot && !hasUnread && (
-                    <span className="inline-flex h-5 items-center gap-0.5 rounded-full bg-emerald-500 px-1.5 text-[10px] font-bold text-white">
-                      <Sparkles size={9} /> MỚI
-                    </span>
-                  )}
-                  {t.bestAnswerId && (
-                    <span className="inline-flex h-5 items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                      <CheckCircle2 size={9} /> Đã giải
-                    </span>
-                  )}
-                  {t.isPinned && <Pin size={14} className="text-amber-500" />}
-                  {t.isLocked && <Lock size={14} className="text-ink-400" />}
-                  {t.threadType && t.threadType !== 'DISCUSSION' && (() => {
-                    const m = THREAD_TYPE_META[t.threadType!];
-                    return m.label ? (
-                      <span className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[10px] font-bold text-white" style={{ backgroundColor: m.color }}>
-                        {m.icon}{m.label}
+            <li key={t.id}
+              className="grid items-center gap-0 hover:bg-ink-50/60 dark:hover:bg-ink-800/30 sm:grid"
+              style={{ gridTemplateColumns: '1fr 72px 72px 176px' }}>
+
+              {/* ── Left: title + meta ── */}
+              <div className="flex min-w-0 items-start gap-3 px-4 py-3">
+                {t.author && <div className="mt-0.5 hidden shrink-0 sm:block"><Avatar user={t.author} size={36} /></div>}
+                <div className="min-w-0 flex-1">
+                  {/* Title row */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {t.isPinned  && <Pin  size={13} className="shrink-0 text-amber-500" />}
+                    {t.isLocked  && <Lock size={13} className="shrink-0 text-ink-400" />}
+                    {typeIcon}
+                    {t.bestAnswerId && (
+                      <CheckCircle2 size={13} className="shrink-0 text-emerald-500" />
+                    )}
+                    {t.prefixRef && (
+                      <span className="shrink-0 rounded px-1.5 py-0.5 text-[11px] font-bold text-white"
+                        style={{ backgroundColor: t.prefixRef.color || '#6366f1' }}>
+                        {t.prefixRef.label}
                       </span>
-                    ) : null;
-                  })()}
-                  {t.prefixRef && <PrefixChip prefix={t.prefixRef} />}
-                  <Link href={`/thread?slug=${t.slug}`} className={`truncate font-semibold hover:text-brand-600 dark:text-ink-100 ${hasUnread ? 'text-ink-900 dark:text-white' : 'text-ink-800'}`}>
-                    {t.title}
-                  </Link>
-                </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
-                  <span>{t.author?.displayName || t.author?.username || 'Ẩn danh'} · {timeAgo(t.createdAt)}</span>
-                  {t.category && <span>trong <span className="text-brand-600">{t.category.name}</span></span>}
-                  {t.replyCount >= POST_PER_PAGE && (() => {
-                    const pages = Math.ceil((t.replyCount + 1) / POST_PER_PAGE);
-                    const shown = pages > 5 ? [1, 2, 3, null, pages] : Array.from({ length: pages }, (_, i) => i + 1);
-                    return (
-                      <span className="flex items-center gap-0.5 text-[10px]">
-                        {shown.map((pg, i) => pg === null
-                          ? <span key={`sep-${i}`} className="text-ink-400">…</span>
-                          : <Link key={pg} href={`/thread?slug=${t.slug}&page=${pg}`} onClick={(e) => e.stopPropagation()}
-                              className="rounded px-1 py-0.5 font-medium text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800"
-                            >{pg}</Link>
-                        )}
+                    )}
+                    {hasUnread && (
+                      <span className="shrink-0 rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        {unread} mới
                       </span>
-                    );
-                  })()}
-                </div>
-                {t.tags && t.tags.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {t.tags.slice(0, 4).map((tt) => (
-                      <Link key={tt.tag.id} href={`/tag?slug=${tt.tag.slug}`} onClick={(e) => e.stopPropagation()}
-                        className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                        style={{ backgroundColor: tt.tag.color ? tt.tag.color + '22' : undefined, color: tt.tag.color || undefined }}>
-                        #{tt.tag.name}
-                      </Link>
-                    ))}
+                    )}
+                    <Link href={`/thread?slug=${t.slug}`}
+                      className={`min-w-0 font-semibold leading-snug hover:text-brand-600 ${hasUnread ? 'text-ink-900 dark:text-white' : 'text-ink-800 dark:text-ink-100'}`}>
+                      {t.title}
+                    </Link>
                   </div>
-                )}
-              </div>
-              <div className="hidden shrink-0 flex-col items-end gap-0.5 text-xs text-ink-500 sm:flex">
-                <div className="flex items-center gap-3">
-                  <span className="flex items-center gap-1"><MessageCircle size={13} /> {t.replyCount}</span>
-                  <span className="flex items-center gap-1"><Eye size={13} /> {t.viewCount}</span>
-                  <span className="flex items-center gap-1"><ThumbsUp size={13} /> {t.likeCount}</span>
-                  {t.replyCount > 0 && (() => {
-                    const lastPage = Math.ceil((t.replyCount + 1) / POST_PER_PAGE);
-                    return (
-                      <Link href={`/thread?slug=${t.slug}&page=${lastPage}`} onClick={(e) => e.stopPropagation()}
-                        title="Đến bài mới nhất" className="rounded p-0.5 text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800">
-                        <ArrowRight size={13} />
-                      </Link>
-                    );
-                  })()}
+                  {/* Sub-meta */}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-ink-400">
+                    <span>{t.author?.displayName || t.author?.username}</span>
+                    <span>·</span>
+                    <span>{timeAgo(t.createdAt)}</span>
+                    {t.category && !categoryId && (
+                      <>
+                        <span>·</span>
+                        <span className="text-brand-500">{t.category.name}</span>
+                      </>
+                    )}
+                    {/* Mini page links */}
+                    {t.replyCount >= POST_PER_PAGE && (() => {
+                      const pages = Math.ceil((t.replyCount + 1) / POST_PER_PAGE);
+                      const shown = pages > 4 ? [1, 2, null, pages] : Array.from({ length: pages }, (_, i) => i + 1);
+                      return (
+                        <span className="flex items-center gap-0.5">
+                          <span className="text-ink-300">·</span>
+                          <span className="text-[10px] text-ink-400">Trang:</span>
+                          {shown.map((pg, i) => pg === null
+                            ? <span key={`s${i}`} className="text-ink-300">…</span>
+                            : <Link key={pg} href={`/thread?slug=${t.slug}&page=${pg}`} onClick={(e) => e.stopPropagation()}
+                                className="rounded px-1 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-700"
+                              >{pg}</Link>
+                          )}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  {/* Tags */}
+                  {t.tags && t.tags.length > 0 && (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {t.tags.slice(0, 3).map((tt) => (
+                        <Link key={tt.tag.id} href={`/tag?slug=${tt.tag.slug}`} onClick={(e) => e.stopPropagation()}
+                          className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                          style={{ backgroundColor: tt.tag.color ? tt.tag.color + '22' : '#6366f122', color: tt.tag.color || '#6366f1' }}>
+                          #{tt.tag.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {t.lastPostAt && t.replyCount > 0 && (
-                  <span className="text-[11px] text-ink-400">{timeAgo(t.lastPostAt)}</span>
+              </div>
+
+              {/* ── Replies ── */}
+              <div className="hidden flex-col items-center justify-center px-2 py-3 sm:flex">
+                <span className="text-sm font-semibold text-ink-700 dark:text-ink-200">{t.replyCount}</span>
+                <span className="text-[10px] text-ink-400">trả lời</span>
+              </div>
+
+              {/* ── Views ── */}
+              <div className="hidden flex-col items-center justify-center px-2 py-3 sm:flex">
+                <span className="text-sm font-semibold text-ink-700 dark:text-ink-200">
+                  {t.viewCount >= 1000 ? `${(t.viewCount / 1000).toFixed(1)}k` : t.viewCount}
+                </span>
+                <span className="text-[10px] text-ink-400">lượt xem</span>
+              </div>
+
+              {/* ── Last post ── */}
+              <div className="hidden items-center gap-2 border-l border-ink-100 px-3 py-3 dark:border-ink-800 sm:flex">
+                {t.lastPostAt && (
+                  <>
+                    <div className="shrink-0"><Avatar user={{ username: t.author?.username || '?', avatar: t.author?.avatar }} size={28} /></div>
+                    <div className="min-w-0">
+                      <Link href={`/thread?slug=${t.slug}&page=${Math.ceil((t.replyCount + 1) / POST_PER_PAGE)}`}
+                        className="block truncate text-[11px] font-medium text-ink-600 hover:text-brand-600 dark:text-ink-300">
+                        {timeAgo(t.lastPostAt)}
+                      </Link>
+                      <span className="block truncate text-[10px] text-ink-400">
+                        {t.author?.displayName || t.author?.username}
+                      </span>
+                    </div>
+                  </>
                 )}
               </div>
             </li>
@@ -254,13 +267,25 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
         })}
       </ul>
 
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between border-t border-ink-200/70 px-4 py-3 dark:border-ink-800">
           <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1 || isLoading}
             className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-800">
             ← Trước
           </button>
-          <span className="text-xs text-ink-500">Trang {page} / {totalPages}</span>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+              const pg = totalPages <= 7 ? i + 1 : i === 0 ? 1 : i === 6 ? totalPages : page - 2 + i;
+              if (pg < 1 || pg > totalPages) return null;
+              return (
+                <button key={pg} onClick={() => setPage(pg)}
+                  className={`h-7 min-w-[28px] rounded px-1.5 text-xs font-medium transition ${pg === page ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
+                  {pg}
+                </button>
+              );
+            })}
+          </div>
           <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || isLoading}
             className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-800">
             Sau →

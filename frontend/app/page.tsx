@@ -7,6 +7,7 @@ import { ThreadList } from '@/components/ThreadList';
 import { CategoryList } from '@/components/CategoryList';
 import { HomeSidebar } from '@/components/HomeSidebar';
 import { AdBanner } from '@/components/AdBanner';
+import { GlobalChat } from '@/components/GlobalChat';
 import { useSiteConfig } from '@/lib/siteConfig';
 
 function HomeContent() {
@@ -33,9 +34,11 @@ function HomeContent() {
           )}
           {/* 1. Bài viết mới của tất cả danh mục */}
           <ThreadList categoryId={cat || undefined} />
+          {/* 2. Chat cộng đồng (shoutbox) */}
+          <GlobalChat />
           {/* Banner giữa trang chủ */}
           <AdBanner position="home_mid" className="h-24 sm:h-28" />
-          {/* 2. Danh mục kiểu XenForo (ẩn khi đang lọc 1 danh mục) */}
+          {/* 3. Danh mục kiểu XenForo (ẩn khi đang lọc 1 danh mục) */}
           {!cat && <CategoryList />}
         </div>
 

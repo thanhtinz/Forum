@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ChevronLeft, PenSquare } from 'lucide-react';
-import { fetcher } from '@/lib/api';
+import { ChevronLeft, PenSquare, BookCheck } from 'lucide-react';
+import { api, fetcher } from '@/lib/api';
 import { ThreadList } from '@/components/ThreadList';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -28,6 +28,12 @@ function CategoryView() {
   // Quyền đăng: nếu danh mục chỉ cho BQT -> chỉ staff thấy nút đăng
   const staffOnly = cat?.minRolePost === 'MODERATOR' || cat?.minRolePost === 'ADMIN';
   const canPost = !!user && (!staffOnly || ['MODERATOR', 'ADMIN'].includes((user as any).role));
+  const [markReadKey, setMarkReadKey] = useState(0);
+
+  async function handleMarkAllRead() {
+    await api.post('/forum/read-progress/mark-all', {}).catch(() => {});
+    setMarkReadKey((k) => k + 1);
+  }
 
   return (
     <div className="space-y-4">
@@ -52,14 +58,21 @@ function CategoryView() {
         )}
       </section>
 
-      {/* Thanh hành động riêng */}
-      {canPost && (
-        <div className="flex justify-end">
-          <Link href={`/threads/new?cat=${id}`} className="btn-primary inline-flex items-center gap-1.5 text-sm"><PenSquare size={16} /> Đăng chủ đề mới</Link>
-        </div>
-      )}
+      {/* Thanh hành động */}
+      <div className="flex items-center justify-end gap-2">
+        {user && (
+          <button onClick={handleMarkAllRead} className="btn-outline inline-flex items-center gap-1.5 text-sm">
+            <BookCheck size={15} /> Đánh dấu đã đọc
+          </button>
+        )}
+        {canPost && (
+          <Link href={`/threads/new?cat=${id}`} className="btn-primary inline-flex items-center gap-1.5 text-sm">
+            <PenSquare size={16} /> Đăng chủ đề mới
+          </Link>
+        )}
+      </div>
 
-      {id ? <ThreadList categoryId={id} hideHeader /> : <div className="card p-8 text-center text-ink-500">Không tìm thấy danh mục.</div>}
+      {id ? <ThreadList categoryId={id} hideHeader markReadKey={markReadKey} /> : <div className="card p-8 text-center text-ink-500">Không tìm thấy danh mục.</div>}
     </div>
   );
 }

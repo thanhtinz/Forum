@@ -231,6 +231,17 @@ export class ForumController {
     return this.forum.reactToPost(postId, userId, emoji);
   }
 
+  @Post('posts/:id/vote')
+  @UseGuards(JwtAuthGuard)
+  votePost(
+    @CurrentUser('id') userId: string,
+    @Param('id') postId: string,
+    @Body('value') value: number,
+  ) {
+    if (value !== 1 && value !== -1) throw new Error('value phải là 1 hoặc -1');
+    return this.forum.votePost(postId, userId, value as 1 | -1);
+  }
+
   @Delete('posts/:id')
   @UseGuards(JwtAuthGuard)
   deletePost(

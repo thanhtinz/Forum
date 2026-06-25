@@ -236,6 +236,7 @@ model User {
   postDrafts           PostDraft[]
   bookmarks            Bookmark[]
   tipsSent             Tip[]                 @relation("TipFrom")
+  postVotes            PostVote[]
   tipsReceived         Tip[]                 @relation("TipTo")
   inviteCodesCreated   InviteCode[]          @relation("InviteCodesCreated")
   inviteCodeUses       InviteCodeUse[]
@@ -278,6 +279,7 @@ model User {
   threadReplyBansMod   ThreadReplyBan[]   @relation("ThreadReplyBanMod")
   conversationParticipants ConversationParticipant[]
   sentMessages         ConversationMessage[] @relation("SentMessages")
+  auditLogs            AuditLog[]
 
   @@index([email])
   @@index([username])
@@ -550,6 +552,7 @@ model Post {
   editCount   Int       @default(0)
   lastEditAt  DateTime?
   likeCount   Int       @default(0)
+  voteScore   Int       @default(0) // tổng upvote - downvote
   isHelpful   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -559,6 +562,7 @@ model Post {
   parent         Post?            @relation("PostQuotes", fields: [parentId], references: [id])
   replies        Post[]           @relation("PostQuotes")
   reactions      PostReaction[]
+  votes          PostVote[]
   hiddenSections HiddenSection[]
   attachments    PostAttachment[]
   editHistory    PostEditHistory[]
@@ -566,6 +570,21 @@ model Post {
   @@index([threadId])
   @@index([authorId])
   @@index([createdAt])
+}
+
+model PostVote {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  value     Int      // +1 = upvote, -1 = downvote
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
 
 model PostReaction {
@@ -1274,6 +1293,8 @@ model AuditLog {
   ip         String?  @db.VarChar(45)
   userAgent  String?  @db.VarChar(255)
   createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([actorId])
   @@index([action])

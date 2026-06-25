@@ -51,6 +51,7 @@ import { PingModule } from './modules/ping/ping.module';
 import { BannerModule } from './modules/banner/banner.module';
 import { MangaCreatorModule } from './modules/manga-creator/manga-creator.module';
 import { RssModule } from './modules/rss/rss.module';
+import { LinkPreviewModule } from './modules/link-preview/link-preview.module';
 
 @Module({
   imports: [
@@ -118,6 +119,7 @@ import { RssModule } from './modules/rss/rss.module';
     PermissionsModule,
     MangaCreatorModule,
     RssModule,
+    LinkPreviewModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

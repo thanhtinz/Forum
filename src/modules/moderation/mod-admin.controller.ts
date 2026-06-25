@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { Roles, RolesGuard, CurrentUser } from '../../common/decorators/roles.decorator';
@@ -34,5 +34,14 @@ export class ModAdminController {
   @Roles(UserRole.ADMIN)
   unban(@CurrentUser('id') uid: string, @Body() b: { username: string }) {
     return this.mod.unban(uid, b.username);
+  }
+
+  @Get('logs')
+  getLogs(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('actorId') actorId?: string,
+  ) {
+    return this.mod.getModLogs(page ? Number(page) : 1, limit ? Number(limit) : 50, actorId);
   }
 }

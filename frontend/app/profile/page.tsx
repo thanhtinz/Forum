@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck, CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck, CalendarDays, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { interceptExternalLink } from '@/lib/externalLink';
@@ -99,6 +99,12 @@ function ProfileView() {
             >
               <Ban size={15} /> {blocked ? 'Bỏ chặn' : 'Chặn'}
             </button>
+            <a
+              href={`/conversations?new=${profile.username}`}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-100 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300"
+            >
+              <Mail size={15} /> Nhắn tin riêng
+            </a>
           </div>
         )}
 

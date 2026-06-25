@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Cake, MapPin, UserCircle, Tag } from 'lucide-react';
+import { Cake, MapPin, UserCircle, Tag, PenLine } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
-interface About { displayName?: string | null; bio?: string | null; location?: string | null; birthday?: string | null; showBirthday?: boolean; birthdayFormat?: string }
+interface About { displayName?: string | null; bio?: string | null; location?: string | null; birthday?: string | null; showBirthday?: boolean; birthdayFormat?: string; signature?: string | null }
 
 const FORMATS = [
   { value: 'full', label: 'Đầy đủ (ngày/tháng/năm)' },
@@ -24,6 +24,7 @@ export default function AboutSettings() {
   const [year, setYear] = useState('');
   const [showBirthday, setShowBirthday] = useState(false);
   const [birthdayFormat, setBirthdayFormat] = useState('full');
+  const [signature, setSignature] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -34,6 +35,7 @@ export default function AboutSettings() {
       setLocation(a.location || '');
       setShowBirthday(!!a.showBirthday);
       setBirthdayFormat(a.birthdayFormat || 'full');
+      setSignature(a.signature || '');
       if (a.birthday) {
         const d = new Date(a.birthday);
         setDay(String(d.getUTCDate()));
@@ -61,6 +63,7 @@ export default function AboutSettings() {
         birthday,
         showBirthday,
         birthdayFormat,
+        signature,
       });
       setMsg('Đã lưu thông tin ✓');
       refresh?.();
@@ -127,6 +130,19 @@ export default function AboutSettings() {
             </select>
           </div>
           <p className="mt-1 text-xs text-ink-400">Bạn có thể chọn chỉ hiện năm sinh, ngày–tháng, hoặc tháng–năm để giữ riêng tư.</p>
+        </div>
+
+        <div>
+          <label className="mb-1 flex items-center gap-1.5 text-sm font-medium"><PenLine size={15} /> Chữ ký (hiển thị dưới bài viết)</label>
+          <textarea
+            className="input w-full font-mono text-sm"
+            rows={3}
+            value={signature}
+            onChange={(e) => setSignature(e.target.value)}
+            placeholder="Chữ ký hiển thị bên dưới mỗi bài viết của bạn…"
+            maxLength={500}
+          />
+          <p className="mt-1 text-xs text-ink-400">Tối đa 500 ký tự. Hỗ trợ văn bản thuần.</p>
         </div>
 
         {msg && <p className="text-sm text-brand-600">{msg}</p>}

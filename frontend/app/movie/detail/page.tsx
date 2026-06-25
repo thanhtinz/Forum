@@ -6,6 +6,7 @@ import { Play, Heart, Star, BookOpen, Clapperboard, RefreshCw, Send, Trash2, Smi
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
+import { CommentBox } from '@/components/CommentBox';
 import { EmojiStickerPicker, isStickerContent } from '@/components/EmojiStickerPicker';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -49,10 +50,7 @@ function MovieDetail() {
   const [err, setErr] = useState('');
   const [fav, setFav] = useState(false);
   const [comments, setComments] = useState<CommentT[]>([]);
-  const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
-  const [picker, setPicker] = useState(false);
-  const [focused, setFocused] = useState(false);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
   const [replyPosting, setReplyPosting] = useState(false);
@@ -95,12 +93,9 @@ function MovieDetail() {
       const ep = w?.episodeList?.find((e: any) => e.id === epId);
       setComments((cs) => [...cs, { ...c, episodeId: epId, episodeNumber: ep?.number }]);
       if (parentId) { setReplyTexts((t) => ({ ...t, [parentId]: '' })); setReplyingToId(null); }
-      else setText('');
     } catch {}
     finally { setPosting(false); setReplyPosting(false); }
   }
-
-  function submitComment(e: React.FormEvent) { e.preventDefault(); postComment(text); }
 
   async function delComment(cid: string) {
     if (!confirm('Xoá bình luận?')) return;
@@ -257,37 +252,9 @@ function MovieDetail() {
       <div className="card p-5">
         <h2 className="mb-3 font-semibold">Bình luận ({comments.length})</h2>
         {user ? (
-          <form onSubmit={submitComment} className="mb-4 flex items-start gap-2">
-            <Avatar user={user} size={32} />
-            <div className="flex-1">
-              <div className="relative">
-                <textarea value={text} onChange={(e) => setText(e.target.value)} onFocus={() => setFocused(true)}
-                  rows={focused ? 3 : 2} placeholder="Viết bình luận…" className="input w-full resize-none pr-9" />
-                <button type="button" onClick={() => setPicker((v) => !v)}
-                  className={`absolute right-2 top-2 rounded p-1 hover:bg-ink-100 dark:hover:bg-ink-800 ${picker ? 'text-brand-600' : 'text-ink-400'}`}
-                  title="Emoji / Sticker">
-                  <Smile size={18} />
-                </button>
-                {picker && (
-                  <EmojiStickerPicker
-                    onEmoji={(e) => setText((t) => t + e)}
-                    onSticker={(url) => { setPicker(false); postComment(url); }}
-                    onClose={() => setPicker(false)}
-                  />
-                )}
-              </div>
-              {focused && (
-                <div className="mt-2 flex justify-end gap-2">
-                  <button type="button" onClick={() => { setText(''); setFocused(false); setPicker(false); }}
-                    className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Huỷ</button>
-                  <button type="submit" disabled={posting || !text.trim()}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-1.5 text-sm text-white hover:bg-brand-700 disabled:opacity-50">
-                    <Send size={14} /> Gửi
-                  </button>
-                </div>
-              )}
-            </div>
-          </form>
+          <div className="mb-4">
+            <CommentBox user={user} onSubmit={(content) => postComment(content)} posting={posting} />
+          </div>
         ) : (
           <p className="mb-4 text-sm text-ink-500"><a href="/login" className="text-brand-600 hover:underline">Đăng nhập</a> để bình luận.</p>
         )}

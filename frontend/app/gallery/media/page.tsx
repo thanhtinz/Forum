@@ -7,6 +7,7 @@ import { vi } from 'date-fns/locale';
 import { Heart, Eye, Trash2, FolderOpen } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
+import { CommentBox, CommentContent } from '@/components/CommentBox';
 import { useAuth } from '@/components/AuthProvider';
 
 interface Owner { id: string; username: string; displayName?: string | null; avatar?: string | null }
@@ -22,7 +23,6 @@ function MediaView() {
   const [media, setMedia] = useState<Media | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
-  const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
 
   const isMod = user && (user.role === 'ADMIN' || user.role === 'MODERATOR');
@@ -40,14 +40,12 @@ function MediaView() {
     try { const m = await api.post<Media>(`/gallery/media/${media.id}/like`); setMedia({ ...media, likeCount: m.likeCount }); } catch {}
   }
 
-  async function submitComment(e: React.FormEvent) {
-    e.preventDefault();
-    if (!media || !comment.trim()) return;
+  async function submitComment(content: string) {
+    if (!media || !content.trim()) return;
     setBusy(true);
     try {
-      const c = await api.post<Comment>(`/gallery/media/${media.id}/comments`, { content: comment });
+      const c = await api.post<Comment>(`/gallery/media/${media.id}/comments`, { content });
       setMedia({ ...media, comments: [...media.comments, c] });
-      setComment('');
     } catch (e: any) { alert(e.message); } finally { setBusy(false); }
   }
 
@@ -106,7 +104,7 @@ function MediaView() {
                     <button onClick={() => removeComment(c.id)} className="text-ink-400 hover:text-red-500"><Trash2 size={12} /></button>
                   )}
                 </div>
-                <p className="mt-0.5 whitespace-pre-wrap text-sm">{c.content}</p>
+                <CommentContent text={c.content} />
               </div>
             </div>
           ))}
@@ -114,13 +112,9 @@ function MediaView() {
         </div>
 
         {user ? (
-          <form onSubmit={submitComment} className="mt-4 space-y-2">
-            <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={2}
-              placeholder="Viết bình luận…" className="input w-full resize-y" />
-            <div className="flex justify-end">
-              <button type="submit" disabled={busy || !comment.trim()} className="btn-primary !py-1.5 text-sm disabled:opacity-50">{busy ? 'Đang gửi…' : 'Gửi'}</button>
-            </div>
-          </form>
+          <div className="mt-4">
+            <CommentBox user={user} onSubmit={submitComment} posting={busy} />
+          </div>
         ) : (
           <p className="mt-4 text-center text-sm text-ink-500">
             Vui lòng <a href="/login" className="font-medium text-brand-600">đăng nhập</a> để bình luận.

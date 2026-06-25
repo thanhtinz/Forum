@@ -274,7 +274,7 @@ export function Header() {
 
       {/* ── Mobile drawer ── */}
       {navOpen && (
-        <div className="fixed inset-0 z-[60] md:hidden" onClick={() => setNavOpen(false)}>
+        <div className="fixed inset-0 z-[9999] md:hidden" onClick={() => setNavOpen(false)}>
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
           <nav
             onClick={(e) => e.stopPropagation()}

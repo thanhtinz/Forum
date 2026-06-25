@@ -50,13 +50,15 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
   const { user } = useAuth();
   const [sort, setSort] = useState<SortBy>('lastPost');
   const [unanswered, setUnanswered] = useState(false);
+  const [page, setPage] = useState(1);
 
-  const params = new URLSearchParams({ limit: '20', sortBy: sort });
+  const params = new URLSearchParams({ limit: '20', sortBy: sort, page: String(page) });
   if (categoryId) params.set('categoryId', categoryId);
   if (unanswered) params.set('unanswered', '1');
   const url = `/forum/threads?${params.toString()}`;
 
   const { data, error, isLoading } = useSWR<Paginated<Thread>>(url, fetcher);
+  const totalPages = data?.meta?.totalPages ?? 1;
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
@@ -82,7 +84,7 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
           {SORT_OPTIONS.map((o) => (
             <button
               key={o.value}
-              onClick={() => setSort(o.value)}
+              onClick={() => { setSort(o.value); setPage(1); }}
               className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${sort === o.value ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}
             >
               {o.label}
@@ -91,7 +93,7 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
         </div>
         <div className="ml-auto">
           <button
-            onClick={() => setUnanswered((v) => !v)}
+            onClick={() => { setUnanswered((v) => !v); setPage(1); }}
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}
           >
             Chưa có trả lời
@@ -158,6 +160,27 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
           );
         })}
       </ul>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between border-t border-ink-200/70 px-4 py-3 dark:border-ink-800">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1 || isLoading}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-800"
+          >
+            ← Trước
+          </button>
+          <span className="text-xs text-ink-500">Trang {page} / {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages || isLoading}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-800"
+          >
+            Sau →
+          </button>
+        </div>
+      )}
     </section>
   );
 }

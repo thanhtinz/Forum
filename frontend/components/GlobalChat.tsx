@@ -110,7 +110,7 @@ export function GlobalChat() {
         </div>
       ) : (
         <>
-          <div className="h-72 space-y-1 overflow-y-auto p-4">
+          <div className="h-96 space-y-1 overflow-y-auto p-4">
             {messages.length === 0 && (
               <p className="text-center text-sm text-ink-400">Chưa có tin nhắn nào. Hãy là người đầu tiên!</p>
             )}
@@ -143,6 +143,9 @@ export function GlobalChat() {
             <div ref={bottomRef} />
           </div>
 
+          <p className="border-t border-amber-200/60 bg-amber-50 px-4 py-1.5 text-center text-[11px] text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+            ⚠️ Không bình luận ngôn từ xúc phạm, spam, liên kết lừa đảo… Vi phạm sẽ bị cảnh cáo hoặc ban.
+          </p>
           <Composer
             onSend={handleSend}
             replyTo={replyTo}

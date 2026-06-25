@@ -39,7 +39,19 @@ export function MessageBody({ m, mine }: { m: ChatMsg; mine?: boolean }) {
     }
     case 'MUSIC': {
       const e = musicEmbed(m.content, m.metadata?.provider);
-      if (e?.kind === 'iframe') return <iframe src={e.src} className="h-20 w-72 max-w-full rounded-lg" allow="encrypted-media" />;
+      if (e?.kind === 'iframe') {
+        const isYT = e.src.includes('youtube.com');
+        const isSC = e.src.includes('soundcloud.com');
+        const h = isYT ? 'h-[200px]' : isSC ? 'h-[120px]' : 'h-[80px]';
+        return (
+          <iframe
+            src={e.src}
+            className={`${h} w-72 max-w-full rounded-lg`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+          />
+        );
+      }
       if (e?.kind === 'audio') return <audio src={e.src} controls className="h-10 w-56 max-w-full" />;
       return <a href={m.content} target="_blank" rel="noreferrer" className="flex items-center gap-1 underline"><Music size={15} /> {m.content}</a>;
     }

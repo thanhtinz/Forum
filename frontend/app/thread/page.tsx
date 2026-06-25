@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreHorizontal, Crown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -14,7 +14,6 @@ import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 import type { Thread, Post, Paginated } from '@/lib/types';
 import { interceptExternalLink } from '@/lib/externalLink';
 import TipTapEditor from '@/components/TipTapEditor';
-import { PingButton } from '@/components/PingButton';
 import { AdBanner } from '@/components/AdBanner';
 import { GATE_OPTIONS, needLike, needComment, needGem, REACTIONS, REPORT_TYPES } from '@/lib/constants';
 
@@ -157,6 +156,8 @@ function ThreadView() {
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const scrolledToLastRead = useRef(false);
+  const [threadMenu, setThreadMenu] = useState(false);
+  const threadMenuRef = useRef<HTMLDivElement>(null);
 
   const [viewing, setViewing] = useState<{ total: number; users: { id: string; username: string; displayName?: string | null; avatar?: string | null }[] }>({ total: 0, users: [] });
 
@@ -396,6 +397,14 @@ function ThreadView() {
     }, 300);
   }, [initialLastReadPostId, posts]);
 
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (threadMenuRef.current && !threadMenuRef.current.contains(e.target as Node)) setThreadMenu(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   function toggleSplitPost(postId: string) {
     setSplitSelected((prev) => prev.includes(postId) ? prev.filter((id) => id !== postId) : [...prev, postId]);
   }
@@ -543,10 +552,62 @@ function ThreadView() {
           <span>/</span>
           <span className="truncate max-w-[200px] text-ink-500">{thread.title}</span>
         </nav>
-        <div className="flex items-center gap-2 text-sm text-ink-500">
-          {thread.isPinned && <Pin size={14} className="text-amber-500" />}
-          {thread.isLocked && <Lock size={14} />}
-          {(thread as any).isHidden && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">Đã ẩn</span>}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-ink-500">
+            {thread.isPinned && <Pin size={14} className="text-amber-500" />}
+            {thread.isLocked && <Lock size={14} />}
+            {(thread as any).isHidden && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">Đã ẩn</span>}
+          </div>
+          {/* 3-dot menu */}
+          {(canManage || isMod) && (
+            <div className="relative" ref={threadMenuRef}>
+              <button onClick={() => setThreadMenu((v) => !v)}
+                className="rounded-lg p-1.5 text-ink-400 hover:bg-ink-100 dark:hover:bg-ink-800">
+                <MoreHorizontal size={18} />
+              </button>
+              {threadMenu && (
+                <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] overflow-hidden rounded-xl border border-ink-200 bg-white py-1 shadow-card dark:border-ink-800 dark:bg-ink-900">
+                  {canManage && (
+                    <>
+                      <button onClick={() => { setEditTitle(thread.title); setEditingTitle(true); setThreadMenu(false); }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
+                        <Pencil size={14} /> Sửa tiêu đề
+                      </button>
+                      <button onClick={() => { toggleLock(); setThreadMenu(false); }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
+                        <Lock size={14} /> {thread.isLocked ? 'Mở bài' : 'Đóng bài'}
+                      </button>
+                    </>
+                  )}
+                  {isMod && (
+                    <>
+                      <div className="my-1 border-t border-ink-200 dark:border-ink-700" />
+                      <button onClick={() => { toggleHide(); setThreadMenu(false); }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-amber-600 hover:bg-ink-50 dark:hover:bg-ink-800">
+                        {(thread as any).isHidden ? 'Hiện bài' : 'Ẩn bài'}
+                      </button>
+                      <button onClick={() => { togglePin(); setThreadMenu(false); }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
+                        <Pin size={14} /> {thread.isPinned ? 'Bỏ ghim' : 'Ghim'}
+                      </button>
+                      <button onClick={() => { openMove(); setThreadMenu(false); }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
+                        <FolderInput size={14} /> Chuyển mục
+                      </button>
+                      <button onClick={() => { openMerge(); setThreadMenu(false); }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
+                        <Merge size={14} /> Gộp chủ đề
+                      </button>
+                      <button onClick={() => { setSplitMode(true); setSplitSelected([]); setSplitTitle(''); setThreadMenu(false); }}
+                        className="flex w-full items-center gap-2 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
+                        <Scissors size={14} /> Tách bài
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="mt-1 flex flex-col gap-2">
           {editingTitle ? (
@@ -559,20 +620,10 @@ function ThreadView() {
               <button onClick={() => setEditingTitle(false)} className="rounded-lg bg-ink-100 px-3 py-1.5 text-xs dark:bg-ink-800">Hủy</button>
             </div>
           ) : (
-            <div className="flex min-w-0 items-start gap-2">
-              <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
-              {canManage && (
-                <button onClick={() => { setEditTitle(thread.title); setEditingTitle(true); }}
-                  className="mt-1 shrink-0 rounded p-1 text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800" title="Sửa tiêu đề">
-                  <Pencil size={14} />
-                </button>
-              )}
-            </div>
+            <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
           )}
           {user && (
             <div className="flex flex-wrap gap-2">
-              <PingButton link={`/thread?slug=${thread.slug}`} defaultTitle={`Bạn được nhắc trong: ${thread.title}`}
-                className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs font-medium hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700" />
               <button onClick={toggleBookmark} title="Lưu chủ đề"
                 className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${bookmarked ? 'bg-amber-500 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
                 {bookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />} {bookmarked ? 'Đã lưu' : 'Lưu'}
@@ -613,20 +664,6 @@ function ThreadView() {
             </span>
           )}
         </div>
-        {(isMod || (user && thread.author && user.id === thread.author.id)) && (
-          <div className="mt-3 flex flex-wrap gap-2 border-t border-ink-200/70 pt-3 dark:border-ink-800">
-            <button onClick={toggleLock} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Lock size={13} /> {thread.isLocked ? 'Mở bài (cho bình luận)' : 'Đóng bài (khoá bình luận)'}</button>
-            <button onClick={toggleHide} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs text-amber-600 hover:bg-ink-200 dark:bg-ink-800">{(thread as any).isHidden ? 'Hiện bài' : 'Ẩn bài (không xoá)'}</button>
-            {isMod && <button onClick={togglePin} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Pin size={13} /> {thread.isPinned ? 'Bỏ ghim' : 'Ghim'}</button>}
-          </div>
-        )}
-        {isMod && (
-          <div className="mt-2 flex flex-wrap gap-2">
-            <button onClick={openMove} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><FolderInput size={13} /> Chuyển mục</button>
-            <button onClick={openMerge} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Merge size={13} /> Gộp chủ đề</button>
-            <button onClick={() => { setSplitMode(true); setSplitSelected([]); setSplitTitle(''); }} className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs hover:bg-ink-200 dark:bg-ink-800"><Scissors size={13} /> Tách bài</button>
-          </div>
-        )}
       </div>
 
       <PollCard threadId={thread.id} />
@@ -682,7 +719,7 @@ function ThreadView() {
                   </div>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1">
                     {p.author && <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />}
-                    {isFirst && <span className="chip bg-brand-100 text-brand-700 text-[10px]">Chủ thớt</span>}
+                    {isFirst && <span className="chip bg-brand-100 text-brand-700 text-[10px] inline-flex items-center gap-0.5"><Crown size={9} />Tác giả</span>}
                   </div>
                 </div>
               </div>
@@ -699,7 +736,7 @@ function ThreadView() {
                       <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />
                     </div>
                   )}
-                  {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700">Chủ thớt</span>}
+                  {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700 inline-flex items-center gap-1"><Crown size={10} />Tác giả</span>}
                 </div>
                 <div className="min-w-0 flex-1 p-4">
                 <div className="mb-2 flex items-center justify-between text-xs text-ink-500">

@@ -46,6 +46,11 @@ export function Header() {
   const [menu, setMenu] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [utilOpen, setUtilOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.toggle('drawer-open', navOpen);
+    return () => document.body.classList.remove('drawer-open');
+  }, [navOpen]);
   const [forumOpen, setForumOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [unread, setUnread] = useState(0);

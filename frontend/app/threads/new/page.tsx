@@ -58,6 +58,10 @@ export default function NewThreadPage() {
   const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
   // Nháp của tôi
   const [drafts, setDrafts] = useState<any[]>([]);
+  // Tags
+  const [tagQuery, setTagQuery] = useState('');
+  const [tagSuggestions, setTagSuggestions] = useState<{ id: string; name: string; color?: string | null }[]>([]);
+  const [selectedTags, setSelectedTags] = useState<{ id: string; name: string; color?: string | null }[]>([]);
   // AI
   const [aiBusy, setAiBusy] = useState('');
 
@@ -115,6 +119,24 @@ export default function NewThreadPage() {
     if (selectable) setForm((f) => ({ ...f, categoryId: f.categoryId || (selectable as any).id }));
   }).catch(() => {}); }, []);
 
+  // Tag search
+  useEffect(() => {
+    if (tagQuery.trim().length < 1) { setTagSuggestions([]); return; }
+    const t = setTimeout(() => {
+      api.get<any[]>(`/forum/tags?q=${encodeURIComponent(tagQuery)}&limit=8`)
+        .then((r) => setTagSuggestions((r || []).filter((x) => !selectedTags.find((s) => s.id === x.id))))
+        .catch(() => {});
+    }, 250);
+    return () => clearTimeout(t);
+  }, [tagQuery, selectedTags]);
+
+  function addTag(tag: { id: string; name: string; color?: string | null }) {
+    if (!selectedTags.find((t) => t.id === tag.id)) {
+      setSelectedTags((prev) => [...prev, tag]);
+    }
+    setTagQuery(''); setTagSuggestions([]);
+  }
+
   // Tải tiền tố theo danh mục đang chọn (admin tạo riêng cho từng danh mục)
   useEffect(() => {
     if (!form.categoryId) { setPrefixes([]); return; }
@@ -129,7 +151,7 @@ export default function NewThreadPage() {
     e.preventDefault();
     setErr(''); setBusy(true);
     try {
-      const t = await api.post<{ id: string; slug: string; pendingApproval?: boolean }>('/forum/threads', { ...form, prefixId: form.prefixId || undefined });
+      const t = await api.post<{ id: string; slug: string; pendingApproval?: boolean }>('/forum/threads', { ...form, prefixId: form.prefixId || undefined, tagIds: selectedTags.map((x) => x.id) });
       if (t.pendingApproval) { if (draftId) await api.del(`/forum/drafts/${draftId}`).catch(() => {}); alert('Bài viết của bạn đang chờ kiểm duyệt và sẽ hiển thị sau khi được duyệt.'); router.push('/'); return; }
       if (pollOn) {
         const opts = poll.options.map((o) => o.trim()).filter(Boolean);
@@ -202,6 +224,41 @@ export default function NewThreadPage() {
             </select>
           </label>
         </div>
+
+        {/* Tag picker */}
+        <div className="relative">
+          <label className="text-sm font-medium">Thẻ (tags)</label>
+          <div className="input mt-1 flex flex-wrap gap-1.5 p-1.5">
+            {selectedTags.map((t) => (
+              <span key={t.id} className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+                style={{ backgroundColor: t.color ? t.color + '22' : '#6366f111', color: t.color || '#6366f1' }}>
+                #{t.name}
+                <button type="button" onClick={() => setSelectedTags((prev) => prev.filter((x) => x.id !== t.id))} className="ml-0.5 opacity-60 hover:opacity-100">×</button>
+              </span>
+            ))}
+            {selectedTags.length < 5 && (
+              <input
+                type="text"
+                value={tagQuery}
+                onChange={(e) => setTagQuery(e.target.value)}
+                placeholder={selectedTags.length === 0 ? 'Tìm thẻ…' : ''}
+                className="min-w-[80px] flex-1 bg-transparent text-sm outline-none"
+              />
+            )}
+          </div>
+          {tagSuggestions.length > 0 && (
+            <div className="absolute z-10 mt-1 w-full rounded-lg border border-ink-200 bg-white shadow-lg dark:border-ink-700 dark:bg-ink-900">
+              {tagSuggestions.map((t) => (
+                <button key={t.id} type="button" onMouseDown={() => addTag(t)}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: t.color || '#6366f1' }} />
+                  #{t.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="flex gap-2">
           <input className="input flex-1" placeholder="Tiêu đề" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
           <button type="button" onClick={aiTitle} disabled={!!aiBusy} className="btn-outline flex shrink-0 items-center gap-1 whitespace-nowrap" title="AI gợi ý tiêu đề từ nội dung">

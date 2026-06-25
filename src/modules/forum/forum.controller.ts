@@ -174,12 +174,15 @@ export class ForumController {
     @Query('tagId') tagId?: string,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
-    @Query('sortBy') sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes',
+    @Query('sortBy') sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes' | 'replies',
+    @Query('unanswered') unanswered?: string,
     @Query('q') q?: string,
     @Query('authorId') authorId?: string,
   ) {
     return this.forum.getThreadList({
-      categoryId, prefix, tagId, page: Number(page), limit: Number(limit), sortBy, q, authorId,
+      categoryId, prefix, tagId, page: Number(page), limit: Number(limit), sortBy,
+      unanswered: unanswered === '1' || unanswered === 'true',
+      q, authorId,
     });
   }
 

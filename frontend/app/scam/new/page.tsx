@@ -18,14 +18,14 @@ const BANKS = [
 
 type Method = 'BANK' | 'MOMO' | 'ZALOPAY' | 'VNPAY' | 'PAYPAL' | 'CRYPTO' | 'OTHER';
 
-const METHODS: { key: Method; label: string; icon: string }[] = [
-  { key: 'BANK',    label: 'Ngân hàng', icon: '🏦' },
-  { key: 'MOMO',    label: 'MoMo',      icon: '💜' },
-  { key: 'ZALOPAY', label: 'ZaloPay',   icon: '🔵' },
-  { key: 'VNPAY',   label: 'VNPay',     icon: '🔴' },
-  { key: 'PAYPAL',  label: 'PayPal',    icon: '🅿️' },
-  { key: 'CRYPTO',  label: 'Crypto',    icon: '₿' },
-  { key: 'OTHER',   label: 'Khác',      icon: '💳' },
+const METHODS: { key: Method; label: string }[] = [
+  { key: 'BANK',    label: 'Ngân hàng' },
+  { key: 'MOMO',    label: 'MoMo'      },
+  { key: 'ZALOPAY', label: 'ZaloPay'   },
+  { key: 'VNPAY',   label: 'VNPay'     },
+  { key: 'PAYPAL',  label: 'PayPal'    },
+  { key: 'CRYPTO',  label: 'Crypto'    },
+  { key: 'OTHER',   label: 'Khác'      },
 ];
 
 export default function NewScamPage() {
@@ -131,12 +131,12 @@ export default function NewScamPage() {
             {METHODS.map((m) => (
               <button key={m.key} type="button"
                 onClick={() => { setMethod(m.key); setErr(''); }}
-                className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-3 py-2 text-sm font-medium transition
+                className={`rounded-xl border-2 px-3 py-2 text-sm font-medium transition
                   ${method === m.key
                     ? 'border-rose-500 bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
                     : 'border-ink-200 bg-white text-ink-700 hover:border-rose-300 dark:border-ink-700 dark:bg-ink-800 dark:text-ink-200'
                   }`}>
-                <span>{m.icon}</span> {m.label}
+                {m.label}
               </button>
             ))}
           </div>

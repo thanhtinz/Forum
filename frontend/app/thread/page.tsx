@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather, AtSign, ImageIcon, SendHorizonal } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather, AtSign } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -212,7 +212,7 @@ function ThreadView() {
     const name = p.author?.username || 'ẩn danh';
     const html = `<blockquote><p><strong>@${name}</strong> đã viết:</p>${p.content}</blockquote><p></p>`;
     setReply((prev) => (prev || '') + html);
-    document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' });
+    document.getElementById('comment-form')?.scrollIntoView({ behavior: 'smooth' });
   }
 
   async function saveReplyDraft() {
@@ -530,6 +530,77 @@ function ThreadView() {
   }
   const ordered = flattenPostTree(sortedPosts);
 
+  const commentBox = (
+    <div id="comment-form" className="card overflow-hidden">
+      <div className="flex items-center gap-2 border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
+        <MessageCircle size={18} className="text-orange-500" />
+        <h2 className="font-bold">Bình luận ( {thread.replyCount} )</h2>
+      </div>
+      {user ? (
+        thread.isLocked ? (
+          <p className="px-4 py-3 text-center text-sm text-ink-500">Chủ đề đã bị khoá.</p>
+        ) : (
+          <form onSubmit={submitReply} className="space-y-2 px-4 py-3">
+            {replyToPost && (
+              <div className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800 dark:bg-brand-950/30 dark:text-brand-200">
+                <Reply size={13} /> <span>Đang trả lời bài của <strong>@{replyToPost.authorName}</strong></span>
+                <button type="button" onClick={() => setReplyToPost(null)} className="ml-auto rounded p-0.5 hover:bg-brand-200/50"><XIcon size={13} /></button>
+              </div>
+            )}
+            {replyDraft && !reply && (
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                <span>Có nháp trả lời đã lưu.</span>
+                <button type="button" onClick={() => { setReply(replyDraft); setReplyDraft(null); }} className="rounded bg-amber-500 px-2 py-0.5 font-medium text-white">Khôi phục</button>
+                <button type="button" onClick={() => setReplyDraft(null)} className="px-2 py-0.5 font-medium">Bỏ</button>
+              </div>
+            )}
+            {replyPreview ? (
+              <div className="prose prose-sm min-h-[80px] max-w-none rounded-lg border border-ink-200 p-4 dark:border-ink-800 dark:prose-invert" dangerouslySetInnerHTML={{ __html: reply || '<p style="color:#94a3b8">Chưa có nội dung…</p>' }} />
+            ) : (
+              <TipTapEditor value={reply} onChange={setReply} placeholder="Viết bình luận…" autosaveKey={`reply-${thread?.id || 'x'}`} />
+            )}
+            <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
+              <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hiddenOn} onChange={(e) => setHiddenOn(e.target.checked)} /><Lock size={14} /> Thêm nội dung ẩn</label>
+              {hiddenOn && (
+                <div className="mt-2 space-y-2">
+                  <TipTapEditor value={hidden.content} onChange={(html) => setHidden({ ...hidden, content: html })} placeholder="Nội dung ẩn cho tới khi mở khoá…" />
+                  <input className="input" placeholder="Nhãn (tuỳ chọn)" value={hidden.label} onChange={(e) => setHidden({ ...hidden, label: e.target.value })} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
+                      {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                    </select>
+                    {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
+                    {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
+                    {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
+                  </div>
+                </div>
+              )}
+            </div>
+            {err && <p className="text-sm text-red-500">{err}</p>}
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setReplyPreview((v) => !v)} className="btn-outline !py-1.5 text-sm">
+                {replyPreview ? '← Sửa' : 'Xem trước'}
+              </button>
+              <button className="btn-primary" type="submit">Gửi bình luận</button>
+            </div>
+          </form>
+        )
+      ) : (
+        <p className="px-4 py-3 text-center text-sm text-ink-500">
+          Vui lòng <a href="/login" className="text-brand-600 font-medium">đăng nhập</a> để trả lời.
+        </p>
+      )}
+      {thread.replyCount === 0 && (
+        <div className="flex flex-col items-center gap-3 border-t border-ink-200/70 py-12 text-ink-400 dark:border-ink-800">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink-100 dark:bg-ink-800">
+            <MessageCircle size={32} className="text-ink-300 dark:text-ink-600" />
+          </div>
+          <span className="text-sm">Chưa có bình luận nào</span>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       {copyToast && <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg bg-ink-900 px-4 py-2 text-sm text-white shadow-card dark:bg-white dark:text-ink-900">{copyToast}</div>}
@@ -676,37 +747,7 @@ function ThreadView() {
       )}
 
       {/* "Bình luận" card — page 1 with 0 replies, or pages 2+ */}
-      {((postPage === 1 && thread.replyCount === 0) || postPage > 1) && (
-        <div className="card overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
-            <MessageCircle size={18} className="text-orange-500" />
-            <h2 className="font-bold">Bình luận ( {thread.replyCount} )</h2>
-          </div>
-          {user && !thread.isLocked && (
-            <div className="flex items-center gap-3 border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
-              <div className="shrink-0"><Avatar user={user} size={36} /></div>
-              <button
-                type="button"
-                onClick={() => document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' })}
-                className="flex flex-1 items-center gap-3 rounded-full bg-ink-100 px-4 py-2.5 text-sm text-ink-400 hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700"
-              >
-                <span className="flex-1 text-left">Viết bình luận......</span>
-                <SmilePlus size={17} />
-                <ImageIcon size={17} />
-                <SendHorizonal size={17} />
-              </button>
-            </div>
-          )}
-          {thread.replyCount === 0 && (
-            <div className="flex flex-col items-center gap-3 py-12 text-ink-400">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink-100 dark:bg-ink-800">
-                <MessageCircle size={32} className="text-ink-300 dark:text-ink-600" />
-              </div>
-              <span className="text-sm">Chưa có bình luận nào</span>
-            </div>
-          )}
-        </div>
-      )}
+      {((postPage === 1 && thread.replyCount === 0) || postPage > 1) && commentBox}
 
       <div className="space-y-3">
         {ordered.map((p, idx) => {
@@ -720,29 +761,7 @@ function ThreadView() {
           const showCommentDivider = !isFirst && idx > 0 && (ordered[idx - 1] as any).isFirstPost;
           return (
             <div key={p.id} style={depth > 0 ? { marginLeft: `${Math.min(depth, 4) * 1.5}rem` } : undefined}>
-              {showCommentDivider && (
-                <div className="card overflow-hidden">
-                  <div className="flex items-center gap-2 border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
-                    <MessageCircle size={18} className="text-orange-500" />
-                    <h2 className="font-bold">Bình luận ( {thread.replyCount} )</h2>
-                  </div>
-                  {user && !thread.isLocked && (
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <div className="shrink-0"><Avatar user={user} size={36} /></div>
-                      <button
-                        type="button"
-                        onClick={() => document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' })}
-                        className="flex flex-1 items-center gap-3 rounded-full bg-ink-100 px-4 py-2.5 text-sm text-ink-400 hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700"
-                      >
-                        <span className="flex-1 text-left">Viết bình luận......</span>
-                        <SmilePlus size={17} />
-                        <ImageIcon size={17} />
-                        <SendHorizonal size={17} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+              {showCommentDivider && commentBox}
               {showNewDivider && (
                 <div className="my-3 flex items-center gap-3">
                   <div className="h-px flex-1 bg-blue-400" />
@@ -897,14 +916,14 @@ function ThreadView() {
                     )}
                     {/* Reply */}
                     {user && !thread.isLocked && !isFirst && (
-                      <button onClick={() => { setReplyToPost({ id: p.id, authorName: p.author?.displayName || p.author?.username || 'ẩn danh' }); document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' }); }}
+                      <button onClick={() => { setReplyToPost({ id: p.id, authorName: p.author?.displayName || p.author?.username || 'ẩn danh' }); document.getElementById('comment-form')?.scrollIntoView({ behavior: 'smooth' }); }}
                         className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
                         <Reply size={13} /> Trả lời
                       </button>
                     )}
                     {/* Tag */}
                     {user && !thread.isLocked && p.author && user.id !== p.author.id && (
-                      <button onClick={() => { const name = p.author?.displayName || p.author?.username || ''; setReply((prev) => (prev || '') + `<p><strong>@${name}</strong> </p>`); document.getElementById('reply-box')?.scrollIntoView({ behavior: 'smooth' }); }}
+                      <button onClick={() => { const name = p.author?.displayName || p.author?.username || ''; setReply((prev) => (prev || '') + `<p><strong>@${name}</strong> </p>`); document.getElementById('comment-form')?.scrollIntoView({ behavior: 'smooth' }); }}
                         className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
                         <AtSign size={13} /> Tag
                       </button>
@@ -948,64 +967,6 @@ function ThreadView() {
 
       <AdBanner position="thread_bottom" className="h-20 sm:h-24" />
 
-      <div className="card p-4" id="reply-box">
-        {user ? (
-          thread.isLocked ? (
-            <p className="text-center text-sm text-ink-500">Chủ đề đã bị khoá.</p>
-          ) : (
-            <form onSubmit={submitReply} className="space-y-2">
-              {replyToPost && (
-                <div className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800 dark:bg-brand-950/30 dark:text-brand-200">
-                  <Reply size={13} /> <span>Đang trả lời bài của <strong>@{replyToPost.authorName}</strong></span>
-                  <button type="button" onClick={() => setReplyToPost(null)} className="ml-auto rounded p-0.5 hover:bg-brand-200/50"><XIcon size={13} /></button>
-                </div>
-              )}
-              {replyDraft && !reply && (
-                <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-                  <span>Có nháp trả lời đã lưu.</span>
-                  <button type="button" onClick={() => { setReply(replyDraft); setReplyDraft(null); }} className="rounded bg-amber-500 px-2 py-0.5 font-medium text-white">Khôi phục</button>
-                  <button type="button" onClick={() => setReplyDraft(null)} className="px-2 py-0.5 font-medium">Bỏ</button>
-                </div>
-              )}
-              {replyPreview ? (
-                <div className="prose prose-sm min-h-[80px] max-w-none rounded-lg border border-ink-200 p-4 dark:border-ink-800 dark:prose-invert" dangerouslySetInnerHTML={{ __html: reply || '<p style="color:#94a3b8">Chưa có nội dung…</p>' }} />
-              ) : (
-                <TipTapEditor value={reply} onChange={setReply} placeholder="Viết trả lời…" autosaveKey={`reply-${thread?.id || 'x'}`} />
-              )}
-
-              <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
-                <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hiddenOn} onChange={(e) => setHiddenOn(e.target.checked)} /><Lock size={14} /> Thêm nội dung ẩn</label>
-                {hiddenOn && (
-                  <div className="mt-2 space-y-2">
-                    <TipTapEditor value={hidden.content} onChange={(html) => setHidden({ ...hidden, content: html })} placeholder="Nội dung ẩn cho tới khi mở khoá…" />
-                    <input className="input" placeholder="Nhãn (tuỳ chọn)" value={hidden.label} onChange={(e) => setHidden({ ...hidden, label: e.target.value })} />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
-                        {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-                      </select>
-                      {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
-                      {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
-                      {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {err && <p className="text-sm text-red-500">{err}</p>}
-              <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setReplyPreview((v) => !v)} className="btn-outline !py-1.5 text-sm">
-                  {replyPreview ? '← Sửa' : 'Xem trước'}
-                </button>
-                <button className="btn-primary" type="submit">Gửi trả lời</button>
-              </div>
-            </form>
-          )
-        ) : (
-          <p className="text-center text-sm text-ink-500">
-            Vui lòng <a href="/login" className="text-brand-600 font-medium">đăng nhập</a> để trả lời.
-          </p>
-        )}
-      </div>
 
       {/* ── Bài viết liên quan ── */}
       {similarThreads.length > 0 && (

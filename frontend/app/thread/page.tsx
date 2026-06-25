@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreHorizontal, Crown } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreHorizontal, Crown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -116,10 +116,8 @@ function ThreadView() {
   const [modBusy, setModBusy] = useState(false);
   const [lastReadPostId, setLastReadPostId] = useState<string | null>(null);
 
-  // ── Thread title edit ──
-  const [editingTitle, setEditingTitle] = useState(false);
+  // ── Post title edit (used inside first-post inline edit form) ──
   const [editTitle, setEditTitle] = useState('');
-  const [titleBusy, setTitleBusy] = useState(false);
   // ── Post edit ──
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -151,6 +149,7 @@ function ThreadView() {
   const [reportReason, setReportReason] = useState('');
   const [reportType, setReportType] = useState('SPAM');
   const [reportBusy, setReportBusy] = useState(false);
+  const [replyPreview, setReplyPreview] = useState(false);
   const [initialLastReadPostId, setInitialLastReadPostId] = useState<string | null>(null);
   const lastSentPostIdRef = useRef<string | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -279,16 +278,6 @@ function ThreadView() {
     try { await api.post(`/forum/threads/${thread.id}/move`, { categoryId: moveCategoryId }); setModModal(null); load(); }
     catch (e: any) { setErr(e.message); }
     finally { setModBusy(false); }
-  }
-  async function submitTitleEdit() {
-    if (!thread || !editTitle.trim()) return;
-    setTitleBusy(true);
-    try {
-      await api.patch(`/forum/threads/${thread.id}`, { title: editTitle.trim() });
-      setEditingTitle(false);
-      load();
-    } catch (e: any) { setErr(e.message); }
-    finally { setTitleBusy(false); }
   }
   async function toggleLock() {
     if (!thread) return;
@@ -426,12 +415,17 @@ function ThreadView() {
     setEditingPostId(p.id);
     setEditContent((p as any).contentRaw || p.content);
     setEditReason('');
+    if ((p as any).isFirstPost && thread) setEditTitle(thread.title);
   }
   async function submitEdit() {
     if (!editingPostId || !editContent.trim()) return;
     setEditBusy(true);
     try {
       await api.patch(`/forum/posts/${editingPostId}`, { content: editContent, reason: editReason || undefined });
+      const editedPost = posts.find((ep) => ep.id === editingPostId);
+      if (editedPost && (editedPost as any).isFirstPost && thread && editTitle.trim() && editTitle.trim() !== thread.title) {
+        await api.patch(`/forum/threads/${thread.id}`, { title: editTitle.trim() });
+      }
       setEditingPostId(null);
       load();
     } catch (e: any) { setErr(e.message); }
@@ -569,9 +563,9 @@ function ThreadView() {
                 <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] overflow-hidden rounded-xl border border-ink-200 bg-white py-1 shadow-card dark:border-ink-800 dark:bg-ink-900">
                   {canManage && (
                     <>
-                      <button onClick={() => { setEditTitle(thread.title); setEditingTitle(true); setThreadMenu(false); }}
+                      <button onClick={() => { const fp = posts.find((p) => (p as any).isFirstPost); if (fp) startEdit(fp); setThreadMenu(false); }}
                         className="flex w-full items-center gap-2 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
-                        <Pencil size={14} /> Sửa tiêu đề
+                        <Pencil size={14} /> Sửa
                       </button>
                       <button onClick={() => { toggleLock(); setThreadMenu(false); }}
                         className="flex w-full items-center gap-2 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
@@ -610,18 +604,7 @@ function ThreadView() {
           )}
         </div>
         <div className="mt-1 flex flex-col gap-2">
-          {editingTitle ? (
-            <div className="flex flex-1 items-center gap-2">
-              <input autoFocus className="input flex-1 text-lg font-bold" value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') submitTitleEdit(); if (e.key === 'Escape') setEditingTitle(false); }}
-              />
-              <button onClick={submitTitleEdit} disabled={titleBusy} className="btn-primary !py-1.5 !px-3 text-xs">{titleBusy ? '…' : 'Lưu'}</button>
-              <button onClick={() => setEditingTitle(false)} className="rounded-lg bg-ink-100 px-3 py-1.5 text-xs dark:bg-ink-800">Hủy</button>
-            </div>
-          ) : (
-            <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
-          )}
+          <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
           {user && (
             <div className="flex flex-wrap gap-2">
               <button onClick={toggleBookmark} title="Lưu chủ đề"
@@ -632,6 +615,12 @@ function ThreadView() {
                 className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium ${subscribed ? 'bg-brand-600 text-white' : 'bg-ink-100 dark:bg-ink-800'}`}>
                 {subscribed ? <BellRing size={14} /> : <Bell size={14} />} {subscribed ? 'Đang theo dõi' : 'Theo dõi'}
               </button>
+              {thread.author && user.id !== (thread.author as any).id && (
+                <button onClick={() => { setReportModal({ targetType: 'thread', targetId: thread.id, reportedUserId: (thread.author as any)?.id }); setReportReason(''); setReportType('SPAM'); }}
+                  className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs font-medium text-ink-500 hover:text-red-500 dark:bg-ink-800">
+                  <Flag size={14} /> Báo cáo
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -748,6 +737,9 @@ function ThreadView() {
                 </div>
                 {editingPostId === p.id ? (
                   <div className="space-y-2">
+                    {isFirst && (
+                      <input autoFocus className="input w-full text-lg font-bold" placeholder="Tiêu đề bài viết…" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                    )}
                     <TipTapEditor value={editContent} onChange={setEditContent} placeholder="Nội dung bài viết…" />
                     <input className="input w-full text-sm" placeholder="Lý do chỉnh sửa (tuỳ chọn)…" value={editReason} onChange={(e) => setEditReason(e.target.value)} />
                     <div className="flex gap-2">
@@ -789,7 +781,7 @@ function ThreadView() {
                   {user && (
                     <div className="group relative">
                       <button className="flex items-center gap-1 rounded-full border border-dashed border-ink-300 px-2 py-0.5 text-ink-500 hover:text-brand-600 dark:border-ink-700"><SmilePlus size={14} /></button>
-                      <div className="absolute left-0 top-full z-10 mt-1 hidden gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card group-hover:flex dark:border-ink-800 dark:bg-ink-900">
+                      <div className="absolute left-0 bottom-full z-10 mb-1 hidden gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card group-hover:flex dark:border-ink-800 dark:bg-ink-900">
                         {REACTIONS.map((e) => (
                           <button key={e} onClick={() => react(p.id, e)} className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-800">{e}</button>
                         ))}
@@ -901,7 +893,11 @@ function ThreadView() {
                   <button type="button" onClick={() => setReplyDraft(null)} className="px-2 py-0.5 font-medium">Bỏ</button>
                 </div>
               )}
-              <TipTapEditor value={reply} onChange={setReply} placeholder="Viết trả lời…" autosaveKey={`reply-${thread?.id || 'x'}`} />
+              {replyPreview ? (
+                <div className="prose prose-sm min-h-[80px] max-w-none rounded-lg border border-ink-200 p-4 dark:border-ink-800 dark:prose-invert" dangerouslySetInnerHTML={{ __html: reply || '<p style="color:#94a3b8">Chưa có nội dung…</p>' }} />
+              ) : (
+                <TipTapEditor value={reply} onChange={setReply} placeholder="Viết trả lời…" autosaveKey={`reply-${thread?.id || 'x'}`} />
+              )}
 
               <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
                 <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hiddenOn} onChange={(e) => setHiddenOn(e.target.checked)} /><Lock size={14} /> Thêm nội dung ẩn</label>
@@ -923,7 +919,9 @@ function ThreadView() {
 
               {err && <p className="text-sm text-red-500">{err}</p>}
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={saveReplyDraft} className="btn-outline inline-flex items-center gap-1"><Save size={15} /> Lưu nháp</button>
+                <button type="button" onClick={() => setReplyPreview((v) => !v)} className="btn-outline !py-1.5 text-sm">
+                  {replyPreview ? '← Sửa' : 'Xem trước'}
+                </button>
                 <button className="btn-primary" type="submit">Gửi trả lời</button>
               </div>
             </form>

@@ -76,7 +76,21 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
       {!hideHeader && (
         <div className="flex items-center justify-between border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
           <h2 className="font-semibold">Bài viết mới nhất</h2>
-          <Link href="/threads/new" className="btn-primary !py-1.5 !px-3 text-xs">+ Đăng bài</Link>
+          <div className="flex items-center gap-2">
+            {user && (
+              <button
+                onClick={async () => {
+                  await api.post('/forum/read-progress/mark-all', {});
+                  setUnreadCounts({});
+                }}
+                className="rounded-lg px-2.5 py-1 text-xs text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800"
+                title="Đánh dấu tất cả đã đọc"
+              >
+                Đánh dấu đã đọc
+              </button>
+            )}
+            <Link href="/threads/new" className="btn-primary !py-1.5 !px-3 text-xs">+ Đăng bài</Link>
+          </div>
         </div>
       )}
 

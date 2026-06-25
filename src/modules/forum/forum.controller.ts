@@ -524,6 +524,19 @@ export class ForumController {
   }
 
   // ── Edit post (sửa bài viết) ──
+  @Patch('threads/:id')
+  @UseGuards(JwtAuthGuard)
+  updateThread(
+    @Param('id') threadId: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: string,
+    @Body('title') title?: string,
+    @Body('prefixId') prefixId?: string,
+    @Body('categoryId') categoryId?: string,
+  ) {
+    return this.forum.updateThread(threadId, userId, role, { title, prefixId, categoryId });
+  }
+
   @Patch('posts/:id')
   @UseGuards(JwtAuthGuard)
   editPost(

@@ -414,6 +414,29 @@ export class ForumService {
     return (user.postCount + user.threadCount) < threshold;
   }
 
+  async updateThread(threadId: string, userId: string, role: string, dto: { title?: string; prefixId?: string | null; categoryId?: string }) {
+    const thread = await this.prisma.thread.findUnique({ where: { id: threadId } });
+    if (!thread) throw new NotFoundException('Thread không tồn tại');
+    const isMod = role === 'ADMIN' || role === 'MODERATOR';
+    if (thread.authorId !== userId && !isMod) throw new ForbiddenException('Không có quyền');
+
+    const patch: any = {};
+    if (dto.title?.trim()) {
+      patch.title = dto.title.trim().slice(0, 255);
+      patch.slug = await this.generateUniqueSlug(dto.title.trim(), threadId);
+    }
+    if (dto.prefixId !== undefined) {
+      patch.prefixId = dto.prefixId || null;
+    }
+    if (dto.categoryId && isMod) {
+      const cat = await this.prisma.category.findUnique({ where: { id: dto.categoryId } });
+      if (!cat) throw new BadRequestException('Category không tồn tại');
+      patch.categoryId = dto.categoryId;
+    }
+
+    return this.prisma.thread.update({ where: { id: threadId }, data: patch });
+  }
+
   // ──────────────────────────────────────────────
   // POSTS
   // ──────────────────────────────────────────────
@@ -1224,10 +1247,10 @@ export class ForumService {
   // HELPERS
   // ──────────────────────────────────────────────
 
-  private async generateUniqueSlug(title: string): Promise<string> {
+  private async generateUniqueSlug(title: string, excludeId?: string): Promise<string> {
     let slug = slugify(title, { lower: true, strict: true, locale: 'vi' });
     const exists = await this.prisma.thread.findUnique({ where: { slug } });
-    if (exists) slug = `${slug}-${createId().slice(0, 6)}`;
+    if (exists && exists.id !== excludeId) slug = `${slug}-${createId().slice(0, 6)}`;
     return slug;
   }
 

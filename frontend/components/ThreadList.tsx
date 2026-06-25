@@ -171,9 +171,24 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                     {t.title}
                   </Link>
                 </div>
-                <div className="mt-0.5 text-xs text-ink-500">
-                  {t.author?.displayName || t.author?.username || 'Ẩn danh'} · {timeAgo(t.createdAt)}
-                  {t.category && <> · trong <span className="text-brand-600">{t.category.name}</span></>}
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
+                  <span>{t.author?.displayName || t.author?.username || 'Ẩn danh'} · {timeAgo(t.createdAt)}</span>
+                  {t.category && <span>trong <span className="text-brand-600">{t.category.name}</span></span>}
+                  {/* Page links for long threads (20 posts/page) */}
+                  {t.replyCount >= 20 && (() => {
+                    const pages = Math.ceil((t.replyCount + 1) / 20);
+                    const shown = pages > 5 ? [1, 2, 3, null, pages] : Array.from({ length: pages }, (_, i) => i + 1);
+                    return (
+                      <span className="flex items-center gap-0.5 text-[10px]">
+                        {shown.map((pg, i) => pg === null
+                          ? <span key={`sep-${i}`} className="text-ink-400">…</span>
+                          : <Link key={pg} href={`/thread?slug=${t.slug}&page=${pg}`} onClick={(e) => e.stopPropagation()}
+                              className="rounded px-1 py-0.5 font-medium text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800"
+                            >{pg}</Link>
+                        )}
+                      </span>
+                    );
+                  })()}
                 </div>
                 {t.tags && t.tags.length > 0 && (
                   <div className="mt-1 flex flex-wrap gap-1">

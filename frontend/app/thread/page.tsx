@@ -87,11 +87,13 @@ function PollCard({ threadId }: { threadId: string }) {
 }
 
 function ThreadView() {
-  const slug = useSearchParams().get('slug') || '';
+  const searchParams = useSearchParams();
+  const slug = searchParams.get('slug') || '';
+  const initialPage = Math.max(1, Number(searchParams.get('page') || 1));
   const { user } = useAuth();
   const [thread, setThread] = useState<Thread | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [postPage, setPostPage] = useState(1);
+  const [postPage, setPostPage] = useState(initialPage);
   const [postTotalPages, setPostTotalPages] = useState(1);
   const POST_LIMIT = 20;
   const [reply, setReply] = useState('');
@@ -163,7 +165,7 @@ function ThreadView() {
     try {
       const t = await api.get<Thread>(`/forum/threads/${slug}`);
       setThread(t);
-      const p = await api.get<Paginated<Post>>(`/forum/threads/${t.id}/posts?limit=${POST_LIMIT}&page=1`);
+      const p = await api.get<Paginated<Post>>(`/forum/threads/${t.id}/posts?limit=${POST_LIMIT}&page=${initialPage}`);
       setPosts(p.data);
       setPostTotalPages(p.meta?.totalPages ?? 1);
       api.get<{ total: number; users: any[] }>(`/community/threads/${t.id}/viewing`).then(setViewing).catch(() => {});

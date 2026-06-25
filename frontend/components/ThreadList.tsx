@@ -1,15 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Pin, Lock, HelpCircle, BarChart2, BookOpen, Lightbulb, CheckCircle2, SlidersHorizontal, MessageSquare } from 'lucide-react';
+import { Pin, Lock, HelpCircle, BarChart2, BookOpen, Lightbulb, CheckCircle2, SlidersHorizontal, MessageSquare, ChevronDown } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
 import { Avatar } from './Header';
 import { useAuth } from './AuthProvider';
-import type { Paginated, Thread, ThreadType } from '@/lib/types';
+import type { Paginated, Thread, ThreadPrefix, ThreadType } from '@/lib/types';
 
 const THREAD_TYPE_ICONS: Partial<Record<ThreadType, React.ReactNode>> = {
   QUESTION:   <HelpCircle  size={12} className="shrink-0 text-blue-500" />,
@@ -28,29 +28,81 @@ function formatLastPost(d?: string) {
   } catch { return ''; }
 }
 
-function timeAgo(d?: string) {
-  if (!d) return '';
-  try { return formatDistanceToNow(new Date(d), { addSuffix: true, locale: vi }); } catch { return ''; }
+function sinceDate(v: string): string | undefined {
+  if (v === 'all') return undefined;
+  const now = new Date();
+  if (v === 'today')  { now.setHours(0,0,0,0); return now.toISOString(); }
+  if (v === 'week')   { now.setDate(now.getDate() - now.getDay()); now.setHours(0,0,0,0); return now.toISOString(); }
+  if (v === 'month')  { return new Date(now.getFullYear(), now.getMonth(), 1).toISOString(); }
+  if (v === 'year')   { return new Date(now.getFullYear(), 0, 1).toISOString(); }
 }
-
-const SORT_OPTIONS = [
-  { value: 'lastPost', label: 'Bài mới nhất' },
-  { value: 'createdAt', label: 'Mới đăng nhất' },
-  { value: 'replyCount', label: 'Nhiều trả lời' },
-  { value: 'viewCount', label: 'Nhiều lượt xem' },
-];
 
 const POST_PER_PAGE = 20;
 
-export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hideHeader?: boolean } = {}) {
+const SINCE_OPTIONS = [
+  { value: 'all',   label: 'Tất cả thời gian' },
+  { value: 'today', label: 'Hôm nay' },
+  { value: 'week',  label: 'Tuần này' },
+  { value: 'month', label: 'Tháng này' },
+  { value: 'year',  label: 'Năm nay' },
+];
+
+const SORT_FIELDS = [
+  { value: 'lastPost',    label: 'Bài viết cuối' },
+  { value: 'createdAt',  label: 'Mới nhất' },
+  { value: 'replyCount', label: 'Nhiều trả lời' },
+  { value: 'viewCount',  label: 'Nhiều lượt xem' },
+];
+
+const SORT_DIRS = [
+  { value: 'desc', label: 'Giảm dần' },
+  { value: 'asc',  label: 'Tăng dần' },
+];
+
+interface FilterState {
+  prefixId: string;
+  startBy: string;
+  since: string;
+  sortBy: string;
+  sortDir: string;
+}
+
+const DEFAULT_FILTER: FilterState = {
+  prefixId: '',
+  startBy: '',
+  since: 'all',
+  sortBy: 'lastPost',
+  sortDir: 'desc',
+};
+
+export function ThreadList({
+  categoryId,
+  hideHeader,
+  markReadKey,
+}: {
+  categoryId?: string;
+  hideHeader?: boolean;
+  markReadKey?: number;
+} = {}) {
   const { user } = useAuth();
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState('lastPost');
-  const [sortOpen, setSortOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [form, setForm] = useState<FilterState>(DEFAULT_FILTER);
+  const [applied, setApplied] = useState<FilterState>(DEFAULT_FILTER);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const filterRef = useRef<HTMLDivElement>(null);
 
-  const params = new URLSearchParams({ limit: String(POST_PER_PAGE), sortBy, page: String(page) });
+  const { data: prefixes } = useSWR<ThreadPrefix[]>(
+    categoryId ? `/forum/categories/${categoryId}/prefixes` : null,
+    fetcher,
+  );
+
+  const params = new URLSearchParams({ limit: String(POST_PER_PAGE), page: String(page), sortBy: applied.sortBy, sortDir: applied.sortDir });
   if (categoryId) params.set('categoryId', categoryId);
+  if (applied.prefixId) params.set('prefixId', applied.prefixId);
+  if (applied.startBy.trim()) params.set('author', applied.startBy.trim());
+  const sd = sinceDate(applied.since);
+  if (sd) params.set('since', sd);
 
   const { data, error, isLoading } = useSWR<Paginated<Thread>>(`/forum/threads?${params}`, fetcher);
   const totalPages = data?.meta?.totalPages ?? 1;
@@ -61,49 +113,144 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
       .then(setUnreadCounts).catch(() => {});
   }, [user, data]);
 
-  const currentSort = SORT_OPTIONS.find((o) => o.value === sortBy) ?? SORT_OPTIONS[0];
+  // Clear unread when parent signals mark-all-read
+  useEffect(() => {
+    if (markReadKey !== undefined && markReadKey > 0) setUnreadCounts({});
+  }, [markReadKey]);
+
+  // Close filter on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  function applyFilter() {
+    setApplied({ ...form });
+    setPage(1);
+    setFilterOpen(false);
+  }
+
+  function resetFilter() {
+    setForm(DEFAULT_FILTER);
+    setApplied(DEFAULT_FILTER);
+    setPage(1);
+    setFilterOpen(false);
+  }
+
+  const isFiltered = applied.prefixId || applied.startBy || applied.since !== 'all' || applied.sortBy !== 'lastPost' || applied.sortDir !== 'desc';
 
   return (
     <section className="card overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
-        {!hideHeader && <h2 className="font-semibold">Bài viết mới nhất</h2>}
-        {hideHeader && <span />}
-        <div className="flex items-center gap-2">
-          {/* Sort filter */}
-          <div className="relative">
-            <button
-              onClick={() => setSortOpen((v) => !v)}
-              className="flex items-center gap-1.5 rounded-lg border border-ink-200 px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-50 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800"
-            >
-              <SlidersHorizontal size={13} />
-              {currentSort.label}
-              <span className="text-ink-400">▾</span>
-            </button>
-            {sortOpen && (
-              <div className="absolute right-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-xl border border-ink-200 bg-white py-1 shadow-card dark:border-ink-800 dark:bg-ink-900">
-                {SORT_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => { setSortBy(opt.value); setSortOpen(false); setPage(1); }}
-                    className={`flex w-full items-center px-4 py-2 text-sm hover:bg-ink-50 dark:hover:bg-ink-800 ${sortBy === opt.value ? 'font-semibold text-brand-600' : 'text-ink-700 dark:text-ink-300'}`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* Card header — hidden when embedded in category page */}
+      {!hideHeader && (
+        <div className="flex items-center justify-between border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
+          <h2 className="font-semibold">Bài viết mới nhất</h2>
           {user && (
             <button
               onClick={async () => { await api.post('/forum/read-progress/mark-all', {}); setUnreadCounts({}); }}
               className="rounded-lg px-2.5 py-1.5 text-xs text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800"
             >
-              Đọc hết
+              Đánh dấu đã đọc
             </button>
           )}
-          <Link href="/threads/new" className="btn-primary !py-1.5 !px-3 text-xs">+ Đăng bài</Link>
         </div>
+      )}
+
+      {/* Filter bar */}
+      <div className="relative flex items-center justify-end border-b border-ink-200/70 bg-[#2d4a6a] px-4 py-2 dark:border-ink-800 dark:bg-slate-800" ref={filterRef}>
+        <button
+          onClick={() => setFilterOpen((v) => !v)}
+          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium text-white/90 hover:text-white ${isFiltered ? 'text-amber-300 hover:text-amber-200' : ''}`}
+        >
+          <SlidersHorizontal size={14} />
+          Bộ lọc
+          <ChevronDown size={14} className={`transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {/* Filter panel */}
+        {filterOpen && (
+          <div className="absolute right-0 top-full z-30 w-80 overflow-hidden rounded-b-xl border border-t-0 border-ink-200 bg-white shadow-xl dark:border-ink-700 dark:bg-ink-900">
+            <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-800">
+              <span className="text-sm font-semibold text-ink-700 dark:text-ink-200">Chỉ hiển thị:</span>
+            </div>
+            <div className="space-y-3 p-4">
+              {/* Tiền tố */}
+              {categoryId && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-ink-500">Tiền tố:</label>
+                  <select
+                    value={form.prefixId}
+                    onChange={(e) => setForm((f) => ({ ...f, prefixId: e.target.value }))}
+                    className="input w-full text-sm"
+                  >
+                    <option value="">(Tất cả)</option>
+                    {prefixes?.map((p) => (
+                      <option key={p.id} value={p.id}>{p.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Bắt đầu bởi */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-ink-500">Bắt đầu bởi:</label>
+                <input
+                  type="text"
+                  placeholder="Tên thành viên…"
+                  value={form.startBy}
+                  onChange={(e) => setForm((f) => ({ ...f, startBy: e.target.value }))}
+                  className="input w-full text-sm"
+                />
+              </div>
+
+              {/* Cập nhật mới nhất */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-ink-500">Cập nhật mới nhất:</label>
+                <select
+                  value={form.since}
+                  onChange={(e) => setForm((f) => ({ ...f, since: e.target.value }))}
+                  className="input w-full text-sm"
+                >
+                  {SINCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+
+              {/* Phân loại */}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-ink-500">Phân loại:</label>
+                <div className="flex gap-2">
+                  <select
+                    value={form.sortBy}
+                    onChange={(e) => setForm((f) => ({ ...f, sortBy: e.target.value }))}
+                    className="input flex-1 text-sm"
+                  >
+                    {SORT_FIELDS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <select
+                    value={form.sortDir}
+                    onChange={(e) => setForm((f) => ({ ...f, sortDir: e.target.value }))}
+                    className="input w-28 text-sm"
+                  >
+                    {SORT_DIRS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center justify-between pt-1">
+                <button onClick={resetFilter} className="text-xs text-ink-400 hover:text-ink-600 dark:hover:text-ink-300">
+                  Đặt lại
+                </button>
+                <button onClick={applyFilter} className="btn-primary !py-1.5 !px-4 text-sm">
+                  LỌC
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {isLoading && <div className="p-8 text-center text-ink-500">Đang tải…</div>}
@@ -213,7 +360,7 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                 </div>
               </div>
 
-              {/* Reply count — right side on md+ */}
+              {/* Reply count — right side on sm+ */}
               <div className="hidden shrink-0 flex-col items-center gap-0.5 pt-1 sm:flex">
                 <span className="text-sm font-bold text-ink-700 dark:text-ink-200">{t.replyCount}</span>
                 <span className="text-[10px] text-ink-400">trả lời</span>

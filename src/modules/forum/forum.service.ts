@@ -495,7 +495,7 @@ export class ForumService {
           author: {
             select: {
               id: true, username: true, displayName: true,
-              avatar: true, role: true, postCount: true,
+              avatar: true, role: true, postCount: true, threadCount: true,
               reputationScore: true, createdAt: true,
               verifiedBadge: true, avatarFrameUrl: true, shopBadgeUrl: true, nameEffectCss: true,
               signature: true,
@@ -511,6 +511,17 @@ export class ForumService {
     // Tổng donate theo từng post
     const tipTotals = await this.tips.totalsForPosts(posts.map((p) => p.id));
 
+    // Tính level cho tác giả
+    const levelTiers = await this.prisma.levelTier.findMany({ orderBy: { minScore: 'asc' } });
+    const computeAuthorLevel = (a: { postCount: number; threadCount: number; reputationScore: number } | null) => {
+      if (!a || !levelTiers.length) return {};
+      const score = a.postCount + a.threadCount * 2 + a.reputationScore;
+      let current: (typeof levelTiers)[number] | null = null;
+      for (const t of levelTiers) { if (t.minScore <= score) current = t; }
+      if (!current) return {};
+      return { levelNum: current.level, levelName: current.name, levelIcon: current.icon, levelColor: current.color };
+    };
+
     // Gắn hidden sections + donate cho từng post
     const postsWithHidden = await Promise.all(
       posts.map(async (post) => {
@@ -518,7 +529,8 @@ export class ForumService {
           post.id, userId, threadId,
         );
         const tip = tipTotals[post.id] || { total: 0, count: 0 };
-        return { ...post, hiddenSections, tipTotal: tip.total, tipCount: tip.count };
+        const authorWithLevel = post.author ? { ...post.author, ...computeAuthorLevel(post.author) } : null;
+        return { ...post, author: authorWithLevel, hiddenSections, tipTotal: tip.total, tipCount: tip.count };
       }),
     );
 

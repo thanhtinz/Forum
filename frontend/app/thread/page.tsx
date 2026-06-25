@@ -625,7 +625,6 @@ function ThreadView() {
               )}
             </div>
           )}
-        </div>
         {/* Prefix + Tags */}
         {((thread as any).prefix && (thread as any).prefix !== 'NONE') || (thread as any).tags?.length > 0 ? (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">

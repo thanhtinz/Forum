@@ -14,6 +14,12 @@ export class ModAdminService {
     private readonly prison: PrisonService,
   ) {}
 
+  private async modLog(actorId: string, action: string, targetId: string, after?: object) {
+    await this.prisma.auditLog.create({
+      data: { actorId, action: `mod.${action}`, targetType: 'user', targetId, after },
+    }).catch(() => {});
+  }
+
   private async target(username: string, actorId: string) {
     const u = await this.prisma.user.findUnique({ where: { username }, select: { id: true, role: true, status: true } });
     if (!u) throw new NotFoundException('Không tìm thấy người dùng');
@@ -40,10 +46,12 @@ export class ModAdminService {
     await this.prisma.userWarning.create({ data: { userId: u.id, warnedById: actorId, reason: reason.trim(), points: Math.max(1, points) } });
     const active = await this.prisma.userWarning.count({ where: { userId: u.id, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] } });
     await this.notifications.notify(u.id, { type: 'SYSTEM', title: `Bạn nhận cảnh cáo (${active}/${WARN_BAN_THRESHOLD})`, body: reason.trim() }).catch(() => {});
+    await this.modLog(actorId, 'warn', u.id, { username, reason: reason.trim(), points, totalActive: active });
     // Tự ban khi đủ ngưỡng
     if (active >= WARN_BAN_THRESHOLD) {
       await this.prisma.user.update({ where: { id: u.id }, data: { status: 'BANNED', banReason: `Vượt ${WARN_BAN_THRESHOLD} cảnh cáo`, bannedUntil: null } });
       await this.notifications.notify(u.id, { type: 'SYSTEM', title: 'Tài khoản bị khóa', body: `Do nhận đủ ${WARN_BAN_THRESHOLD} cảnh cáo.` }).catch(() => {});
+      await this.modLog(actorId, 'auto_ban', u.id, { username, reason: `Auto-ban: ${WARN_BAN_THRESHOLD} cảnh cáo` });
       return { ok: true, warnings: active, autoBanned: true };
     }
     return { ok: true, warnings: active, autoBanned: false };
@@ -51,7 +59,10 @@ export class ModAdminService {
 
   // Mute = giam (prison) trong X phút
   async mute(actorId: string, username: string, minutes: number, reason: string) {
-    return this.prison.jail(actorId, username, minutes, reason, 0);
+    const result = await this.prison.jail(actorId, username, minutes, reason, 0);
+    const u = await this.prisma.user.findUnique({ where: { username }, select: { id: true } });
+    if (u) await this.modLog(actorId, 'mute', u.id, { username, minutes, reason });
+    return result;
   }
 
   async ban(actorId: string, username: string, reason: string, days?: number) {
@@ -59,6 +70,7 @@ export class ModAdminService {
     const until = days && days > 0 ? new Date(Date.now() + days * 86400000) : null;
     await this.prisma.user.update({ where: { id: u.id }, data: { status: 'BANNED', banReason: reason?.trim() || 'Vi phạm quy định', bannedUntil: until } });
     await this.notifications.notify(u.id, { type: 'SYSTEM', title: 'Tài khoản bị khóa', body: `${reason?.trim() || ''}${until ? ` (đến ${until.toLocaleString('vi-VN')})` : ' (vĩnh viễn)'}` }).catch(() => {});
+    await this.modLog(actorId, 'ban', u.id, { username, reason: reason?.trim(), days: days ?? null, until });
     return { ok: true, until };
   }
 
@@ -66,6 +78,24 @@ export class ModAdminService {
     const u = await this.prisma.user.findUnique({ where: { username }, select: { id: true } });
     if (!u) throw new NotFoundException('Không tìm thấy người dùng');
     await this.prisma.user.update({ where: { id: u.id }, data: { status: 'ACTIVE', banReason: null, bannedUntil: null } });
+    await this.modLog(actorId, 'unban', u.id, { username });
     return { ok: true };
+  }
+
+  // Xem nhật ký mod (lọc action có prefix "mod.")
+  async getModLogs(page = 1, limit = 50, actorId?: string) {
+    const where: any = { action: { startsWith: 'mod.' } };
+    if (actorId) where.actorId = actorId;
+    const [data, total] = await Promise.all([
+      this.prisma.auditLog.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { actor: { select: { id: true, username: true, displayName: true, avatar: true } } } as any,
+      }),
+      this.prisma.auditLog.count({ where }),
+    ]);
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
   }
 }

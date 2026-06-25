@@ -1381,4 +1381,49 @@ export class ForumService {
 
     return { bestAnswerId: postId };
   }
+
+  // ── Vote Up/Down ────────────────────────────────────────────
+  async votePost(postId: string, userId: string, value: 1 | -1) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, authorId: true, isDeleted: true },
+    });
+    if (!post || post.isDeleted) throw new Error('Bài viết không tồn tại');
+
+    const existing = await this.prisma.postVote.findUnique({
+      where: { postId_userId: { postId, userId } },
+    });
+
+    let delta = 0;
+    if (existing) {
+      if (existing.value === value) {
+        // Bấm lại cùng hướng → bỏ vote
+        await this.prisma.postVote.delete({ where: { postId_userId: { postId, userId } } });
+        delta = -value;
+      } else {
+        // Đổi hướng
+        await this.prisma.postVote.update({ where: { postId_userId: { postId, userId } }, data: { value } });
+        delta = value * 2;
+      }
+    } else {
+      await this.prisma.postVote.create({ data: { postId, userId, value } });
+      delta = value;
+    }
+
+    const updated = await this.prisma.post.update({
+      where: { id: postId },
+      data: { voteScore: { increment: delta } },
+      select: { voteScore: true },
+    });
+
+    return { voteScore: updated.voteScore, userVote: existing?.value === value ? 0 : value };
+  }
+
+  async getPostVote(postId: string, userId: string) {
+    const v = await this.prisma.postVote.findUnique({
+      where: { postId_userId: { postId, userId } },
+      select: { value: true },
+    });
+    return { userVote: v?.value ?? 0 };
+  }
 }

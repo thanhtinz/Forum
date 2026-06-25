@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { format, isToday, isYesterday } from 'date-fns';
@@ -90,7 +91,9 @@ export function ThreadList({
   const [form, setForm] = useState<FilterState>(DEFAULT_FILTER);
   const [applied, setApplied] = useState<FilterState>(DEFAULT_FILTER);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const filterRef = useRef<HTMLDivElement>(null);
+  const [panelPos, setPanelPos] = useState<{ top: number; right: number } | null>(null);
+  const filterBtnRef = useRef<HTMLButtonElement>(null);
+  const filterPanelRef = useRef<HTMLDivElement>(null);
 
   const { data: prefixes } = useSWR<ThreadPrefix[]>(
     categoryId ? `/forum/categories/${categoryId}/prefixes` : null,
@@ -120,12 +123,22 @@ export function ThreadList({
 
   // Close filter on outside click
   useEffect(() => {
+    if (!filterOpen) return;
     function handleClick(e: MouseEvent) {
-      if (filterRef.current && !filterRef.current.contains(e.target as Node)) setFilterOpen(false);
+      const t = e.target as Node;
+      if (!filterBtnRef.current?.contains(t) && !filterPanelRef.current?.contains(t)) setFilterOpen(false);
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, []);
+  }, [filterOpen]);
+
+  function openFilter() {
+    if (!filterOpen && filterBtnRef.current) {
+      const rect = filterBtnRef.current.getBoundingClientRect();
+      setPanelPos({ top: rect.bottom + 2, right: window.innerWidth - rect.right });
+    }
+    setFilterOpen((v) => !v);
+  }
 
   function applyFilter() {
     setApplied({ ...form });
@@ -160,98 +173,104 @@ export function ThreadList({
       )}
 
       {/* Filter bar */}
-      <div className="relative flex items-center justify-end border-b border-ink-200/70 bg-[#2d4a6a] px-4 py-2 dark:border-ink-800 dark:bg-slate-800" ref={filterRef}>
+      <div className="flex items-center justify-end border-b border-ink-200/70 bg-[#2d4a6a] px-4 py-2 dark:border-ink-800 dark:bg-slate-800">
         <button
-          onClick={() => setFilterOpen((v) => !v)}
-          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium text-white/90 hover:text-white ${isFiltered ? 'text-amber-300 hover:text-amber-200' : ''}`}
+          ref={filterBtnRef}
+          onClick={openFilter}
+          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium hover:text-white ${isFiltered ? 'text-amber-300' : 'text-white/90'}`}
         >
           <SlidersHorizontal size={14} />
           Bộ lọc
           <ChevronDown size={14} className={`transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
         </button>
+      </div>
 
-        {/* Filter panel */}
-        {filterOpen && (
-          <div className="absolute right-0 top-full z-30 w-80 overflow-hidden rounded-b-xl border border-t-0 border-ink-200 bg-white shadow-xl dark:border-ink-700 dark:bg-ink-900">
-            <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-800">
-              <span className="text-sm font-semibold text-ink-700 dark:text-ink-200">Chỉ hiển thị:</span>
-            </div>
-            <div className="space-y-3 p-4">
-              {/* Tiền tố */}
-              {categoryId && (
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-ink-500">Tiền tố:</label>
-                  <select
-                    value={form.prefixId}
-                    onChange={(e) => setForm((f) => ({ ...f, prefixId: e.target.value }))}
-                    className="input w-full text-sm"
-                  >
-                    <option value="">(Tất cả)</option>
-                    {prefixes?.map((p) => (
-                      <option key={p.id} value={p.id}>{p.label}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Bắt đầu bởi */}
+      {/* Filter panel — rendered as fixed portal to escape overflow:hidden */}
+      {filterOpen && panelPos && typeof window !== 'undefined' && createPortal(
+        <div
+          ref={filterPanelRef}
+          className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-xl dark:border-ink-700 dark:bg-ink-900"
+          style={{ position: 'fixed', top: panelPos.top, right: panelPos.right, width: 320, zIndex: 9999 }}
+        >
+          <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-800">
+            <span className="text-sm font-semibold text-ink-700 dark:text-ink-200">Chỉ hiển thị:</span>
+          </div>
+          <div className="space-y-3 p-4">
+            {/* Tiền tố */}
+            {categoryId && (
               <div>
-                <label className="mb-1 block text-xs font-medium text-ink-500">Bắt đầu bởi:</label>
-                <input
-                  type="text"
-                  placeholder="Tên thành viên…"
-                  value={form.startBy}
-                  onChange={(e) => setForm((f) => ({ ...f, startBy: e.target.value }))}
-                  className="input w-full text-sm"
-                />
-              </div>
-
-              {/* Cập nhật mới nhất */}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-ink-500">Cập nhật mới nhất:</label>
+                <label className="mb-1 block text-xs font-medium text-ink-500">Tiền tố:</label>
                 <select
-                  value={form.since}
-                  onChange={(e) => setForm((f) => ({ ...f, since: e.target.value }))}
+                  value={form.prefixId}
+                  onChange={(e) => setForm((f) => ({ ...f, prefixId: e.target.value }))}
                   className="input w-full text-sm"
                 >
-                  {SINCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  <option value="">(Tất cả)</option>
+                  {prefixes?.map((p) => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
                 </select>
               </div>
+            )}
 
-              {/* Phân loại */}
-              <div>
-                <label className="mb-1 block text-xs font-medium text-ink-500">Phân loại:</label>
-                <div className="flex gap-2">
-                  <select
-                    value={form.sortBy}
-                    onChange={(e) => setForm((f) => ({ ...f, sortBy: e.target.value }))}
-                    className="input flex-1 text-sm"
-                  >
-                    {SORT_FIELDS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                  <select
-                    value={form.sortDir}
-                    onChange={(e) => setForm((f) => ({ ...f, sortDir: e.target.value }))}
-                    className="input w-28 text-sm"
-                  >
-                    {SORT_DIRS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-                  </select>
-                </div>
-              </div>
+            {/* Bắt đầu bởi */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink-500">Bắt đầu bởi:</label>
+              <input
+                type="text"
+                placeholder="Tên thành viên…"
+                value={form.startBy}
+                onChange={(e) => setForm((f) => ({ ...f, startBy: e.target.value }))}
+                className="input w-full text-sm"
+              />
+            </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-between pt-1">
-                <button onClick={resetFilter} className="text-xs text-ink-400 hover:text-ink-600 dark:hover:text-ink-300">
-                  Đặt lại
-                </button>
-                <button onClick={applyFilter} className="btn-primary !py-1.5 !px-4 text-sm">
-                  LỌC
-                </button>
+            {/* Cập nhật mới nhất */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink-500">Cập nhật mới nhất:</label>
+              <select
+                value={form.since}
+                onChange={(e) => setForm((f) => ({ ...f, since: e.target.value }))}
+                className="input w-full text-sm"
+              >
+                {SINCE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+
+            {/* Phân loại */}
+            <div>
+              <label className="mb-1 block text-xs font-medium text-ink-500">Phân loại:</label>
+              <div className="flex gap-2">
+                <select
+                  value={form.sortBy}
+                  onChange={(e) => setForm((f) => ({ ...f, sortBy: e.target.value }))}
+                  className="input flex-1 text-sm"
+                >
+                  {SORT_FIELDS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <select
+                  value={form.sortDir}
+                  onChange={(e) => setForm((f) => ({ ...f, sortDir: e.target.value }))}
+                  className="input w-28 text-sm"
+                >
+                  {SORT_DIRS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
               </div>
             </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-1">
+              <button onClick={resetFilter} className="text-xs text-ink-400 hover:text-ink-600 dark:hover:text-ink-300">
+                Đặt lại
+              </button>
+              <button onClick={applyFilter} className="btn-primary !py-1.5 !px-4 text-sm">
+                LỌC
+              </button>
+            </div>
           </div>
-        )}
-      </div>
+        </div>,
+        document.body
+      )}
 
       {isLoading && <div className="p-8 text-center text-ink-500">Đang tải…</div>}
       {error && <div className="p-8 text-center text-red-500">Không tải được dữ liệu.</div>}

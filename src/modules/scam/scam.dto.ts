@@ -23,6 +23,8 @@ export class CreateScamCaseDto {
   @IsOptional() @IsString() @MaxLength(100) targetUid?: string;
   @IsOptional() @IsString() @MaxLength(150) targetEmail?: string;
   @IsOptional() @IsString() @MaxLength(40) targetPhone?: string;
+  @IsOptional() @IsString() @MaxLength(30) targetBankAccount?: string;
+  @IsOptional() @IsString() @MaxLength(100) targetBank?: string;
   @IsOptional() @IsString() @MaxLength(120) targetWallet?: string;
   @IsOptional() @IsString() @MaxLength(150) targetDomain?: string;
   @IsOptional() @IsString() @MaxLength(100) targetDiscord?: string;

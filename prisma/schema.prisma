@@ -849,6 +849,8 @@ model ScamCase {
   targetUid      String? @db.VarChar(100)
   targetEmail    String? @db.VarChar(150)
   targetPhone    String? @db.VarChar(40)
+  targetBankAccount String? @db.VarChar(30)  // số tài khoản ngân hàng
+  targetBank     String? @db.VarChar(100)    // tên ngân hàng
   targetWallet   String? @db.VarChar(120) // địa chỉ ví crypto
   targetDomain   String? @db.VarChar(150)
   targetDiscord  String? @db.VarChar(100)

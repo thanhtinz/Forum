@@ -91,6 +91,9 @@ function ThreadView() {
   const { user } = useAuth();
   const [thread, setThread] = useState<Thread | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [postPage, setPostPage] = useState(1);
+  const [postTotalPages, setPostTotalPages] = useState(1);
+  const POST_LIMIT = 20;
   const [reply, setReply] = useState('');
   const [replyDraft, setReplyDraft] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState('');
@@ -160,8 +163,9 @@ function ThreadView() {
     try {
       const t = await api.get<Thread>(`/forum/threads/${slug}`);
       setThread(t);
-      const p = await api.get<Paginated<Post>>(`/forum/threads/${t.id}/posts?limit=50`);
+      const p = await api.get<Paginated<Post>>(`/forum/threads/${t.id}/posts?limit=${POST_LIMIT}&page=1`);
       setPosts(p.data);
+      setPostTotalPages(p.meta?.totalPages ?? 1);
       api.get<{ total: number; users: any[] }>(`/community/threads/${t.id}/viewing`).then(setViewing).catch(() => {});
       if ((t as any).category?.id) {
         api.get<{ data: Thread[] }>(`/forum/threads?categoryId=${(t as any).category.id}&limit=6&sortBy=lastPost`)
@@ -187,6 +191,17 @@ function ThreadView() {
     }
   }
   useEffect(() => { if (slug) load(); /* eslint-disable-next-line */ }, [slug, user]);
+
+  async function loadPostPage(page: number) {
+    if (!thread) return;
+    try {
+      const p = await api.get<Paginated<Post>>(`/forum/threads/${thread.id}/posts?limit=${POST_LIMIT}&page=${page}`);
+      setPosts(p.data);
+      setPostTotalPages(p.meta?.totalPages ?? 1);
+      setPostPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e: any) { setErr(e.message); }
+  }
 
   function quotePost(p: Post) {
     const name = p.author?.username || 'ẩn danh';
@@ -236,8 +251,11 @@ function ThreadView() {
         const d = (ds || []).find((x) => x.threadId === thread.id);
         if (d) api.del(`/forum/drafts/${d.id}`).catch(() => {});
       }).catch(() => {});
-      const p = await api.get<Paginated<Post>>(`/forum/threads/${thread.id}/posts?limit=50`);
+      const lastPage = postTotalPages;
+      const p = await api.get<Paginated<Post>>(`/forum/threads/${thread.id}/posts?limit=${POST_LIMIT}&page=${lastPage}`);
       setPosts(p.data);
+      setPostTotalPages(p.meta?.totalPages ?? lastPage);
+      setPostPage(p.meta?.totalPages ?? lastPage);
     } catch (e: any) { setErr(e.message); }
   }
 
@@ -581,12 +599,27 @@ function ThreadView() {
 
       <AdBanner position="thread_top" className="h-20 sm:h-24" />
 
+      {/* Post pagination top */}
+      {postTotalPages > 1 && (
+        <div className="flex items-center justify-between rounded-xl border border-ink-200 bg-white px-4 py-2 dark:border-ink-800 dark:bg-ink-900">
+          <span className="text-xs text-ink-500">Trang {postPage} / {postTotalPages}</span>
+          <div className="flex gap-1">
+            {Array.from({ length: postTotalPages }, (_, i) => i + 1).map((pg) => (
+              <button key={pg} onClick={() => loadPostPage(pg)} disabled={pg === postPage}
+                className={`h-7 w-7 rounded text-xs font-medium ${pg === postPage ? 'bg-brand-600 text-white' : 'hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
+                {pg}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="space-y-3">
         {ordered.map((p, idx) => {
           const isFirst = (p as any).isFirstPost;
           const isBest = p.id === bestAnswerId;
           const depth = (p as any)._depth || 0;
-          const postNumber = idx + 1;
+          const postNumber = (postPage - 1) * POST_LIMIT + idx + 1;
           // Show "Bai moi" divider between last-read post and the next unread posts
           const showNewDivider = user && initialLastReadPostId && idx > 0 && ordered[idx - 1].id === initialLastReadPostId && p.id !== initialLastReadPostId;
           return (
@@ -749,6 +782,21 @@ function ThreadView() {
           );
         })}
       </div>
+
+      {/* Post pagination bottom */}
+      {postTotalPages > 1 && (
+        <div className="flex items-center justify-between rounded-xl border border-ink-200 bg-white px-4 py-2 dark:border-ink-800 dark:bg-ink-900">
+          <button onClick={() => loadPostPage(Math.max(1, postPage - 1))} disabled={postPage === 1}
+            className="rounded px-3 py-1 text-xs font-medium hover:bg-ink-100 disabled:opacity-40 dark:hover:bg-ink-800">
+            ← Trang trước
+          </button>
+          <span className="text-xs text-ink-500">Trang {postPage} / {postTotalPages}</span>
+          <button onClick={() => loadPostPage(Math.min(postTotalPages, postPage + 1))} disabled={postPage === postTotalPages}
+            className="rounded px-3 py-1 text-xs font-medium hover:bg-ink-100 disabled:opacity-40 dark:hover:bg-ink-800">
+            Trang sau →
+          </button>
+        </div>
+      )}
 
       <AdBanner position="thread_bottom" className="h-20 sm:h-24" />
 

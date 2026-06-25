@@ -118,6 +118,10 @@ function ThreadView() {
   const [modBusy, setModBusy] = useState(false);
   const [lastReadPostId, setLastReadPostId] = useState<string | null>(null);
 
+  // ── Thread title edit ──
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [titleBusy, setTitleBusy] = useState(false);
   // ── Post edit ──
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
@@ -275,6 +279,16 @@ function ThreadView() {
     try { await api.post(`/forum/threads/${thread.id}/move`, { categoryId: moveCategoryId }); setModModal(null); load(); }
     catch (e: any) { setErr(e.message); }
     finally { setModBusy(false); }
+  }
+  async function submitTitleEdit() {
+    if (!thread || !editTitle.trim()) return;
+    setTitleBusy(true);
+    try {
+      await api.patch(`/forum/threads/${thread.id}`, { title: editTitle.trim() });
+      setEditingTitle(false);
+      load();
+    } catch (e: any) { setErr(e.message); }
+    finally { setTitleBusy(false); }
   }
   async function toggleLock() {
     if (!thread) return;
@@ -536,7 +550,26 @@ function ThreadView() {
           {(thread as any).isHidden && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">Đã ẩn</span>}
         </div>
         <div className="mt-1 flex items-start justify-between gap-3">
-          <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
+          {editingTitle ? (
+            <div className="flex flex-1 items-center gap-2">
+              <input autoFocus className="input flex-1 text-lg font-bold" value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') submitTitleEdit(); if (e.key === 'Escape') setEditingTitle(false); }}
+              />
+              <button onClick={submitTitleEdit} disabled={titleBusy} className="btn-primary !py-1.5 !px-3 text-xs">{titleBusy ? '…' : 'Lưu'}</button>
+              <button onClick={() => setEditingTitle(false)} className="rounded-lg bg-ink-100 px-3 py-1.5 text-xs dark:bg-ink-800">Hủy</button>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2">
+              <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
+              {canManage && (
+                <button onClick={() => { setEditTitle(thread.title); setEditingTitle(true); }}
+                  className="mt-1 shrink-0 rounded p-1 text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800" title="Sửa tiêu đề">
+                  <Pencil size={14} />
+                </button>
+              )}
+            </div>
+          )}
           {user && (
             <div className="flex shrink-0 flex-wrap gap-2">
               <PingButton link={`/thread?slug=${thread.slug}`} defaultTitle={`Bạn được nhắc trong: ${thread.title}`}

@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -136,6 +137,8 @@ function ThreadView() {
   const [movePostTarget, setMovePostTarget] = useState('');
   const [movePostResults, setMovePostResults] = useState<Thread[]>([]);
   const [movePostBusy, setMovePostBusy] = useState(false);
+  // ── Similar threads ──
+  const [similarThreads, setSimilarThreads] = useState<Thread[]>([]);
   // ── Report modal ──
   const [reportModal, setReportModal] = useState<{ targetType: string; targetId: string; reportedUserId?: string } | null>(null);
   const [reportReason, setReportReason] = useState('');
@@ -160,6 +163,11 @@ function ThreadView() {
       const p = await api.get<Paginated<Post>>(`/forum/threads/${t.id}/posts?limit=50`);
       setPosts(p.data);
       api.get<{ total: number; users: any[] }>(`/community/threads/${t.id}/viewing`).then(setViewing).catch(() => {});
+      if ((t as any).category?.id) {
+        api.get<{ data: Thread[] }>(`/forum/threads?categoryId=${(t as any).category.id}&limit=6&sortBy=lastPost`)
+          .then((r) => setSimilarThreads((r.data || []).filter((x) => x.id !== t.id).slice(0, 5)))
+          .catch(() => {});
+      }
       if (user) {
         api.get<{ subscribed: boolean }>(`/forum/threads/${t.id}/subscription`).then((s) => setSubscribed(s.subscribed)).catch(() => {});
         api.get<{ bookmarked: boolean }>(`/forum/threads/${t.id}/bookmark`).then((b) => setBookmarked(b.bookmarked)).catch(() => {});
@@ -773,6 +781,29 @@ function ThreadView() {
           </p>
         )}
       </div>
+
+      {/* ── Bài viết liên quan ── */}
+      {similarThreads.length > 0 && (
+        <div className="card overflow-hidden">
+          <div className="border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
+            <h3 className="text-sm font-semibold">Bài viết liên quan</h3>
+          </div>
+          <ul className="divide-y divide-ink-200/70 dark:divide-ink-800">
+            {similarThreads.map((t) => (
+              <li key={t.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-ink-50/70 dark:hover:bg-ink-800/40">
+                <div className="min-w-0 flex-1">
+                  <Link href={`/thread?slug=${t.slug}`} className="truncate text-sm font-medium hover:text-brand-600">{t.title}</Link>
+                  <p className="mt-0.5 text-xs text-ink-500">{t.author?.displayName || t.author?.username}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-3 text-xs text-ink-400">
+                  <span className="flex items-center gap-1"><MessageCircle size={12} /> {t.replyCount}</span>
+                  <span className="flex items-center gap-1"><Eye size={12} /> {t.viewCount}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {modModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !modBusy && setModModal(null)}>

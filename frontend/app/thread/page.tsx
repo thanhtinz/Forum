@@ -665,33 +665,43 @@ function ThreadView() {
                   <div className="h-px flex-1 bg-blue-400" />
                 </div>
               )}
-            <article data-post-id={p.id} id={`post-${p.id}`} className={`card flex overflow-hidden ${depth > 0 ? 'border-l-4 border-brand-200 dark:border-brand-900' : ''} ${isBest ? 'ring-2 ring-emerald-400' : ''} ${splitMode && splitSelected.includes(p.id) ? 'ring-2 ring-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
+            <article data-post-id={p.id} id={`post-${p.id}`} className={`card overflow-hidden ${depth > 0 ? 'border-l-4 border-brand-200 dark:border-brand-900' : ''} ${isBest ? 'ring-2 ring-emerald-400' : ''} ${splitMode && splitSelected.includes(p.id) ? 'ring-2 ring-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
               {splitMode && !isFirst && (
-                <div className="flex items-center justify-center border-r border-ink-200/70 px-3 dark:border-ink-800">
+                <div className="flex items-center gap-2 border-b border-ink-200/70 px-3 py-2 dark:border-ink-800">
                   <input type="checkbox" checked={splitSelected.includes(p.id)} onChange={() => toggleSplitPost(p.id)}
                     className="h-4 w-4 cursor-pointer accent-orange-500" />
                 </div>
               )}
-              <div className="w-32 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50">
-                {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
-                <div className="mt-2 flex items-center justify-center gap-1 truncate text-sm font-semibold">
-                  <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
-                  {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-5 w-5 shrink-0 object-contain" />}
-                </div>
-                {p.author && (
-                  <div className="mt-1 flex flex-wrap justify-center gap-1">
-                    <UserBadges
-                      size="xs"
-                      badges={roleBadgesFromUser({
-                        role: (p.author as any).role,
-                        verifiedBadge: (p.author as any).verifiedBadge,
-                      })}
-                    />
+              {/* Mobile: horizontal author bar */}
+              <div className="flex items-center gap-3 border-b border-ink-200/70 bg-ink-50 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-900/50 sm:hidden">
+                {p.author && <Avatar user={p.author} size={36} />}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1 text-sm font-semibold">
+                    <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
+                    {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-4 w-4 shrink-0 object-contain" />}
                   </div>
-                )}
-                {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700">Chủ thớt</span>}
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                    {p.author && <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />}
+                    {isFirst && <span className="chip bg-brand-100 text-brand-700 text-[10px]">Chủ thớt</span>}
+                  </div>
+                </div>
               </div>
-              <div className="min-w-0 flex-1 p-4">
+              <div className="flex">
+                {/* sm+ vertical sidebar */}
+                <div className="hidden w-32 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50 sm:block">
+                  {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
+                  <div className="mt-2 flex items-center justify-center gap-1 truncate text-sm font-semibold">
+                    <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
+                    {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+                  </div>
+                  {p.author && (
+                    <div className="mt-1 flex flex-wrap justify-center gap-1">
+                      <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />
+                    </div>
+                  )}
+                  {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700">Chủ thớt</span>}
+                </div>
+                <div className="min-w-0 flex-1 p-4">
                 <div className="mb-2 flex items-center justify-between text-xs text-ink-500">
                   <span className="flex items-center gap-2">
                     {(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}
@@ -810,7 +820,8 @@ function ThreadView() {
                     </button>
                   )}
                 </div>
-              </div>
+              </div>{/* end flex-1 content */}
+              </div>{/* end flex row */}
             </article>
             </div>
           );

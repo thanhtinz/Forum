@@ -12,15 +12,6 @@ import {
 
 interface Paginated { data: ScamCaseCard[]; meta: { total: number; page: number; limit: number } }
 
-function StatBox({ label, value, color }: { label: string; value: string | number; color?: string }) {
-  return (
-    <div className="card p-3 text-center">
-      <div className={`text-2xl font-bold ${color || ''}`}>{value}</div>
-      <div className="text-xs text-ink-500">{label}</div>
-    </div>
-  );
-}
-
 function CaseRow({ c }: { c: ScamCaseCard }) {
   return (
     <Link href={`/scam/detail?id=${c.id}`} className="card block p-4 transition hover:border-brand-400">
@@ -49,7 +40,6 @@ function CaseRow({ c }: { c: ScamCaseCard }) {
 export default function ScamHomePage() {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
-  const [targetType, setTargetType] = useState('');
   const [reason, setReason] = useState('');
   const [page, setPage] = useState(1);
 
@@ -60,13 +50,11 @@ export default function ScamHomePage() {
 
   const params = new URLSearchParams();
   if (status) params.set('status', status);
-  if (targetType) params.set('targetType', targetType);
   if (reason) params.set('reason', reason);
   if (q.trim()) params.set('q', q.trim());
   params.set('page', String(page));
 
   const { data, isLoading } = useSWR<Paginated>(`/scam/cases?${params}`, fetcher);
-  const { data: stats } = useSWR<any>('/scam/public/stats', fetcher);
   const { data: top } = useSWR<any[]>('/scam/public/top?limit=8', fetcher);
   const { data: recent } = useSWR<ScamCaseCard[]>('/scam/public/recent?limit=6', fetcher);
   const { data: cleared } = useSWR<ScamCaseCard[]>('/scam/public/cleared?limit=6', fetcher);
@@ -94,17 +82,6 @@ export default function ScamHomePage() {
           <Link href="/scam/guide" className="btn-outline flex-1 justify-center sm:flex-none">Cẩm nang</Link>
         </div>
       </div>
-
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          <StatBox label="Tổng báo cáo" value={stats.totalReports} />
-          <StatBox label="Đã xác nhận scam" value={stats.confirmedScams} color="text-rose-600" />
-          <StatBox label="Nạn nhân" value={stats.victims} />
-          <StatBox label="Thiệt hại xác nhận" value={formatMoney(stats.totalDamage)} color="text-rose-600" />
-          <StatBox label="Đã minh oan" value={stats.clearedReports} color="text-sky-600" />
-        </div>
-      )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         {/* Danh sách + filter */}

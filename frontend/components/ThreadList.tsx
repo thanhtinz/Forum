@@ -75,7 +75,7 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
       {error && <div className="p-8 text-center text-red-500">Không tải được dữ liệu.</div>}
       {data && data.data.length === 0 && (
         <div className="p-10 text-center text-ink-500">
-          {unanswered ? 'Không có bài viết nào chưa được trả lời.' : 'Chưa có bài viết nào.'}
+          Chưa có bài viết nào.
         </div>
       )}
 

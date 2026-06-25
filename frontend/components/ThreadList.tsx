@@ -9,17 +9,7 @@ import { Pin, Lock, MessageCircle, Eye, ThumbsUp, Flame, Sparkles, CheckCircle2,
 import { api, fetcher } from '@/lib/api';
 import { Avatar } from './Header';
 import { useAuth } from './AuthProvider';
-import type { Paginated, Thread } from '@/lib/types';
-
-const PREFIX_STYLE: Record<string, string> = {
-  FREE: 'bg-emerald-100 text-emerald-700',
-  PAID: 'bg-amber-100 text-amber-700',
-  GUIDE: 'bg-sky-100 text-sky-700',
-  SHOWCASE: 'bg-fuchsia-100 text-fuchsia-700',
-  REQUEST: 'bg-orange-100 text-orange-700',
-  ANNOUNCEMENT: 'bg-red-100 text-red-700',
-  DISCUSSION: 'bg-ink-200 text-ink-700',
-};
+import type { Paginated, Thread, ThreadPrefix } from '@/lib/types';
 
 type SortBy = 'lastPost' | 'createdAt' | 'views' | 'likes' | 'replies';
 
@@ -36,32 +26,47 @@ function timeAgo(d?: string) {
   try { return formatDistanceToNow(new Date(d), { addSuffix: true, locale: vi }); } catch { return ''; }
 }
 
-function isHot(t: Thread) {
-  return t.replyCount >= 15 || t.viewCount >= 300;
-}
-
+function isHot(t: Thread) { return t.replyCount >= 15 || t.viewCount >= 300; }
 function isNew(t: Thread) {
   if (!t.createdAt) return false;
-  const age = Date.now() - new Date(t.createdAt).getTime();
-  return age < 48 * 60 * 60 * 1000;
+  return Date.now() - new Date(t.createdAt).getTime() < 48 * 60 * 60 * 1000;
 }
+
+function PrefixChip({ prefix }: { prefix: ThreadPrefix }) {
+  const bg = prefix.color || '#6366f1';
+  return (
+    <span className="chip text-[11px] font-semibold text-white" style={{ backgroundColor: bg }}>
+      {prefix.label}
+    </span>
+  );
+}
+
+const POST_PER_PAGE = 20;
 
 export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hideHeader?: boolean } = {}) {
   const { user } = useAuth();
   const [sort, setSort] = useState<SortBy>('lastPost');
   const [unanswered, setUnanswered] = useState(false);
-  const [prefix, setPrefix] = useState('');
+  const [prefixId, setPrefixId] = useState('');
   const [page, setPage] = useState(1);
+  const [prefixes, setPrefixes] = useState<ThreadPrefix[]>([]);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
-  const params = new URLSearchParams({ limit: '20', sortBy: sort, page: String(page) });
+  // Fetch category prefixes dynamically
+  useEffect(() => {
+    if (!categoryId) { setPrefixes([]); return; }
+    api.get<ThreadPrefix[]>(`/forum/categories/${categoryId}/prefixes`)
+      .then((p) => setPrefixes(p || []))
+      .catch(() => setPrefixes([]));
+  }, [categoryId]);
+
+  const params = new URLSearchParams({ limit: String(POST_PER_PAGE), sortBy: sort, page: String(page) });
   if (categoryId) params.set('categoryId', categoryId);
   if (unanswered) params.set('unanswered', '1');
-  if (prefix) params.set('prefix', prefix);
-  const url = `/forum/threads?${params.toString()}`;
+  if (prefixId) params.set('prefixId', prefixId);
 
-  const { data, error, isLoading } = useSWR<Paginated<Thread>>(url, fetcher);
+  const { data, error, isLoading } = useSWR<Paginated<Thread>>(`/forum/threads?${params}`, fetcher);
   const totalPages = data?.meta?.totalPages ?? 1;
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!user || !data?.data?.length) return;
@@ -79,12 +84,8 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
           <div className="flex items-center gap-2">
             {user && (
               <button
-                onClick={async () => {
-                  await api.post('/forum/read-progress/mark-all', {});
-                  setUnreadCounts({});
-                }}
+                onClick={async () => { await api.post('/forum/read-progress/mark-all', {}); setUnreadCounts({}); }}
                 className="rounded-lg px-2.5 py-1 text-xs text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800"
-                title="Đánh dấu tất cả đã đọc"
               >
                 Đánh dấu đã đọc
               </button>
@@ -98,39 +99,42 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
       <div className="flex flex-wrap items-center gap-2 border-b border-ink-200/70 px-4 py-2 dark:border-ink-800">
         <div className="flex flex-wrap items-center gap-1">
           {SORT_OPTIONS.map((o) => (
-            <button
-              key={o.value}
-              onClick={() => { setSort(o.value); setPage(1); }}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${sort === o.value ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}
-            >
+            <button key={o.value} onClick={() => { setSort(o.value); setPage(1); }}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${sort === o.value ? 'bg-brand-600 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
               {o.label}
             </button>
           ))}
         </div>
-        <div className="ml-auto flex flex-wrap items-center gap-1">
-          {Object.entries(PREFIX_STYLE).map(([key, cls]) => (
-            <button
-              key={key}
-              onClick={() => { setPrefix(prefix === key ? '' : key); setPage(1); }}
-              className={`chip text-[11px] transition ${prefix === key ? cls + ' ring-2 ring-offset-1 ring-brand-400' : cls + ' opacity-60 hover:opacity-100'}`}
-            >
-              {key}
+        {prefixes.length > 0 && (
+          <div className="ml-auto flex flex-wrap items-center gap-1">
+            {prefixes.map((p) => (
+              <button key={p.id} onClick={() => { setPrefixId(prefixId === p.id ? '' : p.id); setPage(1); }}
+                className={`chip text-[11px] font-semibold text-white transition ${prefixId === p.id ? 'ring-2 ring-offset-1 ring-white/60' : 'opacity-70 hover:opacity-100'}`}
+                style={{ backgroundColor: p.color || '#6366f1' }}>
+                {p.label}
+              </button>
+            ))}
+            <button onClick={() => { setUnanswered((v) => !v); setPage(1); }}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
+              Chưa trả lời
             </button>
-          ))}
-          <button
-            onClick={() => { setUnanswered((v) => !v); setPage(1); }}
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}
-          >
-            Chưa trả lời
-          </button>
-        </div>
+          </div>
+        )}
+        {prefixes.length === 0 && (
+          <div className="ml-auto">
+            <button onClick={() => { setUnanswered((v) => !v); setPage(1); }}
+              className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}>
+              Chưa trả lời
+            </button>
+          </div>
+        )}
       </div>
 
       {isLoading && <div className="p-8 text-center text-ink-500">Đang tải…</div>}
-      {error && <div className="p-8 text-center text-red-500">Không tải được dữ liệu (kiểm tra API).</div>}
+      {error && <div className="p-8 text-center text-red-500">Không tải được dữ liệu.</div>}
       {data && data.data.length === 0 && (
         <div className="p-10 text-center text-ink-500">
-          {unanswered ? 'Không có bài viết nào chưa được trả lời.' : 'Chưa có bài viết nào. Hãy là người đầu tiên!'}
+          {unanswered ? 'Không có bài viết nào chưa được trả lời.' : 'Chưa có bài viết nào.'}
         </div>
       )}
 
@@ -160,18 +164,14 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                       <Sparkles size={9} /> MỚI
                     </span>
                   )}
-                  {(t as any).bestAnswerId && (
+                  {t.bestAnswerId && (
                     <span className="inline-flex h-5 items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                       <CheckCircle2 size={9} /> Đã giải
                     </span>
                   )}
                   {t.isPinned && <Pin size={14} className="text-amber-500" />}
                   {t.isLocked && <Lock size={14} className="text-ink-400" />}
-                  {(t as any).prefixRef ? (
-                    <span className="chip text-white" style={{ backgroundColor: (t as any).prefixRef.color || '#6366f1' }}>{(t as any).prefixRef.label}</span>
-                  ) : t.prefix && t.prefix !== 'NONE' ? (
-                    <span className={`chip ${PREFIX_STYLE[t.prefix] || 'bg-ink-200 text-ink-700'}`}>{t.prefix}</span>
-                  ) : null}
+                  {t.prefixRef && <PrefixChip prefix={t.prefixRef} />}
                   <Link href={`/thread?slug=${t.slug}`} className={`truncate font-semibold hover:text-brand-600 dark:text-ink-100 ${hasUnread ? 'text-ink-900 dark:text-white' : 'text-ink-800'}`}>
                     {t.title}
                   </Link>
@@ -179,9 +179,8 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
                   <span>{t.author?.displayName || t.author?.username || 'Ẩn danh'} · {timeAgo(t.createdAt)}</span>
                   {t.category && <span>trong <span className="text-brand-600">{t.category.name}</span></span>}
-                  {/* Page links for long threads (20 posts/page) */}
-                  {t.replyCount >= 20 && (() => {
-                    const pages = Math.ceil((t.replyCount + 1) / 20);
+                  {t.replyCount >= POST_PER_PAGE && (() => {
+                    const pages = Math.ceil((t.replyCount + 1) / POST_PER_PAGE);
                     const shown = pages > 5 ? [1, 2, 3, null, pages] : Array.from({ length: pages }, (_, i) => i + 1);
                     return (
                       <span className="flex items-center gap-0.5 text-[10px]">
@@ -200,8 +199,7 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                     {t.tags.slice(0, 4).map((tt) => (
                       <Link key={tt.tag.id} href={`/tag?slug=${tt.tag.slug}`} onClick={(e) => e.stopPropagation()}
                         className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                        style={{ backgroundColor: tt.tag.color ? tt.tag.color + '22' : undefined, color: tt.tag.color || undefined }}
-                      >
+                        style={{ backgroundColor: tt.tag.color ? tt.tag.color + '22' : undefined, color: tt.tag.color || undefined }}>
                         #{tt.tag.name}
                       </Link>
                     ))}
@@ -214,10 +212,10 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                   <span className="flex items-center gap-1"><Eye size={13} /> {t.viewCount}</span>
                   <span className="flex items-center gap-1"><ThumbsUp size={13} /> {t.likeCount}</span>
                   {t.replyCount > 0 && (() => {
-                    const lastPage = Math.ceil((t.replyCount + 1) / 20);
+                    const lastPage = Math.ceil((t.replyCount + 1) / POST_PER_PAGE);
                     return (
                       <Link href={`/thread?slug=${t.slug}&page=${lastPage}`} onClick={(e) => e.stopPropagation()}
-                        title="Đến bài mới nhất" className="rounded p-0.5 hover:bg-ink-100 dark:hover:bg-ink-800 text-ink-400 hover:text-brand-600">
+                        title="Đến bài mới nhất" className="rounded p-0.5 text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800">
                         <ArrowRight size={13} />
                       </Link>
                     );
@@ -232,22 +230,15 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
         })}
       </ul>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between border-t border-ink-200/70 px-4 py-3 dark:border-ink-800">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1 || isLoading}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-800"
-          >
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1 || isLoading}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-800">
             ← Trước
           </button>
           <span className="text-xs text-ink-500">Trang {page} / {totalPages}</span>
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages || isLoading}
-            className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-800"
-          >
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages || isLoading}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-800">
             Sau →
           </button>
         </div>

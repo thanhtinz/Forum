@@ -6,19 +6,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import TipTapEditor from '@/components/TipTapEditor';
 import { Sparkles, Lock, FileClock, Trash2 } from 'lucide-react';
-
-const GATE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'LIKE_REQUIRED', label: 'Cần Like' },
-  { value: 'COMMENT_REQUIRED', label: 'Cần Bình luận' },
-  { value: 'LIKE_AND_COMMENT', label: 'Cần Like & Bình luận' },
-  { value: 'LIKE_OR_COMMENT', label: 'Like hoặc Bình luận' },
-  { value: 'GEM_PURCHASE', label: 'Mua bằng Gem' },
-  { value: 'LIKE_OR_GEM', label: 'Like hoặc Gem' },
-  { value: 'COMMENT_OR_GEM', label: 'Bình luận hoặc Gem' },
-];
-const needLike = (g: string) => ['LIKE_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'LIKE_OR_GEM'].includes(g);
-const needComment = (g: string) => ['COMMENT_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'COMMENT_OR_GEM'].includes(g);
-const needGem = (g: string) => ['GEM_PURCHASE', 'LIKE_OR_GEM', 'COMMENT_OR_GEM'].includes(g);
+import { GATE_OPTIONS, needLike, needComment, needGem } from '@/lib/constants';
 
 // Tạo body cho section nội dung ẩn theo gateType
 function buildHiddenBody(postId: string, content: string, gate: string, like: number, comment: number, gem: number, label?: string) {

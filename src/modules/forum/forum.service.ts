@@ -53,6 +53,7 @@ export interface CategoryDto {
 export interface ThreadListQuery {
   categoryId?: string;
   prefix?: ThreadPrefix;
+  prefixId?: string;
   tagId?: string;
   page?: number;
   limit?: number;
@@ -242,6 +243,7 @@ export class ForumService {
     if (query.authorId) where.authorId = query.authorId;
     if (query.categoryId) where.categoryId = query.categoryId;
     if (query.prefix) where.prefix = query.prefix;
+    if (query.prefixId) where.prefixId = query.prefixId;
     if (query.tagId) {
       where.tags = { some: { tagId: query.tagId } };
     }

@@ -7,7 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  ImagePlus, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X, LineChart, Film, BookOpen,
+  ImagePlus, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X, LineChart, Film, BookOpen, Mail,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -50,10 +50,12 @@ export function Header() {
   const [forumOpen, setForumOpen] = useState(false);
   const [dark, setDark] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [dmUnread, setDmUnread] = useState(0);
 
   useEffect(() => {
     if (!user) { setUnread(0); return; }
     api.get<{ meta: { unreadCount: number } }>('/notifications').then((r) => setUnread(r.meta.unreadCount)).catch(() => {});
+    api.get<{ count: number }>('/conversations/unread-count').then((r) => setDmUnread(r.count)).catch(() => {});
     const base = process.env.NEXT_PUBLIC_API_URL || '';
     const s = io(`${base}/notif`, { auth: { token: getToken() }, transports: ['websocket', 'polling'] });
     s.on('notification', () => setUnread((n) => n + 1));
@@ -139,6 +141,16 @@ export function Header() {
           <button onClick={toggleTheme} className="rounded p-2 text-white/75 hover:bg-white/10 hover:text-white" aria-label="theme">
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+          {user && (
+            <Link href="/conversations" className="relative rounded p-2 text-white/75 hover:bg-white/10 hover:text-white" aria-label="tin nhắn">
+              <Mail size={18} />
+              {dmUnread > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-violet-500 px-1 text-[10px] font-bold text-white">
+                  {dmUnread > 9 ? '9+' : dmUnread}
+                </span>
+              )}
+            </Link>
+          )}
           {user && (
             <Link href="/notifications" onClick={() => setUnread(0)} className="relative rounded p-2 text-white/75 hover:bg-white/10 hover:text-white" aria-label="notifications">
               <Bell size={18} />

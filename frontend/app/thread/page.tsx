@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2 } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Save, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -136,6 +136,11 @@ function ThreadView() {
   const [movePostTarget, setMovePostTarget] = useState('');
   const [movePostResults, setMovePostResults] = useState<Thread[]>([]);
   const [movePostBusy, setMovePostBusy] = useState(false);
+  // ── Report modal ──
+  const [reportModal, setReportModal] = useState<{ targetType: string; targetId: string; reportedUserId?: string } | null>(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportType, setReportType] = useState('SPAM');
+  const [reportBusy, setReportBusy] = useState(false);
   const [initialLastReadPostId, setInitialLastReadPostId] = useState<string | null>(null);
   const lastSentPostIdRef = useRef<string | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -434,6 +439,23 @@ function ThreadView() {
     } catch (e: any) { setErr(e.message); setMovePostBusy(false); }
   }
 
+  async function submitReport() {
+    if (!reportModal || !reportReason.trim()) return;
+    setReportBusy(true);
+    try {
+      await api.post('/moderation/reports', {
+        targetType: reportModal.targetType,
+        targetId: reportModal.targetId,
+        reportedUserId: reportModal.reportedUserId,
+        type: reportType,
+        reason: reportReason,
+      });
+      setReportModal(null); setReportReason(''); setReportType('SPAM');
+      alert('Đã gửi báo cáo. Cảm ơn bạn!');
+    } catch (e: any) { setErr(e.message); }
+    finally { setReportBusy(false); }
+  }
+
   if (loading) return <div className="p-10 text-center text-ink-500">Đang tải…</div>;
   if (err && !thread) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!thread) return null;
@@ -527,6 +549,7 @@ function ThreadView() {
           const isFirst = (p as any).isFirstPost;
           const isBest = p.id === bestAnswerId;
           const depth = (p as any)._depth || 0;
+          const postNumber = idx + 1;
           // Show "Bai moi" divider between last-read post and the next unread posts
           const showNewDivider = user && initialLastReadPostId && idx > 0 && ordered[idx - 1].id === initialLastReadPostId && p.id !== initialLastReadPostId;
           return (
@@ -566,7 +589,10 @@ function ThreadView() {
               </div>
               <div className="min-w-0 flex-1 p-4">
                 <div className="mb-2 flex items-center justify-between text-xs text-ink-500">
-                  <span>{(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}</span>
+                  <span className="flex items-center gap-2">
+                    {(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}
+                    <a href={`#post-${p.id}`} className="text-ink-400 hover:text-brand-600">#{postNumber}</a>
+                  </span>
                   {isBest && <span className="flex items-center gap-1 font-medium text-emerald-600"><Award size={14} /> Câu trả lời hay nhất</span>}
                 </div>
                 {editingPostId === p.id ? (
@@ -585,6 +611,12 @@ function ThreadView() {
                   <button onClick={() => loadHistory(p.id)} className="mt-1 flex items-center gap-1 text-[11px] text-ink-400 hover:text-ink-600">
                     <History size={11} /> Đã sửa {(p as any).editCount} lần
                   </button>
+                )}
+                {/* Signature */}
+                {(p.author as any)?.signature && editingPostId !== p.id && (
+                  <div className="mt-3 border-t border-ink-200/60 pt-2 text-xs text-ink-400 italic dark:border-ink-800/60 whitespace-pre-line">
+                    {(p.author as any).signature}
+                  </div>
                 )}
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
                   {/* Các reaction đã có, gom theo emoji */}
@@ -633,6 +665,12 @@ function ThreadView() {
                   {user && p.author && user.id !== p.author.id && (
                     <button onClick={() => donate(p.id)} className="flex items-center gap-1 text-fuchsia-600 hover:text-fuchsia-700">
                       <Gem size={14} /> Donate
+                    </button>
+                  )}
+                  {/* Report button — logged in non-author */}
+                  {user && p.author && user.id !== p.author.id && (
+                    <button onClick={() => { setReportModal({ targetType: 'post', targetId: p.id, reportedUserId: p.author?.id }); setReportReason(''); setReportType('SPAM'); }} className="flex items-center gap-1 text-ink-500 hover:text-red-500">
+                      <Flag size={13} /> Báo cáo
                     </button>
                   )}
                   {/* Edit button — author or mod */}
@@ -796,6 +834,28 @@ function ThreadView() {
             <button onClick={cancelSplit} className="shrink-0 rounded-lg bg-ink-100 px-3 py-1.5 text-sm hover:bg-ink-200 dark:bg-ink-800">
               Hủy
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Report Modal ── */}
+      {reportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !reportBusy && setReportModal(null)}>
+          <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="flex items-center gap-2 font-semibold text-red-600"><Flag size={16} /> Báo cáo nội dung</h3>
+            <select className="input mt-3 w-full" value={reportType} onChange={(e) => setReportType(e.target.value)}>
+              <option value="SPAM">Spam</option>
+              <option value="HARASSMENT">Quấy rối / Đe dọa</option>
+              <option value="INAPPROPRIATE">Nội dung không phù hợp</option>
+              <option value="COPYRIGHT">Vi phạm bản quyền</option>
+              <option value="MISINFORMATION">Thông tin sai lệch</option>
+              <option value="OTHER">Khác</option>
+            </select>
+            <textarea className="input mt-2 w-full" rows={3} placeholder="Mô tả vi phạm (tối thiểu 5 ký tự)…" value={reportReason} onChange={(e) => setReportReason(e.target.value)} />
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setReportModal(null)} className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Hủy</button>
+              <button onClick={submitReport} disabled={reportBusy || reportReason.trim().length < 5} className="rounded-lg bg-red-500 px-4 py-1.5 text-sm text-white disabled:opacity-50">{reportBusy ? 'Đang gửi…' : 'Gửi báo cáo'}</button>
+            </div>
           </div>
         </div>
       )}

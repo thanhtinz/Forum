@@ -442,6 +442,7 @@ export class ForumService {
               avatar: true, role: true, postCount: true,
               reputationScore: true, createdAt: true,
               verifiedBadge: true, avatarFrameUrl: true, shopBadgeUrl: true, nameEffectCss: true,
+              signature: true,
             },
           },
           reactions: { select: { emoji: true, userId: true } },

@@ -187,6 +187,7 @@ model User {
   showBirthday     Boolean          @default(false) // có hiển thị ngày sinh công khai không
   birthdayFormat   String           @default("full") // full | day_month | month_year | year — phần ngày sinh hiển thị công khai
   location         String?          @db.VarChar(120) // nơi ở
+  signature        String?          @db.Text // chữ ký hiển thị dưới bài viết
   shopBadgeUrl     String? // ảnh badge cửa hàng đang đeo (denormalized)
   nameEffectCss    String?          @db.Text // CSS hiệu ứng tên đang dùng (denormalized)
   chatBubbleUrl    String? // ảnh nền bong bóng chat đang dùng (denormalized)
@@ -277,6 +278,8 @@ model User {
   postEditHistory      PostEditHistory[]
   threadReplyBans      ThreadReplyBan[]   @relation("ThreadReplyBanUser")
   threadReplyBansMod   ThreadReplyBan[]   @relation("ThreadReplyBanMod")
+  conversationParticipants ConversationParticipant[]
+  sentMessages         ConversationMessage[] @relation("SentMessages")
 
   @@index([email])
   @@index([username])
@@ -3031,4 +3034,52 @@ model CreatorApplication {
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status])
+}
+
+// ============================================================
+// CONVERSATIONS (Tin nhắn riêng / Private Messaging)
+// ============================================================
+
+model Conversation {
+  id           String    @id @default(cuid())
+  title        String?   @db.VarChar(200)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastMessageAt DateTime @default(now())
+
+  participants ConversationParticipant[]
+  messages     ConversationMessage[]
+
+  @@index([lastMessageAt])
+}
+
+model ConversationParticipant {
+  id             String    @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime  @default(now())
+  lastReadAt     DateTime  @default(now())
+  isDeleted      Boolean   @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, isDeleted])
+}
+
+model ConversationMessage {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String    @db.Text
+  contentRaw     String    @db.Text
+  isDeleted      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
 }

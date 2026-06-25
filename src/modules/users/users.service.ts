@@ -40,7 +40,7 @@ export class UsersService {
   async getMyAbout(userId: string) {
     const u = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { displayName: true, bio: true, location: true, birthday: true, showBirthday: true, birthdayFormat: true },
+      select: { displayName: true, bio: true, location: true, birthday: true, showBirthday: true, birthdayFormat: true, signature: true },
     });
     if (!u) throw new NotFoundException('Người dùng không tồn tại');
     return u;
@@ -48,7 +48,7 @@ export class UsersService {
 
   async updateProfile(
     userId: string,
-    data: { displayName?: string; bio?: string; avatar?: string; location?: string; birthday?: string | null; showBirthday?: boolean; birthdayFormat?: string },
+    data: { displayName?: string; bio?: string; avatar?: string; location?: string; birthday?: string | null; showBirthday?: boolean; birthdayFormat?: string; signature?: string },
   ) {
     const patch: any = {};
     if (data.displayName !== undefined) patch.displayName = data.displayName?.trim() || null;
@@ -58,10 +58,11 @@ export class UsersService {
     if (data.showBirthday !== undefined) patch.showBirthday = !!data.showBirthday;
     if (data.birthdayFormat !== undefined && ['full', 'day_month', 'month_year', 'year'].includes(data.birthdayFormat)) patch.birthdayFormat = data.birthdayFormat;
     if (data.birthday !== undefined) patch.birthday = data.birthday ? new Date(data.birthday) : null;
+    if (data.signature !== undefined) patch.signature = data.signature?.slice(0, 500) || null;
     return this.prisma.user.update({
       where: { id: userId },
       data: patch,
-      select: { id: true, username: true, displayName: true, bio: true, avatar: true, location: true, birthday: true, showBirthday: true, birthdayFormat: true },
+      select: { id: true, username: true, displayName: true, bio: true, avatar: true, location: true, birthday: true, showBirthday: true, birthdayFormat: true, signature: true },
     });
   }
 

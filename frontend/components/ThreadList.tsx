@@ -50,11 +50,13 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
   const { user } = useAuth();
   const [sort, setSort] = useState<SortBy>('lastPost');
   const [unanswered, setUnanswered] = useState(false);
+  const [prefix, setPrefix] = useState('');
   const [page, setPage] = useState(1);
 
   const params = new URLSearchParams({ limit: '20', sortBy: sort, page: String(page) });
   if (categoryId) params.set('categoryId', categoryId);
   if (unanswered) params.set('unanswered', '1');
+  if (prefix) params.set('prefix', prefix);
   const url = `/forum/threads?${params.toString()}`;
 
   const { data, error, isLoading } = useSWR<Paginated<Thread>>(url, fetcher);
@@ -80,7 +82,7 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
 
       {/* Sort / Filter bar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-ink-200/70 px-4 py-2 dark:border-ink-800">
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {SORT_OPTIONS.map((o) => (
             <button
               key={o.value}
@@ -91,12 +93,21 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
             </button>
           ))}
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex flex-wrap items-center gap-1">
+          {Object.entries(PREFIX_STYLE).map(([key, cls]) => (
+            <button
+              key={key}
+              onClick={() => { setPrefix(prefix === key ? '' : key); setPage(1); }}
+              className={`chip text-[11px] transition ${prefix === key ? cls + ' ring-2 ring-offset-1 ring-brand-400' : cls + ' opacity-60 hover:opacity-100'}`}
+            >
+              {key}
+            </button>
+          ))}
           <button
             onClick={() => { setUnanswered((v) => !v); setPage(1); }}
             className={`rounded-full px-2.5 py-0.5 text-xs font-medium transition ${unanswered ? 'bg-amber-500 text-white' : 'text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800'}`}
           >
-            Chưa có trả lời
+            Chưa trả lời
           </button>
         </div>
       </div>
@@ -150,6 +161,18 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
                   {t.author?.displayName || t.author?.username || 'Ẩn danh'} · {timeAgo(t.createdAt)}
                   {t.category && <> · trong <span className="text-brand-600">{t.category.name}</span></>}
                 </div>
+                {t.tags && t.tags.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {t.tags.slice(0, 4).map((tt) => (
+                      <Link key={tt.tag.id} href={`/tag?slug=${tt.tag.slug}`} onClick={(e) => e.stopPropagation()}
+                        className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                        style={{ backgroundColor: tt.tag.color ? tt.tag.color + '22' : undefined, color: tt.tag.color || undefined }}
+                      >
+                        #{tt.tag.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="hidden shrink-0 flex-col items-end gap-0.5 text-xs text-ink-500 sm:flex">
                 <div className="flex items-center gap-3">

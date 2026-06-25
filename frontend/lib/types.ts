@@ -30,6 +30,7 @@ export interface Thread {
   lastPostAt?: string;
   author?: ThreadAuthor;
   category?: { id: string; name: string; slug: string };
+  tags?: { tag: { id: string; name: string; slug: string; color?: string | null } }[];
 }
 
 export interface Post {

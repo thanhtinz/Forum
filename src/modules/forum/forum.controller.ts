@@ -171,6 +171,7 @@ export class ForumController {
   listThreads(
     @Query('categoryId') categoryId?: string,
     @Query('prefix') prefix?: ThreadPrefix,
+    @Query('prefixId') prefixId?: string,
     @Query('tagId') tagId?: string,
     @Query('page') page = 1,
     @Query('limit') limit = 20,
@@ -180,7 +181,7 @@ export class ForumController {
     @Query('authorId') authorId?: string,
   ) {
     return this.forum.getThreadList({
-      categoryId, prefix, tagId, page: Number(page), limit: Number(limit), sortBy,
+      categoryId, prefix, prefixId, tagId, page: Number(page), limit: Number(limit), sortBy,
       unanswered: unanswered === '1' || unanswered === 'true',
       q, authorId,
     });

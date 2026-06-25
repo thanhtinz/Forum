@@ -16,11 +16,19 @@ export interface ThreadAuthor {
   avatar?: string | null;
 }
 
+export interface ThreadPrefix {
+  id: string;
+  label: string;
+  color?: string | null;
+}
+
 export interface Thread {
   id: string;
   title: string;
   slug: string;
   prefix?: string;
+  prefixRef?: ThreadPrefix | null;
+  bestAnswerId?: string | null;
   isPinned?: boolean;
   isLocked?: boolean;
   viewCount: number;

@@ -16,8 +16,7 @@ import { interceptExternalLink } from '@/lib/externalLink';
 import TipTapEditor from '@/components/TipTapEditor';
 import { PingButton } from '@/components/PingButton';
 import { AdBanner } from '@/components/AdBanner';
-
-const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🎉'];
+import { GATE_OPTIONS, needLike, needComment, needGem, REACTIONS, REPORT_TYPES } from '@/lib/constants';
 
 // Ước tính thời gian đọc (200 từ/phút) từ HTML các bài viết
 function readingTime(posts: { content: string }[]): number {
@@ -864,17 +863,11 @@ function ThreadView() {
                     <input className="input" placeholder="Nhãn (tuỳ chọn)" value={hidden.label} onChange={(e) => setHidden({ ...hidden, label: e.target.value })} />
                     <div className="flex flex-wrap items-center gap-2">
                       <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
-                        <option value="LIKE_REQUIRED">Cần Like</option>
-                        <option value="COMMENT_REQUIRED">Cần Bình luận</option>
-                        <option value="LIKE_AND_COMMENT">Cần Like & Bình luận</option>
-                        <option value="LIKE_OR_COMMENT">Like hoặc Bình luận</option>
-                        <option value="GEM_PURCHASE">Mua bằng Gem</option>
-                        <option value="LIKE_OR_GEM">Like hoặc Gem</option>
-                        <option value="COMMENT_OR_GEM">Bình luận hoặc Gem</option>
+                        {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
                       </select>
-                      {['LIKE_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'LIKE_OR_GEM'].includes(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
-                      {['COMMENT_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'COMMENT_OR_GEM'].includes(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
-                      {['GEM_PURCHASE', 'LIKE_OR_GEM', 'COMMENT_OR_GEM'].includes(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
+                      {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
+                      {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
+                      {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
                     </div>
                   </div>
                 )}
@@ -987,12 +980,7 @@ function ThreadView() {
           <div className="card w-full max-w-md p-5" onClick={(e) => e.stopPropagation()}>
             <h3 className="flex items-center gap-2 font-semibold text-red-600"><Flag size={16} /> Báo cáo nội dung</h3>
             <select className="input mt-3 w-full" value={reportType} onChange={(e) => setReportType(e.target.value)}>
-              <option value="SPAM">Spam</option>
-              <option value="HARASSMENT">Quấy rối / Đe dọa</option>
-              <option value="INAPPROPRIATE">Nội dung không phù hợp</option>
-              <option value="COPYRIGHT">Vi phạm bản quyền</option>
-              <option value="MISINFORMATION">Thông tin sai lệch</option>
-              <option value="OTHER">Khác</option>
+              {REPORT_TYPES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
             </select>
             <textarea className="input mt-2 w-full" rows={3} placeholder="Mô tả vi phạm (tối thiểu 5 ký tự)…" value={reportReason} onChange={(e) => setReportReason(e.target.value)} />
             <div className="mt-4 flex justify-end gap-2">

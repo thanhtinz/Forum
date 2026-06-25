@@ -675,6 +675,18 @@ function ThreadView() {
         </div>
       )}
 
+      {/* "Bình luận" header on pages after page 1 (no first post present) */}
+      {postPage > 1 && thread.replyCount > 0 && (
+        <div className="flex items-center gap-3 py-1">
+          <div className="h-px flex-1 bg-ink-200 dark:bg-ink-700" />
+          <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-500 dark:text-ink-400">
+            <MessageCircle size={15} />
+            {thread.replyCount} bình luận
+          </span>
+          <div className="h-px flex-1 bg-ink-200 dark:bg-ink-700" />
+        </div>
+      )}
+
       <div className="space-y-3">
         {ordered.map((p, idx) => {
           const isFirst = (p as any).isFirstPost;
@@ -683,8 +695,20 @@ function ThreadView() {
           const postNumber = (postPage - 1) * POST_LIMIT + idx + 1;
           // Show "Bai moi" divider between last-read post and the next unread posts
           const showNewDivider = user && initialLastReadPostId && idx > 0 && ordered[idx - 1].id === initialLastReadPostId && p.id !== initialLastReadPostId;
+          // Show "Bình luận" section header before the first reply
+          const showCommentDivider = !isFirst && idx > 0 && (ordered[idx - 1] as any).isFirstPost;
           return (
             <div key={p.id} style={depth > 0 ? { marginLeft: `${Math.min(depth, 4) * 1.5}rem` } : undefined}>
+              {showCommentDivider && (
+                <div className="flex items-center gap-3 py-1">
+                  <div className="h-px flex-1 bg-ink-200 dark:bg-ink-700" />
+                  <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-500 dark:text-ink-400">
+                    <MessageCircle size={15} />
+                    {thread.replyCount} bình luận
+                  </span>
+                  <div className="h-px flex-1 bg-ink-200 dark:bg-ink-700" />
+                </div>
+              )}
               {showNewDivider && (
                 <div className="my-3 flex items-center gap-3">
                   <div className="h-px flex-1 bg-blue-400" />

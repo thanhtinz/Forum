@@ -87,7 +87,7 @@ export function ThreadList({ categoryId, hideHeader }: { categoryId?: string; hi
 
           return (
             <li key={t.id}
-              className="grid items-center gap-0 hover:bg-ink-50/60 dark:hover:bg-ink-800/30 sm:grid"
+              className="block hover:bg-ink-50/60 dark:hover:bg-ink-800/30 sm:grid sm:items-center"
               style={{ gridTemplateColumns: '1fr 72px 72px 176px' }}>
 
               {/* ── Left: title + meta ── */}

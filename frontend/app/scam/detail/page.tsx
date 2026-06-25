@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { api, fetcher, ApiError } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { CommentBox, CommentContent } from '@/components/CommentBox';
 import {
   TARGET_TYPES, REASONS, STATUSES, STATUS_COLOR, RISK, RISK_COLOR, EVIDENCE_KINDS,
   targetLabel, formatMoney,
@@ -27,7 +28,6 @@ function ScamDetail() {
   const { data: c, mutate, isLoading } = useSWR<any>(id ? `/scam/cases/${id}` : null, fetcher);
   const { data: profile } = useSWR<any>(c?.reportedUserId ? `/scam/scammer?userId=${c.reportedUserId}` : null, fetcher);
 
-  const [comment, setComment] = useState('');
   const [appealText, setAppealText] = useState('');
   const [showAppeal, setShowAppeal] = useState(false);
   const [err, setErr] = useState('');
@@ -41,10 +41,9 @@ function ScamDetail() {
   }
   const needLogin = () => { if (!user) { setErr('Đăng nhập để thực hiện'); return true; } return false; };
 
-  async function sendComment() {
-    if (needLogin() || !comment.trim()) return;
-    await act(() => api.post(`/scam/cases/${id}/comment`, { body: comment.trim() }));
-    setComment('');
+  async function sendComment(content: string) {
+    if (needLogin()) return;
+    await act(() => api.post(`/scam/cases/${id}/comment`, { body: content.trim() }));
   }
   async function sendAppeal() {
     if (needLogin() || appealText.trim().length < 10) { setErr('Lý do khiếu nại tối thiểu 10 ký tự'); return; }
@@ -155,15 +154,16 @@ function ScamDetail() {
                   {['ADMIN', 'MODERATOR'].includes(cm.author?.role) && <span className="chip bg-brand-100 text-brand-700 dark:bg-brand-900/40">BQT</span>}
                   <span className="text-xs text-ink-400">{new Date(cm.createdAt).toLocaleString('vi-VN')}</span>
                 </div>
-                <p className="mt-0.5 whitespace-pre-wrap">{cm.body}</p>
+                <CommentContent text={cm.body} />
               </div>
             </div>
           ))}
           {!c.comments?.length && <p className="text-sm text-ink-500">Chưa có bình luận.</p>}
         </div>
-        <div className="mt-3 flex gap-2">
-          <input className="input flex-1" placeholder="Viết bình luận…" value={comment} onChange={(e) => setComment(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendComment()} />
-          <button className="btn-primary" onClick={sendComment}>Gửi</button>
+        <div className="mt-3">
+          {user
+            ? <CommentBox user={user} onSubmit={sendComment} />
+            : <p className="text-sm text-ink-500"><a href="/login" className="text-brand-600 hover:underline">Đăng nhập</a> để bình luận.</p>}
         </div>
       </div>
 

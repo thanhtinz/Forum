@@ -811,7 +811,14 @@ function ThreadView() {
                     {(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}
                     <a href={`#post-${p.id}`} className="text-ink-400 hover:text-brand-600">#{postNumber}</a>
                   </span>
-                  {isBest && <span className="flex items-center gap-1 font-medium text-emerald-600"><Award size={14} /> Câu trả lời hay nhất</span>}
+                  <div className="flex items-center gap-2">
+                    {isBest && <span className="flex items-center gap-1 font-medium text-emerald-600"><Award size={14} /> Câu trả lời hay nhất</span>}
+                    {canManage && !isFirst && (
+                      <button onClick={() => markBest(p.id)} className={`flex items-center gap-1 ${isBest ? 'text-emerald-600 hover:text-emerald-700' : 'text-ink-400 hover:text-emerald-600'}`}>
+                        <Award size={13} /> {isBest ? 'Bỏ chọn' : 'Hay nhất'}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {editingPostId === p.id ? (
                   <div className="space-y-2">
@@ -851,9 +858,6 @@ function ThreadView() {
                       <>
                         <button onClick={() => deletePostAction(p.id)} className="flex items-center gap-1 text-red-400 hover:text-red-600">
                           <Trash2 size={13} /> Xoá
-                        </button>
-                        <button onClick={() => { setMovePostModal(p.id); setMovePostTarget(''); setMovePostResults([]); }} className="flex items-center gap-1 text-ink-400 hover:text-amber-600">
-                          <Shuffle size={13} /> Chuyển bài
                         </button>
                         {p.author && p.author.id !== user.id && (
                           <>
@@ -932,12 +936,6 @@ function ThreadView() {
                     {user && p.author && (user.id === p.author.id || isMod) && !thread.isLocked && editingPostId !== p.id && (
                       <button onClick={() => startEdit(p)} className="flex items-center gap-1 text-ink-500 hover:text-blue-600">
                         <Pencil size={13} /> Sửa
-                      </button>
-                    )}
-                    {/* Best answer */}
-                    {canManage && !isFirst && (
-                      <button onClick={() => markBest(p.id)} className={`flex items-center gap-1 ${isBest ? 'text-emerald-600' : 'text-ink-500 hover:text-emerald-600'}`}>
-                        <Award size={13} /> {isBest ? 'Bỏ chọn' : 'Hay nhất'}
                       </button>
                     )}
                   </div>

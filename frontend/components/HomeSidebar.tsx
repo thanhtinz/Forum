@@ -65,13 +65,13 @@ export function HomeSidebar() {
       </div>
 
       {/* Bài viết nổi bật */}
-      {trending?.data?.length > 0 && (
+      {(trending?.data?.length ?? 0) > 0 && (
         <div className="card p-4">
           <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-ink-500">
             <Flame size={15} className="text-red-500" /> Nổi bật
           </h3>
           <div className="flex flex-col gap-1">
-            {trending.data.map((t) => (
+            {trending?.data?.map((t) => (
               <Link key={t.id} href={`/thread?slug=${t.slug}`} className="group rounded-lg p-1.5 hover:bg-ink-100 dark:hover:bg-ink-800">
                 <p className="truncate text-sm font-medium group-hover:text-brand-600">{t.title}</p>
                 <div className="mt-0.5 flex items-center gap-2 text-[11px] text-ink-400">

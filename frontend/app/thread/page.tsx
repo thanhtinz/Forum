@@ -559,8 +559,8 @@ function ThreadView() {
               <button onClick={() => setEditingTitle(false)} className="rounded-lg bg-ink-100 px-3 py-1.5 text-xs dark:bg-ink-800">Hủy</button>
             </div>
           ) : (
-            <div className="flex items-start gap-2">
-              <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
+            <div className="flex min-w-0 flex-1 items-start gap-2">
+              <h1 className="min-w-0 text-xl font-bold sm:text-2xl">{thread.title}</h1>
               {canManage && (
                 <button onClick={() => { setEditTitle(thread.title); setEditingTitle(true); }}
                   className="mt-1 shrink-0 rounded p-1 text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800" title="Sửa tiêu đề">

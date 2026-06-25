@@ -498,11 +498,22 @@ function ThreadView() {
     <div className="space-y-4">
       {copyToast && <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg bg-ink-900 px-4 py-2 text-sm text-white shadow-card dark:bg-white dark:text-ink-900">{copyToast}</div>}
       <div className="card p-5">
+        {/* Breadcrumb */}
+        <nav className="mb-2 flex flex-wrap items-center gap-1 text-xs text-ink-400">
+          <Link href="/" className="hover:text-brand-600">Trang chủ</Link>
+          {thread.category && (
+            <>
+              <span>/</span>
+              <Link href={`/category?id=${(thread as any).category.id}`} className="hover:text-brand-600 text-brand-500">{thread.category.name}</Link>
+            </>
+          )}
+          <span>/</span>
+          <span className="truncate max-w-[200px] text-ink-500">{thread.title}</span>
+        </nav>
         <div className="flex items-center gap-2 text-sm text-ink-500">
           {thread.isPinned && <Pin size={14} className="text-amber-500" />}
           {thread.isLocked && <Lock size={14} />}
           {(thread as any).isHidden && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">Đã ẩn</span>}
-          {thread.category && <span className="text-brand-600">{thread.category.name}</span>}
         </div>
         <div className="mt-1 flex items-start justify-between gap-3">
           <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>

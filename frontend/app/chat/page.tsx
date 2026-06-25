@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { Hash, Users, User, Plus, ArrowLeft, Reply, Trash2, Eraser, Pin, PinOff } from 'lucide-react';
+import { Users, User, Plus, ArrowLeft, Reply, Trash2, Eraser, Pin, PinOff } from 'lucide-react';
 import { api, getToken } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import { Avatar } from '@/components/Header';
@@ -13,7 +13,7 @@ import { NewChat } from '@/components/chat/NewChat';
 
 function ChannelIcon({ c }: { c: ChatChannel }) {
   if (c.avatarUrl) return <img src={c.avatarUrl} alt="" className="h-9 w-9 rounded-full object-cover" />;
-  const Icon = c.type === 'GLOBAL' ? Hash : c.type === 'GROUP' || c.type === 'GUILD' ? Users : User;
+  const Icon = c.type === 'GROUP' || c.type === 'GUILD' ? Users : User;
   return <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-100 text-brand-600 dark:bg-ink-800"><Icon size={18} /></span>;
 }
 
@@ -36,8 +36,9 @@ export default function ChatPage() {
 
   const loadChannels = useCallback(async () => {
     const list = await api.get<ChatChannel[]>('/chat/channels');
-    setChannels(list);
-    return list;
+    const filtered = list.filter((c) => c.type !== 'GLOBAL');
+    setChannels(filtered);
+    return filtered;
   }, []);
 
   // Kết nối socket 1 lần
@@ -46,7 +47,7 @@ export default function ChatPage() {
     let socket: Socket;
     (async () => {
       const list = await loadChannels();
-      const first = list.find((c) => c.type === 'GLOBAL') || list[0];
+      const first = list[0];
       if (first) setActiveId(first.id);
 
       const base = process.env.NEXT_PUBLIC_API_URL || '';
@@ -103,7 +104,7 @@ export default function ChatPage() {
     await api.post(`/chat/channels/${id}/pin`, { pinned: pin }).catch(() => {});
     setChannels((prev) => {
       const next = prev.map((c) => c.id === id ? { ...c, pinned: pin } : c);
-      const rank = (c: ChatChannel) => (c.type === 'GLOBAL' ? 0 : c.pinned ? 1 : 2);
+      const rank = (c: ChatChannel) => (c.pinned ? 0 : 1);
       return [...next].sort((a, b) => rank(a) - rank(b) || (b.lastMessage?.createdAt || '').localeCompare(a.lastMessage?.createdAt || ''));
     });
   }
@@ -133,20 +134,18 @@ export default function ChatPage() {
                 <ChannelIcon c={c} />
                 <div className="min-w-0 flex-1">
                   <p className="flex items-center gap-1 truncate text-sm font-medium">
-                    {c.type === 'GLOBAL' && <Pin size={12} className="shrink-0 text-amber-500" />}
+                    {c.pinned && <Pin size={12} className="shrink-0 text-amber-500" />}
                     <span className="truncate">{c.title}</span>
                   </p>
                   <p className="truncate text-xs text-ink-400">
-                    {c.lastMessage ? (c.lastMessage.type === 'TEXT' ? c.lastMessage.content : `[${c.lastMessage.type.toLowerCase()}]`) : (c.type === 'GROUP' ? `${c.memberCount} thành viên` : 'Bắt đầu trò chuyện')}
+                    {c.lastMessage ? (c.lastMessage.type === 'TEXT' ? c.lastMessage.content : `[${c.lastMessage.type.toLowerCase()}]`) : (c.type === 'GROUP' || c.type === 'GUILD' ? `${c.memberCount} thành viên` : 'Bắt đầu trò chuyện')}
                   </p>
                 </div>
               </button>
-              {c.type !== 'GLOBAL' && (
-                <button onClick={() => togglePinChannel(c.id, !c.pinned)} title={c.pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
-                  className={`shrink-0 p-1 ${c.pinned ? 'text-amber-500' : 'text-ink-300 sm:opacity-0 sm:group-hover:opacity-100'}`}>
-                  {c.pinned ? <PinOff size={15} /> : <Pin size={15} />}
-                </button>
-              )}
+              <button onClick={() => togglePinChannel(c.id, !c.pinned)} title={c.pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
+                className={`shrink-0 p-1 ${c.pinned ? 'text-amber-500' : 'text-ink-300 sm:opacity-0 sm:group-hover:opacity-100'}`}>
+                {c.pinned ? <PinOff size={15} /> : <Pin size={15} />}
+              </button>
             </div>
           ))}
         </div>

@@ -193,6 +193,7 @@ function MovieWatch() {
   const [asc, setAsc] = useState(false);
   const [comments, setComments] = useState<CommentT[]>([]);
   const [text, setText] = useState('');
+  const [focused, setFocused] = useState(false);
   const [posting, setPosting] = useState(false);
   const [picker, setPicker] = useState(false);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
@@ -440,20 +441,32 @@ function MovieWatch() {
       <div className="card p-5">
         <h2 className="mb-3 font-semibold">Bình luận ({comments.length})</h2>
         {user ? (
-          <form onSubmit={submitComment} className="relative mb-4 flex items-start gap-2">
+          <form onSubmit={submitComment} className="mb-4 flex items-start gap-2">
             <Avatar user={user} size={32} />
-            <div className="relative flex-1">
-              <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="Viết bình luận về tập này…" className="input w-full resize-none pr-9" />
-              <button type="button" onClick={() => setPicker((v) => !v)} className={`absolute right-2 top-2 rounded p-1 hover:bg-ink-100 dark:hover:bg-ink-800 ${picker ? 'text-brand-600' : 'text-ink-400'}`} title="Emoji / Sticker"><Smile size={18} /></button>
-              {picker && (
-                <EmojiStickerPicker
-                  onEmoji={(e) => setText((t) => t + e)}
-                  onSticker={(url) => { setPicker(false); postComment(url); }}
-                  onClose={() => setPicker(false)}
-                />
+            <div className="flex-1">
+              <div className="relative">
+                <textarea value={text} onChange={(e) => setText(e.target.value)} onFocus={() => setFocused(true)}
+                  rows={focused ? 3 : 2} placeholder="Viết bình luận về tập này…" className="input w-full resize-none pr-9" />
+                <button type="button" onClick={() => setPicker((v) => !v)} className={`absolute right-2 top-2 rounded p-1 hover:bg-ink-100 dark:hover:bg-ink-800 ${picker ? 'text-brand-600' : 'text-ink-400'}`} title="Emoji / Sticker"><Smile size={18} /></button>
+                {picker && (
+                  <EmojiStickerPicker
+                    onEmoji={(e) => setText((t) => t + e)}
+                    onSticker={(url) => { setPicker(false); postComment(url); }}
+                    onClose={() => setPicker(false)}
+                  />
+                )}
+              </div>
+              {focused && (
+                <div className="mt-2 flex justify-end gap-2">
+                  <button type="button" onClick={() => { setText(''); setFocused(false); setPicker(false); }}
+                    className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Huỷ</button>
+                  <button type="submit" disabled={posting || !text.trim()}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-1.5 text-sm text-white hover:bg-brand-700 disabled:opacity-50">
+                    <Send size={14} /> Gửi
+                  </button>
+                </div>
               )}
             </div>
-            <button type="submit" disabled={posting || !text.trim()} className="flex h-10 w-10 shrink-0 items-center justify-center self-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:opacity-50"><Send size={18} /></button>
           </form>
         ) : (
           <p className="mb-4 text-sm text-ink-500"><a href="/login" className="text-brand-600 hover:underline">Đăng nhập</a> để bình luận.</p>

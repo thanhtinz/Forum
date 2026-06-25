@@ -100,7 +100,7 @@ function ProfileView() {
               <Ban size={15} /> {blocked ? 'Bỏ chặn' : 'Chặn'}
             </button>
             <a
-              href={`/conversations?new=${profile.username}`}
+              href="/chat"
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-100 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300"
             >
               <Mail size={15} /> Nhắn tin riêng

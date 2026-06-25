@@ -548,7 +548,7 @@ function ThreadView() {
           {thread.isLocked && <Lock size={14} />}
           {(thread as any).isHidden && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">Đã ẩn</span>}
         </div>
-        <div className="mt-1 flex items-start justify-between gap-3">
+        <div className="mt-1 flex flex-col gap-2">
           {editingTitle ? (
             <div className="flex flex-1 items-center gap-2">
               <input autoFocus className="input flex-1 text-lg font-bold" value={editTitle}
@@ -559,8 +559,8 @@ function ThreadView() {
               <button onClick={() => setEditingTitle(false)} className="rounded-lg bg-ink-100 px-3 py-1.5 text-xs dark:bg-ink-800">Hủy</button>
             </div>
           ) : (
-            <div className="flex min-w-0 flex-1 items-start gap-2">
-              <h1 className="min-w-0 text-xl font-bold sm:text-2xl">{thread.title}</h1>
+            <div className="flex min-w-0 items-start gap-2">
+              <h1 className="text-xl font-bold sm:text-2xl">{thread.title}</h1>
               {canManage && (
                 <button onClick={() => { setEditTitle(thread.title); setEditingTitle(true); }}
                   className="mt-1 shrink-0 rounded p-1 text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800" title="Sửa tiêu đề">
@@ -570,7 +570,7 @@ function ThreadView() {
             </div>
           )}
           {user && (
-            <div className="flex shrink-0 flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2">
               <PingButton link={`/thread?slug=${thread.slug}`} defaultTitle={`Bạn được nhắc trong: ${thread.title}`}
                 className="flex items-center gap-1 rounded-lg bg-ink-100 px-3 py-1.5 text-xs font-medium hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700" />
               <button onClick={toggleBookmark} title="Lưu chủ đề"

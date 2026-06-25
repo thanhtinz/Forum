@@ -149,7 +149,6 @@ export function CategoryList() {
               style={{ borderLeftColor: accentColor, borderLeftWidth: 3 }}
             >
               <div className="flex items-center gap-2">
-                {sec.parent && <CategoryIcon c={sec.parent} size={24} />}
                 <h2 className="text-sm font-bold text-ink-700 dark:text-ink-200">{sec.parent?.name || 'Danh mục khác'}</h2>
                 {sec.parent?.description && (
                   <span className="hidden text-xs text-ink-400 md:block">— {sec.parent.description}</span>

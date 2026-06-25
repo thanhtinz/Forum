@@ -135,7 +135,10 @@ export function ThreadList({
   function openFilter() {
     if (!filterOpen && filterBtnRef.current) {
       const rect = filterBtnRef.current.getBoundingClientRect();
-      setPanelPos({ top: rect.bottom + 2, right: window.innerWidth - rect.right });
+      setPanelPos({
+        top: rect.bottom + window.scrollY + 2,
+        right: window.innerWidth - rect.right,
+      });
     }
     setFilterOpen((v) => !v);
   }
@@ -190,7 +193,7 @@ export function ThreadList({
         <div
           ref={filterPanelRef}
           className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-xl dark:border-ink-700 dark:bg-ink-900"
-          style={{ position: 'fixed', top: panelPos.top, right: panelPos.right, width: 320, zIndex: 9999 }}
+          style={{ position: 'absolute', top: panelPos.top, right: panelPos.right, width: 320, zIndex: 9999 }}
         >
           <div className="border-b border-ink-100 bg-ink-50 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-800">
             <span className="text-sm font-semibold text-ink-700 dark:text-ink-200">Chỉ hiển thị:</span>

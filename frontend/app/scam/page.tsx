@@ -114,10 +114,6 @@ export default function ScamHomePage() {
               <option value="">Tất cả trạng thái</option>
               {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <select className="input w-auto" value={targetType} onChange={(e) => { setTargetType(e.target.value); setPage(1); }}>
-              <option value="">Mọi đối tượng</option>
-              {Object.entries(TARGET_TYPES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
             <select className="input w-auto" value={reason} onChange={(e) => { setReason(e.target.value); setPage(1); }}>
               <option value="">Mọi lý do</option>
               {Object.entries(REASONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}

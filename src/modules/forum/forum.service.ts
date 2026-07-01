@@ -545,9 +545,14 @@ export class ForumService {
         select: {
           id: true, username: true, displayName: true,
           avatar: true, role: true, postCount: true, threadCount: true,
-          reputationScore: true, createdAt: true,
+          reputationScore: true, createdAt: true, gemBalance: true,
           verifiedBadge: true, avatarFrameUrl: true, shopBadgeUrl: true, nameEffectCss: true,
           signature: true,
+          badges: {
+            take: 10,
+            orderBy: { awardedAt: 'desc' as const },
+            select: { badge: { select: { name: true, icon: true, color: true } } },
+          },
         },
       },
       reactions: { select: { emoji: true, userId: true } },
@@ -596,7 +601,10 @@ export class ForumService {
       posts.map(async (post) => {
         const hiddenSections = await this.hiddenContent.getSectionsForPost(post.id, userId, threadId);
         const tip = tipTotals[post.id] || { total: 0, count: 0 };
-        const authorWithLevel = post.author ? { ...post.author, ...computeAuthorLevel(post.author) } : null;
+        const earnedBadges = (post.author?.badges || []).map((ub: any) => ub.badge);
+        const authorWithLevel = post.author
+          ? { ...post.author, ...computeAuthorLevel(post.author), badges: earnedBadges }
+          : null;
         return { ...post, author: authorWithLevel, hiddenSections, tipTotal: tip.total, tipCount: tip.count };
       }),
     );

@@ -1,0 +1,803 @@
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma, MediaType } from '@prisma/client';
+import slugify from 'slugify';
+import { createId } from '@paralleldrive/cuid2';
+import { Readable } from 'stream';
+import type { Response } from 'express';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AttachmentService } from '../media/attachment.service';
+
+const ANILIST_URL = 'https://graphql.anilist.co';
+const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36';
+// Tuỳ chọn giới hạn host được proxy (phòng lạm dụng) — đặt qua env, phân cách bằng dấu phẩy
+const HLS_ALLOW = (process.env.ANIME_HLS_ALLOW || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+
+@Injectable()
+export class AnimeService {
+  constructor(private readonly prisma: PrismaService, private readonly attachment: AttachmentService) {}
+
+  private async uniqueSlug(base: string): Promise<string> {
+    const root = slugify(base || '', { lower: true, strict: true }).slice(0, 180) || createId().slice(0, 8);
+    let slug = root;
+    for (let i = 2; await this.prisma.mediaWork.findUnique({ where: { slug } }); i++) slug = `${root}-${i}`;
+    return slug;
+  }
+
+  // ───────── CÔNG KHAI ─────────
+  listGenres(type?: string) {
+    return this.prisma.genre.findMany({
+      where: type ? { types: { has: type } } : undefined,
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async createGenre(name: string, types: string[]) {
+    const slug = slugify(name.trim(), { lower: true, strict: true });
+    return this.prisma.genre.upsert({
+      where: { slug },
+      update: { name: name.trim(), types },
+      create: { name: name.trim(), slug, types },
+    });
+  }
+
+  async deleteGenre(id: string) {
+    return this.prisma.genre.delete({ where: { id } });
+  }
+
+  async list(q: {
+    type?: string; genre?: string; studio?: string; status?: string; format?: string;
+    season?: string; year?: string; search?: string; sort?: string;
+    page?: number; limit?: number;
+  }) {
+    const take = Math.min(Math.max(Number(q.limit) || 24, 1), 60);
+    const skip = (Math.max(Number(q.page) || 1, 1) - 1) * take;
+    // Only show admin works (no creatorId) or published creator works
+    const where: Prisma.MediaWorkWhereInput = {
+      OR: [{ creatorId: null }, { publishStatus: 'PUBLISHED' }],
+    };
+    if (q.type) {
+      const types = q.type.split(',').map((t) => t.trim()).filter((t) => ['ANIME', 'MANGA', 'MANHUA', 'DONGHUA'].includes(t)) as MediaType[];
+      if (types.length === 1) where.type = types[0];
+      else if (types.length > 1) where.type = { in: types };
+    }
+    if (q.format) {
+      const fmts = q.format.split(',').map((f) => f.trim()).filter(Boolean);
+      if (fmts.length === 1) where.format = { equals: fmts[0], mode: 'insensitive' };
+      else if (fmts.length > 1) where.format = { in: fmts, mode: 'insensitive' } as any;
+    }
+    if (q.status) where.status = q.status as any;
+    if (q.season) where.season = q.season as any;
+    if (q.year) where.seasonYear = Number(q.year) || undefined;
+    if (q.genre) where.genres = { some: { slug: q.genre } };
+    if (q.studio) where.studios = { some: { slug: q.studio } };
+    if (q.search?.trim()) {
+      const s = q.search.trim();
+      where.OR = [
+        { title: { contains: s, mode: 'insensitive' } },
+        { titleEnglish: { contains: s, mode: 'insensitive' } },
+        { titleNative: { contains: s, mode: 'insensitive' } },
+        { synonyms: { has: s } },
+      ];
+    }
+    const orderBy: Prisma.MediaWorkOrderByWithRelationInput =
+      q.sort === 'score' ? { avgScore: 'desc' }
+      : q.sort === 'newest' ? { createdAt: 'desc' }
+      : q.sort === 'views' ? { viewCount: 'desc' }
+      : { popularity: 'desc' };
+
+    const [data, total] = await Promise.all([
+      this.prisma.mediaWork.findMany({
+        where, orderBy, skip, take,
+        select: {
+          id: true, type: true, slug: true, title: true, titleEnglish: true, coverUrl: true,
+          format: true, status: true, season: true, seasonYear: true, episodes: true, chapters: true,
+          avgScore: true, ratingCount: true, favoriteCount: true,
+          genres: { select: { name: true, slug: true } },
+          episodeList: { orderBy: { number: 'desc' }, take: 1, select: { number: true } },
+        },
+      }),
+      this.prisma.mediaWork.count({ where }),
+    ]);
+    return { data, meta: { total, page: Number(q.page) || 1, limit: take } };
+  }
+
+  async getMediaComments(slug: string) {
+    const media = await this.prisma.mediaWork.findUnique({
+      where: { slug },
+      select: {
+        episodeList: {
+          select: {
+            id: true, number: true,
+            comments: {
+              where: { parentId: null },
+              orderBy: { createdAt: 'desc' },
+              take: 300,
+              include: {
+                author: { select: { id: true, username: true, displayName: true, avatar: true } },
+                replies: {
+                  orderBy: { createdAt: 'asc' },
+                  include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!media) throw new NotFoundException('Không tìm thấy');
+    const all = media.episodeList.flatMap((ep) =>
+      ep.comments.map((c) => ({ ...c, episodeNumber: ep.number, episodeId: ep.id })),
+    );
+    all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return all;
+  }
+
+  async getBySlug(slug: string) {
+    const work = await this.prisma.mediaWork.findUnique({
+      where: { slug },
+      include: {
+        genres: { select: { name: true, slug: true } },
+        studios: { select: { name: true, slug: true } },
+        staff: { include: { person: { select: { id: true, slug: true, name: true, imageUrl: true } } } },
+        characters: {
+          orderBy: { role: 'asc' },
+          include: {
+            character: { select: { id: true, slug: true, name: true, imageUrl: true } },
+            voiceActor: { select: { id: true, slug: true, name: true, imageUrl: true } },
+          },
+        },
+        relatedFrom: { include: { to: { select: { slug: true, title: true, coverUrl: true, type: true, format: true } } } },
+        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, part: true, kind: true, title: true, thumbnail: true, duration: true } },
+        chapterList: { where: { OR: [{ uploaderId: null }, { chapterStatus: 'PUBLISHED' }] }, orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, createdAt: true } },
+      },
+    });
+    if (!work) throw new NotFoundException('Không tìm thấy');
+    if (work.creatorId && (work as any).publishStatus !== 'PUBLISHED')
+      throw new NotFoundException('Series chưa được xuất bản');
+    await this.prisma.mediaWork.update({ where: { id: work.id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
+    return work;
+  }
+
+  // ───────── ADMIN ─────────
+  adminList(q: { type?: string; search?: string; page?: number }) {
+    return this.list({ ...q, sort: 'newest', limit: 40 });
+  }
+
+  async uploadAdminCover(id: string, file: any) {
+    if (!file) throw new BadRequestException('Thiếu file');
+    const result = await this.attachment.upload(file.buffer, file.originalname, file.mimetype, 'anime-covers');
+    return this.prisma.mediaWork.update({ where: { id }, data: { coverUrl: result.url }, select: { id: true, coverUrl: true } });
+  }
+
+  async uploadAdminBanner(id: string, file: any) {
+    if (!file) throw new BadRequestException('Thiếu file');
+    const result = await this.attachment.upload(file.buffer, file.originalname, file.mimetype, 'anime-covers');
+    return this.prisma.mediaWork.update({ where: { id }, data: { bannerUrl: result.url }, select: { id: true, bannerUrl: true } });
+  }
+
+  async deleteWork(id: string) {
+    await this.prisma.mediaWork.delete({ where: { id } }).catch(() => { throw new NotFoundException('Không tồn tại'); });
+    return { ok: true };
+  }
+
+  async updateWork(id: string, data: any) {
+    const patch: any = {};
+    for (const k of ['title', 'titleEnglish', 'titleNative', 'description', 'coverUrl', 'bannerUrl', 'format', 'trailerUrl', 'source']) {
+      if (data[k] !== undefined) patch[k] = data[k] || null;
+    }
+    for (const k of ['episodes', 'duration', 'chapters', 'volumes', 'seasonYear', 'introStart', 'introEnd']) {
+      if (data[k] !== undefined) patch[k] = data[k] === '' || data[k] == null ? null : Number(data[k]);
+    }
+    if (data.type) patch.type = data.type;
+    if (data.status) patch.status = data.status;
+    if (data.season !== undefined) patch.season = data.season || null;
+    if (data.isAdult !== undefined) patch.isAdult = !!data.isAdult;
+    if (Array.isArray(data.genreNames)) {
+      patch.genres = { set: [], connectOrCreate: await this.genreConnect(data.genreNames) };
+    }
+    return this.prisma.mediaWork.update({ where: { id }, data: patch });
+  }
+
+  async createWork(data: any) {
+    if (!data?.title?.trim() || !data?.type) throw new BadRequestException('Thiếu tên hoặc loại');
+    const slug = await this.uniqueSlug(data.title);
+    return this.prisma.mediaWork.create({
+      data: {
+        type: data.type, slug, title: data.title.trim(),
+        titleEnglish: data.titleEnglish || null, titleNative: data.titleNative || null,
+        description: data.description || null, coverUrl: data.coverUrl || null, bannerUrl: data.bannerUrl || null,
+        status: data.status || 'FINISHED', format: data.format || null,
+        season: data.season || null, seasonYear: data.seasonYear ? Number(data.seasonYear) : null,
+        episodes: data.episodes ? Number(data.episodes) : null, duration: data.duration ? Number(data.duration) : null,
+        chapters: data.chapters ? Number(data.chapters) : null, volumes: data.volumes ? Number(data.volumes) : null,
+        trailerUrl: data.trailerUrl || null, source: data.source || null,
+        genres: Array.isArray(data.genreNames) ? { connectOrCreate: await this.genreConnect(data.genreNames) } : undefined,
+      },
+    });
+  }
+
+  private async genreConnect(names: string[]) {
+    return names.filter((n) => n?.trim()).map((n) => {
+      const name = n.trim();
+      const slug = slugify(name, { lower: true, strict: true });
+      return { where: { slug }, create: { slug, name } };
+    });
+  }
+
+  // ───────── IMPORT TỪ ANILIST (GraphQL công khai, miễn phí) ─────────
+  private async anilist<T>(query: string, variables: any): Promise<T> {
+    const res = await fetch(ANILIST_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ query, variables }),
+    });
+    if (!res.ok) throw new BadRequestException(`AniList lỗi ${res.status}`);
+    const json: any = await res.json();
+    if (json.errors) throw new BadRequestException(json.errors[0]?.message || 'AniList lỗi');
+    return json.data as T;
+  }
+
+  async searchAnilist(search: string, type: 'ANIME' | 'MANGA' = 'ANIME') {
+    if (!search?.trim()) return [];
+    const q = `query($s:String,$t:MediaType){ Page(perPage:15){ media(search:$s, type:$t, sort:SEARCH_MATCH){ id format seasonYear averageScore title{ romaji english } coverImage{ large } } } }`;
+    const d = await this.anilist<{ Page: { media: any[] } }>(q, { s: search.trim(), t: type });
+    return (d.Page?.media || []).map((m) => ({
+      anilistId: m.id, format: m.format, year: m.seasonYear, score: m.averageScore,
+      title: m.title?.english || m.title?.romaji, cover: m.coverImage?.large,
+    }));
+  }
+
+  async importFromAnilist(anilistId: number) {
+    if (!anilistId) throw new BadRequestException('Thiếu AniList ID');
+    const q = `query($id:Int){ Media(id:$id){
+      id type format status season seasonYear episodes duration chapters volumes averageScore popularity bannerImage isAdult source
+      title{ romaji english native } synonyms description(asHtml:false)
+      coverImage{ large } startDate{ year month day } endDate{ year month day } trailer{ id site }
+      genres
+      studios{ edges{ isMain node{ id name } } }
+      characters(perPage:24, sort:[ROLE,RELEVANCE]){ edges{ role node{ id name{ full native } image{ large } description gender age } voiceActors(language:JAPANESE){ id name{ full native } image{ large } } } }
+      staff(perPage:12){ edges{ role node{ id name{ full native } image{ large } } } }
+    }}`;
+    const d = await this.anilist<{ Media: any }>(q, { id: anilistId });
+    const m = d.Media;
+    if (!m) throw new NotFoundException('Không tìm thấy trên AniList');
+
+    const type: MediaType = m.type === 'MANGA' ? 'MANGA' : 'ANIME';
+    const statusMap: Record<string, string> = { RELEASING: 'RELEASING', FINISHED: 'FINISHED', NOT_YET_RELEASED: 'NOT_YET_RELEASED', CANCELLED: 'CANCELLED', HIATUS: 'HIATUS' };
+    const toDate = (x: any) => (x?.year ? new Date(Date.UTC(x.year, (x.month || 1) - 1, x.day || 1)) : null);
+    const trailer = m.trailer?.site === 'youtube' && m.trailer?.id ? `https://www.youtube.com/watch?v=${m.trailer.id}` : null;
+    const titlePrimary = m.title?.romaji || m.title?.english || m.title?.native || `anilist-${m.id}`;
+
+    const existing = await this.prisma.mediaWork.findUnique({ where: { anilistId: m.id }, select: { id: true, slug: true } });
+    const base = {
+      type,
+      title: titlePrimary, titleEnglish: m.title?.english || null, titleNative: m.title?.native || null,
+      synonyms: Array.isArray(m.synonyms) ? m.synonyms.slice(0, 20) : [],
+      description: (m.description || '').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '').trim() || null,
+      coverUrl: m.coverImage?.large || null, bannerUrl: m.bannerImage || null,
+      status: (statusMap[m.status] as any) || 'FINISHED',
+      format: m.format || null,
+      season: (m.season as any) || null, seasonYear: m.seasonYear || null,
+      startDate: toDate(m.startDate), endDate: toDate(m.endDate),
+      episodes: m.episodes || null, duration: m.duration || null, chapters: m.chapters || null, volumes: m.volumes || null,
+      trailerUrl: trailer, source: m.source || null, isAdult: !!m.isAdult,
+      anilistId: m.id,
+      popularity: m.popularity || 0,
+    };
+
+    const work = existing
+      ? await this.prisma.mediaWork.update({ where: { id: existing.id }, data: base })
+      : await this.prisma.mediaWork.create({ data: { ...base, slug: await this.uniqueSlug(titlePrimary) } });
+
+    if (Array.isArray(m.genres) && m.genres.length) {
+      await this.prisma.mediaWork.update({
+        where: { id: work.id },
+        data: { genres: { connectOrCreate: await this.genreConnect(m.genres) } },
+      });
+    }
+    for (const e of m.studios?.edges || []) {
+      const node = e.node;
+      if (!node?.name) continue;
+      const studio = await this.prisma.studio.upsert({
+        where: { anilistId: node.id },
+        create: { anilistId: node.id, name: node.name, slug: await this.entitySlug('studio', node.name, node.id) },
+        update: { name: node.name },
+      });
+      await this.prisma.mediaWork.update({ where: { id: work.id }, data: { studios: { connect: { id: studio.id } } } }).catch(() => {});
+    }
+    for (const e of m.characters?.edges || []) {
+      const c = e.node; if (!c?.name?.full) continue;
+      const character = await this.prisma.character.upsert({
+        where: { anilistId: c.id },
+        create: {
+          anilistId: c.id, name: c.name.full, nativeName: c.name.native || null, imageUrl: c.image?.large || null,
+          description: (c.description || '').replace(/<[^>]*>/g, '').trim() || null, gender: c.gender || null, age: c.age || null,
+          slug: await this.entitySlug('character', c.name.full, c.id),
+        },
+        update: { name: c.name.full, imageUrl: c.image?.large || null },
+      });
+      let voiceActorId: string | null = null;
+      const va = (e.node.voiceActors || [])[0];
+      if (va?.name?.full) {
+        const person = await this.prisma.person.upsert({
+          where: { anilistId: va.id },
+          create: { anilistId: va.id, name: va.name.full, nativeName: va.name.native || null, imageUrl: va.image?.large || null, slug: await this.entitySlug('person', va.name.full, va.id) },
+          update: { name: va.name.full },
+        });
+        voiceActorId = person.id;
+      }
+      await this.prisma.mediaCharacter.upsert({
+        where: { mediaId_characterId: { mediaId: work.id, characterId: character.id } },
+        create: { mediaId: work.id, characterId: character.id, role: e.role || 'SUPPORTING', voiceActorId },
+        update: { role: e.role || 'SUPPORTING', voiceActorId },
+      });
+    }
+    for (const e of m.staff?.edges || []) {
+      const p = e.node; if (!p?.name?.full || !e.role) continue;
+      const person = await this.prisma.person.upsert({
+        where: { anilistId: p.id },
+        create: { anilistId: p.id, name: p.name.full, nativeName: p.name.native || null, imageUrl: p.image?.large || null, slug: await this.entitySlug('person', p.name.full, p.id) },
+        update: { name: p.name.full },
+      });
+      await this.prisma.mediaStaff.upsert({
+        where: { mediaId_personId_role: { mediaId: work.id, personId: person.id, role: String(e.role).slice(0, 80) } },
+        create: { mediaId: work.id, personId: person.id, role: String(e.role).slice(0, 80) },
+        update: {},
+      });
+    }
+
+    return { ok: true, id: work.id, slug: work.slug, title: work.title };
+  }
+
+  // ───────── ADMIN: SỬA CHI TIẾT + TẬP PHIM + CHƯƠNG ─────────
+  async getForEdit(id: string) {
+    const work = await this.prisma.mediaWork.findUnique({
+      where: { id },
+      include: {
+        genres: { select: { name: true } },
+        episodeList: { orderBy: { number: 'asc' }, select: { id: true, number: true, part: true, kind: true, title: true, videoUrl: true, serverName: true, thumbnail: true, duration: true, referer: true, introEnd: true, showNextAt: true, servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true, introEnd: true } } } },
+        chapterList: { orderBy: { number: 'asc' }, select: { id: true, number: true, title: true, content: true, pages: true } },
+      },
+    });
+    if (!work) throw new NotFoundException('Không tồn tại');
+    return work;
+  }
+
+  private parsePages(pages: any): string[] {
+    if (Array.isArray(pages)) return pages.map((p) => String(p).trim()).filter(Boolean).slice(0, 500);
+    if (typeof pages === 'string') return pages.split(/[\n,]+/).map((p) => p.trim()).filter(Boolean).slice(0, 500);
+    return [];
+  }
+
+  // Tách số từ chuỗi: "Tập 1" -> 1, "Chương 5.5" -> 5.5, "12" -> 12
+  private parseNum(v: any): number | null {
+    if (typeof v === 'number') return Number.isFinite(v) ? v : null;
+    const m = String(v ?? '').match(/-?\d+(?:[.,]\d+)?/);
+    if (!m) return null;
+    const n = Number(m[0].replace(',', '.'));
+    return Number.isFinite(n) ? n : null;
+  }
+
+  async addEpisode(mediaId: string, dto: any) {
+    const number = this.parseNum(dto.number);
+    if (number == null) throw new BadRequestException('Thiếu số tập (chỉ nhập số, vd 1 hoặc 5.5)');
+    const part = dto.part ? Number(dto.part) : 1;
+    const kind = dto.kind || 'episode';
+    try {
+      return await this.prisma.episode.create({
+        data: {
+          mediaId, number, part, kind, title: dto.title || null,
+          videoUrl: dto.videoUrl || null, serverName: dto.serverName || null, thumbnail: dto.thumbnail || null, referer: dto.referer || null,
+          duration: dto.duration ? Number(dto.duration) : null,
+          introEnd: dto.introEnd ? Number(dto.introEnd) : null,
+          showNextAt: dto.showNextAt ? Number(dto.showNextAt) : null,
+        },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new BadRequestException(`Tập ${number} (phần ${part}) đã tồn tại`);
+      throw e;
+    }
+  }
+  async updateEpisode(id: string, dto: any) {
+    const data: any = {};
+    if (dto.number != null && dto.number !== '') { const n = this.parseNum(dto.number); if (n != null) data.number = n; }
+    if (dto.part != null && dto.part !== '') { const p = Number(dto.part); if (Number.isFinite(p) && p > 0) data.part = p; }
+    if (dto.kind) data.kind = dto.kind;
+    for (const k of ['title', 'videoUrl', 'serverName', 'thumbnail', 'referer']) if (dto[k] !== undefined) data[k] = dto[k] || null;
+    if (dto.duration !== undefined) data.duration = dto.duration ? Number(dto.duration) : null;
+    if (dto.introEnd !== undefined) data.introEnd = dto.introEnd ? Number(dto.introEnd) : null;
+    if (dto.showNextAt !== undefined) data.showNextAt = dto.showNextAt ? Number(dto.showNextAt) : null;
+    return this.prisma.episode.update({ where: { id }, data });
+  }
+  async deleteEpisode(id: string) { await this.prisma.episode.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
+
+  async addServer(episodeId: string, dto: any) {
+    if (!dto.name?.trim() || !dto.videoUrl?.trim()) throw new BadRequestException('Nhập tên server và link');
+    const count = await this.prisma.episodeServer.count({ where: { episodeId } });
+    return this.prisma.episodeServer.create({
+      data: { episodeId, name: dto.name.trim().slice(0, 60), videoUrl: dto.videoUrl.trim(), referer: dto.referer || null, introEnd: dto.introEnd ? Number(dto.introEnd) : null, order: count },
+    });
+  }
+  async updateServer(id: string, dto: any) {
+    const data: any = {};
+    if (dto.name !== undefined) data.name = (dto.name || '').slice(0, 60);
+    if (dto.videoUrl !== undefined) data.videoUrl = dto.videoUrl || '';
+    if (dto.referer !== undefined) data.referer = dto.referer || null;
+    if (dto.introEnd !== undefined) data.introEnd = dto.introEnd ? Number(dto.introEnd) : null;
+    return this.prisma.episodeServer.update({ where: { id }, data });
+  }
+  async deleteServer(id: string) { await this.prisma.episodeServer.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
+
+  // Trích xuất link embed từ mã iframe hoặc URL trang phát (vd: vuighe.live)
+  // Tải HTML 1 trang (cho phép đặt Referer)
+  private async fetchHtml(url: string, referer?: string): Promise<string> {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 12000);
+    try {
+      const res = await fetch(url, {
+        signal: ctrl.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123 Safari/537.36',
+          Accept: 'text/html,application/xhtml+xml,*/*',
+          'Accept-Language': 'vi,en;q=0.9',
+          Referer: referer || new URL(url).origin,
+        },
+        redirect: 'follow',
+      });
+      if (!res.ok) throw new BadRequestException(`Nguồn trả về ${res.status} — thử dán trực tiếp mã iframe.`);
+      return await res.text();
+    } finally { clearTimeout(t); }
+  }
+
+  // Dò iframe + link video (.m3u8/.mp4) trong 1 đoạn HTML/JS
+  private scanHtml(html: string, origin: string): { iframes: string[]; media: string[] } {
+    const abs = (u: string) => (u.startsWith('//') ? `https:${u}` : u.startsWith('/') ? origin + u : u);
+    // unescape \/ trong JS (nhiều player để link dạng https:\/\/...m3u8)
+    const unesc = html.replace(/\\\//g, '/');
+    const iframes = new Set<string>();
+    const media = new Set<string>();
+    for (const m of html.matchAll(/<iframe[^>]*\ssrc=["']([^"']+)["']/gi)) iframes.add(abs(m[1]));
+    for (const src of [html, unesc]) {
+      for (const m of src.matchAll(/["'](https?:\/\/[^"'\\\s]+?\.(?:m3u8|mp4)(?:\?[^"'\\\s]*)?)["']/gi)) media.add(m[1]);
+      for (const m of src.matchAll(/(?:file|source|src|url)\s*[:=]\s*["'](https?:\/\/[^"'\\\s]+?\.(?:m3u8|mp4)[^"'\\\s]*)["']/gi)) media.add(m[1]);
+    }
+    return { iframes: [...iframes], media: [...media] };
+  }
+
+  // Kiểm tra nhanh link video còn sống không (trả status; 200/206 = ổn)
+  private async probe(url: string, referer?: string): Promise<number | null> {
+    try {
+      const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 8000);
+      const h: Record<string, string> = { 'User-Agent': BROWSER_UA, Accept: '*/*', Range: 'bytes=0-1' };
+      if (referer) { h.Referer = referer; try { h.Origin = new URL(referer).origin; } catch {} }
+      const res = await fetch(url, { signal: ctrl.signal, headers: h, redirect: 'follow' });
+      clearTimeout(t);
+      return res.status;
+    } catch { return null; }
+  }
+
+  async extractEmbed(input: string): Promise<{ candidates: { url: string; referer?: string; status?: number | null }[] }> {
+    const raw = (input || '').trim();
+    if (!raw) throw new BadRequestException('Nhập link hoặc mã nhúng');
+    const media = new Set<string>();
+    const embeds = new Set<string>();
+    const refOf = new Map<string, string>(); // gợi ý Referer cho từng link video
+
+    // 1) Mã iframe/embed dán trực tiếp → lấy src (không cần mạng)
+    for (const m of raw.matchAll(/<iframe[^>]*\ssrc=["']([^"']+)["']/gi)) embeds.add(m[1]);
+    // 2) Bản thân input đã là link m3u8/mp4
+    if (/^https?:\/\/\S+\.(?:m3u8|mp4)(?:\?\S*)?$/i.test(raw)) media.add(raw);
+
+    // 3) Là URL trang/embed → tải HTML, dò media + iframe; chui thêm 1 tầng iframe để lấy .m3u8
+    if (!media.size && /^https?:\/\//i.test(raw)) {
+      let html = '';
+      // Không tải được trang (bị chặn / cần token như abyss) → bỏ qua, vẫn dùng URL làm iframe embed bên dưới
+      try { html = await this.fetchHtml(raw); } catch { html = ''; }
+      const origin = new URL(raw).origin;
+      const top = this.scanHtml(html, origin);
+      top.media.forEach((u) => { media.add(u); if (!refOf.has(u)) refOf.set(u, origin + '/'); });
+      top.iframes.forEach((u) => embeds.add(u));
+
+      // Chưa thấy link video → vào trong iframe (tối đa 3) tìm tiếp.
+      // Referer của link video = origin của iframe (đây là cái nguồn chặn hotlink kiểm tra).
+      if (!media.size) {
+        for (const ifr of top.iframes.slice(0, 3)) {
+          if (!/^https?:\/\//i.test(ifr)) continue;
+          let ifrOrigin: string;
+          try { ifrOrigin = new URL(ifr).origin; } catch { continue; }
+          if (this.hostBlocked(new URL(ifr).hostname)) continue;
+          try {
+            const inner = await this.fetchHtml(ifr, raw); // Referer = trang gốc
+            const sub = this.scanHtml(inner, ifrOrigin);
+            sub.media.forEach((u) => { media.add(u); if (!refOf.has(u)) refOf.set(u, ifrOrigin + '/'); });
+            sub.iframes.forEach((u) => embeds.add(u));
+          } catch { /* bỏ qua iframe lỗi */ }
+        }
+      }
+    }
+
+    // Ưu tiên link video trực tiếp (.m3u8/.mp4) kèm Referer gợi ý; rồi mới tới embed
+    const mediaList = [...media].slice(0, 6);
+    // Kiểm tra link video còn sống không (song song) để loại link 404/chết
+    const probed = await Promise.all(mediaList.map(async (url) => ({ url, referer: refOf.get(url), status: await this.probe(url, refOf.get(url)) })));
+    // Link sống (2xx) lên đầu, link chết (vd 404) xuống cuối kèm status để admin biết
+    probed.sort((a, b) => Number(b.status && b.status < 400) - Number(a.status && a.status < 400));
+    let candidates = [
+      ...probed,
+      ...[...embeds].map((url) => ({ url, referer: undefined as string | undefined, status: undefined as number | null | undefined })),
+    ].filter((c) => /^https?:\/\//i.test(c.url)).slice(0, 12);
+    // Không rút được link trực tiếp → nếu input là URL player tự chứa (vd abyssplayer.com), dùng chính nó làm iframe embed
+    if (!candidates.length && /^https?:\/\//i.test(raw)) candidates = [{ url: raw, referer: undefined, status: undefined }];
+    if (!candidates.length) throw new BadRequestException('Không tìm thấy link nhúng. Hãy dán trực tiếp mã <iframe …> từ nguồn.');
+    return { candidates };
+  }
+
+  async addChapter(mediaId: string, dto: any) {
+    const number = this.parseNum(dto.number);
+    if (number == null) throw new BadRequestException('Thiếu số chương (chỉ nhập số, vd 1 hoặc 5.5)');
+    try {
+      return await this.prisma.chapter.create({
+        data: {
+          mediaId, number, title: dto.title || null,
+          pages: this.parsePages(dto.pages), content: dto.content || null,
+          chapterStatus: 'PUBLISHED',
+        },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') throw new BadRequestException(`Chương ${number} đã tồn tại`);
+      throw e;
+    }
+  }
+  async updateChapter(id: string, dto: any) {
+    const data: any = { chapterStatus: 'PUBLISHED' };
+    if (dto.number != null && dto.number !== '') { const n = this.parseNum(dto.number); if (n != null) data.number = n; }
+    if (dto.title !== undefined) data.title = dto.title || null;
+    if (dto.content !== undefined) data.content = dto.content || null;
+    if (dto.pages !== undefined) data.pages = this.parsePages(dto.pages);
+    return this.prisma.chapter.update({ where: { id }, data });
+  }
+  async deleteChapter(id: string) { await this.prisma.chapter.delete({ where: { id } }).catch(() => {}); return { ok: true }; }
+
+  // ───────── PROXY HLS (vượt chặn hotlink CORS/Referer) ─────────
+  private hostBlocked(host: string): boolean {
+    const h = host.toLowerCase().replace(/^\[|\]$/g, '');
+    if (h === 'localhost' || h.endsWith('.local') || h.endsWith('.internal')) return true;
+    const m = h.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (m) {
+      const a = +m[1], b = +m[2];
+      if (a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)) return true;
+    }
+    if (h === '::1' || h.startsWith('fc') || h.startsWith('fd') || h.startsWith('fe80') || h.startsWith('169.254')) return true;
+    if (HLS_ALLOW.length && !HLS_ALLOW.some((d) => h === d || h.endsWith('.' + d))) return true;
+    return false;
+  }
+
+  private rewritePlaylist(text: string, base: URL, referer: string): string {
+    const prox = (abs: string) => `/api/anime/hls?u=${encodeURIComponent(abs)}&r=${encodeURIComponent(referer)}`;
+    const absolutize = (uri: string) => { try { return new URL(uri, base).toString(); } catch { return uri; } };
+    return text.split('\n').map((line) => {
+      const t = line.trim();
+      if (!t) return line;
+      if (t.startsWith('#')) return line.replace(/URI="([^"]+)"/g, (_m, uri) => `URI="${prox(absolutize(uri))}"`);
+      return prox(absolutize(t));
+    }).join('\n');
+  }
+
+  async proxyHls(u: string, r: string | undefined, range: string | undefined, res: Response, debug = false) {
+    if (!u || !/^https?:\/\//i.test(u)) { res.status(400).send('URL không hợp lệ'); return; }
+    let target: URL;
+    try { target = new URL(u); } catch { res.status(400).send('URL không hợp lệ'); return; }
+    if (this.hostBlocked(target.hostname)) { res.status(403).send('Host bị chặn'); return; }
+
+    // Chế độ chẩn đoán: thử nhiều Referer và báo cáo trạng thái upstream (không phát video)
+    if (debug) {
+      const tries: { referer: string | null; status?: number; ct?: string | null; finalUrl?: string; body?: string; err?: string }[] = [];
+      const cands: (string | null)[] = [r || null, `${target.protocol}//${target.host}/`, 'https://vuighe.live/', null];
+      const seen = new Set<string>();
+      for (const ref of cands) {
+        const key = ref || '<none>'; if (seen.has(key)) continue; seen.add(key);
+        const h: Record<string, string> = { 'User-Agent': BROWSER_UA, Accept: '*/*' };
+        if (ref) { h.Referer = ref; try { h.Origin = new URL(ref).origin; } catch {} }
+        try {
+          const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 12000);
+          const up = await fetch(u, { signal: ctrl.signal, headers: h, redirect: 'follow' });
+          clearTimeout(t);
+          const body = (await up.text().catch(() => '')).slice(0, 300);
+          tries.push({ referer: ref, status: up.status, ct: up.headers.get('content-type'), finalUrl: up.url, body });
+        } catch (e: any) { tries.push({ referer: ref, err: String(e?.message || e) }); }
+      }
+      res.json({ url: u, tries });
+      return;
+    }
+
+    const referer = r && /^https?:\/\//i.test(r) ? r : `${target.protocol}//${target.host}/`;
+    const headers: Record<string, string> = {
+      'User-Agent': BROWSER_UA, Referer: referer, Origin: new URL(referer).origin, Accept: '*/*', 'Accept-Language': 'vi,en;q=0.9',
+    };
+    if (range) headers.Range = range;
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 25000);
+    let up: globalThis.Response;
+    try {
+      up = await fetch(u, { signal: ctrl.signal, headers, redirect: 'follow' });
+      // Nếu nguồn từ chối vì Referer (401/403), thử lại 1 lần không gửi Referer/Origin
+      if ((up.status === 401 || up.status === 403) && (headers.Referer || headers.Origin)) {
+        const { Referer, Origin, ...bare } = headers;
+        const retry = await fetch(u, { signal: ctrl.signal, headers: bare, redirect: 'follow' }).catch(() => null);
+        if (retry && retry.ok) up = retry;
+      }
+    } catch { clearTimeout(timer); if (!res.headersSent) res.status(502).send('Không tải được nguồn'); return; }
+    clearTimeout(timer);
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-store');
+    const ct = up.headers.get('content-type') || '';
+    // Dùng URL cuối cùng (sau redirect) làm gốc để resolve segment, tránh 404/403
+    let finalUrl = target;
+    try { finalUrl = new URL(up.url || u); } catch {}
+    const isPlaylist = /mpegurl|m3u8/i.test(ct) || /\.m3u8($|\?)/i.test(finalUrl.pathname + finalUrl.search);
+
+    if (isPlaylist) {
+      const text = await up.text();
+      res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+      res.status(up.status === 206 ? 200 : up.status).send(this.rewritePlaylist(text, finalUrl, referer));
+      return;
+    }
+    if (ct) res.setHeader('Content-Type', ct);
+    for (const h of ['content-length', 'content-range', 'accept-ranges']) {
+      const v = up.headers.get(h); if (v) res.setHeader(h, v);
+    }
+    res.status(up.status);
+    if (up.body) Readable.fromWeb(up.body as any).pipe(res);
+    else res.end();
+  }
+
+  // ───────── CÔNG KHAI: XEM TẬP / ĐỌC CHƯƠNG ─────────
+  private async neighbours(model: 'chapter', mediaId: string, number: number) {
+    const delegate = (this.prisma as any)[model];
+    // Only show published creator chapters (or admin chapters with no uploaderId) as neighbours
+    const visibleWhere = { OR: [{ uploaderId: null }, { chapterStatus: 'PUBLISHED' }] };
+    const [prev, next] = await Promise.all([
+      delegate.findFirst({ where: { mediaId, number: { lt: number }, ...visibleWhere }, orderBy: { number: 'desc' }, select: { id: true, number: true } }),
+      delegate.findFirst({ where: { mediaId, number: { gt: number }, ...visibleWhere }, orderBy: { number: 'asc' }, select: { id: true, number: true } }),
+    ]);
+    return { prev, next };
+  }
+  async getEpisode(id: string) {
+    const ep = await this.prisma.episode.findUnique({
+      where: { id },
+      include: {
+        media: { select: { id: true, slug: true, title: true, titleEnglish: true, type: true, coverUrl: true, introStart: true, introEnd: true, avgScore: true, ratingCount: true } },
+        comments: { orderBy: { createdAt: 'asc' }, take: 200, include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } } },
+        servers: { orderBy: { order: 'asc' }, select: { id: true, name: true, videoUrl: true, referer: true, introEnd: true } },
+      },
+    });
+    if (!ep) throw new NotFoundException('Không tìm thấy tập');
+    const episodes = await this.prisma.episode.findMany({
+      where: { mediaId: ep.mediaId },
+      orderBy: [{ part: 'asc' }, { number: 'asc' }],
+      select: { id: true, number: true, title: true, part: true, kind: true },
+    });
+    const [prev, next] = await Promise.all([
+      this.prisma.episode.findFirst({
+        where: { mediaId: ep.mediaId, OR: [{ part: { lt: ep.part } }, { part: ep.part, number: { lt: ep.number } }] },
+        orderBy: [{ part: 'desc' }, { number: 'desc' }],
+        select: { id: true, number: true, part: true, kind: true, title: true, thumbnail: true },
+      }),
+      this.prisma.episode.findFirst({
+        where: { mediaId: ep.mediaId, OR: [{ part: { gt: ep.part } }, { part: ep.part, number: { gt: ep.number } }] },
+        orderBy: [{ part: 'asc' }, { number: 'asc' }],
+        select: { id: true, number: true, part: true, kind: true, title: true, thumbnail: true },
+      }),
+    ]);
+    // Gộp server: link chính (videoUrl) là "Server 1" + các server phụ
+    const servers = [
+      ...(ep.videoUrl ? [{ id: 'main', name: (ep as any).serverName || 'VIP', videoUrl: ep.videoUrl, referer: ep.referer, introEnd: ep.introEnd }] : []),
+      ...ep.servers,
+    ];
+    return { ...ep, servers, episodes, prev, next };
+  }
+
+  async addEpisodeComment(episodeId: string, authorId: string, content: string, parentId?: string | null) {
+    const text = (content || '').trim();
+    if (!text) throw new BadRequestException('Bình luận không được để trống');
+    const ep = await this.prisma.episode.findUnique({ where: { id: episodeId }, select: { id: true } });
+    if (!ep) throw new NotFoundException('Không tìm thấy tập');
+    if (parentId) {
+      const parent = await this.prisma.episodeComment.findUnique({ where: { id: parentId }, select: { id: true, episodeId: true } });
+      if (!parent || parent.episodeId !== episodeId) throw new BadRequestException('Bình luận gốc không hợp lệ');
+    }
+    return this.prisma.episodeComment.create({
+      data: { episodeId, authorId, content: text.slice(0, 5000), parentId: parentId || null },
+      include: { author: { select: { id: true, username: true, displayName: true, avatar: true } } },
+    });
+  }
+
+  async deleteEpisodeComment(id: string, userId: string, role?: string) {
+    const c = await this.prisma.episodeComment.findUnique({ where: { id } });
+    if (!c) throw new NotFoundException('Không tìm thấy bình luận');
+    const isMod = role === 'ADMIN' || role === 'MODERATOR';
+    if (c.authorId !== userId && !isMod) throw new BadRequestException('Không có quyền xoá');
+    await this.deleteCommentReplies(id);
+    await this.prisma.episodeComment.delete({ where: { id } });
+    return { ok: true };
+  }
+
+  private async deleteCommentReplies(commentId: string) {
+    const replies = await this.prisma.episodeComment.findMany({ where: { parentId: commentId }, select: { id: true } });
+    for (const r of replies) {
+      await this.deleteCommentReplies(r.id);
+      await this.prisma.episodeComment.delete({ where: { id: r.id } });
+    }
+  }
+  async getChapter(id: string) {
+    const ch = await this.prisma.chapter.findUnique({ where: { id }, include: { media: { select: { slug: true, title: true, titleEnglish: true, type: true } } } });
+    if (!ch) throw new NotFoundException('Không tìm thấy chương');
+    // Creator chapters must be published before public access
+    if (ch.uploaderId && ch.chapterStatus !== 'PUBLISHED')
+      throw new NotFoundException('Chương chưa được xuất bản');
+    this.prisma.chapter.update({ where: { id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
+    return { ...ch, ...(await this.neighbours('chapter', ch.mediaId, ch.number)) };
+  }
+
+  // ───────── DANH SÁCH CÁ NHÂN + ĐÁNH GIÁ + YÊU THÍCH ─────────
+  async getEntry(userId: string, mediaId: string) {
+    return this.prisma.mediaListEntry.findUnique({ where: { userId_mediaId: { userId, mediaId } } });
+  }
+
+  async upsertEntry(userId: string, mediaId: string, dto: { status?: string; score?: number | null; progress?: number; favorite?: boolean; note?: string }) {
+    const media = await this.prisma.mediaWork.findUnique({ where: { id: mediaId }, select: { id: true } });
+    if (!media) throw new NotFoundException('Không tìm thấy tác phẩm');
+    const data: any = {};
+    if (dto.status && ['WATCHING', 'COMPLETED', 'PLANNING', 'PAUSED', 'DROPPED'].includes(dto.status)) data.status = dto.status;
+    if (dto.score !== undefined) data.score = dto.score == null || dto.score === 0 ? null : Math.min(Math.max(Math.round(Number(dto.score)), 1), 5);
+    if (dto.progress !== undefined) data.progress = Math.max(0, Number(dto.progress) || 0);
+    if (dto.favorite !== undefined) data.favorite = !!dto.favorite;
+    if (dto.note !== undefined) data.note = (dto.note || '').slice(0, 500) || null;
+
+    const entry = await this.prisma.mediaListEntry.upsert({
+      where: { userId_mediaId: { userId, mediaId } },
+      create: { userId, mediaId, status: data.status || 'PLANNING', ...data },
+      update: data,
+    });
+    await this.recomputeStats(mediaId);
+    return entry;
+  }
+
+  async removeEntry(userId: string, mediaId: string) {
+    await this.prisma.mediaListEntry.deleteMany({ where: { userId, mediaId } });
+    await this.recomputeStats(mediaId);
+    return { ok: true };
+  }
+
+  async myList(userId: string, q: { status?: string; type?: string; favorite?: string }) {
+    const where: Prisma.MediaListEntryWhereInput = { userId };
+    if (q.status && ['WATCHING', 'COMPLETED', 'PLANNING', 'PAUSED', 'DROPPED'].includes(q.status)) where.status = q.status as any;
+    if (q.favorite === 'true') where.favorite = true;
+    if (q.type) where.media = { type: q.type as MediaType };
+    return this.prisma.mediaListEntry.findMany({
+      where, orderBy: { updatedAt: 'desc' },
+      include: { media: { select: { id: true, type: true, slug: true, title: true, titleEnglish: true, coverUrl: true, format: true, episodes: true, chapters: true, avgScore: true } } },
+    });
+  }
+
+  private async recomputeStats(mediaId: string) {
+    const [agg, favs] = await Promise.all([
+      this.prisma.mediaListEntry.aggregate({ where: { mediaId, score: { not: null } }, _avg: { score: true }, _count: { score: true } }),
+      this.prisma.mediaListEntry.count({ where: { mediaId, favorite: true } }),
+    ]);
+    await this.prisma.mediaWork.update({
+      where: { id: mediaId },
+      data: { avgScore: agg._avg.score ? Math.round(agg._avg.score * 10) / 10 : 0, ratingCount: agg._count.score || 0, favoriteCount: favs },
+    });
+  }
+
+  private async entitySlug(model: 'studio' | 'person' | 'character', name: string, anilistId: number): Promise<string> {
+    const root = slugify(name, { lower: true, strict: true }).slice(0, 100) || `${model}-${anilistId}`;
+    const delegate = (this.prisma as any)[model];
+    let slug = root;
+    for (let i = 2; await delegate.findUnique({ where: { slug } }).then((x: any) => x && x.anilistId !== anilistId); i++) slug = `${root}-${i}`;
+    return slug;
+  }
+}

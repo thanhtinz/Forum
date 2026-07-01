@@ -1,0 +1,20 @@
+# Caddy tự động xin & gia hạn chứng chỉ HTTPS (Let's Encrypt) cho domain của bạn.
+# Biến {$DOMAIN} lấy từ .env.production (vd: forum.example.com).
+# Mọi request được chuyển tới app NestJS ở cổng 3001 (cùng phục vụ API /api + frontend).
+
+{$DOMAIN} {
+	encode gzip zstd
+	reverse_proxy app:3001
+
+	# Tăng giới hạn upload (ảnh, file sản phẩm) lên 100MB cho khớp backend.
+	request_body {
+		max_size 100MB
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10MB
+			roll_keep 5
+		}
+	}
+}

@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.next
+frontend/out
+uploads
+.git
+.github
+*.log
+.env
+.env.*
+logs
+*.md
+!README.md

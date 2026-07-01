@@ -6,14 +6,14 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 import TipTapEditor from '@/components/TipTapEditor';
 import { Sparkles, Lock, FileClock, Trash2 } from 'lucide-react';
-import { GATE_OPTIONS, needLike, needComment, needGem } from '@/lib/constants';
+import { GATE_OPTIONS, needLikeInput, needCommentInput, needGem } from '@/lib/constants';
 
 // Tạo body cho section nội dung ẩn theo gateType
 function buildHiddenBody(postId: string, content: string, gate: string, like: number, comment: number, gem: number, label?: string) {
   const body: any = { postId, contentRaw: content, gateType: gate };
   if (label?.trim()) body.label = label.trim();
-  if (needLike(gate)) body.likeRequired = Math.max(1, like);
-  if (needComment(gate)) body.commentRequired = Math.max(1, comment);
+  if (needLikeInput(gate)) body.likeRequired = Math.max(1, like);
+  if (needCommentInput(gate)) body.commentRequired = Math.max(1, comment);
   if (needGem(gate)) body.gemPrice = Math.max(1, gem);
   return body;
 }
@@ -348,8 +348,8 @@ export default function NewThreadPage() {
                   <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
                     {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
                   </select>
-                  {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
-                  {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
+                  {needLikeInput(hidden.gateType) && <label className="text-xs text-ink-500">Tổng like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
+                  {needCommentInput(hidden.gateType) && <label className="text-xs text-ink-500">Tổng bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
                   {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
                 </div>
               </div>

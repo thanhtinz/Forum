@@ -46,7 +46,7 @@ export default function NewThreadPage() {
   const [poll, setPoll] = useState({ question: '', multiple: false, options: ['', ''] });
   // Nội dung ẩn
   const [hiddenOn, setHiddenOn] = useState(false);
-  const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
+  const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_AND_COMMENT', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
   // Nháp của tôi
   const [drafts, setDrafts] = useState<any[]>([]);
   // Tags

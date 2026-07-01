@@ -99,7 +99,7 @@ function ThreadView() {
   const [copyToast, setCopyToast] = useState('');
   // Nội dung ẩn — dùng khi SỬA bài (xem/sửa section đã có, hoặc thêm mới cho bài gốc)
   const [hiddenOn, setHiddenOn] = useState(false);
-  const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
+  const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_AND_COMMENT', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
   const [editHiddenSectionId, setEditHiddenSectionId] = useState<string | null>(null);
   const [unlockBusy, setUnlockBusy] = useState<string | null>(null);
   const [err, setErr] = useState('');
@@ -410,7 +410,7 @@ function ThreadView() {
     if ((p as any).isFirstPost && thread) setEditTitle(thread.title);
     // Nội dung ẩn: tải lại section đã có (nếu có) để hiện ra khi sửa
     setHiddenOn(false);
-    setHidden({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
+    setHidden({ content: '', gateType: 'LIKE_AND_COMMENT', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
     setEditHiddenSectionId(null);
     try {
       const sections = await api.get<any[]>(`/hidden-content/sections/post/${p.id}/edit`);
@@ -420,7 +420,7 @@ function ThreadView() {
         setHiddenOn(true);
         setHidden({
           content: s.contentRaw || '',
-          gateType: s.gateType || 'LIKE_REQUIRED',
+          gateType: s.gateType || 'LIKE_AND_COMMENT',
           likeRequired: s.likeRequired || 1,
           commentRequired: s.commentRequired || 1,
           gemPrice: s.gemPrice || 10,

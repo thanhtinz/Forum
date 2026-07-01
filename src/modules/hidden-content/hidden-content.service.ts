@@ -163,7 +163,7 @@ export class HiddenContentService {
       if (toPersist.length) {
         await Promise.all(
           toPersist.map(async (s) => {
-            const via = this.resolveUnlockVia(s, currentLikes, currentComments);
+            const via = this.resolveUnlockVia();
             const created = await this.prisma.hiddenContentUnlock.createMany({
               data: [{ userId, hiddenSectionId: s.id, unlockedVia: via, gemSpent: 0 }],
               skipDuplicates: true,
@@ -213,12 +213,7 @@ export class HiddenContentService {
     if (!section) throw new NotFoundException('Không tìm thấy nội dung ẩn');
 
     // Kiểm tra gate type có hỗ trợ gem không
-    const gemGates: HiddenGateType[] = [
-      HiddenGateType.GEM_PURCHASE,
-      HiddenGateType.LIKE_OR_GEM,
-      HiddenGateType.COMMENT_OR_GEM,
-    ];
-    if (!gemGates.includes(section.gateType)) {
+    if (section.gateType !== HiddenGateType.GEM_PURCHASE) {
       throw new BadRequestException('Nội dung này không hỗ trợ mở khoá bằng Gem');
     }
     if (!section.gemPrice) throw new BadRequestException('Chưa thiết lập giá Gem');
@@ -349,19 +344,7 @@ export class HiddenContentService {
     currentComments: number,
   ) {
     const sections = await this.prisma.hiddenSection.findMany({
-      where: {
-        postId,
-        gateType: {
-          in: [
-            HiddenGateType.LIKE_REQUIRED,
-            HiddenGateType.COMMENT_REQUIRED,
-            HiddenGateType.LIKE_AND_COMMENT,
-            HiddenGateType.LIKE_OR_COMMENT,
-            HiddenGateType.LIKE_OR_GEM,
-            HiddenGateType.COMMENT_OR_GEM,
-          ],
-        },
-      },
+      where: { postId, gateType: HiddenGateType.LIKE_AND_COMMENT },
     });
 
     const results: string[] = [];
@@ -374,7 +357,7 @@ export class HiddenContentService {
       if (existing) continue;
 
       if (this.checkConditionMet(section, currentLikes, currentComments)) {
-        const via = this.resolveUnlockVia(section, currentLikes, currentComments);
+        const via = this.resolveUnlockVia();
         await this.autoUnlock(section.id, userId, currentLikes, currentComments, via);
         results.push(section.id);
       }
@@ -392,50 +375,17 @@ export class HiddenContentService {
     likes: number,
     comments: number,
   ): boolean {
-    switch (section.gateType) {
-      case HiddenGateType.LIKE_REQUIRED:
-        return likes >= (section.likeRequired ?? Infinity);
-      case HiddenGateType.COMMENT_REQUIRED:
-        return comments >= (section.commentRequired ?? Infinity);
-      case HiddenGateType.LIKE_AND_COMMENT:
-        return (
-          likes >= (section.likeRequired ?? Infinity) &&
-          comments >= (section.commentRequired ?? Infinity)
-        );
-      case HiddenGateType.LIKE_OR_COMMENT:
-        return (
-          likes >= (section.likeRequired ?? Infinity) ||
-          comments >= (section.commentRequired ?? Infinity)
-        );
-      case HiddenGateType.LIKE_OR_GEM:
-        return likes >= (section.likeRequired ?? Infinity);
-      case HiddenGateType.COMMENT_OR_GEM:
-        return comments >= (section.commentRequired ?? Infinity);
-      default:
-        return false; // GEM_PURCHASE phải dùng unlockWithGem
+    if (section.gateType === HiddenGateType.LIKE_AND_COMMENT) {
+      return (
+        likes >= (section.likeRequired ?? Infinity) &&
+        comments >= (section.commentRequired ?? Infinity)
+      );
     }
+    return false; // GEM_PURCHASE phải dùng unlockWithGem
   }
 
-  private resolveUnlockVia(
-    section: { gateType: HiddenGateType; likeRequired: number | null; commentRequired: number | null },
-    likes: number,
-    comments: number,
-  ): string {
-    if (
-      section.gateType === HiddenGateType.LIKE_OR_COMMENT ||
-      section.gateType === HiddenGateType.LIKE_AND_COMMENT
-    ) {
-      if (likes >= (section.likeRequired ?? Infinity) && comments >= (section.commentRequired ?? Infinity)) {
-        return 'like_and_comment';
-      }
-      if (likes >= (section.likeRequired ?? Infinity)) return 'like';
-      return 'comment';
-    }
-    if (section.gateType === HiddenGateType.LIKE_REQUIRED || section.gateType === HiddenGateType.LIKE_OR_GEM)
-      return 'like';
-    if (section.gateType === HiddenGateType.COMMENT_REQUIRED || section.gateType === HiddenGateType.COMMENT_OR_GEM)
-      return 'comment';
-    return 'auto';
+  private resolveUnlockVia(): string {
+    return 'like_and_comment';
   }
 
   private async autoUnlock(
@@ -487,28 +437,15 @@ export class HiddenContentService {
     gemPrice?: number;
   }) {
     switch (dto.gateType) {
-      case HiddenGateType.LIKE_REQUIRED:
-        if (!dto.likeRequired) throw new BadRequestException('Cần chỉ định số like tối thiểu');
-        break;
-      case HiddenGateType.COMMENT_REQUIRED:
-        if (!dto.commentRequired) throw new BadRequestException('Cần chỉ định số bình luận tối thiểu');
-        break;
       case HiddenGateType.LIKE_AND_COMMENT:
-      case HiddenGateType.LIKE_OR_COMMENT:
         if (!dto.likeRequired || !dto.commentRequired)
           throw new BadRequestException('Cần chỉ định cả số like và bình luận');
         break;
       case HiddenGateType.GEM_PURCHASE:
         if (!dto.gemPrice) throw new BadRequestException('Cần chỉ định giá Gem');
         break;
-      case HiddenGateType.LIKE_OR_GEM:
-        if (!dto.likeRequired || !dto.gemPrice)
-          throw new BadRequestException('Cần chỉ định số like và giá Gem');
-        break;
-      case HiddenGateType.COMMENT_OR_GEM:
-        if (!dto.commentRequired || !dto.gemPrice)
-          throw new BadRequestException('Cần chỉ định số bình luận và giá Gem');
-        break;
+      default:
+        throw new BadRequestException('Kiểu điều kiện mở khoá không hợp lệ');
     }
   }
 

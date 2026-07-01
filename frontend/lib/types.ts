@@ -43,6 +43,23 @@ export interface Thread {
   tags?: { tag: { id: string; name: string; slug: string; color?: string | null } }[];
 }
 
+export interface HiddenSection {
+  id: string;
+  postId: string;
+  sortOrder: number;
+  label: string | null;
+  gateType: string;
+  likeRequired: number | null;
+  commentRequired: number | null;
+  gemPrice: number | null;
+  unlockCount: number;
+  isUnlocked: boolean;
+  unlockedVia?: string;
+  content?: string; // chỉ có khi isUnlocked = true
+  currentLikes?: number;
+  currentComments?: number;
+}
+
 export interface Post {
   id: string;
   content: string;
@@ -57,6 +74,7 @@ export interface Post {
   reactions?: { emoji: string; userId: string }[];
   tipTotal?: number;
   tipCount?: number;
+  hiddenSections?: HiddenSection[];
 }
 
 export interface Paginated<T> {

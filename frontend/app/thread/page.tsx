@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather, AtSign } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Unlock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather, AtSign } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -101,6 +101,7 @@ function ThreadView() {
   const [hiddenOn, setHiddenOn] = useState(false);
   const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
   const [editHiddenSectionId, setEditHiddenSectionId] = useState<string | null>(null);
+  const [unlockBusy, setUnlockBusy] = useState<string | null>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
@@ -453,6 +454,21 @@ function ThreadView() {
       load();
     } catch (e: any) { setErr(e.message); }
     finally { setEditBusy(false); }
+  }
+  // ── Nội dung ẩn: mở khoá bằng Gem ──
+  async function unlockHidden(hiddenSectionId: string) {
+    setUnlockBusy(hiddenSectionId);
+    try { await api.post('/hidden-content/unlock/gem', { hiddenSectionId }); load(); }
+    catch (e: any) { setErr(e.message); }
+    finally { setUnlockBusy(null); }
+  }
+  function gateDescription(hs: any): string {
+    const parts: string[] = [];
+    if (needLike(hs.gateType) && hs.likeRequired) parts.push(`${hs.currentLikes ?? 0}/${hs.likeRequired} like`);
+    if (needComment(hs.gateType) && hs.commentRequired) parts.push(`${hs.currentComments ?? 0}/${hs.commentRequired} bình luận`);
+    const text = parts.join(hs.gateType === 'LIKE_AND_COMMENT' ? ' và ' : ' hoặc ');
+    if (needGem(hs.gateType) && hs.gemPrice) return text ? `${text} — hoặc mở ngay bằng ${hs.gemPrice} Gem` : `Mở khoá bằng ${hs.gemPrice} Gem`;
+    return text || 'Nội dung đang bị khoá';
   }
   async function loadHistory(postId: string) {
     setHistoryPostId(postId); setHistoryLoading(true);
@@ -870,6 +886,30 @@ function ThreadView() {
                 ) : (
                   <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: p.content }} />
                 )}
+                {editingPostId !== p.id && (p as any).hiddenSections?.map((hs: any) => (
+                  <div key={hs.id} className={`mt-3 rounded-xl border p-3 text-sm ${hs.isUnlocked ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/10' : 'border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10'}`}>
+                    <div className="mb-1 flex items-center gap-1.5 font-medium">
+                      {hs.isUnlocked ? <Unlock size={14} className="text-emerald-600" /> : <Lock size={14} className="text-amber-600" />}
+                      <span>{hs.label || 'Nội dung ẩn'}</span>
+                    </div>
+                    {hs.isUnlocked ? (
+                      <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-xs text-ink-500">{gateDescription(hs)}</p>
+                        {needGem(hs.gateType) && hs.gemPrice ? (
+                          user ? (
+                            <button type="button" disabled={unlockBusy === hs.id} onClick={() => unlockHidden(hs.id)} className="btn-primary inline-flex items-center gap-1 !py-1 text-xs disabled:opacity-50">
+                              <Gem size={12} /> {unlockBusy === hs.id ? 'Đang mở…' : `Mở khoá bằng ${hs.gemPrice} Gem`}
+                            </button>
+                          ) : (
+                            <p className="text-xs text-ink-400">Đăng nhập để mở khoá bằng Gem.</p>
+                          )
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                ))}
                 {(p as any).editCount > 0 && editingPostId !== p.id && (
                   <button onClick={() => loadHistory(p.id)} className="mt-1 flex items-center gap-1 text-[11px] text-ink-400 hover:text-ink-600">
                     <History size={11} /> Đã sửa {(p as any).editCount} lần

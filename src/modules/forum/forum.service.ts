@@ -311,6 +311,59 @@ export class ForumService {
     };
   }
 
+  // ── Admin: liệt kê TẤT CẢ chủ đề (kể cả ẩn/chờ duyệt/khoá) để quản lý ──
+  async getAdminThreadList(query: {
+    q?: string;
+    categoryId?: string;
+    authorId?: string;
+    status?: 'all' | 'pending' | 'hidden' | 'locked';
+    page?: number;
+    limit?: number;
+    sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes' | 'replies';
+  }) {
+    const page = query.page ?? 1;
+    const limit = Math.min(query.limit ?? 20, 100);
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.categoryId) where.categoryId = query.categoryId;
+    if (query.authorId) where.authorId = query.authorId;
+    if (query.q?.trim()) where.title = { contains: query.q.trim(), mode: 'insensitive' };
+    if (query.status === 'pending') where.isApproved = false;
+    else if (query.status === 'hidden') where.isHidden = true;
+    else if (query.status === 'locked') where.isLocked = true;
+
+    const orderBy: any =
+      query.sortBy === 'createdAt'
+        ? { createdAt: 'desc' }
+        : query.sortBy === 'views'
+        ? { viewCount: 'desc' }
+        : query.sortBy === 'likes'
+        ? { likeCount: 'desc' }
+        : query.sortBy === 'replies'
+        ? { replyCount: 'desc' }
+        : { lastPostAt: 'desc' };
+
+    const [threads, total] = await Promise.all([
+      this.prisma.thread.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        include: {
+          author: { select: { id: true, username: true, displayName: true, avatar: true } },
+          category: { select: { id: true, name: true, slug: true, color: true } },
+        },
+      }),
+      this.prisma.thread.count({ where }),
+    ]);
+
+    return {
+      data: threads,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
   async getThread(slug: string, userId?: string) {
     const thread = await this.prisma.thread.findUnique({
       where: { slug },

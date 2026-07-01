@@ -606,6 +606,25 @@ export class ForumController {
     return this.forum.getThreadReplyBans(threadId);
   }
 
+  // ── Quản lý bài viết (admin): xem toàn bộ chủ đề, kể cả ẩn/chờ duyệt ──
+  @Get('admin/threads')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  listAdminThreads(
+    @Query('q') q?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('authorId') authorId?: string,
+    @Query('status') status?: 'all' | 'pending' | 'hidden' | 'locked',
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @Query('sortBy') sortBy?: 'lastPost' | 'createdAt' | 'views' | 'likes' | 'replies',
+  ) {
+    return this.forum.getAdminThreadList({
+      q, categoryId, authorId, status, sortBy,
+      page: Number(page), limit: Number(limit),
+    });
+  }
+
   // ── Batch moderation ──
   @Post('admin/batch/posts/delete')
   @UseGuards(JwtAuthGuard, RolesGuard)

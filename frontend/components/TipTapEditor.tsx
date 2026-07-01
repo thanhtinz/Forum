@@ -559,7 +559,23 @@ const FxNetdisk = TiptapNode.create({
   addAttributes() { return { url: { default: '' }, label: { default: 'Tải xuống' }, password: { default: '' } }; },
   parseHTML() { return [{ tag: 'div.fx-netdisk' }]; },
   renderHTML({ node }) {
-    const kids: any[] = [['a', { class: 'fx-btn', href: node.attrs.url, target: '_blank', rel: 'noopener noreferrer' }, node.attrs.label || 'Tải xuống']];
+    const downloadBtn: any = [
+      'a',
+      { class: 'fx-netdisk-btn', href: node.attrs.url, target: '_blank', rel: 'noopener noreferrer' },
+      [
+        'div',
+        {},
+        [
+          'div',
+          { class: 'folder' },
+          ['div', { class: 'top' }, ['svg', { viewBox: '0 0 24 27' }, ['path', { d: 'M1,3 L1,27 L23,27 L23,8 L11,8 L8,3 Z' }]]],
+          ['div', { class: 'paper' }],
+        ],
+        ['div', { class: 'pencil' }],
+      ],
+      node.attrs.label || 'Tải xuống',
+    ];
+    const kids: any[] = [downloadBtn];
     if (node.attrs.password) kids.push(['span', { class: 'fx-netdisk-pw' }, 'Mật khẩu: ' + node.attrs.password]);
     return ['div', { class: 'fx-netdisk' }, ...kids];
   },

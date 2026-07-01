@@ -22,7 +22,7 @@ import {
   List, ListOrdered, ListChecks, AlignLeft, AlignCenter, AlignRight,
   Link as LinkIcon, Image as ImageIcon, Table as TableIcon,
   Youtube as YoutubeIcon, Minus, Undo2, Redo2, Type, Palette, Highlighter,
-  Rows, Columns, Trash2, EyeOff, Sparkles, ChevronDown,
+  Rows, Columns, Trash2, Sparkles, ChevronDown,
   Eye, Maximize2, Minimize2,
   Plus, Hash,
 } from 'lucide-react';
@@ -898,12 +898,6 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
     editor!.chain().focus().extendMarkRange('link').setLink({ href: u }).insertContent(u).run();
   }
 
-  function insertSpoiler() {
-    editor!.chain().focus().insertContent(
-      '<details><summary>Spoiler</summary><p>Nội dung ẩn</p></details>'
-    ).run();
-  }
-
   // ── Widget "Chèn" ──
   const chain = () => (editor!.chain().focus() as any);
 
@@ -1141,7 +1135,6 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
         <button type="button" className={btn} title="Chèn media (ảnh / tệp)" disabled={uploading} onClick={() => mediaRef.current?.click()}><ImageIcon size={16} /></button>
         <button type="button" className={btn} title="Nhúng video (YouTube / TikTok / Vimeo / Bilibili)" onClick={insertVideo}><YoutubeIcon size={16} /></button>
         <button type="button" className={btn} title="Chèn bảng 3x3" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><TableIcon size={16} /></button>
-        <button type="button" className={btn} title="Spoiler (nội dung ẩn)" onClick={insertSpoiler}><EyeOff size={16} /></button>
 
         <Divider />
 

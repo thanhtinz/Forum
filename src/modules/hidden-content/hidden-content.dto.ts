@@ -59,6 +59,54 @@ export class CreateHiddenSectionDto {
   gemPrice?: number;
 }
 
+// Cập nhật 1 hidden section đã có (gọi khi sửa bài) — không đổi postId/sortOrder
+export class UpdateHiddenSectionDto {
+  @IsOptional()
+  @IsString()
+  label?: string;
+
+  @IsString()
+  contentRaw: string; // BBCode/Markdown từ editor
+
+  @IsEnum(HiddenGateType)
+  gateType: HiddenGateType;
+
+  @ValidateIf((o) =>
+    [
+      HiddenGateType.LIKE_REQUIRED,
+      HiddenGateType.LIKE_AND_COMMENT,
+      HiddenGateType.LIKE_OR_COMMENT,
+      HiddenGateType.LIKE_OR_GEM,
+    ].includes(o.gateType),
+  )
+  @IsInt()
+  @Min(1)
+  likeRequired?: number;
+
+  @ValidateIf((o) =>
+    [
+      HiddenGateType.COMMENT_REQUIRED,
+      HiddenGateType.LIKE_AND_COMMENT,
+      HiddenGateType.LIKE_OR_COMMENT,
+      HiddenGateType.COMMENT_OR_GEM,
+    ].includes(o.gateType),
+  )
+  @IsInt()
+  @Min(1)
+  commentRequired?: number;
+
+  @ValidateIf((o) =>
+    [
+      HiddenGateType.GEM_PURCHASE,
+      HiddenGateType.LIKE_OR_GEM,
+      HiddenGateType.COMMENT_OR_GEM,
+    ].includes(o.gateType),
+  )
+  @IsInt()
+  @Min(1)
+  gemPrice?: number;
+}
+
 export class UnlockHiddenSectionDto {
   @IsString()
   hiddenSectionId: string;

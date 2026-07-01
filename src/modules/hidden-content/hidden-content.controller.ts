@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   Param,
   Query,
@@ -9,7 +10,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { HiddenContentService } from './hidden-content.service';
-import { CreateHiddenSectionDto, UnlockHiddenSectionDto } from './hidden-content.dto';
+import { CreateHiddenSectionDto, UpdateHiddenSectionDto, UnlockHiddenSectionDto } from './hidden-content.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { OptionalJwtGuard } from '../../common/guards/optional-jwt.guard';
 
@@ -34,6 +35,20 @@ export class HiddenContentController {
   ) {
     const userId = req.user?.id ?? null;
     return this.hiddenContentService.getSectionsForPost(postId, userId, threadId);
+  }
+
+  // Lấy đầy đủ hidden sections (kèm contentRaw) để sửa lại — chỉ tác giả bài viết hoặc mod/admin
+  @Get('sections/post/:postId/edit')
+  @UseGuards(JwtAuthGuard)
+  async getSectionsForEdit(@Param('postId') postId: string, @Request() req: any) {
+    return this.hiddenContentService.getSectionsForEdit(postId, req.user.id, req.user.role);
+  }
+
+  // Cập nhật 1 hidden section đã có (gọi khi sửa bài)
+  @Patch('sections/:id')
+  @UseGuards(JwtAuthGuard)
+  async updateSection(@Param('id') id: string, @Body() dto: UpdateHiddenSectionDto, @Request() req: any) {
+    return this.hiddenContentService.updateSection(id, dto, req.user.id, req.user.role);
   }
 
   // Mở khoá bằng Gem

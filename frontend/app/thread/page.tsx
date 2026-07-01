@@ -97,8 +97,10 @@ function ThreadView() {
   const [reply, setReply] = useState('');
   const [replyDraft, setReplyDraft] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState('');
+  // Nội dung ẩn — dùng khi SỬA bài (xem/sửa section đã có, hoặc thêm mới cho bài gốc)
   const [hiddenOn, setHiddenOn] = useState(false);
   const [hidden, setHidden] = useState({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
+  const [editHiddenSectionId, setEditHiddenSectionId] = useState<string | null>(null);
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
@@ -240,17 +242,6 @@ function ThreadView() {
       const r = await api.post<any>('/forum/posts', { threadId: thread.id, content: reply, parentId: replyToPost?.id || null });
       setReply(''); setReplyToPost(null);
       if (r?.pendingApproval) { setErr(''); alert('Trả lời của bạn đang chờ kiểm duyệt và sẽ hiển thị sau khi được duyệt.'); return; }
-      // Nội dung ẩn cho bài trả lời
-      if (hiddenOn && hidden.content.trim() && r?.id) {
-        const g = hidden.gateType;
-        const body: any = { postId: r.id, contentRaw: hidden.content, gateType: g };
-        if (hidden.label.trim()) body.label = hidden.label.trim();
-        if (['LIKE_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'LIKE_OR_GEM'].includes(g)) body.likeRequired = Math.max(1, hidden.likeRequired);
-        if (['COMMENT_REQUIRED', 'LIKE_AND_COMMENT', 'LIKE_OR_COMMENT', 'COMMENT_OR_GEM'].includes(g)) body.commentRequired = Math.max(1, hidden.commentRequired);
-        if (['GEM_PURCHASE', 'LIKE_OR_GEM', 'COMMENT_OR_GEM'].includes(g)) body.gemPrice = Math.max(1, hidden.gemPrice);
-        await api.post('/hidden-content/sections', body).catch(() => {});
-        setHiddenOn(false); setHidden({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
-      }
       // Xoá nháp trả lời của thread này (nếu có)
       api.get<any[]>('/forum/drafts').then((ds) => {
         const d = (ds || []).find((x) => x.threadId === thread.id);
@@ -411,11 +402,31 @@ function ThreadView() {
   }
 
   // ── Post edit actions ──
-  function startEdit(p: Post) {
+  async function startEdit(p: Post) {
     setEditingPostId(p.id);
     setEditContent((p as any).contentRaw || p.content);
     setEditReason('');
     if ((p as any).isFirstPost && thread) setEditTitle(thread.title);
+    // Nội dung ẩn: tải lại section đã có (nếu có) để hiện ra khi sửa
+    setHiddenOn(false);
+    setHidden({ content: '', gateType: 'LIKE_REQUIRED', likeRequired: 1, commentRequired: 1, gemPrice: 10, label: '' });
+    setEditHiddenSectionId(null);
+    try {
+      const sections = await api.get<any[]>(`/hidden-content/sections/post/${p.id}/edit`);
+      const s = sections?.[0];
+      if (s) {
+        setEditHiddenSectionId(s.id);
+        setHiddenOn(true);
+        setHidden({
+          content: s.contentRaw || '',
+          gateType: s.gateType || 'LIKE_REQUIRED',
+          likeRequired: s.likeRequired || 1,
+          commentRequired: s.commentRequired || 1,
+          gemPrice: s.gemPrice || 10,
+          label: s.label || '',
+        });
+      }
+    } catch { /* chưa có nội dung ẩn hoặc không có quyền -> bỏ qua */ }
   }
   async function submitEdit() {
     if (!editingPostId || !editContent.trim()) return;
@@ -426,7 +437,19 @@ function ThreadView() {
       if (editedPost && (editedPost as any).isFirstPost && thread && editTitle.trim() && editTitle.trim() !== thread.title) {
         await api.patch(`/forum/threads/${thread.id}`, { title: editTitle.trim() });
       }
+      // Nội dung ẩn: cập nhật section đã có, hoặc tạo mới nếu vừa bật
+      if (hiddenOn && hidden.content.trim()) {
+        const g = hidden.gateType;
+        const body: any = { contentRaw: hidden.content, gateType: g };
+        if (hidden.label.trim()) body.label = hidden.label.trim();
+        if (needLike(g)) body.likeRequired = Math.max(1, hidden.likeRequired);
+        if (needComment(g)) body.commentRequired = Math.max(1, hidden.commentRequired);
+        if (needGem(g)) body.gemPrice = Math.max(1, hidden.gemPrice);
+        if (editHiddenSectionId) await api.patch(`/hidden-content/sections/${editHiddenSectionId}`, body).catch(() => {});
+        else await api.post('/hidden-content/sections', { ...body, postId: editingPostId }).catch(() => {});
+      }
       setEditingPostId(null);
+      setEditHiddenSectionId(null);
       load();
     } catch (e: any) { setErr(e.message); }
     finally { setEditBusy(false); }
@@ -559,23 +582,6 @@ function ThreadView() {
             ) : (
               <TipTapEditor value={reply} onChange={setReply} placeholder="Viết bình luận…" autosaveKey={`reply-${thread?.id || 'x'}`} />
             )}
-            <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
-              <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hiddenOn} onChange={(e) => setHiddenOn(e.target.checked)} /><Lock size={14} /> Thêm nội dung ẩn</label>
-              {hiddenOn && (
-                <div className="mt-2 space-y-2">
-                  <TipTapEditor value={hidden.content} onChange={(html) => setHidden({ ...hidden, content: html })} placeholder="Nội dung ẩn cho tới khi mở khoá…" />
-                  <input className="input" placeholder="Nhãn (tuỳ chọn)" value={hidden.label} onChange={(e) => setHidden({ ...hidden, label: e.target.value })} />
-                  <div className="flex flex-wrap items-center gap-2">
-                    <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
-                      {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-                    </select>
-                    {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
-                    {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
-                    {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
-                  </div>
-                </div>
-              )}
-            </div>
             {err && <p className="text-sm text-red-500">{err}</p>}
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setReplyPreview((v) => !v)} className="btn-outline !py-1.5 text-sm">
@@ -832,6 +838,29 @@ function ThreadView() {
                       <input autoFocus className="input w-full text-lg font-bold" placeholder="Tiêu đề bài viết…" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
                     )}
                     <TipTapEditor value={editContent} onChange={setEditContent} placeholder="Nội dung bài viết…" />
+                    {(isFirst || editHiddenSectionId) && (
+                      <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
+                        {editHiddenSectionId ? (
+                          <p className="flex items-center gap-2 text-sm font-medium"><Lock size={14} /> Nội dung ẩn</p>
+                        ) : (
+                          <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hiddenOn} onChange={(e) => setHiddenOn(e.target.checked)} /><Lock size={14} /> Thêm nội dung ẩn</label>
+                        )}
+                        {hiddenOn && (
+                          <div className="mt-2 space-y-2">
+                            <TipTapEditor value={hidden.content} onChange={(html) => setHidden({ ...hidden, content: html })} placeholder="Nội dung ẩn cho tới khi mở khoá…" />
+                            <input className="input" placeholder="Nhãn (tuỳ chọn)" value={hidden.label} onChange={(e) => setHidden({ ...hidden, label: e.target.value })} />
+                            <div className="flex flex-wrap items-center gap-2">
+                              <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
+                                {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                              </select>
+                              {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
+                              {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
+                              {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <input className="input w-full text-sm" placeholder="Lý do chỉnh sửa (tuỳ chọn)…" value={editReason} onChange={(e) => setEditReason(e.target.value)} />
                     <div className="flex gap-2">
                       <button onClick={submitEdit} disabled={editBusy} className="btn-primary !py-1 text-xs">{editBusy ? 'Đang lưu…' : 'Lưu'}</button>

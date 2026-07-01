@@ -8,6 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { HiddenGateType } from '@prisma/client';
 import {
   CreateHiddenSectionDto,
+  UpdateHiddenSectionDto,
   HiddenSectionResponseDto,
 } from './hidden-content.dto';
 import { marked } from 'marked';
@@ -37,6 +38,69 @@ export class HiddenContentService {
       data: {
         postId: dto.postId,
         sortOrder: dto.sortOrder ?? 0,
+        label: dto.label,
+        content,
+        contentRaw: dto.contentRaw,
+        gateType: dto.gateType,
+        likeRequired: dto.likeRequired ?? null,
+        commentRequired: dto.commentRequired ?? null,
+        gemPrice: dto.gemPrice ?? null,
+      },
+    });
+  }
+
+  // ──────────────────────────────────────────────
+  // LẤY HIDDEN SECTIONS ĐẦY ĐỦ (kèm contentRaw) ĐỂ SỬA
+  // Chỉ tác giả bài viết hoặc mod/admin — không áp điều kiện unlock
+  // ──────────────────────────────────────────────
+  async getSectionsForEdit(postId: string, userId: string, role: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+      select: { id: true, authorId: true },
+    });
+    if (!post) throw new NotFoundException('Bài viết không tồn tại');
+    const isMod = role === 'ADMIN' || role === 'MODERATOR';
+    if (post.authorId !== userId && !isMod) {
+      throw new ForbiddenException('Không có quyền xem nội dung ẩn của bài này');
+    }
+
+    const sections = await this.prisma.hiddenSection.findMany({
+      where: { postId },
+      orderBy: { sortOrder: 'asc' },
+    });
+    return sections.map((s) => ({
+      id: s.id,
+      postId: s.postId,
+      sortOrder: s.sortOrder,
+      label: s.label,
+      contentRaw: s.contentRaw,
+      gateType: s.gateType,
+      likeRequired: s.likeRequired,
+      commentRequired: s.commentRequired,
+      gemPrice: s.gemPrice,
+    }));
+  }
+
+  // ──────────────────────────────────────────────
+  // CẬP NHẬT 1 HIDDEN SECTION ĐÃ CÓ (gọi khi sửa bài)
+  // ──────────────────────────────────────────────
+  async updateSection(id: string, dto: UpdateHiddenSectionDto, userId: string, role: string) {
+    const section = await this.prisma.hiddenSection.findUnique({
+      where: { id },
+      include: { post: { select: { authorId: true } } },
+    });
+    if (!section) throw new NotFoundException('Không tìm thấy nội dung ẩn');
+    const isMod = role === 'ADMIN' || role === 'MODERATOR';
+    if (section.post.authorId !== userId && !isMod) {
+      throw new ForbiddenException('Không có quyền sửa nội dung ẩn này');
+    }
+
+    this.validateGateConditions(dto);
+    const content = await this.renderContent(dto.contentRaw);
+
+    return this.prisma.hiddenSection.update({
+      where: { id },
+      data: {
         label: dto.label,
         content,
         contentRaw: dto.contentRaw,
@@ -416,7 +480,12 @@ export class HiddenContentService {
     };
   }
 
-  private validateGateConditions(dto: CreateHiddenSectionDto) {
+  private validateGateConditions(dto: {
+    gateType: HiddenGateType;
+    likeRequired?: number;
+    commentRequired?: number;
+    gemPrice?: number;
+  }) {
     switch (dto.gateType) {
       case HiddenGateType.LIKE_REQUIRED:
         if (!dto.likeRequired) throw new BadRequestException('Cần chỉ định số like tối thiểu');

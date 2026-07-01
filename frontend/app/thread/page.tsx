@@ -883,34 +883,32 @@ function ThreadView() {
                   <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: p.content }} />
                 )}
                 {editingPostId !== p.id && (p as any).hiddenSections?.map((hs: any) => (
-                  <div key={hs.id} className={`mt-3 rounded-xl border p-3 text-sm ${hs.isUnlocked ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/10' : 'border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10'}`}>
-                    {hs.isUnlocked ? (
-                      <>
-                        <div className="mb-1 flex items-center gap-1.5 font-medium">
-                          <Unlock size={14} className="text-emerald-600" />
-                          <span>{hs.label || 'Nội dung ẩn'}</span>
-                        </div>
-                        <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center gap-1.5 py-6 text-center">
-                        <span className="grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30">
-                          <Lock size={26} />
-                        </span>
-                        <p className="font-semibold">{hs.label || 'Nội dung này đã bị ẩn'}</p>
-                        <p className="text-xs text-ink-500">{gateDescription(hs)}</p>
-                        {needGem(hs.gateType) && hs.gemPrice ? (
-                          user ? (
-                            <button type="button" disabled={unlockBusy === hs.id} onClick={() => unlockHidden(hs.id)} className="btn-primary mt-1 inline-flex items-center gap-1 !py-1.5 text-xs disabled:opacity-50">
-                              <Gem size={12} /> {unlockBusy === hs.id ? 'Đang mở…' : `Mở khoá bằng ${hs.gemPrice} Gem`}
-                            </button>
-                          ) : (
-                            <p className="text-xs text-ink-400">Đăng nhập để mở khoá bằng Gem.</p>
-                          )
-                        ) : null}
+                  hs.isUnlocked ? (
+                    <div key={hs.id} className="mt-3">
+                      <div className="mb-1 flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+                        <Unlock size={14} />
+                        <span>{hs.label || 'Nội dung ẩn'}</span>
                       </div>
-                    )}
-                  </div>
+                      <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
+                    </div>
+                  ) : (
+                    <div key={hs.id} className="mt-3 flex flex-col items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/50 p-3 py-6 text-center text-sm dark:border-amber-900/40 dark:bg-amber-950/10">
+                      <span className="grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30">
+                        <Lock size={26} />
+                      </span>
+                      <p className="font-semibold">{hs.label || 'Nội dung này đã bị ẩn'}</p>
+                      <p className="text-xs text-ink-500">{gateDescription(hs)}</p>
+                      {needGem(hs.gateType) && hs.gemPrice ? (
+                        user ? (
+                          <button type="button" disabled={unlockBusy === hs.id} onClick={() => unlockHidden(hs.id)} className="btn-primary mt-1 inline-flex items-center gap-1 !py-1.5 text-xs disabled:opacity-50">
+                            <Gem size={12} /> {unlockBusy === hs.id ? 'Đang mở…' : `Mở khoá bằng ${hs.gemPrice} Gem`}
+                          </button>
+                        ) : (
+                          <p className="text-xs text-ink-400">Đăng nhập để mở khoá bằng Gem.</p>
+                        )
+                      ) : null}
+                    </div>
+                  )
                 ))}
                 {(p as any).editCount > 0 && editingPostId !== p.id && (
                   <button onClick={() => loadHistory(p.id)} className="mt-1 flex items-center gap-1 text-[11px] text-ink-400 hover:text-ink-600">

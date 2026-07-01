@@ -188,6 +188,184 @@ body.drawer-open iframe { display: none !important; }
 .fx-netdisk, .prose .fx-netdisk { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
 .fx-netdisk-pw, .prose .fx-netdisk-pw { font-size: 13px; color: #6b7280; background: #f3f4f6; padding: 2px 8px; border-radius: 6px; }
 .dark .fx-netdisk-pw, .dark .prose .fx-netdisk-pw { background: #1f2937; color: #9ca3af; }
+
+/* Nút Tải xuống (netdisk) — chuyển thể từ component "Continue Application" của Uiverse.io (by Nawsome):
+   đổi chữ thành "Tải xuống" (linh động theo label) và đổi mũi tên ">" thành mũi tên mở liên kết. */
+.fx-netdisk-btn, .prose .fx-netdisk-btn, .ProseMirror .fx-netdisk-btn {
+  --color: #fff;
+  --background: #404660;
+  --background-hover: #3A4059;
+  --background-left: #2B3044;
+  --folder: #F3E9CB;
+  --folder-inner: #BEB393;
+  --paper: #FFFFFF;
+  --paper-lines: #BBC1E1;
+  --paper-behind: #E1E6F9;
+  --pencil-cap: #fff;
+  --pencil-top: #275EFE;
+  --pencil-middle: #fff;
+  --pencil-bottom: #5C86FF;
+  --shadow: rgba(13, 15, 25, .2);
+  display: inline-block;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 19px;
+  -webkit-tap-highlight-color: transparent;
+  padding: 17px 34px 17px 69px;
+  transition: background 0.3s;
+  color: var(--color) !important;
+  text-decoration: none !important;
+  background: var(--bg, var(--background));
+}
+.fx-netdisk-btn > div, .prose .fx-netdisk-btn > div, .ProseMirror .fx-netdisk-btn > div {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 53px;
+  position: absolute;
+  overflow: hidden;
+  border-radius: 5px 0 0 5px;
+  background: var(--background-left);
+}
+.fx-netdisk-btn .folder {
+  width: 23px;
+  height: 27px;
+  position: absolute;
+  left: 15px;
+  top: 13px;
+}
+.fx-netdisk-btn .folder .top {
+  left: 0;
+  top: 0;
+  z-index: 2;
+  position: absolute;
+  transform: translateX(var(--fx, 0));
+  transition: transform 0.4s ease var(--fd, 0.3s);
+}
+.fx-netdisk-btn .folder .top svg {
+  width: 24px;
+  height: 27px;
+  display: block;
+  fill: var(--folder);
+  transform-origin: 0 50%;
+  transition: transform 0.3s ease var(--fds, 0.45s);
+  transform: perspective(120px) rotateY(var(--fr, 0deg));
+}
+.fx-netdisk-btn .folder:before, .fx-netdisk-btn .folder:after, .fx-netdisk-btn .folder .paper {
+  content: "";
+  position: absolute;
+  left: var(--l, 0);
+  top: var(--t, 0);
+  width: var(--w, 100%);
+  height: var(--h, 100%);
+  border-radius: 1px;
+  background: var(--b, var(--folder-inner));
+}
+.fx-netdisk-btn .folder:before {
+  box-shadow: 0 1.5px 3px var(--shadow), 0 2.5px 5px var(--shadow), 0 3.5px 7px var(--shadow);
+  transform: translateX(var(--fx, 0));
+  transition: transform 0.4s ease var(--fd, 0.3s);
+}
+.fx-netdisk-btn .folder:after, .fx-netdisk-btn .folder .paper {
+  --l: 1px;
+  --t: 1px;
+  --w: 21px;
+  --h: 25px;
+  --b: var(--paper-behind);
+}
+.fx-netdisk-btn .folder:after {
+  transform: translate(var(--pbx, 0), var(--pby, 0));
+  transition: transform 0.4s ease var(--pbd, 0s);
+}
+.fx-netdisk-btn .folder .paper {
+  z-index: 1;
+  --b: var(--paper);
+}
+.fx-netdisk-btn .folder .paper:before, .fx-netdisk-btn .folder .paper:after {
+  content: "";
+  width: var(--wp, 14px);
+  height: 2px;
+  border-radius: 1px;
+  transform: scaleY(0.5);
+  left: 3px;
+  top: var(--tp, 3px);
+  position: absolute;
+  background: var(--paper-lines);
+  box-shadow: 0 12px 0 0 var(--paper-lines), 0 24px 0 0 var(--paper-lines);
+}
+.fx-netdisk-btn .folder .paper:after {
+  --tp: 6px;
+  --wp: 10px;
+}
+.fx-netdisk-btn .pencil {
+  height: 2px;
+  width: 3px;
+  border-radius: 1px 1px 0 0;
+  top: 8px;
+  left: 105%;
+  position: absolute;
+  z-index: 3;
+  transform-origin: 50% 19px;
+  background: var(--pencil-cap);
+  transform: translateX(var(--pex, 0)) rotate(35deg);
+  transition: transform 0.4s ease var(--pbd, 0s);
+}
+.fx-netdisk-btn .pencil:before, .fx-netdisk-btn .pencil:after {
+  content: "";
+  position: absolute;
+  display: block;
+  background: var(--b, linear-gradient(var(--pencil-top) 55%, var(--pencil-middle) 55.1%, var(--pencil-middle) 60%, var(--pencil-bottom) 60.1%));
+  width: var(--w, 5px);
+  height: var(--h, 20px);
+  border-radius: var(--br, 2px 2px 0 0);
+  top: var(--t, 2px);
+  left: var(--l, -1px);
+}
+.fx-netdisk-btn .pencil:before {
+  -webkit-clip-path: polygon(0 5%, 5px 5%, 5px 17px, 50% 20px, 0 17px);
+  clip-path: polygon(0 5%, 5px 5%, 5px 17px, 50% 20px, 0 17px);
+}
+.fx-netdisk-btn .pencil:after {
+  --b: none;
+  --w: 3px;
+  --h: 6px;
+  --br: 0 2px 1px 0;
+  --t: 3px;
+  --l: 3px;
+  border-top: 1px solid var(--pencil-top);
+  border-right: 1px solid var(--pencil-top);
+}
+/* Mũi tên mở liên kết (thay cho ký tự ">" của bản gốc) — trượt chéo lên khi hover */
+.fx-netdisk-btn:after {
+  content: "";
+  position: absolute;
+  top: 23px;
+  right: 17px;
+  width: 12px;
+  height: 12px;
+  background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17 17 7M9 7h8v8'/%3E%3C/svg%3E");
+  transition: transform 0.3s;
+  transform: translate(var(--cx, 0), var(--cy, 0));
+}
+.fx-netdisk-btn:hover {
+  --bg: var(--background-hover);
+  --fx: -40px;
+  --fr: -60deg;
+  --fd: .15s;
+  --fds: 0s;
+  --pbx: 3px;
+  --pby: -3px;
+  --pbd: .15s;
+  --pex: -24px;
+  --cx: 3px;
+  --cy: -3px;
+}
+
 .fx-copy, .prose .fx-copy { cursor: pointer; border-bottom: 1px dashed #6366f1; color: #4f46e5; }
 .fx-copy:hover, .prose .fx-copy:hover { background: #eef2ff; }
 .dark .fx-copy, .dark .prose .fx-copy { color: #a5b4fc; }

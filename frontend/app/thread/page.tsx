@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { ThumbsUp, MessageCircle, Eye, Lock, Unlock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather, AtSign } from 'lucide-react';
+import { ThumbsUp, MessageCircle, Eye, Lock, Pin, Bell, BellRing, BarChart3, CheckCircle2, Award, Bookmark, BookmarkCheck, SmilePlus, Clock, FolderInput, Merge, Gem, Scissors, Quote, Reply, X as XIcon, Pencil, History, AlertTriangle, UserX, Shuffle, Trash2, Flag, MoreVertical, Feather, AtSign, Copy as Link2Icon, ChevronLeft, ChevronRight, CalendarDays, MessageSquare, Coins } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { Avatar } from '@/components/Header';
@@ -22,6 +22,50 @@ function readingTime(posts: { content: string }[]): number {
   const text = posts.map((p) => p.content.replace(/<[^>]+>/g, ' ')).join(' ');
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
+}
+
+// Icon MXH cho nút chia sẻ (lucide-react không có logo thương hiệu, nên vẽ SVG tay)
+function FacebookIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+    </svg>
+  );
+}
+function XLogoIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
+function TelegramIcon() {
+  return (
+    <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+    </svg>
+  );
+}
+
+// Dải huy hiệu thành tích của tác giả (khác role/level) — hiện 1 huy hiệu/lần, phân trang khi có nhiều
+function AuthorBadgeCarousel({ badges }: { badges: { name: string; icon: string; color: string }[] }) {
+  const [idx, setIdx] = useState(0);
+  if (!badges.length) return null;
+  const b = badges[idx % badges.length];
+  return (
+    <div className="mt-3 border-t border-ink-200/70 pt-2 dark:border-ink-800">
+      <div className="flex justify-center">
+        <UserBadges size="sm" badges={[{ key: `earned-${idx}`, label: b.name, icon: b.icon, color: b.color, kind: 'milestone' }]} />
+      </div>
+      {badges.length > 1 && (
+        <div className="mt-1 flex items-center justify-center gap-2 text-[10px] text-ink-400">
+          <button type="button" onClick={() => setIdx((i) => (i - 1 + badges.length) % badges.length)} className="rounded p-0.5 hover:bg-ink-100 dark:hover:bg-ink-800"><ChevronLeft size={12} /></button>
+          <span>{idx + 1}/{badges.length}</span>
+          <button type="button" onClick={() => setIdx((i) => (i + 1) % badges.length)} className="rounded p-0.5 hover:bg-ink-100 dark:hover:bg-ink-800"><ChevronRight size={12} /></button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface PollOption { id: string; text: string; voteCount: number; percent: number }
@@ -656,7 +700,7 @@ function ThreadView() {
         </div>
         <div className="flex">
           {/* sm+ vertical sidebar */}
-          <div className="hidden w-32 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50 sm:block">
+          <div className="hidden w-40 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50 sm:block">
             {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
             <div className="mt-2 flex items-center justify-center gap-1 truncate text-sm font-semibold">
               <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
@@ -673,6 +717,27 @@ function ThreadView() {
               </div>
             )}
             {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700 inline-flex items-center gap-1"><Feather size={10} />Tác giả</span>}
+            {p.author && (
+              <div className="mt-3 space-y-1 border-t border-ink-200/70 pt-2 text-left text-[11px] text-ink-500 dark:border-ink-800">
+                <div className="flex items-center justify-between gap-1">
+                  <span className="flex items-center gap-1"><CalendarDays size={11} /> Tham gia</span>
+                  <span className="font-medium text-ink-700 dark:text-ink-300">{(() => { try { return new Date((p.author as any).createdAt).toLocaleDateString('vi-VN'); } catch { return '—'; } })()}</span>
+                </div>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="flex items-center gap-1"><MessageSquare size={11} /> Bài viết</span>
+                  <span className="font-medium text-ink-700 dark:text-ink-300">{(p.author as any).postCount ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="flex items-center gap-1"><ThumbsUp size={11} /> Lượt thích</span>
+                  <span className="font-medium text-ink-700 dark:text-ink-300">{(p.author as any).reputationScore ?? 0}</span>
+                </div>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="flex items-center gap-1"><Coins size={11} /> Coins</span>
+                  <span className="font-medium text-ink-700 dark:text-ink-300">{(p.author as any).gemBalance ?? 0}</span>
+                </div>
+              </div>
+            )}
+            {(p.author as any)?.badges?.length > 0 && <AuthorBadgeCarousel badges={(p.author as any).badges} />}
           </div>
           <div className="min-w-0 flex-1 p-4">
           <div className="mb-2 flex items-center justify-between text-xs text-ink-500">
@@ -729,13 +794,7 @@ function ThreadView() {
           )}
           {editingPostId !== p.id && (p as any).hiddenSections?.map((hs: any) => (
             hs.isUnlocked ? (
-              <div key={hs.id} className="mt-3">
-                <div className="mb-1 flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-                  <Unlock size={14} />
-                  <span>{hs.label || 'Nội dung ẩn'}</span>
-                </div>
-                <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
-              </div>
+              <div key={hs.id} className="prose prose-sm mt-3 max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
             ) : (
               <div key={hs.id} className="mt-3 flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-ink-300 bg-ink-50/70 p-3 py-6 text-center text-sm dark:border-ink-700 dark:bg-ink-900/40">
                 <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-950/40 dark:text-brand-400">
@@ -1004,13 +1063,13 @@ function ThreadView() {
       <div className="card flex flex-wrap items-center gap-2 p-3">
         <span className="text-xs font-medium text-ink-500">Chia sẻ:</span>
         <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer"
-          className="rounded-lg bg-[#1877f2] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90">Facebook</a>
+          className="flex items-center gap-1.5 rounded-lg bg-[#1877f2] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"><FacebookIcon /> Facebook</a>
         <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(thread.title)}`} target="_blank" rel="noopener noreferrer"
-          className="rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white hover:opacity-90">X (Twitter)</a>
+          className="flex items-center gap-1.5 rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"><XLogoIcon /> X (Twitter)</a>
         <a href={`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(thread.title)}`} target="_blank" rel="noopener noreferrer"
-          className="rounded-lg bg-[#26a5e4] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90">Telegram</a>
+          className="flex items-center gap-1.5 rounded-lg bg-[#26a5e4] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"><TelegramIcon /> Telegram</a>
         <button type="button" onClick={() => { navigator.clipboard?.writeText(shareUrl).then(() => { setCopyToast('Đã copy liên kết'); setTimeout(() => setCopyToast(''), 1500); }); }}
-          className="rounded-lg bg-ink-100 px-3 py-1.5 text-xs font-medium hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700">Copy liên kết</button>
+          className="flex items-center gap-1.5 rounded-lg bg-ink-100 px-3 py-1.5 text-xs font-medium hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700"><Link2Icon /> Copy liên kết</button>
       </div>
 
       {/* ── Bài viết cùng chuyên mục ── */}

@@ -15,6 +15,7 @@ export function sanitizeRichHtml(html: string): string {
       'a', 'img',
       'table', 'thead', 'tbody', 'tr', 'td', 'th',
       'details', 'summary', 'iframe', 'input', 'label', 'audio', 'source',
+      'svg', 'path',
     ],
     allowedAttributes: {
       a: ['href', 'target', 'rel', 'title', 'class', 'data-type', 'data-id', 'data-label', 'style'],
@@ -32,6 +33,8 @@ export function sanitizeRichHtml(html: string): string {
       audio: ['controls', 'src'], source: ['src', 'type'],
       iframe: ['src', 'width', 'height', 'allow', 'allowfullscreen', 'frameborder', 'scrolling', 'class'],
       details: ['class'], summary: ['class'],
+      // Chỉ cho thuộc tính vẽ hình thuần tuý (không href/onload) — dùng cho icon nút Tải xuống
+      svg: ['viewBox'], path: ['d'],
     },
     allowedStyles: {
       '*': {
@@ -49,6 +52,7 @@ export function sanitizeRichHtml(html: string): string {
       '*': ['callout', 'callout-info', 'callout-success', 'callout-warning', 'callout-danger',
         'fx-btn', 'fx-note', 'fx-marquee', 'fx-progress', 'fx-progress-bar', 'fx-divider',
         'fx-card', 'fx-card-title', 'fx-card-body', 'fx-timeline', 'fx-netdisk', 'fx-netdisk-pw', 'fx-copy',
+        'fx-netdisk-btn', 'folder', 'top', 'paper', 'pencil',
         'video-embed', 'video-embed-wrap', 'mention', 'hashtag', 'attachment', 'spoiler'],
     },
     allowedSchemes: ['http', 'https', 'mailto', 'data'],
@@ -59,6 +63,9 @@ export function sanitizeRichHtml(html: string): string {
         attribs: { ...attribs, target: '_blank', rel: 'noopener noreferrer nofollow' },
       }),
     },
+    // SVG dùng thuộc tính viewBox chữ hoa B — parser mặc định hạ thường tên thuộc tính
+    // khiến "viewBox" thành "viewbox" (SVG không nhận, phân biệt hoa/thường). Giữ nguyên hoa/thường.
+    parser: { lowerCaseAttributeNames: false },
   });
 }
 

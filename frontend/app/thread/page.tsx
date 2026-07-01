@@ -90,10 +90,11 @@ function ThreadView() {
   const initialPage = Math.max(1, Number(searchParams.get('page') || 1));
   const { user } = useAuth();
   const [thread, setThread] = useState<Thread | null>(null);
+  const [firstPost, setFirstPost] = useState<Post | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [postPage, setPostPage] = useState(initialPage);
   const [postTotalPages, setPostTotalPages] = useState(1);
-  const POST_LIMIT = 20;
+  const POST_LIMIT = 10;
   const [reply, setReply] = useState('');
   const [replyDraft, setReplyDraft] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState('');
@@ -147,6 +148,7 @@ function ThreadView() {
   const [movePostBusy, setMovePostBusy] = useState(false);
   // ── Similar threads ──
   const [similarThreads, setSimilarThreads] = useState<Thread[]>([]);
+  const [latestThreads, setLatestThreads] = useState<Thread[]>([]);
   // ── Report modal ──
   const [reportModal, setReportModal] = useState<{ targetType: string; targetId: string; reportedUserId?: string } | null>(null);
   const [reportReason, setReportReason] = useState('');
@@ -171,7 +173,8 @@ function ThreadView() {
     try {
       const t = await api.get<Thread>(`/forum/threads/${slug}`);
       setThread(t);
-      const p = await api.get<Paginated<Post>>(`/forum/threads/${t.id}/posts?limit=${POST_LIMIT}&page=${initialPage}`);
+      const p = await api.get<Paginated<Post> & { firstPost: Post | null }>(`/forum/threads/${t.id}/posts?limit=${POST_LIMIT}&page=${initialPage}`);
+      setFirstPost(p.firstPost);
       setPosts(p.data);
       setPostTotalPages(p.meta?.totalPages ?? 1);
       api.get<{ total: number; users: any[] }>(`/community/threads/${t.id}/viewing`).then(setViewing).catch(() => {});
@@ -180,6 +183,9 @@ function ThreadView() {
           .then((r) => setSimilarThreads((r.data || []).filter((x) => x.id !== t.id).slice(0, 5)))
           .catch(() => {});
       }
+      api.get<{ data: Thread[] }>(`/forum/threads?limit=6&sortBy=createdAt`)
+        .then((r) => setLatestThreads((r.data || []).filter((x) => x.id !== t.id).slice(0, 5)))
+        .catch(() => {});
       if (user) {
         api.get<{ subscribed: boolean }>(`/forum/threads/${t.id}/subscription`).then((s) => setSubscribed(s.subscribed)).catch(() => {});
         api.get<{ bookmarked: boolean }>(`/forum/threads/${t.id}/bookmark`).then((b) => setBookmarked(b.bookmarked)).catch(() => {});
@@ -203,7 +209,8 @@ function ThreadView() {
   async function loadPostPage(page: number) {
     if (!thread) return;
     try {
-      const p = await api.get<Paginated<Post>>(`/forum/threads/${thread.id}/posts?limit=${POST_LIMIT}&page=${page}`);
+      const p = await api.get<Paginated<Post> & { firstPost: Post | null }>(`/forum/threads/${thread.id}/posts?limit=${POST_LIMIT}&page=${page}`);
+      setFirstPost(p.firstPost);
       setPosts(p.data);
       setPostTotalPages(p.meta?.totalPages ?? 1);
       setPostPage(page);
@@ -248,11 +255,14 @@ function ThreadView() {
         const d = (ds || []).find((x) => x.threadId === thread.id);
         if (d) api.del(`/forum/drafts/${d.id}`).catch(() => {});
       }).catch(() => {});
-      const lastPage = postTotalPages;
-      const p = await api.get<Paginated<Post>>(`/forum/threads/${thread.id}/posts?limit=${POST_LIMIT}&page=${lastPage}`);
+      // Dò trang cuối thật sự (số bình luận vừa tăng có thể sinh thêm trang mới)
+      const probe = await api.get<Paginated<Post> & { firstPost: Post | null }>(`/forum/threads/${thread.id}/posts?limit=${POST_LIMIT}&page=999999`);
+      const lastPage = probe.meta?.totalPages || 1;
+      const p = await api.get<Paginated<Post> & { firstPost: Post | null }>(`/forum/threads/${thread.id}/posts?limit=${POST_LIMIT}&page=${lastPage}`);
+      setFirstPost(p.firstPost);
       setPosts(p.data);
-      setPostTotalPages(p.meta?.totalPages ?? lastPage);
-      setPostPage(p.meta?.totalPages ?? lastPage);
+      setPostTotalPages(lastPage);
+      setPostPage(lastPage);
     } catch (e: any) { setErr(e.message); }
   }
 
@@ -434,8 +444,8 @@ function ThreadView() {
     setEditBusy(true);
     try {
       await api.patch(`/forum/posts/${editingPostId}`, { content: editContent, reason: editReason || undefined });
-      const editedPost = posts.find((ep) => ep.id === editingPostId);
-      if (editedPost && (editedPost as any).isFirstPost && thread && editTitle.trim() && editTitle.trim() !== thread.title) {
+      const isEditingFirstPost = editingPostId === firstPost?.id;
+      if (isEditingFirstPost && thread && editTitle.trim() && editTitle.trim() !== thread.title) {
         await api.patch(`/forum/threads/${thread.id}`, { title: editTitle.trim() });
       }
       // Nội dung ẩn: cập nhật section đã có, hoặc tạo mới nếu vừa bật
@@ -543,9 +553,10 @@ function ThreadView() {
   if (err && !thread) return <div className="card p-8 text-center text-red-500">{err}</div>;
   if (!thread) return null;
 
-  // Đưa best answer lên đầu (sau bài gốc) nếu có
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
+
+  // Đưa best answer lên đầu nếu có
   const sortedPosts = bestAnswerId ? [...posts].sort((a, b) => {
-    if ((a as any).isFirstPost) return -1; if ((b as any).isFirstPost) return 1;
     if (a.id === bestAnswerId) return -1; if (b.id === bestAnswerId) return 1; return 0;
   }) : posts;
 
@@ -619,6 +630,251 @@ function ThreadView() {
     </div>
   );
 
+  function renderPostArticle(p: Post, postNumber: number, isFirst: boolean, isBest: boolean, depth: number, showNewDivider?: boolean) {
+    return (
+      <div key={p.id} style={depth > 0 ? { marginLeft: `${Math.min(depth, 4) * 1.5}rem` } : undefined}>
+        {showNewDivider && (
+          <div className="my-3 flex items-center gap-3">
+            <div className="h-px flex-1 bg-blue-400" />
+            <span className="shrink-0 rounded-full bg-blue-500 px-3 py-0.5 text-xs font-semibold text-white">Bài mới</span>
+            <div className="h-px flex-1 bg-blue-400" />
+          </div>
+        )}
+      <article data-post-id={p.id} id={`post-${p.id}`} className={`card overflow-hidden ${depth > 0 ? 'border-l-4 border-brand-200 dark:border-brand-900' : ''} ${isBest ? 'ring-2 ring-emerald-400' : ''} ${splitMode && splitSelected.includes(p.id) ? 'ring-2 ring-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
+        {splitMode && !isFirst && (
+          <div className="flex items-center gap-2 border-b border-ink-200/70 px-3 py-2 dark:border-ink-800">
+            <input type="checkbox" checked={splitSelected.includes(p.id)} onChange={() => toggleSplitPost(p.id)}
+              className="h-4 w-4 cursor-pointer accent-orange-500" />
+          </div>
+        )}
+        {/* Mobile: horizontal author bar */}
+        <div className="flex items-center gap-3 border-b border-ink-200/70 bg-ink-50 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-900/50 sm:hidden">
+          {p.author && <Avatar user={p.author} size={36} />}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1 text-sm font-semibold">
+              <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
+              {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-4 w-4 shrink-0 object-contain" />}
+            </div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-1">
+              {p.author && (p.author as any)?.levelName && <UserBadges size="xs" badges={[{ key: 'level', label: (p.author as any).levelName, icon: (p.author as any).levelIcon || 'Star', color: (p.author as any).levelColor || 'gray', kind: 'level' as const }]} />}
+              {p.author && <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />}
+              {isFirst && <span className="chip bg-brand-100 text-brand-700 text-[10px] inline-flex items-center gap-0.5"><Feather size={9} />Tác giả</span>}
+            </div>
+          </div>
+        </div>
+        <div className="flex">
+          {/* sm+ vertical sidebar */}
+          <div className="hidden w-32 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50 sm:block">
+            {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
+            <div className="mt-2 flex items-center justify-center gap-1 truncate text-sm font-semibold">
+              <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
+              {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-5 w-5 shrink-0 object-contain" />}
+            </div>
+            {p.author && (
+              <div className="mt-1 flex flex-col items-center gap-1">
+                {(p.author as any)?.levelName && (
+                  <UserBadges size="xs" badges={[{ key: 'level', label: (p.author as any).levelName, icon: (p.author as any).levelIcon || 'Star', color: (p.author as any).levelColor || 'gray', kind: 'level' as const }]} />
+                )}
+                <div className="flex flex-wrap justify-center gap-1">
+                  <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />
+                </div>
+              </div>
+            )}
+            {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700 inline-flex items-center gap-1"><Feather size={10} />Tác giả</span>}
+          </div>
+          <div className="min-w-0 flex-1 p-4">
+          <div className="mb-2 flex items-center justify-between text-xs text-ink-500">
+            <span className="flex items-center gap-2">
+              {(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}
+              <a href={`#post-${p.id}`} className="text-ink-400 hover:text-brand-600">#{postNumber}</a>
+            </span>
+            <div className="flex items-center gap-2">
+              {isBest && <span className="flex items-center gap-1 font-medium text-emerald-600"><Award size={14} /> Câu trả lời hay nhất</span>}
+              {canManage && !isFirst && (
+                <button onClick={() => markBest(p.id)} className={`flex items-center gap-1 ${isBest ? 'text-emerald-600 hover:text-emerald-700' : 'text-ink-400 hover:text-emerald-600'}`}>
+                  <Award size={13} /> {isBest ? 'Bỏ chọn' : 'Hay nhất'}
+                </button>
+              )}
+            </div>
+          </div>
+          {editingPostId === p.id ? (
+            <div className="space-y-2">
+              {isFirst && (
+                <input autoFocus className="input w-full text-lg font-bold" placeholder="Tiêu đề bài viết…" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+              )}
+              <TipTapEditor value={editContent} onChange={setEditContent} placeholder="Nội dung bài viết…" />
+              {(isFirst || editHiddenSectionId) && (
+                <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
+                  {editHiddenSectionId ? (
+                    <p className="flex items-center gap-2 text-sm font-medium"><Lock size={14} /> Nội dung ẩn</p>
+                  ) : (
+                    <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hiddenOn} onChange={(e) => setHiddenOn(e.target.checked)} /><Lock size={14} /> Thêm nội dung ẩn</label>
+                  )}
+                  {hiddenOn && (
+                    <div className="mt-2 space-y-2">
+                      <TipTapEditor value={hidden.content} onChange={(html) => setHidden({ ...hidden, content: html })} placeholder="Nội dung ẩn cho tới khi mở khoá…" />
+                      <input className="input" placeholder="Nhãn (tuỳ chọn)" value={hidden.label} onChange={(e) => setHidden({ ...hidden, label: e.target.value })} />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
+                          {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                        </select>
+                        {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
+                        {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
+                        {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              <input className="input w-full text-sm" placeholder="Lý do chỉnh sửa (tuỳ chọn)…" value={editReason} onChange={(e) => setEditReason(e.target.value)} />
+              <div className="flex gap-2">
+                <button onClick={submitEdit} disabled={editBusy} className="btn-primary !py-1 text-xs">{editBusy ? 'Đang lưu…' : 'Lưu'}</button>
+                <button onClick={() => setEditingPostId(null)} className="rounded bg-ink-100 px-3 py-1 text-xs dark:bg-ink-800">Hủy</button>
+              </div>
+            </div>
+          ) : (
+            <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: p.content }} />
+          )}
+          {editingPostId !== p.id && (p as any).hiddenSections?.map((hs: any) => (
+            hs.isUnlocked ? (
+              <div key={hs.id} className="mt-3">
+                <div className="mb-1 flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+                  <Unlock size={14} />
+                  <span>{hs.label || 'Nội dung ẩn'}</span>
+                </div>
+                <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
+              </div>
+            ) : (
+              <div key={hs.id} className="mt-3 flex flex-col items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/50 p-3 py-6 text-center text-sm dark:border-amber-900/40 dark:bg-amber-950/10">
+                <span className="grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30">
+                  <Lock size={26} />
+                </span>
+                <p className="font-semibold">{hs.label || 'Nội dung này đã bị ẩn'}</p>
+                <p className="text-xs text-ink-500">{gateDescription(hs)}</p>
+                {needGem(hs.gateType) && hs.gemPrice ? (
+                  user ? (
+                    <button type="button" disabled={unlockBusy === hs.id} onClick={() => unlockHidden(hs.id)} className="btn-primary mt-1 inline-flex items-center gap-1 !py-1.5 text-xs disabled:opacity-50">
+                      <Gem size={12} /> {unlockBusy === hs.id ? 'Đang mở…' : `Mở khoá bằng ${hs.gemPrice} Gem`}
+                    </button>
+                  ) : (
+                    <p className="text-xs text-ink-400">Đăng nhập để mở khoá bằng Gem.</p>
+                  )
+                ) : null}
+              </div>
+            )
+          ))}
+          {(p as any).editCount > 0 && editingPostId !== p.id && (
+            <button onClick={() => loadHistory(p.id)} className="mt-1 flex items-center gap-1 text-[11px] text-ink-400 hover:text-ink-600">
+              <History size={11} /> Đã sửa {(p as any).editCount} lần
+            </button>
+          )}
+          {/* Signature */}
+          {(p.author as any)?.signature && editingPostId !== p.id && (
+            <div className="mt-3 border-t border-ink-200/60 pt-2 text-xs text-ink-400 italic dark:border-ink-800/60 whitespace-pre-line">
+              {(p.author as any).signature}
+            </div>
+          )}
+          <div className="mt-3 flex items-center justify-between gap-2 border-t border-ink-100 pt-3 text-xs dark:border-ink-800/60">
+            {/* Left: Report + mod actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              {user && p.author && user.id !== p.author.id && (
+                <button onClick={() => { setReportModal({ targetType: 'post', targetId: p.id, reportedUserId: p.author?.id }); setReportReason(''); setReportType('SPAM'); }} className="flex items-center gap-1 text-ink-400 hover:text-red-500">
+                  <Flag size={13} /> Report
+                </button>
+              )}
+              {isMod && !isFirst && (
+                <>
+                  <button onClick={() => deletePostAction(p.id)} className="flex items-center gap-1 text-red-400 hover:text-red-600">
+                    <Trash2 size={13} /> Xoá
+                  </button>
+                  {p.author && p.author.id !== user.id && (
+                    <>
+                      <button onClick={() => { setWarnModal({ postId: p.id, userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setWarnReason(''); setWarnPoints(1); }} className="flex items-center gap-1 text-amber-500 hover:text-amber-700">
+                        <AlertTriangle size={13} /> Cảnh cáo
+                      </button>
+                      <button onClick={() => { setReplyBanModal({ userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setReplyBanReason(''); setReplyBanExpiry(''); }} className="flex items-center gap-1 text-orange-500 hover:text-orange-700">
+                        <UserX size={13} /> Cấm trả lời
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+            {/* Right: reaction bubbles + main actions */}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {/* Existing reaction bubbles */}
+              {(() => {
+                const groups: Record<string, string[]> = {};
+                (p.reactions || []).forEach((r) => { (groups[r.emoji] ||= []).push(r.userId); });
+                return Object.entries(groups).map(([emoji, uids]) => {
+                  const mine = !!user && uids.includes(user.id);
+                  const label = emoji === 'like' ? '👍' : emoji;
+                  return (
+                    <button key={emoji} onClick={() => user && react(p.id, emoji)}
+                      className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${mine ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30' : 'border-ink-200 dark:border-ink-800'}`}>
+                      <span>{label}</span> <span className="text-ink-500">{uids.length}</span>
+                    </button>
+                  );
+                });
+              })()}
+              {/* Emoji picker */}
+              {user && (
+                <div className="group relative">
+                  <button className="flex items-center gap-1 rounded-full border border-dashed border-ink-300 px-2 py-0.5 text-ink-500 hover:text-brand-600 dark:border-ink-700"><SmilePlus size={14} /></button>
+                  <div className="absolute right-0 bottom-full z-10 mb-1 hidden gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card group-hover:flex dark:border-ink-800 dark:bg-ink-900">
+                    {REACTIONS.map((e) => (
+                      <button key={e} onClick={() => react(p.id, e)} className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-800">{e}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Tip total */}
+              {(p.tipTotal ?? 0) > 0 && (
+                <span className="flex items-center gap-1 rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-300" title={`${p.tipCount} lượt donate`}>
+                  <Gem size={12} /> {p.tipTotal}
+                </span>
+              )}
+              {/* Donate */}
+              {user && p.author && user.id !== p.author.id && (
+                <button onClick={() => donate(p.id)} className="flex items-center gap-1 text-fuchsia-500 hover:text-fuchsia-700">
+                  <Gem size={13} /> Donate
+                </button>
+              )}
+              {/* Quote */}
+              {user && !thread!.isLocked && (
+                <button onClick={() => quotePost(p)} className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
+                  <Quote size={13} /> Trích dẫn
+                </button>
+              )}
+              {/* Reply */}
+              {user && !thread!.isLocked && !isFirst && (
+                <button onClick={() => { setReplyToPost({ id: p.id, authorName: p.author?.displayName || p.author?.username || 'ẩn danh' }); document.getElementById('comment-form')?.scrollIntoView({ behavior: 'smooth' }); }}
+                  className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
+                  <Reply size={13} /> Trả lời
+                </button>
+              )}
+              {/* Tag */}
+              {user && !thread!.isLocked && p.author && user.id !== p.author.id && (
+                <button onClick={() => { const name = p.author?.displayName || p.author?.username || ''; setReply((prev) => (prev || '') + `<p><strong>@${name}</strong> </p>`); document.getElementById('comment-form')?.scrollIntoView({ behavior: 'smooth' }); }}
+                  className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
+                  <AtSign size={13} /> Tag
+                </button>
+              )}
+              {/* Edit */}
+              {user && p.author && (user.id === p.author.id || isMod) && !thread!.isLocked && editingPostId !== p.id && (
+                <button onClick={() => startEdit(p)} className="flex items-center gap-1 text-ink-500 hover:text-blue-600">
+                  <Pencil size={13} /> Sửa
+                </button>
+              )}
+            </div>
+          </div>
+          </div>{/* end flex-1 content */}
+        </div>{/* end flex row */}
+      </article>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {copyToast && <div className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-lg bg-ink-900 px-4 py-2 text-sm text-white shadow-card dark:bg-white dark:text-ink-900">{copyToast}</div>}
@@ -656,7 +912,7 @@ function ThreadView() {
                 <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] overflow-hidden rounded-xl border border-ink-200 bg-white py-1 shadow-card dark:border-ink-800 dark:bg-ink-900">
                   {canManage && (
                     <>
-                      <button onClick={() => { const fp = posts.find((p) => (p as any).isFirstPost); if (fp) startEdit(fp); setThreadMenu(false); }}
+                      <button onClick={() => { if (firstPost) startEdit(firstPost); setThreadMenu(false); }}
                         className="flex w-full items-center gap-2 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
                         <Pencil size={14} /> Sửa
                       </button>
@@ -736,7 +992,7 @@ function ThreadView() {
           <span className="flex items-center gap-1"><MessageCircle size={14} /> {thread.replyCount} trả lời</span>
           <span className="flex items-center gap-1"><Eye size={14} /> {thread.viewCount} lượt xem</span>
           <span className="flex items-center gap-1"><ThumbsUp size={14} /> {thread.likeCount}</span>
-          {posts.length > 0 && <span className="flex items-center gap-1"><Clock size={14} /> ~{readingTime(posts)} phút đọc</span>}
+          {(firstPost || posts.length > 0) && <span className="flex items-center gap-1"><Clock size={14} /> ~{readingTime(firstPost ? [firstPost, ...posts] : posts)} phút đọc</span>}
           {viewing.total > 0 && (
             <span className="flex items-center gap-1 text-emerald-600" title={viewing.users.map((u) => u.displayName || u.username).join(', ')}>
               <span className="h-2 w-2 rounded-full bg-emerald-500" /> {viewing.total} đang xem
@@ -748,6 +1004,45 @@ function ThreadView() {
       <PollCard threadId={thread.id} />
 
       <AdBanner position="thread_top" className="h-20 sm:h-24" />
+
+      {/* Bài gốc — luôn hiển thị, không phân trang */}
+      {firstPost && renderPostArticle(firstPost, 1, true, firstPost.id === bestAnswerId, 0)}
+
+      {/* ── Chia sẻ bài viết ── */}
+      <div className="card flex flex-wrap items-center gap-2 p-3">
+        <span className="text-xs font-medium text-ink-500">Chia sẻ:</span>
+        <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noopener noreferrer"
+          className="rounded-lg bg-[#1877f2] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90">Facebook</a>
+        <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(thread.title)}`} target="_blank" rel="noopener noreferrer"
+          className="rounded-lg bg-black px-3 py-1.5 text-xs font-medium text-white hover:opacity-90">X (Twitter)</a>
+        <a href={`https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(thread.title)}`} target="_blank" rel="noopener noreferrer"
+          className="rounded-lg bg-[#26a5e4] px-3 py-1.5 text-xs font-medium text-white hover:opacity-90">Telegram</a>
+        <button type="button" onClick={() => { navigator.clipboard?.writeText(shareUrl).then(() => { setCopyToast('Đã copy liên kết'); setTimeout(() => setCopyToast(''), 1500); }); }}
+          className="rounded-lg bg-ink-100 px-3 py-1.5 text-xs font-medium hover:bg-ink-200 dark:bg-ink-800 dark:hover:bg-ink-700">Copy liên kết</button>
+      </div>
+
+      {/* ── Bài viết cùng chuyên mục ── */}
+      {similarThreads.length > 0 && (
+        <div className="card overflow-hidden">
+          <div className="border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
+            <h3 className="text-sm font-semibold">Bài viết cùng chuyên mục</h3>
+          </div>
+          <ul className="divide-y divide-ink-200/70 dark:divide-ink-800">
+            {similarThreads.map((t) => (
+              <li key={t.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-ink-50/70 dark:hover:bg-ink-800/40">
+                <div className="min-w-0 flex-1">
+                  <Link href={`/thread?slug=${t.slug}`} className="truncate text-sm font-medium hover:text-brand-600">{t.title}</Link>
+                  <p className="mt-0.5 text-xs text-ink-500">{t.author?.displayName || t.author?.username}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-3 text-xs text-ink-400">
+                  <span className="flex items-center gap-1"><MessageCircle size={12} /> {t.replyCount}</span>
+                  <span className="flex items-center gap-1"><Eye size={12} /> {t.viewCount}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Post pagination top */}
       {postTotalPages > 1 && (
@@ -764,262 +1059,14 @@ function ThreadView() {
         </div>
       )}
 
-      {/* "Bình luận" card — page 1 with 0 replies, or pages 2+ */}
-      {((postPage === 1 && thread.replyCount === 0) || postPage > 1) && commentBox}
-
       <div className="space-y-3">
         {ordered.map((p, idx) => {
-          const isFirst = (p as any).isFirstPost;
           const isBest = p.id === bestAnswerId;
           const depth = (p as any)._depth || 0;
-          const postNumber = (postPage - 1) * POST_LIMIT + idx + 1;
+          const postNumber = (postPage - 1) * POST_LIMIT + idx + 2;
           // Show "Bai moi" divider between last-read post and the next unread posts
-          const showNewDivider = user && initialLastReadPostId && idx > 0 && ordered[idx - 1].id === initialLastReadPostId && p.id !== initialLastReadPostId;
-          // Show "Bình luận" section header before the first reply
-          const showCommentDivider = !isFirst && idx > 0 && (ordered[idx - 1] as any).isFirstPost;
-          return (
-            <div key={p.id} style={depth > 0 ? { marginLeft: `${Math.min(depth, 4) * 1.5}rem` } : undefined}>
-              {showCommentDivider && commentBox}
-              {showNewDivider && (
-                <div className="my-3 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-blue-400" />
-                  <span className="shrink-0 rounded-full bg-blue-500 px-3 py-0.5 text-xs font-semibold text-white">Bài mới</span>
-                  <div className="h-px flex-1 bg-blue-400" />
-                </div>
-              )}
-            <article data-post-id={p.id} id={`post-${p.id}`} className={`card overflow-hidden ${showCommentDivider ? 'mt-3' : ''} ${depth > 0 ? 'border-l-4 border-brand-200 dark:border-brand-900' : ''} ${isBest ? 'ring-2 ring-emerald-400' : ''} ${splitMode && splitSelected.includes(p.id) ? 'ring-2 ring-orange-400 bg-orange-50/50 dark:bg-orange-950/20' : ''}`}>
-              {splitMode && !isFirst && (
-                <div className="flex items-center gap-2 border-b border-ink-200/70 px-3 py-2 dark:border-ink-800">
-                  <input type="checkbox" checked={splitSelected.includes(p.id)} onChange={() => toggleSplitPost(p.id)}
-                    className="h-4 w-4 cursor-pointer accent-orange-500" />
-                </div>
-              )}
-              {/* Mobile: horizontal author bar */}
-              <div className="flex items-center gap-3 border-b border-ink-200/70 bg-ink-50 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-900/50 sm:hidden">
-                {p.author && <Avatar user={p.author} size={36} />}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1 text-sm font-semibold">
-                    <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
-                    {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-4 w-4 shrink-0 object-contain" />}
-                  </div>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                    {p.author && (p.author as any)?.levelName && <UserBadges size="xs" badges={[{ key: 'level', label: (p.author as any).levelName, icon: (p.author as any).levelIcon || 'Star', color: (p.author as any).levelColor || 'gray', kind: 'level' as const }]} />}
-                    {p.author && <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />}
-                    {isFirst && <span className="chip bg-brand-100 text-brand-700 text-[10px] inline-flex items-center gap-0.5"><Feather size={9} />Tác giả</span>}
-                  </div>
-                </div>
-              </div>
-              <div className="flex">
-                {/* sm+ vertical sidebar */}
-                <div className="hidden w-32 shrink-0 border-r border-ink-200/70 bg-ink-50 p-4 text-center dark:border-ink-800 dark:bg-ink-900/50 sm:block">
-                  {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
-                  <div className="mt-2 flex items-center justify-center gap-1 truncate text-sm font-semibold">
-                    <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
-                    {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-5 w-5 shrink-0 object-contain" />}
-                  </div>
-                  {p.author && (
-                    <div className="mt-1 flex flex-col items-center gap-1">
-                      {(p.author as any)?.levelName && (
-                        <UserBadges size="xs" badges={[{ key: 'level', label: (p.author as any).levelName, icon: (p.author as any).levelIcon || 'Star', color: (p.author as any).levelColor || 'gray', kind: 'level' as const }]} />
-                      )}
-                      <div className="flex flex-wrap justify-center gap-1">
-                        <UserBadges size="xs" badges={roleBadgesFromUser({ role: (p.author as any).role, verifiedBadge: (p.author as any).verifiedBadge })} />
-                      </div>
-                    </div>
-                  )}
-                  {isFirst && <span className="chip mt-1 bg-brand-100 text-brand-700 inline-flex items-center gap-1"><Feather size={10} />Tác giả</span>}
-                </div>
-                <div className="min-w-0 flex-1 p-4">
-                <div className="mb-2 flex items-center justify-between text-xs text-ink-500">
-                  <span className="flex items-center gap-2">
-                    {(() => { try { return formatDistanceToNow(new Date(p.createdAt), { addSuffix: true, locale: vi }); } catch { return ''; } })()}
-                    <a href={`#post-${p.id}`} className="text-ink-400 hover:text-brand-600">#{postNumber}</a>
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {isBest && <span className="flex items-center gap-1 font-medium text-emerald-600"><Award size={14} /> Câu trả lời hay nhất</span>}
-                    {canManage && !isFirst && (
-                      <button onClick={() => markBest(p.id)} className={`flex items-center gap-1 ${isBest ? 'text-emerald-600 hover:text-emerald-700' : 'text-ink-400 hover:text-emerald-600'}`}>
-                        <Award size={13} /> {isBest ? 'Bỏ chọn' : 'Hay nhất'}
-                      </button>
-                    )}
-                  </div>
-                </div>
-                {editingPostId === p.id ? (
-                  <div className="space-y-2">
-                    {isFirst && (
-                      <input autoFocus className="input w-full text-lg font-bold" placeholder="Tiêu đề bài viết…" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                    )}
-                    <TipTapEditor value={editContent} onChange={setEditContent} placeholder="Nội dung bài viết…" />
-                    {(isFirst || editHiddenSectionId) && (
-                      <div className="rounded-lg border border-ink-200 p-3 dark:border-ink-800">
-                        {editHiddenSectionId ? (
-                          <p className="flex items-center gap-2 text-sm font-medium"><Lock size={14} /> Nội dung ẩn</p>
-                        ) : (
-                          <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hiddenOn} onChange={(e) => setHiddenOn(e.target.checked)} /><Lock size={14} /> Thêm nội dung ẩn</label>
-                        )}
-                        {hiddenOn && (
-                          <div className="mt-2 space-y-2">
-                            <TipTapEditor value={hidden.content} onChange={(html) => setHidden({ ...hidden, content: html })} placeholder="Nội dung ẩn cho tới khi mở khoá…" />
-                            <input className="input" placeholder="Nhãn (tuỳ chọn)" value={hidden.label} onChange={(e) => setHidden({ ...hidden, label: e.target.value })} />
-                            <div className="flex flex-wrap items-center gap-2">
-                              <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
-                                {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
-                              </select>
-                              {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
-                              {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
-                              {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <input className="input w-full text-sm" placeholder="Lý do chỉnh sửa (tuỳ chọn)…" value={editReason} onChange={(e) => setEditReason(e.target.value)} />
-                    <div className="flex gap-2">
-                      <button onClick={submitEdit} disabled={editBusy} className="btn-primary !py-1 text-xs">{editBusy ? 'Đang lưu…' : 'Lưu'}</button>
-                      <button onClick={() => setEditingPostId(null)} className="rounded bg-ink-100 px-3 py-1 text-xs dark:bg-ink-800">Hủy</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: p.content }} />
-                )}
-                {editingPostId !== p.id && (p as any).hiddenSections?.map((hs: any) => (
-                  hs.isUnlocked ? (
-                    <div key={hs.id} className="mt-3">
-                      <div className="mb-1 flex items-center gap-1.5 text-sm font-medium text-emerald-600">
-                        <Unlock size={14} />
-                        <span>{hs.label || 'Nội dung ẩn'}</span>
-                      </div>
-                      <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
-                    </div>
-                  ) : (
-                    <div key={hs.id} className="mt-3 flex flex-col items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/50 p-3 py-6 text-center text-sm dark:border-amber-900/40 dark:bg-amber-950/10">
-                      <span className="grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30">
-                        <Lock size={26} />
-                      </span>
-                      <p className="font-semibold">{hs.label || 'Nội dung này đã bị ẩn'}</p>
-                      <p className="text-xs text-ink-500">{gateDescription(hs)}</p>
-                      {needGem(hs.gateType) && hs.gemPrice ? (
-                        user ? (
-                          <button type="button" disabled={unlockBusy === hs.id} onClick={() => unlockHidden(hs.id)} className="btn-primary mt-1 inline-flex items-center gap-1 !py-1.5 text-xs disabled:opacity-50">
-                            <Gem size={12} /> {unlockBusy === hs.id ? 'Đang mở…' : `Mở khoá bằng ${hs.gemPrice} Gem`}
-                          </button>
-                        ) : (
-                          <p className="text-xs text-ink-400">Đăng nhập để mở khoá bằng Gem.</p>
-                        )
-                      ) : null}
-                    </div>
-                  )
-                ))}
-                {(p as any).editCount > 0 && editingPostId !== p.id && (
-                  <button onClick={() => loadHistory(p.id)} className="mt-1 flex items-center gap-1 text-[11px] text-ink-400 hover:text-ink-600">
-                    <History size={11} /> Đã sửa {(p as any).editCount} lần
-                  </button>
-                )}
-                {/* Signature */}
-                {(p.author as any)?.signature && editingPostId !== p.id && (
-                  <div className="mt-3 border-t border-ink-200/60 pt-2 text-xs text-ink-400 italic dark:border-ink-800/60 whitespace-pre-line">
-                    {(p.author as any).signature}
-                  </div>
-                )}
-                <div className="mt-3 flex items-center justify-between gap-2 border-t border-ink-100 pt-3 text-xs dark:border-ink-800/60">
-                  {/* Left: Report + mod actions */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    {user && p.author && user.id !== p.author.id && (
-                      <button onClick={() => { setReportModal({ targetType: 'post', targetId: p.id, reportedUserId: p.author?.id }); setReportReason(''); setReportType('SPAM'); }} className="flex items-center gap-1 text-ink-400 hover:text-red-500">
-                        <Flag size={13} /> Report
-                      </button>
-                    )}
-                    {isMod && !isFirst && (
-                      <>
-                        <button onClick={() => deletePostAction(p.id)} className="flex items-center gap-1 text-red-400 hover:text-red-600">
-                          <Trash2 size={13} /> Xoá
-                        </button>
-                        {p.author && p.author.id !== user.id && (
-                          <>
-                            <button onClick={() => { setWarnModal({ postId: p.id, userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setWarnReason(''); setWarnPoints(1); }} className="flex items-center gap-1 text-amber-500 hover:text-amber-700">
-                              <AlertTriangle size={13} /> Cảnh cáo
-                            </button>
-                            <button onClick={() => { setReplyBanModal({ userId: p.author!.id, username: p.author?.displayName || p.author?.username || '' }); setReplyBanReason(''); setReplyBanExpiry(''); }} className="flex items-center gap-1 text-orange-500 hover:text-orange-700">
-                              <UserX size={13} /> Cấm trả lời
-                            </button>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  {/* Right: reaction bubbles + main actions */}
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                    {/* Existing reaction bubbles */}
-                    {(() => {
-                      const groups: Record<string, string[]> = {};
-                      (p.reactions || []).forEach((r) => { (groups[r.emoji] ||= []).push(r.userId); });
-                      return Object.entries(groups).map(([emoji, uids]) => {
-                        const mine = !!user && uids.includes(user.id);
-                        const label = emoji === 'like' ? '👍' : emoji;
-                        return (
-                          <button key={emoji} onClick={() => user && react(p.id, emoji)}
-                            className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${mine ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30' : 'border-ink-200 dark:border-ink-800'}`}>
-                            <span>{label}</span> <span className="text-ink-500">{uids.length}</span>
-                          </button>
-                        );
-                      });
-                    })()}
-                    {/* Emoji picker */}
-                    {user && (
-                      <div className="group relative">
-                        <button className="flex items-center gap-1 rounded-full border border-dashed border-ink-300 px-2 py-0.5 text-ink-500 hover:text-brand-600 dark:border-ink-700"><SmilePlus size={14} /></button>
-                        <div className="absolute right-0 bottom-full z-10 mb-1 hidden gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card group-hover:flex dark:border-ink-800 dark:bg-ink-900">
-                          {REACTIONS.map((e) => (
-                            <button key={e} onClick={() => react(p.id, e)} className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-800">{e}</button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {/* Tip total */}
-                    {(p.tipTotal ?? 0) > 0 && (
-                      <span className="flex items-center gap-1 rounded-full bg-fuchsia-100 px-2 py-0.5 text-fuchsia-700 dark:bg-fuchsia-950/40 dark:text-fuchsia-300" title={`${p.tipCount} lượt donate`}>
-                        <Gem size={12} /> {p.tipTotal}
-                      </span>
-                    )}
-                    {/* Donate */}
-                    {user && p.author && user.id !== p.author.id && (
-                      <button onClick={() => donate(p.id)} className="flex items-center gap-1 text-fuchsia-500 hover:text-fuchsia-700">
-                        <Gem size={13} /> Donate
-                      </button>
-                    )}
-                    {/* Quote */}
-                    {user && !thread.isLocked && (
-                      <button onClick={() => quotePost(p)} className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
-                        <Quote size={13} /> Trích dẫn
-                      </button>
-                    )}
-                    {/* Reply */}
-                    {user && !thread.isLocked && !isFirst && (
-                      <button onClick={() => { setReplyToPost({ id: p.id, authorName: p.author?.displayName || p.author?.username || 'ẩn danh' }); document.getElementById('comment-form')?.scrollIntoView({ behavior: 'smooth' }); }}
-                        className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
-                        <Reply size={13} /> Trả lời
-                      </button>
-                    )}
-                    {/* Tag */}
-                    {user && !thread.isLocked && p.author && user.id !== p.author.id && (
-                      <button onClick={() => { const name = p.author?.displayName || p.author?.username || ''; setReply((prev) => (prev || '') + `<p><strong>@${name}</strong> </p>`); document.getElementById('comment-form')?.scrollIntoView({ behavior: 'smooth' }); }}
-                        className="flex items-center gap-1 text-ink-500 hover:text-brand-600">
-                        <AtSign size={13} /> Tag
-                      </button>
-                    )}
-                    {/* Edit */}
-                    {user && p.author && (user.id === p.author.id || isMod) && !thread.isLocked && editingPostId !== p.id && (
-                      <button onClick={() => startEdit(p)} className="flex items-center gap-1 text-ink-500 hover:text-blue-600">
-                        <Pencil size={13} /> Sửa
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>{/* end flex-1 content */}
-              </div>{/* end flex row */}
-            </article>
-            </div>
-          );
+          const showNewDivider = !!(user && initialLastReadPostId && (idx > 0 ? ordered[idx - 1].id === initialLastReadPostId : initialLastReadPostId === firstPost?.id) && p.id !== initialLastReadPostId);
+          return renderPostArticle(p, postNumber, false, isBest, depth, showNewDivider);
         })}
       </div>
 
@@ -1038,21 +1085,22 @@ function ThreadView() {
         </div>
       )}
 
+      {commentBox}
+
       <AdBanner position="thread_bottom" className="h-20 sm:h-24" />
 
-
-      {/* ── Bài viết liên quan ── */}
-      {similarThreads.length > 0 && (
+      {/* ── Bài viết mới nhất ── */}
+      {latestThreads.length > 0 && (
         <div className="card overflow-hidden">
           <div className="border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
-            <h3 className="text-sm font-semibold">Bài viết liên quan</h3>
+            <h3 className="text-sm font-semibold">Bài viết mới nhất</h3>
           </div>
           <ul className="divide-y divide-ink-200/70 dark:divide-ink-800">
-            {similarThreads.map((t) => (
+            {latestThreads.map((t) => (
               <li key={t.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-ink-50/70 dark:hover:bg-ink-800/40">
                 <div className="min-w-0 flex-1">
                   <Link href={`/thread?slug=${t.slug}`} className="truncate text-sm font-medium hover:text-brand-600">{t.title}</Link>
-                  <p className="mt-0.5 text-xs text-ink-500">{t.author?.displayName || t.author?.username}</p>
+                  <p className="mt-0.5 text-xs text-ink-500">{t.author?.displayName || t.author?.username}{t.category ? ` · ${t.category.name}` : ''}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-3 text-xs text-ink-400">
                   <span className="flex items-center gap-1"><MessageCircle size={12} /> {t.replyCount}</span>

@@ -153,8 +153,8 @@ export default function NewThreadPage() {
       // Nội dung ẩn → tạo section gắn vào bài gốc
       if (hiddenOn && hidden.content.trim()) {
         try {
-          const ps = await api.get<{ data: { id: string }[] }>(`/forum/threads/${t.id}/posts?limit=1`);
-          const firstId = ps?.data?.[0]?.id;
+          const ps = await api.get<{ firstPost: { id: string } | null }>(`/forum/threads/${t.id}/posts?limit=1`);
+          const firstId = ps?.firstPost?.id;
           if (firstId) {
             await api.post('/hidden-content/sections', buildHiddenBody(firstId, hidden.content, hidden.gateType, hidden.likeRequired, hidden.commentRequired, hidden.gemPrice, hidden.label));
           }

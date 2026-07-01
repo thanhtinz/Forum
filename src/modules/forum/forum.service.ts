@@ -521,6 +521,8 @@ export class ForumService {
   // POSTS
   // ──────────────────────────────────────────────
 
+  // Bài gốc (isFirstPost) luôn hiện riêng ở đầu trang (không phân trang theo nó);
+  // chỉ các bài trả lời (bình luận) mới được phân trang theo `limit`.
   async getPostsForThread(threadId: string, userId: string | null, page = 1, limit = 20, canSeeUnapproved = false) {
     const skip = (page - 1) * limit;
 
@@ -528,43 +530,58 @@ export class ForumService {
     const approvalFilter = canSeeUnapproved
       ? {}
       : { OR: [{ isApproved: true }, ...(userId ? [{ authorId: userId }] : [])] };
-    const where: any = { threadId, isDeleted: false, ...approvalFilter };
+    const baseWhere: any = { threadId, isDeleted: false, ...approvalFilter };
 
     // Ẩn bài của người đã bị viewer chặn (trừ bài mở đầu thread)
     if (userId && !canSeeUnapproved) {
       const blockedIds = await this.block.getBlockedIds(userId);
       if (blockedIds.length > 0) {
-        where.NOT = { AND: [{ authorId: { in: blockedIds } }, { isFirstPost: false }] };
+        baseWhere.NOT = { AND: [{ authorId: { in: blockedIds } }, { isFirstPost: false }] };
       }
     }
 
-    const [posts, total] = await Promise.all([
+    const postInclude = {
+      author: {
+        select: {
+          id: true, username: true, displayName: true,
+          avatar: true, role: true, postCount: true, threadCount: true,
+          reputationScore: true, createdAt: true,
+          verifiedBadge: true, avatarFrameUrl: true, shopBadgeUrl: true, nameEffectCss: true,
+          signature: true,
+        },
+      },
+      reactions: { select: { emoji: true, userId: true } },
+      attachments: true,
+    };
+
+    const [firstPostRaw, replies, totalReplies] = await Promise.all([
+      this.prisma.post.findFirst({ where: { ...baseWhere, isFirstPost: true }, include: postInclude }),
       this.prisma.post.findMany({
-        where,
+        where: { ...baseWhere, isFirstPost: false },
         skip,
         take: limit,
         orderBy: { createdAt: 'asc' },
-        include: {
-          author: {
-            select: {
-              id: true, username: true, displayName: true,
-              avatar: true, role: true, postCount: true, threadCount: true,
-              reputationScore: true, createdAt: true,
-              verifiedBadge: true, avatarFrameUrl: true, shopBadgeUrl: true, nameEffectCss: true,
-              signature: true,
-            },
-          },
-          reactions: { select: { emoji: true, userId: true } },
-          attachments: true,
-        },
+        include: postInclude,
       }),
-      this.prisma.post.count({ where }),
+      this.prisma.post.count({ where: { ...baseWhere, isFirstPost: false } }),
     ]);
 
-    // Tổng donate theo từng post
+    const enriched = await this.enrichPosts(firstPostRaw ? [firstPostRaw, ...replies] : replies, userId, threadId);
+    const firstPost = firstPostRaw ? enriched[0] : null;
+    const data = firstPostRaw ? enriched.slice(1) : enriched;
+
+    return {
+      firstPost,
+      data,
+      meta: { total: totalReplies, page, limit, totalPages: Math.ceil(totalReplies / limit) },
+    };
+  }
+
+  // Gắn level tác giả + hidden sections + tổng donate cho danh sách post
+  private async enrichPosts(posts: any[], userId: string | null, threadId: string) {
+    if (posts.length === 0) return [];
     const tipTotals = await this.tips.totalsForPosts(posts.map((p) => p.id));
 
-    // Tính level cho tác giả
     const levelTiers = await this.prisma.levelTier.findMany({ orderBy: { minScore: 'asc' } });
     const computeAuthorLevel = (a: { postCount: number; threadCount: number; reputationScore: number } | null) => {
       if (!a || !levelTiers.length) return {};
@@ -575,22 +592,14 @@ export class ForumService {
       return { levelNum: current.level, levelName: current.name, levelIcon: current.icon, levelColor: current.color };
     };
 
-    // Gắn hidden sections + donate cho từng post
-    const postsWithHidden = await Promise.all(
+    return Promise.all(
       posts.map(async (post) => {
-        const hiddenSections = await this.hiddenContent.getSectionsForPost(
-          post.id, userId, threadId,
-        );
+        const hiddenSections = await this.hiddenContent.getSectionsForPost(post.id, userId, threadId);
         const tip = tipTotals[post.id] || { total: 0, count: 0 };
         const authorWithLevel = post.author ? { ...post.author, ...computeAuthorLevel(post.author) } : null;
         return { ...post, author: authorWithLevel, hiddenSections, tipTotal: tip.total, tipCount: tip.count };
       }),
     );
-
-    return {
-      data: postsWithHidden,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-    };
   }
 
   async createPost(dto: CreatePostDto, authorId: string) {

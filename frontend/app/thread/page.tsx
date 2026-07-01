@@ -555,7 +555,7 @@ function ThreadView() {
               </div>
             )}
             {replyPreview ? (
-              <div className="prose prose-sm min-h-[80px] max-w-none rounded-lg border border-ink-200 p-4 dark:border-ink-800 dark:prose-invert" dangerouslySetInnerHTML={{ __html: reply || '<p style="color:#94a3b8">Chưa có nội dung…</p>' }} />
+              <div className="prose prose-sm min-h-[80px] max-w-none rounded-lg border border-ink-200 p-4 dark:border-ink-800 dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: reply || '<p style="color:#94a3b8">Chưa có nội dung…</p>' }} />
             ) : (
               <TipTapEditor value={reply} onChange={setReply} placeholder="Viết bình luận…" autosaveKey={`reply-${thread?.id || 'x'}`} />
             )}
@@ -1093,7 +1093,7 @@ function ThreadView() {
                       <span>{new Date(h.createdAt).toLocaleString('vi')}</span>
                       {h.editReason && <span className="ml-auto italic">{h.editReason}</span>}
                     </div>
-                    <div className="prose prose-xs mt-2 max-w-none dark:prose-invert line-clamp-4 text-xs opacity-70" dangerouslySetInnerHTML={{ __html: h.oldContentRaw?.slice(0, 500) || '' }} />
+                    <div className="prose prose-xs mt-2 max-w-none dark:prose-invert line-clamp-4 text-xs opacity-70" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: h.oldContentRaw?.slice(0, 500) || '' }} />
                   </div>
                 ))}
               </div>

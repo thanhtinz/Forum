@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Home, ChevronDown } from 'lucide-react';
 import { api } from '@/lib/api';
+import { interceptExternalLink } from '@/lib/externalLink';
 
 interface Chapter {
   id: string;
@@ -163,7 +164,7 @@ function ComicReaderInner() {
         <div className="mx-auto max-w-2xl px-4 pb-12 pt-16">
           <h1 className="mb-1 text-center text-xl font-bold text-brand-400">{seriesTitle}</h1>
           <p className="mb-6 text-center text-sm text-white/50">{chapterLabel}</p>
-          <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: chapter.content! }} />
+          <div className="prose prose-invert max-w-none" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: chapter.content! }} />
         </div>
 
         <BottomNav />

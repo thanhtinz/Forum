@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { uploadEditorImage, uploadAttachment, api } from '@/lib/api';
 import { marked } from 'marked';
+import { interceptExternalLink } from '@/lib/externalLink';
 
 // Phát hiện đoạn text có vẻ là Markdown/BBCode để tự chuyển khi dán.
 function looksLikeMarkup(t: string): boolean {
@@ -1275,6 +1276,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
           <div className="mb-2 text-xs font-medium text-ink-400">Đang xem trước</div>
           <div
             className="prose prose-sm max-w-none dark:prose-invert"
+            onClick={interceptExternalLink}
             dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
           />
         </div>

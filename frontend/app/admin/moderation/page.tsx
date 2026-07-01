@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { interceptExternalLink } from '@/lib/externalLink';
 
 interface Report { id: string; type: string; reason: string; targetType: string; targetId: string; status: string; createdAt: string;
   reporter?: { username: string }; reportedUser?: { username: string }; }
@@ -117,7 +118,7 @@ export default function AdminModeration() {
             <div key={t.id} className="rounded-lg border border-amber-300 p-3 dark:border-amber-700">
               <div className="text-xs text-ink-500">Chủ đề mới · {t.author?.displayName || t.author?.username} · {t.category?.name}</div>
               <div className="font-medium">{t.title}</div>
-              <div className="prose prose-sm mt-1 max-w-none line-clamp-3 dark:prose-invert" dangerouslySetInnerHTML={{ __html: t.posts?.[0]?.content || '' }} />
+              <div className="prose prose-sm mt-1 max-w-none line-clamp-3 dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: t.posts?.[0]?.content || '' }} />
               <div className="mt-2 flex gap-2">
                 <button onClick={() => approveThread(t.id)} className="btn-primary !py-1 text-xs">Duyệt</button>
                 <button onClick={() => reject('thread', t.id)} className="btn-outline !py-1 text-xs text-red-600">Từ chối</button>
@@ -127,7 +128,7 @@ export default function AdminModeration() {
           {queue.posts.map((p) => (
             <div key={p.id} className="rounded-lg border border-amber-300 p-3 dark:border-amber-700">
               <div className="text-xs text-ink-500">Trả lời · {p.author?.displayName || p.author?.username} · trong "{p.thread?.title}"</div>
-              <div className="prose prose-sm mt-1 max-w-none line-clamp-3 dark:prose-invert" dangerouslySetInnerHTML={{ __html: p.content }} />
+              <div className="prose prose-sm mt-1 max-w-none line-clamp-3 dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: p.content }} />
               <div className="mt-2 flex gap-2">
                 <button onClick={() => approvePost(p.id)} className="btn-primary !py-1 text-xs">Duyệt</button>
                 <button onClick={() => reject('post', p.id)} className="btn-outline !py-1 text-xs text-red-600">Từ chối</button>

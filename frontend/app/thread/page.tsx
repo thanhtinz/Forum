@@ -15,7 +15,7 @@ import type { Thread, Post, Paginated } from '@/lib/types';
 import { interceptExternalLink } from '@/lib/externalLink';
 import TipTapEditor from '@/components/TipTapEditor';
 import { AdBanner } from '@/components/AdBanner';
-import { GATE_OPTIONS, needLike, needComment, needGem, REACTIONS, REPORT_TYPES } from '@/lib/constants';
+import { GATE_OPTIONS, needLike, needComment, needLikeInput, needCommentInput, needGem, REACTIONS, REPORT_TYPES } from '@/lib/constants';
 
 // Ước tính thời gian đọc (200 từ/phút) từ HTML các bài viết
 function readingTime(posts: { content: string }[]): number {
@@ -453,8 +453,8 @@ function ThreadView() {
         const g = hidden.gateType;
         const body: any = { contentRaw: hidden.content, gateType: g };
         if (hidden.label.trim()) body.label = hidden.label.trim();
-        if (needLike(g)) body.likeRequired = Math.max(1, hidden.likeRequired);
-        if (needComment(g)) body.commentRequired = Math.max(1, hidden.commentRequired);
+        if (needLikeInput(g)) body.likeRequired = Math.max(1, hidden.likeRequired);
+        if (needCommentInput(g)) body.commentRequired = Math.max(1, hidden.commentRequired);
         if (needGem(g)) body.gemPrice = Math.max(1, hidden.gemPrice);
         if (editHiddenSectionId) await api.patch(`/hidden-content/sections/${editHiddenSectionId}`, body).catch(() => {});
         else await api.post('/hidden-content/sections', { ...body, postId: editingPostId }).catch(() => {});
@@ -581,12 +581,12 @@ function ThreadView() {
   const ordered = flattenPostTree(sortedPosts);
 
   const commentBox = (
-    <div id="comment-form" className="card overflow-hidden">
+    <div id="comment-form">
       {user ? (
         thread.isLocked ? (
           <p className="px-4 py-3 text-center text-sm text-ink-500">Chủ đề đã bị khoá.</p>
         ) : (
-          <form onSubmit={submitReply} className="space-y-2 px-4 py-3">
+          <form onSubmit={submitReply} className="space-y-2">
             {replyToPost && (
               <div className="flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-800 dark:bg-brand-950/30 dark:text-brand-200">
                 <Reply size={13} /> <span>Đang trả lời bài của <strong>@{replyToPost.authorName}</strong></span>
@@ -618,14 +618,6 @@ function ThreadView() {
         <p className="px-4 py-3 text-center text-sm text-ink-500">
           Vui lòng <a href="/login" className="text-brand-600 font-medium">đăng nhập</a> để trả lời.
         </p>
-      )}
-      {thread.replyCount === 0 && (
-        <div className="flex flex-col items-center gap-3 border-t border-ink-200/70 py-12 text-ink-400 dark:border-ink-800">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-ink-100 dark:bg-ink-800">
-            <MessageCircle size={32} className="text-ink-300 dark:text-ink-600" />
-          </div>
-          <span className="text-sm">Chưa có bình luận nào</span>
-        </div>
       )}
     </div>
   );
@@ -718,8 +710,8 @@ function ThreadView() {
                         <select className="input w-auto" value={hidden.gateType} onChange={(e) => setHidden({ ...hidden, gateType: e.target.value })}>
                           {GATE_OPTIONS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
                         </select>
-                        {needLike(hidden.gateType) && <label className="text-xs text-ink-500">Like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
-                        {needComment(hidden.gateType) && <label className="text-xs text-ink-500">Bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
+                        {needLikeInput(hidden.gateType) && <label className="text-xs text-ink-500">Tổng like ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.likeRequired} onChange={(e) => setHidden({ ...hidden, likeRequired: Number(e.target.value) })} /></label>}
+                        {needCommentInput(hidden.gateType) && <label className="text-xs text-ink-500">Tổng bình luận ≥ <input type="number" min={1} className="input ml-1 w-16" value={hidden.commentRequired} onChange={(e) => setHidden({ ...hidden, commentRequired: Number(e.target.value) })} /></label>}
                         {needGem(hidden.gateType) && <label className="text-xs text-ink-500">Giá Gem <input type="number" min={1} className="input ml-1 w-20" value={hidden.gemPrice} onChange={(e) => setHidden({ ...hidden, gemPrice: Number(e.target.value) })} /></label>}
                       </div>
                     </div>
@@ -745,8 +737,8 @@ function ThreadView() {
                 <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
               </div>
             ) : (
-              <div key={hs.id} className="mt-3 flex flex-col items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50/50 p-3 py-6 text-center text-sm dark:border-amber-900/40 dark:bg-amber-950/10">
-                <span className="grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30">
+              <div key={hs.id} className="mt-3 flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-ink-300 bg-ink-50/70 p-3 py-6 text-center text-sm dark:border-ink-700 dark:bg-ink-900/40">
+                <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-950/40 dark:text-brand-400">
                   <Lock size={26} />
                 </span>
                 <p className="font-semibold">{hs.label || 'Nội dung này đã bị ẩn'}</p>

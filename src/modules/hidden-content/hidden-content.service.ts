@@ -33,6 +33,7 @@ export class HiddenContentService {
     this.validateGateConditions(dto);
 
     const content = await this.renderContent(dto.contentRaw);
+    const thresholds = this.resolveGateThresholds(dto);
 
     return this.prisma.hiddenSection.create({
       data: {
@@ -42,9 +43,7 @@ export class HiddenContentService {
         content,
         contentRaw: dto.contentRaw,
         gateType: dto.gateType,
-        likeRequired: dto.likeRequired ?? null,
-        commentRequired: dto.commentRequired ?? null,
-        gemPrice: dto.gemPrice ?? null,
+        ...thresholds,
       },
     });
   }
@@ -97,6 +96,7 @@ export class HiddenContentService {
 
     this.validateGateConditions(dto);
     const content = await this.renderContent(dto.contentRaw);
+    const thresholds = this.resolveGateThresholds(dto);
 
     return this.prisma.hiddenSection.update({
       where: { id },
@@ -105,9 +105,7 @@ export class HiddenContentService {
         content,
         contentRaw: dto.contentRaw,
         gateType: dto.gateType,
-        likeRequired: dto.likeRequired ?? null,
-        commentRequired: dto.commentRequired ?? null,
-        gemPrice: dto.gemPrice ?? null,
+        ...thresholds,
       },
     });
   }
@@ -163,7 +161,7 @@ export class HiddenContentService {
       if (toPersist.length) {
         await Promise.all(
           toPersist.map(async (s) => {
-            const via = this.resolveUnlockVia();
+            const via = this.resolveUnlockVia(s.gateType);
             const created = await this.prisma.hiddenContentUnlock.createMany({
               data: [{ userId, hiddenSectionId: s.id, unlockedVia: via, gemSpent: 0 }],
               skipDuplicates: true,
@@ -344,7 +342,16 @@ export class HiddenContentService {
     currentComments: number,
   ) {
     const sections = await this.prisma.hiddenSection.findMany({
-      where: { postId, gateType: HiddenGateType.LIKE_AND_COMMENT },
+      where: {
+        postId,
+        gateType: {
+          in: [
+            HiddenGateType.LIKE_AND_COMMENT,
+            HiddenGateType.LIKE_REQUIRED,
+            HiddenGateType.COMMENT_REQUIRED,
+          ],
+        },
+      },
     });
 
     const results: string[] = [];
@@ -357,7 +364,7 @@ export class HiddenContentService {
       if (existing) continue;
 
       if (this.checkConditionMet(section, currentLikes, currentComments)) {
-        const via = this.resolveUnlockVia();
+        const via = this.resolveUnlockVia(section.gateType);
         await this.autoUnlock(section.id, userId, currentLikes, currentComments, via);
         results.push(section.id);
       }
@@ -375,17 +382,30 @@ export class HiddenContentService {
     likes: number,
     comments: number,
   ): boolean {
-    if (section.gateType === HiddenGateType.LIKE_AND_COMMENT) {
-      return (
-        likes >= (section.likeRequired ?? Infinity) &&
-        comments >= (section.commentRequired ?? Infinity)
-      );
+    switch (section.gateType) {
+      case HiddenGateType.LIKE_AND_COMMENT:
+        return (
+          likes >= (section.likeRequired ?? Infinity) &&
+          comments >= (section.commentRequired ?? Infinity)
+        );
+      case HiddenGateType.LIKE_REQUIRED:
+        return likes >= (section.likeRequired ?? Infinity);
+      case HiddenGateType.COMMENT_REQUIRED:
+        return comments >= (section.commentRequired ?? Infinity);
+      default:
+        return false; // GEM_PURCHASE phải dùng unlockWithGem
     }
-    return false; // GEM_PURCHASE phải dùng unlockWithGem
   }
 
-  private resolveUnlockVia(): string {
-    return 'like_and_comment';
+  private resolveUnlockVia(gateType: HiddenGateType): string {
+    switch (gateType) {
+      case HiddenGateType.LIKE_REQUIRED:
+        return 'like_required';
+      case HiddenGateType.COMMENT_REQUIRED:
+        return 'comment_required';
+      default:
+        return 'like_and_comment';
+    }
   }
 
   private async autoUnlock(
@@ -438,14 +458,41 @@ export class HiddenContentService {
   }) {
     switch (dto.gateType) {
       case HiddenGateType.LIKE_AND_COMMENT:
-        if (!dto.likeRequired || !dto.commentRequired)
-          throw new BadRequestException('Cần chỉ định cả số like và bình luận');
+        // Mặc định, bắt buộc mọi user like + bình luận 1 lần — không cần cấu hình số liệu.
+        break;
+      case HiddenGateType.LIKE_REQUIRED:
+        if (!dto.likeRequired) throw new BadRequestException('Cần chỉ định tổng số lượt thích');
+        break;
+      case HiddenGateType.COMMENT_REQUIRED:
+        if (!dto.commentRequired) throw new BadRequestException('Cần chỉ định tổng số bình luận');
         break;
       case HiddenGateType.GEM_PURCHASE:
         if (!dto.gemPrice) throw new BadRequestException('Cần chỉ định giá Gem');
         break;
       default:
         throw new BadRequestException('Kiểu điều kiện mở khoá không hợp lệ');
+    }
+  }
+
+  // Chuẩn hoá likeRequired/commentRequired/gemPrice theo gateType — bỏ qua giá trị
+  // client gửi không thuộc kiểu đang chọn (mặc định Like&Bình luận luôn cố định 1/1).
+  private resolveGateThresholds(dto: {
+    gateType: HiddenGateType;
+    likeRequired?: number;
+    commentRequired?: number;
+    gemPrice?: number;
+  }): { likeRequired: number | null; commentRequired: number | null; gemPrice: number | null } {
+    switch (dto.gateType) {
+      case HiddenGateType.LIKE_AND_COMMENT:
+        return { likeRequired: 1, commentRequired: 1, gemPrice: null };
+      case HiddenGateType.LIKE_REQUIRED:
+        return { likeRequired: dto.likeRequired ?? null, commentRequired: null, gemPrice: null };
+      case HiddenGateType.COMMENT_REQUIRED:
+        return { likeRequired: null, commentRequired: dto.commentRequired ?? null, gemPrice: null };
+      case HiddenGateType.GEM_PURCHASE:
+        return { likeRequired: null, commentRequired: null, gemPrice: dto.gemPrice ?? null };
+      default:
+        return { likeRequired: null, commentRequired: null, gemPrice: null };
     }
   }
 

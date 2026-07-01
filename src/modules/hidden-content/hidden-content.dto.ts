@@ -1,8 +1,14 @@
 import { IsEnum, IsIn, IsInt, IsOptional, IsString, Min, ValidateIf } from 'class-validator';
 import { HiddenGateType } from '@prisma/client';
 
-// Chỉ còn 2 kiểu điều kiện mở khoá: bắt buộc Like & Bình luận (mặc định), hoặc mua bằng Gem.
-const CREATABLE_GATE_TYPES = [HiddenGateType.LIKE_AND_COMMENT, HiddenGateType.GEM_PURCHASE];
+// 4 kiểu điều kiện mở khoá: bắt buộc Like & Bình luận (mặc định, không cần nhập số),
+// tổng lượt thích, tổng bình luận (2 kiểu này cần nhập ngưỡng số liệu), hoặc mua bằng Gem.
+const CREATABLE_GATE_TYPES = [
+  HiddenGateType.LIKE_AND_COMMENT,
+  HiddenGateType.LIKE_REQUIRED,
+  HiddenGateType.COMMENT_REQUIRED,
+  HiddenGateType.GEM_PURCHASE,
+];
 
 export class CreateHiddenSectionDto {
   @IsString()
@@ -23,12 +29,12 @@ export class CreateHiddenSectionDto {
   @IsIn(CREATABLE_GATE_TYPES)
   gateType: HiddenGateType;
 
-  @ValidateIf((o) => o.gateType === HiddenGateType.LIKE_AND_COMMENT)
+  @ValidateIf((o) => o.gateType === HiddenGateType.LIKE_REQUIRED)
   @IsInt()
   @Min(1)
   likeRequired?: number;
 
-  @ValidateIf((o) => o.gateType === HiddenGateType.LIKE_AND_COMMENT)
+  @ValidateIf((o) => o.gateType === HiddenGateType.COMMENT_REQUIRED)
   @IsInt()
   @Min(1)
   commentRequired?: number;
@@ -51,12 +57,12 @@ export class UpdateHiddenSectionDto {
   @IsIn(CREATABLE_GATE_TYPES)
   gateType: HiddenGateType;
 
-  @ValidateIf((o) => o.gateType === HiddenGateType.LIKE_AND_COMMENT)
+  @ValidateIf((o) => o.gateType === HiddenGateType.LIKE_REQUIRED)
   @IsInt()
   @Min(1)
   likeRequired?: number;
 
-  @ValidateIf((o) => o.gateType === HiddenGateType.LIKE_AND_COMMENT)
+  @ValidateIf((o) => o.gateType === HiddenGateType.COMMENT_REQUIRED)
   @IsInt()
   @Min(1)
   commentRequired?: number;

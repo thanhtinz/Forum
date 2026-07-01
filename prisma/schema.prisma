@@ -1523,8 +1523,6 @@ model GameCharacter {
   equipped        EquippedItem[]
   guildMember     GuildMember?
   survival        CharacterSurvival?
-  fishingProfile  FishingProfile?
-  fishCatches     FishCatch[]
   farmProfile     FarmProfile?
   farmPlots       FarmPlot[]
   warehouse       WarehouseItem[]
@@ -2262,104 +2260,6 @@ model UserStickerPack {
 }
 
 // ============================================================
-// CÂU CÁ (Fishing minigame) — chỉ dùng coin
-// ============================================================
-
-// Định nghĩa loài cá theo khu (seed sẵn). Stock hồi theo thời gian.
-model FishSpecies {
-  id           String    @id @default(cuid())
-  zone         Int       @default(1) // (cũ) giữ để tương thích; dùng depth là chính
-  depth        Int       @default(1) // độ sâu cá xuất hiện (admin tự đặt)
-  slug         String    @unique @db.VarChar(60)
-  name         String    @db.VarChar(100)
-  kgMin        Int // trọng lượng tối thiểu (kg)
-  kgMax        Int // trọng lượng tối đa (kg)
-  pricePerKg   Int // coin / kg khi bán
-  refillCount  Int // số con hồi lại mỗi chu kỳ
-  stock        Int       @default(0) // số con còn lại trong hồ
-  nextRefillAt DateTime?
-  asset        String?   @db.VarChar(255)
-  sortOrder    Int       @default(0)
-
-  catches FishCatch[]
-
-  @@index([depth])
-}
-
-// Mức độ sâu của hồ câu (admin tự thêm). Mỗi độ sâu: cần bậc tối thiểu + tỷ lệ bắt riêng.
-model FishDepth {
-  id         String @id @default(cuid())
-  depth      Int    @unique // số thứ tự độ sâu (1,2,3…)
-  name       String @db.VarChar(100)
-  minRodTier Int    @default(1) // bậc cần câu tối thiểu để câu ở độ sâu này
-  catchRate  Int    @default(70) // % bắt được khi giật (0-100)
-  sortOrder  Int    @default(0)
-}
-
-// Cần câu (admin tự thêm) — bậc càng cao câu được độ sâu càng lớn.
-model FishingRod {
-  id        String  @id @default(cuid())
-  slug      String  @unique @db.VarChar(60)
-  name      String  @db.VarChar(100)
-  tier      Int     @default(1) // bậc cần
-  price     Int     @default(0)
-  asset     String? @db.VarChar(255)
-  sortOrder Int     @default(0)
-}
-
-// Thuyền câu (admin tự thêm) — phải mua mới câu được; maxDepth = ra được tới độ sâu nào.
-model FishingBoat {
-  id        String  @id @default(cuid())
-  slug      String  @unique @db.VarChar(60)
-  name      String  @db.VarChar(100)
-  price     Int     @default(0)
-  capacity  Int     @default(20) // sức chứa cá trên khoang thuyền
-  maxDepth  Int     @default(1) // độ sâu tối đa ra được
-  asset     String? @db.VarChar(255)
-  sortOrder Int     @default(0)
-}
-
-// Hồ sơ câu cá của mỗi nhân vật (level RIÊNG, không liên quan level nhân vật)
-model FishingProfile {
-  id          String    @id @default(cuid())
-  characterId String    @unique
-  level       Int       @default(0)
-  totalKg     Int       @default(0) // tích lũy hướng tới lên cấp (2000kg/cấp)
-  totalCaught Int       @default(0) // tổng số cá đã câu (cho BXH)
-  rodTier     Int       @default(0) // bậc cần cao nhất đang sở hữu (0 = chưa có)
-  boatSlug    String?   @db.VarChar(60) // thuyền đang sở hữu
-  ownedRods   Int[]     @default([]) // (cũ) không dùng nữa
-  bait1       Int       @default(0)
-  bait2       Int       @default(0)
-  bait3       Int       @default(0)
-  castZone    Int? // (cũ)
-  castDepth   Int? // đang thả cần ở độ sâu nào
-  biteAt      DateTime? // thời điểm cá cắn câu
-  lastCatchAt DateTime? // cooldown giữa 2 lần giật
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
-}
-
-// Cá đã câu được — mặc định nằm trong khoang thuyền (onBoat), chuyển về kho hoặc bán.
-model FishCatch {
-  id          String    @id @default(cuid())
-  characterId String
-  speciesId   String
-  weightKg    Int
-  onBoat      Boolean   @default(false) // true = đang ở khoang thuyền; false = đã chuyển về kho
-  soldAt      DateTime?
-  caughtAt    DateTime  @default(now())
-  pondAt      DateTime? // != null = đang nuôi trong hồ (lớn dần theo thời gian)
-
-  character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  species   FishSpecies   @relation(fields: [speciesId], references: [id])
-
-  @@index([characterId, soldAt])
-}
-
-// ============================================================
 // NÔNG TRẠI (Farm) — chỉ dùng coin (Xu & Lượng gốc đều quy về coin)
 // ============================================================
 
@@ -2448,6 +2348,7 @@ model FarmPlot {
   watered     Boolean   @default(false)
   tilled      Boolean   @default(false) // đã xới đất chưa (phải xới trước khi gieo)
   health      Int       @default(100) // sức khỏe ô đất 0-100 -> ảnh hưởng sản lượng
+  healthUpdatedAt DateTime? // mốc thời gian chốt sức khỏe — bỏ bê quá lâu sẽ tự héo dần (xem farm.service)
   yield       Int       @default(0)
   createdAt   DateTime  @default(now())
 

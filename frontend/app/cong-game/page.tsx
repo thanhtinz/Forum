@@ -1,14 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { Gamepad2, Sprout, Fish, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3, ChevronRight, Shell } from 'lucide-react';
+import { Gamepad2, Sprout, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade, Grid3x3, ChevronRight, Shell } from 'lucide-react';
 
 // Game trên web — mỗi game là 1 trang riêng
 const WEB_GAMES = [
   { href: '/game/farm', label: 'Nông trại', desc: 'Trồng trọt & thu hoạch', icon: Sprout, color: 'from-emerald-500 to-green-600' },
-  { href: '/game/fishing', label: 'Câu cá', desc: 'Thuyền, độ sâu, cá lớn', icon: Fish, color: 'from-sky-500 to-cyan-600' },
-  { href: '/game/shop', label: 'Cửa hàng', desc: 'Hạt giống, đồ câu', icon: ShoppingBag, color: 'from-teal-500 to-emerald-600' },
-  { href: '/game/kho', label: 'Kho chung', desc: 'Nông sản, cá, món ăn', icon: Warehouse, color: 'from-amber-500 to-yellow-600' },
+  { href: '/game/shop', label: 'Cửa hàng', desc: 'Hạt giống & dụng cụ nông trại', icon: ShoppingBag, color: 'from-teal-500 to-emerald-600' },
+  { href: '/game/kho', label: 'Kho chung', desc: 'Nông sản & món ăn', icon: Warehouse, color: 'from-amber-500 to-yellow-600' },
 ];
 
 // Minigame
@@ -50,7 +49,7 @@ export default function GiaiTriPage() {
         <Gamepad2 size={28} />
         <div>
           <h1 className="text-2xl font-bold">Giải trí</h1>
-          <p className="text-sm text-white/80">Trồng trọt, câu cá, minigame, bói toán… kiếm Xu và thư giãn ngay trên web.</p>
+          <p className="text-sm text-white/80">Trồng trọt, minigame, bói toán… kiếm Xu và thư giãn ngay trên web.</p>
         </div>
       </header>
 

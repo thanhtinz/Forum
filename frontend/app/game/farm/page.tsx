@@ -18,7 +18,7 @@ const SOIL_UNTILLED = '/game-assets/nongtrai/img/product/chuaxoi.png'; // đất
 interface FarmState {
   coin: number;
   profile: { level: number; exp: number; maxLevel: number; expIntoLevel: number; expForNextLevel: number | null; plotCount: number; maxPlots: number; nextPlotLevel: number | null; dogActive: boolean; dogUntil?: string | null };
-  plots: { index: number; slug: string | null; crop: string | null; asset: string | null; watered: boolean; tilled: boolean; health: number; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
+  plots: { index: number; slug: string | null; crop: string | null; asset: string | null; watered: boolean; tilled: boolean; health: number; wilting?: boolean; ready: boolean; readyAt: string | null; progress?: number; empty: boolean }[];
   warehouse: { slug: string; name: string; category: string; quantity: number; unitSell: number; asset?: string | null }[];
   animals: { id: string; name: string; grown: boolean; productReady: boolean }[];
   fertilizers?: { slug: string; name: string; quantity: number; reduceSeconds: number }[];
@@ -212,9 +212,10 @@ export default function FarmPage() {
                 {p.empty && !p.tilled && <span className="absolute bottom-0.5 rounded bg-black/45 px-1 text-[9px] text-white">Xới</span>}
                 {p.empty && p.tilled && <span className="absolute bottom-0.5 rounded bg-emerald-600/80 px-1 text-[9px] text-white">Gieo</span>}
                 {p.ready && <span className="absolute -top-0.5 right-0 rounded bg-amber-500 px-1 text-[9px] font-bold text-white shadow">Chín!</span>}
+                {!p.empty && !p.ready && p.wilting && <span className="absolute -top-0.5 left-0 rounded bg-rose-600 px-1 text-[9px] font-bold text-white shadow" title="Cây đang héo — tưới/bón gấp kẻo chết">🥀 héo</span>}
                 {!p.empty && !p.ready && (
                   <span className="absolute bottom-0 left-0 right-0">
-                    <span className="block h-1 w-full bg-black/20"><span className="block h-full bg-emerald-400" style={{ width: `${prog * 100}%` }} /></span>
+                    <span className="block h-1 w-full bg-black/20"><span className={`block h-full ${p.wilting ? 'bg-rose-500' : 'bg-emerald-400'}`} style={{ width: `${prog * 100}%` }} /></span>
                     <span className="block bg-black/40 text-center text-[8px] text-white">{!p.watered ? '💧 cần tưới' : `⏳ ${formatDuration(left)}`}</span>
                   </span>
                 )}
@@ -269,7 +270,8 @@ export default function FarmPage() {
           <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" onClick={() => setFertPlot(null)}>
             <div className="card w-full max-w-sm p-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <h2 className="mb-1 font-semibold">Chăm sóc {plot?.crop ? plot.crop : `ô ${fertPlot + 1}`}</h2>
-              <p className="mb-3 text-xs text-ink-500">Tưới nước giúp cây khoẻ (tăng sản lượng); bón phân giảm thời gian chín.</p>
+              <p className="mb-1 text-xs text-ink-500">Tưới nước giúp cây khoẻ (tăng sản lượng); bón phân giảm thời gian chín.</p>
+              <p className="mb-3 text-xs text-ink-400">Sức khỏe: <b className={plot && plot.health < 50 ? 'text-rose-500' : 'text-emerald-600'}>{plot?.health ?? 0}%</b>{plot?.wilting ? ' — cây đang héo do bỏ bê, chăm sóc ngay kẻo chết!' : ''}</p>
 
               {/* Tưới nước — rút từ giếng (có hạn) */}
               {plot && !plot.watered

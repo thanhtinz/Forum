@@ -49,6 +49,10 @@ const WELL_MAX = 100;                 // sức chứa giếng (đầy = 100 đơ
 const WELL_REGEN_MS = 3 * 60 * 1000;  // hồi 1 nước mỗi 3 phút (đầy giếng sau ~5 giờ)
 const WATER_COST_PLOT = 5;            // tưới 1 ô đất tốn 5 nước
 const WATER_COST_KHE = 10;            // tưới cây khế tốn 10 nước
+// Héo cây (mô phỏng cơ chế Avatar): bỏ bê ô đất (không tưới/bón) quá lâu -> sức khỏe tự giảm dần,
+// về 0 thì cây chết hẳn (mất trắng, ô đất dọn về trống). Mỗi lần tưới/bón đều "chốt" lại mốc thời gian.
+const HEALTH_DECAY_GRACE_MS = 10 * 60 * 1000; // 10 phút ân hạn trước khi bắt đầu héo
+const HEALTH_DECAY_PER_MIN = 3;               // héo 3 điểm sức khỏe / phút sau ân hạn
 
 @Injectable()
 export class FarmService {
@@ -64,6 +68,8 @@ export class FarmService {
     await this.maybeSickenAnimals(char.id);
     // Mở ô đất theo cấp: đảm bảo đã có đủ ô được mở khoá (5 + level, tối đa 50)
     await this.ensurePlots(char.id, profile.level);
+    // Cây bị bỏ bê quá lâu (không tưới/bón) sẽ héo chết -> dọn ô đất về trống
+    await this.wiltNeglectedPlots(char.id);
 
     const [plots, warehouse, animals] = await Promise.all([
       this.prisma.farmPlot.findMany({
@@ -110,15 +116,18 @@ export class FarmService {
         const total = p.plantedAt && p.readyAt ? p.readyAt.getTime() - p.plantedAt.getTime() : 0;
         const done = p.plantedAt ? now - p.plantedAt.getTime() : 0;
         const progress = total > 0 ? Math.max(0, Math.min(1, done / total)) : 0;
+        const health = this.currentPlotHealth(p);
         return {
           index: p.index,
           slug: p.crop?.slug ?? null,
           crop: p.crop?.name ?? null,
           asset: p.crop?.asset ?? null,
           // "Đã tưới đủ" khi sức khỏe đạt 100; còn dưới 100 vẫn tưới tiếp được (tưới liên tục)
-          watered: p.health >= 100,
+          watered: health >= 100,
           tilled: p.tilled,
-          health: p.health,
+          health,
+          // Cảnh báo héo: dưới 50% sức khỏe do bỏ bê — cần tưới/bón gấp kẻo cây chết
+          wilting: !!p.cropId && health < 50,
           ready: p.readyAt ? p.readyAt.getTime() <= now : false,
           readyAt: p.readyAt,
           progress,
@@ -328,6 +337,44 @@ export class FarmService {
   }
 
   // ──────────────────────────────────────────────
+  // HÉO CÂY — bỏ bê (không tưới/bón) quá HEALTH_DECAY_GRACE_MS thì sức khỏe tự giảm dần theo thời gian.
+  // Mỗi lần tưới/bón đều chốt lại healthUpdatedAt, nên chăm sóc đều thì cây không bao giờ héo.
+  // ──────────────────────────────────────────────
+  private currentPlotHealth(plot: { cropId: string | null; health: number; healthUpdatedAt: Date | null }) {
+    if (!plot.cropId) return plot.health;
+    const last = plot.healthUpdatedAt ? plot.healthUpdatedAt.getTime() : Date.now();
+    const elapsed = Date.now() - last;
+    if (elapsed <= HEALTH_DECAY_GRACE_MS) return plot.health;
+    const decayMinutes = Math.floor((elapsed - HEALTH_DECAY_GRACE_MS) / 60000);
+    return Math.max(0, plot.health - decayMinutes * HEALTH_DECAY_PER_MIN);
+  }
+
+  // Dọn các ô có cây đã héo hẳn (sức khỏe chạm 0) — mất trắng, đất trống trở lại.
+  private async wiltNeglectedPlots(characterId: string) {
+    const plots = await this.prisma.farmPlot.findMany({ where: { characterId, cropId: { not: null } } });
+    const deadIds = plots.filter((p) => this.currentPlotHealth(p) <= 0).map((p) => p.id);
+    if (deadIds.length > 0) {
+      await this.prisma.farmPlot.updateMany({
+        where: { id: { in: deadIds } },
+        data: { cropId: null, plantedAt: null, readyAt: null, watered: false, tilled: false, health: 100, healthUpdatedAt: null, yield: 0 },
+      });
+    }
+  }
+
+  // Chốt sức khỏe hiện tại của 1 ô; nếu đã héo chết thì dọn ngay và báo lỗi (dùng trước khi tưới/bón/thu hoạch).
+  private async assertPlotAlive(plot: { id: string; cropId: string | null; health: number; healthUpdatedAt: Date | null }) {
+    const health = this.currentPlotHealth(plot);
+    if (plot.cropId && health <= 0) {
+      await this.prisma.farmPlot.update({
+        where: { id: plot.id },
+        data: { cropId: null, plantedAt: null, readyAt: null, watered: false, tilled: false, health: 100, healthUpdatedAt: null, yield: 0 },
+      });
+      throw new BadRequestException('Cây đã héo chết do bỏ bê quá lâu — ô đất đã dọn, hãy xới đất và trồng lại');
+    }
+    return health;
+  }
+
+  // ──────────────────────────────────────────────
   // CỬA HÀNG HẠT GIỐNG + MUA
   // ──────────────────────────────────────────────
   async listCrops() {
@@ -388,7 +435,7 @@ export class FarmService {
       const readyAt = new Date(Date.now() + crop.growSeconds * 1000);
       await tx.farmPlot.update({
         where: { id: plot.id },
-        data: { cropId: crop.id, plantedAt: new Date(), readyAt, watered: false, health: PLANT_BASE_HEALTH, yield: 0 },
+        data: { cropId: crop.id, plantedAt: new Date(), readyAt, watered: false, health: PLANT_BASE_HEALTH, healthUpdatedAt: new Date(), yield: 0 },
       });
     });
     return { ok: true, plotIndex, crop: crop.name };
@@ -399,12 +446,13 @@ export class FarmService {
     const profile = await this.getProfile(char.id);
     const plot = await this.getPlot(char.id, plotIndex);
     if (!plot.cropId) throw new BadRequestException('Ô đất trống');
+    const currentHealth = await this.assertPlotAlive(plot);
     // Tưới liên tục: mỗi lần tưới +sức khỏe (tốn nước giếng) cho tới khi đầy 100.
-    if (plot.health >= 100) return { ok: true, alreadyWatered: true, health: plot.health };
+    if (currentHealth >= 100) return { ok: true, alreadyWatered: true, health: currentHealth };
     // Rút nước từ giếng (nguồn nước có hạn)
     const wellLeft = await this.drawFromWell(char.id, profile as any, WATER_COST_PLOT);
-    const health = Math.min(100, plot.health + WATER_HEALTH);
-    await this.prisma.farmPlot.update({ where: { id: plot.id }, data: { watered: true, health } });
+    const health = Math.min(100, currentHealth + WATER_HEALTH);
+    await this.prisma.farmPlot.update({ where: { id: plot.id }, data: { watered: true, health, healthUpdatedAt: new Date() } });
     return { ok: true, health, wellWater: wellLeft };
   }
 
@@ -412,6 +460,7 @@ export class FarmService {
     const char = await this.getCharacter(userId);
     const plot = await this.getPlot(char.id, plotIndex);
     if (!plot.cropId || !plot.readyAt) throw new BadRequestException('Ô đất trống');
+    const currentHealth = await this.assertPlotAlive(plot);
     const fert = await this.prisma.fertilizerTemplate.findUnique({ where: { slug: fertilizerSlug } });
     if (!fert) throw new NotFoundException('Phân bón không tồn tại');
 
@@ -425,8 +474,8 @@ export class FarmService {
         data: { quantity: { decrement: 1 } },
       });
       const newReady = new Date(plot.readyAt!.getTime() - fert.reduceSeconds * 1000);
-      const health = Math.min(100, plot.health + FERTILIZE_HEALTH);
-      await tx.farmPlot.update({ where: { id: plot.id }, data: { readyAt: newReady, health } });
+      const health = Math.min(100, currentHealth + FERTILIZE_HEALTH);
+      await tx.farmPlot.update({ where: { id: plot.id }, data: { readyAt: newReady, health, healthUpdatedAt: new Date() } });
     });
     return { ok: true, reducedSeconds: fert.reduceSeconds };
   }
@@ -436,11 +485,12 @@ export class FarmService {
     const plot = await this.getPlot(char.id, plotIndex, true);
     if (!plot.cropId || !plot.crop || !plot.readyAt) throw new BadRequestException('Ô đất trống');
     if (plot.readyAt.getTime() > Date.now()) throw new BadRequestException('Cây chưa chín');
+    const currentHealth = await this.assertPlotAlive(plot);
 
     const crop = plot.crop;
     const raw = crop.yieldMin + Math.floor(Math.random() * (crop.yieldMax - crop.yieldMin + 1));
     // Sản lượng theo sức khỏe ô đất (công thức Avatar): raw × health/100
-    const amount = Math.max(1, Math.round((raw * plot.health) / 100));
+    const amount = Math.max(1, Math.round((raw * currentHealth) / 100));
 
     const result = await this.prisma.$transaction(async (tx) => {
       await this.addWarehouse(tx, char.id, {
@@ -452,7 +502,7 @@ export class FarmService {
       }, amount);
       await tx.farmPlot.update({
         where: { id: plot.id },
-        data: { cropId: null, plantedAt: null, readyAt: null, watered: false, tilled: false, health: 100, yield: 0 },
+        data: { cropId: null, plantedAt: null, readyAt: null, watered: false, tilled: false, health: 100, healthUpdatedAt: null, yield: 0 },
       });
       return this.addExp(tx, char.id, crop.exp);
     });

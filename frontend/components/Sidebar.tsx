@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Gamepad2, Fish, Sprout, Wrench, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Gift, Shield } from 'lucide-react';
+import { Gamepad2, Sprout, Wrench, Award, Bookmark, BellRing, FileText, ExternalLink, Newspaper, Users, Tag, Image, BarChart3, CalendarCheck, Gift, Shield } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -10,10 +10,9 @@ interface NavPage { slug: string; title: string }
 interface NavLinkItem { id: string; label: string; url: string; openNewTab: boolean }
 
 const SHORTCUTS = [
-  { href: '/cong-game', label: 'Giải trí', icon: Gamepad2, desc: 'Nông trại, câu cá, minigame…' },
+  { href: '/cong-game', label: 'Giải trí', icon: Gamepad2, desc: 'Nông trại, minigame…' },
   { href: '/game/farm', label: 'Nông trại', icon: Sprout, desc: 'Trồng trọt & vật nuôi' },
-  { href: '/game/fishing', label: 'Câu cá', icon: Fish, desc: '3 khu, cá hiếm' },
-  { href: '/leaderboard', label: 'Xếp hạng', icon: Award, desc: 'Top danh hiệu & câu cá' },
+  { href: '/leaderboard', label: 'Xếp hạng', icon: Award, desc: 'Top danh hiệu' },
   { href: '/guild', label: 'Bang hội', icon: Shield, desc: 'Cộng đồng — lập & gia nhập bang hội' },
   { href: '/tools', label: 'Công cụ', icon: Wrench, desc: '44 tool dev' },
 ];

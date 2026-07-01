@@ -12,10 +12,6 @@ const IMAGE_KEYS = new Set(['asset', 'iconUrl', 'spriteUrl']);
 
 const TYPES = [
   { id: 'crop', label: 'Cây trồng' },
-  { id: 'fish', label: 'Cá' },
-  { id: 'fishdepth', label: 'Độ sâu hồ' },
-  { id: 'fishingrod', label: 'Cần câu' },
-  { id: 'fishingboat', label: 'Thuyền' },
   { id: 'fertilizer', label: 'Phân bón' },
   { id: 'gempackage', label: 'Gói nạp Gem' },
 ];
@@ -29,27 +25,6 @@ const SCHEMAS: Record<string, Field[]> = {
     { key: 'yieldMin', label: 'Sản lượng tối thiểu', type: 'number' }, { key: 'yieldMax', label: 'Sản lượng tối đa', type: 'number' },
     { key: 'reqLevel', label: 'Cấp yêu cầu', type: 'number' }, { key: 'asset', label: 'Ảnh', type: 'text' },
     { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
-  ],
-  fish: [
-    { key: 'depth', label: 'Độ sâu (cá xuất hiện)', type: 'number' }, { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
-    { key: 'kgMin', label: 'KG tối thiểu', type: 'number' }, { key: 'kgMax', label: 'KG tối đa', type: 'number' },
-    { key: 'pricePerKg', label: 'Giá / kg (coin)', type: 'number' }, { key: 'refillCount', label: 'Số con hồi/chu kỳ', type: 'number' },
-    { key: 'stock', label: 'Tồn kho', type: 'number' }, { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
-  ],
-  fishdepth: [
-    { key: 'depth', label: 'Độ sâu (số, vd 1,2,3)', type: 'number' }, { key: 'name', label: 'Tên (Nông/Vừa/Sâu…)', type: 'text' },
-    { key: 'minRodTier', label: 'Cần bậc tối thiểu', type: 'number' }, { key: 'catchRate', label: 'Tỷ lệ bắt được (%)', type: 'number' },
-    { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
-  ],
-  fishingrod: [
-    { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên cần', type: 'text' },
-    { key: 'tier', label: 'Bậc cần', type: 'number' }, { key: 'price', label: 'Giá (coin)', type: 'number' },
-    { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
-  ],
-  fishingboat: [
-    { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên thuyền', type: 'text' },
-    { key: 'price', label: 'Giá (coin)', type: 'number' }, { key: 'capacity', label: 'Sức chứa cá', type: 'number' },
-    { key: 'maxDepth', label: 'Độ sâu tối đa', type: 'number' }, { key: 'asset', label: 'Ảnh', type: 'text' }, { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
   ],
   fertilizer: [
     { key: 'slug', label: 'Mã (slug)', type: 'text' }, { key: 'name', label: 'Tên', type: 'text' },
@@ -82,11 +57,6 @@ function rowStats(r: any, type: string): string {
     if (r.growSeconds) parts.push(`chín ${humanDur(r.growSeconds)}`);
     if (r.yieldMin != null) parts.push(`SL ${r.yieldMin}-${r.yieldMax}`);
     if (r.sellPrice != null) parts.push(`bán ${r.sellPrice}/cái`);
-  } else if (type === 'fish') {
-    parts.push(`khu ${r.zone}`);
-    if (r.pricePerKg != null) parts.push(`${r.pricePerKg} coin/kg`);
-    if (r.kgMin != null) parts.push(`${r.kgMin}-${r.kgMax}kg`);
-    if (r.stock != null) parts.push(`tồn ${r.stock}`);
   } else {
     if (r.priceCoin != null) parts.push(`coin ${r.priceCoin}`);
     if (r.price != null) parts.push(`${r.price} coin`);

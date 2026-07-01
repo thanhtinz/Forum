@@ -205,6 +205,7 @@ function ThreadView() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const scrolledToLastRead = useRef(false);
   const [threadMenu, setThreadMenu] = useState(false);
+  const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const threadMenuRef = useRef<HTMLDivElement>(null);
 
   const [viewing, setViewing] = useState<{ total: number; users: { id: string; username: string; displayName?: string | null; avatar?: string | null }[] }>({ total: 0, users: [] });
@@ -435,6 +436,7 @@ function ThreadView() {
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (threadMenuRef.current && !threadMenuRef.current.contains(e.target as Node)) setThreadMenu(false);
+      if (!(e.target as HTMLElement)?.closest?.('.emoji-picker-wrap')) setEmojiPickerFor(null);
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -870,13 +872,16 @@ function ThreadView() {
               })()}
               {/* Emoji picker */}
               {user && (
-                <div className="group relative">
-                  <button className="flex items-center gap-1 rounded-full border border-dashed border-ink-300 px-2 py-0.5 text-ink-500 hover:text-brand-600 dark:border-ink-700"><SmilePlus size={14} /></button>
-                  <div className="absolute right-0 bottom-full z-10 mb-1 hidden gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card group-hover:flex dark:border-ink-800 dark:bg-ink-900">
-                    {REACTIONS.map((e) => (
-                      <button key={e} onClick={() => react(p.id, e)} className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-800">{e}</button>
-                    ))}
-                  </div>
+                <div className="emoji-picker-wrap relative">
+                  <button type="button" onClick={() => setEmojiPickerFor((cur) => (cur === p.id ? null : p.id))}
+                    className="flex items-center gap-1 rounded-full border border-dashed border-ink-300 px-2 py-0.5 text-ink-500 hover:text-brand-600 dark:border-ink-700"><SmilePlus size={14} /></button>
+                  {emojiPickerFor === p.id && (
+                    <div className="absolute right-0 bottom-full z-10 mb-1 flex gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card dark:border-ink-800 dark:bg-ink-900">
+                      {REACTIONS.map((e) => (
+                        <button key={e} onClick={() => { react(p.id, e); setEmojiPickerFor(null); }} className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-800">{e}</button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               {/* Tip total */}

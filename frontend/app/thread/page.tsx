@@ -571,10 +571,6 @@ function ThreadView() {
 
   const commentBox = (
     <div id="comment-form" className="card overflow-hidden">
-      <div className="flex items-center gap-2 border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
-        <MessageCircle size={18} className="text-orange-500" />
-        <h2 className="font-bold">Bình luận ( {thread.replyCount} )</h2>
-      </div>
       {user ? (
         thread.isLocked ? (
           <p className="px-4 py-3 text-center text-sm text-ink-500">Chủ đề đã bị khoá.</p>
@@ -888,18 +884,24 @@ function ThreadView() {
                 )}
                 {editingPostId !== p.id && (p as any).hiddenSections?.map((hs: any) => (
                   <div key={hs.id} className={`mt-3 rounded-xl border p-3 text-sm ${hs.isUnlocked ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/40 dark:bg-emerald-950/10' : 'border-amber-200 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/10'}`}>
-                    <div className="mb-1 flex items-center gap-1.5 font-medium">
-                      {hs.isUnlocked ? <Unlock size={14} className="text-emerald-600" /> : <Lock size={14} className="text-amber-600" />}
-                      <span>{hs.label || 'Nội dung ẩn'}</span>
-                    </div>
                     {hs.isUnlocked ? (
-                      <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
+                      <>
+                        <div className="mb-1 flex items-center gap-1.5 font-medium">
+                          <Unlock size={14} className="text-emerald-600" />
+                          <span>{hs.label || 'Nội dung ẩn'}</span>
+                        </div>
+                        <div className="prose prose-sm max-w-none dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: hs.content || '' }} />
+                      </>
                     ) : (
-                      <div className="space-y-2">
+                      <div className="flex flex-col items-center gap-1.5 py-6 text-center">
+                        <span className="grid h-14 w-14 place-items-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/30">
+                          <Lock size={26} />
+                        </span>
+                        <p className="font-semibold">{hs.label || 'Nội dung này đã bị ẩn'}</p>
                         <p className="text-xs text-ink-500">{gateDescription(hs)}</p>
                         {needGem(hs.gateType) && hs.gemPrice ? (
                           user ? (
-                            <button type="button" disabled={unlockBusy === hs.id} onClick={() => unlockHidden(hs.id)} className="btn-primary inline-flex items-center gap-1 !py-1 text-xs disabled:opacity-50">
+                            <button type="button" disabled={unlockBusy === hs.id} onClick={() => unlockHidden(hs.id)} className="btn-primary mt-1 inline-flex items-center gap-1 !py-1.5 text-xs disabled:opacity-50">
                               <Gem size={12} /> {unlockBusy === hs.id ? 'Đang mở…' : `Mở khoá bằng ${hs.gemPrice} Gem`}
                             </button>
                           ) : (

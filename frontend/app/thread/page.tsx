@@ -876,7 +876,7 @@ function ThreadView() {
                   <button type="button" onClick={() => setEmojiPickerFor((cur) => (cur === p.id ? null : p.id))}
                     className="flex items-center gap-1 rounded-full border border-dashed border-ink-300 px-2 py-0.5 text-ink-500 hover:text-brand-600 dark:border-ink-700"><SmilePlus size={14} /></button>
                   {emojiPickerFor === p.id && (
-                    <div className="absolute right-0 bottom-full z-10 mb-1 flex gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card dark:border-ink-800 dark:bg-ink-900">
+                    <div className="absolute bottom-full left-1/2 z-10 mb-1 flex -translate-x-1/2 gap-1 rounded-lg border border-ink-200 bg-white p-1 shadow-card dark:border-ink-800 dark:bg-ink-900">
                       {REACTIONS.map((e) => (
                         <button key={e} onClick={() => { react(p.id, e); setEmojiPickerFor(null); }} className="rounded p-1 text-base hover:bg-ink-100 dark:hover:bg-ink-800">{e}</button>
                       ))}

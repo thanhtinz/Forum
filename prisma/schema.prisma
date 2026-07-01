@@ -2277,6 +2277,7 @@ model CropTemplate {
   reqLevel    Int     @default(0)
   asset       String? @db.VarChar(255)
   sortOrder   Int     @default(0)
+  weightKg    Float   @default(0.5) // khối lượng (kg) mỗi đơn vị nông sản — dùng để tính giới hạn 20kg/ô kho
 
   plots FarmPlot[]
 }
@@ -2310,6 +2311,7 @@ model AnimalTemplate {
   sellYoung       Int     @default(0) // bán khi còn non
   asset           String? @db.VarChar(255)
   sortOrder       Int     @default(0)
+  productWeightKg Float   @default(0.2) // khối lượng (kg) mỗi đơn vị sản phẩm — dùng để tính giới hạn 20kg/ô kho
 
   animals FarmAnimal[]
 }
@@ -2324,6 +2326,8 @@ model FarmProfile {
   nextPlotPrice  Int       @default(5000) // giá ô đất kế tiếp (tăng dần)
   barnLevel      Int       @default(0) // cấp chuồng thú
   barnExp        Int       @default(0) // EXP chuồng thú
+  warehouseLevel Int       @default(0) // cấp kho hàng (mở thêm ô lưu trữ, tối đa 100 ô)
+  warehouseExp   Int       @default(0) // EXP kho hàng (tăng khi thu hoạch)
   dogUntil       DateTime? // chó bảo vệ tới khi nào
   lastCheckinAt  DateTime?
   kheLastWaterAt DateTime? // lần tưới cây khế gần nhất (mỗi ngày)
@@ -2361,14 +2365,15 @@ model FarmPlot {
 
 // Kho nông trại (hạt giống, nông sản, sản phẩm vật nuôi, bánh)
 model WarehouseItem {
-  id          String  @id @default(cuid())
-  characterId String
-  slug        String  @db.VarChar(60)
-  name        String  @db.VarChar(100)
-  category    String  @db.VarChar(20) // SEED | CROP | PRODUCT | DISH
-  quantity    Int     @default(0)
-  unitSell    Int     @default(0) // coin / đơn vị khi bán
-  asset       String? @db.VarChar(255)
+  id           String  @id @default(cuid())
+  characterId  String
+  slug         String  @db.VarChar(60)
+  name         String  @db.VarChar(100)
+  category     String  @db.VarChar(20) // SEED | CROP | PRODUCT | DISH
+  quantity     Int     @default(0)
+  unitSell     Int     @default(0) // coin / đơn vị khi bán
+  unitWeightKg Float   @default(0) // khối lượng (kg) / đơn vị — 0 = không giới hạn theo cân nặng (SEED/SUPPLY)
+  asset        String? @db.VarChar(255)
 
   character GameCharacter @relation(fields: [characterId], references: [id], onDelete: Cascade)
 

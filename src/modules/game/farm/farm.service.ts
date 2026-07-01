@@ -40,6 +40,14 @@ const BARN_START_SLOTS = 3;
 const BARN_MAX_SLOTS = 24;
 const BARN_EXP_PER_LEVEL = 500;
 const BARN_MAX_LEVEL = 21; // 3 + 21 = 24 slot
+// Kho hàng: mỗi loại nông sản/sản phẩm chiếm 1 ô, lên cấp (nhờ EXP khi thu hoạch) mở thêm ô, tối đa 100 ô.
+// Mỗi ô chỉ chứa tối đa 20kg (tính theo khối lượng từng đơn vị nông sản) — vượt quá sẽ tràn kho, mất phần dư.
+const WAREHOUSE_START_SLOTS = 20;
+const WAREHOUSE_MAX_SLOTS = 100;
+const WAREHOUSE_SLOTS_PER_LEVEL = 5;
+const WAREHOUSE_EXP_PER_LEVEL = 500;
+const WAREHOUSE_MAX_LEVEL = 16; // 20 + 16×5 = 100 ô
+const WAREHOUSE_SLOT_WEIGHT_CAP_KG = 20;
 // Sức khỏe ô đất (mô phỏng cơ chế sucKhoe của Avatar): sản lượng = raw × health/100
 const PLANT_BASE_HEALTH = 60; // mới gieo cần chăm sóc mới đạt full
 const WATER_HEALTH = 40;      // tưới 1 lần là đủ 100 (60 + 40)
@@ -140,6 +148,9 @@ export class FarmService {
         category: w.category,
         quantity: w.quantity,
         unitSell: w.unitSell,
+        unitWeightKg: w.unitWeightKg,
+        weightKg: Math.round(w.unitWeightKg * w.quantity * 100) / 100,
+        maxWeightKg: WAREHOUSE_SLOT_WEIGHT_CAP_KG,
         // Nông sản: ưu tiên icon theo crop template admin (đồng bộ cửa hàng); quả khế lấy theo template khế
         asset: w.category === 'CROP'
           ? (cropAsset.get(w.slug) ?? (w.slug === 'qua-khe' ? kheAsset : null) ?? w.asset)
@@ -172,6 +183,17 @@ export class FarmService {
         slots: this.barnSlots(profile.barnLevel),
         used: animals.length,
         nextSlotLevel: this.barnSlots(profile.barnLevel) >= BARN_MAX_SLOTS ? null : profile.barnLevel + 1,
+      },
+      warehouseInfo: {
+        level: profile.warehouseLevel,
+        maxLevel: WAREHOUSE_MAX_LEVEL,
+        expIntoLevel: profile.warehouseLevel >= WAREHOUSE_MAX_LEVEL ? 0 : profile.warehouseExp - profile.warehouseLevel * WAREHOUSE_EXP_PER_LEVEL,
+        expForNextLevel: profile.warehouseLevel >= WAREHOUSE_MAX_LEVEL ? null : WAREHOUSE_EXP_PER_LEVEL,
+        slots: this.warehouseSlots(profile.warehouseLevel),
+        maxSlots: WAREHOUSE_MAX_SLOTS,
+        used: warehouse.length,
+        maxWeightPerSlotKg: WAREHOUSE_SLOT_WEIGHT_CAP_KG,
+        nextSlotLevel: this.warehouseSlots(profile.warehouseLevel) >= WAREHOUSE_MAX_SLOTS ? null : profile.warehouseLevel + 1,
       },
       fertilizers: fertilizers.map((f) => ({
         slug: f.fertilizer.slug,
@@ -253,18 +275,21 @@ export class FarmService {
     const tpl = await this.prisma.cropTemplate.findFirst({
       where: { OR: [{ slug: 'qua-khe' }, { slug: 'khe' }, { name: { contains: 'Khế' } }, { name: { contains: 'khế' } }] },
     });
-    await this.prisma.$transaction(async (tx) => {
+    const stored = await this.prisma.$transaction(async (tx) => {
       await tx.farmProfile.update({ where: { characterId: char.id }, data: { kheFruit: 0, kheUpdatedAt: new Date() } });
-      await this.addWarehouse(tx, char.id, {
+      const r = await this.addWarehouse(tx, char.id, {
         // giữ slug 'qua-khe' để cập nhật luôn icon của các stack đã có trong kho
         slug: 'qua-khe',
         name: tpl?.name ?? 'Quả Khế',
         category: 'CROP',
         unitSell: tpl?.sellPrice ?? this.KHE_PRICE,
         asset: tpl?.asset ?? '/game-assets/nongtrai/pixel/qua-khe.png',
+        weightKg: tpl?.weightKg ?? 0.3,
       }, fruit);
+      if (r.added > 0) await this.addWarehouseExp(tx, char.id, Math.max(5, r.added * 5));
+      return r;
     });
-    return { harvested: fruit };
+    return { harvested: fruit, stored: stored.added, overflow: stored.overflow };
   }
 
   // ──────────────────────────────────────────────
@@ -493,20 +518,24 @@ export class FarmService {
     const amount = Math.max(1, Math.round((raw * currentHealth) / 100));
 
     const result = await this.prisma.$transaction(async (tx) => {
-      await this.addWarehouse(tx, char.id, {
+      const stored = await this.addWarehouse(tx, char.id, {
         slug: crop.slug,
         name: crop.name,
         category: 'CROP',
         unitSell: crop.sellPrice,
         asset: crop.asset,
+        weightKg: crop.weightKg,
       }, amount);
       await tx.farmPlot.update({
         where: { id: plot.id },
         data: { cropId: null, plantedAt: null, readyAt: null, watered: false, tilled: false, health: 100, healthUpdatedAt: null, yield: 0 },
       });
-      return this.addExp(tx, char.id, crop.exp);
+      if (stored.added > 0) await this.addWarehouseExp(tx, char.id, Math.max(5, stored.added * 5));
+      const expResult = await this.addExp(tx, char.id, crop.exp);
+      return { ...expResult, stored };
     });
-    return { ok: true, crop: crop.name, amount, expGained: crop.exp, ...result };
+    const { stored, ...rest } = result;
+    return { ok: true, crop: crop.name, amount, expGained: crop.exp, stored: stored.added, overflow: stored.overflow, ...rest };
   }
 
   // ──────────────────────────────────────────────
@@ -547,7 +576,9 @@ export class FarmService {
     if (item.unitSell <= 0) throw new BadRequestException('Vật phẩm này không bán được');
     const value = item.unitSell * qty;
     await this.prisma.$transaction(async (tx) => {
-      await tx.warehouseItem.update({ where: { id: item.id }, data: { quantity: { decrement: qty } } });
+      // Bán hết -> xoá hẳn ô kho (giải phóng ô trống cho loại khác), tránh "ô ma" chiếm chỗ mãi mãi
+      if (item.quantity - qty <= 0) await tx.warehouseItem.delete({ where: { id: item.id } });
+      else await tx.warehouseItem.update({ where: { id: item.id }, data: { quantity: { decrement: qty } } });
       await this.addCoin(tx, char.id, value, 'farm_sell', `Bán ${item.name}`);
     });
     return { ok: true, value };
@@ -652,22 +683,25 @@ export class FarmService {
       throw new BadRequestException('Sản phẩm chưa sẵn sàng');
     }
     const amount = a.animal.productYield * Math.min(a.fedCount, MAX_FEED);
-    await this.prisma.$transaction(async (tx) => {
-      await this.addWarehouse(tx, char.id, {
+    const stored = await this.prisma.$transaction(async (tx) => {
+      const r = await this.addWarehouse(tx, char.id, {
         slug: a.animal.productSlug!,
         name: a.animal.productName ?? a.animal.productSlug!,
         category: 'PRODUCT',
         unitSell: a.animal.productPrice,
         asset: PRODUCT_ICON[a.animal.productSlug!] ?? a.animal.asset,
+        weightKg: a.animal.productWeightKg,
       }, amount);
       await tx.farmAnimal.update({
         where: { id: a.id },
         data: { fedCount: 0, productReadyAt: null },
       });
-      // Thu sản phẩm -> tăng EXP chuồng (lên cấp mở thêm slot)
+      // Thu sản phẩm -> tăng EXP chuồng (lên cấp mở thêm slot) + EXP kho hàng
       await this.addBarnExp(tx, char.id, Math.max(8, amount * 8));
+      if (r.added > 0) await this.addWarehouseExp(tx, char.id, Math.max(5, r.added * 5));
+      return r;
     });
-    return { ok: true, product: a.animal.productName, amount };
+    return { ok: true, product: a.animal.productName, amount, stored: stored.added, overflow: stored.overflow };
   }
 
   async sellAnimal(userId: string, animalId: string) {
@@ -788,23 +822,25 @@ export class FarmService {
         ? Math.max(1, Math.floor((crop.yieldMin + Math.random() * (crop.yieldMax - crop.yieldMin)) / 10))
         : 0;
 
+    let storedStolen = { added: stolen, overflow: 0 };
     await this.prisma.$transaction(async (tx) => {
       await tx.farmProfile.update({
         where: { characterId: thief.id },
         data: { exp: { decrement: STEAL_EXP_COST }, level: this.farmLevel(Math.max(0, profile.exp - STEAL_EXP_COST)) },
       });
       if (stolen > 0) {
-        await this.addWarehouse(tx, thief.id, {
+        storedStolen = await this.addWarehouse(tx, thief.id, {
           slug: crop.slug,
           name: crop.name,
           category: 'CROP',
           unitSell: crop.sellPrice,
           asset: crop.asset,
+          weightKg: crop.weightKg,
         }, stolen);
       }
     });
     return stolen > 0
-      ? { ok: true, success: true, crop: crop.name, amount: stolen }
+      ? { ok: true, success: true, crop: crop.name, amount: storedStolen.added, overflow: storedStolen.overflow }
       : { ok: true, success: false, message: 'Trộm hụt, không lấy được gì' };
   }
 
@@ -832,6 +868,19 @@ export class FarmService {
     if (!p) return;
     const newExp = p.barnExp + exp;
     await tx.farmProfile.update({ where: { characterId }, data: { barnExp: newExp, barnLevel: this.barnLevel(newExp) } });
+  }
+
+  private warehouseLevel(exp: number) {
+    return Math.min(WAREHOUSE_MAX_LEVEL, Math.floor(exp / WAREHOUSE_EXP_PER_LEVEL));
+  }
+  private warehouseSlots(level: number) {
+    return Math.min(WAREHOUSE_MAX_SLOTS, WAREHOUSE_START_SLOTS + Math.max(0, level) * WAREHOUSE_SLOTS_PER_LEVEL);
+  }
+  private async addWarehouseExp(tx: Prisma.TransactionClient, characterId: string, exp: number) {
+    const p = await tx.farmProfile.findUnique({ where: { characterId }, select: { warehouseExp: true } });
+    if (!p) return;
+    const newExp = p.warehouseExp + exp;
+    await tx.farmProfile.update({ where: { characterId }, data: { warehouseExp: newExp, warehouseLevel: this.warehouseLevel(newExp) } });
   }
 
   private async getCharacter(userId: string) {
@@ -913,31 +962,65 @@ export class FarmService {
     }
   }
 
+  // Thêm nông sản/sản phẩm vào kho — giới hạn tối đa 100 ô (1 loại/ô) và 20kg/ô.
+  // Nếu ô đã có sẵn và đầy (theo cân nặng), phần dư bị TRÀN (mất) chứ không chặn hành động gốc (thu hoạch/thu sản phẩm).
+  // Nếu là loại MỚI (chưa có ô) mà kho đã hết ô trống -> chặn hẳn, yêu cầu bán bớt hoặc nâng cấp kho.
   private async addWarehouse(
     tx: Prisma.TransactionClient,
     characterId: string,
-    item: { slug: string; name: string; category: string; unitSell: number; asset?: string | null },
+    item: { slug: string; name: string; category: string; unitSell: number; asset?: string | null; weightKg?: number },
     qty: number,
-  ) {
-    await tx.warehouseItem.upsert({
+  ): Promise<{ added: number; overflow: number }> {
+    const weightKg = item.weightKg ?? 0;
+    const existing = await tx.warehouseItem.findUnique({
       where: { characterId_slug_category: { characterId, slug: item.slug, category: item.category } },
-      update: { quantity: { increment: qty }, unitSell: item.unitSell, asset: item.asset ?? undefined },
-      create: {
-        characterId,
-        slug: item.slug,
-        name: item.name,
-        category: item.category,
-        unitSell: item.unitSell,
-        asset: item.asset ?? null,
-        quantity: qty,
-      },
     });
+
+    if (!existing) {
+      const profile = await tx.farmProfile.findUnique({ where: { characterId }, select: { warehouseLevel: true } });
+      const slotLimit = this.warehouseSlots(profile?.warehouseLevel ?? 0);
+      const usedSlots = await tx.warehouseItem.count({ where: { characterId } });
+      if (usedSlots >= slotLimit) {
+        throw new BadRequestException('Kho hàng đã hết ô trống. Hãy bán bớt nông sản hoặc nâng cấp kho.');
+      }
+    }
+
+    let added = qty;
+    let overflow = 0;
+    if (weightKg > 0) {
+      const maxQtyForSlot = Math.floor(WAREHOUSE_SLOT_WEIGHT_CAP_KG / weightKg);
+      const room = Math.max(0, maxQtyForSlot - (existing?.quantity ?? 0));
+      if (qty > room) {
+        added = room;
+        overflow = qty - room;
+      }
+    }
+
+    if (added > 0) {
+      await tx.warehouseItem.upsert({
+        where: { characterId_slug_category: { characterId, slug: item.slug, category: item.category } },
+        update: { quantity: { increment: added }, unitSell: item.unitSell, asset: item.asset ?? undefined, unitWeightKg: weightKg },
+        create: {
+          characterId,
+          slug: item.slug,
+          name: item.name,
+          category: item.category,
+          unitSell: item.unitSell,
+          asset: item.asset ?? null,
+          quantity: added,
+          unitWeightKg: weightKg,
+        },
+      });
+    }
+    return { added, overflow };
   }
 
   private async consumeWarehouse(tx: Prisma.TransactionClient, characterId: string, slug: string, category: string, qty: number, errMsg: string) {
     const item = await tx.warehouseItem.findUnique({ where: { characterId_slug_category: { characterId, slug, category } } });
     if (!item || item.quantity < qty) throw new BadRequestException(errMsg);
-    await tx.warehouseItem.update({ where: { id: item.id }, data: { quantity: { decrement: qty } } });
+    // Dùng hết -> xoá hẳn ô kho (giải phóng ô trống), tránh "ô ma" chiếm chỗ mãi mãi
+    if (item.quantity - qty <= 0) await tx.warehouseItem.delete({ where: { id: item.id } });
+    else await tx.warehouseItem.update({ where: { id: item.id }, data: { quantity: { decrement: qty } } });
   }
 
   private async spendCoin(tx: Prisma.TransactionClient, characterId: string, amount: number, refId: string, note: string) {

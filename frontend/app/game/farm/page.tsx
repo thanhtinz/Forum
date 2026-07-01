@@ -45,7 +45,13 @@ export default function FarmPage() {
 
   async function buyDog() { try { await api.post('/farm/dog/buy'); setMsg('Đã mua chó giữ nhà (30 ngày)!'); } catch (e: any) { setMsg(e.message); } load(); }
   async function till(i: number) { try { await api.post('/farm/till', { plotIndex: i }); setMsg('Đã xới đất, giờ gieo hạt được rồi!'); } catch (e: any) { setMsg(e.message); } load(); }
-  async function harvest(i: number) { await api.post('/farm/harvest', { plotIndex: i }).catch(() => {}); load(); }
+  async function harvest(i: number) {
+    try {
+      const r = await api.post<{ crop: string; amount: number; overflow?: number }>('/farm/harvest', { plotIndex: i });
+      setMsg(r.overflow ? `Thu hoạch ${r.amount} ${r.crop}, kho đầy nên mất ${r.overflow} (nâng cấp kho hoặc bán bớt).` : '');
+    } catch (e: any) { setMsg(e.message); }
+    load();
+  }
   async function water(i: number) { try { await api.post('/farm/water', { plotIndex: i }); setMsg('Đã tưới nước (rút từ giếng).'); } catch (e: any) { setMsg(e.message); } load(); }
   async function plant(plotIndex: number, cropSlug: string, name: string) {
     try { await api.post('/farm/plant', { plotIndex, cropSlug }); setMsg(`Đã gieo ${name}`); setPlanting(null); }
@@ -64,7 +70,13 @@ export default function FarmPage() {
     if (!p.empty) { setFertPlot(p.index); return; }   // cây đang lớn -> mở chăm sóc (tưới / bón phân)
   }
   async function waterKhe() { try { const r = await api.post<{ bonus: number }>('/farm/khe/water'); setMsg(`Đã tưới cây khế (+${r.bonus} quả)!`); } catch (e: any) { setMsg(e.message); } load(); }
-  async function harvestKhe() { try { const r = await api.post<{ harvested: number }>('/farm/khe/harvest'); setMsg(`Đã thu hoạch ${r.harvested} quả khế vào kho. Vào kho để bán!`); } catch (e: any) { setMsg(e.message); } load(); }
+  async function harvestKhe() {
+    try {
+      const r = await api.post<{ harvested: number; overflow?: number }>('/farm/khe/harvest');
+      setMsg(r.overflow ? `Đã thu hoạch ${r.harvested} quả khế, kho đầy nên mất ${r.overflow}. Vào kho để bán!` : `Đã thu hoạch ${r.harvested} quả khế vào kho. Vào kho để bán!`);
+    } catch (e: any) { setMsg(e.message); }
+    load();
+  }
 
   return (
     <div className="space-y-5">
@@ -227,11 +239,6 @@ export default function FarmPage() {
           </div>
         )}
       </section>
-
-      <a href="/game/kho" className="card flex items-center justify-between p-4 transition hover:shadow-lg">
-        <span className="font-semibold">📦 Kho chung — xem & bán nông sản, sản phẩm, cá, món ăn</span>
-        <span className="btn-outline !py-1.5 text-xs">Mở kho →</span>
-      </a>
 
       {/* Popup chọn hạt để gieo */}
       {planting !== null && (() => {

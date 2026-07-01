@@ -10,7 +10,11 @@ import { formatCoin } from '@/lib/format';
 import { cropEmoji } from '@/lib/gameIcons';
 import { cropFruit } from '@/lib/cropSprites';
 
-interface WItem { slug: string; name: string; category: string; quantity: number; unitSell: number; asset?: string | null }
+interface WItem { slug: string; name: string; category: string; quantity: number; unitSell: number; asset?: string | null; unitWeightKg?: number; weightKg?: number; maxWeightKg?: number }
+interface WarehouseInfo {
+  level: number; maxLevel: number; expIntoLevel: number; expForNextLevel: number | null;
+  slots: number; maxSlots: number; used: number; maxWeightPerSlotKg: number; nextSlotLevel: number | null;
+}
 
 const CAT_LABEL: Record<string, string> = { SEED: 'Hạt giống', CROP: 'Nông sản', PRODUCT: 'Sản phẩm vật nuôi', DISH: 'Món ăn', FERTILIZER: 'Phân bón' };
 const CAT_ORDER = ['CROP', 'PRODUCT', 'DISH', 'SEED', 'FERTILIZER'];
@@ -26,10 +30,11 @@ const KNOWN_ASSET: Record<string, string> = {
 export default function WarehousePage() {
   const { user, loading } = useAuth();
   const [items, setItems] = useState<WItem[]>([]);
+  const [info, setInfo] = useState<WarehouseInfo | null>(null);
   const [msg, setMsg] = useState('');
 
   const load = useCallback(() => {
-    api.get<any>('/farm/state').then((s) => { setItems(s.warehouse || []); }).catch((e) => setMsg(e.message));
+    api.get<any>('/farm/state').then((s) => { setItems(s.warehouse || []); setInfo(s.warehouseInfo || null); }).catch((e) => setMsg(e.message));
     mutate('/game/character');
   }, []);
   useEffect(() => { if (!loading && user) load(); }, [user, loading, load]);
@@ -49,10 +54,35 @@ export default function WarehousePage() {
     <div className="space-y-4">
       <Link href="/cong-game" className="inline-flex items-center text-sm text-ink-400 hover:text-brand-600"><ChevronLeft size={16} /> Cổng game</Link>
       <header className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-brand-700 to-brand-600 p-6 text-white shadow-card">
-        <Warehouse /> <h1 className="text-2xl font-bold">Kho chung</h1>
+        <Warehouse /> <h1 className="text-2xl font-bold">Kho hàng</h1>
       </header>
       <p className="text-sm text-ink-500">Toàn bộ hạt giống, nông sản, sản phẩm vật nuôi và món ăn đều ở đây. Bán để kiếm coin.</p>
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
+
+      {info && (
+        <div className="card space-y-2 p-4">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">Ô kho: {info.used}/{info.slots} <span className="text-ink-400">(tối đa {info.maxSlots})</span></span>
+            <span className="text-xs text-ink-400">Mỗi ô chứa tối đa {info.maxWeightPerSlotKg}kg</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
+            <div className="h-2 rounded-full bg-brand-600" style={{ width: `${Math.min(100, (info.used / Math.max(1, info.slots)) * 100)}%` }} />
+          </div>
+          {info.nextSlotLevel != null ? (
+            <>
+              <div className="flex items-center justify-between text-xs text-ink-400">
+                <span>Nâng cấp kho (cấp {info.level} → {info.nextSlotLevel}): thu hoạch để lên cấp, mở thêm ô</span>
+                <span>{info.expIntoLevel}/{info.expForNextLevel} EXP</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
+                <div className="h-1.5 rounded-full bg-amber-500" style={{ width: `${Math.min(100, (info.expIntoLevel / Math.max(1, info.expForNextLevel || 1)) * 100)}%` }} />
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-emerald-600">Kho đã đạt tối đa {info.maxSlots} ô.</p>
+          )}
+        </div>
+      )}
 
       {empty && <div className="card p-8 text-center text-ink-500">Kho trống. Trồng cây, nuôi thú hoặc nấu ăn để có vật phẩm.</div>}
 
@@ -63,13 +93,25 @@ export default function WarehousePage() {
             {g.items.map((w) => {
               const cropKey = w.slug.replace(/^seed_/, '');
               const icon = cropFruit(cropKey) || w.asset || KNOWN_ASSET[w.slug];
+              const hasWeight = !!w.unitWeightKg && w.unitWeightKg > 0;
               return (
               <div key={w.slug + w.category} className="flex items-center gap-2 rounded-lg border border-ink-100 p-2 text-sm dark:border-ink-800">
                 {icon
                   // eslint-disable-next-line @next/next/no-img-element
                   ? <img src={icon} alt="" className="h-8 w-8 object-contain" />
                   : <span className="grid h-8 w-8 place-items-center text-lg">{cropEmoji(w.slug.replace(/^(seed_|dish_)/, ''))}</span>}
-                <div className="min-w-0 flex-1"><p className="truncate font-medium">{w.name} <span className="text-ink-400">×{w.quantity}</span></p><p className="text-xs text-ink-400">{w.unitSell ? `${formatCoin(w.unitSell)}/cái` : 'không bán'}</p></div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{w.name} <span className="text-ink-400">×{w.quantity}</span></p>
+                  <p className="text-xs text-ink-400">{w.unitSell ? `${formatCoin(w.unitSell)}/cái` : 'không bán'}</p>
+                  {hasWeight && (
+                    <div className="mt-1">
+                      <div className="h-1 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
+                        <div className="h-1 rounded-full bg-teal-500" style={{ width: `${Math.min(100, ((w.weightKg ?? 0) / (w.maxWeightKg || 20)) * 100)}%` }} />
+                      </div>
+                      <p className="mt-0.5 text-[10px] text-ink-400">{w.weightKg}kg / {w.maxWeightKg}kg</p>
+                    </div>
+                  )}
+                </div>
                 {w.unitSell > 0 && <button onClick={() => sellItem(w)} className="btn-primary shrink-0 !px-2 !py-1 text-xs">Bán</button>}
               </div>
               );

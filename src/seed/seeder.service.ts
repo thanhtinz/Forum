@@ -114,6 +114,8 @@ Bạn có thể chấp nhận cookie qua thanh thông báo, hoặc quản lý/xo
           where: { slug: c.slug, OR: [{ asset: { contains: '/sv1/' } }, { asset: null }, { asset: '' }] },
           data: { asset: c.asset },
         });
+        // Đồng bộ khối lượng (kg) 1 lần cho các bản ghi còn ở giá trị mặc định cột (0.5) — giữ số admin đã tự sửa
+        await this.prisma.cropTemplate.updateMany({ where: { slug: c.slug, weightKg: 0.5 }, data: { weightKg: c.weightKg } });
         n++;
       }
       for (const fz of FERTILIZERS) {
@@ -127,6 +129,8 @@ Bạn có thể chấp nhận cookie qua thanh thông báo, hoặc quản lý/xo
           where: { slug: a.slug, OR: [{ asset: { contains: 'vatnuoi' } }, { asset: { contains: 'pixel-animals' } }, { asset: null }, { asset: '' }] },
           data: { asset: a.asset },
         });
+        // Đồng bộ khối lượng sản phẩm (kg) 1 lần cho các bản ghi còn ở giá trị mặc định cột (0.2)
+        await this.prisma.animalTemplate.updateMany({ where: { slug: a.slug, productWeightKg: 0.2 }, data: { productWeightKg: a.productWeightKg } });
         n++;
       }
       // Lợn/Bò chuyển sang cho THỊT (migrate dữ liệu cũ: lợn chưa có sản phẩm, bò còn sữa)

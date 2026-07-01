@@ -24,6 +24,7 @@ const SCHEMAS: Record<string, Field[]> = {
     { key: 'growSeconds', label: 'Thời gian chín (giây)', type: 'number' }, { key: 'exp', label: 'EXP thu hoạch', type: 'number' },
     { key: 'yieldMin', label: 'Sản lượng tối thiểu', type: 'number' }, { key: 'yieldMax', label: 'Sản lượng tối đa', type: 'number' },
     { key: 'reqLevel', label: 'Cấp yêu cầu', type: 'number' }, { key: 'asset', label: 'Ảnh', type: 'text' },
+    { key: 'weightKg', label: 'Khối lượng/đơn vị (kg)', type: 'number' },
     { key: 'sortOrder', label: 'Thứ tự', type: 'number' },
   ],
   fertilizer: [

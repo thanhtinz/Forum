@@ -7,7 +7,7 @@ import { Gamepad2, Sprout, ShoppingBag, Dices, Warehouse, Rabbit, Cherry, Spade,
 const WEB_GAMES = [
   { href: '/game/farm', label: 'Nông trại', desc: 'Trồng trọt & thu hoạch', icon: Sprout, color: 'from-emerald-500 to-green-600' },
   { href: '/game/shop', label: 'Cửa hàng', desc: 'Hạt giống & dụng cụ nông trại', icon: ShoppingBag, color: 'from-teal-500 to-emerald-600' },
-  { href: '/game/kho', label: 'Kho chung', desc: 'Nông sản & món ăn', icon: Warehouse, color: 'from-amber-500 to-yellow-600' },
+  { href: '/game/kho', label: 'Kho hàng', desc: 'Nông sản & món ăn', icon: Warehouse, color: 'from-amber-500 to-yellow-600' },
 ];
 
 // Minigame

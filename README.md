@@ -1,6 +1,6 @@
 # 🌐 Forum AI Platform
 
-> Nền tảng diễn đàn cộng đồng thế hệ mới — kết hợp **forum** mạnh mẽ kiểu Flarum/XenForo, **game hoá** (RPG, farm, câu cá, minigame), **chợ số** (marketplace + ví Gem), **AI companion Live2D**, và hàng loạt tính năng giải trí — tất cả trong **một ứng dụng duy nhất**.
+> Nền tảng diễn đàn cộng đồng thế hệ mới — kết hợp **forum** mạnh mẽ kiểu Flarum/XenForo, **game hoá** (RPG, farm, minigame), **chợ số** (marketplace + ví Gem), **AI companion Live2D**, và hàng loạt tính năng giải trí — tất cả trong **một ứng dụng duy nhất**.
 
 Một người dùng kiếm điểm khi tham gia diễn đàn → tiêu trong game → mua bán ở chợ → trò chuyện với AI → nhận huy hiệu, lên cấp. Mọi thứ liền mạch trong cùng một hệ sinh thái.
 
@@ -33,7 +33,7 @@ Một người dùng kiếm điểm khi tham gia diễn đàn → tiêu trong ga
 
 ### 🕹️ Game hoá
 - Nhân vật RPG, trang bị, kỹ năng, **PvP/PvE**, **guild**
-- **Nông trại, câu cá**, minigame casino (chỉ dùng coin), nhà tù
+- **Nông trại** (trồng trọt, vật nuôi, nấu ăn), minigame casino (chỉ dùng coin), nhà tù
 - Hai loại tiền tệ: **coin** (trong game, không quy đổi) & **Gem** (chợ, rút được)
 
 ### 🛒 Chợ số (Marketplace)

@@ -124,13 +124,6 @@
 - [ ] Trang storefront chuyên nghiệp (banner, logo, chính sách) — frontend
 - [ ] Rating/review + thống kê doanh thu cho seller
 
-### 🎣 Câu Cá (port từ mod WAP, chỉ coin)
-- [x] **Backend** — 3 khu, mua cần/mồi, thả cần, giật cá (90% trúng), cooldown 40s
-- [x] Level câu cá RIÊNG (2000kg/cấp, thưởng coin lên cấp), hồi cá 4h
-- [x] Kho cá + bán lẻ/bán hết, BXH theo số cá câu được
-- [x] Seed 3 loài cá + copy asset (`game-assets/cauca`)
-- [ ] Frontend UI câu cá
-
 ### 🌾 Nông Trại (port từ mod WAP, chỉ coin)
 - [x] **Trồng trọt** — mua đất (tăng giá dần, max 55), gieo/tưới/bón phân/thu hoạch, 4 giai đoạn
 - [x] **Sức khỏe ô đất 0-100** (cơ chế Avatar): sản lượng = raw × health/100; tưới +25, bón +15
@@ -181,7 +174,7 @@
 - [x] Đăng nhập / Đăng ký; trang Tools (lưới công cụ)
 - [x] API client (rewrite /api -> backend) — **build thành công (next build OK)**
 - [x] **Deploy chung 1 process**: Next static export + NestJS ServeStaticModule (FE+BE+API cùng origin :3001), Dockerfile gộp 2 stage build — đã verify
-- [x] Trang Game (nhân vật/tạo char), Nông trại (ô đất/tưới/thu hoạch/kho/vật nuôi), Câu cá (khu/cần/mồi/thả/giật/bán), Tủ đồ (mua/mặc theo slot)
+- [x] Trang Game (nhân vật/tạo char), Nông trại (ô đất/tưới/thu hoạch/kho/vật nuôi/nấu ăn), Tủ đồ (mua/mặc theo slot)
 - [x] Trang Minigame (sảnh game), Marketplace (gian hàng), Profile (thông tin + diện mạo avatar)
 - [ ] (tiếp) Chat UI realtime + trang tool chi tiết + Live2D widget
 

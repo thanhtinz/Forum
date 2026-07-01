@@ -1,7 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { ConsumableType, MinigameType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { FISH_SPECIES, FISH_DEPTHS, FISHING_RODS, FISHING_BOATS } from './data/fishing.data';
 import { CROPS, FERTILIZERS, ANIMALS } from './data/farm.data';
 import { FOODS } from './data/foods.data';
 
@@ -103,32 +102,6 @@ Bạn có thể chấp nhận cookie qua thanh thông báo, hoặc quản lý/xo
         n++;
       }
     } catch (e) { this.logger.warn(`Seed trang tĩnh lỗi: ${(e as Error).message}`); }
-
-    // Bọc từng phần để 1 lỗi không chặn các phần seed sau (vd: icon/minigame không cập nhật)
-    try {
-      // update: {} -> chỉ thêm khi thiếu, KHÔNG ghi đè dữ liệu admin đã sửa
-      for (const f of FISH_SPECIES) {
-        await this.prisma.fishSpecies.upsert({
-          where: { slug: f.slug },
-          update: {},
-          create: { ...f, stock: f.refillCount },
-        });
-        n++;
-      }
-      // Độ sâu hồ + cần câu + thuyền (admin sửa được sau)
-      for (const d of FISH_DEPTHS) {
-        await this.prisma.fishDepth.upsert({ where: { depth: d.depth }, update: {}, create: d });
-        n++;
-      }
-      for (const r of FISHING_RODS) {
-        await this.prisma.fishingRod.upsert({ where: { slug: r.slug }, update: {}, create: r });
-        n++;
-      }
-      for (const b of FISHING_BOATS) {
-        await this.prisma.fishingBoat.upsert({ where: { slug: b.slug }, update: {}, create: b });
-        n++;
-      }
-    } catch (e) { this.logger.warn(`Seed fishSpecies lỗi: ${(e as Error).message}`); }
 
     // Reset 1 lần: xoá roster cây/thú/công thức cũ, thay bằng pack mới (chỉ chạy khi còn dữ liệu cũ)
     try { await this.resetFarmRosterIfNeeded(); } catch (e) { this.logger.warn(`Reset farm roster lỗi: ${(e as Error).message}`); }
@@ -287,7 +260,7 @@ Bạn có thể chấp nhận cookie qua thanh thông báo, hoặc quản lý/xo
       const ids = removeCrops.map((c) => c.id);
       await this.prisma.farmPlot.updateMany({
         where: { cropId: { in: ids } },
-        data: { cropId: null, plantedAt: null, readyAt: null, watered: false, tilled: false, health: 100, yield: 0 },
+        data: { cropId: null, plantedAt: null, readyAt: null, watered: false, tilled: false, health: 100, healthUpdatedAt: null, yield: 0 },
       });
       await this.prisma.cropTemplate.deleteMany({ where: { id: { in: ids } } });
     }

@@ -625,6 +625,13 @@ export class ForumController {
     });
   }
 
+  @Delete('admin/threads/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  deleteAdminThread(@Param('id') id: string) {
+    return this.forum.deleteThread(id);
+  }
+
   // ── Batch moderation ──
   @Post('admin/batch/posts/delete')
   @UseGuards(JwtAuthGuard, RolesGuard)

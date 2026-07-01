@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { MessageSquare, Pin, Lock, EyeOff, FolderInput, CheckCircle2, XCircle } from 'lucide-react';
+import { MessageSquare, Pin, Lock, EyeOff, FolderInput, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PageHeader, Card, Btn, Notice, Empty } from '@/components/admin/ui';
 
@@ -79,6 +79,11 @@ export default function AdminThreads() {
     act(t.id, () => api.post(`/forum/threads/${t.id}/move`, { categoryId: id }), 'Đã chuyển chuyên mục');
   }
 
+  function deleteThread(t: AdminThread) {
+    if (!confirm(`Xoá vĩnh viễn chủ đề "${t.title}"? Toàn bộ bài trả lời sẽ bị xoá theo. Không thể hoàn tác.`)) return;
+    act(t.id, () => api.del(`/forum/admin/threads/${t.id}`), 'Đã xoá chủ đề');
+  }
+
   return (
     <div className="space-y-5">
       <PageHeader icon={<MessageSquare size={20} />} title="Quản lý bài viết" desc="Tìm, lọc và kiểm duyệt toàn bộ chủ đề trong diễn đàn." />
@@ -150,6 +155,8 @@ export default function AdminThreads() {
                       className="btn-outline inline-flex items-center gap-1 !py-1 text-xs text-red-600"><EyeOff size={12} /> {t.isHidden ? 'Hiện lại' : 'Ẩn'}</button>
                     <button disabled={busy === t.id} onClick={() => moveThread(t)}
                       className="btn-outline inline-flex items-center gap-1 !py-1 text-xs"><FolderInput size={12} /> Chuyển mục</button>
+                    <button disabled={busy === t.id} onClick={() => deleteThread(t)}
+                      className="btn-outline inline-flex items-center gap-1 !py-1 text-xs text-red-600"><Trash2 size={12} /> Xoá</button>
                   </div>
                 </td>
               </tr>

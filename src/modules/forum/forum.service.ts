@@ -1015,6 +1015,31 @@ export class ForumService {
     return { rejected: true };
   }
 
+  // Admin: xoá vĩnh viễn 1 chủ đề (kể cả đã duyệt) — dùng ở trang Quản lý bài viết.
+  // Cascade xoá theo posts/tags/poll/subscriptions/bookmarks/reply-bans (đã khai báo onDelete: Cascade).
+  async deleteThread(threadId: string) {
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, authorId: true, title: true, categoryId: true, isApproved: true },
+    });
+    if (!thread) throw new NotFoundException('Thread không tồn tại');
+
+    await this.prisma.$transaction(async (tx) => {
+      if (thread.isApproved) {
+        await tx.category.update({ where: { id: thread.categoryId }, data: { threadCount: { decrement: 1 } } });
+      }
+      await tx.thread.delete({ where: { id: threadId } });
+    });
+
+    await this.notifications.notify(thread.authorId, {
+      type: 'SYSTEM',
+      title: 'Chủ đề của bạn đã bị xoá bởi quản trị viên',
+      body: thread.title,
+    }).catch(() => {});
+
+    return { deleted: true };
+  }
+
   // Admin: đọc/ghi ngưỡng duyệt bài (số bài tối thiểu để miễn duyệt; 0 = tắt)
   async getApprovalConfig() {
     const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'forum.approvalPostThreshold' } }).catch(() => null);

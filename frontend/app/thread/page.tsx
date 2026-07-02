@@ -13,6 +13,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { UserBadges, roleBadgesFromUser } from '@/components/UserBadges';
 import type { Thread, Post, Paginated } from '@/lib/types';
 import { interceptExternalLink } from '@/lib/externalLink';
+import { applyBBCode } from '@/lib/bbcode';
 import TipTapEditor from '@/components/TipTapEditor';
 import { AdBanner } from '@/components/AdBanner';
 import { GATE_OPTIONS, needLike, needComment, needLikeInput, needCommentInput, needGem, REACTIONS, REPORT_TYPES } from '@/lib/constants';
@@ -647,7 +648,7 @@ function ThreadView() {
               </div>
             )}
             {replyPreview ? (
-              <div className="prose prose-sm min-h-[80px] max-w-none rounded-lg border border-ink-200 p-4 dark:border-ink-800 dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: reply || '<p style="color:#94a3b8">Chưa có nội dung…</p>' }} />
+              <div className="prose prose-sm min-h-[80px] max-w-none rounded-lg border border-ink-200 p-4 dark:border-ink-800 dark:prose-invert" onClick={interceptExternalLink} dangerouslySetInnerHTML={{ __html: reply ? applyBBCode(reply) : '<p style="color:#94a3b8">Chưa có nội dung…</p>' }} />
             ) : (
               <TipTapEditor value={reply} onChange={setReply} placeholder="Viết bình luận…" autosaveKey={`reply-${thread?.id || 'x'}`} />
             )}

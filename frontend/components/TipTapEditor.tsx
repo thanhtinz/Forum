@@ -27,6 +27,7 @@ import {
   Plus, Hash,
 } from 'lucide-react';
 import { uploadEditorImage, uploadAttachment, api } from '@/lib/api';
+import { applyBBCode } from '@/lib/bbcode';
 import { marked } from 'marked';
 import { interceptExternalLink } from '@/lib/externalLink';
 
@@ -34,23 +35,6 @@ import { interceptExternalLink } from '@/lib/externalLink';
 function looksLikeMarkup(t: string): boolean {
   return /(^|\n)\s{0,3}#{1,6}\s|\*\*[^*]+\*\*|`[^`]+`|\[(b|i|u|s|url|img|quote|code|color|size|list)\b|(^|\n)\s*[-*+]\s|(^|\n)\s*\d+\.\s|\[[^\]]+\]\([^)]+\)/i.test(t);
 }
-// BBCode -> HTML (bản client, mirror backend) để dùng khi dán.
-function applyBBCodeClient(s: string): string {
-  for (let i = 0; i < 4; i++) {
-    s = s
-      .replace(/\[b\]([\s\S]*?)\[\/b\]/gi, '<strong>$1</strong>')
-      .replace(/\[i\]([\s\S]*?)\[\/i\]/gi, '<em>$1</em>')
-      .replace(/\[u\]([\s\S]*?)\[\/u\]/gi, '<u>$1</u>')
-      .replace(/\[s\]([\s\S]*?)\[\/s\]/gi, '<s>$1</s>')
-      .replace(/\[quote(?:=[^\]]+)?\]([\s\S]*?)\[\/quote\]/gi, '<blockquote>$1</blockquote>')
-      .replace(/\[code\]([\s\S]*?)\[\/code\]/gi, '<pre><code>$1</code></pre>')
-      .replace(/\[color=(#?[a-zA-Z0-9]+)\]([\s\S]*?)\[\/color\]/gi, '<span style="color:$1">$2</span>')
-      .replace(/\[url=([^\]]+)\]([\s\S]*?)\[\/url\]/gi, '<a href="$1">$2</a>')
-      .replace(/\[img\]([\s\S]*?)\[\/img\]/gi, '<img src="$1" alt="" />');
-  }
-  return s;
-}
-
 interface TipTapEditorProps {
   value: string;
   onChange: (html: string) => void;
@@ -733,7 +717,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
         const hasHtml = (event.clipboardData?.getData('text/html') || '').trim().length > 0;
         if (!hasHtml && text && looksLikeMarkup(text)) {
           try {
-            const html = marked.parse(applyBBCodeClient(text), { breaks: true, async: false }) as string;
+            const html = marked.parse(applyBBCode(text), { breaks: true, async: false }) as string;
             event.preventDefault();
             editorRef.current?.chain().focus().insertContent(html).run();
             return true;
@@ -1270,7 +1254,7 @@ export default function TipTapEditor({ value, onChange, placeholder, autosaveKey
           <div
             className="prose prose-sm max-w-none dark:prose-invert"
             onClick={interceptExternalLink}
-            dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
+            dangerouslySetInnerHTML={{ __html: applyBBCode(editor.getHTML()) }}
           />
         </div>
       ) : (

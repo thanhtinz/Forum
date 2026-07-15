@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { sanitizeRichHtml } from '../../common/html.util';
 import { marked } from 'marked';
 
 @Injectable()
@@ -220,7 +221,9 @@ export class ConversationService {
   }
 
   private async renderContent(raw: string): Promise<string> {
-    if (/<[^>]+>/.test(raw)) return raw;
-    return marked.parse(raw) as string;
+    // Luôn làm sạch HTML (chống stored XSS): nội dung có sẵn thẻ thì sanitize whitelist,
+    // nội dung markdown/text thì render qua marked rồi vẫn sanitize kết quả.
+    const html = /<[^>]+>/.test(raw) ? raw : (marked.parse(raw) as string);
+    return sanitizeRichHtml(html);
   }
 }

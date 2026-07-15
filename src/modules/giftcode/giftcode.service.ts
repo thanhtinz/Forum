@@ -103,25 +103,38 @@ export class GiftcodeService {
     const gift = await this.prisma.giftCode.findUnique({ where: { code } });
     if (!gift || !gift.isActive) throw new BadRequestException('Mã không tồn tại hoặc đã bị tắt');
     if (gift.expiresAt && gift.expiresAt.getTime() < Date.now()) throw new BadRequestException('Mã đã hết hạn');
-    if (gift.maxUses > 0 && gift.usedCount >= gift.maxUses) throw new BadRequestException('Mã đã hết lượt sử dụng');
-
-    const usedByUser = await this.prisma.giftCodeRedemption.count({ where: { codeId: gift.id, userId } });
-    if (usedByUser >= gift.perUserLimit) throw new BadRequestException('Bạn đã sử dụng mã này rồi');
 
     const rewards = (gift.rewards as unknown as GiftReward[]) || [];
+    if (!rewards.length) throw new BadRequestException('Mã chưa cấu hình phần thưởng');
+
+    // Claim atomic: khoá row giftcode (FOR UPDATE) rồi kiểm tra giới hạn tổng + theo user
+    // và ghi nhận redemption + tăng usedCount trong cùng transaction. Các request đồng thời
+    // phải xếp hàng sau khoá nên không thể double-redeem (vượt maxUses / perUserLimit).
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "GiftCode" WHERE id = ${gift.id} FOR UPDATE`;
+
+      const fresh = await tx.giftCode.findUnique({
+        where: { id: gift.id },
+        select: { maxUses: true, usedCount: true, perUserLimit: true, isActive: true },
+      });
+      if (!fresh || !fresh.isActive) throw new BadRequestException('Mã không tồn tại hoặc đã bị tắt');
+      if (fresh.maxUses > 0 && fresh.usedCount >= fresh.maxUses) throw new BadRequestException('Mã đã hết lượt sử dụng');
+
+      const usedByUser = await tx.giftCodeRedemption.count({ where: { codeId: gift.id, userId } });
+      if (usedByUser >= fresh.perUserLimit) throw new BadRequestException('Bạn đã sử dụng mã này rồi');
+
+      await tx.giftCodeRedemption.create({
+        data: { codeId: gift.id, userId, rewards: rewards as unknown as Prisma.InputJsonValue },
+      });
+      await tx.giftCode.update({ where: { id: gift.id }, data: { usedCount: { increment: 1 } } });
+    });
+
+    // Đã claim thành công → trao phần thưởng.
     const granted: { type: string; label: string }[] = [];
     for (const r of rewards) {
       const g = await this.grant(userId, r, gift.id).catch(() => null);
       if (g) granted.push(g);
     }
-    if (!granted.length) throw new BadRequestException('Không trao được phần thưởng nào (kiểm tra cấu hình mã)');
-
-    await this.prisma.$transaction([
-      this.prisma.giftCodeRedemption.create({
-        data: { codeId: gift.id, userId, rewards: rewards as unknown as Prisma.InputJsonValue },
-      }),
-      this.prisma.giftCode.update({ where: { id: gift.id }, data: { usedCount: { increment: 1 } } }),
-    ]);
 
     return { ok: true, rewards: granted };
   }
@@ -134,12 +147,15 @@ export class GiftcodeService {
 
   private async creditGem(userId: string, amount: number, refId: string) {
     await this.prisma.$transaction(async (tx) => {
-      const u = await tx.user.findUnique({ where: { id: userId }, select: { gemBalance: true } });
-      if (!u) throw new NotFoundException();
-      const after = u.gemBalance + amount;
-      await tx.user.update({ where: { id: userId }, data: { gemBalance: after } });
+      // Cộng gem atomic ({ increment }) — update trả về số dư sau khi cộng.
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: { gemBalance: { increment: amount } },
+        select: { gemBalance: true },
+      });
+      const after = updated.gemBalance;
       await tx.gemTransaction.create({
-        data: { userId, type: GemTxType.BONUS, amount, balanceBefore: u.gemBalance, balanceAfter: after, refId, refType: 'giftcode', note: 'Quà giftcode' },
+        data: { userId, type: GemTxType.BONUS, amount, balanceBefore: after - amount, balanceAfter: after, refId, refType: 'giftcode', note: 'Quà giftcode' },
       });
     });
   }

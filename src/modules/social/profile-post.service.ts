@@ -37,6 +37,11 @@ export class ProfilePostService {
     });
     if (!wall) throw new NotFoundException('Không tìm thấy người dùng');
 
+    // Không cho người đã bị chủ tường chặn viết lên tường (chống quấy rối).
+    if (authorId !== wallId && (await this.block.isBlocked(wallId, authorId))) {
+      throw new ForbiddenException('Bạn không thể viết lên tường của người này');
+    }
+
     const post = await this.prisma.profilePost.create({
       data: { authorId, wallId, content: text },
       include: {

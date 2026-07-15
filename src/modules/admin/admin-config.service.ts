@@ -238,6 +238,10 @@ export class AdminConfigService {
       'site.tagline': 'Cộng đồng anime & manga Việt Nam',
       'site.description': 'Cộng đồng anime, manga, hoạt hình — xem phim, đọc truyện, thảo luận tại Trạm GenZ.',
       'site.heroDescription': 'Cộng đồng anime & manga — xem hoạt hình, đọc truyện, thảo luận cùng bạn bè.',
+      // site.primaryColor trước đây chưa từng được áp dụng thực tế (chỉ lưu, không dùng) nên seed
+      // là màu tím mặc định của thư viện color-picker; giờ đã áp dụng thật (ThemeInjector) nên cần
+      // đồng bộ lại về đúng màu xanh thép của site để không đổi màu ngoài ý muốn.
+      'site.primaryColor': '#7c3aed',
     };
     for (const [key, oldValue] of Object.entries(OLD_TEXT_SYNC)) {
       const newValue = DEFAULT_CONFIG_GROUPS.flatMap((g) => g.settings).find((s) => s.key === key)?.value;
@@ -298,11 +302,30 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
       { key: 'site.logo', label: 'Logo lớn (dài, hiện cạnh tên)', type: 'image', value: '' },
       { key: 'site.logoSmall', label: 'Logo nhỏ (thay icon hình thoi)', type: 'image', value: '' },
       { key: 'site.favicon', label: 'Favicon', type: 'image', value: '' },
-      { key: 'site.primaryColor', label: 'Màu chủ đạo', type: 'color', value: '#7c3aed' },
       { key: 'site.defaultLanguage', label: 'Ngôn ngữ mặc định', type: 'select', value: 'vi',
         options: [{ label: 'Tiếng Việt', value: 'vi' }, { label: 'English', value: 'en' }] },
       { key: 'site.timezone', label: 'Múi giờ', type: 'string', value: 'Asia/Ho_Chi_Minh' },
       { key: 'site.maintenanceMode', label: 'Chế độ bảo trì', type: 'boolean', value: false },
+    ],
+  },
+  {
+    key: 'appearance',
+    name: 'Giao diện',
+    description: 'Màu chủ đạo, CSS tuỳ chỉnh, sắp xếp widget trang chủ',
+    icon: 'palette',
+    sortOrder: 2,
+    settings: [
+      { key: 'site.primaryColor', label: 'Màu chủ đạo', type: 'color', value: '#2e5a80' },
+      { key: 'site.customCss', label: 'CSS tuỳ chỉnh (nâng cao)', type: 'textarea', value: '' },
+      {
+        key: 'site.homeWidgets', label: 'Widget trang chủ (sidebar)', type: 'json',
+        value: [
+          { key: 'community', label: 'Cộng đồng', enabled: true },
+          { key: 'stats', label: 'Thống kê', enabled: true },
+          { key: 'trending', label: 'Nổi bật', enabled: true },
+          { key: 'newMembers', label: 'Thành viên mới', enabled: true },
+        ],
+      },
     ],
   },
   {

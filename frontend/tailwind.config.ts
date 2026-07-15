@@ -1,5 +1,12 @@
 import type { Config } from 'tailwindcss';
 
+// Đọc màu brand từ CSS variable (định nghĩa ở globals.css :root, admin có thể
+// ghi đè lúc chạy qua trang Giao diện) thay vì hex cố định, để đổi màu chủ đạo
+// toàn site không cần build lại.
+function brandVar(shade: number) {
+  return `rgb(var(--brand-${shade}) / <alpha-value>)`;
+}
+
 const config: Config = {
   darkMode: 'class',
   content: [
@@ -9,11 +16,12 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Bảng màu xanh thép trầm như XenForo gốc (dịu mắt, không chói)
+        // Bảng màu xanh thép trầm như XenForo gốc (dịu mắt, không chói) — giá trị mặc định
+        // nằm ở globals.css, có thể ghi đè theo site.primaryColor trong admin.
         brand: {
-          50: '#eef4f9', 100: '#dbe7f1', 200: '#bcd1e3', 300: '#90b1cf',
-          400: '#5d8bb3', 500: '#3a6d99', 600: '#2e5a80', 700: '#274d6c',
-          800: '#23425b', 900: '#1d3447', 950: '#12212e',
+          50: brandVar(50), 100: brandVar(100), 200: brandVar(200), 300: brandVar(300),
+          400: brandVar(400), 500: brandVar(500), 600: brandVar(600), 700: brandVar(700),
+          800: brandVar(800), 900: brandVar(900), 950: brandVar(950),
         },
         ink: {
           50: '#f8fafc', 100: '#f1f5f9', 200: '#e2e8f0', 300: '#cbd5e1',

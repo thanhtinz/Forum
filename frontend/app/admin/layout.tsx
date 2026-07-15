@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, FileText, Ticket,
   Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
   BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronDown, ChevronRight,
-  Gift, Square, Megaphone, MessageCircle, SlidersHorizontal, MessageSquare, Search, Palette,
+  Gift, Square, Megaphone, MessageCircle, SlidersHorizontal, MessageSquare, Search, Palette, DatabaseBackup,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSiteConfig } from '@/lib/siteConfig';
@@ -69,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/mail', label: 'Email / SMTP', icon: Mail },
       { href: '/admin/push', label: 'Web Push', icon: BellRing },
       { href: '/admin/security', label: 'Chống spam', icon: ShieldCheck },
+      { href: '/admin/backup', label: 'Sao lưu & Phục hồi', icon: DatabaseBackup },
     ],
   },
 ];

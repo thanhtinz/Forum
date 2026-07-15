@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users, CreditCard, Sprout, KeyRound, Settings, ShieldAlert, FolderTree,
-  MessageSquare, Gem, Activity, Sticker, Award, FileText,
-  CalendarCheck, Gift, Square, Megaphone, MessageCircle, Paperclip,
+  MessageSquare, Gem, Sticker, Award, FileText,
+  CalendarCheck, Gift, Square, Megaphone, Paperclip,
   Mail, BellRing, ShieldCheck, BadgeCheck, Ticket, LayoutDashboard,
-  TrendingUp, Clock, AlertCircle, CheckCircle2, XCircle, ArrowUpRight,
+  TrendingUp, AlertCircle, ArrowUpRight, Flag, UserPlus, ChevronRight,
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import UserGrowthChart from '@/components/admin/UserGrowthChart';
 
 const LABELS: Record<string, string> = {
   users: 'Thành viên', total: 'Tổng', newToday: 'Mới hôm nay', newWeek: 'Mới tuần',
@@ -34,6 +35,7 @@ const QUICK_GROUPS = [
     title: 'Nội dung', color: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800',
     items: [
       { href: '/admin/forum-categories', label: 'Danh mục', icon: FolderTree, color: 'text-emerald-600' },
+      { href: '/admin/threads', label: 'Quản lý bài viết', icon: MessageSquare, color: 'text-emerald-600' },
       { href: '/admin/pages', label: 'Trang & Menu', icon: FileText, color: 'text-emerald-600' },
       { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert, color: 'text-rose-600' },
     ],
@@ -72,6 +74,19 @@ const QUICK_GROUPS = [
   },
 ];
 
+const REPORT_TYPE_LABEL: Record<string, string> = {
+  SPAM: 'Spam', HARASSMENT: 'Quấy rối', INAPPROPRIATE: 'Không phù hợp',
+  COPYRIGHT: 'Bản quyền', MISINFORMATION: 'Sai lệch', OTHER: 'Khác',
+};
+
+function timeAgo(iso: string) {
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'vừa xong';
+  if (s < 3600) return `${Math.floor(s / 60)} phút trước`;
+  if (s < 86400) return `${Math.floor(s / 3600)} giờ trước`;
+  return `${Math.floor(s / 86400)} ngày trước`;
+}
+
 function StatBlock({ group, label, value, icon: Icon }: { group: string; label: string; value: string; icon?: any }) {
   const c = STAT_COLORS[group] || STAT_COLORS['forum'];
   return (
@@ -89,21 +104,6 @@ function StatBlock({ group, label, value, icon: Icon }: { group: string; label: 
   );
 }
 
-function flatten(stats: any): { group: string; label: string; value: string }[] {
-  const out: { group: string; label: string; value: string }[] = [];
-  for (const [group, val] of Object.entries(stats || {})) {
-    if (val && typeof val === 'object') {
-      for (const [k, v] of Object.entries(val as any)) {
-        if (v !== null && typeof v !== 'object')
-          out.push({ group, label: humanize(k), value: Number(v).toLocaleString() });
-      }
-    } else if (val !== null) {
-      out.push({ group, label: humanize(group), value: String(val) });
-    }
-  }
-  return out;
-}
-
 function groupStats(stats: any): { group: string; title: string; items: { label: string; value: string }[] }[] {
   const groups: Record<string, { title: string; items: { label: string; value: string }[] }> = {};
   for (const [group, val] of Object.entries(stats || {})) {
@@ -118,10 +118,22 @@ function groupStats(stats: any): { group: string; title: string; items: { label:
   return Object.entries(groups).map(([group, data]) => ({ group, ...data }));
 }
 
+interface ReportRow { id: string; type: string; reason: string; createdAt: string; reporter?: { username: string }; reportedUser?: { username: string } }
+interface UserRow { id: string; username: string; displayName?: string | null; avatar?: string | null; role: string; createdAt: string }
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
+  const [growth, setGrowth] = useState<{ date: string; count: number }[]>([]);
+  const [reports, setReports] = useState<ReportRow[]>([]);
+  const [newUsers, setNewUsers] = useState<UserRow[]>([]);
   const [err, setErr] = useState('');
-  useEffect(() => { api.get('/admin/stats').then(setStats).catch((e) => setErr(e.message)); }, []);
+
+  useEffect(() => {
+    api.get('/admin/stats').then(setStats).catch((e) => setErr(e.message));
+    api.get<{ date: string; count: number }[]>('/admin/stats/user-growth?days=30').then(setGrowth).catch(() => {});
+    api.get<{ data: ReportRow[] }>('/admin/reports?status=PENDING&page=1').then((r) => setReports((r.data || []).slice(0, 5))).catch(() => {});
+    api.get<{ data: UserRow[] }>('/admin/users?limit=5&page=1').then((r) => setNewUsers(r.data || [])).catch(() => {});
+  }, []);
 
   const statGroups = stats ? groupStats(stats) : [];
 
@@ -129,7 +141,7 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       {/* Page header */}
       <div className="flex items-center gap-3">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-sky-600 text-white shadow">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white shadow">
           <LayoutDashboard size={18} />
         </span>
         <div>
@@ -162,6 +174,71 @@ export default function AdminDashboard() {
           </section>
         );
       })}
+
+      {/* Biểu đồ người dùng mới */}
+      <section className="rounded-xl border border-ink-200/70 bg-white p-4 dark:border-ink-800 dark:bg-ink-900">
+        <div className="mb-3 flex items-center gap-2">
+          <TrendingUp size={15} className="text-brand-600 dark:text-brand-400" />
+          <h2 className="text-xs font-bold uppercase tracking-widest text-brand-600 dark:text-brand-400">Người dùng mới — 30 ngày qua</h2>
+        </div>
+        <UserGrowthChart data={growth} />
+      </section>
+
+      {/* Hoạt động gần đây */}
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="overflow-hidden rounded-xl border border-rose-200 bg-white dark:border-rose-800 dark:bg-ink-900">
+          <div className="flex items-center justify-between border-b border-rose-200 bg-rose-50/50 px-4 py-2 dark:border-rose-800 dark:bg-rose-950/20">
+            <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400"><Flag size={13} /> Báo cáo chờ xử lý</span>
+            <Link href="/admin/moderation" className="flex items-center gap-0.5 text-xs text-ink-400 hover:text-brand-600">Xem tất cả <ChevronRight size={13} /></Link>
+          </div>
+          {reports.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-ink-400">Không có báo cáo nào đang chờ.</p>
+          ) : (
+            <ul className="divide-y divide-ink-100 dark:divide-ink-800">
+              {reports.map((r) => (
+                <li key={r.id} className="px-4 py-2.5 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="chip bg-rose-100 text-rose-700 text-[10px] dark:bg-rose-950/40">{REPORT_TYPE_LABEL[r.type] || r.type}</span>
+                    <span className="shrink-0 text-xs text-ink-400">{timeAgo(r.createdAt)}</span>
+                  </div>
+                  <p className="mt-1 truncate text-ink-600 dark:text-ink-300">{r.reason}</p>
+                  <p className="mt-0.5 text-xs text-ink-400">
+                    báo bởi {r.reporter?.username || '?'}{r.reportedUser ? ` → ${r.reportedUser.username}` : ''}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="overflow-hidden rounded-xl border border-sky-200 bg-white dark:border-sky-800 dark:bg-ink-900">
+          <div className="flex items-center justify-between border-b border-sky-200 bg-sky-50/50 px-4 py-2 dark:border-sky-800 dark:bg-sky-950/20">
+            <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400"><UserPlus size={13} /> Thành viên mới</span>
+            <Link href="/admin/users" className="flex items-center gap-0.5 text-xs text-ink-400 hover:text-brand-600">Xem tất cả <ChevronRight size={13} /></Link>
+          </div>
+          {newUsers.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-ink-400">Chưa có thành viên mới.</p>
+          ) : (
+            <ul className="divide-y divide-ink-100 dark:divide-ink-800">
+              {newUsers.map((u) => (
+                <li key={u.id} className="flex items-center gap-2.5 px-4 py-2.5 text-sm">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-sky-100 text-xs font-bold text-sky-700 dark:bg-sky-900 dark:text-sky-300">
+                    {u.avatar
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={u.avatar} alt="" className="h-full w-full object-cover" />
+                      : (u.displayName || u.username || '?').slice(0, 1).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-ink-700 dark:text-ink-200">{u.displayName || u.username}</p>
+                    <p className="text-xs text-ink-400">@{u.username}</p>
+                  </div>
+                  <span className="shrink-0 text-xs text-ink-400">{timeAgo(u.createdAt)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
 
       {/* Quick access grouped */}
       <section>

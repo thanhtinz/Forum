@@ -4,6 +4,7 @@ import { AuthProvider } from '@/components/AuthProvider';
 import { ForumChrome } from '@/components/ForumChrome';
 import { PwaRegister } from '@/components/PwaRegister';
 import { SiteMeta } from '@/components/SiteMeta';
+import { ThemeInjector } from '@/components/ThemeInjector';
 
 // Giá trị mặc định lúc build (static export). Tiêu đề/meta thực tế do <SiteMeta> cập nhật
 // theo cấu hình admin (site.name…) ở phía client.
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="vi">
       <body>
         <SiteMeta />
+        <ThemeInjector />
         <AuthProvider>
           <ForumChrome>{children}</ForumChrome>
         </AuthProvider>

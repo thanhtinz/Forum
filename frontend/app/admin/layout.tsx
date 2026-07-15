@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, FileText, Ticket,
   Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
   BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronDown, ChevronRight,
-  Gift, Square, Megaphone, MessageCircle, SlidersHorizontal, MessageSquare, Search,
+  Gift, Square, Megaphone, MessageCircle, SlidersHorizontal, MessageSquare, Search, Palette,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSiteConfig } from '@/lib/siteConfig';
@@ -27,6 +27,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/forum-categories', label: 'Danh mục diễn đàn', icon: FolderTree },
       { href: '/admin/threads', label: 'Quản lý bài viết', icon: MessageSquare },
       { href: '/admin/pages', label: 'Trang & Menu', icon: FileText },
+      { href: '/admin/appearance', label: 'Giao diện', icon: Palette },
       { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert, badgeKey: 'pendingReports' },
       { href: '/admin/scam', label: 'Tố cáo scam', icon: ShieldAlert },
     ],

@@ -13,7 +13,8 @@ export class PublicConfigController {
   async getPublic() {
     const c = await this.config.getMany([
       'site.name', 'site.tagline', 'site.description', 'site.logo', 'site.logoSmall', 'site.favicon',
-      'site.primaryColor', 'site.heroTitle', 'site.heroDescription', 'site.footerText', 'site.contactEmail',
+      'site.primaryColor', 'site.customCss', 'site.homeWidgets',
+      'site.heroTitle', 'site.heroDescription', 'site.footerText', 'site.contactEmail',
     ]);
     return {
       name: c['site.name'] ?? process.env.SITE_NAME ?? 'Trạm GenZ',
@@ -24,6 +25,8 @@ export class PublicConfigController {
       logoSmall: c['site.logoSmall'] ?? '',
       favicon: c['site.favicon'] ?? '',
       primaryColor: c['site.primaryColor'] ?? '',
+      customCss: c['site.customCss'] ?? '',
+      homeWidgets: Array.isArray(c['site.homeWidgets']) ? c['site.homeWidgets'] : [],
       heroTitle: c['site.heroTitle'] ?? 'Chào mừng đến Trạm GenZ',
       heroDescription: c['site.heroDescription'] ?? 'Cộng đồng diễn đàn — kết nối, thảo luận cùng bạn bè.',
       footerText: c['site.footerText'] ?? '© {year} Trạm GenZ',

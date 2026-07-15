@@ -4,6 +4,20 @@
 
 :root {
   --header-h: 56px;
+  /* Bảng màu chủ đạo (brand) — dạng "r g b" để Tailwind dùng rgb(var(--brand-X) / <alpha-value>).
+     Admin có thể ghi đè các biến này lúc chạy (trang Giao diện) để đổi màu chủ đạo toàn site
+     mà không cần build lại. */
+  --brand-50: 238 244 249;
+  --brand-100: 219 231 241;
+  --brand-200: 188 209 227;
+  --brand-300: 144 177 207;
+  --brand-400: 93 139 179;
+  --brand-500: 58 109 153;
+  --brand-600: 46 90 128;
+  --brand-700: 39 77 108;
+  --brand-800: 35 66 91;
+  --brand-900: 29 52 71;
+  --brand-950: 18 33 46;
 }
 
 html, body {

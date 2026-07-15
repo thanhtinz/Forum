@@ -7,6 +7,7 @@ import { ChevronLeft, Save, Lock } from 'lucide-react';
 import { api } from '@/lib/api';
 import ImageUpload from '@/components/ImageUpload';
 import { PageHeader, Card, Notice, Btn } from '@/components/admin/ui';
+import { generateBrandRampHex, isValidHex, BRAND_SHADES } from '@/lib/colorRamp';
 
 interface Setting { id: string; key: string; label: string; description?: string; type: string; value: any; options?: any; validation?: any; isSecret?: boolean; }
 interface Group { id: string; key: string; name: string; description?: string; icon?: string; settings: Setting[]; }
@@ -123,13 +124,25 @@ function Field({ s, value, onChange }: { s: Setting; value: any; onChange: (v: a
       return <input type="number" className="input max-w-xs" value={value ?? 0} onChange={(e) => onChange(Number(e.target.value))} />;
     case 'textarea':
       return <textarea className="input resize-y" rows={3} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />;
-    case 'color':
+    case 'color': {
+      const hex = isValidHex(value || '') ? value : '';
+      const ramp = hex ? generateBrandRampHex(hex) : null;
       return (
-        <div className="flex items-center gap-2">
-          <input type="color" className="h-9 w-12 rounded border border-ink-200 dark:border-ink-700" value={value || '#000000'} onChange={(e) => onChange(e.target.value)} />
-          <input className="input max-w-[120px]" value={value || ''} onChange={(e) => onChange(e.target.value)} />
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <input type="color" className="h-9 w-12 rounded border border-ink-200 dark:border-ink-700" value={hex || '#000000'} onChange={(e) => onChange(e.target.value)} />
+            <input className="input max-w-[120px]" value={value || ''} onChange={(e) => onChange(e.target.value)} placeholder="#2e5a80" />
+          </div>
+          {ramp && (
+            <div className="flex overflow-hidden rounded-md border border-ink-200 dark:border-ink-700">
+              {BRAND_SHADES.map((sh) => (
+                <div key={sh} className="h-6 flex-1" style={{ backgroundColor: ramp[sh] }} title={`${sh}: ${ramp[sh]}`} />
+              ))}
+            </div>
+          )}
         </div>
       );
+    }
     case 'image':
       return (
         <div className="space-y-2">
@@ -138,6 +151,12 @@ function Field({ s, value, onChange }: { s: Setting; value: any; onChange: (v: a
           <input className="input text-xs" placeholder="hoặc dán URL ảnh" value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
           {value && <button type="button" onClick={() => onChange('')} className="text-xs text-rose-500 hover:underline">Xoá ảnh</button>}
         </div>
+      );
+    case 'json':
+      return (
+        <a href="/admin/appearance" className="text-sm text-brand-600 hover:underline">
+          Chỉnh ở trang Giao diện →
+        </a>
       );
     case 'select': {
       const opts = getOptions(s);

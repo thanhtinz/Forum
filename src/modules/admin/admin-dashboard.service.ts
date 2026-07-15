@@ -103,6 +103,23 @@ export class AdminDashboardService {
     return user;
   }
 
+  // Đổi vai trò hàng loạt — bỏ qua chính người thực hiện để tránh tự đổi quyền của mình
+  async bulkUpdateRole(userIds: string[], role: UserRole, actorId: string) {
+    const ids = userIds.filter((id) => id !== actorId);
+    const result = await this.prisma.user.updateMany({ where: { id: { in: ids } }, data: { role } });
+    await this.audit(actorId, 'user.bulk_role_change', 'user', ids.join(','), null, { role, count: result.count });
+    return { ok: true, count: result.count, skipped: userIds.length - ids.length };
+  }
+
+  // Ban hàng loạt — bỏ qua ADMIN và chính mình
+  async bulkBan(userIds: string[], reason: string, actorId: string) {
+    const targets = await this.prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, role: true } });
+    const ids = targets.filter((t) => t.role !== 'ADMIN' && t.id !== actorId).map((t) => t.id);
+    const result = await this.prisma.user.updateMany({ where: { id: { in: ids } }, data: { status: 'BANNED', banReason: reason } });
+    await this.audit(actorId, 'user.bulk_ban', 'user', ids.join(','), null, { reason, count: result.count });
+    return { ok: true, count: result.count, skipped: userIds.length - ids.length };
+  }
+
   async banUser(userId: string, reason: string, until: Date | null, actorId: string) {
     if (userId === actorId) throw new BadRequestException('Không thể tự ban chính mình');
     const target = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });

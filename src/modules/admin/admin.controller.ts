@@ -99,6 +99,24 @@ export class AdminController {
     return this.dashboard.listUsers({ search, role, status, page: Number(page), limit: Number(limit) });
   }
 
+  // Lưu ý: các route "bulk/…" phải khai báo TRƯỚC "users/:id/…" để không bị
+  // Nest khớp nhầm "bulk" vào tham số :id.
+  @Patch('users/bulk/role')
+  bulkUpdateUserRole(
+    @Body() body: { userIds: string[]; role: UserRole },
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.dashboard.bulkUpdateRole(body.userIds, body.role, actorId);
+  }
+
+  @Post('users/bulk/ban')
+  bulkBanUsers(
+    @Body() body: { userIds: string[]; reason?: string },
+    @CurrentUser('id') actorId: string,
+  ) {
+    return this.dashboard.bulkBan(body.userIds, body.reason || 'Vi phạm', actorId);
+  }
+
   @Patch('users/:id/role')
   updateUserRole(
     @Param('id') id: string,

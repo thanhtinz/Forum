@@ -7,13 +7,13 @@ import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, FileText, Ticket,
   Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
   BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronDown, ChevronRight,
-  Gift, Square, Megaphone, MessageCircle, SlidersHorizontal, MessageSquare,
+  Gift, Square, Megaphone, MessageCircle, SlidersHorizontal, MessageSquare, Search,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSiteConfig } from '@/lib/siteConfig';
 import { api } from '@/lib/api';
 
-interface NavItem { href: string; label: string; icon: any }
+interface NavItem { href: string; label: string; icon: any; badgeKey?: string }
 interface NavGroup { title: string; color: string; items: NavItem[] }
 
 const NAV_GROUPS: NavGroup[] = [
@@ -27,7 +27,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/forum-categories', label: 'Danh mục diễn đàn', icon: FolderTree },
       { href: '/admin/threads', label: 'Quản lý bài viết', icon: MessageSquare },
       { href: '/admin/pages', label: 'Trang & Menu', icon: FileText },
-      { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert },
+      { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert, badgeKey: 'pendingReports' },
       { href: '/admin/scam', label: 'Tố cáo scam', icon: ShieldAlert },
     ],
   },
@@ -74,12 +74,33 @@ const NAV_GROUPS: NavGroup[] = [
 
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
+function NavLink({ n, active, onNav, badge }: { n: NavItem; active: boolean; onNav: () => void; badge?: number }) {
+  return (
+    <Link
+      href={n.href}
+      onClick={onNav}
+      className={`group flex items-center gap-2.5 border-l-2 py-1.5 pl-5 pr-4 text-sm transition ${
+        active
+          ? 'border-sky-400 bg-white/10 font-semibold text-white'
+          : 'border-transparent text-slate-300 hover:border-slate-500 hover:bg-white/5 hover:text-white'
+      }`}
+    >
+      <n.icon size={15} className={active ? 'text-sky-400' : 'text-slate-400 group-hover:text-slate-200'} />
+      <span className="truncate">{n.label}</span>
+      {!!badge && (
+        <span className="ml-auto grid h-4 min-w-[16px] shrink-0 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
 function NavGroupSection({
-  group, path, onNav, collapsed, onToggle,
+  group, path, onNav, collapsed, onToggle, badges,
 }: {
-  group: NavGroup; path: string; onNav: () => void; collapsed: boolean; onToggle: () => void;
+  group: NavGroup; path: string; onNav: () => void; collapsed: boolean; onToggle: () => void; badges: Record<string, number>;
 }) {
-  const hasActive = group.items.some((i) => i.href === path);
   return (
     <div>
       <button
@@ -91,24 +112,9 @@ function NavGroupSection({
       </button>
       {!collapsed && (
         <div className="pb-1">
-          {group.items.map((n) => {
-            const active = path === n.href;
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                onClick={onNav}
-                className={`group flex items-center gap-2.5 border-l-2 py-1.5 pl-5 pr-4 text-sm transition ${
-                  active
-                    ? 'border-sky-400 bg-white/10 font-semibold text-white'
-                    : 'border-transparent text-slate-300 hover:border-slate-500 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <n.icon size={15} className={active ? 'text-sky-400' : 'text-slate-400 group-hover:text-slate-200'} />
-                <span className="truncate">{n.label}</span>
-              </Link>
-            );
-          })}
+          {group.items.map((n) => (
+            <NavLink key={n.href} n={n} active={path === n.href} onNav={onNav} badge={n.badgeKey ? badges[n.badgeKey] : undefined} />
+          ))}
         </div>
       )}
     </div>
@@ -123,6 +129,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [groupKey, setGroupKey] = useState('');
   const [cfgGroups, setCfgGroups] = useState<{ key: string; name: string }[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [navQuery, setNavQuery] = useState('');
+  const [badges, setBadges] = useState<Record<string, number>>({});
 
   useEffect(() => {
     setGroupKey(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('group') || '' : '');
@@ -131,6 +139,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (user?.role === 'ADMIN') api.get<{ key: string; name: string }[]>('/admin/config').then(setCfgGroups).catch(() => {});
   }, [user]);
+
+  useEffect(() => {
+    if (user?.role === 'ADMIN') {
+      api.get<{ moderation?: { pendingReports?: number } }>('/admin/stats')
+        .then((s) => setBadges({ pendingReports: s.moderation?.pendingReports ?? 0 }))
+        .catch(() => {});
+    }
+  }, [user]);
+
+  const navFiltered = navQuery.trim()
+    ? ALL_ITEMS.filter((n) => n.label.toLowerCase().includes(navQuery.trim().toLowerCase()))
+    : [];
 
   const toggleGroup = (title: string) => setCollapsed((c) => ({ ...c, [title]: !c[title] }));
 
@@ -160,20 +180,46 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
 
+      {/* Tìm nhanh trong admin */}
+      <div className="border-b border-white/10 px-3 py-2.5">
+        <div className="relative">
+          <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <input
+            value={navQuery}
+            onChange={(e) => setNavQuery(e.target.value)}
+            placeholder="Tìm chức năng…"
+            className="w-full rounded-md border border-white/10 bg-white/5 py-1.5 pl-7 pr-2 text-xs text-slate-200 placeholder:text-slate-500 focus:border-sky-500 focus:outline-none"
+          />
+        </div>
+      </div>
+
       {/* Nav */}
       <div className="flex-1 overflow-y-auto py-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-white/10">
-        {NAV_GROUPS.map((g) => (
-          <NavGroupSection
-            key={g.title}
-            group={g}
-            path={path}
-            onNav={() => setDrawerOpen(false)}
-            collapsed={!!collapsed[g.title]}
-            onToggle={() => toggleGroup(g.title)}
-          />
-        ))}
+        {navQuery.trim() ? (
+          navFiltered.length === 0 ? (
+            <p className="px-4 py-3 text-xs text-slate-500">Không tìm thấy chức năng nào.</p>
+          ) : (
+            <div className="pb-1">
+              {navFiltered.map((n) => (
+                <NavLink key={n.href} n={n} active={path === n.href} onNav={() => setDrawerOpen(false)} badge={n.badgeKey ? badges[n.badgeKey] : undefined} />
+              ))}
+            </div>
+          )
+        ) : (
+          NAV_GROUPS.map((g) => (
+            <NavGroupSection
+              key={g.title}
+              group={g}
+              path={path}
+              onNav={() => setDrawerOpen(false)}
+              collapsed={!!collapsed[g.title]}
+              onToggle={() => toggleGroup(g.title)}
+              badges={badges}
+            />
+          ))
+        )}
 
-        {cfgGroups.length > 0 && (
+        {!navQuery.trim() && cfgGroups.length > 0 && (
           <div>
             <button
               onClick={() => toggleGroup('__cfg')}

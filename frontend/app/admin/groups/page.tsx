@@ -6,14 +6,18 @@ import { Plus, Trash2, Check } from 'lucide-react';
 
 interface Group { id: string; key: string; name: string; color?: string; priority: number; isSystem: boolean; permissions: string[]; autoPromote?: boolean; minPosts?: number; minReputation?: number; minDays?: number; _count?: { members: number }; memberCount?: number }
 interface CatItem { key: string; label: string; group: string }
+interface UserHit { id: string; username: string; displayName?: string | null }
 const COLORS = ['red', 'blue', 'amber', 'green', 'gray', 'violet'];
 
 export default function AdminGroups() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [catalog, setCatalog] = useState<CatItem[]>([]);
   const [msg, setMsg] = useState('');
+  const [permQuery, setPermQuery] = useState('');
   const [form, setForm] = useState({ name: '', color: 'gray', priority: 30, autoPromote: false, minPosts: 0, minReputation: 0, minDays: 0 });
-  const [assign, setAssign] = useState({ userId: '', groupId: '' });
+  const [assign, setAssign] = useState<{ user: UserHit | null; groupId: string }>({ user: null, groupId: '' });
+  const [userQuery, setUserQuery] = useState('');
+  const [userHits, setUserHits] = useState<UserHit[]>([]);
 
   async function savePromo(g: Group, patch: Partial<Group>) {
     setGroups((gs) => gs.map((x) => (x.id === g.id ? { ...x, ...patch } : x)));
@@ -46,13 +50,32 @@ export default function AdminGroups() {
     try { await api.del(`/permissions/groups/${id}`); load(); } catch (e: any) { setMsg(e.message); }
   }
   async function doAssign() {
-    if (!assign.userId || !assign.groupId) return;
-    try { await api.post('/permissions/assign', assign); setMsg('Đã gán user vào nhóm ✓'); setAssign({ userId: '', groupId: '' }); load(); }
-    catch (e: any) { setMsg(e.message); }
+    if (!assign.user || !assign.groupId) return;
+    try {
+      await api.post('/permissions/assign', { userId: assign.user.id, groupId: assign.groupId });
+      setMsg('Đã gán user vào nhóm ✓');
+      setAssign({ user: null, groupId: '' });
+      setUserQuery('');
+      setUserHits([]);
+      load();
+    } catch (e: any) { setMsg(e.message); }
   }
 
-  // gom permission theo nhóm hiển thị
-  const cats = [...new Set(catalog.map((c) => c.group))];
+  useEffect(() => {
+    const q = userQuery.trim();
+    if (!q || assign.user) { setUserHits([]); return; }
+    const t = setTimeout(() => {
+      api.get<{ data: UserHit[] }>(`/admin/users?search=${encodeURIComponent(q)}&limit=8`)
+        .then((r) => setUserHits(r.data))
+        .catch(() => {});
+    }, 250);
+    return () => clearTimeout(t);
+  }, [userQuery, assign.user]);
+
+  // gom permission theo nhóm hiển thị, lọc theo permQuery
+  const q = permQuery.trim().toLowerCase();
+  const filteredCatalog = q ? catalog.filter((c) => c.label.toLowerCase().includes(q) || c.key.toLowerCase().includes(q)) : catalog;
+  const cats = [...new Set(filteredCatalog.map((c) => c.group))];
 
   return (
     <div className="space-y-4">
@@ -61,6 +84,9 @@ export default function AdminGroups() {
       {msg && <p className="text-sm text-brand-600">{msg}</p>}
 
       <div className="card overflow-x-auto">
+        <div className="border-b border-ink-200/70 p-3 dark:border-ink-800">
+          <input className="input max-w-xs" placeholder="Tìm quyền theo tên hoặc key…" value={permQuery} onChange={(e) => setPermQuery(e.target.value)} />
+        </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-ink-200/70 text-left dark:border-ink-800">
@@ -78,7 +104,7 @@ export default function AdminGroups() {
             {cats.map((cat) => (
               <Fragment key={cat}>
                 <tr className="bg-ink-50 dark:bg-ink-900/50"><td className="px-3 py-1.5 text-xs font-semibold uppercase text-ink-500" colSpan={groups.length + 1}>{cat}</td></tr>
-                {catalog.filter((c) => c.group === cat).map((c) => (
+                {filteredCatalog.filter((c) => c.group === cat).map((c) => (
                   <tr key={c.key} className="border-b border-ink-100 dark:border-ink-800">
                     <td className="p-2.5">{c.label} <code className="ml-1 text-[10px] text-ink-400">{c.key}</code></td>
                     {groups.map((g) => (
@@ -136,7 +162,26 @@ export default function AdminGroups() {
 
         <div className="card space-y-2 p-4">
           <h2 className="font-semibold">Gán thành viên vào nhóm phụ</h2>
-          <input className="input" placeholder="User ID" value={assign.userId} onChange={(e) => setAssign({ ...assign, userId: e.target.value })} />
+          {assign.user ? (
+            <div className="flex items-center justify-between rounded-lg border border-ink-200 px-3 py-1.5 text-sm dark:border-ink-700">
+              <span>{assign.user.displayName || assign.user.username} <span className="text-ink-400">@{assign.user.username}</span></span>
+              <button type="button" className="text-xs text-red-500" onClick={() => { setAssign({ ...assign, user: null }); setUserQuery(''); }}>Bỏ chọn</button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input className="input" placeholder="Tìm theo username…" value={userQuery} onChange={(e) => setUserQuery(e.target.value)} />
+              {userHits.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full rounded-lg border border-ink-200 bg-white shadow-card dark:border-ink-700 dark:bg-ink-900">
+                  {userHits.map((u) => (
+                    <button type="button" key={u.id} onClick={() => { setAssign({ ...assign, user: u }); setUserQuery(''); setUserHits([]); }}
+                      className="block w-full px-3 py-1.5 text-left text-sm hover:bg-ink-50 dark:hover:bg-ink-800">
+                      {u.displayName || u.username} <span className="text-ink-400">@{u.username}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <select className="input" value={assign.groupId} onChange={(e) => setAssign({ ...assign, groupId: e.target.value })}>
             <option value="">— Chọn nhóm —</option>
             {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}

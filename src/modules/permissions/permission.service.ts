@@ -16,6 +16,8 @@ export const PERMISSION_CATALOG: { key: string; label: string; group: string }[]
   { key: 'admin.access', label: 'Truy cập quản trị', group: 'Quản trị' },
 ];
 export const ALL_PERMISSION_KEYS = PERMISSION_CATALOG.map((p) => p.key);
+// Quyền có thể ghi đè riêng theo từng danh mục/box (không gồm admin.access — quyền quản trị luôn toàn cục).
+export const CATEGORY_PERMISSION_KEYS = ALL_PERMISSION_KEYS.filter((k) => k !== 'admin.access');
 
 // Bộ quyền mặc định cho các nhóm hệ thống (map theo role).
 export const DEFAULT_GROUPS: { key: string; name: string; color: string; priority: number; permissions: string[] }[] = [
@@ -54,6 +56,62 @@ export class PermissionService {
   async can(userId: string, permission: string): Promise<boolean> {
     const perms = await this.getUserPermissions(userId);
     return perms.includes('*') || perms.includes(permission);
+  }
+
+  /** ID các nhóm áp dụng cho user: nhóm mặc định theo role + các nhóm phụ đã gán. */
+  private async resolveGroupIds(userId: string): Promise<string[]> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, groupMemberships: { select: { groupId: true } } },
+    });
+    if (!user) return [];
+    const roleGroup = await this.prisma.userGroup.findUnique({ where: { key: user.role.toLowerCase() }, select: { id: true } }).catch(() => null);
+    const ids = new Set<string>();
+    if (roleGroup) ids.add(roleGroup.id);
+    user.groupMemberships.forEach((m) => ids.add(m.groupId));
+    return [...ids];
+  }
+
+  /**
+   * Quyền hiệu lực trong một danh mục cụ thể (kiểu XenForo node permission):
+   * DENY riêng của bất kỳ nhóm nào của user trong danh mục này thắng tuyệt đối;
+   * nếu không có DENY mà có ALLOW riêng thì cho phép; không có bản ghi nào thì
+   * kế thừa quyền chung (getUserPermissions/can).
+   */
+  async canInCategory(userId: string, permission: string, categoryId: string): Promise<boolean> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (user?.role === 'ADMIN') return true;
+
+    const groupIds = await this.resolveGroupIds(userId);
+    if (!groupIds.length) return this.can(userId, permission);
+
+    const overrides = await this.prisma.categoryPermission.findMany({
+      where: { categoryId, groupId: { in: groupIds }, permission },
+      select: { value: true },
+    });
+    if (overrides.some((o) => o.value === 'DENY')) return false;
+    if (overrides.some((o) => o.value === 'ALLOW')) return true;
+    return this.can(userId, permission);
+  }
+
+  // ── Admin: ghi đè quyền theo danh mục ──
+  async listCategoryOverrides(categoryId: string) {
+    const overrides = await this.prisma.categoryPermission.findMany({ where: { categoryId } });
+    return { catalog: PERMISSION_CATALOG.filter((p) => CATEGORY_PERMISSION_KEYS.includes(p.key)), overrides };
+  }
+
+  async setCategoryOverride(categoryId: string, groupId: string, permission: string, value: 'ALLOW' | 'DENY' | null) {
+    if (!CATEGORY_PERMISSION_KEYS.includes(permission)) throw new Error('Quyền không hợp lệ để ghi đè theo danh mục');
+    if (value === null) {
+      await this.prisma.categoryPermission.deleteMany({ where: { categoryId, groupId, permission } });
+      return { ok: true, value: null };
+    }
+    await this.prisma.categoryPermission.upsert({
+      where: { categoryId_groupId_permission: { categoryId, groupId, permission } },
+      update: { value },
+      create: { categoryId, groupId, permission, value },
+    });
+    return { ok: true, value };
   }
 
   /** Tự thăng nhóm: gán user vào các nhóm autoPromote khi đạt cột mốc. Gọi lúc đăng nhập / lazy. */

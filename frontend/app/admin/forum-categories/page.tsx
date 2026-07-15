@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FolderTree, Plus, Trash2, Pencil, X, Tags } from 'lucide-react';
+import { FolderTree, Plus, Trash2, Pencil, X, Tags, ShieldCheck, Check, Ban } from 'lucide-react';
 import { api } from '@/lib/api';
 import ImageUpload from '@/components/ImageUpload';
 
 interface Prefix { id: string; label: string; color?: string | null; sortOrder?: number }
+interface PermGroup { id: string; key: string; name: string; color?: string }
+interface CatalogItem { key: string; label: string; group: string }
+interface Override { groupId: string; permission: string; value: 'ALLOW' | 'DENY' }
 
 interface Category {
   id: string;
@@ -40,6 +43,12 @@ export default function AdminForumCategoriesPage() {
   // Quản lý thẻ (tag) toàn diễn đàn
   const [tags, setTags] = useState<{ id: string; name: string; slug: string; color?: string | null; usageCount?: number }[]>([]);
   const [newTag, setNewTag] = useState({ name: '', color: '#10b981' });
+  // Ghi đè quyền riêng theo danh mục
+  const [permCat, setPermCat] = useState<Category | null>(null);
+  const [permGroups, setPermGroups] = useState<PermGroup[]>([]);
+  const [permCatalog, setPermCatalog] = useState<CatalogItem[]>([]);
+  const [overrides, setOverrides] = useState<Override[]>([]);
+  const [permBusy, setPermBusy] = useState('');
 
   function loadTags() { api.get<any[]>('/forum/tags?limit=200').then(setTags).catch(() => {}); }
   async function addTag() {
@@ -66,6 +75,32 @@ export default function AdminForumCategoriesPage() {
   async function removePrefix(id: string) {
     await api.del(`/forum/admin/prefixes/${id}`).catch(() => {});
     setPrefixes((p) => p.filter((x) => x.id !== id));
+  }
+
+  function openPerms(c: Category) {
+    setPermCat(c);
+    if (!permGroups.length) api.get<PermGroup[]>('/permissions/groups').then(setPermGroups).catch(() => {});
+    api.get<{ catalog: CatalogItem[]; overrides: Override[] }>(`/permissions/category/${c.id}`)
+      .then((r) => { setPermCatalog(r.catalog); setOverrides(r.overrides); })
+      .catch(() => {});
+  }
+  function cellValue(groupId: string, permission: string): 'ALLOW' | 'DENY' | null {
+    return overrides.find((o) => o.groupId === groupId && o.permission === permission)?.value ?? null;
+  }
+  async function cycleCell(groupId: string, permission: string) {
+    if (!permCat) return;
+    const cur = cellValue(groupId, permission);
+    const next: 'ALLOW' | 'DENY' | null = cur === null ? 'ALLOW' : cur === 'ALLOW' ? 'DENY' : null;
+    const busyKey = `${groupId}:${permission}`;
+    setPermBusy(busyKey);
+    try {
+      await api.post(`/permissions/category/${permCat.id}`, { groupId, permission, value: next });
+      setOverrides((os) => {
+        const rest = os.filter((o) => !(o.groupId === groupId && o.permission === permission));
+        return next === null ? rest : [...rest, { groupId, permission, value: next }];
+      });
+    } catch (e: any) { alert(e.message); }
+    finally { setPermBusy(''); }
   }
 
   function load() {
@@ -151,6 +186,7 @@ export default function AdminForumCategoriesPage() {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => openPrefixes(c)} className="btn-outline inline-flex items-center gap-1 !py-1.5 text-sm"><Tags size={14} /> Tiền tố</button>
+                <button onClick={() => openPerms(c)} className="btn-outline inline-flex items-center gap-1 !py-1.5 text-sm"><ShieldCheck size={14} /> Phân quyền</button>
                 <button onClick={() => openEdit(c)} className="btn-outline inline-flex items-center gap-1 !py-1.5 text-sm"><Pencil size={14} /> Sửa</button>
                 <button onClick={() => remove(c)} className="btn-outline inline-flex items-center gap-1 !py-1.5 text-sm text-red-500"><Trash2 size={14} /> Xoá</button>
               </div>
@@ -256,6 +292,60 @@ export default function AdminForumCategoriesPage() {
               <input type="color" className="h-9 w-10 cursor-pointer rounded border border-ink-300 dark:border-ink-700" value={newPrefix.color}
                 onChange={(e) => setNewPrefix({ ...newPrefix, color: e.target.value })} />
               <button onClick={addPrefix} className="btn-primary !px-3"><Plus size={16} /></button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal ghi đè quyền riêng theo danh mục */}
+      {permCat && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPermCat(null)}>
+          <div onClick={(e) => e.stopPropagation()} className="card w-full max-w-3xl space-y-3 p-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-lg font-semibold"><ShieldCheck size={18} /> Phân quyền riêng · {permCat.name}</h2>
+              <button onClick={() => setPermCat(null)} className="text-ink-400 hover:text-ink-600"><X size={20} /></button>
+            </div>
+            <p className="text-sm text-ink-500">
+              Bấm vào ô để chuyển: <span className="text-ink-400">Kế thừa</span> → <span className="text-emerald-600">Cho phép</span> → <span className="text-red-500">Từ chối</span> → Kế thừa.
+              Không đặt = dùng quyền chung của nhóm (Nhóm &amp; Phân quyền). Từ chối riêng trong danh mục này luôn thắng.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-ink-200/70 text-left dark:border-ink-800">
+                    <th className="p-2">Quyền</th>
+                    {permGroups.map((g) => <th key={g.id} className="p-2 text-center font-semibold">{g.name}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {permCatalog.map((c) => (
+                    <tr key={c.key} className="border-b border-ink-100 dark:border-ink-800">
+                      <td className="p-2">{c.label} <code className="ml-1 text-[10px] text-ink-400">{c.key}</code></td>
+                      {permGroups.map((g) => {
+                        const v = cellValue(g.id, c.key);
+                        const busy = permBusy === `${g.id}:${c.key}`;
+                        return (
+                          <td key={g.id} className="p-2 text-center">
+                            <button
+                              disabled={busy}
+                              onClick={() => cycleCell(g.id, c.key)}
+                              title={v === 'ALLOW' ? 'Cho phép riêng — bấm để chuyển sang Từ chối' : v === 'DENY' ? 'Từ chối riêng — bấm để bỏ ghi đè' : 'Kế thừa quyền chung — bấm để Cho phép riêng'}
+                              className={`mx-auto flex h-6 w-6 items-center justify-center rounded border transition ${
+                                v === 'ALLOW' ? 'border-emerald-500 bg-emerald-500 text-white'
+                                : v === 'DENY' ? 'border-red-500 bg-red-500 text-white'
+                                : 'border-dashed border-ink-300 text-ink-300 dark:border-ink-600'
+                              } ${busy ? 'opacity-50' : ''}`}
+                            >
+                              {v === 'ALLOW' && <Check size={13} />}
+                              {v === 'DENY' && <Ban size={13} />}
+                            </button>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

@@ -49,4 +49,20 @@ export class PermissionsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
   unassign(@Body() body: { userId: string; groupId: string }) { return this.perms.unassignUser(body.userId, body.groupId); }
+
+  // Ghi đè quyền riêng theo từng danh mục/box (kiểu XenForo node permission)
+  @Get('category/:categoryId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  categoryOverrides(@Param('categoryId') categoryId: string) { return this.perms.listCategoryOverrides(categoryId); }
+
+  @Post('category/:categoryId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  setCategoryOverride(
+    @Param('categoryId') categoryId: string,
+    @Body() body: { groupId: string; permission: string; value: 'ALLOW' | 'DENY' | null },
+  ) {
+    return this.perms.setCategoryOverride(categoryId, body.groupId, body.permission, body.value);
+  }
 }

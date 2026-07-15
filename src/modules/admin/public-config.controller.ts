@@ -25,7 +25,7 @@ export class PublicConfigController {
       favicon: c['site.favicon'] ?? '',
       primaryColor: c['site.primaryColor'] ?? '',
       heroTitle: c['site.heroTitle'] ?? 'Chào mừng đến Trạm GenZ',
-      heroDescription: c['site.heroDescription'] ?? 'Cộng đồng anime & manga — xem hoạt hình, đọc truyện, thảo luận cùng bạn bè.',
+      heroDescription: c['site.heroDescription'] ?? 'Cộng đồng diễn đàn — kết nối, thảo luận cùng bạn bè.',
       footerText: c['site.footerText'] ?? '© {year} Trạm GenZ',
     };
   }

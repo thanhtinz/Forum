@@ -7,7 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { api, getToken } from '@/lib/api';
 import {
   Search, Bell, Menu, Sun, Moon, MessageSquare, Gamepad2,
-  ImagePlus, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X, LineChart, Film, BookOpen, Mail,
+  ImagePlus, LogOut, User as UserIcon, ChevronDown, Moon as MoonIcon, Gem, ShieldAlert, Globe, Wrench, Ruler, X, LineChart, Mail,
 } from 'lucide-react';
 import { useAuth } from './AuthProvider';
 import { WalletChips } from './WalletChips';
@@ -23,8 +23,6 @@ function MessengerIcon({ size = 16 }: { size?: number }) {
 }
 
 const NAV = [
-  { href: '/movie', label: 'Hoạt hình TQ', icon: Film },
-  { href: '/comic', label: 'Truyện Tranh', icon: BookOpen },
   { href: '/cong-game', label: 'Giải trí', icon: Gamepad2 },
   { href: '/fortune', label: 'Bói toán', icon: MoonIcon },
   { href: '/scam', label: 'Tố cáo scam', icon: ShieldAlert },
@@ -181,9 +179,6 @@ export function Header() {
                   </Link>
                   <Link href="/wallet" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
                     <Gem size={15} /> Ví của tôi
-                  </Link>
-                  <Link href="/comic/creator" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">
-                    <BookOpen size={15} /> Đăng truyện
                   </Link>
                   {user.role === 'ADMIN' && (
                     <Link href="/admin" className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-100 dark:hover:bg-ink-700">

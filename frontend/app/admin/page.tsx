@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users, CreditCard, Sprout, KeyRound, Settings, ShieldAlert, FolderTree,
-  MessageSquare, Gem, Activity, Sticker, Award, FileText, Tv, BookOpen,
-  Tag, CalendarCheck, Gift, Square, Megaphone, MessageCircle, Paperclip,
+  MessageSquare, Gem, Activity, Sticker, Award, FileText,
+  CalendarCheck, Gift, Square, Megaphone, MessageCircle, Paperclip,
   Mail, BellRing, ShieldCheck, BadgeCheck, Ticket, LayoutDashboard,
   TrendingUp, Clock, AlertCircle, CheckCircle2, XCircle, ArrowUpRight,
 } from 'lucide-react';
@@ -36,9 +36,6 @@ const QUICK_GROUPS = [
       { href: '/admin/forum-categories', label: 'Danh mục', icon: FolderTree, color: 'text-emerald-600' },
       { href: '/admin/pages', label: 'Trang & Menu', icon: FileText, color: 'text-emerald-600' },
       { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert, color: 'text-rose-600' },
-      { href: '/admin/anime', label: 'Donghua', icon: Tv, color: 'text-violet-600' },
-      { href: '/admin/comic', label: 'Truyện tranh', icon: BookOpen, color: 'text-amber-600' },
-      { href: '/admin/genres', label: 'Thể loại', icon: Tag, color: 'text-teal-600' },
     ],
   },
   {

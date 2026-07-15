@@ -45,11 +45,9 @@ import { BadgesModule } from './modules/badges/badge.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { AvatarFrameModule } from './modules/avatar-frame/avatar-frame.module';
 import { CosmeticsModule } from './modules/cosmetics/cosmetics.module';
-import { AnimeModule } from './modules/anime/anime.module';
 import { MarketModule } from './modules/market/market.module';
 import { PingModule } from './modules/ping/ping.module';
 import { BannerModule } from './modules/banner/banner.module';
-import { MangaCreatorModule } from './modules/manga-creator/manga-creator.module';
 import { RssModule } from './modules/rss/rss.module';
 import { LinkPreviewModule } from './modules/link-preview/link-preview.module';
 
@@ -84,7 +82,6 @@ import { LinkPreviewModule } from './modules/link-preview/link-preview.module';
     GemModule,
     AvatarFrameModule,
     CosmeticsModule,
-    AnimeModule,
     MarketModule,
     PingModule,
     BannerModule,
@@ -117,7 +114,6 @@ import { LinkPreviewModule } from './modules/link-preview/link-preview.module';
     MailModule,
     SecurityModule,
     PermissionsModule,
-    MangaCreatorModule,
     RssModule,
     LinkPreviewModule,
   ],

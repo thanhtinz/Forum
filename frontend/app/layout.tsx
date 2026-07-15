@@ -8,7 +8,7 @@ import { SiteMeta } from '@/components/SiteMeta';
 // Giá trị mặc định lúc build (static export). Tiêu đề/meta thực tế do <SiteMeta> cập nhật
 // theo cấu hình admin (site.name…) ở phía client.
 const SITE = 'Trạm GenZ';
-const DESC = 'Cộng đồng anime, manga, hoạt hình — xem phim, đọc truyện, thảo luận tại Trạm GenZ.';
+const DESC = 'Diễn đàn thảo luận, kết nối cộng đồng tại Trạm GenZ.';
 
 export const metadata: Metadata = {
   title: { default: `${SITE} — Diễn đàn cộng đồng`, template: `%s · ${SITE}` },

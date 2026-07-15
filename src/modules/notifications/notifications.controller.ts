@@ -35,6 +35,13 @@ export class NotificationsController {
   @Post('email-pref')
   setEmailPref(@CurrentUser('id') userId: string, @Body('value') value: boolean) { return this.notifications.setEmailNotify(userId, !!value); }
 
+  // ── Tuỳ chỉnh email theo từng loại thông báo ──
+  @Get('type-prefs')
+  getTypePrefs(@CurrentUser('id') userId: string) { return this.notifications.getNotifyPrefs(userId); }
+
+  @Post('type-prefs')
+  setTypePrefs(@CurrentUser('id') userId: string, @Body('prefs') prefs: Record<string, boolean>) { return this.notifications.setNotifyPrefs(userId, prefs); }
+
   // ── Admin: cấu hình Web Push (VAPID) ──
   @Get('admin/push')
   @UseGuards(RolesGuard)

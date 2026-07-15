@@ -21,6 +21,18 @@ import { TipService } from './tip.service';
 import { BlockService } from '../profile-extra/block.service';
 import { UserRole as Role } from '@prisma/client';
 
+// Mặc định điểm uy tín (reputationScore) mỗi loại reaction cộng cho tác giả bài viết.
+// Admin có thể chỉnh qua getReactionWeights/setReactionWeights.
+const DEFAULT_REACTION_WEIGHTS: { emoji: string; weight: number }[] = [
+  { emoji: 'like', weight: 1 },
+  { emoji: '👍', weight: 1 },
+  { emoji: '❤️', weight: 2 },
+  { emoji: '😂', weight: 1 },
+  { emoji: '😮', weight: 1 },
+  { emoji: '😢', weight: 1 },
+  { emoji: '🎉', weight: 2 },
+];
+
 export interface CreateThreadDto {
   categoryId: string;
   title: string;
@@ -88,29 +100,36 @@ export class ForumService {
   // THREADS
   // ──────────────────────────────────────────────
 
-  async listCategories() {
-    const cats = await this.prisma.category.findMany({
-      orderBy: { sortOrder: 'asc' },
-      select: {
-        id: true, name: true, slug: true, icon: true, iconUrl: true, color: true,
-        threadCount: true, postCount: true, description: true, moduleType: true, parentId: true, minRolePost: true,
-        threads: {
-          where: { isApproved: true, isHidden: false },
-          orderBy: { lastPostAt: 'desc' },
-          take: 1,
-          select: {
-            title: true, slug: true, lastPostAt: true, createdAt: true,
-            prefixRef: { select: { label: true, color: true } },
-            author: { select: { username: true, displayName: true, avatar: true } },
+  async listCategories(userId?: string) {
+    const [cats, watchedIds] = await Promise.all([
+      this.prisma.category.findMany({
+        orderBy: { sortOrder: 'asc' },
+        select: {
+          id: true, name: true, slug: true, icon: true, iconUrl: true, color: true,
+          threadCount: true, postCount: true, description: true, moduleType: true, parentId: true, minRolePost: true,
+          threads: {
+            where: { isApproved: true, isHidden: false },
+            orderBy: { lastPostAt: 'desc' },
+            take: 1,
+            select: {
+              title: true, slug: true, lastPostAt: true, createdAt: true,
+              prefixRef: { select: { label: true, color: true } },
+              author: { select: { username: true, displayName: true, avatar: true } },
+            },
           },
         },
-      },
-    });
+      }),
+      userId
+        ? this.prisma.categoryWatch.findMany({ where: { userId }, select: { categoryId: true } })
+        : Promise.resolve([]),
+    ]);
+    const watchedSet = new Set(watchedIds.map((w) => w.categoryId));
     return cats.map((c) => {
       const t = c.threads[0];
       const { threads, ...rest } = c;
       return {
         ...rest,
+        isWatched: watchedSet.has(c.id),
         latest: t ? {
           title: t.title, slug: t.slug, at: t.lastPostAt ?? t.createdAt,
           prefixLabel: t.prefixRef?.label ?? null,
@@ -120,6 +139,19 @@ export class ForumService {
         } : null,
       };
     });
+  }
+
+  // Bật/tắt theo dõi 1 danh mục — nổi bật trong danh sách diễn đàn
+  async toggleWatchCategory(userId: string, categoryId: string) {
+    const existing = await this.prisma.categoryWatch.findUnique({
+      where: { userId_categoryId: { userId, categoryId } },
+    });
+    if (existing) {
+      await this.prisma.categoryWatch.delete({ where: { userId_categoryId: { userId, categoryId } } });
+      return { watched: false };
+    }
+    await this.prisma.categoryWatch.create({ data: { userId, categoryId } });
+    return { watched: true };
   }
 
   // ──────────────────────────────────────────────
@@ -230,16 +262,24 @@ export class ForumService {
   }
 
   // Bài viết (post/reply) gần đây của 1 user — cho tab "Hoạt động mới nhất"
-  async listUserPosts(authorId: string, limit = 20) {
-    return this.prisma.post.findMany({
-      where: { authorId, isDeleted: false, isApproved: true },
-      orderBy: { createdAt: 'desc' },
-      take: Math.min(Math.max(Number(limit) || 20, 1), 50),
-      select: {
-        id: true, content: true, createdAt: true, isFirstPost: true,
-        thread: { select: { title: true, slug: true } },
-      },
-    });
+  async listUserPosts(authorId: string, limit = 20, page = 1) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 50);
+    const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
+    const where = { authorId, isDeleted: false, isApproved: true };
+    const [data, total] = await Promise.all([
+      this.prisma.post.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        select: {
+          id: true, content: true, createdAt: true, isFirstPost: true,
+          thread: { select: { title: true, slug: true } },
+        },
+      }),
+      this.prisma.post.count({ where }),
+    ]);
+    return { data, meta: { total, page: Number(page) || 1, limit: take } };
   }
 
   private normalizeModuleType(v?: string): string {
@@ -715,6 +755,28 @@ export class ForumService {
   // REACTIONS (like/emoji)
   // ──────────────────────────────────────────────
 
+  // Admin: đọc/ghi điểm uy tín (reputationScore) mỗi loại reaction
+  async getReactionWeights() {
+    const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'forum.reactionWeights' } }).catch(() => null);
+    const v = cfg?.value;
+    return Array.isArray(v) && v.length ? v : DEFAULT_REACTION_WEIGHTS;
+  }
+  async setReactionWeights(weights: { emoji: string; weight: number }[]) {
+    const clean = (weights || [])
+      .filter((w) => w?.emoji && Number.isFinite(w.weight))
+      .map((w) => ({ emoji: w.emoji, weight: Math.max(0, Math.floor(w.weight)) }));
+    await this.prisma.siteConfig.upsert({
+      where: { key: 'forum.reactionWeights' },
+      update: { value: clean },
+      create: { key: 'forum.reactionWeights', value: clean },
+    });
+    return clean;
+  }
+  private async getReactionWeight(emoji: string): Promise<number> {
+    const weights = await this.getReactionWeights();
+    return (weights as any[]).find((w) => w.emoji === emoji)?.weight ?? 1;
+  }
+
   async reactToPost(postId: string, userId: string, emoji = 'like') {
     const post = await this.prisma.post.findUnique({
       where: { id: postId },
@@ -726,27 +788,34 @@ export class ForumService {
     const existing = await this.prisma.postReaction.findUnique({
       where: { postId_userId_emoji: { postId, userId, emoji } },
     });
+    const weight = post.authorId !== userId ? await this.getReactionWeight(emoji) : 0;
 
     let newLikeCount: number;
 
     if (existing) {
-      // Bỏ reaction
+      // Bỏ reaction — trừ lại uy tín đã cộng cho tác giả (không để âm)
       await this.prisma.$transaction([
         this.prisma.postReaction.delete({ where: { id: existing.id } }),
         this.prisma.post.update({
           where: { id: postId },
           data: { likeCount: { decrement: 1 } },
         }),
+        ...(weight > 0
+          ? [this.prisma.user.updateMany({ where: { id: post.authorId, reputationScore: { gte: weight } }, data: { reputationScore: { decrement: weight } } })]
+          : []),
       ]);
       newLikeCount = post.likeCount - 1;
     } else {
-      // Thêm reaction
+      // Thêm reaction — cộng uy tín cho tác giả theo trọng số reaction (không tự cộng cho chính mình)
       await this.prisma.$transaction([
         this.prisma.postReaction.create({ data: { postId, userId, emoji } }),
         this.prisma.post.update({
           where: { id: postId },
           data: { likeCount: { increment: 1 } },
         }),
+        ...(weight > 0
+          ? [this.prisma.user.update({ where: { id: post.authorId }, data: { reputationScore: { increment: weight } } })]
+          : []),
       ]);
       newLikeCount = post.likeCount + 1;
 

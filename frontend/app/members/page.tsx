@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '@/lib/api';
 import { Avatar } from '@/components/Header';
 
@@ -33,16 +33,23 @@ export default function MembersPage() {
   const [q, setQ] = useState('');
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const LIMIT = 48;
+
+  useEffect(() => { setPage(1); }, [sortBy, query]);
 
   useEffect(() => {
     setLoading(true);
-    const params = new URLSearchParams({ page: '1', limit: '48', sortBy });
+    const params = new URLSearchParams({ page: String(page), limit: String(LIMIT), sortBy });
     if (query.trim()) params.set('q', query.trim());
-    api.get<{ data: MemberCard[] }>(`/social/members?${params.toString()}`)
-      .then((r) => setMembers(r.data))
+    api.get<{ data: MemberCard[]; meta: { total: number } }>(`/social/members?${params.toString()}`)
+      .then((r) => { setMembers(r.data); setTotal(r.meta?.total ?? r.data.length); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [sortBy, query]);
+  }, [sortBy, query, page]);
+
+  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
   return (
     <div className="space-y-4">
@@ -103,6 +110,18 @@ export default function MembersPage() {
               </div>
             </Link>
           ))}
+        </div>
+      )}
+
+      {!loading && members.length > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="btn-outline inline-flex items-center gap-1 !py-1.5 text-sm disabled:opacity-40">
+            <ChevronLeft size={14} /> Trước
+          </button>
+          <span className="text-sm text-ink-500">Trang {page}/{totalPages} · {total} thành viên</span>
+          <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="btn-outline inline-flex items-center gap-1 !py-1.5 text-sm disabled:opacity-40">
+            Sau <ChevronRight size={14} />
+          </button>
         </div>
       )}
     </div>

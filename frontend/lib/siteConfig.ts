@@ -19,6 +19,8 @@ export interface SiteConfig {
   heroTitle: string;
   heroDescription: string;
   footerText: string;
+  googleLoginEnabled: boolean;
+  googleClientId: string;
 }
 
 export const DEFAULT_HOME_WIDGETS: HomeWidget[] = [
@@ -42,6 +44,8 @@ const DEFAULTS: SiteConfig = {
   heroTitle: 'Chào mừng đến Trạm GenZ',
   heroDescription: 'Cộng đồng diễn đàn — kết nối, thảo luận cùng bạn bè.',
   footerText: '© {year} Trạm GenZ',
+  googleLoginEnabled: false,
+  googleClientId: '',
 };
 
 export function useSiteConfig(): SiteConfig {

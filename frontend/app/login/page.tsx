@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { useSiteConfig } from '@/lib/siteConfig';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -40,6 +41,7 @@ export default function LoginPage() {
           {err && <p className="text-sm text-red-500">{err}</p>}
           <button className="btn-primary w-full" disabled={busy}>{busy ? '…' : 'Đăng nhập'}</button>
         </form>
+        <div className="mt-3"><GoogleSignInButton /></div>
         <p className="mt-3 text-center text-sm">
           <Link href="/forgot-password" className="text-ink-500 hover:text-brand-600">Quên mật khẩu?</Link>
         </p>

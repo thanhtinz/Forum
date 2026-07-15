@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import useSWR from 'swr';
-import { ChevronDown, ChevronUp, Lock, MessageSquare, FileText } from 'lucide-react';
-import { fetcher } from '@/lib/api';
+import useSWR, { mutate } from 'swr';
+import { ChevronDown, ChevronUp, Lock, MessageSquare, FileText, Star } from 'lucide-react';
+import { api, fetcher } from '@/lib/api';
+import { useAuth } from './AuthProvider';
 import { Avatar } from './Header';
 
 interface Latest {
@@ -19,6 +20,7 @@ interface Category {
   description?: string | null; moduleType?: string | null;
   parentId?: string | null; minRolePost?: string | null;
   latest?: Latest | null;
+  isWatched?: boolean;
 }
 
 function CategoryIcon({ c, size = 40 }: { c: Category; size?: number }) {
@@ -57,14 +59,23 @@ function isStaffOnly(minRolePost?: string | null) {
   return minRolePost === 'MODERATOR' || minRolePost === 'ADMIN';
 }
 
-function ChildRow({ c }: { c: Category }) {
+function ChildRow({ c, canWatch, onToggleWatch }: { c: Category; canWatch: boolean; onToggleWatch: (id: string) => void }) {
   const restricted = isStaffOnly(c.minRolePost);
   return (
-    <div className="flex items-start gap-3 px-4 py-3.5">
+    <div className={`flex items-start gap-3 px-4 py-3.5 ${c.isWatched ? 'bg-amber-50/60 dark:bg-amber-950/10' : ''}`}>
+      {canWatch && (
+        <button
+          onClick={() => onToggleWatch(c.id)}
+          title={c.isWatched ? 'Bỏ theo dõi danh mục' : 'Theo dõi danh mục'}
+          className={`mt-1 shrink-0 ${c.isWatched ? 'text-amber-500' : 'text-ink-300 hover:text-amber-500'}`}
+        >
+          <Star size={16} fill={c.isWatched ? 'currentColor' : 'none'} />
+        </button>
+      )}
       <CategoryIcon c={c} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <Link href={`/category?id=${c.id}`} className="font-semibold text-ink-900 hover:text-brand-600 dark:text-ink-100">
+          <Link href={`/category?id=${c.id}`} className={`font-semibold hover:text-brand-600 ${c.isWatched ? 'text-amber-800 dark:text-amber-300' : 'text-ink-900 dark:text-ink-100'}`}>
             {c.name}
           </Link>
           {restricted && (
@@ -110,8 +121,17 @@ function ChildRow({ c }: { c: Category }) {
 }
 
 export function CategoryList() {
+  const { user } = useAuth();
   const { data, isLoading } = useSWR<Category[]>('/forum/categories', fetcher);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  async function toggleWatch(categoryId: string) {
+    if (!data) return;
+    const optimistic = data.map((c) => (c.id === categoryId ? { ...c, isWatched: !c.isWatched } : c));
+    mutate('/forum/categories', optimistic, false);
+    try { await api.post(`/forum/categories/${categoryId}/watch`, {}); mutate('/forum/categories'); }
+    catch { mutate('/forum/categories', data, false); }
+  }
 
   if (isLoading) return <div className="card p-8 text-center text-ink-500">Đang tải danh mục…</div>;
   if (!data || data.length === 0) return null;
@@ -134,7 +154,7 @@ export function CategoryList() {
         if (sec.parent && sec.children.length === 0) {
           return (
             <section key={key} className="card overflow-hidden">
-              <ChildRow c={sec.parent} />
+              <ChildRow c={sec.parent} canWatch={!!user} onToggleWatch={toggleWatch} />
             </section>
           );
         }
@@ -166,7 +186,7 @@ export function CategoryList() {
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-400">Bài viết gần nhất</span>
                 </div>
                 <div className="divide-y divide-ink-100 dark:divide-ink-800">
-                  {sec.children.map((c) => <ChildRow key={c.id} c={c} />)}
+                  {sec.children.map((c) => <ChildRow key={c.id} c={c} canWatch={!!user} onToggleWatch={toggleWatch} />)}
                 </div>
               </>
             )}

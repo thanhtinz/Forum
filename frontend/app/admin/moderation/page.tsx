@@ -18,6 +18,8 @@ export default function AdminModeration() {
   const [censorMsg, setCensorMsg] = useState('');
   const [autoBest, setAutoBest] = useState(10);
   const [autoBestMsg, setAutoBestMsg] = useState('');
+  const [reactionWeights, setReactionWeights] = useState<{ emoji: string; weight: number }[]>([]);
+  const [reactionMsg, setReactionMsg] = useState('');
   const [queue, setQueue] = useState<{ threads: any[]; posts: any[] }>({ threads: [], posts: [] });
   const [approvalThr, setApprovalThr] = useState(0);
   const [approvalMsg, setApprovalMsg] = useState('');
@@ -40,8 +42,18 @@ export default function AdminModeration() {
     api.get<{ words: string[] }>('/forum/admin/censor').then((r) => setCensor((r.words || []).join(', '))).catch(() => {});
     api.get<{ threshold: number }>('/forum/admin/auto-best').then((r) => setAutoBest(r.threshold)).catch(() => {});
     api.get<{ threshold: number }>('/forum/admin/approval-config').then((r) => setApprovalThr(r.threshold)).catch(() => {});
+    api.get<{ emoji: string; weight: number }[]>('/forum/admin/reaction-weights').then(setReactionWeights).catch(() => {});
     loadQueue();
   }, []);
+
+  async function saveReactionWeights() {
+    try {
+      const r = await api.post<{ emoji: string; weight: number }[]>('/forum/admin/reaction-weights', { weights: reactionWeights });
+      setReactionWeights(r);
+      setReactionMsg('Đã lưu ✓');
+      setTimeout(() => setReactionMsg(''), 2500);
+    } catch (e: any) { setReactionMsg(e.message); }
+  }
 
   async function saveApprovalThr() {
     try { const r = await api.post<{ threshold: number }>('/forum/admin/approval-config', { threshold: approvalThr }); setApprovalThr(r.threshold); setApprovalMsg('Đã lưu ✓'); setTimeout(() => setApprovalMsg(''), 2500); }
@@ -148,6 +160,26 @@ export default function AdminModeration() {
           <span className="text-sm text-ink-500">lượt thích</span>
           <button onClick={saveAutoBest} className="btn-primary !py-1.5 text-sm">Lưu</button>
           {autoBestMsg && <span className="text-sm text-emerald-600">{autoBestMsg}</span>}
+        </div>
+      </div>
+
+      {/* Điểm uy tín mỗi loại reaction */}
+      <div className="card p-4">
+        <h2 className="font-semibold">Điểm uy tín theo reaction</h2>
+        <p className="mt-0.5 text-xs text-ink-500">Khi bài viết được thả reaction, tác giả nhận số điểm uy tín (Uy tín) tương ứng — không cộng khi tự thả cho bài của mình.</p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          {reactionWeights.map((w, i) => (
+            <label key={w.emoji} className="flex items-center gap-1.5 text-sm">
+              <span className="text-lg">{w.emoji === 'like' ? '👍' : w.emoji}</span>
+              <input
+                type="number" min={0} className="input w-16 !py-1"
+                value={w.weight}
+                onChange={(e) => setReactionWeights((ws) => ws.map((x, xi) => (xi === i ? { ...x, weight: Number(e.target.value) } : x)))}
+              />
+            </label>
+          ))}
+          <button onClick={saveReactionWeights} className="btn-primary !py-1.5 text-sm">Lưu</button>
+          {reactionMsg && <span className="text-sm text-emerald-600">{reactionMsg}</span>}
         </div>
       </div>
 

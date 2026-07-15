@@ -183,6 +183,9 @@ model User {
   showBirthday     Boolean          @default(false) // có hiển thị ngày sinh công khai không
   birthdayFormat   String           @default("full") // full | day_month | month_year | year — phần ngày sinh hiển thị công khai
   location         String?          @db.VarChar(120) // nơi ở
+  website          String?          @db.VarChar(200) // trang web cá nhân
+  occupation       String?          @db.VarChar(100) // nghề nghiệp
+  coverPhoto       String? // ảnh bìa trang cá nhân
   signature        String?          @db.Text // chữ ký hiển thị dưới bài viết
   shopBadgeUrl     String? // ảnh badge cửa hàng đang đeo (denormalized)
   nameEffectCss    String?          @db.Text // CSS hiệu ứng tên đang dùng (denormalized)
@@ -192,7 +195,8 @@ model User {
   status           UserStatus       @default(ACTIVE)
   isVerified       Boolean          @default(false)
   verifiedBadge    Boolean          @default(false)
-  emailNotify      Boolean          @default(true)
+  emailNotify      Boolean          @default(true) // công tắc tổng: tắt thì không email loại nào
+  notifyPrefs      Json?            // tuỳ chỉnh email theo từng loại thông báo, vd {"POST_LIKE":false} — thiếu key = mặc định bật
   ageVerified      Boolean          @default(false)
   threadCount      Int              @default(0)
   postCount        Int              @default(0)
@@ -225,6 +229,7 @@ model User {
   friends         Friendship[]          @relation("UserFriends")
   friendOf        Friendship[]          @relation("FriendOf")
   followedTags    UserTagFollow[]
+  categoryWatches CategoryWatch[]
 
   gameCharacter        GameCharacter?
   prisonRecords        Prison[]              @relation("UserPrison")
@@ -421,6 +426,7 @@ model Category {
   threads     Thread[]
   prefixes    CategoryPrefix[]
   permOverrides CategoryPermission[]
+  watchers    CategoryWatch[]
 
   @@index([slug])
   @@index([parentId])
@@ -467,6 +473,20 @@ model UserTagFollow {
   tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([userId, tagId])
+}
+
+// Theo dõi danh mục (forum) — khác với ThreadSubscription (theo dõi 1 chủ đề):
+// dùng để bôi đậm/nổi bật danh mục quan tâm trong danh sách diễn đàn.
+model CategoryWatch {
+  userId     String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([userId, categoryId])
+  @@index([categoryId])
 }
 
 model Thread {

@@ -1,6 +1,6 @@
 import { Controller, Post, Body, UseGuards, Get, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto, LoginDto, RefreshTokenDto, OAuthLoginDto } from './auth.dto';
+import { RegisterDto, LoginDto, RefreshTokenDto, GoogleLoginDto } from './auth.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/roles.decorator';
 
@@ -18,9 +18,9 @@ export class AuthController {
     return this.authService.login(dto);
   }
 
-  @Post('oauth')
-  oauth(@Body() dto: OAuthLoginDto) {
-    return this.authService.oauthLogin(dto);
+  @Post('oauth/google')
+  oauthGoogle(@Body() dto: GoogleLoginDto) {
+    return this.authService.googleLogin(dto);
   }
 
   @Post('refresh')

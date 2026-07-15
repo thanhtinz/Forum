@@ -19,15 +19,15 @@ export interface SiteConfig {
 
 const DEFAULTS: SiteConfig = {
   name: 'Trạm GenZ',
-  tagline: 'Cộng đồng anime & manga Việt Nam',
-  description: 'Cộng đồng anime, manga, hoạt hình — xem phim, đọc truyện, thảo luận tại Trạm GenZ.',
+  tagline: 'Cộng đồng mạng xã hội Việt Nam',
+  description: 'Diễn đàn thảo luận, kết nối cộng đồng tại Trạm GenZ.',
   contactEmail: '',
   logo: '',
   logoSmall: '',
   favicon: '',
   primaryColor: '',
   heroTitle: 'Chào mừng đến Trạm GenZ',
-  heroDescription: 'Cộng đồng anime & manga — xem hoạt hình, đọc truyện, thảo luận cùng bạn bè.',
+  heroDescription: 'Cộng đồng diễn đàn — kết nối, thảo luận cùng bạn bè.',
   footerText: '© {year} Trạm GenZ',
 };
 

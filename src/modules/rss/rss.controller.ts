@@ -17,35 +17,31 @@ export class RssController {
   async rss(@Res() res: Response) {
     const base = this.base();
 
-    const episodes = await this.prisma.episode.findMany({
-      orderBy: { createdAt: 'desc' },
+    const threads = await this.prisma.thread.findMany({
+      where: { isHidden: false, isApproved: true },
+      orderBy: { lastPostAt: 'desc' },
       take: 50,
-      select: {
-        id: true, number: true, title: true, thumbnail: true, createdAt: true,
-        media: { select: { title: true, coverUrl: true } },
-      },
+      select: { title: true, slug: true, lastPostAt: true, createdAt: true },
     });
 
-    const items = episodes.map((ep) => {
-      const name = `${ep.media.title} - Tập ${ep.number}${ep.title ? ` · ${ep.title}` : ''}`;
-      const url = `${base}/anime/watch?ep=${ep.id}`;
-      const thumb = ep.thumbnail || ep.media.coverUrl || '';
+    const items = threads.map((t) => {
+      const url = `${base}/thread?slug=${t.slug}`;
       return `
     <item>
-      <title><![CDATA[${name}]]></title>
+      <title><![CDATA[${t.title}]]></title>
       <link>${url}</link>
       <guid isPermaLink="true">${url}</guid>
-      <pubDate>${new Date(ep.createdAt).toUTCString()}</pubDate>
-      <description><![CDATA[${name}]]></description>${thumb ? `\n      <enclosure url="${thumb}" type="image/jpeg" length="0"/>` : ''}
+      <pubDate>${new Date(t.createdAt).toUTCString()}</pubDate>
+      <description><![CDATA[${t.title}]]></description>
     </item>`;
     }).join('');
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Trạm GenZ — Tập phim mới nhất</title>
+    <title>Trạm GenZ — Bài viết mới nhất</title>
     <link>${base}</link>
-    <description>Các tập hoạt hình mới nhất trên Trạm GenZ</description>
+    <description>Các bài viết mới nhất trên Trạm GenZ</description>
     <language>vi</language>
     <atom:link href="${base}/rss.xml" rel="self" type="application/rss+xml"/>
 ${items}
@@ -65,8 +61,6 @@ ${items}
 
     const staticPages = [
       { loc: base, priority: '1.0', changefreq: 'daily' },
-      { loc: `${base}/hoat-hinh`, priority: '0.9', changefreq: 'daily' },
-      { loc: `${base}/truyen-tranh`, priority: '0.9', changefreq: 'daily' },
       { loc: `${base}/community`, priority: '0.7', changefreq: 'daily' },
       { loc: `${base}/gallery`, priority: '0.6', changefreq: 'daily' },
       { loc: `${base}/leaderboard`, priority: '0.6', changefreq: 'daily' },
@@ -76,19 +70,12 @@ ${items}
       { loc: `${base}/search`, priority: '0.4', changefreq: 'always' },
     ];
 
-    const [animes, threads] = await Promise.all([
-      this.prisma.mediaWork.findMany({
-        where: { OR: [{ creatorId: null }, { publishStatus: 'PUBLISHED' }] },
-        select: { slug: true, updatedAt: true },
-        orderBy: { updatedAt: 'desc' },
-      }),
-      this.prisma.thread.findMany({
-        where: { isHidden: false, isApproved: true },
-        select: { slug: true, lastPostAt: true },
-        orderBy: { lastPostAt: 'desc' },
-        take: 5000,
-      }),
-    ]);
+    const threads = await this.prisma.thread.findMany({
+      where: { isHidden: false, isApproved: true },
+      select: { slug: true, lastPostAt: true },
+      orderBy: { lastPostAt: 'desc' },
+      take: 5000,
+    });
 
     const url = (loc: string, lastmod: string, changefreq: string, priority: string) =>
       `\n  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n  </url>`;
@@ -96,7 +83,6 @@ ${items}
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${staticPages.map(p => url(p.loc, today, p.changefreq, p.priority)).join('')}
-${animes.map(a => url(`${base}/anime/detail?slug=${a.slug}`, a.updatedAt.toISOString().slice(0, 10), 'weekly', '0.8')).join('')}
 ${threads.map(t => url(`${base}/thread?slug=${t.slug}`, t.lastPostAt.toISOString().slice(0, 10), 'weekly', '0.7')).join('')}
 </urlset>`;
 

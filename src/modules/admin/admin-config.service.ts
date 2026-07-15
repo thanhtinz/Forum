@@ -232,6 +232,19 @@ export class AdminConfigService {
       }
     }
 
+    // Đồng bộ 1 lần: bỏ tính năng anime/manga -> cập nhật lại các mô tả mặc định đã lỡ lưu
+    // giá trị cũ nhắc tới anime/manga (value không tự đổi theo defaultValue để giữ admin tự sửa).
+    const OLD_TEXT_SYNC: Record<string, string> = {
+      'site.tagline': 'Cộng đồng anime & manga Việt Nam',
+      'site.description': 'Cộng đồng anime, manga, hoạt hình — xem phim, đọc truyện, thảo luận tại Trạm GenZ.',
+      'site.heroDescription': 'Cộng đồng anime & manga — xem hoạt hình, đọc truyện, thảo luận cùng bạn bè.',
+    };
+    for (const [key, oldValue] of Object.entries(OLD_TEXT_SYNC)) {
+      const newValue = DEFAULT_CONFIG_GROUPS.flatMap((g) => g.settings).find((s) => s.key === key)?.value;
+      if (newValue == null) continue;
+      await this.prisma.configSetting.updateMany({ where: { key, value: { equals: oldValue } }, data: { value: newValue } });
+    }
+
     // Dọn rác: xoá các cấu hình/nhóm không còn trong định nghĩa (tính năng đã bỏ).
     const removedSettings = await this.prisma.configSetting.deleteMany({
       where: { key: { notIn: validSettingKeys } },
@@ -276,11 +289,11 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
     sortOrder: 1,
     settings: [
       { key: 'site.name', label: 'Tên website', type: 'string', value: 'Trạm GenZ', validation: { required: true } },
-      { key: 'site.tagline', label: 'Slogan', type: 'string', value: 'Cộng đồng anime & manga Việt Nam' },
-      { key: 'site.description', label: 'Mô tả (SEO)', type: 'textarea', value: 'Cộng đồng anime, manga, hoạt hình — xem phim, đọc truyện, thảo luận tại Trạm GenZ.' },
+      { key: 'site.tagline', label: 'Slogan', type: 'string', value: 'Cộng đồng mạng xã hội Việt Nam' },
+      { key: 'site.description', label: 'Mô tả (SEO)', type: 'textarea', value: 'Diễn đàn thảo luận, kết nối cộng đồng tại Trạm GenZ.' },
       { key: 'site.contactEmail', label: 'Email liên hệ', type: 'string', value: '' },
       { key: 'site.heroTitle', label: 'Tiêu đề Hero (trang chủ)', type: 'string', value: 'Chào mừng đến Trạm GenZ' },
-      { key: 'site.heroDescription', label: 'Mô tả Hero (trang chủ)', type: 'textarea', value: 'Cộng đồng anime & manga — xem hoạt hình, đọc truyện, thảo luận cùng bạn bè.' },
+      { key: 'site.heroDescription', label: 'Mô tả Hero (trang chủ)', type: 'textarea', value: 'Cộng đồng diễn đàn — kết nối, thảo luận cùng bạn bè.' },
       { key: 'site.footerText', label: 'Nội dung Footer', type: 'textarea', value: '© {year} Trạm GenZ' },
       { key: 'site.logo', label: 'Logo lớn (dài, hiện cạnh tên)', type: 'image', value: '' },
       { key: 'site.logoSmall', label: 'Logo nhỏ (thay icon hình thoi)', type: 'image', value: '' },

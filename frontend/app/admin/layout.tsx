@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Sparkles, ShieldAlert, Users, Sprout, CreditCard, FileText, Ticket,
   Award, BadgeCheck, CalendarCheck, Paperclip, Mail, ShieldCheck, KeyRound,
   BellRing, FolderTree, Sticker, ArrowLeft, LogOut, Menu, X, ChevronDown, ChevronRight,
-  Gift, Square, Megaphone, MessageCircle, Tv, SlidersHorizontal, BookOpen, Tag, MessageSquare,
+  Gift, Square, Megaphone, MessageCircle, SlidersHorizontal, MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '@/components/AuthProvider';
 import { useSiteConfig } from '@/lib/siteConfig';
@@ -29,10 +29,6 @@ const NAV_GROUPS: NavGroup[] = [
       { href: '/admin/pages', label: 'Trang & Menu', icon: FileText },
       { href: '/admin/moderation', label: 'Kiểm duyệt', icon: ShieldAlert },
       { href: '/admin/scam', label: 'Tố cáo scam', icon: ShieldAlert },
-      { href: '/admin/anime', label: 'Hoạt hình (Donghua)', icon: Tv },
-      { href: '/admin/comic', label: 'Truyện tranh', icon: BookOpen },
-      { href: '/admin/genres', label: 'Thể loại', icon: Tag },
-      { href: '/admin/manga-creator', label: 'Duyệt truyện UGC', icon: BookOpen },
     ],
   },
   {

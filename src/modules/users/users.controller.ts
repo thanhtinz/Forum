@@ -29,7 +29,11 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   updateProfile(
     @CurrentUser('id') userId: string,
-    @Body() data: { displayName?: string; bio?: string; avatar?: string; location?: string; birthday?: string | null; showBirthday?: boolean; birthdayFormat?: string },
+    @Body() data: {
+      displayName?: string; bio?: string; avatar?: string; location?: string; birthday?: string | null;
+      showBirthday?: boolean; birthdayFormat?: string; signature?: string;
+      website?: string; occupation?: string; coverPhoto?: string;
+    },
   ) {
     return this.usersService.updateProfile(userId, data);
   }

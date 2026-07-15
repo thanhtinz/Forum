@@ -7,14 +7,16 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { OAuth2Client } from 'google-auth-library';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RegisterDto, LoginDto, OAuthLoginDto } from './auth.dto';
+import { RegisterDto, LoginDto, GoogleLoginDto } from './auth.dto';
 import * as argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { generateSecret, verifyTotp, otpauthUrl } from './totp';
 import { MailService } from '../mail/mail.service';
 import { CaptchaService } from '../security/captcha.service';
 import { PermissionService } from '../permissions/permission.service';
+import { AdminConfigService } from '../admin/admin-config.service';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +27,7 @@ export class AuthService {
     private readonly mail: MailService,
     private readonly captcha: CaptchaService,
     private readonly permissions: PermissionService,
+    private readonly adminConfig: AdminConfigService,
   ) {}
 
   // URL gốc của site (để dựng link trong email)
@@ -198,12 +201,36 @@ export class AuthService {
   }
 
   // ──────────────────────────────────────────────
-  // OAUTH (Google / Discord / Zalo)
+  // OAUTH — Google
   // ──────────────────────────────────────────────
-  async oauthLogin(dto: OAuthLoginDto) {
-    // Tìm theo oauth provider
+  // Backend luôn tự xác thực ID token với Google (chữ ký + audience), KHÔNG tin
+  // bất kỳ trường nào client tự khai (email/providerId/tên) — tránh giả mạo tài khoản.
+  async googleLogin(dto: GoogleLoginDto) {
+    const [enabled, clientId] = await Promise.all([
+      this.adminConfig.get<boolean>('auth.googleEnabled'),
+      this.adminConfig.get<string>('auth.googleClientId'),
+    ]);
+    if (!enabled || !clientId) throw new BadRequestException('Đăng nhập Google chưa được bật');
+
+    const client = new OAuth2Client(clientId);
+    let payload;
+    try {
+      const ticket = await client.verifyIdToken({ idToken: dto.idToken, audience: clientId });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Token Google không hợp lệ');
+    }
+    if (!payload?.sub || !payload.email) throw new UnauthorizedException('Token Google không hợp lệ');
+    if (!payload.email_verified) throw new UnauthorizedException('Email Google chưa xác thực');
+
+    const provider = 'google';
+    const providerId = payload.sub;
+    const email = payload.email;
+    const displayName = payload.name ?? email.split('@')[0];
+    const avatar = payload.picture;
+
     let oauth = await this.prisma.oAuthProvider.findUnique({
-      where: { provider_providerId: { provider: dto.provider, providerId: dto.providerId } },
+      where: { provider_providerId: { provider, providerId } },
       include: { user: true },
     });
 
@@ -211,30 +238,17 @@ export class AuthService {
     if (oauth) {
       user = oauth.user;
     } else {
-      // Kiểm tra email đã tồn tại → link
-      let existingUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
-
+      const existingUser = await this.prisma.user.findUnique({ where: { email } });
       if (existingUser) {
-        await this.prisma.oAuthProvider.create({
-          data: { userId: existingUser.id, provider: dto.provider, providerId: dto.providerId },
-        });
+        await this.prisma.oAuthProvider.create({ data: { userId: existingUser.id, provider, providerId } });
         user = existingUser;
       } else {
-        // Tạo user mới
-        const username = await this.generateUniqueUsername(dto.username);
+        const username = await this.generateUniqueUsername(displayName.replace(/[^a-zA-Z0-9_]/g, '') || 'user');
         user = await this.prisma.$transaction(async (tx) => {
           const u = await tx.user.create({
-            data: {
-              username,
-              email: dto.email,
-              displayName: dto.displayName ?? username,
-              avatar: dto.avatar,
-              isVerified: true,
-            },
+            data: { username, email, displayName, avatar, isVerified: true },
           });
-          await tx.oAuthProvider.create({
-            data: { userId: u.id, provider: dto.provider, providerId: dto.providerId },
-          });
+          await tx.oAuthProvider.create({ data: { userId: u.id, provider, providerId } });
           await tx.gemWallet.create({ data: { userId: u.id } });
           return u;
         });

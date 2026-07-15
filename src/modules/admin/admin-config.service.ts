@@ -411,7 +411,7 @@ export const DEFAULT_CONFIG_GROUPS: SeedGroup[] = [
       { key: 'auth.minUsernameLength', label: 'Độ dài username tối thiểu', type: 'number', value: 3, validation: { min: 2, max: 20 } },
 
       { key: 'auth.googleEnabled', label: 'Bật đăng nhập Google', type: 'boolean', value: false },
-      { key: 'auth.googleClientId', label: 'Google Client ID', description: 'Lấy ở Google Cloud Console → OAuth 2.0', type: 'string', value: '', isSecret: true },
+      { key: 'auth.googleClientId', label: 'Google Client ID', description: 'Lấy ở Google Cloud Console → OAuth 2.0. Không bí mật — sẽ hiện trong mã JS frontend.', type: 'string', value: '' },
       { key: 'auth.googleClientSecret', label: 'Google Client Secret', type: 'string', value: '', isSecret: true },
 
       { key: 'auth.discordEnabled', label: 'Bật đăng nhập Discord', type: 'boolean', value: false },

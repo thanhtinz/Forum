@@ -46,24 +46,10 @@ export class RefreshTokenDto {
   refreshToken: string;
 }
 
-export class OAuthLoginDto {
+// Đăng nhập Google: chỉ nhận ID token (JWT) do Google Identity Services ký —
+// backend TỰ xác thực chữ ký/audience với Google, không tin bất kỳ trường nào
+// client tự khai (email/providerId...) để tránh giả mạo tài khoản.
+export class GoogleLoginDto {
   @IsString()
-  provider: string; // google | discord | zalo
-
-  @IsString()
-  providerId: string;
-
-  @IsEmail()
-  email: string;
-
-  @IsString()
-  username: string;
-
-  @IsOptional()
-  @IsString()
-  avatar?: string;
-
-  @IsOptional()
-  @IsString()
-  displayName?: string;
+  idToken: string;
 }

@@ -1,11 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Cake, MapPin, UserCircle, Tag, PenLine } from 'lucide-react';
+import { Cake, MapPin, UserCircle, Tag, PenLine, Globe, Briefcase, Image as ImageIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import ImageUpload from '@/components/ImageUpload';
 
-interface About { displayName?: string | null; bio?: string | null; location?: string | null; birthday?: string | null; showBirthday?: boolean; birthdayFormat?: string; signature?: string | null }
+interface About {
+  displayName?: string | null; bio?: string | null; location?: string | null; birthday?: string | null;
+  showBirthday?: boolean; birthdayFormat?: string; signature?: string | null;
+  website?: string | null; occupation?: string | null; coverPhoto?: string | null;
+}
 
 const FORMATS = [
   { value: 'full', label: 'Đầy đủ (ngày/tháng/năm)' },
@@ -25,6 +30,9 @@ export default function AboutSettings() {
   const [showBirthday, setShowBirthday] = useState(false);
   const [birthdayFormat, setBirthdayFormat] = useState('full');
   const [signature, setSignature] = useState('');
+  const [website, setWebsite] = useState('');
+  const [occupation, setOccupation] = useState('');
+  const [coverPhoto, setCoverPhoto] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
@@ -36,6 +44,9 @@ export default function AboutSettings() {
       setShowBirthday(!!a.showBirthday);
       setBirthdayFormat(a.birthdayFormat || 'full');
       setSignature(a.signature || '');
+      setWebsite(a.website || '');
+      setOccupation(a.occupation || '');
+      setCoverPhoto(a.coverPhoto || '');
       if (a.birthday) {
         const d = new Date(a.birthday);
         setDay(String(d.getUTCDate()));
@@ -64,6 +75,9 @@ export default function AboutSettings() {
         showBirthday,
         birthdayFormat,
         signature,
+        website,
+        occupation,
+        coverPhoto,
       });
       setMsg('Đã lưu thông tin ✓');
       refresh?.();
@@ -78,6 +92,13 @@ export default function AboutSettings() {
       <h1 className="text-xl font-bold">Thông tin & Giới thiệu</h1>
 
       <div className="card space-y-4 p-5">
+        <div>
+          <label className="mb-1 flex items-center gap-1.5 text-sm font-medium"><ImageIcon size={15} /> Ảnh bìa trang cá nhân</label>
+          {coverPhoto && <img src={coverPhoto} alt="" className="mb-2 h-32 w-full rounded-lg object-cover" />}
+          <ImageUpload value={coverPhoto} onUploaded={(url) => setCoverPhoto(url)} label="Tải ảnh bìa" />
+          {coverPhoto && <button type="button" onClick={() => setCoverPhoto('')} className="mt-1 text-xs text-rose-500 hover:underline">Xoá ảnh bìa</button>}
+        </div>
+
         <div>
           <label className="mb-1 flex items-center gap-1.5 text-sm font-medium"><Tag size={15} /> Tên hiển thị</label>
           <input
@@ -111,6 +132,17 @@ export default function AboutSettings() {
             placeholder="vd: Hà Nội, Việt Nam"
             maxLength={120}
           />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="mb-1 flex items-center gap-1.5 text-sm font-medium"><Globe size={15} /> Trang web</label>
+            <input className="input w-full" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" maxLength={200} />
+          </div>
+          <div>
+            <label className="mb-1 flex items-center gap-1.5 text-sm font-medium"><Briefcase size={15} /> Nghề nghiệp</label>
+            <input className="input w-full" value={occupation} onChange={(e) => setOccupation(e.target.value)} placeholder="vd: Lập trình viên" maxLength={100} />
+          </div>
         </div>
 
         <div>

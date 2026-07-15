@@ -9,6 +9,7 @@ interface AuthCtx {
   loading: boolean;
   login: (email: string, password: string, code?: string) => Promise<void>;
   register: (data: { username: string; email: string; password: string; inviteCode?: string; captchaToken?: string }) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -54,6 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (res.accessToken) { setToken(res.accessToken); setUser(res.user); }
   }
 
+  async function loginWithGoogle(idToken: string) {
+    const res = await api.post<{ accessToken: string; user: User }>('/auth/oauth/google', { idToken });
+    setToken(res.accessToken);
+    setUser(res.user ?? (await api.get<User>('/auth/me')));
+  }
+
   function logout() {
     setToken(null);
     setUser(null);
@@ -63,5 +70,5 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { setUser(await api.get<User>('/auth/me')); } catch { /* giữ nguyên */ }
   }
 
-  return <Ctx.Provider value={{ user, loading, login, register, logout, refresh }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ user, loading, login, register, loginWithGoogle, logout, refresh }}>{children}</Ctx.Provider>;
 }

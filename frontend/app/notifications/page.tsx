@@ -9,14 +9,28 @@ export default function NotificationsPage() {
   const { user, loading } = useAuth();
   const [data, setData] = useState<any>(null);
   const [emailNotify, setEmailNotify] = useState(true);
+  const [typeLabels, setTypeLabels] = useState<Record<string, string>>({});
+  const [typePrefs, setTypePrefs] = useState<Record<string, boolean>>({});
+  const [showTypePrefs, setShowTypePrefs] = useState(false);
   function load() { api.get('/notifications').then(setData).catch(() => {}); }
   useEffect(() => {
-    if (!loading && user) { load(); api.get<{ emailNotify: boolean }>('/notifications/email-pref').then((r) => setEmailNotify(r.emailNotify)).catch(() => {}); }
+    if (!loading && user) {
+      load();
+      api.get<{ emailNotify: boolean }>('/notifications/email-pref').then((r) => setEmailNotify(r.emailNotify)).catch(() => {});
+      api.get<{ types: Record<string, string>; prefs: Record<string, boolean> }>('/notifications/type-prefs')
+        .then((r) => { setTypeLabels(r.types); setTypePrefs(r.prefs); }).catch(() => {});
+    }
   }, [user, loading]);
 
   async function toggleEmail() {
     const v = !emailNotify; setEmailNotify(v);
     await api.post('/notifications/email-pref', { value: v }).catch(() => {});
+  }
+
+  async function toggleType(type: string) {
+    const next = { ...typePrefs, [type]: !typePrefs[type] };
+    setTypePrefs(next);
+    await api.post('/notifications/type-prefs', { prefs: next }).catch(() => {});
   }
 
   if (!loading && !user) return <div className="card p-8 text-center text-ink-500">Đăng nhập để xem thông báo.</div>;
@@ -28,9 +42,27 @@ export default function NotificationsPage() {
         <button onClick={() => api.post('/notifications/read-all').then(load)} className="btn-outline text-xs">Đánh dấu đã đọc</button>
       </div>
 
-      <div className="card flex flex-wrap items-center justify-between gap-3 p-3">
-        <PushToggle />
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={emailNotify} onChange={toggleEmail} /> Nhận thông báo qua email</label>
+      <div className="card space-y-2 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <PushToggle />
+          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={emailNotify} onChange={toggleEmail} /> Nhận thông báo qua email</label>
+        </div>
+        {emailNotify && (
+          <div className="border-t border-ink-100 pt-2 dark:border-ink-800">
+            <button onClick={() => setShowTypePrefs((s) => !s)} className="text-xs font-medium text-brand-600 hover:underline">
+              {showTypePrefs ? 'Ẩn' : 'Tuỳ chỉnh'} loại thông báo nhận qua email
+            </button>
+            {showTypePrefs && (
+              <div className="mt-2 space-y-1.5">
+                {Object.entries(typeLabels).map(([type, label]) => (
+                  <label key={type} className="flex items-center gap-2 text-sm text-ink-600 dark:text-ink-300">
+                    <input type="checkbox" checked={typePrefs[type] !== false} onChange={() => toggleType(type)} /> {label}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <div className="card divide-y divide-ink-100 dark:divide-ink-800">
         {data?.data?.map((n: any) => (

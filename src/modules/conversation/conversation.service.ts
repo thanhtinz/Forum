@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { marked } from 'marked';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class ConversationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly events: EventEmitter2,
   ) {}
 
   // Tạo cuộc hội thoại mới với 1 hoặc nhiều người
@@ -109,21 +111,30 @@ export class ConversationService {
     ]);
 
     // Đánh dấu đã đọc
+    const readAt = new Date();
     await this.prisma.conversationParticipant.updateMany({
       where: { conversationId: convId, userId },
-      data: { lastReadAt: new Date() },
+      data: { lastReadAt: readAt },
     });
 
-    // Lấy thông tin participants
+    // Báo cho các thành viên khác biết "đã xem" (đẩy realtime qua socket)
+    const otherIds = await this.prisma.conversationParticipant.findMany({
+      where: { conversationId: convId, userId: { not: userId }, isDeleted: false },
+      select: { userId: true },
+    });
+    otherIds.forEach((o) => this.events.emit('conversation.read', { userId: o.userId, conversationId: convId, readerId: userId, readAt }));
+
+    // Lấy thông tin participants — kèm lastReadAt để suy ra "đã xem đến đâu" cho từng tin nhắn
+    // (so sánh message.createdAt <= participant.lastReadAt) thay vì cần bảng read-receipt riêng.
     const participants = await this.prisma.conversationParticipant.findMany({
       where: { conversationId: convId, isDeleted: false },
-      include: { user: { select: { id: true, username: true, displayName: true, avatar: true } } },
+      select: { lastReadAt: true, user: { select: { id: true, username: true, displayName: true, avatar: true } } },
     });
 
     return {
       data: messages,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
-      participants: participants.map((p) => p.user),
+      participants: participants.map((p) => ({ ...p.user, lastReadAt: p.lastReadAt })),
     };
   }
 
@@ -159,6 +170,13 @@ export class ConversationService {
         actorId: senderId,
       }).catch(() => {}),
     ));
+
+    // Đẩy tin nhắn realtime tới tất cả thành viên (kể cả người gửi, để đồng bộ đa thiết bị/tab)
+    const allParticipants = await this.prisma.conversationParticipant.findMany({
+      where: { conversationId: convId, isDeleted: false },
+      select: { userId: true },
+    });
+    allParticipants.forEach((p) => this.events.emit('conversation.message', { userId: p.userId, conversationId: convId, message: msg }));
 
     return msg;
   }

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck, CalendarDays, ChevronLeft, ChevronRight, Mail } from 'lucide-react';
+import { UserPlus, UserMinus, Ban, MapPin, Cake, Medal, Trophy, BadgeCheck, CalendarDays, ChevronLeft, ChevronRight, Mail, Globe, Briefcase } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cssToStyle } from '@/lib/nameEffect';
 import { interceptExternalLink } from '@/lib/externalLink';
@@ -67,7 +67,13 @@ function ProfileView() {
   const isSelf = user?.id === profile.id;
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-[320px_1fr]">
+    <div className="space-y-5">
+      {profile.coverPhoto && (
+        <div className="card overflow-hidden p-0">
+          <img src={profile.coverPhoto} alt="" className="h-40 w-full object-cover sm:h-56" />
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[320px_1fr]">
       <div className="card p-6 text-center">
         <div className="mx-auto w-fit"><Avatar user={profile} size={96} /></div>
         <h1 className="mt-3 flex items-center justify-center gap-1.5 text-xl font-bold">
@@ -100,7 +106,7 @@ function ProfileView() {
               <Ban size={15} /> {blocked ? 'Bỏ chặn' : 'Chặn'}
             </button>
             <a
-              href="/chat"
+              href={`/conversations?to=${profile.username}`}
               className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-violet-100 px-3 py-1.5 text-sm font-medium text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-300"
             >
               <Mail size={15} /> Nhắn tin riêng
@@ -160,6 +166,17 @@ function ProfileView() {
                 {profile.location && (
                   <div className="flex items-center gap-2"><MapPin size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">{profile.location}</span></div>
                 )}
+                {profile.occupation && (
+                  <div className="flex items-center gap-2"><Briefcase size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">{profile.occupation}</span></div>
+                )}
+                {profile.website && (
+                  <div className="flex items-center gap-2">
+                    <Globe size={14} className="text-ink-400" />
+                    <a href={/^https?:\/\//.test(profile.website) ? profile.website : `https://${profile.website}`} target="_blank" rel="noopener noreferrer nofollow" className="text-brand-600 hover:underline">
+                      {profile.website}
+                    </a>
+                  </div>
+                )}
                 {profile.birthdayDisplay && (
                   <div className="flex items-center gap-2"><Cake size={14} className="text-ink-400" /> <span className="text-ink-600 dark:text-ink-300">Sinh nhật {profile.birthdayDisplay}</span></div>
                 )}
@@ -192,6 +209,7 @@ function ProfileView() {
 
         {tab === 'posts' && <Wall wallId={profile.id} />}
       </div>
+      </div>
     </div>
   );
 }
@@ -202,11 +220,21 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
   const [editorKey, setEditorKey] = useState(0);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const LIMIT = 20;
 
   function load() {
-    api.get<{ data: any[] }>(`/social/wall/${wallId}`).then((r) => setPosts(r.data || [])).catch(() => {});
+    api.get<{ data: any[]; meta: { total: number } }>(`/social/wall/${wallId}?page=1&limit=${LIMIT}`)
+      .then((r) => { setPosts(r.data || []); setTotal(r.meta?.total ?? 0); setPage(1); }).catch(() => {});
   }
   useEffect(() => { if (wallId) load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [wallId]);
+
+  function loadMore() {
+    const next = page + 1;
+    api.get<{ data: any[]; meta: { total: number } }>(`/social/wall/${wallId}?page=${next}&limit=${LIMIT}`)
+      .then((r) => { setPosts((p) => [...p, ...(r.data || [])]); setTotal(r.meta?.total ?? total); setPage(next); }).catch(() => {});
+  }
 
   const isEmpty = !content.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim();
 
@@ -274,6 +302,9 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
             ))}
           </ul>
         )}
+        {posts.length < total && (
+          <button onClick={loadMore} className="btn-outline mt-3 w-full !py-1.5 text-sm">Xem thêm</button>
+        )}
       </div>
     </div>
   );
@@ -281,10 +312,21 @@ function ActivityWall({ wallId, canPost }: { wallId: string; canPost: boolean })
 
 function ActivityFeed({ userId }: { userId: string }) {
   const [posts, setPosts] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const LIMIT = 30;
+
   useEffect(() => {
     if (!userId) return;
-    api.get<any[]>(`/forum/users/${userId}/posts?limit=30`).then((r) => setPosts(r || [])).catch(() => {});
+    api.get<{ data: any[]; meta: { total: number } }>(`/forum/users/${userId}/posts?limit=${LIMIT}&page=1`)
+      .then((r) => { setPosts(r.data || []); setTotal(r.meta?.total ?? 0); setPage(1); }).catch(() => {});
   }, [userId]);
+
+  function loadMore() {
+    const next = page + 1;
+    api.get<{ data: any[]; meta: { total: number } }>(`/forum/users/${userId}/posts?limit=${LIMIT}&page=${next}`)
+      .then((r) => { setPosts((p) => [...p, ...(r.data || [])]); setTotal(r.meta?.total ?? total); setPage(next); }).catch(() => {});
+  }
 
   const snippet = (html: string) => (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 160);
 
@@ -306,17 +348,30 @@ function ActivityFeed({ userId }: { userId: string }) {
           ))}
         </ul>
       )}
+      {posts.length < total && (
+        <button onClick={loadMore} className="btn-outline mt-3 w-full !py-1.5 text-sm">Xem thêm</button>
+      )}
     </div>
   );
 }
 
 function Wall({ wallId }: { wallId: string }) {
   const [threads, setThreads] = useState<any[]>([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const LIMIT = 20;
+
   useEffect(() => {
     if (!wallId) return;
-    api.get<{ data: any[] }>(`/forum/threads?authorId=${wallId}&limit=20&sortBy=createdAt`)
-      .then((r) => setThreads(r.data || [])).catch(() => {});
+    api.get<{ data: any[]; meta?: { total: number } }>(`/forum/threads?authorId=${wallId}&limit=${LIMIT}&page=1&sortBy=createdAt`)
+      .then((r) => { setThreads(r.data || []); setTotal(r.meta?.total ?? (r.data || []).length); setPage(1); }).catch(() => {});
   }, [wallId]);
+
+  function loadMore() {
+    const next = page + 1;
+    api.get<{ data: any[]; meta?: { total: number } }>(`/forum/threads?authorId=${wallId}&limit=${LIMIT}&page=${next}&sortBy=createdAt`)
+      .then((r) => { setThreads((t) => [...t, ...(r.data || [])]); setTotal(r.meta?.total ?? total); setPage(next); }).catch(() => {});
+  }
 
   return (
     <div className="card p-5">
@@ -337,6 +392,9 @@ function Wall({ wallId }: { wallId: string }) {
             </li>
           ))}
         </ul>
+      )}
+      {threads.length < total && (
+        <button onClick={loadMore} className="btn-outline mt-3 w-full !py-1.5 text-sm">Xem thêm</button>
       )}
     </div>
   );

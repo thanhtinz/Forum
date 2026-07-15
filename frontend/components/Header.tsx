@@ -61,6 +61,9 @@ export function Header() {
     const base = process.env.NEXT_PUBLIC_API_URL || '';
     const s = io(`${base}/notif`, { auth: { token: getToken() }, transports: ['websocket', 'polling'] });
     s.on('notification', () => setUnread((n) => n + 1));
+    s.on('conversation.message', (d: { message?: { senderId?: string } }) => {
+      if (d?.message?.senderId !== user.id) setDmUnread((n) => n + 1);
+    });
     return () => { s.disconnect(); };
   }, [user]);
 
@@ -144,7 +147,7 @@ export function Header() {
             {dark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
           {user && (
-            <Link href="/chat" className="relative rounded p-2 text-white/75 hover:bg-white/10 hover:text-white" aria-label="tin nhắn">
+            <Link href="/conversations" onClick={() => setDmUnread(0)} className="relative rounded p-2 text-white/75 hover:bg-white/10 hover:text-white" aria-label="tin nhắn">
               <Mail size={18} />
               {dmUnread > 0 && (
                 <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-violet-500 px-1 text-[10px] font-bold text-white">

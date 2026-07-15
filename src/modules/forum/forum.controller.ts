@@ -46,8 +46,16 @@ export class ForumController {
   ) {}
 
   @Get('categories')
-  categories() {
-    return this.forum.listCategories();
+  @UseGuards(OptionalJwtGuard)
+  categories(@CurrentUser('id') userId?: string) {
+    return this.forum.listCategories(userId);
+  }
+
+  // Bật/tắt theo dõi (nổi bật) 1 danh mục diễn đàn
+  @Post('categories/:id/watch')
+  @UseGuards(JwtAuthGuard)
+  watchCategory(@Param('id') id: string, @CurrentUser('id') userId: string) {
+    return this.forum.toggleWatchCategory(userId, id);
   }
 
   // Tiền tố của 1 danh mục (công khai — để form đăng bài hiển thị)
@@ -162,8 +170,8 @@ export class ForumController {
 
   // Bài viết (post/reply) gần đây của 1 user — cho tab "Hoạt động mới nhất"
   @Get('users/:userId/posts')
-  listUserPosts(@Param('userId') userId: string, @Query('limit') limit = 20) {
-    return this.forum.listUserPosts(userId, Number(limit));
+  listUserPosts(@Param('userId') userId: string, @Query('limit') limit = 20, @Query('page') page = 1) {
+    return this.forum.listUserPosts(userId, Number(limit), Number(page));
   }
 
   // ── Threads ──
@@ -454,6 +462,21 @@ export class ForumController {
   @Roles(UserRole.MODERATOR)
   setAutoBest(@Body('threshold') threshold: number) {
     return this.forum.setAutoBestConfig(Number(threshold));
+  }
+
+  // ── Admin: điểm uy tín (reputationScore) mỗi loại reaction ──
+  @Get('admin/reaction-weights')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getReactionWeights() {
+    return this.forum.getReactionWeights();
+  }
+
+  @Post('admin/reaction-weights')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  setReactionWeights(@Body('weights') weights: { emoji: string; weight: number }[]) {
+    return this.forum.setReactionWeights(weights);
   }
 
   // ── Admin: quản lý từ cấm (FoF Filter) ──

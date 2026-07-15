@@ -28,4 +28,15 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   push(data: { userId: string; notification: any }) {
     this.server.to(`user:${data.userId}`).emit('notification', data.notification);
   }
+
+  // Tin nhắn hội thoại (DM) realtime — dùng chung socket /notif, tránh mở thêm kết nối.
+  @OnEvent('conversation.message')
+  pushConversationMessage(data: { userId: string; conversationId: string; message: any }) {
+    this.server.to(`user:${data.userId}`).emit('conversation.message', { conversationId: data.conversationId, message: data.message });
+  }
+
+  @OnEvent('conversation.read')
+  pushConversationRead(data: { userId: string; conversationId: string; readerId: string; readAt: Date }) {
+    this.server.to(`user:${data.userId}`).emit('conversation.read', { conversationId: data.conversationId, readerId: data.readerId, readAt: data.readAt });
+  }
 }

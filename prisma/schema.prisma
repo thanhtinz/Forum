@@ -298,7 +298,8 @@ model UserGroup {
   minDays       Int      @default(0) // tuổi tài khoản (ngày)
   createdAt     DateTime @default(now())
 
-  members UserGroupMember[]
+  members            UserGroupMember[]
+  categoryOverrides   CategoryPermission[]
 }
 
 model UserGroupMember {
@@ -415,14 +416,33 @@ model Category {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  parent   Category?        @relation("SubCategories", fields: [parentId], references: [id])
-  children Category[]       @relation("SubCategories")
-  threads  Thread[]
-  prefixes CategoryPrefix[]
+  parent      Category?            @relation("SubCategories", fields: [parentId], references: [id])
+  children    Category[]           @relation("SubCategories")
+  threads     Thread[]
+  prefixes    CategoryPrefix[]
+  permOverrides CategoryPermission[]
 
   @@index([slug])
   @@index([parentId])
   @@index([sortOrder])
+}
+
+// Ghi đè quyền theo từng danh mục/box riêng (kiểu XenForo node permission) —
+// không có bản ghi = kế thừa quyền chung của nhóm; có bản ghi = ALLOW/DENY ghi đè.
+model CategoryPermission {
+  id         String   @id @default(cuid())
+  categoryId String
+  groupId    String
+  permission String   @db.VarChar(60)
+  value      String   @db.VarChar(10) // 'ALLOW' | 'DENY'
+  createdAt  DateTime @default(now())
+
+  category Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  group    UserGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, groupId, permission])
+  @@index([categoryId])
+  @@index([groupId])
 }
 
 model Tag {

@@ -4,6 +4,7 @@ import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminShopService } from './admin-shop.service';
 import { AdminGameAssetService } from './admin-game-asset.service';
 import { AdminTemplateService } from './admin-template.service';
+import { AdminBackupService } from './admin-backup.service';
 import { AdminController } from './admin.controller';
 import { PublicConfigController } from './public-config.controller';
 import { MediaModule } from '../media/media.module';
@@ -12,7 +13,7 @@ import { MediaModule } from '../media/media.module';
 @Module({
   imports: [MediaModule],
   controllers: [AdminController, PublicConfigController],
-  providers: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService, AdminTemplateService],
-  exports: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService, AdminTemplateService],
+  providers: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService, AdminTemplateService, AdminBackupService],
+  exports: [AdminConfigService, AdminDashboardService, AdminShopService, AdminGameAssetService, AdminTemplateService, AdminBackupService],
 })
 export class AdminModule {}

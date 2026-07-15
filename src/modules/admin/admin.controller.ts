@@ -6,6 +6,7 @@ import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminShopService } from './admin-shop.service';
 import { AdminGameAssetService } from './admin-game-asset.service';
 import { AdminTemplateService, TemplateType } from './admin-template.service';
+import { AdminBackupService } from './admin-backup.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard, Roles, CurrentUser } from '../../common/decorators/roles.decorator';
 import { UserRole, UserStatus, ReportStatus, MinigameType } from '@prisma/client';
@@ -20,7 +21,19 @@ export class AdminController {
     private readonly shop: AdminShopService,
     private readonly gameAsset: AdminGameAssetService,
     private readonly templates: AdminTemplateService,
+    private readonly backup: AdminBackupService,
   ) {}
+
+  // ── Sao lưu / phục hồi cấu hình site ──
+  @Get('backup/export')
+  exportBackup() {
+    return this.backup.exportBackup();
+  }
+
+  @Post('backup/import')
+  importBackup(@Body() data: any, @CurrentUser('id') actorId: string) {
+    return this.backup.importBackup(data, actorId);
+  }
 
   // ── Game templates (cây/cá/phân/vật nuôi/wardrobe) ──
   @Get('templates/:type')

@@ -242,6 +242,12 @@ export class ForumController {
     return this.forum.reactToPost(postId, userId, emoji);
   }
 
+  // Ai đã thả reaction trên bài viết (công khai)
+  @Get('posts/:id/reactions')
+  postReactions(@Param('id') postId: string) {
+    return this.forum.listPostReactions(postId);
+  }
+
   @Post('posts/:id/vote')
   @UseGuards(JwtAuthGuard)
   votePost(

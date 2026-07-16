@@ -207,7 +207,15 @@ function ThreadView() {
   const scrolledToLastRead = useRef(false);
   const [threadMenu, setThreadMenu] = useState(false);
   const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
+  const [reactorsModal, setReactorsModal] = useState<{ postId: string; data: any } | null>(null);
   const threadMenuRef = useRef<HTMLDivElement>(null);
+
+  async function openReactors(postId: string) {
+    try {
+      const data = await api.get<any>(`/forum/posts/${postId}/reactions`);
+      setReactorsModal({ postId, data });
+    } catch {}
+  }
 
   const [viewing, setViewing] = useState<{ total: number; users: { id: string; username: string; displayName?: string | null; avatar?: string | null }[] }>({ total: 0, users: [] });
 
@@ -871,6 +879,10 @@ function ThreadView() {
                   );
                 });
               })()}
+              {(p.reactions?.length ?? 0) > 0 && (
+                <button onClick={() => openReactors(p.id)} title="Xem ai đã bày tỏ cảm xúc"
+                  className="text-xs text-ink-400 hover:text-brand-600 hover:underline">ai?</button>
+              )}
               {/* Emoji picker */}
               {user && (
                 <div className="emoji-picker-wrap relative">
@@ -1246,6 +1258,40 @@ function ThreadView() {
               <button onClick={() => setReportModal(null)} className="rounded-lg bg-ink-100 px-4 py-1.5 text-sm dark:bg-ink-800">Hủy</button>
               <button onClick={submitReport} disabled={reportBusy || reportReason.trim().length < 5} className="rounded-lg bg-red-500 px-4 py-1.5 text-sm text-white disabled:opacity-50">{reportBusy ? 'Đang gửi…' : 'Gửi báo cáo'}</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Ai đã bày tỏ cảm xúc ── */}
+      {reactorsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setReactorsModal(null)}>
+          <div className="card w-full max-w-sm max-h-[80vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 font-semibold"><SmilePlus size={16} /> Cảm xúc ({reactorsModal.data?.total ?? 0})</h3>
+              <button onClick={() => setReactorsModal(null)} className="text-ink-400 hover:text-ink-600"><XIcon size={18} /></button>
+            </div>
+            {(reactorsModal.data?.groups ?? []).length === 0 ? (
+              <p className="text-center text-sm text-ink-500">Chưa có cảm xúc nào.</p>
+            ) : (
+              <div className="space-y-4">
+                {reactorsModal.data.groups.map((g: any) => (
+                  <div key={g.emoji}>
+                    <div className="mb-1.5 flex items-center gap-1.5 text-sm font-medium text-ink-500">
+                      <span className="text-base">{g.emoji === 'like' ? '👍' : g.emoji}</span> {g.count}
+                    </div>
+                    <div className="space-y-1">
+                      {g.users.map((u: any) => (
+                        <a key={u.id} href={`/profile?u=${u.username}`} className="flex items-center gap-2 rounded-lg p-1.5 text-sm hover:bg-ink-100 dark:hover:bg-ink-800">
+                          <Avatar user={u} size={26} />
+                          <span className="font-medium">{u.displayName || u.username}</span>
+                          <span className="text-xs text-ink-400">@{u.username}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

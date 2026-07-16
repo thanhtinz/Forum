@@ -755,6 +755,26 @@ export class ForumService {
   // REACTIONS (like/emoji)
   // ──────────────────────────────────────────────
 
+  // Danh sách người đã thả reaction trên 1 bài viết, gom theo loại cảm xúc (kiểu XenForo).
+  async listPostReactions(postId: string) {
+    const rows = await this.prisma.postReaction.findMany({
+      where: { postId },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      select: {
+        emoji: true,
+        createdAt: true,
+        user: { select: { id: true, username: true, displayName: true, avatar: true, avatarFrameUrl: true } },
+      },
+    });
+    const groups: Record<string, { user: any; createdAt: Date }[]> = {};
+    for (const r of rows) (groups[r.emoji] ||= []).push({ user: r.user, createdAt: r.createdAt });
+    return {
+      total: rows.length,
+      groups: Object.entries(groups).map(([emoji, list]) => ({ emoji, count: list.length, users: list.map((x) => x.user) })),
+    };
+  }
+
   // Admin: đọc/ghi điểm uy tín (reputationScore) mỗi loại reaction
   async getReactionWeights() {
     const cfg = await this.prisma.siteConfig.findUnique({ where: { key: 'forum.reactionWeights' } }).catch(() => null);

@@ -713,7 +713,7 @@ function ThreadView() {
           {/* sm+ vertical sidebar */}
           <div className="hidden w-40 shrink-0 border-r border-ink-200/70 text-center dark:border-ink-800 sm:block">
             <div className="sticky top-4 p-3 text-center">
-            {p.author && <div className="mx-auto"><Avatar user={p.author} size={56} /></div>}
+            {p.author && <div className="flex justify-center"><Avatar user={p.author} size={56} /></div>}
             <div className="mt-2 flex items-center justify-center gap-1 truncate text-sm font-semibold">
               <span className="truncate" style={cssToStyle((p.author as any)?.nameEffectCss)}>{p.author?.displayName || p.author?.username}</span>
               {(p.author as any)?.shopBadgeUrl && /* eslint-disable-next-line @next/next/no-img-element */ <img src={(p.author as any).shopBadgeUrl} alt="" className="h-5 w-5 shrink-0 object-contain" />}

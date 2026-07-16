@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { UserRole } from '@prisma/client';
 import {
   ForumService,
@@ -204,6 +205,7 @@ export class ForumController {
   @Post('threads')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('forum.startThread')
+  @Throttle({ default: { limit: 6, ttl: 60_000 } }) // flood control: tối đa 6 chủ đề/phút
   createThread(@CurrentUser('id') userId: string, @Body() dto: CreateThreadDto) {
     return this.forum.createThread(dto, userId);
   }
@@ -225,6 +227,7 @@ export class ForumController {
   @Post('posts')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermission('forum.reply')
+  @Throttle({ default: { limit: 20, ttl: 60_000 } }) // flood control: tối đa 20 trả lời/phút
   createPost(@CurrentUser('id') userId: string, @Body() dto: CreatePostDto) {
     return this.forum.createPost(dto, userId);
   }

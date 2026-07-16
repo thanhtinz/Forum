@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ConversationService } from './conversation.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/roles.decorator';
@@ -23,6 +24,7 @@ export class ConversationController {
   }
 
   @Post()
+  @Throttle({ default: { limit: 8, ttl: 60_000 } }) // chống spam mở hội thoại mới
   create(
     @CurrentUser('id') userId: string,
     @Body() dto: { recipientIds: string[]; title?: string; content: string },

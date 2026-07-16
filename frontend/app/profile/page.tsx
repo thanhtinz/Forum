@@ -23,6 +23,15 @@ function ProfileView() {
   const [blocked, setBlocked] = useState(false);
   const [badges, setBadges] = useState<BadgeDescriptor[]>([]);
   const [tab, setTab] = useState<'about' | 'activity' | 'wall' | 'posts'>('activity');
+  const [followModal, setFollowModal] = useState<{ kind: 'followers' | 'following'; users: any[] } | null>(null);
+
+  async function openFollowList(kind: 'followers' | 'following') {
+    if (!profile?.id) return;
+    try {
+      const users = await api.get<any[]>(`/social/users/${profile.id}/${kind}`);
+      setFollowModal({ kind, users });
+    } catch {}
+  }
 
   useEffect(() => {
     if (!name) return;
@@ -87,8 +96,8 @@ function ProfileView() {
         {trophies && <p className="mt-3 inline-flex items-center justify-center gap-1.5 text-sm font-medium text-amber-600"><Medal size={16} /> {trophies.currentTitle} · {trophies.totalPoints} điểm</p>}
 
         <div className="mt-3 flex items-center justify-center gap-5 text-sm">
-          <span><b>{counts.followers}</b> <span className="text-ink-500">người theo dõi</span></span>
-          <span><b>{counts.following}</b> <span className="text-ink-500">đang theo dõi</span></span>
+          <button onClick={() => openFollowList('followers')} className="hover:text-brand-600"><b>{counts.followers}</b> <span className="text-ink-500">người theo dõi</span></button>
+          <button onClick={() => openFollowList('following')} className="hover:text-brand-600"><b>{counts.following}</b> <span className="text-ink-500">đang theo dõi</span></button>
         </div>
 
         {user && !isSelf && (
@@ -210,6 +219,27 @@ function ProfileView() {
         {tab === 'posts' && <Wall wallId={profile.id} />}
       </div>
       </div>
+
+      {followModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setFollowModal(null)}>
+          <div className="card w-full max-w-sm max-h-[80vh] overflow-y-auto p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="mb-3 font-semibold">{followModal.kind === 'followers' ? 'Người theo dõi' : 'Đang theo dõi'} ({followModal.users.length})</h3>
+            {followModal.users.length === 0 ? (
+              <p className="text-center text-sm text-ink-500">Chưa có ai.</p>
+            ) : (
+              <div className="space-y-1">
+                {followModal.users.map((u: any) => (
+                  <a key={u.id} href={`/profile?u=${u.username}`} className="flex items-center gap-2 rounded-lg p-1.5 text-sm hover:bg-ink-100 dark:hover:bg-ink-800">
+                    <Avatar user={u} size={30} />
+                    <span className="font-medium">{u.displayName || u.username}</span>
+                    <span className="text-xs text-ink-400">@{u.username}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { KeyRound, ShieldCheck, Copy } from 'lucide-react';
+import { KeyRound, ShieldCheck, Copy, UserX } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/components/AuthProvider';
+import { Avatar } from '@/components/Header';
 
 export default function AccountSettings() {
   const { user, loading: authLoading } = useAuth();
@@ -22,10 +23,19 @@ export default function AccountSettings() {
   const [faBusy, setFaBusy] = useState(false);
   const [faMsg, setFaMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  // Danh sách đã chặn
+  const [blocked, setBlocked] = useState<any[]>([]);
+  function loadBlocked() {
+    api.get<any[]>('/profile-extra/blocked').then(setBlocked).catch(() => {});
+  }
+  async function unblock(id: string) {
+    try { await api.post(`/profile-extra/block/${id}`, {}); setBlocked((b) => b.filter((u) => u.id !== id)); } catch {}
+  }
+
   function loadStatus() {
     api.get<{ enabled: boolean }>('/auth/2fa/status').then((r) => setEnabled(r.enabled)).catch(() => {});
   }
-  useEffect(() => { loadStatus(); }, []);
+  useEffect(() => { loadStatus(); loadBlocked(); }, []);
 
   async function changePassword() {
     setPwMsg(null);
@@ -119,6 +129,25 @@ export default function AccountSettings() {
         )}
 
         {faMsg && <p className={`text-sm ${faMsg.ok ? 'text-emerald-600' : 'text-rose-500'}`}>{faMsg.text}</p>}
+      </div>
+
+      {/* Người đã chặn */}
+      <div className="card space-y-3 p-5">
+        <h2 className="flex items-center gap-1.5 font-semibold"><UserX size={16} /> Người đã chặn ({blocked.length})</h2>
+        <p className="text-sm text-ink-500">Người bị chặn không thể viết lên tường của bạn. Bạn cũng sẽ không thấy nội dung của họ.</p>
+        {blocked.length === 0 ? (
+          <p className="text-sm text-ink-400">Bạn chưa chặn ai.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {blocked.map((u) => (
+              <div key={u.id} className="flex items-center gap-2 rounded-lg border border-ink-200/70 p-2 dark:border-ink-800">
+                <Avatar user={u} size={30} />
+                <a href={`/profile?u=${u.username}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:text-brand-600">{u.displayName || u.username} <span className="text-ink-400">@{u.username}</span></a>
+                <button onClick={() => unblock(u.id)} className="btn-outline !py-1 text-xs">Bỏ chặn</button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

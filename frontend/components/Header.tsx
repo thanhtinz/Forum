@@ -123,19 +123,20 @@ export function Header() {
         </Link>
 
         {/* Search — desktop */}
-        <form onSubmit={onSearch} className="ml-4 hidden flex-1 max-w-xs items-center md:flex">
+        <form onSubmit={onSearch} className="ml-4 hidden w-full max-w-md items-center md:flex">
           <div className="relative w-full">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Tìm kiếm..."
-              className="w-full rounded border border-white/20 bg-white/10 py-1.5 pl-8 pr-3 text-sm text-white placeholder:text-white/45 outline-none focus:bg-white/15 focus:border-white/40 transition"
+              placeholder="Tìm kiếm chủ đề, thành viên…"
+              className="w-full rounded-lg border border-white/15 bg-white/10 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/45 outline-none focus:bg-white/[0.18] focus:border-white/40 transition"
             />
           </div>
         </form>
 
-        <div className="flex-1 md:hidden" />
+        {/* Spacer đẩy các nút điều khiển sang phải */}
+        <div className="flex-1" />
 
         {/* Weather */}
         <div className="hidden lg:block"><WeatherMenu /></div>
@@ -244,9 +245,10 @@ export function Header() {
             </Link>
           ))}
 
-          <div className="flex-1" />
+          {/* Divider */}
+          <span className="my-2.5 w-px bg-white/15" />
 
-          {/* Tiện ích tab + dropdown (right-aligned) */}
+          {/* Tiện ích tab + dropdown (gom cùng cụm menu bên trái) */}
           <div className="relative flex items-stretch" onMouseLeave={() => setUtilOpen(false)}>
             <button
               onClick={() => setUtilOpen((o) => !o)}
@@ -257,7 +259,7 @@ export function Header() {
               <ChevronDown size={11} className={`transition-transform duration-150 ${utilOpen ? 'rotate-180' : ''}`} />
             </button>
             {utilOpen && (
-              <div className="absolute right-0 top-full z-50 w-48 overflow-hidden rounded-b-lg border-t-2 border-brand-200 bg-white py-1 text-ink-700 shadow-xl dark:bg-ink-800 dark:text-ink-200">
+              <div className="absolute left-0 top-full z-50 w-48 overflow-hidden rounded-b-lg border-t-2 border-brand-200 bg-white py-1 text-ink-700 shadow-xl dark:bg-ink-800 dark:text-ink-200">
                 {UTILS.map((u) => (
                   <Link key={u.href} href={u.href} onClick={() => setUtilOpen(false)}
                     className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-ink-50 dark:hover:bg-ink-700">

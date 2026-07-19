@@ -39,8 +39,10 @@ export interface Thread {
   createdAt: string;
   lastPostAt?: string;
   author?: ThreadAuthor;
-  category?: { id: string; name: string; slug: string };
+  category?: { id: string; name: string; slug: string; color?: string | null };
   tags?: { tag: { id: string; name: string; slug: string; color?: string | null } }[];
+  coverImage?: string | null;
+  excerpt?: string;
 }
 
 export interface HiddenSection {

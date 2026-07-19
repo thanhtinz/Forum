@@ -30,7 +30,9 @@ const config: Config = {
         },
       },
       boxShadow: {
-        card: '0 1px 3px rgba(15,23,42,0.08), 0 1px 2px rgba(15,23,42,0.04)',
+        // Bóng mềm, khuếch tán nhẹ kiểu zibll.
+        card: '0 2px 12px rgba(15,23,42,0.05), 0 1px 3px rgba(15,23,42,0.03)',
+        'card-hover': '0 10px 30px rgba(15,23,42,0.10), 0 4px 10px rgba(15,23,42,0.05)',
       },
     },
   },

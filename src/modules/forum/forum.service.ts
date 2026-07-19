@@ -345,10 +345,57 @@ export class ForumService {
       this.prisma.thread.count({ where }),
     ]);
 
+    // Ảnh bìa + đoạn trích lấy từ bài mở đầu (parentId null) — dùng cho giao diện dạng thẻ magazine.
+    const ids = threads.map((t) => t.id);
+    const openings = ids.length
+      ? await this.prisma.post.findMany({
+          where: { threadId: { in: ids }, parentId: null },
+          select: { threadId: true, content: true, createdAt: true },
+          orderBy: { createdAt: 'asc' },
+        })
+      : [];
+    const firstByThread = new Map<string, string>();
+    for (const p of openings) {
+      if (!firstByThread.has(p.threadId)) firstByThread.set(p.threadId, p.content || '');
+    }
+    const enriched = threads.map((t) => {
+      const html = firstByThread.get(t.id) || '';
+      const { coverImage, excerpt } = this.extractCoverAndExcerpt(html);
+      return { ...t, coverImage, excerpt };
+    });
+
     return {
-      data: threads,
+      data: enriched,
       meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  /** Trích ảnh bìa (img hợp lệ đầu tiên) + đoạn text ngắn từ HTML bài mở đầu. */
+  private extractCoverAndExcerpt(html: string): { coverImage: string | null; excerpt: string } {
+    let coverImage: string | null = null;
+    if (html) {
+      const re = /<img[^>]+src=["']([^"']+)["']/gi;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(html))) {
+        const src = m[1];
+        // Bỏ qua emoji/sticker/data-uri nhỏ; ưu tiên ảnh nội dung thực.
+        if (/^data:/i.test(src)) continue;
+        if (/emoji|sticker|badge|icon|avatar/i.test(src)) continue;
+        coverImage = src;
+        break;
+      }
+    }
+    const text = html
+      .replace(/<img[^>]*>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const excerpt = text.length > 160 ? text.slice(0, 160).trimEnd() + '…' : text;
+    return { coverImage, excerpt };
   }
 
   // ── Admin: liệt kê TẤT CẢ chủ đề (kể cả ẩn/chờ duyệt/khoá) để quản lý ──

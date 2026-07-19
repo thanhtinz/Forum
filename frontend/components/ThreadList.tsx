@@ -6,7 +6,7 @@ import Link from 'next/link';
 import useSWR from 'swr';
 import { format, isToday, isYesterday } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Pin, Lock, HelpCircle, BarChart2, BookOpen, Lightbulb, CheckCircle2, SlidersHorizontal, MessageSquare, ChevronDown } from 'lucide-react';
+import { Pin, Lock, HelpCircle, BarChart2, BookOpen, Lightbulb, CheckCircle2, SlidersHorizontal, MessageSquare, ChevronDown, Eye, Clock } from 'lucide-react';
 import { api, fetcher } from '@/lib/api';
 import { Avatar } from './Header';
 import { useAuth } from './AuthProvider';
@@ -39,6 +39,13 @@ function sinceDate(v: string): string | undefined {
 }
 
 const POST_PER_PAGE = 20;
+
+function fmtCount(n?: number) {
+  const v = n ?? 0;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1000) return `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K`;
+  return String(v);
+}
 
 const SINCE_OPTIONS = [
   { value: 'all',   label: 'Tất cả thời gian' },
@@ -159,33 +166,36 @@ export function ThreadList({
   const isFiltered = applied.prefixId || applied.startBy || applied.since !== 'all' || applied.sortBy !== 'lastPost' || applied.sortDir !== 'desc';
 
   return (
-    <section className="card overflow-hidden">
-      {/* Card header — hidden when embedded in category page */}
-      {!hideHeader && (
-        <div className="flex items-center justify-between border-b border-ink-200/70 px-4 py-3 dark:border-ink-800">
-          <h2 className="font-semibold">Bài viết mới nhất</h2>
-          {user && (
+    <section className="space-y-4">
+      {/* Thanh tiêu đề + bộ lọc kiểu zibll: nhẹ nhàng, không phải khối card nặng */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {!hideHeader && (
+            <>
+              <span className="h-5 w-1.5 rounded-full bg-brand-500" />
+              <h2 className="text-lg font-bold">Bài viết mới nhất</h2>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5">
+          {user && !hideHeader && (
             <button
               onClick={async () => { await api.post('/forum/read-progress/mark-all', {}); setUnreadCounts({}); }}
-              className="rounded-lg px-2.5 py-1.5 text-xs text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800"
+              className="rounded-lg px-2.5 py-1.5 text-xs text-ink-500 hover:bg-ink-200/60 dark:hover:bg-ink-800"
             >
               Đánh dấu đã đọc
             </button>
           )}
+          <button
+            ref={filterBtnRef}
+            onClick={openFilter}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${isFiltered ? 'border-brand-400 bg-brand-50 text-brand-600 dark:bg-brand-950/40' : 'border-ink-200 text-ink-600 hover:bg-ink-100 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800'}`}
+          >
+            <SlidersHorizontal size={14} />
+            Bộ lọc
+            <ChevronDown size={14} className={`transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
+          </button>
         </div>
-      )}
-
-      {/* Filter bar */}
-      <div className="flex items-center justify-end border-b border-ink-200/70 bg-[#2d4a6a] px-4 py-2 dark:border-ink-800 dark:bg-slate-800">
-        <button
-          ref={filterBtnRef}
-          onClick={openFilter}
-          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium hover:text-white ${isFiltered ? 'text-amber-300' : 'text-white/90'}`}
-        >
-          <SlidersHorizontal size={14} />
-          Bộ lọc
-          <ChevronDown size={14} className={`transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
-        </button>
       </div>
 
       {/* Filter panel — rendered as fixed portal to escape overflow:hidden */}
@@ -275,66 +285,81 @@ export function ThreadList({
         document.body
       )}
 
-      {isLoading && <div className="p-8 text-center text-ink-500">Đang tải…</div>}
-      {error && <div className="p-8 text-center text-red-500">Không tải được dữ liệu.</div>}
+      {isLoading && <div className="card p-8 text-center text-ink-500">Đang tải…</div>}
+      {error && <div className="card p-8 text-center text-red-500">Không tải được dữ liệu.</div>}
       {data && data.data.length === 0 && (
-        <div className="p-10 text-center text-ink-500">Chưa có bài viết nào.</div>
+        <div className="card p-10 text-center text-ink-500">Chưa có bài viết nào.</div>
       )}
 
-      <ul className="divide-y divide-ink-100 dark:divide-ink-800">
+      {/* Lưới thẻ magazine kiểu zibll */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {data?.data.map((t) => {
           const unread    = unreadCounts[t.id];
           const hasUnread = typeof unread === 'number' && unread > 0;
           const typeIcon  = t.threadType ? THREAD_TYPE_ICONS[t.threadType] : null;
+          const coverColor = t.category?.color || '#2c7bfe';
 
           return (
-            <li key={t.id} className="flex items-start gap-3 px-4 py-3.5 hover:bg-ink-50/60 dark:hover:bg-ink-800/30">
-              {/* Avatar */}
-              <Link href={`/thread?slug=${t.slug}`} className="mt-0.5 shrink-0">
-                <Avatar user={t.author ?? { username: '?' }} size={44} />
-              </Link>
-
-              {/* Content */}
-              <div className="min-w-0 flex-1">
-                {/* Prefix + type chips */}
-                <div className="mb-1 flex flex-wrap items-center gap-1">
-                  {t.isPinned && <Pin size={12} className="text-amber-500" />}
-                  {t.isLocked && <Lock size={12} className="text-ink-400" />}
-                  {typeIcon}
-                  {t.bestAnswerId && <CheckCircle2 size={12} className="text-emerald-500" />}
+            <article key={t.id} className="post-card group">
+              {/* Ảnh bìa 16:9 (fallback gradient theo màu danh mục) */}
+              <Link href={`/thread?slug=${t.slug}`} className="relative block aspect-[16/9] overflow-hidden">
+                {t.coverImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={t.coverImage} alt="" loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center"
+                    style={{ background: `linear-gradient(135deg, ${coverColor}, ${coverColor}99)` }}>
+                    <span className="px-4 text-center text-lg font-bold leading-snug text-white/95 line-clamp-3">{t.title}</span>
+                  </div>
+                )}
+                {/* Chip danh mục + trạng thái đè lên ảnh */}
+                <div className="absolute left-2 top-2 flex flex-wrap items-center gap-1">
+                  {t.category && !categoryId && (
+                    <span className="rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-semibold text-white backdrop-blur-sm">
+                      {t.category.name}
+                    </span>
+                  )}
                   {t.prefixRef && (
-                    <span
-                      className="rounded px-1.5 py-0.5 text-[11px] font-bold text-white"
-                      style={{ backgroundColor: t.prefixRef.color || '#6366f1' }}
-                    >
+                    <span className="rounded-md px-2 py-0.5 text-[11px] font-bold text-white"
+                      style={{ backgroundColor: t.prefixRef.color || '#2c7bfe' }}>
                       {t.prefixRef.label}
                     </span>
                   )}
-                  {hasUnread && (
-                    <span className="rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                      {unread} mới
-                    </span>
-                  )}
+                </div>
+                <div className="absolute right-2 top-2 flex items-center gap-1">
+                  {t.isPinned && <span className="grid h-6 w-6 place-items-center rounded-md bg-amber-500 text-white"><Pin size={13} /></span>}
+                  {t.isLocked && <span className="grid h-6 w-6 place-items-center rounded-md bg-ink-700/80 text-white"><Lock size={13} /></span>}
+                  {hasUnread && <span className="rounded-full bg-brand-500 px-2 py-0.5 text-[10px] font-bold text-white shadow">{unread} mới</span>}
+                </div>
+              </Link>
+
+              {/* Nội dung thẻ */}
+              <div className="flex flex-1 flex-col gap-2 p-4">
+                <div className="flex items-center gap-1.5">
+                  {typeIcon}
+                  {t.bestAnswerId && <CheckCircle2 size={13} className="text-emerald-500" />}
+                  <Link
+                    href={`/thread?slug=${t.slug}`}
+                    className={`line-clamp-2 flex-1 font-bold leading-snug transition-colors hover:text-brand-600 ${hasUnread ? 'text-ink-900 dark:text-white' : 'text-ink-800 dark:text-ink-100'}`}
+                  >
+                    {t.title}
+                  </Link>
                 </div>
 
-                {/* Title */}
-                <Link
-                  href={`/thread?slug=${t.slug}`}
-                  className={`block leading-snug font-semibold hover:text-brand-600 ${hasUnread ? 'text-ink-900 dark:text-white' : 'text-ink-800 dark:text-ink-100'}`}
-                >
-                  {t.title}
-                </Link>
+                {t.excerpt && (
+                  <p className="line-clamp-2 text-sm text-ink-500 dark:text-ink-400">{t.excerpt}</p>
+                )}
 
-                {/* Tags */}
                 {t.tags && t.tags.length > 0 && (
-                  <div className="mt-1 flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1">
                     {t.tags.slice(0, 3).map((tt) => (
                       <Link
                         key={tt.tag.id}
                         href={`/tag?slug=${tt.tag.slug}`}
                         onClick={(e) => e.stopPropagation()}
                         className="rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                        style={{ backgroundColor: tt.tag.color ? tt.tag.color + '22' : '#6366f122', color: tt.tag.color || '#6366f1' }}
+                        style={{ backgroundColor: tt.tag.color ? tt.tag.color + '22' : '#2c7bfe22', color: tt.tag.color || '#2c7bfe' }}
                       >
                         #{tt.tag.name}
                       </Link>
@@ -342,59 +367,29 @@ export function ThreadList({
                   </div>
                 )}
 
-                {/* Meta row */}
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-400">
-                  <span className="font-medium text-ink-500">{t.author?.displayName || t.author?.username}</span>
-                  {t.category && !categoryId && (
-                    <>
-                      <span>·</span>
-                      <span className="text-brand-500">{t.category.name}</span>
-                    </>
-                  )}
-                  <span>·</span>
-                  <span className="flex items-center gap-0.5">
-                    <MessageSquare size={11} className="text-ink-400" />
-                    Trả lời {t.replyCount}
-                  </span>
-                  {t.lastPostAt && (
-                    <>
-                      <span>·</span>
-                      <span>{formatLastPost(t.lastPostAt)}</span>
-                    </>
-                  )}
-                  {/* Page links for long threads */}
-                  {t.replyCount >= POST_PER_PAGE && (() => {
-                    const pages = Math.ceil((t.replyCount + 1) / POST_PER_PAGE);
-                    const shown = pages > 4 ? [1, 2, null, pages] : Array.from({ length: pages }, (_, i) => i + 1);
-                    return (
-                      <span className="flex items-center gap-0.5">
-                        <span className="text-ink-300">·</span>
-                        <span className="text-[10px]">Trang:</span>
-                        {shown.map((pg, i) => pg === null
-                          ? <span key={`s${i}`} className="text-ink-300">…</span>
-                          : <Link key={pg} href={`/thread?slug=${t.slug}&page=${pg}`} onClick={(e) => e.stopPropagation()}
-                              className="rounded px-1 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-700"
-                            >{pg}</Link>
-                        )}
-                      </span>
-                    );
-                  })()}
+                {/* Chân thẻ: tác giả + số liệu */}
+                <div className="mt-auto flex items-center justify-between gap-2 border-t border-ink-100 pt-2.5 dark:border-ink-800">
+                  <Link href={`/profile?u=${t.author?.username}`} className="flex min-w-0 items-center gap-1.5">
+                    <Avatar user={t.author ?? { username: '?' }} size={24} />
+                    <span className="truncate text-xs font-medium text-ink-600 hover:text-brand-600 dark:text-ink-300">
+                      {t.author?.displayName || t.author?.username}
+                    </span>
+                  </Link>
+                  <div className="flex shrink-0 items-center gap-2.5 text-[11px] text-ink-400">
+                    <span className="flex items-center gap-0.5" title="Lượt xem"><Eye size={12} />{fmtCount(t.viewCount)}</span>
+                    <span className="flex items-center gap-0.5" title="Trả lời"><MessageSquare size={12} />{fmtCount(t.replyCount)}</span>
+                    {t.lastPostAt && <span className="hidden items-center gap-0.5 sm:flex" title="Cập nhật"><Clock size={12} />{formatLastPost(t.lastPostAt)}</span>}
+                  </div>
                 </div>
               </div>
-
-              {/* Reply count — right side on sm+ */}
-              <div className="hidden shrink-0 flex-col items-center gap-0.5 pt-1 sm:flex">
-                <span className="text-sm font-bold text-ink-700 dark:text-ink-200">{t.replyCount}</span>
-                <span className="text-[10px] text-ink-400">trả lời</span>
-              </div>
-            </li>
+            </article>
           );
         })}
-      </ul>
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-ink-200/70 px-4 py-3 dark:border-ink-800">
+        <div className="card flex items-center justify-between px-4 py-3">
           <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1 || isLoading}
             className="rounded-lg px-3 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 disabled:opacity-40 dark:text-ink-300 dark:hover:bg-ink-800">
             ← Trước

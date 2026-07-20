@@ -58,14 +58,14 @@ export function DownloadBox(props: DownloadBoxProps) {
   const bp = basePrice(pricePoints, priceAmount);
 
   return (
-    <div className="relative mt-8 overflow-hidden rounded-2xl border-2 border-dashed border-brand-400 bg-white p-5 shadow-card dark:border-brand-700 dark:bg-ink-900 sm:p-6">
+    <div className="relative mt-8 overflow-hidden rounded-2xl border-2 border-dashed border-brand-400 bg-white p-4 shadow-card dark:border-brand-700 dark:bg-ink-900 sm:p-6">
       {/* Ruy-băng góc phải */}
       <span className="pointer-events-none absolute -right-11 top-5 rotate-45 bg-green-500 px-12 py-1 text-center text-xs font-bold tracking-wide text-white shadow">
         Tải xuống
       </span>
 
       {/* Header */}
-      <h3 className="flex items-center gap-2 pr-16 text-lg font-extrabold text-green-600 dark:text-green-400">
+      <h3 className="flex items-center gap-2 pr-14 text-base font-extrabold text-green-600 dark:text-green-400 sm:text-lg">
         <Lock size={20} className="shrink-0" />
         {allowed ? 'Bạn có quyền tải xuống tài nguyên này' : 'Cần quyền để tải xuống tài nguyên này'}
       </h3>
@@ -185,12 +185,12 @@ function TierRow({ color, label, value, highlight, muted, last }: {
   color: string; label: string; value: string; highlight?: boolean; muted?: boolean; last?: boolean;
 }) {
   return (
-    <li className="relative flex items-center justify-between gap-2 pl-6">
+    <li className="relative flex items-start justify-between gap-3 pl-6">
       {/* dấu chấm + đường nối timeline */}
-      <span className="absolute left-0 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full" style={{ backgroundColor: color }} />
-      {!last && <span className="absolute left-[5px] top-1/2 h-full w-px bg-ink-200 dark:bg-ink-700" />}
-      <span className="font-semibold" style={highlight ? { color } : undefined}>{label}:</span>
-      <span className={muted ? 'font-semibold text-ink-500' : 'font-bold'} style={highlight ? { color } : undefined}>{value}</span>
+      <span className="absolute left-0 top-1.5 h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
+      {!last && <span className="absolute left-[5px] top-2 h-full w-px bg-ink-200 dark:bg-ink-700" />}
+      <span className="text-sm font-semibold sm:text-base" style={highlight ? { color } : undefined}>{label}:</span>
+      <span className={`shrink-0 whitespace-nowrap text-sm sm:text-base ${muted ? 'font-semibold text-ink-500' : 'font-bold'}`} style={highlight ? { color } : undefined}>{value}</span>
     </li>
   );
 }

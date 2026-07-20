@@ -1,8 +1,16 @@
 'use client';
 
-import { useActionState } from 'react';
-import { PenLine, Send } from 'lucide-react';
+import { useActionState, useState } from 'react';
+import { PenLine, Send, Coins, Lock, Crown, Gift } from 'lucide-react';
 import { createPost, type WriteState } from '@/app/(site)/user/write/actions';
+
+const ACCESS_OPTIONS = [
+  { v: 'FREE', label: 'Miễn phí', icon: Gift },
+  { v: 'LOGIN_REQUIRED', label: 'Cần đăng nhập', icon: Lock },
+  { v: 'POINTS', label: 'Bán bằng điểm', icon: Coins },
+  { v: 'PAID', label: 'Bán bằng tiền (VND)', icon: Lock },
+  { v: 'VIP_ONLY', label: 'Chỉ VIP', icon: Crown },
+];
 
 export interface CatOption { slug: string; name: string; color?: string | null; parentName?: string | null }
 
@@ -14,6 +22,8 @@ const STYLES = [
 
 export function WriteForm({ categories }: { categories: CatOption[] }) {
   const [state, action, pending] = useActionState<WriteState, FormData>(createPost, {});
+  const [access, setAccess] = useState('FREE');
+  const isPaid = access === 'POINTS' || access === 'PAID' || access === 'VIP_ONLY';
 
   return (
     <form action={action} className="card space-y-5 p-5 sm:p-6">
@@ -72,6 +82,51 @@ export function WriteForm({ categories }: { categories: CatOption[] }) {
             {STYLES.map((s) => <option key={s.v} value={s.v}>{s.label}</option>)}
           </select>
         </label>
+      </div>
+
+      {/* Bán nội dung — ăn chia doanh thu */}
+      <div className="rounded-2xl border border-ink-200 p-4 dark:border-ink-700">
+        <div className="mb-3 flex items-center gap-1.5 text-sm font-bold"><Coins size={16} className="text-amber-500" /> Bán nội dung (tuỳ chọn)</div>
+
+        <div className="flex flex-wrap gap-2">
+          {ACCESS_OPTIONS.map((o) => {
+            const Icon = o.icon;
+            const on = access === o.v;
+            return (
+              <label key={o.v} className="cursor-pointer">
+                <input type="radio" name="access" value={o.v} checked={on} onChange={() => setAccess(o.v)} className="peer sr-only" />
+                <span className={`chip gap-1 border ${on ? 'border-transparent bg-brand-500 text-white' : 'border-ink-200 bg-white text-ink-600 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300'}`}>
+                  <Icon size={12} /> {o.label}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+
+        {access === 'POINTS' && (
+          <label className="mt-3 block">
+            <span className="mb-1 block text-sm font-medium">Giá (điểm)</span>
+            <input name="pricePoints" type="number" min={1} className="input max-w-xs" placeholder="Ví dụ: 50" />
+          </label>
+        )}
+        {access === 'PAID' && (
+          <label className="mt-3 block">
+            <span className="mb-1 block text-sm font-medium">Giá (VND)</span>
+            <input name="priceAmount" type="number" min={1000} step={1000} className="input max-w-xs" placeholder="Ví dụ: 20000" />
+          </label>
+        )}
+
+        {isPaid && (
+          <>
+            <label className="mt-3 block">
+              <span className="mb-1 block text-sm font-medium">Nội dung ẩn (sau khi mua mới xem được) <b className="text-red-500">*</b></span>
+              <textarea name="hiddenContent" rows={5} className="input resize-y" placeholder="Phần nội dung trả phí: link tải, hướng dẫn chi tiết, mã nguồn…" />
+            </label>
+            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+              💰 Ăn chia: bạn nhận <b>70%</b> mỗi lượt bán, nền tảng giữ <b>30%</b> hoa hồng. Tiền/điểm được cộng tự động khi có người mua.
+            </p>
+          </>
+        )}
       </div>
 
       {state.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{state.error}</p>}

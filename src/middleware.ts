@@ -1,5 +1,9 @@
-import { auth } from '@/lib/auth';
+import NextAuth from 'next-auth';
 import { NextResponse } from 'next/server';
+import { authConfig } from '@/lib/auth.config';
+
+// Instance chỉ dùng cấu hình edge-safe → middleware không kéo Prisma/bcrypt vào Edge runtime.
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;

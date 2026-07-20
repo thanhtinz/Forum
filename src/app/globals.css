@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Xanh dương chủ đạo kiểu zibll (#2c7bfe) — dạng "r g b" */
+  --brand-50: 239 245 255;
+  --brand-100: 219 232 254;
+  --brand-200: 191 215 254;
+  --brand-300: 147 187 253;
+  --brand-400: 96 154 250;
+  --brand-500: 44 123 254;
+  --brand-600: 30 99 232;
+  --brand-700: 26 79 196;
+  --brand-800: 28 68 158;
+  --brand-900: 28 61 125;
+  --brand-950: 22 39 77;
+}
+
+html, body {
+  @apply bg-ink-100 text-ink-800 antialiased;
+}
+.dark html, .dark body {
+  @apply bg-ink-950 text-ink-100;
+}
+
+@layer components {
+  .container-nova {
+    @apply mx-auto w-full max-w-6xl px-3 sm:px-4;
+  }
+  .card {
+    @apply rounded-2xl border border-ink-200/60 bg-white shadow-card dark:border-ink-800 dark:bg-ink-900;
+  }
+  .post-card {
+    @apply flex flex-col overflow-hidden rounded-2xl border border-ink-200/60 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover dark:border-ink-800 dark:bg-ink-900;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors;
+  }
+  .btn-primary {
+    @apply btn bg-brand-500 text-white hover:bg-brand-600;
+  }
+  .btn-outline {
+    @apply btn border border-ink-300 text-ink-700 hover:bg-ink-100 dark:border-ink-700 dark:text-ink-200 dark:hover:bg-ink-800;
+  }
+  .btn-ghost {
+    @apply btn text-ink-600 hover:bg-ink-200/60 dark:text-ink-300 dark:hover:bg-ink-800;
+  }
+  .input {
+    @apply w-full rounded-xl border border-ink-300 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-ink-700 dark:bg-ink-900;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+}

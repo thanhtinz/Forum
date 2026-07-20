@@ -180,12 +180,203 @@ async function main() {
     }
   }
 
-  // ── Forum mẫu ──
-  await db.forum.upsert({
-    where: { slug: 'thao-luan-chung' },
-    update: {},
-    create: { slug: 'thao-luan-chung', name: 'Thảo luận chung', description: 'Nơi trao đổi mọi chủ đề', order: 1 },
-  });
+  // ── Thành viên mẫu (tác giả chủ đề / trả lời) ──
+  const memberSeeds = [
+    { email: 'minh@nova.local', username: 'minhdev', name: 'Minh Dev', points: 320, level: 4, exp: 800 },
+    { email: 'lan@nova.local', username: 'lanpham', name: 'Lan Phạm', points: 180, level: 3, exp: 350 },
+    { email: 'huy@nova.local', username: 'huytran', name: 'Huy Trần', points: 90, level: 2, exp: 150 },
+  ];
+  const memberPass = await bcrypt.hash('member123', 10);
+  const members: Record<string, { id: string }> = {};
+  for (const m of memberSeeds) {
+    const u = await db.user.upsert({
+      where: { email: m.email },
+      update: {},
+      create: {
+        email: m.email,
+        username: m.username,
+        name: m.name,
+        passwordHash: memberPass,
+        role: 'USER',
+        points: m.points,
+        balance: 0,
+        level: m.level,
+        exp: m.exp,
+        inviteCode: m.username.toUpperCase(),
+      },
+    });
+    members[m.username] = { id: u.id };
+  }
+  const authorId = (u: string) => (u === 'admin' ? admin.id : members[u]?.id ?? admin.id);
+
+  // ── Forum mẫu (có phân cấp cha/con) ──
+  const forumSeeds: Array<{
+    slug: string; name: string; description: string; icon?: string; order: number;
+    parent?: string; postAccess?: 'ALL' | 'MEMBERS' | 'VIP' | 'MODERATORS'; minLevel?: number; vipOnly?: boolean;
+  }> = [
+    { slug: 'cong-dong', name: 'Cộng đồng', description: 'Khu vực giao lưu của thành viên Nova', icon: '💬', order: 1 },
+    { slug: 'thao-luan-chung', name: 'Thảo luận chung', description: 'Nơi trao đổi mọi chủ đề', icon: '🗨️', order: 1, parent: 'cong-dong' },
+    { slug: 'gioi-thieu', name: 'Giới thiệu bản thân', description: 'Chào hỏi và làm quen với mọi người', icon: '👋', order: 2, parent: 'cong-dong' },
+    { slug: 'ho-tro', name: 'Hỗ trợ', description: 'Khu vực hỏi đáp và báo lỗi', icon: '🛠️', order: 2 },
+    { slug: 'hoi-dap', name: 'Hỏi đáp', description: 'Đặt câu hỏi và nhận trợ giúp từ cộng đồng', icon: '❓', order: 1, parent: 'ho-tro' },
+    { slug: 'gop-y', name: 'Góp ý & Báo lỗi', description: 'Đề xuất tính năng và báo lỗi hệ thống', icon: '🐛', order: 2, parent: 'ho-tro' },
+    { slug: 'vip-lounge', name: 'Phòng VIP', description: 'Khu vực riêng dành cho thành viên VIP', icon: '👑', order: 3, postAccess: 'VIP', vipOnly: true },
+  ];
+  const forumIds: Record<string, string> = {};
+  for (const f of forumSeeds) {
+    const data = {
+      slug: f.slug,
+      name: f.name,
+      description: f.description,
+      icon: f.icon ?? null,
+      order: f.order,
+      parentId: f.parent ? forumIds[f.parent] : null,
+      postAccess: (f.postAccess ?? 'ALL') as any,
+      minLevel: f.minLevel ?? 1,
+      vipOnly: f.vipOnly ?? false,
+    };
+    const forum = await db.forum.upsert({
+      where: { slug: f.slug },
+      update: { name: f.name, description: f.description, icon: data.icon, order: f.order, parentId: data.parentId, postAccess: data.postAccess, vipOnly: data.vipOnly },
+      create: data,
+    });
+    forumIds[f.slug] = forum.id;
+  }
+
+  // ── Chủ đề (Thread) + Trả lời (Reply) mẫu ──
+  // Mỗi chủ đề idempotent theo (forumId, title); trả lời chỉ tạo khi chủ đề chưa có reply.
+  const threadSeeds: Array<{
+    forum: string; author: string; title: string; content: string;
+    pinned?: boolean; locked?: boolean; featured?: boolean; bountyPoints?: number;
+    tags?: string[];
+    replies?: Array<{ author: string; content: string; solution?: boolean; likeCount?: number; children?: Array<{ author: string; content: string; likeCount?: number }> }>;
+  }> = [
+    {
+      forum: 'thao-luan-chung', author: 'admin', title: 'Nội quy diễn đàn Nova — vui lòng đọc trước khi đăng',
+      content: '<p>Chào mừng bạn đến với diễn đàn Nova. Hãy tôn trọng lẫn nhau, không spam và đăng bài đúng chuyên mục.</p><p>Vi phạm nhiều lần có thể bị khoá tài khoản.</p>',
+      pinned: true, locked: true, featured: true, tags: ['Nội quy', 'Thông báo'],
+      replies: [
+        { author: 'minhdev', content: 'Đã đọc và nắm rõ, cảm ơn ban quản trị!', likeCount: 4 },
+        { author: 'lanpham', content: 'Nội quy rõ ràng, rất hợp lý 👍', likeCount: 2 },
+      ],
+    },
+    {
+      forum: 'thao-luan-chung', author: 'minhdev', title: 'Mọi người đang dùng công cụ nào để quản lý công việc?',
+      content: '<p>Mình đang tìm một công cụ quản lý task nhẹ nhàng, mọi người gợi ý giúp với nhé.</p>',
+      tags: ['Thảo luận', 'Công cụ'],
+      replies: [
+        { author: 'huytran', content: 'Mình dùng Notion, khá linh hoạt.', likeCount: 3, children: [
+          { author: 'minhdev', content: 'Notion đúng là ngon nhưng hơi nặng lúc mở nhiều trang.', likeCount: 1 },
+        ] },
+        { author: 'lanpham', content: 'Todoist cho cá nhân là đủ rồi.', likeCount: 2 },
+      ],
+    },
+    {
+      forum: 'gioi-thieu', author: 'lanpham', title: 'Xin chào cả nhà, mình là Lan!',
+      content: '<p>Mình là newbie mới tham gia, mong được mọi người giúp đỡ 😄</p>',
+      tags: ['Chào hỏi'],
+      replies: [
+        { author: 'admin', content: 'Chào mừng Lan đến với Nova! 🎉', likeCount: 5 },
+        { author: 'huytran', content: 'Chào bạn nha!', likeCount: 1 },
+      ],
+    },
+    {
+      forum: 'hoi-dap', author: 'huytran', title: 'Làm sao để mở khoá nội dung bằng điểm?',
+      content: '<p>Mình có đủ điểm nhưng không thấy nút mở khoá ở đâu, ai chỉ giúp với?</p>',
+      bountyPoints: 20, tags: ['Hỏi đáp', 'Điểm'],
+      replies: [
+        { author: 'minhdev', content: 'Bạn cuộn xuống khối "Tải xuống" trong bài, nút mở khoá nằm ngay đó nhé.', solution: true, likeCount: 6 },
+        { author: 'lanpham', content: 'Mình cũng từng bị, hoá ra do chưa đăng nhập 😅', likeCount: 1 },
+      ],
+    },
+    {
+      forum: 'gop-y', author: 'minhdev', title: 'Đề xuất: thêm chế độ tối (dark mode)',
+      content: '<p>Giao diện sáng nhìn hơi chói vào buổi tối, mong đội ngũ cân nhắc thêm dark mode.</p>',
+      tags: ['Góp ý', 'Giao diện'],
+      replies: [
+        { author: 'admin', content: 'Cảm ơn góp ý, tính năng này đã được đưa vào kế hoạch phát triển 🌙', likeCount: 8 },
+      ],
+    },
+  ];
+
+  for (const t of threadSeeds) {
+    const forumId = forumIds[t.forum];
+    if (!forumId) continue;
+    let thread = await db.thread.findFirst({ where: { forumId, title: t.title }, select: { id: true } });
+    if (!thread) {
+      const created = await db.thread.create({
+        data: {
+          forumId,
+          authorId: authorId(t.author),
+          title: t.title,
+          content: t.content,
+          status: 'PUBLISHED',
+          pinned: t.pinned ?? false,
+          locked: t.locked ?? false,
+          featured: t.featured ?? false,
+          bountyPoints: t.bountyPoints ?? null,
+          viewCount: Math.floor(30 + Math.sin(t.title.length) * 20 + t.title.length),
+          likeCount: t.title.length % 15,
+        },
+      });
+      thread = { id: created.id };
+    }
+
+    // Trả lời — chỉ tạo khi chủ đề chưa có reply nào (idempotent)
+    const existing = await db.reply.count({ where: { threadId: thread.id } });
+    if (existing === 0 && t.replies?.length) {
+      let solvedReplyId: string | null = null;
+      let last: Date = new Date();
+      for (const r of t.replies) {
+        const reply = await db.reply.create({
+          data: {
+            threadId: thread.id,
+            authorId: authorId(r.author),
+            content: r.content,
+            likeCount: r.likeCount ?? 0,
+            isSolution: r.solution ?? false,
+          },
+        });
+        last = reply.createdAt;
+        if (r.solution) solvedReplyId = reply.id;
+        for (const c of r.children ?? []) {
+          const child = await db.reply.create({
+            data: {
+              threadId: thread.id,
+              authorId: authorId(c.author),
+              content: c.content,
+              parentId: reply.id,
+              likeCount: c.likeCount ?? 0,
+            },
+          });
+          last = child.createdAt;
+        }
+      }
+      const total = await db.reply.count({ where: { threadId: thread.id } });
+      await db.thread.update({
+        where: { id: thread.id },
+        data: { replyCount: total, lastReplyAt: last, solvedReplyId: solvedReplyId ?? undefined },
+      });
+    }
+
+    // Thẻ của chủ đề — upsert tag rồi nối (idempotent)
+    if (t.tags?.length) {
+      await db.tagsOnThreads.deleteMany({ where: { threadId: thread.id } });
+      for (const name of t.tags) {
+        const slug = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const tag = await db.tag.upsert({ where: { slug }, update: {}, create: { slug, name } });
+        await db.tagsOnThreads.create({ data: { threadId: thread.id, tagId: tag.id } });
+      }
+    }
+  }
+
+  // ── Cập nhật threadCount / replyCount cho từng forum ──
+  for (const slug of Object.keys(forumIds)) {
+    const id = forumIds[slug];
+    const threadCount = await db.thread.count({ where: { forumId: id } });
+    const replyCount = await db.reply.count({ where: { thread: { forumId: id } } });
+    await db.forum.update({ where: { id }, data: { threadCount, replyCount } });
+  }
 
   // ── Tuyên bố bản quyền (hiển thị trên khung mua hàng) ──
   await db.siteSetting.upsert({

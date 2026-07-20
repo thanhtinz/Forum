@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown, PenLine } from 'lucide-react';
 import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
 import { MobileNav } from './MobileNav';
 
@@ -19,6 +20,7 @@ const NAV_MOBILE = [
 export async function Header() {
   const session = await auth();
   const user = session?.user;
+  const unread = user?.id ? await db.notification.count({ where: { userId: user.id, read: false } }) : 0;
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/90 backdrop-blur dark:border-ink-800 dark:bg-ink-950/90">
@@ -56,8 +58,9 @@ export async function Header() {
               <span className="hidden items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600 sm:flex dark:bg-amber-950/40">
                 <Coins size={13} /> {fmtCount(user.points)}
               </span>
-              <Link href="/user/notifications" className="grid h-9 w-9 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">
+              <Link href="/user/notifications" className="relative grid h-9 w-9 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">
                 <Bell size={18} />
+                {unread > 0 && <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent-500 px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}
               </Link>
               <Link href="/user/dashboard" className="flex items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

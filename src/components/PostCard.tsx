@@ -73,7 +73,7 @@ export function PostCard({ post }: { post: PostCardData }) {
             : <div className="flex h-full min-h-[160px] w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${coverColor}, ${coverColor}99)` }}><span className="px-4 text-center text-lg font-bold text-white/95 line-clamp-3">{post.title}</span></div>}
           <div className="absolute left-2 top-2 flex gap-1"><CategoryChip post={post} overlay /></div>
         </Link>
-        <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
           <div className="flex items-center gap-2"><AccessBadge post={post} /></div>
           <Link href={href} className="line-clamp-2 text-base font-bold leading-snug hover:text-brand-600">{post.title}</Link>
           {post.excerpt && <p className="line-clamp-2 text-sm text-ink-500">{post.excerpt}</p>}
@@ -87,7 +87,7 @@ export function PostCard({ post }: { post: PostCardData }) {
   if (post.cardStyle === 'TEXT_ONLY') {
     return (
       <article className="post-card group" style={{ background: `${coverColor}0d` }}>
-        <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
           <div className="flex items-center gap-2"><CategoryChip post={post} /><AccessBadge post={post} /></div>
           <Link href={href} className="line-clamp-3 text-lg font-bold leading-snug hover:text-brand-600">{post.title}</Link>
           {post.excerpt && <p className="line-clamp-3 text-sm text-ink-500">{post.excerpt}</p>}
@@ -113,7 +113,7 @@ export function PostCard({ post }: { post: PostCardData }) {
             </Link>
           ))}
         </div>
-        <div className="flex flex-1 flex-col gap-2 p-4">
+        <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
           <div className="flex items-center gap-2"><CategoryChip post={post} /><AccessBadge post={post} /></div>
           <Link href={href} className="line-clamp-2 font-bold leading-snug hover:text-brand-600">{post.title}</Link>
           <Meta post={post} />

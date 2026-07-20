@@ -25,7 +25,7 @@ export async function RelatedPosts({ postId, categoryId }: { postId: string; cat
   return (
     <section className="mt-8">
       <h2 className="zib-title mb-4">Bài viết liên quan</h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
         {cards.map((c) => <PostCard key={c.slug} post={c} />)}
       </div>
     </section>

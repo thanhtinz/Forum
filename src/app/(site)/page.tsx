@@ -90,7 +90,7 @@ export default async function HomePage() {
         <section>
           <h2 className="zib-title mb-4">Bài viết mới nhất</h2>
           {cards.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
               {cards.map((c) => <PostCard key={c.slug} post={c} />)}
             </div>
           ) : (

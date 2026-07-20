@@ -6,6 +6,7 @@ import Google from 'next-auth/providers/google';
 import GitHub from 'next-auth/providers/github';
 import bcrypt from 'bcryptjs';
 import { db } from './db';
+import { authConfig } from './auth.config';
 
 // Chỉ bật OAuth khi có credential — tránh lỗi lúc build/khi chưa cấu hình.
 const providers: NextAuthConfig['providers'] = [
@@ -29,7 +30,13 @@ const providers: NextAuthConfig['providers'] = [
       const ok = await bcrypt.compare(password, user.passwordHash);
       if (!ok) return null;
 
-      return { id: user.id, name: user.name ?? user.username, email: user.email, image: user.image };
+      return {
+        id: user.id,
+        name: user.name ?? user.username,
+        email: user.email,
+        image: user.image,
+        role: user.role,
+      };
     },
   }),
 ];
@@ -42,16 +49,20 @@ if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authConfig,
   adapter: PrismaAdapter(db),
-  // Credentials provider bắt buộc dùng JWT session (database strategy không hỗ trợ credentials).
-  session: { strategy: 'jwt' },
-  pages: { signIn: '/login' },
   providers,
   callbacks: {
+    ...authConfig.callbacks,
     async jwt({ token, user }) {
-      if (user?.id) token.uid = user.id;
+      if (user?.id) {
+        token.uid = user.id;
+        const role = (user as { role?: string }).role;
+        if (role) (token as { role?: string }).role = role;
+      }
       return token;
     },
+    // Override bản edge-safe: nạp đầy đủ thông tin từ DB (Node runtime).
     async session({ session, token }) {
       const uid = token.uid as string | undefined;
       if (uid && session.user) {

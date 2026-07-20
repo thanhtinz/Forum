@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Pin, Lock, Award, CheckCircle2, Eye, MessageSquare, ThumbsUp } from 'lucide-react';
+import { Pin, Lock, Award, CheckCircle2, Eye, MessageSquare, Heart, Share2, CornerDownRight } from 'lucide-react';
 import { db } from '@/lib/db';
 import { fmtCount, truncate } from '@/lib/utils';
 import { HomeSidebar } from '@/components/HomeSidebar';
@@ -59,6 +59,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
           <Link href={`/forum/${thread.forum.slug}`} className="hover:text-brand-600">{thread.forum.name}</Link>
         </nav>
 
+        {/* Bài chủ đề */}
         <article className="card p-5">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             {thread.pinned && <span className="chip gap-1 bg-brand-100 text-brand-600 dark:bg-brand-950/50"><Pin size={11} />Ghim</span>}
@@ -71,38 +72,47 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
           <div className="mt-3 flex items-center gap-3 border-b border-ink-100 pb-4 dark:border-ink-800">
             <Avatar user={thread.author} />
             <div className="min-w-0">
-              <p className="font-semibold">{displayName(thread.author)}</p>
+              <p className="flex items-center gap-2 font-semibold">
+                {displayName(thread.author)}
+                <span className="chip bg-ink-100 !py-0 text-ink-400 dark:bg-ink-800">Lv.{thread.author.level}</span>
+              </p>
               <p className="text-xs text-ink-400">{format(thread.createdAt, 'dd/MM/yyyy HH:mm')}</p>
             </div>
             <div className="ml-auto flex items-center gap-4 text-xs text-ink-400">
               <span className="flex items-center gap-1"><Eye size={13} />{fmtCount(thread.viewCount)}</span>
               <span className="flex items-center gap-1"><MessageSquare size={13} />{fmtCount(thread.replyCount)}</span>
-              <span className="flex items-center gap-1"><ThumbsUp size={13} />{fmtCount(thread.likeCount)}</span>
             </div>
           </div>
 
           <div className="prose prose-sm mt-4 max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: thread.content }} />
 
           {thread.tags.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2 border-t border-ink-100 pt-4 dark:border-ink-800">
+            <div className="mt-4 flex flex-wrap gap-2">
               {thread.tags.map(({ tag }) => (
-                <Link key={tag.slug} href={`/tag/${tag.slug}`} className="chip bg-ink-100 text-ink-500 hover:text-brand-600 dark:bg-ink-800">#{tag.name}</Link>
+                <Link key={tag.slug} href={`/tag/${tag.slug}`} className="chip bg-ink-100 text-ink-500 hover:bg-brand-100 hover:text-brand-600 dark:bg-ink-800 dark:text-ink-300">#{tag.name}</Link>
               ))}
             </div>
           )}
+
+          {/* Thanh hành động kiểu zibll */}
+          <div className="mt-4 flex items-center justify-center gap-2 border-t border-ink-100 pt-4 dark:border-ink-800">
+            <button className="btn-outline !rounded-full gap-1.5 !px-4 text-accent-500"><Heart size={16} /> Thích <span className="text-ink-400">{fmtCount(thread.likeCount)}</span></button>
+            <a href="#tra-loi" className="btn-outline !rounded-full gap-1.5 !px-4"><MessageSquare size={16} /> Trả lời</a>
+            <button className="btn-outline !rounded-full gap-1.5 !px-4"><Share2 size={16} /> Chia sẻ</button>
+          </div>
         </article>
 
-        <h2 className="mb-3 mt-6 flex items-center gap-2 font-bold">
-          <MessageSquare size={18} /> {fmtCount(replies?.length ?? 0)} trả lời
+        <h2 id="tra-loi" className="zib-title mb-4 mt-6 flex items-center gap-2 scroll-mt-20">
+          {fmtCount(replies?.length ?? 0)} trả lời
         </h2>
 
         {!replies || replies.length === 0 ? (
           <div className="card flex flex-col items-center gap-2 p-8 text-center text-ink-400">
             <MessageSquare size={26} />
-            <p>Chưa có trả lời nào cho chủ đề này.</p>
+            <p>Chưa có trả lời nào. Hãy là người đầu tiên!</p>
           </div>
         ) : (
-          <ul className="space-y-4">
+          <ul className="space-y-3">
             {replies.map((r) => (
               <li key={r.id} className={`card p-4 ${r.isSolution ? 'ring-2 ring-emerald-400/60' : ''}`}>
                 {r.isSolution && (
@@ -113,7 +123,12 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
                 <ReplyRow r={r} />
                 {r.children.length > 0 && (
                   <ul className="mt-3 space-y-3 border-l-2 border-ink-100 pl-4 dark:border-ink-800">
-                    {r.children.map((ch) => <li key={ch.id}><ReplyRow r={ch} small /></li>)}
+                    {r.children.map((ch) => (
+                      <li key={ch.id} className="flex gap-2">
+                        <CornerDownRight size={15} className="mt-2 shrink-0 text-ink-300" />
+                        <div className="min-w-0 flex-1"><ReplyRow r={ch} small /></div>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </li>
@@ -158,9 +173,10 @@ function ReplyRow({ r, small }: { r: ReplyBits; small?: boolean }) {
           <span className="text-xs text-ink-400">{format(r.createdAt, 'dd/MM/yyyy HH:mm')}</span>
         </div>
         <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink-700 dark:text-ink-200">{r.content}</p>
-        {r.likeCount > 0 && (
-          <p className="mt-1.5 flex items-center gap-1 text-xs text-ink-400"><ThumbsUp size={12} />{fmtCount(r.likeCount)}</p>
-        )}
+        <div className="mt-1.5 flex items-center gap-4 text-xs text-ink-400">
+          <button className="flex items-center gap-1 hover:text-accent-500"><Heart size={13} />{fmtCount(r.likeCount)}</button>
+          <button className="flex items-center gap-1 hover:text-brand-600"><MessageSquare size={13} />Trả lời</button>
+        </div>
       </div>
     </div>
   );

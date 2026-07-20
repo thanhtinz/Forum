@@ -60,10 +60,10 @@ function Meta({ post }: { post: PostCardData }) {
   return (
     <div className="mt-auto">
       <Badges post={post} />
-      <div className="flex items-center gap-3 border-t border-ink-100 pt-2 text-[11px] text-ink-400 dark:border-ink-800">
-        <span className="flex items-center gap-0.5"><Eye size={12} />{fmtCount(post.viewCount)}</span>
-        <span className="flex items-center gap-0.5"><MessageSquare size={12} />{fmtCount(post.commentCount)}</span>
-        <span className="flex items-center gap-0.5"><Heart size={12} />{fmtCount(post.likeCount)}</span>
+      <div className="flex items-center justify-between border-t border-ink-100 pt-2 text-[11px] text-ink-400 dark:border-ink-800">
+        <span className="flex items-center gap-1"><Eye size={12} />{fmtCount(post.viewCount)}</span>
+        <span className="flex items-center gap-1"><MessageSquare size={12} />{fmtCount(post.commentCount)}</span>
+        <span className="flex items-center gap-1"><Heart size={12} />{fmtCount(post.likeCount)}</span>
       </div>
     </div>
   );

@@ -25,21 +25,20 @@ export interface PostCardData {
 function AccessBadge({ post }: { post: PostCardData }) {
   if (post.access === 'FREE' || post.access === 'LOGIN_REQUIRED') return null;
   if (post.access === 'VIP_ONLY')
-    return <span className="chip shrink-0 gap-1 bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"><Crown size={11} /> VIP</span>;
+    return <span className="chip shrink-0 gap-1 bg-amber-500 text-white shadow-sm"><Crown size={11} /> VIP</span>;
   if (post.access === 'POINTS')
-    return <span className="chip shrink-0 gap-1 bg-brand-100 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300"><Coins size={11} /> {fmtCount(post.pricePoints)} điểm</span>;
-  return <span className="chip shrink-0 gap-1 bg-accent-500/15 text-accent-600"><Lock size={11} /> {fmtVnd(post.priceAmount)}</span>;
+    return <span className="chip shrink-0 gap-1 bg-brand-500 text-white shadow-sm"><Coins size={11} /> {fmtCount(post.pricePoints)} điểm</span>;
+  return <span className="chip shrink-0 gap-1 bg-accent-500 text-white shadow-sm"><Lock size={11} /> {fmtVnd(post.priceAmount)}</span>;
 }
 
-/** Badge row kiểu zibll: giá + chuyên mục (nhiều, icon thư mục) + tag (#). */
+/** Badge row kiểu zibll: chuyên mục (nhiều, icon thư mục) + tag (#). Giá hiển thị trên ảnh. */
 function Badges({ post }: { post: PostCardData }) {
   const cats = post.categories && post.categories.length > 0 ? post.categories : post.category ? [post.category] : [];
-  const hasAny = post.access === 'POINTS' || post.access === 'PAID' || post.access === 'VIP_ONLY' || cats.length > 0 || (post.tags && post.tags.length > 0);
+  const hasAny = cats.length > 0 || (post.tags && post.tags.length > 0);
   if (!hasAny) return null;
   return (
     // Mobile: cuộn ngang (kéo qua); PC: xuống dòng hiện nhiều
     <div className="mb-2 flex flex-nowrap gap-1 overflow-x-auto no-scrollbar sm:flex-wrap">
-      <AccessBadge post={post} />
       {cats.map((c) => {
         const color = c.color || '#2c7bfe';
         return (
@@ -83,6 +82,7 @@ export function PostCard({ post }: { post: PostCardData }) {
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={post.cover} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
             : <div className="flex h-full min-h-[160px] w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${coverColor}, ${coverColor}99)` }}><ImageIcon size={30} className="text-white/45" /></div>}
+          <div className="absolute right-2 top-2"><AccessBadge post={post} /></div>
         </Link>
         <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:p-3.5">
           <Link href={href} className="line-clamp-2 text-base font-bold leading-snug hover:text-brand-600">{post.title}</Link>
@@ -98,6 +98,9 @@ export function PostCard({ post }: { post: PostCardData }) {
     return (
       <article className="post-card group" style={{ background: `${coverColor}0d` }}>
         <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:p-3.5">
+          {(post.access === 'POINTS' || post.access === 'PAID' || post.access === 'VIP_ONLY') && (
+            <div><AccessBadge post={post} /></div>
+          )}
           <Link href={href} className="line-clamp-3 text-base font-bold leading-snug hover:text-brand-600">{post.title}</Link>
           {post.excerpt && <p className="line-clamp-3 text-xs text-ink-500">{post.excerpt}</p>}
           <Meta post={post} />
@@ -111,7 +114,8 @@ export function PostCard({ post }: { post: PostCardData }) {
     const imgs = post.gallery.slice(0, 3);
     return (
       <article className="post-card group">
-        <div className="grid grid-cols-3 gap-0.5">
+        <div className="relative grid grid-cols-3 gap-0.5">
+          <div className="absolute right-2 top-2 z-10"><AccessBadge post={post} /></div>
           {imgs.map((g, i) => (
             <Link key={i} href={href} className="relative block aspect-square overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -138,6 +142,7 @@ export function PostCard({ post }: { post: PostCardData }) {
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={post.cover} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
           : <div className="flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${coverColor}, ${coverColor}99)` }}><ImageIcon size={30} className="text-white/45" /></div>}
+        <div className="absolute right-2 top-2"><AccessBadge post={post} /></div>
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:p-3.5">
         <Link href={href} className="line-clamp-2 min-h-[2.6em] text-sm font-bold leading-snug hover:text-brand-600">{post.title}</Link>

@@ -13,10 +13,9 @@ import { PostTabs } from '@/components/post/PostTabs';
 import { Faq, type FaqItem } from '@/components/post/Faq';
 import { Comments } from '@/components/post/Comments';
 import { PostActions } from '@/components/post/PostActions';
-import { AuthorCard } from '@/components/post/AuthorCard';
 import { RelatedPosts } from '@/components/post/RelatedPosts';
 import { CopyrightNotice } from '@/components/post/CopyrightNotice';
-import { HomeSidebar } from '@/components/HomeSidebar';
+import { PostSidebar } from '@/components/post/PostSidebar';
 import { fmtCount, truncate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -180,16 +179,13 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
         </div>
       </div>
 
-      {/* Card tác giả */}
-      <AuthorCard authorId={post.authorId} viewerId={accessUser?.id} />
-
       {/* Bài viết liên quan */}
       <RelatedPosts postId={post.id} categoryId={post.categoryId} />
         </div>
 
-        {/* Cột phải (chỉ PC) */}
-        <div className="hidden lg:block">
-          <HomeSidebar />
+        {/* Cột 2 — tác giả + bài nổi bật + thẻ (PC: sidebar, mobile: xếp dưới) */}
+        <div className="mt-6 lg:mt-0">
+          <PostSidebar authorId={post.authorId} viewerId={accessUser?.id} />
         </div>
       </div>
     </article>

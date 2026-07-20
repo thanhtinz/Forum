@@ -155,6 +155,7 @@ model Post {
 
   categoryId String?
   category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categories CategoriesOnPosts[]   // nhiều chuyên mục (WordPress-style)
   tags       TagsOnPosts[]
 
   // Card layout / hiển thị
@@ -233,11 +234,22 @@ model Category {
   parent   Category?  @relation("CatTree", fields: [parentId], references: [id], onDelete: SetNull)
   children Category[] @relation("CatTree")
 
-  posts Post[]
+  posts     Post[]               // chuyên mục chính (primary)
+  postLinks CategoriesOnPosts[]  // nhiều chuyên mục
 
   createdAt DateTime @default(now())
 
   @@index([parentId])
+}
+
+model CategoriesOnPosts {
+  postId     String
+  categoryId String
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@index([categoryId])
 }
 
 model Tag {

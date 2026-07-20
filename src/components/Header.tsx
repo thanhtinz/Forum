@@ -39,15 +39,15 @@ export async function Header() {
           ))}
         </nav>
 
-        <div className="relative ml-auto hidden max-w-sm flex-1 items-center md:flex">
-          <Search size={16} className="absolute left-3 text-ink-400" />
-          <form action="/search" className="w-full">
+        <div className="hidden flex-1 justify-center px-4 md:flex">
+          <form action="/search" className="relative w-full max-w-md">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
             <input name="q" placeholder="Tìm bài viết, chủ đề, thành viên…"
               className="w-full rounded-full border border-ink-200 bg-ink-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-400 focus:bg-white dark:border-ink-700 dark:bg-ink-900" />
           </form>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 md:ml-0">
           {user ? (
             <>
               <span className="hidden items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600 sm:flex dark:bg-amber-950/40">

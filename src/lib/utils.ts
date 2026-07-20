@@ -20,3 +20,13 @@ export function fmtVnd(n?: number | null): string {
 export function truncate(s: string, max = 160): string {
   return s.length > max ? s.slice(0, max).trimEnd() + '…' : s;
 }
+
+/** Định dạng dung lượng file: 1.5 MB, 48.2 MB, 2.1 GB */
+export function fmtBytes(bytes?: number | bigint | null): string {
+  const n = typeof bytes === 'bigint' ? Number(bytes) : bytes ?? 0;
+  if (!n) return '—';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(Math.floor(Math.log(n) / Math.log(1024)), units.length - 1);
+  const v = n / 1024 ** i;
+  return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+}

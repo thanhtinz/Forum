@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { canAccess, isVipActive, type AccessUser } from '@/lib/access';
 import { Paywall } from '@/components/Paywall';
+import { DownloadBox } from '@/components/DownloadBox';
 import { fmtCount, truncate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,7 @@ async function getPost(slug: string) {
       author: { select: { username: true, name: true, image: true, level: true, vipTier: true } },
       category: { select: { name: true, slug: true, color: true } },
       tags: { include: { tag: { select: { name: true, slug: true } } } },
+      downloads: { orderBy: { order: 'asc' } },
     },
   });
 }
@@ -63,10 +65,31 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
 
   const access = await canAccess(accessUser, post, { isAuthor, vipFreeContent });
 
+  // Bảng giá VIP cho khối tải xuống (chỉ tra khi bài có file).
+  const plans = post.downloads.length > 0
+    ? await db.vipPlan.findMany({
+        where: { active: true },
+        orderBy: { tier: 'asc' },
+        select: { tier: true, name: true, discountPercent: true, freeContent: true },
+      })
+    : [];
+
   // Đếm view (best-effort; tối ưu bằng Redis batch ở giai đoạn sau).
   await db.post.update({ where: { id: post.id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
 
   const published = post.publishedAt ?? post.createdAt;
+
+  const hiddenBlock = post.hiddenContent ? (
+    <div className="mt-2 rounded-2xl border border-brand-200 bg-brand-50/50 p-5 dark:border-brand-900 dark:bg-brand-950/20">
+      <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-brand-600">
+        <Lock size={13} /> Nội dung mở khoá
+      </div>
+      <div
+        className="prose prose-ink max-w-none dark:prose-invert prose-a:text-brand-600"
+        dangerouslySetInnerHTML={{ __html: post.hiddenContent }}
+      />
+    </div>
+  ) : null;
 
   return (
     <article className="mx-auto max-w-3xl">
@@ -123,29 +146,40 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
       />
 
       {/* Nội dung ẩn — CHỈ render khi được phép (không bao giờ gửi xuống client nếu bị khoá) */}
-      {access.allowed
-        ? post.hiddenContent && (
-            <div className="mt-2 rounded-2xl border border-brand-200 bg-brand-50/50 p-5 dark:border-brand-900 dark:bg-brand-950/20">
-              <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-brand-600">
-                <Lock size={13} /> Nội dung mở khoá
-              </div>
-              <div
-                className="prose prose-ink max-w-none dark:prose-invert prose-a:text-brand-600"
-                dangerouslySetInnerHTML={{ __html: post.hiddenContent }}
-              />
-            </div>
-          )
-        : (
-          <Paywall
+      {post.downloads.length > 0 ? (
+        <>
+          {access.allowed && hiddenBlock}
+          <DownloadBox
             postId={post.id}
             slug={post.slug}
+            allowed={access.allowed}
             reason={access.reason}
+            access={post.access}
             pricePoints={post.pricePoints}
             priceAmount={post.priceAmount}
-            vipTierFree={post.vipTierFree}
+            downloads={post.downloads.map((d) => ({
+              id: d.id, label: d.label, url: d.url, provider: d.provider,
+              version: d.version, password: d.password, extractCode: d.extractCode,
+              sizeBytes: d.sizeBytes == null ? null : Number(d.sizeBytes),
+            }))}
+            plans={plans}
+            updatedAt={format(post.updatedAt, 'yyyy-MM-dd')}
             callbackUrl={`/posts/${post.slug}`}
           />
-        )}
+        </>
+      ) : access.allowed ? (
+        hiddenBlock
+      ) : (
+        <Paywall
+          postId={post.id}
+          slug={post.slug}
+          reason={access.reason}
+          pricePoints={post.pricePoints}
+          priceAmount={post.priceAmount}
+          vipTierFree={post.vipTierFree}
+          callbackUrl={`/posts/${post.slug}`}
+        />
+      )}
 
       {/* Tags */}
       {post.tags.length > 0 && (

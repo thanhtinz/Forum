@@ -74,6 +74,21 @@ export async function toggleFavorite(postId: string): Promise<ToggleState> {
   return { active: !existing, count };
 }
 
+/** Theo dõi / bỏ theo dõi một người dùng. */
+export async function toggleFollow(targetId: string): Promise<ToggleState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { active: false, count: 0, error: 'Bạn cần đăng nhập.' };
+  if (userId === targetId) return { active: false, count: 0, error: 'Không thể tự theo dõi chính mình.' };
+
+  const existing = await db.follow.findFirst({ where: { followerId: userId, followingId: targetId }, select: { id: true } });
+  if (existing) await db.follow.delete({ where: { id: existing.id } });
+  else await db.follow.create({ data: { followerId: userId, followingId: targetId } });
+
+  const count = await db.follow.count({ where: { followingId: targetId } });
+  return { active: !existing, count };
+}
+
 // ─────────────────────────── Bình luận ───────────────────────────
 
 export interface CommentState {

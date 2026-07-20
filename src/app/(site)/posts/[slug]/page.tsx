@@ -16,6 +16,7 @@ import { PostActions } from '@/components/post/PostActions';
 import { AuthorCard } from '@/components/post/AuthorCard';
 import { RelatedPosts } from '@/components/post/RelatedPosts';
 import { CopyrightNotice } from '@/components/post/CopyrightNotice';
+import { HomeSidebar } from '@/components/HomeSidebar';
 import { fmtCount, truncate } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -123,9 +124,12 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
   );
 
   return (
-    <article className="mx-auto max-w-3xl">
+    <article>
       <ReadingProgress />
 
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        {/* Cột chính */}
+        <div className="min-w-0">
       {/* Hero tiêu đề */}
       <header className="relative overflow-hidden rounded-2xl bg-ink-800 text-white shadow-card">
         {post.cover && (
@@ -147,7 +151,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
         </div>
       </header>
 
-      {/* Thân bài + 3 tab */}
+      {/* Thân bài + 3 tab + cuối bài (dính trong CÙNG card) */}
       <div className="card mt-6 p-5 sm:p-6">
         <PostTabs
           detail={detailTab}
@@ -156,31 +160,38 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
           faqCount={faqItems.length}
           commentCount={post.commentCount}
         />
+
+        {/* Cuối bài — THE END + tags + thích/chia sẻ/lưu */}
+        <div className="mt-8 border-t border-ink-100 pt-6 dark:border-ink-800">
+          <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-widest text-ink-300">
+            <span className="h-px flex-1 bg-ink-200 dark:bg-ink-800" /> THE END <span className="h-px flex-1 bg-ink-200 dark:bg-ink-800" />
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {post.category && (
+              <Link href={`/category/${post.category.slug}`} className="chip gap-1 bg-brand-50 text-brand-600 dark:bg-brand-950/40">
+                <FolderOpen size={13} /> {post.category.name}
+              </Link>
+            )}
+            {post.tags.map(({ tag }) => (
+              <Link key={tag.slug} href={`/tag/${tag.slug}`} className="chip bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300">#{tag.name}</Link>
+            ))}
+          </div>
+          <PostActions postId={post.id} initialLiked={!!liked} initialLikeCount={post.likeCount} initialSaved={!!saved} initialSaveCount={saveCount} />
+        </div>
       </div>
 
-      {/* Card cuối bài — HẾT + tags + thích/tán thưởng/chia sẻ/lưu */}
-      <section className="card mt-6 p-6">
-        <div className="flex items-center gap-3 text-sm font-semibold uppercase tracking-widest text-ink-300">
-          <span className="h-px flex-1 bg-ink-200 dark:bg-ink-800" /> HẾT <span className="h-px flex-1 bg-ink-200 dark:bg-ink-800" />
-        </div>
-        <div className="mt-5 flex flex-wrap gap-2">
-          {post.category && (
-            <Link href={`/category/${post.category.slug}`} className="chip gap-1 bg-brand-50 text-brand-600 dark:bg-brand-950/40">
-              <FolderOpen size={13} /> {post.category.name}
-            </Link>
-          )}
-          {post.tags.map(({ tag }) => (
-            <Link key={tag.slug} href={`/tag/${tag.slug}`} className="chip bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300">#{tag.name}</Link>
-          ))}
-        </div>
-        <PostActions postId={post.id} initialLiked={!!liked} initialLikeCount={post.likeCount} initialSaved={!!saved} initialSaveCount={saveCount} />
-      </section>
-
       {/* Card tác giả */}
-      <AuthorCard authorId={post.authorId} />
+      <AuthorCard authorId={post.authorId} viewerId={accessUser?.id} />
 
       {/* Bài viết liên quan */}
       <RelatedPosts postId={post.id} categoryId={post.categoryId} />
+        </div>
+
+        {/* Cột phải (chỉ PC) */}
+        <div className="hidden lg:block">
+          <HomeSidebar />
+        </div>
+      </div>
     </article>
   );
 }

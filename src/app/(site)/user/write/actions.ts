@@ -46,9 +46,20 @@ export async function createPost(_prev: WriteState, formData: FormData): Promise
   const catSlugs = formData.getAll('categories').map(String).filter(Boolean);
   const tagRaw = String(formData.get('tags') ?? '');
 
+  // Bán nội dung
+  const ACCESS = ['FREE', 'LOGIN_REQUIRED', 'POINTS', 'PAID', 'VIP_ONLY'];
+  const access = ACCESS.includes(String(formData.get('access'))) ? String(formData.get('access')) : 'FREE';
+  const pricePoints = Math.max(0, Math.floor(Number(formData.get('pricePoints') ?? 0) || 0));
+  const priceAmount = Math.max(0, Math.floor(Number(formData.get('priceAmount') ?? 0) || 0));
+  const hiddenContent = String(formData.get('hiddenContent') ?? '').trim();
+  const isPaid = access === 'POINTS' || access === 'PAID' || access === 'VIP_ONLY';
+
   if (title.length < 5) return { error: 'Tiêu đề tối thiểu 5 ký tự.' };
   if (content.length < 20) return { error: 'Nội dung quá ngắn (tối thiểu 20 ký tự).' };
   if (catSlugs.length === 0) return { error: 'Hãy chọn ít nhất 1 chuyên mục.' };
+  if (access === 'POINTS' && pricePoints <= 0) return { error: 'Hãy nhập giá bằng điểm (> 0).' };
+  if (access === 'PAID' && priceAmount <= 0) return { error: 'Hãy nhập giá bằng tiền (> 0).' };
+  if (isPaid && hiddenContent.length < 10) return { error: 'Hãy nhập phần nội dung ẩn (sau khi mua mới xem được).' };
 
   // slug duy nhất
   let slug = toSlug(title);
@@ -64,9 +75,13 @@ export async function createPost(_prev: WriteState, formData: FormData): Promise
       slug, title,
       excerpt: excerpt || null,
       content: toParagraphs(content),
+      hiddenContent: isPaid && hiddenContent ? toParagraphs(hiddenContent) : null,
       cover: cover || null,
       cardStyle: cardStyle as never,
       status: status as never,
+      access: access as never,
+      pricePoints: access === 'POINTS' ? pricePoints : null,
+      priceAmount: access === 'PAID' ? priceAmount : null,
       publishedAt: AUTO_PUBLISH ? new Date() : null,
       authorId: userId,
       categoryId: cats[0]?.id ?? null,

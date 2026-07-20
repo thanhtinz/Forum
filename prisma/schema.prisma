@@ -569,6 +569,7 @@ enum PointsReason {
   RECEIVED_LIKE
   INVITE_BONUS
   PURCHASE_CONTENT
+  CONTENT_SALE       // tác giả nhận từ bán nội dung
   ADMIN_ADJUST
   EXCHANGE
   BOUNTY_PAID
@@ -598,6 +599,7 @@ enum BalanceReason {
   REFUND
   WITHDRAW
   COMMISSION
+  CONTENT_SALE       // tác giả nhận từ bán nội dung trả phí
   ADMIN_ADJUST
 }
 

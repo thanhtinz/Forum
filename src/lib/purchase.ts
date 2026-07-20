@@ -15,6 +15,17 @@ function newOrderCode(): string {
 }
 
 /**
+ * Hoa hồng nền tảng giữ lại (%). Tác giả nhận (100 - x)% doanh thu mỗi lượt bán.
+ * TODO: cho admin cấu hình qua SiteSetting.
+ */
+export const PLATFORM_COMMISSION_PERCENT = 30;
+
+/** Phần chia cho tác giả từ một khoản doanh thu. */
+export function authorShareOf(amount: number): number {
+  return Math.floor((amount * (100 - PLATFORM_COMMISSION_PERCENT)) / 100);
+}
+
+/**
  * Mua/mở khoá nội dung trả phí. Phương thức thanh toán suy ra từ `post.access`:
  *  - POINTS → trừ `pricePoints` (điểm)
  *  - PAID   → trừ `priceAmount` (số dư VND)
@@ -44,8 +55,12 @@ export async function purchaseContent(userId: string, postId: string): Promise<P
       });
       if (existing) return { ok: true, already: true } as const;
 
-      if (post.access === 'POINTS') {
-        const price = post.pricePoints ?? 0;
+      const isPoints = post.access === 'POINTS';
+      const price = (isPoints ? post.pricePoints : post.priceAmount) ?? 0;
+      const share = authorShareOf(price);
+      const creditAuthor = post.authorId !== userId && share > 0;
+
+      if (isPoints) {
         try {
           await grantPoints(
             { userId, amount: -price, reason: 'PURCHASE_CONTENT', refId: post.id, note: `Mở khoá: ${post.title}` },
@@ -60,8 +75,14 @@ export async function purchaseContent(userId: string, postId: string): Promise<P
             amount: 0, finalAmount: 0, pointsUsed: price, payMethod: 'POINTS', paidAt: new Date(),
           },
         });
+        // Ăn chia: tác giả nhận phần điểm còn lại
+        if (creditAuthor) {
+          await grantPoints(
+            { userId: post.authorId, amount: share, reason: 'CONTENT_SALE', refId: post.id, note: `Bán nội dung: ${post.title}` },
+            tx,
+          );
+        }
       } else {
-        const price = post.priceAmount ?? 0;
         try {
           await grantBalance(
             { userId, amount: -price, reason: 'PURCHASE', refId: post.id, note: `Mở khoá: ${post.title}` },
@@ -76,13 +97,21 @@ export async function purchaseContent(userId: string, postId: string): Promise<P
             amount: price, finalAmount: price, payMethod: 'BALANCE', paidAt: new Date(),
           },
         });
+        // Ăn chia: tác giả nhận phần số dư (VND) còn lại
+        if (creditAuthor) {
+          await grantBalance(
+            { userId: post.authorId, amount: share, reason: 'CONTENT_SALE', refId: post.id, note: `Bán nội dung: ${post.title}` },
+            tx,
+          );
+        }
       }
 
-      // Thông báo cho tác giả (không chặn giao dịch nếu tác giả tự mua).
+      // Thông báo cho tác giả (kèm phần được chia).
       if (post.authorId !== userId) {
+        const earn = isPoints ? `${share} điểm` : `${share.toLocaleString('vi-VN')}₫`;
         await notify(
           {
-            userId: post.authorId, type: 'ORDER', title: 'Có người mở khoá nội dung của bạn',
+            userId: post.authorId, type: 'ORDER', title: `Có người mua nội dung — bạn nhận ${earn}`,
             content: post.title, link: `/posts/${post.slug}`, actorId: userId,
           },
           tx,

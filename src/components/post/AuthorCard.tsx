@@ -1,48 +1,66 @@
 import Link from 'next/link';
 import { db } from '@/lib/db';
-import { FileText, Users } from 'lucide-react';
 import { fmtCount } from '@/lib/utils';
+import { FollowButton } from './FollowButton';
 
-/** Card thông tin tác giả bài viết. */
-export async function AuthorCard({ authorId }: { authorId: string }) {
-  const author = await db.user.findUnique({
-    where: { id: authorId },
-    select: {
-      username: true, name: true, image: true, cover: true, bio: true, level: true,
-      _count: { select: { posts: true, followers: true } },
-    },
-  });
+/** Card tác giả — phong cách zibll: avatar tròn, tên + chữ ký, nút theo dõi, hàng chỉ số. */
+export async function AuthorCard({ authorId, viewerId }: { authorId: string; viewerId?: string | null }) {
+  const [author, following] = await Promise.all([
+    db.user.findUnique({
+      where: { id: authorId },
+      select: {
+        username: true, name: true, image: true, bio: true, level: true, vipTier: true,
+        _count: { select: { posts: true, followers: true, comments: true } },
+      },
+    }),
+    viewerId ? db.follow.findFirst({ where: { followerId: viewerId, followingId: authorId }, select: { id: true } }) : Promise.resolve(null),
+  ]);
   if (!author) return null;
 
   const name = author.name ?? author.username ?? 'Ẩn danh';
   const href = `/u/${author.username ?? ''}`;
 
   return (
-    <section className="card mt-6 overflow-hidden">
-      <div className="h-20 bg-gradient-to-r from-brand-500 to-brand-400"
-        style={author.cover ? { backgroundImage: `url(${author.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined} />
-      <div className="px-5 pb-5">
-        <div className="-mt-9 flex items-end justify-between">
-          <Link href={href}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {author.image
-              ? <img src={author.image} alt="" className="h-18 w-18 h-[72px] w-[72px] rounded-2xl border-4 border-white object-cover dark:border-ink-900" />
-              : <span className="grid h-[72px] w-[72px] place-items-center rounded-2xl border-4 border-white bg-ink-200 text-2xl font-black text-ink-600 dark:border-ink-900 dark:bg-ink-700 dark:text-ink-200">{name[0]?.toUpperCase()}</span>}
-          </Link>
-          <Link href={href} className="btn-outline">Xem trang</Link>
-        </div>
-        <div className="mt-3">
-          <div className="flex items-center gap-2">
-            <Link href={href} className="text-lg font-bold hover:text-brand-600">{name}</Link>
-            <span className="chip bg-brand-100 text-brand-600 dark:bg-brand-950/50 dark:text-brand-300">Lv{author.level}</span>
-          </div>
-          {author.bio && <p className="mt-1 text-sm text-ink-500">{author.bio}</p>}
-          <div className="mt-3 flex gap-5 text-sm text-ink-500">
-            <span className="flex items-center gap-1.5"><FileText size={15} /> {fmtCount(author._count.posts)} bài viết</span>
-            <span className="flex items-center gap-1.5"><Users size={15} /> {fmtCount(author._count.followers)} người theo dõi</span>
+    <section className="card mt-6 p-5">
+      <div className="flex items-start gap-4">
+        <Link href={href} className="shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {author.image
+            ? <img src={author.image} alt="" className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-100 dark:ring-brand-950" />
+            : <span className="grid h-16 w-16 place-items-center rounded-full bg-brand-500 text-2xl font-black text-white">{name[0]?.toUpperCase()}</span>}
+        </Link>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href={href} className="text-base font-bold hover:text-brand-600">{name}</Link>
+                <span className="chip bg-brand-100 text-brand-600 dark:bg-brand-950/50 dark:text-brand-300">Lv{author.level}</span>
+                {author.vipTier != null && (
+                  <span className="chip bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">VIP{author.vipTier}</span>
+                )}
+              </div>
+              <p className="mt-0.5 line-clamp-2 text-sm text-ink-500">{author.bio ?? 'Người này chưa có giới thiệu.'}</p>
+            </div>
+            <FollowButton targetId={authorId} initialFollowing={!!following} initialCount={author._count.followers} self={viewerId === authorId} />
           </div>
         </div>
       </div>
+
+      <div className="mt-4 grid grid-cols-3 divide-x divide-ink-100 border-t border-ink-100 pt-3 text-center dark:divide-ink-800 dark:border-ink-800">
+        <Stat value={author._count.posts} label="Bài viết" />
+        <Stat value={author._count.followers} label="Người theo dõi" />
+        <Stat value={author._count.comments} label="Bình luận" />
+      </div>
     </section>
+  );
+}
+
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <div>
+      <div className="text-lg font-bold">{fmtCount(value)}</div>
+      <div className="text-xs text-ink-400">{label}</div>
+    </div>
   );
 }

@@ -28,7 +28,7 @@ export async function RelatedPosts({ postId, categoryId }: { postId: string; cat
         <span className="h-5 w-1.5 rounded-full bg-brand-500" />
         <h2 className="text-lg font-bold">Bài viết liên quan</h2>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {cards.map((c) => <PostCard key={c.slug} post={c} />)}
       </div>
     </section>

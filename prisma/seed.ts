@@ -102,7 +102,7 @@ async function main() {
   const samples = [
     { slug: 'chao-mung-nova', title: 'Chào mừng đến với Nova Platform', cat: 'tin-tuc', style: 'STANDARD', access: 'FREE', excerpt: 'Nova là nền tảng blog kết hợp diễn đàn và nội dung trả phí, thiết kế hiện đại lấy cảm hứng từ Zibll.' },
     { slug: 'huong-dan-kiem-diem', title: 'Hướng dẫn kiếm điểm và lên cấp nhanh', cat: 'thu-thuat', style: 'WIDE', access: 'LOGIN_REQUIRED', excerpt: 'Điểm danh mỗi ngày, đăng bài chất lượng, nhận like để tích luỹ điểm và EXP lên cấp.' },
-    { slug: 'bo-tai-nguyen-premium', title: 'Bộ tài nguyên thiết kế Premium (mở khoá bằng điểm)', cat: 'tai-nguyen', style: 'STANDARD', access: 'POINTS', pricePoints: 50, type: 'RESOURCE', excerpt: 'Trọn bộ tài nguyên UI cao cấp, mở khoá bằng điểm tích luỹ.', downloads: [{ label: 'Nova-UI-Kit-v2.zip', provider: 'gdrive', version: 'v2.0', sizeBytes: 48234496, password: 'nova2026' }] },
+    { slug: 'bo-tai-nguyen-premium', title: 'Bộ tài nguyên thiết kế Premium (mở khoá bằng điểm)', cat: 'tai-nguyen', style: 'STANDARD', access: 'POINTS', pricePoints: 50, type: 'RESOURCE', excerpt: 'Trọn bộ tài nguyên UI cao cấp, mở khoá bằng điểm tích luỹ.', downloads: [{ label: 'Nova-UI-Kit-v2.zip', provider: 'gdrive', version: 'v2.0', sizeBytes: 48234496, password: 'nova2026' }], faq: [{ q: 'Mua rồi có tải lại được không?', a: 'Có. Sau khi mở khoá, bạn tải lại bao nhiêu lần tuỳ thích trong giới hạn lượt tải mỗi ngày theo cấp độ.' }, { q: 'File có mật khẩu giải nén không?', a: 'Có, mật khẩu hiển thị ngay trong khối tải xuống sau khi bạn mở khoá.' }, { q: 'Tôi có được dùng cho dự án thương mại?', a: 'Vui lòng đọc phần Tuyên bố bản quyền phía trên khung mua hàng.' }] },
     { slug: 'khoa-hoc-vip', title: 'Khoá học nâng cao chỉ dành cho VIP', cat: 'chia-se', style: 'TEXT_ONLY', access: 'VIP_ONLY', vipTierFree: 1, type: 'RESOURCE', excerpt: 'Nội dung độc quyền cho thành viên VIP.', downloads: [{ label: 'Khoa-hoc-nang-cao.pdf', provider: 'local', version: '1.0', sizeBytes: 15728640 }] },
     { slug: 'tai-lieu-tra-phi', title: 'Tài liệu chuyên sâu (trả phí)', cat: 'tai-nguyen', style: 'STANDARD', access: 'PAID', priceAmount: 20000, type: 'RESOURCE', excerpt: 'Tài liệu chi tiết, mua một lần dùng mãi mãi.', downloads: [{ label: 'Tai-lieu-chuyen-sau.pdf', provider: 'local', version: '1.0', sizeBytes: 8388608, extractCode: 'x9k2' }] },
     { slug: 'meo-vat-hang-ngay', title: 'Những mẹo vặt hữu ích hằng ngày', cat: 'thu-thuat', style: 'STANDARD', access: 'FREE', excerpt: 'Tổng hợp các mẹo nhỏ giúp cuộc sống dễ dàng hơn.' },
@@ -110,7 +110,7 @@ async function main() {
   for (const s of samples) {
     const post = await db.post.upsert({
       where: { slug: s.slug },
-      update: { type: ((s as any).type ?? 'ARTICLE') as any },
+      update: { type: ((s as any).type ?? 'ARTICLE') as any, faq: (s as any).faq ?? undefined },
       create: {
         slug: s.slug,
         title: s.title,
@@ -127,6 +127,7 @@ async function main() {
         pricePoints: (s as any).pricePoints ?? null,
         priceAmount: (s as any).priceAmount ?? null,
         vipTierFree: (s as any).vipTierFree ?? null,
+        faq: (s as any).faq ?? undefined,
         viewCount: Math.floor(20 + Math.sin(s.slug.length) * 15 + s.title.length),
         likeCount: s.title.length % 30,
         commentCount: s.title.length % 12,
@@ -159,6 +160,32 @@ async function main() {
     update: {},
     create: { slug: 'thao-luan-chung', name: 'Thảo luận chung', description: 'Nơi trao đổi mọi chủ đề', order: 1 },
   });
+
+  // ── Tuyên bố bản quyền (hiển thị trên khung mua hàng) ──
+  await db.siteSetting.upsert({
+    where: { key: 'copyright_notice' },
+    update: {},
+    create: {
+      key: 'copyright_notice',
+      value: [
+        'Tài nguyên trên Nova chỉ dùng cho mục đích học tập và tham khảo cá nhân.',
+        'Nghiêm cấm mua đi bán lại hoặc phát tán lại dưới mọi hình thức khi chưa được phép.',
+        'Nếu tài nguyên vi phạm bản quyền của bạn, hãy liên hệ để được gỡ bỏ.',
+      ],
+    },
+  });
+
+  // ── Bình luận mẫu ──
+  const premium = await db.post.findUnique({ where: { slug: 'bo-tai-nguyen-premium' }, select: { id: true } });
+  if (premium && (await db.comment.count({ where: { postId: premium.id } })) === 0) {
+    const root = await db.comment.create({
+      data: { postId: premium.id, authorId: admin.id, content: 'Bộ tài nguyên rất chất lượng, cảm ơn tác giả đã chia sẻ!', pinned: true },
+    });
+    await db.comment.create({
+      data: { postId: premium.id, authorId: admin.id, parentId: root.id, content: 'Cảm ơn bạn đã ủng hộ 💙' },
+    });
+    await db.post.update({ where: { id: premium.id }, data: { commentCount: 2 } });
+  }
 
   console.log('✅ Seed hoàn tất. Admin: admin@nova.local / admin123');
 }

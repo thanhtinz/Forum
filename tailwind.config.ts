@@ -41,12 +41,15 @@ const config: Config = {
         },
       },
       boxShadow: {
-        card: '0 2px 12px rgba(15,23,42,0.05), 0 1px 3px rgba(15,23,42,0.03)',
-        'card-hover': '0 10px 30px rgba(15,23,42,0.10), 0 4px 10px rgba(15,23,42,0.05)',
+        // Bóng glow mềm quanh card kiểu zibll (0 0 10px), không đổ hướng.
+        card: '0 0 10px var(--nova-shadow)',
+        'card-hover': '0 6px 22px var(--nova-shadow-strong)',
       },
       borderRadius: {
-        xl: '0.9rem',
-        '2xl': '1.15rem',
+        // zibll dùng --main-radius: 8px; card lớn nhỉnh hơn chút.
+        lg: '0.5rem',    // 8px
+        xl: '0.5rem',    // 8px
+        '2xl': '0.625rem', // 10px
       },
     },
   },

@@ -13,5 +13,5 @@ export default async function RegisterPage({ searchParams }: { searchParams: Pro
   const session = await auth();
   if (session?.user) redirect(cb);
 
-  return <RegisterForm callbackUrl={cb} ref={ref} />;
+  return <RegisterForm callbackUrl={cb} inviteCode={ref} />;
 }

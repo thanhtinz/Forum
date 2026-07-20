@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Xanh dương chủ đạo kiểu zibll (#2c7bfe) — dạng "r g b" */
+  /* Xanh dương chủ đạo (#2c7bfe) — dạng "r g b" */
   --brand-50: 239 245 255;
   --brand-100: 219 232 254;
   --brand-200: 191 215 254;
@@ -15,13 +15,34 @@
   --brand-800: 28 68 158;
   --brand-900: 28 61 125;
   --brand-950: 22 39 77;
+
+  /* Token nền/chữ/viền/bóng theo zibll 8.1 (light) */
+  --nova-body: #f5f6f7;
+  --nova-surface: #ffffff;
+  --nova-text: #4e5358;   /* --main-color */
+  --nova-heading: #2f3337; /* ~--key-color */
+  --nova-muted: #8a8f96;
+  --nova-border: rgba(50, 50, 50, 0.07);
+  --nova-shadow: rgba(116, 116, 116, 0.10);
+  --nova-shadow-strong: rgba(116, 116, 116, 0.20);
+}
+
+.dark {
+  /* zibll dark */
+  --nova-body: #292a2d;
+  --nova-surface: #323335;
+  --nova-text: #e5eef7;
+  --nova-heading: #f2f5f8;
+  --nova-muted: #9a9da0;
+  --nova-border: rgba(255, 255, 255, 0.06);
+  --nova-shadow: rgba(0, 0, 0, 0.28);
+  --nova-shadow-strong: rgba(0, 0, 0, 0.45);
 }
 
 html, body {
-  @apply bg-ink-100 text-ink-800 antialiased;
-}
-.dark html, .dark body {
-  @apply bg-ink-950 text-ink-100;
+  background: var(--nova-body);
+  color: var(--nova-text);
+  @apply antialiased;
 }
 
 @layer components {
@@ -29,27 +50,42 @@ html, body {
     @apply mx-auto w-full max-w-6xl px-3 sm:px-4;
   }
   .card {
-    @apply rounded-2xl border border-ink-200/60 bg-white shadow-card dark:border-ink-800 dark:bg-ink-900;
+    background: var(--nova-surface);
+    border: 1px solid var(--nova-border);
+    @apply rounded-2xl shadow-card;
   }
   .post-card {
-    @apply flex flex-col overflow-hidden rounded-2xl border border-ink-200/60 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover dark:border-ink-800 dark:bg-ink-900;
+    background: var(--nova-surface);
+    border: 1px solid var(--nova-border);
+    @apply flex flex-col overflow-hidden rounded-2xl shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors;
   }
   .btn-primary {
     @apply btn bg-brand-500 text-white hover:bg-brand-600;
   }
   .btn-outline {
-    @apply btn border border-ink-300 text-ink-700 hover:bg-ink-100 dark:border-ink-700 dark:text-ink-200 dark:hover:bg-ink-800;
+    border: 1px solid var(--nova-border);
+    @apply btn text-ink-600 hover:bg-ink-100 dark:text-ink-200 dark:hover:bg-ink-800;
   }
   .btn-ghost {
     @apply btn text-ink-600 hover:bg-ink-200/60 dark:text-ink-300 dark:hover:bg-ink-800;
   }
   .input {
-    @apply w-full rounded-xl border border-ink-300 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-ink-700 dark:bg-ink-900;
+    background: var(--nova-surface);
+    border: 1px solid var(--nova-border);
+    @apply w-full rounded-lg px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
   }
   .chip {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  /* Tiêu đề mục kiểu zibll: gạch nhấn nhỏ dưới-trái */
+  .zib-title {
+    @apply relative pb-2 text-lg font-bold;
+  }
+  .zib-title::before {
+    content: '';
+    @apply absolute bottom-0.5 left-0 h-[3px] w-9 rounded-full bg-brand-500;
   }
 }

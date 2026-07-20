@@ -5,7 +5,7 @@ import { useActionState } from 'react';
 import { UserPlus, User, Mail, Lock } from 'lucide-react';
 import { registerAction, type AuthFormState } from '@/app/(auth)/actions';
 
-export function RegisterForm({ callbackUrl, ref }: { callbackUrl: string; ref?: string }) {
+export function RegisterForm({ callbackUrl, inviteCode }: { callbackUrl: string; inviteCode?: string }) {
   const [state, action, pending] = useActionState<AuthFormState, FormData>(registerAction, {});
   const fe = state.fieldErrors ?? {};
   const loginHref = `/login${callbackUrl !== '/' ? `?callbackUrl=${encodeURIComponent(callbackUrl)}` : ''}`;
@@ -17,7 +17,7 @@ export function RegisterForm({ callbackUrl, ref }: { callbackUrl: string; ref?: 
 
       <form action={action} className="mt-6 space-y-4">
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
-        {ref && <input type="hidden" name="ref" value={ref} />}
+        {inviteCode && <input type="hidden" name="ref" value={inviteCode} />}
 
         <Field name="username" label="Tên đăng nhập" icon={<User size={16} />} placeholder="nguyenvana" autoComplete="username" error={fe.username} />
         <Field name="email" label="Email" type="email" icon={<Mail size={16} />} placeholder="email@vidu.com" autoComplete="email" error={fe.email} />

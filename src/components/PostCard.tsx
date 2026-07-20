@@ -73,10 +73,10 @@ export function PostCard({ post }: { post: PostCardData }) {
             : <div className="flex h-full min-h-[160px] w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${coverColor}, ${coverColor}99)` }}><span className="px-4 text-center text-lg font-bold text-white/95 line-clamp-3">{post.title}</span></div>}
           <div className="absolute left-2 top-2 flex gap-1"><CategoryChip post={post} overlay /></div>
         </Link>
-        <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
+        <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:p-3.5">
           <div className="flex items-center gap-2"><AccessBadge post={post} /></div>
           <Link href={href} className="line-clamp-2 text-base font-bold leading-snug hover:text-brand-600">{post.title}</Link>
-          {post.excerpt && <p className="line-clamp-2 text-sm text-ink-500">{post.excerpt}</p>}
+          {post.excerpt && <p className="line-clamp-2 text-xs text-ink-500">{post.excerpt}</p>}
           <Meta post={post} />
         </div>
       </article>
@@ -87,10 +87,10 @@ export function PostCard({ post }: { post: PostCardData }) {
   if (post.cardStyle === 'TEXT_ONLY') {
     return (
       <article className="post-card group" style={{ background: `${coverColor}0d` }}>
-        <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
+        <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:p-3.5">
           <div className="flex items-center gap-2"><CategoryChip post={post} /><AccessBadge post={post} /></div>
-          <Link href={href} className="line-clamp-3 text-lg font-bold leading-snug hover:text-brand-600">{post.title}</Link>
-          {post.excerpt && <p className="line-clamp-3 text-sm text-ink-500">{post.excerpt}</p>}
+          <Link href={href} className="line-clamp-3 text-base font-bold leading-snug hover:text-brand-600">{post.title}</Link>
+          {post.excerpt && <p className="line-clamp-3 text-xs text-ink-500">{post.excerpt}</p>}
           <Meta post={post} />
         </div>
       </article>
@@ -113,9 +113,9 @@ export function PostCard({ post }: { post: PostCardData }) {
             </Link>
           ))}
         </div>
-        <div className="flex flex-1 flex-col gap-2 p-3 sm:p-4">
+        <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:p-3.5">
           <div className="flex items-center gap-2"><CategoryChip post={post} /><AccessBadge post={post} /></div>
-          <Link href={href} className="line-clamp-2 font-bold leading-snug hover:text-brand-600">{post.title}</Link>
+          <Link href={href} className="line-clamp-2 min-h-[2.6em] text-sm font-bold leading-snug hover:text-brand-600">{post.title}</Link>
           <Meta post={post} />
         </div>
       </article>
@@ -125,7 +125,7 @@ export function PostCard({ post }: { post: PostCardData }) {
   // STANDARD (mặc định) — ảnh 16:9 trên, nội dung dưới
   return (
     <article className="post-card group">
-      <Link href={href} className="relative block aspect-[16/9] overflow-hidden">
+      <Link href={href} className="relative block aspect-[10/7] overflow-hidden">
         {post.cover
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={post.cover} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -134,7 +134,7 @@ export function PostCard({ post }: { post: PostCardData }) {
         <div className="absolute right-2 top-2"><AccessBadge post={post} /></div>
       </Link>
       <div className="flex flex-1 flex-col gap-2 p-4">
-        <Link href={href} className="line-clamp-2 font-bold leading-snug hover:text-brand-600">{post.title}</Link>
+        <Link href={href} className="line-clamp-2 min-h-[2.6em] text-sm font-bold leading-snug hover:text-brand-600">{post.title}</Link>
         {post.excerpt && <p className="line-clamp-2 text-sm text-ink-500">{post.excerpt}</p>}
         <Meta post={post} />
       </div>

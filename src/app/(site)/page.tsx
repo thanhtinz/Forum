@@ -88,10 +88,7 @@ export default async function HomePage() {
       {/* Lưới card + sidebar */}
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <section>
-          <div className="mb-3 flex items-center gap-2">
-            <span className="h-5 w-1.5 rounded-full bg-brand-500" />
-            <h2 className="text-lg font-bold">Bài viết mới nhất</h2>
-          </div>
+          <h2 className="zib-title mb-4">Bài viết mới nhất</h2>
           {cards.length > 0 ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {cards.map((c) => <PostCard key={c.slug} post={c} />)}

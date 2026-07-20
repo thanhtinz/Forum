@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown } from 'lucide-react';
+import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown, PenLine } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { fmtCount } from '@/lib/utils';
 import { MobileNav } from './MobileNav';
@@ -50,6 +50,9 @@ export async function Header() {
         <div className="ml-auto flex items-center gap-2 md:ml-0">
           {user ? (
             <>
+              <Link href="/user/write" className="btn-primary hidden !px-3 !py-1.5 text-sm sm:inline-flex">
+                <PenLine size={15} /> Đăng bài
+              </Link>
               <span className="hidden items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600 sm:flex dark:bg-amber-950/40">
                 <Coins size={13} /> {fmtCount(user.points)}
               </span>

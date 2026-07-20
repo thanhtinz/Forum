@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Search, LayoutGrid, MessagesSquare, Crown, LayoutDashboard, LogIn, UserPlus } from 'lucide-react';
+import { Menu, X, Search, LayoutGrid, MessagesSquare, Crown, LayoutDashboard, LogIn, UserPlus, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ICONS = { LayoutGrid, MessagesSquare, Crown } as const;
@@ -69,10 +69,16 @@ export function MobileNav({ nav, loggedIn }: MobileNavProps) {
               );
             })}
             {loggedIn && (
-              <Link href="/user/dashboard"
-                className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-ink-700 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-200 dark:hover:bg-ink-800">
-                <LayoutDashboard size={18} /> Trang cá nhân
-              </Link>
+              <>
+                <Link href="/user/write"
+                  className="flex items-center gap-3 rounded-xl bg-brand-50 px-3 py-2.5 font-semibold text-brand-600 hover:bg-brand-100 dark:bg-brand-950/40">
+                  <PenLine size={18} /> Đăng bài
+                </Link>
+                <Link href="/user/dashboard"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-ink-700 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-200 dark:hover:bg-ink-800">
+                  <LayoutDashboard size={18} /> Trang cá nhân
+                </Link>
+              </>
             )}
           </nav>
         </div>

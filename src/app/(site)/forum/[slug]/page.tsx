@@ -113,7 +113,7 @@ export default async function ForumPage({ params, searchParams }: {
               </Link>
             ))}
           </div>
-          <Link href="/user/write" className="btn-primary !px-3.5 !py-1.5 text-sm"><PenLine size={15} /> Đăng chủ đề</Link>
+          <Link href={`/forum/${slug}/new`} className="btn-primary !px-3.5 !py-1.5 text-sm"><PenLine size={15} /> Đăng chủ đề</Link>
         </div>
 
         {/* Feed chủ đề */}

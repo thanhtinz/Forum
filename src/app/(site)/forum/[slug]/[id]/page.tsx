@@ -2,9 +2,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Pin, Lock, Award, CheckCircle2, Eye, MessageSquare, Heart, Share2, CornerDownRight } from 'lucide-react';
+import { Pin, Lock, Award, CheckCircle2, Eye, MessageSquare } from 'lucide-react';
 import { db } from '@/lib/db';
+import { auth } from '@/lib/auth';
 import { fmtCount, truncate } from '@/lib/utils';
+import { ThreadActionBar } from '@/components/forum/ThreadActionBar';
+import { ReplyActions } from '@/components/forum/ReplyActions';
+import { ReplyForm } from '@/components/forum/ReplyForm';
 import { HomeSidebar } from '@/components/HomeSidebar';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +39,13 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
   // Đếm lượt xem (không chặn hiển thị nếu lỗi)
   db.thread.update({ where: { id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
 
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  const loggedIn = !!userId;
+  const callbackUrl = `/forum/${slug}/${id}`;
+  const isOwner = userId === thread.authorId;
+  const canMarkSolution = isOwner && !thread.solvedReplyId && !thread.locked;
+
   const replies = await db.thread
     .findUnique({ where: { id } })
     .replies({
@@ -49,6 +60,21 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
         },
       },
     });
+
+  // Trạng thái "đã thích" của người dùng hiện tại (chủ đề + mọi trả lời)
+  const likedThread = new Set<string>();
+  const likedReplies = new Set<string>();
+  if (userId) {
+    const replyIds = (replies ?? []).flatMap((r) => [r.id, ...r.children.map((c) => c.id)]);
+    const reactions = await db.reaction.findMany({
+      where: { userId, type: 'LIKE', OR: [{ threadId: id }, { replyId: { in: replyIds } }] },
+      select: { threadId: true, replyId: true },
+    });
+    for (const rx of reactions) {
+      if (rx.threadId) likedThread.add(rx.threadId);
+      if (rx.replyId) likedReplies.add(rx.replyId);
+    }
+  }
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -94,12 +120,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
             </div>
           )}
 
-          {/* Thanh hành động kiểu zibll */}
-          <div className="mt-4 flex items-center justify-center gap-2 border-t border-ink-100 pt-4 dark:border-ink-800">
-            <button className="btn-outline !rounded-full gap-1.5 !px-4 text-accent-500"><Heart size={16} /> Thích <span className="text-ink-400">{fmtCount(thread.likeCount)}</span></button>
-            <a href="#tra-loi" className="btn-outline !rounded-full gap-1.5 !px-4"><MessageSquare size={16} /> Trả lời</a>
-            <button className="btn-outline !rounded-full gap-1.5 !px-4"><Share2 size={16} /> Chia sẻ</button>
-          </div>
+          <ThreadActionBar threadId={thread.id} initialLiked={likedThread.has(thread.id)} initialLikeCount={thread.likeCount} />
         </article>
 
         <h2 id="tra-loi" className="zib-title mb-4 mt-6 flex items-center gap-2 scroll-mt-20">
@@ -120,13 +141,14 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
                     <CheckCircle2 size={15} /> Câu trả lời được chọn
                   </p>
                 )}
-                <ReplyRow r={r} />
+                <ReplyRow r={r} threadId={thread.id} loggedIn={loggedIn} callbackUrl={callbackUrl}
+                  liked={likedReplies.has(r.id)} canReply canMarkSolution={canMarkSolution && !r.isSolution} />
                 {r.children.length > 0 && (
                   <ul className="mt-3 space-y-3 border-l-2 border-ink-100 pl-4 dark:border-ink-800">
                     {r.children.map((ch) => (
-                      <li key={ch.id} className="flex gap-2">
-                        <CornerDownRight size={15} className="mt-2 shrink-0 text-ink-300" />
-                        <div className="min-w-0 flex-1"><ReplyRow r={ch} small /></div>
+                      <li key={ch.id}>
+                        <ReplyRow r={ch} threadId={thread.id} loggedIn={loggedIn} callbackUrl={callbackUrl}
+                          liked={likedReplies.has(ch.id)} small canMarkSolution={canMarkSolution && !ch.isSolution} />
                       </li>
                     ))}
                   </ul>
@@ -134,6 +156,18 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
               </li>
             ))}
           </ul>
+        )}
+
+        {/* Ô trả lời chủ đề */}
+        {!thread.locked ? (
+          <div className="card mt-4 p-4">
+            <h3 className="mb-2 text-sm font-semibold">Viết trả lời</h3>
+            <ReplyForm threadId={thread.id} loggedIn={loggedIn} callbackUrl={callbackUrl} />
+          </div>
+        ) : (
+          <div className="card mt-4 flex items-center justify-center gap-2 p-4 text-sm text-ink-400">
+            <Lock size={14} /> Chủ đề đã bị khoá, không thể trả lời.
+          </div>
         )}
       </div>
 
@@ -143,7 +177,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
 }
 
 type UserBits = { username: string | null; name: string | null; image: string | null; level: number };
-type ReplyBits = { id: string; content: string; createdAt: Date; likeCount: number; author: UserBits };
+type ReplyBits = { id: string; content: string; createdAt: Date; likeCount: number; isSolution: boolean; author: UserBits };
 
 function displayName(u: UserBits) {
   return u?.name ?? u?.username ?? 'Ẩn danh';
@@ -162,7 +196,10 @@ function Avatar({ user, small }: { user: UserBits; small?: boolean }) {
   );
 }
 
-function ReplyRow({ r, small }: { r: ReplyBits; small?: boolean }) {
+function ReplyRow({ r, threadId, loggedIn, callbackUrl, liked, small, canReply, canMarkSolution }: {
+  r: ReplyBits; threadId: string; loggedIn: boolean; callbackUrl: string; liked: boolean;
+  small?: boolean; canReply?: boolean; canMarkSolution?: boolean;
+}) {
   return (
     <div className="flex gap-3">
       <Avatar user={r.author} small={small} />
@@ -173,10 +210,8 @@ function ReplyRow({ r, small }: { r: ReplyBits; small?: boolean }) {
           <span className="text-xs text-ink-400">{format(r.createdAt, 'dd/MM/yyyy HH:mm')}</span>
         </div>
         <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink-700 dark:text-ink-200">{r.content}</p>
-        <div className="mt-1.5 flex items-center gap-4 text-xs text-ink-400">
-          <button className="flex items-center gap-1 hover:text-accent-500"><Heart size={13} />{fmtCount(r.likeCount)}</button>
-          <button className="flex items-center gap-1 hover:text-brand-600"><MessageSquare size={13} />Trả lời</button>
-        </div>
+        <ReplyActions threadId={threadId} replyId={r.id} initialLiked={liked} initialLikeCount={r.likeCount}
+          loggedIn={loggedIn} callbackUrl={callbackUrl} canReply={canReply} canMarkSolution={canMarkSolution} />
       </div>
     </div>
   );

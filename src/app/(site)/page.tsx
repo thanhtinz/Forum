@@ -16,6 +16,8 @@ export default async function HomePage() {
       include: {
         author: { select: { username: true, name: true, image: true } },
         category: { select: { name: true, slug: true, color: true } },
+        categories: { include: { category: { select: { name: true, slug: true, color: true } } } },
+        tags: { include: { tag: { select: { name: true, slug: true } } }, take: 6 },
       },
     }),
   ]);
@@ -34,6 +36,8 @@ export default async function HomePage() {
     commentCount: p.commentCount,
     author: p.author,
     category: p.category,
+    categories: p.categories.map((c) => c.category),
+    tags: p.tags.map((t) => t.tag),
   }));
 
   const hero = slides[0];

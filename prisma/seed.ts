@@ -66,16 +66,22 @@ async function main() {
     await db.siteSetting.upsert({ where: { key }, update: { value: value as any }, create: { key, value: value as any } });
   }
 
-  // ── Category mẫu ──
-  const cats = [
+  // ── Category mẫu (có phân cấp cha/con) ──
+  const cats: Array<{ slug: string; name: string; color: string; order: number; parent?: string }> = [
+    // Chuyên mục lớn (cha)
     { slug: 'tin-tuc', name: 'Tin tức', color: '#2c7bfe', order: 1 },
     { slug: 'thu-thuat', name: 'Thủ thuật', color: '#10b981', order: 2 },
     { slug: 'tai-nguyen', name: 'Tài nguyên', color: '#f59e0b', order: 3 },
     { slug: 'chia-se', name: 'Chia sẻ', color: '#ec4899', order: 4 },
+    // Chuyên mục nhỏ (con)
+    { slug: 'ui-kit', name: 'UI Kit', color: '#8b5cf6', order: 1, parent: 'tai-nguyen' },
+    { slug: 'source-code', name: 'Source Code', color: '#0ea5e9', order: 2, parent: 'tai-nguyen' },
+    { slug: 'windows', name: 'Windows', color: '#3b82f6', order: 1, parent: 'thu-thuat' },
   ];
   const catIds: Record<string, string> = {};
   for (const c of cats) {
-    const cat = await db.category.upsert({ where: { slug: c.slug }, update: { name: c.name, color: c.color }, create: c });
+    const data = { slug: c.slug, name: c.name, color: c.color, order: c.order, parentId: c.parent ? catIds[c.parent] : null };
+    const cat = await db.category.upsert({ where: { slug: c.slug }, update: { name: c.name, color: c.color, parentId: data.parentId }, create: data });
     catIds[c.slug] = cat.id;
   }
 
@@ -100,12 +106,12 @@ async function main() {
 
   // ── Bài viết mẫu ──
   const samples = [
-    { slug: 'chao-mung-nova', title: 'Chào mừng đến với Nova Platform', cat: 'tin-tuc', style: 'STANDARD', access: 'FREE', excerpt: 'Nova là nền tảng blog kết hợp diễn đàn và nội dung trả phí, thiết kế hiện đại lấy cảm hứng từ Zibll.' },
-    { slug: 'huong-dan-kiem-diem', title: 'Hướng dẫn kiếm điểm và lên cấp nhanh', cat: 'thu-thuat', style: 'WIDE', access: 'LOGIN_REQUIRED', excerpt: 'Điểm danh mỗi ngày, đăng bài chất lượng, nhận like để tích luỹ điểm và EXP lên cấp.' },
-    { slug: 'bo-tai-nguyen-premium', title: 'Bộ tài nguyên thiết kế Premium (mở khoá bằng điểm)', cat: 'tai-nguyen', style: 'STANDARD', access: 'POINTS', pricePoints: 50, type: 'RESOURCE', excerpt: 'Trọn bộ tài nguyên UI cao cấp, mở khoá bằng điểm tích luỹ.', downloads: [{ label: 'Nova-UI-Kit-v2.zip', provider: 'gdrive', version: 'v2.0', sizeBytes: 48234496, password: 'nova2026' }], faq: [{ q: 'Mua rồi có tải lại được không?', a: 'Có. Sau khi mở khoá, bạn tải lại bao nhiêu lần tuỳ thích trong giới hạn lượt tải mỗi ngày theo cấp độ.' }, { q: 'File có mật khẩu giải nén không?', a: 'Có, mật khẩu hiển thị ngay trong khối tải xuống sau khi bạn mở khoá.' }, { q: 'Tôi có được dùng cho dự án thương mại?', a: 'Vui lòng đọc phần Tuyên bố bản quyền phía trên khung mua hàng.' }] },
-    { slug: 'khoa-hoc-vip', title: 'Khoá học nâng cao chỉ dành cho VIP', cat: 'chia-se', style: 'TEXT_ONLY', access: 'VIP_ONLY', vipTierFree: 1, type: 'RESOURCE', excerpt: 'Nội dung độc quyền cho thành viên VIP.', downloads: [{ label: 'Khoa-hoc-nang-cao.pdf', provider: 'local', version: '1.0', sizeBytes: 15728640 }] },
-    { slug: 'tai-lieu-tra-phi', title: 'Tài liệu chuyên sâu (trả phí)', cat: 'tai-nguyen', style: 'STANDARD', access: 'PAID', priceAmount: 20000, type: 'RESOURCE', excerpt: 'Tài liệu chi tiết, mua một lần dùng mãi mãi.', downloads: [{ label: 'Tai-lieu-chuyen-sau.pdf', provider: 'local', version: '1.0', sizeBytes: 8388608, extractCode: 'x9k2' }] },
-    { slug: 'meo-vat-hang-ngay', title: 'Những mẹo vặt hữu ích hằng ngày', cat: 'thu-thuat', style: 'STANDARD', access: 'FREE', excerpt: 'Tổng hợp các mẹo nhỏ giúp cuộc sống dễ dàng hơn.' },
+    { slug: 'chao-mung-nova', title: 'Chào mừng đến với Nova Platform', cat: 'tin-tuc', cats: ['tin-tuc'], style: 'STANDARD', access: 'FREE', excerpt: 'Nova là nền tảng blog kết hợp diễn đàn và nội dung trả phí, thiết kế hiện đại lấy cảm hứng từ Zibll.', tags: ['Nova', 'Thông báo', 'Giới thiệu'] },
+    { slug: 'huong-dan-kiem-diem', title: 'Hướng dẫn kiếm điểm và lên cấp nhanh', cat: 'thu-thuat', cats: ['thu-thuat', 'windows'], style: 'WIDE', access: 'LOGIN_REQUIRED', excerpt: 'Điểm danh mỗi ngày, đăng bài chất lượng, nhận like để tích luỹ điểm và EXP lên cấp.', tags: ['Điểm', 'Cấp độ', 'Mẹo', 'Điểm danh'] },
+    { slug: 'bo-tai-nguyen-premium', title: 'Bộ tài nguyên thiết kế Premium (mở khoá bằng điểm)', cat: 'tai-nguyen', cats: ['tai-nguyen', 'ui-kit', 'source-code'], style: 'STANDARD', access: 'POINTS', pricePoints: 50, type: 'RESOURCE', excerpt: 'Trọn bộ tài nguyên UI cao cấp, mở khoá bằng điểm tích luỹ.', downloads: [{ label: 'Nova-UI-Kit-v2.zip', provider: 'gdrive', version: 'v2.0', sizeBytes: 48234496, password: 'nova2026' }], faq: [{ q: 'Mua rồi có tải lại được không?', a: 'Có. Sau khi mở khoá, bạn tải lại bao nhiêu lần tuỳ thích trong giới hạn lượt tải mỗi ngày theo cấp độ.' }, { q: 'File có mật khẩu giải nén không?', a: 'Có, mật khẩu hiển thị ngay trong khối tải xuống sau khi bạn mở khoá.' }, { q: 'Tôi có được dùng cho dự án thương mại?', a: 'Vui lòng đọc phần Tuyên bố bản quyền phía trên khung mua hàng.' }], tags: ['UI Kit', 'Thiết kế', 'Figma', 'Premium', 'Tài nguyên'] },
+    { slug: 'khoa-hoc-vip', title: 'Khoá học nâng cao chỉ dành cho VIP', cat: 'chia-se', cats: ['chia-se', 'tai-nguyen'], style: 'TEXT_ONLY', access: 'VIP_ONLY', vipTierFree: 1, type: 'RESOURCE', excerpt: 'Nội dung độc quyền cho thành viên VIP.', downloads: [{ label: 'Khoa-hoc-nang-cao.pdf', provider: 'local', version: '1.0', sizeBytes: 15728640 }], tags: ['VIP', 'Khoá học', 'Nâng cao'] },
+    { slug: 'tai-lieu-tra-phi', title: 'Tài liệu chuyên sâu (trả phí)', cat: 'tai-nguyen', cats: ['tai-nguyen', 'source-code'], style: 'STANDARD', access: 'PAID', priceAmount: 20000, type: 'RESOURCE', excerpt: 'Tài liệu chi tiết, mua một lần dùng mãi mãi.', downloads: [{ label: 'Tai-lieu-chuyen-sau.pdf', provider: 'local', version: '1.0', sizeBytes: 8388608, extractCode: 'x9k2' }], tags: ['Tài liệu', 'PDF', 'Chuyên sâu', 'Trả phí'] },
+    { slug: 'meo-vat-hang-ngay', title: 'Những mẹo vặt hữu ích hằng ngày', cat: 'thu-thuat', cats: ['thu-thuat'], style: 'STANDARD', access: 'FREE', excerpt: 'Tổng hợp các mẹo nhỏ giúp cuộc sống dễ dàng hơn.', tags: ['Mẹo vặt', 'Đời sống', 'Hằng ngày'] },
   ];
   for (const s of samples) {
     const post = await db.post.upsert({
@@ -151,6 +157,26 @@ async function main() {
           order: i,
         })),
       });
+    }
+
+    // Nhiều chuyên mục — nối bài vào tất cả chuyên mục trong `cats` (idempotent)
+    const postCats = ((s as any).cats as string[] | undefined) ?? [s.cat];
+    await db.categoriesOnPosts.deleteMany({ where: { postId: post.id } });
+    for (const cs of postCats) {
+      if (catIds[cs]) {
+        await db.categoriesOnPosts.create({ data: { postId: post.id, categoryId: catIds[cs] } });
+      }
+    }
+
+    // Thẻ (tag) của bài — upsert tag rồi nối vào bài (idempotent)
+    const tags = (s as any).tags as string[] | undefined;
+    if (tags?.length) {
+      await db.tagsOnPosts.deleteMany({ where: { postId: post.id } });
+      for (const name of tags) {
+        const slug = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        const tag = await db.tag.upsert({ where: { slug }, update: {}, create: { slug, name } });
+        await db.tagsOnPosts.create({ data: { postId: post.id, tagId: tag.id } });
+      }
     }
   }
 

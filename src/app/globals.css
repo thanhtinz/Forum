@@ -80,6 +80,14 @@ html, body {
   .chip {
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
+  /* Ẩn thanh cuộn (dùng cho hàng tag kéo ngang trên mobile) */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
   /* Tiêu đề mục kiểu zibll: gạch nhấn nhỏ dưới-trái */
   .zib-title {
     @apply relative pb-2 text-lg font-bold;

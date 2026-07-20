@@ -70,7 +70,7 @@ export function PostCard({ post }: { post: PostCardData }) {
           {post.cover
             // eslint-disable-next-line @next/next/no-img-element
             ? <img src={post.cover} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-            : <div className="flex h-full min-h-[160px] w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${coverColor}, ${coverColor}99)` }}><span className="px-4 text-center text-lg font-bold text-white/95 line-clamp-3">{post.title}</span></div>}
+            : <div className="flex h-full min-h-[160px] w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${coverColor}, ${coverColor}99)` }}><ImageIcon size={30} className="text-white/45" /></div>}
           <div className="absolute left-2 top-2 flex gap-1"><CategoryChip post={post} overlay /></div>
         </Link>
         <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:p-3.5">
@@ -129,7 +129,7 @@ export function PostCard({ post }: { post: PostCardData }) {
         {post.cover
           // eslint-disable-next-line @next/next/no-img-element
           ? <img src={post.cover} alt="" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" />
-          : <div className="flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${coverColor}, ${coverColor}99)` }}><span className="px-4 text-center text-lg font-bold text-white/95 line-clamp-3">{post.title}</span></div>}
+          : <div className="flex h-full w-full items-center justify-center" style={{ background: `linear-gradient(135deg, ${coverColor}, ${coverColor}99)` }}><ImageIcon size={30} className="text-white/45" /></div>}
         <div className="absolute left-2 top-2 flex gap-1"><CategoryChip post={post} overlay /></div>
         <div className="absolute right-2 top-2"><AccessBadge post={post} /></div>
       </Link>

@@ -2,11 +2,18 @@ import Link from 'next/link';
 import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { fmtCount } from '@/lib/utils';
+import { MobileNav } from './MobileNav';
 
 const NAV = [
   { href: '/', label: 'Trang chủ', icon: LayoutGrid },
   { href: '/forum', label: 'Diễn đàn', icon: MessagesSquare },
   { href: '/vip', label: 'VIP', icon: Crown },
+];
+
+const NAV_MOBILE = [
+  { href: '/', label: 'Trang chủ', icon: 'LayoutGrid' as const },
+  { href: '/forum', label: 'Diễn đàn', icon: 'MessagesSquare' as const },
+  { href: '/vip', label: 'VIP', icon: 'Crown' as const },
 ];
 
 export async function Header() {
@@ -15,7 +22,9 @@ export async function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/90 backdrop-blur dark:border-ink-800 dark:bg-ink-950/90">
-      <div className="container-nova flex h-14 items-center gap-4">
+      <div className="container-nova flex h-14 items-center gap-3 sm:gap-4">
+        <MobileNav nav={NAV_MOBILE} loggedIn={!!user} />
+
         <Link href="/" className="flex shrink-0 items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-500 text-lg font-black text-white">N</span>
           <span className="text-lg font-black tracking-tight">Nova</span>

@@ -168,6 +168,7 @@ model Post {
   priceAmount Int?        // giá bằng VND
   vipTierFree Int?        // VIP từ tier này trở lên xem miễn phí
   hiddenContent String?   @db.Text  // phần nội dung ẩn sau paywall
+  faq         Json?       // [{ q, a }] — câu hỏi thường gặp của bài
 
   viewCount    Int @default(0)
   likeCount    Int @default(0)

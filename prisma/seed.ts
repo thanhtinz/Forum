@@ -102,15 +102,15 @@ async function main() {
   const samples = [
     { slug: 'chao-mung-nova', title: 'Chào mừng đến với Nova Platform', cat: 'tin-tuc', style: 'STANDARD', access: 'FREE', excerpt: 'Nova là nền tảng blog kết hợp diễn đàn và nội dung trả phí, thiết kế hiện đại lấy cảm hứng từ Zibll.' },
     { slug: 'huong-dan-kiem-diem', title: 'Hướng dẫn kiếm điểm và lên cấp nhanh', cat: 'thu-thuat', style: 'WIDE', access: 'LOGIN_REQUIRED', excerpt: 'Điểm danh mỗi ngày, đăng bài chất lượng, nhận like để tích luỹ điểm và EXP lên cấp.' },
-    { slug: 'bo-tai-nguyen-premium', title: 'Bộ tài nguyên thiết kế Premium (mở khoá bằng điểm)', cat: 'tai-nguyen', style: 'STANDARD', access: 'POINTS', pricePoints: 50, excerpt: 'Trọn bộ tài nguyên UI cao cấp, mở khoá bằng điểm tích luỹ.' },
-    { slug: 'khoa-hoc-vip', title: 'Khoá học nâng cao chỉ dành cho VIP', cat: 'chia-se', style: 'TEXT_ONLY', access: 'VIP_ONLY', vipTierFree: 1, excerpt: 'Nội dung độc quyền cho thành viên VIP.' },
-    { slug: 'tai-lieu-tra-phi', title: 'Tài liệu chuyên sâu (trả phí)', cat: 'tai-nguyen', style: 'STANDARD', access: 'PAID', priceAmount: 20000, excerpt: 'Tài liệu chi tiết, mua một lần dùng mãi mãi.' },
+    { slug: 'bo-tai-nguyen-premium', title: 'Bộ tài nguyên thiết kế Premium (mở khoá bằng điểm)', cat: 'tai-nguyen', style: 'STANDARD', access: 'POINTS', pricePoints: 50, type: 'RESOURCE', excerpt: 'Trọn bộ tài nguyên UI cao cấp, mở khoá bằng điểm tích luỹ.', downloads: [{ label: 'Nova-UI-Kit-v2.zip', provider: 'gdrive', version: 'v2.0', sizeBytes: 48234496, password: 'nova2026' }] },
+    { slug: 'khoa-hoc-vip', title: 'Khoá học nâng cao chỉ dành cho VIP', cat: 'chia-se', style: 'TEXT_ONLY', access: 'VIP_ONLY', vipTierFree: 1, type: 'RESOURCE', excerpt: 'Nội dung độc quyền cho thành viên VIP.', downloads: [{ label: 'Khoa-hoc-nang-cao.pdf', provider: 'local', version: '1.0', sizeBytes: 15728640 }] },
+    { slug: 'tai-lieu-tra-phi', title: 'Tài liệu chuyên sâu (trả phí)', cat: 'tai-nguyen', style: 'STANDARD', access: 'PAID', priceAmount: 20000, type: 'RESOURCE', excerpt: 'Tài liệu chi tiết, mua một lần dùng mãi mãi.', downloads: [{ label: 'Tai-lieu-chuyen-sau.pdf', provider: 'local', version: '1.0', sizeBytes: 8388608, extractCode: 'x9k2' }] },
     { slug: 'meo-vat-hang-ngay', title: 'Những mẹo vặt hữu ích hằng ngày', cat: 'thu-thuat', style: 'STANDARD', access: 'FREE', excerpt: 'Tổng hợp các mẹo nhỏ giúp cuộc sống dễ dàng hơn.' },
   ];
   for (const s of samples) {
-    await db.post.upsert({
+    const post = await db.post.upsert({
       where: { slug: s.slug },
-      update: {},
+      update: { type: ((s as any).type ?? 'ARTICLE') as any },
       create: {
         slug: s.slug,
         title: s.title,
@@ -121,6 +121,7 @@ async function main() {
         publishedAt: new Date(),
         authorId: admin.id,
         categoryId: catIds[s.cat],
+        type: ((s as any).type ?? 'ARTICLE') as any,
         cardStyle: s.style as any,
         access: s.access as any,
         pricePoints: (s as any).pricePoints ?? null,
@@ -131,6 +132,25 @@ async function main() {
         commentCount: s.title.length % 12,
       },
     });
+
+    // File tải xuống (idempotent: xoá cũ rồi tạo lại)
+    const downloads = (s as any).downloads as Array<Record<string, any>> | undefined;
+    if (downloads?.length) {
+      await db.downloadItem.deleteMany({ where: { postId: post.id } });
+      await db.downloadItem.createMany({
+        data: downloads.map((d, i) => ({
+          postId: post.id,
+          label: d.label,
+          url: d.url ?? `https://example.com/files/${s.slug}-${i + 1}`,
+          provider: d.provider ?? 'local',
+          version: d.version ?? null,
+          password: d.password ?? null,
+          extractCode: d.extractCode ?? null,
+          sizeBytes: d.sizeBytes ?? null,
+          order: i,
+        })),
+      });
+    }
   }
 
   // ── Forum mẫu ──

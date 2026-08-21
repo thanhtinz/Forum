@@ -63,6 +63,26 @@ export const NUMPAD_ROWS: EmuKey[][] = [
   ['STAR', 'NUM0', 'POUND'],
 ];
 
+/**
+ * Chữ in dưới mỗi phím số trên bàn phím máy cổ — thứ làm nó ra dáng điện thoại
+ * chứ không phải máy tính bỏ túi.
+ */
+export const NUM_KEY_LETTERS: Partial<Record<EmuKey, string>> = {
+  NUM1: '',
+  NUM2: 'ABC',
+  NUM3: 'DEF',
+  NUM4: 'GHI',
+  NUM5: 'JKL',
+  NUM6: 'MNO',
+  NUM7: 'PQRS',
+  NUM8: 'TUV',
+  NUM9: 'WXYZ',
+  NUM0: '+',
+  // `*` và `#` trên máy thật không có chữ phụ nào cả.
+  STAR: '',
+  POUND: '',
+};
+
 /** Nhãn phím mềm theo layout thiết bị. */
 export const SOFT_KEY_LABEL: Record<string, { left: string; right: string }> = {
   nokia: { left: 'Options', right: 'Back' },
@@ -76,6 +96,20 @@ export const SOFT_KEY_LABEL: Record<string, { left: string; right: string }> = {
 
 /** Các bố cục phím được hỗ trợ — dùng cho ô chọn trong khu quản trị. */
 export const KEY_LAYOUTS = Object.keys(SOFT_KEY_LABEL);
+
+/**
+ * Kiểu D-pad theo hãng: Nokia/Samsung/LG dùng vòng xoay tròn (navi-wheel),
+ * còn lại là phím bốn hướng vuông bo góc.
+ */
+export const DPAD_STYLE: Record<string, 'wheel' | 'pad'> = {
+  nokia: 'wheel',
+  samsung: 'wheel',
+  lg: 'wheel',
+  sonyericsson: 'pad',
+  motorola: 'pad',
+  siemens: 'pad',
+  generic: 'pad',
+};
 
 export function javaKeyCode(key: EmuKey): number {
   return JAVA_KEY[key] ?? 0;

@@ -13,16 +13,25 @@ export const metadata: Metadata = { title: 'Quản lý game', robots: { index: f
 
 const PAGE_SIZE = 20;
 
+const STATUSES = [
+  { key: 'ALL' },
+  { key: 'DRAFT' },
+  { key: 'PENDING' },
+  { key: 'PUBLISHED' },
+  { key: 'ARCHIVED' },
+] as const;
+
 export default async function AdminGamesPage({ searchParams }: {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const q = (sp.q ?? '').trim();
-  const status = sp.status && ['DRAFT', 'PENDING', 'PUBLISHED', 'ARCHIVED'].includes(sp.status) ? sp.status : undefined;
+  // Trạng thái chọn từ menu quản trị (`?status=`), 'ALL' nghĩa là không lọc.
+  const status = STATUSES.some((x) => x.key === sp.status) ? sp.status! : 'ALL';
   const page = Math.max(1, Number(sp.page ?? '1') || 1);
 
   const where = {
-    ...(status ? { status: status as 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED' } : {}),
+    ...(status === 'ALL' ? {} : { status: status as 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED' }),
     ...(q ? { OR: [{ title: { contains: q, mode: 'insensitive' as const } }, { slug: { contains: q, mode: 'insensitive' as const } }] } : {}),
   };
 
@@ -37,7 +46,7 @@ export default async function AdminGamesPage({ searchParams }: {
     }),
   ]);
 
-  const qs = new URLSearchParams({ ...(q ? { q } : {}), ...(status ? { status } : {}) }).toString();
+  const qs = new URLSearchParams({ ...(q ? { q } : {}), ...(status === 'ALL' ? {} : { status }) }).toString();
 
   return (
     <div className="space-y-4">
@@ -52,15 +61,13 @@ export default async function AdminGamesPage({ searchParams }: {
       </div>
 
       <form className="card flex flex-wrap items-center gap-2 p-3">
+        {/* Lọc theo trạng thái nằm ở menu quản trị; ở đây chỉ còn tìm kiếm. */}
+        {status !== 'ALL' && <input type="hidden" name="status" value={status} />}
         <div className="relative min-w-52 flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
           <input name="q" defaultValue={q} placeholder="Tìm theo tên hoặc slug…" className="input !py-2 pl-9 text-sm" />
         </div>
-        <select name="status" defaultValue={status ?? ''} className="input !w-auto !py-2 text-sm">
-          <option value="">Mọi trạng thái</option>
-          {Object.entries(GAME_STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <button type="submit" className="btn-primary !py-2 text-sm">Lọc</button>
+        <button type="submit" className="btn-primary !py-2 text-sm">Tìm</button>
       </form>
 
       <div className="card overflow-x-auto">

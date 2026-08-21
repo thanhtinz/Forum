@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { Loader2, Plus } from 'lucide-react';
-import { createGame, type ActionState } from '@/app/(site)/admin/games/actions';
+import { createGame, type ActionState } from '@/app/admin/games/actions';
 
 export function NewGameForm() {
   const [state, action, pending] = useActionState<ActionState, FormData>(createGame, {});

@@ -10,7 +10,6 @@ import { unlockPost, type UnlockState } from '@/app/(site)/posts/[slug]/actions'
 export interface DownloadItemData {
   id: string;
   label: string;
-  url: string;
   provider?: string | null;
   version?: string | null;
   password?: string | null;
@@ -37,7 +36,18 @@ export interface DownloadBoxProps {
   plans: VipPlanRow[];
   updatedAt: string; // yyyy-MM-dd
   callbackUrl: string;
+  /** Hạn mức tải trong ngày. limit = -1 nghĩa là không giới hạn. */
+  quota?: { used: number; limit: number };
+  /** Mã thông báo từ cổng tải (?dl=limit|locked|banned|error). */
+  notice?: string;
 }
+
+const DL_NOTICE: Record<string, string> = {
+  limit: 'Bạn đã đạt giới hạn lượt tải trong ngày. Vui lòng quay lại vào ngày mai hoặc nâng cấp VIP để tăng hạn mức.',
+  locked: 'Bạn chưa có quyền tải tài nguyên này.',
+  banned: 'Tài khoản của bạn đang bị hạn chế.',
+  error: 'Đã có lỗi xảy ra khi tải xuống. Vui lòng thử lại.',
+};
 
 /** Giá gốc cho người dùng thường, dạng chuỗi hiển thị. */
 function basePrice(pricePoints?: number | null, priceAmount?: number | null): { text: string; isPoints: boolean; value: number } {
@@ -53,7 +63,7 @@ function planPrice(plan: VipPlanRow, bp: ReturnType<typeof basePrice>): string {
 }
 
 export function DownloadBox(props: DownloadBoxProps) {
-  const { postId, slug, allowed, reason, access, pricePoints, priceAmount, downloads, plans, updatedAt, callbackUrl } = props;
+  const { postId, slug, allowed, reason, access, pricePoints, priceAmount, downloads, plans, updatedAt, callbackUrl, quota, notice } = props;
   const [state, action, pending] = useActionState<UnlockState, FormData>(unlockPost, {});
   const bp = basePrice(pricePoints, priceAmount);
 
@@ -70,9 +80,20 @@ export function DownloadBox(props: DownloadBoxProps) {
         {allowed ? 'Bạn có quyền tải xuống tài nguyên này' : 'Cần quyền để tải xuống tài nguyên này'}
       </h3>
 
+      {notice && DL_NOTICE[notice] && (
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">{DL_NOTICE[notice]}</p>
+      )}
+
       {allowed ? (
         /* ─── Đã mở khoá: danh sách file ─── */
         <div className="mt-4 space-y-3">
+          {quota && (
+            <p className="text-xs text-ink-500">
+              Lượt tải hôm nay: <b className="text-ink-700 dark:text-ink-200">{quota.used}{quota.limit >= 0 ? ` / ${quota.limit}` : ''}</b>
+              {quota.limit < 0 && <span className="text-green-600"> (không giới hạn)</span>}
+              {quota.limit >= 0 && quota.used >= quota.limit && <span className="text-red-600"> — đã đạt giới hạn</span>}
+            </p>
+          )}
           {downloads.map((d) => (
             <div key={d.id} className="rounded-xl border border-ink-200 bg-ink-50 p-3.5 dark:border-ink-700 dark:bg-ink-800/50">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -84,7 +105,7 @@ export function DownloadBox(props: DownloadBoxProps) {
                     {d.provider && <span className="uppercase">{d.provider}</span>}
                   </p>
                 </div>
-                <a href={d.url} target="_blank" rel="noopener noreferrer"
+                <a href={`/api/download/${d.id}`} target="_blank" rel="noopener noreferrer"
                   className="btn bg-green-500 text-white hover:bg-green-600">
                   <Download size={16} /> Tải xuống
                 </a>

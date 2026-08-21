@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { Ban, ShieldCheck } from 'lucide-react';
-import { setUserRole, toggleBan } from '@/app/(site)/admin/actions';
+import { setUserRole, toggleBan } from '@/app/admin/actions';
 import { cn } from '@/lib/utils';
 
 type Role = 'USER' | 'AUTHOR' | 'MODERATOR' | 'ADMIN';

@@ -5,6 +5,7 @@ import { requireAdmin, requireSuperAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { grantBalance } from '@/lib/balance';
+import { checkAndAwardMedals } from '@/lib/medals';
 
 // ─────────────── Bài viết ───────────────
 
@@ -12,6 +13,7 @@ export async function approvePost(id: string) {
   await requireAdmin();
   const post = await db.post.update({ where: { id }, data: { status: 'PUBLISHED', publishedAt: new Date() }, select: { authorId: true, slug: true, title: true } });
   await notify({ userId: post.authorId, type: 'SYSTEM', title: 'Bài viết đã được duyệt', content: post.title, link: `/posts/${post.slug}` });
+  await checkAndAwardMedals(post.authorId).catch(() => {});
   revalidatePath('/admin/posts');
 }
 
@@ -52,6 +54,82 @@ export async function toggleBan(id: string) {
     if (!banned) await tx.ban.create({ data: { userId: id, reason: 'Khoá bởi quản trị', createdBy: admin.id } });
   });
   revalidatePath('/admin/users');
+}
+
+// ─────────────── Chuyên mục ───────────────
+
+function slugify(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'muc';
+}
+
+export type CategoryState = { ok?: boolean; error?: string };
+
+export async function saveCategory(_prev: CategoryState, formData: FormData): Promise<CategoryState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const name = String(formData.get('name') ?? '').trim();
+  const parentId = String(formData.get('parentId') ?? '').trim() || null;
+  const color = String(formData.get('color') ?? '').trim() || null;
+  const icon = String(formData.get('icon') ?? '').trim() || null;
+  const description = String(formData.get('description') ?? '').trim() || null;
+  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
+  if (name.length < 2) return { error: 'Tên chuyên mục quá ngắn.' };
+  if (parentId && parentId === id) return { error: 'Chuyên mục không thể là cha của chính nó.' };
+
+  try {
+    if (id) {
+      await db.category.update({ where: { id }, data: { name, parentId, color, icon, description, order } });
+    } else {
+      let slug = slugify(name);
+      if (await db.category.findUnique({ where: { slug }, select: { id: true } })) slug = `${slug}-${Date.now().toString().slice(-4)}`;
+      await db.category.create({ data: { slug, name, parentId, color, icon, description, order } });
+    }
+  } catch {
+    return { error: 'Không thể lưu chuyên mục.' };
+  }
+  revalidatePath('/admin/categories');
+  revalidatePath('/');
+  return { ok: true };
+}
+
+export async function deleteCategory(id: string) {
+  await requireAdmin();
+  await db.category.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/categories');
+  revalidatePath('/');
+}
+
+// ─────────────── Gói VIP ───────────────
+
+export async function updateVipPlan(id: string, data: { price: number; originalPrice: number | null; durationDays: number | null; discountPercent: number; freeContent: boolean; active: boolean }) {
+  await requireAdmin();
+  await db.vipPlan.update({ where: { id }, data });
+  revalidatePath('/admin/vip-plans');
+  revalidatePath('/vip');
+}
+
+// ─────────────── Báo cáo ───────────────
+
+export async function setReportStatus(id: string, status: 'RESOLVED' | 'DISMISSED') {
+  await requireAdmin();
+  await db.report.update({ where: { id }, data: { status, handledAt: new Date() } });
+  revalidatePath('/admin/reports');
+}
+
+/** Duyệt báo cáo và ẩn/xoá nội dung bị báo cáo cùng lúc. */
+export async function resolveReportAndRemove(id: string) {
+  await requireAdmin();
+  const r = await db.report.findUnique({ where: { id }, select: { postId: true, threadId: true, replyId: true, commentId: true } });
+  if (!r) return;
+  await db.$transaction(async (tx) => {
+    if (r.postId) await tx.post.update({ where: { id: r.postId }, data: { status: 'ARCHIVED' } }).catch(() => {});
+    if (r.threadId) await tx.thread.delete({ where: { id: r.threadId } }).catch(() => {});
+    if (r.replyId) await tx.reply.delete({ where: { id: r.replyId } }).catch(() => {});
+    if (r.commentId) await tx.comment.delete({ where: { id: r.commentId } }).catch(() => {});
+    await tx.report.update({ where: { id }, data: { status: 'RESOLVED', handledAt: new Date() } });
+  });
+  revalidatePath('/admin/reports');
 }
 
 // ─────────────── Rút tiền ───────────────

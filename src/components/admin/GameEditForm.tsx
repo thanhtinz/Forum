@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { Loader2, Save } from 'lucide-react';
-import { updateGame, type ActionState } from '@/app/(site)/admin/games/actions';
+import { updateGame, type ActionState } from '@/app/admin/games/actions';
 
 export interface Option { id: string; name: string }
 

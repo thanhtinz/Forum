@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { Check, X, Banknote } from 'lucide-react';
-import { setWithdrawalStatus } from '@/app/(site)/admin/actions';
+import { setWithdrawalStatus } from '@/app/admin/actions';
 import { cn } from '@/lib/utils';
 
 type Props = { id: string; status: string };

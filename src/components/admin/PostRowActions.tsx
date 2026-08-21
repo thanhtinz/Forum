@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { Check, EyeOff, Star, Trash2, Send } from 'lucide-react';
-import { approvePost, setPostStatus, deletePost, togglePostFeatured } from '@/app/(site)/admin/actions';
+import { approvePost, setPostStatus, deletePost, togglePostFeatured } from '@/app/admin/actions';
 import { cn } from '@/lib/utils';
 
 type Props = { id: string; status: string; featured: boolean };

@@ -5,6 +5,9 @@ import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 import { signIn } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { grantPoints } from '@/lib/points';
+import { notify } from '@/lib/notify';
+import { INVITE_BONUS_POINTS } from '@/lib/invite';
 
 export interface AuthFormState {
   error?: string;
@@ -75,9 +78,18 @@ export async function registerAction(_prev: AuthFormState, formData: FormData): 
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  await db.user.create({
+  const created = await db.user.create({
     data: { username, email, name: username, passwordHash, inviteCode: newInviteCode(username), invitedById },
+    select: { id: true },
   });
+
+  // Thưởng điểm cho người giới thiệu
+  if (invitedById) {
+    try {
+      await grantPoints({ userId: invitedById, amount: INVITE_BONUS_POINTS, reason: 'INVITE_BONUS', refId: created.id, note: `Mời thành công @${username}` });
+      await notify({ userId: invitedById, type: 'SYSTEM', title: 'Mời bạn thành công', content: `Bạn nhận ${INVITE_BONUS_POINTS} điểm vì đã mời @${username} tham gia.`, link: '/user/invite' });
+    } catch { /* không chặn đăng ký nếu thưởng lỗi */ }
+  }
 
   try {
     await signIn('credentials', { identifier: email, password, redirectTo: callbackUrl });

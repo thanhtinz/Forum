@@ -4,7 +4,7 @@ import { useActionState } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import {
   addImage, upsertCompatibility, upsertFile, upsertVersion, type ActionState,
-} from '@/app/(site)/admin/games/actions';
+} from '@/app/admin/games/actions';
 
 export interface IdName { id: string; name: string }
 

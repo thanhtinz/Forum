@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  AlertTriangle, Download, Expand, Loader2, LogOut, Pause, Play, RotateCw,
-  Save, Sliders, Smartphone, SmartphoneCharging, Timer, Upload, Volume2, VolumeX,
+  AlertTriangle, Download, Expand, Loader2, LogOut, MoreVertical, Pause, Play,
+  RotateCw, Save, Sliders, Smartphone, SmartphoneCharging, Timer, Upload,
+  Volume2, VolumeX,
 } from 'lucide-react';
 import {
   DEFAULT_GAMEPAD_MAP, javaKeyCode, mergeKeymap, type EmuKey,
@@ -92,7 +93,35 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   const [playedSec, setPlayedSec] = useState(0);
   const [queuePos, setQueuePos] = useState<number | null>(null);
   const [muted, setMuted] = useState(false);
-  const [landscape, setLandscape] = useState(false);
+  /**
+   * Xoay thủ công bằng nút — `null` là để mặc theo hướng thật của máy.
+   * Xoay máy sẽ xoá lựa chọn thủ công, tránh cảnh cầm dọc mà màn hình game
+   * cứ nằm ngang mãi vì lỡ bấm nút xoay một lần.
+   */
+  const [manualLandscape, setManualLandscape] = useState<boolean | null>(null);
+
+  /**
+   * Hướng thật của máy. Trước đây chỗ này đo `max-height: 520px` — một cách
+   * đoán gián tiếp, hụt trên máy màn to nằm ngang và không ăn khớp với hướng
+   * của màn hình ảo. Giờ hỏi thẳng `orientation`.
+   */
+  const [deviceLandscape, setDeviceLandscape] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(orientation: landscape)');
+    const sync = () => {
+      setDeviceLandscape(mq.matches);
+      setManualLandscape(null);
+    };
+    setDeviceLandscape(mq.matches);
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  // Bố cục bàn phím bám hướng cầm máy. Còn khung game thì giữ đúng hướng của
+  // máy ảo (game Java gần như đều là game dọc) — chỉ xoay khi người chơi tự bấm.
+  const wide = deviceLandscape;
+  const landscape = manualLandscape ?? false;
+  const [showMenu, setShowMenu] = useState(false);
   const [showDevices, setShowDevices] = useState(false);
   const [showConfig, setShowConfig] = useState(false);
   const [config, setConfig] = useState<EmulatorConfig>(DEFAULT_CONFIG);
@@ -468,16 +497,6 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     return () => ro.disconnect();
   }, [screen.w, screen.h, scaling]);
 
-  /** Máy cầm ngang: chiều cao eo hẹp nên chuyển bàn phím ra hai bên màn hình. */
-  const [wide, setWide] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(max-height: 520px)');
-    const sync = () => setWide(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, []);
-
   const keypad = useKeypadParts({
     keyLayout: profile?.keyLayout ?? 'generic',
     softKeys: profile?.softKeys ?? true,
@@ -566,38 +585,101 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     </div>
   );
 
-  const controls = (
-    <div className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-      <Ctl onClick={togglePause} disabled={phase !== 'running' && phase !== 'paused'} label={phase === 'paused' ? 'Tiếp tục' : 'Tạm dừng'}>
-        {phase === 'paused' ? <Play size={16} /> : <Pause size={16} />}
-      </Ctl>
-      <Ctl onClick={reset} disabled={!session} label="Khởi động lại"><RotateCw size={16} /></Ctl>
-      <Ctl onClick={toggleMute} disabled={!profile?.audio} label={muted ? 'Bật tiếng' : 'Tắt tiếng'}>
-        {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-      </Ctl>
-      <Ctl onClick={() => setLandscape((v) => !v)} label="Xoay màn hình">
-        <Smartphone size={16} className={landscape ? 'rotate-90' : ''} />
-      </Ctl>
-      <Ctl onClick={fullscreen} label="Toàn màn hình"><Expand size={16} /></Ctl>
-      {(profile?.rms || profile?.saveState) && (
+  /**
+   * Mọi nút điều khiển gom vào menu ⋮ ở góc trên. Hàng nút ngang cũ ăn mất một
+   * dải chiều cao mà màn hình game đang rất cần, lại toàn biểu tượng không nhãn.
+   */
+  const menuItems: MenuItem[] = [
+    {
+      icon: phase === 'paused' ? <Play size={16} /> : <Pause size={16} />,
+      label: phase === 'paused' ? 'Tiếp tục' : 'Tạm dừng',
+      onClick: togglePause,
+      disabled: phase !== 'running' && phase !== 'paused',
+    },
+    { icon: <RotateCw size={16} />, label: 'Khởi động lại', onClick: reset, disabled: !session },
+    {
+      icon: muted ? <VolumeX size={16} /> : <Volume2 size={16} />,
+      label: muted ? 'Bật tiếng' : 'Tắt tiếng',
+      onClick: toggleMute,
+      disabled: !profile?.audio,
+    },
+    {
+      icon: <Smartphone size={16} className={landscape ? 'rotate-90' : ''} />,
+      label: landscape ? 'Về màn hình dọc' : 'Xoay ngang màn hình',
+      onClick: () => setManualLandscape(!landscape),
+    },
+    { icon: <Expand size={16} />, label: 'Toàn màn hình', onClick: fullscreen },
+    ...(profile?.rms || profile?.saveState
+      ? [
+        { icon: <Save size={16} />, label: 'Lưu', onClick: requestSave, disabled: phase !== 'running' },
+        { icon: <Upload size={16} />, label: 'Nạp bản lưu', onClick: requestLoad, disabled: !session },
+      ]
+      : []),
+    ...(devices.length > 1
+      ? [{
+        icon: <SmartphoneCharging size={16} />,
+        label: 'Chọn máy ảo',
+        onClick: () => { setShowDevices(true); setShowConfig(false); },
+      }]
+      : []),
+    {
+      icon: <Sliders size={16} />,
+      label: 'Cấu hình game',
+      onClick: () => { setShowConfig(true); setShowDevices(false); },
+      dot: isCustomised(config),
+    },
+    { icon: <LogOut size={16} />, label: 'Thoát', onClick: exit, danger: true },
+  ];
+
+  const menu = (
+    <div className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setShowMenu((v) => !v)}
+        aria-label="Menu điều khiển"
+        aria-expanded={showMenu}
+        className={cn(
+          'grid h-8 w-8 place-items-center rounded-lg transition-colors',
+          showMenu ? 'bg-ink-700 text-ink-100' : 'bg-ink-800 text-ink-200 hover:bg-ink-700',
+        )}
+      >
+        <span className="relative">
+          <MoreVertical size={18} />
+          {isCustomised(config) && (
+            <span className="absolute -right-1 -top-0.5 h-1.5 w-1.5 rounded-full bg-brand-400" />
+          )}
+        </span>
+      </button>
+
+      {showMenu && (
         <>
-          <Ctl onClick={requestSave} disabled={phase !== 'running'} label="Lưu"><Save size={16} /></Ctl>
-          <Ctl onClick={requestLoad} disabled={!session} label="Nạp bản lưu"><Upload size={16} /></Ctl>
+          {/* Bấm ra ngoài để đóng */}
+          <button
+            type="button" aria-label="Đóng menu" onClick={() => setShowMenu(false)}
+            className="fixed inset-0 z-30 cursor-default"
+          />
+          <div className="absolute right-0 top-full z-40 mt-1 w-52 overflow-hidden rounded-xl border border-ink-700 bg-ink-900 py-1 shadow-xl">
+            {menuItems.map((it) => (
+              <button
+                key={it.label}
+                type="button"
+                disabled={it.disabled}
+                onClick={() => { setShowMenu(false); it.onClick(); }}
+                className={cn(
+                  'flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors disabled:opacity-40',
+                  it.danger ? 'text-red-300 hover:bg-red-500/15' : 'text-ink-200 hover:bg-ink-800',
+                )}
+              >
+                <span className="relative shrink-0">
+                  {it.icon}
+                  {it.dot && <span className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-brand-400" />}
+                </span>
+                {it.label}
+              </button>
+            ))}
+          </div>
         </>
       )}
-      {devices.length > 1 && (
-        <Ctl onClick={() => { setShowDevices((v) => !v); setShowConfig(false); }} label="Chọn máy ảo">
-          <SmartphoneCharging size={16} />
-        </Ctl>
-      )}
-      <Ctl
-        onClick={() => { setShowConfig((v) => !v); setShowDevices(false); }}
-        label="Cấu hình game"
-        dot={isCustomised(config)}
-      >
-        <Sliders size={16} />
-      </Ctl>
-      <Ctl onClick={exit} label="Thoát" danger><LogOut size={16} /></Ctl>
     </div>
   );
 
@@ -620,6 +702,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
         <span className="hidden rounded-full bg-ink-800 px-2 py-1 text-ink-400 sm:inline">
           Đã chơi {fmtClock(playedSec)}
         </span>
+        {menu}
       </div>
     </div>
   );
@@ -653,17 +736,13 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
             </div>
             <div className="shrink-0 self-center">{keypad.numpad}</div>
           </div>
-          <div className="mt-2 flex shrink-0 items-center gap-2">
-            <div className="min-w-0 flex-1">{keypad.functionRow}</div>
-            {controls}
-          </div>
+          <div className="mt-2 shrink-0">{keypad.functionRow}</div>
         </>
       ) : (
         <>
           <div ref={areaRef} className={cn('flex items-center justify-center', fill ? 'min-h-0 flex-1' : 'h-[60vh]')}>
             {screenBox}
           </div>
-          <div className="mt-2 sm:mt-3">{controls}</div>
           {saveNote && <p className="mt-1.5 shrink-0 text-center text-xs text-brand-300">{saveNote}</p>}
           <div className="mt-2 w-full shrink-0 sm:mt-4">{keypad.phonePad}</div>
         </>
@@ -712,27 +791,14 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   );
 }
 
-function Ctl({ onClick, children, label, disabled, danger, dot }: {
-  onClick: () => void; children: React.ReactNode; label: string;
-  disabled?: boolean; danger?: boolean;
+interface MenuItem {
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
   /** Chấm nhỏ báo mục này đang khác mặc định. */
   dot?: boolean;
-}) {
-  return (
-    <button
-      type="button" onClick={onClick} disabled={disabled} title={label} aria-label={label}
-      className={cn(
-        // Nhỏ hơn một chút trên điện thoại để cả hàng nút vừa một dòng.
-        'grid h-8 w-8 place-items-center rounded-lg transition-colors disabled:opacity-40 sm:h-9 sm:w-9',
-        danger ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30' : 'bg-ink-800 text-ink-200 hover:bg-ink-700',
-      )}
-    >
-      <span className="relative">
-        {children}
-        {dot && <span className="absolute -right-1.5 -top-1 h-1.5 w-1.5 rounded-full bg-brand-400" />}
-      </span>
-    </button>
-  );
 }
 
 function fmtClock(sec: number): string {

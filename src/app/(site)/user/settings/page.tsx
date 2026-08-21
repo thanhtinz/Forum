@@ -34,7 +34,7 @@ export default async function SettingsPage() {
           image: user.image, cover: user.cover, hasPassword: !!user.passwordHash,
         }} />
 
-        <PasswordForm hasPassword={!!user.passwordHash} />
+        <PasswordForm hasPassword={!!user.passwordHash} username={user.username} />
 
         <div className="card p-5">
           <h2 className="font-bold">Email đăng nhập</h2>

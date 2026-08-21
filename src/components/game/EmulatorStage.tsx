@@ -528,7 +528,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
       )}
 
       {busy && (
-        <div className="absolute inset-0 grid place-items-center bg-black/70 p-3 text-center text-sm">
+        <div className="absolute inset-0 grid place-items-center bg-ink-950/95 p-3 text-center text-sm">
           <div>
             <Loader2 className="mx-auto animate-spin text-brand-400" size={26} />
             <p className="mt-2">
@@ -654,7 +654,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
             <div className="shrink-0 self-center">{keypad.numpad}</div>
           </div>
           <div className="mt-2 flex shrink-0 items-center gap-2">
-            <div className="min-w-0 flex-1">{keypad.softKeys}</div>
+            <div className="min-w-0 flex-1">{keypad.functionRow}</div>
             {controls}
           </div>
         </>
@@ -665,13 +665,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           </div>
           <div className="mt-2 sm:mt-3">{controls}</div>
           {saveNote && <p className="mt-1.5 shrink-0 text-center text-xs text-brand-300">{saveNote}</p>}
-          <div className="mx-auto mt-2 w-full max-w-sm shrink-0 space-y-3 sm:mt-4">
-            {keypad.softKeys}
-            <div className="flex items-center justify-between gap-4">
-              {keypad.dpad}
-              {keypad.numpad}
-            </div>
-          </div>
+          <div className="mt-2 w-full shrink-0 sm:mt-4">{keypad.phonePad}</div>
         </>
       )}
 

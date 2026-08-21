@@ -6,6 +6,7 @@ import { Eye, MessageSquare, Calendar, FolderOpen, Lock } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { canAccess, isVipActive, type AccessUser } from '@/lib/access';
+import { dailyDownloadLimit, todayDownloadCount } from '@/lib/downloads';
 import { Paywall } from '@/components/Paywall';
 import { DownloadBox } from '@/components/DownloadBox';
 import { ReadingProgress } from '@/components/post/ReadingProgress';
@@ -53,8 +54,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function PostDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function PostDetailPage({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ dl?: string }> }) {
   const { slug } = await params;
+  const { dl } = await searchParams;
   const post = await getPost(slug);
   if (!post) notFound();
 
@@ -98,6 +100,17 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
     </div>
   ) : null;
 
+  // Hạn mức tải trong ngày (chỉ khi đã có quyền và không phải tác giả)
+  let quota: { used: number; limit: number } | undefined;
+  if (access.allowed && post.downloads.length > 0 && accessUser && !isAuthor) {
+    const qUser = await db.user.findUnique({ where: { id: accessUser.id }, select: { level: true, vipTier: true, vipExpiresAt: true, vipPermanent: true } });
+    if (qUser) {
+      const limit = dailyDownloadLimit(qUser);
+      const used = await todayDownloadCount(accessUser.id);
+      quota = { used, limit: Number.isFinite(limit) ? limit : -1 };
+    }
+  }
+
   // Khung mua / tải xuống (đặt SAU tuyên bố bản quyền)
   const purchaseBox = post.downloads.length > 0 ? (
     <>
@@ -105,8 +118,9 @@ export default async function PostDetailPage({ params }: { params: Promise<{ slu
       <DownloadBox
         postId={post.id} slug={post.slug} allowed={access.allowed} reason={access.reason} access={post.access}
         pricePoints={post.pricePoints} priceAmount={post.priceAmount}
-        downloads={post.downloads.map((d) => ({ id: d.id, label: d.label, url: d.url, provider: d.provider, version: d.version, password: d.password, extractCode: d.extractCode, sizeBytes: d.sizeBytes == null ? null : Number(d.sizeBytes) }))}
+        downloads={post.downloads.map((d) => ({ id: d.id, label: d.label, provider: d.provider, version: d.version, password: d.password, extractCode: d.extractCode, sizeBytes: d.sizeBytes == null ? null : Number(d.sizeBytes) }))}
         plans={plans} updatedAt={format(post.updatedAt, 'yyyy-MM-dd')} callbackUrl={`/posts/${post.slug}`}
+        quota={quota} notice={dl}
       />
     </>
   ) : access.allowed ? hiddenBlock : (

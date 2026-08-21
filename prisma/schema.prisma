@@ -78,6 +78,12 @@ model User {
   reportsMade    Report[] @relation("Reporter")
   bans           Ban[]
 
+  emulatorSessions EmulatorSession[]
+  gameEvents       GameEvent[]
+  gameKeymaps      UserKeymap[]
+  gameSaveStates   SaveState[]
+  gameRatings      GameRating[]
+
   @@index([level])
   @@index([vipTier])
   @@index([createdAt])
@@ -258,6 +264,7 @@ model Tag {
   name  String
   posts TagsOnPosts[]
   threads TagsOnThreads[]
+  games TagsOnGames[]
 }
 
 model TagsOnPosts {
@@ -516,8 +523,10 @@ model Favorite {
 
   postId   String?
   threadId String?
+  gameId   String?
   post     Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
   thread   Thread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  game     Game?   @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   folder String @default("default")
 
@@ -525,6 +534,7 @@ model Favorite {
 
   @@unique([userId, postId])
   @@unique([userId, threadId])
+  @@unique([userId, gameId])
 }
 
 model Follow {
@@ -898,10 +908,12 @@ model Report {
   threadId  String?
   replyId   String?
   commentId String?
+  gameId    String?
   post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   thread    Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
   reply     Reply?   @relation(fields: [replyId], references: [id], onDelete: Cascade)
   comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  game      Game?    @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   reason  String
   detail  String? @db.Text
@@ -984,4 +996,497 @@ model FriendLink {
   description String?
   order  Int     @default(0)
   active Boolean @default(true)
+}
+
+// ============================================================
+// GAME HUB — catalog game Java ME + emulator Play Online
+// ============================================================
+
+model Game {
+  id      String  @id @default(cuid())
+  slug    String  @unique
+  title   String              // tên chính thức
+  titleVi String?             // tên bản Việt hóa
+  series  String?             // dòng game (Contra, Asphalt…)
+
+  description String? @db.Text // mô tả
+  gameplay    String? @db.Text // lối chơi
+  icon        String?          // ảnh icon (URL/storage key)
+  cover       String?          // ảnh nền trang chi tiết
+  trailerUrl  String?          // video/trailer tuỳ chọn
+
+  developer String?
+  publisher String?
+  releaseYear Int?
+
+  language    String  @default("en")   // en | vi | multi
+  vietnamized Boolean @default(false)  // bản Việt hóa
+
+  status    GameStatus @default(DRAFT)
+  featured  Boolean    @default(false)
+  playOnline Boolean   @default(false) // bật Play Online cho game này
+
+  // Phân loại
+  platformId   String?
+  platform     GamePlatform?   @relation(fields: [platformId], references: [id], onDelete: SetNull)
+  resolutionId String?
+  resolution   GameResolution? @relation(fields: [resolutionId], references: [id], onDelete: SetNull)
+  genres       GenresOnGames[]
+  tags         TagsOnGames[]
+  collections  GamesOnCollections[]
+
+  // Emulator mặc định (game tham chiếu profile, không nhúng logic emulator)
+  emulatorProfileId String?
+  emulatorProfile   EmulatorProfile? @relation("GameDefaultProfile", fields: [emulatorProfileId], references: [id], onDelete: SetNull)
+
+  // Hướng dẫn / lưu ý
+  controls          Json?            // [{ key, action }] — key mapping mô tả
+  compatibilityNote String? @db.Text
+  knownIssues       String? @db.Text
+
+  // Thống kê
+  ratingSum   Int   @default(0)
+  ratingCount Int   @default(0)
+  viewCount           Int @default(0)
+  uniqueViewCount     Int @default(0)
+  downloadCount       Int @default(0)
+  uniqueDownloadCount Int @default(0)
+  playCount           Int @default(0)
+  uniquePlayerCount   Int @default(0)
+  playSeconds         Int @default(0) // tổng thời lượng phiên (giây)
+  trendingScore       Float @default(0)
+
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  versions   GameVersion[]
+  images     GameImage[]
+  profiles   GameEmulatorProfile[]
+  sessions   EmulatorSession[]
+  events     GameEvent[]
+  ratings    GameRating[]
+  favorites  Favorite[]
+  reports    Report[]
+  uniqueHits GameUniqueHit[]
+
+  @@index([status, publishedAt])
+  @@index([featured])
+  @@index([trendingScore])
+  @@index([platformId])
+  @@index([resolutionId])
+  @@index([vietnamized])
+}
+
+enum GameStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  ARCHIVED
+}
+
+model GameGenre {
+  id    String @id @default(cuid())
+  slug  String @unique
+  name  String
+  icon  String?
+  color String?
+  order Int    @default(0)
+
+  games GenresOnGames[]
+}
+
+model GenresOnGames {
+  gameId  String
+  genreId String
+  game    Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  genre   GameGenre @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, genreId])
+  @@index([genreId])
+}
+
+model TagsOnGames {
+  gameId String
+  tagId  String
+  game   Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, tagId])
+  @@index([tagId])
+}
+
+/// Nokia S40/S60, Sony Ericsson, Samsung, Motorola, Generic Java ME…
+model GamePlatform {
+  id    String @id @default(cuid())
+  slug  String @unique
+  name  String
+  icon  String?
+  order Int    @default(0)
+
+  games Game[]
+}
+
+/// 128x160, 176x208, 176x220, 240x320, 320x240, 360x640, custom…
+model GameResolution {
+  id     String  @id @default(cuid())
+  slug   String  @unique      // "240x320"
+  label  String                // "240 × 320"
+  width  Int
+  height Int
+  custom Boolean @default(false)
+  order  Int     @default(0)
+
+  games Game[]
+}
+
+model GameCollection {
+  id          String  @id @default(cuid())
+  slug        String  @unique
+  name        String
+  description String? @db.Text
+  cover       String?
+  featured    Boolean @default(false)
+  order       Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  games GamesOnCollections[]
+}
+
+model GamesOnCollections {
+  gameId       String
+  collectionId String
+  order        Int    @default(0)
+  game         Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  collection   GameCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, collectionId])
+  @@index([collectionId])
+}
+
+// ── Versioning ────────────────────────────────────────────
+
+model GameVersion {
+  id     String @id @default(cuid())
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  version     String            // "1.0.2"
+  releaseDate DateTime?
+  changelog   String?  @db.Text
+  sizeBytes   BigInt?           // tổng dung lượng (thường = JAR)
+  latest      Boolean  @default(false)
+  playOnline  Boolean  @default(false) // Play Online Compatible hay Download Only
+  note        String?
+
+  createdAt DateTime @default(now())
+
+  files      GameFile[]
+  profiles   GameEmulatorProfile[]
+  sessions   EmulatorSession[]
+  saveStates SaveState[]
+  events     GameEvent[]
+
+  @@unique([gameId, version])
+  @@index([gameId, latest])
+}
+
+model GameFile {
+  id        String @id @default(cuid())
+  versionId String
+  version   GameVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  type       GameFileType
+  storageKey String                 // key trên object storage / CDN
+  fileName   String?
+  sizeBytes  BigInt?
+  checksum   String?                // giá trị checksum
+  checksumAlgo String @default("sha256")
+  mimeType   String?
+
+  scanStatus ScanStatus @default(PENDING) // quét JAR/JAD trước khi phát hành
+  scanNote   String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([versionId, type])
+  @@index([scanStatus])
+}
+
+enum GameFileType {
+  JAR
+  JAD
+  PATCH
+}
+
+enum ScanStatus {
+  PENDING
+  CLEAN
+  SUSPICIOUS
+  QUARANTINED
+}
+
+model GameImage {
+  id     String @id @default(cuid())
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  type       GameImageType @default(SCREENSHOT)
+  storageKey String
+  caption    String?
+  width      Int?
+  height     Int?
+  sortOrder  Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([gameId, type, sortOrder])
+}
+
+enum GameImageType {
+  ICON
+  COVER
+  SCREENSHOT
+  TRAILER
+}
+
+// ── Emulator ──────────────────────────────────────────────
+
+model EmulatorProfile {
+  id     String @id @default(cuid())
+  slug   String @unique
+  name   String              // "Nokia S40 240x320"
+  vendor String?             // Nokia / Sony Ericsson / Samsung…
+
+  screenWidth  Int
+  screenHeight Int
+  orientation  Orientation @default(PORTRAIT)
+
+  cldc String @default("1.1")
+  midp String @default("2.0")
+
+  keyLayout String  @default("nokia")  // nokia | sonyericsson | generic
+  softKeys  Boolean @default(true)
+  audio     Boolean @default(true)
+  rms       Boolean @default(true)
+  saveState Boolean @default(false)
+  touch     Boolean @default(true)
+
+  /// Bản đồ phím mặc định: { "SOFT_LEFT": "Digit1", "UP": "ArrowUp", … }
+  keymap Json?
+
+  // Resource control
+  cpuMillicores  Int @default(500)
+  ramLimitMb     Int @default(256)
+  sessionMaxSec  Int @default(1800) // maximum duration
+  idleTimeoutSec Int @default(120)  // idle timeout (không heartbeat)
+  gracePeriodSec Int @default(60)   // reconnect grace
+  maxConcurrent  Int @default(50)   // giới hạn phiên đồng thời cho profile
+
+  /// URL runtime J2ME chạy trong iframe sandbox (worker riêng, không chung process web).
+  runtimeUrl String?
+  active     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  defaultForGames Game[]                @relation("GameDefaultProfile")
+  gameProfiles    GameEmulatorProfile[]
+  sessions        EmulatorSession[]
+  keymaps         UserKeymap[]
+
+  @@index([active])
+}
+
+enum Orientation {
+  PORTRAIT
+  LANDSCAPE
+}
+
+/// Ma trận tương thích: game (hoặc version cụ thể) × emulator profile.
+model GameEmulatorProfile {
+  id        String @id @default(cuid())
+  gameId    String
+  versionId String?
+  profileId String
+
+  game    Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  version GameVersion?    @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  profile EmulatorProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  support EmuSupport @default(FULL)
+  note    String?
+
+  @@unique([gameId, versionId, profileId])
+  @@index([profileId])
+}
+
+enum EmuSupport {
+  FULL
+  BETA
+  NONE
+}
+
+model EmulatorSession {
+  id String @id @default(cuid())
+
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  guestKey  String?          // khoá ẩn danh (cookie) cho khách
+
+  gameId        String
+  game          Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  gameVersionId String
+  gameVersion   GameVersion @relation(fields: [gameVersionId], references: [id], onDelete: Cascade)
+  profileId     String
+  profile       EmulatorProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  status SessionStatus @default(CREATED)
+
+  queuePosition Int?             // vị trí hàng đợi khi quá tải
+  workerId      String?
+  runtimeUrl    String? @db.Text
+
+  createdAt       DateTime  @default(now())
+  startedAt       DateTime?
+  lastHeartbeatAt DateTime?
+  pausedAt        DateTime?
+  endedAt         DateTime?
+  expiresAt       DateTime                 // maximum duration
+  durationSec     Int       @default(0)
+  playedSec       Int       @default(0)    // thời lượng thực (trừ pause)
+
+  ip        String?
+  userAgent String? @db.Text
+  error     String? @db.Text
+
+  events GameEvent[]
+
+  @@index([status, expiresAt])
+  @@index([userId, status])
+  @@index([guestKey, status])
+  @@index([gameId, createdAt])
+}
+
+enum SessionStatus {
+  CREATED
+  QUEUED
+  LOADING
+  RUNNING
+  PAUSED
+  RECONNECTING
+  EXPIRED
+  CLOSED
+  ERROR
+}
+
+// ── Sự kiện & thống kê ────────────────────────────────────
+
+model GameEvent {
+  id     String @id @default(cuid())
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  versionId String?
+  version   GameVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sessionId String?
+  session   EmulatorSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  actorKey String            // userId hoặc hash(ip+ua) cho khách
+  type     GameEventType
+  isUnique Boolean @default(false)
+  value    Int?              // ví dụ: thời lượng phiên (giây)
+  meta     Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([gameId, type, createdAt])
+  @@index([type, createdAt])
+  @@index([actorKey, type])
+}
+
+enum GameEventType {
+  VIEW
+  DOWNLOAD
+  PLAY_START
+  PLAY_END
+  PLAY_ERROR
+  FAVORITE
+  SHARE
+  RATE
+}
+
+/// Khoá chống trùng cho "unique view / unique download / unique player".
+model GameUniqueHit {
+  id       String        @id @default(cuid())
+  gameId   String
+  game     Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  type     GameEventType
+  actorKey String
+
+  createdAt DateTime @default(now())
+
+  @@unique([gameId, type, actorKey])
+}
+
+model GameRating {
+  id     String @id @default(cuid())
+  gameId String
+  userId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  score Int    // 1..5
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gameId, userId])
+  @@index([gameId])
+}
+
+// ── Input & Save ──────────────────────────────────────────
+
+model UserKeymap {
+  id        String @id @default(cuid())
+  userId    String
+  profileId String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile   EmulatorProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  /// { "SOFT_LEFT": "KeyQ", "FIRE": "Space", … }
+  mapping Json
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, profileId])
+}
+
+model SaveState {
+  id            String @id @default(cuid())
+  userId        String
+  gameVersionId String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameVersion   GameVersion @relation(fields: [gameVersionId], references: [id], onDelete: Cascade)
+
+  kind       SaveKind @default(RMS)
+  slot       Int      @default(0)
+  label      String?
+  storageKey String
+  sizeBytes  Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, gameVersionId, kind, slot])
+  @@index([userId])
+}
+
+enum SaveKind {
+  RMS
+  STATE
 }

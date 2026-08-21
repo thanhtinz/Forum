@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown, PenLine } from 'lucide-react';
+import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown, PenLine, Gamepad2 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
@@ -8,12 +8,14 @@ import { MobileNav } from './MobileNav';
 const NAV = [
   { href: '/', label: 'Trang chủ', icon: LayoutGrid },
   { href: '/forum', label: 'Diễn đàn', icon: MessagesSquare },
+  { href: '/games', label: 'Game', icon: Gamepad2 },
   { href: '/vip', label: 'VIP', icon: Crown },
 ];
 
 const NAV_MOBILE = [
   { href: '/', label: 'Trang chủ', icon: 'LayoutGrid' as const },
   { href: '/forum', label: 'Diễn đàn', icon: 'MessagesSquare' as const },
+  { href: '/games', label: 'Game', icon: 'Gamepad2' as const },
   { href: '/vip', label: 'VIP', icon: 'Crown' as const },
 ];
 

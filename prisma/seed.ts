@@ -1,7 +1,11 @@
+import { createHash } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const db = new PrismaClient();
+
+/** Checksum mẫu cho file game seed — file thật sẽ có checksum tính từ nội dung. */
+const sha256Hex = (s: string) => createHash('sha256').update(s).digest('hex');
 
 async function main() {
   // ── LevelRule 1–10 ──
@@ -402,6 +406,375 @@ async function main() {
       data: { postId: premium.id, authorId: admin.id, parentId: root.id, content: 'Cảm ơn bạn đã ủng hộ 💙' },
     });
     await db.post.update({ where: { id: premium.id }, data: { commentCount: 2 } });
+  }
+
+
+  // ══════════════════════════════════════════════════════════
+  // GAME HUB — thể loại, dòng máy, độ phân giải, emulator, game
+  // ══════════════════════════════════════════════════════════
+
+  // ── Thể loại ──
+  const genreDefs = [
+    { slug: 'action', name: 'Action', icon: '💥', color: '#ef4444' },
+    { slug: 'rpg', name: 'RPG', icon: '🗡️', color: '#8b5cf6' },
+    { slug: 'strategy', name: 'Strategy', icon: '♟️', color: '#0ea5e9' },
+    { slug: 'racing', name: 'Racing', icon: '🏎️', color: '#2c7bfe' },
+    { slug: 'sports', name: 'Sports', icon: '⚽', color: '#10b981' },
+    { slug: 'puzzle', name: 'Puzzle', icon: '🧩', color: '#f59e0b' },
+    { slug: 'arcade', name: 'Arcade', icon: '🕹️', color: '#ec4899' },
+    { slug: 'simulation', name: 'Simulation', icon: '🚜', color: '#14b8a6' },
+    { slug: 'casual', name: 'Casual', icon: '🎈', color: '#a3a3a3' },
+    { slug: 'adventure', name: 'Adventure', icon: '🧭', color: '#22c55e' },
+  ];
+  const genreIds: Record<string, string> = {};
+  for (const [i, g] of genreDefs.entries()) {
+    const row = await db.gameGenre.upsert({
+      where: { slug: g.slug },
+      update: { name: g.name, icon: g.icon, color: g.color, order: i },
+      create: { ...g, order: i },
+    });
+    genreIds[g.slug] = row.id;
+  }
+
+  // ── Dòng máy ──
+  const platformDefs = [
+    { slug: 'nokia-s40', name: 'Nokia S40' },
+    { slug: 'nokia-s60', name: 'Nokia S60' },
+    { slug: 'sony-ericsson', name: 'Sony Ericsson' },
+    { slug: 'samsung', name: 'Samsung' },
+    { slug: 'motorola', name: 'Motorola' },
+    { slug: 'generic-java-me', name: 'Generic Java ME' },
+  ];
+  const platformIds: Record<string, string> = {};
+  for (const [i, p] of platformDefs.entries()) {
+    const row = await db.gamePlatform.upsert({
+      where: { slug: p.slug },
+      update: { name: p.name, order: i },
+      create: { ...p, order: i },
+    });
+    platformIds[p.slug] = row.id;
+  }
+
+  // ── Độ phân giải ──
+  const resDefs = [
+    { slug: '128x160', label: '128 × 160', width: 128, height: 160 },
+    { slug: '176x208', label: '176 × 208', width: 176, height: 208 },
+    { slug: '176x220', label: '176 × 220', width: 176, height: 220 },
+    { slug: '240x320', label: '240 × 320', width: 240, height: 320 },
+    { slug: '320x240', label: '320 × 240', width: 320, height: 240 },
+    { slug: '360x640', label: '360 × 640', width: 360, height: 640 },
+    { slug: 'custom', label: 'Tuỳ chọn', width: 0, height: 0, custom: true },
+  ];
+  const resIds: Record<string, string> = {};
+  for (const [i, r] of resDefs.entries()) {
+    const row = await db.gameResolution.upsert({
+      where: { slug: r.slug },
+      update: { label: r.label, width: r.width, height: r.height, order: i },
+      create: { ...r, order: i },
+    });
+    resIds[r.slug] = row.id;
+  }
+
+  // ── Emulator profile ──
+  const runtimeUrl = process.env.EMU_RUNTIME_URL || null;
+  const profileDefs = [
+    {
+      slug: 'nokia-s40-240x320', name: 'Nokia S40 240x320', vendor: 'Nokia',
+      screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true,
+    },
+    {
+      slug: 'nokia-s60-176x208', name: 'Nokia S60 176x208', vendor: 'Nokia',
+      screenWidth: 176, screenHeight: 208, keyLayout: 'nokia',
+    },
+    {
+      slug: 'sony-ericsson-176x220', name: 'Sony Ericsson 176x220', vendor: 'Sony Ericsson',
+      screenWidth: 176, screenHeight: 220, keyLayout: 'sonyericsson',
+    },
+    {
+      slug: 'samsung-240x320', name: 'Samsung 240x320', vendor: 'Samsung',
+      screenWidth: 240, screenHeight: 320, keyLayout: 'samsung',
+    },
+    {
+      slug: 'generic-320x240', name: 'Generic Java ME 320x240', vendor: null,
+      screenWidth: 320, screenHeight: 240, orientation: 'LANDSCAPE' as const, keyLayout: 'generic',
+    },
+  ];
+  const profileIds: Record<string, string> = {};
+  for (const p of profileDefs) {
+    const row = await db.emulatorProfile.upsert({
+      where: { slug: p.slug },
+      update: { name: p.name, screenWidth: p.screenWidth, screenHeight: p.screenHeight },
+      create: { ...p, runtimeUrl },
+    });
+    profileIds[p.slug] = row.id;
+  }
+
+  // ── Game mẫu ──
+  interface SeedGame {
+    slug: string; title: string; titleVi?: string; series?: string;
+    genres: string[]; platform: string; resolution: string; profile: string;
+    developer: string; publisher: string; year: number;
+    language: string; vietnamized: boolean; featured: boolean; playOnline: boolean;
+    description: string; gameplay: string;
+    versions: { version: string; sizeKb: number; latest: boolean; playOnline: boolean; changelog: string; date: string }[];
+    stats: { views: number; downloads: number; plays: number; ratingSum: number; ratingCount: number };
+  }
+
+  const seedGames: SeedGame[] = [
+    {
+      slug: 'contra-4', title: 'Contra 4', titleVi: 'Contra 4 Việt hóa', series: 'Contra',
+      genres: ['action', 'arcade'], platform: 'nokia-s40', resolution: '240x320', profile: 'nokia-s40-240x320',
+      developer: 'Konami Mobile', publisher: 'Konami', year: 2008,
+      language: 'vi', vietnamized: true, featured: true, playOnline: true,
+      description: 'Bản Java ME của dòng game bắn súng đi cảnh kinh điển. Hai người lính lao vào căn cứ ngoài hành tinh với kho vũ khí nâng cấp liên tục.',
+      gameplay: 'Đi cảnh ngang, nhặt icon để đổi súng (S – lan toả, L – laser, M – liên thanh). Ba mạng mỗi lượt chơi, gặp trùm ở cuối mỗi màn.',
+      versions: [
+        { version: '1.0.0', sizeKb: 412, latest: false, playOnline: false, changelog: 'Bản phát hành đầu tiên.', date: '2008-06-12' },
+        { version: '1.2.0', sizeKb: 486, latest: true, playOnline: true, changelog: 'Việt hóa toàn bộ menu, sửa lỗi treo ở màn 5, thêm chế độ luyện tập.', date: '2011-03-04' },
+      ],
+      stats: { views: 48200, downloads: 12400, plays: 8600, ratingSum: 1880, ratingCount: 412 },
+    },
+    {
+      slug: 'asphalt-urban', title: 'Asphalt Urban GT', series: 'Asphalt',
+      genres: ['racing'], platform: 'nokia-s60', resolution: '176x208', profile: 'nokia-s60-176x208',
+      developer: 'Gameloft', publisher: 'Gameloft', year: 2004,
+      language: 'en', vietnamized: false, featured: true, playOnline: true,
+      description: 'Đua xe đường phố với 20 mẫu xe có giấy phép và các thành phố lớn trên thế giới.',
+      gameplay: 'Đua theo giải, thắng để mở xe mới. Phím 5 tăng tốc, 0 phanh gấp, phím mềm trái dùng nitro.',
+      versions: [
+        { version: '2.1.0', sizeKb: 318, latest: true, playOnline: true, changelog: 'Tối ưu khung hình trên máy S60.', date: '2005-09-20' },
+      ],
+      stats: { views: 31500, downloads: 9800, plays: 5400, ratingSum: 1290, ratingCount: 310 },
+    },
+    {
+      slug: 'bounce-tales', title: 'Bounce Tales', titleVi: 'Quả bóng phiêu lưu',
+      genres: ['adventure', 'arcade'], platform: 'nokia-s40', resolution: '240x320', profile: 'nokia-s40-240x320',
+      developer: 'Rovio Mobile', publisher: 'Nokia', year: 2008,
+      language: 'vi', vietnamized: true, featured: true, playOnline: true,
+      description: 'Quả bóng đỏ lăn qua các màn vật lý đầy bẫy, nước và cơ quan để cứu ngôi làng.',
+      gameplay: 'Điều khiển bóng bằng phím trái/phải, phím lên để nhảy. Nhặt vật phẩm để phóng to, thu nhỏ hoặc trở nên nặng hơn.',
+      versions: [
+        { version: '1.0.5', sizeKb: 240, latest: true, playOnline: true, changelog: 'Việt hóa lời thoại, cân bằng lại độ khó màn 8.', date: '2010-01-15' },
+      ],
+      stats: { views: 62800, downloads: 21300, plays: 15900, ratingSum: 2340, ratingCount: 498 },
+    },
+    {
+      slug: 'snake-xenzia', title: 'Snake Xenzia', series: 'Snake',
+      genres: ['arcade', 'casual'], platform: 'nokia-s40', resolution: '128x160', profile: 'nokia-s40-240x320',
+      developer: 'Nokia', publisher: 'Nokia', year: 2002,
+      language: 'en', vietnamized: false, featured: false, playOnline: true,
+      description: 'Bản Snake huyền thoại đi kèm điện thoại Nokia — càng ăn càng dài, chạm đuôi là thua.',
+      gameplay: 'Bốn phím hướng điều khiển rắn. Ăn mồi để dài ra và tăng điểm, tránh tường và chính thân mình.',
+      versions: [
+        { version: '1.0.0', sizeKb: 64, latest: true, playOnline: true, changelog: 'Bản gốc.', date: '2002-05-01' },
+      ],
+      stats: { views: 88400, downloads: 30100, plays: 42600, ratingSum: 2100, ratingCount: 460 },
+    },
+    {
+      slug: 'dragon-hunter', title: 'Dragon Hunter', titleVi: 'Thợ săn rồng',
+      genres: ['rpg', 'adventure'], platform: 'sony-ericsson', resolution: '176x220', profile: 'sony-ericsson-176x220',
+      developer: 'In-Fusio', publisher: 'In-Fusio', year: 2006,
+      language: 'vi', vietnamized: true, featured: false, playOnline: true,
+      description: 'Nhập vai theo lượt trong thế giới trung cổ: nhận nhiệm vụ, rèn trang bị và hạ gục rồng.',
+      gameplay: 'Di chuyển trên bản đồ ô vuông, đánh theo lượt. Phím 5 xác nhận, phím mềm phải mở túi đồ.',
+      versions: [
+        { version: '1.1.2', sizeKb: 690, latest: true, playOnline: true, changelog: 'Sửa lỗi mất save khi thoát giữa trận.', date: '2007-11-30' },
+      ],
+      stats: { views: 19700, downloads: 6100, plays: 3300, ratingSum: 780, ratingCount: 180 },
+    },
+    {
+      slug: 'chess-master', title: 'Chess Master',
+      genres: ['strategy', 'puzzle'], platform: 'generic-java-me', resolution: '320x240', profile: 'generic-320x240',
+      developer: 'Mobile Chess Studio', publisher: 'MCS', year: 2009,
+      language: 'multi', vietnamized: false, featured: false, playOnline: true,
+      description: 'Cờ vua với 10 mức độ máy, chế độ hai người trên cùng một máy và bộ bài tập chiếu hết.',
+      gameplay: 'Con trỏ di chuyển bằng phím hướng, phím 5 chọn quân và ô đích. Có gợi ý nước đi và hoàn tác.',
+      versions: [
+        { version: '3.0.1', sizeKb: 155, latest: true, playOnline: true, changelog: 'Engine mạnh hơn, thêm 40 bài tập.', date: '2011-08-08' },
+      ],
+      stats: { views: 12300, downloads: 4200, plays: 2100, ratingSum: 620, ratingCount: 140 },
+    },
+    {
+      slug: 'farm-frenzy', title: 'Farm Frenzy', titleVi: 'Nông trại vui vẻ',
+      genres: ['simulation', 'casual'], platform: 'samsung', resolution: '240x320', profile: 'samsung-240x320',
+      developer: 'Alawar', publisher: 'Alawar Entertainment', year: 2010,
+      language: 'vi', vietnamized: true, featured: false, playOnline: false,
+      description: 'Quản lý nông trại: nuôi gà, thu trứng, chế biến và bán hàng trước khi hết giờ.',
+      gameplay: 'Chạm/di chuyển con trỏ để thu hoạch. Mỗi màn có mục tiêu sản lượng và giới hạn thời gian.',
+      versions: [
+        { version: '1.0.0', sizeKb: 980, latest: true, playOnline: false, changelog: 'Bản Việt hóa đầu tiên, chỉ hỗ trợ tải về.', date: '2012-02-20' },
+      ],
+      stats: { views: 25400, downloads: 11200, plays: 0, ratingSum: 1020, ratingCount: 240 },
+    },
+    {
+      slug: 'sudoku-classic', title: 'Sudoku Classic',
+      genres: ['puzzle', 'casual'], platform: 'generic-java-me', resolution: '176x220', profile: 'sony-ericsson-176x220',
+      developer: 'Puzzle Works', publisher: 'Puzzle Works', year: 2007,
+      language: 'en', vietnamized: false, featured: false, playOnline: true,
+      description: 'Hơn 500 câu đố Sudoku bốn mức độ, có kiểm tra lỗi và ghi chú nháp.',
+      gameplay: 'Phím số điền giá trị, phím 0 xoá ô, phím mềm trái bật ghi chú.',
+      versions: [
+        { version: '2.4.0', sizeKb: 96, latest: true, playOnline: true, changelog: 'Thêm 200 câu đố và thống kê thời gian giải.', date: '2009-04-17' },
+      ],
+      stats: { views: 9400, downloads: 3100, plays: 4800, ratingSum: 430, ratingCount: 96 },
+    },
+  ];
+
+  const gameIds: Record<string, string> = {};
+  for (const g of seedGames) {
+    const published = new Date(g.versions.at(-1)!.date);
+    const game = await db.game.upsert({
+      where: { slug: g.slug },
+      update: { title: g.title, status: 'PUBLISHED' },
+      create: {
+        slug: g.slug,
+        title: g.title,
+        titleVi: g.titleVi ?? null,
+        series: g.series ?? null,
+        description: g.description,
+        gameplay: g.gameplay,
+        icon: `games/${g.slug}/icon.svg`,
+        developer: g.developer,
+        publisher: g.publisher,
+        releaseYear: g.year,
+        language: g.language,
+        vietnamized: g.vietnamized,
+        featured: g.featured,
+        playOnline: g.playOnline,
+        status: 'PUBLISHED',
+        publishedAt: published,
+        platformId: platformIds[g.platform],
+        resolutionId: resIds[g.resolution],
+        emulatorProfileId: profileIds[g.profile],
+        controls: [
+          { key: '↑ ↓ ← →', action: 'Di chuyển' },
+          { key: '5 / Enter', action: 'Chọn · Hành động chính' },
+          { key: 'Phím mềm trái', action: 'Menu / Options' },
+          { key: 'Phím mềm phải', action: 'Quay lại' },
+        ],
+        compatibilityNote: `Chạy tốt trên profile ${g.profile}. Máy có độ phân giải khác có thể bị co giãn khung hình.`,
+        viewCount: g.stats.views,
+        uniqueViewCount: Math.round(g.stats.views * 0.62),
+        downloadCount: g.stats.downloads,
+        uniqueDownloadCount: Math.round(g.stats.downloads * 0.71),
+        playCount: g.stats.plays,
+        uniquePlayerCount: Math.round(g.stats.plays * 0.44),
+        playSeconds: g.stats.plays * 260,
+        ratingSum: g.stats.ratingSum,
+        ratingCount: g.stats.ratingCount,
+        trendingScore: Math.round((g.stats.plays / 100 + g.stats.downloads / 200) * 10) / 10,
+      },
+    });
+    gameIds[g.slug] = game.id;
+
+    // Thể loại
+    for (const slug of g.genres) {
+      const genreId = genreIds[slug];
+      if (!genreId) continue;
+      await db.genresOnGames.upsert({
+        where: { gameId_genreId: { gameId: game.id, genreId } },
+        update: {},
+        create: { gameId: game.id, genreId },
+      });
+    }
+
+    // Ảnh chụp màn hình
+    if ((await db.gameImage.count({ where: { gameId: game.id } })) === 0) {
+      await db.gameImage.createMany({
+        data: [1, 2].map((n) => ({
+          gameId: game.id,
+          type: 'SCREENSHOT' as const,
+          storageKey: `games/${g.slug}/shot-${n}.svg`,
+          caption: `${g.title} — màn hình ${n}`,
+          width: 240,
+          height: 320,
+          sortOrder: n,
+        })),
+      });
+    }
+
+    // Version + file JAR/JAD
+    for (const v of g.versions) {
+      const version = await db.gameVersion.upsert({
+        where: { gameId_version: { gameId: game.id, version: v.version } },
+        update: { latest: v.latest, playOnline: v.playOnline },
+        create: {
+          gameId: game.id,
+          version: v.version,
+          releaseDate: new Date(v.date),
+          changelog: v.changelog,
+          sizeBytes: BigInt(v.sizeKb * 1024),
+          latest: v.latest,
+          playOnline: v.playOnline,
+        },
+      });
+
+      for (const type of ['JAR', 'JAD'] as const) {
+        const sizeBytes = type === 'JAR' ? BigInt(v.sizeKb * 1024) : BigInt(1024);
+        await db.gameFile.upsert({
+          where: { versionId_type: { versionId: version.id, type } },
+          update: {},
+          create: {
+            versionId: version.id,
+            type,
+            storageKey: `${g.slug}/${v.version}/${g.slug}.${type.toLowerCase()}`,
+            fileName: `${g.slug}-${v.version}.${type.toLowerCase()}`,
+            sizeBytes,
+            // Checksum mẫu — thay bằng giá trị thật khi upload file lên storage.
+            checksum: type === 'JAR' ? sha256Hex(`${g.slug}-${v.version}`) : null,
+            scanStatus: 'CLEAN',
+          },
+        });
+      }
+
+      // Ma trận tương thích cho version mới nhất
+      if (v.latest && v.playOnline) {
+        const profileId = profileIds[g.profile]!;
+        const exists = await db.gameEmulatorProfile.findFirst({
+          where: { gameId: game.id, versionId: version.id, profileId },
+        });
+        if (!exists) {
+          await db.gameEmulatorProfile.create({
+            data: { gameId: game.id, versionId: version.id, profileId, support: 'FULL' },
+          });
+        }
+      }
+    }
+  }
+
+  // ── Bộ sưu tập ──
+  const collectionDefs = [
+    {
+      slug: 'huyen-thoai-nokia', name: 'Huyền thoại Nokia', featured: true,
+      description: 'Những tựa game gắn liền với thời điện thoại phím bấm.',
+      games: ['snake-xenzia', 'bounce-tales', 'contra-4'],
+    },
+    {
+      slug: 'ban-viet-hoa', name: 'Bản Việt hóa tuyển chọn', featured: true,
+      description: 'Game đã được dịch trọn vẹn sang tiếng Việt.',
+      games: ['contra-4', 'bounce-tales', 'dragon-hunter', 'farm-frenzy'],
+    },
+    {
+      slug: 'giai-tri-nhe-nhang', name: 'Giải trí nhẹ nhàng', featured: false,
+      description: 'Chơi vài phút lúc rảnh, không cần cày cuốc.',
+      games: ['sudoku-classic', 'snake-xenzia', 'chess-master'],
+    },
+  ];
+  for (const [i, c] of collectionDefs.entries()) {
+    const col = await db.gameCollection.upsert({
+      where: { slug: c.slug },
+      update: { name: c.name, description: c.description, featured: c.featured, order: i },
+      create: { slug: c.slug, name: c.name, description: c.description, featured: c.featured, order: i },
+    });
+    for (const [j, slug] of c.games.entries()) {
+      const gameId = gameIds[slug];
+      if (!gameId) continue;
+      await db.gamesOnCollections.upsert({
+        where: { gameId_collectionId: { gameId, collectionId: col.id } },
+        update: { order: j },
+        create: { gameId, collectionId: col.id, order: j },
+      });
+    }
   }
 
   console.log('✅ Seed hoàn tất. Admin: admin@nova.local / admin123');

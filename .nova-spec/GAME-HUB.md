@@ -93,15 +93,15 @@ hết header/footer và khung của trang, chừa safe-area cho tai thỏ
 theo bề ngang cửa sổ — xoay ngang máy vẫn toàn màn hình:
 
 - **Cầm dọc**: màn hình game trên, dưới là hàng nút điều khiển rồi **mặt phím**
-  dựng đúng kiểu máy candybar — phím mềm ở hàng trên, phím gọi/kết thúc ở hàng
-  dưới, hai hàng đó kẹp lấy vòng xoay (hoặc phím bốn hướng), rồi tới bàn phím số
-  4×3 phím bè ngang, chữ số to và chữ cái ABC/DEF in nhỏ bên dưới.
+  dựng đúng kiểu máy candybar, xếp làm ba tầng:
+  1. một hàng phím chức năng — phím mềm trái ‧ gọi ‧ kết thúc ‧ phím mềm phải;
+  2. vòng xoay tròn (navi-wheel) có nút OK ở tâm, đặt chính giữa;
+  3. bàn phím số 4×3 phím bè ngang, chữ số to và chữ cái ABC/DEF in nhỏ bên dưới.
 - **Cầm ngang** (`max-height: 520px`): D-pad ‧ màn hình ‧ bàn phím số xếp ba cột,
   phím mềm và nút điều khiển gom xuống một hàng đáy.
 
-Kiểu D-pad theo hãng: Nokia/Samsung/LG dùng vòng xoay tròn có nút OK ở tâm,
-Sony Ericsson/Motorola/Siemens dùng phím bốn hướng vuông. Nhãn phím mềm cũng lấy
-theo hãng (Options/Back, Menu/Back, Select/Back…).
+Mọi máy đều dùng vòng xoay tròn. Nhãn phím mềm thì lấy theo hãng (Options/Back,
+Menu/Back, Select/Back…).
 
 Khung game được đo bằng JS (`ResizeObserver`) thay vì `aspect-ratio` của CSS: khi
 `max-width` cắt bớt chiều ngang thì CSS không co chiều cao theo, ảnh game bị kéo méo.

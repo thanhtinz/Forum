@@ -1,26 +1,32 @@
 import { redirect } from 'next/navigation';
-import type { Role } from '@prisma/client';
 import { auth } from '@/lib/auth';
 
-export interface AdminUser {
-  id: string;
-  role: Role;
+export type AdminSession = { id: string; role: string };
+
+/** Bảo đảm người dùng là ADMIN/MODERATOR. Trả về session hoặc chuyển hướng. */
+export async function requireAdmin(): Promise<AdminSession> {
+  const session = await auth();
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  if (!session?.user?.id || (role !== 'ADMIN' && role !== 'MODERATOR')) redirect('/');
+  return { id: session.user.id, role: role! };
 }
 
-/** Trả về admin/mod đang đăng nhập, hoặc đá về trang chủ. Dùng trong Server Component. */
-export async function requireAdmin(): Promise<AdminUser> {
-  const session = await auth();
-  const user = session?.user;
-  if (!user?.id || (user.role !== 'ADMIN' && user.role !== 'MODERATOR')) redirect('/');
-  return { id: user.id, role: user.role };
+/** Chỉ ADMIN (không cho MODERATOR). */
+export async function requireSuperAdmin(): Promise<AdminSession> {
+  const s = await requireAdmin();
+  if (s.role !== 'ADMIN') redirect('/admin');
+  return s;
 }
 
-/** Bản dùng trong Server Action: ném lỗi thay vì redirect. */
-export async function assertAdmin(): Promise<AdminUser> {
+/**
+ * Bản dùng trong Server Action: ném lỗi thay vì redirect.
+ * `redirect()` trong action sẽ nuốt mất lỗi quyền, nên ở đây phải ném thật.
+ */
+export async function assertAdmin(): Promise<AdminSession> {
   const session = await auth();
-  const user = session?.user;
-  if (!user?.id || (user.role !== 'ADMIN' && user.role !== 'MODERATOR')) {
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  if (!session?.user?.id || (role !== 'ADMIN' && role !== 'MODERATOR')) {
     throw new Error('FORBIDDEN');
   }
-  return { id: user.id, role: user.role };
+  return { id: session.user.id, role: role! };
 }

@@ -12,7 +12,7 @@ import {
 } from '@/lib/emulator-keys';
 import { cn } from '@/lib/utils';
 import { KeymapEditor } from './KeymapEditor';
-import { VirtualKeypad } from './VirtualKeypad';
+import { useKeypadParts } from './VirtualKeypad';
 
 // ── Kiểu dữ liệu phiên (khớp POST /api/games/{id}/play) ──
 
@@ -48,6 +48,11 @@ export interface EmulatorStageProps {
   /** Keymap người dùng đã lưu cho profile này (nếu đã đăng nhập). */
   savedKeymap?: Record<string, string> | null;
   loggedIn: boolean;
+  /**
+   * Chiếm trọn màn hình. Bật theo thiết bị (điện thoại) chứ không theo bề ngang
+   * cửa sổ — xoay ngang máy vẫn phải là toàn màn hình.
+   */
+  fullscreen?: boolean;
 }
 
 type Phase = 'creating' | 'queued' | 'loading' | 'running' | 'paused' | 'reconnecting' | 'ended' | 'error';
@@ -63,7 +68,7 @@ const CONTINUE_MAX = 12;
  * Runtime J2ME thật chạy ở dịch vụ riêng (`EmulatorProfile.runtimeUrl`), không
  * chung process với web server. Trang chỉ nói chuyện với nó qua postMessage.
  */
-export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeymap, loggedIn }: EmulatorStageProps) {
+export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeymap, loggedIn, fullscreen: fill = false }: EmulatorStageProps) {
   const router = useRouter();
   const frameRef = useRef<HTMLIFrameElement>(null);
   const closedRef = useRef(false);
@@ -175,6 +180,16 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     return () => window.removeEventListener('message', onMessage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, post]);
+
+  // ── 2b. Khoá cuộn nền ───────────────────────────────────
+  // Sân khấu phủ kín màn hình điện thoại, để trang phía sau cuộn được thì
+  // ngón tay trượt hụt sẽ kéo cả trang.
+  useEffect(() => {
+    if (!fill) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, [fill]);
 
   // ── 3. Heartbeat ────────────────────────────────────────
   useEffect(() => {
@@ -359,145 +374,225 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     return landscape ? { w: h, h: w } : { w, h };
   }, [profile, landscape]);
 
+  /**
+   * Khung game phải vừa khít chỗ trống mà vẫn đúng tỉ lệ máy ảo.
+   * `aspect-ratio` của CSS không làm được: khi `max-width` cắt bớt chiều ngang
+   * thì chiều cao không co theo, ảnh game bị kéo méo. Nên đo bằng JS.
+   */
+  const areaRef = useRef<HTMLDivElement>(null);
+  const [box, setBox] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const area = areaRef.current;
+    if (!area) return;
+    const fit = () => {
+      const { width, height } = area.getBoundingClientRect();
+      if (width <= 0 || height <= 0) return;
+      const scale = Math.min(width / screen.w, height / screen.h);
+      setBox({ w: Math.floor(screen.w * scale), h: Math.floor(screen.h * scale) });
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(area);
+    return () => ro.disconnect();
+  }, [screen.w, screen.h]);
+
+  /** Máy cầm ngang: chiều cao eo hẹp nên chuyển bàn phím ra hai bên màn hình. */
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-height: 520px)');
+    const sync = () => setWide(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
+
+  const keypad = useKeypadParts({
+    keyLayout: profile?.keyLayout ?? 'generic',
+    softKeys: profile?.softKeys ?? true,
+    onPress: (k) => sendKey(k, 'down'),
+    onRelease: (k) => sendKey(k, 'up'),
+    held,
+    compact: fill && wide,
+  });
+
   const busy = phase === 'creating' || phase === 'loading' || phase === 'queued' || phase === 'reconnecting';
 
-  return (
-    // Tràn viền trên điện thoại để màn hình game rộng nhất có thể; `touch-none`
-    // chặn cuộn/zoom khi ngón tay đặt lên khu vực điều khiển.
+  // ── Các mảnh dùng chung cho cả hai bố cục ───────────────
+
+  const screenBox = (
     <div
-      id="nova-emulator-stage"
-      className="-mx-3 touch-none select-none bg-ink-950 p-3 text-ink-100 sm:mx-0 sm:rounded-2xl sm:p-4"
+      className="relative overflow-hidden rounded-lg bg-black ring-1 ring-ink-700"
+      style={box.w > 0 ? { width: box.w, height: box.h } : { width: '100%', aspectRatio: `${screen.w} / ${screen.h}` }}
     >
-      {/* Thanh trên: tên game + đồng hồ phiên */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="truncate font-bold">{gameTitle}</p>
+      {session?.profile.runtimeUrl ? (
+        <iframe
+          ref={frameRef}
+          title={`Emulator ${gameTitle}`}
+          src={session.profile.runtimeUrl}
+          // Runtime bị cô lập: không cho điều hướng top-level, không cho form/popup.
+          sandbox="allow-scripts"
+          allow="autoplay; fullscreen; gamepad"
+          className="h-full w-full border-0"
+        />
+      ) : (
+        <div className="grid h-full w-full place-items-center p-3 text-center">
+          <div>
+            <canvas
+              width={screen.w}
+              height={screen.h}
+              className="mx-auto max-h-24 opacity-20"
+              style={{ imageRendering: 'pixelated' }}
+            />
+            <p className="mt-3 text-xs text-ink-400">
+              Emulator profile này chưa gắn runtime (<code>runtimeUrl</code>).
+              <br />Bạn vẫn tải JAR/JAD về máy để chơi trên thiết bị thật.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {busy && (
+        <div className="absolute inset-0 grid place-items-center bg-black/70 p-3 text-center text-sm">
+          <div>
+            <Loader2 className="mx-auto animate-spin text-brand-400" size={26} />
+            <p className="mt-2">
+              {phase === 'creating' && 'Đang tạo phiên chơi…'}
+              {phase === 'queued' && `Đang xếp hàng${queuePos ? ` — vị trí ${queuePos}` : ''}…`}
+              {phase === 'loading' && 'Đang nạp MIDlet…'}
+              {phase === 'reconnecting' && 'Mất kết nối, đang thử lại…'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {(phase === 'ended' || phase === 'error') && (
+        <div className="absolute inset-0 grid place-items-center bg-black/85 p-4 text-center text-sm">
+          <div>
+            <AlertTriangle className="mx-auto text-amber-400" size={26} />
+            <p className="mt-2">{message ?? 'Phiên chơi đã kết thúc.'}</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <button type="button" onClick={() => router.refresh()} className="btn-primary !py-1.5 text-xs">
+                <Play size={13} /> Chơi lại
+              </button>
+              <Link href={`/games/${slug}`} className="btn-outline !py-1.5 text-xs !text-ink-200">
+                <Download size={13} /> Tải về máy
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {phase === 'paused' && (
+        <div className="absolute inset-0 grid place-items-center bg-black/60">
+          <Pause size={40} className="text-white/80" />
+        </div>
+      )}
+    </div>
+  );
+
+  const controls = (
+    <div className="flex shrink-0 flex-wrap items-center justify-center gap-1.5 sm:gap-2">
+      <Ctl onClick={togglePause} disabled={phase !== 'running' && phase !== 'paused'} label={phase === 'paused' ? 'Tiếp tục' : 'Tạm dừng'}>
+        {phase === 'paused' ? <Play size={16} /> : <Pause size={16} />}
+      </Ctl>
+      <Ctl onClick={reset} disabled={!session} label="Khởi động lại"><RotateCw size={16} /></Ctl>
+      <Ctl onClick={toggleMute} disabled={!profile?.audio} label={muted ? 'Bật tiếng' : 'Tắt tiếng'}>
+        {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+      </Ctl>
+      <Ctl onClick={() => setLandscape((v) => !v)} label="Xoay màn hình">
+        <Smartphone size={16} className={landscape ? 'rotate-90' : ''} />
+      </Ctl>
+      <Ctl onClick={fullscreen} label="Toàn màn hình"><Expand size={16} /></Ctl>
+      {(profile?.rms || profile?.saveState) && (
+        <>
+          <Ctl onClick={requestSave} disabled={phase !== 'running'} label="Lưu"><Save size={16} /></Ctl>
+          <Ctl onClick={requestLoad} disabled={!session} label="Nạp bản lưu"><Upload size={16} /></Ctl>
+        </>
+      )}
+      <Ctl onClick={() => setShowSettings((v) => !v)} label="Cấu hình phím"><Settings2 size={16} /></Ctl>
+      <Ctl onClick={exit} label="Thoát" danger><LogOut size={16} /></Ctl>
+    </div>
+  );
+
+  const topBar = (
+    <div className="flex shrink-0 items-center justify-between gap-2 pb-2">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-bold sm:text-base">{gameTitle}</p>
+        {!(fill && wide) && (
           <p className="truncate text-[11px] text-ink-400">
             {profile ? `${profile.name} · CLDC ${profile.cldc} / MIDP ${profile.midp}` : 'Đang chuẩn bị…'}
             {session && ` · v${session.version.version}`}
           </p>
-        </div>
-        <div className="flex items-center gap-2 text-xs">
-          <span className={cn('flex items-center gap-1 rounded-full px-2 py-1',
-            session && remaining < 120 ? 'bg-red-500/20 text-red-300' : 'bg-ink-800 text-ink-300')}>
-            <Timer size={13} /> {session ? fmtClock(remaining) : '--:--'}
-          </span>
-          <span className="hidden rounded-full bg-ink-800 px-2 py-1 text-ink-400 sm:inline">
-            Đã chơi {fmtClock(playedSec)}
-          </span>
-        </div>
-      </div>
-
-      {/* Màn hình */}
-      <div className="flex justify-center">
-        <div
-          className="relative overflow-hidden rounded-lg bg-black ring-1 ring-ink-700"
-          style={{ width: '100%', maxWidth: screen.w * 2, aspectRatio: `${screen.w} / ${screen.h}` }}
-        >
-          {session?.profile.runtimeUrl ? (
-            <iframe
-              ref={frameRef}
-              title={`Emulator ${gameTitle}`}
-              src={session.profile.runtimeUrl}
-              // Runtime bị cô lập: không cho điều hướng top-level, không cho form/popup.
-              sandbox="allow-scripts"
-              allow="autoplay; fullscreen; gamepad"
-              className="h-full w-full border-0"
-            />
-          ) : (
-            <div className="grid h-full w-full place-items-center p-4 text-center">
-              <div>
-                <canvas
-                  width={screen.w}
-                  height={screen.h}
-                  className="mx-auto max-h-40 opacity-20"
-                  style={{ imageRendering: 'pixelated' }}
-                />
-                <p className="mt-3 text-xs text-ink-400">
-                  Emulator profile này chưa gắn runtime (<code>runtimeUrl</code>).
-                  <br />Bạn vẫn tải JAR/JAD về máy để chơi trên thiết bị thật.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {busy && (
-            <div className="absolute inset-0 grid place-items-center bg-black/70 text-center text-sm">
-              <div>
-                <Loader2 className="mx-auto animate-spin text-brand-400" size={26} />
-                <p className="mt-2">
-                  {phase === 'creating' && 'Đang tạo phiên chơi…'}
-                  {phase === 'queued' && `Đang xếp hàng${queuePos ? ` — vị trí ${queuePos}` : ''}…`}
-                  {phase === 'loading' && 'Đang nạp MIDlet…'}
-                  {phase === 'reconnecting' && 'Mất kết nối, đang thử lại…'}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {(phase === 'ended' || phase === 'error') && (
-            <div className="absolute inset-0 grid place-items-center bg-black/85 p-5 text-center text-sm">
-              <div>
-                <AlertTriangle className="mx-auto text-amber-400" size={26} />
-                <p className="mt-2">{message ?? 'Phiên chơi đã kết thúc.'}</p>
-                <div className="mt-4 flex justify-center gap-2">
-                  <button type="button" onClick={() => router.refresh()} className="btn-primary !py-1.5 text-xs">
-                    <Play size={13} /> Chơi lại
-                  </button>
-                  <Link href={`/games/${slug}`} className="btn-outline !py-1.5 text-xs !text-ink-200">
-                    <Download size={13} /> Tải về máy
-                  </Link>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {phase === 'paused' && (
-            <div className="absolute inset-0 grid place-items-center bg-black/60">
-              <Pause size={40} className="text-white/80" />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Thanh điều khiển */}
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-        <Ctl onClick={togglePause} disabled={phase !== 'running' && phase !== 'paused'} label={phase === 'paused' ? 'Tiếp tục' : 'Tạm dừng'}>
-          {phase === 'paused' ? <Play size={16} /> : <Pause size={16} />}
-        </Ctl>
-        <Ctl onClick={reset} disabled={!session} label="Khởi động lại"><RotateCw size={16} /></Ctl>
-        <Ctl onClick={toggleMute} disabled={!profile?.audio} label={muted ? 'Bật tiếng' : 'Tắt tiếng'}>
-          {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-        </Ctl>
-        <Ctl onClick={() => setLandscape((v) => !v)} label="Xoay màn hình">
-          <Smartphone size={16} className={landscape ? 'rotate-90' : ''} />
-        </Ctl>
-        <Ctl onClick={fullscreen} label="Toàn màn hình"><Expand size={16} /></Ctl>
-        {(profile?.rms || profile?.saveState) && (
-          <>
-            <Ctl onClick={requestSave} disabled={phase !== 'running'} label="Lưu"><Save size={16} /></Ctl>
-            <Ctl onClick={requestLoad} disabled={!session} label="Nạp bản lưu"><Upload size={16} /></Ctl>
-          </>
         )}
-        <Ctl onClick={() => setShowSettings((v) => !v)} label="Cấu hình phím"><Settings2 size={16} /></Ctl>
-        <Ctl onClick={exit} label="Thoát" danger><LogOut size={16} /></Ctl>
       </div>
-
-      {saveNote && <p className="mt-2 text-center text-xs text-brand-300">{saveNote}</p>}
-
-      {/* Bàn phím ảo */}
-      <div className="mt-4">
-        <VirtualKeypad
-          keyLayout={profile?.keyLayout ?? 'generic'}
-          softKeys={profile?.softKeys ?? true}
-          onPress={(k) => sendKey(k, 'down')}
-          onRelease={(k) => sendKey(k, 'up')}
-          held={held}
-        />
+      <div className="flex shrink-0 items-center gap-2 text-xs">
+        <span className={cn('flex items-center gap-1 rounded-full px-2 py-1',
+          session && remaining < 120 ? 'bg-red-500/20 text-red-300' : 'bg-ink-800 text-ink-300')}>
+          <Timer size={13} /> {session ? fmtClock(remaining) : '--:--'}
+        </span>
+        <span className="hidden rounded-full bg-ink-800 px-2 py-1 text-ink-400 sm:inline">
+          Đã chơi {fmtClock(playedSec)}
+        </span>
       </div>
+    </div>
+  );
 
+  return (
+    /**
+     * Trên điện thoại emulator chiếm trọn màn hình: không header/footer, chiều cao
+     * 100dvh (tự trừ thanh địa chỉ trình duyệt) và chừa safe-area cho tai thỏ.
+     * Cầm ngang thì bàn phím dạt ra hai bên để màn hình game còn chỗ.
+     */
+    <div
+      id="nova-emulator-stage"
+      className={cn(
+        'touch-none select-none bg-ink-950 text-ink-100',
+        fill
+          ? 'fixed inset-0 z-50 flex h-[100dvh] flex-col px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-[max(0.5rem,env(safe-area-inset-top))]'
+          : 'rounded-2xl p-4',
+      )}
+    >
+      {topBar}
+
+      {fill && wide ? (
+        <>
+          {/* Cầm ngang: D-pad · màn hình · bàn phím số */}
+          {/* `items-stretch` để ô giữa có chiều cao xác định — nếu không, khung game
+              tự quyết chiều cao rồi tràn khỏi màn hình. */}
+          <div className="flex min-h-0 flex-1 items-stretch gap-2">
+            <div className="shrink-0 self-center">{keypad.dpad}</div>
+            <div ref={areaRef} className="flex min-h-0 min-w-0 flex-1 items-center justify-center">
+              {screenBox}
+            </div>
+            <div className="shrink-0 self-center">{keypad.numpad}</div>
+          </div>
+          <div className="mt-2 flex shrink-0 items-center gap-2">
+            <div className="min-w-0 flex-1">{keypad.softKeys}</div>
+            {controls}
+          </div>
+        </>
+      ) : (
+        <>
+          <div ref={areaRef} className={cn('flex items-center justify-center', fill ? 'min-h-0 flex-1' : 'h-[60vh]')}>
+            {screenBox}
+          </div>
+          <div className="mt-2 sm:mt-3">{controls}</div>
+          {saveNote && <p className="mt-1.5 shrink-0 text-center text-xs text-brand-300">{saveNote}</p>}
+          <div className="mx-auto mt-2 w-full max-w-sm shrink-0 space-y-3 sm:mt-4">
+            {keypad.softKeys}
+            <div className="flex items-center justify-between gap-4">
+              {keypad.dpad}
+              {keypad.numpad}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Cấu hình phím — đè lên trên khi toàn màn hình, tự cuộn nếu dài */}
       {showSettings && profile && (
-        <div className="mt-4 rounded-xl bg-ink-900 p-4">
+        <div className={cn('overflow-y-auto rounded-xl bg-ink-900 p-4',
+          fill ? 'absolute inset-x-2 bottom-2 max-h-[70%] shadow-xl' : 'mt-4')}>
           <KeymapEditor
             profileId={profile.id}
             keymap={keymap}

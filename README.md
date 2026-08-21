@@ -68,11 +68,13 @@ Khu game Java ME nằm ở `/games`:
   thiết bị tương thích, hướng dẫn phím, lưu ý và thống kê.
 - **Tải game** — chọn version → JAR/JAD → backend kiểm tra file rồi cấp signed URL
   có hạn; checksum hiển thị để đối chiếu; tải lặp không làm phồng unique download.
-- **Play Online (chỉ trên điện thoại)** — tạo phiên emulator, nạp JAR vào runtime
-  J2ME chạy trong iframe sandbox, bàn phím ảo + D-pad + phím mềm,
-  fullscreen/xoay/tắt tiếng/tạm dừng, save RMS (cloud cho thành viên, localStorage
-  cho khách), heartbeat và hạn mức phiên. Trên máy tính, mọi nút chơi online đều
-  ẩn và trang `/play` hiện hướng dẫn mở bằng đt — kho game vẫn xem/tải bình thường.
+- **Play Online (chỉ trên điện thoại, toàn màn hình)** — tạo phiên emulator, nạp
+  JAR vào runtime J2ME chạy trong iframe sandbox; trên đt emulator chiếm trọn màn
+  hình (không header/footer, chừa safe-area, khoá cuộn), cầm dọc thì bàn phím nằm
+  dưới, cầm ngang thì D-pad và bàn phím số dạt ra hai bên màn hình. Có phím mềm,
+  xoay/tắt tiếng/tạm dừng, save RMS (cloud cho thành viên, localStorage cho khách),
+  heartbeat và hạn mức phiên. Trên máy tính, mọi nút chơi online đều ẩn và trang
+  `/play` hiện hướng dẫn mở bằng đt — kho game vẫn xem/tải bình thường.
 - **Quản trị** — `/admin/games` (CRUD game, version, file, ảnh, ma trận tương thích)
   và `/admin/emulator` (profile thiết bị, hạn mức tài nguyên, phiên đang chạy, log lỗi).
 

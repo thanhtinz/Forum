@@ -1,15 +1,24 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { ChevronLeft, Cpu, Download, Info, Smartphone } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { isMobileRequest } from '@/lib/device';
 import { ORIENTATION_LABEL } from '@/lib/game';
 import { resolveProfile } from '@/lib/emulator';
+import { cn } from '@/lib/utils';
 import { EmulatorStage } from '@/components/game/EmulatorStage';
 
 export const dynamic = 'force-dynamic';
+
+/** `viewport-fit=cover` để emulator tràn tới sát mép máy có tai thỏ. */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0f1115',
+};
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -55,9 +64,16 @@ export default async function PlayGamePage({ params, searchParams }: {
       }))?.mapping as Record<string, string> | undefined
     : undefined;
 
+  // Khi emulator phủ kín màn hình (điện thoại), khung của trang — link quay lại,
+  // chọn version, ghi chú — bị che hoàn toàn nên không render nữa. Bám theo
+  // `mobile` chứ không theo bề ngang: xoay ngang máy vẫn là toàn màn hình.
+  const stageFullscreen = mobile && playable && !!version;
+
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <div className="flex items-center justify-between gap-2">
+    // `space-y-*` đặt margin-top lên cả phần tử `fixed`, làm sân khấu toàn màn
+    // hình lệch khỏi mép trên — nên tắt hẳn khoảng cách này khi đang toàn màn hình.
+    <div className={cn('mx-auto max-w-3xl', !stageFullscreen && 'space-y-4')}>
+      <div className={cn('items-center justify-between gap-2', stageFullscreen ? 'hidden' : 'flex')}>
         <Link href={`/games/${game.slug}`} className="inline-flex items-center gap-1 text-sm text-ink-400 hover:text-brand-600">
           <ChevronLeft size={15} /> Về trang game
         </Link>
@@ -120,9 +136,10 @@ export default async function PlayGamePage({ params, searchParams }: {
             profileId={sp.profile}
             savedKeymap={savedKeymap ?? null}
             loggedIn={!!userId}
+            fullscreen={mobile}
           />
 
-          <div className="card p-4 text-sm text-ink-500">
+          <div className={cn('card p-4 text-sm text-ink-500', stageFullscreen ? 'hidden' : 'block')}>
             <p className="flex items-start gap-2">
               <Info size={15} className="mt-0.5 shrink-0 text-brand-500" />
               <span>

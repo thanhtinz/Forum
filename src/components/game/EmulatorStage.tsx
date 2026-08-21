@@ -504,6 +504,8 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     onRelease: (k) => sendKey(k, 'up'),
     held,
     compact: fill && wide,
+    // Cầm dọc toàn màn hình: mặt phím chiếm trọn nửa dưới.
+    fill: fill && !wide,
   });
 
   const busy = phase === 'creating' || phase === 'loading' || phase === 'queued' || phase === 'reconnecting';
@@ -740,11 +742,13 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
         </>
       ) : (
         <>
-          <div ref={areaRef} className={cn('flex items-center justify-center', fill ? 'min-h-0 flex-1' : 'h-[60vh]')}>
+          <div ref={areaRef} className={cn('flex items-center justify-center', fill ? 'min-h-0 flex-1 basis-0' : 'h-[60vh]')}>
             {screenBox}
           </div>
           {saveNote && <p className="mt-1.5 shrink-0 text-center text-xs text-brand-300">{saveNote}</p>}
-          <div className="mt-2 w-full shrink-0 sm:mt-4">{keypad.phonePad}</div>
+          <div className={cn('mt-2 w-full', fill ? 'min-h-0 flex-1 basis-0' : 'shrink-0 sm:mt-4')}>
+            {keypad.phonePad}
+          </div>
         </>
       )}
 

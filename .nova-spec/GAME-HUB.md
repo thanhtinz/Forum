@@ -92,8 +92,10 @@ hết header/footer và khung của trang, chừa safe-area cho tai thỏ
 (`viewport-fit=cover`), khoá cuộn nền. Chế độ này bật theo **thiết bị** chứ không
 theo bề ngang cửa sổ — xoay ngang máy vẫn toàn màn hình:
 
-- **Cầm dọc**: màn hình game trên, dưới là hàng nút điều khiển rồi **mặt phím**
-  dựng đúng kiểu máy candybar, xếp làm ba tầng:
+- **Cầm dọc**: màn hình chia đôi đúng bằng nhau — nửa trên là khung game, nửa
+  dưới là **mặt phím** trải hết bề ngang (mỗi nửa 374×388 ở khung 390×844).
+  Mặt phím dựng đúng kiểu máy candybar, ba tầng chia chiều cao theo tỉ lệ
+  1.1 : 3 : 4 nên phím to hết cỡ mà không tràn:
   1. một hàng phím chức năng — phím mềm trái ‧ gọi ‧ kết thúc ‧ phím mềm phải;
   2. vòng xoay tròn (navi-wheel) có nút OK ở tâm, đặt chính giữa;
   3. bàn phím số 4×3 phím bè ngang, chữ số to và chữ cái ABC/DEF in nhỏ bên dưới.

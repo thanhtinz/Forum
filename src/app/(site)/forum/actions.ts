@@ -9,6 +9,7 @@ import { addExp } from '@/lib/level';
 import { notify } from '@/lib/notify';
 import { isVipActive } from '@/lib/access';
 import { canModerateForum } from '@/lib/moderation';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
@@ -44,6 +45,9 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { error: 'Bạn cần đăng nhập để đăng chủ đề.' };
+
+  const rate = await checkRateLimit('thread', userId);
+  if (!rate.allowed) return { error: rate.message };
 
   const forumSlug = String(formData.get('forumSlug') ?? '');
   const title = String(formData.get('title') ?? '').trim();
@@ -111,6 +115,9 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { error: 'Bạn cần đăng nhập để trả lời.' };
+
+  const rate = await checkRateLimit('reply', userId);
+  if (!rate.allowed) return { error: rate.message };
 
   const threadId = String(formData.get('threadId') ?? '');
   const parentId = String(formData.get('parentId') ?? '') || null;

@@ -296,3 +296,75 @@ export async function toggleFriendLink(id: string) {
   revalidatePath('/admin/appearance');
   revalidatePath('/');
 }
+
+// ─────────────── Mã giảm giá ───────────────
+
+export type CouponState = { ok?: boolean; error?: string };
+
+/** Chuỗi từ input type="datetime-local" → Date, rỗng thì null. */
+function parseDate(raw: FormDataEntryValue | null): Date | null {
+  const s = String(raw ?? '').trim();
+  if (!s) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function parseIntOrNull(raw: FormDataEntryValue | null): number | null {
+  const s = String(raw ?? '').trim();
+  if (!s) return null;
+  const n = parseInt(s, 10);
+  return Number.isNaN(n) ? null : n;
+}
+
+export async function saveCoupon(_prev: CouponState, formData: FormData): Promise<CouponState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const code = String(formData.get('code') ?? '').trim().toUpperCase();
+  const name = String(formData.get('name') ?? '').trim();
+  const type = String(formData.get('type') ?? 'FIXED') === 'PERCENT' ? 'PERCENT' : 'FIXED';
+  const value = parseInt(String(formData.get('value') ?? '0'), 10) || 0;
+  const minAmount = parseIntOrNull(formData.get('minAmount'));
+  const maxDiscount = parseIntOrNull(formData.get('maxDiscount'));
+  const appliesToRaw = String(formData.get('appliesTo') ?? '').trim();
+  const appliesTo = ['CONTENT', 'VIP', 'TOPUP', 'POINTS'].includes(appliesToRaw)
+    ? (appliesToRaw as 'CONTENT' | 'VIP' | 'TOPUP' | 'POINTS')
+    : null;
+  const totalQuantity = parseIntOrNull(formData.get('totalQuantity'));
+  const perUserLimit = Math.max(1, parseInt(String(formData.get('perUserLimit') ?? '1'), 10) || 1);
+  const startsAt = parseDate(formData.get('startsAt'));
+  const endsAt = parseDate(formData.get('endsAt'));
+  const active = formData.get('active') === 'on';
+
+  if (!/^[A-Z0-9_-]{3,24}$/.test(code)) return { error: 'Mã chỉ gồm chữ hoa, số, gạch ngang — dài 3–24 ký tự.' };
+  if (name.length < 2) return { error: 'Tên chương trình quá ngắn.' };
+  if (value <= 0) return { error: 'Giá trị giảm phải lớn hơn 0.' };
+  if (type === 'PERCENT' && value > 100) return { error: 'Giảm theo phần trăm không vượt quá 100.' };
+  if (startsAt && endsAt && startsAt >= endsAt) return { error: 'Ngày kết thúc phải sau ngày bắt đầu.' };
+
+  const data = { code, name, type, value, minAmount, maxDiscount, appliesTo, totalQuantity, perUserLimit, startsAt, endsAt, active } as const;
+  try {
+    if (id) await db.coupon.update({ where: { id }, data });
+    else await db.coupon.create({ data });
+  } catch {
+    return { error: 'Không thể lưu — có thể mã đã tồn tại.' };
+  }
+  revalidatePath('/admin/coupons');
+  return { ok: true };
+}
+
+export async function toggleCoupon(id: string) {
+  await requireAdmin();
+  const c = await db.coupon.findUnique({ where: { id }, select: { active: true } });
+  if (!c) return;
+  await db.coupon.update({ where: { id }, data: { active: !c.active } });
+  revalidatePath('/admin/coupons');
+}
+
+/** Chỉ xoá được mã chưa ai dùng — đã dùng thì tắt để giữ lịch sử đơn hàng. */
+export async function deleteCoupon(id: string) {
+  await requireAdmin();
+  const used = await db.couponClaim.count({ where: { couponId: id } });
+  if (used > 0) return;
+  await db.coupon.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/coupons');
+}

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { purchaseContent } from '@/lib/purchase';
 import { notify } from '@/lib/notify';
 
@@ -109,6 +110,9 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
   if (!postId) return { error: 'Thiếu thông tin bài viết.' };
   if (content.length < 2) return { error: 'Bình luận quá ngắn.' };
   if (content.length > 2000) return { error: 'Bình luận tối đa 2000 ký tự.' };
+
+  const rate = await checkRateLimit('comment', userId);
+  if (!rate.allowed) return { error: rate.message };
 
   await db.$transaction(async (tx) => {
     await tx.comment.create({ data: { postId, authorId: userId, content, parentId } });

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getActor } from '@/lib/actor';
 import { createEmulatorSession, PlayDenied } from '@/lib/emulator';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit } from '@/lib/rate-limit-memory';
 
 export const dynamic = 'force-dynamic';
 

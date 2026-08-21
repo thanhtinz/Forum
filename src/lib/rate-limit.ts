@@ -1,49 +1,69 @@
+import { db } from './db';
+
 /**
- * Rate limit đơn giản trong bộ nhớ (sliding window).
- *
- * Đủ cho một instance; khi chạy nhiều instance nên chuyển sang Redis
- * (REDIS_URL) — interface giữ nguyên nên chỉ cần thay phần lưu trữ.
+ * Hạn mức chống spam, đếm ngay trên dữ liệu thật nên không cần Redis
+ * và vẫn đúng khi chạy nhiều tiến trình.
  */
+export const RATE_LIMITS = {
+  thread: { max: 5, windowMinutes: 60, label: 'chủ đề' },
+  reply: { max: 20, windowMinutes: 60, label: 'trả lời' },
+  comment: { max: 20, windowMinutes: 60, label: 'bình luận' },
+  post: { max: 5, windowMinutes: 60, label: 'bài viết' },
+} as const;
 
-interface Bucket {
-  hits: number[];
+export type RateKind = keyof typeof RATE_LIMITS;
+
+/** Khoảng thời gian tối thiểu giữa hai lần đăng liên tiếp (chống bấm liên hồi). */
+const MIN_GAP_SECONDS = 20;
+
+export interface RateResult {
+  allowed: boolean;
+  message?: string;
 }
 
-const buckets = new Map<string, Bucket>();
-let lastSweep = Date.now();
+function tooFastMessage(kind: RateKind, seconds: number): string {
+  return `Bạn đăng ${RATE_LIMITS[kind].label} quá nhanh, vui lòng đợi ${seconds} giây.`;
+}
 
-/** Dọn bucket cũ để map không phình theo thời gian. */
-function sweep(windowMs: number) {
-  const now = Date.now();
-  if (now - lastSweep < 60_000) return;
-  lastSweep = now;
-  for (const [key, b] of buckets) {
-    b.hits = b.hits.filter((t) => now - t < windowMs);
-    if (b.hits.length === 0) buckets.delete(key);
+/**
+ * Kiểm tra hạn mức cho một hành động đăng nội dung.
+ * Trả về `allowed: false` kèm thông báo tiếng Việt để hiển thị thẳng cho người dùng.
+ */
+export async function checkRateLimit(kind: RateKind, userId: string): Promise<RateResult> {
+  const { max, windowMinutes, label } = RATE_LIMITS[kind];
+  const since = new Date(Date.now() - windowMinutes * 60 * 1000);
+
+  const [count, last] = await Promise.all([
+    countSince(kind, userId, since),
+    lastCreatedAt(kind, userId),
+  ]);
+
+  if (last) {
+    const gap = Math.floor((Date.now() - last.getTime()) / 1000);
+    if (gap < MIN_GAP_SECONDS) return { allowed: false, message: tooFastMessage(kind, MIN_GAP_SECONDS - gap) };
+  }
+
+  if (count >= max) {
+    return { allowed: false, message: `Bạn đã đăng ${max} ${label} trong ${windowMinutes} phút qua. Hãy nghỉ một lát rồi quay lại.` };
+  }
+  return { allowed: true };
+}
+
+function countSince(kind: RateKind, userId: string, since: Date): Promise<number> {
+  const where = { authorId: userId, createdAt: { gte: since } };
+  switch (kind) {
+    case 'thread': return db.thread.count({ where });
+    case 'reply': return db.reply.count({ where });
+    case 'comment': return db.comment.count({ where });
+    case 'post': return db.post.count({ where });
   }
 }
 
-export interface RateLimitResult {
-  ok: boolean;
-  remaining: number;
-  retryAfterSec: number;
-}
-
-/** `limit` lượt trong `windowSec` giây cho mỗi `key`. */
-export function rateLimit(key: string, limit: number, windowSec: number): RateLimitResult {
-  const windowMs = windowSec * 1000;
-  sweep(windowMs);
-  const now = Date.now();
-  const bucket = buckets.get(key) ?? { hits: [] };
-  bucket.hits = bucket.hits.filter((t) => now - t < windowMs);
-
-  if (bucket.hits.length >= limit) {
-    buckets.set(key, bucket);
-    const oldest = bucket.hits[0]!;
-    return { ok: false, remaining: 0, retryAfterSec: Math.ceil((windowMs - (now - oldest)) / 1000) };
-  }
-
-  bucket.hits.push(now);
-  buckets.set(key, bucket);
-  return { ok: true, remaining: limit - bucket.hits.length, retryAfterSec: 0 };
+async function lastCreatedAt(kind: RateKind, userId: string): Promise<Date | null> {
+  const args = { where: { authorId: userId }, orderBy: { createdAt: 'desc' as const }, select: { createdAt: true } };
+  const row = kind === 'thread' ? await db.thread.findFirst(args)
+    : kind === 'reply' ? await db.reply.findFirst(args)
+    : kind === 'comment' ? await db.comment.findFirst(args)
+    : await db.post.findFirst(args);
+  return row?.createdAt ?? null;
 }

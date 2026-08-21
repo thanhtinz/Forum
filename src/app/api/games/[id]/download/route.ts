@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { getActor } from '@/lib/actor';
 import { downloadFileName, signedFileUrl, SIGNED_URL_TTL } from '@/lib/game-files';
 import { recordGameEvent } from '@/lib/game-stats';
-import { rateLimit } from '@/lib/rate-limit';
+import { rateLimit } from '@/lib/rate-limit-memory';
 
 export const dynamic = 'force-dynamic';
 

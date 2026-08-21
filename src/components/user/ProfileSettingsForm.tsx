@@ -47,13 +47,15 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileInitial }) {
   );
 }
 
-export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
+export function PasswordForm({ hasPassword, username }: { hasPassword: boolean; username?: string | null }) {
   const [state, action, pending] = useActionState<SettingsState, FormData>(changePassword, {});
   const err = (k: string) => state.fieldErrors?.[k];
 
   return (
     <form action={action} className="card space-y-3 p-5">
       <h2 className="font-bold">{hasPassword ? 'Đổi mật khẩu' : 'Đặt mật khẩu'}</h2>
+      {/* Trình quản lý mật khẩu cần biết tài khoản nào đang đổi */}
+      <input type="text" name="username" autoComplete="username" defaultValue={username ?? ''} readOnly hidden aria-hidden="true" tabIndex={-1} />
       {!hasPassword && (
         <p className="text-sm text-ink-500">Tài khoản của bạn đang đăng nhập qua mạng xã hội. Đặt mật khẩu để có thể đăng nhập bằng email.</p>
       )}

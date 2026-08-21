@@ -75,6 +75,10 @@ Khu game Java ME nằm ở `/games`:
   xoay/tắt tiếng/tạm dừng, save RMS (cloud cho thành viên, localStorage cho khách),
   heartbeat và hạn mức phiên. Trên máy tính, mọi nút chơi online đều ẩn và trang
   `/play` hiện hướng dẫn mở bằng đt — kho game vẫn xem/tải bình thường.
+- **Thư viện máy cổ** — 18 máy ảo theo đời máy thật (Nokia 3510i → N73, Sony Ericsson
+  K750i/W810i/K800i, Samsung E250/D900, Motorola RAZR V3/SLVR L7, LG Chocolate,
+  Siemens C65 và ba máy ảo chung), mỗi hãng một bố cục phím mềm riêng. Người chơi
+  bấm “Chọn máy ảo” để đổi máy ngay trong emulator, có nhãn tương thích cho từng máy.
 - **Quản trị** — `/admin/games` (CRUD game, version, file, ảnh, ma trận tương thích)
   và `/admin/emulator` (profile thiết bị, hạn mức tài nguyên, phiên đang chạy, log lỗi).
 

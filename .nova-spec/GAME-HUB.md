@@ -103,7 +103,36 @@ Khung game được đo bằng JS (`ResizeObserver`) thay vì `aspect-ratio` c�
 desktop) không bị khoá cứng. Việc bảo vệ tài nguyên do rate limit và giới hạn
 phiên đồng thời đảm nhiệm.
 
-## 5. Hạn mức & an toàn
+## 5. Thư viện máy cổ
+
+Seed dựng sẵn 18 `EmulatorProfile` theo đời máy Java ME thật, thông số bám máy gốc
+(đời 2002–2003 chỉ có MIDP 1.0 nên không bật save state, RAM thấp hơn):
+
+| Hãng | Máy |
+|---|---|
+| Nokia | 3510i 96×65 · 6230 128×128 · 6600 S60 176×208 · N70 S60 176×208 · 6300 S40 240×320 · N73 S60 240×320 |
+| Sony Ericsson | K750i 176×220 · W810i 176×220 · K800i 240×320 |
+| Samsung | E250 128×160 · D900 240×320 |
+| Motorola | RAZR V3 176×220 · SLVR L7 176×220 |
+| LG · Siemens | KG800 Chocolate 176×220 · C65 132×176 |
+| Máy ảo chung | 240×320 · 320×240 (ngang) · 360×640 |
+
+Mỗi bố cục phím có nhãn phím mềm riêng (`SOFT_KEY_LABEL`): Nokia *Options/Back*,
+Sony Ericsson *Select/Back*, Motorola *Menu/Back*, Siemens *Menu/Clear*…
+
+**Người chơi tự chọn máy**: nút “Chọn máy ảo” trong emulator mở bảng gom theo hãng,
+kèm độ phân giải, CLDC/MIDP và mức tương thích lấy từ ma trận
+(`Chạy tốt` / `Beta` / `Không chạy`; máy chưa ai thử thì không có nhãn). Chọn máy
+khác sẽ mở phiên mới qua `?profile=<id>`.
+
+Seed tự dựng ma trận tương thích: máy trùng độ phân giải gốc của game → `FULL`,
+máy cùng hãng nhưng khác độ phân giải → `BETA`.
+
+`resolveProfile()` ưu tiên máy biên tập chỉ định cho game (`Game.emulatorProfileId`),
+chỉ rơi xuống ma trận khi máy đó bị tắt hoặc bị đánh dấu `NONE` — nếu không, game
+hay khởi động nhầm vào một máy “chạy tốt” bất kỳ thay vì máy gốc.
+
+## 6. Hạn mức & an toàn
 
 - **Phiên**: `sessionMaxSec` (thời lượng tối đa), `idleTimeoutSec` (mất heartbeat),
   `gracePeriodSec` (thời gian ân hạn khi kết nối lại) — đặt trên từng profile.
@@ -119,7 +148,7 @@ phiên đồng thời đảm nhiệm.
   ràng buộc storage key + hạn dùng + actor. Route phục vụ file còn chặn path traversal.
 - **Rate limit**: 10 phiên/5 phút và 30 lượt tải/phút cho mỗi actor.
 
-## 6. Biến môi trường
+## 7. Biến môi trường
 
 | Biến | Mặc định | Vai trò |
 |---|---|---|
@@ -132,7 +161,7 @@ phiên đồng thời đảm nhiệm.
 | `EMU_BREAKER_ERRORS` | `25` | Ngưỡng lỗi/5 phút để mở circuit breaker |
 | `EMU_RUNTIME_URL` | rỗng | Runtime mặc định gán cho profile khi seed |
 
-## 7. Việc còn lại
+## 8. Việc còn lại
 
 - Cắm runtime J2ME thật (hiện `runtimeUrl` để trống trong seed).
 - Chuyển rate limit và bộ đếm phiên sang Redis khi chạy nhiều instance.

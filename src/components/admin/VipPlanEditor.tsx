@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Crown, Save } from 'lucide-react';
-import { updateVipPlan } from '@/app/(site)/admin/actions';
+import { updateVipPlan } from '@/app/admin/actions';
 import { fmtVnd } from '@/lib/utils';
 
 export interface VipPlanRow {

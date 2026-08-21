@@ -18,7 +18,7 @@ const ITEMS = [
 export function AdminNav() {
   const pathname = usePathname();
   return (
-    <nav className="card flex gap-1 overflow-x-auto p-1.5 lg:sticky lg:top-20 lg:flex-col">
+    <nav className="card flex gap-1 overflow-x-auto p-1.5 lg:sticky lg:top-[4.5rem] lg:flex-col">
       <div className="mb-1 hidden items-center gap-1.5 px-3 py-2 text-sm font-bold text-brand-600 lg:flex"><ShieldAlert size={16} /> Quản trị</div>
       {ITEMS.map((it) => {
         const active = it.exact ? pathname === it.href : pathname.startsWith(it.href);

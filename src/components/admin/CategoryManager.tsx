@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import { useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, FolderTree, CornerDownRight } from 'lucide-react';
-import { saveCategory, deleteCategory, type CategoryState } from '@/app/(site)/admin/actions';
+import { saveCategory, deleteCategory, type CategoryState } from '@/app/admin/actions';
 
 export interface CatRow {
   id: string; name: string; slug: string; color: string | null; icon: string | null;

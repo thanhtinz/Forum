@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { Check, X, Trash2 } from 'lucide-react';
-import { setReportStatus, resolveReportAndRemove } from '@/app/(site)/admin/actions';
+import { setReportStatus, resolveReportAndRemove } from '@/app/admin/actions';
 import { cn } from '@/lib/utils';
 
 export function ReportRowActions({ id, status, hasTarget }: { id: string; status: string; hasTarget: boolean }) {

@@ -1,110 +1,151 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { PenLine, MessagesSquare, Clock, Newspaper, ChevronRight } from 'lucide-react';
 import { db } from '@/lib/db';
-import { PostCard, type PostCardData } from '@/components/PostCard';
-import { HomeSidebar } from '@/components/HomeSidebar';
+import { auth } from '@/lib/auth';
+import { fmtCount, plainText, truncate } from '@/lib/utils';
+import { BoardList, type BoardSection, type BoardRow } from '@/components/forum/BoardList';
+import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
+import { ForumSidebar } from '@/components/forum/ForumSidebar';
 
 export const dynamic = 'force-dynamic';
 
+export const metadata: Metadata = {
+  title: 'Diễn đàn',
+  description: 'Thảo luận, hỏi đáp và giao lưu cùng cộng đồng Nova.',
+};
+
+const LATEST_TAKE = 12;
+
 export default async function HomePage() {
-  const [slides, categories, posts] = await Promise.all([
-    db.slide.findMany({ where: { active: true }, orderBy: { order: 'asc' }, take: 5 }),
-    db.category.findMany({ where: { parentId: null }, orderBy: { order: 'asc' }, take: 12 }),
+  const session = await auth();
+
+  const [forums, latestThreads, latestPosts] = await Promise.all([
+    db.forum.findMany({
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        threads: {
+          orderBy: [{ lastReplyAt: 'desc' }, { createdAt: 'desc' }],
+          take: 1,
+          select: { id: true, title: true, lastReplyAt: true, createdAt: true, author: { select: { username: true } } },
+        },
+      },
+    }),
+    db.thread.findMany({
+      where: { status: 'PUBLISHED' },
+      orderBy: [{ lastReplyAt: 'desc' }, { createdAt: 'desc' }],
+      take: LATEST_TAKE,
+      select: {
+        id: true, title: true, content: true, createdAt: true, lastReplyAt: true,
+        pinned: true, locked: true, solvedReplyId: true, bountyPoints: true,
+        viewCount: true, replyCount: true,
+        author: { select: { username: true, name: true, image: true } },
+        forum: { select: { slug: true, name: true } },
+      },
+    }),
     db.post.findMany({
       where: { status: 'PUBLISHED' },
-      orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
-      take: 18,
-      include: {
-        author: { select: { username: true, name: true, image: true } },
-        category: { select: { name: true, slug: true, color: true } },
-        categories: { include: { category: { select: { name: true, slug: true, color: true } } } },
-        tags: { include: { tag: { select: { name: true, slug: true } } }, take: 6 },
-      },
+      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+      take: 5,
+      select: { slug: true, title: true, viewCount: true },
     }),
   ]);
 
-  const cards: PostCardData[] = posts.map((p) => ({
-    slug: p.slug,
-    title: p.title,
-    excerpt: p.excerpt,
-    cover: p.cover,
-    cardStyle: p.cardStyle,
-    access: p.access,
-    pricePoints: p.pricePoints,
-    priceAmount: p.priceAmount,
-    viewCount: p.viewCount,
-    likeCount: p.likeCount,
-    commentCount: p.commentCount,
-    author: p.author,
-    category: p.category,
-    categories: p.categories.map((c) => c.category),
-    tags: p.tags.map((t) => t.tag),
+  const toBoard = (f: (typeof forums)[number]): BoardRow => {
+    const t = f.threads[0];
+    return {
+      id: f.id, slug: f.slug, name: f.name, description: f.description, icon: f.icon,
+      postAccess: f.postAccess, vipOnly: f.vipOnly,
+      threadCount: f.threadCount, replyCount: f.replyCount,
+      latest: t ? { id: t.id, title: t.title, at: t.lastReplyAt ?? t.createdAt, author: t.author?.username ?? null } : null,
+    };
+  };
+
+  // Mục gốc thành "khu vực", mục con thành các hàng bên trong.
+  // Mục gốc không có con thì tự nó là một hàng trong khu "Chung".
+  const roots = forums.filter((f) => !f.parentId);
+  const sections: BoardSection[] = [];
+  const loose: BoardRow[] = [];
+  for (const root of roots) {
+    const children = forums.filter((f) => f.parentId === root.id);
+    if (children.length > 0) sections.push({ id: root.id, name: root.name, icon: root.icon, boards: children.map(toBoard) });
+    else loose.push(toBoard(root));
+  }
+  if (loose.length > 0) sections.push({ id: 'loose', name: 'Chuyên mục khác', icon: '💬', boards: loose });
+
+  const threads: ThreadRowData[] = latestThreads.map((t) => ({
+    id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
+    pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
+    viewCount: t.viewCount, replyCount: t.replyCount, author: t.author, forum: t.forum,
+    excerpt: truncate(plainText(t.content), 90),
   }));
 
-  const hero = slides[0];
+  const totalThreads = forums.reduce((s, f) => s + f.threadCount, 0);
+  const totalReplies = forums.reduce((s, f) => s + f.replyCount, 0);
+  const firstForum = forums.find((f) => f.postAccess === 'ALL') ?? forums[0];
 
   return (
-    <div className="space-y-6">
-      {/* Hero / slider */}
-      <section className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <Link
-          href={hero?.link || '#'}
-          className="relative flex min-h-[220px] items-end overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 to-brand-400 p-6 text-white shadow-card sm:min-h-[300px]"
-        >
-          {hero?.image && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={hero.image} alt="" className="absolute inset-0 h-full w-full object-cover" />
-          )}
-          <div className="relative">
-            <h1 className="text-2xl font-black drop-shadow sm:text-3xl">{hero?.title ?? 'Chào mừng đến Nova'}</h1>
-            <p className="mt-1 max-w-lg text-white/90 drop-shadow">{hero?.subtitle ?? 'Nền tảng blog, diễn đàn và nội dung trả phí.'}</p>
-          </div>
-        </Link>
-
-        {/* Ô phụ bên phải */}
-        <div className="hidden gap-4 lg:grid">
-          {slides.slice(1, 3).map((s) => (
-            <Link key={s.id} href={s.link || '#'} className="relative flex items-end overflow-hidden rounded-2xl bg-ink-800 p-4 text-white shadow-card">
-              {s.image && /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.image} alt="" className="absolute inset-0 h-full w-full object-cover" />}
-              <span className="relative text-sm font-bold drop-shadow">{s.title}</span>
-            </Link>
-          ))}
-          {slides.length <= 1 && (
-            <div className="flex items-center justify-center rounded-2xl border border-dashed border-ink-300 p-6 text-center text-sm text-ink-400 dark:border-ink-700">
-              Thêm slide trong trang quản trị
-            </div>
-          )}
+    <div className="space-y-5">
+      {/* Thanh tiêu đề gọn thay cho banner blog */}
+      <section className="card flex flex-wrap items-center gap-3 px-4 py-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-500 text-white">
+          <MessagesSquare size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg font-black leading-tight text-ink-900 dark:text-white">Diễn đàn Nova</h1>
+          <p className="text-xs text-ink-400">
+            {fmtCount(totalThreads)} chủ đề · {fmtCount(totalThreads + totalReplies)} bài viết · {fmtCount(forums.length)} chuyên mục
+          </p>
         </div>
+        {firstForum && (
+          <Link href={session?.user ? `/forum/${firstForum.slug}/new` : '/login?callbackUrl=/'} className="btn-primary !px-3.5 !py-1.5 text-sm">
+            <PenLine size={15} /> Đăng chủ đề
+          </Link>
+        )}
       </section>
 
-      {/* Hàng chuyên mục */}
-      {categories.length > 0 && (
-        <section className="flex flex-wrap gap-2">
-          {categories.map((c) => (
-            <Link key={c.id} href={`/category/${c.slug}`}
-              className="flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3.5 py-1.5 text-sm font-medium hover:border-brand-400 hover:text-brand-600 dark:border-ink-700 dark:bg-ink-900">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color || '#2c7bfe' }} />
-              {c.name}
-            </Link>
-          ))}
-        </section>
-      )}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-5">
+          <BoardList sections={sections} />
 
-      {/* Lưới card + sidebar */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <section>
-          <h2 className="zib-title mb-4">Bài viết mới nhất</h2>
-          {cards.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
-              {cards.map((c) => <PostCard key={c.slug} post={c} />)}
+          {/* Bài mới — dòng thời gian toàn diễn đàn */}
+          <section className="card overflow-hidden">
+            <header className="flex items-center gap-2 border-b border-ink-100 bg-ink-50/70 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-900/60">
+              <Clock size={15} className="text-brand-500" />
+              <h2 className="text-sm font-bold uppercase tracking-wide text-ink-700 dark:text-ink-200">Bài mới</h2>
+            </header>
+            <div className="divide-y divide-ink-100 dark:divide-ink-800">
+              {threads.length === 0
+                ? <p className="px-4 py-8 text-center text-sm text-ink-400">Chưa có chủ đề nào. Hãy mở màn bằng bài đầu tiên.</p>
+                : threads.map((t) => <ThreadRow key={t.id} thread={t} showForum />)}
             </div>
-          ) : (
-            <div className="card p-10 text-center text-ink-500">
-              Chưa có bài viết. Hãy tạo bài đầu tiên trong trang quản trị.
-            </div>
+          </section>
+
+          {/* Cửa ngõ sang khu bài viết */}
+          {latestPosts.length > 0 && (
+            <section className="card overflow-hidden">
+              <header className="flex items-center gap-2 border-b border-ink-100 bg-ink-50/70 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-900/60">
+                <Newspaper size={15} className="text-accent-500" />
+                <h2 className="text-sm font-bold uppercase tracking-wide text-ink-700 dark:text-ink-200">Bài viết mới</h2>
+                <Link href="/blog" className="ml-auto flex items-center gap-0.5 text-xs font-medium text-brand-600 hover:underline">
+                  Xem tất cả <ChevronRight size={13} />
+                </Link>
+              </header>
+              <ul className="divide-y divide-ink-100 dark:divide-ink-800">
+                {latestPosts.map((p) => (
+                  <li key={p.slug}>
+                    <Link href={`/posts/${p.slug}`} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800/50">
+                      <span className="line-clamp-1 flex-1 font-medium text-ink-800 dark:text-ink-100">{p.title}</span>
+                      <span className="shrink-0 text-xs text-ink-400">{fmtCount(p.viewCount)} xem</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
-        </section>
+        </div>
 
-        <HomeSidebar />
+        <div className="lg:sticky lg:top-[72px] lg:self-start"><ForumSidebar /></div>
       </div>
     </div>
   );

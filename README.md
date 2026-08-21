@@ -28,7 +28,7 @@ Tài khoản admin mẫu: `admin@nova.local` / `admin123`.
 ```
 src/
 ├── app/
-│   ├── (site)/        # giao diện công khai (trang chủ, bài viết, diễn đàn…)
+│   ├── (site)/        # giao diện công khai (trang chủ = diễn đàn, /blog, bài viết…)
 │   ├── (user)/user/   # khu vực đăng nhập (dashboard, điểm, số dư…)
 │   ├── (admin)/admin/ # quản trị
 │   └── api/           # route handlers (auth, webhooks, …)
@@ -50,6 +50,7 @@ src/
 - [x] **P8** Diễn đàn (danh sách, chủ đề, trả lời, chọn lời giải, treo thưởng)
 - [x] **P9** Người dùng & xã hội (trang cá nhân, theo dõi, đã lưu, thông báo, mời bạn, cài đặt tài khoản)
 - [x] **P10** Quản trị (bài viết, người dùng, chuyên mục, diễn đàn, báo cáo, gói VIP, rút tiền, giao diện)
+- [x] **P12** Giao diện chính chuyển sang dạng diễn đàn (board list, bài mới, đang online); blog dời sang `/blog`
 - [ ] **P11** Hoàn thiện (rate limit, dark mode toggle, backup) — đã có SEO/sitemap/robots
 
 Chi tiết đặc tả: [`.nova-spec/SPEC.md`](.nova-spec/SPEC.md) · Kế hoạch: [`.nova-spec/TODO.md`](.nova-spec/TODO.md)

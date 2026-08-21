@@ -30,8 +30,9 @@ export async function Footer() {
       <div className="container-nova flex flex-col items-center justify-between gap-3 py-6 text-sm text-ink-500 sm:flex-row">
         <p>© {new Date().getFullYear()} Nova Platform. Nền tảng blog + diễn đàn.</p>
         <nav className="flex items-center gap-4">
+          <Link href="/" className="hover:text-brand-600">Diễn đàn</Link>
+          <Link href="/blog" className="hover:text-brand-600">Bài viết</Link>
           <Link href="/vip" className="hover:text-brand-600">VIP</Link>
-          <Link href="/forum" className="hover:text-brand-600">Diễn đàn</Link>
           <Link href="/search" className="hover:text-brand-600">Tìm kiếm</Link>
         </nav>
       </div>

@@ -54,6 +54,29 @@ export async function toggleBan(id: string) {
   revalidatePath('/admin/users');
 }
 
+// ─────────────── Báo cáo ───────────────
+
+export async function setReportStatus(id: string, status: 'RESOLVED' | 'DISMISSED') {
+  await requireAdmin();
+  await db.report.update({ where: { id }, data: { status, handledAt: new Date() } });
+  revalidatePath('/admin/reports');
+}
+
+/** Duyệt báo cáo và ẩn/xoá nội dung bị báo cáo cùng lúc. */
+export async function resolveReportAndRemove(id: string) {
+  await requireAdmin();
+  const r = await db.report.findUnique({ where: { id }, select: { postId: true, threadId: true, replyId: true, commentId: true } });
+  if (!r) return;
+  await db.$transaction(async (tx) => {
+    if (r.postId) await tx.post.update({ where: { id: r.postId }, data: { status: 'ARCHIVED' } }).catch(() => {});
+    if (r.threadId) await tx.thread.delete({ where: { id: r.threadId } }).catch(() => {});
+    if (r.replyId) await tx.reply.delete({ where: { id: r.replyId } }).catch(() => {});
+    if (r.commentId) await tx.comment.delete({ where: { id: r.commentId } }).catch(() => {});
+    await tx.report.update({ where: { id }, data: { status: 'RESOLVED', handledAt: new Date() } });
+  });
+  revalidatePath('/admin/reports');
+}
+
 // ─────────────── Rút tiền ───────────────
 
 export async function setWithdrawalStatus(id: string, status: 'APPROVED' | 'REJECTED' | 'PAID') {

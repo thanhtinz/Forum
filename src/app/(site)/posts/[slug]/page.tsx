@@ -14,6 +14,7 @@ import { PostTabs } from '@/components/post/PostTabs';
 import { Faq, type FaqItem } from '@/components/post/Faq';
 import { Comments } from '@/components/post/Comments';
 import { PostActions } from '@/components/post/PostActions';
+import { ReportButton } from '@/components/ReportButton';
 import { RelatedPosts } from '@/components/post/RelatedPosts';
 import { CopyrightNotice } from '@/components/post/CopyrightNotice';
 import { PostSidebar } from '@/components/post/PostSidebar';
@@ -190,6 +191,11 @@ export default async function PostDetailPage({ params, searchParams }: { params:
             ))}
           </div>
           <PostActions postId={post.id} initialLiked={!!liked} initialLikeCount={post.likeCount} initialSaved={!!saved} initialSaveCount={saveCount} />
+          {accessUser && !isAuthor && (
+            <div className="mt-3 flex justify-center border-t border-ink-100 pt-3 dark:border-ink-800">
+              <ReportButton target="post" targetId={post.id} />
+            </div>
+          )}
         </div>
       </div>
 

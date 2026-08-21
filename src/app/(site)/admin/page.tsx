@@ -1,23 +1,24 @@
 import Link from 'next/link';
-import { Users, FileText, Clock, ShoppingCart, MessagesSquare, Wallet, Coins, Banknote } from 'lucide-react';
+import { Users, FileText, Clock, ShoppingCart, Flag, Wallet, Coins, Banknote } from 'lucide-react';
 import { db } from '@/lib/db';
 import { fmtVnd, fmtCount } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 async function getStats() {
-  const [users, posts, pending, orders, threads, pendingWithdrawals, revenueAgg, commissionAgg] = await Promise.all([
+  const [users, posts, pending, orders, threads, pendingWithdrawals, openReports, revenueAgg, commissionAgg] = await Promise.all([
     db.user.count(),
     db.post.count(),
     db.post.count({ where: { status: 'PENDING' } }),
     db.order.count({ where: { status: 'PAID' } }),
     db.thread.count(),
     db.withdrawal.count({ where: { status: 'PENDING' } }),
+    db.report.count({ where: { status: 'OPEN' } }),
     db.order.aggregate({ where: { status: 'PAID' }, _sum: { finalAmount: true } }),
     db.commission.aggregate({ _sum: { amount: true } }),
   ]);
   return {
-    users, posts, pending, orders, threads, pendingWithdrawals,
+    users, posts, pending, orders, threads, pendingWithdrawals, openReports,
     revenue: revenueAgg._sum.finalAmount ?? 0,
     commission: commissionAgg._sum.amount ?? 0,
   };
@@ -28,7 +29,7 @@ const CARDS = (s: Awaited<ReturnType<typeof getStats>>) => [
   { label: 'Bài viết', value: fmtCount(s.posts), icon: FileText, tint: 'text-violet-500', href: '/admin/posts' },
   { label: 'Chờ duyệt', value: fmtCount(s.pending), icon: Clock, tint: 'text-amber-500', href: '/admin/posts?status=PENDING' },
   { label: 'Đơn đã thanh toán', value: fmtCount(s.orders), icon: ShoppingCart, tint: 'text-emerald-500' },
-  { label: 'Chủ đề diễn đàn', value: fmtCount(s.threads), icon: MessagesSquare, tint: 'text-rose-500' },
+  { label: 'Báo cáo chờ xử lý', value: fmtCount(s.openReports), icon: Flag, tint: 'text-red-500', href: '/admin/reports' },
   { label: 'Yêu cầu rút tiền', value: fmtCount(s.pendingWithdrawals), icon: Banknote, tint: 'text-orange-500', href: '/admin/withdrawals' },
 ];
 

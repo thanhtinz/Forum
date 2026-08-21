@@ -84,7 +84,19 @@ cờ `mobile` được truyền xuống `GameCard` / `GameGrid` / `GameRow` /
 | Trang chi tiết | nút `PLAY ONLINE` | dòng nhắc mở bằng đt |
 | Khung tải | nút `PLAY ONLINE` | dòng nhắc; hàng “Play Online” ghi *Chỉ trên điện thoại* |
 | Mục “Tiếp tục chơi” | hiện | ẩn hẳn |
-| `/games/[slug]/play` | dựng emulator | màn hình hướng dẫn + nút tải game |
+| `/games/[slug]/play` | dựng emulator **toàn màn hình** | màn hình hướng dẫn + nút tải game |
+
+Trên điện thoại sân khấu emulator là một lớp `fixed inset-0` cao `100dvh`, che
+hết header/footer và khung của trang, chừa safe-area cho tai thỏ
+(`viewport-fit=cover`), khoá cuộn nền. Chế độ này bật theo **thiết bị** chứ không
+theo bề ngang cửa sổ — xoay ngang máy vẫn toàn màn hình:
+
+- **Cầm dọc**: màn hình game trên, dưới là hàng nút điều khiển rồi bàn phím ảo.
+- **Cầm ngang** (`max-height: 520px`): D-pad ‧ màn hình ‧ bàn phím số xếp ba cột,
+  phím mềm và nút điều khiển gom xuống một hàng đáy.
+
+Khung game được đo bằng JS (`ResizeObserver`) thay vì `aspect-ratio` của CSS: khi
+`max-width` cắt bớt chiều ngang thì CSS không co chiều cao theo, ảnh game bị kéo méo.
 
 Đây là cổng **giao diện**, không phải ranh giới bảo mật: `?force=1` trên trang
 `/play` vẫn mở emulator, để máy thật bị nhận diện nhầm (trình duyệt bật chế độ

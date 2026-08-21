@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { format } from 'date-fns';
-import { Coins, Wallet, TrendingUp, Flame, PenLine, Crown, Bookmark, Plus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Coins, Wallet, TrendingUp, Flame, PenLine, Crown, Bookmark, Gift, Banknote, Plus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount, fmtVnd } from '@/lib/utils';
@@ -71,11 +71,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* Lối tắt */}
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <QuickLink href="/user/write" icon={<PenLine size={18} />} label="Đăng bài" primary />
         <QuickLink href="/vip" icon={<Crown size={18} />} label="Nâng cấp VIP" />
         <QuickLink href="/user/balance" icon={<Plus size={18} />} label="Nạp tiền" />
         <QuickLink href="/user/favorites" icon={<Bookmark size={18} />} label="Đã lưu" />
+        <QuickLink href="/user/invite" icon={<Gift size={18} />} label="Mời bạn" />
+        <QuickLink href="/user/withdraw" icon={<Banknote size={18} />} label="Rút tiền" />
       </div>
 
       {/* Lịch sử điểm */}

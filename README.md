@@ -75,6 +75,11 @@ Khu game Java ME nằm ở `/games`:
   xoay/tắt tiếng/tạm dừng, save RMS (cloud cho thành viên, localStorage cho khách),
   heartbeat và hạn mức phiên. Trên máy tính, mọi nút chơi online đều ẩn và trang
   `/play` hiện hướng dẫn mở bằng đt — kho game vẫn xem/tải bình thường.
+- **Cấu hình riêng từng game** — kiểu J2ME Loader nhưng không có bước import: bấm
+  game nào là chơi game đó với cấu hình của nó. Chọn kích thước màn hình (13 mức
+  dựng sẵn + nhập tay), cách phóng (vừa khung / kéo đầy / gốc 1:1), lọc ảnh sắc nét
+  hay mượt, **tốc độ chạy 0.5×–3×** (game Java hay chậm), giới hạn FPS, cỡ chữ, âm
+  thanh, rung phím và gán phím bàn phím. Lưu theo tài khoản, khách thì theo trình duyệt.
 - **Thư viện máy cổ** — 18 máy ảo theo đời máy thật (Nokia 3510i → N73, Sony Ericsson
   K750i/W810i/K800i, Samsung E250/D900, Motorola RAZR V3/SLVR L7, LG Chocolate,
   Siemens C65 và ba máy ảo chung), mỗi hãng một bố cục phím mềm riêng. Người chơi

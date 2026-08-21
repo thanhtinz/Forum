@@ -51,7 +51,8 @@ Runtime J2ME **không** chạy chung process với web server. Mỗi
 
 | `type` | Payload | Ý nghĩa |
 |---|---|---|
-| `nova:init` | `{ jarUrl, jadUrl, checksum, profile }` | Nạp MIDlet với profile thiết bị |
+| `nova:init` | `{ jarUrl, jadUrl, checksum, profile, config }` | Nạp MIDlet với profile thiết bị + cấu hình game |
+| `nova:config` | `{ config }` | Đổi cấu hình giữa chừng (tốc độ, FPS, cỡ chữ, âm thanh…) |
 | `nova:key` | `{ action: 'down' \| 'up', key, code }` | `code` là Java key code (MIDP `Canvas`) |
 | `nova:control` | `{ action, payload? }` | `pause` · `resume` · `reset` · `mute` · `unmute` · `stop` · `saveState` · `loadState` |
 
@@ -132,7 +133,32 @@ máy cùng hãng nhưng khác độ phân giải → `BETA`.
 chỉ rơi xuống ma trận khi máy đó bị tắt hoặc bị đánh dấu `NONE` — nếu không, game
 hay khởi động nhầm vào một máy “chạy tốt” bất kỳ thay vì máy gốc.
 
-## 6. Hạn mức & an toàn
+## 6. Cấu hình theo từng game
+
+Lấy ý từ J2ME Loader nhưng bỏ bước import: bấm vào game nào là chơi game đó, cấu
+hình gắn theo game và tự nạp lại lần sau. Kiểu dữ liệu ở `src/lib/emulator-config.ts`:
+
+| Trường | Giá trị | Ai xử lý |
+|---|---|---|
+| `screenWidth` / `screenHeight` | 13 mức dựng sẵn (96×65 → 480×800) + nhập tay, `null` = theo máy đã chọn | trang |
+| `scaling` | `fit` giữ tỉ lệ · `stretch` kéo đầy · `original` giữ 1:1 pixel | trang |
+| `filter` | `sharp` (pixel vuông) · `smooth` | trang |
+| `speed` | 0.5× → 3× — game Java hay chạy chậm, kéo lên cho mượt | runtime |
+| `fps` | 15/20/25/30/45/60 hoặc bỏ giới hạn | runtime |
+| `fontSize` · `sound` · `vibrate` | cỡ chữ trong game, âm thanh, rung phím | runtime |
+
+Ba trường đầu trang tự áp được ngay (đo khung bằng `ResizeObserver`, đặt
+`image-rendering`), nên đổi là thấy hiệu lực tức thì. Các trường còn lại được đẩy
+xuống runtime qua `nova:config` và phụ thuộc runtime có hỗ trợ hay không.
+
+Lưu ở đâu: đã đăng nhập → bảng `UserGameConfig` (`userId + gameId`), mở ở máy khác
+vẫn giữ; khách → `localStorage` theo khoá `nova:games:config:<slug>`. Mọi giá trị
+đọc vào đều qua `parseConfig()` nên dữ liệu hỏng chỉ rơi về mặc định, không vỡ trang.
+
+Bảng cấu hình gộp luôn phần **gán phím bàn phím** — trong J2ME Loader nó cũng là
+một phần cấu hình của từng game.
+
+## 7. Hạn mức & an toàn
 
 - **Phiên**: `sessionMaxSec` (thời lượng tối đa), `idleTimeoutSec` (mất heartbeat),
   `gracePeriodSec` (thời gian ân hạn khi kết nối lại) — đặt trên từng profile.
@@ -148,7 +174,7 @@ hay khởi động nhầm vào một máy “chạy tốt” bất kỳ thay vì
   ràng buộc storage key + hạn dùng + actor. Route phục vụ file còn chặn path traversal.
 - **Rate limit**: 10 phiên/5 phút và 30 lượt tải/phút cho mỗi actor.
 
-## 7. Biến môi trường
+## 8. Biến môi trường
 
 | Biến | Mặc định | Vai trò |
 |---|---|---|
@@ -161,7 +187,7 @@ hay khởi động nhầm vào một máy “chạy tốt” bất kỳ thay vì
 | `EMU_BREAKER_ERRORS` | `25` | Ngưỡng lỗi/5 phút để mở circuit breaker |
 | `EMU_RUNTIME_URL` | rỗng | Runtime mặc định gán cho profile khi seed |
 
-## 8. Việc còn lại
+## 9. Việc còn lại
 
 - Cắm runtime J2ME thật (hiện `runtimeUrl` để trống trong seed).
 - Chuyển rate limit và bộ đếm phiên sang Redis khi chạy nhiều instance.

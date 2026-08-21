@@ -83,6 +83,7 @@ model User {
   gameKeymaps      UserKeymap[]
   gameSaveStates   SaveState[]
   gameRatings      GameRating[]
+  gameConfigs      UserGameConfig[]
 
   @@index([level])
   @@index([vipTier])
@@ -1066,6 +1067,7 @@ model Game {
   sessions   EmulatorSession[]
   events     GameEvent[]
   ratings    GameRating[]
+  configs    UserGameConfig[]
   favorites  Favorite[]
   reports    Report[]
   uniqueHits GameUniqueHit[]
@@ -1464,6 +1466,27 @@ model UserKeymap {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, profileId])
+}
+
+/**
+ * Cấu hình emulator người dùng đặt riêng cho từng game (kiểu J2ME Loader):
+ * kích thước màn hình, cách phóng, lọc ảnh, giới hạn FPS, hệ số tốc độ…
+ * Khách chưa đăng nhập thì giữ trong localStorage của trình duyệt.
+ */
+model UserGameConfig {
+  id     String @id @default(cuid())
+  userId String
+  gameId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  config Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, gameId])
+  @@index([gameId])
 }
 
 model SaveState {

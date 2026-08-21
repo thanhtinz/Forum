@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { Loader2, Save } from 'lucide-react';
-import { upsertProfile, type ActionState } from '@/app/(admin)/admin/emulator/actions';
+import { upsertProfile, type ActionState } from '@/app/(site)/admin/emulator/actions';
 
 export interface ProfileFormValues {
   id?: string;

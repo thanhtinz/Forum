@@ -2,14 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FileText, Users, Banknote, Flag, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, FileText, FolderTree, Users, Banknote, Flag, Crown, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ITEMS = [
   { href: '/admin', label: 'Tổng quan', icon: LayoutDashboard, exact: true },
   { href: '/admin/posts', label: 'Bài viết', icon: FileText },
+  { href: '/admin/categories', label: 'Chuyên mục', icon: FolderTree },
   { href: '/admin/users', label: 'Người dùng', icon: Users },
   { href: '/admin/reports', label: 'Báo cáo', icon: Flag },
+  { href: '/admin/vip-plans', label: 'Gói VIP', icon: Crown },
   { href: '/admin/withdrawals', label: 'Rút tiền', icon: Banknote },
 ];
 

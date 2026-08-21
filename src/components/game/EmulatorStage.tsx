@@ -5,14 +5,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle, Download, Expand, Loader2, LogOut, Pause, Play, RotateCw,
-  Save, Settings2, Smartphone, SmartphoneCharging, Timer, Upload, Volume2, VolumeX,
+  Save, Sliders, Smartphone, SmartphoneCharging, Timer, Upload, Volume2, VolumeX,
 } from 'lucide-react';
 import {
   DEFAULT_GAMEPAD_MAP, javaKeyCode, mergeKeymap, type EmuKey,
 } from '@/lib/emulator-keys';
+import {
+  configStorageKey, DEFAULT_CONFIG, effectiveScreen, isCustomised, parseConfig,
+  type EmulatorConfig,
+} from '@/lib/emulator-config';
 import { cn } from '@/lib/utils';
 import { DevicePicker, type DeviceOption } from './DevicePicker';
-import { KeymapEditor } from './KeymapEditor';
+import { EmulatorSettings } from './EmulatorSettings';
 import { useKeypadParts } from './VirtualKeypad';
 
 // ── Kiểu dữ liệu phiên (khớp POST /api/games/{id}/play) ──
@@ -89,8 +93,14 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   const [queuePos, setQueuePos] = useState<number | null>(null);
   const [muted, setMuted] = useState(false);
   const [landscape, setLandscape] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [showDevices, setShowDevices] = useState(false);
+  const [showConfig, setShowConfig] = useState(false);
+  const [config, setConfig] = useState<EmulatorConfig>(DEFAULT_CONFIG);
+  // `nova:init` bắn ra từ listener không có config trong deps — đọc qua ref để
+  // runtime luôn nhận bản cấu hình mới nhất ngay từ lúc khởi động.
+  const configRef = useRef(config);
+  configRef.current = config;
+  const [savingConfig, setSavingConfig] = useState(false);
   const [held, setHeld] = useState<Set<string>>(new Set());
   const [keymap, setKeymap] = useState<Record<string, EmuKey>>(() => mergeKeymap(null, savedKeymapRef.current));
   const [saveNote, setSaveNote] = useState<string | null>(null);
@@ -148,6 +158,46 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     return () => { alive = false; };
   }, [slug, versionId, profileId]);
 
+  // ── 1b. Nạp cấu hình riêng của game ─────────────────────
+  // Đăng nhập thì lấy theo tài khoản, khách thì lấy trong localStorage.
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (loggedIn) {
+        const res = await fetch(`/api/games/${slug}/config`).catch(() => null);
+        if (res?.ok && alive) {
+          const data = (await res.json()) as { config: unknown };
+          setConfig(parseConfig(data.config));
+          return;
+        }
+      }
+      try {
+        const raw = localStorage.getItem(configStorageKey(slug));
+        if (raw && alive) setConfig(parseConfig(JSON.parse(raw)));
+      } catch {
+        // localStorage bị chặn hoặc dữ liệu hỏng — giữ mặc định
+      }
+    })();
+    return () => { alive = false; };
+  }, [slug, loggedIn]);
+
+  /** Đổi cấu hình: áp dụng ngay, rồi lưu lại (tài khoản hoặc trình duyệt). */
+  const updateConfig = useCallback((next: EmulatorConfig) => {
+    setConfig(next);
+    try {
+      localStorage.setItem(configStorageKey(slug), JSON.stringify(next));
+    } catch {
+      // không lưu được thì thôi, cấu hình vẫn có hiệu lực trong phiên này
+    }
+    if (!loggedIn) return;
+    setSavingConfig(true);
+    void fetch(`/api/games/${slug}/config`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(next),
+    }).catch(() => null).finally(() => setSavingConfig(false));
+  }, [slug, loggedIn]);
+
   // ── 2. Nhận thông điệp từ runtime ───────────────────────
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
@@ -162,6 +212,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
               jadUrl: session.jadUrl,
               checksum: session.checksum,
               profile: session.profile,
+              config: configRef.current,
             });
           }
           break;
@@ -194,6 +245,14 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, [fill]);
+
+  // ── 2c. Đẩy cấu hình xuống runtime ──────────────────────
+  // Kích thước/scale/lọc ảnh trang tự áp được; fps, tốc độ, cỡ chữ, âm thanh
+  // thì runtime phải tự xử lý theo giao ước `nova:config`.
+  useEffect(() => {
+    if (!session) return;
+    post({ type: 'nova:config', config });
+  }, [config, session, post]);
 
   // ── 3. Heartbeat ────────────────────────────────────────
   useEffect(() => {
@@ -372,11 +431,10 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   };
 
   // ── Kích thước màn hình ảo ──────────────────────────────
-  const screen = useMemo(() => {
-    const w = profile?.screenWidth ?? 240;
-    const h = profile?.screenHeight ?? 320;
-    return landscape ? { w: h, h: w } : { w, h };
-  }, [profile, landscape]);
+  const screen = useMemo(
+    () => effectiveScreen(config, { width: profile?.screenWidth ?? 240, height: profile?.screenHeight ?? 320 }, landscape),
+    [config, profile, landscape],
+  );
 
   /**
    * Khung game phải vừa khít chỗ trống mà vẫn đúng tỉ lệ máy ảo.
@@ -385,6 +443,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
    */
   const areaRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
+  const scaling = config.scaling;
 
   useEffect(() => {
     const area = areaRef.current;
@@ -392,14 +451,22 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     const fit = () => {
       const { width, height } = area.getBoundingClientRect();
       if (width <= 0 || height <= 0) return;
-      const scale = Math.min(width / screen.w, height / screen.h);
+      if (scaling === 'stretch') {
+        // Kéo đầy khung, chấp nhận méo tỉ lệ.
+        setBox({ w: Math.floor(width), h: Math.floor(height) });
+        return;
+      }
+      // `original` giữ đúng pixel gốc, chỉ thu nhỏ khi màn hình ảo lớn hơn chỗ trống.
+      const scale = scaling === 'original'
+        ? Math.min(1, width / screen.w, height / screen.h)
+        : Math.min(width / screen.w, height / screen.h);
       setBox({ w: Math.floor(screen.w * scale), h: Math.floor(screen.h * scale) });
     };
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(area);
     return () => ro.disconnect();
-  }, [screen.w, screen.h]);
+  }, [screen.w, screen.h, scaling]);
 
   /** Máy cầm ngang: chiều cao eo hẹp nên chuyển bàn phím ra hai bên màn hình. */
   const [wide, setWide] = useState(false);
@@ -427,7 +494,11 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   const screenBox = (
     <div
       className="relative overflow-hidden rounded-lg bg-black ring-1 ring-ink-700"
-      style={box.w > 0 ? { width: box.w, height: box.h } : { width: '100%', aspectRatio: `${screen.w} / ${screen.h}` }}
+      style={{
+        ...(box.w > 0 ? { width: box.w, height: box.h } : { width: '100%', aspectRatio: `${screen.w} / ${screen.h}` }),
+        // Máy cổ nên để pixel vuông; ai thích mượt thì đổi trong cấu hình game.
+        imageRendering: config.filter === 'sharp' ? 'pixelated' : 'auto',
+      }}
     >
       {session?.profile.runtimeUrl ? (
         <iframe
@@ -515,11 +586,17 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
         </>
       )}
       {devices.length > 1 && (
-        <Ctl onClick={() => { setShowDevices((v) => !v); setShowSettings(false); }} label="Chọn máy ảo">
+        <Ctl onClick={() => { setShowDevices((v) => !v); setShowConfig(false); }} label="Chọn máy ảo">
           <SmartphoneCharging size={16} />
         </Ctl>
       )}
-      <Ctl onClick={() => { setShowSettings((v) => !v); setShowDevices(false); }} label="Cấu hình phím"><Settings2 size={16} /></Ctl>
+      <Ctl
+        onClick={() => { setShowConfig((v) => !v); setShowDevices(false); }}
+        label="Cấu hình game"
+        dot={isCustomised(config)}
+      >
+        <Sliders size={16} />
+      </Ctl>
       <Ctl onClick={exit} label="Thoát" danger><LogOut size={16} /></Ctl>
     </div>
   );
@@ -615,24 +692,37 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
         </div>
       )}
 
-      {/* Cấu hình phím — đè lên trên khi toàn màn hình, tự cuộn nếu dài */}
-      {showSettings && profile && (
-        <div className={cn('overflow-y-auto rounded-xl bg-ink-900 p-4',
-          fill ? 'absolute inset-x-2 bottom-2 max-h-[70%] shadow-xl' : 'mt-4')}>
-          <KeymapEditor
-            profileId={profile.id}
+      {/* Cấu hình riêng cho game — kích thước, cách phóng, tốc độ… */}
+      {showConfig && (
+        <div className={cn('rounded-xl bg-ink-900 p-4',
+          fill ? 'absolute inset-x-2 bottom-2 top-14 shadow-xl' : 'mt-4 max-h-[32rem]')}>
+          <EmulatorSettings
+            config={config}
+            device={{
+              name: profile?.name ?? 'Máy ảo',
+              width: profile?.screenWidth ?? 240,
+              height: profile?.screenHeight ?? 320,
+            }}
+            onChange={updateConfig}
+            onClose={() => setShowConfig(false)}
+            saving={savingConfig}
+            loggedIn={loggedIn}
+            profileId={profile?.id}
             keymap={keymap}
-            onChange={setKeymap}
-            canPersist={loggedIn}
+            onKeymapChange={setKeymap}
           />
         </div>
       )}
+
     </div>
   );
 }
 
-function Ctl({ onClick, children, label, disabled, danger }: {
-  onClick: () => void; children: React.ReactNode; label: string; disabled?: boolean; danger?: boolean;
+function Ctl({ onClick, children, label, disabled, danger, dot }: {
+  onClick: () => void; children: React.ReactNode; label: string;
+  disabled?: boolean; danger?: boolean;
+  /** Chấm nhỏ báo mục này đang khác mặc định. */
+  dot?: boolean;
 }) {
   return (
     <button
@@ -643,7 +733,10 @@ function Ctl({ onClick, children, label, disabled, danger }: {
         danger ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30' : 'bg-ink-800 text-ink-200 hover:bg-ink-700',
       )}
     >
-      {children}
+      <span className="relative">
+        {children}
+        {dot && <span className="absolute -right-1.5 -top-1 h-1.5 w-1.5 rounded-full bg-brand-400" />}
+      </span>
     </button>
   );
 }

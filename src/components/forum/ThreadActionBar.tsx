@@ -5,8 +5,8 @@ import { Heart, MessageSquare, Share2 } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
 import { toggleThreadLike } from '@/app/(site)/forum/actions';
 
-export function ThreadActionBar({ threadId, initialLiked, initialLikeCount }: {
-  threadId: string; initialLiked: boolean; initialLikeCount: number;
+export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, modMenu }: {
+  threadId: string; initialLiked: boolean; initialLikeCount: number; modMenu?: React.ReactNode;
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialLikeCount);
@@ -38,6 +38,7 @@ export function ThreadActionBar({ threadId, initialLiked, initialLikeCount }: {
         </button>
         <a href="#tra-loi" className="btn-outline !rounded-full gap-1.5 !px-4"><MessageSquare size={16} /> Trả lời</a>
         <button type="button" onClick={onShare} className="btn-outline !rounded-full gap-1.5 !px-4"><Share2 size={16} /> Chia sẻ</button>
+        {modMenu}
       </div>
       {toast && <p className="mt-2 text-center text-sm font-medium text-brand-600">{toast}</p>}
     </div>

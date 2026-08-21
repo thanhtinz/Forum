@@ -8,6 +8,7 @@ import { grantPoints } from '@/lib/points';
 import { addExp } from '@/lib/level';
 import { notify } from '@/lib/notify';
 import { isVipActive } from '@/lib/access';
+import { canModerateForum } from '@/lib/moderation';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
@@ -248,4 +249,121 @@ export async function markSolution(threadId: string, replyId: string): Promise<S
 
   revalidatePath(`/forum/${thread.forum.slug}/${threadId}`);
   return { ok: true };
+}
+
+// ─────────────────────────── Công cụ điều hành ───────────────────────────
+
+export interface ModState {
+  ok?: boolean;
+  error?: string;
+}
+
+/** Lấy chủ đề + kiểm tra quyền điều hành diễn đàn chứa nó. */
+async function loadThreadForMod(threadId: string) {
+  const session = await auth();
+  const user = session?.user as { id?: string; role?: string } | undefined;
+  if (!user?.id) return { error: 'Bạn cần đăng nhập.' as const };
+
+  const thread = await db.thread.findUnique({
+    where: { id: threadId },
+    select: { id: true, forumId: true, title: true, authorId: true, pinned: true, locked: true, featured: true, replyCount: true, forum: { select: { slug: true } } },
+  });
+  if (!thread) return { error: 'Không tìm thấy chủ đề.' as const };
+
+  const allowed = await canModerateForum({ id: user.id, role: user.role }, thread.forumId);
+  if (!allowed) return { error: 'Bạn không có quyền điều hành mục này.' as const };
+
+  return { thread, userId: user.id };
+}
+
+function revalidateThread(forumSlug: string, threadId?: string) {
+  revalidatePath('/');
+  revalidatePath(`/forum/${forumSlug}`);
+  if (threadId) revalidatePath(`/forum/${forumSlug}/${threadId}`);
+}
+
+/** Ghim / bỏ ghim chủ đề. */
+export async function toggleThreadPin(threadId: string): Promise<ModState> {
+  const r = await loadThreadForMod(threadId);
+  if ('error' in r) return { error: r.error };
+  await db.thread.update({ where: { id: threadId }, data: { pinned: !r.thread.pinned } });
+  revalidateThread(r.thread.forum.slug, threadId);
+  return { ok: true };
+}
+
+/** Khoá / mở khoá trả lời. */
+export async function toggleThreadLock(threadId: string): Promise<ModState> {
+  const r = await loadThreadForMod(threadId);
+  if ('error' in r) return { error: r.error };
+  const locked = !r.thread.locked;
+  await db.thread.update({ where: { id: threadId }, data: { locked } });
+  if (locked && r.thread.authorId !== r.userId) {
+    await notify({
+      userId: r.thread.authorId, type: 'SYSTEM', title: 'Chủ đề đã bị khoá',
+      content: r.thread.title, link: `/forum/${r.thread.forum.slug}/${threadId}`,
+    }).catch(() => {});
+  }
+  revalidateThread(r.thread.forum.slug, threadId);
+  return { ok: true };
+}
+
+/** Đánh dấu / bỏ đánh dấu chủ đề tinh hoa. */
+export async function toggleThreadFeatured(threadId: string): Promise<ModState> {
+  const r = await loadThreadForMod(threadId);
+  if ('error' in r) return { error: r.error };
+  await db.thread.update({ where: { id: threadId }, data: { featured: !r.thread.featured } });
+  revalidateThread(r.thread.forum.slug, threadId);
+  return { ok: true };
+}
+
+/** Chuyển chủ đề sang chuyên mục khác, cập nhật bộ đếm hai bên trong cùng transaction. */
+export async function moveThread(threadId: string, targetForumId: string): Promise<ModState> {
+  const r = await loadThreadForMod(threadId);
+  if ('error' in r) return { error: r.error };
+  if (targetForumId === r.thread.forumId) return { error: 'Chủ đề đã ở trong mục này.' };
+
+  const target = await db.forum.findUnique({ where: { id: targetForumId }, select: { id: true, slug: true, name: true } });
+  if (!target) return { error: 'Không tìm thấy chuyên mục đích.' };
+
+  const replies = r.thread.replyCount;
+  await db.$transaction(async (tx) => {
+    await tx.thread.update({ where: { id: threadId }, data: { forumId: target.id } });
+    await tx.forum.update({ where: { id: r.thread.forumId }, data: { threadCount: { decrement: 1 }, replyCount: { decrement: replies } } });
+    await tx.forum.update({ where: { id: target.id }, data: { threadCount: { increment: 1 }, replyCount: { increment: replies } } });
+  });
+
+  if (r.thread.authorId !== r.userId) {
+    await notify({
+      userId: r.thread.authorId, type: 'SYSTEM', title: 'Chủ đề đã được chuyển mục',
+      content: `“${r.thread.title}” nay nằm trong ${target.name}.`, link: `/forum/${target.slug}/${threadId}`,
+    }).catch(() => {});
+  }
+
+  revalidateThread(r.thread.forum.slug, threadId);
+  revalidateThread(target.slug, threadId);
+  return { ok: true };
+}
+
+/** Ẩn chủ đề khỏi danh sách (giữ dữ liệu để còn khôi phục được). */
+export async function hideThread(threadId: string): Promise<ModState> {
+  const r = await loadThreadForMod(threadId);
+  if ('error' in r) return { error: r.error };
+
+  await db.$transaction(async (tx) => {
+    await tx.thread.update({ where: { id: threadId }, data: { status: 'HIDDEN' } });
+    await tx.forum.update({
+      where: { id: r.thread.forumId },
+      data: { threadCount: { decrement: 1 }, replyCount: { decrement: r.thread.replyCount } },
+    });
+  });
+
+  if (r.thread.authorId !== r.userId) {
+    await notify({
+      userId: r.thread.authorId, type: 'SYSTEM', title: 'Chủ đề đã bị ẩn',
+      content: r.thread.title, link: `/forum/${r.thread.forum.slug}`,
+    }).catch(() => {});
+  }
+
+  revalidateThread(r.thread.forum.slug, threadId);
+  redirect(`/forum/${r.thread.forum.slug}`);
 }

@@ -19,8 +19,8 @@ export interface ThreadRowData {
 }
 
 /**
- * Một dòng chủ đề kiểu diễn đàn wap: avatar, tiêu đề, dòng meta gọn,
- * bên phải là số trả lời — đủ dày để lướt nhanh trên điện thoại.
+ * Một dòng chủ đề. Rail bên phải (w-40 / w-16 / w-20) trùng với bảng chuyên mục
+ * để mọi bảng trên trang thẳng cột với nhau.
  */
 export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowData; forumSlug?: string; showForum?: boolean }) {
   const slug = forumSlug ?? thread.forum?.slug;
@@ -28,12 +28,12 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
   const at = thread.lastReplyAt ?? thread.createdAt;
 
   return (
-    <div className="group flex items-start gap-3 px-3 py-2.5 transition-colors hover:bg-ink-50 sm:px-4 dark:hover:bg-ink-800/50">
-      <Link href={`/u/${thread.author?.username ?? ''}`} className="shrink-0" aria-label={name}>
+    <div className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-ink-50 sm:px-4 dark:hover:bg-ink-800/50">
+      <Link href={`/u/${thread.author?.username ?? ''}`} className="shrink-0 self-start" aria-label={name}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {thread.author?.image
-          ? <img src={thread.author.image} alt="" className="size-9 rounded-full object-cover" />
-          : <span className="grid size-9 place-items-center rounded-full bg-ink-200 text-sm font-bold text-ink-600 dark:bg-ink-700 dark:text-ink-200">{name[0]?.toUpperCase()}</span>}
+          ? <img src={thread.author.image} alt="" className="size-10 rounded-full object-cover" />
+          : <span className="grid size-10 place-items-center rounded-full bg-ink-200 text-sm font-bold text-ink-600 dark:bg-ink-700 dark:text-ink-200">{name[0]?.toUpperCase()}</span>}
       </Link>
 
       <div className="min-w-0 flex-1">
@@ -53,8 +53,9 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
 
         <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-ink-400">
           <Link href={`/u/${thread.author?.username ?? ''}`} className="font-medium hover:text-brand-600">{name}</Link>
-          <span>·</span>
-          <span>{fmtAgo(at)}</span>
+          {/* Thời gian nằm ở cột riêng khi màn hình đủ rộng */}
+          <span className="lg:hidden">·</span>
+          <span className="lg:hidden">{fmtAgo(at)}</span>
           {showForum && thread.forum && (
             <>
               <span>·</span>
@@ -70,13 +71,15 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
         </p>
       </div>
 
-      <div className="hidden w-16 shrink-0 flex-col items-center gap-0.5 text-xs text-ink-400 sm:flex">
-        <span className="rounded-lg bg-ink-100 px-2 py-0.5 text-sm font-bold text-ink-700 dark:bg-ink-800 dark:text-ink-100">{fmtCount(thread.replyCount)}</span>
-        <span>trả lời</span>
+      {/* Rail phải: hoạt động cuối · trả lời · lượt xem */}
+      <div className="hidden w-40 shrink-0 text-xs text-ink-400 lg:block">
+        <span className="line-clamp-1">{fmtAgo(at)}</span>
       </div>
-      <div className="hidden w-20 shrink-0 flex-col items-center gap-0.5 text-xs text-ink-400 md:flex">
-        <span className="text-sm font-bold text-ink-700 dark:text-ink-100">{fmtCount(thread.viewCount)}</span>
-        <span>lượt xem</span>
+      <div className="hidden w-16 shrink-0 text-center text-sm font-bold text-ink-700 sm:block dark:text-ink-100">
+        {fmtCount(thread.replyCount)}
+      </div>
+      <div className="hidden w-20 shrink-0 text-center text-sm font-bold text-ink-700 md:block dark:text-ink-100">
+        {fmtCount(thread.viewCount)}
       </div>
     </div>
   );

@@ -28,7 +28,7 @@ export default async function NewThreadPage({ params }: { params: Promise<{ slug
   return (
     <div className="mx-auto max-w-2xl">
       <nav className="mb-3 flex items-center gap-1.5 text-sm text-ink-400">
-        <Link href="/forum" className="hover:text-brand-600">Diễn đàn</Link>
+        <Link href="/" className="hover:text-brand-600">Diễn đàn</Link>
         <span>/</span>
         <Link href={`/forum/${forum.slug}`} className="hover:text-brand-600">{forum.name}</Link>
       </nav>

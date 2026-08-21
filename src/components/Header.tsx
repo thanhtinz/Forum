@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
 import { touchPresence } from '@/lib/presence';
 import { MobileNav } from './MobileNav';
+import { ThemeToggle } from './ThemeToggle';
 
 const NAV = [
   { href: '/', label: 'Diễn đàn', icon: MessagesSquare },
@@ -53,6 +54,7 @@ export async function Header() {
         </div>
 
         <div className="ml-auto flex items-center gap-2 md:ml-0">
+          <ThemeToggle />
           {user ? (
             <>
               <Link href="/user/write" className="btn-primary hidden !px-3 !py-1.5 text-sm sm:inline-flex">

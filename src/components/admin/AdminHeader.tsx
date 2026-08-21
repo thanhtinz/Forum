@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ShieldCheck, ArrowLeft, ExternalLink } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { AdminMobileNav } from './AdminMobileNav';
 
 export interface AdminHeaderUser {
@@ -22,6 +23,7 @@ export function AdminHeader({ user }: { user: AdminHeaderUser }) {
         </Link>
 
         <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
           <Link href="/" className="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-ink-300 transition-colors hover:bg-ink-800 hover:text-white sm:flex">
             <ExternalLink size={15} /> Xem trang
           </Link>

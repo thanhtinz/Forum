@@ -51,6 +51,7 @@ src/
 - [x] **P9** Người dùng & xã hội (trang cá nhân, theo dõi, đã lưu, thông báo, mời bạn, cài đặt tài khoản)
 - [x] **P10** Quản trị (bài viết, người dùng, chuyên mục, diễn đàn, báo cáo, gói VIP, rút tiền, giao diện)
 - [x] **P12** Giao diện chính chuyển sang dạng diễn đàn (board list, bài mới, đang online); blog dời sang `/blog`
-- [ ] **P11** Hoàn thiện (rate limit, dark mode toggle, backup) — đã có SEO/sitemap/robots
+- [x] **P13** Công cụ điều hành chủ đề, tìm kiếm hợp nhất (chủ đề/bài viết/thành viên), chế độ tối
+- [ ] **P11** Hoàn thiện (rate limit, chống spam, backup) — đã có SEO/sitemap/robots
 
 Chi tiết đặc tả: [`.nova-spec/SPEC.md`](.nova-spec/SPEC.md) · Kế hoạch: [`.nova-spec/TODO.md`](.nova-spec/TODO.md)

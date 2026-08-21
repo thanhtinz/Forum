@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { format } from 'date-fns';
-import { Coins, Wallet, TrendingUp, Flame, PenLine, Crown, User as UserIcon, Plus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Coins, Wallet, TrendingUp, Flame, PenLine, Crown, Bookmark, Plus, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount, fmtVnd } from '@/lib/utils';
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
         <QuickLink href="/user/write" icon={<PenLine size={18} />} label="Đăng bài" primary />
         <QuickLink href="/vip" icon={<Crown size={18} />} label="Nâng cấp VIP" />
         <QuickLink href="/user/balance" icon={<Plus size={18} />} label="Nạp tiền" />
-        <QuickLink href={`/u/${user.username ?? ''}`} icon={<UserIcon size={18} />} label="Trang cá nhân" />
+        <QuickLink href="/user/favorites" icon={<Bookmark size={18} />} label="Đã lưu" />
       </div>
 
       {/* Lịch sử điểm */}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Search, LayoutGrid, MessagesSquare, Crown, Gamepad2, LayoutDashboard, LogIn, UserPlus, PenLine } from 'lucide-react';
+import { Menu, X, Search, LayoutGrid, MessagesSquare, Crown, Gamepad2, LayoutDashboard, LogIn, UserPlus, PenLine, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ICONS = { LayoutGrid, MessagesSquare, Crown, Gamepad2 } as const;
@@ -77,6 +77,10 @@ export function MobileNav({ nav, loggedIn }: MobileNavProps) {
                 <Link href="/user/dashboard"
                   className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-ink-700 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-200 dark:hover:bg-ink-800">
                   <LayoutDashboard size={18} /> Trang cá nhân
+                </Link>
+                <Link href="/user/settings"
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-ink-700 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-200 dark:hover:bg-ink-800">
+                  <Settings size={18} /> Cài đặt
                 </Link>
               </>
             )}

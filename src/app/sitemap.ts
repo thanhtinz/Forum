@@ -4,18 +4,31 @@ import { SITE_URL } from '@/lib/site';
 
 export const revalidate = 3600; // làm mới mỗi giờ
 
+/**
+ * Sitemap được prerender lúc `next build` rồi làm mới mỗi giờ (ISR). Máy build
+ * trên CI thường không có database, nên mỗi truy vấn phải chịu được lỗi kết nối:
+ * thiếu dữ liệu thì vẫn xuất các trang tĩnh, lần regenerate sau sẽ đủ.
+ */
+async function safe<T>(query: Promise<T[]>): Promise<T[]> {
+  try {
+    return await query;
+  } catch {
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const url = (path: string) => `${SITE_URL}${path}`;
 
   const [posts, categories, tags, forums, threads, games, genres, collections] = await Promise.all([
-    db.post.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 }),
-    db.category.findMany({ select: { slug: true } }),
-    db.tag.findMany({ select: { slug: true }, take: 1000 }),
-    db.forum.findMany({ select: { slug: true } }),
-    db.thread.findMany({ select: { id: true, updatedAt: true, forum: { select: { slug: true } } }, orderBy: { updatedAt: 'desc' }, take: 5000 }),
-    db.game.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 }),
-    db.gameGenre.findMany({ select: { slug: true } }),
-    db.gameCollection.findMany({ select: { slug: true } }),
+    safe(db.post.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
+    safe(db.category.findMany({ select: { slug: true } })),
+    safe(db.tag.findMany({ select: { slug: true }, take: 1000 })),
+    safe(db.forum.findMany({ select: { slug: true } })),
+    safe(db.thread.findMany({ select: { id: true, updatedAt: true, forum: { select: { slug: true } } }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
+    safe(db.game.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
+    safe(db.gameGenre.findMany({ select: { slug: true } })),
+    safe(db.gameCollection.findMany({ select: { slug: true } })),
   ]);
 
   const staticPages: MetadataRoute.Sitemap = [

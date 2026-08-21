@@ -13,6 +13,8 @@ const CONTINUE_KEY = 'nova:games:continue';
 export interface ContinuePlayingProps {
   /** Game người dùng đã chơi gần đây, lấy từ phiên emulator trên máy chủ. */
   serverGames: GameCardData[];
+  /** Chỉ điện thoại mới chơi tiếp được — máy tính không hiện mục này. */
+  mobile?: boolean;
 }
 
 /**
@@ -21,19 +23,21 @@ export interface ContinuePlayingProps {
  * Thành viên lấy từ phiên emulator đã lưu; khách chưa đăng nhập thì dựng lại
  * từ localStorage do `EmulatorStage` ghi sau mỗi lần mở phiên.
  */
-export function ContinuePlaying({ serverGames }: ContinuePlayingProps) {
+export function ContinuePlaying({ serverGames, mobile = false }: ContinuePlayingProps) {
   const [local, setLocal] = useState<ContinueEntry[]>([]);
 
   useEffect(() => {
-    if (serverGames.length > 0) return;
+    if (!mobile || serverGames.length > 0) return;
     try {
       const raw = localStorage.getItem(CONTINUE_KEY);
       if (raw) setLocal((JSON.parse(raw) as ContinueEntry[]).slice(0, 8));
     } catch {
       // localStorage bị chặn — coi như chưa chơi game nào
     }
-  }, [serverGames.length]);
+  }, [mobile, serverGames.length]);
 
+  // Mục "tiếp tục chơi" chỉ có nghĩa khi chơi được — tức là trên điện thoại.
+  if (!mobile) return null;
   if (serverGames.length === 0 && local.length === 0) return null;
 
   return (
@@ -41,7 +45,7 @@ export function ContinuePlaying({ serverGames }: ContinuePlayingProps) {
       <h2 className="zib-title mb-3 flex items-center gap-2"><History size={18} /> Tiếp tục chơi</h2>
       {serverGames.length > 0 ? (
         <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
-          {serverGames.map((g) => <GameCard key={g.id} game={g} variant="compact" />)}
+          {serverGames.map((g) => <GameCard key={g.id} game={g} variant="compact" mobile />)}
         </div>
       ) : (
         <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">

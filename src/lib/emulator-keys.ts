@@ -97,20 +97,6 @@ export const SOFT_KEY_LABEL: Record<string, { left: string; right: string }> = {
 /** Các bố cục phím được hỗ trợ — dùng cho ô chọn trong khu quản trị. */
 export const KEY_LAYOUTS = Object.keys(SOFT_KEY_LABEL);
 
-/**
- * Kiểu D-pad theo hãng: Nokia/Samsung/LG dùng vòng xoay tròn (navi-wheel),
- * còn lại là phím bốn hướng vuông bo góc.
- */
-export const DPAD_STYLE: Record<string, 'wheel' | 'pad'> = {
-  nokia: 'wheel',
-  samsung: 'wheel',
-  lg: 'wheel',
-  sonyericsson: 'pad',
-  motorola: 'pad',
-  siemens: 'pad',
-  generic: 'pad',
-};
-
 export function javaKeyCode(key: EmuKey): number {
   return JAVA_KEY[key] ?? 0;
 }

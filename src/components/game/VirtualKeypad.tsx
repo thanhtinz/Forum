@@ -2,7 +2,7 @@
 
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Phone, PhoneOff } from 'lucide-react';
 import {
-  DPAD_STYLE, EMU_KEY_LABEL, NUMPAD_ROWS, NUM_KEY_LETTERS, SOFT_KEY_LABEL, type EmuKey,
+  EMU_KEY_LABEL, NUMPAD_ROWS, NUM_KEY_LETTERS, SOFT_KEY_LABEL, type EmuKey,
 } from '@/lib/emulator-keys';
 import { cn } from '@/lib/utils';
 
@@ -46,7 +46,6 @@ const KEY_HELD = 'from-brand-500 to-brand-600 text-white border-brand-700';
 export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, compact = false }:
   VirtualKeypadProps & { compact?: boolean }): KeypadParts {
   const soft = SOFT_KEY_LABEL[keyLayout] ?? SOFT_KEY_LABEL.generic!;
-  const dpadStyle = DPAD_STYLE[keyLayout] ?? 'pad';
 
   const bind = (key: EmuKey) => ({
     onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); onPress(key); },
@@ -62,7 +61,6 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
 
   // Cầm ngang thì chiều cao eo hẹp — phím nhỏ lại cho đủ chỗ.
   const wheel = compact ? 'h-28 w-28' : 'h-[6.5rem] w-[6.5rem]';
-  const padKey = compact ? 'h-9 w-9' : 'h-11 w-11';
   const numH = compact ? 'h-9' : 'h-11';
 
   // ── D-pad ────────────────────────────────────────────────
@@ -73,8 +71,8 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
     { key: 'RIGHT', icon: <ChevronRight size={18} />, at: 'right-0 top-1/2 -translate-y-1/2' },
   ];
 
-  const dpad = dpadStyle === 'wheel' ? (
-    // Vòng xoay kiểu Nokia: vành tròn, nút OK tròn ở giữa.
+  const dpad = (
+    // Vòng xoay kiểu Nokia: vành tròn, nút OK ở giữa — máy nào cũng dùng kiểu này.
     <div className={cn('relative shrink-0 rounded-full border border-ink-950/70 bg-gradient-to-b from-ink-700 to-ink-800 shadow-[0_2px_6px_rgba(0,0,0,0.5)]', wheel)}>
       {arrows.map((a) => (
         <button
@@ -102,19 +100,6 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
       >
         OK
       </button>
-    </div>
-  ) : (
-    // Phím bốn hướng vuông bo góc, giữa là nút chọn.
-    <div className="grid shrink-0 grid-cols-3 grid-rows-3 gap-1">
-      <span />
-      <button type="button" {...bind('UP')} className={face('UP', `${padKey} rounded-t-xl rounded-b-md`)}><ChevronUp size={18} /></button>
-      <span />
-      <button type="button" {...bind('LEFT')} className={face('LEFT', `${padKey} rounded-l-xl rounded-r-md`)}><ChevronLeft size={18} /></button>
-      <button type="button" {...bind('FIRE')} className={face('FIRE', `${padKey} rounded-md text-[10px] font-bold`)}>OK</button>
-      <button type="button" {...bind('RIGHT')} className={face('RIGHT', `${padKey} rounded-r-xl rounded-l-md`)}><ChevronRight size={18} /></button>
-      <span />
-      <button type="button" {...bind('DOWN')} className={face('DOWN', `${padKey} rounded-b-xl rounded-t-md`)}><ChevronDown size={18} /></button>
-      <span />
     </div>
   );
 
@@ -168,17 +153,16 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
     // dưới, vòng xoay kẹp giữa bốn phím đó, rồi mới tới bàn phím số.
     phonePad: (
       <div className="mx-auto w-full max-w-[19rem] rounded-[1.6rem] border border-ink-800/70 bg-gradient-to-b from-ink-800/40 to-ink-900/40 p-2 shadow-[0_1px_0_rgba(255,255,255,0.05)_inset]">
-        <div className="grid grid-cols-[1fr_auto_1fr] grid-rows-2 items-center gap-x-2 gap-y-1">
-          {softKeys
-            ? softLeft('col-start-1 row-start-1 h-9 w-full rounded-l-[1.1rem] rounded-r-[0.3rem] text-[11px] font-semibold')
-            : <span className="col-start-1 row-start-1" />}
-          <div className="col-start-2 row-start-1 row-span-2 px-1">{dpad}</div>
-          {softKeys
-            ? softRight('col-start-3 row-start-1 h-9 w-full rounded-r-[1.1rem] rounded-l-[0.3rem] text-[11px] font-semibold')
-            : <span className="col-start-3 row-start-1" />}
-          {sendKey('col-start-1 row-start-2 h-9 w-full rounded-l-[1.1rem] rounded-r-[0.3rem]')}
-          {endKey('col-start-3 row-start-2 h-9 w-full rounded-r-[1.1rem] rounded-l-[0.3rem]')}
+        {/* Phím mềm và phím gọi/kết thúc nằm chung một hàng, ngay dưới màn hình. */}
+        <div className="flex items-stretch gap-1.5">
+          {softKeys && softLeft('h-9 flex-1 rounded-l-[1.1rem] rounded-r-[0.3rem] text-[11px] font-semibold')}
+          {sendKey('h-9 w-12 rounded-[0.3rem]')}
+          {endKey('h-9 w-12 rounded-[0.3rem]')}
+          {softKeys && softRight('h-9 flex-1 rounded-r-[1.1rem] rounded-l-[0.3rem] text-[11px] font-semibold')}
         </div>
+
+        {/* Vòng xoay nằm giữa, ngay trên bàn phím số. */}
+        <div className="mt-2 flex justify-center">{dpad}</div>
 
         {/* Bàn phím số: phím bè ngang, xếp khít nhau đúng kiểu máy cổ. */}
         <div className="mt-2 grid grid-cols-3 gap-1">

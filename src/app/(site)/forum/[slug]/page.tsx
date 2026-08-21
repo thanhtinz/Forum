@@ -8,6 +8,7 @@ import { fmtCount, truncate, plainText, cn } from '@/lib/utils';
 import { FORUM_ACCESS_BADGE, forumTint } from '@/lib/forum';
 import { Pagination } from '@/components/Pagination';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
+import { TableHead } from '@/components/forum/TableHead';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 
 export const dynamic = 'force-dynamic';
@@ -73,7 +74,7 @@ export default async function ForumPage({ params, searchParams }: {
   }));
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0">
         {/* Header diễn đàn */}
         <header className="card mb-4 p-5">
@@ -124,11 +125,8 @@ export default async function ForumPage({ params, searchParams }: {
 
         {/* Danh sách chủ đề kiểu bảng diễn đàn */}
         <section className="card overflow-hidden">
-          <header className="hidden items-center gap-3 border-b border-ink-100 bg-ink-50/70 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-ink-400 sm:flex dark:border-ink-800 dark:bg-ink-900/60">
-            <span className="flex-1">Chủ đề</span>
-            <span className="w-16 whitespace-nowrap text-center">Trả lời</span>
-            <span className="hidden w-20 whitespace-nowrap text-center md:block">Lượt xem</span>
-          </header>
+          <TableHead title="Chủ đề" icon={<MessageSquare size={15} className="text-brand-500" />}
+            cols={{ last: 'Hoạt động', a: 'Trả lời', b: 'Lượt xem' }} />
 
           {threads.length === 0 ? (
             <div className="flex flex-col items-center gap-2 p-10 text-center text-ink-400">

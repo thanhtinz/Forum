@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount, plainText, truncate } from '@/lib/utils';
 import { BoardList, type BoardSection, type BoardRow } from '@/components/forum/BoardList';
+import { TableHead } from '@/components/forum/TableHead';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 
@@ -85,35 +86,41 @@ export default async function HomePage() {
   const firstForum = forums.find((f) => f.postAccess === 'ALL') ?? forums[0];
 
   return (
-    <div className="space-y-5">
-      {/* Thanh tiêu đề gọn thay cho banner blog */}
-      <section className="card flex flex-wrap items-center gap-3 px-4 py-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-500 text-white">
-          <MessagesSquare size={20} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-black leading-tight text-ink-900 dark:text-white">Diễn đàn Nova</h1>
-          <p className="text-xs text-ink-400">
-            {fmtCount(totalThreads)} chủ đề · {fmtCount(totalThreads + totalReplies)} bài viết · {fmtCount(forums.length)} chuyên mục
-          </p>
+    <div className="space-y-4">
+      {/* Thanh tiêu đề: danh tính bên trái, số liệu chia đều, hành động bên phải */}
+      <section className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand-500 text-white">
+            <MessagesSquare size={22} />
+          </span>
+          <div className="min-w-0">
+            <h1 className="truncate text-lg font-black leading-tight text-ink-900 dark:text-white">Diễn đàn Nova</h1>
+            <p className="truncate text-xs text-ink-400">Thảo luận, hỏi đáp và giao lưu cùng cộng đồng.</p>
+          </div>
         </div>
+
+        <dl className="grid grid-cols-3 gap-2 sm:w-72">
+          <HeadStat label="Chuyên mục" value={fmtCount(forums.length)} />
+          <HeadStat label="Chủ đề" value={fmtCount(totalThreads)} />
+          <HeadStat label="Bài viết" value={fmtCount(totalThreads + totalReplies)} />
+        </dl>
+
         {firstForum && (
-          <Link href={session?.user ? `/forum/${firstForum.slug}/new` : '/login?callbackUrl=/'} className="btn-primary !px-3.5 !py-1.5 text-sm">
+          <Link href={session?.user ? `/forum/${firstForum.slug}/new` : '/login?callbackUrl=/'}
+            className="btn-primary shrink-0 justify-center whitespace-nowrap !px-3.5 !py-2 text-sm">
             <PenLine size={15} /> Đăng chủ đề
           </Link>
         )}
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="min-w-0 space-y-5">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0 space-y-4">
           <BoardList sections={sections} />
 
           {/* Bài mới — dòng thời gian toàn diễn đàn */}
           <section className="card overflow-hidden">
-            <header className="flex items-center gap-2 border-b border-ink-100 bg-ink-50/70 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-900/60">
-              <Clock size={15} className="text-brand-500" />
-              <h2 className="text-sm font-bold uppercase tracking-wide text-ink-700 dark:text-ink-200">Bài mới</h2>
-            </header>
+            <TableHead title="Bài mới" icon={<Clock size={15} className="text-brand-500" />}
+              cols={{ last: 'Hoạt động', a: 'Trả lời', b: 'Lượt xem' }} />
             <div className="divide-y divide-ink-100 dark:divide-ink-800">
               {threads.length === 0
                 ? <p className="px-4 py-8 text-center text-sm text-ink-400">Chưa có chủ đề nào. Hãy mở màn bằng bài đầu tiên.</p>
@@ -124,13 +131,8 @@ export default async function HomePage() {
           {/* Cửa ngõ sang khu bài viết */}
           {latestPosts.length > 0 && (
             <section className="card overflow-hidden">
-              <header className="flex items-center gap-2 border-b border-ink-100 bg-ink-50/70 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-900/60">
-                <Newspaper size={15} className="text-accent-500" />
-                <h2 className="text-sm font-bold uppercase tracking-wide text-ink-700 dark:text-ink-200">Bài viết mới</h2>
-                <Link href="/blog" className="ml-auto flex items-center gap-0.5 text-xs font-medium text-brand-600 hover:underline">
-                  Xem tất cả <ChevronRight size={13} />
-                </Link>
-              </header>
+              <TableHead title="Bài viết mới" icon={<Newspaper size={15} className="text-accent-500" />}
+                action={<Link href="/blog" className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-brand-600 hover:underline">Xem tất cả <ChevronRight size={13} /></Link>} />
               <ul className="divide-y divide-ink-100 dark:divide-ink-800">
                 {latestPosts.map((p) => (
                   <li key={p.slug}>
@@ -147,6 +149,15 @@ export default async function HomePage() {
 
         <div className="lg:sticky lg:top-[72px] lg:self-start"><ForumSidebar /></div>
       </div>
+    </div>
+  );
+}
+
+function HeadStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-ink-50 py-1.5 text-center dark:bg-ink-800/60">
+      <dd className="text-base font-black leading-tight text-ink-900 dark:text-white">{value}</dd>
+      <dt className="text-[11px] text-ink-400">{label}</dt>
     </div>
   );
 }

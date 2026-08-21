@@ -77,7 +77,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0">
         <nav className="mb-3 flex flex-wrap items-center gap-1.5 text-sm text-ink-400">
           <Link href="/" className="hover:text-brand-600">Diễn đàn</Link>

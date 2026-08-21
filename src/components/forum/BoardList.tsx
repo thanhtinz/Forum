@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { MessagesSquare, ChevronRight } from 'lucide-react';
+import { MessagesSquare } from 'lucide-react';
 import { fmtCount, fmtAgo } from '@/lib/utils';
 import { FORUM_ACCESS_BADGE, forumTint } from '@/lib/forum';
+import { TableHead } from './TableHead';
 
 export interface BoardRow {
   id: string;
@@ -24,8 +25,8 @@ export interface BoardSection {
 }
 
 /**
- * Danh sách chuyên mục kiểu diễn đàn wap: mỗi mục một hàng gọn,
- * bên phải là số chủ đề/bài và bài mới nhất.
+ * Danh sách chuyên mục kiểu bảng diễn đàn: cột số liệu bên phải dùng đúng
+ * bề rộng với bảng chủ đề (w-16 / w-20) để các khối thẳng hàng với nhau.
  */
 export function BoardList({ sections }: { sections: BoardSection[] }) {
   if (sections.length === 0) {
@@ -36,11 +37,11 @@ export function BoardList({ sections }: { sections: BoardSection[] }) {
     <div className="space-y-4">
       {sections.map((s) => (
         <section key={s.id} className="card overflow-hidden">
-          <header className="flex items-center gap-2 border-b border-ink-100 bg-ink-50/70 px-4 py-2.5 dark:border-ink-800 dark:bg-ink-900/60">
-            <span aria-hidden className="text-base leading-none">{s.icon ?? '📁'}</span>
-            <h2 className="text-sm font-bold uppercase tracking-wide text-ink-700 dark:text-ink-200">{s.name}</h2>
-            <span className="ml-auto text-xs text-ink-400">{s.boards.length} mục</span>
-          </header>
+          <TableHead
+            title={s.name}
+            icon={<span aria-hidden className="text-base leading-none">{s.icon ?? '📁'}</span>}
+            cols={{ last: 'Mới nhất', a: 'Chủ đề', b: 'Bài' }}
+          />
 
           <div className="divide-y divide-ink-100 dark:divide-ink-800">
             {s.boards.map((b) => <BoardRowView key={b.id} board={b} />)}
@@ -57,10 +58,10 @@ function BoardRowView({ board }: { board: BoardRow }) {
   const tint = forumTint(board.slug);
 
   return (
-    <div className="group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-ink-50 sm:px-4 dark:hover:bg-ink-800/50">
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl text-xl" style={{ background: `${tint}1f`, color: tint }}>
+    <div className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-ink-50 sm:px-4 dark:hover:bg-ink-800/50">
+      <Link href={`/forum/${board.slug}`} className="grid size-10 shrink-0 place-items-center rounded-xl text-xl" style={{ background: `${tint}1f`, color: tint }}>
         {board.icon ?? <MessagesSquare size={18} />}
-      </span>
+      </Link>
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -72,7 +73,8 @@ function BoardRowView({ board }: { board: BoardRow }) {
 
         {board.description && <p className="mt-0.5 line-clamp-1 text-xs text-ink-400">{board.description}</p>}
 
-        <p className="mt-0.5 flex items-center gap-2 text-xs text-ink-400 sm:hidden">
+        {/* Trên màn hình hẹp thì gộp số liệu vào dòng meta */}
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-400 sm:hidden">
           <span>{fmtCount(board.threadCount)} chủ đề</span>
           <span>·</span>
           <span>{fmtCount(board.replyCount)} bài</span>
@@ -80,14 +82,8 @@ function BoardRowView({ board }: { board: BoardRow }) {
         </p>
       </div>
 
-      {/* Cột số liệu — chỉ hiện từ sm trở lên, giống bảng diễn đàn cổ điển */}
-      <div className="hidden w-24 shrink-0 text-center text-xs leading-tight text-ink-400 sm:block">
-        <div><b className="text-sm text-ink-700 dark:text-ink-200">{fmtCount(board.threadCount)}</b> chủ đề</div>
-        <div><b className="text-sm text-ink-700 dark:text-ink-200">{fmtCount(board.replyCount)}</b> bài</div>
-      </div>
-
       {/* Bài mới nhất */}
-      <div className="hidden w-52 shrink-0 text-xs md:block">
+      <div className="hidden w-40 shrink-0 text-xs lg:block">
         {board.latest ? (
           <>
             <Link href={`/forum/${board.slug}/${board.latest.id}`} className="line-clamp-1 font-medium text-ink-700 hover:text-brand-600 dark:text-ink-200">
@@ -102,7 +98,13 @@ function BoardRowView({ board }: { board: BoardRow }) {
         )}
       </div>
 
-      <ChevronRight size={16} className="shrink-0 text-ink-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500" />
+      {/* Cột số liệu — cùng bề rộng với bảng chủ đề */}
+      <div className="hidden w-16 shrink-0 text-center text-sm font-bold text-ink-700 sm:block dark:text-ink-100">
+        {fmtCount(board.threadCount)}
+      </div>
+      <div className="hidden w-20 shrink-0 text-center text-sm font-bold text-ink-700 md:block dark:text-ink-100">
+        {fmtCount(board.replyCount)}
+      </div>
     </div>
   );
 }

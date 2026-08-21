@@ -97,8 +97,18 @@ theo bề ngang cửa sổ — xoay ngang máy vẫn toàn màn hình:
   1. một hàng phím chức năng — phím mềm trái ‧ gọi ‧ kết thúc ‧ phím mềm phải;
   2. vòng xoay tròn (navi-wheel) có nút OK ở tâm, đặt chính giữa;
   3. bàn phím số 4×3 phím bè ngang, chữ số to và chữ cái ABC/DEF in nhỏ bên dưới.
-- **Cầm ngang** (`max-height: 520px`): D-pad ‧ màn hình ‧ bàn phím số xếp ba cột,
-  phím mềm và nút điều khiển gom xuống một hàng đáy.
+- **Cầm ngang**: D-pad ‧ màn hình ‧ bàn phím số xếp ba cột, hàng phím chức năng
+  nằm dưới đáy.
+
+Bố cục bám `matchMedia('(orientation: landscape)')` — hướng cầm máy thật, không
+phải suy từ chiều cao cửa sổ. Khung game thì giữ đúng hướng của máy ảo (game
+Java gần như đều là game dọc), chỉ xoay khi người chơi bấm "Xoay ngang màn
+hình"; xoay máy sẽ xoá lựa chọn thủ công đó nên không có cảnh cầm dọc mà khung
+game cứ nằm ngang mãi.
+
+Mọi nút điều khiển (tạm dừng, khởi động lại, tiếng, xoay, toàn màn hình, lưu /
+nạp, chọn máy ảo, cấu hình, thoát) nằm trong menu **⋮** ở góc trên phải, có nhãn
+chữ hẳn hoi — thay cho hàng nút biểu tượng ăn mất một dải chiều cao của khung game.
 
 Mọi máy đều dùng vòng xoay tròn. Nhãn phím mềm thì lấy theo hãng (Options/Back,
 Menu/Back, Select/Back…).

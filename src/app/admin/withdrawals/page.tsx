@@ -44,23 +44,15 @@ export default async function AdminWithdrawalsPage({ searchParams }: { searchPar
     }),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const qs = (key: string) => (key === 'ALL' ? '/admin/withdrawals' : `/admin/withdrawals?status=${key}`);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-ink-900 dark:text-white">Yêu cầu rút tiền</h1>
+        <div>
+          <h1 className="text-xl font-bold text-ink-900 dark:text-white">Yêu cầu rút tiền</h1>
+          <p className="text-sm text-ink-500">{STATUSES.find((s) => s.key === status)?.label}</p>
+        </div>
         <span className="text-sm text-ink-500">Đang chờ: <b className="text-amber-600">{fmtVnd(pendingSum._sum.amount ?? 0)}</b></span>
-      </div>
-
-      <div className="flex flex-wrap gap-1.5">
-        {STATUSES.map((s) => (
-          <Link key={s.key} href={qs(s.key)}
-            className={cn('rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-              status === s.key ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300')}>
-            {s.label}
-          </Link>
-        ))}
       </div>
 
       <div className="space-y-2.5">

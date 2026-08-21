@@ -52,23 +52,14 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
     }),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
-  const qs = (key: string) => `/admin/reports?status=${key}`;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-bold text-ink-900 dark:text-white">Báo cáo nội dung</h1>
-        <span className="text-sm text-ink-500">{total} báo cáo</span>
-      </div>
-
-      <div className="flex flex-wrap gap-1.5">
-        {STATUSES.map((s) => (
-          <Link key={s.key} href={qs(s.key)}
-            className={cn('rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
-              status === s.key ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-600 hover:bg-ink-200 dark:bg-ink-800 dark:text-ink-300')}>
-            {s.label}
-          </Link>
-        ))}
+        <div>
+          <h1 className="text-xl font-bold text-ink-900 dark:text-white">Báo cáo nội dung</h1>
+          <p className="text-sm text-ink-500">{STATUSES.find((s) => s.key === status)?.label} · {total} báo cáo</p>
+        </div>
       </div>
 
       <div className="space-y-2.5">

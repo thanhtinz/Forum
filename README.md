@@ -46,15 +46,16 @@ src/
 - [x] **P4a** Bộ PostCard 4 biến thể + trang chủ (slider, chuyên mục, lưới card, sidebar)
 - [x] **P4b** Chi tiết bài viết + paywall, danh mục, tag, tìm kiếm, bình luận
 - [x] **P5** Điểm danh & VIP + huy chương tự động
-- [x] **P6** Thanh toán SePay (nạp qua QR, hoa hồng giới thiệu, rút tiền) — còn `Coupon`
+- [x] **P6** Thanh toán SePay (nạp qua QR, hoa hồng giới thiệu, rút tiền, mã giảm giá)
 - [x] **P7** Cổng tải xuống có hạn mức/ngày + `/user/downloads` — còn upload S3 & CRUD file trong trình soạn
 - [x] **P8** Diễn đàn (danh sách, chủ đề, trả lời, chọn lời giải, treo thưởng)
 - [x] **P9** Người dùng & xã hội (trang cá nhân, theo dõi, đã lưu, thông báo, mời bạn, cài đặt tài khoản)
 - [x] **P10** Quản trị (bài viết, người dùng, chuyên mục, diễn đàn, báo cáo, gói VIP, rút tiền, giao diện)
 - [x] **P12** Giao diện chính chuyển sang dạng diễn đàn (board list, bài mới, đang online); blog dời sang `/blog`
 - [x] **P13** Công cụ điều hành chủ đề, tìm kiếm hợp nhất (chủ đề/bài viết/thành viên), chế độ tối
-- [x] **P14** Game Hub — catalog Java ME, tải JAR/JAD có signed URL, Play Online (emulator toàn màn hình trên đt, thư viện máy cổ), quản trị game & emulator
-- [ ] **P11** Hoàn thiện (rate limit, chống spam, backup) — đã có SEO/sitemap/robots
+- [x] **P14** Mã giảm giá (quản trị + áp khi mua VIP) và hạn mức chống spam khi đăng nội dung
+- [x] **P15** Game Hub — catalog Java ME, tải JAR/JAD có signed URL, Play Online (emulator toàn màn hình trên đt, thư viện máy cổ), quản trị game & emulator
+- [ ] **P11** Hoàn thiện (backup DB, upload S3) — đã có SEO/sitemap/robots/dark mode
 
 ## Game Hub
 

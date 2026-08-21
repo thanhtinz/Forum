@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { grantPoints } from '@/lib/points';
 import { checkAndAwardMedals } from '@/lib/medals';
 
@@ -38,6 +39,9 @@ export async function createPost(_prev: WriteState, formData: FormData): Promise
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { error: 'Bạn cần đăng nhập để đăng bài.' };
+
+  const rate = await checkRateLimit('post', userId);
+  if (!rate.allowed) return { error: rate.message };
 
   const title = String(formData.get('title') ?? '').trim();
   const excerpt = String(formData.get('excerpt') ?? '').trim();

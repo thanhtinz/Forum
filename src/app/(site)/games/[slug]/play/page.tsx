@@ -57,6 +57,24 @@ export default async function PlayGamePage({ params, searchParams }: {
 
   // Profile + keymap đã lưu của người dùng để nạp sẵn vào emulator.
   const profile = playable && version ? await resolveProfile(game.id, version.id) : null;
+
+  // Thư viện máy ảo cho người chơi chọn, kèm mức tương thích với chính game này.
+  const [allProfiles, matrix] = playable && version
+    ? await Promise.all([
+        db.emulatorProfile.findMany({
+          where: { active: true },
+          orderBy: [{ vendor: 'asc' }, { screenWidth: 'asc' }, { name: 'asc' }],
+          select: { id: true, slug: true, name: true, vendor: true, screenWidth: true, screenHeight: true, cldc: true, midp: true },
+        }),
+        db.gameEmulatorProfile.findMany({
+          where: { gameId: game.id, OR: [{ versionId: version.id }, { versionId: null }] },
+          select: { profileId: true, support: true },
+        }),
+      ])
+    : [[], []];
+
+  const supportOf = new Map(matrix.map((m) => [m.profileId, m.support]));
+  const devices = allProfiles.map((p) => ({ ...p, support: supportOf.get(p.id) ?? null }));
   const savedKeymap = userId && profile
     ? (await db.userKeymap.findUnique({
         where: { userId_profileId: { userId, profileId: profile.id } },
@@ -137,6 +155,7 @@ export default async function PlayGamePage({ params, searchParams }: {
             savedKeymap={savedKeymap ?? null}
             loggedIn={!!userId}
             fullscreen={mobile}
+            devices={devices}
           />
 
           <div className={cn('card p-4 text-sm text-ink-500', stageFullscreen ? 'hidden' : 'block')}>

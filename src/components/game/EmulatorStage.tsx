@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle, Download, Expand, Loader2, LogOut, Pause, Play, RotateCw,
-  Save, Settings2, Smartphone, Timer, Upload, Volume2, VolumeX,
+  Save, Settings2, Smartphone, SmartphoneCharging, Timer, Upload, Volume2, VolumeX,
 } from 'lucide-react';
 import {
   DEFAULT_GAMEPAD_MAP, javaKeyCode, mergeKeymap, type EmuKey,
 } from '@/lib/emulator-keys';
 import { cn } from '@/lib/utils';
+import { DevicePicker, type DeviceOption } from './DevicePicker';
 import { KeymapEditor } from './KeymapEditor';
 import { useKeypadParts } from './VirtualKeypad';
 
@@ -53,6 +54,8 @@ export interface EmulatorStageProps {
    * cửa sổ — xoay ngang máy vẫn phải là toàn màn hình.
    */
   fullscreen?: boolean;
+  /** Danh sách máy ảo người chơi được chọn, kèm mức tương thích với game này. */
+  devices?: DeviceOption[];
 }
 
 type Phase = 'creating' | 'queued' | 'loading' | 'running' | 'paused' | 'reconnecting' | 'ended' | 'error';
@@ -68,7 +71,7 @@ const CONTINUE_MAX = 12;
  * Runtime J2ME thật chạy ở dịch vụ riêng (`EmulatorProfile.runtimeUrl`), không
  * chung process với web server. Trang chỉ nói chuyện với nó qua postMessage.
  */
-export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeymap, loggedIn, fullscreen: fill = false }: EmulatorStageProps) {
+export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeymap, loggedIn, fullscreen: fill = false, devices = [] }: EmulatorStageProps) {
   const router = useRouter();
   const frameRef = useRef<HTMLIFrameElement>(null);
   const closedRef = useRef(false);
@@ -87,6 +90,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   const [muted, setMuted] = useState(false);
   const [landscape, setLandscape] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showDevices, setShowDevices] = useState(false);
   const [held, setHeld] = useState<Set<string>>(new Set());
   const [keymap, setKeymap] = useState<Record<string, EmuKey>>(() => mergeKeymap(null, savedKeymapRef.current));
   const [saveNote, setSaveNote] = useState<string | null>(null);
@@ -510,7 +514,12 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           <Ctl onClick={requestLoad} disabled={!session} label="Nạp bản lưu"><Upload size={16} /></Ctl>
         </>
       )}
-      <Ctl onClick={() => setShowSettings((v) => !v)} label="Cấu hình phím"><Settings2 size={16} /></Ctl>
+      {devices.length > 1 && (
+        <Ctl onClick={() => { setShowDevices((v) => !v); setShowSettings(false); }} label="Chọn máy ảo">
+          <SmartphoneCharging size={16} />
+        </Ctl>
+      )}
+      <Ctl onClick={() => { setShowSettings((v) => !v); setShowDevices(false); }} label="Cấu hình phím"><Settings2 size={16} /></Ctl>
       <Ctl onClick={exit} label="Thoát" danger><LogOut size={16} /></Ctl>
     </div>
   );
@@ -587,6 +596,23 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
             </div>
           </div>
         </>
+      )}
+
+      {/* Chọn máy ảo — đè lên trên khi toàn màn hình */}
+      {showDevices && (
+        <div className={cn('rounded-xl bg-ink-900 p-4',
+          fill ? 'absolute inset-x-2 bottom-2 top-14 shadow-xl' : 'mt-4 max-h-96')}>
+          <DevicePicker
+            devices={devices}
+            currentId={profile?.id}
+            playHref={(id) => `/games/${slug}/play?${new URLSearchParams({
+              ...(versionId ? { version: versionId } : {}),
+              profile: id,
+              ...(fill ? {} : { force: '1' }),
+            }).toString()}`}
+            onClose={() => setShowDevices(false)}
+          />
+        </div>
       )}
 
       {/* Cấu hình phím — đè lên trên khi toàn màn hình, tự cuộn nếu dài */}

@@ -109,22 +109,35 @@ export async function breakerOpen(): Promise<boolean> {
 // ── Chọn emulator profile ─────────────────────────────────
 
 /**
- * Chọn profile chạy cho một version: ưu tiên ma trận tương thích ở mức version,
- * rồi mức game, cuối cùng là profile mặc định của game.
+ * Chọn máy ảo mặc định cho một version.
+ *
+ * Thứ tự ưu tiên: máy do biên tập chỉ định cho game (nếu còn bật và không bị
+ * đánh dấu không chạy) → ma trận tương thích ở mức version → mức game. Ma trận
+ * giờ liệt kê nhiều máy cho mỗi game, nên phải bám máy chỉ định trước, không thì
+ * người chơi hay rơi vào một máy "chạy tốt" bất kỳ thay vì máy gốc của game.
  */
 export async function resolveProfile(gameId: string, versionId: string): Promise<EmulatorProfile | null> {
-  const matrix = await db.gameEmulatorProfile.findMany({
-    where: { gameId, OR: [{ versionId }, { versionId: null }], support: { in: ['FULL', 'BETA'] } },
-    include: { profile: true },
-    orderBy: [{ support: 'asc' }],
-  });
-  const forVersion = matrix.find((m) => m.versionId === versionId && m.profile.active);
-  if (forVersion) return forVersion.profile;
-  const forGame = matrix.find((m) => m.versionId === null && m.profile.active);
-  if (forGame) return forGame.profile;
+  const [game, matrix] = await Promise.all([
+    db.game.findUnique({ where: { id: gameId }, include: { emulatorProfile: true } }),
+    db.gameEmulatorProfile.findMany({
+      where: { gameId, OR: [{ versionId }, { versionId: null }] },
+      include: { profile: true },
+      orderBy: [{ support: 'asc' }],
+    }),
+  ]);
 
-  const game = await db.game.findUnique({ where: { id: gameId }, include: { emulatorProfile: true } });
-  return game?.emulatorProfile?.active ? game.emulatorProfile : null;
+  const preferred = game?.emulatorProfile;
+  if (preferred?.active) {
+    const marked = matrix.find((m) => m.profileId === preferred.id);
+    if (!marked || marked.support !== 'NONE') return preferred;
+  }
+
+  const usable = matrix.filter((m) => m.profile.active && m.support !== 'NONE');
+  return (
+    usable.find((m) => m.versionId === versionId)?.profile ??
+    usable.find((m) => m.versionId === null)?.profile ??
+    null
+  );
 }
 
 // ── Tạo phiên ─────────────────────────────────────────────

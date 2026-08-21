@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { Loader2, Save } from 'lucide-react';
+import { KEY_LAYOUTS } from '@/lib/emulator-keys';
 import { upsertProfile, type ActionState } from '@/app/admin/emulator/actions';
 
 export interface ProfileFormValues {
@@ -15,6 +16,13 @@ export interface ProfileFormValues {
   sessionMaxSec: number; idleTimeoutSec: number; gracePeriodSec: number; maxConcurrent: number;
   runtimeUrl: string | null; active: boolean;
 }
+
+/** Nhãn hiển thị cho từng bố cục phím máy cổ. */
+const LAYOUT_LABEL: Record<string, string> = {
+  nokia: 'Nokia', sonyericsson: 'Sony Ericsson', samsung: 'Samsung',
+  motorola: 'Motorola', lg: 'LG', siemens: 'Siemens', generic: 'Generic',
+};
+const KEY_LAYOUT_OPTIONS = KEY_LAYOUTS.map((k) => [k, LAYOUT_LABEL[k] ?? k] as [string, string]);
 
 export const EMPTY_PROFILE: ProfileFormValues = {
   slug: '', name: '', vendor: null,
@@ -51,8 +59,7 @@ export function ProfileForm({ value }: { value: ProfileFormValues }) {
       <Group title="Capability">
         <Text name="cldc" label="CLDC" defaultValue={value.cldc} />
         <Text name="midp" label="MIDP" defaultValue={value.midp} />
-        <Sel name="keyLayout" label="Bố cục phím" defaultValue={value.keyLayout}
-          options={[['nokia', 'Nokia'], ['sonyericsson', 'Sony Ericsson'], ['samsung', 'Samsung'], ['generic', 'Generic']]} />
+        <Sel name="keyLayout" label="Bố cục phím" defaultValue={value.keyLayout} options={KEY_LAYOUT_OPTIONS} />
       </Group>
 
       <div className="flex flex-wrap gap-5">

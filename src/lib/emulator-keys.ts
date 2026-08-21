@@ -68,8 +68,14 @@ export const SOFT_KEY_LABEL: Record<string, { left: string; right: string }> = {
   nokia: { left: 'Options', right: 'Back' },
   sonyericsson: { left: 'Select', right: 'Back' },
   samsung: { left: 'OK', right: 'Back' },
+  motorola: { left: 'Menu', right: 'Back' },
+  lg: { left: 'OK', right: 'Back' },
+  siemens: { left: 'Menu', right: 'Clear' },
   generic: { left: 'Left', right: 'Right' },
 };
+
+/** Các bố cục phím được hỗ trợ — dùng cho ô chọn trong khu quản trị. */
+export const KEY_LAYOUTS = Object.keys(SOFT_KEY_LABEL);
 
 export function javaKeyCode(key: EmuKey): number {
   return JAVA_KEY[key] ?? 0;

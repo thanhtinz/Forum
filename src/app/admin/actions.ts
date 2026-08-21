@@ -58,9 +58,9 @@ export async function toggleBan(id: string) {
 
 // ─────────────── Chuyên mục ───────────────
 
-function slugify(s: string): string {
+function slugify(s: string, fallback = 'muc'): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'muc';
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || fallback;
 }
 
 export type CategoryState = { ok?: boolean; error?: string };
@@ -156,4 +156,143 @@ export async function setWithdrawalStatus(id: string, status: 'APPROVED' | 'REJE
     }
   });
   revalidatePath('/admin/withdrawals');
+}
+
+// ─────────────── Diễn đàn ───────────────
+
+export type ForumState = { ok?: boolean; error?: string };
+
+const FORUM_ACCESS = ['ALL', 'MEMBERS', 'VIP', 'MODERATORS'] as const;
+type ForumAccessValue = (typeof FORUM_ACCESS)[number];
+
+function parseForumAccess(raw: unknown): ForumAccessValue {
+  const v = String(raw ?? 'ALL');
+  return (FORUM_ACCESS as readonly string[]).includes(v) ? (v as ForumAccessValue) : 'ALL';
+}
+
+export async function saveForum(_prev: ForumState, formData: FormData): Promise<ForumState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const name = String(formData.get('name') ?? '').trim();
+  const parentId = String(formData.get('parentId') ?? '').trim() || null;
+  const description = String(formData.get('description') ?? '').trim() || null;
+  const icon = String(formData.get('icon') ?? '').trim() || null;
+  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
+  const postAccess = parseForumAccess(formData.get('postAccess'));
+  const minLevel = Math.max(1, parseInt(String(formData.get('minLevel') ?? '1'), 10) || 1);
+  const vipOnly = formData.get('vipOnly') === 'on';
+
+  if (name.length < 2) return { error: 'Tên diễn đàn quá ngắn.' };
+  if (parentId && parentId === id) return { error: 'Diễn đàn không thể là cha của chính nó.' };
+
+  try {
+    if (id) {
+      await db.forum.update({ where: { id }, data: { name, parentId, description, icon, order, postAccess, minLevel, vipOnly } });
+    } else {
+      let slug = slugify(name, 'dien-dan');
+      if (await db.forum.findUnique({ where: { slug }, select: { id: true } })) slug = `${slug}-${Date.now().toString().slice(-4)}`;
+      await db.forum.create({ data: { slug, name, parentId, description, icon, order, postAccess, minLevel, vipOnly } });
+    }
+  } catch {
+    return { error: 'Không thể lưu diễn đàn.' };
+  }
+  revalidatePath('/admin/forums');
+  revalidatePath('/forum');
+  return { ok: true };
+}
+
+export async function deleteForum(id: string) {
+  await requireAdmin();
+  const forum = await db.forum.findUnique({ where: { id }, select: { threadCount: true } });
+  if (!forum) return;
+  if (forum.threadCount > 0) return; // còn chủ đề thì không xoá, tránh mất dữ liệu
+  await db.forum.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/forums');
+  revalidatePath('/forum');
+}
+
+// ─────────────── Giao diện: slide & liên kết bạn bè ───────────────
+
+export type AppearanceState = { ok?: boolean; error?: string };
+
+export async function saveSlide(_prev: AppearanceState, formData: FormData): Promise<AppearanceState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const title = String(formData.get('title') ?? '').trim();
+  const subtitle = String(formData.get('subtitle') ?? '').trim() || null;
+  const image = String(formData.get('image') ?? '').trim();
+  const link = String(formData.get('link') ?? '').trim() || null;
+  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
+  const active = formData.get('active') === 'on';
+
+  if (title.length < 2) return { error: 'Tiêu đề slide quá ngắn.' };
+  if (!image) return { error: 'Cần có ảnh nền cho slide.' };
+
+  const data = { title, subtitle, image, link, order, active };
+  try {
+    if (id) await db.slide.update({ where: { id }, data });
+    else await db.slide.create({ data });
+  } catch {
+    return { error: 'Không thể lưu slide.' };
+  }
+  revalidatePath('/admin/appearance');
+  revalidatePath('/');
+  return { ok: true };
+}
+
+export async function deleteSlide(id: string) {
+  await requireAdmin();
+  await db.slide.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/appearance');
+  revalidatePath('/');
+}
+
+export async function toggleSlide(id: string) {
+  await requireAdmin();
+  const s = await db.slide.findUnique({ where: { id }, select: { active: true } });
+  if (!s) return;
+  await db.slide.update({ where: { id }, data: { active: !s.active } });
+  revalidatePath('/admin/appearance');
+  revalidatePath('/');
+}
+
+export async function saveFriendLink(_prev: AppearanceState, formData: FormData): Promise<AppearanceState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const name = String(formData.get('name') ?? '').trim();
+  const url = String(formData.get('url') ?? '').trim();
+  const logo = String(formData.get('logo') ?? '').trim() || null;
+  const description = String(formData.get('description') ?? '').trim() || null;
+  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
+  const active = formData.get('active') === 'on';
+
+  if (name.length < 2) return { error: 'Tên liên kết quá ngắn.' };
+  if (!/^https?:\/\//i.test(url)) return { error: 'Địa chỉ phải bắt đầu bằng http:// hoặc https://' };
+
+  const data = { name, url, logo, description, order, active };
+  try {
+    if (id) await db.friendLink.update({ where: { id }, data });
+    else await db.friendLink.create({ data });
+  } catch {
+    return { error: 'Không thể lưu liên kết.' };
+  }
+  revalidatePath('/admin/appearance');
+  revalidatePath('/');
+  return { ok: true };
+}
+
+export async function deleteFriendLink(id: string) {
+  await requireAdmin();
+  await db.friendLink.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/appearance');
+  revalidatePath('/');
+}
+
+export async function toggleFriendLink(id: string) {
+  await requireAdmin();
+  const l = await db.friendLink.findUnique({ where: { id }, select: { active: true } });
+  if (!l) return;
+  await db.friendLink.update({ where: { id }, data: { active: !l.active } });
+  revalidatePath('/admin/appearance');
+  revalidatePath('/');
 }

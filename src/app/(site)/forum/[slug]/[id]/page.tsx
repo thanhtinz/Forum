@@ -2,14 +2,16 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Pin, Lock, Award, CheckCircle2, Eye, MessageSquare } from 'lucide-react';
+import { Pin, Lock, Award, CheckCircle2, Eye, MessageSquare, Star } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount, truncate } from '@/lib/utils';
 import { ThreadActionBar } from '@/components/forum/ThreadActionBar';
 import { ReplyActions } from '@/components/forum/ReplyActions';
 import { ReplyForm } from '@/components/forum/ReplyForm';
-import { HomeSidebar } from '@/components/HomeSidebar';
+import { ThreadModMenu } from '@/components/forum/ThreadModMenu';
+import { ForumSidebar } from '@/components/forum/ForumSidebar';
+import { canModerateForum } from '@/lib/moderation';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +47,18 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
   const callbackUrl = `/forum/${slug}/${id}`;
   const isOwner = userId === thread.authorId;
   const canMarkSolution = isOwner && !thread.solvedReplyId && !thread.locked;
+
+  const canModerate = await canModerateForum(
+    session?.user ? { id: session.user.id, role: (session.user as { role?: string }).role } : null,
+    thread.forumId,
+  );
+  const moveTargets = canModerate
+    ? await db.forum.findMany({
+        where: { id: { not: thread.forumId } },
+        orderBy: [{ order: 'asc' }, { name: 'asc' }],
+        select: { id: true, name: true },
+      })
+    : [];
 
   const replies = await db.thread
     .findUnique({ where: { id } })
@@ -90,6 +104,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
           <div className="mb-2 flex flex-wrap items-center gap-2">
             {thread.pinned && <span className="chip gap-1 bg-brand-100 text-brand-600 dark:bg-brand-950/50"><Pin size={11} />Ghim</span>}
             {thread.locked && <span className="chip gap-1 bg-ink-100 text-ink-500 dark:bg-ink-800"><Lock size={11} />Đã khoá</span>}
+            {thread.featured && <span className="chip gap-1 bg-violet-100 text-violet-600 dark:bg-violet-950/50"><Star size={11} />Tinh hoa</span>}
             {thread.solvedReplyId && <span className="chip gap-1 bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50"><CheckCircle2 size={11} />Đã giải quyết</span>}
             {thread.bountyPoints ? <span className="chip gap-1 bg-amber-100 text-amber-600 dark:bg-amber-950/50"><Award size={11} />Thưởng {fmtCount(thread.bountyPoints)}đ</span> : null}
           </div>
@@ -120,7 +135,10 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
             </div>
           )}
 
-          <ThreadActionBar threadId={thread.id} initialLiked={likedThread.has(thread.id)} initialLikeCount={thread.likeCount} />
+          <ThreadActionBar threadId={thread.id} initialLiked={likedThread.has(thread.id)} initialLikeCount={thread.likeCount}
+            modMenu={canModerate ? (
+              <ThreadModMenu threadId={thread.id} pinned={thread.pinned} locked={thread.locked} featured={thread.featured} forums={moveTargets} />
+            ) : null} />
         </article>
 
         <h2 id="tra-loi" className="zib-title mb-4 mt-6 flex items-center gap-2 scroll-mt-20">
@@ -171,7 +189,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
         )}
       </div>
 
-      <div className="hidden lg:block"><HomeSidebar /></div>
+      <div className="hidden lg:block lg:sticky lg:top-[72px] lg:self-start"><ForumSidebar /></div>
     </div>
   );
 }

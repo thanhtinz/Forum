@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from '@/lib/site';
+import { THEME_INIT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -26,6 +27,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="vi" suppressHydrationWarning>
+      <head>
+        {/* Đặt lớp .dark trước khi vẽ để không chớp trắng khi đang ở chế độ tối */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

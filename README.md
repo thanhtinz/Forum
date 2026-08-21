@@ -43,13 +43,13 @@ src/
 - [x] **P2** Auth.js (credentials + OAuth) + middleware bảo vệ route
 - [x] **P3** Seed: LevelRule 1–10, VipPlan 3 bậc, Medal, Category, admin, bài mẫu
 - [x] **P4a** Bộ PostCard 4 biến thể + trang chủ (slider, chuyên mục, lưới card, sidebar)
-- [ ] **P4b** Chi tiết bài viết + paywall, danh mục, tìm kiếm, bình luận
-- [ ] **P5** Điểm danh & VIP
-- [ ] **P6** Thanh toán SePay
-- [ ] **P7** Nội dung tải xuống
-- [ ] **P8** Diễn đàn
-- [ ] **P9** Người dùng & xã hội
-- [ ] **P10** Quản trị
-- [ ] **P11** Hoàn thiện (rate limit, SEO, dark mode, responsive)
+- [x] **P4b** Chi tiết bài viết + paywall, danh mục, tag, tìm kiếm, bình luận
+- [x] **P5** Điểm danh & VIP + huy chương tự động
+- [x] **P6** Thanh toán SePay (nạp qua QR, hoa hồng giới thiệu, rút tiền) — còn `Coupon`
+- [x] **P7** Cổng tải xuống có hạn mức/ngày + `/user/downloads` — còn upload S3 & CRUD file trong trình soạn
+- [x] **P8** Diễn đàn (danh sách, chủ đề, trả lời, chọn lời giải, treo thưởng)
+- [x] **P9** Người dùng & xã hội (trang cá nhân, theo dõi, đã lưu, thông báo, mời bạn, cài đặt tài khoản)
+- [x] **P10** Quản trị (bài viết, người dùng, chuyên mục, diễn đàn, báo cáo, gói VIP, rút tiền, giao diện)
+- [ ] **P11** Hoàn thiện (rate limit, dark mode toggle, backup) — đã có SEO/sitemap/robots
 
 Chi tiết đặc tả: [`.nova-spec/SPEC.md`](.nova-spec/SPEC.md) · Kế hoạch: [`.nova-spec/TODO.md`](.nova-spec/TODO.md)

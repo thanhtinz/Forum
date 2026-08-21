@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { LayoutDashboard, FileText, FolderTree, Users, Banknote, Flag, Crown } from 'lucide-react';
+import { LayoutDashboard, FileText, FolderTree, Users, Banknote, Flag, Crown, MessagesSquare, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Sub { label: string; status: string }
@@ -20,6 +20,7 @@ export const ADMIN_ITEMS: Item[] = [
     ],
   },
   { href: '/admin/categories', label: 'Chuyên mục', icon: FolderTree },
+  { href: '/admin/forums', label: 'Diễn đàn', icon: MessagesSquare },
   { href: '/admin/users', label: 'Người dùng', icon: Users },
   {
     href: '/admin/reports', label: 'Báo cáo', icon: Flag, defaultStatus: 'OPEN',
@@ -31,6 +32,7 @@ export const ADMIN_ITEMS: Item[] = [
     ],
   },
   { href: '/admin/vip-plans', label: 'Gói VIP', icon: Crown },
+  { href: '/admin/appearance', label: 'Giao diện', icon: Palette },
   {
     href: '/admin/withdrawals', label: 'Rút tiền', icon: Banknote, defaultStatus: 'ALL',
     subs: [

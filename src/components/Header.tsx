@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown, PenLine } from 'lucide-react';
+import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown, PenLine, ShieldAlert } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
@@ -20,6 +20,7 @@ const NAV_MOBILE = [
 export async function Header() {
   const session = await auth();
   const user = session?.user;
+  const role = (user as { role?: string } | undefined)?.role;
   const unread = user?.id ? await db.notification.count({ where: { userId: user.id, read: false } }) : 0;
 
   return (
@@ -58,6 +59,11 @@ export async function Header() {
               <span className="hidden items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-600 sm:flex dark:bg-amber-950/40">
                 <Coins size={13} /> {fmtCount(user.points)}
               </span>
+              {(role === 'ADMIN' || role === 'MODERATOR') && (
+                <Link href="/admin" title="Quản trị" className="hidden h-9 w-9 place-items-center rounded-full text-rose-500 hover:bg-rose-50 sm:grid dark:hover:bg-rose-950/40">
+                  <ShieldAlert size={18} />
+                </Link>
+              )}
               <Link href="/user/notifications" className="relative grid h-9 w-9 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">
                 <Bell size={18} />
                 {unread > 0 && <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent-500 px-1 text-[10px] font-bold text-white">{unread > 9 ? '9+' : unread}</span>}

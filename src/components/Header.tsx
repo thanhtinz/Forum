@@ -3,17 +3,18 @@ import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown, PenLine, Shield
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
+import { touchPresence } from '@/lib/presence';
 import { MobileNav } from './MobileNav';
 
 const NAV = [
-  { href: '/', label: 'Trang chủ', icon: LayoutGrid },
-  { href: '/forum', label: 'Diễn đàn', icon: MessagesSquare },
+  { href: '/', label: 'Diễn đàn', icon: MessagesSquare },
+  { href: '/blog', label: 'Bài viết', icon: LayoutGrid },
   { href: '/vip', label: 'VIP', icon: Crown },
 ];
 
 const NAV_MOBILE = [
-  { href: '/', label: 'Trang chủ', icon: 'LayoutGrid' as const },
-  { href: '/forum', label: 'Diễn đàn', icon: 'MessagesSquare' as const },
+  { href: '/', label: 'Diễn đàn', icon: 'MessagesSquare' as const },
+  { href: '/blog', label: 'Bài viết', icon: 'LayoutGrid' as const },
   { href: '/vip', label: 'VIP', icon: 'Crown' as const },
 ];
 
@@ -22,6 +23,7 @@ export async function Header() {
   const user = session?.user;
   const role = (user as { role?: string } | undefined)?.role;
   const unread = user?.id ? await db.notification.count({ where: { userId: user.id, read: false } }) : 0;
+  if (user?.id) await touchPresence(user.id);
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/90 backdrop-blur dark:border-ink-800 dark:bg-ink-950/90">

@@ -43,8 +43,8 @@ const KEY_HELD = 'from-brand-500 to-brand-600 text-white border-brand-700';
  *
  * Mỗi nút phát cặp press/release để runtime nhận đúng keyPressed/keyReleased.
  */
-export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, compact = false }:
-  VirtualKeypadProps & { compact?: boolean }): KeypadParts {
+export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, compact = false, fill = false }:
+  VirtualKeypadProps & { compact?: boolean; fill?: boolean }): KeypadParts {
   const soft = SOFT_KEY_LABEL[keyLayout] ?? SOFT_KEY_LABEL.generic!;
 
   const bind = (key: EmuKey) => ({
@@ -60,7 +60,9 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
     cn(KEY_FACE, held.has(key) && KEY_HELD, extra);
 
   // Cầm ngang thì chiều cao eo hẹp — phím nhỏ lại cho đủ chỗ.
-  const wheel = compact ? 'h-28 w-28' : 'h-[6.5rem] w-[6.5rem]';
+  const wheel = fill
+    ? 'h-full max-h-full aspect-square'
+    : compact ? 'h-28 w-28' : 'h-[6.5rem] w-[6.5rem]';
   const numH = compact ? 'h-9' : 'h-11';
 
   // ── D-pad ────────────────────────────────────────────────
@@ -152,21 +154,28 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
     // Trên máy thật, phím mềm nằm sát dưới màn hình, phím gọi/kết thúc ở hàng
     // dưới, vòng xoay kẹp giữa bốn phím đó, rồi mới tới bàn phím số.
     phonePad: (
-      <div className="mx-auto w-full max-w-[19rem] rounded-[1.6rem] border border-ink-800/70 bg-gradient-to-b from-ink-800/40 to-ink-900/40 p-2 shadow-[0_1px_0_rgba(255,255,255,0.05)_inset]">
+      <div
+        className={cn(
+          'rounded-[1.6rem] border border-ink-800/70 bg-gradient-to-b from-ink-800/40 to-ink-900/40 p-2 shadow-[0_1px_0_rgba(255,255,255,0.05)_inset]',
+          // Giãn kín nửa dưới màn hình; ba tầng chia chiều cao theo tỉ lệ nên
+          // phím to hết cỡ mà không tràn.
+          fill ? 'flex h-full w-full flex-col gap-1.5' : 'mx-auto w-full max-w-[19rem]',
+        )}
+      >
         {/* Phím mềm và phím gọi/kết thúc nằm chung một hàng, ngay dưới màn hình. */}
-        <div className="flex items-stretch gap-1.5">
-          {softKeys && softLeft('h-9 flex-1 rounded-l-[1.1rem] rounded-r-[0.3rem] text-[11px] font-semibold')}
-          {sendKey('h-9 w-12 rounded-[0.3rem]')}
-          {endKey('h-9 w-12 rounded-[0.3rem]')}
-          {softKeys && softRight('h-9 flex-1 rounded-r-[1.1rem] rounded-l-[0.3rem] text-[11px] font-semibold')}
+        <div className={cn('flex items-stretch gap-1.5', fill && 'min-h-0 flex-[1.1]')}>
+          {softKeys && softLeft(cn('flex-1 rounded-l-[1.1rem] rounded-r-[0.3rem] text-[11px] font-semibold', !fill && 'h-9'))}
+          {sendKey(cn('w-14 rounded-[0.3rem]', !fill && 'h-9'))}
+          {endKey(cn('w-14 rounded-[0.3rem]', !fill && 'h-9'))}
+          {softKeys && softRight(cn('flex-1 rounded-r-[1.1rem] rounded-l-[0.3rem] text-[11px] font-semibold', !fill && 'h-9'))}
         </div>
 
         {/* Vòng xoay nằm giữa, ngay trên bàn phím số. */}
-        <div className="mt-2 flex justify-center">{dpad}</div>
+        <div className={cn('flex justify-center', fill ? 'min-h-0 flex-[3]' : 'mt-2')}>{dpad}</div>
 
         {/* Bàn phím số: phím bè ngang, xếp khít nhau đúng kiểu máy cổ. */}
-        <div className="mt-2 grid grid-cols-3 gap-1">
-          {NUMPAD_ROWS.flat().map((k) => numKey(k, 'h-10 w-full rounded-lg'))}
+        <div className={cn('grid grid-cols-3 gap-1', fill ? 'min-h-0 flex-[4] grid-rows-4' : 'mt-2')}>
+          {NUMPAD_ROWS.flat().map((k) => numKey(k, cn('w-full rounded-lg', fill ? 'h-full' : 'h-10')))}
         </div>
       </div>
     ),

@@ -15,8 +15,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex min-h-screen flex-col bg-ink-100/60 dark:bg-ink-950">
       <AdminHeader user={{ name: user?.name ?? null, username: user?.username ?? null, image: user?.image ?? null, role: admin.role }} />
 
-      <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-4 px-4 py-4 lg:flex-row lg:py-6">
-        <aside className="shrink-0 lg:w-[220px]">
+      <div className="mx-auto flex w-full max-w-[1400px] flex-1 gap-4 px-4 py-4 lg:py-6">
+        <aside className="hidden shrink-0 lg:block lg:w-[220px]">
           <AdminNav />
         </aside>
         <main className="min-w-0 flex-1">{children}</main>

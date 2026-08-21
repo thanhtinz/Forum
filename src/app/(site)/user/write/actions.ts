@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { grantPoints } from '@/lib/points';
+import { checkAndAwardMedals } from '@/lib/medals';
 
 export interface WriteState {
   error?: string;
@@ -101,6 +102,7 @@ export async function createPost(_prev: WriteState, formData: FormData): Promise
   // Thưởng điểm khi đăng (nếu tự đăng ngay)
   if (AUTO_PUBLISH) {
     await grantPoints({ userId, amount: POINTS_PER_POST, reason: 'POST_CREATE', refId: post.id, note: `Đăng bài: ${title}` }).catch(() => {});
+    await checkAndAwardMedals(userId).catch(() => {});
   }
 
   revalidatePath('/');

@@ -5,6 +5,7 @@ import { requireAdmin, requireSuperAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { grantBalance } from '@/lib/balance';
+import { checkAndAwardMedals } from '@/lib/medals';
 
 // ─────────────── Bài viết ───────────────
 
@@ -12,6 +13,7 @@ export async function approvePost(id: string) {
   await requireAdmin();
   const post = await db.post.update({ where: { id }, data: { status: 'PUBLISHED', publishedAt: new Date() }, select: { authorId: true, slug: true, title: true } });
   await notify({ userId: post.authorId, type: 'SYSTEM', title: 'Bài viết đã được duyệt', content: post.title, link: `/posts/${post.slug}` });
+  await checkAndAwardMedals(post.authorId).catch(() => {});
   revalidatePath('/admin/posts');
 }
 

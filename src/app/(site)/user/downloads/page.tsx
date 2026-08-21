@@ -94,7 +94,7 @@ export default async function DownloadsPage({ searchParams }: { searchParams: Pr
                 {log.item.post
                   ? <Link href={`/posts/${log.item.post.slug}`} className="hover:text-brand-600">{log.item.post.title}</Link>
                   : 'Bài viết đã bị xoá'}
-                {log.item.version ? ` · v${log.item.version}` : ''}
+                {log.item.version ? ` · ${/^v/i.test(log.item.version) ? log.item.version : `v${log.item.version}`}` : ''}
                 {log.item.sizeBytes ? ` · ${fmtBytes(log.item.sizeBytes)}` : ''}
               </div>
             </div>

@@ -362,7 +362,12 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   const busy = phase === 'creating' || phase === 'loading' || phase === 'queued' || phase === 'reconnecting';
 
   return (
-    <div id="nova-emulator-stage" className="rounded-2xl bg-ink-950 p-3 text-ink-100 sm:p-4">
+    // Tràn viền trên điện thoại để màn hình game rộng nhất có thể; `touch-none`
+    // chặn cuộn/zoom khi ngón tay đặt lên khu vực điều khiển.
+    <div
+      id="nova-emulator-stage"
+      className="-mx-3 touch-none select-none bg-ink-950 p-3 text-ink-100 sm:mx-0 sm:rounded-2xl sm:p-4"
+    >
       {/* Thanh trên: tên game + đồng hồ phiên */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
@@ -387,7 +392,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
       <div className="flex justify-center">
         <div
           className="relative overflow-hidden rounded-lg bg-black ring-1 ring-ink-700"
-          style={{ width: '100%', maxWidth: screen.w * 1.5, aspectRatio: `${screen.w} / ${screen.h}` }}
+          style={{ width: '100%', maxWidth: screen.w * 2, aspectRatio: `${screen.w} / ${screen.h}` }}
         >
           {session?.profile.runtimeUrl ? (
             <iframe
@@ -456,7 +461,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
       </div>
 
       {/* Thanh điều khiển */}
-      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+      <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
         <Ctl onClick={togglePause} disabled={phase !== 'running' && phase !== 'paused'} label={phase === 'paused' ? 'Tiếp tục' : 'Tạm dừng'}>
           {phase === 'paused' ? <Play size={16} /> : <Pause size={16} />}
         </Ctl>
@@ -512,7 +517,8 @@ function Ctl({ onClick, children, label, disabled, danger }: {
     <button
       type="button" onClick={onClick} disabled={disabled} title={label} aria-label={label}
       className={cn(
-        'grid h-9 w-9 place-items-center rounded-lg transition-colors disabled:opacity-40',
+        // Nhỏ hơn một chút trên điện thoại để cả hàng nút vừa một dòng.
+        'grid h-8 w-8 place-items-center rounded-lg transition-colors disabled:opacity-40 sm:h-9 sm:w-9',
         danger ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30' : 'bg-ink-800 text-ink-200 hover:bg-ink-700',
       )}
     >

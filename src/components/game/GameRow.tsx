@@ -10,10 +10,12 @@ export interface GameRowProps {
   games: GameCardData[];
   /** Hàng cuộn ngang (mặc định) hay lưới 3 cột. */
   layout?: 'scroll' | 'grid';
+  /** Người xem đang dùng điện thoại — quyết định có hiện nút chơi online không. */
+  mobile?: boolean;
 }
 
 /** Một mục trên trang chủ Game: tiêu đề + link "xem tất cả" + danh sách game. */
-export function GameRow({ title, icon, href, games, layout = 'scroll' }: GameRowProps) {
+export function GameRow({ title, icon, href, games, layout = 'scroll', mobile = false }: GameRowProps) {
   if (games.length === 0) return null;
   return (
     <section>
@@ -28,11 +30,11 @@ export function GameRow({ title, icon, href, games, layout = 'scroll' }: GameRow
 
       {layout === 'grid' ? (
         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-          {games.map((g) => <GameCard key={g.id} game={g} />)}
+          {games.map((g) => <GameCard key={g.id} game={g} mobile={mobile} />)}
         </div>
       ) : (
         <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
-          {games.map((g) => <GameCard key={g.id} game={g} variant="compact" />)}
+          {games.map((g) => <GameCard key={g.id} game={g} variant="compact" mobile={mobile} />)}
         </div>
       )}
     </section>

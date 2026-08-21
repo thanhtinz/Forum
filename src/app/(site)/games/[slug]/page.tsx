@@ -4,10 +4,11 @@ import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import {
   Activity, AlertTriangle, Building2, Calendar, Clock, Cpu, Download, Eye,
-  Gamepad2, Keyboard, Languages, MonitorSmartphone, Play, Timer, Users,
+  Gamepad2, Keyboard, Languages, MonitorSmartphone, Play, Smartphone, Timer, Users,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { isMobileRequest } from '@/lib/device';
 import {
   assetUrl, avgRating, EMU_SUPPORT_BADGE, gameBadges, gameCardSelect, gameTint,
   LANGUAGE_LABEL, ORIENTATION_LABEL, toGameCard,
@@ -41,7 +42,7 @@ interface ControlHint { key: string; action: string }
 
 export default async function GameDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const session = await auth();
+  const [session, mobile] = await Promise.all([auth(), isMobileRequest()]);
   const userId = session?.user?.id;
 
   const game = await db.game.findFirst({
@@ -169,11 +170,16 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
               ))}
             </div>
 
-            {canPlay && (
+            {canPlay && (mobile ? (
               <Link href={`/games/${game.slug}/play`} className="btn-primary mt-4 !px-6">
                 <Play size={17} /> PLAY ONLINE
               </Link>
-            )}
+            ) : (
+              <p className="mt-4 flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
+                <Smartphone size={16} className="shrink-0" />
+                Chơi online chỉ mở trên điện thoại — mở trang này bằng đt để bấm PLAY ONLINE.
+              </p>
+            ))}
           </div>
         </div>
       </header>
@@ -362,14 +368,14 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
           {related.length > 0 && (
             <section>
               <h2 className="zib-title mb-3">Game liên quan</h2>
-              <GameGrid games={related.map(toGameCard)} />
+              <GameGrid games={related.map(toGameCard)} mobile={mobile} />
             </section>
           )}
         </div>
 
         {/* ── Cột phải ── */}
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-          <DownloadPanel slug={game.slug} versions={versionInfos} playOnline={game.playOnline} />
+          <DownloadPanel slug={game.slug} versions={versionInfos} playOnline={game.playOnline} mobile={mobile} />
           <GameActions
             gameId={game.id}
             initialFavorite={!!myFavorite}

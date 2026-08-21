@@ -2,9 +2,10 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
   Award, Clock, Download, Flame, Gamepad2, Languages, LayoutGrid, Library,
-  MonitorSmartphone, Shuffle, Sparkles, Trophy, Users,
+  MonitorSmartphone, Shuffle, Smartphone, Sparkles, Trophy, Users,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
+import { isMobileRequest } from '@/lib/device';
 import { db } from '@/lib/db';
 import { gameCardSelect, gameTint, toGameCard, type GameCardData } from '@/lib/game';
 import { fmtCount } from '@/lib/utils';
@@ -23,7 +24,7 @@ const PUBLISHED = { status: 'PUBLISHED' as const };
 const ROW_TAKE = 12;
 
 export default async function GamesHomePage() {
-  const session = await auth();
+  const [session, mobile] = await Promise.all([auth(), isMobileRequest()]);
   const userId = session?.user?.id;
 
   const [featured, updated, trending, mostPlayed, mostDownloaded, vietnamized, genres, platforms, resolutions, collections, totals] =
@@ -80,14 +81,21 @@ export default async function GamesHomePage() {
         <Gamepad2 className="pointer-events-none absolute -bottom-8 -right-6 opacity-10" size={190} />
       </section>
 
-      <ContinuePlaying serverGames={continueGames} />
+      {!mobile && (
+        <p className="flex items-center gap-2 rounded-2xl border border-brand-200 bg-brand-50 p-3 text-sm text-brand-700 dark:border-brand-900 dark:bg-brand-950/40 dark:text-brand-300">
+          <Smartphone size={16} className="shrink-0" />
+          Chơi online chỉ chạy trên điện thoại. Trên máy tính bạn vẫn xem thông tin và tải JAR/JAD bình thường.
+        </p>
+      )}
 
-      <GameRow title="Game nổi bật" icon={<Sparkles size={18} />} href="/games/browse?sort=popular" games={featured.map(toGameCard)} layout="grid" />
-      <GameRow title="Mới cập nhật" icon={<Clock size={18} />} href="/games/browse?sort=updated" games={updated.map(toGameCard)} />
-      <GameRow title="Phổ biến" icon={<Flame size={18} />} href="/games/browse?sort=popular" games={trending.map(toGameCard)} />
-      <GameRow title="Được chơi nhiều" icon={<Users size={18} />} href="/games/browse?sort=played" games={mostPlayed.map(toGameCard)} />
-      <GameRow title="Được tải nhiều" icon={<Download size={18} />} href="/games/browse?sort=downloaded" games={mostDownloaded.map(toGameCard)} />
-      <GameRow title="Game Việt hóa" icon={<Languages size={18} />} href="/games/browse?vi=1" games={vietnamized.map(toGameCard)} />
+      <ContinuePlaying serverGames={continueGames} mobile={mobile} />
+
+      <GameRow title="Game nổi bật" icon={<Sparkles size={18} />} href="/games/browse?sort=popular" games={featured.map(toGameCard)} layout="grid" mobile={mobile} />
+      <GameRow title="Mới cập nhật" icon={<Clock size={18} />} href="/games/browse?sort=updated" games={updated.map(toGameCard)} mobile={mobile} />
+      <GameRow title="Phổ biến" icon={<Flame size={18} />} href="/games/browse?sort=popular" games={trending.map(toGameCard)} mobile={mobile} />
+      <GameRow title="Được chơi nhiều" icon={<Users size={18} />} href="/games/browse?sort=played" games={mostPlayed.map(toGameCard)} mobile={mobile} />
+      <GameRow title="Được tải nhiều" icon={<Download size={18} />} href="/games/browse?sort=downloaded" games={mostDownloaded.map(toGameCard)} mobile={mobile} />
+      <GameRow title="Game Việt hóa" icon={<Languages size={18} />} href="/games/browse?vi=1" games={vietnamized.map(toGameCard)} mobile={mobile} />
 
       {/* Thể loại */}
       {genres.length > 0 && (

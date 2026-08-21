@@ -68,7 +68,30 @@ Runtime J2ME **không** chạy chung process với web server. Mỗi
 Nếu profile chưa có `runtimeUrl`, trang Play vẫn hoạt động (tạo phiên, đếm giờ,
 bàn phím ảo) nhưng hiển thị rõ là chưa gắn runtime và mời người dùng tải JAR về máy.
 
-## 4. Hạn mức & an toàn
+## 4. Play Online chỉ mở trên điện thoại
+
+Game Java ME thiết kế cho màn hình dọc nhỏ và bàn phím số, nên emulator chỉ bật
+trên điện thoại. Kho game (danh sách, tìm kiếm, chi tiết, tải JAR/JAD) vẫn dùng
+được ở mọi thiết bị.
+
+`src/lib/device.ts` đọc `user-agent` phía server và trả `mobile | tablet | desktop`;
+cờ `mobile` được truyền xuống `GameCard` / `GameGrid` / `GameRow` /
+`ContinuePlaying` / `DownloadPanel`.
+
+| Nơi | Điện thoại | Máy tính |
+|---|---|---|
+| Nút trên thẻ game | “Chơi ngay” | “Chi tiết” (không có link `/play`) |
+| Trang chi tiết | nút `PLAY ONLINE` | dòng nhắc mở bằng đt |
+| Khung tải | nút `PLAY ONLINE` | dòng nhắc; hàng “Play Online” ghi *Chỉ trên điện thoại* |
+| Mục “Tiếp tục chơi” | hiện | ẩn hẳn |
+| `/games/[slug]/play` | dựng emulator | màn hình hướng dẫn + nút tải game |
+
+Đây là cổng **giao diện**, không phải ranh giới bảo mật: `?force=1` trên trang
+`/play` vẫn mở emulator, để máy thật bị nhận diện nhầm (trình duyệt bật chế độ
+desktop) không bị khoá cứng. Việc bảo vệ tài nguyên do rate limit và giới hạn
+phiên đồng thời đảm nhiệm.
+
+## 5. Hạn mức & an toàn
 
 - **Phiên**: `sessionMaxSec` (thời lượng tối đa), `idleTimeoutSec` (mất heartbeat),
   `gracePeriodSec` (thời gian ân hạn khi kết nối lại) — đặt trên từng profile.
@@ -84,7 +107,7 @@ bàn phím ảo) nhưng hiển thị rõ là chưa gắn runtime và mời ngư�
   ràng buộc storage key + hạn dùng + actor. Route phục vụ file còn chặn path traversal.
 - **Rate limit**: 10 phiên/5 phút và 30 lượt tải/phút cho mỗi actor.
 
-## 5. Biến môi trường
+## 6. Biến môi trường
 
 | Biến | Mặc định | Vai trò |
 |---|---|---|
@@ -97,7 +120,7 @@ bàn phím ảo) nhưng hiển thị rõ là chưa gắn runtime và mời ngư�
 | `EMU_BREAKER_ERRORS` | `25` | Ngưỡng lỗi/5 phút để mở circuit breaker |
 | `EMU_RUNTIME_URL` | rỗng | Runtime mặc định gán cho profile khi seed |
 
-## 6. Việc còn lại
+## 7. Việc còn lại
 
 - Cắm runtime J2ME thật (hiện `runtimeUrl` để trống trong seed).
 - Chuyển rate limit và bộ đếm phiên sang Redis khi chạy nhiều instance.

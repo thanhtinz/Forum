@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Download, Gamepad2, Play, Users } from 'lucide-react';
+import { Download, Gamepad2, Play, Smartphone, Users } from 'lucide-react';
 import type { GameCardData } from '@/lib/game';
 import { gameTint, LANGUAGE_LABEL } from '@/lib/game';
 import { cn, fmtBytes, fmtCount } from '@/lib/utils';
@@ -9,13 +9,15 @@ export interface GameCardProps {
   game: GameCardData;
   /** `compact` dùng cho hàng cuộn ngang, `list` cho kết quả tìm kiếm. */
   variant?: 'grid' | 'compact' | 'list';
+  /** Người xem đang dùng điện thoại — chỉ khi đó mới hiện nút chơi online. */
+  mobile?: boolean;
 }
 
 /**
  * Thẻ game dùng chung: icon, tên, thể loại, rating, lượt chơi/tải, version,
  * dung lượng, ngôn ngữ, độ phân giải, platform, badge và hai nút Play/Download.
  */
-export function GameCard({ game, variant = 'grid' }: GameCardProps) {
+export function GameCard({ game, variant = 'grid', mobile = false }: GameCardProps) {
   const tint = gameTint(game.slug);
   const href = `/games/${game.slug}`;
 
@@ -66,7 +68,7 @@ export function GameCard({ game, variant = 'grid' }: GameCardProps) {
           {game.titleVi && <p className="truncate text-xs text-ink-500">{game.titleVi}</p>}
           <div className="mt-1 space-y-1">{meta}{stats}</div>
         </div>
-        <Actions game={game} className="hidden shrink-0 flex-col gap-1.5 sm:flex" />
+        <Actions game={game} mobile={mobile} className="hidden shrink-0 flex-col gap-1.5 sm:flex" />
       </article>
     );
   }
@@ -89,7 +91,7 @@ export function GameCard({ game, variant = 'grid' }: GameCardProps) {
         {stats}
       </div>
 
-      <Actions game={game} className="mt-3 grid grid-cols-2 gap-2" />
+      <Actions game={game} mobile={mobile} className="mt-3 grid grid-cols-2 gap-2" />
     </article>
   );
 }
@@ -127,10 +129,19 @@ function Badges({ game }: { game: GameCardData }) {
   );
 }
 
-function Actions({ game, className }: { game: GameCardData; className?: string }) {
+function Actions({ game, mobile, className }: { game: GameCardData; mobile: boolean; className?: string }) {
   return (
     <div className={className}>
-      {game.playOnline ? (
+      {/* Chơi online chỉ mở trên điện thoại; máy tính chỉ thấy đường dẫn tải. */}
+      {!mobile ? (
+        <Link
+          href={`/games/${game.slug}`}
+          className="btn-outline !px-3 !py-1.5 text-xs"
+          title="Play Online chỉ chạy trên điện thoại"
+        >
+          <Smartphone size={13} /> Chi tiết
+        </Link>
+      ) : game.playOnline ? (
         <Link href={`/games/${game.slug}/play`} className="btn-primary !px-3 !py-1.5 text-xs">
           <Play size={13} /> Chơi ngay
         </Link>

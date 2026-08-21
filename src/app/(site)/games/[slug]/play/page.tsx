@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { ChevronLeft, Cpu, Download, Info } from 'lucide-react';
+import { ChevronLeft, Cpu, Download, Info, Smartphone } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { isMobileRequest } from '@/lib/device';
 import { ORIENTATION_LABEL } from '@/lib/game';
 import { resolveProfile } from '@/lib/emulator';
 import { EmulatorStage } from '@/components/game/EmulatorStage';
@@ -18,10 +19,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function PlayGamePage({ params, searchParams }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ version?: string; profile?: string }>;
+  searchParams: Promise<{ version?: string; profile?: string; force?: string }>;
 }) {
-  const [{ slug }, sp, session] = await Promise.all([params, searchParams, auth()]);
+  const [{ slug }, sp, session, mobile] = await Promise.all([params, searchParams, auth(), isMobileRequest()]);
   const userId = session?.user?.id ?? null;
+
+  // Emulator chỉ mở trên điện thoại. `?force=1` là lối thoát cho máy thật bị
+  // nhận diện nhầm (trình duyệt bật chế độ desktop) — không quảng cáo ở nơi khác.
+  const allowed = mobile || sp.force === '1';
 
   const game = await db.game.findFirst({
     where: { slug, status: 'PUBLISHED' },
@@ -73,7 +78,29 @@ export default async function PlayGamePage({ params, searchParams }: {
         )}
       </div>
 
-      {!playable || !version ? (
+      {!allowed ? (
+        <div className="card p-8 text-center sm:p-10">
+          <Smartphone className="mx-auto text-brand-500" size={38} />
+          <p className="mt-3 text-lg font-bold">Chơi online chỉ có trên điện thoại</p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-ink-500">
+            Game Java ME làm cho màn hình dọc nhỏ và bàn phím số, nên emulator chỉ mở trên điện thoại.
+            Hãy mở đường dẫn này bằng đt, hoặc tải JAR/JAD về máy thật để chơi.
+          </p>
+          <p className="mx-auto mt-3 max-w-md break-all rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500 dark:bg-ink-800/60">
+            /games/{game.slug}/play
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Link href={`/games/${game.slug}#download`} className="btn-primary">
+              <Download size={16} /> Tải game về
+            </Link>
+            <Link href={`/games/${game.slug}`} className="btn-outline">Xem thông tin game</Link>
+          </div>
+          <p className="mt-4 text-[11px] text-ink-400">
+            Đang dùng điện thoại mà vẫn thấy màn hình này?{' '}
+            <Link href={`/games/${game.slug}/play?force=1`} className="text-brand-600 hover:underline">Mở emulator</Link>
+          </p>
+        </div>
+      ) : !playable || !version ? (
         <div className="card p-10 text-center">
           <Cpu className="mx-auto text-ink-300" size={34} />
           <p className="mt-3 font-bold">Game này chưa hỗ trợ chơi online</p>

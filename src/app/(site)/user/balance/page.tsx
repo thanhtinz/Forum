@@ -37,6 +37,7 @@ export default async function BalancePage({ searchParams }: { searchParams: Prom
         <div className="flex items-center gap-2 text-green-500"><Wallet size={18} /><span className="text-sm text-ink-500">Số dư khả dụng</span></div>
         <div className="mt-1 text-3xl font-black">{fmtVnd(user?.balance ?? 0)}</div>
         {(user?.frozenBalance ?? 0) > 0 && <p className="mt-1 text-sm text-ink-400">Đang chờ rút: {fmtVnd(user?.frozenBalance)}</p>}
+        <Link href="/user/withdraw" className="btn-ghost mt-3 !px-3 !py-1.5 text-sm"><ArrowDownRight size={15} /> Rút tiền</Link>
       </section>
 
       {/* Nạp tiền */}

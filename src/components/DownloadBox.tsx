@@ -7,6 +7,7 @@ import type { AccessReason } from '@/lib/access';
 import { fmtBytes, fmtVnd } from '@/lib/utils';
 import { unlockPost, type UnlockState } from '@/app/(site)/posts/[slug]/actions';
 import { CouponField } from './CouponField';
+import { ActionForm } from '@/components/ActionForm';
 
 export interface DownloadItemData {
   id: string;
@@ -177,7 +178,7 @@ export function DownloadBox(props: DownloadBoxProps) {
               </Link>
             )}
             {(reason === 'NEED_POINTS' || reason === 'NEED_PAYMENT') && (
-              <form action={action}>
+              <ActionForm action={action}>
                 <input type="hidden" name="postId" value={postId} />
                 <input type="hidden" name="slug" value={slug} />
                 <button type="submit" disabled={pending}
@@ -185,7 +186,7 @@ export function DownloadBox(props: DownloadBoxProps) {
                   <ShoppingBag size={18} /> {pending ? 'Đang xử lý…' : 'Mua quyền tải xuống'}
                 </button>
                 <CouponField />
-              </form>
+              </ActionForm>
             )}
             {state.error && <p className="mt-2 text-center text-sm font-medium text-red-600">{state.error}</p>}
             {state.ok && <p className="mt-2 text-center text-sm font-medium text-green-600">Đã mở khoá! Đang tải lại…</p>}

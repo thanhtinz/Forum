@@ -19,8 +19,8 @@ export default async function AdminCategoriesPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-bold text-ink-900 dark:text-white">Quản lý chuyên mục</h1>
-        <p className="text-sm text-ink-500">Tạo và sắp xếp chuyên mục (hỗ trợ một cấp con).</p>
+        <h1 className="text-xl font-bold text-ink-900 dark:text-white">Chuyên mục cửa hàng</h1>
+        <p className="text-sm text-ink-500">Chuyên mục cho bài bán hàng (hỗ trợ một cấp con). Khu vực diễn đàn cấu hình ở mục riêng.</p>
       </div>
       <CategoryManager categories={rows} />
     </div>

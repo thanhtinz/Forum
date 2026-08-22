@@ -2,6 +2,19 @@ import { db } from './db';
 import { notify } from './notify';
 
 /**
+ * Điều kiện trao tự động mà checkAndAwardMedals biết xử lý.
+ * Để ở đây (không ở actions.ts) vì file 'use server' chỉ được export hàm async.
+ */
+export const MEDAL_CONDITIONS = [
+  { value: '', label: 'Trao tay (không tự động)' },
+  { value: 'checkin_streak', label: 'Chuỗi điểm danh liên tiếp' },
+  { value: 'checkin_total', label: 'Tổng số ngày điểm danh' },
+  { value: 'posts_count', label: 'Số bài đã đăng' },
+  { value: 'level', label: 'Cấp độ đạt được' },
+] as const;
+
+
+/**
  * Kiểm tra và trao các huy chương tự động (autoGrant) mà người dùng đủ điều kiện
  * nhưng chưa sở hữu. An toàn khi gọi lặp lại (idempotent nhờ @@unique).
  *

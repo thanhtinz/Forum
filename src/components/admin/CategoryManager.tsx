@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react';
 import { useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, FolderTree, CornerDownRight } from 'lucide-react';
 import { saveCategory, deleteCategory, type CategoryState } from '@/app/admin/actions';
+import { ActionForm } from '@/components/ActionForm';
 
 export interface CatRow {
   id: string; name: string; slug: string; color: string | null; icon: string | null;
@@ -76,7 +77,7 @@ function CategoryForm({ initial, categories, onDone }: { initial: CatRow | null;
   const parentOptions = categories.filter((c) => !c.parentId && c.id !== initial?.id);
 
   return (
-    <form action={action} className="card space-y-3 p-4">
+    <ActionForm action={action} className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-bold">{initial ? 'Sửa chuyên mục' : 'Thêm chuyên mục'}</h3>
         <button type="button" onClick={onDone} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
@@ -104,6 +105,6 @@ function CategoryForm({ initial, categories, onDone }: { initial: CatRow | null;
         <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">{pending ? 'Đang lưu…' : 'Lưu'}</button>
         <button type="button" onClick={onDone} className="btn-ghost">Huỷ</button>
       </div>
-    </form>
+    </ActionForm>
   );
 }

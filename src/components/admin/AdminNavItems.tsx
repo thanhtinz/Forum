@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
-  LayoutDashboard, FileText, FolderTree, MessagesSquare, Users, Flag,
-  Crown, TicketPercent, Banknote, Images, Link2, Cloud, Sticker, Wand2,
+  LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award,
+  Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2,
   Gamepad2, Cpu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,10 +19,10 @@ export const ADMIN_GROUPS: Group[] = [
     items: [{ href: '/admin', label: 'Tổng quan', icon: LayoutDashboard, exact: true }],
   },
   {
-    title: 'Nội dung',
+    title: 'Cửa hàng',
     items: [
       {
-        href: '/admin/posts', label: 'Bài viết', icon: FileText, defaultStatus: 'ALL',
+        href: '/admin/posts', label: 'Bài bán hàng', icon: FileText, defaultStatus: 'ALL',
         subs: [
           { label: 'Tất cả', status: 'ALL' },
           { label: 'Chờ duyệt', status: 'PENDING' },
@@ -31,13 +31,29 @@ export const ADMIN_GROUPS: Group[] = [
         ],
       },
       { href: '/admin/categories', label: 'Chuyên mục', icon: FolderTree },
-      { href: '/admin/forums', label: 'Diễn đàn', icon: MessagesSquare },
+    ],
+  },
+  {
+    title: 'Diễn đàn',
+    items: [
+      { href: '/admin/forums', label: 'Khu vực', icon: MessagesSquare },
+      {
+        href: '/admin/threads', label: 'Chủ đề', icon: MessageSquareText, defaultStatus: 'ALL',
+        subs: [
+          { label: 'Tất cả', status: 'ALL' },
+          { label: 'Chờ duyệt', status: 'PENDING' },
+          { label: 'Đang hiện', status: 'PUBLISHED' },
+          { label: 'Đã ẩn', status: 'HIDDEN' },
+        ],
+      },
     ],
   },
   {
     title: 'Thành viên',
     items: [
       { href: '/admin/users', label: 'Người dùng', icon: Users },
+      { href: '/admin/levels', label: 'Cấp độ', icon: TrendingUp },
+      { href: '/admin/medals', label: 'Huy chương', icon: Award },
       {
         href: '/admin/reports', label: 'Báo cáo', icon: Flag, defaultStatus: 'OPEN',
         subs: [
@@ -52,6 +68,15 @@ export const ADMIN_GROUPS: Group[] = [
   {
     title: 'Kinh doanh',
     items: [
+      {
+        href: '/admin/orders', label: 'Đơn hàng', icon: Receipt, defaultStatus: 'ALL',
+        subs: [
+          { label: 'Tất cả', status: 'ALL' },
+          { label: 'Chờ thanh toán', status: 'PENDING' },
+          { label: 'Đã thanh toán', status: 'PAID' },
+          { label: 'Đã huỷ', status: 'CANCELLED' },
+        ],
+      },
       { href: '/admin/vip-plans', label: 'Gói VIP', icon: Crown },
       { href: '/admin/coupons', label: 'Mã giảm giá', icon: TicketPercent },
       {

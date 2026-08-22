@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react';
 import { useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, MessagesSquare, CornerDownRight, Lock, Crown } from 'lucide-react';
 import { saveForum, deleteForum, type ForumState } from '@/app/admin/actions';
+import { ActionForm } from '@/components/ActionForm';
 
 export interface ForumRow {
   id: string; name: string; slug: string; description: string | null; icon: string | null;
@@ -92,7 +93,7 @@ function ForumForm({ initial, forums, onDone }: { initial: ForumRow | null; foru
   const parentOptions = forums.filter((f) => !f.parentId && f.id !== initial?.id);
 
   return (
-    <form action={action} className="card space-y-3 p-4">
+    <ActionForm action={action} className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-bold">{initial ? 'Sửa diễn đàn' : 'Thêm diễn đàn'}</h3>
         <button type="button" onClick={onDone} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
@@ -132,6 +133,6 @@ function ForumForm({ initial, forums, onDone }: { initial: ForumRow | null; foru
         <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">{pending ? 'Đang lưu…' : 'Lưu'}</button>
         <button type="button" onClick={onDone} className="btn-ghost">Huỷ</button>
       </div>
-    </form>
+    </ActionForm>
   );
 }

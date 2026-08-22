@@ -184,6 +184,32 @@ sao cho phím số không cao vọt. Đo ở 390×844, biên độ cao–thấp 
 6300 `36–48` · 7210 `36–41` · N70 `36–40` · K750i `36–45` · RAZR `34–39` ·
 E71 `33–46` · 5800 `36–36`. Không nút nào dưới 33px.
 
+**Mũi tên bấm được rộng hơn phím số.** Mũi tên là phím bấm liên tục nhất khi
+chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so với phím số
+125×40. Hai nguyên nhân, sửa cả hai:
+
+- Mỗi mũi tên trước đây chỉ là ô `1/3 × 1/3` ở mép vòng xoay — đúng 1/9 diện
+  tích, bốn góc thành vùng chết. Nay cả vòng xoay lẫn phím bốn hướng vuông cắt
+  vùng bấm theo **góc phần tư** (`clip-path: polygon(50% 50%, …)`): bấm chỗ nào
+  ở nửa trên của vành cũng là đi lên, như máy thật.
+- Trần chiều cao cụm điều hướng bị siết quá chặt. Nới trần và chia lại tỉ lệ
+  cụm điều hướng ‧ bàn phím số trong mọi mặt phím.
+
+Riêng phím bập bênh (`rocker`), hai cánh trái–phải nay **cao hơn** thanh
+trên–dưới (`h-14` so với `h-11`) và giãn hết bề ngang cụm — để cùng chiều cao
+thì trái–phải chỉ còn ~2 500px².
+
+Diện tích vùng bấm sau khi sửa (khung nhìn 425×918, px²):
+
+| Máy | Mũi tên | Phím số | Tỉ lệ |
+|---|---|---|---|
+| 6300 (`s40`) | 6 889 | 4 480 | 1,54× |
+| N70 (`s60`) | 5 543 | 4 154 | 1,33× |
+| K750i (`se`) | 5 543 | 4 154 | 1,33× |
+| 7210 (`rocker`) | 5 603 (trái/phải) · 10 927 (lên/xuống) | 4 357 | 1,29× |
+| RAZR (`razr`) | 4 617 | 3 924 | 1,18× |
+| E71 (`qwerty`) | 4 336 | 1 628 | 2,66× |
+
 Bàn phím QWERTY của E71 xếp trên **lưới 10 cột cho cả bốn hàng** nên mọi phím
 rộng bằng nhau; riêng phím cách trải 4 cột đúng như bàn phím thật. Ba thanh
 mảnh của máy cảm ứng giữ nguyên dáng nhưng vùng bấm cao 36px — thanh 10px thì

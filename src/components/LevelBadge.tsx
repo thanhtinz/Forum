@@ -1,9 +1,5 @@
 import { cn } from '@/lib/utils';
-
-/** Biểu tượng cấp độ có thể là emoji/chữ, hoặc ảnh admin tải lên. */
-export function isLevelImage(icon: string | null | undefined): icon is string {
-  return !!icon && (icon.startsWith('/') || icon.startsWith('http://') || icon.startsWith('https://'));
-}
+import { isImageIcon } from '@/lib/icon';
 
 export interface LevelBadgeProps {
   level: number;
@@ -22,7 +18,7 @@ export interface LevelBadgeProps {
  * không có thì hiện emoji, không có nữa thì chỉ hiện "Lv{n}".
  */
 export function LevelBadge({ level, icon, color, name, hideLabel = false, className }: LevelBadgeProps) {
-  const img = isLevelImage(icon);
+  const img = isImageIcon(icon);
   return (
     <span
       title={name ? `Cấp ${level} · ${name}` : `Cấp ${level}`}

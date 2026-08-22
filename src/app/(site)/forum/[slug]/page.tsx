@@ -10,6 +10,7 @@ import { Pagination } from '@/components/Pagination';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
 import { TableHead } from '@/components/forum/TableHead';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
+import { IconGlyph } from '@/components/IconGlyph';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 15;
@@ -84,7 +85,7 @@ export default async function ForumPage({ params, searchParams }: {
           </nav>
           <div className="flex items-start gap-3">
             <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-3xl" style={{ background: `${tint}1f`, color: tint }}>
-              {forum.icon ?? <MessagesSquare size={26} />}
+              <IconGlyph icon={forum.icon} fallback={<MessagesSquare size={26} />} className="size-11" />
             </span>
             <div className="min-w-0 flex-1">
               <h1 className="flex flex-wrap items-center gap-2 text-xl font-bold">

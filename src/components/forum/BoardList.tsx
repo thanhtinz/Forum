@@ -3,6 +3,7 @@ import { MessagesSquare } from 'lucide-react';
 import { fmtCount, fmtAgo } from '@/lib/utils';
 import { FORUM_ACCESS_BADGE, forumTint } from '@/lib/forum';
 import { TableHead } from './TableHead';
+import { IconGlyph } from '@/components/IconGlyph';
 
 export interface BoardRow {
   id: string;
@@ -39,7 +40,7 @@ export function BoardList({ sections }: { sections: BoardSection[] }) {
         <section key={s.id} className="card overflow-hidden">
           <TableHead
             title={s.name}
-            icon={<span aria-hidden className="text-base leading-none">{s.icon ?? '📁'}</span>}
+            icon={<span aria-hidden className="text-base leading-none"><IconGlyph icon={s.icon} fallback="📁" className="size-5" /></span>}
             cols={{ last: 'Mới nhất', a: 'Chủ đề', b: 'Bài' }}
           />
 
@@ -60,7 +61,7 @@ function BoardRowView({ board }: { board: BoardRow }) {
   return (
     <div className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-ink-50 sm:px-4 dark:hover:bg-ink-800/50">
       <Link href={`/forum/${board.slug}`} className="grid size-10 shrink-0 place-items-center rounded-xl text-xl" style={{ background: `${tint}1f`, color: tint }}>
-        {board.icon ?? <MessagesSquare size={18} />}
+        <IconGlyph icon={board.icon} fallback={<MessagesSquare size={18} />} className="size-8" />
       </Link>
 
       <div className="min-w-0 flex-1">

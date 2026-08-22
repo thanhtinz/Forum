@@ -63,6 +63,7 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
   const isEdit = !!initial;
   const [state, action, pending] = useActionState<WriteState, FormData>(customAction ?? createPost, {});
   const [access, setAccess] = useState(initial?.access ?? 'FREE');
+  const visibleAccess = ACCESS_OPTIONS.filter((o) => canSell || !PAID_VALUES.includes(o.v));
   const isPaid = PAID_VALUES.includes(access);
   // Mọi mức khác FREE/LOGIN_REQUIRED đều khoá phần nội dung ẩn
   const hasGate = access !== 'FREE' && access !== 'LOGIN_REQUIRED';
@@ -140,8 +141,12 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
           </p>
         )}
 
+        {/* Giữ nguyên mức hiện tại nếu nó không nằm trong danh sách chọn được
+            (vd. admin đăng hàng, sau đó người không có quyền bán mở form sửa) */}
+        {!visibleAccess.some((o) => o.v === access) && <input type="hidden" name="access" value={access} />}
+
         <div className="flex flex-wrap gap-2">
-          {ACCESS_OPTIONS.filter((o) => canSell || !PAID_VALUES.includes(o.v)).map((o) => {
+          {visibleAccess.map((o) => {
             const Icon = o.icon;
             const on = access === o.v;
             return (

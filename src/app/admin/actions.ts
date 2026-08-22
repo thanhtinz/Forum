@@ -128,7 +128,7 @@ export async function saveGifConfig(_prev: GifSettingState, formData: FormData):
     update: { value: { provider, apiKey, enabled } },
     create: { key: GIF_SETTING_KEY, value: { provider, apiKey, enabled } },
   });
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/gif');
   return { ok: true };
 }
 
@@ -162,7 +162,7 @@ export async function saveR2Config(_prev: R2State, formData: FormData): Promise<
     update: { value },
     create: { key: R2_SETTING_KEY, value },
   });
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/storage');
   return { ok: true };
 }
 
@@ -176,14 +176,14 @@ export async function deleteStickerPack(id: string) {
   });
   for (const s of pack?.stickers ?? []) await deleteFile(s.storageKey ?? '');
   await db.stickerPack.delete({ where: { id } }).catch(() => {});
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/stickers');
 }
 
 export async function toggleStickerPack(id: string) {
   await requireSuperAdmin();
   const p = await db.stickerPack.findUnique({ where: { id }, select: { active: true } });
   await db.stickerPack.update({ where: { id }, data: { active: !p?.active }, select: { id: true } });
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/stickers');
 }
 
 // ─────────────── Báo cáo ───────────────
@@ -312,7 +312,7 @@ export async function saveSlide(_prev: AppearanceState, formData: FormData): Pro
   } catch {
     return { error: 'Không thể lưu slide.' };
   }
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/slides');
   revalidatePath('/');
   return { ok: true };
 }
@@ -320,7 +320,7 @@ export async function saveSlide(_prev: AppearanceState, formData: FormData): Pro
 export async function deleteSlide(id: string) {
   await requireAdmin();
   await db.slide.delete({ where: { id } }).catch(() => {});
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/slides');
   revalidatePath('/');
 }
 
@@ -329,7 +329,7 @@ export async function toggleSlide(id: string) {
   const s = await db.slide.findUnique({ where: { id }, select: { active: true } });
   if (!s) return;
   await db.slide.update({ where: { id }, data: { active: !s.active } });
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/slides');
   revalidatePath('/');
 }
 
@@ -353,7 +353,7 @@ export async function saveFriendLink(_prev: AppearanceState, formData: FormData)
   } catch {
     return { error: 'Không thể lưu liên kết.' };
   }
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/links');
   revalidatePath('/');
   return { ok: true };
 }
@@ -361,7 +361,7 @@ export async function saveFriendLink(_prev: AppearanceState, formData: FormData)
 export async function deleteFriendLink(id: string) {
   await requireAdmin();
   await db.friendLink.delete({ where: { id } }).catch(() => {});
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/links');
   revalidatePath('/');
 }
 
@@ -370,7 +370,7 @@ export async function toggleFriendLink(id: string) {
   const l = await db.friendLink.findUnique({ where: { id }, select: { active: true } });
   if (!l) return;
   await db.friendLink.update({ where: { id }, data: { active: !l.active } });
-  revalidatePath('/admin/appearance');
+  revalidatePath('/admin/links');
   revalidatePath('/');
 }
 

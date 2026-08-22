@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
-import { signIn } from '@/lib/auth';
+import { signIn, signOut } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { grantPoints } from '@/lib/points';
 import { notify } from '@/lib/notify';
@@ -98,4 +98,9 @@ export async function registerAction(_prev: AuthFormState, formData: FormData): 
     throw e;
   }
   return {};
+}
+
+/** Đăng xuất và quay về trang chủ. */
+export async function logout() {
+  await signOut({ redirectTo: '/' });
 }

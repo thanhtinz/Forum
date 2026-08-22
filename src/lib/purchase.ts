@@ -2,10 +2,12 @@ import { db } from './db';
 import { grantPoints } from './points';
 import { grantBalance } from './balance';
 import { notify } from './notify';
+import { validateCoupon, redeemCoupon, type CouponError } from './coupon';
 
 export type PurchaseOutcome =
-  | { ok: true; already?: boolean }
-  | { ok: false; error: 'NOT_PURCHASABLE' | 'INSUFFICIENT_POINTS' | 'INSUFFICIENT_BALANCE' | 'NOT_FOUND' };
+  | { ok: true; already?: boolean; discount?: number }
+  | { ok: false; error: 'NOT_PURCHASABLE' | 'INSUFFICIENT_POINTS' | 'INSUFFICIENT_BALANCE' | 'NOT_FOUND' }
+  | { ok: false; error: 'COUPON'; couponError: CouponError };
 
 /** Sinh mã đơn hiển thị (không cần chống va chạm mạnh — cột code là unique, retry hiếm). */
 function newOrderCode(): string {
@@ -34,7 +36,7 @@ export function authorShareOf(amount: number): number {
  * Idempotent ở mức thực dụng: nếu đã có đơn PAID cho (user, post) thì trả `already` mà
  * không trừ thêm.
  */
-export async function purchaseContent(userId: string, postId: string): Promise<PurchaseOutcome> {
+export async function purchaseContent(userId: string, postId: string, couponCode?: string): Promise<PurchaseOutcome> {
   try {
     return await db.$transaction(async (tx) => {
       const post = await tx.post.findUnique({
@@ -56,7 +58,23 @@ export async function purchaseContent(userId: string, postId: string): Promise<P
       if (existing) return { ok: true, already: true } as const;
 
       const isPoints = post.access === 'POINTS';
-      const price = (isPoints ? post.pricePoints : post.priceAmount) ?? 0;
+      const listPrice = (isPoints ? post.pricePoints : post.priceAmount) ?? 0;
+
+      // Mã giảm giá (không bắt buộc) — kiểm tra ngay trong transaction để tránh đua tranh.
+      let discount = 0;
+      let couponClaimId: string | null = null;
+      if (couponCode?.trim()) {
+        const check = await validateCoupon({ code: couponCode, userId, orderType: 'CONTENT', amount: listPrice }, tx);
+        if (!check.ok) return { ok: false, error: 'COUPON', couponError: check.error } as const;
+        discount = check.result.discount;
+        couponClaimId = await redeemCoupon(
+          { couponId: check.result.coupon.id, userId, totalQuantity: check.result.coupon.totalQuantity },
+          tx,
+        );
+      }
+
+      const price = Math.max(0, listPrice - discount);
+      // Tác giả ăn chia trên số tiền người mua thực trả.
       const share = authorShareOf(price);
       const creditAuthor = post.authorId !== userId && share > 0;
 
@@ -72,7 +90,8 @@ export async function purchaseContent(userId: string, postId: string): Promise<P
         await tx.order.create({
           data: {
             code: newOrderCode(), userId, type: 'CONTENT', status: 'PAID', postId: post.id,
-            amount: 0, finalAmount: 0, pointsUsed: price, payMethod: 'POINTS', paidAt: new Date(),
+            amount: 0, discount, finalAmount: 0, pointsUsed: price, payMethod: 'POINTS', paidAt: new Date(),
+            couponClaimId,
           },
         });
         // Ăn chia: tác giả nhận phần điểm còn lại
@@ -94,7 +113,8 @@ export async function purchaseContent(userId: string, postId: string): Promise<P
         await tx.order.create({
           data: {
             code: newOrderCode(), userId, type: 'CONTENT', status: 'PAID', postId: post.id,
-            amount: price, finalAmount: price, payMethod: 'BALANCE', paidAt: new Date(),
+            amount: listPrice, discount, finalAmount: price, payMethod: 'BALANCE', paidAt: new Date(),
+            couponClaimId,
           },
         });
         // Ăn chia: tác giả nhận phần số dư (VND) còn lại
@@ -118,9 +138,13 @@ export async function purchaseContent(userId: string, postId: string): Promise<P
         );
       }
 
-      return { ok: true } as const;
+      return { ok: true, discount } as const;
     });
-  } catch {
+  } catch (e) {
+    // redeemCoupon ném lỗi khi mã vừa hết lượt (đua tranh giữa hai đơn).
+    if (e instanceof Error && e.message === 'COUPON_OUT_OF_STOCK') {
+      return { ok: false, error: 'COUPON', couponError: 'OUT_OF_STOCK' };
+    }
     return { ok: false, error: 'NOT_FOUND' };
   }
 }

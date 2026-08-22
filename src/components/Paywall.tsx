@@ -6,6 +6,7 @@ import { Lock, Coins, Crown, LogIn, Wallet } from 'lucide-react';
 import type { AccessReason } from '@/lib/access';
 import { fmtCount, fmtVnd } from '@/lib/utils';
 import { unlockPost, type UnlockState } from '@/app/(site)/posts/[slug]/actions';
+import { CouponField } from './CouponField';
 
 export interface PaywallProps {
   postId: string;
@@ -64,6 +65,7 @@ export function Paywall(props: PaywallProps) {
             <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">
               <Coins size={16} /> {pending ? 'Đang mở khoá…' : `Mở khoá bằng ${fmtCount(pricePoints)} điểm`}
             </button>
+            <CouponField />
           </form>
         </>
       )}
@@ -80,6 +82,7 @@ export function Paywall(props: PaywallProps) {
               <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">
                 <Wallet size={16} /> {pending ? 'Đang xử lý…' : `Mua với ${fmtVnd(priceAmount)}`}
               </button>
+              <CouponField />
             </form>
             <Link href={`/user/balance?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="btn-outline">
               Nạp thêm

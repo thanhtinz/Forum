@@ -9,7 +9,7 @@ import { checkAndAwardMedals, MEDAL_CONDITIONS } from '@/lib/medals';
 import { GIF_SETTING_KEY } from '@/lib/gif';
 import { R2_SETTING_KEY, deleteFile } from '@/lib/storage';
 import { normalizeIcon, isPublicImageRef } from '@/lib/icon';
-import { NAV_GROUPS, isSafeNavUrl } from '@/lib/nav';
+import { NAV_GROUPS, NAV_DEFAULTS, isSafeNavUrl } from '@/lib/nav';
 import { SITE_SETTING_KEY } from '@/lib/site';
 
 // ─────────────── Bài viết ───────────────
@@ -719,4 +719,27 @@ export async function saveSiteSettings(_prev: SiteState, formData: FormData): Pr
   revalidatePath('/admin/settings');
   revalidatePath('/', 'layout');
   return { ok: true };
+}
+
+/**
+ * Thêm các mục mặc định còn thiếu vào menu.
+ * Chỉ cần lưu một mục là menu mặc định ngừng được dùng, nên phải có đường
+ * đưa chúng trở lại thành mục thật để sửa/xoá từng cái.
+ */
+export async function restoreDefaultNav(group: string) {
+  await requireAdmin();
+  if (!NAV_GROUPS.some((g) => g.value === group)) return;
+
+  const existing = await db.navLink.findMany({ where: { group }, select: { url: true, order: true } });
+  const have = new Set(existing.map((e) => e.url));
+  const missing = NAV_DEFAULTS[group as 'header' | 'footer'].filter((d) => !have.has(d.url));
+  if (missing.length === 0) return;
+
+  // Nối vào sau các mục đang có để không xáo trộn thứ tự admin đã sắp.
+  let order = existing.length ? Math.max(...existing.map((e) => e.order)) + 1 : 0;
+  await db.navLink.createMany({
+    data: missing.map((d) => ({ label: d.label, url: d.url, icon: d.icon || null, group, order: order++ })),
+  });
+  revalidatePath('/admin/nav');
+  revalidatePath('/', 'layout');
 }

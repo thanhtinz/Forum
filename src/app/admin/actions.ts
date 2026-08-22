@@ -743,3 +743,50 @@ export async function restoreDefaultNav(group: string) {
   revalidatePath('/admin/nav');
   revalidatePath('/', 'layout');
 }
+
+// ─────────────── Điều hành viên diễn đàn ───────────────
+
+export type ModState = { ok?: boolean; error?: string };
+
+export async function addForumModerator(_prev: ModState, formData: FormData): Promise<ModState> {
+  await requireAdmin();
+  const forumId = String(formData.get('forumId') ?? '').trim();
+  const username = String(formData.get('username') ?? '').trim().replace(/^@/, '');
+  if (!forumId) return { error: 'Thiếu diễn đàn.' };
+  if (!username) return { error: 'Hãy nhập tên đăng nhập của thành viên.' };
+
+  const forum = await db.forum.findUnique({ where: { id: forumId }, select: { id: true, name: true } });
+  if (!forum) return { error: 'Không tìm thấy khu vực này.' };
+
+  const user = await db.user.findFirst({
+    where: { username: { equals: username, mode: 'insensitive' } },
+    select: { id: true, username: true, name: true, role: true, status: true },
+  });
+  if (!user) return { error: `Không có thành viên nào tên “${username}”.` };
+  if (user.status === 'BANNED') return { error: 'Thành viên này đang bị khoá.' };
+  // Admin/mod toàn site đã điều hành được mọi khu vực rồi, gán thêm chỉ gây rối danh sách.
+  if (user.role === 'ADMIN' || user.role === 'MODERATOR') {
+    return { error: 'Thành viên này đã có quyền điều hành toàn site, không cần gán riêng.' };
+  }
+
+  const dup = await db.forumModerator.findUnique({
+    where: { forumId_userId: { forumId, userId: user.id } }, select: { id: true },
+  });
+  if (dup) return { error: 'Thành viên này đã là điều hành viên của khu vực.' };
+
+  await db.forumModerator.create({ data: { forumId, userId: user.id }, select: { id: true } });
+  await notify({
+    userId: user.id, type: 'SYSTEM',
+    title: 'Bạn được giao quyền điều hành',
+    content: `Bạn có thể kiểm duyệt khu vực “${forum.name}”.`,
+    link: '/',
+  });
+  revalidatePath('/admin/moderators');
+  return { ok: true };
+}
+
+export async function removeForumModerator(id: string) {
+  await requireAdmin();
+  await db.forumModerator.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/moderators');
+}

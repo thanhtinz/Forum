@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
-  LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award,
+  LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award, ShieldCheck,
   Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2, Menu, Settings,
   Gamepad2, Cpu,
 } from 'lucide-react';
@@ -42,6 +42,7 @@ export const ADMIN_GROUPS: Group[] = [
     title: 'Diễn đàn',
     items: [
       { href: '/admin/forums', label: 'Khu vực', icon: MessagesSquare },
+      { href: '/admin/moderators', label: 'Điều hành viên', icon: ShieldCheck },
       {
         href: '/admin/threads', label: 'Chủ đề', icon: MessageSquareText, defaultStatus: 'ALL',
         subs: [

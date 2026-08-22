@@ -43,6 +43,22 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const base = q ? `/admin/users?q=${encodeURIComponent(q)}` : '/admin/users';
 
+  // Lệnh cấm còn hiệu lực của những người đang hiển thị (hết hạn thì bỏ qua).
+  const now = new Date();
+  const bans = users.length
+    ? await db.ban.findMany({
+        where: {
+          userId: { in: users.map((u) => u.id) },
+          OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        },
+        orderBy: { createdAt: 'desc' },
+        select: { userId: true, scope: true, reason: true, expiresAt: true },
+      })
+    : [];
+  const bansOf = (userId: string) =>
+    bans.filter((b) => b.userId === userId)
+      .map((b) => ({ scope: b.scope, reason: b.reason, expiresAt: b.expiresAt?.toISOString() ?? null }));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -82,7 +98,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                   <span className="hidden sm:inline">{format(u.createdAt, 'dd/MM/yyyy')}</span>
                 </div>
               </div>
-              <UserRowActions id={u.id} role={u.role} banned={banned} canManageRole={isSuperAdmin} isAdmin={u.role === 'ADMIN'} />
+              <UserRowActions id={u.id} username={u.username ?? ''} role={u.role} banned={banned}
+                bans={bansOf(u.id)} canManageRole={isSuperAdmin} isAdmin={u.role === 'ADMIN'} />
             </div>
           );
         })}

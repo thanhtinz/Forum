@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Smile, Sticker, Search, Loader2, ImageOff } from 'lucide-react';
-import { EMOJI_GROUPS, STICKER_PACKS } from '@/lib/emoji';
+import { EMOJI_GROUPS } from '@/lib/emoji';
 import { cn } from '@/lib/utils';
 
 type Tab = 'emoji' | 'sticker' | 'gif';
@@ -89,29 +89,65 @@ function EmojiTab({ onPick }: { onPick: (e: string) => void }) {
   );
 }
 
+interface StickerPackData { id: string; name: string; stickers: { id: string; name: string; url: string }[] }
+
 function StickerTab({ onPick }: { onPick: (src: string, alt: string) => void }) {
-  const [pack, setPack] = useState(STICKER_PACKS[0].key);
-  const current = STICKER_PACKS.find((p) => p.key === pack) ?? STICKER_PACKS[0];
+  const [packs, setPacks] = useState<StickerPackData[]>([]);
+  const [active, setActive] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/stickers')
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        const list: StickerPackData[] = j.packs ?? [];
+        setPacks(list);
+        setActive(list[0]?.id ?? null);
+      })
+      .catch(() => { if (alive) setPacks([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
+
+  if (loading) {
+    return <div className="flex justify-center py-10 text-ink-400"><Loader2 size={20} className="animate-spin" /></div>;
+  }
+
+  if (packs.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-2 p-8 text-center text-sm text-ink-400">
+        <ImageOff size={24} />
+        <p>Chưa có bộ sticker nào. Quản trị viên có thể tải lên trong trang quản trị.</p>
+      </div>
+    );
+  }
+
+  const current = packs.find((p) => p.id === active) ?? packs[0];
+
   return (
     <div>
       <div className="grid max-h-[250px] grid-cols-4 gap-1.5 overflow-y-auto p-2">
-        {current.items.map((s) => (
-          <button key={s.id} type="button" onClick={() => onPick(s.src, s.alt)} title={s.alt}
+        {current.stickers.map((s) => (
+          <button key={s.id} type="button" onClick={() => onPick(s.url, s.name)} title={s.name}
             className="rounded-lg p-0.5 transition-transform hover:scale-105 hover:bg-ink-100 dark:hover:bg-ink-800">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={s.src} alt={s.alt} className="aspect-square w-full" />
+            <img src={s.url} alt={s.name} loading="lazy" className="aspect-square w-full object-contain" />
           </button>
         ))}
       </div>
-      <div className="flex border-t border-ink-100 dark:border-ink-800">
-        {STICKER_PACKS.map((p) => (
-          <button key={p.key} type="button" onClick={() => setPack(p.key)}
-            className={cn('flex-1 truncate px-2 py-1.5 text-xs font-medium',
-              pack === p.key ? 'bg-ink-100 text-brand-600 dark:bg-ink-800' : 'text-ink-500 hover:bg-ink-50 dark:hover:bg-ink-800/50')}>
-            {p.label}
-          </button>
-        ))}
-      </div>
+      {packs.length > 1 && (
+        <div className="flex overflow-x-auto border-t border-ink-100 dark:border-ink-800">
+          {packs.map((p) => (
+            <button key={p.id} type="button" onClick={() => setActive(p.id)}
+              className={cn('shrink-0 whitespace-nowrap px-3 py-1.5 text-xs font-medium',
+                current.id === p.id ? 'bg-ink-100 text-brand-600 dark:bg-ink-800' : 'text-ink-500 hover:bg-ink-50 dark:hover:bg-ink-800/50')}>
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

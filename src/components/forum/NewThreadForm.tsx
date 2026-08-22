@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { PenLine } from 'lucide-react';
+import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { createThread, type ThreadState } from '@/app/(site)/forum/actions';
 
 export function NewThreadForm({ forumSlug }: { forumSlug: string }) {
@@ -18,7 +19,8 @@ export function NewThreadForm({ forumSlug }: { forumSlug: string }) {
 
       <div>
         <label className="mb-1 block text-sm font-medium">Nội dung</label>
-        <textarea name="content" required minLength={10} rows={8} placeholder="Chia sẻ chi tiết nội dung, câu hỏi hoặc thảo luận của bạn…" className="input resize-y" />
+        <BBCodeEditor name="content" required minLength={10} rows={9}
+          placeholder="Chia sẻ chi tiết nội dung, câu hỏi hoặc thảo luận của bạn…" />
         <p className="mt-1 text-xs text-ink-400">Xuống dòng 2 lần để tách đoạn.</p>
       </div>
 

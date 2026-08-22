@@ -12,9 +12,9 @@ function safeSrc(url: string): string | null {
   }
 }
 
-/** Sticker/emoji ảnh thì nhỏ, ảnh tải lên và GIF thì to hơn. */
+/** Sticker hiển thị nhỏ như emoji lớn; ảnh tải lên và GIF thì to hơn. */
 function isSticker(src: string): boolean {
-  return src.startsWith('/stickers/');
+  return src.includes('/stickers/');
 }
 
 const IMG = /!\[([^\]]*)\]\(([^)\s]+)\)/g;

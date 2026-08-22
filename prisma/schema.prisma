@@ -178,6 +178,9 @@ model Post {
   unlockLikes    Int?     // LIKE_GOAL: số lượt thích cần đạt để mở cho mọi người
   unlockComments Int?     // COMMENT_GOAL: số bình luận cần đạt để mở cho mọi người
   hiddenContent String?   @db.Text  // phần nội dung ẩn sau paywall
+  // Mã BBCode gốc do người dùng gõ — giữ lại để sửa bài không mất định dạng.
+  contentSource String?   @db.Text
+  hiddenSource  String?   @db.Text
   faq         Json?       // [{ q, a }] — câu hỏi thường gặp của bài
 
   viewCount    Int @default(0)
@@ -389,6 +392,8 @@ model Thread {
 
   title   String
   content String @db.Text
+  // Mã BBCode gốc — giữ để sửa chủ đề không mất định dạng.
+  contentSource String? @db.Text
 
   status ThreadStatus @default(PUBLISHED)
   pinned Boolean      @default(false)
@@ -968,6 +973,32 @@ enum BanScope {
 // ============================================================
 // CẤU HÌNH / TRANG CHỦ
 // ============================================================
+
+model StickerPack {
+  id       String @id @default(cuid())
+  slug     String @unique
+  name     String
+  order    Int    @default(0)
+  active   Boolean @default(true)
+
+  stickers Sticker[]
+
+  createdAt DateTime @default(now())
+}
+
+model Sticker {
+  id     String @id @default(cuid())
+  packId String
+  pack   StickerPack @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  name String
+  url  String  @db.Text
+  /** Khoá đối tượng trên R2 để xoá được khi gỡ pack. */
+  storageKey String? @db.Text
+  order Int @default(0)
+
+  @@index([packId])
+}
 
 model SiteSetting {
   key       String   @id

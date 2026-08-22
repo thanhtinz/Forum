@@ -7,6 +7,7 @@ import { notify } from '@/lib/notify';
 import { grantBalance } from '@/lib/balance';
 import { checkAndAwardMedals } from '@/lib/medals';
 import { GIF_SETTING_KEY } from '@/lib/gif';
+import { R2_SETTING_KEY, deleteFile } from '@/lib/storage';
 
 // ─────────────── Bài viết ───────────────
 
@@ -129,6 +130,60 @@ export async function saveGifConfig(_prev: GifSettingState, formData: FormData):
   });
   revalidatePath('/admin/appearance');
   return { ok: true };
+}
+
+// ─────────────── Lưu trữ Cloudflare R2 ───────────────
+
+export type R2State = { ok?: boolean; error?: string };
+
+export async function saveR2Config(_prev: R2State, formData: FormData): Promise<R2State> {
+  await requireSuperAdmin();
+  const accountId = String(formData.get('accountId') ?? '').trim();
+  const accessKeyId = String(formData.get('accessKeyId') ?? '').trim();
+  const secretAccessKey = String(formData.get('secretAccessKey') ?? '').trim();
+  const bucket = String(formData.get('bucket') ?? '').trim();
+  const publicUrl = String(formData.get('publicUrl') ?? '').trim().replace(/\/$/, '');
+  const enabled = formData.get('enabled') === 'on';
+
+  const prev = ((await db.siteSetting.findUnique({ where: { key: R2_SETTING_KEY } }))?.value ?? {}) as Record<string, string>;
+  // Để trống khoá bí mật nghĩa là giữ nguyên khoá đang lưu
+  const secret = secretAccessKey || prev.secretAccessKey || '';
+
+  if (enabled && !(accountId && accessKeyId && secret && bucket && publicUrl)) {
+    return { error: 'Hãy điền đủ Account ID, Access Key, Secret, Bucket và địa chỉ công khai trước khi bật.' };
+  }
+  if (publicUrl && !/^https?:\/\//.test(publicUrl)) {
+    return { error: 'Địa chỉ công khai phải bắt đầu bằng http:// hoặc https://' };
+  }
+
+  const value = { accountId, accessKeyId, secretAccessKey: secret, bucket, publicUrl, enabled };
+  await db.siteSetting.upsert({
+    where: { key: R2_SETTING_KEY },
+    update: { value },
+    create: { key: R2_SETTING_KEY, value },
+  });
+  revalidatePath('/admin/appearance');
+  return { ok: true };
+}
+
+// ─────────────── Bộ sticker ───────────────
+
+export async function deleteStickerPack(id: string) {
+  await requireSuperAdmin();
+  const pack = await db.stickerPack.findUnique({
+    where: { id },
+    select: { stickers: { select: { storageKey: true } } },
+  });
+  for (const s of pack?.stickers ?? []) await deleteFile(s.storageKey ?? '');
+  await db.stickerPack.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/appearance');
+}
+
+export async function toggleStickerPack(id: string) {
+  await requireSuperAdmin();
+  const p = await db.stickerPack.findUnique({ where: { id }, select: { active: true } });
+  await db.stickerPack.update({ where: { id }, data: { active: !p?.active }, select: { id: true } });
+  revalidatePath('/admin/appearance');
 }
 
 // ─────────────── Báo cáo ───────────────

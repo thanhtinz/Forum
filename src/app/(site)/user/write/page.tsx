@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { WriteForm, type CatOption } from '@/components/write/WriteForm';
+import { canSellContent } from '@/lib/sell-permission';
 
 export const metadata: Metadata = { title: 'Đăng bài viết' };
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ export default async function WritePage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <WriteForm categories={options} />
+      <WriteForm categories={options} canSell={canSellContent((session.user as { role?: string }).role)} />
     </div>
   );
 }

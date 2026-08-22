@@ -42,7 +42,7 @@ export function DownloadsEditor({ initial }: { initial?: DownloadDraft[] }) {
 
       {items.length === 0 && (
         <p className="rounded-lg bg-ink-50 px-3 py-2.5 text-sm text-ink-500 dark:bg-ink-800/50">
-          Chưa có tệp nào. Thêm tệp để người mua tải về sau khi mở khoá.
+          Chưa có tệp nào. Thêm tệp để người xem tải về khi đủ quyền.
         </p>
       )}
 

@@ -77,6 +77,9 @@ model User {
   following      Follow[] @relation("Follower")
   reportsMade    Report[] @relation("Reporter")
   bans           Ban[]
+  convosA        Conversation[] @relation("ConvoA")
+  convosB        Conversation[] @relation("ConvoB")
+  messagesSent   Message[]
 
   @@index([level])
   @@index([vipTier])
@@ -1026,4 +1029,46 @@ model FriendLink {
   description String?
   order  Int     @default(0)
   active Boolean @default(true)
+}
+
+
+// ============================================================
+// TIN NHẮN RIÊNG
+// ============================================================
+
+model Conversation {
+  id String @id @default(cuid())
+
+  // Hội thoại 1–1. Luôn lưu userAId < userBId để một cặp chỉ có một hội thoại,
+  // nhờ vậy @@unique chặn được trùng bất kể ai nhắn trước.
+  userAId String
+  userBId String
+  userA   User   @relation("ConvoA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB   User   @relation("ConvoB", fields: [userBId], references: [id], onDelete: Cascade)
+
+  lastMessageAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  messages Message[]
+
+  @@unique([userAId, userBId])
+  @@index([userAId, lastMessageAt])
+  @@index([userBId, lastMessageAt])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  content String    @db.Text
+  readAt  DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderId, createdAt])
 }

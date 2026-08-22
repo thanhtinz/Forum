@@ -31,6 +31,7 @@ export async function Footer() {
         <p>© {new Date().getFullYear()} Nova Platform. Nền tảng blog + diễn đàn.</p>
         <nav className="flex items-center gap-4">
           <Link href="/" className="hover:text-brand-600">Diễn đàn</Link>
+          <Link href="/shop" className="hover:text-brand-600">Cửa hàng</Link>
           <Link href="/blog" className="hover:text-brand-600">Bài viết</Link>
           <Link href="/vip" className="hover:text-brand-600">VIP</Link>
           <Link href="/search" className="hover:text-brand-600">Tìm kiếm</Link>

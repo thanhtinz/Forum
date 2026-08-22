@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown, PenLine, ShieldAlert } from 'lucide-react';
+import { Search, Bell, Coins, LayoutGrid, MessagesSquare, Crown, PenLine, ShieldAlert, ShoppingBag } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
@@ -9,12 +9,14 @@ import { ThemeToggle } from './ThemeToggle';
 
 const NAV = [
   { href: '/', label: 'Diễn đàn', icon: MessagesSquare },
+  { href: '/shop', label: 'Cửa hàng', icon: ShoppingBag },
   { href: '/blog', label: 'Bài viết', icon: LayoutGrid },
   { href: '/vip', label: 'VIP', icon: Crown },
 ];
 
 const NAV_MOBILE = [
   { href: '/', label: 'Diễn đàn', icon: 'MessagesSquare' as const },
+  { href: '/shop', label: 'Cửa hàng', icon: 'ShoppingBag' as const },
   { href: '/blog', label: 'Bài viết', icon: 'LayoutGrid' as const },
   { href: '/vip', label: 'VIP', icon: 'Crown' as const },
 ];

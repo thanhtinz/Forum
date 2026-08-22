@@ -532,6 +532,10 @@ async function main() {
 
     { slug: 'lg-kp500', name: 'LG KP500 Cookie (2008)', vendor: 'LG', screenWidth: 240, screenHeight: 400, keyLayout: 'lg', saveState: true },
 
+    // Máy cảm ứng thuần — không phím cứng, chơi bằng cách chạm lên màn hình.
+    { slug: 'samsung-s5233', name: 'Samsung S5233 Star (2009)', vendor: 'Samsung', screenWidth: 240, screenHeight: 400, keyLayout: 'samsung', saveState: true },
+    { slug: 'nokia-5230', name: 'Nokia 5230 (2009)', vendor: 'Nokia', screenWidth: 360, screenHeight: 640, keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
+
     { slug: 'siemens-cx65', name: 'Siemens CX65 (2004)', vendor: 'Siemens', screenWidth: 132, screenHeight: 176, keyLayout: 'siemens', cldc: '1.0', midp: '2.0', ramLimitMb: 64 },
 
     // ── Máy ảo chung ──

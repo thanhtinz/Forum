@@ -109,91 +109,76 @@ export function useKeypadParts({
 
   // Cầm ngang thì chiều cao eo hẹp — phím nhỏ lại cho đủ chỗ.
   const wheel = fill
-    ? 'h-full max-h-[8.5rem] aspect-square'
+    ? 'h-full max-h-[10.5rem] aspect-square'
     : compact ? 'h-28 w-28' : 'h-[6.5rem] w-[6.5rem]';
   const numH = compact ? 'h-9' : 'h-11';
 
   // ── D-pad ────────────────────────────────────────────────
-  const arrows: { key: EmuKey; icon: React.ReactNode; at: string }[] = [
-    { key: 'UP', icon: <ChevronUp size={18} />, at: 'top-0 left-1/2 -translate-x-1/2' },
-    { key: 'DOWN', icon: <ChevronDown size={18} />, at: 'bottom-0 left-1/2 -translate-x-1/2' },
-    { key: 'LEFT', icon: <ChevronLeft size={18} />, at: 'left-0 top-1/2 -translate-y-1/2' },
-    { key: 'RIGHT', icon: <ChevronRight size={18} />, at: 'right-0 top-1/2 -translate-y-1/2' },
+  /**
+   * Vùng bấm của bốn mũi tên cắt theo **góc phần tư** chứ không phải ô vuông
+   * nhỏ ở mép: trên máy thật bấm chỗ nào ở nửa trên của vành cũng là đi lên.
+   * Cách cũ mỗi mũi tên chỉ chiếm 1/9 vòng, bốn góc thành vùng chết — mà mũi
+   * tên lại là phím bấm nhiều nhất khi chơi.
+   */
+  const NAV_ZONES: { key: EmuKey; icon: React.ReactNode; clip: string; at: string }[] = [
+    { key: 'UP', icon: <ChevronUp size={20} />, clip: 'polygon(50% 50%, 0% 0%, 100% 0%)', at: 'items-start justify-center pt-1.5' },
+    { key: 'RIGHT', icon: <ChevronRight size={20} />, clip: 'polygon(50% 50%, 100% 0%, 100% 100%)', at: 'items-center justify-end pr-1.5' },
+    { key: 'DOWN', icon: <ChevronDown size={20} />, clip: 'polygon(50% 50%, 100% 100%, 0% 100%)', at: 'items-end justify-center pb-1.5' },
+    { key: 'LEFT', icon: <ChevronLeft size={20} />, clip: 'polygon(50% 50%, 0% 100%, 0% 0%)', at: 'items-center justify-start pl-1.5' },
   ];
 
-  const dpad = skinned ? (
-    /**
-     * Vòng xoay của skin máy thật: vành bạc trơn, nút chọn hình vuông bo góc ở
-     * tâm. Máy thật không in mũi tên lên vành nên bốn mũi tên để mờ, vừa đủ
-     * thấy vùng bấm mà không phá dáng.
-     */
-    <div className={cn(
-      'relative shrink-0 rounded-full border',
-      dark
-        ? 'border-black/70 bg-gradient-to-b from-ink-700 to-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset,0_-2px_4px_rgba(0,0,0,0.5)_inset,0_3px_6px_rgba(0,0,0,0.6)]'
-        : 'border-ink-500/50 bg-gradient-to-b from-ink-200 to-ink-400 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_-2px_4px_rgba(0,0,0,0.3)_inset,0_3px_6px_rgba(0,0,0,0.5)]',
-      wheel,
-    )}>
-      {arrows.map((a) => (
+  /** Cụm điều hướng: `round` là vòng xoay, `square` là phím bốn hướng vuông. */
+  const navPad = (shape: 'round' | 'square', size: string) => (
+    <div
+      className={cn(
+        'relative shrink-0 border',
+        shape === 'round' ? 'rounded-full' : 'rounded-2xl',
+        skinned
+          ? dark
+            ? 'border-black/70 bg-gradient-to-b from-ink-700 to-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset,0_-2px_4px_rgba(0,0,0,0.5)_inset,0_3px_6px_rgba(0,0,0,0.6)]'
+            : 'border-ink-500/50 bg-gradient-to-b from-ink-200 to-ink-400 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_-2px_4px_rgba(0,0,0,0.3)_inset,0_3px_6px_rgba(0,0,0,0.5)]'
+          : 'border-ink-950/70 bg-gradient-to-b from-ink-700 to-ink-800 shadow-[0_2px_6px_rgba(0,0,0,0.5)]',
+        size,
+      )}
+    >
+      {NAV_ZONES.map((z) => (
         <button
-          key={a.key}
+          key={z.key}
           type="button"
-          {...bind(a.key)}
+          {...bind(z.key)}
+          style={{ clipPath: z.clip }}
           className={cn(
-            'absolute grid h-1/3 w-1/3 place-items-center rounded-full transition active:scale-95',
-            dark ? 'text-ink-400/60' : 'text-ink-600/50',
-            held.has(a.key) && 'bg-brand-500/80 !text-white',
-            a.at,
+            'absolute inset-0 flex transition',
+            z.at,
+            skinned ? (dark ? 'text-ink-400/60' : 'text-ink-600/50') : 'text-ink-200',
+            held.has(z.key) && 'bg-brand-500/80 !text-white',
           )}
         >
-          {a.icon}
+          {z.icon}
         </button>
       ))}
       <button
         type="button"
         {...bind('FIRE')}
-        className={cn(
-          'absolute left-1/2 top-1/2 grid h-[36%] w-[36%] -translate-x-1/2 -translate-y-1/2 place-items-center',
-          'rounded-[32%] border transition active:translate-y-px',
-          dark
-            ? 'border-black/70 bg-gradient-to-b from-ink-600 to-ink-800 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_2px_4px_rgba(0,0,0,0.6)]'
-            : 'border-ink-500/60 bg-gradient-to-b from-ink-100 to-ink-300 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_2px_4px_rgba(0,0,0,0.45)]',
-          held.has('FIRE') && 'from-brand-400 to-brand-600',
-        )}
         aria-label={EMU_KEY_LABEL.FIRE}
-      />
-    </div>
-  ) : (
-    // Vòng xoay kiểu Nokia: vành tròn, nút OK ở giữa — máy nào cũng dùng kiểu này.
-    <div className={cn('relative shrink-0 rounded-full border border-ink-950/70 bg-gradient-to-b from-ink-700 to-ink-800 shadow-[0_2px_6px_rgba(0,0,0,0.5)]', wheel)}>
-      {arrows.map((a) => (
-        <button
-          key={a.key}
-          type="button"
-          {...bind(a.key)}
-          className={cn(
-            'absolute grid h-1/3 w-1/3 place-items-center rounded-full text-ink-200 transition active:scale-95',
-            held.has(a.key) && 'bg-brand-500/80 text-white',
-            a.at,
-          )}
-        >
-          {a.icon}
-        </button>
-      ))}
-      <button
-        type="button"
-        {...bind('FIRE')}
         className={cn(
-          'absolute left-1/2 top-1/2 grid h-[38%] w-[38%] -translate-x-1/2 -translate-y-1/2 place-items-center',
-          'rounded-full border border-ink-950/70 bg-gradient-to-b from-ink-600 to-ink-700 text-[10px] font-bold tracking-wide text-ink-100',
-          'shadow-[0_1px_0_rgba(255,255,255,0.1)_inset,0_2px_4px_rgba(0,0,0,0.5)] transition active:translate-y-px',
-          held.has('FIRE') && 'from-brand-500 to-brand-600 text-white',
+          'absolute left-1/2 top-1/2 z-10 grid h-[40%] w-[40%] -translate-x-1/2 -translate-y-1/2 place-items-center',
+          'border transition active:translate-y-px',
+          shape === 'round' ? 'rounded-[32%]' : 'rounded-lg',
+          skinned
+            ? dark
+              ? 'border-black/70 bg-gradient-to-b from-ink-600 to-ink-800 text-ink-100 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_2px_4px_rgba(0,0,0,0.6)]'
+              : 'border-ink-500/60 bg-gradient-to-b from-ink-100 to-ink-300 text-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_2px_4px_rgba(0,0,0,0.45)]'
+            : 'border-ink-950/70 bg-gradient-to-b from-ink-600 to-ink-700 text-ink-100 shadow-[0_1px_0_rgba(255,255,255,0.1)_inset,0_2px_4px_rgba(0,0,0,0.5)]',
+          held.has('FIRE') && '!from-brand-500 !to-brand-600 !text-white',
         )}
       >
-        OK
+        <span className="text-[10px] font-bold tracking-wide">OK</span>
       </button>
     </div>
   );
+
+  const dpad = navPad('round', wheel);
 
   /** Một phím số: chữ số to ở giữa, chữ cái in nhỏ bên dưới như phím máy thật. */
   const numKey = (k: EmuKey, extra: string) => {
@@ -278,32 +263,25 @@ export function useKeypadParts({
     </div>
   );
 
-  /** Phím bốn hướng vuông của S60 / máy đời đầu. */
-  const squarePad = (
-    <div className="grid h-full max-h-[7.5rem] shrink-0 grid-cols-3 grid-rows-3 gap-0.5"
-      style={{ aspectRatio: '1 / 1' }}>
-      <span />
-      <button type="button" {...bind('UP')} className={face('UP', 'rounded-t-xl rounded-b-sm')}><ChevronUp size={16} /></button>
-      <span />
-      <button type="button" {...bind('LEFT')} className={face('LEFT', 'rounded-l-xl rounded-r-sm')}><ChevronLeft size={16} /></button>
-      <button type="button" {...bind('FIRE')} className={face('FIRE', 'rounded-sm text-[10px] font-bold')}>OK</button>
-      <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'rounded-r-xl rounded-l-sm')}><ChevronRight size={16} /></button>
-      <span />
-      <button type="button" {...bind('DOWN')} className={face('DOWN', 'rounded-b-xl rounded-t-sm')}><ChevronDown size={16} /></button>
-      <span />
-    </div>
-  );
+  /** Phím bốn hướng vuông của S60 — cùng vùng bấm góc phần tư như vòng xoay. */
+  const squarePad = navPad('square', 'h-full max-h-[10rem] aspect-square');
 
-  /** Phím bập bênh nằm ngang của máy đời đầu / Samsung / Siemens. */
+  /**
+   * Phím bập bênh nằm ngang của máy đời đầu / Samsung / Siemens.
+   *
+   * Hai cánh trái–phải cao hơn thanh trên–dưới: đo thực tế cho thấy để cùng
+   * chiều cao thì trái–phải chỉ còn ~2 500px² trong khi phím số đã 4 300px²,
+   * mà mũi tên mới là phím bấm liên tục nhất khi chơi.
+   */
   const rockerPad = (
-    <div className="flex h-full max-h-[7.5rem] shrink-0 flex-col items-center justify-center gap-1">
-      <button type="button" {...bind('UP')} className={face('UP', 'h-9 w-24 rounded-t-2xl rounded-b-sm')}><ChevronUp size={16} /></button>
+    <div className="flex h-full max-h-[9.5rem] w-[17rem] max-w-full shrink-0 flex-col items-stretch justify-center gap-1">
+      <button type="button" {...bind('UP')} className={face('UP', 'h-11 w-full rounded-t-2xl rounded-b-sm')}><ChevronUp size={20} /></button>
       <div className="flex items-stretch gap-1">
-        <button type="button" {...bind('LEFT')} className={face('LEFT', 'h-9 w-9 rounded-l-2xl rounded-r-sm')}><ChevronLeft size={16} /></button>
-        <button type="button" {...bind('FIRE')} className={face('FIRE', 'h-9 w-10 rounded-sm text-[10px] font-bold')}>OK</button>
-        <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'h-9 w-9 rounded-r-2xl rounded-l-sm')}><ChevronRight size={16} /></button>
+        <button type="button" {...bind('LEFT')} className={face('LEFT', 'h-14 flex-[38] rounded-l-2xl rounded-r-sm')}><ChevronLeft size={20} /></button>
+        <button type="button" {...bind('FIRE')} className={face('FIRE', 'h-14 flex-[24] rounded-sm text-[10px] font-bold')}>OK</button>
+        <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'h-14 flex-[38] rounded-r-2xl rounded-l-sm')}><ChevronRight size={20} /></button>
       </div>
-      <button type="button" {...bind('DOWN')} className={face('DOWN', 'h-9 w-24 rounded-b-2xl rounded-t-sm')}><ChevronDown size={16} /></button>
+      <button type="button" {...bind('DOWN')} className={face('DOWN', 'h-11 w-full rounded-b-2xl rounded-t-sm')}><ChevronDown size={20} /></button>
     </div>
   );
 
@@ -314,7 +292,7 @@ export function useKeypadParts({
         {softKeys && softLeft(cn('h-9 flex-1', PILL_L))}
         {softKeys && softRight(cn('h-9 flex-1', PILL_R))}
       </div>
-      <div className="flex min-h-0 flex-[40] items-center justify-center gap-1.5">
+      <div className="flex min-h-0 flex-[48] items-center justify-center gap-1.5">
         <div className="flex flex-col gap-1.5">
           {callPill('h-9 w-14 rounded-full')}
           {aux('SOFT_LEFT', <MenuIcon size={14} />, 'h-9 w-14 rounded-full')}
@@ -325,7 +303,7 @@ export function useKeypadParts({
           {aux('CLEAR', <Delete size={14} />, 'h-9 w-14 rounded-full')}
         </div>
       </div>
-      <div className="min-h-0 flex-[56]">{numGrid()}</div>
+      <div className="min-h-0 flex-[48]">{numGrid()}</div>
     </div>
   );
 
@@ -342,7 +320,7 @@ export function useKeypadParts({
         {softKeys && softRight(cn('h-9 flex-1', PILL_R))}
       </div>
 
-      <div className="flex min-h-0 flex-[40] items-center justify-center gap-2">
+      <div className="flex min-h-0 flex-[48] items-center justify-center gap-2">
         <div className="flex flex-col gap-1.5">
           <span className={cn(skinFace, 'h-9 w-16 justify-center rounded-[0.4rem] text-[11px] opacity-70')}>▤</span>
           {aux('SOFT_RIGHT', <Undo2 size={14} />, 'h-9 w-16 rounded-[0.4rem]')}
@@ -354,7 +332,7 @@ export function useKeypadParts({
         </div>
       </div>
 
-      <div className="min-h-0 flex-[56]">{numGrid()}</div>
+      <div className="min-h-0 flex-[48]">{numGrid()}</div>
     </div>
   );
 
@@ -370,7 +348,7 @@ export function useKeypadParts({
         {softKeys && softRight('h-9 flex-1 rounded-r-md rounded-l-[3px] text-[11px] font-bold')}
       </div>
 
-      <div className="flex min-h-0 flex-[34] items-center justify-center gap-2">
+      <div className="flex min-h-0 flex-[46] items-center justify-center gap-2">
         <span className={cn(skinFace, 'h-9 w-12 justify-center rounded-[3px] text-[11px] opacity-70')}>✉</span>
         {dpad}
         {aux('CLEAR', <Undo2 size={14} />, 'h-9 w-12 rounded-[3px]')}
@@ -382,7 +360,7 @@ export function useKeypadParts({
         {endPill('h-9 w-16 rounded-full')}
       </div>
 
-      <div className="min-h-0 flex-[52] overflow-hidden rounded-md border border-white/10">
+      <div className="min-h-0 flex-[42] overflow-hidden rounded-md border border-white/10">
         {numGrid(true)}
       </div>
     </div>
@@ -397,8 +375,8 @@ export function useKeypadParts({
         {endPill('h-9 w-12 rounded-[0.3rem]')}
         {softKeys && softRight(cn('h-9 flex-1', PILL_R))}
       </div>
-      <div className="flex min-h-0 flex-[36] items-center justify-center">{rockerPad}</div>
-      <div className="min-h-0 flex-[56]">{numGrid()}</div>
+      <div className="flex min-h-0 flex-[44] items-center justify-center">{rockerPad}</div>
+      <div className="min-h-0 flex-[48]">{numGrid()}</div>
     </div>
   );
 
@@ -427,7 +405,7 @@ export function useKeypadParts({
         Cụm điều hướng E-series: hai phím tắt bên trái, hai bên phải, D-pad vuông
         ở giữa; phím gọi và kết thúc là hai thanh cong nằm dưới hai cặp phím tắt.
       */}
-      <div className="flex min-h-0 flex-[34] items-center justify-center gap-2">
+      <div className="flex min-h-0 flex-[42] items-center justify-center gap-2">
         <div className="flex flex-1 flex-col items-end gap-1">
           <div className="flex w-full justify-end gap-1">
             {softKeys && softLeft('h-9 flex-1 rounded-full text-[10px] font-bold')}
@@ -436,7 +414,7 @@ export function useKeypadParts({
           {callPill('h-9 w-full rounded-full')}
         </div>
 
-        <div className="h-full max-h-[6.5rem]" style={{ aspectRatio: '1 / 1' }}>{squarePad}</div>
+        <div className="h-full max-h-[8.5rem]" style={{ aspectRatio: '1 / 1' }}>{squarePad}</div>
 
         <div className="flex flex-1 flex-col items-start gap-1">
           <div className="flex w-full justify-start gap-1">
@@ -576,7 +554,7 @@ export function useKeypadParts({
        * bốn phím đó, rồi tới bàn phím số phím bè ngang.
        */
       <div className="flex h-full w-full flex-col gap-1.5">
-        <div className="grid min-h-0 flex-[42] grid-cols-[1fr_auto_1fr] grid-rows-2 items-center gap-x-2 gap-y-1.5">
+        <div className="grid min-h-0 flex-[50] grid-cols-[1fr_auto_1fr] grid-rows-2 items-center gap-x-2 gap-y-1.5">
           {/* Phím gọi / kết thúc: viên thuốc màu nhỏ ở hai vai, như máy thật */}
           <button
             type="button" {...bind('SEND')}
@@ -631,7 +609,7 @@ export function useKeypadParts({
 
         {/* Bàn phím số: chữ số và chữ cái nằm cạnh nhau, cột phải đảo thứ tự
             đúng như bàn phím Nokia đời sau. */}
-        <div className="grid min-h-0 flex-[54] grid-cols-3 grid-rows-4 gap-1.5">
+        <div className="grid min-h-0 flex-[46] grid-cols-3 grid-rows-4 gap-1.5">
           {NUMPAD_ROWS.flat().map((k, i) => {
             const letters = NUM_KEY_LETTERS[k];
             const col = i % 3;

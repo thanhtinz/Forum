@@ -4,13 +4,21 @@ import { useState, useTransition } from 'react';
 import { Crown, Save } from 'lucide-react';
 import { updateVipPlan } from '@/app/admin/actions';
 import { fmtVnd } from '@/lib/utils';
+import { isImageIcon } from '@/lib/icon';
+import { IconField } from '@/components/admin/IconField';
 
 export interface VipPlanRow {
-  id: string; tier: number; name: string; price: number; originalPrice: number | null;
+  id: string; tier: number; name: string; description: string | null;
+  icon: string | null; color: string | null;
+  price: number; originalPrice: number | null;
   durationDays: number | null; discountPercent: number; freeContent: boolean; active: boolean;
 }
 
 export function VipPlanEditor({ plan }: { plan: VipPlanRow }) {
+  const [name, setName] = useState(plan.name);
+  const [description, setDescription] = useState(plan.description ?? '');
+  const [icon, setIcon] = useState(plan.icon ?? '');
+  const [color, setColor] = useState(plan.color ?? '#f59e0b');
   const [price, setPrice] = useState(plan.price);
   const [originalPrice, setOriginalPrice] = useState(plan.originalPrice ?? 0);
   const [durationDays, setDurationDays] = useState(plan.durationDays ?? 0);
@@ -19,12 +27,16 @@ export function VipPlanEditor({ plan }: { plan: VipPlanRow }) {
   const [active, setActive] = useState(plan.active);
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const save = () => start(async () => {
-    await updateVipPlan(plan.id, {
+    setError(null);
+    const res = await updateVipPlan(plan.id, {
+      name, description: description || null, icon: icon || null, color,
       price, originalPrice: originalPrice || null, durationDays: durationDays || null,
       discountPercent, freeContent, active,
     });
+    if (res?.error) { setError(res.error); return; }
     setSaved(true);
     setTimeout(() => setSaved(false), 1800);
   });
@@ -32,12 +44,29 @@ export function VipPlanEditor({ plan }: { plan: VipPlanRow }) {
   return (
     <div className="card space-y-3 p-4">
       <div className="flex items-center gap-2">
-        <span className="grid size-8 place-items-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-950/40"><Crown size={16} /></span>
-        <h3 className="font-bold">{plan.name} <span className="text-sm font-normal text-ink-400">(bậc {plan.tier})</span></h3>
+        <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-950/40">
+          {isImageIcon(icon)
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={icon} alt="" className="size-full object-contain" />
+            : icon || <Crown size={16} />}
+        </span>
+        <h3 className="font-bold">{name} <span className="text-sm font-normal text-ink-400">(bậc {plan.tier})</span></h3>
         {!active && <span className="rounded-full bg-ink-200 px-2 py-0.5 text-xs text-ink-500 dark:bg-ink-800">Đang ẩn</span>}
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="Tên gói">
+          <input value={name} onChange={(e) => setName(e.target.value)} className="input" placeholder="Ví dụ: VIP Bạc" />
+        </Field>
+        <Field label="Mô tả ngắn">
+          <input value={description} onChange={(e) => setDescription(e.target.value)} className="input" placeholder="Hiện dưới tên gói ở trang VIP" />
+        </Field>
+        <Field label="Màu chủ đạo">
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} className="input !h-10 !p-1" />
+        </Field>
+        <IconField className="sm:col-span-2 lg:col-span-3" label="Biểu tượng gói" defaultValue={plan.icon}
+          color={color} fallback={<Crown size={16} />} onChange={setIcon}
+          placeholder="👑 hoặc dán link ảnh (để trống thì dùng vương miện mặc định)" />
         <Field label={`Giá (${fmtVnd(price)})`}>
           <input type="number" min={0} step={1000} value={price} onChange={(e) => setPrice(+e.target.value)} className="input" />
         </Field>
@@ -58,6 +87,7 @@ export function VipPlanEditor({ plan }: { plan: VipPlanRow }) {
         </label>
       </div>
 
+      {error && <p className="text-sm text-red-600">{error}</p>}
       <button type="button" onClick={save} disabled={pending} className="btn-primary disabled:opacity-60">
         <Save size={16} /> {pending ? 'Đang lưu…' : saved ? 'Đã lưu ✓' : 'Lưu thay đổi'}
       </button>

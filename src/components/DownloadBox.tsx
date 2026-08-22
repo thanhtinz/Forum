@@ -6,6 +6,7 @@ import { Lock, Coins, Gem, ShoppingBag, Crown, LogIn, Download, KeyRound, Hash }
 import type { AccessReason } from '@/lib/access';
 import { fmtBytes, fmtVnd } from '@/lib/utils';
 import { unlockPost, type UnlockState } from '@/app/(site)/posts/[slug]/actions';
+import { CouponField } from './CouponField';
 
 export interface DownloadItemData {
   id: string;
@@ -183,6 +184,7 @@ export function DownloadBox(props: DownloadBoxProps) {
                   className="btn w-full bg-red-600 py-3 text-base text-white hover:bg-red-700 disabled:opacity-60">
                   <ShoppingBag size={18} /> {pending ? 'Đang xử lý…' : 'Mua quyền tải xuống'}
                 </button>
+                <CouponField />
               </form>
             )}
             {state.error && <p className="mt-2 text-center text-sm font-medium text-red-600">{state.error}</p>}

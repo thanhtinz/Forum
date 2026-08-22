@@ -19,7 +19,7 @@ export interface NavItem {
  * Menu mặc định khi admin chưa cấu hình gì — giữ đúng menu đang chạy trước đây
  * để trang không bị trống trơn ở lần chạy đầu.
  */
-const DEFAULTS: Record<NavGroup, { label: string; url: string; icon: string }[]> = {
+export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: string }[]> = {
   header: [
     { label: 'Diễn đàn', url: '/', icon: '💬' },
     { label: 'Cửa hàng', url: '/shop', icon: '🛍️' },
@@ -42,7 +42,7 @@ export async function getNavItems(group: NavGroup): Promise<NavItem[]> {
     .catch(() => []);
 
   if (rows.length === 0) {
-    return DEFAULTS[group].map((d, i) => ({ id: `default-${i}`, label: d.label, url: d.url, icon: d.icon || null, children: [] }));
+    return NAV_DEFAULTS[group].map((d, i) => ({ id: `default-${i}`, label: d.label, url: d.url, icon: d.icon || null, children: [] }));
   }
 
   const roots = rows.filter((r) => !r.parentId);

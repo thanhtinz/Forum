@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useTransition, useActionState } from 'react';
-import { Plus, Pencil, Trash2, X, CornerDownRight, Link2 } from 'lucide-react';
-import { saveNavLink, deleteNavLink, type NavState } from '@/app/admin/actions';
-import { NAV_GROUPS } from '@/lib/nav';
+import { Plus, Pencil, Trash2, X, CornerDownRight, Link2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { saveNavLink, deleteNavLink, restoreDefaultNav, type NavState } from '@/app/admin/actions';
+import { NAV_GROUPS, NAV_DEFAULTS } from '@/lib/nav';
 import { ActionForm } from '@/components/ActionForm';
 import { IconGlyph } from '@/components/IconGlyph';
 import { IconField } from '@/components/admin/IconField';
@@ -17,14 +17,40 @@ export function NavManager({ links, group }: { links: NavRow[]; group: string })
   const [editing, setEditing] = useState<NavRow | null>(null);
   const [creating, setCreating] = useState(false);
 
+  const [restoring, startRestore] = useTransition();
+
   const roots = links.filter((l) => !l.parentId);
   const childrenOf = (id: string) => links.filter((l) => l.parentId === id);
   const nextOrder = links.length ? Math.max(...links.map((l) => l.order)) + 1 : 0;
 
+  // Mục mặc định chưa có trong danh sách — so theo đường dẫn.
+  const have = new Set(links.map((l) => l.url));
+  const missingDefaults = (NAV_DEFAULTS[group as 'header' | 'footer'] ?? [])
+    .filter((d) => !have.has(d.url)).map((d) => d.label);
+
   return (
     <div className="space-y-4">
       {!creating && !editing && (
-        <button type="button" onClick={() => setCreating(true)} className="btn-primary"><Plus size={16} /> Thêm mục menu</button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => setCreating(true)} className="btn-primary"><Plus size={16} /> Thêm mục menu</button>
+          {missingDefaults.length > 0 && links.length > 0 && (
+            <button type="button" disabled={restoring} onClick={() => startRestore(() => restoreDefaultNav(group))}
+              className="btn-ghost disabled:opacity-60">
+              <RotateCcw size={16} /> Thêm lại mục mặc định ({missingDefaults.join(', ')})
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Chỉ cần một mục là menu mặc định ngừng được dùng — nói rõ để khỏi tưởng bị mất */}
+      {links.length > 0 && missingDefaults.length > 0 && (
+        <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>
+            Menu đang chạy theo danh sách dưới đây, không còn dùng menu mặc định nữa. Các mục{' '}
+            <b>{missingDefaults.join(', ')}</b> hiện không hiển thị trên trang.
+          </span>
+        </p>
       )}
 
       {(creating || editing) && (

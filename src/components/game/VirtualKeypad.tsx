@@ -278,20 +278,49 @@ export function useKeypadParts({
    * chiều cao thì trái–phải chỉ còn ~2 500px² trong khi phím số đã 4 300px².
    */
   const rockerPad = (
-    <div className="flex h-full max-h-[10.5rem] w-full max-w-[17rem] flex-col items-stretch gap-1">
-      <button type="button" {...bind('UP')} className={face('UP', 'h-9 w-full shrink-0 rounded-t-2xl rounded-b-sm')}><ChevronUp size={22} /></button>
-      {/*
-        Hàng giữa ăn hết chiều cao còn lại. Trước đây thanh trên–dưới cao 44px
-        trải hết bề ngang (11 968px²) còn trái–phải chỉ 105×56 (5 880px²) vì bị
-        nút OK ăn mất khúc giữa — hơn gấp đôi. Hạ hai thanh xuống 36px và nhường
-        chỗ cho hàng giữa thì bốn phím xấp xỉ bằng nhau.
-      */}
-      <div className="flex min-h-0 flex-1 items-stretch gap-1">
-        <button type="button" {...bind('LEFT')} className={face('LEFT', 'h-full min-h-0 flex-[40] rounded-l-2xl rounded-r-sm')}><ChevronLeft size={22} /></button>
-        <button type="button" {...bind('FIRE')} className={face('FIRE', 'h-full min-h-0 flex-[20] rounded-sm text-[11px] font-bold')}>OK</button>
-        <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'h-full min-h-0 flex-[40] rounded-r-2xl rounded-l-sm')}><ChevronRight size={22} /></button>
-      </div>
-      <button type="button" {...bind('DOWN')} className={face('DOWN', 'h-9 w-full shrink-0 rounded-b-2xl rounded-t-sm')}><ChevronDown size={22} /></button>
+    /*
+      Năm phím ghép khít thành **một khối vuông**, không phải hai thanh dài kẹp
+      một hàng ngắn: `aspect-square` khoá khung, lưới 3×3 chia chỗ.
+
+      Ba cột chia đều, hàng giữa cao gấp ba hàng trên–dưới (`1fr 3fr 1fr`): trên và
+      dưới trải hết bề ngang nên phải thấp, ba phím hàng giữa chỉ được một phần
+      ba bề ngang nên phải cao bù lại. Năm phím ra gần bằng nhau — chênh nhau
+      dưới 6%. Trước đây khối là chữ nhật 272×168 và ba cỡ phím lệch hẳn:
+      trên/dưới 9 792px², trái/phải 7 657, nút OK chỉ 3 901.
+    */
+    <div className="grid h-full max-h-[11rem] shrink-0 aspect-square grid-cols-3 grid-rows-[1fr_3fr_1fr] gap-1">
+      <button
+        type="button" {...bind('UP')}
+        className={face('UP', 'col-span-3 row-start-1 h-full min-h-0 w-full rounded-t-2xl rounded-b-sm')}
+      >
+        <ChevronUp size={22} />
+      </button>
+
+      <button
+        type="button" {...bind('LEFT')}
+        className={face('LEFT', 'col-start-1 row-start-2 h-full min-h-0 w-full rounded-l-2xl rounded-r-sm')}
+      >
+        <ChevronLeft size={22} />
+      </button>
+      <button
+        type="button" {...bind('FIRE')}
+        className={face('FIRE', 'col-start-2 row-start-2 h-full min-h-0 w-full rounded-sm text-[11px] font-bold')}
+      >
+        OK
+      </button>
+      <button
+        type="button" {...bind('RIGHT')}
+        className={face('RIGHT', 'col-start-3 row-start-2 h-full min-h-0 w-full rounded-r-2xl rounded-l-sm')}
+      >
+        <ChevronRight size={22} />
+      </button>
+
+      <button
+        type="button" {...bind('DOWN')}
+        className={face('DOWN', 'col-span-3 row-start-3 h-full min-h-0 w-full rounded-b-2xl rounded-t-sm')}
+      >
+        <ChevronDown size={22} />
+      </button>
     </div>
   );
 

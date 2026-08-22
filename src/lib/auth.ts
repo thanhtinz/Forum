@@ -6,6 +6,7 @@ import Google from 'next-auth/providers/google';
 import GitHub from 'next-auth/providers/github';
 import bcrypt from 'bcryptjs';
 import { db } from './db';
+import { liftExpiredFullBan } from './ban';
 import { authConfig } from './auth.config';
 
 // Chỉ bật OAuth khi có credential — tránh lỗi lúc build/khi chưa cấu hình.
@@ -25,7 +26,10 @@ const providers: NextAuthConfig['providers'] = [
         where: { OR: [{ email: identifier }, { username: identifier }] },
       });
       if (!user?.passwordHash) return null;
-      if (user.status === 'BANNED' || user.status === 'SUSPENDED') return null;
+      if (user.status === 'SUSPENDED') return null;
+      // Khoá có thời hạn: người bị khoá không đăng nhập được nên không có gì tự mở khoá
+      // cho họ — phải kiểm ngay tại đây, hết hạn thì cho vào lại.
+      if (user.status === 'BANNED' && !(await liftExpiredFullBan(user.id))) return null;
 
       const ok = await bcrypt.compare(password, user.passwordHash);
       if (!ok) return null;

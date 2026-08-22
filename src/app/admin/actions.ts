@@ -11,6 +11,7 @@ import { R2_SETTING_KEY, deleteFile } from '@/lib/storage';
 import { normalizeIcon, isPublicImageRef } from '@/lib/icon';
 import { NAV_GROUPS, NAV_DEFAULTS, isSafeNavUrl } from '@/lib/nav';
 import { SITE_SETTING_KEY } from '@/lib/site';
+import { isBanScope, banExpiry } from '@/lib/ban';
 
 // ─────────────── Bài viết ───────────────
 
@@ -49,14 +50,50 @@ export async function setUserRole(id: string, role: 'USER' | 'AUTHOR' | 'MODERAT
   revalidatePath('/admin/users');
 }
 
-export async function toggleBan(id: string) {
+export type BanState = { ok?: boolean; error?: string };
+
+export async function banUser(_prev: BanState, formData: FormData): Promise<BanState> {
   const admin = await requireAdmin();
-  const u = await db.user.findUnique({ where: { id }, select: { status: true, role: true } });
-  if (!u || u.role === 'ADMIN') return; // không khoá admin
-  const banned = u.status === 'BANNED';
+  const id = String(formData.get('userId') ?? '').trim();
+  const reason = String(formData.get('reason') ?? '').trim();
+  const scope = String(formData.get('scope') ?? 'FULL');
+  const days = parseInt(String(formData.get('days') ?? '0'), 10) || 0;
+
+  if (!isBanScope(scope)) return { error: 'Phạm vi khoá không hợp lệ.' };
+  if (reason.length < 3) return { error: 'Hãy ghi lý do khoá (ít nhất 3 ký tự).' };
+
+  const u = await db.user.findUnique({ where: { id }, select: { role: true, username: true } });
+  if (!u) return { error: 'Không tìm thấy thành viên.' };
+  if (u.role === 'ADMIN') return { error: 'Không khoá được quản trị viên.' };
+
+  const expiresAt = banExpiry(days);
   await db.$transaction(async (tx) => {
-    await tx.user.update({ where: { id }, data: { status: banned ? 'ACTIVE' : 'BANNED' } });
-    if (!banned) await tx.ban.create({ data: { userId: id, reason: 'Khoá bởi quản trị', createdBy: admin.id } });
+    // Cùng phạm vi thì lệnh mới thay lệnh cũ, tránh chồng nhiều lệnh mâu thuẫn.
+    await tx.ban.deleteMany({ where: { userId: id, scope } });
+    await tx.ban.create({ data: { userId: id, reason, scope, expiresAt, createdBy: admin.id } });
+    // Chỉ khoá FULL mới chặn đăng nhập; POST/COMMENT vẫn cho vào để đọc.
+    if (scope === 'FULL') await tx.user.update({ where: { id }, data: { status: 'BANNED' }, select: { id: true } });
+  });
+
+  if (scope !== 'FULL') {
+    await notify({
+      userId: id, type: 'SYSTEM',
+      title: scope === 'POST' ? 'Bạn bị cấm đăng bài' : 'Bạn bị cấm bình luận',
+      content: expiresAt ? `Tới ${expiresAt.toLocaleString('vi-VN')}. Lý do: ${reason}` : `Vĩnh viễn. Lý do: ${reason}`,
+      link: '/',
+    });
+  }
+  revalidatePath('/admin/users');
+  return { ok: true };
+}
+
+/** Gỡ một phạm vi khoá; gỡ FULL thì mở lại đăng nhập. */
+export async function unbanUser(id: string, scope: string) {
+  await requireAdmin();
+  if (!isBanScope(scope)) return;
+  await db.$transaction(async (tx) => {
+    await tx.ban.deleteMany({ where: { userId: id, scope } });
+    if (scope === 'FULL') await tx.user.update({ where: { id }, data: { status: 'ACTIVE' }, select: { id: true } });
   });
   revalidatePath('/admin/users');
 }

@@ -1,11 +1,12 @@
 import Link from 'next/link';
-import { Search, Bell, PenLine, ChevronDown } from 'lucide-react';
+import { Search, Bell, PenLine, ChevronDown, MessageSquare } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { touchPresence } from '@/lib/presence';
 import { getLevelLook } from '@/lib/level';
 import { getNavItems } from '@/lib/nav';
 import { getSiteSettings } from '@/lib/site';
+import { countUnreadMessages } from '@/lib/messages';
 import { IconGlyph } from './IconGlyph';
 import { MobileNav } from './MobileNav';
 import { ThemeToggle } from './ThemeToggle';
@@ -19,6 +20,7 @@ export async function Header() {
   if (user?.id) await touchPresence(user.id);
   const levelLook = user?.id ? await getLevelLook(user.level ?? 1) : null;
   const [nav, site] = await Promise.all([getNavItems('header'), getSiteSettings()]);
+  const unreadMsg = user?.id ? await countUnreadMessages(user.id) : 0;
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/90 backdrop-blur dark:border-ink-800 dark:bg-ink-950/90">
@@ -78,6 +80,15 @@ export async function Header() {
             <>
               <Link href="/user/write" className="btn-primary hidden !px-3 !py-1.5 text-sm sm:inline-flex">
                 <PenLine size={15} /> Đăng bài
+              </Link>
+              <Link href="/user/messages" title="Tin nhắn"
+                className="relative grid size-9 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">
+                <MessageSquare size={18} />
+                {unreadMsg > 0 && (
+                  <span className="absolute right-1 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-accent-500 px-1 text-[10px] font-bold text-white">
+                    {unreadMsg > 9 ? '9+' : unreadMsg}
+                  </span>
+                )}
               </Link>
               <Link href="/user/notifications" title="Thông báo"
                 className="relative grid size-9 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">

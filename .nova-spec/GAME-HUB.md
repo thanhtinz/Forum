@@ -178,6 +178,17 @@ chia thành các họ (`FaceLayout` trong `src/lib/emulator-skin.ts`):
 | `touch` | Nokia 5800, LG KP500 Cookie | mặt trước chỉ **ba thanh mảnh** sát đáy — gọi (xanh) ‧ menu ‧ kết thúc (đỏ); bàn phím số bật ra khi cần. Thân máy chia `78 : 22` |
 | `touch-only` | Samsung S5233 Star, Nokia 5230 | **cảm ứng thuần, không phím cứng nào** — chơi bằng cách chạm thẳng lên màn hình. Thân máy chia `92 : 8`, chỉ chừa nút gọi bàn phím số cho game bắt buộc bấm phím |
 
+**Cỡ phím cân nhau trong mọi mặt phím**: phím điều khiển (phím mềm, gọi/kết
+thúc, phím phụ) đều cao `h-9` (36px), tỉ lệ cụm điều hướng ‧ bàn phím số chỉnh
+sao cho phím số không cao vọt. Đo ở 390×844, biên độ cao–thấp của từng máy:
+6300 `36–48` · 7210 `36–41` · N70 `36–40` · K750i `36–45` · RAZR `34–39` ·
+E71 `33–46` · 5800 `36–36`. Không nút nào dưới 33px.
+
+Bàn phím QWERTY của E71 xếp trên **lưới 10 cột cho cả bốn hàng** nên mọi phím
+rộng bằng nhau; riêng phím cách trải 4 cột đúng như bàn phím thật. Ba thanh
+mảnh của máy cảm ứng giữ nguyên dáng nhưng vùng bấm cao 36px — thanh 10px thì
+ngón tay không trúng.
+
 Máy thật có vài phím cứng không mang mã Java riêng (Menu của S60, phím back của
 Sony Ericsson). Những phím đó gán về phím gần nghĩa nhất — Menu về phím mềm
 trái, back về phím mềm phải — đúng như cách dùng trên máy.

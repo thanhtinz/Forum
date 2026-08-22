@@ -536,6 +536,8 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     compact: fill && wide,
     // Cầm dọc toàn màn hình: mặt phím chiếm trọn nửa dưới.
     fill: fill && !wide,
+    // Toàn màn hình thì cả hai hướng đều dựng theo skin thân máy.
+    skinned: fill,
     keyTone: skin.keys,
     accent: skin.accent,
   });
@@ -726,7 +728,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
    * điều hướng + bàn phím số ~45 mm. Quy ra flex là 39 : 43 cho màn hình và
    * bàn phím, dải trên cao tự nhiên theo nội dung.
    */
-  const chassisTop = (
+  const chassisTop = (earpiece: boolean) => (
     <div className="shrink-0 px-1 pb-1">
       <div className="flex items-center justify-between gap-2">
         <p className="truncate text-xs font-bold">{gameTitle}</p>
@@ -739,7 +741,9 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
         </div>
       </div>
       {/* Loa thoại: khe hẹp giữa thân máy, ngay trên kính màn hình */}
-      <div className="mx-auto mt-1.5 h-[3px] w-16 rounded-full bg-ink-950 shadow-[inset_0_1px_2px_rgba(0,0,0,0.9)]" />
+      {earpiece && (
+        <div className="mx-auto mt-1.5 h-[3px] w-16 rounded-full bg-ink-950 shadow-[inset_0_1px_2px_rgba(0,0,0,0.9)]" />
+      )}
     </div>
   );
 
@@ -782,22 +786,37 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           : 'rounded-2xl p-4',
       )}
     >
-      {!portraitChassis && topBar}
+      {!fill && topBar}
 
       {fill && wide ? (
-        <>
-          {/* Cầm ngang: D-pad · màn hình · bàn phím số */}
-          {/* `items-stretch` để ô giữa có chiều cao xác định — nếu không, khung game
-              tự quyết chiều cao rồi tràn khỏi màn hình. */}
-          <div className="flex min-h-0 flex-1 items-stretch gap-2">
-            <div className="shrink-0 self-center">{keypad.dpad}</div>
+        /**
+         * Cầm ngang: vẫn là thân máy, chỉ xoay thành dáng máy chơi game cầm tay
+         * — vòng xoay bên trái, kính ở giữa, bàn phím số bên phải, hàng phím
+         * chức năng chạy dưới đáy khoang màn hình.
+         */
+        <div className={cn(
+          'flex min-h-0 flex-1 overflow-hidden rounded-[1.75rem] border',
+          'shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_10px_30px_rgba(0,0,0,0.6)]',
+          skin.edge, skin.keypad,
+        )}>
+          <div className="flex shrink-0 items-center px-2.5">{keypad.dpad}</div>
+
+          {/* Khoang màn hình: tối hơn thân máy, kính ôm sát khung game */}
+          <div className={cn('flex min-h-0 min-w-0 flex-1 flex-col px-2 pb-1.5 pt-1', skin.top)}>
+            {chassisTop(false)}
             <div ref={areaRef} className="flex min-h-0 min-w-0 flex-1 items-center justify-center">
-              {screenBox}
+              <div
+                ref={bezelRef}
+                className="rounded-lg border border-black/80 bg-ink-950 p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)]"
+              >
+                {screenBox}
+              </div>
             </div>
-            <div className="shrink-0 self-center">{keypad.numpad}</div>
+            <div className="mt-1.5 shrink-0">{keypad.functionRow}</div>
           </div>
-          <div className="mt-2 shrink-0">{keypad.functionRow}</div>
-        </>
+
+          <div className="flex shrink-0 items-center px-2.5">{keypad.numpad}</div>
+        </div>
       ) : portraitChassis ? (
         /**
          * Cầm dọc: nguyên **thân máy** bọc cả màn hình lẫn bàn phím, kiểu skin
@@ -812,7 +831,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
         )}>
           {/* Nửa trên: mặt trước tối, dải trên + kính màn hình */}
           <div className={cn('flex min-h-0 flex-[56] flex-col px-2.5 pb-2 pt-1', skin.top)}>
-            {chassisTop}
+            {chassisTop(true)}
             <div ref={areaRef} className="flex min-h-0 flex-1 items-center justify-center">
               <div
                 ref={bezelRef}

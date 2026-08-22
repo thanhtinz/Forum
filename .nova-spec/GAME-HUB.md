@@ -106,6 +106,11 @@ theo bề ngang cửa sổ — xoay ngang máy vẫn toàn màn hình:
     3. bàn phím số 4×3 phím bè ngang: chữ số và chữ cái nằm cạnh nhau, cột phải
        đảo thứ tự (`DEF 3`, `MNO 6`) đúng như bàn phím Nokia đời sau.
 
+  Màu thân máy đổi theo hãng của máy ảo đang chọn (`src/lib/emulator-skin.ts`):
+  Nokia bạc lạnh, Sony Ericsson xám trung tính, Samsung ngả xanh, Motorola nhôm
+  anod gần đen, LG Chocolate đen bóng, Siemens xám ngả olive. Phím vẫn giữ một
+  bộ màu bạc nên chữ luôn đọc được trên mọi thân máy.
+
   Đo thật ở khung 390×844: khung game 289×386 (tỉ lệ 0.749), không tràn.
 - **Cầm ngang**: D-pad ‧ màn hình ‧ bàn phím số xếp ba cột, hàng phím chức năng
   nằm dưới đáy.
@@ -172,11 +177,14 @@ hình gắn theo game và tự nạp lại lần sau. Kiểu dữ liệu ở `sr
 | `filter` | `sharp` (pixel vuông) · `smooth` | trang |
 | `speed` | 0.5× → 3× — game Java hay chạy chậm, kéo lên cho mượt | runtime |
 | `fps` | 15/20/25/30/45/60 hoặc bỏ giới hạn | runtime |
-| `fontSize` · `sound` · `vibrate` | cỡ chữ trong game, âm thanh, rung phím | runtime |
+| `fontSize` · `sound` | cỡ chữ trong game, âm thanh | runtime |
+| `vibrate` | rung nhẹ 12 ms khi **chạm phím ảo** — gõ bàn phím PC thì không rung | trang |
 
-Ba trường đầu trang tự áp được ngay (đo khung bằng `ResizeObserver`, đặt
-`image-rendering`), nên đổi là thấy hiệu lực tức thì. Các trường còn lại được đẩy
-xuống runtime qua `nova:config` và phụ thuộc runtime có hỗ trợ hay không.
+Bốn trường trang tự áp được ngay (đo khung bằng `ResizeObserver`, đặt
+`image-rendering`, gọi `navigator.vibrate`), nên đổi là thấy hiệu lực tức thì.
+Các trường còn lại được đẩy xuống runtime qua `nova:config` và phụ thuộc runtime
+có hỗ trợ hay không. Máy không có API rung (iOS Safari) thì `vibrate` trả về
+`false` chứ không ném lỗi.
 
 Lưu ở đâu: đã đăng nhập → bảng `UserGameConfig` (`userId + gameId`), mở ở máy khác
 vẫn giữ; khách → `localStorage` theo khoá `nova:games:config:<slug>`. Mọi giá trị

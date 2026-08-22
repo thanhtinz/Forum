@@ -15,6 +15,7 @@ import {
   configStorageKey, DEFAULT_CONFIG, effectiveScreen, isCustomised, parseConfig,
   type EmulatorConfig,
 } from '@/lib/emulator-config';
+import { chassisSkin } from '@/lib/emulator-skin';
 import { cn } from '@/lib/utils';
 import { DevicePicker, type DeviceOption } from './DevicePicker';
 import { EmulatorSettings } from './EmulatorSettings';
@@ -154,6 +155,17 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
       return next;
     });
   }, [post]);
+
+  /**
+   * Rung nhẹ khi chạm phím ảo — chỉ cho phím trên màn hình, gõ bàn phím PC thì
+   * không rung. Đọc cấu hình qua ref nên bật/tắt ăn ngay mà không dựng lại
+   * handler. Máy không hỗ trợ (iOS Safari) thì `vibrate` trả về false chứ
+   * không ném lỗi.
+   */
+  const buzz = useCallback(() => {
+    if (!configRef.current.vibrate) return;
+    navigator.vibrate?.(12);
+  }, []);
 
   // ── 1. Tạo phiên (đúng một lần cho mỗi lần mở trang) ────
   useEffect(() => {
@@ -472,6 +484,8 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
    */
   /** Cầm dọc toàn màn hình — lúc này mới dựng thân máy. */
   const portraitChassis = fill && !wide;
+  /** Màu thân máy theo hãng của máy ảo đang chọn. */
+  const skin = chassisSkin(profile?.keyLayout);
 
   const areaRef = useRef<HTMLDivElement>(null);
   /** Viền kính bao quanh khung game (chỉ có khi dựng thân máy). */
@@ -516,7 +530,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   const keypad = useKeypadParts({
     keyLayout: profile?.keyLayout ?? 'generic',
     softKeys: profile?.softKeys ?? true,
-    onPress: (k) => sendKey(k, 'down'),
+    onPress: (k) => { buzz(); sendKey(k, 'down'); },
     onRelease: (k) => sendKey(k, 'up'),
     held,
     compact: fill && wide,
@@ -657,8 +671,10 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
         aria-label="Menu điều khiển"
         aria-expanded={showMenu}
         className={cn(
-          'grid h-8 w-8 place-items-center rounded-lg transition-colors',
-          showMenu ? 'bg-ink-700 text-ink-100' : 'bg-ink-800 text-ink-200 hover:bg-ink-700',
+          'grid h-8 w-8 place-items-center rounded-lg ring-1 ring-white/10 transition-colors',
+          // Nền đen mờ chứ không phải một màu cứng: thân máy đổi màu theo hãng,
+          // `bg-ink-800` trùng đúng màu vỏ Nokia nên nút tàng hình.
+          showMenu ? 'bg-black/70 text-ink-100' : 'bg-black/45 text-ink-200 hover:bg-black/70',
         )}
       >
         <span className="relative">
@@ -713,8 +729,8 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
       <div className="flex items-center justify-between gap-2">
         <p className="truncate text-xs font-bold">{gameTitle}</p>
         <div className="flex shrink-0 items-center gap-1.5 text-[11px]">
-          <span className={cn('flex items-center gap-1 rounded-full px-1.5 py-0.5',
-            session && remaining < 120 ? 'bg-red-500/20 text-red-300' : 'bg-ink-800 text-ink-300')}>
+          <span className={cn('flex items-center gap-1 rounded-full px-1.5 py-0.5 ring-1 ring-white/10',
+            session && remaining < 120 ? 'bg-red-500/25 text-red-300' : 'bg-black/45 text-ink-200')}>
             <Timer size={11} /> {session ? fmtClock(remaining) : '--:--'}
           </span>
           {menu}
@@ -787,9 +803,13 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
          * ôm lấy kính, nửa dưới sáng màu là mặt phím. Tỉ lệ 56 : 44 lấy theo
          * skin candybar thật (mặt trước chia màn hình ~57%, bàn phím ~40%).
          */
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-black/80 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_10px_30px_rgba(0,0,0,0.6)]">
+        <div className={cn(
+          'flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border',
+          'shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_10px_30px_rgba(0,0,0,0.6)]',
+          skin.edge,
+        )}>
           {/* Nửa trên: mặt trước tối, dải trên + kính màn hình */}
-          <div className="flex min-h-0 flex-[56] flex-col bg-gradient-to-b from-ink-900 to-ink-950 px-2.5 pb-2 pt-1">
+          <div className={cn('flex min-h-0 flex-[56] flex-col px-2.5 pb-2 pt-1', skin.top)}>
             {chassisTop}
             <div ref={areaRef} className="flex min-h-0 flex-1 items-center justify-center">
               <div
@@ -806,7 +826,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           )}
 
           {/* Nửa dưới: mặt phím sáng màu, tách hẳn khối với nửa trên */}
-          <div className="min-h-0 flex-[44] border-t border-black/60 bg-gradient-to-b from-ink-700 to-ink-800 px-2.5 pb-2.5 pt-2">
+          <div className={cn('min-h-0 flex-[44] border-t border-black/60 px-2.5 pb-2.5 pt-2', skin.keypad)}>
             {keypad.phonePad}
           </div>
         </div>

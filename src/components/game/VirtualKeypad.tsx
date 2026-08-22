@@ -64,10 +64,15 @@ const DARK_FACE =
  */
 export function useKeypadParts({
   keyLayout, softKeys, onPress, onRelease, held, compact = false, fill = false,
-  keyTone = 'silver', accent,
+  keyTone = 'silver', accent, skinned = false,
 }: VirtualKeypadProps & {
   compact?: boolean;
   fill?: boolean;
+  /**
+   * Dựng theo skin thân máy (phím bạc / phím tối) thay vì bộ phím tối mặc định.
+   * Bật cho cả cầm dọc lẫn cầm ngang khi chạy toàn màn hình.
+   */
+  skinned?: boolean;
   /** Tông phím của skin: máy vỏ sáng phím bạc, máy vỏ đen phím tối. */
   keyTone?: 'silver' | 'dark';
   /** Màu chữ cái phụ in trên phím số — vài máy có đèn phím màu riêng. */
@@ -75,9 +80,11 @@ export function useKeypadParts({
 }): KeypadParts {
   const dark = keyTone === 'dark';
   /** Mặt phím và trạng thái giữ, chọn theo tông của máy đang dùng. */
-  const skinFace = dark ? DARK_FACE : SILVER_FACE;
-  const skinHeld = dark ? KEY_HELD : SILVER_HELD;
-  const subColor = accent ?? (dark ? 'text-ink-400' : 'text-ink-600');
+  const skinFace = skinned ? (dark ? DARK_FACE : SILVER_FACE) : KEY_FACE;
+  const skinHeld = skinned && !dark ? SILVER_HELD : KEY_HELD;
+  const subColor = skinned
+    ? (accent ?? (dark ? 'text-ink-400' : 'text-ink-600'))
+    : 'text-ink-400';
   const soft = SOFT_KEY_LABEL[keyLayout] ?? SOFT_KEY_LABEL.generic!;
 
   const bind = (key: EmuKey) => ({
@@ -89,8 +96,9 @@ export function useKeypadParts({
     'aria-label': EMU_KEY_LABEL[key],
   });
 
+  // `justify-center` vì mặt phím của skin dùng flex trái, còn bộ tối dùng grid.
   const face = (key: EmuKey, extra?: string) =>
-    cn(KEY_FACE, held.has(key) && KEY_HELD, extra);
+    cn(skinFace, 'justify-center', held.has(key) && skinHeld, extra);
 
   // Cầm ngang thì chiều cao eo hẹp — phím nhỏ lại cho đủ chỗ.
   const wheel = fill
@@ -106,7 +114,7 @@ export function useKeypadParts({
     { key: 'RIGHT', icon: <ChevronRight size={18} />, at: 'right-0 top-1/2 -translate-y-1/2' },
   ];
 
-  const dpad = fill ? (
+  const dpad = skinned ? (
     /**
      * Vòng xoay của skin máy thật: vành bạc trơn, nút chọn hình vuông bo góc ở
      * tâm. Máy thật không in mũi tên lên vành nên bốn mũi tên để mờ, vừa đủ
@@ -186,8 +194,8 @@ export function useKeypadParts({
     return (
       <button key={k} type="button" {...bind(k)} className={face(k, `${extra} flex-col gap-0`)}>
         <span className={cn('font-semibold leading-none', compact ? 'text-xs' : 'text-sm')}>{EMU_KEY_LABEL[k]}</span>
-        {letters && !compact && (
-          <span className="mt-0.5 text-[8px] leading-none tracking-[0.08em] text-ink-400">{letters}</span>
+        {letters && (!compact || skinned) && (
+          <span className={cn('mt-0.5 text-[8px] leading-none tracking-[0.08em]', subColor)}>{letters}</span>
         )}
       </button>
     );

@@ -115,8 +115,13 @@ theo bề ngang cửa sổ — xoay ngang máy vẫn toàn màn hình:
   đó (`accent`).
 
   Đo thật ở khung 390×844: khung game 289×386 (tỉ lệ 0.749), không tràn.
-- **Cầm ngang**: D-pad ‧ màn hình ‧ bàn phím số xếp ba cột, hàng phím chức năng
-  nằm dưới đáy.
+- **Cầm ngang**: vẫn là thân máy, chỉ xoay thành **dáng máy chơi game cầm tay** —
+  vòng xoay bên trái, khoang màn hình ở giữa (tối hơn thân máy, kính ôm sát khung
+  game), bàn phím số bên phải, hàng phím chức năng chạy dưới đáy khoang màn hình.
+  Dùng chung màu thân máy và tông phím với bản dọc; không có khe loa thoại vì
+  dáng này không phải mặt trước máy. Phím số to hơn và in được cả chữ cái nhờ
+  chỗ trống hai bên. Đo ở 844×390: khung game 199×266; ở 568×320 (máy cũ nhất
+  còn gặp): 147×196, vẫn không tràn.
 
 Bố cục bám `matchMedia('(orientation: landscape)')` — hướng cầm máy thật, không
 phải suy từ chiều cao cửa sổ. Khung game thì giữ đúng hướng của máy ảo (game

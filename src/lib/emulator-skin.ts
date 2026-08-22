@@ -12,19 +12,19 @@
  */
 
 /**
- * Họ bố cục mặt phím — **bốn** kiểu, mỗi kiểu một máy đại diện trong thư viện:
- * - `s40`    vòng xoay tròn, nút OK ở tâm (Nokia 6300).
- * - `s60`    phím bốn hướng vuông, bốn cánh tách theo góc phần tư (Nokia N70).
- * - `rocker` phím bập bênh nằm ngang: hai thanh trên–dưới, hai cánh trái–phải
- *            kẹp nút OK (Nokia 7210).
- * - `razr`   vòng xoay tròn nhưng bàn phím số phẳng khắc laser, chỉ ngăn nhau
- *            bằng đường gân (Motorola RAZR V3).
+ * Họ bố cục mặt phím — **ba** kiểu:
+ * - `s40`  vòng xoay tròn, nút OK ở tâm (Nokia 6300).
+ * - `s60`  phím bốn hướng vuông: một khối vuông bo góc liền, giữa lồng ô vuông
+ *          nhỏ có viền riêng (Nokia N70, Nokia 7210).
+ * - `razr` vòng xoay tròn nhưng bàn phím số phẳng khắc laser, chỉ ngăn nhau
+ *          bằng đường gân (Motorola RAZR V3).
  *
- * Các họ `se` · `qwerty` · `touch` · `touch-only` đã bỏ: sau khi mặt phím rút
- * còn mũi tên · phím số · Options · Back thì chúng dựng ra đúng cùng một thứ
- * với `s40`, chỉ khác màu vỏ.
+ * Các họ đã bỏ vì dựng ra cùng một thứ với họ còn lại, chỉ khác màu vỏ:
+ * `se` · `qwerty` · `touch` · `touch-only` (giống `s40`), và `rocker` — kiểu
+ * bập bênh năm mảnh rời đã thay bằng khối vuông liền của `s60`, đúng như phím
+ * bốn hướng trên máy thật.
  */
-export type FaceLayout = 's40' | 'rocker' | 's60' | 'razr';
+export type FaceLayout = 's40' | 's60' | 'razr';
 
 export interface ChassisSkin {
   /** Nửa trên: mặt trước quanh kính màn hình. Luôn tối để chữ trên đó đọc được. */
@@ -76,18 +76,18 @@ const BY_MODEL: Record<string, ChassisSkin> = {
 const FACE_BY_VENDOR: Record<string, FaceLayout> = {
   nokia: 's40',
   sonyericsson: 's40',
-  samsung: 'rocker',
+  samsung: 's60',
   motorola: 'razr',
   lg: 's40',
-  siemens: 'rocker',
+  siemens: 's60',
   generic: 's40',
 };
 
 /** Bố cục mặt phím theo từng máy. */
 const FACE_BY_MODEL: Record<string, FaceLayout> = {
-  // 7210 là máy đời đầu, còn dùng phím bập bênh chứ chưa có vòng xoay.
-  'nokia-7210': 'rocker',
-  // N70 thuộc dòng S60, dùng phím bốn hướng vuông.
+  // 7210 là máy đời đầu, chưa có vòng xoay — dùng phím bốn hướng vuông.
+  'nokia-7210': 's60',
+  // N70 thuộc dòng S60, cũng phím bốn hướng vuông.
   'nokia-n70': 's60',
 };
 

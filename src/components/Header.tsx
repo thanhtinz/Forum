@@ -1,26 +1,15 @@
 import Link from 'next/link';
-import { Search, Bell, LayoutGrid, MessagesSquare, Crown, PenLine, ShoppingBag } from 'lucide-react';
+import { Search, Bell, PenLine, ChevronDown } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { touchPresence } from '@/lib/presence';
 import { getLevelLook } from '@/lib/level';
+import { getNavItems } from '@/lib/nav';
+import { getSiteSettings } from '@/lib/site';
+import { IconGlyph } from './IconGlyph';
 import { MobileNav } from './MobileNav';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
-
-const NAV = [
-  { href: '/', label: 'Diễn đàn', icon: MessagesSquare },
-  { href: '/shop', label: 'Cửa hàng', icon: ShoppingBag },
-  { href: '/blog', label: 'Bài viết', icon: LayoutGrid },
-  { href: '/vip', label: 'VIP', icon: Crown },
-];
-
-const NAV_MOBILE = [
-  { href: '/', label: 'Diễn đàn', icon: 'MessagesSquare' as const },
-  { href: '/shop', label: 'Cửa hàng', icon: 'ShoppingBag' as const },
-  { href: '/blog', label: 'Bài viết', icon: 'LayoutGrid' as const },
-  { href: '/vip', label: 'VIP', icon: 'Crown' as const },
-];
 
 export async function Header() {
   const session = await auth();
@@ -29,23 +18,45 @@ export async function Header() {
   const unread = user?.id ? await db.notification.count({ where: { userId: user.id, read: false } }) : 0;
   if (user?.id) await touchPresence(user.id);
   const levelLook = user?.id ? await getLevelLook(user.level ?? 1) : null;
+  const [nav, site] = await Promise.all([getNavItems('header'), getSiteSettings()]);
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/90 backdrop-blur dark:border-ink-800 dark:bg-ink-950/90">
       <div className="container-nova flex h-14 items-center gap-2">
-        <MobileNav nav={NAV_MOBILE} loggedIn={!!user} />
+        <MobileNav nav={nav} loggedIn={!!user} siteName={site.name} siteLogo={site.logo} />
 
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span className="grid size-8 place-items-center rounded-xl bg-brand-500 text-lg font-black text-white">N</span>
-          <span className="text-lg font-black tracking-tight">Nova</span>
+        <Link href="/" className="flex shrink-0 items-center gap-2" title={site.tagline || site.name}>
+          <span className="grid size-8 place-items-center overflow-hidden rounded-xl bg-brand-500 text-lg font-black text-white">
+            <IconGlyph icon={site.logo} fallback={site.name.charAt(0).toUpperCase()} className="size-full" />
+          </span>
+          <span className="text-lg font-black tracking-tight">{site.name}</span>
         </Link>
 
         <nav className="hidden items-center lg:flex">
-          {NAV.map((n) => (
-            <Link key={n.href} href={n.href}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
-              <n.icon size={16} /> {n.label}
-            </Link>
+          {nav.map((n) => (
+            n.children.length > 0 ? (
+              // Mục có con: mở bằng hover/focus, không cần JS
+              <div key={n.id} className="group relative">
+                <Link href={n.url}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
+                  <IconGlyph icon={n.icon} className="text-base" /> {n.label}
+                  <ChevronDown size={13} className="text-ink-400" />
+                </Link>
+                <div className="invisible absolute left-0 top-full z-50 min-w-44 rounded-xl border border-ink-200 bg-white p-1 opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 dark:border-ink-700 dark:bg-ink-900">
+                  {n.children.map((c) => (
+                    <Link key={c.id} href={c.url}
+                      className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-ink-600 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
+                      <IconGlyph icon={c.icon} className="text-base" /> {c.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Link key={n.id} href={n.url}
+                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
+                <IconGlyph icon={n.icon} className="text-base" /> {n.label}
+              </Link>
+            )
           ))}
         </nav>
 

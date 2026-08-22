@@ -178,6 +178,7 @@ còn tám:
 | `s40` | **Vòng xoay tròn**, nút OK nổi ở tâm | Nokia 6300 (240×320) |
 | `s60` | **Bốn hướng vuông**: một khối vuông bo góc liền, giữa lồng ô vuông nhỏ có viền riêng | Nokia N70 (176×208), Nokia 7210 (128×128) |
 | `razr` | Vòng xoay như `s40` nhưng **bàn phím số phẳng khắc laser** | Motorola RAZR V3 (176×220) |
+| `j2me` | Bàn phím ảo kiểu **J2ME Loader**: bốn nút tròn rời xếp chữ thập bên trái, bàn phím số bên phải, nút trong suốt trên nền tối | Hai máy ảo chung (320×240, 360×640) |
 
 Các họ đã bỏ vì dựng ra cùng một thứ với họ còn lại, chỉ khác màu vỏ:
 `se` · `qwerty` · `touch` · `touch-only` (giống `s40`), và `rocker` — kiểu bập
@@ -203,6 +204,22 @@ chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so
   ở nửa trên của vành cũng là đi lên, như máy thật.
 - Trần chiều cao cụm điều hướng bị siết quá chặt. Nới trần và chia lại tỉ lệ
   cụm điều hướng ‧ bàn phím số.
+
+**Mẫu J2ME Loader.** Ba họ trên đều mô phỏng mặt trước một máy thật, mà mũi tên
+thì chỉ còn hai dáng: **tròn** (`s40`, `razr`) và **vuông** (`s60`). Họ `j2me`
+là mẫu thứ ba, dựng theo bàn phím ảo của [J2ME Loader](https://github.com/nikita36078/J2ME-Loader)
+— thứ người chơi game Java trên Android quen tay nhất — chứ không phải mặt
+trước máy nào. Ba điểm nhận dạng lấy theo chính app:
+
+- **Cụm mũi tên một bên, bàn phím số bên kia** (trong app hai cụm này còn đổi
+  chỗ được cho nhau — [issue #38](https://github.com/nikita36078/J2ME-Loader/issues/38)).
+- **Nút trong suốt** trên nền tối, không giả phím nhựa hay kim loại.
+- Mũi tên là **bốn nút tròn rời** xếp chữ thập, không phải một khối liền.
+
+Cụm mũi tên có trần chiều cao cố định rồi bàn phím số mới lấp phần bề ngang còn
+lại — ép cả hai thành hình vuông theo chiều cao chỗ chứa thì trên màn hình cao
+hai cụm cộng lại rộng hơn thân máy và cột số bên phải tràn ra ngoài. Đo ở ba cỡ
+màn hình: mũi tên `65px` tròn (3 352px²), phím số `52×60` (3 120px²), không tràn.
 
 **Phím bốn hướng dựng theo ảnh phím thật.** Một khối vuông bo góc **liền**,
 mặt trên là vành bấm bốn hướng, giữa lồng **một ô vuông nhỏ có viền riêng** nổi

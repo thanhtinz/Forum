@@ -294,6 +294,88 @@ export function useKeypadParts({
    * `min-w-0` và `overflow-hidden` ở mọi tầng để không có nhánh nào đẩy mặt
    * phím rộng hơn thân máy.
    */
+  /**
+   * Mặt phím kiểu **J2ME Loader** — bàn phím ảo của emulator Android quen thuộc
+   * chứ không phải mặt trước một máy nào. Ba điểm nhận dạng, lấy theo chính app:
+   * cụm mũi tên một bên và bàn phím số bên kia (hai cụm này còn đổi chỗ được
+   * trong app), nút **trong suốt** chứ không phải phím nhựa, và mũi tên là bốn
+   * **nút tròn rời** xếp chữ thập chứ không phải một khối liền.
+   */
+  const j2Face = (extra?: string) =>
+    cn(
+      'select-none touch-none grid place-items-center rounded-full border transition',
+      'border-white/30 bg-white/[0.10] text-white/85 backdrop-blur-[2px]',
+      'shadow-[0_1px_2px_rgba(0,0,0,0.45)] active:translate-y-px',
+      extra,
+    );
+  const j2Held = 'bg-brand-500/70 border-brand-300/60 !text-white';
+
+  const j2Btn = (key: EmuKey, body: React.ReactNode, extra: string) => (
+    <button
+      key={key} type="button" {...bind(key)}
+      className={cn(j2Face(extra), held.has(key) && j2Held)}
+    >
+      {body}
+    </button>
+  );
+
+  /** Bốn mũi tên tròn rời xếp chữ thập, nút giữa ở tâm; bốn góc để trống. */
+  const J2_CROSS: { key: EmuKey; icon: React.ReactNode; at: string }[] = [
+    { key: 'UP', icon: <ChevronUp size={20} />, at: 'col-start-2 row-start-1' },
+    { key: 'LEFT', icon: <ChevronLeft size={20} />, at: 'col-start-1 row-start-2' },
+    { key: 'RIGHT', icon: <ChevronRight size={20} />, at: 'col-start-3 row-start-2' },
+    { key: 'DOWN', icon: <ChevronDown size={20} />, at: 'col-start-2 row-start-3' },
+  ];
+
+  const faceJ2me = (
+    <div className="flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden">
+      {softKeys && (
+        <div className="flex shrink-0 items-stretch gap-2">
+          <button type="button" {...bind('SOFT_LEFT')}
+            className={cn(j2Face('h-9 min-w-0 flex-1 !rounded-lg text-[11px] font-semibold'), held.has('SOFT_LEFT') && j2Held)}>
+            {soft.left}
+          </button>
+          <button type="button" {...bind('SOFT_RIGHT')}
+            className={cn(j2Face('h-9 min-w-0 flex-1 !rounded-lg text-[11px] font-semibold'), held.has('SOFT_RIGHT') && j2Held)}>
+            {soft.right}
+          </button>
+        </div>
+      )}
+
+      {/*
+        Cụm mũi tên có **trần chiều cao cố định** rồi bàn phím số mới lấp phần
+        bề ngang còn lại. Trước đó tôi ép cả hai thành hình vuông theo chiều cao
+        chỗ chứa, nên trên màn hình cao thì hai cụm cộng lại rộng hơn thân máy
+        và cột số bên phải tràn ra ngoài.
+      */}
+      <div className="flex min-h-0 w-full min-w-0 flex-1 items-center gap-3 overflow-hidden">
+        <div className="grid aspect-square h-full max-h-[13rem] shrink-0 grid-cols-3 grid-rows-3 gap-1.5">
+          {J2_CROSS.map((z) => (
+            <span key={z.key} className={cn(z.at, 'grid min-h-0 place-items-center')}>
+              {j2Btn(z.key, z.icon, 'h-full w-full')}
+            </span>
+          ))}
+          <span className="col-start-2 row-start-2 grid min-h-0 place-items-center">
+            {j2Btn('FIRE', <span className="text-[10px] font-bold tracking-wide">OK</span>, 'h-full w-full')}
+          </span>
+        </div>
+
+        {/* Bàn phím số: viên bo tròn lấp kín ô, đúng như bàn phím số của app */}
+        <div className="grid h-full min-h-0 w-full min-w-0 max-h-[16rem] flex-1 grid-cols-3 grid-rows-4 gap-1.5">
+          {NUMPAD_ROWS.flat().map((k) => {
+            const letters = NUM_KEY_LETTERS[k];
+            return j2Btn(k, (
+              <span className="flex flex-col items-center gap-0 leading-none">
+                <span className="text-sm font-semibold">{EMU_KEY_LABEL[k]}</span>
+                {letters && <span className="mt-0.5 text-[7px] tracking-wider opacity-70">{letters}</span>}
+              </span>
+            ), 'h-full min-h-0 w-full !rounded-[1.1rem]');
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
   const phoneFace = (
     <div className="flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden">
       {softKeys && (
@@ -334,7 +416,7 @@ export function useKeypadParts({
       </div>
     ),
 
-    phonePad: fill ? phoneFace : (
+    phonePad: fill ? (faceLayout === 'j2me' ? faceJ2me : phoneFace) : (
       <div className="mx-auto w-full max-w-[19rem] rounded-[1.6rem] border border-ink-800/70 bg-gradient-to-b from-ink-800/40 to-ink-900/40 p-2 shadow-[0_1px_0_rgba(255,255,255,0.05)_inset]">
         <div className="flex items-stretch gap-1.5">
           {softKeys && softLeft(cn('h-9 min-w-0 flex-1', PILL_L))}

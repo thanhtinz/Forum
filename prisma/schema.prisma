@@ -175,6 +175,8 @@ model Post {
   pricePoints Int?        // giá bằng điểm
   priceAmount Int?        // giá bằng VND
   vipTierFree Int?        // VIP từ tier này trở lên xem miễn phí
+  unlockLikes    Int?     // LIKE_GOAL: số lượt thích cần đạt để mở cho mọi người
+  unlockComments Int?     // COMMENT_GOAL: số bình luận cần đạt để mở cho mọi người
   hiddenContent String?   @db.Text  // phần nội dung ẩn sau paywall
   faq         Json?       // [{ q, a }] — câu hỏi thường gặp của bài
 
@@ -226,6 +228,15 @@ enum AccessLevel {
   POINTS
   PAID
   VIP_ONLY
+
+  // Mở khoá bằng tương tác của CHÍNH người xem
+  LIKE            // phải thích bài
+  COMMENT         // phải bình luận
+  LIKE_COMMENT    // phải vừa thích vừa bình luận
+
+  // Mở khoá cho TẤT CẢ khi đạt mốc tương tác chung
+  LIKE_GOAL       // đủ `unlockLikes` lượt thích
+  COMMENT_GOAL    // đủ `unlockComments` bình luận
 }
 
 model Category {

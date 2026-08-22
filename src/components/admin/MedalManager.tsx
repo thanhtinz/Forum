@@ -6,6 +6,8 @@ import { saveMedal, deleteMedal, type MedalState } from '@/app/admin/actions';
 import { MEDAL_CONDITIONS } from '@/lib/medals';
 import { cn } from '@/lib/utils';
 import { ActionForm } from '@/components/ActionForm';
+import { IconField } from '@/components/admin/IconField';
+import { IconGlyph } from '@/components/IconGlyph';
 
 export interface MedalRow {
   id: string; slug: string; name: string; description: string | null;
@@ -46,9 +48,9 @@ function MedalRowView({ medal, onEdit }: { medal: MedalRow; onEdit: () => void }
 
   return (
     <div className="p-3 sm:flex sm:items-center sm:gap-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl text-lg"
+      <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl text-lg"
         style={{ backgroundColor: (medal.color ?? '#e5e7eb') + '33', color: medal.color ?? '#6b7280' }}>
-        {medal.icon}
+        <IconGlyph icon={medal.icon} className="size-full" />
       </span>
       <div className="mt-2 min-w-0 sm:mt-0 sm:flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
@@ -83,6 +85,7 @@ function MedalRowView({ medal, onEdit }: { medal: MedalRow; onEdit: () => void }
 function MedalForm({ initial, onDone }: { initial: MedalRow | null; onDone: () => void }) {
   const [state, action, pending] = useActionState<MedalState, FormData>(saveMedal, {});
   const [cond, setCond] = useState(initial?.conditionType ?? '');
+  const [color, setColor] = useState(initial?.color ?? '#f59e0b');
   useEffect(() => { if (state.ok) onDone(); }, [state.ok, onDone]);
 
   return (
@@ -99,13 +102,11 @@ function MedalForm({ initial, onDone }: { initial: MedalRow | null; onDone: () =
           <input name="name" defaultValue={initial?.name} className="input" placeholder="Ví dụ: Chăm chỉ" />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm font-medium">Biểu tượng</span>
-          <input name="icon" defaultValue={initial?.icon} className="input" placeholder="🏅" />
-        </label>
-        <label className="block">
           <span className="mb-1 block text-sm font-medium">Màu</span>
-          <input name="color" type="color" defaultValue={initial?.color ?? '#f59e0b'} className="input !h-10 !p-1" />
+          <input name="color" type="color" value={color} onChange={(e) => setColor(e.target.value)} className="input !h-10 !p-1" />
         </label>
+        <IconField className="sm:col-span-2" defaultValue={initial?.icon} color={color}
+          fallback="🏅" placeholder="🏅 hoặc dán link ảnh" />
         <label className="block">
           <span className="mb-1 block text-sm font-medium">Độ hiếm</span>
           <select name="rarity" defaultValue={String(initial?.rarity ?? 1)} className="input">

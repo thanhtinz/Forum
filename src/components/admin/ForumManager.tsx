@@ -5,6 +5,8 @@ import { useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, MessagesSquare, CornerDownRight, Lock, Crown } from 'lucide-react';
 import { saveForum, deleteForum, type ForumState } from '@/app/admin/actions';
 import { ActionForm } from '@/components/ActionForm';
+import { IconField } from '@/components/admin/IconField';
+import { IconGlyph } from '@/components/IconGlyph';
 
 export interface ForumRow {
   id: string; name: string; slug: string; description: string | null; icon: string | null;
@@ -63,8 +65,8 @@ function ForumRowView({ forum, child, onEdit }: { forum: ForumRow; child?: boole
   return (
     <div className={`flex items-center gap-3 p-3 ${child ? 'pl-9' : ''}`}>
       {child && <CornerDownRight size={14} className="shrink-0 text-ink-300" />}
-      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-sm text-brand-600 dark:bg-brand-950/40">
-        {forum.icon || <MessagesSquare size={15} />}
+      <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg bg-brand-50 text-sm text-brand-600 dark:bg-brand-950/40">
+        <IconGlyph icon={forum.icon} fallback={<MessagesSquare size={15} />} className="size-full" />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -108,8 +110,8 @@ function ForumForm({ initial, forums, onDone }: { initial: ForumRow | null; foru
             <option value="">— Không (cấp gốc) —</option>
             {parentOptions.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
           </select></label>
-        <label className="block"><span className="mb-1 block text-sm font-medium">Biểu tượng (emoji)</span>
-          <input name="icon" defaultValue={initial?.icon ?? ''} className="input" placeholder="💬" /></label>
+        <IconField className="sm:col-span-2" defaultValue={initial?.icon} fallback="💬"
+          placeholder="💬 hoặc dán link ảnh" />
         <label className="block"><span className="mb-1 block text-sm font-medium">Thứ tự</span>
           <input name="order" type="number" defaultValue={initial?.order ?? 0} className="input" /></label>
         <label className="block"><span className="mb-1 block text-sm font-medium">Quyền đăng bài</span>

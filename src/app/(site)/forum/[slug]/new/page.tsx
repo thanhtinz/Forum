@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { forumTint } from '@/lib/forum';
 import { NewThreadForm } from '@/components/forum/NewThreadForm';
+import { IconGlyph } from '@/components/IconGlyph';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,7 @@ export default async function NewThreadPage({ params }: { params: Promise<{ slug
       <div className="card p-5 sm:p-6">
         <header className="mb-5 flex items-center gap-3 border-b border-ink-100 pb-4 dark:border-ink-800">
           <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-2xl" style={{ background: `${tint}1f`, color: tint }}>
-            {forum.icon ?? <MessagesSquare size={22} />}
+            <IconGlyph icon={forum.icon} fallback={<MessagesSquare size={22} />} className="size-9" />
           </span>
           <div>
             <h1 className="text-lg font-bold">Đăng chủ đề mới</h1>

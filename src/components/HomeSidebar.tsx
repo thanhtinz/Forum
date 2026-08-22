@@ -2,8 +2,11 @@ import Link from 'next/link';
 import { Flame, Tag as TagIcon, Trophy } from 'lucide-react';
 import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
+import { getLevelLooks } from '@/lib/level';
+import { LevelBadge } from '@/components/LevelBadge';
 
 export async function HomeSidebar() {
+  const levelLooks = await getLevelLooks();
   const [hotPosts, topUsers, tags] = await Promise.all([
     db.post.findMany({
       where: { status: 'PUBLISHED' },
@@ -46,7 +49,8 @@ export async function HomeSidebar() {
                 ? <img src={u.image} alt="" className="h-8 w-8 rounded-full object-cover" />
                 : <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">{(u.name ?? u.username ?? 'U')[0]?.toUpperCase()}</span>}
               <span className="min-w-0 flex-1 truncate text-sm font-medium">{u.name ?? u.username}</span>
-              <span className="chip bg-brand-50 text-brand-600 dark:bg-brand-950/50">Lv{u.level}</span>
+              <LevelBadge level={u.level} icon={levelLooks.get(u.level)?.icon}
+                color={levelLooks.get(u.level)?.color} name={levelLooks.get(u.level)?.name} />
             </Link>
           ))}
           {topUsers.length === 0 && <p className="text-sm text-ink-400">Chưa có thành viên.</p>}

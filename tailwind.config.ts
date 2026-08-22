@@ -12,6 +12,9 @@ const config: Config = {
   content: [
     './src/app/**/*.{ts,tsx}',
     './src/components/**/*.{ts,tsx}',
+    // `src/lib` cũng khai báo class (nhãn badge, màu thân máy emulator…) — thiếu
+    // dòng này thì class nào chỉ xuất hiện ở đó sẽ không được sinh ra CSS.
+    './src/lib/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {

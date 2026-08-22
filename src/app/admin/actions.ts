@@ -235,6 +235,52 @@ export async function setWithdrawalStatus(id: string, status: 'APPROVED' | 'REJE
   revalidatePath('/admin/withdrawals');
 }
 
+// ─────────────── Đơn hàng ───────────────
+
+/**
+ * Xác nhận đơn nạp tiền thủ công khi webhook SePay không về.
+ * Dùng lại đúng luồng của webhook: đổi trạng thái + cộng số dư trong một transaction,
+ * và chỉ chạy khi đơn còn PENDING nên bấm hai lần không cộng tiền hai lần.
+ */
+export async function markOrderPaid(id: string) {
+  await requireAdmin();
+  await db.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id },
+      select: { id: true, code: true, userId: true, status: true, type: true, amount: true, finalAmount: true },
+    });
+    if (!order || order.status !== 'PENDING') return;
+
+    await tx.order.update({
+      where: { id: order.id },
+      data: { status: 'PAID', paidAt: new Date(), payMethod: 'ADMIN' },
+      select: { id: true },
+    });
+
+    if (order.type === 'TOPUP') {
+      const amount = order.finalAmount || order.amount;
+      await grantBalance({ userId: order.userId, amount, reason: 'TOPUP', refId: order.id, note: `Nạp tiền — ${order.code} (admin xác nhận)` }, tx);
+      await notify({
+        userId: order.userId, type: 'ORDER',
+        title: `Nạp tiền thành công +${amount.toLocaleString('vi-VN')}₫`,
+        content: order.code, link: '/user/balance',
+      }, tx);
+    } else {
+      await notify({ userId: order.userId, type: 'ORDER', title: 'Đơn hàng đã được xác nhận', content: order.code, link: '/user/orders' }, tx);
+    }
+  });
+  revalidatePath('/admin/orders');
+}
+
+export async function cancelOrder(id: string) {
+  await requireAdmin();
+  const order = await db.order.findUnique({ where: { id }, select: { status: true, code: true, userId: true } });
+  if (!order || order.status !== 'PENDING') return; // đơn đã trả tiền thì không huỷ suông được
+  await db.order.update({ where: { id }, data: { status: 'CANCELLED' }, select: { id: true } });
+  await notify({ userId: order.userId, type: 'ORDER', title: 'Đơn hàng đã bị huỷ', content: order.code, link: '/user/orders' });
+  revalidatePath('/admin/orders');
+}
+
 // ─────────────── Chủ đề diễn đàn ───────────────
 
 export async function setThreadStatus(id: string, status: 'PUBLISHED' | 'PENDING' | 'HIDDEN') {

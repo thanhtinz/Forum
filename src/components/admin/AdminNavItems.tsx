@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag,
-  Crown, TicketPercent, Banknote, Images, Link2, Cloud, Sticker, Wand2,
+  Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -65,6 +65,15 @@ export const ADMIN_GROUPS: Group[] = [
   {
     title: 'Kinh doanh',
     items: [
+      {
+        href: '/admin/orders', label: 'Đơn hàng', icon: Receipt, defaultStatus: 'ALL',
+        subs: [
+          { label: 'Tất cả', status: 'ALL' },
+          { label: 'Chờ thanh toán', status: 'PENDING' },
+          { label: 'Đã thanh toán', status: 'PAID' },
+          { label: 'Đã huỷ', status: 'CANCELLED' },
+        ],
+      },
       { href: '/admin/vip-plans', label: 'Gói VIP', icon: Crown },
       { href: '/admin/coupons', label: 'Mã giảm giá', icon: TicketPercent },
       {

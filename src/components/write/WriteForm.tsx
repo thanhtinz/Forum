@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { PenLine, Send, Coins, Lock, Crown, Gift } from 'lucide-react';
+import { PenLine, Send, Coins, Lock, Crown, Gift, ThumbsUp, MessageSquare, Target } from 'lucide-react';
 import { createPost, type WriteState } from '@/app/(site)/user/write/actions';
 import { DownloadsEditor, type DownloadDraft } from './DownloadsEditor';
 import { PAID_ACCESS } from '@/lib/sell-permission';
@@ -11,6 +11,11 @@ const PAID_VALUES: string[] = [...PAID_ACCESS];
 const ACCESS_OPTIONS = [
   { v: 'FREE', label: 'Miễn phí', icon: Gift },
   { v: 'LOGIN_REQUIRED', label: 'Cần đăng nhập', icon: Lock },
+  { v: 'LIKE', label: 'Thích để mở', icon: ThumbsUp },
+  { v: 'COMMENT', label: 'Bình luận để mở', icon: MessageSquare },
+  { v: 'LIKE_COMMENT', label: 'Thích + bình luận', icon: ThumbsUp },
+  { v: 'LIKE_GOAL', label: 'Đủ số lượt thích', icon: Target },
+  { v: 'COMMENT_GOAL', label: 'Đủ số bình luận', icon: Target },
   { v: 'POINTS', label: 'Bán bằng điểm', icon: Coins },
   { v: 'PAID', label: 'Bán bằng tiền (VND)', icon: Lock },
   { v: 'VIP_ONLY', label: 'Chỉ VIP', icon: Crown },
@@ -30,6 +35,8 @@ export interface PostDraft {
   access: string;
   pricePoints: string;
   priceAmount: string;
+  unlockLikes: string;
+  unlockComments: string;
   tags: string;
   categorySlugs: string[];
   downloads: DownloadDraft[];
@@ -55,7 +62,9 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
   const isEdit = !!initial;
   const [state, action, pending] = useActionState<WriteState, FormData>(customAction ?? createPost, {});
   const [access, setAccess] = useState(initial?.access ?? 'FREE');
-  const isPaid = access === 'POINTS' || access === 'PAID' || access === 'VIP_ONLY';
+  const isPaid = PAID_VALUES.includes(access);
+  // Mọi mức khác FREE/LOGIN_REQUIRED đều khoá phần nội dung ẩn
+  const hasGate = access !== 'FREE' && access !== 'LOGIN_REQUIRED';
 
   return (
     <form action={action} className="card space-y-5 p-5 sm:p-6">
@@ -144,6 +153,27 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
           })}
         </div>
 
+        {(access === 'LIKE' || access === 'COMMENT' || access === 'LIKE_COMMENT') && (
+          <p className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-xs text-sky-700 dark:bg-sky-950/30 dark:text-sky-300">
+            Tính theo <b>từng người xem</b>: mỗi người phải tự {access === 'LIKE' ? 'thích bài' : access === 'COMMENT' ? 'bình luận' : 'thích và bình luận'} thì mới mở được nội dung ẩn.
+          </p>
+        )}
+
+        {access === 'LIKE_GOAL' && (
+          <label className="mt-3 block">
+            <span className="mb-1 block text-sm font-medium">Cần bao nhiêu lượt thích để mở?</span>
+            <input name="unlockLikes" type="number" min={1} defaultValue={initial?.unlockLikes} className="input max-w-xs" placeholder="Ví dụ: 50" />
+            <span className="mt-1 block text-xs text-ink-400">Tính <b>tổng lượt thích của tất cả mọi người</b>. Đạt mốc là mở cho tất cả.</span>
+          </label>
+        )}
+        {access === 'COMMENT_GOAL' && (
+          <label className="mt-3 block">
+            <span className="mb-1 block text-sm font-medium">Cần bao nhiêu bình luận để mở?</span>
+            <input name="unlockComments" type="number" min={1} defaultValue={initial?.unlockComments} className="input max-w-xs" placeholder="Ví dụ: 20" />
+            <span className="mt-1 block text-xs text-ink-400">Tính <b>tổng bình luận của tất cả mọi người</b>. Đạt mốc là mở cho tất cả.</span>
+          </label>
+        )}
+
         {access === 'POINTS' && (
           <label className="mt-3 block">
             <span className="mb-1 block text-sm font-medium">Giá (điểm)</span>
@@ -157,15 +187,19 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
           </label>
         )}
 
-        {isPaid && (
+        {hasGate && (
           <>
             <label className="mt-3 block">
-              <span className="mb-1 block text-sm font-medium">Nội dung ẩn (sau khi mua mới xem được) <b className="text-red-500">*</b></span>
-              <textarea name="hiddenContent" rows={5} defaultValue={initial?.hiddenContent} className="input resize-y" placeholder="Phần nội dung trả phí: link tải, hướng dẫn chi tiết, mã nguồn…" />
+              <span className="mb-1 block text-sm font-medium">
+                Nội dung ẩn ({isPaid ? 'sau khi mua mới xem được' : 'mở khoá mới xem được'}) <b className="text-red-500">*</b>
+              </span>
+              <textarea name="hiddenContent" rows={5} defaultValue={initial?.hiddenContent} className="input resize-y" placeholder="Phần nội dung bị khoá: link tải, hướng dẫn chi tiết, mã nguồn…" />
             </label>
-            <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-              💰 Ăn chia: bạn nhận <b>70%</b> mỗi lượt bán, nền tảng giữ <b>30%</b> hoa hồng. Tiền/điểm được cộng tự động khi có người mua.
-            </p>
+            {isPaid && (
+              <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                💰 Ăn chia: bạn nhận <b>70%</b> mỗi lượt bán, nền tảng giữ <b>30%</b> hoa hồng. Tiền/điểm được cộng tự động khi có người mua.
+              </p>
+            )}
           </>
         )}
 

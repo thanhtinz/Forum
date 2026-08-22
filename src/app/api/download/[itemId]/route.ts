@@ -16,7 +16,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ite
   const item = await db.downloadItem.findUnique({
     where: { id: itemId },
     include: {
-      post: { select: { id: true, slug: true, authorId: true, access: true, pricePoints: true, priceAmount: true, vipTierFree: true } },
+      post: {
+        select: {
+          id: true, slug: true, authorId: true, access: true,
+          pricePoints: true, priceAmount: true, vipTierFree: true,
+          unlockLikes: true, unlockComments: true, likeCount: true, commentCount: true,
+        },
+      },
     },
   });
   if (!item) return NextResponse.json({ error: 'Không tìm thấy tệp.' }, { status: 404 });

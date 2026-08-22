@@ -8,6 +8,7 @@ import { canAccess, isVipActive, type AccessUser } from '@/lib/access';
 import { dailyDownloadLimit, todayDownloadCount } from '@/lib/downloads';
 import { cn, fmtCount } from '@/lib/utils';
 import { Paywall } from '@/components/Paywall';
+import { InteractionUnlock, type UnlockKind } from '@/components/InteractionUnlock';
 import { DownloadBox } from '@/components/DownloadBox';
 import { ReadingProgress } from '@/components/post/ReadingProgress';
 import { Faq, type FaqItem } from '@/components/post/Faq';
@@ -26,16 +27,36 @@ const DEFAULT_COPYRIGHT = [
   'Nova không chịu trách nhiệm với nội dung do thành viên đăng tải.',
 ];
 
+/**
+ * Lấy bài viết để hiển thị — CỐ Ý không lấy `hiddenContent`.
+ *
+ * Dùng `select` liệt kê từng cột thay vì `include`: với `include`, Prisma trả
+ * về mọi cột vô hướng, và toàn bộ object đó bị tuần tự hoá vào payload RSC gửi
+ * xuống trình duyệt — nghĩa là nội dung trả phí lộ ra trong mã nguồn trang cho
+ * cả người chưa mua. Phần ẩn chỉ được đọc riêng sau khi đã xác định có quyền
+ * (xem `loadHiddenContent`).
+ */
 export async function getPostForView(slug: string) {
   return db.post.findFirst({
     where: { slug, status: 'PUBLISHED' },
-    include: {
+    select: {
+      id: true, slug: true, title: true, excerpt: true, content: true, cover: true,
+      cardStyle: true, status: true, access: true, pricePoints: true, priceAmount: true,
+      vipTierFree: true, unlockLikes: true, unlockComments: true, faq: true,
+      viewCount: true, likeCount: true, commentCount: true, pinned: true, featured: true,
+      publishedAt: true, createdAt: true, updatedAt: true, authorId: true, categoryId: true,
       author: { select: { username: true, name: true, image: true, level: true, vipTier: true } },
       category: { select: { name: true, slug: true, color: true } },
       tags: { include: { tag: { select: { name: true, slug: true } } } },
       downloads: { orderBy: { order: 'asc' } },
     },
   });
+}
+
+/** Chỉ gọi khi đã chắc chắn người xem có quyền. */
+async function loadHiddenContent(postId: string): Promise<string | null> {
+  const r = await db.post.findUnique({ where: { id: postId }, select: { hiddenContent: true } });
+  return r?.hiddenContent ?? null;
 }
 
 export async function PostShell({ slug, section, dl }: { slug: string; section: PostSection; dl?: string }) {
@@ -59,9 +80,16 @@ export async function PostShell({ slug, section, dl }: { slug: string; section: 
   const faqItems = (Array.isArray(post.faq) ? post.faq : []) as unknown as FaqItem[];
   const published = post.publishedAt ?? post.createdAt;
 
-  // Đếm view một lần cho mỗi lượt mở trang chi tiết
+  // Đếm view một lần cho mỗi lượt mở trang chi tiết.
+  // `select` là bắt buộc: không có nó Prisma trả về TOÀN BỘ bản ghi (kèm
+  // `hiddenContent`), và giá trị await đó bị tuần tự hoá vào payload RSC —
+  // tức là nội dung trả phí lộ trong mã nguồn trang cho cả người chưa mua.
   if (section === 'detail') {
-    await db.post.update({ where: { id: post.id }, data: { viewCount: { increment: 1 } } }).catch(() => {});
+    await db.post.update({
+      where: { id: post.id },
+      data: { viewCount: { increment: 1 } },
+      select: { id: true },
+    }).catch(() => {});
   }
 
   const NAV: { key: PostSection; label: string; href: string; icon: typeof FileText; badge?: number }[] = [
@@ -155,10 +183,12 @@ async function DetailSection({ post, access, accessUser, isAuthor, dl }: {
   ]);
   const copyrightLines = Array.isArray(copyrightSetting?.value) ? (copyrightSetting!.value as string[]) : DEFAULT_COPYRIGHT;
 
-  const hiddenBlock = post.hiddenContent ? (
+  // Chỉ đọc nội dung ẩn khi đã chắc chắn có quyền — không bao giờ nạp sẵn rồi ẩn.
+  const hidden = access.allowed ? await loadHiddenContent(post.id) : null;
+  const hiddenBlock = hidden ? (
     <div className="mt-2 rounded-2xl border border-brand-200 bg-brand-50/50 p-5 dark:border-brand-900 dark:bg-brand-950/20">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-brand-600"><Lock size={13} /> Nội dung mở khoá</div>
-      <div className="prose prose-ink max-w-none dark:prose-invert prose-a:text-brand-600" dangerouslySetInnerHTML={{ __html: post.hiddenContent }} />
+      <div className="prose prose-ink max-w-none dark:prose-invert prose-a:text-brand-600" dangerouslySetInnerHTML={{ __html: hidden }} />
     </div>
   ) : null;
 
@@ -171,7 +201,19 @@ async function DetailSection({ post, access, accessUser, isAuthor, dl }: {
     }
   }
 
-  const purchaseBox = post.downloads.length > 0 ? (
+  // Mở khoá bằng tương tác (thích / bình luận / mốc chung) — không phải trả phí
+  const INTERACTION: UnlockKind[] = ['LIKE', 'COMMENT', 'LIKE_COMMENT', 'LIKE_GOAL', 'COMMENT_GOAL'];
+  const unlockKind = INTERACTION.includes(post.access as UnlockKind) ? (post.access as UnlockKind) : null;
+  const interactionBox = unlockKind && !access.allowed ? (
+    <InteractionUnlock
+      postId={post.id} slug={post.slug} kind={unlockKind} loggedIn={!!accessUser}
+      did={access.did} goal={access.goal} callbackUrl={`/posts/${post.slug}`}
+    />
+  ) : null;
+
+  const purchaseBox = interactionBox ? (
+    <>{interactionBox}</>
+  ) : post.downloads.length > 0 ? (
     <>
       {access.allowed && hiddenBlock}
       <DownloadBox

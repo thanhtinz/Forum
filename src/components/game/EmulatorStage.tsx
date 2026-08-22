@@ -470,7 +470,12 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
    * `aspect-ratio` của CSS không làm được: khi `max-width` cắt bớt chiều ngang
    * thì chiều cao không co theo, ảnh game bị kéo méo. Nên đo bằng JS.
    */
+  /** Cầm dọc toàn màn hình — lúc này mới dựng thân máy. */
+  const portraitChassis = fill && !wide;
+
   const areaRef = useRef<HTMLDivElement>(null);
+  /** Viền kính bao quanh khung game (chỉ có khi dựng thân máy). */
+  const bezelRef = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ w: 0, h: 0 });
   const scaling = config.scaling;
 
@@ -478,7 +483,18 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     const area = areaRef.current;
     if (!area) return;
     const fit = () => {
-      const { width, height } = area.getBoundingClientRect();
+      const rect = area.getBoundingClientRect();
+      let width = rect.width;
+      let height = rect.height;
+      // Kính màn hình ôm sát khung game nên phần viền phải trừ ra khỏi chỗ
+      // trống; đọc thẳng từ computed style để đổi class không phải sửa số.
+      const bezel = bezelRef.current;
+      if (bezel) {
+        const cs = getComputedStyle(bezel);
+        const px = (v: string) => parseFloat(v) || 0;
+        width -= px(cs.paddingLeft) + px(cs.paddingRight) + px(cs.borderLeftWidth) + px(cs.borderRightWidth);
+        height -= px(cs.paddingTop) + px(cs.paddingBottom) + px(cs.borderTopWidth) + px(cs.borderBottomWidth);
+      }
       if (width <= 0 || height <= 0) return;
       if (scaling === 'stretch') {
         // Kéo đầy khung, chấp nhận méo tỉ lệ.
@@ -495,7 +511,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     const ro = new ResizeObserver(fit);
     ro.observe(area);
     return () => ro.disconnect();
-  }, [screen.w, screen.h, scaling]);
+  }, [screen.w, screen.h, scaling, portraitChassis]);
 
   const keypad = useKeypadParts({
     keyLayout: profile?.keyLayout ?? 'generic',
@@ -685,6 +701,30 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     </div>
   );
 
+  /**
+   * Cầm dọc toàn màn hình thì dựng nguyên **thân máy candybar** chứ không chia
+   * đôi tuỳ ý: tỉ lệ lấy theo mặt trước Nokia 6300 thật (cao 106.4 mm) —
+   * dải trên (loa thoại + nhãn) ~17 mm, kính màn hình ~41 mm, cụm phím
+   * điều hướng + bàn phím số ~45 mm. Quy ra flex là 39 : 43 cho màn hình và
+   * bàn phím, dải trên cao tự nhiên theo nội dung.
+   */
+  const chassisTop = (
+    <div className="shrink-0 px-1 pb-1">
+      <div className="flex items-center justify-between gap-2">
+        <p className="truncate text-xs font-bold">{gameTitle}</p>
+        <div className="flex shrink-0 items-center gap-1.5 text-[11px]">
+          <span className={cn('flex items-center gap-1 rounded-full px-1.5 py-0.5',
+            session && remaining < 120 ? 'bg-red-500/20 text-red-300' : 'bg-ink-800 text-ink-300')}>
+            <Timer size={11} /> {session ? fmtClock(remaining) : '--:--'}
+          </span>
+          {menu}
+        </div>
+      </div>
+      {/* Loa thoại: khe hẹp giữa thân máy, ngay trên kính màn hình */}
+      <div className="mx-auto mt-1.5 h-[3px] w-16 rounded-full bg-ink-950 shadow-[inset_0_1px_2px_rgba(0,0,0,0.9)]" />
+    </div>
+  );
+
   const topBar = (
     <div className="flex shrink-0 items-center justify-between gap-2 pb-2">
       <div className="min-w-0">
@@ -724,7 +764,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           : 'rounded-2xl p-4',
       )}
     >
-      {topBar}
+      {!portraitChassis && topBar}
 
       {fill && wide ? (
         <>
@@ -740,15 +780,31 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           </div>
           <div className="mt-2 shrink-0">{keypad.functionRow}</div>
         </>
+      ) : portraitChassis ? (
+        /* Cầm dọc: nguyên thân máy — dải trên, kính màn hình lõm, rồi mặt phím */
+        <div className="flex min-h-0 flex-1 flex-col gap-1.5 rounded-[1.75rem] bg-gradient-to-b from-ink-800/50 to-ink-900/50 p-1.5">
+          {chassisTop}
+
+          {/* Kính màn hình: ôm sát khung game như mặt máy thật, lõm hơn thân máy */}
+          <div ref={areaRef} className="flex min-h-0 flex-[39] items-center justify-center px-1.5">
+            <div
+              ref={bezelRef}
+              className="rounded-lg border border-black/80 bg-ink-950 p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)]"
+            >
+              {screenBox}
+            </div>
+          </div>
+
+          {saveNote && <p className="shrink-0 text-center text-xs text-brand-300">{saveNote}</p>}
+          <div className="min-h-0 flex-[43]">{keypad.phonePad}</div>
+        </div>
       ) : (
         <>
-          <div ref={areaRef} className={cn('flex items-center justify-center', fill ? 'min-h-0 flex-1 basis-0' : 'h-[60vh]')}>
+          <div ref={areaRef} className="flex h-[60vh] items-center justify-center">
             {screenBox}
           </div>
           {saveNote && <p className="mt-1.5 shrink-0 text-center text-xs text-brand-300">{saveNote}</p>}
-          <div className={cn('mt-2 w-full', fill ? 'min-h-0 flex-1 basis-0' : 'shrink-0 sm:mt-4')}>
-            {keypad.phonePad}
-          </div>
+          <div className="mt-2 w-full shrink-0 sm:mt-4">{keypad.phonePad}</div>
         </>
       )}
 

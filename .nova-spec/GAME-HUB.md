@@ -92,13 +92,18 @@ hết header/footer và khung của trang, chừa safe-area cho tai thỏ
 (`viewport-fit=cover`), khoá cuộn nền. Chế độ này bật theo **thiết bị** chứ không
 theo bề ngang cửa sổ — xoay ngang máy vẫn toàn màn hình:
 
-- **Cầm dọc**: màn hình chia đôi đúng bằng nhau — nửa trên là khung game, nửa
-  dưới là **mặt phím** trải hết bề ngang (mỗi nửa 374×388 ở khung 390×844).
-  Mặt phím dựng đúng kiểu máy candybar, ba tầng chia chiều cao theo tỉ lệ
-  1.1 : 3 : 4 nên phím to hết cỡ mà không tràn:
-  1. một hàng phím chức năng — phím mềm trái ‧ gọi ‧ kết thúc ‧ phím mềm phải;
-  2. vòng xoay tròn (navi-wheel) có nút OK ở tâm, đặt chính giữa;
-  3. bàn phím số 4×3 phím bè ngang, chữ số to và chữ cái ABC/DEF in nhỏ bên dưới.
+- **Cầm dọc**: dựng nguyên **thân máy candybar**, tỉ lệ lấy theo mặt trước
+  Nokia 6300 thật (cao 106.4 mm): dải trên có loa thoại ~17 mm, kính màn hình
+  ~41 mm, cụm phím điều hướng + bàn phím số ~45 mm — quy ra flex `39 : 43`.
+  Đo thật ở khung 390×844: dải trên 5.3% · kính 42.7% · mặt phím 47.2%.
+  1. **Dải trên** — tên game, đồng hồ phiên, menu ⋮, dưới cùng là khe loa thoại.
+  2. **Kính màn hình** — viền lõm tối hơn thân máy, **ôm sát** khung game chứ
+     không phải mảng đen full chiều ngang. Phần viền được trừ khỏi chỗ trống khi
+     tính khung game (đọc `padding`/`border` từ computed style nên đổi class
+     không phải sửa số).
+  3. **Mặt phím** — ba tầng chia chiều cao theo tỉ lệ 1.1 : 3 : 4: hàng phím
+     chức năng (phím mềm trái ‧ gọi ‧ kết thúc ‧ phím mềm phải), vòng xoay tròn
+     có nút OK ở tâm, rồi bàn phím số 4×3 phím bè ngang có chữ ABC/DEF in nhỏ.
 - **Cầm ngang**: D-pad ‧ màn hình ‧ bàn phím số xếp ba cột, hàng phím chức năng
   nằm dưới đáy.
 

@@ -117,62 +117,91 @@ export function useKeypadParts({
    * tên lại là phím bấm nhiều nhất khi chơi.
    */
   const NAV_ZONES: { key: EmuKey; icon: React.ReactNode; clip: string; at: string }[] = [
-    { key: 'UP', icon: <ChevronUp size={20} />, clip: 'polygon(50% 50%, 0% 0%, 100% 0%)', at: 'items-start justify-center pt-1.5' },
-    { key: 'RIGHT', icon: <ChevronRight size={20} />, clip: 'polygon(50% 50%, 100% 0%, 100% 100%)', at: 'items-center justify-end pr-1.5' },
-    { key: 'DOWN', icon: <ChevronDown size={20} />, clip: 'polygon(50% 50%, 100% 100%, 0% 100%)', at: 'items-end justify-center pb-1.5' },
-    { key: 'LEFT', icon: <ChevronLeft size={20} />, clip: 'polygon(50% 50%, 0% 100%, 0% 0%)', at: 'items-center justify-start pl-1.5' },
+    { key: 'UP', icon: <ChevronUp size={22} />, clip: 'polygon(50% 50%, 0% 0%, 100% 0%)', at: 'items-start justify-center pt-[6%]' },
+    { key: 'RIGHT', icon: <ChevronRight size={22} />, clip: 'polygon(50% 50%, 100% 0%, 100% 100%)', at: 'items-center justify-end pr-[6%]' },
+    { key: 'DOWN', icon: <ChevronDown size={22} />, clip: 'polygon(50% 50%, 100% 100%, 0% 100%)', at: 'items-end justify-center pb-[6%]' },
+    { key: 'LEFT', icon: <ChevronLeft size={22} />, clip: 'polygon(50% 50%, 0% 100%, 0% 0%)', at: 'items-center justify-start pl-[6%]' },
   ];
 
-  /** Cụm điều hướng: `round` là vòng xoay, `square` là phím bốn hướng vuông. */
-  const navPad = (shape: 'round' | 'square', size: string) => (
-    <div
-      className={cn(
-        'relative shrink-0 border',
-        shape === 'round' ? 'rounded-full' : 'rounded-2xl',
-        skinned
-          ? dark
-            ? 'border-black/70 bg-gradient-to-b from-ink-700 to-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset,0_-2px_4px_rgba(0,0,0,0.5)_inset,0_3px_6px_rgba(0,0,0,0.6)]'
-            : 'border-ink-500/50 bg-gradient-to-b from-ink-200 to-ink-400 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_-2px_4px_rgba(0,0,0,0.3)_inset,0_3px_6px_rgba(0,0,0,0.5)]'
-          : 'border-ink-950/70 bg-gradient-to-b from-ink-700 to-ink-800 shadow-[0_2px_6px_rgba(0,0,0,0.5)]',
-        size,
-      )}
-    >
-      {NAV_ZONES.map((z) => (
-        <button
-          key={z.key}
-          type="button"
-          {...bind(z.key)}
-          style={{ clipPath: z.clip }}
-          className={cn(
-            'absolute inset-0 flex transition',
-            z.at,
-            skinned ? (dark ? 'text-ink-400/60' : 'text-ink-600/50') : 'text-ink-200',
-            held.has(z.key) && 'bg-brand-500/80 !text-white',
-          )}
-        >
-          {z.icon}
-        </button>
-      ))}
-      <button
-        type="button"
-        {...bind('FIRE')}
-        aria-label={EMU_KEY_LABEL.FIRE}
+  /**
+   * Cụm điều hướng: `round` là vòng xoay, `square` là phím bốn hướng vuông.
+   *
+   * Phím vuông bo góc kiểu squircle (`rounded-[30%]`) chứ không phải ô vuông bo
+   * nhẹ — máy S60 và E-series đều có dáng này. Bốn cánh được **vẽ tách ra bằng
+   * đường chéo** trùng đúng vùng bấm góc phần tư, nên nhìn là biết bấm vào đâu
+   * ăn phím nào; thêm gờ chìm quanh mép và vành hở quanh nút OK cho ra khối.
+   */
+  const navPad = (shape: 'round' | 'square', size: string) => {
+    const square = shape === 'square';
+    const round = square ? 'rounded-[30%]' : 'rounded-full';
+    /** Đường chỉ chia bốn cánh — vỏ sáng thì mảnh và nhạt hơn vỏ tối. */
+    const seam = skinned && !dark ? 'rgba(0,0,0,0.20)' : 'rgba(0,0,0,0.42)';
+
+    return (
+      <div
         className={cn(
-          'absolute left-1/2 top-1/2 z-10 grid h-[40%] w-[40%] -translate-x-1/2 -translate-y-1/2 place-items-center',
-          'border transition active:translate-y-px',
-          shape === 'round' ? 'rounded-[32%]' : 'rounded-lg',
+          'relative shrink-0 overflow-hidden border', round,
           skinned
             ? dark
-              ? 'border-black/70 bg-gradient-to-b from-ink-600 to-ink-800 text-ink-100 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_2px_4px_rgba(0,0,0,0.6)]'
-              : 'border-ink-500/60 bg-gradient-to-b from-ink-100 to-ink-300 text-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_2px_4px_rgba(0,0,0,0.45)]'
-            : 'border-ink-950/70 bg-gradient-to-b from-ink-600 to-ink-700 text-ink-100 shadow-[0_1px_0_rgba(255,255,255,0.1)_inset,0_2px_4px_rgba(0,0,0,0.5)]',
-          held.has('FIRE') && '!from-brand-500 !to-brand-600 !text-white',
+              ? 'border-black/70 bg-gradient-to-b from-ink-700 to-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset,0_-2px_4px_rgba(0,0,0,0.5)_inset,0_3px_6px_rgba(0,0,0,0.6)]'
+              : 'border-ink-500/50 bg-gradient-to-b from-ink-200 to-ink-400 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_-2px_4px_rgba(0,0,0,0.3)_inset,0_3px_6px_rgba(0,0,0,0.5)]'
+            : 'border-ink-950/70 bg-gradient-to-b from-ink-700 to-ink-800 shadow-[0_2px_6px_rgba(0,0,0,0.5)]',
+          size,
         )}
       >
-        <span className="text-[10px] font-bold tracking-wide">OK</span>
-      </button>
-    </div>
-  );
+        {/* Bốn đường chéo chia cánh, đặt dưới nút nên không cắt ngang chữ OK */}
+        <span
+          aria-hidden
+          className={cn('pointer-events-none absolute inset-0', round)}
+          style={{ background: `repeating-conic-gradient(from 45deg, ${seam} 0deg 0.5deg, transparent 0.5deg 90deg)` }}
+        />
+        {/* Gờ chìm quanh mép, như đường viền dập nổi trên phím thật */}
+        <span
+          aria-hidden
+          className={cn('pointer-events-none absolute inset-[7%]', square ? 'rounded-[26%]' : 'rounded-full',
+            skinned && !dark
+              ? 'shadow-[0_0_0_1px_rgba(255,255,255,0.45),inset_0_0_0_1px_rgba(0,0,0,0.09)]'
+              : 'shadow-[0_0_0_1px_rgba(255,255,255,0.07),inset_0_0_0_1px_rgba(0,0,0,0.3)]')}
+        />
+
+        {NAV_ZONES.map((z) => (
+          <button
+            key={z.key}
+            type="button"
+            {...bind(z.key)}
+            style={{ clipPath: z.clip }}
+            className={cn(
+              'absolute inset-0 flex transition',
+              z.at,
+              skinned ? (dark ? 'text-ink-300/80' : 'text-ink-700/75') : 'text-ink-200',
+              held.has(z.key) && 'bg-brand-500/80 !text-white',
+            )}
+          >
+            {z.icon}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          {...bind('FIRE')}
+          aria-label={EMU_KEY_LABEL.FIRE}
+          className={cn(
+            'absolute left-1/2 top-1/2 z-10 grid -translate-x-1/2 -translate-y-1/2 place-items-center',
+            square ? 'h-[38%] w-[38%] rounded-[28%]' : 'h-[40%] w-[40%] rounded-[32%]',
+            'border transition active:translate-y-px',
+            skinned
+              ? dark
+                ? 'border-black/70 bg-gradient-to-b from-ink-600 to-ink-800 text-ink-100 shadow-[0_0_0_2px_rgba(0,0,0,0.35),0_1px_0_rgba(255,255,255,0.15)_inset,0_2px_4px_rgba(0,0,0,0.6)]'
+                : 'border-ink-500/60 bg-gradient-to-b from-ink-100 to-ink-300 text-ink-900 shadow-[0_0_0_2px_rgba(0,0,0,0.16),0_1px_0_rgba(255,255,255,0.85)_inset,0_2px_4px_rgba(0,0,0,0.45)]'
+              : 'border-ink-950/70 bg-gradient-to-b from-ink-600 to-ink-700 text-ink-100 shadow-[0_0_0_2px_rgba(0,0,0,0.4),0_1px_0_rgba(255,255,255,0.1)_inset,0_2px_4px_rgba(0,0,0,0.5)]',
+            held.has('FIRE') && '!from-brand-500 !to-brand-600 !text-white',
+          )}
+        >
+          <span className="text-[10px] font-bold tracking-wide">OK</span>
+        </button>
+      </div>
+    );
+  };
 
   const dpad = navPad('round', wheel);
 

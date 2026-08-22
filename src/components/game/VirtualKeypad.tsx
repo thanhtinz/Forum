@@ -129,10 +129,11 @@ export function useKeypadParts({
   /**
    * Cụm điều hướng: `round` là vòng xoay, `square` là phím bốn hướng vuông.
    *
-   * Phím vuông bo góc kiểu squircle (`rounded-[30%]`) chứ không phải ô vuông bo
-   * nhẹ — máy S60 và E-series đều có dáng này. Bốn cánh được **vẽ tách ra bằng
-   * đường chéo** trùng đúng vùng bấm góc phần tư, nên nhìn là biết bấm vào đâu
-   * ăn phím nào; thêm gờ chìm quanh mép và vành hở quanh nút OK cho ra khối.
+   * Phím vuông dựng theo ảnh phím thật: **một khối vuông bo góc liền**, mặt
+   * trên là vành bấm bốn hướng, giữa lồng **một ô vuông nhỏ có viền riêng** nổi
+   * lên. Không kẻ đường chia cánh — vành trên máy thật là một mặt liền, bốn mũi
+   * tên in trên đó chỉ để chỉ hướng. Vòng xoay tròn thì vẫn giữ đường chia vì
+   * mặt nó rộng và không có ô vuông ở giữa để lấy mốc.
    */
   const navPad = (shape: 'round' | 'square', size: string) => {
     const square = shape === 'square';
@@ -152,12 +153,15 @@ export function useKeypadParts({
           size,
         )}
       >
-        {/* Bốn đường chéo chia cánh, đặt dưới nút nên không cắt ngang chữ OK */}
-        <span
-          aria-hidden
-          className={cn('pointer-events-none absolute inset-0', round)}
-          style={{ background: `repeating-conic-gradient(from 45deg, ${seam} 0deg 0.5deg, transparent 0.5deg 90deg)` }}
-        />
+        {/* Vòng xoay: bốn đường chéo chia cánh. Phím vuông không có — máy thật
+            là một mặt liền, ô vuông ở giữa đã đủ làm mốc. */}
+        {!square && (
+          <span
+            aria-hidden
+            className={cn('pointer-events-none absolute inset-0', round)}
+            style={{ background: `repeating-conic-gradient(from 45deg, ${seam} 0deg 0.5deg, transparent 0.5deg 90deg)` }}
+          />
+        )}
         {/* Gờ chìm quanh mép, như đường viền dập nổi trên phím thật */}
         <span
           aria-hidden
@@ -190,12 +194,12 @@ export function useKeypadParts({
           aria-label={EMU_KEY_LABEL.FIRE}
           className={cn(
             'absolute left-1/2 top-1/2 z-10 grid -translate-x-1/2 -translate-y-1/2 place-items-center',
-            square ? 'h-[38%] w-[38%] rounded-[28%]' : 'h-[40%] w-[40%] rounded-[32%]',
+            square ? 'h-[38%] w-[38%] rounded-[26%]' : 'h-[40%] w-[40%] rounded-[32%]',
             'border transition active:translate-y-px',
             skinned
               ? dark
                 ? 'border-black/70 bg-gradient-to-b from-ink-600 to-ink-800 text-ink-100 shadow-[0_0_0_2px_rgba(0,0,0,0.35),0_1px_0_rgba(255,255,255,0.15)_inset,0_2px_4px_rgba(0,0,0,0.6)]'
-                : 'border-ink-500/60 bg-gradient-to-b from-ink-100 to-ink-300 text-ink-900 shadow-[0_0_0_2px_rgba(0,0,0,0.16),0_1px_0_rgba(255,255,255,0.85)_inset,0_2px_4px_rgba(0,0,0,0.45)]'
+                : 'border-ink-600/70 bg-gradient-to-b from-ink-100 to-ink-300 text-ink-900 shadow-[0_0_0_3px_rgba(0,0,0,0.22),0_1px_0_rgba(255,255,255,0.9)_inset,0_2px_5px_rgba(0,0,0,0.5)]'
               : 'border-ink-950/70 bg-gradient-to-b from-ink-600 to-ink-700 text-ink-100 shadow-[0_0_0_2px_rgba(0,0,0,0.4),0_1px_0_rgba(255,255,255,0.1)_inset,0_2px_4px_rgba(0,0,0,0.5)]',
             held.has('FIRE') && '!from-brand-500 !to-brand-600 !text-white',
           )}
@@ -277,59 +281,8 @@ export function useKeypadParts({
    * Hai cánh trái–phải cao hơn thanh trên–dưới: đo thực tế cho thấy để cùng
    * chiều cao thì trái–phải chỉ còn ~2 500px² trong khi phím số đã 4 300px².
    */
-  const rockerPad = (
-    /*
-      Năm phím ghép khít thành **một khối vuông**, không phải hai thanh dài kẹp
-      một hàng ngắn: `aspect-square` khoá khung, lưới 3×3 chia chỗ.
-
-      Ba cột chia đều, hàng giữa cao gấp ba hàng trên–dưới (`1fr 3fr 1fr`): trên và
-      dưới trải hết bề ngang nên phải thấp, ba phím hàng giữa chỉ được một phần
-      ba bề ngang nên phải cao bù lại. Bốn mũi tên ra gần bằng nhau — chênh nhau
-      dưới 6%. Nút OK thì thu nhỏ vào giữa ô của nó: để nó cao bằng và rộng gần
-      bằng hai cánh trái–phải thì nhìn ra phím thứ ba chứ không ra nút giữa. Trước đây khối là chữ nhật 272×168 và ba cỡ phím lệch hẳn:
-      trên/dưới 9 792px², trái/phải 7 657, nút OK chỉ 3 901.
-    */
-    <div className="grid h-full max-h-[11rem] shrink-0 aspect-square grid-cols-3 grid-rows-[1fr_3fr_1fr] gap-1">
-      <button
-        type="button" {...bind('UP')}
-        className={face('UP', 'col-span-3 row-start-1 h-full min-h-0 w-full rounded-t-2xl rounded-b-sm')}
-      >
-        <ChevronUp size={22} />
-      </button>
-
-      <button
-        type="button" {...bind('LEFT')}
-        className={face('LEFT', 'col-start-1 row-start-2 h-full min-h-0 w-full rounded-l-2xl rounded-r-sm')}
-      >
-        <ChevronLeft size={22} />
-      </button>
-      <button
-        type="button" {...bind('FIRE')}
-        className={face('FIRE', 'col-start-2 row-start-2 h-[70%] min-h-0 w-[82%] self-center justify-self-center rounded-md text-[11px] font-bold')}
-      >
-        OK
-      </button>
-      <button
-        type="button" {...bind('RIGHT')}
-        className={face('RIGHT', 'col-start-3 row-start-2 h-full min-h-0 w-full rounded-r-2xl rounded-l-sm')}
-      >
-        <ChevronRight size={22} />
-      </button>
-
-      <button
-        type="button" {...bind('DOWN')}
-        className={face('DOWN', 'col-span-3 row-start-3 h-full min-h-0 w-full rounded-b-2xl rounded-t-sm')}
-      >
-        <ChevronDown size={22} />
-      </button>
-    </div>
-  );
-
   /** Cụm điều hướng theo dòng máy. */
-  const navCluster =
-    faceLayout === 'rocker' ? rockerPad
-    : faceLayout === 's60' ? squarePad
-    : dpad;
+  const navCluster = faceLayout === 's60' ? squarePad : dpad;
 
   /** Motorola giữ kiểu phím phẳng khắc laser cho bàn phím số. */
   const flatNum = faceLayout === 'razr';

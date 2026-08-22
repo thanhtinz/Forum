@@ -176,13 +176,13 @@ còn tám:
 | Họ | Cụm điều hướng | Máy đại diện |
 |---|---|---|
 | `s40` | **Vòng xoay tròn**, nút OK nổi ở tâm | Nokia 6300 (240×320) |
-| `s60` | **Bốn hướng vuông** dáng squircle, bốn cánh tách bằng đường chéo | Nokia N70 (176×208) |
-| `rocker` | **Bập bênh nằm ngang**: hai thanh trên–dưới, hai cánh trái–phải kẹp nút OK | Nokia 7210 (128×128) |
+| `s60` | **Bốn hướng vuông**: một khối vuông bo góc liền, giữa lồng ô vuông nhỏ có viền riêng | Nokia N70 (176×208), Nokia 7210 (128×128) |
 | `razr` | Vòng xoay như `s40` nhưng **bàn phím số phẳng khắc laser** | Motorola RAZR V3 (176×220) |
 
-Bốn họ cũ `se` · `qwerty` · `touch` · `touch-only` **đã bỏ**: sau khi mặt phím
-rút còn mũi tên · phím số · Options · Back thì chúng dựng ra đúng cùng một thứ
-với `s40`, chỉ khác màu vỏ.
+Các họ đã bỏ vì dựng ra cùng một thứ với họ còn lại, chỉ khác màu vỏ:
+`se` · `qwerty` · `touch` · `touch-only` (giống `s40`), và `rocker` — kiểu bập
+bênh năm mảnh rời đã thay bằng **khối vuông liền** của `s60`, đúng như phím bốn
+hướng trên máy thật.
 
 **Thư viện rút từ 35 máy còn 6.** 35 máy kia chỉ là 35 màu vỏ khác nhau trên
 bốn bố cục lặp lại — mở bảng chọn máy ra không phân biệt được cái nào với cái
@@ -204,34 +204,25 @@ chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so
 - Trần chiều cao cụm điều hướng bị siết quá chặt. Nới trần và chia lại tỉ lệ
   cụm điều hướng ‧ bàn phím số.
 
-**Phím bập bênh là một khối vuông.** Năm phím ghép khít thành đúng một hình
-vuông (`aspect-square` + lưới 3×3), không phải hai thanh dài kẹp một hàng ngắn.
-Ba cột chia đều, hàng giữa cao gấp ba hàng trên–dưới (`1fr 3fr 1fr`): trên và
-dưới trải hết bề ngang nên phải thấp, ba phím hàng giữa chỉ được một phần ba bề
-ngang nên phải cao bù lại.
+**Phím bốn hướng dựng theo ảnh phím thật.** Một khối vuông bo góc **liền**,
+mặt trên là vành bấm bốn hướng, giữa lồng **một ô vuông nhỏ có viền riêng** nổi
+lên với vành hở quanh nó. Không kẻ đường chia cánh — vành trên máy thật là một
+mặt liền, bốn mũi tên in trên đó chỉ để chỉ hướng; ô vuông ở giữa đã đủ làm mốc.
+Riêng vòng xoay tròn vẫn giữ đường chia vì mặt nó rộng và không có ô vuông ở
+giữa để lấy mốc.
 
-Bốn mũi tên ra gần bằng nhau — chênh nhau **dưới 6%**. Riêng nút OK thì **thu
-nhỏ vào giữa ô của nó** (`h-[70%] w-[82%] self-center justify-self-center`): để
-nó cao bằng và rộng gần bằng hai cánh trái–phải thì nhìn ra phím thứ ba chứ
-không ra nút giữa.
+Vùng bấm mũi tên vẫn cắt theo góc phần tư, nên **diện tích thật của một mũi tên
+= một phần tư hộp trừ phần nút giữa che mất**, không phải cả hộp như
+`getBoundingClientRect()` trả về:
 
-| | Trước (chữ nhật 272×168) | Sau (vuông 153×153) |
-|---|---|---|
-| Trên / Dưới | 9 792px² | 4 423px² |
-| Trái / Phải | 7 657px² | 4 191px² |
-| OK | 3 901px² | 2 405px² (57% của cánh) |
-| Chênh lệch giữa bốn mũi tên | **1,28×** | **1,06×** |
+| | 425×918 | 424×754 | 424×942 |
+|---|---|---|---|
+| Mỗi mũi tên | 4 863px² | 4 836px² | 5 340px² |
+| Nút OK | 3 283px² (68%) | 3 263px² (67%) | 3 604px² (67%) |
+| Phím số | 3 844px² | 3 822px² | 4 301px² |
 
-Bốn mũi tên vẫn lớn hơn phím số (3 844px²); nút OK nhỏ hơn nhưng vẫn là ô
-40×61, đủ rộng để bấm. Vuông thì ép chiều ngang lại nên phím không còn to như
-khối chữ nhật cũ, đổi lại không còn phím nào bị lép.
-
-**Dáng cụm điều hướng.** Phím bốn hướng bo góc kiểu squircle (`rounded-[30%]`)
-chứ không phải ô vuông bo nhẹ — máy S60 và E-series đều có dáng này. Bốn cánh
-được vẽ tách ra bằng **đường chéo trùng đúng vùng bấm góc phần tư**
-(`repeating-conic-gradient` từ 45°), nên nhìn là biết bấm chỗ nào ăn phím nào.
-Thêm gờ chìm quanh mép và vành hở quanh nút OK cho ra khối. Vòng xoay tròn dùng
-chung cách vẽ này.
+Nút OK cố ý nhỏ hơn mũi tên — để nó bằng cỡ mũi tên thì nhìn ra phím thứ năm
+chứ không ra nút giữa.
 
 **Không tràn, không bị bóp.** Mọi tầng của mặt phím đều `min-w-0` +
 `overflow-hidden` nên không nhánh nào đẩy mặt phím rộng hơn thân máy; cụm bập

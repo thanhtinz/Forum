@@ -81,8 +81,6 @@ export default async function HomePage() {
     excerpt: truncate(plainText(t.content), 90),
   }));
 
-  const totalThreads = forums.reduce((s, f) => s + f.threadCount, 0);
-  const totalReplies = forums.reduce((s, f) => s + f.replyCount, 0);
   const firstForum = forums.find((f) => f.postAccess === 'ALL') ?? forums[0];
 
   return (
@@ -98,12 +96,6 @@ export default async function HomePage() {
             <p className="truncate text-xs text-ink-400">Thảo luận, hỏi đáp và giao lưu cùng cộng đồng.</p>
           </div>
         </div>
-
-        <dl className="grid grid-cols-3 gap-2 sm:w-72">
-          <HeadStat label="Chuyên mục" value={fmtCount(forums.length)} />
-          <HeadStat label="Chủ đề" value={fmtCount(totalThreads)} />
-          <HeadStat label="Bài viết" value={fmtCount(totalThreads + totalReplies)} />
-        </dl>
 
         {firstForum && (
           <Link href={session?.user ? `/forum/${firstForum.slug}/new` : '/login?callbackUrl=/'}
@@ -153,11 +145,3 @@ export default async function HomePage() {
   );
 }
 
-function HeadStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-ink-50 py-1.5 text-center dark:bg-ink-800/60">
-      <dd className="text-base font-black leading-tight text-ink-900 dark:text-white">{value}</dd>
-      <dt className="text-[11px] text-ink-400">{label}</dt>
-    </div>
-  );
-}

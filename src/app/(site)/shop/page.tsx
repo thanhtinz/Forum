@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ShoppingBag, Coins, Crown, Package } from 'lucide-react';
+import { ShoppingBag, Crown } from 'lucide-react';
 import { db } from '@/lib/db';
-import { fmtCount } from '@/lib/utils';
 import { postCardInclude, toCardData } from '@/lib/post-card';
 import { SHOP_WHERE, shopOrderBy, parseShopSort } from '@/lib/shop';
 import { PostGrid } from '@/components/PostGrid';
@@ -29,7 +28,7 @@ export default async function ShopPage({ searchParams }: {
     ? { ...SHOP_WHERE, OR: [{ category: { slug: cat } }, { categories: { some: { category: { slug: cat } } } }] }
     : SHOP_WHERE;
 
-  const [total, items, cats, stats] = await Promise.all([
+  const [total, items, cats, vipCount] = await Promise.all([
     db.post.count({ where }),
     db.post.findMany({
       where,
@@ -43,16 +42,11 @@ export default async function ShopPage({ searchParams }: {
       orderBy: [{ order: 'asc' }, { name: 'asc' }],
       select: { slug: true, name: true, _count: { select: { posts: true, postLinks: true } } },
     }),
-    Promise.all([
-      db.post.count({ where: { ...SHOP_WHERE, access: 'POINTS' } }),
-      db.post.count({ where: { ...SHOP_WHERE, access: 'PAID' } }),
-      db.post.count({ where: { ...SHOP_WHERE, access: 'VIP_ONLY' } }),
-    ]),
+    db.post.count({ where: { ...SHOP_WHERE, access: 'VIP_ONLY' } }),
   ]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const categories: ShopCategory[] = cats.map((c) => ({ slug: c.slug, name: c.name, count: c._count.posts + c._count.postLinks }));
-  const [byPoints, byMoney, byVip] = stats;
 
   const base = (() => {
     const p = new URLSearchParams();
@@ -72,12 +66,6 @@ export default async function ShopPage({ searchParams }: {
         <p className="mt-1 max-w-xl text-sm text-white/90">
           Tài nguyên, tài liệu và khoá học chất lượng. Mở khoá bằng điểm tích luỹ, số dư hoặc quyền lợi VIP.
         </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Stat icon={<Package size={15} />} label="Sản phẩm" value={fmtCount(total)} />
-          <Stat icon={<Coins size={15} />} label="Mở bằng điểm" value={fmtCount(byPoints)} />
-          <Stat icon={<ShoppingBag size={15} />} label="Trả phí" value={fmtCount(byMoney)} />
-          <Stat icon={<Crown size={15} />} label="Dành cho VIP" value={fmtCount(byVip)} />
-        </div>
       </section>
 
       <ShopFilters categories={categories} activeCat={cat} sort={sort} />
@@ -86,7 +74,7 @@ export default async function ShopPage({ searchParams }: {
 
       {totalPages > 1 && <Pagination page={page} totalPages={totalPages} basePath={base} />}
 
-      {byVip > 0 && (
+      {vipCount > 0 && (
         <div className="card flex flex-wrap items-center justify-between gap-3 p-4">
           <p className="text-sm text-ink-600 dark:text-ink-300">
             Nâng cấp VIP để mở khoá nội dung độc quyền và được giảm giá khi mua.
@@ -98,10 +86,3 @@ export default async function ShopPage({ searchParams }: {
   );
 }
 
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <span className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm backdrop-blur">
-      {icon} <b>{value}</b> <span className="text-white/80">{label}</span>
-    </span>
-  );
-}

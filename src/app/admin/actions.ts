@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { grantBalance } from '@/lib/balance';
 import { checkAndAwardMedals } from '@/lib/medals';
+import { GIF_SETTING_KEY } from '@/lib/gif';
 
 // ─────────────── Bài viết ───────────────
 
@@ -107,6 +108,27 @@ export async function updateVipPlan(id: string, data: { price: number; originalP
   await db.vipPlan.update({ where: { id }, data });
   revalidatePath('/admin/vip-plans');
   revalidatePath('/vip');
+}
+
+// ─────────────── Cấu hình GIF ───────────────
+
+export type GifSettingState = { ok?: boolean; error?: string };
+
+export async function saveGifConfig(_prev: GifSettingState, formData: FormData): Promise<GifSettingState> {
+  await requireAdmin();
+  const provider = String(formData.get('provider') ?? 'tenor') === 'giphy' ? 'giphy' : 'tenor';
+  const apiKey = String(formData.get('apiKey') ?? '').trim();
+  const enabled = formData.get('enabled') === 'on';
+
+  if (enabled && !apiKey) return { error: 'Hãy nhập khoá API trước khi bật.' };
+
+  await db.siteSetting.upsert({
+    where: { key: GIF_SETTING_KEY },
+    update: { value: { provider, apiKey, enabled } },
+    create: { key: GIF_SETTING_KEY, value: { provider, apiKey, enabled } },
+  });
+  revalidatePath('/admin/appearance');
+  return { ok: true };
 }
 
 // ─────────────── Báo cáo ───────────────

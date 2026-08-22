@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useTransition, useActionState } from 'react';
-import { Plus, Pencil, Trash2, X, Download, MessageSquarePlus, Upload } from 'lucide-react';
+import { useState, useEffect, useRef, useTransition, useActionState } from 'react';
+import { Plus, Pencil, Trash2, X, Download, MessageSquarePlus, Upload, ImagePlus, Loader2 } from 'lucide-react';
 import { saveLevelRule, deleteLevelRule, type LevelState } from '@/app/admin/actions';
 import { fmtCount } from '@/lib/utils';
 import { ActionForm } from '@/components/ActionForm';
@@ -11,6 +11,24 @@ export interface LevelRow {
   icon: string | null; color: string | null;
   dailyDownloadLimit: number | null; canPostThread: boolean; canUploadFile: boolean;
   userCount: number;
+}
+
+/** Biểu tượng có thể là emoji/chữ, hoặc đường dẫn ảnh do admin tải lên. */
+export function isImageIcon(icon: string | null | undefined): boolean {
+  return !!icon && (icon.startsWith('/') || icon.startsWith('http://') || icon.startsWith('https://'));
+}
+
+function LevelBadge({ icon, level, color, className = '' }: {
+  icon: string | null; level: number; color: string | null; className?: string;
+}) {
+  return (
+    <span className={`grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl text-sm font-bold ${className}`}
+      style={{ backgroundColor: (color ?? '#e5e7eb') + '33', color: color ?? '#6b7280' }}>
+      {isImageIcon(icon)
+        ? <img src={icon!} alt="" className="size-full object-contain" />
+        : (icon || `Lv${level}`)}
+    </span>
+  );
 }
 
 export function LevelManager({ levels }: { levels: LevelRow[] }) {
@@ -46,10 +64,7 @@ function LevelRowView({ row, onEdit }: { row: LevelRow; onEdit: () => void }) {
 
   return (
     <div className="p-3 sm:flex sm:items-center sm:gap-3">
-      <span className="grid size-10 shrink-0 place-items-center rounded-xl text-sm font-bold"
-        style={{ backgroundColor: (row.color ?? '#e5e7eb') + '33', color: row.color ?? '#6b7280' }}>
-        {row.icon || `Lv${row.level}`}
-      </span>
+      <LevelBadge icon={row.icon} level={row.level} color={row.color} />
       <div className="mt-2 min-w-0 sm:mt-0 sm:flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-sm font-semibold text-ink-900 dark:text-white">Cấp {row.level} · {row.name}</span>
@@ -87,7 +102,31 @@ function LevelRowView({ row, onEdit }: { row: LevelRow; onEdit: () => void }) {
 
 function LevelForm({ initial, nextLevel, onDone }: { initial: LevelRow | null; nextLevel: number; onDone: () => void }) {
   const [state, action, pending] = useActionState<LevelState, FormData>(saveLevelRule, {});
+  const [icon, setIcon] = useState(initial?.icon ?? '');
+  const [level, setLevel] = useState(initial?.level ?? nextLevel);
+  const [color, setColor] = useState(initial?.color ?? '#3b82f6');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (state.ok) onDone(); }, [state.ok, onDone]);
+
+  const upload = async (file: File) => {
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.set('file', file);
+      const r = await fetch('/api/upload', { method: 'POST', body: fd });
+      const j = await r.json();
+      if (!r.ok) { setUploadError(j.error ?? 'Tải ảnh thất bại.'); return; }
+      setIcon(j.url);
+    } catch {
+      setUploadError('Không tải được ảnh, vui lòng thử lại.');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
 
   return (
     <ActionForm action={action} className="card space-y-3 p-4">
@@ -100,7 +139,8 @@ function LevelForm({ initial, nextLevel, onDone }: { initial: LevelRow | null; n
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1 block text-sm font-medium">Cấp</span>
-          <input name="level" type="number" min={0} defaultValue={initial?.level ?? nextLevel} className="input" />
+          <input name="level" type="number" min={0} value={level}
+            onChange={(e) => setLevel(parseInt(e.target.value, 10) || 0)} className="input" />
         </label>
         <label className="block">
           <span className="mb-1 block text-sm font-medium">Tên cấp</span>
@@ -116,13 +156,36 @@ function LevelForm({ initial, nextLevel, onDone }: { initial: LevelRow | null; n
           <input name="dailyDownloadLimit" type="number" min={0} defaultValue={initial?.dailyDownloadLimit ?? ''} className="input" placeholder="Để trống = không giới hạn" />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm font-medium">Biểu tượng</span>
-          <input name="icon" defaultValue={initial?.icon ?? ''} className="input" placeholder="⭐ (để trống thì hiện Lv)" />
-        </label>
-        <label className="block">
           <span className="mb-1 block text-sm font-medium">Màu</span>
-          <input name="color" type="color" defaultValue={initial?.color ?? '#3b82f6'} className="input !h-10 !p-1" />
+          <input name="color" type="color" value={color} onChange={(e) => setColor(e.target.value)} className="input !h-10 !p-1" />
         </label>
+
+        <div className="sm:col-span-2">
+          <span className="mb-1 block text-sm font-medium">Biểu tượng</span>
+          <div className="flex items-start gap-3">
+            <LevelBadge icon={icon || null} level={level} color={color} className="mt-0.5" />
+            <div className="min-w-0 flex-1 space-y-1.5">
+              <input name="icon" value={icon} onChange={(e) => setIcon(e.target.value)} className="input"
+                placeholder="⭐ hoặc dán link ảnh (để trống thì hiện Lv)" />
+              <div className="flex flex-wrap items-center gap-2">
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
+                  className="btn-ghost !py-1 text-xs disabled:opacity-60">
+                  {uploading ? <Loader2 size={14} className="animate-spin" /> : <ImagePlus size={14} />}
+                  {uploading ? 'Đang tải ảnh…' : 'Tải ảnh lên'}
+                </button>
+                {isImageIcon(icon) && (
+                  <button type="button" onClick={() => setIcon('')} className="btn-ghost !py-1 text-xs">
+                    <X size={14} /> Bỏ ảnh
+                  </button>
+                )}
+                <span className="text-xs text-ink-400">Ảnh JPG, PNG, GIF hoặc WebP, tối đa 5MB.</span>
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
+              {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-4">

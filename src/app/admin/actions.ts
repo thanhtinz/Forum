@@ -8,6 +8,7 @@ import { grantBalance } from '@/lib/balance';
 import { checkAndAwardMedals, MEDAL_CONDITIONS } from '@/lib/medals';
 import { GIF_SETTING_KEY } from '@/lib/gif';
 import { R2_SETTING_KEY, deleteFile } from '@/lib/storage';
+import { normalizeIcon } from '@/lib/icon';
 
 // ─────────────── Bài viết ───────────────
 
@@ -73,7 +74,7 @@ export async function saveCategory(_prev: CategoryState, formData: FormData): Pr
   const name = String(formData.get('name') ?? '').trim();
   const parentId = String(formData.get('parentId') ?? '').trim() || null;
   const color = String(formData.get('color') ?? '').trim() || null;
-  const icon = String(formData.get('icon') ?? '').trim() || null;
+  const icon = normalizeIcon(formData.get('icon'));
   const description = String(formData.get('description') ?? '').trim() || null;
   const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
   if (name.length < 2) return { error: 'Tên chuyên mục quá ngắn.' };
@@ -334,7 +335,7 @@ export async function saveForum(_prev: ForumState, formData: FormData): Promise<
   const name = String(formData.get('name') ?? '').trim();
   const parentId = String(formData.get('parentId') ?? '').trim() || null;
   const description = String(formData.get('description') ?? '').trim() || null;
-  const icon = String(formData.get('icon') ?? '').trim() || null;
+  const icon = normalizeIcon(formData.get('icon'));
   const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
   const postAccess = parseForumAccess(formData.get('postAccess'));
   const minLevel = Math.max(1, parseInt(String(formData.get('minLevel') ?? '1'), 10) || 1);
@@ -535,7 +536,7 @@ export async function saveMedal(_prev: MedalState, formData: FormData): Promise<
   await requireAdmin();
   const id = String(formData.get('id') ?? '').trim() || null;
   const name = String(formData.get('name') ?? '').trim();
-  const icon = String(formData.get('icon') ?? '').trim();
+  const icon = normalizeIcon(formData.get('icon')) ?? '';
   const description = String(formData.get('description') ?? '').trim() || null;
   const color = String(formData.get('color') ?? '').trim() || null;
   const rarity = Math.min(5, Math.max(1, parseInt(String(formData.get('rarity') ?? '1'), 10) || 1));
@@ -543,7 +544,7 @@ export async function saveMedal(_prev: MedalState, formData: FormData): Promise<
   const conditionValue = parseInt(String(formData.get('conditionValue') ?? ''), 10);
 
   if (name.length < 2) return { error: 'Tên huy chương quá ngắn.' };
-  if (!icon) return { error: 'Hãy nhập biểu tượng (emoji hoặc ký tự).' };
+  if (!icon) return { error: 'Hãy nhập biểu tượng (emoji) hoặc tải ảnh lên.' };
   if (conditionType && !MEDAL_CONDITIONS.some((c) => c.value === conditionType)) {
     return { error: 'Điều kiện không hợp lệ.' };
   }
@@ -590,8 +591,7 @@ export async function saveLevelRule(_prev: LevelState, formData: FormData): Prom
   const level = parseInt(String(formData.get('level') ?? ''), 10);
   const name = String(formData.get('name') ?? '').trim();
   const expRequired = parseInt(String(formData.get('expRequired') ?? ''), 10);
-  // Biểu tượng: emoji/chữ ngắn, hoặc đường dẫn ảnh đã tải lên.
-  const icon = String(formData.get('icon') ?? '').trim().slice(0, 500) || null;
+  const icon = normalizeIcon(formData.get('icon'));
   const color = String(formData.get('color') ?? '').trim() || null;
   const dailyRaw = String(formData.get('dailyDownloadLimit') ?? '').trim();
   const dailyDownloadLimit = dailyRaw === '' ? null : Math.max(0, parseInt(dailyRaw, 10) || 0);

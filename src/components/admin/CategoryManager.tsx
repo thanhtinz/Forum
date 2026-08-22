@@ -5,6 +5,8 @@ import { useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, FolderTree, CornerDownRight } from 'lucide-react';
 import { saveCategory, deleteCategory, type CategoryState } from '@/app/admin/actions';
 import { ActionForm } from '@/components/ActionForm';
+import { IconField } from '@/components/admin/IconField';
+import { IconGlyph } from '@/components/IconGlyph';
 
 export interface CatRow {
   id: string; name: string; slug: string; color: string | null; icon: string | null;
@@ -53,8 +55,8 @@ function CategoryRow({ cat, child, onEdit }: { cat: CatRow; child?: boolean; onE
   return (
     <div className={`flex items-center gap-3 p-3 ${child ? 'pl-9' : ''}`}>
       {child && <CornerDownRight size={14} className="shrink-0 text-ink-300" />}
-      <span className="grid size-8 shrink-0 place-items-center rounded-lg text-sm" style={{ backgroundColor: (cat.color ?? '#e5e7eb') + '33', color: cat.color ?? '#6b7280' }}>
-        {cat.icon || <FolderTree size={15} />}
+      <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded-lg text-sm" style={{ backgroundColor: (cat.color ?? '#e5e7eb') + '33', color: cat.color ?? '#6b7280' }}>
+        <IconGlyph icon={cat.icon} fallback={<FolderTree size={15} />} className="size-full" />
       </span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold text-ink-900 dark:text-white">{cat.name}</div>
@@ -93,8 +95,8 @@ function CategoryForm({ initial, categories, onDone }: { initial: CatRow | null;
           </select></label>
         <label className="block"><span className="mb-1 block text-sm font-medium">Màu (hex)</span>
           <input name="color" defaultValue={initial?.color ?? ''} className="input" placeholder="#22c55e" /></label>
-        <label className="block"><span className="mb-1 block text-sm font-medium">Biểu tượng (emoji)</span>
-          <input name="icon" defaultValue={initial?.icon ?? ''} className="input" placeholder="📁" /></label>
+        <IconField className="sm:col-span-2" defaultValue={initial?.icon} fallback="📁"
+          placeholder="📁 hoặc dán link ảnh" />
         <label className="block"><span className="mb-1 block text-sm font-medium">Thứ tự</span>
           <input name="order" type="number" defaultValue={initial?.order ?? 0} className="input" /></label>
       </div>

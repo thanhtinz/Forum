@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { Star } from 'lucide-react';
+import { Star, ShoppingBag, Pencil } from 'lucide-react';
 import { db } from '@/lib/db';
 import { cn, fmtCount } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
@@ -51,6 +51,9 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
           <h1 className="text-xl font-bold text-ink-900 dark:text-white">Quản lý bài viết</h1>
           <p className="text-sm text-ink-500">{STATUSES.find((s) => s.key === status)?.label} · {fmtCount(total)} bài</p>
         </div>
+        <Link href="/admin/posts/new" className="btn-primary !px-3.5 !py-2 text-sm">
+          <ShoppingBag size={15} /> Đăng hàng cửa hàng
+        </Link>
       </div>
 
       <div className="card divide-y divide-ink-100 dark:divide-ink-800">
@@ -71,6 +74,10 @@ export default async function AdminPostsPage({ searchParams }: { searchParams: P
               </div>
             </div>
             <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-medium', STATUS_BADGE[p.status] ?? STATUS_BADGE.DRAFT)}>{STATUS_LABEL[p.status] ?? p.status}</span>
+            <Link href={`/user/posts/${p.id}/edit`} title="Sửa bài"
+              className="grid size-8 shrink-0 place-items-center rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-100 dark:border-ink-700 dark:hover:bg-ink-800">
+              <Pencil size={14} />
+            </Link>
             <PostRowActions id={p.id} status={p.status} featured={p.featured} />
           </div>
         ))}

@@ -5,7 +5,7 @@ import { requireAdmin, requireSuperAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { grantBalance } from '@/lib/balance';
-import { checkAndAwardMedals } from '@/lib/medals';
+import { checkAndAwardMedals, MEDAL_CONDITIONS } from '@/lib/medals';
 import { GIF_SETTING_KEY } from '@/lib/gif';
 import { R2_SETTING_KEY, deleteFile } from '@/lib/storage';
 
@@ -525,4 +525,98 @@ export async function deleteCoupon(id: string) {
   if (used > 0) return;
   await db.coupon.delete({ where: { id } }).catch(() => {});
   revalidatePath('/admin/coupons');
+}
+
+// ─────────────── Huy chương ───────────────
+
+export type MedalState = { ok?: boolean; error?: string };
+
+export async function saveMedal(_prev: MedalState, formData: FormData): Promise<MedalState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const name = String(formData.get('name') ?? '').trim();
+  const icon = String(formData.get('icon') ?? '').trim();
+  const description = String(formData.get('description') ?? '').trim() || null;
+  const color = String(formData.get('color') ?? '').trim() || null;
+  const rarity = Math.min(5, Math.max(1, parseInt(String(formData.get('rarity') ?? '1'), 10) || 1));
+  const conditionType = String(formData.get('conditionType') ?? '').trim() || null;
+  const conditionValue = parseInt(String(formData.get('conditionValue') ?? ''), 10);
+
+  if (name.length < 2) return { error: 'Tên huy chương quá ngắn.' };
+  if (!icon) return { error: 'Hãy nhập biểu tượng (emoji hoặc ký tự).' };
+  if (conditionType && !MEDAL_CONDITIONS.some((c) => c.value === conditionType)) {
+    return { error: 'Điều kiện không hợp lệ.' };
+  }
+  // Trao tự động mà thiếu mốc thì huy chương sẽ không bao giờ được trao.
+  if (conditionType && !(conditionValue > 0)) return { error: 'Hãy nhập mốc đạt được lớn hơn 0.' };
+
+  const autoGrant = Boolean(conditionType);
+  const data = {
+    name, icon, description, color, rarity,
+    conditionType, conditionValue: conditionType ? conditionValue : null, autoGrant,
+  };
+
+  try {
+    if (id) {
+      await db.medal.update({ where: { id }, data, select: { id: true } });
+    } else {
+      let slug = slugify(name, 'huy-chuong');
+      if (await db.medal.findUnique({ where: { slug }, select: { id: true } })) slug = `${slug}-${Date.now().toString().slice(-4)}`;
+      await db.medal.create({ data: { ...data, slug }, select: { id: true } });
+    }
+  } catch {
+    return { error: 'Không lưu được huy chương.' };
+  }
+  revalidatePath('/admin/medals');
+  return { ok: true };
+}
+
+export async function deleteMedal(id: string) {
+  await requireAdmin();
+  // Xoá huy chương thì bộ sưu tập của thành viên cũng mất, nên chặn khi đã có người nhận.
+  const owned = await db.userMedal.count({ where: { medalId: id } });
+  if (owned > 0) return;
+  await db.medal.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/medals');
+}
+
+// ─────────────── Cấp độ ───────────────
+
+export type LevelState = { ok?: boolean; error?: string };
+
+export async function saveLevelRule(_prev: LevelState, formData: FormData): Promise<LevelState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const level = parseInt(String(formData.get('level') ?? ''), 10);
+  const name = String(formData.get('name') ?? '').trim();
+  const expRequired = parseInt(String(formData.get('expRequired') ?? ''), 10);
+  const icon = String(formData.get('icon') ?? '').trim() || null;
+  const color = String(formData.get('color') ?? '').trim() || null;
+  const dailyRaw = String(formData.get('dailyDownloadLimit') ?? '').trim();
+  const dailyDownloadLimit = dailyRaw === '' ? null : Math.max(0, parseInt(dailyRaw, 10) || 0);
+  const canPostThread = formData.get('canPostThread') === 'on';
+  const canUploadFile = formData.get('canUploadFile') === 'on';
+
+  if (!(level >= 0)) return { error: 'Cấp độ phải là số từ 0 trở lên.' };
+  if (name.length < 1) return { error: 'Hãy đặt tên cho cấp độ.' };
+  if (!(expRequired >= 0)) return { error: 'EXP yêu cầu phải là số từ 0 trở lên.' };
+
+  const clash = await db.levelRule.findUnique({ where: { level }, select: { id: true } });
+  if (clash && clash.id !== id) return { error: `Cấp ${level} đã tồn tại.` };
+
+  const data = { level, name, expRequired, icon, color, dailyDownloadLimit, canPostThread, canUploadFile };
+  try {
+    if (id) await db.levelRule.update({ where: { id }, data, select: { id: true } });
+    else await db.levelRule.create({ data, select: { id: true } });
+  } catch {
+    return { error: 'Không lưu được cấp độ.' };
+  }
+  revalidatePath('/admin/levels');
+  return { ok: true };
+}
+
+export async function deleteLevelRule(id: string) {
+  await requireAdmin();
+  await db.levelRule.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/levels');
 }

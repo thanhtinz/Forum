@@ -4,12 +4,13 @@ import { useActionState } from 'react';
 import { PenLine } from 'lucide-react';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { createThread, type ThreadState } from '@/app/(site)/forum/actions';
+import { ActionForm } from '@/components/ActionForm';
 
 export function NewThreadForm({ forumSlug }: { forumSlug: string }) {
   const [state, action, pending] = useActionState<ThreadState, FormData>(createThread, {});
 
   return (
-    <form action={action} className="space-y-4">
+    <ActionForm action={action} className="space-y-4">
       <input type="hidden" name="forumSlug" value={forumSlug} />
 
       <div>
@@ -36,6 +37,6 @@ export function NewThreadForm({ forumSlug }: { forumSlug: string }) {
           <PenLine size={16} /> {pending ? 'Đang đăng…' : 'Đăng chủ đề'}
         </button>
       </div>
-    </form>
+    </ActionForm>
   );
 }

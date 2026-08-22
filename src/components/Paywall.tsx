@@ -7,6 +7,7 @@ import type { AccessReason } from '@/lib/access';
 import { fmtCount, fmtVnd } from '@/lib/utils';
 import { unlockPost, type UnlockState } from '@/app/(site)/posts/[slug]/actions';
 import { CouponField } from './CouponField';
+import { ActionForm } from '@/components/ActionForm';
 
 export interface PaywallProps {
   postId: string;
@@ -59,14 +60,14 @@ export function Paywall(props: PaywallProps) {
           <p className="mx-auto mt-1 max-w-md text-sm text-ink-500">
             Mở khoá vĩnh viễn bằng <strong>{fmtCount(pricePoints)} điểm</strong>.
           </p>
-          <form action={action} className="mt-4">
+          <ActionForm action={action} className="mt-4">
             <input type="hidden" name="postId" value={postId} />
             <input type="hidden" name="slug" value={slug} />
             <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">
               <Coins size={16} /> {pending ? 'Đang mở khoá…' : `Mở khoá bằng ${fmtCount(pricePoints)} điểm`}
             </button>
             <CouponField />
-          </form>
+          </ActionForm>
         </>
       )}
 
@@ -76,14 +77,14 @@ export function Paywall(props: PaywallProps) {
             Mua một lần, xem mãi mãi — <strong>{fmtVnd(priceAmount)}</strong> (trừ vào số dư).
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <form action={action}>
+            <ActionForm action={action}>
               <input type="hidden" name="postId" value={postId} />
               <input type="hidden" name="slug" value={slug} />
               <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">
                 <Wallet size={16} /> {pending ? 'Đang xử lý…' : `Mua với ${fmtVnd(priceAmount)}`}
               </button>
               <CouponField />
-            </form>
+            </ActionForm>
             <Link href={`/user/balance?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="btn-outline">
               Nạp thêm
             </Link>

@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { Save, Wand2 } from 'lucide-react';
 import { saveGifConfig, type GifSettingState } from '@/app/admin/actions';
+import { ActionForm } from '@/components/ActionForm';
 
 export interface GifSettingsProps {
   provider: 'tenor' | 'giphy';
@@ -26,7 +27,7 @@ export function GifSettings({ provider, hasKey, enabled }: GifSettingsProps) {
         <span>Bật tab GIF ở ô soạn trả lời. Khoá API chỉ nằm ở máy chủ, không gửi xuống trình duyệt người dùng.</span>
       </p>
 
-      <form action={action} className="space-y-3">
+      <ActionForm action={action} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
             <span className="mb-1 block text-sm font-medium">Nhà cung cấp</span>
@@ -61,7 +62,7 @@ export function GifSettings({ provider, hasKey, enabled }: GifSettingsProps) {
         <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">
           <Save size={16} /> {pending ? 'Đang lưu…' : 'Lưu cấu hình'}
         </button>
-      </form>
+      </ActionForm>
     </section>
   );
 }

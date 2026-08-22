@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { updateProfile, changePassword, type SettingsState } from '@/app/(site)/user/settings/actions';
+import { ActionForm } from '@/components/ActionForm';
 
 export interface ProfileInitial {
   name: string | null;
@@ -17,7 +18,7 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileInitial }) {
   const err = (k: string) => state.fieldErrors?.[k];
 
   return (
-    <form action={action} className="card space-y-3 p-5">
+    <ActionForm action={action} className="card space-y-3 p-5">
       <h2 className="font-bold">Hồ sơ công khai</h2>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -43,7 +44,7 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileInitial }) {
       {state.ok && <p className="text-sm text-green-600">Đã lưu hồ sơ.</p>}
 
       <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">{pending ? 'Đang lưu…' : 'Lưu thay đổi'}</button>
-    </form>
+    </ActionForm>
   );
 }
 
@@ -52,7 +53,7 @@ export function PasswordForm({ hasPassword, username }: { hasPassword: boolean; 
   const err = (k: string) => state.fieldErrors?.[k];
 
   return (
-    <form action={action} className="card space-y-3 p-5">
+    <ActionForm action={action} className="card space-y-3 p-5">
       <h2 className="font-bold">{hasPassword ? 'Đổi mật khẩu' : 'Đặt mật khẩu'}</h2>
       {/* Trình quản lý mật khẩu cần biết tài khoản nào đang đổi */}
       <input type="text" name="username" autoComplete="username" defaultValue={username ?? ''} readOnly hidden aria-hidden="true" tabIndex={-1} />
@@ -78,7 +79,7 @@ export function PasswordForm({ hasPassword, username }: { hasPassword: boolean; 
       {state.ok && <p className="text-sm text-green-600">Đã cập nhật mật khẩu.</p>}
 
       <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">{pending ? 'Đang lưu…' : 'Cập nhật mật khẩu'}</button>
-    </form>
+    </ActionForm>
   );
 }
 

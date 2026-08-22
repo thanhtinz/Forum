@@ -6,6 +6,7 @@ import { createPost, type WriteState } from '@/app/(site)/user/write/actions';
 import { DownloadsEditor, type DownloadDraft } from './DownloadsEditor';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { PAID_ACCESS } from '@/lib/sell-permission';
+import { ActionForm } from '@/components/ActionForm';
 
 const PAID_VALUES: string[] = [...PAID_ACCESS];
 
@@ -69,7 +70,7 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
   const hasGate = access !== 'FREE' && access !== 'LOGIN_REQUIRED';
 
   return (
-    <form action={action} className="card space-y-5 p-5 sm:p-6">
+    <ActionForm action={action} className="card space-y-5 p-5 sm:p-6">
       {initial && <input type="hidden" name="postId" value={initial.id} />}
       <div className="flex items-center gap-2 border-b border-ink-100 pb-4 dark:border-ink-800">
         <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-950/50"><PenLine size={18} /></span>
@@ -230,6 +231,6 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
           <Send size={16} /> {pending ? (isEdit ? 'Đang lưu…' : 'Đang đăng…') : (isEdit ? 'Lưu thay đổi' : 'Đăng bài')}
         </button>
       </div>
-    </form>
+    </ActionForm>
   );
 }

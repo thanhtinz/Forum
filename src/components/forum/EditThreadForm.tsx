@@ -4,12 +4,13 @@ import { useActionState } from 'react';
 import { Save, PenLine } from 'lucide-react';
 import { updateThread, type ThreadState } from '@/app/(site)/forum/actions';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
+import { ActionForm } from '@/components/ActionForm';
 
 export function EditThreadForm({ threadId, title, content }: { threadId: string; title: string; content: string }) {
   const [state, action, pending] = useActionState<ThreadState, FormData>(updateThread, {});
 
   return (
-    <form action={action} className="card space-y-4 p-5">
+    <ActionForm action={action} className="card space-y-4 p-5">
       <div className="flex items-center gap-2 border-b border-ink-100 pb-3 dark:border-ink-800">
         <span className="grid size-9 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-950/50"><PenLine size={18} /></span>
         <div>
@@ -37,6 +38,6 @@ export function EditThreadForm({ threadId, title, content }: { threadId: string;
           <Save size={16} /> {pending ? 'Đang lưu…' : 'Lưu thay đổi'}
         </button>
       </div>
-    </form>
+    </ActionForm>
   );
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
-  LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag,
+  LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award,
   Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -51,6 +51,8 @@ export const ADMIN_GROUPS: Group[] = [
     title: 'Thành viên',
     items: [
       { href: '/admin/users', label: 'Người dùng', icon: Users },
+      { href: '/admin/levels', label: 'Cấp độ', icon: TrendingUp },
+      { href: '/admin/medals', label: 'Huy chương', icon: Award },
       {
         href: '/admin/reports', label: 'Báo cáo', icon: Flag, defaultStatus: 'OPEN',
         subs: [

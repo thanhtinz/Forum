@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useActionState } from 'react';
 import { Flag, X, CheckCircle2 } from 'lucide-react';
 import { createReport, type ReportState, type ReportTarget } from '@/app/(site)/report/actions';
+import { ActionForm } from '@/components/ActionForm';
 
 const REASONS = ['Nội dung vi phạm', 'Spam / quảng cáo', 'Nội dung không phù hợp', 'Vi phạm bản quyền', 'Lừa đảo', 'Khác'];
 
@@ -34,7 +35,7 @@ export function ReportButton({ target, targetId, className }: { target: ReportTa
                 <button type="button" onClick={() => setOpen(false)} className="btn-ghost mt-2">Đóng</button>
               </div>
             ) : (
-              <form action={action} className="space-y-3">
+              <ActionForm action={action} className="space-y-3">
                 <input type="hidden" name="target" value={target} />
                 <input type="hidden" name="targetId" value={targetId} />
                 <div className="space-y-1.5">
@@ -50,7 +51,7 @@ export function ReportButton({ target, targetId, className }: { target: ReportTa
                 <button type="submit" disabled={pending} className="btn w-full bg-red-600 text-white hover:bg-red-700 disabled:opacity-60">
                   {pending ? 'Đang gửi…' : 'Gửi báo cáo'}
                 </button>
-              </form>
+              </ActionForm>
             )}
           </div>
         </div>

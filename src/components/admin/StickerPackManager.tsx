@@ -49,13 +49,12 @@ export function StickerPackManager({ packs }: { packs: PackRow[] }) {
 
   return (
     <section className="card p-5">
-      <div className="mb-1 flex items-center gap-2">
-        <Sticker size={18} className="text-brand-500" />
-        <h2 className="font-bold text-ink-900 dark:text-white">Bộ sticker</h2>
-      </div>
-      <p className="mb-4 text-sm text-ink-500">
-        Tải lên tệp <b>.zip</b> chứa ảnh (PNG, JPG, GIF, WebP, SVG). Mỗi ảnh thành một sticker,
-        tên lấy theo tên tệp. Tối đa 20MB mỗi gói, 1MB mỗi ảnh, 60 ảnh mỗi bộ.
+      <p className="mb-4 flex items-start gap-2 text-sm text-ink-500">
+        <Sticker size={16} className="mt-0.5 shrink-0 text-brand-500" />
+        <span>
+          Tải lên tệp <b>.zip</b> chứa ảnh (PNG, JPG, GIF, WebP, SVG). Mỗi ảnh thành một sticker,
+          tên lấy theo tên tệp. Tối đa 20MB mỗi gói, 1MB mỗi ảnh, 60 ảnh mỗi bộ.
+        </span>
       </p>
 
       {/* Khung tải lên */}

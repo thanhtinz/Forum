@@ -21,12 +21,9 @@ export function GifSettings({ provider, hasKey, enabled }: GifSettingsProps) {
 
   return (
     <section className="card p-5">
-      <div className="mb-1 flex items-center gap-2">
-        <Wand2 size={18} className="text-brand-500" />
-        <h2 className="font-bold text-ink-900 dark:text-white">GIF trong khung trả lời</h2>
-      </div>
-      <p className="mb-4 text-sm text-ink-500">
-        Bật tab GIF ở ô soạn trả lời. Khoá API chỉ nằm ở máy chủ, không gửi xuống trình duyệt người dùng.
+      <p className="mb-4 flex items-start gap-2 text-sm text-ink-500">
+        <Wand2 size={16} className="mt-0.5 shrink-0 text-brand-500" />
+        <span>Bật tab GIF ở ô soạn trả lời. Khoá API chỉ nằm ở máy chủ, không gửi xuống trình duyệt người dùng.</span>
       </p>
 
       <form action={action} className="space-y-3">

@@ -1,0 +1,23 @@
+import type { Metadata } from 'next';
+import { db } from '@/lib/db';
+import { SlideManager, type SlideRow } from '@/components/admin/AppearanceManager';
+
+export const metadata: Metadata = { title: 'Slide trang chủ' };
+export const dynamic = 'force-dynamic';
+
+export default async function AdminSlidesPage() {
+  const slides = await db.slide.findMany({
+    orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    select: { id: true, title: true, subtitle: true, image: true, link: true, order: true, active: true },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-xl font-bold text-ink-900 dark:text-white">Slide trang chủ</h1>
+        <p className="text-sm text-ink-500">Ảnh lớn hiển thị đầu trang bài viết. Slide đầu tiên làm ảnh chính.</p>
+      </div>
+      <SlideManager slides={slides as SlideRow[]} />
+    </div>
+  );
+}

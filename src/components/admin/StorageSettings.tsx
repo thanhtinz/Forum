@@ -22,7 +22,7 @@ export function StorageSettings(p: StorageSettingsProps) {
     <section className="card p-5">
       <div className="mb-1 flex items-center gap-2">
         <Cloud size={18} className="text-brand-500" />
-        <h2 className="font-bold text-ink-900 dark:text-white">Lưu trữ ảnh — Cloudflare R2</h2>
+        <h2 className="font-bold text-ink-900 dark:text-white">Cloudflare R2</h2>
         <span className={`ml-auto rounded-full px-2.5 py-1 text-xs font-medium ${p.enabled
           ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
           : 'bg-ink-200 text-ink-600 dark:bg-ink-800 dark:text-ink-300'}`}>

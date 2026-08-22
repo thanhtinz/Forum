@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { Cloud, Save, HardDrive } from 'lucide-react';
 import { saveR2Config, type R2State } from '@/app/admin/actions';
+import { ActionForm } from '@/components/ActionForm';
 
 export interface StorageSettingsProps {
   accountId: string;
@@ -40,7 +41,7 @@ export function StorageSettings(p: StorageSettingsProps) {
           Muốn đổi thì sửa biến môi trường rồi khởi động lại máy chủ.
         </p>
       ) : (
-        <form action={action} className="space-y-3">
+        <ActionForm action={action} className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block">
               <span className="mb-1 block text-sm font-medium">Account ID</span>
@@ -84,7 +85,7 @@ export function StorageSettings(p: StorageSettingsProps) {
           <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">
             <Save size={16} /> {pending ? 'Đang lưu…' : 'Lưu cấu hình'}
           </button>
-        </form>
+        </ActionForm>
       )}
     </section>
   );

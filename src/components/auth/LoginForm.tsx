@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useActionState } from 'react';
 import { LogIn, User, Lock } from 'lucide-react';
 import { loginAction, type AuthFormState } from '@/app/(auth)/actions';
+import { ActionForm } from '@/components/ActionForm';
 
 export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
   const [state, action, pending] = useActionState<AuthFormState, FormData>(loginAction, {});
@@ -14,7 +15,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
       <h1 className="text-xl font-bold">Đăng nhập</h1>
       <p className="mt-1 text-sm text-ink-500">Chào mừng bạn quay lại Nova.</p>
 
-      <form action={action} className="mt-6 space-y-4">
+      <ActionForm action={action} className="mt-6 space-y-4">
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
 
         <label className="block">
@@ -38,7 +39,7 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
         <button type="submit" disabled={pending} className="btn-primary w-full py-2.5 disabled:opacity-60">
           <LogIn size={16} /> {pending ? 'Đang đăng nhập…' : 'Đăng nhập'}
         </button>
-      </form>
+      </ActionForm>
 
       <p className="mt-5 text-center text-sm text-ink-500">
         Chưa có tài khoản?{' '}

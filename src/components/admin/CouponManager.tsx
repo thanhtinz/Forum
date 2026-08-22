@@ -5,6 +5,7 @@ import { useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, Eye, EyeOff, TicketPercent } from 'lucide-react';
 import { saveCoupon, toggleCoupon, deleteCoupon, type CouponState } from '@/app/admin/actions';
 import { fmtVnd } from '@/lib/utils';
+import { ActionForm } from '@/components/ActionForm';
 
 export interface CouponRow {
   id: string; code: string; name: string;
@@ -92,7 +93,7 @@ function CouponForm({ initial, onDone }: { initial: CouponRow | null; onDone: ()
   useEffect(() => { if (state.ok) onDone(); }, [state.ok, onDone]);
 
   return (
-    <form action={action} className="card space-y-3 p-4">
+    <ActionForm action={action} className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-bold">{initial ? `Sửa mã ${initial.code}` : 'Tạo mã giảm giá'}</h3>
         <button type="button" onClick={onDone} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
@@ -141,7 +142,7 @@ function CouponForm({ initial, onDone }: { initial: CouponRow | null; onDone: ()
         <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">{pending ? 'Đang lưu…' : 'Lưu'}</button>
         <button type="button" onClick={onDone} className="btn-ghost">Huỷ</button>
       </div>
-    </form>
+    </ActionForm>
   );
 }
 

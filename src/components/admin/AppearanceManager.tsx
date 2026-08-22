@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import { useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, Eye, EyeOff, ImageIcon, Link2 } from 'lucide-react';
+import { ActionForm } from '@/components/ActionForm';
 import {
   saveSlide, deleteSlide, toggleSlide,
   saveFriendLink, deleteFriendLink, toggleFriendLink,
@@ -73,7 +74,7 @@ function SlideForm({ initial, onDone }: { initial: SlideRow | null; onDone: () =
   useEffect(() => { if (state.ok) onDone(); }, [state.ok, onDone]);
 
   return (
-    <form action={action} className="card space-y-3 p-4">
+    <ActionForm action={action} className="card space-y-3 p-4">
       <FormHeader title={initial ? 'Sửa slide' : 'Thêm slide'} icon={<ImageIcon size={16} />} onDone={onDone} />
       {initial && <input type="hidden" name="id" value={initial.id} />}
       <div className="grid gap-3 sm:grid-cols-2">
@@ -93,7 +94,7 @@ function SlideForm({ initial, onDone }: { initial: SlideRow | null; onDone: () =
       </label>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       <FormButtons pending={pending} onDone={onDone} />
-    </form>
+    </ActionForm>
   );
 }
 
@@ -158,7 +159,7 @@ function FriendLinkForm({ initial, onDone }: { initial: FriendLinkRow | null; on
   useEffect(() => { if (state.ok) onDone(); }, [state.ok, onDone]);
 
   return (
-    <form action={action} className="card space-y-3 p-4">
+    <ActionForm action={action} className="card space-y-3 p-4">
       <FormHeader title={initial ? 'Sửa liên kết' : 'Thêm liên kết'} icon={<Link2 size={16} />} onDone={onDone} />
       {initial && <input type="hidden" name="id" value={initial.id} />}
       <div className="grid gap-3 sm:grid-cols-2">
@@ -178,7 +179,7 @@ function FriendLinkForm({ initial, onDone }: { initial: FriendLinkRow | null; on
       </label>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       <FormButtons pending={pending} onDone={onDone} />
-    </form>
+    </ActionForm>
   );
 }
 

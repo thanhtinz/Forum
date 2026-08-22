@@ -204,10 +204,24 @@ chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so
 - Trần chiều cao cụm điều hướng bị siết quá chặt. Nới trần và chia lại tỉ lệ
   cụm điều hướng ‧ bàn phím số.
 
-Riêng phím bập bênh, hai cánh trái–phải bị nút OK ăn mất khúc giữa nên hẹp hơn
-hai thanh trên–dưới. Cân lại bằng cách hạ hai thanh xuống `h-9` và cho hàng giữa
-ăn hết chiều cao còn lại: trái–phải `105×73 = 7 657px²` so với trên–dưới
-`272×36 = 9 792px²` (tỉ lệ 1,28× — trước đó là 2,03×).
+**Phím bập bênh là một khối vuông.** Năm phím ghép khít thành đúng một hình
+vuông (`aspect-square` + lưới 3×3), không phải hai thanh dài kẹp một hàng ngắn.
+Ba cột chia đều, hàng giữa cao gấp ba hàng trên–dưới (`1fr 3fr 1fr`): trên và
+dưới trải hết bề ngang nên phải thấp, ba phím hàng giữa chỉ được một phần ba bề
+ngang nên phải cao bù lại.
+
+Kết quả là năm phím gần bằng nhau — chênh nhau **dưới 6%**:
+
+| | Trước (chữ nhật 272×168) | Sau (vuông 153×153) |
+|---|---|---|
+| Trên / Dưới | 9 792px² | 4 423px² |
+| Trái / Phải | 7 657px² | 4 191px² |
+| OK | 3 901px² | 4 192px² |
+| Chênh lệch cao nhất–thấp nhất | **2,51×** | **1,06×** |
+
+Cả năm vẫn lớn hơn phím số (3 844px²). Vuông thì ép chiều ngang lại nên phím
+không còn to như khối chữ nhật cũ, đổi lại không còn phím nào bị lép — nút OK
+trước đây chỉ bằng 40% thanh trên–dưới.
 
 **Dáng cụm điều hướng.** Phím bốn hướng bo góc kiểu squircle (`rounded-[30%]`)
 chứ không phải ô vuông bo nhẹ — máy S60 và E-series đều có dáng này. Bốn cánh

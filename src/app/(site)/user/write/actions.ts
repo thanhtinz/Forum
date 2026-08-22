@@ -35,6 +35,59 @@ function toSlug(s: string): string {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'bai-viet';
 }
 
+const MAX_DOWNLOADS = 10;
+/** Chỉ chấp nhận liên kết http(s) hoặc đường dẫn nội bộ — chặn javascript:/data: */
+function safeUrl(raw: string): string | null {
+  const s = raw.trim();
+  if (!s) return null;
+  if (s.startsWith('/')) return s.slice(0, 2000);
+  try {
+    const u = new URL(s);
+    return u.protocol === 'http:' || u.protocol === 'https:' ? s.slice(0, 2000) : null;
+  } catch {
+    return null;
+  }
+}
+
+interface DownloadInput {
+  label: string; url: string; provider: string | null; version: string | null;
+  sizeBytes: bigint | null; password: string | null; extractCode: string | null;
+}
+
+/** Đọc danh sách tệp tải xuống (JSON) từ form, làm sạch từng trường. */
+function parseDownloads(raw: FormDataEntryValue | null): DownloadInput[] {
+  if (typeof raw !== 'string' || !raw.trim()) return [];
+  let arr: unknown;
+  try { arr = JSON.parse(raw); } catch { return []; }
+  if (!Array.isArray(arr)) return [];
+
+  const out: DownloadInput[] = [];
+  for (const it of arr.slice(0, MAX_DOWNLOADS)) {
+    if (!it || typeof it !== 'object') continue;
+    const o = it as Record<string, unknown>;
+    const label = String(o.label ?? '').trim().slice(0, 200);
+    const url = safeUrl(String(o.url ?? ''));
+    if (!label || !url) continue;
+
+    const mb = Number(o.sizeMb);
+    const sizeBytes = Number.isFinite(mb) && mb > 0 ? BigInt(Math.round(mb * 1024 * 1024)) : null;
+    const trim = (v: unknown, n: number) => {
+      const s = String(v ?? '').trim().slice(0, n);
+      return s || null;
+    };
+
+    out.push({
+      label, url,
+      provider: trim(o.provider, 30),
+      version: trim(o.version, 50),
+      sizeBytes,
+      password: trim(o.password, 100),
+      extractCode: trim(o.extractCode, 100),
+    });
+  }
+  return out;
+}
+
 export async function createPost(_prev: WriteState, formData: FormData): Promise<WriteState> {
   const session = await auth();
   const userId = session?.user?.id;
@@ -94,6 +147,14 @@ export async function createPost(_prev: WriteState, formData: FormData): Promise
     },
     select: { id: true, slug: true },
   });
+
+  // Tệp tải xuống: nhận JSON từ trình soạn, làm sạch rồi lưu
+  const downloads = parseDownloads(formData.get('downloads'));
+  if (downloads.length > 0) {
+    await db.downloadItem.createMany({
+      data: downloads.map((d, i) => ({ ...d, postId: post.id, order: i })),
+    });
+  }
 
   // Tag: tách theo dấu phẩy, upsert rồi nối
   const tagNames = [...new Set(tagRaw.split(',').map((t) => t.trim()).filter(Boolean))].slice(0, 8);

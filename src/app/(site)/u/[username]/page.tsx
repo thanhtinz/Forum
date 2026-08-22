@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Calendar, Coins, FileText, Users, UserPlus as FollowIcon } from 'lucide-react';
+import { Calendar, Coins, FileText, Users, UserPlus as FollowIcon, MessageSquare } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { postCardInclude, toCardData } from '@/lib/post-card';
@@ -13,6 +13,7 @@ import { fmtCount } from '@/lib/utils';
 import { getLevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
 import { IconGlyph } from '@/components/IconGlyph';
+import { openConversation } from '@/app/(site)/user/messages/actions';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 9;
@@ -66,7 +67,16 @@ export default async function ProfilePage({ params, searchParams }: {
             {user.image
               ? <img src={user.image} alt="" className="h-24 w-24 rounded-2xl border-4 border-white object-cover dark:border-ink-900" />
               : <span className="grid h-24 w-24 place-items-center rounded-2xl border-4 border-white bg-brand-500 text-3xl font-black text-white dark:border-ink-900">{name[0]?.toUpperCase()}</span>}
-            <div className="mb-1">
+            <div className="mb-1 flex items-center gap-2">
+              {/* Chỉ hiện khi đã đăng nhập và không phải trang của chính mình */}
+              {viewerId && viewerId !== user.id && user.username && (
+                <form action={openConversation}>
+                  <input type="hidden" name="username" value={user.username} />
+                  <button type="submit" className="btn-outline !rounded-full gap-1.5 !px-3.5 !py-2 text-sm">
+                    <MessageSquare size={15} /> Nhắn tin
+                  </button>
+                </form>
+              )}
               <FollowButton targetId={user.id} initialFollowing={!!following} initialCount={user._count.followers} self={viewerId === user.id} />
             </div>
           </div>

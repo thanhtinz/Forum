@@ -162,8 +162,28 @@ Seed dựng sẵn 33 `EmulatorProfile` theo đời máy Java ME thật, thông s
 E71 là máy QWERTY màn nằm ngang — để thử game thiết kế cho khung ngang mà không
 phải bấm nút xoay.
 
-Mỗi bố cục phím có nhãn phím mềm riêng (`SOFT_KEY_LABEL`): Nokia *Options/Back*,
-Sony Ericsson *Select/Back*, Motorola *Menu/Back*, Siemens *Menu/Clear*…
+### Bố cục mặt phím theo dòng máy
+
+Các dòng máy không chỉ khác màu vỏ mà **bày phím khác hẳn nhau**, nên mặt phím
+chia thành các họ (`FaceLayout` trong `src/lib/emulator-skin.ts`):
+
+| Họ | Máy | Mặt trước |
+|---|---|---|
+| `s40` | Nokia 6300, 2700, 6070, LG | vòng xoay tròn, nút OK ở tâm, phím mềm + gọi/kết thúc phía trên |
+| `rocker` | Nokia 3510i · 7210 · 6230, Samsung, Siemens | phím bập bênh nằm ngang (đời chưa có vòng xoay) |
+| `s60` | Nokia 6600 · 7610 · N70 · N73 · 6120 · N95 | phím bốn hướng vuông, **Menu** và **C** kẹp hai bên, gọi/kết thúc ngoài cùng |
+| `se` | Sony Ericsson | hàng trên bốn phím, hàng dưới **← back** và **C** kẹp joystick |
+| `razr` | Motorola V3 · L7 · E398 | phím **phẳng khắc laser**, lưới liền mạch chỉ ngăn bằng đường gân |
+| `qwerty` | Nokia E71 | cụm điều hướng, bốn phím tắt, rồi **bàn phím QWERTY** — số in chồng trên U I O / J K L / M , . đúng như máy thật, phím chữ không mang số để trơ |
+| `touch` | Nokia 5800, LG KP500 Cookie | mặt trước chỉ **ba phím** gọi / menu / kết thúc; bàn phím số bật ra khi cần. Thân máy chia `78 : 22` thay vì `56 : 44` nên màn hình gần như chiếm hết |
+
+Máy thật có vài phím cứng không mang mã Java riêng (Menu của S60, phím back của
+Sony Ericsson). Những phím đó gán về phím gần nghĩa nhất — Menu về phím mềm
+trái, back về phím mềm phải — đúng như cách dùng trên máy.
+
+Mỗi bố cục phím còn có nhãn phím mềm riêng (`SOFT_KEY_LABEL`): Nokia
+*Options/Back*, Sony Ericsson *Select/Back*, Motorola *Menu/Back*, Siemens
+*Menu/Clear*…
 
 **Người chơi tự chọn máy**: nút “Chọn máy ảo” trong emulator mở bảng gom theo hãng,
 kèm độ phân giải, CLDC/MIDP và mức tương thích lấy từ ma trận

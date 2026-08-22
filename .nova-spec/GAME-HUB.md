@@ -146,14 +146,14 @@ phiên đồng thời đảm nhiệm.
 
 ## 5. Thư viện máy cổ
 
-Seed dựng sẵn 33 `EmulatorProfile` theo đời máy Java ME thật, thông số bám máy gốc
+Seed dựng sẵn 35 `EmulatorProfile` theo đời máy Java ME thật, thông số bám máy gốc
 (đời 2002–2003 chỉ có MIDP 1.0 nên không bật save state, RAM thấp hơn):
 
 | Hãng | Máy |
 |---|---|
-| Nokia | 3510i 96×65 · 7210 128×128 · 6230 128×128 · 6070 128×160 · 6600 S60 176×208 · 7610 S60 176×208 · N70 S60 176×208 · 6300 S40 240×320 · N73 S60 240×320 · 6120 Classic S60 240×320 · N95 S60 240×320 · 2700 Classic 240×320 · **E71 S60 320×240 (ngang)** · 5800 XpressMusic 360×640 |
+| Nokia | 3510i 96×65 · 7210 128×128 · 6230 128×128 · 6070 128×160 · 6600 S60 176×208 · 7610 S60 176×208 · N70 S60 176×208 · 6300 S40 240×320 · N73 S60 240×320 · 6120 Classic S60 240×320 · N95 S60 240×320 · 2700 Classic 240×320 · **E71 S60 320×240 (ngang)** · 5800 XpressMusic 360×640 · **5230 360×640 (cảm ứng thuần)** |
 | Sony Ericsson | K510i 128×160 · W200i 128×160 · K750i 176×220 · W810i 176×220 · K800i 240×320 · C902 240×320 |
-| Samsung | E250 128×160 · D900 240×320 · E900 240×320 |
+| Samsung | E250 128×160 · D900 240×320 · E900 240×320 · **S5233 Star 240×400 (cảm ứng thuần)** |
 | Motorola | RAZR V3 176×220 · SLVR L7 176×220 · E398 176×220 |
 | LG | KG800 Chocolate 176×220 · KP500 Cookie 240×400 |
 | Siemens | C65 132×176 · CX65 132×176 |
@@ -172,10 +172,11 @@ chia thành các họ (`FaceLayout` trong `src/lib/emulator-skin.ts`):
 | `s40` | Nokia 6300, 2700, 6070, LG | vòng xoay tròn, nút OK ở tâm, phím mềm + gọi/kết thúc phía trên |
 | `rocker` | Nokia 3510i · 7210 · 6230, Samsung, Siemens | phím bập bênh nằm ngang (đời chưa có vòng xoay) |
 | `s60` | Nokia 6600 · 7610 · N70 · N73 · 6120 · N95 | phím bốn hướng vuông, **Menu** và **C** kẹp hai bên, gọi/kết thúc ngoài cùng |
-| `se` | Sony Ericsson | hàng trên bốn phím, hàng dưới **← back** và **C** kẹp joystick |
-| `razr` | Motorola V3 · L7 · E398 | phím **phẳng khắc laser**, lưới liền mạch chỉ ngăn bằng đường gân |
-| `qwerty` | Nokia E71 | cụm điều hướng, bốn phím tắt, rồi **bàn phím QWERTY** — số in chồng trên U I O / J K L / M , . đúng như máy thật, phím chữ không mang số để trơ |
-| `touch` | Nokia 5800, LG KP500 Cookie | mặt trước chỉ **ba phím** gọi / menu / kết thúc; bàn phím số bật ra khi cần. Thân máy chia `78 : 22` thay vì `56 : 44` nên màn hình gần như chiếm hết |
+| `se` | Sony Ericsson | bốn phím xếp **2×2** quanh joystick (hoạt động ‧ back bên trái, tin nhắn ‧ C bên phải), phím mềm hàng trên |
+| `razr` | Motorola V3 · L7 · E398 | **đĩa điều hướng tròn**, ✉ và ↩ hai bên, hàng dưới gọi ‧ trình duyệt ‧ kết thúc, rồi lưới phím **phẳng khắc laser** ngăn nhau bằng đường gân |
+| `qwerty` | Nokia E71 | hai phím tắt mỗi bên D-pad, phím gọi/kết thúc là hai **thanh cong** dưới chúng, rồi **bàn phím QWERTY**. Số in **phía trên chữ** đúng vị trí máy E-series: `1 2 3` trên T Y U, `4 5 6` trên F G H, `7 8 9 0` trên V B N M, `*` trên I, `#` trên J. Phím chữ không mang số để trơ vì game Java không đọc |
+| `touch` | Nokia 5800, LG KP500 Cookie | mặt trước chỉ **ba thanh mảnh** sát đáy — gọi (xanh) ‧ menu ‧ kết thúc (đỏ); bàn phím số bật ra khi cần. Thân máy chia `78 : 22` |
+| `touch-only` | Samsung S5233 Star, Nokia 5230 | **cảm ứng thuần, không phím cứng nào** — chơi bằng cách chạm thẳng lên màn hình. Thân máy chia `92 : 8`, chỉ chừa nút gọi bàn phím số cho game bắt buộc bấm phím |
 
 Máy thật có vài phím cứng không mang mã Java riêng (Menu của S60, phím back của
 Sony Ericsson). Những phím đó gán về phím gần nghĩa nhất — Menu về phím mềm

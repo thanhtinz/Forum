@@ -493,9 +493,11 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
    * toàn màn hình, mặt trước chỉ còn dải ba phím; máy phím thì theo tỉ lệ mặt
    * trước Nokia 6300 (màn hình ~57%, bàn phím ~40%).
    */
-  const split = face === 'touch'
-    ? { top: 'flex-[78]', bottom: 'flex-[22]' }
-    : { top: 'flex-[56]', bottom: 'flex-[44]' };
+  const split = face === 'touch-only'
+    ? { top: 'flex-[92]', bottom: 'flex-[8]' }
+    : face === 'touch'
+      ? { top: 'flex-[78]', bottom: 'flex-[22]' }
+      : { top: 'flex-[56]', bottom: 'flex-[44]' };
 
   const areaRef = useRef<HTMLDivElement>(null);
   /** Viền kính bao quanh khung game (chỉ có khi dựng thân máy). */

@@ -20,9 +20,10 @@
  * - `se`    Sony Ericsson: hàng trên ba phím, hàng dưới ← back và C kẹp joystick.
  * - `razr`  Motorola: phím phẳng khắc laser, lưới liền mạch không khe hở.
  * - `qwerty` Nokia E71: cụm điều hướng + bốn phím tắt + bàn phím QWERTY.
- * - `touch` máy cảm ứng: chỉ ba phím gọi / menu / kết thúc, bàn phím số bật ra khi cần.
+ * - `touch` máy cảm ứng còn phím cứng: ba thanh mảnh gọi / menu / kết thúc.
+ * - `touch-only` máy cảm ứng thuần: không phím cứng nào, chạm thẳng lên màn hình.
  */
-export type FaceLayout = 's40' | 'rocker' | 's60' | 'se' | 'razr' | 'qwerty' | 'touch';
+export type FaceLayout = 's40' | 'rocker' | 's60' | 'se' | 'razr' | 'qwerty' | 'touch' | 'touch-only';
 
 export interface ChassisSkin {
   /** Nửa trên: mặt trước quanh kính màn hình. Luôn tối để chữ trên đó đọc được. */
@@ -106,6 +107,10 @@ const BY_MODEL: Record<string, ChassisSkin> = {
   // Chocolate: đen bóng, phím cảm ứng đèn đỏ.
   'lg-kg800': { top: 'bg-gradient-to-b from-stone-950 to-black', keypad: 'bg-gradient-to-b from-stone-800 to-stone-950', edge: 'border-black', keys: 'dark', accent: 'text-red-400/70' },
   'lg-kp500': { top: 'bg-gradient-to-b from-stone-900 to-black', keypad: 'bg-gradient-to-b from-stone-600 to-stone-800', edge: 'border-black', keys: 'dark' },
+  // Samsung Star: vỏ đen viền crôm.
+  'samsung-s5233': { top: 'bg-gradient-to-b from-slate-900 to-black', keypad: 'bg-gradient-to-b from-slate-800 to-slate-950', edge: 'border-slate-700', keys: 'dark' },
+  // Nokia 5230: nhựa đen tuyền.
+  'nokia-5230': { top: 'bg-gradient-to-b from-neutral-900 to-black', keypad: 'bg-gradient-to-b from-neutral-800 to-neutral-950', edge: 'border-black', keys: 'dark' },
 
   // ── Siemens ──
   'siemens-c65': { top: 'bg-gradient-to-b from-stone-800 to-stone-950', keypad: 'bg-gradient-to-b from-stone-400 to-stone-600', edge: 'border-stone-950', keys: 'silver' },
@@ -141,6 +146,9 @@ const FACE_BY_MODEL: Record<string, FaceLayout> = {
   // Máy cảm ứng: mặt trước chỉ có ba phím.
   'nokia-5800': 'touch',
   'lg-kp500': 'touch',
+  // Máy cảm ứng thuần, không phím cứng nào.
+  'samsung-s5233': 'touch-only',
+  'nokia-5230': 'touch-only',
 };
 
 /** Bố cục mặt phím của máy. */

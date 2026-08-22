@@ -590,7 +590,8 @@ export async function saveLevelRule(_prev: LevelState, formData: FormData): Prom
   const level = parseInt(String(formData.get('level') ?? ''), 10);
   const name = String(formData.get('name') ?? '').trim();
   const expRequired = parseInt(String(formData.get('expRequired') ?? ''), 10);
-  const icon = String(formData.get('icon') ?? '').trim() || null;
+  // Biểu tượng: emoji/chữ ngắn, hoặc đường dẫn ảnh đã tải lên.
+  const icon = String(formData.get('icon') ?? '').trim().slice(0, 500) || null;
   const color = String(formData.get('color') ?? '').trim() || null;
   const dailyRaw = String(formData.get('dailyDownloadLimit') ?? '').trim();
   const dailyDownloadLimit = dailyRaw === '' ? null : Math.max(0, parseInt(dailyRaw, 10) || 0);

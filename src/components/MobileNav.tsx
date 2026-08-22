@@ -32,7 +32,7 @@ export function MobileNav({ nav, loggedIn, siteName, siteLogo }: MobileNavProps)
 
   // Drawer render qua portal ra body để không bị header (backdrop-blur) "nhốt" phần tử fixed.
   const drawer = (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       {/* Overlay */}
       <div className={cn('fixed inset-0 z-[60] bg-black/40 transition-opacity', open ? 'opacity-100' : 'pointer-events-none opacity-0')}
         onClick={() => setOpen(false)} />
@@ -108,7 +108,7 @@ export function MobileNav({ nav, loggedIn, siteName, siteLogo }: MobileNavProps)
   );
 
   return (
-    <div className="md:hidden">
+    <div className="lg:hidden">
       <button type="button" aria-label="Mở menu" onClick={() => setOpen(true)}
         className="grid h-9 w-9 place-items-center rounded-lg text-ink-600 hover:bg-ink-100 dark:text-ink-300 dark:hover:bg-ink-800">
         <Menu size={22} />

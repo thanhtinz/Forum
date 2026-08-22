@@ -10,6 +10,8 @@ import { PostGrid } from '@/components/PostGrid';
 import { Pagination } from '@/components/Pagination';
 import { FollowButton } from '@/components/post/FollowButton';
 import { fmtCount } from '@/lib/utils';
+import { getLevelLook } from '@/lib/level';
+import { LevelBadge } from '@/components/LevelBadge';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 9;
@@ -49,6 +51,7 @@ export default async function ProfilePage({ params, searchParams }: {
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const name = user.name ?? user.username ?? 'Ẩn danh';
+  const levelLook = await getLevelLook(user.level);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -70,7 +73,7 @@ export default async function ProfilePage({ params, searchParams }: {
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold">{name}</h1>
-              <span className="chip bg-brand-100 text-brand-600 dark:bg-brand-950/50 dark:text-brand-300">Lv{user.level}</span>
+              <LevelBadge level={user.level} icon={levelLook?.icon} color={levelLook?.color} name={levelLook?.name} />
               {user.vipTier != null && <span className="chip bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">VIP{user.vipTier}</span>}
             </div>
             {user.username && <p className="text-sm text-ink-400">@{user.username}</p>}

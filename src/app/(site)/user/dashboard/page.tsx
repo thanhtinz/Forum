@@ -8,6 +8,8 @@ import { auth } from '@/lib/auth';
 import { fmtCount, fmtVnd } from '@/lib/utils';
 import { POINTS_REASON_LABEL as REASON_LABEL } from '@/lib/labels';
 import { CheckinButton } from '@/components/user/CheckinButton';
+import { getLevelLook } from '@/lib/level';
+import { LevelBadge } from '@/components/LevelBadge';
 
 export const metadata: Metadata = { title: 'Trang cá nhân' };
 export const dynamic = 'force-dynamic';
@@ -34,6 +36,7 @@ export default async function DashboardPage() {
     db.pointsLog.findMany({ where: { userId: session.user.id }, orderBy: { createdAt: 'desc' }, take: 8 }),
     db.levelRule.findFirst({ where: { level: user.level + 1 }, select: { expRequired: true } }),
   ]);
+  const levelLook = await getLevelLook(user.level);
 
   const name = user.name ?? user.username ?? 'Bạn';
   const checkedInToday = !!user.lastCheckinAt && vnDateStr(user.lastCheckinAt) === vnDateStr(new Date());
@@ -52,7 +55,7 @@ export default async function DashboardPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold">Xin chào, {name}</h1>
-              <span className="chip bg-brand-100 text-brand-600 dark:bg-brand-950/50">Lv{user.level}</span>
+              <LevelBadge level={user.level} icon={levelLook?.icon} color={levelLook?.color} name={levelLook?.name} />
               {vipActive && <span className="chip bg-amber-100 text-amber-700 dark:bg-amber-950/50">VIP{user.vipTier}</span>}
             </div>
             <Link href={`/u/${user.username ?? ''}`} className="text-sm text-brand-600 hover:underline">Xem trang cá nhân</Link>

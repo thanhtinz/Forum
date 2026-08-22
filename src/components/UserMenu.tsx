@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { logout } from '@/app/(auth)/actions';
 import { fmtCount, fmtVnd } from '@/lib/utils';
+import { LevelBadge } from '@/components/LevelBadge';
 
 export interface UserMenuProps {
   name: string;
@@ -15,6 +16,9 @@ export interface UserMenuProps {
   points: number;
   balance: number;
   level: number;
+  levelIcon?: string | null;
+  levelColor?: string | null;
+  levelName?: string | null;
   vipTier: number | null;
   isStaff: boolean;
 }
@@ -28,7 +32,7 @@ const LINKS = [
 ];
 
 /** Nút hồ sơ ở header: gom điểm, số dư và các lối tắt vào một menu. */
-export function UserMenu({ name, image, points, balance, level, vipTier, isStaff }: UserMenuProps) {
+export function UserMenu({ name, image, points, balance, level, levelIcon, levelColor, levelName, vipTier, isStaff }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +64,7 @@ export function UserMenu({ name, image, points, balance, level, vipTier, isStaff
           <div className="border-b border-ink-100 px-4 py-3 dark:border-ink-800">
             <div className="flex items-center gap-2">
               <span className="truncate font-semibold text-ink-900 dark:text-white">{name}</span>
-              <span className="shrink-0 rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">Lv{level}</span>
+              <LevelBadge level={level} icon={levelIcon} color={levelColor} name={levelName} />
               {vipTier != null && (
                 <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">VIP{vipTier}</span>
               )}

@@ -18,13 +18,16 @@
  *          nhỏ có viền riêng (Nokia N70, Nokia 7210).
  * - `razr` vòng xoay tròn nhưng bàn phím số phẳng khắc laser, chỉ ngăn nhau
  *          bằng đường gân (Motorola RAZR V3).
+ * - `j2me` bàn phím ảo kiểu **J2ME Loader**, không phải mặt trước máy nào: mũi
+ *          tên là bốn nút tròn rời xếp chữ thập bên trái, bàn phím số bên phải,
+ *          nút trong suốt trên nền tối (hai máy ảo chung).
  *
  * Các họ đã bỏ vì dựng ra cùng một thứ với họ còn lại, chỉ khác màu vỏ:
  * `se` · `qwerty` · `touch` · `touch-only` (giống `s40`), và `rocker` — kiểu
  * bập bênh năm mảnh rời đã thay bằng khối vuông liền của `s60`, đúng như phím
  * bốn hướng trên máy thật.
  */
-export type FaceLayout = 's40' | 's60' | 'razr';
+export type FaceLayout = 's40' | 's60' | 'razr' | 'j2me';
 
 export interface ChassisSkin {
   /** Nửa trên: mặt trước quanh kính màn hình. Luôn tối để chữ trên đó đọc được. */
@@ -70,6 +73,11 @@ const BY_MODEL: Record<string, ChassisSkin> = {
   'nokia-6300': { top: 'bg-gradient-to-b from-slate-800 to-slate-950', keypad: 'bg-gradient-to-b from-slate-400 to-slate-600', edge: 'border-slate-950', keys: 'silver' },
   // RAZR V3: nhôm anod bạc, phím phẳng cắt laser.
   'motorola-v3': { top: 'bg-gradient-to-b from-neutral-800 to-neutral-950', keypad: 'bg-gradient-to-b from-neutral-400 to-neutral-600', edge: 'border-neutral-950', keys: 'silver' },
+
+  // Máy ảo chung dùng bàn phím kiểu J2ME Loader: nền tối trơn, không giả vỏ
+  // nhựa hay kim loại của máy nào.
+  'generic-320x240': { top: 'bg-ink-950', keypad: 'bg-ink-900', edge: 'border-ink-800', keys: 'dark' },
+  'generic-360x640': { top: 'bg-ink-950', keypad: 'bg-ink-900', edge: 'border-ink-800', keys: 'dark' },
 };
 
 /** Bố cục mặt phím theo hãng, dùng khi máy chưa khai báo riêng. */
@@ -89,6 +97,10 @@ const FACE_BY_MODEL: Record<string, FaceLayout> = {
   'nokia-7210': 's60',
   // N70 thuộc dòng S60, cũng phím bốn hướng vuông.
   'nokia-n70': 's60',
+  // Hai máy ảo chung không mô phỏng máy nào, nên lấy luôn bàn phím ảo của
+  // J2ME Loader — thứ người chơi game Java trên Android quen tay nhất.
+  'generic-320x240': 'j2me',
+  'generic-360x640': 'j2me',
 };
 
 /** Bố cục mặt phím của máy. */

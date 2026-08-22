@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { updateProfile, changePassword, type SettingsState } from '@/app/(site)/user/settings/actions';
 import { ActionForm } from '@/components/ActionForm';
+import { ImageField } from '@/components/ImageField';
 
 export interface ProfileInitial {
   name: string | null;
@@ -28,12 +29,10 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileInitial }) {
         <Field label="Tên đăng nhập" error={err('username')} hint="Dùng cho địa chỉ trang cá nhân /u/…">
           <input name="username" required defaultValue={initial.username ?? ''} className="input" placeholder="nguyenvana" />
         </Field>
-        <Field label="Ảnh đại diện (URL)" error={err('image')}>
-          <input name="image" defaultValue={initial.image ?? ''} className="input" placeholder="https://…/avatar.jpg" />
-        </Field>
-        <Field label="Ảnh bìa (URL)" error={err('cover')}>
-          <input name="cover" defaultValue={initial.cover ?? ''} className="input" placeholder="https://…/cover.jpg" />
-        </Field>
+        <ImageField name="image" label="Ảnh đại diện" shape="square" defaultValue={initial.image}
+          placeholder="https://…/avatar.jpg hoặc tải ảnh lên" error={err('image')} />
+        <ImageField name="cover" label="Ảnh bìa" defaultValue={initial.cover}
+          placeholder="https://…/cover.jpg hoặc tải ảnh lên" error={err('cover')} />
       </div>
 
       <Field label="Giới thiệu" error={err('bio')} hint="Tối đa 300 ký tự">

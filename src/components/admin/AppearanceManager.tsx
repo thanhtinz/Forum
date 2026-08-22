@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react';
 import { useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, Eye, EyeOff, ImageIcon, Link2 } from 'lucide-react';
 import { ActionForm } from '@/components/ActionForm';
+import { ImageField } from '@/components/ImageField';
 import {
   saveSlide, deleteSlide, toggleSlide,
   saveFriendLink, deleteFriendLink, toggleFriendLink,
@@ -82,8 +83,9 @@ function SlideForm({ initial, onDone }: { initial: SlideRow | null; onDone: () =
           <input name="title" required defaultValue={initial?.title} className="input" placeholder="Chào mừng đến Nova" /></label>
         <label className="block"><span className="mb-1 block text-sm font-medium">Mô tả phụ</span>
           <input name="subtitle" defaultValue={initial?.subtitle ?? ''} className="input" placeholder="Không bắt buộc" /></label>
-        <label className="block"><span className="mb-1 block text-sm font-medium">Ảnh nền (URL)</span>
-          <input name="image" required defaultValue={initial?.image} className="input" placeholder="https://…/banner.jpg" /></label>
+        <ImageField className="sm:col-span-2" name="image" label="Ảnh nền" required
+          defaultValue={initial?.image} placeholder="https://…/banner.jpg hoặc tải ảnh lên"
+          hint="Nên dùng ảnh ngang, tối đa 5MB." />
         <label className="block"><span className="mb-1 block text-sm font-medium">Liên kết khi bấm</span>
           <input name="link" defaultValue={initial?.link ?? ''} className="input" placeholder="/posts/bai-viet" /></label>
         <label className="block"><span className="mb-1 block text-sm font-medium">Thứ tự</span>
@@ -167,8 +169,8 @@ function FriendLinkForm({ initial, onDone }: { initial: FriendLinkRow | null; on
           <input name="name" required defaultValue={initial?.name} className="input" placeholder="Blog ABC" /></label>
         <label className="block"><span className="mb-1 block text-sm font-medium">Địa chỉ</span>
           <input name="url" required defaultValue={initial?.url} className="input" placeholder="https://example.com" /></label>
-        <label className="block"><span className="mb-1 block text-sm font-medium">Logo (URL)</span>
-          <input name="logo" defaultValue={initial?.logo ?? ''} className="input" placeholder="https://…/logo.png" /></label>
+        <ImageField className="sm:col-span-2" name="logo" label="Logo" shape="square"
+          defaultValue={initial?.logo} placeholder="https://…/logo.png hoặc tải ảnh lên" />
         <label className="block"><span className="mb-1 block text-sm font-medium">Thứ tự</span>
           <input name="order" type="number" defaultValue={initial?.order ?? 0} className="input" /></label>
       </div>

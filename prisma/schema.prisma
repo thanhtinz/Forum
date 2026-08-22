@@ -171,6 +171,9 @@ model Post {
   unlockLikes    Int?     // LIKE_GOAL: số lượt thích cần đạt để mở cho mọi người
   unlockComments Int?     // COMMENT_GOAL: số bình luận cần đạt để mở cho mọi người
   hiddenContent String?   @db.Text  // phần nội dung ẩn sau paywall
+  // Mã BBCode gốc do người dùng gõ — giữ lại để sửa bài không mất định dạng.
+  contentSource String?   @db.Text
+  hiddenSource  String?   @db.Text
   faq         Json?       // [{ q, a }] — câu hỏi thường gặp của bài
 
   viewCount    Int @default(0)
@@ -381,6 +384,8 @@ model Thread {
 
   title   String
   content String @db.Text
+  // Mã BBCode gốc — giữ để sửa chủ đề không mất định dạng.
+  contentSource String? @db.Text
 
   status ThreadStatus @default(PUBLISHED)
   pinned Boolean      @default(false)

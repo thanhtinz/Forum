@@ -1,5 +1,6 @@
 import { db } from './db';
 import { isPaidAccess } from './sell-permission';
+import { bbcodeToHtml } from './bbcode';
 
 /** Escape HTML để chống XSS khi dựng nội dung. */
 function escapeHtml(s: string): string {
@@ -105,6 +106,8 @@ export interface ParsedPost {
     excerpt: string | null;
     content: string;
     hiddenContent: string | null;
+    contentSource: string;
+    hiddenSource: string | null;
     cover: string | null;
     cardStyle: never;
     access: never;
@@ -168,8 +171,10 @@ export async function parsePostForm(
     data: {
       title,
       excerpt: excerpt || null,
-      content: toParagraphs(content),
-      hiddenContent: hasGate && hiddenContent ? toParagraphs(hiddenContent) : null,
+      content: bbcodeToHtml(content),
+      contentSource: content,
+      hiddenContent: hasGate && hiddenContent ? bbcodeToHtml(hiddenContent) : null,
+      hiddenSource: hasGate && hiddenContent ? hiddenContent : null,
       cover: cover || null,
       cardStyle: cardStyle as never,
       access: access as never,

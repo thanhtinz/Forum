@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { grantPoints } from '@/lib/points';
 import { checkAndAwardMedals } from '@/lib/medals';
+import { parsePostForm, toSlug } from '@/lib/post-form';
 
 export interface WriteState {
   error?: string;
@@ -16,77 +17,11 @@ export interface WriteState {
 const AUTO_PUBLISH = true;
 const POINTS_PER_POST = 10;
 
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
-/** Chuyển văn bản thành các đoạn <p> đã escape (an toàn, chống XSS). */
-function toParagraphs(text: string): string {
-  return text
-    .split(/\n{2,}/)
-    .map((block) => block.trim())
-    .filter(Boolean)
-    .map((block) => `<p>${escapeHtml(block).replace(/\n/g, '<br/>')}</p>`)
-    .join('');
-}
 
-function toSlug(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'bai-viet';
-}
 
-const MAX_DOWNLOADS = 10;
-/** Chỉ chấp nhận liên kết http(s) hoặc đường dẫn nội bộ — chặn javascript:/data: */
-function safeUrl(raw: string): string | null {
-  const s = raw.trim();
-  if (!s) return null;
-  if (s.startsWith('/')) return s.slice(0, 2000);
-  try {
-    const u = new URL(s);
-    return u.protocol === 'http:' || u.protocol === 'https:' ? s.slice(0, 2000) : null;
-  } catch {
-    return null;
-  }
-}
 
-interface DownloadInput {
-  label: string; url: string; provider: string | null; version: string | null;
-  sizeBytes: bigint | null; password: string | null; extractCode: string | null;
-}
 
-/** Đọc danh sách tệp tải xuống (JSON) từ form, làm sạch từng trường. */
-function parseDownloads(raw: FormDataEntryValue | null): DownloadInput[] {
-  if (typeof raw !== 'string' || !raw.trim()) return [];
-  let arr: unknown;
-  try { arr = JSON.parse(raw); } catch { return []; }
-  if (!Array.isArray(arr)) return [];
-
-  const out: DownloadInput[] = [];
-  for (const it of arr.slice(0, MAX_DOWNLOADS)) {
-    if (!it || typeof it !== 'object') continue;
-    const o = it as Record<string, unknown>;
-    const label = String(o.label ?? '').trim().slice(0, 200);
-    const url = safeUrl(String(o.url ?? ''));
-    if (!label || !url) continue;
-
-    const mb = Number(o.sizeMb);
-    const sizeBytes = Number.isFinite(mb) && mb > 0 ? BigInt(Math.round(mb * 1024 * 1024)) : null;
-    const trim = (v: unknown, n: number) => {
-      const s = String(v ?? '').trim().slice(0, n);
-      return s || null;
-    };
-
-    out.push({
-      label, url,
-      provider: trim(o.provider, 30),
-      version: trim(o.version, 50),
-      sizeBytes,
-      password: trim(o.password, 100),
-      extractCode: trim(o.extractCode, 100),
-    });
-  }
-  return out;
-}
 
 export async function createPost(_prev: WriteState, formData: FormData): Promise<WriteState> {
   const session = await auth();
@@ -96,77 +31,41 @@ export async function createPost(_prev: WriteState, formData: FormData): Promise
   const rate = await checkRateLimit('post', userId);
   if (!rate.allowed) return { error: rate.message };
 
-  const title = String(formData.get('title') ?? '').trim();
-  const excerpt = String(formData.get('excerpt') ?? '').trim();
-  const content = String(formData.get('content') ?? '').trim();
-  const cover = String(formData.get('cover') ?? '').trim();
-  const cardStyle = String(formData.get('cardStyle') ?? 'STANDARD');
-  const catSlugs = formData.getAll('categories').map(String).filter(Boolean);
-  const tagRaw = String(formData.get('tags') ?? '');
-
-  // Bán nội dung
-  const ACCESS = ['FREE', 'LOGIN_REQUIRED', 'POINTS', 'PAID', 'VIP_ONLY'];
-  const access = ACCESS.includes(String(formData.get('access'))) ? String(formData.get('access')) : 'FREE';
-  const pricePoints = Math.max(0, Math.floor(Number(formData.get('pricePoints') ?? 0) || 0));
-  const priceAmount = Math.max(0, Math.floor(Number(formData.get('priceAmount') ?? 0) || 0));
-  const hiddenContent = String(formData.get('hiddenContent') ?? '').trim();
-  const isPaid = access === 'POINTS' || access === 'PAID' || access === 'VIP_ONLY';
-
-  if (title.length < 5) return { error: 'Tiêu đề tối thiểu 5 ký tự.' };
-  if (content.length < 20) return { error: 'Nội dung quá ngắn (tối thiểu 20 ký tự).' };
-  if (catSlugs.length === 0) return { error: 'Hãy chọn ít nhất 1 chuyên mục.' };
-  if (access === 'POINTS' && pricePoints <= 0) return { error: 'Hãy nhập giá bằng điểm (> 0).' };
-  if (access === 'PAID' && priceAmount <= 0) return { error: 'Hãy nhập giá bằng tiền (> 0).' };
-  if (isPaid && hiddenContent.length < 10) return { error: 'Hãy nhập phần nội dung ẩn (sau khi mua mới xem được).' };
+  const parsed = await parsePostForm(formData);
+  if ('error' in parsed) return { error: parsed.error };
+  const { data, catIds, tagNames, downloads } = parsed;
 
   // slug duy nhất
-  let slug = toSlug(title);
+  let slug = toSlug(data.title);
   if (await db.post.findUnique({ where: { slug }, select: { id: true } })) {
     slug = `${slug}-${Date.now().toString(36).slice(-4)}`;
   }
 
-  const cats = await db.category.findMany({ where: { slug: { in: catSlugs } }, select: { id: true } });
-  const status = AUTO_PUBLISH ? 'PUBLISHED' : 'PENDING';
-
   const post = await db.post.create({
     data: {
-      slug, title,
-      excerpt: excerpt || null,
-      content: toParagraphs(content),
-      hiddenContent: isPaid && hiddenContent ? toParagraphs(hiddenContent) : null,
-      cover: cover || null,
-      cardStyle: cardStyle as never,
-      status: status as never,
-      access: access as never,
-      pricePoints: access === 'POINTS' ? pricePoints : null,
-      priceAmount: access === 'PAID' ? priceAmount : null,
+      ...data,
+      slug,
+      status: (AUTO_PUBLISH ? 'PUBLISHED' : 'PENDING') as never,
       publishedAt: AUTO_PUBLISH ? new Date() : null,
       authorId: userId,
-      categoryId: cats[0]?.id ?? null,
-      categories: { create: cats.map((c) => ({ categoryId: c.id })) },
+      categoryId: catIds[0] ?? null,
+      categories: { create: catIds.map((categoryId) => ({ categoryId })) },
     },
     select: { id: true, slug: true },
   });
 
-  // Tệp tải xuống: nhận JSON từ trình soạn, làm sạch rồi lưu
-  const downloads = parseDownloads(formData.get('downloads'));
   if (downloads.length > 0) {
-    await db.downloadItem.createMany({
-      data: downloads.map((d, i) => ({ ...d, postId: post.id, order: i })),
-    });
+    await db.downloadItem.createMany({ data: downloads.map((d, i) => ({ ...d, postId: post.id, order: i })) });
   }
 
-  // Tag: tách theo dấu phẩy, upsert rồi nối
-  const tagNames = [...new Set(tagRaw.split(',').map((t) => t.trim()).filter(Boolean))].slice(0, 8);
-  for (const name of tagNames) {
-    const tslug = toSlug(name);
-    const tag = await db.tag.upsert({ where: { slug: tslug }, update: {}, create: { slug: tslug, name } });
+  for (const t of tagNames) {
+    const tag = await db.tag.upsert({ where: { slug: t.slug }, update: {}, create: { slug: t.slug, name: t.label } });
     await db.tagsOnPosts.create({ data: { postId: post.id, tagId: tag.id } }).catch(() => {});
   }
 
   // Thưởng điểm khi đăng (nếu tự đăng ngay)
   if (AUTO_PUBLISH) {
-    await grantPoints({ userId, amount: POINTS_PER_POST, reason: 'POST_CREATE', refId: post.id, note: `Đăng bài: ${title}` }).catch(() => {});
+    await grantPoints({ userId, amount: POINTS_PER_POST, reason: 'POST_CREATE', refId: post.id, note: `Đăng bài: ${data.title}` }).catch(() => {});
     await checkAndAwardMedals(userId).catch(() => {});
   }
 

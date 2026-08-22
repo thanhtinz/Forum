@@ -11,6 +11,19 @@
  * `content` của tailwind.config.ts, đừng bỏ ra.)
  */
 
+/**
+ * Họ bố cục mặt phím. Mỗi dòng máy bày phím một kiểu khác nhau, không phải chỉ
+ * khác màu:
+ * - `s40`   Nokia candybar đời sau: vòng xoay tròn, nút OK ở tâm.
+ * - `rocker` máy đời đầu và Samsung/Siemens: phím bốn hướng vuông kiểu bập bênh.
+ * - `s60`   Nokia S60: phím bốn hướng vuông, kèm phím Menu và C kẹp hai bên.
+ * - `se`    Sony Ericsson: hàng trên ba phím, hàng dưới ← back và C kẹp joystick.
+ * - `razr`  Motorola: phím phẳng khắc laser, lưới liền mạch không khe hở.
+ * - `qwerty` Nokia E71: cụm điều hướng + bốn phím tắt + bàn phím QWERTY.
+ * - `touch` máy cảm ứng: chỉ ba phím gọi / menu / kết thúc, bàn phím số bật ra khi cần.
+ */
+export type FaceLayout = 's40' | 'rocker' | 's60' | 'se' | 'razr' | 'qwerty' | 'touch';
+
 export interface ChassisSkin {
   /** Nửa trên: mặt trước quanh kính màn hình. Luôn tối để chữ trên đó đọc được. */
   top: string;
@@ -98,6 +111,44 @@ const BY_MODEL: Record<string, ChassisSkin> = {
   'siemens-c65': { top: 'bg-gradient-to-b from-stone-800 to-stone-950', keypad: 'bg-gradient-to-b from-stone-400 to-stone-600', edge: 'border-stone-950', keys: 'silver' },
   'siemens-cx65': { top: 'bg-gradient-to-b from-stone-800 to-stone-950', keypad: 'bg-gradient-to-b from-stone-500 to-stone-700', edge: 'border-stone-950', keys: 'silver' },
 };
+
+/** Bố cục mặt phím theo hãng, dùng khi máy chưa khai báo riêng. */
+const FACE_BY_VENDOR: Record<string, FaceLayout> = {
+  nokia: 's40',
+  sonyericsson: 'se',
+  samsung: 'rocker',
+  motorola: 'razr',
+  lg: 's40',
+  siemens: 'rocker',
+  generic: 's40',
+};
+
+/** Bố cục mặt phím theo từng máy. */
+const FACE_BY_MODEL: Record<string, FaceLayout> = {
+  // Nokia đời đầu còn dùng phím bập bênh, chưa có vòng xoay.
+  'nokia-3510i': 'rocker',
+  'nokia-7210': 'rocker',
+  'nokia-6230': 'rocker',
+  // Dòng S60 dùng phím bốn hướng vuông kèm Menu / C.
+  'nokia-6600': 's60',
+  'nokia-7610': 's60',
+  'nokia-n70': 's60',
+  'nokia-n73': 's60',
+  'nokia-6120': 's60',
+  'nokia-n95': 's60',
+  // E71 là máy QWERTY.
+  'nokia-e71': 'qwerty',
+  // Máy cảm ứng: mặt trước chỉ có ba phím.
+  'nokia-5800': 'touch',
+  'lg-kp500': 'touch',
+};
+
+/** Bố cục mặt phím của máy. */
+export function faceLayout(slug?: string | null, keyLayout?: string | null): FaceLayout {
+  return (slug ? FACE_BY_MODEL[slug] : undefined)
+    ?? FACE_BY_VENDOR[keyLayout ?? 'generic']
+    ?? 's40';
+}
 
 /** Skin của máy: ưu tiên màu riêng của máy, không có thì lấy màu chung của hãng. */
 export function chassisSkin(slug?: string | null, keyLayout?: string | null): ChassisSkin {

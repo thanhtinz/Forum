@@ -15,7 +15,7 @@ import {
   configStorageKey, DEFAULT_CONFIG, effectiveScreen, isCustomised, parseConfig,
   type EmulatorConfig,
 } from '@/lib/emulator-config';
-import { chassisSkin } from '@/lib/emulator-skin';
+import { chassisSkin, faceLayout } from '@/lib/emulator-skin';
 import { cn } from '@/lib/utils';
 import { DevicePicker, type DeviceOption } from './DevicePicker';
 import { EmulatorSettings } from './EmulatorSettings';
@@ -486,6 +486,16 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   const portraitChassis = fill && !wide;
   /** Màu thân máy theo hãng của máy ảo đang chọn. */
   const skin = chassisSkin(profile?.slug, profile?.keyLayout);
+  /** Bố cục mặt phím theo dòng máy — S60, QWERTY, cảm ứng… bày phím khác nhau. */
+  const face = faceLayout(profile?.slug, profile?.keyLayout);
+  /**
+   * Thân máy chia cho màn hình bao nhiêu là tuỳ dòng máy: máy cảm ứng gần như
+   * toàn màn hình, mặt trước chỉ còn dải ba phím; máy phím thì theo tỉ lệ mặt
+   * trước Nokia 6300 (màn hình ~57%, bàn phím ~40%).
+   */
+  const split = face === 'touch'
+    ? { top: 'flex-[78]', bottom: 'flex-[22]' }
+    : { top: 'flex-[56]', bottom: 'flex-[44]' };
 
   const areaRef = useRef<HTMLDivElement>(null);
   /** Viền kính bao quanh khung game (chỉ có khi dựng thân máy). */
@@ -540,6 +550,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     skinned: fill,
     keyTone: skin.keys,
     accent: skin.accent,
+    faceLayout: face,
   });
 
   const busy = phase === 'creating' || phase === 'loading' || phase === 'queued' || phase === 'reconnecting';
@@ -830,7 +841,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           skin.edge,
         )}>
           {/* Nửa trên: mặt trước tối, dải trên + kính màn hình */}
-          <div className={cn('flex min-h-0 flex-[56] flex-col px-2.5 pb-2 pt-1', skin.top)}>
+          <div className={cn('flex min-h-0 flex-col px-2.5 pb-2 pt-1', split.top, skin.top)}>
             {chassisTop(true)}
             <div ref={areaRef} className="flex min-h-0 flex-1 items-center justify-center">
               <div
@@ -847,7 +858,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           )}
 
           {/* Nửa dưới: mặt phím sáng màu, tách hẳn khối với nửa trên */}
-          <div className={cn('min-h-0 flex-[44] border-t border-black/60 px-2.5 pb-2.5 pt-2', skin.keypad)}>
+          <div className={cn('min-h-0 border-t border-black/60 px-2.5 pb-2.5 pt-2', split.bottom, skin.keypad)}>
             {keypad.phonePad}
           </div>
         </div>

@@ -1,9 +1,14 @@
 'use client';
 
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Phone, PhoneOff } from 'lucide-react';
+import { useState } from 'react';
+import {
+  ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Delete, Grid3x3,
+  Menu as MenuIcon, Phone, PhoneOff, Undo2,
+} from 'lucide-react';
 import {
   EMU_KEY_LABEL, NUMPAD_ROWS, NUM_KEY_LETTERS, SOFT_KEY_LABEL, type EmuKey,
 } from '@/lib/emulator-keys';
+import type { FaceLayout } from '@/lib/emulator-skin';
 import { cn } from '@/lib/utils';
 
 export interface VirtualKeypadProps {
@@ -64,8 +69,10 @@ const DARK_FACE =
  */
 export function useKeypadParts({
   keyLayout, softKeys, onPress, onRelease, held, compact = false, fill = false,
-  keyTone = 'silver', accent, skinned = false,
+  keyTone = 'silver', accent, skinned = false, faceLayout = 's40',
 }: VirtualKeypadProps & {
+  /** Họ bố cục mặt phím của dòng máy đang chọn. */
+  faceLayout?: FaceLayout;
   compact?: boolean;
   fill?: boolean;
   /**
@@ -215,6 +222,249 @@ export function useKeypadParts({
     <button type="button" {...bind('END')} className={face('END', cn(extra, '!text-red-400'))}><PhoneOff size={15} /></button>
   );
 
+  // ── Mặt phím dựng theo họ bố cục của từng dòng máy ───────
+  // Máy thật có vài phím cứng không mang mã Java riêng (Menu của S60, phím back
+  // của Sony Ericsson). Những phím đó gán về phím gần nghĩa nhất — Menu về phím
+  // mềm trái, back về phím mềm phải — đúng như cách dùng trên máy thật.
+  const [padOpen, setPadOpen] = useState(false);
+
+  const PILL_L = 'rounded-l-[1.1rem] rounded-r-[0.3rem] text-[11px] font-bold';
+  const PILL_R = 'rounded-r-[1.1rem] rounded-l-[0.3rem] text-[11px] font-bold';
+
+  const aux = (key: EmuKey, label: React.ReactNode, extra: string) => (
+    <button type="button" {...bind(key)} className={face(key, extra)}>{label}</button>
+  );
+  const callPill = (extra: string) => (
+    <button type="button" {...bind('SEND')}
+      className={cn('grid place-items-center border border-emerald-900/60 bg-gradient-to-b from-emerald-500 to-emerald-700 text-white',
+        'shadow-[0_1px_0_rgba(255,255,255,0.35)_inset,0_2px_3px_rgba(0,0,0,0.5)] transition active:translate-y-px',
+        held.has('SEND') && 'from-brand-400 to-brand-600', extra)}>
+      <Phone size={13} />
+    </button>
+  );
+  const endPill = (extra: string) => (
+    <button type="button" {...bind('END')}
+      className={cn('grid place-items-center border border-red-900/60 bg-gradient-to-b from-red-500 to-red-700 text-white',
+        'shadow-[0_1px_0_rgba(255,255,255,0.35)_inset,0_2px_3px_rgba(0,0,0,0.5)] transition active:translate-y-px',
+        held.has('END') && 'from-brand-400 to-brand-600', extra)}>
+      <PhoneOff size={13} />
+    </button>
+  );
+
+  /** Bàn phím số 4×3 — dùng lại cho gần hết các họ máy. */
+  const numGrid = (flat = false) => (
+    <div className={cn('grid h-full min-h-0 grid-cols-3 grid-rows-4', flat ? 'gap-px' : 'gap-1.5')}>
+      {NUMPAD_ROWS.flat().map((k, i) => {
+        const letters = NUM_KEY_LETTERS[k];
+        const col = i % 3;
+        const digit = <span className="text-base font-semibold leading-none">{EMU_KEY_LABEL[k]}</span>;
+        const sub = letters
+          ? <span className={cn('text-[9px] font-bold leading-none tracking-wider', subColor)}>{letters}</span>
+          : null;
+        return (
+          <button
+            key={k} type="button" {...bind(k)}
+            className={cn(skinFace, held.has(k) && skinHeld, 'h-full w-full px-3',
+              // RAZR: phím phẳng khắc laser, chỉ có đường gân ngăn chứ không bo tròn.
+              flat ? 'rounded-[3px] border-x-0 border-b-0 border-t border-white/10' : 'rounded-full',
+              col === 0 ? 'justify-start' : col === 1 ? 'justify-center' : 'justify-end')}
+          >
+            <span className="flex items-baseline gap-1.5">
+              {col === 2 ? <>{sub}{digit}</> : <>{digit}{sub}</>}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  /** Phím bốn hướng vuông của S60 / máy đời đầu. */
+  const squarePad = (
+    <div className="grid h-full max-h-[7.5rem] shrink-0 grid-cols-3 grid-rows-3 gap-0.5"
+      style={{ aspectRatio: '1 / 1' }}>
+      <span />
+      <button type="button" {...bind('UP')} className={face('UP', 'rounded-t-xl rounded-b-sm')}><ChevronUp size={16} /></button>
+      <span />
+      <button type="button" {...bind('LEFT')} className={face('LEFT', 'rounded-l-xl rounded-r-sm')}><ChevronLeft size={16} /></button>
+      <button type="button" {...bind('FIRE')} className={face('FIRE', 'rounded-sm text-[10px] font-bold')}>OK</button>
+      <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'rounded-r-xl rounded-l-sm')}><ChevronRight size={16} /></button>
+      <span />
+      <button type="button" {...bind('DOWN')} className={face('DOWN', 'rounded-b-xl rounded-t-sm')}><ChevronDown size={16} /></button>
+      <span />
+    </div>
+  );
+
+  /** Phím bập bênh nằm ngang của máy đời đầu / Samsung / Siemens. */
+  const rockerPad = (
+    <div className="flex h-full max-h-[6rem] shrink-0 flex-col items-center justify-center gap-1">
+      <button type="button" {...bind('UP')} className={face('UP', 'h-7 w-24 rounded-t-2xl rounded-b-sm')}><ChevronUp size={16} /></button>
+      <div className="flex items-stretch gap-1">
+        <button type="button" {...bind('LEFT')} className={face('LEFT', 'h-8 w-9 rounded-l-2xl rounded-r-sm')}><ChevronLeft size={16} /></button>
+        <button type="button" {...bind('FIRE')} className={face('FIRE', 'h-8 w-10 rounded-sm text-[10px] font-bold')}>OK</button>
+        <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'h-8 w-9 rounded-r-2xl rounded-l-sm')}><ChevronRight size={16} /></button>
+      </div>
+      <button type="button" {...bind('DOWN')} className={face('DOWN', 'h-7 w-24 rounded-b-2xl rounded-t-sm')}><ChevronDown size={16} /></button>
+    </div>
+  );
+
+  /** Nokia S60: phím bốn hướng vuông, Menu và C kẹp hai bên, gọi/kết thúc ngoài cùng. */
+  const faceS60 = (
+    <div className="flex h-full w-full flex-col gap-1.5">
+      <div className="flex shrink-0 items-stretch gap-1.5">
+        {softKeys && softLeft(cn('h-8 flex-1', PILL_L))}
+        {softKeys && softRight(cn('h-8 flex-1', PILL_R))}
+      </div>
+      <div className="flex min-h-0 flex-[34] items-center justify-center gap-1.5">
+        <div className="flex flex-col gap-1.5">
+          {callPill('h-8 w-14 rounded-full')}
+          {aux('SOFT_LEFT', <MenuIcon size={14} />, 'h-8 w-14 rounded-full')}
+        </div>
+        {squarePad}
+        <div className="flex flex-col gap-1.5">
+          {endPill('h-8 w-14 rounded-full')}
+          {aux('CLEAR', <Delete size={14} />, 'h-8 w-14 rounded-full')}
+        </div>
+      </div>
+      <div className="min-h-0 flex-[60]">{numGrid()}</div>
+    </div>
+  );
+
+  /** Sony Ericsson: hàng trên ba phím, hàng dưới ← back và C kẹp joystick. */
+  const faceSE = (
+    <div className="flex h-full w-full flex-col gap-1.5">
+      <div className="flex shrink-0 items-stretch gap-1.5">
+        {softKeys && softLeft(cn('h-8 flex-1', PILL_L))}
+        {callPill('h-8 w-12 rounded-[0.3rem]')}
+        {endPill('h-8 w-12 rounded-[0.3rem]')}
+        {softKeys && softRight(cn('h-8 flex-1', PILL_R))}
+      </div>
+      <div className="flex min-h-0 flex-[32] items-center justify-center gap-2">
+        {aux('SOFT_RIGHT', <Undo2 size={14} />, 'h-9 w-16 rounded-full')}
+        {dpad}
+        {aux('CLEAR', <span className="text-xs font-bold">C</span>, 'h-9 w-16 rounded-full')}
+      </div>
+      <div className="min-h-0 flex-[62]">{numGrid()}</div>
+    </div>
+  );
+
+  /** Motorola RAZR: phím phẳng khắc laser, lưới liền không khe. */
+  const faceRazr = (
+    <div className="flex h-full w-full flex-col gap-1">
+      <div className="flex shrink-0 items-stretch gap-px">
+        {softKeys && softLeft('h-8 flex-1 rounded-l-md rounded-r-[3px] text-[11px] font-bold')}
+        {callPill('h-8 w-12 rounded-[3px]')}
+        {endPill('h-8 w-12 rounded-[3px]')}
+        {softKeys && softRight('h-8 flex-1 rounded-r-md rounded-l-[3px] text-[11px] font-bold')}
+      </div>
+      <div className="flex min-h-0 flex-[32] items-center justify-center">{squarePad}</div>
+      <div className="min-h-0 flex-[62] overflow-hidden rounded-md border border-white/10">
+        {numGrid(true)}
+      </div>
+    </div>
+  );
+
+  /** Máy đời đầu / Samsung / Siemens: phím bập bênh nằm ngang. */
+  const faceRocker = (
+    <div className="flex h-full w-full flex-col gap-1.5">
+      <div className="flex shrink-0 items-stretch gap-1.5">
+        {softKeys && softLeft(cn('h-8 flex-1', PILL_L))}
+        {callPill('h-8 w-12 rounded-[0.3rem]')}
+        {endPill('h-8 w-12 rounded-[0.3rem]')}
+        {softKeys && softRight(cn('h-8 flex-1', PILL_R))}
+      </div>
+      <div className="flex min-h-0 flex-[30] items-center justify-center">{rockerPad}</div>
+      <div className="min-h-0 flex-[64]">{numGrid()}</div>
+    </div>
+  );
+
+  /**
+   * Nokia E71: cụm điều hướng, bốn phím tắt, rồi bàn phím QWERTY.
+   * Số nằm chồng lên các phím chữ bên phải (U I O / J K L / M , .) đúng như máy
+   * thật; phím chữ không mang số thì game Java không đọc được nên để trơ.
+   */
+  const QWERTY_ROWS: { ch: string; key?: EmuKey }[][] = [
+    [{ ch: 'Q' }, { ch: 'W' }, { ch: 'E' }, { ch: 'R' }, { ch: 'T' }, { ch: 'Y' },
+      { ch: 'U', key: 'NUM1' }, { ch: 'I', key: 'NUM2' }, { ch: 'O', key: 'NUM3' }, { ch: 'P' }],
+    [{ ch: 'A' }, { ch: 'S' }, { ch: 'D' }, { ch: 'F' }, { ch: 'G' }, { ch: 'H' },
+      { ch: 'J', key: 'NUM4' }, { ch: 'K', key: 'NUM5' }, { ch: 'L', key: 'NUM6' }],
+    [{ ch: 'Z' }, { ch: 'X' }, { ch: 'C' }, { ch: 'V' }, { ch: 'B' }, { ch: 'N' },
+      { ch: 'M', key: 'NUM7' }, { ch: ',', key: 'NUM8' }, { ch: '.', key: 'NUM9' }],
+    [{ ch: '*', key: 'STAR' }, { ch: '␣', key: 'NUM0' }, { ch: '#', key: 'POUND' }],
+  ];
+
+  const faceQwerty = (
+    <div className="flex h-full w-full flex-col gap-1.5">
+      <div className="flex min-h-0 flex-[26] items-center justify-center gap-1.5">
+        {softKeys && softLeft(cn('h-8 flex-1', PILL_L))}
+        {callPill('h-8 w-11 rounded-full')}
+        <div className="h-full max-h-[4.5rem]" style={{ aspectRatio: '1 / 1' }}>{squarePad}</div>
+        {endPill('h-8 w-11 rounded-full')}
+        {softKeys && softRight(cn('h-8 flex-1', PILL_R))}
+      </div>
+
+      {/* Bốn phím tắt: trang chủ, lịch, danh bạ, tin nhắn */}
+      <div className="grid shrink-0 grid-cols-4 gap-1">
+        {['⌂', '▤', '☎', '✉'].map((g) => (
+          <span key={g} className={cn(skinFace, 'h-6 justify-center rounded-full text-[10px] opacity-60')}>{g}</span>
+        ))}
+      </div>
+
+      <div className="flex min-h-0 flex-[62] flex-col gap-1">
+        {QWERTY_ROWS.map((row, r) => (
+          <div key={r} className={cn('flex min-h-0 flex-1 gap-1', r === 3 ? 'justify-center' : 'justify-stretch')}>
+            {row.map(({ ch, key }) => (
+              key ? (
+                <button
+                  key={ch} type="button" {...bind(key)}
+                  className={cn(skinFace, held.has(key) && skinHeld,
+                    'h-full flex-1 flex-col justify-center gap-0 rounded-md px-0',
+                    r === 3 && 'max-w-[6rem]')}
+                >
+                  <span className="text-[11px] font-semibold leading-none">{ch}</span>
+                  {r < 3 && (
+                    <span className={cn('mt-0.5 text-[8px] font-bold leading-none', subColor)}>
+                      {EMU_KEY_LABEL[key]}
+                    </span>
+                  )}
+                </button>
+              ) : (
+                <span
+                  key={ch}
+                  className={cn(skinFace, 'h-full flex-1 justify-center rounded-md text-[11px] font-semibold opacity-55')}
+                >
+                  {ch}
+                </span>
+              )
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  /**
+   * Máy cảm ứng (5800, Cookie): mặt trước chỉ có ba phím gọi / menu / kết thúc.
+   * Game Java vẫn cần phím số nên thêm nút gọi bàn phím trượt lên khi cần —
+   * đúng cách máy cảm ứng đời đó cho chơi game phím.
+   */
+  const faceTouch = (
+    <div className="flex h-full w-full flex-col justify-end gap-2">
+      {padOpen && <div className="min-h-0 flex-1">{numGrid()}</div>}
+      <div className="flex shrink-0 items-stretch justify-center gap-2">
+        {callPill('h-9 w-24 rounded-full')}
+        {aux('SOFT_LEFT', <MenuIcon size={15} />, 'h-9 w-20 rounded-full')}
+        {endPill('h-9 w-24 rounded-full')}
+      </div>
+      <button
+        type="button"
+        onClick={() => setPadOpen((v) => !v)}
+        className={cn(skinFace, 'h-8 shrink-0 justify-center gap-1.5 rounded-full text-[11px] font-bold')}
+      >
+        <Grid3x3 size={13} /> {padOpen ? 'Ẩn bàn phím số' : 'Hiện bàn phím số'}
+      </button>
+    </div>
+  );
+
   return {
     functionRow: (
       <div className="flex w-full items-stretch gap-1.5">
@@ -237,6 +487,13 @@ export function useKeypadParts({
     // Trên máy thật, phím mềm nằm sát dưới màn hình, phím gọi/kết thúc ở hàng
     // dưới, vòng xoay kẹp giữa bốn phím đó, rồi mới tới bàn phím số.
     phonePad: fill ? (
+      faceLayout === 's60' ? faceS60
+      : faceLayout === 'se' ? faceSE
+      : faceLayout === 'razr' ? faceRazr
+      : faceLayout === 'rocker' ? faceRocker
+      : faceLayout === 'qwerty' ? faceQwerty
+      : faceLayout === 'touch' ? faceTouch
+      : (
       /**
        * Mặt phím của skin máy thật (tham khảo skin candybar của Manic EMU):
        * hàng phím gọi/kết thúc ở trên, phím mềm ngay dưới, vòng xoay kẹp giữa
@@ -322,6 +579,7 @@ export function useKeypadParts({
           })}
         </div>
       </div>
+      )
     ) : (
       <div className="mx-auto w-full max-w-[19rem] rounded-[1.6rem] border border-ink-800/70 bg-gradient-to-b from-ink-800/40 to-ink-900/40 p-2 shadow-[0_1px_0_rgba(255,255,255,0.05)_inset]">
         <div className="flex items-stretch gap-1.5">

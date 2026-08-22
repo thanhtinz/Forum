@@ -7,6 +7,7 @@ import { DownloadsEditor, type DownloadDraft } from './DownloadsEditor';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { PAID_ACCESS } from '@/lib/sell-permission';
 import { ActionForm } from '@/components/ActionForm';
+import { ImageField } from '@/components/ImageField';
 
 const PAID_VALUES: string[] = [...PAID_ACCESS];
 
@@ -118,10 +119,8 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
       </label>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium">Ảnh bìa (URL)</span>
-          <input name="cover" type="url" defaultValue={initial?.cover} className="input" placeholder="https://…" />
-        </label>
+        <ImageField name="cover" label="Ảnh bìa" defaultValue={initial?.cover}
+          placeholder="https://… hoặc tải ảnh lên" />
         <label className="block">
           <span className="mb-1 block text-sm font-medium">Kiểu thẻ hiển thị</span>
           <select name="cardStyle" className="input" defaultValue={initial?.cardStyle ?? "STANDARD"}>

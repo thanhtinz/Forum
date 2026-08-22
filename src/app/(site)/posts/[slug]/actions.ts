@@ -7,6 +7,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { purchaseContent } from '@/lib/purchase';
 import { COUPON_ERROR_MESSAGE } from '@/lib/coupon';
 import { notify } from '@/lib/notify';
+import { getActiveBan, banMessage } from '@/lib/ban';
 
 export interface UnlockState {
   error?: string;
@@ -115,6 +116,9 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
   if (!postId) return { error: 'Thiếu thông tin bài viết.' };
   if (content.length < 2) return { error: 'Bình luận quá ngắn.' };
   if (content.length > 2000) return { error: 'Bình luận tối đa 2000 ký tự.' };
+
+  const banned = await getActiveBan(userId, 'COMMENT');
+  if (banned) return { error: banMessage(banned, 'bình luận') };
 
   const rate = await checkRateLimit('comment', userId);
   if (!rate.allowed) return { error: rate.message };

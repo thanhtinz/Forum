@@ -4,13 +4,18 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award,
-  Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2,
+  Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2, Menu, Settings,
   Gamepad2, Cpu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Sub { label: string; status: string }
-interface Item { href: string; label: string; icon: typeof FileText; exact?: boolean; defaultStatus?: string; subs?: Sub[] }
+interface Item {
+  href: string; label: string; icon: typeof FileText; exact?: boolean;
+  defaultStatus?: string; subs?: Sub[];
+  /** Tên tham số cho mục con — mặc định là `status`. */
+  param?: string;
+}
 interface Group { title?: string; items: Item[] }
 
 /** Điều hướng quản trị, chia nhóm theo công việc. */
@@ -94,6 +99,13 @@ export const ADMIN_GROUPS: Group[] = [
   {
     title: 'Giao diện',
     items: [
+      {
+        href: '/admin/nav', label: 'Menu điều hướng', icon: Menu, param: 'group', defaultStatus: 'header',
+        subs: [
+          { label: 'Trên đầu trang', status: 'header' },
+          { label: 'Chân trang', status: 'footer' },
+        ],
+      },
       { href: '/admin/slides', label: 'Slide trang chủ', icon: Images },
       { href: '/admin/links', label: 'Liên kết bạn bè', icon: Link2 },
     ],
@@ -101,6 +113,7 @@ export const ADMIN_GROUPS: Group[] = [
   {
     title: 'Hệ thống',
     items: [
+      { href: '/admin/settings', label: 'Cài đặt chung', icon: Settings },
       { href: '/admin/storage', label: 'Lưu trữ ảnh', icon: Cloud },
       { href: '/admin/stickers', label: 'Bộ sticker', icon: Sticker },
       { href: '/admin/gif', label: 'GIF', icon: Wand2 },
@@ -142,7 +155,8 @@ export function AdminNavItems({ onNavigate }: { onNavigate?: () => void }) {
           {group.items.map((it) => {
             const active = it.exact ? pathname === it.href : pathname.startsWith(it.href);
             const Icon = it.icon;
-            const currentStatus = searchParams.get('status') ?? it.defaultStatus;
+            const param = it.param ?? 'status';
+                const currentStatus = searchParams.get(param) ?? it.defaultStatus;
             return (
               <div key={it.href}>
                 <Link href={it.href} onClick={onNavigate}
@@ -155,7 +169,7 @@ export function AdminNavItems({ onNavigate }: { onNavigate?: () => void }) {
                   <div className="mt-0.5 flex flex-col gap-0.5 border-l border-ink-100 pl-2.5 dark:border-ink-800">
                     {it.subs.map((s) => {
                       const subActive = currentStatus === s.status;
-                      const href = s.status === (it.defaultStatus ?? 'ALL') ? it.href : `${it.href}?status=${s.status}`;
+                      const href = s.status === (it.defaultStatus ?? 'ALL') ? it.href : `${it.href}?${param}=${s.status}`;
                       return (
                         <Link key={s.status} href={href} onClick={onNavigate}
                           className={cn('rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors',

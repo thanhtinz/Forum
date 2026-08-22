@@ -493,11 +493,9 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
    * toàn màn hình, mặt trước chỉ còn dải ba phím; máy phím thì theo tỉ lệ mặt
    * trước Nokia 6300 (màn hình ~57%, bàn phím ~40%).
    */
-  const split = face === 'touch-only'
-    ? { top: 'flex-[92]', bottom: 'flex-[8]' }
-    : face === 'touch'
-      ? { top: 'flex-[78]', bottom: 'flex-[22]' }
-      : { top: 'flex-[56]', bottom: 'flex-[44]' };
+  // Mọi dòng máy giờ dùng chung một mặt phím (mũi tên · số · Options · Back)
+  // nên chia thân máy như nhau; chỉ dáng cụm điều hướng là khác.
+  const split = { top: 'flex-[56]', bottom: 'flex-[44]' };
 
   const areaRef = useRef<HTMLDivElement>(null);
   /** Viền kính bao quanh khung game (chỉ có khi dựng thân máy). */
@@ -859,8 +857,14 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
             <p className="shrink-0 bg-ink-950 py-1 text-center text-xs text-brand-300">{saveNote}</p>
           )}
 
-          {/* Nửa dưới: mặt phím sáng màu, tách hẳn khối với nửa trên */}
-          <div className={cn('min-h-0 border-t border-black/60 px-2.5 pb-2.5 pt-2', split.bottom, skin.keypad)}>
+          {/*
+            Nửa dưới: mặt phím sáng màu, tách hẳn khối với nửa trên.
+
+            `min-h-[19rem]` là sàn cứng: trên máy màn hình ngắn (360×640) mà chỉ
+            chia theo tỉ lệ thì phím số bị bóp còn 20px — không bấm nổi. Thà để
+            khung game nhỏ lại còn hơn.
+          */}
+          <div className={cn('min-h-[23rem] border-t border-black/60 px-2.5 pb-2.5 pt-2', split.bottom, skin.keypad)}>
             {keypad.phonePad}
           </div>
         </div>

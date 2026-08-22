@@ -170,16 +170,28 @@ QWERTY của máy thật đã bỏ — game Java không đọc chúng, mà chún
 của mũi tên và đẩy mặt phím tràn ra ngoài khung máy. Còn 20 nút, trước là 24.
 
 Cái khác nhau giữa các dòng máy giờ nằm ở **dáng cụm điều hướng**
-(`FaceLayout` trong `src/lib/emulator-skin.ts`) và màu vỏ:
+(`FaceLayout` trong `src/lib/emulator-skin.ts`) và màu vỏ — **bốn** họ, không
+còn tám:
 
-| Cụm điều hướng | Họ | Máy |
+| Họ | Cụm điều hướng | Máy đại diện |
 |---|---|---|
-| **Vòng xoay tròn** | `s40` · `se` · `razr` · `touch` · `touch-only` | Nokia 6300 · 2700 · 6070, Sony Ericsson, Motorola V3 · L7 · E398, LG, máy cảm ứng |
-| **Phím bốn hướng vuông** | `s60` · `qwerty` | Nokia 6600 · 7610 · N70 · N73 · 6120 · N95 · E71 |
-| **Phím bập bênh nằm ngang** | `rocker` | Nokia 3510i · 7210 · 6230, Samsung, Siemens |
+| `s40` | **Vòng xoay tròn**, nút OK nổi ở tâm | Nokia 6300 (240×320) |
+| `s60` | **Bốn hướng vuông** dáng squircle, bốn cánh tách bằng đường chéo | Nokia N70 (176×208) |
+| `rocker` | **Bập bênh nằm ngang**: hai thanh trên–dưới, hai cánh trái–phải kẹp nút OK | Nokia 7210 (128×128) |
+| `razr` | Vòng xoay như `s40` nhưng **bàn phím số phẳng khắc laser** | Motorola RAZR V3 (176×220) |
 
-Motorola giữ riêng kiểu **phím số phẳng khắc laser** — chỉ có đường gân ngăn
-chứ không bo tròn.
+Bốn họ cũ `se` · `qwerty` · `touch` · `touch-only` **đã bỏ**: sau khi mặt phím
+rút còn mũi tên · phím số · Options · Back thì chúng dựng ra đúng cùng một thứ
+với `s40`, chỉ khác màu vỏ.
+
+**Thư viện rút từ 35 máy còn 6.** 35 máy kia chỉ là 35 màu vỏ khác nhau trên
+bốn bố cục lặp lại — mở bảng chọn máy ra không phân biệt được cái nào với cái
+nào. Giữ đúng một máy cho mỗi họ, cộng hai máy ảo chung để phủ hai độ phân giải
+mà bốn máy trên không có (`320×240` nằm ngang và `360×640`).
+
+Máy đã bỏ được **tắt** (`active: false`) chứ không xoá: `GameEmulatorProfile` và
+`EmulatorSession` còn tham chiếu tới chúng. Seed tự tắt mọi máy không có trong
+`profileDefs`, nên thêm slug vào lại rồi chạy seed là bật lại được.
 
 **Mũi tên bấm được rộng hơn phím số.** Mũi tên là phím bấm liên tục nhất khi
 chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so với phím số
@@ -192,8 +204,10 @@ chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so
 - Trần chiều cao cụm điều hướng bị siết quá chặt. Nới trần và chia lại tỉ lệ
   cụm điều hướng ‧ bàn phím số.
 
-Riêng phím bập bênh, hai cánh trái–phải **cao hơn** thanh trên–dưới (`h-14` so
-với `h-11`) — để cùng chiều cao thì trái–phải chỉ còn ~2 500px².
+Riêng phím bập bênh, hai cánh trái–phải bị nút OK ăn mất khúc giữa nên hẹp hơn
+hai thanh trên–dưới. Cân lại bằng cách hạ hai thanh xuống `h-9` và cho hàng giữa
+ăn hết chiều cao còn lại: trái–phải `105×73 = 7 657px²` so với trên–dưới
+`272×36 = 9 792px²` (tỉ lệ 1,28× — trước đó là 2,03×).
 
 **Dáng cụm điều hướng.** Phím bốn hướng bo góc kiểu squircle (`rounded-[30%]`)
 chứ không phải ô vuông bo nhẹ — máy S60 và E-series đều có dáng này. Bốn cánh

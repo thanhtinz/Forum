@@ -12,18 +12,19 @@
  */
 
 /**
- * Họ bố cục mặt phím. Mỗi dòng máy bày phím một kiểu khác nhau, không phải chỉ
- * khác màu:
- * - `s40`   Nokia candybar đời sau: vòng xoay tròn, nút OK ở tâm.
- * - `rocker` máy đời đầu và Samsung/Siemens: phím bốn hướng vuông kiểu bập bênh.
- * - `s60`   Nokia S60: phím bốn hướng vuông, kèm phím Menu và C kẹp hai bên.
- * - `se`    Sony Ericsson: hàng trên ba phím, hàng dưới ← back và C kẹp joystick.
- * - `razr`  Motorola: phím phẳng khắc laser, lưới liền mạch không khe hở.
- * - `qwerty` Nokia E71: cụm điều hướng + bốn phím tắt + bàn phím QWERTY.
- * - `touch` máy cảm ứng còn phím cứng: ba thanh mảnh gọi / menu / kết thúc.
- * - `touch-only` máy cảm ứng thuần: không phím cứng nào, chạm thẳng lên màn hình.
+ * Họ bố cục mặt phím — **bốn** kiểu, mỗi kiểu một máy đại diện trong thư viện:
+ * - `s40`    vòng xoay tròn, nút OK ở tâm (Nokia 6300).
+ * - `s60`    phím bốn hướng vuông, bốn cánh tách theo góc phần tư (Nokia N70).
+ * - `rocker` phím bập bênh nằm ngang: hai thanh trên–dưới, hai cánh trái–phải
+ *            kẹp nút OK (Nokia 7210).
+ * - `razr`   vòng xoay tròn nhưng bàn phím số phẳng khắc laser, chỉ ngăn nhau
+ *            bằng đường gân (Motorola RAZR V3).
+ *
+ * Các họ `se` · `qwerty` · `touch` · `touch-only` đã bỏ: sau khi mặt phím rút
+ * còn mũi tên · phím số · Options · Back thì chúng dựng ra đúng cùng một thứ
+ * với `s40`, chỉ khác màu vỏ.
  */
-export type FaceLayout = 's40' | 'rocker' | 's60' | 'se' | 'razr' | 'qwerty' | 'touch' | 'touch-only';
+export type FaceLayout = 's40' | 'rocker' | 's60' | 'razr';
 
 export interface ChassisSkin {
   /** Nửa trên: mặt trước quanh kính màn hình. Luôn tối để chữ trên đó đọc được. */
@@ -58,69 +59,23 @@ const BY_VENDOR: Record<string, ChassisSkin> = {
 
 /** Màu riêng theo từng máy — bám màu vỏ bản bán ra phổ biến nhất. */
 const BY_MODEL: Record<string, ChassisSkin> = {
-  // ── Nokia ──
-  // 3510i: vỏ nhựa xanh xám nhạt, phím bạc sáng.
-  'nokia-3510i': { top: 'bg-gradient-to-b from-slate-700 to-slate-900', keypad: 'bg-gradient-to-b from-slate-300 to-slate-500', edge: 'border-slate-900', keys: 'silver' },
+  // Thư viện giữ đúng một máy cho mỗi bố cục mặt phím, nên bảng màu vỏ cũng chỉ
+  // còn đúng bấy nhiêu. Máy nào không có ở đây thì rơi về màu chung của hãng.
+
   // 7210: bản màu nổi bật nhất là xanh dương.
   'nokia-7210': { top: 'bg-gradient-to-b from-blue-800 to-blue-950', keypad: 'bg-gradient-to-b from-slate-300 to-slate-500', edge: 'border-blue-950', keys: 'silver' },
-  'nokia-6230': { top: 'bg-gradient-to-b from-zinc-700 to-zinc-900', keypad: 'bg-gradient-to-b from-zinc-400 to-zinc-600', edge: 'border-zinc-950', keys: 'silver' },
-  'nokia-6070': { top: 'bg-gradient-to-b from-slate-700 to-slate-900', keypad: 'bg-gradient-to-b from-slate-400 to-slate-600', edge: 'border-slate-950', keys: 'silver' },
-  'nokia-6600': { top: 'bg-gradient-to-b from-slate-700 to-slate-900', keypad: 'bg-gradient-to-b from-slate-400 to-slate-600', edge: 'border-slate-950', keys: 'silver' },
-  // 7610: vỏ đen ngả tím, phím tối.
-  'nokia-7610': { top: 'bg-gradient-to-b from-purple-950 to-black', keypad: 'bg-gradient-to-b from-stone-700 to-stone-900', edge: 'border-black', keys: 'dark' },
   // N70: đen phối viền bạc.
   'nokia-n70': { top: 'bg-gradient-to-b from-neutral-800 to-black', keypad: 'bg-gradient-to-b from-neutral-400 to-neutral-600', edge: 'border-black', keys: 'silver' },
-  'nokia-n73': { top: 'bg-gradient-to-b from-stone-800 to-stone-950', keypad: 'bg-gradient-to-b from-stone-400 to-stone-600', edge: 'border-stone-950', keys: 'silver' },
   // 6300: mặt trước đen, vỏ thép không gỉ.
   'nokia-6300': { top: 'bg-gradient-to-b from-slate-800 to-slate-950', keypad: 'bg-gradient-to-b from-slate-400 to-slate-600', edge: 'border-slate-950', keys: 'silver' },
-  // 6120 Classic: nhựa đen bóng.
-  'nokia-6120': { top: 'bg-gradient-to-b from-neutral-900 to-black', keypad: 'bg-gradient-to-b from-neutral-700 to-neutral-900', edge: 'border-black', keys: 'dark' },
-  'nokia-n95': { top: 'bg-gradient-to-b from-slate-800 to-slate-950', keypad: 'bg-gradient-to-b from-slate-500 to-slate-700', edge: 'border-slate-950', keys: 'silver' },
-  'nokia-2700': { top: 'bg-gradient-to-b from-neutral-800 to-neutral-950', keypad: 'bg-gradient-to-b from-neutral-600 to-neutral-800', edge: 'border-neutral-950', keys: 'dark' },
-  // E71: vỏ thép xám, bàn phím QWERTY.
-  'nokia-e71': { top: 'bg-gradient-to-b from-zinc-700 to-zinc-900', keypad: 'bg-gradient-to-b from-zinc-500 to-zinc-700', edge: 'border-zinc-950', keys: 'silver' },
-  // 5800 XpressMusic: đen phối xanh, máy cảm ứng.
-  'nokia-5800': { top: 'bg-gradient-to-b from-slate-900 to-black', keypad: 'bg-gradient-to-b from-slate-700 to-slate-900', edge: 'border-black', keys: 'dark', accent: 'text-sky-300/70' },
-
-  // ── Sony Ericsson ──
-  'sony-ericsson-k750i': { top: 'bg-gradient-to-b from-zinc-800 to-zinc-950', keypad: 'bg-gradient-to-b from-zinc-400 to-zinc-600', edge: 'border-zinc-950', keys: 'silver' },
-  'sony-ericsson-k510i': { top: 'bg-gradient-to-b from-zinc-700 to-zinc-900', keypad: 'bg-gradient-to-b from-zinc-300 to-zinc-500', edge: 'border-zinc-900', keys: 'silver' },
-  // Dòng Walkman: đen phối cam, chữ phím cũng ngả cam.
-  'sony-ericsson-w810i': { top: 'bg-gradient-to-b from-neutral-900 to-black', keypad: 'bg-gradient-to-b from-neutral-700 to-neutral-900', edge: 'border-black', keys: 'dark', accent: 'text-orange-300/70' },
-  'sony-ericsson-w200i': { top: 'bg-gradient-to-b from-orange-950 to-black', keypad: 'bg-gradient-to-b from-neutral-600 to-neutral-800', edge: 'border-black', keys: 'dark', accent: 'text-orange-300/70' },
-  // Dòng Cyber-shot: đen tuyền.
-  'sony-ericsson-k800i': { top: 'bg-gradient-to-b from-stone-900 to-black', keypad: 'bg-gradient-to-b from-stone-700 to-stone-900', edge: 'border-black', keys: 'dark' },
-  'sony-ericsson-c902': { top: 'bg-gradient-to-b from-neutral-900 to-black', keypad: 'bg-gradient-to-b from-neutral-700 to-neutral-900', edge: 'border-black', keys: 'dark' },
-
-  // ── Samsung ──
-  'samsung-e250': { top: 'bg-gradient-to-b from-blue-950 to-slate-950', keypad: 'bg-gradient-to-b from-slate-300 to-slate-500', edge: 'border-slate-950', keys: 'silver' },
-  'samsung-d900': { top: 'bg-gradient-to-b from-slate-900 to-black', keypad: 'bg-gradient-to-b from-slate-600 to-slate-800', edge: 'border-black', keys: 'dark' },
-  'samsung-e900': { top: 'bg-gradient-to-b from-slate-900 to-black', keypad: 'bg-gradient-to-b from-slate-700 to-slate-900', edge: 'border-black', keys: 'dark' },
-
-  // ── Motorola ──
   // RAZR V3: nhôm anod bạc, phím phẳng cắt laser.
   'motorola-v3': { top: 'bg-gradient-to-b from-neutral-800 to-neutral-950', keypad: 'bg-gradient-to-b from-neutral-400 to-neutral-600', edge: 'border-neutral-950', keys: 'silver' },
-  'motorola-l7': { top: 'bg-gradient-to-b from-neutral-900 to-black', keypad: 'bg-gradient-to-b from-neutral-600 to-neutral-800', edge: 'border-black', keys: 'dark' },
-  'motorola-e398': { top: 'bg-gradient-to-b from-neutral-800 to-black', keypad: 'bg-gradient-to-b from-neutral-500 to-neutral-700', edge: 'border-black', keys: 'silver' },
-
-  // ── LG ──
-  // Chocolate: đen bóng, phím cảm ứng đèn đỏ.
-  'lg-kg800': { top: 'bg-gradient-to-b from-stone-950 to-black', keypad: 'bg-gradient-to-b from-stone-800 to-stone-950', edge: 'border-black', keys: 'dark', accent: 'text-red-400/70' },
-  'lg-kp500': { top: 'bg-gradient-to-b from-stone-900 to-black', keypad: 'bg-gradient-to-b from-stone-600 to-stone-800', edge: 'border-black', keys: 'dark' },
-  // Samsung Star: vỏ đen viền crôm.
-  'samsung-s5233': { top: 'bg-gradient-to-b from-slate-900 to-black', keypad: 'bg-gradient-to-b from-slate-800 to-slate-950', edge: 'border-slate-700', keys: 'dark' },
-  // Nokia 5230: nhựa đen tuyền.
-  'nokia-5230': { top: 'bg-gradient-to-b from-neutral-900 to-black', keypad: 'bg-gradient-to-b from-neutral-800 to-neutral-950', edge: 'border-black', keys: 'dark' },
-
-  // ── Siemens ──
-  'siemens-c65': { top: 'bg-gradient-to-b from-stone-800 to-stone-950', keypad: 'bg-gradient-to-b from-stone-400 to-stone-600', edge: 'border-stone-950', keys: 'silver' },
-  'siemens-cx65': { top: 'bg-gradient-to-b from-stone-800 to-stone-950', keypad: 'bg-gradient-to-b from-stone-500 to-stone-700', edge: 'border-stone-950', keys: 'silver' },
 };
 
 /** Bố cục mặt phím theo hãng, dùng khi máy chưa khai báo riêng. */
 const FACE_BY_VENDOR: Record<string, FaceLayout> = {
   nokia: 's40',
-  sonyericsson: 'se',
+  sonyericsson: 's40',
   samsung: 'rocker',
   motorola: 'razr',
   lg: 's40',
@@ -130,25 +85,10 @@ const FACE_BY_VENDOR: Record<string, FaceLayout> = {
 
 /** Bố cục mặt phím theo từng máy. */
 const FACE_BY_MODEL: Record<string, FaceLayout> = {
-  // Nokia đời đầu còn dùng phím bập bênh, chưa có vòng xoay.
-  'nokia-3510i': 'rocker',
+  // 7210 là máy đời đầu, còn dùng phím bập bênh chứ chưa có vòng xoay.
   'nokia-7210': 'rocker',
-  'nokia-6230': 'rocker',
-  // Dòng S60 dùng phím bốn hướng vuông kèm Menu / C.
-  'nokia-6600': 's60',
-  'nokia-7610': 's60',
+  // N70 thuộc dòng S60, dùng phím bốn hướng vuông.
   'nokia-n70': 's60',
-  'nokia-n73': 's60',
-  'nokia-6120': 's60',
-  'nokia-n95': 's60',
-  // E71 là máy QWERTY.
-  'nokia-e71': 'qwerty',
-  // Máy cảm ứng: mặt trước chỉ có ba phím.
-  'nokia-5800': 'touch',
-  'lg-kp500': 'touch',
-  // Máy cảm ứng thuần, không phím cứng nào.
-  'samsung-s5233': 'touch-only',
-  'nokia-5230': 'touch-only',
 };
 
 /** Bố cục mặt phím của máy. */

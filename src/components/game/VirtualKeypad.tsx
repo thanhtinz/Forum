@@ -278,21 +278,27 @@ export function useKeypadParts({
    * chiều cao thì trái–phải chỉ còn ~2 500px² trong khi phím số đã 4 300px².
    */
   const rockerPad = (
-    <div className="flex h-full max-h-[9.5rem] w-full max-w-[17rem] flex-col items-stretch justify-center gap-1">
-      <button type="button" {...bind('UP')} className={face('UP', 'h-11 w-full rounded-t-2xl rounded-b-sm')}><ChevronUp size={20} /></button>
-      <div className="flex items-stretch gap-1">
-        <button type="button" {...bind('LEFT')} className={face('LEFT', 'h-14 flex-[38] rounded-l-2xl rounded-r-sm')}><ChevronLeft size={20} /></button>
-        <button type="button" {...bind('FIRE')} className={face('FIRE', 'h-14 flex-[24] rounded-sm text-[10px] font-bold')}>OK</button>
-        <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'h-14 flex-[38] rounded-r-2xl rounded-l-sm')}><ChevronRight size={20} /></button>
+    <div className="flex h-full max-h-[10.5rem] w-full max-w-[17rem] flex-col items-stretch gap-1">
+      <button type="button" {...bind('UP')} className={face('UP', 'h-9 w-full shrink-0 rounded-t-2xl rounded-b-sm')}><ChevronUp size={22} /></button>
+      {/*
+        Hàng giữa ăn hết chiều cao còn lại. Trước đây thanh trên–dưới cao 44px
+        trải hết bề ngang (11 968px²) còn trái–phải chỉ 105×56 (5 880px²) vì bị
+        nút OK ăn mất khúc giữa — hơn gấp đôi. Hạ hai thanh xuống 36px và nhường
+        chỗ cho hàng giữa thì bốn phím xấp xỉ bằng nhau.
+      */}
+      <div className="flex min-h-0 flex-1 items-stretch gap-1">
+        <button type="button" {...bind('LEFT')} className={face('LEFT', 'h-full min-h-0 flex-[40] rounded-l-2xl rounded-r-sm')}><ChevronLeft size={22} /></button>
+        <button type="button" {...bind('FIRE')} className={face('FIRE', 'h-full min-h-0 flex-[20] rounded-sm text-[11px] font-bold')}>OK</button>
+        <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'h-full min-h-0 flex-[40] rounded-r-2xl rounded-l-sm')}><ChevronRight size={22} /></button>
       </div>
-      <button type="button" {...bind('DOWN')} className={face('DOWN', 'h-11 w-full rounded-b-2xl rounded-t-sm')}><ChevronDown size={20} /></button>
+      <button type="button" {...bind('DOWN')} className={face('DOWN', 'h-9 w-full shrink-0 rounded-b-2xl rounded-t-sm')}><ChevronDown size={22} /></button>
     </div>
   );
 
   /** Cụm điều hướng theo dòng máy. */
   const navCluster =
     faceLayout === 'rocker' ? rockerPad
-    : faceLayout === 's60' || faceLayout === 'qwerty' ? squarePad
+    : faceLayout === 's60' ? squarePad
     : dpad;
 
   /** Motorola giữ kiểu phím phẳng khắc laser cho bàn phím số. */

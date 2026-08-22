@@ -83,12 +83,12 @@ Khu game Java ME nằm ở `/games`:
   dựng sẵn + nhập tay), cách phóng (vừa khung / kéo đầy / gốc 1:1), lọc ảnh sắc nét
   hay mượt, **tốc độ chạy 0.5×–3×** (game Java hay chậm), giới hạn FPS, cỡ chữ, âm
   thanh, rung phím và gán phím bàn phím. Lưu theo tài khoản, khách thì theo trình duyệt.
-- **Thư viện máy cổ** — 35 máy ảo theo đời máy thật (Nokia 3510i → 5800, Sony Ericsson
-  K510i/W200i/K750i/W810i/K800i/C902, Samsung E250/D900/E900, Motorola RAZR V3/SLVR L7/E398,
-  LG Chocolate/Cookie, Siemens C65/CX65 và ba máy ảo chung), mỗi hãng một bố cục phím
-  mềm riêng. Người chơi bấm “Chọn máy ảo” để đổi máy ngay trong emulator, có nhãn
+- **Thư viện máy ảo** — mỗi bố cục mặt phím giữ đúng một máy đại diện: Nokia 7210
+  (bập bênh), Nokia N70 (bốn hướng vuông), Nokia 6300 (vòng xoay), Motorola RAZR V3
+  (vòng xoay + phím số phẳng khắc laser), cộng hai máy ảo chung phủ `320×240` nằm ngang
+  và `360×640`. Người chơi bấm “Chọn máy ảo” để đổi máy ngay trong emulator, có nhãn
   tương thích cho từng máy. Skin thân máy khớp đúng đời máy: 7210 vỏ xanh, 6300 thép
-  không gỉ, RAZR V3 nhôm anod, Chocolate đen bóng phím đỏ, Walkman cam đen…
+  không gỉ, RAZR V3 nhôm anod.
 - **Quản trị** — `/admin/games` (CRUD game, version, file, ảnh, ma trận tương thích)
   và `/admin/emulator` (profile thiết bị, hạn mức tài nguyên, phiên đang chạy, log lỗi).
 

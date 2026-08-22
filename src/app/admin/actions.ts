@@ -105,11 +105,27 @@ export async function deleteCategory(id: string) {
 
 // ─────────────── Gói VIP ───────────────
 
-export async function updateVipPlan(id: string, data: { price: number; originalPrice: number | null; durationDays: number | null; discountPercent: number; freeContent: boolean; active: boolean }) {
+export async function updateVipPlan(id: string, data: {
+  name: string; description: string | null; icon: string | null; color: string | null;
+  price: number; originalPrice: number | null; durationDays: number | null;
+  discountPercent: number; freeContent: boolean; active: boolean;
+}) {
   await requireAdmin();
-  await db.vipPlan.update({ where: { id }, data });
+  const name = data.name.trim();
+  if (name.length < 2) return { error: 'Tên gói quá ngắn.' };
+  await db.vipPlan.update({
+    where: { id },
+    data: {
+      ...data,
+      name,
+      description: data.description?.trim() || null,
+      icon: normalizeIcon(data.icon),
+      color: data.color?.trim() || null,
+    },
+  });
   revalidatePath('/admin/vip-plans');
   revalidatePath('/vip');
+  return { ok: true };
 }
 
 // ─────────────── Cấu hình GIF ───────────────

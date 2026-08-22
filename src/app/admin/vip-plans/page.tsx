@@ -8,7 +8,10 @@ export const dynamic = 'force-dynamic';
 export default async function AdminVipPlansPage() {
   const plans = await db.vipPlan.findMany({
     orderBy: [{ tier: 'asc' }],
-    select: { id: true, tier: true, name: true, price: true, originalPrice: true, durationDays: true, discountPercent: true, freeContent: true, active: true },
+    select: {
+      id: true, tier: true, name: true, description: true, icon: true, color: true,
+      price: true, originalPrice: true, durationDays: true, discountPercent: true, freeContent: true, active: true,
+    },
   });
   const rows: VipPlanRow[] = plans;
 

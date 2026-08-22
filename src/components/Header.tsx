@@ -3,6 +3,7 @@ import { Search, Bell, LayoutGrid, MessagesSquare, Crown, PenLine, Gamepad2, Sho
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { touchPresence } from '@/lib/presence';
+import { getLevelLook } from '@/lib/level';
 import { MobileNav } from './MobileNav';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
@@ -29,6 +30,7 @@ export async function Header() {
   const role = (user as { role?: string } | undefined)?.role;
   const unread = user?.id ? await db.notification.count({ where: { userId: user.id, read: false } }) : 0;
   if (user?.id) await touchPresence(user.id);
+  const levelLook = user?.id ? await getLevelLook(user.level ?? 1) : null;
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/90 backdrop-blur dark:border-ink-800 dark:bg-ink-950/90">
@@ -83,6 +85,9 @@ export async function Header() {
                 points={user.points ?? 0}
                 balance={user.balance ?? 0}
                 level={user.level ?? 1}
+                levelIcon={levelLook?.icon}
+                levelColor={levelLook?.color}
+                levelName={levelLook?.name}
                 vipTier={user.vipTier ?? null}
                 isStaff={role === 'ADMIN' || role === 'MODERATOR'}
               />

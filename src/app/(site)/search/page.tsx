@@ -10,6 +10,8 @@ import { Pagination } from '@/components/Pagination';
 import { TableHead } from '@/components/forum/TableHead';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
+import { getLevelLooks } from '@/lib/level';
+import { LevelBadge } from '@/components/LevelBadge';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 12;
@@ -31,6 +33,8 @@ export default async function SearchPage({ searchParams }: {
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
   const tab: TabKey = TABS.some((t) => t.key === tabRaw) ? (tabRaw as TabKey) : 'threads';
   const like = { contains: q, mode: 'insensitive' as const };
+
+  const levelLooks = await getLevelLooks();
 
   // Đếm cho cả ba tab để hiện số lượng ngay trên nhãn
   const [threadTotal, postTotal, userTotal] = q
@@ -145,7 +149,8 @@ export default async function SearchPage({ searchParams }: {
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-2 font-semibold text-ink-900 dark:text-white">
                         <span className="truncate">{u.name ?? u.username}</span>
-                        <span className="chip shrink-0 bg-brand-50 text-brand-600 dark:bg-brand-950/50">Lv{u.level}</span>
+                        <LevelBadge level={u.level} icon={levelLooks.get(u.level)?.icon}
+                          color={levelLooks.get(u.level)?.color} name={levelLooks.get(u.level)?.name} />
                       </p>
                       <p className="truncate text-xs text-ink-400">{u.bio || `@${u.username}`}</p>
                     </div>

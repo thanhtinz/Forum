@@ -16,6 +16,8 @@ import { ThreadPost, displayName } from '@/components/forum/ThreadPost';
 import { Pagination } from '@/components/Pagination';
 import { ReplyContent } from '@/components/forum/ReplyContent';
 import { canModerateForum } from '@/lib/moderation';
+import { getLevelLooks, type LevelLook } from '@/lib/level';
+import { LevelBadge } from '@/components/LevelBadge';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,9 +36,19 @@ const authorSelect = {
   },
 } as const;
 
-/** Gộp số chủ đề + số trả lời thành "số bài" hiển thị ở cột người đăng. */
-function toAuthor(u: { username: string | null; name: string | null; image: string | null; level: number; createdAt: Date; _count: { threads: number; replies: number } }) {
-  return { ...u, postCount: u._count.threads + u._count.replies };
+/** Gộp số chủ đề + số trả lời thành "số bài", kèm huy hiệu cấp của người đăng. */
+function toAuthor(
+  u: { username: string | null; name: string | null; image: string | null; level: number; createdAt: Date; _count: { threads: number; replies: number } },
+  looks: Map<number, LevelLook>,
+) {
+  const look = looks.get(u.level);
+  return {
+    ...u,
+    postCount: u._count.threads + u._count.replies,
+    levelIcon: look?.icon ?? null,
+    levelColor: look?.color ?? null,
+    levelName: look?.name ?? null,
+  };
 }
 
 const REPLIES_PER_PAGE = 10;
@@ -79,6 +91,8 @@ export default async function ThreadPage({ params, searchParams }: {
         select: { id: true, name: true },
       })
     : [];
+
+  const levelLooks = await getLevelLooks();
 
   const totalReplies = await db.reply.count({ where: { threadId: id, parentId: null, hidden: false } });
   const totalPages = Math.max(1, Math.ceil(totalReplies / REPLIES_PER_PAGE));
@@ -142,7 +156,7 @@ export default async function ThreadPage({ params, searchParams }: {
         </p>
 
         <ThreadPost
-          author={toAuthor(thread.author)}
+          author={toAuthor(thread.author, levelLooks)}
           createdAt={thread.createdAt}
           index={1}
           actions={
@@ -176,7 +190,7 @@ export default async function ThreadPage({ params, searchParams }: {
             {replies.map((r, i) => (
               <ThreadPost
                 key={r.id}
-                author={toAuthor(r.author)}
+                author={toAuthor(r.author, levelLooks)}
                 createdAt={r.createdAt}
                 index={(page - 1) * REPLIES_PER_PAGE + i + 2}
                 isSolution={r.isSolution}
@@ -195,7 +209,8 @@ export default async function ThreadPage({ params, searchParams }: {
                           <Link href={`/u/${ch.author.username ?? ''}`} className="font-semibold text-ink-700 hover:text-brand-600 dark:text-ink-200">
                             {displayName(ch.author)}
                           </Link>
-                          <span className="rounded bg-brand-100 px-1 text-[10px] font-bold text-brand-700 dark:bg-brand-950/60 dark:text-brand-300">Lv.{ch.author.level}</span>
+                          <LevelBadge level={ch.author.level} icon={levelLooks.get(ch.author.level)?.icon}
+                            color={levelLooks.get(ch.author.level)?.color} name={levelLooks.get(ch.author.level)?.name} />
                           <span className="text-ink-400">{format(ch.createdAt, 'HH:mm · dd/MM/yyyy')}</span>
                         </div>
                         <ReplyContent content={ch.content} />

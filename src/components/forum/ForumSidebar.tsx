@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { Flame, Users, Trophy, Circle } from 'lucide-react';
 import { db } from '@/lib/db';
 import { fmtCount, fmtAgo } from '@/lib/utils';
+import { getLevelLooks } from '@/lib/level';
+import { LevelBadge } from '@/components/LevelBadge';
 
 /** Coi là đang online nếu hoạt động trong 15 phút gần đây. */
 const ONLINE_WINDOW_MS = 15 * 60 * 1000;
@@ -9,6 +11,7 @@ const ONLINE_WINDOW_MS = 15 * 60 * 1000;
 export async function ForumSidebar() {
   const since = new Date(Date.now() - ONLINE_WINDOW_MS);
 
+  const levelLooks = await getLevelLooks();
   const [userCount, newestUser, online, hotThreads, topUsers] = await Promise.all([
     db.user.count(),
     db.user.findFirst({ orderBy: { createdAt: 'desc' }, select: { username: true, name: true, createdAt: true } }),
@@ -97,7 +100,8 @@ export async function ForumSidebar() {
                 ? <img src={u.image} alt="" className="size-8 rounded-full object-cover" />
                 : <span className="grid size-8 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">{(u.name ?? u.username ?? 'U')[0]?.toUpperCase()}</span>}
               <Link href={`/u/${u.username ?? ''}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:text-brand-600">{u.name ?? u.username}</Link>
-              <span className="chip shrink-0 bg-brand-50 text-brand-600 dark:bg-brand-950/50">Lv{u.level}</span>
+              <LevelBadge level={u.level} icon={levelLooks.get(u.level)?.icon}
+                color={levelLooks.get(u.level)?.color} name={levelLooks.get(u.level)?.name} />
             </li>
           ))}
           {topUsers.length === 0 && <li className="text-sm text-ink-400">Chưa có thành viên.</li>}

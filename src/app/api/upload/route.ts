@@ -1,30 +1,18 @@
-import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
 import { NextResponse, type NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
+import { putFile, newObjectName, sniffImage } from '@/lib/storage';
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5MB
-const ALLOWED: Record<string, string> = {
-  'image/jpeg': 'jpg',
-  'image/png': 'png',
-  'image/gif': 'gif',
-  'image/webp': 'webp',
-};
-
-/** Thư mục lưu ảnh người dùng tải lên (phục vụ tĩnh qua /uploads/...). */
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+const ALLOWED = new Set(['jpg', 'png', 'gif', 'webp']);
 
 /**
  * Nhận một ảnh từ người dùng đã đăng nhập và trả về đường dẫn công khai.
- * Kiểu tệp được xác định từ nội dung thật (magic bytes), không tin `type`
- * do trình duyệt khai báo.
+ * Kiểu tệp xác định từ nội dung thật (magic bytes), không tin `type` do
+ * trình duyệt khai báo. Tệp được đẩy lên Cloudflare R2 nếu đã cấu hình.
  */
 export async function POST(req: NextRequest) {
   const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: 'Bạn cần đăng nhập.' }, { status: 401 });
-
+  if (!session?.user?.id) return NextResponse.json({ error: 'Bạn cần đăng nhập.' }, { status: 401 });
 
   const form = await req.formData().catch(() => null);
   const file = form?.get('file');
@@ -33,22 +21,11 @@ export async function POST(req: NextRequest) {
   if (file.size > MAX_BYTES) return NextResponse.json({ error: 'Ảnh tối đa 5MB.' }, { status: 413 });
 
   const buf = Buffer.from(await file.arrayBuffer());
-  const ext = ALLOWED[sniffMime(buf) ?? ''];
-  if (!ext) return NextResponse.json({ error: 'Chỉ nhận ảnh JPG, PNG, GIF hoặc WebP.' }, { status: 415 });
+  const kind = sniffImage(buf);
+  if (!kind || !ALLOWED.has(kind.ext)) {
+    return NextResponse.json({ error: 'Chỉ nhận ảnh JPG, PNG, GIF hoặc WebP.' }, { status: 415 });
+  }
 
-  const name = `${Date.now().toString(36)}-${randomUUID().slice(0, 8)}.${ext}`;
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  await writeFile(path.join(UPLOAD_DIR, name), buf);
-
-  return NextResponse.json({ url: `/uploads/${name}` });
-}
-
-/** Đoán kiểu ảnh từ vài byte đầu — an toàn hơn tin vào header của client. */
-function sniffMime(b: Buffer): string | null {
-  if (b.length < 12) return null;
-  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
-  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
-  if (b.toString('ascii', 0, 3) === 'GIF') return 'image/gif';
-  if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') return 'image/webp';
-  return null;
+  const stored = await putFile(buf, newObjectName(kind.ext), kind.mime);
+  return NextResponse.json({ url: stored.url });
 }

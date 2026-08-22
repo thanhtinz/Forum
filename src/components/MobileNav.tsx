@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Search, LayoutGrid, MessagesSquare, Crown, Gamepad2, LayoutDashboard, LogIn, UserPlus, PenLine, Settings } from 'lucide-react';
+import { Menu, X, Search, LayoutGrid, MessagesSquare, Crown, Gamepad2, LayoutDashboard, LogIn, UserPlus, PenLine, Settings, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const ICONS = { LayoutGrid, MessagesSquare, Crown, Gamepad2 } as const;
+const ICONS = { LayoutGrid, MessagesSquare, Crown, Gamepad2, ShoppingBag } as const;
 
 export interface MobileNavProps {
   nav: { href: string; label: string; icon: keyof typeof ICONS }[];

@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
+import { isPublicImageRef } from '@/lib/icon';
 
 export type SettingsState = { ok?: boolean; error?: string; fieldErrors?: Record<string, string> };
 
@@ -15,8 +16,8 @@ const profileSchema = z.object({
     .max(20, 'Tên đăng nhập tối đa 20 ký tự')
     .regex(/^[a-z0-9_]+$/, 'Chỉ dùng chữ thường, số và dấu gạch dưới'),
   bio: z.string().trim().max(300, 'Giới thiệu tối đa 300 ký tự').optional(),
-  image: z.string().trim().url('Ảnh đại diện phải là URL hợp lệ').optional().or(z.literal('')),
-  cover: z.string().trim().url('Ảnh bìa phải là URL hợp lệ').optional().or(z.literal('')),
+  image: z.string().trim().refine((v) => !v || isPublicImageRef(v), 'Ảnh đại diện phải là URL hợp lệ hoặc ảnh đã tải lên').optional(),
+  cover: z.string().trim().refine((v) => !v || isPublicImageRef(v), 'Ảnh bìa phải là URL hợp lệ hoặc ảnh đã tải lên').optional(),
 });
 
 function fieldErrorsOf(error: z.ZodError): Record<string, string> {

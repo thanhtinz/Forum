@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { CheckCircle2, CalendarDays, MessageSquare } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
+import { LevelBadge } from '@/components/LevelBadge';
 
 export interface PostAuthor {
   username: string | null;
@@ -10,6 +11,10 @@ export interface PostAuthor {
   level: number;
   createdAt?: Date;
   postCount?: number;
+  /** Huy hiệu cấp lấy từ LevelRule (nếu admin đã cấu hình cấp này). */
+  levelIcon?: string | null;
+  levelColor?: string | null;
+  levelName?: string | null;
 }
 
 export function displayName(u: PostAuthor | null | undefined): string {
@@ -69,10 +74,9 @@ export function ThreadPost({ author, createdAt, index, isSolution, header, child
 
           <div className="min-w-0 sm:w-full">
             <Link href={href} className="block truncate font-semibold leading-tight hover:text-brand-600">{name}</Link>
-            <p className="truncate text-[11px] text-ink-400">{rankOf(author.level)}</p>
-            <span className="mt-1 inline-block rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-700 dark:bg-brand-950/60 dark:text-brand-300">
-              Lv.{author.level}
-            </span>
+            <p className="truncate text-[11px] text-ink-400">{author.levelName ?? rankOf(author.level)}</p>
+            <LevelBadge className="mt-1" level={author.level}
+              icon={author.levelIcon} color={author.levelColor} name={author.levelName} />
           </div>
 
           {/* Số liệu — chỉ hiện trên màn hình lớn để cột không quá cao trên mobile */}

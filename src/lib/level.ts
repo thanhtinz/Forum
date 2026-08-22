@@ -1,6 +1,30 @@
+import { cache } from 'react';
 import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import { notify } from './notify';
+
+export interface LevelLook {
+  level: number;
+  name: string;
+  icon: string | null;
+  color: string | null;
+}
+
+/**
+ * Bảng tra cấp -> giao diện huy hiệu (tên, biểu tượng, màu).
+ * Cache theo request nên nhiều component cùng dùng chỉ tốn một truy vấn.
+ */
+export const getLevelLooks = cache(async (): Promise<Map<number, LevelLook>> => {
+  const rules = await db.levelRule.findMany({
+    select: { level: true, name: true, icon: true, color: true },
+  });
+  return new Map(rules.map((r) => [r.level, r]));
+});
+
+/** Giao diện huy hiệu của một cấp; null nếu admin chưa cấu hình cấp đó. */
+export async function getLevelLook(level: number): Promise<LevelLook | null> {
+  return (await getLevelLooks()).get(level) ?? null;
+}
 
 /**
  * Cộng EXP cho người dùng rồi tra bảng LevelRule để nâng cấp.

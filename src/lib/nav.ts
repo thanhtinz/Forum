@@ -16,20 +16,18 @@ export interface NavItem {
 }
 
 /**
- * Menu mặc định khi admin chưa cấu hình gì — giữ đúng menu đang chạy trước đây
- * để trang không bị trống trơn ở lần chạy đầu.
+ * Menu mặc định khi admin chưa cấu hình gì, để trang không trống menu ở lần chạy đầu.
+ * Không có mục "Bài viết" (/blog) vì trang chủ đã là diễn đàn; ai cần vẫn tự thêm được.
  */
 export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: string }[]> = {
   header: [
     { label: 'Diễn đàn', url: '/', icon: '💬' },
     { label: 'Cửa hàng', url: '/shop', icon: '🛍️' },
-    { label: 'Bài viết', url: '/blog', icon: '📰' },
     { label: 'VIP', url: '/vip', icon: '👑' },
   ],
   footer: [
     { label: 'Diễn đàn', url: '/', icon: '' },
     { label: 'Cửa hàng', url: '/shop', icon: '' },
-    { label: 'Bài viết', url: '/blog', icon: '' },
     { label: 'VIP', url: '/vip', icon: '' },
     { label: 'Tìm kiếm', url: '/search', icon: '' },
   ],

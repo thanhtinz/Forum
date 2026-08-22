@@ -12,6 +12,8 @@ import { ReplyForm } from '@/components/forum/ReplyForm';
 import { ThreadModMenu } from '@/components/forum/ThreadModMenu';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { ThreadPost, displayName } from '@/components/forum/ThreadPost';
+import { Pagination } from '@/components/Pagination';
+import { ReplyContent } from '@/components/forum/ReplyContent';
 import { canModerateForum } from '@/lib/moderation';
 
 export const dynamic = 'force-dynamic';
@@ -36,8 +38,14 @@ function toAuthor(u: { username: string | null; name: string | null; image: stri
   return { ...u, postCount: u._count.threads + u._count.replies };
 }
 
-export default async function ThreadPage({ params }: { params: Promise<{ slug: string; id: string }> }) {
+const REPLIES_PER_PAGE = 10;
+
+export default async function ThreadPage({ params, searchParams }: {
+  params: Promise<{ slug: string; id: string }>;
+  searchParams: Promise<{ p?: string }>;
+}) {
   const { slug, id } = await params;
+  const { p: pageRaw } = await searchParams;
 
   const thread = await db.thread.findUnique({
     where: { id },
@@ -71,20 +79,24 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
       })
     : [];
 
-  const replies = await db.thread
-    .findUnique({ where: { id } })
-    .replies({
-      where: { parentId: null, hidden: false },
-      orderBy: [{ isSolution: 'desc' }, { createdAt: 'asc' }],
-      include: {
-        author: authorSelect,
-        children: {
-          where: { hidden: false },
-          orderBy: { createdAt: 'asc' },
-          include: { author: authorSelect },
-        },
+  const totalReplies = await db.reply.count({ where: { threadId: id, parentId: null, hidden: false } });
+  const totalPages = Math.max(1, Math.ceil(totalReplies / REPLIES_PER_PAGE));
+  const page = Math.min(totalPages, Math.max(1, parseInt(pageRaw ?? '1', 10) || 1));
+
+  const replies = await db.reply.findMany({
+    where: { threadId: id, parentId: null, hidden: false },
+    orderBy: [{ isSolution: 'desc' }, { createdAt: 'asc' }],
+    skip: (page - 1) * REPLIES_PER_PAGE,
+    take: REPLIES_PER_PAGE,
+    include: {
+      author: authorSelect,
+      children: {
+        where: { hidden: false },
+        orderBy: { createdAt: 'asc' },
+        include: { author: authorSelect },
       },
-    });
+    },
+  });
 
   // Trạng thái "đã thích" của người dùng hiện tại (chủ đề + mọi trả lời)
   const likedThread = new Set<string>();
@@ -147,7 +159,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
         </ThreadPost>
 
         <h2 id="tra-loi" className="zib-title mb-3 mt-6 scroll-mt-20">
-          {fmtCount(replies?.length ?? 0)} trả lời
+          {fmtCount(totalReplies)} trả lời
         </h2>
 
         {!replies || replies.length === 0 ? (
@@ -162,14 +174,14 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
                 key={r.id}
                 author={toAuthor(r.author)}
                 createdAt={r.createdAt}
-                index={i + 2}
+                index={(page - 1) * REPLIES_PER_PAGE + i + 2}
                 isSolution={r.isSolution}
                 actions={
                   <ReplyActions threadId={thread.id} replyId={r.id} initialLiked={likedReplies.has(r.id)} initialLikeCount={r.likeCount}
                     loggedIn={loggedIn} callbackUrl={callbackUrl} canReply canMarkSolution={canMarkSolution && !r.isSolution} />
                 }
               >
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-700 dark:text-ink-200">{r.content}</p>
+                <ReplyContent content={r.content} />
 
                 {r.children.length > 0 && (
                   <ul className="mt-4 space-y-3 border-l-2 border-brand-200 pl-3 dark:border-brand-900">
@@ -182,7 +194,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
                           <span className="rounded bg-brand-100 px-1 text-[10px] font-bold text-brand-700 dark:bg-brand-950/60 dark:text-brand-300">Lv.{ch.author.level}</span>
                           <span className="text-ink-400">{format(ch.createdAt, 'HH:mm · dd/MM/yyyy')}</span>
                         </div>
-                        <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-700 dark:text-ink-200">{ch.content}</p>
+                        <ReplyContent content={ch.content} />
                         <ReplyActions threadId={thread.id} replyId={ch.id} initialLiked={likedReplies.has(ch.id)} initialLikeCount={ch.likeCount}
                           loggedIn={loggedIn} callbackUrl={callbackUrl} canMarkSolution={canMarkSolution && !ch.isSolution} />
                       </li>
@@ -191,6 +203,12 @@ export default async function ThreadPage({ params }: { params: Promise<{ slug: s
                 )}
               </ThreadPost>
             ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="mt-4">
+            <Pagination page={page} totalPages={totalPages} basePath={`/forum/${slug}/${id}`} pageParam="p" />
           </div>
         )}
 

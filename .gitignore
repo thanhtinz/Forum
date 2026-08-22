@@ -19,3 +19,5 @@ next-env.d.ts
 .DS_Store
 *.tsbuildinfo
 prisma/*.db
+uploads/
+public/uploads/

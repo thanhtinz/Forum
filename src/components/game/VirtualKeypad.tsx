@@ -296,14 +296,14 @@ export function useKeypadParts({
 
   /** Phím bập bênh nằm ngang của máy đời đầu / Samsung / Siemens. */
   const rockerPad = (
-    <div className="flex h-full max-h-[6rem] shrink-0 flex-col items-center justify-center gap-1">
-      <button type="button" {...bind('UP')} className={face('UP', 'h-7 w-24 rounded-t-2xl rounded-b-sm')}><ChevronUp size={16} /></button>
+    <div className="flex h-full max-h-[7.5rem] shrink-0 flex-col items-center justify-center gap-1">
+      <button type="button" {...bind('UP')} className={face('UP', 'h-9 w-24 rounded-t-2xl rounded-b-sm')}><ChevronUp size={16} /></button>
       <div className="flex items-stretch gap-1">
-        <button type="button" {...bind('LEFT')} className={face('LEFT', 'h-8 w-9 rounded-l-2xl rounded-r-sm')}><ChevronLeft size={16} /></button>
-        <button type="button" {...bind('FIRE')} className={face('FIRE', 'h-8 w-10 rounded-sm text-[10px] font-bold')}>OK</button>
-        <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'h-8 w-9 rounded-r-2xl rounded-l-sm')}><ChevronRight size={16} /></button>
+        <button type="button" {...bind('LEFT')} className={face('LEFT', 'h-9 w-9 rounded-l-2xl rounded-r-sm')}><ChevronLeft size={16} /></button>
+        <button type="button" {...bind('FIRE')} className={face('FIRE', 'h-9 w-10 rounded-sm text-[10px] font-bold')}>OK</button>
+        <button type="button" {...bind('RIGHT')} className={face('RIGHT', 'h-9 w-9 rounded-r-2xl rounded-l-sm')}><ChevronRight size={16} /></button>
       </div>
-      <button type="button" {...bind('DOWN')} className={face('DOWN', 'h-7 w-24 rounded-b-2xl rounded-t-sm')}><ChevronDown size={16} /></button>
+      <button type="button" {...bind('DOWN')} className={face('DOWN', 'h-9 w-24 rounded-b-2xl rounded-t-sm')}><ChevronDown size={16} /></button>
     </div>
   );
 
@@ -311,21 +311,21 @@ export function useKeypadParts({
   const faceS60 = (
     <div className="flex h-full w-full flex-col gap-1.5">
       <div className="flex shrink-0 items-stretch gap-1.5">
-        {softKeys && softLeft(cn('h-8 flex-1', PILL_L))}
-        {softKeys && softRight(cn('h-8 flex-1', PILL_R))}
+        {softKeys && softLeft(cn('h-9 flex-1', PILL_L))}
+        {softKeys && softRight(cn('h-9 flex-1', PILL_R))}
       </div>
-      <div className="flex min-h-0 flex-[34] items-center justify-center gap-1.5">
+      <div className="flex min-h-0 flex-[40] items-center justify-center gap-1.5">
         <div className="flex flex-col gap-1.5">
-          {callPill('h-8 w-14 rounded-full')}
-          {aux('SOFT_LEFT', <MenuIcon size={14} />, 'h-8 w-14 rounded-full')}
+          {callPill('h-9 w-14 rounded-full')}
+          {aux('SOFT_LEFT', <MenuIcon size={14} />, 'h-9 w-14 rounded-full')}
         </div>
         {squarePad}
         <div className="flex flex-col gap-1.5">
-          {endPill('h-8 w-14 rounded-full')}
-          {aux('CLEAR', <Delete size={14} />, 'h-8 w-14 rounded-full')}
+          {endPill('h-9 w-14 rounded-full')}
+          {aux('CLEAR', <Delete size={14} />, 'h-9 w-14 rounded-full')}
         </div>
       </div>
-      <div className="min-h-0 flex-[60]">{numGrid()}</div>
+      <div className="min-h-0 flex-[56]">{numGrid()}</div>
     </div>
   );
 
@@ -336,25 +336,25 @@ export function useKeypadParts({
   const faceSE = (
     <div className="flex h-full w-full flex-col gap-1.5">
       <div className="flex shrink-0 items-stretch gap-1.5">
-        {softKeys && softLeft(cn('h-7 flex-1', PILL_L))}
-        {callPill('h-7 w-11 rounded-[0.3rem]')}
-        {endPill('h-7 w-11 rounded-[0.3rem]')}
-        {softKeys && softRight(cn('h-7 flex-1', PILL_R))}
+        {softKeys && softLeft(cn('h-9 flex-1', PILL_L))}
+        {callPill('h-9 w-11 rounded-[0.3rem]')}
+        {endPill('h-9 w-11 rounded-[0.3rem]')}
+        {softKeys && softRight(cn('h-9 flex-1', PILL_R))}
       </div>
 
-      <div className="flex min-h-0 flex-[32] items-center justify-center gap-2">
+      <div className="flex min-h-0 flex-[40] items-center justify-center gap-2">
         <div className="flex flex-col gap-1.5">
-          <span className={cn(skinFace, 'h-8 w-16 justify-center rounded-[0.4rem] text-[11px] opacity-70')}>▤</span>
-          {aux('SOFT_RIGHT', <Undo2 size={14} />, 'h-8 w-16 rounded-[0.4rem]')}
+          <span className={cn(skinFace, 'h-9 w-16 justify-center rounded-[0.4rem] text-[11px] opacity-70')}>▤</span>
+          {aux('SOFT_RIGHT', <Undo2 size={14} />, 'h-9 w-16 rounded-[0.4rem]')}
         </div>
         {dpad}
         <div className="flex flex-col gap-1.5">
-          <span className={cn(skinFace, 'h-8 w-16 justify-center rounded-[0.4rem] text-[11px] opacity-70')}>✉</span>
-          {aux('CLEAR', <span className="text-xs font-bold">C</span>, 'h-8 w-16 rounded-[0.4rem]')}
+          <span className={cn(skinFace, 'h-9 w-16 justify-center rounded-[0.4rem] text-[11px] opacity-70')}>✉</span>
+          {aux('CLEAR', <span className="text-xs font-bold">C</span>, 'h-9 w-16 rounded-[0.4rem]')}
         </div>
       </div>
 
-      <div className="min-h-0 flex-[62]">{numGrid()}</div>
+      <div className="min-h-0 flex-[56]">{numGrid()}</div>
     </div>
   );
 
@@ -366,23 +366,23 @@ export function useKeypadParts({
   const faceRazr = (
     <div className="flex h-full w-full flex-col gap-1">
       <div className="flex shrink-0 items-stretch gap-px">
-        {softKeys && softLeft('h-7 flex-1 rounded-l-md rounded-r-[3px] text-[11px] font-bold')}
-        {softKeys && softRight('h-7 flex-1 rounded-r-md rounded-l-[3px] text-[11px] font-bold')}
+        {softKeys && softLeft('h-9 flex-1 rounded-l-md rounded-r-[3px] text-[11px] font-bold')}
+        {softKeys && softRight('h-9 flex-1 rounded-r-md rounded-l-[3px] text-[11px] font-bold')}
       </div>
 
-      <div className="flex min-h-0 flex-[30] items-center justify-center gap-2">
-        <span className={cn(skinFace, 'h-8 w-12 justify-center rounded-[3px] text-[11px] opacity-70')}>✉</span>
+      <div className="flex min-h-0 flex-[34] items-center justify-center gap-2">
+        <span className={cn(skinFace, 'h-9 w-12 justify-center rounded-[3px] text-[11px] opacity-70')}>✉</span>
         {dpad}
-        {aux('CLEAR', <Undo2 size={14} />, 'h-8 w-12 rounded-[3px]')}
+        {aux('CLEAR', <Undo2 size={14} />, 'h-9 w-12 rounded-[3px]')}
       </div>
 
       <div className="flex shrink-0 items-stretch justify-center gap-1.5">
-        {callPill('h-7 w-16 rounded-full')}
-        <span className={cn(skinFace, 'h-7 w-12 justify-center rounded-full text-[11px] opacity-70')}>⊕</span>
-        {endPill('h-7 w-16 rounded-full')}
+        {callPill('h-9 w-16 rounded-full')}
+        <span className={cn(skinFace, 'h-9 w-12 justify-center rounded-full text-[11px] opacity-70')}>⊕</span>
+        {endPill('h-9 w-16 rounded-full')}
       </div>
 
-      <div className="min-h-0 flex-[58] overflow-hidden rounded-md border border-white/10">
+      <div className="min-h-0 flex-[52] overflow-hidden rounded-md border border-white/10">
         {numGrid(true)}
       </div>
     </div>
@@ -392,13 +392,13 @@ export function useKeypadParts({
   const faceRocker = (
     <div className="flex h-full w-full flex-col gap-1.5">
       <div className="flex shrink-0 items-stretch gap-1.5">
-        {softKeys && softLeft(cn('h-8 flex-1', PILL_L))}
-        {callPill('h-8 w-12 rounded-[0.3rem]')}
-        {endPill('h-8 w-12 rounded-[0.3rem]')}
-        {softKeys && softRight(cn('h-8 flex-1', PILL_R))}
+        {softKeys && softLeft(cn('h-9 flex-1', PILL_L))}
+        {callPill('h-9 w-12 rounded-[0.3rem]')}
+        {endPill('h-9 w-12 rounded-[0.3rem]')}
+        {softKeys && softRight(cn('h-9 flex-1', PILL_R))}
       </div>
-      <div className="flex min-h-0 flex-[30] items-center justify-center">{rockerPad}</div>
-      <div className="min-h-0 flex-[64]">{numGrid()}</div>
+      <div className="flex min-h-0 flex-[36] items-center justify-center">{rockerPad}</div>
+      <div className="min-h-0 flex-[56]">{numGrid()}</div>
     </div>
   );
 
@@ -407,7 +407,7 @@ export function useKeypadParts({
    * Số nằm chồng lên các phím chữ bên phải (U I O / J K L / M , .) đúng như máy
    * thật; phím chữ không mang số thì game Java không đọc được nên để trơ.
    */
-  const QWERTY_ROWS: { ch: string; key?: EmuKey; num?: string }[][] = [
+  const QWERTY_ROWS: { ch: string; key?: EmuKey; num?: string; span?: number }[][] = [
     [{ ch: 'Q' }, { ch: 'W' }, { ch: 'E' }, { ch: 'R' },
       { ch: 'T', key: 'NUM1', num: '1' }, { ch: 'Y', key: 'NUM2', num: '2' }, { ch: 'U', key: 'NUM3', num: '3' },
       { ch: 'I', key: 'STAR', num: '*' }, { ch: 'O', num: '+' }, { ch: 'P', num: '=' }],
@@ -418,7 +418,7 @@ export function useKeypadParts({
     [{ ch: 'Z' }, { ch: 'X' }, { ch: 'C' },
       { ch: 'V', key: 'NUM7', num: '7' }, { ch: 'B', key: 'NUM8', num: '8' }, { ch: 'N', key: 'NUM9', num: '9' },
       { ch: 'M', key: 'NUM0', num: '0' }, { ch: ',', num: ';' }, { ch: '.', num: ':' }, { ch: '↵' }],
-    [{ ch: '⇧' }, { ch: 'Sym' }, { ch: '@' }, { ch: '␣' }, { ch: '?' }, { ch: '!' }, { ch: 'Ctrl' }],
+    [{ ch: '⇧' }, { ch: 'Sym' }, { ch: '@' }, { ch: '␣', span: 4 }, { ch: '?' }, { ch: '!' }, { ch: 'Ctrl' }],
   ];
 
   const faceQwerty = (
@@ -427,31 +427,33 @@ export function useKeypadParts({
         Cụm điều hướng E-series: hai phím tắt bên trái, hai bên phải, D-pad vuông
         ở giữa; phím gọi và kết thúc là hai thanh cong nằm dưới hai cặp phím tắt.
       */}
-      <div className="flex min-h-0 flex-[24] items-center justify-center gap-2">
+      <div className="flex min-h-0 flex-[34] items-center justify-center gap-2">
         <div className="flex flex-1 flex-col items-end gap-1">
           <div className="flex w-full justify-end gap-1">
-            {softKeys && softLeft('h-7 flex-1 rounded-full text-[10px] font-bold')}
-            <span className={cn(skinFace, 'h-7 w-9 justify-center rounded-full text-[11px] opacity-60')}>▤</span>
+            {softKeys && softLeft('h-9 flex-1 rounded-full text-[10px] font-bold')}
+            <span className={cn(skinFace, 'h-9 w-9 justify-center rounded-full text-[11px] opacity-60')}>▤</span>
           </div>
-          {callPill('h-5 w-full rounded-full')}
+          {callPill('h-9 w-full rounded-full')}
         </div>
 
-        <div className="h-full max-h-[4.25rem]" style={{ aspectRatio: '1 / 1' }}>{squarePad}</div>
+        <div className="h-full max-h-[6.5rem]" style={{ aspectRatio: '1 / 1' }}>{squarePad}</div>
 
         <div className="flex flex-1 flex-col items-start gap-1">
           <div className="flex w-full justify-start gap-1">
-            <span className={cn(skinFace, 'h-7 w-9 justify-center rounded-full text-[11px] opacity-60')}>✉</span>
-            {softKeys && softRight('h-7 flex-1 rounded-full text-[10px] font-bold')}
+            <span className={cn(skinFace, 'h-9 w-9 justify-center rounded-full text-[11px] opacity-60')}>✉</span>
+            {softKeys && softRight('h-9 flex-1 rounded-full text-[10px] font-bold')}
           </div>
-          {endPill('h-5 w-full rounded-full')}
+          {endPill('h-9 w-full rounded-full')}
         </div>
       </div>
 
       {/* Bàn phím QWERTY: số in phía trên chữ, đúng vị trí máy E-series thật. */}
-      <div className="flex min-h-0 flex-[70] flex-col gap-1">
+      <div className="flex min-h-0 flex-[66] flex-col gap-1">
         {QWERTY_ROWS.map((row, r) => (
-          <div key={r} className={cn('flex min-h-0 flex-1 gap-1', r === 3 && 'justify-center')}>
-            {row.map(({ ch, key, num }) => {
+          // Lưới 10 cột cho cả bốn hàng nên mọi phím rộng bằng nhau; phím cách
+          // trải 4 cột đúng như bàn phím thật mà vẫn khớp lưới.
+          <div key={r} className="grid min-h-0 max-h-[2.9rem] flex-1 grid-cols-10 gap-1">
+            {row.map(({ ch, key, num, span }) => {
               const body = (
                 <>
                   {num && (
@@ -460,20 +462,20 @@ export function useKeypadParts({
                   <span className="text-[11px] font-semibold leading-none">{ch}</span>
                 </>
               );
+              const cell = span === 4 ? 'col-span-4' : 'col-span-1';
               return key ? (
                 <button
                   key={ch} type="button" {...bind(key)}
-                  className={cn(skinFace, held.has(key) && skinHeld,
-                    'h-full flex-1 flex-col justify-center gap-0.5 rounded-md px-0',
-                    r === 3 && 'max-w-[5rem]')}
+                  className={cn(skinFace, held.has(key) && skinHeld, cell,
+                    'h-full w-full flex-col justify-center gap-0.5 rounded-md px-0')}
                 >
                   {body}
                 </button>
               ) : (
                 <span
                   key={ch}
-                  className={cn(skinFace, 'h-full flex-1 flex-col justify-center gap-0.5 rounded-md opacity-55',
-                    r === 3 && 'max-w-[5rem]')}
+                  className={cn(skinFace, cell,
+                    'h-full w-full flex-col justify-center gap-0.5 rounded-md opacity-55')}
                 >
                   {body}
                 </span>
@@ -504,24 +506,26 @@ export function useKeypadParts({
   const faceTouch = (
     <div className="flex h-full w-full flex-col justify-end gap-2">
       {padOpen && <div className="min-h-0 flex-1">{numGrid()}</div>}
+      {/*
+        Máy thật in ba thanh rất mảnh. Giữ nguyên dáng đó nhưng vùng bấm cao
+        bằng phím khác (36px) — thanh 10px thì ngón tay không trúng.
+      */}
       <div className="flex shrink-0 items-stretch justify-center gap-2">
-        <button type="button" {...bind('SEND')}
-          className={cn('h-2.5 flex-1 rounded-full bg-gradient-to-b from-emerald-400 to-emerald-600',
-            'shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition active:translate-y-px',
-            held.has('SEND') && 'from-brand-400 to-brand-600')}
-          aria-label={EMU_KEY_LABEL.SEND} />
-        <button type="button" {...bind('SOFT_LEFT')}
-          className={cn('h-2.5 flex-1 rounded-full bg-gradient-to-b from-ink-200 to-ink-400',
-            'shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition active:translate-y-px',
-            held.has('SOFT_LEFT') && 'from-brand-400 to-brand-600')}
-          aria-label="Menu" />
-        <button type="button" {...bind('END')}
-          className={cn('h-2.5 flex-1 rounded-full bg-gradient-to-b from-red-400 to-red-600',
-            'shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition active:translate-y-px',
-            held.has('END') && 'from-brand-400 to-brand-600')}
-          aria-label={EMU_KEY_LABEL.END} />
+        {([
+          ['SEND', 'from-emerald-400 to-emerald-600', EMU_KEY_LABEL.SEND],
+          ['SOFT_LEFT', 'from-ink-200 to-ink-400', 'Menu'],
+          ['END', 'from-red-400 to-red-600', EMU_KEY_LABEL.END],
+        ] as const).map(([k, tint, label]) => (
+          <button
+            key={k} type="button" {...bind(k)} aria-label={label}
+            className="grid h-9 flex-1 place-items-center rounded-lg"
+          >
+            <span className={cn('h-2.5 w-full rounded-full bg-gradient-to-b shadow-[0_1px_2px_rgba(0,0,0,0.5)] transition',
+              held.has(k) ? 'from-brand-400 to-brand-600' : tint)} />
+          </button>
+        ))}
       </div>
-      {padToggle('h-8 shrink-0')}
+      {padToggle('h-9 shrink-0')}
     </div>
   );
 
@@ -532,7 +536,7 @@ export function useKeypadParts({
   const faceTouchOnly = (
     <div className="flex h-full w-full flex-col justify-end gap-1.5">
       {padOpen && <div className="min-h-0 flex-1">{numGrid()}</div>}
-      {padToggle('h-7 shrink-0 opacity-80')}
+      {padToggle('h-9 shrink-0 opacity-80')}
     </div>
   );
 
@@ -572,12 +576,12 @@ export function useKeypadParts({
        * bốn phím đó, rồi tới bàn phím số phím bè ngang.
        */
       <div className="flex h-full w-full flex-col gap-1.5">
-        <div className="grid min-h-0 flex-[34] grid-cols-[1fr_auto_1fr] grid-rows-2 items-center gap-x-2 gap-y-1.5">
+        <div className="grid min-h-0 flex-[42] grid-cols-[1fr_auto_1fr] grid-rows-2 items-center gap-x-2 gap-y-1.5">
           {/* Phím gọi / kết thúc: viên thuốc màu nhỏ ở hai vai, như máy thật */}
           <button
             type="button" {...bind('SEND')}
             className={cn(
-              'col-start-1 row-start-1 grid h-7 w-full max-w-[5rem] place-items-center justify-self-start rounded-full',
+              'col-start-1 row-start-1 grid h-9 w-full max-w-[5.5rem] place-items-center justify-self-start rounded-full',
               'border border-emerald-900/60 bg-gradient-to-b from-emerald-500 to-emerald-700 text-white',
               'shadow-[0_1px_0_rgba(255,255,255,0.35)_inset,0_2px_3px_rgba(0,0,0,0.5)] transition active:translate-y-px',
               held.has('SEND') && 'from-brand-400 to-brand-600',
@@ -588,7 +592,7 @@ export function useKeypadParts({
           <button
             type="button" {...bind('END')}
             className={cn(
-              'col-start-3 row-start-1 grid h-7 w-full max-w-[5rem] place-items-center justify-self-end rounded-full',
+              'col-start-3 row-start-1 grid h-9 w-full max-w-[5.5rem] place-items-center justify-self-end rounded-full',
               'border border-red-900/60 bg-gradient-to-b from-red-500 to-red-700 text-white',
               'shadow-[0_1px_0_rgba(255,255,255,0.35)_inset,0_2px_3px_rgba(0,0,0,0.5)] transition active:translate-y-px',
               held.has('END') && 'from-brand-400 to-brand-600',
@@ -606,7 +610,7 @@ export function useKeypadParts({
             <button
               type="button" {...bind('SOFT_LEFT')}
               className={cn(skinFace, held.has('SOFT_LEFT') && skinHeld,
-                'col-start-1 row-start-2 h-8 w-full max-w-[6rem] justify-center justify-self-start rounded-full text-[11px] font-bold')}
+                'col-start-1 row-start-2 h-9 w-full max-w-[6rem] justify-center justify-self-start rounded-full text-[11px] font-bold')}
             >
               {soft.left}
             </button>
@@ -615,7 +619,7 @@ export function useKeypadParts({
             <button
               type="button" {...bind('SOFT_RIGHT')}
               className={cn(skinFace, held.has('SOFT_RIGHT') && skinHeld,
-                'col-start-3 row-start-2 h-8 w-full max-w-[6rem] justify-center justify-self-end rounded-full text-[11px] font-bold')}
+                'col-start-3 row-start-2 h-9 w-full max-w-[6rem] justify-center justify-self-end rounded-full text-[11px] font-bold')}
             >
               {soft.right}
             </button>
@@ -627,7 +631,7 @@ export function useKeypadParts({
 
         {/* Bàn phím số: chữ số và chữ cái nằm cạnh nhau, cột phải đảo thứ tự
             đúng như bàn phím Nokia đời sau. */}
-        <div className="grid min-h-0 flex-[62] grid-cols-3 grid-rows-4 gap-1.5">
+        <div className="grid min-h-0 flex-[54] grid-cols-3 grid-rows-4 gap-1.5">
           {NUMPAD_ROWS.flat().map((k, i) => {
             const letters = NUM_KEY_LETTERS[k];
             const col = i % 3;

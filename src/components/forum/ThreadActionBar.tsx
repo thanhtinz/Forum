@@ -30,7 +30,7 @@ export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, modM
   };
 
   return (
-    <div className="mt-4 border-t border-ink-100 pt-4 dark:border-ink-800">
+    <div>
       <div className="flex items-center justify-center gap-2">
         <button type="button" onClick={onLike} disabled={pending}
           className={cn('btn-outline !rounded-full gap-1.5 !px-4 disabled:opacity-60', liked && 'border-accent-500/40 text-accent-500')}>

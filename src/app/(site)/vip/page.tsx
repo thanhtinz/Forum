@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtVnd } from '@/lib/utils';
 import { BuyVipButton } from '@/components/vip/BuyVipButton';
+import { isImageIcon } from '@/lib/icon';
 
 export const metadata: Metadata = { title: 'Nâng cấp VIP' };
 export const dynamic = 'force-dynamic';
@@ -49,7 +50,12 @@ export default async function VipPage() {
             <div key={p.id} className={`card relative flex flex-col p-6 ${p.tier === 2 ? 'ring-2 ring-amber-400' : ''}`}>
               {p.tier === 2 && <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-amber-500 px-3 py-0.5 text-xs font-bold text-white">Phổ biến</span>}
               <div className="flex items-center gap-2">
-                <Crown size={18} style={{ color: p.color || '#f59e0b' }} />
+                {isImageIcon(p.icon)
+                  // eslint-disable-next-line @next/next/no-img-element
+                  ? <img src={p.icon} alt="" className="size-6 shrink-0 object-contain" />
+                  : p.icon
+                    ? <span className="text-xl leading-none" style={{ color: p.color || '#f59e0b' }}>{p.icon}</span>
+                    : <Crown size={18} style={{ color: p.color || '#f59e0b' }} />}
                 <h2 className="text-lg font-bold">{p.name}</h2>
               </div>
               {p.description && <p className="mt-1 text-sm text-ink-500">{p.description}</p>}

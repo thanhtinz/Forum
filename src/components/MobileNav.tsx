@@ -4,17 +4,19 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Search, LayoutGrid, MessagesSquare, Crown, LayoutDashboard, LogIn, UserPlus, PenLine, Settings, ShoppingBag } from 'lucide-react';
+import { Menu, X, Search, LayoutDashboard, LogIn, UserPlus, PenLine, Settings, Link2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const ICONS = { LayoutGrid, MessagesSquare, Crown, ShoppingBag } as const;
+import type { NavItem } from '@/lib/nav';
+import { IconGlyph } from './IconGlyph';
 
 export interface MobileNavProps {
-  nav: { href: string; label: string; icon: keyof typeof ICONS }[];
+  nav: NavItem[];
   loggedIn: boolean;
+  siteName: string;
+  siteLogo: string;
 }
 
-export function MobileNav({ nav, loggedIn }: MobileNavProps) {
+export function MobileNav({ nav, loggedIn, siteName, siteLogo }: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
@@ -40,8 +42,10 @@ export function MobileNav({ nav, loggedIn }: MobileNavProps) {
         open ? 'translate-x-0' : '-translate-x-full')}>
         <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3 dark:border-ink-800">
           <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-brand-500 text-lg font-black text-white">N</span>
-            <span className="text-lg font-black">Nova</span>
+            <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-xl bg-brand-500 text-lg font-black text-white">
+              <IconGlyph icon={siteLogo} fallback={siteName.charAt(0).toUpperCase()} className="size-full" />
+            </span>
+            <span className="text-lg font-black">{siteName}</span>
           </Link>
           <button type="button" aria-label="Đóng" onClick={() => setOpen(false)}
             className="grid h-9 w-9 place-items-center rounded-lg text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">
@@ -59,15 +63,21 @@ export function MobileNav({ nav, loggedIn }: MobileNavProps) {
 
           {/* Điều hướng */}
           <nav className="space-y-1">
-            {nav.map((n) => {
-              const Icon = ICONS[n.icon];
-              return (
-                <Link key={n.href} href={n.href}
+            {nav.map((n) => (
+              <div key={n.id}>
+                <Link href={n.url}
                   className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-ink-700 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-200 dark:hover:bg-ink-800">
-                  <Icon size={18} /> {n.label}
+                  <IconGlyph icon={n.icon} fallback={<Link2 size={18} />} className="text-lg" /> {n.label}
                 </Link>
-              );
-            })}
+                {/* Mục con hiện luôn — trên điện thoại không có hover để mở */}
+                {n.children.map((c) => (
+                  <Link key={c.id} href={c.url}
+                    className="ml-6 flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-ink-500 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
+                    <IconGlyph icon={c.icon} fallback={<Link2 size={16} />} className="text-base" /> {c.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
             {loggedIn && (
               <>
                 <Link href="/user/write"

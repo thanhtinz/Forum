@@ -226,10 +226,19 @@ Mỗi bố cục phím còn có nhãn phím mềm riêng (`SOFT_KEY_LABEL`): Nok
 *Options/Back*, Sony Ericsson *Select/Back*, Motorola *Menu/Back*, Siemens
 *Menu/Clear*…
 
+**Cầm ngang cũng dùng hết chỗ.** Cụm điều hướng và bàn phím số của bố cục ngang
+trước đây ép cứng (`h-28 w-28`, phím `36px`) nên chỉ bằng nửa diện tích bản dọc
+trong khi hai cột thân máy thừa rất nhiều chỗ. Nay cả hai bám chiều cao cột:
+mũi tên `3 025 → 5 625px²`, nút OK `1 936 → 3 600`, phím số `1 728 → 2 744`.
+Đo ở 844×390, 667×375 và 568×320 đều không tràn.
+
 **Người chơi tự chọn máy**: nút “Chọn máy ảo” trong emulator mở bảng gom theo hãng,
 kèm độ phân giải, CLDC/MIDP và mức tương thích lấy từ ma trận
 (`Chạy tốt` / `Beta` / `Không chạy`; máy chưa ai thử thì không có nhãn). Chọn máy
-khác sẽ mở phiên mới qua `?profile=<id>`.
+khác sẽ mở phiên mới qua `?profile=<id>`. Trang chơi truyền `?profile=` xuống
+`resolveProfile()` — nếu không thì phần mô tả thiết bị dưới trang và **keymap đã
+lưu** vẫn tra theo máy mặc định của game chứ không phải máy vừa chọn. Id không
+tồn tại hoặc máy đã tắt thì rơi về máy mặc định, không báo lỗi.
 
 Seed tự dựng ma trận tương thích: máy trùng độ phân giải gốc của game → `FULL`,
 máy cùng hãng nhưng khác độ phân giải → `BETA`.

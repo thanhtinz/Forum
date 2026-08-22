@@ -56,7 +56,7 @@ export default async function PlayGamePage({ params, searchParams }: {
     : game.versions[0];
 
   // Profile + keymap đã lưu của người dùng để nạp sẵn vào emulator.
-  const profile = playable && version ? await resolveProfile(game.id, version.id) : null;
+  const profile = playable && version ? await resolveProfile(game.id, version.id, sp.profile) : null;
 
   // Thư viện máy ảo cho người chơi chọn, kèm mức tương thích với chính game này.
   const [allProfiles, matrix] = playable && version

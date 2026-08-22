@@ -103,11 +103,14 @@ export function useKeypadParts({
   const face = (key: EmuKey, extra?: string) =>
     cn(skinFace, 'justify-center', held.has(key) && skinHeld, extra);
 
-  // Cầm ngang thì chiều cao eo hẹp — phím nhỏ lại cho đủ chỗ.
+  /**
+   * Cụm điều hướng bám theo **chiều cao chỗ chứa** ở cả hai hướng cầm máy.
+   * Cầm ngang trước đây ép cứng `h-28 w-28` nên vòng xoay chỉ còn nửa diện
+   * tích bản dọc, trong khi hai bên thân máy thừa rất nhiều chỗ.
+   */
   const wheel = fill
     ? 'h-full max-h-[10.5rem] aspect-square'
-    : compact ? 'h-28 w-28' : 'h-[6.5rem] w-[6.5rem]';
-  const numH = compact ? 'h-9' : 'h-11';
+    : compact ? 'h-full max-h-[9.5rem] aspect-square' : 'h-[6.5rem] w-[6.5rem]';
 
   // ── D-pad ────────────────────────────────────────────────
   /**
@@ -334,9 +337,11 @@ export function useKeypadParts({
 
     dpad,
 
+    // Bàn phím số của bố cục ngang: kéo cao hết cột thay vì hàng phím dẹt
+    // 36px, vì cột bên phải thân máy vốn thừa chỗ.
     numpad: (
-      <div className="grid shrink-0 grid-cols-3 gap-1">
-        {NUMPAD_ROWS.flat().map((k) => numKey(k, `${numH} w-12 rounded-lg`))}
+      <div className="grid h-full max-h-[13rem] shrink-0 grid-cols-3 grid-rows-4 gap-1">
+        {NUMPAD_ROWS.flat().map((k) => numKey(k, 'h-full w-14 rounded-lg'))}
       </div>
     ),
 

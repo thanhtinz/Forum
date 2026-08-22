@@ -116,7 +116,21 @@ export async function breakerOpen(): Promise<boolean> {
  * giờ liệt kê nhiều máy cho mỗi game, nên phải bám máy chỉ định trước, không thì
  * người chơi hay rơi vào một máy "chạy tốt" bất kỳ thay vì máy gốc của game.
  */
-export async function resolveProfile(gameId: string, versionId: string): Promise<EmulatorProfile | null> {
+export async function resolveProfile(
+  gameId: string,
+  versionId: string,
+  /**
+   * Máy người chơi tự chọn (`?profile=` trên trang chơi). Ưu tiên hơn máy mặc
+   * định của game, giống hệt cách `createEmulatorSession` xử lý `profileId` —
+   * nếu không thì phần mô tả thiết bị và keymap đã lưu sẽ tra nhầm máy.
+   */
+  preferId?: string | null,
+): Promise<EmulatorProfile | null> {
+  if (preferId) {
+    const picked = await db.emulatorProfile.findFirst({ where: { id: preferId, active: true } });
+    if (picked) return picked;
+  }
+
   const [game, matrix] = await Promise.all([
     db.game.findUnique({ where: { id: gameId }, include: { emulatorProfile: true } }),
     db.gameEmulatorProfile.findMany({

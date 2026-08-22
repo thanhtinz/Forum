@@ -195,6 +195,13 @@ chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so
 Riêng phím bập bênh, hai cánh trái–phải **cao hơn** thanh trên–dưới (`h-14` so
 với `h-11`) — để cùng chiều cao thì trái–phải chỉ còn ~2 500px².
 
+**Dáng cụm điều hướng.** Phím bốn hướng bo góc kiểu squircle (`rounded-[30%]`)
+chứ không phải ô vuông bo nhẹ — máy S60 và E-series đều có dáng này. Bốn cánh
+được vẽ tách ra bằng **đường chéo trùng đúng vùng bấm góc phần tư**
+(`repeating-conic-gradient` từ 45°), nên nhìn là biết bấm chỗ nào ăn phím nào.
+Thêm gờ chìm quanh mép và vành hở quanh nút OK cho ra khối. Vòng xoay tròn dùng
+chung cách vẽ này.
+
 **Không tràn, không bị bóp.** Mọi tầng của mặt phím đều `min-w-0` +
 `overflow-hidden` nên không nhánh nào đẩy mặt phím rộng hơn thân máy; cụm bập
 bênh dùng `w-full max-w-[17rem]` chứ không phải bề rộng cứng. Nửa dưới thân máy

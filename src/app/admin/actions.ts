@@ -235,6 +235,41 @@ export async function setWithdrawalStatus(id: string, status: 'APPROVED' | 'REJE
   revalidatePath('/admin/withdrawals');
 }
 
+// ─────────────── Chủ đề diễn đàn ───────────────
+
+export async function setThreadStatus(id: string, status: 'PUBLISHED' | 'PENDING' | 'HIDDEN') {
+  await requireAdmin();
+  await db.thread.update({ where: { id }, data: { status }, select: { id: true } });
+  revalidatePath('/admin/threads');
+}
+
+export async function toggleThreadPinned(id: string) {
+  await requireAdmin();
+  const t = await db.thread.findUnique({ where: { id }, select: { pinned: true } });
+  await db.thread.update({ where: { id }, data: { pinned: !t?.pinned }, select: { id: true } });
+  revalidatePath('/admin/threads');
+}
+
+export async function toggleThreadLocked(id: string) {
+  await requireAdmin();
+  const t = await db.thread.findUnique({ where: { id }, select: { locked: true } });
+  await db.thread.update({ where: { id }, data: { locked: !t?.locked }, select: { id: true } });
+  revalidatePath('/admin/threads');
+}
+
+export async function deleteThread(id: string) {
+  await requireAdmin();
+  const t = await db.thread.findUnique({ where: { id }, select: { forumId: true } });
+  if (!t) return;
+  await db.$transaction(async (tx) => {
+    await tx.thread.delete({ where: { id } });
+    // Đếm lại cho khu vực để số chủ đề không lệch.
+    const count = await tx.thread.count({ where: { forumId: t.forumId } });
+    await tx.forum.update({ where: { id: t.forumId }, data: { threadCount: count }, select: { id: true } });
+  });
+  revalidatePath('/admin/threads');
+}
+
 // ─────────────── Diễn đàn ───────────────
 
 export type ForumState = { ok?: boolean; error?: string };

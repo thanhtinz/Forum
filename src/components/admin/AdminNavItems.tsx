@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
-  LayoutDashboard, FileText, FolderTree, MessagesSquare, Users, Flag,
+  LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag,
   Crown, TicketPercent, Banknote, Images, Link2, Cloud, Sticker, Wand2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,10 +18,10 @@ export const ADMIN_GROUPS: Group[] = [
     items: [{ href: '/admin', label: 'Tổng quan', icon: LayoutDashboard, exact: true }],
   },
   {
-    title: 'Nội dung',
+    title: 'Cửa hàng',
     items: [
       {
-        href: '/admin/posts', label: 'Bài viết', icon: FileText, defaultStatus: 'ALL',
+        href: '/admin/posts', label: 'Bài bán hàng', icon: FileText, defaultStatus: 'ALL',
         subs: [
           { label: 'Tất cả', status: 'ALL' },
           { label: 'Chờ duyệt', status: 'PENDING' },
@@ -30,7 +30,21 @@ export const ADMIN_GROUPS: Group[] = [
         ],
       },
       { href: '/admin/categories', label: 'Chuyên mục', icon: FolderTree },
-      { href: '/admin/forums', label: 'Diễn đàn', icon: MessagesSquare },
+    ],
+  },
+  {
+    title: 'Diễn đàn',
+    items: [
+      { href: '/admin/forums', label: 'Khu vực', icon: MessagesSquare },
+      {
+        href: '/admin/threads', label: 'Chủ đề', icon: MessageSquareText, defaultStatus: 'ALL',
+        subs: [
+          { label: 'Tất cả', status: 'ALL' },
+          { label: 'Chờ duyệt', status: 'PENDING' },
+          { label: 'Đang hiện', status: 'PUBLISHED' },
+          { label: 'Đã ẩn', status: 'HIDDEN' },
+        ],
+      },
     ],
   },
   {

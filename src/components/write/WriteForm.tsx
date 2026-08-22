@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { PenLine, Send, Coins, Lock, Crown, Gift } from 'lucide-react';
 import { createPost, type WriteState } from '@/app/(site)/user/write/actions';
+import { DownloadsEditor } from './DownloadsEditor';
 
 const ACCESS_OPTIONS = [
   { v: 'FREE', label: 'Miễn phí', icon: Gift },
@@ -127,6 +128,17 @@ export function WriteForm({ categories }: { categories: CatOption[] }) {
             </p>
           </>
         )}
+
+        {/* Tệp tải xuống — dùng cho cả bài miễn phí lẫn trả phí */}
+        <div className="mt-4 border-t border-ink-100 pt-4 dark:border-ink-800">
+          <div className="mb-2">
+            <span className="text-sm font-medium">Tệp tải xuống</span>
+            <p className="text-xs text-ink-400">
+              Liên kết thật được giấu khỏi trình duyệt: người tải đi qua cổng kiểm tra quyền và hạn mức mỗi ngày.
+            </p>
+          </div>
+          <DownloadsEditor />
+        </div>
       </div>
 
       {state.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{state.error}</p>}

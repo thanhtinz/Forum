@@ -90,22 +90,28 @@ function EmojiTab({ onPick }: { onPick: (e: string) => void }) {
 }
 
 function StickerTab({ onPick }: { onPick: (src: string, alt: string) => void }) {
+  const [pack, setPack] = useState(STICKER_PACKS[0].key);
+  const current = STICKER_PACKS.find((p) => p.key === pack) ?? STICKER_PACKS[0];
   return (
-    <div className="max-h-[280px] overflow-y-auto p-2">
-      {STICKER_PACKS.map((pack) => (
-        <div key={pack.key}>
-          <p className="px-1 pb-1 text-xs font-semibold text-ink-400">{pack.label}</p>
-          <div className="grid grid-cols-4 gap-1.5">
-            {pack.items.map((s) => (
-              <button key={s.id} type="button" onClick={() => onPick(s.src, s.alt)} title={s.alt}
-                className="rounded-lg p-1 hover:bg-ink-100 dark:hover:bg-ink-800">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={s.src} alt={s.alt} className="aspect-square w-full" />
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
+    <div>
+      <div className="grid max-h-[250px] grid-cols-4 gap-1.5 overflow-y-auto p-2">
+        {current.items.map((s) => (
+          <button key={s.id} type="button" onClick={() => onPick(s.src, s.alt)} title={s.alt}
+            className="rounded-lg p-0.5 transition-transform hover:scale-105 hover:bg-ink-100 dark:hover:bg-ink-800">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={s.src} alt={s.alt} className="aspect-square w-full" />
+          </button>
+        ))}
+      </div>
+      <div className="flex border-t border-ink-100 dark:border-ink-800">
+        {STICKER_PACKS.map((p) => (
+          <button key={p.key} type="button" onClick={() => setPack(p.key)}
+            className={cn('flex-1 truncate px-2 py-1.5 text-xs font-medium',
+              pack === p.key ? 'bg-ink-100 text-brand-600 dark:bg-ink-800' : 'text-ink-500 hover:bg-ink-50 dark:hover:bg-ink-800/50')}>
+            {p.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

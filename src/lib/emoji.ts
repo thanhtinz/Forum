@@ -42,17 +42,23 @@ export interface StickerPack {
   items: { id: string; src: string; alt: string }[];
 }
 
-const NOVA_FACES = [
-  ['vui', 'Vui vẻ'], ['cuoi', 'Cười lớn'], ['yeu', 'Thả tim'], ['buon', 'Buồn'],
-  ['gian', 'Giận'], ['soc', 'Bất ngờ'], ['ngu', 'Buồn ngủ'], ['suy-nghi', 'Suy nghĩ'],
-  ['ok', 'Đồng ý'], ['tuyet', 'Tuyệt vời'], ['khoc', 'Khóc'], ['nhay-mat', 'Nháy mắt'],
+const CAT = [
+  ['meo-chao','Xin chào'],['meo-vui','Vui quá'],['meo-yeu','Thích lắm'],['meo-buon','Buồn'],
+  ['meo-khoc','Khóc'],['meo-gian','Giận'],['meo-ngu','Buồn ngủ'],['meo-soc','Sốc'],
+  ['meo-ok','Đồng ý'],['meo-suy-nghi','Suy nghĩ'],['meo-an-mung','Ăn mừng'],['meo-code','Đang code'],
 ] as const;
 
-/** Bộ sticker tự dựng, lưu tại /public/stickers (SVG nhẹ, không cần mạng). */
+const CHIBI = [
+  ['chibi-chao','Xin chào'],['chibi-vui','Vui quá'],['chibi-yeu','Thích lắm'],['chibi-buon','Buồn'],
+  ['chibi-khoc','Khóc'],['chibi-gian','Giận'],['chibi-ngu','Buồn ngủ'],['chibi-soc','Sốc'],
+  ['chibi-ok','Đồng ý'],['chibi-suy-nghi','Suy nghĩ'],['chibi-an-mung','Ăn mừng'],['chibi-hoc','Đang học'],
+] as const;
+
+/**
+ * Các bộ sticker tự vẽ (SVG trong /public/stickers) — nhân vật có thân mình,
+ * tư thế và đạo cụ riêng nên không trùng lặp với bộ emoji.
+ */
 export const STICKER_PACKS: StickerPack[] = [
-  {
-    key: 'nova',
-    label: 'Nova',
-    items: NOVA_FACES.map(([id, alt]) => ({ id, src: `/stickers/${id}.svg`, alt })),
-  },
+  { key: 'meo', label: 'Mèo Nova', items: CAT.map(([id, alt]) => ({ id, src: `/stickers/${id}.svg`, alt })) },
+  { key: 'chibi', label: 'Chibi Nova', items: CHIBI.map(([id, alt]) => ({ id, src: `/stickers/${id}.svg`, alt })) },
 ];

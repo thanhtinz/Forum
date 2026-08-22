@@ -8,6 +8,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { grantPoints } from '@/lib/points';
 import { checkAndAwardMedals } from '@/lib/medals';
 import { parsePostForm, toSlug } from '@/lib/post-form';
+import { canSellContent } from '@/lib/sell-permission';
 
 export interface WriteState {
   error?: string;
@@ -31,7 +32,8 @@ export async function createPost(_prev: WriteState, formData: FormData): Promise
   const rate = await checkRateLimit('post', userId);
   if (!rate.allowed) return { error: rate.message };
 
-  const parsed = await parsePostForm(formData);
+  const canSell = canSellContent((session.user as { role?: string }).role);
+  const parsed = await parsePostForm(formData, { canSell });
   if ('error' in parsed) return { error: parsed.error };
   const { data, catIds, tagNames, downloads } = parsed;
 

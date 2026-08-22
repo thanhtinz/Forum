@@ -4,6 +4,9 @@ import { useActionState, useState } from 'react';
 import { PenLine, Send, Coins, Lock, Crown, Gift } from 'lucide-react';
 import { createPost, type WriteState } from '@/app/(site)/user/write/actions';
 import { DownloadsEditor, type DownloadDraft } from './DownloadsEditor';
+import { PAID_ACCESS } from '@/lib/sell-permission';
+
+const PAID_VALUES: string[] = [...PAID_ACCESS];
 
 const ACCESS_OPTIONS = [
   { v: 'FREE', label: 'Miễn phí', icon: Gift },
@@ -34,6 +37,8 @@ export interface PostDraft {
 
 export interface WriteFormProps {
   categories: CatOption[];
+  /** Chỉ quản trị viên mới được đăng bán nội dung. */
+  canSell?: boolean;
   /** Có giá trị = chế độ sửa bài. */
   initial?: PostDraft;
   /** Server action thay thế (dùng cho sửa bài). */
@@ -46,7 +51,7 @@ const STYLES = [
   { v: 'TEXT_ONLY', label: 'Chỉ chữ (không ảnh)' },
 ];
 
-export function WriteForm({ categories, initial, action: customAction }: WriteFormProps) {
+export function WriteForm({ categories, canSell = false, initial, action: customAction }: WriteFormProps) {
   const isEdit = !!initial;
   const [state, action, pending] = useActionState<WriteState, FormData>(customAction ?? createPost, {});
   const [access, setAccess] = useState(initial?.access ?? 'FREE');
@@ -112,12 +117,20 @@ export function WriteForm({ categories, initial, action: customAction }: WriteFo
         </label>
       </div>
 
-      {/* Bán nội dung — ăn chia doanh thu */}
+      {/* Quyền xem — chỉ quản trị viên mới thấy các mức bán hàng */}
       <div className="rounded-2xl border border-ink-200 p-4 dark:border-ink-700">
-        <div className="mb-3 flex items-center gap-1.5 text-sm font-bold"><Coins size={16} className="text-amber-500" /> Bán nội dung (tuỳ chọn)</div>
+        <div className="mb-3 flex items-center gap-1.5 text-sm font-bold">
+          <Coins size={16} className="text-amber-500" /> {canSell ? 'Bán nội dung (tuỳ chọn)' : 'Quyền xem bài'}
+        </div>
+
+        {!canSell && (
+          <p className="mb-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500 dark:bg-ink-800/50">
+            Nội dung trả phí do ban quản trị đăng ở cửa hàng. Bài của thành viên được chia sẻ miễn phí.
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-2">
-          {ACCESS_OPTIONS.map((o) => {
+          {ACCESS_OPTIONS.filter((o) => canSell || !PAID_VALUES.includes(o.v)).map((o) => {
             const Icon = o.icon;
             const on = access === o.v;
             return (

@@ -1,4 +1,5 @@
 import { db } from './db';
+import { isPaidAccess } from './sell-permission';
 
 /** Escape HTML để chống XSS khi dựng nội dung. */
 function escapeHtml(s: string): string {
@@ -119,7 +120,10 @@ export interface ParsedPost {
  * Đọc và kiểm tra dữ liệu bài viết từ form. Dùng chung cho đăng mới và sửa bài
  * để hai luồng không bao giờ lệch quy tắc kiểm tra.
  */
-export async function parsePostForm(formData: FormData): Promise<ParsedPost | { error: string }> {
+export async function parsePostForm(
+  formData: FormData,
+  opts: { canSell?: boolean } = {},
+): Promise<ParsedPost | { error: string }> {
   const title = String(formData.get('title') ?? '').trim();
   const excerpt = String(formData.get('excerpt') ?? '').trim();
   const content = String(formData.get('content') ?? '').trim();
@@ -132,7 +136,12 @@ export async function parsePostForm(formData: FormData): Promise<ParsedPost | { 
   const tagRaw = String(formData.get('tags') ?? '');
   const catSlugs = formData.getAll('categories').map(String).filter(Boolean);
 
-  const isPaid = access === 'POINTS' || access === 'PAID' || access === 'VIP_ONLY';
+  const isPaid = isPaidAccess(access);
+
+  // Chỉ quản trị viên mới được đăng bán — chặn ở server, không tin giao diện.
+  if (isPaid && !opts.canSell) {
+    return { error: 'Chỉ quản trị viên mới được đăng bán nội dung. Bạn có thể đăng bài miễn phí.' };
+  }
 
   if (title.length < 5) return { error: 'Tiêu đề tối thiểu 5 ký tự.' };
   if (content.length < 20) return { error: 'Nội dung quá ngắn (tối thiểu 20 ký tự).' };

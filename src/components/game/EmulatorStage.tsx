@@ -781,22 +781,34 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           <div className="mt-2 shrink-0">{keypad.functionRow}</div>
         </>
       ) : portraitChassis ? (
-        /* Cầm dọc: nguyên thân máy — dải trên, kính màn hình lõm, rồi mặt phím */
-        <div className="flex min-h-0 flex-1 flex-col gap-1.5 rounded-[1.75rem] bg-gradient-to-b from-ink-800/50 to-ink-900/50 p-1.5">
-          {chassisTop}
-
-          {/* Kính màn hình: ôm sát khung game như mặt máy thật, lõm hơn thân máy */}
-          <div ref={areaRef} className="flex min-h-0 flex-[39] items-center justify-center px-1.5">
-            <div
-              ref={bezelRef}
-              className="rounded-lg border border-black/80 bg-ink-950 p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)]"
-            >
-              {screenBox}
+        /**
+         * Cầm dọc: nguyên **thân máy** bọc cả màn hình lẫn bàn phím, kiểu skin
+         * của các emulator máy cổ. Thân hai tông như máy thật — nửa trên tối
+         * ôm lấy kính, nửa dưới sáng màu là mặt phím. Tỉ lệ 56 : 44 lấy theo
+         * skin candybar thật (mặt trước chia màn hình ~57%, bàn phím ~40%).
+         */
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] border border-black/80 shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_10px_30px_rgba(0,0,0,0.6)]">
+          {/* Nửa trên: mặt trước tối, dải trên + kính màn hình */}
+          <div className="flex min-h-0 flex-[56] flex-col bg-gradient-to-b from-ink-900 to-ink-950 px-2.5 pb-2 pt-1">
+            {chassisTop}
+            <div ref={areaRef} className="flex min-h-0 flex-1 items-center justify-center">
+              <div
+                ref={bezelRef}
+                className="rounded-lg border border-black/80 bg-ink-950 p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)]"
+              >
+                {screenBox}
+              </div>
             </div>
           </div>
 
-          {saveNote && <p className="shrink-0 text-center text-xs text-brand-300">{saveNote}</p>}
-          <div className="min-h-0 flex-[43]">{keypad.phonePad}</div>
+          {saveNote && (
+            <p className="shrink-0 bg-ink-950 py-1 text-center text-xs text-brand-300">{saveNote}</p>
+          )}
+
+          {/* Nửa dưới: mặt phím sáng màu, tách hẳn khối với nửa trên */}
+          <div className="min-h-0 flex-[44] border-t border-black/60 bg-gradient-to-b from-ink-700 to-ink-800 px-2.5 pb-2.5 pt-2">
+            {keypad.phonePad}
+          </div>
         </div>
       ) : (
         <>

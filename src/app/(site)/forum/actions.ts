@@ -11,6 +11,7 @@ import { isVipActive } from '@/lib/access';
 import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { bbcodeToHtml } from '@/lib/bbcode';
+import { getActiveBan, banMessage } from '@/lib/ban';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
@@ -46,6 +47,9 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { error: 'Bạn cần đăng nhập để đăng chủ đề.' };
+
+  const banned = await getActiveBan(userId, 'POST');
+  if (banned) return { error: banMessage(banned, 'đăng bài') };
 
   const rate = await checkRateLimit('thread', userId);
   if (!rate.allowed) return { error: rate.message };
@@ -117,6 +121,9 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { error: 'Bạn cần đăng nhập để trả lời.' };
+
+  const banned = await getActiveBan(userId, 'COMMENT');
+  if (banned) return { error: banMessage(banned, 'bình luận') };
 
   const rate = await checkRateLimit('reply', userId);
   if (!rate.allowed) return { error: rate.message };

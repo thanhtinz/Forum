@@ -512,6 +512,28 @@ async function main() {
     { slug: 'lg-kg800', name: 'LG KG800 Chocolate (2006)', vendor: 'LG', screenWidth: 176, screenHeight: 220, keyLayout: 'lg' },
     { slug: 'siemens-c65', name: 'Siemens C65 (2004)', vendor: 'Siemens', screenWidth: 132, screenHeight: 176, keyLayout: 'siemens', cldc: '1.0', midp: '2.0', ramLimitMb: 64 },
 
+    { slug: 'nokia-7210', name: 'Nokia 7210 (2002)', vendor: 'Nokia', screenWidth: 128, screenHeight: 128, keyLayout: 'nokia', cldc: '1.0', midp: '1.0', audio: false, ramLimitMb: 64 },
+    { slug: 'nokia-6070', name: 'Nokia 6070 (2006)', vendor: 'Nokia', screenWidth: 128, screenHeight: 160, keyLayout: 'nokia', ramLimitMb: 96 },
+    { slug: 'nokia-7610', name: 'Nokia 7610 · S60 (2004)', vendor: 'Nokia', screenWidth: 176, screenHeight: 208, keyLayout: 'nokia', ramLimitMb: 128 },
+    { slug: 'nokia-6120', name: 'Nokia 6120 Classic · S60 (2007)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
+    { slug: 'nokia-n95', name: 'Nokia N95 · S60 (2007)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
+    { slug: 'nokia-2700', name: 'Nokia 2700 Classic (2009)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true },
+    // Máy QWERTY màn ngang — dùng để thử game thiết kế cho màn nằm ngang.
+    { slug: 'nokia-e71', name: 'Nokia E71 · S60 (2009)', vendor: 'Nokia', screenWidth: 320, screenHeight: 240, orientation: 'LANDSCAPE', keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
+    { slug: 'nokia-5800', name: 'Nokia 5800 XpressMusic (2008)', vendor: 'Nokia', screenWidth: 360, screenHeight: 640, keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
+
+    { slug: 'sony-ericsson-k510i', name: 'Sony Ericsson K510i (2006)', vendor: 'Sony Ericsson', screenWidth: 128, screenHeight: 160, keyLayout: 'sonyericsson', ramLimitMb: 96 },
+    { slug: 'sony-ericsson-w200i', name: 'Sony Ericsson W200i (2007)', vendor: 'Sony Ericsson', screenWidth: 128, screenHeight: 160, keyLayout: 'sonyericsson', ramLimitMb: 96 },
+    { slug: 'sony-ericsson-c902', name: 'Sony Ericsson C902 (2008)', vendor: 'Sony Ericsson', screenWidth: 240, screenHeight: 320, keyLayout: 'sonyericsson', saveState: true },
+
+    { slug: 'samsung-e900', name: 'Samsung E900 (2006)', vendor: 'Samsung', screenWidth: 240, screenHeight: 320, keyLayout: 'samsung', saveState: true },
+
+    { slug: 'motorola-e398', name: 'Motorola E398 (2004)', vendor: 'Motorola', screenWidth: 176, screenHeight: 220, keyLayout: 'motorola' },
+
+    { slug: 'lg-kp500', name: 'LG KP500 Cookie (2008)', vendor: 'LG', screenWidth: 240, screenHeight: 400, keyLayout: 'lg', saveState: true },
+
+    { slug: 'siemens-cx65', name: 'Siemens CX65 (2004)', vendor: 'Siemens', screenWidth: 132, screenHeight: 176, keyLayout: 'siemens', cldc: '1.0', midp: '2.0', ramLimitMb: 64 },
+
     // ── Máy ảo chung ──
     { slug: 'generic-240x320', name: 'Generic Java ME 240×320', vendor: null, screenWidth: 240, screenHeight: 320, keyLayout: 'generic', saveState: true },
     { slug: 'generic-320x240', name: 'Generic Java ME 320×240 (ngang)', vendor: null, screenWidth: 320, screenHeight: 240, orientation: 'LANDSCAPE', keyLayout: 'generic' },

@@ -485,7 +485,7 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
   /** Cầm dọc toàn màn hình — lúc này mới dựng thân máy. */
   const portraitChassis = fill && !wide;
   /** Màu thân máy theo hãng của máy ảo đang chọn. */
-  const skin = chassisSkin(profile?.keyLayout);
+  const skin = chassisSkin(profile?.slug, profile?.keyLayout);
 
   const areaRef = useRef<HTMLDivElement>(null);
   /** Viền kính bao quanh khung game (chỉ có khi dựng thân máy). */
@@ -536,6 +536,8 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     compact: fill && wide,
     // Cầm dọc toàn màn hình: mặt phím chiếm trọn nửa dưới.
     fill: fill && !wide,
+    keyTone: skin.keys,
+    accent: skin.accent,
   });
 
   const busy = phase === 'creating' || phase === 'loading' || phase === 'queued' || phase === 'reconnecting';

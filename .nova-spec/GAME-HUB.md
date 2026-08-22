@@ -106,10 +106,13 @@ theo bề ngang cửa sổ — xoay ngang máy vẫn toàn màn hình:
     3. bàn phím số 4×3 phím bè ngang: chữ số và chữ cái nằm cạnh nhau, cột phải
        đảo thứ tự (`DEF 3`, `MNO 6`) đúng như bàn phím Nokia đời sau.
 
-  Màu thân máy đổi theo hãng của máy ảo đang chọn (`src/lib/emulator-skin.ts`):
-  Nokia bạc lạnh, Sony Ericsson xám trung tính, Samsung ngả xanh, Motorola nhôm
-  anod gần đen, LG Chocolate đen bóng, Siemens xám ngả olive. Phím vẫn giữ một
-  bộ màu bạc nên chữ luôn đọc được trên mọi thân máy.
+  Màu thân máy khớp **từng đời máy** (`src/lib/emulator-skin.ts`), tra theo slug
+  của máy, không có thì rơi về màu chung của hãng: 7210 vỏ xanh phím bạc, 6300
+  thép không gỉ, RAZR V3 nhôm anod bạc, Chocolate đen bóng phím đỏ, Walkman
+  W200i cam đen, Cyber-shot K800i đen tuyền… Máy vỏ sáng dùng **phím bạc chữ
+  tối**, máy vỏ đen dùng **phím tối chữ sáng** (`keys: 'silver' | 'dark'`), nên
+  chữ luôn đọc được. Vài máy có đèn phím màu riêng thì chữ cái phụ lấy đúng màu
+  đó (`accent`).
 
   Đo thật ở khung 390×844: khung game 289×386 (tỉ lệ 0.749), không tràn.
 - **Cầm ngang**: D-pad ‧ màn hình ‧ bàn phím số xếp ba cột, hàng phím chức năng
@@ -138,17 +141,21 @@ phiên đồng thời đảm nhiệm.
 
 ## 5. Thư viện máy cổ
 
-Seed dựng sẵn 18 `EmulatorProfile` theo đời máy Java ME thật, thông số bám máy gốc
+Seed dựng sẵn 33 `EmulatorProfile` theo đời máy Java ME thật, thông số bám máy gốc
 (đời 2002–2003 chỉ có MIDP 1.0 nên không bật save state, RAM thấp hơn):
 
 | Hãng | Máy |
 |---|---|
-| Nokia | 3510i 96×65 · 6230 128×128 · 6600 S60 176×208 · N70 S60 176×208 · 6300 S40 240×320 · N73 S60 240×320 |
-| Sony Ericsson | K750i 176×220 · W810i 176×220 · K800i 240×320 |
-| Samsung | E250 128×160 · D900 240×320 |
-| Motorola | RAZR V3 176×220 · SLVR L7 176×220 |
-| LG · Siemens | KG800 Chocolate 176×220 · C65 132×176 |
+| Nokia | 3510i 96×65 · 7210 128×128 · 6230 128×128 · 6070 128×160 · 6600 S60 176×208 · 7610 S60 176×208 · N70 S60 176×208 · 6300 S40 240×320 · N73 S60 240×320 · 6120 Classic S60 240×320 · N95 S60 240×320 · 2700 Classic 240×320 · **E71 S60 320×240 (ngang)** · 5800 XpressMusic 360×640 |
+| Sony Ericsson | K510i 128×160 · W200i 128×160 · K750i 176×220 · W810i 176×220 · K800i 240×320 · C902 240×320 |
+| Samsung | E250 128×160 · D900 240×320 · E900 240×320 |
+| Motorola | RAZR V3 176×220 · SLVR L7 176×220 · E398 176×220 |
+| LG | KG800 Chocolate 176×220 · KP500 Cookie 240×400 |
+| Siemens | C65 132×176 · CX65 132×176 |
 | Máy ảo chung | 240×320 · 320×240 (ngang) · 360×640 |
+
+E71 là máy QWERTY màn nằm ngang — để thử game thiết kế cho khung ngang mà không
+phải bấm nút xoay.
 
 Mỗi bố cục phím có nhãn phím mềm riêng (`SOFT_KEY_LABEL`): Nokia *Options/Back*,
 Sony Ericsson *Select/Back*, Motorola *Menu/Back*, Siemens *Menu/Clear*…

@@ -48,6 +48,13 @@ const SILVER_FACE =
 
 const SILVER_HELD = 'from-brand-400 to-brand-600 !text-white border-brand-700';
 
+/** Phím tối của máy vỏ đen (Chocolate, Walkman, Cyber-shot…): chữ sáng. */
+const DARK_FACE =
+  'select-none touch-none relative flex items-center border border-black/70 ' +
+  'bg-gradient-to-b from-ink-700 to-ink-900 text-ink-100 ' +
+  'shadow-[0_1px_0_rgba(255,255,255,0.12)_inset,0_2px_3px_rgba(0,0,0,0.6)] ' +
+  'transition active:translate-y-px active:from-ink-900 active:to-ink-900';
+
 /**
  * Bàn phím ảo dựng theo máy Java ME thật: phím số có chữ ABC/DEF bên dưới,
  * D-pad hình vòng xoay (Nokia/Samsung/LG) hoặc phím bốn hướng (Sony Ericsson,
@@ -55,8 +62,22 @@ const SILVER_HELD = 'from-brand-400 to-brand-600 !text-white border-brand-700';
  *
  * Mỗi nút phát cặp press/release để runtime nhận đúng keyPressed/keyReleased.
  */
-export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, compact = false, fill = false }:
-  VirtualKeypadProps & { compact?: boolean; fill?: boolean }): KeypadParts {
+export function useKeypadParts({
+  keyLayout, softKeys, onPress, onRelease, held, compact = false, fill = false,
+  keyTone = 'silver', accent,
+}: VirtualKeypadProps & {
+  compact?: boolean;
+  fill?: boolean;
+  /** Tông phím của skin: máy vỏ sáng phím bạc, máy vỏ đen phím tối. */
+  keyTone?: 'silver' | 'dark';
+  /** Màu chữ cái phụ in trên phím số — vài máy có đèn phím màu riêng. */
+  accent?: string;
+}): KeypadParts {
+  const dark = keyTone === 'dark';
+  /** Mặt phím và trạng thái giữ, chọn theo tông của máy đang dùng. */
+  const skinFace = dark ? DARK_FACE : SILVER_FACE;
+  const skinHeld = dark ? KEY_HELD : SILVER_HELD;
+  const subColor = accent ?? (dark ? 'text-ink-400' : 'text-ink-600');
   const soft = SOFT_KEY_LABEL[keyLayout] ?? SOFT_KEY_LABEL.generic!;
 
   const bind = (key: EmuKey) => ({
@@ -92,9 +113,10 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
      * thấy vùng bấm mà không phá dáng.
      */
     <div className={cn(
-      'relative shrink-0 rounded-full border border-ink-500/50',
-      'bg-gradient-to-b from-ink-200 to-ink-400',
-      'shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_-2px_4px_rgba(0,0,0,0.3)_inset,0_3px_6px_rgba(0,0,0,0.5)]',
+      'relative shrink-0 rounded-full border',
+      dark
+        ? 'border-black/70 bg-gradient-to-b from-ink-700 to-ink-900 shadow-[0_1px_0_rgba(255,255,255,0.12)_inset,0_-2px_4px_rgba(0,0,0,0.5)_inset,0_3px_6px_rgba(0,0,0,0.6)]'
+        : 'border-ink-500/50 bg-gradient-to-b from-ink-200 to-ink-400 shadow-[0_1px_0_rgba(255,255,255,0.7)_inset,0_-2px_4px_rgba(0,0,0,0.3)_inset,0_3px_6px_rgba(0,0,0,0.5)]',
       wheel,
     )}>
       {arrows.map((a) => (
@@ -103,7 +125,8 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
           type="button"
           {...bind(a.key)}
           className={cn(
-            'absolute grid h-1/3 w-1/3 place-items-center rounded-full text-ink-600/50 transition active:scale-95',
+            'absolute grid h-1/3 w-1/3 place-items-center rounded-full transition active:scale-95',
+            dark ? 'text-ink-400/60' : 'text-ink-600/50',
             held.has(a.key) && 'bg-brand-500/80 !text-white',
             a.at,
           )}
@@ -116,8 +139,10 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
         {...bind('FIRE')}
         className={cn(
           'absolute left-1/2 top-1/2 grid h-[36%] w-[36%] -translate-x-1/2 -translate-y-1/2 place-items-center',
-          'rounded-[32%] border border-ink-500/60 bg-gradient-to-b from-ink-100 to-ink-300',
-          'shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_2px_4px_rgba(0,0,0,0.45)] transition active:translate-y-px',
+          'rounded-[32%] border transition active:translate-y-px',
+          dark
+            ? 'border-black/70 bg-gradient-to-b from-ink-600 to-ink-800 shadow-[0_1px_0_rgba(255,255,255,0.15)_inset,0_2px_4px_rgba(0,0,0,0.6)]'
+            : 'border-ink-500/60 bg-gradient-to-b from-ink-100 to-ink-300 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_2px_4px_rgba(0,0,0,0.45)]',
           held.has('FIRE') && 'from-brand-400 to-brand-600',
         )}
         aria-label={EMU_KEY_LABEL.FIRE}
@@ -243,7 +268,7 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
           {softKeys && (
             <button
               type="button" {...bind('SOFT_LEFT')}
-              className={cn(SILVER_FACE, held.has('SOFT_LEFT') && SILVER_HELD,
+              className={cn(skinFace, held.has('SOFT_LEFT') && skinHeld,
                 'col-start-1 row-start-2 h-8 w-full max-w-[6rem] justify-center justify-self-start rounded-full text-[11px] font-bold')}
             >
               {soft.left}
@@ -252,7 +277,7 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
           {softKeys && (
             <button
               type="button" {...bind('SOFT_RIGHT')}
-              className={cn(SILVER_FACE, held.has('SOFT_RIGHT') && SILVER_HELD,
+              className={cn(skinFace, held.has('SOFT_RIGHT') && skinHeld,
                 'col-start-3 row-start-2 h-8 w-full max-w-[6rem] justify-center justify-self-end rounded-full text-[11px] font-bold')}
             >
               {soft.right}
@@ -271,14 +296,14 @@ export function useKeypadParts({ keyLayout, softKeys, onPress, onRelease, held, 
             const col = i % 3;
             const digit = <span className="text-base font-semibold leading-none">{EMU_KEY_LABEL[k]}</span>;
             const sub = letters
-              ? <span className="text-[9px] font-bold leading-none tracking-wider text-ink-600">{letters}</span>
+              ? <span className={cn('text-[9px] font-bold leading-none tracking-wider', subColor)}>{letters}</span>
               : null;
             return (
               <button
                 key={k}
                 type="button"
                 {...bind(k)}
-                className={cn(SILVER_FACE, held.has(k) && SILVER_HELD, 'h-full w-full rounded-full px-3',
+                className={cn(skinFace, held.has(k) && skinHeld, 'h-full w-full rounded-full px-3',
                   col === 0 ? 'justify-start' : col === 1 ? 'justify-center' : 'justify-end')}
               >
                 <span className="flex items-baseline gap-1.5">

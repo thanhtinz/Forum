@@ -487,62 +487,25 @@ async function main() {
     cldc?: string; midp?: string; orientation?: 'PORTRAIT' | 'LANDSCAPE';
     audio?: boolean; saveState?: boolean; ramLimitMb?: number;
   }[] = [
-    // ── Nokia ──
-    { slug: 'nokia-3510i', name: 'Nokia 3510i (2002)', vendor: 'Nokia', screenWidth: 96, screenHeight: 65, keyLayout: 'nokia', cldc: '1.0', midp: '1.0', audio: false, ramLimitMb: 64 },
-    { slug: 'nokia-6230', name: 'Nokia 6230 (2004)', vendor: 'Nokia', screenWidth: 128, screenHeight: 128, keyLayout: 'nokia', ramLimitMb: 96 },
-    { slug: 'nokia-6600', name: 'Nokia 6600 · S60 (2003)', vendor: 'Nokia', screenWidth: 176, screenHeight: 208, keyLayout: 'nokia', ramLimitMb: 128 },
-    { slug: 'nokia-n70', name: 'Nokia N70 · S60 (2005)', vendor: 'Nokia', screenWidth: 176, screenHeight: 208, keyLayout: 'nokia', ramLimitMb: 128 },
-    { slug: 'nokia-6300', name: 'Nokia 6300 · S40 (2007)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true },
-    { slug: 'nokia-n73', name: 'Nokia N73 · S60 (2006)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
-
-    // ── Sony Ericsson ──
-    { slug: 'sony-ericsson-k750i', name: 'Sony Ericsson K750i (2005)', vendor: 'Sony Ericsson', screenWidth: 176, screenHeight: 220, keyLayout: 'sonyericsson' },
-    { slug: 'sony-ericsson-w810i', name: 'Sony Ericsson W810i (2006)', vendor: 'Sony Ericsson', screenWidth: 176, screenHeight: 220, keyLayout: 'sonyericsson' },
-    { slug: 'sony-ericsson-k800i', name: 'Sony Ericsson K800i (2006)', vendor: 'Sony Ericsson', screenWidth: 240, screenHeight: 320, keyLayout: 'sonyericsson', saveState: true },
-
-    // ── Samsung ──
-    { slug: 'samsung-e250', name: 'Samsung E250 (2006)', vendor: 'Samsung', screenWidth: 128, screenHeight: 160, keyLayout: 'samsung', ramLimitMb: 96 },
-    { slug: 'samsung-d900', name: 'Samsung D900 (2006)', vendor: 'Samsung', screenWidth: 240, screenHeight: 320, keyLayout: 'samsung', saveState: true },
-
-    // ── Motorola ──
-    { slug: 'motorola-v3', name: 'Motorola RAZR V3 (2004)', vendor: 'Motorola', screenWidth: 176, screenHeight: 220, keyLayout: 'motorola' },
-    { slug: 'motorola-l7', name: 'Motorola SLVR L7 (2005)', vendor: 'Motorola', screenWidth: 176, screenHeight: 220, keyLayout: 'motorola' },
-
-    // ── LG & Siemens ──
-    { slug: 'lg-kg800', name: 'LG KG800 Chocolate (2006)', vendor: 'LG', screenWidth: 176, screenHeight: 220, keyLayout: 'lg' },
-    { slug: 'siemens-c65', name: 'Siemens C65 (2004)', vendor: 'Siemens', screenWidth: 132, screenHeight: 176, keyLayout: 'siemens', cldc: '1.0', midp: '2.0', ramLimitMb: 64 },
-
+    // Mỗi bố cục mặt phím giữ đúng **một** máy đại diện — trước đây 35 máy chỉ
+    // là 35 màu vỏ khác nhau trên vài bố cục lặp lại, nhìn không phân biệt được.
+    // Hai máy ảo chung ở cuối không phải bố cục mới, chúng có mặt để phủ hai độ
+    // phân giải mà bốn máy trên không có (320×240 nằm ngang và 360×640).
     { slug: 'nokia-7210', name: 'Nokia 7210 (2002)', vendor: 'Nokia', screenWidth: 128, screenHeight: 128, keyLayout: 'nokia', cldc: '1.0', midp: '1.0', audio: false, ramLimitMb: 64 },
-    { slug: 'nokia-6070', name: 'Nokia 6070 (2006)', vendor: 'Nokia', screenWidth: 128, screenHeight: 160, keyLayout: 'nokia', ramLimitMb: 96 },
-    { slug: 'nokia-7610', name: 'Nokia 7610 · S60 (2004)', vendor: 'Nokia', screenWidth: 176, screenHeight: 208, keyLayout: 'nokia', ramLimitMb: 128 },
-    { slug: 'nokia-6120', name: 'Nokia 6120 Classic · S60 (2007)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
-    { slug: 'nokia-n95', name: 'Nokia N95 · S60 (2007)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
-    { slug: 'nokia-2700', name: 'Nokia 2700 Classic (2009)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true },
-    // Máy QWERTY màn ngang — dùng để thử game thiết kế cho màn nằm ngang.
-    { slug: 'nokia-e71', name: 'Nokia E71 · S60 (2009)', vendor: 'Nokia', screenWidth: 320, screenHeight: 240, orientation: 'LANDSCAPE', keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
-    { slug: 'nokia-5800', name: 'Nokia 5800 XpressMusic (2008)', vendor: 'Nokia', screenWidth: 360, screenHeight: 640, keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
+    { slug: 'nokia-n70', name: 'Nokia N70 · S60 (2005)', vendor: 'Nokia', screenWidth: 176, screenHeight: 208, keyLayout: 'nokia', ramLimitMb: 128 },
+    { slug: 'motorola-v3', name: 'Motorola RAZR V3 (2004)', vendor: 'Motorola', screenWidth: 176, screenHeight: 220, keyLayout: 'motorola' },
+    { slug: 'nokia-6300', name: 'Nokia 6300 · S40 (2007)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true },
 
-    { slug: 'sony-ericsson-k510i', name: 'Sony Ericsson K510i (2006)', vendor: 'Sony Ericsson', screenWidth: 128, screenHeight: 160, keyLayout: 'sonyericsson', ramLimitMb: 96 },
-    { slug: 'sony-ericsson-w200i', name: 'Sony Ericsson W200i (2007)', vendor: 'Sony Ericsson', screenWidth: 128, screenHeight: 160, keyLayout: 'sonyericsson', ramLimitMb: 96 },
-    { slug: 'sony-ericsson-c902', name: 'Sony Ericsson C902 (2008)', vendor: 'Sony Ericsson', screenWidth: 240, screenHeight: 320, keyLayout: 'sonyericsson', saveState: true },
-
-    { slug: 'samsung-e900', name: 'Samsung E900 (2006)', vendor: 'Samsung', screenWidth: 240, screenHeight: 320, keyLayout: 'samsung', saveState: true },
-
-    { slug: 'motorola-e398', name: 'Motorola E398 (2004)', vendor: 'Motorola', screenWidth: 176, screenHeight: 220, keyLayout: 'motorola' },
-
-    { slug: 'lg-kp500', name: 'LG KP500 Cookie (2008)', vendor: 'LG', screenWidth: 240, screenHeight: 400, keyLayout: 'lg', saveState: true },
-
-    // Máy cảm ứng thuần — không phím cứng, chơi bằng cách chạm lên màn hình.
-    { slug: 'samsung-s5233', name: 'Samsung S5233 Star (2009)', vendor: 'Samsung', screenWidth: 240, screenHeight: 400, keyLayout: 'samsung', saveState: true },
-    { slug: 'nokia-5230', name: 'Nokia 5230 (2009)', vendor: 'Nokia', screenWidth: 360, screenHeight: 640, keyLayout: 'nokia', saveState: true, ramLimitMb: 320 },
-
-    { slug: 'siemens-cx65', name: 'Siemens CX65 (2004)', vendor: 'Siemens', screenWidth: 132, screenHeight: 176, keyLayout: 'siemens', cldc: '1.0', midp: '2.0', ramLimitMb: 64 },
-
-    // ── Máy ảo chung ──
-    { slug: 'generic-240x320', name: 'Generic Java ME 240×320', vendor: null, screenWidth: 240, screenHeight: 320, keyLayout: 'generic', saveState: true },
     { slug: 'generic-320x240', name: 'Generic Java ME 320×240 (ngang)', vendor: null, screenWidth: 320, screenHeight: 240, orientation: 'LANDSCAPE', keyLayout: 'generic' },
     { slug: 'generic-360x640', name: 'Generic Java ME 360×640', vendor: null, screenWidth: 360, screenHeight: 640, keyLayout: 'generic', saveState: true, ramLimitMb: 320 },
   ];
+
+  // Seed chỉ upsert nên máy đã bỏ khỏi danh sách vẫn nằm lại trong DB cũ. Tắt
+  // chúng thay vì xoá: phiên chơi và ma trận tương thích còn tham chiếu tới.
+  await db.emulatorProfile.updateMany({
+    where: { slug: { notIn: profileDefs.map((p) => p.slug) } },
+    data: { active: false },
+  });
 
   const profileIds: Record<string, string> = {};
   for (const p of profileDefs) {
@@ -605,7 +568,7 @@ async function main() {
     },
     {
       slug: 'snake-xenzia', title: 'Snake Xenzia', series: 'Snake',
-      genres: ['arcade', 'casual'], platform: 'nokia-s40', resolution: '128x160', profile: 'samsung-e250',
+      genres: ['arcade', 'casual'], platform: 'nokia-s40', resolution: '128x160', profile: 'nokia-7210',
       developer: 'Nokia', publisher: 'Nokia', year: 2002,
       language: 'en', vietnamized: false, featured: false, playOnline: true,
       description: 'Bản Snake huyền thoại đi kèm điện thoại Nokia — càng ăn càng dài, chạm đuôi là thua.',
@@ -617,7 +580,7 @@ async function main() {
     },
     {
       slug: 'dragon-hunter', title: 'Dragon Hunter', titleVi: 'Thợ săn rồng',
-      genres: ['rpg', 'adventure'], platform: 'sony-ericsson', resolution: '176x220', profile: 'sony-ericsson-k750i',
+      genres: ['rpg', 'adventure'], platform: 'sony-ericsson', resolution: '176x220', profile: 'motorola-v3',
       developer: 'In-Fusio', publisher: 'In-Fusio', year: 2006,
       language: 'vi', vietnamized: true, featured: false, playOnline: true,
       description: 'Nhập vai theo lượt trong thế giới trung cổ: nhận nhiệm vụ, rèn trang bị và hạ gục rồng.',
@@ -641,7 +604,7 @@ async function main() {
     },
     {
       slug: 'farm-frenzy', title: 'Farm Frenzy', titleVi: 'Nông trại vui vẻ',
-      genres: ['simulation', 'casual'], platform: 'samsung', resolution: '240x320', profile: 'samsung-d900',
+      genres: ['simulation', 'casual'], platform: 'samsung', resolution: '240x320', profile: 'nokia-6300',
       developer: 'Alawar', publisher: 'Alawar Entertainment', year: 2010,
       language: 'vi', vietnamized: true, featured: false, playOnline: false,
       description: 'Quản lý nông trại: nuôi gà, thu trứng, chế biến và bán hàng trước khi hết giờ.',
@@ -653,7 +616,7 @@ async function main() {
     },
     {
       slug: 'sudoku-classic', title: 'Sudoku Classic',
-      genres: ['puzzle', 'casual'], platform: 'generic-java-me', resolution: '176x220', profile: 'sony-ericsson-k750i',
+      genres: ['puzzle', 'casual'], platform: 'generic-java-me', resolution: '176x220', profile: 'motorola-v3',
       developer: 'Puzzle Works', publisher: 'Puzzle Works', year: 2007,
       language: 'en', vietnamized: false, featured: false, playOnline: true,
       description: 'Hơn 500 câu đố Sudoku bốn mức độ, có kiểm tra lỗi và ghi chú nháp.',

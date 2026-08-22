@@ -10,6 +10,7 @@ import { ThreadActionBar } from '@/components/forum/ThreadActionBar';
 import { ReplyActions } from '@/components/forum/ReplyActions';
 import { ReplyForm } from '@/components/forum/ReplyForm';
 import { ThreadModMenu } from '@/components/forum/ThreadModMenu';
+import { ThreadOwnerMenu } from '@/components/forum/ThreadOwnerMenu';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { ThreadPost, displayName } from '@/components/forum/ThreadPost';
 import { Pagination } from '@/components/Pagination';
@@ -131,7 +132,10 @@ export default async function ThreadPage({ params, searchParams }: {
           {thread.bountyPoints ? <span className="chip gap-1 bg-amber-100 text-amber-600 dark:bg-amber-950/50"><Award size={11} />Thưởng {fmtCount(thread.bountyPoints)}đ</span> : null}
         </div>
 
-        <h1 className="mb-1 text-xl font-bold leading-snug sm:text-2xl">{thread.title}</h1>
+        <div className="mb-1 flex items-start gap-2">
+          <h1 className="min-w-0 flex-1 text-xl font-bold leading-snug sm:text-2xl">{thread.title}</h1>
+          {isOwner && <ThreadOwnerMenu threadId={thread.id} slug={slug} locked={thread.locked} />}
+        </div>
         <p className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-400">
           <span className="flex items-center gap-1"><Eye size={13} />{fmtCount(thread.viewCount)} lượt xem</span>
           <span className="flex items-center gap-1"><MessageSquare size={13} />{fmtCount(thread.replyCount)} trả lời</span>

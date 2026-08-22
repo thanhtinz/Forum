@@ -10,6 +10,7 @@ import { notify } from '@/lib/notify';
 import { isVipActive } from '@/lib/access';
 import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { bbcodeToHtml } from '@/lib/bbcode';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
@@ -79,7 +80,8 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
         forumId: forum.id,
         authorId: userId,
         title,
-        content: toParagraphs(content),
+        content: bbcodeToHtml(content),
+        contentSource: content,
         status: 'PUBLISHED',
         lastReplyAt: new Date(),
       },
@@ -373,4 +375,91 @@ export async function hideThread(threadId: string): Promise<ModState> {
 
   revalidateThread(r.thread.forum.slug, threadId);
   redirect(`/forum/${r.thread.forum.slug}`);
+}
+
+
+// ─────────────────────── Quyền của chủ chủ đề ───────────────────────
+
+export interface OwnerState {
+  ok?: boolean;
+  error?: string;
+}
+
+/** Xác nhận người dùng là tác giả chủ đề (hoặc là điều hành viên). */
+async function assertThreadOwner(threadId: string) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' as const };
+
+  const thread = await db.thread.findUnique({
+    where: { id: threadId },
+    select: { authorId: true, forumId: true, locked: true, forum: { select: { slug: true } } },
+  });
+  if (!thread) return { error: 'Không tìm thấy chủ đề.' as const };
+
+  if (thread.authorId !== userId) {
+    const isMod = await canModerateForum(
+      { id: userId, role: (session.user as { role?: string }).role },
+      thread.forumId,
+    );
+    if (!isMod) return { error: 'Bạn không có quyền với chủ đề này.' as const };
+  }
+  return { userId, thread };
+}
+
+/** Chủ đề chỉ sửa được khi chưa bị khoá. */
+export async function updateThread(_prev: ThreadState, formData: FormData): Promise<ThreadState> {
+  const threadId = String(formData.get('threadId') ?? '');
+  const guard = await assertThreadOwner(threadId);
+  if ('error' in guard) return { error: guard.error };
+  if (guard.thread.locked) return { error: 'Chủ đề đã bị khoá, không thể sửa.' };
+
+  const title = String(formData.get('title') ?? '').trim();
+  const content = String(formData.get('content') ?? '').trim();
+  if (title.length < 5) return { error: 'Tiêu đề tối thiểu 5 ký tự.' };
+  if (title.length > 200) return { error: 'Tiêu đề tối đa 200 ký tự.' };
+  if (content.length < 10) return { error: 'Nội dung quá ngắn (tối thiểu 10 ký tự).' };
+
+  await db.thread.update({
+    where: { id: threadId },
+    data: { title, content: bbcodeToHtml(content), contentSource: content },
+    select: { id: true },
+  });
+
+  const path = `/forum/${guard.thread.forum.slug}/${threadId}`;
+  revalidatePath(path);
+  redirect(path);
+}
+
+/** Chủ đề tự khoá / mở lại chủ đề của mình. */
+export async function toggleOwnThreadLock(threadId: string): Promise<OwnerState> {
+  const guard = await assertThreadOwner(threadId);
+  if ('error' in guard) return { error: guard.error };
+
+  await db.thread.update({
+    where: { id: threadId },
+    data: { locked: !guard.thread.locked },
+    select: { id: true },
+  });
+  revalidatePath(`/forum/${guard.thread.forum.slug}/${threadId}`);
+  return { ok: true };
+}
+
+/** Xoá chủ đề của mình, đồng bộ lại bộ đếm của chuyên mục. */
+export async function deleteOwnThread(threadId: string): Promise<OwnerState> {
+  const guard = await assertThreadOwner(threadId);
+  if ('error' in guard) return { error: guard.error };
+  const slug = guard.thread.forum.slug;
+
+  await db.$transaction(async (tx) => {
+    const replies = await tx.reply.count({ where: { threadId } });
+    await tx.thread.delete({ where: { id: threadId } });
+    await tx.forum.update({
+      where: { id: guard.thread.forumId },
+      data: { threadCount: { decrement: 1 }, replyCount: { decrement: replies } },
+    });
+  });
+
+  revalidatePath(`/forum/${slug}`);
+  redirect(`/forum/${slug}`);
 }

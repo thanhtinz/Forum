@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import { PenLine, Send, Coins, Lock, Crown, Gift, ThumbsUp, MessageSquare, Target } from 'lucide-react';
 import { createPost, type WriteState } from '@/app/(site)/user/write/actions';
 import { DownloadsEditor, type DownloadDraft } from './DownloadsEditor';
+import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { PAID_ACCESS } from '@/lib/sell-permission';
 
 const PAID_VALUES: string[] = [...PAID_ACCESS];
@@ -87,11 +88,12 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
         <textarea name="excerpt" rows={2} maxLength={300} defaultValue={initial?.excerpt} className="input resize-y" placeholder="Tóm tắt ngắn gọn (hiển thị ở thẻ bài viết)…" />
       </label>
 
-      <label className="block">
+      <div className="block">
         <span className="mb-1 block text-sm font-medium">Nội dung <b className="text-red-500">*</b></span>
-        <textarea name="content" required minLength={20} rows={10} defaultValue={initial?.content} className="input resize-y font-normal" placeholder="Viết nội dung tại đây… (mỗi đoạn cách nhau 1 dòng trống)" />
-        <span className="mt-1 block text-xs text-ink-400">Mẹo: để trống 1 dòng để tách đoạn.</span>
-      </label>
+        <BBCodeEditor name="content" required minLength={20} rows={12} defaultValue={initial?.content}
+          placeholder="Viết nội dung tại đây… Dùng thanh công cụ hoặc gõ BBCode: [b]đậm[/b], [url=…]liên kết[/url]" />
+        <span className="mt-1 block text-xs text-ink-400">Mẹo: để trống 1 dòng để tách đoạn. Bấm “Xem trước” để kiểm tra định dạng.</span>
+      </div>
 
       <div>
         <span className="mb-1.5 block text-sm font-medium">Chuyên mục <b className="text-red-500">*</b> <span className="font-normal text-ink-400">(chọn được nhiều)</span></span>
@@ -189,12 +191,13 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
 
         {hasGate && (
           <>
-            <label className="mt-3 block">
+            <div className="mt-3 block">
               <span className="mb-1 block text-sm font-medium">
                 Nội dung ẩn ({isPaid ? 'sau khi mua mới xem được' : 'mở khoá mới xem được'}) <b className="text-red-500">*</b>
               </span>
-              <textarea name="hiddenContent" rows={5} defaultValue={initial?.hiddenContent} className="input resize-y" placeholder="Phần nội dung bị khoá: link tải, hướng dẫn chi tiết, mã nguồn…" />
-            </label>
+              <BBCodeEditor name="hiddenContent" rows={6} defaultValue={initial?.hiddenContent}
+                placeholder="Phần nội dung bị khoá: link tải, hướng dẫn chi tiết, mã nguồn…" />
+            </div>
             {isPaid && (
               <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
                 💰 Ăn chia: bạn nhận <b>70%</b> mỗi lượt bán, nền tảng giữ <b>30%</b> hoa hồng. Tiền/điểm được cộng tự động khi có người mua.

@@ -29,8 +29,8 @@ const PROVIDERS = [
  * Trình quản lý tệp tải xuống cho bài viết.
  * Gửi lên server dưới dạng JSON trong input ẩn `downloads`.
  */
-export function DownloadsEditor() {
-  const [items, setItems] = useState<DownloadDraft[]>([]);
+export function DownloadsEditor({ initial }: { initial?: DownloadDraft[] }) {
+  const [items, setItems] = useState<DownloadDraft[]>(initial ?? []);
 
   const update = (i: number, patch: Partial<DownloadDraft>) =>
     setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, ...patch } : it)));

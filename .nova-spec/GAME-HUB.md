@@ -164,25 +164,22 @@ phải bấm nút xoay.
 
 ### Bố cục mặt phím theo dòng máy
 
-Các dòng máy không chỉ khác màu vỏ mà **bày phím khác hẳn nhau**, nên mặt phím
-chia thành các họ (`FaceLayout` trong `src/lib/emulator-skin.ts`):
+Mặt phím chỉ giữ **những phím thật sự dùng khi chơi**: cụm mũi tên, bàn phím
+số, **Options** và **Back**. Phím gọi ‧ kết thúc ‧ ✉ ‧ C ‧ Menu ‧ bàn phím
+QWERTY của máy thật đã bỏ — game Java không đọc chúng, mà chúng lại ăn mất chỗ
+của mũi tên và đẩy mặt phím tràn ra ngoài khung máy. Còn 20 nút, trước là 24.
 
-| Họ | Máy | Mặt trước |
+Cái khác nhau giữa các dòng máy giờ nằm ở **dáng cụm điều hướng**
+(`FaceLayout` trong `src/lib/emulator-skin.ts`) và màu vỏ:
+
+| Cụm điều hướng | Họ | Máy |
 |---|---|---|
-| `s40` | Nokia 6300, 2700, 6070, LG | vòng xoay tròn, nút OK ở tâm, phím mềm + gọi/kết thúc phía trên |
-| `rocker` | Nokia 3510i · 7210 · 6230, Samsung, Siemens | phím bập bênh nằm ngang (đời chưa có vòng xoay) |
-| `s60` | Nokia 6600 · 7610 · N70 · N73 · 6120 · N95 | phím bốn hướng vuông, **Menu** và **C** kẹp hai bên, gọi/kết thúc ngoài cùng |
-| `se` | Sony Ericsson | bốn phím xếp **2×2** quanh joystick (hoạt động ‧ back bên trái, tin nhắn ‧ C bên phải), phím mềm hàng trên |
-| `razr` | Motorola V3 · L7 · E398 | **đĩa điều hướng tròn**, ✉ và ↩ hai bên, hàng dưới gọi ‧ trình duyệt ‧ kết thúc, rồi lưới phím **phẳng khắc laser** ngăn nhau bằng đường gân |
-| `qwerty` | Nokia E71 | hai phím tắt mỗi bên D-pad, phím gọi/kết thúc là hai **thanh cong** dưới chúng, rồi **bàn phím QWERTY**. Số in **phía trên chữ** đúng vị trí máy E-series: `1 2 3` trên T Y U, `4 5 6` trên F G H, `7 8 9 0` trên V B N M, `*` trên I, `#` trên J. Phím chữ không mang số để trơ vì game Java không đọc |
-| `touch` | Nokia 5800, LG KP500 Cookie | mặt trước chỉ **ba thanh mảnh** sát đáy — gọi (xanh) ‧ menu ‧ kết thúc (đỏ); bàn phím số bật ra khi cần. Thân máy chia `78 : 22` |
-| `touch-only` | Samsung S5233 Star, Nokia 5230 | **cảm ứng thuần, không phím cứng nào** — chơi bằng cách chạm thẳng lên màn hình. Thân máy chia `92 : 8`, chỉ chừa nút gọi bàn phím số cho game bắt buộc bấm phím |
+| **Vòng xoay tròn** | `s40` · `se` · `razr` · `touch` · `touch-only` | Nokia 6300 · 2700 · 6070, Sony Ericsson, Motorola V3 · L7 · E398, LG, máy cảm ứng |
+| **Phím bốn hướng vuông** | `s60` · `qwerty` | Nokia 6600 · 7610 · N70 · N73 · 6120 · N95 · E71 |
+| **Phím bập bênh nằm ngang** | `rocker` | Nokia 3510i · 7210 · 6230, Samsung, Siemens |
 
-**Cỡ phím cân nhau trong mọi mặt phím**: phím điều khiển (phím mềm, gọi/kết
-thúc, phím phụ) đều cao `h-9` (36px), tỉ lệ cụm điều hướng ‧ bàn phím số chỉnh
-sao cho phím số không cao vọt. Đo ở 390×844, biên độ cao–thấp của từng máy:
-6300 `36–48` · 7210 `36–41` · N70 `36–40` · K750i `36–45` · RAZR `34–39` ·
-E71 `33–46` · 5800 `36–36`. Không nút nào dưới 33px.
+Motorola giữ riêng kiểu **phím số phẳng khắc laser** — chỉ có đường gân ngăn
+chứ không bo tròn.
 
 **Mũi tên bấm được rộng hơn phím số.** Mũi tên là phím bấm liên tục nhất khi
 chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so với phím số
@@ -193,31 +190,30 @@ chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so
   vùng bấm theo **góc phần tư** (`clip-path: polygon(50% 50%, …)`): bấm chỗ nào
   ở nửa trên của vành cũng là đi lên, như máy thật.
 - Trần chiều cao cụm điều hướng bị siết quá chặt. Nới trần và chia lại tỉ lệ
-  cụm điều hướng ‧ bàn phím số trong mọi mặt phím.
+  cụm điều hướng ‧ bàn phím số.
 
-Riêng phím bập bênh (`rocker`), hai cánh trái–phải nay **cao hơn** thanh
-trên–dưới (`h-14` so với `h-11`) và giãn hết bề ngang cụm — để cùng chiều cao
-thì trái–phải chỉ còn ~2 500px².
+Riêng phím bập bênh, hai cánh trái–phải **cao hơn** thanh trên–dưới (`h-14` so
+với `h-11`) — để cùng chiều cao thì trái–phải chỉ còn ~2 500px².
 
-Diện tích vùng bấm sau khi sửa (khung nhìn 425×918, px²):
+**Không tràn, không bị bóp.** Mọi tầng của mặt phím đều `min-w-0` +
+`overflow-hidden` nên không nhánh nào đẩy mặt phím rộng hơn thân máy; cụm bập
+bênh dùng `w-full max-w-[17rem]` chứ không phải bề rộng cứng. Nửa dưới thân máy
+có sàn `min-h-[23rem]`: trên máy màn hình ngắn (360×640) mà chỉ chia theo tỉ lệ
+thì phím số bị bóp còn 20px — thà để khung game nhỏ lại còn hơn.
 
-| Máy | Mũi tên | Phím số | Tỉ lệ |
+Đo thực tế trên trình duyệt, diện tích vùng bấm (px²):
+
+| Máy | Khung nhìn | Mũi tên | Phím số |
 |---|---|---|---|
-| 6300 (`s40`) | 6 889 | 4 480 | 1,54× |
-| N70 (`s60`) | 5 543 | 4 154 | 1,33× |
-| K750i (`se`) | 5 543 | 4 154 | 1,33× |
-| 7210 (`rocker`) | 5 603 (trái/phải) · 10 927 (lên/xuống) | 4 357 | 1,29× |
-| RAZR (`razr`) | 4 617 | 3 924 | 1,18× |
-| E71 (`qwerty`) | 4 336 | 1 628 | 2,66× |
+| 6300 (vòng xoay) | ngắn 754 · vừa 918 · cao 942 | 5 652 · 5 684 · 6 889 | 3 822 · 3 844 · 4 301 |
+| 7210 (bập bênh) | ngắn · vừa · cao | 5 603 (trái/phải) · 11 968 (lên/xuống) | 3 822 · 3 844 · 4 301 |
+| RAZR (phím phẳng) | ngắn · vừa · cao | 5 574 · 5 605 · 6 888 | 4 351 · 4 375 · 4 840 |
 
-Bàn phím QWERTY của E71 xếp trên **lưới 10 cột cho cả bốn hàng** nên mọi phím
-rộng bằng nhau; riêng phím cách trải 4 cột đúng như bàn phím thật. Ba thanh
-mảnh của máy cảm ứng giữ nguyên dáng nhưng vùng bấm cao 36px — thanh 10px thì
-ngón tay không trúng.
+Không nút nào tràn khỏi khung nhìn ở cả ba cỡ màn hình.
 
 Máy thật có vài phím cứng không mang mã Java riêng (Menu của S60, phím back của
-Sony Ericsson). Những phím đó gán về phím gần nghĩa nhất — Menu về phím mềm
-trái, back về phím mềm phải — đúng như cách dùng trên máy.
+Sony Ericsson). Chúng đã bỏ khỏi mặt phím — hai phím mềm Options ‧ Back đã làm
+đúng việc đó rồi.
 
 Mỗi bố cục phím còn có nhãn phím mềm riêng (`SOFT_KEY_LABEL`): Nokia
 *Options/Back*, Sony Ericsson *Select/Back*, Motorola *Menu/Back*, Siemens

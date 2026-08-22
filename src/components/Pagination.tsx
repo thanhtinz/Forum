@@ -2,10 +2,14 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /** Phân trang đơn giản dựa trên query param `?page=`. */
-export function Pagination({ page, totalPages, basePath }: { page: number; totalPages: number; basePath: string }) {
+export function Pagination({ page, totalPages, basePath, pageParam = 'page' }: {
+  page: number; totalPages: number; basePath: string;
+  /** Tên tham số trang trên URL (mặc định `page`). */
+  pageParam?: string;
+}) {
   if (totalPages <= 1) return null;
   const sep = basePath.includes('?') ? '&' : '?';
-  const href = (p: number) => `${basePath}${sep}page=${p}`;
+  const href = (p: number) => `${basePath}${sep}${pageParam}=${p}`;
 
   // Danh sách trang gọn quanh trang hiện tại
   const pages: number[] = [];

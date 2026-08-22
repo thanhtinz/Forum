@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { db } from '@/lib/db';
+import { getNavItems } from '@/lib/nav';
+import { getSiteSettings } from '@/lib/site';
 
 export async function Footer() {
+  const [nav, site] = await Promise.all([getNavItems('footer'), getSiteSettings()]);
   const friendLinks = await db.friendLink
     .findMany({
       where: { active: true },
@@ -28,13 +31,11 @@ export async function Footer() {
       )}
 
       <div className="container-nova flex flex-col items-center justify-between gap-3 py-6 text-sm text-ink-500 sm:flex-row">
-        <p>© {new Date().getFullYear()} Nova Platform. Nền tảng blog + diễn đàn.</p>
-        <nav className="flex items-center gap-4">
-          <Link href="/" className="hover:text-brand-600">Diễn đàn</Link>
-          <Link href="/shop" className="hover:text-brand-600">Cửa hàng</Link>
-          <Link href="/blog" className="hover:text-brand-600">Bài viết</Link>
-          <Link href="/vip" className="hover:text-brand-600">VIP</Link>
-          <Link href="/search" className="hover:text-brand-600">Tìm kiếm</Link>
+        <p>© {new Date().getFullYear()} {site.footerText}</p>
+        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          {nav.map((n) => (
+            <Link key={n.id} href={n.url} className="hover:text-brand-600">{n.label}</Link>
+          ))}
         </nav>
       </div>
     </footer>

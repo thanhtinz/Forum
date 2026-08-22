@@ -8,7 +8,9 @@ import { grantBalance } from '@/lib/balance';
 import { checkAndAwardMedals, MEDAL_CONDITIONS } from '@/lib/medals';
 import { GIF_SETTING_KEY } from '@/lib/gif';
 import { R2_SETTING_KEY, deleteFile } from '@/lib/storage';
-import { normalizeIcon } from '@/lib/icon';
+import { normalizeIcon, isPublicImageRef } from '@/lib/icon';
+import { NAV_GROUPS, NAV_DEFAULTS, isSafeNavUrl } from '@/lib/nav';
+import { SITE_SETTING_KEY } from '@/lib/site';
 
 // ─────────────── Bài viết ───────────────
 
@@ -636,4 +638,108 @@ export async function deleteLevelRule(id: string) {
   await requireAdmin();
   await db.levelRule.delete({ where: { id } }).catch(() => {});
   revalidatePath('/admin/levels');
+}
+
+// ─────────────── Menu điều hướng ───────────────
+
+export type NavState = { ok?: boolean; error?: string };
+
+export async function saveNavLink(_prev: NavState, formData: FormData): Promise<NavState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const label = String(formData.get('label') ?? '').trim();
+  const url = String(formData.get('url') ?? '').trim();
+  const icon = normalizeIcon(formData.get('icon'));
+  const group = String(formData.get('group') ?? 'header');
+  const parentId = String(formData.get('parentId') ?? '').trim() || null;
+  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
+
+  if (label.length < 1) return { error: 'Hãy nhập tên hiển thị.' };
+  if (!NAV_GROUPS.some((g) => g.value === group)) return { error: 'Nhóm menu không hợp lệ.' };
+  if (!isSafeNavUrl(url)) return { error: 'Đường dẫn phải bắt đầu bằng / hoặc http(s)://' };
+  if (parentId && parentId === id) return { error: 'Mục không thể là cha của chính nó.' };
+
+  // Mục con của mục con sẽ không hiện ra đâu cả — chặn ngay từ lúc lưu.
+  if (parentId) {
+    const parent = await db.navLink.findUnique({ where: { id: parentId }, select: { parentId: true, group: true } });
+    if (!parent) return { error: 'Không tìm thấy mục cha.' };
+    if (parent.parentId) return { error: 'Chỉ hỗ trợ một cấp con.' };
+    if (parent.group !== group) return { error: 'Mục cha phải cùng nhóm menu.' };
+  }
+  // Đang có con mà lại biến thành con của mục khác thì đám con kia sẽ mất hút.
+  if (id && parentId) {
+    const kids = await db.navLink.count({ where: { parentId: id } });
+    if (kids > 0) return { error: 'Mục này đang có mục con nên không thể chuyển thành mục con.' };
+  }
+
+  const data = { label, url, icon, group, parentId, order };
+  try {
+    if (id) await db.navLink.update({ where: { id }, data, select: { id: true } });
+    else await db.navLink.create({ data, select: { id: true } });
+  } catch {
+    return { error: 'Không lưu được mục menu.' };
+  }
+  revalidatePath('/admin/nav');
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+export async function deleteNavLink(id: string) {
+  await requireAdmin();
+  // Xoá cha thì đưa con lên làm mục gốc thay vì để chúng mồ côi không hiện ra.
+  await db.$transaction(async (tx) => {
+    await tx.navLink.updateMany({ where: { parentId: id }, data: { parentId: null } });
+    await tx.navLink.delete({ where: { id } });
+  }).catch(() => {});
+  revalidatePath('/admin/nav');
+  revalidatePath('/', 'layout');
+}
+
+// ─────────────── Cài đặt chung ───────────────
+
+export type SiteState = { ok?: boolean; error?: string };
+
+export async function saveSiteSettings(_prev: SiteState, formData: FormData): Promise<SiteState> {
+  await requireAdmin();
+  const name = String(formData.get('name') ?? '').trim();
+  const tagline = String(formData.get('tagline') ?? '').trim();
+  const logo = String(formData.get('logo') ?? '').trim();
+  const description = String(formData.get('description') ?? '').trim();
+  const footerText = String(formData.get('footerText') ?? '').trim();
+
+  if (name.length < 1) return { error: 'Hãy nhập tên trang.' };
+  if (logo && !isPublicImageRef(logo)) return { error: 'Logo phải là link ảnh http(s) hoặc ảnh đã tải lên.' };
+
+  const value = { name, tagline, logo, description, footerText };
+  await db.siteSetting.upsert({
+    where: { key: SITE_SETTING_KEY },
+    update: { value },
+    create: { key: SITE_SETTING_KEY, value },
+  });
+  revalidatePath('/admin/settings');
+  revalidatePath('/', 'layout');
+  return { ok: true };
+}
+
+/**
+ * Thêm các mục mặc định còn thiếu vào menu.
+ * Chỉ cần lưu một mục là menu mặc định ngừng được dùng, nên phải có đường
+ * đưa chúng trở lại thành mục thật để sửa/xoá từng cái.
+ */
+export async function restoreDefaultNav(group: string) {
+  await requireAdmin();
+  if (!NAV_GROUPS.some((g) => g.value === group)) return;
+
+  const existing = await db.navLink.findMany({ where: { group }, select: { url: true, order: true } });
+  const have = new Set(existing.map((e) => e.url));
+  const missing = NAV_DEFAULTS[group as 'header' | 'footer'].filter((d) => !have.has(d.url));
+  if (missing.length === 0) return;
+
+  // Nối vào sau các mục đang có để không xáo trộn thứ tự admin đã sắp.
+  let order = existing.length ? Math.max(...existing.map((e) => e.order)) + 1 : 0;
+  await db.navLink.createMany({
+    data: missing.map((d) => ({ label: d.label, url: d.url, icon: d.icon || null, group, order: order++ })),
+  });
+  revalidatePath('/admin/nav');
+  revalidatePath('/', 'layout');
 }

@@ -4,6 +4,7 @@ import { PenLine, MessagesSquare, Clock, Newspaper, ChevronRight } from 'lucide-
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount, plainText, truncate } from '@/lib/utils';
+import { getSiteSettings } from '@/lib/site';
 import { BoardList, type BoardSection, type BoardRow } from '@/components/forum/BoardList';
 import { TableHead } from '@/components/forum/TableHead';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
@@ -11,15 +12,17 @@ import { ForumSidebar } from '@/components/forum/ForumSidebar';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
-  title: 'Diễn đàn',
-  description: 'Thảo luận, hỏi đáp và giao lưu cùng cộng đồng Nova.',
-};
+/** Mô tả lấy từ cài đặt trong admin để sửa một chỗ là đổi cả thẻ SEO trang chủ. */
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getSiteSettings();
+  return { title: 'Diễn đàn', description: site.description };
+}
 
 const LATEST_TAKE = 12;
 
 export default async function HomePage() {
   const session = await auth();
+  const site = await getSiteSettings();
 
   const [forums, latestThreads, latestPosts] = await Promise.all([
     db.forum.findMany({
@@ -92,7 +95,7 @@ export default async function HomePage() {
             <MessagesSquare size={22} />
           </span>
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-black leading-tight text-ink-900 dark:text-white">Diễn đàn Nova</h1>
+            <h1 className="truncate text-lg font-black leading-tight text-ink-900 dark:text-white">Diễn đàn {site.name}</h1>
             <p className="truncate text-xs text-ink-400">Thảo luận, hỏi đáp và giao lưu cùng cộng đồng.</p>
           </div>
         </div>

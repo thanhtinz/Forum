@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { Plus, QrCode, Copy } from 'lucide-react';
 import { createTopup, type TopupState } from '@/app/(site)/user/balance/actions';
 import { fmtVnd } from '@/lib/utils';
+import { ActionForm } from '@/components/ActionForm';
 
 const PRESETS = [20000, 50000, 100000, 200000, 500000];
 
@@ -31,7 +32,7 @@ export function TopupForm() {
   }
 
   return (
-    <form action={action} className="space-y-3">
+    <ActionForm action={action} className="space-y-3">
       <div className="flex flex-wrap gap-2">
         {PRESETS.map((v) => (
           <label key={v} className="cursor-pointer">
@@ -48,7 +49,7 @@ export function TopupForm() {
       </label>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60"><Plus size={16} /> {pending ? 'Đang tạo…' : 'Tạo mã nạp tiền'}</button>
-    </form>
+    </ActionForm>
   );
 }
 

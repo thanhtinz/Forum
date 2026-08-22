@@ -5,6 +5,7 @@ import { Banknote, CheckCircle2 } from 'lucide-react';
 import { requestWithdrawal } from '@/app/(site)/user/withdraw/actions';
 import { MIN_WITHDRAWAL, type WithdrawState } from '@/lib/withdraw';
 import { fmtVnd } from '@/lib/utils';
+import { ActionForm } from '@/components/ActionForm';
 
 export function WithdrawForm({ balance }: { balance: number }) {
   const [state, action, pending] = useActionState<WithdrawState, FormData>(requestWithdrawal, {});
@@ -22,7 +23,7 @@ export function WithdrawForm({ balance }: { balance: number }) {
   const canWithdraw = balance >= MIN_WITHDRAWAL;
 
   return (
-    <form action={action} className="space-y-3">
+    <ActionForm action={action} className="space-y-3">
       {!canWithdraw && (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
           Số dư khả dụng của bạn chưa đạt mức rút tối thiểu ({fmtVnd(MIN_WITHDRAWAL)}).
@@ -56,6 +57,6 @@ export function WithdrawForm({ balance }: { balance: number }) {
       <button type="submit" disabled={pending || !canWithdraw} className="btn-primary disabled:opacity-60">
         <Banknote size={16} /> {pending ? 'Đang gửi…' : 'Gửi yêu cầu rút tiền'}
       </button>
-    </form>
+    </ActionForm>
   );
 }

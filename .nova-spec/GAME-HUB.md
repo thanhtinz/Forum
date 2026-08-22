@@ -210,18 +210,21 @@ Ba cột chia đều, hàng giữa cao gấp ba hàng trên–dưới (`1fr 3fr 
 dưới trải hết bề ngang nên phải thấp, ba phím hàng giữa chỉ được một phần ba bề
 ngang nên phải cao bù lại.
 
-Kết quả là năm phím gần bằng nhau — chênh nhau **dưới 6%**:
+Bốn mũi tên ra gần bằng nhau — chênh nhau **dưới 6%**. Riêng nút OK thì **thu
+nhỏ vào giữa ô của nó** (`h-[70%] w-[82%] self-center justify-self-center`): để
+nó cao bằng và rộng gần bằng hai cánh trái–phải thì nhìn ra phím thứ ba chứ
+không ra nút giữa.
 
 | | Trước (chữ nhật 272×168) | Sau (vuông 153×153) |
 |---|---|---|
 | Trên / Dưới | 9 792px² | 4 423px² |
 | Trái / Phải | 7 657px² | 4 191px² |
-| OK | 3 901px² | 4 192px² |
-| Chênh lệch cao nhất–thấp nhất | **2,51×** | **1,06×** |
+| OK | 3 901px² | 2 405px² (57% của cánh) |
+| Chênh lệch giữa bốn mũi tên | **1,28×** | **1,06×** |
 
-Cả năm vẫn lớn hơn phím số (3 844px²). Vuông thì ép chiều ngang lại nên phím
-không còn to như khối chữ nhật cũ, đổi lại không còn phím nào bị lép — nút OK
-trước đây chỉ bằng 40% thanh trên–dưới.
+Bốn mũi tên vẫn lớn hơn phím số (3 844px²); nút OK nhỏ hơn nhưng vẫn là ô
+40×61, đủ rộng để bấm. Vuông thì ép chiều ngang lại nên phím không còn to như
+khối chữ nhật cũ, đổi lại không còn phím nào bị lép.
 
 **Dáng cụm điều hướng.** Phím bốn hướng bo góc kiểu squircle (`rounded-[30%]`)
 chứ không phải ô vuông bo nhẹ — máy S60 và E-series đều có dáng này. Bốn cánh

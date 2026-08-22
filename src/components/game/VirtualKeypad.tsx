@@ -284,8 +284,9 @@ export function useKeypadParts({
 
       Ba cột chia đều, hàng giữa cao gấp ba hàng trên–dưới (`1fr 3fr 1fr`): trên và
       dưới trải hết bề ngang nên phải thấp, ba phím hàng giữa chỉ được một phần
-      ba bề ngang nên phải cao bù lại. Năm phím ra gần bằng nhau — chênh nhau
-      dưới 6%. Trước đây khối là chữ nhật 272×168 và ba cỡ phím lệch hẳn:
+      ba bề ngang nên phải cao bù lại. Bốn mũi tên ra gần bằng nhau — chênh nhau
+      dưới 6%. Nút OK thì thu nhỏ vào giữa ô của nó: để nó cao bằng và rộng gần
+      bằng hai cánh trái–phải thì nhìn ra phím thứ ba chứ không ra nút giữa. Trước đây khối là chữ nhật 272×168 và ba cỡ phím lệch hẳn:
       trên/dưới 9 792px², trái/phải 7 657, nút OK chỉ 3 901.
     */
     <div className="grid h-full max-h-[11rem] shrink-0 aspect-square grid-cols-3 grid-rows-[1fr_3fr_1fr] gap-1">
@@ -304,7 +305,7 @@ export function useKeypadParts({
       </button>
       <button
         type="button" {...bind('FIRE')}
-        className={face('FIRE', 'col-start-2 row-start-2 h-full min-h-0 w-full rounded-sm text-[11px] font-bold')}
+        className={face('FIRE', 'col-start-2 row-start-2 h-[70%] min-h-0 w-[82%] self-center justify-self-center rounded-md text-[11px] font-bold')}
       >
         OK
       </button>

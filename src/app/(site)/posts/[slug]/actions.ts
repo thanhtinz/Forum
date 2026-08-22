@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { purchaseContent } from '@/lib/purchase';
+import { COUPON_ERROR_MESSAGE } from '@/lib/coupon';
 import { notify } from '@/lib/notify';
 
 export interface UnlockState {
@@ -26,10 +27,14 @@ export async function unlockPost(_prev: UnlockState, formData: FormData): Promis
 
   const postId = String(formData.get('postId') ?? '');
   const slug = String(formData.get('slug') ?? '');
+  const coupon = String(formData.get('coupon') ?? '').trim();
   if (!postId) return { error: 'Thiếu thông tin bài viết.' };
 
-  const res = await purchaseContent(userId, postId);
-  if (!res.ok) return { error: MESSAGES[res.error] ?? 'Không thể mở khoá.' };
+  const res = await purchaseContent(userId, postId, coupon || undefined);
+  if (!res.ok) {
+    if (res.error === 'COUPON') return { error: COUPON_ERROR_MESSAGE[res.couponError] };
+    return { error: MESSAGES[res.error] ?? 'Không thể mở khoá.' };
+  }
 
   if (slug) revalidatePath(`/posts/${slug}`);
   return { ok: true };

@@ -92,18 +92,21 @@ hết header/footer và khung của trang, chừa safe-area cho tai thỏ
 (`viewport-fit=cover`), khoá cuộn nền. Chế độ này bật theo **thiết bị** chứ không
 theo bề ngang cửa sổ — xoay ngang máy vẫn toàn màn hình:
 
-- **Cầm dọc**: dựng nguyên **thân máy candybar**, tỉ lệ lấy theo mặt trước
-  Nokia 6300 thật (cao 106.4 mm): dải trên có loa thoại ~17 mm, kính màn hình
-  ~41 mm, cụm phím điều hướng + bàn phím số ~45 mm — quy ra flex `39 : 43`.
-  Đo thật ở khung 390×844: dải trên 5.3% · kính 42.7% · mặt phím 47.2%.
-  1. **Dải trên** — tên game, đồng hồ phiên, menu ⋮, dưới cùng là khe loa thoại.
-  2. **Kính màn hình** — viền lõm tối hơn thân máy, **ôm sát** khung game chứ
-     không phải mảng đen full chiều ngang. Phần viền được trừ khỏi chỗ trống khi
-     tính khung game (đọc `padding`/`border` từ computed style nên đổi class
-     không phải sửa số).
-  3. **Mặt phím** — ba tầng chia chiều cao theo tỉ lệ 1.1 : 3 : 4: hàng phím
-     chức năng (phím mềm trái ‧ gọi ‧ kết thúc ‧ phím mềm phải), vòng xoay tròn
-     có nút OK ở tâm, rồi bàn phím số 4×3 phím bè ngang có chữ ABC/DEF in nhỏ.
+- **Cầm dọc**: dựng nguyên **skin thân máy candybar** bọc cả màn hình lẫn bàn
+  phím, kiểu skin của các emulator máy cổ. Thân hai tông chia `56 : 44` theo
+  skin thật (mặt trước máy chia màn hình ~57%, bàn phím ~40%):
+  - **Nửa trên — mặt trước tối**: dải trên (tên game, đồng hồ phiên, menu ⋮, khe
+    loa thoại) rồi kính màn hình. Kính **ôm sát** khung game chứ không phải mảng
+    đen full chiều ngang; phần viền được trừ khỏi chỗ trống khi tính khung game
+    (đọc `padding`/`border` từ computed style nên đổi class không phải sửa số).
+  - **Nửa dưới — mặt phím sáng màu**, phím nhựa bạc chữ tối:
+    1. phím gọi (xanh) và kết thúc (đỏ) là hai viên thuốc nhỏ ở hai vai;
+    2. hai phím mềm ngay dưới, vòng xoay bạc kẹp giữa bốn phím đó — vành trơn,
+       nút chọn vuông bo góc ở tâm, mũi tên để mờ vì máy thật không in mũi tên;
+    3. bàn phím số 4×3 phím bè ngang: chữ số và chữ cái nằm cạnh nhau, cột phải
+       đảo thứ tự (`DEF 3`, `MNO 6`) đúng như bàn phím Nokia đời sau.
+
+  Đo thật ở khung 390×844: khung game 289×386 (tỉ lệ 0.749), không tràn.
 - **Cầm ngang**: D-pad ‧ màn hình ‧ bàn phím số xếp ba cột, hàng phím chức năng
   nằm dưới đáy.
 

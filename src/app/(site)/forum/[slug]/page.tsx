@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import type { Prisma } from '@prisma/client';
 import { MessagesSquare, MessageSquare, PenLine } from 'lucide-react';
 import { db } from '@/lib/db';
-import { fmtCount, truncate, plainText, cn } from '@/lib/utils';
+import { truncate, plainText, cn } from '@/lib/utils';
 import { FORUM_ACCESS_BADGE, forumTint } from '@/lib/forum';
 import { Pagination } from '@/components/Pagination';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
@@ -92,7 +92,6 @@ export default async function ForumPage({ params, searchParams }: {
                 {badge && <span className={`chip ${badge.className}`}>{badge.label}</span>}
               </h1>
               {forum.description && <p className="mt-1 text-sm text-ink-500">{forum.description}</p>}
-              <p className="mt-1 text-xs text-ink-400">{fmtCount(forum.threadCount)} chủ đề · {fmtCount(forum.replyCount)} trả lời</p>
             </div>
           </div>
 

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { otherId } from '@/lib/messages';
+import { otherId, messagePreview } from '@/lib/messages';
 import { fmtAgo, truncate } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -80,7 +80,7 @@ export default async function MessagesPage() {
                   {c.lastMessageAt && <span className="ml-auto shrink-0 text-xs text-ink-400">{fmtAgo(c.lastMessageAt)}</span>}
                 </div>
                 <p className={cn('mt-0.5 truncate text-sm', unread > 0 ? 'text-ink-700 dark:text-ink-200' : 'text-ink-400')}>
-                  {last ? `${last.senderId === me ? 'Bạn: ' : ''}${truncate(last.content, 80)}` : 'Chưa có tin nhắn nào'}
+                  {last ? `${last.senderId === me ? 'Bạn: ' : ''}${truncate(messagePreview(last.content), 80)}` : 'Chưa có tin nhắn nào'}
                 </p>
               </div>
 

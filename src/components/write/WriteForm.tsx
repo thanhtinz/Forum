@@ -7,6 +7,7 @@ import { DownloadsEditor, type DownloadDraft } from './DownloadsEditor';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { PAID_ACCESS } from '@/lib/sell-permission';
 import { ActionForm } from '@/components/ActionForm';
+import { DraftKeeper } from '@/components/DraftKeeper';
 import { ImageField } from '@/components/ImageField';
 
 const PAID_VALUES: string[] = [...PAID_ACCESS];
@@ -73,6 +74,7 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
   return (
     <ActionForm action={action} className="card space-y-5 p-5 sm:p-6">
       {initial && <input type="hidden" name="postId" value={initial.id} />}
+      <DraftKeeper storageKey={`nova:draft:post:${initial?.id ?? 'new'}`} />
       <div className="flex items-center gap-2 border-b border-ink-100 pb-4 dark:border-ink-800">
         <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-950/50"><PenLine size={18} /></span>
         <div>

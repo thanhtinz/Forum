@@ -17,7 +17,7 @@ import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { ThreadPost, displayName } from '@/components/forum/ThreadPost';
 import { Pagination } from '@/components/Pagination';
 import { ReplyBody } from '@/components/forum/ReplyBody';
-import { ReplyEditScope } from '@/components/forum/ReplyEditScope';
+import { EditScope } from '@/components/EditScope';
 import { canModerateForum } from '@/lib/moderation';
 import { getLevelLooks, type LevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
@@ -221,7 +221,7 @@ export default async function ThreadPage({ params, searchParams }: {
         ) : (
           <div className="space-y-3">
             {replies.map((r, i) => (
-              <ReplyEditScope key={r.id}>
+              <EditScope key={r.id}>
               <div className={cn(r.hidden && 'rounded-2xl ring-1 ring-rose-300 dark:ring-rose-900')}>
                 {r.hidden && (
                   <p className="mb-1 flex items-center gap-1.5 px-1 text-xs font-medium text-rose-600">
@@ -246,7 +246,7 @@ export default async function ThreadPage({ params, searchParams }: {
                 {r.children.length > 0 && (
                   <ul className="mt-4 space-y-3 border-l-2 border-brand-200 pl-3 dark:border-brand-900">
                     {r.children.map((ch) => (
-                      <ReplyEditScope key={ch.id}>
+                      <EditScope key={ch.id}>
                       <li className={cn('rounded-lg bg-ink-50 p-3 dark:bg-ink-800/40',
                         ch.hidden && 'ring-1 ring-rose-300 dark:ring-rose-900')}>
                         <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
@@ -269,13 +269,13 @@ export default async function ThreadPage({ params, searchParams }: {
                           canManage={ch.authorId === userId && !thread.locked}
                           canModerate={canModerate} hidden={ch.hidden} />
                       </li>
-                      </ReplyEditScope>
+                      </EditScope>
                     ))}
                   </ul>
                 )}
               </ThreadPost>
               </div>
-              </ReplyEditScope>
+              </EditScope>
             ))}
           </div>
         )}

@@ -5,7 +5,7 @@ import { Heart, Reply as ReplyIcon, CheckCircle2, EyeOff, Eye, Pencil, Trash2 } 
 import { cn, fmtCount } from '@/lib/utils';
 import { toggleReplyLike, markSolution, toggleReplyHidden, deleteOwnReply } from '@/app/(site)/forum/actions';
 import { ReplyForm } from './ReplyForm';
-import { useReplyEdit } from './ReplyEditScope';
+import { useEditScope } from '@/components/EditScope';
 import { ReportButton } from '@/components/ReportButton';
 
 export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount, loggedIn, callbackUrl, canReply, canMarkSolution, canReport, canModerate, canManage, hidden }: {
@@ -24,7 +24,7 @@ export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount
   const [showForm, setShowForm] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const { editing, setEditing } = useReplyEdit();
+  const { editing, setEditing } = useEditScope();
 
   const onLike = () => start(async () => {
     const r = await toggleReplyLike(replyId);

@@ -560,6 +560,8 @@ model Comment {
   hidden    Boolean @default(false)
 
   createdAt DateTime @default(now())
+  /// Bình luận cũ chưa có cột này nên lấy now() làm mốc, coi như chưa từng sửa.
+  updatedAt DateTime @default(now()) @updatedAt
 
   reactions Reaction[]
   reports   Report[]

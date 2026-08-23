@@ -221,3 +221,86 @@ export async function toggleCommentHidden(commentId: string): Promise<CommentMod
   revalidatePath(`/posts/${comment.post.slug}`);
   return { hidden };
 }
+
+// ─────────────────── Sửa / xoá bình luận của chính mình ───────────────────
+
+export interface CommentEditState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Chỉ tác giả mới sửa/xoá được bình luận của mình.
+ *
+ * Chủ bài viết và quản trị viên cố tình không nằm trong diện này: họ đã có nút
+ * "Ẩn", giữ nguyên nội dung để còn đối chiếu khi có khiếu nại — sửa lời người
+ * khác hay xoá hẳn thì mất dấu vết.
+ */
+async function assertCommentOwner(commentId: string) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' as const };
+
+  const comment = await db.comment.findUnique({
+    where: { id: commentId },
+    select: {
+      id: true, authorId: true, hidden: true, postId: true,
+      post: { select: { slug: true } },
+    },
+  });
+  if (!comment) return { error: 'Không tìm thấy bình luận.' as const };
+  if (comment.authorId !== userId) return { error: 'Bạn chỉ sửa được bình luận của mình.' as const };
+
+  return { userId, comment };
+}
+
+/**
+ * Sửa nội dung bình luận.
+ *
+ * Không gửi lại thông báo nhắc tên cho những @tên mới thêm vào: sửa bài để
+ * chèn tên người khác là đường vòng để làm phiền, mà bản gốc đã báo một lần rồi.
+ */
+export async function updateComment(_prev: CommentEditState, formData: FormData): Promise<CommentEditState> {
+  const commentId = String(formData.get('commentId') ?? '');
+  const guard = await assertCommentOwner(commentId);
+  if ('error' in guard) return { error: guard.error };
+
+  const content = String(formData.get('content') ?? '').trim();
+  if (content.length < 2) return { error: 'Bình luận quá ngắn.' };
+  if (content.length > 2000) return { error: 'Bình luận tối đa 2000 ký tự.' };
+
+  await db.comment.update({ where: { id: commentId }, data: { content }, select: { id: true } });
+
+  revalidatePath(`/posts/${guard.comment.post.slug}`);
+  return { ok: true };
+}
+
+/**
+ * Xoá hẳn bình luận của mình, kèm các phản hồi lồng bên dưới (khoá ngoại tự dọn).
+ *
+ * Bộ đếm chỉ trừ đi những bình luận đang thật sự hiện: bình luận đã bị ẩn thì
+ * lúc ẩn đã trừ rồi, trừ thêm lần nữa là số đếm âm dần.
+ */
+export async function deleteOwnComment(commentId: string): Promise<CommentEditState> {
+  const guard = await assertCommentOwner(commentId);
+  if ('error' in guard) return { error: guard.error };
+  const { comment } = guard;
+
+  const children = await db.comment.findMany({
+    where: { parentId: commentId }, select: { hidden: true },
+  });
+  const visible = (comment.hidden ? 0 : 1) + children.filter((c) => !c.hidden).length;
+
+  await db.$transaction(async (tx) => {
+    await tx.comment.delete({ where: { id: commentId } });
+    if (visible > 0) {
+      await tx.post.update({
+        where: { id: comment.postId },
+        data: { commentCount: { decrement: visible } }, select: { id: true },
+      });
+    }
+  });
+
+  revalidatePath(`/posts/${comment.post.slug}`);
+  return { ok: true };
+}

@@ -3,27 +3,25 @@
 import { useActionState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Pencil, X } from 'lucide-react';
-import { updateReply, type ReplyEditState } from '@/app/(site)/forum/actions';
+import { updateComment, type CommentEditState } from '@/app/(site)/posts/[slug]/actions';
 import { ActionForm } from '@/components/ActionForm';
 import { MentionTextarea } from '@/components/MentionTextarea';
-import { ReplyContent } from './ReplyContent';
+import { ReplyContent } from '@/components/forum/ReplyContent';
 import { useEditScope } from '@/components/EditScope';
 
 /** Lưu xong Prisma cũng chạm updatedAt, nên chênh vài giây thì chưa tính là sửa. */
 const EDITED_AFTER_MS = 60_000;
 
-/**
- * Nội dung một trả lời: bình thường thì hiển thị, bấm "Sửa" thì đổi thành ô soạn.
- */
-export function ReplyBody({ replyId, content, createdAt, updatedAt, className }: {
-  replyId: string;
+/** Nội dung một bình luận: bấm "Sửa" thì đổi thành ô soạn ngay tại chỗ. */
+export function CommentBody({ commentId, content, createdAt, updatedAt, className }: {
+  commentId: string;
   content: string;
   createdAt: Date;
   updatedAt: Date;
   className?: string;
 }) {
   const { editing, setEditing } = useEditScope();
-  const [state, action, pending] = useActionState<ReplyEditState, FormData>(updateReply, {});
+  const [state, action, pending] = useActionState<CommentEditState, FormData>(updateComment, {});
 
   useEffect(() => {
     if (state.ok) setEditing(false);
@@ -35,7 +33,7 @@ export function ReplyBody({ replyId, content, createdAt, updatedAt, className }:
       <>
         <ReplyContent content={content} className={className} />
         {edited && (
-          <p className="mt-1.5 flex items-center gap-1 text-[11px] text-ink-400">
+          <p className="mt-1 flex items-center gap-1 text-[11px] text-ink-400">
             <Pencil size={10} /> Đã sửa lúc {format(updatedAt, 'HH:mm · dd/MM/yyyy')}
           </p>
         )}
@@ -44,10 +42,10 @@ export function ReplyBody({ replyId, content, createdAt, updatedAt, className }:
   }
 
   return (
-    <ActionForm action={action} className="space-y-2">
-      <input type="hidden" name="replyId" value={replyId} />
-      <MentionTextarea name="content" defaultValue={content} required minLength={2} maxLength={5000}
-        autoFocus rows={4} className="input resize-y" />
+    <ActionForm action={action} className="mt-1 space-y-2">
+      <input type="hidden" name="commentId" value={commentId} />
+      <MentionTextarea name="content" defaultValue={content} required minLength={2} maxLength={2000}
+        autoFocus rows={3} className="input resize-y" />
 
       <div className="flex flex-wrap items-center gap-2">
         <button type="submit" disabled={pending} className="btn-primary !py-1.5 text-sm disabled:opacity-60">

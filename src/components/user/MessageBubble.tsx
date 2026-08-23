@@ -1,10 +1,12 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { Check, CheckCheck } from 'lucide-react';
-import { reactToMessage } from '@/app/(site)/user/messages/actions';
+import { useRouter } from 'next/navigation';
+import { Check, CheckCheck, Reply, Trash2, CornerUpLeft } from 'lucide-react';
+import { reactToMessage, unsendMessage } from '@/app/(site)/user/messages/actions';
 import { MESSAGE_REACTIONS, type ResolvedBubble } from '@/lib/chat-theme';
 import { ReplyContent } from '@/components/forum/ReplyContent';
+import { useChatReply } from '@/components/user/ChatReplyContext';
 import { cn } from '@/lib/utils';
 
 export interface ReactionView { emoji: string; mine: boolean }
@@ -20,6 +22,12 @@ export interface MessageBubbleProps {
   seen: boolean;
   bubble: ResolvedBubble;
   reactions: ReactionView[];
+  /** Tin đã thu hồi: chỉ còn dòng ghi chú, không thả cảm xúc hay trích dẫn được. */
+  deleted?: boolean;
+  /** Tin được trích dẫn, hiện thành khối nhỏ phía trên nội dung. */
+  quote?: { author: string; text: string } | null;
+  /** Tên hiển thị của người gửi, dùng khi tin này được trích dẫn. */
+  authorName: string;
 }
 
 const LONG_PRESS_MS = 450;
@@ -28,12 +36,15 @@ export function MessageBubble(p: MessageBubbleProps) {
   const [reactions, setReactions] = useState(p.reactions);
   const [picker, setPicker] = useState(false);
   const [, start] = useTransition();
+  const router = useRouter();
+  const { setReplyTo } = useChatReply();
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastTap = useRef(0);
 
   const mineReaction = reactions.find((r) => r.mine)?.emoji ?? null;
 
   const send = (emoji: string) => {
+    if (p.deleted) return;
     // Cập nhật ngay trên màn hình rồi mới gọi máy chủ, chạm vào thấy phản hồi liền.
     setReactions((cur) => {
       const others = cur.filter((r) => !r.mine);
@@ -48,6 +59,7 @@ export function MessageBubble(p: MessageBubbleProps) {
   };
 
   const startPress = () => {
+    if (p.deleted) return;
     clearPress();
     pressTimer.current = setTimeout(() => setPicker(true), LONG_PRESS_MS);
   };
@@ -82,13 +94,33 @@ export function MessageBubble(p: MessageBubbleProps) {
                   {e}
                 </button>
               ))}
+
+              <span className="mx-0.5 w-px self-stretch bg-ink-200 dark:bg-ink-700" />
+
+              <button type="button" title="Trả lời tin này"
+                onClick={() => { setPicker(false); setReplyTo({ id: p.id, author: p.authorName, text: p.content }); }}
+                className="grid size-8 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">
+                <Reply size={16} />
+              </button>
+
+              {p.mine && (
+                <button type="button" title="Thu hồi tin"
+                  onClick={() => {
+                    setPicker(false);
+                    if (!confirm('Thu hồi tin này? Người kia sẽ không đọc được nữa.')) return;
+                    start(async () => { await unsendMessage(p.id); router.refresh(); });
+                  }}
+                  className="grid size-8 place-items-center rounded-full text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950">
+                  <Trash2 size={15} />
+                </button>
+              )}
             </div>
           </>
         )}
 
         {/* Ảnh trang trí nằm ngoài bong bóng nên phải bọc riêng để không bị cắt góc */}
         <div className="relative">
-          {p.bubble.decor && (
+          {p.bubble.decor && !p.deleted && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={p.bubble.decor} alt="" aria-hidden
               className={cn('pointer-events-none absolute -top-5 h-7 w-auto', p.mine ? 'right-3' : 'left-3')} />
@@ -102,19 +134,37 @@ export function MessageBubble(p: MessageBubbleProps) {
           onTouchStart={startPress}
           onTouchEnd={onTouchEnd}
           onContextMenu={(e) => { e.preventDefault(); setPicker(true); }}
-          title="Bấm đúp để thả tim · giữ để chọn cảm xúc"
-          style={p.mine ? p.bubble.styleMine : p.bubble.styleTheirs}
+          title={p.deleted ? 'Tin đã thu hồi' : 'Bấm đúp để thả tim · giữ để chọn cảm xúc, trả lời, thu hồi'}
+          style={p.deleted ? undefined : (p.mine ? p.bubble.styleMine : p.bubble.styleTheirs)}
           className={cn('select-none px-3.5 py-2',
-            p.mine ? p.bubble.mine : p.bubble.theirs,
+            // Tin đã thu hồi để viền mờ cho khác hẳn tin còn đọc được.
+            p.deleted
+              ? 'border border-dashed border-ink-300 text-ink-400 dark:border-ink-600 dark:text-ink-500'
+              : (p.mine ? p.bubble.mine : p.bubble.theirs),
             p.bubble.radius,
             p.mine ? 'rounded-br-md' : 'rounded-bl-md',
             reactions.length > 0 && 'mb-2.5')}>
-          <ReplyContent content={p.content}
-            className={cn('whitespace-pre-wrap break-words text-sm leading-relaxed', p.mine ? '' : 'text-inherit')} />
+          {p.quote && (
+            <div className={cn('mb-1.5 flex gap-1.5 rounded-lg border-l-2 px-2 py-1 text-xs',
+              p.mine ? 'border-white/50 bg-white/15' : 'border-ink-300 bg-ink-100/70 dark:border-ink-600 dark:bg-ink-800/70')}>
+              <CornerUpLeft size={12} className="mt-0.5 shrink-0 opacity-70" />
+              <span className="min-w-0">
+                <span className="block font-semibold opacity-90">{p.quote.author}</span>
+                <span className="line-clamp-2 opacity-75">{p.quote.text}</span>
+              </span>
+            </div>
+          )}
+
+          {p.deleted ? (
+            <p className="text-sm italic">Tin nhắn đã được thu hồi</p>
+          ) : (
+            <ReplyContent content={p.content}
+              className={cn('whitespace-pre-wrap break-words text-sm leading-relaxed', p.mine ? '' : 'text-inherit')} />
+          )}
 
           {p.showMeta && (
             <div className={cn('mt-1 flex items-center justify-end gap-1 text-[11px]',
-              p.mine ? p.bubble.mineMuted : 'text-ink-400')}>
+              p.deleted ? 'text-ink-400' : (p.mine ? p.bubble.mineMuted : 'text-ink-400'))}>
               {p.time}
               {p.showTicks && (p.seen
                 ? <CheckCheck size={13} aria-label="Đã xem" />

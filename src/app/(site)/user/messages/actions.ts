@@ -51,6 +51,7 @@ export async function sendMessage(_prev: MessageState, formData: FormData): Prom
 
   const conversationId = String(formData.get('conversationId') ?? '').trim();
   const content = String(formData.get('content') ?? '').trim();
+  const replyToId = String(formData.get('replyToId') ?? '').trim() || null;
   if (!conversationId) return { error: 'Thiếu hội thoại.' };
   if (content.length < 1) return { error: 'Hãy nhập nội dung tin nhắn.' };
   if (content.length > MESSAGE_MAX_LENGTH) return { error: `Tin nhắn tối đa ${MESSAGE_MAX_LENGTH} ký tự.` };
@@ -77,9 +78,19 @@ export async function sendMessage(_prev: MessageState, formData: FormData): Prom
   const to = otherId(convo, me);
   if (await isBlockedBetween(me, to)) return { error: BLOCK_MESSAGE };
 
+  // Chỉ cho trích dẫn tin trong cùng hội thoại, không thì lộ tin của người khác.
+  let quoted: string | null = null;
+  if (replyToId) {
+    const src = await db.message.findFirst({
+      where: { id: replyToId, conversationId },
+      select: { id: true },
+    });
+    quoted = src?.id ?? null;
+  }
+
   const now = new Date();
   await db.$transaction(async (tx) => {
-    await tx.message.create({ data: { conversationId, senderId: me, content }, select: { id: true } });
+    await tx.message.create({ data: { conversationId, senderId: me, content, replyToId: quoted }, select: { id: true } });
     await tx.conversation.update({ where: { id: conversationId }, data: { lastMessageAt: now }, select: { id: true } });
   });
 
@@ -265,4 +276,38 @@ export async function reactToMessage(messageId: string, emoji: string): Promise<
     select: { id: true },
   });
   return { emoji };
+}
+
+/**
+ * Thu hồi tin của chính mình.
+ *
+ * Không xoá hẳn bản ghi: tin khác có thể đang trích dẫn nó, xoá đi thì phần
+ * trích dẫn hụt mất. Thay vào đó xoá nội dung và đánh dấu đã thu hồi.
+ */
+export async function unsendMessage(messageId: string): Promise<MessageState> {
+  const session = await auth();
+  const me = session?.user?.id;
+  if (!me) return { error: 'Bạn cần đăng nhập.' };
+
+  const msg = await db.message.findUnique({
+    where: { id: messageId },
+    select: { id: true, senderId: true, conversationId: true, deletedAt: true },
+  });
+  if (!msg) return { error: 'Không tìm thấy tin nhắn.' };
+  if (msg.senderId !== me) return { error: 'Chỉ thu hồi được tin của chính bạn.' };
+  if (msg.deletedAt) return { ok: true };
+
+  await db.$transaction(async (tx) => {
+    await tx.message.update({
+      where: { id: messageId },
+      data: { content: '', deletedAt: new Date() },
+      select: { id: true },
+    });
+    // Cảm xúc thả lên tin đã thu hồi thì không còn ý nghĩa gì.
+    await tx.messageReaction.deleteMany({ where: { messageId } });
+  });
+
+  revalidatePath(`/user/messages/${msg.conversationId}`);
+  revalidatePath('/user/messages');
+  return { ok: true };
 }

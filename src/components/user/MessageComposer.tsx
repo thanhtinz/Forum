@@ -1,11 +1,12 @@
 'use client';
 
 import { useRef, useState, useEffect, useActionState } from 'react';
-import { Send, ImagePlus, Loader2 } from 'lucide-react';
+import { Send, ImagePlus, Loader2, X, CornerUpLeft } from 'lucide-react';
 import { sendMessage, type MessageState } from '@/app/(site)/user/messages/actions';
-import { MESSAGE_MAX_LENGTH } from '@/lib/messages';
+import { MESSAGE_MAX_LENGTH, messagePreview } from '@/lib/messages';
 import { MediaPicker } from '@/components/forum/MediaPicker';
 import { ActionForm } from '@/components/ActionForm';
+import { useChatReply } from '@/components/user/ChatReplyContext';
 
 export function MessageComposer({ conversationId }: { conversationId: string }) {
   const [state, action, pending] = useActionState<MessageState, FormData>(sendMessage, {});
@@ -13,12 +14,14 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const { replyTo, setReplyTo } = useChatReply();
 
   // Gửi xong mới dọn ô nhập; gửi lỗi thì giữ nguyên để soạn lại.
   useEffect(() => {
     if (!state.ok) return;
     if (taRef.current) taRef.current.value = '';
     setUploadError(null);
+    setReplyTo(null);
     taRef.current?.focus();
   }, [state.ok]);
 
@@ -62,9 +65,25 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
     <ActionForm action={action}
       className="sticky bottom-0 rounded-2xl border border-ink-200 bg-white p-2.5 shadow-sm dark:border-ink-700 dark:bg-ink-900">
       <input type="hidden" name="conversationId" value={conversationId} />
+      {replyTo && <input type="hidden" name="replyToId" value={replyTo.id} />}
+
+      {/* Khối tin đang trả lời, bấm x để bỏ */}
+      {replyTo && (
+        <div className="mb-1.5 flex items-start gap-2 rounded-xl border-l-2 border-brand-400 bg-brand-50 px-2.5 py-1.5 dark:bg-brand-950/40">
+          <CornerUpLeft size={13} className="mt-0.5 shrink-0 text-brand-500" />
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs font-semibold text-brand-700 dark:text-brand-300">
+              Trả lời {replyTo.author}
+            </span>
+            <span className="line-clamp-1 text-xs text-ink-500">{messagePreview(replyTo.text)}</span>
+          </span>
+          <button type="button" onClick={() => setReplyTo(null)} title="Bỏ trả lời"
+            className="shrink-0 text-ink-400 hover:text-ink-600"><X size={14} /></button>
+        </div>
+      )}
 
       <textarea ref={taRef} name="content" rows={2} maxLength={MESSAGE_MAX_LENGTH}
-        placeholder="Nhập tin nhắn…"
+        placeholder={replyTo ? `Trả lời ${replyTo.author}…` : 'Nhập tin nhắn…'}
         className="w-full resize-y bg-transparent px-1.5 py-1 text-sm outline-none placeholder:text-ink-400"
         onKeyDown={(e) => {
           // Enter gửi, Shift/Ctrl + Enter xuống dòng — quen tay như app chat

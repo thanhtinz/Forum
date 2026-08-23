@@ -8,7 +8,6 @@ import { db } from '@/lib/db';
 import { grantPoints } from '@/lib/points';
 import { addExp } from '@/lib/level';
 import { notify, filterNotifiable } from '@/lib/notify';
-import { isVipActive } from '@/lib/access';
 import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { bbcodeToHtml } from '@/lib/bbcode';
@@ -16,6 +15,7 @@ import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { readPollForm, isPollClosed } from '@/lib/poll';
 import { readBounty, BOUNTY_MIN } from '@/lib/bounty';
+import { checkForumPostAccess } from '@/lib/forum-post-access';
 import { InsufficientPointsError } from '@/lib/points';
 
 const POINTS_PER_THREAD = 10;
@@ -76,13 +76,9 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
   });
   if (!forum) return { error: 'Không tìm thấy diễn đàn.' };
 
-  // Kiểm tra quyền đăng
-  const me = await db.user.findUnique({
-    where: { id: userId },
-    select: { level: true, vipTier: true, vipExpiresAt: true, vipPermanent: true },
-  });
-  if (forum.vipOnly && !(me && isVipActive(me))) return { error: 'Diễn đàn này chỉ dành cho thành viên VIP.' };
-  if (me && me.level < forum.minLevel) return { error: `Bạn cần đạt cấp ${forum.minLevel} để đăng ở diễn đàn này.` };
+  // Kiểm tra quyền đăng: quyền của khu vực, mức VIP và cấp độ tối thiểu
+  const denied = await checkForumPostAccess(userId, forum);
+  if (denied) return { error: denied };
 
   const pollForm = readPollForm(formData);
   if (pollForm.error) return { error: pollForm.error };

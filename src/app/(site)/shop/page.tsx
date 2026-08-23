@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { ShoppingBag, Crown } from 'lucide-react';
 import { db } from '@/lib/db';
-import { postCardInclude, toCardData } from '@/lib/post-card';
+import { postCardSelect, toCardData } from '@/lib/post-card';
 import { SHOP_WHERE, shopOrderBy, parseShopSort } from '@/lib/shop';
 import { PostGrid } from '@/components/PostGrid';
 import { Pagination } from '@/components/Pagination';
@@ -35,7 +35,7 @@ export default async function ShopPage({ searchParams }: {
       orderBy: shopOrderBy(sort),
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: postCardInclude,
+      select: postCardSelect,
     }),
     db.category.findMany({
       where: { OR: [{ posts: { some: SHOP_WHERE } }, { postLinks: { some: { post: SHOP_WHERE } } }] },

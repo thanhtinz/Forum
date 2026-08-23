@@ -5,6 +5,7 @@ import { MessagesSquare } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { forumTint } from '@/lib/forum';
+import { checkForumPostAccess } from '@/lib/forum-post-access';
 import { NewThreadForm } from '@/components/forum/NewThreadForm';
 import { IconGlyph } from '@/components/IconGlyph';
 
@@ -18,12 +19,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function NewThreadPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const forum = await db.forum.findUnique({ where: { slug }, select: { slug: true, name: true, icon: true, description: true } });
+  const forum = await db.forum.findUnique({
+    where: { slug },
+    select: { id: true, slug: true, name: true, icon: true, description: true, postAccess: true, minLevel: true, vipOnly: true },
+  });
   if (!forum) notFound();
 
   const session = await auth();
   if (!session?.user?.id) redirect(`/login?callbackUrl=${encodeURIComponent(`/forum/${slug}/new`)}`);
 
+  // Báo trước cho khỏi gõ cả bài rồi mới biết không được đăng ở đây.
+  const denied = await checkForumPostAccess(session.user.id, forum);
+
+  const wallet = await db.user.findUnique({ where: { id: session.user.id }, select: { points: true } });
   const tint = forumTint(forum.slug);
 
   return (
@@ -45,7 +53,16 @@ export default async function NewThreadPage({ params }: { params: Promise<{ slug
           </div>
         </header>
 
-        <NewThreadForm forumSlug={forum.slug} />
+        {denied ? (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+            <p className="font-medium">{denied}</p>
+            <Link href={`/forum/${forum.slug}`} className="mt-2 inline-block text-brand-600 hover:underline">
+              Quay lại {forum.name}
+            </Link>
+          </div>
+        ) : (
+          <NewThreadForm forumSlug={forum.slug} myPoints={wallet?.points ?? 0} />
+        )}
       </div>
     </div>
   );

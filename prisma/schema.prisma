@@ -84,6 +84,9 @@ model User {
   messagesSent   Message[]
   msgReactions   MessageReaction[]
   threadFollows  ThreadFollow[]
+
+  /// Các loại thông báo người dùng đã tắt (chỉ áp dụng cho loại được phép tắt).
+  notifyOff      NotificationType[] @default([])
   adminLogs      AdminLog[] @relation("AdminLogActor")
 
   @@index([level])

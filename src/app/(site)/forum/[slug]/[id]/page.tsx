@@ -16,7 +16,8 @@ import { ThreadOwnerMenu } from '@/components/forum/ThreadOwnerMenu';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { ThreadPost, displayName } from '@/components/forum/ThreadPost';
 import { Pagination } from '@/components/Pagination';
-import { ReplyContent } from '@/components/forum/ReplyContent';
+import { ReplyBody } from '@/components/forum/ReplyBody';
+import { ReplyEditScope } from '@/components/forum/ReplyEditScope';
 import { canModerateForum } from '@/lib/moderation';
 import { getLevelLooks, type LevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
@@ -220,7 +221,8 @@ export default async function ThreadPage({ params, searchParams }: {
         ) : (
           <div className="space-y-3">
             {replies.map((r, i) => (
-              <div key={r.id} className={cn(r.hidden && 'rounded-2xl ring-1 ring-rose-300 dark:ring-rose-900')}>
+              <ReplyEditScope key={r.id}>
+              <div className={cn(r.hidden && 'rounded-2xl ring-1 ring-rose-300 dark:ring-rose-900')}>
                 {r.hidden && (
                   <p className="mb-1 flex items-center gap-1.5 px-1 text-xs font-medium text-rose-600">
                     <EyeOff size={12} /> Trả lời này đang bị ẩn, chỉ người kiểm duyệt thấy.
@@ -235,15 +237,17 @@ export default async function ThreadPage({ params, searchParams }: {
                   <ReplyActions threadId={thread.id} replyId={r.id} initialLiked={likedReplies.has(r.id)} initialLikeCount={r.likeCount}
                     loggedIn={loggedIn} callbackUrl={callbackUrl} canReply canMarkSolution={canMarkSolution && !r.isSolution}
                     canReport={loggedIn && r.authorId !== userId}
+                    canManage={r.authorId === userId && !thread.locked}
                     canModerate={canModerate} hidden={r.hidden} />
                 }
               >
-                <ReplyContent content={r.content} />
+                <ReplyBody replyId={r.id} content={r.content} createdAt={r.createdAt} updatedAt={r.updatedAt} />
 
                 {r.children.length > 0 && (
                   <ul className="mt-4 space-y-3 border-l-2 border-brand-200 pl-3 dark:border-brand-900">
                     {r.children.map((ch) => (
-                      <li key={ch.id} className={cn('rounded-lg bg-ink-50 p-3 dark:bg-ink-800/40',
+                      <ReplyEditScope key={ch.id}>
+                      <li className={cn('rounded-lg bg-ink-50 p-3 dark:bg-ink-800/40',
                         ch.hidden && 'ring-1 ring-rose-300 dark:ring-rose-900')}>
                         <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
                           {ch.hidden && (
@@ -258,17 +262,20 @@ export default async function ThreadPage({ params, searchParams }: {
                             color={levelLooks.get(ch.author.level)?.color} name={levelLooks.get(ch.author.level)?.name} />
                           <span className="text-ink-400">{format(ch.createdAt, 'HH:mm · dd/MM/yyyy')}</span>
                         </div>
-                        <ReplyContent content={ch.content} />
+                        <ReplyBody replyId={ch.id} content={ch.content} createdAt={ch.createdAt} updatedAt={ch.updatedAt} />
                         <ReplyActions threadId={thread.id} replyId={ch.id} initialLiked={likedReplies.has(ch.id)} initialLikeCount={ch.likeCount}
                           loggedIn={loggedIn} callbackUrl={callbackUrl} canMarkSolution={canMarkSolution && !ch.isSolution}
                           canReport={loggedIn && ch.authorId !== userId}
+                          canManage={ch.authorId === userId && !thread.locked}
                           canModerate={canModerate} hidden={ch.hidden} />
                       </li>
+                      </ReplyEditScope>
                     ))}
                   </ul>
                 )}
               </ThreadPost>
               </div>
+              </ReplyEditScope>
             ))}
           </div>
         )}

@@ -221,6 +221,18 @@ lại — ép cả hai thành hình vuông theo chiều cao chỗ chứa thì tr
 hai cụm cộng lại rộng hơn thân máy và cột số bên phải tràn ra ngoài. Đo ở ba cỡ
 màn hình: mũi tên `65px` tròn (3 352px²), phím số `52×60` (3 120px²), không tràn.
 
+**Mũi tên bên trái, bàn phím số bên phải** — mọi họ mặt phím, không riêng
+`j2me`. Trước đây ba họ máy thật xếp chồng mũi tên trên số như mặt trước máy
+gốc; giờ chia hai cột như bàn phím ảo của emulator. Cụm mũi tên có trần chiều
+cao cố định (`max-h-[13rem]`) rồi bàn phím số mới lấp bề ngang còn lại — để cả
+hai cùng bám chiều cao chỗ chứa thì trên màn hình cao chúng cộng lại rộng hơn
+thân máy và cột số tràn ra ngoài.
+
+Nhờ chia hai cột mà cụm mũi tên rộng hẳn ra: hộp `168 → 206px`, diện tích một
+mũi tên **4 863 → 8 912px²**. Đổi lại phím số hẹp lại còn `52×60` (3 074px²) từ
+`125×31` (3 875px²), và **chữ cái phụ phải xuống dòng** — xếp ngang cạnh chữ số
+như cũ thì `WXYZ 9` tràn ra ngoài viền phím.
+
 **Phím bốn hướng dựng theo ảnh phím thật.** Một khối vuông bo góc **liền**,
 mặt trên là vành bấm bốn hướng, giữa lồng **một ô vuông nhỏ có viền riêng** nổi
 lên với vành hở quanh nó. Không kẻ đường chia cánh — vành trên máy thật là một

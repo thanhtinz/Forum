@@ -109,7 +109,7 @@ export function useKeypadParts({
    * tích bản dọc, trong khi hai bên thân máy thừa rất nhiều chỗ.
    */
   const wheel = fill
-    ? 'h-full max-h-[10.5rem] aspect-square'
+    ? 'h-full max-h-[13rem] aspect-square'
     : compact ? 'h-full max-h-[9.5rem] aspect-square' : 'h-[6.5rem] w-[6.5rem]';
 
   // ── D-pad ────────────────────────────────────────────────
@@ -246,26 +246,30 @@ export function useKeypadParts({
    * hướng vuông, hay phím bập bênh nằm ngang.
    */
 
-  /** Bàn phím số 4×3. `flat` là kiểu phím phẳng khắc laser của Motorola. */
+  /**
+   * Bàn phím số 4×3. `flat` là kiểu phím phẳng khắc laser của Motorola.
+   *
+   * Chữ số nằm trên, chữ cái phụ nằm dưới. Trước đây xếp ngang cạnh nhau như
+   * mặt trước máy thật, nhưng từ khi bàn phím số dời sang cột phải thì phím
+   * hẹp lại và `WXYZ 9` tràn ra ngoài viền.
+   */
   const numGrid = (flat = false) => (
     <div className={cn('grid h-full min-h-0 w-full grid-cols-3 grid-rows-4', flat ? 'gap-px' : 'gap-1.5')}>
-      {NUMPAD_ROWS.flat().map((k, i) => {
+      {NUMPAD_ROWS.flat().map((k) => {
         const letters = NUM_KEY_LETTERS[k];
-        const col = i % 3;
-        const digit = <span className="text-base font-semibold leading-none">{EMU_KEY_LABEL[k]}</span>;
-        const sub = letters
-          ? <span className={cn('text-[9px] font-bold leading-none tracking-wider', subColor)}>{letters}</span>
-          : null;
         return (
           <button
             key={k} type="button" {...bind(k)}
-            className={cn(skinFace, held.has(k) && skinHeld, 'h-full w-full min-w-0 px-3',
-              flat ? 'rounded-[3px] border-x-0 border-b-0 border-t border-white/10' : 'rounded-full',
-              col === 0 ? 'justify-start' : col === 1 ? 'justify-center' : 'justify-end')}
+            className={cn(skinFace, held.has(k) && skinHeld,
+              'h-full w-full min-w-0 flex-col justify-center gap-0 overflow-hidden px-1',
+              flat ? 'rounded-[3px] border-x-0 border-b-0 border-t border-white/10' : 'rounded-full')}
           >
-            <span className="flex items-baseline gap-1.5">
-              {col === 2 ? <>{sub}{digit}</> : <>{digit}{sub}</>}
-            </span>
+            <span className="text-base font-semibold leading-none">{EMU_KEY_LABEL[k]}</span>
+            {letters && (
+              <span className={cn('mt-0.5 text-[8px] font-bold leading-none tracking-wider', subColor)}>
+                {letters}
+              </span>
+            )}
           </button>
         );
       })}
@@ -273,7 +277,7 @@ export function useKeypadParts({
   );
 
   /** Phím bốn hướng vuông của S60 / E-series — vùng bấm góc phần tư như vòng xoay. */
-  const squarePad = navPad('square', 'h-full max-h-[10rem] aspect-square');
+  const squarePad = navPad('square', 'h-full max-h-[13rem] aspect-square');
 
   /**
    * Phím bập bênh nằm ngang của máy đời đầu / Samsung / Siemens.
@@ -385,15 +389,24 @@ export function useKeypadParts({
         </div>
       )}
 
-      <div className="flex min-h-0 w-full min-w-0 flex-[52] items-center justify-center">
-        {navCluster}
-      </div>
+      {/*
+        Mũi tên bên trái, bàn phím số bên phải — như bàn phím ảo của emulator,
+        chứ không xếp chồng mũi tên trên số như mặt trước máy thật. Cụm mũi tên
+        có trần chiều cao cố định rồi bàn phím số mới lấp bề ngang còn lại; để
+        cả hai cùng bám chiều cao chỗ chứa thì trên màn hình cao chúng cộng lại
+        rộng hơn thân máy và cột số bên phải tràn ra ngoài.
+      */}
+      <div className="flex min-h-0 w-full min-w-0 flex-1 items-center gap-3 overflow-hidden">
+        <div className="flex h-full min-h-0 shrink-0 items-center justify-center">
+          {navCluster}
+        </div>
 
-      <div
-        className={cn('min-h-0 w-full min-w-0 flex-[48]',
-          flatNum && 'overflow-hidden rounded-md border border-white/10')}
-      >
-        {numGrid(flatNum)}
+        <div
+          className={cn('grid h-full min-h-0 w-full min-w-0 max-h-[16rem] flex-1',
+            flatNum && 'overflow-hidden rounded-md border border-white/10')}
+        >
+          {numGrid(flatNum)}
+        </div>
       </div>
     </div>
   );

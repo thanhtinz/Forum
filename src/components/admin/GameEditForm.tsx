@@ -12,15 +12,14 @@ export interface GameEditFormProps {
     description: string | null; gameplay: string | null; icon: string | null; cover: string | null;
     trailerUrl: string | null; developer: string | null; publisher: string | null;
     releaseYear: number | null; language: string; vietnamized: boolean; featured: boolean;
-    playOnline: boolean; status: string; platformId: string | null; resolutionId: string | null;
-    emulatorProfileId: string | null; compatibilityNote: string | null; knownIssues: string | null;
+    status: string; platformId: string | null; resolutionId: string | null;
+    compatibilityNote: string | null; knownIssues: string | null;
     controls: unknown;
   };
   genres: Option[];
   selectedGenreIds: string[];
   platforms: Option[];
   resolutions: Option[];
-  profiles: Option[];
   tags: string;
 }
 
@@ -29,7 +28,7 @@ const STATUSES = [
 ] as const;
 
 /** Form thông tin chính của game trong khu quản trị. */
-export function GameEditForm({ game, genres, selectedGenreIds, platforms, resolutions, profiles, tags }: GameEditFormProps) {
+export function GameEditForm({ game, genres, selectedGenreIds, platforms, resolutions, tags }: GameEditFormProps) {
   const [state, action, pending] = useActionState<ActionState, FormData>(updateGame, {});
 
   return (
@@ -71,12 +70,6 @@ export function GameEditForm({ game, genres, selectedGenreIds, platforms, resolu
             {resolutions.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
           </select>
         </Field>
-        <Field label="Emulator profile mặc định">
-          <select name="emulatorProfileId" defaultValue={game.emulatorProfileId ?? ''} className="input">
-            <option value="">— Không đặt —</option>
-            {profiles.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-          </select>
-        </Field>
         <Field label="Tag (phân tách bằng dấu phẩy)"><input name="tags" defaultValue={tags} className="input" /></Field>
       </div>
 
@@ -94,7 +87,6 @@ export function GameEditForm({ game, genres, selectedGenreIds, platforms, resolu
       <div className="flex flex-wrap gap-5">
         <Toggle label="Bản Việt hóa" name="vietnamized" defaultChecked={game.vietnamized} />
         <Toggle label="Nổi bật" name="featured" defaultChecked={game.featured} />
-        <Toggle label="Bật Play Online" name="playOnline" defaultChecked={game.playOnline} />
       </div>
 
       <Field label="Mô tả"><textarea name="description" rows={4} defaultValue={game.description ?? ''} className="input" /></Field>

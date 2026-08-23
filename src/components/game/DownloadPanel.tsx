@@ -1,10 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { format } from 'date-fns';
-import { AlertTriangle, CheckCircle2, Download, FileCode2, Loader2, Package, Play, ShieldCheck, Smartphone } from 'lucide-react';
-import { cn, fmtBytes } from '@/lib/utils';
+import { AlertTriangle, CheckCircle2, Download, FileCode2, Loader2, Package, ShieldCheck } from 'lucide-react';
+import { fmtBytes } from '@/lib/utils';
 
 export interface VersionFile {
   type: 'JAR' | 'JAD' | 'PATCH';
@@ -21,7 +20,6 @@ export interface VersionInfo {
   changelog: string | null;
   sizeBytes: number | null;
   latest: boolean;
-  playOnline: boolean;
   note: string | null;
   files: VersionFile[];
 }
@@ -29,10 +27,6 @@ export interface VersionInfo {
 export interface DownloadPanelProps {
   slug: string;
   versions: VersionInfo[];
-  /** Game đã bật Play Online ở cấp game hay chưa. */
-  playOnline: boolean;
-  /** Người xem đang dùng điện thoại — chỉ khi đó mới hiện nút PLAY ONLINE. */
-  mobile: boolean;
 }
 
 /**
@@ -41,7 +35,7 @@ export interface DownloadPanelProps {
  * Link tải là signed URL do backend cấp sau khi kiểm tra file, nên phải xin
  * ngay lúc bấm chứ không nhúng sẵn vào HTML.
  */
-export function DownloadPanel({ slug, versions, playOnline, mobile }: DownloadPanelProps) {
+export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
   const [versionId, setVersionId] = useState(versions.find((v) => v.latest)?.id ?? versions[0]?.id ?? '');
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +73,6 @@ export function DownloadPanel({ slug, versions, playOnline, mobile }: DownloadPa
 
   const jar = current.files.find((f) => f.type === 'JAR');
   const jad = current.files.find((f) => f.type === 'JAD');
-  const canPlay = playOnline && current.playOnline;
 
   return (
     <div className="card p-4 sm:p-5" id="download">
@@ -101,7 +94,6 @@ export function DownloadPanel({ slug, versions, playOnline, mobile }: DownloadPa
                 v{v.version}
                 {v.latest ? ' (mới nhất)' : ''}
                 {v.releaseDate ? ` · ${format(new Date(v.releaseDate), 'dd/MM/yyyy')}` : ''}
-                {v.playOnline ? '' : ' · chỉ tải về'}
               </option>
             ))}
           </select>
@@ -115,23 +107,9 @@ export function DownloadPanel({ slug, versions, playOnline, mobile }: DownloadPa
         <dd className="text-right font-medium">
           {current.releaseDate ? format(new Date(current.releaseDate), 'dd/MM/yyyy') : '—'}
         </dd>
-        <dt className="text-ink-400">Play Online</dt>
-        <dd className={cn('text-right font-medium', canPlay ? 'text-emerald-600' : 'text-ink-400')}>
-          {canPlay ? (mobile ? 'Có' : 'Chỉ trên điện thoại') : 'Không'}
-        </dd>
       </dl>
 
       <div className="space-y-2">
-        {canPlay && (mobile ? (
-          <Link href={`/games/${slug}/play?version=${current.id}`} className="btn-primary w-full">
-            <Play size={16} /> PLAY ONLINE
-          </Link>
-        ) : (
-          <p className="flex items-start gap-2 rounded-lg bg-brand-50 p-2.5 text-xs text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
-            <Smartphone size={14} className="mt-px shrink-0" />
-            Game này chơi online được, nhưng emulator chỉ mở trên điện thoại. Mở trang này bằng điện thoại để bấm PLAY ONLINE.
-          </p>
-        ))}
         <button
           type="button"
           onClick={() => download('JAR')}

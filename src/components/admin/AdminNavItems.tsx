@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award, ShieldCheck,
   Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2, Menu, Settings,
-  Gamepad2, Cpu,
+  Gamepad2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -133,7 +133,6 @@ export const ADMIN_GROUPS: Group[] = [
           { label: 'Lưu trữ', status: 'ARCHIVED' },
         ],
       },
-      { href: '/admin/emulator', label: 'Emulator', icon: Cpu },
     ],
   },
 ];

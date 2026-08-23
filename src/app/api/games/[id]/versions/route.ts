@@ -26,7 +26,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       changelog: v.changelog,
       sizeBytes: v.sizeBytes != null ? Number(v.sizeBytes) : null,
       latest: v.latest,
-      playOnline: v.playOnline,
       note: v.note,
       files: v.files.map((f) => ({
         type: f.type,

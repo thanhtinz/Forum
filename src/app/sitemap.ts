@@ -50,7 +50,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...forums.map((f) => ({ url: url(`/forum/${f.slug}`), changeFrequency: 'daily' as const, priority: 0.5 })),
     ...threads.filter((t) => t.forum).map((t) => ({ url: url(`/forum/${t.forum!.slug}/${t.id}`), lastModified: t.updatedAt, changeFrequency: 'weekly' as const, priority: 0.5 })),
     // Kho game: trang chi tiết + trang lọc theo thể loại + bộ sưu tập.
-    // Trang /games/[slug]/play cố tình không đưa vào (chỉ mở trên điện thoại, đã noindex).
     ...games.map((g) => ({ url: url(`/games/${g.slug}`), lastModified: g.updatedAt, changeFrequency: 'weekly' as const, priority: 0.7 })),
     ...genres.map((g) => ({ url: url(`/games/browse?genre=${g.slug}`), changeFrequency: 'daily' as const, priority: 0.4 })),
     ...collections.map((c) => ({ url: url(`/games/collections/${c.slug}`), changeFrequency: 'weekly' as const, priority: 0.5 })),

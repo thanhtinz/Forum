@@ -17,7 +17,7 @@ export interface GameActionsProps {
 const REPORT_REASONS = [
   'Link tải hỏng',
   'File sai / không đúng game',
-  'Không chạy được trên emulator',
+  'File hỏng / không cài được',
   'Nội dung vi phạm bản quyền',
   'Thông tin sai (version, dung lượng…)',
   'Khác',

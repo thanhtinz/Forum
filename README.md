@@ -29,11 +29,11 @@ Tài khoản admin mẫu: `admin@nova.local` / `admin123`.
 src/
 ├── app/
 │   ├── (site)/        # giao diện công khai (trang chủ = diễn đàn, /blog, bài viết…)
-│   ├── (site)/games/  # Game Hub: catalog, chi tiết, Play Online
+│   ├── (site)/games/  # Game Hub: catalog, chi tiết, tải file
 │   ├── (user)/user/   # khu vực đăng nhập (dashboard, điểm, số dư…)
-│   ├── (admin)/admin/ # quản trị (game, emulator)
-│   └── api/           # route handlers (auth, webhooks, games, emulator…)
-├── lib/               # db, auth, access, points, balance, level, notify, game, emulator
+│   ├── (admin)/admin/ # quản trị (bài viết, diễn đàn, game…)
+│   └── api/           # route handlers (auth, webhooks, games…)
+├── lib/               # db, auth, access, points, balance, level, notify, game
 └── components/        # PostCard (4 biến thể), Header, Sidebar, game/…
 ```
 
@@ -54,48 +54,27 @@ src/
 - [x] **P12** Giao diện chính chuyển sang dạng diễn đàn (board list, bài mới, đang online); blog dời sang `/blog`
 - [x] **P13** Công cụ điều hành chủ đề, tìm kiếm hợp nhất (chủ đề/bài viết/thành viên), chế độ tối
 - [x] **P14** Mã giảm giá (quản trị + áp khi mua VIP) và hạn mức chống spam khi đăng nội dung
-- [x] **P15** Game Hub — catalog Java ME, tải JAR/JAD có signed URL, Play Online (emulator toàn màn hình trên đt, thư viện máy cổ), quản trị game & emulator
+- [x] **P15** Game Hub — catalog Java ME, tải JAR/JAD có signed URL, quản trị game
 - [ ] **P11** Hoàn thiện (backup DB, upload S3) — đã có SEO/sitemap/robots/dark mode
 
 ## Game Hub
 
 Khu game Java ME nằm ở `/games`:
 
-- **Catalog** — game nổi bật / mới cập nhật / phổ biến / chơi nhiều / tải nhiều /
-  Việt hóa, gom theo thể loại, dòng máy, độ phân giải và bộ sưu tập; có
-  “Tiếp tục chơi” và game ngẫu nhiên.
+- **Catalog** — game nổi bật / mới cập nhật / phổ biến / xem nhiều / tải nhiều /
+  Việt hóa, gom theo thể loại, dòng máy, độ phân giải và bộ sưu tập; có cả
+  game ngẫu nhiên.
 - **Bộ lọc & tìm kiếm** — lọc theo thể loại, platform, resolution, ngôn ngữ, năm,
-  rating, dung lượng, lượt chơi/tải, ngày cập nhật; tìm kiếm có autocomplete và
+  rating, dung lượng, lượt tải, ngày cập nhật; tìm kiếm có autocomplete và
   fuzzy (bỏ dấu + Levenshtein) nên gõ “kontra” vẫn ra “Contra 4”.
 - **Chi tiết game** — thông tin phát hành, ảnh chụp màn hình, lịch sử version,
-  thiết bị tương thích, hướng dẫn phím, lưu ý và thống kê.
+  hướng dẫn phím, lưu ý và thống kê.
 - **Tải game** — chọn version → JAR/JAD → backend kiểm tra file rồi cấp signed URL
   có hạn; checksum hiển thị để đối chiếu; tải lặp không làm phồng unique download.
-- **Play Online (chỉ trên điện thoại, toàn màn hình)** — tạo phiên emulator, nạp
-  JAR vào runtime J2ME chạy trong iframe sandbox; trên đt emulator chiếm trọn màn
-  hình (không header/footer, chừa safe-area, khoá cuộn), cầm dọc thì bàn phím nằm
-  dưới, cầm ngang thì D-pad và bàn phím số dạt ra hai bên màn hình. Có phím mềm,
-  xoay/tắt tiếng/tạm dừng, save RMS (cloud cho thành viên, localStorage cho khách),
-  heartbeat và hạn mức phiên. Trên máy tính, mọi nút chơi online đều ẩn và trang
-  `/play` hiện hướng dẫn mở bằng đt — kho game vẫn xem/tải bình thường.
-- **Cấu hình riêng từng game** — kiểu J2ME Loader nhưng không có bước import: bấm
-  game nào là chơi game đó với cấu hình của nó. Chọn kích thước màn hình (13 mức
-  dựng sẵn + nhập tay), cách phóng (vừa khung / kéo đầy / gốc 1:1), lọc ảnh sắc nét
-  hay mượt, **tốc độ chạy 0.5×–3×** (game Java hay chậm), giới hạn FPS, cỡ chữ, âm
-  thanh, rung phím và gán phím bàn phím. Lưu theo tài khoản, khách thì theo trình duyệt.
-- **Thư viện máy ảo** — đúng **một máy cho mỗi giao diện mặt phím**, không hơn:
-  Nokia 6300 (vòng xoay), Nokia N70 (bốn hướng vuông), Motorola RAZR V3 (vòng xoay +
-  phím số phẳng khắc laser), Generic Java ME 320×240 nằm ngang (kiểu **J2ME Loader**),
-  cùng hai skin nút trắng — **vòng khuyên** rỗng ruột kèm cụm hành động xếp hình cung,
-  và **lưới 3×5 nút tròn** bằng nhau. Người chơi bấm “Chọn máy ảo” để đổi ngay trong
-  emulator, có nhãn tương thích cho từng máy.
-- **Quản trị** — `/admin/games` (CRUD game, version, file, ảnh, ma trận tương thích)
-  và `/admin/emulator` (profile thiết bị, hạn mức tài nguyên, phiên đang chạy, log lỗi).
+- **Quản trị** — `/admin/games`: CRUD game, version, file, ảnh.
 
-Runtime J2ME chạy ở dịch vụ riêng — đặt `EmulatorProfile.runtimeUrl` (hoặc
-`EMU_RUNTIME_URL` khi seed) để bật. Chưa gắn runtime thì trang Play vẫn hoạt động
-và hướng người dùng sang tải file về máy. Giao ước `postMessage` giữa trang và
-runtime nằm trong [`.nova-spec/GAME-HUB.md`](.nova-spec/GAME-HUB.md).
+Kho game chỉ phục vụ xem thông tin và tải file về máy thật — không có emulator,
+không chơi online.
 
 Chi tiết đặc tả: [`.nova-spec/SPEC.md`](.nova-spec/SPEC.md) · Game Hub:
 [`.nova-spec/GAME-HUB.md`](.nova-spec/GAME-HUB.md) · Kế hoạch:

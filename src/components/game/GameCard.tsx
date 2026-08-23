@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Download, Gamepad2, Play, Smartphone, Users } from 'lucide-react';
+import { Download, Eye, Gamepad2 } from 'lucide-react';
 import type { GameCardData } from '@/lib/game';
 import { gameTint, LANGUAGE_LABEL } from '@/lib/game';
 import { cn, fmtBytes, fmtCount } from '@/lib/utils';
@@ -9,15 +9,13 @@ export interface GameCardProps {
   game: GameCardData;
   /** `compact` dùng cho hàng cuộn ngang, `list` cho kết quả tìm kiếm. */
   variant?: 'grid' | 'compact' | 'list';
-  /** Người xem đang dùng điện thoại — chỉ khi đó mới hiện nút chơi online. */
-  mobile?: boolean;
 }
 
 /**
- * Thẻ game dùng chung: icon, tên, thể loại, rating, lượt chơi/tải, version,
- * dung lượng, ngôn ngữ, độ phân giải, platform, badge và hai nút Play/Download.
+ * Thẻ game dùng chung: icon, tên, thể loại, rating, lượt xem/tải, version,
+ * dung lượng, ngôn ngữ, độ phân giải, platform, badge và nút tải về.
  */
-export function GameCard({ game, variant = 'grid', mobile = false }: GameCardProps) {
+export function GameCard({ game, variant = 'grid' }: GameCardProps) {
   const tint = gameTint(game.slug);
   const href = `/games/${game.slug}`;
 
@@ -27,7 +25,7 @@ export function GameCard({ game, variant = 'grid', mobile = false }: GameCardPro
         <GameIcon game={game} tint={tint} size={64} className="mx-auto" />
         <p className="mt-2 line-clamp-2 text-center text-sm font-semibold leading-snug">{game.title}</p>
         <p className="mt-0.5 text-center text-[11px] text-ink-400">
-          {game.genres[0]?.name ?? 'Java ME'} · {fmtCount(game.playCount)} lượt chơi
+          {game.genres[0]?.name ?? 'Java ME'} · {fmtCount(game.downloadCount)} lượt tải
         </p>
       </Link>
     );
@@ -45,7 +43,7 @@ export function GameCard({ game, variant = 'grid', mobile = false }: GameCardPro
 
   const stats = (
     <div className="flex items-center gap-3 text-[11px] text-ink-400">
-      <span className="flex items-center gap-1"><Users size={12} />{fmtCount(game.playCount)}</span>
+      <span className="flex items-center gap-1"><Eye size={12} />{fmtCount(game.viewCount)}</span>
       <span className="flex items-center gap-1"><Download size={12} />{fmtCount(game.downloadCount)}</span>
       {game.ratingCount > 0 && (
         <span className="flex items-center gap-1">
@@ -68,7 +66,7 @@ export function GameCard({ game, variant = 'grid', mobile = false }: GameCardPro
           {game.titleVi && <p className="truncate text-xs text-ink-500">{game.titleVi}</p>}
           <div className="mt-1 space-y-1">{meta}{stats}</div>
         </div>
-        <Actions game={game} mobile={mobile} className="hidden shrink-0 flex-col gap-1.5 sm:flex" />
+        <Actions game={game} className="hidden shrink-0 flex-col gap-1.5 sm:flex" />
       </article>
     );
   }
@@ -91,7 +89,7 @@ export function GameCard({ game, variant = 'grid', mobile = false }: GameCardPro
         {stats}
       </div>
 
-      <Actions game={game} mobile={mobile} className="mt-3 grid grid-cols-2 gap-2" />
+      <Actions game={game} className="mt-3 grid grid-cols-2 gap-2" />
     </article>
   );
 }
@@ -129,28 +127,13 @@ function Badges({ game }: { game: GameCardData }) {
   );
 }
 
-function Actions({ game, mobile, className }: { game: GameCardData; mobile: boolean; className?: string }) {
+function Actions({ game, className }: { game: GameCardData; className?: string }) {
   return (
     <div className={className}>
-      {/* Chơi online chỉ mở trên điện thoại; máy tính chỉ thấy đường dẫn tải. */}
-      {!mobile ? (
-        <Link
-          href={`/games/${game.slug}`}
-          className="btn-outline !px-3 !py-1.5 text-xs"
-          title="Play Online chỉ chạy trên điện thoại"
-        >
-          <Smartphone size={13} /> Chi tiết
-        </Link>
-      ) : game.playOnline ? (
-        <Link href={`/games/${game.slug}/play`} className="btn-primary !px-3 !py-1.5 text-xs">
-          <Play size={13} /> Chơi ngay
-        </Link>
-      ) : (
-        <span className="btn-outline cursor-not-allowed !px-3 !py-1.5 text-xs opacity-60" title="Game này chỉ hỗ trợ tải về">
-          <Play size={13} /> Chỉ tải về
-        </span>
-      )}
-      <Link href={`/games/${game.slug}#download`} className="btn-outline !px-3 !py-1.5 text-xs">
+      <Link href={`/games/${game.slug}`} className="btn-outline !px-3 !py-1.5 text-xs">
+        Chi tiết
+      </Link>
+      <Link href={`/games/${game.slug}#download`} className="btn-primary !px-3 !py-1.5 text-xs">
         <Download size={13} /> Tải về
       </Link>
     </div>

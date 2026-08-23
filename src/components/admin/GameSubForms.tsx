@@ -2,9 +2,7 @@
 
 import { useActionState } from 'react';
 import { Loader2, Plus } from 'lucide-react';
-import {
-  addImage, upsertCompatibility, upsertFile, upsertVersion, type ActionState,
-} from '@/app/admin/games/actions';
+import { addImage, upsertFile, upsertVersion, type ActionState } from '@/app/admin/games/actions';
 
 export interface IdName { id: string; name: string }
 
@@ -21,7 +19,6 @@ export function VersionForm({ gameId, versions }: { gameId: string; versions: Id
       <Input name="note" label="Ghi chú" />
       <label className="flex items-end gap-4 pb-2 text-sm">
         <span className="flex items-center gap-1.5"><input type="checkbox" name="latest" /> Latest</span>
-        <span className="flex items-center gap-1.5"><input type="checkbox" name="playOnline" /> Play Online</span>
       </label>
       <label className="sm:col-span-2">
         <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-400">Changelog</span>
@@ -78,24 +75,6 @@ export function ImageForm({ gameId }: { gameId: string }) {
       <Input name="width" label="Rộng (px)" type="number" />
       <Input name="height" label="Cao (px)" type="number" />
       <Submit pending={pending} state={state} label="Thêm ảnh" />
-    </form>
-  );
-}
-
-/** Một dòng trong ma trận tương thích game × emulator profile. */
-export function CompatForm({ gameId, versions, profiles }: { gameId: string; versions: IdName[]; profiles: IdName[] }) {
-  const [state, action, pending] = useActionState<ActionState, FormData>(upsertCompatibility, {});
-  return (
-    <form action={action} className="grid gap-2 sm:grid-cols-2">
-      <input type="hidden" name="gameId" value={gameId} />
-      <Select name="profileId" label="Emulator profile *" options={profiles} required />
-      <Select name="versionId" label="Áp dụng cho version" options={versions} empty="— Mọi version —" />
-      <Select
-        name="support" label="Mức hỗ trợ"
-        options={[{ id: 'FULL', name: 'Chạy tốt' }, { id: 'BETA', name: 'Beta' }, { id: 'NONE', name: 'Không chạy' }]}
-      />
-      <Input name="note" label="Ghi chú" />
-      <Submit pending={pending} state={state} label="Lưu tương thích" />
     </form>
   );
 }

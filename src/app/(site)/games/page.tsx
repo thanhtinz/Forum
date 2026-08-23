@@ -1,48 +1,40 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
-  Award, Clock, Download, Flame, Gamepad2, Languages, LayoutGrid, Library,
-  MonitorSmartphone, Shuffle, Smartphone, Sparkles, Trophy, Users,
+  Award, Clock, Download, Eye, Flame, Gamepad2, Languages, LayoutGrid, Library,
+  MonitorSmartphone, Shuffle, Sparkles, Trophy,
 } from 'lucide-react';
-import { auth } from '@/lib/auth';
-import { isMobileRequest } from '@/lib/device';
 import { db } from '@/lib/db';
-import { gameCardSelect, gameTint, toGameCard, type GameCardData } from '@/lib/game';
+import { gameCardSelect, gameTint, toGameCard } from '@/lib/game';
 import { fmtCount } from '@/lib/utils';
 import { GameRow } from '@/components/game/GameRow';
 import { GameSearchBox } from '@/components/game/GameSearchBox';
-import { ContinuePlaying } from '@/components/game/ContinuePlaying';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Game Java ME',
-  description: 'Kho game Java ME: chơi online ngay trên trình duyệt hoặc tải JAR/JAD về máy.',
+  description: 'Kho game Java ME: tải JAR/JAD về máy thật.',
 };
 
 const PUBLISHED = { status: 'PUBLISHED' as const };
 const ROW_TAKE = 12;
 
 export default async function GamesHomePage() {
-  const [session, mobile] = await Promise.all([auth(), isMobileRequest()]);
-  const userId = session?.user?.id;
-
-  const [featured, updated, trending, mostPlayed, mostDownloaded, vietnamized, genres, platforms, resolutions, collections, totals] =
+  const [featured, updated, trending, mostViewed, mostDownloaded, vietnamized, genres, platforms, resolutions, collections, totals] =
     await Promise.all([
       db.game.findMany({ where: { ...PUBLISHED, featured: true }, orderBy: { publishedAt: 'desc' }, take: 6, select: gameCardSelect }),
       db.game.findMany({ where: PUBLISHED, orderBy: { updatedAt: 'desc' }, take: ROW_TAKE, select: gameCardSelect }),
       db.game.findMany({ where: PUBLISHED, orderBy: [{ trendingScore: 'desc' }, { viewCount: 'desc' }], take: ROW_TAKE, select: gameCardSelect }),
-      db.game.findMany({ where: PUBLISHED, orderBy: { playCount: 'desc' }, take: ROW_TAKE, select: gameCardSelect }),
+      db.game.findMany({ where: PUBLISHED, orderBy: { viewCount: 'desc' }, take: ROW_TAKE, select: gameCardSelect }),
       db.game.findMany({ where: PUBLISHED, orderBy: { downloadCount: 'desc' }, take: ROW_TAKE, select: gameCardSelect }),
       db.game.findMany({ where: { ...PUBLISHED, vietnamized: true }, orderBy: { updatedAt: 'desc' }, take: ROW_TAKE, select: gameCardSelect }),
       db.gameGenre.findMany({ orderBy: { order: 'asc' }, include: { _count: { select: { games: true } } } }),
       db.gamePlatform.findMany({ orderBy: { order: 'asc' }, include: { _count: { select: { games: true } } } }),
       db.gameResolution.findMany({ orderBy: [{ order: 'asc' }, { width: 'asc' }], include: { _count: { select: { games: true } } } }),
       db.gameCollection.findMany({ orderBy: [{ featured: 'desc' }, { order: 'asc' }], take: 6, include: { _count: { select: { games: true } } } }),
-      db.game.aggregate({ where: PUBLISHED, _count: { _all: true }, _sum: { playCount: true, downloadCount: true } }),
+      db.game.aggregate({ where: PUBLISHED, _count: { _all: true }, _sum: { viewCount: true, downloadCount: true } }),
     ]);
-
-  const continueGames = userId ? await recentlyPlayed(userId) : [];
 
   return (
     <div className="space-y-8">
@@ -53,7 +45,7 @@ export default async function GamesHomePage() {
             <Gamepad2 size={28} /> Game Java ME
           </h1>
           <p className="mt-1 max-w-lg text-white/90 drop-shadow">
-            Chơi online ngay trên trình duyệt hoặc tải JAR/JAD về máy thật.
+Tải JAR/JAD về máy thật, kèm checksum để đối chiếu.
           </p>
 
           <div className="mt-4 max-w-xl [&_input]:!border-white/30 [&_input]:!bg-white/95 [&_input]:!text-ink-700">
@@ -74,28 +66,19 @@ export default async function GamesHomePage() {
 
           <div className="mt-4 flex gap-6 text-sm">
             <span className="flex flex-col"><b className="text-xl font-black">{fmtCount(totals._count._all)}</b>game</span>
-            <span className="flex flex-col"><b className="text-xl font-black">{fmtCount(totals._sum.playCount ?? 0)}</b>lượt chơi</span>
+            <span className="flex flex-col"><b className="text-xl font-black">{fmtCount(totals._sum.viewCount ?? 0)}</b>lượt xem</span>
             <span className="flex flex-col"><b className="text-xl font-black">{fmtCount(totals._sum.downloadCount ?? 0)}</b>lượt tải</span>
           </div>
         </div>
         <Gamepad2 className="pointer-events-none absolute -bottom-8 -right-6 opacity-10" size={190} />
       </section>
 
-      {!mobile && (
-        <p className="flex items-center gap-2 rounded-2xl border border-brand-200 bg-brand-50 p-3 text-sm text-brand-700 dark:border-brand-900 dark:bg-brand-950/40 dark:text-brand-300">
-          <Smartphone size={16} className="shrink-0" />
-          Chơi online chỉ chạy trên điện thoại. Trên máy tính bạn vẫn xem thông tin và tải JAR/JAD bình thường.
-        </p>
-      )}
-
-      <ContinuePlaying serverGames={continueGames} mobile={mobile} />
-
-      <GameRow title="Game nổi bật" icon={<Sparkles size={18} />} href="/games/browse?sort=popular" games={featured.map(toGameCard)} layout="grid" mobile={mobile} />
-      <GameRow title="Mới cập nhật" icon={<Clock size={18} />} href="/games/browse?sort=updated" games={updated.map(toGameCard)} mobile={mobile} />
-      <GameRow title="Phổ biến" icon={<Flame size={18} />} href="/games/browse?sort=popular" games={trending.map(toGameCard)} mobile={mobile} />
-      <GameRow title="Được chơi nhiều" icon={<Users size={18} />} href="/games/browse?sort=played" games={mostPlayed.map(toGameCard)} mobile={mobile} />
-      <GameRow title="Được tải nhiều" icon={<Download size={18} />} href="/games/browse?sort=downloaded" games={mostDownloaded.map(toGameCard)} mobile={mobile} />
-      <GameRow title="Game Việt hóa" icon={<Languages size={18} />} href="/games/browse?vi=1" games={vietnamized.map(toGameCard)} mobile={mobile} />
+      <GameRow title="Game nổi bật" icon={<Sparkles size={18} />} href="/games/browse?sort=popular" games={featured.map(toGameCard)} layout="grid" />
+      <GameRow title="Mới cập nhật" icon={<Clock size={18} />} href="/games/browse?sort=updated" games={updated.map(toGameCard)} />
+      <GameRow title="Phổ biến" icon={<Flame size={18} />} href="/games/browse?sort=popular" games={trending.map(toGameCard)} />
+      <GameRow title="Được xem nhiều" icon={<Eye size={18} />} href="/games/browse?sort=popular" games={mostViewed.map(toGameCard)} />
+      <GameRow title="Được tải nhiều" icon={<Download size={18} />} href="/games/browse?sort=downloaded" games={mostDownloaded.map(toGameCard)} />
+      <GameRow title="Game Việt hóa" icon={<Languages size={18} />} href="/games/browse?vi=1" games={vietnamized.map(toGameCard)} />
 
       {/* Thể loại */}
       {genres.length > 0 && (
@@ -170,20 +153,4 @@ export default async function GamesHomePage() {
       )}
     </div>
   );
-}
-
-/** Game người dùng đã mở phiên gần đây (mỗi game một lần, mới nhất trước). */
-async function recentlyPlayed(userId: string): Promise<GameCardData[]> {
-  const sessions = await db.emulatorSession.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
-    take: 40,
-    select: { gameId: true },
-  });
-  const ids = [...new Set(sessions.map((s) => s.gameId))].slice(0, 8);
-  if (ids.length === 0) return [];
-
-  const games = await db.game.findMany({ where: { id: { in: ids }, ...PUBLISHED }, select: gameCardSelect });
-  const order = new Map(ids.map((id, i) => [id, i]));
-  return games.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)).map(toGameCard);
 }

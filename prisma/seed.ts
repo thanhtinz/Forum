@@ -410,7 +410,7 @@ async function main() {
 
 
   // ══════════════════════════════════════════════════════════
-  // GAME HUB — thể loại, dòng máy, độ phân giải, emulator, game
+  // GAME HUB — thể loại, dòng máy, độ phân giải, game
   // ══════════════════════════════════════════════════════════
 
   // ── Thể loại ──
@@ -475,157 +475,114 @@ async function main() {
     resIds[r.slug] = row.id;
   }
 
-  // ── Emulator profile ──
-  const runtimeUrl = process.env.EMU_RUNTIME_URL || null;
-  /**
-   * Thư viện máy cổ chạy Java ME. Thông số lấy theo đời máy thật: đời càng cũ
-   * màn hình càng nhỏ, MIDP 1.0 chỉ có ở lứa 2002–2003 nên không bật save state.
-   */
-  const profileDefs: {
-    slug: string; name: string; vendor: string | null;
-    screenWidth: number; screenHeight: number; keyLayout: string;
-    cldc?: string; midp?: string; orientation?: 'PORTRAIT' | 'LANDSCAPE';
-    audio?: boolean; saveState?: boolean; ramLimitMb?: number;
-  }[] = [
-    // Mỗi giao diện mặt phím giữ đúng **một** máy đại diện, không hơn: 35 máy
-    // ban đầu chỉ là 35 màu vỏ khác nhau trên vài bố cục lặp lại, mở bảng chọn
-    // ra không phân biệt được cái nào với cái nào.
-    { slug: 'nokia-n70', name: 'Nokia N70 · S60 (2005)', vendor: 'Nokia', screenWidth: 176, screenHeight: 208, keyLayout: 'nokia', ramLimitMb: 128 },
-    { slug: 'motorola-v3', name: 'Motorola RAZR V3 (2004)', vendor: 'Motorola', screenWidth: 176, screenHeight: 220, keyLayout: 'motorola' },
-    { slug: 'nokia-6300', name: 'Nokia 6300 · S40 (2007)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true },
-
-    { slug: 'generic-320x240', name: 'Generic Java ME 320×240 (ngang)', vendor: null, screenWidth: 320, screenHeight: 240, orientation: 'LANDSCAPE', keyLayout: 'generic' },
-
-    // Hai skin nút trắng — không mô phỏng máy nào, chỉ khác cách bày nút.
-    { slug: 'skin-ring', name: 'Skin tay cầm · vòng khuyên', vendor: null, screenWidth: 240, screenHeight: 320, keyLayout: 'generic', saveState: true },
-    { slug: 'skin-grid', name: 'Skin lưới nút tròn', vendor: null, screenWidth: 240, screenHeight: 320, keyLayout: 'generic', saveState: true },
-  ];
-
-  // Seed chỉ upsert nên máy đã bỏ khỏi danh sách vẫn nằm lại trong DB cũ. Tắt
-  // chúng thay vì xoá: phiên chơi và ma trận tương thích còn tham chiếu tới.
-  await db.emulatorProfile.updateMany({
-    where: { slug: { notIn: profileDefs.map((p) => p.slug) } },
-    data: { active: false },
-  });
-
-  const profileIds: Record<string, string> = {};
-  for (const p of profileDefs) {
-    const row = await db.emulatorProfile.upsert({
-      where: { slug: p.slug },
-      update: { name: p.name, vendor: p.vendor, screenWidth: p.screenWidth, screenHeight: p.screenHeight, keyLayout: p.keyLayout },
-      create: { ...p, runtimeUrl },
-    });
-    profileIds[p.slug] = row.id;
-  }
-
   // ── Game mẫu ──
   interface SeedGame {
     slug: string; title: string; titleVi?: string; series?: string;
-    genres: string[]; platform: string; resolution: string; profile: string;
+    genres: string[]; platform: string; resolution: string;
     developer: string; publisher: string; year: number;
-    language: string; vietnamized: boolean; featured: boolean; playOnline: boolean;
+    language: string; vietnamized: boolean; featured: boolean;
     description: string; gameplay: string;
-    versions: { version: string; sizeKb: number; latest: boolean; playOnline: boolean; changelog: string; date: string }[];
-    stats: { views: number; downloads: number; plays: number; ratingSum: number; ratingCount: number };
+    versions: { version: string; sizeKb: number; latest: boolean; changelog: string; date: string }[];
+    stats: { views: number; downloads: number; ratingSum: number; ratingCount: number };
   }
 
   const seedGames: SeedGame[] = [
     {
       slug: 'contra-4', title: 'Contra 4', titleVi: 'Contra 4 Việt hóa', series: 'Contra',
-      genres: ['action', 'arcade'], platform: 'nokia-s40', resolution: '240x320', profile: 'nokia-6300',
+      genres: ['action', 'arcade'], platform: 'nokia-s40', resolution: '240x320',
       developer: 'Konami Mobile', publisher: 'Konami', year: 2008,
-      language: 'vi', vietnamized: true, featured: true, playOnline: true,
+      language: 'vi', vietnamized: true, featured: true,
       description: 'Bản Java ME của dòng game bắn súng đi cảnh kinh điển. Hai người lính lao vào căn cứ ngoài hành tinh với kho vũ khí nâng cấp liên tục.',
       gameplay: 'Đi cảnh ngang, nhặt icon để đổi súng (S – lan toả, L – laser, M – liên thanh). Ba mạng mỗi lượt chơi, gặp trùm ở cuối mỗi màn.',
       versions: [
-        { version: '1.0.0', sizeKb: 412, latest: false, playOnline: false, changelog: 'Bản phát hành đầu tiên.', date: '2008-06-12' },
-        { version: '1.2.0', sizeKb: 486, latest: true, playOnline: true, changelog: 'Việt hóa toàn bộ menu, sửa lỗi treo ở màn 5, thêm chế độ luyện tập.', date: '2011-03-04' },
+        { version: '1.0.0', sizeKb: 412, latest: false, changelog: 'Bản phát hành đầu tiên.', date: '2008-06-12' },
+        { version: '1.2.0', sizeKb: 486, latest: true, changelog: 'Việt hóa toàn bộ menu, sửa lỗi treo ở màn 5, thêm chế độ luyện tập.', date: '2011-03-04' },
       ],
-      stats: { views: 48200, downloads: 12400, plays: 8600, ratingSum: 1880, ratingCount: 412 },
+      stats: { views: 48200, downloads: 12400, ratingSum: 1880, ratingCount: 412 },
     },
     {
       slug: 'asphalt-urban', title: 'Asphalt Urban GT', series: 'Asphalt',
-      genres: ['racing'], platform: 'nokia-s60', resolution: '176x208', profile: 'nokia-n70',
+      genres: ['racing'], platform: 'nokia-s60', resolution: '176x208',
       developer: 'Gameloft', publisher: 'Gameloft', year: 2004,
-      language: 'en', vietnamized: false, featured: true, playOnline: true,
+      language: 'en', vietnamized: false, featured: true,
       description: 'Đua xe đường phố với 20 mẫu xe có giấy phép và các thành phố lớn trên thế giới.',
       gameplay: 'Đua theo giải, thắng để mở xe mới. Phím 5 tăng tốc, 0 phanh gấp, phím mềm trái dùng nitro.',
       versions: [
-        { version: '2.1.0', sizeKb: 318, latest: true, playOnline: true, changelog: 'Tối ưu khung hình trên máy S60.', date: '2005-09-20' },
+        { version: '2.1.0', sizeKb: 318, latest: true, changelog: 'Tối ưu khung hình trên máy S60.', date: '2005-09-20' },
       ],
-      stats: { views: 31500, downloads: 9800, plays: 5400, ratingSum: 1290, ratingCount: 310 },
+      stats: { views: 31500, downloads: 9800, ratingSum: 1290, ratingCount: 310 },
     },
     {
       slug: 'bounce-tales', title: 'Bounce Tales', titleVi: 'Quả bóng phiêu lưu',
-      genres: ['adventure', 'arcade'], platform: 'nokia-s40', resolution: '240x320', profile: 'nokia-6300',
+      genres: ['adventure', 'arcade'], platform: 'nokia-s40', resolution: '240x320',
       developer: 'Rovio Mobile', publisher: 'Nokia', year: 2008,
-      language: 'vi', vietnamized: true, featured: true, playOnline: true,
+      language: 'vi', vietnamized: true, featured: true,
       description: 'Quả bóng đỏ lăn qua các màn vật lý đầy bẫy, nước và cơ quan để cứu ngôi làng.',
       gameplay: 'Điều khiển bóng bằng phím trái/phải, phím lên để nhảy. Nhặt vật phẩm để phóng to, thu nhỏ hoặc trở nên nặng hơn.',
       versions: [
-        { version: '1.0.5', sizeKb: 240, latest: true, playOnline: true, changelog: 'Việt hóa lời thoại, cân bằng lại độ khó màn 8.', date: '2010-01-15' },
+        { version: '1.0.5', sizeKb: 240, latest: true, changelog: 'Việt hóa lời thoại, cân bằng lại độ khó màn 8.', date: '2010-01-15' },
       ],
-      stats: { views: 62800, downloads: 21300, plays: 15900, ratingSum: 2340, ratingCount: 498 },
+      stats: { views: 62800, downloads: 21300, ratingSum: 2340, ratingCount: 498 },
     },
     {
       slug: 'snake-xenzia', title: 'Snake Xenzia', series: 'Snake',
-      genres: ['arcade', 'casual'], platform: 'nokia-s40', resolution: '128x160', profile: 'nokia-n70',
+      genres: ['arcade', 'casual'], platform: 'nokia-s40', resolution: '128x160',
       developer: 'Nokia', publisher: 'Nokia', year: 2002,
-      language: 'en', vietnamized: false, featured: false, playOnline: true,
+      language: 'en', vietnamized: false, featured: false,
       description: 'Bản Snake huyền thoại đi kèm điện thoại Nokia — càng ăn càng dài, chạm đuôi là thua.',
       gameplay: 'Bốn phím hướng điều khiển rắn. Ăn mồi để dài ra và tăng điểm, tránh tường và chính thân mình.',
       versions: [
-        { version: '1.0.0', sizeKb: 64, latest: true, playOnline: true, changelog: 'Bản gốc.', date: '2002-05-01' },
+        { version: '1.0.0', sizeKb: 64, latest: true, changelog: 'Bản gốc.', date: '2002-05-01' },
       ],
-      stats: { views: 88400, downloads: 30100, plays: 42600, ratingSum: 2100, ratingCount: 460 },
+      stats: { views: 88400, downloads: 30100, ratingSum: 2100, ratingCount: 460 },
     },
     {
       slug: 'dragon-hunter', title: 'Dragon Hunter', titleVi: 'Thợ săn rồng',
-      genres: ['rpg', 'adventure'], platform: 'sony-ericsson', resolution: '176x220', profile: 'motorola-v3',
+      genres: ['rpg', 'adventure'], platform: 'sony-ericsson', resolution: '176x220',
       developer: 'In-Fusio', publisher: 'In-Fusio', year: 2006,
-      language: 'vi', vietnamized: true, featured: false, playOnline: true,
+      language: 'vi', vietnamized: true, featured: false,
       description: 'Nhập vai theo lượt trong thế giới trung cổ: nhận nhiệm vụ, rèn trang bị và hạ gục rồng.',
       gameplay: 'Di chuyển trên bản đồ ô vuông, đánh theo lượt. Phím 5 xác nhận, phím mềm phải mở túi đồ.',
       versions: [
-        { version: '1.1.2', sizeKb: 690, latest: true, playOnline: true, changelog: 'Sửa lỗi mất save khi thoát giữa trận.', date: '2007-11-30' },
+        { version: '1.1.2', sizeKb: 690, latest: true, changelog: 'Sửa lỗi mất save khi thoát giữa trận.', date: '2007-11-30' },
       ],
-      stats: { views: 19700, downloads: 6100, plays: 3300, ratingSum: 780, ratingCount: 180 },
+      stats: { views: 19700, downloads: 6100, ratingSum: 780, ratingCount: 180 },
     },
     {
       slug: 'chess-master', title: 'Chess Master',
-      genres: ['strategy', 'puzzle'], platform: 'generic-java-me', resolution: '320x240', profile: 'generic-320x240',
+      genres: ['strategy', 'puzzle'], platform: 'generic-java-me', resolution: '320x240',
       developer: 'Mobile Chess Studio', publisher: 'MCS', year: 2009,
-      language: 'multi', vietnamized: false, featured: false, playOnline: true,
+      language: 'multi', vietnamized: false, featured: false,
       description: 'Cờ vua với 10 mức độ máy, chế độ hai người trên cùng một máy và bộ bài tập chiếu hết.',
       gameplay: 'Con trỏ di chuyển bằng phím hướng, phím 5 chọn quân và ô đích. Có gợi ý nước đi và hoàn tác.',
       versions: [
-        { version: '3.0.1', sizeKb: 155, latest: true, playOnline: true, changelog: 'Engine mạnh hơn, thêm 40 bài tập.', date: '2011-08-08' },
+        { version: '3.0.1', sizeKb: 155, latest: true, changelog: 'Engine mạnh hơn, thêm 40 bài tập.', date: '2011-08-08' },
       ],
-      stats: { views: 12300, downloads: 4200, plays: 2100, ratingSum: 620, ratingCount: 140 },
+      stats: { views: 12300, downloads: 4200, ratingSum: 620, ratingCount: 140 },
     },
     {
       slug: 'farm-frenzy', title: 'Farm Frenzy', titleVi: 'Nông trại vui vẻ',
-      genres: ['simulation', 'casual'], platform: 'samsung', resolution: '240x320', profile: 'nokia-6300',
+      genres: ['simulation', 'casual'], platform: 'samsung', resolution: '240x320',
       developer: 'Alawar', publisher: 'Alawar Entertainment', year: 2010,
-      language: 'vi', vietnamized: true, featured: false, playOnline: false,
+      language: 'vi', vietnamized: true, featured: false,
       description: 'Quản lý nông trại: nuôi gà, thu trứng, chế biến và bán hàng trước khi hết giờ.',
       gameplay: 'Chạm/di chuyển con trỏ để thu hoạch. Mỗi màn có mục tiêu sản lượng và giới hạn thời gian.',
       versions: [
-        { version: '1.0.0', sizeKb: 980, latest: true, playOnline: false, changelog: 'Bản Việt hóa đầu tiên, chỉ hỗ trợ tải về.', date: '2012-02-20' },
+        { version: '1.0.0', sizeKb: 980, latest: true, changelog: 'Bản Việt hóa đầu tiên, chỉ hỗ trợ tải về.', date: '2012-02-20' },
       ],
-      stats: { views: 25400, downloads: 11200, plays: 0, ratingSum: 1020, ratingCount: 240 },
+      stats: { views: 25400, downloads: 11200, ratingSum: 1020, ratingCount: 240 },
     },
     {
       slug: 'sudoku-classic', title: 'Sudoku Classic',
-      genres: ['puzzle', 'casual'], platform: 'generic-java-me', resolution: '176x220', profile: 'motorola-v3',
+      genres: ['puzzle', 'casual'], platform: 'generic-java-me', resolution: '176x220',
       developer: 'Puzzle Works', publisher: 'Puzzle Works', year: 2007,
-      language: 'en', vietnamized: false, featured: false, playOnline: true,
+      language: 'en', vietnamized: false, featured: false,
       description: 'Hơn 500 câu đố Sudoku bốn mức độ, có kiểm tra lỗi và ghi chú nháp.',
       gameplay: 'Phím số điền giá trị, phím 0 xoá ô, phím mềm trái bật ghi chú.',
       versions: [
-        { version: '2.4.0', sizeKb: 96, latest: true, playOnline: true, changelog: 'Thêm 200 câu đố và thống kê thời gian giải.', date: '2009-04-17' },
+        { version: '2.4.0', sizeKb: 96, latest: true, changelog: 'Thêm 200 câu đố và thống kê thời gian giải.', date: '2009-04-17' },
       ],
-      stats: { views: 9400, downloads: 3100, plays: 4800, ratingSum: 430, ratingCount: 96 },
+      stats: { views: 9400, downloads: 3100, ratingSum: 430, ratingCount: 96 },
     },
   ];
 
@@ -649,29 +606,24 @@ async function main() {
         language: g.language,
         vietnamized: g.vietnamized,
         featured: g.featured,
-        playOnline: g.playOnline,
         status: 'PUBLISHED',
         publishedAt: published,
         platformId: platformIds[g.platform],
         resolutionId: resIds[g.resolution],
-        emulatorProfileId: profileIds[g.profile],
         controls: [
           { key: '↑ ↓ ← →', action: 'Di chuyển' },
           { key: '5 / Enter', action: 'Chọn · Hành động chính' },
           { key: 'Phím mềm trái', action: 'Menu / Options' },
           { key: 'Phím mềm phải', action: 'Quay lại' },
         ],
-        compatibilityNote: `Chạy tốt trên profile ${g.profile}. Máy có độ phân giải khác có thể bị co giãn khung hình.`,
+        compatibilityNote: `Bản gốc chạy ở độ phân giải ${g.resolution.replace('x', '×')}. Máy khác độ phân giải có thể bị co giãn khung hình.`,
         viewCount: g.stats.views,
         uniqueViewCount: Math.round(g.stats.views * 0.62),
         downloadCount: g.stats.downloads,
         uniqueDownloadCount: Math.round(g.stats.downloads * 0.71),
-        playCount: g.stats.plays,
-        uniquePlayerCount: Math.round(g.stats.plays * 0.44),
-        playSeconds: g.stats.plays * 260,
         ratingSum: g.stats.ratingSum,
         ratingCount: g.stats.ratingCount,
-        trendingScore: Math.round((g.stats.plays / 100 + g.stats.downloads / 200) * 10) / 10,
+        trendingScore: Math.round((g.stats.views / 100 + g.stats.downloads / 200) * 10) / 10,
       },
     });
     gameIds[g.slug] = game.id;
@@ -706,7 +658,7 @@ async function main() {
     for (const v of g.versions) {
       const version = await db.gameVersion.upsert({
         where: { gameId_version: { gameId: game.id, version: v.version } },
-        update: { latest: v.latest, playOnline: v.playOnline },
+        update: { latest: v.latest },
         create: {
           gameId: game.id,
           version: v.version,
@@ -714,7 +666,6 @@ async function main() {
           changelog: v.changelog,
           sizeBytes: BigInt(v.sizeKb * 1024),
           latest: v.latest,
-          playOnline: v.playOnline,
         },
       });
 
@@ -734,36 +685,6 @@ async function main() {
             scanStatus: 'CLEAN',
           },
         });
-      }
-
-      // Ma trận tương thích cho version mới nhất.
-      // Máy đúng độ phân giải gốc → chạy tốt; máy cùng nhà sản xuất nhưng khác
-      // độ phân giải → đánh dấu Beta để người chơi biết là có thể co giãn khung hình.
-      if (v.latest && v.playOnline) {
-        const main = profileDefs.find((p) => p.slug === g.profile)!;
-        const compat = profileDefs
-          .map((p) => {
-            if (p.slug === g.profile) return { slug: p.slug, support: 'FULL' as const };
-            if (p.screenWidth === main.screenWidth && p.screenHeight === main.screenHeight) {
-              return { slug: p.slug, support: 'FULL' as const };
-            }
-            if (p.vendor && p.vendor === main.vendor) return { slug: p.slug, support: 'BETA' as const };
-            return null;
-          })
-          .filter((x): x is { slug: string; support: 'FULL' | 'BETA' } => x !== null);
-
-        for (const c of compat) {
-          const profileId = profileIds[c.slug];
-          if (!profileId) continue;
-          const exists = await db.gameEmulatorProfile.findFirst({
-            where: { gameId: game.id, versionId: version.id, profileId },
-          });
-          if (!exists) {
-            await db.gameEmulatorProfile.create({
-              data: { gameId: game.id, versionId: version.id, profileId, support: c.support },
-            });
-          }
-        }
       }
     }
   }

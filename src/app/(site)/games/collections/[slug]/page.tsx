@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ChevronLeft, Library } from 'lucide-react';
 import { db } from '@/lib/db';
-import { isMobileRequest } from '@/lib/device';
 import { gameCardSelect, toGameCard } from '@/lib/game';
 import { GameGrid } from '@/components/game/GameGrid';
 
@@ -18,7 +17,6 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function CollectionDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const mobile = await isMobileRequest();
   const collection = await db.gameCollection.findUnique({
     where: { slug },
     include: {
@@ -47,7 +45,7 @@ export default async function CollectionDetailPage({ params }: { params: Promise
         <p className="mt-2 text-xs text-ink-400">{games.length} game</p>
       </header>
 
-      <GameGrid games={games} mobile={mobile} empty="Bộ sưu tập này chưa có game nào." />
+      <GameGrid games={games} empty="Bộ sưu tập này chưa có game nào." />
     </div>
   );
 }

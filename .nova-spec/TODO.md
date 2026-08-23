@@ -125,19 +125,16 @@ Thứ tự thực hiện. Mỗi giai đoạn xong mới sang giai đoạn sau �
 ## P12 — Game Hub (đã làm)
 
 - [x] Schema: `Game`, `GameVersion`, `GameFile`, `GameImage`, `GameGenre`, `GamePlatform`,
-      `GameResolution`, `GameCollection`, `EmulatorProfile`, `GameEmulatorProfile`,
-      `EmulatorSession`, `GameEvent`, `GameUniqueHit`, `GameRating`, `UserKeymap`, `SaveState`
+      `GameResolution`, `GameCollection`, `GameEvent`, `GameUniqueHit`, `GameRating`
 - [x] `lib/game.ts` · `lib/game-search.ts` · `lib/game-files.ts` · `lib/game-stats.ts`
-- [x] `lib/emulator.ts` — Session Manager (heartbeat, idle timeout, hàng đợi, circuit breaker, dọn rác)
 - [x] Trang chủ Game, catalog + bộ lọc, tìm kiếm fuzzy, bộ sưu tập, game ngẫu nhiên
-- [x] Chi tiết game: thông tin, gallery, changelog, ma trận tương thích, controls, thống kê
+- [x] Chi tiết game: thông tin, gallery, changelog, controls, thống kê
 - [x] Tải game: signed URL có hạn, checksum, chống trùng unique download
-- [x] Play Online: emulator stage, bàn phím ảo, gamepad, keymap tuỳ biến, save RMS
-- [x] Admin: quản lý game (version/file/ảnh/tương thích) và emulator (profile/phiên/log)
-- [x] Seed: 10 thể loại, 6 dòng máy, 7 độ phân giải, 5 emulator profile, 8 game mẫu, 3 bộ sưu tập
+- [x] Admin: quản lý game (version/file/ảnh)
+- [x] Seed: 10 thể loại, 6 dòng máy, 7 độ phân giải, 8 game mẫu, 3 bộ sưu tập
+- [x] Bỏ toàn bộ Play Online / emulator — kho game chỉ còn xem thông tin và tải file
 
-Việc còn lại: cắm runtime J2ME thật, upload file từ admin, quét JAR/JAD tự động,
-chuyển rate limit & đếm phiên sang Redis, autoscale emulator worker.
+Việc còn lại: upload file từ admin, quét JAR/JAD tự động, chuyển rate limit sang Redis.
 
 ---
 
@@ -152,8 +149,6 @@ chuyển rate limit & đếm phiên sang Redis, autoscale emulator worker.
 | Số dư lệch với log | `BalanceLog.balance` ghi số dư sau mỗi giao dịch để đối soát |
 | VIP hết hạn vẫn còn quyền | Kiểm tra `vipExpiresAt` mỗi lần đọc, không tin cột `vipTier` đơn lẻ |
 | Rò rỉ file game qua link chia sẻ | Signed URL HMAC gắn actor + hạn 5 phút, không lộ storage key |
-| Phiên emulator rác chiếm tài nguyên | Heartbeat + idle timeout + `reapStaleSessions()` trước mỗi lần tạo phiên |
-| Emulator kéo sập web server | Runtime chạy dịch vụ riêng trong iframe sandbox, không chung process |
 | Unique download bị thổi phồng | `GameUniqueHit` khoá theo `gameId + type + actorKey` |
 
 ---

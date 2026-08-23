@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import {
   User as UserIcon, FileText, Bookmark, Coins, Wallet, Crown, Download,
-  Settings, ShieldAlert, LogOut, ChevronDown, MessageSquare,
+  Settings, ShieldAlert, ShieldOff, LogOut, ChevronDown, MessageSquare,
 } from 'lucide-react';
 import { logout } from '@/app/(auth)/actions';
 import { fmtCount, fmtVnd } from '@/lib/utils';
@@ -29,6 +29,7 @@ const LINKS = [
   { href: '/user/posts', label: 'Bài viết của tôi', icon: FileText },
   { href: '/user/favorites', label: 'Đã lưu', icon: Bookmark },
   { href: '/user/downloads', label: 'Đã tải', icon: Download },
+  { href: '/user/blocked', label: 'Đã chặn', icon: ShieldOff },
   { href: '/user/settings', label: 'Cài đặt', icon: Settings },
 ];
 

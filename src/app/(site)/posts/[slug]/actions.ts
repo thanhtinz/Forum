@@ -8,6 +8,7 @@ import { purchaseContent } from '@/lib/purchase';
 import { COUPON_ERROR_MESSAGE } from '@/lib/coupon';
 import { notify } from '@/lib/notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
+import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
 
 export interface UnlockState {
   error?: string;
@@ -87,6 +88,7 @@ export async function toggleFollow(targetId: string): Promise<ToggleState> {
   const userId = session?.user?.id;
   if (!userId) return { active: false, count: 0, error: 'Bạn cần đăng nhập.' };
   if (userId === targetId) return { active: false, count: 0, error: 'Không thể tự theo dõi chính mình.' };
+  if (await isBlockedBetween(userId, targetId)) return { active: false, count: 0, error: BLOCK_MESSAGE };
 
   const existing = await db.follow.findFirst({ where: { followerId: userId, followingId: targetId }, select: { id: true } });
   if (existing) await db.follow.delete({ where: { id: existing.id } });

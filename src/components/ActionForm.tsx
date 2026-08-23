@@ -1,10 +1,12 @@
 'use client';
 
-import { startTransition, type FormHTMLAttributes } from 'react';
+import { startTransition, type FormHTMLAttributes, type Ref } from 'react';
 
 type Props = Omit<FormHTMLAttributes<HTMLFormElement>, 'action' | 'onSubmit'> & {
   /** Hàm dispatch lấy từ useActionState. */
   action: (formData: FormData) => void;
+  /** Chuyển thẳng xuống thẻ form, để nơi gọi tự reset khi lưu xong. */
+  ref?: Ref<HTMLFormElement>;
 };
 
 /**

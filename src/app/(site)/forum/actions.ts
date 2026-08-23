@@ -11,6 +11,7 @@ import { isVipActive } from '@/lib/access';
 import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { bbcodeToHtml } from '@/lib/bbcode';
+import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 
 const POINTS_PER_THREAD = 10;
@@ -77,6 +78,8 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
   if (forum.vipOnly && !(me && isVipActive(me))) return { error: 'Diễn đàn này chỉ dành cho thành viên VIP.' };
   if (me && me.level < forum.minLevel) return { error: `Bạn cần đạt cấp ${forum.minLevel} để đăng ở diễn đàn này.` };
 
+  const mentioned = await resolveMentions(content, userId);
+
   let threadId = '';
   await db.$transaction(async (tx) => {
     const thread = await tx.thread.create({
@@ -104,6 +107,12 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
     await tx.forum.update({ where: { id: forum.id }, data: { threadCount: { increment: 1 } } });
     await grantPoints({ userId, amount: POINTS_PER_THREAD, reason: 'THREAD_CREATE', refId: thread.id, note: `Đăng chủ đề: ${title}` }, tx);
     await addExp(userId, EXP_PER_THREAD, tx);
+  });
+
+  // Ngoài transaction vì phải có id chủ đề mới dựng được liên kết.
+  await notifyMentions(mentioned, {
+    title: 'Có người nhắc tên bạn', content: title,
+    link: `/forum/${forum.slug}/${threadId}`, actorId: userId,
   });
 
   revalidatePath(`/forum/${forum.slug}`);
@@ -151,6 +160,10 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
     parentAuthorId = parent.authorId;
   }
 
+  // Tìm người được nhắc tên trước khi vào transaction, để phần ghi dữ liệu
+  // không phải chờ mấy truy vấn tra tên và kiểm tra chặn.
+  const mentioned = await resolveMentions(content, userId, [thread.authorId, parentAuthorId]);
+
   await db.$transaction(async (tx) => {
     await tx.reply.create({ data: { threadId, authorId: userId, content, parentId } });
     await tx.thread.update({ where: { id: threadId }, data: { replyCount: { increment: 1 }, lastReplyAt: new Date() } });
@@ -167,6 +180,8 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
     if (parentAuthorId && parentAuthorId !== userId && parentAuthorId !== thread.authorId) {
       await notify({ userId: parentAuthorId, type: 'REPLY', title: 'Có người phản hồi bình luận của bạn', content: thread.title, link, actorId: userId }, tx);
     }
+    // Báo cho những người được nhắc tên bằng @
+    await notifyMentions(mentioned, { title: 'Có người nhắc tên bạn', content: thread.title, link, actorId: userId }, tx);
   });
 
   revalidatePath(`/forum/${thread.forum.slug}/${threadId}`);

@@ -24,11 +24,13 @@ export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: 
     { label: 'Diễn đàn', url: '/', icon: '💬' },
     { label: 'Cửa hàng', url: '/shop', icon: '🛍️' },
     { label: 'VIP', url: '/vip', icon: '👑' },
+    { label: 'Xếp hạng', url: '/ranking', icon: '🏆' },
   ],
   footer: [
     { label: 'Diễn đàn', url: '/', icon: '' },
     { label: 'Cửa hàng', url: '/shop', icon: '' },
     { label: 'VIP', url: '/vip', icon: '' },
+    { label: 'Xếp hạng', url: '/ranking', icon: '' },
     { label: 'Tìm kiếm', url: '/search', icon: '' },
   ],
 };

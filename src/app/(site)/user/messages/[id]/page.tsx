@@ -58,7 +58,8 @@ export default async function ConversationPage({ params, searchParams }: {
     where: { id },
     select: {
       id: true, userAId: true, userBId: true,
-      theme: true, bubble: true, nicknameA: true, nicknameB: true, autoDeleteHours: true,
+      theme: true, bubble: true, nicknameA: true, nicknameB: true,
+      autoDeleteHours: true, autoDeleteFrom: true,
       userA: { select: { id: true, name: true, username: true, image: true } },
       userB: { select: { id: true, name: true, username: true, image: true } },
     },
@@ -77,7 +78,9 @@ export default async function ConversationPage({ params, searchParams }: {
   const bubble = getBubble(convo.bubble);
 
   // Tin quá hạn phải biến mất trước khi đọc, không thì vẫn hiện thêm một lần.
-  if (convo.autoDeleteHours) await purgeExpiredMessages(id, convo.autoDeleteHours).catch(() => {});
+  if (convo.autoDeleteHours && convo.autoDeleteFrom) {
+    await purgeExpiredMessages(id, convo.autoDeleteHours, convo.autoDeleteFrom).catch(() => {});
+  }
 
   const [rows, totalMessages] = await Promise.all([
     db.message.findMany({

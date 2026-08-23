@@ -24,6 +24,7 @@ export default async function NewThreadPage({ params }: { params: Promise<{ slug
   const session = await auth();
   if (!session?.user?.id) redirect(`/login?callbackUrl=${encodeURIComponent(`/forum/${slug}/new`)}`);
 
+  const wallet = await db.user.findUnique({ where: { id: session.user.id }, select: { points: true } });
   const tint = forumTint(forum.slug);
 
   return (
@@ -45,7 +46,7 @@ export default async function NewThreadPage({ params }: { params: Promise<{ slug
           </div>
         </header>
 
-        <NewThreadForm forumSlug={forum.slug} />
+        <NewThreadForm forumSlug={forum.slug} myPoints={wallet?.points ?? 0} />
       </div>
     </div>
   );

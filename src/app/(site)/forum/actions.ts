@@ -15,6 +15,8 @@ import { bbcodeToHtml } from '@/lib/bbcode';
 import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { readPollForm, isPollClosed } from '@/lib/poll';
+import { readBounty, BOUNTY_MIN } from '@/lib/bounty';
+import { InsufficientPointsError } from '@/lib/points';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
@@ -85,6 +87,19 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
   const pollForm = readPollForm(formData);
   if (pollForm.error) return { error: pollForm.error };
 
+  const bountyForm = readBounty(formData.get('bounty'));
+  if (bountyForm.error) return { error: bountyForm.error };
+  const bounty = bountyForm.bounty ?? 0;
+
+  // Điểm thưởng bị giữ ngay lúc đăng, nên phải đủ điểm từ bây giờ. Cộng thêm
+  // phần thưởng đăng bài vì phần đó chỉ có sau khi chủ đề được tạo.
+  if (bounty > 0) {
+    const wallet = await db.user.findUnique({ where: { id: userId }, select: { points: true } });
+    if ((wallet?.points ?? 0) + POINTS_PER_THREAD < bounty) {
+      return { error: `Bạn chỉ có ${wallet?.points ?? 0} điểm, không đủ để treo thưởng ${bounty} điểm.` };
+    }
+  }
+
   const mentioned = await resolveMentions(content, userId);
 
   let threadId = '';
@@ -97,6 +112,7 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
         content: bbcodeToHtml(content),
         contentSource: content,
         status: 'PUBLISHED',
+        bountyPoints: bounty > 0 ? bounty : null,
         lastReplyAt: new Date(),
       },
       select: { id: true },
@@ -115,6 +131,12 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
     await grantPoints({ userId, amount: POINTS_PER_THREAD, reason: 'THREAD_CREATE', refId: thread.id, note: `Đăng chủ đề: ${title}` }, tx);
     await addExp(userId, EXP_PER_THREAD, tx);
     await autoFollow(thread.id, userId, tx);
+
+    // Giữ điểm ngay khi treo thưởng, không thì người đăng tiêu hết rồi tới lúc
+    // chọn lời giải mới phát hiện không đủ, người trả lời chịu thiệt.
+    if (bounty > 0) {
+      await grantPoints({ userId, amount: -bounty, reason: 'BOUNTY_PAID', refId: thread.id, note: `Treo thưởng chủ đề: ${title}` }, tx);
+    }
 
     if (pollForm.poll) {
       await tx.poll.create({
@@ -342,15 +364,16 @@ export async function markSolution(threadId: string, replyId: string): Promise<S
     await tx.thread.update({ where: { id: threadId }, data: { solvedReplyId: replyId } });
     await tx.reply.update({ where: { id: replyId }, data: { isSolution: true } });
 
-    // Chuyển điểm treo thưởng: trừ của chủ chủ đề (nếu đủ), cộng cho người trả lời
+    // Điểm thưởng đã bị giữ từ lúc treo, giờ chỉ việc trả cho người có lời giải.
+    // Tự chọn lời giải của chính mình thì hoàn lại cho chính mình.
     const bounty = thread.bountyPoints ?? 0;
-    if (bounty > 0 && reply.authorId !== userId) {
-      try {
-        await grantPoints({ userId, amount: -bounty, reason: 'BOUNTY_PAID', refId: threadId, note: `Trả thưởng chủ đề: ${thread.title}` }, tx);
-        await grantPoints({ userId: reply.authorId, amount: bounty, reason: 'BOUNTY_RECEIVED', refId: threadId, note: `Nhận thưởng lời giải: ${thread.title}` }, tx);
-      } catch {
-        // chủ chủ đề không đủ điểm — vẫn ghi nhận lời giải, bỏ qua thưởng
-      }
+    if (bounty > 0) {
+      await grantPoints({
+        userId: reply.authorId, amount: bounty, reason: 'BOUNTY_RECEIVED', refId: threadId,
+        note: reply.authorId === userId
+          ? `Hoàn điểm treo thưởng: ${thread.title}`
+          : `Nhận thưởng lời giải: ${thread.title}`,
+      }, tx);
     }
 
     if (reply.authorId !== userId) {
@@ -557,8 +580,22 @@ export async function deleteOwnThread(threadId: string): Promise<OwnerState> {
   if ('error' in guard) return { error: guard.error };
   const slug = guard.thread.forum.slug;
 
+  const info = await db.thread.findUnique({
+    where: { id: threadId },
+    select: { authorId: true, title: true, bountyPoints: true, solvedReplyId: true },
+  });
+
   await db.$transaction(async (tx) => {
     const replies = await tx.reply.count({ where: { threadId } });
+
+    // Xoá chủ đề khi chưa chọn lời giải thì hoàn lại điểm đang bị giữ.
+    if (info?.bountyPoints && !info.solvedReplyId) {
+      await grantPoints({
+        userId: info.authorId, amount: info.bountyPoints, reason: 'BOUNTY_RECEIVED', refId: threadId,
+        note: `Hoàn điểm treo thưởng (xoá chủ đề): ${info.title}`,
+      }, tx);
+    }
+
     await tx.thread.delete({ where: { id: threadId } });
     await tx.forum.update({
       where: { id: guard.thread.forumId },

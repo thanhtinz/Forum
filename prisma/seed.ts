@@ -498,6 +498,10 @@ async function main() {
 
     { slug: 'generic-320x240', name: 'Generic Java ME 320×240 (ngang)', vendor: null, screenWidth: 320, screenHeight: 240, orientation: 'LANDSCAPE', keyLayout: 'generic' },
     { slug: 'generic-360x640', name: 'Generic Java ME 360×640', vendor: null, screenWidth: 360, screenHeight: 640, keyLayout: 'generic', saveState: true, ramLimitMb: 320 },
+
+    // Hai skin nút trắng — không mô phỏng máy nào, chỉ khác cách bày nút.
+    { slug: 'skin-ring', name: 'Skin tay cầm · vòng khuyên', vendor: null, screenWidth: 240, screenHeight: 320, keyLayout: 'generic', saveState: true },
+    { slug: 'skin-grid', name: 'Skin lưới nút tròn', vendor: null, screenWidth: 240, screenHeight: 320, keyLayout: 'generic', saveState: true },
   ];
 
   // Seed chỉ upsert nên máy đã bỏ khỏi danh sách vẫn nằm lại trong DB cũ. Tắt

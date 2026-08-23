@@ -492,11 +492,16 @@ export function useKeypadParts({
         mũi tên bỏ không hơn 140px mỗi bên. Dồn lại rồi chia đôi 50 : 50 thì
         cụm mũi tên nở từ 106px lên ~143px (mỗi cánh ~4380px², rộng hơn cả
         phím số) mà hàng phím số vẫn giữ ~31px.
+
+        Hai phím mềm chốt cỡ `h-10` + `max-w-[6rem]` chứ không ăn hết chỗ
+        trống: để `h-[64%] flex-1` thì chúng phình thành 113×92 — to gần gấp
+        ba phím số cho hai nút bấm ít nhất mặt này. Chỗ thừa để trống hai bên,
+        đúng kiểu mặt trước máy thật.
       */}
       <div className="flex min-h-0 w-full min-w-0 flex-[50] items-center justify-center gap-2">
-        {softKeys && softLeft(cn('h-[64%] min-w-0 flex-1', PILL_L))}
+        {softKeys && softLeft(cn('h-10 min-w-0 max-w-[6rem] flex-1', PILL_L))}
         {navCluster}
-        {softKeys && softRight(cn('h-[64%] min-w-0 flex-1', PILL_R))}
+        {softKeys && softRight(cn('h-10 min-w-0 max-w-[6rem] flex-1', PILL_R))}
       </div>
 
       <div

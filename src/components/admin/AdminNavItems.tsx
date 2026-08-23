@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award, ShieldCheck,
-  Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2, Menu, Settings,
+  Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2, Menu, Settings, ScrollText, DatabaseBackup,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -117,6 +117,8 @@ export const ADMIN_GROUPS: Group[] = [
       { href: '/admin/storage', label: 'Lưu trữ ảnh', icon: Cloud },
       { href: '/admin/stickers', label: 'Bộ sticker', icon: Sticker },
       { href: '/admin/gif', label: 'GIF', icon: Wand2 },
+      { href: '/admin/logs', label: 'Nhật ký quản trị', icon: ScrollText },
+      { href: '/admin/backup', label: 'Sao lưu dữ liệu', icon: DatabaseBackup },
     ],
   },
 ];

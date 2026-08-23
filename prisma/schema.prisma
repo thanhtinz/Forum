@@ -83,6 +83,7 @@ model User {
   convosB        Conversation[] @relation("ConvoB")
   messagesSent   Message[]
   msgReactions   MessageReaction[]
+  adminLogs      AdminLog[] @relation("AdminLogActor")
 
   @@index([level])
   @@index([vipTier])
@@ -1119,4 +1120,36 @@ model Block {
 
   @@unique([blockerId, blockedId])
   @@index([blockedId])
+}
+
+
+/**
+ * Nhật ký hành động quản trị. Ghi lại ai làm gì, lên đối tượng nào —
+ * để đối soát khi có tranh chấp và tìm ra nguồn của một thay đổi bất thường.
+ * Xoá tài khoản admin vẫn giữ nguyên bản ghi (actorId -> null) nên lịch sử không mất.
+ */
+model AdminLog {
+  id      String  @id @default(cuid())
+  actorId String?
+  actor   User?   @relation("AdminLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  /** Tên đăng nhập lúc thao tác — giữ lại phòng khi tài khoản bị xoá/đổi tên. */
+  actorName String?
+
+  /** Khoá hành động dạng `nhóm.việc`, ví dụ `post.approve`. */
+  action String
+  /** Loại đối tượng bị tác động: post, user, thread… (null nếu là cài đặt chung). */
+  targetType String?
+  targetId   String?
+  /** Mô tả ngắn hiển thị trong danh sách, đã kèm tên đối tượng. */
+  summary String @db.Text
+  /** Dữ liệu phụ (giá trị trước/sau, lý do…) để soi khi cần. */
+  meta Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
 }

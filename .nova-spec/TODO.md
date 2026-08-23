@@ -110,7 +110,7 @@ Thứ tự thực hiện. Mỗi giai đoạn xong mới sang giai đoạn sau �
 - [ ] Quản lý `VipPlan`, `Coupon`, `Medal`, `LevelRule`
 - [ ] Xử lý `Report`, cấm người dùng (`Ban` theo `BanScope`)
 - [ ] `SiteSetting`, `Slide`, `NavLink`, `FriendLink`
-- [ ] Audit log cho hành động admin
+- [x] Audit log cho hành động admin — `lib/audit.ts` + `/admin/logs`
 
 ## P11 — Hoàn thiện (1 ngày)
 
@@ -120,7 +120,7 @@ Thứ tự thực hiện. Mỗi giai đoạn xong mới sang giai đoạn sau �
 - [ ] OG image động
 - [ ] Chế độ tối
 - [ ] Kiểm tra responsive
-- [ ] Backup DB tự động
+- [x] Backup DB tự động — `/admin/backup` + `GET /api/admin/backup` (cron gọi kèm `BACKUP_TOKEN`)
 
 ---
 

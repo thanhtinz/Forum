@@ -5,6 +5,7 @@ import { Save, PenLine } from 'lucide-react';
 import { updateThread, type ThreadState } from '@/app/(site)/forum/actions';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { ActionForm } from '@/components/ActionForm';
+import { DraftKeeper } from '@/components/DraftKeeper';
 
 export function EditThreadForm({ threadId, title, content }: { threadId: string; title: string; content: string }) {
   const [state, action, pending] = useActionState<ThreadState, FormData>(updateThread, {});
@@ -20,6 +21,7 @@ export function EditThreadForm({ threadId, title, content }: { threadId: string;
       </div>
 
       <input type="hidden" name="threadId" value={threadId} />
+      <DraftKeeper storageKey={`nova:draft:thread-edit:${threadId}`} />
 
       <div>
         <label htmlFor="thread-title" className="mb-1 block text-sm font-medium">Tiêu đề</label>

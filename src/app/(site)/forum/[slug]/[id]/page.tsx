@@ -7,6 +7,8 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount, truncate } from '@/lib/utils';
 import { ThreadActionBar } from '@/components/forum/ThreadActionBar';
+import { PollCard } from '@/components/forum/PollCard';
+import { toPollView } from '@/lib/poll';
 import { ReplyActions } from '@/components/forum/ReplyActions';
 import { ReplyForm } from '@/components/forum/ReplyForm';
 import { ThreadModMenu } from '@/components/forum/ThreadModMenu';
@@ -66,6 +68,13 @@ export default async function ThreadPage({ params, searchParams }: {
       forum: { select: { slug: true, name: true } },
       author: authorSelect,
       tags: { include: { tag: { select: { slug: true, name: true } } } },
+      poll: {
+        select: {
+          id: true, question: true, multiple: true, closesAt: true, closed: true,
+          options: { select: { id: true, text: true, order: true } },
+          votes: { select: { optionId: true, userId: true } },
+        },
+      },
     },
   });
   if (!thread || thread.forum.slug !== slug || thread.status !== 'PUBLISHED') notFound();
@@ -113,6 +122,14 @@ export default async function ThreadPage({ params, searchParams }: {
     },
   });
 
+  // Số người theo dõi chủ đề và trạng thái theo dõi của người đang xem
+  const [followCount, myFollow] = await Promise.all([
+    db.threadFollow.count({ where: { threadId: id } }),
+    userId
+      ? db.threadFollow.findUnique({ where: { threadId_userId: { threadId: id, userId } }, select: { id: true } })
+      : null,
+  ]);
+
   // Trạng thái "đã thích" của người dùng hiện tại (chủ đề + mọi trả lời)
   const likedThread = new Set<string>();
   const likedReplies = new Set<string>();
@@ -155,12 +172,19 @@ export default async function ThreadPage({ params, searchParams }: {
           <span className="flex items-center gap-1"><MessageSquare size={13} />{fmtCount(thread.replyCount)} trả lời</span>
         </p>
 
+        {thread.poll && (
+          <PollCard poll={toPollView(thread.poll, userId)}
+            canClose={isOwner || canModerate} loggedIn={loggedIn} />
+        )}
+
         <ThreadPost
           author={toAuthor(thread.author, levelLooks)}
           createdAt={thread.createdAt}
           index={1}
           actions={
             <ThreadActionBar threadId={thread.id} initialLiked={likedThread.has(thread.id)} initialLikeCount={thread.likeCount}
+              initialFollowing={!!myFollow} initialFollowCount={followCount}
+              canReport={loggedIn && !isOwner}
               modMenu={canModerate ? (
                 <ThreadModMenu threadId={thread.id} pinned={thread.pinned} locked={thread.locked} featured={thread.featured} forums={moveTargets} />
               ) : null} />
@@ -196,7 +220,8 @@ export default async function ThreadPage({ params, searchParams }: {
                 isSolution={r.isSolution}
                 actions={
                   <ReplyActions threadId={thread.id} replyId={r.id} initialLiked={likedReplies.has(r.id)} initialLikeCount={r.likeCount}
-                    loggedIn={loggedIn} callbackUrl={callbackUrl} canReply canMarkSolution={canMarkSolution && !r.isSolution} />
+                    loggedIn={loggedIn} callbackUrl={callbackUrl} canReply canMarkSolution={canMarkSolution && !r.isSolution}
+                    canReport={loggedIn && r.authorId !== userId} />
                 }
               >
                 <ReplyContent content={r.content} />
@@ -215,7 +240,8 @@ export default async function ThreadPage({ params, searchParams }: {
                         </div>
                         <ReplyContent content={ch.content} />
                         <ReplyActions threadId={thread.id} replyId={ch.id} initialLiked={likedReplies.has(ch.id)} initialLikeCount={ch.likeCount}
-                          loggedIn={loggedIn} callbackUrl={callbackUrl} canMarkSolution={canMarkSolution && !ch.isSolution} />
+                          loggedIn={loggedIn} callbackUrl={callbackUrl} canMarkSolution={canMarkSolution && !ch.isSolution}
+                          canReport={loggedIn && ch.authorId !== userId} />
                       </li>
                     ))}
                   </ul>

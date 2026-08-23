@@ -7,6 +7,7 @@ import { DownloadsEditor, type DownloadDraft } from './DownloadsEditor';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { PAID_ACCESS } from '@/lib/sell-permission';
 import { ActionForm } from '@/components/ActionForm';
+import { DraftKeeper } from '@/components/DraftKeeper';
 import { ImageField } from '@/components/ImageField';
 
 const PAID_VALUES: string[] = [...PAID_ACCESS];
@@ -73,6 +74,7 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
   return (
     <ActionForm action={action} className="card space-y-5 p-5 sm:p-6">
       {initial && <input type="hidden" name="postId" value={initial.id} />}
+      <DraftKeeper storageKey={`nova:draft:post:${initial?.id ?? 'new'}`} />
       <div className="flex items-center gap-2 border-b border-ink-100 pb-4 dark:border-ink-800">
         <span className="grid h-9 w-9 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-950/50"><PenLine size={18} /></span>
         <div>
@@ -129,17 +131,11 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
         </label>
       </div>
 
-      {/* Quyền xem — chỉ quản trị viên mới thấy các mức bán hàng */}
+      {/* Quyền xem nội dung ẩn — chỉ quản trị viên mới thấy các mức bán hàng */}
       <div className="rounded-2xl border border-ink-200 p-4 dark:border-ink-700">
         <div className="mb-3 flex items-center gap-1.5 text-sm font-bold">
-          <Coins size={16} className="text-amber-500" /> {canSell ? 'Bán nội dung (tuỳ chọn)' : 'Quyền xem bài'}
+          <Coins size={16} className="text-amber-500" /> {canSell ? 'Bán nội dung (tuỳ chọn)' : 'Quyền xem nội dung ẩn'}
         </div>
-
-        {!canSell && (
-          <p className="mb-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500 dark:bg-ink-800/50">
-            Nội dung trả phí do ban quản trị đăng ở cửa hàng. Bài của thành viên được chia sẻ miễn phí.
-          </p>
-        )}
 
         {/* Giữ nguyên mức hiện tại nếu nó không nằm trong danh sách chọn được
             (vd. admin đăng hàng, sau đó người không có quyền bán mở form sửa) */}

@@ -5,6 +5,8 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { Send } from 'lucide-react';
 import { addComment, type CommentState } from '@/app/(site)/posts/[slug]/actions';
+import { ActionForm } from '@/components/ActionForm';
+import { MentionTextarea } from '@/components/MentionTextarea';
 
 export function CommentForm({ postId, slug, parentId, loggedIn, callbackUrl, compact }: {
   postId: string; slug: string; parentId?: string; loggedIn: boolean; callbackUrl: string; compact?: boolean;
@@ -24,12 +26,12 @@ export function CommentForm({ postId, slug, parentId, loggedIn, callbackUrl, com
   }
 
   return (
-    <form ref={ref} action={action} className="space-y-2">
+    <ActionForm ref={ref} action={action} className="space-y-2">
       <input type="hidden" name="postId" value={postId} />
       <input type="hidden" name="slug" value={slug} />
       {parentId && <input type="hidden" name="parentId" value={parentId} />}
-      <textarea name="content" required minLength={2} maxLength={2000}
-        rows={compact ? 2 : 3} placeholder={parentId ? 'Viết phản hồi…' : 'Viết bình luận của bạn…'}
+      <MentionTextarea name="content" required minLength={2} maxLength={2000}
+        rows={compact ? 2 : 3} placeholder={parentId ? 'Viết phản hồi…' : 'Viết bình luận của bạn… gõ @ để nhắc tên'}
         className="input resize-y" />
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-ink-400">{state.error && <span className="text-red-600">{state.error}</span>}{state.ok && <span className="text-green-600">Đã gửi bình luận.</span>}</span>
@@ -37,6 +39,6 @@ export function CommentForm({ postId, slug, parentId, loggedIn, callbackUrl, com
           <Send size={15} /> {pending ? 'Đang gửi…' : 'Gửi'}
         </button>
       </div>
-    </form>
+    </ActionForm>
   );
 }

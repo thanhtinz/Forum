@@ -7,6 +7,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { purchaseContent } from '@/lib/purchase';
 import { COUPON_ERROR_MESSAGE } from '@/lib/coupon';
 import { notify } from '@/lib/notify';
+import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
 
@@ -125,6 +126,9 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
   const rate = await checkRateLimit('comment', userId);
   if (!rate.allowed) return { error: rate.message };
 
+  const post0 = await db.post.findUnique({ where: { id: postId }, select: { authorId: true } });
+  const mentioned = await resolveMentions(content, userId, [post0?.authorId]);
+
   await db.$transaction(async (tx) => {
     await tx.comment.create({ data: { postId, authorId: userId, content, parentId } });
     const post = await tx.post.update({
@@ -137,6 +141,9 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
         tx,
       );
     }
+    await notifyMentions(mentioned, {
+      title: 'Có người nhắc tên bạn', content: post.title, link: `/posts/${post.slug}`, actorId: userId,
+    }, tx);
   });
 
   if (slug) revalidatePath(`/posts/${slug}`);

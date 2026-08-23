@@ -82,6 +82,13 @@ model User {
   convosA        Conversation[] @relation("ConvoA")
   convosB        Conversation[] @relation("ConvoB")
   messagesSent   Message[]
+  msgReactions   MessageReaction[]
+  threadFollows  ThreadFollow[]
+  pollVotes      PollVote[]
+
+  /// Các loại thông báo người dùng đã tắt (chỉ áp dụng cho loại được phép tắt).
+  notifyOff      NotificationType[] @default([])
+  adminLogs      AdminLog[] @relation("AdminLogActor")
 
   gameEvents  GameEvent[]
   gameRatings GameRating[]
@@ -418,11 +425,76 @@ model Thread {
   reactions Reaction[]
   favorites Favorite[]
   reports   Report[]
+  followers ThreadFollow[]
+  poll      Poll?
 
   @@index([forumId, lastReplyAt])
   @@index([authorId])
   @@index([pinned])
 }
+
+/// Bình chọn gắn vào một chủ đề — mỗi chủ đề nhiều nhất một cuộc.
+model Poll {
+  id       String @id @default(cuid())
+  threadId String @unique
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  question String
+  /// Cho chọn nhiều đáp án cùng lúc.
+  multiple Boolean @default(false)
+  /// Hết hạn thì khoá lại và ai cũng xem được kết quả. null = không hạn.
+  closesAt DateTime?
+  /// Chủ đề/quản trị đóng sớm.
+  closed   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  options PollOption[]
+  votes   PollVote[]
+}
+
+model PollOption {
+  id     String @id @default(cuid())
+  pollId String
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  text  String
+  order Int @default(0)
+
+  votes PollVote[]
+
+  @@index([pollId, order])
+}
+
+model PollVote {
+  id       String @id @default(cuid())
+  pollId   String
+  poll     Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId String
+  option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([optionId, userId])
+  @@index([pollId, userId])
+}
+
+/// Theo dõi chủ đề: có trả lời mới thì được báo, kể cả không phải chủ chủ đề.
+model ThreadFollow {
+  id       String @id @default(cuid())
+  threadId String
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([threadId, userId])
+  @@index([userId, createdAt])
+}
+
 
 enum ThreadStatus {
   PUBLISHED
@@ -1358,6 +1430,17 @@ model Conversation {
   userA   User   @relation("ConvoA", fields: [userAId], references: [id], onDelete: Cascade)
   userB   User   @relation("ConvoB", fields: [userBId], references: [id], onDelete: Cascade)
 
+  // Tuỳ chỉnh dùng chung cho cả hai người, giống cách các app chat vẫn làm.
+  theme       String  @default("default")   // ảnh nền khung chat
+  bubble      String  @default("default")   // kiểu bong bóng
+  nicknameA   String?                       // biệt danh đặt cho userA
+  nicknameB   String?                       // biệt danh đặt cho userB
+  // Số giờ giữ tin trước khi tự xoá; null = không tự xoá
+  autoDeleteHours Int?
+  // Mốc bật tự xoá. Chỉ tin gửi TỪ mốc này trở đi mới bị xoá — bật tính năng
+  // không được phép thổi bay lịch sử đã có từ trước.
+  autoDeleteFrom  DateTime?
+
   lastMessageAt DateTime?
   createdAt     DateTime  @default(now())
 
@@ -1378,11 +1461,37 @@ model Message {
 
   content String    @db.Text
   readAt  DateTime?
+  /** Đã thu hồi: giữ lại bản ghi để tin trích dẫn nó không bị hụt. */
+  deletedAt DateTime?
+
+  // Trả lời một tin cụ thể trong cùng hội thoại
+  replyToId String?
+  replyTo   Message?  @relation("MessageReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[] @relation("MessageReply")
 
   createdAt DateTime @default(now())
 
+  reactions MessageReaction[]
+
   @@index([conversationId, createdAt])
   @@index([senderId, createdAt])
+}
+
+/** Cảm xúc thả lên một tin nhắn — mỗi người một cảm xúc cho mỗi tin. */
+model MessageReaction {
+  id        String  @id @default(cuid())
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emoji String
+
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId])
+  @@index([messageId])
 }
 
 
@@ -1398,4 +1507,70 @@ model Block {
 
   @@unique([blockerId, blockedId])
   @@index([blockedId])
+}
+
+
+/**
+ * Nhật ký hành động quản trị. Ghi lại ai làm gì, lên đối tượng nào —
+ * để đối soát khi có tranh chấp và tìm ra nguồn của một thay đổi bất thường.
+ * Xoá tài khoản admin vẫn giữ nguyên bản ghi (actorId -> null) nên lịch sử không mất.
+ */
+model AdminLog {
+  id      String  @id @default(cuid())
+  actorId String?
+  actor   User?   @relation("AdminLogActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  /** Tên đăng nhập lúc thao tác — giữ lại phòng khi tài khoản bị xoá/đổi tên. */
+  actorName String?
+
+  /** Khoá hành động dạng `nhóm.việc`, ví dụ `post.approve`. */
+  action String
+  /** Loại đối tượng bị tác động: post, user, thread… (null nếu là cài đặt chung). */
+  targetType String?
+  targetId   String?
+  /** Mô tả ngắn hiển thị trong danh sách, đã kèm tên đối tượng. */
+  summary String @db.Text
+  /** Dữ liệu phụ (giá trị trước/sau, lý do…) để soi khi cần. */
+  meta Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+}
+
+
+/** Ảnh nền khung chat do admin tải lên. */
+model ChatBackground {
+  id     String  @id @default(cuid())
+  name   String
+  image  String              // đường dẫn ảnh admin tải lên
+  /** Ảnh tối: chữ phụ trong khung chat phải sáng lên mới đọc được. */
+  dark   Boolean @default(false)
+  active Boolean @default(true)
+  order  Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([active, order])
+}
+
+/** Kiểu bong bóng chat do admin tải lên: màu nền + ảnh trang trí phía trên. */
+model ChatBubbleStyle {
+  id          String  @id @default(cuid())
+  name        String
+  /** Ảnh gắn trên bong bóng (tai chibi, nơ…). Để trống thì chỉ đổi màu. */
+  decor       String?
+  colorMine   String
+  colorTheirs String
+  /** Chữ trong bong bóng là màu đậm hay trắng. */
+  darkText    Boolean @default(true)
+  active      Boolean @default(true)
+  order       Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([active, order])
 }

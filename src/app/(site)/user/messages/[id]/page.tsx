@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, Check, CheckCheck } from 'lucide-react';
+import { ArrowLeft, Check, CheckCheck, ChevronUp } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { otherId } from '@/lib/messages';
@@ -9,12 +9,16 @@ import { cn } from '@/lib/utils';
 import { ReplyContent } from '@/components/forum/ReplyContent';
 import { MessageComposer } from '@/components/user/MessageComposer';
 import { ScrollToLatest } from '@/components/user/ScrollToLatest';
+import { LiveRefresh } from '@/components/user/LiveRefresh';
 import { markConversationRead } from '../actions';
 
 export const metadata: Metadata = { title: 'Trò chuyện' };
 export const dynamic = 'force-dynamic';
 
+/** Số tin hiện mặc định; bấm "xem tin cũ hơn" thì tăng dần tới MAX_TAKE. */
 const TAKE = 100;
+const TAKE_STEP = 100;
+const MAX_TAKE = 1000;
 /** Hai tin liền nhau của cùng người, cách nhau dưới 5 phút thì gộp thành một cụm. */
 const GROUP_GAP_MS = 5 * 60 * 1000;
 
@@ -38,8 +42,12 @@ function Avatar({ image, name, className }: { image: string | null; name: string
       </span>;
 }
 
-export default async function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ConversationPage({ params, searchParams }: {
+  params: Promise<{ id: string }>; searchParams: Promise<{ take?: string }>;
+}) {
   const { id } = await params;
+  const { take: takeRaw } = await searchParams;
+  const take = Math.min(MAX_TAKE, Math.max(TAKE, parseInt(takeRaw ?? '', 10) || TAKE));
   const session = await auth();
   const me = session?.user?.id;
   if (!me) redirect('/login');
@@ -58,13 +66,17 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   const partner = otherId(convo, me) === convo.userA.id ? convo.userA : convo.userB;
   const partnerName = partner.name || partner.username || 'Thành viên';
 
-  const rows = await db.message.findMany({
-    where: { conversationId: id },
-    orderBy: { createdAt: 'desc' },
-    take: TAKE,
-    select: { id: true, content: true, senderId: true, createdAt: true, readAt: true },
-  });
+  const [rows, totalMessages] = await Promise.all([
+    db.message.findMany({
+      where: { conversationId: id },
+      orderBy: { createdAt: 'desc' },
+      take,
+      select: { id: true, content: true, senderId: true, createdAt: true, readAt: true },
+    }),
+    db.message.count({ where: { conversationId: id } }),
+  ]);
   rows.reverse();
+  const hasOlder = totalMessages > rows.length;
 
   // Mở hội thoại là coi như đã đọc.
   await markConversationRead(id).catch(() => {});
@@ -111,8 +123,17 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
           </div>
         )}
 
-        {items.length === TAKE && (
-          <p className="mb-2 text-center text-xs text-ink-400">Chỉ hiện {TAKE} tin gần nhất.</p>
+        {hasOlder && (
+          <div className="mb-3 text-center">
+            {take < MAX_TAKE ? (
+              <Link href={`/user/messages/${id}?take=${take + TAKE_STEP}`}
+                className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3.5 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300 dark:hover:bg-ink-800">
+                <ChevronUp size={14} /> Xem tin cũ hơn
+              </Link>
+            ) : (
+              <p className="text-xs text-ink-400">Chỉ xem được {MAX_TAKE} tin gần nhất.</p>
+            )}
+          </div>
         )}
 
         <div className="space-y-0.5">
@@ -166,10 +187,11 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
           })}
         </div>
 
-        <ScrollToLatest trigger={items.at(-1)?.id ?? 'empty'} />
+        <ScrollToLatest trigger={items.at(-1)?.id ?? 'empty'} enabled={take === TAKE} />
       </div>
 
       <MessageComposer conversationId={id} />
+      <LiveRefresh />
     </div>
   );
 }

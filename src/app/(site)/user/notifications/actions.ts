@@ -17,3 +17,11 @@ export async function markRead(id: string) {
   await db.notification.updateMany({ where: { id, userId: session.user.id }, data: { read: true } });
   revalidatePath('/user/notifications');
 }
+
+/** Xoá hết thông báo đã đọc để danh sách gọn lại. */
+export async function clearRead() {
+  const session = await auth();
+  if (!session?.user?.id) return;
+  await db.notification.deleteMany({ where: { userId: session.user.id, read: true } });
+  revalidatePath('/user/notifications');
+}

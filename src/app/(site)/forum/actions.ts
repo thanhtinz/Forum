@@ -7,7 +7,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { grantPoints } from '@/lib/points';
 import { addExp } from '@/lib/level';
-import { notify } from '@/lib/notify';
+import { notify, filterNotifiable } from '@/lib/notify';
 import { isVipActive } from '@/lib/access';
 import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
@@ -170,9 +170,12 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
 
   // Người theo dõi chủ đề, trừ những ai đã được báo bằng thông báo khác.
   const alreadyNotified = new Set([userId, thread.authorId, parentAuthorId, ...mentioned.map((m) => m.id)]);
-  const followers = (await db.threadFollow.findMany({
-    where: { threadId }, select: { userId: true }, take: FOLLOWER_NOTIFY_LIMIT,
-  })).map((f) => f.userId).filter((id) => !alreadyNotified.has(id));
+  const followers = await filterNotifiable(
+    (await db.threadFollow.findMany({
+      where: { threadId }, select: { userId: true }, take: FOLLOWER_NOTIFY_LIMIT,
+    })).map((f) => f.userId).filter((id) => !alreadyNotified.has(id)),
+    'REPLY',
+  );
 
   await db.$transaction(async (tx) => {
     await tx.reply.create({ data: { threadId, authorId: userId, content, parentId } });
@@ -192,9 +195,14 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
     }
     // Báo cho những người được nhắc tên bằng @
     await notifyMentions(mentioned, { title: 'Có người nhắc tên bạn', content: thread.title, link, actorId: userId }, tx);
-    // Báo cho người đang theo dõi chủ đề
-    for (const followerId of followers) {
-      await notify({ userId: followerId, type: 'REPLY', title: 'Chủ đề bạn theo dõi có trả lời mới', content: thread.title, link, actorId: userId }, tx);
+    // Báo cho người đang theo dõi chủ đề — gộp một lần ghi, danh sách đã lọc sẵn
+    if (followers.length > 0) {
+      await tx.notification.createMany({
+        data: followers.map((followerId) => ({
+          userId: followerId, type: 'REPLY' as const,
+          title: 'Chủ đề bạn theo dõi có trả lời mới', content: thread.title, link, actorId: userId,
+        })),
+      });
     }
     // Đã trả lời thì mặc định theo dõi tiếp diễn biến
     await autoFollow(threadId, userId, tx);

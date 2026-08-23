@@ -5,6 +5,7 @@ import { ArrowLeft, Settings } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { ProfileSettingsForm, PasswordForm } from '@/components/user/ProfileSettingsForm';
+import { NotifyPrefsForm } from '@/components/user/NotifyPrefsForm';
 
 export const metadata: Metadata = { title: 'Cài đặt tài khoản' };
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,7 @@ export default async function SettingsPage() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, username: true, bio: true, image: true, cover: true, email: true, passwordHash: true },
+    select: { name: true, username: true, bio: true, image: true, cover: true, email: true, passwordHash: true, notifyOff: true },
   });
   if (!user) redirect('/login');
 
@@ -35,6 +36,8 @@ export default async function SettingsPage() {
         }} />
 
         <PasswordForm hasPassword={!!user.passwordHash} username={user.username} />
+
+        <NotifyPrefsForm off={user.notifyOff} />
 
         <div className="card p-5">
           <h2 className="font-bold">Email đăng nhập</h2>

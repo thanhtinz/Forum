@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { isPublicImageRef } from '@/lib/icon';
+import { TOGGLEABLE_TYPES, type ToggleableType } from '@/lib/notify-types';
 
 export type SettingsState = { ok?: boolean; error?: string; fieldErrors?: Record<string, string> };
 
@@ -83,5 +84,25 @@ export async function changePassword(_prev: SettingsState, formData: FormData): 
   }
 
   await db.user.update({ where: { id: session.user.id }, data: { passwordHash: await bcrypt.hash(parsed.data.next, 10) } });
+  return { ok: true };
+}
+
+/**
+ * Bật/tắt từng loại thông báo.
+ *
+ * Form gửi lên các ô đã BẬT; loại nào không có trong form thì coi như tắt.
+ * Chỉ nhận các loại được phép tắt — loại liên quan tới đơn hàng, VIP và thông
+ * báo hệ thống luôn giữ nguyên.
+ */
+export async function updateNotifyPrefs(_prev: SettingsState, formData: FormData): Promise<SettingsState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  const on = new Set(formData.getAll('on').map(String));
+  const off: ToggleableType[] = TOGGLEABLE_TYPES.filter((t) => !on.has(t));
+
+  await db.user.update({ where: { id: userId }, data: { notifyOff: off }, select: { id: true } });
+  revalidatePath('/user/settings');
   return { ok: true };
 }

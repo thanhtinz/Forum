@@ -870,13 +870,17 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           {/*
             Nửa dưới: mặt phím sáng màu, tách hẳn khối với nửa trên.
 
-            `h-[19.5rem]` là chiều cao vừa đủ cho phím mềm + cụm mũi tên + bốn
-            hàng phím số ở cỡ bấm được (~30px/hàng). Trên máy màn hình ngắn nó
-            co lại theo `max-h` chứ không đẩy kính ra ngoài thân máy — nhưng
-            `56%` là mức thấp nhất còn bấm được: để `46%` thì màn hình 320×568
-            bóp hàng phím số xuống 22px.
+            `h-[22rem]` là chiều cao vừa đủ cho hàng phím mềm (44px) + cụm mũi
+            tên 143px + bốn hàng phím số ở cỡ bấm được (~31px/hàng). Trước để
+            `19.5rem` vì phím mềm còn kẹp hai bên cụm mũi tên; tách phím mềm ra
+            hàng riêng thì phải bù đúng chỗ nó lấy đi, không thì cụm mũi tên
+            tụt về 106px.
+
+            Trên máy màn hình ngắn nó co lại theo `max-h` chứ không đẩy kính ra
+            ngoài thân máy — nhưng `60%` là mức thấp nhất còn bấm được: để
+            `46%` thì màn hình 320×568 bóp hàng phím số xuống 22px.
           */}
-          <div className={cn('h-[19.5rem] max-h-[56%] min-h-[16.5rem] border-t border-black/60 px-2.5 pb-2 pt-1.5', split.bottom, skin.keypad)}>
+          <div className={cn('h-[22rem] max-h-[60%] min-h-[17.5rem] border-t border-black/60 px-2.5 pb-2 pt-1.5', split.bottom, skin.keypad)}>
             {keypad.phonePad}
           </div>
         </div>

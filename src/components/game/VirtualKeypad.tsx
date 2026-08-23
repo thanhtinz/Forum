@@ -482,26 +482,25 @@ export function useKeypadParts({
 
   const phoneFace = (
     <div className="flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden">
+      {/* Options / Back thành một hàng riêng trên cùng, trải hết bề ngang. */}
+      {softKeys && (
+        <div className="flex shrink-0 items-stretch gap-2">
+          {softLeft(cn('h-9 min-w-0 flex-1', PILL_L))}
+          {softRight(cn('h-9 min-w-0 flex-1', PILL_R))}
+        </div>
+      )}
+
       {/*
-        Mũi tên nằm trên, bàn phím số nằm dưới — như mặt trước máy thật.
+        Mũi tên nằm giữa, bàn phím số nằm dưới — như mặt trước máy thật.
 
-        Options / Back **kẹp hai bên cụm mũi tên** chứ không xếp thành hàng
-        riêng phía trên. Cụm mũi tên là hình vuông bám theo *chiều cao* hàng
-        chứa nó, nên hàng cao bao nhiêu thì cánh mũi tên rộng bấy nhiêu — mà
-        hàng phím mềm riêng lại ăn mất 44px chiều cao trong khi hai bên cụm
-        mũi tên bỏ không hơn 140px mỗi bên. Dồn lại rồi chia đôi 50 : 50 thì
-        cụm mũi tên nở từ 106px lên ~143px (mỗi cánh ~4380px², rộng hơn cả
-        phím số) mà hàng phím số vẫn giữ ~31px.
-
-        Hai phím mềm chốt cỡ `h-10` + `max-w-[6rem]` chứ không ăn hết chỗ
-        trống: để `h-[64%] flex-1` thì chúng phình thành 113×92 — to gần gấp
-        ba phím số cho hai nút bấm ít nhất mặt này. Chỗ thừa để trống hai bên,
-        đúng kiểu mặt trước máy thật.
+        Cụm mũi tên là hình vuông bám theo *chiều cao* hàng chứa nó, nên hàng
+        cao bao nhiêu thì cánh mũi tên rộng bấy nhiêu. Hàng phím mềm riêng ăn
+        mất 44px chiều cao, nên phải bù lại bằng cách nới cả nửa bàn phím lên
+        `22rem` (xem `EmulatorStage`) rồi chia 50 : 50 — giữ được cụm mũi tên
+        143px mà hàng phím số vẫn ~31px.
       */}
-      <div className="flex min-h-0 w-full min-w-0 flex-[50] items-center justify-center gap-2">
-        {softKeys && softLeft(cn('h-10 min-w-0 max-w-[6rem] flex-1', PILL_L))}
+      <div className="flex min-h-0 w-full min-w-0 flex-[50] items-center justify-center">
         {navCluster}
-        {softKeys && softRight(cn('h-10 min-w-0 max-w-[6rem] flex-1', PILL_R))}
       </div>
 
       <div

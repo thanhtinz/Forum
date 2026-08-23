@@ -841,12 +841,22 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           skin.edge,
         )}>
           {/* Nửa trên: mặt trước tối, dải trên + kính màn hình */}
-          <div className={cn('flex min-h-0 flex-col px-2.5 pb-2 pt-1', split.top, skin.top)}>
+          <div className={cn('flex min-h-0 flex-col px-1.5 pb-1.5 pt-1', split.top, skin.top)}>
             {chassisTop(true)}
+            {/*
+              Kính màn hình trải **hết bề ngang thân máy**, khung game giữ đúng
+              tỉ lệ gốc nên nằm giữa và chừa hai dải đen hai bên — y như màn hình
+              máy thật. Trước đây kính ôm sát khung game nên game 3:4 để lộ màu
+              vỏ hai bên, nhìn như màn hình bé hơn thân máy.
+
+              Không thể vừa cho kính ôm sát vừa lấp hết bề ngang: giữ tỉ lệ gốc
+              thì game 240×320 rộng 400px phải cao 533px, mà nhường bấy nhiêu
+              chiều cao cho nửa trên thì phím số chỉ còn 25px.
+            */}
             <div ref={areaRef} className="flex min-h-0 flex-1 items-center justify-center">
               <div
                 ref={bezelRef}
-                className="rounded-lg border border-black/80 bg-ink-950 p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)]"
+                className="flex h-full w-full items-center justify-center rounded-lg border border-black/80 bg-ink-950 p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)]"
               >
                 {screenBox}
               </div>

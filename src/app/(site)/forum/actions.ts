@@ -1,5 +1,6 @@
 'use server';
 
+import type { Prisma } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
@@ -18,6 +19,8 @@ const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
 const EXP_PER_THREAD = 10;
 const EXP_PER_REPLY = 4;
+/** Chủ đề đông người theo dõi thì chỉ báo cho ngần này người mỗi lần trả lời. */
+const FOLLOWER_NOTIFY_LIMIT = 200;
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -107,6 +110,7 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
     await tx.forum.update({ where: { id: forum.id }, data: { threadCount: { increment: 1 } } });
     await grantPoints({ userId, amount: POINTS_PER_THREAD, reason: 'THREAD_CREATE', refId: thread.id, note: `Đăng chủ đề: ${title}` }, tx);
     await addExp(userId, EXP_PER_THREAD, tx);
+    await autoFollow(thread.id, userId, tx);
   });
 
   // Ngoài transaction vì phải có id chủ đề mới dựng được liên kết.
@@ -164,6 +168,12 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
   // không phải chờ mấy truy vấn tra tên và kiểm tra chặn.
   const mentioned = await resolveMentions(content, userId, [thread.authorId, parentAuthorId]);
 
+  // Người theo dõi chủ đề, trừ những ai đã được báo bằng thông báo khác.
+  const alreadyNotified = new Set([userId, thread.authorId, parentAuthorId, ...mentioned.map((m) => m.id)]);
+  const followers = (await db.threadFollow.findMany({
+    where: { threadId }, select: { userId: true }, take: FOLLOWER_NOTIFY_LIMIT,
+  })).map((f) => f.userId).filter((id) => !alreadyNotified.has(id));
+
   await db.$transaction(async (tx) => {
     await tx.reply.create({ data: { threadId, authorId: userId, content, parentId } });
     await tx.thread.update({ where: { id: threadId }, data: { replyCount: { increment: 1 }, lastReplyAt: new Date() } });
@@ -182,10 +192,59 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
     }
     // Báo cho những người được nhắc tên bằng @
     await notifyMentions(mentioned, { title: 'Có người nhắc tên bạn', content: thread.title, link, actorId: userId }, tx);
+    // Báo cho người đang theo dõi chủ đề
+    for (const followerId of followers) {
+      await notify({ userId: followerId, type: 'REPLY', title: 'Chủ đề bạn theo dõi có trả lời mới', content: thread.title, link, actorId: userId }, tx);
+    }
+    // Đã trả lời thì mặc định theo dõi tiếp diễn biến
+    await autoFollow(threadId, userId, tx);
   });
 
   revalidatePath(`/forum/${thread.forum.slug}/${threadId}`);
   return { ok: true };
+}
+
+// ─────────────────────────── Theo dõi chủ đề ───────────────────────────
+
+export interface FollowState {
+  following: boolean;
+  count: number;
+  error?: string;
+}
+
+export async function toggleThreadFollow(threadId: string): Promise<FollowState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { following: false, count: 0, error: 'Bạn cần đăng nhập.' };
+
+  const existing = await db.threadFollow.findUnique({
+    where: { threadId_userId: { threadId, userId } }, select: { id: true },
+  });
+  if (existing) await db.threadFollow.delete({ where: { id: existing.id } });
+  else {
+    const thread = await db.thread.findUnique({ where: { id: threadId }, select: { id: true } });
+    if (!thread) return { following: false, count: 0, error: 'Không tìm thấy chủ đề.' };
+    await db.threadFollow.create({ data: { threadId, userId }, select: { id: true } });
+  }
+
+  const count = await db.threadFollow.count({ where: { threadId } });
+  return { following: !existing, count };
+}
+
+/**
+ * Tự theo dõi chủ đề mình vừa tham gia.
+ *
+ * Bỏ qua nếu người đó đã tự bỏ theo dõi trước đó? Không — chỉ dùng khi tạo
+ * chủ đề hoặc trả lời, coi như hành động chủ động tham gia lại. Ai không thích
+ * thì bấm bỏ theo dõi lần nữa.
+ */
+async function autoFollow(threadId: string, userId: string, tx: Prisma.TransactionClient) {
+  await tx.threadFollow.upsert({
+    where: { threadId_userId: { threadId, userId } },
+    create: { threadId, userId },
+    update: {},
+    select: { id: true },
+  });
 }
 
 // ─────────────────────────── Thích ───────────────────────────

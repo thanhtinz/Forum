@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { MessageSquare } from 'lucide-react';
 import { db } from '@/lib/db';
 import { CommentForm } from './CommentForm';
+import { ReplyContent } from '@/components/forum/ReplyContent';
 
 /** Danh sách bình luận phân cấp 1 mức (bình luận gốc + phản hồi). */
 export async function Comments({ postId, slug, loggedIn }: { postId: string; slug: string; loggedIn: boolean }) {
@@ -71,7 +72,8 @@ function CommentRow({ c, small }: { c: Row; small?: boolean }) {
           {c.pinned && <span className="chip bg-brand-100 text-brand-600 dark:bg-brand-950/50">Ghim</span>}
           <span className="text-xs text-ink-400">{format(c.createdAt, 'dd/MM/yyyy HH:mm')}</span>
         </div>
-        <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink-700 dark:text-ink-200">{c.content}</p>
+        <ReplyContent content={c.content}
+          className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-700 dark:text-ink-200" />
       </div>
     </div>
   );

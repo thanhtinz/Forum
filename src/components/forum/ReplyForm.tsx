@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Send, ImagePlus, Loader2 } from 'lucide-react';
 import { addReply, type ReplyState } from '@/app/(site)/forum/actions';
 import { MediaPicker } from './MediaPicker';
+import { ActionForm } from '@/components/ActionForm';
+import { MentionTextarea } from '@/components/MentionTextarea';
 
 export function ReplyForm({ threadId, parentId, loggedIn, callbackUrl, compact, autoFocus, onDone }: {
   threadId: string; parentId?: string; loggedIn: boolean; callbackUrl: string;
@@ -71,12 +73,12 @@ export function ReplyForm({ threadId, parentId, loggedIn, callbackUrl, compact, 
   }
 
   return (
-    <form ref={ref} action={action} className="space-y-2">
+    <ActionForm ref={ref} action={action} className="space-y-2">
       <input type="hidden" name="threadId" value={threadId} />
       {parentId && <input type="hidden" name="parentId" value={parentId} />}
 
-      <textarea ref={taRef} name="content" required minLength={2} maxLength={5000} autoFocus={autoFocus}
-        rows={compact ? 2 : 3} placeholder={parentId ? 'Viết phản hồi…' : 'Viết trả lời của bạn…'}
+      <MentionTextarea ref={taRef} name="content" required minLength={2} maxLength={5000} autoFocus={autoFocus}
+        rows={compact ? 2 : 3} placeholder={parentId ? 'Viết phản hồi…' : 'Viết trả lời của bạn… gõ @ để nhắc tên'}
         className="input resize-y" />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -101,6 +103,6 @@ export function ReplyForm({ threadId, parentId, loggedIn, callbackUrl, compact, 
           <Send size={15} /> {pending ? 'Đang gửi…' : 'Gửi'}
         </button>
       </div>
-    </form>
+    </ActionForm>
   );
 }

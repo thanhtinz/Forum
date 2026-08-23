@@ -113,6 +113,14 @@ export default async function ThreadPage({ params, searchParams }: {
     },
   });
 
+  // Số người theo dõi chủ đề và trạng thái theo dõi của người đang xem
+  const [followCount, myFollow] = await Promise.all([
+    db.threadFollow.count({ where: { threadId: id } }),
+    userId
+      ? db.threadFollow.findUnique({ where: { threadId_userId: { threadId: id, userId } }, select: { id: true } })
+      : null,
+  ]);
+
   // Trạng thái "đã thích" của người dùng hiện tại (chủ đề + mọi trả lời)
   const likedThread = new Set<string>();
   const likedReplies = new Set<string>();
@@ -161,6 +169,7 @@ export default async function ThreadPage({ params, searchParams }: {
           index={1}
           actions={
             <ThreadActionBar threadId={thread.id} initialLiked={likedThread.has(thread.id)} initialLikeCount={thread.likeCount}
+              initialFollowing={!!myFollow} initialFollowCount={followCount}
               modMenu={canModerate ? (
                 <ThreadModMenu threadId={thread.id} pinned={thread.pinned} locked={thread.locked} featured={thread.featured} forums={moveTargets} />
               ) : null} />

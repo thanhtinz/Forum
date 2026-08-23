@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { format } from 'date-fns';
-import { Coins, Wallet, TrendingUp, Flame, PenLine, Bookmark, Gift, Banknote, Users, Plus, Download, Settings, FileText, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Bell, Coins, Wallet, TrendingUp, Flame, PenLine, Bookmark, Gift, Banknote, Users, Plus, Download, Settings, FileText, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount, fmtVnd } from '@/lib/utils';
@@ -78,6 +78,7 @@ export default async function DashboardPage() {
         <QuickLink href="/user/write" icon={<PenLine size={18} />} label="Đăng bài" primary />
         <QuickLink href="/user/posts" icon={<FileText size={18} />} label="Bài của tôi" />
         <QuickLink href="/user/following" icon={<Users size={18} />} label="Đang theo dõi" />
+        <QuickLink href="/user/threads" icon={<Bell size={18} />} label="Chủ đề theo dõi" />
         <QuickLink href="/user/balance" icon={<Plus size={18} />} label="Nạp tiền" />
         <QuickLink href="/user/favorites" icon={<Bookmark size={18} />} label="Đã lưu" />
         <QuickLink href="/user/downloads" icon={<Download size={18} />} label="Đã tải" />

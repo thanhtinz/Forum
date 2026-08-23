@@ -83,6 +83,7 @@ model User {
   convosB        Conversation[] @relation("ConvoB")
   messagesSent   Message[]
   msgReactions   MessageReaction[]
+  threadFollows  ThreadFollow[]
   adminLogs      AdminLog[] @relation("AdminLogActor")
 
   @@index([level])
@@ -416,11 +417,27 @@ model Thread {
   reactions Reaction[]
   favorites Favorite[]
   reports   Report[]
+  followers ThreadFollow[]
 
   @@index([forumId, lastReplyAt])
   @@index([authorId])
   @@index([pinned])
 }
+
+/// Theo dõi chủ đề: có trả lời mới thì được báo, kể cả không phải chủ chủ đề.
+model ThreadFollow {
+  id       String @id @default(cuid())
+  threadId String
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([threadId, userId])
+  @@index([userId, createdAt])
+}
+
 
 enum ThreadStatus {
   PUBLISHED

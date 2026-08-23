@@ -487,17 +487,14 @@ async function main() {
     cldc?: string; midp?: string; orientation?: 'PORTRAIT' | 'LANDSCAPE';
     audio?: boolean; saveState?: boolean; ramLimitMb?: number;
   }[] = [
-    // Mỗi bố cục mặt phím giữ đúng **một** máy đại diện — trước đây 35 máy chỉ
-    // là 35 màu vỏ khác nhau trên vài bố cục lặp lại, nhìn không phân biệt được.
-    // Hai máy ảo chung ở cuối không phải bố cục mới, chúng có mặt để phủ hai độ
-    // phân giải mà bốn máy trên không có (320×240 nằm ngang và 360×640).
-    { slug: 'nokia-7210', name: 'Nokia 7210 (2002)', vendor: 'Nokia', screenWidth: 128, screenHeight: 128, keyLayout: 'nokia', cldc: '1.0', midp: '1.0', audio: false, ramLimitMb: 64 },
+    // Mỗi giao diện mặt phím giữ đúng **một** máy đại diện, không hơn: 35 máy
+    // ban đầu chỉ là 35 màu vỏ khác nhau trên vài bố cục lặp lại, mở bảng chọn
+    // ra không phân biệt được cái nào với cái nào.
     { slug: 'nokia-n70', name: 'Nokia N70 · S60 (2005)', vendor: 'Nokia', screenWidth: 176, screenHeight: 208, keyLayout: 'nokia', ramLimitMb: 128 },
     { slug: 'motorola-v3', name: 'Motorola RAZR V3 (2004)', vendor: 'Motorola', screenWidth: 176, screenHeight: 220, keyLayout: 'motorola' },
     { slug: 'nokia-6300', name: 'Nokia 6300 · S40 (2007)', vendor: 'Nokia', screenWidth: 240, screenHeight: 320, keyLayout: 'nokia', saveState: true },
 
     { slug: 'generic-320x240', name: 'Generic Java ME 320×240 (ngang)', vendor: null, screenWidth: 320, screenHeight: 240, orientation: 'LANDSCAPE', keyLayout: 'generic' },
-    { slug: 'generic-360x640', name: 'Generic Java ME 360×640', vendor: null, screenWidth: 360, screenHeight: 640, keyLayout: 'generic', saveState: true, ramLimitMb: 320 },
 
     // Hai skin nút trắng — không mô phỏng máy nào, chỉ khác cách bày nút.
     { slug: 'skin-ring', name: 'Skin tay cầm · vòng khuyên', vendor: null, screenWidth: 240, screenHeight: 320, keyLayout: 'generic', saveState: true },
@@ -572,7 +569,7 @@ async function main() {
     },
     {
       slug: 'snake-xenzia', title: 'Snake Xenzia', series: 'Snake',
-      genres: ['arcade', 'casual'], platform: 'nokia-s40', resolution: '128x160', profile: 'nokia-7210',
+      genres: ['arcade', 'casual'], platform: 'nokia-s40', resolution: '128x160', profile: 'nokia-n70',
       developer: 'Nokia', publisher: 'Nokia', year: 2002,
       language: 'en', vietnamized: false, featured: false, playOnline: true,
       description: 'Bản Snake huyền thoại đi kèm điện thoại Nokia — càng ăn càng dài, chạm đuôi là thua.',

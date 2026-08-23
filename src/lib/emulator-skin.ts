@@ -25,7 +25,7 @@
  *          phải là cụm nút hành động `7 9 3 1 OK` xếp theo hình cung, trên cùng
  *          là hai phím vai `L` `R`. Nút trắng viền đậm trên thân xám.
  * - `grid` skin **lưới nút tròn**: `L OK R` rồi bốn hàng số, tất cả cùng một cỡ
- *          nút tròn trắng trên thân tím. Không có phím mũi tên riêng.
+ *          nút tròn trắng. Không có phím mũi tên riêng.
  *
  * Các họ đã bỏ vì dựng ra cùng một thứ với họ còn lại, chỉ khác màu vỏ:
  * `se` · `qwerty` · `touch` · `touch-only` (giống `s40`), và `rocker` — kiểu
@@ -82,12 +82,11 @@ const BY_MODEL: Record<string, ChassisSkin> = {
   // Máy ảo chung dùng bàn phím kiểu J2ME Loader: nền tối trơn, không giả vỏ
   // nhựa hay kim loại của máy nào.
   'generic-320x240': { top: 'bg-ink-950', keypad: 'bg-ink-900', edge: 'border-ink-800', keys: 'dark' },
-  'generic-360x640': { top: 'bg-ink-950', keypad: 'bg-ink-900', edge: 'border-ink-800', keys: 'dark' },
 
   // Hai skin nút trắng. Nửa trên cố ý tối hơn nửa dưới để tên game và nút ⋮
   // (chữ trắng) còn đọc được trên thân sáng màu.
   'skin-ring': { top: 'bg-gradient-to-b from-ink-600 to-ink-700', keypad: 'bg-gradient-to-b from-ink-200 to-ink-300', edge: 'border-ink-500', keys: 'silver' },
-  'skin-grid': { top: 'bg-gradient-to-b from-violet-700 to-violet-900', keypad: 'bg-gradient-to-b from-violet-500 to-violet-600', edge: 'border-violet-900', keys: 'silver' },
+  'skin-grid': { top: 'bg-gradient-to-b from-ink-800 to-ink-950', keypad: 'bg-gradient-to-b from-ink-600 to-ink-700', edge: 'border-ink-900', keys: 'silver' },
 };
 
 /** Bố cục mặt phím theo hãng, dùng khi máy chưa khai báo riêng. */
@@ -110,7 +109,6 @@ const FACE_BY_MODEL: Record<string, FaceLayout> = {
   // Hai máy ảo chung không mô phỏng máy nào, nên lấy luôn bàn phím ảo của
   // J2ME Loader — thứ người chơi game Java trên Android quen tay nhất.
   'generic-320x240': 'j2me',
-  'generic-360x640': 'j2me',
   'skin-ring': 'ring',
   'skin-grid': 'grid',
 };

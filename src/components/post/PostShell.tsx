@@ -48,7 +48,13 @@ export async function getPostForView(slug: string) {
       author: { select: { username: true, name: true, image: true, level: true, vipTier: true } },
       category: { select: { name: true, slug: true, color: true } },
       tags: { include: { tag: { select: { name: true, slug: true } } } },
-      downloads: { orderBy: { order: 'asc' } },
+      // Cùng lý do như trên: KHÔNG lấy url, password, extractCode ở đây. Đó là
+      // hàng đã trả tiền mới có; `orderBy` trần sẽ kéo cả ba cột đó xuống trình
+      // duyệt cho mọi người xem, kể cả người chưa mua.
+      downloads: {
+        orderBy: { order: 'asc' },
+        select: { id: true, label: true, provider: true, version: true, sizeBytes: true, order: true },
+      },
     },
   });
 }
@@ -57,6 +63,20 @@ export async function getPostForView(slug: string) {
 async function loadHiddenContent(postId: string): Promise<string | null> {
   const r = await db.post.findUnique({ where: { id: postId }, select: { hiddenContent: true } });
   return r?.hiddenContent ?? null;
+}
+
+/**
+ * Mật khẩu giải nén và mã trích xuất — chỉ đọc khi đã chắc chắn có quyền.
+ *
+ * `url` thật thì không lấy ở đâu cả: người tải đi qua /api/download/[id],
+ * cổng đó tự kiểm quyền rồi mới chuyển hướng.
+ */
+async function loadDownloadSecrets(postId: string) {
+  const rows = await db.downloadItem.findMany({
+    where: { postId },
+    select: { id: true, password: true, extractCode: true },
+  });
+  return new Map(rows.map((r) => [r.id, r]));
 }
 
 export async function PostShell({ slug, section, dl }: { slug: string; section: PostSection; dl?: string }) {
@@ -185,6 +205,7 @@ async function DetailSection({ post, access, accessUser, isAuthor, dl }: {
 
   // Chỉ đọc nội dung ẩn khi đã chắc chắn có quyền — không bao giờ nạp sẵn rồi ẩn.
   const hidden = access.allowed ? await loadHiddenContent(post.id) : null;
+  const secrets = access.allowed && post.downloads.length > 0 ? await loadDownloadSecrets(post.id) : null;
   const hiddenBlock = hidden ? (
     <div className="mt-2 rounded-2xl border border-brand-200 bg-brand-50/50 p-5 dark:border-brand-900 dark:bg-brand-950/20">
       <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-brand-600"><Lock size={13} /> Nội dung mở khoá</div>
@@ -219,7 +240,12 @@ async function DetailSection({ post, access, accessUser, isAuthor, dl }: {
       <DownloadBox
         postId={post.id} slug={post.slug} allowed={access.allowed} reason={access.reason} access={post.access}
         pricePoints={post.pricePoints} priceAmount={post.priceAmount}
-        downloads={post.downloads.map((d) => ({ id: d.id, label: d.label, provider: d.provider, version: d.version, password: d.password, extractCode: d.extractCode, sizeBytes: d.sizeBytes == null ? null : Number(d.sizeBytes) }))}
+        downloads={post.downloads.map((d) => ({
+          id: d.id, label: d.label, provider: d.provider, version: d.version,
+          password: secrets?.get(d.id)?.password ?? null,
+          extractCode: secrets?.get(d.id)?.extractCode ?? null,
+          sizeBytes: d.sizeBytes == null ? null : Number(d.sizeBytes),
+        }))}
         plans={plans} updatedAt={format(post.updatedAt, 'yyyy-MM-dd')} callbackUrl={`/posts/${post.slug}`}
         quota={quota} notice={dl}
       />

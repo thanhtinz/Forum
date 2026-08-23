@@ -495,7 +495,13 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
    */
   // Mọi dòng máy giờ dùng chung một mặt phím (mũi tên · số · Options · Back)
   // nên chia thân máy như nhau; chỉ dáng cụm điều hướng là khác.
-  const split = { top: 'flex-[56]', bottom: 'flex-[44]' };
+  //
+  // Chia ngược so với trước: **bàn phím lấy đúng chiều cao nó cần**, kính màn
+  // hình ăn tất cả phần còn lại. Hai cách chia kia đều hỏng — chia theo tỉ lệ
+  // cố định thì kính không chạm tới bàn phím (nhìn như màn hình bé hơn thân
+  // máy), còn cho kính giữ tỉ lệ máy ảo ở full bề ngang thì nó cao 513px và
+  // bóp phím số xuống 21px, chữ số đè lên chữ cái.
+  const split = { top: 'flex-1', bottom: 'shrink-0' };
 
   const areaRef = useRef<HTMLDivElement>(null);
   /** Viền kính bao quanh khung game (chỉ có khi dựng thân máy). */
@@ -507,18 +513,10 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
     const area = areaRef.current;
     if (!area) return;
     const fit = () => {
+      // `areaRef` nằm bên trong kính nên rect của nó đã trừ sẵn viền và padding.
       const rect = area.getBoundingClientRect();
-      let width = rect.width;
-      let height = rect.height;
-      // Kính màn hình ôm sát khung game nên phần viền phải trừ ra khỏi chỗ
-      // trống; đọc thẳng từ computed style để đổi class không phải sửa số.
-      const bezel = bezelRef.current;
-      if (bezel) {
-        const cs = getComputedStyle(bezel);
-        const px = (v: string) => parseFloat(v) || 0;
-        width -= px(cs.paddingLeft) + px(cs.paddingRight) + px(cs.borderLeftWidth) + px(cs.borderRightWidth);
-        height -= px(cs.paddingTop) + px(cs.paddingBottom) + px(cs.borderTopWidth) + px(cs.borderBottomWidth);
-      }
+      const width = rect.width;
+      const height = rect.height;
       if (width <= 0 || height <= 0) return;
       if (scaling === 'stretch') {
         // Kéo đầy khung, chấp nhận méo tỉ lệ.
@@ -559,7 +557,10 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
 
   const screenBox = (
     <div
-      className="relative overflow-hidden rounded-lg bg-black ring-1 ring-ink-700"
+      // Trong thân máy thì kính đã là viền rồi: khung game vẽ thêm vành sáng
+      // và bo góc nữa là hiện ra một hình chữ nhật lọt thỏm giữa kính, nhìn
+      // đúng kiểu "màn hình bé hơn khung máy". Ngoài thân máy mới cần vành.
+      className={cn('relative overflow-hidden bg-black', fill ? 'rounded-none' : 'rounded-lg ring-1 ring-ink-700')}
       style={{
         ...(box.w > 0 ? { width: box.w, height: box.h } : { width: '100%', aspectRatio: `${screen.w} / ${screen.h}` }),
         // Máy cổ nên để pixel vuông; ai thích mượt thì đổi trong cấu hình game.
@@ -844,20 +845,19 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           <div className={cn('flex min-h-0 flex-col px-1.5 pb-1.5 pt-1', split.top, skin.top)}>
             {chassisTop(true)}
             {/*
-              Kính màn hình trải **hết bề ngang thân máy**, khung game giữ đúng
-              tỉ lệ gốc nên nằm giữa và chừa hai dải đen hai bên — y như màn hình
-              máy thật. Trước đây kính ôm sát khung game nên game 3:4 để lộ màu
-              vỏ hai bên, nhìn như màn hình bé hơn thân máy.
+              Kính màn hình lấp **trọn vùng phía trên bàn phím** — hết bề ngang
+              lẫn hết chiều cao còn lại, không chốt tỉ lệ. Khung game bên trong
+              vẫn giữ đúng tỉ lệ máy ảo; phần thừa là nền kính đen nên không
+              nhìn ra dải viền, y như màn hình máy thật.
 
-              Không thể vừa cho kính ôm sát vừa lấp hết bề ngang: giữ tỉ lệ gốc
-              thì game 240×320 rộng 400px phải cao 533px, mà nhường bấy nhiêu
-              chiều cao cho nửa trên thì phím số chỉ còn 25px.
+              Đừng gán `aspect-ratio` cho kính: máy 240×320 ở full bề ngang sẽ
+              cao 513px, nuốt hết chỗ của bàn phím.
             */}
-            <div ref={areaRef} className="flex min-h-0 flex-1 items-center justify-center">
-              <div
-                ref={bezelRef}
-                className="flex h-full w-full items-center justify-center rounded-lg border border-black/80 bg-ink-950 p-1.5 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)]"
-              >
+            <div
+              ref={bezelRef}
+              className="min-h-0 w-full flex-1 overflow-hidden rounded-lg border border-black/80 bg-ink-950 p-1 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)]"
+            >
+              <div ref={areaRef} className="flex h-full w-full items-center justify-center">
                 {screenBox}
               </div>
             </div>
@@ -870,11 +870,13 @@ export function EmulatorStage({ slug, gameTitle, versionId, profileId, savedKeym
           {/*
             Nửa dưới: mặt phím sáng màu, tách hẳn khối với nửa trên.
 
-            `min-h-[19rem]` là sàn cứng: trên máy màn hình ngắn (360×640) mà chỉ
-            chia theo tỉ lệ thì phím số bị bóp còn 20px — không bấm nổi. Thà để
-            khung game nhỏ lại còn hơn.
+            `h-[19.5rem]` là chiều cao vừa đủ cho phím mềm + cụm mũi tên + bốn
+            hàng phím số ở cỡ bấm được (~30px/hàng). Trên máy màn hình ngắn nó
+            co lại theo `max-h` chứ không đẩy kính ra ngoài thân máy — nhưng
+            `56%` là mức thấp nhất còn bấm được: để `46%` thì màn hình 320×568
+            bóp hàng phím số xuống 22px.
           */}
-          <div className={cn('min-h-[23rem] border-t border-black/60 px-2.5 pb-2.5 pt-2', split.bottom, skin.keypad)}>
+          <div className={cn('h-[19.5rem] max-h-[56%] min-h-[16.5rem] border-t border-black/60 px-2.5 pb-2 pt-1.5', split.bottom, skin.keypad)}>
             {keypad.phonePad}
           </div>
         </div>

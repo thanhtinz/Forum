@@ -264,9 +264,14 @@ export function useKeypadParts({
               'h-full w-full min-w-0 flex-col justify-center gap-0 overflow-hidden px-1',
               flat ? 'rounded-[3px] border-x-0 border-b-0 border-t border-white/10' : 'rounded-full')}
           >
-            <span className="text-base font-semibold leading-none">{EMU_KEY_LABEL[k]}</span>
+            {/*
+              Cỡ chữ phải nhỏ hơn hàng phím: hàng thấp nhất đo được là ~34px,
+              15px số + 7px chữ cái vừa khít. Để `text-base` + `mt-0.5` như
+              trước thì phần chữ cao 26px, hàng 21px là số đè lên chữ cái.
+            */}
+            <span className="text-[15px] font-semibold leading-none">{EMU_KEY_LABEL[k]}</span>
             {letters && (
-              <span className={cn('mt-0.5 text-[8px] font-bold leading-none tracking-wider', subColor)}>
+              <span className={cn('text-[7px] font-bold leading-[1.4] tracking-wider', subColor)}>
                 {letters}
               </span>
             )}
@@ -479,18 +484,24 @@ export function useKeypadParts({
     <div className="flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden">
       {softKeys && (
         <div className="flex shrink-0 items-stretch gap-2">
-          {softLeft(cn('h-10 min-w-0 flex-1', PILL_L))}
-          {softRight(cn('h-10 min-w-0 flex-1', PILL_R))}
+          {softLeft(cn('h-9 min-w-0 flex-1', PILL_L))}
+          {softRight(cn('h-9 min-w-0 flex-1', PILL_R))}
         </div>
       )}
 
-      {/* Mũi tên nằm trên, bàn phím số nằm dưới — như mặt trước máy thật. */}
-      <div className="flex min-h-0 w-full min-w-0 flex-[52] items-center justify-center">
+      {/*
+        Mũi tên nằm trên, bàn phím số nằm dưới — như mặt trước máy thật.
+
+        Tỉ lệ `44 : 56` nghiêng về bàn phím số: từ khi khung game lấp trọn vùng
+        trên thì nửa dưới hẹp đi, chia đều là phím số tụt xuống 22px, bấm không
+        trúng. Cụm mũi tên nhường chỗ vì nó vẫn còn rộng chán.
+      */}
+      <div className="flex min-h-0 w-full min-w-0 flex-[44] items-center justify-center">
         {navCluster}
       </div>
 
       <div
-        className={cn('min-h-0 w-full min-w-0 flex-[48]',
+        className={cn('min-h-0 w-full min-w-0 flex-[56]',
           flatNum && 'overflow-hidden rounded-md border border-white/10')}
       >
         {numGrid(flatNum)}

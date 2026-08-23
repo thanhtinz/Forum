@@ -380,6 +380,100 @@ export function useKeypadParts({
     </div>
   );
 
+  // ── Hai skin nút trắng ───────────────────────────────────
+  /**
+   * Nút trắng viền đậm, dùng chung cho skin **vòng khuyên** và skin **lưới nút
+   * tròn**. Khác hẳn phím nhựa của ba họ máy thật và nút trong suốt của `j2me`.
+   */
+  const WHITE_KEY =
+    'select-none touch-none grid place-items-center border-2 border-ink-800/80 bg-white text-ink-900 ' +
+    'font-semibold shadow-[0_2px_3px_rgba(0,0,0,0.28)] transition active:translate-y-px active:bg-ink-200';
+  const WHITE_HELD = '!bg-brand-500 !text-white !border-brand-700';
+
+  const whiteBtn = (key: EmuKey, body: React.ReactNode, extra: string, style?: React.CSSProperties) => (
+    <button
+      key={key} type="button" {...bind(key)} style={style}
+      className={cn(WHITE_KEY, held.has(key) && WHITE_HELD, extra)}
+    >
+      {body}
+    </button>
+  );
+
+  /**
+   * Skin **vòng khuyên**: cụm điều hướng là một vòng tròn rỗng ruột (bấm vào
+   * cung nào thì đi hướng đó), bên phải là cụm nút hành động xếp theo hình
+   * cung — `7` `9` trên, `3` `1` bên trái, `OK` to nằm dưới. Hàng trên là hai
+   * phím vai `L` và `R`.
+   *
+   * Lỗ giữa vòng khuyên chỉ để nhìn, `pointer-events-none`, nên bấm trúng giữa
+   * vẫn ăn cung bên dưới chứ không thành vùng chết.
+   */
+  const ringPad = (
+    <div className="relative aspect-square h-full max-h-[13rem] shrink-0 rounded-full border-2 border-ink-800/80 bg-white shadow-[0_2px_4px_rgba(0,0,0,0.3)]">
+      {NAV_ZONES.map((z) => (
+        <button
+          key={z.key} type="button" {...bind(z.key)}
+          style={{ clipPath: z.clip }}
+          className={cn('absolute inset-0 flex rounded-full transition', z.at, 'text-ink-500',
+            held.has(z.key) && 'bg-brand-500/80 !text-white')}
+        >
+          {z.icon}
+        </button>
+      ))}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ink-800/70 bg-ink-100"
+      />
+    </div>
+  );
+
+  /** Cụm nút hành động của skin vòng khuyên, xếp theo hình cung. */
+  const RING_ACTIONS: { key: EmuKey; label: string; box: React.CSSProperties }[] = [
+    { key: 'NUM7', label: '7', box: { left: '32%', top: '2%', width: '30%' } },
+    { key: 'NUM9', label: '9', box: { left: '68%', top: '2%', width: '30%' } },
+    { key: 'NUM3', label: '3', box: { left: '6%', top: '28%', width: '30%' } },
+    { key: 'NUM1', label: '1', box: { left: '0%', top: '64%', width: '30%' } },
+    { key: 'FIRE', label: 'OK', box: { left: '44%', top: '42%', width: '40%' } },
+  ];
+
+  const faceRing = (
+    <div className="flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden">
+      <div className="flex shrink-0 items-stretch gap-3">
+        {whiteBtn('SOFT_LEFT', 'L', 'h-11 min-w-0 flex-1 rounded-xl text-sm')}
+        {whiteBtn('SOFT_RIGHT', 'R', 'h-11 min-w-0 flex-1 rounded-xl text-sm')}
+      </div>
+
+      <div className="flex min-h-0 w-full min-w-0 flex-1 items-center gap-3 overflow-hidden">
+        {ringPad}
+        <div className="relative aspect-square h-full max-h-[13rem] min-w-0 flex-1">
+          {RING_ACTIONS.map((a) =>
+            whiteBtn(a.key, a.label, 'absolute aspect-square rounded-full text-sm', a.box),
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  /**
+   * Skin **lưới nút tròn**: `L OK R` rồi bốn hàng số, tất cả cùng một cỡ nút
+   * tròn trắng. Không có phím mũi tên riêng — game Java đọc `2 4 6 8` làm bốn
+   * hướng, đúng như skin gốc.
+   */
+  const GRID_KEYS: { key: EmuKey; label: string }[][] = [
+    [{ key: 'SOFT_LEFT', label: 'L' }, { key: 'FIRE', label: 'OK' }, { key: 'SOFT_RIGHT', label: 'R' }],
+    ...NUMPAD_ROWS.map((row) => row.map((k) => ({ key: k, label: EMU_KEY_LABEL[k] }))),
+  ];
+
+  const faceGrid = (
+    <div className="grid h-full w-full min-w-0 grid-cols-3 grid-rows-5 gap-2 overflow-hidden">
+      {GRID_KEYS.flat().map(({ key, label }) => (
+        <span key={key} className="grid min-h-0 place-items-center">
+          {whiteBtn(key, label, 'aspect-square h-full max-h-full rounded-full text-sm')}
+        </span>
+      ))}
+    </div>
+  );
+
   const phoneFace = (
     <div className="flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden">
       {softKeys && (
@@ -429,7 +523,12 @@ export function useKeypadParts({
       </div>
     ),
 
-    phonePad: fill ? (faceLayout === 'j2me' ? faceJ2me : phoneFace) : (
+    phonePad: fill ? (
+      faceLayout === 'j2me' ? faceJ2me
+      : faceLayout === 'ring' ? faceRing
+      : faceLayout === 'grid' ? faceGrid
+      : phoneFace
+    ) : (
       <div className="mx-auto w-full max-w-[19rem] rounded-[1.6rem] border border-ink-800/70 bg-gradient-to-b from-ink-800/40 to-ink-900/40 p-2 shadow-[0_1px_0_rgba(255,255,255,0.05)_inset]">
         <div className="flex items-stretch gap-1.5">
           {softKeys && softLeft(cn('h-9 min-w-0 flex-1', PILL_L))}

@@ -179,6 +179,8 @@ còn tám:
 | `s60` | **Bốn hướng vuông**: một khối vuông bo góc liền, giữa lồng ô vuông nhỏ có viền riêng | Nokia N70 (176×208), Nokia 7210 (128×128) |
 | `razr` | Vòng xoay như `s40` nhưng **bàn phím số phẳng khắc laser** | Motorola RAZR V3 (176×220) |
 | `j2me` | Bàn phím ảo kiểu **J2ME Loader**: bốn nút tròn rời xếp chữ thập bên trái, bàn phím số bên phải, nút trong suốt trên nền tối | Hai máy ảo chung (320×240, 360×640) |
+| `ring` | Skin **vòng khuyên**: cụm điều hướng là vòng tròn rỗng ruột, bên phải là cụm hành động `7 9 3 1 OK` xếp hình cung, trên cùng hai phím vai `L` `R`. Nút trắng viền đậm trên thân xám | Skin tay cầm · vòng khuyên |
+| `grid` | Skin **lưới nút tròn**: `L OK R` rồi bốn hàng số, tất cả cùng cỡ nút tròn trắng trên thân tím | Skin lưới nút tròn |
 
 Các họ đã bỏ vì dựng ra cùng một thứ với họ còn lại, chỉ khác màu vỏ:
 `se` · `qwerty` · `touch` · `touch-only` (giống `s40`), và `rocker` — kiểu bập
@@ -204,6 +206,24 @@ chơi, nhưng đo lần đầu lại là phím nhỏ nhất: 33–45px vuông so
   ở nửa trên của vành cũng là đi lên, như máy thật.
 - Trần chiều cao cụm điều hướng bị siết quá chặt. Nới trần và chia lại tỉ lệ
   cụm điều hướng ‧ bàn phím số.
+
+**Hai skin nút trắng.** Ngoài bốn họ trên còn hai skin nữa, dựng theo ảnh
+người dùng gửi. Cả hai dùng nút trắng viền đậm — khác hẳn phím nhựa của họ máy
+thật và nút trong suốt của `j2me`:
+
+- **`ring`** — vòng khuyên rỗng ruột làm cụm điều hướng (bấm vào cung nào đi
+  hướng đó, vùng bấm vẫn cắt theo góc phần tư), bên phải là cụm hành động
+  `7 9 3 1 OK` xếp hình cung, trên cùng hai phím vai `L` `R`. Lỗ giữa vòng
+  khuyên để `pointer-events-none` nên bấm trúng giữa vẫn ăn cung bên dưới chứ
+  không thành vùng chết. Đo: một cung `10 404px²`, `OK` `3 504px²`, nút hành
+  động `50px` tròn (`1 971px²`).
+- **`grid`** — lưới `3×5` nút tròn bằng nhau: `L OK R` rồi bốn hàng số. Đo:
+  cả 16 nút đều `64px` tròn (`3 172px²`).
+
+Hai skin này **cố tình thiếu phím**, đúng như ảnh gốc: `ring` chỉ có
+`1 3 7 9`, thiếu `2 4 5 6 8 0 * #`; `grid` không có phím mũi tên riêng, game
+Java phải tự đọc `2 4 6 8` làm bốn hướng. Game nào cần phím ngoài bộ đó thì
+người chơi đổi sang skin khác.
 
 **Mẫu J2ME Loader.** Ba họ trên đều mô phỏng mặt trước một máy thật, mà mũi tên
 thì chỉ còn hai dáng: **tròn** (`s40`, `razr`) và **vuông** (`s60`). Họ `j2me`

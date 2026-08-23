@@ -131,17 +131,11 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
         </label>
       </div>
 
-      {/* Quyền xem — chỉ quản trị viên mới thấy các mức bán hàng */}
+      {/* Quyền xem nội dung ẩn — chỉ quản trị viên mới thấy các mức bán hàng */}
       <div className="rounded-2xl border border-ink-200 p-4 dark:border-ink-700">
         <div className="mb-3 flex items-center gap-1.5 text-sm font-bold">
-          <Coins size={16} className="text-amber-500" /> {canSell ? 'Bán nội dung (tuỳ chọn)' : 'Quyền xem bài'}
+          <Coins size={16} className="text-amber-500" /> {canSell ? 'Bán nội dung (tuỳ chọn)' : 'Quyền xem nội dung ẩn'}
         </div>
-
-        {!canSell && (
-          <p className="mb-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500 dark:bg-ink-800/50">
-            Nội dung trả phí do ban quản trị đăng ở cửa hàng. Bài của thành viên được chia sẻ miễn phí.
-          </p>
-        )}
 
         {/* Giữ nguyên mức hiện tại nếu nó không nằm trong danh sách chọn được
             (vd. admin đăng hàng, sau đó người không có quyền bán mở form sửa) */}

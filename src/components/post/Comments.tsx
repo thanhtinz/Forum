@@ -7,6 +7,7 @@ import { ReportButton } from '@/components/ReportButton';
 import { CommentModActions } from './CommentModActions';
 import { cn } from '@/lib/utils';
 import { CommentForm } from './CommentForm';
+import { CommentReply } from './CommentReply';
 import { CommentBody } from './CommentBody';
 import { CommentOwnerActions } from './CommentOwnerActions';
 import { EditScope } from '@/components/EditScope';
@@ -51,10 +52,17 @@ export async function Comments({ postId, slug, loggedIn }: { postId: string; slu
         <ul className="space-y-5">
           {roots.map((c) => (
             <li key={c.id}>
-              <CommentRow c={c} me={me} canManage={canManage} />
+              <CommentRow c={c} me={me} canManage={canManage}
+                postId={postId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
               {c.children.length > 0 && (
                 <ul className="mt-3 space-y-3 border-l-2 border-ink-100 pl-4 dark:border-ink-800">
-                  {c.children.map((ch) => <li key={ch.id}><CommentRow c={ch} me={me} canManage={canManage} small /></li>)}
+                  {c.children.map((ch) => (
+                    <li key={ch.id}>
+                      {/* Phản hồi cho phản hồi vẫn gắn vào bình luận gốc: danh sách chỉ lồng một mức. */}
+                      <CommentRow c={ch} me={me} canManage={canManage} small
+                        postId={postId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
+                    </li>
+                  ))}
                 </ul>
               )}
             </li>
@@ -71,7 +79,12 @@ type Row = {
   author: { username: string | null; name: string | null; image: string | null };
 };
 
-function CommentRow({ c, me, canManage, small }: { c: Row; me: string | null; canManage: boolean; small?: boolean }) {
+function CommentRow({ c, me, canManage, small, postId, slug, callbackUrl, rootId }: {
+  c: Row; me: string | null; canManage: boolean; small?: boolean;
+  postId: string; slug: string; callbackUrl: string;
+  /** Bình luận gốc của nhánh — nơi phản hồi mới sẽ gắn vào. */
+  rootId: string;
+}) {
   const name = c.author?.name ?? c.author?.username ?? 'Ẩn danh';
   const size = small ? 'h-8 w-8' : 'h-9 w-9';
   const isOwner = !!me && me === c.authorId;
@@ -94,8 +107,12 @@ function CommentRow({ c, me, canManage, small }: { c: Row; me: string | null; ca
         </div>
         <CommentBody commentId={c.id} content={c.content} createdAt={c.createdAt} updatedAt={c.updatedAt}
           className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-700 dark:text-ink-200" />
-        {(canManage || isOwner || (me && me !== c.authorId)) && (
+        {(canManage || !!me) && (
           <div className="mt-1 flex flex-wrap items-center gap-3">
+            {me && !c.hidden && (
+              <CommentReply postId={postId} slug={slug} rootId={rootId} callbackUrl={callbackUrl}
+                mention={small ? c.author?.username : null} />
+            )}
             {isOwner && <CommentOwnerActions commentId={c.id} />}
             {me && me !== c.authorId && (
               <ReportButton target="comment" targetId={c.id}

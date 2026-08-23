@@ -126,11 +126,24 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
   const rate = await checkRateLimit('comment', userId);
   if (!rate.allowed) return { error: rate.message };
 
+  // Phản hồi phải nằm cùng bài, và luôn gắn vào bình luận gốc của nhánh: gửi
+  // thẳng biểu mẫu với parentId của một phản hồi cũng không lồng sâu thêm được.
+  let rootId: string | null = null;
+  let parentAuthorId: string | null = null;
+  if (parentId) {
+    const parent = await db.comment.findUnique({
+      where: { id: parentId }, select: { id: true, postId: true, parentId: true, authorId: true },
+    });
+    if (!parent || parent.postId !== postId) return { error: 'Phản hồi không hợp lệ.' };
+    rootId = parent.parentId ?? parent.id;
+    parentAuthorId = parent.authorId;
+  }
+
   const post0 = await db.post.findUnique({ where: { id: postId }, select: { authorId: true } });
-  const mentioned = await resolveMentions(content, userId, [post0?.authorId]);
+  const mentioned = await resolveMentions(content, userId, [post0?.authorId, parentAuthorId]);
 
   await db.$transaction(async (tx) => {
-    await tx.comment.create({ data: { postId, authorId: userId, content, parentId } });
+    await tx.comment.create({ data: { postId, authorId: userId, content, parentId: rootId } });
     const post = await tx.post.update({
       where: { id: postId }, data: { commentCount: { increment: 1 } },
       select: { authorId: true, slug: true, title: true },
@@ -138,6 +151,13 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
     if (post.authorId !== userId) {
       await notify(
         { userId: post.authorId, type: 'COMMENT', title: 'Có bình luận mới', content: post.title, link: `/posts/${post.slug}`, actorId: userId },
+        tx,
+      );
+    }
+    // Báo cho người được phản hồi — trừ khi họ là chủ bài viết (đã báo ở trên).
+    if (parentAuthorId && parentAuthorId !== userId && parentAuthorId !== post.authorId) {
+      await notify(
+        { userId: parentAuthorId, type: 'COMMENT', title: 'Có người phản hồi bình luận của bạn', content: post.title, link: `/posts/${post.slug}`, actorId: userId },
         tx,
       );
     }

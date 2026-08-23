@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Settings2, X, Check, Images, Timer, Tag, Palette, MessageSquare } from 'lucide-react';
 import { setChatAppearance, setNickname, setAutoDelete } from '@/app/(site)/user/messages/actions';
 import { CHAT_THEMES, CHAT_BUBBLES, AUTO_DELETE_OPTIONS, NICKNAME_MAX } from '@/lib/chat-theme';
+import { ChibiEars } from '@/components/user/ChibiEars';
 import { cn } from '@/lib/utils';
 
 export interface ChatSettingsProps {
@@ -62,13 +63,30 @@ export function ChatSettings(p: ChatSettingsProps) {
               <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-700 dark:text-ink-200">
                 <Palette size={15} className="text-ink-400" /> Ảnh nền
               </p>
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400">Màu trơn</p>
               <div className="grid grid-cols-4 gap-2">
-                {CHAT_THEMES.map((t) => (
+                {CHAT_THEMES.filter((t) => !t.scenery).map((t) => (
                   <button key={t.value} type="button" disabled={pending} onClick={() => pickTheme(t.value)}
                     className={cn('rounded-xl border p-1.5 text-center transition-colors disabled:opacity-60',
                       theme === t.value ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
                     {/* Xem trước cả hoa văn, không chỉ màu nền */}
                     <span className="relative block h-10 w-full overflow-hidden rounded-lg"
+                      style={{ backgroundColor: t.swatch, ...t.style }}>
+                      {theme === t.value && <Check size={16} className="absolute inset-0 m-auto text-white drop-shadow" />}
+                    </span>
+                    <span className="mt-1 block truncate text-[11px] text-ink-500">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="mb-1.5 mt-3 text-[11px] font-medium uppercase tracking-wide text-ink-400">Phong cảnh</p>
+              <div className="grid grid-cols-3 gap-2">
+                {CHAT_THEMES.filter((t) => t.scenery).map((t) => (
+                  <button key={t.value} type="button" disabled={pending} onClick={() => pickTheme(t.value)}
+                    className={cn('rounded-xl border p-1.5 text-center transition-colors disabled:opacity-60',
+                      theme === t.value ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
+                    {/* Xem trước chính ảnh phong cảnh sẽ dùng */}
+                    <span className="relative block h-14 w-full overflow-hidden rounded-lg"
                       style={{ backgroundColor: t.swatch, ...t.style }}>
                       {theme === t.value && <Check size={16} className="absolute inset-0 m-auto text-white drop-shadow" />}
                     </span>
@@ -83,13 +101,30 @@ export function ChatSettings(p: ChatSettingsProps) {
               <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-700 dark:text-ink-200">
                 <MessageSquare size={15} className="text-ink-400" /> Bong bóng chat
               </p>
+              <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400">Thường</p>
               <div className="grid grid-cols-3 gap-2">
-                {CHAT_BUBBLES.map((b) => (
+                {CHAT_BUBBLES.filter((b) => !b.ears).map((b) => (
                   <button key={b.value} type="button" disabled={pending} onClick={() => pickBubble(b.value)}
                     className={cn('rounded-xl border p-2 transition-colors disabled:opacity-60',
                       bubble === b.value ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
                     {/* Xem trước đúng kiểu bong bóng sẽ dùng */}
                     <span className={cn('mx-auto block h-5 w-14 px-2', b.mine, b.radius)} />
+                    <span className="mt-1.5 block truncate text-[11px] text-ink-500">{b.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="mb-1.5 mt-3 text-[11px] font-medium uppercase tracking-wide text-ink-400">Chibi</p>
+              <div className="grid grid-cols-3 gap-2">
+                {CHAT_BUBBLES.filter((b) => b.ears).map((b) => (
+                  <button key={b.value} type="button" disabled={pending} onClick={() => pickBubble(b.value)}
+                    className={cn('rounded-xl border p-2 transition-colors disabled:opacity-60',
+                      bubble === b.value ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
+                    {/* Xem trước cả đôi tai để phân biệt mèo / gấu / thỏ */}
+                    <span className="relative mx-auto block h-8 w-16">
+                      {b.ears && <ChibiEars kind={b.ears} color={b.earMine ?? '#999'} mine={false} />}
+                      <span className={cn('absolute inset-x-0 bottom-0 block h-5', b.mine, b.radius)} />
+                    </span>
                     <span className="mt-1.5 block truncate text-[11px] text-ink-500">{b.label}</span>
                   </button>
                 ))}

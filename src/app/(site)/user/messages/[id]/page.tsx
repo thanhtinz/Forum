@@ -146,8 +146,8 @@ export default async function ConversationPage({ params, searchParams }: {
         {items.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <Avatar image={partner.image} name={partnerName} className="size-16" />
-            <p className="mt-3 font-semibold text-ink-700 dark:text-ink-200">{partnerName}</p>
-            <p className="mt-1 text-sm text-ink-400">Chưa có tin nhắn nào. Gửi lời chào đi!</p>
+            <p className={cn('mt-3 font-semibold', theme.dark ? 'text-white' : 'text-ink-700 dark:text-ink-200')}>{partnerName}</p>
+            <p className={cn('mt-1 text-sm', theme.dark ? 'text-white/70' : 'text-ink-400')}>Chưa có tin nhắn nào. Gửi lời chào đi!</p>
           </div>
         )}
 
@@ -171,14 +171,17 @@ export default async function ConversationPage({ params, searchParams }: {
               <div key={m.id}>
                 {m.newDay && (
                   <div className="my-3 flex items-center gap-3">
-                    <span className="h-px flex-1 bg-ink-200 dark:bg-ink-800" />
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-ink-400">{dayLabel(m.createdAt)}</span>
-                    <span className="h-px flex-1 bg-ink-200 dark:bg-ink-800" />
+                    <span className={cn('h-px flex-1', theme.dark ? 'bg-white/25' : 'bg-ink-200 dark:bg-ink-800')} />
+                    <span className={cn('text-[11px] font-medium uppercase tracking-wide',
+                      theme.dark ? 'text-white/70' : 'text-ink-400')}>{dayLabel(m.createdAt)}</span>
+                    <span className={cn('h-px flex-1', theme.dark ? 'bg-white/25' : 'bg-ink-200 dark:bg-ink-800')} />
                   </div>
                 )}
 
                 <div className={cn('flex items-end gap-2', mine ? 'justify-end' : 'justify-start',
-                  m.startsGroup && !m.newDay && 'mt-2')}>
+                  // Tai chibi nhô lên khỏi bong bóng nên cụm phải giãn ra thêm
+                  m.startsGroup && !m.newDay && (bubble.ears ? 'mt-4' : 'mt-2'),
+                  bubble.ears && 'first:mt-3')}>
                   {/* Avatar chỉ ở tin cuối cụm để cột trái không bị lặp */}
                   {!mine && (m.endsGroup
                     ? <Avatar image={partner.image} name={partnerName} className="size-7 shrink-0 text-xs" />

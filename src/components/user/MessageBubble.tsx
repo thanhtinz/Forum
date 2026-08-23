@@ -5,6 +5,7 @@ import { Check, CheckCheck } from 'lucide-react';
 import { reactToMessage } from '@/app/(site)/user/messages/actions';
 import { MESSAGE_REACTIONS, type ChatBubble } from '@/lib/chat-theme';
 import { ReplyContent } from '@/components/forum/ReplyContent';
+import { ChibiEars } from '@/components/user/ChibiEars';
 import { cn } from '@/lib/utils';
 
 export interface ReactionView { emoji: string; mine: boolean }
@@ -86,6 +87,13 @@ export function MessageBubble(p: MessageBubbleProps) {
           </>
         )}
 
+        {/* Tai chibi nằm ngoài bong bóng nên phải bọc riêng để không bị cắt góc */}
+        <div className="relative">
+          {p.bubble.ears && (
+            <ChibiEars kind={p.bubble.ears} mine={p.mine}
+              color={(p.mine ? p.bubble.earMine : p.bubble.earTheirs) ?? 'currentColor'} />
+          )}
+
         <div
           onDoubleClick={() => send('❤️')}
           onPointerDown={(e) => { if (e.pointerType !== 'touch') startPress(); }}
@@ -112,6 +120,7 @@ export function MessageBubble(p: MessageBubbleProps) {
                 : <Check size={13} aria-label="Đã gửi" />)}
             </div>
           )}
+        </div>
         </div>
 
         {reactions.length > 0 && (

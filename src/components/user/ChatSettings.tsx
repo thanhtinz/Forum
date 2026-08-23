@@ -67,7 +67,9 @@ export function ChatSettings(p: ChatSettingsProps) {
                   <button key={t.value} type="button" disabled={pending} onClick={() => pickTheme(t.value)}
                     className={cn('rounded-xl border p-1.5 text-center transition-colors disabled:opacity-60',
                       theme === t.value ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
-                    <span className="relative block h-10 w-full overflow-hidden rounded-lg" style={{ backgroundColor: t.swatch }}>
+                    {/* Xem trước cả hoa văn, không chỉ màu nền */}
+                    <span className="relative block h-10 w-full overflow-hidden rounded-lg"
+                      style={{ backgroundColor: t.swatch, ...t.style }}>
                       {theme === t.value && <Check size={16} className="absolute inset-0 m-auto text-white drop-shadow" />}
                     </span>
                     <span className="mt-1 block truncate text-[11px] text-ink-500">{t.label}</span>

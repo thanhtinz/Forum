@@ -2,11 +2,15 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { MessageSquare } from 'lucide-react';
 import { db } from '@/lib/db';
+import { auth } from '@/lib/auth';
+import { ReportButton } from '@/components/ReportButton';
 import { CommentForm } from './CommentForm';
 import { ReplyContent } from '@/components/forum/ReplyContent';
 
 /** Danh sách bình luận phân cấp 1 mức (bình luận gốc + phản hồi). */
 export async function Comments({ postId, slug, loggedIn }: { postId: string; slug: string; loggedIn: boolean }) {
+  const session = await auth();
+  const me = session?.user?.id ?? null;
   const roots = await db.comment.findMany({
     where: { postId, parentId: null, hidden: false },
     orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
@@ -36,10 +40,10 @@ export async function Comments({ postId, slug, loggedIn }: { postId: string; slu
         <ul className="space-y-5">
           {roots.map((c) => (
             <li key={c.id}>
-              <CommentRow c={c} />
+              <CommentRow c={c} me={me} />
               {c.children.length > 0 && (
                 <ul className="mt-3 space-y-3 border-l-2 border-ink-100 pl-4 dark:border-ink-800">
-                  {c.children.map((ch) => <li key={ch.id}><CommentRow c={ch} small /></li>)}
+                  {c.children.map((ch) => <li key={ch.id}><CommentRow c={ch} me={me} small /></li>)}
                 </ul>
               )}
             </li>
@@ -51,11 +55,11 @@ export async function Comments({ postId, slug, loggedIn }: { postId: string; slu
 }
 
 type Row = {
-  id: string; content: string; createdAt: Date; pinned?: boolean;
+  id: string; content: string; createdAt: Date; pinned?: boolean; authorId: string;
   author: { username: string | null; name: string | null; image: string | null };
 };
 
-function CommentRow({ c, small }: { c: Row; small?: boolean }) {
+function CommentRow({ c, me, small }: { c: Row; me: string | null; small?: boolean }) {
   const name = c.author?.name ?? c.author?.username ?? 'Ẩn danh';
   const size = small ? 'h-8 w-8' : 'h-9 w-9';
   return (
@@ -74,6 +78,12 @@ function CommentRow({ c, small }: { c: Row; small?: boolean }) {
         </div>
         <ReplyContent content={c.content}
           className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-700 dark:text-ink-200" />
+        {me && me !== c.authorId && (
+          <div className="mt-1">
+            <ReportButton target="comment" targetId={c.id}
+              className="inline-flex items-center gap-1 text-xs text-ink-400 transition-colors hover:text-red-500" />
+          </div>
+        )}
       </div>
     </div>
   );

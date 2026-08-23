@@ -170,6 +170,7 @@ export default async function ThreadPage({ params, searchParams }: {
           actions={
             <ThreadActionBar threadId={thread.id} initialLiked={likedThread.has(thread.id)} initialLikeCount={thread.likeCount}
               initialFollowing={!!myFollow} initialFollowCount={followCount}
+              canReport={loggedIn && !isOwner}
               modMenu={canModerate ? (
                 <ThreadModMenu threadId={thread.id} pinned={thread.pinned} locked={thread.locked} featured={thread.featured} forums={moveTargets} />
               ) : null} />
@@ -205,7 +206,8 @@ export default async function ThreadPage({ params, searchParams }: {
                 isSolution={r.isSolution}
                 actions={
                   <ReplyActions threadId={thread.id} replyId={r.id} initialLiked={likedReplies.has(r.id)} initialLikeCount={r.likeCount}
-                    loggedIn={loggedIn} callbackUrl={callbackUrl} canReply canMarkSolution={canMarkSolution && !r.isSolution} />
+                    loggedIn={loggedIn} callbackUrl={callbackUrl} canReply canMarkSolution={canMarkSolution && !r.isSolution}
+                    canReport={loggedIn && r.authorId !== userId} />
                 }
               >
                 <ReplyContent content={r.content} />
@@ -224,7 +226,8 @@ export default async function ThreadPage({ params, searchParams }: {
                         </div>
                         <ReplyContent content={ch.content} />
                         <ReplyActions threadId={thread.id} replyId={ch.id} initialLiked={likedReplies.has(ch.id)} initialLikeCount={ch.likeCount}
-                          loggedIn={loggedIn} callbackUrl={callbackUrl} canMarkSolution={canMarkSolution && !ch.isSolution} />
+                          loggedIn={loggedIn} callbackUrl={callbackUrl} canMarkSolution={canMarkSolution && !ch.isSolution}
+                          canReport={loggedIn && ch.authorId !== userId} />
                       </li>
                     ))}
                   </ul>

@@ -4,10 +4,13 @@ import { useState, useTransition } from 'react';
 import { Heart, MessageSquare, Share2, Bell, BellOff } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
 import { toggleThreadLike, toggleThreadFollow } from '@/app/(site)/forum/actions';
+import { ReportButton } from '@/components/ReportButton';
 
-export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, initialFollowing, initialFollowCount, modMenu }: {
+export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, initialFollowing, initialFollowCount, modMenu, canReport }: {
   threadId: string; initialLiked: boolean; initialLikeCount: number;
   initialFollowing: boolean; initialFollowCount: number; modMenu?: React.ReactNode;
+  /** Không hiện với chủ đề của chính mình. */
+  canReport?: boolean;
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialLikeCount);
@@ -55,6 +58,10 @@ export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, init
           {followCount > 0 && <span className="text-ink-400">{fmtCount(followCount)}</span>}
         </button>
         <button type="button" onClick={onShare} className="btn-outline !rounded-full gap-1.5 !px-4"><Share2 size={16} /> Chia sẻ</button>
+        {canReport && (
+          <ReportButton target="thread" targetId={threadId}
+            className="btn-outline !rounded-full gap-1.5 !px-4 hover:text-red-500" />
+        )}
         {modMenu}
       </div>
       {toast && <p className="mt-2 text-center text-sm font-medium text-brand-600">{toast}</p>}

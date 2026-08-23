@@ -25,3 +25,12 @@ export async function countUnreadMessages(userId: string): Promise<number> {
 }
 
 export const MESSAGE_MAX_LENGTH = 2000;
+
+/**
+ * Tóm tắt tin để hiện ở hộp thư: ảnh/sticker/GIF lưu dạng ![alt](url)
+ * nên phải đổi thành chữ, không thì danh sách hiện đầy cú pháp markdown.
+ */
+export function messagePreview(content: string): string {
+  const stripped = content.replace(/!\[[^\]]*\]\([^)\s]+\)/g, ' 📷 Ảnh ').replace(/\s+/g, ' ').trim();
+  return stripped || '📷 Ảnh';
+}

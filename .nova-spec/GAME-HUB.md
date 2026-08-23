@@ -240,17 +240,28 @@ lại — ép cả hai thành hình vuông theo chiều cao chỗ chứa thì tr
 hai cụm cộng lại rộng hơn thân máy và cột số bên phải tràn ra ngoài. Đo ở ba cỡ
 màn hình: mũi tên `65px` tròn (3 352px²), phím số `52×60` (3 120px²), không tràn.
 
-**Mũi tên bên trái, bàn phím số bên phải** — mọi họ mặt phím, không riêng
-`j2me`. Trước đây ba họ máy thật xếp chồng mũi tên trên số như mặt trước máy
-gốc; giờ chia hai cột như bàn phím ảo của emulator. Cụm mũi tên có trần chiều
-cao cố định (`max-h-[13rem]`) rồi bàn phím số mới lấp bề ngang còn lại — để cả
-hai cùng bám chiều cao chỗ chứa thì trên màn hình cao chúng cộng lại rộng hơn
-thân máy và cột số tràn ra ngoài.
+**Vị trí cụm mũi tên theo từng giao diện:**
 
-Nhờ chia hai cột mà cụm mũi tên rộng hẳn ra: hộp `168 → 206px`, diện tích một
-mũi tên **4 863 → 8 912px²**. Đổi lại phím số hẹp lại còn `52×60` (3 074px²) từ
-`125×31` (3 875px²), và **chữ cái phụ phải xuống dòng** — xếp ngang cạnh chữ số
-như cũ thì `WXYZ 9` tràn ra ngoài viền phím.
+| Giao diện | Mũi tên | Bàn phím số |
+|---|---|---|
+| `s40` · `s60` · `razr` | **trên** | dưới |
+| `j2me` | **bên phải** | bên trái |
+| `ring` | vòng khuyên bên trái | (chỉ có `1 3 7 9` bên phải) |
+| `grid` | không có phím riêng | lưới 3×5 |
+
+Cụm mũi tên của `j2me` có trần chiều cao cố định (`max-h-[13rem]`) rồi bàn phím
+số mới lấp bề ngang còn lại — để cả hai cùng bám chiều cao chỗ chứa thì trên màn
+hình cao chúng cộng lại rộng hơn thân máy và cột bên phải tràn ra ngoài.
+
+**Kính màn hình trải hết bề ngang thân máy.** Khung game giữ đúng tỉ lệ gốc nên
+nằm giữa và chừa hai dải đen hai bên, y như màn hình máy thật. Trước đây kính ôm
+sát khung game nên game tỉ lệ 3:4 để lộ màu vỏ hai bên, nhìn như màn hình bé hơn
+thân máy. Đo được kính lấp **97% bề ngang** ở mọi cỡ màn hình — 3% còn lại là
+viền thân.
+
+Không thể vừa cho kính ôm sát khung game vừa lấp hết bề ngang: giữ tỉ lệ gốc thì
+game `240×320` rộng 400px phải cao 533px, mà nhường bấy nhiêu chiều cao cho nửa
+trên thì phím số chỉ còn **25px** — đã thử và đo ra đúng con số đó.
 
 **Phím bốn hướng dựng theo ảnh phím thật.** Một khối vuông bo góc **liền**,
 mặt trên là vành bấm bốn hướng, giữa lồng **một ô vuông nhỏ có viền riêng** nổi

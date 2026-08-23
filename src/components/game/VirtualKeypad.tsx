@@ -353,18 +353,7 @@ export function useKeypadParts({
         và cột số bên phải tràn ra ngoài.
       */}
       <div className="flex min-h-0 w-full min-w-0 flex-1 items-center gap-3 overflow-hidden">
-        <div className="grid aspect-square h-full max-h-[13rem] shrink-0 grid-cols-3 grid-rows-3 gap-1.5">
-          {J2_CROSS.map((z) => (
-            <span key={z.key} className={cn(z.at, 'grid min-h-0 place-items-center')}>
-              {j2Btn(z.key, z.icon, 'h-full w-full')}
-            </span>
-          ))}
-          <span className="col-start-2 row-start-2 grid min-h-0 place-items-center">
-            {j2Btn('FIRE', <span className="text-[10px] font-bold tracking-wide">OK</span>, 'h-full w-full')}
-          </span>
-        </div>
-
-        {/* Bàn phím số: viên bo tròn lấp kín ô, đúng như bàn phím số của app */}
+        {/* Bàn phím số bên TRÁI: viên bo tròn lấp kín ô, như bàn phím số của app */}
         <div className="grid h-full min-h-0 w-full min-w-0 max-h-[16rem] flex-1 grid-cols-3 grid-rows-4 gap-1.5">
           {NUMPAD_ROWS.flat().map((k) => {
             const letters = NUM_KEY_LETTERS[k];
@@ -375,6 +364,18 @@ export function useKeypadParts({
               </span>
             ), 'h-full min-h-0 w-full !rounded-[1.1rem]');
           })}
+        </div>
+
+        {/* Cụm mũi tên bên PHẢI, trần chiều cao cố định để không đẩy tràn cột số */}
+        <div className="grid aspect-square h-full max-h-[13rem] shrink-0 grid-cols-3 grid-rows-3 gap-1.5">
+          {J2_CROSS.map((z) => (
+            <span key={z.key} className={cn(z.at, 'grid min-h-0 place-items-center')}>
+              {j2Btn(z.key, z.icon, 'h-full w-full')}
+            </span>
+          ))}
+          <span className="col-start-2 row-start-2 grid min-h-0 place-items-center">
+            {j2Btn('FIRE', <span className="text-[10px] font-bold tracking-wide">OK</span>, 'h-full w-full')}
+          </span>
         </div>
       </div>
     </div>
@@ -483,24 +484,16 @@ export function useKeypadParts({
         </div>
       )}
 
-      {/*
-        Mũi tên bên trái, bàn phím số bên phải — như bàn phím ảo của emulator,
-        chứ không xếp chồng mũi tên trên số như mặt trước máy thật. Cụm mũi tên
-        có trần chiều cao cố định rồi bàn phím số mới lấp bề ngang còn lại; để
-        cả hai cùng bám chiều cao chỗ chứa thì trên màn hình cao chúng cộng lại
-        rộng hơn thân máy và cột số bên phải tràn ra ngoài.
-      */}
-      <div className="flex min-h-0 w-full min-w-0 flex-1 items-center gap-3 overflow-hidden">
-        <div className="flex h-full min-h-0 shrink-0 items-center justify-center">
-          {navCluster}
-        </div>
+      {/* Mũi tên nằm trên, bàn phím số nằm dưới — như mặt trước máy thật. */}
+      <div className="flex min-h-0 w-full min-w-0 flex-[52] items-center justify-center">
+        {navCluster}
+      </div>
 
-        <div
-          className={cn('grid h-full min-h-0 w-full min-w-0 max-h-[16rem] flex-1',
-            flatNum && 'overflow-hidden rounded-md border border-white/10')}
-        >
-          {numGrid(flatNum)}
-        </div>
+      <div
+        className={cn('min-h-0 w-full min-w-0 flex-[48]',
+          flatNum && 'overflow-hidden rounded-md border border-white/10')}
+      >
+        {numGrid(flatNum)}
       </div>
     </div>
   );

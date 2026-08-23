@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { FolderOpen } from 'lucide-react';
 import { db } from '@/lib/db';
-import { postCardInclude, toCardData } from '@/lib/post-card';
+import { postCardSelect, toCardData } from '@/lib/post-card';
 import { PostGrid } from '@/components/PostGrid';
 import { Pagination } from '@/components/Pagination';
 import { HomeSidebar } from '@/components/HomeSidebar';
@@ -38,7 +38,7 @@ export default async function CategoryPage({ params, searchParams }: {
     db.post.count({ where }),
     db.post.findMany({
       where, orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
-      skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: postCardInclude,
+      skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect,
     }),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);

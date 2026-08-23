@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
+import { postCardSelect, toCardData } from '@/lib/post-card';
 import { PostCard, type PostCardData } from '@/components/PostCard';
 import { HomeSidebar } from '@/components/HomeSidebar';
 
@@ -19,32 +20,11 @@ export default async function BlogPage() {
       where: { status: 'PUBLISHED' },
       orderBy: [{ pinned: 'desc' }, { publishedAt: 'desc' }, { createdAt: 'desc' }],
       take: 18,
-      include: {
-        author: { select: { username: true, name: true, image: true } },
-        category: { select: { name: true, slug: true, color: true } },
-        categories: { include: { category: { select: { name: true, slug: true, color: true } } } },
-        tags: { include: { tag: { select: { name: true, slug: true } } }, take: 6 },
-      },
+      select: postCardSelect,
     }),
   ]);
 
-  const cards: PostCardData[] = posts.map((p) => ({
-    slug: p.slug,
-    title: p.title,
-    excerpt: p.excerpt,
-    cover: p.cover,
-    cardStyle: p.cardStyle,
-    access: p.access,
-    pricePoints: p.pricePoints,
-    priceAmount: p.priceAmount,
-    viewCount: p.viewCount,
-    likeCount: p.likeCount,
-    commentCount: p.commentCount,
-    author: p.author,
-    category: p.category,
-    categories: p.categories.map((c) => c.category),
-    tags: p.tags.map((t) => t.tag),
-  }));
+  const cards: PostCardData[] = posts.map(toCardData);
 
   const hero = slides[0];
 

@@ -1081,6 +1081,13 @@ model Message {
 
   content String    @db.Text
   readAt  DateTime?
+  /** Đã thu hồi: giữ lại bản ghi để tin trích dẫn nó không bị hụt. */
+  deletedAt DateTime?
+
+  // Trả lời một tin cụ thể trong cùng hội thoại
+  replyToId String?
+  replyTo   Message?  @relation("MessageReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   Message[] @relation("MessageReply")
 
   createdAt DateTime @default(now())
 

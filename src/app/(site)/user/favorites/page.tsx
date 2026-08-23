@@ -5,7 +5,7 @@ import { ArrowLeft, Bookmark, MessageSquare, Eye } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { cn, fmtCount } from '@/lib/utils';
-import { postCardInclude, toCardData } from '@/lib/post-card';
+import { postCardSelect, toCardData } from '@/lib/post-card';
 import { PostGrid } from '@/components/PostGrid';
 import { Pagination } from '@/components/Pagination';
 import { UnsaveThreadButton } from '@/components/forum/UnsaveThreadButton';
@@ -45,7 +45,7 @@ export default async function FavoritesPage({ searchParams }: {
     ? (await db.favorite.findMany({
         where: { userId, postId: { not: null } },
         orderBy: { createdAt: 'desc' }, skip, take: PAGE_SIZE,
-        include: { post: { include: postCardInclude } },
+        select: { post: { select: postCardSelect } },
       })).map((f) => f.post).filter((p): p is NonNullable<typeof p> => !!p).map(toCardData)
     : [];
 

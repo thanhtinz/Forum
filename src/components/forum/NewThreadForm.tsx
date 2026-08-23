@@ -5,6 +5,7 @@ import { PenLine } from 'lucide-react';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { createThread, type ThreadState } from '@/app/(site)/forum/actions';
 import { ActionForm } from '@/components/ActionForm';
+import { PollBuilder } from './PollBuilder';
 
 export function NewThreadForm({ forumSlug }: { forumSlug: string }) {
   const [state, action, pending] = useActionState<ThreadState, FormData>(createThread, {});
@@ -29,6 +30,8 @@ export function NewThreadForm({ forumSlug }: { forumSlug: string }) {
         <label className="mb-1 block text-sm font-medium">Thẻ <span className="text-ink-400">(tuỳ chọn)</span></label>
         <input name="tags" maxLength={120} placeholder="Cách nhau bằng dấu phẩy: hỏi đáp, thủ thuật…" className="input" />
       </div>
+
+      <PollBuilder />
 
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 

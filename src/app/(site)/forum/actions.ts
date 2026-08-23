@@ -14,6 +14,7 @@ import { checkRateLimit } from '@/lib/rate-limit';
 import { bbcodeToHtml } from '@/lib/bbcode';
 import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
+import { readPollForm, isPollClosed } from '@/lib/poll';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
@@ -81,6 +82,9 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
   if (forum.vipOnly && !(me && isVipActive(me))) return { error: 'Diễn đàn này chỉ dành cho thành viên VIP.' };
   if (me && me.level < forum.minLevel) return { error: `Bạn cần đạt cấp ${forum.minLevel} để đăng ở diễn đàn này.` };
 
+  const pollForm = readPollForm(formData);
+  if (pollForm.error) return { error: pollForm.error };
+
   const mentioned = await resolveMentions(content, userId);
 
   let threadId = '';
@@ -111,6 +115,19 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
     await grantPoints({ userId, amount: POINTS_PER_THREAD, reason: 'THREAD_CREATE', refId: thread.id, note: `Đăng chủ đề: ${title}` }, tx);
     await addExp(userId, EXP_PER_THREAD, tx);
     await autoFollow(thread.id, userId, tx);
+
+    if (pollForm.poll) {
+      await tx.poll.create({
+        data: {
+          threadId: thread.id,
+          question: pollForm.poll.question,
+          multiple: pollForm.poll.multiple,
+          closesAt: pollForm.poll.hours > 0 ? new Date(Date.now() + pollForm.poll.hours * 3600_000) : null,
+          options: { create: pollForm.poll.options.map((text, order) => ({ text, order })) },
+        },
+        select: { id: true },
+      });
+    }
   });
 
   // Ngoài transaction vì phải có id chủ đề mới dựng được liên kết.
@@ -551,4 +568,74 @@ export async function deleteOwnThread(threadId: string): Promise<OwnerState> {
 
   revalidatePath(`/forum/${slug}`);
   redirect(`/forum/${slug}`);
+}
+
+// ─────────────────────────── Bình chọn ───────────────────────────
+
+export interface PollState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Bỏ phiếu cho một hoặc nhiều lựa chọn.
+ *
+ * Ghi lại toàn bộ lựa chọn hiện tại thay vì cộng dồn: bấm lại là đổi ý, và
+ * bình chọn một đáp án thì phiếu cũ tự bị thay.
+ */
+export async function votePoll(pollId: string, optionIds: string[]): Promise<PollState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập để bình chọn.' };
+
+  const banned = await getActiveBan(userId, 'COMMENT');
+  if (banned) return { error: banMessage(banned, 'bình chọn') };
+
+  const poll = await db.poll.findUnique({
+    where: { id: pollId },
+    select: {
+      id: true, multiple: true, closed: true, closesAt: true,
+      options: { select: { id: true } },
+      thread: { select: { id: true, forum: { select: { slug: true } } } },
+    },
+  });
+  if (!poll) return { error: 'Không tìm thấy cuộc bình chọn.' };
+  if (isPollClosed(poll)) return { error: 'Cuộc bình chọn đã kết thúc.' };
+
+  // Chỉ nhận lựa chọn thuộc đúng cuộc bình chọn này.
+  const valid = new Set(poll.options.map((o) => o.id));
+  const picked = [...new Set(optionIds)].filter((id) => valid.has(id));
+  if (picked.length === 0) return { error: 'Hãy chọn ít nhất một đáp án.' };
+  if (!poll.multiple && picked.length > 1) return { error: 'Cuộc bình chọn này chỉ cho chọn một đáp án.' };
+
+  await db.$transaction(async (tx) => {
+    await tx.pollVote.deleteMany({ where: { pollId, userId } });
+    await tx.pollVote.createMany({ data: picked.map((optionId) => ({ pollId, optionId, userId })) });
+  });
+
+  revalidatePath(`/forum/${poll.thread.forum.slug}/${poll.thread.id}`);
+  return { ok: true };
+}
+
+/** Chủ chủ đề hoặc người kiểm duyệt đóng bình chọn sớm. */
+export async function closePoll(pollId: string): Promise<PollState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  const poll = await db.poll.findUnique({
+    where: { id: pollId },
+    select: { id: true, thread: { select: { id: true, authorId: true, forumId: true, forum: { select: { slug: true } } } } },
+  });
+  if (!poll) return { error: 'Không tìm thấy cuộc bình chọn.' };
+
+  const isOwner = poll.thread.authorId === userId;
+  const me = await db.user.findUnique({ where: { id: userId }, select: { id: true, role: true } });
+  if (!isOwner && !(await canModerateForum(me, poll.thread.forumId))) {
+    return { error: 'Bạn không có quyền đóng cuộc bình chọn này.' };
+  }
+
+  await db.poll.update({ where: { id: pollId }, data: { closed: true }, select: { id: true } });
+  revalidatePath(`/forum/${poll.thread.forum.slug}/${poll.thread.id}`);
+  return { ok: true };
 }

@@ -1,4 +1,4 @@
-import type { EmuSupport, GameStatus, Orientation, Prisma, SessionStatus } from '@prisma/client';
+import type { GameStatus, Prisma } from '@prisma/client';
 
 // ============================================================
 // Nhãn / badge
@@ -9,29 +9,6 @@ export const GAME_STATUS_LABEL: Record<GameStatus, string> = {
   PENDING: 'Chờ duyệt',
   PUBLISHED: 'Đã đăng',
   ARCHIVED: 'Lưu trữ',
-};
-
-export const EMU_SUPPORT_BADGE: Record<EmuSupport, { label: string; className: string }> = {
-  FULL: { label: 'Có', className: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50' },
-  BETA: { label: 'Beta', className: 'bg-amber-100 text-amber-600 dark:bg-amber-950/50' },
-  NONE: { label: 'Không', className: 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300' },
-};
-
-export const SESSION_STATUS_LABEL: Record<SessionStatus, string> = {
-  CREATED: 'Đã tạo',
-  QUEUED: 'Đang xếp hàng',
-  LOADING: 'Đang tải',
-  RUNNING: 'Đang chơi',
-  PAUSED: 'Tạm dừng',
-  RECONNECTING: 'Đang kết nối lại',
-  EXPIRED: 'Hết thời gian',
-  CLOSED: 'Đã đóng',
-  ERROR: 'Lỗi runtime',
-};
-
-export const ORIENTATION_LABEL: Record<Orientation, string> = {
-  PORTRAIT: 'Dọc',
-  LANDSCAPE: 'Ngang',
 };
 
 export const LANGUAGE_LABEL: Record<string, string> = {
@@ -77,10 +54,8 @@ export const gameCardSelect = {
   language: true,
   vietnamized: true,
   featured: true,
-  playOnline: true,
   ratingSum: true,
   ratingCount: true,
-  playCount: true,
   downloadCount: true,
   viewCount: true,
   publishedAt: true,
@@ -91,7 +66,7 @@ export const gameCardSelect = {
   versions: {
     where: { latest: true },
     take: 1,
-    select: { id: true, version: true, sizeBytes: true, playOnline: true },
+    select: { id: true, version: true, sizeBytes: true },
   },
 } satisfies Prisma.GameSelect;
 
@@ -106,15 +81,14 @@ export interface GameCardData {
   genres: { slug: string; name: string }[];
   rating: number;
   ratingCount: number;
-  playCount: number;
   downloadCount: number;
+  viewCount: number;
   version: string | null;
   sizeBytes: number | null;
   language: string;
   vietnamized: boolean;
   resolution: string | null;
   platform: string | null;
-  playOnline: boolean;
   badges: GameBadge[];
 }
 
@@ -130,19 +104,19 @@ const BADGE_VI = { label: 'Việt hóa', className: 'bg-amber-500 text-white' };
 
 /** Game đăng trong 14 ngày gần nhất được coi là mới. */
 const NEW_WINDOW_MS = 14 * 24 * 3600 * 1000;
-/** Ngưỡng lượt chơi để gắn nhãn Popular. */
-export const POPULAR_PLAY_THRESHOLD = 1000;
+/** Ngưỡng lượt tải để gắn nhãn Popular. */
+export const POPULAR_DOWNLOAD_THRESHOLD = 1000;
 
 export function gameBadges(g: {
   featured: boolean;
   vietnamized: boolean;
-  playCount: number;
+  downloadCount: number;
   publishedAt: Date | null;
 }): GameBadge[] {
   const out: GameBadge[] = [];
   if (g.featured) out.push(BADGE_FEATURED);
   if (g.publishedAt && Date.now() - g.publishedAt.getTime() < NEW_WINDOW_MS) out.push(BADGE_NEW);
-  if (g.playCount >= POPULAR_PLAY_THRESHOLD) out.push(BADGE_POPULAR);
+  if (g.downloadCount >= POPULAR_DOWNLOAD_THRESHOLD) out.push(BADGE_POPULAR);
   if (g.vietnamized) out.push(BADGE_VI);
   return out;
 }
@@ -163,15 +137,14 @@ export function toGameCard(g: GameCardRow): GameCardData {
     genres: g.genres.map((x) => x.genre),
     rating: avgRating(g.ratingSum, g.ratingCount),
     ratingCount: g.ratingCount,
-    playCount: g.playCount,
     downloadCount: g.downloadCount,
+    viewCount: g.viewCount,
     version: latest?.version ?? null,
     sizeBytes: latest?.sizeBytes != null ? Number(latest.sizeBytes) : null,
     language: g.language,
     vietnamized: g.vietnamized,
     resolution: g.resolution?.label ?? null,
     platform: g.platform?.name ?? null,
-    playOnline: g.playOnline && (latest?.playOnline ?? false),
     badges: gameBadges(g),
   };
 }
@@ -185,7 +158,6 @@ export const GAME_SORTS = {
   newest: 'Mới nhất',
   updated: 'Mới cập nhật',
   popular: 'Phổ biến',
-  played: 'Chơi nhiều',
   downloaded: 'Tải nhiều',
   rating: 'Đánh giá',
   name: 'Tên A–Z',
@@ -204,12 +176,10 @@ export interface GameFilter {
   resolution?: string;
   language?: string;
   vietnamized?: boolean;
-  playOnline?: boolean;
   yearFrom?: number;
   yearTo?: number;
   minRating?: number;
   maxSizeKb?: number;
-  minPlays?: number;
   minDownloads?: number;
   updatedWithinDays?: number;
   collection?: string;
@@ -237,11 +207,9 @@ export function gameWhere(f: GameFilter): Prisma.GameWhereInput {
   if (f.resolution) and.push({ resolution: { slug: f.resolution } });
   if (f.language) and.push({ language: f.language });
   if (f.vietnamized) and.push({ vietnamized: true });
-  if (f.playOnline) and.push({ playOnline: true, versions: { some: { playOnline: true } } });
   if (f.collection) and.push({ collections: { some: { collection: { slug: f.collection } } } });
   if (f.yearFrom != null) and.push({ releaseYear: { gte: f.yearFrom } });
   if (f.yearTo != null) and.push({ releaseYear: { lte: f.yearTo } });
-  if (f.minPlays != null) and.push({ playCount: { gte: f.minPlays } });
   if (f.minDownloads != null) and.push({ downloadCount: { gte: f.minDownloads } });
   if (f.updatedWithinDays != null) {
     and.push({ updatedAt: { gte: new Date(Date.now() - f.updatedWithinDays * 86400_000) } });
@@ -262,8 +230,6 @@ export function gameOrderBy(sort: GameSort): Prisma.GameOrderByWithRelationInput
       return [{ publishedAt: 'desc' }, { createdAt: 'desc' }];
     case 'updated':
       return [{ updatedAt: 'desc' }];
-    case 'played':
-      return [{ playCount: 'desc' }, { publishedAt: 'desc' }];
     case 'downloaded':
       return [{ downloadCount: 'desc' }, { publishedAt: 'desc' }];
     case 'rating':
@@ -297,12 +263,10 @@ export function parseGameFilter(sp: Record<string, string | string[] | undefined
     resolution: one('resolution'),
     language: one('language'),
     vietnamized: one('vi') === '1',
-    playOnline: one('online') === '1',
     yearFrom: num('yearFrom'),
     yearTo: num('yearTo'),
     minRating: num('minRating'),
     maxSizeKb: num('maxSizeKb'),
-    minPlays: num('minPlays'),
     minDownloads: num('minDownloads'),
     updatedWithinDays: num('updatedIn'),
     collection: one('collection'),
@@ -321,12 +285,10 @@ export function gameFilterQuery(f: GameFilter, extra: Record<string, string | un
   put('resolution', f.resolution);
   put('language', f.language);
   if (f.vietnamized) p.set('vi', '1');
-  if (f.playOnline) p.set('online', '1');
   put('yearFrom', f.yearFrom);
   put('yearTo', f.yearTo);
   put('minRating', f.minRating);
   put('maxSizeKb', f.maxSizeKb);
-  put('minPlays', f.minPlays);
   put('minDownloads', f.minDownloads);
   put('updatedIn', f.updatedWithinDays);
   put('collection', f.collection);

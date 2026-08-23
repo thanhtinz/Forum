@@ -15,10 +15,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       resolution: true,
       genres: { include: { genre: true } },
       tags: { include: { tag: true } },
-      emulatorProfile: true,
       versions: { orderBy: [{ latest: 'desc' }, { releaseDate: 'desc' }], include: { files: true } },
       images: { orderBy: { sortOrder: 'asc' } },
-      profiles: { include: { profile: true } },
     },
   });
   if (!game) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
@@ -39,7 +37,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     releaseYear: game.releaseYear,
     language: game.language,
     vietnamized: game.vietnamized,
-    playOnline: game.playOnline,
     platform: game.platform && { slug: game.platform.slug, name: game.platform.name },
     resolution: game.resolution && { slug: game.resolution.slug, label: game.resolution.label },
     genres: game.genres.map((g) => ({ slug: g.genre.slug, name: g.genre.name })),
@@ -54,18 +51,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       uniqueViews: game.uniqueViewCount,
       downloads: game.downloadCount,
       uniqueDownloads: game.uniqueDownloadCount,
-      plays: game.playCount,
-      uniquePlayers: game.uniquePlayerCount,
-      playSeconds: game.playSeconds,
       trendingScore: game.trendingScore,
     },
-    emulatorProfile: game.emulatorProfile && { id: game.emulatorProfile.id, slug: game.emulatorProfile.slug, name: game.emulatorProfile.name },
-    compatibility: game.profiles.map((p) => ({
-      profile: { id: p.profile.id, slug: p.profile.slug, name: p.profile.name },
-      versionId: p.versionId,
-      support: p.support,
-      note: p.note,
-    })),
     versions: game.versions.map((v) => ({
       id: v.id,
       version: v.version,
@@ -73,7 +60,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       changelog: v.changelog,
       sizeBytes: v.sizeBytes != null ? Number(v.sizeBytes) : null,
       latest: v.latest,
-      playOnline: v.playOnline,
       files: v.files.map((f) => ({ type: f.type, sizeBytes: f.sizeBytes != null ? Number(f.sizeBytes) : null, checksum: f.checksum, checksumAlgo: f.checksumAlgo })),
     })),
     screenshots: game.images

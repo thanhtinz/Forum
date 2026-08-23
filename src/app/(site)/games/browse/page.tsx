@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { LayoutGrid } from 'lucide-react';
 import { db } from '@/lib/db';
-import { isMobileRequest } from '@/lib/device';
 import { gameFilterQuery, isGameSort, parseGameFilter } from '@/lib/game';
 import { searchGames } from '@/lib/game-search';
 import { fmtCount } from '@/lib/utils';
@@ -27,13 +26,12 @@ export default async function BrowseGamesPage({ searchParams }: {
   const sort = isGameSort(sortRaw) ? sortRaw : 'popular';
   const page = Math.max(1, Number(Array.isArray(sp.page) ? sp.page[0] : sp.page ?? '1') || 1);
 
-  const [result, genres, platforms, resolutions, yearRange, mobile] = await Promise.all([
+  const [result, genres, platforms, resolutions, yearRange] = await Promise.all([
     searchGames(filter, { sort, page, pageSize: PAGE_SIZE }),
     db.gameGenre.findMany({ orderBy: { order: 'asc' }, select: { slug: true, name: true } }),
     db.gamePlatform.findMany({ orderBy: { order: 'asc' }, select: { slug: true, name: true } }),
     db.gameResolution.findMany({ orderBy: [{ order: 'asc' }, { width: 'asc' }], select: { slug: true, label: true } }),
     db.game.aggregate({ where: { status: 'PUBLISHED' }, _min: { releaseYear: true }, _max: { releaseYear: true } }),
-    isMobileRequest(),
   ]);
   const { items: games, total } = result;
 
@@ -61,7 +59,7 @@ export default async function BrowseGamesPage({ searchParams }: {
           </p>
         </header>
 
-        <GameGrid games={games} mobile={mobile} empty="Không có game nào khớp bộ lọc. Thử nới lỏng điều kiện xem sao." />
+        <GameGrid games={games} empty="Không có game nào khớp bộ lọc. Thử nới lỏng điều kiện xem sao." />
         <Pagination page={page} totalPages={Math.ceil(total / PAGE_SIZE)} basePath={basePath} />
       </div>
     </div>

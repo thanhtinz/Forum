@@ -3,15 +3,13 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import {
-  Activity, AlertTriangle, Building2, Calendar, Clock, Cpu, Download, Eye,
-  Gamepad2, Keyboard, Languages, MonitorSmartphone, Play, Smartphone, Timer, Users,
+  Activity, AlertTriangle, Building2, Calendar, Clock, Download, Eye,
+  Gamepad2, Keyboard, Languages, MonitorSmartphone,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { isMobileRequest } from '@/lib/device';
 import {
-  assetUrl, avgRating, EMU_SUPPORT_BADGE, gameBadges, gameCardSelect, gameTint,
-  LANGUAGE_LABEL, ORIENTATION_LABEL, toGameCard,
+  assetUrl, avgRating, gameBadges, gameCardSelect, gameTint, LANGUAGE_LABEL, toGameCard,
 } from '@/lib/game';
 import { gameAnalytics } from '@/lib/game-stats';
 import { fmtBytes, fmtCount } from '@/lib/utils';
@@ -42,7 +40,7 @@ interface ControlHint { key: string; action: string }
 
 export default async function GameDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const [session, mobile] = await Promise.all([auth(), isMobileRequest()]);
+  const session = await auth();
   const userId = session?.user?.id;
 
   const game = await db.game.findFirst({
@@ -52,13 +50,11 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
       resolution: true,
       genres: { include: { genre: true } },
       tags: { include: { tag: true } },
-      emulatorProfile: true,
       images: { orderBy: { sortOrder: 'asc' } },
       versions: {
         orderBy: [{ latest: 'desc' }, { releaseDate: 'desc' }, { createdAt: 'desc' }],
         include: { files: true },
       },
-      profiles: { include: { profile: true }, orderBy: { support: 'asc' } },
       _count: { select: { favorites: true } },
     },
   });
@@ -89,7 +85,6 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
   const icon = assetUrl(game.icon);
   const rating = avgRating(game.ratingSum, game.ratingCount);
   const badges = gameBadges(game);
-  const canPlay = game.playOnline && game.versions.some((v) => v.playOnline);
   const screenshots = game.images
     .filter((i) => i.type === 'SCREENSHOT')
     .map((i) => ({ url: assetUrl(i.storageKey)!, caption: i.caption, width: i.width, height: i.height }))
@@ -103,7 +98,6 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
     changelog: v.changelog,
     sizeBytes: v.sizeBytes != null ? Number(v.sizeBytes) : null,
     latest: v.latest,
-    playOnline: v.playOnline,
     note: v.note,
     files: v.files.map((f) => ({
       type: f.type,
@@ -150,7 +144,6 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
                 <b>{rating > 0 ? rating.toFixed(1) : '—'}</b>
                 <span className="text-ink-400">({fmtCount(game.ratingCount)})</span>
               </span>
-              <span className="flex items-center gap-1"><Users size={14} />{fmtCount(game.playCount)} lượt chơi</span>
               <span className="flex items-center gap-1"><Download size={14} />{fmtCount(game.downloadCount)} lượt tải</span>
               <span className="flex items-center gap-1"><Eye size={14} />{fmtCount(game.viewCount)} lượt xem</span>
             </div>
@@ -170,16 +163,9 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
               ))}
             </div>
 
-            {canPlay && (mobile ? (
-              <Link href={`/games/${game.slug}/play`} className="btn-primary mt-4 !px-6">
-                <Play size={17} /> PLAY ONLINE
-              </Link>
-            ) : (
-              <p className="mt-4 flex items-center gap-2 rounded-lg bg-brand-50 px-3 py-2 text-sm text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
-                <Smartphone size={16} className="shrink-0" />
-                Chơi online chỉ mở trên điện thoại — mở trang này bằng đt để bấm PLAY ONLINE.
-              </p>
-            ))}
+            <Link href="#download" className="btn-primary mt-4 !px-6">
+              <Download size={17} /> TẢI GAME
+            </Link>
           </div>
         </div>
       </header>
@@ -264,9 +250,6 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <b>v{v.version}</b>
                       {v.latest && <span className="chip bg-brand-500 !px-2 !py-0 text-[10px] text-white">Latest</span>}
-                      <span className={`chip !px-2 !py-0 text-[10px] ${v.playOnline ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50' : 'bg-ink-100 text-ink-500 dark:bg-ink-800'}`}>
-                        {v.playOnline ? 'Play Online' : 'Download Only'}
-                      </span>
                       <span className="text-xs text-ink-400">
                         {v.releaseDate ? format(v.releaseDate, 'dd/MM/yyyy') : '—'} · {fmtBytes(v.sizeBytes)}
                       </span>
@@ -280,40 +263,6 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
                   </li>
                 ))}
               </ol>
-            </section>
-          )}
-
-          {game.profiles.length > 0 && (
-            <section className="card p-4 sm:p-5">
-              <h2 className="zib-title mb-3 flex items-center gap-2"><Cpu size={17} /> Thiết bị tương thích</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[480px] text-sm">
-                  <thead className="text-left text-xs uppercase tracking-wide text-ink-400">
-                    <tr>
-                      <th className="pb-2 font-bold">Profile</th>
-                      <th className="pb-2 font-bold">Độ phân giải</th>
-                      <th className="pb-2 font-bold">Play Online</th>
-                      <th className="pb-2 font-bold">Download</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-ink-100 dark:divide-ink-800">
-                    {game.profiles.map((p) => {
-                      const badge = EMU_SUPPORT_BADGE[p.support];
-                      return (
-                        <tr key={p.id}>
-                          <td className="py-2">
-                            {p.profile.name}
-                            {p.note && <span className="block text-[11px] text-ink-400">{p.note}</span>}
-                          </td>
-                          <td className="py-2 text-ink-500">{p.profile.screenWidth}×{p.profile.screenHeight}</td>
-                          <td className="py-2"><span className={`chip !px-2 !py-0 text-[10px] ${badge.className}`}>{badge.label}</span></td>
-                          <td className="py-2"><span className="chip bg-emerald-100 !px-2 !py-0 text-[10px] text-emerald-600 dark:bg-emerald-950/50">Có</span></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
             </section>
           )}
 
@@ -335,31 +284,12 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
             </section>
           )}
 
-          {game.emulatorProfile && (
-            <section className="card p-4 sm:p-5">
-              <h2 className="zib-title mb-3 flex items-center gap-2"><Cpu size={17} /> Emulator</h2>
-              <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-                <Row label="Profile" value={game.emulatorProfile.name} />
-                <Row label="Màn hình" value={`${game.emulatorProfile.screenWidth}×${game.emulatorProfile.screenHeight}`} />
-                <Row label="Hướng" value={ORIENTATION_LABEL[game.emulatorProfile.orientation]} />
-                <Row label="CLDC / MIDP" value={`${game.emulatorProfile.cldc} / ${game.emulatorProfile.midp}`} />
-                <Row label="Bố cục phím" value={game.emulatorProfile.keyLayout} />
-                <Row label="Âm thanh" value={game.emulatorProfile.audio ? 'Có' : 'Không'} />
-                <Row label="RMS" value={game.emulatorProfile.rms ? 'Có' : 'Không'} />
-                <Row label="Save state" value={game.emulatorProfile.saveState ? 'Có' : 'Không'} />
-              </dl>
-            </section>
-          )}
-
           <section className="card p-4 sm:p-5">
             <h2 className="zib-title mb-3 flex items-center gap-2"><Activity size={17} /> Thống kê</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Stat label="Lượt xem" value={fmtCount(stats.views)} sub={`${fmtCount(stats.uniqueViews)} người`} />
               <Stat label="Lượt tải" value={fmtCount(stats.downloads)} sub={`${fmtCount(stats.uniqueDownloads)} người`} />
-              <Stat label="Lượt chơi online" value={fmtCount(stats.plays)} sub={`${fmtCount(stats.uniquePlayers)} người chơi`} />
-              <Stat label="Phiên trung bình" value={`${Math.round(stats.avgSessionSec / 60)} phút`} sub={<><Timer size={11} className="inline" /> {fmtCount(Math.round(stats.playSeconds / 3600))} giờ tổng</>} />
-              <Stat label="Tải → chơi" value={`${stats.downloadToPlay}%`} sub="tỉ lệ chuyển đổi" />
-              <Stat label="Lỗi phiên" value={`${stats.errorRate}%`} sub="7 ngày gần đây" />
+              <Stat label="Xem → tải" value={`${stats.viewToDownload}%`} sub="tỉ lệ chuyển đổi" />
               <Stat label="Trending" value={game.trendingScore.toFixed(1)} sub="điểm xu hướng" />
               <Stat label="Cập nhật" value={format(game.updatedAt, 'dd/MM/yyyy')} sub={game.publishedAt ? `đăng ${format(game.publishedAt, 'dd/MM/yyyy')}` : ''} />
             </div>
@@ -368,14 +298,14 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
           {related.length > 0 && (
             <section>
               <h2 className="zib-title mb-3">Game liên quan</h2>
-              <GameGrid games={related.map(toGameCard)} mobile={mobile} />
+              <GameGrid games={related.map(toGameCard)} />
             </section>
           )}
         </div>
 
         {/* ── Cột phải ── */}
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-          <DownloadPanel slug={game.slug} versions={versionInfos} playOnline={game.playOnline} mobile={mobile} />
+          <DownloadPanel slug={game.slug} versions={versionInfos} />
           <GameActions
             gameId={game.id}
             initialFavorite={!!myFavorite}

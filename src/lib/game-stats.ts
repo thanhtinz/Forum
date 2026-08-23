@@ -29,7 +29,6 @@ export interface RecordEventInput {
   gameId: string;
   versionId?: string | null;
   userId?: string | null;
-  sessionId?: string | null;
   actorKey: string;
   type: GameEventType;
   value?: number | null;
@@ -37,18 +36,17 @@ export interface RecordEventInput {
 }
 
 /** Các loại sự kiện có khái niệm "unique". */
-const UNIQUE_TYPES: GameEventType[] = ['VIEW', 'DOWNLOAD', 'PLAY_START'];
+const UNIQUE_TYPES: GameEventType[] = ['VIEW', 'DOWNLOAD'];
 
 /** Cột tổng / cột unique tương ứng cho từng loại sự kiện. */
 const COUNTER: Partial<Record<GameEventType, { total: keyof Prisma.GameUpdateInput; unique: keyof Prisma.GameUpdateInput }>> = {
   VIEW: { total: 'viewCount', unique: 'uniqueViewCount' },
   DOWNLOAD: { total: 'downloadCount', unique: 'uniqueDownloadCount' },
-  PLAY_START: { total: 'playCount', unique: 'uniquePlayerCount' },
 };
 
 /**
  * Ghi một sự kiện và cập nhật bộ đếm. Không ném lỗi ra ngoài: thống kê hỏng
- * không được làm hỏng luồng chính (xem trang / tải file / mở phiên chơi).
+ * không được làm hỏng luồng chính (xem trang / tải file).
  */
 export async function recordGameEvent(input: RecordEventInput): Promise<{ unique: boolean }> {
   try {
@@ -69,7 +67,6 @@ export async function recordGameEvent(input: RecordEventInput): Promise<{ unique
         gameId: input.gameId,
         versionId: input.versionId ?? null,
         userId: input.userId ?? null,
-        sessionId: input.sessionId ?? null,
         actorKey: input.actorKey,
         type: input.type,
         isUnique: unique,
@@ -90,16 +87,6 @@ export async function recordGameEvent(input: RecordEventInput): Promise<{ unique
   }
 }
 
-/** Cộng thời lượng phiên vào tổng thời gian chơi của game. */
-export async function addPlaySeconds(gameId: string, seconds: number): Promise<void> {
-  if (seconds <= 0) return;
-  try {
-    await db.game.update({ where: { id: gameId }, data: { playSeconds: { increment: Math.floor(seconds) } } });
-  } catch {
-    /* bỏ qua */
-  }
-}
-
 /**
  * Trending score: hoạt động 7 ngày gần nhất có trọng số, giảm dần theo tuổi bài.
  * Chạy định kỳ (cron/queue) hoặc gọi thủ công từ trang admin.
@@ -115,7 +102,6 @@ export async function recomputeTrending(days = 7): Promise<number> {
   const weight: Partial<Record<GameEventType, number>> = {
     VIEW: 1,
     DOWNLOAD: 4,
-    PLAY_START: 6,
     FAVORITE: 3,
     SHARE: 2,
     RATE: 2,
@@ -148,45 +134,26 @@ export interface GameAnalytics {
   uniqueViews: number;
   downloads: number;
   uniqueDownloads: number;
-  plays: number;
-  uniquePlayers: number;
-  playSeconds: number;
-  avgSessionSec: number;
-  /** Tỉ lệ người tải rồi chơi online (download → play). */
-  downloadToPlay: number;
-  errorRate: number;
+  /** Tỉ lệ người xem rồi tải file về (view → download). */
+  viewToDownload: number;
 }
 
 /** Chỉ số tổng hợp cho trang chi tiết / admin. */
 export async function gameAnalytics(gameId: string): Promise<GameAnalytics> {
-  const [game, sessions, errors] = await Promise.all([
-    db.game.findUnique({
-      where: { id: gameId },
-      select: {
-        viewCount: true, uniqueViewCount: true,
-        downloadCount: true, uniqueDownloadCount: true,
-        playCount: true, uniquePlayerCount: true, playSeconds: true,
-      },
-    }),
-    db.emulatorSession.count({ where: { gameId, endedAt: { not: null } } }),
-    db.emulatorSession.count({ where: { gameId, status: 'ERROR' } }),
-  ]);
+  const game = await db.game.findUnique({
+    where: { id: gameId },
+    select: {
+      viewCount: true, uniqueViewCount: true,
+      downloadCount: true, uniqueDownloadCount: true,
+    },
+  });
 
-  const g = game ?? {
-    viewCount: 0, uniqueViewCount: 0, downloadCount: 0, uniqueDownloadCount: 0,
-    playCount: 0, uniquePlayerCount: 0, playSeconds: 0,
-  };
-  const totalSessions = sessions + errors;
+  const g = game ?? { viewCount: 0, uniqueViewCount: 0, downloadCount: 0, uniqueDownloadCount: 0 };
   return {
     views: g.viewCount,
     uniqueViews: g.uniqueViewCount,
     downloads: g.downloadCount,
     uniqueDownloads: g.uniqueDownloadCount,
-    plays: g.playCount,
-    uniquePlayers: g.uniquePlayerCount,
-    playSeconds: g.playSeconds,
-    avgSessionSec: sessions > 0 ? Math.round(g.playSeconds / sessions) : 0,
-    downloadToPlay: g.uniqueDownloadCount > 0 ? Math.round((g.uniquePlayerCount / g.uniqueDownloadCount) * 100) : 0,
-    errorRate: totalSessions > 0 ? Math.round((errors / totalSessions) * 1000) / 10 : 0,
+    viewToDownload: g.uniqueViewCount > 0 ? Math.round((g.uniqueDownloadCount / g.uniqueViewCount) * 100) : 0,
   };
 }

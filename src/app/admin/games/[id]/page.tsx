@@ -4,15 +4,12 @@ import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import { ChevronLeft, ExternalLink, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
 import { db } from '@/lib/db';
-import { assetUrl, EMU_SUPPORT_BADGE } from '@/lib/game';
+import { assetUrl } from '@/lib/game';
 import { gameAnalytics } from '@/lib/game-stats';
 import { fmtBytes, fmtCount } from '@/lib/utils';
 import { GameEditForm } from '@/components/admin/GameEditForm';
-import { CompatForm, FileForm, ImageForm, VersionForm } from '@/components/admin/GameSubForms';
-import {
-  deleteCompatibility, deleteFile, deleteGame, deleteImage, deleteVersion,
-  quarantineFile, setLatestVersion,
-} from '../actions';
+import { FileForm, ImageForm, VersionForm } from '@/components/admin/GameSubForms';
+import { deleteFile, deleteGame, deleteImage, deleteVersion, quarantineFile, setLatestVersion } from '../actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sửa game', robots: { index: false } };
@@ -20,7 +17,7 @@ export const metadata: Metadata = { title: 'Sửa game', robots: { index: false 
 export default async function AdminGameEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const [game, genres, platforms, resolutions, profiles] = await Promise.all([
+  const [game, genres, platforms, resolutions] = await Promise.all([
     db.game.findUnique({
       where: { id },
       include: {
@@ -28,13 +25,11 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
         tags: { include: { tag: true } },
         versions: { orderBy: [{ latest: 'desc' }, { createdAt: 'desc' }], include: { files: true } },
         images: { orderBy: { sortOrder: 'asc' } },
-        profiles: { include: { profile: true, version: true } },
       },
     }),
     db.gameGenre.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
     db.gamePlatform.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
     db.gameResolution.findMany({ orderBy: [{ order: 'asc' }, { width: 'asc' }], select: { id: true, label: true } }),
-    db.emulatorProfile.findMany({ orderBy: { name: 'asc' }, select: { id: true, name: true } }),
   ]);
   if (!game) notFound();
 
@@ -59,13 +54,10 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <Tile label="Views" value={fmtCount(stats.views)} sub={`${fmtCount(stats.uniqueViews)} unique`} />
         <Tile label="Downloads" value={fmtCount(stats.downloads)} sub={`${fmtCount(stats.uniqueDownloads)} unique`} />
-        <Tile label="Online plays" value={fmtCount(stats.plays)} sub={`${fmtCount(stats.uniquePlayers)} người`} />
-        <Tile label="Phiên TB" value={`${Math.round(stats.avgSessionSec / 60)}′`} />
-        <Tile label="Tải → chơi" value={`${stats.downloadToPlay}%`} />
-        <Tile label="Lỗi phiên" value={`${stats.errorRate}%`} />
+        <Tile label="Xem → tải" value={`${stats.viewToDownload}%`} />
         <Tile label="Trending" value={game.trendingScore.toFixed(1)} />
         <Tile label="Rating" value={game.ratingCount ? (game.ratingSum / game.ratingCount).toFixed(1) : '—'} sub={`${game.ratingCount} lượt`} />
       </div>
@@ -78,7 +70,6 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
           selectedGenreIds={game.genres.map((g) => g.genreId)}
           platforms={platforms}
           resolutions={resolutions.map((r) => ({ id: r.id, name: r.label }))}
-          profiles={profiles}
           tags={game.tags.map((t) => t.tag.name).join(', ')}
         />
       </section>
@@ -105,7 +96,6 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
                   <td className="p-2">
                     <b>v{v.version}</b>
                     {v.latest && <span className="ml-1.5 chip bg-brand-500 !px-1.5 !py-0 text-[10px] text-white">Latest</span>}
-                    {v.playOnline && <span className="ml-1 chip bg-emerald-100 !px-1.5 !py-0 text-[10px] text-emerald-600 dark:bg-emerald-950/50">Online</span>}
                   </td>
                   <td className="p-2 text-ink-500">{v.releaseDate ? format(v.releaseDate, 'dd/MM/yyyy') : '—'}</td>
                   <td className="p-2 text-ink-500">{fmtBytes(v.sizeBytes)}</td>
@@ -187,47 +177,6 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
         </div>
       </section>
 
-      {/* ── Ma trận tương thích ── */}
-      <section className="card p-4 sm:p-5">
-        <h2 className="zib-title mb-4">Ma trận tương thích</h2>
-        {game.profiles.length > 0 && (
-          <div className="mb-4 overflow-x-auto">
-            <table className="w-full min-w-[520px] text-sm">
-              <thead className="border-b border-ink-100 text-left text-xs uppercase tracking-wide text-ink-400 dark:border-ink-800">
-                <tr>
-                  <th className="p-2 font-bold">Profile</th>
-                  <th className="p-2 font-bold">Version</th>
-                  <th className="p-2 font-bold">Hỗ trợ</th>
-                  <th className="p-2 font-bold">Ghi chú</th>
-                  <th className="p-2" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-ink-100 dark:divide-ink-800">
-                {game.profiles.map((p) => (
-                  <tr key={p.id}>
-                    <td className="p-2">{p.profile.name}</td>
-                    <td className="p-2 text-ink-500">{p.version ? `v${p.version.version}` : 'mọi version'}</td>
-                    <td className="p-2">
-                      <span className={`chip !px-2 !py-0 text-[10px] ${EMU_SUPPORT_BADGE[p.support].className}`}>
-                        {EMU_SUPPORT_BADGE[p.support].label}
-                      </span>
-                    </td>
-                    <td className="p-2 text-[11px] text-ink-400">{p.note ?? '—'}</td>
-                    <td className="p-2">
-                      <form action={async () => { 'use server'; await deleteCompatibility(p.id); }}>
-                        <button type="submit" className="text-red-500 hover:underline text-[11px]">Xoá</button>
-                      </form>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-        <div className="rounded-xl border border-ink-200 p-3 dark:border-ink-700">
-          <CompatForm gameId={game.id} versions={versionOptions} profiles={profiles} />
-        </div>
-      </section>
     </div>
   );
 }

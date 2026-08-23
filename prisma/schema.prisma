@@ -83,12 +83,8 @@ model User {
   convosB        Conversation[] @relation("ConvoB")
   messagesSent   Message[]
 
-  emulatorSessions EmulatorSession[]
-  gameEvents       GameEvent[]
-  gameKeymaps      UserKeymap[]
-  gameSaveStates   SaveState[]
-  gameRatings      GameRating[]
-  gameConfigs      UserGameConfig[]
+  gameEvents  GameEvent[]
+  gameRatings GameRating[]
 
   @@index([level])
   @@index([vipTier])
@@ -1047,7 +1043,7 @@ model FriendLink {
 }
 
 // ============================================================
-// GAME HUB — catalog game Java ME + emulator Play Online
+// GAME HUB — catalog game Java ME
 // ============================================================
 
 model Game {
@@ -1070,9 +1066,8 @@ model Game {
   language    String  @default("en")   // en | vi | multi
   vietnamized Boolean @default(false)  // bản Việt hóa
 
-  status    GameStatus @default(DRAFT)
-  featured  Boolean    @default(false)
-  playOnline Boolean   @default(false) // bật Play Online cho game này
+  status   GameStatus @default(DRAFT)
+  featured Boolean    @default(false)
 
   // Phân loại
   platformId   String?
@@ -1082,10 +1077,6 @@ model Game {
   genres       GenresOnGames[]
   tags         TagsOnGames[]
   collections  GamesOnCollections[]
-
-  // Emulator mặc định (game tham chiếu profile, không nhúng logic emulator)
-  emulatorProfileId String?
-  emulatorProfile   EmulatorProfile? @relation("GameDefaultProfile", fields: [emulatorProfileId], references: [id], onDelete: SetNull)
 
   // Hướng dẫn / lưu ý
   controls          Json?            // [{ key, action }] — key mapping mô tả
@@ -1099,9 +1090,6 @@ model Game {
   uniqueViewCount     Int @default(0)
   downloadCount       Int @default(0)
   uniqueDownloadCount Int @default(0)
-  playCount           Int @default(0)
-  uniquePlayerCount   Int @default(0)
-  playSeconds         Int @default(0) // tổng thời lượng phiên (giây)
   trendingScore       Float @default(0)
 
   publishedAt DateTime?
@@ -1110,11 +1098,8 @@ model Game {
 
   versions   GameVersion[]
   images     GameImage[]
-  profiles   GameEmulatorProfile[]
-  sessions   EmulatorSession[]
   events     GameEvent[]
   ratings    GameRating[]
-  configs    UserGameConfig[]
   favorites  Favorite[]
   reports    Report[]
   uniqueHits GameUniqueHit[]
@@ -1226,16 +1211,12 @@ model GameVersion {
   changelog   String?  @db.Text
   sizeBytes   BigInt?           // tổng dung lượng (thường = JAR)
   latest      Boolean  @default(false)
-  playOnline  Boolean  @default(false) // Play Online Compatible hay Download Only
   note        String?
 
   createdAt DateTime @default(now())
 
-  files      GameFile[]
-  profiles   GameEmulatorProfile[]
-  sessions   EmulatorSession[]
-  saveStates SaveState[]
-  events     GameEvent[]
+  files  GameFile[]
+  events GameEvent[]
 
   @@unique([gameId, version])
   @@index([gameId, latest])
@@ -1300,136 +1281,6 @@ enum GameImageType {
   TRAILER
 }
 
-// ── Emulator ──────────────────────────────────────────────
-
-model EmulatorProfile {
-  id     String @id @default(cuid())
-  slug   String @unique
-  name   String              // "Nokia S40 240x320"
-  vendor String?             // Nokia / Sony Ericsson / Samsung…
-
-  screenWidth  Int
-  screenHeight Int
-  orientation  Orientation @default(PORTRAIT)
-
-  cldc String @default("1.1")
-  midp String @default("2.0")
-
-  keyLayout String  @default("nokia")  // nokia | sonyericsson | generic
-  softKeys  Boolean @default(true)
-  audio     Boolean @default(true)
-  rms       Boolean @default(true)
-  saveState Boolean @default(false)
-  touch     Boolean @default(true)
-
-  /// Bản đồ phím mặc định: { "SOFT_LEFT": "Digit1", "UP": "ArrowUp", … }
-  keymap Json?
-
-  // Resource control
-  cpuMillicores  Int @default(500)
-  ramLimitMb     Int @default(256)
-  sessionMaxSec  Int @default(1800) // maximum duration
-  idleTimeoutSec Int @default(120)  // idle timeout (không heartbeat)
-  gracePeriodSec Int @default(60)   // reconnect grace
-  maxConcurrent  Int @default(50)   // giới hạn phiên đồng thời cho profile
-
-  /// URL runtime J2ME chạy trong iframe sandbox (worker riêng, không chung process web).
-  runtimeUrl String?
-  active     Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  defaultForGames Game[]                @relation("GameDefaultProfile")
-  gameProfiles    GameEmulatorProfile[]
-  sessions        EmulatorSession[]
-  keymaps         UserKeymap[]
-
-  @@index([active])
-}
-
-enum Orientation {
-  PORTRAIT
-  LANDSCAPE
-}
-
-/// Ma trận tương thích: game (hoặc version cụ thể) × emulator profile.
-model GameEmulatorProfile {
-  id        String @id @default(cuid())
-  gameId    String
-  versionId String?
-  profileId String
-
-  game    Game            @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  version GameVersion?    @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  profile EmulatorProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  support EmuSupport @default(FULL)
-  note    String?
-
-  @@unique([gameId, versionId, profileId])
-  @@index([profileId])
-}
-
-enum EmuSupport {
-  FULL
-  BETA
-  NONE
-}
-
-model EmulatorSession {
-  id String @id @default(cuid())
-
-  userId    String?
-  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  guestKey  String?          // khoá ẩn danh (cookie) cho khách
-
-  gameId        String
-  game          Game        @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  gameVersionId String
-  gameVersion   GameVersion @relation(fields: [gameVersionId], references: [id], onDelete: Cascade)
-  profileId     String
-  profile       EmulatorProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  status SessionStatus @default(CREATED)
-
-  queuePosition Int?             // vị trí hàng đợi khi quá tải
-  workerId      String?
-  runtimeUrl    String? @db.Text
-
-  createdAt       DateTime  @default(now())
-  startedAt       DateTime?
-  lastHeartbeatAt DateTime?
-  pausedAt        DateTime?
-  endedAt         DateTime?
-  expiresAt       DateTime                 // maximum duration
-  durationSec     Int       @default(0)
-  playedSec       Int       @default(0)    // thời lượng thực (trừ pause)
-
-  ip        String?
-  userAgent String? @db.Text
-  error     String? @db.Text
-
-  events GameEvent[]
-
-  @@index([status, expiresAt])
-  @@index([userId, status])
-  @@index([guestKey, status])
-  @@index([gameId, createdAt])
-}
-
-enum SessionStatus {
-  CREATED
-  QUEUED
-  LOADING
-  RUNNING
-  PAUSED
-  RECONNECTING
-  EXPIRED
-  CLOSED
-  ERROR
-}
-
 // ── Sự kiện & thống kê ────────────────────────────────────
 
 model GameEvent {
@@ -1440,10 +1291,8 @@ model GameEvent {
   versionId String?
   version   GameVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
 
-  userId    String?
-  user      User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  sessionId String?
-  session   EmulatorSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  userId String?
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   actorKey String            // userId hoặc hash(ip+ua) cho khách
   type     GameEventType
@@ -1461,9 +1310,6 @@ model GameEvent {
 enum GameEventType {
   VIEW
   DOWNLOAD
-  PLAY_START
-  PLAY_END
-  PLAY_ERROR
   FAVORITE
   SHARE
   RATE
@@ -1496,69 +1342,6 @@ model GameRating {
 
   @@unique([gameId, userId])
   @@index([gameId])
-}
-
-// ── Input & Save ──────────────────────────────────────────
-
-model UserKeymap {
-  id        String @id @default(cuid())
-  userId    String
-  profileId String
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  profile   EmulatorProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-
-  /// { "SOFT_LEFT": "KeyQ", "FIRE": "Space", … }
-  mapping Json
-
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, profileId])
-}
-
-/**
- * Cấu hình emulator người dùng đặt riêng cho từng game (kiểu J2ME Loader):
- * kích thước màn hình, cách phóng, lọc ảnh, giới hạn FPS, hệ số tốc độ…
- * Khách chưa đăng nhập thì giữ trong localStorage của trình duyệt.
- */
-model UserGameConfig {
-  id     String @id @default(cuid())
-  userId String
-  gameId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
-
-  config Json
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, gameId])
-  @@index([gameId])
-}
-
-model SaveState {
-  id            String @id @default(cuid())
-  userId        String
-  gameVersionId String
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gameVersion   GameVersion @relation(fields: [gameVersionId], references: [id], onDelete: Cascade)
-
-  kind       SaveKind @default(RMS)
-  slot       Int      @default(0)
-  label      String?
-  storageKey String
-  sizeBytes  Int      @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([userId, gameVersionId, kind, slot])
-  @@index([userId])
-}
-
-enum SaveKind {
-  RMS
-  STATE
 }
 
 // ============================================================

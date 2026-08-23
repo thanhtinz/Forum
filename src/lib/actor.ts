@@ -3,7 +3,7 @@ import { cookies, headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import { actorKeyOf, clientIp } from '@/lib/game-stats';
 
-/** Cookie định danh khách (không đăng nhập) cho phiên emulator & thống kê unique. */
+/** Cookie định danh khách (không đăng nhập) cho thống kê unique. */
 export const GUEST_COOKIE = 'nova_gid';
 const GUEST_MAX_AGE = 180 * 86400;
 

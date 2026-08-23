@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Search as SearchIcon } from 'lucide-react';
-import { isMobileRequest } from '@/lib/device';
 import { GAME_SORTS, isGameSort, parseGameFilter, type GameCardData } from '@/lib/game';
 import { searchGames } from '@/lib/game-search';
 import { cn, fmtCount } from '@/lib/utils';
@@ -24,7 +23,6 @@ export default async function GameSearchPage({ searchParams }: {
   const sort = isGameSort(sortRaw) ? sortRaw : 'relevance';
   const page = Math.max(1, Number(Array.isArray(sp.page) ? sp.page[0] : sp.page ?? '1') || 1);
 
-  const mobile = await isMobileRequest();
   let games: GameCardData[] = [];
   let total = 0;
   let fuzzy = false;
@@ -78,7 +76,7 @@ export default async function GameSearchPage({ searchParams }: {
         </div>
       ) : (
         <div className="space-y-3">
-          {games.map((g) => <GameCard key={g.id} game={g} variant="list" mobile={mobile} />)}
+          {games.map((g) => <GameCard key={g.id} game={g} variant="list" />)}
         </div>
       )}
 

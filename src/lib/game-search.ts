@@ -76,7 +76,7 @@ export async function searchGames(filter: GameFilter, { sort, page = 1, pageSize
       .filter((g) => !seen.has(g.id))
       .map((g) => ({ g, s: scoreOf(g, q) }))
       .filter((x) => x.s >= MIN_SCORE)
-      .sort((a, b) => b.s - a.s || b.g.playCount - a.g.playCount)
+      .sort((a, b) => b.s - a.s || b.g.downloadCount - a.g.downloadCount)
       .map((x) => x.g);
     if (extra.length > 0) fuzzy = items.length === 0;
     items = [...items, ...extra];
@@ -85,7 +85,7 @@ export async function searchGames(filter: GameFilter, { sort, page = 1, pageSize
   if (sort === 'relevance') {
     items = items
       .map((g) => ({ g, s: scoreOf(g, q) }))
-      .sort((a, b) => b.s - a.s || b.g.playCount - a.g.playCount)
+      .sort((a, b) => b.s - a.s || b.g.downloadCount - a.g.downloadCount)
       .map((x) => x.g);
   }
 

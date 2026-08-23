@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Download, Plus, RefreshCw, Search, Star, Users, Wifi } from 'lucide-react';
+import { Download, Eye, Plus, RefreshCw, Search, Star } from 'lucide-react';
 import { db } from '@/lib/db';
 import { GAME_STATUS_LABEL, assetUrl } from '@/lib/game';
 import { fmtCount } from '@/lib/utils';
@@ -113,7 +113,7 @@ export default async function AdminGamesPage({ searchParams }: {
                 <td className="p-3 text-ink-500">{g._count.versions}</td>
                 <td className="p-3">
                   <span className="flex flex-wrap gap-2 text-[11px] text-ink-400">
-                    <span className="flex items-center gap-1"><Users size={11} />{fmtCount(g.playCount)}</span>
+                    <span className="flex items-center gap-1"><Eye size={11} />{fmtCount(g.viewCount)}</span>
                     <span className="flex items-center gap-1"><Download size={11} />{fmtCount(g.downloadCount)}</span>
                     <span className="flex items-center gap-1"><Star size={11} />{g.ratingCount > 0 ? (g.ratingSum / g.ratingCount).toFixed(1) : '—'}</span>
                   </span>
@@ -125,12 +125,6 @@ export default async function AdminGamesPage({ searchParams }: {
                       <button type="submit" title="Nổi bật"
                         className={`grid h-7 w-7 place-items-center rounded-lg ${g.featured ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-500 dark:bg-ink-800'}`}>
                         <Star size={13} />
-                      </button>
-                    </form>
-                    <form action={async () => { 'use server'; await toggleGameFlag(g.id, 'playOnline'); }}>
-                      <button type="submit" title="Play Online"
-                        className={`grid h-7 w-7 place-items-center rounded-lg ${g.playOnline ? 'bg-emerald-500 text-white' : 'bg-ink-100 text-ink-500 dark:bg-ink-800'}`}>
-                        <Wifi size={13} />
                       </button>
                     </form>
                     <Link href={`/admin/games/${g.id}`} className="text-[11px] text-brand-600 hover:underline">Sửa</Link>

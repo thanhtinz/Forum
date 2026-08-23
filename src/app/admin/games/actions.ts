@@ -56,7 +56,7 @@ export async function createGame(_prev: ActionState, fd: FormData): Promise<Acti
   redirect(`/admin/games/${game.id}`);
 }
 
-/** Cập nhật thông tin chính của game (kể cả phân loại và emulator mặc định). */
+/** Cập nhật thông tin chính của game (kể cả phân loại). */
 export async function updateGame(_prev: ActionState, fd: FormData): Promise<ActionState> {
   await assertAdmin();
   const id = str(fd, 'id');
@@ -106,12 +106,10 @@ export async function updateGame(_prev: ActionState, fd: FormData): Promise<Acti
         language: str(fd, 'language') ?? 'en',
         vietnamized: bool(fd, 'vietnamized'),
         featured: bool(fd, 'featured'),
-        playOnline: bool(fd, 'playOnline'),
         status: status as 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED',
         publishedAt: status === 'PUBLISHED' ? current.publishedAt ?? new Date() : current.publishedAt,
         platformId: str(fd, 'platformId'),
         resolutionId: str(fd, 'resolutionId'),
-        emulatorProfileId: str(fd, 'emulatorProfileId'),
         compatibilityNote: str(fd, 'compatibilityNote'),
         knownIssues: str(fd, 'knownIssues'),
         ...(controls !== undefined ? { controls: controls as never } : {}),
@@ -146,9 +144,9 @@ export async function deleteGame(id: string): Promise<void> {
 }
 
 /** Bật/tắt nhanh một cờ trên danh sách game. */
-export async function toggleGameFlag(id: string, field: 'featured' | 'playOnline'): Promise<void> {
+export async function toggleGameFlag(id: string, field: 'featured'): Promise<void> {
   await assertAdmin();
-  const game = await db.game.findUnique({ where: { id }, select: { featured: true, playOnline: true, slug: true } });
+  const game = await db.game.findUnique({ where: { id }, select: { featured: true, slug: true } });
   if (!game) return;
   await db.game.update({ where: { id }, data: { [field]: !game[field] } });
   revalidatePath('/admin/games');
@@ -184,7 +182,6 @@ export async function upsertVersion(_prev: ActionState, fd: FormData): Promise<A
     releaseDate: releaseDate ? new Date(releaseDate) : null,
     changelog: str(fd, 'changelog'),
     sizeBytes: big(fd, 'sizeBytes'),
-    playOnline: bool(fd, 'playOnline'),
     note: str(fd, 'note'),
     latest,
   };
@@ -264,7 +261,7 @@ export async function deleteFile(fileId: string): Promise<void> {
   if (f) revalidatePath(`/admin/games/${f.version.gameId}`);
 }
 
-/** Cách ly file nghi ngờ — Play Online và Download đều bị chặn ngay. */
+/** Cách ly file nghi ngờ — link tải bị chặn ngay. */
 export async function quarantineFile(fileId: string, quarantine: boolean): Promise<void> {
   await assertAdmin();
   const f = await db.gameFile.update({
@@ -302,32 +299,6 @@ export async function deleteImage(imageId: string): Promise<void> {
   await assertAdmin();
   const img = await db.gameImage.delete({ where: { id: imageId }, select: { gameId: true } });
   revalidatePath(`/admin/games/${img.gameId}`);
-}
-
-// ── Ma trận tương thích ───────────────────────────────────
-
-export async function upsertCompatibility(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  await assertAdmin();
-  const gameId = str(fd, 'gameId');
-  const profileId = str(fd, 'profileId');
-  if (!gameId || !profileId) return { error: 'Thiếu game hoặc emulator profile.' };
-
-  const versionId = str(fd, 'versionId');
-  const support = (str(fd, 'support') ?? 'FULL') as 'FULL' | 'BETA' | 'NONE';
-  const note = str(fd, 'note');
-
-  const existing = await db.gameEmulatorProfile.findFirst({ where: { gameId, versionId, profileId }, select: { id: true } });
-  if (existing) await db.gameEmulatorProfile.update({ where: { id: existing.id }, data: { support, note } });
-  else await db.gameEmulatorProfile.create({ data: { gameId, versionId, profileId, support, note } });
-
-  revalidatePath(`/admin/games/${gameId}`);
-  return { ok: true };
-}
-
-export async function deleteCompatibility(rowId: string): Promise<void> {
-  await assertAdmin();
-  const row = await db.gameEmulatorProfile.delete({ where: { id: rowId }, select: { gameId: true } });
-  revalidatePath(`/admin/games/${row.gameId}`);
 }
 
 // ── Tiện ích ──────────────────────────────────────────────

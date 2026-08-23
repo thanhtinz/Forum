@@ -153,14 +153,20 @@ export function useKeypadParts({
           size,
         )}
       >
-        {/* Vòng xoay: bốn đường chéo chia cánh. Phím vuông không có — máy thật
-            là một mặt liền, ô vuông ở giữa đã đủ làm mốc. */}
+        {/*
+          Vòng xoay: bốn đường chéo chia cánh. Phím vuông không có — máy thật
+          là một mặt liền, ô vuông ở giữa đã đủ làm mốc.
+
+          Vẽ bằng **hai đường kính 1px xoay 45°** chứ không phải
+          `repeating-conic-gradient`: vệt conic dày 0.5° thì ở bán kính 70px
+          chỉ ra ~0.6px, dưới một pixel nên Chrome làm tròn và nuốt mất vệt
+          dưới-phải — ba vệt kia còn, một vệt biến mất.
+        */}
         {!square && (
-          <span
-            aria-hidden
-            className={cn('pointer-events-none absolute inset-0', round)}
-            style={{ background: `repeating-conic-gradient(from 45deg, ${seam} 0deg 0.5deg, transparent 0.5deg 90deg)` }}
-          />
+          <span aria-hidden className={cn('pointer-events-none absolute inset-0 overflow-hidden', round)}>
+            <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 rotate-45" style={{ background: seam }} />
+            <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 -rotate-45" style={{ background: seam }} />
+          </span>
         )}
         {/* Gờ chìm quanh mép, như đường viền dập nổi trên phím thật */}
         <span

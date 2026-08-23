@@ -1056,6 +1056,9 @@ model Conversation {
   nicknameB   String?                       // biệt danh đặt cho userB
   // Số giờ giữ tin trước khi tự xoá; null = không tự xoá
   autoDeleteHours Int?
+  // Mốc bật tự xoá. Chỉ tin gửi TỪ mốc này trở đi mới bị xoá — bật tính năng
+  // không được phép thổi bay lịch sử đã có từ trước.
+  autoDeleteFrom  DateTime?
 
   lastMessageAt DateTime?
   createdAt     DateTime  @default(now())

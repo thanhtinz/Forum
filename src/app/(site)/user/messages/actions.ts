@@ -173,12 +173,31 @@ export async function setAutoDelete(conversationId: string, hours: number): Prom
   if (!convo) return { error: 'Không tìm thấy hội thoại.' };
   if (!AUTO_DELETE_OPTIONS.some((o) => o.hours === hours)) return { error: 'Mốc thời gian không hợp lệ.' };
 
+  const current = await db.conversation.findUnique({
+    where: { id: conversationId },
+    select: { autoDeleteHours: true, autoDeleteFrom: true },
+  });
+
+  if (hours <= 0) {
+    await db.conversation.update({
+      where: { id: conversationId },
+      data: { autoDeleteHours: null, autoDeleteFrom: null },
+      select: { id: true },
+    });
+    revalidatePath(`/user/messages/${conversationId}`);
+    return { ok: true };
+  }
+
+  // Bật từ trạng thái tắt thì đánh mốc từ bây giờ. Chỉ đổi số giờ thì giữ
+  // nguyên mốc cũ, không thì mỗi lần chỉnh lại lùi mốc và tin đang chờ xoá
+  // bỗng được tha.
+  const from = current?.autoDeleteHours ? (current.autoDeleteFrom ?? new Date()) : new Date();
   await db.conversation.update({
     where: { id: conversationId },
-    data: { autoDeleteHours: hours > 0 ? hours : null },
+    data: { autoDeleteHours: hours, autoDeleteFrom: from },
     select: { id: true },
   });
-  if (hours > 0) await purgeExpiredMessages(conversationId, hours);
+  await purgeExpiredMessages(conversationId, hours, from);
 
   revalidatePath(`/user/messages/${conversationId}`);
   return { ok: true };
@@ -189,10 +208,16 @@ export async function setAutoDelete(conversationId: string, hours: number): Prom
  *
  * Dọn ngay lúc mở hội thoại thay vì chạy nền: không có hàng đợi nền nào ở
  * đây, mà tin quá hạn thì không được hiện ra nữa — dọn tại chỗ là chắc chắn nhất.
+ *
+ * `from` là mốc bật tính năng: tin gửi trước đó không bị đụng tới, nếu không
+ * thì vừa bật lên là bay sạch lịch sử cũ.
  */
-export async function purgeExpiredMessages(conversationId: string, hours: number) {
+export async function purgeExpiredMessages(conversationId: string, hours: number, from: Date) {
   const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-  await db.message.deleteMany({ where: { conversationId, createdAt: { lt: cutoff } } });
+  if (from >= cutoff) return; // chưa có tin nào kịp quá hạn
+  await db.message.deleteMany({
+    where: { conversationId, createdAt: { gte: from, lt: cutoff } },
+  });
 }
 
 // ─────────────── Cảm xúc trên tin nhắn ───────────────

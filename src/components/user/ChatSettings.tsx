@@ -117,7 +117,8 @@ export function ChatSettings(p: ChatSettingsProps) {
                 {AUTO_DELETE_OPTIONS.map((o) => <option key={o.hours} value={o.hours}>{o.label}</option>)}
               </select>
               <p className="mt-1 text-xs text-ink-400">
-                Tin cũ hơn mốc này bị xoá hẳn khi mở đoạn chat, không khôi phục được.
+                Chỉ áp dụng cho tin gửi <b>sau khi bật</b> — tin cũ từ trước vẫn giữ nguyên.
+                Tin quá hạn bị xoá hẳn, không khôi phục được.
               </p>
             </section>
 

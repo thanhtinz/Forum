@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { Download, Eye, Gamepad2 } from 'lucide-react';
+import { Apple, Coffee, Download, Eye, Gamepad2, Globe, Monitor, Smartphone, Terminal } from 'lucide-react';
 import type { GameCardData } from '@/lib/game';
-import { gameTint, LANGUAGE_LABEL } from '@/lib/game';
+import { DOWNLOAD_PLATFORMS, gameTint, LANGUAGE_LABEL } from '@/lib/game';
 import { cn, fmtBytes, fmtCount } from '@/lib/utils';
 import { RatingStars } from './RatingStars';
+
+const PLATFORM_ICON = { Monitor, Apple, Terminal, Smartphone, Globe, Coffee } as const;
 
 export interface GameCardProps {
   game: GameCardData;
@@ -33,6 +35,7 @@ export function GameCard({ game, variant = 'grid' }: GameCardProps) {
 
   const meta = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-400">
+      <Platforms game={game} />
       {game.version && <span>v{game.version}</span>}
       {game.sizeBytes != null && <span>{fmtBytes(game.sizeBytes)}</span>}
       {game.resolution && <span>{game.resolution}</span>}
@@ -112,6 +115,20 @@ function GameIcon({ game, tint, size, className }: { game: GameCardData; tint: s
       style={{ width: size, height: size, background: `${tint}1f`, color: tint }}
     >
       <Gamepad2 size={size * 0.45} />
+    </span>
+  );
+}
+
+/** Dãy icon nền tảng có bản tải — cho biết game chạy ở đâu ngay từ danh sách. */
+function Platforms({ game }: { game: GameCardData }) {
+  if (game.downloads.length === 0) return null;
+  return (
+    <span className="flex items-center gap-1 text-ink-500">
+      {game.downloads.map((p) => {
+        const meta = DOWNLOAD_PLATFORMS[p];
+        const Icon = PLATFORM_ICON[meta.icon];
+        return <Icon key={p} size={12} aria-label={meta.label} />;
+      })}
     </span>
   );
 }

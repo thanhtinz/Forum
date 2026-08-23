@@ -3,8 +3,10 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import type { DownloadPlatform, GameFileType } from '@prisma/client';
 import { assertAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
+import { DOWNLOAD_PLATFORMS, fileTypeFitsPlatform } from '@/lib/game';
 import { recomputeTrending } from '@/lib/game-stats';
 
 export interface ActionState { ok?: boolean; error?: string }
@@ -173,30 +175,39 @@ export async function upsertVersion(_prev: ActionState, fd: FormData): Promise<A
   const version = str(fd, 'version');
   if (!gameId || !version) return { error: 'Thiếu game hoặc số hiệu version.' };
 
+  const platform = str(fd, 'platform') as DownloadPlatform | null;
+  if (!platform || !(platform in DOWNLOAD_PLATFORMS)) return { error: 'Nền tảng không hợp lệ.' };
+
   const id = str(fd, 'versionId');
   const releaseDate = str(fd, 'releaseDate');
-  const latest = bool(fd, 'latest');
 
   const data = {
+    platform,
     version,
     releaseDate: releaseDate ? new Date(releaseDate) : null,
     changelog: str(fd, 'changelog'),
     sizeBytes: big(fd, 'sizeBytes'),
     note: str(fd, 'note'),
-    latest,
   };
 
+  // Số hiệu chỉ cần duy nhất trong phạm vi một nền tảng — Windows 1.0 và
+  // Android 1.0 là hai bản tải khác nhau của cùng một game.
   const clash = await db.gameVersion.findFirst({
-    where: { gameId, version, ...(id ? { NOT: { id } } : {}) },
+    where: { gameId, platform, version, ...(id ? { NOT: { id } } : {}) },
     select: { id: true },
   });
-  if (clash) return { error: `Version ${version} đã tồn tại cho game này.` };
+  if (clash) return { error: `Nền tảng ${DOWNLOAD_PLATFORMS[platform].label} đã có version ${version}.` };
+
+  // Nền tảng chưa có bản nào thì bản đầu tiên phải là Latest, không thì nút tải
+  // của nền tảng đó không biết mở bản nào.
+  const existing = await db.gameVersion.count({ where: { gameId, platform, ...(id ? { NOT: { id } } : {}) } });
+  const latest = bool(fd, 'latest') || existing === 0;
 
   await db.$transaction(async (tx) => {
-    // Chỉ một version được đánh dấu Latest.
-    if (latest) await tx.gameVersion.updateMany({ where: { gameId }, data: { latest: false } });
-    if (id) await tx.gameVersion.update({ where: { id }, data });
-    else await tx.gameVersion.create({ data: { ...data, gameId } });
+    // Mỗi nền tảng đúng một bản Latest.
+    if (latest) await tx.gameVersion.updateMany({ where: { gameId, platform }, data: { latest: false } });
+    if (id) await tx.gameVersion.update({ where: { id }, data: { ...data, latest } });
+    else await tx.gameVersion.create({ data: { ...data, latest, gameId } });
   });
 
   revalidatePath(`/admin/games/${gameId}`);
@@ -205,33 +216,58 @@ export async function upsertVersion(_prev: ActionState, fd: FormData): Promise<A
 
 export async function deleteVersion(versionId: string): Promise<void> {
   await assertAdmin();
-  const v = await db.gameVersion.findUnique({ where: { id: versionId }, select: { gameId: true } });
+  const v = await db.gameVersion.findUnique({
+    where: { id: versionId },
+    select: { gameId: true, platform: true, latest: true },
+  });
   await db.gameVersion.delete({ where: { id: versionId } });
-  if (v) revalidatePath(`/admin/games/${v.gameId}`);
+  if (!v) return;
+
+  // Xoá mất bản Latest thì nền tảng đó không còn bản mặc định — đôn bản mới
+  // nhất còn lại lên thay.
+  if (v.latest) {
+    const next = await db.gameVersion.findFirst({
+      where: { gameId: v.gameId, platform: v.platform },
+      orderBy: [{ releaseDate: 'desc' }, { createdAt: 'desc' }],
+      select: { id: true },
+    });
+    if (next) await db.gameVersion.update({ where: { id: next.id }, data: { latest: true } });
+  }
+  revalidatePath(`/admin/games/${v.gameId}`);
 }
 
 export async function setLatestVersion(versionId: string): Promise<void> {
   await assertAdmin();
-  const v = await db.gameVersion.findUnique({ where: { id: versionId }, select: { gameId: true } });
+  const v = await db.gameVersion.findUnique({
+    where: { id: versionId },
+    select: { gameId: true, platform: true },
+  });
   if (!v) return;
   await db.$transaction([
-    db.gameVersion.updateMany({ where: { gameId: v.gameId }, data: { latest: false } }),
+    db.gameVersion.updateMany({ where: { gameId: v.gameId, platform: v.platform }, data: { latest: false } }),
     db.gameVersion.update({ where: { id: versionId }, data: { latest: true } }),
   ]);
   revalidatePath(`/admin/games/${v.gameId}`);
 }
 
-/** Gắn/cập nhật file JAR hoặc JAD cho một version. */
+/** Gắn/cập nhật một file tải cho một version. */
 export async function upsertFile(_prev: ActionState, fd: FormData): Promise<ActionState> {
   await assertAdmin();
   const versionId = str(fd, 'versionId');
-  const type = str(fd, 'type');
+  const type = str(fd, 'type') as GameFileType | null;
   const storageKey = str(fd, 'storageKey');
   if (!versionId || !type || !storageKey) return { error: 'Thiếu version, loại file hoặc storage key.' };
-  if (!['JAR', 'JAD', 'PATCH'].includes(type)) return { error: 'Loại file không hợp lệ.' };
 
-  const version = await db.gameVersion.findUnique({ where: { id: versionId }, select: { gameId: true } });
+  const version = await db.gameVersion.findUnique({
+    where: { id: versionId },
+    select: { gameId: true, platform: true },
+  });
   if (!version) return { error: 'Không tìm thấy version.' };
+
+  if (!fileTypeFitsPlatform(version.platform, type)) {
+    const allowed = DOWNLOAD_PLATFORMS[version.platform].fileTypes.join(', ');
+    return { error: `Nền tảng ${DOWNLOAD_PLATFORMS[version.platform].label} chỉ nhận file: ${allowed}.` };
+  }
 
   const data = {
     storageKey,
@@ -245,9 +281,9 @@ export async function upsertFile(_prev: ActionState, fd: FormData): Promise<Acti
   };
 
   await db.gameFile.upsert({
-    where: { versionId_type: { versionId, type: type as 'JAR' | 'JAD' | 'PATCH' } },
+    where: { versionId_type: { versionId, type } },
     update: data,
-    create: { ...data, versionId, type: type as 'JAR' | 'JAD' | 'PATCH' },
+    create: { ...data, versionId, type },
   });
 
   revalidatePath(`/admin/games/${version.gameId}`);

@@ -14,13 +14,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const versions = await db.gameVersion.findMany({
     where: { gameId: game.id },
-    orderBy: [{ latest: 'desc' }, { releaseDate: 'desc' }, { createdAt: 'desc' }],
+    orderBy: [{ platform: 'asc' }, { latest: 'desc' }, { releaseDate: 'desc' }, { createdAt: 'desc' }],
     include: { files: { select: { type: true, sizeBytes: true, checksum: true, checksumAlgo: true, scanStatus: true } } },
   });
 
   return NextResponse.json({
     items: versions.map((v) => ({
       id: v.id,
+      platform: v.platform,
       version: v.version,
       releaseDate: v.releaseDate,
       changelog: v.changelog,

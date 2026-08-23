@@ -1278,10 +1278,13 @@ model GameVersion {
   gameId String
   game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
+  /// Bản tải này dành cho nền tảng nào. Mỗi nền tảng có dãy version riêng.
+  platform    DownloadPlatform @default(JAR)
   version     String            // "1.0.2"
   releaseDate DateTime?
   changelog   String?  @db.Text
-  sizeBytes   BigInt?           // tổng dung lượng (thường = JAR)
+  sizeBytes   BigInt?           // tổng dung lượng của bản tải
+  /// Bản mới nhất **của nền tảng này** — mỗi nền tảng đúng một bản.
   latest      Boolean  @default(false)
   note        String?
 
@@ -1290,8 +1293,19 @@ model GameVersion {
   files  GameFile[]
   events GameEvent[]
 
-  @@unique([gameId, version])
-  @@index([gameId, latest])
+  @@unique([gameId, platform, version])
+  @@index([gameId, platform, latest])
+}
+
+/// Nút tải trên trang chi tiết game. Khác `GamePlatform` (dòng máy để lọc catalog).
+enum DownloadPlatform {
+  WINDOWS
+  MAC
+  LINUX
+  ANDROID
+  IOS
+  WEB
+  JAR
 }
 
 model GameFile {
@@ -1307,7 +1321,7 @@ model GameFile {
   checksumAlgo String @default("sha256")
   mimeType   String?
 
-  scanStatus ScanStatus @default(PENDING) // quét JAR/JAD trước khi phát hành
+  scanStatus ScanStatus @default(PENDING) // quét file trước khi phát hành
   scanNote   String?
 
   createdAt DateTime @default(now())
@@ -1319,6 +1333,14 @@ model GameFile {
 enum GameFileType {
   JAR
   JAD
+  APK
+  IPA
+  EXE
+  MSI
+  DMG
+  PKG
+  DEB
+  ZIP
   PATCH
 }
 

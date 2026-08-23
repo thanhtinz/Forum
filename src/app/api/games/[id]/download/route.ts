@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import type { GameFileType } from '@prisma/client';
 import { db } from '@/lib/db';
 import { getActor } from '@/lib/actor';
+import { fileTypeFitsPlatform } from '@/lib/game';
 import { downloadFileName, signedFileUrl, SIGNED_URL_TTL } from '@/lib/game-files';
 import { recordGameEvent } from '@/lib/game-stats';
 import { rateLimit } from '@/lib/rate-limit-memory';
@@ -8,19 +10,19 @@ import { rateLimit } from '@/lib/rate-limit-memory';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/games/{id|slug}/download?version=<id>&type=JAR|JAD
+ * GET /api/games/{id|slug}/download?version=<id>&type=<GameFileType>
  *
- * Backend kiểm tra file (tồn tại, đã quét sạch) rồi cấp signed URL có hạn.
- * Sự kiện download được ghi nhận tại đây, unique download chống trùng theo
- * actor nên tải lặp bất thường không làm phồng số liệu.
+ * `version` xác định luôn nền tảng (mỗi version thuộc đúng một nền tảng), nên
+ * không cần tham số platform riêng. Backend kiểm tra file (tồn tại, hợp nền
+ * tảng, đã quét sạch) rồi cấp signed URL có hạn. Sự kiện download được ghi
+ * nhận tại đây, unique download chống trùng theo actor nên tải lặp bất thường
+ * không làm phồng số liệu.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const url = new URL(req.url);
-  const type = (url.searchParams.get('type') ?? 'JAR').toUpperCase();
-  if (type !== 'JAR' && type !== 'JAD') {
-    return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });
-  }
+  const type = url.searchParams.get('type')?.toUpperCase() as GameFileType | undefined;
+  if (!type) return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });
 
   const actor = await getActor(true);
   const limit = rateLimit(`dl:${actor.actorKey}`, 30, 60);
@@ -47,6 +49,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       });
   if (!version) return NextResponse.json({ error: 'VERSION_NOT_FOUND' }, { status: 404 });
 
+  if (!fileTypeFitsPlatform(version.platform, type)) {
+    return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });
+  }
+
   const file = version.files.find((f) => f.type === type);
   if (!file) return NextResponse.json({ error: 'FILE_NOT_FOUND' }, { status: 404 });
   if (file.scanStatus === 'QUARANTINED') {
@@ -59,7 +65,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     userId: actor.userId,
     actorKey: actor.actorKey,
     type: 'DOWNLOAD',
-    meta: { fileType: type, version: version.version },
+    meta: { platform: version.platform, fileType: type, version: version.version },
   });
 
   const signed = signedFileUrl(file.storageKey, actor.actorKey);
@@ -70,6 +76,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     checksum: file.checksum,
     checksumAlgo: file.checksumAlgo,
     expiresInSec: SIGNED_URL_TTL,
+    platform: version.platform,
     version: version.version,
   };
 

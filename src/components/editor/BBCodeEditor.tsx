@@ -167,7 +167,9 @@ export function BBCodeEditor({
         </div>
       ) : (
         <textarea
-          ref={ref} name={name} defaultValue={defaultValue} rows={rows}
+          // Phải là ô có điều khiển: bật xem trước là thẻ này bị gỡ khỏi trang,
+          // quay lại mà dùng defaultValue thì nội dung đang soạn mất sạch.
+          ref={ref} name={name} value={value} rows={rows}
           required={required} minLength={minLength} maxLength={maxLength} placeholder={placeholder}
           onChange={(e) => setValue(e.target.value)}
           className="block w-full resize-y border-0 bg-white p-3 text-sm outline-none dark:bg-ink-900"

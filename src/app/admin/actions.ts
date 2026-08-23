@@ -12,41 +12,70 @@ import { normalizeIcon, isPublicImageRef } from '@/lib/icon';
 import { NAV_GROUPS, NAV_DEFAULTS, isSafeNavUrl } from '@/lib/nav';
 import { SITE_SETTING_KEY } from '@/lib/site';
 import { isBanScope, banExpiry } from '@/lib/ban';
+import { logAdmin, pruneAdminLogs } from '@/lib/audit';
+
+const POST_STATUS_LABEL: Record<string, string> = {
+  PUBLISHED: 'đã đăng', PENDING: 'chờ duyệt', ARCHIVED: 'đã ẩn', DRAFT: 'bản nháp', HIDDEN: 'đã ẩn',
+};
 
 // ─────────────── Bài viết ───────────────
 
 export async function approvePost(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const post = await db.post.update({ where: { id }, data: { status: 'PUBLISHED', publishedAt: new Date() }, select: { authorId: true, slug: true, title: true } });
   await notify({ userId: post.authorId, type: 'SYSTEM', title: 'Bài viết đã được duyệt', content: post.title, link: `/posts/${post.slug}` });
   await checkAndAwardMedals(post.authorId).catch(() => {});
+  await logAdmin({ actor: admin, action: 'post.approve', targetType: 'post', targetId: id, summary: `Duyệt bài “${post.title}”` });
   revalidatePath('/admin/posts');
 }
 
 export async function setPostStatus(id: string, status: 'PUBLISHED' | 'PENDING' | 'ARCHIVED') {
-  await requireAdmin();
-  await db.post.update({ where: { id }, data: { status, ...(status === 'PUBLISHED' ? { publishedAt: new Date() } : {}) } });
+  const admin = await requireAdmin();
+  const post = await db.post.update({
+    where: { id },
+    data: { status, ...(status === 'PUBLISHED' ? { publishedAt: new Date() } : {}) },
+    select: { title: true },
+  });
+  await logAdmin({
+    actor: admin, action: 'post.status', targetType: 'post', targetId: id,
+    summary: `Đổi bài “${post.title}” sang ${POST_STATUS_LABEL[status] ?? status}`, meta: { status },
+  });
   revalidatePath('/admin/posts');
 }
 
 export async function deletePost(id: string) {
-  await requireAdmin();
-  await db.post.delete({ where: { id } });
+  const admin = await requireAdmin();
+  const post = await db.post.delete({ where: { id }, select: { title: true, slug: true } });
+  await logAdmin({
+    actor: admin, action: 'post.delete', targetType: 'post', targetId: id,
+    summary: `Xoá bài “${post.title}”`, meta: { slug: post.slug },
+  });
   revalidatePath('/admin/posts');
 }
 
 export async function togglePostFeatured(id: string) {
-  await requireAdmin();
-  const p = await db.post.findUnique({ where: { id }, select: { featured: true } });
-  await db.post.update({ where: { id }, data: { featured: !p?.featured } });
+  const admin = await requireAdmin();
+  const p = await db.post.findUnique({ where: { id }, select: { featured: true, title: true } });
+  const featured = !p?.featured;
+  await db.post.update({ where: { id }, data: { featured } });
+  await logAdmin({
+    actor: admin, action: 'post.feature', targetType: 'post', targetId: id,
+    summary: `${featured ? 'Đặt' : 'Bỏ'} nổi bật cho bài “${p?.title ?? id}”`, meta: { featured },
+  });
   revalidatePath('/admin/posts');
 }
 
 // ─────────────── Người dùng ───────────────
 
 export async function setUserRole(id: string, role: 'USER' | 'AUTHOR' | 'MODERATOR' | 'ADMIN') {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
+  const before = await db.user.findUnique({ where: { id }, select: { role: true, username: true } });
   await db.user.update({ where: { id }, data: { role } });
+  await logAdmin({
+    actor: admin, action: 'user.role', targetType: 'user', targetId: id,
+    summary: `Đổi vai trò của @${before?.username ?? id}: ${before?.role ?? '?'} → ${role}`,
+    meta: { from: before?.role, to: role },
+  });
   revalidatePath('/admin/users');
 }
 
@@ -83,17 +112,27 @@ export async function banUser(_prev: BanState, formData: FormData): Promise<BanS
       link: '/',
     });
   }
+  await logAdmin({
+    actor: admin, action: 'user.ban', targetType: 'user', targetId: id,
+    summary: `Khoá @${u.username ?? id} (${scope}) ${expiresAt ? `tới ${expiresAt.toLocaleDateString('vi-VN')}` : 'vĩnh viễn'} — ${reason}`,
+    meta: { scope, days, reason, expiresAt },
+  });
   revalidatePath('/admin/users');
   return { ok: true };
 }
 
 /** Gỡ một phạm vi khoá; gỡ FULL thì mở lại đăng nhập. */
 export async function unbanUser(id: string, scope: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   if (!isBanScope(scope)) return;
+  const u = await db.user.findUnique({ where: { id }, select: { username: true } });
   await db.$transaction(async (tx) => {
     await tx.ban.deleteMany({ where: { userId: id, scope } });
     if (scope === 'FULL') await tx.user.update({ where: { id }, data: { status: 'ACTIVE' }, select: { id: true } });
+  });
+  await logAdmin({
+    actor: admin, action: 'user.unban', targetType: 'user', targetId: id,
+    summary: `Gỡ khoá ${scope} cho @${u?.username ?? id}`, meta: { scope },
   });
   revalidatePath('/admin/users');
 }
@@ -108,7 +147,7 @@ function slugify(s: string, fallback = 'muc'): string {
 export type CategoryState = { ok?: boolean; error?: string };
 
 export async function saveCategory(_prev: CategoryState, formData: FormData): Promise<CategoryState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get('id') ?? '').trim() || null;
   const name = String(formData.get('name') ?? '').trim();
   const parentId = String(formData.get('parentId') ?? '').trim() || null;
@@ -119,25 +158,36 @@ export async function saveCategory(_prev: CategoryState, formData: FormData): Pr
   if (name.length < 2) return { error: 'Tên chuyên mục quá ngắn.' };
   if (parentId && parentId === id) return { error: 'Chuyên mục không thể là cha của chính nó.' };
 
+  let savedId = id;
   try {
     if (id) {
       await db.category.update({ where: { id }, data: { name, parentId, color, icon, description, order } });
     } else {
       let slug = slugify(name);
       if (await db.category.findUnique({ where: { slug }, select: { id: true } })) slug = `${slug}-${Date.now().toString().slice(-4)}`;
-      await db.category.create({ data: { slug, name, parentId, color, icon, description, order } });
+      const created = await db.category.create({ data: { slug, name, parentId, color, icon, description, order }, select: { id: true } });
+      savedId = created.id;
     }
   } catch {
     return { error: 'Không thể lưu chuyên mục.' };
   }
+  await logAdmin({
+    actor: admin, action: id ? 'category.update' : 'category.create', targetType: 'category', targetId: savedId,
+    summary: `${id ? 'Sửa' : 'Tạo'} chuyên mục “${name}”`,
+  });
   revalidatePath('/admin/categories');
   revalidatePath('/');
   return { ok: true };
 }
 
 export async function deleteCategory(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const cat = await db.category.findUnique({ where: { id }, select: { name: true } });
   await db.category.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'category.delete', targetType: 'category', targetId: id,
+    summary: `Xoá chuyên mục “${cat?.name ?? id}”`,
+  });
   revalidatePath('/admin/categories');
   revalidatePath('/');
 }
@@ -149,7 +199,7 @@ export async function updateVipPlan(id: string, data: {
   price: number; originalPrice: number | null; durationDays: number | null;
   discountPercent: number; freeContent: boolean; active: boolean;
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const name = data.name.trim();
   if (name.length < 2) return { error: 'Tên gói quá ngắn.' };
   await db.vipPlan.update({
@@ -162,6 +212,11 @@ export async function updateVipPlan(id: string, data: {
       color: data.color?.trim() || null,
     },
   });
+  await logAdmin({
+    actor: admin, action: 'vip.update', targetType: 'vipPlan', targetId: id,
+    summary: `Cập nhật gói VIP “${name}” — giá ${data.price.toLocaleString('vi-VN')}₫${data.active ? '' : ' (đang tắt)'}`,
+    meta: { price: data.price, durationDays: data.durationDays, active: data.active },
+  });
   revalidatePath('/admin/vip-plans');
   revalidatePath('/vip');
   return { ok: true };
@@ -172,7 +227,7 @@ export async function updateVipPlan(id: string, data: {
 export type GifSettingState = { ok?: boolean; error?: string };
 
 export async function saveGifConfig(_prev: GifSettingState, formData: FormData): Promise<GifSettingState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const provider = String(formData.get('provider') ?? 'tenor') === 'giphy' ? 'giphy' : 'tenor';
   const apiKey = String(formData.get('apiKey') ?? '').trim();
   const enabled = formData.get('enabled') === 'on';
@@ -184,6 +239,11 @@ export async function saveGifConfig(_prev: GifSettingState, formData: FormData):
     update: { value: { provider, apiKey, enabled } },
     create: { key: GIF_SETTING_KEY, value: { provider, apiKey, enabled } },
   });
+  // Không ghi apiKey vào nhật ký — nhật ký đọc được bởi mọi quản trị viên.
+  await logAdmin({
+    actor: admin, action: 'setting.update', targetType: 'setting', targetId: GIF_SETTING_KEY,
+    summary: `Cấu hình GIF: ${provider}, ${enabled ? 'đang bật' : 'đang tắt'}`, meta: { provider, enabled },
+  });
   revalidatePath('/admin/gif');
   return { ok: true };
 }
@@ -193,7 +253,7 @@ export async function saveGifConfig(_prev: GifSettingState, formData: FormData):
 export type R2State = { ok?: boolean; error?: string };
 
 export async function saveR2Config(_prev: R2State, formData: FormData): Promise<R2State> {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
   const accountId = String(formData.get('accountId') ?? '').trim();
   const accessKeyId = String(formData.get('accessKeyId') ?? '').trim();
   const secretAccessKey = String(formData.get('secretAccessKey') ?? '').trim();
@@ -218,6 +278,12 @@ export async function saveR2Config(_prev: R2State, formData: FormData): Promise<
     update: { value },
     create: { key: R2_SETTING_KEY, value },
   });
+  // Cố ý không ghi accessKeyId/secret vào nhật ký.
+  await logAdmin({
+    actor: admin, action: 'setting.update', targetType: 'setting', targetId: R2_SETTING_KEY,
+    summary: `Cấu hình lưu trữ R2: bucket ${bucket || '—'}, ${enabled ? 'đang bật' : 'đang tắt'}`,
+    meta: { bucket, publicUrl, enabled },
+  });
   revalidatePath('/admin/storage');
   return { ok: true };
 }
@@ -225,34 +291,47 @@ export async function saveR2Config(_prev: R2State, formData: FormData): Promise<
 // ─────────────── Bộ sticker ───────────────
 
 export async function deleteStickerPack(id: string) {
-  await requireSuperAdmin();
+  const admin = await requireSuperAdmin();
   const pack = await db.stickerPack.findUnique({
     where: { id },
-    select: { stickers: { select: { storageKey: true } } },
+    select: { name: true, stickers: { select: { storageKey: true } } },
   });
   for (const s of pack?.stickers ?? []) await deleteFile(s.storageKey ?? '');
   await db.stickerPack.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'setting.delete', targetType: 'stickerPack', targetId: id,
+    summary: `Xoá bộ sticker “${pack?.name ?? id}”`,
+  });
   revalidatePath('/admin/stickers');
 }
 
 export async function toggleStickerPack(id: string) {
-  await requireSuperAdmin();
-  const p = await db.stickerPack.findUnique({ where: { id }, select: { active: true } });
-  await db.stickerPack.update({ where: { id }, data: { active: !p?.active }, select: { id: true } });
+  const admin = await requireSuperAdmin();
+  const p = await db.stickerPack.findUnique({ where: { id }, select: { active: true, name: true } });
+  const active = !p?.active;
+  await db.stickerPack.update({ where: { id }, data: { active }, select: { id: true } });
+  await logAdmin({
+    actor: admin, action: 'setting.toggle', targetType: 'stickerPack', targetId: id,
+    summary: `${active ? 'Bật' : 'Tắt'} bộ sticker “${p?.name ?? id}”`, meta: { active },
+  });
   revalidatePath('/admin/stickers');
 }
 
 // ─────────────── Báo cáo ───────────────
 
 export async function setReportStatus(id: string, status: 'RESOLVED' | 'DISMISSED') {
-  await requireAdmin();
+  const admin = await requireAdmin();
   await db.report.update({ where: { id }, data: { status, handledAt: new Date() } });
+  await logAdmin({
+    actor: admin, action: status === 'RESOLVED' ? 'report.approve' : 'report.status', targetType: 'report', targetId: id,
+    summary: status === 'RESOLVED' ? 'Đánh dấu báo cáo đã xử lý' : 'Bỏ qua báo cáo', meta: { status },
+  });
   revalidatePath('/admin/reports');
 }
 
 /** Duyệt báo cáo và ẩn/xoá nội dung bị báo cáo cùng lúc. */
 export async function resolveReportAndRemove(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const r = await db.report.findUnique({ where: { id }, select: { postId: true, threadId: true, replyId: true, commentId: true } });
   if (!r) return;
   await db.$transaction(async (tx) => {
@@ -262,18 +341,29 @@ export async function resolveReportAndRemove(id: string) {
     if (r.commentId) await tx.comment.delete({ where: { id: r.commentId } }).catch(() => {});
     await tx.report.update({ where: { id }, data: { status: 'RESOLVED', handledAt: new Date() } });
   });
+  const kind = r.postId ? 'bài viết' : r.threadId ? 'chủ đề' : r.replyId ? 'trả lời' : 'bình luận';
+  await logAdmin({
+    actor: admin, action: 'report.approve', targetType: 'report', targetId: id,
+    summary: `Xử lý báo cáo và gỡ ${kind} bị báo cáo`,
+    meta: { postId: r.postId, threadId: r.threadId, replyId: r.replyId, commentId: r.commentId },
+  });
   revalidatePath('/admin/reports');
 }
 
 // ─────────────── Rút tiền ───────────────
 
 export async function setWithdrawalStatus(id: string, status: 'APPROVED' | 'REJECTED' | 'PAID') {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  let logged: { amount: number; username: string | null } | null = null;
   await db.$transaction(async (tx) => {
-    const w = await tx.withdrawal.findUnique({ where: { id }, select: { userId: true, amount: true, status: true } });
+    const w = await tx.withdrawal.findUnique({
+      where: { id },
+      select: { userId: true, amount: true, status: true, user: { select: { username: true } } },
+    });
     if (!w || w.status === 'PAID' || w.status === 'REJECTED') return; // đã xử lý xong
 
     await tx.withdrawal.update({ where: { id }, data: { status, processedAt: new Date() } });
+    logged = { amount: w.amount, username: w.user?.username ?? null };
 
     if (status === 'REJECTED') {
       // Hoàn tiền đang đóng băng về số dư khả dụng
@@ -288,6 +378,17 @@ export async function setWithdrawalStatus(id: string, status: 'APPROVED' | 'REJE
       await notify({ userId: w.userId, type: 'SYSTEM', title: 'Yêu cầu rút tiền đã được duyệt', content: 'Chúng tôi sẽ chuyển khoản trong thời gian sớm nhất.', link: '/user/balance' }, tx);
     }
   });
+  // Bấm lại trên yêu cầu đã chốt thì không có gì thay đổi — cũng không ghi nhật ký.
+  if (logged) {
+    const w = logged as { amount: number; username: string | null };
+    const verb = status === 'REJECTED' ? 'reject' : status === 'PAID' ? 'paid' : 'approve';
+    const label = status === 'REJECTED' ? 'Từ chối' : status === 'PAID' ? 'Đã chuyển tiền cho' : 'Duyệt';
+    await logAdmin({
+      actor: admin, action: `withdrawal.${verb}`, targetType: 'withdrawal', targetId: id,
+      summary: `${label} yêu cầu rút ${w.amount.toLocaleString('vi-VN')}₫ của @${w.username ?? '?'}`,
+      meta: { status, amount: w.amount },
+    });
+  }
   revalidatePath('/admin/withdrawals');
 }
 
@@ -299,7 +400,8 @@ export async function setWithdrawalStatus(id: string, status: 'APPROVED' | 'REJE
  * và chỉ chạy khi đơn còn PENDING nên bấm hai lần không cộng tiền hai lần.
  */
 export async function markOrderPaid(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  let logged: { code: string; amount: number } | null = null;
   await db.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id },
@@ -312,6 +414,7 @@ export async function markOrderPaid(id: string) {
       data: { status: 'PAID', paidAt: new Date(), payMethod: 'ADMIN' },
       select: { id: true },
     });
+    logged = { code: order.code, amount: order.finalAmount || order.amount };
 
     if (order.type === 'TOPUP') {
       const amount = order.finalAmount || order.amount;
@@ -325,49 +428,79 @@ export async function markOrderPaid(id: string) {
       await notify({ userId: order.userId, type: 'ORDER', title: 'Đơn hàng đã được xác nhận', content: order.code, link: '/user/orders' }, tx);
     }
   });
+  if (logged) {
+    const o = logged as { code: string; amount: number };
+    await logAdmin({
+      actor: admin, action: 'order.paid', targetType: 'order', targetId: id,
+      summary: `Xác nhận thanh toán thủ công đơn ${o.code} — ${o.amount.toLocaleString('vi-VN')}₫`,
+      meta: { code: o.code, amount: o.amount },
+    });
+  }
   revalidatePath('/admin/orders');
 }
 
 export async function cancelOrder(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const order = await db.order.findUnique({ where: { id }, select: { status: true, code: true, userId: true } });
   if (!order || order.status !== 'PENDING') return; // đơn đã trả tiền thì không huỷ suông được
   await db.order.update({ where: { id }, data: { status: 'CANCELLED' }, select: { id: true } });
   await notify({ userId: order.userId, type: 'ORDER', title: 'Đơn hàng đã bị huỷ', content: order.code, link: '/user/orders' });
+  await logAdmin({
+    actor: admin, action: 'order.cancel', targetType: 'order', targetId: id,
+    summary: `Huỷ đơn ${order.code}`, meta: { code: order.code },
+  });
   revalidatePath('/admin/orders');
 }
 
 // ─────────────── Chủ đề diễn đàn ───────────────
 
 export async function setThreadStatus(id: string, status: 'PUBLISHED' | 'PENDING' | 'HIDDEN') {
-  await requireAdmin();
-  await db.thread.update({ where: { id }, data: { status }, select: { id: true } });
+  const admin = await requireAdmin();
+  const t = await db.thread.update({ where: { id }, data: { status }, select: { title: true } });
+  await logAdmin({
+    actor: admin, action: 'thread.status', targetType: 'thread', targetId: id,
+    summary: `Đổi chủ đề “${t.title}” sang ${POST_STATUS_LABEL[status] ?? status}`, meta: { status },
+  });
   revalidatePath('/admin/threads');
 }
 
 export async function toggleThreadPinned(id: string) {
-  await requireAdmin();
-  const t = await db.thread.findUnique({ where: { id }, select: { pinned: true } });
-  await db.thread.update({ where: { id }, data: { pinned: !t?.pinned }, select: { id: true } });
+  const admin = await requireAdmin();
+  const t = await db.thread.findUnique({ where: { id }, select: { pinned: true, title: true } });
+  const pinned = !t?.pinned;
+  await db.thread.update({ where: { id }, data: { pinned }, select: { id: true } });
+  await logAdmin({
+    actor: admin, action: 'thread.pin', targetType: 'thread', targetId: id,
+    summary: `${pinned ? 'Ghim' : 'Bỏ ghim'} chủ đề “${t?.title ?? id}”`, meta: { pinned },
+  });
   revalidatePath('/admin/threads');
 }
 
 export async function toggleThreadLocked(id: string) {
-  await requireAdmin();
-  const t = await db.thread.findUnique({ where: { id }, select: { locked: true } });
-  await db.thread.update({ where: { id }, data: { locked: !t?.locked }, select: { id: true } });
+  const admin = await requireAdmin();
+  const t = await db.thread.findUnique({ where: { id }, select: { locked: true, title: true } });
+  const locked = !t?.locked;
+  await db.thread.update({ where: { id }, data: { locked }, select: { id: true } });
+  await logAdmin({
+    actor: admin, action: 'thread.lock', targetType: 'thread', targetId: id,
+    summary: `${locked ? 'Khoá' : 'Mở khoá'} chủ đề “${t?.title ?? id}”`, meta: { locked },
+  });
   revalidatePath('/admin/threads');
 }
 
 export async function deleteThread(id: string) {
-  await requireAdmin();
-  const t = await db.thread.findUnique({ where: { id }, select: { forumId: true } });
+  const admin = await requireAdmin();
+  const t = await db.thread.findUnique({ where: { id }, select: { forumId: true, title: true } });
   if (!t) return;
   await db.$transaction(async (tx) => {
     await tx.thread.delete({ where: { id } });
     // Đếm lại cho khu vực để số chủ đề không lệch.
     const count = await tx.thread.count({ where: { forumId: t.forumId } });
     await tx.forum.update({ where: { id: t.forumId }, data: { threadCount: count }, select: { id: true } });
+  });
+  await logAdmin({
+    actor: admin, action: 'thread.delete', targetType: 'thread', targetId: id,
+    summary: `Xoá chủ đề “${t.title}”`, meta: { forumId: t.forumId },
   });
   revalidatePath('/admin/threads');
 }
@@ -385,7 +518,7 @@ function parseForumAccess(raw: unknown): ForumAccessValue {
 }
 
 export async function saveForum(_prev: ForumState, formData: FormData): Promise<ForumState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get('id') ?? '').trim() || null;
   const name = String(formData.get('name') ?? '').trim();
   const parentId = String(formData.get('parentId') ?? '').trim() || null;
@@ -399,28 +532,38 @@ export async function saveForum(_prev: ForumState, formData: FormData): Promise<
   if (name.length < 2) return { error: 'Tên diễn đàn quá ngắn.' };
   if (parentId && parentId === id) return { error: 'Diễn đàn không thể là cha của chính nó.' };
 
+  let savedId = id;
   try {
     if (id) {
       await db.forum.update({ where: { id }, data: { name, parentId, description, icon, order, postAccess, minLevel, vipOnly } });
     } else {
       let slug = slugify(name, 'dien-dan');
       if (await db.forum.findUnique({ where: { slug }, select: { id: true } })) slug = `${slug}-${Date.now().toString().slice(-4)}`;
-      await db.forum.create({ data: { slug, name, parentId, description, icon, order, postAccess, minLevel, vipOnly } });
+      const created = await db.forum.create({ data: { slug, name, parentId, description, icon, order, postAccess, minLevel, vipOnly }, select: { id: true } });
+      savedId = created.id;
     }
   } catch {
     return { error: 'Không thể lưu diễn đàn.' };
   }
+  await logAdmin({
+    actor: admin, action: id ? 'forum.update' : 'forum.create', targetType: 'forum', targetId: savedId,
+    summary: `${id ? 'Sửa' : 'Tạo'} khu vực “${name}”`, meta: { postAccess, minLevel, vipOnly },
+  });
   revalidatePath('/admin/forums');
   revalidatePath('/forum');
   return { ok: true };
 }
 
 export async function deleteForum(id: string) {
-  await requireAdmin();
-  const forum = await db.forum.findUnique({ where: { id }, select: { threadCount: true } });
+  const admin = await requireAdmin();
+  const forum = await db.forum.findUnique({ where: { id }, select: { threadCount: true, name: true } });
   if (!forum) return;
   if (forum.threadCount > 0) return; // còn chủ đề thì không xoá, tránh mất dữ liệu
   await db.forum.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'forum.delete', targetType: 'forum', targetId: id,
+    summary: `Xoá khu vực “${forum.name}”`,
+  });
   revalidatePath('/admin/forums');
   revalidatePath('/forum');
 }
@@ -430,7 +573,7 @@ export async function deleteForum(id: string) {
 export type AppearanceState = { ok?: boolean; error?: string };
 
 export async function saveSlide(_prev: AppearanceState, formData: FormData): Promise<AppearanceState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get('id') ?? '').trim() || null;
   const title = String(formData.get('title') ?? '').trim();
   const subtitle = String(formData.get('subtitle') ?? '').trim() || null;
@@ -443,35 +586,49 @@ export async function saveSlide(_prev: AppearanceState, formData: FormData): Pro
   if (!image) return { error: 'Cần có ảnh nền cho slide.' };
 
   const data = { title, subtitle, image, link, order, active };
+  let savedId = id;
   try {
     if (id) await db.slide.update({ where: { id }, data });
-    else await db.slide.create({ data });
+    else savedId = (await db.slide.create({ data, select: { id: true } })).id;
   } catch {
     return { error: 'Không thể lưu slide.' };
   }
+  await logAdmin({
+    actor: admin, action: id ? 'appearance.update' : 'appearance.create', targetType: 'slide', targetId: savedId,
+    summary: `${id ? 'Sửa' : 'Thêm'} slide “${title}”`, meta: { active },
+  });
   revalidatePath('/admin/slides');
   revalidatePath('/');
   return { ok: true };
 }
 
 export async function deleteSlide(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const s = await db.slide.findUnique({ where: { id }, select: { title: true } });
   await db.slide.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'appearance.delete', targetType: 'slide', targetId: id,
+    summary: `Xoá slide “${s?.title ?? id}”`,
+  });
   revalidatePath('/admin/slides');
   revalidatePath('/');
 }
 
 export async function toggleSlide(id: string) {
-  await requireAdmin();
-  const s = await db.slide.findUnique({ where: { id }, select: { active: true } });
+  const admin = await requireAdmin();
+  const s = await db.slide.findUnique({ where: { id }, select: { active: true, title: true } });
   if (!s) return;
   await db.slide.update({ where: { id }, data: { active: !s.active } });
+  await logAdmin({
+    actor: admin, action: 'appearance.toggle', targetType: 'slide', targetId: id,
+    summary: `${s.active ? 'Ẩn' : 'Hiện'} slide “${s.title}”`, meta: { active: !s.active },
+  });
   revalidatePath('/admin/slides');
   revalidatePath('/');
 }
 
 export async function saveFriendLink(_prev: AppearanceState, formData: FormData): Promise<AppearanceState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get('id') ?? '').trim() || null;
   const name = String(formData.get('name') ?? '').trim();
   const url = String(formData.get('url') ?? '').trim();
@@ -484,29 +641,43 @@ export async function saveFriendLink(_prev: AppearanceState, formData: FormData)
   if (!/^https?:\/\//i.test(url)) return { error: 'Địa chỉ phải bắt đầu bằng http:// hoặc https://' };
 
   const data = { name, url, logo, description, order, active };
+  let savedId = id;
   try {
     if (id) await db.friendLink.update({ where: { id }, data });
-    else await db.friendLink.create({ data });
+    else savedId = (await db.friendLink.create({ data, select: { id: true } })).id;
   } catch {
     return { error: 'Không thể lưu liên kết.' };
   }
+  await logAdmin({
+    actor: admin, action: id ? 'appearance.update' : 'appearance.create', targetType: 'friendLink', targetId: savedId,
+    summary: `${id ? 'Sửa' : 'Thêm'} liên kết bạn bè “${name}”`, meta: { url, active },
+  });
   revalidatePath('/admin/links');
   revalidatePath('/');
   return { ok: true };
 }
 
 export async function deleteFriendLink(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const l = await db.friendLink.findUnique({ where: { id }, select: { name: true } });
   await db.friendLink.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'appearance.delete', targetType: 'friendLink', targetId: id,
+    summary: `Xoá liên kết bạn bè “${l?.name ?? id}”`,
+  });
   revalidatePath('/admin/links');
   revalidatePath('/');
 }
 
 export async function toggleFriendLink(id: string) {
-  await requireAdmin();
-  const l = await db.friendLink.findUnique({ where: { id }, select: { active: true } });
+  const admin = await requireAdmin();
+  const l = await db.friendLink.findUnique({ where: { id }, select: { active: true, name: true } });
   if (!l) return;
   await db.friendLink.update({ where: { id }, data: { active: !l.active } });
+  await logAdmin({
+    actor: admin, action: 'appearance.toggle', targetType: 'friendLink', targetId: id,
+    summary: `${l.active ? 'Ẩn' : 'Hiện'} liên kết bạn bè “${l.name}”`, meta: { active: !l.active },
+  });
   revalidatePath('/admin/links');
   revalidatePath('/');
 }
@@ -531,7 +702,7 @@ function parseIntOrNull(raw: FormDataEntryValue | null): number | null {
 }
 
 export async function saveCoupon(_prev: CouponState, formData: FormData): Promise<CouponState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get('id') ?? '').trim() || null;
   const code = String(formData.get('code') ?? '').trim().toUpperCase();
   const name = String(formData.get('name') ?? '').trim();
@@ -556,30 +727,45 @@ export async function saveCoupon(_prev: CouponState, formData: FormData): Promis
   if (startsAt && endsAt && startsAt >= endsAt) return { error: 'Ngày kết thúc phải sau ngày bắt đầu.' };
 
   const data = { code, name, type, value, minAmount, maxDiscount, appliesTo, totalQuantity, perUserLimit, startsAt, endsAt, active } as const;
+  let savedId = id;
   try {
     if (id) await db.coupon.update({ where: { id }, data });
-    else await db.coupon.create({ data });
+    else savedId = (await db.coupon.create({ data, select: { id: true } })).id;
   } catch {
     return { error: 'Không thể lưu — có thể mã đã tồn tại.' };
   }
+  await logAdmin({
+    actor: admin, action: id ? 'coupon.update' : 'coupon.create', targetType: 'coupon', targetId: savedId,
+    summary: `${id ? 'Sửa' : 'Tạo'} mã ${code} — giảm ${type === 'PERCENT' ? `${value}%` : `${value.toLocaleString('vi-VN')}₫`}`,
+    meta: { code, type, value, totalQuantity, perUserLimit, active },
+  });
   revalidatePath('/admin/coupons');
   return { ok: true };
 }
 
 export async function toggleCoupon(id: string) {
-  await requireAdmin();
-  const c = await db.coupon.findUnique({ where: { id }, select: { active: true } });
+  const admin = await requireAdmin();
+  const c = await db.coupon.findUnique({ where: { id }, select: { active: true, code: true } });
   if (!c) return;
   await db.coupon.update({ where: { id }, data: { active: !c.active } });
+  await logAdmin({
+    actor: admin, action: 'coupon.toggle', targetType: 'coupon', targetId: id,
+    summary: `${c.active ? 'Tắt' : 'Bật'} mã ${c.code}`, meta: { active: !c.active },
+  });
   revalidatePath('/admin/coupons');
 }
 
 /** Chỉ xoá được mã chưa ai dùng — đã dùng thì tắt để giữ lịch sử đơn hàng. */
 export async function deleteCoupon(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const used = await db.couponClaim.count({ where: { couponId: id } });
   if (used > 0) return;
+  const c = await db.coupon.findUnique({ where: { id }, select: { code: true } });
   await db.coupon.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'coupon.delete', targetType: 'coupon', targetId: id,
+    summary: `Xoá mã ${c?.code ?? id}`,
+  });
   revalidatePath('/admin/coupons');
 }
 
@@ -588,7 +774,7 @@ export async function deleteCoupon(id: string) {
 export type MedalState = { ok?: boolean; error?: string };
 
 export async function saveMedal(_prev: MedalState, formData: FormData): Promise<MedalState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get('id') ?? '').trim() || null;
   const name = String(formData.get('name') ?? '').trim();
   const icon = normalizeIcon(formData.get('icon')) ?? '';
@@ -612,27 +798,37 @@ export async function saveMedal(_prev: MedalState, formData: FormData): Promise<
     conditionType, conditionValue: conditionType ? conditionValue : null, autoGrant,
   };
 
+  let savedId = id;
   try {
     if (id) {
       await db.medal.update({ where: { id }, data, select: { id: true } });
     } else {
       let slug = slugify(name, 'huy-chuong');
       if (await db.medal.findUnique({ where: { slug }, select: { id: true } })) slug = `${slug}-${Date.now().toString().slice(-4)}`;
-      await db.medal.create({ data: { ...data, slug }, select: { id: true } });
+      savedId = (await db.medal.create({ data: { ...data, slug }, select: { id: true } })).id;
     }
   } catch {
     return { error: 'Không lưu được huy chương.' };
   }
+  await logAdmin({
+    actor: admin, action: id ? 'medal.update' : 'medal.create', targetType: 'medal', targetId: savedId,
+    summary: `${id ? 'Sửa' : 'Tạo'} huy chương “${name}”`, meta: { conditionType, conditionValue, autoGrant },
+  });
   revalidatePath('/admin/medals');
   return { ok: true };
 }
 
 export async function deleteMedal(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   // Xoá huy chương thì bộ sưu tập của thành viên cũng mất, nên chặn khi đã có người nhận.
   const owned = await db.userMedal.count({ where: { medalId: id } });
   if (owned > 0) return;
+  const m = await db.medal.findUnique({ where: { id }, select: { name: true } });
   await db.medal.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'medal.delete', targetType: 'medal', targetId: id,
+    summary: `Xoá huy chương “${m?.name ?? id}”`,
+  });
   revalidatePath('/admin/medals');
 }
 
@@ -641,7 +837,7 @@ export async function deleteMedal(id: string) {
 export type LevelState = { ok?: boolean; error?: string };
 
 export async function saveLevelRule(_prev: LevelState, formData: FormData): Promise<LevelState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get('id') ?? '').trim() || null;
   const level = parseInt(String(formData.get('level') ?? ''), 10);
   const name = String(formData.get('name') ?? '').trim();
@@ -661,19 +857,30 @@ export async function saveLevelRule(_prev: LevelState, formData: FormData): Prom
   if (clash && clash.id !== id) return { error: `Cấp ${level} đã tồn tại.` };
 
   const data = { level, name, expRequired, icon, color, dailyDownloadLimit, canPostThread, canUploadFile };
+  let savedId = id;
   try {
     if (id) await db.levelRule.update({ where: { id }, data, select: { id: true } });
-    else await db.levelRule.create({ data, select: { id: true } });
+    else savedId = (await db.levelRule.create({ data, select: { id: true } })).id;
   } catch {
     return { error: 'Không lưu được cấp độ.' };
   }
+  await logAdmin({
+    actor: admin, action: id ? 'level.update' : 'level.create', targetType: 'levelRule', targetId: savedId,
+    summary: `${id ? 'Sửa' : 'Tạo'} cấp ${level} “${name}” — cần ${expRequired.toLocaleString('vi-VN')} EXP`,
+    meta: { level, expRequired, dailyDownloadLimit, canPostThread, canUploadFile },
+  });
   revalidatePath('/admin/levels');
   return { ok: true };
 }
 
 export async function deleteLevelRule(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const r = await db.levelRule.findUnique({ where: { id }, select: { level: true, name: true } });
   await db.levelRule.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'level.delete', targetType: 'levelRule', targetId: id,
+    summary: `Xoá cấp ${r?.level ?? '?'} “${r?.name ?? id}”`,
+  });
   revalidatePath('/admin/levels');
 }
 
@@ -682,7 +889,7 @@ export async function deleteLevelRule(id: string) {
 export type NavState = { ok?: boolean; error?: string };
 
 export async function saveNavLink(_prev: NavState, formData: FormData): Promise<NavState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const id = String(formData.get('id') ?? '').trim() || null;
   const label = String(formData.get('label') ?? '').trim();
   const url = String(formData.get('url') ?? '').trim();
@@ -710,24 +917,34 @@ export async function saveNavLink(_prev: NavState, formData: FormData): Promise<
   }
 
   const data = { label, url, icon, group, parentId, order };
+  let savedId = id;
   try {
     if (id) await db.navLink.update({ where: { id }, data, select: { id: true } });
-    else await db.navLink.create({ data, select: { id: true } });
+    else savedId = (await db.navLink.create({ data, select: { id: true } })).id;
   } catch {
     return { error: 'Không lưu được mục menu.' };
   }
+  await logAdmin({
+    actor: admin, action: id ? 'nav.update' : 'nav.create', targetType: 'navLink', targetId: savedId,
+    summary: `${id ? 'Sửa' : 'Thêm'} mục menu “${label}” (${group}) → ${url}`, meta: { group, url },
+  });
   revalidatePath('/admin/nav');
   revalidatePath('/', 'layout');
   return { ok: true };
 }
 
 export async function deleteNavLink(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const item = await db.navLink.findUnique({ where: { id }, select: { label: true, group: true } });
   // Xoá cha thì đưa con lên làm mục gốc thay vì để chúng mồ côi không hiện ra.
   await db.$transaction(async (tx) => {
     await tx.navLink.updateMany({ where: { parentId: id }, data: { parentId: null } });
     await tx.navLink.delete({ where: { id } });
   }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'nav.delete', targetType: 'navLink', targetId: id,
+    summary: `Xoá mục menu “${item?.label ?? id}”`, meta: { group: item?.group },
+  });
   revalidatePath('/admin/nav');
   revalidatePath('/', 'layout');
 }
@@ -737,7 +954,7 @@ export async function deleteNavLink(id: string) {
 export type SiteState = { ok?: boolean; error?: string };
 
 export async function saveSiteSettings(_prev: SiteState, formData: FormData): Promise<SiteState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const name = String(formData.get('name') ?? '').trim();
   const tagline = String(formData.get('tagline') ?? '').trim();
   const logo = String(formData.get('logo') ?? '').trim();
@@ -753,6 +970,10 @@ export async function saveSiteSettings(_prev: SiteState, formData: FormData): Pr
     update: { value },
     create: { key: SITE_SETTING_KEY, value },
   });
+  await logAdmin({
+    actor: admin, action: 'setting.update', targetType: 'setting', targetId: SITE_SETTING_KEY,
+    summary: `Cập nhật cài đặt chung — tên trang “${name}”`, meta: value,
+  });
   revalidatePath('/admin/settings');
   revalidatePath('/', 'layout');
   return { ok: true };
@@ -764,7 +985,7 @@ export async function saveSiteSettings(_prev: SiteState, formData: FormData): Pr
  * đưa chúng trở lại thành mục thật để sửa/xoá từng cái.
  */
 export async function restoreDefaultNav(group: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   if (!NAV_GROUPS.some((g) => g.value === group)) return;
 
   const existing = await db.navLink.findMany({ where: { group }, select: { url: true, order: true } });
@@ -777,6 +998,11 @@ export async function restoreDefaultNav(group: string) {
   await db.navLink.createMany({
     data: missing.map((d) => ({ label: d.label, url: d.url, icon: d.icon || null, group, order: order++ })),
   });
+  await logAdmin({
+    actor: admin, action: 'nav.restore', targetType: 'navLink', targetId: null,
+    summary: `Thêm lại ${missing.length} mục menu mặc định vào nhóm ${group}`,
+    meta: { group, labels: missing.map((d) => d.label) },
+  });
   revalidatePath('/admin/nav');
   revalidatePath('/', 'layout');
 }
@@ -786,7 +1012,7 @@ export async function restoreDefaultNav(group: string) {
 export type ModState = { ok?: boolean; error?: string };
 
 export async function addForumModerator(_prev: ModState, formData: FormData): Promise<ModState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const forumId = String(formData.get('forumId') ?? '').trim();
   const username = String(formData.get('username') ?? '').trim().replace(/^@/, '');
   if (!forumId) return { error: 'Thiếu diễn đàn.' };
@@ -811,7 +1037,12 @@ export async function addForumModerator(_prev: ModState, formData: FormData): Pr
   });
   if (dup) return { error: 'Thành viên này đã là điều hành viên của khu vực.' };
 
-  await db.forumModerator.create({ data: { forumId, userId: user.id }, select: { id: true } });
+  const created = await db.forumModerator.create({ data: { forumId, userId: user.id }, select: { id: true } });
+  await logAdmin({
+    actor: admin, action: 'moderator.add', targetType: 'forumModerator', targetId: created.id,
+    summary: `Giao quyền điều hành khu vực “${forum.name}” cho @${user.username ?? user.id}`,
+    meta: { forumId, userId: user.id },
+  });
   await notify({
     userId: user.id, type: 'SYSTEM',
     title: 'Bạn được giao quyền điều hành',
@@ -823,7 +1054,113 @@ export async function addForumModerator(_prev: ModState, formData: FormData): Pr
 }
 
 export async function removeForumModerator(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const row = await db.forumModerator.findUnique({
+    where: { id },
+    select: { userId: true, forum: { select: { name: true } } },
+  });
+  const user = row && await db.user.findUnique({ where: { id: row.userId }, select: { username: true } });
   await db.forumModerator.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'moderator.remove', targetType: 'forumModerator', targetId: id,
+    summary: `Gỡ quyền điều hành khu vực “${row?.forum.name ?? '?'}” của @${user?.username ?? '?'}`,
+  });
   revalidatePath('/admin/moderators');
+}
+
+// ─────────────── Nhật ký quản trị ───────────────
+
+/** Xoá các bản ghi nhật ký cũ hơn `days` ngày. Chính việc dọn cũng được ghi lại. */
+export async function pruneLogs(days: number) {
+  const admin = await requireSuperAdmin();
+  const d = Math.max(30, Math.min(3650, Math.floor(days) || 0));
+  const removed = await pruneAdminLogs(d);
+  await logAdmin({
+    actor: admin, action: 'setting.delete', targetType: 'adminLog', targetId: null,
+    summary: `Dọn ${removed} bản ghi nhật ký cũ hơn ${d} ngày`, meta: { days: d, removed },
+  });
+  revalidatePath('/admin/logs');
+}
+
+// ─────────────── Nền & bong bóng chat ───────────────
+
+export type ChatAssetState = { ok?: boolean; error?: string };
+
+export async function saveChatBackground(_prev: ChatAssetState, formData: FormData): Promise<ChatAssetState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const name = String(formData.get('name') ?? '').trim();
+  const image = String(formData.get('image') ?? '').trim();
+  const dark = formData.get('dark') === 'on';
+  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
+
+  if (name.length < 1) return { error: 'Hãy đặt tên cho ảnh nền.' };
+  if (!image) return { error: 'Hãy tải ảnh lên hoặc dán link ảnh.' };
+  if (!isPublicImageRef(image)) return { error: 'Ảnh phải là link http(s) hoặc ảnh đã tải lên.' };
+
+  const data = { name, image, dark, order };
+  try {
+    if (id) await db.chatBackground.update({ where: { id }, data, select: { id: true } });
+    else await db.chatBackground.create({ data, select: { id: true } });
+  } catch {
+    return { error: 'Không lưu được ảnh nền.' };
+  }
+  revalidatePath('/admin/chat-backgrounds');
+  return { ok: true };
+}
+
+export async function deleteChatBackground(id: string) {
+  await requireAdmin();
+  // Hội thoại đang dùng ảnh này sẽ tự quay về nền mặc định vì tra id không ra.
+  await db.chatBackground.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/chat-backgrounds');
+}
+
+export async function toggleChatBackground(id: string) {
+  await requireAdmin();
+  const row = await db.chatBackground.findUnique({ where: { id }, select: { active: true } });
+  if (!row) return;
+  await db.chatBackground.update({ where: { id }, data: { active: !row.active }, select: { id: true } });
+  revalidatePath('/admin/chat-backgrounds');
+}
+
+export async function saveChatBubbleStyle(_prev: ChatAssetState, formData: FormData): Promise<ChatAssetState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const name = String(formData.get('name') ?? '').trim();
+  const decor = String(formData.get('decor') ?? '').trim() || null;
+  const colorMine = String(formData.get('colorMine') ?? '').trim();
+  const colorTheirs = String(formData.get('colorTheirs') ?? '').trim();
+  const darkText = formData.get('darkText') === 'on';
+  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
+
+  if (name.length < 1) return { error: 'Hãy đặt tên cho kiểu bong bóng.' };
+  if (!/^#[0-9a-fA-F]{6}$/.test(colorMine) || !/^#[0-9a-fA-F]{6}$/.test(colorTheirs)) {
+    return { error: 'Màu không hợp lệ.' };
+  }
+  if (decor && !isPublicImageRef(decor)) return { error: 'Ảnh trang trí phải là link http(s) hoặc ảnh đã tải lên.' };
+
+  const data = { name, decor, colorMine, colorTheirs, darkText, order };
+  try {
+    if (id) await db.chatBubbleStyle.update({ where: { id }, data, select: { id: true } });
+    else await db.chatBubbleStyle.create({ data, select: { id: true } });
+  } catch {
+    return { error: 'Không lưu được kiểu bong bóng.' };
+  }
+  revalidatePath('/admin/chat-bubbles');
+  return { ok: true };
+}
+
+export async function deleteChatBubbleStyle(id: string) {
+  await requireAdmin();
+  await db.chatBubbleStyle.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/chat-bubbles');
+}
+
+export async function toggleChatBubbleStyle(id: string) {
+  await requireAdmin();
+  const row = await db.chatBubbleStyle.findUnique({ where: { id }, select: { active: true } });
+  if (!row) return;
+  await db.chatBubbleStyle.update({ where: { id }, data: { active: !row.active }, select: { id: true } });
+  revalidatePath('/admin/chat-bubbles');
 }

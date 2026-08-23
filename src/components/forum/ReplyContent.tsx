@@ -1,4 +1,6 @@
 import { Fragment } from 'react';
+import Link from 'next/link';
+import { MENTION_PATTERN } from '@/lib/mention';
 
 /** Chỉ cho phép ảnh nội bộ hoặc http(s) — chặn javascript:/data:. */
 function safeSrc(url: string): string | null {
@@ -20,6 +22,31 @@ function isSticker(src: string): boolean {
 const IMG = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
 
 /**
+ * Đổi @tên_đăng_nhập trong một đoạn văn thuần thành liên kết tới trang cá nhân.
+ * Không kiểm tra người đó có thật hay không — bấm vào mà không có thì trang
+ * cá nhân tự báo, đỡ phải truy vấn cả danh sách chỉ để hiển thị.
+ */
+function withMentions(text: string, keyPrefix: string): React.ReactNode[] {
+  const re = new RegExp(MENTION_PATTERN, 'g');
+  const out: React.ReactNode[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push(<Fragment key={`${keyPrefix}t${last}`}>{text.slice(last, m.index)}</Fragment>);
+    out.push(
+      <Link key={`${keyPrefix}m${m.index}`} href={`/u/${m[1]}`}
+        className="font-medium text-brand-600 hover:underline dark:text-brand-400">
+        @{m[1]}
+      </Link>,
+    );
+    last = m.index + m[0].length;
+  }
+  if (last === 0) return [<Fragment key={`${keyPrefix}t0`}>{text}</Fragment>];
+  if (last < text.length) out.push(<Fragment key={`${keyPrefix}t${last}`}>{text.slice(last)}</Fragment>);
+  return out;
+}
+
+/**
  * Hiển thị nội dung trả lời: giữ nguyên xuống dòng, đổi cú pháp `![alt](url)`
  * thành ảnh. Dựng bằng React (không dùng dangerouslySetInnerHTML) nên nội dung
  * người dùng nhập không thể chèn HTML.
@@ -33,7 +60,7 @@ export function ReplyContent({ content, className }: { content: string; classNam
   while ((m = IMG.exec(content)) !== null) {
     const [full, alt, rawUrl] = m;
     const src = safeSrc(rawUrl);
-    if (m.index > last) parts.push(<Fragment key={`t${last}`}>{content.slice(last, m.index)}</Fragment>);
+    if (m.index > last) parts.push(...withMentions(content.slice(last, m.index), `a${last}`));
     if (src) {
       parts.push(
         // eslint-disable-next-line @next/next/no-img-element
@@ -49,7 +76,7 @@ export function ReplyContent({ content, className }: { content: string; classNam
     }
     last = m.index + full.length;
   }
-  if (last < content.length) parts.push(<Fragment key={`t${last}`}>{content.slice(last)}</Fragment>);
+  if (last < content.length) parts.push(...withMentions(content.slice(last), `b${last}`));
 
   return <div className={className ?? 'whitespace-pre-wrap text-sm leading-relaxed text-ink-700 dark:text-ink-200'}>{parts}</div>;
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award, ShieldCheck,
-  Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2, Menu, Settings,
+  Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2, Wallpaper, MessageCircle, Menu, Settings, ScrollText, DatabaseBackup,
   Gamepad2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -108,6 +108,8 @@ export const ADMIN_GROUPS: Group[] = [
         ],
       },
       { href: '/admin/slides', label: 'Slide trang chủ', icon: Images },
+      { href: '/admin/chat-backgrounds', label: 'Ảnh nền chat', icon: Wallpaper },
+      { href: '/admin/chat-bubbles', label: 'Bong bóng chat', icon: MessageCircle },
       { href: '/admin/links', label: 'Liên kết bạn bè', icon: Link2 },
     ],
   },
@@ -118,6 +120,8 @@ export const ADMIN_GROUPS: Group[] = [
       { href: '/admin/storage', label: 'Lưu trữ ảnh', icon: Cloud },
       { href: '/admin/stickers', label: 'Bộ sticker', icon: Sticker },
       { href: '/admin/gif', label: 'GIF', icon: Wand2 },
+      { href: '/admin/logs', label: 'Nhật ký quản trị', icon: ScrollText },
+      { href: '/admin/backup', label: 'Sao lưu dữ liệu', icon: DatabaseBackup },
     ],
   },
   {

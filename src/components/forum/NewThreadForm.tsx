@@ -5,6 +5,8 @@ import { PenLine } from 'lucide-react';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { createThread, type ThreadState } from '@/app/(site)/forum/actions';
 import { ActionForm } from '@/components/ActionForm';
+import { PollBuilder } from './PollBuilder';
+import { DraftKeeper } from '@/components/DraftKeeper';
 
 export function NewThreadForm({ forumSlug }: { forumSlug: string }) {
   const [state, action, pending] = useActionState<ThreadState, FormData>(createThread, {});
@@ -12,6 +14,7 @@ export function NewThreadForm({ forumSlug }: { forumSlug: string }) {
   return (
     <ActionForm action={action} className="space-y-4">
       <input type="hidden" name="forumSlug" value={forumSlug} />
+      <DraftKeeper storageKey={`nova:draft:thread:${forumSlug}`} />
 
       <div>
         <label className="mb-1 block text-sm font-medium">Tiêu đề</label>
@@ -29,6 +32,8 @@ export function NewThreadForm({ forumSlug }: { forumSlug: string }) {
         <label className="mb-1 block text-sm font-medium">Thẻ <span className="text-ink-400">(tuỳ chọn)</span></label>
         <input name="tags" maxLength={120} placeholder="Cách nhau bằng dấu phẩy: hỏi đáp, thủ thuật…" className="input" />
       </div>
+
+      <PollBuilder />
 
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 

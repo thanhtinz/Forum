@@ -8,6 +8,9 @@ import { notify } from '@/lib/notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { pairKey, otherId, MESSAGE_MAX_LENGTH } from '@/lib/messages';
 import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
+import {
+  CHAT_THEMES, CHAT_BUBBLES, MESSAGE_REACTIONS, AUTO_DELETE_OPTIONS, NICKNAME_MAX,
+} from '@/lib/chat-theme';
 
 export type MessageState = { ok?: boolean; error?: string };
 
@@ -48,6 +51,7 @@ export async function sendMessage(_prev: MessageState, formData: FormData): Prom
 
   const conversationId = String(formData.get('conversationId') ?? '').trim();
   const content = String(formData.get('content') ?? '').trim();
+  const replyToId = String(formData.get('replyToId') ?? '').trim() || null;
   if (!conversationId) return { error: 'Thiếu hội thoại.' };
   if (content.length < 1) return { error: 'Hãy nhập nội dung tin nhắn.' };
   if (content.length > MESSAGE_MAX_LENGTH) return { error: `Tin nhắn tối đa ${MESSAGE_MAX_LENGTH} ký tự.` };
@@ -74,9 +78,19 @@ export async function sendMessage(_prev: MessageState, formData: FormData): Prom
   const to = otherId(convo, me);
   if (await isBlockedBetween(me, to)) return { error: BLOCK_MESSAGE };
 
+  // Chỉ cho trích dẫn tin trong cùng hội thoại, không thì lộ tin của người khác.
+  let quoted: string | null = null;
+  if (replyToId) {
+    const src = await db.message.findFirst({
+      where: { id: replyToId, conversationId },
+      select: { id: true },
+    });
+    quoted = src?.id ?? null;
+  }
+
   const now = new Date();
   await db.$transaction(async (tx) => {
-    await tx.message.create({ data: { conversationId, senderId: me, content }, select: { id: true } });
+    await tx.message.create({ data: { conversationId, senderId: me, content, replyToId: quoted }, select: { id: true } });
     await tx.conversation.update({ where: { id: conversationId }, data: { lastMessageAt: now }, select: { id: true } });
   });
 
@@ -109,4 +123,191 @@ export async function markConversationRead(conversationId: string) {
     data: { readAt: new Date() },
   });
   revalidatePath('/user/messages');
+}
+
+// ─────────────── Tuỳ chỉnh hội thoại ───────────────
+
+/** Lấy hội thoại và kiểm người gọi có ở trong đó không. */
+async function myConversation(me: string, conversationId: string) {
+  const convo = await db.conversation.findUnique({
+    where: { id: conversationId },
+    select: { id: true, userAId: true, userBId: true },
+  });
+  if (!convo || (convo.userAId !== me && convo.userBId !== me)) return null;
+  return convo;
+}
+
+export type ChatPrefState = { ok?: boolean; error?: string };
+
+/** Đổi ảnh nền / kiểu bong bóng — áp dụng cho cả hai người như các app chat. */
+export async function setChatAppearance(conversationId: string, theme: string, bubble: string): Promise<ChatPrefState> {
+  const session = await auth();
+  const me = session?.user?.id;
+  if (!me) return { error: 'Bạn cần đăng nhập.' };
+
+  const convo = await myConversation(me, conversationId);
+  if (!convo) return { error: 'Không tìm thấy hội thoại.' };
+
+  // Giá trị hợp lệ là slug mẫu có sẵn HOẶC id bản ghi admin tải lên (và còn bật).
+  const themeOk = CHAT_THEMES.some((t) => t.value === theme)
+    || !!(await db.chatBackground.findFirst({ where: { id: theme, active: true }, select: { id: true } }));
+  if (!themeOk) return { error: 'Ảnh nền không hợp lệ.' };
+
+  const bubbleOk = CHAT_BUBBLES.some((b) => b.value === bubble)
+    || !!(await db.chatBubbleStyle.findFirst({ where: { id: bubble, active: true }, select: { id: true } }));
+  if (!bubbleOk) return { error: 'Kiểu bong bóng không hợp lệ.' };
+
+  await db.conversation.update({ where: { id: conversationId }, data: { theme, bubble }, select: { id: true } });
+  revalidatePath(`/user/messages/${conversationId}`);
+  return { ok: true };
+}
+
+/** Đặt biệt danh cho một người trong hội thoại; để trống là gỡ biệt danh. */
+export async function setNickname(conversationId: string, targetId: string, nickname: string): Promise<ChatPrefState> {
+  const session = await auth();
+  const me = session?.user?.id;
+  if (!me) return { error: 'Bạn cần đăng nhập.' };
+
+  const convo = await myConversation(me, conversationId);
+  if (!convo) return { error: 'Không tìm thấy hội thoại.' };
+  if (targetId !== convo.userAId && targetId !== convo.userBId) return { error: 'Người này không ở trong hội thoại.' };
+
+  const value = nickname.trim().slice(0, NICKNAME_MAX) || null;
+  // Cột nào tuỳ theo target là userA hay userB.
+  const data = targetId === convo.userAId ? { nicknameA: value } : { nicknameB: value };
+  await db.conversation.update({ where: { id: conversationId }, data, select: { id: true } });
+  revalidatePath(`/user/messages/${conversationId}`);
+  revalidatePath('/user/messages');
+  return { ok: true };
+}
+
+/** Bật/tắt tự xoá tin. Bật xong dọn luôn tin đã quá hạn cho khỏi phải chờ. */
+export async function setAutoDelete(conversationId: string, hours: number): Promise<ChatPrefState> {
+  const session = await auth();
+  const me = session?.user?.id;
+  if (!me) return { error: 'Bạn cần đăng nhập.' };
+
+  const convo = await myConversation(me, conversationId);
+  if (!convo) return { error: 'Không tìm thấy hội thoại.' };
+  if (!AUTO_DELETE_OPTIONS.some((o) => o.hours === hours)) return { error: 'Mốc thời gian không hợp lệ.' };
+
+  const current = await db.conversation.findUnique({
+    where: { id: conversationId },
+    select: { autoDeleteHours: true, autoDeleteFrom: true },
+  });
+
+  if (hours <= 0) {
+    await db.conversation.update({
+      where: { id: conversationId },
+      data: { autoDeleteHours: null, autoDeleteFrom: null },
+      select: { id: true },
+    });
+    revalidatePath(`/user/messages/${conversationId}`);
+    return { ok: true };
+  }
+
+  // Bật từ trạng thái tắt thì đánh mốc từ bây giờ. Chỉ đổi số giờ thì giữ
+  // nguyên mốc cũ, không thì mỗi lần chỉnh lại lùi mốc và tin đang chờ xoá
+  // bỗng được tha.
+  const from = current?.autoDeleteHours ? (current.autoDeleteFrom ?? new Date()) : new Date();
+  await db.conversation.update({
+    where: { id: conversationId },
+    data: { autoDeleteHours: hours, autoDeleteFrom: from },
+    select: { id: true },
+  });
+  await purgeExpiredMessages(conversationId, hours, from);
+
+  revalidatePath(`/user/messages/${conversationId}`);
+  return { ok: true };
+}
+
+/**
+ * Xoá tin đã quá hạn của một hội thoại.
+ *
+ * Dọn ngay lúc mở hội thoại thay vì chạy nền: không có hàng đợi nền nào ở
+ * đây, mà tin quá hạn thì không được hiện ra nữa — dọn tại chỗ là chắc chắn nhất.
+ *
+ * `from` là mốc bật tính năng: tin gửi trước đó không bị đụng tới, nếu không
+ * thì vừa bật lên là bay sạch lịch sử cũ.
+ */
+export async function purgeExpiredMessages(conversationId: string, hours: number, from: Date) {
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+  if (from >= cutoff) return; // chưa có tin nào kịp quá hạn
+  await db.message.deleteMany({
+    where: { conversationId, createdAt: { gte: from, lt: cutoff } },
+  });
+}
+
+// ─────────────── Cảm xúc trên tin nhắn ───────────────
+
+export type ReactState = { emoji?: string | null; error?: string };
+
+/**
+ * Thả / đổi / gỡ cảm xúc. Thả lại đúng cảm xúc đang có thì gỡ,
+ * nhờ vậy bấm đúp lần hai là bỏ tim.
+ */
+export async function reactToMessage(messageId: string, emoji: string): Promise<ReactState> {
+  const session = await auth();
+  const me = session?.user?.id;
+  if (!me) return { error: 'Bạn cần đăng nhập.' };
+  if (!(MESSAGE_REACTIONS as readonly string[]).includes(emoji)) return { error: 'Cảm xúc không hợp lệ.' };
+
+  const msg = await db.message.findUnique({
+    where: { id: messageId },
+    select: { id: true, conversation: { select: { userAId: true, userBId: true } } },
+  });
+  if (!msg || (msg.conversation.userAId !== me && msg.conversation.userBId !== me)) {
+    return { error: 'Không tìm thấy tin nhắn.' };
+  }
+
+  const existing = await db.messageReaction.findUnique({
+    where: { messageId_userId: { messageId, userId: me } },
+    select: { id: true, emoji: true },
+  });
+
+  if (existing?.emoji === emoji) {
+    await db.messageReaction.delete({ where: { id: existing.id } });
+    return { emoji: null };
+  }
+  await db.messageReaction.upsert({
+    where: { messageId_userId: { messageId, userId: me } },
+    update: { emoji },
+    create: { messageId, userId: me, emoji },
+    select: { id: true },
+  });
+  return { emoji };
+}
+
+/**
+ * Thu hồi tin của chính mình.
+ *
+ * Không xoá hẳn bản ghi: tin khác có thể đang trích dẫn nó, xoá đi thì phần
+ * trích dẫn hụt mất. Thay vào đó xoá nội dung và đánh dấu đã thu hồi.
+ */
+export async function unsendMessage(messageId: string): Promise<MessageState> {
+  const session = await auth();
+  const me = session?.user?.id;
+  if (!me) return { error: 'Bạn cần đăng nhập.' };
+
+  const msg = await db.message.findUnique({
+    where: { id: messageId },
+    select: { id: true, senderId: true, conversationId: true, deletedAt: true },
+  });
+  if (!msg) return { error: 'Không tìm thấy tin nhắn.' };
+  if (msg.senderId !== me) return { error: 'Chỉ thu hồi được tin của chính bạn.' };
+  if (msg.deletedAt) return { ok: true };
+
+  await db.$transaction(async (tx) => {
+    await tx.message.update({
+      where: { id: messageId },
+      data: { content: '', deletedAt: new Date() },
+      select: { id: true },
+    });
+    // Cảm xúc thả lên tin đã thu hồi thì không còn ý nghĩa gì.
+    await tx.messageReaction.deleteMany({ where: { messageId } });
+  });
+
+  revalidatePath(`/user/messages/${msg.conversationId}`);
+  revalidatePath('/user/messages');
+  return { ok: true };
 }

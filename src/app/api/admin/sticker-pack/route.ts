@@ -3,6 +3,7 @@ import { unzipSync } from 'fflate';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { putFile, newObjectName, sniffImage } from '@/lib/storage';
+import { logAdmin } from '@/lib/audit';
 
 const MAX_ZIP = 20 * 1024 * 1024;     // 20MB cho cả gói
 const MAX_ITEM = 1 * 1024 * 1024;     // 1MB mỗi sticker
@@ -96,6 +97,13 @@ export async function POST(req: NextRequest) {
       stickers: { create: items },
     },
     select: { id: true, name: true, _count: { select: { stickers: true } } },
+  });
+
+  await logAdmin({
+    actor: { id: session.user.id, name: session.user.name },
+    action: 'setting.create', targetType: 'stickerPack', targetId: pack.id,
+    summary: `Tải lên bộ sticker “${pack.name}” — ${pack._count.stickers} ảnh`,
+    meta: { skipped: skipped.length },
   });
 
   return NextResponse.json({ ok: true, pack: { id: pack.id, name: pack.name, count: pack._count.stickers }, skipped });

@@ -1,22 +1,27 @@
 'use server';
 
+import type { Prisma } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { grantPoints } from '@/lib/points';
 import { addExp } from '@/lib/level';
-import { notify } from '@/lib/notify';
+import { notify, filterNotifiable } from '@/lib/notify';
 import { isVipActive } from '@/lib/access';
 import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { bbcodeToHtml } from '@/lib/bbcode';
+import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
+import { readPollForm, isPollClosed } from '@/lib/poll';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
 const EXP_PER_THREAD = 10;
 const EXP_PER_REPLY = 4;
+/** Chủ đề đông người theo dõi thì chỉ báo cho ngần này người mỗi lần trả lời. */
+const FOLLOWER_NOTIFY_LIMIT = 200;
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -77,6 +82,11 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
   if (forum.vipOnly && !(me && isVipActive(me))) return { error: 'Diễn đàn này chỉ dành cho thành viên VIP.' };
   if (me && me.level < forum.minLevel) return { error: `Bạn cần đạt cấp ${forum.minLevel} để đăng ở diễn đàn này.` };
 
+  const pollForm = readPollForm(formData);
+  if (pollForm.error) return { error: pollForm.error };
+
+  const mentioned = await resolveMentions(content, userId);
+
   let threadId = '';
   await db.$transaction(async (tx) => {
     const thread = await tx.thread.create({
@@ -104,6 +114,26 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
     await tx.forum.update({ where: { id: forum.id }, data: { threadCount: { increment: 1 } } });
     await grantPoints({ userId, amount: POINTS_PER_THREAD, reason: 'THREAD_CREATE', refId: thread.id, note: `Đăng chủ đề: ${title}` }, tx);
     await addExp(userId, EXP_PER_THREAD, tx);
+    await autoFollow(thread.id, userId, tx);
+
+    if (pollForm.poll) {
+      await tx.poll.create({
+        data: {
+          threadId: thread.id,
+          question: pollForm.poll.question,
+          multiple: pollForm.poll.multiple,
+          closesAt: pollForm.poll.hours > 0 ? new Date(Date.now() + pollForm.poll.hours * 3600_000) : null,
+          options: { create: pollForm.poll.options.map((text, order) => ({ text, order })) },
+        },
+        select: { id: true },
+      });
+    }
+  });
+
+  // Ngoài transaction vì phải có id chủ đề mới dựng được liên kết.
+  await notifyMentions(mentioned, {
+    title: 'Có người nhắc tên bạn', content: title,
+    link: `/forum/${forum.slug}/${threadId}`, actorId: userId,
   });
 
   revalidatePath(`/forum/${forum.slug}`);
@@ -151,6 +181,19 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
     parentAuthorId = parent.authorId;
   }
 
+  // Tìm người được nhắc tên trước khi vào transaction, để phần ghi dữ liệu
+  // không phải chờ mấy truy vấn tra tên và kiểm tra chặn.
+  const mentioned = await resolveMentions(content, userId, [thread.authorId, parentAuthorId]);
+
+  // Người theo dõi chủ đề, trừ những ai đã được báo bằng thông báo khác.
+  const alreadyNotified = new Set([userId, thread.authorId, parentAuthorId, ...mentioned.map((m) => m.id)]);
+  const followers = await filterNotifiable(
+    (await db.threadFollow.findMany({
+      where: { threadId }, select: { userId: true }, take: FOLLOWER_NOTIFY_LIMIT,
+    })).map((f) => f.userId).filter((id) => !alreadyNotified.has(id)),
+    'REPLY',
+  );
+
   await db.$transaction(async (tx) => {
     await tx.reply.create({ data: { threadId, authorId: userId, content, parentId } });
     await tx.thread.update({ where: { id: threadId }, data: { replyCount: { increment: 1 }, lastReplyAt: new Date() } });
@@ -167,10 +210,66 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
     if (parentAuthorId && parentAuthorId !== userId && parentAuthorId !== thread.authorId) {
       await notify({ userId: parentAuthorId, type: 'REPLY', title: 'Có người phản hồi bình luận của bạn', content: thread.title, link, actorId: userId }, tx);
     }
+    // Báo cho những người được nhắc tên bằng @
+    await notifyMentions(mentioned, { title: 'Có người nhắc tên bạn', content: thread.title, link, actorId: userId }, tx);
+    // Báo cho người đang theo dõi chủ đề — gộp một lần ghi, danh sách đã lọc sẵn
+    if (followers.length > 0) {
+      await tx.notification.createMany({
+        data: followers.map((followerId) => ({
+          userId: followerId, type: 'REPLY' as const,
+          title: 'Chủ đề bạn theo dõi có trả lời mới', content: thread.title, link, actorId: userId,
+        })),
+      });
+    }
+    // Đã trả lời thì mặc định theo dõi tiếp diễn biến
+    await autoFollow(threadId, userId, tx);
   });
 
   revalidatePath(`/forum/${thread.forum.slug}/${threadId}`);
   return { ok: true };
+}
+
+// ─────────────────────────── Theo dõi chủ đề ───────────────────────────
+
+export interface FollowState {
+  following: boolean;
+  count: number;
+  error?: string;
+}
+
+export async function toggleThreadFollow(threadId: string): Promise<FollowState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { following: false, count: 0, error: 'Bạn cần đăng nhập.' };
+
+  const existing = await db.threadFollow.findUnique({
+    where: { threadId_userId: { threadId, userId } }, select: { id: true },
+  });
+  if (existing) await db.threadFollow.delete({ where: { id: existing.id } });
+  else {
+    const thread = await db.thread.findUnique({ where: { id: threadId }, select: { id: true } });
+    if (!thread) return { following: false, count: 0, error: 'Không tìm thấy chủ đề.' };
+    await db.threadFollow.create({ data: { threadId, userId }, select: { id: true } });
+  }
+
+  const count = await db.threadFollow.count({ where: { threadId } });
+  return { following: !existing, count };
+}
+
+/**
+ * Tự theo dõi chủ đề mình vừa tham gia.
+ *
+ * Bỏ qua nếu người đó đã tự bỏ theo dõi trước đó? Không — chỉ dùng khi tạo
+ * chủ đề hoặc trả lời, coi như hành động chủ động tham gia lại. Ai không thích
+ * thì bấm bỏ theo dõi lần nữa.
+ */
+async function autoFollow(threadId: string, userId: string, tx: Prisma.TransactionClient) {
+  await tx.threadFollow.upsert({
+    where: { threadId_userId: { threadId, userId } },
+    create: { threadId, userId },
+    update: {},
+    select: { id: true },
+  });
 }
 
 // ─────────────────────────── Thích ───────────────────────────
@@ -469,4 +568,74 @@ export async function deleteOwnThread(threadId: string): Promise<OwnerState> {
 
   revalidatePath(`/forum/${slug}`);
   redirect(`/forum/${slug}`);
+}
+
+// ─────────────────────────── Bình chọn ───────────────────────────
+
+export interface PollState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Bỏ phiếu cho một hoặc nhiều lựa chọn.
+ *
+ * Ghi lại toàn bộ lựa chọn hiện tại thay vì cộng dồn: bấm lại là đổi ý, và
+ * bình chọn một đáp án thì phiếu cũ tự bị thay.
+ */
+export async function votePoll(pollId: string, optionIds: string[]): Promise<PollState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập để bình chọn.' };
+
+  const banned = await getActiveBan(userId, 'COMMENT');
+  if (banned) return { error: banMessage(banned, 'bình chọn') };
+
+  const poll = await db.poll.findUnique({
+    where: { id: pollId },
+    select: {
+      id: true, multiple: true, closed: true, closesAt: true,
+      options: { select: { id: true } },
+      thread: { select: { id: true, forum: { select: { slug: true } } } },
+    },
+  });
+  if (!poll) return { error: 'Không tìm thấy cuộc bình chọn.' };
+  if (isPollClosed(poll)) return { error: 'Cuộc bình chọn đã kết thúc.' };
+
+  // Chỉ nhận lựa chọn thuộc đúng cuộc bình chọn này.
+  const valid = new Set(poll.options.map((o) => o.id));
+  const picked = [...new Set(optionIds)].filter((id) => valid.has(id));
+  if (picked.length === 0) return { error: 'Hãy chọn ít nhất một đáp án.' };
+  if (!poll.multiple && picked.length > 1) return { error: 'Cuộc bình chọn này chỉ cho chọn một đáp án.' };
+
+  await db.$transaction(async (tx) => {
+    await tx.pollVote.deleteMany({ where: { pollId, userId } });
+    await tx.pollVote.createMany({ data: picked.map((optionId) => ({ pollId, optionId, userId })) });
+  });
+
+  revalidatePath(`/forum/${poll.thread.forum.slug}/${poll.thread.id}`);
+  return { ok: true };
+}
+
+/** Chủ chủ đề hoặc người kiểm duyệt đóng bình chọn sớm. */
+export async function closePoll(pollId: string): Promise<PollState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  const poll = await db.poll.findUnique({
+    where: { id: pollId },
+    select: { id: true, thread: { select: { id: true, authorId: true, forumId: true, forum: { select: { slug: true } } } } },
+  });
+  if (!poll) return { error: 'Không tìm thấy cuộc bình chọn.' };
+
+  const isOwner = poll.thread.authorId === userId;
+  const me = await db.user.findUnique({ where: { id: userId }, select: { id: true, role: true } });
+  if (!isOwner && !(await canModerateForum(me, poll.thread.forumId))) {
+    return { error: 'Bạn không có quyền đóng cuộc bình chọn này.' };
+  }
+
+  await db.poll.update({ where: { id: pollId }, data: { closed: true }, select: { id: true } });
+  revalidatePath(`/forum/${poll.thread.forum.slug}/${poll.thread.id}`);
+  return { ok: true };
 }

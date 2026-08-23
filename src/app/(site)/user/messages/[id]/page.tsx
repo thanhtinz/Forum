@@ -4,13 +4,16 @@ import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, Check, CheckCheck, ChevronUp } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { otherId } from '@/lib/messages';
+import { otherId, messagePreview } from '@/lib/messages';
 import { cn } from '@/lib/utils';
-import { ReplyContent } from '@/components/forum/ReplyContent';
+import { MessageBubble } from '@/components/user/MessageBubble';
+import { ChatReplyProvider } from '@/components/user/ChatReplyContext';
+import { ChatSettings } from '@/components/user/ChatSettings';
+import { resolveTheme, resolveBubble } from '@/lib/chat-theme';
 import { MessageComposer } from '@/components/user/MessageComposer';
 import { ScrollToLatest } from '@/components/user/ScrollToLatest';
 import { LiveRefresh } from '@/components/user/LiveRefresh';
-import { markConversationRead } from '../actions';
+import { markConversationRead, purgeExpiredMessages } from '../actions';
 
 export const metadata: Metadata = { title: 'Trò chuyện' };
 export const dynamic = 'force-dynamic';
@@ -56,6 +59,8 @@ export default async function ConversationPage({ params, searchParams }: {
     where: { id },
     select: {
       id: true, userAId: true, userBId: true,
+      theme: true, bubble: true, nicknameA: true, nicknameB: true,
+      autoDeleteHours: true, autoDeleteFrom: true,
       userA: { select: { id: true, name: true, username: true, image: true } },
       userB: { select: { id: true, name: true, username: true, image: true } },
     },
@@ -64,14 +69,42 @@ export default async function ConversationPage({ params, searchParams }: {
   if (!convo || (convo.userAId !== me && convo.userBId !== me)) notFound();
 
   const partner = otherId(convo, me) === convo.userA.id ? convo.userA : convo.userB;
-  const partnerName = partner.name || partner.username || 'Thành viên';
+  const partnerIsA = partner.id === convo.userAId;
+  // Biệt danh (nếu có) thay tên hiển thị ở mọi chỗ trong đoạn chat.
+  const partnerNick = (partnerIsA ? convo.nicknameA : convo.nicknameB) ?? '';
+  const myNick = (partnerIsA ? convo.nicknameB : convo.nicknameA) ?? '';
+  const realName = partner.name || partner.username || 'Thành viên';
+  const partnerName = partnerNick || realName;
+  const myName = myNick || session.user.name || 'Bạn';
+  // Nền và bong bóng do admin tải lên; mẫu có sẵn vẫn dùng được như cũ.
+  const [backgrounds, bubbles] = await Promise.all([
+    db.chatBackground.findMany({
+      where: { active: true }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, name: true, image: true, dark: true },
+    }),
+    db.chatBubbleStyle.findMany({
+      where: { active: true }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, name: true, decor: true, colorMine: true, colorTheirs: true, darkText: true },
+    }),
+  ]);
+  const theme = resolveTheme(convo.theme, backgrounds);
+  const bubble = resolveBubble(convo.bubble, bubbles);
+
+  // Tin quá hạn phải biến mất trước khi đọc, không thì vẫn hiện thêm một lần.
+  if (convo.autoDeleteHours && convo.autoDeleteFrom) {
+    await purgeExpiredMessages(id, convo.autoDeleteHours, convo.autoDeleteFrom).catch(() => {});
+  }
 
   const [rows, totalMessages] = await Promise.all([
     db.message.findMany({
       where: { conversationId: id },
       orderBy: { createdAt: 'desc' },
       take,
-      select: { id: true, content: true, senderId: true, createdAt: true, readAt: true },
+      select: {
+        id: true, content: true, senderId: true, createdAt: true, readAt: true, deletedAt: true,
+        reactions: { select: { emoji: true, userId: true } },
+        replyTo: { select: { id: true, content: true, senderId: true, deletedAt: true } },
+      },
     }),
     db.message.count({ where: { conversationId: id } }),
   ]);
@@ -105,92 +138,94 @@ export default async function ConversationPage({ params, searchParams }: {
           <ArrowLeft size={18} />
         </Link>
         <Avatar image={partner.image} name={partnerName} className="size-10 shrink-0" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="truncate font-bold leading-tight text-ink-900 dark:text-white">{partnerName}</h1>
-          {partner.username && (
-            <Link href={`/u/${partner.username}`} className="text-xs text-ink-400 hover:text-brand-600">@{partner.username}</Link>
-          )}
+          <p className="truncate text-xs text-ink-400">
+            {partnerNick && <span className="mr-1">{realName} ·</span>}
+            {partner.username && (
+              <Link href={`/u/${partner.username}`} className="hover:text-brand-600">@{partner.username}</Link>
+            )}
+            {convo.autoDeleteHours ? <span className="ml-1">· tự xoá sau {convo.autoDeleteHours}h</span> : null}
+          </p>
         </div>
+        <ChatSettings conversationId={id} theme={convo.theme} bubble={convo.bubble}
+          autoDeleteHours={convo.autoDeleteHours ?? 0}
+          me={{ id: me, name: session.user.name ?? 'Bạn', nickname: myNick }}
+          partner={{ id: partner.id, name: realName, nickname: partnerNick }}
+          backgrounds={backgrounds} bubbles={bubbles} />
       </div>
 
       {/* Khung tin nhắn — cuộn riêng, ô soạn luôn nằm dưới cùng */}
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-ink-200 bg-ink-50/60 p-3 dark:border-ink-700 dark:bg-ink-950/40">
-        {items.length === 0 && (
-          <div className="flex h-full flex-col items-center justify-center text-center">
-            <Avatar image={partner.image} name={partnerName} className="size-16" />
-            <p className="mt-3 font-semibold text-ink-700 dark:text-ink-200">{partnerName}</p>
-            <p className="mt-1 text-sm text-ink-400">Chưa có tin nhắn nào. Gửi lời chào đi!</p>
-          </div>
-        )}
+      <ChatReplyProvider>
+        <div style={theme.style}
+          className={cn('min-h-0 flex-1 overflow-y-auto rounded-2xl border border-ink-200 p-3 dark:border-ink-700', theme.className)}>
+          {items.length === 0 && (
+            <div className="flex h-full flex-col items-center justify-center text-center">
+              <Avatar image={partner.image} name={partnerName} className="size-16" />
+              <p className={cn('mt-3 font-semibold', theme.dark ? 'text-white' : 'text-ink-700 dark:text-ink-200')}>{partnerName}</p>
+              <p className={cn('mt-1 text-sm', theme.dark ? 'text-white/70' : 'text-ink-400')}>Chưa có tin nhắn nào. Gửi lời chào đi!</p>
+            </div>
+          )}
 
-        {hasOlder && (
-          <div className="mb-3 text-center">
-            {take < MAX_TAKE ? (
-              <Link href={`/user/messages/${id}?take=${take + TAKE_STEP}`}
-                className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3.5 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300 dark:hover:bg-ink-800">
-                <ChevronUp size={14} /> Xem tin cũ hơn
-              </Link>
-            ) : (
-              <p className="text-xs text-ink-400">Chỉ xem được {MAX_TAKE} tin gần nhất.</p>
-            )}
-          </div>
-        )}
+          {hasOlder && (
+            <div className="mb-3 text-center">
+              {take < MAX_TAKE ? (
+                <Link href={`/user/messages/${id}?take=${take + TAKE_STEP}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-white px-3.5 py-1.5 text-xs font-medium text-ink-600 hover:bg-ink-100 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-300 dark:hover:bg-ink-800">
+                  <ChevronUp size={14} /> Xem tin cũ hơn
+                </Link>
+              ) : (
+                <p className="text-xs text-ink-400">Chỉ xem được {MAX_TAKE} tin gần nhất.</p>
+              )}
+            </div>
+          )}
 
-        <div className="space-y-0.5">
-          {items.map((m) => {
-            const mine = m.senderId === me;
-            return (
-              <div key={m.id}>
-                {m.newDay && (
-                  <div className="my-3 flex items-center gap-3">
-                    <span className="h-px flex-1 bg-ink-200 dark:bg-ink-800" />
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-ink-400">{dayLabel(m.createdAt)}</span>
-                    <span className="h-px flex-1 bg-ink-200 dark:bg-ink-800" />
-                  </div>
-                )}
+          <div className="space-y-0.5">
+            {items.map((m) => {
+              const mine = m.senderId === me;
+              return (
+                <div key={m.id}>
+                  {m.newDay && (
+                    <div className="my-3 flex items-center gap-3">
+                      <span className={cn('h-px flex-1', theme.dark ? 'bg-white/25' : 'bg-ink-200 dark:bg-ink-800')} />
+                      <span className={cn('text-[11px] font-medium uppercase tracking-wide',
+                        theme.dark ? 'text-white/70' : 'text-ink-400')}>{dayLabel(m.createdAt)}</span>
+                      <span className={cn('h-px flex-1', theme.dark ? 'bg-white/25' : 'bg-ink-200 dark:bg-ink-800')} />
+                    </div>
+                  )}
 
-                <div className={cn('flex items-end gap-2', mine ? 'justify-end' : 'justify-start',
-                  m.startsGroup && !m.newDay && 'mt-2')}>
-                  {/* Avatar chỉ ở tin cuối cụm để cột trái không bị lặp */}
-                  {!mine && (m.endsGroup
-                    ? <Avatar image={partner.image} name={partnerName} className="size-7 shrink-0 text-xs" />
-                    : <span className="size-7 shrink-0" />)}
+                  <div className={cn('flex items-end gap-2', mine ? 'justify-end' : 'justify-start',
+                    // Ảnh trang trí nhô lên khỏi bong bóng nên cụm phải giãn ra thêm
+                    m.startsGroup && !m.newDay && (bubble.decor ? 'mt-5' : 'mt-2'),
+                    bubble.decor && 'first:mt-4')}>
+                    {/* Avatar chỉ ở tin cuối cụm để cột trái không bị lặp */}
+                    {!mine && (m.endsGroup
+                      ? <Avatar image={partner.image} name={partnerName} className="size-7 shrink-0 text-xs" />
+                      : <span className="size-7 shrink-0" />)}
 
-                  <div className={cn('max-w-[78%] px-3.5 py-2 sm:max-w-[70%]',
-                    mine
-                      ? 'bg-brand-500 text-white'
-                      : 'border border-ink-200 bg-white text-ink-800 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-100',
-                    // Bo góc theo vị trí trong cụm để cụm trông liền mạch
-                    mine
-                      ? cn('rounded-2xl rounded-br-md', m.startsGroup && 'rounded-tr-2xl', !m.endsGroup && 'rounded-br-md')
-                      : cn('rounded-2xl rounded-bl-md', m.startsGroup && 'rounded-tl-2xl', !m.endsGroup && 'rounded-bl-md'),
-                  )}>
-                    <ReplyContent content={m.content}
-                      className={cn('whitespace-pre-wrap break-words text-sm leading-relaxed',
-                        mine ? 'text-white' : 'text-ink-800 dark:text-ink-100')} />
-
-                    {m.endsGroup && (
-                      <div className={cn('mt-1 flex items-center justify-end gap-1 text-[11px]',
-                        mine ? 'text-white/70' : 'text-ink-400')}>
-                        {time(m.createdAt)}
-                        {mine && m.id === lastMine?.id && (
-                          m.readAt
-                            ? <CheckCheck size={13} aria-label="Đã xem" />
-                            : <Check size={13} aria-label="Đã gửi" />
-                        )}
-                      </div>
-                    )}
+                    <MessageBubble
+                      id={m.id} content={m.content} mine={mine}
+                      authorName={mine ? myName : partnerName}
+                      deleted={!!m.deletedAt}
+                      quote={m.replyTo ? {
+                        author: m.replyTo.senderId === me ? myName : partnerName,
+                        text: m.replyTo.deletedAt ? 'Tin nhắn đã được thu hồi' : messagePreview(m.replyTo.content),
+                      } : null}
+                      time={time(m.createdAt)} showMeta={m.endsGroup}
+                      showTicks={mine && m.id === lastMine?.id} seen={!!m.readAt}
+                      bubble={bubble}
+                      reactions={m.reactions.map((r) => ({ emoji: r.emoji, mine: r.userId === me }))} />
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
+
+          <ScrollToLatest trigger={items.at(-1)?.id ?? 'empty'} enabled={take === TAKE} />
         </div>
 
-        <ScrollToLatest trigger={items.at(-1)?.id ?? 'empty'} enabled={take === TAKE} />
-      </div>
-
-      <MessageComposer conversationId={id} />
+        <MessageComposer conversationId={id} />
+      </ChatReplyProvider>
       <LiveRefresh />
     </div>
   );

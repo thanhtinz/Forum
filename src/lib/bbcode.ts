@@ -6,6 +6,8 @@
  * gõ thẳng `<script>`.
  */
 
+import { MENTION_PATTERN } from './mention';
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
@@ -72,6 +74,12 @@ export function bbcodeToHtml(input: string): string {
     codeBlocks.push(body.replace(/^\n+|\n+$/g, ''));
     return `\n\n\u241ECODE${codeBlocks.length - 1}\u241E\n\n`;
   });
+
+  // 2b) Nhắc tên @thanh_vien → liên kết trang cá nhân. Làm trước các thẻ khác
+  // nhưng sau khi tách [code], để tên trong khối mã không bị đổi. Tên chỉ gồm
+  // chữ, số và gạch dưới nên ghép thẳng vào href là an toàn.
+  s = s.replace(new RegExp(MENTION_PATTERN, 'g'), (_m, name: string) =>
+    `<a href="/u/${name}" class="mention">@${name}</a>`);
 
   // 3) Các thẻ đơn giản (lặp để hỗ trợ lồng nhau)
   const simple: [RegExp, string][] = [

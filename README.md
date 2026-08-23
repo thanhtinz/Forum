@@ -54,8 +54,9 @@ src/
 - [x] **P12** Giao diện chính chuyển sang dạng diễn đàn (board list, bài mới, đang online); blog dời sang `/blog`
 - [x] **P13** Công cụ điều hành chủ đề, tìm kiếm hợp nhất (chủ đề/bài viết/thành viên), chế độ tối
 - [x] **P14** Mã giảm giá (quản trị + áp khi mua VIP) và hạn mức chống spam khi đăng nội dung
-- [x] **P15** Game Hub — catalog Java ME, tải JAR/JAD có signed URL, quản trị game
-- [ ] **P11** Hoàn thiện (backup DB, upload S3) — đã có SEO/sitemap/robots/dark mode
+- [x] **P11** Hoàn thiện: SEO/sitemap/robots, chế độ tối, upload R2, nhật ký quản trị, sao lưu dữ liệu
+- [x] **P15** Nhật ký quản trị (`/admin/logs`) và sao lưu dữ liệu thủ công/tự động (`/admin/backup`)
+- [x] **P16** Game Hub — catalog Java ME, tải JAR/JAD có signed URL, quản trị game
 
 ## Game Hub
 

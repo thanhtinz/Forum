@@ -12,6 +12,9 @@ const config: Config = {
   content: [
     './src/app/**/*.{ts,tsx}',
     './src/components/**/*.{ts,tsx}',
+    // Chủ đề chat khai báo lớp Tailwind trong src/lib — thiếu dòng này thì
+    // các lớp đó không được sinh ra và bong bóng thành trong suốt.
+    './src/lib/**/*.{ts,tsx}',
   ],
   theme: {
     extend: {

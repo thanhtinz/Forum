@@ -82,6 +82,7 @@ model User {
   convosA        Conversation[] @relation("ConvoA")
   convosB        Conversation[] @relation("ConvoB")
   messagesSent   Message[]
+  msgReactions   MessageReaction[]
 
   @@index([level])
   @@index([vipTier])
@@ -1048,6 +1049,14 @@ model Conversation {
   userA   User   @relation("ConvoA", fields: [userAId], references: [id], onDelete: Cascade)
   userB   User   @relation("ConvoB", fields: [userBId], references: [id], onDelete: Cascade)
 
+  // Tuỳ chỉnh dùng chung cho cả hai người, giống cách các app chat vẫn làm.
+  theme       String  @default("default")   // ảnh nền khung chat
+  bubble      String  @default("default")   // kiểu bong bóng
+  nicknameA   String?                       // biệt danh đặt cho userA
+  nicknameB   String?                       // biệt danh đặt cho userB
+  // Số giờ giữ tin trước khi tự xoá; null = không tự xoá
+  autoDeleteHours Int?
+
   lastMessageAt DateTime?
   createdAt     DateTime  @default(now())
 
@@ -1071,8 +1080,27 @@ model Message {
 
   createdAt DateTime @default(now())
 
+  reactions MessageReaction[]
+
   @@index([conversationId, createdAt])
   @@index([senderId, createdAt])
+}
+
+/** Cảm xúc thả lên một tin nhắn — mỗi người một cảm xúc cho mỗi tin. */
+model MessageReaction {
+  id        String  @id @default(cuid())
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  emoji String
+
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId])
+  @@index([messageId])
 }
 
 

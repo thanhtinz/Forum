@@ -6,11 +6,13 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { otherId } from '@/lib/messages';
 import { cn } from '@/lib/utils';
-import { ReplyContent } from '@/components/forum/ReplyContent';
+import { MessageBubble } from '@/components/user/MessageBubble';
+import { ChatSettings } from '@/components/user/ChatSettings';
+import { getTheme, getBubble } from '@/lib/chat-theme';
 import { MessageComposer } from '@/components/user/MessageComposer';
 import { ScrollToLatest } from '@/components/user/ScrollToLatest';
 import { LiveRefresh } from '@/components/user/LiveRefresh';
-import { markConversationRead } from '../actions';
+import { markConversationRead, purgeExpiredMessages } from '../actions';
 
 export const metadata: Metadata = { title: 'Trò chuyện' };
 export const dynamic = 'force-dynamic';
@@ -56,6 +58,7 @@ export default async function ConversationPage({ params, searchParams }: {
     where: { id },
     select: {
       id: true, userAId: true, userBId: true,
+      theme: true, bubble: true, nicknameA: true, nicknameB: true, autoDeleteHours: true,
       userA: { select: { id: true, name: true, username: true, image: true } },
       userB: { select: { id: true, name: true, username: true, image: true } },
     },
@@ -64,14 +67,27 @@ export default async function ConversationPage({ params, searchParams }: {
   if (!convo || (convo.userAId !== me && convo.userBId !== me)) notFound();
 
   const partner = otherId(convo, me) === convo.userA.id ? convo.userA : convo.userB;
-  const partnerName = partner.name || partner.username || 'Thành viên';
+  const partnerIsA = partner.id === convo.userAId;
+  // Biệt danh (nếu có) thay tên hiển thị ở mọi chỗ trong đoạn chat.
+  const partnerNick = (partnerIsA ? convo.nicknameA : convo.nicknameB) ?? '';
+  const myNick = (partnerIsA ? convo.nicknameB : convo.nicknameA) ?? '';
+  const realName = partner.name || partner.username || 'Thành viên';
+  const partnerName = partnerNick || realName;
+  const theme = getTheme(convo.theme);
+  const bubble = getBubble(convo.bubble);
+
+  // Tin quá hạn phải biến mất trước khi đọc, không thì vẫn hiện thêm một lần.
+  if (convo.autoDeleteHours) await purgeExpiredMessages(id, convo.autoDeleteHours).catch(() => {});
 
   const [rows, totalMessages] = await Promise.all([
     db.message.findMany({
       where: { conversationId: id },
       orderBy: { createdAt: 'desc' },
       take,
-      select: { id: true, content: true, senderId: true, createdAt: true, readAt: true },
+      select: {
+        id: true, content: true, senderId: true, createdAt: true, readAt: true,
+        reactions: { select: { emoji: true, userId: true } },
+      },
     }),
     db.message.count({ where: { conversationId: id } }),
   ]);
@@ -105,16 +121,25 @@ export default async function ConversationPage({ params, searchParams }: {
           <ArrowLeft size={18} />
         </Link>
         <Avatar image={partner.image} name={partnerName} className="size-10 shrink-0" />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="truncate font-bold leading-tight text-ink-900 dark:text-white">{partnerName}</h1>
-          {partner.username && (
-            <Link href={`/u/${partner.username}`} className="text-xs text-ink-400 hover:text-brand-600">@{partner.username}</Link>
-          )}
+          <p className="truncate text-xs text-ink-400">
+            {partnerNick && <span className="mr-1">{realName} ·</span>}
+            {partner.username && (
+              <Link href={`/u/${partner.username}`} className="hover:text-brand-600">@{partner.username}</Link>
+            )}
+            {convo.autoDeleteHours ? <span className="ml-1">· tự xoá sau {convo.autoDeleteHours}h</span> : null}
+          </p>
         </div>
+        <ChatSettings conversationId={id} theme={convo.theme} bubble={convo.bubble}
+          autoDeleteHours={convo.autoDeleteHours ?? 0}
+          me={{ id: me, name: session.user.name ?? 'Bạn', nickname: myNick }}
+          partner={{ id: partner.id, name: realName, nickname: partnerNick }} />
       </div>
 
       {/* Khung tin nhắn — cuộn riêng, ô soạn luôn nằm dưới cùng */}
-      <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-ink-200 bg-ink-50/60 p-3 dark:border-ink-700 dark:bg-ink-950/40">
+      <div style={theme.style}
+        className={cn('min-h-0 flex-1 overflow-y-auto rounded-2xl border border-ink-200 p-3 dark:border-ink-700', theme.className)}>
         {items.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-center">
             <Avatar image={partner.image} name={partnerName} className="size-16" />
@@ -156,31 +181,12 @@ export default async function ConversationPage({ params, searchParams }: {
                     ? <Avatar image={partner.image} name={partnerName} className="size-7 shrink-0 text-xs" />
                     : <span className="size-7 shrink-0" />)}
 
-                  <div className={cn('max-w-[78%] px-3.5 py-2 sm:max-w-[70%]',
-                    mine
-                      ? 'bg-brand-500 text-white'
-                      : 'border border-ink-200 bg-white text-ink-800 dark:border-ink-700 dark:bg-ink-900 dark:text-ink-100',
-                    // Bo góc theo vị trí trong cụm để cụm trông liền mạch
-                    mine
-                      ? cn('rounded-2xl rounded-br-md', m.startsGroup && 'rounded-tr-2xl', !m.endsGroup && 'rounded-br-md')
-                      : cn('rounded-2xl rounded-bl-md', m.startsGroup && 'rounded-tl-2xl', !m.endsGroup && 'rounded-bl-md'),
-                  )}>
-                    <ReplyContent content={m.content}
-                      className={cn('whitespace-pre-wrap break-words text-sm leading-relaxed',
-                        mine ? 'text-white' : 'text-ink-800 dark:text-ink-100')} />
-
-                    {m.endsGroup && (
-                      <div className={cn('mt-1 flex items-center justify-end gap-1 text-[11px]',
-                        mine ? 'text-white/70' : 'text-ink-400')}>
-                        {time(m.createdAt)}
-                        {mine && m.id === lastMine?.id && (
-                          m.readAt
-                            ? <CheckCheck size={13} aria-label="Đã xem" />
-                            : <Check size={13} aria-label="Đã gửi" />
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <MessageBubble
+                    id={m.id} content={m.content} mine={mine}
+                    time={time(m.createdAt)} showMeta={m.endsGroup}
+                    showTicks={mine && m.id === lastMine?.id} seen={!!m.readAt}
+                    bubble={bubble}
+                    reactions={m.reactions.map((r) => ({ emoji: r.emoji, mine: r.userId === me }))} />
                 </div>
               </div>
             );

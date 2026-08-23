@@ -46,6 +46,10 @@ jobs:
       AUTH_SECRET: chi-dung-cho-ci-khong-phai-bi-mat-that
       NEXTAUTH_URL: http://localhost:3000
       BASE_URL: http://localhost:3000
+      # Auth.js v5 chặn host lạ; thiếu biến này thì mọi lần đăng nhập trong bộ
+      # kiểm đều hỏng với "UntrustedHost: Host must be trusted" và các mục cần
+      # đăng nhập trượt hết. `.env.example` cũng khai biến này.
+      AUTH_TRUST_HOST: true
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/pw-browsers
     steps:
       - uses: actions/checkout@v4

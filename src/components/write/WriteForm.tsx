@@ -190,21 +190,21 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
           </label>
         )}
 
-        {hasGate && (
-          <>
-            <div className="mt-3 block">
-              <span className="mb-1 block text-sm font-medium">
-                Nội dung ẩn ({isPaid ? 'sau khi mua mới xem được' : 'mở khoá mới xem được'}) <b className="text-red-500">*</b>
-              </span>
-              <BBCodeEditor name="hiddenContent" rows={6} defaultValue={initial?.hiddenContent}
-                placeholder="Phần nội dung bị khoá: link tải, hướng dẫn chi tiết, mã nguồn…" />
-            </div>
-            {isPaid && (
-              <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-                💰 Ăn chia: bạn nhận <b>70%</b> mỗi lượt bán, nền tảng giữ <b>30%</b> hoa hồng. Tiền/điểm được cộng tự động khi có người mua.
-              </p>
-            )}
-          </>
+        {/* Luôn dựng ô nội dung ẩn, chỉ ẩn đi bằng CSS khi chọn Miễn phí.
+            Gỡ hẳn khỏi trang thì bấm nhầm một cái là mất sạch phần đã gõ.
+            Máy chủ chỉ dùng phần này khi bài có khoá nên để lại cũng vô hại. */}
+        <div className={hasGate ? 'mt-3 block' : 'hidden'}>
+          <span className="mb-1 block text-sm font-medium">
+            Nội dung ẩn ({isPaid ? 'sau khi mua mới xem được' : 'mở khoá mới xem được'}) <b className="text-red-500">*</b>
+          </span>
+          <BBCodeEditor name="hiddenContent" rows={6} defaultValue={initial?.hiddenContent}
+            placeholder="Phần nội dung bị khoá: link tải, hướng dẫn chi tiết, mã nguồn…" />
+        </div>
+
+        {hasGate && isPaid && (
+          <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+            💰 Ăn chia: bạn nhận <b>70%</b> mỗi lượt bán, nền tảng giữ <b>30%</b> hoa hồng. Tiền/điểm được cộng tự động khi có người mua.
+          </p>
         )}
 
         {/* Tệp tải xuống — dùng cho cả bài miễn phí lẫn trả phí */}

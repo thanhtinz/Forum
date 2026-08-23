@@ -5,10 +5,13 @@ import { Heart, Reply as ReplyIcon, CheckCircle2 } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
 import { toggleReplyLike, markSolution } from '@/app/(site)/forum/actions';
 import { ReplyForm } from './ReplyForm';
+import { ReportButton } from '@/components/ReportButton';
 
-export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount, loggedIn, callbackUrl, canReply, canMarkSolution }: {
+export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount, loggedIn, callbackUrl, canReply, canMarkSolution, canReport }: {
   threadId: string; replyId: string; initialLiked: boolean; initialLikeCount: number;
   loggedIn: boolean; callbackUrl: string; canReply?: boolean; canMarkSolution?: boolean;
+  /** Không hiện với bài của chính mình — tự báo cáo mình thì vô nghĩa. */
+  canReport?: boolean;
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialLikeCount);
@@ -38,6 +41,10 @@ export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount
           <button type="button" onClick={() => setShowForm((v) => !v)} className="flex items-center gap-1 transition-colors hover:text-brand-600">
             <ReplyIcon size={13} /> Trả lời
           </button>
+        )}
+        {canReport && (
+          <ReportButton target="reply" targetId={replyId}
+            className="flex items-center gap-1 transition-colors hover:text-red-500" />
         )}
         {canMarkSolution && (
           <button type="button" onClick={onSolve} disabled={pending}

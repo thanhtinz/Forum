@@ -8,7 +8,7 @@ import { otherId } from '@/lib/messages';
 import { cn } from '@/lib/utils';
 import { MessageBubble } from '@/components/user/MessageBubble';
 import { ChatSettings } from '@/components/user/ChatSettings';
-import { getTheme, getBubble } from '@/lib/chat-theme';
+import { resolveTheme, resolveBubble } from '@/lib/chat-theme';
 import { MessageComposer } from '@/components/user/MessageComposer';
 import { ScrollToLatest } from '@/components/user/ScrollToLatest';
 import { LiveRefresh } from '@/components/user/LiveRefresh';
@@ -74,8 +74,19 @@ export default async function ConversationPage({ params, searchParams }: {
   const myNick = (partnerIsA ? convo.nicknameB : convo.nicknameA) ?? '';
   const realName = partner.name || partner.username || 'Thành viên';
   const partnerName = partnerNick || realName;
-  const theme = getTheme(convo.theme);
-  const bubble = getBubble(convo.bubble);
+  // Nền và bong bóng do admin tải lên; mẫu có sẵn vẫn dùng được như cũ.
+  const [backgrounds, bubbles] = await Promise.all([
+    db.chatBackground.findMany({
+      where: { active: true }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, name: true, image: true, dark: true },
+    }),
+    db.chatBubbleStyle.findMany({
+      where: { active: true }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      select: { id: true, name: true, decor: true, colorMine: true, colorTheirs: true, darkText: true },
+    }),
+  ]);
+  const theme = resolveTheme(convo.theme, backgrounds);
+  const bubble = resolveBubble(convo.bubble, bubbles);
 
   // Tin quá hạn phải biến mất trước khi đọc, không thì vẫn hiện thêm một lần.
   if (convo.autoDeleteHours && convo.autoDeleteFrom) {
@@ -137,7 +148,8 @@ export default async function ConversationPage({ params, searchParams }: {
         <ChatSettings conversationId={id} theme={convo.theme} bubble={convo.bubble}
           autoDeleteHours={convo.autoDeleteHours ?? 0}
           me={{ id: me, name: session.user.name ?? 'Bạn', nickname: myNick }}
-          partner={{ id: partner.id, name: realName, nickname: partnerNick }} />
+          partner={{ id: partner.id, name: realName, nickname: partnerNick }}
+          backgrounds={backgrounds} bubbles={bubbles} />
       </div>
 
       {/* Khung tin nhắn — cuộn riêng, ô soạn luôn nằm dưới cùng */}
@@ -180,8 +192,9 @@ export default async function ConversationPage({ params, searchParams }: {
 
                 <div className={cn('flex items-end gap-2', mine ? 'justify-end' : 'justify-start',
                   // Tai chibi nhô lên khỏi bong bóng nên cụm phải giãn ra thêm
-                  m.startsGroup && !m.newDay && (bubble.ears ? 'mt-4' : 'mt-2'),
-                  bubble.ears && 'first:mt-3')}>
+                  // Ảnh trang trí nhô lên khỏi bong bóng nên cụm phải giãn ra thêm
+                  m.startsGroup && !m.newDay && (bubble.decor ? 'mt-5' : 'mt-2'),
+                  bubble.decor && 'first:mt-4')}>
                   {/* Avatar chỉ ở tin cuối cụm để cột trái không bị lặp */}
                   {!mine && (m.endsGroup
                     ? <Avatar image={partner.image} name={partnerName} className="size-7 shrink-0 text-xs" />

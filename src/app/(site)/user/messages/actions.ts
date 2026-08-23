@@ -136,8 +136,15 @@ export async function setChatAppearance(conversationId: string, theme: string, b
 
   const convo = await myConversation(me, conversationId);
   if (!convo) return { error: 'Không tìm thấy hội thoại.' };
-  if (!CHAT_THEMES.some((t) => t.value === theme)) return { error: 'Ảnh nền không hợp lệ.' };
-  if (!CHAT_BUBBLES.some((b) => b.value === bubble)) return { error: 'Kiểu bong bóng không hợp lệ.' };
+
+  // Giá trị hợp lệ là slug mẫu có sẵn HOẶC id bản ghi admin tải lên (và còn bật).
+  const themeOk = CHAT_THEMES.some((t) => t.value === theme)
+    || !!(await db.chatBackground.findFirst({ where: { id: theme, active: true }, select: { id: true } }));
+  if (!themeOk) return { error: 'Ảnh nền không hợp lệ.' };
+
+  const bubbleOk = CHAT_BUBBLES.some((b) => b.value === bubble)
+    || !!(await db.chatBubbleStyle.findFirst({ where: { id: bubble, active: true }, select: { id: true } }));
+  if (!bubbleOk) return { error: 'Kiểu bong bóng không hợp lệ.' };
 
   await db.conversation.update({ where: { id: conversationId }, data: { theme, bubble }, select: { id: true } });
   revalidatePath(`/user/messages/${conversationId}`);

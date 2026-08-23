@@ -745,3 +745,103 @@ export async function toggleThreadFavorite(threadId: string): Promise<FavoriteSt
   const count = await db.favorite.count({ where: { threadId } });
   return { saved: !existing, count };
 }
+
+// ─────────────────── Sửa / xoá trả lời của chính mình ───────────────────
+
+export interface ReplyEditState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Chỉ tác giả mới sửa/xoá được trả lời của mình.
+ *
+ * Người kiểm duyệt cố tình không nằm trong diện này: họ đã có nút "Ẩn", giữ
+ * nguyên nội dung để còn đối chiếu khi có khiếu nại — sửa lời người khác hay
+ * xoá hẳn thì mất dấu vết.
+ */
+async function assertReplyOwner(replyId: string) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' as const };
+
+  const reply = await db.reply.findUnique({
+    where: { id: replyId },
+    select: {
+      id: true, authorId: true, hidden: true, isSolution: true, threadId: true,
+      thread: { select: { locked: true, forumId: true, forum: { select: { slug: true } } } },
+    },
+  });
+  if (!reply) return { error: 'Không tìm thấy trả lời.' as const };
+  if (reply.authorId !== userId) return { error: 'Bạn chỉ sửa được trả lời của mình.' as const };
+  if (reply.thread.locked) return { error: 'Chủ đề đã bị khoá, không sửa được trả lời.' as const };
+
+  return { userId, reply };
+}
+
+/**
+ * Sửa nội dung trả lời.
+ *
+ * Không gửi lại thông báo nhắc tên cho những @tên mới thêm vào: sửa bài để
+ * chèn tên người khác là đường vòng để làm phiền, mà bản gốc đã báo một lần rồi.
+ */
+export async function updateReply(_prev: ReplyEditState, formData: FormData): Promise<ReplyEditState> {
+  const replyId = String(formData.get('replyId') ?? '');
+  const guard = await assertReplyOwner(replyId);
+  if ('error' in guard) return { error: guard.error };
+
+  const content = String(formData.get('content') ?? '').trim();
+  if (content.length < 2) return { error: 'Nội dung trả lời quá ngắn.' };
+  if (content.length > 5000) return { error: 'Trả lời tối đa 5000 ký tự.' };
+
+  await db.reply.update({ where: { id: replyId }, data: { content }, select: { id: true } });
+
+  revalidatePath(`/forum/${guard.reply.thread.forum.slug}/${guard.reply.threadId}`);
+  return { ok: true };
+}
+
+/**
+ * Xoá hẳn trả lời của mình, kèm các phản hồi lồng bên dưới (khoá ngoại tự dọn).
+ *
+ * Bộ đếm chỉ trừ đi những bài đang thật sự hiện: bài đã bị ẩn thì lúc ẩn đã
+ * trừ rồi, trừ thêm lần nữa là số đếm âm dần.
+ *
+ * Điểm thưởng lúc trả lời không thu lại — giống xoá chủ đề, để người dùng khỏi
+ * bị âm điểm vì dọn bài cũ.
+ */
+export async function deleteOwnReply(replyId: string): Promise<ReplyEditState> {
+  const guard = await assertReplyOwner(replyId);
+  if ('error' in guard) return { error: guard.error };
+  const { reply } = guard;
+
+  // Lời giải đã chốt thì không cho xoá: điểm treo thưởng đã trả, xoá đi là chủ
+  // đề mang nhãn "đã giải quyết" mà chẳng còn câu trả lời nào.
+  if (reply.isSolution) return { error: 'Trả lời đã được chọn làm lời giải, không xoá được.' };
+
+  const children = await db.reply.findMany({
+    where: { parentId: replyId },
+    select: { id: true, hidden: true, isSolution: true },
+  });
+  if (children.some((c) => c.isSolution)) {
+    return { error: 'Có phản hồi bên dưới đang là lời giải, không xoá được.' };
+  }
+
+  const visible = (reply.hidden ? 0 : 1) + children.filter((c) => !c.hidden).length;
+
+  await db.$transaction(async (tx) => {
+    await tx.reply.delete({ where: { id: replyId } });
+    if (visible > 0) {
+      await tx.thread.update({
+        where: { id: reply.threadId },
+        data: { replyCount: { decrement: visible } }, select: { id: true },
+      });
+      await tx.forum.update({
+        where: { id: reply.thread.forumId },
+        data: { replyCount: { decrement: visible } }, select: { id: true },
+      });
+    }
+  });
+
+  revalidatePath(`/forum/${reply.thread.forum.slug}/${reply.threadId}`);
+  return { ok: true };
+}

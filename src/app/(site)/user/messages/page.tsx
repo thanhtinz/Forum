@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { otherId, messagePreview } from '@/lib/messages';
 import { fmtAgo, truncate } from '@/lib/utils';
+import { LiveRefresh } from '@/components/user/LiveRefresh';
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Tin nhắn' };
@@ -93,6 +94,8 @@ export default async function MessagesPage() {
           );
         })}
       </div>
+
+      <LiveRefresh seconds={20} />
     </div>
   );
 }

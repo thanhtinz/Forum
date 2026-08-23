@@ -23,6 +23,20 @@ npm run dev
 
 Tài khoản admin mẫu: `admin@nova.local` / `admin123`.
 
+### Nâng cấp cơ sở dữ liệu đã có dữ liệu
+
+Nếu cơ sở dữ liệu của bạn từng chạy bản **có tính năng máy ảo (Play Online)**,
+chạy thêm một bước dọn **trước** khi `db push`:
+
+```bash
+npm run db:don-may-ao         # dọn dữ liệu máy ảo còn sót
+npx prisma db push
+```
+
+Bỏ qua bước này thì `db push` dừng giữa chừng ở enum `GameEventType` (Postgres
+không cho bỏ giá trị enum khi còn hàng dùng tới), nên cột `GameVersion.platform`
+không được tạo và mọi trang game trả về lỗi 500.
+
 ## Cấu trúc
 
 ```

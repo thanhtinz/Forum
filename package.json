@@ -9,7 +9,8 @@
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "db:don-may-ao": "tsx prisma/don-du-lieu-may-ao.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

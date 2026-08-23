@@ -109,8 +109,8 @@ export function useKeypadParts({
    * tích bản dọc, trong khi hai bên thân máy thừa rất nhiều chỗ.
    */
   const wheel = fill
-    ? 'h-full max-h-[13rem] aspect-square'
-    : compact ? 'h-full max-h-[9.5rem] aspect-square' : 'h-[6.5rem] w-[6.5rem]';
+    ? 'h-full max-h-[13rem] aspect-square shrink-0'
+    : compact ? 'h-full max-h-[9.5rem] aspect-square shrink-0' : 'h-[6.5rem] w-[6.5rem]';
 
   // ── D-pad ────────────────────────────────────────────────
   /**
@@ -282,7 +282,7 @@ export function useKeypadParts({
   );
 
   /** Phím bốn hướng vuông của S60 / E-series — vùng bấm góc phần tư như vòng xoay. */
-  const squarePad = navPad('square', 'h-full max-h-[13rem] aspect-square');
+  const squarePad = navPad('square', 'h-full max-h-[13rem] aspect-square shrink-0');
 
   /**
    * Phím bập bênh nằm ngang của máy đời đầu / Samsung / Siemens.
@@ -482,26 +482,25 @@ export function useKeypadParts({
 
   const phoneFace = (
     <div className="flex h-full w-full min-w-0 flex-col gap-2 overflow-hidden">
-      {softKeys && (
-        <div className="flex shrink-0 items-stretch gap-2">
-          {softLeft(cn('h-9 min-w-0 flex-1', PILL_L))}
-          {softRight(cn('h-9 min-w-0 flex-1', PILL_R))}
-        </div>
-      )}
-
       {/*
         Mũi tên nằm trên, bàn phím số nằm dưới — như mặt trước máy thật.
 
-        Tỉ lệ `44 : 56` nghiêng về bàn phím số: từ khi khung game lấp trọn vùng
-        trên thì nửa dưới hẹp đi, chia đều là phím số tụt xuống 22px, bấm không
-        trúng. Cụm mũi tên nhường chỗ vì nó vẫn còn rộng chán.
+        Options / Back **kẹp hai bên cụm mũi tên** chứ không xếp thành hàng
+        riêng phía trên. Cụm mũi tên là hình vuông bám theo *chiều cao* hàng
+        chứa nó, nên hàng cao bao nhiêu thì cánh mũi tên rộng bấy nhiêu — mà
+        hàng phím mềm riêng lại ăn mất 44px chiều cao trong khi hai bên cụm
+        mũi tên bỏ không hơn 140px mỗi bên. Dồn lại rồi chia đôi 50 : 50 thì
+        cụm mũi tên nở từ 106px lên ~143px (mỗi cánh ~4380px², rộng hơn cả
+        phím số) mà hàng phím số vẫn giữ ~31px.
       */}
-      <div className="flex min-h-0 w-full min-w-0 flex-[44] items-center justify-center">
+      <div className="flex min-h-0 w-full min-w-0 flex-[50] items-center justify-center gap-2">
+        {softKeys && softLeft(cn('h-[64%] min-w-0 flex-1', PILL_L))}
         {navCluster}
+        {softKeys && softRight(cn('h-[64%] min-w-0 flex-1', PILL_R))}
       </div>
 
       <div
-        className={cn('min-h-0 w-full min-w-0 flex-[56]',
+        className={cn('min-h-0 w-full min-w-0 flex-[50]',
           flatNum && 'overflow-hidden rounded-md border border-white/10')}
       >
         {numGrid(flatNum)}

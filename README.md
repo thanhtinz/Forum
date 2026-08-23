@@ -83,14 +83,12 @@ Khu game Java ME nằm ở `/games`:
   dựng sẵn + nhập tay), cách phóng (vừa khung / kéo đầy / gốc 1:1), lọc ảnh sắc nét
   hay mượt, **tốc độ chạy 0.5×–3×** (game Java hay chậm), giới hạn FPS, cỡ chữ, âm
   thanh, rung phím và gán phím bàn phím. Lưu theo tài khoản, khách thì theo trình duyệt.
-- **Thư viện máy ảo** — mỗi bố cục mặt phím giữ đúng một máy đại diện: Nokia 7210
-  và Nokia N70 (bốn hướng vuông), Nokia 6300 (vòng xoay), Motorola RAZR V3
-  (vòng xoay + phím số phẳng khắc laser), cộng hai máy ảo chung dùng **bàn phím ảo kiểu
-  J2ME Loader** (nút trong suốt, mũi tên tròn rời bên trái, phím số bên phải) và phủ
-  `320×240` nằm ngang với `360×640`. Thêm **hai skin nút trắng**: vòng khuyên rỗng
-  ruột kèm cụm hành động xếp hình cung, và lưới 3×5 nút tròn bằng nhau. Người chơi bấm “Chọn máy ảo” để đổi máy ngay trong emulator, có nhãn
-  tương thích cho từng máy. Skin thân máy khớp đúng đời máy: 7210 vỏ xanh, 6300 thép
-  không gỉ, RAZR V3 nhôm anod.
+- **Thư viện máy ảo** — đúng **một máy cho mỗi giao diện mặt phím**, không hơn:
+  Nokia 6300 (vòng xoay), Nokia N70 (bốn hướng vuông), Motorola RAZR V3 (vòng xoay +
+  phím số phẳng khắc laser), Generic Java ME 320×240 nằm ngang (kiểu **J2ME Loader**),
+  cùng hai skin nút trắng — **vòng khuyên** rỗng ruột kèm cụm hành động xếp hình cung,
+  và **lưới 3×5 nút tròn** bằng nhau. Người chơi bấm “Chọn máy ảo” để đổi ngay trong
+  emulator, có nhãn tương thích cho từng máy.
 - **Quản trị** — `/admin/games` (CRUD game, version, file, ảnh, ma trận tương thích)
   và `/admin/emulator` (profile thiết bị, hạn mức tài nguyên, phiên đang chạy, log lỗi).
 

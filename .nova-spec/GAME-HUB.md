@@ -146,21 +146,21 @@ phiên đồng thời đảm nhiệm.
 
 ## 5. Thư viện máy cổ
 
-Seed dựng sẵn 35 `EmulatorProfile` theo đời máy Java ME thật, thông số bám máy gốc
-(đời 2002–2003 chỉ có MIDP 1.0 nên không bật save state, RAM thấp hơn):
+Seed dựng sẵn **6 `EmulatorProfile`** — đúng một máy cho mỗi giao diện mặt phím,
+không hơn:
 
-| Hãng | Máy |
-|---|---|
-| Nokia | 3510i 96×65 · 7210 128×128 · 6230 128×128 · 6070 128×160 · 6600 S60 176×208 · 7610 S60 176×208 · N70 S60 176×208 · 6300 S40 240×320 · N73 S60 240×320 · 6120 Classic S60 240×320 · N95 S60 240×320 · 2700 Classic 240×320 · **E71 S60 320×240 (ngang)** · 5800 XpressMusic 360×640 · **5230 360×640 (cảm ứng thuần)** |
-| Sony Ericsson | K510i 128×160 · W200i 128×160 · K750i 176×220 · W810i 176×220 · K800i 240×320 · C902 240×320 |
-| Samsung | E250 128×160 · D900 240×320 · E900 240×320 · **S5233 Star 240×400 (cảm ứng thuần)** |
-| Motorola | RAZR V3 176×220 · SLVR L7 176×220 · E398 176×220 |
-| LG | KG800 Chocolate 176×220 · KP500 Cookie 240×400 |
-| Siemens | C65 132×176 · CX65 132×176 |
-| Máy ảo chung | 240×320 · 320×240 (ngang) · 360×640 |
+| Giao diện | Máy | Màn hình |
+|---|---|---|
+| `s40` vòng xoay tròn | Nokia 6300 · S40 (2007) | 240×320 |
+| `s60` bốn hướng vuông | Nokia N70 · S60 (2005) | 176×208 |
+| `razr` vòng xoay + phím số phẳng khắc laser | Motorola RAZR V3 (2004) | 176×220 |
+| `j2me` kiểu J2ME Loader | Generic Java ME 320×240 | 320×240 **nằm ngang** |
+| `ring` vòng khuyên | Skin tay cầm · vòng khuyên | 240×320 |
+| `grid` lưới nút tròn | Skin lưới nút tròn | 240×320 |
 
-E71 là máy QWERTY màn nằm ngang — để thử game thiết kế cho khung ngang mà không
-phải bấm nút xoay.
+Ba máy đầu mô phỏng mặt trước máy thật, ba skin sau là bàn phím ảo của emulator.
+Máy ảo chung giữ bản `320×240` nằm ngang vì đây là profile duy nhất còn khung
+ngang — để thử game thiết kế cho màn nằm ngang mà không phải bấm nút xoay.
 
 ### Bố cục mặt phím theo dòng máy
 
@@ -178,19 +178,18 @@ còn tám:
 | `s40` | **Vòng xoay tròn**, nút OK nổi ở tâm | Nokia 6300 (240×320) |
 | `s60` | **Bốn hướng vuông**: một khối vuông bo góc liền, giữa lồng ô vuông nhỏ có viền riêng | Nokia N70 (176×208), Nokia 7210 (128×128) |
 | `razr` | Vòng xoay như `s40` nhưng **bàn phím số phẳng khắc laser** | Motorola RAZR V3 (176×220) |
-| `j2me` | Bàn phím ảo kiểu **J2ME Loader**: bốn nút tròn rời xếp chữ thập bên trái, bàn phím số bên phải, nút trong suốt trên nền tối | Hai máy ảo chung (320×240, 360×640) |
+| `j2me` | Bàn phím ảo kiểu **J2ME Loader**: bốn nút tròn rời xếp chữ thập bên trái, bàn phím số bên phải, nút trong suốt trên nền tối | Máy ảo chung 320×240 nằm ngang |
 | `ring` | Skin **vòng khuyên**: cụm điều hướng là vòng tròn rỗng ruột, bên phải là cụm hành động `7 9 3 1 OK` xếp hình cung, trên cùng hai phím vai `L` `R`. Nút trắng viền đậm trên thân xám | Skin tay cầm · vòng khuyên |
-| `grid` | Skin **lưới nút tròn**: `L OK R` rồi bốn hàng số, tất cả cùng cỡ nút tròn trắng trên thân tím | Skin lưới nút tròn |
+| `grid` | Skin **lưới nút tròn**: `L OK R` rồi bốn hàng số, tất cả cùng cỡ nút tròn trắng | Skin lưới nút tròn |
 
 Các họ đã bỏ vì dựng ra cùng một thứ với họ còn lại, chỉ khác màu vỏ:
 `se` · `qwerty` · `touch` · `touch-only` (giống `s40`), và `rocker` — kiểu bập
 bênh năm mảnh rời đã thay bằng **khối vuông liền** của `s60`, đúng như phím bốn
 hướng trên máy thật.
 
-**Thư viện rút từ 35 máy còn 6.** 35 máy kia chỉ là 35 màu vỏ khác nhau trên
-bốn bố cục lặp lại — mở bảng chọn máy ra không phân biệt được cái nào với cái
-nào. Giữ đúng một máy cho mỗi họ, cộng hai máy ảo chung để phủ hai độ phân giải
-mà bốn máy trên không có (`320×240` nằm ngang và `360×640`).
+**Thư viện giữ đúng một máy cho mỗi giao diện — không hơn.** 35 máy ban đầu chỉ
+là 35 màu vỏ khác nhau trên vài bố cục lặp lại; mở bảng chọn ra không phân biệt
+được cái nào với cái nào. Còn **6 máy / 6 giao diện**.
 
 Máy đã bỏ được **tắt** (`active: false`) chứ không xoá: `GameEmulatorProfile` và
 `EmulatorSession` còn tham chiếu tới chúng. Seed tự tắt mọi máy không có trong

@@ -84,6 +84,7 @@ model User {
   messagesSent   Message[]
   msgReactions   MessageReaction[]
   threadFollows  ThreadFollow[]
+  pollVotes      PollVote[]
 
   /// Các loại thông báo người dùng đã tắt (chỉ áp dụng cho loại được phép tắt).
   notifyOff      NotificationType[] @default([])
@@ -421,10 +422,59 @@ model Thread {
   favorites Favorite[]
   reports   Report[]
   followers ThreadFollow[]
+  poll      Poll?
 
   @@index([forumId, lastReplyAt])
   @@index([authorId])
   @@index([pinned])
+}
+
+/// Bình chọn gắn vào một chủ đề — mỗi chủ đề nhiều nhất một cuộc.
+model Poll {
+  id       String @id @default(cuid())
+  threadId String @unique
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  question String
+  /// Cho chọn nhiều đáp án cùng lúc.
+  multiple Boolean @default(false)
+  /// Hết hạn thì khoá lại và ai cũng xem được kết quả. null = không hạn.
+  closesAt DateTime?
+  /// Chủ đề/quản trị đóng sớm.
+  closed   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  options PollOption[]
+  votes   PollVote[]
+}
+
+model PollOption {
+  id     String @id @default(cuid())
+  pollId String
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+
+  text  String
+  order Int @default(0)
+
+  votes PollVote[]
+
+  @@index([pollId, order])
+}
+
+model PollVote {
+  id       String @id @default(cuid())
+  pollId   String
+  poll     Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId String
+  option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([optionId, userId])
+  @@index([pollId, userId])
 }
 
 /// Theo dõi chủ đề: có trả lời mới thì được báo, kể cả không phải chủ chủ đề.

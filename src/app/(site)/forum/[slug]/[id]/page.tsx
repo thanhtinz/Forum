@@ -7,6 +7,8 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount, truncate } from '@/lib/utils';
 import { ThreadActionBar } from '@/components/forum/ThreadActionBar';
+import { PollCard } from '@/components/forum/PollCard';
+import { toPollView } from '@/lib/poll';
 import { ReplyActions } from '@/components/forum/ReplyActions';
 import { ReplyForm } from '@/components/forum/ReplyForm';
 import { ThreadModMenu } from '@/components/forum/ThreadModMenu';
@@ -66,6 +68,13 @@ export default async function ThreadPage({ params, searchParams }: {
       forum: { select: { slug: true, name: true } },
       author: authorSelect,
       tags: { include: { tag: { select: { slug: true, name: true } } } },
+      poll: {
+        select: {
+          id: true, question: true, multiple: true, closesAt: true, closed: true,
+          options: { select: { id: true, text: true, order: true } },
+          votes: { select: { optionId: true, userId: true } },
+        },
+      },
     },
   });
   if (!thread || thread.forum.slug !== slug || thread.status !== 'PUBLISHED') notFound();
@@ -162,6 +171,11 @@ export default async function ThreadPage({ params, searchParams }: {
           <span className="flex items-center gap-1"><Eye size={13} />{fmtCount(thread.viewCount)} lượt xem</span>
           <span className="flex items-center gap-1"><MessageSquare size={13} />{fmtCount(thread.replyCount)} trả lời</span>
         </p>
+
+        {thread.poll && (
+          <PollCard poll={toPollView(thread.poll, userId)}
+            canClose={isOwner || canModerate} loggedIn={loggedIn} />
+        )}
 
         <ThreadPost
           author={toAuthor(thread.author, levelLooks)}

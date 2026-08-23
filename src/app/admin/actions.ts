@@ -1081,3 +1081,86 @@ export async function pruneLogs(days: number) {
   });
   revalidatePath('/admin/logs');
 }
+
+// ─────────────── Nền & bong bóng chat ───────────────
+
+export type ChatAssetState = { ok?: boolean; error?: string };
+
+export async function saveChatBackground(_prev: ChatAssetState, formData: FormData): Promise<ChatAssetState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const name = String(formData.get('name') ?? '').trim();
+  const image = String(formData.get('image') ?? '').trim();
+  const dark = formData.get('dark') === 'on';
+  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
+
+  if (name.length < 1) return { error: 'Hãy đặt tên cho ảnh nền.' };
+  if (!image) return { error: 'Hãy tải ảnh lên hoặc dán link ảnh.' };
+  if (!isPublicImageRef(image)) return { error: 'Ảnh phải là link http(s) hoặc ảnh đã tải lên.' };
+
+  const data = { name, image, dark, order };
+  try {
+    if (id) await db.chatBackground.update({ where: { id }, data, select: { id: true } });
+    else await db.chatBackground.create({ data, select: { id: true } });
+  } catch {
+    return { error: 'Không lưu được ảnh nền.' };
+  }
+  revalidatePath('/admin/chat-backgrounds');
+  return { ok: true };
+}
+
+export async function deleteChatBackground(id: string) {
+  await requireAdmin();
+  // Hội thoại đang dùng ảnh này sẽ tự quay về nền mặc định vì tra id không ra.
+  await db.chatBackground.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/chat-backgrounds');
+}
+
+export async function toggleChatBackground(id: string) {
+  await requireAdmin();
+  const row = await db.chatBackground.findUnique({ where: { id }, select: { active: true } });
+  if (!row) return;
+  await db.chatBackground.update({ where: { id }, data: { active: !row.active }, select: { id: true } });
+  revalidatePath('/admin/chat-backgrounds');
+}
+
+export async function saveChatBubbleStyle(_prev: ChatAssetState, formData: FormData): Promise<ChatAssetState> {
+  await requireAdmin();
+  const id = String(formData.get('id') ?? '').trim() || null;
+  const name = String(formData.get('name') ?? '').trim();
+  const decor = String(formData.get('decor') ?? '').trim() || null;
+  const colorMine = String(formData.get('colorMine') ?? '').trim();
+  const colorTheirs = String(formData.get('colorTheirs') ?? '').trim();
+  const darkText = formData.get('darkText') === 'on';
+  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
+
+  if (name.length < 1) return { error: 'Hãy đặt tên cho kiểu bong bóng.' };
+  if (!/^#[0-9a-fA-F]{6}$/.test(colorMine) || !/^#[0-9a-fA-F]{6}$/.test(colorTheirs)) {
+    return { error: 'Màu không hợp lệ.' };
+  }
+  if (decor && !isPublicImageRef(decor)) return { error: 'Ảnh trang trí phải là link http(s) hoặc ảnh đã tải lên.' };
+
+  const data = { name, decor, colorMine, colorTheirs, darkText, order };
+  try {
+    if (id) await db.chatBubbleStyle.update({ where: { id }, data, select: { id: true } });
+    else await db.chatBubbleStyle.create({ data, select: { id: true } });
+  } catch {
+    return { error: 'Không lưu được kiểu bong bóng.' };
+  }
+  revalidatePath('/admin/chat-bubbles');
+  return { ok: true };
+}
+
+export async function deleteChatBubbleStyle(id: string) {
+  await requireAdmin();
+  await db.chatBubbleStyle.delete({ where: { id } }).catch(() => {});
+  revalidatePath('/admin/chat-bubbles');
+}
+
+export async function toggleChatBubbleStyle(id: string) {
+  await requireAdmin();
+  const row = await db.chatBubbleStyle.findUnique({ where: { id }, select: { active: true } });
+  if (!row) return;
+  await db.chatBubbleStyle.update({ where: { id }, data: { active: !row.active }, select: { id: true } });
+  revalidatePath('/admin/chat-bubbles');
+}

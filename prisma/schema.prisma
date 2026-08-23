@@ -1153,3 +1153,37 @@ model AdminLog {
   @@index([action, createdAt])
   @@index([targetType, targetId])
 }
+
+
+/** Ảnh nền khung chat do admin tải lên. */
+model ChatBackground {
+  id     String  @id @default(cuid())
+  name   String
+  image  String              // đường dẫn ảnh admin tải lên
+  /** Ảnh tối: chữ phụ trong khung chat phải sáng lên mới đọc được. */
+  dark   Boolean @default(false)
+  active Boolean @default(true)
+  order  Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([active, order])
+}
+
+/** Kiểu bong bóng chat do admin tải lên: màu nền + ảnh trang trí phía trên. */
+model ChatBubbleStyle {
+  id          String  @id @default(cuid())
+  name        String
+  /** Ảnh gắn trên bong bóng (tai chibi, nơ…). Để trống thì chỉ đổi màu. */
+  decor       String?
+  colorMine   String
+  colorTheirs String
+  /** Chữ trong bong bóng là màu đậm hay trắng. */
+  darkText    Boolean @default(true)
+  active      Boolean @default(true)
+  order       Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([active, order])
+}

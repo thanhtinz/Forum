@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Settings2, X, Check, Images, Timer, Tag, Palette, MessageSquare } from 'lucide-react';
 import { setChatAppearance, setNickname, setAutoDelete } from '@/app/(site)/user/messages/actions';
-import { CHAT_THEMES, CHAT_BUBBLES, AUTO_DELETE_OPTIONS, NICKNAME_MAX } from '@/lib/chat-theme';
-import { ChibiEars } from '@/components/user/ChibiEars';
+import {
+  CHAT_THEMES, CHAT_BUBBLES, AUTO_DELETE_OPTIONS, NICKNAME_MAX,
+  type CustomBackground, type CustomBubble,
+} from '@/lib/chat-theme';
 import { cn } from '@/lib/utils';
 
 export interface ChatSettingsProps {
@@ -16,6 +18,9 @@ export interface ChatSettingsProps {
   autoDeleteHours: number;
   me: { id: string; name: string; nickname: string };
   partner: { id: string; name: string; nickname: string };
+  /** Nền và bong bóng do admin tải lên. */
+  backgrounds: CustomBackground[];
+  bubbles: CustomBubble[];
 }
 
 export function ChatSettings(p: ChatSettingsProps) {
@@ -65,7 +70,7 @@ export function ChatSettings(p: ChatSettingsProps) {
               </p>
               <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400">Màu trơn</p>
               <div className="grid grid-cols-4 gap-2">
-                {CHAT_THEMES.filter((t) => !t.scenery).map((t) => (
+                {CHAT_THEMES.map((t) => (
                   <button key={t.value} type="button" disabled={pending} onClick={() => pickTheme(t.value)}
                     className={cn('rounded-xl border p-1.5 text-center transition-colors disabled:opacity-60',
                       theme === t.value ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
@@ -79,21 +84,25 @@ export function ChatSettings(p: ChatSettingsProps) {
                 ))}
               </div>
 
-              <p className="mb-1.5 mt-3 text-[11px] font-medium uppercase tracking-wide text-ink-400">Phong cảnh</p>
-              <div className="grid grid-cols-3 gap-2">
-                {CHAT_THEMES.filter((t) => t.scenery).map((t) => (
-                  <button key={t.value} type="button" disabled={pending} onClick={() => pickTheme(t.value)}
-                    className={cn('rounded-xl border p-1.5 text-center transition-colors disabled:opacity-60',
-                      theme === t.value ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
-                    {/* Xem trước chính ảnh phong cảnh sẽ dùng */}
-                    <span className="relative block h-14 w-full overflow-hidden rounded-lg"
-                      style={{ backgroundColor: t.swatch, ...t.style }}>
-                      {theme === t.value && <Check size={16} className="absolute inset-0 m-auto text-white drop-shadow" />}
-                    </span>
-                    <span className="mt-1 block truncate text-[11px] text-ink-500">{t.label}</span>
-                  </button>
-                ))}
-              </div>
+              {p.backgrounds.length > 0 && (
+                <>
+                  <p className="mb-1.5 mt-3 text-[11px] font-medium uppercase tracking-wide text-ink-400">Ảnh nền có sẵn</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {p.backgrounds.map((b) => (
+                      <button key={b.id} type="button" disabled={pending} onClick={() => pickTheme(b.id)}
+                        className={cn('rounded-xl border p-1.5 text-center transition-colors disabled:opacity-60',
+                          theme === b.id ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
+                        <span className="relative block h-14 w-full overflow-hidden rounded-lg bg-ink-100 dark:bg-ink-800">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={b.image} alt="" className="size-full object-cover" />
+                          {theme === b.id && <Check size={16} className="absolute inset-0 m-auto text-white drop-shadow" />}
+                        </span>
+                        <span className="mt-1 block truncate text-[11px] text-ink-500">{b.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </section>
 
             {/* Bong bóng */}
@@ -103,7 +112,7 @@ export function ChatSettings(p: ChatSettingsProps) {
               </p>
               <p className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-400">Thường</p>
               <div className="grid grid-cols-3 gap-2">
-                {CHAT_BUBBLES.filter((b) => !b.ears).map((b) => (
+                {CHAT_BUBBLES.map((b) => (
                   <button key={b.value} type="button" disabled={pending} onClick={() => pickBubble(b.value)}
                     className={cn('rounded-xl border p-2 transition-colors disabled:opacity-60',
                       bubble === b.value ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
@@ -114,21 +123,29 @@ export function ChatSettings(p: ChatSettingsProps) {
                 ))}
               </div>
 
-              <p className="mb-1.5 mt-3 text-[11px] font-medium uppercase tracking-wide text-ink-400">Chibi</p>
-              <div className="grid grid-cols-3 gap-2">
-                {CHAT_BUBBLES.filter((b) => b.ears).map((b) => (
-                  <button key={b.value} type="button" disabled={pending} onClick={() => pickBubble(b.value)}
-                    className={cn('rounded-xl border p-2 transition-colors disabled:opacity-60',
-                      bubble === b.value ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
-                    {/* Xem trước cả đôi tai để phân biệt mèo / gấu / thỏ */}
-                    <span className="relative mx-auto block h-8 w-16">
-                      {b.ears && <ChibiEars kind={b.ears} color={b.earMine ?? '#999'} mine={false} />}
-                      <span className={cn('absolute inset-x-0 bottom-0 block h-5', b.mine, b.radius)} />
-                    </span>
-                    <span className="mt-1.5 block truncate text-[11px] text-ink-500">{b.label}</span>
-                  </button>
-                ))}
-              </div>
+              {p.bubbles.length > 0 && (
+                <>
+                  <p className="mb-1.5 mt-3 text-[11px] font-medium uppercase tracking-wide text-ink-400">Bộ có sẵn</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {p.bubbles.map((b) => (
+                      <button key={b.id} type="button" disabled={pending} onClick={() => pickBubble(b.id)}
+                        className={cn('rounded-xl border p-2 transition-colors disabled:opacity-60',
+                          bubble === b.id ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40' : 'border-ink-200 hover:bg-ink-50 dark:border-ink-700 dark:hover:bg-ink-800')}>
+                        {/* Xem trước cả ảnh trang trí gắn trên bong bóng */}
+                        <span className="relative mx-auto block h-9 w-16">
+                          {b.decor && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={b.decor} alt="" className="absolute left-1/2 top-0 h-5 w-auto -translate-x-1/2" />
+                          )}
+                          <span className="absolute inset-x-0 bottom-0 block h-5 rounded-2xl"
+                            style={{ backgroundColor: b.colorMine }} />
+                        </span>
+                        <span className="mt-1.5 block truncate text-[11px] text-ink-500">{b.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </section>
 
             {/* Biệt danh */}

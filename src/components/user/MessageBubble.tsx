@@ -3,9 +3,8 @@
 import { useRef, useState, useTransition } from 'react';
 import { Check, CheckCheck } from 'lucide-react';
 import { reactToMessage } from '@/app/(site)/user/messages/actions';
-import { MESSAGE_REACTIONS, type ChatBubble } from '@/lib/chat-theme';
+import { MESSAGE_REACTIONS, type ResolvedBubble } from '@/lib/chat-theme';
 import { ReplyContent } from '@/components/forum/ReplyContent';
-import { ChibiEars } from '@/components/user/ChibiEars';
 import { cn } from '@/lib/utils';
 
 export interface ReactionView { emoji: string; mine: boolean }
@@ -19,7 +18,7 @@ export interface MessageBubbleProps {
   /** Chỉ tin cuối của mình mới hiện dấu đã gửi/đã xem. */
   showTicks: boolean;
   seen: boolean;
-  bubble: ChatBubble;
+  bubble: ResolvedBubble;
   reactions: ReactionView[];
 }
 
@@ -87,11 +86,12 @@ export function MessageBubble(p: MessageBubbleProps) {
           </>
         )}
 
-        {/* Tai chibi nằm ngoài bong bóng nên phải bọc riêng để không bị cắt góc */}
+        {/* Ảnh trang trí nằm ngoài bong bóng nên phải bọc riêng để không bị cắt góc */}
         <div className="relative">
-          {p.bubble.ears && (
-            <ChibiEars kind={p.bubble.ears} mine={p.mine}
-              color={(p.mine ? p.bubble.earMine : p.bubble.earTheirs) ?? 'currentColor'} />
+          {p.bubble.decor && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.bubble.decor} alt="" aria-hidden
+              className={cn('pointer-events-none absolute -top-5 h-7 w-auto', p.mine ? 'right-3' : 'left-3')} />
           )}
 
         <div
@@ -103,6 +103,7 @@ export function MessageBubble(p: MessageBubbleProps) {
           onTouchEnd={onTouchEnd}
           onContextMenu={(e) => { e.preventDefault(); setPicker(true); }}
           title="Bấm đúp để thả tim · giữ để chọn cảm xúc"
+          style={p.mine ? p.bubble.styleMine : p.bubble.styleTheirs}
           className={cn('select-none px-3.5 py-2',
             p.mine ? p.bubble.mine : p.bubble.theirs,
             p.bubble.radius,

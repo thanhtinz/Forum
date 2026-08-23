@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { pairKey, otherId, MESSAGE_MAX_LENGTH } from '@/lib/messages';
+import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
 
 export type MessageState = { ok?: boolean; error?: string };
 
@@ -28,6 +29,7 @@ export async function openConversation(formData: FormData) {
     select: { id: true, status: true },
   });
   if (!target || target.id === me || target.status === 'BANNED') redirect('/user/messages');
+  if (await isBlockedBetween(me, target.id)) redirect('/user/messages');
 
   const key = pairKey(me, target.id);
   const convo = await db.conversation.upsert({
@@ -70,6 +72,8 @@ export async function sendMessage(_prev: MessageState, formData: FormData): Prom
   }
 
   const to = otherId(convo, me);
+  if (await isBlockedBetween(me, to)) return { error: BLOCK_MESSAGE };
+
   const now = new Date();
   await db.$transaction(async (tx) => {
     await tx.message.create({ data: { conversationId, senderId: me, content }, select: { id: true } });

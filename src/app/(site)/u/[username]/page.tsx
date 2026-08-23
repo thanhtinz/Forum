@@ -14,6 +14,8 @@ import { getLevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
 import { IconGlyph } from '@/components/IconGlyph';
 import { openConversation } from '@/app/(site)/user/messages/actions';
+import { BlockButton } from '@/components/user/BlockButton';
+import { hasBlocked } from '@/lib/block';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 9;
@@ -34,7 +36,7 @@ export default async function ProfilePage({ params, searchParams }: {
   const user = await db.user.findUnique({
     where: { username },
     select: {
-      id: true, name: true, username: true, image: true, cover: true, bio: true, level: true,
+      id: true, name: true, username: true, image: true, cover: true, bio: true, level: true, role: true,
       vipTier: true, points: true, createdAt: true,
       _count: { select: { posts: true, followers: true, following: true } },
       medals: { where: { displayed: true }, take: 8, include: { medal: { select: { name: true, icon: true, color: true } } } },
@@ -46,11 +48,14 @@ export default async function ProfilePage({ params, searchParams }: {
   const viewerId = session?.user?.id ?? null;
 
   const where = { authorId: user.id, status: 'PUBLISHED' as const };
-  const [total, posts, following] = await Promise.all([
+  const [total, posts, following, blocked] = await Promise.all([
     db.post.count({ where }),
     db.post.findMany({ where, orderBy: [{ publishedAt: 'desc' }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: postCardInclude }),
     viewerId ? db.follow.findFirst({ where: { followerId: viewerId, followingId: user.id }, select: { id: true } }) : Promise.resolve(null),
+    viewerId ? hasBlocked(viewerId, user.id) : Promise.resolve(false),
   ]);
+  // Quản trị viên không chặn được — che nút cho khỏi bấm rồi mới báo lỗi.
+  const canBlock = user.role !== 'ADMIN' && user.role !== 'MODERATOR';
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const name = user.name ?? user.username ?? 'Ẩn danh';
   const levelLook = await getLevelLook(user.level);
@@ -67,9 +72,9 @@ export default async function ProfilePage({ params, searchParams }: {
             {user.image
               ? <img src={user.image} alt="" className="h-24 w-24 rounded-2xl border-4 border-white object-cover dark:border-ink-900" />
               : <span className="grid h-24 w-24 place-items-center rounded-2xl border-4 border-white bg-brand-500 text-3xl font-black text-white dark:border-ink-900">{name[0]?.toUpperCase()}</span>}
-            <div className="mb-1 flex items-center gap-2">
-              {/* Chỉ hiện khi đã đăng nhập và không phải trang của chính mình */}
-              {viewerId && viewerId !== user.id && user.username && (
+            <div className="mb-1 flex flex-wrap items-center justify-end gap-2">
+              {/* Đã chặn thì không còn nhắn tin / theo dõi, chỉ còn nút bỏ chặn */}
+              {viewerId && viewerId !== user.id && !blocked && user.username && (
                 <form action={openConversation}>
                   <input type="hidden" name="username" value={user.username} />
                   <button type="submit" className="btn-outline !rounded-full gap-1.5 !px-3.5 !py-2 text-sm">
@@ -77,7 +82,12 @@ export default async function ProfilePage({ params, searchParams }: {
                   </button>
                 </form>
               )}
-              <FollowButton targetId={user.id} initialFollowing={!!following} initialCount={user._count.followers} self={viewerId === user.id} />
+              {!blocked && (
+                <FollowButton targetId={user.id} initialFollowing={!!following} initialCount={user._count.followers} self={viewerId === user.id} />
+              )}
+              {viewerId && viewerId !== user.id && canBlock && (
+                <BlockButton targetId={user.id} targetName={name} initialBlocked={blocked} />
+              )}
             </div>
           </div>
 

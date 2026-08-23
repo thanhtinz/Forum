@@ -77,6 +77,8 @@ model User {
   following      Follow[] @relation("Follower")
   reportsMade    Report[] @relation("Reporter")
   bans           Ban[]
+  blocksMade     Block[] @relation("Blocker")
+  blocksAgainst  Block[] @relation("Blocked")
   convosA        Conversation[] @relation("ConvoA")
   convosB        Conversation[] @relation("ConvoB")
   messagesSent   Message[]
@@ -1598,4 +1600,19 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@index([senderId, createdAt])
+}
+
+
+/** Chặn giữa hai thành viên: cắt nhắn tin và theo dõi cả hai chiều. */
+model Block {
+  id        String @id @default(cuid())
+  blockerId String
+  blockedId String
+  blocker   User   @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User   @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockedId])
 }

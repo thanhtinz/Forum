@@ -639,3 +639,48 @@ export async function closePoll(pollId: string): Promise<PollState> {
   revalidatePath(`/forum/${poll.thread.forum.slug}/${poll.thread.id}`);
   return { ok: true };
 }
+
+// ─────────────────────────── Ẩn trả lời ───────────────────────────
+
+export interface HideState {
+  hidden?: boolean;
+  error?: string;
+}
+
+/**
+ * Ẩn hoặc hiện lại một trả lời.
+ *
+ * Ẩn chứ không xoá: nội dung còn đó để đối chiếu khi có khiếu nại, và các
+ * phản hồi lồng bên dưới không bị kéo theo. Số đếm trả lời phải chỉnh theo,
+ * không thì chủ đề khoe nhiều trả lời hơn số thật sự đọc được.
+ */
+export async function toggleReplyHidden(replyId: string): Promise<HideState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  const reply = await db.reply.findUnique({
+    where: { id: replyId },
+    select: {
+      id: true, hidden: true, threadId: true,
+      thread: { select: { forumId: true, forum: { select: { slug: true } } } },
+    },
+  });
+  if (!reply) return { error: 'Không tìm thấy trả lời.' };
+
+  const me = await db.user.findUnique({ where: { id: userId }, select: { id: true, role: true } });
+  if (!(await canModerateForum(me, reply.thread.forumId))) {
+    return { error: 'Bạn không có quyền kiểm duyệt ở diễn đàn này.' };
+  }
+
+  const hidden = !reply.hidden;
+  const step = hidden ? -1 : 1;
+  await db.$transaction(async (tx) => {
+    await tx.reply.update({ where: { id: replyId }, data: { hidden }, select: { id: true } });
+    await tx.thread.update({ where: { id: reply.threadId }, data: { replyCount: { increment: step } }, select: { id: true } });
+    await tx.forum.update({ where: { id: reply.thread.forumId }, data: { replyCount: { increment: step } }, select: { id: true } });
+  });
+
+  revalidatePath(`/forum/${reply.thread.forum.slug}/${reply.threadId}`);
+  return { hidden };
+}

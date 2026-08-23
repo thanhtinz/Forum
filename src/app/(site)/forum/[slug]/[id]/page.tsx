@@ -2,10 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Pin, Lock, Award, CheckCircle2, Eye, MessageSquare, Star } from 'lucide-react';
+import { Pin, Lock, Award, CheckCircle2, Eye, EyeOff, MessageSquare, Star } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { fmtCount, truncate } from '@/lib/utils';
+import { cn, fmtCount, truncate } from '@/lib/utils';
 import { ThreadActionBar } from '@/components/forum/ThreadActionBar';
 import { PollCard } from '@/components/forum/PollCard';
 import { toPollView } from '@/lib/poll';
@@ -107,15 +107,16 @@ export default async function ThreadPage({ params, searchParams }: {
   const totalPages = Math.max(1, Math.ceil(totalReplies / REPLIES_PER_PAGE));
   const page = Math.min(totalPages, Math.max(1, parseInt(pageRaw ?? '1', 10) || 1));
 
+  // Người kiểm duyệt thấy cả trả lời đã ẩn (có dấu riêng) để còn hiện lại được.
   const replies = await db.reply.findMany({
-    where: { threadId: id, parentId: null, hidden: false },
+    where: { threadId: id, parentId: null, ...(canModerate ? {} : { hidden: false }) },
     orderBy: [{ isSolution: 'desc' }, { createdAt: 'asc' }],
     skip: (page - 1) * REPLIES_PER_PAGE,
     take: REPLIES_PER_PAGE,
     include: {
       author: authorSelect,
       children: {
-        where: { hidden: false },
+        where: canModerate ? {} : { hidden: false },
         orderBy: { createdAt: 'asc' },
         include: { author: authorSelect },
       },
@@ -185,8 +186,10 @@ export default async function ThreadPage({ params, searchParams }: {
             <ThreadActionBar threadId={thread.id} initialLiked={likedThread.has(thread.id)} initialLikeCount={thread.likeCount}
               initialFollowing={!!myFollow} initialFollowCount={followCount}
               canReport={loggedIn && !isOwner}
+              // Phần tử truyền qua prop từ Server Component cần key ổn định,
+              // không thì React cảnh báo thiếu "key" ở chỗ nhận.
               modMenu={canModerate ? (
-                <ThreadModMenu threadId={thread.id} pinned={thread.pinned} locked={thread.locked} featured={thread.featured} forums={moveTargets} />
+                <ThreadModMenu key="mod" threadId={thread.id} pinned={thread.pinned} locked={thread.locked} featured={thread.featured} forums={moveTargets} />
               ) : null} />
           }
         >
@@ -212,8 +215,13 @@ export default async function ThreadPage({ params, searchParams }: {
         ) : (
           <div className="space-y-3">
             {replies.map((r, i) => (
+              <div key={r.id} className={cn(r.hidden && 'rounded-2xl ring-1 ring-rose-300 dark:ring-rose-900')}>
+                {r.hidden && (
+                  <p className="mb-1 flex items-center gap-1.5 px-1 text-xs font-medium text-rose-600">
+                    <EyeOff size={12} /> Trả lời này đang bị ẩn, chỉ người kiểm duyệt thấy.
+                  </p>
+                )}
               <ThreadPost
-                key={r.id}
                 author={toAuthor(r.author, levelLooks)}
                 createdAt={r.createdAt}
                 index={(page - 1) * REPLIES_PER_PAGE + i + 2}
@@ -221,7 +229,8 @@ export default async function ThreadPage({ params, searchParams }: {
                 actions={
                   <ReplyActions threadId={thread.id} replyId={r.id} initialLiked={likedReplies.has(r.id)} initialLikeCount={r.likeCount}
                     loggedIn={loggedIn} callbackUrl={callbackUrl} canReply canMarkSolution={canMarkSolution && !r.isSolution}
-                    canReport={loggedIn && r.authorId !== userId} />
+                    canReport={loggedIn && r.authorId !== userId}
+                    canModerate={canModerate} hidden={r.hidden} />
                 }
               >
                 <ReplyContent content={r.content} />
@@ -229,8 +238,14 @@ export default async function ThreadPage({ params, searchParams }: {
                 {r.children.length > 0 && (
                   <ul className="mt-4 space-y-3 border-l-2 border-brand-200 pl-3 dark:border-brand-900">
                     {r.children.map((ch) => (
-                      <li key={ch.id} className="rounded-lg bg-ink-50 p-3 dark:bg-ink-800/40">
+                      <li key={ch.id} className={cn('rounded-lg bg-ink-50 p-3 dark:bg-ink-800/40',
+                        ch.hidden && 'ring-1 ring-rose-300 dark:ring-rose-900')}>
                         <div className="mb-1 flex flex-wrap items-center gap-2 text-xs">
+                          {ch.hidden && (
+                            <span className="chip gap-1 bg-rose-100 !py-0 text-rose-600 dark:bg-rose-950/50">
+                              <EyeOff size={11} /> Đang ẩn
+                            </span>
+                          )}
                           <Link href={`/u/${ch.author.username ?? ''}`} className="font-semibold text-ink-700 hover:text-brand-600 dark:text-ink-200">
                             {displayName(ch.author)}
                           </Link>
@@ -241,12 +256,14 @@ export default async function ThreadPage({ params, searchParams }: {
                         <ReplyContent content={ch.content} />
                         <ReplyActions threadId={thread.id} replyId={ch.id} initialLiked={likedReplies.has(ch.id)} initialLikeCount={ch.likeCount}
                           loggedIn={loggedIn} callbackUrl={callbackUrl} canMarkSolution={canMarkSolution && !ch.isSolution}
-                          canReport={loggedIn && ch.authorId !== userId} />
+                          canReport={loggedIn && ch.authorId !== userId}
+                          canModerate={canModerate} hidden={ch.hidden} />
                       </li>
                     ))}
                   </ul>
                 )}
               </ThreadPost>
+              </div>
             ))}
           </div>
         )}

@@ -1,17 +1,20 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Heart, Reply as ReplyIcon, CheckCircle2 } from 'lucide-react';
+import { Heart, Reply as ReplyIcon, CheckCircle2, EyeOff, Eye } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
-import { toggleReplyLike, markSolution } from '@/app/(site)/forum/actions';
+import { toggleReplyLike, markSolution, toggleReplyHidden } from '@/app/(site)/forum/actions';
 import { ReplyForm } from './ReplyForm';
 import { ReportButton } from '@/components/ReportButton';
 
-export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount, loggedIn, callbackUrl, canReply, canMarkSolution, canReport }: {
+export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount, loggedIn, callbackUrl, canReply, canMarkSolution, canReport, canModerate, hidden }: {
   threadId: string; replyId: string; initialLiked: boolean; initialLikeCount: number;
   loggedIn: boolean; callbackUrl: string; canReply?: boolean; canMarkSolution?: boolean;
   /** Không hiện với bài của chính mình — tự báo cáo mình thì vô nghĩa. */
   canReport?: boolean;
+  /** Người kiểm duyệt diễn đàn này. */
+  canModerate?: boolean;
+  hidden?: boolean;
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialLikeCount);
@@ -23,6 +26,11 @@ export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount
     const r = await toggleReplyLike(replyId);
     if (r.error) { setMsg(r.error); return; }
     setLiked(r.active); setCount(r.count);
+  });
+
+  const onHide = () => start(async () => {
+    const r = await toggleReplyHidden(replyId);
+    if (r.error) setMsg(r.error);
   });
 
   const onSolve = () => start(async () => {
@@ -45,6 +53,13 @@ export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount
         {canReport && (
           <ReportButton target="reply" targetId={replyId}
             className="flex items-center gap-1 transition-colors hover:text-red-500" />
+        )}
+        {canModerate && (
+          <button type="button" onClick={onHide} disabled={pending}
+            title={hidden ? 'Hiện lại trả lời này' : 'Ẩn trả lời này khỏi mọi người'}
+            className="flex items-center gap-1 transition-colors hover:text-rose-500 disabled:opacity-60">
+            {hidden ? <><Eye size={13} /> Hiện lại</> : <><EyeOff size={13} /> Ẩn</>}
+          </button>
         )}
         {canMarkSolution && (
           <button type="button" onClick={onSolve} disabled={pending}

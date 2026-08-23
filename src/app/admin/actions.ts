@@ -334,11 +334,34 @@ export async function resolveReportAndRemove(id: string) {
   const admin = await requireAdmin();
   const r = await db.report.findUnique({ where: { id }, select: { postId: true, threadId: true, replyId: true, commentId: true } });
   if (!r) return;
+
+  // Xoá nội dung thì phải trừ số đếm theo, không thì chủ đề và bài viết khoe
+  // nhiều trả lời/bình luận hơn số thật sự còn đọc được.
+  const reply = r.replyId
+    ? await db.reply.findUnique({
+        where: { id: r.replyId },
+        select: { hidden: true, threadId: true, thread: { select: { forumId: true } } },
+      })
+    : null;
+  const comment = r.commentId
+    ? await db.comment.findUnique({ where: { id: r.commentId }, select: { hidden: true, postId: true } })
+    : null;
+
   await db.$transaction(async (tx) => {
     if (r.postId) await tx.post.update({ where: { id: r.postId }, data: { status: 'ARCHIVED' } }).catch(() => {});
     if (r.threadId) await tx.thread.delete({ where: { id: r.threadId } }).catch(() => {});
     if (r.replyId) await tx.reply.delete({ where: { id: r.replyId } }).catch(() => {});
     if (r.commentId) await tx.comment.delete({ where: { id: r.commentId } }).catch(() => {});
+
+    // Nội dung đang ẩn thì trước đó đã trừ rồi, đừng trừ thêm lần nữa.
+    if (reply && !reply.hidden) {
+      await tx.thread.update({ where: { id: reply.threadId }, data: { replyCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
+      await tx.forum.update({ where: { id: reply.thread.forumId }, data: { replyCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
+    }
+    if (comment && !comment.hidden) {
+      await tx.post.update({ where: { id: comment.postId }, data: { commentCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
+    }
+
     await tx.report.update({ where: { id }, data: { status: 'RESOLVED', handledAt: new Date() } });
   });
   const kind = r.postId ? 'bài viết' : r.threadId ? 'chủ đề' : r.replyId ? 'trả lời' : 'bình luận';

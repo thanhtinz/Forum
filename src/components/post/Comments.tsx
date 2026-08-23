@@ -7,7 +7,9 @@ import { ReportButton } from '@/components/ReportButton';
 import { CommentModActions } from './CommentModActions';
 import { cn } from '@/lib/utils';
 import { CommentForm } from './CommentForm';
-import { ReplyContent } from '@/components/forum/ReplyContent';
+import { CommentBody } from './CommentBody';
+import { CommentOwnerActions } from './CommentOwnerActions';
+import { EditScope } from '@/components/EditScope';
 
 /** Danh sách bình luận phân cấp 1 mức (bình luận gốc + phản hồi). */
 export async function Comments({ postId, slug, loggedIn }: { postId: string; slug: string; loggedIn: boolean }) {
@@ -64,14 +66,17 @@ export async function Comments({ postId, slug, loggedIn }: { postId: string; slu
 }
 
 type Row = {
-  id: string; content: string; createdAt: Date; pinned?: boolean; hidden?: boolean; authorId: string;
+  id: string; content: string; createdAt: Date; updatedAt: Date;
+  pinned?: boolean; hidden?: boolean; authorId: string;
   author: { username: string | null; name: string | null; image: string | null };
 };
 
 function CommentRow({ c, me, canManage, small }: { c: Row; me: string | null; canManage: boolean; small?: boolean }) {
   const name = c.author?.name ?? c.author?.username ?? 'Ẩn danh';
   const size = small ? 'h-8 w-8' : 'h-9 w-9';
+  const isOwner = !!me && me === c.authorId;
   return (
+    <EditScope>
     <div id={`bl-${c.id}`} data-comment-id={c.id}
       className={cn('flex gap-3', c.hidden && 'rounded-lg p-2 ring-1 ring-rose-200 dark:ring-rose-900')}>
       <Link href={`/u/${c.author?.username ?? ''}`} className="shrink-0">
@@ -87,10 +92,11 @@ function CommentRow({ c, me, canManage, small }: { c: Row; me: string | null; ca
           {c.hidden && <span className="chip bg-rose-100 text-rose-600 dark:bg-rose-950/50">Đang ẩn</span>}
           <span className="text-xs text-ink-400">{format(c.createdAt, 'dd/MM/yyyy HH:mm')}</span>
         </div>
-        <ReplyContent content={c.content}
+        <CommentBody commentId={c.id} content={c.content} createdAt={c.createdAt} updatedAt={c.updatedAt}
           className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-700 dark:text-ink-200" />
-        {(canManage || (me && me !== c.authorId)) && (
+        {(canManage || isOwner || (me && me !== c.authorId)) && (
           <div className="mt-1 flex flex-wrap items-center gap-3">
+            {isOwner && <CommentOwnerActions commentId={c.id} />}
             {me && me !== c.authorId && (
               <ReportButton target="comment" targetId={c.id}
                 className="inline-flex items-center gap-1 text-xs text-ink-400 transition-colors hover:text-red-500" />
@@ -100,5 +106,6 @@ function CommentRow({ c, me, canManage, small }: { c: Row; me: string | null; ca
         )}
       </div>
     </div>
+    </EditScope>
   );
 }

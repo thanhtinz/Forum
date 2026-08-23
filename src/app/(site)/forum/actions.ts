@@ -8,13 +8,15 @@ import { db } from '@/lib/db';
 import { grantPoints } from '@/lib/points';
 import { addExp } from '@/lib/level';
 import { notify, filterNotifiable } from '@/lib/notify';
-import { isVipActive } from '@/lib/access';
 import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { bbcodeToHtml } from '@/lib/bbcode';
 import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { readPollForm, isPollClosed } from '@/lib/poll';
+import { readBounty, BOUNTY_MIN } from '@/lib/bounty';
+import { checkForumPostAccess } from '@/lib/forum-post-access';
+import { InsufficientPointsError } from '@/lib/points';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
@@ -74,16 +76,25 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
   });
   if (!forum) return { error: 'Không tìm thấy diễn đàn.' };
 
-  // Kiểm tra quyền đăng
-  const me = await db.user.findUnique({
-    where: { id: userId },
-    select: { level: true, vipTier: true, vipExpiresAt: true, vipPermanent: true },
-  });
-  if (forum.vipOnly && !(me && isVipActive(me))) return { error: 'Diễn đàn này chỉ dành cho thành viên VIP.' };
-  if (me && me.level < forum.minLevel) return { error: `Bạn cần đạt cấp ${forum.minLevel} để đăng ở diễn đàn này.` };
+  // Kiểm tra quyền đăng: quyền của khu vực, mức VIP và cấp độ tối thiểu
+  const denied = await checkForumPostAccess(userId, forum);
+  if (denied) return { error: denied };
 
   const pollForm = readPollForm(formData);
   if (pollForm.error) return { error: pollForm.error };
+
+  const bountyForm = readBounty(formData.get('bounty'));
+  if (bountyForm.error) return { error: bountyForm.error };
+  const bounty = bountyForm.bounty ?? 0;
+
+  // Điểm thưởng bị giữ ngay lúc đăng, nên phải đủ điểm từ bây giờ. Cộng thêm
+  // phần thưởng đăng bài vì phần đó chỉ có sau khi chủ đề được tạo.
+  if (bounty > 0) {
+    const wallet = await db.user.findUnique({ where: { id: userId }, select: { points: true } });
+    if ((wallet?.points ?? 0) + POINTS_PER_THREAD < bounty) {
+      return { error: `Bạn chỉ có ${wallet?.points ?? 0} điểm, không đủ để treo thưởng ${bounty} điểm.` };
+    }
+  }
 
   const mentioned = await resolveMentions(content, userId);
 
@@ -97,6 +108,7 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
         content: bbcodeToHtml(content),
         contentSource: content,
         status: 'PUBLISHED',
+        bountyPoints: bounty > 0 ? bounty : null,
         lastReplyAt: new Date(),
       },
       select: { id: true },
@@ -115,6 +127,12 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
     await grantPoints({ userId, amount: POINTS_PER_THREAD, reason: 'THREAD_CREATE', refId: thread.id, note: `Đăng chủ đề: ${title}` }, tx);
     await addExp(userId, EXP_PER_THREAD, tx);
     await autoFollow(thread.id, userId, tx);
+
+    // Giữ điểm ngay khi treo thưởng, không thì người đăng tiêu hết rồi tới lúc
+    // chọn lời giải mới phát hiện không đủ, người trả lời chịu thiệt.
+    if (bounty > 0) {
+      await grantPoints({ userId, amount: -bounty, reason: 'BOUNTY_PAID', refId: thread.id, note: `Treo thưởng chủ đề: ${title}` }, tx);
+    }
 
     if (pollForm.poll) {
       await tx.poll.create({
@@ -342,15 +360,16 @@ export async function markSolution(threadId: string, replyId: string): Promise<S
     await tx.thread.update({ where: { id: threadId }, data: { solvedReplyId: replyId } });
     await tx.reply.update({ where: { id: replyId }, data: { isSolution: true } });
 
-    // Chuyển điểm treo thưởng: trừ của chủ chủ đề (nếu đủ), cộng cho người trả lời
+    // Điểm thưởng đã bị giữ từ lúc treo, giờ chỉ việc trả cho người có lời giải.
+    // Tự chọn lời giải của chính mình thì hoàn lại cho chính mình.
     const bounty = thread.bountyPoints ?? 0;
-    if (bounty > 0 && reply.authorId !== userId) {
-      try {
-        await grantPoints({ userId, amount: -bounty, reason: 'BOUNTY_PAID', refId: threadId, note: `Trả thưởng chủ đề: ${thread.title}` }, tx);
-        await grantPoints({ userId: reply.authorId, amount: bounty, reason: 'BOUNTY_RECEIVED', refId: threadId, note: `Nhận thưởng lời giải: ${thread.title}` }, tx);
-      } catch {
-        // chủ chủ đề không đủ điểm — vẫn ghi nhận lời giải, bỏ qua thưởng
-      }
+    if (bounty > 0) {
+      await grantPoints({
+        userId: reply.authorId, amount: bounty, reason: 'BOUNTY_RECEIVED', refId: threadId,
+        note: reply.authorId === userId
+          ? `Hoàn điểm treo thưởng: ${thread.title}`
+          : `Nhận thưởng lời giải: ${thread.title}`,
+      }, tx);
     }
 
     if (reply.authorId !== userId) {
@@ -557,8 +576,22 @@ export async function deleteOwnThread(threadId: string): Promise<OwnerState> {
   if ('error' in guard) return { error: guard.error };
   const slug = guard.thread.forum.slug;
 
+  const info = await db.thread.findUnique({
+    where: { id: threadId },
+    select: { authorId: true, title: true, bountyPoints: true, solvedReplyId: true },
+  });
+
   await db.$transaction(async (tx) => {
     const replies = await tx.reply.count({ where: { threadId } });
+
+    // Xoá chủ đề khi chưa chọn lời giải thì hoàn lại điểm đang bị giữ.
+    if (info?.bountyPoints && !info.solvedReplyId) {
+      await grantPoints({
+        userId: info.authorId, amount: info.bountyPoints, reason: 'BOUNTY_RECEIVED', refId: threadId,
+        note: `Hoàn điểm treo thưởng (xoá chủ đề): ${info.title}`,
+      }, tx);
+    }
+
     await tx.thread.delete({ where: { id: threadId } });
     await tx.forum.update({
       where: { id: guard.thread.forumId },
@@ -637,5 +670,178 @@ export async function closePoll(pollId: string): Promise<PollState> {
 
   await db.poll.update({ where: { id: pollId }, data: { closed: true }, select: { id: true } });
   revalidatePath(`/forum/${poll.thread.forum.slug}/${poll.thread.id}`);
+  return { ok: true };
+}
+
+// ─────────────────────────── Ẩn trả lời ───────────────────────────
+
+export interface HideState {
+  hidden?: boolean;
+  error?: string;
+}
+
+/**
+ * Ẩn hoặc hiện lại một trả lời.
+ *
+ * Ẩn chứ không xoá: nội dung còn đó để đối chiếu khi có khiếu nại, và các
+ * phản hồi lồng bên dưới không bị kéo theo. Số đếm trả lời phải chỉnh theo,
+ * không thì chủ đề khoe nhiều trả lời hơn số thật sự đọc được.
+ */
+export async function toggleReplyHidden(replyId: string): Promise<HideState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  const reply = await db.reply.findUnique({
+    where: { id: replyId },
+    select: {
+      id: true, hidden: true, threadId: true,
+      thread: { select: { forumId: true, forum: { select: { slug: true } } } },
+    },
+  });
+  if (!reply) return { error: 'Không tìm thấy trả lời.' };
+
+  const me = await db.user.findUnique({ where: { id: userId }, select: { id: true, role: true } });
+  if (!(await canModerateForum(me, reply.thread.forumId))) {
+    return { error: 'Bạn không có quyền kiểm duyệt ở diễn đàn này.' };
+  }
+
+  const hidden = !reply.hidden;
+  const step = hidden ? -1 : 1;
+  await db.$transaction(async (tx) => {
+    await tx.reply.update({ where: { id: replyId }, data: { hidden }, select: { id: true } });
+    await tx.thread.update({ where: { id: reply.threadId }, data: { replyCount: { increment: step } }, select: { id: true } });
+    await tx.forum.update({ where: { id: reply.thread.forumId }, data: { replyCount: { increment: step } }, select: { id: true } });
+  });
+
+  revalidatePath(`/forum/${reply.thread.forum.slug}/${reply.threadId}`);
+  return { hidden };
+}
+
+// ─────────────────────────── Lưu chủ đề ───────────────────────────
+
+export interface FavoriteState {
+  saved: boolean;
+  count: number;
+  error?: string;
+}
+
+/** Lưu chủ đề vào mục "Đã lưu" để đọc lại sau. */
+export async function toggleThreadFavorite(threadId: string): Promise<FavoriteState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { saved: false, count: 0, error: 'Bạn cần đăng nhập.' };
+
+  const existing = await db.favorite.findUnique({
+    where: { userId_threadId: { userId, threadId } }, select: { id: true },
+  });
+  if (existing) await db.favorite.delete({ where: { id: existing.id } });
+  else {
+    const thread = await db.thread.findUnique({ where: { id: threadId }, select: { id: true } });
+    if (!thread) return { saved: false, count: 0, error: 'Không tìm thấy chủ đề.' };
+    await db.favorite.create({ data: { userId, threadId }, select: { id: true } });
+  }
+
+  const count = await db.favorite.count({ where: { threadId } });
+  return { saved: !existing, count };
+}
+
+// ─────────────────── Sửa / xoá trả lời của chính mình ───────────────────
+
+export interface ReplyEditState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Chỉ tác giả mới sửa/xoá được trả lời của mình.
+ *
+ * Người kiểm duyệt cố tình không nằm trong diện này: họ đã có nút "Ẩn", giữ
+ * nguyên nội dung để còn đối chiếu khi có khiếu nại — sửa lời người khác hay
+ * xoá hẳn thì mất dấu vết.
+ */
+async function assertReplyOwner(replyId: string) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' as const };
+
+  const reply = await db.reply.findUnique({
+    where: { id: replyId },
+    select: {
+      id: true, authorId: true, hidden: true, isSolution: true, threadId: true,
+      thread: { select: { locked: true, forumId: true, forum: { select: { slug: true } } } },
+    },
+  });
+  if (!reply) return { error: 'Không tìm thấy trả lời.' as const };
+  if (reply.authorId !== userId) return { error: 'Bạn chỉ sửa được trả lời của mình.' as const };
+  if (reply.thread.locked) return { error: 'Chủ đề đã bị khoá, không sửa được trả lời.' as const };
+
+  return { userId, reply };
+}
+
+/**
+ * Sửa nội dung trả lời.
+ *
+ * Không gửi lại thông báo nhắc tên cho những @tên mới thêm vào: sửa bài để
+ * chèn tên người khác là đường vòng để làm phiền, mà bản gốc đã báo một lần rồi.
+ */
+export async function updateReply(_prev: ReplyEditState, formData: FormData): Promise<ReplyEditState> {
+  const replyId = String(formData.get('replyId') ?? '');
+  const guard = await assertReplyOwner(replyId);
+  if ('error' in guard) return { error: guard.error };
+
+  const content = String(formData.get('content') ?? '').trim();
+  if (content.length < 2) return { error: 'Nội dung trả lời quá ngắn.' };
+  if (content.length > 5000) return { error: 'Trả lời tối đa 5000 ký tự.' };
+
+  await db.reply.update({ where: { id: replyId }, data: { content }, select: { id: true } });
+
+  revalidatePath(`/forum/${guard.reply.thread.forum.slug}/${guard.reply.threadId}`);
+  return { ok: true };
+}
+
+/**
+ * Xoá hẳn trả lời của mình, kèm các phản hồi lồng bên dưới (khoá ngoại tự dọn).
+ *
+ * Bộ đếm chỉ trừ đi những bài đang thật sự hiện: bài đã bị ẩn thì lúc ẩn đã
+ * trừ rồi, trừ thêm lần nữa là số đếm âm dần.
+ *
+ * Điểm thưởng lúc trả lời không thu lại — giống xoá chủ đề, để người dùng khỏi
+ * bị âm điểm vì dọn bài cũ.
+ */
+export async function deleteOwnReply(replyId: string): Promise<ReplyEditState> {
+  const guard = await assertReplyOwner(replyId);
+  if ('error' in guard) return { error: guard.error };
+  const { reply } = guard;
+
+  // Lời giải đã chốt thì không cho xoá: điểm treo thưởng đã trả, xoá đi là chủ
+  // đề mang nhãn "đã giải quyết" mà chẳng còn câu trả lời nào.
+  if (reply.isSolution) return { error: 'Trả lời đã được chọn làm lời giải, không xoá được.' };
+
+  const children = await db.reply.findMany({
+    where: { parentId: replyId },
+    select: { id: true, hidden: true, isSolution: true },
+  });
+  if (children.some((c) => c.isSolution)) {
+    return { error: 'Có phản hồi bên dưới đang là lời giải, không xoá được.' };
+  }
+
+  const visible = (reply.hidden ? 0 : 1) + children.filter((c) => !c.hidden).length;
+
+  await db.$transaction(async (tx) => {
+    await tx.reply.delete({ where: { id: replyId } });
+    if (visible > 0) {
+      await tx.thread.update({
+        where: { id: reply.threadId },
+        data: { replyCount: { decrement: visible } }, select: { id: true },
+      });
+      await tx.forum.update({
+        where: { id: reply.thread.forumId },
+        data: { replyCount: { decrement: visible } }, select: { id: true },
+      });
+    }
+  });
+
+  revalidatePath(`/forum/${reply.thread.forum.slug}/${reply.threadId}`);
   return { ok: true };
 }

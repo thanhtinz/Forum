@@ -1,0 +1,74 @@
+name: Kiểm tra
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Biên dịch và quét tĩnh
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Kiểm kiểu
+        run: npx tsc --noEmit
+      - name: Quét truy vấn lấy trọn bản ghi
+        run: node tests/run.mjs overfetch
+      - name: Dựng bản production
+        run: npx next build
+        env:
+          # Bản dựng không gọi CSDL nhưng Prisma vẫn cần biến này tồn tại.
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nova
+          AUTH_SECRET: chi-dung-cho-ci-khong-phai-bi-mat-that
+
+  e2e:
+    name: Kiểm đầu-cuối
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nova
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nova
+      AUTH_SECRET: chi-dung-cho-ci-khong-phai-bi-mat-that
+      NEXTAUTH_URL: http://localhost:3000
+      BASE_URL: http://localhost:3000
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/pw-browsers
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Dựng lược đồ và nạp dữ liệu mẫu
+        run: |
+          npx prisma db push --skip-generate
+          npm run seed
+      - name: Cài trình duyệt cho Playwright
+        run: npx playwright-core install --with-deps chromium
+      - name: Dựng và chạy máy chủ
+        run: |
+          npx next build
+          npx next start &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3000 > /dev/null && break
+            sleep 2
+          done
+          curl -sf http://localhost:3000 > /dev/null || { echo "Máy chủ không lên sau 120 giây"; exit 1; }
+      - name: Chạy bộ kiểm
+        run: node tests/run.mjs

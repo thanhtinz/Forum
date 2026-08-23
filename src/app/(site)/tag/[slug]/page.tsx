@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Tag as TagIcon } from 'lucide-react';
 import { db } from '@/lib/db';
-import { postCardInclude, toCardData } from '@/lib/post-card';
+import { postCardSelect, toCardData } from '@/lib/post-card';
 import { PostGrid } from '@/components/PostGrid';
 import { Pagination } from '@/components/Pagination';
 import { HomeSidebar } from '@/components/HomeSidebar';
@@ -31,7 +31,7 @@ export default async function TagPage({ params, searchParams }: {
     db.post.count({ where }),
     db.post.findMany({
       where, orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
-      skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: postCardInclude,
+      skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect,
     }),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);

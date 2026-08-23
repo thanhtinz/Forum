@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { PostCard, type PostCardData } from '@/components/PostCard';
+import { postCardSelect, toCardData } from '@/lib/post-card';
 
 /** Bài viết liên quan — cùng chuyên mục, mới nhất, loại trừ bài hiện tại. */
 export async function RelatedPosts({ postId, categoryId }: { postId: string; categoryId: string | null }) {
@@ -7,22 +8,13 @@ export async function RelatedPosts({ postId, categoryId }: { postId: string; cat
     where: { status: 'PUBLISHED', id: { not: postId }, ...(categoryId ? { categoryId } : {}) },
     orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
     take: 3,
-    include: {
-      author: { select: { username: true, name: true, image: true } },
-      category: { select: { name: true, slug: true, color: true } },
-      categories: { include: { category: { select: { name: true, slug: true, color: true } } } },
-      tags: { include: { tag: { select: { name: true, slug: true } } }, take: 6 },
-    },
+    select: postCardSelect,
   });
 
   if (posts.length === 0) return null;
 
-  const cards: PostCardData[] = posts.map((p) => ({
-    slug: p.slug, title: p.title, excerpt: p.excerpt, cover: p.cover,
-    cardStyle: 'STANDARD', access: p.access, pricePoints: p.pricePoints, priceAmount: p.priceAmount,
-    viewCount: p.viewCount, likeCount: p.likeCount, commentCount: p.commentCount,
-    author: p.author, category: p.category, categories: p.categories.map((c) => c.category), tags: p.tags.map((t) => t.tag),
-  }));
+  // Khối này luôn dùng thẻ kiểu chuẩn, bất kể bài gốc đặt kiểu gì.
+  const cards: PostCardData[] = posts.map((p) => ({ ...toCardData(p), cardStyle: 'STANDARD' }));
 
   return (
     <section className="mt-8">

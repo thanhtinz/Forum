@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { ArrowLeft, UserPlus, Users } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { postCardInclude, toCardData } from '@/lib/post-card';
+import { postCardSelect, toCardData } from '@/lib/post-card';
 import { PostGrid } from '@/components/PostGrid';
 import { Pagination } from '@/components/Pagination';
 
@@ -31,7 +31,7 @@ export default async function FollowingFeedPage({ searchParams }: { searchParams
   const [total, posts] = authorIds.length
     ? await Promise.all([
         db.post.count({ where }),
-        db.post.findMany({ where, orderBy: { publishedAt: 'desc' }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: postCardInclude }),
+        db.post.findMany({ where, orderBy: { publishedAt: 'desc' }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect }),
       ])
     : [0, []];
   const totalPages = Math.ceil(total / PAGE_SIZE);

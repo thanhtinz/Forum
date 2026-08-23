@@ -126,11 +126,24 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
   const rate = await checkRateLimit('comment', userId);
   if (!rate.allowed) return { error: rate.message };
 
+  // Phản hồi phải nằm cùng bài, và luôn gắn vào bình luận gốc của nhánh: gửi
+  // thẳng biểu mẫu với parentId của một phản hồi cũng không lồng sâu thêm được.
+  let rootId: string | null = null;
+  let parentAuthorId: string | null = null;
+  if (parentId) {
+    const parent = await db.comment.findUnique({
+      where: { id: parentId }, select: { id: true, postId: true, parentId: true, authorId: true },
+    });
+    if (!parent || parent.postId !== postId) return { error: 'Phản hồi không hợp lệ.' };
+    rootId = parent.parentId ?? parent.id;
+    parentAuthorId = parent.authorId;
+  }
+
   const post0 = await db.post.findUnique({ where: { id: postId }, select: { authorId: true } });
-  const mentioned = await resolveMentions(content, userId, [post0?.authorId]);
+  const mentioned = await resolveMentions(content, userId, [post0?.authorId, parentAuthorId]);
 
   await db.$transaction(async (tx) => {
-    await tx.comment.create({ data: { postId, authorId: userId, content, parentId } });
+    await tx.comment.create({ data: { postId, authorId: userId, content, parentId: rootId } });
     const post = await tx.post.update({
       where: { id: postId }, data: { commentCount: { increment: 1 } },
       select: { authorId: true, slug: true, title: true },
@@ -141,11 +154,173 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
         tx,
       );
     }
+    // Báo cho người được phản hồi — trừ khi họ là chủ bài viết (đã báo ở trên).
+    if (parentAuthorId && parentAuthorId !== userId && parentAuthorId !== post.authorId) {
+      await notify(
+        { userId: parentAuthorId, type: 'COMMENT', title: 'Có người phản hồi bình luận của bạn', content: post.title, link: `/posts/${post.slug}`, actorId: userId },
+        tx,
+      );
+    }
     await notifyMentions(mentioned, {
       title: 'Có người nhắc tên bạn', content: post.title, link: `/posts/${post.slug}`, actorId: userId,
     }, tx);
   });
 
   if (slug) revalidatePath(`/posts/${slug}`);
+  return { ok: true };
+}
+
+// ─────────────────────────── Kiểm duyệt bình luận ───────────────────────────
+
+export interface CommentModState {
+  pinned?: boolean;
+  hidden?: boolean;
+  error?: string;
+}
+
+/** Chủ bài viết và quản trị viên được quản lý bình luận trong bài đó. */
+async function canManageComment(userId: string, commentId: string) {
+  const comment = await db.comment.findUnique({
+    where: { id: commentId },
+    select: {
+      id: true, pinned: true, hidden: true, postId: true,
+      post: { select: { authorId: true, slug: true } },
+    },
+  });
+  if (!comment) return null;
+
+  const me = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
+  const allowed = comment.post.authorId === userId || me?.role === 'ADMIN' || me?.role === 'MODERATOR';
+  return allowed ? comment : null;
+}
+
+/** Ghim một bình luận lên đầu danh sách. */
+export async function toggleCommentPinned(commentId: string): Promise<CommentModState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  const comment = await canManageComment(userId, commentId);
+  if (!comment) return { error: 'Bạn không có quyền quản lý bình luận này.' };
+
+  const pinned = !comment.pinned;
+  await db.comment.update({ where: { id: commentId }, data: { pinned }, select: { id: true } });
+  revalidatePath(`/posts/${comment.post.slug}`);
+  return { pinned };
+}
+
+/**
+ * Ẩn hoặc hiện lại một bình luận.
+ *
+ * Ẩn chứ không xoá để còn đối chiếu khi có khiếu nại. Số đếm bình luận của
+ * bài phải chỉnh theo, không thì bài khoe nhiều bình luận hơn số đọc được.
+ */
+export async function toggleCommentHidden(commentId: string): Promise<CommentModState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  const comment = await canManageComment(userId, commentId);
+  if (!comment) return { error: 'Bạn không có quyền quản lý bình luận này.' };
+
+  const hidden = !comment.hidden;
+  await db.$transaction(async (tx) => {
+    await tx.comment.update({
+      where: { id: commentId },
+      // Bình luận đã ẩn thì bỏ ghim luôn, ghim một thứ không ai thấy là vô nghĩa.
+      data: { hidden, ...(hidden ? { pinned: false } : {}) },
+      select: { id: true },
+    });
+    await tx.post.update({
+      where: { id: comment.postId },
+      data: { commentCount: { increment: hidden ? -1 : 1 } },
+      select: { id: true },
+    });
+  });
+
+  revalidatePath(`/posts/${comment.post.slug}`);
+  return { hidden };
+}
+
+// ─────────────────── Sửa / xoá bình luận của chính mình ───────────────────
+
+export interface CommentEditState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Chỉ tác giả mới sửa/xoá được bình luận của mình.
+ *
+ * Chủ bài viết và quản trị viên cố tình không nằm trong diện này: họ đã có nút
+ * "Ẩn", giữ nguyên nội dung để còn đối chiếu khi có khiếu nại — sửa lời người
+ * khác hay xoá hẳn thì mất dấu vết.
+ */
+async function assertCommentOwner(commentId: string) {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' as const };
+
+  const comment = await db.comment.findUnique({
+    where: { id: commentId },
+    select: {
+      id: true, authorId: true, hidden: true, postId: true,
+      post: { select: { slug: true } },
+    },
+  });
+  if (!comment) return { error: 'Không tìm thấy bình luận.' as const };
+  if (comment.authorId !== userId) return { error: 'Bạn chỉ sửa được bình luận của mình.' as const };
+
+  return { userId, comment };
+}
+
+/**
+ * Sửa nội dung bình luận.
+ *
+ * Không gửi lại thông báo nhắc tên cho những @tên mới thêm vào: sửa bài để
+ * chèn tên người khác là đường vòng để làm phiền, mà bản gốc đã báo một lần rồi.
+ */
+export async function updateComment(_prev: CommentEditState, formData: FormData): Promise<CommentEditState> {
+  const commentId = String(formData.get('commentId') ?? '');
+  const guard = await assertCommentOwner(commentId);
+  if ('error' in guard) return { error: guard.error };
+
+  const content = String(formData.get('content') ?? '').trim();
+  if (content.length < 2) return { error: 'Bình luận quá ngắn.' };
+  if (content.length > 2000) return { error: 'Bình luận tối đa 2000 ký tự.' };
+
+  await db.comment.update({ where: { id: commentId }, data: { content }, select: { id: true } });
+
+  revalidatePath(`/posts/${guard.comment.post.slug}`);
+  return { ok: true };
+}
+
+/**
+ * Xoá hẳn bình luận của mình, kèm các phản hồi lồng bên dưới (khoá ngoại tự dọn).
+ *
+ * Bộ đếm chỉ trừ đi những bình luận đang thật sự hiện: bình luận đã bị ẩn thì
+ * lúc ẩn đã trừ rồi, trừ thêm lần nữa là số đếm âm dần.
+ */
+export async function deleteOwnComment(commentId: string): Promise<CommentEditState> {
+  const guard = await assertCommentOwner(commentId);
+  if ('error' in guard) return { error: guard.error };
+  const { comment } = guard;
+
+  const children = await db.comment.findMany({
+    where: { parentId: commentId }, select: { hidden: true },
+  });
+  const visible = (comment.hidden ? 0 : 1) + children.filter((c) => !c.hidden).length;
+
+  await db.$transaction(async (tx) => {
+    await tx.comment.delete({ where: { id: commentId } });
+    if (visible > 0) {
+      await tx.post.update({
+        where: { id: comment.postId },
+        data: { commentCount: { decrement: visible } }, select: { id: true },
+      });
+    }
+  });
+
+  revalidatePath(`/posts/${comment.post.slug}`);
   return { ok: true };
 }

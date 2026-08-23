@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { Calendar, Coins, FileText, Users, UserPlus as FollowIcon, MessageSquare } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { postCardInclude, toCardData } from '@/lib/post-card';
+import { postCardSelect, toCardData } from '@/lib/post-card';
 import { PostGrid } from '@/components/PostGrid';
 import { Pagination } from '@/components/Pagination';
 import { FollowButton } from '@/components/post/FollowButton';
@@ -50,7 +50,7 @@ export default async function ProfilePage({ params, searchParams }: {
   const where = { authorId: user.id, status: 'PUBLISHED' as const };
   const [total, posts, following, blocked] = await Promise.all([
     db.post.count({ where }),
-    db.post.findMany({ where, orderBy: [{ publishedAt: 'desc' }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: postCardInclude }),
+    db.post.findMany({ where, orderBy: [{ publishedAt: 'desc' }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect }),
     viewerId ? db.follow.findFirst({ where: { followerId: viewerId, followingId: user.id }, select: { id: true } }) : Promise.resolve(null),
     viewerId ? hasBlocked(viewerId, user.id) : Promise.resolve(false),
   ]);

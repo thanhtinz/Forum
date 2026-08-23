@@ -4,7 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { Search as SearchIcon, MessagesSquare, Newspaper, Users } from 'lucide-react';
 import { db } from '@/lib/db';
 import { cn, fmtCount, plainText, truncate } from '@/lib/utils';
-import { postCardInclude, toCardData } from '@/lib/post-card';
+import { postCardSelect, toCardData } from '@/lib/post-card';
 import { PostGrid } from '@/components/PostGrid';
 import { Pagination } from '@/components/Pagination';
 import { TableHead } from '@/components/forum/TableHead';
@@ -74,7 +74,7 @@ export default async function SearchPage({ searchParams }: {
         where: { status: 'PUBLISHED', OR: [{ title: like }, { excerpt: like }, { content: like }] } as Prisma.PostWhereInput,
         orderBy: [{ publishedAt: 'desc' }],
         skip, take: PAGE_SIZE,
-        include: postCardInclude,
+        select: postCardSelect,
       })
     : [];
 

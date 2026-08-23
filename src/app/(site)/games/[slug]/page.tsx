@@ -9,7 +9,8 @@ import {
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import {
-  assetUrl, avgRating, gameBadges, gameCardSelect, gameTint, LANGUAGE_LABEL, toGameCard,
+  assetUrl, avgRating, DOWNLOAD_PLATFORMS, DOWNLOAD_PLATFORM_ORDER, gameBadges,
+  gameCardSelect, gameTint, LANGUAGE_LABEL, toGameCard,
 } from '@/lib/game';
 import { gameAnalytics } from '@/lib/game-stats';
 import { fmtBytes, fmtCount } from '@/lib/utils';
@@ -52,7 +53,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
       tags: { include: { tag: true } },
       images: { orderBy: { sortOrder: 'asc' } },
       versions: {
-        orderBy: [{ latest: 'desc' }, { releaseDate: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [{ platform: 'asc' }, { latest: 'desc' }, { releaseDate: 'desc' }, { createdAt: 'desc' }],
         include: { files: true },
       },
       _count: { select: { favorites: true } },
@@ -80,7 +81,11 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
   ]);
 
   const latest = game.versions.find((v) => v.latest) ?? game.versions[0];
-  const latestJar = latest?.files.find((f) => f.type === 'JAR');
+  const latestFile = latest?.files[0];
+  // Lịch sử phiên bản gom theo nền tảng, giữ thứ tự nút tải.
+  const byPlatform = DOWNLOAD_PLATFORM_ORDER
+    .map((p) => ({ platform: p, versions: game.versions.filter((v) => v.platform === p) }))
+    .filter((g) => g.versions.length > 0);
   const tint = gameTint(game.slug);
   const icon = assetUrl(game.icon);
   const rating = avgRating(game.ratingSum, game.ratingCount);
@@ -91,22 +96,30 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
     .filter((s) => !!s.url);
   const controls = Array.isArray(game.controls) ? (game.controls as unknown as ControlHint[]) : [];
 
-  const versionInfos: VersionInfo[] = game.versions.map((v) => ({
-    id: v.id,
-    version: v.version,
-    releaseDate: v.releaseDate ? v.releaseDate.toISOString() : null,
-    changelog: v.changelog,
-    sizeBytes: v.sizeBytes != null ? Number(v.sizeBytes) : null,
-    latest: v.latest,
-    note: v.note,
-    files: v.files.map((f) => ({
-      type: f.type,
-      sizeBytes: f.sizeBytes != null ? Number(f.sizeBytes) : null,
-      checksum: f.checksum,
-      checksumAlgo: f.checksumAlgo,
-      available: f.scanStatus !== 'QUARANTINED',
-    })),
-  }));
+  const versionInfos: VersionInfo[] = game.versions.map((v) => {
+    // Gói chính đứng đầu (JAR trước JAD, EXE trước ZIP…) để khung tải lấy đúng
+    // dung lượng và checksum đại diện.
+    const order = DOWNLOAD_PLATFORMS[v.platform].fileTypes;
+    const files = [...v.files].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+    return {
+      id: v.id,
+      platform: v.platform,
+      version: v.version,
+      releaseDate: v.releaseDate ? v.releaseDate.toISOString() : null,
+      changelog: v.changelog,
+      sizeBytes: v.sizeBytes != null ? Number(v.sizeBytes) : null,
+      latest: v.latest,
+      note: v.note,
+      files: files.map((f) => ({
+        id: f.id,
+        type: f.type,
+        sizeBytes: f.sizeBytes != null ? Number(f.sizeBytes) : null,
+        checksum: f.checksum,
+        checksumAlgo: f.checksumAlgo,
+        available: f.scanStatus !== 'QUARANTINED',
+      })),
+    };
+  });
 
   return (
     <div className="space-y-5">
@@ -180,7 +193,8 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
               <Row label="Tên Việt hóa" value={game.titleVi ?? '—'} />
               <Row label="Thể loại" value={game.genres.map((g) => g.genre.name).join(', ') || '—'} />
               <Row label="Version mới nhất" value={latest ? `v${latest.version}` : '—'} />
-              <Row label="Dung lượng" value={fmtBytes(latest?.sizeBytes ?? latestJar?.sizeBytes)} />
+              <Row label="Dung lượng" value={fmtBytes(latest?.sizeBytes ?? latestFile?.sizeBytes)} />
+              <Row label="Nền tảng" value={byPlatform.map((g) => DOWNLOAD_PLATFORMS[g.platform].label).join(', ') || '—'} />
               <Row label="Ngôn ngữ" value={LANGUAGE_LABEL[game.language] ?? game.language} icon={<Languages size={13} />} />
               <Row label="Platform" value={game.platform?.name ?? '—'} icon={<MonitorSmartphone size={13} />} />
               <Row label="Độ phân giải" value={game.resolution?.label ?? '—'} />
@@ -241,28 +255,35 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
             </section>
           )}
 
-          {game.versions.length > 0 && (
+          {byPlatform.length > 0 && (
             <section className="card p-4 sm:p-5">
               <h2 className="zib-title mb-3 flex items-center gap-2"><Clock size={17} /> Lịch sử phiên bản</h2>
-              <ol className="space-y-3">
-                {game.versions.map((v) => (
-                  <li key={v.id} className="border-l-2 border-ink-200 pl-3 dark:border-ink-700">
-                    <div className="flex flex-wrap items-center gap-2 text-sm">
-                      <b>v{v.version}</b>
-                      {v.latest && <span className="chip bg-brand-500 !px-2 !py-0 text-[10px] text-white">Latest</span>}
-                      <span className="text-xs text-ink-400">
-                        {v.releaseDate ? format(v.releaseDate, 'dd/MM/yyyy') : '—'} · {fmtBytes(v.sizeBytes)}
-                      </span>
-                    </div>
-                    {v.changelog && <p className="mt-1 whitespace-pre-line text-sm text-ink-500">{v.changelog}</p>}
-                    {v.files.some((f) => f.checksum) && (
-                      <p className="mt-1 break-all text-[11px] text-ink-400">
-                        {v.files.filter((f) => f.checksum).map((f) => `${f.type} ${f.checksumAlgo}: ${f.checksum}`).join(' · ')}
-                      </p>
-                    )}
-                  </li>
+              <div className="space-y-5">
+                {byPlatform.map((group) => (
+                  <div key={group.platform}>
+                    <h3 className="mb-2 text-sm font-bold text-ink-500">{DOWNLOAD_PLATFORMS[group.platform].label}</h3>
+                    <ol className="space-y-3">
+                      {group.versions.map((v) => (
+                        <li key={v.id} className="border-l-2 border-ink-200 pl-3 dark:border-ink-700">
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            <b>v{v.version}</b>
+                            {v.latest && <span className="chip bg-brand-500 !px-2 !py-0 text-[10px] text-white">Latest</span>}
+                            <span className="text-xs text-ink-400">
+                              {v.releaseDate ? format(v.releaseDate, 'dd/MM/yyyy') : '—'} · {fmtBytes(v.sizeBytes)}
+                            </span>
+                          </div>
+                          {v.changelog && <p className="mt-1 whitespace-pre-line text-sm text-ink-500">{v.changelog}</p>}
+                          {v.files.some((f) => f.checksum) && (
+                            <p className="mt-1 break-all text-[11px] text-ink-400">
+                              {v.files.filter((f) => f.checksum).map((f) => `${f.type} ${f.checksumAlgo}: ${f.checksum}`).join(' · ')}
+                            </p>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
                 ))}
-              </ol>
+              </div>
             </section>
           )}
 

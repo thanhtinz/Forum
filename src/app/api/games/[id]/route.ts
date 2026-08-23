@@ -15,7 +15,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       resolution: true,
       genres: { include: { genre: true } },
       tags: { include: { tag: true } },
-      versions: { orderBy: [{ latest: 'desc' }, { releaseDate: 'desc' }], include: { files: true } },
+      versions: { orderBy: [{ platform: 'asc' }, { latest: 'desc' }, { releaseDate: 'desc' }], include: { files: true } },
       images: { orderBy: { sortOrder: 'asc' } },
     },
   });
@@ -55,6 +55,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     },
     versions: game.versions.map((v) => ({
       id: v.id,
+      platform: v.platform,
       version: v.version,
       releaseDate: v.releaseDate,
       changelog: v.changelog,

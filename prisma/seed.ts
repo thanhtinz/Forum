@@ -476,13 +476,27 @@ async function main() {
   }
 
   // ── Game mẫu ──
+  const FILES_BY_PLATFORM = {
+    JAR: ['JAR', 'JAD'],
+    WINDOWS: ['EXE'],
+    MAC: ['DMG'],
+    LINUX: ['DEB'],
+    ANDROID: ['APK'],
+    IOS: ['IPA'],
+    WEB: ['ZIP'],
+  } as const satisfies Record<string, readonly ('JAR' | 'JAD' | 'EXE' | 'DMG' | 'DEB' | 'APK' | 'IPA' | 'ZIP')[]>;
+
   interface SeedGame {
     slug: string; title: string; titleVi?: string; series?: string;
     genres: string[]; platform: string; resolution: string;
     developer: string; publisher: string; year: number;
     language: string; vietnamized: boolean; featured: boolean;
     description: string; gameplay: string;
-    versions: { version: string; sizeKb: number; latest: boolean; changelog: string; date: string }[];
+    /** `platform` bỏ trống thì mặc định JAR — phần lớn game trong kho là Java ME. */
+    versions: {
+      platform?: 'WINDOWS' | 'MAC' | 'LINUX' | 'ANDROID' | 'IOS' | 'WEB' | 'JAR';
+      version: string; sizeKb: number; latest: boolean; changelog: string; date: string;
+    }[];
     stats: { views: number; downloads: number; ratingSum: number; ratingCount: number };
   }
 
@@ -497,6 +511,9 @@ async function main() {
       versions: [
         { version: '1.0.0', sizeKb: 412, latest: false, changelog: 'Bản phát hành đầu tiên.', date: '2008-06-12' },
         { version: '1.2.0', sizeKb: 486, latest: true, changelog: 'Việt hóa toàn bộ menu, sửa lỗi treo ở màn 5, thêm chế độ luyện tập.', date: '2011-03-04' },
+        { platform: 'WINDOWS', version: '2.0.0', sizeKb: 48_200, latest: false, changelog: 'Bản dựng lại cho PC, thêm hỗ trợ tay cầm.', date: '2019-08-01' },
+        { platform: 'WINDOWS', version: '2.1.3', sizeKb: 51_400, latest: true, changelog: 'Sửa lỗi mất tiếng trên Windows 11, thêm chỉnh phím.', date: '2023-05-19' },
+        { platform: 'ANDROID', version: '2.1.3', sizeKb: 62_800, latest: true, changelog: 'Cùng bản với PC, thêm nút ảo chỉnh được vị trí.', date: '2023-05-19' },
       ],
       stats: { views: 48200, downloads: 12400, ratingSum: 1880, ratingCount: 412 },
     },
@@ -521,6 +538,7 @@ async function main() {
       gameplay: 'Điều khiển bóng bằng phím trái/phải, phím lên để nhảy. Nhặt vật phẩm để phóng to, thu nhỏ hoặc trở nên nặng hơn.',
       versions: [
         { version: '1.0.5', sizeKb: 240, latest: true, changelog: 'Việt hóa lời thoại, cân bằng lại độ khó màn 8.', date: '2010-01-15' },
+        { platform: 'MAC', version: '1.1.0', sizeKb: 36_500, latest: true, changelog: 'Bản macOS chạy nguyên bản trên Apple Silicon.', date: '2022-07-08' },
       ],
       stats: { views: 62800, downloads: 21300, ratingSum: 2340, ratingCount: 498 },
     },
@@ -581,6 +599,9 @@ async function main() {
       gameplay: 'Phím số điền giá trị, phím 0 xoá ô, phím mềm trái bật ghi chú.',
       versions: [
         { version: '2.4.0', sizeKb: 96, latest: true, changelog: 'Thêm 200 câu đố và thống kê thời gian giải.', date: '2009-04-17' },
+        { platform: 'ANDROID', version: '3.2.0', sizeKb: 18_600, latest: true, changelog: 'Bản Android với chế độ tối và đồng bộ tiến độ.', date: '2021-11-02' },
+        { platform: 'IOS', version: '3.2.0', sizeKb: 24_100, latest: true, changelog: 'Bản iOS, hỗ trợ iPad chia đôi màn hình.', date: '2021-11-02' },
+        { platform: 'WEB', version: '3.2.1', sizeKb: 4_300, latest: true, changelog: 'Bản chơi trên trình duyệt, tải về tự host được.', date: '2022-03-14' },
       ],
       stats: { views: 9400, downloads: 3100, ratingSum: 430, ratingCount: 96 },
     },
@@ -654,13 +675,15 @@ async function main() {
       });
     }
 
-    // Version + file JAR/JAD
+    // Version + file, tách theo từng nền tảng tải
     for (const v of g.versions) {
+      const platform = v.platform ?? 'JAR';
       const version = await db.gameVersion.upsert({
-        where: { gameId_version: { gameId: game.id, version: v.version } },
+        where: { gameId_platform_version: { gameId: game.id, platform, version: v.version } },
         update: { latest: v.latest },
         create: {
           gameId: game.id,
+          platform,
           version: v.version,
           releaseDate: new Date(v.date),
           changelog: v.changelog,
@@ -669,19 +692,23 @@ async function main() {
         },
       });
 
-      for (const type of ['JAR', 'JAD'] as const) {
-        const sizeBytes = type === 'JAR' ? BigInt(v.sizeKb * 1024) : BigInt(1024);
+      // File đi kèm mỗi nền tảng: bản Java ME có cặp JAR + JAD, các nền tảng
+      // khác chỉ một gói cài.
+      const fileTypes = FILES_BY_PLATFORM[platform];
+      for (const type of fileTypes) {
+        // File đầu tiên là gói chính nên mang đúng dung lượng; JAD chỉ là mô tả.
+        const main = type === fileTypes[0];
         await db.gameFile.upsert({
           where: { versionId_type: { versionId: version.id, type } },
           update: {},
           create: {
             versionId: version.id,
             type,
-            storageKey: `${g.slug}/${v.version}/${g.slug}.${type.toLowerCase()}`,
+            storageKey: `${g.slug}/${platform.toLowerCase()}/${v.version}/${g.slug}.${type.toLowerCase()}`,
             fileName: `${g.slug}-${v.version}.${type.toLowerCase()}`,
-            sizeBytes,
+            sizeBytes: main ? BigInt(v.sizeKb * 1024) : BigInt(1024),
             // Checksum mẫu — thay bằng giá trị thật khi upload file lên storage.
-            checksum: type === 'JAR' ? sha256Hex(`${g.slug}-${v.version}`) : null,
+            checksum: main ? sha256Hex(`${g.slug}-${platform}-${v.version}`) : null,
             scanStatus: 'CLEAN',
           },
         });

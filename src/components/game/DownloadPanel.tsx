@@ -2,11 +2,19 @@
 
 import { useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { AlertTriangle, CheckCircle2, Download, FileCode2, Loader2, Package, ShieldCheck } from 'lucide-react';
-import { fmtBytes } from '@/lib/utils';
+import type { DownloadPlatform } from '@prisma/client';
+import {
+  AlertTriangle, Apple, CheckCircle2, Coffee, Download, Globe, Loader2,
+  Monitor, Package, ShieldCheck, Smartphone, Terminal,
+} from 'lucide-react';
+import { DOWNLOAD_PLATFORMS, DOWNLOAD_PLATFORM_ORDER } from '@/lib/game';
+import { cn, fmtBytes } from '@/lib/utils';
+
+const PLATFORM_ICON = { Monitor, Apple, Terminal, Smartphone, Globe, Coffee } as const;
 
 export interface VersionFile {
-  type: 'JAR' | 'JAD' | 'PATCH';
+  id: string;
+  type: string;
   sizeBytes: number | null;
   checksum: string | null;
   checksumAlgo: string;
@@ -15,6 +23,7 @@ export interface VersionFile {
 
 export interface VersionInfo {
   id: string;
+  platform: DownloadPlatform;
   version: string;
   releaseDate: string | null;
   changelog: string | null;
@@ -30,28 +39,45 @@ export interface DownloadPanelProps {
 }
 
 /**
- * Khung tải game: chọn version → chọn JAR/JAD.
+ * Khung tải game: chọn nền tảng → chọn version → chọn file.
  *
- * Link tải là signed URL do backend cấp sau khi kiểm tra file, nên phải xin
- * ngay lúc bấm chứ không nhúng sẵn vào HTML.
+ * Mỗi nền tảng có dãy version riêng, nên đổi nút nền tảng là đổi luôn danh
+ * sách version bên dưới. Link tải là signed URL do backend cấp sau khi kiểm
+ * tra file, nên phải xin ngay lúc bấm chứ không nhúng sẵn vào HTML.
  */
 export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
-  const [versionId, setVersionId] = useState(versions.find((v) => v.latest)?.id ?? versions[0]?.id ?? '');
+  // Nền tảng nào có version thì mới dựng nút, giữ đúng thứ tự đã khai báo.
+  const platforms = useMemo(
+    () => DOWNLOAD_PLATFORM_ORDER.filter((p) => versions.some((v) => v.platform === p)),
+    [versions],
+  );
+
+  const [platform, setPlatform] = useState<DownloadPlatform | null>(platforms[0] ?? null);
+  const [versionId, setVersionId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const current = useMemo(() => versions.find((v) => v.id === versionId) ?? versions[0], [versions, versionId]);
+  const ofPlatform = useMemo(
+    () => versions.filter((v) => v.platform === platform),
+    [versions, platform],
+  );
 
-  if (!current) {
-    return <div className="card p-6 text-center text-sm text-ink-400">Chưa có file tải cho game này.</div>;
+  // Chưa chọn tay thì bám bản mới nhất của nền tảng đang xem; đổi nền tảng mà
+  // vẫn giữ versionId cũ thì id đó không còn trong danh sách nên rơi về mặc định.
+  const current = ofPlatform.find((v) => v.id === versionId)
+    ?? ofPlatform.find((v) => v.latest)
+    ?? ofPlatform[0];
+
+  if (platforms.length === 0 || !current || !platform) {
+    return <div className="card p-6 text-center text-sm text-ink-400" id="download">Chưa có file tải cho game này.</div>;
   }
 
-  const download = async (type: 'JAR' | 'JAD') => {
-    setBusy(type);
+  const download = async (file: VersionFile) => {
+    setBusy(file.id);
     setError(null);
     try {
-      const res = await fetch(`/api/games/${slug}/download?version=${current.id}&type=${type}`);
-      const data = (await res.json()) as { url?: string; fileName?: string; error?: string };
+      const res = await fetch(`/api/games/${slug}/download?version=${current.id}&type=${file.type}`);
+      const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !data.url) {
         setError(
           data.error === 'FILE_QUARANTINED'
@@ -71,25 +97,50 @@ export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
     }
   };
 
-  const jar = current.files.find((f) => f.type === 'JAR');
-  const jad = current.files.find((f) => f.type === 'JAD');
+  const primary = current.files.find((f) => f.available) ?? current.files[0];
 
   return (
     <div className="card p-4 sm:p-5" id="download">
       <h3 className="zib-title mb-4 flex items-center gap-2"><Package size={18} /> Tải game</h3>
 
-      {versions.length > 1 && (
+      {/* Nút nền tảng */}
+      <div className="mb-4 grid grid-cols-2 gap-2">
+        {platforms.map((p) => {
+          const meta = DOWNLOAD_PLATFORMS[p];
+          const Icon = PLATFORM_ICON[meta.icon];
+          const active = p === platform;
+          return (
+            <button
+              key={p}
+              type="button"
+              aria-pressed={active}
+              onClick={() => { setPlatform(p); setVersionId(null); setError(null); }}
+              className={cn(
+                'flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition',
+                active
+                  ? 'border-brand-500 bg-brand-500 text-white'
+                  : 'border-ink-200 text-ink-600 hover:border-brand-400 hover:text-brand-600 dark:border-ink-700 dark:text-ink-300',
+              )}
+            >
+              <Icon size={16} className="shrink-0" />
+              <span className="truncate">{meta.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {ofPlatform.length > 1 && (
         <div className="mb-4">
           <label htmlFor="game-version" className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-ink-400">
             Phiên bản
           </label>
           <select
             id="game-version"
-            value={versionId}
+            value={current.id}
             onChange={(e) => { setVersionId(e.target.value); setError(null); }}
             className="input"
           >
-            {versions.map((v) => (
+            {ofPlatform.map((v) => (
               <option key={v.id} value={v.id}>
                 v{v.version}
                 {v.latest ? ' (mới nhất)' : ''}
@@ -101,33 +152,38 @@ export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
       )}
 
       <dl className="mb-4 grid grid-cols-2 gap-y-2 text-sm">
+        <dt className="text-ink-400">Nền tảng</dt>
+        <dd className="text-right font-medium">{DOWNLOAD_PLATFORMS[platform].label}</dd>
+        <dt className="text-ink-400">Phiên bản</dt>
+        <dd className="text-right font-medium">v{current.version}</dd>
         <dt className="text-ink-400">Dung lượng</dt>
-        <dd className="text-right font-medium">{fmtBytes(current.sizeBytes ?? jar?.sizeBytes)}</dd>
+        <dd className="text-right font-medium">{fmtBytes(current.sizeBytes ?? primary?.sizeBytes)}</dd>
         <dt className="text-ink-400">Phát hành</dt>
         <dd className="text-right font-medium">
           {current.releaseDate ? format(new Date(current.releaseDate), 'dd/MM/yyyy') : '—'}
         </dd>
       </dl>
 
+      {current.note && <p className="mb-3 text-xs text-ink-500">{current.note}</p>}
+
       <div className="space-y-2">
-        <button
-          type="button"
-          onClick={() => download('JAR')}
-          disabled={!jar?.available || busy !== null}
-          className="btn-outline w-full disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {busy === 'JAR' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-          DOWNLOAD JAR{jar?.sizeBytes != null && ` · ${fmtBytes(jar.sizeBytes)}`}
-        </button>
-        <button
-          type="button"
-          onClick={() => download('JAD')}
-          disabled={!jad?.available || busy !== null}
-          className="btn-outline w-full disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {busy === 'JAD' ? <Loader2 size={16} className="animate-spin" /> : <FileCode2 size={16} />}
-          DOWNLOAD JAD{jad?.sizeBytes != null && ` · ${fmtBytes(jad.sizeBytes)}`}
-        </button>
+        {current.files.length === 0 && (
+          <p className="rounded-lg bg-ink-50 p-2.5 text-center text-xs text-ink-400 dark:bg-ink-800/60">
+            Bản này chưa gắn file tải.
+          </p>
+        )}
+        {current.files.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            onClick={() => download(f)}
+            disabled={!f.available || busy !== null}
+            className="btn-outline w-full disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy === f.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+            TẢI {f.type}{f.sizeBytes != null && ` · ${fmtBytes(f.sizeBytes)}`}
+          </button>
+        ))}
       </div>
 
       {error && (
@@ -136,10 +192,10 @@ export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
         </p>
       )}
 
-      {jar?.checksum && (
+      {primary?.checksum && (
         <p className="mt-3 break-all rounded-lg bg-ink-50 p-2.5 text-[11px] text-ink-400 dark:bg-ink-800/60">
           <ShieldCheck size={12} className="mr-1 inline" />
-          {jar.checksumAlgo.toUpperCase()}: <code>{jar.checksum}</code>
+          {primary.checksumAlgo.toUpperCase()}: <code>{primary.checksum}</code>
         </p>
       )}
 

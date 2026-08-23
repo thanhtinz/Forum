@@ -1,4 +1,4 @@
-import type { GameStatus, Prisma } from '@prisma/client';
+import type { DownloadPlatform, GameFileType, GameStatus, Prisma } from '@prisma/client';
 
 // ============================================================
 // Nhãn / badge
@@ -10,6 +10,37 @@ export const GAME_STATUS_LABEL: Record<GameStatus, string> = {
   PUBLISHED: 'Đã đăng',
   ARCHIVED: 'Lưu trữ',
 };
+
+/**
+ * Nút tải trên trang chi tiết game.
+ *
+ * `order` quyết định thứ tự nút; `fileTypes` là các loại file hợp lệ của nền
+ * tảng đó, dùng cho cả dropdown trong admin lẫn kiểm tra ở API tải.
+ */
+export const DOWNLOAD_PLATFORMS: Record<DownloadPlatform, {
+  label: string;
+  /** Tên icon lucide — component tra ở phía client để giữ file này thuần dữ liệu. */
+  icon: 'Monitor' | 'Apple' | 'Terminal' | 'Smartphone' | 'Globe' | 'Coffee';
+  order: number;
+  fileTypes: GameFileType[];
+}> = {
+  WINDOWS: { label: 'Windows', icon: 'Monitor', order: 1, fileTypes: ['EXE', 'MSI', 'ZIP', 'PATCH'] },
+  MAC: { label: 'macOS', icon: 'Apple', order: 2, fileTypes: ['DMG', 'PKG', 'ZIP', 'PATCH'] },
+  LINUX: { label: 'Linux', icon: 'Terminal', order: 3, fileTypes: ['DEB', 'ZIP', 'PATCH'] },
+  ANDROID: { label: 'Android', icon: 'Smartphone', order: 4, fileTypes: ['APK', 'ZIP', 'PATCH'] },
+  IOS: { label: 'iOS', icon: 'Apple', order: 5, fileTypes: ['IPA', 'ZIP', 'PATCH'] },
+  WEB: { label: 'Web', icon: 'Globe', order: 6, fileTypes: ['ZIP', 'PATCH'] },
+  JAR: { label: 'Java ME (JAR)', icon: 'Coffee', order: 7, fileTypes: ['JAR', 'JAD', 'PATCH'] },
+};
+
+/** Danh sách nền tảng theo đúng thứ tự nút hiển thị. */
+export const DOWNLOAD_PLATFORM_ORDER = (Object.keys(DOWNLOAD_PLATFORMS) as DownloadPlatform[])
+  .sort((a, b) => DOWNLOAD_PLATFORMS[a].order - DOWNLOAD_PLATFORMS[b].order);
+
+/** Loại file có hợp với nền tảng không — chặn gán nhầm APK cho bản Windows. */
+export function fileTypeFitsPlatform(platform: DownloadPlatform, type: GameFileType): boolean {
+  return DOWNLOAD_PLATFORMS[platform].fileTypes.includes(type);
+}
 
 export const LANGUAGE_LABEL: Record<string, string> = {
   vi: 'Tiếng Việt',
@@ -63,10 +94,12 @@ export const gameCardSelect = {
   platform: { select: { slug: true, name: true } },
   resolution: { select: { slug: true, label: true } },
   genres: { select: { genre: { select: { slug: true, name: true } } }, take: 2 },
+  // Bản mới nhất của mỗi nền tảng xếp lên đầu, nên `take` bằng số nền tảng + 1
+  // là đủ để thẻ game liệt kê hết nút tải mà không kéo cả lịch sử version về.
   versions: {
-    where: { latest: true },
-    take: 1,
-    select: { id: true, version: true, sizeBytes: true },
+    orderBy: [{ latest: 'desc' }, { releaseDate: 'desc' }, { createdAt: 'desc' }],
+    take: 8,
+    select: { id: true, version: true, sizeBytes: true, platform: true, latest: true },
   },
 } satisfies Prisma.GameSelect;
 
@@ -89,6 +122,8 @@ export interface GameCardData {
   vietnamized: boolean;
   resolution: string | null;
   platform: string | null;
+  /** Các nền tảng có bản tải, theo thứ tự nút. */
+  downloads: DownloadPlatform[];
   badges: GameBadge[];
 }
 
@@ -127,7 +162,9 @@ export function avgRating(ratingSum: number, ratingCount: number): number {
 }
 
 export function toGameCard(g: GameCardRow): GameCardData {
+  // Bản đại diện cho thẻ game: bản mới nhất bất kể nền tảng nào.
   const latest = g.versions[0];
+  const downloads = DOWNLOAD_PLATFORM_ORDER.filter((p) => g.versions.some((v) => v.platform === p));
   return {
     id: g.id,
     slug: g.slug,
@@ -145,6 +182,7 @@ export function toGameCard(g: GameCardRow): GameCardData {
     vietnamized: g.vietnamized,
     resolution: g.resolution?.label ?? null,
     platform: g.platform?.name ?? null,
+    downloads,
     badges: gameBadges(g),
   };
 }

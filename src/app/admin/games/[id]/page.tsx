@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import { ChevronLeft, ExternalLink, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
 import { db } from '@/lib/db';
-import { assetUrl } from '@/lib/game';
+import { assetUrl, DOWNLOAD_PLATFORMS } from '@/lib/game';
 import { gameAnalytics } from '@/lib/game-stats';
 import { fmtBytes, fmtCount } from '@/lib/utils';
 import { GameEditForm } from '@/components/admin/GameEditForm';
@@ -23,7 +23,7 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
       include: {
         genres: true,
         tags: { include: { tag: true } },
-        versions: { orderBy: [{ latest: 'desc' }, { createdAt: 'desc' }], include: { files: true } },
+        versions: { orderBy: [{ platform: 'asc' }, { latest: 'desc' }, { createdAt: 'desc' }], include: { files: true } },
         images: { orderBy: { sortOrder: 'asc' } },
       },
     }),
@@ -34,7 +34,11 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
   if (!game) notFound();
 
   const stats = await gameAnalytics(game.id);
-  const versionOptions = game.versions.map((v) => ({ id: v.id, name: `v${v.version}${v.latest ? ' (latest)' : ''}` }));
+  const versionOptions = game.versions.map((v) => ({
+    id: v.id,
+    platform: v.platform,
+    name: `${DOWNLOAD_PLATFORMS[v.platform].label} · v${v.version}${v.latest ? ' (latest)' : ''}`,
+  }));
 
   return (
     <div className="space-y-5">
@@ -82,6 +86,7 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
           <table className="w-full min-w-[720px] text-sm">
             <thead className="border-b border-ink-100 text-left text-xs uppercase tracking-wide text-ink-400 dark:border-ink-800">
               <tr>
+                <th className="p-2 font-bold">Nền tảng</th>
                 <th className="p-2 font-bold">Version</th>
                 <th className="p-2 font-bold">Phát hành</th>
                 <th className="p-2 font-bold">Dung lượng</th>
@@ -90,9 +95,10 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
               </tr>
             </thead>
             <tbody className="divide-y divide-ink-100 dark:divide-ink-800">
-              {game.versions.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-ink-400">Chưa có version nào.</td></tr>}
+              {game.versions.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-ink-400">Chưa có version nào.</td></tr>}
               {game.versions.map((v) => (
                 <tr key={v.id}>
+                  <td className="p-2 font-semibold text-ink-500">{DOWNLOAD_PLATFORMS[v.platform].label}</td>
                   <td className="p-2">
                     <b>v{v.version}</b>
                     {v.latest && <span className="ml-1.5 chip bg-brand-500 !px-1.5 !py-0 text-[10px] text-white">Latest</span>}

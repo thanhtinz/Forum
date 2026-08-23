@@ -1,24 +1,35 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { Loader2, Plus } from 'lucide-react';
+import type { DownloadPlatform } from '@prisma/client';
+import { DOWNLOAD_PLATFORMS, DOWNLOAD_PLATFORM_ORDER } from '@/lib/game';
 import { addImage, upsertFile, upsertVersion, type ActionState } from '@/app/admin/games/actions';
 
 export interface IdName { id: string; name: string }
 
-/** Thêm / sửa một version của game. */
-export function VersionForm({ gameId, versions }: { gameId: string; versions: IdName[] }) {
+/** Version kèm nền tảng — form file lọc loại file theo nền tảng của version. */
+export interface VersionOption extends IdName { platform: DownloadPlatform }
+
+const PLATFORM_OPTIONS: IdName[] = DOWNLOAD_PLATFORM_ORDER
+  .map((p) => ({ id: p, name: DOWNLOAD_PLATFORMS[p].label }));
+
+/** Thêm / sửa một version của game (mỗi version thuộc đúng một nền tảng). */
+export function VersionForm({ gameId, versions }: { gameId: string; versions: VersionOption[] }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(upsertVersion, {});
   return (
     <form action={action} className="grid gap-2 sm:grid-cols-2">
       <input type="hidden" name="gameId" value={gameId} />
       <Select name="versionId" label="Sửa version có sẵn" options={versions} empty="— Tạo version mới —" />
+      <Select name="platform" label="Nền tảng *" options={PLATFORM_OPTIONS} required />
       <Input name="version" label="Số hiệu *" placeholder="1.0.2" required />
       <Input name="releaseDate" label="Ngày phát hành" type="date" />
       <Input name="sizeBytes" label="Dung lượng (byte)" type="number" />
       <Input name="note" label="Ghi chú" />
       <label className="flex items-end gap-4 pb-2 text-sm">
-        <span className="flex items-center gap-1.5"><input type="checkbox" name="latest" /> Latest</span>
+        <span className="flex items-center gap-1.5">
+          <input type="checkbox" name="latest" /> Latest của nền tảng này
+        </span>
       </label>
       <label className="sm:col-span-2">
         <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-400">Changelog</span>
@@ -29,15 +40,24 @@ export function VersionForm({ gameId, versions }: { gameId: string; versions: Id
   );
 }
 
-/** Gắn file JAR/JAD cho một version. */
-export function FileForm({ versions }: { versions: IdName[] }) {
+/** Gắn file tải cho một version — loại file lọc theo nền tảng của version đó. */
+export function FileForm({ versions }: { versions: VersionOption[] }) {
   const [state, action, pending] = useActionState<ActionState, FormData>(upsertFile, {});
+  const [versionId, setVersionId] = useState('');
+
+  const picked = versions.find((v) => v.id === versionId);
+  const types = picked ? DOWNLOAD_PLATFORMS[picked.platform].fileTypes : [];
+
   return (
     <form action={action} className="grid gap-2 sm:grid-cols-2">
-      <Select name="versionId" label="Version *" options={versions} required />
+      <Select
+        name="versionId" label="Version *" options={versions} required
+        value={versionId} onChange={setVersionId}
+      />
       <Select
         name="type" label="Loại file *" required
-        options={[{ id: 'JAR', name: 'JAR' }, { id: 'JAD', name: 'JAD' }, { id: 'PATCH', name: 'PATCH' }]}
+        options={types.map((t) => ({ id: t, name: t }))}
+        empty={picked ? '— Chọn —' : '— Chọn version trước —'}
       />
       <Input name="storageKey" label="Storage key *" placeholder="games/contra-4/1.0.2/game.jar" required />
       <Input name="fileName" label="Tên file khi tải" placeholder="contra-4-1.0.2.jar" />
@@ -90,13 +110,21 @@ function Input({ name, label, ...rest }: { name: string; label: string } & React
   );
 }
 
-function Select({ name, label, options, empty, required }: {
+function Select({ name, label, options, empty, required, value, onChange }: {
   name: string; label: string; options: IdName[]; empty?: string; required?: boolean;
+  /** Truyền cặp value/onChange để biến thành ô có điều khiển (lọc ô khác theo nó). */
+  value?: string; onChange?: (v: string) => void;
 }) {
+  const controlled = value !== undefined && onChange !== undefined;
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-400">{label}</span>
-      <select name={name} required={required} defaultValue="" className="input !py-2 text-sm">
+      <select
+        name={name}
+        required={required}
+        className="input !py-2 text-sm"
+        {...(controlled ? { value, onChange: (e) => onChange(e.target.value) } : { defaultValue: '' })}
+      >
         <option value="">{empty ?? '— Chọn —'}</option>
         {options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
       </select>

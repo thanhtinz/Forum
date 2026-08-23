@@ -22,7 +22,7 @@ export default async function MessagesPage() {
     orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
     take: 50,
     select: {
-      id: true, userAId: true, userBId: true, lastMessageAt: true,
+      id: true, userAId: true, userBId: true, lastMessageAt: true, nicknameA: true, nicknameB: true,
       userA: { select: { id: true, name: true, username: true, image: true } },
       userB: { select: { id: true, name: true, username: true, image: true } },
       messages: { orderBy: { createdAt: 'desc' }, take: 1, select: { content: true, senderId: true, readAt: true } },
@@ -61,7 +61,9 @@ export default async function MessagesPage() {
           const partner = otherId(c, me) === c.userA.id ? c.userA : c.userB;
           const last = c.messages[0];
           const unread = unreadOf.get(c.id) ?? 0;
-          const name = partner.name || partner.username || 'Thành viên';
+          // Biệt danh đặt trong đoạn chat được ưu tiên hơn tên thật.
+          const nick = (partner.id === c.userAId ? c.nicknameA : c.nicknameB) ?? '';
+          const name = nick || partner.name || partner.username || 'Thành viên';
 
           return (
             <Link key={c.id} href={`/user/messages/${c.id}`}

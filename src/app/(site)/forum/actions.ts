@@ -721,3 +721,31 @@ export async function toggleReplyHidden(replyId: string): Promise<HideState> {
   revalidatePath(`/forum/${reply.thread.forum.slug}/${reply.threadId}`);
   return { hidden };
 }
+
+// ─────────────────────────── Lưu chủ đề ───────────────────────────
+
+export interface FavoriteState {
+  saved: boolean;
+  count: number;
+  error?: string;
+}
+
+/** Lưu chủ đề vào mục "Đã lưu" để đọc lại sau. */
+export async function toggleThreadFavorite(threadId: string): Promise<FavoriteState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { saved: false, count: 0, error: 'Bạn cần đăng nhập.' };
+
+  const existing = await db.favorite.findUnique({
+    where: { userId_threadId: { userId, threadId } }, select: { id: true },
+  });
+  if (existing) await db.favorite.delete({ where: { id: existing.id } });
+  else {
+    const thread = await db.thread.findUnique({ where: { id: threadId }, select: { id: true } });
+    if (!thread) return { saved: false, count: 0, error: 'Không tìm thấy chủ đề.' };
+    await db.favorite.create({ data: { userId, threadId }, select: { id: true } });
+  }
+
+  const count = await db.favorite.count({ where: { threadId } });
+  return { saved: !existing, count };
+}

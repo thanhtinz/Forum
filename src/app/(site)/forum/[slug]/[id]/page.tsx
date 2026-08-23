@@ -124,10 +124,14 @@ export default async function ThreadPage({ params, searchParams }: {
   });
 
   // Số người theo dõi chủ đề và trạng thái theo dõi của người đang xem
-  const [followCount, myFollow] = await Promise.all([
+  const [followCount, myFollow, saveCount, mySave] = await Promise.all([
     db.threadFollow.count({ where: { threadId: id } }),
     userId
       ? db.threadFollow.findUnique({ where: { threadId_userId: { threadId: id, userId } }, select: { id: true } })
+      : null,
+    db.favorite.count({ where: { threadId: id } }),
+    userId
+      ? db.favorite.findUnique({ where: { userId_threadId: { userId, threadId: id } }, select: { id: true } })
       : null,
   ]);
 
@@ -185,6 +189,7 @@ export default async function ThreadPage({ params, searchParams }: {
           actions={
             <ThreadActionBar threadId={thread.id} initialLiked={likedThread.has(thread.id)} initialLikeCount={thread.likeCount}
               initialFollowing={!!myFollow} initialFollowCount={followCount}
+              initialSaved={!!mySave} initialSaveCount={saveCount}
               canReport={loggedIn && !isOwner}
               // Phần tử truyền qua prop từ Server Component cần key ổn định,
               // không thì React cảnh báo thiếu "key" ở chỗ nhận.

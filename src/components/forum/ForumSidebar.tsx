@@ -90,7 +90,10 @@ export async function ForumSidebar() {
 
       {/* Thành viên tích cực */}
       <section className="card p-4">
-        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold"><Trophy size={15} className="text-amber-500" /> Thành viên tích cực</h3>
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="flex items-center gap-1.5 text-sm font-bold"><Trophy size={15} className="text-amber-500" /> Thành viên tích cực</h3>
+          <Link href="/ranking" className="shrink-0 text-xs text-brand-600 hover:underline">Xếp hạng</Link>
+        </div>
         <ol className="space-y-2">
           {topUsers.map((u, i) => (
             <li key={u.username} className="flex items-center gap-2">

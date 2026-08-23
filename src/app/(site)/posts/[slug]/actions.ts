@@ -149,3 +149,75 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
   if (slug) revalidatePath(`/posts/${slug}`);
   return { ok: true };
 }
+
+// ─────────────────────────── Kiểm duyệt bình luận ───────────────────────────
+
+export interface CommentModState {
+  pinned?: boolean;
+  hidden?: boolean;
+  error?: string;
+}
+
+/** Chủ bài viết và quản trị viên được quản lý bình luận trong bài đó. */
+async function canManageComment(userId: string, commentId: string) {
+  const comment = await db.comment.findUnique({
+    where: { id: commentId },
+    select: {
+      id: true, pinned: true, hidden: true, postId: true,
+      post: { select: { authorId: true, slug: true } },
+    },
+  });
+  if (!comment) return null;
+
+  const me = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
+  const allowed = comment.post.authorId === userId || me?.role === 'ADMIN' || me?.role === 'MODERATOR';
+  return allowed ? comment : null;
+}
+
+/** Ghim một bình luận lên đầu danh sách. */
+export async function toggleCommentPinned(commentId: string): Promise<CommentModState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  const comment = await canManageComment(userId, commentId);
+  if (!comment) return { error: 'Bạn không có quyền quản lý bình luận này.' };
+
+  const pinned = !comment.pinned;
+  await db.comment.update({ where: { id: commentId }, data: { pinned }, select: { id: true } });
+  revalidatePath(`/posts/${comment.post.slug}`);
+  return { pinned };
+}
+
+/**
+ * Ẩn hoặc hiện lại một bình luận.
+ *
+ * Ẩn chứ không xoá để còn đối chiếu khi có khiếu nại. Số đếm bình luận của
+ * bài phải chỉnh theo, không thì bài khoe nhiều bình luận hơn số đọc được.
+ */
+export async function toggleCommentHidden(commentId: string): Promise<CommentModState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  const comment = await canManageComment(userId, commentId);
+  if (!comment) return { error: 'Bạn không có quyền quản lý bình luận này.' };
+
+  const hidden = !comment.hidden;
+  await db.$transaction(async (tx) => {
+    await tx.comment.update({
+      where: { id: commentId },
+      // Bình luận đã ẩn thì bỏ ghim luôn, ghim một thứ không ai thấy là vô nghĩa.
+      data: { hidden, ...(hidden ? { pinned: false } : {}) },
+      select: { id: true },
+    });
+    await tx.post.update({
+      where: { id: comment.postId },
+      data: { commentCount: { increment: hidden ? -1 : 1 } },
+      select: { id: true },
+    });
+  });
+
+  revalidatePath(`/posts/${comment.post.slug}`);
+  return { hidden };
+}

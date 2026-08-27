@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import { fmtCount, fmtAgo } from '@/lib/utils';
 import { getLevelLooks } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
+import { Avatar, UserName } from '@/components/user/Cosmetic';
+import { cosmeticSelect, toCosmetics } from '@/lib/shop';
 
 /** Coi là đang online nếu hoạt động trong 15 phút gần đây. */
 const ONLINE_WINDOW_MS = 15 * 60 * 1000;
@@ -19,7 +21,7 @@ export async function ForumSidebar() {
       where: { lastSeenAt: { gte: since } },
       orderBy: { lastSeenAt: 'desc' },
       take: 14,
-      select: { username: true, name: true, image: true, level: true },
+      select: { username: true, name: true, image: true, level: true, ...cosmeticSelect },
     }),
     db.thread.findMany({
       where: { status: 'PUBLISHED' },
@@ -30,7 +32,7 @@ export async function ForumSidebar() {
     db.user.findMany({
       orderBy: { exp: 'desc' },
       take: 5,
-      select: { username: true, name: true, image: true, level: true, exp: true },
+      select: { username: true, name: true, image: true, level: true, exp: true, role: true, ...cosmeticSelect },
     }),
   ]);
 
@@ -49,10 +51,7 @@ export async function ForumSidebar() {
           <div className="flex flex-wrap gap-2">
             {online.map((u) => (
               <Link key={u.username} href={`/u/${u.username ?? ''}`} title={`${u.name ?? u.username} · Lv${u.level}`} className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {u.image
-                  ? <img src={u.image} alt="" className="size-9 rounded-full object-cover" />
-                  : <span className="grid size-9 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">{(u.name ?? u.username ?? 'U')[0]?.toUpperCase()}</span>}
+                <Avatar image={u.image} name={u.name ?? u.username} cosmetics={toCosmetics(u)} size={36} />
                 <Circle size={9} className="absolute -bottom-0.5 -right-0.5 fill-emerald-500 text-white dark:text-ink-900" />
               </Link>
             ))}
@@ -98,11 +97,11 @@ export async function ForumSidebar() {
           {topUsers.map((u, i) => (
             <li key={u.username} className="flex items-center gap-2">
               <span className="w-4 shrink-0 text-center text-xs font-bold text-ink-400">{i + 1}</span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {u.image
-                ? <img src={u.image} alt="" className="size-8 rounded-full object-cover" />
-                : <span className="grid size-8 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">{(u.name ?? u.username ?? 'U')[0]?.toUpperCase()}</span>}
-              <Link href={`/u/${u.username ?? ''}`} className="min-w-0 flex-1 truncate text-sm font-medium hover:text-brand-600">{u.name ?? u.username}</Link>
+              <Avatar image={u.image} name={u.name ?? u.username} cosmetics={toCosmetics(u)} size={32} />
+              <span className="min-w-0 flex-1 truncate text-sm">
+                <UserName username={u.username} name={u.name} role={u.role}
+                  cosmetics={toCosmetics(u)} className="!font-medium" />
+              </span>
               <LevelBadge level={u.level} icon={levelLooks.get(u.level)?.icon}
                 color={levelLooks.get(u.level)?.color} name={levelLooks.get(u.level)?.name} />
             </li>

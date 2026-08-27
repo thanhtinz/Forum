@@ -35,6 +35,37 @@ export async function getCosmetics(userId: string): Promise<Cosmetics> {
   return toCosmetics(u);
 }
 
+/**
+ * Cột cần lấy cho một "chip người dùng": avatar + tên + đồ trang trí.
+ *
+ * Gần như trang nào cũng in tên ai đó ra, và chỗ nào quên lấy kèm đồ trang trí
+ * thì món đồ mua rồi lại không hiện — người mua chỉ thấy nó lúc lúc có lúc
+ * không mà không hiểu vì sao. Một select dùng chung để không có chỗ nào lệch.
+ */
+export const authorChipSelect = {
+  username: true, name: true, image: true, level: true, role: true,
+  ...cosmeticSelect,
+} as const;
+
+export interface AuthorChip {
+  username: string | null;
+  name: string | null;
+  image: string | null;
+  level: number;
+  role: string;
+  cosmetics: Cosmetics;
+}
+
+/** Hàng người dùng lấy kèm `authorChipSelect` → chip gọn để truyền xuống giao diện. */
+export function toAuthorChip(u: {
+  username: string | null; name: string | null; image: string | null; level: number; role: string;
+  nameColor?: { value: string } | null;
+  avatarFrame?: { value: string } | null;
+  shopBadge?: { value: string; name: string } | null;
+} | null | undefined): AuthorChip | null {
+  return u ? { username: u.username, name: u.name, image: u.image, level: u.level, role: u.role, cosmetics: toCosmetics(u) } : null;
+}
+
 const itemSelect = {
   id: true, slug: true, kind: true, name: true, description: true,
   value: true, pricePoints: true, active: true, order: true,

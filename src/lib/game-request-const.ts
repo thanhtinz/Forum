@@ -1,3 +1,4 @@
+import type { Cosmetics } from './shop-const';
 /**
  * Hằng số của bảng yêu cầu game — tách khỏi phần đụng Prisma để ô soạn chạy
  * trên trình duyệt nhập được giới hạn ký tự mà không kéo theo máy khách Prisma.
@@ -33,7 +34,7 @@ export interface RequestItem {
   voteCount: number;
   createdAt: Date;
   handledAt: Date | null;
-  user: { username: string | null; name: string | null; level: number; role: string };
+  user: { username: string | null; name: string | null; image: string | null; level: number; role: string; cosmetics: Cosmetics };
   game: { slug: string; title: string } | null;
   /** Người đang xem đã bấm "tôi cũng muốn" chưa. */
   voted: boolean;

@@ -9,7 +9,8 @@ import {
   getFriends, getIncomingRequests, getOutgoingRequests,
   type FriendPage, type FriendRow,
 } from '@/lib/friend';
-import { fmtAgo, fmtCount, nickClass } from '@/lib/utils';
+import { fmtAgo, fmtCount } from '@/lib/utils';
+import { Avatar, UserName } from '@/components/user/Cosmetic';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Bạn bè' };
@@ -108,20 +109,13 @@ function Row({ row, kind, showMessage }: {
   return (
     <li className="flex flex-wrap items-center gap-3 p-3 sm:px-4">
       <Link href={`/u/${row.user.username ?? ''}`} className="shrink-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {row.user.image
-          ? <img src={row.user.image} alt="" className="size-10 rounded-lg object-cover" />
-          : <span className="grid size-10 place-items-center rounded-lg bg-brand-500 font-bold text-white">
-              {name[0]?.toUpperCase()}
-            </span>}
+        <Avatar image={row.user.image} name={name} cosmetics={row.user.cosmetics} size={40} rounded="rounded-lg" />
       </Link>
 
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-2">
-          <Link href={`/u/${row.user.username ?? ''}`} className={`font-bold hover:underline ${nickClass(row.user.role)}`}>
-            {name}
-          </Link>
-          <span className="retro-sub text-ink-400">Lv{row.user.level}</span>
+          <UserName username={row.user.username} name={row.user.name} role={row.user.role}
+            level={row.user.level} cosmetics={row.user.cosmetics} />
         </p>
         <p className="retro-sub text-ink-400">
           {kind === 'friend'

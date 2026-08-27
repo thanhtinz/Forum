@@ -10,7 +10,8 @@ import {
   canHandleRequests, getGameRequests, isRequestStatus,
   REQUEST_LABELS, REQUEST_STATUSES, type RequestSort, type RequestStatus,
 } from '@/lib/game-request';
-import { fmtAgo, fmtCount, nickClass } from '@/lib/utils';
+import { fmtAgo, fmtCount } from '@/lib/utils';
+import { UserName } from '@/components/user/Cosmetic';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -110,10 +111,9 @@ export default async function GameRequestPage({ searchParams }: {
                 )}
 
                 <p className="retro-sub mt-1 text-ink-400">
-                  <Link href={`/u/${r.user.username ?? ''}`} className={`font-bold hover:underline ${nickClass(r.user.role)}`}>
-                    {r.user.name ?? r.user.username}
-                  </Link>
-                  {' '}Lv{r.user.level} · {fmtAgo(r.createdAt)}
+                  <UserName username={r.user.username} name={r.user.name} role={r.user.role}
+                    level={r.user.level} cosmetics={r.user.cosmetics} />
+                  {' · '}{fmtAgo(r.createdAt)}
                 </p>
 
                 {/* Game đã lên kho — thứ người xin chờ nhất, nên để thành nút. */}

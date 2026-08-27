@@ -11,6 +11,7 @@ import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
 import { TableHead } from '@/components/forum/TableHead';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { IconGlyph } from '@/components/IconGlyph';
+import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 15;
@@ -59,7 +60,7 @@ export default async function ForumPage({ params, searchParams }: {
       orderBy: ORDER_BY[tab],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: { author: { select: { username: true, name: true, image: true } } },
+      include: { author: { select: authorChipSelect } },
     }),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -70,7 +71,7 @@ export default async function ForumPage({ params, searchParams }: {
   const rows: ThreadRowData[] = threads.map((t) => ({
     id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
     pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
-    viewCount: t.viewCount, replyCount: t.replyCount, author: t.author,
+    viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author),
     excerpt: truncate(plainText(t.content), 90),
   }));
 

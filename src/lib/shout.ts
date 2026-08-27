@@ -80,9 +80,9 @@ export async function getHere(scope: string, windowMs = SHOUT_HERE_MS) {
     where: { scope, at: { gte: since } },
     orderBy: { at: 'desc' },
     take: 20,
-    select: { user: { select: { username: true, name: true, level: true } } },
+    select: { user: { select: { username: true, name: true, level: true, role: true, ...cosmeticSelect } } },
   });
-  return rows.map((r) => r.user);
+  return rows.map((r) => ({ ...r.user, cosmetics: toCosmetics(r.user) }));
 }
 
 /** Ai được gỡ câu này: chính chủ, hoặc điều hành viên/quản trị toàn site. */

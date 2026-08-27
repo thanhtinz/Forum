@@ -1,4 +1,5 @@
 import { db } from './db';
+import { cosmeticSelect, toCosmetics } from './shop';
 import {
   canRemoveEntry, isStaff, GUESTBOOK_PAGE_SIZE, GUESTBOOK_GAP_SECONDS, GUESTBOOK_PER_DAY,
   type GuestbookItem, type Viewer,
@@ -15,7 +16,7 @@ const entrySelect = {
   hiddenAt: true,
   createdAt: true,
   authorId: true,
-  author: { select: { id: true, username: true, name: true, image: true, level: true, role: true } },
+  author: { select: { id: true, username: true, name: true, image: true, level: true, role: true, ...cosmeticSelect } },
 } as const;
 
 /**
@@ -66,7 +67,7 @@ export async function getGuestbook(
       private: r.private,
       hidden: !!r.hiddenAt,
       createdAt: r.createdAt,
-      author: r.author,
+      author: { ...r.author, cosmetics: toCosmetics(r.author) },
       canRemove: canRemoveEntry(viewer, ownerId, r.authorId),
     })),
   };

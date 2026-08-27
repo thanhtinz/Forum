@@ -1,4 +1,6 @@
 import { db } from './db';
+import { cosmeticSelect, toCosmetics } from './shop';
+import type { Cosmetics } from './shop-const';
 
 export const RANK_METRICS = [
   { key: 'points', label: 'Điểm', unit: 'điểm' },
@@ -31,6 +33,8 @@ export interface RankRow {
   name: string | null;
   image: string | null;
   level: number;
+  role: string;
+  cosmetics: Cosmetics;
   value: number;
 }
 
@@ -87,16 +91,22 @@ async function tally(
 
   const users = await db.user.findMany({
     where: { id: { in: counted.map((c) => c.userId) }, status: 'ACTIVE' },
-    select: { id: true, username: true, name: true, image: true, level: true },
+    select: { id: true, username: true, name: true, image: true, level: true, role: true, ...cosmeticSelect },
   });
   const byId = new Map(users.map((u) => [u.id, u]));
 
-  return counted
-    .map((c) => {
-      const u = byId.get(c.userId);
-      return u ? { userId: u.id, username: u.username, name: u.name, image: u.image, level: u.level, value: c.value } : null;
-    })
-    .filter((r): r is RankRow => r !== null);
+  const out: RankRow[] = [];
+  for (const c of counted) {
+    const u = byId.get(c.userId);
+    // Người đã bị khoá tài khoản rơi khỏi bảng: có mặt trong bảng đếm nhưng
+    // không có trong danh sách người còn hoạt động.
+    if (!u) continue;
+    out.push({
+      userId: u.id, username: u.username, name: u.name, image: u.image,
+      level: u.level, role: u.role, cosmetics: toCosmetics(u), value: c.value,
+    });
+  }
+  return out;
 }
 
 /** Bảng xếp hạng theo tiêu chí và khoảng thời gian. */
@@ -106,10 +116,11 @@ export async function getRanking(metric: RankMetric, period: RankPeriod): Promis
       where: { status: 'ACTIVE' },
       orderBy: [{ level: 'desc' }, { exp: 'desc' }],
       take: RANK_SIZE,
-      select: { id: true, username: true, name: true, image: true, level: true, exp: true },
+      select: { id: true, username: true, name: true, image: true, level: true, exp: true, role: true, ...cosmeticSelect },
     });
     return users.map((u) => ({
-      userId: u.id, username: u.username, name: u.name, image: u.image, level: u.level, value: u.exp,
+      userId: u.id, username: u.username, name: u.name, image: u.image,
+      level: u.level, role: u.role, cosmetics: toCosmetics(u), value: u.exp,
     }));
   }
   return tally(metric, period);

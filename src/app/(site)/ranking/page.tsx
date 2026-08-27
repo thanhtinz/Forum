@@ -8,6 +8,7 @@ import {
   RANK_METRICS, RANK_PERIODS, RANK_SIZE, getRanking, isCumulative,
   type RankMetric, type RankPeriod,
 } from '@/lib/ranking';
+import { Avatar as CosmeticAvatar, UserName } from '@/components/user/Cosmetic';
 
 export const metadata: Metadata = {
   title: 'Bảng xếp hạng',
@@ -96,15 +97,13 @@ export default async function RankingPage({ searchParams }: {
                   : <span className="text-sm font-bold text-ink-400">{i + 1}</span>}
               </span>
 
-              <Avatar image={r.image} name={r.name ?? r.username ?? 'U'} className={i < 3 ? 'size-11' : 'size-9'} />
+              <CosmeticAvatar image={r.image} name={r.name ?? r.username ?? 'U'}
+                cosmetics={r.cosmetics} size={i < 3 ? 44 : 36} />
 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
-                  {r.username
-                    ? <Link href={`/u/${r.username}`} className="truncate font-semibold text-ink-900 hover:text-brand-600 dark:text-white">
-                        {r.name ?? r.username}
-                      </Link>
-                    : <span className="truncate font-semibold text-ink-900 dark:text-white">{r.name ?? 'Ẩn danh'}</span>}
+                  <UserName username={r.username} name={r.name} role={r.role}
+                    cosmetics={r.cosmetics} asLink={!!r.username} />
                   <LevelBadge level={r.level} icon={levelLooks.get(r.level)?.icon}
                     color={levelLooks.get(r.level)?.color} name={levelLooks.get(r.level)?.name} />
                 </div>

@@ -27,6 +27,7 @@ import { getLevelLooks, type LevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 import { cosmeticSelect, toCosmetics } from '@/lib/shop';
+import { hasHidden, renderHidden, stripHidden } from '@/lib/bbcode';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,13 +35,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params;
   const thread = await db.thread.findUnique({ where: { id }, select: { title: true, content: true } });
   return thread
-    ? { title: thread.title, description: truncate(thread.content.replace(/<[^>]+>/g, ' '), 160) }
+    // Bỏ phần [hide] trước khi rút mô tả: thẻ meta đi ra ngoài trang, ai cũng
+    // đọc được mà không phải trả lời câu nào.
+    ? { title: thread.title, description: truncate(stripHidden(thread.content).replace(/<[^>]+>/g, ' '), 160) }
     : { title: 'Không tìm thấy chủ đề' };
 }
 
 const authorSelect = {
   select: {
-    username: true, name: true, image: true, level: true, createdAt: true, signature: true, mood: true,
+    username: true, name: true, image: true, level: true, createdAt: true, signature: true, mood: true, karma: true,
     _count: { select: { threads: true, replies: true } },
     ...cosmeticSelect,
   },
@@ -50,7 +53,7 @@ const authorSelect = {
 function toAuthor(
   u: {
     username: string | null; name: string | null; image: string | null; level: number;
-    createdAt: Date; signature: string | null; mood: string | null;
+    createdAt: Date; signature: string | null; mood: string | null; karma: number;
     _count: { threads: number; replies: number };
     nameColor?: { value: string } | null;
     avatarFrame?: { value: string } | null;
@@ -132,6 +135,18 @@ export default async function ThreadPage({ params, searchParams }: {
         select: { id: true, name: true },
       })
     : [];
+
+  /**
+   * Ai được đọc phần `[hide]` của bài mở đầu.
+   *
+   * Chủ chủ đề và ban điều hành thì đương nhiên; còn lại phải đã trả lời chủ
+   * đề — đúng nếp "trả lời để xem link" của forum wap. Chỉ hỏi cơ sở dữ liệu
+   * khi bài thật sự có phần ẩn, chứ chủ đề nào cũng đếm một lần thì tốn vô ích.
+   */
+  const unlockedHidden = !hasHidden(thread.content)
+    || isOwner
+    || canModerate
+    || (!!userId && (await db.reply.count({ where: { threadId: id, authorId: userId } })) > 0);
 
   const levelLooks = await getLevelLooks();
 
@@ -318,7 +333,8 @@ export default async function ThreadPage({ params, searchParams }: {
               ) : null} />
           }
         >
-          <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: thread.content }} />
+          <div className="prose prose-sm max-w-none dark:prose-invert"
+            dangerouslySetInnerHTML={{ __html: renderHidden(thread.content, unlockedHidden) }} />
 
           <div className="mt-4">
             <ThanksBar threadId={thread.id} initial={thanksOf({ threadId: thread.id })}

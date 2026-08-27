@@ -47,12 +47,65 @@ export const BBCODE_TAGS: BBCodeTag[] = [
   { code: 'quote', label: 'Trích dẫn' },
   { code: 'code', label: 'Mã nguồn' },
   { code: 'spoiler', label: 'Ẩn nội dung' },
+  { code: 'hide', label: 'Ẩn tới khi trả lời' },
   { code: 'list', label: 'Danh sách' },
   { code: 'url', label: 'Liên kết', sample: '[url=https://…]chữ hiển thị[/url]' },
   { code: 'img', label: 'Ảnh', sample: '[img]https://…[/img]' },
   { code: 'color', label: 'Màu chữ', sample: '[color=#e5484d]chữ[/color]' },
   { code: 'center', label: 'Căn giữa' },
 ];
+
+/**
+ * Mốc bọc khối `[hide]` trong HTML đã dựng.
+ *
+ * Dùng chú thích HTML chứ không phải một thẻ thật, vì phần nội dung ẩn phải
+ * CẮT ĐƯỢC ở máy chủ trước khi gửi đi. Nếu bọc bằng `<div>` thì lúc cắt phải
+ * dò cho đúng thẻ đóng của nó giữa một mớ `<div>` lồng nhau (`[center]` cũng
+ * sinh ra `<div>`), sai một nhịp là lộ nguyên phần đáng lẽ giấu. Chú thích thì
+ * không lồng vào nhau được và người dùng cũng không gõ ra nổi: mọi ký tự `<`
+ * trong bài đã bị escape từ bước đầu.
+ */
+export const HIDE_OPEN = '<!--hide-->';
+export const HIDE_CLOSE = '<!--/hide-->';
+
+/** Cả khối ẩn, kể cả hai mốc. */
+const HIDE_BLOCK = /<!--hide-->[\s\S]*?<!--\/hide-->/g;
+
+/** Bài có phần nội dung ẩn không? */
+export function hasHidden(html: string): boolean {
+  return html.includes(HIDE_OPEN);
+}
+
+/**
+ * Bỏ hẳn phần ẩn khỏi HTML — dùng cho mô tả trang, kết quả tìm kiếm, trích
+ * ngắn: những chỗ nội dung đi ra ngoài mà không kèm nút mở khoá nào.
+ */
+export function stripHidden(html: string): string {
+  return html.replace(HIDE_BLOCK, '');
+}
+
+/**
+ * Dựng phần ẩn để hiển thị.
+ *
+ * `unlocked` là đã đủ điều kiện xem (đã trả lời chủ đề, hoặc là chủ chủ đề /
+ * ban điều hành). Chưa đủ thì phần nội dung bị THAY, không phải bị che bằng
+ * CSS — có che thì bấm "xem nguồn trang" là đọc được hết.
+ *
+ * Chỗ thay dùng `<span>` chứ không dùng `<div>`: khối ẩn hay nằm giữa một
+ * đoạn văn (`<p>Link tải: …</p>`), mà `<div>` nằm trong `<p>` là HTML sai.
+ */
+export function renderHidden(html: string, unlocked: boolean): string {
+  if (!hasHidden(html)) return html;
+  if (unlocked) {
+    return html
+      .replaceAll(HIDE_OPEN, '<span class="bb-hide-open"><b>Nội dung ẩn</b>')
+      .replaceAll(HIDE_CLOSE, '</span>');
+  }
+  return html.replace(
+    HIDE_BLOCK,
+    '<span class="bb-hide">Nội dung này bị ẩn — hãy trả lời chủ đề để xem.</span>',
+  );
+}
 
 /**
  * Chuyển BBCode thành HTML. `[code]` được xử lý trước và giữ nguyên nội dung
@@ -91,6 +144,9 @@ export function bbcodeToHtml(input: string): string {
     [/\[quote\]([\s\S]*?)\[\/quote\]/gi, '<blockquote>$1</blockquote>'],
     [/\[quote=([^\]]{1,60})\]([\s\S]*?)\[\/quote\]/gi, '<blockquote><cite>$1</cite>$2</blockquote>'],
     [/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi, '<details><summary>Nội dung ẩn</summary>$1</details>'],
+    // [hide] chỉ đánh mốc ở đây; cắt hay mở là việc của `renderHidden`, vì lúc
+    // dựng HTML (khi đăng bài) chưa biết ai sẽ đọc.
+    [/\[hide\]([\s\S]*?)\[\/hide\]/gi, `${HIDE_OPEN}$1${HIDE_CLOSE}`],
   ];
   for (let pass = 0; pass < 4; pass++) {
     for (const [re, rep] of simple) s = s.replace(re, rep);
@@ -145,6 +201,9 @@ export function bbcodeToHtml(input: string): string {
 /** Rút gọn BBCode thành văn bản thuần (dùng cho mô tả, trích dẫn ngắn). */
 export function bbcodeToText(input: string): string {
   return input
+    // Phần ẩn bỏ luôn cả ruột: văn bản thuần đi vào mô tả trang, thẻ meta,
+    // kết quả tìm kiếm — toàn những chỗ không ai phải trả lời mới đọc được.
+    .replace(/\[hide\][\s\S]*?\[\/hide\]/gi, ' ')
     .replace(/\[\/?[a-z*]+(=[^\]]*)?\]/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();

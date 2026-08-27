@@ -15,6 +15,7 @@ import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { auth } from '@/lib/auth';
 import { unreadThreadIds } from '@/lib/thread-read';
 import { MarkAllReadButton } from '@/components/forum/MarkAllReadButton';
+import { threadExcerpt } from '@/lib/bbcode';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 15;
@@ -78,7 +79,7 @@ export default async function ForumPage({ params, searchParams }: {
     id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
     pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
     viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author),
-    excerpt: truncate(plainText(t.content), 90),
+    excerpt: threadExcerpt(t.content),
     unread: unread.has(t.id),
   }));
 

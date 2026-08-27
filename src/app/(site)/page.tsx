@@ -13,6 +13,7 @@ import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { ForumStatsBar } from '@/components/forum/ForumStatsBar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
+import { threadExcerpt } from '@/lib/bbcode';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,7 +82,7 @@ export default async function HomePage() {
     id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
     pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
     viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author), forum: t.forum,
-    excerpt: truncate(plainText(t.content), 90),
+    excerpt: threadExcerpt(t.content),
     unread: unread.has(t.id),
   }));
 

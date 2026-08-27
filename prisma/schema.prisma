@@ -103,6 +103,10 @@ model User {
   guestbookWritten  GuestbookEntry[] @relation("GuestbookAuthor")
   guestbookHidden   GuestbookEntry[] @relation("GuestbookHider")
 
+  gameRequests        GameRequest[]     @relation("GameRequestBy")
+  gameRequestsHandled GameRequest[]     @relation("GameRequestHandler")
+  gameRequestVotes    GameRequestVote[]
+
   @@index([level])
   @@index([createdAt])
 }
@@ -1083,6 +1087,7 @@ model Game {
   favorites  Favorite[]
   reports    Report[]
   uniqueHits GameUniqueHit[]
+  requests   GameRequest[]
 
   @@index([status, publishedAt])
   @@index([featured])
@@ -1642,4 +1647,70 @@ model GuestbookEntry {
 
   @@index([ownerId, createdAt])
   @@index([authorId, createdAt])
+}
+
+/**
+ * Yêu cầu game — chỗ người dùng xin một game mà kho chưa có.
+ *
+ * Kho game chỉ quản trị viên đăng, nên không có yêu cầu game thì người dùng
+ * không có cách nào nói ra là mình đang tìm gì. Trang "yêu cầu game" là mục
+ * quen thuộc của ovigame / phonho ngày trước, và nó cũng là danh sách việc
+ * cần làm cho người quản kho.
+ */
+model GameRequest {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation("GameRequestBy", fields: [userId], references: [id], onDelete: Cascade)
+
+  title String
+  /// Mô tả thêm: dòng máy, độ phân giải, bản Việt hoá hay bản gốc…
+  note  String? @db.Text
+
+  status GameRequestStatus @default(PENDING)
+  /// Lời nhắn của người quản kho khi đổi trạng thái.
+  adminNote String? @db.Text
+
+  /// Game đã lên kho để đáp ứng yêu cầu này.
+  gameId String?
+  game   Game?   @relation(fields: [gameId], references: [id], onDelete: SetNull)
+
+  /// Số người bấm "tôi cũng muốn" — đếm sẵn để xếp hạng khỏi phải đếm lại.
+  voteCount Int @default(0)
+
+  handledAt   DateTime?
+  handledById String?
+  handledBy   User?     @relation("GameRequestHandler", fields: [handledById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  votes GameRequestVote[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+  @@index([voteCount])
+}
+
+enum GameRequestStatus {
+  /// Chờ người quản kho xem.
+  PENDING
+  /// Đã nhận, đang tìm.
+  ACCEPTED
+  /// Đã có game trên kho.
+  DONE
+  /// Không làm được (không tìm ra, trùng, không hợp lệ…).
+  REJECTED
+}
+
+/** Một người bấm "tôi cũng muốn" cho một yêu cầu. */
+model GameRequestVote {
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestId String
+  request   GameRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, requestId])
+  @@index([requestId])
 }

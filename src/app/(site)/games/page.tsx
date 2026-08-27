@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
   Award, Clock, Download, Eye, Flame, Gamepad2, Languages, LayoutGrid, Library,
-  MonitorSmartphone, Shuffle, Sparkles, Trophy,
+  Inbox, MonitorSmartphone, Shuffle, Sparkles, Trophy,
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { gameCardSelect, gameTint, toGameCard } from '@/lib/game';
@@ -61,6 +61,9 @@ Tải JAR/JAD về máy thật, kèm checksum để đối chiếu.
             </Link>
             <Link href="/games/random" prefetch={false} className="chip bg-white/20 px-3 py-1.5 backdrop-blur hover:bg-white/30">
               <Shuffle size={14} className="mr-1" /> Game ngẫu nhiên
+            </Link>
+            <Link href="/games/yeu-cau" className="chip bg-white/20 px-3 py-1.5 backdrop-blur hover:bg-white/30">
+              <Inbox size={14} className="mr-1" /> Yêu cầu game
             </Link>
           </div>
 

@@ -8,6 +8,7 @@ import { getSiteSettings } from '@/lib/site';
 import { BoardList, type BoardSection, type BoardRow } from '@/components/forum/BoardList';
 import { TableHead } from '@/components/forum/TableHead';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
+import { unreadThreadIds } from '@/lib/thread-read';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { ForumStatsBar } from '@/components/forum/ForumStatsBar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
@@ -74,11 +75,14 @@ export default async function HomePage() {
   }
   if (loose.length > 0) sections.push({ id: 'loose', name: 'Chuyên mục khác', icon: '💬', boards: loose });
 
+  const unread = await unreadThreadIds(session?.user?.id ?? null, latestThreads);
+
   const threads: ThreadRowData[] = latestThreads.map((t) => ({
     id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
     pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
     viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author), forum: t.forum,
     excerpt: truncate(plainText(t.content), 90),
+    unread: unread.has(t.id),
   }));
 
   const firstForum = forums.find((f) => f.postAccess === 'ALL') ?? forums[0];

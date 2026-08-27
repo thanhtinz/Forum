@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Pin, Lock, MessageSquare, Eye, Award, CheckCircle2 } from 'lucide-react';
-import { fmtCount, fmtAgo } from '@/lib/utils';
+import { cn, fmtCount, fmtAgo } from '@/lib/utils';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { NO_COSMETICS } from '@/lib/shop-const';
 import type { AuthorChip } from '@/lib/shop';
@@ -19,6 +19,8 @@ export interface ThreadRowData {
   author: AuthorChip | null;
   forum?: { slug: string; name: string } | null;
   excerpt?: string | null;
+  /** Có bài mới kể từ lần người đang xem ghé chủ đề này. */
+  unread?: boolean;
 }
 
 /**
@@ -41,9 +43,18 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
           {thread.pinned && <Pin size={13} className="shrink-0 text-brand-500" aria-label="Ghim" />}
           {thread.locked && <Lock size={13} className="shrink-0 text-ink-400" aria-label="Đã khoá" />}
-          <Link href={slug ? `/forum/${slug}/${thread.id}` : '#'} className="line-clamp-2 font-semibold leading-snug text-ink-900 group-hover:text-brand-600 dark:text-white">
+          <Link href={slug ? `/forum/${slug}/${thread.id}` : '#'}
+            className={cn('line-clamp-2 leading-snug text-ink-900 group-hover:text-brand-600 dark:text-white',
+              thread.unread ? 'font-bold' : 'font-semibold')}>
             {thread.title}
           </Link>
+          {/* Dấu "mới": chữ đậm thôi thì người mù màu lẫn người nhìn lướt đều
+              dễ bỏ qua, nên kèm một cái nhãn đọc được. */}
+          {thread.unread && (
+            <span className="chip gap-1 bg-rose-100 !py-0 text-[10px] font-bold uppercase text-rose-600 dark:bg-rose-950/50 dark:text-rose-300">
+              Mới
+            </span>
+          )}
           {thread.solved && <CheckCircle2 size={13} className="shrink-0 text-emerald-500" aria-label="Đã giải quyết" />}
           {thread.bountyPoints ? (
             <span className="chip gap-1 bg-amber-100 text-amber-600 dark:bg-amber-950/50"><Award size={11} />{fmtCount(thread.bountyPoints)}</span>

@@ -12,6 +12,9 @@ import { TableHead } from '@/components/forum/TableHead';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { IconGlyph } from '@/components/IconGlyph';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
+import { auth } from '@/lib/auth';
+import { unreadThreadIds } from '@/lib/thread-read';
+import { MarkAllReadButton } from '@/components/forum/MarkAllReadButton';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 15;
@@ -63,6 +66,9 @@ export default async function ForumPage({ params, searchParams }: {
       include: { author: { select: authorChipSelect } },
     }),
   ]);
+  const session = await auth();
+  const unread = await unreadThreadIds(session?.user?.id ?? null, threads);
+
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const badge = FORUM_ACCESS_BADGE[forum.postAccess];
   const tint = forumTint(forum.slug);
@@ -73,6 +79,7 @@ export default async function ForumPage({ params, searchParams }: {
     pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
     viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author),
     excerpt: truncate(plainText(t.content), 90),
+    unread: unread.has(t.id),
   }));
 
   return (
@@ -119,6 +126,7 @@ export default async function ForumPage({ params, searchParams }: {
               </Link>
             ))}
           </div>
+          {session?.user && <MarkAllReadButton />}
           <Link href={`/forum/${slug}/new`} className="btn-primary shrink-0 whitespace-nowrap !px-3 !py-1.5 text-sm sm:ml-auto">
             <PenLine size={15} /> Đăng chủ đề
           </Link>

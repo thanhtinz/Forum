@@ -25,6 +25,22 @@
   --nova-border: rgba(50, 50, 50, 0.07);
   --nova-shadow: rgba(116, 116, 116, 0.10);
   --nova-shadow-strong: rgba(116, 116, 116, 0.20);
+
+  /*
+   * Bảng màu "hoài niệm" — lấy từ giao diện mặc định của JohnCMS, mã nguồn
+   * dựng nên phần lớn forum wap Việt Nam quãng 2008–2012:
+   *   .phdr #bfc6cf viền vát sáng-trên/tối-dưới · .list1 #eeecd9 · .list2 #f5f5f5
+   *   .sub  gạch chấm #c6c17f
+   * Ở đây pha nhạt lại cho hợp nền trắng hiện đại: vẫn nhận ra ngay là
+   * bảng forum ngày xưa nhưng không chói và vẫn đủ tương phản chữ.
+   */
+  --retro-head-top: #f4f6fa;
+  --retro-head-bottom: #e2e7ef;
+  --retro-head-line: #b9c2d0;
+  --retro-head-text: #3b4656;
+  --retro-stripe: rgba(238, 236, 217, 0.5);
+  --retro-rule: #cfcb9a;
+  --retro-chip: rgba(191, 198, 207, 0.28);
 }
 
 .dark {
@@ -37,6 +53,15 @@
   --nova-border: rgba(255, 255, 255, 0.06);
   --nova-shadow: rgba(0, 0, 0, 0.28);
   --nova-shadow-strong: rgba(0, 0, 0, 0.45);
+
+  /* Nền tối không có bản gốc để bắt chước nên chỉ giữ lại đúng cái "khối nổi". */
+  --retro-head-top: #3a3c40;
+  --retro-head-bottom: #303235;
+  --retro-head-line: #222427;
+  --retro-head-text: #e8edf3;
+  --retro-stripe: rgba(255, 255, 255, 0.028);
+  --retro-rule: rgba(207, 203, 154, 0.35);
+  --retro-chip: rgba(255, 255, 255, 0.06);
 }
 
 html, body {
@@ -96,6 +121,59 @@ html, body {
     content: '';
     @apply absolute bottom-0.5 left-0 h-[3px] w-9 rounded-full bg-brand-500;
   }
+  /* ── Lớp hoài niệm ─────────────────────────────────────────────────────
+   * Bố cục vẫn là bố cục hiện đại; đây chỉ là lớp áo gợi lại forum wap
+   * ngày xưa. Bốn thứ ai từng dùng JohnCMS cũng nhớ:
+   *   1. thanh tiêu đề mục nổi khối, viền vát
+   *   2. hàng kẻ so le hai màu
+   *   3. dấu » trước mỗi liên kết mục
+   *   4. dòng phụ chữ Tahoma nhỏ xíu, ngăn bằng gạch chấm
+   */
+
+  /* 1. Thanh tiêu đề kiểu .phdr: sáng trên, tối dưới, viền đáy đậm. */
+  .retro-head {
+    background: linear-gradient(var(--retro-head-top), var(--retro-head-bottom));
+    border-bottom: 1px solid var(--retro-head-line);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.75);
+    color: var(--retro-head-text);
+  }
+  .dark .retro-head {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+
+  /* 2. Kẻ so le .list1/.list2. Hover của Tailwind nằm ở lớp utilities phía
+   *    sau nên vẫn đè được lên nền này — hàng vẫn sáng lên khi rê chuột. */
+  .retro-stripe > *:nth-child(even) {
+    background: var(--retro-stripe);
+  }
+
+  /* 3. Dấu » dẫn trước tên chuyên mục. */
+  .retro-arrow::before {
+    content: '»';
+    @apply mr-1 font-normal text-brand-400;
+  }
+
+  /* 4. Dòng phụ: Tahoma là phông mặc định của mọi forum Việt thời đó. */
+  .retro-sub {
+    font-family: Tahoma, Verdana, Geneva, sans-serif;
+    @apply text-[11px] leading-relaxed;
+  }
+  .retro-rule {
+    border-top: 1px dotted var(--retro-rule);
+  }
+
+  /* Ô số liệu ở rail phải — khối nhỏ nổi lên như ô đếm bài ngày xưa. */
+  .retro-count {
+    background: var(--retro-chip);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.6);
+    font-family: Tahoma, Verdana, Geneva, sans-serif;
+    font-variant-numeric: tabular-nums;
+    @apply rounded-md py-0.5;
+  }
+  .dark .retro-count {
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+
   /* Nhắc tên @thành_viên trong nội dung BBCode đã dựng sẵn */
   .mention {
     @apply font-medium text-brand-600 no-underline dark:text-brand-400;

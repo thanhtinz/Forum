@@ -49,9 +49,9 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
           ) : null}
         </div>
 
-        {thread.excerpt && <p className="mt-0.5 line-clamp-1 text-xs text-ink-400">{thread.excerpt}</p>}
+        {thread.excerpt && <p className="retro-sub mt-0.5 line-clamp-1 text-ink-400">{thread.excerpt}</p>}
 
-        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-ink-400">
+        <p className="retro-sub retro-rule mt-1 flex flex-wrap items-center gap-x-1.5 pt-1 text-ink-400">
           <Link href={`/u/${thread.author?.username ?? ''}`} className="font-medium hover:text-brand-600">{name}</Link>
           {/* Thời gian nằm ở cột riêng khi màn hình đủ rộng */}
           <span className="lg:hidden">·</span>
@@ -72,13 +72,13 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
       </div>
 
       {/* Rail phải: hoạt động cuối · trả lời · lượt xem */}
-      <div className="hidden w-40 shrink-0 text-xs text-ink-400 lg:block">
+      <div className="retro-sub hidden w-40 shrink-0 text-ink-400 lg:block">
         <span className="line-clamp-1">{fmtAgo(at)}</span>
       </div>
-      <div className="hidden w-16 shrink-0 text-center text-sm font-bold text-ink-700 sm:block dark:text-ink-100">
+      <div className="retro-count hidden w-16 shrink-0 text-center text-sm font-bold text-ink-700 sm:block dark:text-ink-100">
         {fmtCount(thread.replyCount)}
       </div>
-      <div className="hidden w-20 shrink-0 text-center text-sm font-bold text-ink-700 md:block dark:text-ink-100">
+      <div className="retro-count hidden w-20 shrink-0 text-center text-sm font-bold text-ink-700 md:block dark:text-ink-100">
         {fmtCount(thread.viewCount)}
       </div>
     </div>

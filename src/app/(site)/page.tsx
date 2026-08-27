@@ -9,6 +9,7 @@ import { BoardList, type BoardSection, type BoardRow } from '@/components/forum/
 import { TableHead } from '@/components/forum/TableHead';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
+import { ForumStatsBar } from '@/components/forum/ForumStatsBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -116,7 +117,7 @@ export default async function HomePage() {
           <section className="card overflow-hidden">
             <TableHead title="Bài mới" icon={<Clock size={15} className="text-brand-500" />}
               cols={{ last: 'Hoạt động', a: 'Trả lời', b: 'Lượt xem' }} />
-            <div className="divide-y divide-ink-100 dark:divide-ink-800">
+            <div className="retro-stripe divide-y divide-ink-100 dark:divide-ink-800">
               {threads.length === 0
                 ? <p className="px-4 py-8 text-center text-sm text-ink-400">Chưa có chủ đề nào. Hãy mở màn bằng bài đầu tiên.</p>
                 : threads.map((t) => <ThreadRow key={t.id} thread={t} showForum />)}
@@ -140,6 +141,8 @@ export default async function HomePage() {
               </ul>
             </section>
           )}
+
+          <ForumStatsBar />
         </div>
 
         <div className="lg:sticky lg:top-[72px] lg:self-start"><ForumSidebar /></div>

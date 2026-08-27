@@ -125,7 +125,7 @@ export default async function SearchPage({ searchParams }: {
             {threads.length === 0 ? (
               <p className="p-10 text-center text-sm text-ink-400">Không tìm thấy chủ đề nào cho “{q}”.</p>
             ) : (
-              <div className="divide-y divide-ink-100 dark:divide-ink-800">
+              <div className="retro-stripe divide-y divide-ink-100 dark:divide-ink-800">
                 {threads.map((t) => <ThreadRow key={t.id} thread={t} showForum />)}
               </div>
             )}

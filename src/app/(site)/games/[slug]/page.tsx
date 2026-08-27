@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import {
   Activity, AlertTriangle, Building2, Calendar, Clock, Download, Eye,
-  Gamepad2, Keyboard, Languages, MonitorSmartphone,
+  Gamepad2, Keyboard, Languages, MessageSquare, MonitorSmartphone,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -20,6 +20,7 @@ import { GameGallery } from '@/components/game/GameGallery';
 import { GameGrid } from '@/components/game/GameGrid';
 import { GameViewTracker } from '@/components/game/GameViewTracker';
 import { RatingStars } from '@/components/game/RatingStars';
+import { Comments } from '@/components/post/Comments';
 
 export const dynamic = 'force-dynamic';
 
@@ -314,6 +315,16 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
               <Stat label="Trending" value={game.trendingScore.toFixed(1)} sub="điểm xu hướng" />
               <Stat label="Cập nhật" value={format(game.updatedAt, 'dd/MM/yyyy')} sub={game.publishedAt ? `đăng ${format(game.publishedAt, 'dd/MM/yyyy')}` : ''} />
             </div>
+          </section>
+
+          {/* Bình luận — wap tải game ngày xưa trang game nào cũng có, đó mới
+              là chỗ người ta hỏi "máy mình chạy được không". */}
+          <section className="card p-4 sm:p-5">
+            <h2 className="zib-title mb-4 flex items-center gap-2">
+              <MessageSquare size={17} /> Bình luận
+              {game.commentCount > 0 && <span className="text-ink-400">({fmtCount(game.commentCount)})</span>}
+            </h2>
+            <Comments gameId={game.id} slug={game.slug} basePath="/games" loggedIn={!!session?.user?.id} />
           </section>
 
           {related.length > 0 && (

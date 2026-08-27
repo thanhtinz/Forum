@@ -12,19 +12,33 @@ import { CommentBody } from './CommentBody';
 import { CommentOwnerActions } from './CommentOwnerActions';
 import { EditScope } from '@/components/EditScope';
 
-/** Danh sách bình luận phân cấp 1 mức (bình luận gốc + phản hồi). */
-export async function Comments({ postId, slug, loggedIn }: { postId: string; slug: string; loggedIn: boolean }) {
+/**
+ * Danh sách bình luận phân cấp 1 mức (bình luận gốc + phản hồi).
+ *
+ * Dùng chung cho bài viết và cho game — truyền `postId` hoặc `gameId`. Game
+ * không có tác giả nên chỉ ban quản trị mới kiểm duyệt được bình luận ở đó.
+ */
+export async function Comments({ postId, gameId, slug, loggedIn, basePath = '/posts' }: {
+  postId?: string;
+  gameId?: string;
+  slug: string;
+  loggedIn: boolean;
+  /** Tiền tố đường dẫn để quay lại sau khi đăng nhập: /posts hoặc /games. */
+  basePath?: '/posts' | '/games';
+}) {
   const session = await auth();
   const me = session?.user?.id ?? null;
   const role = (session?.user as { role?: string } | undefined)?.role;
 
   // Chủ bài viết và quản trị viên quản lý được bình luận trong bài này, và
   // thấy cả bình luận đang ẩn (có dấu riêng) để còn hiện lại được.
-  const post = await db.post.findUnique({ where: { id: postId }, select: { authorId: true } });
-  const canManage = !!me && (post?.authorId === me || role === 'ADMIN' || role === 'MODERATOR');
+  const owner = postId
+    ? await db.post.findUnique({ where: { id: postId }, select: { authorId: true } })
+    : null;
+  const canManage = !!me && (owner?.authorId === me || role === 'ADMIN' || role === 'MODERATOR');
 
   const roots = await db.comment.findMany({
-    where: { postId, parentId: null, ...(canManage ? {} : { hidden: false }) },
+    where: { postId: postId ?? null, gameId: gameId ?? null, parentId: null, ...(canManage ? {} : { hidden: false }) },
     orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
     take: 50,
     include: {
@@ -37,11 +51,11 @@ export async function Comments({ postId, slug, loggedIn }: { postId: string; slu
     },
   });
 
-  const callbackUrl = `/posts/${slug}`;
+  const callbackUrl = `${basePath}/${slug}`;
 
   return (
     <div className="space-y-6">
-      <CommentForm postId={postId} slug={slug} loggedIn={loggedIn} callbackUrl={callbackUrl} />
+      <CommentForm postId={postId} gameId={gameId} slug={slug} loggedIn={loggedIn} callbackUrl={callbackUrl} />
 
       {roots.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-8 text-center text-ink-400">
@@ -53,14 +67,14 @@ export async function Comments({ postId, slug, loggedIn }: { postId: string; slu
           {roots.map((c) => (
             <li key={c.id}>
               <CommentRow c={c} me={me} canManage={canManage}
-                postId={postId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
+                postId={postId} gameId={gameId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
               {c.children.length > 0 && (
                 <ul className="mt-3 space-y-3 border-l-2 border-ink-100 pl-4 dark:border-ink-800">
                   {c.children.map((ch) => (
                     <li key={ch.id}>
                       {/* Phản hồi cho phản hồi vẫn gắn vào bình luận gốc: danh sách chỉ lồng một mức. */}
                       <CommentRow c={ch} me={me} canManage={canManage} small
-                        postId={postId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
+                        postId={postId} gameId={gameId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
                     </li>
                   ))}
                 </ul>
@@ -79,9 +93,9 @@ type Row = {
   author: { username: string | null; name: string | null; image: string | null };
 };
 
-function CommentRow({ c, me, canManage, small, postId, slug, callbackUrl, rootId }: {
+function CommentRow({ c, me, canManage, small, postId, gameId, slug, callbackUrl, rootId }: {
   c: Row; me: string | null; canManage: boolean; small?: boolean;
-  postId: string; slug: string; callbackUrl: string;
+  postId?: string; gameId?: string; slug: string; callbackUrl: string;
   /** Bình luận gốc của nhánh — nơi phản hồi mới sẽ gắn vào. */
   rootId: string;
 }) {
@@ -110,7 +124,7 @@ function CommentRow({ c, me, canManage, small, postId, slug, callbackUrl, rootId
         {(canManage || !!me) && (
           <div className="mt-1 flex flex-wrap items-center gap-3">
             {me && !c.hidden && (
-              <CommentReply postId={postId} slug={slug} rootId={rootId} callbackUrl={callbackUrl}
+              <CommentReply postId={postId} gameId={gameId} slug={slug} rootId={rootId} callbackUrl={callbackUrl}
                 mention={small ? c.author?.username : null} />
             )}
             {isOwner && <CommentOwnerActions commentId={c.id} />}

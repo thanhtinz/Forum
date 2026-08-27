@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Backpack, Coins, ShoppingBag } from 'lucide-react';
+import { Backpack, ShoppingBag } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Pagination } from '@/components/Pagination';
@@ -50,15 +50,11 @@ export default async function ShopPage({ searchParams }: {
           </p>
         </div>
 
+        {/* Số điểm nằm trên thanh đầu trang, không nhắc lại ở đây. */}
         {viewerId && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="chip gap-1.5 bg-amber-100 text-amber-700 dark:bg-amber-950/50">
-              <Coins size={14} /> {fmtCount(me?.points ?? 0)} điểm
-            </span>
-            <Link href="/user/items" className="btn-outline !py-1.5 text-sm">
-              <Backpack size={15} /> Kho đồ của tôi
-            </Link>
-          </div>
+          <Link href="/user/items" className="btn-outline !py-1.5 text-sm">
+            <Backpack size={15} /> Kho đồ của tôi
+          </Link>
         )}
       </div>
 

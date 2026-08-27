@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Search, Bell, PenLine, ChevronDown, MessageSquare } from 'lucide-react';
+import { Search, Bell, PenLine, ChevronDown, MessageSquare, Coins } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { touchPresence } from '@/lib/presence';
@@ -11,6 +11,7 @@ import { IconGlyph } from './IconGlyph';
 import { MobileNav } from './MobileNav';
 import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
+import { fmtCount } from '@/lib/utils';
 
 export async function Header() {
   const session = await auth();
@@ -89,6 +90,13 @@ export async function Header() {
                     {unreadMsg > 9 ? '9+' : unreadMsg}
                   </span>
                 )}
+              </Link>
+              {/* Điểm là thứ người dùng ngó liên tục — mua đồ, mở khoá game,
+                  tặng nhau — nên để thẳng trên thanh chứ không giấu trong menu.
+                  Màn hình hẹp thì ẩn đi cho khỏi tràn ngang. */}
+              <Link href="/user/points" title="Điểm của bạn"
+                className="hidden items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-sm font-bold tabular-nums text-amber-600 hover:bg-amber-100 sm:inline-flex dark:bg-amber-950/40 dark:hover:bg-amber-900/50">
+                <Coins size={15} /> {fmtCount(user.points ?? 0)}
               </Link>
               <Link href="/user/notifications" title="Thông báo"
                 className="relative grid size-9 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">

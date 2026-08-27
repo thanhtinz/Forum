@@ -77,6 +77,14 @@ export default async function run(check) {
     await member.waitForTimeout(800);
     check('quầy hàng hiện món vừa tạo', (await member.locator('text=Nick đỏ kiểm thử').count()) > 0);
 
+    // Điểm hiện ở thanh đầu trang, không nhắc lại trong thân trang.
+    const chip = member.locator('header a[href="/user/points"]');
+    check('thanh đầu trang có ô điểm', (await chip.count()) > 0);
+    check('ô điểm hiện đúng số', (await chip.first().innerText()).includes('100'),
+      (await chip.first().innerText()).trim());
+    check('trang cửa hàng không nhắc lại số điểm',
+      (await member.locator('main >> text=/\\d+ điểm/').count()) === 0);
+
     const row = (page, ten) => page.locator('li').filter({ hasText: ten });
     await row(member, 'Nick đỏ kiểm thử').locator('button:has-text("Mua")').click();
     await member.waitForTimeout(2500);
@@ -111,6 +119,8 @@ export default async function run(check) {
     await member.goto(`${BASE}/user/items`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(800);
     check('kho đồ hiện món đã mua', (await member.locator('text=Nick đỏ kiểm thử').count()) > 0);
+    check('kho đồ cũng không nhắc lại số điểm',
+      (await member.locator('main >> text=/\\d+ điểm/').count()) === 0);
     await row(member, 'Nick đỏ kiểm thử').locator('button:has-text("Đang đeo")').click();
     await member.waitForTimeout(2500);
     const off = await db.user.findUnique({ where: { id: minh.id }, select: { nameColorId: true } });

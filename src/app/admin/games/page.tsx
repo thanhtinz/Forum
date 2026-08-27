@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Download, Eye, Plus, RefreshCw, Search, Star } from 'lucide-react';
+import { Download, Eye, FolderTree, Plus, RefreshCw, Search, Star } from 'lucide-react';
 import { db } from '@/lib/db';
 import { requireSuperAdmin } from '@/lib/admin';
 import { GAME_STATUS_LABEL, assetUrl } from '@/lib/game';
@@ -60,6 +60,7 @@ export default async function AdminGamesPage({ searchParams }: {
           <form action={refreshTrending}>
             <button type="submit" className="btn-outline !py-1.5 text-sm"><RefreshCw size={14} /> Tính lại trending</button>
           </form>
+          <Link href="/admin/games/danh-muc" className="btn-outline !py-1.5 text-sm"><FolderTree size={14} /> Danh mục</Link>
           <Link href="/admin/games/new" className="btn-primary !py-1.5 text-sm"><Plus size={15} /> Thêm game</Link>
         </div>
       </div>

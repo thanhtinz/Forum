@@ -12,6 +12,7 @@ export interface GameEditFormProps {
     description: string | null; gameplay: string | null; icon: string | null; cover: string | null;
     trailerUrl: string | null; developer: string | null; publisher: string | null;
     releaseYear: number | null; language: string; vietnamized: boolean; featured: boolean;
+    pricePoints: number | null;
     status: string; platformId: string | null; resolutionId: string | null;
     compatibilityNote: string | null; knownIssues: string | null;
     controls: unknown;
@@ -89,6 +90,12 @@ export function GameEditForm({ game, genres, selectedGenreIds, platforms, resolu
         <Toggle label="Nổi bật" name="featured" defaultChecked={game.featured} />
       </div>
 
+      <Field label="Giá mở khoá tải xuống (điểm)"
+        hint="Để trống hoặc 0 thì ai cũng tải được. Có giá thì thành viên phải trả điểm một lần mới thấy phần tải.">
+        <input name="pricePoints" type="number" min={0} max={100000}
+          defaultValue={game.pricePoints ?? ''} className="input max-w-xs" placeholder="0" />
+      </Field>
+
       <Field label="Mô tả"><textarea name="description" rows={4} defaultValue={game.description ?? ''} className="input" /></Field>
       <Field label="Lối chơi"><textarea name="gameplay" rows={3} defaultValue={game.gameplay ?? ''} className="input" /></Field>
       <Field label="Ghi chú tương thích"><textarea name="compatibilityNote" rows={2} defaultValue={game.compatibilityNote ?? ''} className="input" /></Field>
@@ -107,11 +114,12 @@ export function GameEditForm({ game, genres, selectedGenreIds, platforms, resolu
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block">
       <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-ink-400">{label}</span>
       {children}
+      {hint && <span className="mt-1 block text-xs font-normal normal-case text-ink-400">{hint}</span>}
     </label>
   );
 }

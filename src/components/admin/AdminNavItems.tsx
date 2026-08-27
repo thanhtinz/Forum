@@ -124,6 +124,7 @@ export const ADMIN_GROUPS: Group[] = [
           { label: 'Lưu trữ', status: 'ARCHIVED' },
         ],
       },
+      { href: '/admin/games/danh-muc', label: 'Danh mục game', icon: FolderTree },
     ],
   },
 ];

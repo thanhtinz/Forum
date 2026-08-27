@@ -103,8 +103,9 @@ export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
     <div className="card p-4 sm:p-5" id="download">
       <h3 className="zib-title mb-4 flex items-center gap-2"><Package size={18} /> Tải game</h3>
 
-      {/* Nút nền tảng */}
-      <div className="mb-4 grid grid-cols-2 gap-2">
+      {/* Nút nền tảng — xếp theo bề rộng chữ chứ không chia đôi cứng: chia đôi
+          thì một nền tảng duy nhất vẫn chỉ được nửa cột và bị cắt mất tên. */}
+      <div className="mb-4 flex flex-wrap gap-2">
         {platforms.map((p) => {
           const meta = DOWNLOAD_PLATFORMS[p];
           const Icon = PLATFORM_ICON[meta.icon];
@@ -116,14 +117,14 @@ export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
               aria-pressed={active}
               onClick={() => { setPlatform(p); setVersionId(null); setError(null); }}
               className={cn(
-                'flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold transition',
+                'flex items-center gap-2 whitespace-nowrap rounded-xl border px-3 py-2 text-sm font-semibold transition',
                 active
                   ? 'border-brand-500 bg-brand-500 text-white'
                   : 'border-ink-200 text-ink-600 hover:border-brand-400 hover:text-brand-600 dark:border-ink-700 dark:text-ink-300',
               )}
             >
               <Icon size={16} className="shrink-0" />
-              <span className="truncate">{meta.label}</span>
+              <span>{meta.label}</span>
             </button>
           );
         })}

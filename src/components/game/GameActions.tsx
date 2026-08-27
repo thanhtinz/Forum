@@ -65,7 +65,9 @@ export function GameActions({ gameId, initialFavorite, favoriteCount, initialRat
 
   return (
     <div className="card p-4">
-      <div className="flex items-center justify-between gap-2">
+      {/* Ba nút chia đều một hàng. Cột phải chỉ rộng 300px nên chữ phải được
+          giữ trên một dòng, không thì "Chia sẻ" và "Báo lỗi" gãy làm đôi. */}
+      <div className="grid grid-cols-3 gap-2">
         <button
           type="button" onClick={onFav} disabled={pending}
           // Nút chỉ có trái tim và một con số, không có chữ nào — thiếu nhãn
@@ -73,14 +75,16 @@ export function GameActions({ gameId, initialFavorite, favoriteCount, initialRat
           title={fav ? 'Bỏ khỏi mục đã lưu' : 'Lưu game này'}
           aria-label={fav ? 'Bỏ khỏi mục đã lưu' : 'Lưu game này'}
           aria-pressed={fav}
-          className={cn('btn flex-1 border', fav
+          className={cn('btn min-w-0 whitespace-nowrap border !px-2', fav
             ? 'border-accent-500 bg-accent-500 text-white'
             : 'border-ink-200 text-ink-600 hover:border-accent-400 hover:text-accent-500 dark:border-ink-700 dark:text-ink-300')}
         >
           <Heart size={16} fill={fav ? 'currentColor' : 'none'} /> {fmtCount(favCount)}
         </button>
-        <button type="button" onClick={onShare} className="btn-outline flex-1"><Share2 size={16} /> Chia sẻ</button>
-        <button type="button" onClick={() => setShowReport((v) => !v)} className="btn-outline flex-1">
+        <button type="button" onClick={onShare} className="btn-outline min-w-0 whitespace-nowrap !px-2">
+          <Share2 size={16} /> Chia sẻ
+        </button>
+        <button type="button" onClick={() => setShowReport((v) => !v)} className="btn-outline min-w-0 whitespace-nowrap !px-2">
           <Flag size={16} /> Báo lỗi
         </button>
       </div>

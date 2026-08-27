@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import {
-  Activity, AlertTriangle, Building2, Calendar, Clock, Download, Eye,
+  AlertTriangle, Building2, Calendar, Clock, Download, Eye,
   Gamepad2, Keyboard, Languages, MessageSquare, MonitorSmartphone,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -12,7 +12,6 @@ import {
   assetUrl, avgRating, DOWNLOAD_PLATFORMS, DOWNLOAD_PLATFORM_ORDER, gameBadges,
   gameCardSelect, gameTint, LANGUAGE_LABEL, toGameCard,
 } from '@/lib/game';
-import { gameAnalytics } from '@/lib/game-stats';
 import { fmtBytes, fmtCount } from '@/lib/utils';
 import { DownloadPanel, type VersionInfo } from '@/components/game/DownloadPanel';
 import { GameActions } from '@/components/game/GameActions';
@@ -21,6 +20,8 @@ import { GameGrid } from '@/components/game/GameGrid';
 import { GameViewTracker } from '@/components/game/GameViewTracker';
 import { RatingStars } from '@/components/game/RatingStars';
 import { Comments } from '@/components/post/Comments';
+import { GameUnlockBox } from '@/components/game/GameUnlockBox';
+import { checkGameAccess } from '@/lib/game-unlock';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,8 +63,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
   });
   if (!game) notFound();
 
-  const [stats, myRating, myFavorite, related] = await Promise.all([
-    gameAnalytics(game.id),
+  const [myRating, myFavorite, related] = await Promise.all([
     userId ? db.gameRating.findUnique({ where: { gameId_userId: { gameId: game.id, userId } }, select: { score: true } }) : null,
     userId ? db.favorite.findFirst({ where: { userId, gameId: game.id }, select: { id: true } }) : null,
     db.game.findMany({
@@ -97,7 +97,19 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
     .filter((s) => !!s.url);
   const controls = Array.isArray(game.controls) ? (game.controls as unknown as ControlHint[]) : [];
 
-  const versionInfos: VersionInfo[] = game.versions.map((v) => {
+  // Game có đặt giá thì phải trả điểm mới thấy phần tải. Kiểm TRƯỚC khi dựng
+  // danh sách tệp: chưa có quyền là không dựng, nên đường tải không hề đi
+  // xuống trình duyệt để mà mò trong mã nguồn trang.
+  const gameAccess = await checkGameAccess(
+    userId ?? null,
+    game,
+    (session?.user as { role?: string } | undefined)?.role,
+  );
+  const myPoints = userId && !gameAccess.allowed
+    ? (await db.user.findUnique({ where: { id: userId }, select: { points: true } }))?.points
+    : undefined;
+
+  const versionInfos: VersionInfo[] = gameAccess.allowed ? game.versions.map((v) => {
     // Gói chính đứng đầu (JAR trước JAD, EXE trước ZIP…) để khung tải lấy đúng
     // dung lượng và checksum đại diện.
     const order = DOWNLOAD_PLATFORMS[v.platform].fileTypes;
@@ -120,7 +132,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
         available: f.scanStatus !== 'QUARANTINED',
       })),
     };
-  });
+  }) : [];
 
   return (
     <div className="space-y-5">
@@ -306,17 +318,6 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
             </section>
           )}
 
-          <section className="card p-4 sm:p-5">
-            <h2 className="zib-title mb-3 flex items-center gap-2"><Activity size={17} /> Thống kê</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <Stat label="Lượt xem" value={fmtCount(stats.views)} sub={`${fmtCount(stats.uniqueViews)} người`} />
-              <Stat label="Lượt tải" value={fmtCount(stats.downloads)} sub={`${fmtCount(stats.uniqueDownloads)} người`} />
-              <Stat label="Xem → tải" value={`${stats.viewToDownload}%`} sub="tỉ lệ chuyển đổi" />
-              <Stat label="Trending" value={game.trendingScore.toFixed(1)} sub="điểm xu hướng" />
-              <Stat label="Cập nhật" value={format(game.updatedAt, 'dd/MM/yyyy')} sub={game.publishedAt ? `đăng ${format(game.publishedAt, 'dd/MM/yyyy')}` : ''} />
-            </div>
-          </section>
-
           {/* Bình luận — wap tải game ngày xưa trang game nào cũng có, đó mới
               là chỗ người ta hỏi "máy mình chạy được không". */}
           <section className="card p-4 sm:p-5">
@@ -337,7 +338,12 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
 
         {/* ── Cột phải ── */}
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
-          <DownloadPanel slug={game.slug} versions={versionInfos} />
+          {gameAccess.allowed ? (
+            <DownloadPanel slug={game.slug} versions={versionInfos} />
+          ) : (
+            <GameUnlockBox gameId={game.id} price={gameAccess.price} loggedIn={!!userId}
+              myPoints={myPoints} callbackUrl={`/games/${game.slug}`} />
+          )}
           <GameActions
             gameId={game.id}
             initialFavorite={!!myFavorite}
@@ -361,12 +367,3 @@ function Row({ label, value, icon }: { label: string; value: string; icon?: Reac
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: React.ReactNode }) {
-  return (
-    <div className="rounded-xl bg-ink-50 p-3 text-center dark:bg-ink-800/60">
-      <p className="text-lg font-black leading-tight">{value}</p>
-      <p className="text-[11px] text-ink-500">{label}</p>
-      {sub && <p className="mt-0.5 text-[10px] text-ink-400">{sub}</p>}
-    </div>
-  );
-}

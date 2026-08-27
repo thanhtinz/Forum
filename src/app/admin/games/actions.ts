@@ -8,6 +8,7 @@ import { assertSuperAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
 import { DOWNLOAD_PLATFORMS, fileTypeFitsPlatform } from '@/lib/game';
 import { recomputeTrending } from '@/lib/game-stats';
+import { GAME_PRICE_MAX } from '@/lib/game-unlock';
 
 export interface ActionState { ok?: boolean; error?: string }
 
@@ -89,6 +90,13 @@ export async function updateGame(_prev: ActionState, fd: FormData): Promise<Acti
   const genreIds = fd.getAll('genres').map(String).filter(Boolean);
   const tagNames = (str(fd, 'tags') ?? '').split(',').map((t) => t.trim()).filter(Boolean).slice(0, 20);
 
+  // Giá mở khoá phần tải. Bỏ trống hoặc 0 = tải tự do.
+  const priceRaw = int(fd, 'pricePoints') ?? 0;
+  if (priceRaw < 0 || priceRaw > GAME_PRICE_MAX) {
+    return { error: `Giá điểm phải từ 0 đến ${GAME_PRICE_MAX}.` };
+  }
+  const pricePoints = priceRaw > 0 ? priceRaw : null;
+
   await db.$transaction(async (tx) => {
     await tx.game.update({
       where: { id },
@@ -108,6 +116,7 @@ export async function updateGame(_prev: ActionState, fd: FormData): Promise<Acti
         language: str(fd, 'language') ?? 'en',
         vietnamized: bool(fd, 'vietnamized'),
         featured: bool(fd, 'featured'),
+        pricePoints,
         status: status as 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED',
         publishedAt: status === 'PUBLISHED' ? current.publishedAt ?? new Date() : current.publishedAt,
         platformId: str(fd, 'platformId'),
@@ -345,4 +354,103 @@ export async function refreshTrending(): Promise<void> {
   await recomputeTrending();
   revalidatePath('/admin/games');
   revalidatePath('/games');
+}
+
+// ─────────────────── Danh mục kho game (thể loại, dòng máy…) ───────────────────
+
+/**
+ * Bốn bảng phân loại của kho game đều cùng một hình dạng: slug + tên + thứ tự.
+ * Gộp chung một cặp hàm lưu/xoá thay vì viết bốn lần gần y hệt nhau.
+ */
+export type GameTaxonomy = 'genre' | 'platform' | 'resolution' | 'collection';
+
+const TAXONOMY_LABEL: Record<GameTaxonomy, string> = {
+  genre: 'thể loại',
+  platform: 'dòng máy',
+  resolution: 'độ phân giải',
+  collection: 'bộ sưu tập',
+};
+
+function isTaxonomy(v: string): v is GameTaxonomy {
+  return v in TAXONOMY_LABEL;
+}
+
+/** Thêm mới hoặc sửa một mục phân loại. */
+export async function saveGameTaxonomy(_prev: ActionState, fd: FormData): Promise<ActionState> {
+  await assertSuperAdmin();
+
+  const kind = str(fd, 'kind') ?? '';
+  if (!isTaxonomy(kind)) return { error: 'Loại danh mục không hợp lệ.' };
+
+  const id = str(fd, 'id');
+  const name = str(fd, 'name');
+  if (!name) return { error: `Thiếu tên ${TAXONOMY_LABEL[kind]}.` };
+
+  const order = int(fd, 'order') ?? 0;
+  const icon = str(fd, 'icon');
+
+  if (kind === 'resolution') {
+    const width = int(fd, 'width');
+    const height = int(fd, 'height');
+    if (!width || !height || width < 1 || height < 1) {
+      return { error: 'Độ phân giải cần cả chiều rộng và chiều cao (> 0).' };
+    }
+    // Slug của độ phân giải suy ra từ chính hai số đó, không để người nhập tự bịa.
+    const slug = `${width}x${height}`;
+    const clash = await db.gameResolution.findFirst({ where: { slug, NOT: id ? { id } : undefined }, select: { id: true } });
+    if (clash) return { error: `Độ phân giải ${slug} đã có rồi.` };
+    const data = { slug, label: name, width, height, order };
+    if (id) await db.gameResolution.update({ where: { id }, data, select: { id: true } });
+    else await db.gameResolution.create({ data, select: { id: true } });
+  } else {
+    const slug = slugify(str(fd, 'slug') ?? name);
+    if (!slug) return { error: 'Slug không hợp lệ.' };
+
+    // Prisma sinh kiểu riêng cho từng bảng nên không gộp được vào một biến
+    // `table` dùng chung — hỏi trùng slug theo đúng bảng của loại đang lưu.
+    const where = { slug, NOT: id ? { id } : undefined };
+    const clash =
+      kind === 'genre' ? await db.gameGenre.findFirst({ where, select: { id: true } })
+      : kind === 'platform' ? await db.gamePlatform.findFirst({ where, select: { id: true } })
+      : await db.gameCollection.findFirst({ where, select: { id: true } });
+    if (clash) return { error: 'Slug đã được mục khác dùng.' };
+
+    if (kind === 'genre') {
+      const data = { slug, name, icon, color: str(fd, 'color'), order };
+      if (id) await db.gameGenre.update({ where: { id }, data, select: { id: true } });
+      else await db.gameGenre.create({ data, select: { id: true } });
+    } else if (kind === 'platform') {
+      const data = { slug, name, icon, order };
+      if (id) await db.gamePlatform.update({ where: { id }, data, select: { id: true } });
+      else await db.gamePlatform.create({ data, select: { id: true } });
+    } else {
+      const data = { slug, name, description: str(fd, 'description'), featured: bool(fd, 'featured'), order };
+      if (id) await db.gameCollection.update({ where: { id }, data, select: { id: true } });
+      else await db.gameCollection.create({ data, select: { id: true } });
+    }
+  }
+
+  revalidatePath('/admin/games/danh-muc');
+  revalidatePath('/games');
+  return { ok: true };
+}
+
+/**
+ * Xoá một mục phân loại.
+ *
+ * Game đang gắn vào nó KHÔNG bị xoá theo: quan hệ đặt onDelete SetNull /
+ * Cascade ở bảng nối, nên game chỉ mất nhãn đó thôi.
+ */
+export async function deleteGameTaxonomy(kind: string, id: string): Promise<ActionState> {
+  await assertSuperAdmin();
+  if (!isTaxonomy(kind)) return { error: 'Loại danh mục không hợp lệ.' };
+
+  if (kind === 'genre') await db.gameGenre.delete({ where: { id } });
+  else if (kind === 'platform') await db.gamePlatform.delete({ where: { id } });
+  else if (kind === 'resolution') await db.gameResolution.delete({ where: { id } });
+  else await db.gameCollection.delete({ where: { id } });
+
+  revalidatePath('/admin/games/danh-muc');
+  revalidatePath('/games');
+  return { ok: true };
 }

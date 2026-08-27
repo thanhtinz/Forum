@@ -16,7 +16,12 @@ interface Item {
   /** Tên tham số cho mục con — mặc định là `status`. */
   param?: string;
 }
-interface Group { title?: string; items: Item[] }
+interface Group {
+  title?: string;
+  items: Item[];
+  /** Nhóm chỉ quản trị viên thấy; điều hành viên không hiện. */
+  superAdminOnly?: boolean;
+}
 
 /** Điều hướng quản trị, chia nhóm theo công việc. */
 export const ADMIN_GROUPS: Group[] = [
@@ -126,6 +131,8 @@ export const ADMIN_GROUPS: Group[] = [
   },
   {
     title: 'Game Hub',
+    // Kho game là hàng của nền tảng — điều hành viên không nhập hàng.
+    superAdminOnly: true,
     items: [
       {
         href: '/admin/games', label: 'Game', icon: Gamepad2, defaultStatus: 'ALL',
@@ -142,13 +149,18 @@ export const ADMIN_GROUPS: Group[] = [
 ];
 
 /** Danh sách liên kết điều hướng (dùng cho cả sidebar PC và drawer mobile). */
-export function AdminNavItems({ onNavigate }: { onNavigate?: () => void }) {
+export function AdminNavItems({ onNavigate, isSuperAdmin = true }: {
+  onNavigate?: () => void;
+  /** Điều hành viên không thấy các nhóm chỉ dành cho quản trị viên. */
+  isSuperAdmin?: boolean;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const groups = ADMIN_GROUPS.filter((g) => isSuperAdmin || !g.superAdminOnly);
 
   return (
     <div className="flex flex-col gap-3">
-      {ADMIN_GROUPS.map((group, gi) => (
+      {groups.map((group, gi) => (
         <div key={group.title ?? `g${gi}`} className="flex flex-col gap-0.5">
           {group.title && (
             <div className="px-3 pb-0.5 pt-1 text-[11px] font-bold uppercase tracking-wide text-ink-400">

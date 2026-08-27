@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import type { DownloadPlatform, GameFileType } from '@prisma/client';
-import { assertAdmin } from '@/lib/admin';
+import { assertSuperAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
 import { DOWNLOAD_PLATFORMS, fileTypeFitsPlatform } from '@/lib/game';
 import { recomputeTrending } from '@/lib/game-stats';
@@ -40,7 +40,7 @@ const gameSchema = z.object({
 
 /** Tạo game mới rồi mở luôn trang sửa chi tiết. */
 export async function createGame(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  await assertAdmin();
+  await assertSuperAdmin();
 
   const parsed = gameSchema.safeParse({ title: str(fd, 'title') ?? '', slug: str(fd, 'slug') ?? undefined });
   if (!parsed.success) return { error: parsed.error.issues[0]!.message };
@@ -60,7 +60,7 @@ export async function createGame(_prev: ActionState, fd: FormData): Promise<Acti
 
 /** Cập nhật thông tin chính của game (kể cả phân loại). */
 export async function updateGame(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const id = str(fd, 'id');
   if (!id) return { error: 'Thiếu id game.' };
 
@@ -139,7 +139,7 @@ export async function updateGame(_prev: ActionState, fd: FormData): Promise<Acti
 }
 
 export async function deleteGame(id: string): Promise<void> {
-  await assertAdmin();
+  await assertSuperAdmin();
   await db.game.delete({ where: { id } });
   revalidatePath('/admin/games');
   redirect('/admin/games');
@@ -147,7 +147,7 @@ export async function deleteGame(id: string): Promise<void> {
 
 /** Bật/tắt nhanh một cờ trên danh sách game. */
 export async function toggleGameFlag(id: string, field: 'featured'): Promise<void> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const game = await db.game.findUnique({ where: { id }, select: { featured: true, slug: true } });
   if (!game) return;
   await db.game.update({ where: { id }, data: { [field]: !game[field] } });
@@ -156,7 +156,7 @@ export async function toggleGameFlag(id: string, field: 'featured'): Promise<voi
 }
 
 export async function setGameStatus(id: string, status: 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED'): Promise<void> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const game = await db.game.findUnique({ where: { id }, select: { publishedAt: true, slug: true } });
   if (!game) return;
   await db.game.update({
@@ -170,7 +170,7 @@ export async function setGameStatus(id: string, status: 'DRAFT' | 'PENDING' | 'P
 // ── Version & file ────────────────────────────────────────
 
 export async function upsertVersion(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const gameId = str(fd, 'gameId');
   const version = str(fd, 'version');
   if (!gameId || !version) return { error: 'Thiếu game hoặc số hiệu version.' };
@@ -215,7 +215,7 @@ export async function upsertVersion(_prev: ActionState, fd: FormData): Promise<A
 }
 
 export async function deleteVersion(versionId: string): Promise<void> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const v = await db.gameVersion.findUnique({
     where: { id: versionId },
     select: { gameId: true, platform: true, latest: true },
@@ -237,7 +237,7 @@ export async function deleteVersion(versionId: string): Promise<void> {
 }
 
 export async function setLatestVersion(versionId: string): Promise<void> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const v = await db.gameVersion.findUnique({
     where: { id: versionId },
     select: { gameId: true, platform: true },
@@ -252,7 +252,7 @@ export async function setLatestVersion(versionId: string): Promise<void> {
 
 /** Gắn/cập nhật một file tải cho một version. */
 export async function upsertFile(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const versionId = str(fd, 'versionId');
   const type = str(fd, 'type') as GameFileType | null;
   const storageKey = str(fd, 'storageKey');
@@ -291,7 +291,7 @@ export async function upsertFile(_prev: ActionState, fd: FormData): Promise<Acti
 }
 
 export async function deleteFile(fileId: string): Promise<void> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const f = await db.gameFile.findUnique({ where: { id: fileId }, select: { version: { select: { gameId: true } } } });
   await db.gameFile.delete({ where: { id: fileId } });
   if (f) revalidatePath(`/admin/games/${f.version.gameId}`);
@@ -299,7 +299,7 @@ export async function deleteFile(fileId: string): Promise<void> {
 
 /** Cách ly file nghi ngờ — link tải bị chặn ngay. */
 export async function quarantineFile(fileId: string, quarantine: boolean): Promise<void> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const f = await db.gameFile.update({
     where: { id: fileId },
     data: { scanStatus: quarantine ? 'QUARANTINED' : 'CLEAN' },
@@ -311,7 +311,7 @@ export async function quarantineFile(fileId: string, quarantine: boolean): Promi
 // ── Ảnh ───────────────────────────────────────────────────
 
 export async function addImage(_prev: ActionState, fd: FormData): Promise<ActionState> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const gameId = str(fd, 'gameId');
   const storageKey = str(fd, 'storageKey');
   if (!gameId || !storageKey) return { error: 'Thiếu game hoặc đường dẫn ảnh.' };
@@ -332,7 +332,7 @@ export async function addImage(_prev: ActionState, fd: FormData): Promise<Action
 }
 
 export async function deleteImage(imageId: string): Promise<void> {
-  await assertAdmin();
+  await assertSuperAdmin();
   const img = await db.gameImage.delete({ where: { id: imageId }, select: { gameId: true } });
   revalidatePath(`/admin/games/${img.gameId}`);
 }
@@ -341,7 +341,7 @@ export async function deleteImage(imageId: string): Promise<void> {
 
 /** Tính lại trending score cho toàn bộ game đã đăng. */
 export async function refreshTrending(): Promise<void> {
-  await assertAdmin();
+  await assertSuperAdmin();
   await recomputeTrending();
   revalidatePath('/admin/games');
   revalidatePath('/games');

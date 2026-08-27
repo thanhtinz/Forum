@@ -30,3 +30,15 @@ export async function assertAdmin(): Promise<AdminSession> {
   }
   return { id: session.user.id, role: role! };
 }
+
+/**
+ * Bản chỉ-ADMIN dùng trong Server Action.
+ *
+ * Kho game và cửa hàng là hàng của nền tảng nên chỉ quản trị viên đụng vào;
+ * điều hành viên là người trông diễn đàn, không phải người nhập hàng.
+ */
+export async function assertSuperAdmin(): Promise<AdminSession> {
+  const s = await assertAdmin();
+  if (s.role !== 'ADMIN') throw new Error('FORBIDDEN');
+  return s;
+}

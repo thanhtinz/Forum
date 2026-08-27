@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       <div className="mx-auto flex w-full max-w-[1400px] flex-1 gap-4 px-4 py-4 lg:py-6">
         <aside className="hidden shrink-0 lg:block lg:w-[220px]">
-          <AdminNav />
+          <AdminNav isSuperAdmin={admin.role === 'ADMIN'} />
         </aside>
         <main className="min-w-0 flex-1">{children}</main>
       </div>

@@ -6,7 +6,7 @@ import { Menu, X, ShieldAlert } from 'lucide-react';
 import { AdminNavItems } from './AdminNavItems';
 
 /** Nút burger + drawer điều hướng quản trị cho mobile. */
-export function AdminMobileNav() {
+export function AdminMobileNav({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -37,7 +37,7 @@ export function AdminMobileNav() {
                 className="grid size-8 place-items-center rounded-lg text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800"><X size={18} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-2">
-              <AdminNavItems onNavigate={() => setOpen(false)} />
+              <AdminNavItems onNavigate={() => setOpen(false)} isSuperAdmin={isSuperAdmin} />
             </div>
           </div>
         </div>,

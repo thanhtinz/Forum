@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import { Download, Eye, Plus, RefreshCw, Search, Star } from 'lucide-react';
 import { db } from '@/lib/db';
+import { requireSuperAdmin } from '@/lib/admin';
 import { GAME_STATUS_LABEL, assetUrl } from '@/lib/game';
 import { fmtCount } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
@@ -24,6 +25,9 @@ const STATUSES = [
 export default async function AdminGamesPage({ searchParams }: {
   searchParams: Promise<{ q?: string; status?: string; page?: string }>;
 }) {
+  // Kho game là hàng của nền tảng: chỉ quản trị viên, không cho điều hành viên.
+  await requireSuperAdmin();
+
   const sp = await searchParams;
   const q = (sp.q ?? '').trim();
   // Trạng thái chọn từ menu quản trị (`?status=`), 'ALL' nghĩa là không lọc.

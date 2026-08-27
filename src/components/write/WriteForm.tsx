@@ -5,12 +5,14 @@ import { PenLine, Send, Coins, Lock, Crown, Gift, ThumbsUp, MessageSquare, Targe
 import { createPost, type WriteState } from '@/app/(site)/user/write/actions';
 import { DownloadsEditor, type DownloadDraft } from './DownloadsEditor';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
-import { PAID_ACCESS } from '@/lib/sell-permission';
+import { MONEY_ACCESS, PAID_ACCESS } from '@/lib/sell-permission';
 import { ActionForm } from '@/components/ActionForm';
 import { DraftKeeper } from '@/components/DraftKeeper';
 import { ImageField } from '@/components/ImageField';
 
 const PAID_VALUES: string[] = [...PAID_ACCESS];
+/** Chỉ quản trị viên thấy: giá bằng tiền nạp và khoá theo hạng VIP. */
+const MONEY_VALUES: string[] = [...MONEY_ACCESS];
 
 const ACCESS_OPTIONS = [
   { v: 'FREE', label: 'Miễn phí', icon: Gift },
@@ -20,7 +22,7 @@ const ACCESS_OPTIONS = [
   { v: 'LIKE_COMMENT', label: 'Thích + bình luận', icon: ThumbsUp },
   { v: 'LIKE_GOAL', label: 'Đủ số lượt thích', icon: Target },
   { v: 'COMMENT_GOAL', label: 'Đủ số bình luận', icon: Target },
-  { v: 'POINTS', label: 'Bán bằng điểm', icon: Coins },
+  { v: 'POINTS', label: 'Mở khoá bằng điểm', icon: Coins },
   { v: 'PAID', label: 'Bán bằng tiền (VND)', icon: Lock },
   { v: 'VIP_ONLY', label: 'Chỉ VIP', icon: Crown },
 ];
@@ -66,7 +68,9 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
   const isEdit = !!initial;
   const [state, action, pending] = useActionState<WriteState, FormData>(customAction ?? createPost, {});
   const [access, setAccess] = useState(initial?.access ?? 'FREE');
-  const visibleAccess = ACCESS_OPTIONS.filter((o) => canSell || !PAID_VALUES.includes(o.v));
+  // Thành viên thường khoá nội dung bằng ĐIỂM được; giá bằng tiền nạp và khoá
+  // theo VIP thì không — cửa hàng và gói VIP là hàng của ban quản trị.
+  const visibleAccess = ACCESS_OPTIONS.filter((o) => canSell || !MONEY_VALUES.includes(o.v));
   const isPaid = PAID_VALUES.includes(access);
   // Mọi mức khác FREE/LOGIN_REQUIRED đều khoá phần nội dung ẩn
   const hasGate = access !== 'FREE' && access !== 'LOGIN_REQUIRED';

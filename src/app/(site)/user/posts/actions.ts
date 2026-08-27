@@ -6,7 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import type { WriteState } from '@/app/(site)/user/write/actions';
 import { parsePostForm } from '@/lib/post-form';
-import { canSellContent } from '@/lib/sell-permission';
+import { canSellForMoney } from '@/lib/sell-permission';
 
 /** Chỉ tác giả (hoặc ADMIN/MODERATOR) mới được sửa/xoá. */
 async function assertCanEdit(postId: string) {
@@ -21,7 +21,7 @@ async function assertCanEdit(postId: string) {
   const isStaff = role === 'ADMIN' || role === 'MODERATOR';
   if (post.authorId !== userId && !isStaff) return { error: 'Bạn không có quyền với bài viết này.' as const };
 
-  return { userId, post, canSell: canSellContent(role) };
+  return { userId, post, canSellForMoney: canSellForMoney(role) };
 }
 
 export async function updatePost(_prev: WriteState, formData: FormData): Promise<WriteState> {
@@ -31,7 +31,7 @@ export async function updatePost(_prev: WriteState, formData: FormData): Promise
   const guard = await assertCanEdit(postId);
   if ('error' in guard) return { error: guard.error };
 
-  const parsed = await parsePostForm(formData, { canSell: guard.canSell });
+  const parsed = await parsePostForm(formData, { canSellForMoney: guard.canSellForMoney });
   if ('error' in parsed) return { error: parsed.error };
   const { data, catIds, tagNames, downloads } = parsed;
 

@@ -3,9 +3,9 @@
 import { useRef, useState } from 'react';
 import {
   Bold, Italic, Underline, Strikethrough, Quote, Code2, Link2, Image as ImageIcon,
-  List, AlignCenter, EyeOff, Palette, Eye, HelpCircle, Loader2, ImagePlus,
+  List, AlignCenter, EyeOff, Palette, Eye, HelpCircle, Loader2, ImagePlus, Lock,
 } from 'lucide-react';
-import { bbcodeToHtml } from '@/lib/bbcode';
+import { bbcodeToHtml, renderHidden } from '@/lib/bbcode';
 import { cn } from '@/lib/utils';
 import { MediaPicker } from '@/components/forum/MediaPicker';
 
@@ -33,6 +33,7 @@ const TOOLS: ToolButton[] = [
   { icon: Code2, title: 'Mã nguồn', wrap: 'code' },
   { icon: List, title: 'Danh sách', insert: '[list]\n[*]|\n[*]\n[/list]' },
   { icon: EyeOff, title: 'Ẩn nội dung (spoiler)', wrap: 'spoiler' },
+  { icon: Lock, title: 'Ẩn tới khi người đọc trả lời', wrap: 'hide' },
 ];
 
 export interface BBCodeEditorProps {
@@ -152,15 +153,17 @@ export function BBCodeEditor({
 
       {help && (
         <div className="border-b border-ink-100 bg-white px-3 py-2 text-xs text-ink-500 dark:border-ink-800 dark:bg-ink-900">
-          <code className="font-mono">[b]đậm[/b] · [i]nghiêng[/i] · [u]gạch chân[/u] · [s]gạch ngang[/s] · [quote]trích dẫn[/quote] · [code]mã[/code] · [spoiler]ẩn[/spoiler] · [url=https://…]chữ[/url] · [img]link ảnh[/img] · [color=#e5484d]màu[/color] · [center]giữa[/center] · [list][*]mục[/list]</code>
+          <code className="font-mono">[b]đậm[/b] · [i]nghiêng[/i] · [u]gạch chân[/u] · [s]gạch ngang[/s] · [quote]trích dẫn[/quote] · [code]mã[/code] · [spoiler]ẩn[/spoiler] · [hide]trả lời mới xem được[/hide] · [url=https://…]chữ[/url] · [img]link ảnh[/img] · [color=#e5484d]màu[/color] · [center]giữa[/center] · [list][*]mục[/list]</code>
         </div>
       )}
 
       {preview ? (
         <div className="min-h-[160px] bg-white p-4 dark:bg-ink-900">
           {value.trim() ? (
+            /* Người soạn xem trước thì mở luôn khối [hide]: họ là chủ bài, giấu
+               với chính họ chỉ khiến họ tưởng mình gõ sai mã. */
             <div className="prose prose-sm max-w-none dark:prose-invert prose-img:max-h-80 prose-img:rounded-lg"
-              dangerouslySetInnerHTML={{ __html: bbcodeToHtml(value) }} />
+              dangerouslySetInnerHTML={{ __html: renderHidden(bbcodeToHtml(value), true) }} />
           ) : (
             <p className="text-sm text-ink-400">Chưa có nội dung để xem trước.</p>
           )}

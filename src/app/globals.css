@@ -174,6 +174,22 @@ html, body {
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   }
 
+  /* Khối [hide]: chưa trả lời thì thấy ô xám báo bị ẩn, trả lời rồi thì thấy
+   * ô xanh viền đứt — kiểu "nội dung ẩn" của forum wap ngày trước. */
+  .bb-hide,
+  .bb-hide-open {
+    @apply my-2 block rounded-lg border border-dashed px-3 py-2 text-sm;
+  }
+  .bb-hide {
+    @apply border-ink-300 bg-ink-50 text-ink-500 dark:border-ink-700 dark:bg-ink-800/50 dark:text-ink-400;
+  }
+  .bb-hide-open {
+    @apply border-emerald-300 bg-emerald-50/70 text-ink-700 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-ink-200;
+  }
+  .bb-hide-open > b {
+    @apply mb-1 block text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400;
+  }
+
   /* Nhắc tên @thành_viên trong nội dung BBCode đã dựng sẵn */
   .mention {
     @apply font-medium text-brand-600 no-underline dark:text-brand-400;

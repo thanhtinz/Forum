@@ -6,9 +6,13 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { cn, fmtCount } from '@/lib/utils';
 import { postCardSelect, toCardData } from '@/lib/post-card';
+import { gameCardSelect, toGameCard } from '@/lib/game';
+import { DEFAULT_FOLDER, folderLabel } from '@/lib/favorite-folder';
 import { PostGrid } from '@/components/PostGrid';
+import { GameGrid } from '@/components/game/GameGrid';
 import { Pagination } from '@/components/Pagination';
 import { UnsaveThreadButton } from '@/components/forum/UnsaveThreadButton';
+import { FavoriteFolderPicker } from '@/components/user/FavoriteFolderPicker';
 
 export const metadata: Metadata = { title: 'Đã lưu' };
 export const dynamic = 'force-dynamic';
@@ -17,43 +21,57 @@ const PAGE_SIZE = 12;
 const TABS = [
   { key: 'posts', label: 'Bài viết' },
   { key: 'threads', label: 'Chủ đề' },
+  { key: 'games', label: 'Game' },
 ] as const;
 
 const when = (d: Date | null) =>
   d ? d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
 
 export default async function FavoritesPage({ searchParams }: {
-  searchParams: Promise<{ page?: string; tab?: string }>;
+  searchParams: Promise<{ page?: string; tab?: string; folder?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect('/login?callbackUrl=/user/favorites');
   const userId = session.user.id;
-  const { page: pageRaw, tab: tabRaw } = await searchParams;
+  const { page: pageRaw, tab: tabRaw, folder: folderRaw } = await searchParams;
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
   const tab = TABS.find((t) => t.key === tabRaw) ?? TABS[0];
+  /** Không chọn thư mục nào = xem tất cả. */
+  const folder = folderRaw?.trim() || null;
 
-  // Đếm cả hai mục để hiện số ngay trên thẻ chọn.
-  const [postTotal, threadTotal] = await Promise.all([
-    db.favorite.count({ where: { userId, postId: { not: null } } }),
-    db.favorite.count({ where: { userId, threadId: { not: null }, thread: { status: 'PUBLISHED' } } }),
+  // Danh sách thư mục lấy thẳng từ các giá trị đang có, không cần bảng riêng.
+  const folderRows = await db.favorite.findMany({
+    where: { userId },
+    select: { folder: true },
+    distinct: ['folder'],
+    orderBy: { folder: 'asc' },
+  });
+  const folders = folderRows.map((f) => f.folder);
+
+  const scope = folder ? { folder } : {};
+  const [postTotal, threadTotal, gameTotal] = await Promise.all([
+    db.favorite.count({ where: { userId, postId: { not: null }, ...scope } }),
+    db.favorite.count({ where: { userId, threadId: { not: null }, thread: { status: 'PUBLISHED' }, ...scope } }),
+    db.favorite.count({ where: { userId, gameId: { not: null }, ...scope } }),
   ]);
-  const total = tab.key === 'posts' ? postTotal : threadTotal;
+  const total = tab.key === 'posts' ? postTotal : tab.key === 'threads' ? threadTotal : gameTotal;
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const skip = (page - 1) * PAGE_SIZE;
 
   const posts = tab.key === 'posts'
     ? (await db.favorite.findMany({
-        where: { userId, postId: { not: null } },
+        where: { userId, postId: { not: null }, ...scope },
         orderBy: { createdAt: 'desc' }, skip, take: PAGE_SIZE,
-        select: { post: { select: postCardSelect } },
-      })).map((f) => f.post).filter((p): p is NonNullable<typeof p> => !!p).map(toCardData)
+        select: { id: true, folder: true, post: { select: postCardSelect } },
+      })).filter((f) => f.post).map((f) => ({ favId: f.id, folder: f.folder, card: toCardData(f.post!) }))
     : [];
 
   const threads = tab.key === 'threads'
     ? (await db.favorite.findMany({
-        where: { userId, threadId: { not: null }, thread: { status: 'PUBLISHED' } },
+        where: { userId, threadId: { not: null }, thread: { status: 'PUBLISHED' }, ...scope },
         orderBy: { createdAt: 'desc' }, skip, take: PAGE_SIZE,
         select: {
+          id: true, folder: true,
           thread: {
             select: {
               id: true, title: true, replyCount: true, viewCount: true, lastReplyAt: true,
@@ -61,10 +79,25 @@ export default async function FavoritesPage({ searchParams }: {
             },
           },
         },
-      })).map((f) => f.thread).filter((t): t is NonNullable<typeof t> => !!t)
+      })).filter((f) => f.thread).map((f) => ({ favId: f.id, folder: f.folder, thread: f.thread! }))
     : [];
 
-  const tabHref = (key: string) => (key === 'posts' ? '/user/favorites' : `/user/favorites?tab=${key}`);
+  const games = tab.key === 'games'
+    ? (await db.favorite.findMany({
+        where: { userId, gameId: { not: null }, ...scope },
+        orderBy: { createdAt: 'desc' }, skip, take: PAGE_SIZE,
+        select: { id: true, folder: true, game: { select: gameCardSelect } },
+      })).filter((f) => f.game).map((f) => ({ favId: f.id, folder: f.folder, card: toGameCard(f.game!) }))
+    : [];
+
+  const href = (key: string, f = folder) => {
+    const q = new URLSearchParams();
+    if (key !== 'posts') q.set('tab', key);
+    if (f) q.set('folder', f);
+    const s = q.toString();
+    return s ? `/user/favorites?${s}` : '/user/favorites';
+  };
+  const countOf = (key: string) => (key === 'posts' ? postTotal : key === 'threads' ? threadTotal : gameTotal);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -75,27 +108,69 @@ export default async function FavoritesPage({ searchParams }: {
         <h1 className="text-xl font-bold text-ink-900 dark:text-white">Đã lưu</h1>
       </div>
 
-      <div className="mb-4 flex gap-1.5">
+      <div className="mb-3 flex flex-wrap gap-1.5">
         {TABS.map((t) => (
-          <Link key={t.key} href={tabHref(t.key)}
+          <Link key={t.key} href={href(t.key)}
             className={cn('rounded-full border px-3.5 py-1.5 text-sm transition-colors',
               t.key === tab.key
                 ? 'border-brand-500 bg-brand-500 font-medium text-white'
                 : 'border-ink-200 text-ink-600 hover:bg-ink-100 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800')}>
-            {t.label} <span className="opacity-70">{t.key === 'posts' ? postTotal : threadTotal}</span>
+            {t.label} <span className="opacity-70">{countOf(t.key)}</span>
           </Link>
         ))}
       </div>
 
+      {/* Thư mục — chỉ hiện khi người dùng đã tự chia, còn để mặc định thì
+          hàng thẻ này chỉ tổ chiếm chỗ. */}
+      {folders.length > 1 && (
+        <div className="retro-sub mb-4 flex flex-wrap items-center gap-1.5">
+          <span className="text-ink-400">Thư mục:</span>
+          <Link href={href(tab.key, null)}
+            className={cn('rounded-full border px-2.5 py-1', !folder
+              ? 'border-brand-400 bg-brand-50 font-semibold text-brand-600 dark:bg-brand-950/40'
+              : 'border-ink-200 text-ink-500 hover:bg-ink-100 dark:border-ink-700 dark:hover:bg-ink-800')}>
+            Tất cả
+          </Link>
+          {folders.map((f) => (
+            <Link key={f} href={href(tab.key, f)}
+              className={cn('rounded-full border px-2.5 py-1', folder === f
+                ? 'border-brand-400 bg-brand-50 font-semibold text-brand-600 dark:bg-brand-950/40'
+                : 'border-ink-200 text-ink-500 hover:bg-ink-100 dark:border-ink-700 dark:hover:bg-ink-800')}>
+              {folderLabel(f)}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {tab.key === 'posts' ? (
-        <PostGrid posts={posts} empty="Bạn chưa lưu bài viết nào. Nhấn “Lưu” ở mỗi bài để xem lại sau." />
+        posts.length === 0 ? (
+          <div className="card p-10 text-center text-sm text-ink-500">
+            {folder ? 'Thư mục này chưa có bài viết nào.' : 'Bạn chưa lưu bài viết nào. Nhấn “Lưu” ở mỗi bài để xem lại sau.'}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <PostGrid posts={posts.map((p) => p.card)} />
+            <FolderRow items={posts.map((p) => ({ favId: p.favId, folder: p.folder, title: p.card.title }))} folders={folders} />
+          </div>
+        )
+      ) : tab.key === 'games' ? (
+        games.length === 0 ? (
+          <div className="card p-10 text-center text-sm text-ink-500">
+            {folder ? 'Thư mục này chưa có game nào.' : 'Bạn chưa lưu game nào. Mở một game rồi bấm “Lưu” để xem lại sau.'}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <GameGrid games={games.map((g) => g.card)} />
+            <FolderRow items={games.map((g) => ({ favId: g.favId, folder: g.folder, title: g.card.title }))} folders={folders} />
+          </div>
+        )
       ) : threads.length === 0 ? (
         <div className="card p-10 text-center text-sm text-ink-500">
-          Bạn chưa lưu chủ đề nào. Mở một chủ đề rồi bấm <strong>Lưu</strong> để đọc lại sau.
+          {folder ? 'Thư mục này chưa có chủ đề nào.' : <>Bạn chưa lưu chủ đề nào. Mở một chủ đề rồi bấm <strong>Lưu</strong> để đọc lại sau.</>}
         </div>
       ) : (
         <div className="card divide-y divide-ink-100 dark:divide-ink-800">
-          {threads.map((t) => (
+          {threads.map(({ favId, folder: f, thread: t }) => (
             <div key={t.id} className="flex flex-wrap items-center gap-3 p-3">
               <div className="min-w-0 flex-1">
                 <Link href={`/forum/${t.forum.slug}/${t.id}`}
@@ -109,6 +184,7 @@ export default async function FavoritesPage({ searchParams }: {
                   <span>Trả lời cuối: {when(t.lastReplyAt)}</span>
                 </p>
               </div>
+              <FavoriteFolderPicker favoriteId={favId} current={f} folders={folders} />
               <UnsaveThreadButton threadId={t.id} title={t.title} />
             </div>
           ))}
@@ -116,8 +192,32 @@ export default async function FavoritesPage({ searchParams }: {
       )}
 
       {totalPages > 1 && (
-        <div className="mt-6"><Pagination page={page} totalPages={totalPages} basePath={tabHref(tab.key)} /></div>
+        <div className="mt-6"><Pagination page={page} totalPages={totalPages} basePath={href(tab.key)} /></div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Hàng chọn thư mục cho lưới thẻ.
+ *
+ * Thẻ bài viết và thẻ game là component dùng chung ở nhiều trang, nhét thêm
+ * nút vào trong thẻ thì trang nào cũng dính. Để riêng một hàng bên dưới lưới
+ * vừa không đụng vào thẻ, vừa xếp gọn được cả chục mục.
+ */
+function FolderRow({ items, folders }: {
+  items: { favId: string; folder: string; title: string }[];
+  folders: string[];
+}) {
+  return (
+    <div className="card flex flex-wrap items-center gap-x-3 gap-y-1.5 p-3">
+      <span className="retro-sub text-ink-400">Xếp vào thư mục:</span>
+      {items.map((i) => (
+        <span key={i.favId} className="flex min-w-0 items-center gap-1">
+          <span className="retro-sub max-w-32 truncate text-ink-500">{i.title}</span>
+          <FavoriteFolderPicker favoriteId={i.favId} current={i.folder} folders={folders} />
+        </span>
+      ))}
     </div>
   );
 }

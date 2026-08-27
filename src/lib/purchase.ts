@@ -110,12 +110,13 @@ export async function purchaseContent(userId: string, postId: string, couponCode
         } catch {
           return { ok: false, error: 'INSUFFICIENT_BALANCE' } as const;
         }
-        await tx.order.create({
+        const order = await tx.order.create({
           data: {
             code: newOrderCode(), userId, type: 'CONTENT', status: 'PAID', postId: post.id,
             amount: listPrice, discount, finalAmount: price, payMethod: 'BALANCE', paidAt: new Date(),
             couponClaimId,
           },
+          select: { id: true },
         });
         // Ăn chia: tác giả nhận phần số dư (VND) còn lại
         if (creditAuthor) {
@@ -123,6 +124,21 @@ export async function purchaseContent(userId: string, postId: string, couponCode
             { userId: post.authorId, amount: share, reason: 'CONTENT_SALE', refId: post.id, note: `Bán nội dung: ${post.title}` },
             tx,
           );
+          // Ghi sổ hoa hồng. Tiền đã vào ví tác giả ngay trong transaction này
+          // nên ghi luôn là SETTLED — không có khâu chờ đối soát nào ở giữa.
+          // Trước đây khoản chia được cộng nhưng không ai ghi sổ, nên ô "Hoa
+          // hồng đã trả tác giả" ở trang quản trị vĩnh viễn hiện 0đ.
+          await tx.commission.create({
+            data: {
+              orderId: order.id,
+              beneficiaryId: post.authorId,
+              amount: share,
+              rate: (100 - PLATFORM_COMMISSION_PERCENT) / 100,
+              status: 'SETTLED',
+              settledAt: new Date(),
+            },
+            select: { id: true },
+          });
         }
       }
 

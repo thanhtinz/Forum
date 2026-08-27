@@ -14,10 +14,12 @@ import { fmtCount } from '@/lib/utils';
  * avatar mẫu, huy hiệu hiện cạnh tên. Bán đồ trang trí mà bắt người ta mua
  * xong mới biết nó ra sao thì không ai mua lần hai.
  */
-export function ShopItemCard({ item, myPoints, loggedIn }: {
+export function ShopItemCard({ item, myPoints, loggedIn, showKind = true }: {
   item: ShopItemView;
   myPoints?: number;
   loggedIn: boolean;
+  /** Hiện nhãn loại đồ. Quầy đã tách theo loại rồi thì nhãn chỉ là chữ thừa. */
+  showKind?: boolean;
 }) {
   const [owned, setOwned] = useState(item.owned);
   const [equipped, setEquipped] = useState(item.equipped);
@@ -44,9 +46,11 @@ export function ShopItemCard({ item, myPoints, loggedIn }: {
       <div className="min-w-0">
         <p className="flex flex-wrap items-center gap-2">
           <b className="min-w-0 truncate">{item.name}</b>
-          <span className="chip bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300">
-            {KIND_LABELS[item.kind].label}
-          </span>
+          {showKind && (
+            <span className="chip bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-300">
+              {KIND_LABELS[item.kind].label}
+            </span>
+          )}
         </p>
         {item.description && <p className="mt-0.5 line-clamp-2 text-sm text-ink-500">{item.description}</p>}
       </div>

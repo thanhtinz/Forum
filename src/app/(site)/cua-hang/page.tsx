@@ -14,16 +14,18 @@ export const metadata: Metadata = {
   description: 'Dùng điểm kiếm được trên diễn đàn để mua màu tên, khung avatar và huy hiệu.',
 };
 
-const TABS: { key: ShopKind | 'ALL'; label: string }[] = [
-  { key: 'ALL', label: 'Tất cả' },
-  ...SHOP_KINDS.map((k) => ({ key: k, label: KIND_LABELS[k].label })),
-];
-
+/**
+ * Mỗi loại đồ một quầy riêng, không có mục "tất cả".
+ *
+ * Ba loại này xem theo cách khác hẳn nhau — màu tên là chữ, khung là ảnh phủ
+ * lên avatar, huy hiệu là ảnh nhỏ — nên trộn chung một danh sách thì mắt
+ * không so được món nào với món nào.
+ */
 export default async function ShopPage({ searchParams }: {
   searchParams: Promise<{ loai?: string; page?: string }>;
 }) {
   const { loai, page: pageRaw } = await searchParams;
-  const kind = loai && isShopKind(loai) ? loai : 'ALL';
+  const kind: ShopKind = loai && isShopKind(loai) ? loai : SHOP_KINDS[0];
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
 
   const session = await auth();
@@ -36,7 +38,7 @@ export default async function ShopPage({ searchParams }: {
       : Promise.resolve(null),
   ]);
 
-  const href = (k: ShopKind | 'ALL') => (k === 'ALL' ? '/cua-hang' : `/cua-hang?loai=${k}`);
+  const href = (k: ShopKind) => `/cua-hang?loai=${k}`;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -59,34 +61,31 @@ export default async function ShopPage({ searchParams }: {
       </div>
 
       <nav className="mt-4 flex flex-wrap gap-1.5">
-        {TABS.map((t) => (
-          <Link key={t.key} href={href(t.key)}
-            className={`chip ${t.key === kind
+        {SHOP_KINDS.map((k) => (
+          <Link key={k} href={href(k)}
+            className={`chip ${k === kind
               ? 'bg-brand-500 text-white'
               : 'bg-ink-100 text-ink-600 hover:text-brand-600 dark:bg-ink-800 dark:text-ink-300'}`}>
-            {t.label}
+            {KIND_LABELS[k].label}
           </Link>
         ))}
       </nav>
 
-      {kind !== 'ALL' && (
-        <p className="retro-sub mt-2 text-ink-400">{KIND_LABELS[kind].hint}</p>
-      )}
+      <p className="retro-sub mt-2 text-ink-400">{KIND_LABELS[kind].hint}</p>
 
       {items.length === 0 ? (
         <p className="card mt-4 p-10 text-center text-sm text-ink-400">
-          Quầy chưa có món nào ở mục này.
+          Quầy chưa có {KIND_LABELS[kind].one} nào.
         </p>
       ) : (
         <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((it) => (
-            <ShopItemCard key={it.id} item={it} myPoints={me?.points} loggedIn={!!viewerId} />
+            <ShopItemCard key={it.id} item={it} myPoints={me?.points} loggedIn={!!viewerId} showKind={false} />
           ))}
         </ul>
       )}
 
-      <Pagination page={page} totalPages={totalPages}
-        basePath={kind === 'ALL' ? '/cua-hang' : `/cua-hang?loai=${kind}`} />
+      <Pagination page={page} totalPages={totalPages} basePath={href(kind)} />
 
       {total > 0 && <p className="retro-sub mt-3 text-center text-ink-400">{fmtCount(total)} món</p>}
     </div>

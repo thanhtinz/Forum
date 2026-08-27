@@ -77,6 +77,30 @@ export default async function run(check) {
     await member.waitForTimeout(800);
     check('quầy hàng hiện món vừa tạo', (await member.locator('text=Nick đỏ kiểm thử').count()) > 0);
 
+    // Quầy tách theo loại: không có mục "tất cả", mỗi loại một tab riêng.
+    const tabs = await member.$$eval('nav a[href^="/cua-hang"]', (els) => els.map((e) => e.textContent?.trim() ?? ''));
+    check('quầy không còn tab tất cả', !tabs.includes('Tất cả'), JSON.stringify(tabs));
+    check('quầy có đúng ba tab loại đồ', tabs.length === 3, JSON.stringify(tabs));
+    check('tab mặc định là màu tên, không lẫn loại khác',
+      (await member.locator('text=Nick đỏ kiểm thử').count()) > 0
+      && (await member.locator('text=Khung kiểm thử').count()) === 0);
+    check('ô hàng bỏ nhãn loại thừa',
+      (await member.locator('ul li .chip:has-text("Màu tên")').count()) === 0);
+
+    await member.goto(`${BASE}/cua-hang?loai=AVATAR_FRAME`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
+    check('tab khung avatar chỉ hiện khung',
+      (await member.locator('text=Khung kiểm thử').count()) > 0
+      && (await member.locator('text=Nick đỏ kiểm thử').count()) === 0);
+
+    await member.goto(`${BASE}/cua-hang?loai=BIA-RA`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
+    check('tham số loại bịa ra thì về tab đầu',
+      (await member.locator('text=Nick đỏ kiểm thử').count()) > 0);
+
+    await member.goto(`${BASE}/cua-hang`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
+
     // Điểm hiện ở thanh đầu trang, không nhắc lại trong thân trang.
     const chip = member.locator('header a[href="/user/points"]');
     check('thanh đầu trang có ô điểm', (await chip.count()) > 0);
@@ -97,13 +121,15 @@ export default async function run(check) {
     await db.user.update({ where: { id: minh.id }, data: { points: 5 }, select: { id: true } });
     await member.reload({ waitUntil: 'networkidle' });
     await member.waitForTimeout(800);
+    await member.goto(`${BASE}/cua-hang?loai=AVATAR_FRAME`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
     const poorBtn = row(member, 'Khung kiểm thử').locator('button:has-text("Mua")');
     check('không đủ điểm thì nút mua bị khoá', await poorBtn.isDisabled());
 
     await db.user.update({ where: { id: minh.id }, data: { points: 100 }, select: { id: true } });
 
     // ── Đeo lên và hiển thị ──────────────────────────────────────────────
-    await member.reload({ waitUntil: 'networkidle' });
+    await member.goto(`${BASE}/cua-hang`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(800);
     await row(member, 'Nick đỏ kiểm thử').locator('button:has-text("Đeo lên")').click();
     await member.waitForTimeout(2500);

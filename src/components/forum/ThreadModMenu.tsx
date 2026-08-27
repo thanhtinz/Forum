@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition, useRef, useEffect } from 'react';
+import { useState, useTransition, useRef } from 'react';
 import { Shield, Pin, PinOff, Lock, Unlock, Star, StarOff, FolderInput, EyeOff, X } from 'lucide-react';
 import {
   toggleThreadPin, toggleThreadLock, toggleThreadFeatured, moveThread, hideThread,
 } from '@/app/(site)/forum/actions';
+import { Popover } from '@/components/Popover';
 
 export interface ModForumOption { id: string; name: string }
 
@@ -15,17 +16,9 @@ export function ThreadModMenu({ threadId, pinned, locked, featured, forums }: {
   const [moving, setMoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const boxRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
-  // Bấm ra ngoài thì đóng
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) { setOpen(false); setMoving(false); }
-    };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [open]);
+  const close = () => { setOpen(false); setMoving(false); };
 
   const run = (fn: () => Promise<{ error?: string } | void>, confirmText?: string) => {
     if (confirmText && !confirm(confirmText)) return;
@@ -38,15 +31,17 @@ export function ThreadModMenu({ threadId, pinned, locked, featured, forums }: {
   };
 
   return (
-    <div ref={boxRef} className="relative">
-      <button type="button" onClick={() => setOpen((v) => !v)}
+    <>
+      <button ref={btnRef} type="button" onClick={() => setOpen((v) => !v)}
         className="btn-outline !rounded-full gap-1.5 !px-3 !py-1.5 text-sm" aria-haspopup="menu" aria-expanded={open}>
         <Shield size={15} /> Điều hành
       </button>
 
-      {open && (
-        <div role="menu"
-          className="card absolute right-0 z-30 mt-2 w-64 overflow-hidden p-1 shadow-card-hover">
+      {/* Dựng ở gốc trang: thẻ <article> bọc bài viết có overflow-hidden,
+          bảng nằm trong đó sẽ bị cắt gần hết. */}
+      <Popover open={open} anchor={btnRef.current} onClose={close} align="right"
+        className="card w-64 overflow-y-auto p-1 shadow-card-hover">
+        <div role="menu">
           {!moving ? (
             <>
               <MenuItem icon={pinned ? <PinOff size={15} /> : <Pin size={15} />} label={pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
@@ -81,8 +76,8 @@ export function ThreadModMenu({ threadId, pinned, locked, featured, forums }: {
 
           {error && <p className="px-3 py-2 text-xs text-red-600">{error}</p>}
         </div>
-      )}
-    </div>
+      </Popover>
+    </>
   );
 }
 

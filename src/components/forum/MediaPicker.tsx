@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Popover } from '@/components/Popover';
 import { Smile, Sticker, Search, Loader2, ImageOff } from 'lucide-react';
 import { EMOJI_GROUPS } from '@/lib/emoji';
 import { cn } from '@/lib/utils';
@@ -20,31 +21,21 @@ export function MediaPicker({ onPickText, onPickImage }: {
 }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('emoji');
-  const boxRef = useRef<HTMLDivElement>(null);
-
-  // Đóng khi bấm ra ngoài hoặc nhấn Esc
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
-    document.addEventListener('mousedown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
-  }, [open]);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <div ref={boxRef} className="relative">
-      <button type="button" onClick={() => setOpen((v) => !v)} title="Emoji, sticker & GIF"
+    <>
+      <button ref={btnRef} type="button" onClick={() => setOpen((v) => !v)} title="Emoji, sticker & GIF"
         aria-expanded={open}
-        className={cn('grid size-8 place-items-center rounded-lg transition-colors',
+        className={cn('grid size-8 shrink-0 place-items-center rounded-lg transition-colors',
           open ? 'bg-brand-100 text-brand-600 dark:bg-brand-950/50' : 'text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800')}>
         <Smile size={18} />
       </button>
 
-      {open && (
-        <div className="absolute bottom-full left-0 z-50 mb-2 w-[320px] overflow-hidden rounded-xl border border-ink-200 bg-white shadow-xl sm:w-[360px] dark:border-ink-700 dark:bg-ink-900">
+      {/* Ô soạn nằm trong khối .card có overflow-hidden, bảng chọn để
+          `absolute` sẽ bị cắt mất hơn nửa — dựng ở gốc trang mới đủ chỗ. */}
+      <Popover open={open} anchor={btnRef.current} onClose={() => setOpen(false)} side="top" align="left"
+        className="w-[320px] overflow-hidden rounded-xl border border-ink-200 bg-white shadow-xl sm:w-[360px] dark:border-ink-700 dark:bg-ink-900">
           <div className="flex border-b border-ink-100 dark:border-ink-800">
             {([['emoji', 'Emoji'], ['sticker', 'Sticker'], ['gif', 'GIF']] as const).map(([k, label]) => (
               <button key={k} type="button" onClick={() => setTab(k)}
@@ -58,9 +49,8 @@ export function MediaPicker({ onPickText, onPickImage }: {
           {tab === 'emoji' && <EmojiTab onPick={(e) => { onPickText(e); }} />}
           {tab === 'sticker' && <StickerTab onPick={(s, alt) => { onPickImage(s, alt); setOpen(false); }} />}
           {tab === 'gif' && <GifTab onPick={(u, alt) => { onPickImage(u, alt); setOpen(false); }} />}
-        </div>
-      )}
-    </div>
+      </Popover>
+    </>
   );
 }
 

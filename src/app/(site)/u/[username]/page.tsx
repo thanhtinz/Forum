@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Calendar, Coins, FileText, Users, UserPlus as FollowIcon, MessageSquare } from 'lucide-react';
+import { Calendar, Coins, FileText, Users, UserCheck, UserPlus as FollowIcon, MessageSquare } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { postCardSelect, toCardData } from '@/lib/post-card';
@@ -17,6 +17,8 @@ import { openConversation } from '@/app/(site)/user/messages/actions';
 import { BlockButton } from '@/components/user/BlockButton';
 import { hasBlocked } from '@/lib/block';
 import { getGuestbook, isStaff } from '@/lib/guestbook';
+import { countFriends, getFriendState } from '@/lib/friend';
+import { FriendButton } from '@/components/user/FriendButton';
 import { Guestbook } from '@/components/user/Guestbook';
 
 export const dynamic = 'force-dynamic';
@@ -52,12 +54,14 @@ export default async function ProfilePage({ params, searchParams }: {
   const viewer = { id: viewerId, role: (session?.user as { role?: string } | undefined)?.role };
 
   const where = { authorId: user.id, status: 'PUBLISHED' as const };
-  const [total, posts, following, blocked, guestbook] = await Promise.all([
+  const [total, posts, following, blocked, guestbook, friendState, friendCount] = await Promise.all([
     db.post.count({ where }),
     db.post.findMany({ where, orderBy: [{ publishedAt: 'desc' }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect }),
     viewerId ? db.follow.findFirst({ where: { followerId: viewerId, followingId: user.id }, select: { id: true } }) : Promise.resolve(null),
     viewerId ? hasBlocked(viewerId, user.id) : Promise.resolve(false),
     getGuestbook(user.id, viewer, gbPage),
+    getFriendState(viewerId, user.id),
+    countFriends(user.id),
   ]);
   // Quản trị viên không chặn được — che nút cho khỏi bấm rồi mới báo lỗi.
   const canBlock = user.role !== 'ADMIN' && user.role !== 'MODERATOR';
@@ -90,6 +94,10 @@ export default async function ProfilePage({ params, searchParams }: {
               {!blocked && (
                 <FollowButton targetId={user.id} initialFollowing={!!following} initialCount={user._count.followers} self={viewerId === user.id} />
               )}
+              {!blocked && (
+                <FriendButton targetId={user.id} targetName={name} initial={friendState}
+                  loggedIn={!!viewerId} callbackUrl={`/u/${username}`} />
+              )}
               {viewerId && viewerId !== user.id && canBlock && (
                 <BlockButton targetId={user.id} targetName={name} initialBlocked={blocked} />
               )}
@@ -121,6 +129,7 @@ export default async function ProfilePage({ params, searchParams }: {
               <span className="flex items-center gap-1.5"><FileText size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.posts)}</b> bài viết</span>
               <span className="flex items-center gap-1.5"><Users size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.followers)}</b> người theo dõi</span>
               <span className="flex items-center gap-1.5"><FollowIcon size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.following)}</b> đang theo dõi</span>
+              <span className="flex items-center gap-1.5"><UserCheck size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(friendCount)}</b> bạn bè</span>
               <span className="flex items-center gap-1.5"><Coins size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user.points)}</b> điểm</span>
               <span className="flex items-center gap-1.5"><Calendar size={15} /> Tham gia {format(user.createdAt, 'MM/yyyy')}</span>
             </div>

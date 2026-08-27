@@ -4,6 +4,8 @@ import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
 import { getLevelLooks } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
+import { Avatar, UserName } from '@/components/user/Cosmetic';
+import { cosmeticSelect, toCosmetics } from '@/lib/shop';
 
 export async function HomeSidebar() {
   const levelLooks = await getLevelLooks();
@@ -17,7 +19,7 @@ export async function HomeSidebar() {
     db.user.findMany({
       orderBy: { exp: 'desc' },
       take: 6,
-      select: { username: true, name: true, image: true, level: true },
+      select: { username: true, name: true, image: true, level: true, role: true, ...cosmeticSelect },
     }),
     db.tag.findMany({ take: 20, select: { slug: true, name: true } }),
   ]);
@@ -44,11 +46,11 @@ export async function HomeSidebar() {
         <div className="space-y-2">
           {topUsers.map((u) => (
             <Link key={u.username} href={`/u/${u.username ?? ''}`} className="flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {u.image
-                ? <img src={u.image} alt="" className="h-8 w-8 rounded-full object-cover" />
-                : <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">{(u.name ?? u.username ?? 'U')[0]?.toUpperCase()}</span>}
-              <span className="min-w-0 flex-1 truncate text-sm font-medium">{u.name ?? u.username}</span>
+              <Avatar image={u.image} name={u.name ?? u.username} cosmetics={toCosmetics(u)} size={32} />
+              <span className="min-w-0 flex-1 truncate text-sm">
+                <UserName username={u.username} name={u.name} role={u.role}
+                  cosmetics={toCosmetics(u)} asLink={false} className="!font-medium" />
+              </span>
               <LevelBadge level={u.level} icon={levelLooks.get(u.level)?.icon}
                 color={levelLooks.get(u.level)?.color} name={levelLooks.get(u.level)?.name} />
             </Link>

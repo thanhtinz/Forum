@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Eye } from 'lucide-react';
 import { getHere } from '@/lib/shout';
+import { UserName } from '@/components/user/Cosmetic';
 
 /**
  * "Đang xem chủ đề này: A, B, C".
@@ -19,10 +20,8 @@ export async function WhoIsHere({ scope }: { scope: string }) {
       <span className="font-semibold uppercase tracking-wide">Đang xem chủ đề này:</span>
       {people.map((u, i) => (
         <span key={u.username ?? i}>
-          <Link href={`/u/${u.username ?? ''}`} className="font-bold text-brand-600 hover:underline">
-            {u.name ?? u.username}
-          </Link>
-          <span className="text-ink-300 dark:text-ink-600"> Lv{u.level}</span>
+          <UserName username={u.username} name={u.name} role={u.role}
+            level={u.level} cosmetics={u.cosmetics} />
           {i < people.length - 1 && <span>,</span>}
         </span>
       ))}

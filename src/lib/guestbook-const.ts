@@ -1,3 +1,4 @@
+import type { Cosmetics } from './shop-const';
 /**
  * Hằng số của sổ lưu bút, tách riêng khỏi `guestbook.ts`.
  *
@@ -25,7 +26,7 @@ export interface GuestbookItem {
   private: boolean;
   hidden: boolean;
   createdAt: Date;
-  author: { id: string; username: string | null; name: string | null; image: string | null; level: number; role: string };
+  author: { id: string; username: string | null; name: string | null; image: string | null; level: number; role: string; cosmetics: Cosmetics };
   /** Người xem hiện tại có được gỡ lời nhắn này không. */
   canRemove: boolean;
 }

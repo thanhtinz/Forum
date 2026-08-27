@@ -11,6 +11,8 @@ import { CommentReply } from './CommentReply';
 import { CommentBody } from './CommentBody';
 import { CommentOwnerActions } from './CommentOwnerActions';
 import { EditScope } from '@/components/EditScope';
+import { Avatar, UserName } from '@/components/user/Cosmetic';
+import { authorChipSelect, toCosmetics } from '@/lib/shop';
 
 /**
  * Danh sách bình luận phân cấp 1 mức (bình luận gốc + phản hồi).
@@ -42,11 +44,11 @@ export async function Comments({ postId, gameId, slug, loggedIn, basePath = '/po
     orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
     take: 50,
     include: {
-      author: { select: { username: true, name: true, image: true } },
+      author: { select: authorChipSelect },
       children: {
         where: canManage ? {} : { hidden: false },
         orderBy: { createdAt: 'asc' },
-        include: { author: { select: { username: true, name: true, image: true } } },
+        include: { author: { select: authorChipSelect } },
       },
     },
   });
@@ -90,7 +92,12 @@ export async function Comments({ postId, gameId, slug, loggedIn, basePath = '/po
 type Row = {
   id: string; content: string; createdAt: Date; updatedAt: Date;
   pinned?: boolean; hidden?: boolean; authorId: string;
-  author: { username: string | null; name: string | null; image: string | null };
+  author: {
+    username: string | null; name: string | null; image: string | null; level: number; role: string;
+    nameColor: { value: string } | null;
+    avatarFrame: { value: string } | null;
+    shopBadge: { value: string; name: string } | null;
+  } | null;
 };
 
 function CommentRow({ c, me, canManage, small, postId, gameId, slug, callbackUrl, rootId }: {
@@ -100,21 +107,18 @@ function CommentRow({ c, me, canManage, small, postId, gameId, slug, callbackUrl
   rootId: string;
 }) {
   const name = c.author?.name ?? c.author?.username ?? 'Ẩn danh';
-  const size = small ? 'h-8 w-8' : 'h-9 w-9';
   const isOwner = !!me && me === c.authorId;
   return (
     <EditScope>
     <div id={`bl-${c.id}`} data-comment-id={c.id}
       className={cn('flex gap-3', c.hidden && 'rounded-lg p-2 ring-1 ring-rose-200 dark:ring-rose-900')}>
       <Link href={`/u/${c.author?.username ?? ''}`} className="shrink-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {c.author?.image
-          ? <img src={c.author.image} alt="" className={`${size} rounded-full object-cover`} />
-          : <span className={`grid ${size} place-items-center rounded-full bg-ink-200 text-sm font-bold text-ink-600 dark:bg-ink-700 dark:text-ink-200`}>{name[0]?.toUpperCase()}</span>}
+        <Avatar image={c.author?.image ?? null} name={name} cosmetics={toCosmetics(c.author)} size={small ? 32 : 40} />
       </Link>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="font-semibold">{name}</span>
+          <UserName username={c.author?.username ?? null} name={c.author?.name ?? null}
+            role={c.author?.role} cosmetics={toCosmetics(c.author)} />
           {c.pinned && <span className="chip bg-brand-100 text-brand-600 dark:bg-brand-950/50">Ghim</span>}
           {c.hidden && <span className="chip bg-rose-100 text-rose-600 dark:bg-rose-950/50">Đang ẩn</span>}
           <span className="text-xs text-ink-400">{format(c.createdAt, 'dd/MM/yyyy HH:mm')}</span>

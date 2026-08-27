@@ -1,4 +1,5 @@
 import { db } from './db';
+import { authorChipSelect, toCosmetics } from './shop';
 import {
   REQUEST_PAGE_SIZE, REQUEST_PER_DAY,
   type RequestItem, type RequestStatus,
@@ -54,7 +55,7 @@ export async function getGameRequests(opts: {
       select: {
         id: true, title: true, note: true, status: true, adminNote: true,
         voteCount: true, createdAt: true, handledAt: true, userId: true,
-        user: { select: { username: true, name: true, level: true, role: true } },
+        user: { select: authorChipSelect },
         game: { select: { slug: true, title: true } },
         // Chỉ hỏi phiếu của CHÍNH người đang xem, không kéo cả danh sách người
         // đã bấm về rồi mới tìm trong đó.
@@ -79,7 +80,7 @@ export async function getGameRequests(opts: {
       voteCount: r.voteCount,
       createdAt: r.createdAt,
       handledAt: r.handledAt,
-      user: r.user,
+      user: { ...r.user, cosmetics: toCosmetics(r.user) },
       game: r.game,
       voted: Array.isArray(r.votes) && r.votes.length > 0,
       canRemove: canRemoveRequest(viewer, { userId: r.userId, status: r.status }),

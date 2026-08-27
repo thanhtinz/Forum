@@ -12,6 +12,7 @@ import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { getLevelLooks } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
+import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 12;
@@ -58,13 +59,13 @@ export default async function SearchPage({ searchParams }: {
           id: true, title: true, content: true, createdAt: true, lastReplyAt: true,
           pinned: true, locked: true, solvedReplyId: true, bountyPoints: true,
           viewCount: true, replyCount: true,
-          author: { select: { username: true, name: true, image: true } },
+          author: { select: authorChipSelect },
           forum: { select: { slug: true, name: true } },
         },
       })).map((t) => ({
         id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
         pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
-        viewCount: t.viewCount, replyCount: t.replyCount, author: t.author, forum: t.forum,
+        viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author), forum: t.forum,
         excerpt: truncate(plainText(t.content), 90),
       }))
     : [];

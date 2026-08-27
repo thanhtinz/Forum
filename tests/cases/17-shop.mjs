@@ -34,7 +34,10 @@ export default async function run(check) {
     await admin.locator('button:has-text("Thêm món")').click();
     await admin.waitForTimeout(400);
     await admin.fill('form input[name="name"]', 'Nick đỏ kiểm thử');
-    await admin.fill('form input[name="value"]', '#e11d48');
+    // Cố tình KHÔNG dùng #e11d48: đó đúng là màu cấp 4 của minhdev, nên mục
+    // kiểm "màu tên hiện trên trang cá nhân" sẽ đạt vì màu cấp chứ không phải
+    // vì món đồ vừa mua.
+    await admin.fill('form input[name="value"]', '#00b7ff');
     await admin.fill('form input[name="pricePoints"]', '50');
     await admin.locator('form button[type="submit"]:has-text("Lưu")').click();
     await admin.waitForTimeout(2500);
@@ -43,7 +46,7 @@ export default async function run(check) {
       where: { name: 'Nick đỏ kiểm thử' },
       select: { id: true, kind: true, value: true, pricePoints: true, slug: true },
     });
-    check('tạo được món màu tên', color?.kind === 'NAME_COLOR' && color?.value === '#e11d48',
+    check('tạo được món màu tên', color?.kind === 'NAME_COLOR' && color?.value === '#00b7ff',
       JSON.stringify(color));
     check('lưu đúng giá', color?.pricePoints === 50);
     await db.shopItem.update({ where: { id: color.id }, data: { slug: 'kiem-thu-mau' }, select: { id: true } });
@@ -121,7 +124,7 @@ export default async function run(check) {
     // Xem trước phải dựng trên hồ sơ THẬT của người xem, không phải hình mẫu.
     check('xem trước dùng tên thật của người xem', (await dlg.innerText()).includes('Minh Dev'));
     check('xem trước tô đúng màu của món',
-      (await dlg.locator('[style*="rgb(225, 29, 72)"], [style*="#e11d48"]').count()) > 0);
+      (await dlg.locator('[style*="rgb(0, 183, 255)"], [style*="#00b7ff"]').count()) > 0);
     check('hộp thoại khoá cuộn nền',
       (await member.evaluate(() => document.body.style.overflow)) === 'hidden');
 
@@ -160,7 +163,7 @@ export default async function run(check) {
     await member.goto(`${BASE}/u/minhdev`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(800);
     check('màu tên hiện trên trang cá nhân',
-      (await member.locator('[style*="rgb(225, 29, 72)"], [style*="#e11d48"]').count()) > 0);
+      (await member.locator('[style*="rgb(0, 183, 255)"], [style*="#00b7ff"]').count()) > 0);
 
     // Gỡ ra thì màu biến mất
     await member.goto(`${BASE}/user/items`, { waitUntil: 'networkidle' });

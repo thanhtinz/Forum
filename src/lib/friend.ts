@@ -1,4 +1,6 @@
 import { db } from './db';
+import { cosmeticSelect, toCosmetics } from './shop';
+import type { Cosmetics } from './shop-const';
 
 /** Lời nhắn kèm khi xin kết bạn. */
 export const FRIEND_MESSAGE_MAX = 200;
@@ -20,7 +22,7 @@ export interface FriendRow {
   message: string | null;
   createdAt: Date;
   acceptedAt: Date | null;
-  user: { id: string; username: string | null; name: string | null; image: string | null; level: number; role: string };
+  user: { id: string; username: string | null; name: string | null; image: string | null; level: number; role: string; cosmetics: Cosmetics };
 }
 
 /** Số dòng mỗi trang của cả ba danh sách trên trang bạn bè. */
@@ -37,8 +39,12 @@ const page_ = (items: FriendRow[], total: number): FriendPage => ({
 });
 
 const userSelect = {
-  id: true, username: true, name: true, image: true, level: true, role: true,
+  id: true, username: true, name: true, image: true, level: true, role: true, ...cosmeticSelect,
 } as const;
+
+/** Gắn đồ trang trí vào hàng người dùng đã lấy kèm `userSelect`. */
+const withCosmetics = <T extends Parameters<typeof toCosmetics>[0]>(u: T) =>
+  ({ ...u, cosmetics: toCosmetics(u) });
 
 /** Tìm hàng nối hai người, bất kể ai là người gửi. */
 export async function findFriendship(a: string, b: string) {
@@ -106,7 +112,7 @@ export async function getFriends(userId: string, page = 1): Promise<FriendPage> 
     message: r.message,
     createdAt: r.createdAt,
     acceptedAt: r.acceptedAt,
-    user: r.requesterId === userId ? r.addressee : r.requester,
+    user: withCosmetics(r.requesterId === userId ? r.addressee : r.requester),
   })), total);
 }
 
@@ -123,7 +129,7 @@ export async function getIncomingRequests(userId: string, page = 1): Promise<Fri
       select: { id: true, message: true, createdAt: true, acceptedAt: true, requester: { select: userSelect } },
     }),
   ]);
-  return page_(rows.map((r) => ({ ...r, user: r.requester })), total);
+  return page_(rows.map((r) => ({ ...r, user: withCosmetics(r.requester) })), total);
 }
 
 /** Lời mời mình đã gửi, đang chờ người kia. */
@@ -139,7 +145,7 @@ export async function getOutgoingRequests(userId: string, page = 1): Promise<Fri
       select: { id: true, message: true, createdAt: true, acceptedAt: true, addressee: { select: userSelect } },
     }),
   ]);
-  return page_(rows.map((r) => ({ ...r, user: r.addressee })), total);
+  return page_(rows.map((r) => ({ ...r, user: withCosmetics(r.addressee) })), total);
 }
 
 /** Có phải bạn bè không — dùng cho những chỗ sau này giới hạn "chỉ bạn bè". */

@@ -4,7 +4,8 @@ import { ReplyContent } from '@/components/forum/ReplyContent';
 import { Pagination } from '@/components/Pagination';
 import { GuestbookForm } from '@/components/user/GuestbookForm';
 import { GuestbookReplyForm, RemoveEntryButton, RestoreEntryButton } from '@/components/user/GuestbookEntryActions';
-import { fmtAgo, fmtCount, nickClass } from '@/lib/utils';
+import { fmtAgo, fmtCount } from '@/lib/utils';
+import { Avatar, UserName } from '@/components/user/Cosmetic';
 import type { GuestbookItem } from '@/lib/guestbook-const';
 
 /**
@@ -44,20 +45,13 @@ export function Guestbook({ username, ownerName, items, total, page, totalPages,
           {items.map((e) => (
             <li key={e.id} className={`p-4 ${e.hidden ? 'opacity-60' : ''}`}>
               <div className="flex items-start gap-3">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {e.author.image
-                  ? <img src={e.author.image} alt="" className="size-9 shrink-0 rounded-lg object-cover" />
-                  : <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-brand-500 font-bold text-white">
-                      {(e.author.name ?? e.author.username ?? '?')[0]?.toUpperCase()}
-                    </span>}
+                <Avatar image={e.author.image} name={e.author.name ?? e.author.username}
+                  cosmetics={e.author.cosmetics} size={36} rounded="rounded-lg" />
 
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <Link href={`/u/${e.author.username ?? ''}`}
-                      className={`font-bold hover:underline ${nickClass(e.author.role)}`}>
-                      {e.author.name ?? e.author.username}
-                    </Link>
-                    <span className="retro-sub text-ink-400">Lv{e.author.level}</span>
+                    <UserName username={e.author.username} name={e.author.name} role={e.author.role}
+                      level={e.author.level} cosmetics={e.author.cosmetics} />
                     <span className="retro-sub text-ink-400">· {fmtAgo(e.createdAt)}</span>
                     {e.private && (
                       <span className="chip gap-1 bg-amber-100 text-amber-700 dark:bg-amber-950/50" title="Chỉ chủ nhà và người viết đọc được">

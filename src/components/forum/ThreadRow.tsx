@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { Pin, Lock, MessageSquare, Eye, Award, CheckCircle2 } from 'lucide-react';
 import { fmtCount, fmtAgo } from '@/lib/utils';
+import { Avatar, UserName } from '@/components/user/Cosmetic';
+import { NO_COSMETICS } from '@/lib/shop-const';
+import type { AuthorChip } from '@/lib/shop';
 
 export interface ThreadRowData {
   id: string;
@@ -13,7 +16,7 @@ export interface ThreadRowData {
   bountyPoints: number | null;
   viewCount: number;
   replyCount: number;
-  author: { username: string | null; name: string | null; image: string | null } | null;
+  author: AuthorChip | null;
   forum?: { slug: string; name: string } | null;
   excerpt?: string | null;
 }
@@ -25,15 +28,13 @@ export interface ThreadRowData {
 export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowData; forumSlug?: string; showForum?: boolean }) {
   const slug = forumSlug ?? thread.forum?.slug;
   const name = thread.author?.name ?? thread.author?.username ?? 'Ẩn danh';
+  const cos = thread.author?.cosmetics ?? NO_COSMETICS;
   const at = thread.lastReplyAt ?? thread.createdAt;
 
   return (
     <div className="group flex items-center gap-3 px-3 py-3 transition-colors hover:bg-ink-50 sm:px-4 dark:hover:bg-ink-800/50">
       <Link href={`/u/${thread.author?.username ?? ''}`} className="shrink-0 self-start" aria-label={name}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {thread.author?.image
-          ? <img src={thread.author.image} alt="" className="size-10 rounded-full object-cover" />
-          : <span className="grid size-10 place-items-center rounded-full bg-ink-200 text-sm font-bold text-ink-600 dark:bg-ink-700 dark:text-ink-200">{name[0]?.toUpperCase()}</span>}
+        <Avatar image={thread.author?.image ?? null} name={name} cosmetics={cos} size={40} />
       </Link>
 
       <div className="min-w-0 flex-1">
@@ -52,7 +53,8 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
         {thread.excerpt && <p className="retro-sub mt-0.5 line-clamp-1 text-ink-400">{thread.excerpt}</p>}
 
         <p className="retro-sub retro-rule mt-1 flex flex-wrap items-center gap-x-1.5 pt-1 text-ink-400">
-          <Link href={`/u/${thread.author?.username ?? ''}`} className="font-medium hover:text-brand-600">{name}</Link>
+          <UserName username={thread.author?.username ?? null} name={thread.author?.name ?? null}
+            role={thread.author?.role} cosmetics={cos} className="!font-medium" />
           {/* Thời gian nằm ở cột riêng khi màn hình đủ rộng */}
           <span className="lg:hidden">·</span>
           <span className="lg:hidden">{fmtAgo(at)}</span>

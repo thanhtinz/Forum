@@ -25,6 +25,7 @@ import { EditScope } from '@/components/EditScope';
 import { canModerateForum } from '@/lib/moderation';
 import { getLevelLooks, type LevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,13 +64,25 @@ function toAuthor(
 }
 
 const REPLIES_PER_PAGE = 10;
+/**
+ * Mỗi trả lời chỉ dựng sẵn ngần này phản hồi con.
+ *
+ * Phản hồi con không có phân trang riêng — chúng nằm lồng trong trả lời cha —
+ * nên nếu lấy hết thì một trả lời bị "hội đồng" vài nghìn phản hồi sẽ kéo sập
+ * đúng cái trang mà mọi người đang đổ vào xem.
+ */
+const CHILDREN_SHOWN = 10;
+/** Khi người đọc bấm "xem tất cả" cho MỘT trả lời thì mở rộng tới mức này. */
+const CHILDREN_EXPANDED = 200;
 
 export default async function ThreadPage({ params, searchParams }: {
   params: Promise<{ slug: string; id: string }>;
-  searchParams: Promise<{ p?: string }>;
+  searchParams: Promise<{ p?: string; r?: string }>;
 }) {
   const { slug, id } = await params;
-  const { p: pageRaw } = await searchParams;
+  const { p: pageRaw, r: expandRaw } = await searchParams;
+  /** Id của trả lời đang được mở rộng phần phản hồi con, nếu có. */
+  const expandId = expandRaw?.trim() || null;
 
   const thread = await db.thread.findUnique({
     where: { id },
@@ -107,7 +120,7 @@ export default async function ThreadPage({ params, searchParams }: {
     thread.forumId,
   );
   const moveTargets = canModerate
-    ? await db.forum.findMany({
+    ? await db.forum.findMany({ take: CONFIG_LIST_CAP,
         where: { id: { not: thread.forumId } },
         orderBy: [{ order: 'asc' }, { name: 'asc' }],
         select: { id: true, name: true },
@@ -131,10 +144,22 @@ export default async function ThreadPage({ params, searchParams }: {
       children: {
         where: canModerate ? {} : { hidden: false },
         orderBy: { createdAt: 'asc' },
+        // Lấy dư một hàng để biết "còn nữa" mà không phải đếm thêm lần nào.
+        take: CHILDREN_EXPANDED + 1,
         include: { author: authorSelect },
       },
+      _count: { select: { children: true } },
     },
   });
+
+  /**
+   * Cắt danh sách phản hồi con xuống mức đang hiển thị.
+   *
+   * Cắt ở đây, sau khi đã lấy về, chứ không cắt trong truy vấn: Prisma không
+   * cho đặt `take` khác nhau cho từng hàng cha trong cùng một lần lấy.
+   */
+  const childrenShown = <T,>(r: { id: string; children: T[] }): T[] =>
+    r.children.slice(0, r.id === expandId ? CHILDREN_EXPANDED : CHILDREN_SHOWN);
 
   // Số người theo dõi chủ đề và trạng thái theo dõi của người đang xem
   const [followCount, myFollow, saveCount, mySave] = await Promise.all([
@@ -152,7 +177,7 @@ export default async function ThreadPage({ params, searchParams }: {
   const likedThread = new Set<string>();
   const likedReplies = new Set<string>();
   if (userId) {
-    const replyIds = (replies ?? []).flatMap((r) => [r.id, ...r.children.map((c) => c.id)]);
+    const replyIds = (replies ?? []).flatMap((r) => [r.id, ...childrenShown(r).map((c) => c.id)]);
     const reactions = await db.reaction.findMany({
       where: { userId, type: 'LIKE', OR: [{ threadId: id }, { replyId: { in: replyIds } }] },
       select: { threadId: true, replyId: true },
@@ -163,14 +188,59 @@ export default async function ThreadPage({ params, searchParams }: {
     }
   }
 
-  // Trạng thái "cảm ơn" của bài mở đầu và mọi trả lời đang hiện — gom vào một
-  // truy vấn rồi chia ở JS, thay vì mỗi bài một lần hỏi cơ sở dữ liệu.
-  const thankTargets = (replies ?? []).flatMap((r) => [r.id, ...r.children.map((c) => c.id)]);
-  const thankRows = await db.reaction.findMany({
-    where: { type: 'THANKS', OR: [{ threadId: id }, { replyId: { in: thankTargets } }] },
-    orderBy: { createdAt: 'desc' },
-    select: { userId: true, threadId: true, replyId: true, user: { select: { name: true, username: true } } },
-  });
+  // Trạng thái "cảm ơn" của bài mở đầu và mọi trả lời đang hiện.
+  //
+  // Bảng cảm ơn chỉ khoe vài cái tên rồi gộp phần còn lại thành "và N người
+  // khác", nên KHÔNG được lấy hết hàng về rồi mới cắt: một bài được mười nghìn
+  // lượt cảm ơn sẽ kéo đủ mười nghìn hàng kèm mười nghìn lần nối bảng người
+  // dùng, chỉ để in ra mười hai cái tên.
+  //
+  // Vì vậy chia làm ba việc, việc nào cũng có trần:
+  //   • đếm bằng groupBy — cơ sở dữ liệu đếm, không gửi hàng nào về;
+  //   • lấy tên bằng một câu SQL có ROW_NUMBER, chặn đúng ngần ấy tên MỖI bài
+  //     (Prisma không đặt được `take` riêng cho từng nhóm);
+  //   • hỏi riêng xem chính người đang xem đã cảm ơn bài nào.
+  const thankTargets = (replies ?? []).flatMap((r) => [r.id, ...childrenShown(r).map((c) => c.id)]);
+
+  const [thankCounts, thankNames, myThanks] = await Promise.all([
+    db.reaction.groupBy({
+      by: ['threadId', 'replyId'],
+      where: { type: 'THANKS', OR: [{ threadId: id }, { replyId: { in: thankTargets } }] },
+      _count: { _all: true },
+    }),
+    db.$queryRaw<{ threadId: string | null; replyId: string | null; name: string | null; username: string | null }[]>`
+      SELECT x."threadId", x."replyId", u."name", u."username"
+      FROM (
+        SELECT r."userId", r."threadId", r."replyId",
+               ROW_NUMBER() OVER (
+                 PARTITION BY COALESCE(r."threadId", r."replyId")
+                 ORDER BY r."createdAt" DESC
+               ) AS rn
+        FROM "Reaction" r
+        WHERE r."type" = 'THANKS'::"ReactionType"
+          AND (r."threadId" = ${id} OR r."replyId" = ANY(${thankTargets}::text[]))
+      ) x
+      JOIN "User" u ON u.id = x."userId"
+      WHERE x.rn <= ${THANKS_NAMES_SHOWN}
+    `,
+    userId
+      ? db.reaction.findMany({
+          where: { userId, type: 'THANKS', OR: [{ threadId: id }, { replyId: { in: thankTargets } }] },
+          select: { threadId: true, replyId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const keyOf = (k: { threadId?: string | null; replyId?: string | null }) => k.threadId ?? k.replyId ?? '';
+  const thankedByMe = new Set(myThanks.map(keyOf));
+  const countByTarget = new Map(thankCounts.map((c) => [keyOf(c), c._count._all]));
+  const namesByTarget = new Map<string, string[]>();
+  for (const n of thankNames) {
+    const k = keyOf(n);
+    const list = namesByTarget.get(k) ?? [];
+    list.push(n.name ?? n.username ?? 'Ẩn danh');
+    namesByTarget.set(k, list);
+  }
   // Tổng điểm đã tặng cho từng bài, cũng gom một lần rồi chia ở JS.
   const donationRows = await db.pointDonation.groupBy({
     by: ['threadId', 'replyId'],
@@ -186,12 +256,11 @@ export default async function ThreadPage({ params, searchParams }: {
     : undefined;
 
   const thanksOf = (key: { threadId?: string; replyId?: string }): ThanksState => {
-    const rows = thankRows.filter((r) =>
-      key.threadId ? r.threadId === key.threadId : r.replyId === key.replyId);
+    const k = keyOf(key);
     return {
-      active: !!userId && rows.some((r) => r.userId === userId),
-      people: rows.slice(0, THANKS_NAMES_SHOWN).map((r) => r.user.name ?? r.user.username ?? 'Ẩn danh'),
-      count: rows.length,
+      active: thankedByMe.has(k),
+      people: namesByTarget.get(k) ?? [],
+      count: countByTarget.get(k) ?? 0,
     };
   };
 
@@ -300,9 +369,9 @@ export default async function ThreadPage({ params, searchParams }: {
                     canThank={loggedIn && r.authorId !== userId} callbackUrl={callbackUrl} />
                 </div>
 
-                {r.children.length > 0 && (
+                {childrenShown(r).length > 0 && (
                   <ul className="mt-4 space-y-3 border-l-2 border-brand-200 pl-3 dark:border-brand-900">
-                    {r.children.map((ch) => (
+                    {childrenShown(r).map((ch) => (
                       <EditScope key={ch.id}>
                       <li className={cn('rounded-lg bg-ink-50 p-3 dark:bg-ink-800/40',
                         ch.hidden && 'ring-1 ring-rose-300 dark:ring-rose-900')}>
@@ -328,6 +397,15 @@ export default async function ThreadPage({ params, searchParams }: {
                       </li>
                       </EditScope>
                     ))}
+
+                    {r._count.children > childrenShown(r).length && (
+                      <li className="pl-1">
+                        <Link href={`?p=${page}&r=${r.id}#${r.id}`} scroll={false}
+                          className="text-sm font-medium text-brand-600 hover:underline">
+                          Xem tất cả {fmtCount(r._count.children)} phản hồi
+                        </Link>
+                      </li>
+                    )}
                   </ul>
                 )}
               </ThreadPost>

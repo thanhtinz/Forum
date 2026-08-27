@@ -1,15 +1,29 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { CouponManager, type CouponRow } from '@/components/admin/CouponManager';
+import { Pagination } from '@/components/Pagination';
 
 export const metadata: Metadata = { title: 'Mã giảm giá' };
 export const dynamic = 'force-dynamic';
 
-export default async function AdminCouponsPage() {
-  const coupons = await db.coupon.findMany({
-    orderBy: [{ active: 'desc' }, { createdAt: 'desc' }],
-    include: { _count: { select: { claims: true } } },
-  });
+const PAGE_SIZE = 30;
+
+export default async function AdminCouponsPage({ searchParams }: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageRaw } = await searchParams;
+  const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
+
+  const [total, coupons] = await Promise.all([
+    db.coupon.count(),
+    db.coupon.findMany({
+      orderBy: [{ active: 'desc' }, { createdAt: 'desc' }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: { _count: { select: { claims: true } } },
+    }),
+  ]);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const rows: CouponRow[] = coupons.map((c) => ({
     id: c.id, code: c.code, name: c.name, type: c.type, value: c.value,
@@ -26,6 +40,7 @@ export default async function AdminCouponsPage() {
         <p className="text-sm text-ink-500">Tạo mã giảm theo số điểm hoặc phần trăm, giới hạn lượt dùng và thời gian áp dụng.</p>
       </div>
       <CouponManager coupons={rows} />
+      <Pagination page={page} totalPages={totalPages} basePath="/admin/coupons" />
     </div>
   );
 }

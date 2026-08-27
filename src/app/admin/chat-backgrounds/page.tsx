@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { ChatBackgroundManager, type ChatBgRow } from '@/components/admin/ChatBackgroundManager';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Ảnh nền chat' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminChatBackgroundsPage() {
-  const rows = await db.chatBackground.findMany({
+  const rows = await db.chatBackground.findMany({ take: CONFIG_LIST_CAP,
     orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     select: { id: true, name: true, image: true, dark: true, active: true, order: true },
   });

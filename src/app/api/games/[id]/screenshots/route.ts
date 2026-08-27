@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { assetUrl } from '@/lib/game-files';
+import { ITEM_LIST_CAP } from '@/lib/list-cap';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
   if (!game) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
-  const images = await db.gameImage.findMany({
+  const images = await db.gameImage.findMany({ take: ITEM_LIST_CAP,
     where: { gameId: game.id, type: 'SCREENSHOT' },
     orderBy: { sortOrder: 'asc' },
   });

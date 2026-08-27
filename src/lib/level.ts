@@ -2,6 +2,7 @@ import { cache } from 'react';
 import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import { notify } from './notify';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export interface LevelLook {
   level: number;
@@ -15,7 +16,7 @@ export interface LevelLook {
  * Cache theo request nên nhiều component cùng dùng chỉ tốn một truy vấn.
  */
 export const getLevelLooks = cache(async (): Promise<Map<number, LevelLook>> => {
-  const rules = await db.levelRule.findMany({
+  const rules = await db.levelRule.findMany({ take: CONFIG_LIST_CAP,
     select: { level: true, name: true, icon: true, color: true },
   });
   return new Map(rules.map((r) => [r.level, r]));

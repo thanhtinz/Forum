@@ -23,6 +23,8 @@ jobs:
         run: node tests/run.mjs overfetch
       - name: Quét nút và liên kết chết
         run: node scripts/scan-dead-buttons.mjs
+      - name: Quét danh sách đọc không đặt trần
+        run: node scripts/scan-unbounded.mjs
       - name: Dựng bản production
         run: npx next build
         env:

@@ -14,6 +14,7 @@ import { MessageComposer } from '@/components/user/MessageComposer';
 import { ScrollToLatest } from '@/components/user/ScrollToLatest';
 import { LiveRefresh } from '@/components/user/LiveRefresh';
 import { markConversationRead, purgeExpiredMessages } from '../actions';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Trò chuyện' };
 export const dynamic = 'force-dynamic';
@@ -78,11 +79,11 @@ export default async function ConversationPage({ params, searchParams }: {
   const myName = myNick || session.user.name || 'Bạn';
   // Nền và bong bóng do admin tải lên; mẫu có sẵn vẫn dùng được như cũ.
   const [backgrounds, bubbles] = await Promise.all([
-    db.chatBackground.findMany({
+    db.chatBackground.findMany({ take: CONFIG_LIST_CAP,
       where: { active: true }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
       select: { id: true, name: true, image: true, dark: true },
     }),
-    db.chatBubbleStyle.findMany({
+    db.chatBubbleStyle.findMany({ take: CONFIG_LIST_CAP,
       where: { active: true }, orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
       select: { id: true, name: true, decor: true, colorMine: true, colorTheirs: true, darkText: true },
     }),

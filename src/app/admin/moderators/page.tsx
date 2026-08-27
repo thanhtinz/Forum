@@ -1,18 +1,19 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { ModeratorManager, type ForumWithMods } from '@/components/admin/ModeratorManager';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Điều hành viên' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminModeratorsPage() {
   const [forums, mods] = await Promise.all([
-    db.forum.findMany({
+    db.forum.findMany({ take: CONFIG_LIST_CAP,
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
       select: { id: true, name: true, slug: true, icon: true },
     }),
     // ForumModerator không có quan hệ tới User nên phải tra người dùng ở bước sau.
-    db.forumModerator.findMany({ select: { id: true, forumId: true, userId: true }, orderBy: { createdAt: 'asc' } }),
+    db.forumModerator.findMany({ take: CONFIG_LIST_CAP, select: { id: true, forumId: true, userId: true }, orderBy: { createdAt: 'asc' } }),
   ]);
 
   const users = mods.length

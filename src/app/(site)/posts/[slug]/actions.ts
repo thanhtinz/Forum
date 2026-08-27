@@ -341,10 +341,9 @@ export async function deleteOwnComment(commentId: string): Promise<CommentEditSt
   if ('error' in guard) return { error: guard.error };
   const { comment } = guard;
 
-  const children = await db.comment.findMany({
-    where: { parentId: commentId }, select: { hidden: true },
-  });
-  const visible = (comment.hidden ? 0 : 1) + children.filter((c) => !c.hidden).length;
+  // Đếm bằng count thay vì kéo cả danh sách phản hồi về chỉ để đếm.
+  const visibleChildren = await db.comment.count({ where: { parentId: commentId, hidden: false } });
+  const visible = (comment.hidden ? 0 : 1) + visibleChildren;
 
   await db.$transaction(async (tx) => {
     await tx.comment.delete({ where: { id: commentId } });

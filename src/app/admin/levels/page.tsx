@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { LevelManager, type LevelRow } from '@/components/admin/LevelManager';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Cấp độ' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLevelsPage() {
-  const levels = await db.levelRule.findMany({ orderBy: { level: 'asc' } });
+  const levels = await db.levelRule.findMany({ take: CONFIG_LIST_CAP, orderBy: { level: 'asc' } });
 
   // Đếm thành viên theo cấp bằng một truy vấn gộp thay vì đếm từng cấp.
   const counts = await db.user.groupBy({ by: ['level'], _count: { _all: true } });

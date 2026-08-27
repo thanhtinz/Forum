@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { ForumManager, type ForumRow } from '@/components/admin/ForumManager';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Diễn đàn' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminForumsPage() {
-  const forums = await db.forum.findMany({
+  const forums = await db.forum.findMany({ take: CONFIG_LIST_CAP,
     orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     select: {
       id: true, name: true, slug: true, description: true, icon: true, order: true,

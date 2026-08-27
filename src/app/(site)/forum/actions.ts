@@ -962,15 +962,17 @@ export async function deleteOwnReply(replyId: string): Promise<ReplyEditState> {
   // đề mang nhãn "đã giải quyết" mà chẳng còn câu trả lời nào.
   if (reply.isSolution) return { error: 'Trả lời đã được chọn làm lời giải, không xoá được.' };
 
-  const children = await db.reply.findMany({
-    where: { parentId: replyId },
-    select: { id: true, hidden: true, isSolution: true },
-  });
-  if (children.some((c) => c.isSolution)) {
+  // Đếm bằng count chứ không kéo cả danh sách phản hồi về: một trả lời có
+  // hàng nghìn phản hồi thì đọc hết chỉ để đếm là tự dựng một quả bom.
+  const [solutionBelow, visibleChildren] = await Promise.all([
+    db.reply.count({ where: { parentId: replyId, isSolution: true } }),
+    db.reply.count({ where: { parentId: replyId, hidden: false } }),
+  ]);
+  if (solutionBelow > 0) {
     return { error: 'Có phản hồi bên dưới đang là lời giải, không xoá được.' };
   }
 
-  const visible = (reply.hidden ? 0 : 1) + children.filter((c) => !c.hidden).length;
+  const visible = (reply.hidden ? 0 : 1) + visibleChildren;
 
   await db.$transaction(async (tx) => {
     await tx.reply.delete({ where: { id: replyId } });

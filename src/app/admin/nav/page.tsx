@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { NAV_GROUPS } from '@/lib/nav';
 import { NavManager, type NavRow } from '@/components/admin/NavManager';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Menu điều hướng' };
 export const dynamic = 'force-dynamic';
@@ -10,7 +11,7 @@ export default async function AdminNavPage({ searchParams }: { searchParams: Pro
   const { group: groupRaw } = await searchParams;
   const group = NAV_GROUPS.some((g) => g.value === groupRaw) ? groupRaw! : 'header';
 
-  const links = await db.navLink.findMany({
+  const links = await db.navLink.findMany({ take: CONFIG_LIST_CAP,
     where: { group },
     orderBy: [{ order: 'asc' }, { label: 'asc' }],
     select: { id: true, label: true, url: true, icon: true, group: true, parentId: true, order: true },

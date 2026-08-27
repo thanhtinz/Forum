@@ -8,6 +8,7 @@ import { GameFilters } from '@/components/game/GameFilters';
 import { GameGrid } from '@/components/game/GameGrid';
 import { GameSearchBox } from '@/components/game/GameSearchBox';
 import { Pagination } from '@/components/Pagination';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 18;
@@ -28,9 +29,9 @@ export default async function BrowseGamesPage({ searchParams }: {
 
   const [result, genres, platforms, resolutions, yearRange] = await Promise.all([
     searchGames(filter, { sort, page, pageSize: PAGE_SIZE }),
-    db.gameGenre.findMany({ orderBy: { order: 'asc' }, select: { slug: true, name: true } }),
-    db.gamePlatform.findMany({ orderBy: { order: 'asc' }, select: { slug: true, name: true } }),
-    db.gameResolution.findMany({ orderBy: [{ order: 'asc' }, { width: 'asc' }], select: { slug: true, label: true } }),
+    db.gameGenre.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, select: { slug: true, name: true } }),
+    db.gamePlatform.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, select: { slug: true, name: true } }),
+    db.gameResolution.findMany({ take: CONFIG_LIST_CAP, orderBy: [{ order: 'asc' }, { width: 'asc' }], select: { slug: true, label: true } }),
     db.game.aggregate({ where: { status: 'PUBLISHED' }, _min: { releaseYear: true }, _max: { releaseYear: true } }),
   ]);
   const { items: games, total } = result;

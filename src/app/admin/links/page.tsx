@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { FriendLinkManager, type FriendLinkRow } from '@/components/admin/AppearanceManager';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Liên kết bạn bè' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLinksPage() {
-  const links = await db.friendLink.findMany({
+  const links = await db.friendLink.findMany({ take: CONFIG_LIST_CAP,
     orderBy: [{ order: 'asc' }, { name: 'asc' }],
     select: { id: true, name: true, url: true, logo: true, description: true, order: true, active: true },
   });

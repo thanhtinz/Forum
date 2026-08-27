@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { cn, fmtCount } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { ThreadRowActions } from '@/components/admin/ThreadRowActions';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Chủ đề diễn đàn' };
 export const dynamic = 'force-dynamic';
@@ -50,7 +51,7 @@ export default async function AdminThreadsPage({ searchParams }: { searchParams:
         author: { select: { name: true, username: true } },
       },
     }),
-    db.forum.findMany({ orderBy: { order: 'asc' }, select: { name: true, slug: true } }),
+    db.forum.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, select: { name: true, slug: true } }),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
 

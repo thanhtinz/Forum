@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { ITEM_LIST_CAP } from '@/lib/list-cap';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
   if (!game) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
 
-  const versions = await db.gameVersion.findMany({
+  const versions = await db.gameVersion.findMany({ take: ITEM_LIST_CAP,
     where: { gameId: game.id },
     orderBy: [{ platform: 'asc' }, { latest: 'desc' }, { releaseDate: 'desc' }, { createdAt: 'desc' }],
     include: { files: { select: { type: true, sizeBytes: true, checksum: true, checksumAlgo: true, scanStatus: true } } },

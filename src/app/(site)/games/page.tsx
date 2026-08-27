@@ -9,6 +9,7 @@ import { gameCardSelect, gameTint, toGameCard } from '@/lib/game';
 import { fmtCount } from '@/lib/utils';
 import { GameRow } from '@/components/game/GameRow';
 import { GameSearchBox } from '@/components/game/GameSearchBox';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,9 +30,9 @@ export default async function GamesHomePage() {
       db.game.findMany({ where: PUBLISHED, orderBy: { viewCount: 'desc' }, take: ROW_TAKE, select: gameCardSelect }),
       db.game.findMany({ where: PUBLISHED, orderBy: { downloadCount: 'desc' }, take: ROW_TAKE, select: gameCardSelect }),
       db.game.findMany({ where: { ...PUBLISHED, vietnamized: true }, orderBy: { updatedAt: 'desc' }, take: ROW_TAKE, select: gameCardSelect }),
-      db.gameGenre.findMany({ orderBy: { order: 'asc' }, include: { _count: { select: { games: true } } } }),
-      db.gamePlatform.findMany({ orderBy: { order: 'asc' }, include: { _count: { select: { games: true } } } }),
-      db.gameResolution.findMany({ orderBy: [{ order: 'asc' }, { width: 'asc' }], include: { _count: { select: { games: true } } } }),
+      db.gameGenre.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, include: { _count: { select: { games: true } } } }),
+      db.gamePlatform.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, include: { _count: { select: { games: true } } } }),
+      db.gameResolution.findMany({ take: CONFIG_LIST_CAP, orderBy: [{ order: 'asc' }, { width: 'asc' }], include: { _count: { select: { games: true } } } }),
       db.gameCollection.findMany({ orderBy: [{ featured: 'desc' }, { order: 'asc' }], take: 6, include: { _count: { select: { games: true } } } }),
       db.game.aggregate({ where: PUBLISHED, _count: { _all: true }, _sum: { viewCount: true, downloadCount: true } }),
     ]);

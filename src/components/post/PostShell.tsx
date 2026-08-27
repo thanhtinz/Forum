@@ -18,6 +18,7 @@ import { ReportButton } from '@/components/ReportButton';
 import { RelatedPosts } from '@/components/post/RelatedPosts';
 import { CopyrightNotice } from '@/components/post/CopyrightNotice';
 import { PostSidebar } from '@/components/post/PostSidebar';
+import { ITEM_LIST_CAP } from '@/lib/list-cap';
 
 export type PostSection = 'detail' | 'faq' | 'comments';
 
@@ -72,7 +73,7 @@ async function loadHiddenContent(postId: string): Promise<string | null> {
  * cổng đó tự kiểm quyền rồi mới chuyển hướng.
  */
 async function loadDownloadSecrets(postId: string) {
-  const rows = await db.downloadItem.findMany({
+  const rows = await db.downloadItem.findMany({ take: ITEM_LIST_CAP,
     where: { postId },
     select: { id: true, password: true, extractCode: true },
   });

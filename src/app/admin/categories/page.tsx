@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { CategoryManager, type CatRow } from '@/components/admin/CategoryManager';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Chuyên mục' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminCategoriesPage() {
-  const cats = await db.category.findMany({
+  const cats = await db.category.findMany({ take: CONFIG_LIST_CAP,
     orderBy: [{ order: 'asc' }, { name: 'asc' }],
     select: { id: true, name: true, slug: true, color: true, icon: true, description: true, order: true, parentId: true, _count: { select: { posts: true, postLinks: true } } },
   });

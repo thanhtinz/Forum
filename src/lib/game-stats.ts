@@ -87,6 +87,9 @@ export async function recordGameEvent(input: RecordEventInput): Promise<{ unique
   }
 }
 
+/** Số game xử lý mỗi mẻ khi tính lại điểm nổi bật. */
+const TRENDING_BATCH = 500;
+
 /**
  * Trending score: hoạt động 7 ngày gần nhất có trọng số, giảm dần theo tuổi bài.
  * Chạy định kỳ (cron/queue) hoặc gọi thủ công từ trang admin.
@@ -112,21 +115,36 @@ export async function recomputeTrending(days = 7): Promise<number> {
     score.set(r.gameId, (score.get(r.gameId) ?? 0) + (weight[r.type] ?? 0) * r._count._all);
   }
 
-  const games = await db.game.findMany({
-    where: { status: 'PUBLISHED' },
-    select: { id: true, publishedAt: true },
-  });
+  // Đi theo mẻ chứ không lấy cả kho về rồi dồn vào MỘT transaction: kho vài
+  // vạn game sẽ dựng ra vài vạn câu update trong cùng một giao dịch, đủ để
+  // nuốt sạch bộ nhớ và giữ khoá bảng suốt thời gian đó.
+  let done = 0;
+  let cursor: string | undefined;
+  for (;;) {
+    const games = await db.game.findMany({
+      where: { status: 'PUBLISHED' },
+      select: { id: true, publishedAt: true },
+      orderBy: { id: 'asc' },
+      take: TRENDING_BATCH,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+    });
+    if (games.length === 0) break;
 
-  await db.$transaction(
-    games.map((g) => {
-      const raw = score.get(g.id) ?? 0;
-      const ageDays = g.publishedAt ? (Date.now() - g.publishedAt.getTime()) / 86400_000 : 365;
-      // Giảm dần kiểu Hacker News: score / (age + 2)^0.4
-      const value = Math.round((raw / Math.pow(ageDays + 2, 0.4)) * 100) / 100;
-      return db.game.update({ where: { id: g.id }, data: { trendingScore: value } });
-    }),
-  );
-  return games.length;
+    await db.$transaction(
+      games.map((g) => {
+        const raw = score.get(g.id) ?? 0;
+        const ageDays = g.publishedAt ? (Date.now() - g.publishedAt.getTime()) / 86400_000 : 365;
+        // Giảm dần kiểu Hacker News: score / (age + 2)^0.4
+        const value = Math.round((raw / Math.pow(ageDays + 2, 0.4)) * 100) / 100;
+        return db.game.update({ where: { id: g.id }, data: { trendingScore: value }, select: { id: true } });
+      }),
+    );
+
+    done += games.length;
+    if (games.length < TRENDING_BATCH) break;
+    cursor = games[games.length - 1].id;
+  }
+  return done;
 }
 
 export interface GameAnalytics {

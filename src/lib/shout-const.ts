@@ -1,3 +1,4 @@
+import type { Cosmetics } from './shop-const';
 /**
  * Hằng số của phòng chat, tách riêng để phía trình duyệt dùng được.
  *
@@ -30,5 +31,7 @@ export interface ShoutItem {
   createdAt: Date;
   deleted: boolean;
   user: { username: string | null; name: string | null; image: string | null; level: number; role: string };
+  /** Đồ trang trí mua ở cửa hàng của người nói. */
+  cosmetics: Cosmetics;
   replyTo: { id: string; username: string | null; content: string } | null;
 }

@@ -1,4 +1,5 @@
 import { db } from './db';
+import { cosmeticSelect, toCosmetics } from './shop';
 import {
   SHOUT_TAKE, SHOUT_GAP_SECONDS, SHOUT_PER_MINUTE, SHOUT_HERE_MS, SHOUT_SCOPE,
   type ShoutItem,
@@ -11,7 +12,7 @@ const shoutSelect = {
   content: true,
   createdAt: true,
   deletedAt: true,
-  user: { select: { username: true, name: true, image: true, level: true, role: true } },
+  user: { select: { username: true, name: true, image: true, level: true, role: true, ...cosmeticSelect } },
   replyTo: { select: { id: true, content: true, deletedAt: true, user: { select: { username: true } } } },
 } as const;
 
@@ -34,6 +35,7 @@ export async function getShouts(): Promise<ShoutItem[]> {
     createdAt: r.createdAt,
     deleted: !!r.deletedAt,
     user: r.user,
+    cosmetics: toCosmetics(r.user),
     replyTo: r.replyTo
       ? {
           id: r.replyTo.id,

@@ -8,7 +8,8 @@ import { MediaPicker } from '@/components/forum/MediaPicker';
 import { ReplyContent } from '@/components/forum/ReplyContent';
 import { sendShout, removeShout, type ShoutState } from '@/app/(site)/chat/actions';
 import { SHOUT_MAX_LEN } from '@/lib/shout-const';
-import { nickClass } from '@/lib/utils';
+import type { Cosmetics } from '@/lib/shop-const';
+import { UserName } from '@/components/user/Cosmetic';
 
 interface Shout {
   id: string;
@@ -16,6 +17,7 @@ interface Shout {
   createdAt: string;
   deleted: boolean;
   user: { username: string | null; name: string | null; image: string | null; level: number; role: string };
+  cosmetics: Cosmetics;
   replyTo: { id: string; username: string | null; content: string } | null;
 }
 interface Here { username: string | null; name: string | null; image: string | null; level: number }
@@ -162,10 +164,8 @@ export function ShoutRoom({ initial, initialHere, meUsername, meRole }: {
                 <span className="retro-sub shrink-0 pt-0.5 tabular-nums text-ink-400">[{clock(s.createdAt)}]</span>
 
                 <p className="min-w-0 flex-1 break-words text-sm leading-relaxed">
-                  <Link href={`/u/${s.user.username ?? ''}`} className={`font-bold hover:underline ${nickClass(s.user.role)}`}>
-                    {s.user.name ?? s.user.username}
-                  </Link>
-                  <span className="retro-sub text-ink-400"> Lv{s.user.level}</span>
+                  <UserName username={s.user.username} name={s.user.name} role={s.user.role}
+                    level={s.user.level} cosmetics={s.cosmetics} />
                   <span className="text-ink-400">: </span>
 
                   {s.replyTo && (

@@ -26,6 +26,7 @@ import { canModerateForum } from '@/lib/moderation';
 import { getLevelLooks, type LevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
+import { cosmeticSelect, toCosmetics } from '@/lib/shop';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,6 +42,7 @@ const authorSelect = {
   select: {
     username: true, name: true, image: true, level: true, createdAt: true, signature: true, mood: true,
     _count: { select: { threads: true, replies: true } },
+    ...cosmeticSelect,
   },
 } as const;
 
@@ -50,6 +52,9 @@ function toAuthor(
     username: string | null; name: string | null; image: string | null; level: number;
     createdAt: Date; signature: string | null; mood: string | null;
     _count: { threads: number; replies: number };
+    nameColor?: { value: string } | null;
+    avatarFrame?: { value: string } | null;
+    shopBadge?: { value: string; name: string } | null;
   },
   looks: Map<number, LevelLook>,
 ) {
@@ -60,6 +65,7 @@ function toAuthor(
     levelIcon: look?.icon ?? null,
     levelColor: look?.color ?? null,
     levelName: look?.name ?? null,
+    cosmetics: toCosmetics(u),
   };
 }
 

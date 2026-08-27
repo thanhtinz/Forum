@@ -732,6 +732,28 @@ async function main() {
     }
   }
 
+  // ── Cửa hàng: vài màu tên có sẵn ─────────────────────────────────────
+  // Chỉ seed màu, không seed khung/huy hiệu: hai loại kia cần ảnh thật do
+  // quản trị viên tải lên, seed sẵn đường dẫn không có ảnh chỉ tổ hiện ảnh vỡ.
+  const shopColors = [
+    { slug: 'nick-do', name: 'Nick đỏ', value: '#e11d48', pricePoints: 100, order: 1, description: 'Đỏ rực như forum ngày xưa.' },
+    { slug: 'nick-xanh-la', name: 'Nick xanh lá', value: '#16a34a', pricePoints: 100, order: 2, description: null },
+    { slug: 'nick-tim', name: 'Nick tím', value: '#9333ea', pricePoints: 150, order: 3, description: null },
+    { slug: 'nick-vang-kim', name: 'Nick vàng kim', value: '#d97706', pricePoints: 200, order: 4, description: null },
+    {
+      slug: 'nick-cau-vong', name: 'Nick cầu vồng', pricePoints: 800, order: 9,
+      value: 'linear-gradient(90deg,#f43f5e,#f59e0b,#22c55e,#3b82f6,#a855f7)',
+      description: 'Tên chuyển sắc bảy màu — món hàng xa xỉ của mọi diễn đàn.',
+    },
+  ];
+  for (const c of shopColors) {
+    await db.shopItem.upsert({
+      where: { slug: c.slug },
+      update: { name: c.name, value: c.value, pricePoints: c.pricePoints, order: c.order },
+      create: { ...c, kind: 'NAME_COLOR' },
+    });
+  }
+
   console.log('✅ Seed hoàn tất. Admin: admin@nova.local / admin123');
 }
 

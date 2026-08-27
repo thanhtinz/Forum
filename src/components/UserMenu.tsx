@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import {
-  User as UserIcon, FileText, Bookmark, Coins, Download, Users,
+  User as UserIcon, FileText, Bookmark, Coins, Download, Users, ShoppingBag, Backpack,
   Settings, ShieldAlert, ShieldOff, LogOut, ChevronDown, MessageSquare,
 } from 'lucide-react';
 import { logout } from '@/app/(auth)/actions';
@@ -25,6 +25,8 @@ const LINKS = [
   { href: '/user/dashboard', label: 'Trang cá nhân', icon: UserIcon },
   { href: '/user/messages', label: 'Tin nhắn', icon: MessageSquare },
   { href: '/user/friends', label: 'Bạn bè', icon: Users },
+  { href: '/cua-hang', label: 'Cửa hàng', icon: ShoppingBag },
+  { href: '/user/items', label: 'Kho đồ', icon: Backpack },
   { href: '/user/posts', label: 'Bài viết của tôi', icon: FileText },
   { href: '/user/favorites', label: 'Đã lưu', icon: Bookmark },
   { href: '/user/downloads', label: 'Đã tải', icon: Download },

@@ -87,6 +87,7 @@ export const gameCardSelect = {
   featured: true,
   ratingSum: true,
   ratingCount: true,
+  pricePoints: true,
   downloadCount: true,
   viewCount: true,
   publishedAt: true,
@@ -124,6 +125,8 @@ export interface GameCardData {
   platform: string | null;
   /** Các nền tảng có bản tải, theo thứ tự nút. */
   downloads: DownloadPlatform[];
+  /** Số điểm phải trả để mở phần tải; 0 = tải tự do. */
+  pricePoints: number;
   badges: GameBadge[];
 }
 
@@ -183,6 +186,7 @@ export function toGameCard(g: GameCardRow): GameCardData {
     resolution: g.resolution?.label ?? null,
     platform: g.platform?.name ?? null,
     downloads,
+    pricePoints: g.pricePoints ?? 0,
     badges: gameBadges(g),
   };
 }

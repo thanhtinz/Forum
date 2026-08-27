@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { Eye, MessageSquare, Calendar, FolderOpen, Lock, FileText, HelpCircle } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { canAccess, isVipActive, type AccessUser } from '@/lib/access';
+import { canAccess, type AccessUser } from '@/lib/access';
 import { dailyDownloadLimit, todayDownloadCount } from '@/lib/downloads';
 import { cn, fmtCount } from '@/lib/utils';
 import { Paywall } from '@/components/Paywall';
@@ -41,11 +41,11 @@ export async function getPostForView(slug: string) {
     where: { slug, status: 'PUBLISHED' },
     select: {
       id: true, slug: true, title: true, excerpt: true, content: true, cover: true,
-      cardStyle: true, status: true, access: true, pricePoints: true, priceAmount: true,
-      vipTierFree: true, unlockLikes: true, unlockComments: true, faq: true,
+      cardStyle: true, status: true, access: true, pricePoints: true,
+      unlockLikes: true, unlockComments: true, faq: true,
       viewCount: true, likeCount: true, commentCount: true, pinned: true, featured: true,
       publishedAt: true, createdAt: true, updatedAt: true, authorId: true, categoryId: true,
-      author: { select: { username: true, name: true, image: true, level: true, vipTier: true } },
+      author: { select: { username: true, name: true, image: true, level: true } },
       category: { select: { name: true, slug: true, color: true } },
       tags: { include: { tag: { select: { name: true, slug: true } } } },
       // Cùng lý do như trên: KHÔNG lấy url, password, extractCode ở đây. Đó là
@@ -86,16 +86,11 @@ export async function PostShell({ slug, section, dl }: { slug: string; section: 
   const session = await auth();
   const su = session?.user;
   const accessUser: AccessUser | null = su?.id
-    ? { id: su.id, vipTier: su.vipTier ?? null, vipExpiresAt: su.vipExpiresAt ?? null, vipPermanent: su.vipPermanent ?? false }
+    ? { id: su.id }
     : null;
   const isAuthor = !!accessUser && post.authorId === accessUser.id;
 
-  let vipFreeContent = false;
-  if (accessUser && accessUser.vipTier != null && isVipActive(accessUser)) {
-    const plan = await db.vipPlan.findUnique({ where: { tier: accessUser.vipTier }, select: { freeContent: true } });
-    vipFreeContent = !!plan?.freeContent;
-  }
-  const access = await canAccess(accessUser, post, { isAuthor, vipFreeContent });
+  const access = await canAccess(accessUser, post, { isAuthor });
 
   const faqItems = (Array.isArray(post.faq) ? post.faq : []) as unknown as FaqItem[];
   const published = post.publishedAt ?? post.createdAt;
@@ -192,10 +187,7 @@ async function DetailSection({ post, access, accessUser, isAuthor, dl }: {
   isAuthor: boolean;
   dl?: string;
 }) {
-  const [plans, saveCount, liked, saved, copyrightSetting] = await Promise.all([
-    post.downloads.length > 0
-      ? db.vipPlan.findMany({ where: { active: true }, orderBy: { tier: 'asc' }, select: { tier: true, name: true, discountPercent: true, freeContent: true } })
-      : Promise.resolve([]),
+  const [saveCount, liked, saved, copyrightSetting] = await Promise.all([
     db.favorite.count({ where: { postId: post.id } }),
     accessUser ? db.reaction.findFirst({ where: { userId: accessUser.id, postId: post.id, type: 'LIKE' }, select: { id: true } }) : Promise.resolve(null),
     accessUser ? db.favorite.findFirst({ where: { userId: accessUser.id, postId: post.id }, select: { id: true } }) : Promise.resolve(null),
@@ -215,7 +207,7 @@ async function DetailSection({ post, access, accessUser, isAuthor, dl }: {
 
   let quota: { used: number; limit: number } | undefined;
   if (access.allowed && post.downloads.length > 0 && accessUser && !isAuthor) {
-    const qUser = await db.user.findUnique({ where: { id: accessUser.id }, select: { level: true, vipTier: true, vipExpiresAt: true, vipPermanent: true } });
+    const qUser = await db.user.findUnique({ where: { id: accessUser.id }, select: { level: true } });
     if (qUser) {
       const limit = dailyDownloadLimit(qUser);
       quota = { used: await todayDownloadCount(accessUser.id), limit: Number.isFinite(limit) ? limit : -1 };
@@ -239,19 +231,19 @@ async function DetailSection({ post, access, accessUser, isAuthor, dl }: {
       {access.allowed && hiddenBlock}
       <DownloadBox
         postId={post.id} slug={post.slug} allowed={access.allowed} reason={access.reason} access={post.access}
-        pricePoints={post.pricePoints} priceAmount={post.priceAmount}
+        pricePoints={post.pricePoints}
         downloads={post.downloads.map((d) => ({
           id: d.id, label: d.label, provider: d.provider, version: d.version,
           password: secrets?.get(d.id)?.password ?? null,
           extractCode: secrets?.get(d.id)?.extractCode ?? null,
           sizeBytes: d.sizeBytes == null ? null : Number(d.sizeBytes),
         }))}
-        plans={plans} updatedAt={format(post.updatedAt, 'yyyy-MM-dd')} callbackUrl={`/posts/${post.slug}`}
+        updatedAt={format(post.updatedAt, 'yyyy-MM-dd')} callbackUrl={`/posts/${post.slug}`}
         quota={quota} notice={dl}
       />
     </>
   ) : access.allowed ? hiddenBlock : (
-    <Paywall postId={post.id} slug={post.slug} reason={access.reason} pricePoints={post.pricePoints} priceAmount={post.priceAmount} vipTierFree={post.vipTierFree} callbackUrl={`/posts/${post.slug}`} />
+    <Paywall postId={post.id} slug={post.slug} reason={access.reason} pricePoints={post.pricePoints} callbackUrl={`/posts/${post.slug}`} />
   );
 
   return (

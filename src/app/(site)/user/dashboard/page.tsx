@@ -25,8 +25,8 @@ export default async function DashboardPage() {
   const user = await db.user.findUnique({
     where: { id: session.user.id },
     select: {
-      name: true, username: true, image: true, points: true, balance: true, level: true, exp: true,
-      vipTier: true, vipExpiresAt: true, vipPermanent: true, checkinStreak: true, lastCheckinAt: true,
+      name: true, username: true, image: true, points: true, level: true, exp: true,
+      checkinStreak: true, lastCheckinAt: true,
       _count: { select: { posts: true } },
     },
   });
@@ -41,7 +41,6 @@ export default async function DashboardPage() {
   const name = user.name ?? user.username ?? 'Bạn';
   const checkedInToday = !!user.lastCheckinAt && vnDateStr(user.lastCheckinAt) === vnDateStr(new Date());
   const expProgress = nextLevel?.expRequired ? Math.min(100, Math.round((user.exp / nextLevel.expRequired) * 100)) : 100;
-  const vipActive = user.vipTier != null && (user.vipPermanent || !user.vipExpiresAt || user.vipExpiresAt > new Date());
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -56,7 +55,6 @@ export default async function DashboardPage() {
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold">Xin chào, {name}</h1>
               <LevelBadge level={user.level} icon={levelLook?.icon} color={levelLook?.color} name={levelLook?.name} />
-              {vipActive && <span className="chip bg-amber-100 text-amber-700 dark:bg-amber-950/50">VIP{user.vipTier}</span>}
             </div>
             <Link href={`/u/${user.username ?? ''}`} className="text-sm text-brand-600 hover:underline">Xem trang cá nhân</Link>
           </div>
@@ -65,9 +63,8 @@ export default async function DashboardPage() {
       </section>
 
       {/* Thẻ số liệu */}
-      <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard icon={<Coins size={18} />} color="text-amber-500" label="Điểm" value={fmtCount(user.points)} href="/user/points" />
-        <StatCard icon={<Wallet size={18} />} color="text-green-500" label="Số dư" value={fmtVnd(user.balance)} href="/user/balance" />
         <StatCard icon={<TrendingUp size={18} />} color="text-brand-500" label={`Cấp ${user.level}`}
           value={nextLevel ? `${user.exp}/${nextLevel.expRequired} EXP` : `${user.exp} EXP`} progress={expProgress} />
         <StatCard icon={<Flame size={18} />} color="text-red-500" label="Chuỗi điểm danh" value={`${user.checkinStreak} ngày`} />
@@ -79,11 +76,9 @@ export default async function DashboardPage() {
         <QuickLink href="/user/posts" icon={<FileText size={18} />} label="Bài của tôi" />
         <QuickLink href="/user/following" icon={<Users size={18} />} label="Đang theo dõi" />
         <QuickLink href="/user/threads" icon={<Bell size={18} />} label="Chủ đề theo dõi" />
-        <QuickLink href="/user/balance" icon={<Plus size={18} />} label="Nạp tiền" />
         <QuickLink href="/user/favorites" icon={<Bookmark size={18} />} label="Đã lưu" />
         <QuickLink href="/user/downloads" icon={<Download size={18} />} label="Đã tải" />
         <QuickLink href="/user/invite" icon={<Gift size={18} />} label="Mời bạn" />
-        <QuickLink href="/user/withdraw" icon={<Banknote size={18} />} label="Rút tiền" />
         <QuickLink href="/user/settings" icon={<Settings size={18} />} label="Cài đặt" />
       </div>
 

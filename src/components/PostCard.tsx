@@ -11,7 +11,6 @@ export interface PostCardData {
   cardStyle: CardStyle;
   access: AccessLevel;
   pricePoints?: number | null;
-  priceAmount?: number | null;
   viewCount: number;
   likeCount: number;
   commentCount: number;
@@ -24,11 +23,9 @@ export interface PostCardData {
 
 function AccessBadge({ post }: { post: PostCardData }) {
   if (post.access === 'FREE' || post.access === 'LOGIN_REQUIRED') return null;
-  if (post.access === 'VIP_ONLY')
-    return <span className="chip shrink-0 gap-1 bg-amber-500 text-white shadow-sm"><Crown size={11} /> VIP</span>;
   if (post.access === 'POINTS')
     return <span className="chip shrink-0 gap-1 bg-brand-500 text-white shadow-sm"><Coins size={11} /> {fmtCount(post.pricePoints)} điểm</span>;
-  return <span className="chip shrink-0 gap-1 bg-accent-500 text-white shadow-sm"><Lock size={11} /> {fmtVnd(post.priceAmount)}</span>;
+  return null;
 }
 
 /** Badge row kiểu zibll: chuyên mục (nhiều, icon thư mục) + tag (#). Giá hiển thị trên ảnh. */
@@ -98,7 +95,7 @@ export function PostCard({ post }: { post: PostCardData }) {
     return (
       <article className="post-card group" style={{ background: `${coverColor}0d` }}>
         <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:p-3.5">
-          {(post.access === 'POINTS' || post.access === 'PAID' || post.access === 'VIP_ONLY') && (
+          {post.access === 'POINTS' && (
             <div><AccessBadge post={post} /></div>
           )}
           <Link href={href} className="line-clamp-3 text-base font-bold leading-snug hover:text-brand-600">{post.title}</Link>

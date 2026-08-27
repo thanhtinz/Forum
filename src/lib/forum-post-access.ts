@@ -1,13 +1,11 @@
 import type { ForumAccess } from '@prisma/client';
 import { db } from './db';
-import { isVipActive } from './access';
 import { canModerateForum } from './moderation';
 
 export interface PostAccessForum {
   id: string;
   postAccess: ForumAccess;
   minLevel: number;
-  vipOnly: boolean;
 }
 
 /**
@@ -23,7 +21,7 @@ export async function checkForumPostAccess(
 ): Promise<string | null> {
   const me = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, role: true, level: true, vipTier: true, vipExpiresAt: true, vipPermanent: true },
+    select: { id: true, role: true, level: true },
   });
   if (!me) return 'Không tìm thấy tài khoản của bạn.';
 
@@ -33,12 +31,6 @@ export async function checkForumPostAccess(
 
   if (forum.postAccess === 'MODERATORS') {
     return 'Khu vực này chỉ điều hành viên mới được mở chủ đề.';
-  }
-  if (forum.postAccess === 'VIP' && !isVipActive(me)) {
-    return 'Khu vực này chỉ dành cho thành viên VIP.';
-  }
-  if (forum.vipOnly && !isVipActive(me)) {
-    return 'Diễn đàn này chỉ dành cho thành viên VIP.';
   }
   if (me.level < forum.minLevel) {
     return `Bạn cần đạt cấp ${forum.minLevel} để đăng ở diễn đàn này.`;

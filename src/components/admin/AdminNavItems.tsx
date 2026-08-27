@@ -79,27 +79,7 @@ export const ADMIN_GROUPS: Group[] = [
   {
     title: 'Kinh doanh',
     items: [
-      {
-        href: '/admin/orders', label: 'Đơn hàng', icon: Receipt, defaultStatus: 'ALL',
-        subs: [
-          { label: 'Tất cả', status: 'ALL' },
-          { label: 'Chờ thanh toán', status: 'PENDING' },
-          { label: 'Đã thanh toán', status: 'PAID' },
-          { label: 'Đã huỷ', status: 'CANCELLED' },
-        ],
-      },
-      { href: '/admin/vip-plans', label: 'Gói VIP', icon: Crown },
       { href: '/admin/coupons', label: 'Mã giảm giá', icon: TicketPercent },
-      {
-        href: '/admin/withdrawals', label: 'Rút tiền', icon: Banknote, defaultStatus: 'ALL',
-        subs: [
-          { label: 'Tất cả', status: 'ALL' },
-          { label: 'Chờ xử lý', status: 'PENDING' },
-          { label: 'Đã duyệt', status: 'APPROVED' },
-          { label: 'Đã trả', status: 'PAID' },
-          { label: 'Từ chối', status: 'REJECTED' },
-        ],
-      },
     ],
   },
   {

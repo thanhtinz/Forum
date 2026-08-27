@@ -37,7 +37,7 @@ export default async function ProfilePage({ params, searchParams }: {
     where: { username },
     select: {
       id: true, name: true, username: true, image: true, cover: true, bio: true, mood: true, level: true, role: true,
-      vipTier: true, points: true, createdAt: true,
+      points: true, createdAt: true,
       _count: { select: { posts: true, followers: true, following: true } },
       medals: { where: { displayed: true }, take: 8, include: { medal: { select: { name: true, icon: true, color: true } } } },
     },
@@ -95,7 +95,6 @@ export default async function ProfilePage({ params, searchParams }: {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold">{name}</h1>
               <LevelBadge level={user.level} icon={levelLook?.icon} color={levelLook?.color} name={levelLook?.name} />
-              {user.vipTier != null && <span className="chip bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">VIP{user.vipTier}</span>}
             </div>
             {user.username && <p className="text-sm text-ink-400">@{user.username}</p>}
             {user.mood?.trim() && (

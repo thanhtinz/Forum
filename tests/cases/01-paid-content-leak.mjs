@@ -22,7 +22,7 @@ export default async function run(check) {
   await db.post.deleteMany({ where: { slug: { in: [PAID, FREE] } } });
   const paid = await db.post.create({
     data: {
-      slug: PAID, title: 'Bài trả phí dùng để kiểm rò rỉ', content: '<p>Phần công khai.</p>',
+      slug: PAID, title: 'Bài khoá bằng điểm dùng để kiểm rò rỉ', content: '<p>Phần công khai.</p>',
       hiddenContent: `<p>${SECRET_BODY}</p>`, hiddenSource: SECRET_BODY,
       authorId: admin.id, status: 'PUBLISHED', access: 'POINTS', pricePoints: 999999,
       publishedAt: new Date(),
@@ -48,7 +48,6 @@ export default async function run(check) {
     const pages = [
       ['trang chi tiết bài trả phí', `/posts/${paid.slug}`],
       ['trang chi tiết bài khác (khối liên quan)', `/posts/${FREE}`],
-      ['cửa hàng', '/shop'],
       ['chuyên mục', `/category/${cat?.slug ?? 'tin-tuc'}`],
       ['thẻ', `/tag/${tag?.slug ?? 'x'}`],
       ['trang cá nhân tác giả', `/u/${admin.username}`],

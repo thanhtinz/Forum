@@ -23,8 +23,6 @@ const ACCESS_OPTIONS = [
   { v: 'LIKE_GOAL', label: 'Đủ số lượt thích', icon: Target },
   { v: 'COMMENT_GOAL', label: 'Đủ số bình luận', icon: Target },
   { v: 'POINTS', label: 'Mở khoá bằng điểm', icon: Coins },
-  { v: 'PAID', label: 'Bán bằng tiền (VND)', icon: Lock },
-  { v: 'VIP_ONLY', label: 'Chỉ VIP', icon: Crown },
 ];
 
 export interface CatOption { slug: string; name: string; color?: string | null; parentName?: string | null }
@@ -40,7 +38,6 @@ export interface PostDraft {
   cardStyle: string;
   access: string;
   pricePoints: string;
-  priceAmount: string;
   unlockLikes: string;
   unlockComments: string;
   tags: string;
@@ -185,12 +182,6 @@ export function WriteForm({ categories, canSell = false, initial, action: custom
           <label className="mt-3 block">
             <span className="mb-1 block text-sm font-medium">Giá (điểm)</span>
             <input name="pricePoints" type="number" min={1} defaultValue={initial?.pricePoints} className="input max-w-xs" placeholder="Ví dụ: 50" />
-          </label>
-        )}
-        {access === 'PAID' && (
-          <label className="mt-3 block">
-            <span className="mb-1 block text-sm font-medium">Giá (VND)</span>
-            <input name="priceAmount" type="number" min={1000} step={1000} defaultValue={initial?.priceAmount} className="input max-w-xs" placeholder="Ví dụ: 20000" />
           </label>
         )}
 

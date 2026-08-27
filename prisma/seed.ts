@@ -30,18 +30,6 @@ async function main() {
   }
 
   // ── VipPlan 3 bậc ──
-  const plans = [
-    { tier: 1, name: 'VIP Tháng', durationDays: 30, price: 49000, discountPercent: 10, checkinMultiplier: 1.5, color: '#2c7bfe' },
-    { tier: 2, name: 'VIP Năm', durationDays: 365, price: 399000, discountPercent: 20, checkinMultiplier: 2, freeContent: false, color: '#8b5cf6' },
-    { tier: 3, name: 'VIP Vĩnh viễn', durationDays: null, price: 999000, discountPercent: 30, checkinMultiplier: 3, freeContent: true, permanent: true, color: '#f59e0b' },
-  ];
-  for (const p of plans) {
-    await db.vipPlan.upsert({
-      where: { tier: p.tier },
-      update: { name: p.name, price: p.price },
-      create: { ...p, order: p.tier },
-    });
-  }
 
   // ── Medal cơ bản ──
   const medals = [
@@ -101,7 +89,6 @@ async function main() {
       passwordHash,
       role: 'ADMIN',
       points: 1000,
-      balance: 0,
       level: 10,
       exp: 60000,
       inviteCode: 'ADMIN',
@@ -113,8 +100,7 @@ async function main() {
     { slug: 'chao-mung-nova', title: 'Chào mừng đến với Nova Platform', cat: 'tin-tuc', cats: ['tin-tuc'], style: 'STANDARD', access: 'FREE', excerpt: 'Nova là nền tảng blog kết hợp diễn đàn và nội dung trả phí, thiết kế hiện đại lấy cảm hứng từ Zibll.', tags: ['Nova', 'Thông báo', 'Giới thiệu'] },
     { slug: 'huong-dan-kiem-diem', title: 'Hướng dẫn kiếm điểm và lên cấp nhanh', cat: 'thu-thuat', cats: ['thu-thuat', 'windows'], style: 'WIDE', access: 'LOGIN_REQUIRED', excerpt: 'Điểm danh mỗi ngày, đăng bài chất lượng, nhận like để tích luỹ điểm và EXP lên cấp.', tags: ['Điểm', 'Cấp độ', 'Mẹo', 'Điểm danh'] },
     { slug: 'bo-tai-nguyen-premium', title: 'Bộ tài nguyên thiết kế Premium (mở khoá bằng điểm)', cat: 'tai-nguyen', cats: ['tai-nguyen', 'ui-kit', 'source-code'], style: 'STANDARD', access: 'POINTS', pricePoints: 50, type: 'RESOURCE', excerpt: 'Trọn bộ tài nguyên UI cao cấp, mở khoá bằng điểm tích luỹ.', downloads: [{ label: 'Nova-UI-Kit-v2.zip', provider: 'gdrive', version: 'v2.0', sizeBytes: 48234496, password: 'nova2026' }], faq: [{ q: 'Mua rồi có tải lại được không?', a: 'Có. Sau khi mở khoá, bạn tải lại bao nhiêu lần tuỳ thích trong giới hạn lượt tải mỗi ngày theo cấp độ.' }, { q: 'File có mật khẩu giải nén không?', a: 'Có, mật khẩu hiển thị ngay trong khối tải xuống sau khi bạn mở khoá.' }, { q: 'Tôi có được dùng cho dự án thương mại?', a: 'Vui lòng đọc phần Tuyên bố bản quyền phía trên khung mua hàng.' }], tags: ['UI Kit', 'Thiết kế', 'Figma', 'Premium', 'Tài nguyên'] },
-    { slug: 'khoa-hoc-vip', title: 'Khoá học nâng cao chỉ dành cho VIP', cat: 'chia-se', cats: ['chia-se', 'tai-nguyen'], style: 'TEXT_ONLY', access: 'VIP_ONLY', vipTierFree: 1, type: 'RESOURCE', excerpt: 'Nội dung độc quyền cho thành viên VIP.', downloads: [{ label: 'Khoa-hoc-nang-cao.pdf', provider: 'local', version: '1.0', sizeBytes: 15728640 }], tags: ['VIP', 'Khoá học', 'Nâng cao'] },
-    { slug: 'tai-lieu-tra-phi', title: 'Tài liệu chuyên sâu (trả phí)', cat: 'tai-nguyen', cats: ['tai-nguyen', 'source-code'], style: 'STANDARD', access: 'PAID', priceAmount: 20000, type: 'RESOURCE', excerpt: 'Tài liệu chi tiết, mua một lần dùng mãi mãi.', downloads: [{ label: 'Tai-lieu-chuyen-sau.pdf', provider: 'local', version: '1.0', sizeBytes: 8388608, extractCode: 'x9k2' }], tags: ['Tài liệu', 'PDF', 'Chuyên sâu', 'Trả phí'] },
+    { slug: 'tai-lieu-tra-phi', title: 'Tài liệu chuyên sâu (trả phí)', cat: 'tai-nguyen', cats: ['tai-nguyen', 'source-code'], style: 'STANDARD', access: 'POINTS', pricePoints: 200, type: 'RESOURCE', excerpt: 'Tài liệu chi tiết, mở khoá một lần dùng mãi mãi.', downloads: [{ label: 'Tai-lieu-chuyen-sau.pdf', provider: 'local', version: '1.0', sizeBytes: 8388608, extractCode: 'x9k2' }], tags: ['Tài liệu', 'PDF', 'Chuyên sâu', 'Điểm'] },
     { slug: 'meo-vat-hang-ngay', title: 'Những mẹo vặt hữu ích hằng ngày', cat: 'thu-thuat', cats: ['thu-thuat'], style: 'STANDARD', access: 'FREE', excerpt: 'Tổng hợp các mẹo nhỏ giúp cuộc sống dễ dàng hơn.', tags: ['Mẹo vặt', 'Đời sống', 'Hằng ngày'] },
   ];
   for (const s of samples) {
@@ -135,8 +121,6 @@ async function main() {
         cardStyle: s.style as any,
         access: s.access as any,
         pricePoints: (s as any).pricePoints ?? null,
-        priceAmount: (s as any).priceAmount ?? null,
-        vipTierFree: (s as any).vipTierFree ?? null,
         faq: (s as any).faq ?? undefined,
         viewCount: Math.floor(20 + Math.sin(s.slug.length) * 15 + s.title.length),
         likeCount: s.title.length % 30,
@@ -203,8 +187,7 @@ async function main() {
         passwordHash: memberPass,
         role: 'USER',
         points: m.points,
-        balance: 0,
-        level: m.level,
+          level: m.level,
         exp: m.exp,
         inviteCode: m.username.toUpperCase(),
       },
@@ -216,7 +199,7 @@ async function main() {
   // ── Forum mẫu (có phân cấp cha/con) ──
   const forumSeeds: Array<{
     slug: string; name: string; description: string; icon?: string; order: number;
-    parent?: string; postAccess?: 'ALL' | 'MEMBERS' | 'VIP' | 'MODERATORS'; minLevel?: number; vipOnly?: boolean;
+    parent?: string; postAccess?: 'ALL' | 'MEMBERS' | 'MODERATORS'; minLevel?: number;
   }> = [
     { slug: 'cong-dong', name: 'Cộng đồng', description: 'Khu vực giao lưu của thành viên Nova', icon: '💬', order: 1 },
     { slug: 'thao-luan-chung', name: 'Thảo luận chung', description: 'Nơi trao đổi mọi chủ đề', icon: '🗨️', order: 1, parent: 'cong-dong' },
@@ -224,7 +207,6 @@ async function main() {
     { slug: 'ho-tro', name: 'Hỗ trợ', description: 'Khu vực hỏi đáp và báo lỗi', icon: '🛠️', order: 2 },
     { slug: 'hoi-dap', name: 'Hỏi đáp', description: 'Đặt câu hỏi và nhận trợ giúp từ cộng đồng', icon: '❓', order: 1, parent: 'ho-tro' },
     { slug: 'gop-y', name: 'Góp ý & Báo lỗi', description: 'Đề xuất tính năng và báo lỗi hệ thống', icon: '🐛', order: 2, parent: 'ho-tro' },
-    { slug: 'vip-lounge', name: 'Phòng VIP', description: 'Khu vực riêng dành cho thành viên VIP', icon: '👑', order: 3, postAccess: 'VIP', vipOnly: true },
   ];
   const forumIds: Record<string, string> = {};
   for (const f of forumSeeds) {
@@ -237,11 +219,10 @@ async function main() {
       parentId: f.parent ? forumIds[f.parent] : null,
       postAccess: (f.postAccess ?? 'ALL') as any,
       minLevel: f.minLevel ?? 1,
-      vipOnly: f.vipOnly ?? false,
     };
     const forum = await db.forum.upsert({
       where: { slug: f.slug },
-      update: { name: f.name, description: f.description, icon: data.icon, order: f.order, parentId: data.parentId, postAccess: data.postAccess, vipOnly: data.vipOnly },
+      update: { name: f.name, description: f.description, icon: data.icon, order: f.order, parentId: data.parentId, postAccess: data.postAccess },
       create: data,
     });
     forumIds[f.slug] = forum.id;

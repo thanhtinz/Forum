@@ -112,7 +112,6 @@ export interface ParsedPost {
     cardStyle: never;
     access: never;
     pricePoints: number | null;
-    priceAmount: number | null;
     unlockLikes: number | null;
     unlockComments: number | null;
   };
@@ -137,7 +136,6 @@ export async function parsePostForm(
   const cardStyle = String(formData.get('cardStyle') ?? 'STANDARD');
   const access = String(formData.get('access') ?? 'FREE');
   const pricePoints = parseInt(String(formData.get('pricePoints') ?? '0'), 10) || 0;
-  const priceAmount = parseInt(String(formData.get('priceAmount') ?? '0'), 10) || 0;
   const unlockLikes = parseInt(String(formData.get('unlockLikes') ?? '0'), 10) || 0;
   const unlockComments = parseInt(String(formData.get('unlockComments') ?? '0'), 10) || 0;
   const tagRaw = String(formData.get('tags') ?? '');
@@ -157,7 +155,6 @@ export async function parsePostForm(
   if (content.length < 20) return { error: 'Nội dung quá ngắn (tối thiểu 20 ký tự).' };
   if (catSlugs.length === 0) return { error: 'Hãy chọn ít nhất 1 chuyên mục.' };
   if (access === 'POINTS' && pricePoints <= 0) return { error: 'Hãy nhập giá bằng điểm (> 0).' };
-  if (access === 'PAID' && priceAmount <= 0) return { error: 'Hãy nhập giá bằng tiền (> 0).' };
   if (access === 'LIKE_GOAL' && unlockLikes <= 0) return { error: 'Hãy nhập số lượt thích cần đạt (> 0).' };
   if (access === 'COMMENT_GOAL' && unlockComments <= 0) return { error: 'Hãy nhập số bình luận cần đạt (> 0).' };
   if (hasGate && hiddenContent.length < 10) return { error: 'Hãy nhập phần nội dung ẩn (phần bị khoá).' };
@@ -180,7 +177,6 @@ export async function parsePostForm(
       cardStyle: cardStyle as never,
       access: access as never,
       pricePoints: access === 'POINTS' ? pricePoints : null,
-      priceAmount: access === 'PAID' ? priceAmount : null,
       unlockLikes: access === 'LIKE_GOAL' ? unlockLikes : null,
       unlockComments: access === 'COMMENT_GOAL' ? unlockComments : null,
     },

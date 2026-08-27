@@ -37,7 +37,7 @@ export default async function MyPostsPage({ searchParams }: { searchParams: Prom
       take: PAGE_SIZE,
       select: {
         id: true, slug: true, title: true, status: true, access: true, createdAt: true,
-        viewCount: true, commentCount: true, pricePoints: true, priceAmount: true,
+        viewCount: true, commentCount: true, pricePoints: true,
         _count: { select: { orders: true } },
       },
     }),
@@ -79,7 +79,6 @@ export default async function MyPostsPage({ searchParams }: { searchParams: Prom
                   <><span>·</span><span className="flex items-center gap-1 text-emerald-600"><Coins size={12} /> {p._count.orders} lượt bán</span></>
                 )}
                 {p.access === 'POINTS' && p.pricePoints != null && <><span>·</span><span>{p.pricePoints} điểm</span></>}
-                {p.access === 'PAID' && p.priceAmount != null && <><span>·</span><span>{fmtVnd(p.priceAmount)}</span></>}
               </div>
             </div>
             <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-medium', STATUS_BADGE[p.status] ?? STATUS_BADGE.DRAFT)}>

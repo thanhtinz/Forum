@@ -41,25 +41,25 @@ const itemSelect = {
 } as const;
 
 /**
- * Một trang quầy hàng.
+ * Một trang quầy hàng của MỘT loại đồ.
  *
- * Món đã ngừng bán vẫn hiện với người ĐÃ MUA nó (để họ còn đeo/gỡ), nhưng
- * không hiện với người chưa mua — quầy không mời mua thứ không bán nữa.
+ * Món đã ngừng bán không hiện ở quầy — quầy không mời mua thứ không bán nữa —
+ * nhưng người đã mua vẫn thấy nó trong kho đồ để còn đeo/gỡ.
  */
 export async function getShopItems(opts: {
   viewerId: string | null;
-  kind?: ShopKind | 'ALL';
+  kind: ShopKind;
   page?: number;
 }): Promise<{ items: ShopItemView[]; total: number; totalPages: number }> {
-  const { viewerId, kind = 'ALL' } = opts;
+  const { viewerId, kind } = opts;
   const page = Math.max(1, opts.page ?? 1);
-  const where = { active: true, ...(kind === 'ALL' ? {} : { kind }) };
+  const where = { active: true, kind };
 
   const [total, rows, me] = await Promise.all([
     db.shopItem.count({ where }),
     db.shopItem.findMany({
       where,
-      orderBy: [{ kind: 'asc' }, { order: 'asc' }, { pricePoints: 'asc' }],
+      orderBy: [{ order: 'asc' }, { pricePoints: 'asc' }],
       skip: (page - 1) * SHOP_PAGE_SIZE,
       take: SHOP_PAGE_SIZE,
       select: {

@@ -110,6 +110,9 @@ model User {
   friendRequestsSent     Friendship[] @relation("FriendRequester")
   friendRequestsReceived Friendship[] @relation("FriendAddressee")
 
+  albums PhotoAlbum[]
+  photos Photo[]
+
   @@index([level])
   @@index([createdAt])
 }
@@ -1757,4 +1760,63 @@ enum FriendStatus {
   PENDING
   /// Đã là bạn.
   ACCEPTED
+}
+
+/**
+ * Album ảnh cá nhân.
+ *
+ * Trang cá nhân thời forum wap Việt nào cũng có mục ảnh: vài tấm để khoe, vài
+ * tấm chỉ cho bạn bè xem. Đây cũng là chỗ đầu tiên dùng tới quan hệ kết bạn:
+ * mức "chỉ bạn bè" chỉ có nghĩa khi kết bạn là hai chiều.
+ */
+model PhotoAlbum {
+  id String @id @default(cuid())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String? @db.Text
+  /// Ảnh bìa — lấy từ một ảnh trong album, giữ sẵn để khỏi phải truy vấn thêm.
+  cover       String?
+
+  privacy AlbumPrivacy @default(PUBLIC)
+
+  /// Đếm sẵn số ảnh, để danh sách album không phải đếm lại từng cái.
+  photoCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos Photo[]
+
+  @@index([ownerId, createdAt])
+}
+
+enum AlbumPrivacy {
+  /// Ai cũng xem được.
+  PUBLIC
+  /// Chỉ bạn bè (hai chiều) và chính chủ.
+  FRIENDS
+  /// Chỉ chính chủ.
+  PRIVATE
+}
+
+model Photo {
+  id String @id @default(cuid())
+
+  albumId String
+  album   PhotoAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  /// Giữ luôn chủ ảnh: kiểm quyền sửa/xoá không phải đi vòng qua album.
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  url     String
+  caption String?
+  order   Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([albumId, order, createdAt])
 }

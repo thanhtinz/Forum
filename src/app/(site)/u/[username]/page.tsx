@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Calendar, Coins, FileText, Images, Users, UserCheck, UserPlus as FollowIcon, MessageSquare } from 'lucide-react';
+import { Calendar, Coins, FileText, Images, Scale, Users, UserCheck, UserPlus as FollowIcon, MessageSquare } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { postCardSelect, toCardData } from '@/lib/post-card';
@@ -23,6 +23,9 @@ import { cosmeticSelect, toCosmetics } from '@/lib/shop';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { FriendButton } from '@/components/user/FriendButton';
 import { Guestbook } from '@/components/user/Guestbook';
+import { KarmaBox } from '@/components/user/KarmaBox';
+import { checkKarmaPermission } from '@/lib/karma';
+import { karmaSigned, karmaTone } from '@/lib/karma-const';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 9;
@@ -45,7 +48,7 @@ export default async function ProfilePage({ params, searchParams }: {
     where: { username },
     select: {
       id: true, name: true, username: true, image: true, cover: true, bio: true, mood: true, level: true, role: true,
-      points: true, createdAt: true,
+      points: true, karma: true, createdAt: true,
       _count: { select: { posts: true, followers: true, following: true } },
       ...cosmeticSelect,
       medals: { where: { displayed: true }, take: 8, include: { medal: { select: { name: true, icon: true, color: true } } } },
@@ -58,7 +61,7 @@ export default async function ProfilePage({ params, searchParams }: {
   const viewer = { id: viewerId, role: (session?.user as { role?: string } | undefined)?.role };
 
   const where = { authorId: user.id, status: 'PUBLISHED' as const };
-  const [total, posts, following, blocked, guestbook, friendState, friendCount, albumCount] = await Promise.all([
+  const [total, posts, following, blocked, guestbook, friendState, friendCount, albumCount, karmaPerm] = await Promise.all([
     db.post.count({ where }),
     db.post.findMany({ where, orderBy: [{ publishedAt: 'desc' }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect }),
     viewerId ? db.follow.findFirst({ where: { followerId: viewerId, followingId: user.id }, select: { id: true } }) : Promise.resolve(null),
@@ -67,6 +70,7 @@ export default async function ProfilePage({ params, searchParams }: {
     getFriendState(viewerId, user.id),
     countFriends(user.id),
     countVisibleAlbums(user.id, viewer),
+    checkKarmaPermission(viewerId, user.id),
   ]);
   // Quản trị viên không chặn được — che nút cho khỏi bấm rồi mới báo lỗi.
   const canBlock = user.role !== 'ADMIN' && user.role !== 'MODERATOR';
@@ -141,11 +145,27 @@ export default async function ProfilePage({ params, searchParams }: {
                 <Images size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(albumCount)}</b> album ảnh
               </Link>
               <span className="flex items-center gap-1.5"><Coins size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user.points)}</b> điểm</span>
+              <Link href={`/u/${username}/uy-tin`} className="flex items-center gap-1.5 hover:text-brand-600">
+                <Scale size={15} /> <b className={karmaTone(user.karma)}>{karmaSigned(user.karma)}</b> uy tín
+              </Link>
               <span className="flex items-center gap-1.5"><Calendar size={15} /> Tham gia {format(user.createdAt, 'MM/yyyy')}</span>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Uy tín — chấm được cho nhau, có sổ công khai. Người đã chặn nhau thì
+          không chấm qua lại, nên giấu luôn cả ô. */}
+      {!blocked && (
+        <div className="mt-4">
+          <KarmaBox targetId={user.id} username={username} karma={user.karma}
+            canGive={karmaPerm.can}
+            /* Ở trang của chính mình thì không cần câu "không tự chấm cho mình
+               được" — chẳng ai đang định làm thế cả. */
+            blockedReason={karmaPerm.can || viewerId === user.id ? undefined : karmaPerm.reason}
+            loggedIn={!!viewerId} callbackUrl={`/u/${username}`} />
+        </div>
+      )}
 
       {/* Bài viết */}
       <div className="mt-6">

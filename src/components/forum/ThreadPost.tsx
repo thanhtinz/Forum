@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { CheckCircle2, CalendarDays, MessageSquare } from 'lucide-react';
+import { CheckCircle2, CalendarDays, MessageSquare, Scale } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
 import { bbcodeToHtml } from '@/lib/bbcode';
 import { LevelBadge } from '@/components/LevelBadge';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { NO_COSMETICS, type Cosmetics } from '@/lib/shop-const';
+import { karmaSigned, karmaTone } from '@/lib/karma-const';
 
 export interface PostAuthor {
   username: string | null;
@@ -22,6 +23,8 @@ export interface PostAuthor {
   signature?: string | null;
   /** Tâm trạng — dòng chữ ngắn người dùng tự đặt. */
   mood?: string | null;
+  /** Uy tín — tổng các lần được người khác chấm "+" / "−". */
+  karma?: number;
   /** Đồ trang trí mua ở cửa hàng: màu tên, khung avatar, huy hiệu. */
   cosmetics?: Cosmetics;
 }
@@ -101,6 +104,16 @@ export function ThreadPost({ author, createdAt, index, isSolution, header, child
             {author.postCount != null && (
               <div className="flex items-center justify-center gap-1">
                 <MessageSquare size={11} /> {fmtCount(author.postCount)} bài
+              </div>
+            )}
+            {author.karma != null && (
+              <div className="flex items-center justify-center gap-1">
+                <Scale size={11} />
+                {/* Uy tín bấm được: dẫn thẳng sang sổ để ai thắc mắc con số
+                    thì tra được ngay ai đã chấm và vì việc gì. */}
+                <Link href={`${href}/uy-tin`} className={cn('hover:underline', karmaTone(author.karma))}>
+                  {karmaSigned(author.karma)} uy tín
+                </Link>
               </div>
             )}
             {author.createdAt && (

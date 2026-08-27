@@ -546,9 +546,15 @@ model Reply {
 // ============================================================
 
 model Comment {
-  id     String @id @default(cuid())
-  postId String
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id String @id @default(cuid())
+
+  // Bình luận gắn vào MỘT trong hai: bài viết hoặc game. Cùng kiểu "một cột
+  // cho mỗi đối tượng" mà Reaction và Favorite đang dùng, để khỏi phải bịa ra
+  // bảng bình luận riêng cho kho game.
+  postId String?
+  post   Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  gameId String?
+  game   Game?   @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   authorId String
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -571,6 +577,7 @@ model Comment {
   reports   Report[]
 
   @@index([postId, createdAt])
+  @@index([gameId, createdAt])
 }
 
 // ============================================================
@@ -1041,8 +1048,9 @@ model Game {
   knownIssues       String? @db.Text
 
   // Thống kê
-  ratingSum   Int   @default(0)
-  ratingCount Int   @default(0)
+  ratingSum    Int @default(0)
+  ratingCount  Int @default(0)
+  commentCount Int @default(0)
   viewCount           Int @default(0)
   uniqueViewCount     Int @default(0)
   downloadCount       Int @default(0)
@@ -1057,6 +1065,7 @@ model Game {
   images     GameImage[]
   events     GameEvent[]
   ratings    GameRating[]
+  comments   Comment[]
   favorites  Favorite[]
   reports    Report[]
   uniqueHits GameUniqueHit[]

@@ -313,7 +313,7 @@ export async function resolveReportAndRemove(id: string) {
       })
     : null;
   const comment = r.commentId
-    ? await db.comment.findUnique({ where: { id: r.commentId }, select: { hidden: true, postId: true } })
+    ? await db.comment.findUnique({ where: { id: r.commentId }, select: { hidden: true, postId: true, gameId: true } })
     : null;
 
   await db.$transaction(async (tx) => {
@@ -328,7 +328,12 @@ export async function resolveReportAndRemove(id: string) {
       await tx.forum.update({ where: { id: reply.thread.forumId }, data: { replyCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
     }
     if (comment && !comment.hidden) {
-      await tx.post.update({ where: { id: comment.postId }, data: { commentCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
+      // Bình luận nay gắn vào bài viết HOẶC game, trừ đúng bảng đang giữ bộ đếm.
+      if (comment.postId) {
+        await tx.post.update({ where: { id: comment.postId }, data: { commentCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
+      } else if (comment.gameId) {
+        await tx.game.update({ where: { id: comment.gameId }, data: { commentCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
+      }
     }
 
     await tx.report.update({ where: { id }, data: { status: 'RESOLVED', handledAt: new Date() } });

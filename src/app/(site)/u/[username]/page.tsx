@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
-import { Calendar, Coins, FileText, Users, UserCheck, UserPlus as FollowIcon, MessageSquare } from 'lucide-react';
+import { Calendar, Coins, FileText, Images, Users, UserCheck, UserPlus as FollowIcon, MessageSquare } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { postCardSelect, toCardData } from '@/lib/post-card';
@@ -18,6 +18,7 @@ import { BlockButton } from '@/components/user/BlockButton';
 import { hasBlocked } from '@/lib/block';
 import { getGuestbook, isStaff } from '@/lib/guestbook';
 import { countFriends, getFriendState } from '@/lib/friend';
+import { countVisibleAlbums } from '@/lib/album';
 import { FriendButton } from '@/components/user/FriendButton';
 import { Guestbook } from '@/components/user/Guestbook';
 
@@ -54,7 +55,7 @@ export default async function ProfilePage({ params, searchParams }: {
   const viewer = { id: viewerId, role: (session?.user as { role?: string } | undefined)?.role };
 
   const where = { authorId: user.id, status: 'PUBLISHED' as const };
-  const [total, posts, following, blocked, guestbook, friendState, friendCount] = await Promise.all([
+  const [total, posts, following, blocked, guestbook, friendState, friendCount, albumCount] = await Promise.all([
     db.post.count({ where }),
     db.post.findMany({ where, orderBy: [{ publishedAt: 'desc' }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect }),
     viewerId ? db.follow.findFirst({ where: { followerId: viewerId, followingId: user.id }, select: { id: true } }) : Promise.resolve(null),
@@ -62,6 +63,7 @@ export default async function ProfilePage({ params, searchParams }: {
     getGuestbook(user.id, viewer, gbPage),
     getFriendState(viewerId, user.id),
     countFriends(user.id),
+    countVisibleAlbums(user.id, viewer),
   ]);
   // Quản trị viên không chặn được — che nút cho khỏi bấm rồi mới báo lỗi.
   const canBlock = user.role !== 'ADMIN' && user.role !== 'MODERATOR';
@@ -130,6 +132,9 @@ export default async function ProfilePage({ params, searchParams }: {
               <span className="flex items-center gap-1.5"><Users size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.followers)}</b> người theo dõi</span>
               <span className="flex items-center gap-1.5"><FollowIcon size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.following)}</b> đang theo dõi</span>
               <span className="flex items-center gap-1.5"><UserCheck size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(friendCount)}</b> bạn bè</span>
+              <Link href={`/u/${username}/album`} className="flex items-center gap-1.5 hover:text-brand-600">
+                <Images size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(albumCount)}</b> album ảnh
+              </Link>
               <span className="flex items-center gap-1.5"><Coins size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user.points)}</b> điểm</span>
               <span className="flex items-center gap-1.5"><Calendar size={15} /> Tham gia {format(user.createdAt, 'MM/yyyy')}</span>
             </div>

@@ -18,6 +18,7 @@ import { ThreadOwnerMenu } from '@/components/forum/ThreadOwnerMenu';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { WhoIsHere } from '@/components/forum/WhoIsHere';
 import { markHere } from '@/lib/shout';
+import { markThreadRead } from '@/lib/thread-read';
 import { ThreadPost, displayName } from '@/components/forum/ThreadPost';
 import { Pagination } from '@/components/Pagination';
 import { ReplyBody } from '@/components/forum/ReplyBody';
@@ -123,6 +124,10 @@ export default async function ThreadPage({ params, searchParams }: {
   // Điểm danh "đang xem chủ đề này". Không chờ kết quả — hỏng thì cùng lắm
   // là thiếu một cái tên trong dòng cuối trang, không đáng để chặn cả trang.
   if (userId) markHere(userId, `thread:${id}`).catch(() => {});
+
+  // Ghi mốc "đã đọc chủ đề này" để dấu bài mới ở danh sách tắt đi. Cũng không
+  // chờ: hỏng thì cùng lắm chủ đề còn dấu mới thêm một lượt.
+  if (userId) markThreadRead(userId, id).catch(() => {});
 
   const canModerate = await canModerateForum(
     session?.user ? { id: session.user.id, role: (session.user as { role?: string }).role } : null,

@@ -16,6 +16,7 @@ import { getActiveBan, banMessage } from '@/lib/ban';
 import { readPollForm, isPollClosed } from '@/lib/poll';
 import { readBounty, BOUNTY_MIN } from '@/lib/bounty';
 import { checkForumPostAccess } from '@/lib/forum-post-access';
+import { markAllThreadsRead } from '@/lib/thread-read';
 import { InsufficientPointsError } from '@/lib/points';
 import { THANKS_NAMES_SHOWN, DONATE_MIN, DONATE_MAX, type ThanksState, type DonateState } from '@/lib/thanks';
 
@@ -989,5 +990,26 @@ export async function deleteOwnReply(replyId: string): Promise<ReplyEditState> {
   });
 
   revalidatePath(`/forum/${reply.thread.forum.slug}/${reply.threadId}`);
+  return { ok: true };
+}
+
+// ─────────────────────────── Dấu bài mới ───────────────────────────
+
+export interface ReadAllState {
+  ok?: boolean;
+  error?: string;
+}
+
+/** "Đánh dấu đã đọc hết" — xoá sạch dấu chủ đề mới cho người đang đăng nhập. */
+export async function markAllForumsRead(): Promise<ReadAllState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  await markAllThreadsRead(userId);
+  // Danh sách chủ đề dựng lại theo yêu cầu nên chỉ cần bảo Next bỏ bản cũ;
+  // trang chủ cũng có bảng chủ đề mới nhất nên làm mới luôn.
+  revalidatePath('/');
+  revalidatePath('/forum', 'layout');
   return { ok: true };
 }

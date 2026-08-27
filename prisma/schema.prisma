@@ -67,6 +67,15 @@ model User {
   updatedAt DateTime @updatedAt
   lastSeenAt DateTime?
 
+  /**
+   * Mốc "đã đọc hết diễn đàn" — bấm một nút là mọi chủ đề cũ hơn mốc này hết
+   * được coi là mới.
+   *
+   * Có mốc chung thì nút ấy làm được trong một lần ghi, thay vì phải chèn một
+   * hàng ThreadRead cho từng chủ đề trong cả diễn đàn.
+   */
+  forumReadAt DateTime?
+
   accounts       Account[]
   sessions       Session[]
   posts          Post[]
@@ -124,6 +133,8 @@ model User {
 
   karmaGiven    KarmaVote[] @relation("KarmaFrom")
   karmaReceived KarmaVote[] @relation("KarmaTo")
+
+  threadReads ThreadRead[]
 
   // Cửa hàng: đồ đã mua, và đồ đang đeo (mỗi loại đeo được một món).
   shopPurchases ShopPurchase[]
@@ -460,6 +471,7 @@ model Thread {
   favorites Favorite[]
   reports   Report[]
   followers ThreadFollow[]
+  reads     ThreadRead[]
   poll      Poll?
   donations PointDonation[]
 
@@ -530,6 +542,26 @@ model ThreadFollow {
   @@index([userId, createdAt])
 }
 
+
+/**
+ * Lần cuối một người mở một chủ đề — để đánh dấu chủ đề có bài mới.
+ *
+ * Chỉ ghi mốc thời gian, không ghi "đã đọc tới bài số mấy": danh sách chủ đề
+ * chỉ cần biết có gì mới sau lần mình ghé hay không, mà mốc thời gian thì so
+ * thẳng được với `lastReplyAt` sẵn có, không phải đếm bài.
+ */
+model ThreadRead {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threadId String
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  readAt DateTime @default(now())
+
+  @@unique([userId, threadId])
+  @@index([userId, readAt])
+}
 
 enum ThreadStatus {
   PUBLISHED

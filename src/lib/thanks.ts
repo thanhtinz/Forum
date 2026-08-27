@@ -15,3 +15,18 @@ export interface ThanksState {
 
 /** Chỉ liệt kê ngần này cái tên, còn lại gộp thành "và N người khác". */
 export const THANKS_NAMES_SHOWN = 12;
+
+/** Mức tặng nhanh, để khỏi phải gõ số. */
+export const DONATE_QUICK = [5, 10, 20, 50] as const;
+export const DONATE_MIN = 1;
+/** Trần mỗi lần tặng — chặn tay trượt và chặn cả người cố tình dốc sạch ví. */
+export const DONATE_MAX = 1000;
+
+export interface DonateState {
+  ok?: boolean;
+  error?: string;
+  /** Tổng điểm đã tặng cho bài này sau khi tặng xong. */
+  total?: number;
+  /** Số điểm còn lại của người tặng. */
+  left?: number;
+}

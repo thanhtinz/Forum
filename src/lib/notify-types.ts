@@ -3,8 +3,9 @@ import type { NotificationType } from '@prisma/client';
 /**
  * Các loại thông báo người dùng được phép tắt.
  *
- * ORDER, VIP và SYSTEM không có ở đây: đó là việc liên quan tới tiền và tài
- * khoản, tắt đi thì người dùng bỏ lỡ những thứ không thể bỏ lỡ.
+ * ORDER và SYSTEM không có ở đây: đó là việc liên quan tới tài khoản, tắt đi
+ * thì người dùng bỏ lỡ những thứ không thể bỏ lỡ. DONATE cũng vậy — ai tặng
+ * điểm cho mình thì phải biết.
  */
 export const TOGGLEABLE_TYPES = ['COMMENT', 'REPLY', 'MENTION', 'LIKE', 'FOLLOW', 'MEDAL'] as const;
 

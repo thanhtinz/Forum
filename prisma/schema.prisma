@@ -866,7 +866,8 @@ enum NotificationType {
   ORDER
   SYSTEM
   MEDAL
-  VIP
+  /// Được người khác tặng điểm.
+  DONATE
 }
 
 // ============================================================

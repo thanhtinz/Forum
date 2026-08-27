@@ -22,7 +22,8 @@ const TABS: { key: string; label: string; types?: NotificationType[] }[] = [
   { key: 'reply', label: 'Trả lời & bình luận', types: ['REPLY', 'COMMENT'] },
   { key: 'mention', label: 'Nhắc tên', types: ['MENTION'] },
   { key: 'social', label: 'Thích & theo dõi', types: ['LIKE', 'FOLLOW'] },
-  { key: 'system', label: 'Hệ thống', types: ['ORDER', 'VIP', 'MEDAL', 'SYSTEM'] },
+  { key: 'donate', label: 'Được tặng điểm', types: ['DONATE'] },
+  { key: 'system', label: 'Hệ thống', types: ['ORDER', 'MEDAL', 'SYSTEM'] },
 ];
 
 export default async function NotificationsPage({ searchParams }: {

@@ -17,7 +17,7 @@ import { readPollForm, isPollClosed } from '@/lib/poll';
 import { readBounty, BOUNTY_MIN } from '@/lib/bounty';
 import { checkForumPostAccess } from '@/lib/forum-post-access';
 import { InsufficientPointsError } from '@/lib/points';
-import { THANKS_NAMES_SHOWN, type ThanksState } from '@/lib/thanks';
+import { THANKS_NAMES_SHOWN, DONATE_MIN, DONATE_MAX, type ThanksState, type DonateState } from '@/lib/thanks';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
@@ -400,6 +400,80 @@ async function readThanks(target: { threadId?: string; replyId?: string }, userI
     people: rows.map((r) => r.user.name ?? r.user.username ?? 'Ẩn danh'),
     count,
   };
+}
+
+/**
+ * Tặng điểm cho bài của người khác, đi kèm nút Cảm ơn.
+ *
+ * Điểm chuyển thẳng từ ví người tặng sang ví tác giả, không qua trung gian và
+ * nền tảng không cắt gì — tặng là tặng. Cả hai vế nằm trong một transaction:
+ * không bao giờ có chuyện trừ được của người này mà không cộng cho người kia.
+ */
+export async function donatePoints(
+  target: { threadId?: string; replyId?: string },
+  amount: number,
+): Promise<DonateState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  if (!Number.isInteger(amount) || amount < DONATE_MIN || amount > DONATE_MAX) {
+    return { error: `Chỉ tặng được từ ${DONATE_MIN} đến ${DONATE_MAX} điểm mỗi lần.` };
+  }
+
+  const threadId = target.threadId ?? null;
+  const replyId = target.replyId ?? null;
+  if (!threadId === !replyId) return { error: 'Thiếu thông tin bài viết.' };
+
+  const owner = threadId
+    ? await db.thread.findUnique({ where: { id: threadId }, select: { authorId: true, title: true, forum: { select: { slug: true } } } })
+    : await db.reply.findUnique({ where: { id: replyId! }, select: { authorId: true, threadId: true, thread: { select: { title: true, forum: { select: { slug: true } } } } } });
+  if (!owner) return { error: 'Không tìm thấy bài viết.' };
+  if (owner.authorId === userId) return { error: 'Không tặng điểm cho chính mình được.' };
+
+  const link = threadId
+    ? `/forum/${(owner as { forum: { slug: string } }).forum.slug}/${threadId}`
+    : `/forum/${(owner as { thread: { forum: { slug: string } } }).thread.forum.slug}/${(owner as { threadId: string }).threadId}`;
+  const title = threadId
+    ? (owner as { title: string }).title
+    : (owner as { thread: { title: string } }).thread.title;
+
+  let left = 0;
+  try {
+    await db.$transaction(async (tx) => {
+      const after = await grantPoints(
+        { userId, amount: -amount, reason: 'DONATE_SENT', refId: threadId ?? replyId, note: `Tặng điểm: ${title}` },
+        tx,
+      );
+      left = after.balance;
+      await grantPoints(
+        { userId: owner.authorId, amount, reason: 'DONATE_RECEIVED', refId: threadId ?? replyId, note: `Được tặng điểm: ${title}` },
+        tx,
+      );
+      await tx.pointDonation.create({
+        data: { fromId: userId, toId: owner.authorId, amount, threadId, replyId },
+        select: { id: true },
+      });
+      // Đã bỏ công tặng thì tính luôn là đã cảm ơn — khỏi phải bấm hai lần.
+      await tx.reaction
+        .create({ data: { userId, threadId, replyId, type: 'THANKS' }, select: { id: true } })
+        .catch(() => null);
+      await notify(
+        {
+          userId: owner.authorId, type: 'DONATE',
+          title: `Bạn được tặng ${amount} điểm`, content: title, link, actorId: userId,
+        },
+        tx,
+      );
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) return { error: 'Bạn không đủ điểm để tặng.' };
+    return { error: 'Không tặng được, vui lòng thử lại.' };
+  }
+
+  const total = await db.pointDonation.aggregate({ where: { threadId, replyId }, _sum: { amount: true } });
+  revalidatePath(link);
+  return { ok: true, total: total._sum.amount ?? 0, left };
 }
 
 // ─────────────────────── Chọn câu trả lời (lời giải) ───────────────────────

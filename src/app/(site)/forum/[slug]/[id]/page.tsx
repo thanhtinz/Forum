@@ -171,6 +171,20 @@ export default async function ThreadPage({ params, searchParams }: {
     orderBy: { createdAt: 'desc' },
     select: { userId: true, threadId: true, replyId: true, user: { select: { name: true, username: true } } },
   });
+  // Tổng điểm đã tặng cho từng bài, cũng gom một lần rồi chia ở JS.
+  const donationRows = await db.pointDonation.groupBy({
+    by: ['threadId', 'replyId'],
+    where: { OR: [{ threadId: id }, { replyId: { in: thankTargets } }] },
+    _sum: { amount: true },
+  });
+  const donatedOf = (key: { threadId?: string; replyId?: string }): number =>
+    donationRows.find((d) => (key.threadId ? d.threadId === key.threadId : d.replyId === key.replyId))?._sum.amount ?? 0;
+
+  // Điểm của người đang xem — để bảng tặng không mời họ tặng thứ không có.
+  const myPoints = userId
+    ? (await db.user.findUnique({ where: { id: userId }, select: { points: true } }))?.points
+    : undefined;
+
   const thanksOf = (key: { threadId?: string; replyId?: string }): ThanksState => {
     const rows = thankRows.filter((r) =>
       key.threadId ? r.threadId === key.threadId : r.replyId === key.replyId);
@@ -233,6 +247,7 @@ export default async function ThreadPage({ params, searchParams }: {
 
           <div className="mt-4">
             <ThanksBar threadId={thread.id} initial={thanksOf({ threadId: thread.id })}
+              donated={donatedOf({ threadId: thread.id })} myPoints={myPoints}
               canThank={loggedIn && !isOwner} callbackUrl={callbackUrl} />
           </div>
 
@@ -281,6 +296,7 @@ export default async function ThreadPage({ params, searchParams }: {
 
                 <div className="mt-3">
                   <ThanksBar replyId={r.id} initial={thanksOf({ replyId: r.id })}
+                    donated={donatedOf({ replyId: r.id })} myPoints={myPoints}
                     canThank={loggedIn && r.authorId !== userId} callbackUrl={callbackUrl} />
                 </div>
 

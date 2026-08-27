@@ -36,7 +36,7 @@ export default async function ProfilePage({ params, searchParams }: {
   const user = await db.user.findUnique({
     where: { username },
     select: {
-      id: true, name: true, username: true, image: true, cover: true, bio: true, level: true, role: true,
+      id: true, name: true, username: true, image: true, cover: true, bio: true, mood: true, level: true, role: true,
       vipTier: true, points: true, createdAt: true,
       _count: { select: { posts: true, followers: true, following: true } },
       medals: { where: { displayed: true }, take: 8, include: { medal: { select: { name: true, icon: true, color: true } } } },
@@ -98,6 +98,9 @@ export default async function ProfilePage({ params, searchParams }: {
               {user.vipTier != null && <span className="chip bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">VIP{user.vipTier}</span>}
             </div>
             {user.username && <p className="text-sm text-ink-400">@{user.username}</p>}
+            {user.mood?.trim() && (
+              <p className="mt-1 text-sm italic text-ink-500 dark:text-ink-400">“{user.mood}”</p>
+            )}
             {user.bio && <p className="mt-2 text-sm text-ink-600 dark:text-ink-300">{user.bio}</p>}
 
             {user.medals.length > 0 && (

@@ -10,6 +10,7 @@ export interface ProfileInitial {
   username: string | null;
   bio: string | null;
   signature: string | null;
+  mood: string | null;
   image: string | null;
   cover: string | null;
   hasPassword: boolean;
@@ -38,6 +39,12 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileInitial }) {
 
       <Field label="Giới thiệu" error={err('bio')} hint="Tối đa 300 ký tự">
         <textarea name="bio" rows={3} defaultValue={initial.bio ?? ''} className="input" placeholder="Đôi dòng về bạn…" />
+      </Field>
+
+      <Field label="Tâm trạng" error={err('mood')}
+        hint="Một dòng ngắn hiện cạnh tên bạn ở diễn đàn. Tối đa 60 ký tự.">
+        <input name="mood" maxLength={60} defaultValue={initial.mood ?? ''} className="input"
+          placeholder="Hôm nay code cả ngày…" />
       </Field>
 
       <Field label="Chữ ký" error={err('signature')}

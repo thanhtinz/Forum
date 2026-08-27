@@ -20,6 +20,8 @@ const profileSchema = z.object({
   // Chữ ký dán dưới mọi bài ở diễn đàn, nên phải ngắn — dài quá thì mỗi bài
   // của một người sẽ đẩy bài của người khác ra khỏi màn hình.
   signature: z.string().trim().max(200, 'Chữ ký tối đa 200 ký tự').optional(),
+  // Tâm trạng chỉ là một dòng ngắn cạnh tên, dài hơn thì vỡ cột người đăng.
+  mood: z.string().trim().max(60, 'Tâm trạng tối đa 60 ký tự').optional(),
   image: z.string().trim().refine((v) => !v || isPublicImageRef(v), 'Ảnh đại diện phải là URL hợp lệ hoặc ảnh đã tải lên').optional(),
   cover: z.string().trim().refine((v) => !v || isPublicImageRef(v), 'Ảnh bìa phải là URL hợp lệ hoặc ảnh đã tải lên').optional(),
 });
@@ -40,11 +42,12 @@ export async function updateProfile(_prev: SettingsState, formData: FormData): P
     username: formData.get('username'),
     bio: formData.get('bio'),
     signature: formData.get('signature'),
+    mood: formData.get('mood'),
     image: formData.get('image'),
     cover: formData.get('cover'),
   });
   if (!parsed.success) return { fieldErrors: fieldErrorsOf(parsed.error) };
-  const { name, username, bio, signature, image, cover } = parsed.data;
+  const { name, username, bio, signature, mood, image, cover } = parsed.data;
 
   const taken = await db.user.findFirst({ where: { username, NOT: { id: session.user.id } }, select: { id: true } });
   if (taken) return { fieldErrors: { username: 'Tên đăng nhập đã có người dùng.' } };
@@ -52,7 +55,7 @@ export async function updateProfile(_prev: SettingsState, formData: FormData): P
   await db.user.update({
     where: { id: session.user.id },
     data: {
-      name, username, bio: bio || null, signature: signature || null,
+      name, username, bio: bio || null, signature: signature || null, mood: mood || null,
       image: image || null, cover: cover || null,
     },
   });

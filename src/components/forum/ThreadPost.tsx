@@ -18,6 +18,8 @@ export interface PostAuthor {
   levelName?: string | null;
   /** Chữ ký (BBCode thô) — dán dưới mọi bài của người này. */
   signature?: string | null;
+  /** Tâm trạng — dòng chữ ngắn người dùng tự đặt. */
+  mood?: string | null;
 }
 
 export function displayName(u: PostAuthor | null | undefined): string {
@@ -76,11 +78,20 @@ export function ThreadPost({ author, createdAt, index, isSolution, header, child
           </Link>
 
           <div className="min-w-0 sm:w-full">
-            <Link href={href} className="block truncate font-semibold leading-tight hover:text-brand-600">{name}</Link>
+            {/* Màu nick lấy từ màu cấp do admin đặt — "mod màu nick thành viên"
+                của forum wap ngày xưa. Chưa đặt màu thì về màu chữ mặc định. */}
+            <Link href={href} style={author.levelColor ? { color: author.levelColor } : undefined}
+              className="block truncate font-semibold leading-tight hover:underline">{name}</Link>
             <p className="truncate text-[11px] text-ink-400">{author.levelName ?? rankOf(author.level)}</p>
             <LevelBadge className="mt-1" level={author.level}
               icon={author.levelIcon} color={author.levelColor} name={author.levelName} />
           </div>
+
+          {author.mood?.trim() && (
+            <p className="retro-sub hidden w-full truncate italic text-ink-400 sm:block" title={author.mood}>
+              “{author.mood}”
+            </p>
+          )}
 
           {/* Số liệu — chỉ hiện trên màn hình lớn để cột không quá cao trên mobile */}
           <dl className="hidden w-full gap-1 border-t border-ink-200 pt-2 text-[11px] text-ink-400 sm:block dark:border-ink-700">

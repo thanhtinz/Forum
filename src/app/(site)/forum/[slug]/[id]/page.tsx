@@ -12,6 +12,8 @@ import { toPollView } from '@/lib/poll';
 import { ReplyActions } from '@/components/forum/ReplyActions';
 import { ReplyForm } from '@/components/forum/ReplyForm';
 import { ThreadModMenu } from '@/components/forum/ThreadModMenu';
+import { ThanksBar } from '@/components/forum/ThanksBar';
+import { THANKS_NAMES_SHOWN, type ThanksState } from '@/lib/thanks';
 import { ThreadOwnerMenu } from '@/components/forum/ThreadOwnerMenu';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { WhoIsHere } from '@/components/forum/WhoIsHere';
@@ -36,7 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 const authorSelect = {
   select: {
-    username: true, name: true, image: true, level: true, createdAt: true, signature: true,
+    username: true, name: true, image: true, level: true, createdAt: true, signature: true, mood: true,
     _count: { select: { threads: true, replies: true } },
   },
 } as const;
@@ -45,7 +47,8 @@ const authorSelect = {
 function toAuthor(
   u: {
     username: string | null; name: string | null; image: string | null; level: number;
-    createdAt: Date; signature: string | null; _count: { threads: number; replies: number };
+    createdAt: Date; signature: string | null; mood: string | null;
+    _count: { threads: number; replies: number };
   },
   looks: Map<number, LevelLook>,
 ) {
@@ -160,6 +163,24 @@ export default async function ThreadPage({ params, searchParams }: {
     }
   }
 
+  // Trạng thái "cảm ơn" của bài mở đầu và mọi trả lời đang hiện — gom vào một
+  // truy vấn rồi chia ở JS, thay vì mỗi bài một lần hỏi cơ sở dữ liệu.
+  const thankTargets = (replies ?? []).flatMap((r) => [r.id, ...r.children.map((c) => c.id)]);
+  const thankRows = await db.reaction.findMany({
+    where: { type: 'THANKS', OR: [{ threadId: id }, { replyId: { in: thankTargets } }] },
+    orderBy: { createdAt: 'desc' },
+    select: { userId: true, threadId: true, replyId: true, user: { select: { name: true, username: true } } },
+  });
+  const thanksOf = (key: { threadId?: string; replyId?: string }): ThanksState => {
+    const rows = thankRows.filter((r) =>
+      key.threadId ? r.threadId === key.threadId : r.replyId === key.replyId);
+    return {
+      active: !!userId && rows.some((r) => r.userId === userId),
+      people: rows.slice(0, THANKS_NAMES_SHOWN).map((r) => r.user.name ?? r.user.username ?? 'Ẩn danh'),
+      count: rows.length,
+    };
+  };
+
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
       <div className="min-w-0">
@@ -209,6 +230,12 @@ export default async function ThreadPage({ params, searchParams }: {
           }
         >
           <div className="prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={{ __html: thread.content }} />
+
+          <div className="mt-4">
+            <ThanksBar threadId={thread.id} initial={thanksOf({ threadId: thread.id })}
+              canThank={loggedIn && !isOwner} callbackUrl={callbackUrl} />
+          </div>
+
           {thread.tags.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-ink-100 pt-3 dark:border-ink-800">
               {thread.tags.map(({ tag }) => (
@@ -251,6 +278,11 @@ export default async function ThreadPage({ params, searchParams }: {
                 }
               >
                 <ReplyBody replyId={r.id} content={r.content} createdAt={r.createdAt} updatedAt={r.updatedAt} />
+
+                <div className="mt-3">
+                  <ThanksBar replyId={r.id} initial={thanksOf({ replyId: r.id })}
+                    canThank={loggedIn && r.authorId !== userId} callbackUrl={callbackUrl} />
+                </div>
 
                 {r.children.length > 0 && (
                   <ul className="mt-4 space-y-3 border-l-2 border-brand-200 pl-3 dark:border-brand-900">

@@ -10,6 +10,7 @@ import { TableHead } from '@/components/forum/TableHead';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { ForumStatsBar } from '@/components/forum/ForumStatsBar';
+import { ChatPanel } from '@/components/chat/ChatPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -112,6 +113,10 @@ export default async function HomePage() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-4">
           <BoardList sections={sections} />
+
+          {/* Phòng chat chung ngay trên trang chủ, như chatbox ở index của
+              forum wap ngày xưa — không phải bấm sang trang khác mới thấy. */}
+          <ChatPanel />
 
           {/* Bài mới — dòng thời gian toàn diễn đàn */}
           <section className="card overflow-hidden">

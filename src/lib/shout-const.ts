@@ -7,8 +7,12 @@
 
 /** Số câu giữ lại và hiển thị trong phòng. Cũ hơn thì tự rơi khỏi khung nhìn. */
 export const SHOUT_TAKE = 60;
-/** Dài hơn thì phòng chat biến thành nơi đăng bài. Đúng tinh thần chatbox cũ. */
-export const SHOUT_MAX_LEN = 300;
+/**
+ * Dài hơn thì phòng chat biến thành nơi đăng bài. Đúng tinh thần chatbox cũ.
+ * Rộng tay hơn một chút so với chữ thuần vì một ảnh/GIF chèn vào đã là
+ * `![tên](đường-dẫn-dài)` chiếm cả trăm ký tự.
+ */
+export const SHOUT_MAX_LEN = 500;
 /** Giãn cách tối thiểu giữa hai câu của cùng một người. */
 export const SHOUT_GAP_SECONDS = 3;
 /** Trần theo phút, chặn kiểu dán liên hồi. */

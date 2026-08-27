@@ -6,7 +6,8 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Pagination } from '@/components/Pagination';
 import { ShopItemCard } from '@/components/user/ShopItemCard';
-import { getMyItems } from '@/lib/shop';
+import { cosmeticSelect, getMyItems, toCosmetics } from '@/lib/shop';
+import type { ShopViewer } from '@/components/user/ShopItemCard';
 import { fmtCount } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -24,8 +25,15 @@ export default async function MyItemsPage({ searchParams }: {
 
   const [{ items, total, totalPages }, me] = await Promise.all([
     getMyItems(userId, page),
-    db.user.findUnique({ where: { id: userId }, select: { points: true } }),
+    db.user.findUnique({
+      where: { id: userId },
+      select: { points: true, name: true, username: true, image: true, role: true, level: true, ...cosmeticSelect },
+    }),
   ]);
+
+  const viewer: ShopViewer | undefined = me
+    ? { name: me.name, username: me.username, image: me.image, role: me.role, level: me.level, cosmetics: toCosmetics(me) }
+    : undefined;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -55,7 +63,7 @@ export default async function MyItemsPage({ searchParams }: {
       ) : (
         <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((it) => (
-            <ShopItemCard key={it.id} item={it} myPoints={me?.points} loggedIn />
+            <ShopItemCard key={it.id} item={it} myPoints={me?.points} loggedIn viewer={viewer} />
           ))}
         </ul>
       )}

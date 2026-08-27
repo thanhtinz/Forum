@@ -5,7 +5,8 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Pagination } from '@/components/Pagination';
 import { ShopItemCard } from '@/components/user/ShopItemCard';
-import { getShopItems, isShopKind, KIND_LABELS, SHOP_KINDS, type ShopKind } from '@/lib/shop';
+import { cosmeticSelect, getShopItems, isShopKind, toCosmetics, KIND_LABELS, SHOP_KINDS, type ShopKind } from '@/lib/shop';
+import type { ShopViewer } from '@/components/user/ShopItemCard';
 import { fmtCount } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
@@ -34,11 +35,19 @@ export default async function ShopPage({ searchParams }: {
   const [{ items, total, totalPages }, me] = await Promise.all([
     getShopItems({ viewerId, kind, page }),
     viewerId
-      ? db.user.findUnique({ where: { id: viewerId }, select: { points: true } })
+      // Lấy kèm tên, avatar và đồ đang đeo: ô xem trước dựng món đồ lên chính
+      // hồ sơ người đang xem chứ không phải một hình mẫu chung chung.
+      ? db.user.findUnique({
+          where: { id: viewerId },
+          select: { points: true, name: true, username: true, image: true, role: true, level: true, ...cosmeticSelect },
+        })
       : Promise.resolve(null),
   ]);
 
   const href = (k: ShopKind) => `/cua-hang?loai=${k}`;
+  const viewer: ShopViewer | undefined = me
+    ? { name: me.name, username: me.username, image: me.image, role: me.role, level: me.level, cosmetics: toCosmetics(me) }
+    : undefined;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -80,7 +89,8 @@ export default async function ShopPage({ searchParams }: {
       ) : (
         <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((it) => (
-            <ShopItemCard key={it.id} item={it} myPoints={me?.points} loggedIn={!!viewerId} showKind={false} />
+            <ShopItemCard key={it.id} item={it} myPoints={me?.points} loggedIn={!!viewerId}
+              viewer={viewer} showKind={false} />
           ))}
         </ul>
       )}

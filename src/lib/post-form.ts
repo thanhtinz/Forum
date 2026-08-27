@@ -1,5 +1,5 @@
 import { db } from './db';
-import { isPaidAccess } from './sell-permission';
+import { isMoneyAccess } from './sell-permission';
 import { bbcodeToHtml } from './bbcode';
 
 /** Escape HTML để chống XSS khi dựng nội dung. */
@@ -127,7 +127,7 @@ export interface ParsedPost {
  */
 export async function parsePostForm(
   formData: FormData,
-  opts: { canSell?: boolean } = {},
+  opts: { canSellForMoney?: boolean } = {},
 ): Promise<ParsedPost | { error: string }> {
   const title = String(formData.get('title') ?? '').trim();
   const excerpt = String(formData.get('excerpt') ?? '').trim();
@@ -143,13 +143,14 @@ export async function parsePostForm(
   const tagRaw = String(formData.get('tags') ?? '');
   const catSlugs = formData.getAll('categories').map(String).filter(Boolean);
 
-  const isPaid = isPaidAccess(access);
+  const usesMoney = isMoneyAccess(access);
   // Mọi mức khác FREE/LOGIN_REQUIRED đều khoá phần nội dung ẩn
   const hasGate = access !== 'FREE' && access !== 'LOGIN_REQUIRED';
 
-  // Chỉ quản trị viên mới được đăng bán — chặn ở server, không tin giao diện.
-  if (isPaid && !opts.canSell) {
-    return { error: 'Chỉ quản trị viên mới được đăng bán nội dung. Bạn có thể đăng bài miễn phí.' };
+  // Chặn ở server, không tin giao diện: giá bằng tiền nạp và khoá theo VIP là
+  // hàng của nền tảng. Thành viên vẫn khoá nội dung ẩn bằng ĐIỂM được.
+  if (usesMoney && !opts.canSellForMoney) {
+    return { error: 'Chỉ quản trị viên mới đặt được giá bằng tiền. Bạn có thể khoá nội dung bằng điểm.' };
   }
 
   if (title.length < 5) return { error: 'Tiêu đề tối thiểu 5 ký tự.' };

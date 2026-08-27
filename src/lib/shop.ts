@@ -1,9 +1,17 @@
 import type { Prisma } from '@prisma/client';
 
-/** Điều kiện xác định một bài viết là "hàng" trong cửa hàng (nội dung có giá / khoá VIP). */
+/**
+ * Điều kiện xác định một bài viết là "hàng" trong cửa hàng.
+ *
+ * Cửa hàng là hàng của nền tảng, chỉ ban quản trị đăng. Thành viên vẫn khoá
+ * được nội dung ẩn của mình bằng điểm, nhưng bài đó là bài trên diễn đàn /
+ * blog chứ không phải món hàng — nên lọc thêm theo vai trò tác giả, không
+ * chỉ theo mức giá.
+ */
 export const SHOP_WHERE: Prisma.PostWhereInput = {
   status: 'PUBLISHED',
   access: { in: ['POINTS', 'PAID', 'VIP_ONLY'] },
+  author: { role: 'ADMIN' },
 };
 
 export type ShopSort = 'new' | 'popular' | 'cheap' | 'expensive';

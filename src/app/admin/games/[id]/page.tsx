@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import { ChevronLeft, ExternalLink, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
 import { db } from '@/lib/db';
+import { requireSuperAdmin } from '@/lib/admin';
 import { assetUrl, DOWNLOAD_PLATFORMS } from '@/lib/game';
 import { gameAnalytics } from '@/lib/game-stats';
 import { fmtBytes, fmtCount } from '@/lib/utils';
@@ -15,6 +16,9 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sửa game', robots: { index: false } };
 
 export default async function AdminGameEditPage({ params }: { params: Promise<{ id: string }> }) {
+  // Kho game là hàng của nền tảng: chỉ quản trị viên, không cho điều hành viên.
+  await requireSuperAdmin();
+
   const { id } = await params;
 
   const [game, genres, platforms, resolutions] = await Promise.all([

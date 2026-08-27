@@ -16,7 +16,7 @@ export function AdminHeader({ user }: { user: AdminHeaderUser }) {
   return (
     <header className="sticky top-0 z-40 border-b border-ink-800 bg-ink-950 text-white">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-2 px-4">
-        <AdminMobileNav />
+        <AdminMobileNav isSuperAdmin={user.role === 'ADMIN'} />
         <Link href="/admin" className="flex shrink-0 items-center gap-2">
           <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-500 text-white"><ShieldCheck size={18} /></span>
           <span className="whitespace-nowrap text-base font-black tracking-tight">Nova <span className="text-brand-400">Quản trị</span></span>

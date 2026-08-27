@@ -2,10 +2,14 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { NewGameForm } from '@/components/admin/NewGameForm';
+import { requireSuperAdmin } from '@/lib/admin';
 
 export const metadata: Metadata = { title: 'Thêm game', robots: { index: false } };
 
-export default function NewGamePage() {
+export default async function NewGamePage() {
+  // Kho game là hàng của nền tảng: chỉ quản trị viên, không cho điều hành viên.
+  await requireSuperAdmin();
+
   return (
     <div className="mx-auto max-w-lg space-y-4">
       <Link href="/admin/games" className="inline-flex items-center gap-1 text-sm text-ink-400 hover:text-brand-600">

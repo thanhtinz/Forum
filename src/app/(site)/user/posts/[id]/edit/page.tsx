@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
 import { fromParagraphs } from '@/lib/post-form';
 import { WriteForm, type CatOption, type PostDraft } from '@/components/write/WriteForm';
 import { updatePost } from '../../actions';
-import { canSellContent } from '@/lib/sell-permission';
+import { canSellForMoney } from '@/lib/sell-permission';
 
 export const metadata: Metadata = { title: 'Sửa bài viết' };
 export const dynamic = 'force-dynamic';
@@ -68,7 +68,7 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
       <Link href="/user/posts" className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-brand-600">
         <ArrowLeft size={15} /> Bài viết của tôi
       </Link>
-      <WriteForm categories={options} canSell={canSellContent(role)} initial={initial} action={updatePost} />
+      <WriteForm categories={options} canSell={canSellForMoney(role)} initial={initial} action={updatePost} />
     </div>
   );
 }

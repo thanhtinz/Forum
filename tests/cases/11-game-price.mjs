@@ -52,9 +52,21 @@ export default async function run(check) {
       (await member.locator('text=cần mở khoá bằng điểm').count()) > 0);
     check('chưa mở khoá thì không có nút tải',
       (await member.locator('button:has-text("TẢI JAR")').count()) === 0);
+    // Nút to ở đầu trang cũng phải nói đúng việc nó làm, không mời "TẢI GAME".
+    const heroLocked = (await member.locator('header a[href="#download"]').first().innerText()).trim();
+    check('nút đầu trang đổi thành mời mở khoá',
+      /MỞ KHOÁ/.test(heroLocked) && !/TẢI GAME/.test(heroLocked), `đang là “${heroLocked}”`);
     check('mã nguồn trang không chứa dữ liệu tệp tải',
       !/versionId|"files"/.test(await member.content()));
 
+    // Ngoài kho game, thẻ của game có giá phải báo giá thay vì mời "Tải về".
+    await member.goto(`${BASE}/games/browse`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(900);
+    const cardText = (await member.locator(`a[href^="/games/${game.slug}"]`).last().innerText()).trim();
+    check('thẻ ngoài kho game báo giá điểm', /điểm/.test(cardText), `đang là “${cardText}”`);
+
+    await member.goto(url, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
     const status = await member.evaluate(async (slug) => {
       const res = await fetch(`/api/games/${slug}/download?type=JAR`);
       return res.status;
@@ -71,6 +83,8 @@ export default async function run(check) {
     });
     check('ghi sổ mở khoá', unlock?.pointsPaid === 30);
     check('mở xong thấy nút tải', (await member.locator('button:has-text("TẢI")').count()) > 0);
+    const heroOpen = (await member.locator('header a[href="#download"]').first().innerText()).trim();
+    check('mở xong nút đầu trang về lại TẢI GAME', /TẢI GAME/.test(heroOpen), `đang là “${heroOpen}”`);
 
     // Vào lại không bị trừ lần nữa
     await member.reload({ waitUntil: 'networkidle' });

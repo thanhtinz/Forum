@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Apple, Coffee, Download, Eye, Gamepad2, Globe, Monitor, Smartphone, Terminal } from 'lucide-react';
+import { Apple, Coffee, Coins, Download, Eye, Gamepad2, Globe, Monitor, Smartphone, Terminal } from 'lucide-react';
 import type { GameCardData } from '@/lib/game';
 import { DOWNLOAD_PLATFORMS, gameTint, LANGUAGE_LABEL } from '@/lib/game';
 import { cn, fmtBytes, fmtCount } from '@/lib/utils';
@@ -150,9 +150,18 @@ function Actions({ game, className }: { game: GameCardData; className?: string }
       <Link href={`/games/${game.slug}`} className="btn-outline !px-3 !py-1.5 text-xs">
         Chi tiết
       </Link>
-      <Link href={`/games/${game.slug}#download`} className="btn-primary !px-3 !py-1.5 text-xs">
-        <Download size={13} /> Tải về
-      </Link>
+      {/* Game có giá thì nói thẳng là phải mở khoá, đừng mời "Tải về" rồi
+          bấm vào lại gặp khung đòi điểm. */}
+      {game.pricePoints > 0 ? (
+        <Link href={`/games/${game.slug}#download`}
+          className="btn !px-3 !py-1.5 text-xs bg-amber-500 text-white hover:bg-amber-600">
+          <Coins size={13} /> {fmtCount(game.pricePoints)} điểm
+        </Link>
+      ) : (
+        <Link href={`/games/${game.slug}#download`} className="btn-primary !px-3 !py-1.5 text-xs">
+          <Download size={13} /> Tải về
+        </Link>
+      )}
     </div>
   );
 }

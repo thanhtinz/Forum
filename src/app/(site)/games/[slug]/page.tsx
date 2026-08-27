@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import {
-  AlertTriangle, Building2, Calendar, Clock, Download, Eye,
+  AlertTriangle, Building2, Calendar, Clock, Coins, Download, Eye,
   Gamepad2, Keyboard, Languages, MessageSquare, MonitorSmartphone,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -189,9 +189,17 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
               ))}
             </div>
 
-            <Link href="#download" className="btn-primary mt-4 !px-6">
-              <Download size={17} /> TẢI GAME
-            </Link>
+            {/* Game có giá mà chưa mở khoá thì nút này phải nói đúng việc nó
+                làm: bấm xuống là gặp khung đòi điểm, không phải tải ngay. */}
+            {gameAccess.allowed ? (
+              <Link href="#download" className="btn-primary mt-4 !px-6">
+                <Download size={17} /> TẢI GAME
+              </Link>
+            ) : (
+              <Link href="#download" className="btn mt-4 !px-6 bg-amber-500 text-white hover:bg-amber-600">
+                <Coins size={17} /> MỞ KHOÁ · {fmtCount(gameAccess.price)} ĐIỂM
+              </Link>
+            )}
           </div>
         </div>
       </header>

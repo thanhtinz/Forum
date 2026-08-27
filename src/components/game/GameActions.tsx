@@ -68,6 +68,11 @@ export function GameActions({ gameId, initialFavorite, favoriteCount, initialRat
       <div className="flex items-center justify-between gap-2">
         <button
           type="button" onClick={onFav} disabled={pending}
+          // Nút chỉ có trái tim và một con số, không có chữ nào — thiếu nhãn
+          // thì trình đọc màn hình đọc ra mỗi con số, không rõ để làm gì.
+          title={fav ? 'Bỏ khỏi mục đã lưu' : 'Lưu game này'}
+          aria-label={fav ? 'Bỏ khỏi mục đã lưu' : 'Lưu game này'}
+          aria-pressed={fav}
           className={cn('btn flex-1 border', fav
             ? 'border-accent-500 bg-accent-500 text-white'
             : 'border-ink-200 text-ink-600 hover:border-accent-400 hover:text-accent-500 dark:border-ink-700 dark:text-ink-300')}

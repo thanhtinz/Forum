@@ -13,6 +13,7 @@ import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { getLevelLooks } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
+import { threadExcerpt } from '@/lib/bbcode';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 12;
@@ -66,7 +67,7 @@ export default async function SearchPage({ searchParams }: {
         id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
         pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
         viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author), forum: t.forum,
-        excerpt: truncate(plainText(t.content), 90),
+        excerpt: threadExcerpt(t.content),
       }))
     : [];
 

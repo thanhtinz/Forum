@@ -7,6 +7,7 @@
  */
 
 import { MENTION_PATTERN } from './mention';
+import { plainText, truncate } from './utils';
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -82,6 +83,19 @@ export function hasHidden(html: string): boolean {
  */
 export function stripHidden(html: string): string {
   return html.replace(HIDE_BLOCK, '');
+}
+
+/**
+ * Trích ngắn của một chủ đề, dùng cho danh sách chủ đề và kết quả tìm kiếm.
+ *
+ * Bắt buộc đi qua `stripHidden` TRƯỚC khi bóc thẻ: `plainText` bóc mọi thứ
+ * khớp `<...>` nên hai mốc `<!--hide-->` bị coi như thẻ thường và biến mất,
+ * để lại đúng phần chữ đáng lẽ phải giấu nằm chình ình trong trích ngắn.
+ * Gói lại thành một hàm vì đây là thao tác ba nơi cùng làm, mà quên ở một nơi
+ * là lộ ở nơi đó — chẳng có gì báo cho biết.
+ */
+export function threadExcerpt(html: string, max = 90): string {
+  return truncate(plainText(stripHidden(html)), max);
 }
 
 /**

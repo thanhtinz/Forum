@@ -11,7 +11,7 @@ export async function AuthorCard({ authorId, viewerId }: { authorId: string; vie
     db.user.findUnique({
       where: { id: authorId },
       select: {
-        username: true, name: true, image: true, cover: true, bio: true, level: true, vipTier: true,
+        username: true, name: true, image: true, cover: true, bio: true, level: true,
         _count: { select: { posts: true, followers: true, comments: true } },
       },
     }),
@@ -41,9 +41,6 @@ export async function AuthorCard({ authorId, viewerId }: { authorId: string; vie
         <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
           <Link href={href} className="text-base font-bold hover:text-brand-600">{name}</Link>
           <LevelBadge level={author.level} icon={look?.icon} color={look?.color} name={look?.name} />
-          {author.vipTier != null && (
-            <span className="chip bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">VIP{author.vipTier}</span>
-          )}
         </div>
         <p className="mt-1 line-clamp-2 text-sm text-ink-500">{author.bio ?? 'Người này chưa có giới thiệu.'}</p>
 

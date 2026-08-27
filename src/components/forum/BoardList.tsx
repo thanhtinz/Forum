@@ -12,7 +12,6 @@ export interface BoardRow {
   description: string | null;
   icon: string | null;
   postAccess: keyof typeof FORUM_ACCESS_BADGE;
-  vipOnly: boolean;
   threadCount: number;
   replyCount: number;
   latest: { id: string; title: string; at: Date; author: string | null } | null;

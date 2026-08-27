@@ -55,7 +55,7 @@ export default async function HomePage() {
     const t = f.threads[0];
     return {
       id: f.id, slug: f.slug, name: f.name, description: f.description, icon: f.icon,
-      postAccess: f.postAccess, vipOnly: f.vipOnly,
+      postAccess: f.postAccess,
       threadCount: f.threadCount, replyCount: f.replyCount,
       latest: t ? { id: t.id, title: t.title, at: t.lastReplyAt ?? t.createdAt, author: t.author?.username ?? null } : null,
     };

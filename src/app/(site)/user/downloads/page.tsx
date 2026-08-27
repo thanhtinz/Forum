@@ -22,7 +22,7 @@ export default async function DownloadsPage({ searchParams }: { searchParams: Pr
 
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { level: true, vipTier: true, vipExpiresAt: true, vipPermanent: true },
+    select: { level: true },
   });
   if (!user) redirect('/login');
 
@@ -73,7 +73,7 @@ export default async function DownloadsPage({ searchParams }: { searchParams: Pr
             </div>
             <p className="mt-2 text-xs text-ink-400">
               Còn {remaining} lượt trong hôm nay (đặt lại lúc 00:00 giờ Việt Nam).{' '}
-              <Link href="/vip" className="text-brand-600 hover:underline">Nâng cấp VIP</Link> để tăng hạn mức.
+              Lên cấp để được tải nhiều hơn mỗi ngày.
             </p>
           </>
         )}

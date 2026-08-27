@@ -13,7 +13,7 @@ export default async function AdminCouponsPage() {
 
   const rows: CouponRow[] = coupons.map((c) => ({
     id: c.id, code: c.code, name: c.name, type: c.type, value: c.value,
-    minAmount: c.minAmount, maxDiscount: c.maxDiscount, appliesTo: c.appliesTo,
+    minAmount: c.minAmount, maxDiscount: c.maxDiscount,
     totalQuantity: c.totalQuantity, usedCount: c.usedCount, perUserLimit: c.perUserLimit,
     startsAt: c.startsAt?.toISOString() ?? null, endsAt: c.endsAt?.toISOString() ?? null,
     active: c.active, claimCount: c._count.claims,
@@ -23,7 +23,7 @@ export default async function AdminCouponsPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-bold text-ink-900 dark:text-white">Mã giảm giá</h1>
-        <p className="text-sm text-ink-500">Tạo mã giảm theo số tiền hoặc phần trăm, giới hạn lượt dùng và thời gian áp dụng.</p>
+        <p className="text-sm text-ink-500">Tạo mã giảm theo số điểm hoặc phần trăm, giới hạn lượt dùng và thời gian áp dụng.</p>
       </div>
       <CouponManager coupons={rows} />
     </div>

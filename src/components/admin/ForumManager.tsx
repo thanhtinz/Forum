@@ -11,7 +11,7 @@ import { IconGlyph } from '@/components/IconGlyph';
 export interface ForumRow {
   id: string; name: string; slug: string; description: string | null; icon: string | null;
   order: number; parentId: string | null; threadCount: number; replyCount: number;
-  postAccess: string; minLevel: number; vipOnly: boolean;
+  postAccess: string; minLevel: number;
 }
 
 const ACCESS_LABEL: Record<string, string> = {
@@ -71,7 +71,6 @@ function ForumRowView({ forum, child, onEdit }: { forum: ForumRow; child?: boole
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm font-semibold text-ink-900 dark:text-white">{forum.name}</span>
-          {forum.vipOnly && <Crown size={13} className="shrink-0 text-amber-500" />}
           {forum.postAccess !== 'ALL' && <Lock size={12} className="shrink-0 text-ink-400" />}
         </div>
         <div className="truncate text-xs text-ink-400">
@@ -124,11 +123,6 @@ function ForumForm({ initial, forums, onDone }: { initial: ForumRow | null; foru
 
       <label className="block"><span className="mb-1 block text-sm font-medium">Mô tả</span>
         <input name="description" defaultValue={initial?.description ?? ''} className="input" placeholder="Mô tả ngắn (không bắt buộc)" /></label>
-
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="vipOnly" defaultChecked={initial?.vipOnly} className="size-4 rounded" />
-        Chỉ VIP mới xem/đăng được
-      </label>
 
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       <div className="flex gap-2">

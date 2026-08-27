@@ -22,16 +22,12 @@ export interface NavItem {
 export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: string }[]> = {
   header: [
     { label: 'Diễn đàn', url: '/', icon: '💬' },
-    { label: 'Cửa hàng', url: '/shop', icon: '🛍️' },
     { label: 'Game', url: '/games', icon: '🎮' },
-    { label: 'VIP', url: '/vip', icon: '👑' },
     { label: 'Xếp hạng', url: '/ranking', icon: '🏆' },
   ],
   footer: [
     { label: 'Diễn đàn', url: '/', icon: '' },
-    { label: 'Cửa hàng', url: '/shop', icon: '' },
     { label: 'Game', url: '/games', icon: '' },
-    { label: 'VIP', url: '/vip', icon: '' },
     { label: 'Xếp hạng', url: '/ranking', icon: '' },
     { label: 'Tìm kiếm', url: '/search', icon: '' },
   ],

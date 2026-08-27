@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache';
 import { requireAdmin, requireSuperAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
-import { grantBalance } from '@/lib/balance';
 import { checkAndAwardMedals, MEDAL_CONDITIONS } from '@/lib/medals';
 import { GIF_SETTING_KEY } from '@/lib/gif';
 import { R2_SETTING_KEY, deleteFile } from '@/lib/storage';
@@ -192,36 +191,6 @@ export async function deleteCategory(id: string) {
   revalidatePath('/');
 }
 
-// ─────────────── Gói VIP ───────────────
-
-export async function updateVipPlan(id: string, data: {
-  name: string; description: string | null; icon: string | null; color: string | null;
-  price: number; originalPrice: number | null; durationDays: number | null;
-  discountPercent: number; freeContent: boolean; active: boolean;
-}) {
-  const admin = await requireAdmin();
-  const name = data.name.trim();
-  if (name.length < 2) return { error: 'Tên gói quá ngắn.' };
-  await db.vipPlan.update({
-    where: { id },
-    data: {
-      ...data,
-      name,
-      description: data.description?.trim() || null,
-      icon: normalizeIcon(data.icon),
-      color: data.color?.trim() || null,
-    },
-  });
-  await logAdmin({
-    actor: admin, action: 'vip.update', targetType: 'vipPlan', targetId: id,
-    summary: `Cập nhật gói VIP “${name}” — giá ${data.price.toLocaleString('vi-VN')}₫${data.active ? '' : ' (đang tắt)'}`,
-    meta: { price: data.price, durationDays: data.durationDays, active: data.active },
-  });
-  revalidatePath('/admin/vip-plans');
-  revalidatePath('/vip');
-  return { ok: true };
-}
-
 // ─────────────── Cấu hình GIF ───────────────
 
 export type GifSettingState = { ok?: boolean; error?: string };
@@ -373,108 +342,6 @@ export async function resolveReportAndRemove(id: string) {
   revalidatePath('/admin/reports');
 }
 
-// ─────────────── Rút tiền ───────────────
-
-export async function setWithdrawalStatus(id: string, status: 'APPROVED' | 'REJECTED' | 'PAID') {
-  const admin = await requireAdmin();
-  let logged: { amount: number; username: string | null } | null = null;
-  await db.$transaction(async (tx) => {
-    const w = await tx.withdrawal.findUnique({
-      where: { id },
-      select: { userId: true, amount: true, status: true, user: { select: { username: true } } },
-    });
-    if (!w || w.status === 'PAID' || w.status === 'REJECTED') return; // đã xử lý xong
-
-    await tx.withdrawal.update({ where: { id }, data: { status, processedAt: new Date() } });
-    logged = { amount: w.amount, username: w.user?.username ?? null };
-
-    if (status === 'REJECTED') {
-      // Hoàn tiền đang đóng băng về số dư khả dụng
-      await tx.user.update({ where: { id: w.userId }, data: { frozenBalance: { decrement: w.amount } } });
-      await grantBalance({ userId: w.userId, amount: w.amount, reason: 'REFUND', refId: id, note: 'Hoàn tiền yêu cầu rút bị từ chối' }, tx);
-      await notify({ userId: w.userId, type: 'SYSTEM', title: 'Yêu cầu rút tiền bị từ chối', content: `Số tiền ${w.amount.toLocaleString('vi-VN')}₫ đã được hoàn về số dư.`, link: '/user/balance' }, tx);
-    } else if (status === 'PAID') {
-      // Tiền đã chuyển đi: trừ khỏi đóng băng (đã ghi log WITHDRAW khi tạo yêu cầu)
-      await tx.user.update({ where: { id: w.userId }, data: { frozenBalance: { decrement: w.amount } } });
-      await notify({ userId: w.userId, type: 'SYSTEM', title: 'Rút tiền thành công', content: `Đã chuyển ${w.amount.toLocaleString('vi-VN')}₫ tới tài khoản của bạn.`, link: '/user/balance' }, tx);
-    } else if (status === 'APPROVED') {
-      await notify({ userId: w.userId, type: 'SYSTEM', title: 'Yêu cầu rút tiền đã được duyệt', content: 'Chúng tôi sẽ chuyển khoản trong thời gian sớm nhất.', link: '/user/balance' }, tx);
-    }
-  });
-  // Bấm lại trên yêu cầu đã chốt thì không có gì thay đổi — cũng không ghi nhật ký.
-  if (logged) {
-    const w = logged as { amount: number; username: string | null };
-    const verb = status === 'REJECTED' ? 'reject' : status === 'PAID' ? 'paid' : 'approve';
-    const label = status === 'REJECTED' ? 'Từ chối' : status === 'PAID' ? 'Đã chuyển tiền cho' : 'Duyệt';
-    await logAdmin({
-      actor: admin, action: `withdrawal.${verb}`, targetType: 'withdrawal', targetId: id,
-      summary: `${label} yêu cầu rút ${w.amount.toLocaleString('vi-VN')}₫ của @${w.username ?? '?'}`,
-      meta: { status, amount: w.amount },
-    });
-  }
-  revalidatePath('/admin/withdrawals');
-}
-
-// ─────────────── Đơn hàng ───────────────
-
-/**
- * Xác nhận đơn nạp tiền thủ công khi webhook SePay không về.
- * Dùng lại đúng luồng của webhook: đổi trạng thái + cộng số dư trong một transaction,
- * và chỉ chạy khi đơn còn PENDING nên bấm hai lần không cộng tiền hai lần.
- */
-export async function markOrderPaid(id: string) {
-  const admin = await requireAdmin();
-  let logged: { code: string; amount: number } | null = null;
-  await db.$transaction(async (tx) => {
-    const order = await tx.order.findUnique({
-      where: { id },
-      select: { id: true, code: true, userId: true, status: true, type: true, amount: true, finalAmount: true },
-    });
-    if (!order || order.status !== 'PENDING') return;
-
-    await tx.order.update({
-      where: { id: order.id },
-      data: { status: 'PAID', paidAt: new Date(), payMethod: 'ADMIN' },
-      select: { id: true },
-    });
-    logged = { code: order.code, amount: order.finalAmount || order.amount };
-
-    if (order.type === 'TOPUP') {
-      const amount = order.finalAmount || order.amount;
-      await grantBalance({ userId: order.userId, amount, reason: 'TOPUP', refId: order.id, note: `Nạp tiền — ${order.code} (admin xác nhận)` }, tx);
-      await notify({
-        userId: order.userId, type: 'ORDER',
-        title: `Nạp tiền thành công +${amount.toLocaleString('vi-VN')}₫`,
-        content: order.code, link: '/user/balance',
-      }, tx);
-    } else {
-      await notify({ userId: order.userId, type: 'ORDER', title: 'Đơn hàng đã được xác nhận', content: order.code, link: '/user/orders' }, tx);
-    }
-  });
-  if (logged) {
-    const o = logged as { code: string; amount: number };
-    await logAdmin({
-      actor: admin, action: 'order.paid', targetType: 'order', targetId: id,
-      summary: `Xác nhận thanh toán thủ công đơn ${o.code} — ${o.amount.toLocaleString('vi-VN')}₫`,
-      meta: { code: o.code, amount: o.amount },
-    });
-  }
-  revalidatePath('/admin/orders');
-}
-
-export async function cancelOrder(id: string) {
-  const admin = await requireAdmin();
-  const order = await db.order.findUnique({ where: { id }, select: { status: true, code: true, userId: true } });
-  if (!order || order.status !== 'PENDING') return; // đơn đã trả tiền thì không huỷ suông được
-  await db.order.update({ where: { id }, data: { status: 'CANCELLED' }, select: { id: true } });
-  await notify({ userId: order.userId, type: 'ORDER', title: 'Đơn hàng đã bị huỷ', content: order.code, link: '/user/orders' });
-  await logAdmin({
-    actor: admin, action: 'order.cancel', targetType: 'order', targetId: id,
-    summary: `Huỷ đơn ${order.code}`, meta: { code: order.code },
-  });
-  revalidatePath('/admin/orders');
-}
-
 // ─────────────── Chủ đề diễn đàn ───────────────
 
 export async function setThreadStatus(id: string, status: 'PUBLISHED' | 'PENDING' | 'HIDDEN') {
@@ -532,7 +399,7 @@ export async function deleteThread(id: string) {
 
 export type ForumState = { ok?: boolean; error?: string };
 
-const FORUM_ACCESS = ['ALL', 'MEMBERS', 'VIP', 'MODERATORS'] as const;
+const FORUM_ACCESS = ['ALL', 'MEMBERS', 'MODERATORS'] as const;
 type ForumAccessValue = (typeof FORUM_ACCESS)[number];
 
 function parseForumAccess(raw: unknown): ForumAccessValue {
@@ -550,7 +417,6 @@ export async function saveForum(_prev: ForumState, formData: FormData): Promise<
   const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
   const postAccess = parseForumAccess(formData.get('postAccess'));
   const minLevel = Math.max(1, parseInt(String(formData.get('minLevel') ?? '1'), 10) || 1);
-  const vipOnly = formData.get('vipOnly') === 'on';
 
   if (name.length < 2) return { error: 'Tên diễn đàn quá ngắn.' };
   if (parentId && parentId === id) return { error: 'Diễn đàn không thể là cha của chính nó.' };
@@ -558,11 +424,11 @@ export async function saveForum(_prev: ForumState, formData: FormData): Promise<
   let savedId = id;
   try {
     if (id) {
-      await db.forum.update({ where: { id }, data: { name, parentId, description, icon, order, postAccess, minLevel, vipOnly } });
+      await db.forum.update({ where: { id }, data: { name, parentId, description, icon, order, postAccess, minLevel } });
     } else {
       let slug = slugify(name, 'dien-dan');
       if (await db.forum.findUnique({ where: { slug }, select: { id: true } })) slug = `${slug}-${Date.now().toString().slice(-4)}`;
-      const created = await db.forum.create({ data: { slug, name, parentId, description, icon, order, postAccess, minLevel, vipOnly }, select: { id: true } });
+      const created = await db.forum.create({ data: { slug, name, parentId, description, icon, order, postAccess, minLevel }, select: { id: true } });
       savedId = created.id;
     }
   } catch {
@@ -570,7 +436,7 @@ export async function saveForum(_prev: ForumState, formData: FormData): Promise<
   }
   await logAdmin({
     actor: admin, action: id ? 'forum.update' : 'forum.create', targetType: 'forum', targetId: savedId,
-    summary: `${id ? 'Sửa' : 'Tạo'} khu vực “${name}”`, meta: { postAccess, minLevel, vipOnly },
+    summary: `${id ? 'Sửa' : 'Tạo'} khu vực “${name}”`, meta: { postAccess, minLevel },
   });
   revalidatePath('/admin/forums');
   revalidatePath('/forum');

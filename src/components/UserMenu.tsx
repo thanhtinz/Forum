@@ -7,19 +7,17 @@ import {
   Settings, ShieldAlert, ShieldOff, LogOut, ChevronDown, MessageSquare,
 } from 'lucide-react';
 import { logout } from '@/app/(auth)/actions';
-import { fmtCount, fmtVnd } from '@/lib/utils';
+import { fmtCount } from '@/lib/utils';
 import { LevelBadge } from '@/components/LevelBadge';
 
 export interface UserMenuProps {
   name: string;
   image: string | null;
   points: number;
-  balance: number;
   level: number;
   levelIcon?: string | null;
   levelColor?: string | null;
   levelName?: string | null;
-  vipTier: number | null;
   isStaff: boolean;
 }
 
@@ -34,7 +32,7 @@ const LINKS = [
 ];
 
 /** Nút hồ sơ ở header: gom điểm, số dư và các lối tắt vào một menu. */
-export function UserMenu({ name, image, points, balance, level, levelIcon, levelColor, levelName, vipTier, isStaff }: UserMenuProps) {
+export function UserMenu({ name, image, points, level, levelIcon, levelColor, levelName, isStaff }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -67,21 +65,14 @@ export function UserMenu({ name, image, points, balance, level, levelIcon, level
             <div className="flex items-center gap-2">
               <span className="truncate font-semibold text-ink-900 dark:text-white">{name}</span>
               <LevelBadge level={level} icon={levelIcon} color={levelColor} name={levelName} />
-              {vipTier != null && (
-                <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-950 dark:text-amber-300">VIP{vipTier}</span>
-              )}
             </div>
           </div>
 
-          {/* Ví */}
-          <div className="grid grid-cols-2 divide-x divide-ink-100 border-b border-ink-100 dark:divide-ink-800 dark:border-ink-800">
-            <Link href="/user/points" onClick={() => setOpen(false)} className="px-3 py-2.5 hover:bg-ink-50 dark:hover:bg-ink-800/60">
+          {/* Điểm — loại tiền duy nhất của diễn đàn */}
+          <div className="border-b border-ink-100 dark:border-ink-800">
+            <Link href="/user/points" onClick={() => setOpen(false)} className="block px-4 py-2.5 hover:bg-ink-50 dark:hover:bg-ink-800/60">
               <span className="flex items-center gap-1 text-[11px] text-ink-400"><Coins size={11} /> Điểm</span>
               <span className="block text-sm font-bold text-amber-600">{fmtCount(points)}</span>
-            </Link>
-            <Link href="/user/balance" onClick={() => setOpen(false)} className="px-3 py-2.5 hover:bg-ink-50 dark:hover:bg-ink-800/60">
-              <span className="flex items-center gap-1 text-[11px] text-ink-400"><Wallet size={11} /> Số dư</span>
-              <span className="block text-sm font-bold text-emerald-600">{fmtVnd(balance)}</span>
             </Link>
           </div>
 
@@ -96,12 +87,6 @@ export function UserMenu({ name, image, points, balance, level, levelIcon, level
                 </Link>
               );
             })}
-            {vipTier == null && (
-              <Link href="/vip" onClick={() => setOpen(false)}
-                className="flex items-center gap-2.5 px-4 py-2 text-sm text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/40">
-                <Crown size={15} /> Nâng cấp VIP
-              </Link>
-            )}
             {isStaff && (
               <Link href="/admin" onClick={() => setOpen(false)}
                 className="flex items-center gap-2.5 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40">

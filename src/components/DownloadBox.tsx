@@ -19,13 +19,6 @@ export interface DownloadItemData {
   sizeBytes?: number | null;
 }
 
-export interface VipPlanRow {
-  tier: number;
-  name: string;
-  discountPercent: number;
-  freeContent: boolean;
-}
-
 export interface DownloadBoxProps {
   postId: string;
   slug: string;
@@ -33,9 +26,7 @@ export interface DownloadBoxProps {
   reason: AccessReason;
   access: string; // AccessLevel
   pricePoints?: number | null;
-  priceAmount?: number | null;
   downloads: DownloadItemData[];
-  plans: VipPlanRow[];
   updatedAt: string; // yyyy-MM-dd
   callbackUrl: string;
   /** Hạn mức tải trong ngày. limit = -1 nghĩa là không giới hạn. */
@@ -45,29 +36,16 @@ export interface DownloadBoxProps {
 }
 
 const DL_NOTICE: Record<string, string> = {
-  limit: 'Bạn đã đạt giới hạn lượt tải trong ngày. Vui lòng quay lại vào ngày mai hoặc nâng cấp VIP để tăng hạn mức.',
+  limit: 'Bạn đã đạt giới hạn lượt tải trong ngày. Lên cấp để được tải nhiều hơn, hoặc quay lại vào ngày mai.',
   locked: 'Bạn chưa có quyền tải tài nguyên này.',
   banned: 'Tài khoản của bạn đang bị hạn chế.',
   error: 'Đã có lỗi xảy ra khi tải xuống. Vui lòng thử lại.',
 };
 
-/** Giá gốc cho người dùng thường, dạng chuỗi hiển thị. */
-function basePrice(pricePoints?: number | null, priceAmount?: number | null): { text: string; isPoints: boolean; value: number } {
-  if (pricePoints != null) return { text: `${pricePoints}`, isPoints: true, value: pricePoints };
-  return { text: fmtVnd(priceAmount), isPoints: false, value: priceAmount ?? 0 };
-}
-
-/** Giá cho một bậc VIP sau khi áp quyền lợi. */
-function planPrice(plan: VipPlanRow, bp: ReturnType<typeof basePrice>): string {
-  if (plan.freeContent) return 'Miễn phí';
-  const discounted = Math.round(bp.value * (1 - plan.discountPercent / 100));
-  return bp.isPoints ? `${discounted} điểm` : fmtVnd(discounted);
-}
-
 export function DownloadBox(props: DownloadBoxProps) {
-  const { postId, slug, allowed, reason, access, pricePoints, priceAmount, downloads, plans, updatedAt, callbackUrl, quota, notice } = props;
+  const { postId, slug, allowed, reason, pricePoints, downloads, updatedAt, callbackUrl, quota, notice } = props;
   const [state, action, pending] = useActionState<UnlockState, FormData>(unlockPost, {});
-  const bp = basePrice(pricePoints, priceAmount);
+  const points = pricePoints ?? 0;
 
   return (
     <div className="relative mt-8 overflow-hidden rounded-2xl border-2 border-dashed border-brand-400 bg-white p-4 shadow-card dark:border-brand-700 dark:bg-ink-900 sm:p-6">
@@ -130,38 +108,16 @@ export function DownloadBox(props: DownloadBoxProps) {
           ))}
         </div>
       ) : (
-        /* ─── Bị khoá: bong bóng giá + bảng VIP + nút mua ─── */
+        /* ─── Bị khoá: bong bóng giá + nút mở khoá ─── */
         <>
-          {/* Bong bóng giá */}
+          {/* Bong bóng giá — chỉ còn một loại giá là điểm */}
           <div className="relative mt-4 rounded-xl bg-amber-50 px-5 py-4 dark:bg-amber-950/30">
             <div className="flex items-center gap-2 text-2xl font-black text-ink-800 dark:text-ink-100">
               <Coins className="text-red-500" size={26} />
-              {bp.isPoints
-                ? <><span>{bp.text}</span><span className="text-base font-semibold text-ink-500">điểm</span></>
-                : <span>{bp.text}</span>}
+              <span>{points}</span><span className="text-base font-semibold text-ink-500">điểm</span>
             </div>
             {/* mũi nhọn chỉ xuống */}
             <span className="absolute -bottom-2 left-8 h-4 w-4 rotate-45 bg-amber-50 dark:bg-amber-950/30" />
-          </div>
-
-          {/* Bảng giá VIP */}
-          <div className="mt-4 rounded-xl border border-dashed border-amber-400 p-4">
-            <p className="mb-3 flex items-center justify-center gap-1.5 font-bold text-red-500">
-              <Gem size={16} /> Giảm giá VIP
-            </p>
-            <ul className="space-y-3">
-              <TierRow color="#64748b" label="Người Dùng Thông Thường"
-                value={access === 'VIP_ONLY' ? 'Không thể mua' : (bp.isPoints ? `${bp.text} điểm` : bp.text)}
-                muted={access === 'VIP_ONLY'} last={plans.length === 0} />
-              {plans.map((p, i) => (
-                <TierRow key={p.tier}
-                  color={p.freeContent ? '#f59e0b' : '#22c55e'}
-                  label={`Thành Viên ${p.name}`}
-                  value={planPrice(p, bp)}
-                  highlight
-                  last={i === plans.length - 1} />
-              ))}
-            </ul>
           </div>
 
           {/* Nút hành động theo lý do khoá */}
@@ -172,18 +128,13 @@ export function DownloadBox(props: DownloadBoxProps) {
                 <LogIn size={18} /> Đăng nhập để mua
               </Link>
             )}
-            {reason === 'NEED_VIP' && (
-              <Link href="/vip" className="btn w-full bg-amber-500 py-3 text-base text-white hover:bg-amber-600">
-                <Crown size={18} /> Nâng cấp VIP để tải
-              </Link>
-            )}
-            {(reason === 'NEED_POINTS' || reason === 'NEED_PAYMENT') && (
+            {reason === 'NEED_POINTS' && (
               <ActionForm action={action}>
                 <input type="hidden" name="postId" value={postId} />
                 <input type="hidden" name="slug" value={slug} />
                 <button type="submit" disabled={pending}
                   className="btn w-full bg-red-600 py-3 text-base text-white hover:bg-red-700 disabled:opacity-60">
-                  <ShoppingBag size={18} /> {pending ? 'Đang xử lý…' : 'Mua quyền tải xuống'}
+                  <ShoppingBag size={18} /> {pending ? 'Đang xử lý…' : 'Dùng điểm để mở khoá tải xuống'}
                 </button>
                 <CouponField />
               </ActionForm>

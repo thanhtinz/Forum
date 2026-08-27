@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ite
       post: {
         select: {
           id: true, slug: true, authorId: true, access: true,
-          pricePoints: true, priceAmount: true, vipTierFree: true,
+          pricePoints: true,
           unlockLikes: true, unlockComments: true, likeCount: true, commentCount: true,
         },
       },
@@ -36,19 +36,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ite
 
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { id: true, level: true, vipTier: true, vipExpiresAt: true, vipPermanent: true, status: true },
+    select: { id: true, level: true, status: true },
   });
   if (!user) return back('error');
   if (user.status === 'BANNED') return back('banned');
 
   // Kiểm tra quyền truy cập bài viết
-  const accessUser: AccessUser = { id: user.id, vipTier: user.vipTier, vipExpiresAt: user.vipExpiresAt, vipPermanent: user.vipPermanent };
-  let vipFreeContent = false;
-  if (user.vipTier != null) {
-    const plan = await db.vipPlan.findUnique({ where: { tier: user.vipTier }, select: { freeContent: true } });
-    vipFreeContent = !!plan?.freeContent;
-  }
-  const access = await canAccess(accessUser, item.post, { isAuthor: item.post.authorId === userId, vipFreeContent });
+  const accessUser: AccessUser = { id: user.id };
+  const access = await canAccess(accessUser, item.post, { isAuthor: item.post.authorId === userId });
   if (!access.allowed) return back('locked');
 
   // Hạn mức tải mỗi ngày (tác giả tự tải bài của mình thì miễn đếm)

@@ -10,7 +10,7 @@ export default async function AdminForumsPage() {
     orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     select: {
       id: true, name: true, slug: true, description: true, icon: true, order: true,
-      parentId: true, threadCount: true, replyCount: true, postAccess: true, minLevel: true, vipOnly: true,
+      parentId: true, threadCount: true, replyCount: true, postAccess: true, minLevel: true,
     },
   });
   const rows: ForumRow[] = forums;

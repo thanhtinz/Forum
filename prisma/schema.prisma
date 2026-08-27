@@ -36,19 +36,12 @@ model User {
   role   Role   @default(USER)
   status UserStatus @default(ACTIVE)
 
-  // Kinh tế
-  points       Int @default(0)   // điểm (virtual currency, kiếm được)
-  balance      Int @default(0)   // số dư nạp (VND, đơn vị đồng)
-  frozenBalance Int @default(0)  // đang chờ rút
+  // Kinh tế — chỉ còn MỘT loại: điểm, kiếm được bằng hoạt động trên diễn đàn.
+  points Int @default(0)
 
   // Cấp độ / kinh nghiệm
   exp   Int @default(0)
   level Int @default(1)
-
-  // VIP
-  vipTier      Int?      // null = không VIP; 1,2,3...
-  vipExpiresAt DateTime? // null + vipTier != null => vĩnh viễn
-  vipPermanent Boolean   @default(false)
 
   // Điểm danh
   checkinStreak    Int       @default(0)
@@ -75,11 +68,9 @@ model User {
   favorites      Favorite[]
   orders         Order[]
   pointsLogs     PointsLog[]
-  balanceLogs    BalanceLog[]
   downloads      DownloadLog[]
   medals         UserMedal[]
   notifications  Notification[]
-  withdrawals    Withdrawal[]
   couponsClaimed CouponClaim[]
   followers      Follow[] @relation("Following")
   following      Follow[] @relation("Follower")
@@ -104,9 +95,10 @@ model User {
   shouts        ShoutMessage[]
   shoutsDeleted ShoutMessage[] @relation("ShoutDeleter")
   presence      PresenceHere[]
+  donationsSent     PointDonation[] @relation("DonationFrom")
+  donationsReceived PointDonation[] @relation("DonationTo")
 
   @@index([level])
-  @@index([vipTier])
   @@index([createdAt])
 }
 
@@ -193,8 +185,6 @@ model Post {
   // Trả phí
   access      AccessLevel @default(FREE)
   pricePoints Int?        // giá bằng điểm
-  priceAmount Int?        // giá bằng VND
-  vipTierFree Int?        // VIP từ tier này trở lên xem miễn phí
   unlockLikes    Int?     // LIKE_GOAL: số lượt thích cần đạt để mở cho mọi người
   unlockComments Int?     // COMMENT_GOAL: số bình luận cần đạt để mở cho mọi người
   hiddenContent String?   @db.Text  // phần nội dung ẩn sau paywall
@@ -249,8 +239,6 @@ enum AccessLevel {
   FREE
   LOGIN_REQUIRED
   POINTS
-  PAID
-  VIP_ONLY
 
   // Mở khoá bằng tương tác của CHÍNH người xem
   LIKE            // phải thích bài
@@ -367,7 +355,6 @@ model Forum {
 
   postAccess  ForumAccess @default(ALL)
   minLevel    Int         @default(1)
-  vipOnly     Boolean     @default(false)
 
   threadCount Int @default(0)
   replyCount  Int @default(0)
@@ -387,7 +374,6 @@ model Forum {
 enum ForumAccess {
   ALL
   MEMBERS
-  VIP
   MODERATORS
 }
 
@@ -439,6 +425,7 @@ model Thread {
   reports   Report[]
   followers ThreadFollow[]
   poll      Poll?
+  donations PointDonation[]
 
   @@index([forumId, lastReplyAt])
   @@index([authorId])
@@ -548,6 +535,7 @@ model Reply {
 
   reactions Reaction[]
   reports   Report[]
+  donations PointDonation[]
 
   @@index([threadId, createdAt])
   @@index([authorId])
@@ -659,7 +647,7 @@ model Follow {
 }
 
 // ============================================================
-// KINH TẾ — điểm, số dư, đơn hàng
+// KINH TẾ — chỉ còn điểm và sổ ghi quyền mở khoá nội dung
 // ============================================================
 
 model PointsLog {
@@ -693,33 +681,11 @@ enum PointsReason {
   BOUNTY_PAID
   BOUNTY_RECEIVED
   COUPON
+  DONATE_SENT        // tặng điểm cho bài của người khác
+  DONATE_RECEIVED    // nhận điểm người khác tặng
 }
 
-model BalanceLog {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  amount  Int          // VND, +/- 
-  balance Int
-  reason  BalanceReason
-  note    String?
-  refId   String?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId, createdAt])
-}
-
-enum BalanceReason {
-  TOPUP
-  PURCHASE
-  REFUND
-  WITHDRAW
-  COMMISSION
-  CONTENT_SALE       // tác giả nhận từ bán nội dung trả phí
-  ADMIN_ADJUST
-}
 
 model Order {
   id     String @id @default(cuid())
@@ -727,44 +693,27 @@ model Order {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  type   OrderType
   status OrderStatus @default(PENDING)
 
   // Đối tượng mua
   postId String?
   post   Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
-  vipPlanId String?
-  vipPlan   VipPlan? @relation(fields: [vipPlanId], references: [id], onDelete: SetNull)
 
-  amount        Int      // VND trước giảm
-  discount      Int      @default(0)
-  finalAmount   Int      // thực trả
-  pointsUsed    Int      @default(0)
-  payMethod     PayMethod?
+  discount   Int @default(0)
+  pointsUsed Int @default(0)
 
   couponClaimId String?     @unique
   couponClaim   CouponClaim? @relation(fields: [couponClaimId], references: [id], onDelete: SetNull)
 
-  // SePay
-  sepayRefId       String?  @unique
-  sepayTransaction String?  @db.Text
-  paidAt           DateTime?
+  paidAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  commission Commission?
 
   @@index([userId, createdAt])
   @@index([status])
 }
 
-enum OrderType {
-  CONTENT
-  VIP
-  TOPUP
-  POINTS
-}
 
 enum OrderStatus {
   PENDING
@@ -774,45 +723,11 @@ enum OrderStatus {
   FAILED
 }
 
-enum PayMethod {
-  SEPAY
-  BALANCE
-  POINTS
-  ADMIN
-}
 
 // ============================================================
 // VIP
 // ============================================================
 
-model VipPlan {
-  id       String @id @default(cuid())
-  tier     Int             // 1, 2, 3
-  name     String
-  description String? @db.Text
-  color    String?
-  icon     String?
-
-  durationDays Int?         // null => vĩnh viễn
-  price        Int          // VND
-  originalPrice Int?
-  permanent    Boolean @default(false)
-
-  // Quyền lợi
-  discountPercent  Int @default(0)   // giảm giá khi mua nội dung
-  freeContent      Boolean @default(false)
-  dailyPointsBonus Int @default(0)
-  checkinMultiplier Float @default(1)
-
-  active Boolean @default(true)
-  order  Int     @default(0)
-
-  orders Order[]
-
-  createdAt DateTime @default(now())
-
-  @@unique([tier])
-}
 
 // ============================================================
 // COUPON / MÃ GIẢM GIÁ
@@ -824,12 +739,10 @@ model Coupon {
   name String
 
   type  CouponType @default(FIXED)
-  value Int                       // VND hoặc %
+  value Int                       // số điểm giảm, hoặc %
 
   minAmount   Int?
   maxDiscount Int?
-
-  appliesTo OrderType?
 
   totalQuantity Int?    // null = không giới hạn
   usedCount     Int     @default(0)
@@ -869,56 +782,9 @@ model CouponClaim {
 // HOA HỒNG / RÚT TIỀN
 // ============================================================
 
-model Commission {
-  id      String @id @default(cuid())
-  orderId String @unique
-  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  beneficiaryId String   // người nhận hoa hồng
-  amount        Int
-  rate          Float
-  status        CommissionStatus @default(PENDING)
-  settledAt     DateTime?
 
-  createdAt DateTime @default(now())
 
-  @@index([beneficiaryId])
-}
-
-enum CommissionStatus {
-  PENDING
-  SETTLED
-  CANCELLED
-}
-
-model Withdrawal {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  amount Int
-  fee    Int @default(0)
-  status WithdrawalStatus @default(PENDING)
-
-  bankName    String?
-  bankAccount String?
-  bankHolder  String?
-
-  note       String?
-  processedAt DateTime?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([status])
-}
-
-enum WithdrawalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  PAID
-}
 
 // ============================================================
 // GAMIFICATION — huy chương, cấp độ
@@ -1664,4 +1530,33 @@ model PresenceHere {
 
   @@id([userId, scope])
   @@index([scope, at])
+}
+
+/**
+ * Tặng điểm kèm lời cảm ơn.
+ *
+ * Điểm đã cộng/trừ và ghi vào PointsLog rồi, nhưng bảng này giữ riêng để
+ * dựng được dòng "N người đã tặng X điểm cho bài này" ngay dưới bài — moi ra
+ * từ nhật ký điểm thì phải lọc theo cả reason lẫn refId, vừa chậm vừa dễ sai.
+ */
+model PointDonation {
+  id String @id @default(cuid())
+
+  fromId String
+  from   User   @relation("DonationFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  toId   String
+  to     User   @relation("DonationTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  amount Int
+
+  threadId String?
+  thread   Thread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  replyId  String?
+  reply    Reply?  @relation(fields: [replyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([threadId, createdAt])
+  @@index([replyId, createdAt])
+  @@index([toId, createdAt])
 }

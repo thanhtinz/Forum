@@ -47,7 +47,6 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
     cardStyle: post.cardStyle,
     access: post.access,
     pricePoints: post.pricePoints != null ? String(post.pricePoints) : '',
-    priceAmount: post.priceAmount != null ? String(post.priceAmount) : '',
     unlockLikes: post.unlockLikes != null ? String(post.unlockLikes) : '',
     unlockComments: post.unlockComments != null ? String(post.unlockComments) : '',
     tags: post.tags.map((t) => t.tag.name).join(', '),

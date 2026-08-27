@@ -10,7 +10,6 @@ const TITLE = 'Kiểm thử quyền đăng khu vực';
  */
 export default async function run(check) {
   const forum = await db.forum.findFirst({
-    where: { vipOnly: false },
     select: { id: true, slug: true, postAccess: true, minLevel: true },
   });
   const original = { postAccess: forum.postAccess, minLevel: forum.minLevel };
@@ -18,6 +17,7 @@ export default async function run(check) {
 
   const member = await openPage('minhdev');
   const admin = await openPage('admin@nova.local', 'admin123');
+  const guest = await openPage(null);
   const NEW = `${BASE}/forum/${forum.slug}/new`;
 
   const attempt = async (page, suffix) => {
@@ -53,10 +53,10 @@ export default async function run(check) {
     const r2 = await attempt(admin, 'moderators-admin');
     check('quản trị đăng được ở khu Điều hành viên', r2.created > 0);
 
-    // Khu VIP
-    await db.forum.update({ where: { id: forum.id }, data: { postAccess: 'VIP' }, select: { id: true } });
-    const r3 = await attempt(member, 'vip-member');
-    check('khu VIP chặn thành viên thường', r3.blockedAtPage);
+    // Khu chỉ dành cho thành viên
+    await db.forum.update({ where: { id: forum.id }, data: { postAccess: 'MEMBERS' }, select: { id: true } });
+    const r3 = await attempt(guest, 'members-guest');
+    check('khu chỉ-thành-viên chặn khách', r3.blockedAtPage);
 
     // Cấp tối thiểu
     await db.forum.update({ where: { id: forum.id }, data: { postAccess: 'ALL', minLevel: 99 }, select: { id: true } });

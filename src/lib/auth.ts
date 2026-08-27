@@ -73,16 +73,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const u = await db.user.findUnique({
           where: { id: uid },
           select: {
-            id: true, username: true, role: true, points: true, balance: true,
-            level: true, vipTier: true, vipExpiresAt: true, vipPermanent: true, image: true,
+            id: true, username: true, role: true, points: true,
+            level: true, image: true,
           },
         });
         if (u) {
           session.user.id = u.id;
           Object.assign(session.user, {
-            username: u.username, role: u.role, points: u.points, balance: u.balance,
-            level: u.level, vipTier: u.vipTier, vipExpiresAt: u.vipExpiresAt,
-            vipPermanent: u.vipPermanent,
+            username: u.username, role: u.role, points: u.points,
+            level: u.level,
           });
         }
       }

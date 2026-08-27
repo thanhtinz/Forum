@@ -1,4 +1,4 @@
-import type { Coupon, OrderType, Prisma } from '@prisma/client';
+import type { Coupon, Prisma } from '@prisma/client';
 import { db } from './db';
 
 export interface CouponCheck {
@@ -34,7 +34,7 @@ export function discountFor(coupon: Pick<Coupon, 'type' | 'value' | 'maxDiscount
  * lẫn ngay trước khi trừ tiền — truyền `tx` để chạy trong cùng transaction.
  */
 export async function validateCoupon(
-  input: { code: string; userId: string; orderType: OrderType; amount: number },
+  input: { code: string; userId: string; amount: number },
   tx: Prisma.TransactionClient | typeof db = db,
 ): Promise<{ ok: true; result: CouponCheck } | { ok: false; error: CouponError }> {
   const code = input.code.trim().toUpperCase();
@@ -45,7 +45,6 @@ export async function validateCoupon(
   const now = new Date();
   if (coupon.startsAt && coupon.startsAt > now) return { ok: false, error: 'NOT_STARTED' };
   if (coupon.endsAt && coupon.endsAt < now) return { ok: false, error: 'EXPIRED' };
-  if (coupon.appliesTo && coupon.appliesTo !== input.orderType) return { ok: false, error: 'WRONG_TYPE' };
   if (coupon.minAmount != null && input.amount < coupon.minAmount) return { ok: false, error: 'MIN_AMOUNT' };
   if (coupon.totalQuantity != null && coupon.usedCount >= coupon.totalQuantity) return { ok: false, error: 'OUT_OF_STOCK' };
 

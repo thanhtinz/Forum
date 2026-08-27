@@ -73,7 +73,7 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
 
   const forum = await db.forum.findUnique({
     where: { slug: forumSlug },
-    select: { id: true, slug: true, vipOnly: true, postAccess: true, minLevel: true },
+    select: { id: true, slug: true, postAccess: true, minLevel: true },
   });
   if (!forum) return { error: 'Không tìm thấy diễn đàn.' };
 

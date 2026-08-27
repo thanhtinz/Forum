@@ -14,13 +14,11 @@ export interface PaywallProps {
   slug: string;
   reason: AccessReason;
   pricePoints?: number | null;
-  priceAmount?: number | null;
-  vipTierFree?: number | null;
   callbackUrl: string;
 }
 
 export function Paywall(props: PaywallProps) {
-  const { postId, slug, reason, pricePoints, priceAmount, vipTierFree, callbackUrl } = props;
+  const { postId, slug, reason, pricePoints, callbackUrl } = props;
   const [state, action, pending] = useActionState<UnlockState, FormData>(unlockPost, {});
 
   return (
@@ -44,17 +42,6 @@ export function Paywall(props: PaywallProps) {
         </>
       )}
 
-      {reason === 'NEED_VIP' && (
-        <>
-          <p className="mx-auto mt-1 max-w-md text-sm text-ink-500">
-            Nội dung độc quyền cho thành viên VIP{vipTierFree ? ` bậc ${vipTierFree} trở lên` : ''}.
-          </p>
-          <Link href="/vip" className="btn mt-4 bg-amber-500 text-white hover:bg-amber-600">
-            <Crown size={16} /> Nâng cấp VIP
-          </Link>
-        </>
-      )}
-
       {reason === 'NEED_POINTS' && (
         <>
           <p className="mx-auto mt-1 max-w-md text-sm text-ink-500">
@@ -68,27 +55,6 @@ export function Paywall(props: PaywallProps) {
             </button>
             <CouponField />
           </ActionForm>
-        </>
-      )}
-
-      {reason === 'NEED_PAYMENT' && (
-        <>
-          <p className="mx-auto mt-1 max-w-md text-sm text-ink-500">
-            Mua một lần, xem mãi mãi — <strong>{fmtVnd(priceAmount)}</strong> (trừ vào số dư).
-          </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <ActionForm action={action}>
-              <input type="hidden" name="postId" value={postId} />
-              <input type="hidden" name="slug" value={slug} />
-              <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">
-                <Wallet size={16} /> {pending ? 'Đang xử lý…' : `Mua với ${fmtVnd(priceAmount)}`}
-              </button>
-              <CouponField />
-            </ActionForm>
-            <Link href={`/user/balance?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="btn-outline">
-              Nạp thêm
-            </Link>
-          </div>
         </>
       )}
 

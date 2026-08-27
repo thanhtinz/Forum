@@ -4,22 +4,16 @@ import { useState, useTransition, useEffect } from 'react';
 import { useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, Eye, EyeOff, TicketPercent } from 'lucide-react';
 import { saveCoupon, toggleCoupon, deleteCoupon, type CouponState } from '@/app/admin/actions';
-import { fmtVnd } from '@/lib/utils';
 import { ActionForm } from '@/components/ActionForm';
 
 export interface CouponRow {
   id: string; code: string; name: string;
   type: 'FIXED' | 'PERCENT'; value: number;
   minAmount: number | null; maxDiscount: number | null;
-  appliesTo: string | null;
   totalQuantity: number | null; usedCount: number; perUserLimit: number;
   startsAt: string | null; endsAt: string | null; active: boolean;
   claimCount: number;
 }
-
-const APPLIES_LABEL: Record<string, string> = {
-  '': 'Mọi loại đơn', CONTENT: 'Mua nội dung', VIP: 'Mua VIP', TOPUP: 'Nạp tiền', POINTS: 'Mua điểm',
-};
 
 export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
   const [editing, setEditing] = useState<CouponRow | null>(null);
@@ -45,7 +39,7 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
 function CouponRowView({ coupon: c, onEdit }: { coupon: CouponRow; onEdit: () => void }) {
   const [pending, start] = useTransition();
   const used = c.claimCount > 0;
-  const value = c.type === 'PERCENT' ? `-${c.value}%` : `-${fmtVnd(c.value)}`;
+  const value = c.type === 'PERCENT' ? `-${c.value}%` : `-${c.value} điểm`;
   const quota = c.totalQuantity != null ? `${c.usedCount}/${c.totalQuantity} lượt` : `${c.usedCount} lượt`;
   const period = [
     c.startsAt ? `từ ${fmtShort(c.startsAt)}` : null,
@@ -65,9 +59,9 @@ function CouponRowView({ coupon: c, onEdit }: { coupon: CouponRow; onEdit: () =>
           <span className="truncate text-sm text-ink-600 dark:text-ink-300">{c.name}</span>
         </div>
         <p className="mt-0.5 truncate text-xs text-ink-400">
-          {APPLIES_LABEL[c.appliesTo ?? ''] ?? c.appliesTo} · {quota} · tối đa {c.perUserLimit}/người
-          {c.minAmount ? ` · đơn từ ${fmtVnd(c.minAmount)}` : ''}
-          {c.maxDiscount ? ` · giảm tối đa ${fmtVnd(c.maxDiscount)}` : ''}
+          {quota} · tối đa {c.perUserLimit}/người
+          {c.minAmount ? ` · từ ${c.minAmount} điểm` : ''}
+          {c.maxDiscount ? ` · giảm tối đa ${c.maxDiscount} điểm` : ''}
           {period ? ` · ${period}` : ''}
         </p>
       </div>
@@ -105,22 +99,17 @@ function CouponForm({ initial, onDone }: { initial: CouponRow | null; onDone: ()
           <input name="code" required defaultValue={initial?.code} className="input uppercase" placeholder="TET2026" /></label>
         <label className="block"><span className="mb-1 block text-sm font-medium">Tên chương trình</span>
           <input name="name" required defaultValue={initial?.name} className="input" placeholder="Khuyến mãi Tết" /></label>
-        <label className="block"><span className="mb-1 block text-sm font-medium">Áp dụng cho</span>
-          <select name="appliesTo" defaultValue={initial?.appliesTo ?? ''} className="input">
-            {Object.entries(APPLIES_LABEL).map(([v, label]) => <option key={v} value={v}>{label}</option>)}
-          </select></label>
-
         <label className="block"><span className="mb-1 block text-sm font-medium">Kiểu giảm</span>
           <select name="type" value={type} onChange={(e) => setType(e.target.value as 'FIXED' | 'PERCENT')} className="input">
-            <option value="FIXED">Số tiền cố định (₫)</option>
+            <option value="FIXED">Số điểm cố định</option>
             <option value="PERCENT">Phần trăm (%)</option>
           </select></label>
-        <label className="block"><span className="mb-1 block text-sm font-medium">{type === 'PERCENT' ? 'Giảm (%)' : 'Giảm (₫)'}</span>
+        <label className="block"><span className="mb-1 block text-sm font-medium">{type === 'PERCENT' ? 'Giảm (%)' : 'Giảm (điểm)'}</span>
           <input name="value" type="number" min={1} required defaultValue={initial?.value} className="input" /></label>
-        <label className="block"><span className="mb-1 block text-sm font-medium">Giảm tối đa (₫)</span>
+        <label className="block"><span className="mb-1 block text-sm font-medium">Giảm tối đa (điểm)</span>
           <input name="maxDiscount" type="number" min={0} defaultValue={initial?.maxDiscount ?? ''} className="input" placeholder="Không giới hạn" /></label>
 
-        <label className="block"><span className="mb-1 block text-sm font-medium">Đơn tối thiểu (₫)</span>
+        <label className="block"><span className="mb-1 block text-sm font-medium">Giá tối thiểu (điểm)</span>
           <input name="minAmount" type="number" min={0} defaultValue={initial?.minAmount ?? ''} className="input" placeholder="Không yêu cầu" /></label>
         <label className="block"><span className="mb-1 block text-sm font-medium">Tổng lượt phát hành</span>
           <input name="totalQuantity" type="number" min={1} defaultValue={initial?.totalQuantity ?? ''} className="input" placeholder="Không giới hạn" /></label>

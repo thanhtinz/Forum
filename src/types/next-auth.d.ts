@@ -10,9 +10,6 @@ declare module 'next-auth' {
       points?: number;
       balance?: number;
       level?: number;
-      vipTier?: number | null;
-      vipExpiresAt?: Date | null;
-      vipPermanent?: boolean;
     } & DefaultSession['user'];
   }
 }

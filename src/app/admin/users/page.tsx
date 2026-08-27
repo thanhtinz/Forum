@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { Search } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { cn, fmtCount, fmtVnd } from '@/lib/utils';
+import { cn, fmtCount } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { UserRowActions } from '@/components/admin/UserRowActions';
 
@@ -37,7 +37,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      select: { id: true, name: true, username: true, email: true, image: true, role: true, status: true, points: true, balance: true, createdAt: true },
+      select: { id: true, name: true, username: true, email: true, image: true, role: true, status: true, points: true, createdAt: true },
     }),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -92,8 +92,6 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                   <span className="truncate">{u.email ?? `@${u.username}`}</span>
                   <span>·</span>
                   <span>{fmtCount(u.points)} điểm</span>
-                  <span>·</span>
-                  <span>{fmtVnd(u.balance)}</span>
                   <span className="hidden sm:inline">·</span>
                   <span className="hidden sm:inline">{format(u.createdAt, 'dd/MM/yyyy')}</span>
                 </div>

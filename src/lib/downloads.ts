@@ -1,25 +1,14 @@
 import { db } from './db';
-import { isVipActive } from './access';
 
 export interface DownloadQuotaUser {
   level: number;
-  vipTier: number | null;
-  vipExpiresAt: Date | null;
-  vipPermanent: boolean;
 }
 
 /**
- * Giới hạn số lượt tải mỗi ngày theo cấp độ / hạng VIP.
- * VIP luôn được ưu tiên hơn cấp độ thường. `Infinity` = không giới hạn.
+ * Giới hạn số lượt tải mỗi ngày theo cấp độ.
+ * Cấp càng cao tải càng nhiều — thay cho hạng VIP đã bỏ.
  */
 export function dailyDownloadLimit(user: DownloadQuotaUser): number {
-  if (isVipActive(user)) {
-    const tier = user.vipTier ?? 1;
-    if (tier >= 3) return Infinity;
-    if (tier === 2) return 100;
-    return 40; // VIP tier 1
-  }
-  // Theo cấp độ thường
   if (user.level >= 10) return 30;
   if (user.level >= 5) return 20;
   if (user.level >= 2) return 10;

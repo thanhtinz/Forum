@@ -110,6 +110,27 @@ export default async function run(check) {
       (await member.locator('main >> text=/\\d+ điểm/').count()) === 0);
 
     const row = (page, ten) => page.locator('li').filter({ hasText: ten });
+
+    // ── Xem trước trước khi mua ──────────────────────────────────────────
+    check('chưa bấm thì chưa dựng hộp thoại',
+      (await member.locator('[role="dialog"]').count()) === 0);
+    await member.locator('button[title="Xem trước Nick đỏ kiểm thử"]').click();
+    await member.waitForTimeout(500);
+    const dlg = member.locator('[role="dialog"]');
+    check('bấm ô hàng mở được xem trước', (await dlg.count()) > 0);
+    // Xem trước phải dựng trên hồ sơ THẬT của người xem, không phải hình mẫu.
+    check('xem trước dùng tên thật của người xem', (await dlg.innerText()).includes('Minh Dev'));
+    check('xem trước tô đúng màu của món',
+      (await dlg.locator('[style*="rgb(225, 29, 72)"], [style*="#e11d48"]').count()) > 0);
+    check('hộp thoại khoá cuộn nền',
+      (await member.evaluate(() => document.body.style.overflow)) === 'hidden');
+
+    await member.keyboard.press('Escape');
+    await member.waitForTimeout(400);
+    check('Esc đóng được hộp thoại', (await member.locator('[role="dialog"]').count()) === 0);
+    check('đóng xong trả lại cuộn nền',
+      (await member.evaluate(() => document.body.style.overflow)) !== 'hidden');
+
     await row(member, 'Nick đỏ kiểm thử').locator('button:has-text("Mua")').click();
     await member.waitForTimeout(2500);
     const afterBuy = await db.user.findUnique({ where: { id: minh.id }, select: { points: true } });

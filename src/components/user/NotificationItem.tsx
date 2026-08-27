@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { useTransition } from 'react';
-import { MessageSquare, ShoppingBag, Coins, Heart, UserPlus, Award, Bell, BookOpen, UserCheck } from 'lucide-react';
+import { MessageSquare, ShoppingBag, Coins, Heart, UserPlus, Award, Bell, BookOpen, UserCheck, Scale } from 'lucide-react';
 import { markRead } from '@/app/(site)/user/notifications/actions';
 import { cn } from '@/lib/utils';
 
 const ICONS: Record<string, React.ReactNode> = {
   COMMENT: <MessageSquare size={16} />, REPLY: <MessageSquare size={16} />, MENTION: <MessageSquare size={16} />,
   LIKE: <Heart size={16} />, FOLLOW: <UserPlus size={16} />, ORDER: <ShoppingBag size={16} />,
-  MEDAL: <Award size={16} />, DONATE: <Coins size={16} />, GUESTBOOK: <BookOpen size={16} />, FRIEND: <UserCheck size={16} />,
+  MEDAL: <Award size={16} />, DONATE: <Coins size={16} />, GUESTBOOK: <BookOpen size={16} />, FRIEND: <UserCheck size={16} />, KARMA: <Scale size={16} />,
   SYSTEM: <Bell size={16} />,
 };
 

@@ -39,6 +39,15 @@ model User {
   // Kinh tế — chỉ còn MỘT loại: điểm, kiếm được bằng hoạt động trên diễn đàn.
   points Int @default(0)
 
+  /**
+   * Uy tín — tổng các lần thành viên khác chấm "+" và "−" cho người này.
+   *
+   * Cộng dồn sẵn ở đây thay vì đếm lại bảng KarmaVote mỗi lần in tên: con số
+   * này hiện cạnh nick ở MỌI bài trong chủ đề, đếm lại thì mỗi trang chủ đề
+   * thêm vài chục lượt gom nhóm chỉ để ra một số nhỏ.
+   */
+  karma Int @default(0)
+
   // Cấp độ / kinh nghiệm
   exp   Int @default(0)
   level Int @default(1)
@@ -112,6 +121,9 @@ model User {
 
   albums PhotoAlbum[]
   photos Photo[]
+
+  karmaGiven    KarmaVote[] @relation("KarmaFrom")
+  karmaReceived KarmaVote[] @relation("KarmaTo")
 
   // Cửa hàng: đồ đã mua, và đồ đang đeo (mỗi loại đeo được một món).
   shopPurchases ShopPurchase[]
@@ -904,6 +916,8 @@ enum NotificationType {
   GUESTBOOK
   /// Lời mời kết bạn, hoặc lời mời của mình được đồng ý.
   FRIEND
+  /// Được người khác chấm uy tín (+ hoặc −).
+  KARMA
 }
 
 // ============================================================
@@ -1779,6 +1793,31 @@ enum FriendStatus {
  * tấm chỉ cho bạn bè xem. Đây cũng là chỗ đầu tiên dùng tới quan hệ kết bạn:
  * mức "chỉ bạn bè" chỉ có nghĩa khi kết bạn là hai chiều.
  */
+/**
+ * Một lần chấm uy tín: ai chấm cho ai, cộng hay trừ, vì lý do gì.
+ *
+ * Giữ từng lần chấm chứ không chỉ giữ con số tổng, vì trang uy tín của forum
+ * ngày trước là một cuốn sổ công khai: ai chấm mình, chấm vì việc gì, ngày
+ * nào. Không có sổ thì con số tổng chẳng khác gì lời đồn.
+ */
+model KarmaVote {
+  id     String @id @default(cuid())
+  fromId String
+  from   User   @relation("KarmaFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  toId   String
+  to     User   @relation("KarmaTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  /// Chỉ nhận +1 hoặc −1 — không có chuyện chấm một phát mười điểm uy tín.
+  value  Int
+  /// Bắt buộc ghi lý do: uy tín không lý do thì chỉ là chỗ để dìm nhau.
+  reason String
+
+  createdAt DateTime @default(now())
+
+  @@index([toId, createdAt])
+  @@index([fromId, createdAt])
+}
+
 model PhotoAlbum {
   id String @id @default(cuid())
 

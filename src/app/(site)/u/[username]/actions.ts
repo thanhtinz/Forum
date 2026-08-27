@@ -11,6 +11,7 @@ import {
   canRemoveEntry, checkGuestbookRate, isStaff,
   GUESTBOOK_MAX_LEN, GUESTBOOK_REPLY_MAX_LEN,
 } from '@/lib/guestbook';
+import { checkKarmaPermission, KARMA_REASON_MAX, KARMA_REASON_MIN } from '@/lib/karma';
 
 export interface GuestbookState {
   ok?: boolean;
@@ -182,5 +183,72 @@ export async function restoreGuestbookEntry(id: string): Promise<GuestbookState>
   });
 
   revalidatePath(`/u/${entry.owner.username}`);
+  return { ok: true };
+}
+
+// ─────────────────────────── Uy tín ───────────────────────────
+
+export interface KarmaActionState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Chấm một nấc uy tín cho người khác.
+ *
+ * `value` chỉ nhận +1 hoặc −1; mọi con số khác coi như hỏng biểu mẫu chứ không
+ * làm tròn về 1, vì "chấm 50 điểm một phát" là đúng thứ luật uy tín muốn chặn.
+ */
+export async function giveKarma(targetId: string, value: number, reason: string): Promise<KarmaActionState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập.' };
+
+  // Ai đang bị khoá mồm ở diễn đàn thì cũng không mượn ô lý do để nói tiếp.
+  const banned = await getActiveBan(userId, 'COMMENT');
+  if (banned) return { error: banMessage(banned, 'chấm uy tín') };
+
+  const nac = value > 0 ? 1 : value < 0 ? -1 : 0;
+  if (nac === 0) return { error: 'Chỉ chấm được một nấc cộng hoặc một nấc trừ.' };
+
+  const note = reason.trim().replace(/\s+/g, ' ');
+  if (note.length < KARMA_REASON_MIN) return { error: 'Hãy ghi lý do chấm uy tín.' };
+  if (note.length > KARMA_REASON_MAX) return { error: `Lý do tối đa ${KARMA_REASON_MAX} ký tự.` };
+
+  const target = await db.user.findUnique({
+    where: { id: targetId },
+    select: { id: true, username: true, status: true },
+  });
+  if (!target || target.status !== 'ACTIVE') return { error: 'Không tìm thấy người này.' };
+
+  if (await isBlockedBetween(userId, targetId)) return { error: BLOCK_MESSAGE };
+
+  const allowed = await checkKarmaPermission(userId, targetId);
+  if (!allowed.can) return { error: allowed.reason };
+
+  await db.$transaction(async (tx) => {
+    await tx.karmaVote.create({
+      data: { fromId: userId, toId: targetId, value: nac, reason: note },
+      select: { id: true },
+    });
+    // Tổng uy tín cộng dồn trên User; cộng trong cùng transaction với hàng vừa
+    // ghi để sổ và con số không bao giờ lệch nhau.
+    await tx.user.update({
+      where: { id: targetId },
+      data: { karma: { increment: nac } },
+      select: { id: true },
+    });
+    await notify({
+      userId: targetId,
+      type: 'KARMA',
+      title: nac > 0 ? 'Có người tăng uy tín cho bạn' : 'Có người giảm uy tín của bạn',
+      content: note,
+      link: `/u/${target.username}/uy-tin`,
+      actorId: userId,
+    }, tx);
+  });
+
+  revalidatePath(`/u/${target.username}`);
+  revalidatePath(`/u/${target.username}/uy-tin`);
   return { ok: true };
 }

@@ -24,6 +24,9 @@ model User {
   image         String?
   cover         String?
   bio           String?   @db.Text
+  /// Tâm trạng — dòng chữ ngắn hiện cạnh tên, đổi xoành xoạch. Mod "tâm
+  /// trạng" là thứ forum wap Việt nào quãng 2010 cũng gắn thêm.
+  mood          String?
   /**
    * Chữ ký — dán dưới mỗi bài viết của người này ở diễn đàn.
    * Forum Việt thời 2010 nhà nào cũng có; nhận BBCode như nội dung bài.
@@ -615,6 +618,10 @@ enum ReactionType {
   LIKE
   DISLIKE
   HELPFUL
+  /// Nút "Cảm ơn" của forum Việt ngày xưa — khác Thích ở chỗ nó công khai
+  /// danh sách người đã cảm ơn ngay dưới bài, và một người vẫn vừa thích
+  /// vừa cảm ơn được (ràng buộc duy nhất đã tính cả `type`).
+  THANKS
 }
 
 model Favorite {

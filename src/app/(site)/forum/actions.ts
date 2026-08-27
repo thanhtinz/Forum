@@ -17,6 +17,7 @@ import { readPollForm, isPollClosed } from '@/lib/poll';
 import { readBounty, BOUNTY_MIN } from '@/lib/bounty';
 import { checkForumPostAccess } from '@/lib/forum-post-access';
 import { InsufficientPointsError } from '@/lib/points';
+import { THANKS_NAMES_SHOWN, type ThanksState } from '@/lib/thanks';
 
 const POINTS_PER_THREAD = 10;
 const POINTS_PER_REPLY = 2;
@@ -330,6 +331,75 @@ export async function toggleReplyLike(replyId: string): Promise<ToggleState> {
     return tx.reply.update({ where: { id: replyId }, data: { likeCount: { increment: 1 } }, select: { likeCount: true } });
   });
   return { active: !existing, count: Math.max(0, r.likeCount) };
+}
+
+// ─────────────────────────── Cảm ơn bài viết ───────────────────────────
+
+/**
+ * Cảm ơn / bỏ cảm ơn một bài trong chủ đề.
+ *
+ * Khác nút Thích ở chỗ danh sách người cảm ơn hiện công khai ngay dưới bài —
+ * đúng nếp forum Việt ngày xưa, cảm ơn là để người ta thấy mình cảm ơn. Một
+ * người vẫn vừa thích vừa cảm ơn được vì ràng buộc duy nhất có tính cả `type`.
+ */
+export async function toggleThanks(target: { threadId?: string; replyId?: string }): Promise<ThanksState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { active: false, people: [], count: 0, error: 'Bạn cần đăng nhập.' };
+
+  const threadId = target.threadId ?? null;
+  const replyId = target.replyId ?? null;
+  if (!threadId === !replyId) return { active: false, people: [], count: 0, error: 'Thiếu thông tin bài viết.' };
+
+  // Không cảm ơn chính mình — forum ngày xưa cũng chặn đúng chỗ này.
+  const owner = threadId
+    ? await db.thread.findUnique({ where: { id: threadId }, select: { authorId: true, title: true, forum: { select: { slug: true } } } })
+    : await db.reply.findUnique({ where: { id: replyId! }, select: { authorId: true, threadId: true, thread: { select: { title: true, forum: { select: { slug: true } } } } } });
+  if (!owner) return { active: false, people: [], count: 0, error: 'Không tìm thấy bài viết.' };
+  if (owner.authorId === userId) {
+    return { ...(await readThanks(target, userId)), error: 'Không cảm ơn bài của chính mình được.' };
+  }
+
+  const where = { userId, threadId, replyId, type: 'THANKS' as const };
+  const existing = await db.reaction.findFirst({ where, select: { id: true } });
+  if (existing) {
+    await db.reaction.delete({ where: { id: existing.id } });
+  } else {
+    await db.reaction.create({ data: where, select: { id: true } });
+    const link = threadId
+      ? `/forum/${(owner as { forum: { slug: string } }).forum.slug}/${threadId}`
+      : `/forum/${(owner as { thread: { forum: { slug: string } } }).thread.forum.slug}/${(owner as { threadId: string }).threadId}`;
+    const title = threadId
+      ? (owner as { title: string }).title
+      : (owner as { thread: { title: string } }).thread.title;
+    await notify(
+      { userId: owner.authorId, type: 'LIKE', title: 'Có người cảm ơn bài của bạn', content: title, link, actorId: userId },
+    ).catch(() => {});
+  }
+
+  return readThanks(target, userId);
+}
+
+/** Đọc lại trạng thái cảm ơn của một bài. */
+async function readThanks(target: { threadId?: string; replyId?: string }, userId: string | null): Promise<ThanksState> {
+  const where = { threadId: target.threadId ?? null, replyId: target.replyId ?? null, type: 'THANKS' as const };
+  const [rows, count, mine] = await Promise.all([
+    db.reaction.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: THANKS_NAMES_SHOWN,
+      select: { user: { select: { name: true, username: true } } },
+    }),
+    db.reaction.count({ where }),
+    // Hỏi riêng chứ không dò trong danh sách tên: người cảm ơn từ lâu đã rơi
+    // ra ngoài ngần ấy cái tên nhưng vẫn đang ở trạng thái "đã cảm ơn".
+    userId ? db.reaction.count({ where: { ...where, userId } }) : Promise.resolve(0),
+  ]);
+  return {
+    active: mine > 0,
+    people: rows.map((r) => r.user.name ?? r.user.username ?? 'Ẩn danh'),
+    count,
+  };
 }
 
 // ─────────────────────── Chọn câu trả lời (lời giải) ───────────────────────

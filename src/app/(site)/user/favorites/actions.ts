@@ -33,6 +33,8 @@ export async function moveFavorite(favoriteId: string, rawFolder: string): Promi
       where: { userId },
       select: { folder: true },
       distinct: ['folder'],
+      // Chỉ cần biết đã chạm trần thư mục hay chưa, nên lấy vừa đủ để so.
+      take: FOLDER_LIMIT + 1,
     });
     const names = new Set(existing.map((e) => e.folder));
     if (!names.has(folder) && names.size >= FOLDER_LIMIT) {

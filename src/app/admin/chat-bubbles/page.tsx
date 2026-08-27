@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { ChatBubbleManager, type ChatBubbleRow } from '@/components/admin/ChatBubbleManager';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Bong bóng chat' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminChatBubblesPage() {
-  const rows = await db.chatBubbleStyle.findMany({
+  const rows = await db.chatBubbleStyle.findMany({ take: CONFIG_LIST_CAP,
     orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     select: {
       id: true, name: true, decor: true, colorMine: true, colorTheirs: true,

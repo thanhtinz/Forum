@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { Library } from 'lucide-react';
 import { db } from '@/lib/db';
 import { assetUrl } from '@/lib/game';
+import { Pagination } from '@/components/Pagination';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,11 +12,24 @@ export const metadata: Metadata = {
   description: 'Các tuyển tập game Java ME do biên tập viên Nova chọn.',
 };
 
-export default async function CollectionsPage() {
-  const collections = await db.gameCollection.findMany({
-    orderBy: [{ featured: 'desc' }, { order: 'asc' }],
-    include: { _count: { select: { games: true } } },
-  });
+const PAGE_SIZE = 24;
+
+export default async function CollectionsPage({ searchParams }: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const { page: pageRaw } = await searchParams;
+  const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
+
+  const [total, collections] = await Promise.all([
+    db.gameCollection.count(),
+    db.gameCollection.findMany({
+      orderBy: [{ featured: 'desc' }, { order: 'asc' }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: { _count: { select: { games: true } } },
+    }),
+  ]);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="space-y-5">
@@ -43,6 +57,8 @@ export default async function CollectionsPage() {
           ))}
         </div>
       )}
+
+      <Pagination page={page} totalPages={totalPages} basePath="/games/collections" />
     </div>
   );
 }

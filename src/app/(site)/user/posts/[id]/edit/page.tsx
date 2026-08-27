@@ -8,6 +8,7 @@ import { fromParagraphs } from '@/lib/post-form';
 import { WriteForm, type CatOption, type PostDraft } from '@/components/write/WriteForm';
 import { updatePost } from '../../actions';
 import { canSellForMoney } from '@/lib/sell-permission';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Sửa bài viết' };
 export const dynamic = 'force-dynamic';
@@ -31,7 +32,7 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
   const isStaff = role === 'ADMIN' || role === 'MODERATOR';
   if (post.authorId !== session.user.id && !isStaff) redirect('/user/posts');
 
-  const cats = await db.category.findMany({
+  const cats = await db.category.findMany({ take: CONFIG_LIST_CAP,
     orderBy: [{ order: 'asc' }],
     select: { slug: true, name: true, color: true, parent: { select: { name: true } } },
   });

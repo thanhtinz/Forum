@@ -6,23 +6,37 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { fmtAgo } from '@/lib/utils';
 import { BlockButton } from '@/components/user/BlockButton';
+import { Pagination } from '@/components/Pagination';
 
 export const metadata: Metadata = { title: 'Đã chặn' };
 export const dynamic = 'force-dynamic';
 
-export default async function BlockedPage() {
+const PAGE_SIZE = 20;
+
+export default async function BlockedPage({ searchParams }: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const session = await auth();
   const me = session?.user?.id;
   if (!me) redirect('/login');
 
-  const blocks = await db.block.findMany({
+  const { page: pageRaw } = await searchParams;
+  const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
+
+  const [total, blocks] = await Promise.all([
+    db.block.count({ where: { blockerId: me } }),
+    db.block.findMany({
     where: { blockerId: me },
     orderBy: { createdAt: 'desc' },
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
     select: {
       id: true, createdAt: true,
       blocked: { select: { id: true, name: true, username: true, image: true } },
     },
-  });
+    }),
+  ]);
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="space-y-4">
@@ -63,6 +77,8 @@ export default async function BlockedPage() {
           );
         })}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} basePath="/user/blocked" />
     </div>
   );
 }

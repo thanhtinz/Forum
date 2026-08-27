@@ -1,5 +1,6 @@
 import { db } from './db';
 import { notify } from './notify';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 /**
  * Điều kiện trao tự động mà checkAndAwardMedals biết xử lý.
@@ -31,7 +32,7 @@ export async function checkAndAwardMedals(userId: string): Promise<string[]> {
   });
   if (!user) return [];
 
-  const medals = await db.medal.findMany({
+  const medals = await db.medal.findMany({ take: CONFIG_LIST_CAP,
     where: { autoGrant: true, conditionType: { not: null }, users: { none: { userId } } },
     select: { id: true, name: true, slug: true, conditionType: true, conditionValue: true },
   });

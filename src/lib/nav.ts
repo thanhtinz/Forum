@@ -1,4 +1,5 @@
 import { db } from './db';
+import { CONFIG_LIST_CAP } from './list-cap';
 
 export const NAV_GROUPS = [
   { value: 'header', label: 'Menu trên đầu trang' },
@@ -36,7 +37,7 @@ export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: 
 /** Lấy menu theo nhóm, gom sẵn mục con vào mục cha. */
 export async function getNavItems(group: NavGroup): Promise<NavItem[]> {
   const rows = await db.navLink
-    .findMany({ where: { group }, orderBy: [{ order: 'asc' }, { label: 'asc' }], select: { id: true, label: true, url: true, icon: true, parentId: true } })
+    .findMany({ where: { group }, take: CONFIG_LIST_CAP, orderBy: [{ order: 'asc' }, { label: 'asc' }], select: { id: true, label: true, url: true, icon: true, parentId: true } })
     .catch(() => []);
 
   if (rows.length === 0) {

@@ -11,6 +11,8 @@ import { Pagination } from '@/components/Pagination';
 export const metadata: Metadata = { title: 'Bài viết từ người theo dõi' };
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 12;
+/** Hàng avatar ở đầu trang chỉ khoe ngần này người. */
+const AVATARS_SHOWN = 20;
 
 export default async function FollowingFeedPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const session = await auth();
@@ -19,21 +21,28 @@ export default async function FollowingFeedPage({ searchParams }: { searchParams
   const { page: pageRaw } = await searchParams;
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
 
-  const following = await db.follow.findMany({ where: { followerId: userId }, select: { followingId: true } });
-  const authorIds = following.map((f) => f.followingId);
+  // Lọc bài bằng quan hệ chứ không kéo danh sách người đang theo dõi về rồi
+  // nhét vào `in:` — người theo dõi vài nghìn tác giả sẽ dựng ra một câu truy
+  // vấn dài vài nghìn id, và số đó chỉ có tăng.
+  const where = {
+    status: 'PUBLISHED' as const,
+    author: { followers: { some: { followerId: userId } } },
+  };
 
-  // Danh sách tác giả đang theo dõi (để hiển thị hàng avatar)
-  const authors = authorIds.length
-    ? await db.user.findMany({ where: { id: { in: authorIds } }, select: { username: true, name: true, image: true }, take: 20 })
-    : [];
-
-  const where = { authorId: { in: authorIds }, status: 'PUBLISHED' as const };
-  const [total, posts] = authorIds.length
-    ? await Promise.all([
-        db.post.count({ where }),
-        db.post.findMany({ where, orderBy: { publishedAt: 'desc' }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect }),
-      ])
-    : [0, []];
+  const [followCount, authors, total, posts] = await Promise.all([
+    db.follow.count({ where: { followerId: userId } }),
+    // Hàng avatar chỉ khoe vài người đầu, không phải cả danh sách.
+    db.user.findMany({
+      where: { followers: { some: { followerId: userId } } },
+      select: { username: true, name: true, image: true },
+      take: AVATARS_SHOWN,
+    }),
+    db.post.count({ where }),
+    db.post.findMany({
+      where, orderBy: { publishedAt: 'desc' },
+      skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect,
+    }),
+  ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
@@ -43,7 +52,7 @@ export default async function FollowingFeedPage({ searchParams }: { searchParams
       <div className="mb-4 flex items-center gap-2">
         <Users size={22} className="text-brand-500" />
         <h1 className="text-xl font-bold text-ink-900 dark:text-white">Đang theo dõi</h1>
-        <span className="text-sm text-ink-500">({authorIds.length} người)</span>
+        <span className="text-sm text-ink-500">({followCount} người)</span>
       </div>
 
       {authors.length > 0 && (
@@ -60,7 +69,7 @@ export default async function FollowingFeedPage({ searchParams }: { searchParams
         </div>
       )}
 
-      {authorIds.length === 0 ? (
+      {followCount === 0 ? (
         <div className="card flex flex-col items-center gap-2 p-12 text-center text-ink-400">
           <UserPlus size={30} />
           <p>Bạn chưa theo dõi ai. Ghé thăm trang cá nhân của tác giả và nhấn “Theo dõi” để xem bài viết mới của họ tại đây.</p>

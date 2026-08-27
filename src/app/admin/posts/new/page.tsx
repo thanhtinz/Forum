@@ -4,6 +4,7 @@ import { ArrowLeft, ShoppingBag } from 'lucide-react';
 import { db } from '@/lib/db';
 import { requireSuperAdmin } from '@/lib/admin';
 import { WriteForm, type CatOption } from '@/components/write/WriteForm';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Đăng hàng cửa hàng' };
 export const dynamic = 'force-dynamic';
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export default async function AdminNewPostPage() {
   await requireSuperAdmin();
 
-  const cats = await db.category.findMany({
+  const cats = await db.category.findMany({ take: CONFIG_LIST_CAP,
     orderBy: [{ order: 'asc' }],
     select: { slug: true, name: true, color: true, parent: { select: { name: true } } },
   });

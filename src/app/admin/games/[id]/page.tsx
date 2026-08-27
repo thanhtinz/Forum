@@ -11,6 +11,7 @@ import { fmtBytes, fmtCount } from '@/lib/utils';
 import { GameEditForm } from '@/components/admin/GameEditForm';
 import { FileForm, ImageForm, VersionForm } from '@/components/admin/GameSubForms';
 import { deleteFile, deleteGame, deleteImage, deleteVersion, quarantineFile, setLatestVersion } from '../actions';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sửa game', robots: { index: false } };
@@ -31,9 +32,9 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
         images: { orderBy: { sortOrder: 'asc' } },
       },
     }),
-    db.gameGenre.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
-    db.gamePlatform.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
-    db.gameResolution.findMany({ orderBy: [{ order: 'asc' }, { width: 'asc' }], select: { id: true, label: true } }),
+    db.gameGenre.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, select: { id: true, name: true } }),
+    db.gamePlatform.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, select: { id: true, name: true } }),
+    db.gameResolution.findMany({ take: CONFIG_LIST_CAP, orderBy: [{ order: 'asc' }, { width: 'asc' }], select: { id: true, label: true } }),
   ]);
   if (!game) notFound();
 

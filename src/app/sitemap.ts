@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { db } from '@/lib/db';
 import { SITE_URL } from '@/lib/site';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const revalidate = 3600; // làm mới mỗi giờ
 
@@ -22,13 +23,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const [posts, categories, tags, forums, threads, games, genres, collections] = await Promise.all([
     safe(db.post.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
-    safe(db.category.findMany({ select: { slug: true } })),
+    safe(db.category.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
     safe(db.tag.findMany({ select: { slug: true }, take: 1000 })),
-    safe(db.forum.findMany({ select: { slug: true } })),
+    safe(db.forum.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
     safe(db.thread.findMany({ select: { id: true, updatedAt: true, forum: { select: { slug: true } } }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
     safe(db.game.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
-    safe(db.gameGenre.findMany({ select: { slug: true } })),
-    safe(db.gameCollection.findMany({ select: { slug: true } })),
+    safe(db.gameGenre.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
+    safe(db.gameCollection.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
   ]);
 
   const staticPages: MetadataRoute.Sitemap = [

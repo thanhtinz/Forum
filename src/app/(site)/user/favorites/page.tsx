@@ -7,7 +7,7 @@ import { auth } from '@/lib/auth';
 import { cn, fmtCount } from '@/lib/utils';
 import { postCardSelect, toCardData } from '@/lib/post-card';
 import { gameCardSelect, toGameCard } from '@/lib/game';
-import { DEFAULT_FOLDER, folderLabel } from '@/lib/favorite-folder';
+import { DEFAULT_FOLDER, FOLDER_LIMIT, folderLabel } from '@/lib/favorite-folder';
 import { PostGrid } from '@/components/PostGrid';
 import { GameGrid } from '@/components/game/GameGrid';
 import { Pagination } from '@/components/Pagination';
@@ -45,6 +45,8 @@ export default async function FavoritesPage({ searchParams }: {
     select: { folder: true },
     distinct: ['folder'],
     orderBy: { folder: 'asc' },
+    // Số thư mục đã bị chặn ở FOLDER_LIMIT lúc tạo; lấy dư một chỗ cho chắc.
+    take: FOLDER_LIMIT + 1,
   });
   const folders = folderRows.map((f) => f.folder);
 

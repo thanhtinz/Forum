@@ -12,6 +12,7 @@ import { NAV_GROUPS, NAV_DEFAULTS, isSafeNavUrl } from '@/lib/nav';
 import { SITE_SETTING_KEY } from '@/lib/site';
 import { isBanScope, banExpiry } from '@/lib/ban';
 import { logAdmin, pruneAdminLogs } from '@/lib/audit';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 const POST_STATUS_LABEL: Record<string, string> = {
   PUBLISHED: 'đã đăng', PENDING: 'chờ duyệt', ARCHIVED: 'đã ẩn', DRAFT: 'bản nháp', HIDDEN: 'đã ẩn',
@@ -882,7 +883,7 @@ export async function restoreDefaultNav(group: string) {
   const admin = await requireAdmin();
   if (!NAV_GROUPS.some((g) => g.value === group)) return;
 
-  const existing = await db.navLink.findMany({ where: { group }, select: { url: true, order: true } });
+  const existing = await db.navLink.findMany({ take: CONFIG_LIST_CAP, where: { group }, select: { url: true, order: true } });
   const have = new Set(existing.map((e) => e.url));
   const missing = NAV_DEFAULTS[group as 'header' | 'footer'].filter((d) => !have.has(d.url));
   if (missing.length === 0) return;

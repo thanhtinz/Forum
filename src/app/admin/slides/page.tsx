@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { SlideManager, type SlideRow } from '@/components/admin/AppearanceManager';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Slide trang chủ' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminSlidesPage() {
-  const slides = await db.slide.findMany({
+  const slides = await db.slide.findMany({ take: CONFIG_LIST_CAP,
     orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     select: { id: true, title: true, subtitle: true, image: true, link: true, order: true, active: true },
   });

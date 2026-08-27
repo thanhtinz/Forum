@@ -8,6 +8,7 @@ import { MediaPicker } from '@/components/forum/MediaPicker';
 import { ReplyContent } from '@/components/forum/ReplyContent';
 import { sendShout, removeShout, type ShoutState } from '@/app/(site)/chat/actions';
 import { SHOUT_MAX_LEN } from '@/lib/shout-const';
+import { nickClass } from '@/lib/utils';
 
 interface Shout {
   id: string;
@@ -29,12 +30,6 @@ function clock(iso: string): string {
 }
 
 /** Màu tên theo vai trò — ban quản trị đỏ, điều hành xanh lá, còn lại xanh dương. */
-function nameClass(role: string): string {
-  if (role === 'ADMIN') return 'text-red-600 dark:text-red-400';
-  if (role === 'MODERATOR') return 'text-emerald-600 dark:text-emerald-400';
-  return 'text-brand-700 dark:text-brand-300';
-}
-
 export function ShoutRoom({ initial, initialHere, meUsername, meRole }: {
   initial: Shout[];
   initialHere: Here[];
@@ -167,7 +162,7 @@ export function ShoutRoom({ initial, initialHere, meUsername, meRole }: {
                 <span className="retro-sub shrink-0 pt-0.5 tabular-nums text-ink-400">[{clock(s.createdAt)}]</span>
 
                 <p className="min-w-0 flex-1 break-words text-sm leading-relaxed">
-                  <Link href={`/u/${s.user.username ?? ''}`} className={`font-bold hover:underline ${nameClass(s.user.role)}`}>
+                  <Link href={`/u/${s.user.username ?? ''}`} className={`font-bold hover:underline ${nickClass(s.user.role)}`}>
                     {s.user.name ?? s.user.username}
                   </Link>
                   <span className="retro-sub text-ink-400"> Lv{s.user.level}</span>

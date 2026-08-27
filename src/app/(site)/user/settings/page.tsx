@@ -16,7 +16,7 @@ export default async function SettingsPage() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { name: true, username: true, bio: true, image: true, cover: true, email: true, passwordHash: true, notifyOff: true },
+    select: { name: true, username: true, bio: true, signature: true, image: true, cover: true, email: true, passwordHash: true, notifyOff: true },
   });
   if (!user) redirect('/login');
 
@@ -31,7 +31,7 @@ export default async function SettingsPage() {
 
       <div className="space-y-4">
         <ProfileSettingsForm initial={{
-          name: user.name, username: user.username, bio: user.bio,
+          name: user.name, username: user.username, bio: user.bio, signature: user.signature,
           image: user.image, cover: user.cover, hasPassword: !!user.passwordHash,
         }} />
 

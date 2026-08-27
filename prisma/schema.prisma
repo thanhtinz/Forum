@@ -24,6 +24,11 @@ model User {
   image         String?
   cover         String?
   bio           String?   @db.Text
+  /**
+   * Chữ ký — dán dưới mỗi bài viết của người này ở diễn đàn.
+   * Forum Việt thời 2010 nhà nào cũng có; nhận BBCode như nội dung bài.
+   */
+  signature     String?   @db.Text
 
   role   Role   @default(USER)
   status UserStatus @default(ACTIVE)
@@ -92,6 +97,10 @@ model User {
 
   gameEvents  GameEvent[]
   gameRatings GameRating[]
+
+  shouts        ShoutMessage[]
+  shoutsDeleted ShoutMessage[] @relation("ShoutDeleter")
+  presence      PresenceHere[]
 
   @@index([level])
   @@index([vipTier])
@@ -1597,4 +1606,55 @@ model ChatBubbleStyle {
   createdAt DateTime @default(now())
 
   @@index([active, order])
+}
+
+// ============================================================
+// PHÒNG CHAT CHUNG — "chat tổng" kiểu forum wap ngày xưa
+// ============================================================
+
+/**
+ * Một câu nói trong phòng chat chung.
+ *
+ * Khác hẳn Message (nhắn riêng 1–1): đây là dòng chảy công khai, ai vào cũng
+ * đọc được, chỉ giữ lại một số lượng gần đây. Xoá là xoá mềm để chỗ trống
+ * trong hội thoại vẫn nhìn ra là "đã bị gỡ" chứ không lặng lẽ biến mất.
+ */
+model ShoutMessage {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+
+  /** Trả lời một câu cụ thể — giữ lại nếp "@ai đó" của phòng chat cũ. */
+  replyToId String?
+  replyTo   ShoutMessage?  @relation("ShoutReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies   ShoutMessage[] @relation("ShoutReply")
+
+  deletedAt   DateTime?
+  deletedById String?
+  deletedBy   User?     @relation("ShoutDeleter", fields: [deletedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+/**
+ * Ai đang ở trong một chủ đề / trong phòng chat ngay lúc này.
+ *
+ * Forum ngày xưa trang nào cũng có dòng "Đang xem chủ đề: A, B và 3 khách".
+ * Một hàng cho mỗi (người, chỗ); mở chỗ khác thì hàng cũ được ghi đè.
+ * `scope` là 'thread:<id>' hoặc 'chat'.
+ */
+model PresenceHere {
+  userId String
+  scope  String
+  at     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, scope])
+  @@index([scope, at])
 }

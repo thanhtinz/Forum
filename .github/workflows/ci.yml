@@ -21,6 +21,8 @@ jobs:
         run: npx tsc --noEmit
       - name: Quét truy vấn lấy trọn bản ghi
         run: node tests/run.mjs overfetch
+      - name: Quét nút và liên kết chết
+        run: node scripts/scan-dead-buttons.mjs
       - name: Dựng bản production
         run: npx next build
         env:

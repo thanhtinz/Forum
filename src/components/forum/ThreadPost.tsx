@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { CheckCircle2, CalendarDays, MessageSquare } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
+import { bbcodeToHtml } from '@/lib/bbcode';
 import { LevelBadge } from '@/components/LevelBadge';
 
 export interface PostAuthor {
@@ -15,6 +16,8 @@ export interface PostAuthor {
   levelIcon?: string | null;
   levelColor?: string | null;
   levelName?: string | null;
+  /** Chữ ký (BBCode thô) — dán dưới mọi bài của người này. */
+  signature?: string | null;
 }
 
 export function displayName(u: PostAuthor | null | undefined): string {
@@ -104,6 +107,15 @@ export function ThreadPost({ author, createdAt, index, isSolution, header, child
           <div className="p-4">
             {header}
             {children}
+
+            {/* Chữ ký: gạch chấm ngăn với nội dung, chữ nhỏ mờ — đúng nếp
+                forum ngày xưa, để không ai nhầm chữ ký với phần bài viết. */}
+            {author.signature?.trim() ? (
+              <div
+                className="retro-sub retro-rule mt-4 pt-2 text-ink-400 [&_a]:text-brand-500"
+                dangerouslySetInnerHTML={{ __html: bbcodeToHtml(author.signature) }}
+              />
+            ) : null}
           </div>
 
           {actions && <div className="border-t border-ink-100 px-4 py-2 dark:border-ink-800">{actions}</div>}

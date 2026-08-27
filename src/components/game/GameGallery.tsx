@@ -55,7 +55,10 @@ export function GameGallery({ shots }: { shots: Shot[] }) {
 
       {index !== null && (
         <div className="fixed inset-0 z-[70] grid place-items-center bg-black/85 p-4" onClick={() => setIndex(null)}>
-          <button type="button" aria-label="Đóng" className="absolute right-4 top-4 text-white/80 hover:text-white">
+          {/* Bấm ra nền cũng đóng, nhưng nút vẫn phải tự đóng được: dựa vào
+              sự kiện nổi lên thẻ cha thì nhìn vào mã không ai dám chắc. */}
+          <button type="button" aria-label="Đóng" onClick={() => setIndex(null)}
+            className="absolute right-4 top-4 text-white/80 hover:text-white">
             <X size={26} />
           </button>
           {shots.length > 1 && (

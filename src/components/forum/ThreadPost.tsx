@@ -4,6 +4,8 @@ import { CheckCircle2, CalendarDays, MessageSquare } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
 import { bbcodeToHtml } from '@/lib/bbcode';
 import { LevelBadge } from '@/components/LevelBadge';
+import { Avatar, UserName } from '@/components/user/Cosmetic';
+import { NO_COSMETICS, type Cosmetics } from '@/lib/shop-const';
 
 export interface PostAuthor {
   username: string | null;
@@ -20,6 +22,8 @@ export interface PostAuthor {
   signature?: string | null;
   /** Tâm trạng — dòng chữ ngắn người dùng tự đặt. */
   mood?: string | null;
+  /** Đồ trang trí mua ở cửa hàng: màu tên, khung avatar, huy hiệu. */
+  cosmetics?: Cosmetics;
 }
 
 export function displayName(u: PostAuthor | null | undefined): string {
@@ -52,6 +56,7 @@ export function ThreadPost({ author, createdAt, index, isSolution, header, child
 }) {
   const name = displayName(author);
   const href = `/u/${author.username ?? ''}`;
+  const cos = author.cosmetics ?? NO_COSMETICS;
 
   return (
     <article
@@ -71,17 +76,15 @@ export function ThreadPost({ author, createdAt, index, isSolution, header, child
         {/* Cột người đăng */}
         <aside className="flex shrink-0 items-center gap-3 border-b border-ink-100 bg-ink-50/70 p-3 sm:w-[150px] sm:flex-col sm:items-center sm:gap-1.5 sm:border-b-0 sm:border-r sm:p-4 sm:text-center dark:border-ink-800 dark:bg-ink-800/40">
           <Link href={href} className="shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {author.image
-              ? <img src={author.image} alt="" className="size-10 rounded-full object-cover sm:size-16" />
-              : <span className="grid size-10 place-items-center rounded-full bg-brand-500 text-base font-black text-white sm:size-16 sm:text-2xl">{name[0]?.toUpperCase()}</span>}
+            <Avatar image={author.image} name={name} cosmetics={cos} size={64} className="hidden sm:inline-block" />
+            <Avatar image={author.image} name={name} cosmetics={cos} size={40} className="sm:hidden" />
           </Link>
 
           <div className="min-w-0 sm:w-full">
-            {/* Màu nick lấy từ màu cấp do admin đặt — "mod màu nick thành viên"
-                của forum wap ngày xưa. Chưa đặt màu thì về màu chữ mặc định. */}
-            <Link href={href} style={author.levelColor ? { color: author.levelColor } : undefined}
-              className="block truncate font-semibold leading-tight hover:underline">{name}</Link>
+            {/* Màu nick: ưu tiên màu mua ở cửa hàng, sau đó tới màu cấp do
+                admin đặt — "mod màu nick thành viên" của forum wap ngày xưa. */}
+            <UserName username={author.username} name={author.name} levelColor={author.levelColor}
+              cosmetics={cos} className="leading-tight" />
             <p className="truncate text-[11px] text-ink-400">{author.levelName ?? rankOf(author.level)}</p>
             <LevelBadge className="mt-1" level={author.level}
               icon={author.levelIcon} color={author.levelColor} name={author.levelName} />

@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award, ShieldCheck,
   Crown, TicketPercent, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2, Wallpaper, MessageCircle, Menu, Settings, ScrollText, DatabaseBackup,
-  Gamepad2,
+  Gamepad2, ShoppingBag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -80,6 +80,7 @@ export const ADMIN_GROUPS: Group[] = [
     title: 'Kinh doanh',
     items: [
       { href: '/admin/coupons', label: 'Mã giảm giá', icon: TicketPercent },
+      { href: '/admin/shop', label: 'Cửa hàng', icon: ShoppingBag },
     ],
   },
   {

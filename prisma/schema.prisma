@@ -113,6 +113,15 @@ model User {
   albums PhotoAlbum[]
   photos Photo[]
 
+  // Cửa hàng: đồ đã mua, và đồ đang đeo (mỗi loại đeo được một món).
+  shopPurchases ShopPurchase[]
+  nameColorId   String?
+  nameColor     ShopItem? @relation("EquipNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
+  avatarFrameId String?
+  avatarFrame   ShopItem? @relation("EquipAvatarFrame", fields: [avatarFrameId], references: [id], onDelete: SetNull)
+  shopBadgeId   String?
+  shopBadge     ShopItem? @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
+
   @@index([level])
   @@index([createdAt])
 }
@@ -705,6 +714,7 @@ enum PointsReason {
   COUPON
   DONATE_SENT        // tặng điểm cho bài của người khác
   DONATE_RECEIVED    // nhận điểm người khác tặng
+  SHOP_BUY           // mua đồ trang trí ở cửa hàng
 }
 
 
@@ -1819,4 +1829,75 @@ model Photo {
   createdAt DateTime @default(now())
 
   @@index([albumId, order, createdAt])
+}
+
+/**
+ * Món đồ trong cửa hàng — mua bằng ĐIỂM, dùng để trang trí hồ sơ.
+ *
+ * Đúng nếp JohnCMS ngày xưa: bỏ điểm ra mua màu nick, khung avatar, huy hiệu
+ * rồi đeo lên cho cả diễn đàn thấy. Cửa hàng này KHÔNG dính tới tiền thật —
+ * diễn đàn chỉ có một loại tiền là điểm.
+ */
+model ShopItem {
+  id   String @id @default(cuid())
+  slug String @unique
+
+  kind ShopItemKind
+
+  name        String
+  description String?
+
+  /**
+   * Nội dung của món đồ, ý nghĩa tuỳ theo `kind`:
+   *   NAME_COLOR   — một giá trị màu CSS (#hex, rgb(), hoặc linear-gradient()).
+   *   AVATAR_FRAME — đường dẫn ảnh khung, phủ lên trên avatar.
+   *   BADGE        — đường dẫn ảnh huy hiệu, hiện cạnh tên.
+   */
+  value String
+
+  pricePoints Int     @default(0)
+  active      Boolean @default(true)
+  order       Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  purchases ShopPurchase[]
+
+  equippedNameColorBy   User[] @relation("EquipNameColor")
+  equippedAvatarFrameBy User[] @relation("EquipAvatarFrame")
+  equippedBadgeBy       User[] @relation("EquipBadge")
+
+  @@index([kind, active, order])
+}
+
+enum ShopItemKind {
+  /// Màu tên hiển thị.
+  NAME_COLOR
+  /// Khung viền quanh avatar.
+  AVATAR_FRAME
+  /// Huy hiệu nhỏ hiện cạnh tên.
+  BADGE
+}
+
+/**
+ * Sổ ghi quyền sở hữu: ai đã mua món nào.
+ *
+ * Mua một lần là của mãi mãi, kể cả khi quản trị viên gỡ món đó khỏi quầy hay
+ * đổi giá — nên phải có bảng riêng chứ không suy ra từ nhật ký điểm.
+ */
+model ShopPurchase {
+  id String @id @default(cuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId String
+  item   ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  /// Giá thực trả lúc mua, giữ lại để đối soát khi giá đổi.
+  pointsPaid Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, itemId])
+  @@index([userId, createdAt])
 }

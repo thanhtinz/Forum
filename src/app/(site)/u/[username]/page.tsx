@@ -19,6 +19,8 @@ import { hasBlocked } from '@/lib/block';
 import { getGuestbook, isStaff } from '@/lib/guestbook';
 import { countFriends, getFriendState } from '@/lib/friend';
 import { countVisibleAlbums } from '@/lib/album';
+import { cosmeticSelect, toCosmetics } from '@/lib/shop';
+import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { FriendButton } from '@/components/user/FriendButton';
 import { Guestbook } from '@/components/user/Guestbook';
 
@@ -45,6 +47,7 @@ export default async function ProfilePage({ params, searchParams }: {
       id: true, name: true, username: true, image: true, cover: true, bio: true, mood: true, level: true, role: true,
       points: true, createdAt: true,
       _count: { select: { posts: true, followers: true, following: true } },
+      ...cosmeticSelect,
       medals: { where: { displayed: true }, take: 8, include: { medal: { select: { name: true, icon: true, color: true } } } },
     },
   });
@@ -70,6 +73,7 @@ export default async function ProfilePage({ params, searchParams }: {
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const name = user.name ?? user.username ?? 'Ẩn danh';
   const levelLook = await getLevelLook(user.level);
+  const cos = toCosmetics(user);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -79,10 +83,8 @@ export default async function ProfilePage({ params, searchParams }: {
           style={user.cover ? { backgroundImage: `url(${user.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined} />
         <div className="px-5 pb-5 sm:px-6">
           <div className="-mt-12 flex flex-wrap items-end justify-between gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {user.image
-              ? <img src={user.image} alt="" className="h-24 w-24 rounded-2xl border-4 border-white object-cover dark:border-ink-900" />
-              : <span className="grid h-24 w-24 place-items-center rounded-2xl border-4 border-white bg-brand-500 text-3xl font-black text-white dark:border-ink-900">{name[0]?.toUpperCase()}</span>}
+            <Avatar image={user.image} name={name} cosmetics={cos} size={96}
+              rounded="rounded-2xl border-4 border-white dark:border-ink-900" />
             <div className="mb-1 flex flex-wrap items-center justify-end gap-2">
               {/* Đã chặn thì không còn nhắn tin / theo dõi, chỉ còn nút bỏ chặn */}
               {viewerId && viewerId !== user.id && !blocked && user.username && (
@@ -108,7 +110,10 @@ export default async function ProfilePage({ params, searchParams }: {
 
           <div className="mt-3">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold">{name}</h1>
+              <h1 className="text-xl font-bold">
+                <UserName username={user.username} name={user.name} role={user.role}
+                  levelColor={levelLook?.color} cosmetics={cos} asLink={false} />
+              </h1>
               <LevelBadge level={user.level} icon={levelLook?.icon} color={levelLook?.color} name={levelLook?.name} />
             </div>
             {user.username && <p className="text-sm text-ink-400">@{user.username}</p>}

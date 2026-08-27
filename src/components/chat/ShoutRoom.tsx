@@ -157,7 +157,7 @@ export function ShoutRoom({ initial, initialHere, meUsername, meRole }: {
 
         {/* Phòng vắng thì các câu vẫn nằm sát đáy, ngay trên ô nhập — chatbox
             ngày xưa luôn dồn xuống dưới chứ không treo lơ lửng ở đỉnh khung. */}
-        <div ref={boxRef} onScroll={onScroll} className="flex h-80 flex-col overflow-y-auto">
+        <div ref={boxRef} onScroll={onScroll} className="flex max-h-80 min-h-24 flex-col overflow-y-auto">
           <div className="retro-stripe mt-auto">
           {items.length === 0 ? (
             <p className="p-10 text-center text-sm text-ink-400">Phòng đang vắng. Nói câu đầu tiên đi.</p>

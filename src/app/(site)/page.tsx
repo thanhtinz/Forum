@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { PenLine, MessagesSquare, Clock, Newspaper, ChevronRight } from 'lucide-react';
+import { PenLine, MessagesSquare, Clock } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { fmtCount, plainText, truncate } from '@/lib/utils';
+import { plainText, truncate } from '@/lib/utils';
 import { getSiteSettings } from '@/lib/site';
 import { BoardList, type BoardSection, type BoardRow } from '@/components/forum/BoardList';
 import { TableHead } from '@/components/forum/TableHead';
@@ -26,7 +26,7 @@ export default async function HomePage() {
   const session = await auth();
   const site = await getSiteSettings();
 
-  const [forums, latestThreads, latestPosts] = await Promise.all([
+  const [forums, latestThreads] = await Promise.all([
     db.forum.findMany({
       orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
       include: {
@@ -48,12 +48,6 @@ export default async function HomePage() {
         author: { select: { username: true, name: true, image: true } },
         forum: { select: { slug: true, name: true } },
       },
-    }),
-    db.post.findMany({
-      where: { status: 'PUBLISHED' },
-      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
-      take: 5,
-      select: { slug: true, title: true, viewCount: true },
     }),
   ]);
 
@@ -112,15 +106,11 @@ export default async function HomePage() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-4">
-          <BoardList sections={sections} />
-
-          {/* Phòng chat chung ngay trên trang chủ, như chatbox ở index của
-              forum wap ngày xưa — không phải bấm sang trang khác mới thấy. */}
-          <ChatPanel />
-
-          {/* Bài mới — dòng thời gian toàn diễn đàn */}
+          {/* Bài mới lên trên cùng: mở trang ra là thấy ngay diễn đàn đang
+              bàn chuyện gì. Trang này chỉ lấy bài của diễn đàn — blog và cửa
+              hàng có lối riêng trên menu. */}
           <section className="card overflow-hidden">
-            <TableHead title="Bài mới" icon={<Clock size={15} className="text-brand-500" />}
+            <TableHead title="Bài viết mới" icon={<Clock size={15} className="text-brand-500" />}
               cols={{ last: 'Hoạt động', a: 'Trả lời', b: 'Lượt xem' }} />
             <div className="retro-stripe divide-y divide-ink-100 dark:divide-ink-800">
               {threads.length === 0
@@ -129,23 +119,12 @@ export default async function HomePage() {
             </div>
           </section>
 
-          {/* Cửa ngõ sang khu bài viết */}
-          {latestPosts.length > 0 && (
-            <section className="card overflow-hidden">
-              <TableHead title="Bài viết mới" icon={<Newspaper size={15} className="text-accent-500" />}
-                action={<Link href="/blog" className="flex shrink-0 items-center gap-0.5 text-xs font-medium text-brand-600 hover:underline">Xem tất cả <ChevronRight size={13} /></Link>} />
-              <ul className="divide-y divide-ink-100 dark:divide-ink-800">
-                {latestPosts.map((p) => (
-                  <li key={p.slug}>
-                    <Link href={`/posts/${p.slug}`} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-ink-50 dark:hover:bg-ink-800/50">
-                      <span className="line-clamp-1 flex-1 font-medium text-ink-800 dark:text-ink-100">{p.title}</span>
-                      <span className="shrink-0 text-xs text-ink-400">{fmtCount(p.viewCount)} xem</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+          {/* Phòng chat chung ngay trên trang chủ, như chatbox ở index của
+              forum wap ngày xưa — không phải bấm sang trang khác mới thấy. */}
+          <ChatPanel />
+
+          {/* Danh mục diễn đàn */}
+          <BoardList sections={sections} />
 
           <ForumStatsBar />
         </div>

@@ -51,7 +51,16 @@ function withMentions(text: string, keyPrefix: string): React.ReactNode[] {
  * thành ảnh. Dựng bằng React (không dùng dangerouslySetInnerHTML) nên nội dung
  * người dùng nhập không thể chèn HTML.
  */
-export function ReplyContent({ content, className }: { content: string; className?: string }) {
+export function ReplyContent({ content, className, as: Tag = 'div' }: {
+  content: string;
+  className?: string;
+  /**
+   * Thẻ bọc ngoài. Mặc định `div`; nơi nào đặt nội dung này nằm trong một
+   * đoạn văn (như từng dòng phòng chat) phải truyền `span`, vì `div` lồng
+   * trong `p` là HTML sai và React sẽ báo lệch khi khớp lại trên trình duyệt.
+   */
+  as?: 'div' | 'span';
+}) {
   const parts: React.ReactNode[] = [];
   let last = 0;
   let m: RegExpExecArray | null;
@@ -78,5 +87,5 @@ export function ReplyContent({ content, className }: { content: string; classNam
   }
   if (last < content.length) parts.push(...withMentions(content.slice(last), `b${last}`));
 
-  return <div className={className ?? 'whitespace-pre-wrap text-sm leading-relaxed text-ink-700 dark:text-ink-200'}>{parts}</div>;
+  return <Tag className={className ?? 'whitespace-pre-wrap text-sm leading-relaxed text-ink-700 dark:text-ink-200'}>{parts}</Tag>;
 }

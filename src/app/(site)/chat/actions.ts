@@ -46,7 +46,7 @@ export async function sendShout(_prev: ShoutState, formData: FormData): Promise<
     await tx.shoutMessage.create({ data: { userId, content, replyToId }, select: { id: true } });
     await notifyMentions(
       mentioned,
-      { title: 'Có người nhắc tên bạn trong phòng chat', content: content.slice(0, 120), link: '/chat', actorId: userId },
+      { title: 'Có người nhắc tên bạn trong phòng chat', content: content.slice(0, 120), link: '/#phong-chat', actorId: userId },
       tx,
     );
   });

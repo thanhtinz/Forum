@@ -107,6 +107,9 @@ model User {
   gameRequestsHandled GameRequest[]     @relation("GameRequestHandler")
   gameRequestVotes    GameRequestVote[]
 
+  friendRequestsSent     Friendship[] @relation("FriendRequester")
+  friendRequestsReceived Friendship[] @relation("FriendAddressee")
+
   @@index([level])
   @@index([createdAt])
 }
@@ -886,6 +889,8 @@ enum NotificationType {
   DONATE
   /// Có người ghi vào sổ lưu bút, hoặc chủ nhà hồi âm lời nhắn của mình.
   GUESTBOOK
+  /// Lời mời kết bạn, hoặc lời mời của mình được đồng ý.
+  FRIEND
 }
 
 // ============================================================
@@ -1713,4 +1718,43 @@ model GameRequestVote {
 
   @@id([userId, requestId])
   @@index([requestId])
+}
+
+/**
+ * Kết bạn hai chiều.
+ *
+ * Theo dõi (Follow) là một chiều: mình theo ai đó không cần họ đồng ý. Kết bạn
+ * thì phải cả hai gật — nếp của forum wap Việt ngày trước, và là thứ để sau
+ * này giới hạn "chỉ bạn bè xem được".
+ *
+ * Một hàng cho một cặp, giữ đúng chiều người gửi → người nhận để biết ai còn
+ * phải bấm đồng ý. Muốn biết A và B có phải bạn không thì phải dò cả hai
+ * chiều, nên đánh chỉ mục cho cả hai cột.
+ */
+model Friendship {
+  id String @id @default(cuid())
+
+  requesterId String
+  requester   User   @relation("FriendRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addresseeId String
+  addressee   User   @relation("FriendAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  status FriendStatus @default(PENDING)
+
+  /// Lời nhắn kèm khi xin kết bạn.
+  message String?
+
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId, status])
+  @@index([requesterId, status])
+}
+
+enum FriendStatus {
+  /// Đã gửi, chờ người kia đồng ý.
+  PENDING
+  /// Đã là bạn.
+  ACCEPTED
 }

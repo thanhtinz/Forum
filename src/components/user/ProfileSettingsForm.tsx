@@ -9,6 +9,7 @@ export interface ProfileInitial {
   name: string | null;
   username: string | null;
   bio: string | null;
+  signature: string | null;
   image: string | null;
   cover: string | null;
   hasPassword: boolean;
@@ -37,6 +38,12 @@ export function ProfileSettingsForm({ initial }: { initial: ProfileInitial }) {
 
       <Field label="Giới thiệu" error={err('bio')} hint="Tối đa 300 ký tự">
         <textarea name="bio" rows={3} defaultValue={initial.bio ?? ''} className="input" placeholder="Đôi dòng về bạn…" />
+      </Field>
+
+      <Field label="Chữ ký" error={err('signature')}
+        hint="Dán dưới mỗi bài bạn viết ở diễn đàn. Nhận BBCode như khi đăng bài. Tối đa 200 ký tự.">
+        <textarea name="signature" rows={2} defaultValue={initial.signature ?? ''} className="input"
+          placeholder="[i]Một câu bạn muốn kèm dưới mọi bài viết…[/i]" />
       </Field>
 
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}

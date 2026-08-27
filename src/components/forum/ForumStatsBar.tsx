@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
+import { bumpOnlineRecord } from '@/lib/online-record';
 
 /** Coi là đang online nếu hoạt động trong 15 phút gần đây — trùng ForumSidebar. */
 const ONLINE_WINDOW_MS = 15 * 60 * 1000;
@@ -24,6 +25,9 @@ export async function ForumStatsBar() {
     db.user.findFirst({ orderBy: { createdAt: 'desc' }, select: { username: true, name: true } }),
   ]);
 
+  // Mỗi lần dựng trang chủ cũng là một lần đối chiếu kỷ lục.
+  const record = await bumpOnlineRecord(online);
+
   return (
     <section className="card overflow-hidden">
       <div className="retro-head px-3 py-2 sm:px-4">
@@ -39,14 +43,24 @@ export async function ForumStatsBar() {
         <Stat label="Đang trực tuyến" value={fmtCount(online)} highlight />
       </dl>
 
-      {newest && (
-        <p className="retro-sub retro-rule px-3 py-2 text-ink-400 sm:px-4">
-          Xin chào thành viên mới nhất:{' '}
-          <Link href={`/u/${newest.username ?? ''}`} className="font-bold text-brand-600 hover:underline">
-            {newest.name ?? newest.username}
-          </Link>
-        </p>
-      )}
+      <div className="retro-sub retro-rule space-y-0.5 px-3 py-2 text-ink-400 sm:px-4">
+        {newest && (
+          <p>
+            Xin chào thành viên mới nhất:{' '}
+            <Link href={`/u/${newest.username ?? ''}`} className="font-bold text-brand-600 hover:underline">
+              {newest.name ?? newest.username}
+            </Link>
+          </p>
+        )}
+        {record.count > 0 && (
+          <p>
+            Kỷ lục trực tuyến: <b className="text-ink-600 dark:text-ink-200">{fmtCount(record.count)}</b> thành viên
+            {record.at && ` lúc ${new Date(record.at).toLocaleString('vi-VN', {
+              hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric',
+            })}`}
+          </p>
+        )}
+      </div>
     </section>
   );
 }

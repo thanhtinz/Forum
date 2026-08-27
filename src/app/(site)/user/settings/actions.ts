@@ -17,6 +17,9 @@ const profileSchema = z.object({
     .max(20, 'Tên đăng nhập tối đa 20 ký tự')
     .regex(/^[a-z0-9_]+$/, 'Chỉ dùng chữ thường, số và dấu gạch dưới'),
   bio: z.string().trim().max(300, 'Giới thiệu tối đa 300 ký tự').optional(),
+  // Chữ ký dán dưới mọi bài ở diễn đàn, nên phải ngắn — dài quá thì mỗi bài
+  // của một người sẽ đẩy bài của người khác ra khỏi màn hình.
+  signature: z.string().trim().max(200, 'Chữ ký tối đa 200 ký tự').optional(),
   image: z.string().trim().refine((v) => !v || isPublicImageRef(v), 'Ảnh đại diện phải là URL hợp lệ hoặc ảnh đã tải lên').optional(),
   cover: z.string().trim().refine((v) => !v || isPublicImageRef(v), 'Ảnh bìa phải là URL hợp lệ hoặc ảnh đã tải lên').optional(),
 });
@@ -36,23 +39,29 @@ export async function updateProfile(_prev: SettingsState, formData: FormData): P
     name: formData.get('name'),
     username: formData.get('username'),
     bio: formData.get('bio'),
+    signature: formData.get('signature'),
     image: formData.get('image'),
     cover: formData.get('cover'),
   });
   if (!parsed.success) return { fieldErrors: fieldErrorsOf(parsed.error) };
-  const { name, username, bio, image, cover } = parsed.data;
+  const { name, username, bio, signature, image, cover } = parsed.data;
 
   const taken = await db.user.findFirst({ where: { username, NOT: { id: session.user.id } }, select: { id: true } });
   if (taken) return { fieldErrors: { username: 'Tên đăng nhập đã có người dùng.' } };
 
   await db.user.update({
     where: { id: session.user.id },
-    data: { name, username, bio: bio || null, image: image || null, cover: cover || null },
+    data: {
+      name, username, bio: bio || null, signature: signature || null,
+      image: image || null, cover: cover || null,
+    },
   });
 
   revalidatePath('/user/settings');
   revalidatePath('/user/dashboard');
   revalidatePath(`/u/${username}`);
+  // Chữ ký nằm dưới mọi bài viết cũ của người này, nên phải làm mới cả khu diễn đàn.
+  revalidatePath('/forum', 'layout');
   return { ok: true };
 }
 

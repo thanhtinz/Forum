@@ -11,7 +11,8 @@
     "prisma:push": "prisma db push",
     "seed": "tsx prisma/seed.ts",
     "db:don-may-ao": "tsx prisma/don-du-lieu-may-ao.ts",
-    "test": "node tests/run.mjs"
+    "test": "node tests/run.mjs",
+    "scan": "node scripts/scan-overfetch.mjs && node scripts/scan-dead-buttons.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",

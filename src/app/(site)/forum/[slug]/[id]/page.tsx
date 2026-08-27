@@ -14,6 +14,8 @@ import { ReplyForm } from '@/components/forum/ReplyForm';
 import { ThreadModMenu } from '@/components/forum/ThreadModMenu';
 import { ThreadOwnerMenu } from '@/components/forum/ThreadOwnerMenu';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
+import { WhoIsHere } from '@/components/forum/WhoIsHere';
+import { markHere } from '@/lib/shout';
 import { ThreadPost, displayName } from '@/components/forum/ThreadPost';
 import { Pagination } from '@/components/Pagination';
 import { ReplyBody } from '@/components/forum/ReplyBody';
@@ -34,14 +36,17 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 const authorSelect = {
   select: {
-    username: true, name: true, image: true, level: true, createdAt: true,
+    username: true, name: true, image: true, level: true, createdAt: true, signature: true,
     _count: { select: { threads: true, replies: true } },
   },
 } as const;
 
 /** Gộp số chủ đề + số trả lời thành "số bài", kèm huy hiệu cấp của người đăng. */
 function toAuthor(
-  u: { username: string | null; name: string | null; image: string | null; level: number; createdAt: Date; _count: { threads: number; replies: number } },
+  u: {
+    username: string | null; name: string | null; image: string | null; level: number;
+    createdAt: Date; signature: string | null; _count: { threads: number; replies: number };
+  },
   looks: Map<number, LevelLook>,
 ) {
   const look = looks.get(u.level);
@@ -89,6 +94,10 @@ export default async function ThreadPage({ params, searchParams }: {
   const callbackUrl = `/forum/${slug}/${id}`;
   const isOwner = userId === thread.authorId;
   const canMarkSolution = isOwner && !thread.solvedReplyId && !thread.locked;
+
+  // Điểm danh "đang xem chủ đề này". Không chờ kết quả — hỏng thì cùng lắm
+  // là thiếu một cái tên trong dòng cuối trang, không đáng để chặn cả trang.
+  if (userId) markHere(userId, `thread:${id}`).catch(() => {});
 
   const canModerate = await canModerateForum(
     session?.user ? { id: session.user.id, role: (session.user as { role?: string }).role } : null,
@@ -285,6 +294,9 @@ export default async function ThreadPage({ params, searchParams }: {
             <Pagination page={page} totalPages={totalPages} basePath={`/forum/${slug}/${id}`} pageParam="p" />
           </div>
         )}
+
+        {/* Ai đang mở chủ đề này ngay lúc này */}
+        <WhoIsHere scope={`thread:${id}`} />
 
         {/* Ô trả lời chủ đề */}
         {!thread.locked ? (

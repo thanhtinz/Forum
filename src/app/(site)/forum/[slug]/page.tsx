@@ -134,7 +134,7 @@ export default async function ForumPage({ params, searchParams }: {
               <p>Chưa có chủ đề nào ở mục này.</p>
             </div>
           ) : (
-            <div className="divide-y divide-ink-100 dark:divide-ink-800">
+            <div className="retro-stripe divide-y divide-ink-100 dark:divide-ink-800">
               {rows.map((t) => <ThreadRow key={t.id} thread={t} forumSlug={forum.slug} />)}
             </div>
           )}

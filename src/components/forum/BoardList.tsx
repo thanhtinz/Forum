@@ -44,7 +44,7 @@ export function BoardList({ sections }: { sections: BoardSection[] }) {
             cols={{ last: 'Mới nhất', a: 'Chủ đề', b: 'Bài' }}
           />
 
-          <div className="divide-y divide-ink-100 dark:divide-ink-800">
+          <div className="retro-stripe divide-y divide-ink-100 dark:divide-ink-800">
             {s.boards.map((b) => <BoardRowView key={b.id} board={b} />)}
             {s.boards.length === 0 && <p className="px-4 py-6 text-center text-sm text-ink-400">Chưa có mục con.</p>}
           </div>
@@ -66,16 +66,16 @@ function BoardRowView({ board }: { board: BoardRow }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <Link href={`/forum/${board.slug}`} className="truncate font-semibold text-ink-900 group-hover:text-brand-600 dark:text-white">
+          <Link href={`/forum/${board.slug}`} className="retro-arrow truncate font-semibold text-ink-900 group-hover:text-brand-600 dark:text-white">
             {board.name}
           </Link>
           {badge && <span className={`chip ${badge.className}`}>{badge.label}</span>}
         </div>
 
-        {board.description && <p className="mt-0.5 line-clamp-1 text-xs text-ink-400">{board.description}</p>}
+        {board.description && <p className="retro-sub mt-0.5 line-clamp-1 text-ink-400">{board.description}</p>}
 
         {/* Trên màn hình hẹp thì gộp số liệu vào dòng meta */}
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-ink-400 sm:hidden">
+        <p className="retro-sub retro-rule mt-1 flex items-center gap-1.5 pt-1 text-ink-400 sm:hidden">
           <span>{fmtCount(board.threadCount)} chủ đề</span>
           <span>·</span>
           <span>{fmtCount(board.replyCount)} bài</span>
@@ -90,20 +90,20 @@ function BoardRowView({ board }: { board: BoardRow }) {
             <Link href={`/forum/${board.slug}/${board.latest.id}`} className="line-clamp-1 font-medium text-ink-700 hover:text-brand-600 dark:text-ink-200">
               {board.latest.title}
             </Link>
-            <p className="mt-0.5 truncate text-ink-400">
+            <p className="retro-sub mt-0.5 truncate text-ink-400">
               {board.latest.author ? `@${board.latest.author}` : 'Ẩn danh'} · {fmtAgo(board.latest.at)}
             </p>
           </>
         ) : (
-          <p className="text-ink-300 dark:text-ink-600">Chưa có bài</p>
+          <p className="retro-sub text-ink-300 dark:text-ink-600">Chưa có bài</p>
         )}
       </div>
 
       {/* Cột số liệu — cùng bề rộng với bảng chủ đề */}
-      <div className="hidden w-16 shrink-0 text-center text-sm font-bold text-ink-700 sm:block dark:text-ink-100">
+      <div className="retro-count hidden w-16 shrink-0 text-center text-sm font-bold text-ink-700 sm:block dark:text-ink-100">
         {fmtCount(board.threadCount)}
       </div>
-      <div className="hidden w-20 shrink-0 text-center text-sm font-bold text-ink-700 md:block dark:text-ink-100">
+      <div className="retro-count hidden w-20 shrink-0 text-center text-sm font-bold text-ink-700 md:block dark:text-ink-100">
         {fmtCount(board.replyCount)}
       </div>
     </div>

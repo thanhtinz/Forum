@@ -114,8 +114,11 @@ export async function Header() {
             </>
           ) : (
             <>
-              <Link href="/login" className="btn-ghost !px-3 !py-1.5 text-sm">Đăng nhập</Link>
-              <Link href="/register" className="btn-primary !px-3.5 !py-1.5 text-sm">Đăng ký</Link>
+              {/* Màn hình hẹp chỉ đủ chỗ cho một nút: để "Đăng nhập" vì trang
+                  đăng nhập đã có sẵn liên kết sang đăng ký. Hai nút cùng lúc
+                  làm thanh đầu trang tràn ngang ở bề rộng 390px. */}
+              <Link href="/login" className="btn-outline !px-3 !py-1.5 text-sm">Đăng nhập</Link>
+              <Link href="/register" className="btn-primary hidden !px-3.5 !py-1.5 text-sm sm:inline-flex">Đăng ký</Link>
             </>
           )}
         </div>

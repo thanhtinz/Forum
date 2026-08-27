@@ -99,6 +99,10 @@ model User {
   donationsSent     PointDonation[] @relation("DonationFrom")
   donationsReceived PointDonation[] @relation("DonationTo")
 
+  guestbookReceived GuestbookEntry[] @relation("GuestbookOwner")
+  guestbookWritten  GuestbookEntry[] @relation("GuestbookAuthor")
+  guestbookHidden   GuestbookEntry[] @relation("GuestbookHider")
+
   @@index([level])
   @@index([createdAt])
 }
@@ -876,6 +880,8 @@ enum NotificationType {
   MEDAL
   /// Được người khác tặng điểm.
   DONATE
+  /// Có người ghi vào sổ lưu bút, hoặc chủ nhà hồi âm lời nhắn của mình.
+  GUESTBOOK
 }
 
 // ============================================================
@@ -1599,4 +1605,41 @@ model GameUnlock {
 
   @@unique([userId, gameId])
   @@index([gameId, createdAt])
+}
+
+/**
+ * Sổ lưu bút trên trang cá nhân.
+ *
+ * Khách ghé qua để lại một lời nhắn công khai ngay trên hồ sơ, chủ nhà hồi âm
+ * ngay dưới lời nhắn đó — đúng nếp sổ lưu bút của forum wap Việt thời 2010.
+ * Khác tin nhắn riêng ở chỗ cả làng đọc được; khác bình luận ở chỗ nó gắn vào
+ * *người* chứ không gắn vào bài nào.
+ */
+model GuestbookEntry {
+  id String @id @default(cuid())
+
+  /// Chủ nhà — người sở hữu trang cá nhân đang được ghi vào.
+  ownerId String
+  owner   User   @relation("GuestbookOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Người để lại lời nhắn.
+  authorId String
+  author   User   @relation("GuestbookAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+
+  /// Hồi âm của chủ nhà, hiện ngay dưới lời nhắn.
+  reply     String?   @db.Text
+  repliedAt DateTime?
+
+  /// Lời nhắn kín: chỉ chủ nhà, người viết và quản trị đọc được.
+  private Boolean @default(false)
+
+  hiddenAt   DateTime?
+  hiddenById String?
+  hiddenBy   User?     @relation("GuestbookHider", fields: [hiddenById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([ownerId, createdAt])
+  @@index([authorId, createdAt])
 }

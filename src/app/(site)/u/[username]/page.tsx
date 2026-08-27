@@ -16,6 +16,8 @@ import { IconGlyph } from '@/components/IconGlyph';
 import { openConversation } from '@/app/(site)/user/messages/actions';
 import { BlockButton } from '@/components/user/BlockButton';
 import { hasBlocked } from '@/lib/block';
+import { getGuestbook, isStaff } from '@/lib/guestbook';
+import { Guestbook } from '@/components/user/Guestbook';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 9;
@@ -27,11 +29,12 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
 }
 
 export default async function ProfilePage({ params, searchParams }: {
-  params: Promise<{ username: string }>; searchParams: Promise<{ page?: string }>;
+  params: Promise<{ username: string }>; searchParams: Promise<{ page?: string; gb?: string }>;
 }) {
   const { username } = await params;
-  const { page: pageRaw } = await searchParams;
+  const { page: pageRaw, gb: gbRaw } = await searchParams;
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
+  const gbPage = Math.max(1, parseInt(gbRaw ?? '1', 10) || 1);
 
   const user = await db.user.findUnique({
     where: { username },
@@ -46,13 +49,15 @@ export default async function ProfilePage({ params, searchParams }: {
 
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
+  const viewer = { id: viewerId, role: (session?.user as { role?: string } | undefined)?.role };
 
   const where = { authorId: user.id, status: 'PUBLISHED' as const };
-  const [total, posts, following, blocked] = await Promise.all([
+  const [total, posts, following, blocked, guestbook] = await Promise.all([
     db.post.count({ where }),
     db.post.findMany({ where, orderBy: [{ publishedAt: 'desc' }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect }),
     viewerId ? db.follow.findFirst({ where: { followerId: viewerId, followingId: user.id }, select: { id: true } }) : Promise.resolve(null),
     viewerId ? hasBlocked(viewerId, user.id) : Promise.resolve(false),
+    getGuestbook(user.id, viewer, gbPage),
   ]);
   // Quản trị viên không chặn được — che nút cho khỏi bấm rồi mới báo lỗi.
   const canBlock = user.role !== 'ADMIN' && user.role !== 'MODERATOR';
@@ -129,6 +134,15 @@ export default async function ProfilePage({ params, searchParams }: {
         <PostGrid posts={posts.map(toCardData)} empty="Người này chưa đăng bài viết nào." />
         <Pagination page={page} totalPages={totalPages} basePath={`/u/${username}`} />
       </div>
+
+      {/* Sổ lưu bút — người đã chặn nhau thì không mở sổ cho nhau xem lẫn ghi. */}
+      {!blocked && (
+        <Guestbook
+          username={username} ownerName={name}
+          items={guestbook.items} total={guestbook.total} page={gbPage} totalPages={guestbook.totalPages}
+          viewerId={viewerId} isOwner={viewerId === user.id} staff={isStaff(viewer)} loggedIn={!!viewerId}
+        />
+      )}
     </div>
   );
 }

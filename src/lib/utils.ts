@@ -49,3 +49,13 @@ export function fmtBytes(bytes?: number | bigint | null): string {
   const v = n / 1024 ** i;
   return `${v.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
+
+/**
+ * Màu tên hiển thị theo vai trò — nếp "nick màu" của forum Việt thời 2010:
+ * nhìn màu là biết ai quản trị, ai điều hành.
+ */
+export function nickClass(role?: string | null): string {
+  if (role === 'ADMIN') return 'text-red-600 dark:text-red-400';
+  if (role === 'MODERATOR') return 'text-emerald-600 dark:text-emerald-400';
+  return 'text-brand-700 dark:text-brand-300';
+}

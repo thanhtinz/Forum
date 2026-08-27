@@ -64,9 +64,15 @@ export default async function run(check) {
   check('menu Điều hành không bị khối cha cắt', !!mod && mod.lost <= 2, mod && `mất ${mod.lost}px`);
   check('menu Điều hành nằm trọn trong màn hình', !!mod && mod.offScreen <= 2, mod && `lọt ra ngoài ${mod.offScreen}px`);
 
+  // Bảng emoji mở ở cả ba ô soạn — mỗi ô nằm trong một khối cha khác nhau
+  // nên phải đo riêng từng chỗ.
+  const post = await db.post.findFirst({ where: { status: 'PUBLISHED', access: 'FREE' }, select: { slug: true } });
+  const game = await db.game.findFirst({ where: { status: 'PUBLISHED' }, select: { slug: true } });
   for (const [ten, page, url] of [
     ['phòng chat', member, BASE],
     ['ô trả lời chủ đề', member, threadUrl],
+    ...(post ? [['ô bình luận bài viết', member, `${BASE}/posts/${post.slug}/binh-luan`]] : []),
+    ...(game ? [['ô bình luận game', member, `${BASE}/games/${game.slug}`]] : []),
   ]) {
     const box = await open(page, url, 'button[title="Emoji, sticker & GIF"]', '#khong-co-selector-rieng');
     check(`bảng emoji ở ${ten} mở ra`, !!box && box.h > 100);

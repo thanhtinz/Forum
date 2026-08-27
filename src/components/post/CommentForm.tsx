@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Send } from 'lucide-react';
 import { addComment, type CommentState } from '@/app/(site)/posts/[slug]/actions';
 import { ActionForm } from '@/components/ActionForm';
+import { ComposerTools } from '@/components/ComposerTools';
 import { MentionTextarea } from '@/components/MentionTextarea';
 
 export function CommentForm({ postId, gameId, slug, parentId, loggedIn, callbackUrl, compact, autoFocus, defaultValue, onDone }: {
@@ -20,6 +21,7 @@ export function CommentForm({ postId, gameId, slug, parentId, loggedIn, callback
 }) {
   const [state, action, pending] = useActionState<CommentState, FormData>(addComment, {});
   const ref = useRef<HTMLFormElement>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!state.ok) return;
@@ -42,15 +44,19 @@ export function CommentForm({ postId, gameId, slug, parentId, loggedIn, callback
       {gameId && <input type="hidden" name="gameId" value={gameId} />}
       <input type="hidden" name="slug" value={slug} />
       {parentId && <input type="hidden" name="parentId" value={parentId} />}
-      <MentionTextarea name="content" required minLength={2} maxLength={2000}
+      <MentionTextarea ref={taRef} name="content" required minLength={2} maxLength={2000}
         autoFocus={autoFocus} defaultValue={defaultValue} rows={compact ? 2 : 3} placeholder={parentId ? 'Viết phản hồi…' : 'Viết bình luận của bạn… gõ @ để nhắc tên'}
         className="input resize-y" />
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-ink-400">{state.error && <span className="text-red-600">{state.error}</span>}{state.ok && <span className="text-green-600">Đã gửi bình luận.</span>}</span>
-        <button type="submit" disabled={pending} className="btn-primary disabled:opacity-60">
+
+      <ComposerTools textareaRef={taRef}>
+        <span className="min-w-0 flex-1 truncate text-xs">
+          {state.error && <span className="text-red-600">{state.error}</span>}
+          {state.ok && <span className="text-green-600">Đã gửi bình luận.</span>}
+        </span>
+        <button type="submit" disabled={pending} className="btn-primary !py-1.5 disabled:opacity-60">
           <Send size={15} /> {pending ? 'Đang gửi…' : 'Gửi'}
         </button>
-      </div>
+      </ComposerTools>
     </ActionForm>
   );
 }

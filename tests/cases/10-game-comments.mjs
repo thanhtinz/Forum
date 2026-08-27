@@ -25,6 +25,10 @@ export default async function run(check) {
     await member.waitForTimeout(700);
     check('trang game có mục bình luận', (await member.locator('h2:has-text("Bình luận")').count()) > 0);
     check('thành viên có ô soạn', (await member.locator('textarea[name="content"]').count()) > 0);
+    // Ô bình luận phải có đúng bộ công cụ như ô trả lời bên diễn đàn.
+    check('ô bình luận có nút emoji/sticker/GIF',
+      (await member.locator('button[title="Emoji, sticker & GIF"]').count()) > 0);
+    check('ô bình luận có nút gửi ảnh', (await member.locator('button[title="Gửi ảnh"]').count()) > 0);
 
     await member.fill('textarea[name="content"]', 'Máy Nokia 5230 chạy được không mọi người?');
     await member.locator('button[type="submit"]:has-text("Gửi")').first().click();

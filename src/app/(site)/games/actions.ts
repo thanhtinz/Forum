@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { getActor } from '@/lib/actor';
 import { avgRating } from '@/lib/game';
 import { recordGameEvent } from '@/lib/game-stats';
+import { grantPoints, InsufficientPointsError } from '@/lib/points';
 
 export interface ToggleFavoriteState {
   active: boolean;
@@ -105,4 +106,60 @@ export async function recordGameView(gameId: string, slug: string): Promise<void
   const actor = await getActor();
   const { unique } = await recordGameEvent({ gameId, userId: actor.userId, actorKey: actor.actorKey, type: 'VIEW' });
   if (unique) revalidatePath(`/games/${slug}`);
+}
+
+// ─────────────────────── Mở khoá phần tải bằng điểm ───────────────────────
+
+export interface UnlockGameState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Trả điểm để mở phần tải xuống của một game.
+ *
+ * Trừ điểm và ghi sổ quyền trong cùng một transaction, và ràng buộc duy nhất
+ * (userId, gameId) đảm bảo bấm hai lần cũng chỉ trừ một lần. Điểm về "kho"
+ * chứ không sang ví ai — game là hàng của nền tảng, không có tác giả để chia.
+ */
+export async function unlockGame(gameId: string): Promise<UnlockGameState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập để mở khoá.' };
+
+  const game = await db.game.findUnique({
+    where: { id: gameId },
+    select: { id: true, slug: true, title: true, pricePoints: true, status: true },
+  });
+  if (!game || game.status !== 'PUBLISHED') return { error: 'Không tìm thấy game.' };
+
+  const price = game.pricePoints ?? 0;
+  if (price <= 0) return { ok: true };
+
+  const already = await db.gameUnlock.findUnique({
+    where: { userId_gameId: { userId, gameId } },
+    select: { id: true },
+  });
+  if (already) return { ok: true };
+
+  try {
+    await db.$transaction(async (tx) => {
+      await grantPoints(
+        { userId, amount: -price, reason: 'PURCHASE_CONTENT', refId: game.id, note: `Mở khoá tải: ${game.title}` },
+        tx,
+      );
+      await tx.gameUnlock.create({ data: { userId, gameId, pointsPaid: price }, select: { id: true } });
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) return { error: 'Bạn không đủ điểm để mở khoá game này.' };
+    // Hai tab bấm cùng lúc: ràng buộc duy nhất chặn bản ghi thứ hai, coi như xong.
+    const owned = await db.gameUnlock.findUnique({
+      where: { userId_gameId: { userId, gameId } }, select: { id: true },
+    });
+    if (owned) return { ok: true };
+    return { error: 'Không mở khoá được, vui lòng thử lại.' };
+  }
+
+  revalidatePath(`/games/${game.slug}`);
+  return { ok: true };
 }

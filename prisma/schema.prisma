@@ -94,6 +94,7 @@ model User {
 
   shouts        ShoutMessage[]
   shoutsDeleted ShoutMessage[] @relation("ShoutDeleter")
+  gameUnlocks   GameUnlock[]
   presence      PresenceHere[]
   donationsSent     PointDonation[] @relation("DonationFrom")
   donationsReceived PointDonation[] @relation("DonationTo")
@@ -1033,6 +1034,12 @@ model Game {
   status   GameStatus @default(DRAFT)
   featured Boolean    @default(false)
 
+  /**
+   * Số điểm phải trả để mở phần tải xuống. null hoặc 0 = tải tự do.
+   * Trả một lần là mở mãi, ghi lại bằng GameUnlock.
+   */
+  pricePoints Int?
+
   // Phân loại
   platformId   String?
   platform     GamePlatform?   @relation(fields: [platformId], references: [id], onDelete: SetNull)
@@ -1066,6 +1073,7 @@ model Game {
   events     GameEvent[]
   ratings    GameRating[]
   comments   Comment[]
+  unlocks    GameUnlock[]
   favorites  Favorite[]
   reports    Report[]
   uniqueHits GameUniqueHit[]
@@ -1569,4 +1577,26 @@ model PointDonation {
   @@index([threadId, createdAt])
   @@index([replyId, createdAt])
   @@index([toId, createdAt])
+}
+
+/**
+ * Ai đã trả điểm để mở phần tải của game nào.
+ *
+ * Sổ ghi quyền, giống Order bên bài viết: mở rồi thì lần sau vào không bị đòi
+ * điểm nữa, kể cả khi quản trị viên đổi giá.
+ */
+model GameUnlock {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  /** Số điểm thực trả lúc mở, giữ lại để đối soát khi giá đổi. */
+  pointsPaid Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, gameId])
+  @@index([gameId, createdAt])
 }

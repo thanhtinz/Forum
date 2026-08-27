@@ -5,6 +5,8 @@ import { getActor } from '@/lib/actor';
 import { fileTypeFitsPlatform } from '@/lib/game';
 import { downloadFileName, signedFileUrl, SIGNED_URL_TTL } from '@/lib/game-files';
 import { recordGameEvent } from '@/lib/game-stats';
+import { checkGameAccess } from '@/lib/game-unlock';
+import { auth } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit-memory';
 
 export const dynamic = 'force-dynamic';
@@ -35,9 +37,21 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
   const game = await db.game.findFirst({
     where: { OR: [{ id }, { slug: id }], status: 'PUBLISHED' },
-    select: { id: true, slug: true, title: true },
+    select: { id: true, slug: true, title: true, pricePoints: true },
   });
   if (!game) return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+
+  // Game có giá thì phải mở khoá mới cấp được liên kết. Kiểm ở đây chứ không
+  // chỉ ở giao diện: ai đoán ra địa chỉ API cũng không lấy được tệp.
+  const session = await auth();
+  const access = await checkGameAccess(
+    session?.user?.id ?? null,
+    game,
+    (session?.user as { role?: string } | undefined)?.role,
+  );
+  if (!access.allowed) {
+    return NextResponse.json({ error: 'LOCKED', price: access.price }, { status: 403 });
+  }
 
   const versionId = url.searchParams.get('version');
   const version = versionId

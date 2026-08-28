@@ -116,7 +116,7 @@ export default async function HomePage() {
               bàn chuyện gì. Trang này chỉ lấy bài của diễn đàn — blog và cửa
               hàng có lối riêng trên menu. */}
           <section className="card overflow-hidden">
-            <TableHead title="Bài viết mới" icon={<Clock size={15} className="text-brand-500" />}
+            <TableHead title="Chủ đề mới" icon={<Clock size={15} className="text-brand-500" />}
               cols={{ last: 'Hoạt động', a: 'Trả lời', b: 'Lượt xem' }} />
             <div className="retro-stripe divide-y divide-ink-100 dark:divide-ink-800">
               {threads.length === 0

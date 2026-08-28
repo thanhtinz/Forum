@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { Heart, Reply as ReplyIcon, CheckCircle2, EyeOff, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Heart, Reply as ReplyIcon, CheckCircle2, EyeOff, Eye, Pencil, Trash2, Quote } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
 import { toggleReplyLike, markSolution, toggleReplyHidden, deleteOwnReply } from '@/app/(site)/forum/actions';
 import { ReplyForm } from './ReplyForm';
 import { useEditScope } from '@/components/EditScope';
 import { ReportButton } from '@/components/ReportButton';
 
-export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount, loggedIn, callbackUrl, canReply, canMarkSolution, canReport, canModerate, canManage, hidden }: {
+export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount, loggedIn, callbackUrl, canReply, canMarkSolution, canReport, canModerate, canManage, hidden, quote }: {
   threadId: string; replyId: string; initialLiked: boolean; initialLikeCount: number;
   loggedIn: boolean; callbackUrl: string; canReply?: boolean; canMarkSolution?: boolean;
   /** Không hiện với bài của chính mình — tự báo cáo mình thì vô nghĩa. */
@@ -18,10 +18,14 @@ export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount
   /** Tác giả của chính trả lời này, chủ đề chưa khoá: được sửa và xoá. */
   canManage?: boolean;
   hidden?: boolean;
+  /** Mã BBCode trích dẫn bài này, dựng sẵn ở máy chủ. */
+  quote?: string;
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialLikeCount);
   const [showForm, setShowForm] = useState(false);
+  /** Ô soạn đang mở ở dạng trích dẫn hay dạng trả lời trống. */
+  const [seed, setSeed] = useState<string | undefined>(undefined);
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const { editing, setEditing } = useEditScope();
@@ -58,8 +62,16 @@ export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount
           <Heart size={13} className={liked ? 'fill-current' : ''} />{fmtCount(count)}
         </button>
         {canReply && (
-          <button type="button" onClick={() => setShowForm((v) => !v)} className="flex items-center gap-1 transition-colors hover:text-brand-600">
+          <button type="button" onClick={() => { setSeed(undefined); setShowForm((v) => !v); }}
+            className="flex items-center gap-1 transition-colors hover:text-brand-600">
             <ReplyIcon size={13} /> Trả lời
+          </button>
+        )}
+        {canReply && quote && loggedIn && (
+          <button type="button" onClick={() => { setSeed(quote); setShowForm(true); }}
+            title="Trả lời kèm trích dẫn bài này"
+            className="flex items-center gap-1 transition-colors hover:text-brand-600">
+            <Quote size={13} /> Trích dẫn
           </button>
         )}
         {canManage && (
@@ -95,7 +107,11 @@ export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount
       {msg && <p className="mt-1 text-xs text-red-600">{msg}</p>}
       {showForm && (
         <div className="mt-3">
-          <ReplyForm threadId={threadId} parentId={replyId} loggedIn={loggedIn} callbackUrl={callbackUrl} compact autoFocus onDone={() => setShowForm(false)} />
+          {/* `key` đổi theo mồi: React dựng lại ô soạn, không thì bấm "Trích
+              dẫn" khi ô đang mở sẽ chẳng thấy gì đổi. */}
+          <ReplyForm key={seed ? 'quote' : 'plain'} threadId={threadId} parentId={replyId}
+            loggedIn={loggedIn} callbackUrl={callbackUrl} compact={!seed} autoFocus
+            defaultValue={seed} onDone={() => { setShowForm(false); setSeed(undefined); }} />
         </div>
       )}
     </div>

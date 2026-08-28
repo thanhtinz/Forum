@@ -1,18 +1,28 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { Heart, MessageSquare, Share2, Bell, BellOff, Bookmark } from 'lucide-react';
+import { Heart, MessageSquare, Share2, Bell, BellOff, Bookmark, Quote } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
 import { toggleThreadLike, toggleThreadFollow, toggleThreadFavorite } from '@/app/(site)/forum/actions';
 import { ReportButton } from '@/components/ReportButton';
 
-export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, initialFollowing, initialFollowCount, initialSaved, initialSaveCount, modMenu, canReport }: {
+export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, initialFollowing, initialFollowCount, initialSaved, initialSaveCount, modMenu, canReport, quoteHref }: {
   threadId: string; initialLiked: boolean; initialLikeCount: number;
   initialFollowing: boolean; initialFollowCount: number;
   initialSaved: boolean; initialSaveCount: number;
   modMenu?: React.ReactNode;
   /** Không hiện với chủ đề của chính mình. */
   canReport?: boolean;
+  /**
+   * Đường dẫn "trả lời kèm trích dẫn bài mở đầu".
+   *
+   * Là LIÊN KẾT chứ không phải nút bấm: ô soạn trả lời nằm tận cuối trang, ở
+   * một nhánh khác của cây thẻ, nên không chuyền nội dung mồi sang đó bằng
+   * state được. Đi qua địa chỉ thì máy chủ mồi sẵn — và ai tắt JavaScript cũng
+   * dùng được.
+   */
+  quoteHref?: string;
 }) {
   const [liked, setLiked] = useState(initialLiked);
   const [count, setCount] = useState(initialLikeCount);
@@ -75,6 +85,11 @@ export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, init
           {saved ? 'Đã lưu' : 'Lưu'}
           {saveCount > 0 && <span className="text-ink-400">{fmtCount(saveCount)}</span>}
         </button>
+        {quoteHref && (
+          <Link href={quoteHref} className="btn-outline !rounded-full gap-1.5 !px-4">
+            <Quote size={16} /> Trích dẫn
+          </Link>
+        )}
         <button type="button" onClick={onShare} className="btn-outline !rounded-full gap-1.5 !px-4"><Share2 size={16} /> Chia sẻ</button>
         {canReport && (
           <ReportButton target="thread" targetId={threadId}

@@ -28,7 +28,7 @@ import { getLevelLooks, type LevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 import { cosmeticSelect, toCosmetics } from '@/lib/shop';
-import { hideRules, renderHidden, stripHidden } from '@/lib/bbcode';
+import { hideRules, quoteBBCode, renderHidden, stripHidden } from '@/lib/bbcode';
 import type { HideKind, HideViewer } from '@/lib/hide';
 import { HideUnlockButton } from '@/components/forum/HideUnlockButton';
 
@@ -89,10 +89,10 @@ const CHILDREN_EXPANDED = 200;
 
 export default async function ThreadPage({ params, searchParams }: {
   params: Promise<{ slug: string; id: string }>;
-  searchParams: Promise<{ p?: string; r?: string }>;
+  searchParams: Promise<{ p?: string; r?: string; td?: string }>;
 }) {
   const { slug, id } = await params;
-  const { p: pageRaw, r: expandRaw } = await searchParams;
+  const { p: pageRaw, r: expandRaw, td: quoteRaw } = await searchParams;
   /** Id của trả lời đang được mở rộng phần phản hồi con, nếu có. */
   const expandId = expandRaw?.trim() || null;
 
@@ -143,7 +143,17 @@ export default async function ThreadPage({ params, searchParams }: {
       })
     : [];
 
+  /**
+   * Mồi sẵn ô soạn khi vào bằng liên kết "Trích dẫn" của bài mở đầu.
+   *
+   * Chỉ nhận đúng một giá trị `md`; tham số lạ thì bỏ qua. Nội dung trích do
+   * máy chủ dựng từ bài thật, không lấy gì từ địa chỉ — địa chỉ chỉ nói "có
+   * trích hay không".
+   */
   const levelLooks = await getLevelLooks();
+  const quoteSeed = quoteRaw === 'md'
+    ? quoteBBCode(displayName(toAuthor(thread.author, levelLooks)), thread.content)
+    : undefined;
 
   const totalReplies = await db.reply.count({ where: { threadId: id, parentId: null, hidden: false } });
   const totalPages = Math.max(1, Math.ceil(totalReplies / REPLIES_PER_PAGE));
@@ -365,6 +375,7 @@ export default async function ThreadPage({ params, searchParams }: {
               initialFollowing={!!myFollow} initialFollowCount={followCount}
               initialSaved={!!mySave} initialSaveCount={saveCount}
               canReport={loggedIn && !isOwner}
+              quoteHref={loggedIn ? `/forum/${slug}/${id}?td=md#tra-loi` : undefined}
               // Phần tử truyền qua prop từ Server Component cần key ổn định,
               // không thì React cảnh báo thiếu "key" ở chỗ nhận.
               modMenu={canModerate ? (
@@ -424,7 +435,8 @@ export default async function ThreadPage({ params, searchParams }: {
                     loggedIn={loggedIn} callbackUrl={callbackUrl} canReply canMarkSolution={canMarkSolution && !r.isSolution}
                     canReport={loggedIn && r.authorId !== userId}
                     canManage={r.authorId === userId && !thread.locked}
-                    canModerate={canModerate} hidden={r.hidden} />
+                    canModerate={canModerate} hidden={r.hidden}
+                    quote={quoteBBCode(displayName(r.author), r.content)} />
                 }
               >
                 <ReplyBody replyId={r.id} content={r.content} createdAt={r.createdAt} updatedAt={r.updatedAt} />
@@ -494,7 +506,8 @@ export default async function ThreadPage({ params, searchParams }: {
         {!thread.locked ? (
           <div className="card mt-4 p-4">
             <h3 className="mb-2 text-sm font-semibold">Viết trả lời</h3>
-            <ReplyForm threadId={thread.id} loggedIn={loggedIn} callbackUrl={callbackUrl} />
+            <ReplyForm threadId={thread.id} loggedIn={loggedIn} callbackUrl={callbackUrl}
+              defaultValue={quoteSeed} autoFocus={!!quoteSeed} />
           </div>
         ) : (
           <div className="card mt-4 flex items-center justify-center gap-2 p-4 text-sm text-ink-400">

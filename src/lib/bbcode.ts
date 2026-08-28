@@ -254,3 +254,17 @@ export function bbcodeToText(input: string): string {
     .replace(/\s+/g, ' ')
     .trim();
 }
+
+/**
+ * Mã BBCode để trích dẫn một bài khi trả lời.
+ *
+ * Cắt ngắn có chủ đích: trích cả bài dài hai nghìn chữ thì trang chủ đề thành
+ * ra đọc hai lần cùng một nội dung. Cắt xong thêm dấu lửng để người đọc biết là
+ * còn nữa, và luôn chừa hai dòng trống bên dưới cho người trả lời gõ tiếp.
+ */
+export function quoteBBCode(author: string, html: string, max = 400): string {
+  const text = truncate(plainText(stripHidden(html)), max);
+  // Tên có thể chứa `]` làm hỏng thẻ mở; thay bằng khoảng trắng cho lành.
+  const ten = author.replace(/[[\]]/g, ' ').trim() || 'Ẩn danh';
+  return `[quote=${ten}]${text}[/quote]\n\n`;
+}

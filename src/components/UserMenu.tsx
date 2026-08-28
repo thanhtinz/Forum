@@ -8,14 +8,13 @@ import {
 } from 'lucide-react';
 import { logout } from '@/app/(auth)/actions';
 import { fmtCount } from '@/lib/utils';
-import { LevelBadge, RankBadge } from '@/components/LevelBadge';
+import { LevelBadge } from '@/components/LevelBadge';
 
 export interface UserMenuProps {
   name: string;
   image: string | null;
   points: number;
   level: number;
-  levelIcon?: string | null;
   levelColor?: string | null;
   levelName?: string | null;
   isStaff: boolean;
@@ -33,7 +32,7 @@ const LINKS = [
 ];
 
 /** Nút hồ sơ ở header: gom điểm, số dư và các lối tắt vào một menu. */
-export function UserMenu({ name, image, points, level, levelIcon, levelColor, levelName, isStaff }: UserMenuProps) {
+export function UserMenu({ name, image, points, level, levelColor, levelName, isStaff }: UserMenuProps) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +65,6 @@ export function UserMenu({ name, image, points, level, levelIcon, levelColor, le
             <div className="flex items-center gap-2">
               <span className="truncate font-semibold text-ink-900 dark:text-white">{name}</span>
               <LevelBadge level={level} color={levelColor} name={levelName} />
-              <RankBadge icon={levelIcon} color={levelColor} name={levelName} />
             </div>
           </div>
 

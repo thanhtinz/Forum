@@ -73,6 +73,26 @@ async function main() {
       () => db.game.update({ where: { id: g.id }, data: { commentCount: binhLuan.get(g.id) ?? 0 }, select: { id: true } }));
   }
 
+  // ── Danh hiệu chép sẵn ──────────────────────────────────────────────────
+  // `User.levelTitle` là bản chép của `LevelRule.name`; chép thì có thể lệch,
+  // nên đối soát cùng chỗ với các bộ đếm.
+  console.log('Danh hiệu:');
+  const bac = await db.levelRule.findMany({ select: { level: true, name: true } });
+  for (const r of bac) {
+    const n = await db.user.count({
+      where: { level: r.level, OR: [{ levelTitle: null }, { NOT: { levelTitle: r.name } }] },
+    });
+    await chua(`cấp ${r.level} “${r.name}”`, `${n} người sai`, '0 người sai',
+      () => db.user.updateMany({ where: { level: r.level }, data: { levelTitle: r.name } }));
+  }
+  const lacBac = await db.user.count({
+    where: { levelTitle: { not: null }, level: { notIn: bac.map((r) => r.level) } },
+  });
+  await chua('người ở cấp không còn bậc', `${lacBac} người còn danh hiệu`, '0 người còn danh hiệu',
+    () => db.user.updateMany({
+      where: { level: { notIn: bac.map((r) => r.level) } }, data: { levelTitle: null },
+    }));
+
   // ── Hàng kết bạn trùng ──────────────────────────────────────────────────
   // Hai người bấm "kết bạn" đúng cùng lúc từng sinh ra hai hàng ngược chiều;
   // sót một hàng là album mức "bạn bè" vẫn mở cho người đã huỷ kết bạn.

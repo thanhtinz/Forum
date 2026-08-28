@@ -12,9 +12,13 @@ export const SHOP_PAGE_SIZE = 24;
  * Cửa hàng CỐ Ý không bán avatar lẫn ảnh bìa — hai thứ ấy người dùng tự tải
  * lên ở trang cài đặt. Ảnh bìa bán được thì món mua sẽ đè lên ảnh người ta tự
  * chọn, tức là cướp mất chỗ của chính chủ; còn avatar thì càng không có lý do
- * gì phải mua. Chỉ bán những thứ TÔ ĐIỂM THÊM: màu tên, huy hiệu, danh hiệu.
+ * gì phải mua.
+ *
+ * Danh hiệu cũng thôi bán: nó là TÊN BẬC theo cấp, thứ phải leo lên mới có.
+ * Bán được thì người mới bỏ điểm ra là đứng ngang người đã ở đây nhiều năm, và
+ * cái tên bậc mất sạch ý nghĩa. Quầy chỉ còn hai thứ thuần tô điểm.
  */
-export const SHOP_KINDS = ['NAME_COLOR', 'BADGE', 'TITLE'] as const;
+export const SHOP_KINDS = ['NAME_COLOR', 'BADGE'] as const;
 export type ShopKind = (typeof SHOP_KINDS)[number];
 
 export const KIND_LABELS: Record<ShopKind, {
@@ -31,12 +35,6 @@ export const KIND_LABELS: Record<ShopKind, {
     hint: 'Icon nhỏ hiện cạnh tên, ngay sau huy hiệu cấp bậc.',
     valueLabel: 'Ảnh icon',
     valueHint: 'Ảnh nhỏ nền trong suốt, cỡ 16–24px là vừa. To hơn cũng được nhưng sẽ bị thu lại, nét vẽ pixel dễ nhoè.',
-  },
-  TITLE: {
-    label: 'Danh hiệu', one: 'danh hiệu',
-    hint: 'Dòng chữ nhỏ hiện ngay cạnh tên bạn ở mọi chỗ trên diễn đàn.',
-    valueLabel: 'Chữ danh hiệu',
-    valueHint: 'Ngắn thôi — ví dụ “Cao thủ Java”, “Thợ săn game”. Tối đa 24 ký tự.',
   },
 };
 
@@ -114,24 +112,16 @@ export interface Cosmetics {
   /** Huy hiệu NHẬN được (huy chương), chỉ lấy cái đang bật hiển thị. */
   medal: string | null;
   medalName: string | null;
-  /** Danh hiệu chữ mua ở cửa hàng, hiện cạnh tên. */
+  /**
+   * Danh hiệu — TÊN BẬC của cấp hiện tại, không mua được.
+   *
+   * Chép sẵn lên hàng người dùng (`User.levelTitle`) chứ không tra bảng
+   * `LevelRule` lúc dựng giao diện: hơn hai mươi chỗ hiện tên người dùng chỉ
+   * cầm theo bộ trang trí, bắt từng chỗ tự tra bảng cấp là chắc chắn có chỗ quên.
+   */
   title: string | null;
 }
 
 export const NO_COSMETICS: Cosmetics = {
   nameColor: null, badge: null, badgeName: null, medal: null, medalName: null, title: null,
 };
-
-/** Trần độ dài chữ danh hiệu — dài quá thì vỡ mọi dòng có tên người. */
-export const TITLE_MAX = 24;
-
-/**
- * Chữ danh hiệu có dùng được không.
- *
- * Chỉ chặn thứ làm hỏng dòng: rỗng, quá dài, hoặc có ký tự xuống dòng. Không
- * cần lọc HTML — React in ra dạng chữ chứ không dựng thẻ.
- */
-export function isTitleText(v: string): boolean {
-  const t = v.trim();
-  return t.length > 0 && t.length <= TITLE_MAX && !/[\r\n\t]/.test(t);
-}

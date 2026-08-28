@@ -25,7 +25,7 @@ import { ReplyBody } from '@/components/forum/ReplyBody';
 import { EditScope } from '@/components/EditScope';
 import { canModerateForum } from '@/lib/moderation';
 import { getLevelLooks, type LevelLook } from '@/lib/level';
-import { LevelBadge, RankBadge } from '@/components/LevelBadge';
+import { LevelBadge } from '@/components/LevelBadge';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 import { cosmeticSelect, toCosmetics } from '@/lib/shop';
 import { hideRules, quoteBBCode, renderHidden, stripHidden } from '@/lib/bbcode';
@@ -67,7 +67,6 @@ function toAuthor(
   return {
     ...u,
     postCount: u._count.threads + u._count.replies,
-    levelIcon: look?.icon ?? null,
     levelColor: look?.color ?? null,
     levelName: look?.name ?? null,
     cosmetics: toCosmetics(u),
@@ -462,8 +461,6 @@ export default async function ThreadPage({ params, searchParams }: {
                             {displayName(ch.author)}
                           </Link>
                           <LevelBadge level={ch.author.level}
-                            color={levelLooks.get(ch.author.level)?.color} name={levelLooks.get(ch.author.level)?.name} />
-                          <RankBadge icon={levelLooks.get(ch.author.level)?.icon}
                             color={levelLooks.get(ch.author.level)?.color} name={levelLooks.get(ch.author.level)?.name} />
                           <span className="text-ink-400">{format(ch.createdAt, 'HH:mm · dd/MM/yyyy')}</span>
                         </div>

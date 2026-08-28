@@ -144,8 +144,14 @@ model User {
   nameColor      ShopItem?      @relation("EquipNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
   shopBadgeId    String?
   shopBadge      ShopItem?      @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
-  shopTitleId    String?
-  shopTitle      ShopItem?      @relation("EquipTitle", fields: [shopTitleId], references: [id], onDelete: SetNull)
+
+  /// Danh hiệu = tên bậc của cấp hiện tại, chép sẵn từ `LevelRule.name`.
+  ///
+  /// Chép chứ không tra bảng lúc dựng giao diện: hơn hai mươi chỗ hiện tên
+  /// người dùng chỉ cầm theo bộ trang trí, bắt từng chỗ tự tra bảng cấp là chắc
+  /// chắn có chỗ quên. Ghi ở đúng hai nơi — lúc lên cấp (`addExp`) và lúc quản
+  /// trị sửa bậc (`saveLevelRule`) — và có `scripts/soat-bo-dem.mjs` đối soát.
+  levelTitle     String?
 
   @@index([level])
   @@index([createdAt])
@@ -580,6 +586,7 @@ enum PointsReason {
   DONATE_SENT // tặng điểm cho bài của người khác
   DONATE_RECEIVED // nhận điểm người khác tặng
   SHOP_BUY // mua đồ trang trí ở cửa hàng
+  SHOP_REFUND // hoàn điểm khi một loại đồ thôi bán
 }
 
 // ============================================================
@@ -625,9 +632,9 @@ model UserMedal {
 model LevelRule {
   id          String  @id @default(cuid())
   level       Int     @unique
+  /// Tên bậc — cũng là DANH HIỆU hiện cạnh tên (chép sang `User.levelTitle`).
   name        String
   expRequired Int
-  icon        String?
   color       String?
 
   // Quyền lợi theo cấp
@@ -1691,11 +1698,11 @@ model ShopItem {
    * Nội dung của món đồ, ý nghĩa tuỳ theo `kind`:
    * NAME_COLOR — một giá trị màu CSS (#hex, rgb(), hoặc linear-gradient()).
    * BADGE      — đường dẫn ảnh huy hiệu, hiện cạnh tên.
-   * TITLE      — dòng chữ danh hiệu, hiện cạnh tên.
    *
    * Cửa hàng CỐ Ý không bán avatar lẫn ảnh bìa: hai thứ ấy người dùng tự tải
    * lên ở trang cài đặt. Bán ảnh bìa thì món mua được sẽ đè lên ảnh người ta
-   * tự chọn — tự dưng cướp mất chỗ của chính chủ.
+   * tự chọn — tự dưng cướp mất chỗ của chính chủ. Danh hiệu cũng thôi bán: nó
+   * là tên bậc theo cấp, thứ phải leo lên mới có.
    */
   value String
 
@@ -1709,7 +1716,6 @@ model ShopItem {
 
   equippedNameColorBy   User[] @relation("EquipNameColor")
   equippedBadgeBy       User[] @relation("EquipBadge")
-  equippedTitleBy       User[] @relation("EquipTitle")
 
   @@index([kind, active, order])
 }
@@ -1719,8 +1725,6 @@ enum ShopItemKind {
   NAME_COLOR
   /// Huy hiệu nhỏ hiện cạnh tên.
   BADGE
-  /// Danh hiệu chữ, hiện ngay cạnh tên.
-  TITLE
 }
 
 /**

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cn, nickClass } from '@/lib/utils';
 import { isGradient, NO_COSMETICS, type Cosmetics } from '@/lib/shop-const';
-import { LevelBadge, RankBadge } from '@/components/LevelBadge';
+import { LevelBadge } from '@/components/LevelBadge';
 
 /**
  * Tên hiển thị của một người, kèm màu tên mua ở cửa hàng.
@@ -64,9 +64,7 @@ export function UserName({
       ) : (
         <span className={cls} style={style}>{label}</span>
       )}
-      {/* Cấp độ và cấp bậc là HAI khung riêng đứng cạnh nhau. */}
       {level != null && <LevelBadge level={level} color={look?.color} name={look?.name} />}
-      <RankBadge icon={look?.icon} color={look?.color} name={look?.name} />
       <CosmeticTitle cosmetics={cosmetics} />
       <CosmeticMedal cosmetics={cosmetics} />
       <CosmeticBadge cosmetics={cosmetics} />

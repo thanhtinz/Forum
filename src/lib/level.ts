@@ -6,8 +6,8 @@ import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export interface LevelLook {
   level: number;
+  /** Tên bậc — cũng chính là DANH HIỆU hiện cạnh tên. */
   name: string;
-  icon: string | null;
   color: string | null;
 }
 
@@ -17,7 +17,7 @@ export interface LevelLook {
  */
 export const getLevelLooks = cache(async (): Promise<Map<number, LevelLook>> => {
   const rules = await db.levelRule.findMany({ take: CONFIG_LIST_CAP,
-    select: { level: true, name: true, icon: true, color: true },
+    select: { level: true, name: true, color: true },
   });
   return new Map(rules.map((r) => [r.level, r]));
 });
@@ -60,7 +60,12 @@ export async function addExp(
 
     let leveledUp = false;
     if (rule && rule.level > user.level) {
-      await client.user.update({ where: { id: userId }, data: { level: rule.level } });
+      // Chép luôn tên bậc lên hàng người dùng: danh hiệu cạnh tên đọc từ đó,
+      // để hơn hai mươi chỗ hiện tên không phải tự tra bảng cấp.
+      await client.user.update({
+        where: { id: userId },
+        data: { level: rule.level, levelTitle: rule.name },
+      });
       await notify(
         {
           userId,

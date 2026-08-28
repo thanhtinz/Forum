@@ -12,7 +12,9 @@ export * from './shop-const';
 export const cosmeticSelect = {
   nameColor: { select: { value: true } },
   shopBadge: { select: { value: true, name: true } },
-  shopTitle: { select: { value: true } },
+  // Danh hiệu KHÔNG bán: nó là tên bậc của cấp, chép sẵn lên hàng người dùng
+  // để đi cùng bộ trang trí tới mọi chỗ (xem `User.levelTitle`).
+  levelTitle: true,
   // Huy chương đang bật hiển thị — chỉ lấy MỘT cái mới nhất: cạnh tên chỉ đủ
   // chỗ cho một huy hiệu nhận được, lấy hết về rồi bỏ đi là phí truy vấn.
   medals: {
@@ -27,7 +29,7 @@ export const cosmeticSelect = {
 export function toCosmetics(u: {
   nameColor?: { value: string } | null;
   shopBadge?: { value: string; name: string } | null;
-  shopTitle?: { value: string } | null;
+  levelTitle?: string | null;
   medals?: { medal: { icon: string; name: string } }[];
 } | null | undefined): Cosmetics {
   const huyChuong = u?.medals?.[0]?.medal ?? null;
@@ -37,7 +39,7 @@ export function toCosmetics(u: {
     badgeName: u?.shopBadge?.name ?? null,
     medal: huyChuong?.icon ?? null,
     medalName: huyChuong?.name ?? null,
-    title: u?.shopTitle?.value ?? null,
+    title: u?.levelTitle ?? null,
   };
 }
 
@@ -116,13 +118,13 @@ export async function getShopItems(opts: {
     viewerId
       ? db.user.findUnique({
           where: { id: viewerId },
-          select: { nameColorId: true, shopBadgeId: true, shopTitleId: true },
+          select: { nameColorId: true, shopBadgeId: true },
         })
       : Promise.resolve(null),
   ]);
 
   const equippedIds = new Set(
-    [me?.nameColorId, me?.shopBadgeId, me?.shopTitleId].filter((x): x is string => !!x),
+    [me?.nameColorId, me?.shopBadgeId].filter((x): x is string => !!x),
   );
 
   return {
@@ -153,12 +155,12 @@ export async function getMyItems(userId: string, page = 1): Promise<{
     }),
     db.user.findUnique({
       where: { id: userId },
-      select: { nameColorId: true, shopBadgeId: true, shopTitleId: true },
+      select: { nameColorId: true, shopBadgeId: true },
     }),
   ]);
 
   const equippedIds = new Set(
-    [me?.nameColorId, me?.shopBadgeId, me?.shopTitleId].filter((x): x is string => !!x),
+    [me?.nameColorId, me?.shopBadgeId].filter((x): x is string => !!x),
   );
 
   return {
@@ -169,8 +171,7 @@ export async function getMyItems(userId: string, page = 1): Promise<{
 }
 
 /** Cột trên User ứng với từng loại đồ. */
-export const EQUIP_FIELD: Record<ShopKind, 'nameColorId' | 'shopBadgeId' | 'shopTitleId'> = {
+export const EQUIP_FIELD: Record<ShopKind, 'nameColorId' | 'shopBadgeId'> = {
   NAME_COLOR: 'nameColorId',
   BADGE: 'shopBadgeId',
-  TITLE: 'shopTitleId',
 };

@@ -115,7 +115,6 @@ export async function Header() {
                 image={user.image ?? null}
                 points={user.points ?? 0}
                 level={user.level ?? 1}
-                levelIcon={levelLook?.icon}
                 levelColor={levelLook?.color}
                 levelName={levelLook?.name}
                 isStaff={role === 'ADMIN' || role === 'MODERATOR'}

@@ -15,7 +15,7 @@ export default async function AdminLevelsPage() {
 
   const rows: LevelRow[] = levels.map((l) => ({
     id: l.id, level: l.level, name: l.name, expRequired: l.expRequired,
-    icon: l.icon, color: l.color, dailyDownloadLimit: l.dailyDownloadLimit,
+    color: l.color, dailyDownloadLimit: l.dailyDownloadLimit,
     canPostThread: l.canPostThread, canUploadFile: l.canUploadFile,
     userCount: countOf.get(l.level) ?? 0,
   }));

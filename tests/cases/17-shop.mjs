@@ -14,7 +14,7 @@ export default async function run(check) {
   const wipe = async () => {
     await db.user.updateMany({
       where: { id: { in: [minh.id, huy.id] } },
-      data: { nameColorId: null, shopBadgeId: null, shopTitleId: null },
+      data: { nameColorId: null, shopBadgeId: null },
     });
     await db.shopItem.deleteMany({ where: { slug: { startsWith: 'kiem-thu-' } } });
   };
@@ -64,13 +64,9 @@ export default async function run(check) {
       (await admin.locator('text=Giá trị màu không dùng được').count()) > 0);
     check('món hỏng không được tạo', (await db.shopItem.count({ where: { name: 'Màu bậy' } })) === 0);
 
-    // Huy hiệu và danh hiệu tạo thẳng bằng dữ liệu — luồng tải ảnh đã kiểm ở album.
-    const danhHieu = await db.shopItem.create({
-      data: { slug: 'kiem-thu-dh-dat', kind: 'TITLE', name: 'Danh hiệu đắt', value: 'Cao thủ kiểm thử', pricePoints: 30 },
-      select: { id: true },
-    });
+    // Huy hiệu tạo thẳng bằng dữ liệu — luồng tải ảnh đã kiểm ở album.
     const badge = await db.shopItem.create({
-      data: { slug: 'kiem-thu-huy-hieu', kind: 'BADGE', name: 'Huy hiệu kiểm thử', value: '/uploads/hh.png', pricePoints: 20 },
+      data: { slug: 'kiem-thu-huy-hieu', kind: 'BADGE', name: 'Huy hiệu đắt', value: '/uploads/hh.png', pricePoints: 30 },
       select: { id: true },
     });
 
@@ -85,21 +81,22 @@ export default async function run(check) {
     // /cua-hang, đếm chung vào là con số sai mà đọc lỗi thì tưởng quầy hỏng.
     const tabs = await member.$$eval('[data-shop-tabs] a', (els) => els.map((e) => e.textContent?.trim() ?? ''));
     check('quầy không còn tab tất cả', !tabs.includes('Tất cả'), JSON.stringify(tabs));
-    // Ba loại: màu tên, huy hiệu, danh hiệu. Avatar và ảnh bìa KHÔNG bán —
-    // người dùng tự tải lên, nên bán ở đây là cướp chỗ của chính chủ.
-    check('quầy có đúng ba tab loại đồ', tabs.length === 3, JSON.stringify(tabs));
-    check('quầy không bán avatar hay ảnh bìa',
-      !tabs.some((t) => /khung|avatar|bìa/i.test(t)), JSON.stringify(tabs));
+    // Hai loại: màu tên và huy hiệu. Avatar, ảnh bìa và danh hiệu KHÔNG bán —
+    // hai thứ đầu người dùng tự tải lên, còn danh hiệu là tên bậc theo cấp,
+    // thứ phải leo lên mới có chứ không bỏ điểm ra mua.
+    check('quầy có đúng hai tab loại đồ', tabs.length === 2, JSON.stringify(tabs));
+    check('quầy không bán avatar, ảnh bìa hay danh hiệu',
+      !tabs.some((t) => /khung|avatar|bìa|danh hiệu/i.test(t)), JSON.stringify(tabs));
     check('tab mặc định là màu tên, không lẫn loại khác',
       (await member.locator('text=Nick đỏ kiểm thử').count()) > 0
-      && (await member.locator('text=Danh hiệu đắt').count()) === 0);
+      && (await member.locator('text=Huy hiệu đắt').count()) === 0);
     check('ô hàng bỏ nhãn loại thừa',
       (await member.locator('ul li .chip:has-text("Màu tên")').count()) === 0);
 
-    await member.goto(`${BASE}/cua-hang?loai=TITLE`, { waitUntil: 'networkidle' });
+    await member.goto(`${BASE}/cua-hang?loai=BADGE`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(700);
-    check('tab danh hiệu chỉ hiện danh hiệu',
-      (await member.locator('text=Danh hiệu đắt').count()) > 0
+    check('tab huy hiệu chỉ hiện huy hiệu',
+      (await member.locator('text=Huy hiệu đắt').count()) > 0
       && (await member.locator('text=Nick đỏ kiểm thử').count()) === 0);
 
     await member.goto(`${BASE}/cua-hang?loai=BIA-RA`, { waitUntil: 'networkidle' });
@@ -151,9 +148,9 @@ export default async function run(check) {
     await db.user.update({ where: { id: minh.id }, data: { points: 5 }, select: { id: true } });
     await member.reload({ waitUntil: 'networkidle' });
     await member.waitForTimeout(800);
-    await member.goto(`${BASE}/cua-hang?loai=TITLE`, { waitUntil: 'networkidle' });
+    await member.goto(`${BASE}/cua-hang?loai=BADGE`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(700);
-    const poorBtn = row(member, 'Danh hiệu đắt').locator('button:has-text("Mua")');
+    const poorBtn = row(member, 'Huy hiệu đắt').locator('button:has-text("Mua")');
     check('không đủ điểm thì nút mua bị khoá', await poorBtn.isDisabled());
 
     await db.user.update({ where: { id: minh.id }, data: { points: 100 }, select: { id: true } });
@@ -217,7 +214,7 @@ export default async function run(check) {
 
     // Món chưa ai mua thì xoá được
     admin.once('dialog', (d) => d.accept());
-    await admin.locator('li').filter({ hasText: 'Huy hiệu kiểm thử' }).locator('button[title="Xoá"]').click();
+    await admin.locator('li').filter({ hasText: 'Huy hiệu đắt' }).locator('button[title="Xoá"]').click();
     await admin.waitForTimeout(2000);
     check('món chưa ai mua thì xoá được', (await db.shopItem.count({ where: { id: badge.id } })) === 0);
 
@@ -231,7 +228,6 @@ export default async function run(check) {
     await member.waitForTimeout(800);
     check('người đã mua vẫn thấy món trong kho đồ',
       (await member.locator('text=Nick đỏ kiểm thử').count()) > 0);
-    void danhHieu;
 
     // ── Ảnh bìa là của chính chủ, quầy không được đụng vào ───────────────
     // Trước đây quầy có bán ảnh bìa, và món mua được ưu tiên hơn ảnh người
@@ -244,61 +240,22 @@ export default async function run(check) {
     await db.user.update({ where: { id: minh.id }, data: { cover: null }, select: { id: true } });
 
 
-    // ── Danh hiệu: món CHỮ, hiện cạnh tên ở mọi chỗ ──────────────────────
-    const title = await db.shopItem.create({
-      data: {
-        slug: 'kiem-thu-danh-hieu', kind: 'TITLE', name: 'Danh hiệu kiểm thử',
-        value: 'Cao thu Java', pricePoints: 10,
-      },
-      select: { id: true },
-    });
-    await db.user.update({ where: { id: minh.id }, data: { points: 100 }, select: { id: true } });
-
+    // ── Danh hiệu KHÔNG bán ─────────────────────────────────────────────
+    // Danh hiệu nay là tên bậc theo cấp. Quầy không được có đường nào bán nó,
+    // kể cả bằng địa chỉ gõ tay.
     await member.goto(`${BASE}/cua-hang?loai=TITLE`, { waitUntil: 'networkidle' });
-    await member.waitForTimeout(800);
-    check('tab danh hiệu hiện đúng món', (await member.locator('text=Danh hiệu kiểm thử').count()) > 0);
-
-    await row(member, 'Danh hiệu kiểm thử').locator('button:has-text("Mua")').click();
-    await doiToi(() => db.shopPurchase.findFirst({ where: { userId: minh.id, itemId: title.id }, select: { id: true } }));
-    await member.reload({ waitUntil: 'networkidle' });
     await member.waitForTimeout(700);
-    await row(member, 'Danh hiệu kiểm thử').locator('button:has-text("Đeo lên")').click();
-    const deoDanhHieu = await doiToi(async () => {
-      const u = await db.user.findUnique({ where: { id: minh.id }, select: { shopTitleId: true } });
-      return u?.shopTitleId === title.id ? u : null;
-    });
-    check('đeo được danh hiệu', !!deoDanhHieu);
+    const tabsCuoi = await member.$$eval('[data-shop-tabs] a', (els) => els.map((e) => e.textContent?.trim() ?? ''));
+    check('gõ tay ?loai=TITLE không mở ra tab danh hiệu nào',
+      tabsCuoi.length === 2 && !tabsCuoi.some((t) => /danh hiệu/i.test(t)), JSON.stringify(tabsCuoi));
 
-    // Danh hiệu đi kèm tên nên phải hiện ở cả trang cá nhân lẫn danh bạ.
-    await member.goto(`${BASE}/u/minhdev`, { waitUntil: 'networkidle' });
-    await member.waitForTimeout(700);
-    check('danh hiệu hiện ở trang cá nhân', (await member.content()).includes('Cao thu Java'));
-
-    await member.goto(`${BASE}/thanh-vien?q=minhdev`, { waitUntil: 'networkidle' });
-    await member.waitForTimeout(700);
-    check('danh hiệu hiện ở danh bạ thành viên', (await member.content()).includes('Cao thu Java'));
-
-    // Chữ danh hiệu quá dài phải bị chặn ở máy chủ.
     await admin.goto(`${BASE}/admin/shop`, { waitUntil: 'networkidle' });
     await admin.waitForTimeout(800);
     await admin.locator('button:has-text("Thêm món")').click();
     await admin.waitForTimeout(400);
-    await admin.locator('form label:has-text("Danh hiệu")').click();
-    await admin.waitForTimeout(300);
-    await admin.fill('form input[name="name"]', 'Danh hieu dai');
-    await admin.locator('form input[name="value"]').evaluate((el, v) => {
-      // maxLength của ô chặn gõ tay, nên đặt thẳng giá trị để thử phần kiểm ở
-      // máy chủ — giao diện chỉ là gợi ý, chốt chặn phải nằm dưới máy chủ.
-      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-      setter.call(el, v);
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-    }, 'D'.repeat(60));
-    await admin.locator('form button[type="submit"]:has-text("Lưu")').click();
-    await admin.waitForTimeout(2000);
-    check('danh hiệu quá dài bị chặn',
-      (await db.shopItem.count({ where: { name: 'Danh hieu dai' } })) === 0);
+    check('trang quản trị không còn loại danh hiệu',
+      (await admin.locator('form input[name="kind"][value="TITLE"]').count()) === 0);
 
-    await db.user.update({ where: { id: minh.id }, data: { shopTitleId: null }, select: { id: true } });
   } finally {
     await wipe();
     await db.user.update({ where: { id: minh.id }, data: { points: minh.points }, select: { id: true } });

@@ -561,7 +561,6 @@ export async function saveLevelRule(_prev: LevelState, formData: FormData): Prom
   const level = parseInt(String(formData.get('level') ?? ''), 10);
   const name = String(formData.get('name') ?? '').trim();
   const expRequired = parseInt(String(formData.get('expRequired') ?? ''), 10);
-  const icon = normalizeIcon(formData.get('icon'));
   const color = String(formData.get('color') ?? '').trim() || null;
   const dailyRaw = String(formData.get('dailyDownloadLimit') ?? '').trim();
   const dailyDownloadLimit = dailyRaw === '' ? null : Math.max(0, parseInt(dailyRaw, 10) || 0);
@@ -575,7 +574,7 @@ export async function saveLevelRule(_prev: LevelState, formData: FormData): Prom
   const clash = await db.levelRule.findUnique({ where: { level }, select: { id: true } });
   if (clash && clash.id !== id) return { error: `Cấp ${level} đã tồn tại.` };
 
-  const data = { level, name, expRequired, icon, color, dailyDownloadLimit, canPostThread, canUploadFile };
+  const data = { level, name, expRequired, color, dailyDownloadLimit, canPostThread, canUploadFile };
   let savedId = id;
   try {
     if (id) await db.levelRule.update({ where: { id }, data, select: { id: true } });
@@ -583,6 +582,12 @@ export async function saveLevelRule(_prev: LevelState, formData: FormData): Prom
   } catch {
     return { error: 'Không lưu được cấp độ.' };
   }
+
+  // Tên bậc CHÍNH LÀ danh hiệu hiện cạnh tên, mà nó được chép sẵn lên từng hàng
+  // người dùng. Đổi tên ở đây mà quên chỗ này là mọi người đang ở cấp ấy vẫn
+  // đeo cái tên cũ mãi mãi.
+  await db.user.updateMany({ where: { level }, data: { levelTitle: name } });
+
   await logAdmin({
     actor: admin, action: id ? 'level.update' : 'level.create', targetType: 'levelRule', targetId: savedId,
     summary: `${id ? 'Sửa' : 'Tạo'} cấp ${level} “${name}” — cần ${expRequired.toLocaleString('vi-VN')} EXP`,
@@ -596,6 +601,9 @@ export async function deleteLevelRule(id: string) {
   const admin = await requireAdmin();
   const r = await db.levelRule.findUnique({ where: { id }, select: { level: true, name: true } });
   await db.levelRule.delete({ where: { id } }).catch(() => {});
+  // Xoá bậc thì người đang ở cấp ấy hết danh hiệu — để lại tên của một bậc
+  // không còn tồn tại thì còn khó hiểu hơn.
+  if (r) await db.user.updateMany({ where: { level: r.level }, data: { levelTitle: null } });
   await logAdmin({
     actor: admin, action: 'level.delete', targetType: 'levelRule', targetId: id,
     summary: `Xoá cấp ${r?.level ?? '?'} “${r?.name ?? id}”`,

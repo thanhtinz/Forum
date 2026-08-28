@@ -159,20 +159,6 @@ function Preview({ item }: { item: ShopItemView }) {
     );
   }
 
-  if (item.kind === 'TITLE') {
-    return (
-      <span className="grid h-16 place-items-center rounded-xl bg-ink-50 dark:bg-ink-800/50">
-        <span className="inline-flex items-center gap-1.5">
-          <b>Tên của bạn</b>
-          <span className="rounded-full bg-ink-100 px-1.5 py-px text-[11px] font-semibold text-ink-500 dark:bg-ink-700 dark:text-ink-300">
-            {item.value}
-          </span>
-        </span>
-      </span>
-    );
-  }
-
-
 
   return (
     <span className="grid h-16 place-items-center rounded-xl bg-ink-50 dark:bg-ink-800/50">
@@ -188,7 +174,7 @@ function Preview({ item }: { item: ShopItemView }) {
 /**
  * Xem trước cỡ lớn: món đồ đeo lên chính hồ sơ của người đang xem.
  *
- * Chỉ THAY món cùng loại, giữ nguyên hai loại kia — đó mới là thứ họ sẽ thấy
+ * Chỉ THAY món cùng loại, giữ nguyên những thứ khác — đó mới là thứ họ sẽ thấy
  * sau khi mua, chứ không phải món này đứng một mình trên nền trắng.
  */
 function BigPreview({ item, viewer }: { item: ShopItemView; viewer?: ShopViewer }) {
@@ -197,7 +183,6 @@ function BigPreview({ item, viewer }: { item: ShopItemView; viewer?: ShopViewer 
     ...base,
     ...(item.kind === 'NAME_COLOR' ? { nameColor: item.value } : {}),
     ...(item.kind === 'BADGE' ? { badge: item.value, badgeName: item.name } : {}),
-    ...(item.kind === 'TITLE' ? { title: item.value } : {}),
   };
 
   const name = viewer?.name ?? 'Tên của bạn';

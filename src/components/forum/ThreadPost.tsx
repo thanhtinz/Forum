@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { CheckCircle2, CalendarDays, MessageSquare, Scale } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
 import { bbcodeToHtml } from '@/lib/bbcode';
-import { LevelBadge, RankBadge } from '@/components/LevelBadge';
+import { LevelBadge } from '@/components/LevelBadge';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { NO_COSMETICS, type Cosmetics } from '@/lib/shop-const';
 import { karmaSigned, karmaTone } from '@/lib/karma-const';
@@ -16,7 +16,6 @@ export interface PostAuthor {
   createdAt?: Date;
   postCount?: number;
   /** Huy hiệu cấp lấy từ LevelRule (nếu admin đã cấu hình cấp này). */
-  levelIcon?: string | null;
   levelColor?: string | null;
   levelName?: string | null;
   /** Chữ ký (BBCode thô) — dán dưới mọi bài của người này. */
@@ -89,10 +88,8 @@ export function ThreadPost({ author, createdAt, index, isSolution, header, child
             <UserName username={author.username} name={author.name} levelColor={author.levelColor}
               cosmetics={cos} className="leading-tight" />
             <p className="truncate text-[11px] text-ink-400">{author.levelName ?? rankOf(author.level)}</p>
-            <span className="mt-1 flex flex-wrap items-center justify-center gap-1">
-              <LevelBadge level={author.level} color={author.levelColor} name={author.levelName} />
-              <RankBadge icon={author.levelIcon} color={author.levelColor} name={author.levelName} />
-            </span>
+            <LevelBadge className="mt-1" level={author.level}
+              color={author.levelColor} name={author.levelName} />
           </div>
 
           {author.mood?.trim() && (

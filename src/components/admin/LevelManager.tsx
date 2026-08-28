@@ -5,25 +5,21 @@ import { Plus, Pencil, Trash2, X, Download, MessageSquarePlus, Upload } from 'lu
 import { saveLevelRule, deleteLevelRule, type LevelState } from '@/app/admin/actions';
 import { fmtCount } from '@/lib/utils';
 import { ActionForm } from '@/components/ActionForm';
-import { isImageIcon } from '@/lib/icon';
-import { IconField } from '@/components/admin/IconField';
 
 export interface LevelRow {
   id: string; level: number; name: string; expRequired: number;
-  icon: string | null; color: string | null;
+  color: string | null;
   dailyDownloadLimit: number | null; canPostThread: boolean; canUploadFile: boolean;
   userCount: number;
 }
 
-function LevelIconBox({ icon, level, color, className = '' }: {
-  icon: string | null; level: number; color: string | null; className?: string;
+function LevelIconBox({ level, color, className = '' }: {
+  level: number; color: string | null; className?: string;
 }) {
   return (
     <span className={`grid size-10 shrink-0 place-items-center overflow-hidden rounded-xl text-sm font-bold ${className}`}
       style={{ backgroundColor: (color ?? '#e5e7eb') + '33', color: color ?? '#6b7280' }}>
-      {isImageIcon(icon)
-        ? <img src={icon} alt="" className="size-full object-contain" />
-        : (icon || `Lv${level}`)}
+      Lv{level}
     </span>
   );
 }
@@ -61,7 +57,7 @@ function LevelRowView({ row, onEdit }: { row: LevelRow; onEdit: () => void }) {
 
   return (
     <div className="p-3 sm:flex sm:items-center sm:gap-3">
-      <LevelIconBox icon={row.icon} level={row.level} color={row.color} />
+      <LevelIconBox level={row.level} color={row.color} />
       <div className="mt-2 min-w-0 sm:mt-0 sm:flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-sm font-semibold text-ink-900 dark:text-white">Cấp {row.level} · {row.name}</span>
@@ -134,10 +130,6 @@ function LevelForm({ initial, nextLevel, onDone }: { initial: LevelRow | null; n
           <span className="mb-1 block text-sm font-medium">Màu</span>
           <input name="color" type="color" value={color} onChange={(e) => setColor(e.target.value)} className="input !h-10 !p-1" />
         </label>
-
-        <IconField className="sm:col-span-2" defaultValue={initial?.icon} color={color}
-          fallback={<span className="text-sm font-bold">Lv{level}</span>}
-          placeholder="⭐ hoặc dán link ảnh (để trống thì hiện Lv)" />
       </div>
 
       <div className="flex flex-wrap gap-4">

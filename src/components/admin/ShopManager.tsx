@@ -6,7 +6,7 @@ import { ImagePlus, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { saveShopItem, deleteShopItem, type ShopAdminState } from '@/app/admin/shop/actions';
 import { ActionForm } from '@/components/ActionForm';
 import {
-  isGradient, KIND_LABELS, SHOP_KINDS, SHOP_NAME_MAX, SHOP_DESC_MAX, SHOP_PRICE_MAX, TITLE_MAX,
+  isGradient, KIND_LABELS, SHOP_KINDS, SHOP_NAME_MAX, SHOP_DESC_MAX, SHOP_PRICE_MAX,
   type ShopItemView, type ShopKind,
 } from '@/lib/shop-const';
 import { fmtCount } from '@/lib/utils';
@@ -97,13 +97,6 @@ function MiniPreview({ item }: { item: ShopItemView }) {
       : { color: item.value };
     return <b className="w-14 shrink-0 text-center" style={style}>Aa</b>;
   }
-  if (item.kind === 'TITLE') {
-    return (
-      <span className="w-14 shrink-0 truncate rounded-full bg-ink-100 px-1.5 py-px text-center text-[11px] font-semibold text-ink-500 dark:bg-ink-800 dark:text-ink-300">
-        {item.value}
-      </span>
-    );
-  }
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={item.value} alt="" className="size-8 shrink-0 object-contain" />;
 }
@@ -141,7 +134,6 @@ function ItemForm({ initial, onDone }: { initial: ShopItemView | null; onDone: (
   };
 
   const isColor = kind === 'NAME_COLOR';
-  const isText = kind === 'TITLE';
   const meta = KIND_LABELS[kind];
 
   return (
@@ -159,8 +151,6 @@ function ItemForm({ initial, onDone }: { initial: ShopItemView | null; onDone: (
                   // Đổi loại thì giá trị cũ vô nghĩa (màu ↔ ảnh), dọn luôn cho
                   // khỏi lưu nhầm một đường dẫn ảnh vào ô màu.
                   setValue(k === 'NAME_COLOR' ? '#e11d48' : '');
-                  // Danh hiệu là CHỮ, hai loại kia là ảnh, màu lại là màu —
-                  // giữ lại giá trị cũ khi đổi loại là lưu nhầm chắc chắn.
                 }}
                 className="peer sr-only" />
               <span className="chip bg-ink-100 text-ink-600 peer-checked:bg-brand-500 peer-checked:text-white dark:bg-ink-800 dark:text-ink-300">
@@ -193,19 +183,7 @@ function ItemForm({ initial, onDone }: { initial: ShopItemView | null; onDone: (
       </div>
 
       <Field label={meta.valueLabel} hint={meta.valueHint}>
-        {isText ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <input name="value" required maxLength={TITLE_MAX} value={value}
-              onChange={(e) => setValue(e.target.value)}
-              className="input min-w-48 flex-1" placeholder="Cao thủ Java" />
-            <span className="rounded-lg bg-ink-50 px-3 py-1.5 dark:bg-ink-800/50">
-              <b className="mr-1.5">Tên của bạn</b>
-              <span className="rounded-full bg-ink-100 px-1.5 py-px text-[11px] font-semibold text-ink-500 dark:bg-ink-700 dark:text-ink-300">
-                {value || 'danh hiệu'}
-              </span>
-            </span>
-          </div>
-        ) : isColor ? (
+        {isColor ? (
           <div className="flex flex-wrap items-center gap-2">
             <input name="value" required value={value} onChange={(e) => setValue(e.target.value)}
               className="input min-w-48 flex-1" placeholder="#e11d48" />

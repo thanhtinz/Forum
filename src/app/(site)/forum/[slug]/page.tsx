@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { Prisma } from '@prisma/client';
-import { MessagesSquare, MessageSquare, PenLine } from 'lucide-react';
+import { MessagesSquare, MessageSquare, PenLine, Sparkles } from 'lucide-react';
 import { db } from '@/lib/db';
 import { truncate, plainText, cn } from '@/lib/utils';
 import { FORUM_ACCESS_BADGE, forumTint } from '@/lib/forum';
@@ -127,6 +127,11 @@ export default async function ForumPage({ params, searchParams }: {
               </Link>
             ))}
           </div>
+          {session?.user && (
+            <Link href="/chua-doc" className="btn-outline shrink-0 gap-1.5 whitespace-nowrap !px-3 !py-1.5 text-sm">
+              <Sparkles size={15} /> Chưa đọc
+            </Link>
+          )}
           {session?.user && <MarkAllReadButton />}
           <Link href={`/forum/${slug}/new`} className="btn-primary shrink-0 whitespace-nowrap !px-3 !py-1.5 text-sm sm:ml-auto">
             <PenLine size={15} /> Đăng chủ đề

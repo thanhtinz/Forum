@@ -1012,6 +1012,7 @@ export async function markAllForumsRead(): Promise<ReadAllState> {
   // trang chủ cũng có bảng chủ đề mới nhất nên làm mới luôn.
   revalidatePath('/');
   revalidatePath('/forum', 'layout');
+  revalidatePath('/chua-doc');
   return { ok: true };
 }
 

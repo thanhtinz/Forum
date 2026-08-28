@@ -46,7 +46,7 @@ async function main() {
   // ── SiteSetting mặc định ──
   const settings: Record<string, unknown> = {
     'site.name': 'Nova Platform',
-    'site.description': 'Nền tảng blog + diễn đàn + nội dung trả phí',
+    'site.description': 'Diễn đàn và kho game, tính điểm thay cho tiền',
     'points.checkinBase': 5,
     'points.checkinStep': 2,
     'points.postCreate': 10,

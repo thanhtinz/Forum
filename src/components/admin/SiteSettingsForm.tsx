@@ -35,7 +35,7 @@ export function SiteSettingsForm({ initial }: { initial: SiteSettings }) {
         </label>
         <label className="block sm:col-span-2">
           <span className="mb-1 block text-sm font-medium">Dòng chân trang</span>
-          <input name="footerText" defaultValue={initial.footerText} className="input" placeholder="Nova Platform. Nền tảng blog + diễn đàn." />
+          <input name="footerText" defaultValue={initial.footerText} className="input" placeholder="Nova Platform. Diễn đàn và kho game." />
           <span className="mt-1 block text-xs text-ink-400">Năm bản quyền được thêm tự động phía trước.</span>
         </label>
       </div>

@@ -81,7 +81,9 @@ export default async function run(check) {
     check('quầy hàng hiện món vừa tạo', (await member.locator('text=Nick đỏ kiểm thử').count()) > 0);
 
     // Quầy tách theo loại: không có mục "tất cả", mỗi loại một tab riêng.
-    const tabs = await member.$$eval('nav a[href^="/cua-hang"]', (els) => els.map((e) => e.textContent?.trim() ?? ''));
+    // Chỉ đếm tab TRONG quầy: menu đầu trang và chân trang cũng có liên kết
+    // /cua-hang, đếm chung vào là con số sai mà đọc lỗi thì tưởng quầy hỏng.
+    const tabs = await member.$$eval('[data-shop-tabs] a', (els) => els.map((e) => e.textContent?.trim() ?? ''));
     check('quầy không còn tab tất cả', !tabs.includes('Tất cả'), JSON.stringify(tabs));
     check('quầy có đúng ba tab loại đồ', tabs.length === 3, JSON.stringify(tabs));
     check('tab mặc định là màu tên, không lẫn loại khác',

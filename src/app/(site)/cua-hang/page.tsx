@@ -69,7 +69,7 @@ export default async function ShopPage({ searchParams }: {
         )}
       </div>
 
-      <nav className="mt-4 flex flex-wrap gap-1.5">
+      <nav aria-label="Loại đồ trong quầy" data-shop-tabs className="mt-4 flex flex-wrap gap-1.5">
         {SHOP_KINDS.map((k) => (
           <Link key={k} href={href(k)}
             className={`chip ${k === kind

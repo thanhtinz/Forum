@@ -98,16 +98,24 @@ export function Avatar({ image, name, cosmetics = NO_COSMETICS, size = 40, round
   const letter = (name ?? '?')[0]?.toUpperCase() ?? '?';
 
   /**
-   * Chấm online phải NẰM TRÊN VÀNH tròn, không phải ở góc khung bao.
+   * Chấm online phải nằm TRÊN VÀNH avatar, và vành ấy nằm ở đâu thì tuỳ hình.
    *
-   * Avatar tròn nhưng khung bao nó là hình vuông, nên góc dưới-phải của khung
-   * nằm hẳn ngoài đường tròn — dán chấm vào đó là chấm bay lơ lửng bên ngoài.
-   * Điểm ở góc 45° của đường tròn thụt vào so với góc khung đúng
-   * `bán kính × (1 − 1/√2)`, tức `0.1464 × cạnh`. Đặt tâm chấm vào đúng chỗ ấy
-   * thì nó ôm lấy vành avatar ở mọi cỡ.
+   * • Avatar TRÒN: khung bao nó là hình vuông, nên góc dưới-phải của khung nằm
+   *   hẳn ngoài đường tròn — dán chấm vào góc là chấm bay lơ lửng bên ngoài.
+   *   Điểm ở góc 45° của đường tròn thụt vào so với góc khung đúng
+   *   `bán kính × (1 − 1/√2)`, tức `0.1464 × cạnh`.
+   * • Avatar VUÔNG BO GÓC (trang cá nhân): vành gần trùng với khung bao, thụt
+   *   vào chừng ấy thì chấm rơi vào giữa ảnh. Chỉ cần nhích nhẹ cho nó cắn lấy
+   *   góc là vừa.
+   *
+   * Cỡ chấm cũng phải có TRẦN: avatar 96px mà nhân 0.3 thì ra một quả bóng 29px
+   * che mất cả góc mặt.
    */
-  const cham = Math.max(8, Math.round(size * 0.3));
-  const lech = Math.max(0, Math.round(size * 0.1464 - cham / 2));
+  const tron = rounded.includes('rounded-full');
+  const cham = Math.min(18, Math.max(8, Math.round(size * 0.3)));
+  const lech = tron
+    ? Math.max(0, Math.round(size * 0.1464 - cham / 2))
+    : Math.round(size * 0.04);
 
   return (
     <span className={cn('relative inline-block shrink-0', className)} style={{ width: size, height: size }}>

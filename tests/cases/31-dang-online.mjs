@@ -113,6 +113,32 @@ export default async function run(check) {
     check('ô cộng đồng ở cột bên dẫn sang trang này',
       (await p.locator('a[href="/online"]').count()) > 0);
 
+    // ── Chấm xanh trên trang cá nhân ─────────────────────────────────────
+    // Chấm nằm TRONG khung avatar, không phải lơ lửng bên ngoài: avatar tròn
+    // thì khung bao nó vuông, dán chấm vào góc khung là chấm rơi ra ngoài vành.
+    await db.user.update({ where: { id: ai.id }, data: { lastSeenAt: new Date() }, select: { id: true } });
+    await p.goto(`${BASE}/u/minhdev`, { waitUntil: 'networkidle' });
+    await p.waitForTimeout(900);
+    const chamHoSo = await p.evaluate(() => {
+      const c = document.querySelector('[aria-label="Đang trực tuyến"]');
+      if (!c) return null;
+      const a = c.parentElement.getBoundingClientRect();
+      const r = c.getBoundingClientRect();
+      return { trong: r.right <= a.right + 1 && r.bottom <= a.bottom + 1, canhCham: Math.round(r.width), canhAvatar: Math.round(a.width) };
+    });
+    check('trang cá nhân có chấm xanh khi đang online', !!chamHoSo, String(chamHoSo));
+    check('chấm nằm gọn trong khung avatar', chamHoSo?.trong === true, JSON.stringify(chamHoSo));
+    check('chấm không to quá so với avatar',
+      !!chamHoSo && chamHoSo.canhCham <= chamHoSo.canhAvatar * 0.32, JSON.stringify(chamHoSo));
+
+    await db.user.update({
+      where: { id: ai.id }, data: { lastSeenAt: new Date(Date.now() - 60 * 60 * 1000) }, select: { id: true },
+    });
+    await p.goto(`${BASE}/u/minhdev`, { waitUntil: 'networkidle' });
+    await p.waitForTimeout(900);
+    check('rời đi quá lâu thì hết chấm xanh',
+      (await p.locator('[aria-label="Đang trực tuyến"]').count()) === 0);
+
     // ── Khách vãng lai vẫn xem được ──────────────────────────────────────
     const khach = await openPage(null);
     const r = await khach.goto(trang, { waitUntil: 'networkidle' });

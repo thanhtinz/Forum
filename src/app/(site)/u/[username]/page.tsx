@@ -32,6 +32,7 @@ import { Guestbook } from '@/components/user/Guestbook';
 import { KarmaBox } from '@/components/user/KarmaBox';
 import { PixelIcon } from '@/components/PixelIcon';
 import { checkKarmaPermission } from '@/lib/karma';
+import { ONLINE_WINDOW_MS } from '@/lib/members';
 import { karmaSigned, karmaTone } from '@/lib/karma-const';
 
 export const dynamic = 'force-dynamic';
@@ -82,7 +83,7 @@ export default async function ProfilePage({ params, searchParams }: {
     where: { username },
     select: {
       id: true, name: true, username: true, image: true, cover: true, bio: true, mood: true, level: true, role: true,
-      points: true, karma: true, createdAt: true,
+      points: true, karma: true, createdAt: true, lastSeenAt: true,
       profileCover: { select: { value: true } },
       _count: { select: { threads: true, replies: true, followers: true, following: true } },
       ...cosmeticSelect,
@@ -90,6 +91,10 @@ export default async function ProfilePage({ params, searchParams }: {
     },
   });
   if (!user) notFound();
+
+  // Cùng cửa sổ 15 phút với chấm xanh ở danh bạ, cột bên và trang Đang online —
+  // để cùng một người không chỗ nào báo online còn chỗ kia báo offline.
+  const dangOnline = !!user.lastSeenAt && user.lastSeenAt.getTime() >= Date.now() - ONLINE_WINDOW_MS;
 
   const session = await auth();
   const viewerId = session?.user?.id ?? null;
@@ -156,7 +161,7 @@ export default async function ProfilePage({ params, searchParams }: {
         <div className="px-5 pb-5 sm:px-6">
           <div className="-mt-12 flex flex-wrap items-end justify-between gap-3">
             <Avatar image={user.image} name={name} cosmetics={cos} size={96}
-              rounded="rounded-2xl border-4 border-white dark:border-ink-900" />
+              rounded="rounded-2xl border-4 border-white dark:border-ink-900" online={dangOnline} />
             <div className="mb-1 flex flex-wrap items-center justify-end gap-2">
               {/* Đã chặn thì không còn nhắn tin / theo dõi, chỉ còn nút bỏ chặn */}
               {viewerId && viewerId !== user.id && !blocked && user.username && (

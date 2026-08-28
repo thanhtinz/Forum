@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Flame, Users, Trophy, Circle } from 'lucide-react';
+import { Flame, Users, Trophy } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ONLINE_WINDOW_MS } from '@/lib/members';
 import { fmtCount, fmtAgo } from '@/lib/utils';
@@ -55,9 +55,8 @@ export async function ForumSidebar() {
         ) : (
           <div className="flex flex-wrap gap-2">
             {online.map((u) => (
-              <Link key={u.username} href={`/u/${u.username ?? ''}`} title={`${u.name ?? u.username} · Lv${u.level}`} className="relative">
-                <Avatar image={u.image} name={u.name ?? u.username} cosmetics={toCosmetics(u)} size={36} />
-                <Circle size={9} className="absolute -bottom-0.5 -right-0.5 fill-emerald-500 text-white dark:text-ink-900" />
+              <Link key={u.username} href={`/u/${u.username ?? ''}`} title={`${u.name ?? u.username} · Lv${u.level}`}>
+                <Avatar image={u.image} name={u.name ?? u.username} cosmetics={toCosmetics(u)} size={36} online />
               </Link>
             ))}
           </div>

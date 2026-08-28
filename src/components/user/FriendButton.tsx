@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
-import { Check, Clock, UserCheck, UserPlus, UserX } from 'lucide-react';
+import { Clock, UserRound, UserRoundCheck, UserRoundPlus, UserRoundX, Users } from 'lucide-react';
 import {
   sendFriendRequest, acceptFriendRequest, removeFriendship, removeFriendshipWith,
 } from '@/app/(site)/user/friends/actions';
@@ -32,7 +32,7 @@ export function FriendButton({ targetId, targetName, initial, loggedIn, callback
     return (
       <Link href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
         className="btn-outline !rounded-full gap-1.5 !px-3.5 !py-2 text-sm">
-        <UserPlus size={15} /> Kết bạn
+        <UserRoundPlus size={15} /> Kết bạn
       </Link>
     );
   }
@@ -54,14 +54,14 @@ export function FriendButton({ targetId, targetName, initial, loggedIn, callback
         {state === 'none' && (
           <button type="button" disabled={pending} className={cls}
             onClick={() => run(() => sendFriendRequest(targetId), 'outgoing')}>
-            <UserPlus size={15} /> {pending ? 'Đang gửi…' : 'Kết bạn'}
+            <UserRoundPlus size={15} /> {pending ? 'Đang gửi…' : 'Kết bạn'}
           </button>
         )}
 
         {state === 'outgoing' && (
           <button type="button" disabled={pending} title="Rút lời mời" className={cls}
             onClick={() => run(() => removeFriendshipWith(targetId), 'none')}>
-            <Clock size={15} /> {pending ? 'Đang rút…' : 'Đã gửi lời mời'}
+            <NguoiChoDuyet /> {pending ? 'Đang rút…' : 'Đã gửi lời mời'}
           </button>
         )}
 
@@ -74,11 +74,11 @@ export function FriendButton({ targetId, targetName, initial, loggedIn, callback
                 const r = await sendFriendRequest(targetId);
                 return r;
               }, 'friends')}>
-              <Check size={15} /> {pending ? 'Đang lưu…' : 'Đồng ý kết bạn'}
+              <UserRoundCheck size={15} /> {pending ? 'Đang lưu…' : 'Đồng ý kết bạn'}
             </button>
             <button type="button" disabled={pending} title="Từ chối" className={cls}
               onClick={() => run(() => removeFriendshipWith(targetId), 'none')}>
-              <UserX size={15} />
+              <UserRoundX size={15} />
             </button>
           </>
         )}
@@ -90,11 +90,28 @@ export function FriendButton({ targetId, targetName, initial, loggedIn, callback
               if (!confirm(`Huỷ kết bạn với ${targetName}?`)) return;
               run(() => removeFriendshipWith(targetId), 'none');
             }}>
-            <UserCheck size={15} /> Bạn bè
+            <Users size={15} /> Bạn bè
           </button>
         )}
       </span>
       {error && <span className="text-xs text-red-600">{error}</span>}
+    </span>
+  );
+}
+
+/**
+ * 👤🕐 — "đã gửi lời mời, đang chờ".
+ *
+ * lucide bản đang dùng chưa có `UserRoundClock`, mà nâng cả thư viện lên bản
+ * mới chỉ vì một icon thì không đáng, nên ghép người với đồng hồ. Đồng hồ có
+ * nền cùng màu mặt thẻ để nó nổi khỏi hình người bên dưới.
+ */
+function NguoiChoDuyet({ size = 15 }: { size?: number }) {
+  return (
+    <span className="relative inline-flex shrink-0" style={{ width: size, height: size }}>
+      <UserRound size={size} />
+      <Clock size={Math.round(size * 0.66)} strokeWidth={2.75}
+        className="absolute -bottom-1 -right-1 rounded-full bg-[color:var(--nova-surface)]" />
     </span>
   );
 }
@@ -127,7 +144,7 @@ export function FriendRowActions({ id, kind, name }: {
       {kind === 'incoming' && (
         <button type="button" disabled={pending} className="btn-primary !py-1 text-xs disabled:opacity-60"
           onClick={() => act(() => acceptFriendRequest(id), () => setAccepted(true))}>
-          <Check size={14} /> Đồng ý
+          <UserRoundCheck size={14} /> Đồng ý
         </button>
       )}
       <button type="button" disabled={pending}
@@ -139,7 +156,7 @@ export function FriendRowActions({ id, kind, name }: {
           // dùng removeFriendship chứ không phải bản …With.
           act(() => removeFriendship(id), () => setGone(true));
         }}>
-        <UserX size={14} /> {kind === 'incoming' ? 'Từ chối' : kind === 'outgoing' ? 'Rút lại' : 'Huỷ kết bạn'}
+        <UserRoundX size={14} /> {kind === 'incoming' ? 'Từ chối' : kind === 'outgoing' ? 'Rút lại' : 'Huỷ kết bạn'}
       </button>
       {error && <span className="text-xs text-red-600">{error}</span>}
     </span>

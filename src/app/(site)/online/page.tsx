@@ -83,12 +83,8 @@ export default async function OnlinePage({ searchParams }: {
               const look = levelLooks.get(u.chip?.level ?? 1);
               return (
                 <li key={u.id} className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-ink-50 sm:px-4 dark:hover:bg-ink-800/50">
-                  <Link href={`/u/${u.chip?.username ?? ''}`} className="relative shrink-0 self-start" aria-label={name}>
-                    <Avatar image={u.chip?.image ?? null} name={name} cosmetics={u.chip?.cosmetics} size={40} />
-                    {/* Dấu online là một chấm tròn chứ không phải icon: ở góc
-                        avatar, cỡ chừng này thì mọi icon đều thành vệt mờ. */}
-                    <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white bg-emerald-500 dark:border-ink-900"
-                      aria-label="Đang online" />
+                  <Link href={`/u/${u.chip?.username ?? ''}`} className="shrink-0 self-start" aria-label={name}>
+                    <Avatar image={u.chip?.image ?? null} name={name} cosmetics={u.chip?.cosmetics} size={40} online />
                   </Link>
 
                   <div className="min-w-0 flex-1">

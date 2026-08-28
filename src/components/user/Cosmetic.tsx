@@ -84,16 +84,30 @@ export function CosmeticTitle({ cosmetics, className }: { cosmetics: Cosmetics; 
  * một lớp riêng có `pointer-events-none` — đè lên thì không được nuốt cú bấm
  * vào avatar bên dưới.
  */
-export function Avatar({ image, name, cosmetics = NO_COSMETICS, size = 40, rounded = 'rounded-full', className }: {
+export function Avatar({ image, name, cosmetics = NO_COSMETICS, size = 40, rounded = 'rounded-full', online, className }: {
   image: string | null;
   name: string | null;
   cosmetics?: Cosmetics;
   /** Cạnh của avatar, tính bằng px. */
   size?: number;
   rounded?: string;
+  /** Hiện chấm "đang trực tuyến" nằm gọn trên vành avatar. */
+  online?: boolean;
   className?: string;
 }) {
   const letter = (name ?? '?')[0]?.toUpperCase() ?? '?';
+
+  /**
+   * Chấm online phải NẰM TRÊN VÀNH tròn, không phải ở góc khung bao.
+   *
+   * Avatar tròn nhưng khung bao nó là hình vuông, nên góc dưới-phải của khung
+   * nằm hẳn ngoài đường tròn — dán chấm vào đó là chấm bay lơ lửng bên ngoài.
+   * Điểm ở góc 45° của đường tròn thụt vào so với góc khung đúng
+   * `bán kính × (1 − 1/√2)`, tức `0.1464 × cạnh`. Đặt tâm chấm vào đúng chỗ ấy
+   * thì nó ôm lấy vành avatar ở mọi cỡ.
+   */
+  const cham = Math.max(8, Math.round(size * 0.3));
+  const lech = Math.max(0, Math.round(size * 0.1464 - cham / 2));
 
   return (
     <span className={cn('relative inline-block shrink-0', className)} style={{ width: size, height: size }}>
@@ -111,6 +125,14 @@ export function Avatar({ image, name, cosmetics = NO_COSMETICS, size = 40, round
         // eslint-disable-next-line @next/next/no-img-element
         <img src={cosmetics.avatarFrame} alt="" aria-hidden
           className="pointer-events-none absolute -inset-[12%] size-[124%] max-w-none object-contain" />
+      )}
+
+      {online && (
+        <span
+          className="absolute rounded-full bg-emerald-500 ring-2 ring-white dark:ring-ink-900"
+          style={{ width: cham, height: cham, right: lech, bottom: lech }}
+          aria-label="Đang trực tuyến"
+        />
       )}
     </span>
   );

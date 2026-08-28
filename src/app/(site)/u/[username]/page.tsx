@@ -206,7 +206,7 @@ export default async function ProfilePage({ params, searchParams }: {
 
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-500">
               <span className="flex items-center gap-1.5"><PixelIcon name="chuDe" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.threads)}</b> chủ đề</span>
-              <span className="flex items-center gap-1.5"><PixelIcon name="thanhVien" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.followers)}</b> người theo dõi</span>
+              <span className="flex items-center gap-1.5"><PixelIcon name="nguoiTheoDoi" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.followers)}</b> người theo dõi</span>
               <span className="flex items-center gap-1.5"><PixelIcon name="theoDoi" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.following)}</b> đang theo dõi</span>
               <span className="flex items-center gap-1.5"><PixelIcon name="banBe" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(friendCount)}</b> bạn bè</span>
               <Link href={`/u/${username}/album`} className="flex items-center gap-1.5 hover:text-brand-600">

@@ -31,18 +31,20 @@ const ICON = {
   baiViet: 'icon-[pixelarticons--file-text]',
   thanhVien: 'icon-[pixelarticons--users]',
   /**
-   * Ba mục người ở trang cá nhân đứng cạnh nhau nên phải khác hình hẳn:
-   *  • người theo dõi — đám đông hướng về mình (`users`);
-   *  • đang theo dõi — con mắt, chính mình đang dõi theo người khác;
-   *  • bạn bè — người kèm dấu tích, quan hệ hai chiều đã nhận.
+   * Ba mục người ở trang cá nhân đứng cạnh nhau nên phải khác hình hẳn, và
+   * dùng đúng thứ dấu mà các nút bên trên đang dùng:
+   *  • người theo dõi — 👤＋ dấu cộng, vì họ là người đã bấm "Theo dõi" mình;
+   *  • đang theo dõi — 👤✓ dấu tích, khớp với nút "Đang theo dõi";
+   *  • bạn bè — 👥 hai người, quan hệ hai chiều.
    *
    * Hai lần chọn hụt, ghi lại để khỏi lặp:
    *  • `group` nhìn tưởng là nhóm người, hoá ra là lưới ô vuông của nhóm BỐ CỤC.
    *  • `handshake` phóng to thì đẹp nhưng ở đúng cỡ 16px chỉ còn một vệt nhoè.
    *    Chọn icon phải soi ở CỠ THẬT, không phải cỡ phóng to.
    */
-  theoDoi: 'icon-[pixelarticons--eye]',
-  banBe: 'icon-[pixel--user-check]',
+  nguoiTheoDoi: 'icon-[pixelarticons--user-plus]',
+  theoDoi: 'icon-[pixel--user-check]',
+  banBe: 'icon-[pixelarticons--users]',
   /** `album` của bộ này là quyển SÁCH, không phải album ảnh — đừng lẫn. */
   album: 'icon-[pixelarticons--image-multiple]',
   /**

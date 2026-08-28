@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Mục đã lưu: game phải tìm lại được, và thư mục phải là chuyện riêng từng người.
@@ -34,9 +34,12 @@ export default async function run(check) {
   await p.waitForTimeout(500);
   await p.fill('input[placeholder="Thư mục mới…"]', 'Thư mục kiểm thử');
   await p.locator('button[title="Tạo và chuyển vào"]').click();
-  await p.waitForTimeout(2500);
-
-  const mine = await db.favorite.findFirst({ where: { userId: me.id, gameId: game.id }, select: { folder: true } });
+  // Chờ tới khi CSDL đổi thật, đừng chờ cứng: lúc chạy cả bộ kiểm thì máy chủ
+  // dev chậm hơn nhiều và mục này đỏ oan.
+  const mine = await doiToi(async () => {
+    const r = await db.favorite.findFirst({ where: { userId: me.id, gameId: game.id }, select: { folder: true } });
+    return r?.folder === 'Thư mục kiểm thử' ? r : null;
+  }) ?? await db.favorite.findFirst({ where: { userId: me.id, gameId: game.id }, select: { folder: true } });
   check('tạo thư mục và chuyển vào được', mine?.folder === 'Thư mục kiểm thử', `đang ở "${mine?.folder}"`);
 
   const stillForeign = await db.favorite.findUnique({ where: { id: foreign.id }, select: { folder: true } });

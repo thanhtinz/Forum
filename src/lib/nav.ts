@@ -25,11 +25,13 @@ export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: 
     { label: 'Game', url: '/games', icon: '🎮' },
     { label: 'Xếp hạng', url: '/ranking', icon: '🏆' },
     { label: 'Câu lạc bộ', url: '/clb', icon: '👥' },
+    { label: 'Cửa hàng', url: '/cua-hang', icon: '🛍️' },
   ],
   footer: [
     { label: 'Diễn đàn', url: '/', icon: '' },
     { label: 'Game', url: '/games', icon: '' },
     { label: 'Xếp hạng', url: '/ranking', icon: '' },
+    { label: 'Cửa hàng', url: '/cua-hang', icon: '' },
     { label: 'Tìm kiếm', url: '/search', icon: '' },
     { label: 'Hướng dẫn BBCode', url: '/huong-dan/bbcode', icon: '' },
   ],

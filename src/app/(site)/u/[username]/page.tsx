@@ -17,7 +17,6 @@ import { Pagination } from '@/components/Pagination';
 import { FollowButton } from '@/components/user/FollowButton';
 import { cn, fmtCount } from '@/lib/utils';
 import { getLevelLook } from '@/lib/level';
-import { LevelBadge } from '@/components/LevelBadge';
 import { IconGlyph } from '@/components/IconGlyph';
 import { openConversation } from '@/app/(site)/user/messages/actions';
 import { BlockButton } from '@/components/user/BlockButton';
@@ -190,9 +189,8 @@ export default async function ProfilePage({ params, searchParams }: {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold">
                 <UserName username={user.username} name={user.name} role={user.role}
-                  levelColor={levelLook?.color} cosmetics={cos} asLink={false} />
+                  level={user.level} look={levelLook} cosmetics={cos} asLink={false} />
               </h1>
-              <LevelBadge level={user.level} icon={levelLook?.icon} color={levelLook?.color} name={levelLook?.name} />
             </div>
             {user.username && <p className="text-sm text-ink-400">@{user.username}</p>}
             {user.mood?.trim() && (

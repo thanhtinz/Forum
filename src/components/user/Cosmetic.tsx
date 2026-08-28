@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { cn, nickClass } from '@/lib/utils';
 import { isGradient, NO_COSMETICS, type Cosmetics } from '@/lib/shop-const';
+import { LevelBadge } from '@/components/LevelBadge';
 
 /**
  * Tên hiển thị của một người, kèm màu tên mua ở cửa hàng.
@@ -9,12 +10,25 @@ import { isGradient, NO_COSMETICS, type Cosmetics } from '@/lib/shop-const';
  * Bỏ tiền ra mua thì phải thấy được, nếu không món đồ chỉ là một dòng trong
  * kho đồ.
  */
-export function UserName({ username, name, role, level, levelColor, cosmetics = NO_COSMETICS, className, asLink = true }: {
+/**
+ * Tên người dùng cùng mọi thứ đứng cạnh nó, LUÔN theo một thứ tự:
+ *
+ *   tên → Lv → huy hiệu cấp bậc → huy hiệu nhận được → huy hiệu mua → danh hiệu
+ *
+ * Gom hết vào đây thay vì để mỗi trang tự ghép: trước kia mười một trang tự
+ * dựng lấy `UserName` rồi dán thêm `LevelBadge` bên cạnh, nên thứ tự mỗi chỗ
+ * một kiểu và có chỗ hiện cấp độ hai lần.
+ */
+export function UserName({
+  username, name, role, level, look, levelColor, cosmetics = NO_COSMETICS, className, asLink = true,
+}: {
   username: string | null;
   name: string | null;
   role?: string | null;
   level?: number;
-  /** Màu theo cấp độ (LevelRule) — dùng khi không đeo màu mua. */
+  /** Cấu hình hiển thị của cấp (LevelRule): tên bậc, biểu tượng, màu. */
+  look?: { name?: string | null; icon?: string | null; color?: string | null } | null;
+  /** Màu theo cấp độ — dùng khi chỗ gọi chưa có `look` đầy đủ. */
   levelColor?: string | null;
   cosmetics?: Cosmetics;
   className?: string;
@@ -22,6 +36,7 @@ export function UserName({ username, name, role, level, levelColor, cosmetics = 
 }) {
   const label = name ?? username ?? 'Ẩn danh';
   const bought = cosmetics.nameColor;
+  const mauCap = look?.color ?? levelColor;
 
   // Màu chuyển sắc không đặt vào `color` được: phải tô nền rồi cắt nền theo
   // hình chữ, và chữ phải trong suốt thì mới nhìn thấy nền.
@@ -29,11 +44,11 @@ export function UserName({ username, name, role, level, levelColor, cosmetics = 
     ? isGradient(bought)
       ? { backgroundImage: bought, WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent' }
       : { color: bought }
-    : levelColor
-      ? { color: levelColor }
+    : mauCap
+      ? { color: mauCap }
       : undefined;
 
-  const cls = cn('min-w-0 truncate font-bold', !bought && !levelColor && nickClass(role), className);
+  const cls = cn('min-w-0 truncate font-bold', !bought && !mauCap && nickClass(role), className);
 
   // Màu đặt thẳng lên chính thẻ mang tên (thẻ `a` khi là liên kết) chứ không
   // lồng thêm một `span` bên trong: gạch chân khi rê chuột phải cùng màu với
@@ -45,10 +60,31 @@ export function UserName({ username, name, role, level, levelColor, cosmetics = 
       ) : (
         <span className={cls} style={style}>{label}</span>
       )}
+      {level != null && <span className="retro-sub shrink-0 text-ink-400">Lv{level}</span>}
+      {/* Huy hiệu cấp bậc: chỉ hiện khi quản trị có đặt biểu tượng cho cấp ấy,
+          và bỏ chữ "Lv" vì con số đã nằm ngay bên trái rồi. */}
+      {level != null && look?.icon && (
+        <LevelBadge level={level} icon={look.icon} color={look.color} name={look.name} hideLabel />
+      )}
+      <CosmeticMedal cosmetics={cosmetics} />
       <CosmeticBadge cosmetics={cosmetics} />
       <CosmeticTitle cosmetics={cosmetics} />
-      {level != null && <span className="retro-sub shrink-0 text-ink-400">Lv{level}</span>}
     </span>
+  );
+}
+
+/** Huy hiệu NHẬN được (huy chương) — ảnh nhỏ hiện cạnh tên, trước huy hiệu mua. */
+export function CosmeticMedal({ cosmetics, className }: { cosmetics: Cosmetics; className?: string }) {
+  if (!cosmetics.medal) return null;
+  const ten = cosmetics.medalName ?? '';
+  // Huy chương của quản trị có thể là emoji chứ không chỉ ảnh.
+  if (!/^(https?:|\/)/.test(cosmetics.medal)) {
+    return <span title={ten} className={cn('shrink-0 text-sm leading-none', className)}>{cosmetics.medal}</span>;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={cosmetics.medal} alt={ten} title={ten}
+      className={cn('inline-block size-4 shrink-0 object-contain', className)} />
   );
 }
 

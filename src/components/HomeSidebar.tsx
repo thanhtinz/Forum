@@ -3,7 +3,6 @@ import { Flame, Tag as TagIcon, Trophy } from 'lucide-react';
 import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
 import { getLevelLooks } from '@/lib/level';
-import { LevelBadge } from '@/components/LevelBadge';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { cosmeticSelect, toCosmetics } from '@/lib/shop';
 
@@ -51,10 +50,9 @@ export async function HomeSidebar() {
               <Avatar image={u.image} name={u.name ?? u.username} cosmetics={toCosmetics(u)} size={32} />
               <span className="min-w-0 flex-1 truncate text-sm">
                 <UserName username={u.username} name={u.name} role={u.role}
+                  level={u.level} look={levelLooks.get(u.level)}
                   cosmetics={toCosmetics(u)} asLink={false} className="!font-medium" />
               </span>
-              <LevelBadge level={u.level} icon={levelLooks.get(u.level)?.icon}
-                color={levelLooks.get(u.level)?.color} name={levelLooks.get(u.level)?.name} />
             </Link>
           ))}
           {topUsers.length === 0 && <p className="text-sm text-ink-400">Chưa có thành viên.</p>}

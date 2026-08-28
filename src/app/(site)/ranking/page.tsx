@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { Trophy, Medal } from 'lucide-react';
 import { fmtCount, cn } from '@/lib/utils';
 import { getLevelLooks } from '@/lib/level';
-import { LevelBadge } from '@/components/LevelBadge';
 import {
   RANK_METRICS, RANK_PERIODS, RANK_SIZE, getRanking, isCumulative,
   type RankMetric, type RankPeriod,
@@ -103,9 +102,8 @@ export default async function RankingPage({ searchParams }: {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <UserName username={r.username} name={r.name} role={r.role}
+                    level={r.level} look={levelLooks.get(r.level)}
                     cosmetics={r.cosmetics} asLink={!!r.username} />
-                  <LevelBadge level={r.level} icon={levelLooks.get(r.level)?.icon}
-                    color={levelLooks.get(r.level)?.color} name={levelLooks.get(r.level)?.name} />
                 </div>
                 {r.username && <p className="truncate text-xs text-ink-400">@{r.username}</p>}
               </div>

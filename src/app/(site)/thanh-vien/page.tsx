@@ -4,7 +4,6 @@ import { Users, Search } from 'lucide-react';
 import { PixelIcon } from '@/components/PixelIcon';
 import { Pagination } from '@/components/Pagination';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
-import { LevelBadge } from '@/components/LevelBadge';
 import { getLevelLooks } from '@/lib/level';
 import { getMembers, isMemberSort, MEMBER_SORTS } from '@/lib/members';
 import { cn, fmtAgo, fmtCount } from '@/lib/utils';
@@ -105,12 +104,9 @@ export default async function MembersPage({ searchParams }: {
 
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-x-2">
-                  {/* Không truyền `level` cho UserName: huy hiệu cấp có màu ngay
-                      bên cạnh rồi, truyền cả hai thì cấp hiện hai lần. */}
                   <UserName username={m.chip.username} name={m.chip.name} role={m.chip.role}
+                    level={m.chip.level} look={levelLooks.get(m.chip.level)}
                     cosmetics={m.chip.cosmetics} asLink={false} className="font-bold" />
-                  <LevelBadge level={m.chip.level} icon={levelLooks.get(m.chip.level)?.icon}
-                    color={levelLooks.get(m.chip.level)?.color} name={levelLooks.get(m.chip.level)?.name} />
                 </p>
 
                 {m.mood && <p className="mt-0.5 truncate text-xs italic text-ink-500">“{m.mood}”</p>}

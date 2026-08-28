@@ -28,9 +28,9 @@ export const KIND_LABELS: Record<ShopKind, {
   },
   BADGE: {
     label: 'Huy hiệu', one: 'huy hiệu',
-    hint: 'Ảnh nhỏ hiện ngay cạnh tên.',
-    valueLabel: 'Ảnh huy hiệu',
-    valueHint: 'Ảnh nhỏ, nền trong suốt thì đẹp nhất.',
+    hint: 'Icon nhỏ hiện cạnh tên, ngay sau huy hiệu cấp bậc.',
+    valueLabel: 'Ảnh icon',
+    valueHint: 'Ảnh nhỏ nền trong suốt, cỡ 16–24px là vừa. To hơn cũng được nhưng sẽ bị thu lại, nét vẽ pixel dễ nhoè.',
   },
   TITLE: {
     label: 'Danh hiệu', one: 'danh hiệu',
@@ -99,16 +99,27 @@ export interface ShopItemView {
  * Bộ trang trí của một người, đã rút gọn để truyền xuống giao diện.
  * Trường nào null nghĩa là không đeo gì.
  */
+/**
+ * Mọi thứ đứng cạnh tên một người, gói vào một chỗ.
+ *
+ * Huy hiệu có hai đường tới: MUA ở cửa hàng (`badge`) hoặc NHẬN được nhờ hoạt
+ * động (`medal`, do quản trị đặt điều kiện). Hai thứ đó hiện cạnh nhau chứ
+ * không thay nhau — huy hiệu tự kiếm được thì không nên bị món mua che mất.
+ */
 export interface Cosmetics {
   nameColor: string | null;
+  /** Huy hiệu MUA ở cửa hàng. */
   badge: string | null;
   badgeName: string | null;
+  /** Huy hiệu NHẬN được (huy chương), chỉ lấy cái đang bật hiển thị. */
+  medal: string | null;
+  medalName: string | null;
   /** Danh hiệu chữ mua ở cửa hàng, hiện cạnh tên. */
   title: string | null;
 }
 
 export const NO_COSMETICS: Cosmetics = {
-  nameColor: null, badge: null, badgeName: null, title: null,
+  nameColor: null, badge: null, badgeName: null, medal: null, medalName: null, title: null,
 };
 
 /** Trần độ dài chữ danh hiệu — dài quá thì vỡ mọi dòng có tên người. */

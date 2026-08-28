@@ -13,6 +13,14 @@ export const cosmeticSelect = {
   nameColor: { select: { value: true } },
   shopBadge: { select: { value: true, name: true } },
   shopTitle: { select: { value: true } },
+  // Huy chương đang bật hiển thị — chỉ lấy MỘT cái mới nhất: cạnh tên chỉ đủ
+  // chỗ cho một huy hiệu nhận được, lấy hết về rồi bỏ đi là phí truy vấn.
+  medals: {
+    where: { displayed: true },
+    orderBy: { grantedAt: 'desc' },
+    take: 1,
+    select: { medal: { select: { icon: true, name: true } } },
+  },
 } as const;
 
 /** Hàng người dùng đã lấy kèm `cosmeticSelect` — đổi thành bộ trang trí gọn. */
@@ -20,11 +28,15 @@ export function toCosmetics(u: {
   nameColor?: { value: string } | null;
   shopBadge?: { value: string; name: string } | null;
   shopTitle?: { value: string } | null;
+  medals?: { medal: { icon: string; name: string } }[];
 } | null | undefined): Cosmetics {
+  const huyChuong = u?.medals?.[0]?.medal ?? null;
   return {
     nameColor: u?.nameColor?.value ?? null,
     badge: u?.shopBadge?.value ?? null,
     badgeName: u?.shopBadge?.name ?? null,
+    medal: huyChuong?.icon ?? null,
+    medalName: huyChuong?.name ?? null,
     title: u?.shopTitle?.value ?? null,
   };
 }
@@ -62,6 +74,7 @@ export function toAuthorChip(u: {
   nameColor?: { value: string } | null;
   shopBadge?: { value: string; name: string } | null;
   shopTitle?: { value: string } | null;
+  medals?: { medal: { icon: string; name: string } }[];
 } | null | undefined): AuthorChip | null {
   return u ? { username: u.username, name: u.name, image: u.image, level: u.level, role: u.role, cosmetics: toCosmetics(u) } : null;
 }

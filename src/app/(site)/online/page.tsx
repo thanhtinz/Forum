@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { Radio, MessageSquare, MessagesSquare, ShieldCheck } from 'lucide-react';
 import { Pagination } from '@/components/Pagination';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
-import { LevelBadge } from '@/components/LevelBadge';
 import { getLevelLooks } from '@/lib/level';
 import { getOnline, isOnlineTab, ONLINE_TABS, type OnlineTab, type OnlineSpot } from '@/lib/online';
 import { cn, fmtAgo, fmtCount } from '@/lib/utils';
@@ -89,11 +88,8 @@ export default async function OnlinePage({ searchParams }: {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                      {/* Không truyền `level` cho UserName: huy hiệu cấp có màu
-                          ngay bên cạnh rồi, truyền cả hai thì cấp hiện hai lần. */}
                       <UserName username={u.chip?.username ?? null} name={u.chip?.name ?? null} role={u.chip?.role}
-                        cosmetics={u.chip?.cosmetics} className="font-bold" />
-                      <LevelBadge level={u.chip?.level ?? 1} icon={look?.icon} color={look?.color} name={look?.name} />
+                        level={u.chip?.level} look={look} cosmetics={u.chip?.cosmetics} className="font-bold" />
                       {staff && (
                         <span className="chip gap-1 bg-brand-50 text-brand-600 dark:bg-brand-950/40">
                           <ShieldCheck size={11} /> {u.role === 'ADMIN' ? 'Quản trị' : 'Điều hành'}

@@ -8,7 +8,13 @@ export interface LevelBadgeProps {
   color?: string | null;
   /** Tên cấp, dùng cho tooltip. */
   name?: string | null;
-  /** Ẩn chữ "Lv" khi chỉ muốn hiện ảnh. */
+  /**
+   * Ẩn chữ "Lv{n}", chỉ chừa lại biểu tượng.
+   *
+   * Dùng khi con số cấp đã nằm ngay bên cạnh rồi (xem `UserName`). Trước đây
+   * cờ này chỉ ăn thua khi biểu tượng là ẢNH, nên cấp nào đặt biểu tượng bằng
+   * emoji thì vẫn in "Lv4" thêm lần nữa ngay cạnh con số đã có.
+   */
   hideLabel?: boolean;
   className?: string;
 }
@@ -33,7 +39,7 @@ export function LevelBadge({ level, icon, color, name, hideLabel = false, classN
         // eslint-disable-next-line @next/next/no-img-element
         ? <img src={icon as string} alt="" className="-my-0.5 size-4 shrink-0 object-contain" />
         : icon ? <span aria-hidden>{icon}</span> : null}
-      {!(hideLabel && img) && <span>Lv{level}</span>}
+      {!(hideLabel && icon) && <span>Lv{level}</span>}
     </span>
   );
 }

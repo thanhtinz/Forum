@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Cửa hàng bán đồ trang trí bằng điểm.
@@ -85,7 +85,7 @@ export default async function run(check) {
     // /cua-hang, đếm chung vào là con số sai mà đọc lỗi thì tưởng quầy hỏng.
     const tabs = await member.$$eval('[data-shop-tabs] a', (els) => els.map((e) => e.textContent?.trim() ?? ''));
     check('quầy không còn tab tất cả', !tabs.includes('Tất cả'), JSON.stringify(tabs));
-    check('quầy có đúng ba tab loại đồ', tabs.length === 3, JSON.stringify(tabs));
+    check('quầy có đúng bốn tab loại đồ', tabs.length === 4, JSON.stringify(tabs));
     check('tab mặc định là màu tên, không lẫn loại khác',
       (await member.locator('text=Nick đỏ kiểm thử').count()) > 0
       && (await member.locator('text=Khung kiểm thử').count()) === 0);
@@ -228,6 +228,51 @@ export default async function run(check) {
     check('người đã mua vẫn thấy món trong kho đồ',
       (await member.locator('text=Nick đỏ kiểm thử').count()) > 0);
     void frame;
+
+    // ── Ảnh bìa hồ sơ: loại đồ thứ tư ────────────────────────────────────
+    const cover = await db.shopItem.create({
+      data: {
+        slug: 'kiem-thu-anh-bia', kind: 'PROFILE_COVER', name: 'Ảnh bìa kiểm thử',
+        value: '/uploads/bia-kiem-thu.png', pricePoints: 10,
+      },
+      select: { id: true },
+    });
+    await db.user.update({ where: { id: minh.id }, data: { points: 100 }, select: { id: true } });
+
+    await member.goto(`${BASE}/cua-hang?loai=PROFILE_COVER`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(800);
+    check('tab ảnh bìa hiện đúng món', (await member.locator('text=Ảnh bìa kiểm thử').count()) > 0);
+
+    await row(member, 'Ảnh bìa kiểm thử').locator('button:has-text("Mua")').click();
+    await doiToi(() => db.shopPurchase.findFirst({ where: { userId: minh.id, itemId: cover.id }, select: { id: true } }));
+    check('mua được ảnh bìa',
+      (await db.shopPurchase.count({ where: { userId: minh.id, itemId: cover.id } })) === 1);
+
+    await member.reload({ waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
+    await row(member, 'Ảnh bìa kiểm thử').locator('button:has-text("Đeo lên")').click();
+    const daDeo = await doiToi(async () => {
+      const u = await db.user.findUnique({ where: { id: minh.id }, select: { profileCoverId: true } });
+      return u?.profileCoverId === cover.id ? u : null;
+    });
+    check('đeo được ảnh bìa', !!daDeo);
+
+    // Ảnh bìa mua ở quầy phải đè lên ảnh tự tải, và trang cá nhân phải dùng nó.
+    await db.user.update({ where: { id: minh.id }, data: { cover: '/uploads/anh-cu.png' }, select: { id: true } });
+    await member.goto(`${BASE}/u/minhdev`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(800);
+    const hoSo = await member.content();
+    check('trang cá nhân dùng ảnh bìa vừa mua', hoSo.includes('/uploads/bia-kiem-thu.png'));
+    check('ảnh tự tải lên nhường chỗ cho món đã mua', !hoSo.includes('/uploads/anh-cu.png'));
+
+    // Gỡ ra thì ảnh cũ hiện lại.
+    await db.user.update({ where: { id: minh.id }, data: { profileCoverId: null }, select: { id: true } });
+    await member.reload({ waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
+    check('gỡ món ra thì ảnh tự tải lên hiện lại',
+      (await member.content()).includes('/uploads/anh-cu.png'));
+    await db.user.update({ where: { id: minh.id }, data: { cover: null }, select: { id: true } });
+
   } finally {
     await wipe();
     await db.user.update({ where: { id: minh.id }, data: { points: minh.points }, select: { id: true } });

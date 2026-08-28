@@ -103,13 +103,13 @@ export async function getShopItems(opts: {
     viewerId
       ? db.user.findUnique({
           where: { id: viewerId },
-          select: { nameColorId: true, avatarFrameId: true, shopBadgeId: true },
+          select: { nameColorId: true, avatarFrameId: true, shopBadgeId: true, profileCoverId: true },
         })
       : Promise.resolve(null),
   ]);
 
   const equippedIds = new Set(
-    [me?.nameColorId, me?.avatarFrameId, me?.shopBadgeId].filter((x): x is string => !!x),
+    [me?.nameColorId, me?.avatarFrameId, me?.shopBadgeId, me?.profileCoverId].filter((x): x is string => !!x),
   );
 
   return {
@@ -140,12 +140,12 @@ export async function getMyItems(userId: string, page = 1): Promise<{
     }),
     db.user.findUnique({
       where: { id: userId },
-      select: { nameColorId: true, avatarFrameId: true, shopBadgeId: true },
+      select: { nameColorId: true, avatarFrameId: true, shopBadgeId: true, profileCoverId: true },
     }),
   ]);
 
   const equippedIds = new Set(
-    [me?.nameColorId, me?.avatarFrameId, me?.shopBadgeId].filter((x): x is string => !!x),
+    [me?.nameColorId, me?.avatarFrameId, me?.shopBadgeId, me?.profileCoverId].filter((x): x is string => !!x),
   );
 
   return {
@@ -156,8 +156,9 @@ export async function getMyItems(userId: string, page = 1): Promise<{
 }
 
 /** Cột trên User ứng với từng loại đồ. */
-export const EQUIP_FIELD: Record<ShopKind, 'nameColorId' | 'avatarFrameId' | 'shopBadgeId'> = {
+export const EQUIP_FIELD: Record<ShopKind, 'nameColorId' | 'avatarFrameId' | 'shopBadgeId' | 'profileCoverId'> = {
   NAME_COLOR: 'nameColorId',
   AVATAR_FRAME: 'avatarFrameId',
   BADGE: 'shopBadgeId',
+  PROFILE_COVER: 'profileCoverId',
 };

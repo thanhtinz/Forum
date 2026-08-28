@@ -6,6 +6,7 @@ import { updateThread, type ThreadState } from '@/app/(site)/forum/actions';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
 import { ActionForm } from '@/components/ActionForm';
 import { DraftKeeper } from '@/components/DraftKeeper';
+import { THREAD_CONTENT_MAX } from '@/lib/forum-const';
 
 export function EditThreadForm({ threadId, title, content }: { threadId: string; title: string; content: string }) {
   const [state, action, pending] = useActionState<ThreadState, FormData>(updateThread, {});
@@ -30,7 +31,7 @@ export function EditThreadForm({ threadId, title, content }: { threadId: string;
 
       <div>
         <span className="mb-1 block text-sm font-medium">Nội dung</span>
-        <BBCodeEditor name="content" required minLength={10} rows={10} defaultValue={content} />
+        <BBCodeEditor name="content" required minLength={10} maxLength={THREAD_CONTENT_MAX} rows={10} defaultValue={content} />
       </div>
 
       {state.error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950/40">{state.error}</p>}

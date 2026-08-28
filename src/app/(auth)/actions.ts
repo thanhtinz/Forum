@@ -5,9 +5,8 @@ import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 import { signIn, signOut } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { grantPoints } from '@/lib/points';
-import { notify } from '@/lib/notify';
-import { INVITE_BONUS_POINTS } from '@/lib/invite';
+import { getActor } from '@/lib/actor';
+import { rateLimit } from '@/lib/rate-limit-memory';
 
 export interface AuthFormState {
   error?: string;
@@ -50,6 +49,9 @@ function newInviteCode(username: string): string {
   return `${username.slice(0, 4).toUpperCase()}${rnd}`;
 }
 
+/** Số tài khoản tối đa tạo được từ một địa chỉ IP trong một ngày. */
+const DANG_KY_MOI_NGAY = 3;
+
 export async function registerAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const parsed = registerSchema.safeParse({
     username: formData.get('username'),
@@ -64,6 +66,20 @@ export async function registerAction(_prev: AuthFormState, formData: FormData): 
   const { username, email, password } = parsed.data;
   const callbackUrl = safeCallback(formData.get('callbackUrl'));
   const ref = String(formData.get('ref') ?? '').trim();
+
+  // Chặn số lần đăng ký từ cùng một địa chỉ IP.
+  //
+  // Nói thẳng giới hạn của lớp này: bộ đếm nằm trong bộ nhớ tiến trình nên mất
+  // khi khởi động lại và không dùng chung giữa nhiều máy chủ. Nó chỉ là rào
+  // chắn tiện tay cho việc nuôi tài khoản bằng script; rào thật nằm ở chỗ phần
+  // thưởng giới thiệu chỉ trả khi người được mời đăng bài đầu tiên.
+  const { ip } = await getActor();
+  if (ip) {
+    const cho = rateLimit(`dangky:${ip}`, DANG_KY_MOI_NGAY, 86400);
+    if (!cho.ok) {
+      return { error: 'Đã tạo quá nhiều tài khoản từ máy này hôm nay. Thử lại vào ngày mai nhé.' };
+    }
+  }
 
   const existed = await db.user.findFirst({ where: { OR: [{ email }, { username }] }, select: { email: true, username: true } });
   if (existed) {
@@ -83,13 +99,10 @@ export async function registerAction(_prev: AuthFormState, formData: FormData): 
     select: { id: true },
   });
 
-  // Thưởng điểm cho người giới thiệu
-  if (invitedById) {
-    try {
-      await grantPoints({ userId: invitedById, amount: INVITE_BONUS_POINTS, reason: 'INVITE_BONUS', refId: created.id, note: `Mời thành công @${username}` });
-      await notify({ userId: invitedById, type: 'SYSTEM', title: 'Mời bạn thành công', content: `Bạn nhận ${INVITE_BONUS_POINTS} điểm vì đã mời @${username} tham gia.`, link: '/user/invite' });
-    } catch { /* không chặn đăng ký nếu thưởng lỗi */ }
-  }
+  // Người giới thiệu KHÔNG được thưởng ở đây. Tạo tài khoản trống chẳng tốn gì,
+  // nên trả điểm ngay lúc đăng ký là biến việc mời thành máy in điểm. Phần
+  // thưởng chuyển sang lúc người được mời đăng bài đầu tiên — xem
+  // `thuongNguoiMoi` trong `src/lib/invite.ts`.
 
   try {
     await signIn('credentials', { identifier: email, password, redirectTo: callbackUrl });

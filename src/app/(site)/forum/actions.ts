@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { THREAD_CONTENT_MAX, THREAD_CONTENT_MAX_MESSAGE } from '@/lib/forum-const';
+import { thuongNguoiMoi } from '@/lib/invite';
 import { recountForum, recountForums, recountThread } from '@/lib/forum-counters';
 import { grantPoints } from '@/lib/points';
 import { addExp } from '@/lib/level';
@@ -73,6 +75,7 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
   if (title.length < 5) return { error: 'Tiêu đề tối thiểu 5 ký tự.' };
   if (title.length > 200) return { error: 'Tiêu đề tối đa 200 ký tự.' };
   if (content.length < 10) return { error: 'Nội dung quá ngắn (tối thiểu 10 ký tự).' };
+  if (content.length > THREAD_CONTENT_MAX) return { error: THREAD_CONTENT_MAX_MESSAGE };
 
   const forum = await db.forum.findUnique({
     where: { slug: forumSlug },
@@ -152,6 +155,10 @@ export async function createThread(_prev: ThreadState, formData: FormData): Prom
     }
   });
 
+  // Người mời chỉ nhận điểm khi người được mời làm ra nội dung thật; đây là
+  // một trong hai chỗ "nội dung thật" ấy được sinh ra.
+  await thuongNguoiMoi(userId);
+
   // Ngoài transaction vì phải có id chủ đề mới dựng được liên kết.
   await notifyMentions(mentioned, {
     title: 'Có người nhắc tên bạn', content: title,
@@ -198,12 +205,24 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
   // của chuyên mục chỉ tính chủ đề đang hiện — cộng vào là lệch ngay.
   if (thread.status !== 'PUBLISHED') return { error: 'Chủ đề này không còn nhận trả lời.' };
 
-  // Nếu là phản hồi lồng, xác định người được phản hồi để báo tin
+  // Nếu là phản hồi lồng, xác định người được phản hồi để báo tin.
+  //
+  // Trang chủ đề chỉ dựng ĐÚNG MỘT tầng con, mà nút "Trả lời" lại gắn cho cả
+  // phản hồi ở tầng ấy — nên lưu `parentId` nguyên xi là đẻ ra bản ghi tầng ba
+  // KHÔNG BAO GIỜ hiện ra, trong khi vẫn cộng điểm, cộng EXP, tăng bộ đếm và
+  // gửi thông báo. Người viết chỉ thấy bài mình biến mất.
+  //
+  // Nên gập về gốc nhánh, đúng như bình luận game đã làm (`comments/actions.ts`):
+  // trả lời một phản hồi thì bài mới nằm ngang hàng với nó, dưới cùng một gốc.
   let parentAuthorId: string | null = null;
+  let goc: string | null = null;
   if (parentId) {
-    const parent = await db.reply.findUnique({ where: { id: parentId }, select: { authorId: true, threadId: true } });
+    const parent = await db.reply.findUnique({
+      where: { id: parentId }, select: { id: true, authorId: true, threadId: true, parentId: true },
+    });
     if (!parent || parent.threadId !== threadId) return { error: 'Phản hồi không hợp lệ.' };
     parentAuthorId = parent.authorId;
+    goc = parent.parentId ?? parent.id;
   }
 
   // Tìm người được nhắc tên trước khi vào transaction, để phần ghi dữ liệu
@@ -220,7 +239,7 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
   );
 
   await db.$transaction(async (tx) => {
-    await tx.reply.create({ data: { threadId, authorId: userId, content, parentId } });
+    await tx.reply.create({ data: { threadId, authorId: userId, content, parentId: goc } });
     await tx.thread.update({ where: { id: threadId }, data: { replyCount: { increment: 1 }, lastReplyAt: new Date() } });
     await tx.forum.update({ where: { id: thread.forum.id }, data: { replyCount: { increment: 1 } } });
     await grantPoints({ userId, amount: POINTS_PER_REPLY, reason: 'REPLY_CREATE', refId: threadId, note: `Trả lời: ${thread.title}` }, tx);
@@ -249,6 +268,8 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
     // Đã trả lời thì mặc định theo dõi tiếp diễn biến
     await autoFollow(threadId, userId, tx);
   });
+
+  await thuongNguoiMoi(userId);
 
   revalidatePath(`/forum/${thread.forum.slug}/${threadId}`);
   return { ok: true };
@@ -695,11 +716,17 @@ export async function updateThread(_prev: ThreadState, formData: FormData): Prom
   if ('error' in guard) return { error: guard.error };
   if (guard.thread.locked) return { error: 'Chủ đề đã bị khoá, không thể sửa.' };
 
+  // Người đang bị cấm đăng bài thì cũng không được viết lại bài cũ thành thứ
+  // khác — cấm đăng mà vẫn sửa được là lệnh cấm chỉ chặn đúng cái nút.
+  const banned = await getActiveBan(guard.userId, 'POST');
+  if (banned) return { error: banMessage(banned, 'sửa bài') };
+
   const title = String(formData.get('title') ?? '').trim();
   const content = String(formData.get('content') ?? '').trim();
   if (title.length < 5) return { error: 'Tiêu đề tối thiểu 5 ký tự.' };
   if (title.length > 200) return { error: 'Tiêu đề tối đa 200 ký tự.' };
   if (content.length < 10) return { error: 'Nội dung quá ngắn (tối thiểu 10 ký tự).' };
+  if (content.length > THREAD_CONTENT_MAX) return { error: THREAD_CONTENT_MAX_MESSAGE };
 
   await db.thread.update({
     where: { id: threadId },

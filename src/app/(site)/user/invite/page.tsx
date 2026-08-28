@@ -6,7 +6,7 @@ import { ArrowLeft, Gift, Users, Coins } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount } from '@/lib/utils';
-import { INVITE_BONUS_POINTS } from '@/lib/invite';
+import { INVITE_BONUS_POINTS, INVITE_DAILY_MAX } from '@/lib/invite';
 import { InviteLink } from '@/components/user/InviteLink';
 
 export const metadata: Metadata = { title: 'Mời bạn bè' };
@@ -29,11 +29,18 @@ export default async function InvitePage() {
     await db.user.update({ where: { id: userId }, data: { inviteCode: code } }).catch(() => {});
   }
 
-  const [invitees, earnedAgg] = await Promise.all([
+  const [invitees, earnedAgg, daTra] = await Promise.all([
     db.user.findMany({ where: { invitedById: userId }, orderBy: { createdAt: 'desc' }, take: 50, select: { id: true, username: true, name: true, image: true, createdAt: true } }),
     db.pointsLog.aggregate({ where: { userId, reason: 'INVITE_BONUS' }, _sum: { amount: true } }),
+    // Phần thưởng nay chỉ trả khi người được mời đăng bài đầu tiên, nên danh
+    // sách phải nói rõ ai đã tính điểm, ai còn đang chờ — in "+20 điểm" cho tất
+    // cả là hứa một thứ chưa chắc có.
+    db.pointsLog.findMany({
+      where: { userId, reason: 'INVITE_BONUS' }, take: 50, select: { refId: true },
+    }),
   ]);
   const earned = earnedAgg._sum.amount ?? 0;
+  const daThuong = new Set(daTra.map((r) => r.refId).filter((x): x is string => !!x));
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -43,7 +50,10 @@ export default async function InvitePage() {
       <section className="card overflow-hidden p-0">
         <div className="bg-gradient-to-br from-brand-500 to-brand-600 p-6 text-white">
           <div className="flex items-center gap-2 text-lg font-bold"><Gift size={22} /> Mời bạn — nhận điểm</div>
-          <p className="mt-1 text-sm text-white/90">Mỗi người bạn mời đăng ký thành công, bạn nhận ngay <b>{INVITE_BONUS_POINTS} điểm</b>.</p>
+          <p className="mt-1 text-sm text-white/90">
+            Người bạn mời đăng bài đầu tiên trên diễn đàn, bạn nhận <b>{INVITE_BONUS_POINTS} điểm</b> —
+            tối đa {INVITE_DAILY_MAX} lượt mỗi ngày.
+          </p>
         </div>
         <div className="p-5">
           <InviteLink code={code} />
@@ -79,7 +89,13 @@ export default async function InvitePage() {
                   <Link href={`/u/${u.username}`} className="truncate text-sm font-semibold hover:text-brand-600">{u.name ?? u.username}</Link>
                   <p className="text-xs text-ink-400">Tham gia {format(u.createdAt, 'dd/MM/yyyy')}</p>
                 </div>
-                <span className="shrink-0 text-xs font-medium text-amber-600">+{INVITE_BONUS_POINTS} điểm</span>
+                {daThuong.has(u.id) ? (
+                  <span className="shrink-0 text-xs font-medium text-amber-600">+{INVITE_BONUS_POINTS} điểm</span>
+                ) : (
+                  <span className="shrink-0 text-xs text-ink-400" title="Điểm được cộng khi người này đăng bài đầu tiên">
+                    Chờ bài đầu tiên
+                  </span>
+                )}
               </li>
             ))}
           </ul>

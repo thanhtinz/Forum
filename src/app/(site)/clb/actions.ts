@@ -175,7 +175,8 @@ async function assertOwner(clubId: string) {
   const me = await actor();
   if ('error' in me) return { error: me.error } as const;
   const club = await db.club.findUnique({
-    where: { id: clubId }, select: { id: true, slug: true, name: true, ownerId: true },
+    where: { id: clubId },
+    select: { id: true, slug: true, name: true, ownerId: true, joinMode: true, privacy: true },
   });
   if (!club) return { error: 'Không tìm thấy câu lạc bộ.' } as const;
   if (club.ownerId !== me.id && !isStaff(me.role)) return { error: 'Bạn không có quyền với câu lạc bộ này.' } as const;
@@ -297,8 +298,15 @@ export async function updateClub(_prev: ClubActionState, formData: FormData): Pr
   const name = String(formData.get('name') ?? '').trim();
   const description = String(formData.get('description') ?? '').trim();
   const avatar = String(formData.get('avatar') ?? '').trim();
-  const joinMode = readMode(formData, 'joinMode', ['OPEN', 'APPROVAL', 'CLOSED'], 'OPEN');
-  const privacy = readMode(formData, 'privacy', ['PUBLIC', 'MEMBERS'], 'PUBLIC');
+  // Sửa thì thiếu trường phải GIỮ NGUYÊN, không được rơi về hằng số.
+  //
+  // `readMode` không phân biệt "biểu mẫu không gửi trường này" với "gửi giá trị
+  // sai", cả hai đều trả về mặc định. Ở lúc lập nhóm thì mặc định là đúng
+  // nghĩa; ở lúc sửa thì nó biến một câu lạc bộ đang kín thành công khai mà
+  // chẳng ai bấm gì — chỉ cần một ô chọn bị `disabled` (trình duyệt không gửi
+  // field bị disable) hay một biểu mẫu sửa từng phần là dính.
+  const joinMode = readMode(formData, 'joinMode', ['OPEN', 'APPROVAL', 'CLOSED'], guard.club.joinMode);
+  const privacy = readMode(formData, 'privacy', ['PUBLIC', 'MEMBERS'], guard.club.privacy);
 
   if (name.length < CLUB_NAME_MIN) return { error: `Tên câu lạc bộ tối thiểu ${CLUB_NAME_MIN} ký tự.` };
   if (name.length > CLUB_NAME_MAX) return { error: `Tên câu lạc bộ tối đa ${CLUB_NAME_MAX} ký tự.` };

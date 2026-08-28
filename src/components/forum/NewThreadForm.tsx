@@ -8,6 +8,7 @@ import { ActionForm } from '@/components/ActionForm';
 import { PollBuilder } from './PollBuilder';
 import { DraftKeeper } from '@/components/DraftKeeper';
 import { BOUNTY_MAX, BOUNTY_MIN } from '@/lib/bounty';
+import { THREAD_CONTENT_MAX } from '@/lib/forum-const';
 
 export function NewThreadForm({ forumSlug, myPoints }: { forumSlug: string; myPoints: number }) {
   const [state, action, pending] = useActionState<ThreadState, FormData>(createThread, {});
@@ -24,7 +25,7 @@ export function NewThreadForm({ forumSlug, myPoints }: { forumSlug: string; myPo
 
       <div>
         <label className="mb-1 block text-sm font-medium">Nội dung</label>
-        <BBCodeEditor name="content" required minLength={10} rows={9}
+        <BBCodeEditor name="content" required minLength={10} maxLength={THREAD_CONTENT_MAX} rows={9}
           placeholder="Chia sẻ chi tiết nội dung, câu hỏi hoặc thảo luận của bạn…" />
         <p className="mt-1 text-xs text-ink-400">Xuống dòng 2 lần để tách đoạn.</p>
       </div>

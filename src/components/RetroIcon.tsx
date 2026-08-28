@@ -1,29 +1,39 @@
+import { RETRO_ICONS, type RetroIconName } from '@/lib/retro-icons';
+
 /**
  * Icon pixel của forum wap ngày trước (bộ icon JohnCMS).
  *
- * Vì sao dùng `<img>` chứ không phải `next/image`: đây là ảnh 16×16 nằm sẵn
- * trong `public/`, nhỏ hơn cả phần mã mà bộ tối ưu ảnh sinh ra để phục vụ
- * chúng. Tối ưu ở đây chỉ tổ chậm hơn.
+ * Hai điều quyết định icon nét hay mờ, và cả hai đều dễ làm sai:
  *
- * `image-rendering: pixelated` là phần quan trọng nhất: bộ icon này vẽ từng
- * điểm ảnh một, để trình duyệt làm mịn thì mất sạch nét — nhòe nhoẹt và trông
- * như ảnh hỏng chứ không ra hoài cổ.
+ *  1. **Vẽ đúng kích thước gốc, hoặc bội số NGUYÊN của nó.** Bộ icon này có
+ *     tới 15 kích thước khác nhau (16×16, 20×16, 65×12, 18×9…). Ép hết vào
+ *     một ô vuông chung là co giãn lẻ: điểm ảnh gốc rơi vào ranh giới giữa hai
+ *     điểm ảnh màn hình nên chỗ to chỗ nhỏ, nhìn mờ và răng cưa lệch. Kích
+ *     thước lấy từ bảng sinh tự động `retro-icons.ts`, không đoán.
+ *
+ *  2. **`image-rendering: pixelated`.** Không có nó thì trình duyệt làm mịn
+ *     khi phóng to, mất sạch nét vẽ từng điểm.
+ *
+ * Dùng `<img>` thường chứ không phải `next/image`: ảnh 16×16 còn nhỏ hơn cả
+ * phần mã mà bộ tối ưu ảnh sinh ra để phục vụ chúng.
  */
 export function RetroIcon({
-  name, alt = '', size = 16, w, h, className,
+  name, alt = '', scale = 1, className,
 }: {
-  /** Đường dẫn trong `public/retro`, không kèm đuôi — vd `bb/bold` hay `award`. */
-  name: string;
+  /** Tên trong `public/retro`, không kèm đuôi — vd `bb/bold` hay `award`. */
+  name: RetroIconName;
   alt?: string;
-  /** Cạnh vuông. Icon không vuông (huy hiệu ON/OFF, dải sao) thì đặt `w`/`h`. */
-  size?: number;
-  w?: number;
-  h?: number;
+  /**
+   * Bội số phóng to. CHỈ nhận số nguyên — 1.5 lần là mờ ngay.
+   * Kiểu ở đây chặn luôn cho khỏi lỡ tay.
+   */
+  scale?: 1 | 2 | 3 | 4;
   className?: string;
 }) {
-  const ext = RETRO_PNG.has(name) ? 'png' : 'gif';
-  const rong = w ?? size;
-  const cao = h ?? size;
+  const { w, h, ext } = RETRO_ICONS[name];
+  const rong = w * scale;
+  const cao = h * scale;
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -33,24 +43,9 @@ export function RetroIcon({
       height={cao}
       aria-hidden={alt ? undefined : true}
       className={className}
-      style={{ imageRendering: 'pixelated', width: rong, height: cao, objectFit: 'contain' }}
+      // Đặt cả `width`/`height` lẫn style: thuộc tính giữ chỗ trước khi ảnh về
+      // (khỏi giật bố cục), style chặn CSS ngoài kéo giãn mất tỷ lệ.
+      style={{ imageRendering: 'pixelated', width: rong, height: cao }}
     />
   );
 }
-
-/**
- * Icon nào là .png, còn lại là .gif.
- *
- * Bộ icon gốc trộn hai định dạng chẳng theo quy luật nào, mà đoán sai đuôi thì
- * ra ảnh vỡ — nên liệt kê thẳng ra đây, thêm icon mới thì thêm vào danh sách.
- */
-const RETRO_PNG = new Set([
-  'award', 'balans', 'birthday', 'card', 'cat', 'code', 'coins', 'contacts', 'del',
-  'dislike', 'down', 'facebook', 'forbidden', 'gift', 'google', 'home', 'label',
-  'lock', 'm', 'm_new', 'mail', 'mail-inbox', 'mail-info', 'mail-send',
-  'menu_cabinet', 'menu_home', 'menu_login', 'menu_online', 'menu_registration',
-  'mission', 'modules', 'network', 'post', 'question', 'quote_icon', 'search',
-  'settings', 'tinnhiem', 'topic', 'tuthien', 'up', 'user', 'user-block',
-  'user-edit', 'user-ok', 'users', 'w', 'w_new',
-  'bb/img', 'bb/youtube',
-]);

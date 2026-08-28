@@ -50,7 +50,7 @@ export function GameCard({ game, variant = 'grid' }: GameCardProps) {
       <span className="flex items-center gap-1"><Download size={12} />{fmtCount(game.downloadCount)}</span>
       {game.ratingCount > 0 && (
         <span className="flex items-center gap-1">
-          <RatingStars value={game.rating} size={11} />
+          <RatingStars value={game.rating} />
           <b className="font-semibold text-ink-500">{game.rating.toFixed(1)}</b>
         </span>
       )}

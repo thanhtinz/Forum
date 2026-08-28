@@ -51,26 +51,56 @@ export default async function run(check) {
   check('trang online có huy hiệu ON', on.some((x) => x.src.includes('/retro/online')));
   check('huy hiệu ON không vỡ', on.every((x) => x.ok), on.filter((x) => !x.ok).map((x) => x.src).join(', '));
 
-  // ── Mọi tên icon khai trong mã đều có tệp thật ────────────────────────
-  // Đọc thẳng danh sách trong RetroIcon: đây là chỗ duy nhất biết icon nào là
-  // .png, nên sai ở đây là ảnh vỡ ở mọi nơi dùng icon ấy.
-  const nguon = fs.readFileSync('src/components/RetroIcon.tsx', 'utf8');
-  const khoi = nguon.slice(nguon.indexOf('RETRO_PNG = new Set(['));
-  const dsPng = [...khoi.slice(0, khoi.indexOf(']')).matchAll(/'([^']+)'/g)].map((m) => m[1]);
-  check('đọc được danh sách icon .png trong mã', dsPng.length > 20, `đếm được ${dsPng.length}`);
-  const saiDuoi = dsPng.filter((n) => !fs.existsSync(`public/retro/${n}.png`));
-  check('mọi icon khai là .png đều có tệp .png thật', saiDuoi.length === 0, saiDuoi.join(', '));
+  // ── Bảng kích thước phải khớp tệp thật ────────────────────────────────
+  // Bảng này sinh tự động, nhưng thêm icon mà quên chạy lại script là bảng
+  // thiếu tên — mà thiếu tên thì TypeScript báo ngay, còn SAI kích thước thì
+  // không ai báo: ảnh vẫn hiện, chỉ là méo và mờ. Nên phải đối chiếu ở đây.
+  const bang = fs.readFileSync('src/lib/retro-icons.ts', 'utf8');
+  const khai = [...bang.matchAll(/'([^']+)':\s*\{\s*w:\s*(\d+),\s*h:\s*(\d+),\s*ext:\s*'(\w+)'/g)]
+    .map((m) => ({ ten: m[1], w: +m[2], h: +m[3], ext: m[4] }));
+  check('bảng kích thước có đủ icon', khai.length >= 100, `đếm được ${khai.length}`);
 
-  // Chiều ngược lại: tệp .png nào không có trong danh sách thì RetroIcon sẽ
-  // đoán nhầm sang .gif — cũng là ảnh vỡ, chỉ khác hướng.
-  const moiPng = [];
+  const doGif = (d) => [d.readUInt16LE(6), d.readUInt16LE(8)];
+  const doPng = (d) => [d.readUInt32BE(16), d.readUInt32BE(20)];
+  const lech = [];
+  for (const k of khai) {
+    const tep = `public/retro/${k.ten}.${k.ext}`;
+    if (!fs.existsSync(tep)) { lech.push(`${k.ten}: không có tệp`); continue; }
+    const d = fs.readFileSync(tep);
+    const [w, h] = k.ext === 'gif' ? doGif(d) : doPng(d);
+    if (w !== k.w || h !== k.h) lech.push(`${k.ten}: bảng ghi ${k.w}x${k.h}, tệp thật ${w}x${h}`);
+  }
+  check('kích thước trong bảng khớp tệp thật', lech.length === 0, lech.slice(0, 3).join(' | '));
+
+  // Có tệp nào chưa vào bảng không — vào rồi mới gọi được từ mã.
+  const coTep = [];
   const quet = (thuMuc, tien = '') => {
     for (const e of fs.readdirSync(thuMuc, { withFileTypes: true })) {
       if (e.isDirectory()) quet(`${thuMuc}/${e.name}`, tien ? `${tien}/${e.name}` : e.name);
-      else if (e.name.endsWith('.png')) moiPng.push(tien ? `${tien}/${e.name.slice(0, -4)}` : e.name.slice(0, -4));
+      else if (/\.(png|gif)$/.test(e.name)) {
+        coTep.push(tien ? `${tien}/${e.name.replace(/\.\w+$/, '')}` : e.name.replace(/\.\w+$/, ''));
+      }
     }
   };
   quet('public/retro');
-  const sotPng = moiPng.filter((n) => !n.startsWith('rating/') && !dsPng.includes(n));
-  check('mọi tệp .png đều có tên trong danh sách', sotPng.length === 0, sotPng.join(', '));
+  const sot = coTep.filter((n) => !khai.some((k) => k.ten === n));
+  check('mọi tệp icon đều có trong bảng', sot.length === 0, sot.join(', '));
+
+  // ── Vẽ đúng kích thước gốc thì mới nét ────────────────────────────────
+  // Ảnh phải hiện ĐÚNG bằng kích thước gốc (hoặc bội số nguyên). Lệch một
+  // pixel là co giãn lẻ, và co giãn lẻ thì `pixelated` cũng không cứu nổi.
+  await p.goto(`${BASE}/forum/${forum.slug}/new`, { waitUntil: 'networkidle' });
+  await p.waitForTimeout(1000);
+  const doVe = await p.evaluate(() =>
+    [...document.querySelectorAll('img[src^="/retro/"]')].map((i) => ({
+      src: i.getAttribute('src'),
+      goc: [i.naturalWidth, i.naturalHeight],
+      ve: [Math.round(i.getBoundingClientRect().width), Math.round(i.getBoundingClientRect().height)],
+    })));
+  const meo = doVe.filter((x) => {
+    const tiLe = x.ve[0] / x.goc[0];
+    return !Number.isInteger(tiLe) || tiLe < 1 || x.ve[1] / x.goc[1] !== tiLe;
+  });
+  check('icon vẽ đúng bội số nguyên của kích thước gốc', meo.length === 0,
+    meo.map((x) => `${x.src} gốc ${x.goc.join('x')} vẽ ${x.ve.join('x')}`).slice(0, 3).join(' | '));
 }

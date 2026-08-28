@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { AlignCenter, Eye, HelpCircle, Loader2, ImagePlus } from 'lucide-react';
 import { RetroIcon } from '@/components/RetroIcon';
+import type { RetroIconName } from '@/lib/retro-icons';
 import { bbcodeToHtml, renderHidden } from '@/lib/bbcode';
 import { HIDE_SAMPLES } from '@/lib/hide';
 import { cn } from '@/lib/utils';
@@ -15,7 +16,7 @@ interface ToolButton {
    * riêng nút ấy dùng icon vẽ nét — thà lệch một cái còn hơn gán bừa một icon
    * mang nghĩa khác.
    */
-  icon?: string;
+  icon?: RetroIconName;
   title: string;
   /** Bọc vùng chọn bằng [tag]…[/tag] */
   wrap?: string;
@@ -152,7 +153,7 @@ export function BBCodeEditor({
         {TOOLS.map((t) => (
           <button key={t.title} type="button" title={t.title} aria-label={t.title} onClick={() => run(t)}
             className="grid size-8 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-ink-700">
-            {t.icon ? <RetroIcon name={t.icon} size={16} /> : <AlignCenter size={16} />}
+            {t.icon ? <RetroIcon name={t.icon} /> : <AlignCenter size={16} />}
           </button>
         ))}
 
@@ -160,7 +161,7 @@ export function BBCodeEditor({
           ref={setHideAnchor} onClick={() => setHideOpen((v) => !v)}
           aria-label="Ẩn nội dung theo điều kiện"
           className="grid size-8 place-items-center rounded-lg transition-colors hover:bg-white dark:hover:bg-ink-700">
-          <RetroIcon name="lock" size={16} />
+          <RetroIcon name="lock" />
         </button>
         <Popover open={hideOpen} anchor={hideAnchor} onClose={() => setHideOpen(false)} className="card w-64 overflow-y-auto p-1 shadow-card-hover">
           <p className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-400">Mở phần ẩn khi…</p>

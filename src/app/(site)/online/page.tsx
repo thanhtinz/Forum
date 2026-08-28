@@ -89,7 +89,7 @@ export default async function OnlinePage({ searchParams }: {
                     {/* Huy hiệu ON của bộ icon wap ngày trước, thay cho chấm
                         tròn — đây đúng là trang mà nó sinh ra để phục vụ. */}
                     <span className="absolute -bottom-1 -right-1 rounded-sm bg-white p-px dark:bg-ink-900">
-                      <RetroIcon name="online" alt="Đang online" w={18} h={9} />
+                      <RetroIcon name="online" alt="Đang online" />
                     </span>
                   </Link>
 

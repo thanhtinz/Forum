@@ -23,16 +23,12 @@ export function ClubCreateForm({ cost, myPoints, canCreate, ownedMax }: {
 
   if (!open) {
     return (
-      <div className="mb-6 flex flex-wrap items-center gap-3">
+      // Không nhắc giá ở đây: mở biểu mẫu ra là thấy ngay dòng "Trừ N điểm"
+      // kèm số điểm đang có, nói hai lần chỉ tổ chật chỗ.
+      <div className="mb-6">
         <button type="button" onClick={() => setOpen(true)} className="btn-primary">
           <Plus size={16} /> Lập câu lạc bộ
         </button>
-        {cost > 0 && (
-          <span className="retro-sub text-ink-500">
-            <Coins size={13} className="inline text-amber-500" /> {fmtCount(cost)} điểm mỗi lần lập
-            {' '}· bạn đang có {fmtCount(myPoints)}
-          </span>
-        )}
       </div>
     );
   }

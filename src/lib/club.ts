@@ -2,6 +2,7 @@ import { db } from './db';
 import { toSlug } from './post-form';
 import {
   CLUBS_PER_PAGE, CLUB_MEMBERS_PER_PAGE, CLUB_POSTS_PER_PAGE,
+  CLUB_COMMENTS_SHOWN, CLUB_COMMENTS_EXPANDED,
 } from './club-const';
 import { authorChipSelect, toAuthorChip, type AuthorChip } from './shop';
 
@@ -109,14 +110,16 @@ export async function getMyClubs(userId: string) {
 }
 
 export interface ClubViewer {
-  /** Chưa xin vào thì null. */
-  status: 'PENDING' | 'ACTIVE' | null;
+  /** Chưa dính dáng gì tới nhóm thì null. */
+  status: 'PENDING' | 'INVITED' | 'ACTIVE' | null;
   role: 'OWNER' | 'MOD' | 'MEMBER' | null;
   isOwner: boolean;
   /** Được đọc bảng tin không. */
   canRead: boolean;
   /** Được đăng lên bảng tin không. */
   canPost: boolean;
+  /** Được duyệt đơn, đuổi người, ghim và xoá bài không — chủ và phó nhóm. */
+  canManage: boolean;
 }
 
 /**
@@ -131,7 +134,10 @@ export async function getClubViewer(
   isAdmin = false,
 ): Promise<ClubViewer> {
   if (!userId) {
-    return { status: null, role: null, isOwner: false, canRead: club.privacy === 'PUBLIC', canPost: false };
+    return {
+      status: null, role: null, isOwner: false,
+      canRead: club.privacy === 'PUBLIC', canPost: false, canManage: false,
+    };
   }
 
   const m = await db.clubMember.findUnique({
@@ -148,6 +154,9 @@ export async function getClubViewer(
     // Quản trị viên đọc được để còn xử lý báo cáo, nhưng không được đăng thay.
     canRead: club.privacy === 'PUBLIC' || active || isAdmin,
     canPost: active,
+    // Phó nhóm gánh việc thay chủ, nhưng đổi cấu hình và giải tán thì không —
+    // hai việc ấy chỉ chủ nhóm làm, xét riêng bằng `isOwner`.
+    canManage: (active && (isOwner || m?.role === 'MOD')) || isAdmin,
   };
 }
 
@@ -175,7 +184,7 @@ export async function getClubMembers(clubId: string, page = 1) {
   };
 }
 
-/** Những người đang chờ duyệt — chỉ chủ câu lạc bộ hỏi tới. */
+/** Đơn xin vào đang chờ — chỉ chủ và phó nhóm hỏi tới. */
 export async function getClubPending(clubId: string) {
   const rows = await db.clubMember.findMany({
     where: { clubId, status: 'PENDING' },
@@ -186,22 +195,106 @@ export async function getClubPending(clubId: string) {
   return rows.map((r) => ({ id: r.id, createdAt: r.createdAt, user: toAuthorChip(r.user) }));
 }
 
-/** Bảng tin câu lạc bộ. Người gọi phải tự chắc là đọc được (`getClubViewer`). */
-export async function getClubPosts(clubId: string, page = 1) {
+/**
+ * Bạn bè của một người mà CHƯA dính dáng gì tới nhóm — danh sách để mời.
+ *
+ * Lọc ngay trong truy vấn chứ không lấy hết bạn rồi loại sau: người có vài
+ * trăm bạn thì lấy hết về chỉ để bỏ đi gần hết là phí, mà lọc sau còn dễ quên
+ * một trạng thái (đã mời rồi vẫn hiện ra để mời tiếp).
+ */
+export async function getInvitableFriends(userId: string, clubId: string) {
+  const rows = await db.friendship.findMany({
+    where: {
+      status: 'ACCEPTED',
+      OR: [{ requesterId: userId }, { addresseeId: userId }],
+    },
+    take: CLUB_MEMBERS_PER_PAGE,
+    orderBy: { acceptedAt: 'desc' },
+    select: {
+      requesterId: true,
+      requester: { select: { id: true, ...authorChipSelect } },
+      addressee: { select: { id: true, ...authorChipSelect } },
+    },
+  });
+
+  const friends = rows.map((r) => (r.requesterId === userId ? r.addressee : r.requester));
+  if (friends.length === 0) return [];
+
+  const taken = await db.clubMember.findMany({
+    where: { clubId, userId: { in: friends.map((f) => f.id) } },
+    select: { userId: true },
+  });
+  const skip = new Set(taken.map((t) => t.userId));
+
+  return friends
+    .filter((f) => !skip.has(f.id))
+    .map((f) => ({ id: f.id, chip: toAuthorChip(f) }));
+}
+
+/**
+ * Bảng tin câu lạc bộ. Người gọi phải tự chắc là đọc được (`getClubViewer`).
+ *
+ * `expandId` là bài đang được người đọc mở hết bình luận; các bài còn lại chỉ
+ * lấy vài bình luận mới nhất. Không có mốc ấy thì mười lăm bài mỗi trang kéo
+ * về cả nghìn hàng bình luận chỉ để in ra ba dòng đầu mỗi bài.
+ */
+export async function getClubPosts(
+  clubId: string,
+  page = 1,
+  opts: { viewerId?: string | null; expandId?: string | null } = {},
+) {
   const p = Math.max(1, page);
   const [total, rows] = await Promise.all([
     db.clubPost.count({ where: { clubId } }),
     db.clubPost.findMany({
       where: { clubId },
-      orderBy: { createdAt: 'desc' },
+      // Bài ghim luôn nằm trên đầu, trong nhóm ghim thì mới nhất trước.
+      orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
       skip: (p - 1) * CLUB_POSTS_PER_PAGE,
       take: CLUB_POSTS_PER_PAGE,
-      select: { id: true, content: true, createdAt: true, authorId: true, author: { select: authorChipSelect } },
+      select: {
+        id: true, content: true, createdAt: true, authorId: true, pinned: true,
+        likeCount: true, commentCount: true,
+        author: { select: authorChipSelect },
+      },
     }),
   ]);
 
+  const ids = rows.map((r) => r.id);
+  const [liked, comments] = await Promise.all([
+    opts.viewerId && ids.length > 0
+      ? db.clubPostLike.findMany({
+          where: { userId: opts.viewerId, postId: { in: ids } },
+          select: { postId: true },
+        })
+      : Promise.resolve([]),
+    ids.length > 0
+      ? Promise.all(ids.map(async (id) => ({
+          id,
+          rows: await db.clubComment.findMany({
+            where: { postId: id },
+            orderBy: { createdAt: 'desc' },
+            take: id === opts.expandId ? CLUB_COMMENTS_EXPANDED : CLUB_COMMENTS_SHOWN,
+            select: { id: true, content: true, createdAt: true, authorId: true, author: { select: authorChipSelect } },
+          }),
+        })))
+      : Promise.resolve([]),
+  ]);
+
+  const likedSet = new Set(liked.map((l) => l.postId));
+  const commentMap = new Map(comments.map((c) => [c.id, c.rows]));
+
   return {
-    items: rows.map((r) => ({ ...r, author: toAuthorChip(r.author) })),
+    items: rows.map((r) => ({
+      ...r,
+      author: toAuthorChip(r.author),
+      liked: likedSet.has(r.id),
+      // Lấy mới nhất trước cho đúng trần, nhưng in ra thì cũ trước cho dễ đọc.
+      comments: (commentMap.get(r.id) ?? [])
+        .slice()
+        .reverse()
+        .map((c) => ({ ...c, author: toAuthorChip(c.author) })),
+    })),
     page: p,
     totalPages: Math.max(1, Math.ceil(total / CLUB_POSTS_PER_PAGE)),
     total,

@@ -118,6 +118,8 @@ model User {
   clubsOwned      Club[]       @relation("ClubOwner")
   clubMemberships ClubMember[]
   clubPosts       ClubPost[]
+  clubPostLikes   ClubPostLike[]
+  clubComments    ClubComment[]
   presence      PresenceHere[]
   donationsSent     PointDonation[] @relation("DonationFrom")
   donationsReceived PointDonation[] @relation("DonationTo")
@@ -2026,7 +2028,10 @@ enum ClubMemberRole {
 }
 
 enum ClubMemberStatus {
+  /// Đã xin vào, chờ chủ nhóm duyệt.
   PENDING
+  /// Được chủ nhóm mời, chờ chính người đó nhận lời.
+  INVITED
   ACTIVE
 }
 
@@ -2077,6 +2082,9 @@ model ClubMember {
   role   ClubMemberRole   @default(MEMBER)
   status ClubMemberStatus @default(ACTIVE)
 
+  /// Ai mời — chỉ có ở hàng do lời mời sinh ra.
+  invitedById String?
+
   createdAt DateTime @default(now())
 
   @@unique([clubId, userId])
@@ -2096,7 +2104,45 @@ model ClubPost {
   /// Mã BBCode gốc, giữ để sửa bài không mất định dạng.
   contentSource String? @db.Text
 
+  /// Bài ghim luôn nằm trên đầu bảng tin.
+  pinned Boolean @default(false)
+
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+
   createdAt DateTime @default(now())
 
+  likes    ClubPostLike[]
+  comments ClubComment[]
+
+  @@index([clubId, pinned, createdAt])
   @@index([clubId, createdAt])
+}
+
+model ClubPostLike {
+  id     String   @id @default(cuid())
+  postId String
+  post   ClubPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
+  @@index([userId])
+}
+
+model ClubComment {
+  id     String   @id @default(cuid())
+  postId String
+  post   ClubPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([postId, createdAt])
 }

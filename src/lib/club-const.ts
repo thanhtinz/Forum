@@ -21,6 +21,18 @@ export const CLUB_NAME_MAX = 40;
 export const CLUB_DESC_MAX = 500;
 export const CLUB_POST_MIN = 2;
 export const CLUB_POST_MAX = 2000;
+export const CLUB_COMMENT_MAX = 500;
+
+/**
+ * Số bình luận hiện sẵn dưới mỗi bài trên bảng tin.
+ *
+ * Bài nào nhiều hơn thì phải bấm mở — mười lăm bài mỗi trang mà bài nào cũng
+ * kéo hết bình luận về thì một trang bảng tin gánh cả nghìn hàng chỉ để in ra
+ * vài dòng đầu.
+ */
+export const CLUB_COMMENTS_SHOWN = 3;
+/** Trần khi người đọc bấm "xem tất cả bình luận" của MỘT bài. */
+export const CLUB_COMMENTS_EXPANDED = 200;
 
 /** Cách vào câu lạc bộ. */
 export const CLUB_JOIN_MODES = [
@@ -38,6 +50,13 @@ export const CLUB_PRIVACY = [
 ] as const;
 
 export type ClubPrivacy = (typeof CLUB_PRIVACY)[number]['value'];
+
+/** Vai trò trong nhóm, để in ra cho gọn. */
+export const CLUB_ROLE_LABELS: Record<string, string> = {
+  OWNER: 'Chủ câu lạc bộ',
+  MOD: 'Phó câu lạc bộ',
+  MEMBER: 'Thành viên',
+};
 
 export interface ClubActionState {
   ok?: boolean;

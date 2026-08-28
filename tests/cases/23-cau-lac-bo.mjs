@@ -15,7 +15,8 @@ const BAI_KIN = 'BAI-TRONG-NHOM-KIN-x9';
 export default async function run(check) {
   const chu = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true } });
   const khach = await db.user.findFirst({ where: { username: 'huytran' }, select: { id: true } });
-  if (!chu || !khach) { check('có dữ liệu mẫu', false, 'thiếu người dùng'); return; }
+  const lan = await db.user.findFirst({ where: { username: 'lanpham' }, select: { id: true } });
+  if (!chu || !khach || !lan) { check('có dữ liệu mẫu', false, 'thiếu người dùng'); return; }
 
   const wipe = () => db.club.deleteMany({ where: { name: { startsWith: 'Kiểm thử CLB' } } });
   await wipe();
@@ -136,7 +137,112 @@ export default async function run(check) {
     await chuPage.waitForTimeout(700);
     check('chủ nhóm không có nút rời', (await chuPage.locator('button:has-text("Rời câu lạc bộ")').count()) === 0);
     check('chủ nhóm được ghi rõ là chủ', (await chuPage.content()).includes('Bạn là chủ câu lạc bộ'));
+
+    // ── Thích và bình luận bài bảng tin ─────────────────────────────────
+    // huytran vừa rời nhóm ở mục trên, cho vào lại để còn thích/bình luận.
+    await db.clubMember.create({ data: { clubId: clbMo.id, userId: khach.id, status: 'ACTIVE' }, select: { id: true } });
+    await db.club.update({ where: { id: clbMo.id }, data: { memberCount: { increment: 1 } }, select: { id: true } });
+    const baiMo = await db.clubPost.findFirst({ where: { clubId: clbMo.id }, select: { id: true } });
+
+    await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await khachPage.waitForTimeout(900);
+    // Nút thích là nút trái tim đầu tiên trong thẻ bài.
+    await khachPage.locator('li.card button:has(svg.lucide-heart)').first().click();
+    await khachPage.waitForTimeout(2000);
+    let baiSau = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { likeCount: true } });
+    check('thích được bài bảng tin', baiSau.likeCount === 1, `đang là ${baiSau.likeCount}`);
+
+    // Bấm lần nữa thì bỏ thích.
+    await khachPage.locator('li.card button:has(svg.lucide-heart)').first().click();
+    await khachPage.waitForTimeout(2000);
+    baiSau = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { likeCount: true } });
+    check('bấm lại thì bỏ thích', baiSau.likeCount === 0, `đang là ${baiSau.likeCount}`);
+
+    const BINH_LUAN = 'Hay qua ban oi';
+    await khachPage.fill('input[name="content"]', BINH_LUAN);
+    await khachPage.click('button:has-text("Gửi")');
+    await khachPage.waitForTimeout(2500);
+    const bl = await db.clubComment.findFirst({ where: { postId: baiMo.id }, select: { content: true } });
+    check('bình luận được bài bảng tin', !!bl && bl.content.includes(BINH_LUAN));
+    const demBL = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { commentCount: true } });
+    check('bộ đếm bình luận tăng', demBL.commentCount === 1, `đang là ${demBL.commentCount}`);
+
+    // Người ngoài nhóm không thích/bình luận được — chấm ở máy chủ, không tin giao diện.
+    await anon.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await anon.waitForTimeout(700);
+    check('khách không có ô bình luận', (await anon.locator('input[name="content"]').count()) === 0);
+
+    // ── Ghim bài ────────────────────────────────────────────────────────
+    await chuPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await chuPage.waitForTimeout(900);
+    await chuPage.locator('button[title="Ghim lên đầu"]').first().click();
+    await chuPage.waitForTimeout(2000);
+    const daGhim = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { pinned: true } });
+    check('chủ nhóm ghim được bài', daGhim.pinned === true);
+    check('bài ghim có dấu riêng', (await chuPage.content()).includes('Bài ghim'));
+
+    // Thành viên thường KHÔNG được ghim.
+    await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await khachPage.waitForTimeout(800);
+    check('thành viên thường không có nút ghim',
+      (await khachPage.locator('button[title="Ghim lên đầu"], button[title="Bỏ ghim"]').count()) === 0);
+
+    // ── Phong phó nhóm ──────────────────────────────────────────────────
+    const hangKhach = await db.clubMember.findUnique({
+      where: { clubId_userId: { clubId: clbMo.id, userId: khach.id } }, select: { id: true },
+    });
+    await chuPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await chuPage.waitForTimeout(800);
+    await chuPage.click('button:has-text("Quản lý thành viên")');
+    await chuPage.waitForTimeout(500);
+    await chuPage.locator('button[title="Phong làm phó"]').first().click();
+    await chuPage.waitForTimeout(2000);
+    const pho = await db.clubMember.findUnique({ where: { id: hangKhach.id }, select: { role: true } });
+    check('phong được phó nhóm', pho.role === 'MOD');
+
+    // Phó nhóm ghim được bài, nhưng không thấy cài đặt nhóm.
+    await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await khachPage.waitForTimeout(900);
+    check('phó nhóm ghim được bài',
+      (await khachPage.locator('button[title="Bỏ ghim"], button[title="Ghim lên đầu"]').count()) > 0);
+    check('phó nhóm không thấy cài đặt câu lạc bộ',
+      (await khachPage.locator('button:has-text("Cài đặt câu lạc bộ")').count()) === 0);
+
+    // ── Mời bạn vào nhóm ────────────────────────────────────────────────
+    // lanpham chưa dính dáng gì tới nhóm; kết bạn với chủ nhóm để mời được.
+    await db.friendship.deleteMany({
+      where: { OR: [{ requesterId: chu.id, addresseeId: lan.id }, { requesterId: lan.id, addresseeId: chu.id }] },
+    });
+    await db.friendship.create({
+      data: { requesterId: chu.id, addresseeId: lan.id, status: 'ACCEPTED', acceptedAt: new Date() },
+      select: { id: true },
+    });
+    await chuPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await chuPage.waitForTimeout(900);
+    await chuPage.click('button:has-text("Mời bạn bè")');
+    await chuPage.waitForTimeout(600);
+    await chuPage.locator('button:has-text("Mời")').last().click();
+    await chuPage.waitForTimeout(2000);
+    const loiMoi = await db.clubMember.findUnique({
+      where: { clubId_userId: { clubId: clbMo.id, userId: lan.id } }, select: { status: true, invitedById: true },
+    });
+    check('mời được bạn vào nhóm', loiMoi?.status === 'INVITED');
+    check('ghi lại ai là người mời', loiMoi?.invitedById === chu.id);
+
+    const lanPage = await openPage('lanpham');
+    await lanPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await lanPage.waitForTimeout(800);
+    check('người được mời thấy lời mời', (await lanPage.content()).includes('Bạn được mời vào nhóm'));
+    await lanPage.click('button:has-text("Nhận lời")');
+    await lanPage.waitForTimeout(2000);
+    const daVao = await db.clubMember.findUnique({
+      where: { clubId_userId: { clubId: clbMo.id, userId: lan.id } }, select: { status: true },
+    });
+    check('nhận lời thì thành thành viên', daVao?.status === 'ACTIVE');
   } finally {
+    await db.friendship.deleteMany({
+      where: { OR: [{ requesterId: chu.id, addresseeId: lan.id }, { requesterId: lan.id, addresseeId: chu.id }] },
+    });
     await wipe();
   }
 }

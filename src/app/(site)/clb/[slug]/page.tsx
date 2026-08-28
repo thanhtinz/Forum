@@ -10,7 +10,7 @@ import { ClubJoinButton } from '@/components/club/ClubJoinButton';
 import { ClubBoard } from '@/components/club/ClubBoard';
 import { ClubOwnerPanel } from '@/components/club/ClubOwnerPanel';
 import {
-  getClubViewer, getClubMembers, getClubPending, getClubPosts,
+  getClubViewer, getClubMembers, getClubPending, getClubPosts, getInvitableFriends,
   CLUB_JOIN_MODES,
 } from '@/lib/club';
 import { fmtAgo, fmtCount } from '@/lib/utils';
@@ -25,14 +25,17 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     : { title: 'Không tìm thấy câu lạc bộ' };
 }
 
+/** Chủ nhóm đội vương miện, phó nhóm đeo khiên; thành viên thường không có gì. */
 const ROLE_ICON = { OWNER: Crown, MOD: Shield, MEMBER: null } as const;
 
 export default async function ClubPage({ params, searchParams }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string; tv?: string }>;
+  searchParams: Promise<{ page?: string; tv?: string; bl?: string }>;
 }) {
   const { slug } = await params;
-  const { page: pageRaw, tv: memberPageRaw } = await searchParams;
+  const { page: pageRaw, tv: memberPageRaw, bl: expandRaw } = await searchParams;
+  /** Bài đang được mở hết bình luận, nếu có. */
+  const expandId = expandRaw?.trim() || null;
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
   const memberPage = Math.max(1, parseInt(memberPageRaw ?? '1', 10) || 1);
 
@@ -54,10 +57,11 @@ export default async function ClubPage({ params, searchParams }: {
 
   // Bảng tin chỉ HỎI TỚI khi được đọc: nhóm kín mà cứ lấy về rồi mới quyết
   // hiện hay không thì bài vẫn đi xuống trình duyệt, xem mã nguồn là thấy.
-  const [members, posts, pending] = await Promise.all([
+  const [members, posts, pending, friends] = await Promise.all([
     getClubMembers(club.id, memberPage),
-    viewer.canRead ? getClubPosts(club.id, page) : Promise.resolve(null),
-    viewer.isOwner ? getClubPending(club.id) : Promise.resolve([]),
+    viewer.canRead ? getClubPosts(club.id, page, { viewerId: userId, expandId }) : Promise.resolve(null),
+    viewer.canManage ? getClubPending(club.id) : Promise.resolve([]),
+    viewer.canManage && userId ? getInvitableFriends(userId, club.id) : Promise.resolve([]),
   ]);
 
   const joinLabel = CLUB_JOIN_MODES.find((m) => m.value === club.joinMode)?.label ?? '';
@@ -101,7 +105,7 @@ export default async function ClubPage({ params, searchParams }: {
 
       <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
         <div className="min-w-0">
-          {viewer.isOwner && (
+          {viewer.canManage && (
             <ClubOwnerPanel
               clubId={club.id}
               name={club.name}
@@ -110,13 +114,17 @@ export default async function ClubPage({ params, searchParams }: {
               joinMode={club.joinMode}
               privacy={club.privacy}
               pending={pending}
+              members={members.items}
+              friends={friends}
+              isOwner={viewer.isOwner}
             />
           )}
 
           {posts ? (
             <>
-              <ClubBoard clubId={club.id} canPost={viewer.canPost} posts={posts.items}
-                viewerId={userId} isOwner={viewer.isOwner} />
+              <ClubBoard clubId={club.id} clubSlug={club.slug} canPost={viewer.canPost}
+                canManage={viewer.canManage} posts={posts.items}
+                viewerId={userId} expandId={expandId} />
               <Pagination page={posts.page} totalPages={posts.totalPages} basePath={`/clb/${club.slug}`} />
             </>
           ) : (

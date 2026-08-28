@@ -11,7 +11,7 @@ import { getActiveBan, banMessage } from '@/lib/ban';
 import {
   clubSlug, getClubConfig,
   CLUBS_OWNED_MAX, CLUB_NAME_MIN, CLUB_NAME_MAX, CLUB_DESC_MAX,
-  CLUB_POST_MIN, CLUB_POST_MAX,
+  CLUB_POST_MIN, CLUB_POST_MAX, CLUB_COMMENT_MAX,
   type ClubActionState,
 } from '@/lib/club';
 
@@ -326,4 +326,265 @@ export async function deleteClub(clubId: string): Promise<ClubActionState> {
 
   revalidatePath('/clb');
   redirect('/clb');
+}
+
+// ─────────────── Thích / bình luận / ghim bài bảng tin ───────────────
+
+/**
+ * Ai được động vào bài của nhóm: chủ, phó, và ban điều hành.
+ *
+ * Trả kèm bài để nơi gọi khỏi hỏi lại cơ sở dữ liệu lần nữa.
+ */
+async function assertCanManagePost(postId: string) {
+  const me = await actor();
+  if ('error' in me) return { error: me.error } as const;
+
+  const post = await db.clubPost.findUnique({
+    where: { id: postId },
+    select: {
+      id: true, clubId: true, authorId: true, pinned: true,
+      club: { select: { slug: true, ownerId: true } },
+    },
+  });
+  if (!post) return { error: 'Không tìm thấy bài.' } as const;
+
+  const m = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId: post.clubId, userId: me.id } },
+    select: { role: true, status: true },
+  });
+  const manages = (m?.status === 'ACTIVE' && (m.role === 'OWNER' || m.role === 'MOD'))
+    || post.club.ownerId === me.id
+    || isStaff(me.role);
+
+  return { me, post, manages } as const;
+}
+
+/** Thích / bỏ thích một bài trên bảng tin. Chỉ thành viên. */
+export async function toggleClubPostLike(postId: string): Promise<ClubActionState & { liked?: boolean; count?: number }> {
+  const me = await actor();
+  if ('error' in me) return { error: me.error };
+
+  const post = await db.clubPost.findUnique({
+    where: { id: postId }, select: { id: true, clubId: true, club: { select: { slug: true } } },
+  });
+  if (!post) return { error: 'Không tìm thấy bài.' };
+
+  const m = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId: post.clubId, userId: me.id } }, select: { status: true },
+  });
+  if (m?.status !== 'ACTIVE') return { error: 'Chỉ thành viên câu lạc bộ mới thích được.' };
+
+  const existing = await db.clubPostLike.findUnique({
+    where: { postId_userId: { postId, userId: me.id } }, select: { id: true },
+  });
+
+  const after = await db.$transaction(async (tx) => {
+    if (existing) {
+      await tx.clubPostLike.delete({ where: { id: existing.id }, select: { id: true } });
+      return tx.clubPost.update({
+        where: { id: postId }, data: { likeCount: { decrement: 1 } }, select: { likeCount: true },
+      });
+    }
+    await tx.clubPostLike.create({ data: { postId, userId: me.id }, select: { id: true } });
+    return tx.clubPost.update({
+      where: { id: postId }, data: { likeCount: { increment: 1 } }, select: { likeCount: true },
+    });
+  });
+
+  revalidatePath(`/clb/${post.club.slug}`);
+  return { ok: true, liked: !existing, count: after.likeCount };
+}
+
+export async function addClubComment(_prev: ClubActionState, formData: FormData): Promise<ClubActionState> {
+  const me = await actor();
+  if ('error' in me) return { error: me.error };
+
+  const postId = String(formData.get('postId') ?? '');
+  const content = String(formData.get('content') ?? '').trim();
+  if (!content) return { error: 'Chưa nhập nội dung.' };
+  if (content.length > CLUB_COMMENT_MAX) return { error: `Bình luận tối đa ${CLUB_COMMENT_MAX} ký tự.` };
+
+  const post = await db.clubPost.findUnique({
+    where: { id: postId }, select: { id: true, clubId: true, authorId: true, club: { select: { slug: true, name: true } } },
+  });
+  if (!post) return { error: 'Không tìm thấy bài.' };
+
+  const m = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId: post.clubId, userId: me.id } }, select: { status: true },
+  });
+  if (m?.status !== 'ACTIVE') return { error: 'Chỉ thành viên câu lạc bộ mới bình luận được.' };
+
+  await db.$transaction(async (tx) => {
+    await tx.clubComment.create({
+      data: { postId, authorId: me.id, content: bbcodeToHtml(content) }, select: { id: true },
+    });
+    await tx.clubPost.update({
+      where: { id: postId }, data: { commentCount: { increment: 1 } }, select: { id: true },
+    });
+    if (post.authorId !== me.id) {
+      await notify(
+        {
+          userId: post.authorId, type: 'CLUB', actorId: me.id,
+          title: 'Có người bình luận bài của bạn trong câu lạc bộ',
+          content: post.club.name, link: `/clb/${post.club.slug}`,
+        },
+        tx,
+      );
+    }
+  });
+
+  revalidatePath(`/clb/${post.club.slug}`);
+  return { ok: true };
+}
+
+export async function deleteClubComment(commentId: string): Promise<ClubActionState> {
+  const me = await actor();
+  if ('error' in me) return { error: me.error };
+
+  const c = await db.clubComment.findUnique({
+    where: { id: commentId },
+    select: {
+      id: true, authorId: true, postId: true,
+      post: { select: { clubId: true, club: { select: { slug: true, ownerId: true } } } },
+    },
+  });
+  if (!c) return { ok: true };
+
+  const m = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId: c.post.clubId, userId: me.id } }, select: { role: true, status: true },
+  });
+  const manages = m?.status === 'ACTIVE' && (m.role === 'OWNER' || m.role === 'MOD');
+  if (c.authorId !== me.id && !manages && !isStaff(me.role)) {
+    return { error: 'Bạn không xoá được bình luận này.' };
+  }
+
+  await db.$transaction(async (tx) => {
+    await tx.clubComment.delete({ where: { id: c.id }, select: { id: true } });
+    await tx.clubPost.update({
+      where: { id: c.postId }, data: { commentCount: { decrement: 1 } }, select: { id: true },
+    });
+  });
+
+  revalidatePath(`/clb/${c.post.club.slug}`);
+  return { ok: true };
+}
+
+/** Ghim / bỏ ghim một bài lên đầu bảng tin. Chủ và phó nhóm. */
+export async function toggleClubPostPin(postId: string): Promise<ClubActionState> {
+  const guard = await assertCanManagePost(postId);
+  if ('error' in guard) return { error: guard.error };
+  if (!guard.manages) return { error: 'Chỉ chủ hoặc phó câu lạc bộ mới ghim được bài.' };
+
+  await db.clubPost.update({
+    where: { id: postId }, data: { pinned: !guard.post.pinned }, select: { id: true },
+  });
+
+  revalidatePath(`/clb/${guard.post.club.slug}`);
+  return { ok: true };
+}
+
+// ─────────────── Phó nhóm, mời bạn ───────────────
+
+/** Chủ nhóm phong hoặc gỡ chức phó cho một thành viên. */
+export async function setMemberRole(memberId: string, role: 'MOD' | 'MEMBER'): Promise<ClubActionState> {
+  const m = await db.clubMember.findUnique({
+    where: { id: memberId }, select: { id: true, clubId: true, userId: true, role: true, status: true },
+  });
+  if (!m) return { error: 'Không tìm thấy thành viên.' };
+  if (m.role === 'OWNER') return { error: 'Chủ câu lạc bộ không đổi vai trò được.' };
+  if (m.status !== 'ACTIVE') return { error: 'Người này chưa phải thành viên.' };
+
+  // Phong phó là việc riêng của CHỦ nhóm: để phó tự phong nhau thì chỉ cần một
+  // người bị chọn nhầm là cả nhóm mất kiểm soát.
+  const guard = await assertOwner(m.clubId);
+  if ('error' in guard) return { error: guard.error };
+  if (guard.club.ownerId !== guard.me.id && !isStaff(guard.me.role)) {
+    return { error: 'Chỉ chủ câu lạc bộ mới phong phó.' };
+  }
+
+  await db.clubMember.update({ where: { id: m.id }, data: { role }, select: { id: true } });
+  await notify({
+    userId: m.userId, type: 'CLUB', actorId: guard.me.id,
+    title: role === 'MOD' ? 'Bạn được phong phó câu lạc bộ' : 'Bạn thôi làm phó câu lạc bộ',
+    content: guard.club.name, link: `/clb/${guard.club.slug}`,
+  });
+
+  revalidatePath(`/clb/${guard.club.slug}`);
+  return { ok: true };
+}
+
+/** Chủ hoặc phó nhóm mời một người bạn vào nhóm. */
+export async function inviteToClub(clubId: string, userId: string): Promise<ClubActionState> {
+  const me = await actor();
+  if ('error' in me) return { error: me.error };
+
+  const club = await db.club.findUnique({
+    where: { id: clubId }, select: { id: true, slug: true, name: true, ownerId: true },
+  });
+  if (!club) return { error: 'Không tìm thấy câu lạc bộ.' };
+
+  const mine = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId, userId: me.id } }, select: { role: true, status: true },
+  });
+  const manages = mine?.status === 'ACTIVE' && (mine.role === 'OWNER' || mine.role === 'MOD');
+  if (!manages) return { error: 'Chỉ chủ hoặc phó câu lạc bộ mới mời được người.' };
+
+  const existing = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId, userId } }, select: { id: true },
+  });
+  if (existing) return { ok: true };
+
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.clubMember.create({
+        data: { clubId, userId, status: 'INVITED', invitedById: me.id }, select: { id: true },
+      });
+      await notify(
+        {
+          userId, type: 'CLUB', actorId: me.id,
+          title: 'Bạn được mời vào câu lạc bộ', content: club.name, link: `/clb/${club.slug}`,
+        },
+        tx,
+      );
+    });
+  } catch {
+    return { error: 'Không mời được, vui lòng thử lại.' };
+  }
+
+  revalidatePath(`/clb/${club.slug}`);
+  return { ok: true };
+}
+
+/** Người được mời nhận lời hoặc từ chối. */
+export async function respondInvite(clubId: string, accept: boolean): Promise<ClubActionState> {
+  const me = await actor();
+  if ('error' in me) return { error: me.error };
+
+  const m = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId, userId: me.id } },
+    select: { id: true, status: true, invitedById: true, club: { select: { slug: true, name: true } } },
+  });
+  if (!m || m.status !== 'INVITED') return { error: 'Không có lời mời nào đang chờ bạn.' };
+
+  await db.$transaction(async (tx) => {
+    if (!accept) {
+      await tx.clubMember.delete({ where: { id: m.id }, select: { id: true } });
+      return;
+    }
+    await tx.clubMember.update({ where: { id: m.id }, data: { status: 'ACTIVE' }, select: { id: true } });
+    await tx.club.update({ where: { id: clubId }, data: { memberCount: { increment: 1 } }, select: { id: true } });
+    if (m.invitedById) {
+      await notify(
+        {
+          userId: m.invitedById, type: 'CLUB', actorId: me.id,
+          title: 'Lời mời vào câu lạc bộ đã được nhận',
+          content: m.club.name, link: `/clb/${m.club.slug}`,
+        },
+        tx,
+      );
+    }
+  });
+
+  revalidatePath(`/clb/${m.club.slug}`);
+  return { ok: true };
 }

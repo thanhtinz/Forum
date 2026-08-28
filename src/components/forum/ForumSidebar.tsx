@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Flame, Users, Trophy, Circle } from 'lucide-react';
 import { db } from '@/lib/db';
+import { ONLINE_WINDOW_MS } from '@/lib/members';
 import { fmtCount, fmtAgo } from '@/lib/utils';
 import { getLevelLooks } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
@@ -8,7 +9,6 @@ import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { cosmeticSelect, toCosmetics } from '@/lib/shop';
 
 /** Coi là đang online nếu hoạt động trong 15 phút gần đây. */
-const ONLINE_WINDOW_MS = 15 * 60 * 1000;
 
 export async function ForumSidebar() {
   const since = new Date(Date.now() - ONLINE_WINDOW_MS);

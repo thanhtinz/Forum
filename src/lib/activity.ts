@@ -33,22 +33,64 @@ export interface ActivityItem {
   thumb: string | null;
 }
 
-/** Lấy dư một ít ở mỗi nguồn rồi mới trộn: nguồn nào cũng có thể chiếm hết. */
-const PER_SOURCE = 10;
+export const ACTIVITY_PER_PAGE = 12;
+
+/**
+ * Trần số trang xem được.
+ *
+ * Dòng hoạt động trộn từ bốn bảng nên muốn lấy trang thứ N phải kéo về N trang
+ * ở MỖI nguồn rồi mới trộn — không có cách nào bảo cơ sở dữ liệu "bỏ qua 200
+ * dòng" trên một danh sách chưa tồn tại. Càng lật sâu càng tốn, mà chẳng ai lật
+ * tới trang hai mươi để xem một người đăng gì hồi nào; muốn đào sâu thì có
+ * danh sách chủ đề đầy đủ ngay bên dưới.
+ */
+export const ACTIVITY_MAX_PAGES = 20;
+
+export interface ActivityPage {
+  items: ActivityItem[];
+  page: number;
+  totalPages: number;
+  total: number;
+}
 
 export async function getUserActivity(
   owner: { id: string; username: string | null },
   viewer: Viewer,
-  limit = 12,
-): Promise<ActivityItem[]> {
+  opts: { page?: number; pageSize?: number } = {},
+): Promise<ActivityPage> {
   const ownerId = owner.id;
+  const pageSize = opts.pageSize ?? ACTIVITY_PER_PAGE;
+  const page = Math.min(ACTIVITY_MAX_PAGES, Math.max(1, opts.page ?? 1));
+  /**
+   * Lấy đủ cho tới hết trang đang xem ở TỪNG nguồn.
+   *
+   * Một dòng nằm trong `page * pageSize` dòng mới nhất của cả bốn nguồn gộp lại
+   * thì chắc chắn cũng nằm trong ngần ấy dòng mới nhất của chính nguồn nó — nên
+   * lấy chừng này ở mỗi nguồn là đủ, không sót dòng nào.
+   */
+  const perSource = page * pageSize;
   const privacies = await visiblePrivacies(viewer, ownerId);
 
-  const [threads, replies, clubPosts, photos] = await Promise.all([
+  const threadWhere = { authorId: ownerId, status: 'PUBLISHED' as const };
+  const replyWhere = { authorId: ownerId, hidden: false, thread: { status: 'PUBLISHED' as const } };
+  const clubWhere = {
+    authorId: ownerId,
+    club: viewer.id
+      ? {
+          OR: [
+            { privacy: 'PUBLIC' as const },
+            { members: { some: { userId: viewer.id, status: 'ACTIVE' as const } } },
+          ],
+        }
+      : { privacy: 'PUBLIC' as const },
+  };
+  const photoWhere = { album: { ownerId, privacy: { in: privacies } } };
+
+  const [threads, replies, clubPosts, photos, total] = await Promise.all([
     db.thread.findMany({
-      where: { authorId: ownerId, status: 'PUBLISHED' },
+      where: threadWhere,
       orderBy: { createdAt: 'desc' },
-      take: PER_SOURCE,
+      take: perSource,
       select: {
         id: true, title: true, content: true, createdAt: true,
         forum: { select: { slug: true, name: true } },
@@ -56,9 +98,9 @@ export async function getUserActivity(
     }),
 
     db.reply.findMany({
-      where: { authorId: ownerId, hidden: false, thread: { status: 'PUBLISHED' } },
+      where: replyWhere,
       orderBy: { createdAt: 'desc' },
-      take: PER_SOURCE,
+      take: perSource,
       select: {
         id: true, content: true, createdAt: true,
         thread: { select: { id: true, title: true, forum: { select: { slug: true, name: true } } } },
@@ -68,19 +110,9 @@ export async function getUserActivity(
     // Bảng tin câu lạc bộ: chỉ lấy bài của nhóm công khai, hoặc nhóm mà chính
     // người đang xem có chân. Điều kiện nằm ngay trong `where`.
     db.clubPost.findMany({
-      where: {
-        authorId: ownerId,
-        club: viewer.id
-          ? {
-              OR: [
-                { privacy: 'PUBLIC' },
-                { members: { some: { userId: viewer.id, status: 'ACTIVE' } } },
-              ],
-            }
-          : { privacy: 'PUBLIC' },
-      },
+      where: clubWhere,
       orderBy: { createdAt: 'desc' },
-      take: PER_SOURCE,
+      take: perSource,
       select: {
         id: true, content: true, createdAt: true,
         club: { select: { slug: true, name: true } },
@@ -88,14 +120,23 @@ export async function getUserActivity(
     }),
 
     db.photo.findMany({
-      where: { album: { ownerId, privacy: { in: privacies } } },
+      where: photoWhere,
       orderBy: { createdAt: 'desc' },
-      take: PER_SOURCE,
+      take: perSource,
       select: {
         id: true, url: true, caption: true, createdAt: true,
         album: { select: { id: true, name: true } },
       },
     }),
+
+    // Tổng để biết có bao nhiêu trang. Bốn phép đếm chạy trên chỉ mục, cơ sở dữ
+    // liệu tự đếm chứ không gửi hàng nào về.
+    Promise.all([
+      db.thread.count({ where: threadWhere }),
+      db.reply.count({ where: replyWhere }),
+      db.clubPost.count({ where: clubWhere }),
+      db.photo.count({ where: photoWhere }),
+    ]).then((n) => n.reduce((a, b) => a + b, 0)),
   ]);
 
   const items: ActivityItem[] = [
@@ -125,5 +166,12 @@ export async function getUserActivity(
   ];
 
   items.sort((a, b) => b.at.getTime() - a.at.getTime());
-  return items.slice(0, limit);
+
+  const totalPages = Math.min(ACTIVITY_MAX_PAGES, Math.max(1, Math.ceil(total / pageSize)));
+  return {
+    items: items.slice((page - 1) * pageSize, page * pageSize),
+    page,
+    totalPages,
+    total,
+  };
 }

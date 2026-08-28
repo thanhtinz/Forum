@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="90" viewBox="0 0 220 90" role="img" aria-label="Ảnh mẫu">
+  <rect width="220" height="90" rx="12" fill="#e0edff"/>
+  <circle cx="46" cy="45" r="20" fill="#2f6feb"/>
+  <text x="46" y="53" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#fff" text-anchor="middle">N</text>
+  <text x="82" y="42" font-family="system-ui, sans-serif" font-size="17" font-weight="700" fill="#1e3a8a">Ảnh mẫu</text>
+  <text x="82" y="63" font-family="system-ui, sans-serif" font-size="12" fill="#3b5f9e">dán địa chỉ ảnh vào [img]</text>
+</svg>

@@ -118,8 +118,9 @@ model User {
   clubsOwned      Club[]       @relation("ClubOwner")
   clubMemberships ClubMember[]
   clubPosts       ClubPost[]
-  clubPostLikes   ClubPostLike[]
-  clubComments    ClubComment[]
+  clubPostLikes    ClubPostLike[]
+  clubComments     ClubComment[]
+  clubCommentLikes ClubCommentLike[]
   presence      PresenceHere[]
   donationsSent     PointDonation[] @relation("DonationFrom")
   donationsReceived PointDonation[] @relation("DonationTo")
@@ -2142,6 +2143,8 @@ model ClubComment {
 
   content String @db.Text
 
+  likeCount Int @default(0)
+
   /// Bình luận cha; rỗng nghĩa là bình luận gốc.
   parentId String?
   parent   ClubComment?  @relation("ClubCommentTree", fields: [parentId], references: [id], onDelete: Cascade)
@@ -2161,6 +2164,21 @@ model ClubComment {
 
   createdAt DateTime @default(now())
 
+  likes ClubCommentLike[]
+
   @@index([postId, depth, createdAt])
   @@index([rootId, createdAt])
+}
+
+model ClubCommentLike {
+  id        String      @id @default(cuid())
+  commentId String
+  comment   ClubComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId])
+  @@index([userId])
 }

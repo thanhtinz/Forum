@@ -468,6 +468,43 @@ export async function addClubComment(_prev: ClubActionState, formData: FormData)
   return { ok: true };
 }
 
+/** Thả tim / bỏ tim một bình luận. Chỉ thành viên. */
+export async function toggleClubCommentLike(commentId: string): Promise<ClubActionState & { liked?: boolean; count?: number }> {
+  const me = await actor();
+  if ('error' in me) return { error: me.error };
+
+  const c = await db.clubComment.findUnique({
+    where: { id: commentId },
+    select: { id: true, post: { select: { clubId: true, club: { select: { slug: true } } } } },
+  });
+  if (!c) return { error: 'Không tìm thấy bình luận.' };
+
+  const m = await db.clubMember.findUnique({
+    where: { clubId_userId: { clubId: c.post.clubId, userId: me.id } }, select: { status: true },
+  });
+  if (m?.status !== 'ACTIVE') return { error: 'Chỉ thành viên câu lạc bộ mới thả tim được.' };
+
+  const existing = await db.clubCommentLike.findUnique({
+    where: { commentId_userId: { commentId, userId: me.id } }, select: { id: true },
+  });
+
+  const after = await db.$transaction(async (tx) => {
+    if (existing) {
+      await tx.clubCommentLike.delete({ where: { id: existing.id }, select: { id: true } });
+      return tx.clubComment.update({
+        where: { id: commentId }, data: { likeCount: { decrement: 1 } }, select: { likeCount: true },
+      });
+    }
+    await tx.clubCommentLike.create({ data: { commentId, userId: me.id }, select: { id: true } });
+    return tx.clubComment.update({
+      where: { id: commentId }, data: { likeCount: { increment: 1 } }, select: { likeCount: true },
+    });
+  });
+
+  revalidatePath(`/clb/${c.post.club.slug}`);
+  return { ok: true, liked: !existing, count: Math.max(0, after.likeCount) };
+}
+
 export async function deleteClubComment(commentId: string): Promise<ClubActionState> {
   const me = await actor();
   if ('error' in me) return { error: me.error };

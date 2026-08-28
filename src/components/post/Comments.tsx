@@ -10,6 +10,7 @@ import { CommentForm } from './CommentForm';
 import { CommentReply } from './CommentReply';
 import { CommentBody } from './CommentBody';
 import { CommentOwnerActions } from './CommentOwnerActions';
+import { CommentLike } from './CommentLike';
 import { EditScope } from '@/components/EditScope';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { authorChipSelect, toCosmetics } from '@/lib/shop';
@@ -53,6 +54,18 @@ export async function Comments({ postId, gameId, slug, loggedIn, basePath = '/po
     },
   });
 
+  // Tim của người đang xem, hỏi MỘT lượt cho cả trang thay vì mỗi bình luận
+  // một lượt: một bài đông bình luận thì đó là năm chục lượt hỏi chỉ để tô đỏ
+  // mấy trái tim.
+  const shownIds = roots.flatMap((c) => [c.id, ...c.children.map((ch) => ch.id)]);
+  const myLikes = me && shownIds.length > 0
+    ? await db.reaction.findMany({
+        where: { userId: me, type: 'LIKE', commentId: { in: shownIds } },
+        select: { commentId: true },
+      })
+    : [];
+  const likedSet = new Set(myLikes.map((r) => r.commentId));
+
   const callbackUrl = `${basePath}/${slug}`;
 
   return (
@@ -68,14 +81,14 @@ export async function Comments({ postId, gameId, slug, loggedIn, basePath = '/po
         <ul className="space-y-5">
           {roots.map((c) => (
             <li key={c.id}>
-              <CommentRow c={c} me={me} canManage={canManage}
+              <CommentRow c={c} me={me} canManage={canManage} liked={likedSet.has(c.id)}
                 postId={postId} gameId={gameId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
               {c.children.length > 0 && (
                 <ul className="mt-3 space-y-3 border-l-2 border-ink-100 pl-4 dark:border-ink-800">
                   {c.children.map((ch) => (
                     <li key={ch.id}>
                       {/* Phản hồi cho phản hồi vẫn gắn vào bình luận gốc: danh sách chỉ lồng một mức. */}
-                      <CommentRow c={ch} me={me} canManage={canManage} small
+                      <CommentRow c={ch} me={me} canManage={canManage} small liked={likedSet.has(ch.id)}
                         postId={postId} gameId={gameId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
                     </li>
                   ))}
@@ -91,7 +104,7 @@ export async function Comments({ postId, gameId, slug, loggedIn, basePath = '/po
 
 type Row = {
   id: string; content: string; createdAt: Date; updatedAt: Date;
-  pinned?: boolean; hidden?: boolean; authorId: string;
+  pinned?: boolean; hidden?: boolean; authorId: string; likeCount: number;
   author: {
     username: string | null; name: string | null; image: string | null; level: number; role: string;
     nameColor: { value: string } | null;
@@ -100,11 +113,13 @@ type Row = {
   } | null;
 };
 
-function CommentRow({ c, me, canManage, small, postId, gameId, slug, callbackUrl, rootId }: {
+function CommentRow({ c, me, canManage, small, postId, gameId, slug, callbackUrl, rootId, liked }: {
   c: Row; me: string | null; canManage: boolean; small?: boolean;
   postId?: string; gameId?: string; slug: string; callbackUrl: string;
   /** Bình luận gốc của nhánh — nơi phản hồi mới sẽ gắn vào. */
   rootId: string;
+  /** Người đang xem đã thả tim bình luận này chưa. */
+  liked: boolean;
 }) {
   const name = c.author?.name ?? c.author?.username ?? 'Ẩn danh';
   const isOwner = !!me && me === c.authorId;
@@ -125,8 +140,13 @@ function CommentRow({ c, me, canManage, small, postId, gameId, slug, callbackUrl
         </div>
         <CommentBody commentId={c.id} content={c.content} createdAt={c.createdAt} updatedAt={c.updatedAt}
           className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-700 dark:text-ink-200" />
-        {(canManage || !!me) && (
-          <div className="mt-1 flex flex-wrap items-center gap-3">
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          {!c.hidden && (
+            <CommentLike commentId={c.id} initialLiked={liked} initialCount={c.likeCount}
+              loggedIn={!!me} callbackUrl={callbackUrl} />
+          )}
+          {(canManage || !!me) && (
+            <>
             {me && !c.hidden && (
               <CommentReply postId={postId} gameId={gameId} slug={slug} rootId={rootId} callbackUrl={callbackUrl}
                 mention={small ? c.author?.username : null} />
@@ -137,8 +157,9 @@ function CommentRow({ c, me, canManage, small, postId, gameId, slug, callbackUrl
                 className="inline-flex items-center gap-1 text-xs text-ink-400 transition-colors hover:text-red-500" />
             )}
             {canManage && <CommentModActions commentId={c.id} pinned={!!c.pinned} hidden={!!c.hidden} />}
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </div>
     </EditScope>

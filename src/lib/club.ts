@@ -233,7 +233,7 @@ export async function getInvitableFriends(userId: string, clubId: string) {
 
 const commentSelect = {
   id: true, content: true, createdAt: true, authorId: true, parentId: true, depth: true,
-  author: { select: authorChipSelect },
+  likeCount: true, author: { select: authorChipSelect },
 } as const;
 
 /** Một bình luận kèm cả nhánh con của nó. */
@@ -244,6 +244,9 @@ export interface ClubCommentNode {
   authorId: string;
   parentId: string | null;
   depth: number;
+  likeCount: number;
+  /** Người đang xem đã thả tim bình luận này chưa. */
+  liked: boolean;
   author: AuthorChip | null;
   children: ClubCommentNode[];
 }
@@ -311,6 +314,16 @@ export async function getClubPosts(
       })
     : [];
 
+  // Tim của người đang xem, hỏi một lượt cho cả trang.
+  const allCommentIds = [...rootIds, ...children.map((c) => c.id)];
+  const likedComments = opts.viewerId && allCommentIds.length > 0
+    ? await db.clubCommentLike.findMany({
+        where: { userId: opts.viewerId, commentId: { in: allCommentIds } },
+        select: { commentId: true },
+      })
+    : [];
+  const likedCommentSet = new Set(likedComments.map((l) => l.commentId));
+
   const likedSet = new Set(liked.map((l) => l.postId));
   const byParent = new Map<string, typeof children>();
   for (const c of children) {
@@ -324,6 +337,7 @@ export async function getClubPosts(
   const tree = (c: (typeof children)[number]): ClubCommentNode => ({
     ...c,
     author: toAuthorChip(c.author),
+    liked: likedCommentSet.has(c.id),
     children: (byParent.get(c.id) ?? []).map(tree),
   });
 

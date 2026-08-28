@@ -76,6 +76,23 @@ export async function closeOpenPages() {
   contexts.clear();
 }
 
+/**
+ * Đợi tới khi `dieuKien()` trả về giá trị đúng, tối đa `hanGiay` giây.
+ *
+ * Thay cho `waitForTimeout` cố định sau mỗi hành động: máy chủ dev lúc rảnh
+ * trả lời trong nửa giây, lúc chạy cả bộ kiểm thì mất mấy giây — chờ cứng thì
+ * hoặc phí thời gian, hoặc kiểm hụt và báo đỏ oan như đã dính ở ca câu lạc bộ.
+ */
+export async function doiToi(dieuKien, hanGiay = 20) {
+  const het = Date.now() + hanGiay * 1000;
+  for (;;) {
+    const v = await dieuKien();
+    if (v) return v;
+    if (Date.now() > het) return v;
+    await new Promise((r) => setTimeout(r, 400));
+  }
+}
+
 /** Mở một tab; truyền user để đăng nhập sẵn, bỏ trống là khách. */
 export async function openPage(user, password = 'member123') {
   const b = await getBrowser();

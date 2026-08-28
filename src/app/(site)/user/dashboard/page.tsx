@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { format } from 'date-fns';
-import { Bell, Coins, Wallet, TrendingUp, Flame, PenLine, Bookmark, Gift, Banknote, Users, Plus, Download, Settings, FileText, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Bell, Coins, Wallet, TrendingUp, Flame, PenLine, Bookmark, Gift, Banknote, Users, Plus, Settings, FileText, ArrowUpRight, ArrowDownRight, Sparkles } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount, fmtVnd } from '@/lib/utils';
@@ -27,7 +27,6 @@ export default async function DashboardPage() {
     select: {
       name: true, username: true, image: true, points: true, level: true, exp: true,
       checkinStreak: true, lastCheckinAt: true,
-      _count: { select: { posts: true } },
     },
   });
   if (!user) redirect('/login');
@@ -73,11 +72,11 @@ export default async function DashboardPage() {
       {/* Lối tắt */}
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <QuickLink href="/forum" icon={<PenLine size={18} />} label="Đăng chủ đề" primary />
+        <QuickLink href="/chua-doc" icon={<Sparkles size={18} />} label="Chưa đọc" />
         <QuickLink href={`/u/${user.username ?? ''}`} icon={<FileText size={18} />} label="Chủ đề của tôi" />
         <QuickLink href="/user/following" icon={<Users size={18} />} label="Đang theo dõi" />
         <QuickLink href="/user/threads" icon={<Bell size={18} />} label="Chủ đề theo dõi" />
         <QuickLink href="/user/favorites" icon={<Bookmark size={18} />} label="Đã lưu" />
-        <QuickLink href="/user/downloads" icon={<Download size={18} />} label="Đã tải" />
         <QuickLink href="/user/invite" icon={<Gift size={18} />} label="Mời bạn" />
         <QuickLink href="/user/settings" icon={<Settings size={18} />} label="Cài đặt" />
       </div>

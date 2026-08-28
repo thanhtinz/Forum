@@ -133,7 +133,7 @@ export default async function SearchPage({ searchParams }: {
             {sap !== 'recent' && <input type="hidden" name="sap" value={sap} />}
             {chiGiai && <input type="hidden" name="giai" value="1" />}
             <SearchIcon size={17} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" />
-            <input name="q" defaultValue={q} placeholder="Tìm chủ đề, bài viết, thành viên…" className="input pl-10" autoFocus />
+            <input name="q" defaultValue={q} placeholder="Tìm chủ đề, thành viên…" className="input pl-10" autoFocus />
           </form>
 
           {/* Bảng lọc: mở sẵn khi đang có bộ lọc bật, để người dùng thấy ngay
@@ -211,7 +211,7 @@ export default async function SearchPage({ searchParams }: {
         </header>
 
         {!q ? (
-          <div className="card p-12 text-center text-ink-400">Nhập từ khoá để tìm chủ đề, bài viết hoặc thành viên.</div>
+          <div className="card p-12 text-center text-ink-400">Nhập từ khoá để tìm chủ đề hoặc thành viên.</div>
         ) : tab === 'threads' ? (
           <section data-ket-qua className="card overflow-hidden">
             <TableHead title={`Chủ đề · ${fmtCount(threadTotal)} kết quả`} icon={<MessagesSquare size={15} className="text-brand-500" />}

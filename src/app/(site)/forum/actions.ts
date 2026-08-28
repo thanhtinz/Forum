@@ -11,7 +11,7 @@ import { notify, filterNotifiable } from '@/lib/notify';
 import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { bbcodeToHtml, hideRules } from '@/lib/bbcode';
-import { authorShareOf } from '@/lib/purchase';
+import { authorShareOf } from '@/lib/revenue-share';
 import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { readPollForm, isPollClosed } from '@/lib/poll';

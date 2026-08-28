@@ -7,7 +7,7 @@ import { MediaPicker } from '@/components/forum/MediaPicker';
 /**
  * Hàng công cụ soạn thảo: emoji / sticker / GIF và nút gửi ảnh.
  *
- * Ba ô soạn của trang (trả lời chủ đề, bình luận bài viết, bình luận game)
+ * Ba ô soạn của trang (trả lời chủ đề, bình luận game, bảng tin câu lạc bộ)
  * cần đúng một bộ công cụ này. Trước đây phần chèn-tại-con-trỏ và phần tải
  * ảnh được chép tay ở từng chỗ, nên ô bình luận bị bỏ quên — gom về một chỗ
  * để lần sau thêm ô soạn mới là có sẵn.

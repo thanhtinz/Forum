@@ -87,7 +87,7 @@ export default async function AdminBackupPage() {
       <div className="card space-y-2 p-4 text-sm text-ink-600 dark:text-ink-300">
         <p className="font-semibold text-ink-900 dark:text-white">Bản sao lưu gồm những gì</p>
         <ul className="list-inside list-disc space-y-1">
-          <li>Toàn bộ bảng dữ liệu: thành viên, bài viết, chủ đề, đơn hàng, điểm, nhật ký…</li>
+          <li>Toàn bộ bảng dữ liệu: thành viên, chủ đề, trả lời, bình luận, điểm, nhật ký…</li>
           <li>Không gồm phiên đăng nhập — người dùng sẽ đăng nhập lại sau khi khôi phục.</li>
           <li>Không gồm tệp ảnh đã tải lên; ảnh nằm trên Cloudflare R2 hoặc thư mục <code>public/</code>.</li>
         </ul>

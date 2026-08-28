@@ -24,8 +24,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 const STATUS_LABEL: Record<string, string> = { OPEN: 'Chờ xử lý', RESOLVED: 'Đã xử lý', DISMISSED: 'Đã bỏ qua' };
 
-function targetInfo(r: { postId: string | null; threadId: string | null; replyId: string | null; commentId: string | null; post: { slug: string; title: string } | null }) {
-  if (r.postId) return { label: `Bài viết: ${r.post?.title ?? r.postId}`, href: r.post ? `/posts/${r.post.slug}` : null };
+function targetInfo(r: { threadId: string | null; replyId: string | null; commentId: string | null }) {
   if (r.threadId) return { label: 'Chủ đề diễn đàn', href: null };
   if (r.replyId) return { label: 'Trả lời diễn đàn', href: null };
   if (r.commentId) return { label: 'Bình luận', href: null };
@@ -47,7 +46,6 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
       take: PAGE_SIZE,
       include: {
         reporter: { select: { name: true, username: true } },
-        post: { select: { slug: true, title: true } },
       },
     }),
   ]);
@@ -66,7 +64,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
         {items.length === 0 && <div className="card p-8 text-center text-sm text-ink-500">Không có báo cáo nào.</div>}
         {items.map((r) => {
           const t = targetInfo(r);
-          const hasTarget = !!(r.postId || r.threadId || r.replyId || r.commentId);
+          const hasTarget = !!(r.threadId || r.replyId || r.commentId);
           return (
             <div key={r.id} className="card space-y-2.5 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">

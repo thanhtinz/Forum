@@ -71,7 +71,8 @@ export default async function run(check) {
       ['bài trong chủ đề', `${BASE}/forum/${thread.forum.slug}/${thread.id}`],
       ['danh sách chủ đề của box', `${BASE}/forum/${newThread.forum.slug}`],
       ['chủ đề mới ở trang chủ', `${BASE}/`],
-      ['sổ lưu bút', `${BASE}/u/minhdev`],
+      // Hồ sơ chia tab nên sổ lưu bút nằm ở tab riêng.
+      ['sổ lưu bút', `${BASE}/u/minhdev?tab=luu-but`],
       ['danh sách bạn bè', `${BASE}/user/friends`],
       ['bình luận game', `${BASE}/games/${game.slug}`],
       ['bảng yêu cầu game', `${BASE}/games/yeu-cau`],

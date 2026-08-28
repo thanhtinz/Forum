@@ -181,7 +181,7 @@ export default async function FavoritesPage({ searchParams }: {
 /**
  * Hàng chọn thư mục cho lưới thẻ.
  *
- * Thẻ bài viết và thẻ game là component dùng chung ở nhiều trang, nhét thêm
+ * Thẻ chủ đề và thẻ game là component dùng chung ở nhiều trang, nhét thêm
  * nút vào trong thẻ thì trang nào cũng dính. Để riêng một hàng bên dưới lưới
  * vừa không đụng vào thẻ, vừa xếp gọn được cả chục mục.
  */

@@ -22,7 +22,7 @@ export default async function AdminStickersPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-bold text-ink-900 dark:text-white">Bộ sticker</h1>
-        <p className="text-sm text-ink-500">Sticker dùng trong khung soạn trả lời và bài viết.</p>
+        <p className="text-sm text-ink-500">Sticker dùng trong khung soạn trả lời và bình luận.</p>
       </div>
       <StickerPackManager packs={packs} />
     </div>

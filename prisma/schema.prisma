@@ -33,7 +33,7 @@ model User {
    */
   signature     String?   @db.Text
 
-  role   Role   @default(USER)
+  role   Role       @default(USER)
   status UserStatus @default(ACTIVE)
 
   // Kinh tế — chỉ còn MỘT loại: điểm, kiếm được bằng hoạt động trên diễn đàn.
@@ -41,7 +41,6 @@ model User {
 
   /**
    * Uy tín — tổng các lần thành viên khác chấm "+" và "−" cho người này.
-   *
    * Cộng dồn sẵn ở đây thay vì đếm lại bảng KarmaVote mỗi lần in tên: con số
    * này hiện cạnh nick ở MỌI bài trong chủ đề, đếm lại thì mỗi trang chủ đề
    * thêm vài chục lượt gom nhóm chỉ để ra một số nhỏ.
@@ -58,72 +57,67 @@ model User {
   totalCheckinDays Int       @default(0)
 
   // Mời bạn
-  inviteCode     String? @unique
-  invitedById    String?
-  invitedBy      User?   @relation("Invites", fields: [invitedById], references: [id], onDelete: SetNull)
-  invitees       User[]  @relation("Invites")
+  inviteCode  String? @unique
+  invitedById String?
+  invitedBy   User?   @relation("Invites", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitees    User[]  @relation("Invites")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   lastSeenAt DateTime?
 
   /**
    * Mốc "đã đọc hết diễn đàn" — bấm một nút là mọi chủ đề cũ hơn mốc này hết
    * được coi là mới.
-   *
    * Có mốc chung thì nút ấy làm được trong một lần ghi, thay vì phải chèn một
    * hàng ThreadRead cho từng chủ đề trong cả diễn đàn.
    */
   forumReadAt DateTime?
 
-  accounts       Account[]
-  sessions       Session[]
-  posts          Post[]
-  comments       Comment[]
-  threads        Thread[]
-  replies        Reply[]
-  reactions      Reaction[]
-  favorites      Favorite[]
-  orders         Order[]
-  pointsLogs     PointsLog[]
-  downloads      DownloadLog[]
-  medals         UserMedal[]
-  notifications  Notification[]
-  couponsClaimed CouponClaim[]
-  followers      Follow[] @relation("Following")
-  following      Follow[] @relation("Follower")
-  reportsMade    Report[] @relation("Reporter")
-  bans           Ban[]
-  blocksMade     Block[] @relation("Blocker")
-  blocksAgainst  Block[] @relation("Blocked")
-  convosA        Conversation[] @relation("ConvoA")
-  convosB        Conversation[] @relation("ConvoB")
-  messagesSent   Message[]
-  msgReactions   MessageReaction[]
-  threadFollows  ThreadFollow[]
-  pollVotes      PollVote[]
+  accounts      Account[]
+  sessions      Session[]
+  comments      Comment[]
+  threads       Thread[]
+  replies       Reply[]
+  reactions     Reaction[]
+  favorites     Favorite[]
+  pointsLogs    PointsLog[]
+  medals        UserMedal[]
+  notifications Notification[]
+  followers     Follow[]          @relation("Following")
+  following     Follow[]          @relation("Follower")
+  reportsMade   Report[]          @relation("Reporter")
+  bans          Ban[]
+  blocksMade    Block[]           @relation("Blocker")
+  blocksAgainst Block[]           @relation("Blocked")
+  convosA       Conversation[]    @relation("ConvoA")
+  convosB       Conversation[]    @relation("ConvoB")
+  messagesSent  Message[]
+  msgReactions  MessageReaction[]
+  threadFollows ThreadFollow[]
+  pollVotes     PollVote[]
 
   /// Các loại thông báo người dùng đã tắt (chỉ áp dụng cho loại được phép tắt).
-  notifyOff      NotificationType[] @default([])
-  adminLogs      AdminLog[] @relation("AdminLogActor")
+  notifyOff NotificationType[] @default([])
+  adminLogs AdminLog[]         @relation("AdminLogActor")
 
   gameEvents  GameEvent[]
   gameRatings GameRating[]
 
   shouts        ShoutMessage[]
-  shoutsDeleted ShoutMessage[] @relation("ShoutDeleter")
+  shoutsDeleted ShoutMessage[]     @relation("ShoutDeleter")
   gameUnlocks   GameUnlock[]
   hideUnlocks   ThreadHideUnlock[]
 
-  clubsOwned      Club[]       @relation("ClubOwner")
-  clubMemberships ClubMember[]
-  clubPosts       ClubPost[]
-  clubPostLikes    ClubPostLike[]
-  clubComments     ClubComment[]
-  clubCommentLikes ClubCommentLike[]
-  presence      PresenceHere[]
-  donationsSent     PointDonation[] @relation("DonationFrom")
-  donationsReceived PointDonation[] @relation("DonationTo")
+  clubsOwned        Club[]            @relation("ClubOwner")
+  clubMemberships   ClubMember[]
+  clubPosts         ClubPost[]
+  clubPostLikes     ClubPostLike[]
+  clubComments      ClubComment[]
+  clubCommentLikes  ClubCommentLike[]
+  presence          PresenceHere[]
+  donationsSent     PointDonation[]   @relation("DonationFrom")
+  donationsReceived PointDonation[]   @relation("DonationTo")
 
   guestbookReceived GuestbookEntry[] @relation("GuestbookOwner")
   guestbookWritten  GuestbookEntry[] @relation("GuestbookAuthor")
@@ -145,17 +139,17 @@ model User {
   threadReads ThreadRead[]
 
   // Cửa hàng: đồ đã mua, và đồ đang đeo (mỗi loại đeo được một món).
-  shopPurchases ShopPurchase[]
-  nameColorId   String?
-  nameColor     ShopItem? @relation("EquipNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
-  avatarFrameId String?
-  avatarFrame   ShopItem? @relation("EquipAvatarFrame", fields: [avatarFrameId], references: [id], onDelete: SetNull)
-  shopBadgeId   String?
-  shopBadge     ShopItem? @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
+  shopPurchases  ShopPurchase[]
+  nameColorId    String?
+  nameColor      ShopItem?      @relation("EquipNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
+  avatarFrameId  String?
+  avatarFrame    ShopItem?      @relation("EquipAvatarFrame", fields: [avatarFrameId], references: [id], onDelete: SetNull)
+  shopBadgeId    String?
+  shopBadge      ShopItem?      @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
   profileCoverId String?
-  profileCover   ShopItem? @relation("EquipCover", fields: [profileCoverId], references: [id], onDelete: SetNull)
+  profileCover   ShopItem?      @relation("EquipCover", fields: [profileCoverId], references: [id], onDelete: SetNull)
   shopTitleId    String?
-  shopTitle      ShopItem? @relation("EquipTitle", fields: [shopTitleId], references: [id], onDelete: SetNull)
+  shopTitle      ShopItem?      @relation("EquipTitle", fields: [shopTitleId], references: [id], onDelete: SetNull)
 
   @@index([level])
   @@index([createdAt])
@@ -214,189 +208,15 @@ model VerificationToken {
 }
 
 // ============================================================
-// CONTENT — Blog / bài viết
+// THẺ — dùng chung cho chủ đề diễn đàn và kho game
 // ============================================================
-
-model Post {
-  id      String @id @default(cuid())
-  slug    String @unique
-  title   String
-  excerpt String? @db.Text
-  content String  @db.Text
-  cover   String?
-
-  type   PostType   @default(ARTICLE)
-  status PostStatus @default(DRAFT)
-
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  categoryId String?
-  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  categories CategoriesOnPosts[]   // nhiều chuyên mục (WordPress-style)
-  tags       TagsOnPosts[]
-
-  // Card layout / hiển thị
-  featured  Boolean @default(false)
-  pinned    Boolean @default(false)
-  cardStyle CardStyle @default(STANDARD)
-
-  // Trả phí
-  access      AccessLevel @default(FREE)
-  pricePoints Int?        // giá bằng điểm
-  unlockLikes    Int?     // LIKE_GOAL: số lượt thích cần đạt để mở cho mọi người
-  unlockComments Int?     // COMMENT_GOAL: số bình luận cần đạt để mở cho mọi người
-  hiddenContent String?   @db.Text  // phần nội dung ẩn sau paywall
-  // Mã BBCode gốc do người dùng gõ — giữ lại để sửa bài không mất định dạng.
-  contentSource String?   @db.Text
-  hiddenSource  String?   @db.Text
-  faq         Json?       // [{ q, a }] — câu hỏi thường gặp của bài
-
-  viewCount    Int @default(0)
-  likeCount    Int @default(0)
-  commentCount Int @default(0)
-
-  publishedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  comments   Comment[]
-  reactions  Reaction[]
-  favorites  Favorite[]
-  downloads  DownloadItem[]
-  orders     Order[]
-  reports    Report[]
-
-  @@index([status, publishedAt])
-  @@index([categoryId])
-  @@index([authorId])
-  @@index([featured])
-}
-
-enum PostType {
-  ARTICLE
-  RESOURCE   // tài nguyên tải xuống
-  DOC        // tài liệu / doc series
-  PAGE
-}
-
-enum PostStatus {
-  DRAFT
-  PENDING
-  PUBLISHED
-  ARCHIVED
-}
-
-enum CardStyle {
-  STANDARD
-  WIDE
-  TEXT_ONLY
-  GALLERY
-}
-
-enum AccessLevel {
-  FREE
-  LOGIN_REQUIRED
-  POINTS
-
-  // Mở khoá bằng tương tác của CHÍNH người xem
-  LIKE            // phải thích bài
-  COMMENT         // phải bình luận
-  LIKE_COMMENT    // phải vừa thích vừa bình luận
-
-  // Mở khoá cho TẤT CẢ khi đạt mốc tương tác chung
-  LIKE_GOAL       // đủ `unlockLikes` lượt thích
-  COMMENT_GOAL    // đủ `unlockComments` bình luận
-}
-
-model Category {
-  id          String  @id @default(cuid())
-  slug        String  @unique
-  name        String
-  description String? @db.Text
-  icon        String?
-  color       String?
-  order       Int     @default(0)
-
-  parentId String?
-  parent   Category?  @relation("CatTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children Category[] @relation("CatTree")
-
-  posts     Post[]               // chuyên mục chính (primary)
-  postLinks CategoriesOnPosts[]  // nhiều chuyên mục
-
-  createdAt DateTime @default(now())
-
-  @@index([parentId])
-}
-
-model CategoriesOnPosts {
-  postId     String
-  categoryId String
-  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([postId, categoryId])
-  @@index([categoryId])
-}
 
 model Tag {
-  id    String @id @default(cuid())
-  slug  String @unique
-  name  String
-  posts TagsOnPosts[]
+  id      String          @id @default(cuid())
+  slug    String          @unique
+  name    String
   threads TagsOnThreads[]
-  games TagsOnGames[]
-}
-
-model TagsOnPosts {
-  postId String
-  tagId  String
-  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([postId, tagId])
-  @@index([tagId])
-}
-
-// ============================================================
-// DOWNLOADS — nội dung tải xuống
-// ============================================================
-
-model DownloadItem {
-  id     String @id @default(cuid())
-  postId String
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  label    String
-  url      String  @db.Text
-  password String?          // mật khẩu giải nén
-  extractCode String?       // mã trích xuất (netdisk)
-  provider String?          // local | gdrive | onedrive | ...
-  sizeBytes BigInt?
-  version  String?
-
-  order Int @default(0)
-
-  logs DownloadLog[]
-
-  createdAt DateTime @default(now())
-
-  @@index([postId])
-}
-
-model DownloadLog {
-  id     String @id @default(cuid())
-  userId String
-  itemId String
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item   DownloadItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-
-  ip        String?
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([itemId])
+  games   TagsOnGames[]
 }
 
 // ============================================================
@@ -412,8 +232,8 @@ model Forum {
   cover       String?
   order       Int     @default(0)
 
-  postAccess  ForumAccess @default(ALL)
-  minLevel    Int         @default(1)
+  postAccess ForumAccess @default(ALL)
+  minLevel   Int         @default(1)
 
   threadCount Int @default(0)
   replyCount  Int @default(0)
@@ -455,19 +275,19 @@ model Thread {
   authorId String
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  title   String
-  content String @db.Text
+  title         String
+  content       String  @db.Text
   // Mã BBCode gốc — giữ để sửa chủ đề không mất định dạng.
   contentSource String? @db.Text
 
-  status ThreadStatus @default(PUBLISHED)
-  pinned Boolean      @default(false)
-  locked Boolean      @default(false)
-  featured Boolean    @default(false)
+  status   ThreadStatus @default(PUBLISHED)
+  pinned   Boolean      @default(false)
+  locked   Boolean      @default(false)
+  featured Boolean      @default(false)
 
   // Thưởng / hỏi đáp
   bountyPoints  Int?
-  solvedReplyId String?  @unique
+  solvedReplyId String? @unique
 
   viewCount  Int @default(0)
   replyCount Int @default(0)
@@ -477,15 +297,15 @@ model Thread {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  replies   Reply[]
-  tags      TagsOnThreads[]
-  reactions Reaction[]
-  favorites Favorite[]
-  reports   Report[]
-  followers ThreadFollow[]
-  reads     ThreadRead[]
-  poll      Poll?
-  donations PointDonation[]
+  replies     Reply[]
+  tags        TagsOnThreads[]
+  reactions   Reaction[]
+  favorites   Favorite[]
+  reports     Report[]
+  followers   ThreadFollow[]
+  reads       ThreadRead[]
+  poll        Poll?
+  donations   PointDonation[]
   hideUnlocks ThreadHideUnlock[]
 
   @@index([forumId, lastReplyAt])
@@ -501,11 +321,11 @@ model Poll {
 
   question String
   /// Cho chọn nhiều đáp án cùng lúc.
-  multiple Boolean @default(false)
+  multiple Boolean   @default(false)
   /// Hết hạn thì khoá lại và ai cũng xem được kết quả. null = không hạn.
   closesAt DateTime?
   /// Chủ đề/quản trị đóng sớm.
-  closed   Boolean @default(false)
+  closed   Boolean   @default(false)
 
   createdAt DateTime @default(now())
 
@@ -519,7 +339,7 @@ model PollOption {
   poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
 
   text  String
-  order Int @default(0)
+  order Int    @default(0)
 
   votes PollVote[]
 
@@ -527,13 +347,13 @@ model PollOption {
 }
 
 model PollVote {
-  id       String @id @default(cuid())
+  id       String     @id @default(cuid())
   pollId   String
-  poll     Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  poll     Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
   optionId String
   option   PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
   userId   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -555,10 +375,8 @@ model ThreadFollow {
   @@index([userId, createdAt])
 }
 
-
 /**
  * Lần cuối một người mở một chủ đề — để đánh dấu chủ đề có bài mới.
- *
  * Chỉ ghi mốc thời gian, không ghi "đã đọc tới bài số mấy": danh sách chủ đề
  * chỉ cần biết có gì mới sau lần mình ghé hay không, mà mốc thời gian thì so
  * thẳng được với `lastReplyAt` sẵn có, không phải đếm bài.
@@ -607,9 +425,9 @@ model Reply {
   parent   Reply?  @relation("ReplyTree", fields: [parentId], references: [id], onDelete: Cascade)
   children Reply[] @relation("ReplyTree")
 
-  likeCount Int     @default(0)
+  likeCount  Int     @default(0)
   isSolution Boolean @default(false)
-  hidden    Boolean @default(false)
+  hidden     Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -629,11 +447,9 @@ model Reply {
 model Comment {
   id String @id @default(cuid())
 
-  // Bình luận gắn vào MỘT trong hai: bài viết hoặc game. Cùng kiểu "một cột
-  // cho mỗi đối tượng" mà Reaction và Favorite đang dùng, để khỏi phải bịa ra
-  // bảng bình luận riêng cho kho game.
-  postId String?
-  post   Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  // Bình luận của kho game. Trước còn gắn được vào bài viết nữa, nhưng mục
+  // bài viết đã bỏ nên chỉ còn một cột. Giữ nguyên kiểu "một cột cho mỗi đối
+  // tượng" mà Reaction và Favorite đang dùng, phòng khi có thêm chỗ cần.
   gameId String?
   game   Game?   @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
@@ -657,7 +473,6 @@ model Comment {
   reactions Reaction[]
   reports   Report[]
 
-  @@index([postId, createdAt])
   @@index([gameId, createdAt])
 }
 
@@ -672,19 +487,16 @@ model Reaction {
 
   type ReactionType @default(LIKE)
 
-  postId    String?
   threadId  String?
   replyId   String?
   commentId String?
 
-  post    Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   thread  Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
   reply   Reply?   @relation(fields: [replyId], references: [id], onDelete: Cascade)
   comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, postId, type])
   @@unique([userId, threadId, type])
   @@unique([userId, replyId, type])
   @@unique([userId, commentId, type])
@@ -705,10 +517,8 @@ model Favorite {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  postId   String?
   threadId String?
   gameId   String?
-  post     Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
   thread   Thread? @relation(fields: [threadId], references: [id], onDelete: Cascade)
   game     Game?   @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
@@ -716,7 +526,6 @@ model Favorite {
 
   createdAt DateTime @default(now())
 
-  @@unique([userId, postId])
   @@unique([userId, threadId])
   @@unique([userId, gameId])
 }
@@ -743,11 +552,11 @@ model PointsLog {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  amount  Int         // +/- 
-  balance Int         // số dư sau giao dịch
+  amount  Int // +/- 
+  balance Int // số dư sau giao dịch
   reason  PointsReason
   note    String?
-  refId   String?     // id đối tượng liên quan
+  refId   String? // id đối tượng liên quan
 
   createdAt DateTime @default(now())
 
@@ -756,140 +565,46 @@ model PointsLog {
 
 enum PointsReason {
   CHECKIN
+  /// Của mục bài viết đã bỏ. Giữ lại vì sổ điểm cũ còn hàng ghi lý do này —
+  /// bỏ đi là mất luôn dòng lịch sử, mà lịch sử điểm thì không được phép mất.
   POST_CREATE
   COMMENT_CREATE
   THREAD_CREATE
   REPLY_CREATE
   RECEIVED_LIKE
   INVITE_BONUS
-  PURCHASE_CONTENT
-  CONTENT_SALE       // tác giả nhận từ bán nội dung
+  PURCHASE_CONTENT // mở khoá khối [hide=diem:N] trong bài diễn đàn
+  CONTENT_SALE // tác giả nhận từ lượt mở khoá ấy
   ADMIN_ADJUST
   EXCHANGE
   BOUNTY_PAID
   BOUNTY_RECEIVED
+  /// Cũng của mục bài viết đã bỏ, giữ lại vì lý do như POST_CREATE.
   COUPON
-  DONATE_SENT        // tặng điểm cho bài của người khác
-  DONATE_RECEIVED    // nhận điểm người khác tặng
-  SHOP_BUY           // mua đồ trang trí ở cửa hàng
-}
-
-
-
-model Order {
-  id     String @id @default(cuid())
-  code   String @unique          // mã đơn hiển thị
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  status OrderStatus @default(PENDING)
-
-  // Đối tượng mua
-  postId String?
-  post   Post?   @relation(fields: [postId], references: [id], onDelete: SetNull)
-
-  discount   Int @default(0)
-  pointsUsed Int @default(0)
-
-  couponClaimId String?     @unique
-  couponClaim   CouponClaim? @relation(fields: [couponClaimId], references: [id], onDelete: SetNull)
-
-  paidAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([userId, createdAt])
-  @@index([status])
-}
-
-
-enum OrderStatus {
-  PENDING
-  PAID
-  CANCELLED
-  REFUNDED
-  FAILED
-}
-
-
-// ============================================================
-// VIP
-// ============================================================
-
-
-// ============================================================
-// COUPON / MÃ GIẢM GIÁ
-// ============================================================
-
-model Coupon {
-  id   String @id @default(cuid())
-  code String @unique
-  name String
-
-  type  CouponType @default(FIXED)
-  value Int                       // số điểm giảm, hoặc %
-
-  minAmount   Int?
-  maxDiscount Int?
-
-  totalQuantity Int?    // null = không giới hạn
-  usedCount     Int     @default(0)
-  perUserLimit  Int     @default(1)
-
-  startsAt DateTime?
-  endsAt   DateTime?
-  active   Boolean  @default(true)
-
-  claims CouponClaim[]
-
-  createdAt DateTime @default(now())
-}
-
-enum CouponType {
-  FIXED
-  PERCENT
-}
-
-model CouponClaim {
-  id       String @id @default(cuid())
-  couponId String
-  userId   String
-  coupon   Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  usedAt DateTime?
-  order  Order?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([couponId])
+  DONATE_SENT // tặng điểm cho bài của người khác
+  DONATE_RECEIVED // nhận điểm người khác tặng
+  SHOP_BUY // mua đồ trang trí ở cửa hàng
 }
 
 // ============================================================
 // HOA HỒNG / RÚT TIỀN
 // ============================================================
 
-
-
-
-
 // ============================================================
 // GAMIFICATION — huy chương, cấp độ
 // ============================================================
 
 model Medal {
-  id          String @id @default(cuid())
-  slug        String @unique
+  id          String  @id @default(cuid())
+  slug        String  @unique
   name        String
   description String? @db.Text
   icon        String
   color       String?
-  rarity      Int    @default(1)
+  rarity      Int     @default(1)
 
-  autoGrant     Boolean @default(false)
-  conditionType String?          // posts_count | checkin_streak | ...
+  autoGrant      Boolean @default(false)
+  conditionType  String? // posts_count | checkin_streak | ...
   conditionValue Int?
 
   users UserMedal[]
@@ -912,12 +627,12 @@ model UserMedal {
 }
 
 model LevelRule {
-  id       String @id @default(cuid())
-  level    Int    @unique
-  name     String
+  id          String  @id @default(cuid())
+  level       Int     @unique
+  name        String
   expRequired Int
-  icon     String?
-  color    String?
+  icon        String?
+  color       String?
 
   // Quyền lợi theo cấp
   dailyDownloadLimit Int?
@@ -936,7 +651,7 @@ model Notification {
 
   type    NotificationType
   title   String
-  content String? @db.Text
+  content String?          @db.Text
   link    String?
   actorId String?
 
@@ -952,7 +667,6 @@ enum NotificationType {
   MENTION
   LIKE
   FOLLOW
-  ORDER
   SYSTEM
   MEDAL
   /// Được người khác tặng điểm.
@@ -976,20 +690,18 @@ model Report {
   reporterId String
   reporter   User   @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
 
-  postId    String?
   threadId  String?
   replyId   String?
   commentId String?
   gameId    String?
-  post      Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
   thread    Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
   reply     Reply?   @relation(fields: [replyId], references: [id], onDelete: Cascade)
   comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
   game      Game?    @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
-  reason  String
-  detail  String? @db.Text
-  status  ReportStatus @default(OPEN)
+  reason    String
+  detail    String?      @db.Text
+  status    ReportStatus @default(OPEN)
   handledAt DateTime?
 
   createdAt DateTime @default(now())
@@ -1009,7 +721,7 @@ model Ban {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   reason    String
-  scope     BanScope @default(FULL)
+  scope     BanScope  @default(FULL)
   expiresAt DateTime?
   createdBy String?
 
@@ -1020,7 +732,9 @@ model Ban {
 
 enum BanScope {
   FULL
+  /// Cấm bình luận.
   COMMENT
+  /// Cấm đăng bài — chủ đề diễn đàn, không dính gì tới mục bài viết đã bỏ.
   POST
   FORUM
 }
@@ -1030,11 +744,11 @@ enum BanScope {
 // ============================================================
 
 model StickerPack {
-  id       String @id @default(cuid())
-  slug     String @unique
-  name     String
-  order    Int    @default(0)
-  active   Boolean @default(true)
+  id     String  @id @default(cuid())
+  slug   String  @unique
+  name   String
+  order  Int     @default(0)
+  active Boolean @default(true)
 
   stickers Sticker[]
 
@@ -1042,15 +756,17 @@ model StickerPack {
 }
 
 model Sticker {
-  id     String @id @default(cuid())
+  id     String      @id @default(cuid())
   packId String
   pack   StickerPack @relation(fields: [packId], references: [id], onDelete: Cascade)
 
-  name String
-  url  String  @db.Text
-  /** Khoá đối tượng trên R2 để xoá được khi gỡ pack. */
+  name       String
+  url        String  @db.Text
+  /**
+   * Khoá đối tượng trên R2 để xoá được khi gỡ pack.
+   */
   storageKey String? @db.Text
-  order Int @default(0)
+  order      Int     @default(0)
 
   @@index([packId])
 }
@@ -1062,7 +778,7 @@ model SiteSetting {
 }
 
 model Slide {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   title    String
   subtitle String?
   image    String
@@ -1074,12 +790,12 @@ model Slide {
 }
 
 model NavLink {
-  id     String @id @default(cuid())
-  label  String
-  url    String
-  icon   String?
-  order  Int     @default(0)
-  group  String  @default("header")   // header | footer | sidebar
+  id    String  @id @default(cuid())
+  label String
+  url   String
+  icon  String?
+  order Int     @default(0)
+  group String  @default("header") // header | footer | sidebar
 
   parentId String?
   parent   NavLink?  @relation("NavTree", fields: [parentId], references: [id], onDelete: SetNull)
@@ -1087,13 +803,13 @@ model NavLink {
 }
 
 model FriendLink {
-  id     String @id @default(cuid())
-  name   String
-  url    String
-  logo   String?
+  id          String  @id @default(cuid())
+  name        String
+  url         String
+  logo        String?
   description String?
-  order  Int     @default(0)
-  active Boolean @default(true)
+  order       Int     @default(0)
+  active      Boolean @default(true)
 }
 
 // ============================================================
@@ -1103,22 +819,22 @@ model FriendLink {
 model Game {
   id      String  @id @default(cuid())
   slug    String  @unique
-  title   String              // tên chính thức
-  titleVi String?             // tên bản Việt hóa
-  series  String?             // dòng game (Contra, Asphalt…)
+  title   String // tên chính thức
+  titleVi String? // tên bản Việt hóa
+  series  String? // dòng game (Contra, Asphalt…)
 
   description String? @db.Text // mô tả
   gameplay    String? @db.Text // lối chơi
-  icon        String?          // ảnh icon (URL/storage key)
-  cover       String?          // ảnh nền trang chi tiết
-  trailerUrl  String?          // video/trailer tuỳ chọn
+  icon        String? // ảnh icon (URL/storage key)
+  cover       String? // ảnh nền trang chi tiết
+  trailerUrl  String? // video/trailer tuỳ chọn
 
-  developer String?
-  publisher String?
+  developer   String?
+  publisher   String?
   releaseYear Int?
 
-  language    String  @default("en")   // en | vi | multi
-  vietnamized Boolean @default(false)  // bản Việt hóa
+  language    String  @default("en") // en | vi | multi
+  vietnamized Boolean @default(false) // bản Việt hóa
 
   status   GameStatus @default(DRAFT)
   featured Boolean    @default(false)
@@ -1131,26 +847,26 @@ model Game {
 
   // Phân loại
   platformId   String?
-  platform     GamePlatform?   @relation(fields: [platformId], references: [id], onDelete: SetNull)
+  platform     GamePlatform?        @relation(fields: [platformId], references: [id], onDelete: SetNull)
   resolutionId String?
-  resolution   GameResolution? @relation(fields: [resolutionId], references: [id], onDelete: SetNull)
+  resolution   GameResolution?      @relation(fields: [resolutionId], references: [id], onDelete: SetNull)
   genres       GenresOnGames[]
   tags         TagsOnGames[]
   collections  GamesOnCollections[]
 
   // Hướng dẫn / lưu ý
-  controls          Json?            // [{ key, action }] — key mapping mô tả
+  controls          Json? // [{ key, action }] — key mapping mô tả
   compatibilityNote String? @db.Text
   knownIssues       String? @db.Text
 
   // Thống kê
-  ratingSum    Int @default(0)
-  ratingCount  Int @default(0)
-  commentCount Int @default(0)
-  viewCount           Int @default(0)
-  uniqueViewCount     Int @default(0)
-  downloadCount       Int @default(0)
-  uniqueDownloadCount Int @default(0)
+  ratingSum           Int   @default(0)
+  ratingCount         Int   @default(0)
+  commentCount        Int   @default(0)
+  viewCount           Int   @default(0)
+  uniqueViewCount     Int   @default(0)
+  downloadCount       Int   @default(0)
+  uniqueDownloadCount Int   @default(0)
   trendingScore       Float @default(0)
 
   publishedAt DateTime?
@@ -1184,12 +900,12 @@ enum GameStatus {
 }
 
 model GameGenre {
-  id    String @id @default(cuid())
-  slug  String @unique
+  id    String  @id @default(cuid())
+  slug  String  @unique
   name  String
   icon  String?
   color String?
-  order Int    @default(0)
+  order Int     @default(0)
 
   games GenresOnGames[]
 }
@@ -1207,8 +923,8 @@ model GenresOnGames {
 model TagsOnGames {
   gameId String
   tagId  String
-  game   Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([gameId, tagId])
   @@index([tagId])
@@ -1216,11 +932,11 @@ model TagsOnGames {
 
 /// Nokia S40/S60, Sony Ericsson, Samsung, Motorola, Generic Java ME…
 model GamePlatform {
-  id    String @id @default(cuid())
-  slug  String @unique
+  id    String  @id @default(cuid())
+  slug  String  @unique
   name  String
   icon  String?
-  order Int    @default(0)
+  order Int     @default(0)
 
   games Game[]
 }
@@ -1228,8 +944,8 @@ model GamePlatform {
 /// 128x160, 176x208, 176x220, 240x320, 320x240, 360x640, custom…
 model GameResolution {
   id     String  @id @default(cuid())
-  slug   String  @unique      // "240x320"
-  label  String                // "240 × 320"
+  slug   String  @unique // "240x320"
+  label  String // "240 × 320"
   width  Int
   height Int
   custom Boolean @default(false)
@@ -1255,7 +971,7 @@ model GameCollection {
 model GamesOnCollections {
   gameId       String
   collectionId String
-  order        Int    @default(0)
+  order        Int            @default(0)
   game         Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
   collection   GameCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
@@ -1272,12 +988,12 @@ model GameVersion {
 
   /// Bản tải này dành cho nền tảng nào. Mỗi nền tảng có dãy version riêng.
   platform    DownloadPlatform @default(JAR)
-  version     String            // "1.0.2"
+  version     String // "1.0.2"
   releaseDate DateTime?
-  changelog   String?  @db.Text
-  sizeBytes   BigInt?           // tổng dung lượng của bản tải
+  changelog   String?          @db.Text
+  sizeBytes   BigInt? // tổng dung lượng của bản tải
   /// Bản mới nhất **của nền tảng này** — mỗi nền tảng đúng một bản.
-  latest      Boolean  @default(false)
+  latest      Boolean          @default(false)
   note        String?
 
   createdAt DateTime @default(now())
@@ -1301,17 +1017,17 @@ enum DownloadPlatform {
 }
 
 model GameFile {
-  id        String @id @default(cuid())
+  id        String      @id @default(cuid())
   versionId String
   version   GameVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
 
-  type       GameFileType
-  storageKey String                 // key trên object storage / CDN
-  fileName   String?
-  sizeBytes  BigInt?
-  checksum   String?                // giá trị checksum
-  checksumAlgo String @default("sha256")
-  mimeType   String?
+  type         GameFileType
+  storageKey   String // key trên object storage / CDN
+  fileName     String?
+  sizeBytes    BigInt?
+  checksum     String? // giá trị checksum
+  checksumAlgo String       @default("sha256")
+  mimeType     String?
 
   scanStatus ScanStatus @default(PENDING) // quét file trước khi phát hành
   scanNote   String?
@@ -1353,7 +1069,7 @@ model GameImage {
   caption    String?
   width      Int?
   height     Int?
-  sortOrder  Int @default(0)
+  sortOrder  Int           @default(0)
 
   createdAt DateTime @default(now())
 
@@ -1378,12 +1094,12 @@ model GameEvent {
   version   GameVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
 
   userId String?
-  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  actorKey String            // userId hoặc hash(ip+ua) cho khách
+  actorKey String // userId hoặc hash(ip+ua) cho khách
   type     GameEventType
-  isUnique Boolean @default(false)
-  value    Int?              // ví dụ: thời lượng phiên (giây)
+  isUnique Boolean       @default(false)
+  value    Int? // ví dụ: thời lượng phiên (giây)
   meta     Json?
 
   createdAt DateTime @default(now())
@@ -1421,7 +1137,7 @@ model GameRating {
   game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  score Int    // 1..5
+  score Int // 1..5
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1445,10 +1161,10 @@ model Conversation {
   userB   User   @relation("ConvoB", fields: [userBId], references: [id], onDelete: Cascade)
 
   // Tuỳ chỉnh dùng chung cho cả hai người, giống cách các app chat vẫn làm.
-  theme       String  @default("default")   // ảnh nền khung chat
-  bubble      String  @default("default")   // kiểu bong bóng
-  nicknameA   String?                       // biệt danh đặt cho userA
-  nicknameB   String?                       // biệt danh đặt cho userB
+  theme           String    @default("default") // ảnh nền khung chat
+  bubble          String    @default("default") // kiểu bong bóng
+  nicknameA       String? // biệt danh đặt cho userA
+  nicknameB       String? // biệt danh đặt cho userB
   // Số giờ giữ tin trước khi tự xoá; null = không tự xoá
   autoDeleteHours Int?
   // Mốc bật tự xoá. Chỉ tin gửi TỪ mốc này trở đi mới bị xoá — bật tính năng
@@ -1473,9 +1189,11 @@ model Message {
   senderId String
   sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
-  content String    @db.Text
-  readAt  DateTime?
-  /** Đã thu hồi: giữ lại bản ghi để tin trích dẫn nó không bị hụt. */
+  content   String    @db.Text
+  readAt    DateTime?
+  /**
+   * Đã thu hồi: giữ lại bản ghi để tin trích dẫn nó không bị hụt.
+   */
   deletedAt DateTime?
 
   // Trả lời một tin cụ thể trong cùng hội thoại
@@ -1491,7 +1209,9 @@ model Message {
   @@index([senderId, createdAt])
 }
 
-/** Cảm xúc thả lên một tin nhắn — mỗi người một cảm xúc cho mỗi tin. */
+/**
+ * Cảm xúc thả lên một tin nhắn — mỗi người một cảm xúc cho mỗi tin.
+ */
 model MessageReaction {
   id        String  @id @default(cuid())
   messageId String
@@ -1508,8 +1228,9 @@ model MessageReaction {
   @@index([messageId])
 }
 
-
-/** Chặn giữa hai thành viên: cắt nhắn tin và theo dõi cả hai chiều. */
+/**
+ * Chặn giữa hai thành viên: cắt nhắn tin và theo dõi cả hai chiều.
+ */
 model Block {
   id        String @id @default(cuid())
   blockerId String
@@ -1523,7 +1244,6 @@ model Block {
   @@index([blockedId])
 }
 
-
 /**
  * Nhật ký hành động quản trị. Ghi lại ai làm gì, lên đối tượng nào —
  * để đối soát khi có tranh chấp và tìm ra nguồn của một thay đổi bất thường.
@@ -1534,18 +1254,28 @@ model AdminLog {
   actorId String?
   actor   User?   @relation("AdminLogActor", fields: [actorId], references: [id], onDelete: SetNull)
 
-  /** Tên đăng nhập lúc thao tác — giữ lại phòng khi tài khoản bị xoá/đổi tên. */
+  /**
+   * Tên đăng nhập lúc thao tác — giữ lại phòng khi tài khoản bị xoá/đổi tên.
+   */
   actorName String?
 
-  /** Khoá hành động dạng `nhóm.việc`, ví dụ `post.approve`. */
-  action String
-  /** Loại đối tượng bị tác động: post, user, thread… (null nếu là cài đặt chung). */
+  /**
+   * Khoá hành động dạng `nhóm.việc`, ví dụ `post.approve`.
+   */
+  action     String
+  /**
+   * Loại đối tượng bị tác động: post, user, thread… (null nếu là cài đặt chung).
+   */
   targetType String?
   targetId   String?
-  /** Mô tả ngắn hiển thị trong danh sách, đã kèm tên đối tượng. */
-  summary String @db.Text
-  /** Dữ liệu phụ (giá trị trước/sau, lý do…) để soi khi cần. */
-  meta Json?
+  /**
+   * Mô tả ngắn hiển thị trong danh sách, đã kèm tên đối tượng.
+   */
+  summary    String  @db.Text
+  /**
+   * Dữ liệu phụ (giá trị trước/sau, lý do…) để soi khi cần.
+   */
+  meta       Json?
 
   createdAt DateTime @default(now())
 
@@ -1555,13 +1285,16 @@ model AdminLog {
   @@index([targetType, targetId])
 }
 
-
-/** Ảnh nền khung chat do admin tải lên. */
+/**
+ * Ảnh nền khung chat do admin tải lên.
+ */
 model ChatBackground {
   id     String  @id @default(cuid())
   name   String
-  image  String              // đường dẫn ảnh admin tải lên
-  /** Ảnh tối: chữ phụ trong khung chat phải sáng lên mới đọc được. */
+  image  String // đường dẫn ảnh admin tải lên
+  /**
+   * Ảnh tối: chữ phụ trong khung chat phải sáng lên mới đọc được.
+   */
   dark   Boolean @default(false)
   active Boolean @default(true)
   order  Int     @default(0)
@@ -1571,15 +1304,21 @@ model ChatBackground {
   @@index([active, order])
 }
 
-/** Kiểu bong bóng chat do admin tải lên: màu nền + ảnh trang trí phía trên. */
+/**
+ * Kiểu bong bóng chat do admin tải lên: màu nền + ảnh trang trí phía trên.
+ */
 model ChatBubbleStyle {
   id          String  @id @default(cuid())
   name        String
-  /** Ảnh gắn trên bong bóng (tai chibi, nơ…). Để trống thì chỉ đổi màu. */
+  /**
+   * Ảnh gắn trên bong bóng (tai chibi, nơ…). Để trống thì chỉ đổi màu.
+   */
   decor       String?
   colorMine   String
   colorTheirs String
-  /** Chữ trong bong bóng là màu đậm hay trắng. */
+  /**
+   * Chữ trong bong bóng là màu đậm hay trắng.
+   */
   darkText    Boolean @default(true)
   active      Boolean @default(true)
   order       Int     @default(0)
@@ -1595,7 +1334,6 @@ model ChatBubbleStyle {
 
 /**
  * Một câu nói trong phòng chat chung.
- *
  * Khác hẳn Message (nhắn riêng 1–1): đây là dòng chảy công khai, ai vào cũng
  * đọc được, chỉ giữ lại một số lượng gần đây. Xoá là xoá mềm để chỗ trống
  * trong hội thoại vẫn nhìn ra là "đã bị gỡ" chứ không lặng lẽ biến mất.
@@ -1607,7 +1345,9 @@ model ShoutMessage {
 
   content String @db.Text
 
-  /** Trả lời một câu cụ thể — giữ lại nếp "@ai đó" của phòng chat cũ. */
+  /**
+   * Trả lời một câu cụ thể — giữ lại nếp "@ai đó" của phòng chat cũ.
+   */
   replyToId String?
   replyTo   ShoutMessage?  @relation("ShoutReply", fields: [replyToId], references: [id], onDelete: SetNull)
   replies   ShoutMessage[] @relation("ShoutReply")
@@ -1624,7 +1364,6 @@ model ShoutMessage {
 
 /**
  * Ai đang ở trong một chủ đề / trong phòng chat ngay lúc này.
- *
  * Forum ngày xưa trang nào cũng có dòng "Đang xem chủ đề: A, B và 3 khách".
  * Một hàng cho mỗi (người, chỗ); mở chỗ khác thì hàng cũ được ghi đè.
  * `scope` là 'thread:<id>' hoặc 'chat'.
@@ -1642,7 +1381,6 @@ model PresenceHere {
 
 /**
  * Tặng điểm kèm lời cảm ơn.
- *
  * Điểm đã cộng/trừ và ghi vào PointsLog rồi, nhưng bảng này giữ riêng để
  * dựng được dòng "N người đã tặng X điểm cho bài này" ngay dưới bài — moi ra
  * từ nhật ký điểm thì phải lọc theo cả reason lẫn refId, vừa chậm vừa dễ sai.
@@ -1671,8 +1409,7 @@ model PointDonation {
 
 /**
  * Ai đã trả điểm để mở phần tải của game nào.
- *
- * Sổ ghi quyền, giống Order bên bài viết: mở rồi thì lần sau vào không bị đòi
+ * Sổ ghi quyền mở khoá: mở rồi thì lần sau vào không bị đòi
  * điểm nữa, kể cả khi quản trị viên đổi giá.
  */
 model GameUnlock {
@@ -1682,7 +1419,9 @@ model GameUnlock {
   gameId String
   game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
-  /** Số điểm thực trả lúc mở, giữ lại để đối soát khi giá đổi. */
+  /**
+   * Số điểm thực trả lúc mở, giữ lại để đối soát khi giá đổi.
+   */
   pointsPaid Int
 
   createdAt DateTime @default(now())
@@ -1693,7 +1432,6 @@ model GameUnlock {
 
 /**
  * Ai đã trả điểm để mở khối `[hide=diem:N]` của chủ đề nào.
- *
  * Ghi ở mức CHỦ ĐỀ chứ không phải từng khối: một chủ đề có thể có mấy khối ẩn,
  * mà bắt trả riêng từng khối thì vừa khó đếm cho người đọc vừa khó dò cho ta —
  * khối không có mã định danh riêng, thứ tự lại đổi mỗi lần người đăng sửa bài.
@@ -1705,7 +1443,9 @@ model ThreadHideUnlock {
   threadId String
   thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
 
-  /** Số điểm thực trả lúc mở, giữ lại để đối soát khi người đăng sửa giá. */
+  /**
+   * Số điểm thực trả lúc mở, giữ lại để đối soát khi người đăng sửa giá.
+   */
   pointsPaid Int
 
   createdAt DateTime @default(now())
@@ -1716,7 +1456,6 @@ model ThreadHideUnlock {
 
 /**
  * Sổ lưu bút trên trang cá nhân.
- *
  * Khách ghé qua để lại một lời nhắn công khai ngay trên hồ sơ, chủ nhà hồi âm
  * ngay dưới lời nhắn đó — đúng nếp sổ lưu bút của forum wap Việt thời 2010.
  * Khác tin nhắn riêng ở chỗ cả làng đọc được; khác bình luận ở chỗ nó gắn vào
@@ -1726,8 +1465,8 @@ model GuestbookEntry {
   id String @id @default(cuid())
 
   /// Chủ nhà — người sở hữu trang cá nhân đang được ghi vào.
-  ownerId String
-  owner   User   @relation("GuestbookOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId  String
+  owner    User   @relation("GuestbookOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   /// Người để lại lời nhắn.
   authorId String
   author   User   @relation("GuestbookAuthor", fields: [authorId], references: [id], onDelete: Cascade)
@@ -1753,7 +1492,6 @@ model GuestbookEntry {
 
 /**
  * Yêu cầu game — chỗ người dùng xin một game mà kho chưa có.
- *
  * Kho game chỉ quản trị viên đăng, nên không có yêu cầu game thì người dùng
  * không có cách nào nói ra là mình đang tìm gì. Trang "yêu cầu game" là mục
  * quen thuộc của ovigame / phonho ngày trước, và nó cũng là danh sách việc
@@ -1769,9 +1507,9 @@ model GameRequest {
   /// Mô tả thêm: dòng máy, độ phân giải, bản Việt hoá hay bản gốc…
   note  String? @db.Text
 
-  status GameRequestStatus @default(PENDING)
+  status    GameRequestStatus @default(PENDING)
   /// Lời nhắn của người quản kho khi đổi trạng thái.
-  adminNote String? @db.Text
+  adminNote String?           @db.Text
 
   /// Game đã lên kho để đáp ứng yêu cầu này.
   gameId String?
@@ -1804,7 +1542,9 @@ enum GameRequestStatus {
   REJECTED
 }
 
-/** Một người bấm "tôi cũng muốn" cho một yêu cầu. */
+/**
+ * Một người bấm "tôi cũng muốn" cho một yêu cầu.
+ */
 model GameRequestVote {
   userId    String
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1819,11 +1559,9 @@ model GameRequestVote {
 
 /**
  * Kết bạn hai chiều.
- *
  * Theo dõi (Follow) là một chiều: mình theo ai đó không cần họ đồng ý. Kết bạn
  * thì phải cả hai gật — nếp của forum wap Việt ngày trước, và là thứ để sau
  * này giới hạn "chỉ bạn bè xem được".
- *
  * Một hàng cho một cặp, giữ đúng chiều người gửi → người nhận để biết ai còn
  * phải bấm đồng ý. Muốn biết A và B có phải bạn không thì phải dò cả hai
  * chiều, nên đánh chỉ mục cho cả hai cột.
@@ -1858,14 +1596,12 @@ enum FriendStatus {
 
 /**
  * Album ảnh cá nhân.
- *
  * Trang cá nhân thời forum wap Việt nào cũng có mục ảnh: vài tấm để khoe, vài
  * tấm chỉ cho bạn bè xem. Đây cũng là chỗ đầu tiên dùng tới quan hệ kết bạn:
  * mức "chỉ bạn bè" chỉ có nghĩa khi kết bạn là hai chiều.
  */
 /**
  * Một lần chấm uy tín: ai chấm cho ai, cộng hay trừ, vì lý do gì.
- *
  * Giữ từng lần chấm chứ không chỉ giữ con số tổng, vì trang uy tín của forum
  * ngày trước là một cuốn sổ công khai: ai chấm mình, chấm vì việc gì, ngày
  * nào. Không có sổ thì con số tổng chẳng khác gì lời đồn.
@@ -1942,7 +1678,6 @@ model Photo {
 
 /**
  * Món đồ trong cửa hàng — mua bằng ĐIỂM, dùng để trang trí hồ sơ.
- *
  * Đúng nếp JohnCMS ngày xưa: bỏ điểm ra mua màu nick, khung avatar, huy hiệu
  * rồi đeo lên cho cả diễn đàn thấy. Cửa hàng này KHÔNG dính tới tiền thật —
  * diễn đàn chỉ có một loại tiền là điểm.
@@ -1958,11 +1693,11 @@ model ShopItem {
 
   /**
    * Nội dung của món đồ, ý nghĩa tuỳ theo `kind`:
-   *   NAME_COLOR   — một giá trị màu CSS (#hex, rgb(), hoặc linear-gradient()).
-   *   AVATAR_FRAME — đường dẫn ảnh khung, phủ lên trên avatar.
-   *   BADGE        — đường dẫn ảnh huy hiệu, hiện cạnh tên.
-   *   PROFILE_COVER — đường dẫn ảnh bìa, trải ngang đầu trang cá nhân.
-   *   TITLE        — dòng chữ danh hiệu, hiện cạnh tên.
+   * NAME_COLOR   — một giá trị màu CSS (#hex, rgb(), hoặc linear-gradient()).
+   * AVATAR_FRAME — đường dẫn ảnh khung, phủ lên trên avatar.
+   * BADGE        — đường dẫn ảnh huy hiệu, hiện cạnh tên.
+   * PROFILE_COVER — đường dẫn ảnh bìa, trải ngang đầu trang cá nhân.
+   * TITLE        — dòng chữ danh hiệu, hiện cạnh tên.
    */
   value String
 
@@ -1998,7 +1733,6 @@ enum ShopItemKind {
 
 /**
  * Sổ ghi quyền sở hữu: ai đã mua món nào.
- *
  * Mua một lần là của mãi mãi, kể cả khi quản trị viên gỡ món đó khỏi quầy hay
  * đổi giá — nên phải có bảng riêng chứ không suy ra từ nhật ký điểm.
  */
@@ -2006,7 +1740,7 @@ model ShopPurchase {
   id String @id @default(cuid())
 
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   itemId String
   item   ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
@@ -2024,13 +1758,13 @@ model ShopPurchase {
 // ============================================================
 
 enum ClubJoinMode {
-  OPEN     // bấm là vào
+  OPEN // bấm là vào
   APPROVAL // chủ câu lạc bộ duyệt
-  CLOSED   // không nhận thêm
+  CLOSED // không nhận thêm
 }
 
 enum ClubPrivacy {
-  PUBLIC  // ai cũng đọc được bảng tin
+  PUBLIC // ai cũng đọc được bảng tin
   MEMBERS // chỉ thành viên
 }
 
@@ -2050,7 +1784,6 @@ enum ClubMemberStatus {
 
 /**
  * Một hội nhóm do thành viên lập, có bảng tin riêng.
- *
  * Không dùng lại Forum: chuyên mục diễn đàn phân quyền theo vai trò và cấp,
  * còn ở đây quyền đọc/ghi phụ thuộc vào việc CÓ CHÂN trong nhóm hay không —
  * nhét thêm điều kiện ấy vào phân quyền chuyên mục thì mọi truy vấn diễn đàn
@@ -2113,7 +1846,7 @@ model ClubPost {
   authorId String
   author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
-  content String @db.Text
+  content       String  @db.Text
   /// Mã BBCode gốc, giữ để sửa bài không mất định dạng.
   contentSource String? @db.Text
 
@@ -2164,7 +1897,6 @@ model ClubComment {
 
   /**
    * Bình luận gốc của cả nhánh (rỗng ở chính bình luận gốc).
-   *
    * Có cột này thì lấy cả nhánh chỉ mất MỘT truy vấn: `rootId in (…)`. Không có
    * thì phải lần theo `parentId` từng tầng một, mỗi tầng một lượt hỏi cơ sở dữ
    * liệu — mà bảng tin có mười lăm bài mỗi trang.

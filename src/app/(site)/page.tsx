@@ -123,8 +123,7 @@ export default async function HomePage() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0 space-y-4">
           {/* Bài mới lên trên cùng: mở trang ra là thấy ngay diễn đàn đang
-              bàn chuyện gì. Trang này chỉ lấy bài của diễn đàn — blog và cửa
-              hàng có lối riêng trên menu. */}
+              bàn chuyện gì. */}
           <section className="card overflow-hidden">
             <TableHead title="Chủ đề mới" icon={<Clock size={15} className="text-brand-500" />}
               cols={{ last: 'Hoạt động', a: 'Trả lời', b: 'Lượt xem' }} />

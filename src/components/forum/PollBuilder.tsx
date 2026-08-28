@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { BarChart3, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
+import { PixelIcon } from '@/components/PixelIcon';
 import {
   POLL_DURATIONS, POLL_MAX_OPTIONS, POLL_MIN_OPTIONS,
   POLL_OPTION_MAX, POLL_QUESTION_MAX,
@@ -22,7 +23,7 @@ export function PollBuilder() {
     return (
       <button type="button" onClick={() => setOpen(true)}
         className="btn-outline w-full justify-center gap-2 !py-2.5 text-sm">
-        <BarChart3 size={16} /> Thêm bình chọn
+        <PixelIcon name="binhChon" /> Thêm bình chọn
       </button>
     );
   }
@@ -31,7 +32,7 @@ export function PollBuilder() {
     <div className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 font-semibold text-ink-900 dark:text-white">
-          <BarChart3 size={17} className="text-brand-500" /> Bình chọn
+          <PixelIcon name="binhChon" /> Bình chọn
         </h3>
         <button type="button" onClick={() => setOpen(false)} title="Bỏ bình chọn"
           className="text-ink-400 hover:text-ink-600"><X size={18} /></button>

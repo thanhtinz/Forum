@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Radio, MessageSquare, MessagesSquare, ShieldCheck } from 'lucide-react';
-import { RetroIcon } from '@/components/RetroIcon';
+import { PixelIcon } from '@/components/PixelIcon';
 import { Pagination } from '@/components/Pagination';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { LevelBadge } from '@/components/LevelBadge';
@@ -89,7 +89,7 @@ export default async function OnlinePage({ searchParams }: {
                     {/* Huy hiệu ON của bộ icon wap ngày trước, thay cho chấm
                         tròn — đây đúng là trang mà nó sinh ra để phục vụ. */}
                     <span className="absolute -bottom-1 -right-1 rounded-sm bg-white p-px dark:bg-ink-900">
-                      <RetroIcon name="online" alt="Đang online" />
+                      <PixelIcon name="trucTuyen" alt="Đang online" />
                     </span>
                   </Link>
 

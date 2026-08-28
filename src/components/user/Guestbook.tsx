@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { BookOpen, CornerDownRight, EyeOff, Lock } from 'lucide-react';
+import { CornerDownRight, EyeOff, Lock } from 'lucide-react';
+import { PixelIcon } from '@/components/PixelIcon';
 import { ReplyContent } from '@/components/forum/ReplyContent';
 import { Pagination } from '@/components/Pagination';
 import { GuestbookForm } from '@/components/user/GuestbookForm';
@@ -29,7 +30,7 @@ export function Guestbook({ username, ownerName, items, total, page, totalPages,
   return (
     <section id="so-luu-but" className="mt-8 scroll-mt-20">
       <h2 className="zib-title mb-4 flex items-center gap-2">
-        <BookOpen size={18} /> Sổ lưu bút
+        <PixelIcon name="soLuuBut" /> Sổ lưu bút
         {total > 0 && <span className="retro-count">{fmtCount(total)}</span>}
       </h2>
 

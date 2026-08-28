@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
+import { PixelIcon } from '@/components/PixelIcon';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { otherId, messagePreview } from '@/lib/messages';
@@ -77,6 +78,10 @@ export default async function MessagesPage() {
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
+                  {/* Phong bì đóng/mở của forum wap ngày trước — nhìn phát biết
+                      hội thoại nào còn tin chưa đọc, không phải dò con số. */}
+                  <PixelIcon name={unread > 0 ? 'thuChuaDoc' : 'thuDaDoc'}
+                    alt={unread > 0 ? 'Có tin chưa đọc' : 'Đã đọc hết'} className="shrink-0" />
                   <span className={cn('truncate text-sm', unread > 0 ? 'font-bold text-ink-900 dark:text-white' : 'font-semibold text-ink-800 dark:text-ink-100')}>
                     {name}
                   </span>

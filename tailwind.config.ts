@@ -1,5 +1,6 @@
 import type { Config } from 'tailwindcss';
 import typography from '@tailwindcss/typography';
+import { addDynamicIconSelectors } from '@iconify/tailwind';
 
 /**
  * Bảng màu Nova — tham chiếu zibll 8.1:
@@ -57,7 +58,10 @@ const config: Config = {
       },
     },
   },
-  plugins: [typography],
+  // `addDynamicIconSelectors` sinh ra lớp dạng `icon-[pixelarticons--lock]`.
+  // Icon nhúng thẳng vào CSS lúc build nên không tốn lượt tải nào, và vẽ bằng
+  // mask nên ăn theo `currentColor` — tự đổi màu theo chữ, kể cả nền tối.
+  plugins: [typography, addDynamicIconSelectors()],
 };
 
 export default config;

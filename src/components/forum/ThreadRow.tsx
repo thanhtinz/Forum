@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import { Pin, Lock, MessageSquare, Eye, Award, CheckCircle2 } from 'lucide-react';
+import { Pin, MessageSquare, Eye, Award, CheckCircle2 } from 'lucide-react';
+import { PixelIcon } from '@/components/PixelIcon';
 import { cn, fmtCount, fmtAgo } from '@/lib/utils';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { NO_COSMETICS } from '@/lib/shop-const';
@@ -42,7 +43,7 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
           {thread.pinned && <Pin size={13} className="shrink-0 text-brand-500" aria-label="Ghim" />}
-          {thread.locked && <Lock size={13} className="shrink-0 text-ink-400" aria-label="Đã khoá" />}
+          {thread.locked && <PixelIcon name="khoa" alt="Đã khoá" className="shrink-0" />}
           <Link href={slug ? `/forum/${slug}/${thread.id}` : '#'}
             className={cn('line-clamp-2 leading-snug text-ink-900 group-hover:text-brand-600 dark:text-white',
               thread.unread ? 'font-bold' : 'font-semibold')}>

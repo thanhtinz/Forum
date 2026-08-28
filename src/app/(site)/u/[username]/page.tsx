@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import {
-  Calendar, Coins, FileText, Images, Scale, Users, UserCheck, UserPlus as FollowIcon,
+  Calendar, Images,
   MessageSquare, Activity as ActivityIcon, BookOpen,
 } from 'lucide-react';
 import { db } from '@/lib/db';
@@ -30,6 +30,7 @@ import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { FriendButton } from '@/components/user/FriendButton';
 import { Guestbook } from '@/components/user/Guestbook';
 import { KarmaBox } from '@/components/user/KarmaBox';
+import { PixelIcon } from '@/components/PixelIcon';
 import { checkKarmaPermission } from '@/lib/karma';
 import { karmaSigned, karmaTone } from '@/lib/karma-const';
 
@@ -204,16 +205,16 @@ export default async function ProfilePage({ params, searchParams }: {
             )}
 
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-500">
-              <span className="flex items-center gap-1.5"><FileText size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.threads)}</b> chủ đề</span>
-              <span className="flex items-center gap-1.5"><Users size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.followers)}</b> người theo dõi</span>
-              <span className="flex items-center gap-1.5"><FollowIcon size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.following)}</b> đang theo dõi</span>
-              <span className="flex items-center gap-1.5"><UserCheck size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(friendCount)}</b> bạn bè</span>
+              <span className="flex items-center gap-1.5"><PixelIcon name="chuDe" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.threads)}</b> chủ đề</span>
+              <span className="flex items-center gap-1.5"><PixelIcon name="thanhVien" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.followers)}</b> người theo dõi</span>
+              <span className="flex items-center gap-1.5"><PixelIcon name="theoDoi" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.following)}</b> đang theo dõi</span>
+              <span className="flex items-center gap-1.5"><PixelIcon name="banBe" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(friendCount)}</b> bạn bè</span>
               <Link href={`/u/${username}/album`} className="flex items-center gap-1.5 hover:text-brand-600">
-                <Images size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(albumCount)}</b> album ảnh
+                <PixelIcon name="album" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(albumCount)}</b> album ảnh
               </Link>
-              <span className="flex items-center gap-1.5"><Coins size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user.points)}</b> điểm</span>
+              <span className="flex items-center gap-1.5"><PixelIcon name="diem" /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user.points)}</b> điểm</span>
               <Link href={`/u/${username}/uy-tin`} className="flex items-center gap-1.5 hover:text-brand-600">
-                <Scale size={15} /> <b className={karmaTone(user.karma)}>{karmaSigned(user.karma)}</b> uy tín
+                <PixelIcon name="uyTin" /> <b className={karmaTone(user.karma)}>{karmaSigned(user.karma)}</b> uy tín
               </Link>
               <span className="flex items-center gap-1.5"><Calendar size={15} /> Tham gia {format(user.createdAt, 'MM/yyyy')}</span>
             </div>

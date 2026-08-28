@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { BarChart3, Check, Lock, Users } from 'lucide-react';
+import { Check, Lock, Users } from 'lucide-react';
+import { PixelIcon } from '@/components/PixelIcon';
 import { votePoll, closePoll } from '@/app/(site)/forum/actions';
 import { fmtCount, cn } from '@/lib/utils';
 import type { PollView } from '@/lib/poll';
@@ -44,7 +45,7 @@ export function PollCard({ poll, canClose, loggedIn }: {
     <div className="card mb-3 space-y-3 p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <h2 className="flex min-w-0 items-start gap-2 font-bold text-ink-900 dark:text-white">
-          <BarChart3 size={18} className="mt-0.5 shrink-0 text-brand-500" />
+          <PixelIcon name="binhChon" className="mt-0.5 shrink-0" />
           <span className="min-w-0 break-words">{poll.question}</span>
         </h2>
         {canClose && !poll.closed && (

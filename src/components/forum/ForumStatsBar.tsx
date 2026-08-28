@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { ONLINE_WINDOW_MS } from '@/lib/members';
 import { fmtCount } from '@/lib/utils';
 import { bumpOnlineRecord } from '@/lib/online-record';
+import { PixelIcon } from '@/components/PixelIcon';
+import type { PixelIconName } from '@/components/PixelIcon';
 
 /** Coi là đang online nếu hoạt động trong 15 phút gần đây — trùng ForumSidebar. */
 
@@ -37,10 +39,10 @@ export async function ForumStatsBar() {
       {/* gap-px trên nền xám cho ra lưới kẻ 1px đều tăm tắp dù xuống dòng ở
           màn hình hẹp — divide-x sẽ kẻ nhầm vào ô đầu mỗi hàng. */}
       <dl className="grid grid-cols-2 gap-px bg-ink-100 sm:grid-cols-4 dark:bg-ink-800">
-        <Stat label="Chủ đề" value={fmtCount(threads)} />
-        <Stat label="Bài trả lời" value={fmtCount(replies)} />
-        <Stat label="Thành viên" value={fmtCount(members)} />
-        <Stat label="Đang trực tuyến" value={fmtCount(online)} highlight />
+        <Stat icon="chuDe" label="Chủ đề" value={fmtCount(threads)} />
+        <Stat icon="baiViet" label="Bài trả lời" value={fmtCount(replies)} />
+        <Stat icon="thanhVien" label="Thành viên" value={fmtCount(members)} />
+        <Stat icon="trucTuyen" label="Đang trực tuyến" value={fmtCount(online)} highlight />
       </dl>
 
       <div className="retro-sub retro-rule space-y-0.5 px-3 py-2 text-ink-400 sm:px-4">
@@ -65,10 +67,14 @@ export async function ForumStatsBar() {
   );
 }
 
-function Stat({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function Stat({ icon, label, value, highlight }: {
+  icon: PixelIconName; label: string; value: string; highlight?: boolean;
+}) {
   return (
     <div className="bg-[color:var(--nova-surface)] px-3 py-2.5 text-center">
-      <dt className="retro-sub text-ink-400">{label}</dt>
+      <dt className="retro-sub flex items-center justify-center gap-1.5 text-ink-400">
+        <PixelIcon name={icon} /> {label}
+      </dt>
       <dd className={`retro-count mt-1 text-base font-bold ${highlight ? 'text-emerald-600 dark:text-emerald-400' : 'text-ink-800 dark:text-ink-100'}`}>
         {value}
       </dd>

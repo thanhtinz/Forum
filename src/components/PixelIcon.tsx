@@ -1,0 +1,71 @@
+import { cn } from '@/lib/utils';
+
+/**
+ * Icon pixel lấy từ bộ `pixelarticons` (1306 icon), dựng bằng CSS.
+ *
+ * Không phải ảnh mà là một khối được `mask` theo hình icon, nên:
+ *  • Ăn theo `currentColor` — tự đổi màu theo chữ xung quanh, nền sáng hay nền
+ *    tối đều đúng. Ảnh GIF thì màu chết cứng, sang nền tối là chỏi hẳn.
+ *  • Nhúng thẳng vào CSS lúc build, không tốn thêm lượt tải và không bao giờ
+ *    có chuyện vỡ ảnh.
+ *
+ * VÌ SAO PHẢI CÓ BẢNG `ICON` DƯỚI ĐÂY thay vì ghép chuỗi tên:
+ * Tailwind tìm lớp bằng cách QUÉT VĂN BẢN mã nguồn. Viết
+ * `icon-[pixelarticons--${ten}]` thì nó không thấy lớp nào để sinh CSS, và
+ * icon lặng lẽ mất tăm. Nên mọi tên lớp phải nằm nguyên vẹn trong tệp này.
+ */
+const ICON = {
+  // Thanh soạn thảo
+  mau: 'icon-[pixelarticons--colors-swatch]',
+  canhGiua: 'icon-[pixelarticons--align-center]',
+  lienKet: 'icon-[pixelarticons--link]',
+  anh: 'icon-[pixelarticons--image]',
+  trichDan: 'icon-[pixelarticons--quote-text-inline]',
+  maNguon: 'icon-[pixelarticons--code]',
+  danhSach: 'icon-[pixelarticons--bulletlist]',
+  an: 'icon-[pixelarticons--eye-closed]',
+  khoa: 'icon-[pixelarticons--lock]',
+
+  // Diễn đàn
+  chuDe: 'icon-[pixelarticons--message-text]',
+  baiViet: 'icon-[pixelarticons--file-text]',
+  thanhVien: 'icon-[pixelarticons--users]',
+  theoDoi: 'icon-[pixelarticons--avatar-circle-plus]',
+  banBe: 'icon-[pixelarticons--group]',
+  album: 'icon-[pixelarticons--album]',
+  diem: 'icon-[pixelarticons--coins]',
+  uyTin: 'icon-[pixelarticons--heart]',
+  binhChon: 'icon-[pixelarticons--chart-bar]',
+  soLuuBut: 'icon-[pixelarticons--book-open]',
+  trucTuyen: 'icon-[pixelarticons--avatar]',
+
+  // Tin nhắn
+  thuDaDoc: 'icon-[pixelarticons--mail-open]',
+  thuChuaDoc: 'icon-[pixelarticons--mail-unread]',
+
+  // Đánh giá — lấy từ bộ `pixel` chứ không phải `pixelarticons`, vì bộ kia
+  // chỉ có sao viền. Sao đánh giá cần cả bản ĐẶC mới phân biệt được "đã đạt"
+  // với "chưa đạt"; hai bản viền chỉ khác màu thì nhìn không ra mấy sao.
+  sao: 'icon-[pixel--star]',
+  saoDay: 'icon-[pixel--star-solid]',
+} as const;
+
+export type PixelIconName = keyof typeof ICON;
+
+export function PixelIcon({
+  name, alt, className,
+}: {
+  name: PixelIconName;
+  /** Có chữ thay thế thì icon mang nghĩa; bỏ trống là icon trang trí. */
+  alt?: string;
+  className?: string;
+}) {
+  return (
+    <span
+      role={alt ? 'img' : undefined}
+      aria-label={alt}
+      aria-hidden={alt ? undefined : true}
+      className={cn(ICON[name], 'inline-block size-4 shrink-0 align-[-0.15em]', className)}
+    />
+  );
+}

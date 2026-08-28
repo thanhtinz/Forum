@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 import { ArrowLeft, Check, CheckCheck, ChevronUp } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { otherId, messagePreview } from '@/lib/messages';
+import { otherId, messagePreview, purgeExpiredMessages } from '@/lib/messages';
 import { cn } from '@/lib/utils';
 import { MessageBubble } from '@/components/user/MessageBubble';
 import { ChatReplyProvider } from '@/components/user/ChatReplyContext';
@@ -13,7 +13,7 @@ import { resolveTheme, resolveBubble } from '@/lib/chat-theme';
 import { MessageComposer } from '@/components/user/MessageComposer';
 import { ScrollToLatest } from '@/components/user/ScrollToLatest';
 import { LiveRefresh } from '@/components/user/LiveRefresh';
-import { markConversationRead, purgeExpiredMessages } from '../actions';
+import { markConversationRead } from '../actions';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
 export const metadata: Metadata = { title: 'Trò chuyện' };

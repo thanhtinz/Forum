@@ -52,12 +52,30 @@ export async function getActiveBan(userId: string, scope: BanScopeValue) {
 /**
  * Gỡ khoá đăng nhập khi lệnh cấm FULL đã hết hạn.
  *
- * Người bị khoá FULL không đăng nhập được nên không có gì chạy để tự mở khoá cho họ;
- * phải kiểm ngay lúc họ thử đăng nhập. Trả về true nếu tài khoản được phép vào.
+ * Người bị khoá FULL không đăng nhập được nên không có gì chạy để tự mở khoá
+ * cho họ; phải kiểm ngay lúc họ thử đăng nhập. Trả về true nếu tài khoản được
+ * phép vào.
+ *
+ * Hai điều kiện chặt phải giữ, vì hàm này chạy trên đường ĐĂNG NHẬP — tức là
+ * người gọi chưa chứng minh mình là ai:
+ *
+ *   1. Chỉ mở khoá khi thật sự CÓ một lệnh cấm FULL đã hết hạn. Trước đây hàm
+ *      update vô điều kiện, nên tài khoản bị khoá mà hàng `Ban` đã bị xoá tay
+ *      là người lạ chỉ cần gõ đúng tên rồi nhập mật khẩu bừa cũng mở khoá được.
+ *   2. Chỗ gọi phải đặt SAU khi so mật khẩu thành công (xem `src/lib/auth.ts`),
+ *      để chỉ chính chủ mới kích hoạt được việc ghi này.
  */
 export async function liftExpiredFullBan(userId: string): Promise<boolean> {
   const active = await getActiveBan(userId, 'FULL');
   if (active) return false;
+
+  // Có lệnh FULL nào đó nhưng đã hết hạn thì mới là "hết hạn, cho vào lại".
+  const expired = await db.ban.findFirst({
+    where: { userId, scope: 'FULL', expiresAt: { not: null, lte: new Date() } },
+    select: { id: true },
+  });
+  if (!expired) return false;
+
   await db.user.update({ where: { id: userId }, data: { status: 'ACTIVE' }, select: { id: true } });
   return true;
 }

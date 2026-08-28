@@ -11,7 +11,21 @@ export { assetUrl } from '@/lib/game';
  * hotlink và để ghi nhận sự kiện download đúng chỗ.
  */
 
-const SIGN_SECRET = process.env.GAME_SIGN_SECRET || process.env.AUTH_SECRET || 'nova-dev-secret';
+/**
+ * Khoá ký signed URL.
+ *
+ * Thiếu khoá ở production thì DỪNG HẲN chứ không lặng lẽ dùng giá trị dự
+ * phòng: giá trị dự phòng nằm ngay trong mã nguồn, ai đọc được mã là tự ký
+ * được token tải mọi file game — kể cả game phải trả điểm mới mở khoá.
+ */
+const SIGN_SECRET = (() => {
+  const key = process.env.GAME_SIGN_SECRET || process.env.AUTH_SECRET;
+  if (key) return key;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Thiếu GAME_SIGN_SECRET (hoặc AUTH_SECRET) — không thể ký link tải file game.');
+  }
+  return 'nova-dev-secret';
+})();
 
 /** Hạn mặc định của signed URL (giây). */
 export const SIGNED_URL_TTL = 300;

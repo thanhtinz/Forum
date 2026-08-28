@@ -4,6 +4,7 @@ import { Readable } from 'node:stream';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyFileToken } from '@/lib/game-files';
+import { getActor } from '@/lib/actor';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,7 +22,7 @@ const MIME: Record<string, string> = {
  * GET /api/games/files?token=… — phục vụ file game qua signed URL.
  *
  * Chỉ dùng khi chưa cấu hình `GAME_CDN_URL`. Token đã ký ràng buộc storage key,
- * hạn dùng và người tải nên link chia sẻ lại sẽ hết hiệu lực rất nhanh.
+ * hạn dùng và người tải.
  */
 export async function GET(req: Request) {
   const token = new URL(req.url).searchParams.get('token');
@@ -29,6 +30,14 @@ export async function GET(req: Request) {
 
   const payload = verifyFileToken(token);
   if (!payload) return NextResponse.json({ error: 'INVALID_OR_EXPIRED' }, { status: 403 });
+
+  // Token có ghi người tải (`a`) nhưng ghi thôi thì chưa ràng buộc được gì —
+  // phải SO với người đang gọi. Không so thì chỉ cần chép địa chỉ dán ra ngoài
+  // là ai cũng tải được game phải trả điểm, suốt cả thời hạn của token.
+  const actor = await getActor();
+  if (payload.a && payload.a !== actor.actorKey) {
+    return NextResponse.json({ error: 'WRONG_ACTOR' }, { status: 403 });
+  }
 
   const file = await db.gameFile.findFirst({
     where: { storageKey: payload.k },

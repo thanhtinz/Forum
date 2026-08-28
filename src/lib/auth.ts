@@ -27,12 +27,16 @@ const providers: NextAuthConfig['providers'] = [
       });
       if (!user?.passwordHash) return null;
       if (user.status === 'SUSPENDED') return null;
-      // Khoá có thời hạn: người bị khoá không đăng nhập được nên không có gì tự mở khoá
-      // cho họ — phải kiểm ngay tại đây, hết hạn thì cho vào lại.
-      if (user.status === 'BANNED' && !(await liftExpiredFullBan(user.id))) return null;
 
+      // So mật khẩu TRƯỚC mọi thứ khác. `liftExpiredFullBan` có ghi vào CSDL,
+      // nên nếu gọi trước thì người lạ chỉ cần gõ đúng tên tài khoản là gây ra
+      // được thay đổi trạng thái — dù mật khẩu sai.
       const ok = await bcrypt.compare(password, user.passwordHash);
       if (!ok) return null;
+
+      // Khoá có thời hạn: người bị khoá không đăng nhập được nên không có gì tự
+      // mở khoá cho họ — phải kiểm ngay tại đây, hết hạn thì cho vào lại.
+      if (user.status === 'BANNED' && !(await liftExpiredFullBan(user.id))) return null;
 
       return {
         id: user.id,

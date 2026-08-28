@@ -6,7 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { notify } from '@/lib/notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
-import { pairKey, otherId, MESSAGE_MAX_LENGTH } from '@/lib/messages';
+import { pairKey, otherId, purgeExpiredMessages, MESSAGE_MAX_LENGTH } from '@/lib/messages';
 import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
 import {
   CHAT_THEMES, CHAT_BUBBLES, MESSAGE_REACTIONS, AUTO_DELETE_OPTIONS, NICKNAME_MAX,
@@ -219,23 +219,6 @@ export async function setAutoDelete(conversationId: string, hours: number): Prom
 
   revalidatePath(`/user/messages/${conversationId}`);
   return { ok: true };
-}
-
-/**
- * Xoá tin đã quá hạn của một hội thoại.
- *
- * Dọn ngay lúc mở hội thoại thay vì chạy nền: không có hàng đợi nền nào ở
- * đây, mà tin quá hạn thì không được hiện ra nữa — dọn tại chỗ là chắc chắn nhất.
- *
- * `from` là mốc bật tính năng: tin gửi trước đó không bị đụng tới, nếu không
- * thì vừa bật lên là bay sạch lịch sử cũ.
- */
-export async function purgeExpiredMessages(conversationId: string, hours: number, from: Date) {
-  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
-  if (from >= cutoff) return; // chưa có tin nào kịp quá hạn
-  await db.message.deleteMany({
-    where: { conversationId, createdAt: { gte: from, lt: cutoff } },
-  });
 }
 
 // ─────────────── Cảm xúc trên tin nhắn ───────────────

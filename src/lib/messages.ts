@@ -34,3 +34,26 @@ export function messagePreview(content: string): string {
   const stripped = content.replace(/!\[[^\]]*\]\([^)\s]+\)/g, ' 📷 Ảnh ').replace(/\s+/g, ' ').trim();
   return stripped || '📷 Ảnh';
 }
+
+/**
+ * Xoá tin đã quá hạn của một hội thoại.
+ *
+ * Dọn ngay lúc mở hội thoại thay vì chạy nền: không có hàng đợi nền nào ở đây,
+ * mà tin quá hạn thì không được hiện ra nữa — dọn tại chỗ là chắc chắn nhất.
+ *
+ * `from` là mốc bật tính năng: tin gửi trước đó không bị đụng tới, nếu không
+ * thì vừa bật lên là bay sạch lịch sử cũ.
+ *
+ * Hàm này CỐ Ý nằm ở đây chứ không nằm trong tệp `'use server'`. Mọi hàm được
+ * export từ tệp `'use server'` đều là một endpoint POST công khai — hàm này lại
+ * nhận thẳng `conversationId` và mốc thời gian rồi `deleteMany`, nên đặt ở đó
+ * là ai cũng gọi được để xoá sạch tin của hội thoại người khác. Chỗ gọi duy
+ * nhất (trang hội thoại) đã kiểm người xem có trong hội thoại trước khi gọi.
+ */
+export async function purgeExpiredMessages(conversationId: string, hours: number, from: Date) {
+  const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
+  if (from >= cutoff) return; // chưa có tin nào kịp quá hạn
+  await db.message.deleteMany({
+    where: { conversationId, createdAt: { gte: from, lt: cutoff } },
+  });
+}

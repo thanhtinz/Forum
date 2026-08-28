@@ -96,10 +96,13 @@ export default async function MembersPage({ searchParams }: {
           {list.items.map((m) => m.chip && (
             <Link key={m.id} href={`/u/${m.chip.username ?? ''}`}
               className="card flex gap-3 p-3.5 transition-shadow hover:shadow-card-hover">
-              <span className="relative shrink-0">
+              {/* `self-start`: ô bọc là con của một khối flex, mặc định nó bị
+                  kéo cao bằng cả thẻ — chấm xanh neo theo mép dưới ô bọc sẽ rơi
+                  xuống đáy thẻ chứ không nằm ở góc avatar. */}
+              <span className="relative flex shrink-0 self-start">
                 <Avatar image={m.chip.image} name={m.chip.name ?? m.chip.username ?? '?'}
                   cosmetics={m.chip.cosmetics} size={48} />
-                {/* Chấm xanh nằm đè lên góc avatar, đúng nếp forum wax ngày xưa. */}
+                {/* Chấm xanh nằm đè lên góc avatar, đúng nếp forum wap ngày xưa. */}
                 {m.online && (
                   <span className="absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-white bg-emerald-500 dark:border-ink-900"
                     title="Đang online" />

@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { db } from '@/lib/db';
+import { ONLINE_WINDOW_MS } from '@/lib/members';
 import { fmtCount } from '@/lib/utils';
 import { bumpOnlineRecord } from '@/lib/online-record';
 
 /** Coi là đang online nếu hoạt động trong 15 phút gần đây — trùng ForumSidebar. */
-const ONLINE_WINDOW_MS = 15 * 60 * 1000;
 
 /**
  * Thanh đếm cuối trang chủ.

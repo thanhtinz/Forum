@@ -35,13 +35,16 @@ export async function Header() {
           <span className="text-lg font-black tracking-tight">{site.name}</span>
         </Link>
 
-        <nav className="hidden items-center lg:flex">
+        {/* `shrink-0` + `whitespace-nowrap`: menu nhiều mục thì để ô tìm kiếm
+            thu lại, chứ đừng để nhãn vỡ làm hai dòng — hàng đầu trang cao cố
+            định nên chữ tràn ra là bị cắt. */}
+        <nav className="hidden shrink-0 items-center whitespace-nowrap lg:flex">
           {nav.map((n) => (
             n.children.length > 0 ? (
               // Mục có con: mở bằng hover/focus, không cần JS
               <div key={n.id} className="group relative">
                 <Link href={n.url}
-                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
+                  className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
                   <IconGlyph icon={n.icon} className="text-base" /> {n.label}
                   <ChevronDown size={13} className="text-ink-400" />
                 </Link>
@@ -56,7 +59,7 @@ export async function Header() {
               </div>
             ) : (
               <Link key={n.id} href={n.url}
-                className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
+                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
                 <IconGlyph icon={n.icon} className="text-base" /> {n.label}
               </Link>
             )

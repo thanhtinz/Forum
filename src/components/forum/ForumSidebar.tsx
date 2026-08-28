@@ -42,7 +42,12 @@ export async function ForumSidebar() {
       <section className="card p-4">
         <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold">
           <Users size={15} className="text-emerald-500" /> Cộng đồng
-          <span className="chip ml-auto bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50">{online.length} online</span>
+          {/* Con số này là lối vào tự nhiên nhất của trang "đang online" —
+              ai tò mò "ai đang ở đây" thì nhìn đúng vào chỗ ấy trước. */}
+          <Link href="/online"
+            className="chip ml-auto bg-emerald-100 text-emerald-600 hover:bg-emerald-200 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60">
+            {online.length} online
+          </Link>
         </h3>
 
         {online.length === 0 ? (

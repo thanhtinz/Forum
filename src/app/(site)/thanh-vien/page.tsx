@@ -52,7 +52,9 @@ export default async function MembersPage({ searchParams }: {
           <p className="mt-1 text-sm text-ink-500">
             {fmtCount(list.total)} thành viên
             {' · '}
-            <span className="text-emerald-600 dark:text-emerald-400">{fmtCount(list.online)} đang online</span>
+            <Link href="/online" className="text-emerald-600 hover:underline dark:text-emerald-400">
+              {fmtCount(list.online)} đang online
+            </Link>
           </p>
         </div>
 

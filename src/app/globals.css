@@ -190,6 +190,13 @@ html, body {
     @apply mb-1 block text-[11px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400;
   }
 
+  /* Tên người được trích trong [quote=Tên]: `cite` vốn là thẻ inline nên tên
+   * dính liền vào câu trích, đọc ra thành "Minh DevCâu Minh Dev nói". Cho
+   * xuống dòng riêng và làm nhạt đi để thấy ngay đâu là tên, đâu là câu. */
+  .prose blockquote cite {
+    @apply mb-1 block text-xs font-semibold not-italic text-ink-400;
+  }
+
   /* Nhắc tên @thành_viên trong nội dung BBCode đã dựng sẵn */
   .mention {
     @apply font-medium text-brand-600 no-underline dark:text-brand-400;

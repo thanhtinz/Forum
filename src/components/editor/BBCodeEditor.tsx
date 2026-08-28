@@ -206,6 +206,10 @@ export function BBCodeEditor({
               <li key={s.code}><code className="font-mono">{s.code}</code> — {s.label}</li>
             ))}
           </ul>
+          <a href="/huong-dan/bbcode" target="_blank" rel="noopener"
+            className="mt-2 inline-block font-semibold text-brand-600 hover:underline dark:text-brand-300">
+            Xem hướng dẫn đầy đủ →
+          </a>
         </div>
       )}
 

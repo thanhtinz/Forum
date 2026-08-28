@@ -31,6 +31,7 @@ export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: 
     { label: 'Game', url: '/games', icon: '' },
     { label: 'Xếp hạng', url: '/ranking', icon: '' },
     { label: 'Tìm kiếm', url: '/search', icon: '' },
+    { label: 'Hướng dẫn BBCode', url: '/huong-dan/bbcode', icon: '' },
   ],
 };
 

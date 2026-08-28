@@ -3,7 +3,7 @@ import { BASE, db, openPage } from '../helpers.mjs';
 /**
  * Thứ tự những thứ đứng cạnh tên người dùng.
  *
- *   tên → cấp độ ("Lv4") → cấp bậc → huy hiệu NHẬN → huy hiệu MUA → danh hiệu
+ *   tên → cấp độ ("Lv4") → cấp bậc → danh hiệu → huy hiệu NHẬN → huy hiệu MUA
  *
  * Mục kiểm này soi đúng hai thứ dễ hỏng:
  *  • THỨ TỰ. Trước đây mỗi trang tự ghép lấy `UserName` rồi dán `LevelBadge`
@@ -53,7 +53,19 @@ export default async function run(check) {
       create: { userId: ai.id, medalId: hc.id, displayed: true },
       select: { id: true },
     });
-    await db.user.update({ where: { id: ai.id }, data: { shopBadgeId: icon.id }, select: { id: true } });
+    // Danh hiệu MUA ở quầy — dòng chữ, khác hẳn huy hiệu là hình.
+    const danh = await db.shopItem.create({
+      data: {
+        slug: `${DAU}-danh`, kind: 'TITLE', name: 'Danh hiệu kiểm thử',
+        value: 'Cao thủ kiểm thử', pricePoints: 5,
+      },
+      select: { id: true },
+    });
+    await db.shopPurchase.create({ data: { userId: ai.id, itemId: danh.id, pricePaid: 5 }, select: { id: true } })
+      .catch(() => {});
+    await db.user.update({
+      where: { id: ai.id }, data: { shopBadgeId: icon.id, shopTitleId: danh.id }, select: { id: true },
+    });
 
     const p = await openPage('huytran');
 
@@ -61,7 +73,7 @@ export default async function run(check) {
     const doThuTu = async (url, boc) => {
       await p.goto(BASE + url, { waitUntil: 'networkidle' });
       await p.waitForTimeout(1000);
-      return p.evaluate((sel) => {
+      return p.evaluate(({ sel, danhHieu }) => {
         const khoi = [...document.querySelectorAll(sel)]
           .find((e) => e.textContent?.includes('Minh Dev'));
         if (!khoi) return null;
@@ -73,9 +85,12 @@ export default async function run(check) {
           if (/^Lv\d+$/.test(t)) return 'lv';
           if (t === '🔰') return 'cap';
           if (t === '🔥') return 'nhan';
+          // Nhận danh hiệu theo ĐÚNG chữ của nó: chính cái tên người dùng cũng
+          // là một khối chữ, so kiểu "hễ là chữ thì là danh hiệu" là bắt nhầm tên.
+          if (t === danhHieu) return 'danh';
           return t ? `chu:${t}` : 'khac';
         });
-      }, boc);
+      }, { sel: boc, danhHieu: 'Cao thủ kiểm thử' });
     };
 
     for (const [ten, url] of [['trang cá nhân', '/u/minhdev'], ['danh bạ', '/thanh-vien'], ['xếp hạng', '/ranking']]) {
@@ -88,10 +103,11 @@ export default async function run(check) {
       const iNhan = thuTu.indexOf('nhan');
       const iMua = thuTu.findIndex((x) => x.startsWith('mua:'));
 
-      check(`${ten}: có đủ cấp độ, cấp bậc, huy hiệu nhận, huy hiệu mua`,
-        iLv >= 0 && iCap >= 0 && iNhan >= 0 && iMua >= 0, JSON.stringify(thuTu));
-      check(`${ten}: đúng thứ tự Lv → cấp bậc → nhận → mua`,
-        iLv < iCap && iCap < iNhan && iNhan < iMua, JSON.stringify(thuTu));
+      const iDanh = thuTu.indexOf('danh');
+      check(`${ten}: có đủ cấp độ, cấp bậc, danh hiệu, huy hiệu nhận, huy hiệu mua`,
+        iLv >= 0 && iCap >= 0 && iDanh >= 0 && iNhan >= 0 && iMua >= 0, JSON.stringify(thuTu));
+      check(`${ten}: đúng thứ tự Lv → cấp bậc → danh hiệu → nhận → mua`,
+        iLv < iCap && iCap < iDanh && iDanh < iNhan && iNhan < iMua, JSON.stringify(thuTu));
       // Cấp độ chỉ được in MỘT lần: khung cấp bậc chỉ mang biểu tượng, không
       // in lại "Lv4" thêm lần nữa ngay cạnh con số đã có.
       check(`${ten}: cấp độ chỉ hiện một lần`,
@@ -106,7 +122,11 @@ export default async function run(check) {
       JSON.stringify(conNhan));
   } finally {
     await wipe();
-    await db.user.update({ where: { id: ai.id }, data: { shopBadgeId: cu?.shopBadgeId ?? null }, select: { id: true } });
+    await db.user.update({
+      where: { id: ai.id },
+      data: { shopBadgeId: cu?.shopBadgeId ?? null, shopTitleId: cu?.shopTitleId ?? null },
+      select: { id: true },
+    });
     await db.levelRule.updateMany({ where: { level: ai.level }, data: { icon: iconCu?.icon ?? null } });
   }
 }

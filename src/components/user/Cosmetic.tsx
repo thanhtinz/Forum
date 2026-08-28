@@ -13,8 +13,11 @@ import { LevelBadge, RankBadge } from '@/components/LevelBadge';
 /**
  * Tên người dùng cùng mọi thứ đứng cạnh nó, LUÔN theo một thứ tự:
  *
- *   tên → cấp độ ("Lv4") → cấp bậc → huy hiệu nhận được → huy hiệu mua
- *   → danh hiệu
+ *   tên → cấp độ ("Lv4") → cấp bậc → danh hiệu → huy hiệu nhận được
+ *   → huy hiệu mua
+ *
+ * Danh hiệu là chữ nên đứng trước, hai huy hiệu là hình nên gom về cuối: xen
+ * chữ vào giữa hai hình thì hàng trông vụn.
  *
  * Gom hết vào đây thay vì để mỗi trang tự ghép: trước kia mười một trang tự
  * dựng lấy `UserName` rồi dán thêm `LevelBadge` bên cạnh, nên thứ tự mỗi chỗ
@@ -64,14 +67,14 @@ export function UserName({
       {/* Cấp độ và cấp bậc là HAI khung riêng đứng cạnh nhau. */}
       {level != null && <LevelBadge level={level} color={look?.color} name={look?.name} />}
       <RankBadge icon={look?.icon} color={look?.color} name={look?.name} />
+      <CosmeticTitle cosmetics={cosmetics} />
       <CosmeticMedal cosmetics={cosmetics} />
       <CosmeticBadge cosmetics={cosmetics} />
-      <CosmeticTitle cosmetics={cosmetics} />
     </span>
   );
 }
 
-/** Huy hiệu NHẬN được (huy chương) — ảnh nhỏ hiện cạnh tên, trước huy hiệu mua. */
+/** Huy hiệu NHẬN được (huy chương) — hình nhỏ hiện cạnh tên, trước huy hiệu mua. */
 export function CosmeticMedal({ cosmetics, className }: { cosmetics: Cosmetics; className?: string }) {
   if (!cosmetics.medal) return null;
   const ten = cosmetics.medalName ?? '';
@@ -97,7 +100,7 @@ export function CosmeticBadge({ cosmetics, className }: { cosmetics: Cosmetics; 
 }
 
 /**
- * Danh hiệu mua ở cửa hàng — dòng chữ nhỏ ngay cạnh tên.
+ * Danh hiệu mua ở cửa hàng — dòng chữ nhỏ đứng sau cấp bậc, trước hai huy hiệu.
  *
  * `shrink-0` để danh hiệu không bị bóp méo khi tên dài: chỗ hẹp thì cắt bớt
  * TÊN (tên đã có `truncate`), chứ cắt danh hiệu thì ra một mẩu chữ vô nghĩa.

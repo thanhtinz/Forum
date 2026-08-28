@@ -6,6 +6,8 @@ import { Calendar, Coins, FileText, Images, Scale, Users, UserCheck, UserPlus as
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
+import { ActivityFeed } from '@/components/user/ActivityFeed';
+import { getUserActivity } from '@/lib/activity';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { threadExcerpt } from '@/lib/bbcode';
 import { Pagination } from '@/components/Pagination';
@@ -79,6 +81,11 @@ export default async function ProfilePage({ params, searchParams }: {
     countVisibleAlbums(user.id, viewer),
     checkKarmaPermission(viewerId, user.id),
   ]);
+
+  // Hoạt động lấy sau vì cần `user.username` cho đường dẫn album.
+  const activity = await getUserActivity(
+    { id: user.id, username: user.username }, viewer, 12,
+  );
   // Quản trị viên không chặn được — che nút cho khỏi bấm rồi mới báo lỗi.
   const canBlock = user.role !== 'ADMIN' && user.role !== 'MODERATOR';
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -187,9 +194,18 @@ export default async function ProfilePage({ params, searchParams }: {
         </div>
       )}
 
+      {/* Hoạt động gần đây — gộp chủ đề, trả lời, bảng tin câu lạc bộ, ảnh */}
+      <div className="mt-6">
+        <h2 className="zib-title mb-4">Hoạt động gần đây</h2>
+        <ActivityFeed items={activity} name={name} />
+      </div>
+
       {/* Chủ đề đã lập */}
       <div className="mt-6">
-        <h2 className="zib-title mb-4">Chủ đề của {name}</h2>
+        {/* Dòng hoạt động ở trên đã điểm qua vài chủ đề mới nhất; khối này là
+            danh sách ĐẦY ĐỦ, có phân trang. Đặt tên khác nhau cho khỏi tưởng
+            một chỗ hiện hai lần. */}
+        <h2 className="zib-title mb-4">Tất cả chủ đề của {name}</h2>
         {rows.length === 0 ? (
           <div className="card p-8 text-center text-sm text-ink-500">Người này chưa lập chủ đề nào.</div>
         ) : (

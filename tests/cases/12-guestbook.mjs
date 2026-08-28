@@ -15,7 +15,9 @@ export default async function run(check) {
   await db.guestbookEntry.deleteMany({ where: { ownerId: owner.id } });
   await db.notification.deleteMany({ where: { type: 'GUESTBOOK' } });
 
-  const url = `${BASE}/u/minhdev`;
+  // Hồ sơ đã chia tab nên sổ lưu bút không còn nằm sẵn trên trang, phải mở
+  // đúng tab của nó — chính là điều mỗi tab chỉ truy vấn phần của mình.
+  const url = `${BASE}/u/minhdev?tab=luu-but`;
   const visitor = await openPage('huytran');
   const host = await openPage('minhdev');
   const anon = await openPage(null);

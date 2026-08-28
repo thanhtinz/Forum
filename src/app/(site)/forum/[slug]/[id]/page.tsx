@@ -28,7 +28,9 @@ import { getLevelLooks, type LevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 import { cosmeticSelect, toCosmetics } from '@/lib/shop';
-import { hasHidden, renderHidden, stripHidden } from '@/lib/bbcode';
+import { hideRules, renderHidden, stripHidden } from '@/lib/bbcode';
+import type { HideKind, HideViewer } from '@/lib/hide';
+import { HideUnlockButton } from '@/components/forum/HideUnlockButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -141,18 +143,6 @@ export default async function ThreadPage({ params, searchParams }: {
       })
     : [];
 
-  /**
-   * Ai được đọc phần `[hide]` của bài mở đầu.
-   *
-   * Chủ chủ đề và ban điều hành thì đương nhiên; còn lại phải đã trả lời chủ
-   * đề — đúng nếp "trả lời để xem link" của forum wap. Chỉ hỏi cơ sở dữ liệu
-   * khi bài thật sự có phần ẩn, chứ chủ đề nào cũng đếm một lần thì tốn vô ích.
-   */
-  const unlockedHidden = !hasHidden(thread.content)
-    || isOwner
-    || canModerate
-    || (!!userId && (await db.reply.count({ where: { threadId: id, authorId: userId } })) > 0);
-
   const levelLooks = await getLevelLooks();
 
   const totalReplies = await db.reply.count({ where: { threadId: id, parentId: null, hidden: false } });
@@ -213,6 +203,50 @@ export default async function ThreadPage({ params, searchParams }: {
       if (rx.replyId) likedReplies.add(rx.replyId);
     }
   }
+
+  /**
+   * Ai được đọc khối `[hide]` của bài mở đầu.
+   *
+   * Chủ chủ đề và ban điều hành thì đương nhiên. Còn lại xét theo đúng điều
+   * kiện người đăng gõ trong mã — trả lời, thích, đủ mốc, đủ cấp, hay trả điểm
+   * — chứ không còn mỗi kiểu "trả lời mới xem được" như trước.
+   *
+   * Mỗi lần hỏi thêm cơ sở dữ liệu đều buộc phải có khối cần tới nó: chủ đề nào
+   * cũng đếm trả lời với dò sổ mở khoá thì tốn vô ích, mà tuyệt đại đa số chủ
+   * đề chẳng có khối ẩn nào.
+   */
+  const rules = hideRules(thread.content);
+  const needs = (k: HideKind) => rules.some((r) => r.kind === k);
+  /** Khối đắt nhất; trả một lần là mở hết mọi khối ẩn của chủ đề. */
+  const hidePrice = Math.max(0, ...rules.map((r) => (r.kind === 'POINTS' ? r.n : 0)));
+
+  const [repliedHere, hideUnlock, meLevel] = await Promise.all([
+    userId && needs('REPLY')
+      ? db.reply.count({ where: { threadId: id, authorId: userId } })
+      : 0,
+    userId && hidePrice > 0
+      ? db.threadHideUnlock.findUnique({
+          where: { userId_threadId: { userId, threadId: id } }, select: { id: true },
+        })
+      : null,
+    userId && needs('LEVEL')
+      ? db.user.findUnique({ where: { id: userId }, select: { level: true } })
+      : null,
+  ]);
+
+  const hideViewer: HideViewer = {
+    loggedIn,
+    liked: likedThread.has(thread.id),
+    replied: repliedHere > 0,
+    level: meLevel?.level ?? 0,
+    paid: !!hideUnlock,
+    likeCount: thread.likeCount,
+    replyCount: thread.replyCount,
+  };
+  /** Chủ bài và ban điều hành đọc thẳng, khỏi chấm điều kiện nào. */
+  const hideView = isOwner || canModerate ? true : hideViewer;
+  /** Còn khoá bằng điểm thì mới mời mua — trả rồi mà vẫn mời là kỳ. */
+  const offerHideBuy = hideView !== true && hidePrice > 0 && !hideUnlock;
 
   // Trạng thái "cảm ơn" của bài mở đầu và mọi trả lời đang hiện.
   //
@@ -339,7 +373,12 @@ export default async function ThreadPage({ params, searchParams }: {
           }
         >
           <div className="prose prose-sm max-w-none dark:prose-invert"
-            dangerouslySetInnerHTML={{ __html: renderHidden(thread.content, unlockedHidden) }} />
+            dangerouslySetInnerHTML={{ __html: renderHidden(thread.content, hideView) }} />
+
+          {offerHideBuy && (
+            <HideUnlockButton threadId={thread.id} price={hidePrice} myPoints={myPoints}
+              loggedIn={loggedIn} callbackUrl={callbackUrl} />
+          )}
 
           <div className="mt-4">
             <ThanksBar threadId={thread.id} initial={thanksOf({ threadId: thread.id })}

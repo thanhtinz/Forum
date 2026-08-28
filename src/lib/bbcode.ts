@@ -7,6 +7,10 @@
  */
 
 import { MENTION_PATTERN } from './mention';
+import {
+  canOpenHide, decodeHideRule, describeHideRule, encodeHideRule, parseHideParam,
+  type HideRule, type HideViewer,
+} from './hide';
 import { plainText, truncate } from './utils';
 
 function escapeHtml(s: string): string {
@@ -48,7 +52,7 @@ export const BBCODE_TAGS: BBCodeTag[] = [
   { code: 'quote', label: 'Trích dẫn' },
   { code: 'code', label: 'Mã nguồn' },
   { code: 'spoiler', label: 'Ẩn nội dung' },
-  { code: 'hide', label: 'Ẩn tới khi trả lời' },
+  { code: 'hide', label: 'Ẩn theo điều kiện', sample: '[hide=diem:50]nội dung ẩn[/hide]' },
   { code: 'list', label: 'Danh sách' },
   { code: 'url', label: 'Liên kết', sample: '[url=https://…]chữ hiển thị[/url]' },
   { code: 'img', label: 'Ảnh', sample: '[img]https://…[/img]' },
@@ -69,12 +73,39 @@ export const BBCODE_TAGS: BBCodeTag[] = [
 export const HIDE_OPEN = '<!--hide-->';
 export const HIDE_CLOSE = '<!--/hide-->';
 
+/**
+ * Mốc mở, kèm điều kiện: `<!--hide-->` (trả lời — dạng cũ, vẫn còn trong CSDL)
+ * hoặc `<!--hide:points:50-->`. Điều kiện chỉ do `encodeHideRule` sinh ra nên
+ * dạng chuỗi luôn nằm trong tầm kiểm soát; người dùng không gõ ra được vì mọi
+ * ký tự `<` trong bài đã bị escape từ bước đầu.
+ *
+ * Dựng mới mỗi lần gọi, KHÔNG dùng chung một biến ở đầu tệp: biểu thức có cờ
+ * `g` thì `test()` và `matchAll()` đọc và ghi `lastIndex` của chính nó. Dùng
+ * chung một biến ở tầng mô-đun nghĩa là dùng chung con trỏ ấy giữa mọi lượt
+ * dựng trang — `hasHidden` chạy trước để lại con trỏ sau mốc thứ nhất, lượt sau
+ * `hideRules` bắt đầu dò từ đó nên KHÔNG thấy mốc nào, coi như bài không có
+ * khối ẩn: điều kiện mở tính sai, nút mở khoá biến mất. Đã dính đúng lỗi này.
+ */
+const hideOpenRe = () => /<!--hide(?::([a-z]+(?::\d+)?))?-->/g;
+
 /** Cả khối ẩn, kể cả hai mốc. */
-const HIDE_BLOCK = /<!--hide-->[\s\S]*?<!--\/hide-->/g;
+const HIDE_BLOCK = /<!--hide(?::([a-z]+(?::\d+)?))?-->([\s\S]*?)<!--\/hide-->/g;
+
+/** Mốc mở của một khối có điều kiện `rule`. */
+export function hideOpenMarker(rule: HideRule): string {
+  return rule.kind === 'REPLY' ? HIDE_OPEN : `<!--hide:${encodeHideRule(rule)}-->`;
+}
 
 /** Bài có phần nội dung ẩn không? */
 export function hasHidden(html: string): boolean {
-  return html.includes(HIDE_OPEN);
+  return hideOpenRe().test(html);
+}
+
+/** Các điều kiện đang dùng trong bài — để trang chỉ hỏi CSDL đúng thứ cần hỏi. */
+export function hideRules(html: string): HideRule[] {
+  const out: HideRule[] = [];
+  for (const m of html.matchAll(hideOpenRe())) out.push(decodeHideRule(m[1]));
+  return out;
 }
 
 /**
@@ -108,17 +139,15 @@ export function threadExcerpt(html: string, max = 90): string {
  * Chỗ thay dùng `<span>` chứ không dùng `<div>`: khối ẩn hay nằm giữa một
  * đoạn văn (`<p>Link tải: …</p>`), mà `<div>` nằm trong `<p>` là HTML sai.
  */
-export function renderHidden(html: string, unlocked: boolean): string {
+export function renderHidden(html: string, viewer: HideViewer | true): string {
   if (!hasHidden(html)) return html;
-  if (unlocked) {
-    return html
-      .replaceAll(HIDE_OPEN, '<span class="bb-hide-open"><b>Nội dung ẩn</b>')
-      .replaceAll(HIDE_CLOSE, '</span>');
-  }
-  return html.replace(
-    HIDE_BLOCK,
-    '<span class="bb-hide">Nội dung này bị ẩn — hãy trả lời chủ đề để xem.</span>',
-  );
+  return html.replace(HIDE_BLOCK, (_m, token: string | undefined, body: string) => {
+    const rule = decodeHideRule(token);
+    if (viewer === true || canOpenHide(rule, viewer)) {
+      return `<span class="bb-hide-open"><b>Nội dung ẩn</b>${body}</span>`;
+    }
+    return `<span class="bb-hide">Nội dung này bị ẩn — ${describeHideRule(rule)}.</span>`;
+  });
 }
 
 /**
@@ -158,12 +187,15 @@ export function bbcodeToHtml(input: string): string {
     [/\[quote\]([\s\S]*?)\[\/quote\]/gi, '<blockquote>$1</blockquote>'],
     [/\[quote=([^\]]{1,60})\]([\s\S]*?)\[\/quote\]/gi, '<blockquote><cite>$1</cite>$2</blockquote>'],
     [/\[spoiler\]([\s\S]*?)\[\/spoiler\]/gi, '<details><summary>Nội dung ẩn</summary>$1</details>'],
-    // [hide] chỉ đánh mốc ở đây; cắt hay mở là việc của `renderHidden`, vì lúc
-    // dựng HTML (khi đăng bài) chưa biết ai sẽ đọc.
-    [/\[hide\]([\s\S]*?)\[\/hide\]/gi, `${HIDE_OPEN}$1${HIDE_CLOSE}`],
   ];
   for (let pass = 0; pass < 4; pass++) {
     for (const [re, rep] of simple) s = s.replace(re, rep);
+    // [hide] chỉ đánh mốc ở đây; cắt hay mở là việc của `renderHidden`, vì lúc
+    // dựng HTML (khi đăng bài) chưa biết ai sẽ đọc. Điều kiện đi kèm được đọc
+    // và dựng lại theo dạng chuẩn, không bê nguyên chữ người dùng gõ vào mốc.
+    s = s.replace(/\[hide(?:=([^\]]{1,40}))?\]([\s\S]*?)\[\/hide\]/gi,
+      (_m, param: string | undefined, body: string) =>
+        `${hideOpenMarker(parseHideParam(param))}${body}${HIDE_CLOSE}`);
   }
 
   // 4) Thẻ có tham số cần kiểm tra giá trị
@@ -217,7 +249,7 @@ export function bbcodeToText(input: string): string {
   return input
     // Phần ẩn bỏ luôn cả ruột: văn bản thuần đi vào mô tả trang, thẻ meta,
     // kết quả tìm kiếm — toàn những chỗ không ai phải trả lời mới đọc được.
-    .replace(/\[hide\][\s\S]*?\[\/hide\]/gi, ' ')
+    .replace(/\[hide(?:=[^\]]{1,40})?\][\s\S]*?\[\/hide\]/gi, ' ')
     .replace(/\[\/?[a-z*]+(=[^\]]*)?\]/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();

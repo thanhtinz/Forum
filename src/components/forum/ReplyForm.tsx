@@ -9,9 +9,12 @@ import { ActionForm } from '@/components/ActionForm';
 import { ComposerTools } from '@/components/ComposerTools';
 import { MentionTextarea } from '@/components/MentionTextarea';
 
-export function ReplyForm({ threadId, parentId, loggedIn, callbackUrl, compact, autoFocus, onDone }: {
+export function ReplyForm({ threadId, parentId, loggedIn, callbackUrl, compact, autoFocus, defaultValue, onDone }: {
   threadId: string; parentId?: string; loggedIn: boolean; callbackUrl: string;
-  compact?: boolean; autoFocus?: boolean; onDone?: () => void;
+  compact?: boolean; autoFocus?: boolean;
+  /** Nội dung mồi sẵn — dùng khi bấm "Trích dẫn". */
+  defaultValue?: string;
+  onDone?: () => void;
 }) {
   const [state, action, pending] = useActionState<ReplyState, FormData>(addReply, {});
   const ref = useRef<HTMLFormElement>(null);
@@ -39,7 +42,9 @@ export function ReplyForm({ threadId, parentId, loggedIn, callbackUrl, compact, 
       {parentId && <input type="hidden" name="parentId" value={parentId} />}
 
       <MentionTextarea ref={taRef} name="content" required minLength={2} maxLength={5000} autoFocus={autoFocus}
-        rows={compact ? 2 : 3} placeholder={parentId ? 'Viết phản hồi…' : 'Viết trả lời của bạn… gõ @ để nhắc tên'}
+        defaultValue={defaultValue}
+        rows={compact ? 2 : (defaultValue ? 6 : 3)}
+        placeholder={parentId ? 'Viết phản hồi…' : 'Viết trả lời của bạn… gõ @ để nhắc tên'}
         className="input resize-y" />
 
       <ComposerTools textareaRef={taRef}>

@@ -152,6 +152,8 @@ model User {
   avatarFrame   ShopItem? @relation("EquipAvatarFrame", fields: [avatarFrameId], references: [id], onDelete: SetNull)
   shopBadgeId   String?
   shopBadge     ShopItem? @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
+  profileCoverId String?
+  profileCover   ShopItem? @relation("EquipCover", fields: [profileCoverId], references: [id], onDelete: SetNull)
 
   @@index([level])
   @@index([createdAt])
@@ -1957,6 +1959,7 @@ model ShopItem {
    *   NAME_COLOR   — một giá trị màu CSS (#hex, rgb(), hoặc linear-gradient()).
    *   AVATAR_FRAME — đường dẫn ảnh khung, phủ lên trên avatar.
    *   BADGE        — đường dẫn ảnh huy hiệu, hiện cạnh tên.
+   *   PROFILE_COVER — đường dẫn ảnh bìa, trải ngang đầu trang cá nhân.
    */
   value String
 
@@ -1971,6 +1974,7 @@ model ShopItem {
   equippedNameColorBy   User[] @relation("EquipNameColor")
   equippedAvatarFrameBy User[] @relation("EquipAvatarFrame")
   equippedBadgeBy       User[] @relation("EquipBadge")
+  equippedCoverBy       User[] @relation("EquipCover")
 
   @@index([kind, active, order])
 }
@@ -1982,6 +1986,8 @@ enum ShopItemKind {
   AVATAR_FRAME
   /// Huy hiệu nhỏ hiện cạnh tên.
   BADGE
+  /// Ảnh bìa trải ngang đầu trang cá nhân.
+  PROFILE_COVER
 }
 
 /**

@@ -50,6 +50,7 @@ export default async function ProfilePage({ params, searchParams }: {
     select: {
       id: true, name: true, username: true, image: true, cover: true, bio: true, mood: true, level: true, role: true,
       points: true, karma: true, createdAt: true,
+      profileCover: { select: { value: true } },
       _count: { select: { threads: true, replies: true, followers: true, following: true } },
       ...cosmeticSelect,
       medals: { where: { displayed: true }, take: 8, include: { medal: { select: { name: true, icon: true, color: true } } } },
@@ -90,13 +91,20 @@ export default async function ProfilePage({ params, searchParams }: {
   const name = user.name ?? user.username ?? 'Ẩn danh';
   const levelLook = await getLevelLook(user.level);
   const cos = toCosmetics(user);
+  /**
+   * Ảnh bìa: món mua ở cửa hàng được ưu tiên hơn ảnh tự tải lên.
+   *
+   * Ai bỏ điểm ra mua thì muốn thấy nó ngay, chứ không phải đi gỡ ảnh cũ trong
+   * cài đặt rồi mới thấy món vừa mua. Gỡ món ra là ảnh tự tải lên hiện lại.
+   */
+  const coverImage = user.profileCover?.value ?? user.cover;
 
   return (
     <div className="mx-auto max-w-4xl">
       {/* Card hồ sơ */}
       <section className="card overflow-hidden">
         <div className="h-28 bg-gradient-to-r from-brand-500 to-brand-400 sm:h-36"
-          style={user.cover ? { backgroundImage: `url(${user.cover})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined} />
+          style={coverImage ? { backgroundImage: `url(${coverImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined} />
         <div className="px-5 pb-5 sm:px-6">
           <div className="-mt-12 flex flex-wrap items-end justify-between gap-3">
             <Avatar image={user.image} name={name} cosmetics={cos} size={96}

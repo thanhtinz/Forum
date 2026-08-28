@@ -8,7 +8,7 @@ export const SHOP_DESC_MAX = 200;
 export const SHOP_PRICE_MAX = 1_000_000;
 export const SHOP_PAGE_SIZE = 24;
 
-export const SHOP_KINDS = ['NAME_COLOR', 'AVATAR_FRAME', 'BADGE'] as const;
+export const SHOP_KINDS = ['NAME_COLOR', 'AVATAR_FRAME', 'BADGE', 'PROFILE_COVER'] as const;
 export type ShopKind = (typeof SHOP_KINDS)[number];
 
 export const KIND_LABELS: Record<ShopKind, {
@@ -31,6 +31,12 @@ export const KIND_LABELS: Record<ShopKind, {
     hint: 'Ảnh nhỏ hiện ngay cạnh tên.',
     valueLabel: 'Ảnh huy hiệu',
     valueHint: 'Ảnh nhỏ, nền trong suốt thì đẹp nhất.',
+  },
+  PROFILE_COVER: {
+    label: 'Ảnh bìa', one: 'ảnh bìa',
+    hint: 'Ảnh trải ngang đầu trang cá nhân của bạn.',
+    valueLabel: 'Ảnh bìa',
+    valueHint: 'Ảnh ngang, nên rộng từ 1200px trở lên để không bị vỡ trên màn hình lớn.',
   },
 };
 

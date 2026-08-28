@@ -159,6 +159,15 @@ function Preview({ item }: { item: ShopItemView }) {
     );
   }
 
+  if (item.kind === 'PROFILE_COVER') {
+    return (
+      <span className="block h-16 overflow-hidden rounded-xl bg-ink-50 dark:bg-ink-800/50">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={item.value} alt="" className="size-full object-cover" />
+      </span>
+    );
+  }
+
   if (item.kind === 'AVATAR_FRAME') {
     return (
       <span className="grid h-16 place-items-center rounded-xl bg-ink-50 dark:bg-ink-800/50">
@@ -201,7 +210,13 @@ function BigPreview({ item, viewer }: { item: ShopItemView; viewer?: ShopViewer 
   const name = viewer?.name ?? 'Tên của bạn';
 
   return (
-    <div className="rounded-xl border border-ink-100 bg-ink-50 p-4 dark:border-ink-800 dark:bg-ink-800/40">
+    <div className="overflow-hidden rounded-xl border border-ink-100 bg-ink-50 dark:border-ink-800 dark:bg-ink-800/40">
+      {/* Ảnh bìa trải ngang phía trên, đúng chỗ nó sẽ nằm ở trang cá nhân. */}
+      {item.kind === 'PROFILE_COVER' && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={item.value} alt="" className="h-24 w-full object-cover" />
+      )}
+      <div className="p-4">
       <div className="flex items-center gap-3">
         <Avatar image={viewer?.image ?? null} name={name} cosmetics={preview} size={64} />
         <div className="min-w-0">
@@ -221,6 +236,7 @@ function BigPreview({ item, viewer }: { item: ShopItemView; viewer?: ShopViewer 
         <span className="text-ink-400">:</span>
         <span className="text-ink-600 dark:text-ink-300">Chào cả nhà 👋</span>
       </p>
+      </div>
     </div>
   );
 }

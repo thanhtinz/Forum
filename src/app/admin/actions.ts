@@ -208,11 +208,11 @@ export async function setReportStatus(id: string, status: 'RESOLVED' | 'DISMISSE
 /** Duyệt báo cáo và ẩn/xoá nội dung bị báo cáo cùng lúc. */
 export async function resolveReportAndRemove(id: string) {
   const admin = await requireAdmin();
-  const r = await db.report.findUnique({ where: { id }, select: { postId: true, threadId: true, replyId: true, commentId: true } });
+  const r = await db.report.findUnique({ where: { id }, select: { threadId: true, replyId: true, commentId: true } });
   if (!r) return;
 
-  // Xoá nội dung thì phải trừ số đếm theo, không thì chủ đề và bài viết khoe
-  // nhiều trả lời/bình luận hơn số thật sự còn đọc được.
+  // Xoá nội dung thì phải trừ số đếm theo, không thì chủ đề và game khoe nhiều
+  // trả lời/bình luận hơn số thật sự còn đọc được.
   const reply = r.replyId
     ? await db.reply.findUnique({
         where: { id: r.replyId },
@@ -220,11 +220,10 @@ export async function resolveReportAndRemove(id: string) {
       })
     : null;
   const comment = r.commentId
-    ? await db.comment.findUnique({ where: { id: r.commentId }, select: { hidden: true, postId: true, gameId: true } })
+    ? await db.comment.findUnique({ where: { id: r.commentId }, select: { hidden: true, gameId: true } })
     : null;
 
   await db.$transaction(async (tx) => {
-    if (r.postId) await tx.post.update({ where: { id: r.postId }, data: { status: 'ARCHIVED' } }).catch(() => {});
     if (r.threadId) await tx.thread.delete({ where: { id: r.threadId } }).catch(() => {});
     if (r.replyId) await tx.reply.delete({ where: { id: r.replyId } }).catch(() => {});
     if (r.commentId) await tx.comment.delete({ where: { id: r.commentId } }).catch(() => {});
@@ -234,22 +233,17 @@ export async function resolveReportAndRemove(id: string) {
       await tx.thread.update({ where: { id: reply.threadId }, data: { replyCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
       await tx.forum.update({ where: { id: reply.thread.forumId }, data: { replyCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
     }
-    if (comment && !comment.hidden) {
-      // Bình luận nay gắn vào bài viết HOẶC game, trừ đúng bảng đang giữ bộ đếm.
-      if (comment.postId) {
-        await tx.post.update({ where: { id: comment.postId }, data: { commentCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
-      } else if (comment.gameId) {
-        await tx.game.update({ where: { id: comment.gameId }, data: { commentCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
-      }
+    if (comment && !comment.hidden && comment.gameId) {
+      await tx.game.update({ where: { id: comment.gameId }, data: { commentCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
     }
 
     await tx.report.update({ where: { id }, data: { status: 'RESOLVED', handledAt: new Date() } });
   });
-  const kind = r.postId ? 'bài viết' : r.threadId ? 'chủ đề' : r.replyId ? 'trả lời' : 'bình luận';
+  const kind = r.threadId ? 'chủ đề' : r.replyId ? 'trả lời' : 'bình luận';
   await logAdmin({
     actor: admin, action: 'report.approve', targetType: 'report', targetId: id,
     summary: `Xử lý báo cáo và gỡ ${kind} bị báo cáo`,
-    meta: { postId: r.postId, threadId: r.threadId, replyId: r.replyId, commentId: r.commentId },
+    meta: { threadId: r.threadId, replyId: r.replyId, commentId: r.commentId },
   });
   revalidatePath('/admin/reports');
 }
@@ -481,93 +475,6 @@ export async function toggleFriendLink(id: string) {
   });
   revalidatePath('/admin/links');
   revalidatePath('/');
-}
-
-// ─────────────── Mã giảm giá ───────────────
-
-export type CouponState = { ok?: boolean; error?: string };
-
-/** Chuỗi từ input type="datetime-local" → Date, rỗng thì null. */
-function parseDate(raw: FormDataEntryValue | null): Date | null {
-  const s = String(raw ?? '').trim();
-  if (!s) return null;
-  const d = new Date(s);
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function parseIntOrNull(raw: FormDataEntryValue | null): number | null {
-  const s = String(raw ?? '').trim();
-  if (!s) return null;
-  const n = parseInt(s, 10);
-  return Number.isNaN(n) ? null : n;
-}
-
-export async function saveCoupon(_prev: CouponState, formData: FormData): Promise<CouponState> {
-  const admin = await requireAdmin();
-  const id = String(formData.get('id') ?? '').trim() || null;
-  const code = String(formData.get('code') ?? '').trim().toUpperCase();
-  const name = String(formData.get('name') ?? '').trim();
-  const type = String(formData.get('type') ?? 'FIXED') === 'PERCENT' ? 'PERCENT' : 'FIXED';
-  const value = parseInt(String(formData.get('value') ?? '0'), 10) || 0;
-  const minAmount = parseIntOrNull(formData.get('minAmount'));
-  const maxDiscount = parseIntOrNull(formData.get('maxDiscount'));
-  const appliesToRaw = String(formData.get('appliesTo') ?? '').trim();
-  const appliesTo = ['CONTENT', 'VIP', 'TOPUP', 'POINTS'].includes(appliesToRaw)
-    ? (appliesToRaw as 'CONTENT' | 'VIP' | 'TOPUP' | 'POINTS')
-    : null;
-  const totalQuantity = parseIntOrNull(formData.get('totalQuantity'));
-  const perUserLimit = Math.max(1, parseInt(String(formData.get('perUserLimit') ?? '1'), 10) || 1);
-  const startsAt = parseDate(formData.get('startsAt'));
-  const endsAt = parseDate(formData.get('endsAt'));
-  const active = formData.get('active') === 'on';
-
-  if (!/^[A-Z0-9_-]{3,24}$/.test(code)) return { error: 'Mã chỉ gồm chữ hoa, số, gạch ngang — dài 3–24 ký tự.' };
-  if (name.length < 2) return { error: 'Tên chương trình quá ngắn.' };
-  if (value <= 0) return { error: 'Giá trị giảm phải lớn hơn 0.' };
-  if (type === 'PERCENT' && value > 100) return { error: 'Giảm theo phần trăm không vượt quá 100.' };
-  if (startsAt && endsAt && startsAt >= endsAt) return { error: 'Ngày kết thúc phải sau ngày bắt đầu.' };
-
-  const data = { code, name, type, value, minAmount, maxDiscount, appliesTo, totalQuantity, perUserLimit, startsAt, endsAt, active } as const;
-  let savedId = id;
-  try {
-    if (id) await db.coupon.update({ where: { id }, data });
-    else savedId = (await db.coupon.create({ data, select: { id: true } })).id;
-  } catch {
-    return { error: 'Không thể lưu — có thể mã đã tồn tại.' };
-  }
-  await logAdmin({
-    actor: admin, action: id ? 'coupon.update' : 'coupon.create', targetType: 'coupon', targetId: savedId,
-    summary: `${id ? 'Sửa' : 'Tạo'} mã ${code} — giảm ${type === 'PERCENT' ? `${value}%` : `${value.toLocaleString('vi-VN')}₫`}`,
-    meta: { code, type, value, totalQuantity, perUserLimit, active },
-  });
-  revalidatePath('/admin/coupons');
-  return { ok: true };
-}
-
-export async function toggleCoupon(id: string) {
-  const admin = await requireAdmin();
-  const c = await db.coupon.findUnique({ where: { id }, select: { active: true, code: true } });
-  if (!c) return;
-  await db.coupon.update({ where: { id }, data: { active: !c.active } });
-  await logAdmin({
-    actor: admin, action: 'coupon.toggle', targetType: 'coupon', targetId: id,
-    summary: `${c.active ? 'Tắt' : 'Bật'} mã ${c.code}`, meta: { active: !c.active },
-  });
-  revalidatePath('/admin/coupons');
-}
-
-/** Chỉ xoá được mã chưa ai dùng — đã dùng thì tắt để giữ lịch sử đơn hàng. */
-export async function deleteCoupon(id: string) {
-  const admin = await requireAdmin();
-  const used = await db.couponClaim.count({ where: { couponId: id } });
-  if (used > 0) return;
-  const c = await db.coupon.findUnique({ where: { id }, select: { code: true } });
-  await db.coupon.delete({ where: { id } }).catch(() => {});
-  await logAdmin({
-    actor: admin, action: 'coupon.delete', targetType: 'coupon', targetId: id,
-    summary: `Xoá mã ${c?.code ?? id}`,
-  });
-  revalidatePath('/admin/coupons');
 }
 
 // ─────────────── Huy chương ───────────────

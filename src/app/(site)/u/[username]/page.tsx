@@ -14,7 +14,7 @@ import { getUserActivity } from '@/lib/activity';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { threadExcerpt } from '@/lib/bbcode';
 import { Pagination } from '@/components/Pagination';
-import { FollowButton } from '@/components/post/FollowButton';
+import { FollowButton } from '@/components/user/FollowButton';
 import { cn, fmtCount } from '@/lib/utils';
 import { getLevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';

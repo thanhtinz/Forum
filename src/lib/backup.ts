@@ -43,10 +43,9 @@ async function setBackupState(state: BackupState): Promise<void> {
  * lại chỉ tổ mang theo phiên đăng nhập cũ.
  */
 const TABLES = [
-  'user', 'account', 'category', 'tag', 'post', 'categoriesOnPosts', 'tagsOnPosts',
-  'downloadItem', 'downloadLog', 'forum', 'forumModerator', 'thread', 'tagsOnThreads',
-  'reply', 'comment', 'reaction', 'favorite', 'follow', 'pointsLog', 'balanceLog',
-  'vipPlan', 'coupon', 'order', 'couponClaim', 'commission', 'withdrawal',
+  'user', 'account', 'tag',
+  'forum', 'forumModerator', 'thread', 'tagsOnThreads',
+  'reply', 'comment', 'reaction', 'favorite', 'follow', 'pointsLog',
   'medal', 'userMedal', 'levelRule', 'notification', 'report', 'ban',
   'stickerPack', 'sticker', 'siteSetting', 'slide', 'navLink', 'friendLink',
   'conversation', 'message', 'messageReaction', 'block', 'adminLog',

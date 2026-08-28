@@ -76,7 +76,6 @@ export default async function run(check) {
 
     const admin = await openPage('admin@nova.local', 'admin123');
     for (const [ten, path] of [
-      ['mã giảm giá', '/admin/coupons'],
       ['huy chương', '/admin/medals'],
       ['danh mục kho game', '/admin/games/danh-muc'],
     ]) {

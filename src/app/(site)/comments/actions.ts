@@ -25,11 +25,11 @@ export interface ToggleState {
 }
 
 /**
- * Bật/tắt thích cho một bình luận (bài viết lẫn game dùng chung bảng Comment).
+ * Bật/tắt thích cho một bình luận dưới game.
  *
  * Cột `likeCount` và `Reaction.commentId` đã có sẵn trong lược đồ từ lâu nhưng
  * chưa nơi nào dùng — bình luận là chỗ duy nhất trên trang không thả tim được,
- * trong khi chủ đề, trả lời, bài viết và bảng tin câu lạc bộ đều thả được.
+ * trong khi chủ đề, trả lời và bảng tin câu lạc bộ đều thả được.
  */
 export async function toggleCommentLike(commentId: string): Promise<ToggleState> {
   const session = await auth();
@@ -38,7 +38,7 @@ export async function toggleCommentLike(commentId: string): Promise<ToggleState>
 
   const c = await db.comment.findUnique({
     where: { id: commentId },
-    select: { id: true, hidden: true, post: { select: { slug: true } }, game: { select: { slug: true } } },
+    select: { id: true, hidden: true, game: { select: { slug: true } } },
   });
   if (!c) return { active: false, count: 0, error: 'Không tìm thấy bình luận.' };
   if (c.hidden) return { active: false, count: 0, error: 'Bình luận này đang bị ẩn.' };
@@ -59,7 +59,6 @@ export async function toggleCommentLike(commentId: string): Promise<ToggleState>
     });
   });
 
-  if (c.post?.slug) revalidatePath(`/posts/${c.post.slug}`);
   if (c.game?.slug) revalidatePath(`/games/${c.game.slug}`);
   return { active: !existing, count: Math.max(0, after.likeCount) };
 }
@@ -113,7 +112,7 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
   let parentAuthorId: string | null = null;
   if (parentId) {
     const parent = await db.comment.findUnique({
-      where: { id: parentId }, select: { id: true, postId: true, gameId: true, parentId: true, authorId: true },
+      where: { id: parentId }, select: { id: true, gameId: true, parentId: true, authorId: true },
     });
     const sameTarget = parent?.gameId === gameId;
     if (!parent || !sameTarget) return { error: 'Phản hồi không hợp lệ.' };
@@ -142,7 +141,7 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
         tx,
       );
     }
-    // Báo cho người được phản hồi — trừ khi họ là chủ bài viết (đã báo ở trên).
+    // Báo cho người được phản hồi — trừ khi họ đã được báo ở trên.
     if (parentAuthorId && parentAuthorId !== userId && parentAuthorId !== ownerId) {
       await notify(
         { userId: parentAuthorId, type: 'COMMENT', title: 'Có người phản hồi bình luận của bạn', content: target.title, link, actorId: userId },
@@ -159,28 +158,20 @@ export async function addComment(_prev: CommentState, formData: FormData): Promi
 }
 
 /**
- * Bình luận gắn vào bài viết hoặc game. Gom hai khác biệt duy nhất — đường dẫn
- * để làm mới, và bảng giữ bộ đếm — vào một chỗ, phần còn lại dùng chung.
+ * Bình luận chỉ còn gắn vào game. Vẫn giữ kiểu riêng thay vì dùng thẳng
+ * `gameId`: hai hàm dưới đây nhận đúng thứ chúng cần, và nếu sau này có thêm
+ * chỗ khác nhận bình luận thì chỉ phải sửa ở đây.
  */
-/**
- * Bình luận mới chỉ gắn vào game. `postId` vẫn còn ở đây vì trong cơ sở dữ liệu
- * còn những bình luận cũ của mục bài viết đã gỡ — mấy hàm kiểm duyệt bên dưới
- * đọc lại hàng cũ nên phải chịu được cả hai dạng.
- */
-type CommentTarget = { postId?: string | null; gameId: string | null; postSlug?: string | null; gameSlug?: string | null };
+type CommentTarget = { gameId: string | null; gameSlug?: string | null };
 
 function targetPath(t: CommentTarget): string {
-  return t.gameId ? `/games/${t.gameSlug ?? ''}` : `/posts/${t.postSlug ?? ''}`;
+  return `/games/${t.gameSlug ?? ''}`;
 }
 
-/** Cộng/trừ bộ đếm bình luận của đúng bảng đang giữ nó. */
+/** Cộng/trừ bộ đếm bình luận của game. */
 async function bumpCommentCount(tx: Prisma.TransactionClient, t: CommentTarget, by: number) {
-  if (by === 0) return;
-  if (t.gameId) {
-    await tx.game.update({ where: { id: t.gameId }, data: { commentCount: { increment: by } }, select: { id: true } });
-  } else if (t.postId) {
-    await tx.post.update({ where: { id: t.postId }, data: { commentCount: { increment: by } }, select: { id: true } });
-  }
+  if (by === 0 || !t.gameId) return;
+  await tx.game.update({ where: { id: t.gameId }, data: { commentCount: { increment: by } }, select: { id: true } });
 }
 
 // ─────────────────────────── Kiểm duyệt bình luận ───────────────────────────
@@ -191,16 +182,12 @@ export interface CommentModState {
   error?: string;
 }
 
-/**
- * Chủ bài viết và quản trị viên được quản lý bình luận trong bài đó.
- * Bình luận dưới game thì không có "chủ bài" nào, chỉ ban quản trị.
- */
+/** Bình luận dưới game không có "chủ bài" nào, nên chỉ ban quản trị quản được. */
 async function canManageComment(userId: string, commentId: string) {
   const comment = await db.comment.findUnique({
     where: { id: commentId },
     select: {
-      id: true, pinned: true, hidden: true, postId: true, gameId: true,
-      post: { select: { authorId: true, slug: true } },
+      id: true, pinned: true, hidden: true, gameId: true,
       game: { select: { slug: true } },
     },
   });
@@ -208,8 +195,7 @@ async function canManageComment(userId: string, commentId: string) {
 
   const me = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
   const isStaff = me?.role === 'ADMIN' || me?.role === 'MODERATOR';
-  const allowed = isStaff || comment.post?.authorId === userId;
-  return allowed ? comment : null;
+  return isStaff ? comment : null;
 }
 
 /** Ghim một bình luận lên đầu danh sách. */
@@ -223,7 +209,7 @@ export async function toggleCommentPinned(commentId: string): Promise<CommentMod
 
   const pinned = !comment.pinned;
   await db.comment.update({ where: { id: commentId }, data: { pinned }, select: { id: true } });
-  revalidatePath(targetPath({ ...comment, postSlug: comment.post?.slug, gameSlug: comment.game?.slug }));
+  revalidatePath(targetPath({ ...comment, gameSlug: comment.game?.slug }));
   return { pinned };
 }
 
@@ -252,7 +238,7 @@ export async function toggleCommentHidden(commentId: string): Promise<CommentMod
     await bumpCommentCount(tx, comment, hidden ? -1 : 1);
   });
 
-  revalidatePath(targetPath({ ...comment, postSlug: comment.post?.slug, gameSlug: comment.game?.slug }));
+  revalidatePath(targetPath({ ...comment, gameSlug: comment.game?.slug }));
   return { hidden };
 }
 
@@ -266,7 +252,7 @@ export interface CommentEditState {
 /**
  * Chỉ tác giả mới sửa/xoá được bình luận của mình.
  *
- * Chủ bài viết và quản trị viên cố tình không nằm trong diện này: họ đã có nút
+ * Quản trị viên cố tình không nằm trong diện này: họ đã có nút
  * "Ẩn", giữ nguyên nội dung để còn đối chiếu khi có khiếu nại — sửa lời người
  * khác hay xoá hẳn thì mất dấu vết.
  */
@@ -278,8 +264,7 @@ async function assertCommentOwner(commentId: string) {
   const comment = await db.comment.findUnique({
     where: { id: commentId },
     select: {
-      id: true, authorId: true, hidden: true, postId: true, gameId: true,
-      post: { select: { slug: true } },
+      id: true, authorId: true, hidden: true, gameId: true,
       game: { select: { slug: true } },
     },
   });
@@ -306,7 +291,7 @@ export async function updateComment(_prev: CommentEditState, formData: FormData)
 
   await db.comment.update({ where: { id: commentId }, data: { content }, select: { id: true } });
 
-  revalidatePath(targetPath({ ...guard.comment, postSlug: guard.comment.post?.slug, gameSlug: guard.comment.game?.slug }));
+  revalidatePath(targetPath({ ...guard.comment, gameSlug: guard.comment.game?.slug }));
   return { ok: true };
 }
 
@@ -330,6 +315,6 @@ export async function deleteOwnComment(commentId: string): Promise<CommentEditSt
     await bumpCommentCount(tx, comment, -visible);
   });
 
-  revalidatePath(targetPath({ ...comment, postSlug: comment.post?.slug, gameSlug: comment.game?.slug }));
+  revalidatePath(targetPath({ ...comment, gameSlug: comment.game?.slug }));
   return { ok: true };
 }

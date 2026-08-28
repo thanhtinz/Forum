@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import {
-  User as UserIcon, FileText, Bookmark, Coins, Download, Users, ShoppingBag, Backpack,
+  User as UserIcon, FileText, Bookmark, Coins, Users, ShoppingBag, Backpack,
   Settings, ShieldAlert, ShieldOff, LogOut, ChevronDown, MessageSquare,
 } from 'lucide-react';
 import { logout } from '@/app/(auth)/actions';
@@ -28,7 +28,6 @@ const LINKS = [
   { href: '/cua-hang', label: 'Cửa hàng', icon: ShoppingBag },
   { href: '/user/items', label: 'Kho đồ', icon: Backpack },
   { href: '/user/favorites', label: 'Đã lưu', icon: Bookmark },
-  { href: '/user/downloads', label: 'Đã tải', icon: Download },
   { href: '/user/blocked', label: 'Đã chặn', icon: ShieldOff },
   { href: '/user/settings', label: 'Cài đặt', icon: Settings },
 ];

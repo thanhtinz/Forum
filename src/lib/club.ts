@@ -1,5 +1,5 @@
 import { db } from './db';
-import { toSlug } from './post-form';
+import { toSlug } from './slug';
 import {
   CLUBS_PER_PAGE, CLUB_MEMBERS_PER_PAGE, CLUB_POSTS_PER_PAGE,
   CLUB_COMMENTS_SHOWN, CLUB_COMMENTS_EXPANDED, CLUB_REPLIES_PER_ROOT,

@@ -7,7 +7,7 @@ import { toggleCommentLike } from '@/app/(site)/comments/actions';
 import { cn, fmtCount } from '@/lib/utils';
 
 /**
- * Nút thả tim cho một bình luận (bài viết và game dùng chung).
+ * Nút thả tim cho một bình luận dưới game.
  *
  * Đổi mặt trái tim ngay khi bấm rồi mới hỏi máy chủ, hỏng thì trả lại như cũ:
  * đây là nút bấm nhiều nhất trang, chờ hết một vòng máy chủ mới thấy đổi thì

@@ -23,7 +23,7 @@ const TABS: { key: string; label: string; types?: NotificationType[] }[] = [
   { key: 'mention', label: 'Nhắc tên', types: ['MENTION'] },
   { key: 'social', label: 'Thích & theo dõi', types: ['LIKE', 'FOLLOW'] },
   { key: 'donate', label: 'Được tặng điểm', types: ['DONATE'] },
-  { key: 'system', label: 'Hệ thống', types: ['ORDER', 'MEDAL', 'SYSTEM'] },
+  { key: 'system', label: 'Hệ thống', types: ['MEDAL', 'SYSTEM'] },
 ];
 
 export default async function NotificationsPage({ searchParams }: {

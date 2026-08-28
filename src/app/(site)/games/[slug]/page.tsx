@@ -19,7 +19,7 @@ import { GameGallery } from '@/components/game/GameGallery';
 import { GameGrid } from '@/components/game/GameGrid';
 import { GameViewTracker } from '@/components/game/GameViewTracker';
 import { RatingStars } from '@/components/game/RatingStars';
-import { Comments } from '@/components/post/Comments';
+import { Comments } from '@/components/comment/Comments';
 import { GameUnlockBox } from '@/components/game/GameUnlockBox';
 import { checkGameAccess } from '@/lib/game-unlock';
 

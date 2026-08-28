@@ -5,7 +5,7 @@ import { Pin, PinOff, EyeOff, Eye } from 'lucide-react';
 import { toggleCommentPinned, toggleCommentHidden } from '@/app/(site)/comments/actions';
 
 /**
- * Ghim và ẩn bình luận — dành cho chủ bài viết và quản trị viên.
+ * Ghim và ẩn bình luận — dành cho quản trị viên.
  *
  * Ẩn chứ không xoá: nội dung còn đó để đối chiếu khi có khiếu nại.
  */

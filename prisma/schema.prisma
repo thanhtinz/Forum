@@ -2142,7 +2142,25 @@ model ClubComment {
 
   content String @db.Text
 
+  /// Bình luận cha; rỗng nghĩa là bình luận gốc.
+  parentId String?
+  parent   ClubComment?  @relation("ClubCommentTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children ClubComment[] @relation("ClubCommentTree")
+
+  /**
+   * Bình luận gốc của cả nhánh (rỗng ở chính bình luận gốc).
+   *
+   * Có cột này thì lấy cả nhánh chỉ mất MỘT truy vấn: `rootId in (…)`. Không có
+   * thì phải lần theo `parentId` từng tầng một, mỗi tầng một lượt hỏi cơ sở dữ
+   * liệu — mà bảng tin có mười lăm bài mỗi trang.
+   */
+  rootId String?
+
+  /// 0 là bình luận gốc. Có sẵn ở đây thì khỏi phải đếm ngược lên cây để thụt lề.
+  depth Int @default(0)
+
   createdAt DateTime @default(now())
 
-  @@index([postId, createdAt])
+  @@index([postId, depth, createdAt])
+  @@index([rootId, createdAt])
 }

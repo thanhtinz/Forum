@@ -11,7 +11,7 @@ import { getActiveBan, banMessage } from '@/lib/ban';
 import {
   clubSlug, getClubConfig,
   CLUBS_OWNED_MAX, CLUB_NAME_MIN, CLUB_NAME_MAX, CLUB_DESC_MAX,
-  CLUB_POST_MIN, CLUB_POST_MAX, CLUB_COMMENT_MAX,
+  CLUB_POST_MIN, CLUB_POST_MAX, CLUB_COMMENT_MAX, CLUB_COMMENT_DEPTH_MAX,
   type ClubActionState,
 } from '@/lib/club';
 
@@ -400,6 +400,7 @@ export async function addClubComment(_prev: ClubActionState, formData: FormData)
   if ('error' in me) return { error: me.error };
 
   const postId = String(formData.get('postId') ?? '');
+  const parentId = String(formData.get('parentId') ?? '').trim() || null;
   const content = String(formData.get('content') ?? '').trim();
   if (!content) return { error: 'Chưa nhập nội dung.' };
   if (content.length > CLUB_COMMENT_MAX) return { error: `Bình luận tối đa ${CLUB_COMMENT_MAX} ký tự.` };
@@ -414,18 +415,48 @@ export async function addClubComment(_prev: ClubActionState, formData: FormData)
   });
   if (m?.status !== 'ACTIVE') return { error: 'Chỉ thành viên câu lạc bộ mới bình luận được.' };
 
+  /**
+   * Chỗ treo của bình luận mới.
+   *
+   * Trả lời ở tầng cuối thì bám vào chính tầng ấy (cha của nó là cha của người
+   * được trả lời), chứ không đẻ thêm tầng — nếu không thì một cuộc đối đáp dài
+   * sẽ thụt lề mãi tới lúc chỉ còn một chữ mỗi dòng trên điện thoại.
+   */
+  let parent: { id: string; postId: string; depth: number; parentId: string | null; rootId: string | null; authorId: string } | null = null;
+  if (parentId) {
+    parent = await db.clubComment.findUnique({
+      where: { id: parentId },
+      select: { id: true, postId: true, depth: true, parentId: true, rootId: true, authorId: true },
+    });
+    if (!parent || parent.postId !== postId) return { error: 'Không tìm thấy bình luận được trả lời.' };
+  }
+
+  const depth = parent ? Math.min(parent.depth + 1, CLUB_COMMENT_DEPTH_MAX - 1) : 0;
+  const treeParentId = parent
+    ? (depth > parent.depth ? parent.id : parent.parentId)
+    : null;
+  const rootId = parent ? (parent.rootId ?? parent.id) : null;
+
+  // Người được trả lời cũng phải biết, không chỉ chủ bài.
+  const tell = new Set<string>();
+  if (post.authorId !== me.id) tell.add(post.authorId);
+  if (parent && parent.authorId !== me.id) tell.add(parent.authorId);
+
   await db.$transaction(async (tx) => {
     await tx.clubComment.create({
-      data: { postId, authorId: me.id, content: bbcodeToHtml(content) }, select: { id: true },
+      data: { postId, authorId: me.id, content, parentId: treeParentId, rootId, depth },
+      select: { id: true },
     });
     await tx.clubPost.update({
       where: { id: postId }, data: { commentCount: { increment: 1 } }, select: { id: true },
     });
-    if (post.authorId !== me.id) {
+    for (const userId of tell) {
       await notify(
         {
-          userId: post.authorId, type: 'CLUB', actorId: me.id,
-          title: 'Có người bình luận bài của bạn trong câu lạc bộ',
+          userId, type: 'CLUB', actorId: me.id,
+          title: userId === parent?.authorId
+            ? 'Có người trả lời bình luận của bạn'
+            : 'Có người bình luận bài của bạn trong câu lạc bộ',
           content: post.club.name, link: `/clb/${post.club.slug}`,
         },
         tx,
@@ -444,7 +475,7 @@ export async function deleteClubComment(commentId: string): Promise<ClubActionSt
   const c = await db.clubComment.findUnique({
     where: { id: commentId },
     select: {
-      id: true, authorId: true, postId: true,
+      id: true, authorId: true, postId: true, rootId: true,
       post: { select: { clubId: true, club: { select: { slug: true, ownerId: true } } } },
     },
   });
@@ -458,10 +489,17 @@ export async function deleteClubComment(commentId: string): Promise<ClubActionSt
     return { error: 'Bạn không xoá được bình luận này.' };
   }
 
+  // Xoá một bình luận là mất cả nhánh dưới nó (ràng buộc Cascade), nên bộ đếm
+  // phải trừ đủ chừng ấy chứ không phải trừ một.
+  const rootOfBranch = c.rootId ?? c.id;
+  const inBranch = c.rootId
+    ? 1 + (await db.clubComment.count({ where: { rootId: rootOfBranch, parentId: c.id } }))
+    : 1 + (await db.clubComment.count({ where: { rootId: c.id } }));
+
   await db.$transaction(async (tx) => {
     await tx.clubComment.delete({ where: { id: c.id }, select: { id: true } });
     await tx.clubPost.update({
-      where: { id: c.postId }, data: { commentCount: { decrement: 1 } }, select: { id: true },
+      where: { id: c.postId }, data: { commentCount: { decrement: inBranch } }, select: { id: true },
     });
   });
 

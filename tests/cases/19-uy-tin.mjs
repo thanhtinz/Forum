@@ -44,7 +44,7 @@ export default async function run(check) {
     check('chưa ghi lý do thì nút Chấm bị khoá',
       await me.locator('button:has-text("Chấm")').isDisabled());
 
-    await me.locator('textarea').last().fill('Chỉ mình cách chỉnh nhạc chuông');
+    await me.locator('textarea[name="karmaReason"]').fill('Chỉ mình cách chỉnh nhạc chuông');
     await me.locator('button:has-text("Chấm")').click();
     await me.waitForTimeout(2500);
 

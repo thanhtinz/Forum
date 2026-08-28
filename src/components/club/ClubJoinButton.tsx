@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { UserPlus, UserMinus, Clock, LogIn, Crown } from 'lucide-react';
-import { joinClub, leaveClub } from '@/app/(site)/clb/actions';
+import { UserPlus, UserMinus, Clock, LogIn, Crown, MailOpen, X } from 'lucide-react';
+import { joinClub, leaveClub, respondInvite } from '@/app/(site)/clb/actions';
 
 /** Nút vào / rời câu lạc bộ; đổi mặt theo quan hệ hiện tại của người xem. */
 export function ClubJoinButton({ clubId, status, isOwner, joinMode, loggedIn, callbackUrl }: {
   clubId: string;
-  status: 'PENDING' | 'ACTIVE' | null;
+  status: 'PENDING' | 'INVITED' | 'ACTIVE' | null;
   isOwner: boolean;
   joinMode: string;
   loggedIn: boolean;
@@ -46,7 +46,22 @@ export function ClubJoinButton({ clubId, status, isOwner, joinMode, loggedIn, ca
 
   return (
     <div className="text-right">
-      {status === 'ACTIVE' ? (
+      {status === 'INVITED' ? (
+        // Được mời thì không hỏi "tham gia" nữa — chỉ còn nhận lời hay thôi.
+        <span className="inline-flex flex-wrap items-center justify-end gap-2">
+          <span className="chip gap-1.5 bg-brand-100 text-brand-700 dark:bg-brand-950/50 dark:text-brand-300">
+            <MailOpen size={14} /> Bạn được mời vào nhóm
+          </span>
+          <button type="button" disabled={pending} onClick={() => run(() => respondInvite(clubId, true))}
+            className="btn-primary !py-2 disabled:opacity-60">
+            <UserPlus size={15} /> {pending ? 'Đang vào…' : 'Nhận lời'}
+          </button>
+          <button type="button" disabled={pending} onClick={() => run(() => respondInvite(clubId, false))}
+            className="btn-ghost !py-2 disabled:opacity-60" title="Từ chối lời mời">
+            <X size={15} />
+          </button>
+        </span>
+      ) : status === 'ACTIVE' ? (
         <button type="button" disabled={pending} onClick={() => run(() => leaveClub(clubId))}
           className="btn-ghost !py-2 disabled:opacity-60">
           <UserMinus size={15} /> {pending ? 'Đang rời…' : 'Rời câu lạc bộ'}

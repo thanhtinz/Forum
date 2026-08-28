@@ -86,7 +86,9 @@ export function KarmaBox({ targetId, username, karma, canGive, blockedReason, lo
           <p className="text-sm font-medium">
             {open > 0 ? 'Tăng uy tín — vì sao?' : 'Giảm uy tín — vì sao?'}
           </p>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} autoFocus
+          {/* Có `name` để chỉ đích danh được: trang cá nhân còn ô soạn sổ lưu
+              bút, chọn kiểu "ô cuối trang" là nhè nhầm ô kia. */}
+          <textarea name="karmaReason" value={reason} onChange={(e) => setReason(e.target.value)} rows={2} autoFocus
             minLength={KARMA_REASON_MIN} maxLength={KARMA_REASON_MAX}
             placeholder="Ví dụ: trả lời giúp mình bài hỏi về nhạc chuông"
             className="input resize-y text-sm" />

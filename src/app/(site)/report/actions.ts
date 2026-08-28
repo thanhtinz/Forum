@@ -3,11 +3,11 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
-export type ReportTarget = 'post' | 'thread' | 'reply' | 'comment';
+export type ReportTarget = 'thread' | 'reply' | 'comment';
 export type ReportState = { ok?: boolean; error?: string };
 
-const FIELD: Record<ReportTarget, 'postId' | 'threadId' | 'replyId' | 'commentId'> = {
-  post: 'postId', thread: 'threadId', reply: 'replyId', comment: 'commentId',
+const FIELD: Record<ReportTarget, 'threadId' | 'replyId' | 'commentId'> = {
+  thread: 'threadId', reply: 'replyId', comment: 'commentId',
 };
 
 const REASON_MAX = 100;
@@ -16,8 +16,7 @@ const DETAIL_MAX = 1000;
 /** Tìm tác giả của nội dung bị báo cáo; null nghĩa là nội dung không tồn tại. */
 async function authorOf(target: ReportTarget, id: string): Promise<string | null> {
   const sel = { select: { authorId: true } };
-  const row = target === 'post' ? await db.post.findUnique({ where: { id }, ...sel })
-    : target === 'thread' ? await db.thread.findUnique({ where: { id }, ...sel })
+  const row = target === 'thread' ? await db.thread.findUnique({ where: { id }, ...sel })
     : target === 'reply' ? await db.reply.findUnique({ where: { id }, ...sel })
     : await db.comment.findUnique({ where: { id }, ...sel });
   return row?.authorId ?? null;

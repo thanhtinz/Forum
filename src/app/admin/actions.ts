@@ -13,58 +13,18 @@ import { SITE_SETTING_KEY } from '@/lib/site';
 import { isBanScope, banExpiry } from '@/lib/ban';
 import { logAdmin, pruneAdminLogs } from '@/lib/audit';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
-import { saveClubConfig } from '@/lib/club';
 
-const POST_STATUS_LABEL: Record<string, string> = {
+/** Nhãn tiếng Việt của trạng thái nội dung, dùng khi ghi nhật ký quản trị. */
+const STATUS_LABEL: Record<string, string> = {
   PUBLISHED: 'đã đăng', PENDING: 'chờ duyệt', ARCHIVED: 'đã ẩn', DRAFT: 'bản nháp', HIDDEN: 'đã ẩn',
 };
 
-// ─────────────── Bài viết ───────────────
-
-export async function approvePost(id: string) {
-  const admin = await requireAdmin();
-  const post = await db.post.update({ where: { id }, data: { status: 'PUBLISHED', publishedAt: new Date() }, select: { authorId: true, slug: true, title: true } });
-  await notify({ userId: post.authorId, type: 'SYSTEM', title: 'Bài viết đã được duyệt', content: post.title, link: `/posts/${post.slug}` });
-  await checkAndAwardMedals(post.authorId).catch(() => {});
-  await logAdmin({ actor: admin, action: 'post.approve', targetType: 'post', targetId: id, summary: `Duyệt bài “${post.title}”` });
-  revalidatePath('/admin/posts');
+/** Chuỗi thành slug: bỏ dấu, thay khoảng trắng bằng gạch nối. */
+function slugify(s: string, fallback = 'muc'): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || fallback;
 }
-
-export async function setPostStatus(id: string, status: 'PUBLISHED' | 'PENDING' | 'ARCHIVED') {
-  const admin = await requireAdmin();
-  const post = await db.post.update({
-    where: { id },
-    data: { status, ...(status === 'PUBLISHED' ? { publishedAt: new Date() } : {}) },
-    select: { title: true },
-  });
-  await logAdmin({
-    actor: admin, action: 'post.status', targetType: 'post', targetId: id,
-    summary: `Đổi bài “${post.title}” sang ${POST_STATUS_LABEL[status] ?? status}`, meta: { status },
-  });
-  revalidatePath('/admin/posts');
-}
-
-export async function deletePost(id: string) {
-  const admin = await requireAdmin();
-  const post = await db.post.delete({ where: { id }, select: { title: true, slug: true } });
-  await logAdmin({
-    actor: admin, action: 'post.delete', targetType: 'post', targetId: id,
-    summary: `Xoá bài “${post.title}”`, meta: { slug: post.slug },
-  });
-  revalidatePath('/admin/posts');
-}
-
-export async function togglePostFeatured(id: string) {
-  const admin = await requireAdmin();
-  const p = await db.post.findUnique({ where: { id }, select: { featured: true, title: true } });
-  const featured = !p?.featured;
-  await db.post.update({ where: { id }, data: { featured } });
-  await logAdmin({
-    actor: admin, action: 'post.feature', targetType: 'post', targetId: id,
-    summary: `${featured ? 'Đặt' : 'Bỏ'} nổi bật cho bài “${p?.title ?? id}”`, meta: { featured },
-  });
-  revalidatePath('/admin/posts');
-}
+import { saveClubConfig } from '@/lib/club';
 
 // ─────────────── Người dùng ───────────────
 
@@ -136,61 +96,6 @@ export async function unbanUser(id: string, scope: string) {
     summary: `Gỡ khoá ${scope} cho @${u?.username ?? id}`, meta: { scope },
   });
   revalidatePath('/admin/users');
-}
-
-// ─────────────── Chuyên mục ───────────────
-
-function slugify(s: string, fallback = 'muc'): string {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || fallback;
-}
-
-export type CategoryState = { ok?: boolean; error?: string };
-
-export async function saveCategory(_prev: CategoryState, formData: FormData): Promise<CategoryState> {
-  const admin = await requireAdmin();
-  const id = String(formData.get('id') ?? '').trim() || null;
-  const name = String(formData.get('name') ?? '').trim();
-  const parentId = String(formData.get('parentId') ?? '').trim() || null;
-  const color = String(formData.get('color') ?? '').trim() || null;
-  const icon = normalizeIcon(formData.get('icon'));
-  const description = String(formData.get('description') ?? '').trim() || null;
-  const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
-  if (name.length < 2) return { error: 'Tên chuyên mục quá ngắn.' };
-  if (parentId && parentId === id) return { error: 'Chuyên mục không thể là cha của chính nó.' };
-
-  let savedId = id;
-  try {
-    if (id) {
-      await db.category.update({ where: { id }, data: { name, parentId, color, icon, description, order } });
-    } else {
-      let slug = slugify(name);
-      if (await db.category.findUnique({ where: { slug }, select: { id: true } })) slug = `${slug}-${Date.now().toString().slice(-4)}`;
-      const created = await db.category.create({ data: { slug, name, parentId, color, icon, description, order }, select: { id: true } });
-      savedId = created.id;
-    }
-  } catch {
-    return { error: 'Không thể lưu chuyên mục.' };
-  }
-  await logAdmin({
-    actor: admin, action: id ? 'category.update' : 'category.create', targetType: 'category', targetId: savedId,
-    summary: `${id ? 'Sửa' : 'Tạo'} chuyên mục “${name}”`,
-  });
-  revalidatePath('/admin/categories');
-  revalidatePath('/');
-  return { ok: true };
-}
-
-export async function deleteCategory(id: string) {
-  const admin = await requireAdmin();
-  const cat = await db.category.findUnique({ where: { id }, select: { name: true } });
-  await db.category.delete({ where: { id } }).catch(() => {});
-  await logAdmin({
-    actor: admin, action: 'category.delete', targetType: 'category', targetId: id,
-    summary: `Xoá chuyên mục “${cat?.name ?? id}”`,
-  });
-  revalidatePath('/admin/categories');
-  revalidatePath('/');
 }
 
 // ─────────────── Cấu hình GIF ───────────────
@@ -356,7 +261,7 @@ export async function setThreadStatus(id: string, status: 'PUBLISHED' | 'PENDING
   const t = await db.thread.update({ where: { id }, data: { status }, select: { title: true } });
   await logAdmin({
     actor: admin, action: 'thread.status', targetType: 'thread', targetId: id,
-    summary: `Đổi chủ đề “${t.title}” sang ${POST_STATUS_LABEL[status] ?? status}`, meta: { status },
+    summary: `Đổi chủ đề “${t.title}” sang ${STATUS_LABEL[status] ?? status}`, meta: { status },
   });
   revalidatePath('/admin/threads');
 }

@@ -4,8 +4,6 @@ import type { Prisma } from '@prisma/client';
 import { Search as SearchIcon, MessagesSquare, Newspaper, Users } from 'lucide-react';
 import { db } from '@/lib/db';
 import { cn, fmtCount, plainText, truncate } from '@/lib/utils';
-import { postCardSelect, toCardData } from '@/lib/post-card';
-import { PostGrid } from '@/components/PostGrid';
 import { Pagination } from '@/components/Pagination';
 import { TableHead } from '@/components/forum/TableHead';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
@@ -22,7 +20,6 @@ export const metadata: Metadata = { title: 'Tìm kiếm' };
 
 const TABS = [
   { key: 'threads', label: 'Chủ đề', icon: MessagesSquare },
-  { key: 'posts', label: 'Bài viết', icon: Newspaper },
   { key: 'users', label: 'Thành viên', icon: Users },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
@@ -39,15 +36,14 @@ export default async function SearchPage({ searchParams }: {
   const levelLooks = await getLevelLooks();
 
   // Đếm cho cả ba tab để hiện số lượng ngay trên nhãn
-  const [threadTotal, postTotal, userTotal] = q
+  const [threadTotal, userTotal] = q
     ? await Promise.all([
         db.thread.count({ where: { status: 'PUBLISHED', OR: [{ title: like }, { content: like }] } }),
-        db.post.count({ where: { status: 'PUBLISHED', OR: [{ title: like }, { excerpt: like }, { content: like }] } }),
         db.user.count({ where: { status: 'ACTIVE', OR: [{ username: like }, { name: like }] } }),
       ])
     : [0, 0, 0];
 
-  const total = tab === 'threads' ? threadTotal : tab === 'posts' ? postTotal : userTotal;
+  const total = tab === 'threads' ? threadTotal : userTotal;
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const skip = (page - 1) * PAGE_SIZE;
 
@@ -71,21 +67,13 @@ export default async function SearchPage({ searchParams }: {
       }))
     : [];
 
-  const posts = q && tab === 'posts'
-    ? await db.post.findMany({
-        where: { status: 'PUBLISHED', OR: [{ title: like }, { excerpt: like }, { content: like }] } as Prisma.PostWhereInput,
-        orderBy: [{ publishedAt: 'desc' }],
-        skip, take: PAGE_SIZE,
-        select: postCardSelect,
-      })
-    : [];
 
   const users = q && tab === 'users'
     ? await db.user.findMany({
         where: { status: 'ACTIVE', OR: [{ username: like }, { name: like }] },
         orderBy: [{ exp: 'desc' }],
         skip, take: PAGE_SIZE,
-        select: { username: true, name: true, image: true, level: true, bio: true, _count: { select: { threads: true, posts: true } } },
+        select: { username: true, name: true, image: true, level: true, bio: true, _count: { select: { threads: true, replies: true } } },
       })
     : [];
 
@@ -104,7 +92,7 @@ export default async function SearchPage({ searchParams }: {
           {q && (
             <div className="no-scrollbar mt-3 flex gap-1 overflow-x-auto rounded-full bg-ink-100 p-1 dark:bg-ink-800">
               {TABS.map((t) => {
-                const count = t.key === 'threads' ? threadTotal : t.key === 'posts' ? postTotal : userTotal;
+                const count = t.key === 'threads' ? threadTotal : userTotal;
                 return (
                   <Link key={t.key} href={hrefFor(t.key)}
                     className={cn('flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
@@ -132,8 +120,6 @@ export default async function SearchPage({ searchParams }: {
               </div>
             )}
           </section>
-        ) : tab === 'posts' ? (
-          <PostGrid posts={posts.map(toCardData)} empty={`Không tìm thấy bài viết nào cho “${q}”.`} />
         ) : (
           <section className="card overflow-hidden">
             <TableHead title={`Thành viên · ${fmtCount(userTotal)} kết quả`} icon={<Users size={15} className="text-emerald-500" />} />
@@ -157,7 +143,7 @@ export default async function SearchPage({ searchParams }: {
                       <p className="truncate text-xs text-ink-400">{u.bio || `@${u.username}`}</p>
                     </div>
                     <span className="hidden shrink-0 text-xs text-ink-400 sm:block">
-                      {fmtCount(u._count.threads)} chủ đề · {fmtCount(u._count.posts)} bài viết
+                      {fmtCount(u._count.threads)} chủ đề · {fmtCount(u._count.replies)} trả lời
                     </span>
                   </Link>
                 ))}

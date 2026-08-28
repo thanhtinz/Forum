@@ -333,7 +333,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
               <MessageSquare size={17} /> Bình luận
               {game.commentCount > 0 && <span className="text-ink-400">({fmtCount(game.commentCount)})</span>}
             </h2>
-            <Comments gameId={game.id} slug={game.slug} basePath="/games" loggedIn={!!session?.user?.id} />
+            <Comments gameId={game.id} slug={game.slug} loggedIn={!!session?.user?.id} />
           </section>
 
           {related.length > 0 && (

@@ -21,9 +21,7 @@ async function safe<T>(query: Promise<T[]>): Promise<T[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const url = (path: string) => `${SITE_URL}${path}`;
 
-  const [posts, categories, tags, forums, threads, games, genres, collections] = await Promise.all([
-    safe(db.post.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
-    safe(db.category.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
+  const [tags, forums, threads, games, genres, collections] = await Promise.all([
     safe(db.tag.findMany({ select: { slug: true }, take: 1000 })),
     safe(db.forum.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
     safe(db.thread.findMany({ select: { id: true, updatedAt: true, forum: { select: { slug: true } } }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
@@ -34,7 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: url('/'), changeFrequency: 'daily', priority: 1 },
-    { url: url('/blog'), changeFrequency: 'daily', priority: 0.8 },
+    { url: url('/clb'), changeFrequency: 'daily', priority: 0.6 },
     { url: url('/games'), changeFrequency: 'daily', priority: 0.8 },
     { url: url('/games/browse'), changeFrequency: 'daily', priority: 0.6 },
     { url: url('/games/collections'), changeFrequency: 'weekly', priority: 0.5 },
@@ -43,8 +41,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     ...staticPages,
-    ...posts.map((p) => ({ url: url(`/posts/${p.slug}`), lastModified: p.updatedAt, changeFrequency: 'weekly' as const, priority: 0.7 })),
-    ...categories.map((c) => ({ url: url(`/category/${c.slug}`), changeFrequency: 'daily' as const, priority: 0.5 })),
     ...tags.map((t) => ({ url: url(`/tag/${t.slug}`), changeFrequency: 'weekly' as const, priority: 0.4 })),
     ...forums.map((f) => ({ url: url(`/forum/${f.slug}`), changeFrequency: 'daily' as const, priority: 0.5 })),
     ...threads.filter((t) => t.forum).map((t) => ({ url: url(`/forum/${t.forum!.slug}/${t.id}`), lastModified: t.updatedAt, changeFrequency: 'weekly' as const, priority: 0.5 })),

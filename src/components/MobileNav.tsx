@@ -80,9 +80,9 @@ export function MobileNav({ nav, loggedIn, siteName, siteLogo }: MobileNavProps)
             ))}
             {loggedIn && (
               <>
-                <Link href="/user/write"
+                <Link href="/forum"
                   className="flex items-center gap-3 rounded-xl bg-brand-50 px-3 py-2.5 font-semibold text-brand-600 hover:bg-brand-100 dark:bg-brand-950/40">
-                  <PenLine size={18} /> Đăng bài
+                  <PenLine size={18} /> Đăng chủ đề
                 </Link>
                 <Link href="/user/dashboard"
                   className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-ink-700 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-200 dark:hover:bg-ink-800">

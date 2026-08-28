@@ -4,13 +4,14 @@ import { redirect } from 'next/navigation';
 import { ArrowLeft, UserPlus, Users } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { postCardSelect, toCardData } from '@/lib/post-card';
-import { PostGrid } from '@/components/PostGrid';
+import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
+import { authorChipSelect, toAuthorChip } from '@/lib/shop';
+import { threadExcerpt } from '@/lib/bbcode';
 import { Pagination } from '@/components/Pagination';
 
-export const metadata: Metadata = { title: 'Bài viết từ người theo dõi' };
+export const metadata: Metadata = { title: 'Chủ đề từ người bạn theo dõi' };
 export const dynamic = 'force-dynamic';
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
 /** Hàng avatar ở đầu trang chỉ khoe ngần này người. */
 const AVATARS_SHOWN = 20;
 
@@ -21,15 +22,15 @@ export default async function FollowingFeedPage({ searchParams }: { searchParams
   const { page: pageRaw } = await searchParams;
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
 
-  // Lọc bài bằng quan hệ chứ không kéo danh sách người đang theo dõi về rồi
-  // nhét vào `in:` — người theo dõi vài nghìn tác giả sẽ dựng ra một câu truy
-  // vấn dài vài nghìn id, và số đó chỉ có tăng.
+  // Lọc chủ đề bằng quan hệ chứ không kéo danh sách người đang theo dõi về rồi
+  // nhét vào `in:` — người theo dõi vài nghìn người sẽ dựng ra một câu truy vấn
+  // dài vài nghìn id, và số đó chỉ có tăng.
   const where = {
     status: 'PUBLISHED' as const,
     author: { followers: { some: { followerId: userId } } },
   };
 
-  const [followCount, authors, total, posts] = await Promise.all([
+  const [followCount, authors, total, threads] = await Promise.all([
     db.follow.count({ where: { followerId: userId } }),
     // Hàng avatar chỉ khoe vài người đầu, không phải cả danh sách.
     db.user.findMany({
@@ -37,13 +38,20 @@ export default async function FollowingFeedPage({ searchParams }: { searchParams
       select: { username: true, name: true, image: true },
       take: AVATARS_SHOWN,
     }),
-    db.post.count({ where }),
-    db.post.findMany({
-      where, orderBy: { publishedAt: 'desc' },
-      skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect,
+    db.thread.count({ where }),
+    db.thread.findMany({
+      where, orderBy: [{ lastReplyAt: 'desc' }, { createdAt: 'desc' }],
+      skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE,
+      include: { author: { select: authorChipSelect }, forum: { select: { slug: true, name: true } } },
     }),
   ]);
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const rows: ThreadRowData[] = threads.map((t) => ({
+    id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
+    pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
+    viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author),
+    forum: t.forum, excerpt: threadExcerpt(t.content),
+  }));
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -72,11 +80,17 @@ export default async function FollowingFeedPage({ searchParams }: { searchParams
       {followCount === 0 ? (
         <div className="card flex flex-col items-center gap-2 p-12 text-center text-ink-400">
           <UserPlus size={30} />
-          <p>Bạn chưa theo dõi ai. Ghé thăm trang cá nhân của tác giả và nhấn “Theo dõi” để xem bài viết mới của họ tại đây.</p>
+          <p>Bạn chưa theo dõi ai. Ghé trang cá nhân của một thành viên và nhấn “Theo dõi” để xem chủ đề mới của họ tại đây.</p>
         </div>
       ) : (
         <>
-          <PostGrid posts={posts.map(toCardData)} empty="Những người bạn theo dõi chưa đăng bài viết nào." />
+          {rows.length === 0 ? (
+            <div className="card p-8 text-center text-sm text-ink-500">Những người bạn theo dõi chưa lập chủ đề nào.</div>
+          ) : (
+            <div className="card divide-y divide-ink-100 dark:divide-ink-800">
+              {rows.map((t) => <ThreadRow key={t.id} thread={t} forumSlug={t.forum?.slug ?? ''} />)}
+            </div>
+          )}
           {totalPages > 1 && <div className="mt-6"><Pagination page={page} totalPages={totalPages} basePath="/user/following" /></div>}
         </>
       )}

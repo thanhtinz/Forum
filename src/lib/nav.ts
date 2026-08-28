@@ -18,7 +18,6 @@ export interface NavItem {
 
 /**
  * Menu mặc định khi admin chưa cấu hình gì, để trang không trống menu ở lần chạy đầu.
- * Không có mục "Bài viết" (/blog) vì trang chủ đã là diễn đàn; ai cần vẫn tự thêm được.
  */
 export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: string }[]> = {
   header: [

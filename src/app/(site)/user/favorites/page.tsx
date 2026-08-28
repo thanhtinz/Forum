@@ -5,10 +5,8 @@ import { ArrowLeft, Bookmark, MessageSquare, Eye } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { cn, fmtCount } from '@/lib/utils';
-import { postCardSelect, toCardData } from '@/lib/post-card';
 import { gameCardSelect, toGameCard } from '@/lib/game';
 import { DEFAULT_FOLDER, FOLDER_LIMIT, folderLabel } from '@/lib/favorite-folder';
-import { PostGrid } from '@/components/PostGrid';
 import { GameGrid } from '@/components/game/GameGrid';
 import { Pagination } from '@/components/Pagination';
 import { UnsaveThreadButton } from '@/components/forum/UnsaveThreadButton';
@@ -19,7 +17,6 @@ export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 12;
 
 const TABS = [
-  { key: 'posts', label: 'Bài viết' },
   { key: 'threads', label: 'Chủ đề' },
   { key: 'games', label: 'Game' },
 ] as const;
@@ -51,22 +48,13 @@ export default async function FavoritesPage({ searchParams }: {
   const folders = folderRows.map((f) => f.folder);
 
   const scope = folder ? { folder } : {};
-  const [postTotal, threadTotal, gameTotal] = await Promise.all([
-    db.favorite.count({ where: { userId, postId: { not: null }, ...scope } }),
+  const [threadTotal, gameTotal] = await Promise.all([
     db.favorite.count({ where: { userId, threadId: { not: null }, thread: { status: 'PUBLISHED' }, ...scope } }),
     db.favorite.count({ where: { userId, gameId: { not: null }, ...scope } }),
   ]);
-  const total = tab.key === 'posts' ? postTotal : tab.key === 'threads' ? threadTotal : gameTotal;
+  const total = tab.key === 'threads' ? threadTotal : gameTotal;
   const totalPages = Math.ceil(total / PAGE_SIZE);
   const skip = (page - 1) * PAGE_SIZE;
-
-  const posts = tab.key === 'posts'
-    ? (await db.favorite.findMany({
-        where: { userId, postId: { not: null }, ...scope },
-        orderBy: { createdAt: 'desc' }, skip, take: PAGE_SIZE,
-        select: { id: true, folder: true, post: { select: postCardSelect } },
-      })).filter((f) => f.post).map((f) => ({ favId: f.id, folder: f.folder, card: toCardData(f.post!) }))
-    : [];
 
   const threads = tab.key === 'threads'
     ? (await db.favorite.findMany({
@@ -94,12 +82,12 @@ export default async function FavoritesPage({ searchParams }: {
 
   const href = (key: string, f = folder) => {
     const q = new URLSearchParams();
-    if (key !== 'posts') q.set('tab', key);
+    if (key !== 'threads') q.set('tab', key);
     if (f) q.set('folder', f);
     const s = q.toString();
     return s ? `/user/favorites?${s}` : '/user/favorites';
   };
-  const countOf = (key: string) => (key === 'posts' ? postTotal : key === 'threads' ? threadTotal : gameTotal);
+  const countOf = (key: string) => (key === 'threads' ? threadTotal : gameTotal);
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -144,18 +132,8 @@ export default async function FavoritesPage({ searchParams }: {
         </div>
       )}
 
-      {tab.key === 'posts' ? (
-        posts.length === 0 ? (
-          <div className="card p-10 text-center text-sm text-ink-500">
-            {folder ? 'Thư mục này chưa có bài viết nào.' : 'Bạn chưa lưu bài viết nào. Nhấn “Lưu” ở mỗi bài để xem lại sau.'}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <PostGrid posts={posts.map((p) => p.card)} />
-            <FolderRow items={posts.map((p) => ({ favId: p.favId, folder: p.folder, title: p.card.title }))} folders={folders} />
-          </div>
-        )
-      ) : tab.key === 'games' ? (
+      {tab.key === 'games' ? (
+
         games.length === 0 ? (
           <div className="card p-10 text-center text-sm text-ink-500">
             {folder ? 'Thư mục này chưa có game nào.' : 'Bạn chưa lưu game nào. Mở một game rồi bấm “Lưu” để xem lại sau.'}

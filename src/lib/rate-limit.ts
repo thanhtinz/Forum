@@ -8,7 +8,6 @@ export const RATE_LIMITS = {
   thread: { max: 5, windowMinutes: 60, label: 'chủ đề' },
   reply: { max: 20, windowMinutes: 60, label: 'trả lời' },
   comment: { max: 20, windowMinutes: 60, label: 'bình luận' },
-  post: { max: 5, windowMinutes: 60, label: 'bài viết' },
 } as const;
 
 export type RateKind = keyof typeof RATE_LIMITS;
@@ -55,7 +54,6 @@ function countSince(kind: RateKind, userId: string, since: Date): Promise<number
     case 'thread': return db.thread.count({ where });
     case 'reply': return db.reply.count({ where });
     case 'comment': return db.comment.count({ where });
-    case 'post': return db.post.count({ where });
   }
 }
 
@@ -63,7 +61,6 @@ async function lastCreatedAt(kind: RateKind, userId: string): Promise<Date | nul
   const args = { where: { authorId: userId }, orderBy: { createdAt: 'desc' as const }, select: { createdAt: true } };
   const row = kind === 'thread' ? await db.thread.findFirst(args)
     : kind === 'reply' ? await db.reply.findFirst(args)
-    : kind === 'comment' ? await db.comment.findFirst(args)
-    : await db.post.findFirst(args);
+    : await db.comment.findFirst(args);
   return row?.createdAt ?? null;
 }

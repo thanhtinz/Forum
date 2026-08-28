@@ -87,7 +87,7 @@ function SlideForm({ initial, onDone }: { initial: SlideRow | null; onDone: () =
           defaultValue={initial?.image} placeholder="https://…/banner.jpg hoặc tải ảnh lên"
           hint="Nên dùng ảnh ngang, tối đa 5MB." />
         <label className="block"><span className="mb-1 block text-sm font-medium">Liên kết khi bấm</span>
-          <input name="link" defaultValue={initial?.link ?? ''} className="input" placeholder="/posts/bai-viet" /></label>
+          <input name="link" defaultValue={initial?.link ?? ''} className="input" placeholder="/forum/gop-y" /></label>
         <label className="block"><span className="mb-1 block text-sm font-medium">Thứ tự</span>
           <input name="order" type="number" defaultValue={initial?.order ?? 0} className="input" /></label>
       </div>

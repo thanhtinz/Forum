@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { Pin, PinOff, EyeOff, Eye } from 'lucide-react';
-import { toggleCommentPinned, toggleCommentHidden } from '@/app/(site)/posts/[slug]/actions';
+import { toggleCommentPinned, toggleCommentHidden } from '@/app/(site)/comments/actions';
 
 /**
  * Ghim và ẩn bình luận — dành cho chủ bài viết và quản trị viên.

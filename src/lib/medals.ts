@@ -10,7 +10,7 @@ export const MEDAL_CONDITIONS = [
   { value: '', label: 'Trao tay (không tự động)' },
   { value: 'checkin_streak', label: 'Chuỗi điểm danh liên tiếp' },
   { value: 'checkin_total', label: 'Tổng số ngày điểm danh' },
-  { value: 'posts_count', label: 'Số bài đã đăng' },
+  { value: 'posts_count', label: 'Số chủ đề đã lập' },
   { value: 'level', label: 'Cấp độ đạt được' },
 ] as const;
 
@@ -22,7 +22,7 @@ export const MEDAL_CONDITIONS = [
  * Điều kiện hỗ trợ:
  *  - checkin_streak: chuỗi điểm danh hiện tại ≥ conditionValue
  *  - checkin_total : tổng số ngày điểm danh ≥ conditionValue
- *  - posts_count   : số bài đã đăng ≥ conditionValue
+ *  - posts_count   : số chủ đề đã lập ≥ conditionValue
  *  - level         : cấp độ ≥ conditionValue
  */
 export async function checkAndAwardMedals(userId: string): Promise<string[]> {
@@ -38,9 +38,12 @@ export async function checkAndAwardMedals(userId: string): Promise<string[]> {
   });
   if (medals.length === 0) return [];
 
-  // Chỉ đếm bài viết nếu có huy chương cần đến
+  // Điều kiện "posts_count" nay tính theo số CHỦ ĐỀ đã lập: mục bài viết đã gỡ
+  // khỏi trang, nhưng huy chương cũ vẫn còn nên phải có thứ để đếm.
   const needsPosts = medals.some((m) => m.conditionType === 'posts_count');
-  const postsCount = needsPosts ? await db.post.count({ where: { authorId: userId, status: 'PUBLISHED' } }) : 0;
+  const postsCount = needsPosts
+    ? await db.thread.count({ where: { authorId: userId, status: 'PUBLISHED' } })
+    : 0;
 
   const stat = (type: string | null): number => {
     switch (type) {

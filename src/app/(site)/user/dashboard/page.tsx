@@ -72,8 +72,8 @@ export default async function DashboardPage() {
 
       {/* Lối tắt */}
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <QuickLink href="/user/write" icon={<PenLine size={18} />} label="Đăng bài" primary />
-        <QuickLink href="/user/posts" icon={<FileText size={18} />} label="Bài của tôi" />
+        <QuickLink href="/forum" icon={<PenLine size={18} />} label="Đăng chủ đề" primary />
+        <QuickLink href={`/u/${user.username ?? ''}`} icon={<FileText size={18} />} label="Chủ đề của tôi" />
         <QuickLink href="/user/following" icon={<Users size={18} />} label="Đang theo dõi" />
         <QuickLink href="/user/threads" icon={<Bell size={18} />} label="Chủ đề theo dõi" />
         <QuickLink href="/user/favorites" icon={<Bookmark size={18} />} label="Đã lưu" />

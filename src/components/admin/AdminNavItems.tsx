@@ -29,21 +29,6 @@ export const ADMIN_GROUPS: Group[] = [
     items: [{ href: '/admin', label: 'Tổng quan', icon: LayoutDashboard, exact: true }],
   },
   {
-    title: 'Cửa hàng',
-    items: [
-      {
-        href: '/admin/posts', label: 'Bài bán hàng', icon: FileText, defaultStatus: 'ALL',
-        subs: [
-          { label: 'Tất cả', status: 'ALL' },
-          { label: 'Chờ duyệt', status: 'PENDING' },
-          { label: 'Đã đăng', status: 'PUBLISHED' },
-          { label: 'Đã ẩn', status: 'ARCHIVED' },
-        ],
-      },
-      { href: '/admin/categories', label: 'Chuyên mục', icon: FolderTree },
-    ],
-  },
-  {
     title: 'Diễn đàn',
     items: [
       { href: '/admin/forums', label: 'Khu vực', icon: MessagesSquare },

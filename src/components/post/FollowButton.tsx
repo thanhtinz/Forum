@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { UserPlus, UserCheck } from 'lucide-react';
 import { cn, fmtCount } from '@/lib/utils';
-import { toggleFollow } from '@/app/(site)/posts/[slug]/actions';
+import { toggleFollow } from '@/app/(site)/comments/actions';
 
 export function FollowButton({ targetId, initialFollowing, initialCount, self }: {
   targetId: string; initialFollowing: boolean; initialCount: number; self: boolean;

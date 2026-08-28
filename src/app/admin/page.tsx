@@ -1,35 +1,29 @@
 import Link from 'next/link';
-import { Users, FileText, Clock, Flag, Coins, MessagesSquare, Gamepad2 } from 'lucide-react';
+import { Users, FileText, Flag, MessagesSquare, Gamepad2 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { fmtCount } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 async function getStats() {
-  const [users, posts, pending, unlocks, threads, games, openReports, pointsAgg] = await Promise.all([
+  const [users, replies, clubs, threads, games, openReports] = await Promise.all([
     db.user.count(),
-    db.post.count(),
-    db.post.count({ where: { status: 'PENDING' } }),
-    db.order.count({ where: { status: 'PAID' } }),
+    db.reply.count(),
+    db.club.count(),
     db.thread.count(),
     db.game.count(),
     db.report.count({ where: { status: 'OPEN' } }),
-    db.order.aggregate({ where: { status: 'PAID' }, _sum: { pointsUsed: true } }),
   ]);
-  return {
-    users, posts, pending, unlocks, threads, games, openReports,
-    pointsSpent: pointsAgg._sum.pointsUsed ?? 0,
-  };
+  return { users, replies, clubs, threads, games, openReports };
 }
 
 const CARDS = (s: Awaited<ReturnType<typeof getStats>>) => [
   { label: 'Thành viên', value: fmtCount(s.users), icon: Users, tint: 'text-sky-500', href: '/admin/users' },
-  { label: 'Bài viết', value: fmtCount(s.posts), icon: FileText, tint: 'text-violet-500', href: '/admin/posts' },
-  { label: 'Chờ duyệt', value: fmtCount(s.pending), icon: Clock, tint: 'text-amber-500', href: '/admin/posts?status=PENDING' },
   { label: 'Chủ đề', value: fmtCount(s.threads), icon: MessagesSquare, tint: 'text-emerald-500', href: '/admin/threads' },
+  { label: 'Trả lời', value: fmtCount(s.replies), icon: FileText, tint: 'text-violet-500', href: '/admin/threads' },
+  { label: 'Câu lạc bộ', value: fmtCount(s.clubs), icon: Users, tint: 'text-amber-500', href: '/admin/clubs' },
   { label: 'Game', value: fmtCount(s.games), icon: Gamepad2, tint: 'text-fuchsia-500', href: '/admin/games' },
   { label: 'Báo cáo chờ xử lý', value: fmtCount(s.openReports), icon: Flag, tint: 'text-red-500', href: '/admin/reports' },
-  { label: 'Lượt mở khoá bằng điểm', value: fmtCount(s.unlocks), icon: Coins, tint: 'text-orange-500' },
 ];
 
 export default async function AdminDashboard() {

@@ -30,14 +30,35 @@ const ICON = {
   chuDe: 'icon-[pixelarticons--message-text]',
   baiViet: 'icon-[pixelarticons--file-text]',
   thanhVien: 'icon-[pixelarticons--users]',
-  theoDoi: 'icon-[pixelarticons--avatar-circle-plus]',
-  banBe: 'icon-[pixelarticons--group]',
-  album: 'icon-[pixelarticons--album]',
-  diem: 'icon-[pixelarticons--coins]',
+  /**
+   * Ba mục người ở trang cá nhân đứng cạnh nhau nên phải khác hình hẳn:
+   *  • người theo dõi — đám đông hướng về mình (`users`);
+   *  • đang theo dõi — con mắt, chính mình đang dõi theo người khác;
+   *  • bạn bè — người kèm dấu tích, quan hệ hai chiều đã nhận.
+   *
+   * Hai lần chọn hụt, ghi lại để khỏi lặp:
+   *  • `group` nhìn tưởng là nhóm người, hoá ra là lưới ô vuông của nhóm BỐ CỤC.
+   *  • `handshake` phóng to thì đẹp nhưng ở đúng cỡ 16px chỉ còn một vệt nhoè.
+   *    Chọn icon phải soi ở CỠ THẬT, không phải cỡ phóng to.
+   */
+  theoDoi: 'icon-[pixelarticons--eye]',
+  banBe: 'icon-[pixel--user-check]',
+  /** `album` của bộ này là quyển SÁCH, không phải album ảnh — đừng lẫn. */
+  album: 'icon-[pixelarticons--image-multiple]',
+  /**
+   * Chồng xu, KHÔNG dùng icon có ký hiệu `$`: trang này chỉ tính điểm, không
+   * có tiền thật, nên một cái đô la ở đây là nói sai bản chất.
+   */
+  diem: 'icon-[pixel--coins]',
   uyTin: 'icon-[pixelarticons--heart]',
   binhChon: 'icon-[pixelarticons--chart-bar]',
   soLuuBut: 'icon-[pixelarticons--book-open]',
-  trucTuyen: 'icon-[pixelarticons--avatar]',
+  /**
+   * Dùng cho CON SỐ "đang trực tuyến", không dùng làm dấu trên avatar — chỗ ấy
+   * một chấm tròn thường vẫn rõ hơn mọi icon. `avatar` trước đây là khung chân
+   * dung, chẳng nói lên chuyện đang kết nối.
+   */
+  trucTuyen: 'icon-[pixel--wifi-solid]',
 
   // Tin nhắn
   thuDaDoc: 'icon-[pixelarticons--mail-open]',

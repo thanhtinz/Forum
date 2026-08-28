@@ -7,6 +7,10 @@ import { BASE, db, openPage } from '../helpers.mjs';
  * màn hình: bộ lọc hỏng kiểu "trả về tất cả" vẫn hiện đầy trang, nhìn qua
  * tưởng chạy đúng.
  */
+const TAM = 'kiemthu-tam-';
+/** Phải khớp MEMBERS_PER_PAGE trong src/lib/members.ts. */
+const MEMBERS_PER_PAGE = 24;
+
 export default async function run(check) {
   const online = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true, username: true } });
   const offline = await db.user.findFirst({ where: { username: 'lanpham' }, select: { id: true, username: true } });
@@ -77,6 +81,45 @@ export default async function run(check) {
     await p.waitForTimeout(600);
     check('tham số sắp xếp bịa ra thì về mặc định', (await p.content()).includes('Hoạt động gần đây'));
 
+    // ── Phân trang ───────────────────────────────────────────────────────
+    // Thanh phân trang tự ẩn khi chỉ có một trang, mà dữ liệu mẫu chỉ vài
+    // người — nên tự dựng đủ người để có trang thứ hai rồi mới kiểm.
+    const CAN = MEMBERS_PER_PAGE + 6;
+    const dangCo = await db.user.count({ where: { status: 'ACTIVE' } });
+    const themVao = Math.max(0, CAN - dangCo);
+    for (let i = 1; i <= themVao; i++) {
+      await db.user.create({
+        data: {
+          username: `${TAM}${i}`, name: `Người tạm ${i}`, email: `${TAM}${i}@vidu.test`,
+          status: 'ACTIVE', points: i,
+        },
+        select: { id: true },
+      });
+    }
+
+    await p.goto(`${BASE}/thanh-vien`, { waitUntil: 'networkidle' });
+    await p.waitForTimeout(800);
+    check('trang đầu đủ một trang người',
+      (await p.locator('a.card').count()) === MEMBERS_PER_PAGE,
+      `đếm được ${await p.locator('a.card').count()}`);
+    const nutTrang = await p.locator('nav a[href*="page="]').count();
+    check('có thanh phân trang khi quá một trang', nutTrang > 0);
+
+    await p.goto(`${BASE}/thanh-vien?page=2`, { waitUntil: 'networkidle' });
+    await p.waitForTimeout(800);
+    const soTrang2 = await p.locator('a.card').count();
+    check('trang hai có người và ít hơn một trang đầy', soTrang2 > 0 && soTrang2 < MEMBERS_PER_PAGE,
+      `đếm được ${soTrang2}`);
+
+    // Sang trang phải giữ nguyên từ khoá và cách sắp, không thì bấm trang 2 là
+    // mất hết lựa chọn.
+    await p.goto(`${BASE}/thanh-vien?sort=points`, { waitUntil: 'networkidle' });
+    await p.waitForTimeout(700);
+    const nutSort = await p.locator('nav a[href*="page="]').evaluateAll((els) =>
+      els.map((e) => e.getAttribute('href') ?? ''));
+    check('nút sang trang giữ cách sắp',
+      nutSort.length > 0 && nutSort.every((h) => h.includes('sort=points')), JSON.stringify(nutSort));
+
     // ── Giữ lựa chọn khi đổi một thứ ─────────────────────────────────────
     await p.goto(`${BASE}/thanh-vien?sort=karma&online=1`, { waitUntil: 'networkidle' });
     await p.waitForTimeout(600);
@@ -86,6 +129,7 @@ export default async function run(check) {
       nutTim.some((h) => h.includes('online=1') && h.includes('sort=points')),
       JSON.stringify(nutTim.slice(0, 6)));
   } finally {
+    await db.user.deleteMany({ where: { username: { startsWith: TAM } } });
     // Trả lại dấu hoạt động như trước để bài kiểm khác không lệ thuộc vào đây.
     await db.user.update({ where: { id: online.id }, data: { lastSeenAt: cu[0].lastSeenAt }, select: { id: true } });
     await db.user.update({ where: { id: offline.id }, data: { lastSeenAt: cu[1].lastSeenAt }, select: { id: true } });

@@ -159,6 +159,19 @@ function Preview({ item }: { item: ShopItemView }) {
     );
   }
 
+  if (item.kind === 'TITLE') {
+    return (
+      <span className="grid h-16 place-items-center rounded-xl bg-ink-50 dark:bg-ink-800/50">
+        <span className="inline-flex items-center gap-1.5">
+          <b>Tên của bạn</b>
+          <span className="rounded-full bg-ink-100 px-1.5 py-px text-[11px] font-semibold text-ink-500 dark:bg-ink-700 dark:text-ink-300">
+            {item.value}
+          </span>
+        </span>
+      </span>
+    );
+  }
+
   if (item.kind === 'PROFILE_COVER') {
     return (
       <span className="block h-16 overflow-hidden rounded-xl bg-ink-50 dark:bg-ink-800/50">
@@ -205,6 +218,7 @@ function BigPreview({ item, viewer }: { item: ShopItemView; viewer?: ShopViewer 
     ...(item.kind === 'NAME_COLOR' ? { nameColor: item.value } : {}),
     ...(item.kind === 'AVATAR_FRAME' ? { avatarFrame: item.value } : {}),
     ...(item.kind === 'BADGE' ? { badge: item.value, badgeName: item.name } : {}),
+    ...(item.kind === 'TITLE' ? { title: item.value } : {}),
   };
 
   const name = viewer?.name ?? 'Tên của bạn';

@@ -46,6 +46,7 @@ export function UserName({ username, name, role, level, levelColor, cosmetics = 
         <span className={cls} style={style}>{label}</span>
       )}
       <CosmeticBadge cosmetics={cosmetics} />
+      <CosmeticTitle cosmetics={cosmetics} />
       {level != null && <span className="retro-sub shrink-0 text-ink-400">Lv{level}</span>}
     </span>
   );
@@ -58,6 +59,21 @@ export function CosmeticBadge({ cosmetics, className }: { cosmetics: Cosmetics; 
     // eslint-disable-next-line @next/next/no-img-element
     <img src={cosmetics.badge} alt={cosmetics.badgeName ?? ''} title={cosmetics.badgeName ?? undefined}
       className={cn('inline-block size-4 shrink-0 object-contain', className)} />
+  );
+}
+
+/**
+ * Danh hiệu mua ở cửa hàng — dòng chữ nhỏ ngay cạnh tên.
+ *
+ * `shrink-0` để danh hiệu không bị bóp méo khi tên dài: chỗ hẹp thì cắt bớt
+ * TÊN (tên đã có `truncate`), chứ cắt danh hiệu thì ra một mẩu chữ vô nghĩa.
+ */
+export function CosmeticTitle({ cosmetics, className }: { cosmetics: Cosmetics; className?: string }) {
+  if (!cosmetics.title) return null;
+  return (
+    <span className={cn('shrink-0 rounded-full bg-ink-100 px-1.5 py-px text-[11px] font-semibold text-ink-500 dark:bg-ink-800 dark:text-ink-300', className)}>
+      {cosmetics.title}
+    </span>
   );
 }
 

@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Câu lạc bộ: lập nhóm, vào nhóm, duyệt đơn, bảng tin riêng.
@@ -54,10 +54,9 @@ export default async function run(check) {
     await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });
     await khachPage.waitForTimeout(600);
     await khachPage.click('button:has-text("Tham gia")');
-    await khachPage.waitForTimeout(2000);
-    const vao = await db.clubMember.findUnique({
+    const vao = await doiToi(() => db.clubMember.findUnique({
       where: { clubId_userId: { clubId: clbMo.id, userId: khach.id } }, select: { status: true },
-    });
+    }));
     check('nhóm mở: vào thẳng thành thành viên', vao?.status === 'ACTIVE');
     const dem = await db.club.findUnique({ where: { id: clbMo.id }, select: { memberCount: true } });
     check('bộ đếm thành viên tăng', dem.memberCount === 2, `đang là ${dem.memberCount}`);
@@ -66,10 +65,9 @@ export default async function run(check) {
     await khachPage.goto(url(clbDuyet), { waitUntil: 'networkidle' });
     await khachPage.waitForTimeout(600);
     await khachPage.click('button:has-text("Xin vào nhóm")');
-    await khachPage.waitForTimeout(2000);
-    let don = await db.clubMember.findUnique({
+    let don = await doiToi(() => db.clubMember.findUnique({
       where: { clubId_userId: { clubId: clbDuyet.id, userId: khach.id } }, select: { id: true, status: true },
-    });
+    }));
     check('nhóm duyệt: đơn ở trạng thái chờ', don?.status === 'PENDING');
     const demCho = await db.club.findUnique({ where: { id: clbDuyet.id }, select: { memberCount: true } });
     check('người chờ duyệt chưa tính vào bộ đếm', demCho.memberCount === 1, `đang là ${demCho.memberCount}`);
@@ -79,9 +77,11 @@ export default async function run(check) {
     await chuPage.waitForTimeout(800);
     check('chủ nhóm thấy ô đơn xin vào', (await chuPage.content()).includes('Đơn xin vào'));
     await chuPage.click('button[title="Duyệt"]');
-    await chuPage.waitForTimeout(2000);
-    don = await db.clubMember.findUnique({
-      where: { clubId_userId: { clubId: clbDuyet.id, userId: khach.id } }, select: { status: true },
+    don = await doiToi(async () => {
+      const r = await db.clubMember.findUnique({
+        where: { clubId_userId: { clubId: clbDuyet.id, userId: khach.id } }, select: { status: true },
+      });
+      return r?.status === 'ACTIVE' ? r : null;
     });
     check('duyệt xong thành thành viên', don?.status === 'ACTIVE');
     check('người được duyệt nhận thông báo',
@@ -109,8 +109,9 @@ export default async function run(check) {
     await khachPage.waitForTimeout(800);
     await khachPage.fill('textarea[name="content"]', NOI_DUNG);
     await khachPage.click('button:has-text("Đăng lên bảng tin")');
-    await khachPage.waitForTimeout(2500);
-    const bai = await db.clubPost.findFirst({ where: { clubId: clbMo.id, authorId: khach.id }, select: { content: true } });
+    const bai = await doiToi(() => db.clubPost.findFirst({
+      where: { clubId: clbMo.id, authorId: khach.id }, select: { content: true },
+    }));
     check('thành viên đăng được lên bảng tin', !!bai && bai.content.includes(NOI_DUNG));
     const demBai = await db.club.findUnique({ where: { id: clbMo.id }, select: { postCount: true } });
     check('bộ đếm bài tăng', demBai.postCount === 1, `đang là ${demBai.postCount}`);
@@ -124,7 +125,9 @@ export default async function run(check) {
     await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });
     await khachPage.waitForTimeout(700);
     await khachPage.click('button:has-text("Rời câu lạc bộ")');
-    await khachPage.waitForTimeout(2000);
+    await doiToi(async () => !(await db.clubMember.findUnique({
+      where: { clubId_userId: { clubId: clbMo.id, userId: khach.id } }, select: { id: true },
+    })));
     const conKhong = await db.clubMember.findUnique({
       where: { clubId_userId: { clubId: clbMo.id, userId: khach.id } }, select: { id: true },
     });
@@ -148,14 +151,18 @@ export default async function run(check) {
     await khachPage.waitForTimeout(900);
     // Nút thích là nút trái tim đầu tiên trong thẻ bài.
     await khachPage.locator('li.card button:has(svg.lucide-heart)').first().click();
-    await khachPage.waitForTimeout(2000);
-    let baiSau = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { likeCount: true } });
+    let baiSau = await doiToi(async () => {
+      const r = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { likeCount: true } });
+      return r.likeCount === 1 ? r : null;
+    }) ?? await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { likeCount: true } });
     check('thích được bài bảng tin', baiSau.likeCount === 1, `đang là ${baiSau.likeCount}`);
 
     // Bấm lần nữa thì bỏ thích.
     await khachPage.locator('li.card button:has(svg.lucide-heart)').first().click();
-    await khachPage.waitForTimeout(2000);
-    baiSau = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { likeCount: true } });
+    baiSau = await doiToi(async () => {
+      const r = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { likeCount: true } });
+      return r.likeCount === 0 ? r : null;
+    }) ?? await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { likeCount: true } });
     check('bấm lại thì bỏ thích', baiSau.likeCount === 0, `đang là ${baiSau.likeCount}`);
 
     const BINH_LUAN = 'Hay qua ban oi';
@@ -163,8 +170,9 @@ export default async function run(check) {
     const oBinhLuan = khachPage.locator('li.card textarea[name="content"]').last();
     await oBinhLuan.fill(BINH_LUAN);
     await khachPage.locator('li.card button:has-text("Gửi")').last().click();
-    await khachPage.waitForTimeout(2500);
-    const bl = await db.clubComment.findFirst({ where: { postId: baiMo.id }, select: { id: true, content: true, depth: true } });
+    const bl = await doiToi(() => db.clubComment.findFirst({
+      where: { postId: baiMo.id }, select: { id: true, content: true, depth: true },
+    }));
     check('bình luận được bài bảng tin', !!bl && bl.content.includes(BINH_LUAN));
     check('bình luận gốc ở tầng 0', bl?.depth === 0);
     const demBL = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { commentCount: true } });
@@ -184,10 +192,9 @@ export default async function run(check) {
     await chuPage.waitForTimeout(400);
     await chuPage.locator('textarea[placeholder^="Trả lời"]').fill(TRA_LOI);
     await chuPage.locator('li.card button:has-text("Gửi")').first().click();
-    await chuPage.waitForTimeout(2500);
-    const con = await db.clubComment.findFirst({
+    const con = await doiToi(() => db.clubComment.findFirst({
       where: { postId: baiMo.id, depth: 1 }, select: { id: true, content: true, parentId: true, rootId: true },
-    });
+    }));
     check('trả lời được bình luận', !!con && con.content.includes(TRA_LOI));
     check('trả lời bám đúng bình luận cha', con?.parentId === bl.id);
     check('trả lời ghi đúng gốc nhánh', con?.rootId === bl.id);
@@ -200,10 +207,9 @@ export default async function run(check) {
     await khachPage.waitForTimeout(400);
     await khachPage.locator('textarea[placeholder^="Trả lời"]').fill(TANG_BA);
     await khachPage.locator('li.card button:has-text("Gửi")').first().click();
-    await khachPage.waitForTimeout(2500);
-    const chau = await db.clubComment.findFirst({
+    const chau = await doiToi(() => db.clubComment.findFirst({
       where: { postId: baiMo.id, depth: 2 }, select: { parentId: true, rootId: true },
-    });
+    }));
     check('trả lời tầng ba nằm ở tầng 2', !!chau);
     check('tầng ba vẫn thuộc đúng nhánh gốc', chau?.rootId === bl.id);
 
@@ -214,7 +220,7 @@ export default async function run(check) {
     await khachPage.waitForTimeout(400);
     await khachPage.locator('textarea[placeholder^="Trả lời"]').fill('Chot lai nhe');
     await khachPage.locator('li.card button:has-text("Gửi")').first().click();
-    await khachPage.waitForTimeout(2500);
+    await doiToi(async () => (await db.clubComment.count({ where: { postId: baiMo.id } })) >= 4);
     check('không đẻ ra tầng thứ tư',
       (await db.clubComment.count({ where: { postId: baiMo.id, depth: { gte: 3 } } })) === 0);
 
@@ -236,10 +242,16 @@ export default async function run(check) {
     await chuPage.goto(url(clbMo), { waitUntil: 'networkidle' });
     await chuPage.waitForTimeout(900);
     await chuPage.locator('button[title="Ghim lên đầu"]').first().click();
-    await chuPage.waitForTimeout(2000);
-    const daGhim = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { pinned: true } });
+    const daGhim = await doiToi(async () => {
+      const r = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { pinned: true } });
+      return r.pinned ? r : null;
+    }) ?? { pinned: false };
     check('chủ nhóm ghim được bài', daGhim.pinned === true);
-    check('bài ghim có dấu riêng', (await chuPage.content()).includes('Bài ghim'));
+    // Đợi giao diện dựng lại: hành động xong ở máy chủ không có nghĩa là màn
+    // hình đã đổi — router.refresh còn phải chạy xong một lượt.
+    const coDauGhim = await chuPage.locator('text=Bài ghim').first()
+      .waitFor({ timeout: 15000 }).then(() => true, () => false);
+    check('bài ghim có dấu riêng', coDauGhim);
 
     // Thành viên thường KHÔNG được ghim.
     await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });
@@ -256,8 +268,10 @@ export default async function run(check) {
     await chuPage.click('button:has-text("Quản lý thành viên")');
     await chuPage.waitForTimeout(500);
     await chuPage.locator('button[title="Phong làm phó"]').first().click();
-    await chuPage.waitForTimeout(2000);
-    const pho = await db.clubMember.findUnique({ where: { id: hangKhach.id }, select: { role: true } });
+    const pho = await doiToi(async () => {
+      const r = await db.clubMember.findUnique({ where: { id: hangKhach.id }, select: { role: true } });
+      return r?.role === 'MOD' ? r : null;
+    }) ?? { role: null };
     check('phong được phó nhóm', pho.role === 'MOD');
 
     // Phó nhóm ghim được bài, nhưng không thấy cài đặt nhóm.
@@ -282,10 +296,9 @@ export default async function run(check) {
     await chuPage.click('button:has-text("Mời bạn bè")');
     await chuPage.waitForTimeout(600);
     await chuPage.locator('button:has-text("Mời")').last().click();
-    await chuPage.waitForTimeout(2000);
-    const loiMoi = await db.clubMember.findUnique({
+    const loiMoi = await doiToi(() => db.clubMember.findUnique({
       where: { clubId_userId: { clubId: clbMo.id, userId: lan.id } }, select: { status: true, invitedById: true },
-    });
+    }));
     check('mời được bạn vào nhóm', loiMoi?.status === 'INVITED');
     check('ghi lại ai là người mời', loiMoi?.invitedById === chu.id);
 
@@ -294,9 +307,11 @@ export default async function run(check) {
     await lanPage.waitForTimeout(800);
     check('người được mời thấy lời mời', (await lanPage.content()).includes('Bạn được mời vào nhóm'));
     await lanPage.click('button:has-text("Nhận lời")');
-    await lanPage.waitForTimeout(2000);
-    const daVao = await db.clubMember.findUnique({
-      where: { clubId_userId: { clubId: clbMo.id, userId: lan.id } }, select: { status: true },
+    const daVao = await doiToi(async () => {
+      const r = await db.clubMember.findUnique({
+        where: { clubId_userId: { clubId: clbMo.id, userId: lan.id } }, select: { status: true },
+      });
+      return r?.status === 'ACTIVE' ? r : null;
     });
     check('nhận lời thì thành thành viên', daVao?.status === 'ACTIVE');
   } finally {

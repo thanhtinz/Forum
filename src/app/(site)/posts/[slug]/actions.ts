@@ -52,6 +52,46 @@ export interface ToggleState {
   error?: string;
 }
 
+/**
+ * Bật/tắt thích cho một bình luận (bài viết lẫn game dùng chung bảng Comment).
+ *
+ * Cột `likeCount` và `Reaction.commentId` đã có sẵn trong lược đồ từ lâu nhưng
+ * chưa nơi nào dùng — bình luận là chỗ duy nhất trên trang không thả tim được,
+ * trong khi chủ đề, trả lời, bài viết và bảng tin câu lạc bộ đều thả được.
+ */
+export async function toggleCommentLike(commentId: string): Promise<ToggleState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { active: false, count: 0, error: 'Bạn cần đăng nhập.' };
+
+  const c = await db.comment.findUnique({
+    where: { id: commentId },
+    select: { id: true, hidden: true, post: { select: { slug: true } }, game: { select: { slug: true } } },
+  });
+  if (!c) return { active: false, count: 0, error: 'Không tìm thấy bình luận.' };
+  if (c.hidden) return { active: false, count: 0, error: 'Bình luận này đang bị ẩn.' };
+
+  const existing = await db.reaction.findFirst({
+    where: { userId, commentId, type: 'LIKE' }, select: { id: true },
+  });
+  const after = await db.$transaction(async (tx) => {
+    if (existing) {
+      await tx.reaction.delete({ where: { id: existing.id } });
+      return tx.comment.update({
+        where: { id: commentId }, data: { likeCount: { decrement: 1 } }, select: { likeCount: true },
+      });
+    }
+    await tx.reaction.create({ data: { userId, commentId, type: 'LIKE' } });
+    return tx.comment.update({
+      where: { id: commentId }, data: { likeCount: { increment: 1 } }, select: { likeCount: true },
+    });
+  });
+
+  if (c.post?.slug) revalidatePath(`/posts/${c.post.slug}`);
+  if (c.game?.slug) revalidatePath(`/games/${c.game.slug}`);
+  return { active: !existing, count: Math.max(0, after.likeCount) };
+}
+
 /** Bật/tắt thích cho bài viết (Reaction LIKE), đồng bộ likeCount trong transaction. */
 export async function toggleLike(postId: string): Promise<ToggleState> {
   const session = await auth();

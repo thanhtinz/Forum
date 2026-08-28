@@ -2,14 +2,14 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Send, Trash2, CornerDownRight } from 'lucide-react';
-import { addClubComment, deleteClubComment } from '@/app/(site)/clb/actions';
+import { Send, Trash2, CornerDownRight, Heart } from 'lucide-react';
+import { addClubComment, deleteClubComment, toggleClubCommentLike } from '@/app/(site)/clb/actions';
 import { UserName, Avatar } from '@/components/user/Cosmetic';
 import { ReplyContent } from '@/components/forum/ReplyContent';
 import { ComposerTools } from '@/components/ComposerTools';
 import { MentionTextarea } from '@/components/MentionTextarea';
 import { CLUB_COMMENT_MAX, type ClubActionState } from '@/lib/club-const';
-import { fmtAgo } from '@/lib/utils';
+import { cn, fmtAgo, fmtCount } from '@/lib/utils';
 import type { AuthorChip } from '@/lib/shop';
 
 export interface ClubCommentNodeView {
@@ -18,6 +18,8 @@ export interface ClubCommentNodeView {
   createdAt: Date;
   authorId: string;
   depth: number;
+  likeCount: number;
+  liked: boolean;
   author: AuthorChip | null;
   children: ClubCommentNodeView[];
 }
@@ -81,12 +83,25 @@ function CommentNode({ c, postId, canReply, canManage, viewerId, onChanged }: {
 }) {
   const [replying, setReplying] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Đổi mặt trái tim ngay khi bấm rồi mới hỏi máy chủ: chờ cả vòng máy chủ
+  // xong mới đổi thì bấm xong tưởng hỏng, mà đây là nút bấm nhiều nhất.
+  const [liked, setLiked] = useState(c.liked);
+  const [likes, setLikes] = useState(c.likeCount);
 
   const remove = async () => {
     setBusy(true);
     await deleteClubComment(c.id);
     setBusy(false);
     onChanged();
+  };
+
+  const like = async () => {
+    const truoc = { liked, likes };
+    setLiked(!liked);
+    setLikes(likes + (liked ? -1 : 1));
+    const r = await toggleClubCommentLike(c.id);
+    if (r.error) { setLiked(truoc.liked); setLikes(truoc.likes); return; }
+    if (typeof r.count === 'number') { setLiked(!!r.liked); setLikes(r.count); }
   };
 
   return (
@@ -108,6 +123,19 @@ function CommentNode({ c, postId, canReply, canManage, viewerId, onChanged }: {
           </div>
 
           <p className="mt-0.5 flex items-center gap-3 pl-1 text-xs text-ink-400">
+            {canReply && (
+              <button type="button" onClick={like}
+                className={cn('flex items-center gap-1 font-semibold transition-colors',
+                  liked ? 'text-rose-500' : 'hover:text-rose-500')}>
+                <Heart size={12} className={liked ? 'fill-current' : undefined} />
+                {likes > 0 ? fmtCount(likes) : 'Thích'}
+              </button>
+            )}
+            {!canReply && likes > 0 && (
+              <span className="flex items-center gap-1 text-rose-400">
+                <Heart size={12} className="fill-current" /> {fmtCount(likes)}
+              </span>
+            )}
             {canReply && (
               <button type="button" onClick={() => setReplying((v) => !v)}
                 className="font-semibold hover:text-brand-600">

@@ -199,6 +199,18 @@ export default async function run(check) {
     check('trả lời bám đúng bình luận cha', con?.parentId === bl.id);
     check('trả lời ghi đúng gốc nhánh', con?.rootId === bl.id);
 
+    // Thả tim bình luận.
+    await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await khachPage.waitForTimeout(900);
+    await khachPage.locator('li.card button:has-text("Thích")').first().click();
+    const timBL = await doiToi(async () => {
+      const r = await db.clubComment.findUnique({ where: { id: bl.id }, select: { likeCount: true } });
+      return r.likeCount === 1 ? r : null;
+    });
+    check('thả tim được bình luận', timBL?.likeCount === 1);
+    check('ghi đúng một hàng tim',
+      (await db.clubCommentLike.count({ where: { commentId: bl.id } })) === 1);
+
     // Tầng ba: trả lời của trả lời.
     const TANG_BA = 'Dung roi do ban';
     await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });

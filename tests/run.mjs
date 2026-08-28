@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { closeOpenPages } from './helpers.mjs';
 
 const only = process.argv[2] ?? '';
 const dir = path.join(import.meta.dirname, 'cases');
@@ -40,6 +41,10 @@ for (const file of files) {
   } catch (e) {
     failures.push(`${file} ném lỗi: ${e.message}`);
     console.log(`  ✗ ném lỗi giữa chừng: ${e.message}`);
+  } finally {
+    // Đóng tab của ca vừa xong, kể cả khi ca ném lỗi giữa chừng: để dồn lại
+    // thì máy chủ dev đuối dần và các ca sau đỏ oan.
+    await closeOpenPages();
   }
 }
 

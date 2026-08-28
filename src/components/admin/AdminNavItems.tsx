@@ -97,6 +97,7 @@ export const ADMIN_GROUPS: Group[] = [
       { href: '/admin/chat-backgrounds', label: 'Ảnh nền chat', icon: Wallpaper },
       { href: '/admin/chat-bubbles', label: 'Bong bóng chat', icon: MessageCircle },
       { href: '/admin/links', label: 'Liên kết bạn bè', icon: Link2 },
+      { href: '/admin/clubs', label: 'Câu lạc bộ', icon: Users },
     ],
   },
   {

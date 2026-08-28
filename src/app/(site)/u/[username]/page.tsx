@@ -40,12 +40,13 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
 }
 
 export default async function ProfilePage({ params, searchParams }: {
-  params: Promise<{ username: string }>; searchParams: Promise<{ page?: string; gb?: string }>;
+  params: Promise<{ username: string }>; searchParams: Promise<{ page?: string; gb?: string; hd?: string }>;
 }) {
   const { username } = await params;
-  const { page: pageRaw, gb: gbRaw } = await searchParams;
+  const { page: pageRaw, gb: gbRaw, hd: hdRaw } = await searchParams;
   const page = Math.max(1, parseInt(pageRaw ?? '1', 10) || 1);
   const gbPage = Math.max(1, parseInt(gbRaw ?? '1', 10) || 1);
+  const hdPage = Math.max(1, parseInt(hdRaw ?? '1', 10) || 1);
 
   const user = await db.user.findUnique({
     where: { username },
@@ -84,7 +85,7 @@ export default async function ProfilePage({ params, searchParams }: {
 
   // Hoạt động lấy sau vì cần `user.username` cho đường dẫn album.
   const activity = await getUserActivity(
-    { id: user.id, username: user.username }, viewer, 12,
+    { id: user.id, username: user.username }, viewer, { page: hdPage },
   );
   // Quản trị viên không chặn được — che nút cho khỏi bấm rồi mới báo lỗi.
   const canBlock = user.role !== 'ADMIN' && user.role !== 'MODERATOR';
@@ -197,7 +198,9 @@ export default async function ProfilePage({ params, searchParams }: {
       {/* Hoạt động gần đây — gộp chủ đề, trả lời, bảng tin câu lạc bộ, ảnh */}
       <div className="mt-6">
         <h2 className="zib-title mb-4">Hoạt động gần đây</h2>
-        <ActivityFeed items={activity} name={name} />
+        <ActivityFeed items={activity.items} name={name} />
+        <Pagination page={activity.page} totalPages={activity.totalPages}
+          basePath={`/u/${username}`} pageParam="hd" />
       </div>
 
       {/* Chủ đề đã lập */}

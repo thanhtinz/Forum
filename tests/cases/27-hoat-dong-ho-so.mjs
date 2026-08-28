@@ -8,6 +8,8 @@ import { BASE, db, openPage } from '../helpers.mjs';
  * ta cố tình giấu lại chui ra ở một chỗ chẳng ai ngờ tới.
  */
 const DAU = 'kiemthu-hoatdong';
+/** Phải khớp ACTIVITY_PER_PAGE trong src/lib/activity.ts. */
+const MOI_TRANG = 12;
 
 export default async function run(check) {
   const chu = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true, username: true } });
@@ -116,6 +118,49 @@ export default async function run(check) {
     html = await xem(nguoiNgoai);
     check('vào nhóm rồi thì thấy bài của nhóm kín', html.includes('BAIKIN-KIEMTHU-xyz'));
     check('nhưng ảnh riêng tư vẫn kín', !html.includes('/uploads/anh-kin-kiemthu.png'));
+
+    // ── Phân trang ───────────────────────────────────────────────────────
+    // Thanh phân trang tự ẩn khi chỉ có một trang, nên phải dựng đủ việc cho
+    // quá một trang rồi mới kiểm được.
+    const dong = (page) => page.locator('ol.card > li').count();
+    for (let i = 1; i <= MOI_TRANG + 4; i++) {
+      await db.thread.create({
+        data: {
+          forumId: forum.id, authorId: chu.id, status: 'PUBLISHED',
+          title: `${DAU} chủ đề số ${i}`, content: '<p>Nội dung.</p>',
+          createdAt: new Date(Date.now() - i * 60 * 1000), lastReplyAt: new Date(),
+        },
+        select: { id: true },
+      });
+    }
+
+    await nguoiNgoai.goto(hoSo, { waitUntil: 'networkidle' });
+    await nguoiNgoai.waitForTimeout(800);
+    check('trang đầu đúng một trang việc', (await dong(nguoiNgoai)) === MOI_TRANG,
+      `đếm được ${await dong(nguoiNgoai)}`);
+    check('có thanh phân trang cho hoạt động',
+      (await nguoiNgoai.locator('a[href*="hd=2"]').count()) > 0);
+
+    await nguoiNgoai.goto(`${hoSo}?hd=2`, { waitUntil: 'networkidle' });
+    await nguoiNgoai.waitForTimeout(800);
+    const soTrang2 = await dong(nguoiNgoai);
+    check('trang hai có việc', soTrang2 > 0, `đếm được ${soTrang2}`);
+
+    // Trang hai phải là những dòng KHÁC, không phải lặp lại trang một.
+    const dauTrang1 = await (async () => {
+      await nguoiNgoai.goto(hoSo, { waitUntil: 'networkidle' });
+      await nguoiNgoai.waitForTimeout(700);
+      return nguoiNgoai.locator('ol.card > li a').first().getAttribute('href');
+    })();
+    await nguoiNgoai.goto(`${hoSo}?hd=2`, { waitUntil: 'networkidle' });
+    await nguoiNgoai.waitForTimeout(700);
+    const dauTrang2 = await nguoiNgoai.locator('ol.card > li a').first().getAttribute('href');
+    check('trang hai không lặp lại trang một', dauTrang1 !== dauTrang2,
+      `${dauTrang1} vs ${dauTrang2}`);
+
+    // Số trang bịa ra thì kẹp về khoảng hợp lệ chứ không vỡ trang.
+    const r = await nguoiNgoai.goto(`${hoSo}?hd=9999`, { waitUntil: 'networkidle' });
+    check('số trang quá lớn vẫn mở được trang', r.status() === 200, `trả về ${r.status()}`);
   } finally {
     await wipe();
   }

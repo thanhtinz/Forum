@@ -7,7 +7,7 @@ import type { NotificationType } from '@prisma/client';
  * thì người dùng bỏ lỡ những thứ không thể bỏ lỡ. DONATE cũng vậy — ai tặng
  * điểm cho mình thì phải biết.
  */
-export const TOGGLEABLE_TYPES = ['COMMENT', 'REPLY', 'MENTION', 'LIKE', 'FOLLOW', 'MEDAL', 'GUESTBOOK', 'FRIEND', 'KARMA'] as const;
+export const TOGGLEABLE_TYPES = ['COMMENT', 'REPLY', 'MENTION', 'LIKE', 'FOLLOW', 'MEDAL', 'GUESTBOOK', 'FRIEND', 'KARMA', 'CLUB'] as const;
 
 export type ToggleableType = (typeof TOGGLEABLE_TYPES)[number];
 
@@ -21,6 +21,7 @@ export const NOTIFY_LABELS: Record<ToggleableType, { label: string; hint: string
   GUESTBOOK: { label: 'Sổ lưu bút', hint: 'Khi có người ghi vào sổ lưu bút của bạn, hoặc chủ nhà hồi âm lời nhắn của bạn' },
   FRIEND: { label: 'Kết bạn', hint: 'Khi có người mời kết bạn, hoặc lời mời của bạn được đồng ý' },
   KARMA: { label: 'Uy tín', hint: 'Khi có người chấm tăng hoặc giảm uy tín của bạn' },
+  CLUB: { label: 'Câu lạc bộ', hint: 'Khi có người xin vào câu lạc bộ của bạn, hoặc đơn xin vào của bạn được duyệt' },
 };
 
 export function isToggleable(type: NotificationType): type is ToggleableType {

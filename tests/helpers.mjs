@@ -60,10 +60,27 @@ export async function closeBrowser() {
   browser = undefined;
 }
 
+/**
+ * Các ngữ cảnh đã mở, để đóng lại sau mỗi ca kiểm.
+ *
+ * Trước đây không ai đóng: chạy hết bộ là hơn bốn chục tab còn sống, mỗi tab
+ * giữ một mối nối HMR tới máy chủ dev. Tới quãng ca 15 thì máy chủ đuối hẳn,
+ * `page.goto` hết giờ ở cả những trang chẳng liên quan — kể cả /login — nên
+ * mấy ca cuối cùng đỏ oan mà đọc lỗi thì tưởng tính năng hỏng.
+ */
+const contexts = new Set();
+
+/** Đóng mọi tab đang mở, giữ nguyên trình duyệt. Gọi giữa hai ca kiểm. */
+export async function closeOpenPages() {
+  for (const ctx of contexts) await ctx.close().catch(() => {});
+  contexts.clear();
+}
+
 /** Mở một tab; truyền user để đăng nhập sẵn, bỏ trống là khách. */
 export async function openPage(user, password = 'member123') {
   const b = await getBrowser();
   const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 } });
+  contexts.add(ctx);
   const page = await ctx.newPage();
   if (user) {
     await page.goto(`${BASE}/login`, { waitUntil: 'networkidle' });

@@ -13,6 +13,7 @@ import { SITE_SETTING_KEY } from '@/lib/site';
 import { isBanScope, banExpiry } from '@/lib/ban';
 import { logAdmin, pruneAdminLogs } from '@/lib/audit';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
+import { saveClubConfig } from '@/lib/club';
 
 const POST_STATUS_LABEL: Record<string, string> = {
   PUBLISHED: 'đã đăng', PENDING: 'chờ duyệt', ARCHIVED: 'đã ẩn', DRAFT: 'bản nháp', HIDDEN: 'đã ẩn',
@@ -1058,4 +1059,42 @@ export async function toggleChatBubbleStyle(id: string) {
   if (!row) return;
   await db.chatBubbleStyle.update({ where: { id }, data: { active: !row.active }, select: { id: true } });
   revalidatePath('/admin/chat-bubbles');
+}
+
+// ─────────────── Câu lạc bộ ───────────────
+
+export interface ClubSettingState {
+  ok?: boolean;
+  error?: string;
+}
+
+/** Đặt giá lập câu lạc bộ (tính bằng điểm; 0 là cho lập tự do). */
+export async function saveClubSettings(_prev: ClubSettingState, formData: FormData): Promise<ClubSettingState> {
+  const admin = await requireAdmin();
+  const createCost = parseInt(String(formData.get('createCost') ?? '0'), 10);
+  if (!Number.isFinite(createCost) || createCost < 0) return { error: 'Giá phải là số không âm.' };
+  if (createCost > 1_000_000) return { error: 'Giá quá lớn.' };
+
+  await saveClubConfig({ createCost });
+  await logAdmin({
+    actor: admin, action: 'setting.update', targetType: 'setting', targetId: 'club',
+    summary: `Giá lập câu lạc bộ: ${createCost} điểm`, meta: { createCost },
+  });
+  revalidatePath('/admin/clubs');
+  revalidatePath('/clb');
+  return { ok: true };
+}
+
+/** Quản trị viên giải tán một câu lạc bộ (nhóm rác, tên bậy…). */
+export async function adminDeleteClub(id: string) {
+  const admin = await requireAdmin();
+  const club = await db.club.findUnique({ where: { id }, select: { name: true } });
+  if (!club) return;
+  await db.club.delete({ where: { id } }).catch(() => {});
+  await logAdmin({
+    actor: admin, action: 'club.delete', targetType: 'club', targetId: id,
+    summary: `Giải tán câu lạc bộ: ${club.name}`,
+  });
+  revalidatePath('/admin/clubs');
+  revalidatePath('/clb');
 }

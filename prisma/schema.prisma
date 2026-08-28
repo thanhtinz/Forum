@@ -114,6 +114,10 @@ model User {
   shoutsDeleted ShoutMessage[] @relation("ShoutDeleter")
   gameUnlocks   GameUnlock[]
   hideUnlocks   ThreadHideUnlock[]
+
+  clubsOwned      Club[]       @relation("ClubOwner")
+  clubMemberships ClubMember[]
+  clubPosts       ClubPost[]
   presence      PresenceHere[]
   donationsSent     PointDonation[] @relation("DonationFrom")
   donationsReceived PointDonation[] @relation("DonationTo")
@@ -952,6 +956,8 @@ enum NotificationType {
   FRIEND
   /// Được người khác chấm uy tín (+ hoặc −).
   KARMA
+  /// Việc của câu lạc bộ: có người xin vào, hoặc đơn của mình được duyệt.
+  CLUB
 }
 
 // ============================================================
@@ -1996,4 +2002,101 @@ model ShopPurchase {
 
   @@unique([userId, itemId])
   @@index([userId, createdAt])
+}
+
+// ============================================================
+// CÂU LẠC BỘ — hội nhóm do thành viên tự lập
+// ============================================================
+
+enum ClubJoinMode {
+  OPEN     // bấm là vào
+  APPROVAL // chủ câu lạc bộ duyệt
+  CLOSED   // không nhận thêm
+}
+
+enum ClubPrivacy {
+  PUBLIC  // ai cũng đọc được bảng tin
+  MEMBERS // chỉ thành viên
+}
+
+enum ClubMemberRole {
+  OWNER
+  MOD
+  MEMBER
+}
+
+enum ClubMemberStatus {
+  PENDING
+  ACTIVE
+}
+
+/**
+ * Một hội nhóm do thành viên lập, có bảng tin riêng.
+ *
+ * Không dùng lại Forum: chuyên mục diễn đàn phân quyền theo vai trò và cấp,
+ * còn ở đây quyền đọc/ghi phụ thuộc vào việc CÓ CHÂN trong nhóm hay không —
+ * nhét thêm điều kiện ấy vào phân quyền chuyên mục thì mọi truy vấn diễn đàn
+ * đều phải gánh một phép nối chẳng liên quan gì tới đại đa số chủ đề.
+ */
+model Club {
+  id   String @id @default(cuid())
+  slug String @unique
+  name String
+
+  description String? @db.Text
+  avatar      String?
+  cover       String?
+
+  ownerId String
+  owner   User   @relation("ClubOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  joinMode ClubJoinMode @default(OPEN)
+  privacy  ClubPrivacy  @default(PUBLIC)
+
+  /// Đếm sẵn để danh sách khỏi phải nối bảng đếm từng nhóm.
+  memberCount Int @default(1)
+  postCount   Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members ClubMember[]
+  posts   ClubPost[]
+
+  @@index([memberCount])
+  @@index([createdAt])
+}
+
+model ClubMember {
+  id     String @id @default(cuid())
+  clubId String
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role   ClubMemberRole   @default(MEMBER)
+  status ClubMemberStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+
+  @@unique([clubId, userId])
+  @@index([clubId, status, createdAt])
+  @@index([userId, status])
+}
+
+model ClubPost {
+  id     String @id @default(cuid())
+  clubId String
+  club   Club   @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+  /// Mã BBCode gốc, giữ để sửa bài không mất định dạng.
+  contentSource String? @db.Text
+
+  createdAt DateTime @default(now())
+
+  @@index([clubId, createdAt])
 }

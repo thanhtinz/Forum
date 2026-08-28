@@ -10,7 +10,8 @@ import { addExp } from '@/lib/level';
 import { notify, filterNotifiable } from '@/lib/notify';
 import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { bbcodeToHtml } from '@/lib/bbcode';
+import { bbcodeToHtml, hideRules } from '@/lib/bbcode';
+import { authorShareOf } from '@/lib/purchase';
 import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { readPollForm, isPollClosed } from '@/lib/poll';
@@ -1011,5 +1012,77 @@ export async function markAllForumsRead(): Promise<ReadAllState> {
   // trang chủ cũng có bảng chủ đề mới nhất nên làm mới luôn.
   revalidatePath('/');
   revalidatePath('/forum', 'layout');
+  return { ok: true };
+}
+
+// ───────────────────── Mở khối [hide=diem:N] bằng điểm ─────────────────────
+
+export interface HideUnlockState {
+  ok?: boolean;
+  error?: string;
+}
+
+/**
+ * Trả điểm để mở phần ẩn của một chủ đề.
+ *
+ * Giá lấy từ chính nội dung bài — người đăng gõ `[hide=diem:50]` — nên phải đọc
+ * lại bài ở máy chủ mà chấm, không tin số do trình duyệt gửi lên. Nhiều khối
+ * ẩn trong một bài thì lấy khối đắt nhất: trả một lần mở hết, khỏi phải giải
+ * thích vì sao mở được khối này mà khối kia vẫn khoá.
+ *
+ * Trừ điểm, chia cho người đăng và ghi sổ quyền trong cùng một transaction;
+ * ràng buộc duy nhất (userId, threadId) lo phần bấm hai lần.
+ */
+export async function unlockThreadHide(threadId: string): Promise<HideUnlockState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập để mở khoá.' };
+
+  const thread = await db.thread.findUnique({
+    where: { id: threadId },
+    select: { id: true, title: true, authorId: true, content: true, forum: { select: { slug: true } } },
+  });
+  if (!thread) return { error: 'Không tìm thấy chủ đề.' };
+  if (thread.authorId === userId) return { ok: true };
+
+  const price = Math.max(
+    0,
+    ...hideRules(thread.content).map((r) => (r.kind === 'POINTS' ? r.n : 0)),
+  );
+  if (price <= 0) return { error: 'Phần ẩn của chủ đề này không mở bằng điểm.' };
+
+  const already = await db.threadHideUnlock.findUnique({
+    where: { userId_threadId: { userId, threadId } }, select: { id: true },
+  });
+  if (already) return { ok: true };
+
+  const share = authorShareOf(price);
+  try {
+    await db.$transaction(async (tx) => {
+      await grantPoints(
+        { userId, amount: -price, reason: 'PURCHASE_CONTENT', refId: threadId, note: `Mở nội dung ẩn: ${thread.title}` },
+        tx,
+      );
+      if (share > 0) {
+        await grantPoints(
+          { userId: thread.authorId, amount: share, reason: 'CONTENT_SALE', refId: threadId, note: `Có người mở nội dung ẩn: ${thread.title}` },
+          tx,
+        );
+      }
+      await tx.threadHideUnlock.create({
+        data: { userId, threadId, pointsPaid: price }, select: { id: true },
+      });
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) return { error: `Bạn không đủ ${price} điểm để mở khoá.` };
+    // Hai tab bấm cùng lúc: ràng buộc duy nhất chặn bản ghi thứ hai, coi như xong.
+    const owned = await db.threadHideUnlock.findUnique({
+      where: { userId_threadId: { userId, threadId } }, select: { id: true },
+    });
+    if (owned) return { ok: true };
+    return { error: 'Không mở khoá được, vui lòng thử lại.' };
+  }
+
+  revalidatePath(`/forum/${thread.forum.slug}/${threadId}`);
   return { ok: true };
 }

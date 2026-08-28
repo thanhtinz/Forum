@@ -6,8 +6,10 @@ import {
   List, AlignCenter, EyeOff, Palette, Eye, HelpCircle, Loader2, ImagePlus, Lock,
 } from 'lucide-react';
 import { bbcodeToHtml, renderHidden } from '@/lib/bbcode';
+import { HIDE_SAMPLES } from '@/lib/hide';
 import { cn } from '@/lib/utils';
 import { MediaPicker } from '@/components/forum/MediaPicker';
+import { Popover } from '@/components/Popover';
 
 interface ToolButton {
   icon: typeof Bold;
@@ -33,7 +35,20 @@ const TOOLS: ToolButton[] = [
   { icon: Code2, title: 'Mã nguồn', wrap: 'code' },
   { icon: List, title: 'Danh sách', insert: '[list]\n[*]|\n[*]\n[/list]' },
   { icon: EyeOff, title: 'Ẩn nội dung (spoiler)', wrap: 'spoiler' },
-  { icon: Lock, title: 'Ẩn tới khi người đọc trả lời', wrap: 'hide' },
+];
+
+/**
+ * Các mức khoá của khối [hide], xếp đúng thứ tự dễ → khó như bên trang đăng
+ * bài viết. `param` rỗng là dạng không tham số, giữ nguyên cho quen mắt.
+ */
+const HIDE_MODES: { param: string; label: string; ask?: string }[] = [
+  { param: '', label: 'Trả lời chủ đề mới xem được' },
+  { param: 'dangnhap', label: 'Cần đăng nhập' },
+  { param: 'thich', label: 'Thích chủ đề để mở' },
+  { param: 'thich', label: 'Đủ số lượt thích', ask: 'Cần bao nhiêu lượt thích?' },
+  { param: 'traloi', label: 'Đủ số trả lời', ask: 'Cần bao nhiêu trả lời?' },
+  { param: 'cap', label: 'Từ cấp nào trở lên', ask: 'Cần từ cấp mấy?' },
+  { param: 'diem', label: 'Mở khoá bằng điểm', ask: 'Bao nhiêu điểm?' },
 ];
 
 export interface BBCodeEditorProps {
@@ -59,6 +74,8 @@ export function BBCodeEditor({
   const [help, setHelp] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [hideAnchor, setHideAnchor] = useState<HTMLElement | null>(null);
+  const [hideOpen, setHideOpen] = useState(false);
 
   const apply = (fn: (sel: string) => { text: string; caret?: number }) => {
     const ta = ref.current;
@@ -88,6 +105,20 @@ export function BBCodeEditor({
   };
 
   const insertRaw = (text: string) => apply(() => ({ text }));
+
+  /** Chèn khối [hide] theo mức đã chọn; mức nào cần số thì hỏi thêm. */
+  const insertHide = (mode: (typeof HIDE_MODES)[number]) => {
+    setHideOpen(false);
+    let param = mode.param;
+    if (mode.ask) {
+      const v = window.prompt(mode.ask, '10');
+      const n = parseInt((v ?? '').trim(), 10);
+      if (!Number.isFinite(n) || n <= 0) return;
+      param = `${mode.param}:${n}`;
+    }
+    const tag = param ? `hide=${param}` : 'hide';
+    apply((sel) => ({ text: `[${tag}]${sel}[/hide]`, caret: sel ? undefined : tag.length + 2 }));
+  };
 
   const upload = async (file: File) => {
     setUploadError(null);
@@ -121,6 +152,21 @@ export function BBCodeEditor({
           );
         })}
 
+        <button type="button" title="Ẩn nội dung theo điều kiện"
+          ref={setHideAnchor} onClick={() => setHideOpen((v) => !v)}
+          className="grid size-8 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-ink-700">
+          <Lock size={16} />
+        </button>
+        <Popover open={hideOpen} anchor={hideAnchor} onClose={() => setHideOpen(false)} className="card w-64 overflow-y-auto p-1 shadow-card-hover">
+          <p className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-400">Mở phần ẩn khi…</p>
+          {HIDE_MODES.map((m) => (
+            <button key={m.label} type="button" onClick={() => insertHide(m)}
+              className="block w-full rounded-lg px-2 py-1.5 text-left text-sm text-ink-600 hover:bg-ink-100 dark:text-ink-200 dark:hover:bg-ink-700">
+              {m.label}
+            </button>
+          ))}
+        </Popover>
+
         {media && (
           <>
             <span className="mx-1 h-5 w-px bg-ink-200 dark:bg-ink-700" />
@@ -153,7 +199,13 @@ export function BBCodeEditor({
 
       {help && (
         <div className="border-b border-ink-100 bg-white px-3 py-2 text-xs text-ink-500 dark:border-ink-800 dark:bg-ink-900">
-          <code className="font-mono">[b]đậm[/b] · [i]nghiêng[/i] · [u]gạch chân[/u] · [s]gạch ngang[/s] · [quote]trích dẫn[/quote] · [code]mã[/code] · [spoiler]ẩn[/spoiler] · [hide]trả lời mới xem được[/hide] · [url=https://…]chữ[/url] · [img]link ảnh[/img] · [color=#e5484d]màu[/color] · [center]giữa[/center] · [list][*]mục[/list]</code>
+          <code className="font-mono">[b]đậm[/b] · [i]nghiêng[/i] · [u]gạch chân[/u] · [s]gạch ngang[/s] · [quote]trích dẫn[/quote] · [code]mã[/code] · [spoiler]ẩn[/spoiler] · [url=https://…]chữ[/url] · [img]link ảnh[/img] · [color=#e5484d]màu[/color] · [center]giữa[/center] · [list][*]mục[/list]</code>
+          <p className="mt-2 font-semibold text-ink-600 dark:text-ink-300">Nội dung ẩn — chọn điều kiện mở:</p>
+          <ul className="mt-0.5 space-y-0.5">
+            {HIDE_SAMPLES.map((s) => (
+              <li key={s.code}><code className="font-mono">{s.code}</code> — {s.label}</li>
+            ))}
+          </ul>
         </div>
       )}
 

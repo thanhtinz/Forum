@@ -113,6 +113,7 @@ model User {
   shouts        ShoutMessage[]
   shoutsDeleted ShoutMessage[] @relation("ShoutDeleter")
   gameUnlocks   GameUnlock[]
+  hideUnlocks   ThreadHideUnlock[]
   presence      PresenceHere[]
   donationsSent     PointDonation[] @relation("DonationFrom")
   donationsReceived PointDonation[] @relation("DonationTo")
@@ -474,6 +475,7 @@ model Thread {
   reads     ThreadRead[]
   poll      Poll?
   donations PointDonation[]
+  hideUnlocks ThreadHideUnlock[]
 
   @@index([forumId, lastReplyAt])
   @@index([authorId])
@@ -1674,6 +1676,29 @@ model GameUnlock {
 
   @@unique([userId, gameId])
   @@index([gameId, createdAt])
+}
+
+/**
+ * Ai đã trả điểm để mở khối `[hide=diem:N]` của chủ đề nào.
+ *
+ * Ghi ở mức CHỦ ĐỀ chứ không phải từng khối: một chủ đề có thể có mấy khối ẩn,
+ * mà bắt trả riêng từng khối thì vừa khó đếm cho người đọc vừa khó dò cho ta —
+ * khối không có mã định danh riêng, thứ tự lại đổi mỗi lần người đăng sửa bài.
+ */
+model ThreadHideUnlock {
+  id       String @id @default(cuid())
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threadId String
+  thread   Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  /** Số điểm thực trả lúc mở, giữ lại để đối soát khi người đăng sửa giá. */
+  pointsPaid Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, threadId])
+  @@index([threadId, createdAt])
 }
 
 /**

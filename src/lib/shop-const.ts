@@ -8,7 +8,7 @@ export const SHOP_DESC_MAX = 200;
 export const SHOP_PRICE_MAX = 1_000_000;
 export const SHOP_PAGE_SIZE = 24;
 
-export const SHOP_KINDS = ['NAME_COLOR', 'AVATAR_FRAME', 'BADGE', 'PROFILE_COVER'] as const;
+export const SHOP_KINDS = ['NAME_COLOR', 'AVATAR_FRAME', 'BADGE', 'TITLE', 'PROFILE_COVER'] as const;
 export type ShopKind = (typeof SHOP_KINDS)[number];
 
 export const KIND_LABELS: Record<ShopKind, {
@@ -31,6 +31,12 @@ export const KIND_LABELS: Record<ShopKind, {
     hint: 'Ảnh nhỏ hiện ngay cạnh tên.',
     valueLabel: 'Ảnh huy hiệu',
     valueHint: 'Ảnh nhỏ, nền trong suốt thì đẹp nhất.',
+  },
+  TITLE: {
+    label: 'Danh hiệu', one: 'danh hiệu',
+    hint: 'Dòng chữ nhỏ hiện ngay cạnh tên bạn ở mọi chỗ trên diễn đàn.',
+    valueLabel: 'Chữ danh hiệu',
+    valueHint: 'Ngắn thôi — ví dụ “Cao thủ Java”, “Thợ săn game”. Tối đa 24 ký tự.',
   },
   PROFILE_COVER: {
     label: 'Ảnh bìa', one: 'ảnh bìa',
@@ -104,8 +110,24 @@ export interface Cosmetics {
   avatarFrame: string | null;
   badge: string | null;
   badgeName: string | null;
+  /** Danh hiệu chữ mua ở cửa hàng, hiện cạnh tên. */
+  title: string | null;
 }
 
 export const NO_COSMETICS: Cosmetics = {
-  nameColor: null, avatarFrame: null, badge: null, badgeName: null,
+  nameColor: null, avatarFrame: null, badge: null, badgeName: null, title: null,
 };
+
+/** Trần độ dài chữ danh hiệu — dài quá thì vỡ mọi dòng có tên người. */
+export const TITLE_MAX = 24;
+
+/**
+ * Chữ danh hiệu có dùng được không.
+ *
+ * Chỉ chặn thứ làm hỏng dòng: rỗng, quá dài, hoặc có ký tự xuống dòng. Không
+ * cần lọc HTML — React in ra dạng chữ chứ không dựng thẻ.
+ */
+export function isTitleText(v: string): boolean {
+  const t = v.trim();
+  return t.length > 0 && t.length <= TITLE_MAX && !/[\r\n\t]/.test(t);
+}

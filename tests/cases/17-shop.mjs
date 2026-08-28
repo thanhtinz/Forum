@@ -85,7 +85,7 @@ export default async function run(check) {
     // /cua-hang, đếm chung vào là con số sai mà đọc lỗi thì tưởng quầy hỏng.
     const tabs = await member.$$eval('[data-shop-tabs] a', (els) => els.map((e) => e.textContent?.trim() ?? ''));
     check('quầy không còn tab tất cả', !tabs.includes('Tất cả'), JSON.stringify(tabs));
-    check('quầy có đúng bốn tab loại đồ', tabs.length === 4, JSON.stringify(tabs));
+    check('quầy có đúng năm tab loại đồ', tabs.length === 5, JSON.stringify(tabs));
     check('tab mặc định là màu tên, không lẫn loại khác',
       (await member.locator('text=Nick đỏ kiểm thử').count()) > 0
       && (await member.locator('text=Khung kiểm thử').count()) === 0);
@@ -273,6 +273,62 @@ export default async function run(check) {
       (await member.content()).includes('/uploads/anh-cu.png'));
     await db.user.update({ where: { id: minh.id }, data: { cover: null }, select: { id: true } });
 
+
+    // ── Danh hiệu: món CHỮ, hiện cạnh tên ở mọi chỗ ──────────────────────
+    const title = await db.shopItem.create({
+      data: {
+        slug: 'kiem-thu-danh-hieu', kind: 'TITLE', name: 'Danh hiệu kiểm thử',
+        value: 'Cao thu Java', pricePoints: 10,
+      },
+      select: { id: true },
+    });
+    await db.user.update({ where: { id: minh.id }, data: { points: 100 }, select: { id: true } });
+
+    await member.goto(`${BASE}/cua-hang?loai=TITLE`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(800);
+    check('tab danh hiệu hiện đúng món', (await member.locator('text=Danh hiệu kiểm thử').count()) > 0);
+
+    await row(member, 'Danh hiệu kiểm thử').locator('button:has-text("Mua")').click();
+    await doiToi(() => db.shopPurchase.findFirst({ where: { userId: minh.id, itemId: title.id }, select: { id: true } }));
+    await member.reload({ waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
+    await row(member, 'Danh hiệu kiểm thử').locator('button:has-text("Đeo lên")').click();
+    const deoDanhHieu = await doiToi(async () => {
+      const u = await db.user.findUnique({ where: { id: minh.id }, select: { shopTitleId: true } });
+      return u?.shopTitleId === title.id ? u : null;
+    });
+    check('đeo được danh hiệu', !!deoDanhHieu);
+
+    // Danh hiệu đi kèm tên nên phải hiện ở cả trang cá nhân lẫn danh bạ.
+    await member.goto(`${BASE}/u/minhdev`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
+    check('danh hiệu hiện ở trang cá nhân', (await member.content()).includes('Cao thu Java'));
+
+    await member.goto(`${BASE}/thanh-vien?q=minhdev`, { waitUntil: 'networkidle' });
+    await member.waitForTimeout(700);
+    check('danh hiệu hiện ở danh bạ thành viên', (await member.content()).includes('Cao thu Java'));
+
+    // Chữ danh hiệu quá dài phải bị chặn ở máy chủ.
+    await admin.goto(`${BASE}/admin/shop`, { waitUntil: 'networkidle' });
+    await admin.waitForTimeout(800);
+    await admin.locator('button:has-text("Thêm món")').click();
+    await admin.waitForTimeout(400);
+    await admin.locator('form label:has-text("Danh hiệu")').click();
+    await admin.waitForTimeout(300);
+    await admin.fill('form input[name="name"]', 'Danh hieu dai');
+    await admin.locator('form input[name="value"]').evaluate((el, v) => {
+      // maxLength của ô chặn gõ tay, nên đặt thẳng giá trị để thử phần kiểm ở
+      // máy chủ — giao diện chỉ là gợi ý, chốt chặn phải nằm dưới máy chủ.
+      const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+      setter.call(el, v);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, 'D'.repeat(60));
+    await admin.locator('form button[type="submit"]:has-text("Lưu")').click();
+    await admin.waitForTimeout(2000);
+    check('danh hiệu quá dài bị chặn',
+      (await db.shopItem.count({ where: { name: 'Danh hieu dai' } })) === 0);
+
+    await db.user.update({ where: { id: minh.id }, data: { shopTitleId: null }, select: { id: true } });
   } finally {
     await wipe();
     await db.user.update({ where: { id: minh.id }, data: { points: minh.points }, select: { id: true } });

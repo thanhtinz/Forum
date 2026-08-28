@@ -13,6 +13,7 @@ export const cosmeticSelect = {
   nameColor: { select: { value: true } },
   avatarFrame: { select: { value: true } },
   shopBadge: { select: { value: true, name: true } },
+  shopTitle: { select: { value: true } },
 } as const;
 
 /** Hàng người dùng đã lấy kèm `cosmeticSelect` — đổi thành bộ trang trí gọn. */
@@ -20,12 +21,14 @@ export function toCosmetics(u: {
   nameColor?: { value: string } | null;
   avatarFrame?: { value: string } | null;
   shopBadge?: { value: string; name: string } | null;
+  shopTitle?: { value: string } | null;
 } | null | undefined): Cosmetics {
   return {
     nameColor: u?.nameColor?.value ?? null,
     avatarFrame: u?.avatarFrame?.value ?? null,
     badge: u?.shopBadge?.value ?? null,
     badgeName: u?.shopBadge?.name ?? null,
+    title: u?.shopTitle?.value ?? null,
   };
 }
 
@@ -62,6 +65,7 @@ export function toAuthorChip(u: {
   nameColor?: { value: string } | null;
   avatarFrame?: { value: string } | null;
   shopBadge?: { value: string; name: string } | null;
+  shopTitle?: { value: string } | null;
 } | null | undefined): AuthorChip | null {
   return u ? { username: u.username, name: u.name, image: u.image, level: u.level, role: u.role, cosmetics: toCosmetics(u) } : null;
 }
@@ -103,13 +107,13 @@ export async function getShopItems(opts: {
     viewerId
       ? db.user.findUnique({
           where: { id: viewerId },
-          select: { nameColorId: true, avatarFrameId: true, shopBadgeId: true, profileCoverId: true },
+          select: { nameColorId: true, avatarFrameId: true, shopBadgeId: true, profileCoverId: true, shopTitleId: true },
         })
       : Promise.resolve(null),
   ]);
 
   const equippedIds = new Set(
-    [me?.nameColorId, me?.avatarFrameId, me?.shopBadgeId, me?.profileCoverId].filter((x): x is string => !!x),
+    [me?.nameColorId, me?.avatarFrameId, me?.shopBadgeId, me?.profileCoverId, me?.shopTitleId].filter((x): x is string => !!x),
   );
 
   return {
@@ -140,12 +144,12 @@ export async function getMyItems(userId: string, page = 1): Promise<{
     }),
     db.user.findUnique({
       where: { id: userId },
-      select: { nameColorId: true, avatarFrameId: true, shopBadgeId: true, profileCoverId: true },
+      select: { nameColorId: true, avatarFrameId: true, shopBadgeId: true, profileCoverId: true, shopTitleId: true },
     }),
   ]);
 
   const equippedIds = new Set(
-    [me?.nameColorId, me?.avatarFrameId, me?.shopBadgeId, me?.profileCoverId].filter((x): x is string => !!x),
+    [me?.nameColorId, me?.avatarFrameId, me?.shopBadgeId, me?.profileCoverId, me?.shopTitleId].filter((x): x is string => !!x),
   );
 
   return {
@@ -156,9 +160,10 @@ export async function getMyItems(userId: string, page = 1): Promise<{
 }
 
 /** Cột trên User ứng với từng loại đồ. */
-export const EQUIP_FIELD: Record<ShopKind, 'nameColorId' | 'avatarFrameId' | 'shopBadgeId' | 'profileCoverId'> = {
+export const EQUIP_FIELD: Record<ShopKind, 'nameColorId' | 'avatarFrameId' | 'shopBadgeId' | 'profileCoverId' | 'shopTitleId'> = {
   NAME_COLOR: 'nameColorId',
   AVATAR_FRAME: 'avatarFrameId',
   BADGE: 'shopBadgeId',
+  TITLE: 'shopTitleId',
   PROFILE_COVER: 'profileCoverId',
 };

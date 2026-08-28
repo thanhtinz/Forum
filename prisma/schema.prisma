@@ -154,6 +154,8 @@ model User {
   shopBadge     ShopItem? @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
   profileCoverId String?
   profileCover   ShopItem? @relation("EquipCover", fields: [profileCoverId], references: [id], onDelete: SetNull)
+  shopTitleId    String?
+  shopTitle      ShopItem? @relation("EquipTitle", fields: [shopTitleId], references: [id], onDelete: SetNull)
 
   @@index([level])
   @@index([createdAt])
@@ -1960,6 +1962,7 @@ model ShopItem {
    *   AVATAR_FRAME — đường dẫn ảnh khung, phủ lên trên avatar.
    *   BADGE        — đường dẫn ảnh huy hiệu, hiện cạnh tên.
    *   PROFILE_COVER — đường dẫn ảnh bìa, trải ngang đầu trang cá nhân.
+   *   TITLE        — dòng chữ danh hiệu, hiện cạnh tên.
    */
   value String
 
@@ -1975,6 +1978,7 @@ model ShopItem {
   equippedAvatarFrameBy User[] @relation("EquipAvatarFrame")
   equippedBadgeBy       User[] @relation("EquipBadge")
   equippedCoverBy       User[] @relation("EquipCover")
+  equippedTitleBy       User[] @relation("EquipTitle")
 
   @@index([kind, active, order])
 }
@@ -1988,6 +1992,8 @@ enum ShopItemKind {
   BADGE
   /// Ảnh bìa trải ngang đầu trang cá nhân.
   PROFILE_COVER
+  /// Danh hiệu chữ, hiện ngay cạnh tên.
+  TITLE
 }
 
 /**

@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { assertSuperAdmin } from '@/lib/admin';
 import {
-  isCssColor, isShopKind, safeImageUrl,
-  SHOP_NAME_MAX, SHOP_DESC_MAX, SHOP_PRICE_MAX, KIND_LABELS,
+  isCssColor, isShopKind, isTitleText, safeImageUrl,
+  SHOP_NAME_MAX, SHOP_DESC_MAX, SHOP_PRICE_MAX, TITLE_MAX, KIND_LABELS,
 } from '@/lib/shop-const';
 
 export interface ShopAdminState { ok?: boolean; error?: string }
@@ -44,7 +44,12 @@ export async function saveShopItem(_prev: ShopAdminState, formData: FormData): P
   // thì phải là đường dẫn ảnh dùng được.
   const rawValue = String(formData.get('value') ?? '').trim();
   let value: string;
-  if (kindRaw === 'NAME_COLOR') {
+  if (kindRaw === 'TITLE') {
+    if (!isTitleText(rawValue)) {
+      return { error: `Chữ danh hiệu phải có nội dung, tối đa ${TITLE_MAX} ký tự và nằm trên một dòng.` };
+    }
+    value = rawValue.trim();
+  } else if (kindRaw === 'NAME_COLOR') {
     if (!isCssColor(rawValue)) {
       return { error: 'Giá trị màu không dùng được. Ví dụ: #e11d48, rgb(225 29 72), linear-gradient(90deg,#f43f5e,#f59e0b).' };
     }

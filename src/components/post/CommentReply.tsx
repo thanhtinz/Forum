@@ -12,8 +12,8 @@ import { CommentForm } from './CommentForm';
  * gốc (rootId) để danh sách không thụt lề mãi, và chèn sẵn @tên người được
  * phản hồi để vẫn biết ai đang nói với ai.
  */
-export function CommentReply({ postId, gameId, slug, rootId, mention, callbackUrl }: {
-  postId?: string; gameId?: string;
+export function CommentReply({ gameId, slug, rootId, mention, callbackUrl }: {
+  gameId: string;
   slug: string; rootId: string; mention?: string | null; callbackUrl: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -29,7 +29,7 @@ export function CommentReply({ postId, gameId, slug, rootId, mention, callbackUr
       {open && (
         // basis-full: hàng công cụ là flex-wrap nên ô soạn tự xuống dòng riêng.
         <div className="mt-2 w-full basis-full">
-          <CommentForm postId={postId} gameId={gameId} slug={slug} parentId={rootId} loggedIn callbackUrl={callbackUrl}
+          <CommentForm gameId={gameId} slug={slug} parentId={rootId} loggedIn callbackUrl={callbackUrl}
             compact autoFocus defaultValue={mention ? `@${mention} ` : undefined}
             onDone={() => setOpen(false)} />
         </div>

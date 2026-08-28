@@ -9,12 +9,14 @@ import { cosmeticSelect, toCosmetics } from '@/lib/shop';
 
 export async function HomeSidebar() {
   const levelLooks = await getLevelLooks();
-  const [hotPosts, topUsers, tags] = await Promise.all([
-    db.post.findMany({
+  const [hotThreads, topUsers, tags] = await Promise.all([
+    // Chủ đề nhiều lượt xem nhất — trước đây ô này khoe bài viết, mà mục bài
+    // viết đã gỡ khỏi trang.
+    db.thread.findMany({
       where: { status: 'PUBLISHED' },
       orderBy: { viewCount: 'desc' },
       take: 5,
-      select: { slug: true, title: true, viewCount: true },
+      select: { id: true, title: true, viewCount: true, forum: { select: { slug: true } } },
     }),
     db.user.findMany({
       orderBy: { exp: 'desc' },
@@ -26,17 +28,17 @@ export async function HomeSidebar() {
 
   return (
     <aside className="space-y-4">
-      {/* Bài nổi bật */}
+      {/* Chủ đề nổi bật */}
       <section className="card p-4">
-        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold"><Flame size={15} className="text-accent-500" /> Bài nổi bật</h3>
+        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold"><Flame size={15} className="text-accent-500" /> Chủ đề nổi bật</h3>
         <ol className="space-y-2.5">
-          {hotPosts.map((p, i) => (
-            <li key={p.slug} className="flex gap-2 text-sm">
+          {hotThreads.map((t, i) => (
+            <li key={t.id} className="flex gap-2 text-sm">
               <span className={`grid h-5 w-5 shrink-0 place-items-center rounded text-[11px] font-bold ${i < 3 ? 'bg-accent-500 text-white' : 'bg-ink-100 text-ink-500 dark:bg-ink-800'}`}>{i + 1}</span>
-              <Link href={`/posts/${p.slug}`} className="line-clamp-2 flex-1 text-ink-700 hover:text-brand-600 dark:text-ink-200">{p.title}</Link>
+              <Link href={`/forum/${t.forum.slug}/${t.id}`} className="line-clamp-2 flex-1 text-ink-700 hover:text-brand-600 dark:text-ink-200">{t.title}</Link>
             </li>
           ))}
-          {hotPosts.length === 0 && <li className="text-sm text-ink-400">Chưa có bài viết.</li>}
+          {hotThreads.length === 0 && <li className="text-sm text-ink-400">Chưa có chủ đề.</li>}
         </ol>
       </section>
 

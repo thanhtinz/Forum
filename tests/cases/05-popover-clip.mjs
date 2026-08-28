@@ -66,12 +66,10 @@ export default async function run(check) {
 
   // Bảng emoji mở ở cả ba ô soạn — mỗi ô nằm trong một khối cha khác nhau
   // nên phải đo riêng từng chỗ.
-  const post = await db.post.findFirst({ where: { status: 'PUBLISHED', access: 'FREE' }, select: { slug: true } });
   const game = await db.game.findFirst({ where: { status: 'PUBLISHED' }, select: { slug: true } });
   for (const [ten, page, url] of [
     ['phòng chat', member, BASE],
     ['ô trả lời chủ đề', member, threadUrl],
-    ...(post ? [['ô bình luận bài viết', member, `${BASE}/posts/${post.slug}/binh-luan`]] : []),
     ...(game ? [['ô bình luận game', member, `${BASE}/games/${game.slug}`]] : []),
   ]) {
     const box = await open(page, url, 'button[title="Emoji, sticker & GIF"]', '#khong-co-selector-rieng');

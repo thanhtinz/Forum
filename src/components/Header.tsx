@@ -79,8 +79,8 @@ export async function Header() {
 
           {user ? (
             <>
-              <Link href="/user/write" className="btn-primary hidden !px-3 !py-1.5 text-sm sm:inline-flex">
-                <PenLine size={15} /> Đăng bài
+              <Link href="/forum" className="btn-primary hidden !px-3 !py-1.5 text-sm sm:inline-flex">
+                <PenLine size={15} /> Đăng chủ đề
               </Link>
               <Link href="/user/messages" title="Tin nhắn"
                 className="relative grid size-9 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">

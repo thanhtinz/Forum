@@ -3,7 +3,7 @@
 import { useActionState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Pencil, X } from 'lucide-react';
-import { updateComment, type CommentEditState } from '@/app/(site)/posts/[slug]/actions';
+import { updateComment, type CommentEditState } from '@/app/(site)/comments/actions';
 import { ActionForm } from '@/components/ActionForm';
 import { MentionTextarea } from '@/components/MentionTextarea';
 import { ReplyContent } from '@/components/forum/ReplyContent';

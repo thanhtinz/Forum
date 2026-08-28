@@ -6,7 +6,6 @@ export const RANK_METRICS = [
   { key: 'points', label: 'Điểm', unit: 'điểm' },
   { key: 'threads', label: 'Chủ đề', unit: 'chủ đề' },
   { key: 'replies', label: 'Trả lời', unit: 'trả lời' },
-  { key: 'posts', label: 'Bài viết', unit: 'bài' },
   { key: 'level', label: 'Cấp độ', unit: 'EXP' },
 ] as const;
 
@@ -75,15 +74,10 @@ async function tally(
           by: ['authorId'], where: { ...where, status: 'PUBLISHED' },
           _count: { _all: true }, orderBy: { _count: { authorId: 'desc' } }, take: RANK_SIZE,
         })
-      : metric === 'replies'
-        ? await db.reply.groupBy({
-            by: ['authorId'], where: { ...where, hidden: false },
-            _count: { _all: true }, orderBy: { _count: { authorId: 'desc' } }, take: RANK_SIZE,
-          })
-        : await db.post.groupBy({
-            by: ['authorId'], where: { ...where, status: 'PUBLISHED' },
-            _count: { _all: true }, orderBy: { _count: { authorId: 'desc' } }, take: RANK_SIZE,
-          });
+      : await db.reply.groupBy({
+          by: ['authorId'], where: { ...where, hidden: false },
+          _count: { _all: true }, orderBy: { _count: { authorId: 'desc' } }, take: RANK_SIZE,
+        });
     counted = rows.map((r) => ({ userId: r.authorId, value: r._count._all }));
   }
 

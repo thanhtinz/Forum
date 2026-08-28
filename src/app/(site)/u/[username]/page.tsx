@@ -5,8 +5,9 @@ import { format } from 'date-fns';
 import { Calendar, Coins, FileText, Images, Scale, Users, UserCheck, UserPlus as FollowIcon, MessageSquare } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { postCardSelect, toCardData } from '@/lib/post-card';
-import { PostGrid } from '@/components/PostGrid';
+import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
+import { authorChipSelect, toAuthorChip } from '@/lib/shop';
+import { threadExcerpt } from '@/lib/bbcode';
 import { Pagination } from '@/components/Pagination';
 import { FollowButton } from '@/components/post/FollowButton';
 import { fmtCount } from '@/lib/utils';
@@ -49,7 +50,7 @@ export default async function ProfilePage({ params, searchParams }: {
     select: {
       id: true, name: true, username: true, image: true, cover: true, bio: true, mood: true, level: true, role: true,
       points: true, karma: true, createdAt: true,
-      _count: { select: { posts: true, followers: true, following: true } },
+      _count: { select: { threads: true, replies: true, followers: true, following: true } },
       ...cosmeticSelect,
       medals: { where: { displayed: true }, take: 8, include: { medal: { select: { name: true, icon: true, color: true } } } },
     },
@@ -61,9 +62,14 @@ export default async function ProfilePage({ params, searchParams }: {
   const viewer = { id: viewerId, role: (session?.user as { role?: string } | undefined)?.role };
 
   const where = { authorId: user.id, status: 'PUBLISHED' as const };
-  const [total, posts, following, blocked, guestbook, friendState, friendCount, albumCount, karmaPerm] = await Promise.all([
-    db.post.count({ where }),
-    db.post.findMany({ where, orderBy: [{ publishedAt: 'desc' }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, select: postCardSelect }),
+  const [total, threads, following, blocked, guestbook, friendState, friendCount, albumCount, karmaPerm] = await Promise.all([
+    db.thread.count({ where }),
+    db.thread.findMany({
+      where,
+      orderBy: [{ lastReplyAt: 'desc' }, { createdAt: 'desc' }],
+      skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE,
+      include: { author: { select: authorChipSelect }, forum: { select: { slug: true, name: true } } },
+    }),
     viewerId ? db.follow.findFirst({ where: { followerId: viewerId, followingId: user.id }, select: { id: true } }) : Promise.resolve(null),
     viewerId ? hasBlocked(viewerId, user.id) : Promise.resolve(false),
     getGuestbook(user.id, viewer, gbPage),
@@ -75,6 +81,12 @@ export default async function ProfilePage({ params, searchParams }: {
   // Quản trị viên không chặn được — che nút cho khỏi bấm rồi mới báo lỗi.
   const canBlock = user.role !== 'ADMIN' && user.role !== 'MODERATOR';
   const totalPages = Math.ceil(total / PAGE_SIZE);
+  const rows: ThreadRowData[] = threads.map((t) => ({
+    id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
+    pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
+    viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author),
+    forum: t.forum, excerpt: threadExcerpt(t.content),
+  }));
   const name = user.name ?? user.username ?? 'Ẩn danh';
   const levelLook = await getLevelLook(user.level);
   const cos = toCosmetics(user);
@@ -137,7 +149,7 @@ export default async function ProfilePage({ params, searchParams }: {
             )}
 
             <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink-500">
-              <span className="flex items-center gap-1.5"><FileText size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.posts)}</b> bài viết</span>
+              <span className="flex items-center gap-1.5"><FileText size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.threads)}</b> chủ đề</span>
               <span className="flex items-center gap-1.5"><Users size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.followers)}</b> người theo dõi</span>
               <span className="flex items-center gap-1.5"><FollowIcon size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(user._count.following)}</b> đang theo dõi</span>
               <span className="flex items-center gap-1.5"><UserCheck size={15} /> <b className="text-ink-700 dark:text-ink-200">{fmtCount(friendCount)}</b> bạn bè</span>
@@ -167,10 +179,16 @@ export default async function ProfilePage({ params, searchParams }: {
         </div>
       )}
 
-      {/* Bài viết */}
+      {/* Chủ đề đã lập */}
       <div className="mt-6">
-        <h2 className="zib-title mb-4">Bài viết của {name}</h2>
-        <PostGrid posts={posts.map(toCardData)} empty="Người này chưa đăng bài viết nào." />
+        <h2 className="zib-title mb-4">Chủ đề của {name}</h2>
+        {rows.length === 0 ? (
+          <div className="card p-8 text-center text-sm text-ink-500">Người này chưa lập chủ đề nào.</div>
+        ) : (
+          <div className="card divide-y divide-ink-100 dark:divide-ink-800">
+            {rows.map((t) => <ThreadRow key={t.id} thread={t} forumSlug={t.forum?.slug ?? ''} />)}
+          </div>
+        )}
         <Pagination page={page} totalPages={totalPages} basePath={`/u/${username}`} />
       </div>
 

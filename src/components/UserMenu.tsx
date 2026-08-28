@@ -27,7 +27,6 @@ const LINKS = [
   { href: '/user/friends', label: 'Bạn bè', icon: Users },
   { href: '/cua-hang', label: 'Cửa hàng', icon: ShoppingBag },
   { href: '/user/items', label: 'Kho đồ', icon: Backpack },
-  { href: '/user/posts', label: 'Bài viết của tôi', icon: FileText },
   { href: '/user/favorites', label: 'Đã lưu', icon: Bookmark },
   { href: '/user/downloads', label: 'Đã tải', icon: Download },
   { href: '/user/blocked', label: 'Đã chặn', icon: ShieldOff },

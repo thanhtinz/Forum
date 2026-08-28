@@ -4,14 +4,14 @@ import { useEffect, useRef } from 'react';
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { Send } from 'lucide-react';
-import { addComment, type CommentState } from '@/app/(site)/posts/[slug]/actions';
+import { addComment, type CommentState } from '@/app/(site)/comments/actions';
 import { ActionForm } from '@/components/ActionForm';
 import { ComposerTools } from '@/components/ComposerTools';
 import { MentionTextarea } from '@/components/MentionTextarea';
 
-export function CommentForm({ postId, gameId, slug, parentId, loggedIn, callbackUrl, compact, autoFocus, defaultValue, onDone }: {
+export function CommentForm({ gameId, slug, parentId, loggedIn, callbackUrl, compact, autoFocus, defaultValue, onDone }: {
   /** Bình luận gắn vào bài viết hoặc game — truyền đúng một trong hai. */
-  postId?: string; gameId?: string;
+  gameId: string;
   slug: string; parentId?: string; loggedIn: boolean; callbackUrl: string; compact?: boolean;
   autoFocus?: boolean;
   /** Nội dung gợi sẵn — dùng để chèn @tên người đang được phản hồi. */
@@ -40,7 +40,6 @@ export function CommentForm({ postId, gameId, slug, parentId, loggedIn, callback
 
   return (
     <ActionForm ref={ref} action={action} className="space-y-2">
-      {postId && <input type="hidden" name="postId" value={postId} />}
       {gameId && <input type="hidden" name="gameId" value={gameId} />}
       <input type="hidden" name="slug" value={slug} />
       {parentId && <input type="hidden" name="parentId" value={parentId} />}

@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { deleteOwnComment } from '@/app/(site)/posts/[slug]/actions';
+import { deleteOwnComment } from '@/app/(site)/comments/actions';
 import { useEditScope } from '@/components/EditScope';
 
 /** Sửa và xoá — chỉ hiện với bình luận của chính người đang xem. */

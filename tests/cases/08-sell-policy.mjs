@@ -1,17 +1,13 @@
-import { BASE, db, openPage } from '../helpers.mjs';
-
-const TITLE = 'Bài kiểm thử khoá nội dung bằng điểm';
+import { BASE, openPage } from '../helpers.mjs';
 
 /**
- * Hệ thống chỉ còn MỘT loại tiền là điểm, và chỉ còn diễn đàn với kho game.
+ * Trang chỉ còn diễn đàn và kho game, và chỉ còn MỘT loại tiền là điểm.
  *
- * Kiểm rằng cửa hàng, VIP, nạp/rút tiền đã biến mất thật — không còn trang,
- * không còn mục menu, không còn mức truy cập nào đòi tiền — và thành viên vẫn
- * khoá được nội dung ẩn của mình bằng điểm.
+ * Kiểm rằng cửa hàng, VIP, nạp/rút tiền và cả mục bài viết đã biến mất thật —
+ * không còn trang, không còn mục menu. Cách khoá nội dung bằng điểm nay nằm ở
+ * mã [hide=diem:N] trong chủ đề, có bộ kiểm riêng.
  */
 export default async function run(check) {
-  await db.post.deleteMany({ where: { title: { startsWith: TITLE } } });
-
   const member = await openPage('minhdev');
   const admin = await openPage('admin@nova.local', 'admin123');
 
@@ -25,6 +21,11 @@ export default async function run(check) {
       ['gói VIP (quản trị)', '/admin/vip-plans'],
       ['đơn hàng (quản trị)', '/admin/orders'],
       ['rút tiền (quản trị)', '/admin/withdrawals'],
+      ['danh sách bài viết', '/blog'],
+      ['soạn bài viết', '/user/write'],
+      ['bài viết của tôi', '/user/posts'],
+      ['bài viết (quản trị)', '/admin/posts'],
+      ['chuyên mục (quản trị)', '/admin/categories'],
     ]) {
       const r = await admin.goto(BASE + url, { waitUntil: 'domcontentloaded' });
       check(`trang ${ten} đã bỏ`, r.status() === 404, `trả về ${r.status()}`);
@@ -37,31 +38,9 @@ export default async function run(check) {
     check('menu không còn mục VIP', (await member.locator('a[href="/vip"]').count()) === 0);
     check('menu vẫn còn Game', (await member.locator('header a[href="/games"]').count()) > 0);
 
-    // ── Ô chọn quyền chỉ còn cách khoá bằng điểm ─────────────────────────
-    await member.goto(`${BASE}/user/write`, { waitUntil: 'networkidle' });
-    await member.waitForTimeout(600);
-    const form = await member.content();
-    check('thành viên khoá được nội dung bằng điểm', form.includes('Mở khoá bằng điểm'));
-    check('không còn mục bán bằng tiền', !form.includes('Bán bằng tiền'));
-    check('không còn mục chỉ VIP', !form.includes('Chỉ VIP'));
-
-    // ── Đăng bài khoá bằng điểm ──────────────────────────────────────────
-    await member.fill('input[name="title"]', `${TITLE} — điểm`);
-    await member.fill('textarea[name="content"]', 'Nội dung công khai đủ dài để qua kiểm tra tối thiểu hai mươi ký tự.');
-    const cat = member.locator('input[name="categories"]').first();
-    if (await cat.count()) await cat.evaluate((el) => { if (!el.checked) el.click(); });
-    await member.locator('input[name="access"][value="POINTS"]').evaluate((el) => el.click());
-    await member.waitForTimeout(400);
-    await member.fill('input[name="pricePoints"]', '50');
-    await member.locator('textarea[name="hiddenContent"]').fill('Phần nội dung ẩn dành cho người đã mở khoá.');
-    await member.locator('button[type="submit"]:has-text("Đăng")').first().click();
-    await member.waitForTimeout(4000);
-
-    const post = await db.post.findFirst({
-      where: { title: `${TITLE} — điểm` },
-      select: { access: true, pricePoints: true },
-    });
-    check('đăng được bài khoá bằng điểm', post?.access === 'POINTS' && post.pricePoints === 50);
+    // ── Menu không còn lối vào mục bài viết ──────────────────────────────
+    check('menu không còn mục Bài viết', (await member.locator('a[href="/blog"]').count()) === 0);
+    check('không còn nút Đăng bài viết', (await member.locator('a[href="/user/write"]').count()) === 0);
 
     // ── Kho game vẫn chỉ quản trị viên ───────────────────────────────────
     await member.goto(`${BASE}/admin/games`, { waitUntil: 'networkidle' });
@@ -72,6 +51,6 @@ export default async function run(check) {
     await admin.waitForTimeout(500);
     check('quản trị viên vẫn vào được kho game', admin.url().includes('/admin/games'));
   } finally {
-    await db.post.deleteMany({ where: { title: { startsWith: TITLE } } });
+    // Không có gì phải dọn: bài kiểm này chỉ đọc.
   }
 }

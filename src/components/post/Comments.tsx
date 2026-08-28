@@ -18,30 +18,24 @@ import { authorChipSelect, toCosmetics } from '@/lib/shop';
 /**
  * Danh sách bình luận phân cấp 1 mức (bình luận gốc + phản hồi).
  *
- * Dùng chung cho bài viết và cho game — truyền `postId` hoặc `gameId`. Game
- * không có tác giả nên chỉ ban quản trị mới kiểm duyệt được bình luận ở đó.
+ * Nay chỉ còn dùng cho GAME — mục bài viết đã gỡ khỏi trang. Game không có tác
+ * giả nên chỉ ban quản trị mới kiểm duyệt được bình luận ở đây.
  */
-export async function Comments({ postId, gameId, slug, loggedIn, basePath = '/posts' }: {
-  postId?: string;
-  gameId?: string;
+export async function Comments({ gameId, slug, loggedIn }: {
+  gameId: string;
   slug: string;
   loggedIn: boolean;
-  /** Tiền tố đường dẫn để quay lại sau khi đăng nhập: /posts hoặc /games. */
-  basePath?: '/posts' | '/games';
 }) {
   const session = await auth();
   const me = session?.user?.id ?? null;
   const role = (session?.user as { role?: string } | undefined)?.role;
 
-  // Chủ bài viết và quản trị viên quản lý được bình luận trong bài này, và
-  // thấy cả bình luận đang ẩn (có dấu riêng) để còn hiện lại được.
-  const owner = postId
-    ? await db.post.findUnique({ where: { id: postId }, select: { authorId: true } })
-    : null;
-  const canManage = !!me && (owner?.authorId === me || role === 'ADMIN' || role === 'MODERATOR');
+  // Quản trị viên quản lý được bình luận, và thấy cả bình luận đang ẩn (có dấu
+  // riêng) để còn hiện lại được.
+  const canManage = !!me && (role === 'ADMIN' || role === 'MODERATOR');
 
   const roots = await db.comment.findMany({
-    where: { postId: postId ?? null, gameId: gameId ?? null, parentId: null, ...(canManage ? {} : { hidden: false }) },
+    where: { gameId, parentId: null, ...(canManage ? {} : { hidden: false }) },
     orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
     take: 50,
     include: {
@@ -66,11 +60,11 @@ export async function Comments({ postId, gameId, slug, loggedIn, basePath = '/po
     : [];
   const likedSet = new Set(myLikes.map((r) => r.commentId));
 
-  const callbackUrl = `${basePath}/${slug}`;
+  const callbackUrl = `/games/${slug}`;
 
   return (
     <div className="space-y-6">
-      <CommentForm postId={postId} gameId={gameId} slug={slug} loggedIn={loggedIn} callbackUrl={callbackUrl} />
+      <CommentForm gameId={gameId} slug={slug} loggedIn={loggedIn} callbackUrl={callbackUrl} />
 
       {roots.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-8 text-center text-ink-400">
@@ -82,14 +76,14 @@ export async function Comments({ postId, gameId, slug, loggedIn, basePath = '/po
           {roots.map((c) => (
             <li key={c.id}>
               <CommentRow c={c} me={me} canManage={canManage} liked={likedSet.has(c.id)}
-                postId={postId} gameId={gameId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
+                gameId={gameId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
               {c.children.length > 0 && (
                 <ul className="mt-3 space-y-3 border-l-2 border-ink-100 pl-4 dark:border-ink-800">
                   {c.children.map((ch) => (
                     <li key={ch.id}>
                       {/* Phản hồi cho phản hồi vẫn gắn vào bình luận gốc: danh sách chỉ lồng một mức. */}
                       <CommentRow c={ch} me={me} canManage={canManage} small liked={likedSet.has(ch.id)}
-                        postId={postId} gameId={gameId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
+                        gameId={gameId} slug={slug} callbackUrl={callbackUrl} rootId={c.id} />
                     </li>
                   ))}
                 </ul>
@@ -113,9 +107,9 @@ type Row = {
   } | null;
 };
 
-function CommentRow({ c, me, canManage, small, postId, gameId, slug, callbackUrl, rootId, liked }: {
+function CommentRow({ c, me, canManage, small, gameId, slug, callbackUrl, rootId, liked }: {
   c: Row; me: string | null; canManage: boolean; small?: boolean;
-  postId?: string; gameId?: string; slug: string; callbackUrl: string;
+  gameId: string; slug: string; callbackUrl: string;
   /** Bình luận gốc của nhánh — nơi phản hồi mới sẽ gắn vào. */
   rootId: string;
   /** Người đang xem đã thả tim bình luận này chưa. */
@@ -148,7 +142,7 @@ function CommentRow({ c, me, canManage, small, postId, gameId, slug, callbackUrl
           {(canManage || !!me) && (
             <>
             {me && !c.hidden && (
-              <CommentReply postId={postId} gameId={gameId} slug={slug} rootId={rootId} callbackUrl={callbackUrl}
+              <CommentReply gameId={gameId} slug={slug} rootId={rootId} callbackUrl={callbackUrl}
                 mention={small ? c.author?.username : null} />
             )}
             {isOwner && <CommentOwnerActions commentId={c.id} />}

@@ -8,7 +8,6 @@ import { execFileSync } from 'node:child_process';
 const ALLOWED = new Set([
   'src/app/(site)/report/actions.ts',            // select truyền qua biến rồi trải ra
   'src/lib/rate-limit.ts',                       // select truyền qua biến rồi trải ra
-  'src/app/(site)/user/posts/[id]/edit/page.tsx', // chỉ tác giả/quản trị, cần đúng cột đó
   'src/app/api/download/[itemId]/route.ts',      // route API, cần url thật để chuyển hướng
   'src/lib/auth.ts',                             // cần passwordHash để so mật khẩu
 ]);

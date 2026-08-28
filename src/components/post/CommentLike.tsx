@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Heart } from 'lucide-react';
-import { toggleCommentLike } from '@/app/(site)/posts/[slug]/actions';
+import { toggleCommentLike } from '@/app/(site)/comments/actions';
 import { cn, fmtCount } from '@/lib/utils';
 
 /**

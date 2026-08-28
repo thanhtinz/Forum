@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { PenLine, MessagesSquare, Clock } from 'lucide-react';
+import { PenLine, MessagesSquare, Clock, Sparkles } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { plainText, truncate } from '@/lib/utils';
@@ -102,12 +102,22 @@ export default async function HomePage() {
           </div>
         </div>
 
-        {firstForum && (
-          <Link href={session?.user ? `/forum/${firstForum.slug}/new` : '/login?callbackUrl=/'}
-            className="btn-primary shrink-0 justify-center whitespace-nowrap !px-3.5 !py-2 text-sm">
-            <PenLine size={15} /> Đăng chủ đề
-          </Link>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Lối vào "Chưa đọc" đặt ngay cạnh nút đăng bài: người đi vắng mấy
+              hôm về thì việc đầu tiên là xem có gì mới, chứ chưa viết gì. */}
+          {session?.user && (
+            <Link href="/chua-doc"
+              className="btn-outline shrink-0 justify-center whitespace-nowrap !px-3 !py-2 text-sm">
+              <Sparkles size={15} /> Chưa đọc
+            </Link>
+          )}
+          {firstForum && (
+            <Link href={session?.user ? `/forum/${firstForum.slug}/new` : '/login?callbackUrl=/'}
+              className="btn-primary shrink-0 justify-center whitespace-nowrap !px-3.5 !py-2 text-sm">
+              <PenLine size={15} /> Đăng chủ đề
+            </Link>
+          )}
+        </div>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">

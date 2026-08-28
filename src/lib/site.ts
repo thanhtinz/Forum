@@ -4,7 +4,7 @@ import { db } from './db';
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '');
 
 export const SITE_NAME = 'Nova Platform';
-export const SITE_DESCRIPTION = 'Nền tảng blog + diễn đàn + nội dung trả phí lấy cảm hứng từ Zibll.';
+export const SITE_DESCRIPTION = 'Diễn đàn và kho game, tính điểm thay cho tiền.';
 
 export const SITE_SETTING_KEY = 'site_general';
 
@@ -25,7 +25,7 @@ export const SITE_DEFAULTS: SiteSettings = {
   tagline: '',
   logo: '',
   description: SITE_DESCRIPTION,
-  footerText: `${SITE_NAME}. Nền tảng blog + diễn đàn.`,
+  footerText: `${SITE_NAME}. Diễn đàn và kho game.`,
 };
 
 export async function getSiteSettings(): Promise<SiteSettings> {

@@ -34,6 +34,18 @@ export const CLUB_COMMENTS_SHOWN = 3;
 /** Trần khi người đọc bấm "xem tất cả bình luận" của MỘT bài. */
 export const CLUB_COMMENTS_EXPANDED = 200;
 
+/**
+ * Số tầng bình luận, tính cả tầng gốc.
+ *
+ * Ba tầng là đủ để đối đáp qua lại mà vẫn còn chỗ thụt lề trên màn hình điện
+ * thoại. Trả lời ở tầng cuối thì bám vào chính tầng ấy chứ không đẻ thêm tầng
+ * — giống cách Facebook làm, và nhờ vậy không có nhánh nào dài vô tận.
+ */
+export const CLUB_COMMENT_DEPTH_MAX = 3;
+
+/** Trần số bình luận con lấy kèm mỗi nhánh gốc. */
+export const CLUB_REPLIES_PER_ROOT = 50;
+
 /** Cách vào câu lạc bộ. */
 export const CLUB_JOIN_MODES = [
   { value: 'OPEN', label: 'Ai bấm cũng vào được' },

@@ -159,18 +159,78 @@ export default async function run(check) {
     check('bấm lại thì bỏ thích', baiSau.likeCount === 0, `đang là ${baiSau.likeCount}`);
 
     const BINH_LUAN = 'Hay qua ban oi';
-    await khachPage.fill('input[name="content"]', BINH_LUAN);
-    await khachPage.click('button:has-text("Gửi")');
+    // Ô bình luận nằm sau ô soạn bài, nên lấy ô cuối cùng của thẻ bài.
+    const oBinhLuan = khachPage.locator('li.card textarea[name="content"]').last();
+    await oBinhLuan.fill(BINH_LUAN);
+    await khachPage.locator('li.card button:has-text("Gửi")').last().click();
     await khachPage.waitForTimeout(2500);
-    const bl = await db.clubComment.findFirst({ where: { postId: baiMo.id }, select: { content: true } });
+    const bl = await db.clubComment.findFirst({ where: { postId: baiMo.id }, select: { id: true, content: true, depth: true } });
     check('bình luận được bài bảng tin', !!bl && bl.content.includes(BINH_LUAN));
+    check('bình luận gốc ở tầng 0', bl?.depth === 0);
     const demBL = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { commentCount: true } });
     check('bộ đếm bình luận tăng', demBL.commentCount === 1, `đang là ${demBL.commentCount}`);
+
+    // Ô soạn phải có đủ đồ nghề như mấy ô khác của trang.
+    check('ô bình luận có nút emoji/sticker/GIF',
+      (await khachPage.locator('li.card button[title="Emoji, sticker & GIF"]').count()) > 0);
+    check('ô bình luận có nút gửi ảnh',
+      (await khachPage.locator('li.card button[title="Gửi ảnh"]').count()) > 0);
+
+    // ── Trả lời bình luận: nhiều tầng ───────────────────────────────────
+    const TRA_LOI = 'Minh cung nghi vay';
+    await chuPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await chuPage.waitForTimeout(900);
+    await chuPage.locator('button:has-text("Trả lời")').first().click();
+    await chuPage.waitForTimeout(400);
+    await chuPage.locator('textarea[placeholder^="Trả lời"]').fill(TRA_LOI);
+    await chuPage.locator('li.card button:has-text("Gửi")').first().click();
+    await chuPage.waitForTimeout(2500);
+    const con = await db.clubComment.findFirst({
+      where: { postId: baiMo.id, depth: 1 }, select: { id: true, content: true, parentId: true, rootId: true },
+    });
+    check('trả lời được bình luận', !!con && con.content.includes(TRA_LOI));
+    check('trả lời bám đúng bình luận cha', con?.parentId === bl.id);
+    check('trả lời ghi đúng gốc nhánh', con?.rootId === bl.id);
+
+    // Tầng ba: trả lời của trả lời.
+    const TANG_BA = 'Dung roi do ban';
+    await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await khachPage.waitForTimeout(900);
+    await khachPage.locator('button:has-text("Trả lời")').nth(1).click();
+    await khachPage.waitForTimeout(400);
+    await khachPage.locator('textarea[placeholder^="Trả lời"]').fill(TANG_BA);
+    await khachPage.locator('li.card button:has-text("Gửi")').first().click();
+    await khachPage.waitForTimeout(2500);
+    const chau = await db.clubComment.findFirst({
+      where: { postId: baiMo.id, depth: 2 }, select: { parentId: true, rootId: true },
+    });
+    check('trả lời tầng ba nằm ở tầng 2', !!chau);
+    check('tầng ba vẫn thuộc đúng nhánh gốc', chau?.rootId === bl.id);
+
+    // Trần ba tầng: trả lời tiếp thì bám lại tầng 2 chứ không đẻ tầng 4.
+    await khachPage.goto(url(clbMo), { waitUntil: 'networkidle' });
+    await khachPage.waitForTimeout(900);
+    await khachPage.locator('button:has-text("Trả lời")').nth(2).click();
+    await khachPage.waitForTimeout(400);
+    await khachPage.locator('textarea[placeholder^="Trả lời"]').fill('Chot lai nhe');
+    await khachPage.locator('li.card button:has-text("Gửi")').first().click();
+    await khachPage.waitForTimeout(2500);
+    check('không đẻ ra tầng thứ tư',
+      (await db.clubComment.count({ where: { postId: baiMo.id, depth: { gte: 3 } } })) === 0);
+
+    const demSauTL = await db.clubPost.findUnique({ where: { id: baiMo.id }, select: { commentCount: true } });
+    check('bộ đếm tính cả trả lời', demSauTL.commentCount === 4, `đang là ${demSauTL.commentCount}`);
+
+    // Xoá bình luận gốc thì cả nhánh đi theo, bộ đếm trừ đủ.
+    await db.clubComment.delete({ where: { id: bl.id } });
+    const conLai = await db.clubComment.count({ where: { postId: baiMo.id } });
+    check('xoá gốc thì cả nhánh mất theo', conLai === 0, `còn ${conLai}`);
+    await db.clubPost.update({ where: { id: baiMo.id }, data: { commentCount: 0 }, select: { id: true } });
 
     // Người ngoài nhóm không thích/bình luận được — chấm ở máy chủ, không tin giao diện.
     await anon.goto(url(clbMo), { waitUntil: 'networkidle' });
     await anon.waitForTimeout(700);
-    check('khách không có ô bình luận', (await anon.locator('input[name="content"]').count()) === 0);
+    check('khách không có ô bình luận', (await anon.locator('li.card textarea[name="content"]').count()) === 0);
 
     // ── Ghim bài ────────────────────────────────────────────────────────
     await chuPage.goto(url(clbMo), { waitUntil: 'networkidle' });

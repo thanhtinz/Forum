@@ -5,21 +5,14 @@ import { useActionState, useEffect, useRef, useState, useTransition } from 'reac
 import { useRouter } from 'next/navigation';
 import { Send, Trash2, Heart, MessageCircle, Pin, PinOff } from 'lucide-react';
 import {
-  postToClub, deleteClubPost, toggleClubPostLike, addClubComment, deleteClubComment, toggleClubPostPin,
+  postToClub, deleteClubPost, toggleClubPostLike, toggleClubPostPin,
 } from '@/app/(site)/clb/actions';
 import { UserName, Avatar } from '@/components/user/Cosmetic';
 import { BBCodeEditor } from '@/components/editor/BBCodeEditor';
-import { CLUB_POST_MAX, CLUB_COMMENT_MAX, CLUB_COMMENTS_SHOWN, type ClubActionState } from '@/lib/club-const';
+import { ClubComments, type ClubCommentNodeView } from '@/components/club/ClubComments';
+import { CLUB_POST_MAX, CLUB_COMMENTS_SHOWN, type ClubActionState } from '@/lib/club-const';
 import { cn, fmtAgo, fmtCount } from '@/lib/utils';
 import type { AuthorChip } from '@/lib/shop';
-
-export interface ClubCommentView {
-  id: string;
-  content: string;
-  createdAt: Date;
-  authorId: string;
-  author: AuthorChip | null;
-}
 
 export interface ClubPostView {
   id: string;
@@ -31,27 +24,12 @@ export interface ClubPostView {
   likeCount: number;
   commentCount: number;
   liked: boolean;
-  comments: ClubCommentView[];
+  comments: ClubCommentNodeView[];
 }
 
-/** Ô viết bình luận dưới một bài. Tách riêng để mỗi bài có state của mình. */
-function CommentBox({ postId, onDone }: { postId: string; onDone: () => void }) {
-  const [state, action, sending] = useActionState<ClubActionState, FormData>(addClubComment, {});
-  const ref = useRef<HTMLFormElement>(null);
-
-  useEffect(() => { if (state.ok) { ref.current?.reset(); onDone(); } }, [state, onDone]);
-
-  return (
-    <form ref={ref} action={action} className="mt-2 flex items-center gap-2">
-      <input type="hidden" name="postId" value={postId} />
-      <input name="content" required maxLength={CLUB_COMMENT_MAX} placeholder="Viết bình luận…"
-        className="input !py-1.5 flex-1 text-sm" />
-      <button type="submit" disabled={sending} className="btn-ghost !py-1.5 text-sm disabled:opacity-60">
-        {sending ? '…' : 'Gửi'}
-      </button>
-      {state.error && <span className="text-xs text-red-600">{state.error}</span>}
-    </form>
-  );
+/** Đếm cả cây, kể cả bình luận con — để biết còn bao nhiêu dòng chưa hiện. */
+function countTree(list: ClubCommentNodeView[]): number {
+  return list.reduce((n, c) => n + 1 + countTree(c.children), 0);
 }
 
 /** Bảng tin câu lạc bộ: ô soạn ở trên, bài ghim trước rồi tới bài mới nhất. */
@@ -110,7 +88,7 @@ export function ClubBoard({ clubId, clubSlug, canPost, canManage, posts, viewerI
       ) : (
         <ul className="space-y-3">
           {posts.map((p) => {
-            const hidden = p.commentCount - p.comments.length;
+            const hidden = p.commentCount - countTree(p.comments);
             return (
               <li key={p.id} className={cn('card p-3.5', p.pinned && 'border-amber-300 dark:border-amber-800')}>
                 {p.pinned && (
@@ -165,51 +143,24 @@ export function ClubBoard({ clubId, clubSlug, canPost, canManage, posts, viewerI
                   </span>
                 </div>
 
-                {/* Bình luận */}
-                {p.comments.length > 0 && (
-                  <ul className="mt-2 space-y-2">
-                    {hidden > 0 && (
-                      <li>
-                        <Link href={`/clb/${clubSlug}?bl=${p.id}`} className="text-xs font-semibold text-brand-600 hover:underline">
-                          Xem tất cả {fmtCount(p.commentCount)} bình luận
-                        </Link>
-                      </li>
-                    )}
-                    {p.comments.map((c) => (
-                      <li key={c.id} className="flex items-start gap-2 rounded-lg bg-ink-50 px-2.5 py-1.5 dark:bg-ink-800/50">
-                        <Avatar image={c.author?.image ?? null} name={c.author?.name ?? c.author?.username ?? '?'}
-                          cosmetics={c.author?.cosmetics} size={24} />
-                        <div className="min-w-0 flex-1">
-                          <p className="flex flex-wrap items-center gap-x-2 text-xs">
-                            {c.author && (
-                              <UserName username={c.author.username} name={c.author.name} role={c.author.role}
-                                level={c.author.level} cosmetics={c.author.cosmetics} />
-                            )}
-                            <span className="text-ink-400">· {fmtAgo(c.createdAt)}</span>
-                          </p>
-                          <div className="prose prose-sm max-w-none text-sm dark:prose-invert"
-                            dangerouslySetInnerHTML={{ __html: c.content }} />
-                        </div>
-                        {(canManage || c.authorId === viewerId) && (
-                          <button type="button" title="Xoá bình luận" disabled={busy}
-                            onClick={() => run(() => deleteClubComment(c.id))}
-                            className="grid size-6 shrink-0 place-items-center rounded text-ink-400 hover:text-red-600 disabled:opacity-50">
-                            <Trash2 size={13} />
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                    {expandId === p.id && p.commentCount > CLUB_COMMENTS_SHOWN && (
-                      <li>
-                        <Link href={`/clb/${clubSlug}`} className="text-xs font-semibold text-ink-500 hover:underline">
-                          Thu gọn bình luận
-                        </Link>
-                      </li>
-                    )}
-                  </ul>
-                )}
-
-                {canPost && <CommentBox postId={p.id} onDone={() => router.refresh()} />}
+                {/* Bình luận: cây nhiều tầng, mỗi tầng trả lời được */}
+                <ClubComments
+                  postId={p.id}
+                  comments={p.comments}
+                  canReply={canPost}
+                  canManage={canManage}
+                  viewerId={viewerId}
+                  header={hidden > 0 ? (
+                    <Link href={`/clb/${clubSlug}?bl=${p.id}`} className="text-xs font-semibold text-brand-600 hover:underline">
+                      Xem tất cả {fmtCount(p.commentCount)} bình luận
+                    </Link>
+                  ) : null}
+                  footer={expandId === p.id && p.commentCount > CLUB_COMMENTS_SHOWN ? (
+                    <Link href={`/clb/${clubSlug}`} className="text-xs font-semibold text-ink-500 hover:underline">
+                      Thu gọn bình luận
+                    </Link>
+                  ) : null}
+                />
               </li>
             );
           })}

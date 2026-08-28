@@ -2,7 +2,7 @@ import { db } from './db';
 import { toSlug } from './post-form';
 import {
   CLUBS_PER_PAGE, CLUB_MEMBERS_PER_PAGE, CLUB_POSTS_PER_PAGE,
-  CLUB_COMMENTS_SHOWN, CLUB_COMMENTS_EXPANDED,
+  CLUB_COMMENTS_SHOWN, CLUB_COMMENTS_EXPANDED, CLUB_REPLIES_PER_ROOT,
 } from './club-const';
 import { authorChipSelect, toAuthorChip, type AuthorChip } from './shop';
 
@@ -231,6 +231,23 @@ export async function getInvitableFriends(userId: string, clubId: string) {
     .map((f) => ({ id: f.id, chip: toAuthorChip(f) }));
 }
 
+const commentSelect = {
+  id: true, content: true, createdAt: true, authorId: true, parentId: true, depth: true,
+  author: { select: authorChipSelect },
+} as const;
+
+/** Một bình luận kèm cả nhánh con của nó. */
+export interface ClubCommentNode {
+  id: string;
+  content: string;
+  createdAt: Date;
+  authorId: string;
+  parentId: string | null;
+  depth: number;
+  author: AuthorChip | null;
+  children: ClubCommentNode[];
+}
+
 /**
  * Bảng tin câu lạc bộ. Người gọi phải tự chắc là đọc được (`getClubViewer`).
  *
@@ -261,39 +278,69 @@ export async function getClubPosts(
   ]);
 
   const ids = rows.map((r) => r.id);
-  const [liked, comments] = await Promise.all([
+  const [liked, roots] = await Promise.all([
     opts.viewerId && ids.length > 0
       ? db.clubPostLike.findMany({
           where: { userId: opts.viewerId, postId: { in: ids } },
           select: { postId: true },
         })
       : Promise.resolve([]),
+    // Chỉ lấy bình luận GỐC ở bước này; nhánh con lấy sau theo `rootId`, một
+    // lượt cho cả trang. Lấy lẫn lộn cả cây ngay từ đây thì "ba bình luận mỗi
+    // bài" hoá ra ba dòng bất kỳ, có khi toàn dòng con của cùng một nhánh.
     ids.length > 0
       ? Promise.all(ids.map(async (id) => ({
           id,
           rows: await db.clubComment.findMany({
-            where: { postId: id },
+            where: { postId: id, depth: 0 },
             orderBy: { createdAt: 'desc' },
             take: id === opts.expandId ? CLUB_COMMENTS_EXPANDED : CLUB_COMMENTS_SHOWN,
-            select: { id: true, content: true, createdAt: true, authorId: true, author: { select: authorChipSelect } },
+            select: commentSelect,
           }),
         })))
       : Promise.resolve([]),
   ]);
 
+  const rootIds = roots.flatMap((r) => r.rows.map((c) => c.id));
+  const children = rootIds.length > 0
+    ? await db.clubComment.findMany({
+        where: { rootId: { in: rootIds } },
+        orderBy: { createdAt: 'asc' },
+        take: rootIds.length * CLUB_REPLIES_PER_ROOT,
+        select: commentSelect,
+      })
+    : [];
+
   const likedSet = new Set(liked.map((l) => l.postId));
-  const commentMap = new Map(comments.map((c) => [c.id, c.rows]));
+  const byParent = new Map<string, typeof children>();
+  for (const c of children) {
+    const key = c.parentId ?? '';
+    const list = byParent.get(key) ?? [];
+    list.push(c);
+    byParent.set(key, list);
+  }
+
+  /** Dựng cây từ một bình luận gốc xuống hết nhánh của nó. */
+  const tree = (c: (typeof children)[number]): ClubCommentNode => ({
+    ...c,
+    author: toAuthorChip(c.author),
+    children: (byParent.get(c.id) ?? []).map(tree),
+  });
+
+  const commentMap = new Map(
+    roots.map((r) => [
+      r.id,
+      // Lấy mới nhất trước cho đúng trần, nhưng in ra thì cũ trước cho dễ đọc.
+      r.rows.slice().reverse().map(tree),
+    ]),
+  );
 
   return {
     items: rows.map((r) => ({
       ...r,
       author: toAuthorChip(r.author),
       liked: likedSet.has(r.id),
-      // Lấy mới nhất trước cho đúng trần, nhưng in ra thì cũ trước cho dễ đọc.
-      comments: (commentMap.get(r.id) ?? [])
-        .slice()
-        .reverse()
-        .map((c) => ({ ...c, author: toAuthorChip(c.author) })),
+      comments: commentMap.get(r.id) ?? [],
     })),
     page: p,
     totalPages: Math.max(1, Math.ceil(total / CLUB_POSTS_PER_PAGE)),

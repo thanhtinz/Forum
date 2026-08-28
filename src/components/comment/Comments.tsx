@@ -102,7 +102,6 @@ type Row = {
   author: {
     username: string | null; name: string | null; image: string | null; level: number; role: string;
     nameColor: { value: string } | null;
-    avatarFrame: { value: string } | null;
     shopBadge: { value: string; name: string } | null;
   } | null;
 };

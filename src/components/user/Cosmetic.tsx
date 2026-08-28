@@ -129,11 +129,6 @@ export function Avatar({ image, name, cosmetics = NO_COSMETICS, size = 40, round
         </span>
       )}
 
-      {cosmetics.avatarFrame && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={cosmetics.avatarFrame} alt="" aria-hidden
-          className="pointer-events-none absolute -inset-[12%] size-[124%] max-w-none object-contain" />
-      )}
 
       {online && (
         <span

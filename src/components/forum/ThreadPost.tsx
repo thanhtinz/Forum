@@ -25,7 +25,7 @@ export interface PostAuthor {
   mood?: string | null;
   /** Uy tín — tổng các lần được người khác chấm "+" / "−". */
   karma?: number;
-  /** Đồ trang trí mua ở cửa hàng: màu tên, khung avatar, huy hiệu. */
+  /** Đồ trang trí mua ở cửa hàng: màu tên, huy hiệu, danh hiệu. */
   cosmetics?: Cosmetics;
 }
 

@@ -8,7 +8,13 @@ export const SHOP_DESC_MAX = 200;
 export const SHOP_PRICE_MAX = 1_000_000;
 export const SHOP_PAGE_SIZE = 24;
 
-export const SHOP_KINDS = ['NAME_COLOR', 'AVATAR_FRAME', 'BADGE', 'TITLE', 'PROFILE_COVER'] as const;
+/**
+ * Cửa hàng CỐ Ý không bán avatar lẫn ảnh bìa — hai thứ ấy người dùng tự tải
+ * lên ở trang cài đặt. Ảnh bìa bán được thì món mua sẽ đè lên ảnh người ta tự
+ * chọn, tức là cướp mất chỗ của chính chủ; còn avatar thì càng không có lý do
+ * gì phải mua. Chỉ bán những thứ TÔ ĐIỂM THÊM: màu tên, huy hiệu, danh hiệu.
+ */
+export const SHOP_KINDS = ['NAME_COLOR', 'BADGE', 'TITLE'] as const;
 export type ShopKind = (typeof SHOP_KINDS)[number];
 
 export const KIND_LABELS: Record<ShopKind, {
@@ -19,12 +25,6 @@ export const KIND_LABELS: Record<ShopKind, {
     hint: 'Đổi màu tên bạn ở mọi chỗ trên diễn đàn.',
     valueLabel: 'Giá trị màu CSS',
     valueHint: 'Ví dụ #e11d48, rgb(225 29 72), hoặc linear-gradient(90deg,#f43f5e,#f59e0b) cho nick chuyển sắc.',
-  },
-  AVATAR_FRAME: {
-    label: 'Khung avatar', one: 'khung avatar',
-    hint: 'Viền ảnh phủ lên trên avatar.',
-    valueLabel: 'Ảnh khung',
-    valueHint: 'Ảnh PNG nền trong suốt, vuông, phủ vừa khít lên avatar.',
   },
   BADGE: {
     label: 'Huy hiệu', one: 'huy hiệu',
@@ -37,12 +37,6 @@ export const KIND_LABELS: Record<ShopKind, {
     hint: 'Dòng chữ nhỏ hiện ngay cạnh tên bạn ở mọi chỗ trên diễn đàn.',
     valueLabel: 'Chữ danh hiệu',
     valueHint: 'Ngắn thôi — ví dụ “Cao thủ Java”, “Thợ săn game”. Tối đa 24 ký tự.',
-  },
-  PROFILE_COVER: {
-    label: 'Ảnh bìa', one: 'ảnh bìa',
-    hint: 'Ảnh trải ngang đầu trang cá nhân của bạn.',
-    valueLabel: 'Ảnh bìa',
-    valueHint: 'Ảnh ngang, nên rộng từ 1200px trở lên để không bị vỡ trên màn hình lớn.',
   },
 };
 
@@ -107,7 +101,6 @@ export interface ShopItemView {
  */
 export interface Cosmetics {
   nameColor: string | null;
-  avatarFrame: string | null;
   badge: string | null;
   badgeName: string | null;
   /** Danh hiệu chữ mua ở cửa hàng, hiện cạnh tên. */
@@ -115,7 +108,7 @@ export interface Cosmetics {
 }
 
 export const NO_COSMETICS: Cosmetics = {
-  nameColor: null, avatarFrame: null, badge: null, badgeName: null, title: null,
+  nameColor: null, badge: null, badgeName: null, title: null,
 };
 
 /** Trần độ dài chữ danh hiệu — dài quá thì vỡ mọi dòng có tên người. */

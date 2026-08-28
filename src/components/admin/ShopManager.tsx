@@ -104,16 +104,6 @@ function MiniPreview({ item }: { item: ShopItemView }) {
       </span>
     );
   }
-  if (item.kind === 'AVATAR_FRAME') {
-    return (
-      <span className="relative inline-block size-10 shrink-0">
-        <span className="grid size-full place-items-center rounded-full bg-brand-500 text-sm font-black text-white">N</span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={item.value} alt="" aria-hidden
-          className="pointer-events-none absolute -inset-[12%] size-[124%] max-w-none object-contain" />
-      </span>
-    );
-  }
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={item.value} alt="" className="size-8 shrink-0 object-contain" />;
 }

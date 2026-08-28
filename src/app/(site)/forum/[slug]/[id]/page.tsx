@@ -59,7 +59,6 @@ function toAuthor(
     createdAt: Date; signature: string | null; mood: string | null; karma: number;
     _count: { threads: number; replies: number };
     nameColor?: { value: string } | null;
-    avatarFrame?: { value: string } | null;
     shopBadge?: { value: string; name: string } | null;
   },
   looks: Map<number, LevelLook>,

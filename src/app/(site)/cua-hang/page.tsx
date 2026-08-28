@@ -12,7 +12,7 @@ import { fmtCount } from '@/lib/utils';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
   title: 'Cửa hàng',
-  description: 'Dùng điểm kiếm được trên diễn đàn để mua màu tên, khung avatar và huy hiệu.',
+  description: 'Dùng điểm kiếm được trên diễn đàn để mua màu tên, huy hiệu và danh hiệu.',
 };
 
 /**

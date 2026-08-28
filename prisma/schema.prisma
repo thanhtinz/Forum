@@ -142,12 +142,8 @@ model User {
   shopPurchases  ShopPurchase[]
   nameColorId    String?
   nameColor      ShopItem?      @relation("EquipNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
-  avatarFrameId  String?
-  avatarFrame    ShopItem?      @relation("EquipAvatarFrame", fields: [avatarFrameId], references: [id], onDelete: SetNull)
   shopBadgeId    String?
   shopBadge      ShopItem?      @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
-  profileCoverId String?
-  profileCover   ShopItem?      @relation("EquipCover", fields: [profileCoverId], references: [id], onDelete: SetNull)
   shopTitleId    String?
   shopTitle      ShopItem?      @relation("EquipTitle", fields: [shopTitleId], references: [id], onDelete: SetNull)
 
@@ -1693,11 +1689,13 @@ model ShopItem {
 
   /**
    * Nội dung của món đồ, ý nghĩa tuỳ theo `kind`:
-   * NAME_COLOR   — một giá trị màu CSS (#hex, rgb(), hoặc linear-gradient()).
-   * AVATAR_FRAME — đường dẫn ảnh khung, phủ lên trên avatar.
-   * BADGE        — đường dẫn ảnh huy hiệu, hiện cạnh tên.
-   * PROFILE_COVER — đường dẫn ảnh bìa, trải ngang đầu trang cá nhân.
-   * TITLE        — dòng chữ danh hiệu, hiện cạnh tên.
+   * NAME_COLOR — một giá trị màu CSS (#hex, rgb(), hoặc linear-gradient()).
+   * BADGE      — đường dẫn ảnh huy hiệu, hiện cạnh tên.
+   * TITLE      — dòng chữ danh hiệu, hiện cạnh tên.
+   *
+   * Cửa hàng CỐ Ý không bán avatar lẫn ảnh bìa: hai thứ ấy người dùng tự tải
+   * lên ở trang cài đặt. Bán ảnh bìa thì món mua được sẽ đè lên ảnh người ta
+   * tự chọn — tự dưng cướp mất chỗ của chính chủ.
    */
   value String
 
@@ -1710,9 +1708,7 @@ model ShopItem {
   purchases ShopPurchase[]
 
   equippedNameColorBy   User[] @relation("EquipNameColor")
-  equippedAvatarFrameBy User[] @relation("EquipAvatarFrame")
   equippedBadgeBy       User[] @relation("EquipBadge")
-  equippedCoverBy       User[] @relation("EquipCover")
   equippedTitleBy       User[] @relation("EquipTitle")
 
   @@index([kind, active, order])
@@ -1721,12 +1717,8 @@ model ShopItem {
 enum ShopItemKind {
   /// Màu tên hiển thị.
   NAME_COLOR
-  /// Khung viền quanh avatar.
-  AVATAR_FRAME
   /// Huy hiệu nhỏ hiện cạnh tên.
   BADGE
-  /// Ảnh bìa trải ngang đầu trang cá nhân.
-  PROFILE_COVER
   /// Danh hiệu chữ, hiện ngay cạnh tên.
   TITLE
 }

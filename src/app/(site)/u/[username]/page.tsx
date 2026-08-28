@@ -84,7 +84,6 @@ export default async function ProfilePage({ params, searchParams }: {
     select: {
       id: true, name: true, username: true, image: true, cover: true, bio: true, mood: true, level: true, role: true,
       points: true, karma: true, createdAt: true, lastSeenAt: true,
-      profileCover: { select: { value: true } },
       _count: { select: { threads: true, replies: true, followers: true, following: true } },
       ...cosmeticSelect,
       medals: { where: { displayed: true }, take: 8, include: { medal: { select: { name: true, icon: true, color: true } } } },
@@ -150,7 +149,9 @@ export default async function ProfilePage({ params, searchParams }: {
    * Ai bỏ điểm ra mua thì muốn thấy nó ngay, chứ không phải đi gỡ ảnh cũ trong
    * cài đặt rồi mới thấy món vừa mua. Gỡ món ra là ảnh tự tải lên hiện lại.
    */
-  const coverImage = user.profileCover?.value ?? user.cover;
+  // Bìa chỉ lấy từ ảnh người dùng tự tải lên. Trước đây ảnh bìa mua ở cửa hàng
+  // được ưu tiên hơn, tức là mua xong thì ảnh chính chủ tự chọn bị đè mất.
+  const coverImage = user.cover;
 
   return (
     <div className="mx-auto max-w-4xl">

@@ -172,27 +172,7 @@ function Preview({ item }: { item: ShopItemView }) {
     );
   }
 
-  if (item.kind === 'PROFILE_COVER') {
-    return (
-      <span className="block h-16 overflow-hidden rounded-xl bg-ink-50 dark:bg-ink-800/50">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={item.value} alt="" className="size-full object-cover" />
-      </span>
-    );
-  }
 
-  if (item.kind === 'AVATAR_FRAME') {
-    return (
-      <span className="grid h-16 place-items-center rounded-xl bg-ink-50 dark:bg-ink-800/50">
-        <span className="relative inline-block size-12">
-          <span className="grid size-full place-items-center rounded-full bg-brand-500 text-lg font-black text-white">N</span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={item.value} alt="" aria-hidden
-            className="pointer-events-none absolute -inset-[12%] size-[124%] max-w-none object-contain" />
-        </span>
-      </span>
-    );
-  }
 
   return (
     <span className="grid h-16 place-items-center rounded-xl bg-ink-50 dark:bg-ink-800/50">
@@ -216,7 +196,6 @@ function BigPreview({ item, viewer }: { item: ShopItemView; viewer?: ShopViewer 
   const preview: Cosmetics = {
     ...base,
     ...(item.kind === 'NAME_COLOR' ? { nameColor: item.value } : {}),
-    ...(item.kind === 'AVATAR_FRAME' ? { avatarFrame: item.value } : {}),
     ...(item.kind === 'BADGE' ? { badge: item.value, badgeName: item.name } : {}),
     ...(item.kind === 'TITLE' ? { title: item.value } : {}),
   };
@@ -225,11 +204,6 @@ function BigPreview({ item, viewer }: { item: ShopItemView; viewer?: ShopViewer 
 
   return (
     <div className="overflow-hidden rounded-xl border border-ink-100 bg-ink-50 dark:border-ink-800 dark:bg-ink-800/40">
-      {/* Ảnh bìa trải ngang phía trên, đúng chỗ nó sẽ nằm ở trang cá nhân. */}
-      {item.kind === 'PROFILE_COVER' && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={item.value} alt="" className="h-24 w-full object-cover" />
-      )}
       <div className="p-4">
       <div className="flex items-center gap-3">
         <Avatar image={viewer?.image ?? null} name={name} cosmetics={preview} size={64} />

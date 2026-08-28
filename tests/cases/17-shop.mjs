@@ -14,7 +14,7 @@ export default async function run(check) {
   const wipe = async () => {
     await db.user.updateMany({
       where: { id: { in: [minh.id, huy.id] } },
-      data: { nameColorId: null, avatarFrameId: null, shopBadgeId: null },
+      data: { nameColorId: null, shopBadgeId: null, shopTitleId: null },
     });
     await db.shopItem.deleteMany({ where: { slug: { startsWith: 'kiem-thu-' } } });
   };
@@ -64,9 +64,9 @@ export default async function run(check) {
       (await admin.locator('text=Giá trị màu không dùng được').count()) > 0);
     check('món hỏng không được tạo', (await db.shopItem.count({ where: { name: 'Màu bậy' } })) === 0);
 
-    // Khung và huy hiệu tạo thẳng bằng dữ liệu — luồng tải ảnh đã kiểm ở album.
-    const frame = await db.shopItem.create({
-      data: { slug: 'kiem-thu-khung', kind: 'AVATAR_FRAME', name: 'Khung kiểm thử', value: '/uploads/khung.png', pricePoints: 30 },
+    // Huy hiệu và danh hiệu tạo thẳng bằng dữ liệu — luồng tải ảnh đã kiểm ở album.
+    const danhHieu = await db.shopItem.create({
+      data: { slug: 'kiem-thu-dh-dat', kind: 'TITLE', name: 'Danh hiệu đắt', value: 'Cao thủ kiểm thử', pricePoints: 30 },
       select: { id: true },
     });
     const badge = await db.shopItem.create({
@@ -85,17 +85,21 @@ export default async function run(check) {
     // /cua-hang, đếm chung vào là con số sai mà đọc lỗi thì tưởng quầy hỏng.
     const tabs = await member.$$eval('[data-shop-tabs] a', (els) => els.map((e) => e.textContent?.trim() ?? ''));
     check('quầy không còn tab tất cả', !tabs.includes('Tất cả'), JSON.stringify(tabs));
-    check('quầy có đúng năm tab loại đồ', tabs.length === 5, JSON.stringify(tabs));
+    // Ba loại: màu tên, huy hiệu, danh hiệu. Avatar và ảnh bìa KHÔNG bán —
+    // người dùng tự tải lên, nên bán ở đây là cướp chỗ của chính chủ.
+    check('quầy có đúng ba tab loại đồ', tabs.length === 3, JSON.stringify(tabs));
+    check('quầy không bán avatar hay ảnh bìa',
+      !tabs.some((t) => /khung|avatar|bìa/i.test(t)), JSON.stringify(tabs));
     check('tab mặc định là màu tên, không lẫn loại khác',
       (await member.locator('text=Nick đỏ kiểm thử').count()) > 0
-      && (await member.locator('text=Khung kiểm thử').count()) === 0);
+      && (await member.locator('text=Danh hiệu đắt').count()) === 0);
     check('ô hàng bỏ nhãn loại thừa',
       (await member.locator('ul li .chip:has-text("Màu tên")').count()) === 0);
 
-    await member.goto(`${BASE}/cua-hang?loai=AVATAR_FRAME`, { waitUntil: 'networkidle' });
+    await member.goto(`${BASE}/cua-hang?loai=TITLE`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(700);
-    check('tab khung avatar chỉ hiện khung',
-      (await member.locator('text=Khung kiểm thử').count()) > 0
+    check('tab danh hiệu chỉ hiện danh hiệu',
+      (await member.locator('text=Danh hiệu đắt').count()) > 0
       && (await member.locator('text=Nick đỏ kiểm thử').count()) === 0);
 
     await member.goto(`${BASE}/cua-hang?loai=BIA-RA`, { waitUntil: 'networkidle' });
@@ -147,9 +151,9 @@ export default async function run(check) {
     await db.user.update({ where: { id: minh.id }, data: { points: 5 }, select: { id: true } });
     await member.reload({ waitUntil: 'networkidle' });
     await member.waitForTimeout(800);
-    await member.goto(`${BASE}/cua-hang?loai=AVATAR_FRAME`, { waitUntil: 'networkidle' });
+    await member.goto(`${BASE}/cua-hang?loai=TITLE`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(700);
-    const poorBtn = row(member, 'Khung kiểm thử').locator('button:has-text("Mua")');
+    const poorBtn = row(member, 'Danh hiệu đắt').locator('button:has-text("Mua")');
     check('không đủ điểm thì nút mua bị khoá', await poorBtn.isDisabled());
 
     await db.user.update({ where: { id: minh.id }, data: { points: 100 }, select: { id: true } });
@@ -185,7 +189,7 @@ export default async function run(check) {
     await member.goto(`${BASE}/user/items`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(800);
     check('kho đồ không chứa món chưa mua',
-      (await member.locator('text=Khung kiểm thử').count()) === 0);
+      (await member.locator('text=Danh hiệu đắt').count()) === 0);
 
     const other = await openPage('huytran');
     await other.goto(`${BASE}/cua-hang`, { waitUntil: 'networkidle' });
@@ -227,50 +231,16 @@ export default async function run(check) {
     await member.waitForTimeout(800);
     check('người đã mua vẫn thấy món trong kho đồ',
       (await member.locator('text=Nick đỏ kiểm thử').count()) > 0);
-    void frame;
+    void danhHieu;
 
-    // ── Ảnh bìa hồ sơ: loại đồ thứ tư ────────────────────────────────────
-    const cover = await db.shopItem.create({
-      data: {
-        slug: 'kiem-thu-anh-bia', kind: 'PROFILE_COVER', name: 'Ảnh bìa kiểm thử',
-        value: '/uploads/bia-kiem-thu.png', pricePoints: 10,
-      },
-      select: { id: true },
-    });
-    await db.user.update({ where: { id: minh.id }, data: { points: 100 }, select: { id: true } });
-
-    await member.goto(`${BASE}/cua-hang?loai=PROFILE_COVER`, { waitUntil: 'networkidle' });
-    await member.waitForTimeout(800);
-    check('tab ảnh bìa hiện đúng món', (await member.locator('text=Ảnh bìa kiểm thử').count()) > 0);
-
-    await row(member, 'Ảnh bìa kiểm thử').locator('button:has-text("Mua")').click();
-    await doiToi(() => db.shopPurchase.findFirst({ where: { userId: minh.id, itemId: cover.id }, select: { id: true } }));
-    check('mua được ảnh bìa',
-      (await db.shopPurchase.count({ where: { userId: minh.id, itemId: cover.id } })) === 1);
-
-    await member.reload({ waitUntil: 'networkidle' });
-    await member.waitForTimeout(700);
-    await row(member, 'Ảnh bìa kiểm thử').locator('button:has-text("Đeo lên")').click();
-    const daDeo = await doiToi(async () => {
-      const u = await db.user.findUnique({ where: { id: minh.id }, select: { profileCoverId: true } });
-      return u?.profileCoverId === cover.id ? u : null;
-    });
-    check('đeo được ảnh bìa', !!daDeo);
-
-    // Ảnh bìa mua ở quầy phải đè lên ảnh tự tải, và trang cá nhân phải dùng nó.
-    await db.user.update({ where: { id: minh.id }, data: { cover: '/uploads/anh-cu.png' }, select: { id: true } });
+    // ── Ảnh bìa là của chính chủ, quầy không được đụng vào ───────────────
+    // Trước đây quầy có bán ảnh bìa, và món mua được ưu tiên hơn ảnh người
+    // dùng tự tải lên — tức là mua xong thì ảnh chính chủ chọn bị đè mất.
+    await db.user.update({ where: { id: minh.id }, data: { cover: '/uploads/bia-tu-tai.png' }, select: { id: true } });
     await member.goto(`${BASE}/u/minhdev`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(800);
-    const hoSo = await member.content();
-    check('trang cá nhân dùng ảnh bìa vừa mua', hoSo.includes('/uploads/bia-kiem-thu.png'));
-    check('ảnh tự tải lên nhường chỗ cho món đã mua', !hoSo.includes('/uploads/anh-cu.png'));
-
-    // Gỡ ra thì ảnh cũ hiện lại.
-    await db.user.update({ where: { id: minh.id }, data: { profileCoverId: null }, select: { id: true } });
-    await member.reload({ waitUntil: 'networkidle' });
-    await member.waitForTimeout(700);
-    check('gỡ món ra thì ảnh tự tải lên hiện lại',
-      (await member.content()).includes('/uploads/anh-cu.png'));
+    check('trang cá nhân dùng đúng ảnh bìa người dùng tự tải lên',
+      (await member.content()).includes('/uploads/bia-tu-tai.png'));
     await db.user.update({ where: { id: minh.id }, data: { cover: null }, select: { id: true } });
 
 

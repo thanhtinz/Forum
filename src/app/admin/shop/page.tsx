@@ -39,7 +39,7 @@ export default async function AdminShopPage({ searchParams }: {
       <div>
         <h1 className="text-xl font-bold text-ink-900 dark:text-white">Cửa hàng</h1>
         <p className="text-sm text-ink-500">
-          Đồ trang trí bán bằng điểm: màu tên nhập giá trị CSS, khung avatar và huy hiệu thì tải ảnh lên.
+          Đồ trang trí bán bằng điểm: màu tên nhập giá trị CSS, huy hiệu thì tải ảnh lên, danh hiệu thì gõ chữ. Avatar và ảnh bìa KHÔNG bán — người dùng tự tải lên ở trang cài đặt.
           Món đã có người mua thì tắt “đang bán” chứ đừng xoá — xoá là mất luôn đồ của họ.
         </p>
       </div>

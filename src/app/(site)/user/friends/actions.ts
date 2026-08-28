@@ -5,7 +5,8 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
 import { notify } from '@/lib/notify';
-import { findFriendship, FRIEND_MESSAGE_MAX, FRIEND_PENDING_MAX } from '@/lib/friend';
+import { findFriendship, capBanBe, FRIEND_MESSAGE_MAX, FRIEND_PENDING_MAX } from '@/lib/friend';
+import { lockUsers } from '@/lib/lock';
 
 export interface FriendActionState {
   ok?: boolean;
@@ -49,7 +50,14 @@ export async function sendFriendRequest(targetId: string, message?: string): Pro
     return { error: `Bạn đang có ${FRIEND_PENDING_MAX} lời mời chờ trả lời, dọn bớt đã nhé.` };
   }
 
-  await db.$transaction(async (tx) => {
+  // Ràng buộc duy nhất trong cơ sở dữ liệu chỉ chặn được hai hàng CÙNG chiều.
+  // Hai người bấm "kết bạn" với nhau đúng cùng lúc thì sinh ra hai hàng NGƯỢC
+  // chiều — và huỷ kết bạn chỉ xoá một, hàng còn lại vẫn mở album mức "bạn bè"
+  // cho người đã huỷ. Khoá hàng cả hai người rồi dò lại là hết đường ấy.
+  const trung = await db.$transaction(async (tx) => {
+    await lockUsers(tx, userId, targetId);
+    if (await findFriendship(userId, targetId, tx)) return true;
+
     await tx.friendship.create({
       data: { requesterId: userId, addresseeId: targetId, message: note || null },
       select: { id: true },
@@ -62,7 +70,9 @@ export async function sendFriendRequest(targetId: string, message?: string): Pro
       link: '/user/friends',
       actorId: userId,
     }, tx);
+    return false;
   });
+  if (trung) return { error: 'Người kia vừa gửi lời mời cho bạn, xem lại ở trang bạn bè nhé.' };
 
   refresh(target.username);
   return { ok: true };
@@ -131,7 +141,9 @@ export async function removeFriendship(id: string): Promise<FriendActionState> {
     return { error: 'Đây không phải quan hệ của bạn.' };
   }
 
-  await db.friendship.delete({ where: { id } });
+  // Xoá theo CẶP chứ không theo id: dữ liệu cũ có thể còn hàng ngược chiều sinh
+  // ra từ lúc chưa khoá, mà sót một hàng là album mức "bạn bè" vẫn mở.
+  await capBanBe(db, row.requesterId, row.addresseeId).deleteMany();
 
   refresh(row.requesterId === userId ? row.addressee.username : row.requester.username);
   return { ok: true };

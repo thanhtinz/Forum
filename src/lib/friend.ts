@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import { cosmeticSelect, toCosmetics } from './shop';
 import type { Cosmetics } from './shop-const';
@@ -46,15 +47,32 @@ const userSelect = {
 const withCosmetics = <T extends Parameters<typeof toCosmetics>[0]>(u: T) =>
   ({ ...u, cosmetics: toCosmetics(u) });
 
-/** Tìm hàng nối hai người, bất kể ai là người gửi. */
-export async function findFriendship(a: string, b: string) {
-  return db.friendship.findFirst({
-    where: {
-      OR: [
-        { requesterId: a, addresseeId: b },
-        { requesterId: b, addresseeId: a },
-      ],
-    },
+type Client = Prisma.TransactionClient | typeof db;
+
+/** Điều kiện "hàng nối hai người này", bất kể ai là người gửi. */
+export const friendPairWhere = (a: string, b: string) => ({
+  OR: [
+    { requesterId: a, addresseeId: b },
+    { requesterId: b, addresseeId: a },
+  ],
+});
+
+/** Tiện tay xoá/đếm mọi hàng nối một cặp — dùng khi huỷ kết bạn. */
+export const capBanBe = (client: Client, a: string, b: string) => ({
+  deleteMany: () => client.friendship.deleteMany({ where: friendPairWhere(a, b) }),
+  count: () => client.friendship.count({ where: friendPairWhere(a, b) }),
+});
+
+/**
+ * Tìm hàng nối hai người, bất kể ai là người gửi.
+ *
+ * Sắp ACCEPTED lên trước: nếu dữ liệu cũ còn sót hai hàng ngược chiều thì
+ * "đã là bạn" mới là câu trả lời đúng, chứ không phải hàng nào tình cờ đứng đầu.
+ */
+export async function findFriendship(a: string, b: string, client: Client = db) {
+  return client.friendship.findFirst({
+    where: friendPairWhere(a, b),
+    orderBy: { status: 'desc' },
     select: { id: true, requesterId: true, addresseeId: true, status: true },
   });
 }

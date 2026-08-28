@@ -11,6 +11,7 @@ import {
   canRemoveEntry, checkGuestbookRate, isStaff,
   GUESTBOOK_MAX_LEN, GUESTBOOK_REPLY_MAX_LEN,
 } from '@/lib/guestbook';
+import { lockUsers } from '@/lib/lock';
 import { checkKarmaPermission, KARMA_REASON_MAX, KARMA_REASON_MIN } from '@/lib/karma';
 
 export interface GuestbookState {
@@ -226,7 +227,15 @@ export async function giveKarma(targetId: string, value: number, reason: string)
   const allowed = await checkKarmaPermission(userId, targetId);
   if (!allowed.can) return { error: allowed.reason };
 
-  await db.$transaction(async (tx) => {
+  // Luật uy tín ("một nấc mỗi 24 giờ cho một người, mỗi ngày tối đa N lượt")
+  // nằm ở chỗ đọc-rồi-mới-ghi, nên hai lần bấm cùng lúc phá được luật. Khoá
+  // hàng người chấm rồi kiểm LẠI bên trong transaction: luồng thứ hai phải chờ,
+  // và lúc nó đọc thì phiếu của luồng thứ nhất đã nằm đó.
+  const chan = await db.$transaction(async (tx): Promise<string | null> => {
+    await lockUsers(tx, userId);
+    const lai = await checkKarmaPermission(userId, targetId, tx);
+    if (!lai.can) return lai.reason;
+
     await tx.karmaVote.create({
       data: { fromId: userId, toId: targetId, value: nac, reason: note },
       select: { id: true },
@@ -246,7 +255,10 @@ export async function giveKarma(targetId: string, value: number, reason: string)
       link: `/u/${target.username}/uy-tin`,
       actorId: userId,
     }, tx);
+    return null;
   });
+
+  if (chan) return { error: chan };
 
   revalidatePath(`/u/${target.username}`);
   revalidatePath(`/u/${target.username}/uy-tin`);

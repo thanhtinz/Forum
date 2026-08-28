@@ -3,7 +3,7 @@ import { BASE, db, openPage } from '../helpers.mjs';
 /**
  * Thứ tự những thứ đứng cạnh tên người dùng.
  *
- *   tên → Lv → huy hiệu cấp bậc → huy hiệu NHẬN được → huy hiệu MUA → danh hiệu
+ *   tên → huy hiệu cấp bậc (khung "Lv4") → huy hiệu NHẬN → huy hiệu MUA → danh hiệu
  *
  * Mục kiểm này soi đúng hai thứ dễ hỏng:
  *  • THỨ TỰ. Trước đây mỗi trang tự ghép lấy `UserName` rồi dán `LevelBadge`
@@ -68,8 +68,8 @@ export default async function run(check) {
         return [...khoi.children].map((e) => {
           if (e.tagName === 'IMG') return `mua:${e.getAttribute('src')}`;
           const t = (e.textContent ?? '').trim();
-          if (/^Lv\d+$/.test(t)) return 'lv';
-          if (t === '🔰') return 'cap';
+          // Cấp bậc là một khung duy nhất chứa cả biểu tượng lẫn chữ "Lv4".
+          if (/Lv\d+/.test(t)) return t.includes('🔰') ? 'cap' : 'lv';
           if (t === '🔥') return 'nhan';
           return t ? `chu:${t}` : 'khac';
         });
@@ -81,19 +81,19 @@ export default async function run(check) {
       check(`${ten}: đọc được khối tên`, !!thuTu && thuTu.length >= 4, JSON.stringify(thuTu));
       if (!thuTu) continue;
 
-      const iLv = thuTu.indexOf('lv');
       const iCap = thuTu.indexOf('cap');
       const iNhan = thuTu.indexOf('nhan');
       const iMua = thuTu.findIndex((x) => x.startsWith('mua:'));
 
-      check(`${ten}: có đủ Lv, huy hiệu cấp, huy hiệu nhận, huy hiệu mua`,
-        iLv >= 0 && iCap >= 0 && iNhan >= 0 && iMua >= 0, JSON.stringify(thuTu));
-      check(`${ten}: đúng thứ tự Lv → cấp bậc → nhận → mua`,
-        iLv < iCap && iCap < iNhan && iNhan < iMua, JSON.stringify(thuTu));
-      // Cấp độ chỉ được in MỘT lần: con số nằm ở "Lv4", huy hiệu cấp chỉ còn
-      // biểu tượng. Trước đây huy hiệu cấp in thêm "Lv4" lần nữa ngay cạnh.
-      check(`${ten}: cấp độ chỉ hiện một lần`,
-        thuTu.filter((x) => x === 'lv').length === 1, JSON.stringify(thuTu));
+      check(`${ten}: có đủ huy hiệu cấp, huy hiệu nhận, huy hiệu mua`,
+        iCap >= 0 && iNhan >= 0 && iMua >= 0, JSON.stringify(thuTu));
+      check(`${ten}: đúng thứ tự cấp bậc → nhận → mua`,
+        iCap < iNhan && iNhan < iMua, JSON.stringify(thuTu));
+      // Cấp độ chỉ được in MỘT lần, và nằm GỌN trong khung cấp bậc — không có
+      // thêm một mẩu "Lv4" rời nào đứng cạnh.
+      check(`${ten}: cấp độ chỉ hiện một lần, nằm trong khung cấp bậc`,
+        thuTu.filter((x) => x === 'cap' || x === 'lv').length === 1
+        && !thuTu.includes('lv'), JSON.stringify(thuTu));
     }
 
     // Gỡ món mua ra thì huy chương tự kiếm vẫn còn.

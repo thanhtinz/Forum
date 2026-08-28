@@ -13,7 +13,8 @@ import { LevelBadge } from '@/components/LevelBadge';
 /**
  * Tên người dùng cùng mọi thứ đứng cạnh nó, LUÔN theo một thứ tự:
  *
- *   tên → Lv → huy hiệu cấp bậc → huy hiệu nhận được → huy hiệu mua → danh hiệu
+ *   tên → huy hiệu cấp bậc (khung "Lv4") → huy hiệu nhận được → huy hiệu mua
+ *   → danh hiệu
  *
  * Gom hết vào đây thay vì để mỗi trang tự ghép: trước kia mười một trang tự
  * dựng lấy `UserName` rồi dán thêm `LevelBadge` bên cạnh, nên thứ tự mỗi chỗ
@@ -60,11 +61,11 @@ export function UserName({
       ) : (
         <span className={cls} style={style}>{label}</span>
       )}
-      {level != null && <span className="retro-sub shrink-0 text-ink-400">Lv{level}</span>}
-      {/* Huy hiệu cấp bậc: chỉ hiện khi quản trị có đặt biểu tượng cho cấp ấy,
-          và bỏ chữ "Lv" vì con số đã nằm ngay bên trái rồi. */}
-      {level != null && look?.icon && (
-        <LevelBadge level={level} icon={look.icon} color={look.color} name={look.name} hideLabel />
+      {/* Cấp bậc là MỘT khối: khung nhỏ có biểu tượng cấp và chữ "Lv4" bên
+          trong. Tách con số ra ngoài khung thì thành hai thứ rời rạc cạnh nhau,
+          mà cấp bậc vốn là một huy hiệu chứ không phải hai mẩu. */}
+      {level != null && (
+        <LevelBadge level={level} icon={look?.icon} color={look?.color} name={look?.name} />
       )}
       <CosmeticMedal cosmetics={cosmetics} />
       <CosmeticBadge cosmetics={cosmetics} />

@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import { cosmeticSelect, toCosmetics } from './shop';
 import type { Cosmetics } from './shop-const';
@@ -64,11 +65,16 @@ export type KarmaPermission = { can: true } | { can: false; reason: string };
  * Dùng ở cả hai đầu: giao diện gọi để biết có nên hiện nút, và hành động gọi
  * lại lần nữa trước khi ghi — nút chỉ là gợi ý, ai cũng gửi thẳng biểu mẫu được.
  */
-export async function checkKarmaPermission(fromId: string | null, toId: string): Promise<KarmaPermission> {
+export async function checkKarmaPermission(
+  fromId: string | null,
+  toId: string,
+  /** Truyền transaction vào để kiểm lại LẦN NỮA sau khi đã khoá hàng người chấm. */
+  client: Prisma.TransactionClient | typeof db = db,
+): Promise<KarmaPermission> {
   if (!fromId) return { can: false, reason: 'Bạn cần đăng nhập để chấm uy tín.' };
   if (fromId === toId) return { can: false, reason: 'Không tự chấm uy tín cho mình được.' };
 
-  const me = await db.user.findUnique({
+  const me = await client.user.findUnique({
     where: { id: fromId },
     select: { _count: { select: { threads: true, replies: true } } },
   });
@@ -78,13 +84,11 @@ export async function checkKarmaPermission(fromId: string | null, toId: string):
   }
 
   const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [recentForTarget, todayCount] = await Promise.all([
-    db.karmaVote.findFirst({
-      where: { fromId, toId, createdAt: { gte: new Date(Date.now() - KARMA_COOLDOWN_HOURS * 60 * 60 * 1000) } },
-      select: { createdAt: true },
-    }),
-    db.karmaVote.count({ where: { fromId, createdAt: { gte: dayAgo } } }),
-  ]);
+  const recentForTarget = await client.karmaVote.findFirst({
+    where: { fromId, toId, createdAt: { gte: new Date(Date.now() - KARMA_COOLDOWN_HOURS * 60 * 60 * 1000) } },
+    select: { createdAt: true },
+  });
+  const todayCount = await client.karmaVote.count({ where: { fromId, createdAt: { gte: dayAgo } } });
 
   if (recentForTarget) {
     return { can: false, reason: `Bạn đã chấm cho người này rồi, ${KARMA_COOLDOWN_HOURS} giờ sau mới chấm tiếp được.` };

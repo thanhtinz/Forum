@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { recountForum, recountForums, recountThread } from '@/lib/forum-counters';
 import { grantPoints } from '@/lib/points';
 import { addExp } from '@/lib/level';
 import { notify, filterNotifiable } from '@/lib/notify';
@@ -189,10 +190,13 @@ export async function addReply(_prev: ReplyState, formData: FormData): Promise<R
 
   const thread = await db.thread.findUnique({
     where: { id: threadId },
-    select: { id: true, locked: true, authorId: true, title: true, forum: { select: { slug: true, id: true } } },
+    select: { id: true, locked: true, status: true, authorId: true, title: true, forum: { select: { slug: true, id: true } } },
   });
   if (!thread) return { error: 'Không tìm thấy chủ đề.' };
   if (thread.locked) return { error: 'Chủ đề đã bị khoá, không thể trả lời.' };
+  // Chủ đề đã ẩn hoặc còn chờ duyệt thì không ai đọc được trả lời, mà bộ đếm
+  // của chuyên mục chỉ tính chủ đề đang hiện — cộng vào là lệch ngay.
+  if (thread.status !== 'PUBLISHED') return { error: 'Chủ đề này không còn nhận trả lời.' };
 
   // Nếu là phản hồi lồng, xác định người được phản hồi để báo tin
   let parentAuthorId: string | null = null;
@@ -502,8 +506,16 @@ export async function markSolution(threadId: string, replyId: string): Promise<S
   const reply = await db.reply.findUnique({ where: { id: replyId }, select: { authorId: true, threadId: true } });
   if (!reply || reply.threadId !== threadId) return { error: 'Trả lời không hợp lệ.' };
 
-  await db.$transaction(async (tx) => {
-    await tx.thread.update({ where: { id: threadId }, data: { solvedReplyId: replyId } });
+  // Hai lần bấm cùng lúc thì cả hai cùng đọc thấy "chưa có lời giải" ở trên,
+  // và điểm treo thưởng bị trả HAI lần dù chỉ giữ một lần — mất điểm thật. Nên
+  // chốt lời giải bằng một lần ghi CÓ ĐIỀU KIỆN: chỉ luồng nào đổi được ô đang
+  // trống mới đi tiếp, luồng kia dừng lại ở đây.
+  const daCoLoiGiai = await db.$transaction(async (tx) => {
+    const chot = await tx.thread.updateMany({
+      where: { id: threadId, solvedReplyId: null },
+      data: { solvedReplyId: replyId },
+    });
+    if (chot.count === 0) return true;
     await tx.reply.update({ where: { id: replyId }, data: { isSolution: true } });
 
     // Điểm thưởng đã bị giữ từ lúc treo, giờ chỉ việc trả cho người có lời giải.
@@ -525,7 +537,10 @@ export async function markSolution(threadId: string, replyId: string): Promise<S
         content: thread.title, link: `/forum/${thread.forum.slug}/${threadId}`, actorId: userId,
       }, tx);
     }
+    return false;
   });
+
+  if (daCoLoiGiai) return { error: 'Chủ đề đã có lời giải được chọn.' };
 
   revalidatePath(`/forum/${thread.forum.slug}/${threadId}`);
   return { ok: true };
@@ -546,7 +561,7 @@ async function loadThreadForMod(threadId: string) {
 
   const thread = await db.thread.findUnique({
     where: { id: threadId },
-    select: { id: true, forumId: true, title: true, authorId: true, pinned: true, locked: true, featured: true, replyCount: true, forum: { select: { slug: true } } },
+    select: { id: true, forumId: true, title: true, authorId: true, pinned: true, locked: true, featured: true, forum: { select: { slug: true } } },
   });
   if (!thread) return { error: 'Không tìm thấy chủ đề.' as const };
 
@@ -605,11 +620,9 @@ export async function moveThread(threadId: string, targetForumId: string): Promi
   const target = await db.forum.findUnique({ where: { id: targetForumId }, select: { id: true, slug: true, name: true } });
   if (!target) return { error: 'Không tìm thấy chuyên mục đích.' };
 
-  const replies = r.thread.replyCount;
   await db.$transaction(async (tx) => {
     await tx.thread.update({ where: { id: threadId }, data: { forumId: target.id } });
-    await tx.forum.update({ where: { id: r.thread.forumId }, data: { threadCount: { decrement: 1 }, replyCount: { decrement: replies } } });
-    await tx.forum.update({ where: { id: target.id }, data: { threadCount: { increment: 1 }, replyCount: { increment: replies } } });
+    await recountForums([r.thread.forumId, target.id], tx);
   });
 
   if (r.thread.authorId !== r.userId) {
@@ -631,10 +644,7 @@ export async function hideThread(threadId: string): Promise<ModState> {
 
   await db.$transaction(async (tx) => {
     await tx.thread.update({ where: { id: threadId }, data: { status: 'HIDDEN' } });
-    await tx.forum.update({
-      where: { id: r.thread.forumId },
-      data: { threadCount: { decrement: 1 }, replyCount: { decrement: r.thread.replyCount } },
-    });
+    await recountForum(r.thread.forumId, tx);
   });
 
   if (r.thread.authorId !== r.userId) {
@@ -728,8 +738,6 @@ export async function deleteOwnThread(threadId: string): Promise<OwnerState> {
   });
 
   await db.$transaction(async (tx) => {
-    const replies = await tx.reply.count({ where: { threadId } });
-
     // Xoá chủ đề khi chưa chọn lời giải thì hoàn lại điểm đang bị giữ.
     if (info?.bountyPoints && !info.solvedReplyId) {
       await grantPoints({
@@ -739,10 +747,7 @@ export async function deleteOwnThread(threadId: string): Promise<OwnerState> {
     }
 
     await tx.thread.delete({ where: { id: threadId } });
-    await tx.forum.update({
-      where: { id: guard.thread.forumId },
-      data: { threadCount: { decrement: 1 }, replyCount: { decrement: replies } },
-    });
+    await recountForum(guard.thread.forumId, tx);
   });
 
   revalidatePath(`/forum/${slug}`);
@@ -853,11 +858,10 @@ export async function toggleReplyHidden(replyId: string): Promise<HideState> {
   }
 
   const hidden = !reply.hidden;
-  const step = hidden ? -1 : 1;
   await db.$transaction(async (tx) => {
     await tx.reply.update({ where: { id: replyId }, data: { hidden }, select: { id: true } });
-    await tx.thread.update({ where: { id: reply.threadId }, data: { replyCount: { increment: step } }, select: { id: true } });
-    await tx.forum.update({ where: { id: reply.thread.forumId }, data: { replyCount: { increment: step } }, select: { id: true } });
+    await recountThread(reply.threadId, tx);
+    await recountForum(reply.thread.forumId, tx);
   });
 
   revalidatePath(`/forum/${reply.thread.forum.slug}/${reply.threadId}`);
@@ -914,7 +918,7 @@ async function assertReplyOwner(replyId: string) {
   const reply = await db.reply.findUnique({
     where: { id: replyId },
     select: {
-      id: true, authorId: true, hidden: true, isSolution: true, threadId: true,
+      id: true, authorId: true, isSolution: true, threadId: true,
       thread: { select: { locked: true, forumId: true, forum: { select: { slug: true } } } },
     },
   });
@@ -949,8 +953,8 @@ export async function updateReply(_prev: ReplyEditState, formData: FormData): Pr
 /**
  * Xoá hẳn trả lời của mình, kèm các phản hồi lồng bên dưới (khoá ngoại tự dọn).
  *
- * Bộ đếm chỉ trừ đi những bài đang thật sự hiện: bài đã bị ẩn thì lúc ẩn đã
- * trừ rồi, trừ thêm lần nữa là số đếm âm dần.
+ * Bộ đếm được đếm lại từ dữ liệu thật sau khi xoá (xem `forum-counters.ts`),
+ * nên không phải tự tính xem bài này đã bị trừ lúc ẩn hay chưa.
  *
  * Điểm thưởng lúc trả lời không thu lại — giống xoá chủ đề, để người dùng khỏi
  * bị âm điểm vì dọn bài cũ.
@@ -966,28 +970,15 @@ export async function deleteOwnReply(replyId: string): Promise<ReplyEditState> {
 
   // Đếm bằng count chứ không kéo cả danh sách phản hồi về: một trả lời có
   // hàng nghìn phản hồi thì đọc hết chỉ để đếm là tự dựng một quả bom.
-  const [solutionBelow, visibleChildren] = await Promise.all([
-    db.reply.count({ where: { parentId: replyId, isSolution: true } }),
-    db.reply.count({ where: { parentId: replyId, hidden: false } }),
-  ]);
+  const solutionBelow = await db.reply.count({ where: { parentId: replyId, isSolution: true } });
   if (solutionBelow > 0) {
     return { error: 'Có phản hồi bên dưới đang là lời giải, không xoá được.' };
   }
 
-  const visible = (reply.hidden ? 0 : 1) + visibleChildren;
-
   await db.$transaction(async (tx) => {
     await tx.reply.delete({ where: { id: replyId } });
-    if (visible > 0) {
-      await tx.thread.update({
-        where: { id: reply.threadId },
-        data: { replyCount: { decrement: visible } }, select: { id: true },
-      });
-      await tx.forum.update({
-        where: { id: reply.thread.forumId },
-        data: { replyCount: { decrement: visible } }, select: { id: true },
-      });
-    }
+    await recountThread(reply.threadId, tx);
+    await recountForum(reply.thread.forumId, tx);
   });
 
   revalidatePath(`/forum/${reply.thread.forum.slug}/${reply.threadId}`);

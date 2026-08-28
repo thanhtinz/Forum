@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { requireAdmin, requireSuperAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
+import { recountForum, recountThread } from '@/lib/forum-counters';
 import { notify } from '@/lib/notify';
 import { checkAndAwardMedals, MEDAL_CONDITIONS } from '@/lib/medals';
 import { GIF_SETTING_KEY } from '@/lib/gif';
@@ -213,10 +214,13 @@ export async function resolveReportAndRemove(id: string) {
 
   // Xoá nội dung thì phải trừ số đếm theo, không thì chủ đề và game khoe nhiều
   // trả lời/bình luận hơn số thật sự còn đọc được.
+  const thread = r.threadId
+    ? await db.thread.findUnique({ where: { id: r.threadId }, select: { forumId: true } })
+    : null;
   const reply = r.replyId
     ? await db.reply.findUnique({
         where: { id: r.replyId },
-        select: { hidden: true, threadId: true, thread: { select: { forumId: true } } },
+        select: { threadId: true, thread: { select: { forumId: true } } },
       })
     : null;
   const comment = r.commentId
@@ -228,10 +232,12 @@ export async function resolveReportAndRemove(id: string) {
     if (r.replyId) await tx.reply.delete({ where: { id: r.replyId } }).catch(() => {});
     if (r.commentId) await tx.comment.delete({ where: { id: r.commentId } }).catch(() => {});
 
-    // Nội dung đang ẩn thì trước đó đã trừ rồi, đừng trừ thêm lần nữa.
-    if (reply && !reply.hidden) {
-      await tx.thread.update({ where: { id: reply.threadId }, data: { replyCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
-      await tx.forum.update({ where: { id: reply.thread.forumId }, data: { replyCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
+    // Đếm lại thay vì trừ dần: xoá một trả lời là kéo theo cả phản hồi lồng bên
+    // dưới nó, mà trừ đi 1 thì chỉ đúng khi nó không có phản hồi nào.
+    if (thread) await recountForum(thread.forumId, tx);
+    if (reply) {
+      await recountThread(reply.threadId, tx).catch(() => {});
+      await recountForum(reply.thread.forumId, tx);
     }
     if (comment && !comment.hidden && comment.gameId) {
       await tx.game.update({ where: { id: comment.gameId }, data: { commentCount: { decrement: 1 } }, select: { id: true } }).catch(() => {});
@@ -252,7 +258,13 @@ export async function resolveReportAndRemove(id: string) {
 
 export async function setThreadStatus(id: string, status: 'PUBLISHED' | 'PENDING' | 'HIDDEN') {
   const admin = await requireAdmin();
-  const t = await db.thread.update({ where: { id }, data: { status }, select: { title: true } });
+  // Bộ đếm của chuyên mục chỉ tính chủ đề đang hiện, nên đổi trạng thái là phải
+  // đếm lại: ẩn đi rồi hiện lại mà quên đếm là con số hụt vĩnh viễn.
+  const t = await db.$transaction(async (tx) => {
+    const row = await tx.thread.update({ where: { id }, data: { status }, select: { title: true, forumId: true } });
+    await recountForum(row.forumId, tx);
+    return row;
+  });
   await logAdmin({
     actor: admin, action: 'thread.status', targetType: 'thread', targetId: id,
     summary: `Đổi chủ đề “${t.title}” sang ${STATUS_LABEL[status] ?? status}`, meta: { status },
@@ -290,9 +302,8 @@ export async function deleteThread(id: string) {
   if (!t) return;
   await db.$transaction(async (tx) => {
     await tx.thread.delete({ where: { id } });
-    // Đếm lại cho khu vực để số chủ đề không lệch.
-    const count = await tx.thread.count({ where: { forumId: t.forumId } });
-    await tx.forum.update({ where: { id: t.forumId }, data: { threadCount: count }, select: { id: true } });
+    // Đếm lại cả chủ đề lẫn trả lời: xoá chủ đề là xoá theo mọi trả lời trong nó.
+    await recountForum(t.forumId, tx);
   });
   await logAdmin({
     actor: admin, action: 'thread.delete', targetType: 'thread', targetId: id,

@@ -11,6 +11,7 @@
     "prisma:push": "prisma db push",
     "seed": "tsx prisma/seed.ts",
     "db:don-may-ao": "tsx prisma/don-du-lieu-may-ao.ts",
+    "db:soat-bo-dem": "node scripts/soat-bo-dem.mjs",
     "test": "node tests/run.mjs",
     "scan": "node scripts/scan-overfetch.mjs && node scripts/scan-dead-buttons.mjs && node scripts/scan-unbounded.mjs"
   },

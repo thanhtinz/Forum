@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { logout } from '@/app/(auth)/actions';
 import { fmtCount } from '@/lib/utils';
-import { LevelBadge } from '@/components/LevelBadge';
+import { LevelBadge, RankBadge } from '@/components/LevelBadge';
 
 export interface UserMenuProps {
   name: string;
@@ -65,7 +65,8 @@ export function UserMenu({ name, image, points, level, levelIcon, levelColor, le
           <div className="border-b border-ink-100 px-4 py-3 dark:border-ink-800">
             <div className="flex items-center gap-2">
               <span className="truncate font-semibold text-ink-900 dark:text-white">{name}</span>
-              <LevelBadge level={level} icon={levelIcon} color={levelColor} name={levelName} />
+              <LevelBadge level={level} color={levelColor} name={levelName} />
+              <RankBadge icon={levelIcon} color={levelColor} name={levelName} />
             </div>
           </div>
 

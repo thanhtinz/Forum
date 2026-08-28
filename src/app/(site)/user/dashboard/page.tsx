@@ -9,7 +9,7 @@ import { fmtCount, fmtVnd } from '@/lib/utils';
 import { POINTS_REASON_LABEL as REASON_LABEL } from '@/lib/labels';
 import { CheckinButton } from '@/components/user/CheckinButton';
 import { getLevelLook } from '@/lib/level';
-import { LevelBadge } from '@/components/LevelBadge';
+import { LevelBadge, RankBadge } from '@/components/LevelBadge';
 
 export const metadata: Metadata = { title: 'Trang cá nhân' };
 export const dynamic = 'force-dynamic';
@@ -53,7 +53,8 @@ export default async function DashboardPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold">Xin chào, {name}</h1>
-              <LevelBadge level={user.level} icon={levelLook?.icon} color={levelLook?.color} name={levelLook?.name} />
+              <LevelBadge level={user.level} color={levelLook?.color} name={levelLook?.name} />
+              <RankBadge icon={levelLook?.icon} color={levelLook?.color} name={levelLook?.name} />
             </div>
             <Link href={`/u/${user.username ?? ''}`} className="text-sm text-brand-600 hover:underline">Xem trang cá nhân</Link>
           </div>

@@ -9,7 +9,7 @@ import { TableHead } from '@/components/forum/TableHead';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
 import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { getLevelLooks } from '@/lib/level';
-import { LevelBadge } from '@/components/LevelBadge';
+import { LevelBadge, RankBadge } from '@/components/LevelBadge';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { threadExcerpt } from '@/lib/bbcode';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
@@ -253,7 +253,9 @@ export default async function SearchPage({ searchParams }: {
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-2 font-semibold text-ink-900 dark:text-white">
                         <span className="truncate">{u.name ?? u.username}</span>
-                        <LevelBadge level={u.level} icon={levelLooks.get(u.level)?.icon}
+                        <LevelBadge level={u.level}
+                          color={levelLooks.get(u.level)?.color} name={levelLooks.get(u.level)?.name} />
+                        <RankBadge icon={levelLooks.get(u.level)?.icon}
                           color={levelLooks.get(u.level)?.color} name={levelLooks.get(u.level)?.name} />
                       </p>
                       <p className="truncate text-xs text-ink-400">{u.bio || `@${u.username}`}</p>

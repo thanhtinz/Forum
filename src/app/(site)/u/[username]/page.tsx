@@ -161,7 +161,7 @@ export default async function ProfilePage({ params, searchParams }: {
         <div className="px-5 pb-5 sm:px-6">
           <div className="-mt-12 flex flex-wrap items-end justify-between gap-3">
             <Avatar image={user.image} name={name} cosmetics={cos} size={96}
-              rounded="rounded-2xl border-4 border-white dark:border-ink-900" online={dangOnline} />
+              rounded="rounded-full border-4 border-white dark:border-ink-900" online={dangOnline} />
             <div className="mb-1 flex flex-wrap items-center justify-end gap-2">
               {/* Đã chặn thì không còn nhắn tin / theo dõi, chỉ còn nút bỏ chặn */}
               {viewerId && viewerId !== user.id && !blocked && user.username && (

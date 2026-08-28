@@ -47,7 +47,7 @@ export function Guestbook({ username, ownerName, items, total, page, totalPages,
             <li key={e.id} className={`p-4 ${e.hidden ? 'opacity-60' : ''}`}>
               <div className="flex items-start gap-3">
                 <Avatar image={e.author.image} name={e.author.name ?? e.author.username}
-                  cosmetics={e.author.cosmetics} size={36} rounded="rounded-lg" />
+                  cosmetics={e.author.cosmetics} size={36} />
 
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-x-2 gap-y-1">

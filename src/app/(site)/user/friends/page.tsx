@@ -109,7 +109,7 @@ function Row({ row, kind, showMessage }: {
   return (
     <li className="flex flex-wrap items-center gap-3 p-3 sm:px-4">
       <Link href={`/u/${row.user.username ?? ''}`} className="shrink-0">
-        <Avatar image={row.user.image} name={name} cosmetics={row.user.cosmetics} size={40} rounded="rounded-lg" />
+        <Avatar image={row.user.image} name={name} cosmetics={row.user.cosmetics} size={40} />
       </Link>
 
       <div className="min-w-0 flex-1">

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Radio, MessageSquare, MessagesSquare, ShieldCheck } from 'lucide-react';
+import { RetroIcon } from '@/components/RetroIcon';
 import { Pagination } from '@/components/Pagination';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { LevelBadge } from '@/components/LevelBadge';
@@ -85,8 +86,11 @@ export default async function OnlinePage({ searchParams }: {
                 <li key={u.id} className="flex items-center gap-3 px-3 py-3 transition-colors hover:bg-ink-50 sm:px-4 dark:hover:bg-ink-800/50">
                   <Link href={`/u/${u.chip?.username ?? ''}`} className="relative shrink-0 self-start" aria-label={name}>
                     <Avatar image={u.chip?.image ?? null} name={name} cosmetics={u.chip?.cosmetics} size={40} />
-                    <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white bg-emerald-500 dark:border-ink-900"
-                      aria-label="Đang online" />
+                    {/* Huy hiệu ON của bộ icon wap ngày trước, thay cho chấm
+                        tròn — đây đúng là trang mà nó sinh ra để phục vụ. */}
+                    <span className="absolute -bottom-1 -right-1 rounded-sm bg-white p-px dark:bg-ink-900">
+                      <RetroIcon name="online" alt="Đang online" w={18} h={9} />
+                    </span>
                   </Link>
 
                   <div className="min-w-0 flex-1">

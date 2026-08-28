@@ -1,10 +1,8 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import {
-  Bold, Italic, Underline, Strikethrough, Quote, Code2, Link2, Image as ImageIcon,
-  List, AlignCenter, EyeOff, Palette, Eye, HelpCircle, Loader2, ImagePlus, Lock,
-} from 'lucide-react';
+import { AlignCenter, Eye, HelpCircle, Loader2, ImagePlus } from 'lucide-react';
+import { RetroIcon } from '@/components/RetroIcon';
 import { bbcodeToHtml, renderHidden } from '@/lib/bbcode';
 import { HIDE_SAMPLES } from '@/lib/hide';
 import { cn } from '@/lib/utils';
@@ -12,7 +10,12 @@ import { MediaPicker } from '@/components/forum/MediaPicker';
 import { Popover } from '@/components/Popover';
 
 interface ToolButton {
-  icon: typeof Bold;
+  /**
+   * Tên icon trong `public/retro`. Bộ icon gốc không có nút căn giữa, nên
+   * riêng nút ấy dùng icon vẽ nét — thà lệch một cái còn hơn gán bừa một icon
+   * mang nghĩa khác.
+   */
+  icon?: string;
   title: string;
   /** Bọc vùng chọn bằng [tag]…[/tag] */
   wrap?: string;
@@ -22,19 +25,23 @@ interface ToolButton {
   prompt?: { tag: string; label: string; placeholder: string };
 }
 
+/**
+ * Thanh công cụ dùng đúng bộ icon BBCode của forum wap ngày trước — bộ icon ấy
+ * vốn sinh ra cho chính những nút này, nên khớp một-một, không phải cố ép.
+ */
 const TOOLS: ToolButton[] = [
-  { icon: Bold, title: 'Đậm', wrap: 'b' },
-  { icon: Italic, title: 'Nghiêng', wrap: 'i' },
-  { icon: Underline, title: 'Gạch chân', wrap: 'u' },
-  { icon: Strikethrough, title: 'Gạch ngang', wrap: 's' },
-  { icon: Palette, title: 'Màu chữ', prompt: { tag: 'color', label: 'Nhập mã màu', placeholder: '#e5484d' } },
-  { icon: AlignCenter, title: 'Căn giữa', wrap: 'center' },
-  { icon: Link2, title: 'Chèn liên kết', prompt: { tag: 'url', label: 'Nhập địa chỉ liên kết', placeholder: 'https://' } },
-  { icon: ImageIcon, title: 'Ảnh từ liên kết', insert: '[img]|[/img]' },
-  { icon: Quote, title: 'Trích dẫn', wrap: 'quote' },
-  { icon: Code2, title: 'Mã nguồn', wrap: 'code' },
-  { icon: List, title: 'Danh sách', insert: '[list]\n[*]|\n[*]\n[/list]' },
-  { icon: EyeOff, title: 'Ẩn nội dung (spoiler)', wrap: 'spoiler' },
+  { icon: 'bb/bold', title: 'Đậm', wrap: 'b' },
+  { icon: 'bb/italics', title: 'Nghiêng', wrap: 'i' },
+  { icon: 'bb/underline', title: 'Gạch chân', wrap: 'u' },
+  { icon: 'bb/strike', title: 'Gạch ngang', wrap: 's' },
+  { icon: 'bb/color', title: 'Màu chữ', prompt: { tag: 'color', label: 'Nhập mã màu', placeholder: '#e5484d' } },
+  { title: 'Căn giữa', wrap: 'center' },
+  { icon: 'bb/link', title: 'Chèn liên kết', prompt: { tag: 'url', label: 'Nhập địa chỉ liên kết', placeholder: 'https://' } },
+  { icon: 'bb/img', title: 'Ảnh từ liên kết', insert: '[img]|[/img]' },
+  { icon: 'bb/quote', title: 'Trích dẫn', wrap: 'quote' },
+  { icon: 'bb/php', title: 'Mã nguồn', wrap: 'code' },
+  { icon: 'bb/list', title: 'Danh sách', insert: '[list]\n[*]|\n[*]\n[/list]' },
+  { icon: 'bb/sp', title: 'Ẩn nội dung (spoiler)', wrap: 'spoiler' },
 ];
 
 /**
@@ -142,20 +149,18 @@ export function BBCodeEditor({
     <div className="overflow-hidden rounded-xl border border-ink-200 dark:border-ink-700">
       {/* Thanh công cụ */}
       <div className="flex flex-wrap items-center gap-0.5 border-b border-ink-200 bg-ink-50 p-1.5 dark:border-ink-700 dark:bg-ink-800/60">
-        {TOOLS.map((t) => {
-          const Icon = t.icon;
-          return (
-            <button key={t.title} type="button" title={t.title} onClick={() => run(t)}
-              className="grid size-8 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-ink-700">
-              <Icon size={16} />
-            </button>
-          );
-        })}
+        {TOOLS.map((t) => (
+          <button key={t.title} type="button" title={t.title} aria-label={t.title} onClick={() => run(t)}
+            className="grid size-8 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-ink-700">
+            {t.icon ? <RetroIcon name={t.icon} size={16} /> : <AlignCenter size={16} />}
+          </button>
+        ))}
 
         <button type="button" title="Ẩn nội dung theo điều kiện"
           ref={setHideAnchor} onClick={() => setHideOpen((v) => !v)}
-          className="grid size-8 place-items-center rounded-lg text-ink-500 transition-colors hover:bg-white hover:text-brand-600 dark:hover:bg-ink-700">
-          <Lock size={16} />
+          aria-label="Ẩn nội dung theo điều kiện"
+          className="grid size-8 place-items-center rounded-lg transition-colors hover:bg-white dark:hover:bg-ink-700">
+          <RetroIcon name="lock" size={16} />
         </button>
         <Popover open={hideOpen} anchor={hideAnchor} onClose={() => setHideOpen(false)} className="card w-64 overflow-y-auto p-1 shadow-card-hover">
           <p className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-400">Mở phần ẩn khi…</p>

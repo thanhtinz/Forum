@@ -1,21 +1,28 @@
-import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-/** Sao đánh giá chỉ để hiển thị (0–5, hỗ trợ nửa sao bằng cách tô nền). */
+/**
+ * Sao đánh giá chỉ để hiển thị (0–5, có nửa sao).
+ *
+ * Dùng thẳng dải sao của bộ icon wap ngày trước: mỗi mức nửa sao là một ảnh
+ * riêng (`star.0`, `star.0-5`, … `star.5`), nên không phải chồng hai lớp sao
+ * rồi cắt theo phần trăm như trước — làm tròn về nửa sao gần nhất là xong.
+ */
 export function RatingStars({ value, size = 13, className }: { value: number; size?: number; className?: string }) {
+  const muc = Math.max(0, Math.min(5, Math.round(value * 2) / 2));
+  const ten = Number.isInteger(muc) ? String(muc) : `${Math.floor(muc)}-5`;
+  // Dải gốc rộng 65px cho 5 sao; giữ đúng tỷ lệ ấy theo chiều cao mong muốn.
+  const rong = Math.round((size * 65) / 12);
+
   return (
-    <span className={cn('inline-flex items-center gap-0.5', className)} aria-label={`${value}/5 sao`}>
-      {[1, 2, 3, 4, 5].map((i) => {
-        const fill = Math.min(1, Math.max(0, value - i + 1));
-        return (
-          <span key={i} className="relative inline-block" style={{ width: size, height: size }}>
-            <Star size={size} className="absolute inset-0 text-ink-300 dark:text-ink-600" />
-            <span className="absolute inset-0 overflow-hidden" style={{ width: `${fill * 100}%` }}>
-              <Star size={size} className="text-amber-400" fill="currentColor" />
-            </span>
-          </span>
-        );
-      })}
+    <span className={cn('inline-flex items-center', className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/retro/rating/star.${ten}.gif`}
+        alt={`${value.toFixed(1)}/5 sao`}
+        width={rong}
+        height={size}
+        style={{ imageRendering: 'pixelated', width: rong, height: size }}
+      />
     </span>
   );
 }

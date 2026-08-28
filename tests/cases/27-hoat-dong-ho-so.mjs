@@ -89,7 +89,9 @@ export default async function run(check) {
 
     // ── Người ngoài: thấy phần công khai, không thấy phần kín ────────────
     let html = await xem(nguoiNgoai);
-    check('có khối hoạt động gần đây', html.includes('Hoạt động gần đây'));
+    // Từ khi hồ sơ chia tab, phần này không còn tiêu đề riêng mà là một tab.
+    check('có tab hoạt động và đang mở sẵn',
+      (await nguoiNgoai.locator('ol.card > li').count()) > 0);
     check('thấy chủ đề đã lập', html.includes(`${DAU} chủ đề tự lập`));
     check('thấy trả lời ở chủ đề người khác', html.includes('TRALOI-KIEMTHU-abc'));
     check('thấy bài ở câu lạc bộ mở', html.includes('BAIMO-KIEMTHU-abc'));
@@ -140,8 +142,10 @@ export default async function run(check) {
       `đếm được ${await dong(nguoiNgoai)}`);
     check('có thanh phân trang cho hoạt động',
       (await nguoiNgoai.locator('a[href*="hd=2"]').count()) > 0);
+    check('có thanh tab trên hồ sơ',
+      (await nguoiNgoai.locator('a[href*="tab=chu-de"]').count()) > 0);
 
-    await nguoiNgoai.goto(`${hoSo}?hd=2`, { waitUntil: 'networkidle' });
+    await nguoiNgoai.goto(`${hoSo}?tab=hoat-dong&hd=2`, { waitUntil: 'networkidle' });
     await nguoiNgoai.waitForTimeout(800);
     const soTrang2 = await dong(nguoiNgoai);
     check('trang hai có việc', soTrang2 > 0, `đếm được ${soTrang2}`);
@@ -152,14 +156,14 @@ export default async function run(check) {
       await nguoiNgoai.waitForTimeout(700);
       return nguoiNgoai.locator('ol.card > li a').first().getAttribute('href');
     })();
-    await nguoiNgoai.goto(`${hoSo}?hd=2`, { waitUntil: 'networkidle' });
+    await nguoiNgoai.goto(`${hoSo}?tab=hoat-dong&hd=2`, { waitUntil: 'networkidle' });
     await nguoiNgoai.waitForTimeout(700);
     const dauTrang2 = await nguoiNgoai.locator('ol.card > li a').first().getAttribute('href');
     check('trang hai không lặp lại trang một', dauTrang1 !== dauTrang2,
       `${dauTrang1} vs ${dauTrang2}`);
 
     // Số trang bịa ra thì kẹp về khoảng hợp lệ chứ không vỡ trang.
-    const r = await nguoiNgoai.goto(`${hoSo}?hd=9999`, { waitUntil: 'networkidle' });
+    const r = await nguoiNgoai.goto(`${hoSo}?tab=hoat-dong&hd=9999`, { waitUntil: 'networkidle' });
     check('số trang quá lớn vẫn mở được trang', r.status() === 200, `trả về ${r.status()}`);
   } finally {
     await wipe();

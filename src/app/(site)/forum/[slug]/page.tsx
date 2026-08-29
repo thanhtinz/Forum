@@ -127,14 +127,20 @@ export default async function ForumPage({ params, searchParams }: {
               </Link>
             ))}
           </div>
+          {/* Dưới `sm` hai nút này chỉ còn biểu tượng. Để nguyên cả chữ thì
+              hàng tab + hai nút vượt quá 390px, nút "Đăng chủ đề" bị đẩy hẳn
+              ra ngoài mép phải — mà cho xuống hàng thì lại tốn thêm một dòng
+              trên đúng cái màn hình đang chật nhất. */}
           {session?.user && (
-            <Link href="/chua-doc" className="btn-outline shrink-0 gap-1.5 whitespace-nowrap !px-3 !py-1.5 text-sm">
-              <Sparkles size={15} /> Chưa đọc
+            <Link href="/chua-doc" title="Chưa đọc"
+              className="btn-outline shrink-0 gap-1.5 whitespace-nowrap !px-2.5 !py-1.5 text-sm sm:!px-3">
+              <Sparkles size={15} /> <span className="hidden sm:inline">Chưa đọc</span>
             </Link>
           )}
           {session?.user && <MarkAllReadButton />}
-          <Link href={`/forum/${slug}/new`} className="btn-primary shrink-0 whitespace-nowrap !px-3 !py-1.5 text-sm sm:ml-auto">
-            <PenLine size={15} /> Đăng chủ đề
+          <Link href={`/forum/${slug}/new`} title="Đăng chủ đề"
+            className="btn-primary shrink-0 whitespace-nowrap !px-2.5 !py-1.5 text-sm sm:ml-auto sm:!px-3">
+            <PenLine size={15} /> <span className="hidden sm:inline">Đăng chủ đề</span>
           </Link>
         </div>
 

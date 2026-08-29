@@ -16,7 +16,7 @@ import { fmtBytes, fmtCount } from '@/lib/utils';
 import { DownloadPanel, type VersionInfo } from '@/components/game/DownloadPanel';
 import { GameActions } from '@/components/game/GameActions';
 import { GameGallery } from '@/components/game/GameGallery';
-import { GameGrid } from '@/components/game/GameGrid';
+import { GameRow } from '@/components/game/GameRow';
 import { GameViewTracker } from '@/components/game/GameViewTracker';
 import { RatingStars } from '@/components/game/RatingStars';
 import { Comments } from '@/components/comment/Comments';
@@ -336,11 +336,13 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
             <Comments gameId={game.id} slug={game.slug} loggedIn={!!session?.user?.id} />
           </section>
 
+          {/* Hàng cuộn ngang chứ không phải lưới dọc: xếp dọc thì khối phụ này
+              cao 922px trên điện thoại — hơn cả phần thông tin của chính game
+              đang xem, mà người ta xuống tới đây là để xem game này chứ chưa
+              phải để chọn game khác. Cuộn ngang giữ đủ số game, còn chiều cao
+              rút xuống bằng một thẻ. */}
           {related.length > 0 && (
-            <section>
-              <h2 className="zib-title mb-3">Game liên quan</h2>
-              <GameGrid games={related.map(toGameCard)} />
-            </section>
+            <GameRow title="Game liên quan" games={related.map(toGameCard)} />
           )}
         </div>
 

@@ -93,7 +93,10 @@ export default async function DashboardPage() {
           <ul className="divide-y divide-ink-100 dark:divide-ink-800">
             {pointsLogs.map((l) => (
               <li key={l.id} className="flex items-center justify-between gap-3 py-2.5">
-                <div className="flex items-center gap-2.5">
+                {/* `min-w-0` phải có ở ĐÂY nữa, không chỉ ở thẻ con: thiếu nó
+                    thì mục flex này không co được, dòng ghi chú dài đẩy cả
+                    hàng rộng ra và số điểm bị hất khỏi mép phải màn hình. */}
+                <div className="flex min-w-0 flex-1 items-center gap-2.5">
                   <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${l.amount >= 0 ? 'bg-green-50 text-green-600 dark:bg-green-950/40' : 'bg-red-50 text-red-600 dark:bg-red-950/40'}`}>
                     {l.amount >= 0 ? <ArrowUpRight size={15} /> : <ArrowDownRight size={15} />}
                   </span>

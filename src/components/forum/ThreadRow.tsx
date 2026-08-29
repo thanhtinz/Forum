@@ -62,11 +62,25 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
           ) : null}
         </div>
 
-        {thread.excerpt && <p className="retro-sub mt-0.5 line-clamp-1 text-ink-400">{thread.excerpt}</p>}
+        {/* Đoạn trích chỉ hiện từ `sm` trở lên. Trên điện thoại nó ăn thêm
+            20px mỗi hàng mà chỉ đọc được đúng một dòng cụt — tám hàng là mất
+            gần một phần tư màn hình cho thứ gần như không nói thêm gì. */}
+        {thread.excerpt && <p className="retro-sub mt-0.5 hidden line-clamp-1 text-ink-400 sm:block">{thread.excerpt}</p>}
 
-        <p className="retro-sub retro-rule mt-1 flex flex-wrap items-center gap-x-1.5 pt-1 text-ink-400">
-          <UserName username={thread.author?.username ?? null} name={thread.author?.name ?? null}
-            role={thread.author?.role} cosmetics={cos} className="!font-medium" />
+        {/*
+          Hàng chân: không cho xuống dòng nữa.
+
+          Tên người đăng kéo theo cả Lv, danh hiệu, thẻ câu lạc bộ và huy
+          hiệu, nên ở 390px hàng này luôn tràn sang dòng thứ hai — mỗi hàng
+          chủ đề tự dưng cao thêm 21px. Nay phần tên bị cắt bớt khi chật, còn
+          hai con số xem/trả lời thì giữ nguyên: cắt tên vẫn đọc ra ai, chứ
+          cắt con số thì mất hẳn thông tin.
+        */}
+        <p className="retro-sub retro-rule mt-1 flex items-center gap-x-1.5 overflow-hidden pt-1 text-ink-400 max-sm:flex-nowrap sm:flex-wrap">
+          <span className="flex min-w-0 items-center gap-x-1.5 max-sm:overflow-hidden max-sm:[&_*]:flex-nowrap">
+            <UserName username={thread.author?.username ?? null} name={thread.author?.name ?? null}
+              role={thread.author?.role} cosmetics={cos} className="!font-medium" />
+          </span>
           {/* Thời gian nằm ở cột riêng khi màn hình đủ rộng */}
           <span className="lg:hidden">·</span>
           <span className="lg:hidden">{fmtAgo(at)}</span>
@@ -78,7 +92,7 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
               </Link>
             </>
           )}
-          <span className="ml-auto flex items-center gap-2 sm:hidden">
+          <span className="ml-auto flex shrink-0 items-center gap-2 sm:hidden">
             <span className="flex items-center gap-0.5"><Eye size={12} />{fmtCount(thread.viewCount)}</span>
             <span className="flex items-center gap-0.5"><MessageSquare size={12} />{fmtCount(thread.replyCount)}</span>
           </span>

@@ -42,7 +42,11 @@ export function CuaHangHat({ cay, diem, oSeGieo, dangLam, onGieo }: Props) {
         </div>
       </header>
 
-      <ul className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 lg:grid-cols-4">
+      {/* Ba cột ngay từ điện thoại. Hai cột thì mười một giống xếp thành sáu
+          hàng thẻ cao 153px — gần 950px chỉ để chọn hạt, dài hơn cả mảnh ruộng
+          bên trên. Ba cột còn bốn hàng, mà ô bấm vẫn rộng ~116px nên không
+          bấm nhầm. */}
+      <ul className="grid grid-cols-3 gap-2 p-3 sm:gap-3 lg:grid-cols-4">
         {cay.map((c) => {
           const du = diem >= c.seedCost;
           const gieoDuoc = du && oSeGieo != null && !dangLam;
@@ -66,13 +70,13 @@ export function CuaHangHat({ cay, diem, oSeGieo, dangLam, onGieo }: Props) {
               >
                 {/* Khay ảnh: nền đất nhạt cho quả nào cũng nổi lên như nhau. */}
                 <span
-                  className="grid size-16 place-items-center overflow-hidden rounded-lg"
+                  className="grid size-12 place-items-center overflow-hidden rounded-lg sm:size-16"
                   style={{ background: 'radial-gradient(circle at 50% 118%, #f2ddb2 0%, #fbf6ec 72%)' }}
                 >
                   <AnhPixel src={anhNongSan(c.key)} phong={2} />
                 </span>
 
-                <span className="mt-1.5 block text-sm font-bold leading-tight">{c.name}</span>
+                <span className="mt-1.5 block text-[13px] font-bold leading-tight sm:text-sm">{c.name}</span>
                 <span className="retro-sub mt-0.5 block text-ink-400">
                   {moTaVu(c.growMinutes)} · thu {c.yieldMin}–{c.yieldMax}
                 </span>

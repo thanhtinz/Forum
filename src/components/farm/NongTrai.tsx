@@ -40,6 +40,7 @@ export function NongTrai({ d }: { d: DuLieu }) {
   const [tin, setTin] = useState<FarmState>({});
   const [dangLam, batDau] = useTransition();
   const [oChon, setOChon] = useState<number | null>(null);
+  const [trang, setTrang] = useState(0);
 
   // Đồng hồ nhích mỗi giây để đếm ngược chạy mà không phải hỏi lại máy chủ.
   useEffect(() => {
@@ -82,6 +83,13 @@ export function NongTrai({ d }: { d: DuLieu }) {
   const duTienMoO = d.giaMoO != null && d.diem >= d.giaMoO;
   const moODatNgay = () => lam(moODat, {});
 
+  /*
+   * Lật trang thì bỏ luôn ô đang chọn: thanh việc ở dưới nói về ô đang chọn,
+   * mà ô ấy nay đã ở trang khác — để nguyên là thanh việc mời làm một việc
+   * lên chính cái ô người chơi không còn nhìn thấy.
+   */
+  const doiTrang = (t: number) => { setTrang(t); setOChon(null); };
+
   return (
     <div className="space-y-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -107,6 +115,7 @@ export function NongTrai({ d }: { d: DuLieu }) {
           oDat={d.oDat} now={now} banNgay={d.banNgay}
           dangChon={oChon} onChon={(i) => setOChon((cu) => (cu === i ? null : i))}
           giaMoO={d.giaMoO} duTienMoO={duTienMoO} dangLam={dangLam} onMua={moODatNgay}
+          trang={trang} onTrang={doiTrang}
         />
         <ThanhViec
           nhan={

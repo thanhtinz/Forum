@@ -3,8 +3,10 @@
 import type { ODat as ODatDL } from '@/lib/farm';
 import {
   ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY,
-  NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, TROI_DEM, TROI_NGAY,
+  NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, O_MOI_TRANG, TROI_DEM, TROI_NGAY,
+  changCua,
 } from '@/lib/farm-const';
+import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
 import { ODat, ODatKhoa } from './ODat';
 
@@ -61,10 +63,14 @@ interface Props {
   duTienMoO: boolean;
   dangLam: boolean;
   onMua: () => void;
+  /** Trang ruộng đang xem, đếm từ 0. */
+  trang: number;
+  onTrang: (trang: number) => void;
 }
 
 export function ManhDat({
   oDat, now, banNgay, dangChon, onChon, giaMoO, duTienMoO, dangLam, onMua,
+  trang, onTrang,
 }: Props) {
   const [troiTren, troiDuoi] = banNgay ? TROI_NGAY : TROI_DEM;
 
@@ -76,12 +82,29 @@ export function ManhDat({
   const soO = oDat.length;
   const soHienRa = Math.min(O_DAT_TOI_DA, Math.ceil((soO + 1) / 4) * 4);
 
+  /*
+   * Chia trang trên SỐ Ô ĐANG BÀY, không phải trên trần 40: người mới chơi có
+   * bốn ô thì vẫn đúng một trang, không phải bốn trang rỗng đứng chờ.
+   */
+  const soTrang = Math.max(1, Math.ceil(soHienRa / O_MOI_TRANG));
+  const trangAnToan = Math.min(Math.max(0, trang), soTrang - 1);
+  const dau = trangAnToan * O_MOI_TRANG;
+  const cuoi = Math.min(soHienRa, dau + O_MOI_TRANG);
+
+  // Trang nào có ô đã chín, và trang nào chứa ô mua được ngay — để đánh dấu
+  // lên nút chuyển trang.
+  const chinTheoTrang = Array.from({ length: soTrang }, (_, t) =>
+    oDat
+      .slice(t * O_MOI_TRANG, (t + 1) * O_MOI_TRANG)
+      .some((o) => changCua(o.plantedAt, o.readyAt, now) === 'chin'));
+  const moDuocTrang = giaMoO != null ? Math.floor(soO / O_MOI_TRANG) : null;
+
   // Xếp thành từng hàng bốn ô: dải luống vẽ theo hàng nên phải biết hàng nào
   // gồm những ô nào, chứ một lưới phẳng thì không có chỗ móc dải luống vào.
   const hang: { soTT: number; o: ODatDL | null }[][] = [];
-  for (let i = 0; i < soHienRa; i += 4) {
+  for (let i = dau; i < cuoi; i += 4) {
     hang.push(
-      Array.from({ length: Math.min(4, soHienRa - i) }, (_, j) => ({
+      Array.from({ length: Math.min(4, cuoi - i) }, (_, j) => ({
         soTT: i + j + 1,
         o: oDat[i + j] ?? null,
       })),
@@ -354,6 +377,75 @@ export function ManhDat({
         )}
         </div>
       </div>
+
+      {soTrang > 1 && (
+        <ThanhTrang
+          soTrang={soTrang} trang={trangAnToan} onTrang={onTrang}
+          chinTheoTrang={chinTheoTrang} moDuocTrang={moDuocTrang}
+        />
+      )}
     </div>
+  );
+}
+
+/**
+ * Chuyển trang ruộng.
+ *
+ * Hai dấu chấm trên số trang là phần đáng kể nhất ở đây, không phải trang trí:
+ * chia trang xong thì ô chín ở trang khác BIẾN MẤT khỏi mắt người chơi, mà cây
+ * chín để lâu thì phí cả vụ. Chấm xanh báo trang ấy có ô đã chín, chấm vàng
+ * báo trang ấy có ô mua được ngay — hai thứ duy nhất đáng lật trang để xem.
+ */
+function ThanhTrang({
+  soTrang, trang, onTrang, chinTheoTrang, moDuocTrang,
+}: {
+  soTrang: number;
+  trang: number;
+  onTrang: (t: number) => void;
+  chinTheoTrang: boolean[];
+  moDuocTrang: number | null;
+}) {
+  return (
+    <nav aria-label="Trang ruộng" className="mt-1.5 flex items-center justify-center gap-1">
+      <button
+        type="button" disabled={trang === 0} onClick={() => onTrang(trang - 1)}
+        aria-label="Lùi một trang ruộng"
+        className="grid size-7 shrink-0 place-items-center rounded-md bg-black/25 text-sm font-black text-amber-50 disabled:opacity-30"
+      >‹</button>
+
+      {Array.from({ length: soTrang }, (_, i) => (
+        <button
+          key={i} type="button" onClick={() => onTrang(i)}
+          aria-label={
+            `Trang ruộng ${i + 1}`
+            + (chinTheoTrang[i] ? ', có ô đã chín' : '')
+            + (moDuocTrang === i ? ', còn đất mở được' : '')
+          }
+          aria-current={i === trang ? 'true' : undefined}
+          className={cn(
+            'relative grid size-7 shrink-0 place-items-center rounded-md text-xs font-black',
+            i === trang
+              ? 'bg-amber-300 text-amber-950'
+              : 'bg-black/25 text-amber-50 hover:bg-black/40',
+          )}
+        >
+          {i + 1}
+          {chinTheoTrang[i] && (
+            <span aria-hidden
+              className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-emerald-400 ring-1 ring-emerald-900/50" />
+          )}
+          {!chinTheoTrang[i] && moDuocTrang === i && (
+            <span aria-hidden
+              className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-amber-400 ring-1 ring-amber-900/50" />
+          )}
+        </button>
+      ))}
+
+      <button
+        type="button" disabled={trang === soTrang - 1} onClick={() => onTrang(trang + 1)}
+        aria-label="Tới một trang ruộng"
+        className="grid size-7 shrink-0 place-items-center rounded-md bg-black/25 text-sm font-black text-amber-50 disabled:opacity-30"
+      >›</button>
+    </nav>
   );
 }

@@ -59,6 +59,13 @@ sưu tầm 9 loài × 6 màu.
 **Slide trang chủ** — nối `Slide` vào trang chủ (trước đây quản trị lập được mà
 chẳng hiện ở đâu), kèm vá chỗ `saveSlide` không kiểm định dạng ảnh.
 
+**Nông trại 40 ô, chia trang** — trần ô đất 12 → 40, mảnh ruộng chia trang 8 ô
+(hai hàng bốn ô) nên khung cảnh luôn cao đúng bằng lúc mới chơi. Nút chuyển
+trang có chấm xanh báo trang ấy có ô đã CHÍN và chấm vàng báo trang ấy còn đất
+mở được — chia trang xong thì ô chín ở trang khác biến mất khỏi mắt người chơi,
+mà cây chín để lâu là phí cả vụ. Thêm `42-nong-trai-o-dat` (15 mục): trước đợt
+này nông trại KHÔNG có bài kiểm nào.
+
 **Đăng bài một lối** — trước có năm chỗ mở khung đăng chủ đề, bốn trong số đó
 là lối toàn cục tự đoán hộ chuyên mục (tệ nhất là nút ở trang chủ, nó lấy
 `forums[0]`). Gỡ cả bốn, xoá trang `/dang-chu-de`; nay chỉ đăng bài từ trong

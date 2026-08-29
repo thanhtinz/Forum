@@ -18,8 +18,19 @@ export const FARM_ANH = '/hoai-niem/nongtrai';
 /** Ai cũng bắt đầu với bốn ô — đủ để xoay vòng mà chưa cần mua gì. */
 export const O_DAT_BAN_DAU = 4;
 
-/** Trần số ô một người có thể mở. Quá mười hai ô thì một màn hình không nhìn hết. */
-export const O_DAT_TOI_DA = 12;
+/** Trần số ô một người có thể mở. */
+export const O_DAT_TOI_DA = 40;
+
+/**
+ * Mỗi trang ruộng bày bao nhiêu ô — hai hàng bốn ô.
+ *
+ * Bốn mươi ô mà bày hết một lượt thì mảnh ruộng dài mười hàng, cuộn mãi không
+ * hết và chẳng còn nhìn ra một khoảnh đất nữa. Chia trang thì khung cảnh luôn
+ * cao đúng bằng lúc mới chơi, mở thêm bao nhiêu ô cũng vậy.
+ *
+ * Phải là bội số của 4 (số ô một hàng), không thì trang cuối lòi ra một hàng dở.
+ */
+export const O_MOI_TRANG = 8;
 
 /** Giá mở ô tiếp theo: càng rộng càng đắt, nên hệ số nhân thẳng với số ô đang có. */
 export const GIA_MOI_O = 30;

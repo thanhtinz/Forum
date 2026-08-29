@@ -150,6 +150,7 @@ model User {
   quizQuestions  QuizQuestion[]    @relation("QuizAuthor")
   quizReviewed   QuizQuestion[]    @relation("QuizReviewer")
   quizAnswers    QuizAnswer[]
+  quizComments   QuizComment[]     @relation("QuizCommentAuthor")
   farmPlots      FarmPlot[]
   farmBarn       FarmBarn[]
   /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
@@ -2068,6 +2069,11 @@ model QuizQuestion {
   authorId String
   author   User   @relation("QuizAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
+  /// Thể loại — bản gốc xếp câu hỏi theo thể loại, và đó là thứ khiến trang
+  /// chủ trắc nghiệm có hình hài chứ không phải một đống câu hỏi trộn lẫn.
+  categoryId String?
+  category   QuizCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
   content String @db.Text
   /// Bốn phương án, theo đúng thứ tự hiện ra.
   options String[]
@@ -2087,12 +2093,53 @@ model QuizQuestion {
   /// Lý do từ chối, để người đăng biết đường sửa.
   reviewNote   String?
 
-  answers QuizAnswer[]
+  answers  QuizAnswer[]
+  comments QuizComment[]
 
   createdAt DateTime @default(now())
 
   @@index([status, createdAt])
   @@index([authorId, createdAt])
+  @@index([categoryId, status, createdAt])
+}
+
+/** Thể loại câu hỏi, quản trị lập. */
+model QuizCategory {
+  id   String @id @default(cuid())
+  slug String @unique
+  name String
+  /// Một dòng mô tả ngắn hiện dưới tên thể loại.
+  note String?
+
+  order Int @default(0)
+
+  questions QuizQuestion[]
+
+  createdAt DateTime @default(now())
+
+  @@index([order])
+}
+
+/**
+ * Bình luận dưới một câu hỏi.
+ *
+ * Bản gốc có mục này và nó đúng là chỗ vui nhất: trả lời xong người ta hay
+ * xuống cãi nhau về đáp án. Điều hành viên ẩn được bình luận bậy chứ không xoá
+ * hẳn, giống mọi chỗ khác trong diễn đàn.
+ */
+model QuizComment {
+  id         String       @id @default(cuid())
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User         @relation("QuizCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+  hidden  Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([questionId, hidden, createdAt])
 }
 
 enum QuizStatus {

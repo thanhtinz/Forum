@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * `[hide=…]`: khối ẩn mở theo đúng điều kiện người đăng đặt.
@@ -158,7 +158,7 @@ export default async function run(check) {
     await poster.fill('textarea[name="content"]',
       `Bản mới đây:\n\n[hide=diem:45]${BIMAT_GO}[/hide]`);
     await poster.click('button[type="submit"]');
-    await poster.waitForTimeout(2500);
+    await doiToi(async () => (await db.thread.findUnique({ where: { id: tCu.id }, select: { content: true } }))?.content?.includes('<!--hide:points:45-->'));
 
     const daLuu = await db.thread.findUnique({ where: { id: tCu.id }, select: { content: true } });
     check('BBCode [hide=diem:45] dựng ra mốc có điều kiện',

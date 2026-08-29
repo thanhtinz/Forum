@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Sổ lưu bút trên trang cá nhân.
@@ -37,7 +37,7 @@ export default async function run(check) {
 
     await visitor.fill('#so-luu-but textarea[name="content"]', 'Ghé qua chào chủ nhà một tiếng');
     await visitor.locator('#so-luu-but button:has-text("Ghi sổ")').click();
-    await visitor.waitForTimeout(2500);
+    await doiToi(async () => (await db.guestbookEntry.count({ where: { ownerId: owner.id } })) === 1);
     check('ghi được lời nhắn', (await db.guestbookEntry.count({ where: { ownerId: owner.id } })) === 1);
     check('lời nhắn hiện trên trang', (await visitor.locator('text=Ghé qua chào chủ nhà').count()) > 0);
     check('chủ nhà nhận thông báo',
@@ -78,7 +78,7 @@ export default async function run(check) {
     await host.waitForTimeout(400);
     await row(host, 'Ghé qua chào').locator('textarea[name="reply"]').fill('Cảm ơn bạn đã ghé nhé!');
     await row(host, 'Ghé qua chào').locator('button:has-text("Lưu hồi âm")').click();
-    await host.waitForTimeout(2500);
+    await doiToi(async () => (await db.guestbookEntry.findFirst({ where: { ownerId: owner.id }, select: { reply: true } }))?.reply != null);
     const replied = await db.guestbookEntry.findFirst({
       where: { ownerId: owner.id, content: { contains: 'Ghé qua chào' } },
       select: { reply: true, repliedAt: true },
@@ -100,7 +100,7 @@ export default async function run(check) {
     await host.waitForTimeout(800);
     host.once('dialog', (d) => d.accept());
     await row(host, 'Ghé qua chào').locator('button[title="Gỡ lời nhắn"]').click();
-    await host.waitForTimeout(2500);
+    await doiToi(async () => (await db.guestbookEntry.findUnique({ where: { id: target.id }, select: { hiddenAt: true } }))?.hiddenAt !== null);
     check('gỡ được lời nhắn',
       !!(await db.guestbookEntry.findUnique({ where: { id: target.id }, select: { hiddenAt: true } }))?.hiddenAt);
     check('gỡ chứ không xoá', (await db.guestbookEntry.count({ where: { id: target.id } })) === 1);
@@ -114,7 +114,7 @@ export default async function run(check) {
     await admin.waitForTimeout(800);
     check('quản trị vẫn thấy lời đã gỡ', (await admin.locator('text=đã gỡ').count()) > 0);
     await row(admin, 'Ghé qua chào').locator('button[title="Phục hồi lời nhắn"]').click();
-    await admin.waitForTimeout(2500);
+    await doiToi(async () => (await db.guestbookEntry.findUnique({ where: { id: target.id }, select: { hiddenAt: true } }))?.hiddenAt === null);
     const back = await db.guestbookEntry.findUnique({ where: { id: target.id }, select: { hiddenAt: true } });
     check('quản trị phục hồi được', back?.hiddenAt === null);
 

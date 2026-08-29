@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Bộ đếm lệch và điều kiện đua.
@@ -144,7 +144,7 @@ export default async function run(check) {
     await moQuanTri();
     quanTri.once('dialog', (d) => d.accept());
     await hang(quanTri, t.id).locator('button[title="Xoá"]').click();
-    await quanTri.waitForTimeout(1800);
+    await doiToi(async () => (await db.thread.count({ where: { id: t.id } })) === 0);
     check('xoá chủ đề rồi thì chủ đề đó không còn',
       (await db.thread.count({ where: { id: t.id } })) === 0);
     check('xoá chủ đề thì trừ theo cả số trả lời', (await soLech()) === '', await soLech());
@@ -187,7 +187,11 @@ export default async function run(check) {
         nut(tacGiaA, 'loi giai mot').click().catch(() => {}),
         nut(tacGiaB, 'loi giai hai').click().catch(() => {}),
       ]);
-      await tacGiaA.waitForTimeout(2500);
+      // Hai người cùng bấm chọn lời giải; chờ tới khi CÓ khoản trả thưởng rồi
+      // mới đếm — mục kiểm khẳng định chỉ trả đúng MỘT lần.
+      await doiToi(async () => (await db.pointsLog.count({
+        where: { reason: 'BOUNTY_RECEIVED', refId: t2.id },
+      })) > 0);
 
       const traThuong = await db.pointsLog.count({
         where: { reason: 'BOUNTY_RECEIVED', refId: t2.id },
@@ -241,7 +245,9 @@ export default async function run(check) {
     check('trang cá nhân hiện đúng là đã kết bạn', (await nutHuy.count()) > 0);
     if ((await nutHuy.count()) > 0) {
       await nutHuy.click();
-      await banA.waitForTimeout(2200);
+      await doiToi(async () => (await db.friendship.count({
+        where: { OR: [{ requesterId: chu.id, addresseeId: ba.id }, { requesterId: ba.id, addresseeId: chu.id }] },
+      })) === 0);
     }
     const conLai = await db.friendship.count({
       where: { OR: [{ requesterId: chu.id, addresseeId: ba.id }, { requesterId: ba.id, addresseeId: chu.id }] },

@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Khu giải trí — oẳn tù tì.
@@ -45,9 +45,14 @@ export default async function run(check) {
     await p.goto(`${BASE}/giai-tri/oan-tu-ti`, { waitUntil: 'networkidle' });
     await p.waitForTimeout(900);
     const truocVan = await diem();
+    const vanTruoc = await db.miniGamePlay.count({ where: { userId: ai.id, game: 'OANTUTI' } });
     await p.fill('input[name="cuoc"]', '20');
     await p.locator('button:has-text("Oẳn tù tì!")').click();
-    await p.waitForTimeout(2500);
+    // Chờ SỐ VÁN tăng, không chờ điểm đổi: ra hoà thì điểm giữ nguyên, mà
+    // hoà là kết quả hợp lệ — chờ điểm đổi là cứ hoà một cái lại ngồi hết hạn.
+    await doiToi(async () => (await db.miniGamePlay.count({
+      where: { userId: ai.id, game: 'OANTUTI' },
+    })) > vanTruoc);
 
     const van = await db.miniGamePlay.findFirst({
       where: { userId: ai.id, game: 'OANTUTI' }, orderBy: { createdAt: 'desc' },

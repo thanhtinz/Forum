@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 const TITLE = 'Chủ đề kiểm thử tặng điểm';
 
@@ -38,7 +38,10 @@ export default async function run(check) {
     check('bảng tặng mở ra và nêu số điểm đang có', (await p.locator('text=bạn có 500 điểm').count()) > 0);
 
     await p.locator('button:has-text("20")').first().click();
-    await p.waitForTimeout(2500);
+    // Chờ tới THÔNG BÁO chứ không phải khoản điểm: điểm ghi trước, còn thông
+    // báo và lượt cảm ơn ghi sau — chờ ở khoản điểm là quay lại quá sớm, hai
+    // mục kiểm ngay dưới đọc đúng hai thứ ghi sau ấy.
+    await doiToi(async () => (await db.notification.count({ where: { userId: lan.id, type: 'DONATE' } })) > 0);
 
     const donor = await db.user.findUnique({ where: { id: minh.id }, select: { points: true } });
     const author = await db.user.findUnique({ where: { id: lan.id }, select: { points: true } });

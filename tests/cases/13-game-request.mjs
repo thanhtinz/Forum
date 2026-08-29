@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Bảng yêu cầu game.
@@ -32,7 +32,7 @@ export default async function run(check) {
     await member.fill('input[name="title"]', 'Chinh Phục Vũ Môn 128x160');
     await member.fill('textarea[name="note"]', 'Bản Việt hoá cho Nokia S40 nhé');
     await member.locator('button:has-text("Gửi yêu cầu")').click();
-    await member.waitForTimeout(2500);
+    await doiToi(async () => (await db.gameRequest.count()) > 0);
 
     const req = await db.gameRequest.findFirst({ select: { id: true, title: true, status: true } });
     check('gửi được yêu cầu', req?.title === 'Chinh Phục Vũ Môn 128x160', `đang là ${req?.title}`);
@@ -53,12 +53,12 @@ export default async function run(check) {
     await member.reload({ waitUntil: 'networkidle' });
     await member.waitForTimeout(700);
     await member.locator('button[title="Tôi cũng muốn game này"]').first().click();
-    await member.waitForTimeout(2500);
+    await doiToi(async () => (await db.gameRequest.findUnique({ where: { id: req.id }, select: { voteCount: true } }))?.voteCount === 2);
     check('bấm ủng hộ tăng phiếu',
       (await db.gameRequest.findUnique({ where: { id: req.id }, select: { voteCount: true } }))?.voteCount === 2);
 
     await member.locator('button[title="Bỏ lượt muốn"]').first().click();
-    await member.waitForTimeout(2500);
+    await doiToi(async () => (await db.gameRequest.findUnique({ where: { id: req.id }, select: { voteCount: true } }))?.voteCount === 1);
     const count = (await db.gameRequest.findUnique({ where: { id: req.id }, select: { voteCount: true } }))?.voteCount;
     const rows = await db.gameRequestVote.count({ where: { requestId: req.id } });
     check('bấm lại thì bỏ phiếu', count === 1, `còn ${count}`);
@@ -86,7 +86,7 @@ export default async function run(check) {
     await admin.fill('input[name="gameSlug"]', game.slug);
     await admin.fill('input[name="adminNote"]', 'Đã lên kho rồi nhé bạn');
     await admin.locator('button:has-text("Lưu")').first().click();
-    await admin.waitForTimeout(2500);
+    await doiToi(async () => (await db.gameRequest.findUnique({ where: { id: req.id }, select: { handledAt: true } }))?.handledAt !== null);
 
     const done = await db.gameRequest.findUnique({
       where: { id: req.id }, select: { status: true, adminNote: true, gameId: true, handledAt: true },
@@ -124,7 +124,7 @@ export default async function run(check) {
     await member.waitForTimeout(700);
     member.once('dialog', (d) => d.accept());
     await member.locator('button[title="Rút yêu cầu"]').first().click();
-    await member.waitForTimeout(2500);
+    await doiToi(async () => (await db.gameRequest.count()) === 0);
     check('chủ yêu cầu rút được', (await db.gameRequest.count()) === 0);
     check('rút xong phiếu đi theo', (await db.gameRequestVote.count()) === 0);
 

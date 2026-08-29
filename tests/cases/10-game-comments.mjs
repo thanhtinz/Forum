@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Bình luận dưới mỗi game.
@@ -32,7 +32,10 @@ export default async function run(check) {
 
     await member.fill('textarea[name="content"]', 'Máy Nokia 5230 chạy được không mọi người?');
     await member.locator('button[type="submit"]:has-text("Gửi")').first().click();
-    await member.waitForTimeout(3000);
+    await doiToi(async () => (await db.comment.count({ where: { gameId: game.id } })) > 0);
+    // Có trong cơ sở dữ liệu chưa đủ: mục kiểm dưới đọc TRANG, mà trang dựng
+    // lại sau đó một nhịp.
+    await member.locator('text=Nokia 5230 chạy được không').first().waitFor({ timeout: 15000 }).catch(() => {});
 
     check('bình luận vào đúng game', (await db.comment.count({ where: { gameId: game.id } })) === 1);
     const g1 = await db.game.findUnique({ where: { id: game.id }, select: { commentCount: true } });
@@ -49,7 +52,7 @@ export default async function run(check) {
     await member.waitForTimeout(500);
     await member.locator('textarea[name="content"]').last().fill('Chạy tốt nhé bạn.');
     await member.locator('button[type="submit"]:has-text("Gửi")').last().click();
-    await member.waitForTimeout(3000);
+    await doiToi(async () => (await db.comment.count({ where: { gameId: game.id, parentId: { not: null } } })) > 0);
     check('trả lời được bình luận game',
       (await db.comment.count({ where: { gameId: game.id, parentId: { not: null } } })) === 1);
 
@@ -61,7 +64,7 @@ export default async function run(check) {
 
     const before = (await db.game.findUnique({ where: { id: game.id }, select: { commentCount: true } }))?.commentCount ?? 0;
     await hideBtn.click();
-    await admin.waitForTimeout(2500);
+    await doiToi(async () => (await db.game.findUnique({ where: { id: game.id }, select: { commentCount: true } }))?.commentCount === before - 1);
     const after = (await db.game.findUnique({ where: { id: game.id }, select: { commentCount: true } }))?.commentCount ?? 0;
     check('ẩn xong bộ đếm của game trừ đúng', after === before - 1, `${before}→${after}`);
     check('ẩn chứ không xoá', (await db.comment.count({ where: { gameId: game.id, hidden: true } })) === 1);

@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Đặt giá điểm cho phần tải xuống của game, và quản lý danh mục kho game.
@@ -35,7 +35,7 @@ export default async function run(check) {
     await admin.locator('form input[name="name"]').first().fill('Thể loại kiểm thử');
     await admin.locator('form input[name="slug"]').first().fill('the-loai-kiem-thu');
     await admin.locator('form button[type="submit"]:has-text("Lưu")').first().click();
-    await admin.waitForTimeout(2500);
+    await doiToi(async () => (await db.gameGenre.count({ where: { slug: 'the-loai-kiem-thu' } })) === 1);
     check('tạo được thể loại mới',
       (await db.gameGenre.count({ where: { slug: 'the-loai-kiem-thu' } })) === 1);
 
@@ -75,7 +75,11 @@ export default async function run(check) {
 
     // ── Mở khoá ──────────────────────────────────────────────────────────
     await member.locator('button:has-text("Dùng điểm để mở khoá")').click();
-    await member.waitForTimeout(4000);
+    // Chờ HAI thứ: điểm đã trừ xong ở cơ sở dữ liệu, RỒI trang mới dựng lại.
+    // Chỉ chờ cơ sở dữ liệu là quay lại quá sớm — mấy mục kiểm ngay dưới đọc
+    // trang chứ không đọc cơ sở dữ liệu, và trang lúc ấy vẫn còn nút mở khoá cũ.
+    await doiToi(async () => (await db.user.findUnique({ where: { id: minh.id }, select: { points: true } }))?.points === 70);
+    await member.locator('button:has-text("TẢI")').first().waitFor({ timeout: 15000 }).catch(() => {});
     const after = await db.user.findUnique({ where: { id: minh.id }, select: { points: true } });
     check('trừ đúng số điểm', after?.points === 70, `còn ${after?.points}`);
     const unlock = await db.gameUnlock.findUnique({

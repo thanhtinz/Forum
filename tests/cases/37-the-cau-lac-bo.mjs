@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Thẻ viết tắt câu lạc bộ đeo cạnh tên.
@@ -55,7 +55,7 @@ export default async function run(check) {
 
     await p.fill('input[name="shortName"]', TAT.toLowerCase());
     await p.locator('form button:has-text("Lập câu lạc bộ")').click();
-    await p.waitForTimeout(2500);
+    await doiToi(async () => (await db.club.count({ where: { name: { startsWith: DAU } } })) > 0);
 
     const clb = await db.club.findFirst({
       where: { name: { startsWith: DAU } }, select: { id: true, slug: true, shortName: true },

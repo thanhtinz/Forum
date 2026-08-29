@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Bốn lỗ hổng nặng đã vá — mỗi mục kiểm ở đây là một lần thử tấn công thật.
@@ -110,7 +110,7 @@ export default async function run(check) {
     await chinhChu.fill('input[name="identifier"]', 'lanpham');
     await chinhChu.fill('input[name="password"]', 'member123');
     await chinhChu.click('button[type="submit"]');
-    await chinhChu.waitForTimeout(3000);
+    await doiToi(async () => (await db.user.findUnique({ where: { id: b.id }, select: { status: true } }))?.status === 'ACTIVE');
     const sau2 = await db.user.findUnique({ where: { id: b.id }, select: { status: true } });
     check('lệnh cấm hết hạn thì chính chủ vào lại được', sau2?.status === 'ACTIVE', `trạng thái ${sau2?.status}`);
 

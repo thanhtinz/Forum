@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Uy tín: chấm "+" / "−" kèm lý do.
@@ -46,7 +46,7 @@ export default async function run(check) {
 
     await me.locator('textarea[name="karmaReason"]').fill('Chỉ mình cách chỉnh nhạc chuông');
     await me.locator('button:has-text("Chấm")').click();
-    await me.waitForTimeout(2500);
+    await doiToi(async () => (await db.user.findUnique({ where: { id: target.id }, select: { karma: true } }))?.karma === 1);
 
     const after = await db.user.findUnique({ where: { id: target.id }, select: { karma: true } });
     check('uy tín tăng đúng một nấc', after?.karma === 1, `karma = ${after?.karma}`);

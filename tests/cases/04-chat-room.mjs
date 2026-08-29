@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Phòng chat chung (nằm ngay trên trang chủ) phải chặn thật ở phía máy chủ.
@@ -28,12 +28,11 @@ export default async function run(check) {
   await minh.waitForTimeout(500);
   await minh.fill('#phong-chat input[name="content"]', 'Câu kiểm thử phòng chat');
   await minh.click('#phong-chat button[type="submit"]');
-  await minh.waitForTimeout(1800);
 
-  const said = await db.shoutMessage.findFirst({
+  const said = await doiToi(() => db.shoutMessage.findFirst({
     where: { content: 'Câu kiểm thử phòng chat' },
     select: { id: true, userId: true },
-  });
+  }));
   check('nói được một câu', !!said);
 
   // ── Câu quá dài bị chặn ở máy chủ ──────────────────────────────────────
@@ -72,7 +71,7 @@ export default async function run(check) {
   // khác thì không — kiểm bằng cách so số câu còn lại sau khi Lan thử gỡ.
   const beforeAlive = await db.shoutMessage.count({ where: { deletedAt: null } });
   await lan.locator('#phong-chat button[title="Gỡ câu này"]').first().click();
-  await lan.waitForTimeout(2000);
+  await doiToi(async () => (await db.shoutMessage.count({ where: { deletedAt: null } })) === beforeAlive - 1);
   const afterAlive = await db.shoutMessage.count({ where: { deletedAt: null } });
   check('chính chủ gỡ được câu của mình', afterAlive === beforeAlive - 1);
   check('câu của minhdev vẫn còn', (await db.shoutMessage.count({ where: { id: said.id, deletedAt: null } })) === 1);
@@ -100,7 +99,7 @@ export default async function run(check) {
     'vui quá 😀 ![ảnh](/uploads/khong-co-that.png) ![xấu](javascript:alert(1))',
   );
   await minh.click('#phong-chat button[type="submit"]');
-  await minh.waitForTimeout(2200);
+  await doiToi(async () => (await db.shoutMessage.count({ where: { content: { contains: '😀' } } })) > 0);
 
   check('emoji gửi được', (await db.shoutMessage.count({ where: { content: { contains: '😀' } } })) === 1);
   check('ảnh dựng thành thẻ img', (await minh.locator('#phong-chat img[src="/uploads/khong-co-that.png"]').count()) === 1);

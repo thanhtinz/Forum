@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Album ảnh cá nhân, và mức riêng tư "chỉ bạn bè".
@@ -42,7 +42,7 @@ export default async function run(check) {
     await me.waitForTimeout(400);
     await me.fill('input[name="name"]', 'Album công khai');
     await me.locator('form button:has-text("Tạo album")').click();
-    await me.waitForTimeout(2500);
+    await doiToi(async () => (await db.photoAlbum.count({ where: { ownerId: minh.id } })) > 0);
     const pub = await db.photoAlbum.findFirst({ where: { ownerId: minh.id }, select: { id: true, privacy: true } });
     check('tạo được album', !!pub, 'không thấy album nào');
     check('mặc định là công khai', pub?.privacy === 'PUBLIC', `đang là ${pub?.privacy}`);
@@ -157,7 +157,7 @@ export default async function run(check) {
     await me.waitForTimeout(800);
     me.once('dialog', (d) => d.accept());
     await me.locator('button:has-text("Xoá album")').click();
-    await me.waitForTimeout(2500);
+    await doiToi(async () => (await db.photoAlbum.count({ where: { id: friendsOnly.id } })) === 0);
     check('xoá được album', (await db.photoAlbum.count({ where: { id: friendsOnly.id } })) === 0);
     check('ảnh trong album cũng đi theo',
       (await db.photo.count({ where: { albumId: friendsOnly.id } })) === 0);

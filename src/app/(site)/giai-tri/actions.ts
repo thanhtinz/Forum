@@ -7,9 +7,11 @@ import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { lockUsers } from '@/lib/lock';
 import {
-  BAUCUA_CONS, BAUCUA_MAX, BAUCUA_MIN, GIFT_COOLDOWN_MS, GIFT_POINTS,
-  OTT_MAX, OTT_MIN, OTT_TAY, VAN_MOI_NGAY, dauNgayVN, ottKetQua,
+  BAUCUA_CONS, BAUCUA_MAX, BAUCUA_MIN, BAUCUA_CUA_MOI_PHIEN, BAUCUA_PHIEN_MOI_NGAY,
+  GIFT_COOLDOWN_MS, GIFT_POINTS, OTT_MAX, OTT_MIN, OTT_TAY, VAN_MOI_NGAY,
+  dauNgayVN, ottKetQua,
 } from '@/lib/mini-game';
+import { phienHomNay, xemBan } from '@/lib/bau-cua';
 
 export interface GameState {
   ok?: boolean;
@@ -125,33 +127,86 @@ async function choiMotVan(
 
 // ─────────────────────────── Bầu cua tôm cá ───────────────────────────
 
-export async function choiBauCua(_prev: GameState, formData: FormData): Promise<GameState> {
+/**
+ * Đặt một cửa lên bàn chung.
+ *
+ * Trừ điểm NGAY lúc đặt: không ai được ngồi vào chiếu mà chưa trả tiền, và tới
+ * lúc xóc thì việc trả thưởng chỉ còn là cộng vào, không phải đi đòi ai cả.
+ * Trả thưởng nằm ở `chotSoPhienCu` trong `src/lib/bau-cua.ts`.
+ */
+export async function datCua(_prev: GameState, formData: FormData): Promise<GameState> {
   const me = await nguoiChoi();
   if ('error' in me) return { error: me.error };
 
   const con = Number(formData.get('con'));
-  if (!BAUCUA_CONS.some((c) => c.id === con)) return { error: 'Chọn một con trên mâm đã nào.' };
+  if (!BAUCUA_CONS.some((c) => c.id === con)) return { error: 'Chọn một cửa trên bàn đã nào.' };
   const cuoc = docCuoc(formData, BAUCUA_MIN, BAUCUA_MAX);
   if (typeof cuoc === 'string') return { error: cuoc };
 
-  const r = await choiMotVan(me.userId, 'BAUCUA', cuoc, () => {
-    const mat = [0, 0, 0].map(() => 1 + Math.floor(Math.random() * 6));
-    const trung = mat.filter((m) => m === con).length;
-    // Trúng mấy viên ăn bấy nhiêu lần cược; không viên nào thì mất cược.
-    const delta = trung === 0 ? -cuoc : trung * cuoc;
-    const tenCon = BAUCUA_CONS.find((c) => c.id === con)!.ten;
-    const tenMat = mat.map((m) => BAUCUA_CONS.find((c) => c.id === m)!.ten).join(' · ');
-    return {
-      delta,
-      detail: `${tenCon} | ${mat.join(',')}`,
-      mat,
-      ke: trung === 0
-        ? `Mở bát: ${tenMat}. Không có con ${tenCon} nào, mất ${cuoc} điểm.`
-        : `Mở bát: ${tenMat}. Trúng ${trung} con ${tenCon}, được ${delta} điểm!`,
-    };
-  });
+  const ban = await xemBan(me.userId);
+  if (!ban.dangDat) return { error: 'Hết giờ đặt cửa rồi, chờ phiên sau nhé.' };
+
+  const daDat = await phienHomNay(me.userId);
+  const dangChoiPhienNay = ban.cua.some((c) => c.cuaToi > 0);
+  if (!dangChoiPhienNay && daDat >= BAUCUA_PHIEN_MOI_NGAY) {
+    return { error: `Hôm nay bạn chơi đủ ${BAUCUA_PHIEN_MOI_NGAY} phiên rồi, để mai chơi tiếp nhé.` };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      await lockUsers(tx, me.userId);
+
+      // Kiểm LẠI trong transaction: giữa lúc đọc bàn ở trên và lúc ghi ở đây,
+      // phiên có thể đã hết giờ và bị người khác chốt sổ. Cửa đặt sau khi chốt
+      // thì không bao giờ được trả — mất trắng mà chẳng ai biết vì sao.
+      const conNhan = await tx.bauCuaRound.count({
+        where: { id: ban.roundId, rolledAt: null, closeAt: { gt: new Date() } },
+      });
+      if (conNhan === 0) throw new Error('het-gio');
+
+      // Đặt thêm vào cửa đã có thì cộng dồn; mỗi phiên tối đa sáu cửa là hết bàn.
+      const cu = await tx.bauCuaBet.findUnique({
+        where: { roundId_userId_con: { roundId: ban.roundId, userId: me.userId, con } },
+        select: { id: true, amount: true },
+      });
+      if (!cu) {
+        const soCua = await tx.bauCuaBet.count({ where: { roundId: ban.roundId, userId: me.userId } });
+        if (soCua >= BAUCUA_CUA_MOI_PHIEN) throw new Error('het-cua');
+      }
+      if (cu && cu.amount + cuoc > BAUCUA_MAX) throw new Error('qua-tran');
+
+      await grantPoints({
+        userId: me.userId, amount: -cuoc, reason: 'GAME_BET',
+        refId: ban.roundId, note: `Bầu cua: đặt ${BAUCUA_CONS.find((c) => c.id === con)!.ten}`,
+      }, tx);
+
+      if (cu) {
+        await tx.bauCuaBet.update({
+          where: { id: cu.id }, data: { amount: { increment: cuoc } }, select: { id: true },
+        });
+      } else {
+        await tx.bauCuaBet.create({
+          data: { roundId: ban.roundId, userId: me.userId, con, amount: cuoc },
+          select: { id: true },
+        });
+      }
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) return { error: 'Bạn không đủ điểm để đặt cửa này.' };
+    if (e instanceof Error && e.message === 'het-gio') {
+      return { error: 'Hết giờ đặt cửa rồi, chờ phiên sau nhé.' };
+    }
+    if (e instanceof Error && e.message === 'het-cua') {
+      return { error: `Mỗi phiên đặt tối đa ${BAUCUA_CUA_MOI_PHIEN} cửa.` };
+    }
+    if (e instanceof Error && e.message === 'qua-tran') {
+      return { error: `Mỗi cửa tối đa ${BAUCUA_MAX} điểm trong một phiên.` };
+    }
+    return { error: 'Không đặt được lúc này, thử lại nhé.' };
+  }
+
   revalidatePath('/giai-tri/bau-cua');
-  return r;
+  return { ok: true, ke: `Đã đặt ${cuoc} điểm cửa ${BAUCUA_CONS.find((c) => c.id === con)!.ten}.` };
 }
 
 // ─────────────────────────── Oẳn tù tì ───────────────────────────

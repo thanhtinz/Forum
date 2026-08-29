@@ -46,6 +46,19 @@ export const BAUCUA_CONS = [
 export const BAUCUA_MIN = 10;
 export const BAUCUA_MAX = 100;
 
+/**
+ * Nhịp một phiên bầu cua chung.
+ *
+ * 45 giây đặt cửa, xóc, rồi 15 giây để mọi người nhìn kết quả trước khi bàn dọn
+ * lại. Chọn 60 giây tròn vì mã phiên tính thẳng từ đồng hồ: chia cho 60 giây là
+ * ra, không cần ai giữ trạng thái.
+ */
+export const BAUCUA_ROUND_MS = 60_000;
+export const BAUCUA_BET_MS = 45_000;
+
+/** Trần số cửa một người đặt trong một phiên — sáu cửa là hết bàn. */
+export const BAUCUA_CUA_MOI_PHIEN = 6;
+
 // ─────────────────────────── Oẳn tù tì ───────────────────────────
 
 /** Búa thắng Kéo, Kéo thắng Bao, Bao thắng Búa. */
@@ -77,6 +90,9 @@ export function ottKetQua(nguoi: number, may: number): -1 | 0 | 1 {
  * bấm-là-ra-tiền không có trần thì thành chỗ cày điểm bằng script.
  */
 export const VAN_MOI_NGAY = 30;
+
+/** Riêng bầu cua đếm theo PHIÊN có đặt cửa, chứ không đếm từng cửa. */
+export const BAUCUA_PHIEN_MOI_NGAY = 30;
 
 export const GAME_LABELS = {
   GIFT: 'Hộp quà mỗi ngày',

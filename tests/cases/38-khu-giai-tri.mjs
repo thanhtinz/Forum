@@ -1,7 +1,10 @@
 import { BASE, db, openPage } from '../helpers.mjs';
 
 /**
- * Khu giải trí — hộp quà, bầu cua, oẳn tù tì.
+ * Khu giải trí — hộp quà và oẳn tù tì.
+ *
+ * Bàn bầu cua chung nằm ở ca kiểm riêng (39), vì nó chạy theo phiên chứ không
+ * phải bấm phát ăn ngay.
  *
  * Mấy trò này đụng thẳng vào điểm nên chỗ đáng soi không phải là "chơi có vui
  * không" mà là:
@@ -58,60 +61,6 @@ export default async function run(check) {
     const lanHai = await diem();
     check('không có đường nhận quà lần hai trong ngày', lanHai === sauQua, `${sauQua} → ${lanHai}`);
 
-    // ── Bầu cua: điểm đổi đúng bằng kết quả ván ─────────────────────────
-    await p.goto(`${BASE}/giai-tri/bau-cua`, { waitUntil: 'networkidle' });
-    await p.waitForTimeout(900);
-    const truocVan = await diem();
-    await p.fill('input[name="cuoc"]', '20');
-    await p.locator('button:has-text("Xóc bát")').click();
-    await p.waitForTimeout(2500);
-
-    const van = await db.miniGamePlay.findFirst({
-      where: { userId: ai.id, game: 'BAUCUA' }, orderBy: { createdAt: 'desc' },
-      select: { bet: true, delta: true, detail: true },
-    });
-    check('ván bầu cua có vào sổ chơi', !!van);
-    check('cược ghi đúng số đã nhập', van?.bet === 20, `ghi ${van?.bet}`);
-    const sauVan = await diem();
-    check('điểm đổi đúng bằng kết quả ván',
-      sauVan === truocVan + (van?.delta ?? 0), `${truocVan} → ${sauVan}, delta ${van?.delta}`);
-    // Trúng mấy viên ăn bấy nhiêu lần cược — kiểm thẳng bằng ba mặt đã ghi.
-    if (van?.detail) {
-      const [conStr, matStr] = van.detail.split(' | ');
-      const mat = matStr.split(',').map(Number);
-      const ten = ['', 'Nai', 'Bầu', 'Gà', 'Cá', 'Cua', 'Tôm'];
-      const trung = mat.filter((m) => ten[m] === conStr).length;
-      const dung = trung === 0 ? -20 : trung * 20;
-      check('trả thưởng đúng số viên trúng', van.delta === dung,
-        `${conStr} vs ${matStr} → delta ${van.delta}, đáng lẽ ${dung}`);
-    }
-
-    // ── Cược ngoài khoảng cho phép bị chặn ──────────────────────────────
-    const truocSai = await diem();
-    const soVanTruoc = await db.miniGamePlay.count({ where: { userId: ai.id, game: 'BAUCUA' } });
-    await p.evaluate(() => {
-      const el = document.querySelector('input[name="cuoc"]');
-      const setter = Object.getOwnPropertyDescriptor(el.constructor.prototype, 'value').set;
-      setter.call(el, '99999');
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      el.removeAttribute('max');
-    });
-    await p.locator('button:has-text("Xóc bát")').click();
-    await p.waitForTimeout(2000);
-    check('cược quá trần bị chặn ở máy chủ',
-      (await db.miniGamePlay.count({ where: { userId: ai.id, game: 'BAUCUA' } })) === soVanTruoc);
-    check('ván bị chặn không đụng vào điểm', (await diem()) === truocSai);
-
-    // ── Thiếu điểm thì không mất gì ─────────────────────────────────────
-    await db.user.update({ where: { id: ai.id }, data: { points: 5 }, select: { id: true } });
-    await p.reload({ waitUntil: 'networkidle' });
-    await p.waitForTimeout(900);
-    await p.fill('input[name="cuoc"]', '100');
-    await p.locator('button:has-text("Xóc bát")').click();
-    await p.waitForTimeout(2200);
-    check('không đủ điểm thì vẫn còn nguyên 5 điểm', (await diem()) === 5, `còn ${await diem()}`);
-    check('có báo không đủ điểm', (await p.locator('text=không đủ điểm').count()) > 0);
-
     // ── Trần ván mỗi ngày ───────────────────────────────────────────────
     await db.user.update({ where: { id: ai.id }, data: { points: 5000 }, select: { id: true } });
     // Nhồi cho đủ trần bằng dữ liệu, rồi thử chơi thêm một ván thật.
@@ -130,10 +79,10 @@ export default async function run(check) {
 
     // ── Khách vãng lai không chơi được ──────────────────────────────────
     const khach = await openPage(null);
-    await khach.goto(`${BASE}/giai-tri/bau-cua`, { waitUntil: 'networkidle' });
+    await khach.goto(`${BASE}/giai-tri/oan-tu-ti`, { waitUntil: 'networkidle' });
     await khach.waitForTimeout(800);
     check('khách vãng lai không có ô chơi',
-      (await khach.locator('button:has-text("Xóc bát")').count()) === 0);
+      (await khach.locator('button:has-text("Đặt cửa")').count()) === 0);
     check('khách vãng lai được mời đăng nhập',
       (await khach.locator('a:has-text("Đăng nhập")').count()) > 0);
   } finally {

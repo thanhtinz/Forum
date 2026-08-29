@@ -149,6 +149,7 @@ model User {
   lastGiftAt     DateTime?
 
   gamePlays      MiniGamePlay[]
+  bauCuaBets     BauCuaBet[]
 
   /// Danh hiệu = tên bậc của cấp hiện tại, chép sẵn từ `LevelRule.name`.
   ///
@@ -1982,4 +1983,61 @@ enum MiniGame {
   BAUCUA
   /// Oẳn tù tì với máy.
   OANTUTI
+}
+
+
+/**
+ * Một phiên bầu cua chung cho cả nhà.
+ *
+ * Bản cũ mỗi người xóc riêng một bát. Ở đây có MỘT bàn: ai cũng đặt lên cùng
+ * sáu ô, hết giờ thì hệ thống xóc một lần cho tất cả — đúng kiểu ngồi quanh
+ * chiếu ngày Tết, và nhìn người khác đặt cửa mới là phần vui nhất.
+ *
+ * Phiên không do một tiến trình chạy nền sinh ra mà TÍNH THEO ĐỒNG HỒ: mã
+ * phiên chính là mốc giây bắt đầu, nên máy chủ nào hỏi cũng ra cùng một phiên,
+ * và không có gì để hỏng khi máy chủ khởi động lại. Ai ghé vào sau giờ xóc thì
+ * chính người ấy chốt sổ phiên cũ — chốt bằng ghi có điều kiện nên dù mười
+ * người cùng ghé cũng chỉ xóc đúng một lần.
+ */
+model BauCuaRound {
+  /// Mốc giây bắt đầu phiên, dạng chuỗi — vừa là khoá vừa là số thứ tự.
+  id String @id
+
+  startAt DateTime
+  /// Hết giờ đặt cược; sau mốc này là xóc được.
+  closeAt DateTime
+
+  rolledAt DateTime?
+  /// Ba mặt đã xóc, dạng "3,1,6". Chưa xóc thì rỗng.
+  dice String?
+
+  bets BauCuaBet[]
+
+  @@index([startAt])
+}
+
+/**
+ * Một cửa đặt của một người trong một phiên.
+ *
+ * Điểm TRỪ ngay lúc đặt (không ai đặt được cửa mà chưa trả tiền) và TRẢ lúc
+ * chốt sổ. `payout` rỗng nghĩa là phiên chưa chốt.
+ */
+model BauCuaBet {
+  id      String      @id @default(cuid())
+  roundId String
+  round   BauCuaRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Cửa đặt: 1..6, theo `BAUCUA_CONS`.
+  con    Int
+  amount Int
+
+  /// Điểm nhận lại khi chốt sổ (0 nếu trượt). Rỗng = chưa chốt.
+  payout Int?
+
+  createdAt DateTime @default(now())
+
+  @@unique([roundId, userId, con])
+  @@index([userId, createdAt])
 }

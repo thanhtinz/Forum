@@ -188,6 +188,27 @@ export async function traLoiCauHoi(_prev: TraLoiState, formData: FormData): Prom
       if (!cau) throw new Error('dong-cua');
       if (cau.authorId === me.userId) throw new Error('cua-minh');
 
+      /*
+       * Đủ tiền cọc rồi mới cho trả lời — và phải kiểm ở ĐÂY, trước khi biết
+       * đúng hay sai.
+       *
+       * Trước đây chỗ này để `grantPoints` tự ném lỗi ở nhánh trả lời sai. Mà
+       * lỗi ấy kéo cả transaction quay lại, kể cả hàng `QuizAnswer` vừa tạo —
+       * nên ràng buộc "mỗi câu một lần" không hề chặn, và người trả lời được
+       * thử lại vô hạn. Ai có ít điểm hơn giá cọc liền có một máy soi đáp án
+       * miễn phí: đoán sai thì lỗi "không đủ điểm" và không mất gì, đoán đúng
+       * thì thành công (nhánh đúng do NGƯỜI RA CÂU trả tiền, không đụng túi
+       * mình). Dò bốn lượt là ra đáp án, rồi mang tài khoản chính vào ăn trọn
+       * tiền cọc, rủi ro bằng không.
+       *
+       * Chặn trước khi so `chon` với `correct` thì hai trường hợp đúng và sai
+       * nhận đúng một câu trả lời như nhau — không còn gì để dò.
+       */
+      const tui = await tx.user.findUniqueOrThrow({
+        where: { id: me.userId }, select: { points: true },
+      });
+      if (tui.points < cau.price) throw new Error('thieu-diem');
+
       const dung = chon === cau.correct;
 
       // Ghi lượt trả lời TRƯỚC khi cộng trừ điểm: ràng buộc duy nhất
@@ -251,6 +272,9 @@ export async function traLoiCauHoi(_prev: TraLoiState, formData: FormData): Prom
       } satisfies TraLoiState;
     });
   } catch (e) {
+    if (e instanceof Error && e.message === 'thieu-diem') {
+      return { error: 'Bạn không đủ điểm để nhận câu này — trả lời sai là mất đúng số điểm cọc đấy.' };
+    }
     if (e instanceof InsufficientPointsError) {
       return { error: 'Bạn không đủ điểm để nhận câu này — trả lời sai là mất đúng số điểm cọc đấy.' };
     }

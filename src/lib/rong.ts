@@ -90,8 +90,11 @@ export async function xemDao(userId: string, anChoMs: number, choiChoMs: number)
       take: CHUONG_TOI_DA,
       select: chonRong,
     }),
-    db.rongTran.count({
-      where: { a: { userId }, createdAt: { gte: dauNgayVN(now) } },
+    // Cùng nguồn với chỗ chặn ở server action — xem chú thích tại `thachDau`.
+    // Đếm trên `RongTran` thì con số in ra trang cũng nói dối theo mỗi lần có
+    // ai đó thả rồng.
+    db.miniGamePlay.count({
+      where: { userId, game: 'RONGDAU', createdAt: { gte: dauNgayVN(now) } },
     }),
   ]);
 

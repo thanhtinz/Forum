@@ -1991,6 +1991,8 @@ enum MiniGame {
   BAUCUA
   /// Oẳn tù tì với máy.
   OANTUTI
+  /// Đấu trường đảo rồng.
+  RONGDAU
 }
 
 /**
@@ -2297,6 +2299,15 @@ model Rong {
   @@index([loai, mau])
 }
 
+/**
+ * Một trận ở đấu trường — giữ để kể lại diễn biến.
+ *
+ * KHÔNG đếm trần "mỗi ngày mấy trận" trên bảng này: hai khoá ngoại đều
+ * `onDelete: Cascade`, mà người chơi thả rồng lúc nào cũng được, nên xoá một
+ * con rồng là xoá luôn lịch sử trận của nó và bộ đếm ngày tự về 0. Tệ hơn, thả
+ * rồng của MÌNH còn quét cả những trận người khác đã đánh với nó. Trần ngày
+ * đếm trên `MiniGamePlay` — bảng người chơi không xoá được.
+ */
 model RongTran {
   id String @id @default(cuid())
 

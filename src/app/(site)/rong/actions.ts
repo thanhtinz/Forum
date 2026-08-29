@@ -339,8 +339,23 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
       await lockUsers(tx, me.userId);
 
       const now = Date.now();
-      const daDau = await tx.rongTran.count({
-        where: { a: { userId: me.userId }, createdAt: { gte: dauNgayVN(now) } },
+      /*
+       * Đếm trên `MiniGamePlay` chứ KHÔNG trên `RongTran`.
+       *
+       * `RongTran` cascade theo cả hai con rồng, mà `thaRong` cho thả bất cứ
+       * lúc nào — nên đếm ở đó thì người chơi tự xoá được bộ đếm của chính
+       * mình: đấu đủ 10 trận, thả con rồng vừa đấu, bộ đếm về 0, đấu tiếp.
+       * Thắng ăn 25 điểm ròng mỗi trận nên vòng lặp ấy có lãi.
+       *
+       * Tệ hơn nữa là đường vòng qua người khác: B cử rồng ra trận cho A đánh
+       * đủ 10 trận rồi B thả con rồng ấy — cascade quét luôn 10 hàng có `bId`
+       * là nó, và bộ đếm của A về 0 dù A không đụng gì vào rồng của mình.
+       *
+       * `MiniGamePlay` không có đường nào để người chơi xoá, và đây cũng đúng
+       * bảng mà bầu cua với oẳn tù tì đang dùng để chặn trần ngày.
+       */
+      const daDau = await tx.miniGamePlay.count({
+        where: { userId: me.userId, game: 'RONGDAU', createdAt: { gte: dauNgayVN(now) } },
       });
       if (daDau >= DAU_MOI_NGAY) {
         throw new Error(`Hôm nay bạn đã đấu đủ ${DAU_MOI_NGAY} trận. Mai quay lại nhé.`);
@@ -376,6 +391,16 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
           note: kq.ai === 'a' ? 'Thắng ở đấu trường rồng' : 'Hoà ở đấu trường rồng, hoàn phí',
         }, tx);
       }
+
+      // Ghi lượt chơi trước khi ghi trận: đây mới là thứ chặn trần ngày, nên
+      // nó phải tồn tại kể cả khi hàng `RongTran` sau này bị cascade xoá đi.
+      await tx.miniGamePlay.create({
+        data: {
+          userId: me.userId, game: 'RONGDAU', bet: PHI_DAU, delta: duoc - PHI_DAU,
+          detail: kq.ai === 'a' ? 'thang' : kq.ai === 'hoa' ? 'hoa' : 'thua',
+        },
+        select: { id: true },
+      });
 
       await tx.rongTran.create({
         data: {

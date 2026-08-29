@@ -3,8 +3,9 @@ import type { Metadata } from 'next';
 import { auth } from '@/lib/auth';
 import { xemNongTrai } from '@/lib/farm';
 import {
-  ANH_FARM, GIA_MOI_O, KHE_MAX, KHE_MIN, O_DAT_BAN_DAU, O_DAT_TOI_DA, TUOI_RUT_NGAN,
+  ANH_FARM, GIA_MOI_O, KHE_MIN, KHE_MAX, O_DAT_BAN_DAU, O_DAT_TOI_DA, TUOI_RUT_NGAN,
 } from '@/lib/farm-const';
+import { AnhPixel } from '@/components/farm/AnhPixel';
 import { NongTrai } from '@/components/farm/NongTrai';
 
 export const metadata: Metadata = {
@@ -19,11 +20,9 @@ export default async function NongTraiPage() {
   const d = userId ? await xemNongTrai(userId) : null;
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="mb-4 flex items-center gap-2 text-xl font-black">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ANH_FARM} alt="" aria-hidden className="h-8 w-auto"
-          style={{ imageRendering: 'pixelated' }} />
+    <div className="mx-auto max-w-3xl">
+      <h1 className="mb-3 flex items-center gap-2 text-xl font-black">
+        <AnhPixel src={ANH_FARM} className="h-9 w-auto" />
         Nông trại
       </h1>
 
@@ -35,13 +34,15 @@ export default async function NongTraiPage() {
         </p>
       )}
 
-      <section className="card mt-4 p-5 text-sm text-ink-600 dark:text-ink-300">
-        <h2 className="zib-title mb-3">Luật chơi</h2>
-        <ul className="list-inside list-disc space-y-1">
-          <li>Bắt đầu với {O_DAT_BAN_DAU} ô đất; mở thêm giá số ô đang có × {GIA_MOI_O} điểm, tối đa {O_DAT_TOI_DA} ô.</li>
-          <li>Gieo hạt trả điểm trước, cây chín theo đúng số phút của giống ấy.</li>
-          <li>Tưới nước miễn phí, mỗi vụ một lần: chín sớm hơn {Math.round(TUOI_RUT_NGAN * 100)}% và thu được nhiều hơn.</li>
-          <li>Thu hoạch xong nông sản vào nhà kho, bán lúc nào cũng được.</li>
+      {/* Luật chơi để cuối và giữ thật ngắn: người chơi quay lại lần thứ hai
+          là không đọc nữa, nên nó không được chiếm chỗ của mảnh ruộng. */}
+      <section className="card mt-4 px-4 py-3 text-sm text-ink-600 dark:text-ink-300">
+        <h2 className="mb-2 text-sm font-black uppercase tracking-wide text-ink-400">Luật chơi</h2>
+        <ul className="grid list-inside list-disc gap-x-6 gap-y-1 marker:text-brand-400 sm:grid-cols-2">
+          <li>Bắt đầu {O_DAT_BAN_DAU} ô, mở thêm giá số ô đang có × {GIA_MOI_O}, tối đa {O_DAT_TOI_DA} ô.</li>
+          <li>Gieo hạt trả trước, cây chín đúng số phút của giống.</li>
+          <li>Mỗi vụ tưới được một lần: chín sớm hơn {Math.round(TUOI_RUT_NGAN * 100)}%, thu nhiều hơn.</li>
+          <li>Thu hoạch vào kho, bán lúc nào cũng được.</li>
           <li>Cây khế hái mỗi giờ một lần, được {KHE_MIN}–{KHE_MAX} điểm, không mất gì.</li>
         </ul>
       </section>

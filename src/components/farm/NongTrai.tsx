@@ -7,11 +7,13 @@ import {
 } from '@/app/(site)/nong-trai/actions';
 import type { NongTrai as DuLieu } from '@/lib/farm';
 import {
-  ANH_CAY_KHE, ANH_CAY_KHE_CHIN, ANH_CUA_HANG, ANH_MUA_DAT, ANH_NHA_KHO,
-  KHE_MAX, KHE_MIN, O_DAT_TOI_DA, anhNongSan, changCua, moTaConLai, moTaVu,
+  O_DAT_TOI_DA, TUOI_RUT_NGAN, changCua, moTaConLai, tienDoVu,
 } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
+import { CuaHangHat } from './CuaHangHat';
+import { GocTrai } from './GocTrai';
 import { ManhDat } from './ManhDat';
+import { NhaKho } from './NhaKho';
 
 /**
  * Nông trại — một màn hình, mọi việc làm ngay tại chỗ.
@@ -23,6 +25,11 @@ import { ManhDat } from './ManhDat';
  * Đồng hồ lấy mốc từ máy chủ (`d.now`) rồi mới tự chạy tiếp: nếu lần dựng đầu
  * ở trình duyệt đã dùng `Date.now()` của máy người xem thì máy nào lệch giờ là
  * React kêu sai lệch dựng hình ngay giây đầu tiên.
+ *
+ * Bố cục xếp theo thứ tự người chơi nhìn: mảnh ruộng trước (kèm một thanh việc
+ * dính ngay dưới chân ruộng, làm gì cũng ở đó), rồi mới tới cửa hàng, góc trại
+ * và nhà kho. Số điểm KHÔNG in ở đâu trong trang — nó đã nằm trên thanh đầu
+ * trang, in lại là có hai con số phải giữ cho khớp nhau.
  */
 
 type ViecLam = (prev: FarmState, formData: FormData) => Promise<FarmState>;
@@ -33,7 +40,6 @@ export function NongTrai({ d }: { d: DuLieu }) {
   const [tin, setTin] = useState<FarmState>({});
   const [dangLam, batDau] = useTransition();
   const [oChon, setOChon] = useState<number | null>(null);
-  const [banBaoNhieu, setBanBaoNhieu] = useState<Record<string, number>>({});
 
   // Đồng hồ nhích mỗi giây để đếm ngược chạy mà không phải hỏi lại máy chủ.
   useEffect(() => {
@@ -58,7 +64,6 @@ export function NongTrai({ d }: { d: DuLieu }) {
 
   const o = oChon == null ? null : d.oDat.find((x) => x.index === oChon) ?? null;
   const changO = o ? changCua(o.plantedAt, o.readyAt, now) : null;
-  const kheSanSang = now >= d.kheSanSangLuc;
 
   // Sắp cây theo giá hạt: nhìn từ trái sang là thấy ngay bậc thang rẻ → đắt.
   const cay = useMemo(
@@ -66,210 +71,142 @@ export function NongTrai({ d }: { d: DuLieu }) {
     [d.cayGiong],
   );
 
+  /*
+   * Hạt gieo xuống ô nào: ô đang chọn nếu nó còn trống, không thì ô trống đầu
+   * tiên. Bắt người chơi chọn ô rồi mới cho bấm giống là thêm một bước thừa —
+   * chín trên mười lần thì ô nào cũng như ô nào.
+   */
+  const oTrongDauTien = d.oDat.find((x) => x.cropKey == null)?.index ?? null;
+  const oSeGieo = o && o.cropKey == null ? o.index : oTrongDauTien;
+
+  const duTienMoO = d.giaMoO != null && d.diem >= d.giaMoO;
+  const moODatNgay = () => lam(moODat, {});
+
   return (
     <div className="space-y-4">
-      {/* Thanh tình hình. Không in số điểm ở đây: nó đã nằm sẵn trên thanh đầu
-          trang, nhắc lại chỉ tổ có hai con số phải giữ cho khớp nhau. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="chip">{d.soODaMo}/{O_DAT_TOI_DA} ô đất</span>
-        <span className="chip">{d.banNgay ? 'Ban ngày' : 'Ban đêm'}</span>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <span className="chip bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+          {d.soODaMo}/{O_DAT_TOI_DA} ô đất
+        </span>
+        <span className={cn(
+          'chip',
+          d.banNgay
+            ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300'
+            : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300',
+        )}>
+          {d.banNgay ? 'Ban ngày' : 'Ban đêm'}
+        </span>
+        {soODaChin > 0 && (
+          <span className="chip bg-emerald-500 text-white">{soODaChin} ô đã chín</span>
+        )}
       </div>
 
-      <ManhDat
-        oDat={d.oDat} now={now} banNgay={d.banNgay}
-        dangChon={oChon} onChon={(i) => setOChon((cu) => (cu === i ? null : i))}
-      />
-
-      {tin.ke && <p className="text-sm font-medium text-emerald-600">{tin.ke}</p>}
-      {tin.error && <p className="text-sm text-red-600">{tin.error}</p>}
-
-      {/* ── Việc của ô đang chọn ── */}
-      <section className="card p-4">
-        <h2 className="zib-title mb-3">
-          {o ? `Ô đất số ${o.index + 1}` : 'Chọn một ô đất'}
-        </h2>
-
-        {!o && (
-          <p className="text-sm text-ink-500">
-            Bấm vào một ô trên mảnh đất phía trên để gieo hạt, tưới nước hoặc thu hoạch.
-          </p>
-        )}
-
-        {/* Ô trống → bày cửa hàng hạt giống ngay tại đây */}
-        {o && o.cropKey == null && (
-          <>
-            <p className="mb-3 flex items-center gap-2 text-sm text-ink-500">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ANH_CUA_HANG} alt="" aria-hidden className="size-8"
-                style={{ imageRendering: 'pixelated' }} />
-              Chọn giống để gieo. Tưới một lần trong vụ thì được mùa.
-            </p>
-            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {cay.map((c) => {
-                const du = d.diem >= c.seedCost;
-                return (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      disabled={dangLam || !du}
-                      onClick={() => lam(gieoHat, { o: o.index, cay: c.id })}
-                      className={cn(
-                        'flex w-full items-center gap-2 rounded-xl border-2 border-ink-100 p-2 text-left transition-all',
-                        'hover:-translate-y-0.5 hover:border-emerald-300 dark:border-ink-800',
-                        !du && 'cursor-not-allowed opacity-45 hover:translate-y-0',
-                      )}
-                      title={du ? `Gieo ${c.name}` : `Cần ${c.seedCost} điểm`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={anhNongSan(c.key)} alt="" aria-hidden className="size-8 shrink-0"
-                        style={{ imageRendering: 'pixelated' }} />
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-bold">{c.name}</span>
-                        <span className="retro-sub block text-ink-400">
-                          {c.seedCost}đ · {moTaVu(c.growMinutes)} · thu {c.yieldMin}–{c.yieldMax}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-
-        {/* Đang lớn → tưới nước */}
-        {o && o.cropKey != null && changO !== 'chin' && (
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-sm">
-              <b>{o.cropName}</b> · còn {moTaConLai((o.readyAt ?? 0) - now)}
-              {o.watered && <span className="ml-1 text-sky-600">· đã tưới</span>}
-            </p>
+      {/* ── Mảnh ruộng và thanh việc, chung một khối ── */}
+      <div className="card overflow-hidden">
+        <ManhDat
+          oDat={d.oDat} now={now} banNgay={d.banNgay}
+          dangChon={oChon} onChon={(i) => setOChon((cu) => (cu === i ? null : i))}
+          giaMoO={d.giaMoO} duTienMoO={duTienMoO} dangLam={dangLam} onMua={moODatNgay}
+        />
+        <ThanhViec
+          nhan={
+            !o ? 'Bấm vào một ô đất để xem việc của ô đó.'
+              : o.cropKey == null ? `Ô ${o.index + 1} đang trống — chọn giống ở Cửa hàng hạt giống bên dưới.`
+              : changO === 'chin' ? `${o.cropName} ở ô ${o.index + 1} đã chín, hái vào kho thôi.`
+              : `${o.cropName} ở ô ${o.index + 1} · còn ${moTaConLai((o.readyAt ?? 0) - now)}${o.watered ? ' · đã tưới' : ''}`
+          }
+          phan={o && o.cropKey != null && changO !== 'chin'
+            ? Math.round(tienDoVu(o.plantedAt, o.readyAt, now) * 100)
+            : null}
+        >
+          {o && o.cropKey != null && changO === 'chin' && (
             <button
-              type="button"
-              disabled={dangLam || o.watered}
-              onClick={() => lam(tuoiNuoc, { o: o.index })}
-              className="btn-primary disabled:opacity-50"
-            >
-              {o.watered ? 'Vụ này tưới rồi' : 'Tưới nước (miễn phí)'}
-            </button>
-          </div>
-        )}
-
-        {/* Đã chín → thu hoạch */}
-        {o && o.cropKey != null && changO === 'chin' && (
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-sm"><b>{o.cropName}</b> đã chín, hái vào kho thôi.</p>
-            <button
-              type="button"
-              disabled={dangLam}
+              type="button" disabled={dangLam}
               onClick={() => lam(thuHoach, { o: o.index })}
-              className="btn-primary disabled:opacity-50"
+              className="btn-primary !bg-emerald-500 !py-1.5 hover:!bg-emerald-600 disabled:opacity-50"
             >
               Thu hoạch
             </button>
-          </div>
-        )}
-      </section>
-
-      {/* ── Nhà kho ── */}
-      <section className="card p-4">
-        <h2 className="zib-title mb-3 flex items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ANH_NHA_KHO} alt="" aria-hidden className="size-7"
-            style={{ imageRendering: 'pixelated' }} />
-          Nhà kho
-        </h2>
-
-        {d.kho.length === 0 ? (
-          <p className="text-sm text-ink-500">Kho đang trống. Thu hoạch xong nông sản sẽ nằm ở đây.</p>
-        ) : (
-          <ul className="space-y-2">
-            {d.kho.map((m) => {
-              const so = Math.min(banBaoNhieu[m.cropId] ?? m.qty, m.qty);
-              return (
-                <li key={m.cropId} className="flex flex-wrap items-center gap-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={anhNongSan(m.cropKey)} alt="" aria-hidden className="size-8"
-                    style={{ imageRendering: 'pixelated' }} />
-                  <span className="min-w-28 text-sm font-bold">{m.name}</span>
-                  <span className="retro-sub text-ink-400">
-                    có {m.qty} · {m.sellPrice}đ/quả
-                  </span>
-                  <input
-                    type="number" min={1} max={m.qty} value={so}
-                    aria-label={`Số ${m.name} muốn bán`}
-                    onChange={(e) =>
-                      setBanBaoNhieu((v) => ({
-                        ...v,
-                        [m.cropId]: Math.max(1, Math.min(m.qty, Number(e.target.value) || 1)),
-                      }))
-                    }
-                    className="input !w-20"
-                  />
-                  <button
-                    type="button"
-                    disabled={dangLam}
-                    onClick={() => lam(banNongSan, { cay: m.cropId, so_luong: so })}
-                    className="btn-ghost disabled:opacity-50"
-                  >
-                    Bán {so * m.sellPrice}đ
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      {/* ── Cây khế và mở đất ── */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <section className="card flex items-center gap-3 p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={kheSanSang ? ANH_CAY_KHE_CHIN : ANH_CAY_KHE}
-            alt="Cây khế" className="size-16 shrink-0"
-            style={{ imageRendering: 'pixelated' }}
-          />
-          <div className="min-w-0">
-            <p className="text-sm font-bold">Cây khế</p>
-            <p className="retro-sub mb-2 text-ink-400">
-              {kheSanSang
-                ? `Có quả rồi, hái được ${KHE_MIN}–${KHE_MAX} điểm.`
-                : `Ra quả sau ${moTaConLai(d.kheSanSangLuc - now)}.`}
-            </p>
+          )}
+          {o && o.cropKey != null && changO !== 'chin' && (
             <button
-              type="button"
-              disabled={dangLam || !kheSanSang}
-              onClick={() => lam(haiCayKhe, {})}
-              className="btn-primary disabled:opacity-50"
+              type="button" disabled={dangLam || o.watered}
+              onClick={() => lam(tuoiNuoc, { o: o.index })}
+              className="btn-primary !py-1.5 disabled:opacity-50"
+              title={`Tưới một lần mỗi vụ, chín sớm hơn ${Math.round(TUOI_RUT_NGAN * 100)}%`}
             >
-              Hái khế
+              {o.watered ? 'Vụ này tưới rồi' : 'Tưới nước'}
             </button>
-          </div>
-        </section>
-
-        <section className="card flex items-center gap-3 p-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ANH_MUA_DAT} alt="Mua đất" className="size-16 shrink-0"
-            style={{ imageRendering: 'pixelated' }} />
-          <div className="min-w-0">
-            <p className="text-sm font-bold">Mở thêm ô đất</p>
-            <p className="retro-sub mb-2 text-ink-400">
-              {d.giaMoO == null
-                ? `Đã mở hết ${O_DAT_TOI_DA} ô.`
-                : `Ô thứ ${d.soODaMo + 1} giá ${d.giaMoO} điểm.`}
-            </p>
-            <button
-              type="button"
-              disabled={dangLam || d.giaMoO == null || d.diem < d.giaMoO}
-              onClick={() => lam(moODat, {})}
-              className="btn-primary disabled:opacity-50"
-            >
-              {d.giaMoO == null ? 'Hết đất để mở' : `Mua ${d.giaMoO} điểm`}
-            </button>
-          </div>
-        </section>
+          )}
+        </ThanhViec>
       </div>
+
+      {(tin.ke || tin.error) && (
+        <p
+          role="status"
+          className={cn(
+            'rounded-xl px-3 py-2 text-sm font-medium',
+            tin.error
+              ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-300'
+              : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
+          )}
+        >
+          {tin.error ?? tin.ke}
+        </p>
+      )}
+
+      <CuaHangHat
+        cay={cay} diem={d.diem} oSeGieo={oSeGieo} dangLam={dangLam}
+        onGieo={(cayId) => {
+          if (oSeGieo == null) return;
+          setOChon(oSeGieo);
+          lam(gieoHat, { o: oSeGieo, cay: cayId });
+        }}
+      />
+
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <NhaKho
+          kho={d.kho} dangLam={dangLam}
+          onBan={(cropId, so) => lam(banNongSan, { cay: cropId, so_luong: so })}
+        />
+        <GocTrai
+          kheSanSangLuc={d.kheSanSangLuc} now={now}
+          giaMoO={d.giaMoO} soODaMo={d.soODaMo} duTienMoO={duTienMoO}
+          dangLam={dangLam} onHaiKhe={() => lam(haiCayKhe, {})} onMuaDat={moODatNgay}
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Thanh việc dính ngay dưới chân ruộng.
+ *
+ * Một chỗ duy nhất cho mọi việc của ô đang chọn, nên mắt không phải chạy đi
+ * tìm nút: bấm ô nào thì câu chữ và cái nút ở đây đổi theo ô ấy.
+ */
+function ThanhViec({
+  nhan, phan, children,
+}: {
+  nhan: string;
+  /** Phần trăm vụ đã đi, `null` khi ô không có gì đang lớn. */
+  phan: number | null;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-[var(--nova-border)] px-3 py-2.5">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{nhan}</p>
+        {phan != null && (
+          <span className="mt-1 block h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-ink-200 dark:bg-ink-800">
+            <span
+              className="block h-full rounded-full bg-gradient-to-r from-lime-400 to-emerald-500 transition-[width] duration-1000 ease-linear"
+              style={{ width: `${phan}%` }}
+            />
+          </span>
+        )}
+      </div>
+      {children}
     </div>
   );
 }

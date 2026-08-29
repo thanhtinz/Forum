@@ -7,11 +7,17 @@ import { db } from '@/lib/db';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { lockUsers } from '@/lib/lock';
+import { notify } from '@/lib/notify';
 import {
-  QUIZ_CHO_DUYET_TOI_DA, QUIZ_SO_PHUONG_AN, loiCauHoi, quyenRaCauHoi,
+  QUIZ_CHO_DUYET_TOI_DA, QUIZ_SO_PHUONG_AN, loiBinhLuan, loiCauHoi, quyenRaCauHoi,
 } from '@/lib/quiz';
 
-const DUONG_DAN = '/giai-tri/trac-nghiem';
+const GOC = '/giai-tri/trac-nghiem';
+
+/** Đường dẫn trang một câu hỏi — dùng lại ở cả `revalidatePath` lẫn thông báo. */
+function duongDanCau(id: string) {
+  return `${GOC}/cau-hoi/${id}`;
+}
 
 /** Kết quả một lượt gửi câu hỏi mới. */
 export interface RaCauState {
@@ -33,6 +39,12 @@ export interface TraLoiState {
   ke?: string;
 }
 
+/** Kết quả một lượt gửi bình luận. */
+export interface BinhLuanState {
+  ok?: boolean;
+  error?: string;
+}
+
 /** Người chơi hợp lệ: đã đăng nhập và không bị cấm. */
 async function nguoiChoi() {
   const session = await auth();
@@ -43,10 +55,17 @@ async function nguoiChoi() {
   return { userId };
 }
 
+/** Người đang đăng nhập có phải điều hành viên/quản trị không. */
+async function laDieuHanh(): Promise<boolean> {
+  const session = await auth();
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  return role === 'ADMIN' || role === 'MODERATOR';
+}
+
 // ─────────────────────────── Ra câu hỏi ───────────────────────────
 
 /**
- * Đăng một câu hỏi mới, trừ cọc NGAY.
+ * Đăng một câu hỏi mới VÀO MỘT THỂ LOẠI, trừ cọc NGAY.
  *
  * Trừ ngay chứ không đợi duyệt: cọc chính là thứ khiến người ta chịu khó nghĩ
  * câu tử tế. Đợi tới lúc duyệt mới trừ thì thả câu rác chẳng mất gì cả.
@@ -56,6 +75,7 @@ export async function dangCauHoi(_prev: RaCauState, formData: FormData): Promise
   const me = await nguoiChoi();
   if ('error' in me) return { error: me.error };
 
+  const categoryId = String(formData.get('categoryId') ?? '').trim();
   const noiDung = String(formData.get('noiDung') ?? '').trim();
   const phuongAn = Array.from({ length: QUIZ_SO_PHUONG_AN }, (_, i) =>
     String(formData.get(`phuongAn${i}`) ?? '').trim());
@@ -65,6 +85,12 @@ export async function dangCauHoi(_prev: RaCauState, formData: FormData): Promise
 
   const loi = loiCauHoi(noiDung, phuongAn, dapAn, giaiThich, coc);
   if (loi) return { error: loi };
+
+  // Bản gốc đăng câu là đăng VÀO một thể loại, không có câu hỏi trôi nổi.
+  const theLoai = categoryId
+    ? await db.quizCategory.findUnique({ where: { id: categoryId }, select: { id: true, slug: true } })
+    : null;
+  if (!theLoai) return { error: 'Hãy chọn một thể loại cho câu hỏi.' };
 
   // Kiểm điều kiện trước để báo lỗi cho tử tế; trần câu chờ duyệt còn được
   // kiểm LẠI trong khoá bên dưới, vì đây là luật đọc-rồi-ghi.
@@ -83,6 +109,7 @@ export async function dangCauHoi(_prev: RaCauState, formData: FormData): Promise
       const cau = await tx.quizQuestion.create({
         data: {
           authorId: me.userId,
+          categoryId: theLoai.id,
           content: noiDung,
           options: phuongAn,
           correct: dapAn,
@@ -110,8 +137,13 @@ export async function dangCauHoi(_prev: RaCauState, formData: FormData): Promise
     return { error: 'Không gửi được câu hỏi lúc này, thử lại nhé.' };
   }
 
-  revalidatePath(DUONG_DAN);
-  return { ok: true, ke: `Đã gửi câu hỏi và trừ ${coc} điểm cọc. Chờ quản trị duyệt là câu sẽ hiện ra.` };
+  revalidatePath(GOC);
+  revalidatePath(`${GOC}/the-loai/${theLoai.slug}`);
+  revalidatePath(`${GOC}/cua-toi`);
+  return {
+    ok: true,
+    ke: `Đã gửi câu hỏi và trừ ${coc} điểm cọc. Chờ quản trị duyệt là câu sẽ hiện ra.`,
+  };
 }
 
 // ─────────────────────────── Trả lời ───────────────────────────
@@ -234,8 +266,96 @@ export async function traLoiCauHoi(_prev: TraLoiState, formData: FormData): Prom
     return { error: 'Không trả lời được lúc này, thử lại nhé.' };
   }
 
-  // CỐ Ý không `revalidatePath` ở đây: làm mới trang là câu vừa trả lời biến
-  // khỏi danh sách ngay lập tức, cuốn theo cả đáp án lẫn lời giải thích vừa
-  // hiện ra — người chơi chưa kịp đọc. Cứ để nguyên tới lần tải trang sau.
+  // Làm mới đúng trang câu hỏi: trả lời xong thì trang phải chuyển sang bản
+  // "đã trả lời" — hiện đáp án, lời giải, và mở ô bình luận. Giao diện vẫn tự
+  // bày kết quả từ state trả về, nên người chơi thấy ngay chứ không phải đợi.
+  revalidatePath(duongDanCau(questionId));
   return kq;
+}
+
+// ─────────────────────────── Bình luận ───────────────────────────
+
+/**
+ * Gửi một bình luận dưới câu hỏi.
+ *
+ * Phải TRẢ LỜI XONG mới được bình luận — bản gốc dán hẳn dòng "nghiêm cấm chat
+ * gợi ý đáp án" lên ô này, mà cách chặn chắc chắn hơn một lời nhắc là không
+ * cho người chưa trả lời mở miệng. Người ra câu và điều hành viên thì được,
+ * họ đã biết đáp án sẵn rồi.
+ */
+export async function guiBinhLuan(
+  _prev: BinhLuanState,
+  formData: FormData,
+): Promise<BinhLuanState> {
+  const me = await nguoiChoi();
+  if ('error' in me) return { error: me.error };
+
+  const questionId = String(formData.get('questionId') ?? '').trim();
+  const noiDung = String(formData.get('noiDung') ?? '').trim();
+  const loi = loiBinhLuan(noiDung);
+  if (loi) return { error: loi };
+
+  const cau = await db.quizQuestion.findFirst({
+    where: { id: questionId, status: 'APPROVED' },
+    select: { id: true, authorId: true },
+  });
+  if (!cau) return { error: 'Không tìm thấy câu hỏi này.' };
+
+  if (cau.authorId !== me.userId && !(await laDieuHanh())) {
+    const daTraLoi = await db.quizAnswer.findUnique({
+      where: { questionId_userId: { questionId: cau.id, userId: me.userId } },
+      select: { id: true },
+    });
+    if (!daTraLoi) return { error: 'Trả lời câu hỏi xong rồi hãy bình luận nhé.' };
+  }
+
+  await db.quizComment.create({
+    data: { questionId: cau.id, authorId: me.userId, content: noiDung },
+    select: { id: true },
+  });
+
+  // Báo cho người ra câu, trừ khi chính họ vừa bình luận.
+  if (cau.authorId !== me.userId) {
+    await notify({
+      userId: cau.authorId,
+      type: 'SYSTEM',
+      title: 'Có bình luận mới dưới câu hỏi trắc nghiệm của bạn',
+      content: noiDung.slice(0, 120),
+      link: duongDanCau(cau.id),
+      actorId: me.userId,
+    });
+  }
+
+  revalidatePath(duongDanCau(cau.id));
+  return { ok: true };
+}
+
+/**
+ * Ẩn hoặc phục hồi một bình luận — chỉ điều hành viên/quản trị.
+ *
+ * ẨN chứ không XOÁ, đúng bản gốc: bình luận vẫn nằm đó, điều hành viên còn đọc
+ * được và phục hồi được nếu ẩn nhầm. Đổi trạng thái bằng `updateMany` có điều
+ * kiện `hidden` phải đang ngược lại, để hai người cùng bấm thì người sau biết
+ * mình bấm hụt chứ không ghi đè lặng lẽ.
+ */
+export async function doiTrangThaiBinhLuan(
+  id: string,
+  an: boolean,
+): Promise<{ ok?: boolean; error?: string }> {
+  if (!(await laDieuHanh())) return { error: 'Bạn không có quyền làm việc này.' };
+
+  const bl = await db.quizComment.findUnique({
+    where: { id },
+    select: { id: true, questionId: true },
+  });
+  if (!bl) return { error: 'Không tìm thấy bình luận này.' };
+
+  const res = await db.quizComment.updateMany({
+    where: { id, hidden: !an },
+    data: { hidden: an },
+  });
+  if (res.count === 0) return { error: 'Bình luận này vừa được người khác xử lý rồi.' };
+
+  revalidatePath(duongDanCau(bl.questionId));
+  return { ok: true };
 }

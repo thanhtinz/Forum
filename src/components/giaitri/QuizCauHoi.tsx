@@ -1,50 +1,39 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { Check, Coins, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { traLoiCauHoi, type TraLoiState } from '@/app/(site)/giai-tri/trac-nghiem/actions';
 import { QUIZ_NHAN } from '@/lib/quiz-const';
 import { cn } from '@/lib/utils';
 
 /**
- * Một câu hỏi bày ra để trả lời.
+ * Ô chọn đáp án của một câu hỏi — bản gốc là bốn nút tròn với một nút "Trả lời".
  *
- * Đáp án đúng KHÔNG có trong props — máy chủ chỉ gửi về sau khi đã ghi nhận
- * lượt trả lời. Trước lúc ấy, có mở mã nguồn trang ra cũng chẳng thấy gì.
+ * Đáp án đúng KHÔNG có trong props: máy chủ chỉ gửi về sau khi đã ghi nhận lượt
+ * trả lời. Trước lúc ấy, có mở mã nguồn trang ra cũng chẳng thấy gì.
+ *
+ * Trả lời xong, `revalidatePath` trong action làm trang máy chủ dựng lại ở bản
+ * "đã trả lời" và thẻ này biến mất. Vẫn tự bày kết quả từ state, vì nếu vì cớ
+ * gì đó trang chưa kịp dựng lại thì người chơi phải thấy ngay mình đúng hay
+ * sai, chứ không đứng nhìn một cái nút vừa bấm.
  */
-export function QuizCauHoi({ id, noiDung, phuongAn, coc, tacGia, soLuot }: {
-  id: string;
-  noiDung: string;
-  phuongAn: string[];
-  coc: number;
-  tacGia: string;
-  soLuot: number;
-}) {
+export function QuizCauHoi({ id, phuongAn }: { id: string; phuongAn: string[] }) {
   const [state, action, dangChay] = useActionState<TraLoiState, FormData>(traLoiCauHoi, {});
   const [chon, setChon] = useState<number | null>(null);
 
-  // Chỉ nhận kết quả đúng của câu này — mọi thẻ trên trang đều dùng chung
-  // kiểu state, nhầm câu là hiện đáp án của câu khác.
   const xong = state.questionId === id;
   const dapAn = xong ? state.dapAn : undefined;
 
   return (
-    <form action={action} className="card space-y-3 p-4">
+    <form action={action} className="space-y-3">
       <input type="hidden" name="questionId" value={id} />
-
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="min-w-0 flex-1 font-semibold text-ink-800 dark:text-ink-100">{noiDung}</p>
-        <span className="chip shrink-0 !py-0.5 bg-amber-50 text-[11px] font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-          <Coins size={12} /> {coc} điểm
-        </span>
-      </div>
 
       <div className="grid gap-1.5">
         {phuongAn.map((p, i) => {
           const laDapAn = dapAn === i;
           const laChon = chon === i;
           return (
-            <label key={i} className={cn('cursor-pointer', xong && 'cursor-default')}>
+            <label key={i} className={cn('block', xong ? 'cursor-default' : 'cursor-pointer')}>
               <input type="radio" name="chon" value={i} checked={chon === i} disabled={xong}
                 onChange={() => setChon(i)} className="sr-only" />
               <span className={cn(
@@ -68,15 +57,10 @@ export function QuizCauHoi({ id, noiDung, phuongAn, coc, tacGia, soLuot }: {
       </div>
 
       {!xong && (
-        <div className="flex flex-wrap items-center gap-3">
-          <button type="submit" disabled={dangChay || chon === null}
-            className="btn-primary disabled:opacity-60">
-            {dangChay ? 'Đang gửi…' : 'Trả lời'}
-          </button>
-          <span className="retro-sub text-ink-400">
-            {tacGia} ra câu · {soLuot} lượt trả lời
-          </span>
-        </div>
+        <button type="submit" disabled={dangChay || chon === null}
+          className="btn-primary disabled:opacity-60">
+          {dangChay ? 'Đang gửi…' : 'Trả lời'}
+        </button>
       )}
 
       {xong && (

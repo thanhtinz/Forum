@@ -94,6 +94,23 @@ export function changCua(
   return daQua < MOC_MAM ? 'mam' : 'lon';
 }
 
+/**
+ * Vụ đã đi được bao nhiêu phần, 0 tới 1 — để vẽ thanh tiến độ.
+ *
+ * Tưới nước kéo mốc chín gần lại nên phần trăm nhảy vọt một cái: đấy là ý
+ * muốn, người chơi thấy ngay công tưới đáng bao nhiêu.
+ */
+export function tienDoVu(
+  plantedAt: number | null,
+  readyAt: number | null,
+  now: number,
+): number {
+  if (plantedAt == null || readyAt == null) return 0;
+  if (now >= readyAt) return 1;
+  if (readyAt <= plantedAt) return 1;
+  return Math.max(0, Math.min(1, (now - plantedAt) / (readyAt - plantedAt)));
+}
+
 /** Ảnh của một ô đất theo loại cây và chặng đang đứng. */
 export function anhODat(cropKey: number | null, chang: ChangCay | null): string {
   if (cropKey == null || chang == null) return `${FARM_ANH}/o-dat/0.png`;
@@ -117,6 +134,33 @@ export const ANH_NEN_NGAY = `${FARM_ANH}/nen/nennongtrai.png`;
 export const ANH_NEN_DEM = `${FARM_ANH}/nen/nennongtrai-toi.png`;
 export const ANH_MAY_1 = `${FARM_ANH}/nen/may1.png`;
 export const ANH_MAY_2 = `${FARM_ANH}/nen/may2.png`;
+export const ANH_TUOI_NUOC = `${FARM_ANH}/o-dat/tuoinuoc.gif`;
+
+// ─────────────────────────── Dựng cảnh ───────────────────────────
+
+/**
+ * Tấm nền `nennongtrai.png` cao 141 pixel, nhưng chỉ 51 hàng cuối là có cảnh
+ * (rặng cây, thửa ruộng xa, hàng rào); phía trên chỉ là trời trơn. Cắt lấy
+ * đúng phần cảnh rồi vẽ trời bằng CSS: trời CSS cao bao nhiêu cũng được mà
+ * không phải kéo giãn ảnh, nên không còn chỗ nối ngang giữa lưng chừng trời.
+ */
+export const NEN_CAO = 141;
+export const NEN_RONG = 95;
+export const NEN_DAI_CANH = 51;
+
+/**
+ * Màu trời của chính tấm nền, lấy ngay tại hàng bị cắt (hàng 90).
+ *
+ * Dải chuyển của trời CSS phải kết thúc đúng bằng màu này, không thì chỗ nối
+ * giữa trời CSS và mép trên tấm ảnh hiện ra thành một vạch ngang.
+ */
+export const TROI_NGAY = ['#5dbef7', '#addbf5'] as const;
+export const TROI_DEM = ['#264e86', '#465985'] as const;
+
+/** Màu đất của bộ ảnh ô đất — nền ruộng CSS phải cùng tông thì mới liền. */
+export const DAT_SANG = '#a67b21';
+export const DAT_VUA = '#8f5e0a';
+export const DAT_TOI = '#624400';
 
 // ─────────────────────────── Hiển thị ───────────────────────────
 

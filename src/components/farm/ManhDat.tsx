@@ -1,164 +1,251 @@
 'use client';
 
-import type { ODat } from '@/lib/farm';
+import type { ODat as ODatDL } from '@/lib/farm';
 import {
-  ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY, O_DAT_TOI_DA,
-  anhODat, changCua, moTaConLai,
+  ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY,
+  NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, TROI_DEM, TROI_NGAY,
 } from '@/lib/farm-const';
-import { cn } from '@/lib/utils';
+import { AnhPixel } from './AnhPixel';
+import { ODat, ODatKhoa } from './ODat';
 
 /**
- * Mảnh đất — nền trời, mây trôi, và các ô đất bấm được phủ lên trên.
+ * Mảnh ruộng — trời, rặng cây, hàng rào, rồi tới thửa đất có luống.
  *
- * Nền là chính tấm `nennongtrai.png` cũ (95×141): trời ở trên, hàng rào cây ở
- * dưới. Lặp NGANG chứ không lặp dọc — lặp dọc thì hàng rào hiện lại giữa trời.
- * Phần trời phía trên tấm ảnh tô bằng đúng màu trời của nó (`#5dbef7` ban
- * ngày, `#264e86` ban đêm) nên khung có cao thêm cũng không thấy chỗ nối.
+ * Cảnh dựng bằng BA LỚP CHỒNG DỌC chứ không phải một tấm ảnh kéo giãn:
  *
- * Ảnh gốc 32 pixel, phóng đúng ×3 và `imageRendering: pixelated`: phóng lẻ
- * (hoặc để trình duyệt nội suy) là mỗi nét dày mỏng không đều, nhìn nhoè.
+ *   1. Trời  — dải chuyển màu CSS, cao bao nhiêu cũng được. Kết thúc đúng
+ *      bằng màu trời của tấm nền nên chỗ giáp lớp 2 không thành vạch ngang.
+ *   2. Rặng cây và hàng rào — 51 hàng cuối của `nennongtrai.png`, lặp ngang.
+ *      Chỉ lấy phần có cảnh: phần trời trơn phía trên tấm ảnh bỏ đi, để lớp 1
+ *      lo. Bản trước lặp cả tấm nên mỗi lần lặp lôi theo cả một khoảng trời
+ *      và mấy thửa ruộng xa, chỗ nối lộ hẳn ra.
+ *   3. Thửa đất — nền đất CSS cùng tông với bộ ảnh, các ô đất xếp thành luống
+ *      đứng trên đó.
+ *
+ * Nền vẽ ×2 còn cây cối trước mặt ×3: vật ở xa nhỏ hơn vật ở gần, mắt tự hiểu
+ * đó là chiều sâu — mà vẫn là bội số nguyên nên không tấm nào bị nhoè.
  */
 
-/** Bội số phóng to bộ ảnh 32 pixel. */
-const PHONG = 3;
+/** Bội số phóng của lớp nền ở xa. */
+const PHONG_NEN = 2;
+
+/**
+ * Sao đêm, toạ độ ghi cứng theo phần trăm.
+ *
+ * Rắc bằng `Math.random()` thì máy chủ dựng ra một bầu trời, trình duyệt dựng
+ * ra một bầu trời khác, React kêu sai lệch ngay lần dựng đầu.
+ */
+const SAO: ReadonlyArray<[number, number, number]> = [
+  [6, 22, 0], [15, 46, 1.1], [23, 14, 0.4], [34, 58, 1.7], [41, 28, 0.8],
+  [52, 12, 2.1], [58, 44, 0.2], [67, 24, 1.4], [74, 52, 0.6], [83, 18, 1.9],
+  [90, 38, 1.2], [96, 10, 0.5],
+];
 
 interface Props {
-  oDat: ODat[];
-  /** Đồng hồ do component cha giữ, nhích mỗi giây. */
+  oDat: ODatDL[];
+  /** Đồng hồ do trang giữ, nhích mỗi giây. */
   now: number;
   banNgay: boolean;
   dangChon: number | null;
   onChon: (index: number) => void;
+  /** Giá mở ô tiếp theo; `null` là đã kịch trần. */
+  giaMoO: number | null;
+  duTienMoO: boolean;
+  dangLam: boolean;
+  onMua: () => void;
 }
 
-export function ManhDat({ oDat, now, banNgay, dangChon, onChon }: Props) {
-  const troi = banNgay ? '#5dbef7' : '#264e86';
+export function ManhDat({
+  oDat, now, banNgay, dangChon, onChon, giaMoO, duTienMoO, dangLam, onMua,
+}: Props) {
+  const [troiTren, troiDuoi] = banNgay ? TROI_NGAY : TROI_DEM;
+
+  /*
+   * Bày thêm bao nhiêu ô chưa mở: chỉ đủ cho ĐẦY HÀNG đang dở rồi thêm một
+   * hàng nữa, tối đa tới trần. Bày sẵn cả tám ô hoang thì mảnh đất trông như
+   * bỏ hoang, mà không bày ô nào thì người chơi chẳng thấy đường mở rộng.
+   */
+  const soO = oDat.length;
+  const soHienRa = Math.min(O_DAT_TOI_DA, Math.ceil((soO + 1) / 4) * 4);
+  const oKhoa = Array.from({ length: soHienRa - soO }, (_, i) => soO + i);
 
   return (
-    // `flex flex-col justify-end`: ô đất phải ĐỨNG TRÊN ĐẤT. Ảnh nền dán ở
-    // đáy khung (trời ở trên, hàng rào ở dưới), nên nếu để lưới ô đất chảy từ
-    // trên xuống như thường lệ thì mấy ô đất treo lơ lửng giữa trời.
-    <div
-      className="relative flex min-h-[340px] flex-col justify-end overflow-hidden rounded-2xl border-2 border-ink-200 dark:border-ink-700"
-      style={{
-        backgroundColor: troi,
-        backgroundImage: `url(${banNgay ? ANH_NEN_NGAY : ANH_NEN_DEM})`,
-        backgroundRepeat: 'repeat-x',
-        backgroundPosition: 'center bottom',
-        backgroundSize: `${95 * PHONG}px ${141 * PHONG}px`,
-        imageRendering: 'pixelated',
-      }}
-    >
-      {/* Hai dải mây chạy ngang. Chỉ để nhìn nên `aria-hidden`; ai dùng trình
-          đọc màn hình không cần nghe kể có mấy đám mây. */}
+    <div className="farm-canh relative select-none overflow-hidden">
       <style>{`
-        @keyframes nong-trai-may {
-          from { transform: translateX(-200px); }
+        .farm-canh { --px: 2px; }
+        @media (min-width: 640px) { .farm-canh { --px: 3px; } }
+
+        /* Luống đã cày: mặt luống sáng ở trên, vệt cày ngang, sườn tối ở dưới. */
+        .farm-luong {
+          height: calc(var(--px) * 13);
+          background-image:
+            repeating-linear-gradient(90deg,
+              rgba(255,255,255,.05) 0 var(--px),
+              rgba(0,0,0,.05) var(--px) calc(var(--px) * 2)),
+            linear-gradient(180deg,
+              #a67b21 0 var(--px),
+              #8f5e0a var(--px) 55%,
+              #6b4706 55% 100%);
+          box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(0,0,0,.28);
+        }
+
+        /* Đất hoang chưa cày: cùng tông nhưng phẳng, xỉn và tối hơn. */
+        .farm-hoang {
+          height: calc(var(--px) * 9);
+          background-image: linear-gradient(180deg, #6f4d16 0 var(--px), #55380a var(--px) 100%);
+          opacity: .75;
+        }
+
+        /* Nền thửa đất giữa các luống. */
+        .farm-ruong {
+          background-color: #6b4708;
+          background-image:
+            repeating-linear-gradient(0deg,
+              rgba(0,0,0,.14) 0 var(--px),
+              rgba(0,0,0,0) var(--px) calc(var(--px) * 5)),
+            repeating-linear-gradient(90deg,
+              rgba(255,255,255,.045) 0 var(--px),
+              rgba(0,0,0,0) var(--px) calc(var(--px) * 4)),
+            linear-gradient(180deg, #7d520b 0%, #4f3305 100%);
+        }
+
+        .farm-sang {
+          background: radial-gradient(circle,
+            rgba(255,238,150,.85) 0%, rgba(255,210,60,.35) 45%, rgba(255,210,60,0) 70%);
+          animation: farm-tho 1.8s ease-in-out infinite;
+        }
+        @keyframes farm-tho {
+          0%, 100% { opacity: .45; transform: translateX(-50%) scale(.88); }
+          50%      { opacity: 1;   transform: translateX(-50%) scale(1.06); }
+        }
+
+        /* Nhún theo bội số nguyên của pixel, không thì cây rung mờ nét. */
+        .farm-nhun { animation: farm-nhun 1.4s steps(1, end) infinite; }
+        @keyframes farm-nhun {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(calc(var(--px) * -1)); }
+        }
+
+        .farm-may { animation: farm-may linear infinite; }
+        @keyframes farm-may {
+          from { transform: translateX(-140px); }
           to   { transform: translateX(calc(100% + 100vw)); }
         }
+
+        .farm-sao { animation: farm-sao 3.2s ease-in-out infinite; }
+        @keyframes farm-sao {
+          0%, 100% { opacity: .25; }
+          50%      { opacity: 1; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
-          .nong-trai-may { animation: none !important; }
+          .farm-may, .farm-sao, .farm-sang, .farm-nhun { animation: none !important; }
         }
       `}</style>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={ANH_MAY_1} alt="" aria-hidden
-        className="nong-trai-may pointer-events-none absolute left-0 top-4 opacity-90"
-        style={{
-          width: 34 * PHONG, imageRendering: 'pixelated',
-          animation: 'nong-trai-may 46s linear infinite',
-        }}
-      />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={ANH_MAY_2} alt="" aria-hidden
-        className="nong-trai-may pointer-events-none absolute left-0 top-16 opacity-80"
-        style={{
-          width: 54 * PHONG, imageRendering: 'pixelated',
-          animation: 'nong-trai-may 71s linear infinite',
-          animationDelay: '-24s',
-        }}
-      />
 
-      {/* Chừa đáy khung cho hàng rào trong ảnh nền khỏi bị ô đất đè lên. */}
-      <div className="relative grid grid-cols-4 gap-x-2 gap-y-1 px-3 pb-[92px] pt-3">
-        {oDat.map((o) => {
-          const chang = changCua(o.plantedAt, o.readyAt, now);
-          const chin = chang === 'chin';
-          const chon = dangChon === o.index;
-          return (
-            <button
-              key={o.index}
-              type="button"
-              onClick={() => onChon(o.index)}
-              title={o.cropName ? `Ô ${o.index + 1} — ${o.cropName}` : `Ô ${o.index + 1} — đang trống`}
-              className={cn(
-                'group relative flex flex-col items-center justify-end rounded-lg p-1 pb-1.5 transition-all',
-                'ring-inset hover:bg-white/20',
-                chon && 'bg-white/30 ring-2 ring-amber-400',
-                chin && !chon && 'ring-2 ring-emerald-400',
-              )}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={anhODat(o.cropKey, chang)}
-                alt={o.cropName ?? 'Ô đất trống'}
-                className={cn('object-contain', chin && 'animate-bounce')}
-                style={{ height: 32 * PHONG, imageRendering: 'pixelated' }}
-              />
-
-              {/* Nhãn dưới chân ô: còn bao lâu, hoặc chín rồi, hoặc bỏ trống */}
-              <span
-                className={cn(
-                  'mt-1 rounded px-1 text-[11px] font-bold leading-tight',
-                  chin ? 'bg-emerald-500 text-white'
-                    : o.cropKey != null ? 'bg-ink-900/70 text-white'
-                    : 'bg-white/70 text-ink-700',
-                )}
-              >
-                {o.cropKey == null
-                  ? `Ô ${o.index + 1}`
-                  : chin ? 'Chín rồi!' : moTaConLai((o.readyAt ?? 0) - now)}
-              </span>
-
-              {/* Đã tưới — dấu giọt nước ở góc, để biết ô nào còn tưới được */}
-              {o.watered && o.cropKey != null && (
-                <span
-                  className="absolute right-1 top-1 rounded-full bg-sky-500/90 px-1 text-[10px] font-bold text-white"
-                  title="Đã tưới vụ này"
-                >
-                  ~
-                </span>
-              )}
-            </button>
-          );
-        })}
-
-        {/* Chỗ đất chưa mở, vẽ mờ cho thấy nông trại còn nới ra được */}
-        {/* Chỗ đất chưa mở: chỉ vẽ cho ĐẦY HÀNG đang dở, không vẽ thêm hàng
-            mới. Bày sẵn cả tám ô xám thì mảnh đất trông như bỏ hoang, mà người
-            mới vào có bốn ô là chuyện bình thường. */}
-        {Array.from(
-          { length: (4 - (oDat.length % 4)) % 4 && oDat.length < O_DAT_TOI_DA
-            ? Math.min((4 - (oDat.length % 4)) % 4, O_DAT_TOI_DA - oDat.length)
-            : 0 },
-          (_, i) => (
-            <div
-              key={`chua-mo-${i}`}
+      {/* ── Lớp 1: trời ── */}
+      <div
+        className="relative h-24 overflow-hidden sm:h-32"
+        style={{ background: `linear-gradient(180deg, ${troiTren} 0%, ${troiDuoi} 100%)` }}
+      >
+        {banNgay ? (
+          <span
+            aria-hidden
+            className="absolute right-6 top-5 block size-14 rounded-full"
+            style={{
+              background:
+                'radial-gradient(circle, #fff8cc 0 32%, #ffdc55 33% 52%, rgba(255,220,85,.35) 53% 72%, rgba(255,220,85,0) 73%)',
+            }}
+          />
+        ) : (
+          <>
+            <span
               aria-hidden
-              className="flex flex-col items-center justify-end rounded-lg border-2 border-dashed border-white/40 p-1 pb-1.5"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={anhODat(null, null)} alt=""
-                className="object-contain opacity-25 grayscale"
-                style={{ height: 32 * PHONG, imageRendering: 'pixelated' }}
+              className="absolute right-8 top-5 block size-10 rounded-full"
+              style={{
+                background: 'radial-gradient(circle at 62% 38%, #f6f8ff 0 46%, rgba(246,248,255,.18) 47% 70%, rgba(246,248,255,0) 71%)',
+              }}
+            />
+            {SAO.map(([x, y, tre]) => (
+              <span
+                key={`${x}-${y}`}
+                aria-hidden
+                className="farm-sao absolute block size-[2px] rounded-full bg-white"
+                style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${tre}s` }}
               />
-              <span className="mt-1 rounded bg-white/40 px-1 text-[11px] font-bold leading-tight text-ink-700">
-                chưa mở
-              </span>
-            </div>
-          ),
+            ))}
+          </>
+        )}
+
+        <AnhPixel
+          src={ANH_MAY_1}
+          className="farm-may pointer-events-none absolute left-0 top-4 opacity-90"
+          style={{ width: 34 * PHONG_NEN, animationDuration: '46s' }}
+        />
+        <AnhPixel
+          src={ANH_MAY_2}
+          className="farm-may pointer-events-none absolute left-0 top-12 opacity-80"
+          style={{ width: 54 * PHONG_NEN, animationDuration: '71s', animationDelay: '-24s' }}
+        />
+      </div>
+
+      {/* ── Lớp 2: rặng cây và hàng rào ──
+          Mấy búi cỏ ở mép dưới tấm ảnh có nền trong suốt, nên tô sẵn màu đất
+          phía sau để cỏ mọc ra từ thửa ruộng chứ không lơ lửng trên khoảng
+          trắng. */}
+      <div
+        aria-hidden
+        style={{
+          height: NEN_DAI_CANH * PHONG_NEN,
+          backgroundColor: '#7d520b',
+          backgroundImage: `url(${banNgay ? ANH_NEN_NGAY : ANH_NEN_DEM})`,
+          backgroundRepeat: 'repeat-x',
+          backgroundPosition: 'center bottom',
+          backgroundSize: `${NEN_RONG * PHONG_NEN}px ${NEN_CAO * PHONG_NEN}px`,
+          imageRendering: 'pixelated',
+        }}
+      />
+
+      {/* ── Lớp 3: thửa đất ── */}
+      <div className="farm-ruong relative px-2 pb-3 pt-2 sm:px-4">
+        {/*
+          Bề ngang thửa ruộng đo bằng chính bội số pixel: mỗi ô rộng 40 đơn vị
+          ảnh, vừa đủ để hai gò đất cạnh nhau gần nhau như luống thật. Để lưới
+          giãn hết bề ngang thẻ thì bốn gò đất đứng cách nhau cả gang tay, nhìn
+          lại hoá thưa thớt.
+        */}
+        <div
+          className="mx-auto grid grid-cols-4 gap-x-0 gap-y-2"
+          style={{ width: 'min(100%, calc(var(--px) * 40 * 4))' }}
+        >
+          {oDat.map((o) => (
+            <ODat
+              key={o.index}
+              o={o}
+              now={now}
+              dangChon={dangChon === o.index}
+              onChon={() => onChon(o.index)}
+            />
+          ))}
+          {oKhoa.map((i) => (
+            <ODatKhoa
+              key={`khoa-${i}`}
+              soTT={i + 1}
+              gia={i === soO ? giaMoO : null}
+              duTien={duTienMoO}
+              dangLam={dangLam}
+              onMua={onMua}
+            />
+          ))}
+        </div>
+
+        {/* Ban đêm phủ một lớp xanh lạnh cho thửa đất tối theo bầu trời. */}
+        {!banNgay && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 mix-blend-multiply"
+            style={{ backgroundColor: 'rgba(24, 42, 92, .45)' }}
+          />
         )}
       </div>
     </div>

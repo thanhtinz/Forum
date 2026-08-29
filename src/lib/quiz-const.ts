@@ -2,9 +2,10 @@
  * Trắc nghiệm — hằng số và luật, dùng chung cho máy chủ lẫn trình duyệt.
  *
  * Dựng lại từ `quiz.php` của bộ mod JohnCMS Việt hoá cũ. Giữ nguyên luật:
- * thành viên tự ra câu hỏi bốn phương án, ĐẶT CỌC một khoản, ai trả lời đúng
- * thì ăn đúng khoản ấy của người ra câu, trả lời sai thì mất đúng khoản ấy cho
- * người ra câu. Chỉ ĐỔI ĐƠN VỊ: bản cũ tính bằng "xu", ở đây tính bằng "điểm".
+ * thành viên tự ra câu hỏi bốn phương án ĐẶT VÀO MỘT THỂ LOẠI, kèm một khoản
+ * ĐẶT CỌC; ai trả lời đúng thì ăn đúng khoản ấy của người ra câu, trả lời sai
+ * thì mất đúng khoản ấy cho người ra câu. Chỉ ĐỔI ĐƠN VỊ: bản cũ tính bằng
+ * "xu", ở đây tính bằng "điểm".
  *
  * Tách riêng khỏi `quiz.ts` vì tệp kia đụng Prisma — kéo Prisma vào gói trình
  * duyệt là hỏng cả bản dựng.
@@ -39,8 +40,35 @@ export const QUIZ_NOI_DUNG_MAX = 500;
 export const QUIZ_PHUONG_AN_MAX = 120;
 export const QUIZ_GIAI_THICH_MAX = 500;
 
+/** Giới hạn cho một bình luận dưới câu hỏi — đúng khoảng bản gốc: 3–500. */
+export const QUIZ_BINH_LUAN_MIN = 3;
+export const QUIZ_BINH_LUAN_MAX = 500;
+
+/** Giới hạn cho tên và mô tả một thể loại — đúng khoảng bản gốc. */
+export const QUIZ_THE_LOAI_TEN_MIN = 2;
+export const QUIZ_THE_LOAI_TEN_MAX = 100;
+export const QUIZ_THE_LOAI_MO_TA_MAX = 500;
+
 /** Số câu hỏi hiện mỗi trang. */
 export const QUIZ_MOI_TRANG = 10;
+/** Số bình luận hiện mỗi trang. */
+export const QUIZ_BINH_LUAN_MOI_TRANG = 20;
+/** Trần số thể loại bày ra một lần — thể loại là thứ quản trị lập, luôn ít. */
+export const QUIZ_THE_LOAI_TOI_DA = 50;
+/** Trần số tên người trả lời kể ra dưới mỗi câu hỏi. */
+export const QUIZ_NGUOI_TRA_LOI_TOI_DA = 20;
+
+/**
+ * Danh sách câu hỏi ở bản gốc cắt đúng 100 ký tự đầu rồi chấm lửng. Giữ nguyên
+ * con số ấy: dài hơn thì mỗi dòng một kiểu, danh sách gãy vụn.
+ */
+export const QUIZ_TOM_TAT = 100;
+
+/** Cắt ngắn nội dung câu hỏi cho danh sách, đúng kiểu bản gốc. */
+export function rutGon(s: string, max = QUIZ_TOM_TAT): string {
+  const mot = s.replace(/\s+/g, ' ').trim();
+  return mot.length > max ? `${mot.slice(0, max)}...` : mot;
+}
 
 /** Nhãn A, B, C, D cho từng phương án. */
 export const QUIZ_NHAN = ['A', 'B', 'C', 'D'] as const;
@@ -88,6 +116,33 @@ export function loiCauHoi(
   }
   if (!Number.isInteger(coc) || coc < QUIZ_COC_MIN || coc > QUIZ_COC_MAX) {
     return `Đặt cọc từ ${QUIZ_COC_MIN} đến ${QUIZ_COC_MAX} điểm.`;
+  }
+  return null;
+}
+
+/** Kiểm một bình luận, trả về câu lỗi hoặc `null` nếu sạch. */
+export function loiBinhLuan(noiDung: string): string | null {
+  const nd = noiDung.trim();
+  if (nd.length < QUIZ_BINH_LUAN_MIN) {
+    return `Bình luận phải dài ít nhất ${QUIZ_BINH_LUAN_MIN} ký tự.`;
+  }
+  if (nd.length > QUIZ_BINH_LUAN_MAX) {
+    return `Bình luận dài quá ${QUIZ_BINH_LUAN_MAX} ký tự.`;
+  }
+  return null;
+}
+
+/** Kiểm tên và mô tả một thể loại, trả về câu lỗi hoặc `null` nếu sạch. */
+export function loiTheLoai(ten: string, moTa: string): string | null {
+  const t = ten.trim();
+  if (t.length < QUIZ_THE_LOAI_TEN_MIN) {
+    return `Tên thể loại phải dài ít nhất ${QUIZ_THE_LOAI_TEN_MIN} ký tự.`;
+  }
+  if (t.length > QUIZ_THE_LOAI_TEN_MAX) {
+    return `Tên thể loại dài quá ${QUIZ_THE_LOAI_TEN_MAX} ký tự.`;
+  }
+  if (moTa.trim().length > QUIZ_THE_LOAI_MO_TA_MAX) {
+    return `Mô tả thể loại dài quá ${QUIZ_THE_LOAI_MO_TA_MAX} ký tự.`;
   }
   return null;
 }

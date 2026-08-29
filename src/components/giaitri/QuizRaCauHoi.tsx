@@ -1,6 +1,8 @@
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { ActionForm } from '@/components/ActionForm';
 import { dangCauHoi, type RaCauState } from '@/app/(site)/giai-tri/trac-nghiem/actions';
 import {
   QUIZ_COC_MAX, QUIZ_COC_MIN, QUIZ_GIAI_THICH_MAX, QUIZ_NHAN, QUIZ_NOI_DUNG_MAX,
@@ -8,13 +10,40 @@ import {
 } from '@/lib/quiz-const';
 import { cn } from '@/lib/utils';
 
-/** Biểu mẫu ra câu hỏi mới: bốn phương án, chọn một đáp án đúng, đặt cọc. */
-export function QuizRaCauHoi() {
+/**
+ * Biểu mẫu ra câu hỏi mới: bốn phương án, chọn một đáp án đúng, đặt cọc.
+ *
+ * Câu hỏi luôn đăng VÀO một thể loại — `categoryId` đi kèm cố định theo trang
+ * thể loại đang mở, đúng như bản gốc (`quiz.php?act=add&id=<thể loại>`), chứ
+ * không có ô chọn thể loại rời để người ta chọn nhầm.
+ */
+export function QuizRaCauHoi({ categoryId, tenTheLoai, slugTheLoai }: {
+  categoryId: string;
+  tenTheLoai: string;
+  slugTheLoai: string;
+}) {
   const [state, action, dangChay] = useActionState<RaCauState, FormData>(dangCauHoi, {});
   const [dapAn, setDapAn] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Gửi xong thì dọn ô nhập, chứ để nguyên là người ta tưởng chưa gửi được và
+  // bấm lần nữa — mất thêm một lần cọc cho đúng câu hỏi ấy.
+  useEffect(() => {
+    if (state.ok) {
+      formRef.current?.reset();
+      setDapAn(0);
+    }
+  }, [state]);
 
   return (
-    <form action={action} className="space-y-4">
+    <ActionForm ref={formRef} action={action} className="space-y-4">
+      <input type="hidden" name="categoryId" value={categoryId} />
+
+      <p className="rounded-xl bg-ink-50 p-3 text-xs leading-relaxed text-ink-500 dark:bg-ink-800/50">
+        Đăng vào thể loại <b className="text-ink-700 dark:text-ink-200">{tenTheLoai}</b>. Câu hỏi viết
+        tiếng Việt có dấu, ngắn gọn, đáp án phải chính xác; đăng sai thể loại có thể bị loại bỏ.
+      </p>
+
       <label className="block">
         <span className="label">Câu hỏi</span>
         <textarea name="noiDung" rows={3} maxLength={QUIZ_NOI_DUNG_MAX} required
@@ -61,15 +90,22 @@ export function QuizRaCauHoi() {
             defaultValue={QUIZ_COC_MIN} className="input !w-32" />
         </label>
         <button type="submit" disabled={dangChay} className="btn-primary disabled:opacity-60">
-          {dangChay ? 'Đang gửi…' : 'Gửi câu hỏi'}
+          {dangChay ? 'Đang gửi…' : 'Đăng câu hỏi'}
         </button>
         <span className="retro-sub text-ink-400">
           Trừ cọc ngay, bị từ chối cũng không hoàn
         </span>
       </div>
 
-      {state.ke && <p className="text-sm font-medium text-emerald-600">{state.ke}</p>}
+      {state.ke && (
+        <p className="text-sm font-medium text-emerald-600">
+          {state.ke}{' '}
+          <Link href={`/giai-tri/trac-nghiem/the-loai/${slugTheLoai}`} className="underline">
+            Về thể loại
+          </Link>
+        </p>
+      )}
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-    </form>
+    </ActionForm>
   );
 }

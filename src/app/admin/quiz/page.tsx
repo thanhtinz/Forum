@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
+import { FolderCog } from 'lucide-react';
 import { QUIZ_NHAN, QUIZ_TRANG_THAI_LABEL } from '@/lib/quiz-const';
 import { QuizRowActions } from './QuizRowActions';
 
@@ -52,6 +53,7 @@ export default async function AdminQuizPage({ searchParams }: {
         id: true, content: true, options: true, correct: true, explain: true,
         price: true, status: true, reviewNote: true, createdAt: true,
         author: { select: { username: true, name: true } },
+        category: { select: { slug: true, name: true } },
         _count: { select: { answers: true } },
       },
     }),
@@ -66,6 +68,11 @@ export default async function AdminQuizPage({ searchParams }: {
           {STATUSES.find((s) => s.key === status)?.label} · {total} câu
         </p>
       </div>
+
+      <Link href="/admin/quiz/the-loai"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-ink-200 px-2.5 py-1.5 text-xs font-semibold text-ink-600 hover:border-brand-400 hover:text-brand-600 dark:border-ink-700 dark:text-ink-300">
+        <FolderCog size={14} /> Thể loại trắc nghiệm
+      </Link>
 
       <div className="flex flex-wrap gap-1.5">
         {STATUSES.map((s) => (
@@ -116,8 +123,19 @@ export default async function AdminQuizPage({ searchParams }: {
             {q.reviewNote && <p className="text-sm text-rose-600">Lý do từ chối: {q.reviewNote}</p>}
 
             <p className="text-xs text-ink-400">
-              Bởi {q.author.name ?? q.author.username ?? 'Ẩn danh'} · {q._count.answers} lượt trả lời ·{' '}
-              {format(q.createdAt, 'HH:mm dd/MM/yyyy')}
+              Bởi {q.author.name ?? q.author.username ?? 'Ẩn danh'} ·{' '}
+              {q.category
+                ? <Link href={`/giai-tri/trac-nghiem/the-loai/${q.category.slug}`} className="hover:text-brand-600">{q.category.name}</Link>
+                : <span className="text-rose-500">chưa có thể loại</span>}
+              {' · '}{q._count.answers} lượt trả lời · {format(q.createdAt, 'HH:mm dd/MM/yyyy')}
+              {q.status === 'APPROVED' && (
+                <>
+                  {' · '}
+                  <Link href={`/giai-tri/trac-nghiem/cau-hoi/${q.id}`} className="font-semibold hover:text-brand-600">
+                    Xem ngoài trang chơi
+                  </Link>
+                </>
+              )}
             </p>
 
             {q.status === 'PENDING' && <QuizRowActions id={q.id} />}

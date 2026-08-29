@@ -11,6 +11,7 @@
  * trình thoát với mã khác 0 để CI báo đỏ.
  */
 import fs from 'node:fs';
+import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { closeOpenPages } from './helpers.mjs';
@@ -47,6 +48,24 @@ for (const file of files) {
     await closeOpenPages();
   }
 }
+
+/*
+ * Đối soát bộ đếm trước khi kết thúc.
+ *
+ * Hơn hai chục ca xoá thẳng chủ đề và trả lời bằng Prisma trong phần dọn dẹp
+ * của mình — nhanh và gọn, nhưng đi vòng qua `forum-counters.ts` nên bộ đếm
+ * của chuyên mục ở lại cao hơn sự thật. Chạy xong cả bộ mà cơ sở dữ liệu dùng
+ * chung lại sai số liệu thì lần sau mở trang lên thấy "Hỏi đáp · 11 chủ đề"
+ * trong khi chẳng còn cái nào.
+ *
+ * Chữa ở ĐÂY chứ không rải vào từng ca: hai mươi mốt chỗ nhớ gọi thì kiểu gì
+ * cũng có chỗ quên, mà quên thì im lặng.
+ */
+await new Promise((xong) => {
+  const p = spawn('node', ['scripts/soat-bo-dem.mjs'], { stdio: 'ignore' });
+  p.on('exit', xong);
+  p.on('error', xong);
+});
 
 console.log(`\n${'─'.repeat(50)}`);
 if (failures.length === 0) {

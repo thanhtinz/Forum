@@ -78,6 +78,29 @@ export default async function run(check) {
     check('lật sang trang hai thì bày phần còn lại, ít hơn 8 ô',
       t2 > 0 && t2 < MOI_TRANG, `đếm được ${t2}`);
 
+    // ── Một trang tám ô: điện thoại hai hàng bốn, máy tính một hàng tám ──
+    // Ghép đôi hàng trên máy tính là chỗ dễ vỡ nhất: khe ở CHỖ NỐI phải rộng
+    // đúng bằng mọi khe khác, không thì nhìn ra ngay hai bệ kê sát nhau.
+    await datSoO(12);
+    const doBoCuc = async (rong) => {
+      await p.setViewportSize({ width: rong, height: 1000 });
+      await mo();
+      return p.evaluate(() => {
+        const r = [...document.querySelectorAll('.farm-o')].map((b) => b.getBoundingClientRect());
+        return {
+          soCot: new Set(r.map((x) => Math.round(x.left))).size,
+          khe: r.slice(1).map((x, i) => Math.round(x.left - r[i].right)).filter((k) => k > 0),
+        };
+      });
+    };
+    const dt = await doBoCuc(390);
+    check('điện thoại xếp bốn ô một hàng', dt.soCot === 4, `đếm được ${dt.soCot} cột`);
+    const may = await doBoCuc(1280);
+    check('máy tính dàn tám ô một hàng', may.soCot === MOI_TRANG, `đếm được ${may.soCot} cột`);
+    check('và khe giữa các ô đều nhau, kể cả chỗ nối hai bệ',
+      may.khe.length === 7 && new Set(may.khe).size === 1, `các khe: ${may.khe.join(',')}`);
+    await p.setViewportSize({ width: 1280, height: 1000 });
+
     // ── Mua một ô: tăng đúng một, trừ đúng giá ───────────────────────────
     // Đúng 8 ô thì ô khoá thứ 9 rơi sang TRANG HAI — nút chuyển trang phải có
     // dấu báo, không thì người chơi không biết ruộng còn mở rộng được.

@@ -63,8 +63,11 @@ chẳng hiện ở đâu), kèm vá chỗ `saveSlide` không kiểm định dạ
 (hai hàng bốn ô) nên khung cảnh luôn cao đúng bằng lúc mới chơi. Nút chuyển
 trang có chấm xanh báo trang ấy có ô đã CHÍN và chấm vàng báo trang ấy còn đất
 mở được — chia trang xong thì ô chín ở trang khác biến mất khỏi mắt người chơi,
-mà cây chín để lâu là phí cả vụ. Thêm `42-nong-trai-o-dat` (15 mục): trước đợt
-này nông trại KHÔNG có bài kiểm nào.
+mà cây chín để lâu là phí cả vụ. Máy tính ghép ĐÔI hàng nằm cạnh nhau thành
+một dải tám ô (bệ trái bỏ nẹp phải, bệ phải bỏ nẹp trái, lề trong rút một nửa
+nên khe chỗ nối rộng đúng bằng mọi khe khác) — trước đó bệ chỉ rộng 528px giữa
+thửa ruộng 754px, thừa hai mảng đất trống hai bên. Thêm `42-nong-trai-o-dat`
+(18 mục): trước đợt này nông trại KHÔNG có bài kiểm nào.
 
 **Đăng bài một lối** — trước có năm chỗ mở khung đăng chủ đề, bốn trong số đó
 là lối toàn cục tự đoán hộ chuyên mục (tệ nhất là nút ở trang chủ, nó lấy

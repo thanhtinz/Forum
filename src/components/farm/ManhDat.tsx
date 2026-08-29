@@ -183,6 +183,34 @@ export function ManhDat({
             inset 0 4px 7px rgba(0,0,0,.34);
         }
 
+        /*
+         * Hai bệ ghép đôi trên máy tính phải đọc ra MỘT bệ tám ô, không phải
+         * hai bệ kê sát nhau: bệ trái bỏ nẹp phải, bệ phải bỏ nẹp trái, và
+         * hai góc ở chỗ giáp nhau vuông lại.
+         *
+         * Lề trong chỗ giáp cũng phải rút một nửa (6px → 3px mỗi bên): để
+         * nguyên thì khe giữa ô thứ tư và ô thứ năm rộng gấp đôi mọi khe khác,
+         * nhìn ra ngay chỗ nối.
+         */
+        @media (min-width: 640px) {
+          .farm-cap > :nth-child(odd) .farm-be {
+            padding-right: 3px;
+            border-radius: 4px 0 0 7px;
+            box-shadow:
+              inset 3px 0 0 rgba(150,101,42,.85),
+              inset 0 -3px 0 rgba(122,80,30,.9),
+              inset 0 4px 7px rgba(0,0,0,.34);
+          }
+          .farm-cap > :nth-child(even) .farm-be {
+            padding-left: 3px;
+            border-radius: 0 4px 7px 0;
+            box-shadow:
+              inset -3px 0 0 rgba(150,101,42,.85),
+              inset 0 -3px 0 rgba(122,80,30,.9),
+              inset 0 4px 7px rgba(0,0,0,.34);
+          }
+        }
+
         /* Luống đã cày: mặt luống sáng ở trên, vệt cày ngang, sườn tối ở dưới. */
         .farm-luong {
           height: calc(var(--px) * 13);
@@ -317,6 +345,20 @@ export function ManhDat({
 
       {/* ── Lớp 3: thửa đất ── */}
       <div className="farm-ruong relative pb-2 pt-1">
+        {/*
+          Điện thoại xếp hai hàng bốn ô chồng lên nhau; máy tính ghép ĐÔI hàng
+          nằm cạnh nhau thành một dải tám ô.
+
+          Ghép ở cấp hàng chứ không đổi số cột của bệ, vì dải luống vẽ theo
+          hàng: một lưới tám cột thì ở khổ hẹp nó tự xuống dòng thành hai hàng
+          nhìn thấy, mà chỉ có MỘT dải luống vẽ cho cả khối — hàng trên mất
+          luống. Còn ghép theo cặp thì mỗi hàng vẫn giữ dải luống của nó, hai
+          dải nằm sát nhau nối thành một vệt chạy suốt bề ngang.
+
+          Hàng lẻ (trang cuối chỉ còn một hàng) thì không ghép, để nguyên một
+          cột — không thì nó co lại còn nửa thửa ruộng, bỏ trống hẳn bên phải.
+        */}
+        <div className={cn('grid', hang.length > 1 && 'farm-cap sm:grid-cols-2')}>
         {hang.map((oTrongHang, thuTuHang) => (
           <div key={thuTuHang} className="relative">
             {/*
@@ -366,6 +408,7 @@ export function ManhDat({
             </div>
           </div>
         ))}
+        </div>
 
         {/* Ban đêm phủ một lớp xanh lạnh cho thửa đất tối theo bầu trời. */}
         {!banNgay && (

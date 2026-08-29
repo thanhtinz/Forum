@@ -48,10 +48,15 @@ export function ODat({ o, now, dangChon, onChon }: Props) {
           ? `Ô ${o.index + 1} — đang trống, bấm để gieo hạt`
           : `Ô ${o.index + 1} — ${o.cropName}${chin ? ', đã chín' : ''}`
       }
+      data-chon={dangChon ? '1' : '0'}
+      aria-label={
+        dangTrong
+          ? `Ô đất số ${o.index + 1}, đang trống`
+          : `Ô đất số ${o.index + 1}, ${o.cropName}${chin ? ', đã chín' : ', đang lớn'}`
+      }
       className={cn(
-        'group relative flex flex-col items-stretch rounded-md pb-1 outline-none transition-[filter]',
-        'focus-visible:ring-2 focus-visible:ring-white',
-        dangChon && 'ring-2 ring-amber-300 ring-offset-0',
+        'farm-o group relative flex flex-col items-stretch pb-1 pt-0.5 outline-none',
+        'focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1',
       )}
     >
       {/*
@@ -110,7 +115,9 @@ export function ODat({ o, now, dangChon, onChon }: Props) {
           gióng đúng vào chân cây, ô nào đang ở trạng thái nào cũng vậy. */}
       <span className="mt-1 block h-[18px] px-0.5">
         {dangTrong ? (
-          <span className="block truncate text-[10px] font-bold leading-4 text-amber-100/70 group-hover:text-amber-50">
+          /* Nền tối sau chữ: chữ vàng nhạt đặt thẳng lên đất nâu chỉ được
+             chừng 2:1, đọc đã khó mà ra nắng thì mất hẳn. */
+          <span className="mx-auto block w-fit max-w-full truncate rounded-full bg-black/60 px-2 text-[11px] font-bold leading-4 text-amber-50 group-hover:bg-black/75">
             <span className="group-hover:hidden">Ô {o.index + 1}</span>
             <span className="hidden group-hover:inline">Gieo hạt</span>
           </span>
@@ -128,7 +135,7 @@ export function ODat({ o, now, dangChon, onChon }: Props) {
                 style={{ width: `${Math.max(6, phan)}%` }}
               />
             </span>
-            <span className="block truncate pt-0.5 text-[10px] font-bold leading-3 text-amber-50/85">
+            <span className="mx-auto mt-0.5 block w-fit max-w-full truncate rounded-full bg-black/60 px-1.5 text-[11px] font-bold leading-4 text-amber-50">
               {moTaConLai((o.readyAt ?? 0) - now)}
             </span>
           </>
@@ -168,13 +175,22 @@ export function ODatKhoa({
             ? `Mở ô ${soTT} với ${gia} điểm`
             : `Ô ${soTT} cần ${gia} điểm để mở`
       }
+      aria-label={
+        gia == null
+          ? `Ô đất số ${soTT}, chưa tới lượt mở`
+          : `Mở ô đất số ${soTT}, giá ${gia} điểm`
+      }
       className={cn(
-        'group relative flex flex-col items-stretch rounded-md pb-1 outline-none',
-        muaDuoc && 'cursor-pointer',
-        !muaDuoc && 'cursor-not-allowed',
+        'farm-o group relative flex flex-col items-stretch pb-1 pt-0.5 outline-none',
+        'focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-1',
+        muaDuoc ? 'cursor-pointer' : 'cursor-not-allowed',
       )}
     >
-      <span className="relative block w-full" style={{ height: 'calc(var(--px) * 24)' }}>
+      {/* Cao đúng bằng ô đã mở (32 đơn vị ảnh) chứ không phải 24: tấm biển
+          "MUA" cao 27 đơn vị, nhét vào khoảng 24 thì nó tràn lên trên và đâm
+          vào nhãn của hàng phía trên. Cho hai loại ô cùng chiều cao thì biển
+          nằm gọn trong ô, mà hai hàng cũng gióng thẳng chân với nhau. */}
+      <span className="relative block w-full" style={{ height: 'calc(var(--px) * 32)' }}>
         {/* Đè phẳng dải luống của hàng: chỗ này chưa cày. */}
         <span aria-hidden className="farm-hoang absolute inset-x-0 bottom-0" />
         {gia != null && (
@@ -194,8 +210,15 @@ export function ODatKhoa({
           />
         )}
       </span>
-      <span className="mt-1 block h-[18px] truncate px-0.5 text-[10px] font-bold leading-4 text-amber-100/55">
-        {gia == null ? 'chưa mở' : `${gia} điểm`}
+      <span className="mt-1 block h-[18px] px-0.5">
+        {/* Giá là lời mời mua, nên cho nó màu của một cái nút: ô nào tới lượt
+            mở thì nhìn phát thấy, khác hẳn mấy ô còn phải chờ. */}
+        <span className={cn(
+          'mx-auto block w-fit max-w-full truncate rounded-full px-2 text-[11px] font-bold leading-4',
+          gia == null ? 'bg-black/45 text-amber-100/85' : 'bg-amber-400 text-amber-950',
+        )}>
+          {gia == null ? 'chưa mở' : `${gia} điểm`}
+        </span>
       </span>
     </button>
   );

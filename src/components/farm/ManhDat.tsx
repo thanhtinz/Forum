@@ -89,10 +89,76 @@ export function ManhDat({
   }
 
   return (
-    <div className="farm-canh relative select-none overflow-hidden">
+    <div className="farm-khung relative select-none">
+      <div className="farm-canh relative overflow-hidden rounded-[10px]">
       <style>{`
         .farm-canh { --px: 2px; }
         @media (min-width: 640px) { .farm-canh { --px: 3px; } }
+
+        /*
+         * Khung gỗ quanh thửa ruộng.
+         *
+         * Trước đây cảnh ruộng tràn hết bề ngang thẻ, không có mép, nên nó
+         * trôi tuột vào phần trang phía dưới — nhìn ra một tấm ảnh dán lên
+         * trang chứ không ra một khoảnh đất có bờ. Khung này là bờ ấy: bốn
+         * nẹp gỗ, trong lòng hơi lõm xuống cho có chiều sâu.
+         */
+        .farm-khung {
+          padding: 6px;
+          border-radius: 14px;
+          background-image:
+            repeating-linear-gradient(90deg,
+              rgba(0,0,0,.07) 0 2px, rgba(255,255,255,.05) 2px 6px),
+            linear-gradient(180deg, #a9702f 0%, #8a5620 45%, #6d4116 100%);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.28),
+            inset 0 -2px 0 rgba(0,0,0,.30),
+            0 1px 2px rgba(0,0,0,.18);
+        }
+        .farm-canh {
+          box-shadow:
+            inset 0 2px 5px rgba(0,0,0,.45),
+            inset 0 -1px 0 rgba(255,255,255,.10);
+        }
+
+        /*
+         * Luống của riêng từng ô: một khoảnh lõm để mắt biết cây nào trồng ở
+         * chỗ nào. Chỉ hiện khi rê chuột hoặc đang chọn — lúc nào cũng vẽ thì
+         * bốn khung vuông đè lên nhau át mất chính mấy cái cây.
+         */
+        .farm-o {
+          border-radius: 8px;
+          transition: background-color .18s ease, box-shadow .18s ease;
+        }
+        .farm-o:hover:not(:disabled) {
+          background-color: rgba(255,255,255,.09);
+          box-shadow: inset 0 0 0 2px rgba(255,244,200,.45);
+        }
+        .farm-o[data-chon="1"] {
+          background-color: rgba(255,214,102,.16);
+          box-shadow:
+            inset 0 0 0 2px rgba(255,206,84,.95),
+            0 0 10px rgba(255,196,60,.45);
+        }
+        @media (prefers-reduced-motion: reduce) { .farm-o { transition: none; } }
+
+        /*
+         * Bệ trồng: khoảnh đất có bờ, bốn ô nằm gọn bên trong.
+         *
+         * Nẹp gỗ chỉ ở hai bên và đáy — mặt trên để hở thì cây mọc vượt lên
+         * khỏi bờ được, đóng kín cả bốn mặt là thành cái hộp úp lên cây.
+         */
+        .farm-be {
+          padding: 0 6px 4px;
+          border-radius: 4px 4px 7px 7px;
+          background-image: linear-gradient(180deg,
+            rgba(0,0,0,.16) 0%, rgba(0,0,0,.28) 62%, rgba(0,0,0,.16) 100%);
+          box-shadow:
+            inset 3px 0 0 rgba(150,101,42,.85),
+            inset -3px 0 0 rgba(150,101,42,.85),
+            inset 0 -3px 0 rgba(122,80,30,.9),
+            inset 0 4px 7px rgba(0,0,0,.34);
+        }
 
         /* Luống đã cày: mặt luống sáng ở trên, vệt cày ngang, sườn tối ở dưới. */
         .farm-luong {
@@ -244,10 +310,15 @@ export function ManhDat({
               Bề ngang chỗ trồng đo bằng chính bội số pixel: mỗi ô rộng 40 đơn
               vị ảnh, vừa đủ để hai gò đất cạnh nhau gần nhau như luống thật.
               Giãn hết bề ngang thẻ thì bốn gò đứng cách nhau cả gang tay.
+
+              Bọc thêm một lớp "bệ trồng": bốn ô trước đây đứng trần trên nền
+              đất nên hai bên thừa ra hai mảng đất trống chẳng để làm gì, mà
+              cũng không thấy đâu là ranh giới của khoảnh trồng. Bệ có nẹp gỗ
+              ba mặt, trong lòng tối hơn nền — nhìn ra một luống có bờ.
             */}
             <div
-              className="relative mx-auto grid grid-cols-4"
-              style={{ width: 'min(100%, calc(var(--px) * 40 * 4))' }}
+              className="farm-be relative mx-auto grid grid-cols-4 gap-x-1.5"
+              style={{ width: 'min(100%, calc(var(--px) * 44 * 4))' }}
             >
               {oTrongHang.map((c) =>
                 c.o ? (
@@ -281,6 +352,7 @@ export function ManhDat({
             style={{ backgroundColor: 'rgba(24, 42, 92, .45)' }}
           />
         )}
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,11 @@
 # Nova Platform — Đặc tả kỹ thuật
 
-Nền tảng blog + diễn đàn + nội dung trả phí, xây mới hoàn toàn trên Next.js.
-Tham chiếu tính năng/bố cục từ Zibll 8.1, **không** dùng WordPress và không tái sử dụng mã nguồn của theme đó.
+Diễn đàn + kho game, dựng mới trên Next.js 15. Lấy cảm hứng từ các diễn đàn wap
+Việt Nam thời JohnCMS (2005–2010).
+
+**Điểm là đơn vị duy nhất.** Không có tiền thật, không có VIP, không có nội dung
+trả phí bằng tiền. Mọi thứ mua bán, thưởng phạt, cược, mở khoá đều tính bằng
+điểm kiếm được trên diễn đàn.
 
 ---
 
@@ -9,15 +13,18 @@ Tham chiếu tính năng/bố cục từ Zibll 8.1, **không** dùng WordPress v
 
 | Lớp | Công nghệ |
 |---|---|
-| Framework | Next.js 15 (App Router, Server Components) |
+| Framework | Next.js 15 (App Router, Server Components, Server Actions) |
 | Ngôn ngữ | TypeScript |
-| DB | PostgreSQL 16 |
+| CSDL | PostgreSQL |
 | ORM | Prisma |
-| Auth | Auth.js v5 (Credentials + OAuth: Google, GitHub) |
-| Thanh toán | SePay (webhook chuyển khoản VN) |
-| UI | Tailwind CSS + shadcn/ui |
-| Cache/queue | Redis (rate limit, view counter, session tuỳ chọn) |
-| Lưu file | S3-compatible (R2/MinIO) |
+| Auth | Auth.js v5 — Credentials, thêm OAuth nếu cấu hình |
+| Giao diện | Tailwind CSS thuần, **không** dùng thư viện component nào |
+| Kiểm thử | Playwright, chạy thật trên trình duyệt |
+
+Không dùng Redis, không dùng shadcn/ui, không có hàng đợi. Hạn mức chống spam
+nằm trong bộ nhớ tiến trình (`src/lib/rate-limit-memory.ts`) — mất khi khởi động
+lại và không dùng chung giữa nhiều máy chủ; đó là lớp chặn tiện tay, lớp thật
+luôn nằm ở cơ sở dữ liệu.
 
 ---
 
@@ -26,168 +33,162 @@ Tham chiếu tính năng/bố cục từ Zibll 8.1, **không** dùng WordPress v
 ```
 src/
 ├── app/
-│   ├── (site)/                  # Giao diện công khai
-│   │   ├── page.tsx             # Trang chủ — slider + lưới card
-│   │   ├── posts/[slug]/        # Chi tiết bài viết + paywall
-│   │   ├── category/[slug]/
-│   │   ├── tag/[slug]/
-│   │   ├── forum/               # Danh sách chuyên mục diễn đàn
-│   │   │   ├── [forum]/         # Danh sách chủ đề
-│   │   │   └── t/[thread]/      # Chi tiết chủ đề + trả lời
-│   │   ├── u/[username]/        # Trang cá nhân công khai
-│   │   ├── vip/                 # Bảng giá VIP
-│   │   └── search/
-│   ├── (user)/user/             # Khu vực đăng nhập
-│   │   ├── dashboard/
-│   │   ├── posts/               # Bài viết của tôi
-│   │   ├── orders/
-│   │   ├── points/              # Lịch sử điểm
-│   │   ├── balance/             # Nạp / lịch sử số dư
-│   │   ├── downloads/
-│   │   ├── favorites/
-│   │   ├── medals/
-│   │   ├── invite/
-│   │   ├── withdraw/
-│   │   └── settings/
-│   ├── (admin)/admin/           # Quản trị
-│   │   ├── posts/ users/ forums/ orders/
-│   │   ├── vip/ coupons/ medals/ levels/
-│   │   ├── reports/ withdrawals/
-│   │   └── settings/            # SiteSetting, slider, nav, friend links
-│   └── api/
-│       ├── auth/[...nextauth]/
-│       ├── webhooks/sepay/      # Xác thực chữ ký → cộng số dư
-│       ├── posts/ forum/ comments/
-│       ├── orders/ checkin/ upload/
-│       └── admin/
-├── lib/
-│   ├── db.ts                    # Prisma singleton
-│   ├── auth.ts                  # Cấu hình Auth.js
-│   ├── access.ts                # Kiểm tra quyền xem nội dung
-│   ├── points.ts                # Giao dịch điểm (atomic)
-│   ├── balance.ts               # Giao dịch số dư
-│   ├── sepay.ts                 # Ký/xác thực webhook
-│   ├── level.ts                 # Tính EXP → cấp độ
-│   ├── medals.ts                # Trao huy chương tự động
-│   └── notify.ts
-└── components/
-    ├── post-card/               # 4 biến thể: STANDARD/WIDE/TEXT_ONLY/GALLERY
-    ├── paywall/
-    ├── forum/
-    ├── user/
-    └── ui/                      # shadcn
+│   ├── (auth)/                  # đăng nhập, đăng ký
+│   ├── (site)/                  # toàn bộ giao diện công khai
+│   │   ├── page.tsx             # trang chủ = diễn đàn
+│   │   ├── forum/[slug]/[id]/   # chuyên mục → chủ đề
+│   │   ├── dang-chu-de/         # chuyển hướng tới chuyên mục đăng được
+│   │   ├── chua-doc/            # chủ đề chưa đọc
+│   │   ├── games/               # kho game
+│   │   ├── giai-tri/            # bầu cua, oẳn tù tì, trắc nghiệm
+│   │   ├── nong-trai/           # nông trại
+│   │   ├── clb/                 # câu lạc bộ
+│   │   ├── cua-hang/            # cửa hàng điểm
+│   │   ├── chat/  online/  ranking/  thanh-vien/  search/  tag/
+│   │   ├── u/[username]/        # trang cá nhân
+│   │   └── user/                # khu vực đăng nhập
+│   ├── admin/                   # quản trị (không bọc nhóm route)
+│   └── api/                     # auth, upload, bau-cua, chat, mentions, gifs…
+├── lib/                         # nghiệp vụ thuần, không dựng JSX
+└── components/                  # forum/ game/ club/ user/ giaitri/ farm/ comment/
 ```
 
 ---
 
-## 3. Quy tắc nghiệp vụ
+## 3. Luật bất di bất dịch
 
-### 3.1 Kiểm soát truy cập nội dung (`lib/access.ts`)
+Những điều dưới đây đã đổi bằng lỗi thật, đừng phá.
 
-Hàm `canAccess(user, post)` trả về `{ allowed, reason, price }`:
+### 3.1 `'use server'`
 
-| `post.access` | Điều kiện mở khoá |
-|---|---|
-| `FREE` | Luôn cho phép |
-| `LOGIN_REQUIRED` | Đã đăng nhập |
-| `POINTS` | Có `Order` PAID, hoặc trừ `pricePoints` |
-| `PAID` | Có `Order` PAID với `priceAmount` |
-| `VIP_ONLY` | `user.vipTier >= post.vipTierFree` và VIP còn hạn |
+Mọi hàm `export` trong tệp `'use server'` là **một endpoint POST công khai**.
+Người lạ gọi thẳng được, không qua giao diện. Vì vậy:
 
-VIP có `freeContent = true` bỏ qua paywall. VIP có `discountPercent` được giảm giá khi mua.
+- Mỗi hàm **tự kiểm quyền của chính nó**, không tin trang gọi nó đã kiểm.
+- Hằng số, kiểu, hàm đồng bộ phải để ở tệp `*-const.ts` riêng — tệp
+  `'use server'` chỉ được export hàm async.
 
-Nội dung ẩn nằm ở `post.hiddenContent`, **không bao giờ** gửi xuống client khi chưa mở khoá — lọc ở tầng server component.
+*Đã từng dính:* `purgeExpiredMessages` được export từ tệp `'use server'` mà không
+kiểm gì, gọi thẳng là xoá sạch tin nhắn của hội thoại bất kỳ.
 
-### 3.2 Giao dịch điểm (`lib/points.ts`)
+### 3.2 Quyền nằm trong `where`
 
-Mọi thay đổi điểm đi qua một hàm duy nhất, chạy trong `prisma.$transaction`:
+Điều kiện phân quyền phải nằm **trong mệnh đề `where` của Prisma**, không được
+lấy dữ liệu về rồi mới lọc. Lọc sau nghĩa là dữ liệu đã rời cơ sở dữ liệu, và
+chỉ cần một đường rẽ quên lọc là rò.
 
-```ts
-await grantPoints({ userId, amount, reason, refId, note })
-```
+Áp cho: album theo mức riêng tư, bài câu lạc bộ theo tư cách thành viên, bình
+luận bị ẩn, đáp án trắc nghiệm, khối `[hide]`.
 
-- Cập nhật `User.points` bằng `increment`, đồng thời ghi `PointsLog` với số dư sau giao dịch.
-- Từ chối nếu kết quả âm (trừ khi `allowNegative`).
-- Nguồn cộng điểm: điểm danh, đăng bài, bình luận, được thích, mời bạn.
+### 3.3 Giấu ở máy chủ, không giấu ở giao diện
 
-### 3.3 Điểm danh
+Thứ người xem chưa được thấy thì **không được rời máy chủ**. Giấu bằng CSS hay
+bằng điều kiện dựng hình là không giấu — xem mã trang là ra.
 
-- Một lần/ngày theo múi giờ `Asia/Ho_Chi_Minh`.
-- Chuỗi liên tục tăng nếu lần trước là hôm qua, ngược lại reset về 1.
-- Điểm thưởng = `base + min(streak, 7) * step`, nhân `vipPlan.checkinMultiplier`.
+Ví dụ đang làm đúng: đáp án và lời giải trắc nghiệm lấy bằng một truy vấn thứ
+hai, chỉ chạy khi người xem đã trả lời / là tác giả / là quản trị. Kết quả bầu
+cua giữ ở máy chủ tới đúng mốc `revealAt`.
 
-### 3.4 Cấp độ
+### 3.4 Điều kiện đua
 
-- EXP cộng cùng lúc với hành động tạo nội dung.
-- `LevelRule` là bảng cấu hình, không hardcode. Sau mỗi lần cộng EXP, so với `expRequired` để nâng cấp và bắn `Notification`.
+Đọc-rồi-ghi là sai ở mọi chỗ có thể gọi hai lần cùng lúc. Dùng:
 
-### 3.5 SePay
+- ghi có điều kiện: `updateMany` + `where` rồi xem `count`, hoặc
+- khoá hàng theo thứ tự id đã sắp: `src/lib/lock.ts`.
 
-Luồng nạp tiền:
+*Đã từng dính:* chọn lời giải song song trả thưởng hai lần; điểm danh hai lần ăn
+hai lần điểm; kết bạn hai chiều tạo hai hàng nên huỷ kết bạn chỉ xoá một, album
+mức "bạn bè" vẫn mở cho người đã huỷ.
 
-1. Người dùng tạo `Order` type `TOPUP`, hệ thống sinh `code` duy nhất.
-2. Hiển thị QR VietQR kèm nội dung chuyển khoản = `code`.
-3. SePay gọi webhook `POST /api/webhooks/sepay`.
-4. Webhook xác thực `Authorization: Apikey <SEPAY_API_KEY>`, đối chiếu số tiền và `code` trong nội dung.
-5. Idempotent theo `sepayRefId` (unique) — trùng thì bỏ qua.
-6. Cộng `User.balance` + ghi `BalanceLog`, đặt `Order.status = PAID`.
-7. Nếu người mua có `invitedBy`, tạo `Commission`.
+### 3.5 Bộ đếm đếm lại từ sự thật
 
-Mua nội dung/VIP thì trừ thẳng từ `balance`, không qua SePay.
+`Forum.threadCount`, `Forum.replyCount`, `Thread.replyCount` **đếm lại** bằng
+`src/lib/forum-counters.ts`, không cộng trừ dồn. Cộng trừ dồn thì mỗi đường đi
+quên một nhịp là lệch vĩnh viễn, và không có cách nào biết đã lệch.
 
-### 3.6 Diễn đàn
+`scripts/soat-bo-dem.mjs` đối soát lại toàn bộ khi cần.
 
-- `Forum` phân cấp cha–con, giới hạn theo `postAccess` / `minLevel` / `vipOnly`.
-- Chủ đề có thể treo thưởng (`bountyPoints`): điểm bị giữ lúc tạo, trả cho người có `Reply` được đánh dấu `isSolution`.
-- `lastReplyAt` cập nhật mỗi khi có trả lời — dùng để sắp xếp danh sách.
-- Đếm `replyCount`/`threadCount` là denormalized, cập nhật trong cùng transaction.
+### 3.6 Cột chép sẵn
 
----
+`User.levelTitle` chép từ `LevelRule.name`. Cột chép sẵn thì lệch được, nên có
+đúng **hai nơi ghi** — `addExp` khi lên cấp, và `saveLevelRule`/`deleteLevelRule`
+khi quản trị đổi tên bậc — cùng một mục đối soát trong `soat-bo-dem.mjs`.
 
-## 4. Bố cục giao diện
+### 3.7 Danh sách phải có trần và phải phân trang
 
-**Trang chủ:** slider (`Slide`) → hàng chuyên mục → lưới card 3 cột (2 tablet, 1 mobile) → sidebar (thẻ người dùng, bài nổi bật, tag cloud).
-
-**Biến thể card** khớp `CardStyle`:
-- `STANDARD` — ảnh 16:9 trên, tiêu đề + trích đoạn + meta dưới
-- `WIDE` — ảnh trái, nội dung phải, chiếm 2 cột
-- `TEXT_ONLY` — không ảnh, nền màu nhạt theo chuyên mục
-- `GALLERY` — lưới ảnh nhỏ, dùng cho bài nhiều hình
-
-**Chi tiết bài:** cover → meta tác giả → nội dung → khối paywall (nếu khoá) → khối tải xuống → phản ứng → bình luận phân cấp.
-
-**Chủ đề diễn đàn:** bài gốc nổi bật, trả lời dạng danh sách, trả lời được chọn làm giải pháp ghim lên đầu.
+Mọi `findMany` phải có `take` (`npm run scan` chặn). Nhưng có `take` mà không có
+phân trang thì dữ liệu vượt trần **mất hẳn lối vào** — vẫn nằm trong cơ sở dữ
+liệu mà người dùng không có cách nào xem. Danh sách dài theo thời gian thì phải
+phân trang thật, không chỉ cắt trần.
 
 ---
 
-## 5. Việc cần làm tiếp
+## 4. Bẫy đã gặp
 
-1. `npx prisma migrate dev --name init` (chạy ở máy bạn — sandbox chặn binaries.prisma.sh)
-2. Seed: `LevelRule` 1–10, `VipPlan` 3 bậc, `Medal` cơ bản, tài khoản admin
-3. Cấu hình Auth.js + middleware bảo vệ route
-4. `lib/access.ts` + `lib/points.ts` — hai file lõi, làm trước UI
-5. Webhook SePay + trang nạp tiền
-6. Bộ component card + trang chủ
-7. Module diễn đàn
-8. Khu vực quản trị
+**Prisma `NOT` không khớp NULL.** `NOT: { col: x }` bỏ qua đúng những hàng
+`col IS NULL`. Muốn phủ cả NULL phải viết
+`OR: [{ col: null }, { NOT: { col: x } }]`.
+
+**`as const` làm `orderBy` thành readonly**, Prisma từ chối. Tách ra một biến
+riêng kèm `satisfies Prisma.X$argsType`.
+
+**Máy chủ dev giữ bản Prisma cũ** sau `prisma generate` — phải khởi động lại,
+không thì lỗi "không có trường này" dù lược đồ đã đúng.
+
+**Neo phải đứng cuối địa chỉ.** Gắn `#neo` vào `basePath` của `Pagination` sẽ ra
+`/trang#neo?page=2`, lúc ấy `?page=2` nằm trong phần neo nên máy chủ không đọc
+thấy. Dùng prop `neo` riêng.
+
+**`<details>` gấp nội dung theo `::details-content`.** Chrome đời mới giấu bằng
+`content-visibility: hidden` trên pseudo ấy, không phải `display: none` trên thẻ
+con — muốn ép mở phải mở khoá ở cả hai chỗ. Và thẻ `<style>` đặt trước
+`<summary>` sẽ làm `<details>` thôi gấp.
+
+**Bộ kiểm chờ theo đồng hồ là bộ kiểm chập chờn.** Lượt `goto` hay lượt bấm trả
+về không có nghĩa là giao dịch ở máy chủ đã ghi xong. Dùng `doiToi` trong
+`tests/helpers.mjs` để chờ đúng trạng thái.
 
 ---
 
-## 6. Biến môi trường
+## 5. Điểm
 
-```env
-DATABASE_URL="postgresql://user:pass@localhost:5432/nova"
-AUTH_SECRET=""
-AUTH_GOOGLE_ID=""
-AUTH_GOOGLE_SECRET=""
-AUTH_GITHUB_ID=""
-AUTH_GITHUB_SECRET=""
-SEPAY_API_KEY=""
-SEPAY_ACCOUNT_NUMBER=""
-SEPAY_BANK_CODE=""
-REDIS_URL=""
-S3_ENDPOINT=""
-S3_BUCKET=""
-S3_ACCESS_KEY=""
-S3_SECRET_KEY=""
-```
+`src/lib/points.ts::grantPoints` là đường duy nhất đổi điểm: ghi `PointsLog` và
+đổi `User.points` trong cùng một giao dịch, có khoá chống trùng theo
+`reason` + `refId`.
+
+**Lịch sử điểm không được mất.** Enum `PointsReason` giữ cả những lý do không còn
+chỗ nào ghi nữa (`POST_CREATE` còn 37 hàng lịch sử) — bỏ giá trị enum là xoá
+luôn phần lịch sử ấy.
+
+Số dư điểm **chỉ hiện trên thanh đầu trang**, không in lại trong trang chơi: hai
+con số thì phải giữ cho khớp nhau, mà chúng sẽ lệch. Giá cả (giá hạt, giá ô đất,
+cọc câu hỏi) thì vẫn hiện — đó là thông tin của trò, không phải ví người chơi.
+
+---
+
+## 6. Trò chơi
+
+Vòng chơi tính theo **đồng hồ**, không có cron. Bầu cua: mã phiên là
+`floor(now / 60000)`, chia ba pha đặt → xóc → mở bát. Việc chốt sổ chạy **lười**
+— chính lượt có người mở trang là lượt chốt phiên cũ, bằng
+`updateMany where rolledAt: null` nên chỉ chốt được một lần dù bao nhiêu người
+cùng vào.
+
+`closeAt` đọc từ **hàng đã lưu**, không tính lại từ đồng hồ. Hai nguồn sự thật
+thì có lúc lệch nhau, và đã từng cho đặt cửa vào phiên đã xóc — cược ấy không
+bao giờ được trả.
+
+Ảnh lấy từ chính các mã nguồn JohnCMS cũ trong `public/hoai-niem/`. Giữ nét
+pixel: `image-rendering: pixelated`, phóng theo **bội số nguyên**.
+
+---
+
+## 7. Chữ nghĩa
+
+Tên hàm, biến, chú thích và mọi chữ hiện ra màn hình đều **tiếng Việt**.
+
+Gọi một thứ bằng một tên: **"chuyên mục"** (không dùng "mục", "khu vực", "box").
+Tham số trên URL dùng `tab` và `sort`.
+
+Chú thích giải thích **vì sao**, nhất là ở chỗ trông như thừa hoặc trông như
+sai — không kể lại mã đang làm gì.

@@ -1,35 +1,47 @@
 # Nova Platform
 
-Nền tảng **blog + diễn đàn + nội dung trả phí**, xây mới trên Next.js 15.
-Tham chiếu tính năng/bố cục từ Zibll 8.1 (không dùng WordPress, không tái sử dụng mã nguồn theme đó).
+**Diễn đàn + kho game**, dựng trên Next.js 15. Lấy cảm hứng từ các diễn đàn wap
+Việt Nam thời JohnCMS (2005–2010): cảm ơn, uy tín, chữ ký, tâm trạng, màu nick,
+huy hiệu, sổ lưu bút, phòng chat, câu lạc bộ, và mấy trò chơi nhỏ ăn điểm.
+
+**Điểm là đơn vị duy nhất.** Không có tiền thật: mọi thứ mua bán, thưởng phạt,
+cược, mở khoá đều tính bằng điểm kiếm được trên diễn đàn.
 
 ## Stack
 
-- **Next.js 15** (App Router, Server Components) + TypeScript
-- **PostgreSQL 16** + **Prisma**
-- **Auth.js v5** (Credentials + Google/GitHub OAuth)
-- **Tailwind CSS**
-- **SePay** (webhook nạp tiền — đang triển khai)
+- **Next.js 15** — App Router, Server Components, Server Actions
+- **TypeScript**
+- **PostgreSQL** + **Prisma**
+- **Auth.js v5** — Credentials (+ OAuth nếu cấu hình)
+- **Tailwind CSS** — không dùng thư viện component nào
+- **Playwright** — bộ kiểm chạy thật trên trình duyệt
 
 ## Bắt đầu
 
 ```bash
 npm install
 cp .env.example .env          # điền DATABASE_URL, AUTH_SECRET…
-npx prisma db push            # đồng bộ schema
+npx prisma db push            # đồng bộ lược đồ
 npm run seed                  # dữ liệu mẫu + tài khoản admin
 npm run dev
 ```
 
 Tài khoản admin mẫu: `admin@nova.local` / `admin123`.
 
-### Nâng cấp cơ sở dữ liệu đã có dữ liệu
-
-Nếu cơ sở dữ liệu của bạn từng chạy bản **có tính năng máy ảo (Play Online)**,
-chạy thêm một bước dọn **trước** khi `db push`:
+Hai trò cần gieo dữ liệu riêng:
 
 ```bash
-npm run db:don-may-ao         # dọn dữ liệu máy ảo còn sót
+node scripts/seed-nong-trai.mjs      # 11 giống cây
+node scripts/seed-trac-nghiem.mjs    # 5 thể loại + 10 câu hỏi (cần sẵn một ADMIN)
+```
+
+### Nâng cấp cơ sở dữ liệu đã có dữ liệu
+
+Nếu cơ sở dữ liệu từng chạy bản **có tính năng máy ảo (Play Online)**, chạy bước
+dọn **trước** khi `db push`:
+
+```bash
+npm run db:don-may-ao
 npx prisma db push
 ```
 
@@ -37,60 +49,84 @@ Bỏ qua bước này thì `db push` dừng giữa chừng ở enum `GameEventTy
 không cho bỏ giá trị enum khi còn hàng dùng tới), nên cột `GameVersion.platform`
 không được tạo và mọi trang game trả về lỗi 500.
 
+Nếu từng chạy bản **có tiền thật và VIP**, hoặc bản **còn bán danh hiệu**:
+
+```bash
+node scripts/go-bo-tien-va-vip.mjs
+node scripts/go-danh-hieu-ban.mjs    # hoàn điểm cho người đã mua rồi mới gỡ
+```
+
 ## Cấu trúc
 
 ```
 src/
 ├── app/
-│   ├── (site)/        # giao diện công khai (trang chủ = diễn đàn, /blog, bài viết…)
-│   ├── (site)/games/  # Game Hub: catalog, chi tiết, tải file
-│   ├── (user)/user/   # khu vực đăng nhập (dashboard, điểm, số dư…)
-│   ├── (admin)/admin/ # quản trị (bài viết, diễn đàn, game…)
-│   └── api/           # route handlers (auth, webhooks, games…)
-├── lib/               # db, auth, access, points, balance, level, notify, game
-└── components/        # PostCard (4 biến thể), Header, Sidebar, game/…
+│   ├── (auth)/        # đăng nhập, đăng ký
+│   ├── (site)/        # toàn bộ giao diện công khai (trang chủ = diễn đàn)
+│   ├── admin/         # quản trị
+│   └── api/           # route handlers (auth, upload, bau-cua, chat, mentions…)
+├── lib/               # nghiệp vụ thuần: db, auth, points, level, forum, game…
+└── components/        # dựng theo vùng: forum/, game/, club/, user/, giaitri/, farm/
 ```
 
-## Tiến độ
+Không có nhóm `(user)` hay `(admin)` — khu vực người dùng nằm trong
+`(site)/user/`, còn quản trị là `app/admin/` không bọc nhóm.
 
-- [x] **P0** Scaffold Next.js + Prisma + Tailwind
-- [x] **P1** Lõi nghiệp vụ: `points` / `balance` (atomic), `access` (5 mức), `level`, `notify`
-- [x] **P2** Auth.js (credentials + OAuth) + middleware bảo vệ route
-- [x] **P3** Seed: LevelRule 1–10, VipPlan 3 bậc, Medal, Category, admin, bài mẫu
-- [x] **P4a** Bộ PostCard 4 biến thể + trang chủ (slider, chuyên mục, lưới card, sidebar)
-- [x] **P4b** Chi tiết bài viết + paywall, danh mục, tag, tìm kiếm, bình luận
-- [x] **P5** Điểm danh & VIP + huy chương tự động
-- [x] **P6** Thanh toán SePay (nạp qua QR, hoa hồng giới thiệu, rút tiền, mã giảm giá)
-- [x] **P7** Cổng tải xuống có hạn mức/ngày + `/user/downloads` — còn upload S3 & CRUD file trong trình soạn
-- [x] **P8** Diễn đàn (danh sách, chủ đề, trả lời, chọn lời giải, treo thưởng)
-- [x] **P9** Người dùng & xã hội (trang cá nhân, theo dõi, đã lưu, thông báo, mời bạn, cài đặt tài khoản)
-- [x] **P10** Quản trị (bài viết, người dùng, chuyên mục, diễn đàn, báo cáo, gói VIP, rút tiền, giao diện)
-- [x] **P12** Giao diện chính chuyển sang dạng diễn đàn (board list, bài mới, đang online); blog dời sang `/blog`
-- [x] **P13** Công cụ điều hành chủ đề, tìm kiếm hợp nhất (chủ đề/bài viết/thành viên), chế độ tối
-- [x] **P14** Mã giảm giá (quản trị + áp khi mua VIP) và hạn mức chống spam khi đăng nội dung
-- [x] **P11** Hoàn thiện: SEO/sitemap/robots, chế độ tối, upload R2, nhật ký quản trị, sao lưu dữ liệu
-- [x] **P15** Nhật ký quản trị (`/admin/logs`) và sao lưu dữ liệu thủ công/tự động (`/admin/backup`)
-- [x] **P16** Game Hub — catalog Java ME, tải JAR/JAD có signed URL, quản trị game
+## Có những gì
 
-## Game Hub
+**Diễn đàn** — chuyên mục nhiều tầng, chủ đề, trả lời lồng một tầng, trích dẫn,
+BBCode, thăm dò ý kiến, treo thưởng điểm, chọn lời giải, theo dõi chủ đề, "chưa
+đọc", khối `[hide]` mở bằng điểm, tìm kiếm có lọc theo khu vực/tác giả/thời gian.
 
-Khu game Java ME nằm ở `/games`:
+**Người dùng & xã hội** — trang cá nhân, album ảnh theo mức riêng tư, sổ lưu bút,
+bạn bè, theo dõi, chặn, tin nhắn riêng (kèm cảm xúc, thu hồi, tự xoá, kho ảnh),
+phòng chat, nhắc tên `@`, uy tín, cảm ơn, tặng điểm, mời bạn, huy chương, cấp độ.
 
-- **Catalog** — game nổi bật / mới cập nhật / phổ biến / xem nhiều / tải nhiều /
-  Việt hóa, gom theo thể loại, dòng máy, độ phân giải và bộ sưu tập; có cả
-  game ngẫu nhiên.
-- **Bộ lọc & tìm kiếm** — lọc theo thể loại, platform, resolution, ngôn ngữ, năm,
-  rating, dung lượng, lượt tải, ngày cập nhật; tìm kiếm có autocomplete và
-  fuzzy (bỏ dấu + Levenshtein) nên gõ “kontra” vẫn ra “Contra 4”.
-- **Chi tiết game** — thông tin phát hành, ảnh chụp màn hình, lịch sử version,
-  hướng dẫn phím, lưu ý và thống kê.
-- **Tải game** — chọn version → JAR/JAD → backend kiểm tra file rồi cấp signed URL
-  có hạn; checksum hiển thị để đối chiếu; tải lặp không làm phồng unique download.
-- **Quản trị** — `/admin/games`: CRUD game, version, file, ảnh.
+**Câu lạc bộ** — lập nhóm có tên viết tắt hiện cạnh tên thành viên, bài đăng,
+bình luận, duyệt thành viên.
 
-Kho game chỉ phục vụ xem thông tin và tải file về máy thật — không có emulator,
-không chơi online.
+**Kho game** — catalog Java ME, lọc và tìm kiếm bỏ dấu, chi tiết game, tải
+JAR/JAD qua URL có chữ ký và hạn dùng, mở khoá game trả điểm, bình luận có phân
+trang, yêu cầu game.
 
-Chi tiết đặc tả: [`.nova-spec/SPEC.md`](.nova-spec/SPEC.md) · Game Hub:
-[`.nova-spec/GAME-HUB.md`](.nova-spec/GAME-HUB.md) · Kế hoạch:
-[`.nova-spec/TODO.md`](.nova-spec/TODO.md)
+**Khu giải trí** — bầu cua bàn chung tự xóc theo phiên, oẳn tù tì, trắc nghiệm
+(thể loại, ra câu hỏi, bình luận), nông trại (gieo, tưới, thu hoạch, bán, mở
+đất, cây khế). Ảnh lấy từ chính các mã nguồn JohnCMS cũ, giữ nguyên nét pixel.
+
+**Cửa hàng điểm** — màu nick và huy hiệu. Danh hiệu **không bán**, nó là tên cấp
+bậc theo cấp độ.
+
+**Quản trị** — người dùng, khu vực, chủ đề, báo cáo, cấm, huy chương, cấp độ,
+game, trắc nghiệm, câu lạc bộ, cửa hàng, giao diện, menu, nhật ký, sao lưu.
+
+## Kiểm thử
+
+```bash
+npm run test          # chạy trên máy chủ dev đang bật (nhanh, lúc đang sửa mã)
+npm run test:that     # dựng bản thật rồi chạy — dùng khi cần con số đáng tin
+npm run test 17       # chỉ một bài
+npm run scan          # soi truy vấn thừa, nút chết, danh sách không có trần
+```
+
+38 tệp kiểm, hơn 630 mục, chạy thật bằng Playwright.
+
+**Nên dùng `test:that` khi cần kết luận.** Máy chủ dev biên dịch từng route lúc
+chạy và phình tới gần 900MB, nên bộ kiểm mở nhiều tab dồn dập là nghẽn; đo thực
+tế dev trả lời 180–1600ms còn bản dựng 35ms. Cùng một bộ mã, chạy trên dev từng
+cho ra 555, 594, 613, 633, 634 mục đạt qua năm lượt — còn trên bản dựng thì hai
+lượt liên tiếp đều 634/634.
+
+## Quy ước trong mã
+
+- Tên hàm, biến, chú thích và mọi chữ hiện ra màn hình đều **tiếng Việt**.
+- Kiểm tra quyền nằm **trong mệnh đề `where` của Prisma**, không lọc lại sau khi
+  đã lấy dữ liệu về.
+- Mọi hàm `export` trong tệp `'use server'` là **một endpoint POST công khai** —
+  hằng số và kiểu phải để ở tệp `*-const.ts` riêng.
+- Chỗ có thể đua thì ghi có điều kiện (`updateMany` + `where`) hoặc khoá hàng
+  (`src/lib/lock.ts`), không đọc-rồi-ghi.
+- Bộ đếm đếm lại từ sự thật (`src/lib/forum-counters.ts`), không cộng trừ dồn.
+- Mọi `findMany` phải có `take`; danh sách dài thì phải phân trang thật.
+
+Chi tiết đặc tả: [`.nova-spec/SPEC.md`](.nova-spec/SPEC.md) · Kho game:
+[`.nova-spec/GAME-HUB.md`](.nova-spec/GAME-HUB.md)

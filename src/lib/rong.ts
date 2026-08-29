@@ -176,7 +176,6 @@ export function danhNhau(a: ChiSo, b: ChiSo, tungXu: () => number = Math.random)
 
 export interface DoiThu {
   rongId: string;
-  userId: string;
   ten: string;
   chuTen: string;
   chuUsername: string;
@@ -200,7 +199,9 @@ export async function timDoiThu(userId: string, soLuong = 6): Promise<DoiThu[]> 
     take: soLuong,
     select: {
       id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true,
-      user: { select: { id: true, name: true, username: true } },
+      // Chỉ lấy tên để hiện và tên đăng nhập để trỏ link — id của chủ nhân
+      // không dùng tới, mà đây là dữ liệu của NGƯỜI KHÁC nên lấy vừa đủ.
+      user: { select: { name: true, username: true } },
     },
   });
 
@@ -208,7 +209,6 @@ export async function timDoiThu(userId: string, soLuong = 6): Promise<DoiThu[]> 
     const vui = vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now);
     return {
       rongId: r.id,
-      userId: r.user.id,
       ten: r.ten ?? '',
       chuTen: r.user.name ?? r.user.username ?? 'Ẩn danh',
       chuUsername: r.user.username ?? '',

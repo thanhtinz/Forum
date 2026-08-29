@@ -8,6 +8,8 @@ import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import { notify } from '@/lib/notify';
 import { bbcodeToHtml } from '@/lib/bbcode';
 import { getActiveBan, banMessage } from '@/lib/ban';
+import { isPublicImageRef } from '@/lib/icon';
+import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
 import {
   clubSlug, getClubConfig,
   CLUBS_OWNED_MAX, CLUB_NAME_MIN, CLUB_NAME_MAX, CLUB_DESC_MAX,
@@ -32,6 +34,14 @@ async function actor(): Promise<{ id: string; role: string } | { error: string }
 function isStaff(role: string): boolean {
   return role === 'ADMIN' || role === 'MODERATOR';
 }
+
+/**
+ * Ảnh đại diện nhóm được in thẳng vào `src` của thẻ <img> ở trang câu lạc bộ,
+ * nên phải kiểm dạng NGAY LÚC LƯU như trang cài đặt cá nhân vẫn làm: không
+ * kiểm thì một chuỗi `javascript:`/`data:` bất kỳ cũng vào được cột này, mà
+ * chỗ hiện nó thì chẳng còn dịp nào để hỏi lại.
+ */
+const LOI_ANH = 'Ảnh đại diện phải là URL hợp lệ hoặc ảnh đã tải lên.';
 
 function readMode(fd: FormData, key: string, allowed: string[], fallback: string): string {
   const v = String(fd.get(key) ?? '');
@@ -59,6 +69,7 @@ export async function createClub(_prev: ClubActionState, formData: FormData): Pr
   if (name.length < CLUB_NAME_MIN) return { error: `Tên câu lạc bộ tối thiểu ${CLUB_NAME_MIN} ký tự.` };
   if (name.length > CLUB_NAME_MAX) return { error: `Tên câu lạc bộ tối đa ${CLUB_NAME_MAX} ký tự.` };
   if (description.length > CLUB_DESC_MAX) return { error: `Giới thiệu tối đa ${CLUB_DESC_MAX} ký tự.` };
+  if (avatar && !isPublicImageRef(avatar)) return { error: LOI_ANH };
   if (!isClubShortName(shortName)) return { error: LOI_VIET_TAT };
 
   const trungTat = await db.club.findUnique({ where: { shortName }, select: { name: true } });
@@ -322,6 +333,7 @@ export async function updateClub(_prev: ClubActionState, formData: FormData): Pr
   if (name.length < CLUB_NAME_MIN) return { error: `Tên câu lạc bộ tối thiểu ${CLUB_NAME_MIN} ký tự.` };
   if (name.length > CLUB_NAME_MAX) return { error: `Tên câu lạc bộ tối đa ${CLUB_NAME_MAX} ký tự.` };
   if (description.length > CLUB_DESC_MAX) return { error: `Giới thiệu tối đa ${CLUB_DESC_MAX} ký tự.` };
+  if (avatar && !isPublicImageRef(avatar)) return { error: LOI_ANH };
 
   // Cùng lẽ trên: thiếu trường thì giữ nguyên viết tắt đang có.
   const shortRaw = String(formData.get('shortName') ?? '').trim();
@@ -641,6 +653,11 @@ export async function inviteToClub(clubId: string, userId: string): Promise<Club
     where: { clubId_userId: { clubId, userId } }, select: { id: true },
   });
   if (existing) return { ok: true };
+
+  // Lời mời sinh ra một thông báo đi thẳng tới người kia, nên nó cũng là một
+  // đường nhắn tin: bỏ qua chặn ở đây thì chủ nhóm mời đi mời lại là quấy rối
+  // được đúng người đã chặn mình.
+  if (await isBlockedBetween(me.id, userId)) return { error: BLOCK_MESSAGE };
 
   try {
     await db.$transaction(async (tx) => {

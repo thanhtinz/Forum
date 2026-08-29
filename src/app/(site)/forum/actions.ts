@@ -17,6 +17,7 @@ import { bbcodeToHtml, hideRules } from '@/lib/bbcode';
 import { authorShareOf } from '@/lib/revenue-share';
 import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
+import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
 import { readPollForm, isPollClosed } from '@/lib/poll';
 import { readBounty, BOUNTY_MIN } from '@/lib/bounty';
 import { checkForumPostAccess } from '@/lib/forum-post-access';
@@ -386,6 +387,12 @@ export async function toggleThanks(target: { threadId?: string; replyId?: string
   if (owner.authorId === userId) {
     return { ...(await readThanks(target, userId)), error: 'Không cảm ơn bài của chính mình được.' };
   }
+  // Cảm ơn là gửi một thông báo có kèm tên mình tới tác giả. Hai người đã chặn
+  // nhau thì đó đúng là thứ chặn sinh ra để khỏi phải nhận — bấm đi bấm lại là
+  // gọi tên mình trước mặt người ta bao nhiêu lần cũng được.
+  if (await isBlockedBetween(userId, owner.authorId)) {
+    return { ...(await readThanks(target, userId)), error: BLOCK_MESSAGE };
+  }
 
   const where = { userId, threadId, replyId, type: 'THANKS' as const };
   const existing = await db.reaction.findFirst({ where, select: { id: true } });
@@ -457,6 +464,10 @@ export async function donatePoints(
     : await db.reply.findUnique({ where: { id: replyId! }, select: { authorId: true, threadId: true, thread: { select: { title: true, forum: { select: { slug: true } } } } } });
   if (!owner) return { error: 'Không tìm thấy bài viết.' };
   if (owner.authorId === userId) return { error: 'Không tặng điểm cho chính mình được.' };
+  // Cùng lẽ với nút Cảm ơn: tặng điểm cũng đẩy một thông báo mang tên người
+  // tặng sang tác giả, mà tác giả thì không có cách nào trả lại. Chặn trước
+  // khi trừ điểm, để không phải hoàn lại ví ai cả.
+  if (await isBlockedBetween(userId, owner.authorId)) return { error: BLOCK_MESSAGE };
 
   const link = threadId
     ? `/forum/${(owner as { forum: { slug: string } }).forum.slug}/${threadId}`

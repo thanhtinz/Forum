@@ -1,0 +1,141 @@
+/**
+ * Nông trại — hằng số và quy ước, dùng chung cho máy chủ lẫn giao diện.
+ *
+ * Chỉ để những thứ KHÔNG chạm cơ sở dữ liệu ở đây: tệp này bị cả component
+ * phía trình duyệt lẫn server action nạp vào, kéo theo `db` là kéo cả Prisma
+ * xuống trình duyệt.
+ *
+ * Bộ ảnh là của bản nông trại cũ, pixel art 32×32. Phóng to phải theo BỘI SỐ
+ * NGUYÊN và `image-rendering: pixelated`, không thì từng nét bị nội suy mờ
+ * nhoè, mất hẳn cái chất pixel vốn là lý do giữ lại bộ ảnh này.
+ */
+
+/** Thư mục gốc của bộ ảnh nông trại cũ. */
+export const FARM_ANH = '/hoai-niem/nongtrai';
+
+// ─────────────────────────── Ô đất ───────────────────────────
+
+/** Ai cũng bắt đầu với bốn ô — đủ để xoay vòng mà chưa cần mua gì. */
+export const O_DAT_BAN_DAU = 4;
+
+/** Trần số ô một người có thể mở. Quá mười hai ô thì một màn hình không nhìn hết. */
+export const O_DAT_TOI_DA = 12;
+
+/** Giá mở ô tiếp theo: càng rộng càng đắt, nên hệ số nhân thẳng với số ô đang có. */
+export const GIA_MOI_O = 30;
+
+/** Giá để mở thêm một ô khi đang có `soO` ô. */
+export function giaMoODat(soO: number): number {
+  return soO * GIA_MOI_O;
+}
+
+// ─────────────────────────── Tưới nước ───────────────────────────
+
+/**
+ * Tưới rút bớt bao nhiêu phần thời gian CÒN LẠI.
+ *
+ * Rút theo phần còn lại chứ không theo tổng thời gian vụ: tưới sớm thì lợi
+ * nhiều, tưới lúc cây sắp chín thì gần như chẳng lợi gì — đúng như việc chăm
+ * cây thật, và tự nó khuyến khích người chơi quay lại sớm.
+ */
+export const TUOI_RUT_NGAN = 0.2;
+
+// ─────────────────────────── Cây khế ───────────────────────────
+
+/** Mỗi giờ hái cây khế được một lần. */
+export const KHE_CHU_KY_MS = 60 * 60 * 1000;
+
+/** Hái một lần được từng này tới từng này điểm. */
+export const KHE_MIN = 1;
+export const KHE_MAX = 3;
+
+// ─────────────────────────── Ngày và đêm ───────────────────────────
+
+/** Giờ hiện tại theo múi giờ Việt Nam (UTC+7), 0–23. */
+export function gioVN(now: Date = new Date()): number {
+  return Math.floor((now.getTime() / 3600000 + 7) % 24);
+}
+
+/** 6h–18h giờ Việt Nam là ban ngày, còn lại là ban đêm. */
+export function laBanNgay(now: Date = new Date()): boolean {
+  const g = gioVN(now);
+  return g >= 6 && g < 18;
+}
+
+// ─────────────────────────── Đường dẫn ảnh ───────────────────────────
+
+/**
+ * Ba chặng một ô đất đi qua: vừa gieo → đang lớn → đã chín.
+ *
+ * Tách riêng chặng "mầm" vì mọi loại cây dùng chung một ảnh `gieohat.png`;
+ * chỉ từ chặng thứ hai ảnh mới phân biệt theo loại.
+ */
+export type ChangCay = 'mam' | 'lon' | 'chin';
+
+/** Mầm chiếm phần đầu vụ — dưới mốc này thì ô mới chỉ là mầm. */
+export const MOC_MAM = 0.3;
+
+/**
+ * Chặng của một ô: mầm ở đầu vụ, rồi cây đang lớn, tới mốc thì chín.
+ *
+ * Để ở đây chứ không ở `farm.ts` vì giao diện phải tự tính lại mỗi giây: mốc
+ * chín gửi xuống một lần, còn "đã tới chưa" thì đồng hồ trong máy người xem
+ * trả lời, không phải chờ hỏi lại máy chủ.
+ */
+export function changCua(
+  plantedAt: number | null,
+  readyAt: number | null,
+  now: number,
+): ChangCay | null {
+  if (plantedAt == null || readyAt == null) return null;
+  if (now >= readyAt) return 'chin';
+  // Vụ có thể bị tưới rút ngắn tới sát mốc; chia cho 0 thì ra NaN.
+  const daQua = readyAt > plantedAt ? (now - plantedAt) / (readyAt - plantedAt) : 1;
+  return daQua < MOC_MAM ? 'mam' : 'lon';
+}
+
+/** Ảnh của một ô đất theo loại cây và chặng đang đứng. */
+export function anhODat(cropKey: number | null, chang: ChangCay | null): string {
+  if (cropKey == null || chang == null) return `${FARM_ANH}/o-dat/0.png`;
+  if (chang === 'mam') return `${FARM_ANH}/o-dat/gieohat.png`;
+  return `${FARM_ANH}/o-dat/${cropKey}${chang === 'chin' ? '-chin' : ''}.png`;
+}
+
+/** Ảnh nông sản đã thu, dùng trong nhà kho và cửa hàng hạt giống. */
+export function anhNongSan(cropKey: number): string {
+  return `${FARM_ANH}/nong-san/${cropKey}.png`;
+}
+
+/** Icon công trình trên trang. */
+export const ANH_CUA_HANG = `${FARM_ANH}/o-dat/cuahang.png`;
+export const ANH_NHA_KHO = `${FARM_ANH}/o-dat/nhakho.png`;
+export const ANH_MUA_DAT = `${FARM_ANH}/o-dat/muadat.png`;
+export const ANH_FARM = `${FARM_ANH}/o-dat/farm.png`;
+export const ANH_CAY_KHE = `${FARM_ANH}/o-dat/caykhe.png`;
+export const ANH_CAY_KHE_CHIN = `${FARM_ANH}/o-dat/caykhechin.png`;
+export const ANH_NEN_NGAY = `${FARM_ANH}/nen/nennongtrai.png`;
+export const ANH_NEN_DEM = `${FARM_ANH}/nen/nennongtrai-toi.png`;
+export const ANH_MAY_1 = `${FARM_ANH}/nen/may1.png`;
+export const ANH_MAY_2 = `${FARM_ANH}/nen/may2.png`;
+
+// ─────────────────────────── Hiển thị ───────────────────────────
+
+/** "2 giờ 5 phút", "45 phút", "30 giây" — đọc lướt là biết còn bao lâu. */
+export function moTaConLai(ms: number): string {
+  if (ms <= 0) return 'đã chín';
+  const giay = Math.ceil(ms / 1000);
+  if (giay < 60) return `${giay} giây`;
+  const phut = Math.ceil(giay / 60);
+  if (phut < 60) return `${phut} phút`;
+  const gio = Math.floor(phut / 60);
+  const du = phut % 60;
+  return du === 0 ? `${gio} giờ` : `${gio} giờ ${du} phút`;
+}
+
+/** "5 phút", "1 giờ 30 phút" — mô tả độ dài một vụ trong cửa hàng. */
+export function moTaVu(phut: number): string {
+  if (phut < 60) return `${phut} phút`;
+  const gio = Math.floor(phut / 60);
+  const du = phut % 60;
+  return du === 0 ? `${gio} giờ` : `${gio} giờ ${du} phút`;
+}

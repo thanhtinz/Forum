@@ -24,7 +24,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [tags, forums, threads, games, genres, collections] = await Promise.all([
     safe(db.tag.findMany({ select: { slug: true }, take: 1000 })),
     safe(db.forum.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
-    safe(db.thread.findMany({ select: { id: true, updatedAt: true, forum: { select: { slug: true } } }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
+    // Chỉ chủ đề đã đăng: chủ đề đang chờ duyệt hoặc đã ẩn thì trang của nó
+    // trả 404, mà vẫn nằm trong sitemap là tự mời máy tìm kiếm đi vào ngõ cụt —
+    // tệ hơn nữa là lộ ra rằng có một chủ đề như thế ở đúng địa chỉ ấy.
+    safe(db.thread.findMany({ where: { status: 'PUBLISHED' }, select: { id: true, updatedAt: true, forum: { select: { slug: true } } }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
     safe(db.game.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
     safe(db.gameGenre.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
     safe(db.gameCollection.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),

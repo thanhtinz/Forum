@@ -154,7 +154,10 @@ export async function getUserActivity(
 
     ...clubPosts.map((c) => ({
       id: `clubpost-${c.id}`, kind: 'CLUB_POST' as const, at: c.createdAt,
-      title: c.club.name, excerpt: truncate(plainText(c.content), 120),
+      // Bài bảng tin cũng dựng bằng `bbcodeToHtml` nên có thể mang khối `[hide]`,
+      // mà `plainText` bóc mất hai cái mốc chú thích rồi để lại đúng phần ruột.
+      // Dòng hoạt động đi ra ngoài câu lạc bộ, nên phải cắt trước khi bóc thẻ.
+      title: c.club.name, excerpt: threadExcerpt(c.content, 120),
       href: `/clb/${c.club.slug}`, where: 'Câu lạc bộ', thumb: null,
     })),
 

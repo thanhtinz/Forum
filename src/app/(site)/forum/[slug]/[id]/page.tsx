@@ -34,10 +34,17 @@ import { HideUnlockButton } from '@/components/forum/HideUnlockButton';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params;
-  const thread = await db.thread.findUnique({ where: { id }, select: { title: true, content: true } });
-  return thread
+export async function generateMetadata({ params }: { params: Promise<{ slug: string; id: string }> }): Promise<Metadata> {
+  const { slug, id } = await params;
+  const thread = await db.thread.findUnique({
+    where: { id },
+    select: { title: true, content: true, status: true, forum: { select: { slug: true } } },
+  });
+  // Lọc y hệt thân trang (`notFound()` ở dưới). Thẻ meta được dựng riêng, nên
+  // thân trang trả 404 mà chỗ này không lọc thì tiêu đề và trích nội dung của
+  // một chủ đề đang chờ duyệt / đã ẩn vẫn nằm trong <head> — chỉ cần xem mã
+  // nguồn trang 404 là đọc được thứ mà ban điều hành vừa gỡ xuống.
+  return thread && thread.forum.slug === slug && thread.status === 'PUBLISHED'
     // Bỏ phần [hide] trước khi rút mô tả: thẻ meta đi ra ngoài trang, ai cũng
     // đọc được mà không phải trả lời câu nào.
     ? { title: thread.title, description: truncate(stripHidden(thread.content).replace(/<[^>]+>/g, ' '), 160) }

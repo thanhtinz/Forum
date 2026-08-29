@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { stripHidden } from './bbcode';
 
 /**
  * Bộ lọc của tìm kiếm chủ đề.
@@ -38,6 +39,35 @@ export function isSearchSort(v: string | undefined): v is SearchSort {
   return SEARCH_SORTS.some((x) => x.key === v);
 }
 
+/**
+ * Số chủ đề lấy về tối đa cho một lượt tìm theo từ khoá.
+ *
+ * Kết quả phải lọc lại trong bộ nhớ (xem `matchesVisibleText`) nên không nhờ
+ * cơ sở dữ liệu phân trang hộ được nữa: lấy một cửa sổ có trần rồi tự cắt
+ * trang. Trần này cũng là số kết quả tối đa đếm được — người tìm mà phải lật
+ * quá ngần này trang thì vấn đề là từ khoá quá rộng, không phải thiếu trang.
+ */
+export const SEARCH_SCAN_CAP = 300;
+
+/**
+ * Từ khoá có nằm ở phần AI CŨNG ĐỌC ĐƯỢC của chủ đề không.
+ *
+ * `contains` chạy trên cột `Thread.content`, mà cột ấy giữ nguyên cả phần
+ * `[hide]` (mốc ẩn chỉ là chú thích HTML — xem `stripHidden`). Chỉ lọc bằng
+ * cơ sở dữ liệu thì ô tìm kiếm thành ra một máy dò: gõ thử từng ký tự, thấy
+ * chủ đề còn trong kết quả là đoán đúng, đọc dần ra nguyên phần đáng lẽ phải
+ * trả điểm mới xem được — mà chẳng cần mở trang chủ đề lần nào.
+ *
+ * Nên câu `contains` chỉ còn là lưới lọc thô (nó chỉ khớp THỪA chứ không bỏ
+ * sót), rồi mỗi dòng lấy về phải qua đây một lần nữa với phần ẩn đã cắt.
+ */
+export function matchesVisibleText(t: { title: string; content: string }, q: string): boolean {
+  const needle = q.trim().toLowerCase();
+  if (!needle) return true;
+  return t.title.toLowerCase().includes(needle)
+    || stripHidden(t.content).toLowerCase().includes(needle);
+}
+
 const ORDER: Record<SearchSort, Prisma.ThreadOrderByWithRelationInput[]> = {
   recent: [{ lastReplyAt: 'desc' }, { createdAt: 'desc' }],
   new: [{ createdAt: 'desc' }],
@@ -75,6 +105,8 @@ export function buildThreadSearch(input: ThreadSearchInput): ThreadSearchQuery {
   const like = { contains: q, mode: 'insensitive' as const };
   const where: Prisma.ThreadWhereInput = {
     status: 'PUBLISHED',
+    // Lưới thô: khớp cả vào phần `[hide]` nên PHẢI lọc lại bằng
+    // `matchesVisibleText` trước khi đưa dòng nào ra màn hình.
     ...(q ? { OR: [{ title: like }, { content: like }] } : {}),
     ...(forum ? { forum: { slug: forum } } : {}),
     // Lọc theo QUAN HỆ chứ không tra tên ra id rồi lọc: bớt một lượt hỏi, mà

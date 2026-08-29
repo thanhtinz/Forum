@@ -108,6 +108,10 @@ export function ClubBoard({ clubId, clubSlug, canPost, canManage, posts, viewerI
                       )}
                       <span className="retro-sub text-ink-400">· {fmtAgo(p.createdAt)}</span>
                     </p>
+                    {/* `p.content` đã qua `renderHidden`/`renderHiddenClosed` ở
+                        `getClubPosts` — phần `[hide]` bị CẮT từ máy chủ, không
+                        phải giấu ở đây. Đừng in thẳng nội dung thô: mốc ẩn là
+                        chú thích HTML, trình duyệt không giấu giúp gì cả. */}
                     <div className="prose prose-sm mt-1 max-w-none dark:prose-invert prose-img:max-h-72 prose-img:rounded-lg"
                       dangerouslySetInnerHTML={{ __html: p.content }} />
                   </div>

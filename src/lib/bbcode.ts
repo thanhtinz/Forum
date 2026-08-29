@@ -151,6 +151,26 @@ export function renderHidden(html: string, viewer: HideViewer | true): string {
 }
 
 /**
+ * Dựng phần ẩn ở những nơi KHÔNG có cơ chế mở khoá — bảng tin câu lạc bộ.
+ *
+ * Ô soạn bảng tin dùng chung `bbcodeToHtml` với chủ đề diễn đàn nên người đăng
+ * gõ được `[hide]`, nhưng câu lạc bộ chẳng có nút trả lời/trả điểm nào để mở,
+ * mà mốc ẩn lại là chú thích HTML — không cắt thì trình duyệt hiện nguyên phần
+ * đáng lẽ giấu, người đăng tưởng đã giấu mà thực ra khoe hết.
+ *
+ * Nên ở đây phần ẩn bị THAY hẳn, và câu nhắc nói thẳng là chỗ này không mở
+ * được — không mượn `describeHideRule` vì mọi điều kiện của nó ("trả lời chủ
+ * đề", "trả 50 điểm") đều nói về chủ đề diễn đàn, hứa một cái nút không có
+ * thật. Chỉ người đăng mới xem lại được ruột (gọi `renderHidden(html, true)`):
+ * chữ do chính họ gõ ra, giấu của họ với họ thì vô nghĩa.
+ */
+export function renderHiddenClosed(html: string): string {
+  if (!hasHidden(html)) return html;
+  return html.replace(HIDE_BLOCK,
+    '<span class="bb-hide">Nội dung này bị ẩn — bảng tin câu lạc bộ không mở khoá được.</span>');
+}
+
+/**
  * Chuyển BBCode thành HTML. `[code]` được xử lý trước và giữ nguyên nội dung
  * bên trong (không diễn giải BBCode lồng bên trong).
  */

@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import {
   LayoutDashboard, FileText, FolderTree, MessagesSquare, MessageSquareText, Users, Flag, TrendingUp, Award, ShieldCheck,
   Crown, Banknote, Receipt, Images, Link2, Cloud, Sticker, Wand2, Wallpaper, MessageCircle, Menu, Settings, ScrollText, DatabaseBackup,
-  Gamepad2, ShoppingBag,
+  Gamepad2, ShoppingBag, HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +40,15 @@ export const ADMIN_GROUPS: Group[] = [
           { label: 'Chờ duyệt', status: 'PENDING' },
           { label: 'Đang hiện', status: 'PUBLISHED' },
           { label: 'Đã ẩn', status: 'HIDDEN' },
+        ],
+      },
+      {
+        href: '/admin/quiz', label: 'Trắc nghiệm', icon: HelpCircle, defaultStatus: 'PENDING',
+        subs: [
+          { label: 'Chờ duyệt', status: 'PENDING' },
+          { label: 'Đang hiện', status: 'APPROVED' },
+          { label: 'Bị từ chối', status: 'REJECTED' },
+          { label: 'Tất cả', status: 'ALL' },
         ],
       },
     ],

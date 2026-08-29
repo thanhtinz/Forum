@@ -14,7 +14,8 @@ import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { threadExcerpt } from '@/lib/bbcode';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 import {
-  buildThreadSearch, isSearchSort, isSearchWhen, SEARCH_SORTS, SEARCH_WHEN,
+  buildThreadSearch, isSearchSort, isSearchWhen, matchesVisibleText,
+  SEARCH_SCAN_CAP, SEARCH_SORTS, SEARCH_WHEN,
 } from '@/lib/thread-search';
 
 export const dynamic = 'force-dynamic';
@@ -59,23 +60,18 @@ export default async function SearchPage({ searchParams }: {
     }),
   ]);
 
-  // Đếm cho cả hai tab để hiện số lượng ngay trên nhãn
-  const [threadTotal, userTotal] = q
-    ? await Promise.all([
-        db.thread.count({ where: search.where }),
-        db.user.count({ where: { status: 'ACTIVE', OR: [{ username: like }, { name: like }] } }),
-      ])
-    : [0, 0];
-
-  const total = tab === 'threads' ? threadTotal : userTotal;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
-  const skip = (page - 1) * PAGE_SIZE;
-
-  const threads: ThreadRowData[] = q && tab === 'threads'
-    ? (await db.thread.findMany({
+  // Chủ đề: lấy một cửa sổ có trần rồi LỌC LẠI trong bộ nhớ.
+  //
+  // Không đếm và phân trang bằng cơ sở dữ liệu được nữa, vì `contains` khớp cả
+  // vào phần `[hide]`: đếm theo nó là nói cho người tìm biết có bài chứa từ
+  // khoá ấy trong phần ẩn, mà đó đúng là thứ phải trả điểm mới được biết.
+  // `matchesVisibleText` mới là câu trả lời thật, nên số kết quả và các trang
+  // đều tính từ danh sách đã lọc.
+  const scanned = q
+    ? await db.thread.findMany({
         where: search.where,
         orderBy: search.orderBy,
-        skip, take: PAGE_SIZE,
+        take: SEARCH_SCAN_CAP,
         select: {
           id: true, title: true, content: true, createdAt: true, lastReplyAt: true,
           pinned: true, locked: true, solvedReplyId: true, bountyPoints: true,
@@ -83,7 +79,22 @@ export default async function SearchPage({ searchParams }: {
           author: { select: authorChipSelect },
           forum: { select: { slug: true, name: true } },
         },
-      })).map((t) => ({
+      })
+    : [];
+  const hits = scanned.filter((t) => matchesVisibleText(t, q));
+
+  // Đếm cho cả hai tab để hiện số lượng ngay trên nhãn
+  const threadTotal = hits.length;
+  const userTotal = q
+    ? await db.user.count({ where: { status: 'ACTIVE', OR: [{ username: like }, { name: like }] } })
+    : 0;
+
+  const total = tab === 'threads' ? threadTotal : userTotal;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const skip = (page - 1) * PAGE_SIZE;
+
+  const threads: ThreadRowData[] = tab === 'threads'
+    ? hits.slice(skip, skip + PAGE_SIZE).map((t) => ({
         id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
         pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,
         viewCount: t.viewCount, replyCount: t.replyCount, author: toAuthorChip(t.author), forum: t.forum,

@@ -5,6 +5,7 @@ import {
   CLUB_COMMENTS_SHOWN, CLUB_COMMENTS_EXPANDED, CLUB_REPLIES_PER_ROOT,
 } from './club-const';
 import { authorChipSelect, toAuthorChip, type AuthorChip } from './shop';
+import { renderHidden, renderHiddenClosed } from './bbcode';
 
 export * from './club-const';
 
@@ -354,6 +355,14 @@ export async function getClubPosts(
   return {
     items: rows.map((r) => ({
       ...r,
+      // Cắt phần `[hide]` NGAY Ở ĐÂY chứ không để trình duyệt lo: mốc ẩn là chú
+      // thích HTML, gửi nguyên xuống rồi mới giấu bằng giao diện thì xem mã
+      // nguồn trang là đọc được hết. Câu lạc bộ không có nút mở khoá nào nên
+      // ngoài chính người đăng ra thì không ai xem lại được — xem thêm ghi chú
+      // ở `renderHiddenClosed`.
+      content: opts.viewerId && opts.viewerId === r.authorId
+        ? renderHidden(r.content, true)
+        : renderHiddenClosed(r.content),
       author: toAuthorChip(r.author),
       liked: likedSet.has(r.id),
       comments: commentMap.get(r.id) ?? [],

@@ -147,6 +147,13 @@ model User {
 
   gamePlays      MiniGamePlay[]
   bauCuaBets     BauCuaBet[]
+  quizQuestions  QuizQuestion[]    @relation("QuizAuthor")
+  quizReviewed   QuizQuestion[]    @relation("QuizReviewer")
+  quizAnswers    QuizAnswer[]
+  farmPlots      FarmPlot[]
+  farmBarn       FarmBarn[]
+  /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
+  lastTreeAt     DateTime?
 
   /// Danh hiệu = tên bậc của cấp hiện tại, chép sẵn từ `LevelRule.name`.
   ///
@@ -592,6 +599,12 @@ enum PointsReason {
   SHOP_REFUND // hoàn điểm khi một loại đồ thôi bán
   GAME_BET // đặt cược ở khu giải trí
   GAME_WIN // thắng cược ở khu giải trí
+  QUIZ_STAKE // đặt cọc khi đăng câu hỏi trắc nghiệm
+  QUIZ_WIN // ăn cọc của người ra câu hỏi (hoặc ngược lại)
+  FARM_SEED // mua hạt giống
+  FARM_SELL // bán nông sản
+  FARM_PLOT // mở thêm ô đất
+  FARM_TREE // hái cây khế
 }
 
 // ============================================================
@@ -2032,4 +2045,155 @@ model BauCuaBet {
 
   @@unique([roundId, userId, con])
   @@index([userId, createdAt])
+}
+
+
+// ============================================================
+// TRẮC NGHIỆM — thành viên tự ra câu hỏi, đặt cọc bằng điểm
+// ============================================================
+
+/**
+ * Một câu hỏi trắc nghiệm do thành viên đăng.
+ *
+ * Luật kinh tế giữ đúng bản JohnCMS cũ, vì nó hay: người ra câu hỏi ĐẶT CỌC
+ * `price` điểm. Ai trả lời ĐÚNG thì lấy cọc ấy; ai trả lời SAI thì mất đúng
+ * bấy nhiêu cho người ra câu. Nghĩa là ra câu quá dễ thì lỗ, ra câu đánh đố vô
+ * lý thì chẳng ai thèm trả lời — tự nó ép người ta ra câu tử tế.
+ *
+ * Câu hỏi phải qua duyệt mới hiện: cọc đã trừ ngay lúc đăng, nên câu rác không
+ * lọt ra mà người đăng vẫn mất tiền đặt cọc.
+ */
+model QuizQuestion {
+  id       String @id @default(cuid())
+  authorId String
+  author   User   @relation("QuizAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  content String @db.Text
+  /// Bốn phương án, theo đúng thứ tự hiện ra.
+  options String[]
+  /// Chỉ số phương án đúng, 0..3.
+  correct Int
+  /// Lời giải thích, hiện sau khi người ta trả lời xong.
+  explain String? @db.Text
+
+  /// Số điểm đặt cọc, cũng là số điểm ăn thua mỗi lượt trả lời.
+  price Int
+
+  status QuizStatus @default(PENDING)
+
+  reviewedById String?
+  reviewedBy   User?     @relation("QuizReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt   DateTime?
+  /// Lý do từ chối, để người đăng biết đường sửa.
+  reviewNote   String?
+
+  answers QuizAnswer[]
+
+  createdAt DateTime @default(now())
+
+  @@index([status, createdAt])
+  @@index([authorId, createdAt])
+}
+
+enum QuizStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/**
+ * Một lượt trả lời. Mỗi người chỉ trả lời mỗi câu MỘT lần — có ràng buộc duy
+ * nhất canh, chứ kiểm bằng truy vấn rồi mới ghi thì hai tab mở cùng lúc là
+ * lách được.
+ */
+model QuizAnswer {
+  id         String       @id @default(cuid())
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  chosen  Int
+  correct Boolean
+
+  createdAt DateTime @default(now())
+
+  @@unique([questionId, userId])
+  @@index([userId, createdAt])
+}
+
+// ============================================================
+// NÔNG TRẠI — viết mới, dùng lại bộ ảnh của bản mod cũ
+// ============================================================
+
+/**
+ * Một loại cây trồng. Quản trị cấu hình được, không viết cứng trong mã.
+ *
+ * Bản cũ có 11 loại và bộ ảnh đi kèm (`nongtrai/o-dat/{n}.png` lúc còn non,
+ * `{n}-chin.png` lúc chín), nên giữ nguyên chừng ấy loại để dùng lại tranh.
+ */
+model FarmCrop {
+  id   String @id @default(cuid())
+  /// Số thứ tự trong bộ ảnh cũ, cũng là tên tệp: 1..11.
+  key  Int    @unique
+  name String
+
+  /// Giá một hạt giống, tính bằng điểm.
+  seedCost Int
+  /// Bao lâu thì chín, tính bằng phút.
+  growMinutes Int
+  /// Thu được bao nhiêu nông sản mỗi vụ (chăm kém → chăm tốt).
+  yieldMin Int
+  yieldMax Int
+  /// Giá bán một nông sản.
+  sellPrice Int
+
+  order  Int     @default(0)
+  active Boolean @default(true)
+
+  plots FarmPlot[]
+  barn  FarmBarn[]
+
+  @@index([active, order])
+}
+
+/**
+ * Một ô đất của một người.
+ *
+ * Không lưu "còn bao lâu nữa chín" mà lưu THỜI ĐIỂM chín (`readyAt`): đếm
+ * ngược thì phải có ai đó chạy nền trừ dần, còn mốc thời gian thì lúc nào hỏi
+ * cũng tính ra được, và tưới nước hay bón phân chỉ là kéo cái mốc ấy gần lại.
+ */
+model FarmPlot {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Ô số mấy trên mảnh đất, đếm từ 0.
+  index Int
+
+  cropId String?
+  crop   FarmCrop? @relation(fields: [cropId], references: [id], onDelete: SetNull)
+
+  plantedAt DateTime?
+  readyAt   DateTime?
+  /// Đã tưới chưa — mỗi vụ tưới được một lần, tưới thì được mùa hơn.
+  watered   Boolean   @default(false)
+
+  @@unique([userId, index])
+  @@index([userId])
+}
+
+/** Nhà kho: nông sản thu được, chờ đem bán. */
+model FarmBarn {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cropId String
+  crop   FarmCrop @relation(fields: [cropId], references: [id], onDelete: Cascade)
+
+  qty Int @default(0)
+
+  @@unique([userId, cropId])
+  @@index([userId])
 }

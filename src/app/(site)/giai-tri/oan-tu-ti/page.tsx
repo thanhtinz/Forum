@@ -45,16 +45,24 @@ export default async function OanTuTiPage() {
 
       <section className="card mt-4 p-5 text-sm text-ink-600 dark:text-ink-300">
         <h2 className="zib-title mb-2">Luật chơi</h2>
-        <ul className="list-inside list-disc space-y-1">
-          <li>Búa thắng Kéo, Kéo thắng Bao, Bao thắng Búa.</li>
-          <li>Cược {OTT_MIN}–{OTT_MAX} điểm. Thắng ăn đúng số cược, thua mất đúng số ấy.</li>
-          <li>Ra trùng tay thì hoà, không mất điểm nào.</li>
-          <li>Mỗi ngày {VAN_MOI_NGAY} ván.</li>
+        <p className="font-semibold text-ink-800 dark:text-ink-100">Cách chơi</p>
+        <p className="mt-1">
+          Chọn một tay rồi đặt cược, máy ra tay cùng lúc. Búa thắng Kéo, Kéo
+          thắng Bao, Bao thắng Búa.
+        </p>
+
+        <p className="mt-3 font-semibold text-ink-800 dark:text-ink-100">Ăn thua</p>
+        <ul className="mt-1 list-inside list-disc space-y-0.5">
+          <li>thắng → được đúng số điểm đã cược</li>
+          <li>thua → mất đúng số điểm đã cược</li>
+          <li>ra trùng tay → hoà, không mất điểm nào</li>
         </ul>
-        <p className="mt-3 text-ink-500">
-          Trò này công bằng: ba khả năng thắng — hoà — thua chia đều, chơi lâu
-          thì điểm về gần chỗ cũ. Bản gốc viết nhầm nhãn thắng thua nên chữ in ra
-          ngược với việc cộng trừ điểm; ở đây sửa lại cho đúng.
+
+        <p className="mt-3 font-semibold text-ink-800 dark:text-ink-100">Giới hạn</p>
+        <p className="mt-1">
+          Mỗi ván cược từ {OTT_MIN} đến {OTT_MAX} điểm, mỗi ngày {VAN_MOI_NGAY} ván.
+          Ba khả năng thắng, hoà, thua chia đều nhau nên chơi lâu thì điểm về gần
+          chỗ cũ.
         </p>
       </section>
     </div>

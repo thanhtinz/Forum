@@ -8,8 +8,7 @@ import { getActiveBan, banMessage } from '@/lib/ban';
 import { lockUsers } from '@/lib/lock';
 import {
   BAUCUA_CONS, BAUCUA_MAX, BAUCUA_MIN, BAUCUA_CUA_MOI_PHIEN, BAUCUA_PHIEN_MOI_NGAY,
-  GIFT_COOLDOWN_MS, GIFT_POINTS, OTT_MAX, OTT_MIN, OTT_TAY, VAN_MOI_NGAY,
-  dauNgayVN, ottKetQua,
+  OTT_MAX, OTT_MIN, OTT_TAY, VAN_MOI_NGAY, dauNgayVN, ottKetQua,
 } from '@/lib/mini-game';
 import { phienHomNay, xemBan } from '@/lib/bau-cua';
 
@@ -31,42 +30,6 @@ async function nguoiChoi() {
   const banned = await getActiveBan(userId, 'COMMENT');
   if (banned) return { error: banMessage(banned, 'chơi ở khu giải trí') };
   return { userId };
-}
-
-// ─────────────────────────── Hộp quà mỗi ngày ───────────────────────────
-
-/**
- * Nhận quà. Bản gốc đếm đủ 24 giờ kể từ lần nhận trước chứ không reset lúc nửa
- * đêm — giữ nguyên nếp ấy.
- *
- * Ghi CÓ ĐIỀU KIỆN chứ không đọc-rồi-ghi: bấm hai lần cùng lúc thì cả hai cùng
- * đọc thấy "đã tới hạn" rồi cùng nhận.
- */
-export async function nhanQua(): Promise<GameState> {
-  const me = await nguoiChoi();
-  if ('error' in me) return { error: me.error };
-
-  const moc = new Date(Date.now() - GIFT_COOLDOWN_MS);
-  const ghi = await db.user.updateMany({
-    where: { id: me.userId, OR: [{ lastGiftAt: null }, { lastGiftAt: { lt: moc } }] },
-    data: { lastGiftAt: new Date() },
-  });
-  if (ghi.count === 0) {
-    const u = await db.user.findUnique({ where: { id: me.userId }, select: { lastGiftAt: true } });
-    const con = Math.ceil(((u?.lastGiftAt?.getTime() ?? 0) + GIFT_COOLDOWN_MS - Date.now()) / 60000);
-    return { error: `Chưa tới giờ. Còn ${con} phút nữa mới mở được hộp quà.` };
-  }
-
-  await grantPoints({
-    userId: me.userId, amount: GIFT_POINTS, reason: 'GAME_GIFT', note: 'Hộp quà mỗi ngày',
-  });
-  await db.miniGamePlay.create({
-    data: { userId: me.userId, game: 'GIFT', bet: 0, delta: GIFT_POINTS },
-    select: { id: true },
-  });
-
-  revalidatePath('/giai-tri');
-  return { ok: true, delta: GIFT_POINTS, ke: `Mở hộp quà được ${GIFT_POINTS} điểm.` };
 }
 
 // ─────────────────────────── Nền chung cho trò cược ───────────────────────────

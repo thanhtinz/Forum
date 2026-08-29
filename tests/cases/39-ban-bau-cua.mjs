@@ -39,16 +39,21 @@ export default async function run(check) {
     };
     await mo(pa);
 
-    // Chỉ đặt khi còn kha khá thời gian, không thì vừa bấm đã hết giờ.
-    const conGiay = async () => {
-      const t = await pa.locator('text=/Còn \\d+ giây/').first().innerText().catch(() => '');
-      return Number(t.match(/\d+/)?.[0] ?? 0);
-    };
-    if ((await conGiay()) < 12) {
-      // Chờ sang phiên mới rồi hẵng chơi.
-      await pa.waitForTimeout(((await conGiay()) + 17) * 1000);
-      await mo(pa);
+    // Chờ tới đầu một phiên còn nhiều thời gian rồi hẵng chơi. Hỏi thẳng máy
+    // chủ chứ không đọc chữ trên trang: chữ chỉ mới đúng ở lần hỏi gần nhất,
+    // mà cả bài kiểm này phụ thuộc vào việc còn kịp đặt cửa.
+    const conMs = async () => pa.evaluate(async (base) => {
+      const r = await fetch(`${base}/api/bau-cua`, { cache: 'no-store' });
+      const d = await r.json();
+      return d.conMs;
+    }, BASE);
+    for (let i = 0; i < 5; i++) {
+      const ms = await conMs();
+      if (ms >= 25000) break;
+      // Ngủ cho hết phần còn lại của phiên này cộng quãng xóc, rồi hỏi lại.
+      await pa.waitForTimeout(Math.max(1000, ms) + 16000);
     }
+    await mo(pa);
     await mo(pb);
 
     // ── Đặt cửa là trừ điểm ngay ────────────────────────────────────────
@@ -76,7 +81,7 @@ export default async function run(check) {
     await pa.waitForTimeout(3000);
     const banA = await pa.locator('main').innerText();
     check('người này đặt thì người kia thấy cả bàn',
-      banA.includes('cả bàn đang đặt 50 điểm'), banA.slice(0, 200));
+      banA.includes('cả bàn 50 điểm'), banA.slice(0, 200));
 
     // ── Tới giờ thì tự xóc và trả thưởng đúng ───────────────────────────
     // Kéo giờ đóng cửa về quá khứ để khỏi phải ngồi chờ hết phiên thật.
@@ -127,21 +132,33 @@ export default async function run(check) {
     check('và không trả thưởng thêm lần nữa', (await diem(a.id)) === diemTruoc);
 
     // ── Hết giờ thì không đặt được ──────────────────────────────────────
-    // Phiên hiện tại vừa mở lại; ép nó đóng cửa rồi thử đặt.
-    const banHienTai = await db.bauCuaRound.findFirst({
-      orderBy: { startAt: 'desc' }, select: { id: true },
-    });
-    await db.bauCuaRound.update({
-      where: { id: banHienTai.id }, data: { closeAt: new Date(Date.now() - 1000) }, select: { id: true },
-    });
-    const truocHetGio = await diem(a.id);
-    const nut = pa.locator('button:has-text("Đặt cửa")');
-    if (await nut.isEnabled().catch(() => false)) {
-      await nut.click();
-      await pa.waitForTimeout(2200);
+    // Chờ tới đúng lúc bàn đang xóc / đang mở bát rồi mới thử. Không ép giờ
+    // đóng cửa bằng dữ liệu nữa: ép xong mà phiên mới kịp mở thì cửa đặt được
+    // là chuyện đúng, bài kiểm lại tưởng hỏng.
+    let phaGio = 'dat';
+    for (let i = 0; i < 70; i++) {
+      phaGio = await pa.evaluate(async (base) => {
+        const r = await fetch(`${base}/api/bau-cua`, { cache: 'no-store' });
+        return (await r.json()).pha;
+      }, BASE);
+      if (phaGio !== 'dat') break;
+      await pa.waitForTimeout(1000);
     }
-    check('hết giờ đặt thì điểm không bị trừ', (await diem(a.id)) === truocHetGio,
-      `${truocHetGio} → ${await diem(a.id)}`);
+    check('bắt được lúc bàn đã khoá cửa', phaGio !== 'dat', `pha ${phaGio}`);
+
+    const truocHetGio = await diem(a.id);
+    // Mở khoá nút rồi bấm thật: giao diện chỉ là gợi ý, ai cũng bỏ được thuộc
+    // tính `disabled`. Phải thấy MÁY CHỦ chặn thì mới yên tâm.
+    await pa.evaluate(() => {
+      for (const el of document.querySelectorAll('form :disabled')) el.disabled = false;
+    });
+    await pa.locator('form button[type="submit"]').click();
+    await pa.waitForTimeout(2500);
+    check('gửi thẳng biểu mẫu lúc đã khoá cũng không trừ điểm',
+      (await diem(a.id)) === truocHetGio, `${truocHetGio} → ${await diem(a.id)}`);
+    check('có báo hết giờ đặt cửa',
+      (await pa.locator('text=Hết giờ đặt cửa').count()) > 0);
+
   } finally {
     await wipe();
     for (const [id, points] of Object.entries(diemCu)) {

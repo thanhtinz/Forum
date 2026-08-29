@@ -10,13 +10,6 @@
 /** Đường dẫn gốc của bộ ảnh cũ giữ lại. */
 export const ANH = '/hoai-niem';
 
-// ─────────────────────────── Hộp quà mỗi ngày ───────────────────────────
-
-/** Quà mỗi lần nhận. Bản cũ: 5.000 xu. */
-export const GIFT_POINTS = 50;
-/** Khoảng cách giữa hai lần nhận — bản cũ đếm đủ 24 giờ chứ không reset lúc nửa đêm. */
-export const GIFT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-
 // ─────────────────────────── Bầu cua tôm cá ───────────────────────────
 
 /**
@@ -47,14 +40,24 @@ export const BAUCUA_MIN = 10;
 export const BAUCUA_MAX = 100;
 
 /**
- * Nhịp một phiên bầu cua chung.
+ * Nhịp một phiên bầu cua chung, chia làm ba pha:
  *
- * 45 giây đặt cửa, xóc, rồi 15 giây để mọi người nhìn kết quả trước khi bàn dọn
- * lại. Chọn 60 giây tròn vì mã phiên tính thẳng từ đồng hồ: chia cho 60 giây là
- * ra, không cần ai giữ trạng thái.
+ *   [0s → 45s)  ĐẶT CỬA   — ai đặt gì thì đặt, thấy cả bàn đang đặt gì
+ *   [45s → 50s) XÓC       — bát úp lại, rung; chưa ai được thấy kết quả
+ *   [50s → 60s) KẾT QUẢ   — mở bát, ai ăn ai thua rõ ràng
+ *
+ * Quãng xóc năm giây không phải để trang trí: mở bát ngay lúc hết giờ thì người
+ * đặt cửa cuối cùng chưa kịp buông tay đã thấy kết quả, mất hẳn cái hồi hộp vốn
+ * là toàn bộ cái thú của trò này.
+ *
+ * Chọn 60 giây tròn vì mã phiên tính thẳng từ đồng hồ: chia cho 60 giây là ra,
+ * không cần ai giữ trạng thái.
  */
 export const BAUCUA_ROUND_MS = 60_000;
 export const BAUCUA_BET_MS = 45_000;
+export const BAUCUA_XOC_MS = 5_000;
+/** Mốc mở bát, tính từ đầu phiên. */
+export const BAUCUA_REVEAL_MS = BAUCUA_BET_MS + BAUCUA_XOC_MS;
 
 /** Trần số cửa một người đặt trong một phiên — sáu cửa là hết bàn. */
 export const BAUCUA_CUA_MOI_PHIEN = 6;
@@ -95,7 +98,6 @@ export const VAN_MOI_NGAY = 30;
 export const BAUCUA_PHIEN_MOI_NGAY = 30;
 
 export const GAME_LABELS = {
-  GIFT: 'Hộp quà mỗi ngày',
   BAUCUA: 'Bầu cua tôm cá',
   OANTUTI: 'Oẳn tù tì',
 } as const;

@@ -1,7 +1,8 @@
 import { db } from './db';
 import { grantPoints } from './points';
 import {
-  BAUCUA_BET_MS, BAUCUA_CONS, BAUCUA_CUA_MOI_PHIEN, BAUCUA_PHIEN_MOI_NGAY, BAUCUA_ROUND_MS,
+  BAUCUA_BET_MS, BAUCUA_CONS, BAUCUA_CUA_MOI_PHIEN, BAUCUA_PHIEN_MOI_NGAY,
+  BAUCUA_REVEAL_MS, BAUCUA_ROUND_MS,
 } from './mini-game-const';
 import { dauNgayVN } from './mini-game';
 
@@ -22,18 +23,28 @@ export interface CuaDat {
   cuaToi: number;
 }
 
+/** Pha của phiên: đang đặt cửa, đang xóc, hay đang mở bát. */
+export type PhaBan = 'dat' | 'xoc' | 'kq';
+
 export interface BanBauCua {
   roundId: string;
-  startAt: Date;
-  closeAt: Date;
-  /** Còn bao nhiêu mili giây nữa hết giờ đặt (âm là đã đóng cửa). */
+  pha: PhaBan;
+  /** Còn bao nhiêu mili giây nữa hết pha hiện tại. */
   conMs: number;
   dangDat: boolean;
   cua: CuaDat[];
-  /** Kết quả phiên VỪA XONG, để người đang xem thấy bát vừa mở. */
-  truoc: { roundId: string; dice: number[]; anMs: number } | null;
-  /** Điểm ăn/thua của chính người xem ở phiên vừa xong. */
+  /**
+   * Ba mặt của CHÍNH phiên này — chỉ trả về khi đã tới giờ mở bát.
+   *
+   * Giấu ở máy chủ chứ không giấu ở giao diện: bát đã xóc xong từ giây 45, nếu
+   * cứ gửi kèm rồi nhờ trang đừng vẽ ra thì ai mở công cụ nhà phát triển cũng
+   * biết trước kết quả trong lúc người khác còn đang hồi hộp.
+   */
+  dice: number[] | null;
+  /** Điểm ăn/thua của chính người xem ở phiên này (khi đã mở bát). */
   toiDuoc: number | null;
+  /** Mấy phiên gần nhất, mới trước. */
+  lichSu: { roundId: string; dice: number[] }[];
 }
 
 /** Mốc bắt đầu của phiên chứa thời điểm `t`. */
@@ -131,7 +142,11 @@ export async function xemBan(userId: string | null): Promise<BanBauCua> {
   const roundId = phien.id;
   const closeAt = phien.closeAt;
 
-  const [nhom, cuaToi, phienTruoc] = await Promise.all([
+  const tuDau = now - phien.startAt.getTime();
+  const pha: PhaBan = tuDau < BAUCUA_BET_MS ? 'dat' : tuDau < BAUCUA_REVEAL_MS ? 'xoc' : 'kq';
+  const conMs = (pha === 'dat' ? BAUCUA_BET_MS : pha === 'xoc' ? BAUCUA_REVEAL_MS : BAUCUA_ROUND_MS) - tuDau;
+
+  const [nhom, cuaToi, banThan, lichSu] = await Promise.all([
     db.bauCuaBet.groupBy({
       by: ['con'], where: { roundId }, _sum: { amount: true }, _count: { _all: true },
     }),
@@ -142,10 +157,12 @@ export async function xemBan(userId: string | null): Promise<BanBauCua> {
           select: { con: true, amount: true },
         })
       : Promise.resolve([]),
-    db.bauCuaRound.findFirst({
-      where: { rolledAt: { not: null }, dice: { not: null } },
+    db.bauCuaRound.findUnique({ where: { id: roundId }, select: { dice: true } }),
+    db.bauCuaRound.findMany({
+      where: { dice: { not: null }, id: { not: roundId } },
       orderBy: { startAt: 'desc' },
-      select: { id: true, dice: true, startAt: true },
+      take: 12,
+      select: { id: true, dice: true },
     }),
   ]);
 
@@ -156,32 +173,31 @@ export async function xemBan(userId: string | null): Promise<BanBauCua> {
     cuaToi: cuaToi.find((b) => b.con === c.id)?.amount ?? 0,
   }));
 
+  // Chỉ mở bát khi đã tới giờ mở.
+  const dice = pha === 'kq' && banThan?.dice ? banThan.dice.split(',').map(Number) : null;
+
   let toiDuoc: number | null = null;
-  if (userId && phienTruoc) {
-    const cua0 = await db.bauCuaBet.findMany({
-      where: { roundId: phienTruoc.id, userId }, take: BAUCUA_CUA_MOI_PHIEN,
-      select: { amount: true, payout: true },
-    });
-    if (cua0.length > 0) {
-      toiDuoc = cua0.reduce((s, b) => s + ((b.payout ?? 0) - b.amount), 0);
+  if (userId && dice) {
+    const cuaMinh = cuaToi.length > 0
+      ? await db.bauCuaBet.findMany({
+          where: { roundId, userId }, take: BAUCUA_CUA_MOI_PHIEN,
+          select: { amount: true, payout: true },
+        })
+      : [];
+    if (cuaMinh.length > 0) {
+      toiDuoc = cuaMinh.reduce((s, b) => s + ((b.payout ?? 0) - b.amount), 0);
     }
   }
 
   return {
     roundId,
-    startAt: phien.startAt,
-    closeAt,
-    conMs: closeAt.getTime() - now,
-    dangDat: !phien.rolledAt && now < closeAt.getTime(),
+    pha,
+    conMs,
+    dangDat: pha === 'dat' && !phien.rolledAt && now < closeAt.getTime(),
     cua,
-    truoc: phienTruoc?.dice
-      ? {
-          roundId: phienTruoc.id,
-          dice: phienTruoc.dice.split(',').map(Number),
-          anMs: now - phienTruoc.startAt.getTime(),
-        }
-      : null,
+    dice,
     toiDuoc,
+    lichSu: lichSu.map((r) => ({ roundId: r.id, dice: (r.dice ?? '').split(',').map(Number) })),
   };
 }
 

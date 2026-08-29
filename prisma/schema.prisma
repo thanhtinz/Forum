@@ -145,9 +145,6 @@ model User {
   shopBadgeId    String?
   shopBadge      ShopItem?      @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
 
-  /// Lần bấm nhận quà hằng ngày gần nhất — mốc đếm 24 giờ của hộp quà.
-  lastGiftAt     DateTime?
-
   gamePlays      MiniGamePlay[]
   bauCuaBets     BauCuaBet[]
 
@@ -595,7 +592,6 @@ enum PointsReason {
   SHOP_REFUND // hoàn điểm khi một loại đồ thôi bán
   GAME_BET // đặt cược ở khu giải trí
   GAME_WIN // thắng cược ở khu giải trí
-  GAME_GIFT // quà tặng hằng ngày
 }
 
 // ============================================================
@@ -1977,8 +1973,6 @@ model MiniGamePlay {
 }
 
 enum MiniGame {
-  /// Hộp quà mỗi ngày.
-  GIFT
   /// Bầu cua tôm cá.
   BAUCUA
   /// Oẳn tù tì với máy.

@@ -23,6 +23,7 @@ export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: 
   header: [
     { label: 'Diễn đàn', url: '/', icon: '💬' },
     { label: 'Game', url: '/games', icon: '🎮' },
+    { label: 'Giải trí', url: '/giai-tri', icon: '🎲' },
     { label: 'Xếp hạng', url: '/ranking', icon: '🏆' },
     { label: 'Câu lạc bộ', url: '/clb', icon: '👥' },
     { label: 'Thành viên', url: '/thanh-vien', icon: '🧑‍🤝‍🧑' },
@@ -31,6 +32,7 @@ export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: 
   footer: [
     { label: 'Diễn đàn', url: '/', icon: '' },
     { label: 'Game', url: '/games', icon: '' },
+    { label: 'Giải trí', url: '/giai-tri', icon: '' },
     { label: 'Xếp hạng', url: '/ranking', icon: '' },
     { label: 'Thành viên', url: '/thanh-vien', icon: '' },
     { label: 'Cửa hàng', url: '/cua-hang', icon: '' },

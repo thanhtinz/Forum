@@ -145,6 +145,11 @@ model User {
   shopBadgeId    String?
   shopBadge      ShopItem?      @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
 
+  /// Lần bấm nhận quà hằng ngày gần nhất — mốc đếm 24 giờ của hộp quà.
+  lastGiftAt     DateTime?
+
+  gamePlays      MiniGamePlay[]
+
   /// Danh hiệu = tên bậc của cấp hiện tại, chép sẵn từ `LevelRule.name`.
   ///
   /// Chép chứ không tra bảng lúc dựng giao diện: hơn hai mươi chỗ hiện tên
@@ -587,6 +592,9 @@ enum PointsReason {
   DONATE_RECEIVED // nhận điểm người khác tặng
   SHOP_BUY // mua đồ trang trí ở cửa hàng
   SHOP_REFUND // hoàn điểm khi một loại đồ thôi bán
+  GAME_BET // đặt cược ở khu giải trí
+  GAME_WIN // thắng cược ở khu giải trí
+  GAME_GIFT // quà tặng hằng ngày
 }
 
 // ============================================================
@@ -1928,4 +1936,50 @@ model ClubCommentLike {
 
   @@unique([commentId, userId])
   @@index([userId])
+}
+
+
+// ============================================================
+// KHU GIẢI TRÍ — dựng lại từ bộ mod JohnCMS Việt hoá 2008-2011
+// ============================================================
+
+/**
+ * Một lượt chơi ở khu giải trí.
+ *
+ * Ghi lại TỪNG lượt chứ không chỉ cộng trừ điểm, vì ba lẽ:
+ *   • trần lượt mỗi ngày phải đếm được — không có trần thì mấy trò cược biến
+ *     thành chỗ ngồi bấm cả đêm,
+ *   • có gì bất thường (ai đó thắng liên tục) thì còn lần ra được,
+ *   • và để in bảng "lượt chơi gần đây" cho vui, đúng kiểu wap ngày trước.
+ *
+ * Điểm vẫn đi qua `grantPoints` như mọi nơi khác; bảng này chỉ là sổ chơi.
+ */
+model MiniGamePlay {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  game MiniGame
+
+  /// Số điểm đặt cược (0 với những trò không cược, như hộp quà).
+  bet Int @default(0)
+  /// Điểm thay đổi sau lượt: dương là được, âm là mất.
+  delta Int @default(0)
+
+  /// Kết quả gọn để in lại: mặt xúc xắc, tay ra của bot… Mỗi trò tự quy ước.
+  detail String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, game, createdAt])
+  @@index([game, createdAt])
+}
+
+enum MiniGame {
+  /// Hộp quà mỗi ngày.
+  GIFT
+  /// Bầu cua tôm cá.
+  BAUCUA
+  /// Oẳn tù tì với máy.
+  OANTUTI
 }

@@ -2,7 +2,7 @@
 
 import type { ODat as ODatDL } from '@/lib/farm';
 import {
-  ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY,
+  ANH_CUA_HANG, ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY,
   NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, O_MOI_TRANG, TROI_DEM, TROI_NGAY,
   changCua,
 } from '@/lib/farm-const';
@@ -66,11 +66,12 @@ interface Props {
   /** Trang ruộng đang xem, đếm từ 0. */
   trang: number;
   onTrang: (trang: number) => void;
+  onMoCuaHang: () => void;
 }
 
 export function ManhDat({
   oDat, now, banNgay, dangChon, onChon, giaMoO, duTienMoO, dangLam, onMua,
-  trang, onTrang,
+  trang, onTrang, onMoCuaHang,
 }: Props) {
   const [troiTren, troiDuoi] = banNgay ? TROI_NGAY : TROI_DEM;
 
@@ -331,7 +332,7 @@ export function ManhDat({
           phía sau để cỏ mọc ra từ thửa ruộng chứ không lơ lửng trên khoảng
           trắng. */}
       <div
-        aria-hidden
+        className="relative"
         style={{
           height: NEN_DAI_CANH * PHONG_NEN,
           backgroundColor: '#7d520b',
@@ -341,7 +342,27 @@ export function ManhDat({
           backgroundSize: `${NEN_RONG * PHONG_NEN}px ${NEN_CAO * PHONG_NEN}px`,
           imageRendering: 'pixelated',
         }}
-      />
+      >
+        {/*
+          Căn cửa hàng dựng ngay trong cảnh, không phải một thẻ rời ở cuối
+          trang: người chơi đi mua hạt thì bước tới cửa hàng, đó là chỗ ai
+          cũng đoán được mà chẳng cần chỉ.
+
+          Đứng bên TRÁI vì mặt trời và mặt trăng đều nằm ở góc phải bầu trời.
+          Nhà cao hơn rặng cây nên nhô lên nền trời — đó là chủ ý, mái nhà cắt
+          ngang đường chân trời mới ra một căn nhà đứng trước cảnh, chứ không
+          phải một hình dán bẹt vào rặng cây.
+        */}
+        <button
+          type="button"
+          onClick={onMoCuaHang}
+          title="Cửa hàng hạt giống"
+          aria-label="Mở cửa hàng hạt giống"
+          className="farm-quan absolute bottom-0 left-1 origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 sm:left-6"
+        >
+          <AnhPixel src={ANH_CUA_HANG} className="block w-[93px] sm:w-[186px]" />
+        </button>
+      </div>
 
       {/* ── Lớp 3: thửa đất ── */}
       <div className="farm-ruong relative pb-2 pt-1">

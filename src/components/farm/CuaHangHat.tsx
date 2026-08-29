@@ -1,12 +1,16 @@
 'use client';
 
 import type { CayGiong } from '@/lib/farm';
-import { ANH_CUA_HANG, anhNongSan, moTaVu } from '@/lib/farm-const';
+import { anhNongSan, moTaVu } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
 
 /**
  * Cửa hàng hạt giống — mỗi giống một tấm thẻ có ảnh nông sản.
+ *
+ * Dựng làm RUỘT của hộp thoại, mở ra từ căn cửa hàng trong cảnh nông trại,
+ * nên ở đây không có khung thẻ cũng không có tiêu đề: hộp thoại đã có sẵn cả
+ * hai, vẽ thêm là hai lần viền và hai lần tên cửa hàng chồng lên nhau.
  *
  * Bản trước là một lưới nút toàn chữ, mười một giống nhìn như nhau nên chẳng
  * ai nhớ nổi giống nào là giống nào. Ở đây ảnh nông sản đứng trước, ba con số
@@ -29,18 +33,14 @@ interface Props {
 
 export function CuaHangHat({ cay, diem, oSeGieo, dangLam, onGieo }: Props) {
   return (
-    <section className="card overflow-hidden">
-      <header className="flex items-center gap-3 border-b border-[var(--nova-border)] bg-gradient-to-r from-amber-50 to-transparent px-4 py-3 dark:from-amber-950/30">
-        <AnhPixel src={ANH_CUA_HANG} className="h-10 w-auto shrink-0" />
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base font-black leading-tight">Cửa hàng hạt giống</h2>
-          <p className="retro-sub truncate text-ink-400">
-            {oSeGieo == null
-              ? 'Hết ô trống rồi — thu hoạch hoặc mở thêm đất đã.'
-              : `Bấm một giống để gieo xuống ô ${oSeGieo + 1}.`}
-          </p>
-        </div>
-      </header>
+    <div>
+      {/* Dòng này là thứ quyết định cả lượt mua: hạt rơi xuống ô NÀO. Thiếu nó
+          thì bấm một giống xong người chơi phải đi tìm xem cây mọc ở đâu. */}
+      <p className="border-b border-[var(--nova-border)] bg-amber-50 px-4 py-2 text-sm font-medium text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+        {oSeGieo == null
+          ? 'Hết ô trống rồi — thu hoạch hoặc mở thêm đất đã.'
+          : `Bấm một giống để gieo xuống ô ${oSeGieo + 1}.`}
+      </p>
 
       {/* Ba cột ngay từ điện thoại. Hai cột thì mười một giống xếp thành sáu
           hàng thẻ cao 153px — gần 950px chỉ để chọn hạt, dài hơn cả mảnh ruộng
@@ -92,7 +92,6 @@ export function CuaHangHat({ cay, diem, oSeGieo, dangLam, onGieo }: Props) {
           );
         })}
       </ul>
-
-    </section>
+    </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   O_DAT_TOI_DA, TUOI_RUT_NGAN, changCua, moTaConLai, tienDoVu,
 } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
+import { Modal } from '@/components/Modal';
 import { CuaHangHat } from './CuaHangHat';
 import { GocTrai } from './GocTrai';
 import { ManhDat } from './ManhDat';
@@ -41,6 +42,7 @@ export function NongTrai({ d }: { d: DuLieu }) {
   const [dangLam, batDau] = useTransition();
   const [oChon, setOChon] = useState<number | null>(null);
   const [trang, setTrang] = useState(0);
+  const [moCho, setMoCho] = useState(false);
 
   // Đồng hồ nhích mỗi giây để đếm ngược chạy mà không phải hỏi lại máy chủ.
   useEffect(() => {
@@ -116,6 +118,7 @@ export function NongTrai({ d }: { d: DuLieu }) {
           dangChon={oChon} onChon={(i) => setOChon((cu) => (cu === i ? null : i))}
           giaMoO={d.giaMoO} duTienMoO={duTienMoO} dangLam={dangLam} onMua={moODatNgay}
           trang={trang} onTrang={doiTrang}
+          onMoCuaHang={() => setMoCho(true)}
         />
         <ThanhViec
           nhan={
@@ -164,14 +167,24 @@ export function NongTrai({ d }: { d: DuLieu }) {
         </p>
       )}
 
-      <CuaHangHat
-        cay={cay} diem={d.diem} oSeGieo={oSeGieo} dangLam={dangLam}
-        onGieo={(cayId) => {
-          if (oSeGieo == null) return;
-          setOChon(oSeGieo);
-          lam(gieoHat, { o: oSeGieo, cay: cayId });
-        }}
-      />
+      {/*
+        Cửa hàng nay nằm sau căn nhà trong cảnh chứ không bày sẵn ở cuối trang.
+        Gieo xong thì ĐÓNG luôn hộp thoại: người chơi mở cửa hàng là để gieo
+        một vụ, gieo rồi mà cửa hàng vẫn chắn giữa màn hình thì họ phải tự đóng
+        mới thấy được cái cây mình vừa trồng.
+      */}
+      <Modal open={moCho} onClose={() => setMoCho(false)} title="Cửa hàng hạt giống"
+        className="max-w-2xl">
+        <CuaHangHat
+          cay={cay} diem={d.diem} oSeGieo={oSeGieo} dangLam={dangLam}
+          onGieo={(cayId) => {
+            if (oSeGieo == null) return;
+            setOChon(oSeGieo);
+            setMoCho(false);
+            lam(gieoHat, { o: oSeGieo, cay: cayId });
+          }}
+        />
+      </Modal>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <NhaKho

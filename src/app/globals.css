@@ -205,3 +205,44 @@ html, body {
     @apply underline;
   }
 }
+
+/*
+ * Khối gấp lại trên điện thoại, mở sẵn từ `sm` — xem `GopTrenDienThoai`.
+ *
+ * Đặt ở đây chứ không nhét thẻ <style> vào trong chính component: thẻ ấy sẽ
+ * thành con đầu tiên của <details>, đứng TRƯỚC <summary>, và thế là trình
+ * duyệt thôi không gấp nội dung lại nữa — khối lúc nào cũng mở toang. Để ở
+ * đây cũng chỉ in ra một lần thay vì lặp theo mỗi lần dùng.
+ */
+.gop-dt > summary::-webkit-details-marker {
+  display: none;
+}
+@media (min-width: 640px) {
+  /*
+   * Ép hiện phần thân trên máy tính.
+   *
+   * Phải mở khoá ở HAI chỗ. Chrome đời mới giấu nội dung của <details> đang
+   * đóng bằng `content-visibility: hidden` đặt trên pseudo `::details-content`,
+   * chứ không phải bằng `display: none` trên các thẻ con — nên chỉ ghi đè thẻ
+   * con thì khối vẫn cao 0px, tức là trên máy tính mất hẳn nội dung. Dòng
+   * `display` là đường lui cho các trình duyệt còn dùng cách giấu cũ.
+   */
+  .gop-dt::details-content {
+    content-visibility: visible !important;
+    block-size: auto !important;
+  }
+  .gop-dt > .gop-dt-than {
+    display: block !important;
+  }
+  /* Thanh tiêu đề thôi bấm được, thành ra một tiêu đề mục bình thường. */
+  .gop-dt > summary {
+    pointer-events: none;
+    cursor: default;
+  }
+  .gop-dt > summary > .gop-dt-mui {
+    display: none;
+  }
+  .gop-dt-an > summary {
+    display: none;
+  }
+}

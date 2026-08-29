@@ -8,6 +8,7 @@ import { db } from '@/lib/db';
 import { gameCardSelect, gameTint, toGameCard } from '@/lib/game';
 import { fmtCount } from '@/lib/utils';
 import { GameRow } from '@/components/game/GameRow';
+import { GopTrenDienThoai } from '@/components/GopTrenDienThoai';
 import { GameSearchBox } from '@/components/game/GameSearchBox';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 
@@ -84,7 +85,12 @@ Tải JAR/JAD về máy thật, kèm checksum để đối chiếu.
       <GameRow title="Được tải nhiều" icon={<Download size={18} />} href="/games/browse?sort=downloaded" games={mostDownloaded.map(toGameCard)} />
       <GameRow title="Game Việt hóa" icon={<Languages size={18} />} href="/games/browse?vi=1" games={vietnamized.map(toGameCard)} />
 
-      {/* Thể loại */}
+      {/* Bốn khối phân loại dưới đây gấp lại trên điện thoại: chúng là chỗ để
+          DUYỆT, còn người mở trang kho game thường vào xem game mới và game
+          nổi bật ở trên. Từ `sm` trở lên chúng mở sẵn như cũ. */}
+      <GopTrenDienThoai tieuDe="Duyệt theo phân loại" icon={<LayoutGrid size={18} />} anTuSm
+        className="rounded-2xl border border-ink-100 px-3 py-3 sm:rounded-none sm:border-0 sm:px-0 sm:py-0 dark:border-ink-800">
+      <div className="space-y-6">
       {genres.length > 0 && (
         <section>
           <h2 className="zib-title mb-3 flex items-center gap-2"><Trophy size={18} /> Theo thể loại</h2>
@@ -155,6 +161,8 @@ Tải JAR/JAD về máy thật, kèm checksum để đối chiếu.
           </div>
         </section>
       )}
+      </div>
+      </GopTrenDienThoai>
     </div>
   );
 }

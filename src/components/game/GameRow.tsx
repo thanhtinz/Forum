@@ -27,9 +27,20 @@ export function GameRow({ title, icon, href, games, layout = 'scroll' }: GameRow
       </div>
 
       {layout === 'grid' ? (
-        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
-          {games.map((g) => <GameCard key={g.id} game={g} />)}
-        </div>
+        <>
+          {/*
+            Trên điện thoại lưới này chỉ còn MỘT cột, mỗi thẻ to gần 170px —
+            bốn game là hết hơn 700px, dài hơn cả phần còn lại của trang. Dưới
+            `sm` đổi sang hàng cuộn ngang như mọi hàng khác; từ `sm` mới bày
+            lưới, vì lúc ấy mỗi hàng đã xếp được 2–3 thẻ.
+          */}
+          <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-1 sm:hidden">
+            {games.map((g) => <GameCard key={g.id} game={g} variant="compact" />)}
+          </div>
+          <div className="hidden gap-3 sm:grid sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
+            {games.map((g) => <GameCard key={g.id} game={g} />)}
+          </div>
+        </>
       ) : (
         <div className="no-scrollbar -mx-3 flex gap-3 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0">
           {games.map((g) => <GameCard key={g.id} game={g} variant="compact" />)}

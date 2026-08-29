@@ -17,6 +17,7 @@ import { DownloadPanel, type VersionInfo } from '@/components/game/DownloadPanel
 import { GameActions } from '@/components/game/GameActions';
 import { GameGallery } from '@/components/game/GameGallery';
 import { GameRow } from '@/components/game/GameRow';
+import { GopTrenDienThoai } from '@/components/GopTrenDienThoai';
 import { GameViewTracker } from '@/components/game/GameViewTracker';
 import { RatingStars } from '@/components/game/RatingStars';
 import { Comments } from '@/components/comment/Comments';
@@ -263,8 +264,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
           )}
 
           {controls.length > 0 && (
-            <section className="card p-4 sm:p-5">
-              <h2 className="zib-title mb-3 flex items-center gap-2"><Keyboard size={17} /> Điều khiển</h2>
+            <GopTrenDienThoai tieuDe="Điều khiển" icon={<Keyboard size={17} />} className="card p-4 sm:p-5">
               <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
                 {controls.map((c, i) => (
                   <li key={i} className="flex items-center justify-between gap-3 rounded-lg bg-ink-50 px-3 py-1.5 dark:bg-ink-800/60">
@@ -273,12 +273,11 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
                   </li>
                 ))}
               </ul>
-            </section>
+            </GopTrenDienThoai>
           )}
 
           {byPlatform.length > 0 && (
-            <section className="card p-4 sm:p-5">
-              <h2 className="zib-title mb-3 flex items-center gap-2"><Clock size={17} /> Lịch sử phiên bản</h2>
+            <GopTrenDienThoai tieuDe="Lịch sử phiên bản" icon={<Clock size={17} />} className="card p-4 sm:p-5">
               <div className="space-y-5">
                 {byPlatform.map((group) => (
                   <div key={group.platform}>
@@ -305,12 +304,11 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
                   </div>
                 ))}
               </div>
-            </section>
+            </GopTrenDienThoai>
           )}
 
           {(game.compatibilityNote || game.knownIssues) && (
-            <section className="card p-4 sm:p-5">
-              <h2 className="zib-title mb-3 flex items-center gap-2"><AlertTriangle size={17} /> Lưu ý</h2>
+            <GopTrenDienThoai tieuDe="Lưu ý" icon={<AlertTriangle size={17} />} className="card p-4 sm:p-5">
               {game.compatibilityNote && (
                 <>
                   <h3 className="text-sm font-bold">Ghi chú tương thích</h3>
@@ -323,7 +321,7 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
                   <p className="mt-1 whitespace-pre-line text-sm text-ink-500">{game.knownIssues}</p>
                 </>
               )}
-            </section>
+            </GopTrenDienThoai>
           )}
 
           {/* Bình luận — wap tải game ngày xưa trang game nào cũng có, đó mới

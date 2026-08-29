@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { cn } from '@/lib/utils';
 import { phienConLai } from '@/lib/bau-cua';
+import { DU_BO, anhRong } from '@/lib/rong-const';
 import {
   ANH, BAUCUA_ROUND_MS, GAME_LABELS, OTT_MAX, OTT_MIN, VAN_MOI_NGAY, conLai,
 } from '@/lib/mini-game';
@@ -34,6 +35,7 @@ export default async function GiaiTriPage() {
     ? await Promise.all([phienConLai(userId), conLai(userId, 'OANTUTI')])
     : [VAN_MOI_NGAY, VAN_MOI_NGAY];
   const soCauHoi = await db.quizQuestion.count({ where: { status: 'APPROVED' } });
+  const soRongDaNo = await db.rong.count({ where: { noAt: { not: null } } });
 
   const tro = [
     {
@@ -70,6 +72,19 @@ export default async function GiaiTriPage() {
       nen: 'from-violet-500/15 via-fuchsia-400/10 to-indigo-400/20',
       vien: 'hover:border-violet-300 dark:hover:border-violet-800',
       pill: 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
+    },
+    {
+      href: '/rong',
+      ten: 'Đảo rồng',
+      mo: `Ấp trứng, nuôi lớn rồi mang đi đấu. Sưu tầm đủ ${DU_BO} con.`,
+      // Ba con mở màn lấy ba loài khác hẳn nhau về dáng, để nhìn ô này là
+      // thấy ngay trò có nhiều loài chứ không phải một con đổi màu.
+      anh: [[6, 1], [8, 3], [3, 5]].map(([l, m]) => anhRong(l, m)),
+      chu: null as string[] | null,
+      nhan: `${soRongDaNo} con`,
+      nen: 'from-emerald-500/15 via-teal-400/10 to-lime-400/20',
+      vien: 'hover:border-emerald-300 dark:hover:border-emerald-800',
+      pill: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
     },
   ];
 

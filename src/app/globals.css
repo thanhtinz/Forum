@@ -246,3 +246,21 @@ html, body {
     display: none;
   }
 }
+
+/*
+ * Trứng rồng lắc nhè nhẹ trong lúc ấp — để nhìn phát biết nó đang sống chứ
+ * không phải một tấm ảnh đứng im. Lắc theo bội số nguyên của điểm ảnh, không
+ * thì ảnh pixel bị nhoè nét khi trình duyệt nội suy.
+ */
+.rong-lac {
+  animation: rong-lac 2.4s ease-in-out infinite;
+}
+@keyframes rong-lac {
+  0%, 88%, 100% { transform: rotate(0deg); }
+  91% { transform: rotate(-6deg); }
+  94% { transform: rotate(5deg); }
+  97% { transform: rotate(-3deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rong-lac { animation: none; }
+}

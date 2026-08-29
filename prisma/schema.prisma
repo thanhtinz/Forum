@@ -153,6 +153,7 @@ model User {
   quizComments   QuizComment[]     @relation("QuizCommentAuthor")
   farmPlots      FarmPlot[]
   farmBarn       FarmBarn[]
+  rong           Rong[]
   /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
   lastTreeAt     DateTime?
 
@@ -606,11 +607,11 @@ enum PointsReason {
   FARM_SELL // bán nông sản
   FARM_PLOT // mở thêm ô đất
   FARM_TREE // hái cây khế
+  RONG_TRUNG // mua trứng rồng
+  RONG_AN // cho rồng ăn
+  RONG_DAU // phí ghi danh đấu trường
+  RONG_THANG // thắng ở đấu trường rồng
 }
-
-// ============================================================
-// HOA HỒNG / RÚT TIỀN
-// ============================================================
 
 // ============================================================
 // GAMIFICATION — huy chương, cấp độ
@@ -2243,4 +2244,79 @@ model FarmBarn {
 
   @@unique([userId, cropId])
   @@index([userId])
+}
+
+// ============================================================
+// ĐẢO RỒNG — ấp trứng, nuôi lớn, đấu trường
+// ============================================================
+
+model Rong {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /**
+   * Loài (1–9) và màu (1–6) — tra thẳng vào `public/hoai-niem/rong/<loài>/<màu>.gif`.
+   * Sáu tấm trong mỗi thư mục là SÁU BIẾN THỂ MÀU của cùng một loài, không phải
+   * sáu bước tiến hoá; nên hai số này cùng nhau mới ra một con, và bộ sưu tập
+   * đủ là 9 × 6 = 54 con.
+   */
+  loai Int
+  mau  Int
+
+  ten String?
+
+  cap Int @default(1)
+  exp Int @default(0)
+
+  /** Độ vui 0–100. Bỏ bê thì tụt dần theo giờ, tụt thì đánh yếu đi. */
+  vui       Int      @default(60)
+  vuiTinhAt DateTime @default(now())
+
+  /**
+   * Còn là trứng khi `noAt` là null. Trứng nở được kể từ `apXongAt` — mốc ấy
+   * ghi sẵn lúc mua, chứ không tính lại từ đồng hồ mỗi lần mở trang: hai nguồn
+   * sự thật thì có lúc lệch nhau.
+   */
+  apXongAt DateTime
+  noAt     DateTime?
+
+  anLanCuoi   DateTime?
+  choiLanCuoi DateTime?
+
+  /** Con đang cử ra đấu trường. Mỗi người chỉ một con. */
+  raTran Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  tranA RongTran[] @relation("RongA")
+  tranB RongTran[] @relation("RongB")
+
+  @@index([userId, createdAt])
+  @@index([userId, raTran])
+  @@index([loai, mau])
+}
+
+model RongTran {
+  id String @id @default(cuid())
+
+  aId String
+  a   Rong   @relation("RongA", fields: [aId], references: [id], onDelete: Cascade)
+  bId String
+  b   Rong   @relation("RongB", fields: [bId], references: [id], onDelete: Cascade)
+
+  /** id con thắng; null nghĩa là hoà. */
+  thangId String?
+
+  /** Điểm bên thách đấu được (âm nếu thua). */
+  duoc Int
+
+  /** Diễn biến từng hiệp, để kể lại trận đấu. */
+  dienBien Json
+
+  createdAt DateTime @default(now())
+
+  @@index([aId, createdAt])
+  @@index([bId, createdAt])
+  @@index([createdAt])
 }

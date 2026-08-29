@@ -8,24 +8,7 @@ Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` 634/
 
 ---
 
-## Còn thiếu tính năng
-
-- [ ] **Dragon City** — trò cuối chưa dựng trong bộ trò JohnCMS. Ảnh đã có sẵn:
-      9 con rồng × 6 khung tiến hoá trong `public/hoai-niem/rong/`. Bản gốc có
-      ấp trứng 12 giờ, cho ăn, đấu trường.
-
-- [ ] **`/online` không vào được từ điện thoại.** Trang này chỉ có lối vào ở cột
-      bên, mà cột bên nằm trong `hidden lg:block`. Thêm vào `MobileNav`.
-
----
-
 ## Cần bạn quyết, không phải việc kỹ thuật
-
-- [ ] **Cụm `/admin/slides`.** Quản trị lập được slide, bảng `Slide` có dữ liệu,
-      nhưng **trang chủ không dựng slide nào** — tức là đang quản một thứ chẳng
-      hiện ở đâu. Hai đường: nối slide vào trang chủ cho nó có tác dụng, hoặc gỡ
-      hẳn cụm này (trang + action + `SlideManager` + model + mục nav). Gỡ là
-      không lùi được nên phải hỏi trước.
 
 - [ ] **Nhãn đếm ngược ở nông trại bị cắt trên điện thoại** ("2 giờ 10…"). Muốn
       hết thì phải rút cách viết thời gian (kiểu "2h10"), mà đổi cách viết là
@@ -37,17 +20,10 @@ Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` 634/
 
 Xếp theo mức đáng làm. Không cái nào đang gây lỗi cho người dùng.
 
-- [ ] **~70 chỗ trong bộ kiểm ngủ cứng rồi đọc thẳng cơ sở dữ liệu**, rải ở 20
-      tệp. Ba chỗ từng đỏ oan đã đổi sang `doiToi`; số còn lại chưa đỏ lần nào
-      nên để nguyên — viết lại mù quáng cả bảy chục chỗ thì rủi ro làm hỏng bài
-      đang chạy tốt còn cao hơn cái được. Chỗ nào đỏ oan thì sửa chỗ đó, đã có
-      sẵn mẫu ở `39-ban-bau-cua`, `30-chua-doc`, `34-thu-tu-canh-ten`.
-
-- [ ] **40 nút đóng thiếu `aria-label`** — trình đọc màn hình chỉ nghe thấy "nút".
-
-- [ ] **7 hộp thoại tự dựng bằng `fixed inset-0`** thay vì dùng `Modal.tsx` sẵn
-      có, nên không khoá cuộn nền: mở hộp thoại rồi lăn chuột là trang phía sau
-      trôi theo.
+- [ ] **38 chỗ ngủ cứng còn lại trong bộ kiểm.** Đã đổi 34 chỗ sang `doiToi`;
+      số còn lại là những mục kiểm khẳng định KHÔNG có gì xảy ra, mà không chờ
+      được một việc không xảy ra — ngủ cứng ở đó mới đúng. Đừng "dọn nốt cho
+      đều".
 
 - [ ] **35 chỗ `Math.ceil(total / SIZE)` thiếu `Math.max(1, …)`.** Hiện KHÔNG
       gây lỗi — `Pagination` đã tự ẩn khi `totalPages <= 1` — nên đây là chuyện
@@ -83,4 +59,13 @@ nhất (kho game 3799→2143px, game 4416→3327px, trang chủ 3019→2252px), 
 mất hẳn lối vào: bình luận game, tin nhắn, bạn bè đã mời, kho ảnh hội thoại.
 
 **Bộ kiểm** — tìm ra bốn nguồn đỏ oan và xử hết; thêm `npm run test:that` chạy
-trên bản dựng thật.
+trên bản dựng thật; 34 chỗ chờ theo đồng hồ đổi sang chờ theo trạng thái.
+
+**Đảo rồng** — trò cuối của bộ trò JohnCMS: ấp trứng, nuôi lớn, đấu trường,
+sưu tầm 9 loài × 6 màu.
+
+**Slide trang chủ** — nối `Slide` vào trang chủ (trước đây quản trị lập được mà
+chẳng hiện ở đâu), kèm vá chỗ `saveSlide` không kiểm định dạng ảnh.
+
+**Trợ năng** — 24 nút chỉ có biểu tượng nay có `aria-label`; sáu lớp phủ nay
+khoá cuộn nền qua hook `useKhoaCuon`; `/online` vào được từ điện thoại.

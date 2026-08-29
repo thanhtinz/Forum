@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { otherId } from '@/lib/messages';
 import { fmtAgo } from '@/lib/utils';
+import { Pagination } from '@/components/Pagination';
 
 export const metadata: Metadata = { title: 'Ảnh đã gửi' };
 export const dynamic = 'force-dynamic';
@@ -25,7 +26,19 @@ function safeSrc(url: string): string | null {
   }
 }
 
-export default async function ConversationMediaPage({ params }: { params: Promise<{ id: string }> }) {
+/**
+ * Số TIN NHẮN có ảnh lấy mỗi trang.
+ *
+ * Cắt theo tin chứ không theo tấm ảnh: một tin có thể mang nhiều ảnh, cắt
+ * giữa một tin thì mấy tấm cùng lượt gửi bị tách sang hai trang khác nhau.
+ * Vậy nên số ảnh mỗi trang có thể chênh nhau đôi chút.
+ */
+const TIN_MOI_TRANG = 60;
+
+export default async function ConversationMediaPage({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ page?: string }>;
+}) {
   const { id } = await params;
   const session = await auth();
   const me = session?.user?.id;
@@ -45,10 +58,18 @@ export default async function ConversationMediaPage({ params }: { params: Promis
   const partnerNick = (partner.id === convo.userAId ? convo.nicknameA : convo.nicknameB) ?? '';
   const partnerName = partnerNick || partner.name || partner.username || 'Thành viên';
 
+  // Trước đây lấy 300 tin rồi thôi: hội thoại gửi ảnh nhiều thì phần cũ hơn
+  // không còn đường nào xem lại.
+  const locAnh = { conversationId: id, content: { contains: '![' } };
+  const tongTin = await db.message.count({ where: locAnh });
+  const soTrang = Math.max(1, Math.ceil(tongTin / TIN_MOI_TRANG));
+  const trang = Math.min(Math.max(1, Number((await searchParams).page) || 1), soTrang);
+
   const rows = await db.message.findMany({
-    where: { conversationId: id, content: { contains: '![' } },
+    where: locAnh,
     orderBy: { createdAt: 'desc' },
-    take: 300,
+    skip: (trang - 1) * TIN_MOI_TRANG,
+    take: TIN_MOI_TRANG,
     select: { id: true, content: true, senderId: true, createdAt: true },
   });
 
@@ -98,6 +119,8 @@ export default async function ConversationMediaPage({ params }: { params: Promis
           ))}
         </div>
       )}
+
+      <Pagination page={trang} totalPages={soTrang} basePath={`/user/messages/${id}/media`} />
     </div>
   );
 }

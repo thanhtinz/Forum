@@ -14,6 +14,14 @@ import { CommentLike } from './CommentLike';
 import { EditScope } from '@/components/EditScope';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { authorChipSelect, toCosmetics } from '@/lib/shop';
+import { Pagination } from '@/components/Pagination';
+
+/**
+ * Số bình luận GỐC mỗi trang. Phản hồi của một bình luận vẫn hiện đủ dưới nó,
+ * chứ không cắt tiếp — một nhánh phản hồi bị cắt giữa chừng thì đọc không ra
+ * câu chuyện.
+ */
+const MOI_TRANG = 20;
 
 /**
  * Danh sách bình luận phân cấp 1 mức (bình luận gốc + phản hồi).
@@ -21,10 +29,12 @@ import { authorChipSelect, toCosmetics } from '@/lib/shop';
  * Nay chỉ còn dùng cho GAME — mục bài viết đã gỡ khỏi trang. Game không có tác
  * giả nên chỉ ban quản trị mới kiểm duyệt được bình luận ở đây.
  */
-export async function Comments({ gameId, slug, loggedIn }: {
+export async function Comments({ gameId, slug, loggedIn, page = 1 }: {
   gameId: string;
   slug: string;
   loggedIn: boolean;
+  /** Trang bình luận đang xem, lấy từ `?bl=` trên URL. */
+  page?: number;
 }) {
   const session = await auth();
   const me = session?.user?.id ?? null;
@@ -34,10 +44,22 @@ export async function Comments({ gameId, slug, loggedIn }: {
   // riêng) để còn hiện lại được.
   const canManage = !!me && (role === 'ADMIN' || role === 'MODERATOR');
 
+  const where = { gameId, parentId: null, ...(canManage ? {} : { hidden: false }) };
+
+  /*
+   * Trước đây chỗ này lấy đúng 50 bình luận gốc rồi thôi — game nào bàn tán
+   * sôi nổi hơn thế là phần sau biến mất, mà không có lấy một cái nút nào để
+   * đi tiếp. Nay đếm tổng rồi cắt trang đàng hoàng.
+   */
+  const tong = await db.comment.count({ where });
+  const soTrang = Math.max(1, Math.ceil(tong / MOI_TRANG));
+  const trang = Math.min(Math.max(1, page), soTrang);
+
   const roots = await db.comment.findMany({
-    where: { gameId, parentId: null, ...(canManage ? {} : { hidden: false }) },
+    where,
     orderBy: [{ pinned: 'desc' }, { createdAt: 'desc' }],
-    take: 50,
+    skip: (trang - 1) * MOI_TRANG,
+    take: MOI_TRANG,
     include: {
       author: { select: authorChipSelect },
       children: {
@@ -92,6 +114,10 @@ export async function Comments({ gameId, slug, loggedIn }: {
           ))}
         </ul>
       )}
+
+      {/* Neo `#binh-luan` để lật trang xong không bị ném về đầu trang game. */}
+      <Pagination page={trang} totalPages={soTrang} pageParam="bl"
+        basePath={`/games/${slug}`} neo="binh-luan" />
     </div>
   );
 }

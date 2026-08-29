@@ -42,8 +42,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 interface ControlHint { key: string; action: string }
 
-export default async function GameDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function GameDetailPage({ params, searchParams }: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ bl?: string }>;
+}) {
   const { slug } = await params;
+  const trangBinhLuan = Number((await searchParams).bl) || 1;
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -326,12 +330,13 @@ export default async function GameDetailPage({ params }: { params: Promise<{ slu
 
           {/* Bình luận — wap tải game ngày xưa trang game nào cũng có, đó mới
               là chỗ người ta hỏi "máy mình chạy được không". */}
-          <section className="card p-4 sm:p-5">
+          <section id="binh-luan" className="card p-4 sm:p-5">
             <h2 className="zib-title mb-4 flex items-center gap-2">
               <MessageSquare size={17} /> Bình luận
               {game.commentCount > 0 && <span className="text-ink-400">({fmtCount(game.commentCount)})</span>}
             </h2>
-            <Comments gameId={game.id} slug={game.slug} loggedIn={!!session?.user?.id} />
+            <Comments gameId={game.id} slug={game.slug} loggedIn={!!session?.user?.id}
+              page={trangBinhLuan} />
           </section>
 
           {/* Hàng cuộn ngang chứ không phải lưới dọc: xếp dọc thì khối phụ này

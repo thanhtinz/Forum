@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { fmtCount } from '@/lib/utils';
 import { INVITE_BONUS_POINTS, INVITE_DAILY_MAX } from '@/lib/invite';
 import { InviteLink } from '@/components/user/InviteLink';
+import { Pagination } from '@/components/Pagination';
 
 export const metadata: Metadata = { title: 'Mời bạn bè' };
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,12 @@ function fallbackCode(username: string | null, id: string): string {
   return (username ?? id).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) || id.slice(0, 8).toUpperCase();
 }
 
-export default async function InvitePage() {
+/** Số người được mời hiện mỗi trang. */
+const MOI_TRANG = 20;
+
+export default async function InvitePage({ searchParams }: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const session = await auth();
   if (!session?.user?.id) redirect('/login?callbackUrl=/user/invite');
   const userId = session.user.id;
@@ -29,14 +35,34 @@ export default async function InvitePage() {
     await db.user.update({ where: { id: userId }, data: { inviteCode: code } }).catch(() => {});
   }
 
-  const [invitees, earnedAgg, daTra] = await Promise.all([
-    db.user.findMany({ where: { invitedById: userId }, orderBy: { createdAt: 'desc' }, take: 50, select: { id: true, username: true, name: true, image: true, createdAt: true } }),
+  /*
+   * Danh sách người được mời trước đây cắt ở 50 rồi thôi — mời nhiều hơn thế
+   * là những người mời sớm nhất biến mất, mà đó lại đúng là những người đã
+   * tính điểm xong.
+   */
+  const tongMoi = await db.user.count({ where: { invitedById: userId } });
+  const soTrang = Math.max(1, Math.ceil(tongMoi / MOI_TRANG));
+  const trang = Math.min(Math.max(1, Number((await searchParams).page) || 1), soTrang);
+
+  const invitees = await db.user.findMany({
+    where: { invitedById: userId },
+    orderBy: { createdAt: 'desc' },
+    skip: (trang - 1) * MOI_TRANG,
+    take: MOI_TRANG,
+    select: { id: true, username: true, name: true, image: true, createdAt: true },
+  });
+
+  const [earnedAgg, daTra] = await Promise.all([
     db.pointsLog.aggregate({ where: { userId, reason: 'INVITE_BONUS' }, _sum: { amount: true } }),
     // Phần thưởng nay chỉ trả khi người được mời đăng bài đầu tiên, nên danh
     // sách phải nói rõ ai đã tính điểm, ai còn đang chờ — in "+20 điểm" cho tất
     // cả là hứa một thứ chưa chắc có.
     db.pointsLog.findMany({
-      where: { userId, reason: 'INVITE_BONUS' }, take: 50, select: { refId: true },
+      // Chỉ hỏi về ĐÚNG những người đang hiện trên trang này. Lấy bừa N dòng
+      // đầu thì sang trang 2 ai cũng thành "đang chờ" dù đã trả thưởng từ lâu.
+      where: { userId, reason: 'INVITE_BONUS', refId: { in: invitees.map((u) => u.id) } },
+      take: MOI_TRANG,
+      select: { refId: true },
     }),
   ]);
   const earned = earnedAgg._sum.amount ?? 0;
@@ -64,7 +90,7 @@ export default async function InvitePage() {
       <div className="mt-4 grid grid-cols-2 gap-3">
         <div className="card flex items-center gap-3 p-4">
           <span className="grid size-11 place-items-center rounded-xl bg-sky-50 text-sky-500 dark:bg-sky-950/40"><Users size={20} /></span>
-          <div><div className="text-xl font-bold">{fmtCount(invitees.length)}</div><div className="text-xs text-ink-500">Đã mời</div></div>
+          <div><div className="text-xl font-bold">{fmtCount(tongMoi)}</div><div className="text-xs text-ink-500">Đã mời</div></div>
         </div>
         <div className="card flex items-center gap-3 p-4">
           <span className="grid size-11 place-items-center rounded-xl bg-amber-50 text-amber-500 dark:bg-amber-950/40"><Coins size={20} /></span>
@@ -100,6 +126,8 @@ export default async function InvitePage() {
             ))}
           </ul>
         )}
+
+        <Pagination page={trang} totalPages={soTrang} basePath="/user/invite" />
       </section>
     </div>
   );

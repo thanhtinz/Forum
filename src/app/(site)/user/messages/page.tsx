@@ -9,19 +9,37 @@ import { otherId, messagePreview } from '@/lib/messages';
 import { fmtAgo, truncate } from '@/lib/utils';
 import { LiveRefresh } from '@/components/user/LiveRefresh';
 import { cn } from '@/lib/utils';
+import { Pagination } from '@/components/Pagination';
 
 export const metadata: Metadata = { title: 'Tin nhắn' };
 export const dynamic = 'force-dynamic';
 
-export default async function MessagesPage() {
+/** Số hội thoại mỗi trang. */
+const MOI_TRANG = 25;
+
+export default async function MessagesPage({ searchParams }: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const session = await auth();
   const me = session?.user?.id;
   if (!me) redirect('/login');
 
+  const where = { OR: [{ userAId: me }, { userBId: me }] };
+
+  /*
+   * Trước đây lấy đúng 50 hội thoại rồi thôi. Ai nhắn tin nhiều thì những
+   * người cũ tụt xuống dưới mốc ấy là mất hẳn khỏi danh sách — không tìm lại
+   * được bằng cách nào trên giao diện.
+   */
+  const tong = await db.conversation.count({ where });
+  const soTrang = Math.max(1, Math.ceil(tong / MOI_TRANG));
+  const trang = Math.min(Math.max(1, Number((await searchParams).page) || 1), soTrang);
+
   const convos = await db.conversation.findMany({
-    where: { OR: [{ userAId: me }, { userBId: me }] },
+    where,
     orderBy: [{ lastMessageAt: 'desc' }, { createdAt: 'desc' }],
-    take: 50,
+    skip: (trang - 1) * MOI_TRANG,
+    take: MOI_TRANG,
     select: {
       id: true, userAId: true, userBId: true, lastMessageAt: true, nicknameA: true, nicknameB: true,
       userA: { select: { id: true, name: true, username: true, image: true } },
@@ -101,6 +119,8 @@ export default async function MessagesPage() {
           );
         })}
       </div>
+
+      <Pagination page={trang} totalPages={soTrang} basePath="/user/messages" />
 
       <LiveRefresh seconds={20} />
     </div>

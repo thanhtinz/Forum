@@ -2,14 +2,23 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 /** Phân trang đơn giản dựa trên query param `?page=`. */
-export function Pagination({ page, totalPages, basePath, pageParam = 'page' }: {
+export function Pagination({ page, totalPages, basePath, pageParam = 'page', neo }: {
   page: number; totalPages: number; basePath: string;
   /** Tên tham số trang trên URL (mặc định `page`). */
   pageParam?: string;
+  /**
+   * Neo để nhảy tới sau khi lật trang, KHÔNG kèm dấu `#` (ví dụ `binh-luan`).
+   *
+   * Phải truyền qua đây chứ không được gắn sẵn vào `basePath`: neo bắt buộc
+   * đứng cuối địa chỉ, nhét vào `basePath` thì thành `/trang#neo?page=2` —
+   * lúc ấy `?page=2` nằm trong phần neo, máy chủ không đọc thấy, và bấm lật
+   * trang chẳng đi tới đâu.
+   */
+  neo?: string;
 }) {
   if (totalPages <= 1) return null;
   const sep = basePath.includes('?') ? '&' : '?';
-  const href = (p: number) => `${basePath}${sep}${pageParam}=${p}`;
+  const href = (p: number) => `${basePath}${sep}${pageParam}=${p}${neo ? `#${neo}` : ''}`;
 
   // Danh sách trang gọn quanh trang hiện tại
   const pages: number[] = [];

@@ -153,6 +153,7 @@ model User {
   quizComments   QuizComment[]     @relation("QuizCommentAuthor")
   farmPlots      FarmPlot[]
   farmBarn       FarmBarn[]
+  farmSeeds      FarmSeed[]
   rong           Rong[]
   /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
   lastTreeAt     DateTime?
@@ -2203,6 +2204,7 @@ model FarmCrop {
 
   plots FarmPlot[]
   barn  FarmBarn[]
+  seeds FarmSeed[]
 
   @@index([active, order])
 }
@@ -2236,6 +2238,25 @@ model FarmPlot {
 
 /** Nhà kho: nông sản thu được, chờ đem bán. */
 model FarmBarn {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cropId String
+  crop   FarmCrop @relation(fields: [cropId], references: [id], onDelete: Cascade)
+
+  qty Int @default(0)
+
+  @@unique([userId, cropId])
+  @@index([userId])
+}
+
+/// Túi hạt giống đã mua mà chưa gieo.
+///
+/// Tách khỏi `FarmBarn` (kho nông sản) dù hai bảng trông y hệt nhau: hạt chưa
+/// gieo và quả đã thu là hai thứ khác nhau hoàn toàn — một thứ đem trồng, một
+/// thứ đem bán — mà gộp một bảng thì phải thêm một cột phân loại, rồi mọi câu
+/// truy vấn đều phải nhớ lọc theo cột ấy. Quên một chỗ là bán mất hạt giống.
+model FarmSeed {
   id     String @id @default(cuid())
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

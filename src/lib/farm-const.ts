@@ -32,6 +32,15 @@ export const O_DAT_TOI_DA = 40;
  */
 export const O_MOI_TRANG = 8;
 
+/**
+ * Mỗi lượt mua nhiều nhất bấy nhiêu gói hạt.
+ *
+ * Có trần vì `so_luong` đến từ biểu mẫu, mà biểu mẫu thì người lạ gửi số nào
+ * cũng được — không chặn thì một lượt gọi mua vài triệu gói, nhân với giá là
+ * tràn số nguyên trước cả khi kịp kiểm đủ điểm.
+ */
+export const HAT_MUA_TOI_DA = 99;
+
 /** Giá mở ô tiếp theo: càng rộng càng đắt, nên hệ số nhân thẳng với số ô đang có. */
 export const GIA_MOI_O = 30;
 

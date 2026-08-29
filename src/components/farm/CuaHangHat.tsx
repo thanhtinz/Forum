@@ -1,97 +1,110 @@
 'use client';
 
+import { useState } from 'react';
+import { Minus, Plus, ShoppingBasket } from 'lucide-react';
 import type { CayGiong } from '@/lib/farm';
-import { anhNongSan, moTaVu } from '@/lib/farm-const';
+import { HAT_MUA_TOI_DA, anhNongSan, moTaVu } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
 
 /**
- * Cửa hàng hạt giống — mỗi giống một tấm thẻ có ảnh nông sản.
+ * Cửa hàng hạt giống — chỉ MUA hạt về túi, không gieo.
  *
- * Dựng làm RUỘT của hộp thoại, mở ra từ căn cửa hàng trong cảnh nông trại,
- * nên ở đây không có khung thẻ cũng không có tiêu đề: hộp thoại đã có sẵn cả
- * hai, vẽ thêm là hai lần viền và hai lần tên cửa hàng chồng lên nhau.
+ * Trước đây bấm một giống là vừa trả tiền vừa xuống giống luôn, nên cửa hàng
+ * buộc phải mở ra đúng lúc đang đứng trước ô đất. Nhưng hộp thoại thì che kín
+ * mảnh ruộng, mà che ruộng rồi thì chẳng còn chỗ nào chọn ô để gieo.
  *
- * Bản trước là một lưới nút toàn chữ, mười một giống nhìn như nhau nên chẳng
- * ai nhớ nổi giống nào là giống nào. Ở đây ảnh nông sản đứng trước, ba con số
- * quyết định việc mua (giá hạt, vụ dài bao lâu, thu được mấy quả) xếp thành
- * hàng bên dưới, nên so hai giống chỉ cần liếc.
+ * Nên tách hẳn: ở đây mua, đóng hộp thoại, rồi ra ruộng gieo. Mua xong hộp
+ * thoại VẪN MỞ để mua tiếp giống khác — người đi chợ hiếm khi mua đúng một
+ * món rồi về.
  *
- * Thẻ nào không mua nổi thì mờ đi chứ vẫn bày ra: người chơi phải thấy trước
- * mấy giống đắt tiền thì mới có cớ trồng tiếp mà gom điểm.
+ * Dựng làm ruột của hộp thoại nên không có khung thẻ cũng không có tiêu đề:
+ * hộp thoại đã có sẵn cả hai.
  */
 
 interface Props {
   cay: CayGiong[];
   /** Điểm đang có — chỉ dùng để mờ/sáng thẻ, KHÔNG in ra màn hình. */
   diem: number;
-  /** Ô sẽ nhận hạt; `null` nghĩa là chưa có ô trống nào. */
-  oSeGieo: number | null;
+  /** Số hạt từng loại đang có trong túi, tra theo `cropId`. */
+  daCo: Record<string, number>;
   dangLam: boolean;
-  onGieo: (cayId: string) => void;
+  onMua: (cayId: string, soLuong: number) => void;
 }
 
-export function CuaHangHat({ cay, diem, oSeGieo, dangLam, onGieo }: Props) {
+export function CuaHangHat({ cay, diem, daCo, dangLam, onMua }: Props) {
   return (
     <div>
-      {/* Dòng này là thứ quyết định cả lượt mua: hạt rơi xuống ô NÀO. Thiếu nó
-          thì bấm một giống xong người chơi phải đi tìm xem cây mọc ở đâu. */}
       <p className="border-b border-[var(--nova-border)] bg-amber-50 px-4 py-2 text-sm font-medium text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-        {oSeGieo == null
-          ? 'Hết ô trống rồi — thu hoạch hoặc mở thêm đất đã.'
-          : `Bấm một giống để gieo xuống ô ${oSeGieo + 1}.`}
+        Mua hạt về túi, rồi đóng cửa hàng và ra ruộng gieo.
       </p>
 
-      {/* Ba cột ngay từ điện thoại. Hai cột thì mười một giống xếp thành sáu
-          hàng thẻ cao 153px — gần 950px chỉ để chọn hạt, dài hơn cả mảnh ruộng
-          bên trên. Ba cột còn bốn hàng, mà ô bấm vẫn rộng ~116px nên không
-          bấm nhầm. */}
-      <ul className="grid grid-cols-3 gap-2 p-3 sm:gap-3 lg:grid-cols-4">
-        {cay.map((c) => {
-          const du = diem >= c.seedCost;
-          const gieoDuoc = du && oSeGieo != null && !dangLam;
-          return (
-            <li key={c.id}>
-              <button
-                type="button"
-                disabled={!gieoDuoc}
-                onClick={() => onGieo(c.id)}
-                title={
-                  oSeGieo == null
-                    ? 'Không còn ô trống'
-                    : du ? `Gieo ${c.name} xuống ô ${oSeGieo + 1}` : `${c.name} cần ${c.seedCost} điểm`
-                }
-                className={cn(
-                  'flex h-full w-full flex-col items-center rounded-xl border border-[var(--nova-border)] bg-[var(--nova-surface)] px-2 pb-2 pt-2.5 text-center transition-all',
-                  gieoDuoc
-                    ? 'hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-card-hover'
-                    : 'cursor-not-allowed opacity-60',
-                )}
-              >
-                {/* Khay ảnh: nền đất nhạt cho quả nào cũng nổi lên như nhau. */}
-                <span
-                  className="grid size-12 place-items-center overflow-hidden rounded-lg sm:size-16"
-                  style={{ background: 'radial-gradient(circle at 50% 118%, #f2ddb2 0%, #fbf6ec 72%)' }}
-                >
-                  <AnhPixel src={anhNongSan(c.key)} phong={2} />
-                </span>
-
-                <span className="mt-1.5 block text-[13px] font-bold leading-tight sm:text-sm">{c.name}</span>
-                {/* `flex-1`: dòng này dài ngắn khác nhau ("1 giờ 30 phút · thu
-                    4–6" chiếm ba dòng, "5 phút · thu 2–3" một dòng). Cho nó ăn
-                    hết chỗ thừa thì nhãn giá của cả hàng thẻ nằm thẳng một
-                    đường thay vì so le theo độ dài mô tả. */}
-                <span className="retro-sub mt-0.5 block flex-1 text-ink-400">
-                  {moTaVu(c.growMinutes)} · thu {c.yieldMin}–{c.yieldMax}
-                </span>
-                <span className="chip mt-1.5 bg-amber-100 text-[11px] text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
-                  hạt {c.seedCost}đ
-                </span>
-              </button>
-            </li>
-          );
-        })}
+      {/* Hai cột ở điện thoại: mỗi thẻ nay còn phải chứa cả bộ chọn số lượng,
+          ba cột thì nút cộng trừ bé tới mức bấm nhầm. Từ 640px hộp thoại rộng
+          672px nên ba cột vẫn còn ~210px một thẻ, nhãn "Mua · 120đ" nằm gọn
+          một dòng. */}
+      <ul className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3 sm:gap-3">
+        {cay.map((c) => (
+          <TheGiong key={c.id} c={c} diem={diem} daCo={daCo[c.id] ?? 0}
+            dangLam={dangLam} onMua={onMua} />
+        ))}
       </ul>
     </div>
+  );
+}
+
+function TheGiong({ c, diem, daCo, dangLam, onMua }: {
+  c: CayGiong; diem: number; daCo: number; dangLam: boolean;
+  onMua: (cayId: string, soLuong: number) => void;
+}) {
+  const [so, setSo] = useState(1);
+
+  // Mua nhiều nhất bấy nhiêu gói với số điểm đang có — và không quá trần một
+  // lượt. Bằng 0 nghĩa là không mua nổi dù một gói.
+  const muaNoi = Math.min(HAT_MUA_TOI_DA, Math.floor(diem / c.seedCost));
+  const duMua = muaNoi >= so && !dangLam;
+  const doi = (b: number) => setSo((n) => Math.min(HAT_MUA_TOI_DA, Math.max(1, n + b)));
+
+  return (
+    <li className={cn(
+      'flex flex-col items-center rounded-xl border border-[var(--nova-border)] bg-[var(--nova-surface)] px-2 pb-2 pt-2.5 text-center',
+      muaNoi === 0 && 'opacity-60',
+    )}>
+      <span className="relative grid size-12 place-items-center overflow-hidden rounded-lg sm:size-16"
+        style={{ background: 'radial-gradient(circle at 50% 118%, #f2ddb2 0%, #fbf6ec 72%)' }}>
+        <AnhPixel src={anhNongSan(c.key)} phong={2} />
+      </span>
+
+      <span className="mt-1.5 block text-[13px] font-bold leading-tight sm:text-sm">{c.name}</span>
+      <span className="retro-sub mt-0.5 block flex-1 text-ink-400">
+        {moTaVu(c.growMinutes)} · thu {c.yieldMin}–{c.yieldMax}
+      </span>
+      <span className="chip mt-1.5 bg-amber-100 text-[11px] text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+        hạt {c.seedCost}đ{daCo > 0 && ` · túi có ${daCo}`}
+      </span>
+
+      {/* Bộ chọn số lượng rồi mới tới nút mua: mua một nắm hạt một lượt là
+          việc thường, bắt bấm mười lần cho mười gói thì thà để y như cũ. */}
+      <div className="mt-2 flex w-full items-center gap-1">
+        <button type="button" onClick={() => doi(-1)} disabled={so <= 1}
+          aria-label={`Bớt một gói hạt ${c.name}`}
+          className="grid size-7 shrink-0 place-items-center rounded-lg border border-[var(--nova-border)] disabled:opacity-40">
+          <Minus size={13} />
+        </button>
+        <span className="min-w-0 flex-1 text-sm font-bold tabular-nums">{so}</span>
+        <button type="button" onClick={() => doi(1)} disabled={so >= HAT_MUA_TOI_DA}
+          aria-label={`Thêm một gói hạt ${c.name}`}
+          className="grid size-7 shrink-0 place-items-center rounded-lg border border-[var(--nova-border)] disabled:opacity-40">
+          <Plus size={13} />
+        </button>
+      </div>
+
+      <button type="button" disabled={!duMua} onClick={() => onMua(c.id, so)}
+        title={muaNoi === 0 ? `${c.name} cần ${c.seedCost} điểm một gói` : `Mua ${so} hạt ${c.name}`}
+        aria-label={`Mua ${so} hạt ${c.name}, hết ${c.seedCost * so} điểm`}
+        className="btn-primary mt-1.5 w-full justify-center gap-1 !py-1.5 text-xs disabled:opacity-50">
+        <ShoppingBasket size={13} /> Mua · {c.seedCost * so}đ
+      </button>
+    </li>
   );
 }

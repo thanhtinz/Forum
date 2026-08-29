@@ -7,7 +7,8 @@ import { banMessage, getActiveBan } from '@/lib/ban';
 import { lockUsers } from '@/lib/lock';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import {
-  KHE_CHU_KY_MS, KHE_MAX, KHE_MIN, O_DAT_BAN_DAU, O_DAT_TOI_DA, TUOI_RUT_NGAN, giaMoODat,
+  HAT_MUA_TOI_DA, KHE_CHU_KY_MS, KHE_MAX, KHE_MIN, O_DAT_BAN_DAU, O_DAT_TOI_DA,
+  TUOI_RUT_NGAN, giaMoODat,
 } from '@/lib/farm-const';
 
 /**
@@ -54,14 +55,70 @@ function docSo(v: FormDataEntryValue | null): number | null {
   return Number.isInteger(n) && n >= 0 ? n : null;
 }
 
+// ─────────────────────────── Mua hạt giống ───────────────────────────
+
+/**
+ * Mua hạt về túi. Mua và gieo là HAI việc tách rời.
+ *
+ * Trước đây gieo hạt trừ điểm luôn, nên cửa hàng phải mở ra đúng lúc đứng
+ * trước ô đất. Tách ra thì người chơi mua sẵn một nắm hạt lúc rảnh, rồi gieo
+ * lúc nào cũng được mà không phải mở cửa hàng lần nữa.
+ */
+export async function muaHat(_prev: FarmState, formData: FormData): Promise<FarmState> {
+  const me = await nhaNong();
+  if ('error' in me) return { error: me.error };
+
+  const cropId = String(formData.get('cay') ?? '').trim();
+  const so = docSo(formData.get('so_luong')) ?? 1;
+  if (!cropId) return { error: 'Chọn một giống đã nào.' };
+  if (so < 1 || so > HAT_MUA_TOI_DA) {
+    return { error: `Mỗi lượt mua được 1 tới ${HAT_MUA_TOI_DA} gói thôi.` };
+  }
+
+  const cay = await db.farmCrop.findFirst({
+    where: { id: cropId, active: true },
+    select: { id: true, name: true, seedCost: true },
+  });
+  if (!cay) return { error: 'Cửa hàng không còn bán giống này.' };
+
+  const tien = cay.seedCost * so;
+
+  try {
+    await db.$transaction(async (tx) => {
+      // Trừ tiền TRƯỚC: `grantPoints` ném lỗi khi thiếu điểm, mà cả khối nằm
+      // trong một transaction nên hạt cũng không được ghi vào túi.
+      await grantPoints({
+        userId: me.userId, amount: -tien, reason: 'FARM_SEED',
+        note: `Mua ${so} hạt ${cay.name}`,
+      }, tx);
+
+      await tx.farmSeed.upsert({
+        where: { userId_cropId: { userId: me.userId, cropId: cay.id } },
+        create: { userId: me.userId, cropId: cay.id, qty: so },
+        update: { qty: { increment: so } },
+        select: { id: true },
+      });
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) {
+      return { error: `Bạn không đủ ${tien} điểm để mua ${so} hạt ${cay.name}.` };
+    }
+    return { error: 'Không mua được lúc này, thử lại nhé.' };
+  }
+
+  lamMoi();
+  return { ok: true, ke: `Đã mua ${so} hạt ${cay.name} về túi.` };
+}
+
 // ─────────────────────────── Gieo hạt ───────────────────────────
 
 /**
- * Gieo một loại cây xuống một ô trống.
+ * Gieo một hạt ĐÃ CÓ TRONG TÚI xuống một ô trống. Không đụng tới điểm.
  *
- * Dọn ô trước, trả tiền sau — nhưng cả hai trong một transaction, nên thiếu
- * điểm là `grantPoints` ném lỗi và ô quay về trống như chưa có gì xảy ra.
- * Ngược lại (trả tiền trước) thì mỗi lần bấm nhầm vào ô đã có cây là mất tiền.
+ * Hai câu ghi đều là ghi CÓ ĐIỀU KIỆN, và thứ tự có lý do: rút hạt khỏi túi
+ * trước (`qty: { gte: 1 }`), rồi mới xuống giống (`cropId: null`). Ngược lại
+ * thì hai tab cùng gieo một hạt cuối xuống hai ô khác nhau — cả hai ô đều
+ * thấy mình trống, cả hai cùng khớp, mà trong túi chỉ có một hạt.
  */
 export async function gieoHat(_prev: FarmState, formData: FormData): Promise<FarmState> {
   const me = await nhaNong();
@@ -73,12 +130,18 @@ export async function gieoHat(_prev: FarmState, formData: FormData): Promise<Far
 
   const cay = await db.farmCrop.findFirst({
     where: { id: cropId, active: true },
-    select: { id: true, name: true, seedCost: true, growMinutes: true },
+    select: { id: true, name: true, growMinutes: true },
   });
-  if (!cay) return { error: 'Cửa hàng không còn bán giống này.' };
+  if (!cay) return { error: 'Không còn giống này nữa.' };
 
   try {
     await db.$transaction(async (tx) => {
+      const rut = await tx.farmSeed.updateMany({
+        where: { userId: me.userId, cropId: cay.id, qty: { gte: 1 } },
+        data: { qty: { decrement: 1 } },
+      });
+      if (rut.count === 0) throw new Error('het-hat');
+
       const now = new Date();
       const readyAt = new Date(now.getTime() + cay.growMinutes * 60_000);
 
@@ -88,15 +151,10 @@ export async function gieoHat(_prev: FarmState, formData: FormData): Promise<Far
         data: { cropId: cay.id, plantedAt: now, readyAt, watered: false },
       });
       if (xuong.count === 0) throw new Error('o-ban');
-
-      await grantPoints({
-        userId: me.userId, amount: -cay.seedCost, reason: 'FARM_SEED',
-        refId: cay.id, note: `Mua hạt ${cay.name}`,
-      }, tx);
     });
   } catch (e) {
-    if (e instanceof InsufficientPointsError) {
-      return { error: `Bạn không đủ ${cay.seedCost} điểm để mua hạt ${cay.name}.` };
+    if (e instanceof Error && e.message === 'het-hat') {
+      return { error: `Trong túi hết hạt ${cay.name} rồi — ghé cửa hàng mua thêm đã.` };
     }
     if (e instanceof Error && e.message === 'o-ban') {
       return { error: 'Ô này đang có cây rồi, chọn ô khác nhé.' };

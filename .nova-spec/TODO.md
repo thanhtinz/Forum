@@ -69,6 +69,15 @@ nên khe chỗ nối rộng đúng bằng mọi khe khác) — trước đó b�
 thửa ruộng 754px, thừa hai mảng đất trống hai bên. Thêm `42-nong-trai-o-dat`
 (18 mục): trước đợt này nông trại KHÔNG có bài kiểm nào.
 
+**Cửa hàng hạt giống vào trong cảnh, tách mua khỏi gieo** — căn cửa hàng nay
+đứng ngay trong cảnh nông trại, bấm vào mở hộp thoại. Nhưng hộp thoại che kín
+mảnh ruộng, mà che ruộng thì không còn ô nào để chọn gieo — nên hạt giống
+thành món có trong TÚI (`FarmSeed`): ở cửa hàng chỉ mua, gieo thì làm ở thanh
+việc dưới ruộng nơi vẫn nhìn thấy ô đất. Túi rỗng thì thanh việc mời đi mua
+chứ không chỉ báo suông. `gieoHat` nay rút hạt TRƯỚC rồi mới xuống giống: đảo
+thứ tự thì hai tab cùng gieo hạt cuối sẽ trồng được hai ô. Thêm
+`43-tui-hat-giong` (15 mục).
+
 **Đăng bài một lối** — trước có năm chỗ mở khung đăng chủ đề, bốn trong số đó
 là lối toàn cục tự đoán hộ chuyên mục (tệ nhất là nút ở trang chủ, nó lấy
 `forums[0]`). Gỡ cả bốn, xoá trang `/dang-chu-de`; nay chỉ đăng bài từ trong

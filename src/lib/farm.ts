@@ -34,6 +34,15 @@ export interface ODat {
   watered: boolean;
 }
 
+/** Một loại hạt đang có trong túi. */
+export interface HatTrongTui {
+  cropId: string;
+  cropKey: number;
+  name: string;
+  qty: number;
+  growMinutes: number;
+}
+
 export interface MonTrongKho {
   cropId: string;
   cropKey: number;
@@ -46,6 +55,8 @@ export interface NongTrai {
   diem: number;
   oDat: ODat[];
   kho: MonTrongKho[];
+  /** Hạt đã mua mà chưa gieo. */
+  tuiHat: HatTrongTui[];
   cayGiong: CayGiong[];
   /** Giá mở ô tiếp theo; `null` nghĩa là đã kịch trần. */
   giaMoO: number | null;
@@ -91,7 +102,7 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
   await moDatKhoiDiem(userId);
   const now = Date.now();
 
-  const [nguoi, plots, kho, cayGiong] = await Promise.all([
+  const [nguoi, plots, kho, tui, cayGiong] = await Promise.all([
     db.user.findUnique({ where: { id: userId }, select: { points: true, lastTreeAt: true } }),
     db.farmPlot.findMany({
       where: { userId },
@@ -109,6 +120,15 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
       select: {
         qty: true,
         crop: { select: { id: true, key: true, name: true, sellPrice: true } },
+      },
+    }),
+    db.farmSeed.findMany({
+      where: { userId, qty: { gt: 0 } },
+      orderBy: { crop: { order: 'asc' } },
+      take: 40,
+      select: {
+        qty: true,
+        crop: { select: { id: true, key: true, name: true, growMinutes: true } },
       },
     }),
     danhSachCay(),
@@ -133,6 +153,13 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
       name: b.crop.name,
       qty: b.qty,
       sellPrice: b.crop.sellPrice,
+    })),
+    tuiHat: tui.map((h) => ({
+      cropId: h.crop.id,
+      cropKey: h.crop.key,
+      name: h.crop.name,
+      qty: h.qty,
+      growMinutes: h.crop.growMinutes,
     })),
     cayGiong,
     giaMoO: soODaMo >= O_DAT_TOI_DA ? null : giaMoODat(soODaMo),

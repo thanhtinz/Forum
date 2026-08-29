@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  banNongSan, gieoHat, haiCayKhe, moODat, thuHoach, tuoiNuoc, type FarmState,
+  banNongSan, gieoHat, haiCayKhe, moODat, muaHat, thuHoach, tuoiNuoc, type FarmState,
 } from '@/app/(site)/nong-trai/actions';
 import type { NongTrai as DuLieu } from '@/lib/farm';
 import {
@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Modal } from '@/components/Modal';
 import { CuaHangHat } from './CuaHangHat';
+import { TuiHat } from './TuiHat';
 import { GocTrai } from './GocTrai';
 import { ManhDat } from './ManhDat';
 import { NhaKho } from './NhaKho';
@@ -74,14 +75,6 @@ export function NongTrai({ d }: { d: DuLieu }) {
     [d.cayGiong],
   );
 
-  /*
-   * Hạt gieo xuống ô nào: ô đang chọn nếu nó còn trống, không thì ô trống đầu
-   * tiên. Bắt người chơi chọn ô rồi mới cho bấm giống là thêm một bước thừa —
-   * chín trên mười lần thì ô nào cũng như ô nào.
-   */
-  const oTrongDauTien = d.oDat.find((x) => x.cropKey == null)?.index ?? null;
-  const oSeGieo = o && o.cropKey == null ? o.index : oTrongDauTien;
-
   const duTienMoO = d.giaMoO != null && d.diem >= d.giaMoO;
   const moODatNgay = () => lam(moODat, {});
 
@@ -123,7 +116,10 @@ export function NongTrai({ d }: { d: DuLieu }) {
         <ThanhViec
           nhan={
             !o ? 'Bấm vào một ô đất để xem việc của ô đó.'
-              : o.cropKey == null ? `Ô ${o.index + 1} đang trống — chọn giống ở Cửa hàng hạt giống bên dưới.`
+              : o.cropKey == null
+                ? d.tuiHat.length > 0
+                  ? `Ô ${o.index + 1} đang trống — chọn một hạt trong túi để gieo.`
+                  : `Ô ${o.index + 1} đang trống, mà túi chưa có hạt nào — ghé cửa hàng mua đã.`
               : changO === 'chin' ? `${o.cropName} ở ô ${o.index + 1} đã chín, hái vào kho thôi.`
               : `${o.cropName} ở ô ${o.index + 1} · còn ${moTaConLai((o.readyAt ?? 0) - now)}${o.watered ? ' · đã tưới' : ''}`
           }
@@ -131,6 +127,16 @@ export function NongTrai({ d }: { d: DuLieu }) {
             ? Math.round(tienDoVu(o.plantedAt, o.readyAt, now) * 100)
             : null}
         >
+          {o && o.cropKey == null && (
+            d.tuiHat.length > 0
+              ? <TuiHat tui={d.tuiHat} dangLam={dangLam}
+                  onGieo={(cayId) => lam(gieoHat, { o: o.index, cay: cayId })} />
+              // Túi rỗng thì đừng chỉ báo "hết hạt" rồi thôi — chỉ luôn đường
+              // đi mua, không thì người chơi phải tự đoán ra căn nhà bên trái
+              // cảnh mới là cửa hàng.
+              : <button type="button" onClick={() => setMoCho(true)}
+                  className="btn-primary !py-1.5">Tới cửa hàng mua hạt</button>
+          )}
           {o && o.cropKey != null && changO === 'chin' && (
             <button
               type="button" disabled={dangLam}
@@ -168,21 +174,20 @@ export function NongTrai({ d }: { d: DuLieu }) {
       )}
 
       {/*
-        Cửa hàng nay nằm sau căn nhà trong cảnh chứ không bày sẵn ở cuối trang.
-        Gieo xong thì ĐÓNG luôn hộp thoại: người chơi mở cửa hàng là để gieo
-        một vụ, gieo rồi mà cửa hàng vẫn chắn giữa màn hình thì họ phải tự đóng
-        mới thấy được cái cây mình vừa trồng.
+        Cửa hàng nay chỉ để MUA hạt về túi, và nó nằm sau căn nhà trong cảnh.
+        Mua xong hộp thoại vẫn mở để mua tiếp giống khác; đóng lúc nào là việc
+        của người chơi. Gieo thì làm ở thanh việc dưới ruộng, nơi còn nhìn
+        thấy ô đất — hộp thoại che kín ruộng nên không thể vừa mở vừa gieo.
       */}
+      {/* `!max-w-2xl` chứ không phải `max-w-2xl`: `cn` ở đây chỉ nối chuỗi chứ
+          không gộp lớp Tailwind, nên `max-w-md` sẵn có trong `Modal` vẫn đứng
+          nguyên và thắng theo thứ tự trong bảng kiểu. */}
       <Modal open={moCho} onClose={() => setMoCho(false)} title="Cửa hàng hạt giống"
-        className="max-w-2xl">
+        className="!max-w-2xl">
         <CuaHangHat
-          cay={cay} diem={d.diem} oSeGieo={oSeGieo} dangLam={dangLam}
-          onGieo={(cayId) => {
-            if (oSeGieo == null) return;
-            setOChon(oSeGieo);
-            setMoCho(false);
-            lam(gieoHat, { o: oSeGieo, cay: cayId });
-          }}
+          cay={cay} diem={d.diem} dangLam={dangLam}
+          daCo={Object.fromEntries(d.tuiHat.map((h) => [h.cropId, h.qty]))}
+          onMua={(cayId, soLuong) => lam(muaHat, { cay: cayId, so_luong: soLuong })}
         />
       </Modal>
 

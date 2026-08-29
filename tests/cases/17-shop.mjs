@@ -16,11 +16,24 @@ export default async function run(check) {
       where: { id: { in: [minh.id, huy.id] } },
       data: { nameColorId: null, shopBadgeId: null },
     });
-    // Lọc theo TÊN chứ không theo slug: slug do ứng dụng tự sinh ra là
-    // "nick-do-kiem-thu-<hậu tố>", không hề bắt đầu bằng "kiem-thu-", nên bộ
-    // lọc cũ chẳng xoá được gì. Mỗi lượt chạy để lại một món, lượt sau tạo
-    // thêm một món trùng tên nữa, và bài kiểm gãy vì tìm ra hai nút giống hệt.
-    await db.shopItem.deleteMany({ where: { name: { contains: 'kiểm thử' } } });
+    /*
+     * Phải quét theo CẢ HAI kiểu đặt tên, vì bài kiểm này tạo món bằng hai
+     * đường khác nhau:
+     *   • qua biểu mẫu quản trị — slug do ứng dụng tự sinh thành
+     *     "nick-do-kiem-thu-<hậu tố>", KHÔNG bắt đầu bằng "kiem-thu-";
+     *   • ghi thẳng vào cơ sở dữ liệu — slug đặt tay là "kiem-thu-huy-hieu",
+     *     nhưng tên lại không có chữ "kiểm thử".
+     * Chỉ lọc một trong hai thì luôn sót một loại, và lượt chạy sau gãy vì
+     * trùng tên hoặc trùng slug.
+     */
+    await db.shopItem.deleteMany({
+      where: {
+        OR: [
+          { slug: { startsWith: 'kiem-thu-' } },
+          { name: { contains: 'kiểm thử' } },
+        ],
+      },
+    });
   };
   await wipe();
 

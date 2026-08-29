@@ -30,6 +30,14 @@ import { ODat, ODatKhoa } from './ODat';
 const PHONG_NEN = 2;
 
 /**
+ * Chiều cao phần chân ô (thanh tiến độ, đồng hồ, nhãn) tính bằng điểm ảnh.
+ *
+ * Dải luống của hàng gióng theo con số này để luôn nằm đúng chân cây; `ODat`
+ * cũng ghim cùng chiều cao ấy, hai bên phải khớp nhau.
+ */
+const CHAN_O = 18;
+
+/**
  * Sao đêm, toạ độ ghi cứng theo phần trăm.
  *
  * Rắc bằng `Math.random()` thì máy chủ dựng ra một bầu trời, trình duyệt dựng
@@ -67,7 +75,18 @@ export function ManhDat({
    */
   const soO = oDat.length;
   const soHienRa = Math.min(O_DAT_TOI_DA, Math.ceil((soO + 1) / 4) * 4);
-  const oKhoa = Array.from({ length: soHienRa - soO }, (_, i) => soO + i);
+
+  // Xếp thành từng hàng bốn ô: dải luống vẽ theo hàng nên phải biết hàng nào
+  // gồm những ô nào, chứ một lưới phẳng thì không có chỗ móc dải luống vào.
+  const hang: { soTT: number; o: ODatDL | null }[][] = [];
+  for (let i = 0; i < soHienRa; i += 4) {
+    hang.push(
+      Array.from({ length: Math.min(4, soHienRa - i) }, (_, j) => ({
+        soTT: i + j + 1,
+        o: oDat[i + j] ?? null,
+      })),
+    );
+  }
 
   return (
     <div className="farm-canh relative select-none overflow-hidden">
@@ -79,14 +98,15 @@ export function ManhDat({
         .farm-luong {
           height: calc(var(--px) * 13);
           background-image:
-            repeating-linear-gradient(90deg,
-              rgba(255,255,255,.05) 0 var(--px),
-              rgba(0,0,0,.05) var(--px) calc(var(--px) * 2)),
+            repeating-linear-gradient(0deg,
+              rgba(0,0,0,.10) 0 var(--px),
+              rgba(255,255,255,.04) var(--px) calc(var(--px) * 3)),
             linear-gradient(180deg,
-              #a67b21 0 var(--px),
-              #8f5e0a var(--px) 55%,
-              #6b4706 55% 100%);
-          box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(0,0,0,.28);
+              #b98d2c 0 var(--px),
+              #a67b21 var(--px) calc(var(--px) * 3),
+              #8f5e0a calc(var(--px) * 3) 62%,
+              #6b4706 62% 100%);
+          box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(0,0,0,.3);
         }
 
         /* Đất hoang chưa cày: cùng tông nhưng phẳng, xỉn và tối hơn. */
@@ -207,37 +227,51 @@ export function ManhDat({
       />
 
       {/* ── Lớp 3: thửa đất ── */}
-      <div className="farm-ruong relative px-2 pb-3 pt-2 sm:px-4">
-        {/*
-          Bề ngang thửa ruộng đo bằng chính bội số pixel: mỗi ô rộng 40 đơn vị
-          ảnh, vừa đủ để hai gò đất cạnh nhau gần nhau như luống thật. Để lưới
-          giãn hết bề ngang thẻ thì bốn gò đất đứng cách nhau cả gang tay, nhìn
-          lại hoá thưa thớt.
-        */}
-        <div
-          className="mx-auto grid grid-cols-4 gap-x-0 gap-y-2"
-          style={{ width: 'min(100%, calc(var(--px) * 40 * 4))' }}
-        >
-          {oDat.map((o) => (
-            <ODat
-              key={o.index}
-              o={o}
-              now={now}
-              dangChon={dangChon === o.index}
-              onChon={() => onChon(o.index)}
+      <div className="farm-ruong relative pb-2 pt-1">
+        {hang.map((oTrongHang, thuTuHang) => (
+          <div key={thuTuHang} className="relative">
+            {/*
+              Dải luống chạy suốt bề ngang thửa ruộng, vẽ ở cấp hàng và nằm sau
+              lưng các ô. Cắt thành từng mẩu theo ô thì mỗi hàng hoá ra bốn tấm
+              ván rời có đầu có đuôi; một dải liền mới đọc ra là luống cày.
+            */}
+            <span
+              aria-hidden
+              className="farm-luong absolute inset-x-0"
+              style={{ bottom: CHAN_O }}
             />
-          ))}
-          {oKhoa.map((i) => (
-            <ODatKhoa
-              key={`khoa-${i}`}
-              soTT={i + 1}
-              gia={i === soO ? giaMoO : null}
-              duTien={duTienMoO}
-              dangLam={dangLam}
-              onMua={onMua}
-            />
-          ))}
-        </div>
+            {/*
+              Bề ngang chỗ trồng đo bằng chính bội số pixel: mỗi ô rộng 40 đơn
+              vị ảnh, vừa đủ để hai gò đất cạnh nhau gần nhau như luống thật.
+              Giãn hết bề ngang thẻ thì bốn gò đứng cách nhau cả gang tay.
+            */}
+            <div
+              className="relative mx-auto grid grid-cols-4"
+              style={{ width: 'min(100%, calc(var(--px) * 40 * 4))' }}
+            >
+              {oTrongHang.map((c) =>
+                c.o ? (
+                  <ODat
+                    key={c.soTT}
+                    o={c.o}
+                    now={now}
+                    dangChon={dangChon === c.o.index}
+                    onChon={() => onChon(c.o!.index)}
+                  />
+                ) : (
+                  <ODatKhoa
+                    key={c.soTT}
+                    soTT={c.soTT}
+                    gia={c.soTT - 1 === soO ? giaMoO : null}
+                    duTien={duTienMoO}
+                    dangLam={dangLam}
+                    onMua={onMua}
+                  />
+                ),
+              )}
+            </div>
+          </div>
+        ))}
 
         {/* Ban đêm phủ một lớp xanh lạnh cho thửa đất tối theo bầu trời. */}
         {!banNgay && (

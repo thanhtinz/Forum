@@ -13,6 +13,19 @@ import { ThemeToggle } from './ThemeToggle';
 import { UserMenu } from './UserMenu';
 import { fmtCount } from '@/lib/utils';
 
+/**
+ * Số mục menu bày thẳng ra thanh; phần dôi ra gom vào "Thêm".
+ * Xem chú thích ở chỗ dựng menu để biết vì sao là bốn.
+ */
+const NAV_BAY = 4;
+
+const NAV_ITEM =
+  'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800';
+const NAV_MENU =
+  'invisible absolute left-0 top-full z-50 min-w-44 rounded-xl border border-ink-200 bg-white p-1 opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 dark:border-ink-700 dark:bg-ink-900';
+const NAV_MENU_ITEM =
+  'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-ink-600 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800';
+
 export async function Header() {
   const session = await auth();
   const user = session?.user;
@@ -35,35 +48,65 @@ export async function Header() {
           <span className="text-lg font-black tracking-tight">{site.name}</span>
         </Link>
 
-        {/* `shrink-0` + `whitespace-nowrap`: menu nhiều mục thì để ô tìm kiếm
-            thu lại, chứ đừng để nhãn vỡ làm hai dòng — hàng đầu trang cao cố
-            định nên chữ tràn ra là bị cắt. */}
+        {/*
+          Menu chính, và cái tràn ra thì gom vào "Thêm".
+
+          Thanh đầu trang cao cố định nên mọi thứ phải nằm gọn trên MỘT hàng.
+          Khung nội dung rộng tối đa 1152px, mà chỉ riêng logo, ô tìm kiếm và
+          cụm nút bên phải đã ăn chừng 750px — nên bày quá bốn mục là hàng tràn
+          ngang, avatar với chuông thông báo bị đẩy hẳn ra ngoài màn hình.
+
+          Bốn mục đầu bày ra, còn lại nằm trong "Thêm". Ai muốn đổi thứ tự thì
+          sắp lại ở trang quản trị menu — mục nào đứng trước thì được bày.
+        */}
         <nav className="hidden shrink-0 items-center whitespace-nowrap lg:flex">
-          {nav.map((n) => (
+          {nav.slice(0, NAV_BAY).map((n) => (
             n.children.length > 0 ? (
               // Mục có con: mở bằng hover/focus, không cần JS
               <div key={n.id} className="group relative">
-                <Link href={n.url}
-                  className="flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
+                <Link href={n.url} className={NAV_ITEM}>
                   <IconGlyph icon={n.icon} className="text-base" /> {n.label}
                   <ChevronDown size={13} className="text-ink-400" />
                 </Link>
-                <div className="invisible absolute left-0 top-full z-50 min-w-44 rounded-xl border border-ink-200 bg-white p-1 opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 dark:border-ink-700 dark:bg-ink-900">
+                <div className={NAV_MENU}>
                   {n.children.map((c) => (
-                    <Link key={c.id} href={c.url}
-                      className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-ink-600 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
+                    <Link key={c.id} href={c.url} className={NAV_MENU_ITEM}>
                       <IconGlyph icon={c.icon} className="text-base" /> {c.label}
                     </Link>
                   ))}
                 </div>
               </div>
             ) : (
-              <Link key={n.id} href={n.url}
-                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1.5 text-sm font-medium text-ink-600 transition-colors hover:bg-ink-100 hover:text-brand-600 dark:text-ink-300 dark:hover:bg-ink-800">
+              <Link key={n.id} href={n.url} className={NAV_ITEM}>
                 <IconGlyph icon={n.icon} className="text-base" /> {n.label}
               </Link>
             )
           ))}
+
+          {nav.length > NAV_BAY && (
+            <div className="group relative">
+              <button type="button" className={NAV_ITEM}>
+                Thêm <ChevronDown size={13} className="text-ink-400" />
+              </button>
+              <div className={NAV_MENU}>
+                {nav.slice(NAV_BAY).map((n) => (
+                  <div key={n.id}>
+                    <Link href={n.url} className={NAV_MENU_ITEM}>
+                      <IconGlyph icon={n.icon} className="text-base" /> {n.label}
+                    </Link>
+                    {/* Mục con của mục đã nằm trong "Thêm" thì thụt vào một
+                        bậc, chứ đẻ thêm một tầng menu nữa thì rê chuột không
+                        nổi. */}
+                    {n.children.map((c) => (
+                      <Link key={c.id} href={c.url} className={`${NAV_MENU_ITEM} pl-6 text-ink-500`}>
+                        {c.label}
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </nav>
 
         {/* Tìm kiếm — chiếm phần còn lại, thu nhỏ dần thay vì đẩy các nút đi */}
@@ -82,8 +125,12 @@ export async function Header() {
 
           {user ? (
             <>
-              <Link href="/forum" className="btn-primary hidden !px-3 !py-1.5 text-sm sm:inline-flex">
-                <PenLine size={15} /> Đăng chủ đề
+              {/* Màn hình chưa đủ rộng thì nút này rút còn cái bút: chữ "Đăng
+                  chủ đề" ăn gần trăm điểm ảnh, mà đó đúng là chỗ đẩy avatar ra
+                  khỏi màn hình. */}
+              <Link href="/forum" title="Đăng chủ đề"
+                className="btn-primary hidden !px-2.5 !py-1.5 text-sm sm:inline-flex xl:!px-3">
+                <PenLine size={15} /> <span className="hidden xl:inline">Đăng chủ đề</span>
               </Link>
               <Link href="/user/messages" title="Tin nhắn"
                 className="relative grid size-9 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">

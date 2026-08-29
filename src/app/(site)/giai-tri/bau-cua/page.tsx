@@ -45,40 +45,18 @@ export default async function BauCuaPage() {
 
       <section className="card mt-4 p-5 text-sm text-ink-600 dark:text-ink-300">
         <h2 className="zib-title mb-3">Luật chơi</h2>
-
-        <p className="font-semibold text-ink-800 dark:text-ink-100">Một phiên</p>
-        <p className="mt-1">
-          Cả nhà chung một bàn. Mỗi phiên {giay(BAUCUA_ROUND_MS)} giây:{' '}
-          {giay(BAUCUA_BET_MS)} giây nhận cửa, {giay(BAUCUA_XOC_MS)} giây xóc bát,
-          rồi mở bát cho tới hết phiên. Hết giờ nhận cửa là bàn khoá, không ai đặt
-          thêm được nữa.
-        </p>
-
-        <p className="mt-3 font-semibold text-ink-800 dark:text-ink-100">Đặt cửa</p>
-        <p className="mt-1">
-          Sáu cửa: Nai, Bầu, Gà, Cá, Cua, Tôm. Một phiên đặt được nhiều cửa, mỗi
-          cửa từ {BAUCUA_MIN} đến {BAUCUA_MAX} điểm. Điểm trừ ngay lúc đặt.
-        </p>
-
-        <p className="mt-3 font-semibold text-ink-800 dark:text-ink-100">Ăn thua</p>
-        <p className="mt-1">
-          Ba viên xóc độc lập nhau. Cửa nào có mặt trong bát thì được trả lại tiền
-          đặt, cộng thêm đúng bấy nhiêu lần tiền đặt cho mỗi viên trúng:
-        </p>
-        <ul className="mt-1 list-inside list-disc space-y-0.5">
-          <li>trúng 1 viên → nhận gấp đôi tiền đặt</li>
-          <li>trúng 2 viên → nhận gấp ba</li>
-          <li>trúng 3 viên → nhận gấp bốn</li>
-          <li>không viên nào → mất tiền đặt cửa ấy</li>
+        <ul className="list-inside list-disc space-y-1">
+          <li>
+            Mỗi phiên {giay(BAUCUA_ROUND_MS)} giây: {giay(BAUCUA_BET_MS)} giây nhận cửa,{' '}
+            {giay(BAUCUA_XOC_MS)} giây xóc, rồi mở bát.
+          </li>
+          <li>Một phiên đặt được nhiều cửa, mỗi cửa {BAUCUA_MIN}–{BAUCUA_MAX} điểm.</li>
+          <li>Trúng 1 viên nhận gấp đôi, 2 viên gấp ba, 3 viên gấp bốn tiền đặt.</li>
+          <li>Cửa không trúng viên nào thì mất tiền đặt cửa ấy.</li>
+          <li>Mỗi ngày {BAUCUA_PHIEN_MOI_NGAY} phiên.</li>
         </ul>
-
-        <p className="mt-3 font-semibold text-ink-800 dark:text-ink-100">Giới hạn</p>
-        <p className="mt-1">
-          Mỗi ngày {BAUCUA_PHIEN_MOI_NGAY} phiên. Tỉ lệ trả thưởng giữ đúng như
-          bản gốc, nghĩa là về lâu dài bàn luôn thu về nhiều hơn chi ra — chơi cho
-          vui, đừng coi là chỗ kiếm điểm.
-        </p>
       </section>
+
     </div>
   );
 }

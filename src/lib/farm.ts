@@ -1,4 +1,6 @@
 import { db } from './db';
+import { bxhNongTrai, type HangNongTrai } from './farm-bxh';
+import { dungBangDon, xemBangDon, type DonHang } from './farm-don';
 import {
   KHE_CHU_KY_MS, O_DAT_BAN_DAU, O_DAT_TOI_DA, giaMoODat, laBanNgay,
 } from './farm-const';
@@ -60,6 +62,14 @@ export interface NongTrai {
   kho: MonTrongKho[];
   /** Hạt đã mua mà chưa gieo. */
   tuiHat: HatTrongTui[];
+  /** Số bao phân bón đang có trong kho. */
+  phanBon: number;
+  /** Đơn đang treo trên bảng ghi chú. */
+  donHang: DonHang[];
+  /** Bảng xếp hạng của riêng nông trại. */
+  bxh: HangNongTrai[];
+  /** Tên đăng nhập của chính người xem — để tô đậm hàng của họ trong bảng. */
+  toi: string | null;
   cayGiong: CayGiong[];
   /** Giá mở ô tiếp theo; `null` nghĩa là đã kịch trần. */
   giaMoO: number | null;
@@ -90,7 +100,9 @@ async function moDatKhoiDiem(userId: string): Promise<void> {
 /** Danh sách cây đang bán, sắp theo thứ tự bày trong cửa hàng. */
 export async function danhSachCay(): Promise<CayGiong[]> {
   return db.farmCrop.findMany({
-    where: { active: true },
+    // Chỉ giống GIEO ĐƯỢC: đây là danh sách của cửa hàng hạt giống, mà khế thì
+    // không có hạt để bán.
+    where: { active: true, plantable: true },
     orderBy: [{ order: 'asc' }, { key: 'asc' }],
     take: 40,
     select: {
@@ -103,10 +115,16 @@ export async function danhSachCay(): Promise<CayGiong[]> {
 /** Toàn cảnh nông trại của một người, đủ để dựng trang trong một lần đọc. */
 export async function xemNongTrai(userId: string): Promise<NongTrai> {
   await moDatKhoiDiem(userId);
+  // Dọn đơn quá hạn và treo đơn mới TRƯỚC khi đọc bảng, không thì lượt này
+  // vẫn thấy bảng cũ và phải mở lại trang lần nữa mới thấy đơn mới.
+  await dungBangDon(userId);
   const now = Date.now();
 
-  const [nguoi, plots, kho, tui, cayGiong] = await Promise.all([
-    db.user.findUnique({ where: { id: userId }, select: { points: true, lastTreeAt: true } }),
+  const [nguoi, plots, kho, tui, vatTu, donHang, bxh, cayGiong] = await Promise.all([
+    db.user.findUnique({
+      where: { id: userId },
+      select: { points: true, lastTreeAt: true, username: true },
+    }),
     db.farmPlot.findMany({
       where: { userId },
       orderBy: { index: 'asc' },
@@ -135,6 +153,9 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
         crop: { select: { id: true, key: true, name: true, growMinutes: true } },
       },
     }),
+    db.farmSupply.findUnique({ where: { userId }, select: { fertilizer: true } }),
+    xemBangDon(userId),
+    bxhNongTrai(),
     danhSachCay(),
   ]);
 
@@ -167,6 +188,10 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
       qty: h.qty,
       growMinutes: h.crop.growMinutes,
     })),
+    phanBon: vatTu?.fertilizer ?? 0,
+    donHang,
+    bxh,
+    toi: nguoi?.username ?? null,
     cayGiong,
     giaMoO: soODaMo >= O_DAT_TOI_DA ? null : giaMoODat(soODaMo),
     soODaMo,

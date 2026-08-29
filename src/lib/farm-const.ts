@@ -106,16 +106,51 @@ export function tinhTrangViec(
   ])) as Record<ViecVu, TinhTrangViec>;
 }
 
-// ─────────────────────────── Bón phân ───────────────────────────
+// ─────────────────────────── Phân bón ───────────────────────────
 
 /** Ảnh bao phân. */
 export const ANH_PHAN = `${FARM_ANH}/phan-bon/3.png`;
 
-/** Giá một lần bón phân, tính bằng điểm. */
+/** Giá một bao phân ở cửa hàng. */
 export const PHAN_GIA = 15;
+
+/** Mỗi lượt mua nhiều nhất bấy nhiêu bao — cùng lý do có trần với hạt giống. */
+export const PHAN_MUA_TOI_DA = 99;
 
 /** Bón phân thì thu thêm bấy nhiêu quả. */
 export const PHAN_THEM = 2;
+
+// ─────────────────────────── Bảng đơn hàng ───────────────────────────
+
+/** Bảng ghi chú treo bao nhiêu đơn cùng lúc. */
+export const DON_TREN_BANG = 4;
+
+/**
+ * Thưởng của một đơn = tổng giá bán số hàng phải giao, nhân hệ số này.
+ *
+ * Phải LỚN HƠN 1: giao đơn tốn công gom đúng món đúng số, mà trả bằng đúng
+ * giá bán thì chẳng ai giao — nhất là khi nông trại không còn lái buôn nào
+ * mua lẻ nữa, đơn hàng là đường duy nhất đổi nông sản ra điểm.
+ */
+export const DON_HE_SO = 1.5;
+
+/** Hệ số nhân theo kiểu đơn. */
+export const DON_NHAN: Record<'THUONG' | 'DAC_BIET' | 'SIEU_TOC', number> = {
+  THUONG: 1, DAC_BIET: 2, SIEU_TOC: 3,
+};
+
+export const DON_TEN: Record<'THUONG' | 'DAC_BIET' | 'SIEU_TOC', string> = {
+  THUONG: 'Đơn thường', DAC_BIET: 'Đơn đặc biệt', SIEU_TOC: 'Đơn siêu tốc',
+};
+
+/** Đơn siêu tốc phải giao trong bấy nhiêu mili giây kể từ lúc lên bảng. */
+export const DON_SIEU_TOC_HAN_MS = 2 * 60 * 60 * 1000;
+
+/** Tên khách đặt hàng — lấy tên Việt cho hợp giọng cả trang. */
+export const DON_KHACH = [
+  'Bác Tư', 'Cô Sáu', 'Chú Bảy', 'Dì Ba', 'Anh Hùng', 'Chị Lan',
+  'Ông Năm', 'Bà Tám', 'Thầy Chín', 'Cô Mai',
+] as const;
 
 // ─────────────────────────── Tưới nước ───────────────────────────
 
@@ -206,10 +241,19 @@ export function anhODat(cropKey: number | null, chang: ChangCay | null): string 
   return `${FARM_ANH}/o-dat/${cropKey}${chang === 'chin' ? '-chin' : ''}.png`;
 }
 
-/** Ảnh nông sản đã thu, dùng trong nhà kho và cửa hàng hạt giống. */
+/**
+ * Ảnh nông sản đã thu, dùng trong nhà kho, cửa hàng và bảng đơn hàng.
+ *
+ * Khế (key 0) mượn ảnh CÂY khế chín vì bộ ảnh cũ không có quả khế rời — chỗ
+ * `nong-san/0.png` là một bao đất, dán vào thì thành ra kho chứa đất.
+ */
 export function anhNongSan(cropKey: number): string {
+  if (cropKey === KHE_KEY) return ANH_CAY_KHE_CHIN;
   return `${FARM_ANH}/nong-san/${cropKey}.png`;
 }
+
+/** `key` của quả khế trong bảng `FarmCrop`. */
+export const KHE_KEY = 0;
 
 /** Icon công trình trên trang. */
 export const ANH_CUA_HANG = `${FARM_ANH}/o-dat/cuahang.png`;

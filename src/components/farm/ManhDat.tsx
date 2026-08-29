@@ -2,7 +2,8 @@
 
 import type { ODat as ODatDL } from '@/lib/farm';
 import {
-  ANH_CUA_HANG, ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY, ANH_NHA_KHO,
+  ANH_CAY_KHE, ANH_CAY_KHE_CHIN, ANH_CUA_HANG, ANH_FARM,
+  ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY, ANH_NHA_KHO,
   NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, O_MOI_TRANG, TROI_DEM, TROI_NGAY,
   changCua,
 } from '@/lib/farm-const';
@@ -68,11 +69,15 @@ interface Props {
   onTrang: (trang: number) => void;
   onMoCuaHang: () => void;
   onMoNhaKho: () => void;
+  onMoBxh: () => void;
+  /** Cây khế đã ra quả chưa, và bấm vào thì hái. */
+  kheSanSang: boolean;
+  onHaiKhe: () => void;
 }
 
 export function ManhDat({
   oDat, now, banNgay, dangChon, onChon, giaMoO, duTienMoO, dangLam, onMua,
-  trang, onTrang, onMoCuaHang, onMoNhaKho,
+  trang, onTrang, onMoCuaHang, onMoNhaKho, onMoBxh, kheSanSang, onHaiKhe,
 }: Props) {
   const [troiTren, troiDuoi] = banNgay ? TROI_NGAY : TROI_DEM;
 
@@ -355,33 +360,68 @@ export function ManhDat({
           cuối trang: đi mua hạt thì bước tới cửa hàng, đi cất nông sản thì
           bước tới nhà kho — chỗ nào cũng đoán được mà chẳng cần chỉ.
 
-          Hai căn đứng cạnh nhau và cùng thu nhỏ lại so với lúc chỉ có một
-          căn: hai căn cỡ cũ thì chiếm gần hết bề ngang cảnh ở khổ điện thoại,
-          chẳng còn thấy rặng cây đâu.
+          Bốn thứ đứng chung một hàng nên cái nào cũng phải nhỏ lại: để cỡ
+          lúc chỉ có một căn thì ở khổ điện thoại chúng chiếm hết bề ngang,
+          chẳng còn thấy rặng cây đâu. Bảng xếp hạng nhỏ nhất vì nó là tấm
+          biển, không phải căn nhà.
 
           Đứng bên TRÁI vì mặt trời và mặt trăng đều nằm ở góc phải bầu trời.
           Nhà cao hơn rặng cây nên nhô lên nền trời — đó là chủ ý, mái nhà cắt
           ngang đường chân trời mới ra một căn nhà đứng trước cảnh, chứ không
           phải một hình dán bẹt vào rặng cây.
         */}
-        <div className="absolute bottom-0 left-1 flex items-end gap-1 sm:left-6 sm:gap-3">
+        <div className="absolute inset-x-1 bottom-0 flex items-end justify-between gap-1 sm:inset-x-6 sm:gap-3">
+          <div className="flex items-end gap-1 sm:gap-3">
+            <button
+              type="button"
+              onClick={onMoCuaHang}
+              title="Cửa hàng hạt giống"
+              aria-label="Mở cửa hàng hạt giống"
+              className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+            >
+              <AnhPixel src={ANH_CUA_HANG} className="block w-[62px] sm:w-[124px]" />
+            </button>
+            <button
+              type="button"
+              onClick={onMoNhaKho}
+              title="Nhà kho"
+              aria-label="Mở nhà kho"
+              className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+            >
+              <AnhPixel src={ANH_NHA_KHO} className="block w-[52px] sm:w-[104px]" />
+            </button>
+            <button
+              type="button"
+              onClick={onMoBxh}
+              title="Bảng xếp hạng nông trại"
+              aria-label="Mở bảng xếp hạng nông trại"
+              className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+            >
+              <AnhPixel src={ANH_FARM} className="block w-[40px] sm:w-[80px]" />
+            </button>
+          </div>
+
+          {/*
+            Cây khế đứng tách hẳn sang mép PHẢI, không xếp cùng dãy nhà: nó
+            không phải công trình để bấm vào xem gì cả mà là một cái cây có
+            quả để hái, và cứ vài giờ mới hái được một lần. Đứng riêng thì lúc
+            nó chín, người chơi thấy ngay có thứ khác lạ ở góc vườn.
+          */}
           <button
             type="button"
-            onClick={onMoCuaHang}
-            title="Cửa hàng hạt giống"
-            aria-label="Mở cửa hàng hạt giống"
-            className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+            onClick={onHaiKhe}
+            disabled={!kheSanSang}
+            title={kheSanSang ? 'Cây khế đã ra quả — hái vào kho' : 'Cây khế chưa ra quả'}
+            aria-label={kheSanSang ? 'Hái quả khế vào kho' : 'Cây khế chưa ra quả'}
+            className={cn(
+              'origin-bottom transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200',
+              kheSanSang ? 'farm-nhun cursor-pointer hover:scale-105' : 'cursor-not-allowed',
+            )}
           >
-            <AnhPixel src={ANH_CUA_HANG} className="block w-[78px] sm:w-[155px]" />
-          </button>
-          <button
-            type="button"
-            onClick={onMoNhaKho}
-            title="Nhà kho"
-            aria-label="Mở nhà kho"
-            className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
-          >
-            <AnhPixel src={ANH_NHA_KHO} className="block w-[65px] sm:w-[130px]" />
+            <AnhPixel
+              src={kheSanSang ? ANH_CAY_KHE_CHIN : ANH_CAY_KHE}
+              className="block w-[58px] sm:w-[116px]"
+            />
           </button>
         </div>
       </div>

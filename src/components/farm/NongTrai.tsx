@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  banNongSan, bonPhan, gieoHat, haiCayKhe, moODat, muaHat, thuHoach, tuoiNuoc,
-  xoiDat, type FarmState,
+  bonPhan, giaoDon, gieoHat, haiCayKhe, moODat, muaHat, muaPhan, thuHoach,
+  tuoiNuoc, xoiDat, type FarmState,
 } from '@/app/(site)/nong-trai/actions';
 import type { NongTrai as DuLieu } from '@/lib/farm';
 import {
@@ -13,10 +13,11 @@ import {
 } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { Modal } from '@/components/Modal';
+import { BangDon } from './BangDon';
+import { BxhNongTrai } from './BxhNongTrai';
 import { CuaHangHat } from './CuaHangHat';
 import { ThanhViecVu } from './ThanhViecVu';
 import { TuiHat } from './TuiHat';
-import { GocTrai } from './GocTrai';
 import { ManhDat } from './ManhDat';
 import { NhaKho } from './NhaKho';
 
@@ -49,6 +50,7 @@ export function NongTrai({ d }: { d: DuLieu }) {
   const [moCho, setMoCho] = useState(false);
   const [moKho, setMoKho] = useState(false);
   const [moTui, setMoTui] = useState(false);
+  const [moBxh, setMoBxh] = useState(false);
 
   // Đồng hồ nhích mỗi giây để đếm ngược chạy mà không phải hỏi lại máy chủ.
   useEffect(() => {
@@ -131,6 +133,9 @@ export function NongTrai({ d }: { d: DuLieu }) {
           trang={trang} onTrang={doiTrang}
           onMoCuaHang={() => setMoCho(true)}
           onMoNhaKho={() => setMoKho(true)}
+          onMoBxh={() => setMoBxh(true)}
+          kheSanSang={now >= d.kheSanSangLuc}
+          onHaiKhe={() => lam(haiCayKhe, {})}
         />
         <ThanhViec
           nhan={
@@ -185,16 +190,15 @@ export function NongTrai({ d }: { d: DuLieu }) {
         <CuaHangHat
           cay={cay} diem={d.diem} dangLam={dangLam}
           daCo={Object.fromEntries(d.tuiHat.map((h) => [h.cropId, h.qty]))}
+          phanDangCo={d.phanBon}
           onMua={(cayId, soLuong) => lam(muaHat, { cay: cayId, so_luong: soLuong })}
+          onMuaPhan={(soLuong) => lam(muaPhan, { so_luong: soLuong })}
         />
       </Modal>
 
       <Modal open={moKho} onClose={() => setMoKho(false)} title="Nhà kho"
         className="!max-w-lg">
-        <NhaKho
-          kho={d.kho} tuiHat={d.tuiHat} dangLam={dangLam}
-          onBan={(cropId, so) => lam(banNongSan, { cay: cropId, so_luong: so })}
-        />
+        <NhaKho kho={d.kho} tuiHat={d.tuiHat} phanBon={d.phanBon} />
       </Modal>
 
       {/*
@@ -215,13 +219,15 @@ export function NongTrai({ d }: { d: DuLieu }) {
         />
       </Modal>
 
-      <div className="grid items-start gap-4">
-        <GocTrai
-          kheSanSangLuc={d.kheSanSangLuc} now={now}
-          giaMoO={d.giaMoO} soODaMo={d.soODaMo} duTienMoO={duTienMoO}
-          dangLam={dangLam} onHaiKhe={() => lam(haiCayKhe, {})} onMuaDat={moODatNgay}
-        />
-      </div>
+      <BangDon
+        don={d.donHang} now={now} dangLam={dangLam}
+        onGiao={(donId) => lam(giaoDon, { don: donId })}
+      />
+
+      <Modal open={moBxh} onClose={() => setMoBxh(false)} title="Bảng xếp hạng nông trại"
+        className="!max-w-lg">
+        <BxhNongTrai bxh={d.bxh} toi={d.toi} />
+      </Modal>
     </div>
   );
 }

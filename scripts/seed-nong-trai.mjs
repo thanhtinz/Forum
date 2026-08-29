@@ -43,15 +43,31 @@ const CAY = [
   { key: 10, name: 'Hướng dương', seedCost: 220, growMinutes: 360, yieldMin: 7, yieldMax: 9, sellPrice: 55 },
 ];
 
+/**
+ * Quả khế — nông sản thật nhưng KHÔNG gieo được.
+ *
+ * Nó rụng từ cây khế ngoài vườn chứ không có hạt bán ở cửa hàng, nên
+ * `plantable: false` để cửa hàng giấu đi mà bảng đơn hàng vẫn gọi tên được.
+ * `growMinutes`/`seedCost` để 0 vì không có vụ nào cả; `sellPrice` đặt ngang
+ * bậc thấp nhất, đúng như trước đây hái một quả được một điểm.
+ */
+const KHE = {
+  key: 0, name: 'Khế', seedCost: 0, growMinutes: 0,
+  yieldMin: 0, yieldMax: 0, sellPrice: 4,
+};
+
 async function main() {
   for (const [i, c] of CAY.entries()) {
-    const data = { ...c, order: i + 1, active: true };
+    const data = { ...c, order: i + 1, active: true, plantable: true };
     await db.farmCrop.upsert({
       where: { key: c.key },
       update: data,
       create: data,
     });
   }
+
+  const dataKhe = { ...KHE, order: 0, active: true, plantable: false };
+  await db.farmCrop.upsert({ where: { key: KHE.key }, update: dataKhe, create: dataKhe });
 
   // In bảng cân đối ra màn hình: sửa con số ở trên xong là thấy ngay bậc thang
   // lãi còn tăng đều hay đã có giống nhảy cóc.
@@ -65,7 +81,7 @@ async function main() {
       `${String(it).padStart(4)} → ${String(nhieu).padStart(4)}`,
     );
   }
-  console.log(`\n✓ Đã nạp ${CAY.length} loại cây cho nông trại.`);
+  console.log(`\n✓ Đã nạp ${CAY.length} loại cây cho nông trại, kèm quả khế.`);
 }
 
 main()

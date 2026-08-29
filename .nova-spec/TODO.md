@@ -59,6 +59,20 @@ sưu tầm 9 loài × 6 màu.
 **Slide trang chủ** — nối `Slide` vào trang chủ (trước đây quản trị lập được mà
 chẳng hiện ở đâu), kèm vá chỗ `saveSlide` không kiểm định dạng ảnh.
 
+**Nông trại: bảng đơn hàng thay lái buôn** — bỏ hẳn `banNongSan`. Khách đặt
+1–2 món trên bảng ghi chú, gom trong kho ra giao; đơn thường ×1, đặc biệt ×2,
+siêu tốc ×3 nhưng hạn 2 giờ. Thưởng = tổng giá bán × 1,5 × hệ số, CHỐT lúc tạo
+đơn. Đơn thuộc về từng người (bảng chung thì ai vào trước nhận hết) và sinh
+lười lúc mở trang, không cron. Phân bón thành vật tư mua ở cửa hàng, cất trong
+kho; `bonPhan` ăn một bao thay vì trừ điểm. Cây khế lên map, hái vào kho thành
+nông sản giao đơn được — khế là `FarmCrop` có `plantable: false` nên cửa hàng
+giấu mà đơn hàng vẫn gọi tên. Bảng xếp hạng nông trại lên map, xếp theo SỐ ĐƠN
+ĐÃ GIAO chứ không theo điểm — theo điểm thì nó chỉ là bảng xếp hạng diễn đàn
+chép lại. Bỏ `GocTrai`. Thêm `44-bang-don-hang` (19 mục).
+
+*Còn nợ:* bộ ảnh cũ không có quả khế rời nên khế đang mượn ảnh CÂY khế chín;
+`nong-san/0.png` là một bao đất, dán vào thì kho thành ra chứa đất.
+
 **Nông trại 40 ô, chia trang** — trần ô đất 12 → 40, mảnh ruộng chia trang 8 ô
 (hai hàng bốn ô) nên khung cảnh luôn cao đúng bằng lúc mới chơi. Nút chuyển
 trang có chấm xanh báo trang ấy có ô đã CHÍN và chấm vàng báo trang ấy còn đất

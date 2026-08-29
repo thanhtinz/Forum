@@ -154,6 +154,8 @@ model User {
   farmPlots      FarmPlot[]
   farmBarn       FarmBarn[]
   farmSeeds      FarmSeed[]
+  farmSupply     FarmSupply?
+  farmOrders     FarmOrder[]
   rong           Rong[]
   /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
   lastTreeAt     DateTime?
@@ -2202,9 +2204,15 @@ model FarmCrop {
   order  Int     @default(0)
   active Boolean @default(true)
 
-  plots FarmPlot[]
-  barn  FarmBarn[]
-  seeds FarmSeed[]
+  /// Gieo được không. Quả khế là nông sản thật — vào kho, giao đơn được —
+  /// nhưng nó rụng từ cây khế ngoài vườn chứ không có hạt để gieo, nên phải
+  /// giấu khỏi cửa hàng mà vẫn để đơn hàng gọi tên.
+  plantable Boolean @default(true)
+
+  plots      FarmPlot[]
+  barn       FarmBarn[]
+  seeds      FarmSeed[]
+  orderItems FarmOrderItem[]
 
   @@index([active, order])
 }
@@ -2273,6 +2281,70 @@ model FarmSeed {
 
   @@unique([userId, cropId])
   @@index([userId])
+}
+
+/// Vật tư của nông trại — thứ mua ở cửa hàng mà không phải hạt giống.
+///
+/// Một hàng mỗi người chứ không phải một hàng mỗi loại như `FarmSeed`: phân
+/// bón chỉ có một loại, mà có một loại thì bảng khoá theo (người, loại) chỉ
+/// tổ thêm một cột luôn bằng nhau.
+model FarmSupply {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Số bao phân bón đang có.
+  fertilizer Int @default(0)
+}
+
+/// Kiểu đơn hàng trên bảng ghi chú.
+enum FarmOrderKind {
+  /// Đơn thường, trả đúng phần thưởng cơ bản.
+  THUONG
+  /// Đơn đặc biệt, gấp đôi.
+  DAC_BIET
+  /// Đơn siêu tốc, gấp ba nhưng có hạn giao.
+  SIEU_TOC
+}
+
+/// Một đơn hàng do khách đặt trên bảng ghi chú của nông trại.
+///
+/// Đơn thuộc về TỪNG NGƯỜI chứ không phải bảng chung: bảng chung thì ai vào
+/// trước nhận hết, người vào sau mở ra thấy bảng trống mà chẳng hiểu vì sao.
+model FarmOrder {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Tên khách đặt hàng, chọn sẵn từ một danh sách.
+  khach String
+  kind  FarmOrderKind @default(THUONG)
+
+  /// Điểm trả cho đơn này, ĐÃ nhân hệ số. Chốt lúc tạo đơn chứ không tính
+  /// lại lúc giao: giá bán nông sản có thể đổi, mà đơn đã treo lên bảng thì
+  /// phải trả đúng số đã hứa.
+  reward Int
+
+  items FarmOrderItem[]
+
+  /// Hạn giao của đơn siêu tốc; `null` là không có hạn.
+  expiresAt   DateTime?
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, deliveredAt])
+}
+
+model FarmOrderItem {
+  id      String    @id @default(cuid())
+  orderId String
+  order   FarmOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  cropId  String
+  crop    FarmCrop  @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  qty     Int
+
+  @@unique([orderId, cropId])
+  @@index([orderId])
 }
 
 // ============================================================

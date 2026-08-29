@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Minus, Plus, ShoppingBasket } from 'lucide-react';
 import type { CayGiong } from '@/lib/farm';
-import { HAT_MUA_TOI_DA, anhNongSan, moTaVu } from '@/lib/farm-const';
+import { ANH_PHAN, HAT_MUA_TOI_DA, PHAN_GIA, PHAN_THEM, anhNongSan, moTaVu } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
 
@@ -28,16 +28,28 @@ interface Props {
   diem: number;
   /** Số hạt từng loại đang có trong túi, tra theo `cropId`. */
   daCo: Record<string, number>;
+  /** Số bao phân đang có trong kho. */
+  phanDangCo: number;
   dangLam: boolean;
   onMua: (cayId: string, soLuong: number) => void;
+  onMuaPhan: (soLuong: number) => void;
 }
 
-export function CuaHangHat({ cay, diem, daCo, dangLam, onMua }: Props) {
+export function CuaHangHat({ cay, diem, daCo, phanDangCo, dangLam, onMua, onMuaPhan }: Props) {
   return (
     <div>
       <p className="border-b border-[var(--nova-border)] bg-amber-50 px-4 py-2 text-sm font-medium text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-        Mua hạt về túi, rồi đóng cửa hàng và ra ruộng gieo.
+        Mua hạt và phân về kho, rồi đóng cửa hàng và ra ruộng làm.
       </p>
+
+      {/* Phân bón đứng riêng một khối trên đầu, không xếp lẫn vào lưới hạt
+          giống: nó không phải một giống cây, mà lẫn vào thì người chơi phải
+          quét hết mười một thẻ mới thấy nó. */}
+      <div className="border-b border-[var(--nova-border)] p-3">
+        <ThePhanBon diem={diem} daCo={phanDangCo} dangLam={dangLam} onMua={onMuaPhan} />
+      </div>
+
+      <h3 className="px-4 pt-3 text-sm font-black">Hạt giống</h3>
 
       {/* Hai cột ở điện thoại: mỗi thẻ nay còn phải chứa cả bộ chọn số lượng,
           ba cột thì nút cộng trừ bé tới mức bấm nhầm. Từ 640px hộp thoại rộng
@@ -49,6 +61,49 @@ export function CuaHangHat({ cay, diem, daCo, dangLam, onMua }: Props) {
             dangLam={dangLam} onMua={onMua} />
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** Bao phân — mua như hạt giống, dùng lúc bón cho ô đang có cây. */
+function ThePhanBon({ diem, daCo, dangLam, onMua }: {
+  diem: number; daCo: number; dangLam: boolean; onMua: (soLuong: number) => void;
+}) {
+  const [so, setSo] = useState(1);
+  const muaNoi = Math.min(HAT_MUA_TOI_DA, Math.floor(diem / PHAN_GIA));
+  const duMua = muaNoi >= so && !dangLam;
+  const doi = (b: number) => setSo((n) => Math.min(HAT_MUA_TOI_DA, Math.max(1, n + b)));
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--nova-border)] bg-[var(--nova-surface)] p-2.5">
+      <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-lg"
+        style={{ background: 'radial-gradient(circle at 50% 118%, #dfe8cf 0%, #f6faf0 72%)' }}>
+        <AnhPixel src={ANH_PHAN} phong={2} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-black">Phân bón</p>
+        <p className="retro-sub text-ink-400">
+          Bón một bao cho một ô, thu thêm {PHAN_THEM} quả{daCo > 0 && ` · kho có ${daCo}`}
+        </p>
+      </div>
+      <div className="flex items-center gap-1">
+        <button type="button" onClick={() => doi(-1)} disabled={so <= 1}
+          aria-label="Bớt một bao phân"
+          className="grid size-7 shrink-0 place-items-center rounded-lg border border-[var(--nova-border)] disabled:opacity-40">
+          <Minus size={13} />
+        </button>
+        <span className="w-6 text-center text-sm font-bold tabular-nums">{so}</span>
+        <button type="button" onClick={() => doi(1)} disabled={so >= HAT_MUA_TOI_DA}
+          aria-label="Thêm một bao phân"
+          className="grid size-7 shrink-0 place-items-center rounded-lg border border-[var(--nova-border)] disabled:opacity-40">
+          <Plus size={13} />
+        </button>
+      </div>
+      <button type="button" disabled={!duMua} onClick={() => onMua(so)}
+        aria-label={`Mua ${so} bao phân bón, hết ${PHAN_GIA * so} điểm`}
+        className="btn-primary shrink-0 gap-1 !py-1.5 text-xs disabled:opacity-50">
+        <ShoppingBasket size={13} /> Mua · {PHAN_GIA * so}đ
+      </button>
     </div>
   );
 }

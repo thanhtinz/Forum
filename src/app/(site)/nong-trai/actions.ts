@@ -8,7 +8,7 @@ import { lockUsers } from '@/lib/lock';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import {
   HAT_MUA_TOI_DA, KHE_CHU_KY_MS, KHE_MAX, KHE_MIN, O_DAT_BAN_DAU, O_DAT_TOI_DA,
-  PHAN_GIA, PHAN_THEM, TUOI_RUT_NGAN, giaMoODat,
+  KHE_KEY, PHAN_GIA, PHAN_MUA_TOI_DA, PHAN_THEM, TUOI_RUT_NGAN, giaMoODat,
 } from '@/lib/farm-const';
 
 /**
@@ -53,6 +53,46 @@ function lamMoi(): void {
 function docSo(v: FormDataEntryValue | null): number | null {
   const n = Number(String(v ?? '').trim());
   return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
+// ─────────────────────────── Mua phân bón ───────────────────────────
+
+/**
+ * Mua phân về kho. Cùng một hình dạng với `muaHat`, và cố ý giống hệt: hai
+ * thứ mua ở cùng một cửa hàng thì đừng bắt người đọc mã học hai lối nghĩ.
+ */
+export async function muaPhan(_prev: FarmState, formData: FormData): Promise<FarmState> {
+  const me = await nhaNong();
+  if ('error' in me) return { error: me.error };
+
+  const so = docSo(formData.get('so_luong')) ?? 1;
+  if (so < 1 || so > PHAN_MUA_TOI_DA) {
+    return { error: `Mỗi lượt mua được 1 tới ${PHAN_MUA_TOI_DA} bao thôi.` };
+  }
+  const tien = PHAN_GIA * so;
+
+  try {
+    await db.$transaction(async (tx) => {
+      await grantPoints({
+        userId: me.userId, amount: -tien, reason: 'FARM_SEED',
+        note: `Mua ${so} bao phân bón`,
+      }, tx);
+      await tx.farmSupply.upsert({
+        where: { userId: me.userId },
+        create: { userId: me.userId, fertilizer: so },
+        update: { fertilizer: { increment: so } },
+        select: { id: true },
+      });
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) {
+      return { error: `Bạn không đủ ${tien} điểm để mua ${so} bao phân.` };
+    }
+    return { error: 'Không mua được lúc này, thử lại nhé.' };
+  }
+
+  lamMoi();
+  return { ok: true, ke: `Đã mua ${so} bao phân về kho.` };
 }
 
 // ─────────────────────────── Xới đất ───────────────────────────
@@ -235,12 +275,11 @@ export async function tuoiNuoc(_prev: FarmState, formData: FormData): Promise<Fa
 // ─────────────────────────── Bón phân ───────────────────────────
 
 /**
- * Bón phân cho ô đang có cây: mất điểm, đổi lấy thêm quả lúc thu.
+ * Bón phân cho ô đang có cây bằng một bao phân TRONG KHO. Không đụng tới điểm.
  *
- * Trừ tiền và đánh dấu đã bón nằm chung một transaction, và câu đánh dấu là
- * ghi CÓ ĐIỀU KIỆN (`fertilized: false`) đặt TRƯỚC lúc trừ tiền — hai tab
- * cùng bấm thì tab sau không khớp, ném lỗi, nên không trả tiền hai lần cho
- * một lần bón.
+ * Cùng luật với gieo hạt: rút vật tư trước (`fertilizer: { gte: 1 }`), rồi mới
+ * đánh dấu ô. Đảo lại thì hai tab cùng bón bao phân cuối sẽ đánh dấu được hai
+ * ô — cả hai ô đều chưa bón nên cả hai câu ghi đều khớp, mà kho chỉ có một bao.
  */
 export async function bonPhan(_prev: FarmState, formData: FormData): Promise<FarmState> {
   const me = await nhaNong();
@@ -251,6 +290,12 @@ export async function bonPhan(_prev: FarmState, formData: FormData): Promise<Far
 
   try {
     await db.$transaction(async (tx) => {
+      const rut = await tx.farmSupply.updateMany({
+        where: { userId: me.userId, fertilizer: { gte: 1 } },
+        data: { fertilizer: { decrement: 1 } },
+      });
+      if (rut.count === 0) throw new Error('het-phan');
+
       const danh = await tx.farmPlot.updateMany({
         where: {
           userId: me.userId, index: o,
@@ -259,15 +304,10 @@ export async function bonPhan(_prev: FarmState, formData: FormData): Promise<Far
         data: { fertilized: true },
       });
       if (danh.count === 0) throw new Error('khong-bon-duoc');
-
-      await grantPoints({
-        userId: me.userId, amount: -PHAN_GIA, reason: 'FARM_SEED',
-        note: `Bón phân ô ${o + 1}`,
-      }, tx);
     });
   } catch (e) {
-    if (e instanceof InsufficientPointsError) {
-      return { error: `Bạn không đủ ${PHAN_GIA} điểm để mua phân bón.` };
+    if (e instanceof Error && e.message === 'het-phan') {
+      return { error: 'Trong kho hết phân rồi — ghé cửa hàng mua thêm đã.' };
     }
     if (e instanceof Error && e.message === 'khong-bon-duoc') {
       return { error: 'Ô này bón rồi, hoặc đang trống.' };
@@ -348,51 +388,84 @@ export async function thuHoach(_prev: FarmState, formData: FormData): Promise<Fa
   return { ok: true, ke };
 }
 
-// ─────────────────────────── Bán nông sản ───────────────────────────
+// ─────────────────────────── Giao đơn hàng ───────────────────────────
 
 /**
- * Bán nông sản trong kho lấy điểm.
+ * Giao một đơn trên bảng ghi chú: trừ hàng trong kho, nhận điểm đã hứa.
  *
- * Trừ kho bằng `updateMany` có điều kiện `qty >= n`: bán hai tab cùng lúc thì
- * tab sau không đủ hàng để khớp, nên không thể bán một quả táo hai lần.
+ * Không còn lái buôn mua lẻ nữa, nên đây là đường DUY NHẤT đổi nông sản ra
+ * điểm. Vì thế mọi phép kiểm phải nằm trong đúng một transaction: trừ thiếu
+ * một món giữa chừng rồi hỏng là mất hàng mà không được gì.
+ *
+ * Ba lớp chống hai tab cùng bấm:
+ *  • đánh dấu đã giao là ghi CÓ ĐIỀU KIỆN (`deliveredAt: null`) và làm TRƯỚC
+ *    mọi thứ — tab sau không khớp, ném lỗi, chưa kịp trừ hàng nào;
+ *  • trừ từng món cũng có điều kiện `qty >= n`;
+ *  • `grantPoints` khoá trùng theo `reason` + `refId`, mà `refId` là id đơn.
+ *
+ * Hạn giao đọc từ HÀNG ĐÃ LƯU, không tính lại từ đồng hồ — cùng lý do với
+ * `closeAt` của bầu cua: hai nguồn sự thật thì có lúc lệch nhau.
  */
-export async function banNongSan(_prev: FarmState, formData: FormData): Promise<FarmState> {
+export async function giaoDon(_prev: FarmState, formData: FormData): Promise<FarmState> {
   const me = await nhaNong();
   if ('error' in me) return { error: me.error };
 
-  const cropId = String(formData.get('cay') ?? '').trim();
-  const soLuong = docSo(formData.get('so_luong'));
-  if (!cropId || !soLuong || soLuong < 1) return { error: 'Chọn nông sản và số lượng muốn bán.' };
+  const donId = String(formData.get('don') ?? '').trim();
+  if (!donId) return { error: 'Chọn một đơn đã nào.' };
 
-  const cay = await db.farmCrop.findUnique({
-    where: { id: cropId },
-    select: { name: true, sellPrice: true },
-  });
-  if (!cay) return { error: 'Không có loại nông sản này.' };
-
-  const tien = cay.sellPrice * soLuong;
+  let ke = '';
   try {
     await db.$transaction(async (tx) => {
-      const bot = await tx.farmBarn.updateMany({
-        where: { userId: me.userId, cropId, qty: { gte: soLuong } },
-        data: { qty: { decrement: soLuong } },
+      const don = await tx.farmOrder.findFirst({
+        // `userId` nằm trong `where` chứ không lọc sau: đơn của người khác thì
+        // không được rời cơ sở dữ liệu.
+        where: { id: donId, userId: me.userId, deliveredAt: null },
+        select: {
+          reward: true, khach: true, expiresAt: true,
+          items: { take: 4, select: { cropId: true, qty: true, crop: { select: { name: true } } } },
+        },
       });
-      if (bot.count === 0) throw new Error('thieu-hang');
+      if (!don) throw new Error('khong-thay');
+
+      const now = new Date();
+      if (don.expiresAt && don.expiresAt <= now) throw new Error('qua-han');
+
+      const chot = await tx.farmOrder.updateMany({
+        where: { id: donId, userId: me.userId, deliveredAt: null },
+        data: { deliveredAt: now },
+      });
+      if (chot.count === 0) throw new Error('khong-thay');
+
+      for (const it of don.items) {
+        const bot = await tx.farmBarn.updateMany({
+          where: { userId: me.userId, cropId: it.cropId, qty: { gte: it.qty } },
+          data: { qty: { decrement: it.qty } },
+        });
+        if (bot.count === 0) throw new Error(`thieu:${it.crop.name}`);
+      }
 
       await grantPoints({
-        userId: me.userId, amount: tien, reason: 'FARM_SELL',
-        refId: cropId, note: `Bán ${soLuong} ${cay.name}`,
+        userId: me.userId, amount: don.reward, reason: 'FARM_SELL',
+        refId: donId, note: `Giao đơn cho ${don.khach}`,
       }, tx);
+
+      ke = `Đã giao đơn cho ${don.khach}, được ${don.reward} điểm.`;
     });
   } catch (e) {
-    if (e instanceof Error && e.message === 'thieu-hang') {
-      return { error: `Trong kho không đủ ${soLuong} ${cay.name}.` };
+    if (e instanceof Error && e.message === 'khong-thay') {
+      return { error: 'Đơn này không còn trên bảng nữa.' };
     }
-    return { error: 'Không bán được lúc này, thử lại nhé.' };
+    if (e instanceof Error && e.message === 'qua-han') {
+      return { error: 'Đơn siêu tốc này quá hạn mất rồi.' };
+    }
+    if (e instanceof Error && e.message.startsWith('thieu:')) {
+      return { error: `Trong kho không đủ ${e.message.slice(6)} để giao đơn này.` };
+    }
+    return { error: 'Không giao được lúc này, thử lại nhé.' };
   }
 
   lamMoi();
-  return { ok: true, ke: `Bán ${soLuong} ${cay.name}, được ${tien} điểm.` };
+  return { ok: true, ke };
 }
 
 // ─────────────────────────── Mở thêm ô đất ───────────────────────────
@@ -487,17 +560,28 @@ export async function haiCayKhe(_prev: FarmState, _formData: FormData): Promise<
       });
       if (hai.count === 0) throw new Error('chua-toi-gio');
 
-      await grantPoints({
-        userId: me.userId, amount: duoc, reason: 'FARM_TREE', note: 'Hái cây khế',
-      }, tx);
+      // Khế vào KHO chứ không đổi thẳng ra điểm: nay nó là nông sản như mọi
+      // thứ khác, đem giao đơn cho khách được — mà đơn thì trả hơn giá bán.
+      const khe = await tx.farmCrop.findUnique({ where: { key: KHE_KEY }, select: { id: true } });
+      if (!khe) throw new Error('thieu-khe');
+
+      await tx.farmBarn.upsert({
+        where: { userId_cropId: { userId: me.userId, cropId: khe.id } },
+        create: { userId: me.userId, cropId: khe.id, qty: duoc },
+        update: { qty: { increment: duoc } },
+        select: { id: true },
+      });
     });
   } catch (e) {
     if (e instanceof Error && e.message === 'chua-toi-gio') {
       return { error: 'Cây khế chưa ra quả, giờ sau ghé lại nhé.' };
     }
+    if (e instanceof Error && e.message === 'thieu-khe') {
+      return { error: 'Chưa nạp dữ liệu quả khế — chạy scripts/seed-nong-trai.mjs đã.' };
+    }
     return { error: 'Không hái được lúc này, thử lại nhé.' };
   }
 
   lamMoi();
-  return { ok: true, ke: `Hái được ${duoc} quả khế, đổi lấy ${duoc} điểm.` };
+  return { ok: true, ke: `Hái được ${duoc} quả khế, cất vào kho.` };
 }

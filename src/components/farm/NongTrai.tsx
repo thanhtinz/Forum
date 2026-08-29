@@ -3,15 +3,18 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  banNongSan, gieoHat, haiCayKhe, moODat, muaHat, thuHoach, tuoiNuoc, type FarmState,
+  banNongSan, bonPhan, gieoHat, haiCayKhe, moODat, muaHat, thuHoach, tuoiNuoc,
+  xoiDat, type FarmState,
 } from '@/app/(site)/nong-trai/actions';
 import type { NongTrai as DuLieu } from '@/lib/farm';
 import {
-  O_DAT_TOI_DA, TUOI_RUT_NGAN, changCua, moTaConLai, tienDoVu,
+  O_DAT_TOI_DA, PHAN_GIA, changCua, moTaConLai, tienDoVu, tinhTrangViec,
+  type ViecVu,
 } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { Modal } from '@/components/Modal';
 import { CuaHangHat } from './CuaHangHat';
+import { ThanhViecVu } from './ThanhViecVu';
 import { TuiHat } from './TuiHat';
 import { GocTrai } from './GocTrai';
 import { ManhDat } from './ManhDat';
@@ -44,6 +47,8 @@ export function NongTrai({ d }: { d: DuLieu }) {
   const [oChon, setOChon] = useState<number | null>(null);
   const [trang, setTrang] = useState(0);
   const [moCho, setMoCho] = useState(false);
+  const [moKho, setMoKho] = useState(false);
+  const [moTui, setMoTui] = useState(false);
 
   // Đồng hồ nhích mỗi giây để đếm ngược chạy mà không phải hỏi lại máy chủ.
   useEffect(() => {
@@ -85,6 +90,19 @@ export function NongTrai({ d }: { d: DuLieu }) {
    */
   const doiTrang = (t: number) => { setTrang(t); setOChon(null); };
 
+  /*
+   * Một chỗ duy nhất nối tên việc với hàm chạy nó.
+   *
+   * "Gieo hạt" là việc DUY NHẤT không gọi thẳng server action mà mở hộp thoại
+   * túi hạt trước — bốn việc kia không phải chọn gì cả, còn gieo thì phải biết
+   * gieo hạt nào.
+   */
+  const lamViec = (v: ViecVu, oIndex: number) => {
+    if (v === 'gieo') { setMoTui(true); return; }
+    const viec = { xoi: xoiDat, tuoi: tuoiNuoc, bon: bonPhan, thu: thuHoach }[v];
+    lam(viec, { o: oIndex });
+  };
+
   return (
     <div className="space-y-4">
       <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -112,49 +130,29 @@ export function NongTrai({ d }: { d: DuLieu }) {
           giaMoO={d.giaMoO} duTienMoO={duTienMoO} dangLam={dangLam} onMua={moODatNgay}
           trang={trang} onTrang={doiTrang}
           onMoCuaHang={() => setMoCho(true)}
+          onMoNhaKho={() => setMoKho(true)}
         />
         <ThanhViec
           nhan={
             !o ? 'Bấm vào một ô đất để xem việc của ô đó.'
               : o.cropKey == null
-                ? d.tuiHat.length > 0
-                  ? `Ô ${o.index + 1} đang trống — chọn một hạt trong túi để gieo.`
-                  : `Ô ${o.index + 1} đang trống, mà túi chưa có hạt nào — ghé cửa hàng mua đã.`
+                ? o.tilled
+                  ? `Ô ${o.index + 1} đã xới, gieo hạt được rồi.`
+                  : `Ô ${o.index + 1} còn chai — xới đất trước đã.`
               : changO === 'chin' ? `${o.cropName} ở ô ${o.index + 1} đã chín, hái vào kho thôi.`
-              : `${o.cropName} ở ô ${o.index + 1} · còn ${moTaConLai((o.readyAt ?? 0) - now)}${o.watered ? ' · đã tưới' : ''}`
+              : `${o.cropName} ở ô ${o.index + 1} · còn ${moTaConLai((o.readyAt ?? 0) - now)}`
           }
           phan={o && o.cropKey != null && changO !== 'chin'
             ? Math.round(tienDoVu(o.plantedAt, o.readyAt, now) * 100)
             : null}
         >
-          {o && o.cropKey == null && (
-            d.tuiHat.length > 0
-              ? <TuiHat tui={d.tuiHat} dangLam={dangLam}
-                  onGieo={(cayId) => lam(gieoHat, { o: o.index, cay: cayId })} />
-              // Túi rỗng thì đừng chỉ báo "hết hạt" rồi thôi — chỉ luôn đường
-              // đi mua, không thì người chơi phải tự đoán ra căn nhà bên trái
-              // cảnh mới là cửa hàng.
-              : <button type="button" onClick={() => setMoCho(true)}
-                  className="btn-primary !py-1.5">Tới cửa hàng mua hạt</button>
-          )}
-          {o && o.cropKey != null && changO === 'chin' && (
-            <button
-              type="button" disabled={dangLam}
-              onClick={() => lam(thuHoach, { o: o.index })}
-              className="btn-primary !bg-emerald-500 !py-1.5 hover:!bg-emerald-600 disabled:opacity-50"
-            >
-              Thu hoạch
-            </button>
-          )}
-          {o && o.cropKey != null && changO !== 'chin' && (
-            <button
-              type="button" disabled={dangLam || o.watered}
-              onClick={() => lam(tuoiNuoc, { o: o.index })}
-              className="btn-primary !py-1.5 disabled:opacity-50"
-              title={`Tưới một lần mỗi vụ, chín sớm hơn ${Math.round(TUOI_RUT_NGAN * 100)}%`}
-            >
-              {o.watered ? 'Vụ này tưới rồi' : 'Tưới nước'}
-            </button>
+          {o && (
+            <ThanhViecVu
+              tinhTrang={tinhTrangViec(o, changO === 'chin')}
+              giaBon={PHAN_GIA}
+              dangLam={dangLam}
+              onViec={(v) => lamViec(v, o.index)}
+            />
           )}
         </ThanhViec>
       </div>
@@ -191,11 +189,33 @@ export function NongTrai({ d }: { d: DuLieu }) {
         />
       </Modal>
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <Modal open={moKho} onClose={() => setMoKho(false)} title="Nhà kho"
+        className="!max-w-lg">
         <NhaKho
-          kho={d.kho} dangLam={dangLam}
+          kho={d.kho} tuiHat={d.tuiHat} dangLam={dangLam}
           onBan={(cropId, so) => lam(banNongSan, { cay: cropId, so_luong: so })}
         />
+      </Modal>
+
+      {/*
+        Túi hạt mở ra từ nút "Gieo hạt", và ĐÓNG NGAY khi chọn xong: khác với
+        cửa hàng (mua một lúc mấy giống là chuyện thường), một ô đất chỉ nhận
+        đúng một hạt — chọn xong là hết việc ở đây, giữ hộp thoại lại chỉ tổ
+        che mất cái cây vừa mọc.
+      */}
+      <Modal open={moTui} onClose={() => setMoTui(false)} title="Chọn hạt để gieo">
+        <TuiHat
+          tui={d.tuiHat} dangLam={dangLam}
+          onGieo={(cayId) => {
+            if (oChon == null) return;
+            setMoTui(false);
+            lam(gieoHat, { o: oChon, cay: cayId });
+          }}
+          onToiCuaHang={() => { setMoTui(false); setMoCho(true); }}
+        />
+      </Modal>
+
+      <div className="grid items-start gap-4">
         <GocTrai
           kheSanSangLuc={d.kheSanSangLuc} now={now}
           giaMoO={d.giaMoO} soODaMo={d.soODaMo} duTienMoO={duTienMoO}
@@ -221,9 +241,13 @@ function ThanhViec({
   children?: React.ReactNode;
 }) {
   return (
+    // Dải năm việc chiếm hẳn một dòng riêng (`basis-full`) chứ không đứng
+    // cạnh nhãn: xếp cùng hàng thì ở 754px nhãn chỉ còn ~280px và câu "Chuối
+    // ở ô 2 · còn 1 giờ 30 phút" cụt mất nửa sau — đúng cái nửa cho biết bao
+    // giờ cây chín.
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-[var(--nova-border)] px-3 py-2.5">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{nhan}</p>
+      <div className="min-w-0 flex-1 basis-full">
+        <p className="text-sm font-semibold">{nhan}</p>
         {phan != null && (
           <span className="mt-1 block h-1.5 w-full max-w-xs overflow-hidden rounded-full bg-ink-200 dark:bg-ink-800">
             <span
@@ -233,7 +257,7 @@ function ThanhViec({
           </span>
         )}
       </div>
-      {children}
+      {children && <div className="min-w-0 basis-full">{children}</div>}
     </div>
   );
 }

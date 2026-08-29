@@ -2,7 +2,7 @@
 
 import type { ODat as ODatDL } from '@/lib/farm';
 import {
-  ANH_CUA_HANG, ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY,
+  ANH_CUA_HANG, ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY, ANH_NHA_KHO,
   NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, O_MOI_TRANG, TROI_DEM, TROI_NGAY,
   changCua,
 } from '@/lib/farm-const';
@@ -67,11 +67,12 @@ interface Props {
   trang: number;
   onTrang: (trang: number) => void;
   onMoCuaHang: () => void;
+  onMoNhaKho: () => void;
 }
 
 export function ManhDat({
   oDat, now, banNgay, dangChon, onChon, giaMoO, duTienMoO, dangLam, onMua,
-  trang, onTrang, onMoCuaHang,
+  trang, onTrang, onMoCuaHang, onMoNhaKho,
 }: Props) {
   const [troiTren, troiDuoi] = banNgay ? TROI_NGAY : TROI_DEM;
 
@@ -227,6 +228,12 @@ export function ManhDat({
           box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(0,0,0,.3);
         }
 
+        /* Ô của mình mà chưa xới: đất còn chai, khô và bạc. Khác hẳn
+           .farm-hoang bên dưới — cái đó là đất CHƯA MUA, không phải đất chưa
+           xới. (Không dùng dấu huyền quanh tên lớp ở đây: cả khối CSS này nằm
+           trong một chuỗi mẫu, một dấu huyền là đứt chuỗi.) */
+        .farm-chai { filter: saturate(.45) brightness(.82); }
+
         /* Đất hoang chưa cày: cùng tông nhưng phẳng, xỉn và tối hơn. */
         .farm-hoang {
           height: calc(var(--px) * 9);
@@ -344,24 +351,39 @@ export function ManhDat({
         }}
       >
         {/*
-          Căn cửa hàng dựng ngay trong cảnh, không phải một thẻ rời ở cuối
-          trang: người chơi đi mua hạt thì bước tới cửa hàng, đó là chỗ ai
-          cũng đoán được mà chẳng cần chỉ.
+          Cửa hàng và nhà kho dựng ngay trong cảnh, không phải hai thẻ rời ở
+          cuối trang: đi mua hạt thì bước tới cửa hàng, đi cất nông sản thì
+          bước tới nhà kho — chỗ nào cũng đoán được mà chẳng cần chỉ.
+
+          Hai căn đứng cạnh nhau và cùng thu nhỏ lại so với lúc chỉ có một
+          căn: hai căn cỡ cũ thì chiếm gần hết bề ngang cảnh ở khổ điện thoại,
+          chẳng còn thấy rặng cây đâu.
 
           Đứng bên TRÁI vì mặt trời và mặt trăng đều nằm ở góc phải bầu trời.
           Nhà cao hơn rặng cây nên nhô lên nền trời — đó là chủ ý, mái nhà cắt
           ngang đường chân trời mới ra một căn nhà đứng trước cảnh, chứ không
           phải một hình dán bẹt vào rặng cây.
         */}
-        <button
-          type="button"
-          onClick={onMoCuaHang}
-          title="Cửa hàng hạt giống"
-          aria-label="Mở cửa hàng hạt giống"
-          className="farm-quan absolute bottom-0 left-1 origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200 sm:left-6"
-        >
-          <AnhPixel src={ANH_CUA_HANG} className="block w-[93px] sm:w-[186px]" />
-        </button>
+        <div className="absolute bottom-0 left-1 flex items-end gap-1 sm:left-6 sm:gap-3">
+          <button
+            type="button"
+            onClick={onMoCuaHang}
+            title="Cửa hàng hạt giống"
+            aria-label="Mở cửa hàng hạt giống"
+            className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+          >
+            <AnhPixel src={ANH_CUA_HANG} className="block w-[78px] sm:w-[155px]" />
+          </button>
+          <button
+            type="button"
+            onClick={onMoNhaKho}
+            title="Nhà kho"
+            aria-label="Mở nhà kho"
+            className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+          >
+            <AnhPixel src={ANH_NHA_KHO} className="block w-[65px] sm:w-[130px]" />
+          </button>
+        </div>
       </div>
 
       {/* ── Lớp 3: thửa đất ── */}

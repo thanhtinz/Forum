@@ -26,12 +26,15 @@ export interface CayGiong {
 
 export interface ODat {
   index: number;
+  /** Đã xới chưa — chưa xới thì chưa gieo được. */
+  tilled: boolean;
   cropKey: number | null;
   cropName: string | null;
   /** Mốc gieo và mốc chín, tính bằng mili giây — số để gửi thẳng xuống trình duyệt. */
   plantedAt: number | null;
   readyAt: number | null;
   watered: boolean;
+  fertilized: boolean;
 }
 
 /** Một loại hạt đang có trong túi. */
@@ -109,7 +112,8 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
       orderBy: { index: 'asc' },
       take: O_DAT_TOI_DA,
       select: {
-        index: true, plantedAt: true, readyAt: true, watered: true,
+        index: true, tilled: true, plantedAt: true, readyAt: true,
+        watered: true, fertilized: true,
         crop: { select: { key: true, name: true } },
       },
     }),
@@ -141,11 +145,13 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
     diem: nguoi?.points ?? 0,
     oDat: plots.map((p) => ({
       index: p.index,
+      tilled: p.tilled,
       cropKey: p.crop?.key ?? null,
       cropName: p.crop?.name ?? null,
       plantedAt: p.plantedAt?.getTime() ?? null,
       readyAt: p.readyAt?.getTime() ?? null,
       watered: p.watered,
+      fertilized: p.fertilized,
     })),
     kho: kho.map((b) => ({
       cropId: b.crop.id,

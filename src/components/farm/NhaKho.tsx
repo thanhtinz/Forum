@@ -1,12 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import type { MonTrongKho } from '@/lib/farm';
-import { ANH_NHA_KHO, anhNongSan } from '@/lib/farm-const';
+import type { HatTrongTui, MonTrongKho } from '@/lib/farm';
+import { anhNongSan, moTaVu } from '@/lib/farm-const';
 import { AnhPixel } from './AnhPixel';
 
 /**
- * Nhà kho — nông sản đã thu, xếp thành thẻ có ảnh và bán ngay tại chỗ.
+ * Nhà kho — mọi thứ đang cất giữ: hạt giống chưa gieo và nông sản đã thu.
+ *
+ * Hai thứ cùng một chỗ vì người chơi nghĩ về chúng như nhau — "tôi đang có
+ * gì" — chứ không phải "hạt thì tra ở đây, quả thì tra ở kia". Hạt xếp trước
+ * vì đó là thứ hay tra hơn: xem còn hạt không rồi mới ra ruộng gieo.
+ *
+ * Dựng làm ruột hộp thoại nên không có khung thẻ cũng không có tiêu đề.
  *
  * Số lượng muốn bán giữ ngay trong component này chứ không đẩy lên trang:
  * nó chỉ là nút vặn của riêng từng thẻ, trang không cần biết, mà để trên
@@ -16,32 +22,52 @@ import { AnhPixel } from './AnhPixel';
  * điểm, ai muốn giữ lại vài quả thì vặn xuống.
  */
 export function NhaKho({
-  kho, dangLam, onBan,
+  kho, tuiHat, dangLam, onBan,
 }: {
   kho: MonTrongKho[];
+  tuiHat: HatTrongTui[];
   dangLam: boolean;
   onBan: (cropId: string, soLuong: number) => void;
 }) {
   const [chon, setChon] = useState<Record<string, number>>({});
 
   return (
-    <section className="card overflow-hidden">
-      <header className="flex items-center gap-3 border-b border-[var(--nova-border)] bg-gradient-to-r from-lime-50 to-transparent px-4 py-3 dark:from-lime-950/25">
-        <AnhPixel src={ANH_NHA_KHO} className="h-10 w-auto shrink-0" />
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base font-black leading-tight">Nhà kho</h2>
-          {/* Không `truncate`: câu này là lời chỉ dẫn duy nhất khi kho trống,
-              mà thẻ nằm ở cột hẹp nên cắt cụt là mất đúng nửa cuối câu. */}
+    <div>
+      {/* ── Hạt giống đang có ── */}
+      <div className="border-b border-[var(--nova-border)] px-4 py-3">
+        <h3 className="mb-2 text-sm font-black">Hạt giống</h3>
+        {tuiHat.length === 0 ? (
           <p className="retro-sub text-ink-400">
-            {kho.length === 0
-              ? 'Kho đang trống — thu hoạch xong nông sản sẽ nằm ở đây.'
-              : `Đang giữ ${kho.length} loại nông sản, bán lúc nào cũng được.`}
+            Chưa có hạt nào — ghé cửa hàng hạt giống mua đã.
           </p>
-        </div>
-      </header>
+        ) : (
+          <ul className="flex flex-wrap gap-1.5">
+            {tuiHat.map((h) => (
+              <li key={h.cropId}
+                title={`${h.name} — ${moTaVu(h.growMinutes)}`}
+                className="flex items-center gap-1.5 rounded-lg border border-[var(--nova-border)] py-1 pl-1 pr-2">
+                <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded"
+                  style={{ background: 'radial-gradient(circle at 50% 118%, #f2ddb2 0%, #fbf6ec 72%)' }}>
+                  <AnhPixel src={anhNongSan(h.cropKey)} />
+                </span>
+                <span className="whitespace-nowrap text-xs font-bold">{h.name}</span>
+                <span className="chip !px-1.5 !py-0 text-[11px] tabular-nums">{h.qty}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
-      {/* Một cột thôi: thẻ nhà kho đã nằm trong lưới hai cột của trang, chia
-          đôi lần nữa thì mỗi món chỉ còn hơn trăm điểm ảnh, nút bán vỡ dòng. */}
+      {/* ── Nông sản đã thu ── */}
+      <div className="px-4 pt-3">
+        <h3 className="text-sm font-black">Nông sản</h3>
+        {kho.length === 0 && (
+          <p className="retro-sub mt-1 text-ink-400">
+            Kho đang trống — thu hoạch xong nông sản sẽ nằm ở đây.
+          </p>
+        )}
+      </div>
+
       {kho.length > 0 && (
         <ul className="grid grid-cols-1 gap-2 p-3">
           {kho.map((m) => {
@@ -106,6 +132,6 @@ export function NhaKho({
           })}
         </ul>
       )}
-    </section>
+    </div>
   );
 }

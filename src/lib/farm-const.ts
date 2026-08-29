@@ -49,6 +49,74 @@ export function giaMoODat(soO: number): number {
   return soO * GIA_MOI_O;
 }
 
+// ─────────────────────────── Việc nhà nông ───────────────────────────
+
+/**
+ * Năm việc của một vụ, ĐÚNG THỨ TỰ.
+ *
+ * Thứ tự này là luật của trò chứ không phải cách bày nút: xới xong mới gieo
+ * được, gieo xong mới có gì để tưới. Giao diện đọc mảng này để biết việc nào
+ * đang tới lượt, nên đổi thứ tự ở đây là đổi cả luật lẫn giao diện — không có
+ * chỗ thứ hai để quên đồng bộ.
+ */
+export const VIEC_VU = ['xoi', 'gieo', 'tuoi', 'bon', 'thu'] as const;
+export type ViecVu = (typeof VIEC_VU)[number];
+
+export const VIEC_TEN: Record<ViecVu, string> = {
+  xoi: 'Xới đất', gieo: 'Gieo hạt', tuoi: 'Tưới nước',
+  bon: 'Bón phân', thu: 'Thu hoạch',
+};
+
+/** Một việc đang ở tình trạng nào trên thanh việc. */
+export type TinhTrangViec = 'xong' | 'toi-luot' | 'chua-toi';
+
+/**
+ * Việc nào xong, việc nào tới lượt, việc nào còn phải chờ.
+ *
+ * Gom vào một hàm thuần ở đây thay vì rải điều kiện trong JSX, vì cùng một
+ * luật ấy còn phải trả lời câu "bấm nút này có ăn thua gì không" — hai chỗ
+ * viết riêng thì sẽ có lúc nút sáng lên mà bấm vào chẳng làm gì.
+ *
+ * "Tới lượt" là việc ĐẦU TIÊN chưa xong theo thứ tự `VIEC_VU`. Tưới và bón
+ * đều bỏ qua được — bỏ thì thu ít hơn chứ không kẹt — nên khi cây đã chín thì
+ * thu hoạch giành lấy lượt, không bắt phải tưới bù.
+ */
+export function tinhTrangViec(
+  o: { tilled: boolean; cropKey: number | null; watered: boolean; fertilized: boolean },
+  chin: boolean,
+): Record<ViecVu, TinhTrangViec> {
+  const dangTrong = o.cropKey != null;
+  const xong: Record<ViecVu, boolean> = {
+    xoi: o.tilled || dangTrong,
+    gieo: dangTrong,
+    tuoi: dangTrong && o.watered,
+    bon: dangTrong && o.fertilized,
+    thu: false,
+  };
+
+  let toiLuot: ViecVu | null = null;
+  if (!xong.xoi) toiLuot = 'xoi';
+  else if (!dangTrong) toiLuot = 'gieo';
+  else if (chin) toiLuot = 'thu';
+  else if (!o.watered) toiLuot = 'tuoi';
+  else if (!o.fertilized) toiLuot = 'bon';
+
+  return Object.fromEntries(VIEC_VU.map((v) => [
+    v, xong[v] ? 'xong' : v === toiLuot ? 'toi-luot' : 'chua-toi',
+  ])) as Record<ViecVu, TinhTrangViec>;
+}
+
+// ─────────────────────────── Bón phân ───────────────────────────
+
+/** Ảnh bao phân. */
+export const ANH_PHAN = `${FARM_ANH}/phan-bon/3.png`;
+
+/** Giá một lần bón phân, tính bằng điểm. */
+export const PHAN_GIA = 15;
+
+/** Bón phân thì thu thêm bấy nhiêu quả. */
+export const PHAN_THEM = 2;
+
 // ─────────────────────────── Tưới nước ───────────────────────────
 
 /**

@@ -2227,10 +2227,16 @@ model FarmPlot {
   cropId String?
   crop   FarmCrop? @relation(fields: [cropId], references: [id], onDelete: SetNull)
 
+  /// Đã xới chưa. Xới xong mới gieo được, và thu hoạch xong thì đất lại
+  /// chai — mỗi vụ phải xới lại từ đầu.
+  tilled    Boolean   @default(false)
+
   plantedAt DateTime?
   readyAt   DateTime?
   /// Đã tưới chưa — mỗi vụ tưới được một lần, tưới thì được mùa hơn.
   watered   Boolean   @default(false)
+  /// Đã bón phân chưa — mỗi vụ một lần, bón thì thu thêm được ít quả.
+  fertilized Boolean  @default(false)
 
   @@unique([userId, index])
   @@index([userId])

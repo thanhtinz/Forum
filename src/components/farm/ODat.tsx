@@ -45,13 +45,15 @@ export function ODat({ o, now, dangChon, onChon }: Props) {
       aria-pressed={dangChon}
       title={
         dangTrong
-          ? `Ô ${o.index + 1} — đang trống, bấm để gieo hạt`
+          ? o.tilled
+            ? `Ô ${o.index + 1} — đã xới, gieo được rồi`
+            : `Ô ${o.index + 1} — đất còn chai, xới đã`
           : `Ô ${o.index + 1} — ${o.cropName}${chin ? ', đã chín' : ''}`
       }
       data-chon={dangChon ? '1' : '0'}
       aria-label={
         dangTrong
-          ? `Ô đất số ${o.index + 1}, đang trống`
+          ? `Ô đất số ${o.index + 1}, ${o.tilled ? 'đã xới' : 'chưa xới'}`
           : `Ô đất số ${o.index + 1}, ${o.cropName}${chin ? ', đã chín' : ', đang lớn'}`
       }
       className={cn(
@@ -88,6 +90,10 @@ export function ODat({ o, now, dangChon, onChon }: Props) {
             'absolute inset-x-0 bottom-0 mx-auto block',
             chin && 'farm-nhun',
             dangTrong && 'opacity-90 transition-opacity group-hover:opacity-100',
+            // Đất chưa xới thì khô và bạc hơn. Không có dấu hiệu này thì ô đã
+            // xới và ô chưa xới trông y hệt nhau, mà đó lại là thứ quyết định
+            // việc nào đang tới lượt.
+            dangTrong && !o.tilled && 'farm-chai',
           )}
           style={{
             height: 'calc(var(--px) * 32)',
@@ -119,7 +125,7 @@ export function ODat({ o, now, dangChon, onChon }: Props) {
              chừng 2:1, đọc đã khó mà ra nắng thì mất hẳn. */
           <span className="mx-auto block w-fit max-w-full truncate rounded-full bg-black/60 px-2 text-[11px] font-bold leading-4 text-amber-50 group-hover:bg-black/75">
             <span className="group-hover:hidden">Ô {o.index + 1}</span>
-            <span className="hidden group-hover:inline">Gieo hạt</span>
+            <span className="hidden group-hover:inline">{o.tilled ? 'Gieo hạt' : 'Xới đất'}</span>
           </span>
         ) : chin ? (
           <span className="mx-auto block w-fit max-w-full truncate rounded-full bg-emerald-500 px-2 text-[10px] font-black leading-4 text-white shadow-[0_0_10px_rgba(16,185,129,.6)]">

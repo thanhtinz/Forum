@@ -8,7 +8,7 @@ import { lockUsers } from '@/lib/lock';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import {
   HAT_MUA_TOI_DA, KHE_CHU_KY_MS, KHE_MAX, KHE_MIN, O_DAT_BAN_DAU, O_DAT_TOI_DA,
-  TUOI_RUT_NGAN, giaMoODat,
+  PHAN_GIA, PHAN_THEM, TUOI_RUT_NGAN, giaMoODat,
 } from '@/lib/farm-const';
 
 /**
@@ -53,6 +53,32 @@ function lamMoi(): void {
 function docSo(v: FormDataEntryValue | null): number | null {
   const n = Number(String(v ?? '').trim());
   return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
+// ─────────────────────────── Xới đất ───────────────────────────
+
+/**
+ * Xới ô đất cho tơi. Miễn phí, nhưng phải xới rồi mới gieo được.
+ *
+ * Ghi có điều kiện `tilled: false` chứ không đọc rồi mới ghi: hai tab cùng
+ * bấm thì tab sau thấy `count === 0` — không sao cả, đất đã tơi rồi, chỉ là
+ * đừng kể lại là vừa xới xong lần nữa.
+ */
+export async function xoiDat(_prev: FarmState, formData: FormData): Promise<FarmState> {
+  const me = await nhaNong();
+  if ('error' in me) return { error: me.error };
+
+  const o = docSo(formData.get('o'));
+  if (o == null) return { error: 'Chọn ô đất đã nào.' };
+
+  const xong = await db.farmPlot.updateMany({
+    where: { userId: me.userId, index: o, cropId: null, tilled: false },
+    data: { tilled: true },
+  });
+  if (xong.count === 0) return { error: 'Ô này xới rồi, hoặc đang có cây.' };
+
+  lamMoi();
+  return { ok: true, ke: `Đã xới ô ${o + 1}, gieo hạt được rồi.` };
 }
 
 // ─────────────────────────── Mua hạt giống ───────────────────────────
@@ -145,10 +171,11 @@ export async function gieoHat(_prev: FarmState, formData: FormData): Promise<Far
       const now = new Date();
       const readyAt = new Date(now.getTime() + cay.growMinutes * 60_000);
 
-      // `cropId: null` là điều kiện: ô đã có cây thì không câu nào khớp.
+      // `cropId: null` và `tilled: true` đều là điều kiện: ô đã có cây, hay ô
+      // chưa xới, thì không câu nào khớp.
       const xuong = await tx.farmPlot.updateMany({
-        where: { userId: me.userId, index: o, cropId: null },
-        data: { cropId: cay.id, plantedAt: now, readyAt, watered: false },
+        where: { userId: me.userId, index: o, cropId: null, tilled: true },
+        data: { cropId: cay.id, plantedAt: now, readyAt, watered: false, fertilized: false },
       });
       if (xuong.count === 0) throw new Error('o-ban');
     });
@@ -157,7 +184,7 @@ export async function gieoHat(_prev: FarmState, formData: FormData): Promise<Far
       return { error: `Trong túi hết hạt ${cay.name} rồi — ghé cửa hàng mua thêm đã.` };
     }
     if (e instanceof Error && e.message === 'o-ban') {
-      return { error: 'Ô này đang có cây rồi, chọn ô khác nhé.' };
+      return { error: 'Ô này đang có cây, hoặc chưa xới đất.' };
     }
     return { error: 'Không gieo được lúc này, thử lại nhé.' };
   }
@@ -205,6 +232,53 @@ export async function tuoiNuoc(_prev: FarmState, formData: FormData): Promise<Fa
   return { ok: true, ke: `Đã tưới ô ${o + 1} — chín sớm hơn và được mùa hơn.` };
 }
 
+// ─────────────────────────── Bón phân ───────────────────────────
+
+/**
+ * Bón phân cho ô đang có cây: mất điểm, đổi lấy thêm quả lúc thu.
+ *
+ * Trừ tiền và đánh dấu đã bón nằm chung một transaction, và câu đánh dấu là
+ * ghi CÓ ĐIỀU KIỆN (`fertilized: false`) đặt TRƯỚC lúc trừ tiền — hai tab
+ * cùng bấm thì tab sau không khớp, ném lỗi, nên không trả tiền hai lần cho
+ * một lần bón.
+ */
+export async function bonPhan(_prev: FarmState, formData: FormData): Promise<FarmState> {
+  const me = await nhaNong();
+  if ('error' in me) return { error: me.error };
+
+  const o = docSo(formData.get('o'));
+  if (o == null) return { error: 'Chọn ô đất đã nào.' };
+
+  try {
+    await db.$transaction(async (tx) => {
+      const danh = await tx.farmPlot.updateMany({
+        where: {
+          userId: me.userId, index: o,
+          cropId: { not: null }, fertilized: false,
+        },
+        data: { fertilized: true },
+      });
+      if (danh.count === 0) throw new Error('khong-bon-duoc');
+
+      await grantPoints({
+        userId: me.userId, amount: -PHAN_GIA, reason: 'FARM_SEED',
+        note: `Bón phân ô ${o + 1}`,
+      }, tx);
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) {
+      return { error: `Bạn không đủ ${PHAN_GIA} điểm để mua phân bón.` };
+    }
+    if (e instanceof Error && e.message === 'khong-bon-duoc') {
+      return { error: 'Ô này bón rồi, hoặc đang trống.' };
+    }
+    return { error: 'Không bón được lúc này, thử lại nhé.' };
+  }
+
+  lamMoi();
+  return { ok: true, ke: `Đã bón phân ô ${o + 1}, vụ này thu thêm ${PHAN_THEM} quả.` };
+}
+
 // ─────────────────────────── Thu hoạch ───────────────────────────
 
 /**
@@ -228,7 +302,7 @@ export async function thuHoach(_prev: FarmState, formData: FormData): Promise<Fa
       const cu = await tx.farmPlot.findUnique({
         where: { userId_index: { userId: me.userId, index: o } },
         select: {
-          watered: true,
+          watered: true, fertilized: true,
           crop: { select: { id: true, name: true, yieldMin: true, yieldMax: true } },
         },
       });
@@ -240,12 +314,19 @@ export async function thuHoach(_prev: FarmState, formData: FormData): Promise<Fa
           userId: me.userId, index: o,
           cropId: cu.crop.id, readyAt: { lte: now },
         },
-        data: { cropId: null, plantedAt: null, readyAt: null, watered: false },
+        // `tilled: false`: thu xong đất chai lại, vụ sau phải xới từ đầu —
+        // đó là thứ khép vòng năm việc thành một vòng lặp thật.
+        data: {
+          cropId: null, plantedAt: null, readyAt: null,
+          watered: false, fertilized: false, tilled: false,
+        },
       });
       if (don.count === 0) throw new Error('chua-chin');
 
-      // Tưới thì được mùa, không tưới thì chỉ được phần tối thiểu.
-      const soLuong = cu.watered ? cu.crop.yieldMax : cu.crop.yieldMin;
+      // Tưới thì được mùa, không tưới thì chỉ được phần tối thiểu; bón phân
+      // cộng thêm một phần cố định nữa.
+      const soLuong = (cu.watered ? cu.crop.yieldMax : cu.crop.yieldMin)
+        + (cu.fertilized ? PHAN_THEM : 0);
       await tx.farmBarn.upsert({
         where: { userId_cropId: { userId: me.userId, cropId: cu.crop.id } },
         create: { userId: me.userId, cropId: cu.crop.id, qty: soLuong },

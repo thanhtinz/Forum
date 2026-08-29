@@ -5,42 +5,57 @@ import { anhNongSan, moTaVu } from '@/lib/farm-const';
 import { AnhPixel } from './AnhPixel';
 
 /**
- * Túi hạt — bày ngay trong thanh việc dưới mảnh ruộng, không phải trong cửa
- * hàng.
+ * Túi hạt — mở ra từ nút "Gieo hạt" để chọn gieo hạt nào xuống ô đang chọn.
  *
- * Đây là chỗ GIEO, tách hẳn khỏi chỗ MUA: hộp thoại cửa hàng che kín ruộng,
- * mà che ruộng rồi thì không còn ô đất nào để chọn. Ở đây thì ô đang chọn vẫn
- * sáng ngay trên đầu, bấm một gói hạt là thấy cây mọc lên luôn.
+ * Đây chỉ là chỗ CHỌN, không phải chỗ tra cứu: muốn xem đang có những gì thì
+ * vào nhà kho, nơi hạt nằm cạnh nông sản. Nên ở đây mỗi hạt là một nút bấm
+ * to, không có gì khác chen vào.
  *
- * Cuộn ngang chứ không xuống dòng: thanh việc là một dải mỏng dính dưới chân
- * ruộng, cho nó cao dần theo số giống trong túi thì mỗi lần mua thêm một loại
- * là mảnh ruộng lại bị đẩy lên một nấc.
+ * Túi rỗng thì không chỉ báo "hết hạt" rồi thôi mà mời luôn sang cửa hàng —
+ * để nguyên thì người chơi bấm "Gieo hạt" xong gặp một hộp thoại trống rỗng,
+ * không biết đi đâu tiếp.
  */
-export function TuiHat({ tui, dangLam, onGieo }: {
+export function TuiHat({ tui, dangLam, onGieo, onToiCuaHang }: {
   tui: HatTrongTui[];
   dangLam: boolean;
   onGieo: (cayId: string) => void;
+  onToiCuaHang: () => void;
 }) {
-  return (
-    <div className="no-scrollbar -mx-1 flex max-w-full gap-1.5 overflow-x-auto px-1 pb-0.5">
-      {tui.map((h) => (
-        <button
-          key={h.cropId}
-          type="button"
-          disabled={dangLam}
-          onClick={() => onGieo(h.cropId)}
-          title={`Gieo ${h.name} — ${moTaVu(h.growMinutes)}, còn ${h.qty} hạt`}
-          aria-label={`Gieo hạt ${h.name}, trong túi còn ${h.qty}`}
-          className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--nova-border)] bg-[var(--nova-surface)] py-1 pl-1 pr-2 transition-colors hover:border-emerald-400 disabled:opacity-50"
-        >
-          <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded"
-            style={{ background: 'radial-gradient(circle at 50% 118%, #f2ddb2 0%, #fbf6ec 72%)' }}>
-            <AnhPixel src={anhNongSan(h.cropKey)} />
-          </span>
-          <span className="whitespace-nowrap text-xs font-bold">{h.name}</span>
-          <span className="chip !px-1.5 !py-0 text-[11px] tabular-nums">{h.qty}</span>
+  if (tui.length === 0) {
+    return (
+      <div className="px-4 py-6 text-center">
+        <p className="text-sm text-ink-500 dark:text-ink-300">
+          Túi chưa có hạt nào.
+        </p>
+        <button type="button" onClick={onToiCuaHang} className="btn-primary mt-3 !py-1.5">
+          Tới cửa hàng mua hạt
         </button>
+      </div>
+    );
+  }
+
+  return (
+    <ul className="grid grid-cols-2 gap-2 p-3 sm:grid-cols-3">
+      {tui.map((h) => (
+        <li key={h.cropId}>
+          <button
+            type="button"
+            disabled={dangLam}
+            onClick={() => onGieo(h.cropId)}
+            title={`Gieo ${h.name} — ${moTaVu(h.growMinutes)}`}
+            aria-label={`Gieo hạt ${h.name}, trong túi còn ${h.qty}`}
+            className="flex h-full w-full flex-col items-center rounded-xl border border-[var(--nova-border)] bg-[var(--nova-surface)] px-2 pb-2 pt-2.5 text-center transition-all hover:-translate-y-0.5 hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span className="grid size-12 place-items-center overflow-hidden rounded-lg"
+              style={{ background: 'radial-gradient(circle at 50% 118%, #f2ddb2 0%, #fbf6ec 72%)' }}>
+              <AnhPixel src={anhNongSan(h.cropKey)} phong={2} />
+            </span>
+            <span className="mt-1.5 block text-[13px] font-bold leading-tight">{h.name}</span>
+            <span className="retro-sub mt-0.5 block flex-1 text-ink-400">{moTaVu(h.growMinutes)}</span>
+            <span className="chip mt-1.5 !px-2 !py-0 text-[11px] tabular-nums">còn {h.qty}</span>
+          </button>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

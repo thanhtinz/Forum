@@ -9,7 +9,7 @@ import { Avatar, UserName } from '@/components/user/Cosmetic';
 import {
   isGradient, KIND_LABELS, NO_COSMETICS, type Cosmetics, type ShopItemView,
 } from '@/lib/shop-const';
-import { fmtCount } from '@/lib/utils';
+import { cn, fmtCount } from '@/lib/utils';
 
 /** Người đang xem — để xem trước món đồ trên chính hồ sơ của họ. */
 export interface ShopViewer {
@@ -29,6 +29,8 @@ export interface ShopViewer {
  * avatar mình, cạnh những món mình đang đeo. Bán đồ trang trí mà bắt người ta
  * mua xong mới biết nó ra sao thì không ai mua lần hai.
  */
+const NUT_MUA = 'ml-auto w-full justify-center !py-1.5 text-sm disabled:opacity-60 sm:w-auto';
+
 export function ShopItemCard({ item, myPoints, loggedIn, viewer, showKind = true }: {
   item: ShopItemView;
   myPoints?: number;
@@ -56,6 +58,9 @@ export function ShopItemCard({ item, myPoints, loggedIn, viewer, showKind = true
 
   const tooPoor = myPoints != null && myPoints < item.pricePoints;
 
+  // Thẻ chỉ rộng ~150px trên điện thoại, nút không đứng cạnh giá được nên nó
+  // rơi xuống dòng dưới rồi nép về phải — giá bên trái, nút bên phải dòng dưới,
+  // thành hình chữ L. Cho nút chiếm trọn bề ngang thì thành hai tầng cố ý.
   const actions = (
     <>
       {!loggedIn ? (
@@ -64,19 +69,19 @@ export function ShopItemCard({ item, myPoints, loggedIn, viewer, showKind = true
         <button type="button" disabled={pending || tooPoor}
           title={tooPoor ? 'Bạn không đủ điểm' : undefined}
           onClick={() => run(() => buyShopItem(item.id), () => setOwned(true))}
-          className="btn-primary ml-auto !py-1.5 text-sm disabled:opacity-60">
+          className={cn(NUT_MUA, 'btn-primary')}>
           <ShoppingBag size={15} /> {pending ? 'Đang mua…' : 'Mua'}
         </button>
       ) : equipped ? (
         <button type="button" disabled={pending}
           onClick={() => run(() => unequipShopItem(item.id), () => setEquipped(false))}
-          className="btn-outline ml-auto !py-1.5 text-sm text-emerald-600 disabled:opacity-60 dark:text-emerald-400">
+          className={cn(NUT_MUA, 'btn-outline text-emerald-600 dark:text-emerald-400')}>
           <Check size={15} /> Đang đeo
         </button>
       ) : (
         <button type="button" disabled={pending}
           onClick={() => run(() => equipShopItem(item.id), () => setEquipped(true))}
-          className="btn-outline ml-auto !py-1.5 text-sm disabled:opacity-60">
+          className={cn(NUT_MUA, 'btn-outline')}>
           Đeo lên
         </button>
       )}

@@ -51,7 +51,9 @@ export default async function DashboardPage() {
             ? <img src={user.image} alt="" className="h-14 w-14 rounded-2xl object-cover" />
             : <span className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-500 text-xl font-black text-white">{name[0]?.toUpperCase()}</span>}
           <div>
-            <div className="flex items-center gap-2">
+            {/* `flex-wrap` + `items-baseline`: tên dài thì xuống dòng, và khung
+                cấp đi theo chân chữ chứ không lơ lửng giữa hai dòng tên. */}
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <h1 className="text-lg font-bold">Xin chào, {name}</h1>
               <LevelBadge level={user.level} color={levelLook?.color} name={levelLook?.name} />
             </div>
@@ -120,12 +122,15 @@ export default async function DashboardPage() {
 function StatCard({ icon, color, label, value, href, progress }: {
   icon: React.ReactNode; color: string; label: string; value: string; href?: string; progress?: number;
 }) {
+  // Dưới 640px ba tấm này xếp chồng, mỗi tấm cao gần 90px chỉ để đỡ một con
+  // số — hết một phần ba màn hình cho ba dòng chữ. Nên ở khổ đó nhãn và số
+  // đứng cùng một hàng, thanh tiến độ tụt xuống hàng dưới chiếm trọn bề ngang.
   const inner = (
-    <div className="card h-full p-4">
+    <div className="card h-full p-4 max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:justify-between max-sm:gap-x-3 max-sm:p-3">
       <div className={`flex items-center gap-1.5 text-sm text-ink-500 ${color}`}>{icon}<span className="text-ink-500">{label}</span></div>
-      <div className="mt-1.5 text-lg font-bold">{value}</div>
+      <div className="mt-1.5 text-lg font-bold max-sm:mt-0">{value}</div>
       {progress != null && (
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
+        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800">
           <div className="h-full rounded-full bg-brand-500" style={{ width: `${progress}%` }} />
         </div>
       )}

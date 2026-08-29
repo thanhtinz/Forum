@@ -72,29 +72,32 @@ export function ThreadRow({ thread, forumSlug, showForum }: { thread: ThreadRowD
 
           Tên người đăng kéo theo cả Lv, danh hiệu, thẻ câu lạc bộ và huy
           hiệu, nên ở 390px hàng này luôn tràn sang dòng thứ hai — mỗi hàng
-          chủ đề tự dưng cao thêm 21px. Nay phần tên bị cắt bớt khi chật, còn
-          hai con số xem/trả lời thì giữ nguyên: cắt tên vẫn đọc ra ai, chứ
-          cắt con số thì mất hẳn thông tin.
+          chủ đề tự dưng cao thêm 21px.
+
+          Chỉ cắt bớt thì chưa đủ: chỗ cắt rơi vào GIỮA một cái nhãn, "[HMGJ]"
+          hiện ra thành "[HM". Nên dưới 640px mấy cái nhãn ẩn hẳn
+          (`gonTrenDienThoai`), còn lại tên + cấp + thời gian + hai con số —
+          đều là thứ đọc trọn vẹn hoặc không hiện, không có nửa vời.
         */}
         <p className="retro-sub retro-rule mt-1 flex items-center gap-x-1.5 overflow-hidden pt-1 text-ink-400 max-sm:flex-nowrap sm:flex-wrap">
           <span className="flex min-w-0 items-center gap-x-1.5 max-sm:overflow-hidden max-sm:[&_*]:flex-nowrap">
             <UserName username={thread.author?.username ?? null} name={thread.author?.name ?? null}
-              role={thread.author?.role} cosmetics={cos} className="!font-medium" />
+              role={thread.author?.role} cosmetics={cos} className="!font-medium" gonTrenDienThoai />
           </span>
           {/* Thời gian nằm ở cột riêng khi màn hình đủ rộng */}
           <span className="lg:hidden">·</span>
-          <span className="lg:hidden">{fmtAgo(at)}</span>
+          <span className="whitespace-nowrap lg:hidden">{fmtAgo(at)}</span>
           {showForum && thread.forum && (
             <>
               <span>·</span>
-              <Link href={`/forum/${thread.forum.slug}`} className="chip bg-ink-100 !py-0 text-[11px] text-ink-500 hover:text-brand-600 dark:bg-ink-800 dark:text-ink-300">
+              <Link href={`/forum/${thread.forum.slug}`} className="chip max-w-[9rem] truncate whitespace-nowrap bg-ink-100 !py-0 text-[11px] text-ink-500 hover:text-brand-600 dark:bg-ink-800 dark:text-ink-300">
                 {thread.forum.name}
               </Link>
             </>
           )}
-          <span className="ml-auto flex shrink-0 items-center gap-2 sm:hidden">
-            <span className="flex items-center gap-0.5"><Eye size={12} />{fmtCount(thread.viewCount)}</span>
-            <span className="flex items-center gap-0.5"><MessageSquare size={12} />{fmtCount(thread.replyCount)}</span>
+          <span className="ml-auto flex shrink-0 items-center gap-2 pl-1 sm:hidden">
+            <span className="flex items-center gap-0.5 whitespace-nowrap"><Eye size={12} />{fmtCount(thread.viewCount)}</span>
+            <span className="flex items-center gap-0.5 whitespace-nowrap"><MessageSquare size={12} />{fmtCount(thread.replyCount)}</span>
           </span>
         </p>
       </div>

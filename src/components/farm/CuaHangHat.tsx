@@ -77,7 +77,11 @@ export function CuaHangHat({ cay, diem, oSeGieo, dangLam, onGieo }: Props) {
                 </span>
 
                 <span className="mt-1.5 block text-[13px] font-bold leading-tight sm:text-sm">{c.name}</span>
-                <span className="retro-sub mt-0.5 block text-ink-400">
+                {/* `flex-1`: dòng này dài ngắn khác nhau ("1 giờ 30 phút · thu
+                    4–6" chiếm ba dòng, "5 phút · thu 2–3" một dòng). Cho nó ăn
+                    hết chỗ thừa thì nhãn giá của cả hàng thẻ nằm thẳng một
+                    đường thay vì so le theo độ dài mô tả. */}
+                <span className="retro-sub mt-0.5 block flex-1 text-ink-400">
                   {moTaVu(c.growMinutes)} · thu {c.yieldMin}–{c.yieldMax}
                 </span>
                 <span className="chip mt-1.5 bg-amber-100 text-[11px] text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">

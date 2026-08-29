@@ -56,50 +56,52 @@ export function ReplyActions({ threadId, replyId, initialLiked, initialLikeCount
 
   return (
     <div>
-      <div className="mt-1.5 flex items-center gap-4 text-xs text-ink-400">
+      {/* Cho xuống hàng: trên điện thoại tám mục này bị bóp lại tới mức chữ
+          vỡ giữa từ ("Trả / lời"), nhìn như hỏng chứ không như chật. */}
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-400">
         <button type="button" onClick={onLike} disabled={pending}
-          className={cn('flex items-center gap-1 transition-colors hover:text-accent-500 disabled:opacity-60', liked && 'text-accent-500')}>
+          className={cn('flex shrink-0 items-center gap-1 whitespace-nowrap transition-colors hover:text-accent-500 disabled:opacity-60', liked && 'text-accent-500')}>
           <Heart size={13} className={liked ? 'fill-current' : ''} />{fmtCount(count)}
         </button>
         {canReply && (
           <button type="button" onClick={() => { setSeed(undefined); setShowForm((v) => !v); }}
-            className="flex items-center gap-1 transition-colors hover:text-brand-600">
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap transition-colors hover:text-brand-600">
             <ReplyIcon size={13} /> Trả lời
           </button>
         )}
         {canReply && quote && loggedIn && (
           <button type="button" onClick={() => { setSeed(quote); setShowForm(true); }}
             title="Trả lời kèm trích dẫn bài này"
-            className="flex items-center gap-1 transition-colors hover:text-brand-600">
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap transition-colors hover:text-brand-600">
             <Quote size={13} /> Trích dẫn
           </button>
         )}
         {canManage && (
           <>
             <button type="button" onClick={() => setEditing(!editing)}
-              className={cn('flex items-center gap-1 transition-colors hover:text-brand-600', editing && 'text-brand-600')}>
+              className={cn('flex shrink-0 items-center gap-1 whitespace-nowrap transition-colors hover:text-brand-600', editing && 'text-brand-600')}>
               <Pencil size={13} /> Sửa
             </button>
             <button type="button" onClick={onDelete} disabled={pending}
-              className="flex items-center gap-1 transition-colors hover:text-rose-500 disabled:opacity-60">
+              className="flex shrink-0 items-center gap-1 whitespace-nowrap transition-colors hover:text-rose-500 disabled:opacity-60">
               <Trash2 size={13} /> Xoá
             </button>
           </>
         )}
         {canReport && (
           <ReportButton target="reply" targetId={replyId}
-            className="flex items-center gap-1 transition-colors hover:text-red-500" />
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap transition-colors hover:text-red-500" />
         )}
         {canModerate && (
           <button type="button" onClick={onHide} disabled={pending}
             title={hidden ? 'Hiện lại trả lời này' : 'Ẩn trả lời này khỏi mọi người'}
-            className="flex items-center gap-1 transition-colors hover:text-rose-500 disabled:opacity-60">
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap transition-colors hover:text-rose-500 disabled:opacity-60">
             {hidden ? <><Eye size={13} /> Hiện lại</> : <><EyeOff size={13} /> Ẩn</>}
           </button>
         )}
         {canMarkSolution && (
           <button type="button" onClick={onSolve} disabled={pending}
-            className="flex items-center gap-1 font-medium text-emerald-600 transition-colors hover:text-emerald-700 disabled:opacity-60">
+            className="flex shrink-0 items-center gap-1 whitespace-nowrap font-medium text-emerald-600 transition-colors hover:text-emerald-700 disabled:opacity-60">
             <CheckCircle2 size={13} /> Chọn làm lời giải
           </button>
         )}

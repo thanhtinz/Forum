@@ -7,6 +7,9 @@ import { cn, fmtCount } from '@/lib/utils';
 import { toggleThreadLike, toggleThreadFollow, toggleThreadFavorite } from '@/app/(site)/forum/actions';
 import { ReportButton } from '@/components/ReportButton';
 
+/** Kiểu chung cho mọi nút trong hàng — trước đây mỗi nút chép lại một chuỗi. */
+const NUT = 'btn-outline !rounded-full whitespace-nowrap gap-1 !px-3 !py-1.5 !text-xs sm:gap-1.5 sm:!px-4 sm:!py-2 sm:!text-sm';
+
 export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, initialFollowing, initialFollowCount, initialSaved, initialSaveCount, modMenu, canReport, quoteHref }: {
   threadId: string; initialLiked: boolean; initialLikeCount: number;
   initialFollowing: boolean; initialFollowCount: number;
@@ -65,35 +68,38 @@ export function ThreadActionBar({ threadId, initialLiked, initialLikeCount, init
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      {/* Trên điện thoại: pill nhỏ hơn và canh trái, nếu không tám nút này
+          xếp thành bốn hàng chiếm gần hết màn. Chữ không được vỡ dòng — nút
+          cao gấp đôi vì chữ "Trích dẫn" rơi xuống dòng thì nhìn như lỗi. */}
+      <div className="flex flex-wrap items-center justify-start gap-1.5 sm:justify-center sm:gap-2">
         <button type="button" onClick={onLike} disabled={pending}
-          className={cn('btn-outline !rounded-full gap-1.5 !px-4 disabled:opacity-60', liked && 'border-accent-500/40 text-accent-500')}>
+          className={cn(NUT, 'disabled:opacity-60', liked && 'border-accent-500/40 text-accent-500')}>
           <Heart size={16} className={liked ? 'fill-current' : ''} /> Thích <span className="text-ink-400">{fmtCount(count)}</span>
         </button>
-        <a href="#tra-loi" className="btn-outline !rounded-full gap-1.5 !px-4"><MessageSquare size={16} /> Trả lời</a>
+        <a href="#tra-loi" className={NUT}><MessageSquare size={16} /> Trả lời</a>
         <button type="button" onClick={onFollow} disabled={pending}
           title={following ? 'Bỏ theo dõi chủ đề' : 'Theo dõi để nhận báo khi có trả lời mới'}
-          className={cn('btn-outline !rounded-full gap-1.5 !px-4 disabled:opacity-60', following && 'border-brand-500/40 text-brand-600')}>
+          className={cn(NUT, 'disabled:opacity-60', following && 'border-brand-500/40 text-brand-600')}>
           {following ? <BellOff size={16} /> : <Bell size={16} />}
           {following ? 'Đang theo dõi' : 'Theo dõi'}
           {followCount > 0 && <span className="text-ink-400">{fmtCount(followCount)}</span>}
         </button>
         <button type="button" onClick={onSave} disabled={pending}
           title={saved ? 'Bỏ khỏi mục Đã lưu' : 'Lưu chủ đề để đọc lại sau'}
-          className={cn('btn-outline !rounded-full gap-1.5 !px-4 disabled:opacity-60', saved && 'border-amber-500/40 text-amber-600')}>
+          className={cn(NUT, 'disabled:opacity-60', saved && 'border-amber-500/40 text-amber-600')}>
           <Bookmark size={16} className={saved ? 'fill-current' : ''} />
           {saved ? 'Đã lưu' : 'Lưu'}
           {saveCount > 0 && <span className="text-ink-400">{fmtCount(saveCount)}</span>}
         </button>
         {quoteHref && (
-          <Link href={quoteHref} className="btn-outline !rounded-full gap-1.5 !px-4">
+          <Link href={quoteHref} className={NUT}>
             <Quote size={16} /> Trích dẫn
           </Link>
         )}
-        <button type="button" onClick={onShare} className="btn-outline !rounded-full gap-1.5 !px-4"><Share2 size={16} /> Chia sẻ</button>
+        <button type="button" onClick={onShare} className={NUT}><Share2 size={16} /> Chia sẻ</button>
         {canReport && (
           <ReportButton target="thread" targetId={threadId}
-            className="btn-outline !rounded-full gap-1.5 !px-4 hover:text-red-500" />
+            className={cn(NUT, 'hover:text-red-500')} />
         )}
         {modMenu}
       </div>

@@ -25,6 +25,7 @@ import { LevelBadge } from '@/components/LevelBadge';
  */
 export function UserName({
   username, name, role, level, look, levelColor, cosmetics = NO_COSMETICS, className, asLink = true,
+  gonTrenDienThoai = false,
 }: {
   username: string | null;
   name: string | null;
@@ -37,7 +38,17 @@ export function UserName({
   cosmetics?: Cosmetics;
   className?: string;
   asLink?: boolean;
+  /**
+   * Dưới 640px chỉ giữ tên và cấp, giấu danh hiệu / thẻ nhóm / huy hiệu.
+   *
+   * Dành cho những hàng một dòng không cho xuống dòng (hàng chân của chủ đề
+   * chẳng hạn): ở đó bốn cái nhãn nối đuôi nhau luôn dài quá khổ, và cái bị
+   * cắt lại cắt NGANG THÂN CHỮ — "[HMGJ]" hiện ra thành "[HM". Thà không hiện
+   * còn hơn hiện một nửa.
+   */
+  gonTrenDienThoai?: boolean;
 }) {
+  const anPhu = gonTrenDienThoai ? 'max-sm:hidden' : undefined;
   const label = name ?? username ?? 'Ẩn danh';
   const bought = cosmetics.nameColor;
   const mauCap = look?.color ?? levelColor;
@@ -69,10 +80,10 @@ export function UserName({
         <span className={cls} style={style}>{label}</span>
       )}
       {level != null && <LevelBadge level={level} color={look?.color} name={look?.name} />}
-      <CosmeticTitle cosmetics={cosmetics} />
-      <CosmeticClub cosmetics={cosmetics} />
-      <CosmeticMedal cosmetics={cosmetics} />
-      <CosmeticBadge cosmetics={cosmetics} />
+      <CosmeticTitle cosmetics={cosmetics} className={anPhu} />
+      <CosmeticClub cosmetics={cosmetics} className={anPhu} />
+      <CosmeticMedal cosmetics={cosmetics} className={anPhu} />
+      <CosmeticBadge cosmetics={cosmetics} className={anPhu} />
     </span>
   );
 }

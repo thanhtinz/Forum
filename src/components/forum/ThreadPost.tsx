@@ -87,7 +87,12 @@ export function ThreadPost({ author, createdAt, index, isSolution, header, child
                 admin đặt — "mod màu nick thành viên" của forum wap ngày xưa. */}
             <UserName username={author.username} name={author.name} levelColor={author.levelColor}
               cosmetics={cos} className="leading-tight" />
-            <p className="truncate text-[11px] text-ink-400">{author.levelName ?? rankOf(author.level)}</p>
+            {/* Tên bậc chỉ nhắc lại khi nó CHƯA đứng cạnh tên: từ lúc danh
+                hiệu theo cấp chuyển vào `UserName`, dòng này lặp y nguyên cái
+                nhãn ngay phía trên — "Quen thuộc" hai lần liền nhau. */}
+            {!cos.title && (
+              <p className="truncate text-[11px] text-ink-400">{author.levelName ?? rankOf(author.level)}</p>
+            )}
             <LevelBadge className="mt-1" level={author.level}
               color={author.levelColor} name={author.levelName} />
           </div>

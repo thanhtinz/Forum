@@ -110,7 +110,9 @@ export default async function HomePage() {
           </span>
           <div className="min-w-0">
             <h1 className="truncate text-lg font-black leading-tight text-ink-900 dark:text-white">Diễn đàn {site.name}</h1>
-            <p className="truncate text-xs text-ink-400">Thảo luận, hỏi đáp và giao lưu cùng cộng đồng.</p>
+            {/* Chật thì xuống dòng chứ đừng cắt: câu này ngắn, ở 390px nó cụt
+                mất ba chữ cuối mà bên dưới vẫn còn thừa chỗ. */}
+            <p className="text-xs text-ink-400 max-sm:leading-snug sm:truncate">Thảo luận, hỏi đáp và giao lưu cùng cộng đồng.</p>
           </div>
         </div>
 

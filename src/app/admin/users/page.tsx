@@ -77,27 +77,34 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
         {users.map((u) => {
           const banned = u.status === 'BANNED';
           return (
-            <div key={u.id} className="flex flex-wrap items-center gap-3 p-3 sm:flex-nowrap">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              {u.image
-                ? <img src={u.image} alt="" className="size-9 shrink-0 rounded-full object-cover" />
-                : <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">{(u.name ?? u.username ?? 'U')[0]?.toUpperCase()}</span>}
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <Link href={`/u/${u.username}`} target="_blank" className="truncate text-sm font-semibold text-ink-900 hover:text-brand-600 dark:text-white">{u.name ?? u.username ?? 'Ẩn danh'}</Link>
-                  {u.role !== 'USER' && <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase', ROLE_BADGE[u.role])}>{u.role}</span>}
-                  {banned && <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase text-rose-500">Đã khoá</span>}
-                </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
-                  <span className="truncate">{u.email ?? `@${u.username}`}</span>
-                  <span>·</span>
-                  <span>{fmtCount(u.points)} điểm</span>
-                  <span className="hidden sm:inline">·</span>
-                  <span className="hidden sm:inline">{format(u.createdAt, 'dd/MM/yyyy')}</span>
+            // Trên điện thoại: danh tính một hàng, các nút một hàng. Trước đây
+            // cả hai chen nhau trên cùng một hàng 390px nên email bị cắt còn
+            // "member@nova.lo…" và số điểm rớt xuống dòng bỏ lại dấu "·" treo.
+            <div key={u.id} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {u.image
+                  ? <img src={u.image} alt="" className="size-9 shrink-0 rounded-full object-cover" />
+                  : <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700 dark:bg-brand-950 dark:text-brand-300">{(u.name ?? u.username ?? 'U')[0]?.toUpperCase()}</span>}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <Link href={`/u/${u.username}`} target="_blank" className="truncate text-sm font-semibold text-ink-900 hover:text-brand-600 dark:text-white">{u.name ?? u.username ?? 'Ẩn danh'}</Link>
+                    {u.role !== 'USER' && <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase', ROLE_BADGE[u.role])}>{u.role}</span>}
+                    {banned && <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase text-rose-500">Đã khoá</span>}
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
+                    <span className="truncate">{u.email ?? `@${u.username}`}</span>
+                    <span>·</span>
+                    <span>{fmtCount(u.points)} điểm</span>
+                    <span>·</span>
+                    <span>{format(u.createdAt, 'dd/MM/yyyy')}</span>
+                  </div>
                 </div>
               </div>
-              <UserRowActions id={u.id} username={u.username ?? ''} role={u.role} banned={banned}
-                bans={bansOf(u.id)} canManageRole={isSuperAdmin} isAdmin={u.role === 'ADMIN'} />
+              <div className="pl-12 sm:ml-auto sm:pl-0">
+                <UserRowActions id={u.id} username={u.username ?? ''} role={u.role} banned={banned}
+                  bans={bansOf(u.id)} canManageRole={isSuperAdmin} isAdmin={u.role === 'ADMIN'} />
+              </div>
             </div>
           );
         })}

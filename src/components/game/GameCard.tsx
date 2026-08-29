@@ -25,9 +25,18 @@ export function GameCard({ game, variant = 'grid' }: GameCardProps) {
     return (
       <Link href={href} className="post-card w-36 shrink-0 p-3 sm:w-40">
         <GameIcon game={game} tint={tint} size={64} className="mx-auto" />
-        <p className="mt-2 line-clamp-2 text-center text-sm font-semibold leading-snug">{game.title}</p>
-        <p className="mt-0.5 text-center text-[11px] text-ink-400">
-          {game.genres[0]?.name ?? 'Java ME'} · {fmtCount(game.downloadCount)} lượt tải
+        {/* `flex-1`: tên game một hay hai dòng tuỳ cái, cho nó ăn chỗ thừa thì
+            hai dòng chú thích bên dưới của cả băng thẻ nằm thẳng một đường. */}
+        <p className="mt-2 line-clamp-2 flex-1 text-center text-sm font-semibold leading-snug">{game.title}</p>
+        {/* Hai dòng cố ý, mỗi dòng một ý. Trước đây là một câu nối bằng dấu
+            chấm giữa, mà thẻ chỉ rộng 144px nên nó tự vỡ ở chỗ ngẫu nhiên —
+            "Arcade · 30.1K lượt" rồi "tải" nằm trơ một mình dòng dưới, và thẻ
+            trong cùng một băng cao thấp khác nhau. */}
+        <p className="mt-0.5 truncate text-center text-[11px] text-ink-400">
+          {game.genres[0]?.name ?? 'Java ME'}
+        </p>
+        <p className="truncate text-center text-[11px] text-ink-400">
+          {fmtCount(game.downloadCount)} lượt tải
         </p>
       </Link>
     );

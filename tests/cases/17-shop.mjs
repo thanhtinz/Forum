@@ -16,7 +16,11 @@ export default async function run(check) {
       where: { id: { in: [minh.id, huy.id] } },
       data: { nameColorId: null, shopBadgeId: null },
     });
-    await db.shopItem.deleteMany({ where: { slug: { startsWith: 'kiem-thu-' } } });
+    // Lọc theo TÊN chứ không theo slug: slug do ứng dụng tự sinh ra là
+    // "nick-do-kiem-thu-<hậu tố>", không hề bắt đầu bằng "kiem-thu-", nên bộ
+    // lọc cũ chẳng xoá được gì. Mỗi lượt chạy để lại một món, lượt sau tạo
+    // thêm một món trùng tên nữa, và bài kiểm gãy vì tìm ra hai nút giống hệt.
+    await db.shopItem.deleteMany({ where: { name: { contains: 'kiểm thử' } } });
   };
   await wipe();
 

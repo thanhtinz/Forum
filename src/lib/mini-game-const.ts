@@ -28,10 +28,29 @@ export const ANH = '/hoai-niem';
  * chơi: đây là chỗ TIÊU điểm cho vui, không phải chỗ kiếm điểm.
  */
 /**
- * Thứ tự sáu ô TRÊN MẶT BÀN gốc (`baucua/ban.gif`, 135×85): hàng trên Nai, Bầu,
- * Gà; hàng dưới Tôm, Cua, Cá. Không phải thứ tự 1→6 của mấy tệp ảnh xúc xắc.
+ * Sáu ô TRÊN MẶT BÀN gốc (`baucua/ban.gif`, 135×85), kèm vị trí từng ô.
+ *
+ * Toạ độ đo thẳng trên ảnh chứ không ước lượng: khung vẽ trong ảnh nằm ở
+ * x = 2, 51, 100 và y = 4, 52, mỗi ô 32×32 pixel. Quy ra phần trăm để ô bấm
+ * co giãn theo ảnh. Lưới CSS đều nhau KHÔNG khớp được vì lề trái, lề phải và
+ * khoảng cách giữa các ô trong ảnh vốn không bằng nhau — cứ chia đều là viền
+ * lệch khỏi khung vẽ, nhìn rất chối.
+ *
+ * Thứ tự ô trên bàn: hàng trên Nai, Bầu, Gà; hàng dưới Tôm, Cua, Cá. Không
+ * phải thứ tự 1→6 của mấy tệp ảnh xúc xắc.
  */
-export const BAUCUA_BAN = [1, 2, 3, 6, 5, 4] as const;
+const O_W = (32 / 135) * 100;
+const O_H = (32 / 85) * 100;
+const COT = [2, 51, 100].map((x) => (x / 135) * 100);
+const HANG = [4, 52].map((y) => (y / 85) * 100);
+
+export const BAUCUA_BAN = ([1, 2, 3, 6, 5, 4] as const).map((con, i) => ({
+  con,
+  left: `${COT[i % 3]!.toFixed(3)}%`,
+  top: `${HANG[Math.floor(i / 3)]!.toFixed(3)}%`,
+  width: `${O_W.toFixed(3)}%`,
+  height: `${O_H.toFixed(3)}%`,
+}));
 
 export const BAUCUA_CONS = [
   { id: 1, ten: 'Nai' },

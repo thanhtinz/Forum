@@ -133,17 +133,18 @@ export function BanBauCua({ ban0 }: { ban0: BanState }) {
             className="w-full rounded-xl"
             style={{ imageRendering: 'pixelated' }} />
 
-          {/* Ô bấm xếp đúng lưới 3×2 của tấm ảnh. Ô trong suốt để lộ hình vẽ
-              bên dưới — thứ người ta nhận ra ngay là con gì. */}
-          <div className="absolute inset-0 grid grid-cols-3 grid-rows-2 gap-[2.5%] p-[4%]">
-            {BAUCUA_BAN.map((id) => {
+          {/* Ô bấm đặt đúng lên từng khung vẽ trong ảnh (toạ độ đo sẵn trong
+              `BAUCUA_BAN`). Ô trong suốt để lộ hình vẽ bên dưới — thứ người ta
+              nhận ra ngay là con gì. */}
+          <div className="absolute inset-0">
+            {BAUCUA_BAN.map(({ con: id, ...oz }) => {
               const o = ban.cua.find((x) => x.con === id);
               const chon = cua === id;
               const trung = ban.pha === 'kq' && ban.dice
                 ? ban.dice.filter((d) => d === id).length : 0;
               return (
-                <label key={id} title={ten(id)}
-                  className={cn('relative block', dangDat ? 'cursor-pointer' : 'cursor-not-allowed')}>
+                <label key={id} title={ten(id)} style={{ position: 'absolute', ...oz }}
+                  className={cn('block', dangDat ? 'cursor-pointer' : 'cursor-not-allowed')}>
                   <input type="radio" name="con" value={id} checked={chon} disabled={!dangDat}
                     onChange={() => setCua(id)} className="peer sr-only" />
                   <span className={cn(
@@ -180,7 +181,7 @@ export function BanBauCua({ ban0 }: { ban0: BanState }) {
 
         {/* Ai đang đặt cửa nào — mặt bàn chật, con số chi tiết để xuống đây */}
         <ul className="mt-2 grid grid-cols-3 gap-x-3 gap-y-1 text-center sm:grid-cols-6">
-          {BAUCUA_BAN.map((id) => {
+          {BAUCUA_BAN.map(({ con: id }) => {
             const o = ban.cua.find((x) => x.con === id);
             return (
               <li key={id} className="retro-sub text-ink-400">

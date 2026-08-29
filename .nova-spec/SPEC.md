@@ -37,7 +37,7 @@ src/
 │   ├── (site)/                  # toàn bộ giao diện công khai
 │   │   ├── page.tsx             # trang chủ = diễn đàn
 │   │   ├── forum/[slug]/[id]/   # chuyên mục → chủ đề
-│   │   ├── dang-chu-de/         # chuyển hướng tới chuyên mục đăng được
+│   │   │                        # đăng bài CHỈ từ trong chuyên mục: /forum/<slug>/new
 │   │   ├── chua-doc/            # chủ đề chưa đọc
 │   │   ├── games/               # kho game
 │   │   ├── giai-tri/            # bầu cua, oẳn tù tì, trắc nghiệm

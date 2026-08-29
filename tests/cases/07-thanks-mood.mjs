@@ -45,8 +45,12 @@ export default async function run(check) {
 
     check('cảm ơn được bài của người khác',
       (await db.reaction.count({ where: { type: 'THANKS', threadId: thread.id } })) === 1);
-    check('có dòng liệt kê người đã cảm ơn',
-      (await p.locator('text=thành viên đã cảm ơn bài này').count()) > 0);
+    // Chờ trên chính DÒNG CHỮ, không chờ trên cơ sở dữ liệu: hàng `Reaction`
+    // ghi xong trước lúc React kịp nhận kết quả action và dựng lại dòng này,
+    // nên `doiToi` ở trên trả về sớm hơn thời điểm dòng chữ hiện ra.
+    const dong = p.locator('text=thành viên đã cảm ơn bài này');
+    await dong.first().waitFor({ timeout: 5000 }).catch(() => {});
+    check('có dòng liệt kê người đã cảm ơn', (await dong.count()) > 0);
     check('tác giả nhận được thông báo',
       (await db.notification.count({ where: { userId: lan.id, title: { contains: 'cảm ơn' } } })) > 0);
 

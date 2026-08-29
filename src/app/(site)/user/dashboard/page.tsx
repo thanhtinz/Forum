@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { format } from 'date-fns';
-import { Bell, Coins, Wallet, TrendingUp, Flame, PenLine, Bookmark, Gift, Banknote, Users, Plus, Settings, FileText, ArrowUpRight, ArrowDownRight, Sparkles } from 'lucide-react';
+import { Bell, Coins, Wallet, TrendingUp, Flame, Bookmark, Gift, Banknote, Users, Plus, Settings, FileText, ArrowUpRight, ArrowDownRight, Sparkles } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { fmtCount } from '@/lib/utils';
@@ -73,7 +73,6 @@ export default async function DashboardPage() {
 
       {/* Lối tắt */}
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <QuickLink href="/dang-chu-de" icon={<PenLine size={18} />} label="Đăng chủ đề" primary />
         <QuickLink href="/chua-doc" icon={<Sparkles size={18} />} label="Chưa đọc" />
         <QuickLink href={`/u/${user.username ?? ''}`} icon={<FileText size={18} />} label="Chủ đề của tôi" />
         <QuickLink href="/user/following" icon={<Users size={18} />} label="Đang theo dõi" />

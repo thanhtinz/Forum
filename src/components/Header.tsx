@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Search, Bell, PenLine, ChevronDown, MessageSquare, Coins } from 'lucide-react';
+import { Search, Bell, ChevronDown, MessageSquare, Coins } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { touchPresence } from '@/lib/presence';
@@ -125,13 +125,6 @@ export async function Header() {
 
           {user ? (
             <>
-              {/* Màn hình chưa đủ rộng thì nút này rút còn cái bút: chữ "Đăng
-                  chủ đề" ăn gần trăm điểm ảnh, mà đó đúng là chỗ đẩy avatar ra
-                  khỏi màn hình. */}
-              <Link href="/dang-chu-de" title="Đăng chủ đề"
-                className="btn-primary hidden !px-2.5 !py-1.5 text-sm sm:inline-flex xl:!px-3">
-                <PenLine size={15} /> <span className="hidden xl:inline">Đăng chủ đề</span>
-              </Link>
               <Link href="/user/messages" title="Tin nhắn"
                 className="relative grid size-9 place-items-center rounded-full text-ink-500 hover:bg-ink-100 dark:hover:bg-ink-800">
                 <MessageSquare size={18} />

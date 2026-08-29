@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Link2, LogIn, Menu, PenLine, Radio, Search, Settings, UserPlus, X } from 'lucide-react';
+import { LayoutDashboard, Link2, LogIn, Menu, Radio, Search, Settings, UserPlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/nav';
 import { IconGlyph } from './IconGlyph';
@@ -92,10 +92,6 @@ export function MobileNav({ nav, loggedIn, siteName, siteLogo }: MobileNavProps)
 
             {loggedIn && (
               <>
-                <Link href="/dang-chu-de"
-                  className="flex items-center gap-3 rounded-xl bg-brand-50 px-3 py-2.5 font-semibold text-brand-600 hover:bg-brand-100 dark:bg-brand-950/40">
-                  <PenLine size={18} /> Đăng chủ đề
-                </Link>
                 <Link href="/user/dashboard"
                   className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-ink-700 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-200 dark:hover:bg-ink-800">
                   <LayoutDashboard size={18} /> Trang cá nhân

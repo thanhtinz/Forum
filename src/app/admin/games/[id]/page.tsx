@@ -130,7 +130,7 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
                             </button>
                           </form>
                           <form action={async () => { 'use server'; await deleteFile(f.id); }}>
-                            <button type="submit" className="text-ink-400 hover:text-red-500" title="Xoá file"><Trash2 size={13} /></button>
+                            <button type="submit" className="text-ink-400 hover:text-red-500" title="Xoá file" aria-label="Xoá file"><Trash2 size={13} /></button>
                           </form>
                         </li>
                       ))}

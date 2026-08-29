@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 /**
  * Những phép kiểm bị bỏ sót ở server action.
@@ -70,12 +70,11 @@ export default async function run(check) {
       await p.waitForTimeout(500);
       await khoiCapHai.locator('textarea[name="content"]').fill(`${DAU} bai moi phai hien ra`);
       await khoiCapHai.locator('button[type="submit"]').first().click();
-      await p.waitForTimeout(2500);
 
-      const moi = await db.reply.findFirst({
+      const moi = await doiToi(() => db.reply.findFirst({
         where: { threadId: t.id, content: { contains: 'bai moi phai hien ra' } },
         select: { id: true, parentId: true },
-      });
+      }));
       check('bài trả lời được ghi lại', !!moi);
       check('bài mới gập về gốc nhánh chứ không lồng thêm tầng',
         moi?.parentId === goc.id, `parentId đang là ${moi?.parentId}`);
@@ -137,6 +136,9 @@ export default async function run(check) {
         ta.dispatchEvent(new Event('input', { bubbles: true }));
       });
       await p.locator('button[type="submit"]').first().click();
+      // Ngủ cứng ở đây là ĐÚNG: mục kiểm này khẳng định bài KHÔNG đổi. Không
+      // chờ được một việc không xảy ra — đổi sang `doiToi` thì lượt nào cũng
+      // ngồi hết hạn rồi mới đi tiếp, mà kết luận vẫn y hệt.
       await p.waitForTimeout(2500);
     }
     const sauKhiSua = await db.thread.findUnique({
@@ -219,7 +221,9 @@ export default async function run(check) {
     if ((await oTraLoi.count()) > 0) {
       await oTraLoi.fill(`${DAU} tra loi dau tien cua nguoi duoc moi`);
       await moiP.locator('button[type="submit"]').first().click();
-      await moiP.waitForTimeout(2500);
+      await doiToi(async () => (await db.pointsLog.count({
+        where: { userId: chu.id, reason: 'INVITE_BONUS', refId: moiVao.id },
+      })) > 0);
     }
     const sauBai = await db.pointsLog.count({
       where: { userId: chu.id, reason: 'INVITE_BONUS', refId: moiVao.id },

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useKhoaCuon } from './use-khoa-cuon';
 
 /**
  * Hộp thoại dựng ở gốc trang thay vì nằm trong cây thẻ của nút mở.
@@ -31,17 +32,11 @@ export function Modal({ open, onClose, title, children, className }: {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
-
-    // Giữ nguyên giá trị cũ rồi trả lại đúng như thế: đặt cứng về '' sẽ xoá
-    // mất `overflow` mà trang có thể đã tự đặt vì lý do khác.
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
-    };
+    return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  // Khoá cuộn nền — nay dùng chung với ngăn kéo và tấm trượt.
+  useKhoaCuon(open);
 
   if (!mounted || !open) return null;
 
@@ -55,7 +50,7 @@ export function Modal({ open, onClose, title, children, className }: {
         className={cn('w-full max-w-md rounded-2xl border border-ink-200 bg-white shadow-2xl dark:border-ink-700 dark:bg-ink-900', className)}>
         <div className="flex items-center justify-between gap-2 border-b border-ink-100 px-4 py-3 dark:border-ink-800">
           <h2 className="min-w-0 truncate font-bold">{title}</h2>
-          <button type="button" onClick={onClose} title="Đóng"
+          <button type="button" onClick={onClose} title="Đóng" aria-label="Đóng hộp thoại"
             className="grid size-8 shrink-0 place-items-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-ink-700 dark:hover:bg-ink-800 dark:hover:text-ink-200">
             <X size={16} />
           </button>

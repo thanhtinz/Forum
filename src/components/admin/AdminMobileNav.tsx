@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Menu, X, ShieldAlert } from 'lucide-react';
 import { AdminNavItems } from './AdminNavItems';
+import { useKhoaCuon } from '../use-khoa-cuon';
 
 /** Nút burger + drawer điều hướng quản trị cho mobile. */
 export function AdminMobileNav({ isSuperAdmin }: { isSuperAdmin: boolean }) {
   const [open, setOpen] = useState(false);
+  // Khoá cuộn nền khi lớp phủ đang mở.
+  useKhoaCuon(open);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 

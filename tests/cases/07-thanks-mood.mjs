@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, doiToi, openPage } from '../helpers.mjs';
 
 const TITLE = 'Chủ đề kiểm thử nút cảm ơn';
 
@@ -41,7 +41,7 @@ export default async function run(check) {
     await p.goto(url, { waitUntil: 'networkidle' });
     await p.waitForTimeout(700);
     await p.locator('button:has-text("Cảm ơn")').first().click();
-    await p.waitForTimeout(2200);
+    await doiToi(async () => (await db.reaction.count({ where: { type: 'THANKS', threadId: thread.id } })) === 1);
 
     check('cảm ơn được bài của người khác',
       (await db.reaction.count({ where: { type: 'THANKS', threadId: thread.id } })) === 1);
@@ -52,7 +52,7 @@ export default async function run(check) {
 
     // Bấm lại là bỏ
     await p.locator('button:has-text("Đã cảm ơn")').first().click();
-    await p.waitForTimeout(2200);
+    await doiToi(async () => (await db.reaction.count({ where: { type: 'THANKS', threadId: thread.id } })) === 0);
     check('bấm lại thì bỏ cảm ơn',
       (await db.reaction.count({ where: { type: 'THANKS', threadId: thread.id } })) === 0);
 
@@ -80,7 +80,7 @@ export default async function run(check) {
 
     await p.fill('input[name="mood"]', 'Nhớ wap ngày xưa');
     await p.locator('form:has(input[name="mood"]) button[type="submit"]').click();
-    await p.waitForTimeout(2200);
+    await doiToi(async () => (await db.user.findUnique({ where: { id: minh.id }, select: { mood: true } }))?.mood != null);
     check('lưu được tâm trạng',
       (await db.user.findUnique({ where: { id: minh.id }, select: { mood: true } }))?.mood === 'Nhớ wap ngày xưa');
 

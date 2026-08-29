@@ -90,9 +90,9 @@ function NavRowView({ row, child, onEdit }: { row: NavRow; child?: boolean; onEd
         <div className="truncate text-sm font-semibold text-ink-900 dark:text-white">{row.label}</div>
         <div className="truncate text-xs text-ink-400">{row.url} · thứ tự {row.order}</div>
       </div>
-      <button type="button" onClick={onEdit} title="Sửa"
+      <button type="button" onClick={onEdit} title="Sửa" aria-label={`Sửa mục menu ${row.label}`}
         className="grid size-8 place-items-center rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-100 dark:border-ink-700 dark:hover:bg-ink-800"><Pencil size={14} /></button>
-      <button type="button" disabled={pending} title="Xoá"
+      <button type="button" disabled={pending} title="Xoá" aria-label={`Xoá mục menu ${row.label}`}
         onClick={() => { if (confirm(`Xoá mục “${row.label}”? Mục con (nếu có) sẽ được đưa lên thành mục gốc.`)) start(() => deleteNavLink(row.id)); }}
         className="grid size-8 place-items-center rounded-lg border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-800 dark:hover:bg-rose-950"><Trash2 size={14} /></button>
     </div>
@@ -112,7 +112,8 @@ function NavForm({ initial, group, roots, nextOrder, onDone }: {
     <ActionForm action={action} className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-ink-900 dark:text-white">{initial ? 'Sửa mục menu' : 'Mục menu mới'}</h2>
-        <button type="button" onClick={onDone} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
+        <button type="button" onClick={onDone} title="Đóng" aria-label="Đóng biểu mẫu"
+            className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
       </div>
       {initial && <input type="hidden" name="id" value={initial.id} />}
       <input type="hidden" name="group" value={group} />

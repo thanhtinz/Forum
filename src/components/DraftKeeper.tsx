@@ -196,7 +196,7 @@ export function DraftKeeper({ storageKey }: { storageKey: string }) {
             className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-amber-600">
             <RotateCcw size={13} /> Khôi phục
           </button>
-          <button type="button" onClick={dismiss} title="Bỏ bản nháp"
+          <button type="button" onClick={dismiss} title="Bỏ bản nháp" aria-label="Bỏ bản nháp"
             className="shrink-0 text-ink-400 hover:text-ink-600"><X size={16} /></button>
         </div>
       )}

@@ -66,11 +66,11 @@ function Row({ item, onEdit }: { item: ShopItemView; onEdit: () => void }) {
       </div>
 
       <div className="flex shrink-0 gap-1.5">
-        <button type="button" onClick={onEdit} title="Sửa"
+        <button type="button" onClick={onEdit} title="Sửa" aria-label={`Sửa món ${item.name}`}
           className="grid size-8 place-items-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800">
           <Pencil size={15} />
         </button>
-        <button type="button" disabled={pending} title="Xoá"
+        <button type="button" disabled={pending} title="Xoá" aria-label={`Xoá món ${item.name}`}
           onClick={() => {
             if (!confirm(`Xoá “${item.name}”?`)) return;
             setError(null);

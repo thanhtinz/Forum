@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useActionState } from 'react';
-import { Flag, X, CheckCircle2 } from 'lucide-react';
+import { Flag, CheckCircle2 } from 'lucide-react';
 import { createReport, type ReportState, type ReportTarget } from '@/app/(site)/report/actions';
 import { ActionForm } from '@/components/ActionForm';
+import { Modal } from './Modal';
 
 const REASONS = ['Nội dung vi phạm', 'Spam / quảng cáo', 'Nội dung không phù hợp', 'Vi phạm bản quyền', 'Lừa đảo', 'Khác'];
 
@@ -19,15 +20,12 @@ export function ReportButton({ target, targetId, className }: { target: ReportTa
         <Flag size={15} /> Báo cáo
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl dark:bg-ink-900" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 font-bold text-ink-900 dark:text-white"><Flag size={18} className="text-red-500" /> Báo cáo nội dung</h3>
-              <button type="button" onClick={() => setOpen(false)} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
-            </div>
-
-            {state.ok ? (
+      {/* Dùng `Modal` chung thay cho hộp thoại tự dựng: nó lo sẵn phím Esc,
+          khoá cuộn nền và dựng ở gốc trang. Bản tự dựng trước đây thiếu cả ba. */}
+      <Modal open={open} onClose={() => setOpen(false)}
+        title={<span className="flex items-center gap-2"><Flag size={18} className="text-red-500" /> Báo cáo nội dung</span>}>
+        <div className="p-4">
+          {state.ok ? (
               <div className="flex flex-col items-center gap-2 py-6 text-center">
                 <CheckCircle2 size={38} className="text-emerald-500" />
                 <p className="font-semibold">Đã gửi báo cáo</p>
@@ -52,10 +50,9 @@ export function ReportButton({ target, targetId, className }: { target: ReportTa
                   {pending ? 'Đang gửi…' : 'Gửi báo cáo'}
                 </button>
               </ActionForm>
-            )}
-          </div>
+          )}
         </div>
-      )}
+      </Modal>
     </>
   );
 }

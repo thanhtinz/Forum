@@ -57,12 +57,11 @@ export default async function run(check) {
     await admin.fill('form input[name="value"]', '#00b7ff');
     await admin.fill('form input[name="pricePoints"]', '50');
     await admin.locator('form button[type="submit"]:has-text("Lưu")').click();
-    await admin.waitForTimeout(2500);
 
-    const color = await db.shopItem.findFirst({
+    const color = await doiToi(() => db.shopItem.findFirst({
       where: { name: 'Nick đỏ kiểm thử' },
       select: { id: true, kind: true, value: true, pricePoints: true, slug: true },
-    });
+    }));
     check('tạo được món màu tên', color?.kind === 'NAME_COLOR' && color?.value === '#00b7ff',
       JSON.stringify(color));
     check('lưu đúng giá', color?.pricePoints === 50);
@@ -155,8 +154,10 @@ export default async function run(check) {
       (await member.evaluate(() => document.body.style.overflow)) !== 'hidden');
 
     await row(member, 'Nick đỏ kiểm thử').locator('button:has-text("Mua")').click();
-    await member.waitForTimeout(2500);
-    const afterBuy = await db.user.findUnique({ where: { id: minh.id }, select: { points: true } });
+    const afterBuy = await doiToi(async () => {
+      const u = await db.user.findUnique({ where: { id: minh.id }, select: { points: true } });
+      return u?.points === 50 ? u : null;
+    });
     check('mua thì trừ đúng điểm', afterBuy?.points === 50, `còn ${afterBuy?.points}`);
     check('ghi sổ sở hữu',
       (await db.shopPurchase.count({ where: { userId: minh.id, itemId: color.id } })) === 1);
@@ -176,8 +177,10 @@ export default async function run(check) {
     await member.goto(`${BASE}/cua-hang`, { waitUntil: 'networkidle' });
     await member.waitForTimeout(800);
     await row(member, 'Nick đỏ kiểm thử').locator('button:has-text("Đeo lên")').click();
-    await member.waitForTimeout(2500);
-    const equipped = await db.user.findUnique({ where: { id: minh.id }, select: { nameColorId: true } });
+    const equipped = await doiToi(async () => {
+      const u = await db.user.findUnique({ where: { id: minh.id }, select: { nameColorId: true } });
+      return u?.nameColorId === color.id ? u : null;
+    });
     check('đeo được món đã mua', equipped?.nameColorId === color.id);
 
     await member.goto(`${BASE}/u/minhdev`, { waitUntil: 'networkidle' });
@@ -192,8 +195,10 @@ export default async function run(check) {
     check('kho đồ cũng không nhắc lại số điểm',
       (await member.locator('main >> text=/\\d+ điểm/').count()) === 0);
     await row(member, 'Nick đỏ kiểm thử').locator('button:has-text("Đang đeo")').click();
-    await member.waitForTimeout(2500);
-    const off = await db.user.findUnique({ where: { id: minh.id }, select: { nameColorId: true } });
+    const off = await doiToi(async () => {
+      const u = await db.user.findUnique({ where: { id: minh.id }, select: { nameColorId: true } });
+      return u?.nameColorId === null ? u : null;
+    });
     check('gỡ được món đang đeo', off?.nameColorId === null, `còn ${off?.nameColorId}`);
 
     // ── Đeo món CHƯA MUA phải bị chặn ────────────────────────────────────
@@ -232,7 +237,7 @@ export default async function run(check) {
     // Món chưa ai mua thì xoá được
     admin.once('dialog', (d) => d.accept());
     await admin.locator('li').filter({ hasText: 'Huy hiệu đắt' }).locator('button[title="Xoá"]').click();
-    await admin.waitForTimeout(2000);
+    await doiToi(async () => (await db.shopItem.count({ where: { id: badge.id } })) === 0);
     check('món chưa ai mua thì xoá được', (await db.shopItem.count({ where: { id: badge.id } })) === 0);
 
     // ── Ngừng bán: gỡ khỏi quầy nhưng người đã mua vẫn giữ ───────────────

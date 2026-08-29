@@ -85,11 +85,11 @@ function Row({ kind, row, onEdit }: { kind: Kind; row: TaxonomyRow; onEdit: () =
       </div>
 
       <div className="flex shrink-0 gap-1.5">
-        <button type="button" onClick={onEdit} title="Sửa"
+        <button type="button" onClick={onEdit} title="Sửa" aria-label={`Sửa mục ${row.name}`}
           className="grid size-8 place-items-center rounded-lg text-ink-400 hover:bg-ink-100 hover:text-brand-600 dark:hover:bg-ink-800">
           <Pencil size={15} />
         </button>
-        <button type="button" disabled={pending} title="Xoá"
+        <button type="button" disabled={pending} title="Xoá" aria-label={`Xoá mục ${row.name}`}
           onClick={() => {
             const warn = row.count > 0
               ? `Xoá “${row.name}”? ${row.count} game đang gắn nhãn này sẽ mất nhãn, game vẫn còn nguyên.`

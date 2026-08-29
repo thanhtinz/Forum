@@ -3,13 +3,14 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Settings2, X, Check, Images, Timer, Tag, Palette, MessageSquare } from 'lucide-react';
+import { Settings2, Check, Images, Timer, Tag, Palette, MessageSquare } from 'lucide-react';
 import { setChatAppearance, setNickname, setAutoDelete } from '@/app/(site)/user/messages/actions';
 import {
   CHAT_THEMES, CHAT_BUBBLES, AUTO_DELETE_OPTIONS, NICKNAME_MAX,
   type CustomBackground, type CustomBubble,
 } from '@/lib/chat-theme';
 import { cn } from '@/lib/utils';
+import { Modal } from '@/components/Modal';
 
 export interface ChatSettingsProps {
   conversationId: string;
@@ -54,14 +55,10 @@ export function ChatSettings(p: ChatSettingsProps) {
         <Settings2 size={18} />
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={() => setOpen(false)}>
-          <div onClick={(e) => e.stopPropagation()}
-            className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-xl dark:bg-ink-900">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-bold text-ink-900 dark:text-white">Tuỳ chỉnh đoạn chat</h2>
-              <button type="button" onClick={() => setOpen(false)} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
-            </div>
+      {/* Dùng `Modal` chung: phím Esc, khoá cuộn nền và dựng ở gốc trang đều
+          đã có sẵn ở đó. Bản tự dựng trước đây thiếu cả ba. */}
+      <Modal open={open} onClose={() => setOpen(false)} title="Tuỳ chỉnh đoạn chat">
+        <div className="max-h-[75vh] overflow-y-auto p-4">
 
             {/* Ảnh nền */}
             <section className="mb-5">
@@ -181,10 +178,9 @@ export function ChatSettings(p: ChatSettingsProps) {
               <Images size={16} className="text-ink-400" /> Xem ảnh đã gửi
             </Link>
 
-            {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-          </div>
+          {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
         </div>
-      )}
+      </Modal>
     </>
   );
 }

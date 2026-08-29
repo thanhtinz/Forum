@@ -85,7 +85,7 @@ function ForumRowView({ forum, child, onEdit }: { forum: ForumRow; child?: boole
           {forum.minLevel > 1 ? ` · từ Lv${forum.minLevel}` : ''}
         </div>
       </div>
-      <button type="button" onClick={onEdit} title="Sửa"
+      <button type="button" onClick={onEdit} title="Sửa" aria-label={`Sửa chuyên mục ${forum.name}`}
         className="grid size-8 place-items-center rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-100 dark:border-ink-700 dark:hover:bg-ink-800"><Pencil size={14} /></button>
       <button type="button" disabled={pending || locked} title={locked ? 'Còn chủ đề nên không xoá được' : 'Xoá'}
         onClick={() => { if (confirm(`Xoá diễn đàn “${forum.name}”?`)) start(() => deleteForum(forum.id)); }}
@@ -104,7 +104,8 @@ function ForumForm({ initial, forums, onDone }: { initial: ForumRow | null; foru
     <ActionForm action={action} className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-bold">{initial ? 'Sửa diễn đàn' : 'Thêm diễn đàn'}</h3>
-        <button type="button" onClick={onDone} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
+        <button type="button" onClick={onDone} title="Đóng" aria-label="Đóng biểu mẫu"
+            className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
       </div>
       {initial && <input type="hidden" name="id" value={initial.id} />}
 

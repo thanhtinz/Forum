@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Filter, RotateCcw, X } from 'lucide-react';
 import { GAME_SORTS } from '@/lib/game';
 import { cn } from '@/lib/utils';
+import { useKhoaCuon } from '../use-khoa-cuon';
 
 export interface FilterOption { slug: string; name: string }
 
@@ -57,6 +58,8 @@ export function GameFilters({ genres, platforms, resolutions, years, basePath = 
   const sp = useSearchParams();
   const [pending, startTransition] = useTransition();
   const [openMobile, setOpenMobile] = useState(false);
+  // Khoá cuộn nền khi lớp phủ đang mở.
+  useKhoaCuon(openMobile);
 
   const get = (k: string) => sp.get(k) ?? '';
 

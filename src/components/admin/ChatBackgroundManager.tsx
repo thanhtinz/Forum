@@ -66,11 +66,11 @@ function BgCard({ row, onEdit }: { row: ChatBgRow; onEdit: () => void }) {
           className="grid size-8 shrink-0 place-items-center rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-100 disabled:opacity-50 dark:border-ink-700 dark:hover:bg-ink-800">
           {row.active ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
-        <button type="button" onClick={onEdit} title="Sửa"
+        <button type="button" onClick={onEdit} title="Sửa" aria-label={`Sửa ảnh nền ${row.name}`}
           className="grid size-8 shrink-0 place-items-center rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-100 dark:border-ink-700 dark:hover:bg-ink-800">
           <Pencil size={14} />
         </button>
-        <button type="button" disabled={pending} title="Xoá"
+        <button type="button" disabled={pending} title="Xoá" aria-label={`Xoá ảnh nền ${row.name}`}
           onClick={() => { if (confirm(`Xoá ảnh nền “${row.name}”? Đoạn chat đang dùng sẽ quay về nền mặc định.`)) start(() => deleteChatBackground(row.id)); }}
           className="grid size-8 shrink-0 place-items-center rounded-lg border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-800 dark:hover:bg-rose-950">
           <Trash2 size={14} />
@@ -88,7 +88,8 @@ function BgForm({ initial, nextOrder, onDone }: { initial: ChatBgRow | null; nex
     <ActionForm action={action} className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-ink-900 dark:text-white">{initial ? 'Sửa ảnh nền' : 'Ảnh nền mới'}</h2>
-        <button type="button" onClick={onDone} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
+        <button type="button" onClick={onDone} title="Đóng" aria-label="Đóng biểu mẫu"
+            className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
       </div>
       {initial && <input type="hidden" name="id" value={initial.id} />}
 

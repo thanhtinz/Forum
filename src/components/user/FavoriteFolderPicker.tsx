@@ -60,7 +60,7 @@ export function FavoriteFolderPicker({ favoriteId, current, folders }: {
         >
           <input ref={inputRef} maxLength={FOLDER_MAX_LEN} placeholder="Thư mục mới…"
             className="input min-w-0 flex-1 !py-1.5 !text-sm" />
-          <button type="submit" disabled={pending} title="Tạo và chuyển vào"
+          <button type="submit" disabled={pending} title="Tạo và chuyển vào" aria-label="Tạo thư mục và chuyển vào"
             className="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-500 text-white hover:bg-brand-600 disabled:opacity-60">
             <Plus size={15} />
           </button>

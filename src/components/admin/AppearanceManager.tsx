@@ -60,6 +60,7 @@ function SlideRowView({ slide, onEdit }: { slide: SlideRow; onEdit: () => void }
         <div className="truncate text-xs text-ink-400">{slide.subtitle || slide.link || '—'} · thứ tự {slide.order}</div>
       </div>
       <RowActions
+        ten={`slide “${slide.title}”`}
         pending={pending}
         active={slide.active}
         onToggle={() => start(() => toggleSlide(slide.id))}
@@ -146,6 +147,7 @@ function FriendLinkRowView({ link, onEdit }: { link: FriendLinkRow; onEdit: () =
         <div className="truncate text-xs text-ink-400">{link.url}</div>
       </div>
       <RowActions
+        ten={`liên kết “${link.name}”`}
         pending={pending}
         active={link.active}
         onToggle={() => start(() => toggleFriendLink(link.id))}
@@ -187,18 +189,21 @@ function FriendLinkForm({ initial, onDone }: { initial: FriendLinkRow | null; on
 
 // ─────────────── Dùng chung ───────────────
 
-function RowActions({ pending, active, onToggle, onEdit, onDelete }: {
+function RowActions({ ten, pending, active, onToggle, onEdit, onDelete }: {
+  /** Tên món đang thao tác — để nhãn cho trình đọc màn hình nói rõ sửa/xoá CÁI GÌ. */
+  ten: string;
   pending: boolean; active: boolean; onToggle: () => void; onEdit: () => void; onDelete: () => void;
 }) {
   return (
     <div className="flex shrink-0 gap-2">
       <button type="button" disabled={pending} onClick={onToggle} title={active ? 'Ẩn' : 'Hiện'}
+        aria-label={`${active ? 'Ẩn' : 'Hiện'} ${ten}`}
         className="grid size-8 place-items-center rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-100 disabled:opacity-50 dark:border-ink-700 dark:hover:bg-ink-800">
         {active ? <Eye size={14} /> : <EyeOff size={14} />}
       </button>
-      <button type="button" onClick={onEdit} title="Sửa"
+      <button type="button" onClick={onEdit} title="Sửa" aria-label={`Sửa ${ten}`}
         className="grid size-8 place-items-center rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-100 dark:border-ink-700 dark:hover:bg-ink-800"><Pencil size={14} /></button>
-      <button type="button" disabled={pending} onClick={onDelete} title="Xoá"
+      <button type="button" disabled={pending} onClick={onDelete} title="Xoá" aria-label={`Xoá ${ten}`}
         className="grid size-8 place-items-center rounded-lg border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:border-rose-800 dark:hover:bg-rose-950"><Trash2 size={14} /></button>
     </div>
   );
@@ -208,7 +213,8 @@ function FormHeader({ title, icon, onDone }: { title: string; icon: React.ReactN
   return (
     <div className="flex items-center justify-between">
       <h3 className="flex items-center gap-1.5 font-bold">{icon} {title}</h3>
-      <button type="button" onClick={onDone} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
+      <button type="button" onClick={onDone} title="Đóng" aria-label="Đóng biểu mẫu"
+            className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
     </div>
   );
 }

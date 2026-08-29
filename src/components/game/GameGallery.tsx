@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useKhoaCuon } from '../use-khoa-cuon';
 
 export interface Shot {
   url: string;
@@ -13,6 +14,8 @@ export interface Shot {
 /** Gallery ảnh chụp màn hình: lazy-load, click để mở lightbox, điều hướng bằng phím. */
 export function GameGallery({ shots }: { shots: Shot[] }) {
   const [index, setIndex] = useState<number | null>(null);
+  // Khoá cuộn nền khi đèn lồng đang mở.
+  useKhoaCuon(index !== null);
 
   useEffect(() => {
     if (index === null) return;

@@ -14,6 +14,7 @@ import { ForumStatsBar } from '@/components/forum/ForumStatsBar';
 import { ChatPanel } from '@/components/chat/ChatPanel';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { threadExcerpt } from '@/lib/bbcode';
+import { DaiSlide } from '@/components/DaiSlide';
 
 export const dynamic = 'force-dynamic';
 
@@ -88,8 +89,19 @@ export default async function HomePage() {
 
   const firstForum = forums.find((f) => f.postAccess === 'ALL') ?? forums[0];
 
+  // Slide do quản trị lập ở /admin/slides. Không có tấm nào đang bật thì
+  // `DaiSlide` tự trả về null, trang chủ y như trước.
+  const slides = await db.slide.findMany({
+    where: { active: true },
+    orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+    take: 10,
+    select: { id: true, title: true, subtitle: true, image: true, link: true },
+  });
+
   return (
     <div className="space-y-4">
+      <DaiSlide slides={slides} />
+
       {/* Thanh tiêu đề: danh tính bên trái, số liệu chia đều, hành động bên phải */}
       <section className="card flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">

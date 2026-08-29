@@ -127,7 +127,7 @@ export default async function AdminGamesPage({ searchParams }: {
                 <td className="p-3">
                   <div className="flex items-center gap-1.5">
                     <form action={async () => { 'use server'; await toggleGameFlag(g.id, 'featured'); }}>
-                      <button type="submit" title="Nổi bật"
+                      <button type="submit" title="Nổi bật" aria-label="Bật hoặc tắt nổi bật cho game này"
                         className={`grid h-7 w-7 place-items-center rounded-lg ${g.featured ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-500 dark:bg-ink-800'}`}>
                         <Star size={13} />
                       </button>

@@ -390,6 +390,12 @@ export async function saveSlide(_prev: AppearanceState, formData: FormData): Pro
 
   if (title.length < 2) return { error: 'Tiêu đề slide quá ngắn.' };
   if (!image) return { error: 'Cần có ảnh nền cho slide.' };
+  // Kiểm định dạng, không chỉ kiểm rỗng: từ khi slide hiện ra trang chủ thì ô
+  // nhập này ghi thẳng vào `src` của thẻ ảnh. Dùng chung đúng bộ lọc mà ảnh đại
+  // diện câu lạc bộ đang dùng, chứ không tự viết luật riêng.
+  if (!isPublicImageRef(image)) {
+    return { error: 'Ảnh phải là địa chỉ http(s) hoặc tệp đã tải lên.' };
+  }
 
   const data = { title, subtitle, image, link, order, active };
   let savedId = id;

@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Search, LayoutDashboard, LogIn, UserPlus, PenLine, Settings, Link2 } from 'lucide-react';
+import { LayoutDashboard, Link2, LogIn, Menu, PenLine, Radio, Search, Settings, UserPlus, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/lib/nav';
 import { IconGlyph } from './IconGlyph';
+import { useKhoaCuon } from './use-khoa-cuon';
 
 export interface MobileNavProps {
   nav: NavItem[];
@@ -18,6 +19,8 @@ export interface MobileNavProps {
 
 export function MobileNav({ nav, loggedIn, siteName, siteLogo }: MobileNavProps) {
   const [open, setOpen] = useState(false);
+  // Khoá cuộn nền khi lớp phủ đang mở.
+  useKhoaCuon(open);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
@@ -78,6 +81,15 @@ export function MobileNav({ nav, loggedIn, siteName, siteLogo }: MobileNavProps)
                 ))}
               </div>
             ))}
+            {/* "Ai đang online" đặt NGOÀI khối `loggedIn`: khách vãng lai cũng
+                xem được trang này. Nó chỉ có lối vào ở cột bên, mà cột bên nằm
+                trong `hidden lg:block`, nên thiếu mục này là trên điện thoại
+                không có đường nào tới. */}
+            <Link href="/online"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-ink-700 hover:bg-ink-100 hover:text-brand-600 dark:text-ink-200 dark:hover:bg-ink-800">
+              <Radio size={18} /> Ai đang online
+            </Link>
+
             {loggedIn && (
               <>
                 <Link href="/dang-chu-de"

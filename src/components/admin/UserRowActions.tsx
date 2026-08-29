@@ -6,6 +6,7 @@ import { setUserRole, banUser, unbanUser, type BanState } from '@/app/admin/acti
 import { BAN_SCOPES, BAN_DURATIONS, type BanScopeValue } from '@/lib/ban';
 import { ActionForm } from '@/components/ActionForm';
 import { cn } from '@/lib/utils';
+import { Modal } from '@/components/Modal';
 
 type Role = 'USER' | 'AUTHOR' | 'MODERATOR' | 'ADMIN';
 
@@ -76,13 +77,10 @@ function BanDialog({ id, username, onDone }: { id: string; username: string; onD
   const hint = BAN_SCOPES.find((s) => s.value === scope)?.hint;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" onClick={onDone}>
-      <ActionForm action={action} onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md space-y-3 rounded-2xl bg-white p-5 shadow-xl dark:bg-ink-900">
-        <div className="flex items-center justify-between">
-          <h2 className="font-bold text-ink-900 dark:text-white">Khoá @{username}</h2>
-          <button type="button" onClick={onDone} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
-        </div>
+    // Dùng `Modal` chung: phím Esc, khoá cuộn nền và dựng ở gốc trang đều đã
+    // có sẵn ở đó. Bản tự dựng trước đây thiếu cả ba.
+    <Modal open onClose={onDone} title={`Khoá @${username}`}>
+      <ActionForm action={action} className="space-y-3 p-4">
         <input type="hidden" name="userId" value={id} />
 
         <label className="block">
@@ -115,6 +113,6 @@ function BanDialog({ id, username, onDone }: { id: string; username: string; onD
           <button type="button" onClick={onDone} className="btn-ghost">Huỷ</button>
         </div>
       </ActionForm>
-    </div>
+    </Modal>
   );
 }

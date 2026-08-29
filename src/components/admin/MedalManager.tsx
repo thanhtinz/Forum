@@ -71,9 +71,9 @@ function MedalRowView({ medal, onEdit }: { medal: MedalRow; onEdit: () => void }
       </div>
 
       <div className="mt-2 flex items-center gap-1.5 sm:mt-0 sm:shrink-0">
-        <button type="button" onClick={onEdit} title="Sửa"
+        <button type="button" onClick={onEdit} title="Sửa" aria-label={`Sửa huy chương ${medal.name}`}
           className="grid size-8 place-items-center rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-100 dark:border-ink-700 dark:hover:bg-ink-800"><Pencil size={14} /></button>
-        <button type="button" disabled={pending || medal.ownerCount > 0}
+        <button type="button" disabled={pending || medal.ownerCount > 0} aria-label={`Xoá huy chương ${medal.name}`}
           title={medal.ownerCount > 0 ? 'Đã có người nhận nên không xoá được' : 'Xoá'}
           onClick={() => { if (confirm(`Xoá huy chương “${medal.name}”?`)) start(() => deleteMedal(medal.id)); }}
           className="grid size-8 place-items-center rounded-lg border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-rose-800 dark:hover:bg-rose-950"><Trash2 size={14} /></button>
@@ -92,7 +92,8 @@ function MedalForm({ initial, onDone }: { initial: MedalRow | null; onDone: () =
     <ActionForm action={action} className="card space-y-3 p-4">
       <div className="flex items-center justify-between">
         <h2 className="font-bold text-ink-900 dark:text-white">{initial ? 'Sửa huy chương' : 'Huy chương mới'}</h2>
-        <button type="button" onClick={onDone} className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
+        <button type="button" onClick={onDone} title="Đóng" aria-label="Đóng biểu mẫu"
+            className="text-ink-400 hover:text-ink-600"><X size={18} /></button>
       </div>
       {initial && <input type="hidden" name="id" value={initial.id} />}
 

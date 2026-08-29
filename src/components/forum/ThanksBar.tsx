@@ -111,7 +111,7 @@ export function ThanksBar({ threadId, replyId, initial, canThank, callbackUrl, d
           }}>
           <input ref={customRef} type="number" min={1} max={DONATE_MAX} placeholder="Số khác…"
             className="input min-w-0 flex-1 !py-1.5 !text-sm" />
-          <button type="submit" disabled={pending}
+          <button type="submit" disabled={pending} title="Tặng điểm" aria-label="Gửi số điểm muốn tặng"
             className="btn-primary shrink-0 !px-2.5 !py-1.5 disabled:opacity-60"><Coins size={14} /></button>
         </form>
         {error && <p className="mt-1.5 text-xs text-red-600">{error}</p>}

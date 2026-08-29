@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, openPage, doiToi } from '../helpers.mjs';
 
 /**
  * Thứ tự những thứ đứng cạnh tên người dùng.
@@ -127,9 +127,19 @@ export default async function run(check) {
       await quanTri.waitForTimeout(600);
       await quanTri.fill('form input[name="name"]', `${TEN_BAC} đổi`);
       await quanTri.locator('form button[type="submit"]').first().click();
-      await quanTri.waitForTimeout(2500);
 
-      const sau = await db.user.findUnique({ where: { id: ai.id }, select: { levelTitle: true } });
+      /*
+       * Chờ theo TRẠNG THÁI chứ không theo đồng hồ.
+       *
+       * Đổi tên bậc kéo theo một `updateMany` chép tên mới xuống cột
+       * `levelTitle` của MỌI người đang ở cấp ấy. Ngủ cứng 2,5 giây thì máy
+       * bận một nhịp là đọc phải tên cũ, và bài kiểm báo đỏ oan dù mã đúng —
+       * đây chính là mục hỏng lúc chạy cả bộ mà chạy riêng lại xanh.
+       */
+      const sau = await doiToi(async () => {
+        const u = await db.user.findUnique({ where: { id: ai.id }, select: { levelTitle: true } });
+        return u?.levelTitle === `${TEN_BAC} đổi` ? u : null;
+      });
       check('đổi tên bậc thì danh hiệu chép sẵn đổi theo',
         sau?.levelTitle === `${TEN_BAC} đổi`, `đang là ${sau?.levelTitle}`);
 

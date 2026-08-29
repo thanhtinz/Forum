@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, openPage, doiToi } from '../helpers.mjs';
 
 /**
  * Trang "Chưa đọc".
@@ -114,7 +114,20 @@ export default async function run(check) {
     // ── "Đã đọc hết" quét sạch danh sách ────────────────────────────────
     await mo();
     await p.locator('button:has-text("Đã đọc hết")').first().click();
-    await p.waitForTimeout(1200);
+
+    /*
+     * Chờ theo TRẠNG THÁI chứ không theo đồng hồ: nút ấy gọi một server
+     * action đẩy mốc `forumReadAt` lên, mà ngủ cứng 1,2 giây thì máy bận một
+     * nhịp là tải lại trang trước khi mốc kịp ghi — danh sách vẫn còn nguyên
+     * và bài kiểm báo đỏ oan.
+     */
+    await doiToi(async () => {
+      const u = await db.user.findUnique({
+        where: { id: toi.id }, select: { forumReadAt: true },
+      });
+      return u?.forumReadAt != null && u.forumReadAt > moc;
+    });
+
     await mo();
     check('bấm đã đọc hết thì danh sách trống', (await soDong()) === 0, `còn ${await soDong()}`);
 

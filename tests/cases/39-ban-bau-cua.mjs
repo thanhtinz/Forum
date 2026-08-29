@@ -1,4 +1,4 @@
-import { BASE, db, openPage } from '../helpers.mjs';
+import { BASE, db, openPage, doiToi } from '../helpers.mjs';
 
 /**
  * Bàn bầu cua chung.
@@ -94,10 +94,26 @@ export default async function run(check) {
     const truocXocB = await diem(b.id);
     // Chính lượt mở trang là thứ chốt sổ.
     await mo(pa);
-    await pa.waitForTimeout(1500);
 
-    const phien = await db.bauCuaRound.findUnique({
-      where: { id: cuaA.roundId }, select: { dice: true, rolledAt: true },
+    /*
+     * Chờ theo TRẠNG THÁI chứ không theo đồng hồ.
+     *
+     * Trước đây chỗ này ngủ cứng 1,5 giây rồi đọc điểm luôn. Việc chốt sổ chạy
+     * ở máy chủ trong lúc dựng trang, mà lượt `goto` trả về không có nghĩa là
+     * giao dịch ấy đã ghi xong — máy bận một nhịp là đọc phải điểm cũ, và bài
+     * kiểm báo đỏ oan ("5040 + 60 ≠ 5040") dù mã hoàn toàn đúng.
+     *
+     * Nay đợi tới khi phiên đã xóc VÀ mọi cửa đã có tiền trả, rồi mới đọc.
+     */
+    const phien = await doiToi(async () => {
+      const r = await db.bauCuaRound.findUnique({
+        where: { id: cuaA.roundId }, select: { dice: true, rolledAt: true },
+      });
+      if (!r?.dice || !r.rolledAt) return null;
+      const chuaChot = await db.bauCuaBet.count({
+        where: { roundId: cuaA.roundId, payout: null },
+      });
+      return chuaChot === 0 ? r : null;
     });
     check('hết giờ thì phiên tự xóc', !!phien?.dice && !!phien.rolledAt, JSON.stringify(phien));
 

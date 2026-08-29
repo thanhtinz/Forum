@@ -128,7 +128,7 @@ export async function Header() {
               {/* Màn hình chưa đủ rộng thì nút này rút còn cái bút: chữ "Đăng
                   chủ đề" ăn gần trăm điểm ảnh, mà đó đúng là chỗ đẩy avatar ra
                   khỏi màn hình. */}
-              <Link href="/forum" title="Đăng chủ đề"
+              <Link href="/dang-chu-de" title="Đăng chủ đề"
                 className="btn-primary hidden !px-2.5 !py-1.5 text-sm sm:inline-flex xl:!px-3">
                 <PenLine size={15} /> <span className="hidden xl:inline">Đăng chủ đề</span>
               </Link>

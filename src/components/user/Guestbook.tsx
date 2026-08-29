@@ -92,8 +92,11 @@ export function Guestbook({ username, ownerName, items, total, page, totalPages,
         </ul>
       )}
 
-      {/* Trang của sổ đi riêng với trang bài viết, nên dùng tham số khác. */}
-      <Pagination page={page} totalPages={totalPages} pageParam="gb" basePath={`/u/${username}`} />
+      {/* Trang của sổ đi riêng với trang bài viết, nên dùng tham số khác. Phải
+          giữ cả `?tab=luu-but` trong đường dẫn: thiếu nó là bấm sang trang 2 lại
+          rơi về tab Hoạt động, tức là không có cách nào đọc trang 2 của sổ. */}
+      <Pagination page={page} totalPages={totalPages} pageParam="gb"
+        basePath={`/u/${username}?tab=luu-but`} />
 
       {viewerId === null && total > 0 && (
         <p className="retro-sub mt-2 text-center text-ink-400">Đăng nhập để ghi lời nhắn của bạn.</p>

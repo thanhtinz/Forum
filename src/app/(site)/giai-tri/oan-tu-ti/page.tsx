@@ -1,9 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ArrowLeft, Coins } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { fmtCount } from '@/lib/utils';
 import { OanTuTi } from '@/components/giaitri/OanTuTi';
 import { OTT_MAX, OTT_MIN, VAN_MOI_NGAY, conLai } from '@/lib/mini-game';
 
@@ -13,10 +11,9 @@ export const dynamic = 'force-dynamic';
 export default async function OanTuTiPage() {
   const session = await auth();
   const userId = session?.user?.id ?? null;
-  const [me, con] = await Promise.all([
-    userId ? db.user.findUnique({ where: { id: userId }, select: { points: true } }) : null,
-    userId ? conLai(userId, 'OANTUTI') : Promise.resolve(0),
-  ]);
+  // Không hỏi số điểm ở đây: điểm đã nằm sẵn trên thanh đầu trang, in lại
+  // trong trang chơi là có hai con số phải giữ cho khớp nhau.
+  const con = userId ? await conLai(userId, 'OANTUTI') : 0;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -27,11 +24,7 @@ export default async function OanTuTiPage() {
       <section className="card p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-black">Oẳn tù tì</h1>
-          {me && (
-            <span className="flex items-center gap-1.5 text-sm">
-              <Coins size={15} className="text-amber-500" /> <b>{fmtCount(me.points)}</b> điểm
-            </span>
-          )}
+          {userId && <span className="retro-sub text-ink-400">Còn {con} ván hôm nay</span>}
         </div>
 
         {userId ? <OanTuTi conLai={con} /> : (

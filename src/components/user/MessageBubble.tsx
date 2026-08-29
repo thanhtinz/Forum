@@ -7,6 +7,7 @@ import { reactToMessage, unsendMessage } from '@/app/(site)/user/messages/action
 import { MESSAGE_REACTIONS, type ResolvedBubble } from '@/lib/chat-theme';
 import { ReplyContent } from '@/components/forum/ReplyContent';
 import { useChatReply } from '@/components/user/ChatReplyContext';
+import { Popover } from '@/components/Popover';
 import { cn } from '@/lib/utils';
 
 export interface ReactionView { emoji: string; mine: boolean }
@@ -58,6 +59,9 @@ export function MessageBubble(p: MessageBubbleProps) {
     });
   };
 
+  // `Popover` bám vào bong bóng nên mốc phải là state — ref không dựng lại hình.
+  const [bongBong, setBongBong] = useState<HTMLDivElement | null>(null);
+
   const startPress = () => {
     if (p.deleted) return;
     clearPress();
@@ -78,14 +82,14 @@ export function MessageBubble(p: MessageBubbleProps) {
   // Chỉ vẽ bong bóng; hàng flex và avatar do trang bao ngoài lo. Bọc thêm một
   // hàng flex nữa ở đây sẽ khiến hàng bên trong co lại theo nội dung.
   return (
-    <div className="relative max-w-[78%] sm:max-w-[70%]">
-      {picker && (
-          <>
-            {/* Nền trong suốt để chạm ra ngoài là đóng */}
-            <button type="button" aria-label="Đóng" onClick={() => setPicker(false)}
-              className="fixed inset-0 z-40 cursor-default" />
-            <div className={cn('absolute bottom-full z-50 mb-1 flex gap-0.5 rounded-full border border-ink-200 bg-white p-1 shadow-lg dark:border-ink-700 dark:bg-ink-900',
-              p.mine ? 'right-0' : 'left-0')}>
+    <div ref={setBongBong} className="relative max-w-[78%] sm:max-w-[70%]">
+      {/* Bảng cảm xúc dựng ở gốc trang. Khung cuộn của phòng chat có
+          `overflow-y-auto`, nên bảng `absolute` đặt trên bong bóng trên cùng bị
+          khung ấy cắt mất — nhấn giữ thì bảng có mở, mà chỉ thấy một vệt. */}
+      <Popover open={picker} anchor={bongBong} onClose={() => setPicker(false)}
+        side="top" align={p.mine ? 'right' : 'left'} gap={4}
+        className="rounded-full border border-ink-200 bg-white p-1 shadow-lg dark:border-ink-700 dark:bg-ink-900">
+            <div className="flex gap-0.5">
               {MESSAGE_REACTIONS.map((e) => (
                 <button key={e} type="button" onClick={() => send(e)}
                   title={`Thả ${e}`}
@@ -115,8 +119,7 @@ export function MessageBubble(p: MessageBubbleProps) {
                 </button>
               )}
             </div>
-          </>
-        )}
+      </Popover>
 
         {/* Ảnh trang trí nằm ngoài bong bóng nên phải bọc riêng để không bị cắt góc */}
         <div className="relative">

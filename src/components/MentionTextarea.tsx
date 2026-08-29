@@ -5,6 +5,7 @@ import {
   type TextareaHTMLAttributes,
 } from 'react';
 import { AtSign } from 'lucide-react';
+import { Popover } from '@/components/Popover';
 import { cn } from '@/lib/utils';
 
 interface Suggestion { username: string; name: string | null; image: string | null; level: number }
@@ -27,16 +28,20 @@ export const MentionTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttri
     const [query, setQuery] = useState<string | null>(null);
     const [items, setItems] = useState<Suggestion[]>([]);
     const [active, setActive] = useState(0);
-    const [dropUp, setDropUp] = useState(false);
     const open = query !== null && items.length > 0;
 
-    // Ô trả lời hay nằm cuối trang: thiếu chỗ bên dưới thì bung lên trên.
+    // Bảng gợi ý phải bám vào chính ô soạn, mà `Popover` nhận mốc bám qua prop
+    // nên phải là state chứ không phải ref: ref đổi không dựng lại hình.
+    const [moc, setMoc] = useState<HTMLTextAreaElement | null>(null);
+    // Bảng dựng ngoài cây thẻ nên không tự rộng bằng ô soạn được nữa — đo lấy.
+    const [rong, setRong] = useState(0);
     useEffect(() => {
-      if (!open || !inner.current) return;
-      const r = inner.current.getBoundingClientRect();
-      const need = 56 + items.length * 44;
-      setDropUp(r.bottom + need > window.innerHeight && r.top > need);
-    }, [open, items.length]);
+      if (!open || !moc) return;
+      const do_ = () => setRong(moc.getBoundingClientRect().width);
+      do_();
+      window.addEventListener('resize', do_);
+      return () => window.removeEventListener('resize', do_);
+    }, [open, moc]);
 
     /** Đọc lại phần đang gõ mỗi khi nội dung hoặc con trỏ đổi. */
     const sync = useCallback(() => {
@@ -80,7 +85,9 @@ export const MentionTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttri
 
     return (
       <div className="relative">
-        <textarea {...rest} ref={inner} className={className}
+        <textarea {...rest}
+          ref={(el) => { inner.current = el; setMoc(el); }}
+          className={className}
           onInput={(e) => { sync(); onInput?.(e); }}
           onClick={sync}
           onBlur={(e) => { setQuery(null); onBlur?.(e); }}
@@ -98,9 +105,12 @@ export const MentionTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttri
             if (e.key.startsWith('Arrow') || e.key === 'Home' || e.key === 'End') sync();
           }} />
 
-        {open && (
-          <ul className={cn('absolute inset-x-0 z-30 overflow-hidden rounded-xl border border-ink-200 bg-white shadow-lg dark:border-ink-700 dark:bg-ink-900',
-            dropUp ? 'bottom-full mb-1' : 'top-full mt-1')}>
+        {/* Bảng gợi ý dựng ở gốc trang. Trước đây nó là `absolute` ngay tại
+            chỗ này, mà ô trả lời nằm trong khối bài viết có `overflow-hidden`
+            nên danh sách bị CẮT mất — gõ @ thấy loé một vạch rồi thôi. */}
+        <Popover open={open} anchor={moc} onClose={() => setQuery(null)} gap={4}
+          className="overflow-hidden rounded-xl border border-ink-200 bg-white shadow-lg dark:border-ink-700 dark:bg-ink-900">
+          <ul style={{ width: rong || undefined }} className="overflow-y-auto">
             <li className="flex items-center gap-1.5 border-b border-ink-100 px-3 py-1.5 text-[11px] text-ink-400 dark:border-ink-800">
               <AtSign size={11} /> Chọn bằng Enter hoặc Tab
             </li>
@@ -128,7 +138,8 @@ export const MentionTextarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttri
               </li>
             ))}
           </ul>
-        )}
+        </Popover>
+
       </div>
     );
   },

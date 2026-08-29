@@ -3,7 +3,7 @@
 import { Droplets } from 'lucide-react';
 import type { ODat as ODatDL } from '@/lib/farm';
 import {
-  ANH_MUA_DAT, anhODat, changCua, moTaConLai, tienDoVu,
+  ANH_MUA_DAT, anhODat, changCua, moTaConLaiNgan, tienDoVu,
 } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
@@ -136,7 +136,7 @@ export function ODat({ o, now, dangChon, onChon }: Props) {
               />
             </span>
             <span className="mx-auto mt-0.5 block w-fit max-w-full truncate rounded-full bg-black/60 px-1.5 text-[11px] font-bold leading-4 text-amber-50">
-              {moTaConLai((o.readyAt ?? 0) - now)}
+              {moTaConLaiNgan((o.readyAt ?? 0) - now)}
             </span>
           </>
         )}

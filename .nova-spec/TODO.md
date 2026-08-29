@@ -4,16 +4,7 @@ Bản này ghi **hiện trạng thật**, đã đối chiếu với mã và dữ
 ban đầu (P0–P16) đã xong và không còn ý nghĩa, nên gỡ đi — sản phẩm nay là diễn
 đàn + kho game tính bằng điểm, không còn blog, tiền thật hay VIP.
 
-Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **661/661**,
-hai lượt liên tiếp cho cùng một con số.
-
----
-
-## Cần bạn quyết, không phải việc kỹ thuật
-
-- [ ] **Nhãn đếm ngược ở nông trại bị cắt trên điện thoại** ("2 giờ 10…"). Muốn
-      hết thì phải rút cách viết thời gian (kiểu "2h10"), mà đổi cách viết là
-      đổi thứ người dùng đọc quen.
+Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **677/677**.
 
 ---
 
@@ -25,6 +16,11 @@ Xếp theo mức đáng làm. Không cái nào đang gây lỗi cho người dù
       số còn lại là những mục kiểm khẳng định KHÔNG có gì xảy ra, mà không chờ
       được một việc không xảy ra — ngủ cứng ở đó mới đúng. Đừng "dọn nốt cho
       đều".
+
+- [ ] **Hai hàm `moTaConLai` giống hệt nhau** ở `farm-const.ts` và
+      `rong-const.ts`, khác mỗi câu trả về khi hết giờ ("đã chín" / "xong
+      rồi"). Gộp lại thì phải truyền câu ấy vào, mà lúc đó hàm chung cũng chỉ
+      còn là chỗ chứa một phép chia — chưa chắc đáng.
 
 - [ ] **35 chỗ `Math.ceil(total / SIZE)` thiếu `Math.max(1, …)`.** Hiện KHÔNG
       gây lỗi — `Pagination` đã tự ẩn khi `totalPages <= 1` — nên đây là chuyện
@@ -62,6 +58,16 @@ sưu tầm 9 loài × 6 màu.
 
 **Slide trang chủ** — nối `Slide` vào trang chủ (trước đây quản trị lập được mà
 chẳng hiện ở đâu), kèm vá chỗ `saveSlide` không kiểm định dạng ảnh.
+
+**Đăng bài một lối** — trước có năm chỗ mở khung đăng chủ đề, bốn trong số đó
+là lối toàn cục tự đoán hộ chuyên mục (tệ nhất là nút ở trang chủ, nó lấy
+`forums[0]`). Gỡ cả bốn, xoá trang `/dang-chu-de`; nay chỉ đăng bài từ trong
+chuyên mục.
+
+**Nhãn đếm ngược ở nông trại** — ô đất chỉ cho nhãn 77px ở khổ 390px mà "11 giờ
+58 phút" cần 102px nên bị cắt. Thêm `moTaConLaiNgan` dùng RIÊNG cho nhãn dưới
+chân ô ("11h58"); cách viết đầy đủ giữ nguyên ở mọi chỗ khác, kể cả thanh việc
+ngay bên dưới mảnh đất.
 
 **Trợ năng** — 24 nút chỉ có biểu tượng nay có `aria-label`; sáu lớp phủ nay
 khoá cuộn nền qua hook `useKhoaCuon`; `/online` vào được từ điện thoại.

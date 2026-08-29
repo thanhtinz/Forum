@@ -176,6 +176,29 @@ export function moTaConLai(ms: number): string {
   return du === 0 ? `${gio} giờ` : `${gio} giờ ${du} phút`;
 }
 
+/**
+ * Bản rút gọn CHỈ dùng cho nhãn dưới chân ô đất: "11h58" thay cho
+ * "11 giờ 58 phút".
+ *
+ * Ô đất là một ô vuông bé — ở khổ 390px nhãn chỉ được 77px, mà cách viết đầy
+ * đủ cần tới 102px nên bị cắt cụt thành "11 giờ 58…". Chữ cụt còn khó đọc hơn
+ * chữ ngắn.
+ *
+ * Không đổi `moTaConLai`: cách viết đầy đủ vẫn giữ nguyên ở mọi chỗ khác, kể
+ * cả thanh việc ngay bên dưới mảnh đất — bấm vào ô là đọc được đủ chữ. Chỉ
+ * phần giờ mới phải nén, còn dưới một giờ thì cách viết cũ đã vừa chỗ.
+ */
+export function moTaConLaiNgan(ms: number): string {
+  if (ms <= 0) return 'đã chín';
+  const giay = Math.ceil(ms / 1000);
+  if (giay < 60) return `${giay} giây`;
+  const phut = Math.ceil(giay / 60);
+  if (phut < 60) return `${phut} phút`;
+  const gio = Math.floor(phut / 60);
+  const du = phut % 60;
+  return du === 0 ? `${gio}h` : `${gio}h${String(du).padStart(2, '0')}`;
+}
+
 /** "5 phút", "1 giờ 30 phút" — mô tả độ dài một vụ trong cửa hàng. */
 export function moTaVu(phut: number): string {
   if (phut < 60) return `${phut} phút`;

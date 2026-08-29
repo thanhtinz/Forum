@@ -11,6 +11,7 @@ import { getActiveBan, banMessage } from '@/lib/ban';
 import {
   clubSlug, getClubConfig,
   CLUBS_OWNED_MAX, CLUB_NAME_MIN, CLUB_NAME_MAX, CLUB_DESC_MAX,
+  CLUB_SHORT_MIN, CLUB_SHORT_MAX, isClubShortName, normClubShortName, suggestClubShortName,
   CLUB_POST_MIN, CLUB_POST_MAX, CLUB_COMMENT_MAX, CLUB_COMMENT_DEPTH_MAX,
   type ClubActionState,
 } from '@/lib/club';
@@ -37,6 +38,9 @@ function readMode(fd: FormData, key: string, allowed: string[], fallback: string
   return allowed.includes(v) ? v : fallback;
 }
 
+const LOI_VIET_TAT =
+  `Viết tắt phải dài ${CLUB_SHORT_MIN}–${CLUB_SHORT_MAX} ký tự, chỉ gồm chữ cái không dấu và số.`;
+
 // ─────────────────────────── Lập câu lạc bộ ───────────────────────────
 
 export async function createClub(_prev: ClubActionState, formData: FormData): Promise<ClubActionState> {
@@ -48,10 +52,17 @@ export async function createClub(_prev: ClubActionState, formData: FormData): Pr
   const avatar = String(formData.get('avatar') ?? '').trim();
   const joinMode = readMode(formData, 'joinMode', ['OPEN', 'APPROVAL', 'CLOSED'], 'OPEN');
   const privacy = readMode(formData, 'privacy', ['PUBLIC', 'MEMBERS'], 'PUBLIC');
+  // Bỏ trống thì tự đoán từ tên, để không ai lập nhóm mà thiếu mất cái thẻ.
+  const shortRaw = String(formData.get('shortName') ?? '').trim();
+  const shortName = normClubShortName(shortRaw) || suggestClubShortName(name);
 
   if (name.length < CLUB_NAME_MIN) return { error: `Tên câu lạc bộ tối thiểu ${CLUB_NAME_MIN} ký tự.` };
   if (name.length > CLUB_NAME_MAX) return { error: `Tên câu lạc bộ tối đa ${CLUB_NAME_MAX} ký tự.` };
   if (description.length > CLUB_DESC_MAX) return { error: `Giới thiệu tối đa ${CLUB_DESC_MAX} ký tự.` };
+  if (!isClubShortName(shortName)) return { error: LOI_VIET_TAT };
+
+  const trungTat = await db.club.findUnique({ where: { shortName }, select: { name: true } });
+  if (trungTat) return { error: `Viết tắt “${shortName}” đã có nhóm “${trungTat.name}” dùng rồi.` };
 
   const owned = await db.club.count({ where: { ownerId: me.id } });
   if (owned >= CLUBS_OWNED_MAX) {
@@ -71,7 +82,7 @@ export async function createClub(_prev: ClubActionState, formData: FormData): Pr
       }
       const club = await tx.club.create({
         data: {
-          slug, name, description: description || null, avatar: avatar || null,
+          slug, name, shortName, description: description || null, avatar: avatar || null,
           ownerId: me.id, joinMode: joinMode as never, privacy: privacy as never,
         },
         select: { id: true },
@@ -176,7 +187,7 @@ async function assertOwner(clubId: string) {
   if ('error' in me) return { error: me.error } as const;
   const club = await db.club.findUnique({
     where: { id: clubId },
-    select: { id: true, slug: true, name: true, ownerId: true, joinMode: true, privacy: true },
+    select: { id: true, slug: true, name: true, ownerId: true, joinMode: true, privacy: true, shortName: true },
   });
   if (!club) return { error: 'Không tìm thấy câu lạc bộ.' } as const;
   if (club.ownerId !== me.id && !isStaff(me.role)) return { error: 'Bạn không có quyền với câu lạc bộ này.' } as const;
@@ -312,14 +323,28 @@ export async function updateClub(_prev: ClubActionState, formData: FormData): Pr
   if (name.length > CLUB_NAME_MAX) return { error: `Tên câu lạc bộ tối đa ${CLUB_NAME_MAX} ký tự.` };
   if (description.length > CLUB_DESC_MAX) return { error: `Giới thiệu tối đa ${CLUB_DESC_MAX} ký tự.` };
 
+  // Cùng lẽ trên: thiếu trường thì giữ nguyên viết tắt đang có.
+  const shortRaw = String(formData.get('shortName') ?? '').trim();
+  const shortName = shortRaw ? normClubShortName(shortRaw) : (guard.club.shortName ?? '');
+  if (!isClubShortName(shortName)) return { error: LOI_VIET_TAT };
+  if (shortName !== guard.club.shortName) {
+    const trung = await db.club.findUnique({ where: { shortName }, select: { name: true } });
+    if (trung) return { error: `Viết tắt “${shortName}” đã có nhóm “${trung.name}” dùng rồi.` };
+  }
+
   await db.club.update({
     where: { id: clubId },
     data: {
-      name, description: description || null, avatar: avatar || null,
+      name, shortName, description: description || null, avatar: avatar || null,
       joinMode: joinMode as never, privacy: privacy as never,
     },
     select: { id: true },
   });
+
+  // Cái thẻ viết tắt đeo cạnh tên MỌI thành viên, nên đổi nó là đổi trang của
+  // tất cả — làm mới cả trang danh bạ và trang chủ cho khỏi hiện thẻ cũ.
+  revalidatePath('/thanh-vien');
+  revalidatePath('/');
 
   revalidatePath(`/clb/${guard.club.slug}`);
   return { ok: true };

@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import { SHOP_PAGE_SIZE, type Cosmetics, type ShopItemView, type ShopKind } from './shop-const';
 
@@ -9,6 +10,23 @@ export * from './shop-const';
  * Để chung một chỗ vì nó phải đi kèm ở rất nhiều truy vấn; sửa rời rạc từng
  * nơi là chắc chắn có chỗ quên, rồi món đồ mua rồi mà chỗ đó không hiện.
  */
+/**
+ * Câu lạc bộ đại diện — cái thẻ viết tắt đeo cạnh tên.
+ *
+ * Lấy MỘT nhóm: nhóm mình làm chủ trước (enum vai trò xếp OWNER đầu tiên),
+ * không có thì nhóm vào sớm nhất. Cùng lối với huy chương: hỏi kèm luôn, khỏi
+ * phải nối bảng ở từng trang.
+ *
+ * Tách ra biến riêng vì `cosmeticSelect` mang `as const` — mảng `orderBy` viết
+ * thẳng trong đó thành mảng chỉ-đọc, mà Prisma chỉ nhận mảng ghi được.
+ */
+const clbDaiDien = {
+  where: { status: 'ACTIVE', club: { shortName: { not: null } } },
+  orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+  take: 1,
+  select: { club: { select: { shortName: true, slug: true, name: true } } },
+} satisfies Prisma.User$clubMembershipsArgs;
+
 export const cosmeticSelect = {
   nameColor: { select: { value: true } },
   shopBadge: { select: { value: true, name: true } },
@@ -23,6 +41,7 @@ export const cosmeticSelect = {
     take: 1,
     select: { medal: { select: { icon: true, name: true } } },
   },
+  clubMemberships: clbDaiDien,
 } as const;
 
 /** Hàng người dùng đã lấy kèm `cosmeticSelect` — đổi thành bộ trang trí gọn. */
@@ -31,8 +50,10 @@ export function toCosmetics(u: {
   shopBadge?: { value: string; name: string } | null;
   levelTitle?: string | null;
   medals?: { medal: { icon: string; name: string } }[];
+  clubMemberships?: { club: { shortName: string | null; slug: string; name: string } }[];
 } | null | undefined): Cosmetics {
   const huyChuong = u?.medals?.[0]?.medal ?? null;
+  const clb = u?.clubMemberships?.[0]?.club ?? null;
   return {
     nameColor: u?.nameColor?.value ?? null,
     badge: u?.shopBadge?.value ?? null,
@@ -40,6 +61,9 @@ export function toCosmetics(u: {
     medal: huyChuong?.icon ?? null,
     medalName: huyChuong?.name ?? null,
     title: u?.levelTitle ?? null,
+    clubTag: clb?.shortName ?? null,
+    clubSlug: clb?.slug ?? null,
+    clubName: clb?.name ?? null,
   };
 }
 

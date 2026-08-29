@@ -18,6 +18,38 @@ export const CLUBS_OWNED_MAX = 3;
 
 export const CLUB_NAME_MIN = 3;
 export const CLUB_NAME_MAX = 40;
+
+/**
+ * Tên viết tắt — cái thẻ nhỏ đeo cạnh tên mọi thành viên.
+ *
+ * Ngắn và chỉ chữ hoa với số: nó nằm chen giữa một hàng đã đông đúc (tên, cấp,
+ * danh hiệu, huy hiệu), dài ra một chút là cả hàng vỡ trên màn hình điện thoại.
+ */
+export const CLUB_SHORT_MIN = 2;
+export const CLUB_SHORT_MAX = 6;
+
+/** Viết tắt hợp lệ chưa — nhận vào chuỗi ĐÃ chuẩn hoá. */
+export function isClubShortName(v: string): boolean {
+  return new RegExp(`^[A-Z0-9]{${CLUB_SHORT_MIN},${CLUB_SHORT_MAX}}$`).test(v);
+}
+
+/** Chuẩn hoá về chữ hoa, bỏ mọi thứ không phải chữ cái không dấu hoặc số. */
+export function normClubShortName(v: string): string {
+  return v.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, CLUB_SHORT_MAX);
+}
+
+/**
+ * Đoán viết tắt từ tên nhóm, để ô nhập có sẵn thứ gì đó thay vì trống trơn.
+ *
+ * Lấy chữ đầu mỗi từ ("Hội mê game Java" → "HMGJ"); tên một từ thì lấy mấy chữ
+ * đầu. Bỏ dấu tiếng Việt trước, không thì "Đội" ra chữ không dùng được.
+ */
+export function suggestClubShortName(name: string): string {
+  const khongDau = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+  const tu = khongDau.split(/\s+/).filter(Boolean);
+  const raw = tu.length > 1 ? tu.map((t) => t[0]).join('') : (tu[0] ?? '');
+  return normClubShortName(raw);
+}
 export const CLUB_DESC_MAX = 500;
 export const CLUB_POST_MIN = 2;
 export const CLUB_POST_MAX = 2000;

@@ -42,7 +42,7 @@ export default async function ClubPage({ params, searchParams }: {
   const club = await db.club.findUnique({
     where: { slug },
     select: {
-      id: true, slug: true, name: true, description: true, avatar: true,
+      id: true, slug: true, name: true, shortName: true, description: true, avatar: true,
       memberCount: true, postCount: true, joinMode: true, privacy: true,
       ownerId: true, createdAt: true,
       owner: { select: { username: true, name: true } },
@@ -85,6 +85,11 @@ export default async function ClubPage({ params, searchParams }: {
         <div className="min-w-0 flex-1">
           <h1 className="flex items-center gap-2 text-xl font-black text-ink-800 dark:text-ink-100">
             {club.name}
+            {club.shortName && (
+              <span className="font-mono text-sm font-bold text-brand-600 dark:text-brand-300">
+                [{club.shortName}]
+              </span>
+            )}
             {club.privacy === 'MEMBERS' && (
               <span className="chip gap-1 bg-ink-100 text-xs text-ink-500 dark:bg-ink-800 dark:text-ink-300">
                 <Lock size={12} /> Bảng tin riêng
@@ -109,6 +114,7 @@ export default async function ClubPage({ params, searchParams }: {
             <ClubOwnerPanel
               clubId={club.id}
               name={club.name}
+              shortName={club.shortName}
               description={club.description ?? ''}
               avatar={club.avatar ?? ''}
               joinMode={club.joinMode}

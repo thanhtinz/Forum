@@ -3,7 +3,10 @@
 import { useActionState, useState } from 'react';
 import { Plus, Coins, X } from 'lucide-react';
 import { createClub } from '@/app/(site)/clb/actions';
-import { CLUB_JOIN_MODES, CLUB_PRIVACY, CLUB_NAME_MAX, CLUB_DESC_MAX, type ClubActionState } from '@/lib/club-const';
+import {
+  CLUB_JOIN_MODES, CLUB_PRIVACY, CLUB_NAME_MAX, CLUB_DESC_MAX, CLUB_SHORT_MAX,
+  normClubShortName, suggestClubShortName, type ClubActionState,
+} from '@/lib/club-const';
 import { fmtCount } from '@/lib/utils';
 
 /**
@@ -20,6 +23,10 @@ export function ClubCreateForm({ cost, myPoints, canCreate, ownedMax }: {
 }) {
   const [open, setOpen] = useState(false);
   const [state, action, pending] = useActionState<ClubActionState, FormData>(createClub, {});
+  // Viết tắt tự đoán theo tên cho tới khi người ta tự gõ — gõ rồi thì thôi
+  // đoán, không thì mỗi lần sửa tên lại giật mất thứ họ vừa nhập.
+  const [tat, setTat] = useState('');
+  const [tuGo, setTuGo] = useState(false);
 
   if (!open) {
     return (
@@ -52,13 +59,24 @@ export function ClubCreateForm({ cost, myPoints, canCreate, ownedMax }: {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="label">Tên câu lạc bộ</span>
-          <input name="name" required maxLength={CLUB_NAME_MAX} className="input" placeholder="Hội mê game Java" />
+          <input name="name" required maxLength={CLUB_NAME_MAX} className="input" placeholder="Hội mê game Java"
+            onChange={(e) => { if (!tuGo) setTat(suggestClubShortName(e.target.value)); }} />
         </label>
         <label className="block">
-          <span className="label">Ảnh đại diện (địa chỉ ảnh)</span>
-          <input name="avatar" className="input" placeholder="https://… (không bắt buộc)" />
+          <span className="label">Viết tắt</span>
+          <input name="shortName" required maxLength={CLUB_SHORT_MAX} value={tat}
+            onChange={(e) => { setTuGo(true); setTat(normClubShortName(e.target.value)); }}
+            className="input font-mono uppercase" placeholder="HMGJ" />
+          <span className="retro-sub mt-1 block text-ink-400">
+            Hiện thành thẻ <b className="font-mono text-brand-600">[{tat || 'HMGJ'}]</b> cạnh tên mọi thành viên.
+          </span>
         </label>
       </div>
+
+      <label className="mt-3 block">
+        <span className="label">Ảnh đại diện (địa chỉ ảnh)</span>
+        <input name="avatar" className="input" placeholder="https://… (không bắt buộc)" />
+      </label>
 
       <label className="mt-3 block">
         <span className="label">Giới thiệu</span>

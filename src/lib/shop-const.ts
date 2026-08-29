@@ -120,8 +120,13 @@ export interface Cosmetics {
    * cầm theo bộ trang trí, bắt từng chỗ tự tra bảng cấp là chắc chắn có chỗ quên.
    */
   title: string | null;
+  /** Viết tắt câu lạc bộ đại diện — cái thẻ nhỏ cạnh tên. */
+  clubTag: string | null;
+  clubSlug: string | null;
+  clubName: string | null;
 }
 
 export const NO_COSMETICS: Cosmetics = {
   nameColor: null, badge: null, badgeName: null, medal: null, medalName: null, title: null,
+  clubTag: null, clubSlug: null, clubName: null,
 };

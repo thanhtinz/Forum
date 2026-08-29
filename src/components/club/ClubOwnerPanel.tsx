@@ -8,7 +8,7 @@ import {
 } from '@/app/(site)/clb/actions';
 import { UserName, Avatar } from '@/components/user/Cosmetic';
 import {
-  CLUB_JOIN_MODES, CLUB_PRIVACY, CLUB_NAME_MAX, CLUB_DESC_MAX, CLUB_ROLE_LABELS,
+  CLUB_JOIN_MODES, CLUB_PRIVACY, CLUB_NAME_MAX, CLUB_DESC_MAX, CLUB_SHORT_MAX, CLUB_ROLE_LABELS,
   type ClubActionState,
 } from '@/lib/club-const';
 import { fmtAgo } from '@/lib/utils';
@@ -39,10 +39,11 @@ export interface FriendRow {
  * hay dẹp nhóm thì chức phó thành chức chủ.
  */
 export function ClubOwnerPanel({
-  clubId, name, description, avatar, joinMode, privacy, pending, members, friends, isOwner,
+  clubId, name, shortName, description, avatar, joinMode, privacy, pending, members, friends, isOwner,
 }: {
   clubId: string;
   name: string;
+  shortName: string | null;
   description: string;
   avatar: string;
   joinMode: string;
@@ -199,6 +200,13 @@ export function ClubOwnerPanel({
               <span className="label">Tên câu lạc bộ</span>
               <input name="name" required maxLength={CLUB_NAME_MAX} defaultValue={name} className="input" />
             </label>
+            <label className="block">
+              <span className="label">Viết tắt</span>
+              <input name="shortName" required maxLength={CLUB_SHORT_MAX} defaultValue={shortName ?? ''}
+                className="input font-mono uppercase" placeholder="HMGJ" />
+            </label>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <label className="block">
               <span className="label">Ảnh đại diện</span>
               <input name="avatar" defaultValue={avatar} className="input" placeholder="https://…" />

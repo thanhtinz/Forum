@@ -1790,6 +1790,13 @@ model Club {
   slug String @unique
   name String
 
+  /// Tên viết tắt, hiện thành cái thẻ nhỏ cạnh tên mọi thành viên.
+  ///
+  /// Duy nhất toàn site: cái thẻ ấy chỉ có nghĩa khi nhìn vào là biết ngay
+  /// nhóm nào — hai nhóm cùng viết tắt thì nó thành ra vô nghĩa. Cho phép rỗng
+  /// vì những nhóm lập trước khi có mục này chưa kịp đặt.
+  shortName String? @unique
+
   description String? @db.Text
   avatar      String?
   cover       String?

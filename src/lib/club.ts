@@ -50,6 +50,7 @@ export interface ClubCard {
   id: string;
   slug: string;
   name: string;
+  shortName: string | null;
   description: string | null;
   avatar: string | null;
   memberCount: number;
@@ -60,13 +61,14 @@ export interface ClubCard {
 }
 
 const clubCardSelect = {
-  id: true, slug: true, name: true, description: true, avatar: true,
+  id: true, slug: true, name: true, shortName: true, description: true, avatar: true,
   memberCount: true, postCount: true, joinMode: true, privacy: true,
   owner: { select: authorChipSelect },
 } as const;
 
 function toCard(c: {
-  id: string; slug: string; name: string; description: string | null; avatar: string | null;
+  id: string; slug: string; name: string; shortName: string | null;
+  description: string | null; avatar: string | null;
   memberCount: number; postCount: number; joinMode: string; privacy: string;
   owner: Parameters<typeof toAuthorChip>[0];
 }): ClubCard {

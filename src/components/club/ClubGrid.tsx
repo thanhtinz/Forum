@@ -28,6 +28,11 @@ export function ClubGrid({ clubs }: { clubs: ClubCard[] }) {
                 thì tên vẫn tràn ra ngoài thẻ, vì flex không cắt con của nó. */}
             <p className="flex items-center gap-1.5 font-bold text-ink-800 dark:text-ink-100">
               <span className="truncate">{c.name}</span>
+              {c.shortName && (
+                <span className="shrink-0 font-mono text-[11px] font-bold text-brand-600 dark:text-brand-300">
+                  [{c.shortName}]
+                </span>
+              )}
               {c.privacy === 'MEMBERS' && <Lock size={13} className="shrink-0 text-ink-400" />}
             </p>
             {c.description && <p className="mt-0.5 line-clamp-2 text-xs text-ink-500">{c.description}</p>}

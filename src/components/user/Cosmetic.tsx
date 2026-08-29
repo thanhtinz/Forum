@@ -13,7 +13,7 @@ import { LevelBadge } from '@/components/LevelBadge';
 /**
  * Tên người dùng cùng mọi thứ đứng cạnh nó, LUÔN theo một thứ tự:
  *
- *   tên → cấp độ ("Lv4") → cấp bậc → danh hiệu → huy hiệu nhận được
+ *   tên → cấp độ ("Lv4") → danh hiệu → thẻ câu lạc bộ → huy hiệu nhận được
  *   → huy hiệu mua
  *
  * Danh hiệu là chữ nên đứng trước, hai huy hiệu là hình nên gom về cuối: xen
@@ -58,7 +58,11 @@ export function UserName({
   // lồng thêm một `span` bên trong: gạch chân khi rê chuột phải cùng màu với
   // tên, và bất cứ chỗ nào đọc màu của liên kết cũng thấy đúng màu.
   return (
-    <span className="inline-flex min-w-0 items-center gap-1">
+    // `flex-wrap`: hàng này nay có tới bốn thứ đứng sau tên (cấp, danh hiệu,
+    // thẻ nhóm, huy hiệu). Không cho xuống dòng thì chính CÁI TÊN bị bóp lại
+    // thành "Minh …" để nhường chỗ cho mấy cái nhãn — ngược đời, vì tên mới là
+    // thứ người ta cần đọc.
+    <span className="inline-flex min-w-0 flex-wrap items-center gap-1">
       {asLink && username ? (
         <Link href={`/u/${username}`} className={cn(cls, 'hover:underline')} style={style}>{label}</Link>
       ) : (
@@ -66,9 +70,30 @@ export function UserName({
       )}
       {level != null && <LevelBadge level={level} color={look?.color} name={look?.name} />}
       <CosmeticTitle cosmetics={cosmetics} />
+      <CosmeticClub cosmetics={cosmetics} />
       <CosmeticMedal cosmetics={cosmetics} />
       <CosmeticBadge cosmetics={cosmetics} />
     </span>
+  );
+}
+
+/**
+ * Thẻ câu lạc bộ — viết tắt tên nhóm, đặt trong ngoặc vuông kiểu forum ngày
+ * trước: `[HMGJ]`. Bấm vào là sang thẳng trang nhóm.
+ */
+export function CosmeticClub({ cosmetics, className }: { cosmetics: Cosmetics; className?: string }) {
+  if (!cosmetics.clubTag) return null;
+  const noiDung = <>[{cosmetics.clubTag}]</>;
+  const cls = cn(
+    'shrink-0 font-mono text-[11px] font-bold leading-none text-brand-600 dark:text-brand-300',
+    className,
+  );
+  if (!cosmetics.clubSlug) return <span className={cls}>{noiDung}</span>;
+  return (
+    <Link href={`/clb/${cosmetics.clubSlug}`} title={cosmetics.clubName ?? undefined}
+      className={cn(cls, 'hover:underline')}>
+      {noiDung}
+    </Link>
   );
 }
 

@@ -14,10 +14,17 @@ export interface ForumRow {
   postAccess: string; minLevel: number;
 }
 
+/*
+ * Phải khớp ĐÚNG enum `ForumAccess` trong lược đồ.
+ *
+ * Trước đây ở đây còn mục "Chỉ VIP", mà enum không hề có giá trị ấy: chọn nó
+ * thì `parseForumAccess` không nhận ra và lặng lẽ đổi về `ALL` — quản trị
+ * tưởng vừa khoá khu vực lại, thực ra vừa mở toang nó, mà không có lấy một
+ * lời báo nào.
+ */
 const ACCESS_LABEL: Record<string, string> = {
   ALL: 'Ai cũng đăng được',
   MEMBERS: 'Chỉ thành viên',
-  VIP: 'Chỉ VIP',
   MODERATORS: 'Chỉ điều hành viên',
 };
 

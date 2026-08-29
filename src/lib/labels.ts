@@ -6,8 +6,3 @@ export const POINTS_REASON_LABEL: Record<string, string> = {
   EXCHANGE: 'Quy đổi', BOUNTY_PAID: 'Treo thưởng', BOUNTY_RECEIVED: 'Nhận thưởng', COUPON: 'Mã giảm giá',
 };
 
-/** Nhãn tiếng Việt cho lý do biến động số dư. */
-export const BALANCE_REASON_LABEL: Record<string, string> = {
-  TOPUP: 'Nạp tiền', PURCHASE: 'Mua nội dung', REFUND: 'Hoàn tiền', WITHDRAW: 'Rút tiền',
-  COMMISSION: 'Hoa hồng', CONTENT_SALE: 'Bán nội dung', ADMIN_ADJUST: 'Điều chỉnh',
-};

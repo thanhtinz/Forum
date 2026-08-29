@@ -11,10 +11,6 @@ export function fmtCount(n?: number | null): string {
   return String(v);
 }
 
-/** Định dạng tiền VND */
-export function fmtVnd(n?: number | null): string {
-  return `${(n ?? 0).toLocaleString('vi-VN')}₫`;
-}
 
 /** Thời gian tương đối kiểu diễn đàn: "vừa xong", "5 phút", "3 giờ", "2 ngày", cũ hơn thì dd/MM/yy */
 export function fmtAgo(date?: Date | string | null, now = new Date()): string {

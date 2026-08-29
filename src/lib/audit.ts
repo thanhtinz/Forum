@@ -7,25 +7,37 @@ import { db } from './db';
  * nên mọi lỗi ở đây đều được nuốt (xem `logAdmin`).
  */
 
-/** Nhóm hành động — dùng cho bộ lọc và nhãn hiển thị. */
+/**
+ * Nhóm hành động — dùng cho bộ lọc và nhãn hiển thị.
+ *
+ * Danh sách này phải bám theo hai thứ: nhóm nào mã CÒN ghi, và nhóm nào sổ CÒN
+ * giữ lịch sử. Đối chiếu với dữ liệu thật thì:
+ *
+ *   • bỏ `category`, `order`, `withdrawal`, `coupon` — không còn chỗ nào ghi,
+ *     mà sổ cũng không có lấy một hàng nào; để lại chỉ tổ bày ra bốn bộ lọc
+ *     bấm vào là trống trơn;
+ *   • thêm `club` và `quiz` — mã ghi hai nhóm này nhưng chúng chưa từng có mục
+ *     lọc, nên không có cách nào lọc ra xem ai đã làm gì ở đó;
+ *   • GIỮ `post` và `vip` dù không còn chỗ nào ghi nữa: sổ vẫn còn 12 và 3 hàng
+ *     lịch sử, bỏ mục lọc đi là chôn luôn phần lịch sử ấy.
+ */
 export const AUDIT_GROUPS = [
-  { value: 'post', label: 'Bài viết' },
   { value: 'user', label: 'Người dùng' },
-  { value: 'category', label: 'Chuyên mục' },
   { value: 'forum', label: 'Khu vực diễn đàn' },
   { value: 'thread', label: 'Chủ đề' },
+  { value: 'club', label: 'Câu lạc bộ' },
+  { value: 'quiz', label: 'Trắc nghiệm' },
   { value: 'moderator', label: 'Điều hành viên' },
   { value: 'report', label: 'Báo cáo' },
-  { value: 'order', label: 'Đơn hàng' },
-  { value: 'withdrawal', label: 'Rút tiền' },
-  { value: 'vip', label: 'Gói VIP' },
-  { value: 'coupon', label: 'Mã giảm giá' },
   { value: 'medal', label: 'Huy chương' },
   { value: 'level', label: 'Cấp độ' },
   { value: 'nav', label: 'Menu điều hướng' },
   { value: 'appearance', label: 'Giao diện' },
   { value: 'setting', label: 'Cài đặt hệ thống' },
   { value: 'backup', label: 'Sao lưu' },
+  // Hai nhóm dưới đây không còn chỗ nào ghi nữa, chỉ còn lịch sử cũ.
+  { value: 'post', label: 'Bài viết (cũ)' },
+  { value: 'vip', label: 'Gói VIP (cũ)' },
 ] as const;
 
 export type AuditGroup = (typeof AUDIT_GROUPS)[number]['value'];

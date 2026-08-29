@@ -9,12 +9,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(SITE_URL),
     title: {
-      default: `${site.name} — Blog, diễn đàn & nội dung trả phí`,
+      default: `${site.name} — Diễn đàn & kho game`,
       template: `%s · ${site.name}`,
     },
     description: site.description,
     applicationName: site.name,
-    keywords: ['blog', 'diễn đàn', 'nội dung trả phí', 'tài nguyên', site.name],
+    keywords: ['diễn đàn', 'kho game', 'game java', 'điểm thưởng', site.name],
     openGraph: {
       type: 'website',
       siteName: site.name,

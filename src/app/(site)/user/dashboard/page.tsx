@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { Bell, Coins, Wallet, TrendingUp, Flame, PenLine, Bookmark, Gift, Banknote, Users, Plus, Settings, FileText, ArrowUpRight, ArrowDownRight, Sparkles } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { fmtCount, fmtVnd } from '@/lib/utils';
+import { fmtCount } from '@/lib/utils';
 import { POINTS_REASON_LABEL as REASON_LABEL } from '@/lib/labels';
 import { CheckinButton } from '@/components/user/CheckinButton';
 import { getLevelLook } from '@/lib/level';

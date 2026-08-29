@@ -22,7 +22,7 @@ export function NotifyPrefsForm({ off }: { off: string[] }) {
         <h2 className="font-bold">Thông báo</h2>
       </div>
       <p className="text-sm text-ink-500">
-        Chọn loại thông báo bạn muốn nhận. Thông báo về đơn hàng, VIP và thông báo từ ban quản trị
+        Chọn loại thông báo bạn muốn nhận. Thông báo từ ban quản trị
         luôn được gửi nên không tắt được.
       </p>
 

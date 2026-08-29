@@ -354,7 +354,7 @@ export default async function ThreadPage({ params, searchParams }: {
           {thread.locked && <span className="chip gap-1 bg-ink-100 text-ink-500 dark:bg-ink-800"><Lock size={11} />Đã khoá</span>}
           {thread.featured && <span className="chip gap-1 bg-violet-100 text-violet-600 dark:bg-violet-950/50"><Star size={11} />Tinh hoa</span>}
           {thread.solvedReplyId && <span className="chip gap-1 bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50"><CheckCircle2 size={11} />Đã giải quyết</span>}
-          {thread.bountyPoints ? <span className="chip gap-1 bg-amber-100 text-amber-600 dark:bg-amber-950/50"><Award size={11} />Thưởng {fmtCount(thread.bountyPoints)}đ</span> : null}
+          {thread.bountyPoints ? <span className="chip gap-1 bg-amber-100 text-amber-600 dark:bg-amber-950/50"><Award size={11} />Thưởng {fmtCount(thread.bountyPoints)} điểm</span> : null}
         </div>
 
         <div className="mb-1 flex items-start gap-2">

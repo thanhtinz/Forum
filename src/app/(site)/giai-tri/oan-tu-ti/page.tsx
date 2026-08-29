@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { OanTuTi } from '@/components/giaitri/OanTuTi';
 import { OTT_MAX, OTT_MIN, VAN_MOI_NGAY, conLai } from '@/lib/mini-game';
+import { GopTrenDienThoai } from '@/components/GopTrenDienThoai';
 
 export const metadata: Metadata = { title: 'Oẳn tù tì' };
 export const dynamic = 'force-dynamic';
@@ -36,15 +37,14 @@ export default async function OanTuTiPage() {
         )}
       </section>
 
-      <section className="card mt-4 p-5 text-sm text-ink-600 dark:text-ink-300">
-        <h2 className="zib-title mb-3">Luật chơi</h2>
+      <GopTrenDienThoai tieuDe="Luật chơi" className="card mt-4 p-5 text-sm text-ink-600 dark:text-ink-300">
         <ul className="list-inside list-disc space-y-1">
           <li>Búa thắng Kéo, Kéo thắng Bao, Bao thắng Búa.</li>
           <li>Thắng được đúng số điểm đã cược, thua mất đúng số ấy.</li>
           <li>Ra trùng tay thì hoà, không mất điểm nào.</li>
           <li>Mỗi ván cược {OTT_MIN}–{OTT_MAX} điểm, mỗi ngày {VAN_MOI_NGAY} ván.</li>
         </ul>
-      </section>
+      </GopTrenDienThoai>
 
     </div>
   );

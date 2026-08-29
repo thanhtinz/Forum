@@ -20,18 +20,20 @@ import { cn } from '@/lib/utils';
  * riêng của từng mục con, thêm một cái nữa là thừa).
  */
 export function GopTrenDienThoai({
-  tieuDe, icon, className, anTuSm = false, children,
+  tieuDe, icon, className, lopTieuDe = 'zib-title', anTuSm = false, children,
 }: {
   tieuDe: string;
   icon?: React.ReactNode;
   className?: string;
+  /** Lớp cho thanh tiêu đề — đặt lại để khớp kiểu tiêu đề của chỗ dùng. */
+  lopTieuDe?: string;
   /** Giấu hẳn thanh tiêu đề từ `sm` — cho khối mà bên trong đã có tiêu đề. */
   anTuSm?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <details className={cn('gop-dt group', anTuSm && 'gop-dt-an', className)} >
-      <summary className="zib-title flex cursor-pointer list-none items-center gap-2">
+      <summary className={cn('flex cursor-pointer list-none items-center gap-2', lopTieuDe)}>
         {icon}
         <span className="flex-1">{tieuDe}</span>
         <ChevronDown

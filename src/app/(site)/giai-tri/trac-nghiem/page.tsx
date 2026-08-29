@@ -4,6 +4,7 @@ import { ArrowLeft, FolderOpen, ShieldCheck, User } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { Pagination } from '@/components/Pagination';
 import { QuizDanhSach } from '@/components/giaitri/QuizDanhSach';
+import { GopTrenDienThoai } from '@/components/GopTrenDienThoai';
 import {
   QUIZ_BAI_TOI_THIEU, QUIZ_COC_MAX, QUIZ_COC_MIN, QUIZ_MOI_TRANG,
   danhSachCauHoi, danhSachTheLoai,
@@ -111,8 +112,7 @@ export default async function TracNghiemPage({ searchParams }: {
         )}
       </section>
 
-      <section className="card mt-6 p-5 text-sm text-ink-600 dark:text-ink-300">
-        <h2 className="zib-title mb-3">Luật chơi</h2>
+      <GopTrenDienThoai tieuDe="Luật chơi" className="card mt-6 p-5 text-sm text-ink-600 dark:text-ink-300">
         <ul className="list-inside list-disc space-y-1">
           <li>Ra câu hỏi phải đặt cọc {QUIZ_COC_MIN}–{QUIZ_COC_MAX} điểm, trừ ngay lúc gửi.</li>
           <li>Câu hỏi qua duyệt mới hiện ra; bị từ chối thì không hoàn cọc.</li>
@@ -121,7 +121,7 @@ export default async function TracNghiemPage({ searchParams }: {
           <li>Trả lời xong mới được bình luận; cấm gợi ý đáp án.</li>
           <li>Phải có ít nhất {QUIZ_BAI_TOI_THIEU} bài trên diễn đàn mới được ra câu hỏi.</li>
         </ul>
-      </section>
+      </GopTrenDienThoai>
     </div>
   );
 }

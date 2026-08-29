@@ -7,6 +7,7 @@ import {
 } from '@/lib/farm-const';
 import { AnhPixel } from '@/components/farm/AnhPixel';
 import { NongTrai } from '@/components/farm/NongTrai';
+import { GopTrenDienThoai } from '@/components/GopTrenDienThoai';
 
 export const metadata: Metadata = {
   title: 'Nông trại',
@@ -36,8 +37,7 @@ export default async function NongTraiPage() {
 
       {/* Luật chơi để cuối và giữ thật ngắn: người chơi quay lại lần thứ hai
           là không đọc nữa, nên nó không được chiếm chỗ của mảnh ruộng. */}
-      <section className="card mt-4 px-4 py-3 text-sm text-ink-600 dark:text-ink-300">
-        <h2 className="mb-2 text-sm font-black uppercase tracking-wide text-ink-400">Luật chơi</h2>
+      <GopTrenDienThoai tieuDe="Luật chơi" className="card mt-4 px-4 py-3 text-sm text-ink-600 dark:text-ink-300">
         <ul className="grid list-inside list-disc gap-x-6 gap-y-1 marker:text-brand-400 sm:grid-cols-2">
           <li>Bắt đầu {O_DAT_BAN_DAU} ô, mở thêm giá số ô đang có × {GIA_MOI_O}, tối đa {O_DAT_TOI_DA} ô.</li>
           <li>Gieo hạt trả trước, cây chín đúng số phút của giống.</li>
@@ -45,7 +45,7 @@ export default async function NongTraiPage() {
           <li>Thu hoạch vào kho, bán lúc nào cũng được.</li>
           <li>Cây khế hái mỗi giờ một lần, được {KHE_MIN}–{KHE_MAX} điểm, không mất gì.</li>
         </ul>
-      </section>
+      </GopTrenDienThoai>
     </div>
   );
 }

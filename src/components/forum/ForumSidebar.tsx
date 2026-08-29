@@ -6,6 +6,7 @@ import { fmtCount, fmtAgo } from '@/lib/utils';
 import { getLevelLooks } from '@/lib/level';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { cosmeticSelect, toCosmetics } from '@/lib/shop';
+import { GopTrenDienThoai } from '@/components/GopTrenDienThoai';
 
 /** Coi là đang online nếu hoạt động trong 15 phút gần đây. */
 
@@ -76,8 +77,7 @@ export async function ForumSidebar() {
       </section>
 
       {/* Chủ đề sôi nổi */}
-      <section className="card p-4">
-        <h3 className="mb-3 flex items-center gap-1.5 text-sm font-bold"><Flame size={15} className="text-accent-500" /> Chủ đề sôi nổi</h3>
+      <GopTrenDienThoai tieuDe="Chủ đề sôi nổi" icon={<Flame size={15} className="text-accent-500" />} lopTieuDe="text-sm font-bold" className="card p-4">
         <ol className="space-y-2.5">
           {hotThreads.map((t, i) => (
             <li key={t.id} className="flex gap-2 text-sm">
@@ -88,13 +88,12 @@ export async function ForumSidebar() {
           ))}
           {hotThreads.length === 0 && <li className="text-sm text-ink-400">Chưa có chủ đề nào.</li>}
         </ol>
-      </section>
+      </GopTrenDienThoai>
 
       {/* Thành viên tích cực */}
-      <section className="card p-4">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <h3 className="flex items-center gap-1.5 text-sm font-bold"><Trophy size={15} className="text-amber-500" /> Thành viên tích cực</h3>
-          <Link href="/ranking" className="shrink-0 text-xs text-brand-600 hover:underline">Xếp hạng</Link>
+      <GopTrenDienThoai tieuDe="Thành viên tích cực" icon={<Trophy size={15} className="text-amber-500" />} lopTieuDe="text-sm font-bold" className="card p-4">
+        <div className="mb-2 flex justify-end">
+          <Link href="/ranking" className="text-xs text-brand-600 hover:underline">Xếp hạng</Link>
         </div>
         <ol className="space-y-2">
           {topUsers.map((u, i) => (
@@ -110,7 +109,7 @@ export async function ForumSidebar() {
           ))}
           {topUsers.length === 0 && <li className="text-sm text-ink-400">Chưa có thành viên.</li>}
         </ol>
-      </section>
+      </GopTrenDienThoai>
     </aside>
   );
 }

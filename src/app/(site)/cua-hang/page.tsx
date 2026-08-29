@@ -87,7 +87,9 @@ export default async function ShopPage({ searchParams }: {
           Quầy chưa có {KIND_LABELS[kind].one} nào.
         </p>
       ) : (
-        <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        // Hai cột ngay từ điện thoại: một cột thì sáu món xếp thành sáu thẻ
+        // cao ~180px, hết 1200px chỉ để xem sáu món trang trí.
+        <ul className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {items.map((it) => (
             <ShopItemCard key={it.id} item={it} myPoints={me?.points} loggedIn={!!viewerId}
               viewer={viewer} showKind={false} />

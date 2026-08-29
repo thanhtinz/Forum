@@ -4,6 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { BanBauCua } from '@/components/giaitri/BanBauCua';
 import { xemBan, phienConLai } from '@/lib/bau-cua';
+import { GopTrenDienThoai } from '@/components/GopTrenDienThoai';
 import {
   BAUCUA_BET_MS, BAUCUA_MAX, BAUCUA_MIN, BAUCUA_PHIEN_MOI_NGAY, BAUCUA_ROUND_MS, BAUCUA_XOC_MS,
 } from '@/lib/mini-game';
@@ -43,8 +44,7 @@ export default async function BauCuaPage() {
         )}
       </section>
 
-      <section className="card mt-4 p-5 text-sm text-ink-600 dark:text-ink-300">
-        <h2 className="zib-title mb-3">Luật chơi</h2>
+      <GopTrenDienThoai tieuDe="Luật chơi" className="card mt-4 p-5 text-sm text-ink-600 dark:text-ink-300">
         <ul className="list-inside list-disc space-y-1">
           <li>
             Mỗi phiên {giay(BAUCUA_ROUND_MS)} giây: {giay(BAUCUA_BET_MS)} giây nhận cửa,{' '}
@@ -55,7 +55,7 @@ export default async function BauCuaPage() {
           <li>Cửa không trúng viên nào thì mất tiền đặt cửa ấy.</li>
           <li>Mỗi ngày {BAUCUA_PHIEN_MOI_NGAY} phiên.</li>
         </ul>
-      </section>
+      </GopTrenDienThoai>
 
     </div>
   );

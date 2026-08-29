@@ -147,6 +147,8 @@ model User {
 
   gamePlays      MiniGamePlay[]
   bauCuaBets     BauCuaBet[]
+  giftCodesMade  GiftCode[]        @relation("GiftCodeMaker")
+  giftCodesUsed  GiftCode[]        @relation("GiftCodeUser")
 
   /// Danh hiệu = tên bậc của cấp hiện tại, chép sẵn từ `LevelRule.name`.
   ///
@@ -592,6 +594,9 @@ enum PointsReason {
   SHOP_REFUND // hoàn điểm khi một loại đồ thôi bán
   GAME_BET // đặt cược ở khu giải trí
   GAME_WIN // thắng cược ở khu giải trí
+  GIFT_CODE // đổi mã quà tặng
+  TRANSFER_SENT // chuyển điểm cho thành viên khác
+  TRANSFER_RECEIVED // nhận điểm người khác chuyển
 }
 
 // ============================================================
@@ -1977,6 +1982,37 @@ enum MiniGame {
   BAUCUA
   /// Oẳn tù tì với máy.
   OANTUTI
+}
+
+/**
+ * Mã quà tặng — quản trị phát, thành viên nhập vào lấy điểm.
+ *
+ * Bản gốc XOÁ hàng ngay khi có người dùng mã, nên chẳng còn dấu vết ai đã lấy
+ * cái gì. Ở đây giữ hàng lại và ghi tên người dùng: mã quà là điểm phát ra từ
+ * hư không, thứ ấy mà không có sổ thì không đối soát được với ai.
+ */
+model GiftCode {
+  id   String @id @default(cuid())
+  /// Mã người dùng gõ vào, luôn viết hoa.
+  code String @unique
+
+  points Int
+
+  createdById String?
+  createdBy   User?   @relation("GiftCodeMaker", fields: [createdById], references: [id], onDelete: SetNull)
+
+  /// Ai đã dùng. Rỗng nghĩa là mã còn dùng được.
+  usedById String?
+  usedBy   User?     @relation("GiftCodeUser", fields: [usedById], references: [id], onDelete: SetNull)
+  usedAt   DateTime?
+
+  /// Hết hạn thì thôi không dùng được nữa. Rỗng là không hết hạn.
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([usedById])
+  @@index([createdAt])
 }
 
 

@@ -27,6 +27,12 @@ export const ANH = '/hoai-niem';
  * Kỳ vọng của người chơi là −17/216 ≈ −7,9 % mỗi ván. Nói thẳng ra ở trang
  * chơi: đây là chỗ TIÊU điểm cho vui, không phải chỗ kiếm điểm.
  */
+/**
+ * Thứ tự sáu ô TRÊN MẶT BÀN gốc (`baucua/ban.gif`, 135×85): hàng trên Nai, Bầu,
+ * Gà; hàng dưới Tôm, Cua, Cá. Không phải thứ tự 1→6 của mấy tệp ảnh xúc xắc.
+ */
+export const BAUCUA_BAN = [1, 2, 3, 6, 5, 4] as const;
+
 export const BAUCUA_CONS = [
   { id: 1, ten: 'Nai' },
   { id: 2, ten: 'Bầu' },

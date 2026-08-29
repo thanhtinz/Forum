@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { Users } from 'lucide-react';
 import { datCua, type GameState } from '@/app/(site)/giai-tri/actions';
-import { ANH, BAUCUA_CONS, BAUCUA_MAX, BAUCUA_MIN } from '@/lib/mini-game-const';
+import { ANH, BAUCUA_BAN, BAUCUA_CONS, BAUCUA_MAX, BAUCUA_MIN } from '@/lib/mini-game-const';
 import { cn, fmtCount } from '@/lib/utils';
 
 interface CuaDat { con: number; tong: number; nguoi: number; cuaToi: number }
@@ -125,49 +125,73 @@ export function BanBauCua({ ban0 }: { ban0: BanState }) {
         )}
       </div>
 
-      {/* Bàn cờ sáu cửa */}
+      {/* Mặt bàn: chính tấm ảnh bàn đặt của bản cũ, sáu ô bấm phủ lên trên */}
       <form action={action}>
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-          {BAUCUA_CONS.map((c) => {
-            const o = ban.cua.find((x) => x.con === c.id);
-            const chon = cua === c.id;
-            const trung = ban.pha === 'kq' && ban.dice
-              ? ban.dice.filter((d) => d === c.id).length : 0;
-            return (
-              <label key={c.id} className={cn('block', dangDat ? 'cursor-pointer' : 'cursor-not-allowed')}>
-                <input type="radio" name="con" value={c.id} checked={chon} disabled={!dangDat}
-                  onChange={() => setCua(c.id)} className="peer sr-only" />
-                <span className={cn(
-                  'relative flex flex-col items-center gap-1 rounded-xl border-2 p-2 transition-colors',
-                  trung > 0
-                    ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/40'
-                    : chon && dangDat
-                      ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/40'
-                      : 'border-ink-200 dark:border-ink-700',
-                  dangDat && !chon && 'hover:border-brand-300',
-                  !dangDat && trung === 0 && 'opacity-70',
-                )}>
+        <div className="relative mx-auto w-full max-w-md select-none">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${ANH}/baucua/ban.gif`} alt="" aria-hidden
+            className="w-full rounded-xl"
+            style={{ imageRendering: 'pixelated' }} />
+
+          {/* Ô bấm xếp đúng lưới 3×2 của tấm ảnh. Ô trong suốt để lộ hình vẽ
+              bên dưới — thứ người ta nhận ra ngay là con gì. */}
+          <div className="absolute inset-0 grid grid-cols-3 grid-rows-2 gap-[2.5%] p-[4%]">
+            {BAUCUA_BAN.map((id) => {
+              const o = ban.cua.find((x) => x.con === id);
+              const chon = cua === id;
+              const trung = ban.pha === 'kq' && ban.dice
+                ? ban.dice.filter((d) => d === id).length : 0;
+              return (
+                <label key={id} title={ten(id)}
+                  className={cn('relative block', dangDat ? 'cursor-pointer' : 'cursor-not-allowed')}>
+                  <input type="radio" name="con" value={id} checked={chon} disabled={!dangDat}
+                    onChange={() => setCua(id)} className="peer sr-only" />
+                  <span className={cn(
+                    'absolute inset-0 rounded-md ring-inset transition-all',
+                    trung > 0 && 'bg-emerald-400/35 ring-4 ring-emerald-500',
+                    trung === 0 && chon && dangDat && 'bg-brand-400/25 ring-4 ring-brand-500',
+                    trung === 0 && !chon && dangDat && 'hover:bg-white/25 hover:ring-2 hover:ring-white/70',
+                  )} />
+
                   {trung > 0 && (
-                    <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-emerald-500 text-[11px] font-bold text-white">
+                    <span className="absolute -right-1 -top-1 z-10 grid size-5 place-items-center rounded-full bg-emerald-500 text-[11px] font-bold text-white shadow">
                       {trung}
                     </span>
                   )}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={anh(c.id)} alt="" width={44} height={44} className="size-11 object-contain" />
-                  <span className="text-xs font-semibold">{c.ten}</span>
-                  <span className="retro-sub flex items-center gap-1 text-ink-400">
-                    <Users size={11} /> {o?.nguoi ?? 0} · {fmtCount(o?.tong ?? 0)}
+
+                  {/* Tiền trên ô: của cả bàn, và của riêng mình */}
+                  <span className="absolute inset-x-0 bottom-0 flex flex-col items-center gap-px pb-0.5">
+                    {(o?.tong ?? 0) > 0 && (
+                      <span className="rounded bg-ink-900/75 px-1 text-[10px] font-bold leading-tight text-white">
+                        {fmtCount(o!.tong)}
+                      </span>
+                    )}
+                    {(o?.cuaToi ?? 0) > 0 && (
+                      <span className="rounded bg-amber-400 px-1 text-[10px] font-bold leading-tight text-ink-900">
+                        bạn {o!.cuaToi}
+                      </span>
+                    )}
                   </span>
-                  {(o?.cuaToi ?? 0) > 0 && (
-                    <span className="chip !py-0 bg-amber-100 text-[11px] font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
-                      bạn {o!.cuaToi}
-                    </span>
-                  )}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Ai đang đặt cửa nào — mặt bàn chật, con số chi tiết để xuống đây */}
+        <ul className="mt-2 grid grid-cols-3 gap-x-3 gap-y-1 text-center sm:grid-cols-6">
+          {BAUCUA_BAN.map((id) => {
+            const o = ban.cua.find((x) => x.con === id);
+            return (
+              <li key={id} className="retro-sub text-ink-400">
+                <b className="text-ink-600 dark:text-ink-300">{ten(id)}</b>
+                <span className="ml-1 inline-flex items-center gap-0.5">
+                  <Users size={10} /> {o?.nguoi ?? 0}
                 </span>
-              </label>
+              </li>
             );
           })}
-        </div>
+        </ul>
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="block">

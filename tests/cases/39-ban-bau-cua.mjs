@@ -58,9 +58,9 @@ export default async function run(check) {
 
     // ── Đặt cửa là trừ điểm ngay ────────────────────────────────────────
     const truocA = await diem(a.id);
-    await pa.locator('label:has-text("Bầu")').first().click();
+    await pa.locator('label[title="Bầu"]').click();
     await pa.fill('input[name="cuoc"]', '20');
-    await pa.locator('button:has-text("Đặt cửa")').click();
+    await pa.locator('form button[type="submit"]').click();
     await pa.waitForTimeout(2500);
     check('đặt cửa thì trừ điểm ngay', (await diem(a.id)) === truocA - 20,
       `${truocA} → ${await diem(a.id)}`);
@@ -73,9 +73,9 @@ export default async function run(check) {
     check('cửa chưa chốt thì chưa có tiền trả', cuaA?.payout === null);
 
     // ── Người kia đặt thì mình thấy ─────────────────────────────────────
-    await pb.locator('label:has-text("Gà")').first().click();
+    await pb.locator('label[title="Gà"]').click();
     await pb.fill('input[name="cuoc"]', '30');
-    await pb.locator('button:has-text("Đặt cửa")').click();
+    await pb.locator('form button[type="submit"]').click();
     await pb.waitForTimeout(2500);
     // Trang tự hỏi lại máy chủ mỗi hai giây, chờ một nhịp là thấy.
     await pa.waitForTimeout(3000);

@@ -184,14 +184,31 @@ const KHO = {
   mobile: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
 };
 
+/**
+ * Đăng nhập, thử lại tối đa ba lượt.
+ *
+ * Ô nhập chỉ hoạt động sau khi React gắn xong; bấm sớm hơn thì cú bấm rơi vào
+ * đường gửi mặc định của trình duyệt, trang quay lại /login và chờ mãi không
+ * thấy chuyển. Máy bận (đang dựng, đang chạy bộ kiểm) là lúc hay trúng nhất.
+ */
 async function dangNhap(ctx, tenDangNhap = 'admin@nova.local', matKhau = 'admin123') {
   const page = await ctx.newPage();
-  await page.goto(`${GOC}/login`, { waitUntil: 'networkidle' });
-  await page.fill('input[name="identifier"]', tenDangNhap);
-  await page.fill('input[name="password"]', matKhau);
-  await page.click('button[type="submit"]');
-  await page.waitForURL((u) => !u.pathname.includes('/login'), { timeout: 30000 });
-  await page.close();
+  let loiCuoi;
+  for (let lan = 1; lan <= 3; lan++) {
+    try {
+      await page.goto(`${GOC}/login`, { waitUntil: 'networkidle' });
+      await page.fill('input[name="identifier"]', tenDangNhap);
+      await page.fill('input[name="password"]', matKhau);
+      await page.click('button[type="submit"]');
+      await page.waitForURL((u) => !u.pathname.includes('/login'), { timeout: 30000 });
+      await page.close();
+      return;
+    } catch (e) {
+      loiCuoi = e;
+      console.log(`  … đăng nhập ${tenDangNhap} hụt lượt ${lan}, thử lại`);
+    }
+  }
+  throw loiCuoi;
 }
 
 async function main() {
@@ -200,10 +217,25 @@ async function main() {
     if (ma !== 0) { console.error('Dựng hỏng — chưa chụp.'); process.exit(ma); }
   }
 
+  // Cổng phải trống. `stdio: 'ignore'` nuốt luôn lỗi kẹt cổng, nên khi một lượt
+  // chụp trước còn sót máy chủ thì lượt này lặng lẽ chụp bản dựng CŨ của lượt
+  // đó — ảnh ra không khớp mã, mà chẳng có dấu hiệu gì.
+  try {
+    await fetch(GOC, { cache: 'no-store' });
+    console.error(`Cổng ${CONG} đang có máy chủ khác. Dẹp nó rồi chạy lại:\n  pkill -f "next start"`);
+    process.exit(1);
+  } catch { /* trống, đúng như mong đợi */ }
+
+  // `detached`: `npx next start` đẻ ra một tiến trình `next-server` riêng, và
+  // giết mỗi thằng cha thì thằng con sống tiếp, ôm luôn cổng 3200 — lượt chụp
+  // sau gặp cổng bận. Cho cả nhóm một mã rồi giết theo nhóm.
   const mayChu = spawn('npx', ['next', 'start'], {
-    env: { ...process.env, PORT: String(CONG) }, stdio: 'ignore',
+    env: { ...process.env, PORT: String(CONG) }, stdio: 'ignore', detached: true,
   });
-  const donDep = () => { if (!mayChu.killed) mayChu.kill('SIGTERM'); };
+  const donDep = () => {
+    if (mayChu.killed || mayChu.pid == null) return;
+    try { process.kill(-mayChu.pid, 'SIGTERM'); } catch { mayChu.kill('SIGTERM'); }
+  };
   process.on('exit', donDep);
   process.on('SIGINT', () => { donDep(); process.exit(130); });
 

@@ -109,15 +109,33 @@ export async function datCua(_prev: GameState, formData: FormData): Promise<Game
   const ban = await xemBan(me.userId);
   if (!ban.dangDat) return { error: 'Hết giờ đặt cửa rồi, chờ phiên sau nhé.' };
 
-  const daDat = await phienHomNay(me.userId);
+  // Kiểm sớm một lần cho người dùng biết ngay, KHÔNG dựa vào nó để chặn —
+  // phép chặn thật nằm trong khoá bên dưới.
   const dangChoiPhienNay = ban.cua.some((c) => c.cuaToi > 0);
-  if (!dangChoiPhienNay && daDat >= BAUCUA_PHIEN_MOI_NGAY) {
+  if (!dangChoiPhienNay && (await phienHomNay(me.userId)) >= BAUCUA_PHIEN_MOI_NGAY) {
     return { error: `Hôm nay bạn chơi đủ ${BAUCUA_PHIEN_MOI_NGAY} phiên rồi, để mai chơi tiếp nhé.` };
   }
 
   try {
     await db.$transaction(async (tx) => {
       await lockUsers(tx, me.userId);
+
+      /*
+       * Đếm LẠI trần ngày sau khi đã khoá.
+       *
+       * Trần ngày là một phép đếm trên nhiều hàng, thứ mà một câu `where` không
+       * nói được — nên đọc ngoài khoá rồi ghi trong khoá là đúng cái mẫu
+       * đọc-rồi-ghi mà dự án cấm: hai tab bấm cùng lúc cùng thấy con số cũ và
+       * cùng đi qua. Hôm nay khó nổ vì hai phiên cách nhau 60 giây, nhưng rút
+       * `BAUCUA_ROUND_MS` xuống là nổ ngay.
+       */
+      const daDatTrongKhoa = await phienHomNay(me.userId, tx);
+      const dangChoiPhienNayThat = (await tx.bauCuaBet.count({
+        where: { roundId: ban.roundId, userId: me.userId },
+      })) > 0;
+      if (!dangChoiPhienNayThat && daDatTrongKhoa >= BAUCUA_PHIEN_MOI_NGAY) {
+        throw new Error('het-phien');
+      }
 
       // Kiểm LẠI trong transaction: giữa lúc đọc bàn ở trên và lúc ghi ở đây,
       // phiên có thể đã hết giờ và bị người khác chốt sổ. Cửa đặt sau khi chốt
@@ -156,6 +174,9 @@ export async function datCua(_prev: GameState, formData: FormData): Promise<Game
     });
   } catch (e) {
     if (e instanceof InsufficientPointsError) return { error: 'Bạn không đủ điểm để đặt cửa này.' };
+    if (e instanceof Error && e.message === 'het-phien') {
+      return { error: `Hôm nay bạn chơi đủ ${BAUCUA_PHIEN_MOI_NGAY} phiên rồi, để mai chơi tiếp nhé.` };
+    }
     if (e instanceof Error && e.message === 'het-gio') {
       return { error: 'Hết giờ đặt cửa rồi, chờ phiên sau nhé.' };
     }

@@ -7,7 +7,7 @@ import { banMessage, getActiveBan } from '@/lib/ban';
 import { lockUsers } from '@/lib/lock';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import {
-  KHE_CHU_KY_MS, KHE_MAX, KHE_MIN, O_DAT_TOI_DA, TUOI_RUT_NGAN, giaMoODat,
+  KHE_CHU_KY_MS, KHE_MAX, KHE_MIN, O_DAT_BAN_DAU, O_DAT_TOI_DA, TUOI_RUT_NGAN, giaMoODat,
 } from '@/lib/farm-const';
 
 /**
@@ -275,7 +275,27 @@ export async function moODat(_prev: FarmState, _formData: FormData): Promise<Far
     await db.$transaction(async (tx) => {
       await lockUsers(tx, me.userId);
 
-      const soO = await tx.farmPlot.count({ where: { userId: me.userId } });
+      /*
+       * Dựng mảnh đất khởi điểm ngay tại đây nếu chưa có.
+       *
+       * `moDatKhoiDiem` (bốn ô tặng) chỉ chạy trong `xemNongTrai`, tức là chỉ
+       * khi có người MỞ TRANG. Nhưng hàm này là một endpoint POST công khai,
+       * gọi thẳng được — và lúc ấy `soO = 0` nên `giaMoODat(0)` ra 0, tức là
+       * ô đầu tiên miễn phí, `grantPoints` thoát sớm và không ghi sổ điểm nào.
+       *
+       * Nó không sinh lợi cho ai (gọi thế là tự mất ba ô tặng), nhưng đây đúng
+       * kiểu hàm tin rằng "trang đã chạy trước" — thứ mà một endpoint công khai
+       * không bao giờ được tin.
+       */
+      let soO = await tx.farmPlot.count({ where: { userId: me.userId } });
+      if (soO === 0) {
+        await tx.farmPlot.createMany({
+          data: Array.from({ length: O_DAT_BAN_DAU }, (_, index) => ({ userId: me.userId, index })),
+          skipDuplicates: true,
+        });
+        soO = await tx.farmPlot.count({ where: { userId: me.userId } });
+      }
+
       if (soO >= O_DAT_TOI_DA) throw new Error('kich-tran');
       gia = giaMoODat(soO);
 

@@ -1,4 +1,5 @@
 import { db } from './db';
+import type { Prisma } from '@prisma/client';
 import { grantPoints } from './points';
 import {
   BAUCUA_BET_MS, BAUCUA_CONS, BAUCUA_CUA_MOI_PHIEN, BAUCUA_PHIEN_MOI_NGAY,
@@ -201,9 +202,18 @@ export async function xemBan(userId: string | null): Promise<BanBauCua> {
   };
 }
 
-/** Số phiên người này đã đặt cửa hôm nay. */
-export async function phienHomNay(userId: string): Promise<number> {
-  const r = await db.bauCuaBet.groupBy({
+/**
+ * Số PHIÊN đã chơi hôm nay (không phải số cửa đã đặt).
+ *
+ * Nhận `tx` để gọi được từ trong transaction: trần ngày là một phép ĐẾM, mà
+ * đếm ngoài khoá rồi ghi trong khoá thì hai tab bấm cùng lúc cùng thấy con số
+ * cũ và cùng đi qua. Chỗ chặn thật phải đếm lại sau khi đã khoá.
+ */
+export async function phienHomNay(
+  userId: string,
+  tx: Prisma.TransactionClient | typeof db = db,
+): Promise<number> {
+  const r = await tx.bauCuaBet.groupBy({
     by: ['roundId'], where: { userId, createdAt: { gte: dauNgayVN() } },
   });
   return r.length;

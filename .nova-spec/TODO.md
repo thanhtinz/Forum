@@ -4,7 +4,8 @@ Bản này ghi **hiện trạng thật**, đã đối chiếu với mã và dữ
 ban đầu (P0–P16) đã xong và không còn ý nghĩa, nên gỡ đi — sản phẩm nay là diễn
 đàn + kho game tính bằng điểm, không còn blog, tiền thật hay VIP.
 
-Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` 634/634.
+Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **661/661**,
+hai lượt liên tiếp cho cùng một con số.
 
 ---
 
@@ -28,11 +29,6 @@ Xếp theo mức đáng làm. Không cái nào đang gây lỗi cho người dù
 - [ ] **35 chỗ `Math.ceil(total / SIZE)` thiếu `Math.max(1, …)`.** Hiện KHÔNG
       gây lỗi — `Pagination` đã tự ẩn khi `totalPages <= 1` — nên đây là chuyện
       gọn gàng, không phải lỗi. Ghi lại để khỏi ai đó "phát hiện" lại lần nữa.
-
-- [ ] **`ThreadOwnerMenu` tự dựng bảng thả xuống** thay vì dùng `Popover`. Ba
-      chỗ cùng kiểu đã chuyển rồi (menu điều hành, @nhắc tên, cảm xúc chat) vì
-      bị khối cha `overflow-hidden` cắt; chỗ này chưa thấy bị cắt nhưng vẫn nên
-      gom về một mối.
 
 ---
 
@@ -69,3 +65,5 @@ chẳng hiện ở đâu), kèm vá chỗ `saveSlide` không kiểm định dạ
 
 **Trợ năng** — 24 nút chỉ có biểu tượng nay có `aria-label`; sáu lớp phủ nay
 khoá cuộn nền qua hook `useKhoaCuon`; `/online` vào được từ điện thoại.
+`ThreadOwnerMenu` chuyển sang `Popover` — nay không còn bảng thả xuống nào tự
+dựng bằng `absolute` nữa.

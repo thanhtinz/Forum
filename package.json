@@ -13,6 +13,7 @@
     "db:don-may-ao": "tsx prisma/don-du-lieu-may-ao.ts",
     "db:soat-bo-dem": "node scripts/soat-bo-dem.mjs",
     "test": "node tests/run.mjs",
+    "test:that": "node scripts/kiem-tren-ban-dung.mjs",
     "scan": "node scripts/scan-overfetch.mjs && node scripts/scan-dead-buttons.mjs && node scripts/scan-unbounded.mjs"
   },
   "dependencies": {

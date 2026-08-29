@@ -21,3 +21,6 @@ next-env.d.ts
 prisma/*.db
 uploads/
 public/uploads/
+
+# ảnh chụp màn hình do scripts/chup-man-hinh.mjs sinh ra
+/.anh-chup/

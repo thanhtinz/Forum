@@ -50,7 +50,10 @@ export default async function PointsPage({ searchParams }: { searchParams: Promi
           <ul className="divide-y divide-ink-100 dark:divide-ink-800">
             {logs.map((l) => (
               <li key={l.id} className="flex items-center justify-between gap-3 py-3">
-                <div className="flex items-center gap-3">
+                {/* `min-w-0` phải có ở ĐÂY nữa, không chỉ ở thẻ con: thiếu nó
+                    thì mục flex này không co được, dòng ghi chú dài đẩy cả hàng
+                    rộng ra và cả trang cuộn ngang được. */}
+                <div className="flex min-w-0 flex-1 items-center gap-3">
                   <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full ${l.amount >= 0 ? 'bg-green-50 text-green-600 dark:bg-green-950/40' : 'bg-red-50 text-red-600 dark:bg-red-950/40'}`}>
                     {l.amount >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                   </span>

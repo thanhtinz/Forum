@@ -43,14 +43,33 @@ function chay(lenh, dsoi) {
   return new Promise((xong) => spawn(lenh, dsoi, { stdio: 'inherit' }).on('exit', (m) => xong(m ?? 1)));
 }
 
+/**
+ * Đợi máy chủ trả 200 ở trang chủ — không nhận "khác 5xx" là đủ.
+ *
+ * `next dev` dùng chung thư mục `.next` với bản dựng, nên nếu nó chạy song
+ * song thì nó ghi đè lên bản vừa dựng và `next start` lên được nhưng mọi
+ * trang đều 500 ("Cannot read properties of undefined (reading 'call')").
+ * Trước đây điều kiện là `< 500` nên bộ chụp đi tiếp rồi chụp về 162 tấm ảnh
+ * màn hình lỗi.
+ */
 async function doiMayChu(hanGiay = 90) {
   const het = Date.now() + hanGiay * 1000;
+  let ma = 0;
   for (;;) {
     try {
       const r = await fetch(GOC, { cache: 'no-store' });
-      if (r.status < 500) return true;
+      ma = r.status;
+      if (r.ok) return true;
     } catch { /* chưa lên */ }
-    if (Date.now() > het) return false;
+    if (Date.now() > het) {
+      if (ma >= 500) {
+        console.error(
+          `Máy chủ lên nhưng trang chủ trả ${ma}. Thường là do có \`next dev\` chạy song song:\n` +
+          'nó ghi đè .next và làm hỏng bản dựng. Dẹp nó rồi dựng lại.',
+        );
+      }
+      return false;
+    }
     await new Promise((r) => setTimeout(r, 500));
   }
 }
@@ -179,6 +198,47 @@ function dungDanhSach(ts) {
   return ds;
 }
 
+/**
+ * Tìm phần tử thò ra ngoài mép phải — chạy TRONG trang.
+ *
+ * Thân trang cuộn ngang được là dấu hiệu chắc chắn của một chỗ hỏng bố cục,
+ * và nó là thứ máy tìm được, khác với "trông xấu" thì phải mắt người nhìn.
+ * Chỉ kể phần tử NHỎ NHẤT thò ra: cha của nó cũng rộng theo, kể cả họ hàng
+ * thì mỗi lỗi hoá ra hai chục dòng.
+ */
+function doTranNgang() {
+  const rong = document.documentElement.clientWidth;
+  // Chính THÂN TRANG có cuộn ngang không. Không thì mọi thứ thò ra bên trong
+  // đều nằm trong một khung cuộn cố ý (băng game, hàng thẻ lọc, bảng quản trị
+  // đặt `min-w`) — đó là thiết kế, không phải lỗi.
+  if (document.documentElement.scrollWidth - rong <= 1) return [];
+
+  const trongKhungCuon = (el) => {
+    for (let p = el.parentElement; p; p = p.parentElement) {
+      const ox = getComputedStyle(p).overflowX;
+      if (ox === 'auto' || ox === 'scroll' || ox === 'hidden') return true;
+    }
+    return false;
+  };
+
+  const thoRa = [];
+  for (const el of document.body.querySelectorAll('*')) {
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.right <= rong + 1) continue;
+    if (getComputedStyle(el).position === 'fixed') continue;
+    if (trongKhungCuon(el)) continue;
+    // Cha đã thò ra rồi thì con không kể lại nữa.
+    if (thoRa.some((x) => x.el.contains(el))) continue;
+    thoRa.push({ el, thua: Math.round(r.right - rong) });
+  }
+  return thoRa.slice(0, 6).map(({ el, thua }) => ({
+    thua,
+    the: el.tagName.toLowerCase() + (el.className && typeof el.className === 'string'
+      ? '.' + el.className.trim().split(/\s+/).slice(0, 3).join('.') : ''),
+    chu: (el.textContent ?? '').trim().slice(0, 40),
+  }));
+}
+
 const KHO = {
   pc: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
   mobile: { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
@@ -277,6 +337,8 @@ async function main() {
         await page.waitForTimeout(400);
         await page.screenshot({ path: tep, fullPage: true });
         muc.cao = await page.evaluate(() => document.documentElement.scrollHeight);
+        const tran = await page.evaluate(doTranNgang);
+        if (tran.length) muc.tranNgang = tran;
       } catch (e) {
         muc.loi = String(e).split('\n')[0];
         hong++;
@@ -294,7 +356,12 @@ async function main() {
 
   await trinhDuyet.close();
   fs.writeFileSync(path.join(RA, 'manifest.json'), JSON.stringify(manifest, null, 2));
-  console.log(`\n${manifest.length} ảnh · ${hong} lỗi · ${RA}`);
+  const tran = manifest.filter((m) => m.tranNgang);
+  console.log(`\n${manifest.length} ảnh · ${hong} lỗi · ${tran.length} trang tràn ngang · ${RA}`);
+  for (const m of tran) {
+    console.log(`  ⇥ ${m.kho} ${m.duongDan}`);
+    for (const t of m.tranNgang) console.log(`      +${t.thua}px  ${t.the}  ${t.chu ? '“' + t.chu + '”' : ''}`);
+  }
   donDep();
   process.exit(hong ? 1 : 0);
 }

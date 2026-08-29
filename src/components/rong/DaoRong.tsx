@@ -153,7 +153,10 @@ export function DaoRong({ d, doiThu }: { d: DuLieu; doiThu: DoiThu[] }) {
               <p className="mb-1 text-sm font-bold">
                 {l.ten} <span className="retro-sub font-normal text-ink-400">· {l.moTa}</span>
               </p>
-              <ul className="flex flex-wrap gap-1.5">
+              {/* Sáu màu của một loài phải nằm trọn MỘT hàng. Xếp tự do thì ở
+                  390px vừa đúng năm con một hàng, con thứ sáu rơi xuống dòng
+                  dưới đứng một mình — chín loài là chín cái đuôi thừa. */}
+              <ul className="grid grid-cols-6 gap-1.5 sm:flex sm:flex-wrap">
                 {MAU_TEN.map((tenMau, i) => {
                   const mau = i + 1;
                   const co = d.boSuuTap.includes(`${l.id}-${mau}`);
@@ -168,7 +171,7 @@ export function DaoRong({ d, doiThu }: { d: DuLieu; doiThu: DoiThu[] }) {
                         // hàng thành một vệt xám, không còn thấy con nào khác
                         // con nào — mà nhìn trước con mình sắp săn chính là
                         // cái thú của bộ sưu tập.
-                        className={cn('size-14 object-contain transition-all',
+                        className={cn('h-auto w-full max-w-14 object-contain transition-all sm:size-14',
                           co ? '' : 'opacity-45 grayscale contrast-75')}
                         style={{ imageRendering: 'pixelated' }}
                       />

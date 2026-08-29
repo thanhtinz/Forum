@@ -61,7 +61,10 @@ function Row({ item, onEdit }: { item: ShopItemView; onEdit: () => void }) {
           )}
         </p>
         <p className="retro-sub text-ink-400">
-          {fmtCount(item.pricePoints)} điểm · thứ tự {item.order} · <code>{item.value}</code>
+          {/* `break-all`: giá trị của món có thể là cả một chuỗi CSS không dấu
+              cách ("linear-gradient(90deg,#f43f5e,…)"), không cho ngắt thì nó
+              đẩy rộng cả trang và điện thoại cuộn ngang được. */}
+          {fmtCount(item.pricePoints)} điểm · thứ tự {item.order} · <code className="break-all">{item.value}</code>
         </p>
       </div>
 

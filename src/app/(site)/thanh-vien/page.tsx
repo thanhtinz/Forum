@@ -65,7 +65,7 @@ export default async function MembersPage({ searchParams }: {
             <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-400" />
             <input name="q" defaultValue={q ?? ''} placeholder="Tìm theo tên…" className="input !py-1.5 !pl-8 text-sm" />
           </label>
-          <button type="submit" className="btn-ghost !py-1.5 text-sm">Tìm</button>
+          <button type="submit" className="btn-outline !py-1.5 text-sm">Tìm</button>
         </form>
       </header>
 
@@ -80,7 +80,10 @@ export default async function MembersPage({ searchParams }: {
           </Link>
         ))}
         <Link href={href({ online: onlineOnly ? null : '1' })}
-          className={cn('ml-auto flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors',
+          // `ml-auto` chỉ từ 640px trở lên: ở khổ hẹp hàng thẻ lọc đã phải
+          // xuống ba dòng, đẩy thẻ này sang phải nữa thì nó đứng lẻ loi cuối
+          // dòng thứ tư, trông như bị rơi ra khỏi nhóm.
+          className={cn('flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors sm:ml-auto',
             onlineOnly
               ? 'border-emerald-500 bg-emerald-500 font-medium text-white'
               : 'border-ink-200 text-ink-600 hover:bg-ink-100 dark:border-ink-700 dark:text-ink-300 dark:hover:bg-ink-800')}>

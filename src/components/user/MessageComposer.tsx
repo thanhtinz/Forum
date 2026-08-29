@@ -108,7 +108,10 @@ export function MessageComposer({ conversationId }: { conversationId: string }) 
             ? <span className="text-red-600">{uploadError}</span>
             : state.error
               ? <span className="text-red-600">{state.error}</span>
-              : <span className="text-ink-400">Enter để gửi · Shift + Enter xuống dòng</span>}
+              // Mẹo bàn phím giấu đi ở khổ hẹp: trên điện thoại nó vừa vô
+              // nghĩa vừa dài quá chỗ, hiện ra chỉ để bị cắt cụt giữa chừng
+              // ("Shift + Enter xuống …"). Lỗi thì vẫn hiện, ở mọi khổ.
+              : <span className="hidden text-ink-400 sm:inline">Enter để gửi · Shift + Enter xuống dòng</span>}
         </span>
 
         <button type="submit" disabled={pending}

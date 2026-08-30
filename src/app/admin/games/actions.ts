@@ -72,7 +72,6 @@ export async function updateGame(_prev: ActionState, fd: FormData): Promise<Acti
   const clash = await db.game.findFirst({ where: { slug, NOT: { id } }, select: { id: true } });
   if (clash) return { error: 'Slug đã được game khác dùng.' };
 
-  // Giữ nguyên ngày đăng cũ nếu game đã từng được đăng.
   const current = await db.game.findUnique({ where: { id }, select: { publishedAt: true } });
   if (!current) return { error: 'Không tìm thấy game.' };
 
@@ -118,7 +117,7 @@ export async function updateGame(_prev: ActionState, fd: FormData): Promise<Acti
         featured: bool(fd, 'featured'),
         pricePoints,
         status: status as 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED',
-        publishedAt: status === 'PUBLISHED' ? current.publishedAt ?? new Date() : current.publishedAt,
+        publishedAt: ngayDang(status, current.publishedAt),
         platformId: str(fd, 'platformId'),
         resolutionId: str(fd, 'resolutionId'),
         compatibilityNote: str(fd, 'compatibilityNote'),
@@ -164,13 +163,29 @@ export async function toggleGameFlag(id: string, field: 'featured'): Promise<voi
   revalidatePath(`/games/${game.slug}`);
 }
 
+/**
+ * Ngày đăng đi theo trạng thái.
+ *
+ *  • Đăng: giữ ngày cũ nếu từng đăng, chưa có thì lấy bây giờ — đăng lại sau
+ *    một lần sửa không phải là bài mới, cho nhảy lên đầu mọi danh sách là sai.
+ *  • Nháp: xoá — nháp là thứ CHƯA đăng, mang ngày đăng thì tự mâu thuẫn, mà
+ *    huy hiệu "mới" với điểm trending đều đọc cột này.
+ *  • Chờ duyệt / đã ẩn: giữ — cả hai đều là bài đã từng ra mặt tiền, chỉ đang
+ *    tạm rút, ngày ra mắt vẫn là ngày ra mắt.
+ */
+function ngayDang(trangThai: string, cu: Date | null): Date | null {
+  if (trangThai === 'PUBLISHED') return cu ?? new Date();
+  if (trangThai === 'DRAFT') return null;
+  return cu;
+}
+
 export async function setGameStatus(id: string, status: 'DRAFT' | 'PENDING' | 'PUBLISHED' | 'ARCHIVED'): Promise<void> {
   await assertSuperAdmin();
   const game = await db.game.findUnique({ where: { id }, select: { publishedAt: true, slug: true } });
   if (!game) return;
   await db.game.update({
     where: { id },
-    data: { status, publishedAt: status === 'PUBLISHED' ? game.publishedAt ?? new Date() : game.publishedAt },
+    data: { status, publishedAt: ngayDang(status, game.publishedAt) },
   });
   revalidatePath('/admin/games');
   revalidatePath(`/games/${game.slug}`);

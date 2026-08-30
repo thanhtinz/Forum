@@ -72,10 +72,9 @@ export default async function run(check) {
       where: { id: game.id }, select: { status: true, publishedAt: true },
     });
     check('rút được về nháp', sauRut?.status === 'DRAFT', `đang là ${sauRut?.status}`);
-    // Ngày đăng giữ nguyên: đăng lại lần hai không phải là bài mới, giữ ngày cũ
-    // thì thứ tự ở các danh sách không nhảy lung tung mỗi lần sửa vặt.
-    check('rút về nháp vẫn giữ ngày đăng cũ',
-      sauRut?.publishedAt?.getTime() === sauDuyet?.publishedAt?.getTime());
+    // Nháp là thứ chưa đăng, nên không được còn ngày đăng — huy hiệu "mới" và
+    // điểm trending đều đọc cột này, để sót là hai chỗ ấy nói dối.
+    check('rút về nháp thì xoá luôn ngày đăng', sauRut?.publishedAt === null, String(sauRut?.publishedAt));
 
     await khach.goto(`${BASE}/games/${slug}`, { waitUntil: 'domcontentloaded' });
     await khach.waitForTimeout(600);

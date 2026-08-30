@@ -157,7 +157,9 @@ export async function aiApVaoGame(_prev: ApState, fd: FormData): Promise<ApState
   await db.game.update({
     where: { id },
     data: {
+      // Về nháp thì hết là bài đã đăng, ngày đăng phải rỗng theo.
       status: 'DRAFT',
+      publishedAt: null,
       titleVi: chu('titleVi'),
       series: chu('series'),
       developer: chu('developer'),

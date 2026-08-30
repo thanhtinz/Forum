@@ -1,0 +1,5748 @@
+{
+ "khu": [
+  {
+   "ma": "co",
+   "ten": "Khu Cỏ",
+   "bac": 1,
+   "thu": [
+    {
+     "nguon": 1,
+     "ten": "sâu xanh",
+     "cong": 7,
+     "thu": 3,
+     "mau": 20,
+     "exp": 5,
+     "vang": 5,
+     "he": 12,
+     "nac": 0,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 2,
+     "ten": "sâu xanh",
+     "cong": 7,
+     "thu": 3,
+     "mau": 25,
+     "exp": 3,
+     "vang": 4,
+     "he": 12,
+     "nac": 0,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 3,
+     "ten": "sâu xanh",
+     "cong": 10,
+     "thu": 15,
+     "mau": 15,
+     "exp": 2,
+     "vang": 6,
+     "he": 1,
+     "nac": 0,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 4,
+     "ten": "sâu xanh",
+     "cong": 7,
+     "thu": 9,
+     "mau": 18,
+     "exp": 6,
+     "vang": 2,
+     "he": 10,
+     "nac": 0,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 5,
+     "ten": "sâu xanh",
+     "cong": 12,
+     "thu": 12,
+     "mau": 20,
+     "exp": 2,
+     "vang": 5,
+     "he": 8,
+     "nac": 2,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 6,
+     "ten": "sâu xanh",
+     "cong": 8,
+     "thu": 8,
+     "mau": 21,
+     "exp": 3,
+     "vang": 5,
+     "he": 9,
+     "nac": 2,
+     "chieu": [
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
+     ]
+    },
+    {
+     "nguon": 7,
+     "ten": "sâu xanh",
+     "cong": 14,
+     "thu": 7,
+     "mau": 20,
+     "exp": 3,
+     "vang": 5,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 8,
+     "ten": "sâu xanh",
+     "cong": 15,
+     "thu": 10,
+     "mau": 20,
+     "exp": 4,
+     "vang": 3,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 9,
+     "ten": "sâu xanh",
+     "cong": 12,
+     "thu": 10,
+     "mau": 25,
+     "exp": 3,
+     "vang": 6,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 10,
+     "ten": "sâu xanh",
+     "cong": 9,
+     "thu": 12,
+     "mau": 28,
+     "exp": 3,
+     "vang": 4,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 11,
+     "ten": "sâu xanh",
+     "cong": 16,
+     "thu": 12,
+     "mau": 22,
+     "exp": 3,
+     "vang": 3,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
+     ]
+    },
+    {
+     "nguon": 12,
+     "ten": "sâu xanh",
+     "cong": 14,
+     "thu": 14,
+     "mau": 24,
+     "exp": 3,
+     "vang": 5,
+     "he": 10,
+     "nac": 3,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 13,
+     "ten": "sâu xanh",
+     "cong": 12,
+     "thu": 12,
+     "mau": 21,
+     "exp": 4,
+     "vang": 6,
+     "he": 12,
+     "nac": 2,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 14,
+     "ten": "sâu xanh",
+     "cong": 11,
+     "thu": 10,
+     "mau": 14,
+     "exp": 6,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 15,
+     "ten": "sâu xanh",
+     "cong": 8,
+     "thu": 12,
+     "mau": 20,
+     "exp": 4,
+     "vang": 2,
+     "he": 7,
+     "nac": 2,
+     "chieu": [
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 16,
+     "ten": "sâu xanh",
+     "cong": 150,
+     "thu": 120,
+     "mau": 100,
+     "exp": 5,
+     "vang": 5,
+     "he": 1,
+     "nac": 3,
+     "chieu": [
+      "attack",
+      "Fusion bolt",
+      "Photoshop Strike",
+      "Teravolt"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "map2",
+   "ten": "Rừng Xanh",
+   "bac": 2,
+   "thu": [
+    {
+     "nguon": 1,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 30,
+     "mau": 70,
+     "exp": 5,
+     "vang": 5,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 2,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 70,
+     "mau": 70,
+     "exp": 3,
+     "vang": 4,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 3,
+     "ten": "sâu xanh",
+     "cong": 85,
+     "thu": 55,
+     "mau": 85,
+     "exp": 2,
+     "vang": 6,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 4,
+     "ten": "sâu xanh",
+     "cong": 78,
+     "thu": 92,
+     "mau": 100,
+     "exp": 6,
+     "vang": 2,
+     "he": 10,
+     "nac": 2,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 5,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 200,
+     "exp": 2,
+     "vang": 5,
+     "he": 8,
+     "nac": 2,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 6,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 3,
+     "vang": 5,
+     "he": 9,
+     "nac": 2,
+     "chieu": [
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
+     ]
+    },
+    {
+     "nguon": 7,
+     "ten": "sâu xanh",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 8,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 120,
+     "exp": 4,
+     "vang": 3,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 9,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 6,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 10,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 4,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 11,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 90,
+     "mau": 90,
+     "exp": 3,
+     "vang": 3,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
+     ]
+    },
+    {
+     "nguon": 12,
+     "ten": "sâu xanh",
+     "cong": 50,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 10,
+     "nac": 3,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 13,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 4,
+     "vang": 6,
+     "he": 12,
+     "nac": 2,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 14,
+     "ten": "sâu xanh",
+     "cong": 110,
+     "thu": 100,
+     "mau": 140,
+     "exp": 6,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 15,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 7,
+     "nac": 2,
+     "chieu": [
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 16,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
+     ]
+    },
+    {
+     "nguon": 17,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 18,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 5,
+     "nac": 2,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAM",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 19,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 20,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 22,
+     "ten": "Pikachu",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 7,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "Volt Tackle",
+      "Volt Tackle 1",
+      "Volt Tackle 2",
+      "Volt Tackle 3"
+     ]
+    },
+    {
+     "nguon": 25,
+     "ten": "ran da",
+     "cong": 129,
+     "thu": 129,
+     "mau": 129,
+     "exp": 2,
+     "vang": 3,
+     "he": 1,
+     "nac": 1,
+     "chieu": [
+      "fsd",
+      "sdf",
+      "sfsdf",
+      "dfsf"
+     ]
+    },
+    {
+     "nguon": 23,
+     "ten": "Bulbasaur",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 5,
+     "vang": 5,
+     "he": 5,
+     "nac": 2,
+     "chieu": [
+      "Tackle",
+      "Growl",
+      "Leech Seed",
+      "Vine Whip"
+     ]
+    },
+    {
+     "nguon": 1044,
+     "ten": "Landorus",
+     "cong": 12000,
+     "thu": 1200,
+     "mau": 17000,
+     "exp": 8,
+     "vang": 5,
+     "he": 10,
+     "nac": 7,
+     "chieu": [
+      "Mud Shot",
+      "Bulldoze",
+      "Earth Power",
+      "Earthquake"
+     ]
+    },
+    {
+     "nguon": 1045,
+     "ten": "Victini",
+     "cong": 14000,
+     "thu": 14000,
+     "mau": 21000,
+     "exp": 12,
+     "vang": 7,
+     "he": 2,
+     "nac": 7,
+     "chieu": [
+      "Searing Shot",
+      "Confusion",
+      "Flame Charge",
+      "Inferno"
+     ]
+    },
+    {
+     "nguon": 1046,
+     "ten": "Mewtwo",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 25000,
+     "exp": 12,
+     "vang": 7,
+     "he": 11,
+     "nac": 7,
+     "chieu": [
+      "Confusion",
+      "Future Sight",
+      "Psycho Cut",
+      "Psychic"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "map3",
+   "ten": "Núi Đá",
+   "bac": 3,
+   "thu": [
+    {
+     "nguon": 1,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 30,
+     "mau": 70,
+     "exp": 5,
+     "vang": 5,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 2,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 70,
+     "mau": 70,
+     "exp": 3,
+     "vang": 4,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 3,
+     "ten": "sâu xanh",
+     "cong": 85,
+     "thu": 55,
+     "mau": 85,
+     "exp": 2,
+     "vang": 6,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 4,
+     "ten": "sâu xanh",
+     "cong": 78,
+     "thu": 92,
+     "mau": 100,
+     "exp": 6,
+     "vang": 2,
+     "he": 10,
+     "nac": 2,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 5,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 200,
+     "exp": 2,
+     "vang": 5,
+     "he": 8,
+     "nac": 2,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 6,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 3,
+     "vang": 5,
+     "he": 9,
+     "nac": 2,
+     "chieu": [
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
+     ]
+    },
+    {
+     "nguon": 7,
+     "ten": "sâu xanh",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 8,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 120,
+     "exp": 4,
+     "vang": 3,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 9,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 6,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 10,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 4,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 11,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 90,
+     "mau": 90,
+     "exp": 3,
+     "vang": 3,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
+     ]
+    },
+    {
+     "nguon": 12,
+     "ten": "sâu xanh",
+     "cong": 50,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 10,
+     "nac": 3,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 13,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 4,
+     "vang": 6,
+     "he": 12,
+     "nac": 2,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 14,
+     "ten": "sâu xanh",
+     "cong": 110,
+     "thu": 100,
+     "mau": 140,
+     "exp": 6,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 15,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 7,
+     "nac": 2,
+     "chieu": [
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 16,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
+     ]
+    },
+    {
+     "nguon": 17,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 18,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 5,
+     "nac": 2,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAM",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 19,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 20,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 22,
+     "ten": "Pikachu",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 7,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "Volt Tackle",
+      "Volt Tackle 1",
+      "Volt Tackle 2",
+      "Volt Tackle 3"
+     ]
+    },
+    {
+     "nguon": 23,
+     "ten": "Bulbasaur",
+     "cong": 100,
+     "thu": 100,
+     "mau": 130,
+     "exp": 6,
+     "vang": 3,
+     "he": 5,
+     "nac": 5,
+     "chieu": [
+      "Tackle",
+      "Growl",
+      "Leech Seed",
+      "Vine Whip"
+     ]
+    },
+    {
+     "nguon": 25,
+     "ten": "ran da",
+     "cong": 240,
+     "thu": 235,
+     "mau": 500,
+     "exp": 10,
+     "vang": 12,
+     "he": 3,
+     "nac": 5,
+     "chieu": [
+      "Rock Throw",
+      "super Rock Throw",
+      "Rock Throw 2",
+      "Rock Throw  3"
+     ]
+    },
+    {
+     "nguon": 24,
+     "ten": "rong ca chep",
+     "cong": 240,
+     "thu": 235,
+     "mau": 450,
+     "exp": 10,
+     "vang": 12,
+     "he": 3,
+     "nac": 5,
+     "chieu": [
+      "Dragon Dance",
+      "Waterfall",
+      "Stone Edge",
+      "Earthquake"
+     ]
+    },
+    {
+     "nguon": 26,
+     "ten": "Cyndaquil",
+     "cong": 240,
+     "thu": 235,
+     "mau": 500,
+     "exp": 10,
+     "vang": 12,
+     "he": 2,
+     "nac": 5,
+     "chieu": [
+      "Tackle",
+      "Leer",
+      "Smokescreen",
+      "Ember"
+     ]
+    },
+    {
+     "nguon": 27,
+     "ten": "Electrode",
+     "cong": 95,
+     "thu": 70,
+     "mau": 50,
+     "exp": 6,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "Charge",
+      "Tackle",
+      "Spark",
+      "Sonicboom"
+     ]
+    },
+    {
+     "nguon": 28,
+     "ten": "Chikorita",
+     "cong": 210,
+     "thu": 110,
+     "mau": 240,
+     "exp": 8,
+     "vang": 7,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "SolarBeam",
+      "Aromatherapy",
+      "Safeguard",
+      "Magical Leaf"
+     ]
+    },
+    {
+     "nguon": 29,
+     "ten": "Totodile",
+     "cong": 210,
+     "thu": 150,
+     "mau": 100,
+     "exp": 7,
+     "vang": 4,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Water Gun",
+      "Rage",
+      "Bite",
+      "Scary Face"
+     ]
+    },
+    {
+     "nguon": 30,
+     "ten": "Charmander",
+     "cong": 120,
+     "thu": 120,
+     "mau": 250,
+     "exp": 7,
+     "vang": 4,
+     "he": 2,
+     "nac": 3,
+     "chieu": [
+      "Ember",
+      "Fire Fang",
+      "Flame Burst",
+      "Fire Spin"
+     ]
+    },
+    {
+     "nguon": 31,
+     "ten": "Meditite",
+     "cong": 650,
+     "thu": 420,
+     "mau": 350,
+     "exp": 8,
+     "vang": 4,
+     "he": 11,
+     "nac": 3,
+     "chieu": [
+      "Confusion",
+      "Force Palm",
+      "Hi Jump Kick",
+      "Reversal"
+     ]
+    },
+    {
+     "nguon": 32,
+     "ten": "Gastly",
+     "cong": 420,
+     "thu": 410,
+     "mau": 250,
+     "exp": 8,
+     "vang": 7,
+     "he": 14,
+     "nac": 3,
+     "chieu": [
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
+     ]
+    },
+    {
+     "nguon": 33,
+     "ten": "abysol",
+     "cong": 650,
+     "thu": 740,
+     "mau": 820,
+     "exp": 7,
+     "vang": 5,
+     "he": 16,
+     "nac": 7,
+     "chieu": [
+      "Dark Pulse",
+      "Foul Play",
+      "Knock Off",
+      "Zen Headbutt"
+     ]
+    },
+    {
+     "nguon": 34,
+     "ten": "Umbreon",
+     "cong": 420,
+     "thu": 120,
+     "mau": 520,
+     "exp": 9,
+     "vang": 5,
+     "he": 16,
+     "nac": 3,
+     "chieu": [
+      "Pursuit",
+      "Faint Attack",
+      "Assurance",
+      "Quick Attack"
+     ]
+    },
+    {
+     "nguon": 35,
+     "ten": "Sceptile",
+     "cong": 450,
+     "thu": 450,
+     "mau": 720,
+     "exp": 7,
+     "vang": 6,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "Absorb",
+      "Mega Drain",
+      "Giga Drain",
+      "Energy Ball"
+     ]
+    },
+    {
+     "nguon": 36,
+     "ten": "Machop",
+     "cong": 520,
+     "thu": 520,
+     "mau": 640,
+     "exp": 8,
+     "vang": 4,
+     "he": 7,
+     "nac": 3,
+     "chieu": [
+      "Low Kick",
+      "Karate Chop",
+      "Revenge",
+      "Vital Throw"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "map4",
+   "ten": "Hoang Mạc",
+   "bac": 4,
+   "thu": [
+    {
+     "nguon": 53,
+     "ten": "Krookodile",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 8,
+     "vang": 8,
+     "he": 16,
+     "nac": 3,
+     "chieu": [
+      "Aqua Tail",
+      "Dark Pulse",
+      "Earth Power",
+      "foul"
+     ]
+    },
+    {
+     "nguon": 52,
+     "ten": "Metagross",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 8,
+     "vang": 8,
+     "he": 17,
+     "nac": 3,
+     "chieu": [
+      "Iron Defense",
+      "Iron Head",
+      "Zen Headbutt",
+      "TACKLE"
+     ]
+    },
+    {
+     "nguon": 51,
+     "ten": "Klinklang",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 8,
+     "vang": 8,
+     "he": 17,
+     "nac": 3,
+     "chieu": [
+      "Bind",
+      "Gravity",
+      "Iron Defense",
+      "Magic Coat"
+     ]
+    },
+    {
+     "nguon": 50,
+     "ten": "Vanilluxe",
+     "cong": 199,
+     "thu": 199,
+     "mau": 199,
+     "exp": 8,
+     "vang": 7,
+     "he": 6,
+     "nac": 3,
+     "chieu": [
+      "Icicle Spear",
+      "Harden",
+      "Astonish",
+      "Uproar"
+     ]
+    },
+    {
+     "nguon": 49,
+     "ten": "Galvantula",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 8,
+     "vang": 7,
+     "he": 4,
+     "nac": 3,
+     "chieu": [
+      "Bounce",
+      "Bug Bite",
+      "Electroweb",
+      "Gastro Acid"
+     ]
+    },
+    {
+     "nguon": 48,
+     "ten": "Stoutland",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 7,
+     "vang": 7,
+     "he": 1,
+     "nac": 3,
+     "chieu": [
+      "Covet",
+      "Helping Hand",
+      "Hyper Voice",
+      "Last Resort"
+     ]
+    },
+    {
+     "nguon": 47,
+     "ten": "Staraptor",
+     "cong": 90,
+     "thu": 90,
+     "mau": 90,
+     "exp": 5,
+     "vang": 5,
+     "he": 10,
+     "nac": 3,
+     "chieu": [
+      "Endeavor",
+      "Heat Wave",
+      "Roost",
+      "Snore"
+     ]
+    },
+    {
+     "nguon": 46,
+     "ten": "Hydreigon",
+     "cong": 80,
+     "thu": 80,
+     "mau": 80,
+     "exp": 5,
+     "vang": 5,
+     "he": 15,
+     "nac": 3,
+     "chieu": [
+      "Aqua Tail",
+      "Dark Pulse",
+      "Draco Meteor",
+      "Dragon Pulse"
+     ]
+    },
+    {
+     "nguon": 45,
+     "ten": "Garchomp",
+     "cong": 70,
+     "thu": 70,
+     "mau": 70,
+     "exp": 5,
+     "vang": 5,
+     "he": 15,
+     "nac": 3,
+     "chieu": [
+      "Tackle",
+      "Sand-Attack",
+      "Dragon Rage",
+      "Sandstorm"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "map5",
+   "ten": "Đỉnh Tuyết",
+   "bac": 5,
+   "thu": [
+    {
+     "nguon": 7,
+     "ten": "s",
+     "cong": 4000,
+     "thu": 5000,
+     "mau": 6000,
+     "exp": 19,
+     "vang": 18,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 8,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 5000,
+     "mau": 4400,
+     "exp": 19,
+     "vang": 19,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 9,
+     "ten": "s",
+     "cong": 8000,
+     "thu": 8000,
+     "mau": 8000,
+     "exp": 19,
+     "vang": 18,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 10,
+     "ten": "s",
+     "cong": 9000,
+     "thu": 4000,
+     "mau": 6000,
+     "exp": 19,
+     "vang": 16,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 11,
+     "ten": "s",
+     "cong": 5000,
+     "thu": 5000,
+     "mau": 7000,
+     "exp": 19,
+     "vang": 17,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
+     ]
+    },
+    {
+     "nguon": 12,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 6000,
+     "mau": 6000,
+     "exp": 18,
+     "vang": 19,
+     "he": 10,
+     "nac": 3,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 13,
+     "ten": "s",
+     "cong": 9000,
+     "thu": 9000,
+     "mau": 9000,
+     "exp": 18,
+     "vang": 19,
+     "he": 12,
+     "nac": 2,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 14,
+     "ten": "s",
+     "cong": 7000,
+     "thu": 7000,
+     "mau": 7000,
+     "exp": 19,
+     "vang": 19,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 15,
+     "ten": "s",
+     "cong": 5000,
+     "thu": 5000,
+     "mau": 5000,
+     "exp": 19,
+     "vang": 20,
+     "he": 7,
+     "nac": 2,
+     "chieu": [
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 16,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 6000,
+     "mau": 6000,
+     "exp": 19,
+     "vang": 21,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
+     ]
+    },
+    {
+     "nguon": 17,
+     "ten": "s",
+     "cong": 7000,
+     "thu": 7000,
+     "mau": 7000,
+     "exp": 20,
+     "vang": 17,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 18,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 6000,
+     "mau": 6000,
+     "exp": 19,
+     "vang": 19,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAM",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 19,
+     "ten": "s",
+     "cong": 4000,
+     "thu": 4000,
+     "mau": 4000,
+     "exp": 20,
+     "vang": 19,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 20,
+     "ten": "s",
+     "cong": 3000,
+     "thu": 3000,
+     "mau": 3000,
+     "exp": 19,
+     "vang": 18,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 21,
+     "ten": "s",
+     "cong": 7000,
+     "thu": 7000,
+     "mau": 7000,
+     "exp": 18,
+     "vang": 18,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 22,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 6000,
+     "mau": 6000,
+     "exp": 19,
+     "vang": 17,
+     "he": 2,
+     "nac": 3,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 23,
+     "ten": "s",
+     "cong": 5000,
+     "thu": 5000,
+     "mau": 5000,
+     "exp": 17,
+     "vang": 19,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 24,
+     "ten": "s",
+     "cong": 5000,
+     "thu": 5000,
+     "mau": 5000,
+     "exp": 17,
+     "vang": 18,
+     "he": 10,
+     "nac": 2,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 25,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 6000,
+     "mau": 6000,
+     "exp": 16,
+     "vang": 19,
+     "he": 4,
+     "nac": 2,
+     "chieu": [
+      "THUNDERBOLT",
+      "SPARK",
+      "THUNDER",
+      "SHOCK UAVE"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "ao",
+   "ten": "Ao Sen",
+   "bac": 2,
+   "thu": [
+    {
+     "nguon": 37,
+     "ten": "Squirtle",
+     "cong": 210,
+     "thu": 235,
+     "mau": 210,
+     "exp": 6,
+     "vang": 3,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Bubble",
+      "Water Gun",
+      "Water Pulse",
+      "Aqua Tail"
+     ]
+    },
+    {
+     "nguon": 38,
+     "ten": "Poliwag",
+     "cong": 57,
+     "thu": 75,
+     "mau": 75,
+     "exp": 4,
+     "vang": 3,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Bubble",
+      "Water Gun",
+      "BubbleBeam",
+      "Hydro Pump"
+     ]
+    },
+    {
+     "nguon": 39,
+     "ten": "Lotad",
+     "cong": 45,
+     "thu": 45,
+     "mau": 45,
+     "exp": 4,
+     "vang": 6,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Absorb",
+      "Mega Drain",
+      "BubbleBeam",
+      "Energy Ball"
+     ]
+    },
+    {
+     "nguon": 40,
+     "ten": "mudkip",
+     "cong": 120,
+     "thu": 120,
+     "mau": 70,
+     "exp": 5,
+     "vang": 3,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Water Gun",
+      "Whirlpool",
+      "Hydro Pump",
+      "Endeavor"
+     ]
+    },
+    {
+     "nguon": 41,
+     "ten": "Spheal",
+     "cong": 250,
+     "thu": 250,
+     "mau": 70,
+     "exp": 7,
+     "vang": 3,
+     "he": 1,
+     "nac": 3,
+     "chieu": [
+      "Powder Snow",
+      "Water Gun",
+      "Ice Ball",
+      "Blizzard"
+     ]
+    },
+    {
+     "nguon": 43,
+     "ten": "Horsea",
+     "cong": 40,
+     "thu": 40,
+     "mau": 50,
+     "exp": 5,
+     "vang": 3,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Bubble",
+      "Water Gun",
+      "BubbleBeam",
+      "Brine"
+     ]
+    },
+    {
+     "nguon": 44,
+     "ten": "miclotic",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 6,
+     "vang": 4,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Toxic",
+      "Surf",
+      "Waterfall",
+      "Dive"
+     ]
+    },
+    {
+     "nguon": 37,
+     "ten": "Squirtle",
+     "cong": 210,
+     "thu": 235,
+     "mau": 210,
+     "exp": 6,
+     "vang": 3,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Bubble",
+      "Water Gun",
+      "Water Pulse",
+      "Aqua Tail"
+     ]
+    },
+    {
+     "nguon": 38,
+     "ten": "Poliwag",
+     "cong": 57,
+     "thu": 75,
+     "mau": 75,
+     "exp": 4,
+     "vang": 3,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Bubble",
+      "Water Gun",
+      "BubbleBeam",
+      "Hydro Pump"
+     ]
+    },
+    {
+     "nguon": 39,
+     "ten": "Lotad",
+     "cong": 45,
+     "thu": 45,
+     "mau": 45,
+     "exp": 4,
+     "vang": 6,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Absorb",
+      "Mega Drain",
+      "BubbleBeam",
+      "Energy Ball"
+     ]
+    },
+    {
+     "nguon": 40,
+     "ten": "mudkip",
+     "cong": 120,
+     "thu": 120,
+     "mau": 70,
+     "exp": 5,
+     "vang": 3,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Water Gun",
+      "Whirlpool",
+      "Hydro Pump",
+      "Endeavor"
+     ]
+    },
+    {
+     "nguon": 41,
+     "ten": "Spheal",
+     "cong": 250,
+     "thu": 250,
+     "mau": 70,
+     "exp": 7,
+     "vang": 3,
+     "he": 1,
+     "nac": 3,
+     "chieu": [
+      "Powder Snow",
+      "Water Gun",
+      "Ice Ball",
+      "Blizzard"
+     ]
+    },
+    {
+     "nguon": 43,
+     "ten": "Horsea",
+     "cong": 40,
+     "thu": 40,
+     "mau": 50,
+     "exp": 5,
+     "vang": 3,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Bubble",
+      "Water Gun",
+      "BubbleBeam",
+      "Brine"
+     ]
+    },
+    {
+     "nguon": 44,
+     "ten": "miclotic",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 6,
+     "vang": 4,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Toxic",
+      "Surf",
+      "Waterfall",
+      "Dive"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "dong",
+   "ten": "Hang Động",
+   "bac": 3,
+   "thu": [
+    {
+     "nguon": 1,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 30,
+     "mau": 70,
+     "exp": 5,
+     "vang": 5,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 2,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 70,
+     "mau": 70,
+     "exp": 3,
+     "vang": 4,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 3,
+     "ten": "sâu xanh",
+     "cong": 85,
+     "thu": 55,
+     "mau": 85,
+     "exp": 2,
+     "vang": 6,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 4,
+     "ten": "sâu xanh",
+     "cong": 78,
+     "thu": 92,
+     "mau": 100,
+     "exp": 6,
+     "vang": 2,
+     "he": 10,
+     "nac": 2,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 5,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 200,
+     "exp": 2,
+     "vang": 5,
+     "he": 8,
+     "nac": 2,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 6,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 3,
+     "vang": 5,
+     "he": 9,
+     "nac": 2,
+     "chieu": [
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
+     ]
+    },
+    {
+     "nguon": 7,
+     "ten": "sâu xanh",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 8,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 120,
+     "exp": 4,
+     "vang": 3,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 9,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 6,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 10,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 4,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 11,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 90,
+     "mau": 90,
+     "exp": 3,
+     "vang": 3,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
+     ]
+    },
+    {
+     "nguon": 12,
+     "ten": "sâu xanh",
+     "cong": 50,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 10,
+     "nac": 3,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 13,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 4,
+     "vang": 6,
+     "he": 12,
+     "nac": 2,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 14,
+     "ten": "sâu xanh",
+     "cong": 110,
+     "thu": 100,
+     "mau": 140,
+     "exp": 6,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 15,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 7,
+     "nac": 2,
+     "chieu": [
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 16,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
+     ]
+    },
+    {
+     "nguon": 17,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 18,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 5,
+     "nac": 2,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAM",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 19,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 20,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "ho3",
+   "ten": "Hồ Ba",
+   "bac": 4,
+   "thu": [
+    {
+     "nguon": 300,
+     "ten": "s",
+     "cong": 700,
+     "thu": 700,
+     "mau": 900,
+     "exp": 12,
+     "vang": 12,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 301,
+     "ten": "s",
+     "cong": 700,
+     "thu": 700,
+     "mau": 1000,
+     "exp": 12,
+     "vang": 11,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 302,
+     "ten": "s",
+     "cong": 1000,
+     "thu": 1500,
+     "mau": 1500,
+     "exp": 10,
+     "vang": 15,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 303,
+     "ten": "s",
+     "cong": 700,
+     "thu": 900,
+     "mau": 1000,
+     "exp": 12,
+     "vang": 13,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 304,
+     "ten": "s",
+     "cong": 1200,
+     "thu": 1200,
+     "mau": 900,
+     "exp": 13,
+     "vang": 15,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 305,
+     "ten": "s",
+     "cong": 800,
+     "thu": 800,
+     "mau": 800,
+     "exp": 11,
+     "vang": 15,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "SURF",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 306,
+     "ten": "s",
+     "cong": 1400,
+     "thu": 700,
+     "mau": 1200,
+     "exp": 10,
+     "vang": 15,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 307,
+     "ten": "s",
+     "cong": 900,
+     "thu": 1500,
+     "mau": 1300,
+     "exp": 13,
+     "vang": 15,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 308,
+     "ten": "s",
+     "cong": 900,
+     "thu": 1200,
+     "mau": 900,
+     "exp": 10,
+     "vang": 14,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "ho4",
+   "ten": "Hồ Bốn",
+   "bac": 4,
+   "thu": [
+    {
+     "nguon": 300,
+     "ten": "s",
+     "cong": 2000,
+     "thu": 2000,
+     "mau": 2000,
+     "exp": 15,
+     "vang": 15,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 301,
+     "ten": "s",
+     "cong": 700,
+     "thu": 700,
+     "mau": 1000,
+     "exp": 15,
+     "vang": 14,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 302,
+     "ten": "s",
+     "cong": 1000,
+     "thu": 1500,
+     "mau": 1500,
+     "exp": 15,
+     "vang": 17,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 303,
+     "ten": "s",
+     "cong": 1700,
+     "thu": 1900,
+     "mau": 2000,
+     "exp": 15,
+     "vang": 16,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 304,
+     "ten": "s",
+     "cong": 2400,
+     "thu": 2400,
+     "mau": 2400,
+     "exp": 18,
+     "vang": 20,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 305,
+     "ten": "s",
+     "cong": 2500,
+     "thu": 2500,
+     "mau": 2500,
+     "exp": 18,
+     "vang": 16,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "SURF",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 306,
+     "ten": "s",
+     "cong": 2100,
+     "thu": 2100,
+     "mau": 2100,
+     "exp": 14,
+     "vang": 19,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 307,
+     "ten": "s",
+     "cong": 2300,
+     "thu": 2300,
+     "mau": 2300,
+     "exp": 13,
+     "vang": 14,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 308,
+     "ten": "s",
+     "cong": 2500,
+     "thu": 1200,
+     "mau": 1900,
+     "exp": 19,
+     "vang": 14,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "ho5",
+   "ten": "Hồ Năm",
+   "bac": 5,
+   "thu": [
+    {
+     "nguon": 300,
+     "ten": "s",
+     "cong": 7000,
+     "thu": 7000,
+     "mau": 9000,
+     "exp": 20,
+     "vang": 17,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 301,
+     "ten": "s",
+     "cong": 7000,
+     "thu": 7000,
+     "mau": 5000,
+     "exp": 20,
+     "vang": 18,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 302,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 6006,
+     "mau": 6060,
+     "exp": 20,
+     "vang": 18,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 303,
+     "ten": "s",
+     "cong": 7000,
+     "thu": 9000,
+     "mau": 4000,
+     "exp": 19,
+     "vang": 19,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 304,
+     "ten": "s",
+     "cong": 9000,
+     "thu": 4000,
+     "mau": 6000,
+     "exp": 19,
+     "vang": 19,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 305,
+     "ten": "s",
+     "cong": 8000,
+     "thu": 8000,
+     "mau": 8000,
+     "exp": 18,
+     "vang": 18,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "SURF",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 306,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 7000,
+     "mau": 5000,
+     "exp": 18,
+     "vang": 18,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 307,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 6000,
+     "mau": 7000,
+     "exp": 18,
+     "vang": 19,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 308,
+     "ten": "s",
+     "cong": 6000,
+     "thu": 8000,
+     "mau": 7000,
+     "exp": 19,
+     "vang": 18,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "ho7",
+   "ten": "Hồ Bảy",
+   "bac": 5,
+   "thu": [
+    {
+     "nguon": 300,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 19000,
+     "exp": 22,
+     "vang": 17,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 301,
+     "ten": "s",
+     "cong": 14000,
+     "thu": 14000,
+     "mau": 15000,
+     "exp": 24,
+     "vang": 18,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 302,
+     "ten": "s",
+     "cong": 13000,
+     "thu": 13006,
+     "mau": 13060,
+     "exp": 25,
+     "vang": 26,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 303,
+     "ten": "s",
+     "cong": 14000,
+     "thu": 14000,
+     "mau": 14000,
+     "exp": 26,
+     "vang": 24,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 304,
+     "ten": "s",
+     "cong": 12000,
+     "thu": 12000,
+     "mau": 12000,
+     "exp": 23,
+     "vang": 20,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 305,
+     "ten": "s",
+     "cong": 11000,
+     "thu": 11000,
+     "mau": 11000,
+     "exp": 28,
+     "vang": 24,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "SURF",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 306,
+     "ten": "s",
+     "cong": 12000,
+     "thu": 12000,
+     "mau": 12000,
+     "exp": 22,
+     "vang": 28,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 307,
+     "ten": "s",
+     "cong": 13000,
+     "thu": 13000,
+     "mau": 13000,
+     "exp": 25,
+     "vang": 27,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 308,
+     "ten": "s",
+     "cong": 14000,
+     "thu": 14000,
+     "mau": 14000,
+     "exp": 24,
+     "vang": 26,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 309,
+     "ten": "s",
+     "cong": 12000,
+     "thu": 12000,
+     "mau": 12000,
+     "exp": 23,
+     "vang": 25,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 310,
+     "ten": "s",
+     "cong": 10000,
+     "thu": 10000,
+     "mau": 10000,
+     "exp": 22,
+     "vang": 23,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 312,
+     "ten": "s",
+     "cong": 10000,
+     "thu": 10000,
+     "mau": 10000,
+     "exp": 21,
+     "vang": 20,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "ho9",
+   "ten": "Hồ Chín",
+   "bac": 6,
+   "thu": [
+    {
+     "nguon": 300,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 19000,
+     "exp": 22,
+     "vang": 17,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 301,
+     "ten": "s",
+     "cong": 18000,
+     "thu": 18000,
+     "mau": 18000,
+     "exp": 24,
+     "vang": 18,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 302,
+     "ten": "s",
+     "cong": 13000,
+     "thu": 13006,
+     "mau": 13060,
+     "exp": 25,
+     "vang": 26,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 303,
+     "ten": "s",
+     "cong": 14000,
+     "thu": 14000,
+     "mau": 14000,
+     "exp": 26,
+     "vang": 24,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 304,
+     "ten": "s",
+     "cong": 25000,
+     "thu": 12000,
+     "mau": 18000,
+     "exp": 23,
+     "vang": 20,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 305,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 17000,
+     "exp": 28,
+     "vang": 24,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "SURF",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 306,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 17000,
+     "exp": 22,
+     "vang": 28,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 307,
+     "ten": "s",
+     "cong": 18000,
+     "thu": 18000,
+     "mau": 18000,
+     "exp": 25,
+     "vang": 27,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 308,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 17000,
+     "exp": 24,
+     "vang": 26,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 309,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 17000,
+     "exp": 23,
+     "vang": 25,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 310,
+     "ten": "s",
+     "cong": 21000,
+     "thu": 21000,
+     "mau": 21000,
+     "exp": 22,
+     "vang": 23,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 312,
+     "ten": "s",
+     "cong": 19000,
+     "thu": 19000,
+     "mau": 19000,
+     "exp": 21,
+     "vang": 20,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 313,
+     "ten": "picachu",
+     "cong": 20000,
+     "thu": 20000,
+     "mau": 20000,
+     "exp": 21,
+     "vang": 20,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 314,
+     "ten": "s",
+     "cong": 18000,
+     "thu": 18000,
+     "mau": 18000,
+     "exp": 24,
+     "vang": 26,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 315,
+     "ten": "s",
+     "cong": 16000,
+     "thu": 16000,
+     "mau": 16000,
+     "exp": 23,
+     "vang": 25,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "ho11",
+   "ten": "Hồ Mười Một",
+   "bac": 6,
+   "thu": [
+    {
+     "nguon": 312,
+     "ten": "s",
+     "cong": 19000,
+     "thu": 19000,
+     "mau": 19000,
+     "exp": 21,
+     "vang": 20,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 310,
+     "ten": "s",
+     "cong": 21000,
+     "thu": 21000,
+     "mau": 21000,
+     "exp": 22,
+     "vang": 23,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 309,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 17000,
+     "exp": 23,
+     "vang": 25,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 308,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 17000,
+     "exp": 24,
+     "vang": 26,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 307,
+     "ten": "s",
+     "cong": 18000,
+     "thu": 18000,
+     "mau": 18000,
+     "exp": 25,
+     "vang": 27,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 306,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 17000,
+     "exp": 22,
+     "vang": 28,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 305,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 17000,
+     "exp": 28,
+     "vang": 24,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "SURF",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 304,
+     "ten": "s",
+     "cong": 25000,
+     "thu": 12000,
+     "mau": 18000,
+     "exp": 23,
+     "vang": 20,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 303,
+     "ten": "s",
+     "cong": 14000,
+     "thu": 14000,
+     "mau": 14000,
+     "exp": 26,
+     "vang": 24,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 302,
+     "ten": "s",
+     "cong": 13000,
+     "thu": 13006,
+     "mau": 13060,
+     "exp": 25,
+     "vang": 26,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "MUDDY WATER",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 301,
+     "ten": "s",
+     "cong": 18000,
+     "thu": 18000,
+     "mau": 18000,
+     "exp": 24,
+     "vang": 18,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 300,
+     "ten": "s",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 19000,
+     "exp": 22,
+     "vang": 17,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 313,
+     "ten": "s",
+     "cong": 20000,
+     "thu": 20000,
+     "mau": 20000,
+     "exp": 21,
+     "vang": 20,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 314,
+     "ten": "s",
+     "cong": 18000,
+     "thu": 18000,
+     "mau": 18000,
+     "exp": 24,
+     "vang": 26,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 315,
+     "ten": "s",
+     "cong": 16000,
+     "thu": 16000,
+     "mau": 16000,
+     "exp": 23,
+     "vang": 25,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    },
+    {
+     "nguon": 316,
+     "ten": "s",
+     "cong": 21000,
+     "thu": 21000,
+     "mau": 21000,
+     "exp": 22,
+     "vang": 23,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 317,
+     "ten": "s",
+     "cong": 19000,
+     "thu": 19000,
+     "mau": 19000,
+     "exp": 21,
+     "vang": 20,
+     "he": 3,
+     "nac": 2,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 318,
+     "ten": "s",
+     "cong": 20000,
+     "thu": 20000,
+     "mau": 20000,
+     "exp": 21,
+     "vang": 20,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 319,
+     "ten": "s",
+     "cong": 18000,
+     "thu": 18000,
+     "mau": 18000,
+     "exp": 24,
+     "vang": 26,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
+     ]
+    },
+    {
+     "nguon": 320,
+     "ten": "s",
+     "cong": 32000,
+     "thu": 30000,
+     "mau": 30000,
+     "exp": 23,
+     "vang": 25,
+     "he": 3,
+     "nac": 1,
+     "chieu": [
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "lanhtho",
+   "ten": "Lãnh Thổ",
+   "bac": 7,
+   "thu": [
+    {
+     "nguon": 1,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 30,
+     "mau": 70,
+     "exp": 5,
+     "vang": 5,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 2,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 70,
+     "mau": 70,
+     "exp": 3,
+     "vang": 4,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 3,
+     "ten": "sâu xanh",
+     "cong": 85,
+     "thu": 55,
+     "mau": 85,
+     "exp": 2,
+     "vang": 6,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 4,
+     "ten": "sâu xanh",
+     "cong": 78,
+     "thu": 92,
+     "mau": 100,
+     "exp": 6,
+     "vang": 2,
+     "he": 10,
+     "nac": 2,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 5,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 200,
+     "exp": 2,
+     "vang": 5,
+     "he": 8,
+     "nac": 2,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 6,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 3,
+     "vang": 5,
+     "he": 9,
+     "nac": 2,
+     "chieu": [
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
+     ]
+    },
+    {
+     "nguon": 7,
+     "ten": "sâu xanh",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 8,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 120,
+     "exp": 4,
+     "vang": 3,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 9,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 6,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 10,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 4,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 11,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 90,
+     "mau": 90,
+     "exp": 3,
+     "vang": 3,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
+     ]
+    },
+    {
+     "nguon": 12,
+     "ten": "sâu xanh",
+     "cong": 50,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 10,
+     "nac": 3,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 13,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 4,
+     "vang": 6,
+     "he": 12,
+     "nac": 2,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 14,
+     "ten": "sâu xanh",
+     "cong": 110,
+     "thu": 100,
+     "mau": 140,
+     "exp": 6,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 15,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 7,
+     "nac": 2,
+     "chieu": [
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 16,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
+     ]
+    },
+    {
+     "nguon": 17,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 18,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 5,
+     "nac": 2,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAM",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 19,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 20,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 22,
+     "ten": "Pikachu",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 7,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "Volt Tackle",
+      "Volt Tackle 1",
+      "Volt Tackle 2",
+      "Volt Tackle 3"
+     ]
+    },
+    {
+     "nguon": 23,
+     "ten": "Bulbasaur",
+     "cong": 100,
+     "thu": 100,
+     "mau": 130,
+     "exp": 6,
+     "vang": 3,
+     "he": 5,
+     "nac": 5,
+     "chieu": [
+      "Tackle",
+      "Growl",
+      "Leech Seed",
+      "Vine Whip"
+     ]
+    },
+    {
+     "nguon": 25,
+     "ten": "ran da",
+     "cong": 240,
+     "thu": 235,
+     "mau": 500,
+     "exp": 10,
+     "vang": 12,
+     "he": 3,
+     "nac": 5,
+     "chieu": [
+      "Rock Throw",
+      "super Rock Throw",
+      "Rock Throw 2",
+      "Rock Throw  3"
+     ]
+    },
+    {
+     "nguon": 24,
+     "ten": "rong ca chep",
+     "cong": 240,
+     "thu": 235,
+     "mau": 450,
+     "exp": 10,
+     "vang": 12,
+     "he": 3,
+     "nac": 5,
+     "chieu": [
+      "Dragon Dance",
+      "Waterfall",
+      "Stone Edge",
+      "Earthquake"
+     ]
+    },
+    {
+     "nguon": 26,
+     "ten": "Cyndaquil",
+     "cong": 240,
+     "thu": 235,
+     "mau": 500,
+     "exp": 10,
+     "vang": 12,
+     "he": 2,
+     "nac": 5,
+     "chieu": [
+      "Tackle",
+      "Leer",
+      "Smokescreen",
+      "Ember"
+     ]
+    },
+    {
+     "nguon": 27,
+     "ten": "Electrode",
+     "cong": 95,
+     "thu": 70,
+     "mau": 50,
+     "exp": 6,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "Charge",
+      "Tackle",
+      "Spark",
+      "Sonicboom"
+     ]
+    },
+    {
+     "nguon": 28,
+     "ten": "Chikorita",
+     "cong": 210,
+     "thu": 110,
+     "mau": 240,
+     "exp": 8,
+     "vang": 7,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "SolarBeam",
+      "Aromatherapy",
+      "Safeguard",
+      "Magical Leaf"
+     ]
+    },
+    {
+     "nguon": 29,
+     "ten": "Totodile",
+     "cong": 210,
+     "thu": 150,
+     "mau": 100,
+     "exp": 7,
+     "vang": 4,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Water Gun",
+      "Rage",
+      "Bite",
+      "Scary Face"
+     ]
+    },
+    {
+     "nguon": 30,
+     "ten": "Charmander",
+     "cong": 120,
+     "thu": 120,
+     "mau": 250,
+     "exp": 7,
+     "vang": 4,
+     "he": 2,
+     "nac": 3,
+     "chieu": [
+      "Ember",
+      "Fire Fang",
+      "Flame Burst",
+      "Fire Spin"
+     ]
+    },
+    {
+     "nguon": 31,
+     "ten": "Meditite",
+     "cong": 650,
+     "thu": 420,
+     "mau": 350,
+     "exp": 8,
+     "vang": 4,
+     "he": 11,
+     "nac": 3,
+     "chieu": [
+      "Confusion",
+      "Force Palm",
+      "Hi Jump Kick",
+      "Reversal"
+     ]
+    },
+    {
+     "nguon": 32,
+     "ten": "Gastly",
+     "cong": 420,
+     "thu": 410,
+     "mau": 250,
+     "exp": 8,
+     "vang": 7,
+     "he": 14,
+     "nac": 3,
+     "chieu": [
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
+     ]
+    },
+    {
+     "nguon": 33,
+     "ten": "abysol",
+     "cong": 650,
+     "thu": 740,
+     "mau": 820,
+     "exp": 7,
+     "vang": 5,
+     "he": 16,
+     "nac": 7,
+     "chieu": [
+      "Dark Pulse",
+      "Foul Play",
+      "Knock Off",
+      "Zen Headbutt"
+     ]
+    },
+    {
+     "nguon": 34,
+     "ten": "Umbreon",
+     "cong": 420,
+     "thu": 120,
+     "mau": 520,
+     "exp": 9,
+     "vang": 5,
+     "he": 16,
+     "nac": 3,
+     "chieu": [
+      "Pursuit",
+      "Faint Attack",
+      "Assurance",
+      "Quick Attack"
+     ]
+    },
+    {
+     "nguon": 35,
+     "ten": "Sceptile",
+     "cong": 450,
+     "thu": 450,
+     "mau": 720,
+     "exp": 7,
+     "vang": 6,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "Absorb",
+      "Mega Drain",
+      "Giga Drain",
+      "Energy Ball"
+     ]
+    },
+    {
+     "nguon": 36,
+     "ten": "Machop",
+     "cong": 520,
+     "thu": 520,
+     "mau": 640,
+     "exp": 8,
+     "vang": 4,
+     "he": 7,
+     "nac": 3,
+     "chieu": [
+      "Low Kick",
+      "Karate Chop",
+      "Revenge",
+      "Vital Throw"
+     ]
+    },
+    {
+     "nguon": 1,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 30,
+     "mau": 70,
+     "exp": 5,
+     "vang": 5,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 2,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 70,
+     "mau": 70,
+     "exp": 3,
+     "vang": 4,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 3,
+     "ten": "sâu xanh",
+     "cong": 85,
+     "thu": 55,
+     "mau": 85,
+     "exp": 2,
+     "vang": 6,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 4,
+     "ten": "sâu xanh",
+     "cong": 78,
+     "thu": 92,
+     "mau": 100,
+     "exp": 6,
+     "vang": 2,
+     "he": 10,
+     "nac": 2,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 5,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 200,
+     "exp": 2,
+     "vang": 5,
+     "he": 8,
+     "nac": 2,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 6,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 3,
+     "vang": 5,
+     "he": 9,
+     "nac": 2,
+     "chieu": [
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
+     ]
+    },
+    {
+     "nguon": 7,
+     "ten": "sâu xanh",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 8,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 120,
+     "exp": 4,
+     "vang": 3,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 9,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 6,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 10,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 4,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 11,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 90,
+     "mau": 90,
+     "exp": 3,
+     "vang": 3,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
+     ]
+    },
+    {
+     "nguon": 12,
+     "ten": "sâu xanh",
+     "cong": 50,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 10,
+     "nac": 3,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 13,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 4,
+     "vang": 6,
+     "he": 12,
+     "nac": 2,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 14,
+     "ten": "sâu xanh",
+     "cong": 110,
+     "thu": 100,
+     "mau": 140,
+     "exp": 6,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 15,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 7,
+     "nac": 2,
+     "chieu": [
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 16,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
+     ]
+    },
+    {
+     "nguon": 17,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 18,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 5,
+     "nac": 2,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAM",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 19,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 20,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 22,
+     "ten": "Pikachu",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 7,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "Volt Tackle",
+      "Volt Tackle 1",
+      "Volt Tackle 2",
+      "Volt Tackle 3"
+     ]
+    },
+    {
+     "nguon": 23,
+     "ten": "Bulbasaur",
+     "cong": 100,
+     "thu": 100,
+     "mau": 130,
+     "exp": 6,
+     "vang": 3,
+     "he": 5,
+     "nac": 5,
+     "chieu": [
+      "Tackle",
+      "Growl",
+      "Leech Seed",
+      "Vine Whip"
+     ]
+    },
+    {
+     "nguon": 25,
+     "ten": "ran da",
+     "cong": 240,
+     "thu": 235,
+     "mau": 500,
+     "exp": 10,
+     "vang": 12,
+     "he": 3,
+     "nac": 5,
+     "chieu": [
+      "Rock Throw",
+      "super Rock Throw",
+      "Rock Throw 2",
+      "Rock Throw  3"
+     ]
+    },
+    {
+     "nguon": 24,
+     "ten": "rong ca chep",
+     "cong": 240,
+     "thu": 235,
+     "mau": 450,
+     "exp": 10,
+     "vang": 12,
+     "he": 3,
+     "nac": 5,
+     "chieu": [
+      "Dragon Dance",
+      "Waterfall",
+      "Stone Edge",
+      "Earthquake"
+     ]
+    },
+    {
+     "nguon": 26,
+     "ten": "Cyndaquil",
+     "cong": 240,
+     "thu": 235,
+     "mau": 500,
+     "exp": 10,
+     "vang": 12,
+     "he": 2,
+     "nac": 5,
+     "chieu": [
+      "Tackle",
+      "Leer",
+      "Smokescreen",
+      "Ember"
+     ]
+    },
+    {
+     "nguon": 27,
+     "ten": "Electrode",
+     "cong": 95,
+     "thu": 70,
+     "mau": 50,
+     "exp": 6,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "Charge",
+      "Tackle",
+      "Spark",
+      "Sonicboom"
+     ]
+    },
+    {
+     "nguon": 28,
+     "ten": "Chikorita",
+     "cong": 210,
+     "thu": 110,
+     "mau": 240,
+     "exp": 8,
+     "vang": 7,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "SolarBeam",
+      "Aromatherapy",
+      "Safeguard",
+      "Magical Leaf"
+     ]
+    },
+    {
+     "nguon": 29,
+     "ten": "Totodile",
+     "cong": 210,
+     "thu": 150,
+     "mau": 100,
+     "exp": 7,
+     "vang": 4,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Water Gun",
+      "Rage",
+      "Bite",
+      "Scary Face"
+     ]
+    },
+    {
+     "nguon": 30,
+     "ten": "Charmander",
+     "cong": 120,
+     "thu": 120,
+     "mau": 250,
+     "exp": 7,
+     "vang": 4,
+     "he": 2,
+     "nac": 3,
+     "chieu": [
+      "Ember",
+      "Fire Fang",
+      "Flame Burst",
+      "Fire Spin"
+     ]
+    },
+    {
+     "nguon": 31,
+     "ten": "Meditite",
+     "cong": 650,
+     "thu": 420,
+     "mau": 350,
+     "exp": 8,
+     "vang": 4,
+     "he": 11,
+     "nac": 3,
+     "chieu": [
+      "Confusion",
+      "Force Palm",
+      "Hi Jump Kick",
+      "Reversal"
+     ]
+    },
+    {
+     "nguon": 32,
+     "ten": "Gastly",
+     "cong": 420,
+     "thu": 410,
+     "mau": 250,
+     "exp": 8,
+     "vang": 7,
+     "he": 14,
+     "nac": 3,
+     "chieu": [
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
+     ]
+    },
+    {
+     "nguon": 33,
+     "ten": "abysol",
+     "cong": 650,
+     "thu": 740,
+     "mau": 820,
+     "exp": 7,
+     "vang": 5,
+     "he": 16,
+     "nac": 7,
+     "chieu": [
+      "Dark Pulse",
+      "Foul Play",
+      "Knock Off",
+      "Zen Headbutt"
+     ]
+    },
+    {
+     "nguon": 34,
+     "ten": "Umbreon",
+     "cong": 420,
+     "thu": 120,
+     "mau": 520,
+     "exp": 9,
+     "vang": 5,
+     "he": 16,
+     "nac": 3,
+     "chieu": [
+      "Pursuit",
+      "Faint Attack",
+      "Assurance",
+      "Quick Attack"
+     ]
+    },
+    {
+     "nguon": 35,
+     "ten": "Sceptile",
+     "cong": 450,
+     "thu": 450,
+     "mau": 720,
+     "exp": 7,
+     "vang": 6,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "Absorb",
+      "Mega Drain",
+      "Giga Drain",
+      "Energy Ball"
+     ]
+    },
+    {
+     "nguon": 36,
+     "ten": "Machop",
+     "cong": 520,
+     "thu": 520,
+     "mau": 640,
+     "exp": 8,
+     "vang": 4,
+     "he": 7,
+     "nac": 3,
+     "chieu": [
+      "Low Kick",
+      "Karate Chop",
+      "Revenge",
+      "Vital Throw"
+     ]
+    },
+    {
+     "nguon": 1,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 30,
+     "mau": 70,
+     "exp": 5,
+     "vang": 5,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 2,
+     "ten": "sâu xanh",
+     "cong": 70,
+     "thu": 70,
+     "mau": 70,
+     "exp": 3,
+     "vang": 4,
+     "he": 12,
+     "nac": 3,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 3,
+     "ten": "sâu xanh",
+     "cong": 85,
+     "thu": 55,
+     "mau": 85,
+     "exp": 2,
+     "vang": 6,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 4,
+     "ten": "sâu xanh",
+     "cong": 78,
+     "thu": 92,
+     "mau": 100,
+     "exp": 6,
+     "vang": 2,
+     "he": 10,
+     "nac": 2,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 5,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 200,
+     "exp": 2,
+     "vang": 5,
+     "he": 8,
+     "nac": 2,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 6,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 3,
+     "vang": 5,
+     "he": 9,
+     "nac": 2,
+     "chieu": [
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
+     ]
+    },
+    {
+     "nguon": 7,
+     "ten": "sâu xanh",
+     "cong": 100,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 8,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 120,
+     "exp": 4,
+     "vang": 3,
+     "he": 8,
+     "nac": 3,
+     "chieu": [
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
+     ]
+    },
+    {
+     "nguon": 9,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 100,
+     "mau": 100,
+     "exp": 3,
+     "vang": 6,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 10,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 4,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 11,
+     "ten": "sâu xanh",
+     "cong": 90,
+     "thu": 90,
+     "mau": 90,
+     "exp": 3,
+     "vang": 3,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
+     ]
+    },
+    {
+     "nguon": 12,
+     "ten": "sâu xanh",
+     "cong": 50,
+     "thu": 120,
+     "mau": 100,
+     "exp": 3,
+     "vang": 5,
+     "he": 10,
+     "nac": 3,
+     "chieu": [
+      "FLY",
+      "AERIAL ACE",
+      "WING ATTACK",
+      "GUST"
+     ]
+    },
+    {
+     "nguon": 13,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 4,
+     "vang": 6,
+     "he": 12,
+     "nac": 2,
+     "chieu": [
+      "STRING SHOT",
+      "TACKLE",
+      "MEGAHORM",
+      "BUG BITE"
+     ]
+    },
+    {
+     "nguon": 14,
+     "ten": "sâu xanh",
+     "cong": 110,
+     "thu": 100,
+     "mau": 140,
+     "exp": 6,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 15,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 7,
+     "nac": 2,
+     "chieu": [
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 16,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
+     ]
+    },
+    {
+     "nguon": 17,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 18,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 5,
+     "nac": 2,
+     "chieu": [
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAM",
+      "ROLLING KICK"
+     ]
+    },
+    {
+     "nguon": 19,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 2,
+     "nac": 2,
+     "chieu": [
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
+     ]
+    },
+    {
+     "nguon": 20,
+     "ten": "sâu xanh",
+     "cong": 120,
+     "thu": 120,
+     "mau": 100,
+     "exp": 4,
+     "vang": 2,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "QUICK ATTACK",
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
+     ]
+    },
+    {
+     "nguon": 22,
+     "ten": "Pikachu",
+     "cong": 120,
+     "thu": 120,
+     "mau": 120,
+     "exp": 7,
+     "vang": 5,
+     "he": 1,
+     "nac": 2,
+     "chieu": [
+      "Volt Tackle",
+      "Volt Tackle 1",
+      "Volt Tackle 2",
+      "Volt Tackle 3"
+     ]
+    },
+    {
+     "nguon": 23,
+     "ten": "Bulbasaur",
+     "cong": 100,
+     "thu": 100,
+     "mau": 130,
+     "exp": 6,
+     "vang": 3,
+     "he": 5,
+     "nac": 5,
+     "chieu": [
+      "Tackle",
+      "Growl",
+      "Leech Seed",
+      "Vine Whip"
+     ]
+    },
+    {
+     "nguon": 25,
+     "ten": "ran da",
+     "cong": 240,
+     "thu": 235,
+     "mau": 500,
+     "exp": 10,
+     "vang": 12,
+     "he": 3,
+     "nac": 5,
+     "chieu": [
+      "Rock Throw",
+      "super Rock Throw",
+      "Rock Throw 2",
+      "Rock Throw  3"
+     ]
+    },
+    {
+     "nguon": 24,
+     "ten": "rong ca chep",
+     "cong": 240,
+     "thu": 235,
+     "mau": 450,
+     "exp": 10,
+     "vang": 12,
+     "he": 3,
+     "nac": 5,
+     "chieu": [
+      "Dragon Dance",
+      "Waterfall",
+      "Stone Edge",
+      "Earthquake"
+     ]
+    },
+    {
+     "nguon": 26,
+     "ten": "Cyndaquil",
+     "cong": 240,
+     "thu": 235,
+     "mau": 500,
+     "exp": 10,
+     "vang": 12,
+     "he": 2,
+     "nac": 5,
+     "chieu": [
+      "Tackle",
+      "Leer",
+      "Smokescreen",
+      "Ember"
+     ]
+    },
+    {
+     "nguon": 27,
+     "ten": "Electrode",
+     "cong": 95,
+     "thu": 70,
+     "mau": 50,
+     "exp": 6,
+     "vang": 2,
+     "he": 11,
+     "nac": 2,
+     "chieu": [
+      "Charge",
+      "Tackle",
+      "Spark",
+      "Sonicboom"
+     ]
+    },
+    {
+     "nguon": 28,
+     "ten": "Chikorita",
+     "cong": 210,
+     "thu": 110,
+     "mau": 240,
+     "exp": 8,
+     "vang": 7,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "SolarBeam",
+      "Aromatherapy",
+      "Safeguard",
+      "Magical Leaf"
+     ]
+    },
+    {
+     "nguon": 29,
+     "ten": "Totodile",
+     "cong": 210,
+     "thu": 150,
+     "mau": 100,
+     "exp": 7,
+     "vang": 4,
+     "he": 3,
+     "nac": 3,
+     "chieu": [
+      "Water Gun",
+      "Rage",
+      "Bite",
+      "Scary Face"
+     ]
+    },
+    {
+     "nguon": 30,
+     "ten": "Charmander",
+     "cong": 120,
+     "thu": 120,
+     "mau": 250,
+     "exp": 7,
+     "vang": 4,
+     "he": 2,
+     "nac": 3,
+     "chieu": [
+      "Ember",
+      "Fire Fang",
+      "Flame Burst",
+      "Fire Spin"
+     ]
+    },
+    {
+     "nguon": 31,
+     "ten": "Meditite",
+     "cong": 650,
+     "thu": 420,
+     "mau": 350,
+     "exp": 8,
+     "vang": 4,
+     "he": 11,
+     "nac": 3,
+     "chieu": [
+      "Confusion",
+      "Force Palm",
+      "Hi Jump Kick",
+      "Reversal"
+     ]
+    },
+    {
+     "nguon": 32,
+     "ten": "Gastly",
+     "cong": 420,
+     "thu": 410,
+     "mau": 250,
+     "exp": 8,
+     "vang": 7,
+     "he": 14,
+     "nac": 3,
+     "chieu": [
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
+     ]
+    },
+    {
+     "nguon": 33,
+     "ten": "abysol",
+     "cong": 650,
+     "thu": 740,
+     "mau": 820,
+     "exp": 7,
+     "vang": 5,
+     "he": 16,
+     "nac": 7,
+     "chieu": [
+      "Dark Pulse",
+      "Foul Play",
+      "Knock Off",
+      "Zen Headbutt"
+     ]
+    },
+    {
+     "nguon": 34,
+     "ten": "Umbreon",
+     "cong": 420,
+     "thu": 120,
+     "mau": 520,
+     "exp": 9,
+     "vang": 5,
+     "he": 16,
+     "nac": 3,
+     "chieu": [
+      "Pursuit",
+      "Faint Attack",
+      "Assurance",
+      "Quick Attack"
+     ]
+    },
+    {
+     "nguon": 35,
+     "ten": "Sceptile",
+     "cong": 450,
+     "thu": 450,
+     "mau": 720,
+     "exp": 7,
+     "vang": 6,
+     "he": 5,
+     "nac": 3,
+     "chieu": [
+      "Absorb",
+      "Mega Drain",
+      "Giga Drain",
+      "Energy Ball"
+     ]
+    },
+    {
+     "nguon": 36,
+     "ten": "Machop",
+     "cong": 520,
+     "thu": 520,
+     "mau": 640,
+     "exp": 8,
+     "vang": 4,
+     "he": 7,
+     "nac": 3,
+     "chieu": [
+      "Low Kick",
+      "Karate Chop",
+      "Revenge",
+      "Vital Throw"
+     ]
+    }
+   ]
+  }
+ ],
+ "gym": [
+  {
+   "so": 1,
+   "ten": "Gym 1",
+   "cong": 200,
+   "thu": 200,
+   "mau": 200,
+   "exp": 12,
+   "vang": 20,
+   "cau": 5,
+   "he": 8,
+   "chieu": [
+    "TOXIC",
+    "POISON STING",
+    "POSONPOWDER",
+    "REFLECT"
+   ]
+  },
+  {
+   "so": 2,
+   "ten": "Gym 2",
+   "cong": 800,
+   "thu": 800,
+   "mau": 800,
+   "exp": 20,
+   "vang": 30,
+   "cau": 7,
+   "he": 1,
+   "chieu": [
+    "QUICK ATTACK",
+    "HYPER FANG",
+    "SCARY FACE",
+    "RETURN"
+   ]
+  },
+  {
+   "so": 3,
+   "ten": "Gym 3",
+   "cong": 1600,
+   "thu": 1600,
+   "mau": 1600,
+   "exp": 40,
+   "vang": 50,
+   "cau": 7,
+   "he": 1,
+   "chieu": [
+    "QUICK ATTACK",
+    "HYPER FANG",
+    "SCARY FACE",
+    "RETURN"
+   ]
+  },
+  {
+   "so": 4,
+   "ten": "Gym 4",
+   "cong": 2300,
+   "thu": 2300,
+   "mau": 2300,
+   "exp": 80,
+   "vang": 50,
+   "cau": 7,
+   "he": 1,
+   "chieu": [
+    "QUICK ATTACK",
+    "HYPER FANG",
+    "SCARY FACE",
+    "RETURN"
+   ]
+  },
+  {
+   "so": 5,
+   "ten": "Gym 5",
+   "cong": 3000,
+   "thu": 3000,
+   "mau": 3000,
+   "exp": 40,
+   "vang": 40,
+   "cau": 10,
+   "he": 3,
+   "chieu": [
+    "DIVE",
+    "MUDDY WATER",
+    "MUDDY WATER",
+    "WATERFALL"
+   ]
+  },
+  {
+   "so": 6,
+   "ten": "Gym 6",
+   "cong": 6000,
+   "thu": 6000,
+   "mau": 6000,
+   "exp": 45,
+   "vang": 45,
+   "cau": 10,
+   "he": 3,
+   "chieu": [
+    "DIVE",
+    "MUDDY WATER",
+    "MUDDY WATER",
+    "WATERFALL"
+   ]
+  },
+  {
+   "so": 7,
+   "ten": "Gym 7",
+   "cong": 10000,
+   "thu": 10000,
+   "mau": 10000,
+   "exp": 60,
+   "vang": 60,
+   "cau": 12,
+   "he": 3,
+   "chieu": [
+    "DIVE",
+    "MUDDY WATER",
+    "MUDDY WATER",
+    "WATERFALL"
+   ]
+  },
+  {
+   "so": 8,
+   "ten": "Gym 8",
+   "cong": 13000,
+   "thu": 13000,
+   "mau": 13000,
+   "exp": 70,
+   "vang": 70,
+   "cau": 14,
+   "he": 10,
+   "chieu": [
+    "FLY",
+    "AERIAL ACE",
+    "WING ATTACK",
+    "GUST"
+   ]
+  },
+  {
+   "so": 9,
+   "ten": "Gym 9",
+   "cong": 18000,
+   "thu": 18000,
+   "mau": 18000,
+   "exp": 60,
+   "vang": 60,
+   "cau": 12,
+   "he": 5,
+   "chieu": [
+    "BULK UP",
+    "BRICK BREAK",
+    "JUMP KICK",
+    "ROLLING KICK"
+   ]
+  },
+  {
+   "so": 10,
+   "ten": "Gym 10",
+   "cong": 65000,
+   "thu": 30000,
+   "mau": 30000,
+   "exp": 60,
+   "vang": 60,
+   "cau": 12,
+   "he": 14,
+   "chieu": [
+    "SPITE",
+    "NIGHT SHADE",
+    "POSONPOWDER",
+    "CURSE"
+   ]
+  },
+  {
+   "so": 11,
+   "ten": "Gym 11",
+   "cong": 85000,
+   "thu": 35000,
+   "mau": 35000,
+   "exp": 60,
+   "vang": 60,
+   "cau": 12,
+   "he": 11,
+   "chieu": [
+    "SPITE",
+    "REST",
+    "CALM MIND",
+    "CURSE"
+   ]
+  },
+  {
+   "so": 12,
+   "ten": "Gym 12",
+   "cong": 95000,
+   "thu": 40000,
+   "mau": 40000,
+   "exp": 60,
+   "vang": 60,
+   "cau": 12,
+   "he": 5,
+   "chieu": [
+    "BULLET SEED",
+    "BULK UP",
+    "JUMP KICK",
+    "CURSE"
+   ]
+  },
+  {
+   "so": 13,
+   "ten": "Gym 13",
+   "cong": 95000,
+   "thu": 45000,
+   "mau": 45000,
+   "exp": 70,
+   "vang": 70,
+   "cau": 12,
+   "he": 10,
+   "chieu": [
+    "FLY",
+    "AERIAL ACE",
+    "WING ATTACK",
+    "CURSE"
+   ]
+  },
+  {
+   "so": 14,
+   "ten": "Gym 14",
+   "cong": 95000,
+   "thu": 50000,
+   "mau": 50000,
+   "exp": 80,
+   "vang": 80,
+   "cau": 12,
+   "he": 4,
+   "chieu": [
+    "THUNDERBOLT",
+    "SPARK",
+    "THUNDER",
+    "SHOCK WAVE"
+   ]
+  }
+ ]
+}

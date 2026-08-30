@@ -1,0 +1,241 @@
+/**
+ * Đảo Pokémon — hằng số và luật chơi thuần, dùng chung máy chủ lẫn giao diện.
+ *
+ * Dựng lại từ mã nguồn một wap game Pokémon Việt hoá chạy trên JohnCMS quãng
+ * 2013 (`pokemonv_vn`). Giữ nguyên công thức, giữ nguyên số liệu, giữ nguyên
+ * bộ ảnh 318 con thú. Những chỗ ĐỔI đều ghi rõ lý do ngay tại chỗ.
+ */
+
+/** Đường dẫn gốc của bộ ảnh cũ. */
+export const ANH_POKE = '/hoai-niem/pokemon';
+
+// ─────────────────────────── Mười bảy hệ ───────────────────────────
+
+/**
+ * Tên hệ đọc từ chính bộ ảnh huy hiệu `img/he/1..17.png` của bản gốc, không
+ * đoán theo thứ tự quen thuộc của Pokémon thật.
+ */
+export const HE = [
+  '', 'NORMAL', 'FIRE', 'WATER', 'ELECTRIC', 'GRASS', 'ICE', 'FIGHTING',
+  'POISON', 'GROUND', 'FLYING', 'PSYCHIC', 'BUG', 'ROCK', 'GHOST', 'DRAGON',
+  'DARK', 'STEEL',
+] as const;
+
+export const SO_HE = 17;
+
+export function tenHe(he: number): string {
+  return HE[he] ?? HE[1]!;
+}
+
+export function anhHe(he: number): string {
+  return `${ANH_POKE}/he/${he >= 1 && he <= SO_HE ? he : 1}.png`;
+}
+
+/**
+ * Bảng khắc hệ, trích thẳng từ `modules/location/he.php` của bản gốc.
+ *
+ * Đọc là: `KHAC_HE[hệ mình][hệ đối thủ] = [nhân sát thương mình gây,
+ * nhân sát thương mình chịu]`. Cặp nào không ghi thì cả hai là 1.
+ *
+ * MỘT ĐIỀU PHẢI NÓI RÕ: trong bản gốc tệp `he.php` KHÔNG hề được `include` ở
+ * đâu cả — tác giả viết xong rồi bỏ quên, nên suốt cả game không trận nào áp
+ * bảng này. Ở đây có nối vào thật. Bỏ đi thì trung thành với thứ chạy được,
+ * nhưng lại vứt mất phần luật mà chính tác giả đã ngồi viết ra, và mười bảy
+ * huy hiệu hệ trên mỗi con thú thành ra trang trí suông.
+ */
+export const KHAC_HE: Record<number, Record<number, readonly [number, number]>> = {
+  1: { 13: [0.5, 1], 14: [0, 1], 16: [0.5, 1] },
+  2: { 2: [0.5, 1], 3: [0.5, 2], 5: [2, 0.5], 6: [2, 0.5], 12: [2, 0.5], 13: [0.5, 2], 15: [0.5, 2], 17: [2, 1] },
+  3: { 2: [2, 0.5], 3: [0.5, 2], 5: [0.5, 2], 9: [2, 0.5], 13: [2, 0.5], 15: [0.5, 2] },
+  4: { 3: [2, 0.5], 4: [0.5, 2], 5: [0.5, 2], 9: [0, 2], 10: [2, 0.5], 15: [0.5, 1] },
+  5: { 2: [0.5, 2], 3: [2, 0.5], 8: [0.5, 2], 9: [2, 0.5], 10: [0.5, 2], 12: [0.5, 2], 13: [2, 0.5], 15: [0.5, 1], 17: [0.5, 2] },
+  6: { 2: [0.5, 2], 3: [0.5, 1], 5: [2, 1], 9: [2, 1], 10: [2, 1], 15: [2, 1], 17: [0.5, 2] },
+  7: { 1: [2, 1], 6: [2, 1], 8: [0.5, 2], 10: [0.5, 2], 11: [0.5, 2], 12: [0.5, 2], 13: [2, 0.5], 14: [0, 0.5], 16: [2, 0.5], 17: [2, 0.5] },
+  8: { 5: [2, 0.5], 8: [0.5, 2], 9: [0.5, 2], 13: [0.5, 2], 14: [0.5, 2], 17: [0, 2] },
+  9: { 2: [2, 0.5], 4: [2, 1], 5: [0.5, 2], 8: [2, 1], 10: [0, 2], 12: [0.5, 2], 13: [2, 0.5], 17: [2, 0.5] },
+  10: { 4: [0.5, 2], 5: [2, 2], 7: [2, 0.5], 12: [2, 0.5], 13: [0.5, 2], 17: [0.5, 2] },
+  11: { 7: [2, 0.5], 8: [2, 0.5], 16: [0, 2], 17: [0.5, 1] },
+  12: { 2: [0.5, 2], 5: [2, 0.5], 7: [0.5, 2], 8: [0.5, 2], 10: [0.5, 2], 11: [2, 0.5], 14: [0.5, 2], 16: [2, 0.5], 17: [0.5, 1] },
+  13: { 2: [2, 0.5], 6: [2, 0.5], 7: [0.5, 2], 9: [0.5, 2], 10: [2, 0.5], 12: [2, 0.5], 17: [0.5, 2] },
+  14: { 11: [2, 0.5], 16: [0.5, 2], 17: [0.5, 2] },
+  15: { 17: [0.5, 1] },
+  16: { 7: [0.5, 2], 11: [2, 0.5], 14: [2, 0.5], 17: [0.5, 1] },
+  17: { 2: [0.5, 2], 3: [0.5, 2], 4: [0.5, 2], 6: [2, 0.5], 13: [2, 0.5] },};
+
+/** Hệ số [gây, chịu] khi hệ `minh` gặp hệ `dich`. */
+export function heSoHe(minh: number, dich: number): readonly [number, number] {
+  return KHAC_HE[minh]?.[dich] ?? [1, 1];
+}
+
+// ─────────────────────────── Nhân vật ───────────────────────────
+
+/** Ba con thú khởi đầu, đúng ba lựa chọn của bản gốc. */
+export const THU_DAU = [
+  { nguon: 1, ten: 'Sâu Xanh', he: 12, nacToiDa: 1 },
+  { nguon: 3, ten: 'Rattata', he: 1, nacToiDa: 3 },
+  { nguon: 4, ten: 'Spearow', he: 10, nacToiDa: 3 },
+] as const;
+
+export const VANG_DAU = 200;
+export const EXP_DAU = 20;
+export const SK_DAU = 20;
+export const CAU_DAU = 5;
+
+/** Chỉ số con thú lúc mới có: 20 máu, bốn chiêu đều 10 sát thương. */
+export const MAU_DAU = 20;
+export const CHIEU_DAU = 10;
+
+export const TEN_TOI_THIEU = 3;
+export const TEN_TOI_DA = 16;
+
+// ─────────────────────────── Đánh nhau ───────────────────────────
+
+/** Mỗi trận tốn 2 thể lực, y bản gốc. */
+export const SK_MOI_TRAN = 2;
+
+/**
+ * Sát thương một lượt.
+ *
+ * Công thức gốc: mình gây `chiêu − thủ của địch`, địch gây `công của địch −
+ * thủ của mình`, trong đó "thủ của mình" là TRUNG BÌNH bốn chiêu — con thú
+ * không có cột phòng thủ riêng, bản gốc lấy `(p_1+p_2+p_3+p_4)/4`. Sàn 1 để
+ * không bao giờ có lượt đánh không mất máu nào.
+ *
+ * Phần nhân theo hệ là của `he.php`, xem chú thích ở `KHAC_HE`.
+ */
+export function tinhSatThuong(
+  chieu: number, boThu: number, heMinh: number,
+  congDich: number, thuDich: number, heDich: number,
+): { gay: number; chiu: number } {
+  const [nGay, nChiu] = heSoHe(heMinh, heDich);
+  const gay = Math.floor(Math.max(1, chieu - thuDich) * nGay);
+  const chiu = Math.floor(Math.max(1, congDich - boThu) * nChiu);
+  // Hệ số 0 nghĩa là miễn nhiễm hoàn toàn — giữ đúng 0, không kéo lên 1.
+  return { gay: nGay === 0 ? 0 : Math.max(1, gay), chiu: nChiu === 0 ? 0 : Math.max(1, chiu) };
+}
+
+/** Bộ thủ của một con thú: trung bình bốn chiêu. */
+export function boThu(c: { c1: number; c2: number; c3: number; c4: number }): number {
+  return Math.floor((c.c1 + c.c2 + c.c3 + c.c4) / 4);
+}
+
+// ─────────────────────────── Bắt thú ───────────────────────────
+
+/** Bản gốc: `rand(0,5) == 1`, tức đúng một phần sáu, không phụ thuộc máu. */
+export const CO_HOI_BAT = 1 / 6;
+
+// ─────────────────────────── Tiến cấp và tiến hoá ───────────────────────────
+
+/**
+ * Lên cấp bằng ĐÁ TIẾN CẤP: tốn 1 viên, cộng 100 vào cả bốn chiêu lẫn máu tối
+ * đa, y bản gốc.
+ *
+ * ĐỔI MỘT CHỖ: bản gốc đòi `exp >= 1000` rồi lại ghi `exp = exp * 3` — nhân
+ * lên chứ không trừ đi, nên qua lần đầu là ngưỡng vĩnh viễn thoả, kinh nghiệm
+ * hoá ra chẳng để làm gì. Đó là lỗi gõ nhầm chứ không phải luật: ở đây TRỪ
+ * đúng ngưỡng ấy.
+ */
+export const EXP_MOI_CAP = 1000;
+export const CONG_MOI_CAP = 100;
+
+/**
+ * Tiến hoá: ảnh nấc sau nằm ở `id + 500`, nấc ba ở `id + 1000` — đúng quy ước
+ * đánh số của bộ ảnh gốc. Nấc 2 mở ở cấp 6, nấc 3 ở cấp 10, và chỉ những con
+ * có `nacToiDa` đủ lớn mới tiến được.
+ */
+export const CAP_TIEN_HOA = [0, 6, 10] as const;
+export const BUOC_ANH_TIEN_HOA = 500;
+
+export function anhThu(nguon: number, nac = 1): string {
+  return `${ANH_POKE}/thu/${nguon + (nac - 1) * BUOC_ANH_TIEN_HOA}.gif`;
+}
+
+/** Con thú có tiến hoá được lúc này không, và lên nấc mấy. */
+export function nacTienHoaMoi(cap: number, nac: number, nacToiDa: number): number | null {
+  for (let n = nacToiDa; n >= 2; n--) {
+    if (nac < n && n <= 3 && cap >= CAP_TIEN_HOA[n - 1]!) return n;
+  }
+  return null;
+}
+
+// ─────────────────────────── Trạm y tế ───────────────────────────
+
+/** Bản gốc: 20 máu mỗi 5 phút, 10 thể lực mỗi 2 phút, chung một lần chờ. */
+export const YTE_MAU = 20;
+export const YTE_MAU_CHO_MS = 5 * 60_000;
+export const YTE_SK = 10;
+export const YTE_SK_CHO_MS = 2 * 60_000;
+
+// ─────────────────────────── Cửa hàng ───────────────────────────
+
+export const GIA_CAU = 20;
+export const GIA_DA = 500;
+export const MUA_TOI_DA = 99;
+
+// ─────────────────────────── Mười bốn khu ───────────────────────────
+
+/**
+ * Bản gốc để mỗi khu một thư mục `modules/` và một bảng cơ sở dữ liệu riêng
+ * (`pokemon2`, `pokemon3`, `nuoc3`, `lanhtho`…) tuy nội dung y hệt nhau. Ở đây
+ * gộp làm một danh sách; `bac` là mức khó, dùng để xếp thứ tự và để khoá khu
+ * khó lại cho tới khi nhân vật đủ cấp.
+ */
+export const KHU = [
+  { ma: 'co', ten: 'Khu Cỏ', bac: 1, mo: 'Bãi cỏ ngay cạnh làng, thú yếu nhất đảo.' },
+  { ma: 'ao', ten: 'Ao Sen', bac: 2, mo: 'Mặt nước lặng, toàn thú hệ nước.' },
+  { ma: 'map2', ten: 'Rừng Xanh', bac: 2, mo: 'Rừng rậm um tùm, nhiều thú hệ bọ.' },
+  { ma: 'dong', ten: 'Hang Động', bac: 3, mo: 'Tối om, thú hệ đá và độc ẩn trong ngách.' },
+  { ma: 'map3', ten: 'Núi Đá', bac: 3, mo: 'Vách đá dựng đứng, thú to xác.' },
+  { ma: 'ho3', ten: 'Hồ Ba', bac: 4, mo: 'Hồ nước sâu ở chân núi.' },
+  { ma: 'ho4', ten: 'Hồ Bốn', bac: 4, mo: 'Nước xoáy, thú khoẻ hơn hồ Ba.' },
+  { ma: 'map4', ten: 'Hoang Mạc', bac: 4, mo: 'Cát nóng, thú hệ đất và thép.' },
+  { ma: 'ho5', ten: 'Hồ Năm', bac: 5, mo: 'Hồ trên cao, nước lạnh buốt.' },
+  { ma: 'ho7', ten: 'Hồ Bảy', bac: 5, mo: 'Sương phủ quanh năm.' },
+  { ma: 'map5', ten: 'Đỉnh Tuyết', bac: 5, mo: 'Đỉnh cao nhất đảo, thú hệ băng.' },
+  { ma: 'ho9', ten: 'Hồ Chín', bac: 6, mo: 'Vực nước đen, ít ai dám xuống.' },
+  { ma: 'ho11', ten: 'Hồ Mười Một', bac: 6, mo: 'Nơi sâu nhất trong chuỗi hồ.' },
+  { ma: 'lanhtho', ten: 'Lãnh Thổ', bac: 7, mo: 'Vùng đất cuối, thú mạnh nhất tụ về.' },
+] as const;
+
+export type MaKhu = (typeof KHU)[number]['ma'];
+
+export function timKhu(ma: string) {
+  return KHU.find((k) => k.ma === ma);
+}
+
+/**
+ * Cấp nhân vật tối thiểu để vào một khu.
+ *
+ * Bản gốc KHÔNG khoá khu nào — ai cũng đi thẳng vào Lãnh Thổ được, gặp con
+ * 8000 máu rồi mất trắng thể lực mà chẳng hiểu vì sao. Thêm ngưỡng cấp để thứ
+ * tự mười bốn khu có nghĩa, và để người mới không lạc ngay vào chỗ chết.
+ */
+export function capVaoKhu(bac: number): number {
+  return bac <= 1 ? 1 : (bac - 1) * 3;
+}
+
+// ─────────────────────────── Cấp nhân vật ───────────────────────────
+
+/**
+ * Cấp nhân vật tính từ tổng kinh nghiệm: cấp n cần `25·n·(n−1)` điểm.
+ *
+ * PHẢI THÊM, bản gốc thiếu hẳn. Ở đó cột `chars.lvl` được ghi '1' lúc tạo
+ * nhân vật rồi không câu lệnh nào trong 291 tệp đụng vào nữa — kinh nghiệm cứ
+ * cộng dồn mà cấp đứng yên mãi ở 1. Không có phép này thì mười ba khu sau khoá
+ * vĩnh viễn, mà thứ tự mười bốn khu cũng chẳng còn nghĩa gì.
+ *
+ * Chọn hàm bậc hai chứ không tuyến tính để đoạn đầu đi nhanh (cấp 2 chỉ cần
+ * 50 điểm, quãng chục con thú ở Khu Cỏ) rồi chậm dần về sau, khớp với việc thú
+ * ở khu sau cho nhiều kinh nghiệm hơn hẳn.
+ */
+export const EXP_HE_SO_CAP = 25;
+
+export function expChoCap(cap: number): number {
+  return EXP_HE_SO_CAP * cap * (cap - 1);
+}
+
+export function capTheoExp(exp: number): number {
+  let cap = 1;
+  while (expChoCap(cap + 1) <= exp && cap < 99) cap++;
+  return cap;
+}

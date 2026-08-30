@@ -139,26 +139,27 @@ model User {
   threadReads ThreadRead[]
 
   // Cửa hàng: đồ đã mua, và đồ đang đeo (mỗi loại đeo được một món).
-  shopPurchases  ShopPurchase[]
-  nameColorId    String?
-  nameColor      ShopItem?      @relation("EquipNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
-  shopBadgeId    String?
-  shopBadge      ShopItem?      @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
+  shopPurchases ShopPurchase[]
+  nameColorId   String?
+  nameColor     ShopItem?      @relation("EquipNameColor", fields: [nameColorId], references: [id], onDelete: SetNull)
+  shopBadgeId   String?
+  shopBadge     ShopItem?      @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
 
-  gamePlays      MiniGamePlay[]
-  bauCuaBets     BauCuaBet[]
-  quizQuestions  QuizQuestion[]    @relation("QuizAuthor")
-  quizReviewed   QuizQuestion[]    @relation("QuizReviewer")
-  quizAnswers    QuizAnswer[]
-  quizComments   QuizComment[]     @relation("QuizCommentAuthor")
-  farmPlots      FarmPlot[]
-  farmBarn       FarmBarn[]
-  farmSeeds      FarmSeed[]
-  farmFerts      FarmFert[]
-  farmOrders     FarmOrder[]
-  rong           Rong[]
+  gamePlays     MiniGamePlay[]
+  bauCuaBets    BauCuaBet[]
+  quizQuestions QuizQuestion[] @relation("QuizAuthor")
+  quizReviewed  QuizQuestion[] @relation("QuizReviewer")
+  quizAnswers   QuizAnswer[]
+  quizComments  QuizComment[]  @relation("QuizCommentAuthor")
+  farmPlots     FarmPlot[]
+  farmBarn      FarmBarn[]
+  farmSeeds     FarmSeed[]
+  farmFerts     FarmFert[]
+  farmOrders    FarmOrder[]
+  pokeNhanVat   PokeNhanVat?
+  rong          Rong[]
   /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
-  lastTreeAt     DateTime?
+  lastTreeAt    DateTime?
 
   /// Danh hiệu = tên bậc của cấp hiện tại, chép sẵn từ `LevelRule.name`.
   ///
@@ -166,7 +167,7 @@ model User {
   /// người dùng chỉ cầm theo bộ trang trí, bắt từng chỗ tự tra bảng cấp là chắc
   /// chắn có chỗ quên. Ghi ở đúng hai nơi — lúc lên cấp (`addExp`) và lúc quản
   /// trị sửa bậc (`saveLevelRule`) — và có `scripts/soat-bo-dem.mjs` đối soát.
-  levelTitle     String?
+  levelTitle String?
 
   @@index([level])
   @@index([createdAt])
@@ -1726,7 +1727,6 @@ model ShopItem {
    * Nội dung của món đồ, ý nghĩa tuỳ theo `kind`:
    * NAME_COLOR — một giá trị màu CSS (#hex, rgb(), hoặc linear-gradient()).
    * BADGE      — đường dẫn ảnh huy hiệu, hiện cạnh tên.
-   *
    * Cửa hàng CỐ Ý không bán avatar lẫn ảnh bìa: hai thứ ấy người dùng tự tải
    * lên ở trang cài đặt. Bán ảnh bìa thì món mua được sẽ đè lên ảnh người ta
    * tự chọn — tự dưng cướp mất chỗ của chính chủ. Danh hiệu cũng thôi bán: nó
@@ -1742,8 +1742,8 @@ model ShopItem {
 
   purchases ShopPurchase[]
 
-  equippedNameColorBy   User[] @relation("EquipNameColor")
-  equippedBadgeBy       User[] @relation("EquipBadge")
+  equippedNameColorBy User[] @relation("EquipNameColor")
+  equippedBadgeBy     User[] @relation("EquipBadge")
 
   @@index([kind, active, order])
 }
@@ -1964,13 +1964,11 @@ model ClubCommentLike {
 
 /**
  * Một lượt chơi ở khu giải trí.
- *
  * Ghi lại TỪNG lượt chứ không chỉ cộng trừ điểm, vì ba lẽ:
- *   • trần lượt mỗi ngày phải đếm được — không có trần thì mấy trò cược biến
- *     thành chỗ ngồi bấm cả đêm,
- *   • có gì bất thường (ai đó thắng liên tục) thì còn lần ra được,
- *   • và để in bảng "lượt chơi gần đây" cho vui, đúng kiểu wap ngày trước.
- *
+ * • trần lượt mỗi ngày phải đếm được — không có trần thì mấy trò cược biến
+ * thành chỗ ngồi bấm cả đêm,
+ * • có gì bất thường (ai đó thắng liên tục) thì còn lần ra được,
+ * • và để in bảng "lượt chơi gần đây" cho vui, đúng kiểu wap ngày trước.
  * Điểm vẫn đi qua `grantPoints` như mọi nơi khác; bảng này chỉ là sổ chơi.
  */
 model MiniGamePlay {
@@ -1981,7 +1979,7 @@ model MiniGamePlay {
   game MiniGame
 
   /// Số điểm đặt cược (0 với những trò không cược, như hộp quà).
-  bet Int @default(0)
+  bet   Int @default(0)
   /// Điểm thay đổi sau lượt: dương là được, âm là mất.
   delta Int @default(0)
 
@@ -2015,11 +2013,9 @@ enum MiniGame {
 
 /**
  * Một phiên bầu cua chung cho cả nhà.
- *
  * Bản cũ mỗi người xóc riêng một bát. Ở đây có MỘT bàn: ai cũng đặt lên cùng
  * sáu ô, hết giờ thì hệ thống xóc một lần cho tất cả — đúng kiểu ngồi quanh
  * chiếu ngày Tết, và nhìn người khác đặt cửa mới là phần vui nhất.
- *
  * Phiên không do một tiến trình chạy nền sinh ra mà TÍNH THEO ĐỒNG HỒ: mã
  * phiên chính là mốc giây bắt đầu, nên máy chủ nào hỏi cũng ra cùng một phiên,
  * và không có gì để hỏng khi máy chủ khởi động lại. Ai ghé vào sau giờ xóc thì
@@ -2036,7 +2032,7 @@ model BauCuaRound {
 
   rolledAt DateTime?
   /// Ba mặt đã xóc, dạng "3,1,6". Chưa xóc thì rỗng.
-  dice String?
+  dice     String?
 
   bets BauCuaBet[]
 
@@ -2045,7 +2041,6 @@ model BauCuaRound {
 
 /**
  * Một cửa đặt của một người trong một phiên.
- *
  * Điểm TRỪ ngay lúc đặt (không ai đặt được cửa mà chưa trả tiền) và TRẢ lúc
  * chốt sổ. `payout` rỗng nghĩa là phiên chưa chốt.
  */
@@ -2069,19 +2064,16 @@ model BauCuaBet {
   @@index([userId, createdAt])
 }
 
-
 // ============================================================
 // TRẮC NGHIỆM — thành viên tự ra câu hỏi, đặt cọc bằng điểm
 // ============================================================
 
 /**
  * Một câu hỏi trắc nghiệm do thành viên đăng.
- *
  * Luật kinh tế giữ đúng bản JohnCMS cũ, vì nó hay: người ra câu hỏi ĐẶT CỌC
  * `price` điểm. Ai trả lời ĐÚNG thì lấy cọc ấy; ai trả lời SAI thì mất đúng
  * bấy nhiêu cho người ra câu. Nghĩa là ra câu quá dễ thì lỗ, ra câu đánh đố vô
  * lý thì chẳng ai thèm trả lời — tự nó ép người ta ra câu tử tế.
- *
  * Câu hỏi phải qua duyệt mới hiện: cọc đã trừ ngay lúc đăng, nên câu rác không
  * lọt ra mà người đăng vẫn mất tiền đặt cọc.
  */
@@ -2095,13 +2087,13 @@ model QuizQuestion {
   categoryId String?
   category   QuizCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  content String @db.Text
+  content String   @db.Text
   /// Bốn phương án, theo đúng thứ tự hiện ra.
   options String[]
   /// Chỉ số phương án đúng, 0..3.
   correct Int
   /// Lời giải thích, hiện sau khi người ta trả lời xong.
-  explain String? @db.Text
+  explain String?  @db.Text
 
   /// Số điểm đặt cọc, cũng là số điểm ăn thua mỗi lượt trả lời.
   price Int
@@ -2124,10 +2116,12 @@ model QuizQuestion {
   @@index([categoryId, status, createdAt])
 }
 
-/** Thể loại câu hỏi, quản trị lập. */
+/**
+ * Thể loại câu hỏi, quản trị lập.
+ */
 model QuizCategory {
-  id   String @id @default(cuid())
-  slug String @unique
+  id   String  @id @default(cuid())
+  slug String  @unique
   name String
   /// Một dòng mô tả ngắn hiện dưới tên thể loại.
   note String?
@@ -2143,7 +2137,6 @@ model QuizCategory {
 
 /**
  * Bình luận dưới một câu hỏi.
- *
  * Bản gốc có mục này và nó đúng là chỗ vui nhất: trả lời xong người ta hay
  * xuống cãi nhau về đáp án. Điều hành viên ẩn được bình luận bậy chứ không xoá
  * hẳn, giống mọi chỗ khác trong diễn đàn.
@@ -2155,7 +2148,7 @@ model QuizComment {
   authorId   String
   author     User         @relation("QuizCommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
 
-  content String @db.Text
+  content String  @db.Text
   hidden  Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -2196,7 +2189,6 @@ model QuizAnswer {
 
 /**
  * Một loại cây trồng. Quản trị cấu hình được, không viết cứng trong mã.
- *
  * Bản cũ có 11 loại và bộ ảnh đi kèm (`nongtrai/o-dat/{n}.png` lúc còn non,
  * `{n}-chin.png` lúc chín), nên giữ nguyên chừng ấy loại để dùng lại tranh.
  */
@@ -2207,14 +2199,14 @@ model FarmCrop {
   name String
 
   /// Giá một hạt giống, tính bằng điểm.
-  seedCost Int
+  seedCost    Int
   /// Bao lâu thì chín, tính bằng phút.
   growMinutes Int
   /// Thu được bao nhiêu nông sản mỗi vụ (chăm kém → chăm tốt).
-  yieldMin Int
-  yieldMax Int
+  yieldMin    Int
+  yieldMax    Int
   /// Giá bán một nông sản.
-  sellPrice Int
+  sellPrice   Int
 
   order  Int     @default(0)
   active Boolean @default(true)
@@ -2234,7 +2226,6 @@ model FarmCrop {
 
 /**
  * Một ô đất của một người.
- *
  * Không lưu "còn bao lâu nữa chín" mà lưu THỜI ĐIỂM chín (`readyAt`): đếm
  * ngược thì phải có ai đó chạy nền trừ dần, còn mốc thời gian thì lúc nào hỏi
  * cũng tính ra được, và tưới nước hay bón phân chỉ là kéo cái mốc ấy gần lại.
@@ -2252,7 +2243,7 @@ model FarmPlot {
 
   /// Đã xới chưa. Xới xong mới gieo được, và thu hoạch xong thì đất lại
   /// chai — mỗi vụ phải xới lại từ đầu.
-  tilled    Boolean   @default(false)
+  tilled Boolean @default(false)
 
   plantedAt DateTime?
   readyAt   DateTime?
@@ -2267,11 +2258,13 @@ model FarmPlot {
   @@index([userId])
 }
 
-/** Nhà kho: nông sản thu được, chờ đem bán. */
+/**
+ * Nhà kho: nông sản thu được, chờ đem bán.
+ */
 model FarmBarn {
-  id     String @id @default(cuid())
+  id     String   @id @default(cuid())
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   cropId String
   crop   FarmCrop @relation(fields: [cropId], references: [id], onDelete: Cascade)
 
@@ -2288,9 +2281,9 @@ model FarmBarn {
 /// thứ đem bán — mà gộp một bảng thì phải thêm một cột phân loại, rồi mọi câu
 /// truy vấn đều phải nhớ lọc theo cột ấy. Quên một chỗ là bán mất hạt giống.
 model FarmSeed {
-  id     String @id @default(cuid())
+  id     String   @id @default(cuid())
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   cropId String
   crop   FarmCrop @relation(fields: [cropId], references: [id], onDelete: Cascade)
 
@@ -2390,7 +2383,9 @@ model Rong {
   cap Int @default(1)
   exp Int @default(0)
 
-  /** Độ vui 0–100. Bỏ bê thì tụt dần theo giờ, tụt thì đánh yếu đi. */
+  /**
+   * Độ vui 0–100. Bỏ bê thì tụt dần theo giờ, tụt thì đánh yếu đi.
+   */
   vui       Int      @default(60)
   vuiTinhAt DateTime @default(now())
 
@@ -2405,7 +2400,9 @@ model Rong {
   anLanCuoi   DateTime?
   choiLanCuoi DateTime?
 
-  /** Con đang cử ra đấu trường. Mỗi người chỉ một con. */
+  /**
+   * Con đang cử ra đấu trường. Mỗi người chỉ một con.
+   */
   raTran Boolean @default(false)
 
   createdAt DateTime @default(now())
@@ -2420,7 +2417,6 @@ model Rong {
 
 /**
  * Một trận ở đấu trường — giữ để kể lại diễn biến.
- *
  * KHÔNG đếm trần "mỗi ngày mấy trận" trên bảng này: hai khoá ngoại đều
  * `onDelete: Cascade`, mà người chơi thả rồng lúc nào cũng được, nên xoá một
  * con rồng là xoá luôn lịch sử trận của nó và bộ đếm ngày tự về 0. Tệ hơn, thả
@@ -2435,13 +2431,19 @@ model RongTran {
   bId String
   b   Rong   @relation("RongB", fields: [bId], references: [id], onDelete: Cascade)
 
-  /** id con thắng; null nghĩa là hoà. */
+  /**
+   * id con thắng; null nghĩa là hoà.
+   */
   thangId String?
 
-  /** Điểm bên thách đấu được (âm nếu thua). */
+  /**
+   * Điểm bên thách đấu được (âm nếu thua).
+   */
   duoc Int
 
-  /** Diễn biến từng hiệp, để kể lại trận đấu. */
+  /**
+   * Diễn biến từng hiệp, để kể lại trận đấu.
+   */
   dienBien Json
 
   createdAt DateTime @default(now())
@@ -2449,4 +2451,145 @@ model RongTran {
   @@index([aId, createdAt])
   @@index([bId, createdAt])
   @@index([createdAt])
+}
+
+// ─────────────────────────── Đảo Pokémon ───────────────────────────
+//
+// Dựng lại từ mã nguồn một wap game Pokémon Việt hoá chạy trên JohnCMS quãng
+// 2013. Bản gốc nhồi hết vào hai bảng `chars` và `poke` với hơn bốn mươi cột
+// đánh số (`cuonghoa2`…`cuonghoa8`); ở đây tách theo đúng thứ mỗi bảng nói về.
+//
+// Thú hoang KHÔNG có bảng riêng cho từng khu như bản gốc (`pokemon2`,
+// `pokemon3`, `nuoc3`… mười bốn bảng giống hệt nhau): bảng thú của cả mười bốn
+// khu nằm trong `prisma/du-lieu/pokemon.json` và nạp vào `PokeThuHoang`.
+
+model PokeNhanVat {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Tên trong game, khác tên tài khoản diễn đàn.
+  ten String @unique
+
+  vang Int @default(200)
+  exp  Int @default(20)
+  cap  Int @default(1)
+
+  /// Thể lực: mỗi trận tốn 2, hết thì phải vào trạm y tế.
+  sk      Int @default(20)
+  skToiDa Int @default(20)
+
+  /// Quả cầu để bắt thú, và đá tiến cấp.
+  cau Int @default(5)
+  da  Int @default(0)
+
+  /// Khu đang đứng.
+  khu String @default("co")
+
+  /// Con đang ra trận.
+  raTranId String?  @unique
+  raTran   PokeThu? @relation("PokeRaTran", fields: [raTranId], references: [id], onDelete: SetNull)
+
+  /// Lần vào trạm y tế gần nhất — bản gốc dùng chung một lần chờ cho cả máu
+  /// lẫn thể lực, giữ nguyên vậy.
+  chuaLuc DateTime?
+
+  /// Số Gym đã hạ.
+  gym Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  thu  PokeThu[] @relation("PokeChu")
+  tran PokeTran?
+
+  @@index([cap, exp])
+}
+
+model PokeThu {
+  id        String      @id @default(cuid())
+  nhanVatId String
+  nhanVat   PokeNhanVat @relation("PokeChu", fields: [nhanVatId], references: [id], onDelete: Cascade)
+
+  /// Số hiệu ảnh gốc; ảnh nấc sau nằm ở số hiệu + 500.
+  nguon Int
+  ten   String
+  he    Int
+
+  /// Nấc tiến hoá hiện tại và tối đa (bản gốc: `lv` và `mlv`).
+  nac      Int @default(1)
+  nacToiDa Int @default(1)
+
+  cap Int @default(1)
+  exp Int @default(0)
+
+  mau      Int
+  mauToiDa Int
+
+  /// Sát thương bốn chiêu; trung bình bốn số này cũng là bộ thủ.
+  c1 Int @default(10)
+  c2 Int @default(10)
+  c3 Int @default(10)
+  c4 Int @default(10)
+
+  chieu String[]
+
+  createdAt DateTime @default(now())
+
+  raTranCua PokeNhanVat? @relation("PokeRaTran")
+
+  @@index([nhanVatId, createdAt])
+}
+
+/// Bảng thú hoang của từng khu, nạp từ `prisma/du-lieu/pokemon.json`.
+model PokeThuHoang {
+  id  String @id @default(cuid())
+  khu String
+  /// Số hiệu trong bảng gốc, để đối chiếu về sau.
+  goc Int
+
+  nguon Int
+  ten   String
+  he    Int
+  nac   Int    @default(1)
+
+  cong Int
+  thu  Int
+  mau  Int
+  exp  Int
+  vang Int
+
+  chieu String[]
+
+  @@unique([khu, goc])
+  @@index([khu])
+}
+
+/// Trận đang đánh dở. Một nhân vật chỉ có đúng một trận.
+model PokeTran {
+  id        String      @id @default(cuid())
+  nhanVatId String      @unique
+  nhanVat   PokeNhanVat @relation(fields: [nhanVatId], references: [id], onDelete: Cascade)
+
+  khu String
+
+  /// Bản sao chỉ số con thú hoang lúc vào trận — chép ra chứ không trỏ tới
+  /// bảng gốc, vì máu của nó tụt dần trong trận. Bản gốc trừ thẳng vào bảng
+  /// chung nên hai người đánh cùng lúc là trừ máu của nhau.
+  nguon    Int
+  ten      String
+  he       Int
+  nac      Int      @default(1)
+  cong     Int
+  thu      Int
+  mau      Int
+  mauToiDa Int
+  exp      Int
+  vang     Int
+  chieu    String[]
+
+  /// Câu kể lượt vừa rồi.
+  ke String?
+
+  createdAt DateTime @default(now())
 }

@@ -2001,6 +2001,16 @@ enum MiniGame {
   OANTUTI
   /// Đấu trường đảo rồng.
   RONGDAU
+  /// Máy quay xèng ba hàng ba cột.
+  QUAYXENG
+  /// Phi tiêu, so điểm với máy.
+  PHITIEU
+  /// Sóc đĩa chẵn/lẻ.
+  SOCDIA
+  /// Đập trứng, chọn một trong năm quả.
+  DAPTRUNG
+  /// Sút phạt đền.
+  SUTPHAT
 }
 
 /**

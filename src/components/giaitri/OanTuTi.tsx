@@ -9,6 +9,9 @@ import { cn } from '@/lib/utils';
 export function OanTuTi({ conLai }: { conLai: number }) {
   const [state, action, dangChay] = useActionState<GameState, FormData>(choiOanTuTi, {});
   const [chon, setChon] = useState(1);
+  // Giữ mức cược qua các ván: `defaultValue` bật về mức tối thiểu sau mỗi
+  // lượt, bắt người chơi gõ lại con số y hệt ván nào cũng như ván nào.
+  const [cuoc, setCuoc] = useState(String(OTT_MIN));
   const het = conLai <= 0;
   const may = state.mat?.[0];
 
@@ -39,13 +42,12 @@ export function OanTuTi({ conLai }: { conLai: number }) {
       <div className="flex flex-wrap items-end gap-3">
         <label className="block">
           <span className="label">Cược (điểm)</span>
-          <input name="cuoc" type="number" min={OTT_MIN} max={OTT_MAX} defaultValue={OTT_MIN}
+          <input name="cuoc" type="number" min={OTT_MIN} max={OTT_MAX} value={cuoc} onChange={(e) => setCuoc(e.target.value)}
             disabled={het} className="input !w-32" />
         </label>
         <button type="submit" disabled={dangChay || het} className="btn-primary disabled:opacity-60">
           {dangChay ? 'Đang ra tay…' : 'Oẳn tù tì!'}
         </button>
-        <span className="retro-sub text-ink-400">Còn {conLai} ván hôm nay</span>
       </div>
 
       {may && (

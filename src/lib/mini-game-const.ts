@@ -108,6 +108,117 @@ export function ottKetQua(nguoi: number, may: number): -1 | 0 | 1 {
     ? 1 : -1;
 }
 
+// ─────────────────────────── Máy quay xèng ───────────────────────────
+
+/**
+ * Máy quay xèng ba hàng ba cột (bản gốc `quayso/`, tám ảnh 19×16).
+ *
+ * Tên từng biểu tượng lấy theo ĐÚNG chữ trong mã gốc, đối chiếu với ảnh đã mở
+ * ra xem: 3 là quả tím, bản cũ gọi là nho thì giữ là nho.
+ *
+ * ĐỔI TỈ LỆ TRẢ THƯỞNG so với bản gốc. Bản cũ trả một số xu CỐ ĐỊNH bất kể
+ * cược bao nhiêu, mà lại chỉ trừ tiền khi thua — ngồi bấm là ra tiền, đúng
+ * nghĩa máy in điểm. Ở đây trả theo BỘI SỐ CƯỢC, và cân lại cho nhà cái ăn
+ * nhẹ, tính được chính xác chứ không ước lượng:
+ *
+ *   • 8 đường (3 hàng + 3 cột + 2 chéo), mỗi đường trùng cả ba ô với xác suất
+ *     8·(1/8)³ = 1/64 → trung bình 8/64 = 0,125 đường trúng mỗi lượt.
+ *   • Bội số trung bình của tám biểu tượng: (2+3+4+5+7+9+20+11)/8 = 7,625.
+ *   • Kỳ vọng = 0,125 × 7,625 − 1 = −4,7 % mỗi lượt.
+ */
+export const XENG_BIEU_TUONG = [
+  { id: 1, ten: 'Anh đào', boi: 2 },
+  { id: 2, ten: 'Cam', boi: 3 },
+  { id: 3, ten: 'Nho', boi: 4 },
+  { id: 4, ten: 'Chuối', boi: 5 },
+  { id: 5, ten: 'Táo', boi: 7 },
+  { id: 6, ten: 'BAR', boi: 9 },
+  { id: 7, ten: 'Số 7', boi: 20 },
+  { id: 8, ten: 'Đô la', boi: 11 },
+] as const;
+
+export const XENG_MIN = 10;
+export const XENG_MAX = 100;
+
+/** Tám đường ăn tiền, ghi theo chỉ số ô 0–8 của lưới 3×3. */
+export const XENG_DUONG: readonly (readonly [number, number, number])[] = [
+  [0, 1, 2], [3, 4, 5], [6, 7, 8],
+  [0, 3, 6], [1, 4, 7], [2, 5, 8],
+  [0, 4, 8], [2, 4, 6],
+] as const;
+
+/** Những đường trúng của một lượt quay, kèm tổng bội số. */
+export function xengDo(o: readonly number[]): { duong: number[]; boi: number } {
+  const duong: number[] = [];
+  let boi = 0;
+  XENG_DUONG.forEach(([a, b, c], i) => {
+    if (o[a] === o[b] && o[b] === o[c]) {
+      duong.push(i);
+      boi += XENG_BIEU_TUONG.find((t) => t.id === o[a])?.boi ?? 0;
+    }
+  });
+  return { duong, boi };
+}
+
+// ─────────────────────────── Phi tiêu ───────────────────────────
+
+/** Sáu bảng phi tiêu của bản cũ, mũi tiêu cắm sẵn mỗi ảnh một chỗ. */
+export const PHITIEU_MAT = 6;
+export const PHITIEU_MIN = 10;
+export const PHITIEU_MAX = 100;
+
+// ─────────────────────────── Sóc đĩa (chẵn / lẻ) ───────────────────────────
+
+/**
+ * Bản gốc chia năm phòng với mức cược khác nhau, ở đây gộp làm một và cho tự
+ * gõ số điểm — năm trang giống hệt nhau chỉ khác hai con số là năm chỗ phải
+ * sửa mỗi lần đổi luật.
+ */
+export const SOCDIA_MIN = 10;
+export const SOCDIA_MAX = 100;
+
+// ─────────────────────────── Đập trứng ───────────────────────────
+
+export const TRUNG_SO = 5;
+export const TRUNG_MIN = 10;
+export const TRUNG_MAX = 100;
+
+/**
+ * Bội số thưởng khi đập trúng. Bản gốc trả 5× rồi nhân đôi nếu trúng luôn quả
+ * may mắn, mà KHÔNG trừ cược lúc thắng — kỳ vọng +40 %, lại một máy in điểm.
+ *
+ * Ở đây: đúng ăn 3× cược, đúng mà trúng luôn quả vàng thì 7×; sai mất cược.
+ *   Kỳ vọng = 1/5 × (4/5 × 3 + 1/5 × 7) − 4/5 = 0,76 − 0,8 = −4 %.
+ */
+export const TRUNG_BOI = 3;
+export const TRUNG_BOI_VANG = 7;
+
+// ─────────────────────────── Sút phạt ───────────────────────────
+
+/** Bốn góc khung thành, đúng bốn ô của bảng gốc. */
+export const SUT_GOC = [
+  { id: 1, ten: 'Góc trên trái' },
+  { id: 2, ten: 'Góc trên phải' },
+  { id: 3, ten: 'Góc dưới trái' },
+  { id: 4, ten: 'Góc dưới phải' },
+] as const;
+
+export const SUT_MIN = 10;
+export const SUT_MAX = 100;
+
+/**
+ * Thủ môn bay đúng một góc, nên cửa vào tới 3/4 — trả 1 ăn 1 là người sút mỗi
+ * quả lãi 50 % cược, ngồi sút cả ngày là giàu. Trả 30 % thì kỳ vọng
+ * 3/4 × 0,3 − 1/4 = −2,5 %, gần đúng với thực tế đá phạt đền: vào thì thường,
+ * hỏng mới là chuyện.
+ */
+export const SUT_THUONG = 0.3;
+
+/** Điểm thưởng khi bóng vào lưới, làm tròn xuống cho khỏi lẻ. */
+export function sutThuong(cuoc: number): number {
+  return Math.floor(cuoc * SUT_THUONG);
+}
+
 // ─────────────────────────── Trần chung ───────────────────────────
 
 /**
@@ -125,4 +236,9 @@ export const BAUCUA_PHIEN_MOI_NGAY = 30;
 export const GAME_LABELS = {
   BAUCUA: 'Bầu cua tôm cá',
   OANTUTI: 'Oẳn tù tì',
+  QUAYXENG: 'Máy quay xèng',
+  PHITIEU: 'Phi tiêu',
+  SOCDIA: 'Sóc đĩa',
+  DAPTRUNG: 'Đập trứng',
+  SUTPHAT: 'Sút phạt',
 } as const;

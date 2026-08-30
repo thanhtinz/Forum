@@ -9,6 +9,11 @@ import { lockUsers } from '@/lib/lock';
 import {
   BAUCUA_CONS, BAUCUA_MAX, BAUCUA_MIN, BAUCUA_CUA_MOI_PHIEN, BAUCUA_PHIEN_MOI_NGAY,
   OTT_MAX, OTT_MIN, OTT_TAY, VAN_MOI_NGAY, dauNgayVN, ottKetQua,
+  PHITIEU_MAT, PHITIEU_MAX, PHITIEU_MIN,
+  SOCDIA_MAX, SOCDIA_MIN,
+  SUT_GOC, SUT_MAX, SUT_MIN, sutThuong,
+  TRUNG_BOI, TRUNG_BOI_VANG, TRUNG_MAX, TRUNG_MIN, TRUNG_SO,
+  XENG_BIEU_TUONG, XENG_MAX, XENG_MIN, xengDo,
 } from '@/lib/mini-game';
 import { phienHomNay, xemBan } from '@/lib/bau-cua';
 
@@ -51,7 +56,7 @@ function docCuoc(formData: FormData, min: number, max: number): number | string 
  */
 async function choiMotVan(
   userId: string,
-  game: 'BAUCUA' | 'OANTUTI',
+  game: 'BAUCUA' | 'OANTUTI' | 'QUAYXENG' | 'PHITIEU' | 'SOCDIA' | 'DAPTRUNG' | 'SUTPHAT',
   cuoc: number,
   chay: () => { delta: number; detail: string; ke: string; mat: number[] },
 ): Promise<GameState> {
@@ -222,5 +227,161 @@ export async function choiOanTuTi(_prev: GameState, formData: FormData): Promise
     };
   });
   revalidatePath('/giai-tri/oan-tu-ti');
+  return r;
+}
+
+// ─────────────────────────── Máy quay xèng ───────────────────────────
+
+/** Một số nguyên 1..n. Gom lại một chỗ cho khỏi rải `Math.random` khắp tệp. */
+function tung(n: number): number {
+  return 1 + Math.floor(Math.random() * n);
+}
+
+export async function choiQuayXeng(_prev: GameState, formData: FormData): Promise<GameState> {
+  const me = await nguoiChoi();
+  if ('error' in me) return { error: me.error };
+  const cuoc = docCuoc(formData, XENG_MIN, XENG_MAX);
+  if (typeof cuoc === 'string') return { error: cuoc };
+
+  const r = await choiMotVan(me.userId, 'QUAYXENG', cuoc, () => {
+    const o = Array.from({ length: 9 }, () => tung(XENG_BIEU_TUONG.length));
+    const { duong, boi } = xengDo(o);
+    // `boi` là bội số TRẢ VỀ tính cả tiền cược, nên lãi thật là (boi − 1) lần.
+    // Không đường nào thì boi = 0, ra đúng −1 lần cược, khỏi phải rẽ nhánh.
+    const delta = cuoc * boi - cuoc;
+    return {
+      delta,
+      detail: o.join(''),
+      // `mat` chở cả lưới rồi tới danh sách đường trúng, giao diện tự cắt.
+      mat: [...o, -1, ...duong],
+      ke: duong.length
+        ? `Trúng ${duong.length} đường, trả ${boi}× cược: ${delta >= 0 ? '+' : ''}${delta} điểm!`
+        : `Không đường nào trùng. Mất ${cuoc} điểm.`,
+    };
+  });
+  revalidatePath('/giai-tri/quay-xeng');
+  return r;
+}
+
+// ─────────────────────────── Phi tiêu ───────────────────────────
+
+export async function choiPhiTieu(_prev: GameState, formData: FormData): Promise<GameState> {
+  const me = await nguoiChoi();
+  if ('error' in me) return { error: me.error };
+  const cuoc = docCuoc(formData, PHITIEU_MIN, PHITIEU_MAX);
+  if (typeof cuoc === 'string') return { error: cuoc };
+
+  const r = await choiMotVan(me.userId, 'PHITIEU', cuoc, () => {
+    const toi = tung(PHITIEU_MAT);
+    const may = tung(PHITIEU_MAT);
+    const kq = toi === may ? 0 : toi > may ? 1 : -1;
+    return {
+      delta: kq * cuoc,
+      detail: `${toi} vs ${may}`,
+      mat: [toi, may],
+      ke: kq === 0
+        ? `Cả hai cùng ${toi} điểm. Hoà, không mất điểm nào.`
+        : kq > 0
+          ? `Bạn ${toi} — máy ${may}. Bạn thắng, được ${cuoc} điểm!`
+          : `Bạn ${toi} — máy ${may}. Bạn thua, mất ${cuoc} điểm.`,
+    };
+  });
+  revalidatePath('/giai-tri/phi-tieu');
+  return r;
+}
+
+// ─────────────────────────── Sóc đĩa ───────────────────────────
+
+export async function choiSocDia(_prev: GameState, formData: FormData): Promise<GameState> {
+  const me = await nguoiChoi();
+  if ('error' in me) return { error: me.error };
+
+  const cua = Number(formData.get('cua'));
+  if (cua !== 1 && cua !== 2) return { error: 'Chọn chẵn hoặc lẻ đã nào.' };
+  const cuoc = docCuoc(formData, SOCDIA_MIN, SOCDIA_MAX);
+  if (typeof cuoc === 'string') return { error: cuoc };
+
+  const r = await choiMotVan(me.userId, 'SOCDIA', cuoc, () => {
+    // Bốn đồng tiền như bát sóc đĩa thật: đếm mặt ngửa rồi xét chẵn/lẻ. Tung
+    // thẳng một trong hai cửa cũng ra đúng 50/50, nhưng bày bốn đồng thì người
+    // chơi nhìn thấy kết quả từ đâu ra chứ không phải tin suông.
+    const dong = Array.from({ length: 4 }, () => tung(2) - 1);
+    const ngua = dong.reduce((a, b) => a + b, 0);
+    const ra = ngua % 2 === 0 ? 1 : 2;
+    const thang = ra === cua;
+    const tenRa = ra === 1 ? 'Chẵn' : 'Lẻ';
+    return {
+      delta: thang ? cuoc : -cuoc,
+      detail: `${dong.join('')} → ${tenRa}`,
+      mat: [ra, ...dong],
+      ke: thang
+        ? `Mở bát ra ${tenRa} (${ngua} mặt ngửa). Bạn thắng, được ${cuoc} điểm!`
+        : `Mở bát ra ${tenRa} (${ngua} mặt ngửa). Bạn thua, mất ${cuoc} điểm.`,
+    };
+  });
+  revalidatePath('/giai-tri/soc-dia');
+  return r;
+}
+
+// ─────────────────────────── Đập trứng ───────────────────────────
+
+export async function choiDapTrung(_prev: GameState, formData: FormData): Promise<GameState> {
+  const me = await nguoiChoi();
+  if ('error' in me) return { error: me.error };
+
+  const chon = Number(formData.get('trung'));
+  if (!Number.isInteger(chon) || chon < 0 || chon >= TRUNG_SO) {
+    return { error: 'Chọn một quả trứng đã nào.' };
+  }
+  const cuoc = docCuoc(formData, TRUNG_MIN, TRUNG_MAX);
+  if (typeof cuoc === 'string') return { error: cuoc };
+
+  const r = await choiMotVan(me.userId, 'DAPTRUNG', cuoc, () => {
+    const co = tung(TRUNG_SO) - 1;
+    const vang = tung(TRUNG_SO) - 1;
+    const trung = chon === co;
+    const anVang = trung && chon === vang;
+    const boi = anVang ? TRUNG_BOI_VANG : TRUNG_BOI;
+    return {
+      delta: trung ? cuoc * boi : -cuoc,
+      detail: `chọn ${chon}, quà ở ${co}, vàng ở ${vang}`,
+      mat: [co, vang],
+      ke: anVang
+        ? `Quả ${co} có quà, mà lại đúng quả vàng! Ăn ${boi}×: +${cuoc * boi} điểm!`
+        : trung
+          ? `Quả ${co} có quà. Ăn ${boi}×: +${cuoc * boi} điểm!`
+          : `Quà nằm ở quả ${co}. Bạn đập trượt, mất ${cuoc} điểm.`,
+    };
+  });
+  revalidatePath('/giai-tri/dap-trung');
+  return r;
+}
+
+// ─────────────────────────── Sút phạt ───────────────────────────
+
+export async function choiSutPhat(_prev: GameState, formData: FormData): Promise<GameState> {
+  const me = await nguoiChoi();
+  if ('error' in me) return { error: me.error };
+
+  const goc = Number(formData.get('goc'));
+  if (!SUT_GOC.some((g) => g.id === goc)) return { error: 'Chọn góc sút đã nào.' };
+  const cuoc = docCuoc(formData, SUT_MIN, SUT_MAX);
+  if (typeof cuoc === 'string') return { error: cuoc };
+
+  const r = await choiMotVan(me.userId, 'SUTPHAT', cuoc, () => {
+    const thu = tung(SUT_GOC.length);
+    const vao = thu !== goc;
+    const thuong = sutThuong(cuoc);
+    const tenThu = SUT_GOC.find((g) => g.id === thu)!.ten.toLowerCase();
+    return {
+      delta: vao ? thuong : -cuoc,
+      detail: `sút ${goc}, thủ môn ${thu}`,
+      mat: [thu, vao ? 1 : 0],
+      ke: vao
+        ? `Thủ môn bay ${tenThu} — bóng vào lưới! Được ${thuong} điểm.`
+        : `Thủ môn bay ${tenThu}, đúng hướng bạn sút. Bị bắt, mất ${cuoc} điểm.`,
+    };
+  });
+  revalidatePath('/giai-tri/sut-phat');
   return r;
 }

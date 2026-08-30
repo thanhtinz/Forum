@@ -14,7 +14,7 @@
  *
  * Cổng riêng (3100) để không đụng máy chủ dev đang chạy ở 3000.
  */
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 
 const CONG = Number(process.env.PORT_KIEM ?? 3100);
 const GOC = `http://localhost:${CONG}`;
@@ -39,20 +39,58 @@ function chay(lenh, tsoDoi, tuyChon = {}) {
   });
 }
 
+/**
+ * Dọn máy chủ mồ côi của lượt trước TRƯỚC KHI dựng lại.
+ *
+ * `next start` chỉ là vỏ: nó đẻ ra `next-server` rồi giao việc, nên giết vỏ
+ * xong `next-server` vẫn sống và vẫn giữ cổng. Lượt sau dựng đè lên `.next`
+ * ngay dưới chân nó: máy chủ cũ vẫn trả lời nên `doiMayChu` tưởng mọi thứ ổn,
+ * còn `next start` mới thì không chiếm được cổng và chết lặng. Bộ kiểm khi ấy
+ * chạy trên MÃ CŨ với đống chunk vừa bị thay — CSS 404, icon mất sạch, bố cục
+ * vỡ. Đúng cảnh đã dính: một lượt 21 mục đỏ rải khắp bảy bài chẳng liên quan
+ * gì nhau, mà mã thì không sai chỗ nào.
+ *
+ * Nhắm theo CỔNG chứ không theo tên tiến trình: `pgrep -f next-server` bắt
+ * trúng cả máy chủ dev ở cổng 3000 mà người đang ngồi làm việc dùng.
+ */
+function donCong() {
+  let ra = '';
+  try {
+    ra = execFileSync('lsof', ['-ti', `tcp:${CONG}`], { encoding: 'utf8' });
+  } catch {
+    return; // lsof thoát khác 0 khi cổng trống — đúng điều mong muốn
+  }
+  const pids = ra.split('\n').map((d) => Number(d.trim())).filter(Boolean);
+  for (const pid of pids) {
+    try { process.kill(pid, 'SIGKILL'); } catch { /* đã chết rồi */ }
+  }
+  if (pids.length) console.log(`Đã dọn ${pids.length} tiến trình còn giữ cổng ${CONG}.`);
+}
+
+donCong();
+
 const maBuild = await chay('npm', ['run', 'build']);
 if (maBuild !== 0) {
   console.error('\nDựng bản thật hỏng — chưa chạy bộ kiểm.');
   process.exit(maBuild);
 }
 
+// `detached` để `next start` và `next-server` con nằm chung MỘT nhóm tiến
+// trình, nhờ đó giết được cả hai bằng một phát `kill(-pid)`.
 const mayChu = spawn('npx', ['next', 'start'], {
   env: { ...process.env, PORT: String(CONG) },
   stdio: 'ignore',
-  detached: false,
+  detached: true,
 });
 
 // Dọn máy chủ dù bộ kiểm đạt, hỏng, hay chính tiến trình này bị ngắt.
-const donDep = () => { if (!mayChu.killed) mayChu.kill('SIGTERM'); };
+let daDon = false;
+const donDep = () => {
+  if (daDon) return;
+  daDon = true;
+  try { process.kill(-mayChu.pid, 'SIGKILL'); } catch { /* nhóm đã tắt */ }
+  donCong();
+};
 process.on('exit', donDep);
 process.on('SIGINT', () => { donDep(); process.exit(130); });
 process.on('SIGTERM', () => { donDep(); process.exit(143); });

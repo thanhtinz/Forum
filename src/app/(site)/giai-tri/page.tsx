@@ -8,11 +8,12 @@ import { phienConLai } from '@/lib/bau-cua';
 import { DU_BO, anhRong } from '@/lib/rong-const';
 import {
   ANH, BAUCUA_ROUND_MS, GAME_LABELS, OTT_MAX, OTT_MIN, VAN_MOI_NGAY, conLai,
+  TRUNG_BOI_VANG, TRUNG_SO, XENG_BIEU_TUONG,
 } from '@/lib/mini-game';
 
 export const metadata: Metadata = {
   title: 'Khu giải trí',
-  description: 'Bầu cua tôm cá, oẳn tù tì — chơi bằng điểm kiếm được trên diễn đàn.',
+  description: 'Bầu cua, oẳn tù tì, quay xèng, phi tiêu, sóc đĩa, đập trứng, sút phạt — chơi bằng điểm kiếm được trên diễn đàn.',
 };
 export const dynamic = 'force-dynamic';
 
@@ -31,9 +32,13 @@ export default async function GiaiTriPage() {
   const session = await auth();
   const userId = session?.user?.id ?? null;
 
-  const [conBauCua, conOtt] = userId
-    ? await Promise.all([phienConLai(userId), conLai(userId, 'OANTUTI')])
-    : [VAN_MOI_NGAY, VAN_MOI_NGAY];
+  const [conBauCua, conOtt, conXeng, conTieu, conSoc, conTrung, conSut] = userId
+    ? await Promise.all([
+        phienConLai(userId), conLai(userId, 'OANTUTI'), conLai(userId, 'QUAYXENG'),
+        conLai(userId, 'PHITIEU'), conLai(userId, 'SOCDIA'), conLai(userId, 'DAPTRUNG'),
+        conLai(userId, 'SUTPHAT'),
+      ])
+    : Array<number>(7).fill(VAN_MOI_NGAY);
   const soCauHoi = await db.quizQuestion.count({ where: { status: 'APPROVED' } });
   const soRongDaNo = await db.rong.count({ where: { noAt: { not: null } } });
 
@@ -59,6 +64,62 @@ export default async function GiaiTriPage() {
       nen: 'from-sky-500/15 via-cyan-400/10 to-emerald-400/20',
       vien: 'hover:border-sky-300 dark:hover:border-sky-800',
       pill: 'bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-300',
+    },
+    {
+      href: '/giai-tri/quay-xeng',
+      ten: GAME_LABELS.QUAYXENG,
+      mo: 'Ba hàng ba cột. Ba ô giống nhau trên một hàng, một cột hay đường chéo là ăn.',
+      nhan: `${conXeng} lượt`,
+      // Bốn quả ăn to nhất của bảng trả thưởng, để nhìn ô là đoán được luật.
+      anh: [7, 8, 6, 5].map((i) => `${ANH}/quayxeng/${i}.gif`),
+      chu: null as string[] | null,
+      nen: 'from-amber-500/20 via-yellow-400/10 to-orange-400/20',
+      vien: 'hover:border-amber-300 dark:hover:border-amber-800',
+      pill: 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300',
+    },
+    {
+      href: '/giai-tri/phi-tieu',
+      ten: GAME_LABELS.PHITIEU,
+      mo: 'Ném một mũi, so điểm với máy. Cao hơn thì thắng, bằng nhau thì hoà.',
+      nhan: `${conTieu} lượt`,
+      anh: [3, 5].map((i) => `${ANH}/phitieu/${i}.gif`),
+      chu: null as string[] | null,
+      nen: 'from-red-500/15 via-rose-400/10 to-pink-400/20',
+      vien: 'hover:border-red-300 dark:hover:border-red-800',
+      pill: 'bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-300',
+    },
+    {
+      href: '/giai-tri/soc-dia',
+      ten: GAME_LABELS.SOCDIA,
+      mo: 'Bát bốn đồng, đếm mặt ngửa. Đặt chẵn hay lẻ, trúng ăn một ăn một.',
+      nhan: `${conSoc} lượt`,
+      anh: ['chan', 'le'].map((t) => `${ANH}/socdia/${t}.gif`),
+      chu: null as string[] | null,
+      nen: 'from-slate-500/20 via-zinc-400/10 to-stone-400/20',
+      vien: 'hover:border-slate-300 dark:hover:border-slate-700',
+      pill: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+    },
+    {
+      href: '/giai-tri/dap-trung',
+      ten: GAME_LABELS.DAPTRUNG,
+      mo: `${TRUNG_SO} quả, một quả có quà. Trúng luôn quả vàng thì ăn ${TRUNG_BOI_VANG}×.`,
+      nhan: `${conTrung} lượt`,
+      anh: ['trung', 'vo', 'trung'].map((t) => `${ANH}/daptrung/${t}.png`),
+      chu: null as string[] | null,
+      nen: 'from-lime-500/15 via-green-400/10 to-emerald-400/20',
+      vien: 'hover:border-lime-300 dark:hover:border-lime-800',
+      pill: 'bg-lime-50 text-lime-600 dark:bg-lime-950/50 dark:text-lime-300',
+    },
+    {
+      href: '/giai-tri/sut-phat',
+      ten: GAME_LABELS.SUTPHAT,
+      mo: 'Chọn một trong bốn góc. Thủ môn bay một góc — né được là bóng vào lưới.',
+      nhan: `${conSut} lượt`,
+      anh: [`${ANH}/sutphat/bong.png`],
+      chu: null as string[] | null,
+      nen: 'from-green-600/20 via-emerald-500/10 to-teal-400/20',
+      vien: 'hover:border-green-300 dark:hover:border-green-800',
+      pill: 'bg-green-50 text-green-600 dark:bg-green-950/50 dark:text-green-300',
     },
     {
       href: '/giai-tri/trac-nghiem',
@@ -119,9 +180,15 @@ export default async function GiaiTriPage() {
                   ))
                 : t.anh.map((src, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img key={src} src={src} alt="" aria-hidden
+                    // Khoá theo VỊ TRÍ chứ không theo đường dẫn: ô đập trứng bày
+                    // quả nguyên – quả vỡ – quả nguyên, hai quả nguyên trùng ảnh
+                    // nên lấy `src` làm khoá là React kêu trùng key ngay.
+                    <img key={i} src={src} alt="" aria-hidden
                       className="h-14 w-auto object-contain drop-shadow-sm transition-transform duration-200 group-hover:-translate-y-1"
                       style={{
+                        // Bộ ảnh cũ bé tí (19×16 với 70×40), phóng lên gấp mấy lần
+                        // mà để trình duyệt nội suy thì nhoè hết nét.
+                        imageRendering: 'pixelated',
                         transitionDelay: `${i * 45}ms`,
                         transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (3 + i)}deg)`,
                       }} />

@@ -100,7 +100,10 @@ export default async function run(check) {
     await db.farmOrder.deleteMany({ where: { userId: u.id } });
     const don = await db.farmOrder.create({
       data: {
-        userId: u.id, khach: 'Bác Tư', kind: 'THUONG', reward: 100,
+        // Tên khách KHÔNG nằm trong danh sách sinh đơn ngẫu nhiên: dùng tên
+        // thật thì bảng vừa treo đơn mới của đúng người ấy là mục kiểm "đơn
+        // đã giao thì không còn trên bảng" đỏ oan.
+        userId: u.id, khach: 'Khách kiểm thử', kind: 'THUONG', reward: 100,
         items: { create: [{ cropId: cay.id, qty: 3 }] },
       },
       select: { id: true },
@@ -111,7 +114,7 @@ export default async function run(check) {
     await mo();
     await moBangDon();
     const truocGiao = await diem();
-    await p.locator(`button[aria-label^="Giao đơn cho Bác Tư"]`).first().click();
+    await p.locator(`button[aria-label^="Giao đơn cho Khách kiểm thử"]`).first().click();
     await doiToi(async () =>
       (await db.farmOrder.findUnique({ where: { id: don.id }, select: { deliveredAt: true } }))?.deliveredAt != null);
     await p.waitForTimeout(1200);
@@ -131,7 +134,7 @@ export default async function run(check) {
     await mo();
     await moBangDon();
     check('đơn đã giao thì không còn trên bảng',
-      (await p.locator('button[aria-label^="Giao đơn cho Bác Tư"]').count()) === 0);
+      (await p.locator('button[aria-label^="Giao đơn cho Khách kiểm thử"]').count()) === 0);
     check('và điểm không đổi thêm', (await diem()) === truocLai, `điểm đổi ${(await diem()) - truocLai}`);
     check('kho cũng không bị trừ thêm',
       (await db.farmBarn.findUnique({
@@ -142,7 +145,7 @@ export default async function run(check) {
     await db.farmOrder.deleteMany({ where: { userId: u.id } });
     const donTo = await db.farmOrder.create({
       data: {
-        userId: u.id, khach: 'Cô Sáu', kind: 'DAC_BIET', reward: 500,
+        userId: u.id, khach: 'Khách đơn to', kind: 'DAC_BIET', reward: 500,
         items: { create: [{ cropId: cay.id, qty: 99 }] },
       },
       select: { id: true },
@@ -151,7 +154,7 @@ export default async function run(check) {
     await mo();
     await moBangDon();
     const truocThieu = await diem();
-    const nutThieu = p.locator('button[aria-label^="Giao đơn cho Cô Sáu"]').first();
+    const nutThieu = p.locator('button[aria-label^="Giao đơn cho Khách đơn to"]').first();
     check('thiếu hàng thì nút giao bị khoá', await nutThieu.isDisabled());
     // Máy chủ phải tự chặn, không chỉ dựa vào nút mờ
     await p.evaluate(() => {
@@ -171,7 +174,7 @@ export default async function run(check) {
     // ── Đơn của NGƯỜI KHÁC: không được giao hộ để ăn điểm ────────────────
     const donNguoiKhac = await db.farmOrder.create({
       data: {
-        userId: nguoiKhac.id, khach: 'Chú Bảy', kind: 'THUONG', reward: 999,
+        userId: nguoiKhac.id, khach: 'Khách người khác', kind: 'THUONG', reward: 999,
         items: { create: [{ cropId: cay.id, qty: 1 }] },
       },
       select: { id: true },

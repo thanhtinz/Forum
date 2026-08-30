@@ -12,7 +12,9 @@ import { BASE, db, doiToi, openPage } from '../helpers.mjs';
  * thế rút hạt TRƯỚC rồi mới xuống giống.
  */
 
-const PHAN_GIA = 15;
+// Loại phân rẻ nhất, theo đúng bảng trong `farm-const`.
+const PHAN_KIND = 1;
+const PHAN_THEM = 1;
 
 export default async function run(check) {
   const u = await db.user.findFirst({ where: { username: 'huytran' }, select: { id: true, points: true } });
@@ -59,7 +61,10 @@ export default async function run(check) {
 
   try {
     const re = await db.farmCrop.findFirst({
-      where: { active: true }, orderBy: { seedCost: 'asc' },
+      // `plantable: true` là bắt buộc: thiếu nó thì câu này bốc trúng quả khế
+      // — khế giá 0đ nên nó luôn là "giống rẻ nhất", mà khế thì không gieo
+      // được, nên cả bài kiểm mua bán gieo trồng chạy trên một thứ vô nghĩa.
+      where: { active: true, plantable: true }, orderBy: { seedCost: 'asc' },
       select: { id: true, name: true, seedCost: true, yieldMin: true, yieldMax: true },
     });
 
@@ -162,12 +167,36 @@ export default async function run(check) {
     check('tưới xong thì tới lượt BÓN PHÂN',
       buoc[3] === 'Bón phân, đang tới lượt', buoc.join(' | '));
 
+    // Bón phân nay ăn một bao TRONG KHO chứ không trừ điểm, và phải chọn loại
+    // nên bấm xong là mở hộp thoại túi phân.
+    await db.farmFert.deleteMany({ where: { userId: u.id } });
+    await db.farmFert.create({ data: { userId: u.id, kind: PHAN_KIND, qty: 2 } });
+    await mo();
+    // Ô SỐ MỘT là ô vừa gieo và vừa tưới; tải lại trang thì ô đang chọn mất
+    // nên phải chọn lại đúng nó, không thì thanh việc nói về một ô đất trống.
+    await p.locator('.farm-o').first().click();
+    await p.waitForTimeout(600);
+
     const truocBon = await diem();
     await bam('Bón phân');
-    await doiToi(async () => (await db.farmPlot.count({ where: { userId: u.id, fertKind: true } })) === 1);
+    await p.waitForTimeout(900);
+    check('bấm Bón phân thì mở hộp thoại túi phân',
+      (await p.locator('div[role="dialog"] button[aria-label^="Bón "]').count()) > 0);
+    await p.locator('div[role="dialog"] button[aria-label^="Bón "]').first().click();
+    await doiToi(async () =>
+      (await db.farmPlot.count({ where: { userId: u.id, fertKind: { not: null } } })) === 1);
     await p.waitForTimeout(1200);
-    check('bón phân trừ đúng giá', truocBon - (await diem()) === PHAN_GIA,
-      `trừ ${truocBon - (await diem())}, đáng lẽ ${PHAN_GIA}`);
+
+    check('bón phân ăn đúng một bao trong kho',
+      (await db.farmFert.findUnique({
+        where: { userId_kind: { userId: u.id, kind: PHAN_KIND } }, select: { qty: true },
+      })).qty === 1);
+    check('và bón phân KHÔNG đụng tới điểm', (await diem()) === truocBon,
+      `điểm đổi ${(await diem()) - truocBon}`);
+    check('ô ghi đúng LOẠI phân đã bón',
+      (await db.farmPlot.findUnique({
+        where: { userId_index: { userId: u.id, index: 0 } }, select: { fertKind: true },
+      })).fertKind === PHAN_KIND);
 
     // ── Chín thì THU HOẠCH giành lượt, và đất về lại chưa xới ────────────
     await db.farmPlot.updateMany({
@@ -185,7 +214,8 @@ export default async function run(check) {
     await p.waitForTimeout(1200);
     const thu = await db.farmBarn.findFirst({ where: { userId: u.id }, select: { qty: true } });
     check('tưới và bón đủ thì thu được nhiều nhất cộng phần phân bón',
-      thu.qty === re.yieldMax + 2, `thu ${thu.qty}, đáng lẽ ${re.yieldMax + 2}`);
+      thu.qty === re.yieldMax + PHAN_THEM,
+      `thu ${thu.qty}, đáng lẽ ${re.yieldMax + PHAN_THEM}`);
 
     const oSau = await db.farmPlot.findUnique({
       where: { userId_index: { userId: u.id, index: 0 } },

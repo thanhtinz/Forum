@@ -302,6 +302,11 @@ export const ANH_MUA_DAT = `${FARM_ANH}/o-dat/muadat.png`;
 export const ANH_FARM = `${FARM_ANH}/o-dat/farm.png`;
 /** Tấm biển "BẢNG XẾP HẠNG" của bản gốc — chữ Việt sẵn trong ảnh. */
 export const ANH_BXH = `${FARM_ANH}/o-dat/bxh.png`;
+/**
+ * Tấm biển "ĐƠN HÀNG", dựng từ chính `bxh.png` bằng
+ * `scripts/ve-bien-don-hang.mjs` — cùng khung, cùng nét chữ, chỉ khác chữ.
+ */
+export const ANH_BANG_DON = `${FARM_ANH}/o-dat/bangdon.png`;
 export const ANH_CAY_KHE = `${FARM_ANH}/o-dat/caykhe.png`;
 export const ANH_CAY_KHE_CHIN = `${FARM_ANH}/o-dat/caykhechin.png`;
 export const ANH_NEN_NGAY = `${FARM_ANH}/nen/nennongtrai.png`;

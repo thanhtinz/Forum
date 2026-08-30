@@ -2,14 +2,13 @@
 
 import type { ODat as ODatDL } from '@/lib/farm';
 import {
-  ANH_BXH, ANH_CAY_KHE, ANH_CAY_KHE_CHIN, ANH_CUA_HANG,
+  ANH_BANG_DON, ANH_BXH, ANH_CAY_KHE, ANH_CAY_KHE_CHIN, ANH_CUA_HANG,
   ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY, ANH_NHA_KHO,
   NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, O_MOI_TRANG, TROI_DEM, TROI_NGAY,
   changCua, doToiTroi,
 } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
-import { BienBangDon } from './VePixel';
 import { ODat, ODatKhoa } from './ODat';
 
 /**
@@ -460,7 +459,7 @@ export function ManhDat({
               aria-label="Mở bảng đơn hàng"
               className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
             >
-              <BienBangDon className="block w-[44px] sm:w-[88px]" />
+              <AnhPixel src={ANH_BANG_DON} className="block w-[44px] sm:w-[88px]" />
             </button>
             <button
               type="button"

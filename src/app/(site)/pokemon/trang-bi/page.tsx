@@ -32,7 +32,7 @@ export default async function TrangTrangBi() {
     <section className="card p-5">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-black">Trang bị</h1>
-        <span className="retro-sub text-ink-400">{nv.vang} vàng · {nv.ngoc} ngọc</span>
+        <span className="retro-sub text-ink-400">{nv.vang.toLocaleString('vi')} vàng · {nv.ngoc.toLocaleString('vi')} ngọc</span>
       </div>
       <p className="mb-4 text-sm text-ink-500">
         Bốn ô: vũ khí cộng vào sát thương, còn khiên, mũ và giáp đều cộng vào bộ thủ.

@@ -465,11 +465,26 @@ export const QUA_LANH_THO = [
  * vào thật.
  */
 export const O_TRANG_BI = [
-  { loai: 'weapon', ten: 'Vũ khí', cot: 'cong' as const, mo: 'Cộng thẳng vào sát thương gây ra.' },
-  { loai: 'shield', ten: 'Khiên', cot: 'thu' as const, mo: 'Cộng vào bộ thủ, giảm sát thương phải chịu.' },
-  { loai: 'golova', ten: 'Mũ', cot: 'mu' as const, mo: 'Cộng vào bộ thủ.' },
-  { loai: 'body', ten: 'Giáp', cot: 'giap' as const, mo: 'Cộng vào bộ thủ.' },
+  { loai: 'weapon', ten: 'Vũ khí', anh: 'vukhi', cot: 'cong' as const, mo: 'Cộng thẳng vào sát thương gây ra.' },
+  { loai: 'shield', ten: 'Khiên', anh: 'khien', cot: 'thu' as const, mo: 'Cộng vào bộ thủ, giảm sát thương phải chịu.' },
+  { loai: 'golova', ten: 'Mũ', anh: 'mu', cot: 'mu' as const, mo: 'Cộng vào bộ thủ.' },
+  { loai: 'body', ten: 'Giáp', anh: 'giap', cot: 'giap' as const, mo: 'Cộng vào bộ thủ.' },
 ] as const;
+
+/**
+ * Ảnh của từng ô. Bộ ảnh lấy từ game-icons.net (CC BY 3.0) — bản gốc không có
+ * icon vật phẩm nào cả, thư mục `nhanvat` chỉ là mấy mảnh ghép hình nhân vật
+ * cỡ 23×11 điểm ảnh và còn thiếu hẳn cái khiên.
+ *
+ * CC BY BẮT BUỘC ghi công, khác bộ Kenney dùng cho sóc đĩa vốn là CC0 —
+ * nên phần ghi công hiện ngay trên trang chứ không giấu trong tệp NGUON.txt.
+ */
+export function anhTrangBi(loai: string): string {
+  const o = O_TRANG_BI.find((x) => x.loai === loai);
+  return `${ANH_POKE}/trangbi/${o?.anh ?? 'thuoc'}.svg`;
+}
+
+export const GHI_CONG_TRANG_BI = 'Ảnh trang bị: Lorc và sbed trên game-icons.net (CC BY 3.0).';
 
 export type LoaiDo = (typeof O_TRANG_BI)[number]['loai'] | 'elixir';
 

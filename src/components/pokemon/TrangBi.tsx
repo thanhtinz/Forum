@@ -1,9 +1,10 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { FlaskConical, Shield, Shirt, Sword, HardHat } from 'lucide-react';
 import { coiDo, macDo, muaDo, uongThuoc, type PokeState } from '@/app/(site)/pokemon/actions';
-import { MUA_DO_TOI_DA, O_TRANG_BI, boThu, congTrangBi, tenLoaiDo } from '@/lib/pokemon-const';
+import {
+  GHI_CONG_TRANG_BI, MUA_DO_TOI_DA, O_TRANG_BI, anhTrangBi, boThu, congTrangBi, tenLoaiDo,
+} from '@/lib/pokemon-const';
 import { cn } from '@/lib/utils';
 import { ThanhMau } from './ThePoke';
 
@@ -18,10 +19,6 @@ interface Mon {
   dangMac: boolean; sl: number;
 }
 interface Con { ten: string; mau: number; mauToiDa: number; c: number[] }
-
-const ICON: Record<string, typeof Sword> = {
-  weapon: Sword, shield: Shield, golova: HardHat, body: Shirt, elixir: FlaskConical,
-};
 
 export function TrangBi({ hang, tui, cap, vang, ngoc, con }: {
   hang: Hang[]; tui: Mon[]; cap: number; vang: number; ngoc: number;
@@ -48,13 +45,14 @@ export function TrangBi({ hang, tui, cap, vang, ngoc, con }: {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {O_TRANG_BI.map((o) => {
           const dang = dangMacDs.find((d) => d.loai === o.loai);
-          const Icon = ICON[o.loai]!;
           return (
             <div key={o.loai} className={cn(
               'rounded-xl border-2 p-3 text-center',
               dang ? 'border-brand-400 bg-brand-50/60 dark:bg-brand-950/30' : 'border-dashed border-ink-200 dark:border-ink-700',
             )}>
-              <Icon size={18} className={cn('mx-auto', dang ? 'text-brand-600' : 'text-ink-300')} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={anhTrangBi(o.loai)} alt="" aria-hidden
+                className={cn('mx-auto h-8 w-8', !dang && 'opacity-30 grayscale')} />
               <p className="mt-1 text-[11px] font-semibold text-ink-400">{o.ten}</p>
               {dang ? (
                 <>
@@ -71,6 +69,8 @@ export function TrangBi({ hang, tui, cap, vang, ngoc, con }: {
           );
         })}
       </div>
+
+      <p className="text-[11px] text-ink-400">{GHI_CONG_TRANG_BI}</p>
 
       {con && (
         <div className="rounded-xl bg-ink-50 p-3 text-sm dark:bg-ink-800/50">
@@ -101,7 +101,9 @@ export function TrangBi({ hang, tui, cap, vang, ngoc, con }: {
               <form key={t.id} action={uongAction}>
                 <input type="hidden" name="do" value={t.id} />
                 <button disabled={dangUong} className="btn-outline gap-1.5 !py-1.5 text-sm">
-                  <FlaskConical size={14} /> {t.ten} (+{t.mau}) ×{t.sl}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={anhTrangBi('elixir')} alt="" aria-hidden className="h-4 w-4" />
+                  {t.ten} (+{t.mau}) ×{t.sl}
                 </button>
               </form>
             ))}
@@ -118,6 +120,8 @@ export function TrangBi({ hang, tui, cap, vang, ngoc, con }: {
           <div className="space-y-1.5">
             {tui.filter((d) => d.loai !== 'elixir').map((d) => (
               <div key={d.id} className="flex items-center gap-2 rounded-lg bg-ink-50 px-3 py-2 text-sm dark:bg-ink-800/50">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={anhTrangBi(d.loai)} alt="" aria-hidden className="h-5 w-5 shrink-0" />
                 <b>{tenLoaiDo(d.loai)} {d.ten}</b>
                 <span className="text-xs text-ink-400">
                   {[d.cong && `công +${d.cong}`, (d.thu + d.mu + d.giap) && `thủ +${d.thu + d.mu + d.giap}`]

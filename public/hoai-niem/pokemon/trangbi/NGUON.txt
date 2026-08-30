@@ -1,0 +1,16 @@
+Nguồn ảnh trang bị — game-icons.net, giấy phép CC BY 3.0.
+
+Kho gốc: https://github.com/game-icons/icons
+
+  vukhi.svg ← lorc/broadsword.svg      (tác giả: Lorc)
+  khien.svg ← sbed/shield.svg          (tác giả: sbed)
+  mu.svg    ← lorc/crested-helmet.svg  (tác giả: Lorc)
+  giap.svg  ← lorc/breastplate.svg     (tác giả: Lorc)
+  thuoc.svg ← lorc/potion-ball.svg     (tác giả: Lorc)
+
+CC BY 3.0 BẮT BUỘC ghi công — khác với bộ ảnh Kenney dùng cho sóc đĩa vốn là
+CC0 không bắt buộc. Phần ghi công hiện ngay dưới bốn ô trang bị trong trang,
+chứ không giấu trong tệp này.
+
+Đã sửa hai chỗ so với bản gốc: bỏ ô vuông đen phủ kín làm nền (bộ này vẽ hình
+trắng trên nền đen), và đổi màu hình theo từng ô cho phân biệt được.

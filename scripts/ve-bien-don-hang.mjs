@@ -103,8 +103,19 @@ function crc(b) {
 
 // ── Bảng màu của tấm gốc ──
 const MAU = {
-  u: [0x6b, 0x49, 0x00, 255],   // nét chữ đậm
-  z: [0xff, 0xe7, 0xc1, 255],   // viền sáng của nét
+  // Chữ CẮT RA từ tấm gốc: 'u' là thân nét, 'z' là vệt nổi khối bên phải dưới.
+  u: [0x6b, 0x49, 0x00, 255],
+  z: [0xff, 0xe7, 0xc1, 255],
+  /*
+   * Màu chữ khi VIẾT LÊN tấm biển nâu — đảo hẳn so với bản gốc.
+   *
+   * Bản gốc là nền gỗ vàng nhạt nên chữ nâu đậm nổi rõ. Tấm này nền nâu sẫm,
+   * giữ nguyên chữ nâu đậm thì chữ chìm nghỉm vào nền. Nên thân nét đổi sang
+   * kem sáng, còn vệt nổi khối đổi sang nâu đen — vẫn đúng lối nổi khối ấy,
+   * chỉ đảo chiều sáng tối cho hợp nền mới.
+   */
+  U: [0xff, 0xef, 0xc9, 255],   // thân nét, kem sáng
+  Z: [0x3d, 0x27, 0x08, 255],   // vệt nổi khối, nâu gần đen
   e: [0xff, 0xcb, 0x7b, 255],   // mặt gỗ (của tấm GỐC, trước khi đổi màu)
   // Giấy note ghim lên bảng
   g: [0xff, 0xf6, 0xdd, 255],   // mặt giấy
@@ -207,8 +218,8 @@ for (let i = 0; i < anh.px.length; i += 4) if (anh.px[i + 3] > 0) xoayTone(anh.p
 /** Dán một bản đồ ký tự lên tấm ảnh. */
 function dan(hinh, x0, y0) {
   hinh.forEach((h, dy) => [...h].forEach((c, dx) => {
-    if (c === 'u') dat(x0 + dx, y0 + dy, MAU.u);
-    else if (c === 'z') dat(x0 + dx, y0 + dy, MAU.z);
+    if (c === 'u') dat(x0 + dx, y0 + dy, MAU.U);
+    else if (c === 'z') dat(x0 + dx, y0 + dy, MAU.Z);
   }));
 }
 

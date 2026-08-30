@@ -11,9 +11,9 @@ import {
   MAU_DAU, MUA_TOI_DA, SK_DAU, SK_MOI_TRAN, TEN_TOI_DA, TEN_TOI_THIEU, THU_DAU, VANG_DAU,
   YTE_MAU, YTE_MAU_CHO_MS, YTE_SK, YTE_SK_CHO_MS,
   BANG_CAP_TOI_THIEU, BANG_GIA_NGOC, BANG_SUC_CHUA, BANG_TEN_TOI_DA, BANG_TEN_TOI_THIEU,
-  CAP_CUONG_TOI_DA, CHO_GIA_MAX, CHO_GIA_MIN,
+  CAP_CUONG_TOI_DA, CHO_GIA_MAX, CHO_GIA_MIN, MUA_DO_TOI_DA,
   DAU_CAP_MAX, DAU_CAP_MIN, DAU_EXP, DAU_HAN_MS, DAU_VANG, NGOC_MOI_DA, NHIEM_VU,
-  timHuyenTinh,
+  O_TRANG_BI, congTrangBi, tenLoaiDo, timHuyenTinh,
   DIEM_DOI_QUA, KHU_CHIEN_TRUONG, QUA_LANH_THO,
   boThu, canVaoKhu, capTheoExp, gymDuocVao, laGioVang, nacTienHoaMoi, satThuongDau,
   timKhu, tinhSatThuong,
@@ -202,9 +202,20 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
       if (toi.mau <= 0) throw new Error('thu-bi-thuong');
       if (nv.sk < SK_MOI_TRAN) throw new Error('het-sk');
 
-      const chieu = [toi.c1, toi.c2, toi.c3, toi.c4][so - 1]!;
+      // Trang bị đang mặc cộng vào chiêu và bộ thủ. Bản gốc bán đủ ba mươi
+      // tám món rồi không trận nào cộng chỉ số của chúng vào đâu cả.
+      const dangMac = await tx.pokeDo.findMany({
+        where: { nhanVatId: nv.id, dangMac: true },
+        select: { cong: true, thu: true, mu: true, giap: true },
+        // Bốn ô là bốn ô; `take` để nếu luật một-món-một-ô có ngày hỏng thì
+        // cũng không kéo về cả túi.
+        take: O_TRANG_BI.length,
+      });
+      const them = congTrangBi(dangMac);
+
+      const chieu = [toi.c1, toi.c2, toi.c3, toi.c4][so - 1]! + them.cong;
       const { gay, chiu } = tinhSatThuong(
-        chieu, boThu(toi), toi.he, tran.cong, tran.thu, tran.he,
+        chieu, boThu(toi) + them.thu, toi.he, tran.cong, tran.thu, tran.he,
       );
 
       const mauDich = Math.max(0, tran.mau - gay);
@@ -1331,5 +1342,154 @@ export async function doiQuaChien(_prev: PokeState, _fd: FormData): Promise<Poke
       return { error: `Cần ${DIEM_DOI_QUA} điểm chiến công mới đổi được.` };
     }
     return { error: 'Không đổi được lúc này.' };
+  }
+}
+
+// ─────────────────────────── Trang bị và thuốc ───────────────────────────
+
+/** Mua một món ở quầy trang bị. Thuốc thì mua được nhiều, trang bị mỗi lần một. */
+export async function muaDo(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+
+  const ma = Number(fd.get('ma'));
+  const hang = await db.pokeHang.findUnique({ where: { ma } });
+  if (!hang) return { error: 'Không có món này.' };
+
+  const laThuoc = hang.loai === 'elixir';
+  const sl = laThuoc ? Number(fd.get('sl') ?? 1) : 1;
+  if (!Number.isInteger(sl) || sl < 1 || sl > MUA_DO_TOI_DA) {
+    return { error: `Mỗi lượt mua từ 1 đến ${MUA_DO_TOI_DA} món.` };
+  }
+  if (r.nv.cap < hang.cap) return { error: `Món này cần cấp ${hang.cap}.` };
+
+  const canVang = hang.vang * sl;
+  const canNgoc = hang.ngoc * sl;
+
+  try {
+    await db.$transaction(async (tx) => {
+      // Bản gốc trừ CẢ vàng lẫn ngọc với những món ghi hai giá — giữ nguyên,
+      // và trừ có điều kiện nên không tiêu quá số đang có.
+      const tru = await tx.pokeNhanVat.updateMany({
+        where: { id: r.nv.id, vang: { gte: canVang }, ngoc: { gte: canNgoc }, cap: { gte: hang.cap } },
+        data: { vang: { decrement: canVang }, ngoc: { decrement: canNgoc } },
+      });
+      if (tru.count === 0) throw new Error('khong-du');
+
+      const phan = {
+        ma: hang.ma, ten: hang.ten, loai: hang.loai,
+        cong: hang.cong, thu: hang.thu, mu: hang.mu, giap: hang.giap, mau: hang.mau,
+      };
+      if (laThuoc) {
+        // Thuốc gộp thành một dòng cho khỏi đầy túi.
+        const co = await tx.pokeDo.findFirst({
+          where: { nhanVatId: r.nv.id, ma: hang.ma }, select: { id: true },
+        });
+        if (co) await tx.pokeDo.update({ where: { id: co.id }, data: { sl: { increment: sl } } });
+        else await tx.pokeDo.create({ data: { nhanVatId: r.nv.id, ...phan, sl }, select: { id: true } });
+      } else {
+        await tx.pokeDo.create({ data: { nhanVatId: r.nv.id, ...phan }, select: { id: true } });
+      }
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === 'khong-du') {
+      return { error: 'Bạn không đủ tiền, hoặc chưa đủ cấp.' };
+    }
+    return { error: 'Không mua được lúc này.' };
+  }
+
+  revalidatePath('/pokemon/trang-bi');
+  const gia = [canVang ? `${canVang} vàng` : '', canNgoc ? `${canNgoc} ngọc` : ''].filter(Boolean).join(' và ');
+  return { ok: true, ke: `Đã mua ${sl > 1 ? `${sl} ` : ''}${tenLoaiDo(hang.loai)} ${hang.ten}, hết ${gia}.` };
+}
+
+/** Mặc một món vào ô của nó; món cũ ở ô ấy tự cởi ra. */
+export async function macDo(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const id = String(fd.get('do') ?? '');
+
+  try {
+    const kq = await db.$transaction(async (tx) => {
+      const mon = await tx.pokeDo.findFirst({ where: { id, nhanVatId: r.nv.id } });
+      if (!mon) throw new Error('khong-phai-cua-ban');
+      if (mon.loai === 'elixir') throw new Error('la-thuoc');
+
+      // Cởi món cũ cùng ô TRƯỚC rồi mới mặc món mới: mỗi ô đúng một món, và
+      // luật ấy nằm trong hai câu ghi chứ không phải trong lời hứa.
+      await tx.pokeDo.updateMany({
+        where: { nhanVatId: r.nv.id, loai: mon.loai, dangMac: true },
+        data: { dangMac: false },
+      });
+      await tx.pokeDo.update({ where: { id: mon.id }, data: { dangMac: true } });
+      return { ok: true, ke: `Đã mặc ${tenLoaiDo(mon.loai).toLowerCase()} ${mon.ten}.` };
+    });
+    revalidatePath('/pokemon/trang-bi');
+    return kq;
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'khong-phai-cua-ban') return { error: 'Đó không phải đồ của bạn.' };
+    if (m === 'la-thuoc') return { error: 'Thuốc thì uống chứ không mặc.' };
+    return { error: 'Không mặc được lúc này.' };
+  }
+}
+
+/** Cởi một món đang mặc ra. */
+export async function coiDo(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const id = String(fd.get('do') ?? '');
+  // Quyền nằm trong `where`.
+  const xong = await db.pokeDo.updateMany({
+    where: { id, nhanVatId: r.nv.id, dangMac: true }, data: { dangMac: false },
+  });
+  if (xong.count === 0) return { error: 'Món này không phải của bạn, hoặc không đang mặc.' };
+  revalidatePath('/pokemon/trang-bi');
+  return { ok: true, ke: 'Đã cởi ra.' };
+}
+
+/**
+ * Uống một liều thuốc, hồi máu cho con đang ra trận.
+ *
+ * Dùng được cả khi đang đánh dở — đó là lý do thuốc tồn tại; trạm y tế bắt
+ * chờ năm phút một lần thì giữa trận chẳng cứu được gì.
+ */
+export async function uongThuoc(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const id = String(fd.get('do') ?? '');
+
+  try {
+    const kq = await db.$transaction(async (tx) => {
+      await lockUsers(tx, r.userId);
+
+      const mon = await tx.pokeDo.findFirst({ where: { id, nhanVatId: r.nv.id, loai: 'elixir' } });
+      if (!mon) throw new Error('khong-co-thuoc');
+
+      const thu = r.nv.raTranId
+        ? await tx.pokeThu.findFirst({ where: { id: r.nv.raTranId, nhanVatId: r.nv.id } })
+        : await tx.pokeThu.findFirst({ where: { nhanVatId: r.nv.id }, orderBy: { createdAt: 'asc' } });
+      if (!thu) throw new Error('khong-co-thu');
+      if (thu.mau >= thu.mauToiDa) throw new Error('day-mau');
+
+      const tru = await tx.pokeDo.updateMany({
+        where: { id: mon.id, sl: { gte: 1 } }, data: { sl: { decrement: 1 } },
+      });
+      if (tru.count === 0) throw new Error('khong-co-thuoc');
+      await tx.pokeDo.deleteMany({ where: { id: mon.id, sl: { lte: 0 } } });
+
+      const moi = Math.min(thu.mauToiDa, thu.mau + mon.mau);
+      await tx.pokeThu.update({ where: { id: thu.id }, data: { mau: moi } });
+      return { ok: true, ke: `${thu.ten} hồi ${moi - thu.mau} máu, còn ${moi}/${thu.mauToiDa}.` };
+    });
+    revalidatePath('/pokemon');
+    revalidatePath('/pokemon/trang-bi');
+    return kq;
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'khong-co-thuoc') return { error: 'Bạn không có liều thuốc nào.' };
+    if (m === 'khong-co-thu') return { error: 'Bạn chưa có con thú nào ra trận.' };
+    if (m === 'day-mau') return { error: 'Thú của bạn đang đầy máu.' };
+    return { error: 'Không uống được lúc này.' };
   }
 }

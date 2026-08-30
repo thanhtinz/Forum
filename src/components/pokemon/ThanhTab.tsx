@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Backpack, Cross, Flame, Map, Medal, ScrollText, ShoppingBasket, Store,
-  Swords, Target, Trophy, Users,
+  Sword, Swords, Target, Trophy, Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +27,7 @@ const TAB = [
   { href: '/pokemon/dau-truong', ten: 'Đấu trường', Icon: Swords },
   { href: '/pokemon/lanh-tho', ten: 'Lãnh Thổ', Icon: Target },
   { href: '/pokemon/cua-hang', ten: 'Cửa hàng', Icon: Store },
+  { href: '/pokemon/trang-bi', ten: 'Trang bị', Icon: Sword },
   { href: '/pokemon/cuong-hoa', ten: 'Cường hoá', Icon: Flame },
   { href: '/pokemon/cho', ten: 'Chợ thú', Icon: ShoppingBasket },
   { href: '/pokemon/y-te', ten: 'Trạm y tế', Icon: Cross },

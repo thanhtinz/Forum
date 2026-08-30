@@ -2524,6 +2524,7 @@ model PokeNhanVat {
   dauChu     PokeDau[]       @relation("DauChu")
   dauDoi     PokeDau[]       @relation("DauDoi")
   huyenTinh  PokeHuyenTinh[]
+  do         PokeDo[]
   rao        PokeRao[]
   bangTruong PokeBang?       @relation("BangTruong")
 
@@ -2764,4 +2765,52 @@ model PokeBang {
   createdAt DateTime @default(now())
 
   thanhVien PokeNhanVat[] @relation("BangThanhVien")
+}
+
+/// Bảng hàng trang bị và thuốc, nạp từ `prisma/du-lieu/pokemon.json`.
+model PokeHang {
+  ma   Int    @id
+  ten  String
+  /// weapon | shield | golova | body | elixir
+  loai String
+
+  cong Int @default(0)
+  thu  Int @default(0)
+  mu   Int @default(0)
+  giap Int @default(0)
+  /// Riêng thuốc: số máu hồi được.
+  mau  Int @default(0)
+
+  /// Cấp nhân vật tối thiểu để mua.
+  cap  Int @default(1)
+  vang Int @default(0)
+  ngoc Int @default(0)
+
+  @@index([loai, cap])
+}
+
+/// Một món trong túi. Trang bị mỗi món một dòng; thuốc gộp theo `sl`.
+model PokeDo {
+  id        String      @id @default(cuid())
+  nhanVatId String
+  nhanVat   PokeNhanVat @relation(fields: [nhanVatId], references: [id], onDelete: Cascade)
+
+  ma   Int
+  ten  String
+  loai String
+
+  cong Int @default(0)
+  thu  Int @default(0)
+  mu   Int @default(0)
+  giap Int @default(0)
+  mau  Int @default(0)
+
+  /// Trang bị: đang mặc hay để trong túi. Mỗi ô chỉ mặc được một món.
+  dangMac Boolean @default(false)
+  /// Thuốc thì gộp số lượng; trang bị luôn là 1.
+  sl      Int     @default(1)
+
+  createdAt DateTime @default(now())
+
+  @@index([nhanVatId, loai, dangMac])
 }

@@ -452,3 +452,45 @@ export const QUA_LANH_THO = [
   { ten: '200 vàng', da: 0, cau: 0, vang: 200, ngoc: 0, skToiDa: 0 },
   { ten: '10 ngọc', da: 0, cau: 0, vang: 0, ngoc: 10, skToiDa: 0 },
 ] as const;
+
+// ─────────────────────────── Trang bị ───────────────────────────
+
+/**
+ * Bốn ô trang bị, tên cột lấy đúng của bản gốc (`golova` là tiếng Nga —
+ * "đầu", tức cái mũ; bảng `shop` giữ nguyên chữ ấy).
+ *
+ * GIỐNG HỆT BẢNG KHẮC HỆ: bản gốc dựng đủ bốn ô, bán đủ ba mươi tám món từ
+ * +1 tới +500, cho mặc vào bằng cột `dressed` — rồi KHÔNG trận nào cộng chỉ
+ * số trang bị vào sát thương. Mua xong mặc vào là hết chuyện. Ở đây có nối
+ * vào thật.
+ */
+export const O_TRANG_BI = [
+  { loai: 'weapon', ten: 'Vũ khí', cot: 'cong' as const, mo: 'Cộng thẳng vào sát thương gây ra.' },
+  { loai: 'shield', ten: 'Khiên', cot: 'thu' as const, mo: 'Cộng vào bộ thủ, giảm sát thương phải chịu.' },
+  { loai: 'golova', ten: 'Mũ', cot: 'mu' as const, mo: 'Cộng vào bộ thủ.' },
+  { loai: 'body', ten: 'Giáp', cot: 'giap' as const, mo: 'Cộng vào bộ thủ.' },
+] as const;
+
+export type LoaiDo = (typeof O_TRANG_BI)[number]['loai'] | 'elixir';
+
+export function tenLoaiDo(loai: string): string {
+  return O_TRANG_BI.find((o) => o.loai === loai)?.ten ?? (loai === 'elixir' ? 'Thuốc' : loai);
+}
+
+/** Chỉ số cộng thêm từ những món đang mặc. */
+export function congTrangBi(
+  doDangMac: readonly { cong: number; thu: number; mu: number; giap: number }[],
+): { cong: number; thu: number } {
+  let cong = 0;
+  let thu = 0;
+  for (const d of doDangMac) {
+    cong += d.cong;
+    // Khiên, mũ và giáp đều đổ vào một chỗ: bản gốc để ba cột riêng nhưng
+    // chưa bao giờ dùng tới, nên chẳng có gì nói ba cột ấy khác nhau ra sao.
+    // Gộp làm bộ thủ thì mọi món đều có tác dụng và luật chỉ có một dòng.
+    thu += d.thu + d.mu + d.giap;
+  }
+  return { cong, thu };
+}
+
+export const MUA_DO_TOI_DA = 20;

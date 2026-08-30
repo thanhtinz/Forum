@@ -18,6 +18,11 @@ interface ThuGoc {
   chieu: string[];
 }
 interface KhuGoc { ma: string; ten: string; bac: number; thu: (ThuGoc & { nguon: number })[] }
+interface HangGoc {
+  ma: number; ten: string; loai: string;
+  cong: number; thu: number; mu: number; giap: number; mau: number;
+  cap: number; vang: number; ngoc: number;
+}
 interface GymGoc {
   so: number; ten: string; cong: number; thu: number; mau: number;
   exp: number; vang: number; cau: number; he: number; chieu: string[];
@@ -26,7 +31,7 @@ interface GymGoc {
 async function main() {
   const duLieu = JSON.parse(
     readFileSync(new URL('./du-lieu/pokemon.json', import.meta.url), 'utf8'),
-  ) as { khu: KhuGoc[]; gym: GymGoc[] };
+  ) as { khu: KhuGoc[]; gym: GymGoc[]; hang: HangGoc[] };
 
   // Xoá sạch rồi nạp lại thay vì chỉ `upsert`: khi một con được chuyển sang
   // khu khác thì bản cũ vẫn nằm lại, và đúng thế thật — ba con huyền thoại đã
@@ -75,7 +80,16 @@ async function main() {
     await db.pokeGym.upsert({ where: { so: g.so }, update: chung, create: { so: g.so, ...chung } });
   }
 
-  console.log(`✅ Nạp ${dem} thú hoang trên ${duLieu.khu.length} khu, ${duLieu.gym.length} Gym.`);
+  // ── Bảng hàng trang bị ────────────────────────────────────────────────
+  for (const h of duLieu.hang) {
+    const { ma, ...phan } = h;
+    await db.pokeHang.upsert({ where: { ma }, update: phan, create: { ma, ...phan } });
+  }
+
+  console.log(
+    `✅ Nạp ${dem} thú hoang trên ${duLieu.khu.length} khu, ${duLieu.gym.length} Gym,`
+    + ` ${duLieu.hang.length} món hàng.`,
+  );
 }
 
 main().then(() => db.$disconnect()).catch(async (e) => {

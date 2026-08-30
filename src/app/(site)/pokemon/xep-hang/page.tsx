@@ -44,7 +44,7 @@ export default async function TrangXepHang() {
   ];
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="space-y-4">
       <Link href="/pokemon" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-brand-600">
         <ArrowLeft size={15} /> Đảo Pokémon
       </Link>

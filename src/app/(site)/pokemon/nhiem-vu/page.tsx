@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { NHIEM_VU } from '@/lib/pokemon-const';
@@ -22,10 +20,7 @@ export default async function TrangNhiemVu() {
   const tienDo = await tienDoNhiemVu(nv.id);
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Link href="/pokemon" className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-brand-600">
-        <ArrowLeft size={15} /> Đảo Pokémon
-      </Link>
+    <>
       <section className="card p-5">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-black">Chuỗi nhiệm vụ</h1>
@@ -37,6 +32,6 @@ export default async function TrangNhiemVu() {
         </p>
         <BangNhiemVu daNhan={nv.nhiemVu} tienDo={tienDo} />
       </section>
-    </div>
+    </>
   );
 }

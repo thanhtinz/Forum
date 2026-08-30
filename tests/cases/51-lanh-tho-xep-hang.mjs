@@ -9,6 +9,14 @@ import { BASE, db, doiToi, openPage } from '../helpers.mjs';
  * bốn bảng làm một tôi bê nguyên cả bảng, nên Rừng Xanh bậc 2 nhả ra Mewtwo.
  * Bài này canh đúng chỗ ấy.
  */
+/** Ép trận đang đánh về một con hệ NORMAL máu 1 — chắc chắn hạ trong một đòn. */
+async function deTranDeThang(nhanVatId) {
+  await db.pokeTran.update({
+    where: { nhanVatId },
+    data: { he: 1, cong: 1, thu: 1, mau: 1, mauToiDa: 1 },
+  });
+}
+
 export default async function run(check) {
   const me = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true } });
   if (!me) { check('có dữ liệu mẫu', false, 'thiếu minhdev'); return; }
@@ -83,6 +91,10 @@ export default async function run(check) {
   await p.waitForTimeout(900);
   await p.locator('button:has-text("Tìm thú")').click();
   await doiToi(async () => (await db.pokeTran.count({ where: { nhanVatId: nv.id } })) > 0);
+  // Ép con thú hoang về một bộ ĐÃ BIẾT trước khi đánh. Bốc ngẫu nhiên thì có
+  // lượt gặp thú hệ GHOST, mà đòn hệ NORMAL vô hiệu hoàn toàn với GHOST theo
+  // bảng khắc hệ — trận không kết thúc và bài kiểm đỏ oan.
+  await deTranDeThang(nv.id);
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(700);
   await p.locator('form button[name="chieu"]').first().click();
@@ -97,6 +109,7 @@ export default async function run(check) {
   await p.waitForTimeout(900);
   await p.locator('button:has-text("Tìm thú")').click();
   await doiToi(async () => (await db.pokeTran.count({ where: { nhanVatId: nv.id } })) > 0);
+  await deTranDeThang(nv.id);
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(700);
   await p.locator('form button[name="chieu"]').first().click();

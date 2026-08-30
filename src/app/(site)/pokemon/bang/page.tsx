@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
@@ -37,10 +35,7 @@ export default async function TrangBang() {
   });
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Link href="/pokemon" className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-brand-600">
-        <ArrowLeft size={15} /> Đảo Pokémon
-      </Link>
+    <>
       <section className="card p-5">
         <h1 className="mb-1 text-xl font-black">Bang hội</h1>
         <p className="mb-4 text-sm text-ink-500">
@@ -63,6 +58,6 @@ export default async function TrangBang() {
             soNguoi: b._count.thanhVien, sucChua: b.sucChua,
           }))} />
       </section>
-    </div>
+    </>
   );
 }

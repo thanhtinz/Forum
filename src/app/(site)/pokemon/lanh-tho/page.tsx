@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { ArrowLeft, Swords } from 'lucide-react';
+import { Swords } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { DIEM_DOI_QUA, KHU_CHIEN_TRUONG, QUA_LANH_THO, timKhu } from '@/lib/pokemon-const';
@@ -31,10 +31,7 @@ export default async function TrangLanhTho() {
   const khu = timKhu(KHU_CHIEN_TRUONG)!;
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Link href="/pokemon" className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-brand-600">
-        <ArrowLeft size={15} /> Đảo Pokémon
-      </Link>
+    <>
       <section className="card p-5">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-black">{khu.ten}</h1>
@@ -86,6 +83,6 @@ export default async function TrangLanhTho() {
         </div>
         <p className="sr-only">{CONFIG_LIST_CAP}</p>
       </section>
-    </div>
+    </>
   );
 }

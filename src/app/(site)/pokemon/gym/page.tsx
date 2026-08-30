@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { SO_GYM } from '@/lib/pokemon-const';
@@ -26,10 +24,7 @@ export default async function TrangGym() {
   const gym = await db.pokeGym.findMany({ orderBy: { so: 'asc' }, take: SO_GYM });
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Link href="/pokemon" className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-brand-600">
-        <ArrowLeft size={15} /> Đảo Pokémon
-      </Link>
+    <>
       <section className="card p-5">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-black">Mười bốn Gym</h1>
@@ -52,6 +47,6 @@ export default async function TrangGym() {
             exp: g.exp, vang: g.vang, cau: g.cau, ngoc: g.ngoc, tangNguon: g.tangNguon,
           }))} />
       </section>
-    </div>
+    </>
   );
 }

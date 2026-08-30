@@ -5,7 +5,6 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { KHU, canVaoKhu, timKhu } from '@/lib/pokemon-const';
 import { DaoPokemon } from '@/components/pokemon/DaoPokemon';
-import { tienDoNhiemVu } from '@/lib/pokemon';
 
 export const metadata: Metadata = {
   title: 'Đảo Pokémon',
@@ -56,59 +55,14 @@ export default async function TrangPokemon() {
   const raTran = nv.raTran
     ?? (await db.pokeThu.findFirst({ where: { nhanVatId: nv.id }, orderBy: { createdAt: 'asc' } }));
 
-  const [soThu, soTrongKhu, tienDo] = await Promise.all([
-    db.pokeThu.count({ where: { nhanVatId: nv.id } }),
-    db.pokeThuHoang.count({ where: { khu: nv.khu } }),
-    tienDoNhiemVu(nv.id),
-  ]);
-  // Nhiệm vụ kế tiếp đã xong mà chưa nhận thưởng — báo ngay trên nút cho khỏi quên.
-  const conNhiemVu = tienDo[nv.nhiemVu] ? 1 : 0;
+  // Số loài trong khu đang đứng; huy chương và nhiệm vụ thì thanh tab ở
+  // layout tự lo.
+  const soTrongKhu = await db.pokeThuHoang.count({ where: { khu: nv.khu } });
 
   const khu = timKhu(nv.khu) ?? KHU[0];
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <div>
-        <h1 className="mb-3 text-xl font-black">Đảo Pokémon</h1>
-        {/* Tám lối đi là quá nhiều để nhét cạnh tiêu đề: xuống hàng riêng và
-            cấm chữ gãy dòng, không thì mỗi nút thành hai dòng chữ vụn. */}
-        <nav className="flex flex-wrap gap-2 [&>a]:whitespace-nowrap">
-          <Link href="/pokemon/kho" className="btn-outline !py-1.5 text-sm">
-            <Backpack size={14} /> Kho ({soThu})
-          </Link>
-          <Link href="/pokemon/gym" className="btn-outline !py-1.5 text-sm">
-            <Medal size={14} /> Gym ({nv.huyChuong}/14)
-          </Link>
-          <Link href="/pokemon/dau-truong" className="btn-outline !py-1.5 text-sm">
-            <Swords size={14} /> Đấu trường
-          </Link>
-          <Link href="/pokemon/cua-hang" className="btn-outline !py-1.5 text-sm">
-            <Store size={14} /> Cửa hàng
-          </Link>
-          <Link href="/pokemon/y-te" className="btn-outline !py-1.5 text-sm">
-            <Cross size={14} /> Trạm y tế
-          </Link>
-          <Link href="/pokemon/cuong-hoa" className="btn-outline !py-1.5 text-sm">
-            <Flame size={14} /> Cường hoá
-          </Link>
-          <Link href="/pokemon/cho" className="btn-outline !py-1.5 text-sm">
-            <ShoppingBasket size={14} /> Chợ thú
-          </Link>
-          <Link href="/pokemon/bang" className="btn-outline !py-1.5 text-sm">
-            <Users size={14} /> Bang hội
-          </Link>
-          <Link href="/pokemon/nhiem-vu" className="btn-outline !py-1.5 text-sm">
-            <ScrollText size={14} /> Nhiệm vụ{conNhiemVu > 0 ? ` (${conNhiemVu})` : ''}
-          </Link>
-          <Link href="/pokemon/lanh-tho" className="btn-outline !py-1.5 text-sm">
-            <Swords size={14} /> Lãnh Thổ ({nv.diemChien})
-          </Link>
-          <Link href="/pokemon/xep-hang" className="btn-outline !py-1.5 text-sm">
-            <Trophy size={14} /> Xếp hạng
-          </Link>
-        </nav>
-      </div>
-
+    <>
       <DaoPokemon
         nv={{
           ten: nv.ten, vang: nv.vang, exp: nv.exp, cap: nv.cap,
@@ -131,7 +85,7 @@ export default async function TrangPokemon() {
         soTrongKhu={soTrongKhu}
         khuMo={KHU.map((k) => ({ ...k, chan: canVaoKhu(k.bac, k.ma, nv.cap, nv.huyChuong) }))}
       />
-    </div>
+    </>
   );
 }
 

@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
@@ -28,10 +26,7 @@ export default async function TrangCuongHoa() {
   });
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <Link href="/pokemon" className="mb-4 inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-brand-600">
-        <ArrowLeft size={15} /> Đảo Pokémon
-      </Link>
+    <>
       <section className="card p-5">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-black">Lò cường hoá</h1>
@@ -50,6 +45,6 @@ export default async function TrangCuongHoa() {
             capCuong: t.capCuong, mau: t.mau, mauToiDa: t.mauToiDa,
           }))} />
       </section>
-    </div>
+    </>
   );
 }

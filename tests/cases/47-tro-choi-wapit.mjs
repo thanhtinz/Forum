@@ -22,6 +22,17 @@ const TRO = [
   { slug: 'sut-phat', game: 'SUTPHAT', ten: 'Sút phạt', nut: 'Sút!', dien: 'Đang chạy đà…', chon: 'input[name="goc"][value="3"]' },
 ];
 
+/**
+ * Câu kể kết quả, KHÔNG phải nhãn "Cược (điểm)".
+ *
+ * Lần đầu tôi soi bằng `/điểm/` — mà chữ ấy có sẵn trong nhãn ô cược nên bài
+ * kiểm báo "đã lộ kết quả" ngay từ lúc chưa bấm gì.
+ *
+ * Nhánh "không mất điểm nào" là ván HOÀ của phi tiêu: hoà thì câu kể không có
+ * con số nào, thiếu nhánh này là cứ hoà một cái là đỏ oan.
+ */
+const KE_KET_QUA = /(được|mất|Mất|Được|\+)\s*\d+\s*điểm|không mất điểm nào/;
+
 /** Đợi hoạt cảnh diễn xong, nhận ra bằng lúc nút chơi bật lại. */
 async function doiDienXong(p, nut) {
   await p.locator(`button:has-text("${nut}")`).waitFor({ state: 'visible', timeout: 15_000 });
@@ -67,19 +78,22 @@ export default async function run(check) {
     await p.waitForTimeout(700);
     const truoc = (await db.user.findUnique({ where: { id: me.id }, select: { points: true } })).points;
 
-    if (t.chon) await p.locator(t.chon).check();
+    if (t.chon) await p.locator(t.chon).check({ force: true });
     await p.fill('input[name="cuoc"]', '20');
     await p.locator(`button:has-text("${t.nut}")`).click();
 
     // Ngay sau khi bấm phải vào màn "diễn ra": nút đổi chữ và bị khoá. Không
     // có nó thì kết quả nhảy ra tức thì, chẳng ai kịp thấy bát xóc hay bóng bay.
-    check(`${t.ten}: bấm xong thì vào màn đang diễn`,
-      (await p.locator(`button:has-text("${t.dien}")`).count()) > 0);
+    const nutDien = p.locator(`button:has-text("${t.dien}")`);
+    // Đợi chữ đổi chứ không đếm ngay: bấm xong React còn phải vẽ lại một lượt.
+    const vaoMan = await nutDien.waitFor({ state: 'visible', timeout: 5_000 })
+      .then(() => true).catch(() => false);
+    check(`${t.ten}: bấm xong thì vào màn đang diễn`, vaoMan);
     check(`${t.ten}: đang diễn thì không bấm thêm được`,
-      await p.locator(`button:has-text("${t.dien}")`).isDisabled().catch(() => false));
+      vaoMan && await nutDien.isDisabled().catch(() => false));
     // Kết quả phải CÒN GIẤU trong lúc diễn — lộ sớm là hoạt cảnh thành thừa.
     check(`${t.ten}: đang diễn thì chưa lộ kết quả`,
-      !/điểm/.test(await p.locator('form:has(input[name="cuoc"])').innerText()));
+      !KE_KET_QUA.test(await p.locator('form:has(input[name="cuoc"])').innerText()));
 
     await doiToi(async () => (await db.miniGamePlay.count({ where: { userId: me.id, game: t.game } })) > 0);
     await doiDienXong(p, t.nut);
@@ -97,11 +111,11 @@ export default async function run(check) {
       sau === truoc + (van?.delta ?? NaN), `${truoc} → ${sau}, delta ${van?.delta}`);
 
     check(`${t.ten}: diễn xong thì kể lại kết quả ván`,
-      /điểm/.test(await p.locator('form:has(input[name="cuoc"])').innerText()));
+      KE_KET_QUA.test(await p.locator('form:has(input[name="cuoc"])').innerText()));
 
     // ── Cược ngoài khoảng bị máy chủ chặn ──────────────────────────────
     const soVanTruoc = await db.miniGamePlay.count({ where: { userId: me.id, game: t.game } });
-    if (t.chon) await p.locator(t.chon).check();
+    if (t.chon) await p.locator(t.chon).check({ force: true });
     // Gỡ trần của trình duyệt rồi mới gõ: cần thử LUẬT CỦA MÁY CHỦ, chứ ô
     // `max` chặn ngay tại chỗ thì chẳng kiểm được gì.
     await p.locator('input[name="cuoc"]').evaluate((el) => { el.removeAttribute('max'); });

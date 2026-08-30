@@ -24,20 +24,21 @@ export function SocDia({ conLai }: { conLai: number }) {
   const xong = man === 'ketqua';
 
   const ra = xong ? state.mat?.[0] : undefined;
-  const dong = xong ? (state.mat?.slice(1) ?? []) : [];
+  // Đồng lộ từ màn kết thúc (lúc nhấc bát), còn cửa thắng và dòng kể thì đợi
+  // tới màn kết quả — nhấc bát ra mà chữ hiện luôn thì mất hết phần hồi hộp.
+  const dong = man === 'ketthuc' || xong ? (state.mat?.slice(1) ?? []) : [];
   const ngua = dong.filter((d) => d === 1).length;
 
   return (
     <form action={action} className="space-y-4">
-      {/* Cái đĩa: úp bát trong lúc xóc, mở ra ở màn kết thúc. */}
-      <div className="relative mx-auto h-40 w-40 sm:h-48 sm:w-48">
-        <DiaSocDia dong={dong} xoc={man === 'batdau' || man === 'dienra'} kin={dien || man === 'cho'} />
-        {man === 'ketthuc' && (
-          <div className="pointer-events-none absolute inset-0 soc-mo">
-            <DiaSocDia dong={[]} kin />
-          </div>
-        )}
-      </div>
+      {/* Úp bát trong lúc xóc, nhấc lên ở màn kết thúc. Ở màn kết thúc phải
+          hiện ĐỒNG THỜI cả bốn đồng lẫn cái bát đang bay lên, không thì bát
+          biến mất đột ngột rồi đồng mới hiện ra. */}
+      <DiaSocDia
+        dong={dong}
+        xoc={man === 'batdau' || man === 'dienra'}
+        kin={man === 'cho' || man === 'batdau' || man === 'dienra'}
+        batDangMo={man === 'ketthuc'} />
 
       {xong && (
         <p className="man-hien text-center text-sm text-ink-500">

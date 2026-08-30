@@ -1,0 +1,11 @@
+Nguồn ảnh — tất cả CC0 1.0 (miễn phí cho mọi mục đích, kể cả thương mại,
+không bắt buộc ghi công; ghi ở đây cho minh bạch và để sau còn tìm lại).
+
+Tác giả: Kenney (https://kenney.nl) — https://kenney.nl/assets
+
+  dia.png       ← foodKit / Side / plate.png
+  bat.png       ← foodKit / Side / bowl.png, lật ngược lại thành bát úp
+  dong-ngua.png ← Board Game Pack / PNG / Chips / chipRedWhite_side.png
+  dong-sap.png  ← Board Game Pack / PNG / Chips / chipWhite_side.png
+
+Lấy qua bản sao trên GitHub: github.com/ETdoFresh/kenney.nl

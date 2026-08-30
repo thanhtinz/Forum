@@ -79,6 +79,7 @@ export default async function GiaiTriPage() {
     },
     {
       href: '/giai-tri/phi-tieu',
+      anhPixel: false,
       ten: GAME_LABELS.PHITIEU,
       mo: 'Ném một mũi, so điểm với máy. Cao hơn thì thắng, bằng nhau thì hoà.',
       nhan: `${conTieu} lượt`,
@@ -90,14 +91,13 @@ export default async function GiaiTriPage() {
     },
     {
       href: '/giai-tri/soc-dia',
+      anhPixel: false,
       ten: GAME_LABELS.SOCDIA,
       mo: 'Bát bốn đồng, đếm mặt ngửa. Đặt chẵn hay lẻ, trúng ăn một ăn một.',
       nhan: `${conSoc} lượt`,
-      // Hai tấm chữ nền đen của bản cũ đã bỏ, giờ đĩa vẽ bằng SVG — nên ô này
-      // bày luôn số mặt ngửa, đúng thứ quyết định chẵn hay lẻ.
-      anh: [] as string[],
-      chu: ['●', '●', '○'] as string[] | null,
-      chuMau: 'text-rose-500/80 dark:text-rose-300/80',
+      // Ba đồng: hai ngửa một sấp — nhìn ô là biết trò này đếm cái gì.
+      anh: ['ngua', 'sap', 'ngua'].map((t) => `${ANH}/socdia/dong-${t}.png`),
+      chu: null as string[] | null,
       nen: 'from-slate-500/20 via-zinc-400/10 to-stone-400/20',
       vien: 'hover:border-slate-300 dark:hover:border-slate-700',
       pill: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
@@ -115,6 +115,7 @@ export default async function GiaiTriPage() {
     },
     {
       href: '/giai-tri/sut-phat',
+      anhPixel: false,
       ten: GAME_LABELS.SUTPHAT,
       mo: 'Chọn một trong bốn góc. Thủ môn bay một góc — né được là bóng vào lưới.',
       nhan: `${conSut} lượt`,
@@ -193,9 +194,11 @@ export default async function GiaiTriPage() {
                     <img key={i} src={src} alt="" aria-hidden
                       className="h-14 w-auto object-contain drop-shadow-sm transition-transform duration-200 group-hover:-translate-y-1"
                       style={{
-                        // Bộ ảnh cũ bé tí (19×16 với 70×40), phóng lên gấp mấy lần
-                        // mà để trình duyệt nội suy thì nhoè hết nét.
-                        imageRendering: 'pixelated',
+                        // Bộ ảnh pixel cũ bé tí (19×16), phóng lên gấp mấy lần mà
+                        // để trình duyệt nội suy thì nhoè hết nét. Còn ảnh vector
+                        // (phỉnh sóc đĩa, bảng phi tiêu, quả bóng) thì ngược lại:
+                        // ép pixel hoá là viền tròn thành răng cưa.
+                        imageRendering: 'anhPixel' in t && !t.anhPixel ? 'auto' : 'pixelated',
                         transitionDelay: `${i * 45}ms`,
                         transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (3 + i)}deg)`,
                       }} />

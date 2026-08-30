@@ -15,12 +15,24 @@ import { BASE, db, doiToi, openPage } from '../helpers.mjs';
  * lệ đã tính tay và ghi rõ trong `mini-game-const.ts`.
  */
 const TRO = [
-  { slug: 'quay-xeng', game: 'QUAYXENG', ten: 'Máy quay xèng', nut: 'Quay!', chon: null },
-  { slug: 'phi-tieu', game: 'PHITIEU', ten: 'Phi tiêu', nut: 'Ném phi tiêu!', chon: null },
-  { slug: 'soc-dia', game: 'SOCDIA', ten: 'Sóc đĩa', nut: 'Mở bát!', chon: 'input[name="cua"][value="1"]' },
-  { slug: 'dap-trung', game: 'DAPTRUNG', ten: 'Đập trứng', nut: 'Đập!', chon: 'input[name="trung"][value="2"]' },
-  { slug: 'sut-phat', game: 'SUTPHAT', ten: 'Sút phạt', nut: 'Sút!', chon: 'input[name="goc"][value="3"]' },
+  { slug: 'quay-xeng', game: 'QUAYXENG', ten: 'Máy quay xèng', nut: 'Quay!', dien: 'Đang quay…', chon: null },
+  { slug: 'phi-tieu', game: 'PHITIEU', ten: 'Phi tiêu', nut: 'Ném phi tiêu!', dien: 'Đang ngắm…', chon: null },
+  { slug: 'soc-dia', game: 'SOCDIA', ten: 'Sóc đĩa', nut: 'Mở bát!', dien: 'Đang xóc…', chon: 'input[name="cua"][value="1"]' },
+  { slug: 'dap-trung', game: 'DAPTRUNG', ten: 'Đập trứng', nut: 'Đập!', dien: 'Đang đập…', chon: 'input[name="trung"][value="2"]' },
+  { slug: 'sut-phat', game: 'SUTPHAT', ten: 'Sút phạt', nut: 'Sút!', dien: 'Đang chạy đà…', chon: 'input[name="goc"][value="3"]' },
 ];
+
+/** Đợi hoạt cảnh diễn xong, nhận ra bằng lúc nút chơi bật lại. */
+async function doiDienXong(p, nut) {
+  await p.locator(`button:has-text("${nut}")`).waitFor({ state: 'visible', timeout: 15_000 });
+  await p.waitForFunction(
+    (chu) => {
+      const b = [...document.querySelectorAll('button')].find((x) => x.textContent?.includes(chu));
+      return !!b && !b.disabled;
+    },
+    nut, { timeout: 15_000 },
+  );
+}
 
 export default async function run(check) {
   const me = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true } });
@@ -58,7 +70,19 @@ export default async function run(check) {
     if (t.chon) await p.locator(t.chon).check();
     await p.fill('input[name="cuoc"]', '20');
     await p.locator(`button:has-text("${t.nut}")`).click();
+
+    // Ngay sau khi bấm phải vào màn "diễn ra": nút đổi chữ và bị khoá. Không
+    // có nó thì kết quả nhảy ra tức thì, chẳng ai kịp thấy bát xóc hay bóng bay.
+    check(`${t.ten}: bấm xong thì vào màn đang diễn`,
+      (await p.locator(`button:has-text("${t.dien}")`).count()) > 0);
+    check(`${t.ten}: đang diễn thì không bấm thêm được`,
+      await p.locator(`button:has-text("${t.dien}")`).isDisabled().catch(() => false));
+    // Kết quả phải CÒN GIẤU trong lúc diễn — lộ sớm là hoạt cảnh thành thừa.
+    check(`${t.ten}: đang diễn thì chưa lộ kết quả`,
+      !/điểm/.test(await p.locator('form:has(input[name="cuoc"])').innerText()));
+
     await doiToi(async () => (await db.miniGamePlay.count({ where: { userId: me.id, game: t.game } })) > 0);
+    await doiDienXong(p, t.nut);
 
     const van = await db.miniGamePlay.findFirst({
       where: { userId: me.id, game: t.game },
@@ -72,8 +96,8 @@ export default async function run(check) {
     check(`${t.ten}: điểm đổi đúng bằng delta của ván`,
       sau === truoc + (van?.delta ?? NaN), `${truoc} → ${sau}, delta ${van?.delta}`);
 
-    check(`${t.ten}: trang kể lại kết quả ván`,
-      (await p.locator('form').innerText()).length > 0);
+    check(`${t.ten}: diễn xong thì kể lại kết quả ván`,
+      /điểm/.test(await p.locator('form:has(input[name="cuoc"])').innerText()));
 
     // ── Cược ngoài khoảng bị máy chủ chặn ──────────────────────────────
     const soVanTruoc = await db.miniGamePlay.count({ where: { userId: me.id, game: t.game } });
@@ -83,7 +107,7 @@ export default async function run(check) {
     await p.locator('input[name="cuoc"]').evaluate((el) => { el.removeAttribute('max'); });
     await p.fill('input[name="cuoc"]', '99999');
     await p.locator(`button:has-text("${t.nut}")`).click();
-    await p.waitForTimeout(1200);
+    await p.waitForTimeout(2500);
     check(`${t.ten}: cược quá trần thì không ghi thêm ván nào`,
       (await db.miniGamePlay.count({ where: { userId: me.id, game: t.game } })) === soVanTruoc);
   }

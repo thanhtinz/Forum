@@ -264,3 +264,116 @@ html, body {
 @media (prefers-reduced-motion: reduce) {
   .rong-lac { animation: none; }
 }
+
+/*
+ * ── Hiệu ứng khu giải trí ──────────────────────────────────────────────
+ *
+ * Mỗi ván diễn qua bốn màn: bắt đầu → diễn ra → kết thúc → kết quả (nhịp ở
+ * `src/components/giaitri/dung-man.ts`). Mấy lớp dưới đây là phần "diễn ra"
+ * và "kết thúc"; phần kết quả thì đứng yên cho đọc.
+ *
+ * Cả cụm đều tắt khi máy người dùng đặt `prefers-reduced-motion`: mấy trò này
+ * rung và nháy khá mạnh, ép xem là làm khó người nhạy với chuyển động.
+ */
+
+/* Bát sóc đĩa rung lúc xóc */
+.soc-rung { animation: soc-rung 0.28s linear infinite; }
+@keyframes soc-rung {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-2px, 1px) rotate(-3deg); }
+  50% { transform: translate(2px, -1px) rotate(3deg); }
+  75% { transform: translate(-1px, -2px) rotate(-2deg); }
+}
+
+/* Bát mở ra: nhấc lên rồi mờ dần */
+.soc-mo { animation: soc-mo 0.42s ease-out forwards; }
+@keyframes soc-mo {
+  from { transform: translateY(0); opacity: 1; }
+  to { transform: translateY(-26px); opacity: 0; }
+}
+
+/*
+ * Ô máy quay xèng chạy dọc.
+ *
+ * Dải ảnh được lặp HAI lần rồi kéo đúng nửa chiều cao, nên hết vòng là khớp
+ * lại y chỗ cũ — không thấy mối nối. Tốc độ do từng cột tự đặt qua
+ * `animationDuration`: cho ba cột cùng nhịp rồi lệch pha bằng `delay` thì hai
+ * cột ngoài rơi trúng cùng khung hình, nhìn như cả máy đứng im.
+ */
+.xeng-chay { animation: xeng-chay 0.3s linear infinite; }
+@keyframes xeng-chay {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+
+/* Ô xèng dừng lại: nảy một cái rồi đứng */
+.xeng-dung { animation: xeng-dung 0.34s cubic-bezier(0.2, 1.6, 0.4, 1); }
+@keyframes xeng-dung {
+  0% { transform: translateY(-14px); }
+  100% { transform: translateY(0); }
+}
+
+/* Đường ăn tiền nháy sáng */
+.xeng-an { animation: xeng-an 0.7s ease-in-out infinite; }
+@keyframes xeng-an {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.45); }
+}
+
+/* Bảng phi tiêu quay lúc ngắm */
+.tieu-quay { animation: tieu-quay 0.9s linear infinite; }
+@keyframes tieu-quay {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Mũi tiêu cắm phập */
+.tieu-cam { animation: tieu-cam 0.4s cubic-bezier(0.2, 1.5, 0.4, 1); }
+@keyframes tieu-cam {
+  0% { transform: scale(2.4); opacity: 0; }
+  60% { transform: scale(0.86); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Trứng rung trước khi nứt */
+.trung-rung { animation: trung-rung 0.22s linear infinite; }
+@keyframes trung-rung {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  33% { transform: translateX(-2px) rotate(-7deg); }
+  66% { transform: translateX(2px) rotate(7deg); }
+}
+
+/* Trứng vỡ */
+.trung-vo { animation: trung-vo 0.4s ease-out; }
+@keyframes trung-vo {
+  0% { transform: scale(1.3); }
+  55% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+/* Bóng bay từ chấm phạt lên góc đã chọn */
+.sut-bay { animation: sut-bay 0.62s cubic-bezier(0.3, 0, 0.5, 1) forwards; }
+@keyframes sut-bay {
+  from { transform: translate(var(--sut-dx), var(--sut-dy)) scale(1.9) rotate(0deg); }
+  to { transform: translate(0, 0) scale(1) rotate(540deg); }
+}
+
+/* Thủ môn đổ người */
+.thu-bay { animation: thu-bay 0.36s ease-out; }
+@keyframes thu-bay {
+  0% { transform: scale(0.4); }
+  70% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* Dòng kết quả hiện lên */
+.man-hien { animation: man-hien 0.3s ease-out; }
+@keyframes man-hien {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .soc-rung, .soc-mo, .xeng-chay, .xeng-dung, .xeng-an, .tieu-quay, .tieu-cam,
+  .trung-rung, .trung-vo, .sut-bay, .thu-bay, .man-hien { animation: none; }
+}

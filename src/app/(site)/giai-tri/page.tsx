@@ -93,8 +93,11 @@ export default async function GiaiTriPage() {
       ten: GAME_LABELS.SOCDIA,
       mo: 'Bát bốn đồng, đếm mặt ngửa. Đặt chẵn hay lẻ, trúng ăn một ăn một.',
       nhan: `${conSoc} lượt`,
-      anh: ['chan', 'le'].map((t) => `${ANH}/socdia/${t}.gif`),
-      chu: null as string[] | null,
+      // Hai tấm chữ nền đen của bản cũ đã bỏ, giờ đĩa vẽ bằng SVG — nên ô này
+      // bày luôn số mặt ngửa, đúng thứ quyết định chẵn hay lẻ.
+      anh: [] as string[],
+      chu: ['●', '●', '○'] as string[] | null,
+      chuMau: 'text-rose-500/80 dark:text-rose-300/80',
       nen: 'from-slate-500/20 via-zinc-400/10 to-stone-400/20',
       vien: 'hover:border-slate-300 dark:hover:border-slate-700',
       pill: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
@@ -129,6 +132,7 @@ export default async function GiaiTriPage() {
       // pixel cho hợp với hai ô bên cạnh, thay vì mượn tạm một cái icon lạc đề.
       anh: [] as string[],
       chu: ['?', '?', '?'] as string[] | null,
+      chuMau: 'text-violet-500/70 dark:text-violet-300/70',
       nhan: `${soCauHoi} câu`,
       nen: 'from-violet-500/15 via-fuchsia-400/10 to-indigo-400/20',
       vien: 'hover:border-violet-300 dark:hover:border-violet-800',
@@ -170,7 +174,10 @@ export default async function GiaiTriPage() {
               {t.chu
                 ? t.chu.map((c, i) => (
                     <span key={i} aria-hidden
-                      className="font-mono text-4xl font-black text-violet-500/70 transition-transform duration-200 group-hover:-translate-y-1 dark:text-violet-300/70"
+                      className={cn(
+                        'font-mono text-4xl font-black transition-transform duration-200 group-hover:-translate-y-1',
+                        'chuMau' in t ? t.chuMau : 'text-violet-500/70 dark:text-violet-300/70',
+                      )}
                       style={{
                         transitionDelay: `${i * 45}ms`,
                         transform: `rotate(${(i % 2 === 0 ? -1 : 1) * (4 + i * 2)}deg)`,

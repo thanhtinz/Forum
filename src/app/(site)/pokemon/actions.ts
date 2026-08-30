@@ -10,11 +10,15 @@ import {
   CAU_DAU, CHIEU_DAU, CO_HOI_BAT, CONG_MOI_CAP, EXP_DAU, EXP_MOI_CAP, GIA_CAU, GIA_DA,
   MAU_DAU, MUA_TOI_DA, SK_DAU, SK_MOI_TRAN, TEN_TOI_DA, TEN_TOI_THIEU, THU_DAU, VANG_DAU,
   YTE_MAU, YTE_MAU_CHO_MS, YTE_SK, YTE_SK_CHO_MS,
-  DAU_CAP_MAX, DAU_CAP_MIN, DAU_EXP, DAU_HAN_MS, DAU_VANG, NGOC_MOI_DA,
+  BANG_CAP_TOI_THIEU, BANG_GIA_NGOC, BANG_SUC_CHUA, BANG_TEN_TOI_DA, BANG_TEN_TOI_THIEU,
+  CAP_CUONG_TOI_DA, CHO_GIA_MAX, CHO_GIA_MIN,
+  DAU_CAP_MAX, DAU_CAP_MIN, DAU_EXP, DAU_HAN_MS, DAU_VANG, NGOC_MOI_DA, NHIEM_VU,
+  timHuyenTinh,
   boThu, capTheoExp, capVaoKhu, gymDuocVao, laGioVang, nacTienHoaMoi, satThuongDau,
   timKhu, tinhSatThuong,
 } from '@/lib/pokemon-const';
 import { chotDauQuaHan, traThuong } from '@/lib/pokemon-dau';
+import { tienDoNhiemVu } from '@/lib/pokemon';
 
 export interface PokeState { ok?: boolean; error?: string; ke?: string }
 
@@ -853,4 +857,427 @@ export async function danhDau(_prev: PokeState, fd: FormData): Promise<PokeState
     if (m === 'chua-toi-luot') return { error: 'Chưa tới lượt bạn.' };
     return { error: 'Không đánh được lúc này, thử lại nhé.' };
   }
+}
+
+// ─────────────────────────── Cường hoá ───────────────────────────
+
+/** Mua huyền tinh: cấp 1–3 trả bằng vàng, cấp 4–6 trả bằng ngọc. */
+export async function muaHuyenTinh(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+
+  const cap = Number(fd.get('cap'));
+  const ht = timHuyenTinh(cap);
+  if (!ht) return { error: 'Không có loại huyền tinh này.' };
+  const sl = Number(fd.get('sl'));
+  if (!Number.isInteger(sl) || sl < 1 || sl > MUA_TOI_DA) {
+    return { error: `Mỗi lượt mua từ 1 đến ${MUA_TOI_DA} viên.` };
+  }
+
+  const canVang = ht.vang * sl;
+  const canNgoc = ht.ngoc * sl;
+
+  try {
+    await db.$transaction(async (tx) => {
+      // Trừ có điều kiện: đủ mới ghi, nên hai tab bấm cùng lúc không tiêu quá
+      // số đang có.
+      const tru = await tx.pokeNhanVat.updateMany({
+        where: { id: r.nv.id, vang: { gte: canVang }, ngoc: { gte: canNgoc } },
+        data: { vang: { decrement: canVang }, ngoc: { decrement: canNgoc } },
+      });
+      if (tru.count === 0) throw new Error('khong-du');
+
+      await tx.pokeHuyenTinh.upsert({
+        where: { nhanVatId_cap: { nhanVatId: r.nv.id, cap } },
+        update: { sl: { increment: sl } },
+        create: { nhanVatId: r.nv.id, cap, sl },
+      });
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === 'khong-du') {
+      return { error: ht.vang ? 'Bạn không đủ vàng.' : 'Bạn không đủ ngọc.' };
+    }
+    return { error: 'Không mua được lúc này.' };
+  }
+
+  revalidatePath('/pokemon/cuong-hoa');
+  return {
+    ok: true,
+    ke: `Đã mua ${sl} huyền tinh cấp ${cap}, hết ${ht.vang ? `${canVang} vàng` : `${canNgoc} ngọc`}.`,
+  };
+}
+
+/**
+ * Cường hoá một con thú.
+ *
+ * Cấp 1–5 chắc chắn thành công; cấp 6 chỉ 50 % — thất bại thì TỤT một cấp
+ * cường hoá. Bản gốc cũng vậy, nhưng ở nhánh thất bại nó vẫn ghi
+ * `hpall = $hp` trong khi `$hp` chưa được gán ở nhánh ấy, nên PHP đẩy chuỗi
+ * rỗng vào cột số và máu tối đa của con thú về 0 — con thú coi như hỏng vĩnh
+ * viễn. Ở đây thất bại chỉ tụt cấp, máu giữ nguyên.
+ */
+export async function cuongHoa(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+
+  const id = String(fd.get('thu') ?? '');
+
+  try {
+    const kq = await db.$transaction(async (tx) => {
+      await lockUsers(tx, r.userId);
+
+      const thu = await tx.pokeThu.findFirst({ where: { id, nhanVatId: r.nv.id } });
+      if (!thu) throw new Error('khong-phai-cua-ban');
+      if (thu.capCuong >= CAP_CUONG_TOI_DA) throw new Error('het-cap');
+
+      const capMoi = thu.capCuong + 1;
+      const ht = timHuyenTinh(capMoi)!;
+
+      const tru = await tx.pokeHuyenTinh.updateMany({
+        where: { nhanVatId: r.nv.id, cap: capMoi, sl: { gte: 1 } },
+        data: { sl: { decrement: 1 } },
+      });
+      if (tru.count === 0) throw new Error('thieu-huyen-tinh');
+
+      if (Math.random() >= ht.coHoi) {
+        // Thất bại: tụt một cấp, không xuống dưới 0, máu giữ nguyên.
+        const tut = Math.max(0, thu.capCuong - 1);
+        await tx.pokeThu.update({ where: { id: thu.id }, data: { capCuong: tut } });
+        return {
+          ok: true,
+          ke: `Huyền tinh cấp ${capMoi} vỡ vụn. ${thu.ten} tụt xuống cường hoá ${tut}.`,
+        };
+      }
+
+      await tx.pokeThu.update({
+        where: { id: thu.id },
+        data: {
+          capCuong: capMoi,
+          mauToiDa: { increment: ht.mau },
+          mau: { increment: ht.mau },
+        },
+      });
+      return {
+        ok: true,
+        ke: `${thu.ten} cường hoá lên cấp ${capMoi}, máu tối đa cộng thêm ${ht.mau}.`,
+      };
+    });
+
+    revalidatePath('/pokemon/cuong-hoa');
+    revalidatePath('/pokemon/kho');
+    return kq;
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'khong-phai-cua-ban') return { error: 'Đó không phải thú của bạn.' };
+    if (m === 'het-cap') return { error: `Con này đã cường hoá tối đa (cấp ${CAP_CUONG_TOI_DA}).` };
+    if (m === 'thieu-huyen-tinh') return { error: 'Bạn không có viên huyền tinh cấp kế tiếp.' };
+    return { error: 'Không cường hoá được lúc này.' };
+  }
+}
+
+// ─────────────────────────── Chợ thú ───────────────────────────
+
+/** Rao một con thú lên chợ. Giá tính bằng ngọc, y bản gốc. */
+export async function raoBan(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+
+  const id = String(fd.get('thu') ?? '');
+  const gia = Number(fd.get('gia'));
+  if (!Number.isInteger(gia) || gia < CHO_GIA_MIN || gia > CHO_GIA_MAX) {
+    return { error: `Giá phải từ ${CHO_GIA_MIN} đến ${CHO_GIA_MAX} ngọc.` };
+  }
+
+  const thu = await db.pokeThu.findFirst({ where: { id, nhanVatId: r.nv.id }, select: { id: true, ten: true } });
+  if (!thu) return { error: 'Đó không phải thú của bạn.' };
+  if (r.nv.raTranId === thu.id) return { error: 'Con này đang ra trận, đổi con khác đã.' };
+  if ((await db.pokeThu.count({ where: { nhanVatId: r.nv.id } })) <= 1) {
+    return { error: 'Đây là con cuối cùng, bán nốt thì lấy gì mà đánh.' };
+  }
+
+  try {
+    await db.pokeRao.create({ data: { nhanVatId: r.nv.id, thuId: thu.id, gia }, select: { id: true } });
+  } catch {
+    return { error: 'Con này đang rao rồi.' };
+  }
+
+  revalidatePath('/pokemon/cho');
+  return { ok: true, ke: `Đã rao ${thu.ten} với giá ${gia} ngọc.` };
+}
+
+/** Rút một con thú khỏi chợ. */
+export async function huyRao(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const id = String(fd.get('rao') ?? '');
+  // Quyền nằm trong `where`: chỉ người rao mới rút được.
+  const xoa = await db.pokeRao.deleteMany({ where: { id, nhanVatId: r.nv.id } });
+  if (xoa.count === 0) return { error: 'Không rút được — có thể đã có người mua.' };
+  revalidatePath('/pokemon/cho');
+  return { ok: true, ke: 'Đã rút khỏi chợ.' };
+}
+
+/**
+ * Mua một con thú ở chợ.
+ *
+ * Bản gốc có một lỗ hổng thật: nó cộng ngọc cho người bán bằng cách ĐỌC số
+ * ngọc rồi ghi đè cả cột, mà lại đọc trước khi trừ của người mua — mua con
+ * của chính mình thì tự nhân đôi ngọc. Ở đây chỉ dùng phép cộng/trừ tương
+ * đối, và chặn hẳn việc mua đồ của chính mình.
+ */
+export async function muaThu(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const id = String(fd.get('rao') ?? '');
+
+  try {
+    const kq = await db.$transaction(async (tx) => {
+      const rao = await tx.pokeRao.findUnique({ where: { id } });
+      if (!rao) throw new Error('het-hang');
+      if (rao.nhanVatId === r.nv.id) throw new Error('cua-minh');
+
+      // Xoá bản rao TRƯỚC, có điều kiện: hai người cùng bấm mua thì chỉ một
+      // người xoá được, người kia dừng ngay tại đây chứ không lấy mất con thú
+      // rồi mới phát hiện.
+      const chiem = await tx.pokeRao.deleteMany({ where: { id } });
+      if (chiem.count === 0) throw new Error('het-hang');
+
+      const tru = await tx.pokeNhanVat.updateMany({
+        where: { id: r.nv.id, ngoc: { gte: rao.gia } },
+        data: { ngoc: { decrement: rao.gia } },
+      });
+      if (tru.count === 0) throw new Error('thieu-ngoc');
+
+      await tx.pokeNhanVat.update({
+        where: { id: rao.nhanVatId }, data: { ngoc: { increment: rao.gia } },
+      });
+
+      // Người bán có thể đang cho chính con này ra trận: gỡ ra trước khi đổi chủ.
+      await tx.pokeNhanVat.updateMany({
+        where: { id: rao.nhanVatId, raTranId: rao.thuId }, data: { raTranId: null },
+      });
+      const thu = await tx.pokeThu.update({
+        where: { id: rao.thuId }, data: { nhanVatId: r.nv.id },
+        select: { ten: true },
+      });
+      return { ok: true, ke: `Đã mua ${thu.ten} với giá ${rao.gia} ngọc.` };
+    });
+
+    revalidatePath('/pokemon/cho');
+    revalidatePath('/pokemon/kho');
+    return kq;
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'het-hang') return { error: 'Con này có người mua mất rồi.' };
+    if (m === 'cua-minh') return { error: 'Đó là con bạn đang rao.' };
+    if (m === 'thieu-ngoc') return { error: 'Bạn không đủ ngọc.' };
+    return { error: 'Không mua được lúc này.' };
+  }
+}
+
+// ─────────────────────────── Bang hội ───────────────────────────
+
+/** Lập bang. Tốn 500 ngọc, y bản gốc. */
+export async function lapBang(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+
+  const ten = String(fd.get('ten') ?? '').trim();
+  if (ten.length < BANG_TEN_TOI_THIEU || ten.length > BANG_TEN_TOI_DA) {
+    return { error: `Tên bang dài ${BANG_TEN_TOI_THIEU}–${BANG_TEN_TOI_DA} ký tự.` };
+  }
+  if (r.nv.bangId) return { error: 'Bạn đang ở trong một bang rồi.' };
+
+  try {
+    await db.$transaction(async (tx) => {
+      const tru = await tx.pokeNhanVat.updateMany({
+        where: { id: r.nv.id, bangId: null, ngoc: { gte: BANG_GIA_NGOC } },
+        data: { ngoc: { decrement: BANG_GIA_NGOC } },
+      });
+      if (tru.count === 0) throw new Error('khong-du');
+
+      const bang = await tx.pokeBang.create({
+        data: { ten, truongId: r.nv.id, sucChua: BANG_SUC_CHUA },
+        select: { id: true },
+      });
+      await tx.pokeNhanVat.update({ where: { id: r.nv.id }, data: { bangId: bang.id } });
+    });
+  } catch (e) {
+    const s = String(e);
+    if (e instanceof Error && e.message === 'khong-du') {
+      return { error: `Lập bang tốn ${BANG_GIA_NGOC} ngọc, hoặc bạn đã ở trong bang.` };
+    }
+    if (s.includes('Unique')) return { error: 'Tên bang này có người dùng rồi.' };
+    return { error: 'Không lập được bang lúc này.' };
+  }
+
+  revalidatePath('/pokemon/bang');
+  return { ok: true, ke: `Đã lập bang ${ten}.` };
+}
+
+/** Gia nhập một bang. Cần cấp 15 trở lên, y bản gốc. */
+export async function vaoBang(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const id = String(fd.get('bang') ?? '');
+
+  if (r.nv.bangId) return { error: 'Bạn đang ở trong một bang rồi.' };
+  if (r.nv.cap < BANG_CAP_TOI_THIEU) {
+    return { error: `Phải đạt cấp ${BANG_CAP_TOI_THIEU} mới vào bang được.` };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      const bang = await tx.pokeBang.findUnique({ where: { id }, select: { sucChua: true } });
+      if (!bang) throw new Error('khong-co-bang');
+
+      // Đếm chỗ trống TRONG giao dịch rồi mới ghi: đọc ngoài rồi ghi trong là
+      // hai người cùng vào một chỗ cuối.
+      const dangCo = await tx.pokeNhanVat.count({ where: { bangId: id } });
+      if (dangCo >= bang.sucChua) throw new Error('het-cho');
+
+      const vao = await tx.pokeNhanVat.updateMany({
+        where: { id: r.nv.id, bangId: null, cap: { gte: BANG_CAP_TOI_THIEU } },
+        data: { bangId: id },
+      });
+      if (vao.count === 0) throw new Error('khong-vao-duoc');
+    });
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'khong-co-bang') return { error: 'Bang này không còn.' };
+    if (m === 'het-cho') return { error: 'Bang đã đủ người.' };
+    return { error: 'Không vào bang được lúc này.' };
+  }
+
+  revalidatePath('/pokemon/bang');
+  return { ok: true, ke: 'Đã gia nhập bang.' };
+}
+
+/** Rời bang. Trưởng bang rời thì bang giải tán. */
+export async function roiBang(_prev: PokeState, _fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  if (!r.nv.bangId) return { error: 'Bạn không ở bang nào.' };
+
+  const bang = await db.pokeBang.findUnique({
+    where: { id: r.nv.bangId }, select: { id: true, truongId: true, ten: true },
+  });
+  if (!bang) return { error: 'Bang này không còn.' };
+
+  if (bang.truongId === r.nv.id) {
+    // Trưởng bang đi thì bang tan: `bangId` của mọi người tự về rỗng nhờ
+    // `onDelete: SetNull`, không cần quét tay.
+    await db.pokeBang.delete({ where: { id: bang.id } });
+    revalidatePath('/pokemon/bang');
+    return { ok: true, ke: `Bang ${bang.ten} đã giải tán.` };
+  }
+
+  await db.pokeNhanVat.update({ where: { id: r.nv.id }, data: { bangId: null } });
+  revalidatePath('/pokemon/bang');
+  return { ok: true, ke: 'Đã rời bang.' };
+}
+
+/** Góp vàng vào quỹ bang, hoặc rút ra. */
+export async function quyBang(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  if (!r.nv.bangId) return { error: 'Bạn không ở bang nào.' };
+
+  const huong = String(fd.get('huong') ?? '');
+  if (huong !== 'gop' && huong !== 'rut') return { error: 'Chọn góp hay rút đã nào.' };
+  const so = Number(fd.get('so'));
+  if (!Number.isInteger(so) || so < 1) return { error: 'Số vàng phải là số nguyên dương.' };
+
+  const bang = await db.pokeBang.findUnique({
+    where: { id: r.nv.bangId }, select: { id: true, truongId: true, khoaQuy: true },
+  });
+  if (!bang) return { error: 'Bang này không còn.' };
+  if (huong === 'rut' && bang.khoaQuy && bang.truongId !== r.nv.id) {
+    return { error: 'Trưởng bang đang khoá quỹ.' };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      if (huong === 'gop') {
+        const tru = await tx.pokeNhanVat.updateMany({
+          where: { id: r.nv.id, vang: { gte: so } }, data: { vang: { decrement: so } },
+        });
+        if (tru.count === 0) throw new Error('khong-du');
+        await tx.pokeBang.update({ where: { id: bang.id }, data: { vang: { increment: so } } });
+        return;
+      }
+      const tru = await tx.pokeBang.updateMany({
+        where: { id: bang.id, vang: { gte: so } }, data: { vang: { decrement: so } },
+      });
+      if (tru.count === 0) throw new Error('quy-thieu');
+      await tx.pokeNhanVat.update({ where: { id: r.nv.id }, data: { vang: { increment: so } } });
+    });
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'khong-du') return { error: 'Bạn không đủ vàng.' };
+    if (m === 'quy-thieu') return { error: 'Quỹ bang không đủ.' };
+    return { error: 'Không làm được lúc này.' };
+  }
+
+  revalidatePath('/pokemon/bang');
+  return { ok: true, ke: huong === 'gop' ? `Đã góp ${so} vàng vào quỹ.` : `Đã rút ${so} vàng.` };
+}
+
+/** Trưởng bang khoá hoặc mở quỹ. */
+export async function khoaQuyBang(_prev: PokeState, _fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  if (!r.nv.bangId) return { error: 'Bạn không ở bang nào.' };
+
+  // Quyền nằm trong `where`: chỉ trưởng bang đổi được.
+  const bang = await db.pokeBang.findFirst({
+    where: { id: r.nv.bangId, truongId: r.nv.id }, select: { id: true, khoaQuy: true },
+  });
+  if (!bang) return { error: 'Chỉ trưởng bang mới đổi được.' };
+
+  await db.pokeBang.update({ where: { id: bang.id }, data: { khoaQuy: !bang.khoaQuy } });
+  revalidatePath('/pokemon/bang');
+  return { ok: true, ke: bang.khoaQuy ? 'Đã mở quỹ cho cả bang.' : 'Đã khoá quỹ.' };
+}
+
+// ─────────────────────────── Nhiệm vụ ───────────────────────────
+
+/**
+ * Nhận thưởng nhiệm vụ kế tiếp.
+ *
+ * Nhận theo THỨ TỰ và mỗi bước đúng một lần: cột `nhiemVu` đếm số bước đã
+ * nhận, và câu ghi mang chính con số cũ trong `where` nên bấm hai tab không
+ * nhận được hai lần.
+ */
+export async function nhanThuongNhiemVu(_prev: PokeState, _fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const { nv } = r;
+
+  const buoc = nv.nhiemVu;
+  const nhiem = NHIEM_VU[buoc];
+  if (!nhiem) return { error: 'Bạn đã làm hết chuỗi nhiệm vụ.' };
+
+  const tienDo = await tienDoNhiemVu(nv.id);
+  if (!tienDo[buoc]) return { error: `Chưa xong: ${nhiem.mo}` };
+
+  const expMoi = nv.exp + nhiem.exp;
+  const ghi = await db.pokeNhanVat.updateMany({
+    where: { id: nv.id, nhiemVu: buoc },
+    data: {
+      nhiemVu: buoc + 1,
+      exp: expMoi, cap: capTheoExp(expMoi),
+      vang: { increment: nhiem.vang },
+      ngoc: { increment: nhiem.ngoc },
+    },
+  });
+  if (ghi.count === 0) return { error: 'Phần thưởng này đã nhận rồi.' };
+
+  revalidatePath('/pokemon/nhiem-vu');
+  const qua = [
+    `${nhiem.exp} kinh nghiệm`,
+    ...(nhiem.vang ? [`${nhiem.vang} vàng`] : []),
+    ...(nhiem.ngoc ? [`${nhiem.ngoc} ngọc`] : []),
+  ].join(', ');
+  return { ok: true, ke: `Xong “${nhiem.ten}” — nhận ${qua}.` };
 }

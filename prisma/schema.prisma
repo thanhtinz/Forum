@@ -2492,6 +2492,12 @@ model PokeNhanVat {
   /// Số trận thắng ở đấu trường.
   thangDau Int @default(0)
 
+  /// Số nhiệm vụ đã nhận thưởng.
+  nhiemVu Int @default(0)
+
+  bangId String?
+  bang   PokeBang? @relation("BangThanhVien", fields: [bangId], references: [id], onDelete: SetNull)
+
   /// Khu đang đứng.
   khu String @default("co")
 
@@ -2506,10 +2512,13 @@ model PokeNhanVat {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  thu    PokeThu[] @relation("PokeChu")
-  tran   PokeTran?
-  dauChu PokeDau[] @relation("DauChu")
-  dauDoi PokeDau[] @relation("DauDoi")
+  thu        PokeThu[]       @relation("PokeChu")
+  tran       PokeTran?
+  dauChu     PokeDau[]       @relation("DauChu")
+  dauDoi     PokeDau[]       @relation("DauDoi")
+  huyenTinh  PokeHuyenTinh[]
+  rao        PokeRao[]
+  bangTruong PokeBang?       @relation("BangTruong")
 
   @@index([cap, exp])
 }
@@ -2531,6 +2540,9 @@ model PokeThu {
   cap Int @default(1)
   exp Int @default(0)
 
+  /// Cấp cường hoá, 0 tới 6 — bản gốc gọi là `lvcuonghoa`.
+  capCuong Int @default(0)
+
   mau      Int
   mauToiDa Int
 
@@ -2545,6 +2557,7 @@ model PokeThu {
   createdAt DateTime @default(now())
 
   raTranCua PokeNhanVat? @relation("PokeRaTran")
+  rao       PokeRao?
 
   @@index([nhanVatId, createdAt])
 }
@@ -2687,4 +2700,59 @@ model PokeDau {
   @@index([thangId, hanLuc])
   @@index([chuId])
   @@index([doiId])
+}
+
+/// Huyền tinh để cường hoá — sáu cấp, mỗi cấp một dòng.
+model PokeHuyenTinh {
+  id        String      @id @default(cuid())
+  nhanVatId String
+  nhanVat   PokeNhanVat @relation(fields: [nhanVatId], references: [id], onDelete: Cascade)
+
+  cap Int
+  sl  Int @default(0)
+
+  @@unique([nhanVatId, cap])
+}
+
+/// Một con thú đang rao bán ở chợ. Giá tính bằng NGỌC, y bản gốc.
+model PokeRao {
+  id        String      @id @default(cuid())
+  nhanVatId String
+  nhanVat   PokeNhanVat @relation(fields: [nhanVatId], references: [id], onDelete: Cascade)
+
+  /// Mỗi con chỉ được rao một lần.
+  thuId String  @unique
+  thu   PokeThu @relation(fields: [thuId], references: [id], onDelete: Cascade)
+
+  gia Int
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// Bang hội.
+model PokeBang {
+  id  String @id @default(cuid())
+  ten String @unique
+
+  truongId String      @unique
+  truong   PokeNhanVat @relation("BangTruong", fields: [truongId], references: [id], onDelete: Cascade)
+
+  /// Quỹ chung.
+  vang Int @default(0)
+  ngoc Int @default(0)
+
+  /// Chỉ số bang cộng cho mọi thành viên khi ra trận.
+  cong Int @default(10)
+  thu  Int @default(10)
+
+  sucChua Int @default(5)
+
+  /// Trưởng bang khoá quỹ thì chỉ mình trưởng rút được — bản gốc gọi là `zapret`.
+  khoaQuy Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  thanhVien PokeNhanVat[] @relation("BangThanhVien")
 }

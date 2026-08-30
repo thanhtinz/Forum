@@ -331,3 +331,73 @@ export const DAU_GIO_VANG = 21;
 export function laGioVang(now: Date = new Date()): boolean {
   return Math.floor((now.getTime() / 3600000 + 7) % 24) === DAU_GIO_VANG;
 }
+
+// ─────────────────────────── Cường hoá ───────────────────────────
+
+/**
+ * Sáu cấp huyền tinh. Dùng viên cấp n để nâng con thú từ cấp cường hoá n−1
+ * lên n; mỗi cấp cộng thẳng vào MÁU TỐI ĐA.
+ *
+ * Số liệu lấy đúng từ `modules/cuonghoa/`: cấp 1 và 2 cộng 500 máu, cấp 3
+ * cộng 1500, cấp 4 cộng 2000, cấp 5 cộng 2500, cấp 6 cộng 3000. Giá thì cấp
+ * 1–3 trả bằng vàng (10.000 / 50.000 / 100.000) còn cấp 4–6 trả bằng ngọc
+ * (50 / 100 / 150) — thang giá vàng cao hơn hẳn mọi thứ khác trong game, đó
+ * là chủ ý: đây là hàng cuối chặng.
+ *
+ * Riêng cấp 6 có RỦI RO: `rand(1,10)`, năm số đầu thành công, năm số sau
+ * thất bại và tụt một cấp cường hoá.
+ */
+export const HUYEN_TINH = [
+  { cap: 1, mau: 500, vang: 10_000, ngoc: 0, coHoi: 1 },
+  { cap: 2, mau: 500, vang: 50_000, ngoc: 0, coHoi: 1 },
+  { cap: 3, mau: 1500, vang: 100_000, ngoc: 0, coHoi: 1 },
+  { cap: 4, mau: 2000, vang: 0, ngoc: 50, coHoi: 1 },
+  { cap: 5, mau: 2500, vang: 0, ngoc: 100, coHoi: 1 },
+  { cap: 6, mau: 3000, vang: 0, ngoc: 150, coHoi: 0.5 },
+] as const;
+
+export const CAP_CUONG_TOI_DA = 6;
+
+export function timHuyenTinh(cap: number) {
+  return HUYEN_TINH.find((h) => h.cap === cap);
+}
+
+export function anhHuyenTinh(cap: number): string {
+  return `${ANH_POKE}/huyentinh/${cap}.png`;
+}
+
+// ─────────────────────────── Chợ thú ───────────────────────────
+
+/** Chợ tính bằng NGỌC chứ không phải vàng, y bản gốc. */
+export const CHO_GIA_MIN = 1;
+export const CHO_GIA_MAX = 9999;
+
+// ─────────────────────────── Bang hội ───────────────────────────
+
+/** Lập bang tốn 500 ngọc; muốn vào bang phải từ cấp 15. Y bản gốc. */
+export const BANG_GIA_NGOC = 500;
+export const BANG_CAP_TOI_THIEU = 15;
+export const BANG_SUC_CHUA = 5;
+export const BANG_CONG_DAU = 10;
+export const BANG_THU_DAU = 10;
+export const BANG_TEN_TOI_THIEU = 3;
+export const BANG_TEN_TOI_DA = 20;
+
+// ─────────────────────────── Nhiệm vụ ───────────────────────────
+
+/**
+ * Chuỗi nhiệm vụ nhập môn.
+ *
+ * Bản gốc có bốn nhiệm vụ nhưng KHÔNG có chỗ nào đánh dấu hoàn thành: cột
+ * `quest` chỉ nhảy từ số lẻ lên số chẵn khi tự nó đọc thấy số lẻ, mà không
+ * đoạn mã nào trong 291 tệp đặt nó thành số lẻ cả — nên người chơi kẹt vĩnh
+ * viễn ở nhiệm vụ đầu. Ở đây mốc hoàn thành đọc thẳng từ dữ liệu thật (số thú
+ * trong kho, số huy chương, số trận thắng đấu trường…), nên không có cột nào
+ * để lệch.
+ */
+export const NHIEM_VU = [
+  { ten: 'Người mới đến đảo', mo: 'Bắt con thú thứ hai bằng quả cầu.', exp: 10, vang: 50, ngoc: 0 },
+  { ten: 'Thử sức ở Gym', mo: 'Hạ Gym đầu tiên và lấy huy chương.', exp: 20, vang: 0, ngoc: 1 },
+  { ten: 'Đi cho biết đó biết đây', mo: 'Đạt cấp 3 để mở khu thứ hai.', exp: 40, vang: 0, ngoc: 1 },
+  { ten: 'Ra sàn đấu', mo: 'Thắng một trận ở đấu trường.', exp: 40, vang: 0, ngoc: 1 },
+] as const;

@@ -40,3 +40,21 @@ export function conChoYTe(chuaLuc: Date | null, choMs: number, now = Date.now())
 
 export const YTE = { YTE_MAU, YTE_MAU_CHO_MS, YTE_SK, YTE_SK_CHO_MS };
 export { boThu };
+
+/**
+ * Tiến độ chuỗi nhiệm vụ, đọc thẳng từ dữ liệu thật.
+ *
+ * Không có cột riêng nào ghi "đã làm xong bước n" — mốc suy ra từ số thú
+ * trong kho, số huy chương, cấp nhân vật và số trận thắng đấu trường. Nhờ vậy
+ * không có đường nào để tiến độ lệch khỏi sự thật, mà cũng không cần rải mã
+ * đánh dấu vào khắp các hàm chơi.
+ */
+export async function tienDoNhiemVu(nhanVatId: string): Promise<boolean[]> {
+  const nv = await db.pokeNhanVat.findUnique({
+    where: { id: nhanVatId },
+    select: { huyChuong: true, cap: true, thangDau: true },
+  });
+  if (!nv) return [];
+  const soThu = await db.pokeThu.count({ where: { nhanVatId } });
+  return [soThu >= 2, nv.huyChuong >= 1, nv.cap >= 3, nv.thangDau >= 1];
+}

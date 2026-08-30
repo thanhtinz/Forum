@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Backpack, Cross, Medal, Store, Swords } from 'lucide-react';
+import { Backpack, Cross, Flame, Medal, ScrollText, ShoppingBasket, Store, Swords, Users } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { KHU, capVaoKhu, timKhu } from '@/lib/pokemon-const';
 import { DaoPokemon } from '@/components/pokemon/DaoPokemon';
+import { tienDoNhiemVu } from '@/lib/pokemon';
 
 export const metadata: Metadata = {
   title: 'Đảo Pokémon',
@@ -55,18 +56,23 @@ export default async function TrangPokemon() {
   const raTran = nv.raTran
     ?? (await db.pokeThu.findFirst({ where: { nhanVatId: nv.id }, orderBy: { createdAt: 'asc' } }));
 
-  const [soThu, soTrongKhu] = await Promise.all([
+  const [soThu, soTrongKhu, tienDo] = await Promise.all([
     db.pokeThu.count({ where: { nhanVatId: nv.id } }),
     db.pokeThuHoang.count({ where: { khu: nv.khu } }),
+    tienDoNhiemVu(nv.id),
   ]);
+  // Nhiệm vụ kế tiếp đã xong mà chưa nhận thưởng — báo ngay trên nút cho khỏi quên.
+  const conNhiemVu = tienDo[nv.nhiemVu] ? 1 : 0;
 
   const khu = timKhu(nv.khu) ?? KHU[0];
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-black">Đảo Pokémon</h1>
-        <nav className="flex gap-2">
+      <div>
+        <h1 className="mb-3 text-xl font-black">Đảo Pokémon</h1>
+        {/* Tám lối đi là quá nhiều để nhét cạnh tiêu đề: xuống hàng riêng và
+            cấm chữ gãy dòng, không thì mỗi nút thành hai dòng chữ vụn. */}
+        <nav className="flex flex-wrap gap-2 [&>a]:whitespace-nowrap">
           <Link href="/pokemon/kho" className="btn-outline !py-1.5 text-sm">
             <Backpack size={14} /> Kho ({soThu})
           </Link>
@@ -81,6 +87,18 @@ export default async function TrangPokemon() {
           </Link>
           <Link href="/pokemon/y-te" className="btn-outline !py-1.5 text-sm">
             <Cross size={14} /> Trạm y tế
+          </Link>
+          <Link href="/pokemon/cuong-hoa" className="btn-outline !py-1.5 text-sm">
+            <Flame size={14} /> Cường hoá
+          </Link>
+          <Link href="/pokemon/cho" className="btn-outline !py-1.5 text-sm">
+            <ShoppingBasket size={14} /> Chợ thú
+          </Link>
+          <Link href="/pokemon/bang" className="btn-outline !py-1.5 text-sm">
+            <Users size={14} /> Bang hội
+          </Link>
+          <Link href="/pokemon/nhiem-vu" className="btn-outline !py-1.5 text-sm">
+            <ScrollText size={14} /> Nhiệm vụ{conNhiemVu > 0 ? ` (${conNhiemVu})` : ''}
           </Link>
         </nav>
       </div>

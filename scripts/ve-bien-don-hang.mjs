@@ -105,8 +105,36 @@ function crc(b) {
 const MAU = {
   u: [0x6b, 0x49, 0x00, 255],   // nét chữ đậm
   z: [0xff, 0xe7, 0xc1, 255],   // viền sáng của nét
-  e: [0xff, 0xcb, 0x7b, 255],   // mặt gỗ
+  e: [0xff, 0xcb, 0x7b, 255],   // mặt gỗ (của tấm GỐC, trước khi đổi màu)
+  // Giấy note ghim lên bảng
+  g: [0xff, 0xf6, 0xdd, 255],   // mặt giấy
+  G: [0xe3, 0xd2, 0xa8, 255],   // mép giấy phía bóng
+  n: [0x8a, 0x6a, 0x2a, 255],   // nét chữ nguệch ngoạc trên giấy
+  d: [0xc0, 0x39, 0x2b, 255],   // đinh ghim
+  D: [0xff, 0xa8, 0x9a, 255],   // chấm sáng trên đinh
 };
+
+/**
+ * Xoay màu gỗ sang tông khác để hai tấm biển không lẫn vào nhau.
+ *
+ * Xoay SẮC ĐỘ chứ không tô đè một màu phẳng: tấm gốc có tới chục sắc gỗ đan
+ * nhau làm nên vân và bóng, tô đè là mất sạch, còn xoay thì giữ nguyên tương
+ * quan sáng tối, chỉ đổi tông.
+ *
+ * Trừ nét chữ ra — chữ phải giữ nguyên màu nâu đậm của bộ gốc thì hai tấm
+ * biển mới ra cùng một bàn tay viết.
+ */
+function xoayTone(px, i) {
+  const [r, g, b] = [px[i], px[i + 1], px[i + 2]];
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2 / 255;
+  // Xám thì để yên, không thì nó ám màu cả bóng đổ dưới chân cột.
+  if (max - min < 12) return;
+  // Gỗ vàng ấm → gỗ xanh rêu: giữ độ sáng, đổi tương quan ba kênh.
+  px[i] = Math.round(255 * (l * 0.62 + 0.02));
+  px[i + 1] = Math.round(255 * (l * 0.86 + 0.04));
+  px[i + 2] = Math.round(255 * (l * 0.58 + 0.06));
+}
 
 const anh = docPng(GOC);
 const dat = (x, y, m) => {
@@ -164,9 +192,13 @@ const CHU = {
 const HUYEN = ['.u..', '..u.'];
 
 // ── Xoá chữ cũ: tô phẳng vùng chữ bằng màu mặt gỗ ──
+// Làm TRƯỚC lúc xoay tông, để chỗ vừa tô cũng được xoay theo và không thành
+// một mảng phẳng khác màu giữa tấm biển.
 for (const [x0, y0, x1, y1] of [[12, 8, 33, 18], [4, 19, 39, 27]]) {
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) dat(x, y, MAU.e);
 }
+
+for (let i = 0; i < anh.px.length; i += 4) if (anh.px[i + 3] > 0) xoayTone(anh.px, i);
 
 /** Dán một bản đồ ký tự lên tấm ảnh. */
 function dan(hinh, x0, y0) {
@@ -190,10 +222,45 @@ function vietDong(chuoi, y, dauHuyenO = -1) {
   });
 }
 
-vietDong('ĐƠN', 12);
-// Viết 'HANG' rồi mới đội dấu huyền lên chữ thứ hai: tra bảng bằng 'À' thì
-// trượt, vì bảng chữ cắt ra từ tấm gốc chỉ có chữ CÁI trần, dấu để riêng.
-vietDong('HANG', 21, 1);
+// ── Chữ nằm HÀNG TRÊN, chừa chỗ dưới cho mấy tờ note ──
+vietDong('ĐƠN HANG', 11, 5);
+
+/**
+ * Ba tờ giấy ghim lên bảng.
+ *
+ * Vẽ mép phải và mép dưới bằng màu tối hơn để tờ giấy có bề dày, không thì
+ * nó là ba hình chữ nhật trắng dán bẹt. Góc dưới bên phải quăn lên một chút —
+ * chi tiết bé nhất mà lại nói ra "đây là tờ giấy" rõ nhất.
+ */
+function veNote(x0, y0, rong, cao, soDong) {
+  for (let y = y0; y < y0 + cao; y++) {
+    for (let x = x0; x < x0 + rong; x++) {
+      const mep = x === x0 + rong - 1 || y === y0 + cao - 1;
+      dat(x, y, mep ? MAU.G : MAU.g);
+    }
+  }
+  // Góc quăn: bỏ trống một mẩu tam giác ở dưới bên phải.
+  dat(x0 + rong - 1, y0 + cao - 1, MAU.G);
+  dat(x0 + rong - 2, y0 + cao - 1, MAU.G);
+  // Mấy dòng chữ nguệch ngoạc, dài ngắn xen kẽ.
+  for (let i = 0; i < soDong; i++) {
+    const y = y0 + 3 + i * 3;
+    const dai = i % 2 ? rong - 6 : rong - 4;
+    for (let x = x0 + 2; x < x0 + 2 + dai; x++) dat(x, y, MAU.n);
+  }
+  // Đinh ghim ở mép trên.
+  const gx = x0 + Math.floor(rong / 2) - 1;
+  dat(gx, y0 - 1, MAU.d); dat(gx + 1, y0 - 1, MAU.d);
+  dat(gx, y0 - 2, MAU.d); dat(gx + 1, y0 - 2, MAU.D);
+}
+
+const NOTE_RONG = 10, NOTE_CAO = 11, KHE = 3;
+const tongRong = NOTE_RONG * 3 + KHE * 2;
+let nx = Math.round((anh.rong - tongRong) / 2);
+for (const dong of [3, 2, 3]) {
+  veNote(nx, 21, NOTE_RONG, NOTE_CAO, dong);
+  nx += NOTE_RONG + KHE;
+}
 
 ghiPng(RA, anh);
 console.log(`✓ Đã dựng ${RA} (${anh.rong}×${anh.cao}) từ ${GOC}`);

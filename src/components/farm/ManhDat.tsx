@@ -2,13 +2,14 @@
 
 import type { ODat as ODatDL } from '@/lib/farm';
 import {
-  ANH_CAY_KHE, ANH_CAY_KHE_CHIN, ANH_CUA_HANG, ANH_FARM,
+  ANH_CAY_KHE, ANH_CAY_KHE_CHIN, ANH_CUA_HANG,
   ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY, ANH_NHA_KHO,
   NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, O_MOI_TRANG, TROI_DEM, TROI_NGAY,
   changCua,
 } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
+import { BienXepHang } from './VePixel';
 import { ODat, ODatKhoa } from './ODat';
 
 /**
@@ -397,7 +398,7 @@ export function ManhDat({
               aria-label="Mở bảng xếp hạng nông trại"
               className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
             >
-              <AnhPixel src={ANH_FARM} className="block w-[40px] sm:w-[80px]" />
+              <BienXepHang className="block w-[48px] sm:w-[96px]" />
             </button>
           </div>
 

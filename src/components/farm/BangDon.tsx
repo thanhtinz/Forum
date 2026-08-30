@@ -2,9 +2,10 @@
 
 import { Clock, Star, Zap } from 'lucide-react';
 import type { DonHang } from '@/lib/farm-don';
-import { ANH_NHA_KHO, DON_TEN, anhNongSan, moTaConLai } from '@/lib/farm-const';
+import { DON_TEN, anhNongSan, moTaConLai } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
+import { BienBangDon } from './VePixel';
 
 /**
  * Bảng ghi chú — khách đặt hàng, mình gom trong kho ra giao.
@@ -39,7 +40,10 @@ export function BangDon({ don, now, dangLam, onGiao }: {
   return (
     <section className="card overflow-hidden">
       <header className="flex items-center gap-3 border-b border-[var(--nova-border)] bg-gradient-to-r from-sky-50 to-transparent px-4 py-3 dark:from-sky-950/25">
-        <AnhPixel src={ANH_NHA_KHO} className="h-10 w-auto shrink-0" />
+        {/* Trước đây mượn ảnh nhà kho làm biểu tượng cho bảng đơn hàng — sai
+            hẳn, kho và bảng đơn là hai thứ khác nhau, mà người chơi vừa bấm
+            vào đúng cái nhà kho ấy trên map. */}
+        <BienBangDon className="h-10 w-auto shrink-0" />
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-black leading-tight">Bảng đơn hàng</h2>
           <p className="retro-sub text-ink-400">

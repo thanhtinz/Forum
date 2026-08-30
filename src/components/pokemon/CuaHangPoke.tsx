@@ -1,8 +1,8 @@
 'use client';
 
 import { useActionState, useState } from 'react';
-import { muaHang, type PokeState } from '@/app/(site)/pokemon/actions';
-import { ANH_POKE, EXP_MOI_CAP, GIA_CAU, GIA_DA, MUA_TOI_DA } from '@/lib/pokemon-const';
+import { doiNgoc, muaHang, type PokeState } from '@/app/(site)/pokemon/actions';
+import { ANH_POKE, EXP_MOI_CAP, GIA_CAU, GIA_DA, MUA_TOI_DA, NGOC_MOI_DA } from '@/lib/pokemon-const';
 
 const MON = [
   {
@@ -15,14 +15,19 @@ const MON = [
   },
 ] as const;
 
-export function CuaHangPoke({ vang, cau, da }: { vang: number; cau: number; da: number }) {
+export function CuaHangPoke({ vang, cau, da, ngoc }: {
+  vang: number; cau: number; da: number; ngoc: number;
+}) {
   const [state, action, dangChay] = useActionState<PokeState, FormData>(muaHang, {});
+  const [ng, ngAction, dangNg] = useActionState<PokeState, FormData>(doiNgoc, {});
   const [sl, setSl] = useState<Record<string, string>>({ cau: '1', da: '1' });
 
   return (
     <div className="space-y-3">
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-      {state.ke && !state.error && <p className="man-hien text-sm font-medium text-emerald-600">{state.ke}</p>}
+      {(state.error ?? ng.error) && <p className="text-sm text-red-600">{state.error ?? ng.error}</p>}
+      {(state.ke ?? ng.ke) && !(state.error ?? ng.error) && (
+        <p className="man-hien text-sm font-medium text-emerald-600">{state.ke ?? ng.ke}</p>
+      )}
 
       {MON.map((m) => {
         const dangCo = m.ma === 'cau' ? cau : da;
@@ -60,6 +65,30 @@ export function CuaHangPoke({ vang, cau, da }: { vang: number; cau: number; da: 
           </form>
         );
       })}
+
+      {/* Chỗ tiêu ngọc — ngọc chỉ Gym mới cho, nên đây là phần thưởng thật cho
+          việc đi hết mười bốn Gym chứ không phải một con số nằm chơi. */}
+      <form action={ngAction} className="rounded-xl border-2 border-emerald-300 bg-emerald-50/50 p-3 dark:border-emerald-900 dark:bg-emerald-950/20">
+        <div className="flex flex-wrap items-center gap-2">
+          <b className="text-sm">Đổi ngọc lấy đá</b>
+          <span className="chip !py-0 text-[11px]">{NGOC_MOI_DA} ngọc / viên</span>
+          <span className="text-xs text-ink-400">đang có {ngoc} ngọc</span>
+        </div>
+        <p className="mt-0.5 text-xs text-ink-500">
+          Ngọc chỉ có ở Gym. Đổi ra đá tiến cấp thì rẻ hơn hẳn mua bằng vàng.
+        </p>
+        <div className="mt-2.5 flex flex-wrap items-end gap-2">
+          <label className="block">
+            <span className="label">Số viên</span>
+            <input name="sl" type="number" min={1} max={MUA_TOI_DA} defaultValue={1} className="input !w-24" />
+          </label>
+          <button type="submit" disabled={dangNg || ngoc < NGOC_MOI_DA}
+            className="btn-primary !py-1.5 text-sm disabled:opacity-60">
+            Đổi
+          </button>
+          {ngoc < NGOC_MOI_DA && <span className="self-center text-xs text-amber-600">Chưa đủ ngọc</span>}
+        </div>
+      </form>
     </div>
   );
 }

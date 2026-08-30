@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Backpack, Cross, Store } from 'lucide-react';
+import { Backpack, Cross, Medal, Store } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { KHU, capVaoKhu, timKhu } from '@/lib/pokemon-const';
@@ -70,6 +70,9 @@ export default async function TrangPokemon() {
           <Link href="/pokemon/kho" className="btn-outline !py-1.5 text-sm">
             <Backpack size={14} /> Kho ({soThu})
           </Link>
+          <Link href="/pokemon/gym" className="btn-outline !py-1.5 text-sm">
+            <Medal size={14} /> Gym ({nv.huyChuong}/14)
+          </Link>
           <Link href="/pokemon/cua-hang" className="btn-outline !py-1.5 text-sm">
             <Store size={14} /> Cửa hàng
           </Link>
@@ -83,6 +86,7 @@ export default async function TrangPokemon() {
         nv={{
           ten: nv.ten, vang: nv.vang, exp: nv.exp, cap: nv.cap,
           sk: nv.sk, skToiDa: nv.skToiDa, cau: nv.cau, da: nv.da, khu: nv.khu,
+          ngoc: nv.ngoc, huyChuong: nv.huyChuong,
         }}
         raTran={raTran && {
           id: raTran.id, ten: raTran.ten, nguon: raTran.nguon, nac: raTran.nac,
@@ -94,7 +98,7 @@ export default async function TrangPokemon() {
           ten: nv.tran.ten, nguon: nv.tran.nguon, nac: nv.tran.nac, he: nv.tran.he,
           mau: nv.tran.mau, mauToiDa: nv.tran.mauToiDa,
           cong: nv.tran.cong, thu: nv.tran.thu, exp: nv.tran.exp, vang: nv.tran.vang,
-          ke: nv.tran.ke,
+          ke: nv.tran.ke, gym: nv.tran.gym,
         }}
         khuHienTai={{ ...khu }}
         soTrongKhu={soTrongKhu}

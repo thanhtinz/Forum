@@ -18,11 +18,15 @@ interface ThuGoc {
   chieu: string[];
 }
 interface KhuGoc { ma: string; ten: string; bac: number; thu: (ThuGoc & { nguon: number })[] }
+interface GymGoc {
+  so: number; ten: string; cong: number; thu: number; mau: number;
+  exp: number; vang: number; cau: number; he: number; chieu: string[];
+}
 
 async function main() {
   const duLieu = JSON.parse(
     readFileSync(new URL('./du-lieu/pokemon.json', import.meta.url), 'utf8'),
-  ) as { khu: KhuGoc[] };
+  ) as { khu: KhuGoc[]; gym: GymGoc[] };
 
   let dem = 0;
   for (const khu of duLieu.khu) {
@@ -48,7 +52,23 @@ async function main() {
       dem++;
     }
   }
-  console.log(`✅ Nạp ${dem} thú hoang trên ${duLieu.khu.length} khu.`);
+  // ── Mười bốn Gym ──────────────────────────────────────────────────────
+  // Bản gốc để mỗi Gym một bảng riêng đúng một dòng (`monster`, `monster2`…
+  // `monster14`). Thưởng ngọc thì bản gốc lưu ở cột `tree`; ở dữ liệu trích
+  // ra chỉ Gym 1 có, nên suy theo bậc cho mười ba Gym còn lại — xem chú thích
+  // trong `src/lib/pokemon-const.ts`.
+  for (const g of duLieu.gym) {
+    const chung = {
+      ten: `Gym ${g.so}`, he: g.he || 1,
+      cong: g.cong, thu: g.thu, mau: g.mau,
+      exp: g.exp, vang: g.vang, cau: g.cau, ngoc: 10 + g.so * 5,
+      chieu: g.chieu.filter(Boolean),
+      tangNguon: 1500 + g.so, tangNac: 1,
+    };
+    await db.pokeGym.upsert({ where: { so: g.so }, update: chung, create: { so: g.so, ...chung } });
+  }
+
+  console.log(`✅ Nạp ${dem} thú hoang trên ${duLieu.khu.length} khu, ${duLieu.gym.length} Gym.`);
 }
 
 main().then(() => db.$disconnect()).catch(async (e) => {

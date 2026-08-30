@@ -2483,6 +2483,12 @@ model PokeNhanVat {
   cau Int @default(5)
   da  Int @default(0)
 
+  /// Ngọc — thưởng riêng của Gym, bản gốc gọi là `tree`.
+  ngoc Int @default(0)
+
+  /// Huy chương cao nhất đang giữ; cũng là số Gym đã hạ vì Gym đánh theo thứ tự.
+  huyChuong Int @default(0)
+
   /// Khu đang đứng.
   khu String @default("co")
 
@@ -2493,9 +2499,6 @@ model PokeNhanVat {
   /// Lần vào trạm y tế gần nhất — bản gốc dùng chung một lần chờ cho cả máu
   /// lẫn thể lực, giữ nguyên vậy.
   chuaLuc DateTime?
-
-  /// Số Gym đã hạ.
-  gym Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2573,6 +2576,10 @@ model PokeTran {
 
   khu String
 
+  /// Số hiệu Gym nếu đây là trận Gym; rỗng nghĩa là thú hoang. Trận Gym không
+  /// ném cầu được, và thắng thì có thưởng riêng.
+  gym Int?
+
   /// Bản sao chỉ số con thú hoang lúc vào trận — chép ra chứ không trỏ tới
   /// bảng gốc, vì máu của nó tụt dần trong trận. Bản gốc trừ thẳng vào bảng
   /// chung nên hai người đánh cùng lúc là trừ máu của nhau.
@@ -2592,4 +2599,27 @@ model PokeTran {
   ke String?
 
   createdAt DateTime @default(now())
+}
+
+/// Mười bốn Gym, nạp từ `prisma/du-lieu/pokemon.json`.
+model PokeGym {
+  so  Int    @id
+  ten String
+  he  Int
+
+  cong Int
+  thu  Int
+  mau  Int
+
+  /// Thưởng khi hạ được.
+  exp  Int
+  vang Int
+  cau  Int
+  ngoc Int
+
+  chieu String[]
+
+  /// Con thú tặng kèm — bản gốc lấy số hiệu ảnh là `số Gym + 1500`.
+  tangNguon Int
+  tangNac   Int @default(1)
 }

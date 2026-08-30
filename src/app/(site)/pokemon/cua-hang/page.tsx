@@ -14,7 +14,7 @@ export default async function TrangCuaHang() {
   const userId = s?.user?.id;
   if (!userId) redirect('/login?callbackUrl=/pokemon/cua-hang');
   const nv = await db.pokeNhanVat.findUnique({
-    where: { userId }, select: { vang: true, cau: true, da: true },
+    where: { userId }, select: { vang: true, cau: true, da: true, ngoc: true },
   });
   if (!nv) redirect('/pokemon');
 
@@ -26,9 +26,9 @@ export default async function TrangCuaHang() {
       <section className="card p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-black">Cửa hàng</h1>
-          <span className="retro-sub text-ink-400">{nv.vang} vàng</span>
+          <span className="retro-sub text-ink-400">{nv.vang} vàng · {nv.ngoc} ngọc</span>
         </div>
-        <CuaHangPoke vang={nv.vang} cau={nv.cau} da={nv.da} />
+        <CuaHangPoke vang={nv.vang} cau={nv.cau} da={nv.da} ngoc={nv.ngoc} />
       </section>
     </div>
   );

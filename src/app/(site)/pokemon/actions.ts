@@ -10,7 +10,8 @@ import {
   CAU_DAU, CHIEU_DAU, CO_HOI_BAT, CONG_MOI_CAP, EXP_DAU, EXP_MOI_CAP, GIA_CAU, GIA_DA,
   MAU_DAU, MUA_TOI_DA, SK_DAU, SK_MOI_TRAN, TEN_TOI_DA, TEN_TOI_THIEU, THU_DAU, VANG_DAU,
   YTE_MAU, YTE_MAU_CHO_MS, YTE_SK, YTE_SK_CHO_MS,
-  boThu, capTheoExp, capVaoKhu, nacTienHoaMoi, timKhu, tinhSatThuong,
+  NGOC_MOI_DA,
+  boThu, capTheoExp, capVaoKhu, gymDuocVao, nacTienHoaMoi, timKhu, tinhSatThuong,
 } from '@/lib/pokemon-const';
 
 export interface PokeState { ok?: boolean; error?: string; ke?: string }
@@ -223,14 +224,50 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
         // Cấp tính LẠI từ tổng kinh nghiệm chứ không cộng dần, nên không có
         // đường nào để cấp lệch khỏi kinh nghiệm dù ghi hụt một lượt.
         const expMoi = nv.exp + tran.exp;
-        await tx.pokeNhanVat.update({
-          where: { id: nv.id },
-          data: { vang: { increment: tran.vang }, exp: expMoi, cap: capTheoExp(expMoi) },
-        });
+        const capMoi = capTheoExp(expMoi);
         await tx.pokeThu.update({
           where: { id: toi.id }, data: { exp: { increment: tran.exp } },
         });
-        const capMoi = capTheoExp(expMoi);
+
+        // ── Thắng Gym: thưởng riêng, một con thú tặng và một huy chương ──
+        if (tran.gym) {
+          const gym = await tx.pokeGym.findUnique({ where: { so: tran.gym } });
+          if (!gym) throw new Error('khong-co-gym');
+
+          // Ghi huy chương CÓ ĐIỀU KIỆN theo huy chương cũ: hai tab cùng hạ
+          // một Gym thì tab sau không cộng thưởng lần nữa.
+          const ghi = await tx.pokeNhanVat.updateMany({
+            where: { id: nv.id, huyChuong: gym.so - 1 },
+            data: {
+              vang: { increment: gym.vang }, exp: expMoi, cap: capMoi,
+              cau: { increment: gym.cau }, ngoc: { increment: gym.ngoc },
+              huyChuong: gym.so,
+            },
+          });
+          if (ghi.count === 0) throw new Error('gym-da-xong');
+
+          await tx.pokeThu.create({
+            data: {
+              nhanVatId: nv.id, nguon: gym.tangNguon, ten: `Quà ${gym.ten}`, he: gym.he,
+              nacToiDa: Math.max(1, gym.tangNac), mau: MAU_DAU, mauToiDa: MAU_DAU,
+              c1: CHIEU_DAU, c2: CHIEU_DAU, c3: CHIEU_DAU, c4: CHIEU_DAU,
+              chieu: gym.chieu,
+            },
+            select: { id: true },
+          });
+
+          return {
+            ok: true,
+            ke: `${ke} Bạn hạ được ${gym.ten}! Nhận ${gym.vang} vàng, ${gym.exp} kinh nghiệm, `
+              + `${gym.cau} quả cầu, ${gym.ngoc} ngọc, một con thú và huy chương thứ ${gym.so}.`
+              + (capMoi > nv.cap ? ` Bạn lên cấp ${capMoi}!` : ''),
+          };
+        }
+
+        await tx.pokeNhanVat.update({
+          where: { id: nv.id },
+          data: { vang: { increment: tran.vang }, exp: expMoi, cap: capMoi },
+        });
         return {
           ok: true,
           ke: `${ke} ${tran.ten} gục! Bạn được ${tran.vang} vàng và ${tran.exp} kinh nghiệm.`
@@ -258,6 +295,8 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
     if (m === 'het-sk') return { error: 'Hết thể lực, vào trạm y tế nghỉ đã.' };
     if (m === 'thu-bi-thuong') return { error: 'Thú của bạn đã gục, chữa đã.' };
     if (m === 'khong-co-thu') return { error: 'Bạn chưa có con thú nào ra trận.' };
+    if (m === 'gym-da-xong') return { error: 'Gym này đã được ghi nhận rồi.' };
+    if (m === 'khong-co-gym') return { error: 'Gym này không còn trên đảo.' };
     return { error: 'Không đánh được lúc này, thử lại nhé.' };
   }
 }
@@ -292,6 +331,8 @@ export async function nemCau(_prev: PokeState, _fd: FormData): Promise<PokeState
 
       const tran = await tx.pokeTran.findUnique({ where: { nhanVatId: nv.id } });
       if (!tran) throw new Error('het-tran');
+      // Gym là chủ Gym chứ không phải thú hoang — không bắt được.
+      if (tran.gym) throw new Error('la-gym');
 
       const tru = await tx.pokeNhanVat.updateMany({
         where: { id: nv.id, cau: { gte: 1 } },
@@ -324,6 +365,7 @@ export async function nemCau(_prev: PokeState, _fd: FormData): Promise<PokeState
     const m = e instanceof Error ? e.message : '';
     if (m === 'het-tran') return { error: 'Không có con nào trước mặt.' };
     if (m === 'het-cau') return { error: 'Bạn hết quả cầu rồi, ra cửa hàng mua thêm.' };
+    if (m === 'la-gym') return { error: 'Đây là chủ Gym, không bắt được.' };
     return { error: 'Không ném được lúc này, thử lại nhé.' };
   }
 }
@@ -523,4 +565,76 @@ export async function muaHang(_prev: PokeState, fd: FormData): Promise<PokeState
 
   revalidatePath('/pokemon');
   return { ok: true, ke: `Đã mua ${sl} ${mon === 'cau' ? 'quả cầu' : 'viên đá tiến cấp'}, hết ${gia} vàng.` };
+}
+
+// ─────────────────────────── Gym ───────────────────────────
+
+/**
+ * Vào một Gym. Đánh theo thứ tự: hạ xong Gym n mới vào được Gym n+1.
+ */
+export async function vaoGym(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const { nv } = r;
+
+  const so = Number(fd.get('gym'));
+  if (!Number.isInteger(so)) return { error: 'Chọn một Gym đã nào.' };
+  if (!gymDuocVao(so, nv.huyChuong)) {
+    return nv.huyChuong >= so
+      ? { error: `Bạn hạ Gym ${so} rồi.` }
+      : { error: `Phải hạ Gym ${nv.huyChuong + 1} trước đã.` };
+  }
+  if (nv.sk < SK_MOI_TRAN) return { error: 'Thú của bạn kiệt sức, vào trạm y tế nghỉ đã.' };
+
+  const con = await conRaTranHoacLoi(nv.id, nv.raTranId);
+  if ('error' in con) return { error: con.error };
+  if (con.thu.mau <= 0) return { error: 'Thú của bạn đang bị thương, chữa đã.' };
+
+  const gym = await db.pokeGym.findUnique({ where: { so } });
+  if (!gym) return { error: 'Gym này không có trên đảo.' };
+
+  try {
+    await db.$transaction(async (tx) => {
+      // Kiểm LẠI trong giao dịch: giữa lúc đọc và lúc ghi có thể đã có trận
+      // khác được mở ở tab kia.
+      const dang = await tx.pokeTran.findUnique({ where: { nhanVatId: nv.id }, select: { id: true } });
+      if (dang) throw new Error('dang-danh');
+      await tx.pokeTran.create({
+        data: {
+          nhanVatId: nv.id, khu: nv.khu, gym: gym.so,
+          nguon: gym.so, ten: gym.ten, he: gym.he, nac: 1,
+          cong: gym.cong, thu: gym.thu, mau: gym.mau, mauToiDa: gym.mau,
+          exp: gym.exp, vang: gym.vang, chieu: gym.chieu,
+        },
+        select: { id: true },
+      });
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === 'dang-danh') return { error: 'Bạn đang đánh dở một trận rồi.' };
+    return { error: 'Không vào được Gym lúc này.' };
+  }
+
+  revalidatePath('/pokemon');
+  revalidatePath('/pokemon/gym');
+  return { ok: true, ke: `Bạn bước vào ${gym.ten}.` };
+}
+
+/** Đổi ngọc lấy đá tiến cấp. */
+export async function doiNgoc(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+
+  const sl = Number(fd.get('sl'));
+  if (!Number.isInteger(sl) || sl < 1 || sl > MUA_TOI_DA) {
+    return { error: `Mỗi lượt đổi từ 1 đến ${MUA_TOI_DA} viên.` };
+  }
+  const can = sl * NGOC_MOI_DA;
+  const xong = await db.pokeNhanVat.updateMany({
+    where: { id: r.nv.id, ngoc: { gte: can } },
+    data: { ngoc: { decrement: can }, da: { increment: sl } },
+  });
+  if (xong.count === 0) return { error: 'Bạn không đủ ngọc.' };
+
+  revalidatePath('/pokemon/cua-hang');
+  return { ok: true, ke: `Đổi ${can} ngọc lấy ${sl} viên đá tiến cấp.` };
 }

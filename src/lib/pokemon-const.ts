@@ -239,3 +239,52 @@ export function capTheoExp(exp: number): number {
   while (expChoCap(cap + 1) <= exp && cap < 99) cap++;
   return cap;
 }
+
+// ─────────────────────────── Mười bốn Gym ───────────────────────────
+
+export const SO_GYM = 14;
+
+/**
+ * Huy chương: mỗi Gym một cái, lấy đúng ảnh `img/bot/N/huychuong` của bản gốc.
+ *
+ * Bộ ảnh chỉ có mười ba cái — Gym 14 thiếu. Không mượn tạm huy chương của Gym
+ * khác cho đủ mâm: chỗ ấy để trống và nói rõ là thiếu, chứ hai Gym cùng một
+ * huy chương thì người sưu tầm nhìn vào không hiểu vì sao.
+ */
+export const SO_HUY_CHUONG = 13;
+
+export function anhHuyChuong(so: number): string | null {
+  return so >= 1 && so <= SO_HUY_CHUONG ? `${ANH_POKE}/huychuong/${so}.png` : null;
+}
+
+export function anhGym(so: number): string {
+  return `${ANH_POKE}/gym/${so}.gif`;
+}
+
+/**
+ * Gym đánh THEO THỨ TỰ: hạ xong Gym n mới vào được Gym n+1.
+ *
+ * Bản gốc chỉ chặn đánh lại Gym đã qua (`if bot >= id`) chứ không chặn nhảy
+ * cóc, mà thắng lại ghi `bot = id` — nên hạ Gym 5 trước là mặc nhiên coi như
+ * xong luôn Gym 1 đến 4 dù chưa hề đánh, còn hạ Gym 14 trước thì khoá sạch cả
+ * mười ba Gym còn lại. Cột `bot` rõ ràng được nghĩ ra để đếm số Gym đã qua,
+ * nên ở đây ép đúng thứ tự.
+ */
+export function gymDuocVao(so: number, daHa: number): boolean {
+  return so === daHa + 1;
+}
+
+/**
+ * Ngọc thưởng cho mỗi Gym.
+ *
+ * PHẢI SUY RA. Bản gốc trả ngọc bằng cột `tree` của bảng Gym, nhưng trong bản
+ * kết xuất cơ sở dữ liệu chỉ Gym 1 còn dòng dữ liệu (20 ngọc); mười ba bảng
+ * `monster2`…`monster14` đều rỗng phần ấy. Cho tăng dần theo số hiệu Gym để
+ * Gym sau vẫn đáng đánh hơn Gym trước.
+ */
+export function ngocGym(so: number): number {
+  return 10 + so * 5;
+}
+
+/** Đổi ngọc lấy đá tiến cấp — chỗ tiêu ngọc, bản gốc dùng ngọc mua đồ ở tiệm. */
+export const NGOC_MOI_DA = 5;

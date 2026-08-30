@@ -17,11 +17,12 @@ interface Thu {
 interface Tran {
   ten: string; nguon: number; nac: number; he: number;
   mau: number; mauToiDa: number; cong: number; thu: number;
-  exp: number; vang: number; ke: string | null;
+  exp: number; vang: number; ke: string | null; gym: number | null;
 }
 interface NV {
   ten: string; vang: number; exp: number; cap: number;
   sk: number; skToiDa: number; cau: number; da: number; khu: string;
+  ngoc: number; huyChuong: number;
 }
 interface Khu { ma: string; ten: string; bac: number; mo: string }
 
@@ -50,6 +51,7 @@ function BangNhanVat({ nv, raTran }: { nv: NV; raTran: Thu | null | undefined })
         <O nhan="Vàng" giaTri={nv.vang} mau="text-amber-600" />
         <O nhan="Cầu" giaTri={nv.cau} mau="text-rose-600" />
         <O nhan="Đá" giaTri={nv.da} mau="text-violet-600" />
+        <O nhan="Ngọc" giaTri={nv.ngoc} mau="text-emerald-600" />
         <O nhan="KN" giaTri={nv.exp} mau="text-sky-600" />
         <span className="ml-auto text-xs text-ink-400">Thể lực {nv.sk}/{nv.skToiDa}</span>
       </div>
@@ -231,17 +233,20 @@ function ManDanh({ tran, toi, coCau }: { tran: Tran; toi: Thu; coCau: number }) 
       </form>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <form action={batAction}>
-          <button type="submit" disabled={ban || coCau < 1} className="btn-outline gap-1.5 !py-1.5 text-sm disabled:opacity-60">
-            {dangBat ? <Loader2 size={14} className="animate-spin" /> : null}
-            Ném cầu ({coCau})
-          </button>
-        </form>
+        {/* Chủ Gym không bắt được, nên đừng bày cái nút ra rồi báo lỗi. */}
+        {!tran.gym && (
+          <form action={batAction}>
+            <button type="submit" disabled={ban || coCau < 1} className="btn-outline gap-1.5 !py-1.5 text-sm disabled:opacity-60">
+              {dangBat ? <Loader2 size={14} className="animate-spin" /> : null}
+              Ném cầu ({coCau})
+            </button>
+          </form>
+        )}
         <form action={chayAction}>
           <button type="submit" disabled={ban} className="btn !py-1.5 text-sm">Bỏ chạy</button>
         </form>
         <span className="ml-auto self-center text-xs text-ink-400">
-          Bắt trúng khoảng {Math.round(CO_HOI_BAT * 100)}%
+          {tran.gym ? 'Trận Gym — không bắt được' : `Bắt trúng khoảng ${Math.round(CO_HOI_BAT * 100)}%`}
         </span>
       </div>
     </section>

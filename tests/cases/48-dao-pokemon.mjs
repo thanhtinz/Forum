@@ -269,6 +269,116 @@ export default async function run(check) {
   check('gọi thẳng máy chủ cũng không vào được khu chưa mở',
     (await db.pokeNhanVat.findUnique({ where: { id: nv0.id } })).khu === 'co');
 
+  // ── Gym ──────────────────────────────────────────────────────────────
+  const soGym = await db.pokeGym.count();
+  check('đã nạp đủ mười bốn Gym', soGym === 14, `${soGym} Gym`);
+
+  await db.pokeTran.deleteMany({ where: { nhanVatId: nv0.id } });
+  await db.pokeNhanVat.update({
+    where: { id: nv0.id },
+    data: { huyChuong: 0, sk: 20, cau: 5, ngoc: 0, vang: 0, cap: 1, khu: 'co' },
+  });
+  // Cho con thú đủ khoẻ để hạ Gym 1 trong một lượt: bài này soi PHẦN THƯỞNG,
+  // không soi việc đánh nhau — phần ấy đã có ở trên.
+  await db.pokeThu.update({
+    where: { id: nv0.raTranId },
+    data: { mau: 9999, mauToiDa: 9999, c1: 99999, c2: 99999, c3: 99999, c4: 99999 },
+  });
+
+  await p.goto(`${BASE}/pokemon/gym`, { waitUntil: 'networkidle' });
+  await p.waitForTimeout(900);
+  check('trang Gym bày đủ mười bốn Gym',
+    (await p.locator('text=/^Gym \\d+$/').count()) >= 14,
+    String(await p.locator('text=/^Gym \\d+$/').count()));
+  check('chỉ Gym kế tiếp mới có nút thách đấu',
+    (await p.locator('button:has-text("Thách đấu")').count()) === 1);
+
+  // Gọi thẳng máy chủ để nhảy cóc sang Gym 5 — phải bị chặn.
+  await p.evaluate(async ([base]) => {
+    const fd = new FormData();
+    fd.set('gym', '5');
+    await fetch(`${base}/pokemon/gym`, {
+      method: 'POST', body: fd, headers: { 'Next-Action': 'z'.repeat(40) },
+    }).catch(() => null);
+  }, [BASE]);
+  await p.waitForTimeout(1200);
+  const tranNhay = await db.pokeTran.findUnique({ where: { nhanVatId: nv0.id } });
+  check('không nhảy cóc sang Gym chưa mở được', !tranNhay || tranNhay.gym === 1,
+    `gym ${tranNhay?.gym}`);
+  await db.pokeTran.deleteMany({ where: { nhanVatId: nv0.id } });
+
+  await p.locator('button:has-text("Thách đấu")').click();
+  await doiToi(async () => (await db.pokeTran.count({ where: { nhanVatId: nv0.id } })) > 0);
+  const tranGym = await db.pokeTran.findUnique({ where: { nhanVatId: nv0.id } });
+  check('vào được Gym 1', tranGym?.gym === 1, `gym ${tranGym?.gym}`);
+
+  await p.goto(`${BASE}/pokemon`, { waitUntil: 'networkidle' });
+  await p.waitForTimeout(900);
+  check('trận Gym không bày nút ném cầu',
+    (await p.locator('button:has-text("Ném cầu")').count()) === 0);
+
+  // Gọi thẳng hàm ném cầu vào trận Gym — máy chủ phải chặn, và không được
+  // trừ mất quả cầu nào.
+  const cauTruocGym = (await db.pokeNhanVat.findUnique({ where: { id: nv0.id } })).cau;
+  await p.evaluate(async ([base]) => {
+    await fetch(`${base}/pokemon`, {
+      method: 'POST', body: new FormData(),
+      headers: { 'Next-Action': 'w'.repeat(40) },
+    }).catch(() => null);
+  }, [BASE]);
+  await p.waitForTimeout(1200);
+  check('không bắt được chủ Gym, mà cũng không mất cầu',
+    (await db.pokeNhanVat.findUnique({ where: { id: nv0.id } })).cau === cauTruocGym);
+
+  const gym1 = await db.pokeGym.findUnique({ where: { so: 1 } });
+  const truocGym = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
+  const khoTruocGym = await db.pokeThu.count({ where: { nhanVatId: nv0.id } });
+
+  await p.locator('form button[name="chieu"]').first().click();
+  await doiToi(async () => (await db.pokeNhanVat.findUnique({ where: { id: nv0.id } })).huyChuong === 1);
+
+  const sauGym = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
+  check('hạ Gym thì nhận huy chương', sauGym.huyChuong === 1, String(sauGym.huyChuong));
+  check('hạ Gym thì được đúng số vàng của Gym',
+    sauGym.vang === truocGym.vang + gym1.vang, `${truocGym.vang} → ${sauGym.vang}`);
+  check('hạ Gym thì được đúng số cầu của Gym',
+    sauGym.cau === truocGym.cau + gym1.cau, `${truocGym.cau} → ${sauGym.cau}`);
+  check('hạ Gym thì được đúng số ngọc của Gym',
+    sauGym.ngoc === truocGym.ngoc + gym1.ngoc, `${truocGym.ngoc} → ${sauGym.ngoc}`);
+  check('hạ Gym thì được tặng một con thú',
+    (await db.pokeThu.count({ where: { nhanVatId: nv0.id } })) === khoTruocGym + 1);
+  const qua = await db.pokeThu.findFirst({
+    where: { nhanVatId: nv0.id }, orderBy: { createdAt: 'desc' },
+  });
+  check('con thú tặng đúng số hiệu ảnh của bản gốc (Gym + 1500)',
+    qua.nguon === gym1.tangNguon && qua.nguon === 1501, String(qua.nguon));
+  check('đánh xong Gym thì trận kết thúc',
+    (await db.pokeTran.count({ where: { nhanVatId: nv0.id } })) === 0);
+
+  await p.goto(`${BASE}/pokemon/gym`, { waitUntil: 'networkidle' });
+  await p.waitForTimeout(900);
+  check('Gym đã hạ thì không đánh lại được',
+    (await p.locator('text=đã hạ').count()) >= 1);
+
+  // ── Đổi ngọc lấy đá ──────────────────────────────────────────────────
+  await db.pokeNhanVat.update({ where: { id: nv0.id }, data: { ngoc: 12, da: 0 } });
+  await p.goto(`${BASE}/pokemon/cua-hang`, { waitUntil: 'networkidle' });
+  await p.waitForTimeout(900);
+  await p.locator('form:has-text("Đổi ngọc lấy đá") input[name="sl"]').fill('2');
+  await p.locator('form:has-text("Đổi ngọc lấy đá") button:has-text("Đổi")').click();
+  await doiToi(async () => (await db.pokeNhanVat.findUnique({ where: { id: nv0.id } })).da >= 2);
+  const sauDoi = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
+  check('đổi hai viên đá thì trừ đúng mười ngọc',
+    sauDoi.ngoc === 2 && sauDoi.da === 2, `${sauDoi.ngoc} ngọc, ${sauDoi.da} đá`);
+
+  const ngocTruoc = sauDoi.ngoc;
+  await p.locator('form:has-text("Đổi ngọc lấy đá") input[name="sl"]').fill('50');
+  await p.locator('form:has-text("Đổi ngọc lấy đá") button:has-text("Đổi")').click({ force: true });
+  await p.waitForTimeout(1500);
+  const sauLoNgoc = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
+  check('đổi quá số ngọc đang có thì bị chặn',
+    sauLoNgoc.ngoc === ngocTruoc && sauLoNgoc.da === 2, `${sauLoNgoc.ngoc} ngọc, ${sauLoNgoc.da} đá`);
+
   // ── Dọn ──────────────────────────────────────────────────────────────
   await db.pokeNhanVat.deleteMany({ where: { userId: { in: [me.id, khac.id] } } });
 }

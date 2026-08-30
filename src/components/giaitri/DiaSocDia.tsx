@@ -18,12 +18,18 @@ import { ANH } from '@/lib/mini-game-const';
  * cảnh ngay.
  */
 
-/** Chỗ nằm của bốn đồng trên mặt đĩa, đặt lệch nhau cho khỏi giống xếp hàng. */
+/**
+ * Chỗ nằm của bốn đồng trên mặt đĩa, đặt lệch nhau cho khỏi giống xếp hàng.
+ *
+ * Đo trên ảnh chứ không ướm bằng mắt: mặt phẳng của cái đĩa (nơi đặt được đồ)
+ * nằm ở 8 hàng điểm ảnh trên cùng của `dia.png`, quy ra khoảng 23 % chiều cao
+ * khung. Đặt thấp hơn con số ấy là đồ chìm xuống dưới mặt đĩa.
+ */
 const CHO = [
-  { left: '10%', bottom: '17%' },
-  { left: '31%', bottom: '20%' },
-  { left: '49%', bottom: '15%' },
-  { left: '68%', bottom: '18%' },
+  { left: '10%', bottom: '21%' },
+  { left: '31%', bottom: '24%' },
+  { left: '49%', bottom: '20%' },
+  { left: '68%', bottom: '22%' },
 ];
 
 export function DiaSocDia({ dong, xoc, kin, batDangMo }: {
@@ -38,22 +44,23 @@ export function DiaSocDia({ dong, xoc, kin, batDangMo }: {
 }) {
   return (
     <div className="relative mx-auto aspect-[8/5] w-full max-w-sm overflow-hidden rounded-2xl bg-gradient-to-b from-emerald-800 to-emerald-950 shadow-inner">
-      {/* Bốn đồng nằm trên mặt đĩa. Vẽ TRƯỚC đĩa để mép đĩa che chân đồng. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`${ANH}/socdia/dia.png`} alt="" aria-hidden
+        className="absolute bottom-[12%] left-[8%] w-[84%] drop-shadow-lg" />
+
+      {/* Bốn đồng vẽ SAU cái đĩa — vẽ trước thì vành đĩa cắt mất chân đồng, nhìn
+          như bốn đồng bị chôn nửa dưới. */}
       {!kin && CHO.map((cho, i) => (
         // eslint-disable-next-line @next/next/no-img-element
         <img key={i} src={`${ANH}/socdia/dong-${dong[i] === 1 ? 'ngua' : 'sap'}.png`}
           alt="" aria-hidden className="absolute w-[21%] drop-shadow" style={cho} />
       ))}
 
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`${ANH}/socdia/dia.png`} alt="" aria-hidden
-        className="absolute bottom-[12%] left-[8%] w-[84%] drop-shadow-lg" />
-
       {(kin || batDangMo) && (
         // Phần căn giữa để Ở NGOÀI, hoạt cảnh áp lên ảnh bên trong: cả hai đều
         // dùng `transform`, gộp chung một thẻ là hoạt cảnh xoá luôn phép căn
         // giữa và cái bát trôi hẳn ra mép khung.
-        <span className="absolute bottom-[15%] left-1/2 w-[58%] -translate-x-1/2">
+        <span className="absolute bottom-[23%] left-1/2 w-[58%] -translate-x-1/2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={`${ANH}/socdia/bat.png`} alt="Bát úp trên đĩa"
             className={cn('w-full drop-shadow-xl', xoc && 'soc-rung', batDangMo && 'soc-mo')} />

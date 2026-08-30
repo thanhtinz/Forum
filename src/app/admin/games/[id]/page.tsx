@@ -9,9 +9,11 @@ import { assetUrl, DOWNLOAD_PLATFORMS } from '@/lib/game';
 import { gameAnalytics } from '@/lib/game-stats';
 import { fmtBytes, fmtCount } from '@/lib/utils';
 import { GameEditForm } from '@/components/admin/GameEditForm';
+import { TroLyGameAi } from '@/components/admin/TroLyGameAi';
 import { FileForm, ImageForm, VersionForm } from '@/components/admin/GameSubForms';
 import { deleteFile, deleteGame, deleteImage, deleteVersion, quarantineFile, setLatestVersion } from '../actions';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
+import { coAi } from '@/lib/ai';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sửa game', robots: { index: false } };
@@ -70,6 +72,13 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
         <Tile label="Trending" value={game.trendingScore.toFixed(1)} />
         <Tile label="Rating" value={game.ratingCount ? (game.ratingSum / game.ratingCount).toFixed(1) : '—'} sub={`${game.ratingCount} lượt`} />
       </div>
+
+      {/* Trợ lý AI đặt TRƯỚC biểu mẫu tay: người vào đây phần lớn là để điền
+          một game mới toanh, mà điền tay thì mất mươi phút còn nhờ AI tra rồi
+          sửa thì mất một. Ai muốn tự gõ thì cuộn qua. */}
+      <section>
+        <TroLyGameAi gameId={game.id} coKhoa={coAi()} />
+      </section>
 
       <section className="card p-4 sm:p-5">
         <h2 className="zib-title mb-4">Thông tin game</h2>

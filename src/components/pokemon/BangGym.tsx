@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import { Lock } from 'lucide-react';
 import { vaoGym, type PokeState } from '@/app/(site)/pokemon/actions';
-import { SO_HUY_CHUONG, anhGym, anhHuyChuong, gymDuocVao } from '@/lib/pokemon-const';
+import { SO_HUY_CHUONG, anhGym, anhHuyChuong, boThu, gymDuocVao, tinhSatThuong } from '@/lib/pokemon-const';
 import { cn } from '@/lib/utils';
 import { AnhThu, HuyHieuHe } from './ThePoke';
 
@@ -12,7 +12,11 @@ interface G {
   exp: number; vang: number; cau: number; ngoc: number; tangNguon: number;
 }
 
-export function BangGym({ gym, daHa, dangDanh }: { gym: G[]; daHa: number; dangDanh: boolean }) {
+interface Con { ten: string; he: number; mau: number; c: number[] }
+
+export function BangGym({ gym, daHa, dangDanh, con }: {
+  gym: G[]; daHa: number; dangDanh: boolean; con: Con | null | undefined;
+}) {
   const [state, action, dangChay] = useActionState<PokeState, FormData>(vaoGym, {});
 
   return (
@@ -77,6 +81,26 @@ export function BangGym({ gym, daHa, dangDanh }: { gym: G[]; daHa: number; dangD
                 </div>
               </div>
             </div>
+
+            {/* Ước lượng trước khi vào. Chỉ số Gym nhảy vọt theo cấp số nhân
+                (Gym 1 công 200, Gym 4 đã 2300), mà thú người chơi chỉ +100 mỗi
+                cấp — vào thiếu sức là thua ngay lượt đầu mà chẳng hiểu vì sao.
+                Bản gốc không nói gì cả, cứ để người chơi tự đâm đầu. */}
+            {moData && con && (() => {
+              const bt = boThu({ c1: con.c[0]!, c2: con.c[1]!, c3: con.c[2]!, c4: con.c[3]! });
+              const manh = Math.max(...con.c);
+              const { gay, chiu } = tinhSatThuong(manh, bt, con.he, g.cong, g.thu, g.he);
+              const soLuot = gay > 0 ? Math.ceil(g.mau / gay) : Infinity;
+              const chiuNoi = chiu > 0 ? Math.ceil(con.mau / chiu) : Infinity;
+              const thua = chiuNoi <= soLuot;
+              return (
+                <p className={cn('mt-2 text-xs', thua ? 'text-rose-600' : 'text-emerald-600')}>
+                  {con.ten} gây {gay} máu mỗi lượt — cần {Number.isFinite(soLuot) ? soLuot : '∞'} lượt;
+                  {' '}chịu {chiu} máu mỗi lượt — trụ được {Number.isFinite(chiuNoi) ? chiuNoi : '∞'} lượt.
+                  {thua ? ' Vào lúc này là thua.' : ' Đủ sức đánh.'}
+                </p>
+              );
+            })()}
 
             <div className="mt-2.5">
               {xong ? null : moData ? (

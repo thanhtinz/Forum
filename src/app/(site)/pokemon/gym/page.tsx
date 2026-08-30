@@ -15,8 +15,13 @@ export default async function TrangGym() {
   const userId = s?.user?.id;
   if (!userId) redirect('/login?callbackUrl=/pokemon/gym');
 
-  const nv = await db.pokeNhanVat.findUnique({ where: { userId }, include: { tran: true } });
+  const nv = await db.pokeNhanVat.findUnique({
+    where: { userId }, include: { tran: true, raTran: true },
+  });
   if (!nv) redirect('/pokemon');
+
+  const con = nv.raTran
+    ?? (await db.pokeThu.findFirst({ where: { nhanVatId: nv.id }, orderBy: { createdAt: 'asc' } }));
 
   const gym = await db.pokeGym.findMany({ orderBy: { so: 'asc' }, take: SO_GYM });
 
@@ -38,6 +43,10 @@ export default async function TrangGym() {
         <BangGym
           daHa={nv.huyChuong}
           dangDanh={!!nv.tran}
+          con={con && {
+            ten: con.ten, he: con.he, mau: con.mau,
+            c: [con.c1, con.c2, con.c3, con.c4],
+          }}
           gym={gym.map((g) => ({
             so: g.so, ten: g.ten, he: g.he, cong: g.cong, thu: g.thu, mau: g.mau,
             exp: g.exp, vang: g.vang, cau: g.cau, ngoc: g.ngoc, tangNguon: g.tangNguon,

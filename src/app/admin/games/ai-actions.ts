@@ -7,6 +7,9 @@ import { LoiAiError, ThieuKhoaAiError, coAi } from '@/lib/ai';
 import { soanChiTietGame, timUngVienGame, type ChiTietGame, type UngVienGame } from '@/lib/ai-game';
 import { AnhKhongHopLeError, taiAnhVeKho } from '@/lib/tai-anh';
 
+/** `hoanTac` = game vốn đang hiện công khai, vừa bị rút về nháp để duyệt lại. */
+export type ApState = { error?: string; ok?: boolean; hoanTac?: boolean };
+
 /**
  * Trợ lý AI cho trang đăng game.
  *
@@ -107,7 +110,7 @@ export async function aiTaiAnh(_prev: AiAnhState, fd: FormData): Promise<AiAnhSt
 }
 
 /** Ghi nội dung AI đã soạn (và admin đã duyệt) vào một game có sẵn. */
-export async function aiApVaoGame(_prev: { error?: string; ok?: boolean }, fd: FormData) {
+export async function aiApVaoGame(_prev: ApState, fd: FormData): Promise<ApState> {
   await assertSuperAdmin();
 
   const id = String(fd.get('id') ?? '').trim();
@@ -145,9 +148,16 @@ export async function aiApVaoGame(_prev: { error?: string; ok?: boolean }, fd: F
     }
   }
 
+  // AI soạn xong thì HẠ VỀ NHÁP, không đăng thẳng: nội dung máy viết phải qua
+  // mắt người đã. Game đang hiện công khai mà nhờ AI viết lại thì cũng rút
+  // xuống, vì bản đang hiện lúc ấy là bản chưa ai duyệt.
+  const truoc = await db.game.findUnique({ where: { id }, select: { status: true, slug: true } });
+  if (!truoc) return { error: 'Không tìm thấy game.' };
+
   await db.game.update({
     where: { id },
     data: {
+      status: 'DRAFT',
       titleVi: chu('titleVi'),
       series: chu('series'),
       developer: chu('developer'),
@@ -164,5 +174,7 @@ export async function aiApVaoGame(_prev: { error?: string; ok?: boolean }, fd: F
   });
 
   revalidatePath(`/admin/games/${id}`);
-  return { ok: true };
+  revalidatePath('/admin/games');
+  if (truoc.status === 'PUBLISHED') revalidatePath(`/games/${truoc.slug}`);
+  return { ok: true, hoanTac: truoc.status === 'PUBLISHED' };
 }

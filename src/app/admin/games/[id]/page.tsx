@@ -11,7 +11,7 @@ import { fmtBytes, fmtCount } from '@/lib/utils';
 import { GameEditForm } from '@/components/admin/GameEditForm';
 import { TroLyGameAi } from '@/components/admin/TroLyGameAi';
 import { FileForm, ImageForm, VersionForm } from '@/components/admin/GameSubForms';
-import { deleteFile, deleteGame, deleteImage, deleteVersion, quarantineFile, setLatestVersion } from '../actions';
+import { deleteFile, deleteGame, deleteImage, deleteVersion, quarantineFile, setGameStatus, setLatestVersion } from '../actions';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 import { coAi } from '@/lib/ai';
 
@@ -72,6 +72,8 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
         <Tile label="Trending" value={game.trendingScore.toFixed(1)} />
         <Tile label="Rating" value={game.ratingCount ? (game.ratingSum / game.ratingCount).toFixed(1) : '—'} sub={`${game.ratingCount} lượt`} />
       </div>
+
+      <ThanhDuyet id={game.id} trangThai={game.status} ngayDang={game.publishedAt} />
 
       {/* Trợ lý AI đặt TRƯỚC biểu mẫu tay: người vào đây phần lớn là để điền
           một game mới toanh, mà điền tay thì mất mươi phút còn nhờ AI tra rồi
@@ -198,6 +200,62 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
       </section>
 
     </div>
+  );
+}
+
+const TRANG_THAI: Record<string, { nhan: string; mau: string }> = {
+  DRAFT: { nhan: 'Bản nháp', mau: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+  PENDING: { nhan: 'Chờ duyệt', mau: 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300' },
+  PUBLISHED: { nhan: 'Đang hiện', mau: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+  ARCHIVED: { nhan: 'Đã ẩn', mau: 'bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-400' },
+};
+
+/**
+ * Chốt cuối trước khi game ra mặt tiền. Đặt ngay trên trợ lý AI vì đây là thứ
+ * người sửa game cần biết đầu tiên: bản đang xem là nháp hay là bản khách đang
+ * đọc. Nút duyệt tách riêng khỏi ô "trạng thái" trong biểu mẫu bên dưới — biểu
+ * mẫu ấy lưu cả chục trường một lượt, còn đăng bài thì đáng một cú bấm rõ ràng.
+ */
+function ThanhDuyet({ id, trangThai, ngayDang }: { id: string; trangThai: string; ngayDang: Date | null }) {
+  const tt = TRANG_THAI[trangThai] ?? TRANG_THAI.DRAFT;
+  const dangHien = trangThai === 'PUBLISHED';
+  const doi = async (fd: FormData) => {
+    'use server';
+    await setGameStatus(id, String(fd.get('sang')) as 'PUBLISHED');
+  };
+  return (
+    <section className="card flex flex-wrap items-center gap-3 p-4">
+      <div className="mr-auto">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wide text-ink-400">Trạng thái</span>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${tt.mau}`}>{tt.nhan}</span>
+        </div>
+        <p className="mt-1 text-xs text-ink-400">
+          {dangHien
+            ? ngayDang ? `Đăng ngày ${format(ngayDang, 'dd/MM/yyyy HH:mm')}` : 'Đang hiện công khai.'
+            : 'Chưa hiện với người dùng. Sửa xong thì bấm “Duyệt & đăng”.'}
+        </p>
+      </div>
+      {dangHien ? (
+        <>
+          <form action={doi}>
+            <input type="hidden" name="sang" value="DRAFT" />
+            <button type="submit" className="btn-outline !py-1.5 text-sm">Rút về nháp</button>
+          </form>
+          <form action={doi}>
+            <input type="hidden" name="sang" value="ARCHIVED" />
+            <button type="submit" className="btn !py-1.5 text-sm">Ẩn game</button>
+          </form>
+        </>
+      ) : (
+        <form action={doi}>
+          <input type="hidden" name="sang" value="PUBLISHED" />
+          <button type="submit" className="btn-primary !py-1.5 text-sm gap-1.5">
+            <ShieldCheck size={15} /> Duyệt &amp; đăng
+          </button>
+        </form>
+      )}
+    </section>
   );
 }
 

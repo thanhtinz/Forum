@@ -4,7 +4,7 @@ import { useActionState, useState, useTransition } from 'react';
 import { Check, Download, Loader2, Search, Sparkles } from 'lucide-react';
 import {
   aiApVaoGame, aiSoanGame, aiTaiAnh, aiTimGame,
-  type AiSoanState, type AiTimState,
+  type AiSoanState, type AiTimState, type ApState,
 } from '@/app/admin/games/ai-actions';
 import type { UngVienGame } from '@/lib/ai-game';
 import { cn } from '@/lib/utils';
@@ -118,7 +118,7 @@ function DuyetNoiDung({ gameId, chiTiet }: {
   gameId: string;
   chiTiet: NonNullable<AiSoanState['chiTiet']>;
 }) {
-  const [luu, luuAction, dangLuu] = useActionState<{ error?: string; ok?: boolean }, FormData>(
+  const [luu, luuAction, dangLuu] = useActionState<ApState, FormData>(
     aiApVaoGame, {},
   );
   // Ảnh đã tải về kho: `null` là chưa tải, chuỗi là đường dẫn nội bộ.
@@ -223,10 +223,19 @@ function DuyetNoiDung({ gameId, chiTiet }: {
       )}
 
       {luu.error && <p className="text-sm text-red-600">{luu.error}</p>}
-      {luu.ok && <p className="text-sm font-medium text-emerald-600">Đã lưu vào game.</p>}
+      {luu.ok && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm dark:border-emerald-900 dark:bg-emerald-950/40">
+          <p className="font-medium text-emerald-700 dark:text-emerald-300">Đã lưu thành bản nháp.</p>
+          <p className="mt-1 text-emerald-700/80 dark:text-emerald-300/80">
+            {luu.hoanTac
+              ? 'Game đang hiện công khai đã được rút xuống nháp. Xem lại ở “Thông tin game” bên dưới rồi bấm “Duyệt & đăng” để cho hiện lại.'
+              : 'Xem lại ở “Thông tin game” bên dưới, sửa chỗ nào chưa đúng, rồi bấm “Duyệt & đăng”.'}
+          </p>
+        </div>
+      )}
       <button type="submit" disabled={dangLuu} className="btn-primary w-full gap-1.5">
         {dangLuu ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
-        Lưu vào game
+        Lưu thành bản nháp
       </button>
     </form>
   );

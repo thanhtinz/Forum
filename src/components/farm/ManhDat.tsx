@@ -2,14 +2,14 @@
 
 import type { ODat as ODatDL } from '@/lib/farm';
 import {
-  ANH_CAY_KHE, ANH_CAY_KHE_CHIN, ANH_CUA_HANG,
+  ANH_BXH, ANH_CAY_KHE, ANH_CAY_KHE_CHIN, ANH_CUA_HANG,
   ANH_MAY_1, ANH_MAY_2, ANH_NEN_DEM, ANH_NEN_NGAY, ANH_NHA_KHO,
   NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, O_MOI_TRANG, TROI_DEM, TROI_NGAY,
-  changCua,
+  changCua, doToiTroi,
 } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
-import { BienXepHang } from './VePixel';
+import { BienBangDon } from './VePixel';
 import { ODat, ODatKhoa } from './ODat';
 
 /**
@@ -32,6 +32,21 @@ import { ODat, ODatKhoa } from './ODat';
 
 /** Bội số phóng của lớp nền ở xa. */
 const PHONG_NEN = 2;
+
+/**
+ * Pha hai màu hex theo tỉ lệ `t` (0 là màu đầu, 1 là màu sau).
+ *
+ * Pha ở JS chứ không dùng `color-mix()` của CSS: giá trị `t` đổi mỗi giây
+ * theo đồng hồ, mà đã phải dựng lại kiểu nội tuyến thì tính luôn ra mã màu
+ * gọn hơn là dựng một chuỗi `color-mix` dài ngoằng.
+ */
+function pha(a: string, b: string, t: number): string {
+  const doc = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [ar, ag, ab] = doc(a);
+  const [br, bg, bb] = doc(b);
+  const g = (x: number, y: number) => Math.round(x + (y - x) * t);
+  return `rgb(${g(ar, br)}, ${g(ag, bg)}, ${g(ab, bb)})`;
+}
 
 /**
  * Chiều cao phần chân ô (thanh tiến độ, đồng hồ, nhãn) tính bằng điểm ảnh.
@@ -57,7 +72,6 @@ interface Props {
   oDat: ODatDL[];
   /** Đồng hồ do trang giữ, nhích mỗi giây. */
   now: number;
-  banNgay: boolean;
   dangChon: number | null;
   onChon: (index: number) => void;
   /** Giá mở ô tiếp theo; `null` là đã kịch trần. */
@@ -71,16 +85,29 @@ interface Props {
   onMoCuaHang: () => void;
   onMoNhaKho: () => void;
   onMoBxh: () => void;
+  onMoBangDon: () => void;
   /** Cây khế đã ra quả chưa, và bấm vào thì hái. */
   kheSanSang: boolean;
   onHaiKhe: () => void;
 }
 
 export function ManhDat({
-  oDat, now, banNgay, dangChon, onChon, giaMoO, duTienMoO, dangLam, onMua,
-  trang, onTrang, onMoCuaHang, onMoNhaKho, onMoBxh, kheSanSang, onHaiKhe,
+  oDat, now, dangChon, onChon, giaMoO, duTienMoO, dangLam, onMua,
+  trang, onTrang, onMoCuaHang, onMoNhaKho, onMoBxh, onMoBangDon,
+  kheSanSang, onHaiKhe,
 }: Props) {
-  const [troiTren, troiDuoi] = banNgay ? TROI_NGAY : TROI_DEM;
+  /*
+   * Trời tính từ ĐỒNG HỒ ĐANG CHẠY, không phải từ một cái cờ máy chủ gửi
+   * xuống lúc dựng trang: có cờ thì mở trang lúc 17h55 rồi ngồi đó, tới 18h30
+   * ngoài trời tối om mà trong game vẫn nắng chang chang cho tới khi tải lại.
+   *
+   * `doToiTroi` trả về số thực 0..1 nên mọi lớp đều pha được theo nó, và
+   * cảnh chuyển dần trong hai tiếng chứ không giật một nhát ở đúng mốc giờ.
+   */
+  const toi = doToiTroi(new Date(now));
+  const banNgay = toi < 0.5;
+  const troiTren = pha(TROI_NGAY[0], TROI_DEM[0], toi);
+  const troiDuoi = pha(TROI_NGAY[1], TROI_DEM[1], toi);
 
   /*
    * Bày thêm bao nhiêu ô chưa mở: chỉ đủ cho ĐẦY HÀNG đang dở rồi thêm một
@@ -299,44 +326,72 @@ export function ManhDat({
         className="relative h-24 overflow-hidden sm:h-32"
         style={{ background: `linear-gradient(180deg, ${troiTren} 0%, ${troiDuoi} 100%)` }}
       >
-        {banNgay ? (
-          <span
-            aria-hidden
-            className="absolute right-6 top-5 block size-14 rounded-full"
-            style={{
-              background:
-                'radial-gradient(circle, #fff8cc 0 32%, #ffdc55 33% 52%, rgba(255,220,85,.35) 53% 72%, rgba(255,220,85,0) 73%)',
-            }}
-          />
-        ) : (
-          <>
-            <span
-              aria-hidden
-              className="absolute right-8 top-5 block size-10 rounded-full"
-              style={{
-                background: 'radial-gradient(circle at 62% 38%, #f6f8ff 0 46%, rgba(246,248,255,.18) 47% 70%, rgba(246,248,255,0) 71%)',
-              }}
-            />
-            {SAO.map(([x, y, tre]) => (
-              <span
-                key={`${x}-${y}`}
-                aria-hidden
-                className="farm-sao absolute block size-[2px] rounded-full bg-white"
-                style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${tre}s` }}
-              />
-            ))}
-          </>
-        )}
+        {/*
+          Mặt trời, mặt trăng và các vì sao đều dựng SẴN cả ba, chỉ mờ tỏ theo
+          `toi`. Dựng có điều kiện thì tới mốc giờ mặt trời biến mất và mặt
+          trăng hiện ra trong đúng một khung hình — mà lúc chạng vạng thì
+          ngoài đời cả hai cùng ở trên trời.
 
+          Mặt trời lặn xuống còn mặt trăng mọc lên: chỉ mờ dần tại chỗ thì ra
+          hai cái đèn ai đó bật tắt, có nhích theo chiều dọc mới ra chuyển
+          cảnh.
+        */}
+        <span
+          aria-hidden
+          className="absolute right-6 block size-14 rounded-full"
+          style={{
+            top: `${20 + toi * 46}px`,
+            opacity: Math.max(0, 1 - toi * 1.6),
+            background:
+              'radial-gradient(circle, #fff8cc 0 32%, #ffdc55 33% 52%, rgba(255,220,85,.35) 53% 72%, rgba(255,220,85,0) 73%)',
+          }}
+        />
+        <span
+          aria-hidden
+          className="absolute right-8 block size-10 rounded-full"
+          style={{
+            top: `${66 - toi * 46}px`,
+            opacity: Math.max(0, toi * 1.6 - 0.6),
+            background: 'radial-gradient(circle at 62% 38%, #f6f8ff 0 46%, rgba(246,248,255,.18) 47% 70%, rgba(246,248,255,0) 71%)',
+          }}
+        />
+        {SAO.map(([x, y, tre]) => (
+          <span
+            key={`${x}-${y}`}
+            aria-hidden
+            className="farm-sao absolute block size-[2px] rounded-full bg-white"
+            style={{ left: `${x}%`, top: `${y}%`, animationDelay: `${tre}s`, opacity: toi }}
+          />
+        ))}
+
+        {/*
+          Ba tầng mây, mỗi tầng một cỡ một tốc độ: đám nhỏ ở xa trôi chậm và
+          mờ, đám to ở gần trôi nhanh và rõ. Cùng cỡ cùng tốc độ thì ba đám
+          dính thành một dải phẳng, không ra chiều sâu.
+
+          Trễ âm (`animationDelay`) để mỗi đám vào cảnh ở một chỗ khác nhau
+          ngay từ giây đầu — không có nó thì mở trang ra trời trống trơn, phải
+          đợi cả phút mới thấy đám mây đầu tiên bò vào.
+
+          Mây mờ dần về đêm chứ không tắt hẳn: đêm trăng vẫn nhìn ra mây.
+        */}
         <AnhPixel
           src={ANH_MAY_1}
-          className="farm-may pointer-events-none absolute left-0 top-4 opacity-90"
-          style={{ width: 34 * PHONG_NEN, animationDuration: '46s' }}
+          className="farm-may pointer-events-none absolute left-0 top-3"
+          style={{ width: 24 * PHONG_NEN, animationDuration: '96s', animationDelay: '-40s',
+            opacity: 0.55 - toi * 0.25 }}
         />
         <AnhPixel
           src={ANH_MAY_2}
-          className="farm-may pointer-events-none absolute left-0 top-12 opacity-80"
-          style={{ width: 54 * PHONG_NEN, animationDuration: '71s', animationDelay: '-24s' }}
+          className="farm-may pointer-events-none absolute left-0 top-8"
+          style={{ width: 40 * PHONG_NEN, animationDuration: '68s', animationDelay: '-12s',
+            opacity: 0.8 - toi * 0.35 }}
+        />
+        <AnhPixel
+          src={ANH_MAY_1}
+          className="farm-may pointer-events-none absolute left-0 top-14"
+          style={{ width: 60 * PHONG_NEN, animationDuration: '44s', animationDelay: '-30s',
+            opacity: 0.95 - toi * 0.4 }}
         />
       </div>
 
@@ -344,18 +399,25 @@ export function ManhDat({
           Mấy búi cỏ ở mép dưới tấm ảnh có nền trong suốt, nên tô sẵn màu đất
           phía sau để cỏ mọc ra từ thửa ruộng chứ không lơ lửng trên khoảng
           trắng. */}
-      <div
-        className="relative"
-        style={{
-          height: NEN_DAI_CANH * PHONG_NEN,
-          backgroundColor: '#7d520b',
-          backgroundImage: `url(${banNgay ? ANH_NEN_NGAY : ANH_NEN_DEM})`,
-          backgroundRepeat: 'repeat-x',
-          backgroundPosition: 'center bottom',
-          backgroundSize: `${NEN_RONG * PHONG_NEN}px ${NEN_CAO * PHONG_NEN}px`,
-          imageRendering: 'pixelated',
-        }}
-      >
+      <div className="relative" style={{ height: NEN_DAI_CANH * PHONG_NEN, backgroundColor: '#7d520b' }}>
+        {/* Hai tấm nền chồng lên nhau, tấm đêm mờ tỏ theo `toi` — đổi thẳng
+            `backgroundImage` thì rặng cây đang nắng nhảy phắt sang rặng cây
+            đêm, mà hai tấm chỉ khác nhau ở màu nên chuyển dần là liền mạch. */}
+        {[[ANH_NEN_NGAY, 1], [ANH_NEN_DEM, toi]].map(([anh, mo]) => (
+          <span
+            key={anh as string}
+            aria-hidden
+            className="absolute inset-0 block"
+            style={{
+              opacity: mo as number,
+              backgroundImage: `url(${anh})`,
+              backgroundRepeat: 'repeat-x',
+              backgroundPosition: 'center bottom',
+              backgroundSize: `${NEN_RONG * PHONG_NEN}px ${NEN_CAO * PHONG_NEN}px`,
+              imageRendering: 'pixelated',
+            }}
+          />
+        ))}
         {/*
           Cửa hàng và nhà kho dựng ngay trong cảnh, không phải hai thẻ rời ở
           cuối trang: đi mua hạt thì bước tới cửa hàng, đi cất nông sản thì
@@ -393,12 +455,23 @@ export function ManhDat({
             </button>
             <button
               type="button"
+              onClick={onMoBangDon}
+              title="Bảng đơn hàng"
+              aria-label="Mở bảng đơn hàng"
+              className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
+            >
+              <BienBangDon className="block w-[44px] sm:w-[88px]" />
+            </button>
+            <button
+              type="button"
               onClick={onMoBxh}
               title="Bảng xếp hạng nông trại"
               aria-label="Mở bảng xếp hạng nông trại"
               className="origin-bottom transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
             >
-              <BienXepHang className="block w-[48px] sm:w-[96px]" />
+              {/* Tấm biển của chính bản gốc, đã có sẵn chữ "BẢNG XẾP HẠNG"
+                  tiếng Việt vẽ trong ảnh — không cần tự vẽ nữa. */}
+              <AnhPixel src={ANH_BXH} className="block w-[44px] sm:w-[88px]" />
             </button>
           </div>
 
@@ -425,6 +498,20 @@ export function ManhDat({
             />
           </button>
         </div>
+
+        {/*
+          Lớp phủ đêm trùm CẢ rặng cây lẫn dãy nhà, không chỉ thửa đất.
+          Thiếu nó thì lúc chín giờ tối bầu trời đã đen kịt mà cửa hàng, nhà
+          kho và hai tấm biển vẫn sáng trưng như đang giữa trưa — nhìn ra mấy
+          hình dán lên nền chứ không ra một cảnh có ánh sáng chung.
+        */}
+        {toi > 0 && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 mix-blend-multiply"
+            style={{ backgroundColor: `rgba(24, 42, 92, ${(toi * 0.45).toFixed(3)})` }}
+          />
+        )}
       </div>
 
       {/* ── Lớp 3: thửa đất ── */}
@@ -495,11 +582,11 @@ export function ManhDat({
         </div>
 
         {/* Ban đêm phủ một lớp xanh lạnh cho thửa đất tối theo bầu trời. */}
-        {!banNgay && (
+        {toi > 0 && (
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0 mix-blend-multiply"
-            style={{ backgroundColor: 'rgba(24, 42, 92, .45)' }}
+            style={{ backgroundColor: `rgba(24, 42, 92, ${(toi * 0.45).toFixed(3)})` }}
           />
         )}
         </div>

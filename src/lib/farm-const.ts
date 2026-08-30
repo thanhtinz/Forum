@@ -82,7 +82,7 @@ export type TinhTrangViec = 'xong' | 'toi-luot' | 'chua-toi';
  * thu hoạch giành lấy lượt, không bắt phải tưới bù.
  */
 export function tinhTrangViec(
-  o: { tilled: boolean; cropKey: number | null; watered: boolean; fertilized: boolean },
+  o: { tilled: boolean; cropKey: number | null; watered: boolean; fertKind: number | null },
   chin: boolean,
 ): Record<ViecVu, TinhTrangViec> {
   const dangTrong = o.cropKey != null;
@@ -90,7 +90,7 @@ export function tinhTrangViec(
     xoi: o.tilled || dangTrong,
     gieo: dangTrong,
     tuoi: dangTrong && o.watered,
-    bon: dangTrong && o.fertilized,
+    bon: dangTrong && o.fertKind != null,
     thu: false,
   };
 
@@ -99,7 +99,7 @@ export function tinhTrangViec(
   else if (!dangTrong) toiLuot = 'gieo';
   else if (chin) toiLuot = 'thu';
   else if (!o.watered) toiLuot = 'tuoi';
-  else if (!o.fertilized) toiLuot = 'bon';
+  else if (o.fertKind == null) toiLuot = 'bon';
 
   return Object.fromEntries(VIEC_VU.map((v) => [
     v, xong[v] ? 'xong' : v === toiLuot ? 'toi-luot' : 'chua-toi',
@@ -108,17 +108,36 @@ export function tinhTrangViec(
 
 // ─────────────────────────── Phân bón ───────────────────────────
 
-/** Ảnh bao phân. */
-export const ANH_PHAN = `${FARM_ANH}/phan-bon/3.png`;
+/**
+ * Năm loại phân, càng đắt càng bồi nhiều.
+ *
+ * `kind` vừa là khoá vừa là tên tệp ảnh (`phan-bon/{kind}.png`), cùng quy ước
+ * với `FarmCrop.key`. Bậc thang giá và mức bồi đi đều nhau để không có loại
+ * nào "ngon bất thường" — lệch một bậc là mọi người chỉ mua đúng bậc ấy, bốn
+ * loại kia bày ra cho có.
+ */
+export const PHAN_LOAI = [
+  { kind: 1, ten: 'Phân chuồng', gia: 8, them: 1 },
+  { kind: 2, ten: 'Phân xanh', gia: 15, them: 2 },
+  { kind: 3, ten: 'Phân lân', gia: 24, them: 3 },
+  { kind: 4, ten: 'Phân NPK', gia: 35, them: 4 },
+  { kind: 5, ten: 'Phân vi sinh', gia: 48, them: 5 },
+] as const;
 
-/** Giá một bao phân ở cửa hàng. */
-export const PHAN_GIA = 15;
+export type LoaiPhan = (typeof PHAN_LOAI)[number];
+
+/** Tra một loại phân theo `kind`; `null` nếu số không hợp lệ. */
+export function loaiPhan(kind: number | null | undefined): LoaiPhan | null {
+  return PHAN_LOAI.find((p) => p.kind === kind) ?? null;
+}
+
+/** Ảnh một bao phân. */
+export function anhPhan(kind: number): string {
+  return `${FARM_ANH}/phan-bon/${kind}.png`;
+}
 
 /** Mỗi lượt mua nhiều nhất bấy nhiêu bao — cùng lý do có trần với hạt giống. */
 export const PHAN_MUA_TOI_DA = 99;
-
-/** Bón phân thì thu thêm bấy nhiêu quả. */
-export const PHAN_THEM = 2;
 
 // ─────────────────────────── Bảng đơn hàng ───────────────────────────
 
@@ -179,10 +198,31 @@ export function gioVN(now: Date = new Date()): number {
   return Math.floor((now.getTime() / 3600000 + 7) % 24);
 }
 
-/** 6h–18h giờ Việt Nam là ban ngày, còn lại là ban đêm. */
+/** Trời đang nghiêng về ban ngày hay ban đêm — dùng cho cái nhãn trên trang. */
 export function laBanNgay(now: Date = new Date()): boolean {
-  const g = gioVN(now);
-  return g >= 6 && g < 18;
+  return doToiTroi(now) < 0.5;
+}
+
+/**
+ * Trời tối tới mức nào, 0 là ban ngày hẳn và 1 là ban đêm hẳn.
+ *
+ * Trả về số THỰC chứ không phải ngày/đêm đúng-sai, để cảnh chuyển dần chứ
+ * không giật một nhát: 5–7 giờ sáng trời sáng dần, 17–19 giờ tối dần. Bản
+ * trước chỉ có một cái cờ, nên đúng 6 giờ là cả bầu trời, tấm nền, mặt trời
+ * và lớp phủ đêm cùng đổi trong một khung hình.
+ *
+ * Nội suy tuyến tính là đủ: mắt không đọc ra đường cong của hoàng hôn trên
+ * một dải chuyển màu cao trăm điểm ảnh, mà một hàm bậc nhất thì đọc mã là
+ * biết ngay giờ nào trời ra sao.
+ */
+export function doToiTroi(now: Date = new Date()): number {
+  // Giờ THẬP PHÂN, không dùng `gioVN` vì hàm ấy làm tròn xuống — trời sẽ
+  // nhảy từng nấc một giờ thay vì trôi.
+  const g = (now.getTime() / 3600000 + 7) % 24;
+  if (g >= 7 && g < 17) return 0;
+  if (g >= 19 || g < 5) return 1;
+  if (g < 7) return (7 - g) / 2;   // 5h → 7h: 1 xuống 0
+  return (g - 17) / 2;             // 17h → 19h: 0 lên 1
 }
 
 // ─────────────────────────── Đường dẫn ảnh ───────────────────────────
@@ -260,6 +300,8 @@ export const ANH_CUA_HANG = `${FARM_ANH}/o-dat/cuahang.png`;
 export const ANH_NHA_KHO = `${FARM_ANH}/o-dat/nhakho.png`;
 export const ANH_MUA_DAT = `${FARM_ANH}/o-dat/muadat.png`;
 export const ANH_FARM = `${FARM_ANH}/o-dat/farm.png`;
+/** Tấm biển "BẢNG XẾP HẠNG" của bản gốc — chữ Việt sẵn trong ảnh. */
+export const ANH_BXH = `${FARM_ANH}/o-dat/bxh.png`;
 export const ANH_CAY_KHE = `${FARM_ANH}/o-dat/caykhe.png`;
 export const ANH_CAY_KHE_CHIN = `${FARM_ANH}/o-dat/caykhechin.png`;
 export const ANH_NEN_NGAY = `${FARM_ANH}/nen/nennongtrai.png`;

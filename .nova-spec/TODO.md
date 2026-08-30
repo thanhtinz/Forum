@@ -59,6 +59,16 @@ sưu tầm 9 loài × 6 màu.
 **Slide trang chủ** — nối `Slide` vào trang chủ (trước đây quản trị lập được mà
 chẳng hiện ở đâu), kèm vá chỗ `saveSlide` không kiểm định dạng ảnh.
 
+**Nông trại: tên gốc, phân bón nhiều loại, trời chuyển sáng tối** — tên nông
+sản sửa theo đúng bộ của bản gốc (Lúa · Cà chua · Cà rốt · Dứa · Dưa hấu · Nho
+· Hoa hồng · Xoài · Thanh long · Hoa hướng dương · Hoa tulip); đợt trước tôi
+nhìn ảnh đoán bừa nên sai ba tên. Phân bón thành năm loại (`FarmFert`), ô đất
+lưu LOẠI phân đã bón chứ không phải cờ đúng/sai. Biển xếp hạng dùng `bxh.png`
+của bản gốc (có sẵn chữ Việt), bảng đơn hàng vẽ lại theo đúng khuôn và bảng
+màu của tấm ấy. Trời tính từ `doToiTroi` — số thực 0..1 theo ĐỒNG HỒ ĐANG
+CHẠY, nên cảnh chuyển dần trong hai tiếng quanh 5–7h và 17–19h thay vì giật
+một nhát, và đổi ngay trong lúc đang mở trang. Ba tầng mây thay cho hai.
+
 **Nông trại: bảng đơn hàng thay lái buôn** — bỏ hẳn `banNongSan`. Khách đặt
 1–2 món trên bảng ghi chú, gom trong kho ra giao; đơn thường ×1, đặc biệt ×2,
 siêu tốc ×3 nhưng hạn 2 giờ. Thưởng = tổng giá bán × 1,5 × hệ số, CHỐT lúc tạo

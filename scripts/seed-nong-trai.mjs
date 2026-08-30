@@ -9,6 +9,10 @@
  * `key` là đổi luôn cái cây người ta nhìn thấy. Tên tiếng Việt bên dưới đặt
  * theo ĐÚNG hình đã mở ra xem, không đặt theo thứ tự số.
  *
+ * Bảng tên này là của bản gốc, không phải tên tôi đoán từ hình: đợt đầu tôi
+ * nhìn ảnh rồi đặt bừa nên `1.png` (bó lúa) thành "Chuối", `8.png` (quả xoài)
+ * thành "Ớt vàng", `9.png` (thanh long) thành "Hoa mười giờ".
+ *
  * Cân đối con số — ba luật tự đặt cho nhau, kiểm lại bằng bảng ở cuối tệp:
  *
  *  1. Rẻ thì nhanh mà lãi mỏng, đắt thì lâu mà lãi dày. Lãi một vụ (bán hết
@@ -31,16 +35,16 @@ const db = new PrismaClient();
 const CAY = [
   // key, tên,            hạt, phút, thu min–max, giá bán
   { key: 3, name: 'Cà rốt', seedCost: 5, growMinutes: 5, yieldMin: 2, yieldMax: 3, sellPrice: 4 },
-  { key: 1, name: 'Chuối', seedCost: 10, growMinutes: 10, yieldMin: 2, yieldMax: 3, sellPrice: 7 },
-  { key: 8, name: 'Ớt vàng', seedCost: 16, growMinutes: 20, yieldMin: 2, yieldMax: 4, sellPrice: 10 },
-  { key: 2, name: 'Táo đỏ', seedCost: 25, growMinutes: 30, yieldMin: 3, yieldMax: 4, sellPrice: 13 },
-  { key: 4, name: 'Chanh vàng', seedCost: 35, growMinutes: 45, yieldMin: 3, yieldMax: 5, sellPrice: 17 },
+  { key: 1, name: 'Lúa', seedCost: 10, growMinutes: 10, yieldMin: 2, yieldMax: 3, sellPrice: 7 },
+  { key: 2, name: 'Cà chua', seedCost: 16, growMinutes: 20, yieldMin: 2, yieldMax: 4, sellPrice: 10 },
+  { key: 4, name: 'Dứa', seedCost: 25, growMinutes: 30, yieldMin: 3, yieldMax: 4, sellPrice: 13 },
+  { key: 8, name: 'Xoài', seedCost: 35, growMinutes: 45, yieldMin: 3, yieldMax: 5, sellPrice: 17 },
   { key: 5, name: 'Dưa hấu', seedCost: 50, growMinutes: 60, yieldMin: 3, yieldMax: 5, sellPrice: 24 },
-  { key: 6, name: 'Nho tím', seedCost: 70, growMinutes: 90, yieldMin: 4, yieldMax: 6, sellPrice: 26 },
-  { key: 9, name: 'Hoa mười giờ', seedCost: 90, growMinutes: 120, yieldMin: 4, yieldMax: 6, sellPrice: 33 },
+  { key: 6, name: 'Nho', seedCost: 70, growMinutes: 90, yieldMin: 4, yieldMax: 6, sellPrice: 26 },
+  { key: 9, name: 'Thanh long', seedCost: 90, growMinutes: 120, yieldMin: 4, yieldMax: 6, sellPrice: 33 },
   { key: 7, name: 'Hoa hồng', seedCost: 120, growMinutes: 180, yieldMin: 5, yieldMax: 7, sellPrice: 38 },
   { key: 11, name: 'Hoa tulip', seedCost: 160, growMinutes: 240, yieldMin: 6, yieldMax: 8, sellPrice: 45 },
-  { key: 10, name: 'Hướng dương', seedCost: 220, growMinutes: 360, yieldMin: 7, yieldMax: 9, sellPrice: 55 },
+  { key: 10, name: 'Hoa hướng dương', seedCost: 220, growMinutes: 360, yieldMin: 7, yieldMax: 9, sellPrice: 55 },
 ];
 
 /**

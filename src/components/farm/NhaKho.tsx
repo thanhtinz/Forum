@@ -1,7 +1,7 @@
 'use client';
 
 import type { HatTrongTui, MonTrongKho } from '@/lib/farm';
-import { ANH_PHAN, anhNongSan, moTaVu } from '@/lib/farm-const';
+import { anhNongSan, anhPhan, loaiPhan, moTaVu } from '@/lib/farm-const';
 import { AnhPixel } from './AnhPixel';
 
 /**
@@ -20,7 +20,7 @@ import { AnhPixel } from './AnhPixel';
 export function NhaKho({ kho, tuiHat, phanBon }: {
   kho: MonTrongKho[];
   tuiHat: HatTrongTui[];
-  phanBon: number;
+  phanBon: { kind: number; qty: number }[];
 }) {
   return (
     <div className="pb-3">
@@ -50,15 +50,29 @@ export function NhaKho({ kho, tuiHat, phanBon }: {
       </div>
 
       {/* ── Phân bón ── */}
-      <div className="flex items-center gap-2 border-b border-[var(--nova-border)] px-4 py-3">
-        <span className="grid size-8 shrink-0 place-items-center overflow-hidden rounded"
-          style={{ background: 'radial-gradient(circle at 50% 118%, #dfe8cf 0%, #f6faf0 72%)' }}>
-          <AnhPixel src={ANH_PHAN} />
-        </span>
-        <h3 className="text-sm font-black">Phân bón</h3>
-        <span className="chip !px-1.5 !py-0 text-[11px] tabular-nums">{phanBon}</span>
-        {phanBon === 0 && (
-          <span className="retro-sub text-ink-400">— hết rồi, ghé cửa hàng mua thêm.</span>
+      <div className="border-b border-[var(--nova-border)] px-4 py-3">
+        <h3 className="mb-2 text-sm font-black">Phân bón</h3>
+        {phanBon.length === 0 ? (
+          <p className="retro-sub text-ink-400">
+            Chưa có bao phân nào — ghé cửa hàng mua đã.
+          </p>
+        ) : (
+          <ul className="flex flex-wrap gap-1.5">
+            {phanBon.map((f) => {
+              const l = loaiPhan(f.kind);
+              return (
+                <li key={f.kind} title={l ? `${l.ten} — thu thêm ${l.them} quả` : undefined}
+                  className="flex items-center gap-1.5 rounded-lg border border-[var(--nova-border)] py-1 pl-1 pr-2">
+                  <span className="grid size-7 shrink-0 place-items-center overflow-hidden rounded"
+                    style={{ background: 'radial-gradient(circle at 50% 118%, #dfe8cf 0%, #f6faf0 72%)' }}>
+                    <AnhPixel src={anhPhan(f.kind)} />
+                  </span>
+                  <span className="whitespace-nowrap text-xs font-bold">{l?.ten ?? `Phân ${f.kind}`}</span>
+                  <span className="chip !px-1.5 !py-0 text-[11px] tabular-nums">{f.qty}</span>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
 

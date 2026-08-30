@@ -8,7 +8,7 @@ import {
 } from '@/app/(site)/nong-trai/actions';
 import type { NongTrai as DuLieu } from '@/lib/farm';
 import {
-  O_DAT_TOI_DA, PHAN_GIA, changCua, moTaConLai, tienDoVu, tinhTrangViec,
+  O_DAT_TOI_DA, changCua, laBanNgay, moTaConLai, tienDoVu, tinhTrangViec,
   type ViecVu,
 } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ import { BxhNongTrai } from './BxhNongTrai';
 import { CuaHangHat } from './CuaHangHat';
 import { ThanhViecVu } from './ThanhViecVu';
 import { TuiHat } from './TuiHat';
+import { TuiPhan } from './TuiPhan';
 import { ManhDat } from './ManhDat';
 import { NhaKho } from './NhaKho';
 
@@ -51,6 +52,13 @@ export function NongTrai({ d }: { d: DuLieu }) {
   const [moKho, setMoKho] = useState(false);
   const [moTui, setMoTui] = useState(false);
   const [moBxh, setMoBxh] = useState(false);
+  const [moPhan, setMoPhan] = useState(false);
+  const [moDon, setMoDon] = useState(false);
+
+  // Nhãn ngày/đêm đi theo ĐỒNG HỒ ĐANG CHẠY như cảnh ruộng, không theo cái cờ
+  // máy chủ gửi lúc dựng trang — hai chỗ lệch nhau thì nhãn nói "Ban ngày"
+  // trong lúc trời trong cảnh đã tối hẳn.
+  const banNgay = laBanNgay(new Date(now));
 
   // Đồng hồ nhích mỗi giây để đếm ngược chạy mà không phải hỏi lại máy chủ.
   useEffect(() => {
@@ -100,8 +108,12 @@ export function NongTrai({ d }: { d: DuLieu }) {
    * gieo hạt nào.
    */
   const lamViec = (v: ViecVu, oIndex: number) => {
+    // Hai việc phải CHỌN MÓN trước nên mở hộp thoại chứ không gọi thẳng: gieo
+    // thì phải biết gieo hạt nào, bón thì phải biết bón loại phân nào. Ba việc
+    // còn lại không có gì để chọn.
     if (v === 'gieo') { setMoTui(true); return; }
-    const viec = { xoi: xoiDat, tuoi: tuoiNuoc, bon: bonPhan, thu: thuHoach }[v];
+    if (v === 'bon') { setMoPhan(true); return; }
+    const viec = { xoi: xoiDat, tuoi: tuoiNuoc, thu: thuHoach }[v];
     lam(viec, { o: oIndex });
   };
 
@@ -113,11 +125,11 @@ export function NongTrai({ d }: { d: DuLieu }) {
         </span>
         <span className={cn(
           'chip',
-          d.banNgay
+          banNgay
             ? 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300'
             : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300',
         )}>
-          {d.banNgay ? 'Ban ngày' : 'Ban đêm'}
+          {banNgay ? 'Ban ngày' : 'Ban đêm'}
         </span>
         {soODaChin > 0 && (
           <span className="chip bg-emerald-500 text-white">{soODaChin} ô đã chín</span>
@@ -127,13 +139,14 @@ export function NongTrai({ d }: { d: DuLieu }) {
       {/* ── Mảnh ruộng và thanh việc, chung một khối ── */}
       <div className="card overflow-hidden">
         <ManhDat
-          oDat={d.oDat} now={now} banNgay={d.banNgay}
+          oDat={d.oDat} now={now}
           dangChon={oChon} onChon={(i) => setOChon((cu) => (cu === i ? null : i))}
           giaMoO={d.giaMoO} duTienMoO={duTienMoO} dangLam={dangLam} onMua={moODatNgay}
           trang={trang} onTrang={doiTrang}
           onMoCuaHang={() => setMoCho(true)}
           onMoNhaKho={() => setMoKho(true)}
           onMoBxh={() => setMoBxh(true)}
+          onMoBangDon={() => setMoDon(true)}
           kheSanSang={now >= d.kheSanSangLuc}
           onHaiKhe={() => lam(haiCayKhe, {})}
         />
@@ -154,7 +167,6 @@ export function NongTrai({ d }: { d: DuLieu }) {
           {o && (
             <ThanhViecVu
               tinhTrang={tinhTrangViec(o, changO === 'chin')}
-              giaBon={PHAN_GIA}
               dangLam={dangLam}
               onViec={(v) => lamViec(v, o.index)}
             />
@@ -190,9 +202,9 @@ export function NongTrai({ d }: { d: DuLieu }) {
         <CuaHangHat
           cay={cay} diem={d.diem} dangLam={dangLam}
           daCo={Object.fromEntries(d.tuiHat.map((h) => [h.cropId, h.qty]))}
-          phanDangCo={d.phanBon}
+          phanDangCo={Object.fromEntries(d.phanBon.map((f) => [f.kind, f.qty]))}
           onMua={(cayId, soLuong) => lam(muaHat, { cay: cayId, so_luong: soLuong })}
-          onMuaPhan={(soLuong) => lam(muaPhan, { so_luong: soLuong })}
+          onMuaPhan={(kind, soLuong) => lam(muaPhan, { loai: kind, so_luong: soLuong })}
         />
       </Modal>
 
@@ -219,10 +231,25 @@ export function NongTrai({ d }: { d: DuLieu }) {
         />
       </Modal>
 
-      <BangDon
-        don={d.donHang} now={now} dangLam={dangLam}
-        onGiao={(donId) => lam(giaoDon, { don: donId })}
-      />
+      <Modal open={moPhan} onClose={() => setMoPhan(false)} title="Chọn phân để bón">
+        <TuiPhan
+          phan={d.phanBon} dangLam={dangLam}
+          onBon={(kind) => {
+            if (oChon == null) return;
+            setMoPhan(false);
+            lam(bonPhan, { o: oChon, loai: kind });
+          }}
+          onToiCuaHang={() => { setMoPhan(false); setMoCho(true); }}
+        />
+      </Modal>
+
+      <Modal open={moDon} onClose={() => setMoDon(false)} title="Bảng đơn hàng"
+        className="!max-w-2xl">
+        <BangDon
+          don={d.donHang} now={now} dangLam={dangLam}
+          onGiao={(donId) => lam(giaoDon, { don: donId })}
+        />
+      </Modal>
 
       <Modal open={moBxh} onClose={() => setMoBxh(false)} title="Bảng xếp hạng nông trại"
         className="!max-w-lg">

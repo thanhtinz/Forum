@@ -21,7 +21,7 @@ export default async function run(check) {
   const diemCu = u.points;
   const oCu = await db.farmPlot.findMany({
     where: { userId: u.id },
-    select: { index: true, tilled: true, cropId: true, plantedAt: true, readyAt: true, watered: true, fertilized: true },
+    select: { index: true, tilled: true, cropId: true, plantedAt: true, readyAt: true, watered: true, fertKind: true },
   });
   const hatCu = await db.farmSeed.findMany({ where: { userId: u.id }, select: { cropId: true, qty: true } });
   const khoCu = await db.farmBarn.findMany({ where: { userId: u.id }, select: { cropId: true, qty: true } });
@@ -74,10 +74,12 @@ export default async function run(check) {
     check('bấm căn cửa hàng thì mở hộp thoại',
       (await p.locator('div[role="dialog"]').count()) === 1);
 
-    const the = p.locator('div[role="dialog"] li').first();
-    await the.locator('button[aria-label^="Thêm một gói"]').click();
-    await the.locator('button[aria-label^="Thêm một gói"]').click();
-    await the.locator('button[aria-label^="Mua "]').click();
+    // Bám theo NHÃN chứ không theo thứ tự thẻ: cửa hàng nay bày phân bón
+    // trước hạt giống, nên `li` đầu tiên là bao phân chứ không phải giống.
+    const themGoi = p.locator('div[role="dialog"] button[aria-label^="Thêm một gói"]').first();
+    await themGoi.click();
+    await themGoi.click();
+    await p.locator('div[role="dialog"] button[aria-label^="Mua "][aria-label*="hạt"]').first().click();
     await doiToi(async () => (await soHat(re.id)) > 0);
 
     check('mua ba gói thì túi có ba hạt', (await soHat(re.id)) === 3, `túi có ${await soHat(re.id)}`);
@@ -162,7 +164,7 @@ export default async function run(check) {
 
     const truocBon = await diem();
     await bam('Bón phân');
-    await doiToi(async () => (await db.farmPlot.count({ where: { userId: u.id, fertilized: true } })) === 1);
+    await doiToi(async () => (await db.farmPlot.count({ where: { userId: u.id, fertKind: true } })) === 1);
     await p.waitForTimeout(1200);
     check('bón phân trừ đúng giá', truocBon - (await diem()) === PHAN_GIA,
       `trừ ${truocBon - (await diem())}, đáng lẽ ${PHAN_GIA}`);
@@ -187,11 +189,11 @@ export default async function run(check) {
 
     const oSau = await db.farmPlot.findUnique({
       where: { userId_index: { userId: u.id, index: 0 } },
-      select: { tilled: true, cropId: true, watered: true, fertilized: true },
+      select: { tilled: true, cropId: true, watered: true, fertKind: true },
     });
     check('thu xong thì đất chai lại, phải xới từ đầu',
       oSau.tilled === false && oSau.cropId === null
-      && oSau.watered === false && oSau.fertilized === false,
+      && oSau.watered === false && oSau.fertKind === null,
       JSON.stringify(oSau));
     buoc = await cacBuoc();
     check('và vòng năm việc quay về XỚI ĐẤT', buoc[0] === 'Xới đất, đang tới lượt', buoc.join(' | '));

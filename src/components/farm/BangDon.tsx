@@ -5,7 +5,6 @@ import type { DonHang } from '@/lib/farm-don';
 import { DON_TEN, anhNongSan, moTaConLai } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
-import { BienBangDon } from './VePixel';
 
 /**
  * Bảng ghi chú — khách đặt hàng, mình gom trong kho ra giao.
@@ -16,6 +15,9 @@ import { BienBangDon } from './VePixel';
  *
  * Mỗi món hiện "đang có / cần" chứ không chỉ hiện số cần: thiếu mấy quả là
  * câu hỏi đầu tiên khi nhìn một đơn chưa giao được.
+ *
+ * Dựng làm ruột hộp thoại, mở từ tấm bảng trong cảnh — nên không có khung thẻ
+ * cũng không có tiêu đề.
  */
 
 const VE: Record<DonHang['kind'], { lop: string; icon: React.ReactNode }> = {
@@ -38,20 +40,11 @@ export function BangDon({ don, now, dangLam, onGiao }: {
   onGiao: (donId: string) => void;
 }) {
   return (
-    <section className="card overflow-hidden">
-      <header className="flex items-center gap-3 border-b border-[var(--nova-border)] bg-gradient-to-r from-sky-50 to-transparent px-4 py-3 dark:from-sky-950/25">
-        {/* Trước đây mượn ảnh nhà kho làm biểu tượng cho bảng đơn hàng — sai
-            hẳn, kho và bảng đơn là hai thứ khác nhau, mà người chơi vừa bấm
-            vào đúng cái nhà kho ấy trên map. */}
-        <BienBangDon className="h-10 w-auto shrink-0" />
-        <div className="min-w-0 flex-1">
-          <h2 className="text-base font-black leading-tight">Bảng đơn hàng</h2>
-          <p className="retro-sub text-ink-400">
-            Khách đặt gì thì gom trong kho ra giao. Đơn đặc biệt ăn đôi, đơn
-            siêu tốc ăn ba nhưng có hạn.
-          </p>
-        </div>
-      </header>
+    <div>
+      <p className="border-b border-[var(--nova-border)] bg-sky-50 px-4 py-2 text-sm font-medium text-sky-900 dark:bg-sky-950/30 dark:text-sky-200">
+        Khách đặt gì thì gom trong kho ra giao. Đơn đặc biệt ăn đôi, đơn siêu
+        tốc ăn ba nhưng có hạn.
+      </p>
 
       {don.length === 0 ? (
         <p className="px-4 py-8 text-center text-sm text-ink-400">
@@ -130,6 +123,6 @@ export function BangDon({ don, now, dangLam, onGiao }: {
           })}
         </ul>
       )}
-    </section>
+    </div>
   );
 }

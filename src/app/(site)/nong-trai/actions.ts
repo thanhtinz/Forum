@@ -8,7 +8,7 @@ import { lockUsers } from '@/lib/lock';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import {
   HAT_MUA_TOI_DA, KHE_CHU_KY_MS, KHE_MAX, KHE_MIN, O_DAT_BAN_DAU, O_DAT_TOI_DA,
-  KHE_KEY, PHAN_GIA, PHAN_MUA_TOI_DA, PHAN_THEM, TUOI_RUT_NGAN, giaMoODat,
+  KHE_KEY, PHAN_MUA_TOI_DA, TUOI_RUT_NGAN, giaMoODat, loaiPhan,
 } from '@/lib/farm-const';
 
 /**
@@ -65,34 +65,37 @@ export async function muaPhan(_prev: FarmState, formData: FormData): Promise<Far
   const me = await nhaNong();
   if ('error' in me) return { error: me.error };
 
+  const kind = docSo(formData.get('loai'));
   const so = docSo(formData.get('so_luong')) ?? 1;
+  const phan = loaiPhan(kind);
+  if (!phan) return { error: 'Không có loại phân này.' };
   if (so < 1 || so > PHAN_MUA_TOI_DA) {
     return { error: `Mỗi lượt mua được 1 tới ${PHAN_MUA_TOI_DA} bao thôi.` };
   }
-  const tien = PHAN_GIA * so;
+  const tien = phan.gia * so;
 
   try {
     await db.$transaction(async (tx) => {
       await grantPoints({
         userId: me.userId, amount: -tien, reason: 'FARM_SEED',
-        note: `Mua ${so} bao phân bón`,
+        note: `Mua ${so} bao ${phan.ten}`,
       }, tx);
-      await tx.farmSupply.upsert({
-        where: { userId: me.userId },
-        create: { userId: me.userId, fertilizer: so },
-        update: { fertilizer: { increment: so } },
+      await tx.farmFert.upsert({
+        where: { userId_kind: { userId: me.userId, kind: phan.kind } },
+        create: { userId: me.userId, kind: phan.kind, qty: so },
+        update: { qty: { increment: so } },
         select: { id: true },
       });
     });
   } catch (e) {
     if (e instanceof InsufficientPointsError) {
-      return { error: `Bạn không đủ ${tien} điểm để mua ${so} bao phân.` };
+      return { error: `Bạn không đủ ${tien} điểm để mua ${so} bao ${phan.ten}.` };
     }
     return { error: 'Không mua được lúc này, thử lại nhé.' };
   }
 
   lamMoi();
-  return { ok: true, ke: `Đã mua ${so} bao phân về kho.` };
+  return { ok: true, ke: `Đã mua ${so} bao ${phan.ten} về kho.` };
 }
 
 // ─────────────────────────── Xới đất ───────────────────────────
@@ -215,7 +218,7 @@ export async function gieoHat(_prev: FarmState, formData: FormData): Promise<Far
       // chưa xới, thì không câu nào khớp.
       const xuong = await tx.farmPlot.updateMany({
         where: { userId: me.userId, index: o, cropId: null, tilled: true },
-        data: { cropId: cay.id, plantedAt: now, readyAt, watered: false, fertilized: false },
+        data: { cropId: cay.id, plantedAt: now, readyAt, watered: false, fertKind: null },
       });
       if (xuong.count === 0) throw new Error('o-ban');
     });
@@ -286,28 +289,33 @@ export async function bonPhan(_prev: FarmState, formData: FormData): Promise<Far
   if ('error' in me) return { error: me.error };
 
   const o = docSo(formData.get('o'));
+  const kind = docSo(formData.get('loai'));
+  const phan = loaiPhan(kind);
   if (o == null) return { error: 'Chọn ô đất đã nào.' };
+  if (!phan) return { error: 'Chọn loại phân đã nào.' };
 
   try {
     await db.$transaction(async (tx) => {
-      const rut = await tx.farmSupply.updateMany({
-        where: { userId: me.userId, fertilizer: { gte: 1 } },
-        data: { fertilizer: { decrement: 1 } },
+      const rut = await tx.farmFert.updateMany({
+        where: { userId: me.userId, kind: phan.kind, qty: { gte: 1 } },
+        data: { qty: { decrement: 1 } },
       });
       if (rut.count === 0) throw new Error('het-phan');
 
+      // Ghi LOẠI phân xuống ô: lúc thu hoạch mới cần biết bón loại nào để
+      // cộng đúng phần bồi. `fertKind: null` vừa là điều kiện "chưa bón".
       const danh = await tx.farmPlot.updateMany({
         where: {
           userId: me.userId, index: o,
-          cropId: { not: null }, fertilized: false,
+          cropId: { not: null }, fertKind: null,
         },
-        data: { fertilized: true },
+        data: { fertKind: phan.kind },
       });
       if (danh.count === 0) throw new Error('khong-bon-duoc');
     });
   } catch (e) {
     if (e instanceof Error && e.message === 'het-phan') {
-      return { error: 'Trong kho hết phân rồi — ghé cửa hàng mua thêm đã.' };
+      return { error: `Trong kho hết ${phan.ten} rồi — ghé cửa hàng mua thêm đã.` };
     }
     if (e instanceof Error && e.message === 'khong-bon-duoc') {
       return { error: 'Ô này bón rồi, hoặc đang trống.' };
@@ -316,7 +324,7 @@ export async function bonPhan(_prev: FarmState, formData: FormData): Promise<Far
   }
 
   lamMoi();
-  return { ok: true, ke: `Đã bón phân ô ${o + 1}, vụ này thu thêm ${PHAN_THEM} quả.` };
+  return { ok: true, ke: `Đã bón ${phan.ten} cho ô ${o + 1}, vụ này thu thêm ${phan.them} quả.` };
 }
 
 // ─────────────────────────── Thu hoạch ───────────────────────────
@@ -342,7 +350,7 @@ export async function thuHoach(_prev: FarmState, formData: FormData): Promise<Fa
       const cu = await tx.farmPlot.findUnique({
         where: { userId_index: { userId: me.userId, index: o } },
         select: {
-          watered: true, fertilized: true,
+          watered: true, fertKind: true,
           crop: { select: { id: true, name: true, yieldMin: true, yieldMax: true } },
         },
       });
@@ -358,7 +366,7 @@ export async function thuHoach(_prev: FarmState, formData: FormData): Promise<Fa
         // đó là thứ khép vòng năm việc thành một vòng lặp thật.
         data: {
           cropId: null, plantedAt: null, readyAt: null,
-          watered: false, fertilized: false, tilled: false,
+          watered: false, fertKind: null, tilled: false,
         },
       });
       if (don.count === 0) throw new Error('chua-chin');
@@ -366,7 +374,7 @@ export async function thuHoach(_prev: FarmState, formData: FormData): Promise<Fa
       // Tưới thì được mùa, không tưới thì chỉ được phần tối thiểu; bón phân
       // cộng thêm một phần cố định nữa.
       const soLuong = (cu.watered ? cu.crop.yieldMax : cu.crop.yieldMin)
-        + (cu.fertilized ? PHAN_THEM : 0);
+        + (loaiPhan(cu.fertKind)?.them ?? 0);
       await tx.farmBarn.upsert({
         where: { userId_cropId: { userId: me.userId, cropId: cu.crop.id } },
         create: { userId: me.userId, cropId: cu.crop.id, qty: soLuong },

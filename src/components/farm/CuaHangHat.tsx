@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Minus, Plus, ShoppingBasket } from 'lucide-react';
 import type { CayGiong } from '@/lib/farm';
-import { ANH_PHAN, HAT_MUA_TOI_DA, PHAN_GIA, PHAN_THEM, anhNongSan, moTaVu } from '@/lib/farm-const';
+import { HAT_MUA_TOI_DA, PHAN_LOAI, anhNongSan, anhPhan, moTaVu } from '@/lib/farm-const';
 import { cn } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
 
@@ -28,11 +28,11 @@ interface Props {
   diem: number;
   /** Số hạt từng loại đang có trong túi, tra theo `cropId`. */
   daCo: Record<string, number>;
-  /** Số bao phân đang có trong kho. */
-  phanDangCo: number;
+  /** Số bao từng loại phân đang có trong kho, tra theo `kind`. */
+  phanDangCo: Record<number, number>;
   dangLam: boolean;
   onMua: (cayId: string, soLuong: number) => void;
-  onMuaPhan: (soLuong: number) => void;
+  onMuaPhan: (kind: number, soLuong: number) => void;
 }
 
 export function CuaHangHat({ cay, diem, daCo, phanDangCo, dangLam, onMua, onMuaPhan }: Props) {
@@ -45,9 +45,13 @@ export function CuaHangHat({ cay, diem, daCo, phanDangCo, dangLam, onMua, onMuaP
       {/* Phân bón đứng riêng một khối trên đầu, không xếp lẫn vào lưới hạt
           giống: nó không phải một giống cây, mà lẫn vào thì người chơi phải
           quét hết mười một thẻ mới thấy nó. */}
-      <div className="border-b border-[var(--nova-border)] p-3">
-        <ThePhanBon diem={diem} daCo={phanDangCo} dangLam={dangLam} onMua={onMuaPhan} />
-      </div>
+      <h3 className="px-4 pt-3 text-sm font-black">Phân bón</h3>
+      <ul className="grid grid-cols-1 gap-2 border-b border-[var(--nova-border)] p-3 sm:grid-cols-2">
+        {PHAN_LOAI.map((l) => (
+          <ThePhanBon key={l.kind} loai={l} diem={diem} daCo={phanDangCo[l.kind] ?? 0}
+            dangLam={dangLam} onMua={(so) => onMuaPhan(l.kind, so)} />
+        ))}
+      </ul>
 
       <h3 className="px-4 pt-3 text-sm font-black">Hạt giống</h3>
 
@@ -65,46 +69,47 @@ export function CuaHangHat({ cay, diem, daCo, phanDangCo, dangLam, onMua, onMuaP
   );
 }
 
-/** Bao phân — mua như hạt giống, dùng lúc bón cho ô đang có cây. */
-function ThePhanBon({ diem, daCo, dangLam, onMua }: {
+/** Một loại phân — mua như hạt giống, dùng lúc bón cho ô đang có cây. */
+function ThePhanBon({ loai, diem, daCo, dangLam, onMua }: {
+  loai: (typeof PHAN_LOAI)[number];
   diem: number; daCo: number; dangLam: boolean; onMua: (soLuong: number) => void;
 }) {
   const [so, setSo] = useState(1);
-  const muaNoi = Math.min(HAT_MUA_TOI_DA, Math.floor(diem / PHAN_GIA));
+  const muaNoi = Math.min(HAT_MUA_TOI_DA, Math.floor(diem / loai.gia));
   const duMua = muaNoi >= so && !dangLam;
   const doi = (b: number) => setSo((n) => Math.min(HAT_MUA_TOI_DA, Math.max(1, n + b)));
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--nova-border)] bg-[var(--nova-surface)] p-2.5">
-      <span className="grid size-12 shrink-0 place-items-center overflow-hidden rounded-lg"
+    <li className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--nova-border)] bg-[var(--nova-surface)] p-2">
+      <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-lg"
         style={{ background: 'radial-gradient(circle at 50% 118%, #dfe8cf 0%, #f6faf0 72%)' }}>
-        <AnhPixel src={ANH_PHAN} phong={2} />
+        <AnhPixel src={anhPhan(loai.kind)} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-black">Phân bón</p>
+        <p className="truncate text-[13px] font-black">{loai.ten}</p>
         <p className="retro-sub text-ink-400">
-          Bón một bao cho một ô, thu thêm {PHAN_THEM} quả{daCo > 0 && ` · kho có ${daCo}`}
+          thu thêm {loai.them} quả{daCo > 0 && ` · kho có ${daCo}`}
         </p>
       </div>
       <div className="flex items-center gap-1">
         <button type="button" onClick={() => doi(-1)} disabled={so <= 1}
-          aria-label="Bớt một bao phân"
+          aria-label={`Bớt một bao ${loai.ten}`}
           className="grid size-7 shrink-0 place-items-center rounded-lg border border-[var(--nova-border)] disabled:opacity-40">
           <Minus size={13} />
         </button>
-        <span className="w-6 text-center text-sm font-bold tabular-nums">{so}</span>
+        <span className="w-5 text-center text-sm font-bold tabular-nums">{so}</span>
         <button type="button" onClick={() => doi(1)} disabled={so >= HAT_MUA_TOI_DA}
-          aria-label="Thêm một bao phân"
+          aria-label={`Thêm một bao ${loai.ten}`}
           className="grid size-7 shrink-0 place-items-center rounded-lg border border-[var(--nova-border)] disabled:opacity-40">
           <Plus size={13} />
         </button>
       </div>
       <button type="button" disabled={!duMua} onClick={() => onMua(so)}
-        aria-label={`Mua ${so} bao phân bón, hết ${PHAN_GIA * so} điểm`}
+        aria-label={`Mua ${so} bao ${loai.ten}, hết ${loai.gia * so} điểm`}
         className="btn-primary shrink-0 gap-1 !py-1.5 text-xs disabled:opacity-50">
-        <ShoppingBasket size={13} /> Mua · {PHAN_GIA * so}đ
+        <ShoppingBasket size={13} /> {loai.gia * so}đ
       </button>
-    </div>
+    </li>
   );
 }
 

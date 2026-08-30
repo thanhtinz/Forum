@@ -15,10 +15,8 @@ import { cn } from '@/lib/utils';
  * Cuộn ngang ở khổ hẹp: năm nút mà ép vừa 390px thì chữ bé tới mức không đọc
  * nổi, còn cho xuống dòng thì mất luôn cảm giác một dây việc nối tiếp nhau.
  */
-export function ThanhViecVu({ tinhTrang, giaBon, dangLam, onViec }: {
+export function ThanhViecVu({ tinhTrang, dangLam, onViec }: {
   tinhTrang: Record<ViecVu, TinhTrangViec>;
-  /** Giá một lần bón phân — việc duy nhất trong năm việc là mất điểm. */
-  giaBon: number;
   dangLam: boolean;
   onViec: (v: ViecVu) => void;
 }) {
@@ -37,8 +35,7 @@ export function ThanhViecVu({ tinhTrang, giaBon, dangLam, onViec }: {
               aria-current={t === 'toi-luot' ? 'step' : undefined}
               title={
                 t === 'xong' ? `${VIEC_TEN[v]} — xong rồi`
-                  : t === 'toi-luot'
-                    ? v === 'bon' ? `Bón phân · ${giaBon} điểm` : VIEC_TEN[v]
+                  : t === 'toi-luot' ? VIEC_TEN[v]
                   : `${VIEC_TEN[v]} — chưa tới lượt`
               }
               aria-label={
@@ -57,9 +54,6 @@ export function ThanhViecVu({ tinhTrang, giaBon, dangLam, onViec }: {
             >
               {t === 'xong' && <Check size={12} aria-hidden />}
               {VIEC_TEN[v]}
-              {v === 'bon' && t === 'toi-luot' && (
-                <span className="font-black opacity-80">· {giaBon}đ</span>
-              )}
             </button>
           </div>
         );

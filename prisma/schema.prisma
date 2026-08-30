@@ -154,7 +154,7 @@ model User {
   farmPlots      FarmPlot[]
   farmBarn       FarmBarn[]
   farmSeeds      FarmSeed[]
-  farmSupply     FarmSupply?
+  farmFerts      FarmFert[]
   farmOrders     FarmOrder[]
   rong           Rong[]
   /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
@@ -2243,8 +2243,10 @@ model FarmPlot {
   readyAt   DateTime?
   /// Đã tưới chưa — mỗi vụ tưới được một lần, tưới thì được mùa hơn.
   watered   Boolean   @default(false)
-  /// Đã bón phân chưa — mỗi vụ một lần, bón thì thu thêm được ít quả.
-  fertilized Boolean  @default(false)
+  /// Đã bón loại phân nào; `null` là chưa bón. Giữ LOẠI chứ không phải một
+  /// cờ đúng/sai, vì mỗi loại bồi thêm một mức khác nhau và lúc thu hoạch mới
+  /// cần tới con số ấy.
+  fertKind  Int?
 
   @@unique([userId, index])
   @@index([userId])
@@ -2283,18 +2285,21 @@ model FarmSeed {
   @@index([userId])
 }
 
-/// Vật tư của nông trại — thứ mua ở cửa hàng mà không phải hạt giống.
+/// Phân bón trong kho, một hàng mỗi LOẠI.
 ///
-/// Một hàng mỗi người chứ không phải một hàng mỗi loại như `FarmSeed`: phân
-/// bón chỉ có một loại, mà có một loại thì bảng khoá theo (người, loại) chỉ
-/// tổ thêm một cột luôn bằng nhau.
-model FarmSupply {
+/// Năm loại, mỗi loại một giá và một mức bồi. `kind` là số 1..5 và cũng là
+/// tên tệp ảnh (`phan-bon/{kind}.png`) — cùng quy ước với `FarmCrop.key`, nên
+/// đổi số là đổi luôn bao phân người ta nhìn thấy.
+model FarmFert {
   id     String @id @default(cuid())
-  userId String @unique
+  userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  /// Số bao phân bón đang có.
-  fertilizer Int @default(0)
+  kind Int
+  qty  Int @default(0)
+
+  @@unique([userId, kind])
+  @@index([userId])
 }
 
 /// Kiểu đơn hàng trên bảng ghi chú.

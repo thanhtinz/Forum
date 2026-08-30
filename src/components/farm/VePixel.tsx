@@ -53,8 +53,20 @@ export function VePixel({ hinh, mau, className, title }: {
   );
 }
 
-/** Gỗ, cỏ và ba màu bục — dùng chung cho mấy tấm biển tự vẽ. */
+/**
+ * Bảng màu lấy thẳng từ `bxh.png` của bản gốc — đếm điểm ảnh trong chính tấm
+ * ảnh ấy ra, không phải màu tôi tự chọn. Nhờ vậy tấm biển tự vẽ đứng cạnh mấy
+ * tấm ảnh cũ mà không lộ ra là đồ ghép.
+ */
 const MAU_BIEN = {
+  v: '#ffcb7b', // mặt gỗ sáng
+  h: '#ffe7c1', // bắt sáng, cũng là màu giấy
+  e: '#6b3c00', // viền
+  p: '#946110', // cột
+  q: '#d69e5a', // cột phía sáng, cũng là bóng mép dưới bảng
+  z: '#6b4900', // nét chữ nguệch ngoạc trên giấy
+  r: '#c0392b', // đinh ghim
+  o: '#66472c', // bóng đổ dưới chân cột
   k: '#4a2f0f', // viền gỗ
   s: '#a9702f', // mặt gỗ bắt sáng
   g: '#8a5620', // mặt gỗ
@@ -105,26 +117,65 @@ export function BienXepHang({ className }: { className?: string }) {
 }
 
 /**
- * Bảng ghi chú của khách: tấm gỗ đóng đinh bốn góc, trên ghim một tờ giấy có
- * mấy dòng chữ nguệch ngoạc — đúng cái bảng đơn hàng treo ở đầu trại.
+ * Bảng đơn hàng: tấm gỗ trên hai cột, ghim ba tờ giấy có mấy dòng nguệch
+ * ngoạc — đúng cái bảng khách dán đơn ở đầu trại.
+ *
+ * Dựng theo ĐÚNG khuôn và bảng màu của `bxh.png`: cùng 44×45, cùng hai cột
+ * trên hai cột dưới, cùng màu gỗ. Bản trước tôi tự nghĩ ra một tấm bảng tối
+ * màu, đứng cạnh mấy tấm ảnh gốc là lộ ngay ra đồ ghép từ hai bộ khác nhau.
+ *
+ * Không viết chữ lên biển: chữ có dấu ở cỡ này phải vẽ tay từng nét, mà ba tờ
+ * giấy ghim đinh đỏ thì tự nó đã nói ra "bảng dán đơn".
+ *
+ * Bản đồ ký tự này SINH RA bằng script rồi dán vào, không gõ tay: 45 hàng ×
+ * 44 cột mà đếm bằng mắt thì lệch cột như đã lệch một lần rồi.
  */
 const HINH_BANG_DON = [
-  '................',
-  '.kkkkkkkkkkkkkk.',
-  '.kssssssssssssk.',
-  '.kg..........gk.',
-  '.kg.dddddddd.gk.',
-  '.kg.dnnnnndd.gk.',
-  '.kg.dddddddd.gk.',
-  '.kg.dnnnnnnd.gk.',
-  '.kg.dddddddd.gk.',
-  '.kg.dnnnnddd.gk.',
-  '.kg.dddddddd.gk.',
-  '.kg..........gk.',
-  '.kkkkkkkkkkkkkk.',
-  '....tt....tt....',
-  '...cccc..cccc...',
-  '................',
+  '............................................',
+  '..........eeee.................eeee.........',
+  '..........qqpp.................qqpp.........',
+  '..........qqpp.................qqpp.........',
+  '..........qqpp.................qqpp.........',
+  '..........qqpp.................qqpp.........',
+  '..........qqpp.................qqpp.........',
+  '.eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.',
+  '.ehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhe.',
+  '.ehhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhe.',
+  '.evvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvve.',
+  '.evvvvvvrhrvvvvvvvvvvrhrvvvvvvvvvvrhrvvvvve.',
+  '.evvvvvvrrrvvvvvvvvvvrrrvvvvvvvvvvrrrvvvvve.',
+  '.evvvzzzzzzzzzvvvvzzzzzzzzzvvvvzzzzzzzzzvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhzzzzhhhvvvvhhzzzzhhhvvvvhhzzzzhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhzzzzzzhvvvvhhzzzzzzhvvvvhhzzzzzzhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhzzzzhhhvvvvhhzzzzhhhvvvvhhzzzzhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhzzzzzzhvvvvhhzzzzzzhvvvvhhzzzzzzhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvhhhhhhhhhvvvvhhhhhhhhhvvvvhhhhhhhhhvve.',
+  '.evvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvve.',
+  '.evvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvve.',
+  '.eqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqe.',
+  '.eqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqe.',
+  '.eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.',
+  '............qqpp............qqpp............',
+  '............qqpp............qqpp............',
+  '............qqpp............qqpp............',
+  '............qqpp............qqpp............',
+  '............qqpp............qqpp............',
+  '...........oooooo..........oooooo...........',
+  '...........oooooo..........oooooo...........',
 ] as const;
 
 export function BienBangDon({ className }: { className?: string }) {

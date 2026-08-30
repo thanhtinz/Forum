@@ -1,9 +1,7 @@
 import { db } from './db';
 import { bxhNongTrai, type HangNongTrai } from './farm-bxh';
 import { dungBangDon, xemBangDon, type DonHang } from './farm-don';
-import {
-  KHE_CHU_KY_MS, O_DAT_BAN_DAU, O_DAT_TOI_DA, giaMoODat, laBanNgay,
-} from './farm-const';
+import { KHE_CHU_KY_MS, O_DAT_BAN_DAU, O_DAT_TOI_DA, giaMoODat } from './farm-const';
 
 /**
  * Nông trại — mọi thứ để DỰNG trang. Phần thay đổi dữ liệu nằm ở
@@ -36,7 +34,8 @@ export interface ODat {
   plantedAt: number | null;
   readyAt: number | null;
   watered: boolean;
-  fertilized: boolean;
+  /** Đã bón loại phân nào; `null` là chưa bón. */
+  fertKind: number | null;
 }
 
 /** Một loại hạt đang có trong túi. */
@@ -62,8 +61,8 @@ export interface NongTrai {
   kho: MonTrongKho[];
   /** Hạt đã mua mà chưa gieo. */
   tuiHat: HatTrongTui[];
-  /** Số bao phân bón đang có trong kho. */
-  phanBon: number;
+  /** Phân bón trong kho, theo từng loại. */
+  phanBon: { kind: number; qty: number }[];
   /** Đơn đang treo trên bảng ghi chú. */
   donHang: DonHang[];
   /** Bảng xếp hạng của riêng nông trại. */
@@ -74,7 +73,6 @@ export interface NongTrai {
   /** Giá mở ô tiếp theo; `null` nghĩa là đã kịch trần. */
   giaMoO: number | null;
   soODaMo: number;
-  banNgay: boolean;
   /** Mốc hái được cây khế lần tới, tính bằng mili giây. */
   kheSanSangLuc: number;
   /** Đồng hồ máy chủ lúc dựng trang — giao diện lấy làm gốc rồi tự chạy tiếp. */
@@ -131,7 +129,7 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
       take: O_DAT_TOI_DA,
       select: {
         index: true, tilled: true, plantedAt: true, readyAt: true,
-        watered: true, fertilized: true,
+        watered: true, fertKind: true,
         crop: { select: { key: true, name: true } },
       },
     }),
@@ -153,7 +151,11 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
         crop: { select: { id: true, key: true, name: true, growMinutes: true } },
       },
     }),
-    db.farmSupply.findUnique({ where: { userId }, select: { fertilizer: true } }),
+    db.farmFert.findMany({
+      where: { userId, qty: { gt: 0 } },
+      orderBy: { kind: 'asc' }, take: 10,
+      select: { kind: true, qty: true },
+    }),
     xemBangDon(userId),
     bxhNongTrai(),
     danhSachCay(),
@@ -172,7 +174,7 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
       plantedAt: p.plantedAt?.getTime() ?? null,
       readyAt: p.readyAt?.getTime() ?? null,
       watered: p.watered,
-      fertilized: p.fertilized,
+      fertKind: p.fertKind,
     })),
     kho: kho.map((b) => ({
       cropId: b.crop.id,
@@ -188,14 +190,13 @@ export async function xemNongTrai(userId: string): Promise<NongTrai> {
       qty: h.qty,
       growMinutes: h.crop.growMinutes,
     })),
-    phanBon: vatTu?.fertilizer ?? 0,
+    phanBon: vatTu,
     donHang,
     bxh,
     toi: nguoi?.username ?? null,
     cayGiong,
     giaMoO: soODaMo >= O_DAT_TOI_DA ? null : giaMoODat(soODaMo),
     soODaMo,
-    banNgay: laBanNgay(new Date(now)),
     kheSanSangLuc: khe + KHE_CHU_KY_MS,
     now,
   };

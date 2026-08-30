@@ -123,6 +123,10 @@ const MAU = {
  *
  * Trừ nét chữ ra — chữ phải giữ nguyên màu nâu đậm của bộ gốc thì hai tấm
  * biển mới ra cùng một bàn tay viết.
+ *
+ * Vẫn là GỖ NÂU như tấm gốc, chỉ sẫm và đượm hơn — tấm gốc là gỗ vàng nhạt
+ * đã bạc nắng, tấm này là gỗ nâu còn tươi. Hai tông cùng họ thì đứng cạnh
+ * nhau vẫn ra hai tấm biển của cùng một cái trại.
  */
 function xoayTone(px, i) {
   const [r, g, b] = [px[i], px[i + 1], px[i + 2]];
@@ -130,10 +134,10 @@ function xoayTone(px, i) {
   const l = (max + min) / 2 / 255;
   // Xám thì để yên, không thì nó ám màu cả bóng đổ dưới chân cột.
   if (max - min < 12) return;
-  // Gỗ vàng ấm → gỗ xanh rêu: giữ độ sáng, đổi tương quan ba kênh.
-  px[i] = Math.round(255 * (l * 0.62 + 0.02));
-  px[i + 1] = Math.round(255 * (l * 0.86 + 0.04));
-  px[i + 2] = Math.round(255 * (l * 0.58 + 0.06));
+  // Gỗ vàng nhạt → gỗ nâu sẫm: giữ độ sáng, kéo kênh lam xuống cho đượm.
+  px[i] = Math.round(255 * (l * 0.86 + 0.07));
+  px[i + 1] = Math.round(255 * (l * 0.58 + 0.04));
+  px[i + 2] = Math.round(255 * (l * 0.30 + 0.02));
 }
 
 const anh = docPng(GOC);

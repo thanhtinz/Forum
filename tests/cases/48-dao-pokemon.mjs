@@ -13,6 +13,18 @@ import { BASE, db, doiToi, openPage } from '../helpers.mjs';
  *    vào bảng dùng chung — hai người đánh cùng lúc là trừ máu của nhau.
  *  • Quyền: thú của người khác thì không được cho ra trận, không được thả.
  */
+/**
+ * Cấp theo kinh nghiệm: cấp n cần 25·n·(n−1) điểm.
+ *
+ * Viết lại ở đây chứ không gọi hàm của ứng dụng — gọi hàm của chính nó thì bài
+ * kiểm chỉ so nó với nó.
+ */
+function capTuExp(exp) {
+  let c = 1;
+  while (25 * (c + 1) * c <= exp && c < 99) c++;
+  return c;
+}
+
 export default async function run(check) {
   const me = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true } });
   const khac = await db.user.findFirst({ where: { username: 'huytran' }, select: { id: true } });
@@ -80,8 +92,22 @@ export default async function run(check) {
   check('trận giữ BẢN SAO máu riêng, không trỏ về bảng chung',
     tran?.mau === tran?.mauToiDa, `${tran?.mau}/${tran?.mauToiDa}`);
 
+  // Ép chỉ số con thú hoang về một bộ ĐÃ BIẾT rồi mới đánh. Bốc ngẫu nhiên
+  // thì có lượt gặp con dị biệt của khu Cỏ (công 150, thủ 120, máu 100 giữa
+  // toàn những con công dưới 20) — thú khởi đầu chết ngay lượt đầu và bài
+  // kiểm đỏ oan, mà nhánh thưởng thì lượt có lượt không.
+  await db.pokeTran.update({
+    where: { nhanVatId: nv0.id },
+    data: { cong: 12, thu: 4, mau: 60, mauToiDa: 60, he: 1, exp: 7, vang: 9 },
+  });
+  await db.pokeThu.update({ where: { id: nv0.raTranId }, data: { mau: 20 } });
+
+  const tranD = await db.pokeTran.findUnique({ where: { nhanVatId: nv0.id } });
   const truocDanh = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
   const conTruoc = await db.pokeThu.findUnique({ where: { id: nv0.raTranId } });
+
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.waitForTimeout(900);
 
   // Hệ số khắc hệ đọc từ chính dòng chữ trang đang hiện: nếu bảng hệ của máy
   // chủ và dòng chữ nói hai đằng thì phép so bên dưới sẽ đỏ.
@@ -92,11 +118,10 @@ export default async function run(check) {
   ];
   check('trang có nói rõ hệ số khắc hệ', dongHe.includes('×') || dongHe.includes('vô hiệu'), dongHe);
 
-  await p.locator('button:has-text("TACKLE"), button:has-text("Ra chiêu") + * button').first().click()
-    .catch(async () => { await p.locator('form button[name="chieu"]').first().click(); });
+  await p.locator('form button[name="chieu"]').first().click();
   await doiToi(async () => {
     const t = await db.pokeTran.findUnique({ where: { nhanVatId: nv0.id } });
-    return !t || t.mau < tran.mau;
+    return !!t && t.mau < tranD.mau;
   });
 
   const sauDanh = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
@@ -110,28 +135,35 @@ export default async function run(check) {
   // gọi hàm của chính nó thì bài kiểm chỉ so nó với nó.
   //   mình gây  = (chiêu − thủ của địch)      , sàn 1
   //   mình chịu = (công của địch − thủ của mình), sàn 1,  thủ = trung bình 4 chiêu
-  // rồi nhân hệ số khắc hệ. Hệ số lấy từ chính dòng chữ trang đang hiện, nên
-  // nếu bảng hệ và màn đánh nói hai đằng thì bài này đỏ.
+  // rồi nhân hệ số khắc hệ.
   const boThu = Math.floor((conTruoc.c1 + conTruoc.c2 + conTruoc.c3 + conTruoc.c4) / 4);
-  const nhan = (chuoi) => (chuoi === 'vô hiệu' ? 0 : Number(chuoi.replace(/[^\d.]/g, '')));
-  const gayThuong = Math.max(1, conTruoc.c1 - tran.thu);
-  const chiuThuong = Math.max(1, tran.cong - boThu);
-  const gay = heSo[0] === 0 ? 0 : Math.max(1, Math.floor(gayThuong * heSo[0]));
-  const chiu = heSo[1] === 0 ? 0 : Math.max(1, Math.floor(chiuThuong * heSo[1]));
-  void nhan;
+  const gay = heSo[0] === 0 ? 0 : Math.max(1, Math.floor(Math.max(1, conTruoc.c1 - tranD.thu) * heSo[0]));
+  const chiu = heSo[1] === 0 ? 0 : Math.max(1, Math.floor(Math.max(1, tranD.cong - boThu) * heSo[1]));
 
-  if (tranSau) {
-    check('sát thương gây ra khớp công thức gốc',
-      tranSau.mau === Math.max(0, tran.mau - gay),
-      `${tran.mau} − ${gay} ≠ ${tranSau.mau}`);
-    check('sát thương phải chịu khớp công thức gốc',
-      conSau.mau === Math.max(0, conTruoc.mau - chiu),
-      `${conTruoc.mau} − ${chiu} ≠ ${conSau.mau}`);
-  } else {
-    check('hạ gục trong một lượt thì được cộng thưởng',
-      sauDanh.vang > truocDanh.vang && sauDanh.exp > truocDanh.exp,
-      `${truocDanh.vang}→${sauDanh.vang} vàng`);
-  }
+  check('sát thương gây ra khớp công thức gốc',
+    tranSau.mau === Math.max(0, tranD.mau - gay),
+    `${tranD.mau} − ${gay} ≠ ${tranSau.mau}`);
+  check('sát thương phải chịu khớp công thức gốc',
+    conSau.mau === Math.max(0, conTruoc.mau - chiu),
+    `${conTruoc.mau} − ${chiu} ≠ ${conSau.mau}`);
+
+  // ── Hạ gục thì được đúng số vàng và kinh nghiệm của con thú ──────────
+  await db.pokeTran.update({ where: { nhanVatId: nv0.id }, data: { mau: 1 } });
+  const truocThang = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.waitForTimeout(900);
+  await p.locator('form button[name="chieu"]').first().click();
+  await doiToi(async () => (await db.pokeTran.count({ where: { nhanVatId: nv0.id } })) === 0);
+
+  const sauThang = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
+  check('hạ gục thì được đúng số vàng của con thú',
+    sauThang.vang === truocThang.vang + tranD.vang,
+    `${truocThang.vang} + ${tranD.vang} ≠ ${sauThang.vang}`);
+  check('hạ gục thì được đúng số kinh nghiệm của con thú',
+    sauThang.exp === truocThang.exp + tranD.exp,
+    `${truocThang.exp} + ${tranD.exp} ≠ ${sauThang.exp}`);
+  check('cấp nhân vật tính lại từ tổng kinh nghiệm',
+    sauThang.cap === capTuExp(sauThang.exp), `cấp ${sauThang.cap}, kn ${sauThang.exp}`);
 
   // ── Ném cầu: trừ cầu dù trúng hay trượt ──────────────────────────────
   await db.pokeTran.deleteMany({ where: { nhanVatId: nv0.id } });

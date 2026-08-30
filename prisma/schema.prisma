@@ -720,10 +720,15 @@ model Report {
   replyId   String?
   commentId String?
   gameId    String?
-  thread    Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  reply     Reply?   @relation(fields: [replyId], references: [id], onDelete: Cascade)
-  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  game      Game?    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  // SetNull chứ KHÔNG Cascade: gỡ nội dung bị báo cáo mà cuốn theo luôn tờ báo
+  // cáo thì mất sạch lịch sử xử lý, và `resolveReportAndRemove` xoá xong không
+  // còn hàng nào để đánh dấu RESOLVED — cả giao dịch đổ, nội dung cũng không gỡ
+  // được. Để null thì báo cáo còn nguyên ở tab "Đã xử lý", và `hasTarget` ở
+  // trang quản trị tự thành false đúng như nó vẫn chờ.
+  thread    Thread?  @relation(fields: [threadId], references: [id], onDelete: SetNull)
+  reply     Reply?   @relation(fields: [replyId], references: [id], onDelete: SetNull)
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: SetNull)
+  game      Game?    @relation(fields: [gameId], references: [id], onDelete: SetNull)
 
   reason    String
   detail    String?      @db.Text

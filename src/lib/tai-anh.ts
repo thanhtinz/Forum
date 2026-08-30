@@ -24,8 +24,8 @@ export { AnhKhongHopLeError };
 
 
 /** Tải ảnh về kho nội bộ, trả về đường dẫn công khai. */
-export async function taiAnhVeKho(diaChi: string): Promise<string> {
-  const u = await kiemDiaChiAnh(diaChi);
+export async function taiAnhVeKho(diaChi: string, choHttp = false): Promise<string> {
+  const u = await kiemDiaChiAnh(diaChi, choHttp);
 
   const bo = new AbortController();
   const hen = setTimeout(() => bo.abort(), CHO);

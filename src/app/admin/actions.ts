@@ -8,7 +8,8 @@ import { notify } from '@/lib/notify';
 import { checkAndAwardMedals, MEDAL_CONDITIONS } from '@/lib/medals';
 import { GIF_SETTING_KEY } from '@/lib/gif';
 import { R2_SETTING_KEY, deleteFile } from '@/lib/storage';
-import { normalizeIcon, isPublicImageRef } from '@/lib/icon';
+import { normalizeIcon } from '@/lib/icon';
+import { AnhKhongHopLeError, nhanAnhVaoKho } from '@/lib/nhan-anh';
 import { NAV_GROUPS, NAV_DEFAULTS, isSafeNavUrl } from '@/lib/nav';
 import { SITE_SETTING_KEY } from '@/lib/site';
 import { isBanScope, banExpiry } from '@/lib/ban';
@@ -393,11 +394,17 @@ export async function saveSlide(_prev: AppearanceState, formData: FormData): Pro
   // Kiểm định dạng, không chỉ kiểm rỗng: từ khi slide hiện ra trang chủ thì ô
   // nhập này ghi thẳng vào `src` của thẻ ảnh. Dùng chung đúng bộ lọc mà ảnh đại
   // diện câu lạc bộ đang dùng, chứ không tự viết luật riêng.
-  if (!isPublicImageRef(image)) {
-    return { error: 'Ảnh phải là địa chỉ http(s) hoặc tệp đã tải lên.' };
+  // Không lưu địa chỉ ngoài: `nhanAnhVaoKho` tải ảnh về R2 rồi trả về đường
+  // dẫn của mình, nên slide không bao giờ vỡ vì máy chủ người khác đổi ảnh.
+  let anh: string;
+  try {
+    anh = (await nhanAnhVaoKho(image)) ?? '';
+  } catch (e) {
+    return { error: e instanceof AnhKhongHopLeError ? e.message : 'Không nhận được ảnh này.' };
   }
+  if (!anh) return { error: 'Cần có ảnh nền cho slide.' };
 
-  const data = { title, subtitle, image, link, order, active };
+  const data = { title, subtitle, image: anh, link, order, active };
   let savedId = id;
   try {
     if (id) await db.slide.update({ where: { id }, data });
@@ -695,9 +702,14 @@ export async function saveSiteSettings(_prev: SiteState, formData: FormData): Pr
   const footerText = String(formData.get('footerText') ?? '').trim();
 
   if (name.length < 1) return { error: 'Hãy nhập tên trang.' };
-  if (logo && !isPublicImageRef(logo)) return { error: 'Logo phải là link ảnh http(s) hoặc ảnh đã tải lên.' };
+  let anhLogo: string;
+  try {
+    anhLogo = (await nhanAnhVaoKho(logo)) ?? '';
+  } catch (e) {
+    return { error: e instanceof AnhKhongHopLeError ? e.message : 'Không nhận được logo này.' };
+  }
 
-  const value = { name, tagline, logo, description, footerText };
+  const value = { name, tagline, logo: anhLogo, description, footerText };
   await db.siteSetting.upsert({
     where: { key: SITE_SETTING_KEY },
     update: { value },
@@ -829,9 +841,15 @@ export async function saveChatBackground(_prev: ChatAssetState, formData: FormDa
 
   if (name.length < 1) return { error: 'Hãy đặt tên cho ảnh nền.' };
   if (!image) return { error: 'Hãy tải ảnh lên hoặc dán link ảnh.' };
-  if (!isPublicImageRef(image)) return { error: 'Ảnh phải là link http(s) hoặc ảnh đã tải lên.' };
+  let anhNen: string;
+  try {
+    anhNen = (await nhanAnhVaoKho(image)) ?? '';
+  } catch (e) {
+    return { error: e instanceof AnhKhongHopLeError ? e.message : 'Không nhận được ảnh này.' };
+  }
+  if (!anhNen) return { error: 'Hãy tải ảnh lên hoặc dán link ảnh.' };
 
-  const data = { name, image, dark, order };
+  const data = { name, image: anhNen, dark, order };
   try {
     if (id) await db.chatBackground.update({ where: { id }, data, select: { id: true } });
     else await db.chatBackground.create({ data, select: { id: true } });
@@ -871,9 +889,14 @@ export async function saveChatBubbleStyle(_prev: ChatAssetState, formData: FormD
   if (!/^#[0-9a-fA-F]{6}$/.test(colorMine) || !/^#[0-9a-fA-F]{6}$/.test(colorTheirs)) {
     return { error: 'Màu không hợp lệ.' };
   }
-  if (decor && !isPublicImageRef(decor)) return { error: 'Ảnh trang trí phải là link http(s) hoặc ảnh đã tải lên.' };
+  let anhTrangTri: string | null;
+  try {
+    anhTrangTri = await nhanAnhVaoKho(decor);
+  } catch (e) {
+    return { error: e instanceof AnhKhongHopLeError ? e.message : 'Không nhận được ảnh trang trí.' };
+  }
 
-  const data = { name, decor, colorMine, colorTheirs, darkText, order };
+  const data = { name, decor: anhTrangTri, colorMine, colorTheirs, darkText, order };
   try {
     if (id) await db.chatBubbleStyle.update({ where: { id }, data, select: { id: true } });
     else await db.chatBubbleStyle.create({ data, select: { id: true } });

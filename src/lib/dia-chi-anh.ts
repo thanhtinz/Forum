@@ -42,15 +42,25 @@ export function laDiaChiRiengTu(ip: string): boolean {
  *
  * Phân giải tên miền RA ĐỊA CHỈ rồi mới xét, chứ xét chuỗi tên miền là vô
  * dụng: ai cũng trỏ được một tên miền của mình về 127.0.0.1.
+ *
+ * `choHttp` mở cho ảnh người dùng dán vào — nhiều trang ảnh game cũ vẫn chỉ
+ * có http. Nới chỗ này KHÔNG làm yếu phần chặn SSRF, vì lớp chặn thật là phép
+ * xét địa chỉ ở dưới chứ không phải tên giao thức; mà byte tải về thì cũng
+ * nằm lại trong kho của mình rồi phục vụ qua https.
  */
-export async function kiemDiaChiAnh(diaChi: string): Promise<URL> {
+export async function kiemDiaChiAnh(diaChi: string, choHttp = false): Promise<URL> {
   let u: URL;
   try {
     u = new URL(diaChi);
   } catch {
     throw new AnhKhongHopLeError('Địa chỉ ảnh không hợp lệ.');
   }
-  if (u.protocol !== 'https:') throw new AnhKhongHopLeError('Chỉ nhận ảnh qua https.');
+  const hop = u.protocol === 'https:' || (choHttp && u.protocol === 'http:');
+  if (!hop) {
+    throw new AnhKhongHopLeError(
+      choHttp ? 'Chỉ nhận ảnh qua http hoặc https.' : 'Chỉ nhận ảnh qua https.',
+    );
+  }
 
   const ban = await dns.lookup(u.hostname, { all: true }).catch(() => []);
   if (ban.length === 0) throw new AnhKhongHopLeError('Không phân giải được tên miền.');

@@ -8,7 +8,7 @@ import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import { notify } from '@/lib/notify';
 import { bbcodeToHtml } from '@/lib/bbcode';
 import { getActiveBan, banMessage } from '@/lib/ban';
-import { isPublicImageRef } from '@/lib/icon';
+import { AnhKhongHopLeError, nhanAnhVaoKho } from '@/lib/nhan-anh';
 import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
 import {
   clubSlug, getClubConfig,
@@ -69,7 +69,13 @@ export async function createClub(_prev: ClubActionState, formData: FormData): Pr
   if (name.length < CLUB_NAME_MIN) return { error: `Tên câu lạc bộ tối thiểu ${CLUB_NAME_MIN} ký tự.` };
   if (name.length > CLUB_NAME_MAX) return { error: `Tên câu lạc bộ tối đa ${CLUB_NAME_MAX} ký tự.` };
   if (description.length > CLUB_DESC_MAX) return { error: `Giới thiệu tối đa ${CLUB_DESC_MAX} ký tự.` };
-  if (avatar && !isPublicImageRef(avatar)) return { error: LOI_ANH };
+  // Ảnh dán từ ngoài được tải về kho của mình, không lưu địa chỉ người khác.
+  let anh: string | null;
+  try {
+    anh = await nhanAnhVaoKho(avatar);
+  } catch (e) {
+    return { error: e instanceof AnhKhongHopLeError ? e.message : LOI_ANH };
+  }
   if (!isClubShortName(shortName)) return { error: LOI_VIET_TAT };
 
   const trungTat = await db.club.findUnique({ where: { shortName }, select: { name: true } });
@@ -93,7 +99,7 @@ export async function createClub(_prev: ClubActionState, formData: FormData): Pr
       }
       const club = await tx.club.create({
         data: {
-          slug, name, shortName, description: description || null, avatar: avatar || null,
+          slug, name, shortName, description: description || null, avatar: anh,
           ownerId: me.id, joinMode: joinMode as never, privacy: privacy as never,
         },
         select: { id: true },
@@ -333,7 +339,12 @@ export async function updateClub(_prev: ClubActionState, formData: FormData): Pr
   if (name.length < CLUB_NAME_MIN) return { error: `Tên câu lạc bộ tối thiểu ${CLUB_NAME_MIN} ký tự.` };
   if (name.length > CLUB_NAME_MAX) return { error: `Tên câu lạc bộ tối đa ${CLUB_NAME_MAX} ký tự.` };
   if (description.length > CLUB_DESC_MAX) return { error: `Giới thiệu tối đa ${CLUB_DESC_MAX} ký tự.` };
-  if (avatar && !isPublicImageRef(avatar)) return { error: LOI_ANH };
+  let anh: string | null;
+  try {
+    anh = await nhanAnhVaoKho(avatar);
+  } catch (e) {
+    return { error: e instanceof AnhKhongHopLeError ? e.message : LOI_ANH };
+  }
 
   // Cùng lẽ trên: thiếu trường thì giữ nguyên viết tắt đang có.
   const shortRaw = String(formData.get('shortName') ?? '').trim();
@@ -347,7 +358,7 @@ export async function updateClub(_prev: ClubActionState, formData: FormData): Pr
   await db.club.update({
     where: { id: clubId },
     data: {
-      name, shortName, description: description || null, avatar: avatar || null,
+      name, shortName, description: description || null, avatar: anh,
       joinMode: joinMode as never, privacy: privacy as never,
     },
     select: { id: true },

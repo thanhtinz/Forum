@@ -12,11 +12,3 @@ export const ICON_MAX_LENGTH = 500;
 export function normalizeIcon(raw: FormDataEntryValue | null): string | null {
   return String(raw ?? '').trim().slice(0, ICON_MAX_LENGTH) || null;
 }
-
-/**
- * Ảnh hợp lệ để lưu: URL http(s) hoặc đường dẫn nội bộ do /api/upload trả về
- * (khi chưa bật R2 thì tệp nằm trong public/ nên đường dẫn bắt đầu bằng "/").
- */
-export function isPublicImageRef(value: string): boolean {
-  return /^https?:\/\/\S+$/.test(value) || /^\/[^\s]*$/.test(value);
-}

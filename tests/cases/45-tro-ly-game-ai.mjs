@@ -59,4 +59,20 @@ export default async function run(check) {
   }
   check('phần kiểm địa chỉ ảnh có chạy', ket.length > 0, `${ket.length} mục`);
   for (const m of ket) check(m.ten, m.dat, m.ghi);
+
+  // ── Mọi ảnh đều phải đi qua kho của mình ─────────────────────────────
+  // Không còn chỗ nào lưu thẳng địa chỉ ảnh của máy chủ người khác: ảnh dán
+  // vào đều được tải về R2 (hoặc thư mục public khi chưa bật R2).
+  // `grep` thoát với mã 1 khi KHÔNG tìm thấy gì, mà không tìm thấy chính là
+  // điều kiện đạt — nên phải bắt lỗi chứ không để nó ném.
+  const { execFileSync } = await import('node:child_process');
+  let conSot = [];
+  try {
+    conSot = execFileSync('grep', ['-rn', 'isPublicImageRef', 'src/'], { encoding: 'utf8' })
+      .trim().split('\n').filter(Boolean);
+  } catch (e) {
+    if (e.status !== 1) { check('quét được mã nguồn', false, String(e).slice(0, 120)); return; }
+  }
+  check('không còn chỗ nào lưu thẳng địa chỉ ảnh ngoài',
+    conSot.length === 0, conSot.slice(0, 3).join(' | '));
 }

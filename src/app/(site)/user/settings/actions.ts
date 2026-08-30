@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { isPublicImageRef } from '@/lib/icon';
+import { AnhKhongHopLeError, nhanAnhVaoKho } from '@/lib/nhan-anh';
 import { TOGGLEABLE_TYPES, type ToggleableType } from '@/lib/notify-types';
 
 export type SettingsState = { ok?: boolean; error?: string; fieldErrors?: Record<string, string> };
@@ -22,8 +22,11 @@ const profileSchema = z.object({
   signature: z.string().trim().max(200, 'Chữ ký tối đa 200 ký tự').optional(),
   // Tâm trạng chỉ là một dòng ngắn cạnh tên, dài hơn thì vỡ cột người đăng.
   mood: z.string().trim().max(60, 'Tâm trạng tối đa 60 ký tự').optional(),
-  image: z.string().trim().refine((v) => !v || isPublicImageRef(v), 'Ảnh đại diện phải là URL hợp lệ hoặc ảnh đã tải lên').optional(),
-  cover: z.string().trim().refine((v) => !v || isPublicImageRef(v), 'Ảnh bìa phải là URL hợp lệ hoặc ảnh đã tải lên').optional(),
+  // Không kiểm định dạng ở đây nữa: `nhanAnhVaoKho` vừa kiểm vừa TẢI ẢNH VỀ
+  // kho của mình, mà việc ấy phải chạy bất đồng bộ nên không nhét vào lược đồ
+  // đồng bộ của zod được.
+  image: z.string().trim().optional(),
+  cover: z.string().trim().optional(),
 });
 
 function fieldErrorsOf(error: z.ZodError): Record<string, string> {
@@ -49,6 +52,19 @@ export async function updateProfile(_prev: SettingsState, formData: FormData): P
   if (!parsed.success) return { fieldErrors: fieldErrorsOf(parsed.error) };
   const { name, username, bio, signature, mood, image, cover } = parsed.data;
 
+  // Ảnh dán từ ngoài được tải về R2 luôn. Người dùng dán một địa chỉ rồi bên
+  // kia đổi ảnh thì ảnh đại diện của họ thành thứ khác — mà mình không biết.
+  let anhDaiDien: string | null;
+  let anhBia: string | null;
+  try {
+    anhDaiDien = await nhanAnhVaoKho(image);
+    anhBia = await nhanAnhVaoKho(cover);
+  } catch (e) {
+    return {
+      error: e instanceof AnhKhongHopLeError ? e.message : 'Không nhận được ảnh này.',
+    };
+  }
+
   const taken = await db.user.findFirst({ where: { username, NOT: { id: session.user.id } }, select: { id: true } });
   if (taken) return { fieldErrors: { username: 'Tên đăng nhập đã có người dùng.' } };
 
@@ -56,7 +72,7 @@ export async function updateProfile(_prev: SettingsState, formData: FormData): P
     where: { id: session.user.id },
     data: {
       name, username, bio: bio || null, signature: signature || null, mood: mood || null,
-      image: image || null, cover: cover || null,
+      image: anhDaiDien, cover: anhBia,
     },
   });
 

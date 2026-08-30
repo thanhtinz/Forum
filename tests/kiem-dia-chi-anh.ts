@@ -36,6 +36,18 @@ async function chay() {
   for (const ip of IP_RIENG) kq.push({ ten: `${ip} là địa chỉ riêng tư`, dat: laDiaChiRiengTu(ip) });
   for (const ip of IP_CHUNG) kq.push({ ten: `${ip} là địa chỉ công cộng`, dat: !laDiaChiRiengTu(ip) });
 
+  // Ảnh người dùng dán vào được phép dùng http, nhưng phần chặn mạng nội bộ
+  // vẫn phải giữ nguyên — nới giao thức không được kéo theo nới địa chỉ.
+  let httpQua = false;
+  try { await kiemDiaChiAnh('http://example.com/a.png', true); httpQua = true; } catch { /* trống */ }
+  kq.push({ ten: 'cho phép http khi người dùng dán ảnh vào', dat: httpQua });
+
+  let noiBoVanChan = false;
+  try { await kiemDiaChiAnh('http://127.0.0.1/a.png', true); } catch (e) {
+    noiBoVanChan = e instanceof AnhKhongHopLeError;
+  }
+  kq.push({ ten: 'nhưng http trỏ vào mạng nội bộ vẫn bị chặn', dat: noiBoVanChan });
+
   console.log(`@@KQ@@${JSON.stringify(kq)}`);
 }
 chay();

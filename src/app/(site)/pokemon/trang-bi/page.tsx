@@ -17,7 +17,12 @@ export default async function TrangTrangBi() {
   if (!nv) redirect('/pokemon');
 
   const [hang, tui] = await Promise.all([
-    db.pokeHang.findMany({ orderBy: [{ loai: 'asc' }, { cap: 'asc' }, { ma: 'asc' }], take: CONFIG_LIST_CAP }),
+    // Xếp theo SỨC MẠNH chứ không theo mã: bảng gốc đánh mã lộn xộn nên xếp
+    // theo mã thì trong một loại, món +50 lại đứng trên món +4.
+    db.pokeHang.findMany({
+      orderBy: [{ loai: 'asc' }, { cong: 'asc' }, { thu: 'asc' }, { mu: 'asc' }, { giap: 'asc' }, { mau: 'asc' }],
+      take: CONFIG_LIST_CAP,
+    }),
     db.pokeDo.findMany({
       where: { nhanVatId: nv.id },
       orderBy: [{ dangMac: 'desc' }, { createdAt: 'asc' }],
@@ -29,7 +34,7 @@ export default async function TrangTrangBi() {
     ?? (await db.pokeThu.findFirst({ where: { nhanVatId: nv.id }, orderBy: { createdAt: 'asc' } }));
 
   return (
-    <section className="card p-5">
+    <section className="dao-tam p-5">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-black">Trang bị</h1>
         <span className="retro-sub text-ink-400">{nv.vang.toLocaleString('vi')} vàng · {nv.ngoc.toLocaleString('vi')} ngọc</span>

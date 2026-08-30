@@ -5,6 +5,7 @@ import { coiDo, macDo, muaDo, uongThuoc, type PokeState } from '@/app/(site)/pok
 import {
   GHI_CONG_TRANG_BI, MUA_DO_TOI_DA, O_TRANG_BI, anhTrangBi, boThu, congTrangBi, tenLoaiDo,
 } from '@/lib/pokemon-const';
+import { mucHiem } from '@/lib/pokemon-giao-dien';
 import { cn } from '@/lib/utils';
 import { ThanhMau } from './ThePoke';
 
@@ -119,10 +120,13 @@ export function TrangBi({ hang, tui, cap, vang, ngoc, con }: {
         ) : (
           <div className="space-y-1.5">
             {tui.filter((d) => d.loai !== 'elixir').map((d) => (
-              <div key={d.id} className="flex items-center gap-2 rounded-lg bg-ink-50 px-3 py-2 text-sm dark:bg-ink-800/50">
+              <div key={d.id} className={cn(
+                'flex items-center gap-2 rounded-lg border-l-4 bg-ink-50 px-3 py-2 text-sm dark:bg-ink-800/50',
+                mucHiem(d.cong + d.thu + d.mu + d.giap).vien,
+              )}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={anhTrangBi(d.loai)} alt="" aria-hidden className="h-5 w-5 shrink-0" />
-                <b>{tenLoaiDo(d.loai)} {d.ten}</b>
+                <b className={mucHiem(d.cong + d.thu + d.mu + d.giap).lop}>{tenLoaiDo(d.loai)} {d.ten}</b>
                 <span className="text-xs text-ink-400">
                   {[d.cong && `công +${d.cong}`, (d.thu + d.mu + d.giap) && `thủ +${d.thu + d.mu + d.giap}`]
                     .filter(Boolean).join(' · ')}
@@ -160,19 +164,22 @@ export function TrangBi({ hang, tui, cap, vang, ngoc, con }: {
           {hang.filter((h) => h.loai === xemLoai).map((h) => {
             const duCap = cap >= h.cap;
             const duTien = vang >= h.vang && ngoc >= h.ngoc;
+            const hiem = mucHiem(h.loai === 'elixir' ? h.mau / 20 : h.cong + h.thu + h.mu + h.giap);
             const chiSo = h.loai === 'elixir'
               ? `hồi ${h.mau} máu`
               : [h.cong && `công +${h.cong}`, (h.thu + h.mu + h.giap) && `thủ +${h.thu + h.mu + h.giap}`]
                   .filter(Boolean).join(' · ');
             return (
               <form key={h.ma} action={muaAction}
-                className="flex flex-wrap items-center gap-2 rounded-lg border-2 border-ink-200 px-3 py-2 text-sm dark:border-ink-700">
+                className={cn('flex flex-wrap items-center gap-2 rounded-lg border-2 border-l-4 border-ink-200 px-3 py-2 text-sm dark:border-ink-700', hiem.vien)}>
                 <input type="hidden" name="ma" value={h.ma} />
-                <b>{h.ten}</b>
+                <b className={hiem.lop}>{h.ten}</b>
+                <span className={cn('chip !py-0 text-[10px]', hiem.lop)}>{hiem.ten}</span>
                 <span className="text-xs text-ink-400">{chiSo}</span>
                 <span className={cn('chip !py-0 text-[11px]', !duCap && 'text-amber-600')}>cấp {h.cap}</span>
                 <span className="chip !py-0 text-[11px]">
-                  {[h.vang && `${h.vang.toLocaleString('vi')} vàng`, h.ngoc && `${h.ngoc} ngọc`]
+                  {[h.vang && `${h.vang.toLocaleString('vi')} vàng`,
+                    h.ngoc && `${h.ngoc.toLocaleString('vi')} ngọc`]
                     .filter(Boolean).join(' + ')}
                 </span>
                 {h.loai === 'elixir' && (

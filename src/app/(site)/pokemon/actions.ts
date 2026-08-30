@@ -17,6 +17,7 @@ import {
   DIEM_DOI_QUA, KHU_CHIEN_TRUONG, QUA_LANH_THO,
   boThu, canVaoKhu, capTheoExp, gymDuocVao, laGioVang, nacTienHoaMoi, satThuongDau,
   timKhu, tinhSatThuong,
+  chuoiDiemDanh, dauNgayVN, quaDiemDanh,
 } from '@/lib/pokemon-const';
 import { chotDauQuaHan, traThuong } from '@/lib/pokemon-dau';
 import { tienDoNhiemVu } from '@/lib/pokemon';
@@ -1479,8 +1480,34 @@ export async function uongThuoc(_prev: PokeState, fd: FormData): Promise<PokeSta
       await tx.pokeDo.deleteMany({ where: { id: mon.id, sl: { lte: 0 } } });
 
       const moi = Math.min(thu.mauToiDa, thu.mau + mon.mau);
-      await tx.pokeThu.update({ where: { id: thu.id }, data: { mau: moi } });
-      return { ok: true, ke: `${thu.ten} hồi ${moi - thu.mau} máu, còn ${moi}/${thu.mauToiDa}.` };
+      let ke = `${thu.ten} hồi ${moi - thu.mau} máu, còn ${moi}/${thu.mauToiDa}.`;
+
+      // Uống thuốc GIỮA TRẬN mất một lượt: thú hoang được đánh trả.
+      // Không tính lượt thì cứ đứng đó uống là bất tử, và cả bảng chỉ số thủ
+      // lẫn bảng khắc hệ thành vô nghĩa. Ngoài trận thì uống không mất gì.
+      const tran = await tx.pokeTran.findUnique({ where: { nhanVatId: r.nv.id } });
+      let mauSau = moi;
+      if (tran) {
+        const dangMac = await tx.pokeDo.findMany({
+          where: { nhanVatId: r.nv.id, dangMac: true },
+          select: { cong: true, thu: true, mu: true, giap: true },
+          take: O_TRANG_BI.length,
+        });
+        const { chiu } = tinhSatThuong(
+          0, boThu(thu) + congTrangBi(dangMac).thu, thu.he, tran.cong, tran.thu, tran.he,
+        );
+        mauSau = Math.max(0, moi - chiu);
+        ke += ` ${tran.ten} đánh trả, mất ${chiu} máu, còn ${mauSau}/${thu.mauToiDa}.`;
+        if (mauSau <= 0) {
+          await tx.pokeTran.delete({ where: { id: tran.id } });
+          ke += ` ${thu.ten} gục mất rồi.`;
+        } else {
+          await tx.pokeTran.update({ where: { id: tran.id }, data: { ke } });
+        }
+      }
+
+      await tx.pokeThu.update({ where: { id: thu.id }, data: { mau: mauSau } });
+      return { ok: true, ke };
     });
     revalidatePath('/pokemon');
     revalidatePath('/pokemon/trang-bi');
@@ -1492,4 +1519,45 @@ export async function uongThuoc(_prev: PokeState, fd: FormData): Promise<PokeSta
     if (m === 'day-mau') return { error: 'Thú của bạn đang đầy máu.' };
     return { error: 'Không uống được lúc này.' };
   }
+}
+
+/**
+ * Điểm danh hằng ngày.
+ *
+ * Chuỗi ngày liên tiếp cho quà to dần tới ngày thứ bảy rồi giữ nguyên. Điều
+ * kiện "hôm nay chưa nhận" nằm TRONG `where` của `updateMany` chứ không đọc
+ * rồi mới ghi: hai tab bấm cùng lúc thì tab sau đếm được 0 dòng và không phát
+ * quà lần thứ hai.
+ */
+export async function diemDanh(_prev: PokeState, _fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+
+  const homNay = dauNgayVN(new Date());
+  const chuoi = chuoiDiemDanh(r.nv.diemDanhNgay, r.nv.diemDanhChuoi, homNay);
+  if (chuoi === null) return { error: 'Hôm nay bạn điểm danh rồi, mai quay lại nhé.' };
+
+  const qua = quaDiemDanh(chuoi);
+  const ghi = await db.pokeNhanVat.updateMany({
+    where: {
+      id: r.nv.id,
+      OR: [{ diemDanhNgay: null }, { diemDanhNgay: { lt: homNay } }],
+    },
+    data: {
+      diemDanhNgay: homNay,
+      diemDanhChuoi: chuoi,
+      vang: { increment: qua.vang },
+      cau: { increment: qua.cau },
+      ngoc: { increment: qua.ngoc },
+    },
+  });
+  if (ghi.count === 0) return { error: 'Hôm nay bạn điểm danh rồi, mai quay lại nhé.' };
+
+  revalidatePath('/pokemon');
+  return {
+    ok: true,
+    ke: `Điểm danh ngày thứ ${chuoi}: nhận ${qua.vang.toLocaleString('vi')} vàng`
+      + `, ${qua.cau} quả cầu`
+      + (qua.ngoc ? ` và ${qua.ngoc} ngọc` : '') + '.',
+  };
 }

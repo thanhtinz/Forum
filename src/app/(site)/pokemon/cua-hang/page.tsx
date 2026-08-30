@@ -18,7 +18,7 @@ export default async function TrangCuaHang() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <section className="card p-5">
+      <section className="dao-tam p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-black">Cửa hàng</h1>
           <span className="retro-sub text-ink-400">{nv.vang} vàng · {nv.ngoc} ngọc</span>

@@ -14,7 +14,7 @@ export default async function TrangTao() {
   if (!userId) {
     return (
       <div className="mx-auto max-w-lg">
-        <p className="card p-5 text-sm text-ink-500">
+        <p className="dao-tam p-5 text-sm text-ink-500">
           <Link href="/login?callbackUrl=/pokemon" className="font-semibold text-brand-600 hover:underline">
             Đăng nhập
           </Link>{' '}để bắt đầu hành trình.
@@ -32,7 +32,7 @@ export default async function TrangTao() {
         Đặt tên cho mình rồi chọn con thú đi cùng. Chọn xong là theo suốt chặng đầu,
         nên ngắm cho kỹ.
       </p>
-      <section className="card p-5">
+      <section className="dao-tam p-5">
         <TaoNhanVat />
       </section>
     </div>

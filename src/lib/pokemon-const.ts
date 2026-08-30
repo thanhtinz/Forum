@@ -196,6 +196,16 @@ export const KHU = [
   { ma: 'ho11', ten: 'Hồ Mười Một', bac: 6, mo: 'Nơi sâu nhất trong chuỗi hồ.' },
   { ma: 'lanhtho', ten: 'Lãnh Thổ', bac: 7, mo: 'Chiến trường tranh đoạt — thắng ở đây được điểm chiến công.' },
   { ma: 'huyenthoai', ten: 'Hang Huyền Thoại', bac: 8, mo: 'Ba con mạnh nhất đảo. Phải đủ mười bốn huy chương mới vào được.' },
+  // Năm khu dưới đây KHÔNG có trong bản gốc — bản gốc dừng ở bậc 8 và hết
+  // đường đi. Thú lấy từ bảng chỉ số công khai của PokeAPI (đời bốn và đời
+  // năm, những đời mà bản wap 2013 chưa kịp có), sức mạnh nối tiếp bậc 6 rồi
+  // nhân dần lên; phần thưởng cũng tăng theo — khác bản gốc vốn để exp và
+  // vàng đứng yên ở mức hai chữ số suốt từ đầu tới cuối.
+  { ma: 'gio', ten: 'Thảo Nguyên Gió', bac: 9, mo: 'Đồng cỏ lộng gió sau Hang Huyền Thoại, thú hệ bay và cỏ.' },
+  { ma: 'nuiLua', ten: 'Núi Lửa Đỏ', bac: 10, mo: 'Miệng núi còn nóng, thú hệ lửa và đá.' },
+  { ma: 'bien', ten: 'Vực Biển Sâu', bac: 11, mo: 'Dưới đáy vực không thấy mặt trời, thú hệ nước và băng.' },
+  { ma: 'thanh', ten: 'Thành Cổ Hoang', bac: 12, mo: 'Phế tích bỏ hoang, thú hệ ma và tà.' },
+  { ma: 'rong', ten: 'Vực Rồng', bac: 13, mo: 'Tận cùng đảo. Chỉ rồng ở được.' },
 ] as const;
 
 export type MaKhu = (typeof KHU)[number]['ma'];
@@ -237,8 +247,61 @@ export function canVaoKhu(bac: number, ma: string, cap: number, huyChuong: numbe
   if (ma === KHU_HUYEN_THOAI) {
     return huyChuong >= SO_GYM ? null : `Cần đủ ${SO_GYM} huy chương Gym`;
   }
+  // Năm khu bậc 9 trở lên nằm SAU Hang Huyền Thoại nên cũng đòi đủ huy chương,
+  // nếu không thì đi vòng qua hang là vào thẳng được chỗ mạnh hơn cả hang.
+  if (bac >= BAC_SAU_HUYEN_THOAI && huyChuong < SO_GYM) {
+    return `Cần đủ ${SO_GYM} huy chương Gym`;
+  }
   const can = capVaoKhu(bac);
   return cap >= can ? null : `Mở từ cấp ${can}`;
+}
+
+/** Bậc đầu tiên của phần đảo mở ra sau Hang Huyền Thoại. */
+export const BAC_SAU_HUYEN_THOAI = 9;
+
+// ─────────────────────────── Điểm danh hằng ngày ───────────────────────────
+
+/**
+ * Quà điểm danh theo chuỗi ngày liên tiếp — bản gốc không có mục này.
+ *
+ * Chuỗi tính theo NGÀY LỊCH giờ Việt Nam, không theo 24 giờ trôi: đếm theo giờ
+ * thì ai vào lúc 23h hôm nay rồi 8h sáng mai sẽ bị coi là đứt chuỗi, mà đó lại
+ * đúng là hai ngày liền.
+ */
+export const QUA_DIEM_DANH = [
+  { ngay: 1, vang: 200, cau: 1, ngoc: 0 },
+  { ngay: 2, vang: 400, cau: 1, ngoc: 0 },
+  { ngay: 3, vang: 800, cau: 2, ngoc: 1 },
+  { ngay: 4, vang: 1200, cau: 2, ngoc: 1 },
+  { ngay: 5, vang: 2000, cau: 3, ngoc: 2 },
+  { ngay: 6, vang: 3000, cau: 3, ngoc: 3 },
+  { ngay: 7, vang: 5000, cau: 5, ngoc: 5 },
+] as const;
+
+/** Chuỗi dài hơn bảy ngày thì lặp lại mức ngày thứ bảy. */
+export function quaDiemDanh(chuoi: number) {
+  const i = Math.min(Math.max(1, chuoi), QUA_DIEM_DANH.length) - 1;
+  return QUA_DIEM_DANH[i]!;
+}
+
+/** Múi giờ dùng để cắt ngày. Cả game là game Việt nên cắt theo giờ Việt Nam. */
+export const LECH_GIO_VN = 7 * 60 * 60 * 1000;
+
+/** Mốc đầu ngày (giờ Việt Nam) chứa thời điểm `t`, trả về dưới dạng UTC. */
+export function dauNgayVN(t: Date): Date {
+  const v = t.getTime() + LECH_GIO_VN;
+  return new Date(Math.floor(v / 86_400_000) * 86_400_000 - LECH_GIO_VN);
+}
+
+/**
+ * Chuỗi mới sau khi điểm danh vào `homNay`, biết lần trước là `truoc`.
+ * Trả `null` nghĩa là hôm nay đã điểm danh rồi.
+ */
+export function chuoiDiemDanh(truoc: Date | null, chuoi: number, homNay: Date): number | null {
+  if (!truoc) return 1;
+  const cach = Math.round((homNay.getTime() - dauNgayVN(truoc).getTime()) / 86_400_000);
+  if (cach <= 0) return null;
+  return cach === 1 ? chuoi + 1 : 1;
 }
 
 // ─────────────────────────── Cấp nhân vật ───────────────────────────

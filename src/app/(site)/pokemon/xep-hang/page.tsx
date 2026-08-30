@@ -51,7 +51,7 @@ export default async function TrangXepHang() {
       <h1 className="text-xl font-black">Xếp hạng Đảo Pokémon</h1>
 
       {bang.map((b) => (
-        <section key={b.ten} className="card p-5">
+        <section key={b.ten} className="dao-tam p-5">
           <h2 className="zib-title mb-3">{b.ten}</h2>
           {b.ds.length === 0 ? (
             <p className="text-sm text-ink-500">Chưa có ai.</p>

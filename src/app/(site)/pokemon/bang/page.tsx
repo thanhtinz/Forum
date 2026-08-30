@@ -36,7 +36,7 @@ export default async function TrangBang() {
 
   return (
     <>
-      <section className="card p-5">
+      <section className="dao-tam p-5">
         <h1 className="mb-1 text-xl font-black">Bang hội</h1>
         <p className="mb-4 text-sm text-ink-500">
           Lập bang tốn ngọc, vào bang phải đủ cấp — y bản gốc. Quỹ vàng chung,

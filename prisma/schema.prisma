@@ -2502,6 +2502,12 @@ model PokeNhanVat {
   /// "số quái đã giết".
   soDiet Int @default(0)
 
+  /// Điểm danh hằng ngày: ngày nhận gần nhất và chuỗi ngày liên tiếp.
+  /// `diemDanhNgay` lưu theo NGÀY (đầu ngày giờ Việt Nam) chứ không theo thời
+  /// điểm, để "một ngày một lần" là một ngày lịch chứ không phải 24 giờ trôi.
+  diemDanhNgay   DateTime?
+  diemDanhChuoi  Int       @default(0)
+
   bangId String?
   bang   PokeBang? @relation("BangThanhVien", fields: [bangId], references: [id], onDelete: SetNull)
 

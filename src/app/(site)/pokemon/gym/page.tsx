@@ -25,7 +25,7 @@ export default async function TrangGym() {
 
   return (
     <>
-      <section className="card p-5">
+      <section className="dao-tam p-5">
         <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-black">Mười bốn Gym</h1>
           <span className="retro-sub text-ink-400">{nv.huyChuong}/{SO_GYM} huy chương</span>

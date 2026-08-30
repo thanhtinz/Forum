@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { SO_GYM } from '@/lib/pokemon-const';
 import { tienDoNhiemVu } from '@/lib/pokemon';
 import { ThanhTab } from '@/components/pokemon/ThanhTab';
+import { bienCanh } from '@/lib/pokemon-giao-dien';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ export default async function KhungPokemon({ children }: { children: ReactNode }
   const nv = userId
     ? await db.pokeNhanVat.findUnique({
         where: { userId },
-        select: { id: true, huyChuong: true, nhiemVu: true },
+        select: { id: true, huyChuong: true, nhiemVu: true, khu: true },
       })
     : null;
 
@@ -35,8 +36,11 @@ export default async function KhungPokemon({ children }: { children: ReactNode }
     };
   }
 
+  // Biến màu của khu đang đứng đặt ở KHUNG chứ không ở từng trang: thanh tab,
+  // cửa hàng, kho thú… đều ăn theo cùng một tông với bản đồ, nên đi giữa các
+  // trang không thấy đổi da đổi thịt giữa chừng.
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div style={bienCanh(nv?.khu ?? 'co')} className="mx-auto max-w-2xl space-y-4">
       {nv && <ThanhTab nhan={nhan} />}
       {children}
     </div>

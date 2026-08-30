@@ -4,7 +4,7 @@ import { useActionState } from 'react';
 import { choRaTran, dungDa, thaThu, type PokeState } from '@/app/(site)/pokemon/actions';
 import { CAP_TIEN_HOA, EXP_MOI_CAP, boThu } from '@/lib/pokemon-const';
 import { cn } from '@/lib/utils';
-import { AnhThu, HuyHieuHe, ThanhMau } from './ThePoke';
+import { HuyHieuHe, ThanhMau, TrenBe } from './ThePoke';
 
 interface T {
   id: string; ten: string; nguon: number; nac: number; nacToiDa: number;
@@ -33,10 +33,10 @@ export function KhoThu({ thu, raTranId, coDa }: { thu: T[]; raTranId: string | n
         return (
           <div key={t.id} className={cn(
             'rounded-xl border-2 p-3 transition-colors',
-            dangRa ? 'border-brand-500 bg-brand-50 dark:bg-brand-950/30' : 'border-ink-200 dark:border-ink-700',
+            dangRa ? 'dao-vien dao-nen-nhan' : 'border-ink-200 dark:border-ink-700',
           )}>
             <div className="flex items-start gap-3">
-              <AnhThu nguon={t.nguon} nac={t.nac} className="h-14 w-14 shrink-0" />
+              <TrenBe nguon={t.nguon} nac={t.nac} className="h-16 w-16 shrink-0" />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <b className="text-sm">{t.ten}</b>
@@ -44,15 +44,18 @@ export function KhoThu({ thu, raTranId, coDa }: { thu: T[]; raTranId: string | n
                   <span className="text-xs text-ink-400">
                     Cấp {t.cap} · nấc {t.nac}/{t.nacToiDa}
                   </span>
-                  {dangRa && <span className="text-[11px] font-bold text-brand-600">đang ra trận</span>}
+                  {dangRa && <span className="dao-nhan text-[11px] font-bold">đang ra trận</span>}
                 </div>
                 <div className="mt-1 flex items-center gap-2">
                   <ThanhMau mau={t.mau} toiDa={t.mauToiDa} nho />
                   <span className="shrink-0 text-xs tabular-nums text-ink-500">{t.mau}/{t.mauToiDa}</span>
                 </div>
-                <p className="mt-1 text-xs text-ink-400">
-                  Chiêu {t.c.join(' / ')} · thủ {boThu({ c1: t.c[0]!, c2: t.c[1]!, c3: t.c[2]!, c4: t.c[3]! })}
-                  {' · '}KN {t.exp}/{EXP_MOI_CAP}
+                <p className="mt-1 flex flex-wrap gap-x-2.5 gap-y-0.5 text-xs text-ink-400">
+                  <span>công <b className="tabular-nums text-ink-600 dark:text-ink-300">{Math.max(...t.c).toLocaleString('vi')}</b></span>
+                  <span>thủ <b className="tabular-nums text-ink-600 dark:text-ink-300">
+                    {boThu({ c1: t.c[0]!, c2: t.c[1]!, c3: t.c[2]!, c4: t.c[3]! }).toLocaleString('vi')}
+                  </b></span>
+                  <span>KN <b className="tabular-nums text-ink-600 dark:text-ink-300">{t.exp}/{EXP_MOI_CAP}</b></span>
                 </p>
                 {nacSau && (
                   <p className="mt-0.5 text-xs text-violet-600 dark:text-violet-300">

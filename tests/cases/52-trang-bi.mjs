@@ -14,15 +14,22 @@ export default async function run(check) {
 
   // ── Bảng hàng ────────────────────────────────────────────────────────
   const soHang = await db.pokeHang.count();
-  check('đã nạp bảng hàng', soHang === 42, `${soHang} món`);
-  for (const [loai, so] of [['weapon', 10], ['shield', 10], ['golova', 9], ['body', 9], ['elixir', 4]]) {
+  check('đã nạp bảng hàng', soHang === 68, `${soHang} món`);
+  for (const [loai, so] of [['weapon', 15], ['shield', 15], ['golova', 15], ['body', 15], ['elixir', 8]]) {
     check(`đủ ${so} món loại ${loai}`,
       (await db.pokeHang.count({ where: { loai } })) === so);
   }
-  // Bản gốc có hai món vũ khí tên một đằng chỉ số một nẻo: "+200" chỉ cho +50
-  // và "+500" cho +100, trong khi khiên, mũ, giáp đều khớp tên.
-  const vk500 = await db.pokeHang.findFirst({ where: { loai: 'weapon', ten: '+500' } });
-  check('vũ khí +500 cho đúng 500 công', vk500?.cong === 500, `công ${vk500?.cong}`);
+  // Bảng gốc bỏ sót đúng hai ô: mũ không có bậc +500 và giáp không có bậc +50,
+  // trong khi vũ khí và khiên đủ cả mười bậc.
+  const mu500 = await db.pokeHang.findFirst({ where: { loai: 'golova', mu: 500 } });
+  const giap50 = await db.pokeHang.findFirst({ where: { loai: 'body', giap: 50 } });
+  check('mũ đã có bậc +500', mu500 != null);
+  check('giáp đã có bậc +50', giap50 != null);
+  // Tên món phải là tên thật, không còn là chính con số cộng thêm.
+  const conTenSo = await db.pokeHang.count({ where: { ten: { startsWith: '+' } } });
+  check('không món nào còn tên kiểu "+50"', conTenSo === 0, `${conTenSo} món`);
+  const manh = await db.pokeHang.findFirst({ where: { loai: 'weapon' }, orderBy: { cong: 'desc' } });
+  check('vũ khí mạnh nhất là bậc 25.000', manh?.cong === 25000, `công ${manh?.cong}`);
 
   await db.pokeNhanVat.deleteMany({ where: { userId: me.id } });
   const nv = await db.pokeNhanVat.create({
@@ -39,7 +46,9 @@ export default async function run(check) {
   const p = await openPage('minhdev');
 
   // ── Mua và mặc ───────────────────────────────────────────────────────
-  const vk = await db.pokeHang.findFirst({ where: { loai: 'weapon', ten: '+20' } });
+  // Tra theo CHỈ SỐ chứ không theo tên: tên món nay là tên thật ("Kiếm Thép")
+  // chứ không còn là con số cộng thêm.
+  const vk = await db.pokeHang.findFirst({ where: { loai: 'weapon', cong: 20 } });
   await p.goto(`${BASE}/pokemon/trang-bi`, { waitUntil: 'networkidle' });
   await p.waitForTimeout(1000);
   await p.locator(`form:has(input[name="ma"][value="${vk.ma}"]) button:has-text("Mua")`).click();
@@ -59,7 +68,7 @@ export default async function run(check) {
   check('mặc được vào ô của nó', true);
 
   // Mua món thứ hai cùng ô rồi mặc: món cũ phải tự cởi ra.
-  const vk2 = await db.pokeHang.findFirst({ where: { loai: 'weapon', ten: '+10' } });
+  const vk2 = await db.pokeHang.findFirst({ where: { loai: 'weapon', cong: 10 } });
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(900);
   await p.locator(`form:has(input[name="ma"][value="${vk2.ma}"]) button:has-text("Mua")`).click();
@@ -110,7 +119,7 @@ export default async function run(check) {
   check('vũ khí không đụng tới sát thương phải chịu',
     co.chiu === tran.chiu, `${tran.chiu} → ${co.chiu}`);
 
-  const khien = await db.pokeHang.findFirst({ where: { loai: 'shield', ten: '+20' } });
+  const khien = await db.pokeHang.findFirst({ where: { loai: 'shield', thu: 20 } });
   await db.pokeDo.create({
     data: {
       nhanVatId: nv.id, ma: khien.ma, ten: khien.ten, loai: 'shield',
@@ -122,7 +131,7 @@ export default async function run(check) {
     co2.chiu === tran.chiu - 20, `${tran.chiu} → ${co2.chiu}`);
 
   // Mũ và giáp cũng đổ vào bộ thủ.
-  const mu = await db.pokeHang.findFirst({ where: { loai: 'golova', ten: '+10' } });
+  const mu = await db.pokeHang.findFirst({ where: { loai: 'golova', mu: 10 } });
   await db.pokeDo.create({
     data: {
       nhanVatId: nv.id, ma: mu.ma, ten: mu.ten, loai: 'golova',
@@ -147,15 +156,41 @@ export default async function run(check) {
   const loThuoc = await db.pokeDo.findFirst({ where: { nhanVatId: nv.id, ma: thuoc.ma } });
   check('thuốc gộp thành một dòng có số lượng', loThuoc.sl === 2, `sl ${loThuoc.sl}`);
 
+  // NGOÀI trận thì uống không mất gì cả, hồi đúng số ghi trên nhãn.
+  await db.pokeTran.deleteMany({ where: { nhanVatId: nv.id } });
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(900);
   await p.locator(`form:has(input[name="do"][value="${loThuoc.id}"]) button`).click();
   await doiToi(async () => (await db.pokeThu.findUnique({ where: { id: t.id } })).mau > 100);
   const sauUong = await db.pokeThu.findUnique({ where: { id: t.id } });
-  check('uống thuốc hồi đúng số máu ghi trên nhãn',
+  check('ngoài trận, uống thuốc hồi đúng số máu ghi trên nhãn',
     sauUong.mau === 100 + thuoc.mau, `100 + ${thuoc.mau} ≠ ${sauUong.mau}`);
   check('uống xong thì trừ đúng một liều',
     (await db.pokeDo.findUnique({ where: { id: loThuoc.id } })).sl === 1);
+
+  // ── Uống thuốc GIỮA trận thì mất một lượt ────────────────────────────
+  // Không tính lượt thì đứng đó uống là bất tử, chỉ số thủ hoá vô nghĩa.
+  await db.pokeDo.update({ where: { id: loThuoc.id }, data: { sl: 5 } });
+  await db.pokeThu.update({ where: { id: t.id }, data: { mau: 100 } });
+  await db.pokeDo.updateMany({ where: { nhanVatId: nv.id }, data: { dangMac: false } });
+  await db.pokeTran.create({
+    data: {
+      nhanVatId: nv.id, nguon: 3, ten: 'Đối thủ', he: 1, nac: 0, khu: 'co',
+      cong: 200, thu: 30, mau: 100_000, mauToiDa: 100_000, exp: 1, vang: 1,
+    },
+  });
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.waitForTimeout(900);
+  await p.locator(`form:has(input[name="do"][value="${loThuoc.id}"]) button`).first().click();
+  await doiToi(async () => (await db.pokeThu.findUnique({ where: { id: t.id } })).mau !== 100);
+  const sauUongTran = await db.pokeThu.findUnique({ where: { id: t.id } });
+  // Thú thử có bộ thủ 100, đối thủ công 200 nên đòn trả đúng 100 máu.
+  check('giữa trận, uống thuốc rồi bị đánh trả đúng một lượt',
+    sauUongTran.mau === 100 + thuoc.mau - 100,
+    `${100 + thuoc.mau} - 100 ≠ ${sauUongTran.mau}`);
+  check('lượt đánh trả không xoá mất trận',
+    (await db.pokeTran.count({ where: { nhanVatId: nv.id } })) === 1);
+  await db.pokeTran.deleteMany({ where: { nhanVatId: nv.id } });
 
   // ── Quyền và giới hạn ────────────────────────────────────────────────
   await db.pokeNhanVat.update({ where: { id: nv.id }, data: { cap: 1, exp: 0 } });

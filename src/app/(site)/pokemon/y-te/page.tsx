@@ -22,7 +22,7 @@ export default async function TrangYTe() {
   const luc = nv.chuaLuc?.getTime() ?? 0;
   return (
     <div className="mx-auto max-w-lg">
-      <section className="card p-5">
+      <section className="dao-tam p-5">
         <h1 className="mb-1 text-xl font-black">Trạm y tế</h1>
         <p className="mb-4 text-sm text-ink-500">
           Y tá hồi {YTE_MAU} máu mỗi {YTE_MAU_CHO_MS / 60_000} phút, hoặc {YTE_SK} thể lực

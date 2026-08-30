@@ -40,7 +40,8 @@ export function ThanhTab({ nhan }: { nhan?: Partial<Record<string, string>> }) {
   const duong = usePathname();
 
   return (
-    <nav aria-label="Đảo Pokémon" className="grid grid-cols-4 gap-1.5 sm:grid-cols-6">
+    <nav aria-label="Đảo Pokémon"
+      className="dao-tam grid grid-cols-4 gap-1.5 p-1.5 sm:grid-cols-7">
       {TAB.map(({ href, ten, Icon }) => {
         // So khớp CHÍNH XÁC, không dùng `startsWith`: mọi đường dẫn con đều bắt
         // đầu bằng `/pokemon` nên ô Bản đồ sẽ sáng ở khắp mọi trang.
@@ -50,12 +51,12 @@ export function ThanhTab({ nhan }: { nhan?: Partial<Record<string, string>> }) {
           <Link key={href} href={href}
             aria-current={dangMo ? 'page' : undefined}
             className={cn(
-              'relative flex flex-col items-center gap-1 rounded-xl border-2 px-1 py-2 text-center transition-colors',
+              'relative flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-center transition-colors',
               dangMo
-                ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950/50 dark:text-brand-200'
-                : 'border-ink-100 text-ink-500 hover:border-brand-300 hover:text-brand-600 dark:border-ink-800',
+                ? 'dao-nen-nhan font-bold shadow-inner'
+                : 'text-ink-500 hover:bg-black/5 dark:text-ink-400 dark:hover:bg-white/5',
             )}>
-            <Icon size={17} className="shrink-0" />
+            <Icon size={17} className={cn('shrink-0', dangMo && 'dao-nhan')} />
             <span className="text-[11px] font-semibold leading-tight">{ten}</span>
             {so && (
               // Nhô hẳn ra ngoài viền và viền trắng quanh: nằm gọn bên trong

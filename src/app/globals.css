@@ -377,3 +377,140 @@ html, body {
   .soc-rung, .soc-mo, .xeng-chay, .xeng-dung, .xeng-an, .tieu-quay, .tieu-cam,
   .trung-rung, .trung-vo, .sut-bay, .thu-bay, .man-hien { animation: none; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+ * Đảo Pokémon — lớp áo riêng
+ *
+ * Cả trang game trước đây dùng chung .card trắng của diễn đàn, nên mười lăm
+ * khu trông y hệt bảng quản trị. Ở đây mỗi khu tự đặt bốn biến màu
+ * (--dao-xa, --dao-gan, --dao-nhan, --dao-chu) qua `bienCanh()`, còn các lớp
+ * dưới đây chỉ đọc lại bốn biến ấy — thêm khu mới thì không phải sửa CSS.
+ * ════════════════════════════════════════════════════════════════════ */
+
+/* Nền cảnh: trời ở trên, đất ở dưới, thêm một lớp lưới điểm ảnh rất mờ cho
+ * đỡ phẳng. Không dùng ảnh nền để khỏi thêm một lượt tải cho mỗi khu. */
+.dao-canh {
+  background:
+    radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--dao-xa) 92%, #fff) 0%, var(--dao-xa) 55%, var(--dao-gan) 100%);
+  color: var(--dao-chu);
+}
+.dao-canh::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 8px 8px;
+  mix-blend-mode: overlay;
+}
+
+/* Tấm nội dung nổi trên nền cảnh: kính mờ, viền sáng, bo góc lớn. */
+.dao-tam {
+  background: color-mix(in srgb, var(--nova-surface) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dao-nhan) 45%, transparent);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.5) inset, 0 8px 24px -12px rgb(0 0 0 / 0.35);
+  backdrop-filter: blur(8px);
+  border-radius: 1rem;
+}
+.dark .dao-tam {
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.05) inset, 0 8px 24px -12px rgb(0 0 0 / 0.6);
+}
+
+/* Bệ đứng dưới chân con thú — hình bầu dục mờ dần, thay cho cái khung vuông.
+ * `position` để trong @layer components để lớp tiện ích `absolute` của nơi gọi
+ * vẫn đè lên được — utilities đứng sau components. */
+@layer components {
+  .dao-be { position: relative; }
+}
+.dao-be::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 78%;
+  height: 14%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--dao-nhan) 55%, transparent), transparent);
+}
+
+/* Thanh máu: nền lõm, ruột chuyển màu, thêm vệt bóng chạy dọc trên. */
+.dao-mau {
+  background: rgb(0 0 0 / 0.28);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.4);
+  overflow: hidden;
+  border-radius: 9999px;
+}
+.dao-mau > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.45), rgb(255 255 255 / 0) 55%);
+  transition: width 0.5s ease-out;
+}
+
+/* Viền nhấn theo màu khu — dùng cho ô đang chọn, nút chính, thẻ khu. */
+.dao-nhan { color: var(--dao-nhan); }
+.dao-vien { border-color: color-mix(in srgb, var(--dao-nhan) 70%, transparent); }
+.dao-nen-nhan { background: color-mix(in srgb, var(--dao-nhan) 16%, transparent); }
+
+/* Nút chính trong game: khối màu khu, nổi lên, ấn xuống thì lún. */
+.dao-nut {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--dao-nhan) 88%, #fff),
+    var(--dao-nhan));
+  box-shadow: 0 3px 0 color-mix(in srgb, var(--dao-nhan) 60%, #000);
+  color: #fff;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.35);
+  border-radius: 0.75rem;
+  font-weight: 700;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.dao-nut:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 color-mix(in srgb, var(--dao-nhan) 60%, #000); }
+.dao-nut:disabled { filter: grayscale(0.6); opacity: 0.6; }
+
+/* Số sát thương bay lên rồi tan. */
+.dao-so-bay { animation: dao-so-bay 0.9s ease-out forwards; }
+@keyframes dao-so-bay {
+  0% { opacity: 0; transform: translateY(6px) scale(0.8); }
+  25% { opacity: 1; transform: translateY(-6px) scale(1.15); }
+  100% { opacity: 0; transform: translateY(-30px) scale(1); }
+}
+
+/* Con thú lao tới khi ra chiêu, và giật lùi khi ăn đòn. */
+.dao-lao { animation: dao-lao 0.45s ease-in-out; }
+@keyframes dao-lao {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(18px); }
+}
+.dao-lao-nguoc { animation: dao-lao-nguoc 0.45s ease-in-out; }
+@keyframes dao-lao-nguoc {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(-18px); }
+}
+.dao-dinh { animation: dao-dinh 0.4s ease-out; }
+@keyframes dao-dinh {
+  0%, 100% { transform: translateX(0); filter: none; }
+  20% { transform: translateX(-6px); filter: brightness(2.4) saturate(0); }
+  60% { transform: translateX(4px); }
+}
+
+/* Con thú hoang hiện ra: nhảy vào từ bên phải rồi nhún một cái. */
+.dao-ra-san { animation: dao-ra-san 0.5s cubic-bezier(0.2, 1.4, 0.5, 1); }
+@keyframes dao-ra-san {
+  0% { opacity: 0; transform: translateX(40px) scale(0.7); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* Thú đứng yên thì thở nhẹ — sprite gốc vốn đã động, cái này chỉ thêm chiều sâu. */
+.dao-tho { animation: dao-tho 2.6s ease-in-out infinite; }
+@keyframes dao-tho {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dao-so-bay, .dao-lao, .dao-lao-nguoc, .dao-dinh, .dao-ra-san, .dao-tho { animation: none; }
+}

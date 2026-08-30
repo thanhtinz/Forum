@@ -3,12 +3,13 @@ import type { Metadata } from 'next';
 import { Backpack, Cross, Flame, Medal, ScrollText, ShoppingBasket, Store, Swords, Trophy, Users } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { KHU, canVaoKhu, timKhu } from '@/lib/pokemon-const';
+import { KHU, O_TRANG_BI, canVaoKhu, congTrangBi, dauNgayVN, timKhu } from '@/lib/pokemon-const';
 import { DaoPokemon } from '@/components/pokemon/DaoPokemon';
+import { DiemDanh } from '@/components/pokemon/DiemDanh';
 
 export const metadata: Metadata = {
   title: 'Đảo Pokémon',
-  description: 'Đi khắp mười lăm khu, đánh và bắt 318 con thú, nuôi lớn rồi cho tiến hoá.',
+  description: 'Đi khắp hai mươi khu, đánh và bắt 468 con thú, nuôi lớn rồi cho tiến hoá.',
 };
 export const dynamic = 'force-dynamic';
 
@@ -27,7 +28,7 @@ export default async function TrangPokemon() {
     return (
       <div className="mx-auto max-w-2xl">
         <GioiThieu />
-        <p className="card mt-4 p-5 text-sm text-ink-500">
+        <p className="dao-tam mt-4 p-5 text-sm text-ink-500">
           <Link href="/login?callbackUrl=/pokemon" className="font-semibold text-brand-600 hover:underline">
             Đăng nhập
           </Link>{' '}để lên đảo.
@@ -59,10 +60,32 @@ export default async function TrangPokemon() {
   // layout tự lo.
   const soTrongKhu = await db.pokeThuHoang.count({ where: { khu: nv.khu } });
 
+  // Thuốc trong túi để dùng ngay giữa trận, gộp theo món.
+  const thuoc = await db.pokeDo.findMany({
+    where: { nhanVatId: nv.id, loai: 'elixir', sl: { gt: 0 } },
+    select: { id: true, ten: true, mau: true, sl: true },
+    orderBy: { mau: 'asc' },
+    take: 8,
+  });
+
+  // Trang bị đang mặc, để bản xem trước sát thương khớp với thứ máy chủ tính.
+  const dangMac = await db.pokeDo.findMany({
+    where: { nhanVatId: nv.id, dangMac: true },
+    select: { cong: true, thu: true, mu: true, giap: true },
+    take: O_TRANG_BI.length,
+  });
+
   const khu = timKhu(nv.khu) ?? KHU[0];
+
+  // Đã điểm danh hôm nay chưa — cắt theo ngày lịch giờ Việt Nam.
+  const xongDiemDanh = nv.diemDanhNgay != null
+    && nv.diemDanhNgay.getTime() >= dauNgayVN(new Date()).getTime();
 
   return (
     <>
+      {/* Nhận rồi thì thôi không bày nữa: một tấm thẻ chỉ để nói "hôm nay xong
+          rồi" mà chiếm chỗ trên đầu bản đồ suốt cả ngày là phiền. */}
+      {!xongDiemDanh && <DiemDanh chuoi={nv.diemDanhChuoi} xong={false} />}
       <DaoPokemon
         nv={{
           ten: nv.ten, vang: nv.vang, exp: nv.exp, cap: nv.cap,
@@ -84,6 +107,8 @@ export default async function TrangPokemon() {
         khuHienTai={{ ...khu }}
         soTrongKhu={soTrongKhu}
         khuMo={KHU.map((k) => ({ ...k, chan: canVaoKhu(k.bac, k.ma, nv.cap, nv.huyChuong) }))}
+        thuoc={thuoc}
+        boTrangBi={congTrangBi(dangMac)}
       />
     </>
   );
@@ -91,12 +116,13 @@ export default async function TrangPokemon() {
 
 function GioiThieu() {
   return (
-    <section className="card p-5">
+    <section className="dao-tam p-5">
       <h1 className="mb-2 text-xl font-black">Đảo Pokémon</h1>
       <p className="text-sm text-ink-600 dark:text-ink-300">
         Dựng lại từ một wap game Pokémon Việt hoá chạy trên JohnCMS quãng 2013:
-        mười lăm khu, 318 con thú hoang với đúng chỉ số và bộ ảnh gốc, mười bảy
-        hệ khắc chế nhau, bắt bằng quả cầu rồi nuôi lớn cho tiến hoá.
+        mười lăm khu gốc với đúng chỉ số và bộ ảnh cũ, mười bảy hệ khắc chế
+        nhau, bắt bằng quả cầu rồi nuôi lớn cho tiến hoá — cộng thêm năm khu
+        mới mở sau Hang Huyền Thoại, tổng cộng 468 con thú hoang.
       </p>
     </section>
   );

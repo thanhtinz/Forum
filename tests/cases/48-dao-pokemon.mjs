@@ -5,7 +5,7 @@ import { BASE, db, doiToi, openPage } from '../helpers.mjs';
  *
  * Soi đúng những chỗ hỏng là mất thật:
  *  • CÔNG THỨC ĐÁNH phải khớp bản gốc từng con số. Sai một chỗ là cả bảng chỉ
- *    số của 318 con thú vô nghĩa.
+ *    số của 468 con thú vô nghĩa.
  *  • Thể lực, quả cầu, vàng đều là thứ trừ đi được: mỗi lần phải trừ ĐÚNG một
  *    lần. Bản gốc ghi bằng những câu UPDATE rời không điều kiện, nên bấm hai
  *    tab là đánh hai lượt mà chỉ tốn một lượt thể lực.
@@ -35,8 +35,9 @@ export default async function run(check) {
   check('đã nạp bảng thú hoang', soHoang >= 300, `${soHoang} con`);
   const soKhu = (await db.pokeThuHoang.groupBy({ by: ['khu'], _count: true })).length;
   // Mười bốn khu của bản gốc, cộng Hang Huyền Thoại tách ra từ bảng của
-  // Rừng Xanh — xem chú thích ở `KHU_HUYEN_THOAI`.
-  check('đủ mười lăm khu', soKhu === 15, `${soKhu} khu`);
+  // Rừng Xanh (xem chú thích ở `KHU_HUYEN_THOAI`), cộng năm khu bậc 9–13 mở
+  // sau hang — xem `BAC_SAU_HUYEN_THOAI`.
+  check('đủ hai mươi khu', soKhu === 20, `${soKhu} khu`);
   const thieuChieu = await db.pokeThuHoang.count({ where: { chieu: { isEmpty: true } } });
   check('thú hoang nào cũng có chiêu', thieuChieu === 0, `${thieuChieu} con trống chiêu`);
   const heLa = await db.pokeThuHoang.count({ where: { OR: [{ he: { lt: 1 } }, { he: { gt: 17 } }] } });

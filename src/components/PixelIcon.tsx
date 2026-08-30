@@ -10,9 +10,13 @@ import { cn } from '@/lib/utils';
  *    có chuyện vỡ ảnh.
  *
  * VÌ SAO PHẢI CÓ BẢNG `ICON` DƯỚI ĐÂY thay vì ghép chuỗi tên:
- * Tailwind tìm lớp bằng cách QUÉT VĂN BẢN mã nguồn. Viết
- * `icon-[pixelarticons--${ten}]` thì nó không thấy lớp nào để sinh CSS, và
- * icon lặng lẽ mất tăm. Nên mọi tên lớp phải nằm nguyên vẹn trong tệp này.
+ * Tailwind tìm lớp bằng cách QUÉT VĂN BẢN mã nguồn. Ghép tên lớp từ biến —
+ * `icon-[pixelarticons--` + tên + `]` — thì nó không thấy lớp nào để sinh CSS,
+ * và icon lặng lẽ mất tăm. Nên mọi tên lớp phải nằm nguyên vẹn trong tệp này.
+ *
+ * Chính vì quét văn bản, ngay cả CHÚ THÍCH cũng bị quét: viết dạng ghép chuỗi
+ * liền một mạch ở đây thôi là plugin iconify đã kêu "Invalid icon name" mỗi
+ * lần biên dịch, nên ví dụ trên phải để rời ra như vậy.
  */
 const ICON = {
   // Thanh soạn thảo

@@ -2489,6 +2489,9 @@ model PokeNhanVat {
   /// Huy chương cao nhất đang giữ; cũng là số Gym đã hạ vì Gym đánh theo thứ tự.
   huyChuong Int @default(0)
 
+  /// Số trận thắng ở đấu trường.
+  thangDau Int @default(0)
+
   /// Khu đang đứng.
   khu String @default("co")
 
@@ -2503,8 +2506,10 @@ model PokeNhanVat {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  thu  PokeThu[] @relation("PokeChu")
-  tran PokeTran?
+  thu    PokeThu[] @relation("PokeChu")
+  tran   PokeTran?
+  dauChu PokeDau[] @relation("DauChu")
+  dauDoi PokeDau[] @relation("DauDoi")
 
   @@index([cap, exp])
 }
@@ -2622,4 +2627,64 @@ model PokeGym {
   /// Con thú tặng kèm — bản gốc lấy số hiệu ảnh là `số Gym + 1500`.
   tangNguon Int
   tangNac   Int @default(1)
+}
+
+/// Một kèo ở đấu trường: người tạo mở kèo, người khác nhảy vào, rồi đánh
+/// luân phiên từng lượt cho tới khi một bên hết máu hoặc hết giờ.
+model PokeDau {
+  id String @id @default(cuid())
+
+  chuId String
+  chu   PokeNhanVat @relation("DauChu", fields: [chuId], references: [id], onDelete: Cascade)
+
+  /// Khoảng cấp nhận đối thủ, do người mở kèo đặt.
+  capMin Int
+  capMax Int
+
+  doiId String?
+  doi   PokeNhanVat? @relation("DauDoi", fields: [doiId], references: [id], onDelete: Cascade)
+
+  /// Bản sao lúc vào trận: tên, ảnh, bốn chiêu và máu của con ra trận mỗi bên.
+  /// Chép ra để trận không đổi giữa chừng khi ai đó đổi con ở kho.
+  chuTen      String
+  chuNguon    Int
+  chuNac      Int      @default(1)
+  chuHe       Int      @default(1)
+  chuChieu    Int[]
+  chuTenChieu String[]
+  chuMau      Int
+  chuMauToiDa Int
+
+  doiTen      String?
+  doiNguon    Int?
+  doiNac      Int?
+  doiHe       Int?
+  doiChieu    Int[]
+  doiTenChieu String[]
+  doiMau      Int?
+  doiMauToiDa Int?
+
+  /// Con ra trận của mỗi bên, để trừ máu thật khi thua.
+  chuThuId String?
+  doiThuId String?
+
+  /// Đến lượt ai: 'chu' hoặc 'doi'. Rỗng khi chưa có đối thủ.
+  luotCua String?
+
+  /// Hạn của lượt hiện tại (hoặc hạn sống của kèo khi chưa ai vào). Quá hạn
+  /// thì bên đến lượt xử thua — chốt lười, không cần tiến trình nền.
+  hanLuc DateTime
+
+  /// Câu kể lượt vừa rồi.
+  ke String?
+
+  /// Ai thắng, và kết thúc lúc nào. Rỗng nghĩa là còn đánh.
+  thangId String?
+  ketThuc DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([thangId, hanLuc])
+  @@index([chuId])
+  @@index([doiId])
 }

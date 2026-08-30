@@ -288,3 +288,46 @@ export function ngocGym(so: number): number {
 
 /** Đổi ngọc lấy đá tiến cấp — chỗ tiêu ngọc, bản gốc dùng ngọc mua đồ ở tiệm. */
 export const NGOC_MOI_DA = 5;
+
+// ─────────────────────────── Đấu trường ───────────────────────────
+
+/**
+ * Sát thương ở đấu trường: chiêu số n của mình TRỪ chiêu số n của đối thủ.
+ *
+ * Khác hẳn công thức đánh thú hoang, và đó là chủ ý của bản gốc: ở đây không
+ * có "bộ thủ" nào cả, mà là đoán xem đối thủ yếu ở chiêu nào rồi nhè đúng
+ * chiêu ấy mà đánh. Sàn 1 như mọi chỗ khác.
+ *
+ * KHÔNG áp bảng khắc hệ ở đấu trường, dù cả phần đánh thú hoang đều có. Thêm
+ * vào thì con mang hệ khắc thắng bất kể chỉ số, mà phần đoán chiêu — điểm hay
+ * duy nhất của luật này — thành vô nghĩa.
+ */
+export function satThuongDau(chieuMinh: number, chieuDich: number): number {
+  return Math.max(1, chieuMinh - chieuDich);
+}
+
+/** Mỗi lượt có 10 phút; quá hạn thì bên đến lượt xử thua. Y bản gốc. */
+export const DAU_HAN_MS = 10 * 60_000;
+
+/** Thắng được 5 vàng và 5 kinh nghiệm; thua mất 5 vàng và thú tụt về 10 máu. */
+export const DAU_VANG = 5;
+export const DAU_EXP = 5;
+export const DAU_MAU_THUA = 10;
+
+export const DAU_CAP_MIN = 1;
+export const DAU_CAP_MAX = 100;
+
+/**
+ * Giờ vàng của đấu trường: 21 giờ (giờ Việt Nam).
+ *
+ * Bản gốc `if ($hour>=21 and $hour<=21)` — ĐÓNG CỬA đấu trường suốt 23 tiếng
+ * còn lại trong ngày. Ý tưởng giờ vàng thì hay, nhưng khoá cứng như thế thì
+ * trên một diễn đàn nhỏ gần như chẳng ai gặp được ai. Ở đây mở cả ngày, còn
+ * giờ vàng thì THƯỞNG GẤP ĐÔI — giữ được lý do để mọi người cùng lên vào một
+ * giờ mà không biến tính năng thành đồ trưng bày.
+ */
+export const DAU_GIO_VANG = 21;
+
+export function laGioVang(now: Date = new Date()): boolean {
+  return Math.floor((now.getTime() / 3600000 + 7) % 24) === DAU_GIO_VANG;
+}

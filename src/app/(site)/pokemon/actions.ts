@@ -10,9 +10,11 @@ import {
   CAU_DAU, CHIEU_DAU, CO_HOI_BAT, CONG_MOI_CAP, EXP_DAU, EXP_MOI_CAP, GIA_CAU, GIA_DA,
   MAU_DAU, MUA_TOI_DA, SK_DAU, SK_MOI_TRAN, TEN_TOI_DA, TEN_TOI_THIEU, THU_DAU, VANG_DAU,
   YTE_MAU, YTE_MAU_CHO_MS, YTE_SK, YTE_SK_CHO_MS,
-  NGOC_MOI_DA,
-  boThu, capTheoExp, capVaoKhu, gymDuocVao, nacTienHoaMoi, timKhu, tinhSatThuong,
+  DAU_CAP_MAX, DAU_CAP_MIN, DAU_EXP, DAU_HAN_MS, DAU_VANG, NGOC_MOI_DA,
+  boThu, capTheoExp, capVaoKhu, gymDuocVao, laGioVang, nacTienHoaMoi, satThuongDau,
+  timKhu, tinhSatThuong,
 } from '@/lib/pokemon-const';
+import { chotDauQuaHan, traThuong } from '@/lib/pokemon-dau';
 
 export interface PokeState { ok?: boolean; error?: string; ke?: string }
 
@@ -637,4 +639,218 @@ export async function doiNgoc(_prev: PokeState, fd: FormData): Promise<PokeState
 
   revalidatePath('/pokemon/cua-hang');
   return { ok: true, ke: `Đổi ${can} ngọc lấy ${sl} viên đá tiến cấp.` };
+}
+
+// ─────────────────────────── Đấu trường ───────────────────────────
+
+/** Mở một kèo. Mỗi nhân vật chỉ giữ một kèo hoặc một trận đấu tại một lúc. */
+export async function taoKeo(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const { nv } = r;
+
+  const min = Number(fd.get('min'));
+  const max = Number(fd.get('max'));
+  if (!Number.isInteger(min) || !Number.isInteger(max)) return { error: 'Khoảng cấp phải là số nguyên.' };
+  if (min < DAU_CAP_MIN || max > DAU_CAP_MAX || min > max) {
+    return { error: `Khoảng cấp phải nằm trong ${DAU_CAP_MIN}–${DAU_CAP_MAX} và tối thiểu không lớn hơn tối đa.` };
+  }
+
+  const con = await conRaTranHoacLoi(nv.id, nv.raTranId);
+  if ('error' in con) return { error: con.error };
+  if (con.thu.mau <= 0) return { error: 'Thú của bạn đang bị thương, chữa đã.' };
+
+  await chotDauQuaHan();
+  const dangCo = await db.pokeDau.findFirst({
+    where: { ketThuc: null, OR: [{ chuId: nv.id }, { doiId: nv.id }] },
+    select: { id: true },
+  });
+  if (dangCo) return { error: 'Bạn đang có một kèo dở rồi.' };
+
+  await db.pokeDau.create({
+    data: {
+      chuId: nv.id, capMin: min, capMax: max,
+      chuTen: con.thu.ten, chuNguon: con.thu.nguon, chuNac: con.thu.nac, chuHe: con.thu.he,
+      chuChieu: [con.thu.c1, con.thu.c2, con.thu.c3, con.thu.c4],
+      chuTenChieu: con.thu.chieu,
+      chuMau: con.thu.mau, chuMauToiDa: con.thu.mauToiDa, chuThuId: con.thu.id,
+      hanLuc: new Date(Date.now() + DAU_HAN_MS),
+    },
+    select: { id: true },
+  });
+
+  revalidatePath('/pokemon/dau-truong');
+  return { ok: true, ke: `Đã mở kèo cho cấp ${min}–${max}. Kèo sống ${DAU_HAN_MS / 60_000} phút.` };
+}
+
+/** Huỷ kèo của mình khi chưa ai nhận. */
+export async function huyKeo(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+
+  const id = String(fd.get('dau') ?? '');
+  // Quyền nằm trong `where`: chỉ chủ kèo, chỉ khi chưa ai nhận.
+  const xoa = await db.pokeDau.deleteMany({
+    where: { id, chuId: r.nv.id, doiId: null, ketThuc: null },
+  });
+  if (xoa.count === 0) return { error: 'Không huỷ được kèo này — có thể đã có người nhận.' };
+
+  revalidatePath('/pokemon/dau-truong');
+  return { ok: true, ke: 'Đã huỷ kèo.' };
+}
+
+/** Nhận kèo của người khác. */
+export async function vaoKeo(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const { nv } = r;
+
+  const id = String(fd.get('dau') ?? '');
+  const con = await conRaTranHoacLoi(nv.id, nv.raTranId);
+  if ('error' in con) return { error: con.error };
+  if (con.thu.mau <= 0) return { error: 'Thú của bạn đang bị thương, chữa đã.' };
+
+  await chotDauQuaHan();
+
+  try {
+    await db.$transaction(async (tx) => {
+      const dang = await tx.pokeDau.findFirst({
+        where: { ketThuc: null, OR: [{ chuId: nv.id }, { doiId: nv.id }] },
+        select: { id: true },
+      });
+      if (dang) throw new Error('dang-co-keo');
+
+      const keo = await tx.pokeDau.findUnique({ where: { id } });
+      if (!keo || keo.ketThuc || keo.doiId) throw new Error('het-keo');
+      if (keo.chuId === nv.id) throw new Error('keo-cua-minh');
+      if (nv.cap < keo.capMin) throw new Error('cap-thap');
+      if (nv.cap > keo.capMax) throw new Error('cap-cao');
+
+      // Ghi CÓ ĐIỀU KIỆN `doiId: null`: hai người cùng bấm nhận thì chỉ một
+      // người vào được, người kia thấy kèo đã có chủ.
+      const vao = await tx.pokeDau.updateMany({
+        where: { id, doiId: null, ketThuc: null },
+        data: {
+          doiId: nv.id,
+          doiTen: con.thu.ten, doiNguon: con.thu.nguon, doiNac: con.thu.nac, doiHe: con.thu.he,
+          doiChieu: [con.thu.c1, con.thu.c2, con.thu.c3, con.thu.c4],
+          doiTenChieu: con.thu.chieu,
+          doiMau: con.thu.mau, doiMauToiDa: con.thu.mauToiDa, doiThuId: con.thu.id,
+          // Chủ kèo đánh trước, đúng như bản gốc.
+          luotCua: 'chu',
+          hanLuc: new Date(Date.now() + DAU_HAN_MS),
+          ke: `${con.thu.ten} bước vào sàn đấu.`,
+        },
+      });
+      if (vao.count === 0) throw new Error('het-keo');
+    });
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'dang-co-keo') return { error: 'Bạn đang có một kèo dở rồi.' };
+    if (m === 'het-keo') return { error: 'Kèo này có người nhận mất rồi.' };
+    if (m === 'keo-cua-minh') return { error: 'Đó là kèo của chính bạn.' };
+    if (m === 'cap-thap') return { error: 'Cấp của bạn thấp hơn kèo này nhận.' };
+    if (m === 'cap-cao') return { error: 'Cấp của bạn cao hơn kèo này nhận.' };
+    return { error: 'Không nhận được kèo lúc này.' };
+  }
+
+  revalidatePath('/pokemon/dau-truong');
+  return { ok: true, ke: 'Vào sàn rồi — chủ kèo đánh trước.' };
+}
+
+/**
+ * Một lượt ở đấu trường.
+ *
+ * Đánh luân phiên: đánh xong là chuyền lượt cho đối thủ và hạn giờ đặt lại.
+ * Bản gốc để cả hai bên bấm bất kỳ lúc nào rồi dùng cột `step` để chặn, mà
+ * chặn hụt vì đọc rồi ghi; ở đây lượt nằm trong `where` của câu ghi.
+ */
+export async function danhDau(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const { nv } = r;
+
+  const so = Number(fd.get('chieu'));
+  if (![1, 2, 3, 4].includes(so)) return { error: 'Chọn một chiêu đã nào.' };
+
+  await chotDauQuaHan();
+
+  try {
+    const kq = await db.$transaction(async (tx) => {
+      const d = await tx.pokeDau.findFirst({
+        where: { ketThuc: null, OR: [{ chuId: nv.id }, { doiId: nv.id }] },
+      });
+      if (!d) throw new Error('khong-co-tran');
+      if (!d.doiId) throw new Error('chua-co-doi');
+
+      const laChu = d.chuId === nv.id;
+      const ben = laChu ? 'chu' : 'doi';
+      if (d.luotCua !== ben) throw new Error('chua-toi-luot');
+
+      const chieuMinh = (laChu ? d.chuChieu : d.doiChieu)[so - 1] ?? 0;
+      const chieuDich = (laChu ? d.doiChieu : d.chuChieu)[so - 1] ?? 0;
+      const gay = satThuongDau(chieuMinh, chieuDich);
+
+      const mauDich = Math.max(0, (laChu ? d.doiMau : d.chuMau) ?? 0) - gay;
+      const tenMinh = (laChu ? d.chuTen : d.doiTen) ?? 'Thú';
+      const tenDich = (laChu ? d.doiTen : d.chuTen) ?? 'Thú';
+      const tenChieu = (laChu ? d.chuTenChieu : d.doiTenChieu)[so - 1] ?? `Chiêu ${so}`;
+      const ke = `${tenMinh} dùng ${tenChieu}, ${tenDich} mất ${gay} máu.`;
+
+      // ── Hạ gục ────────────────────────────────────────────────────────
+      if (mauDich <= 0) {
+        const gapDoi = laGioVang();
+        const chot = await tx.pokeDau.updateMany({
+          where: { id: d.id, ketThuc: null, luotCua: ben },
+          data: {
+            ...(laChu ? { doiMau: 0 } : { chuMau: 0 }),
+            thangId: nv.id, ketThuc: new Date(), luotCua: null,
+            ke: `${ke} ${tenDich} gục — bạn thắng!`,
+          },
+        });
+        if (chot.count === 0) throw new Error('chua-toi-luot');
+
+        const thuaId = laChu ? d.doiId : d.chuId;
+        const thuaThuId = laChu ? d.doiThuId : d.chuThuId;
+        await traThuong(tx, nv.id, thuaId, thuaThuId, gapDoi);
+
+        const expThuong = DAU_EXP * (gapDoi ? 2 : 1);
+        const expMoi = nv.exp + expThuong;
+        await tx.pokeNhanVat.update({
+          where: { id: nv.id }, data: { exp: expMoi, cap: capTheoExp(expMoi) },
+        });
+        const thuId = laChu ? d.chuThuId : d.doiThuId;
+        if (thuId) {
+          await tx.pokeThu.updateMany({ where: { id: thuId }, data: { exp: { increment: expThuong } } });
+        }
+        return {
+          ok: true,
+          ke: `${ke} ${tenDich} gục — bạn thắng, được ${DAU_VANG * (gapDoi ? 2 : 1)} vàng`
+            + ` và ${expThuong} kinh nghiệm.${gapDoi ? ' (giờ vàng, thưởng gấp đôi)' : ''}`,
+        };
+      }
+
+      // ── Chuyền lượt ───────────────────────────────────────────────────
+      const ghi = await tx.pokeDau.updateMany({
+        where: { id: d.id, ketThuc: null, luotCua: ben },
+        data: {
+          ...(laChu ? { doiMau: mauDich } : { chuMau: mauDich }),
+          luotCua: laChu ? 'doi' : 'chu',
+          hanLuc: new Date(Date.now() + DAU_HAN_MS),
+          ke,
+        },
+      });
+      if (ghi.count === 0) throw new Error('chua-toi-luot');
+      return { ok: true, ke: `${ke} Giờ tới lượt đối thủ.` };
+    });
+
+    revalidatePath('/pokemon/dau-truong');
+    return kq;
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'khong-co-tran') return { error: 'Bạn không có trận đấu nào.' };
+    if (m === 'chua-co-doi') return { error: 'Chưa có ai nhận kèo.' };
+    if (m === 'chua-toi-luot') return { error: 'Chưa tới lượt bạn.' };
+    return { error: 'Không đánh được lúc này, thử lại nhé.' };
+  }
 }

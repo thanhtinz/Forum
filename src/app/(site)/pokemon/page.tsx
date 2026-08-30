@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Backpack, Cross, Medal, Store } from 'lucide-react';
+import { Backpack, Cross, Medal, Store, Swords } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { KHU, capVaoKhu, timKhu } from '@/lib/pokemon-const';
@@ -72,6 +72,9 @@ export default async function TrangPokemon() {
           </Link>
           <Link href="/pokemon/gym" className="btn-outline !py-1.5 text-sm">
             <Medal size={14} /> Gym ({nv.huyChuong}/14)
+          </Link>
+          <Link href="/pokemon/dau-truong" className="btn-outline !py-1.5 text-sm">
+            <Swords size={14} /> Đấu trường
           </Link>
           <Link href="/pokemon/cua-hang" className="btn-outline !py-1.5 text-sm">
             <Store size={14} /> Cửa hàng

@@ -259,23 +259,6 @@
       "JUMP KICK",
       "ROLLING KICK"
      ]
-    },
-    {
-     "nguon": 16,
-     "ten": "sâu xanh",
-     "cong": 150,
-     "thu": 120,
-     "mau": 100,
-     "exp": 5,
-     "vang": 5,
-     "he": 1,
-     "nac": 3,
-     "chieu": [
-      "attack",
-      "Fusion bolt",
-      "Photoshop Strike",
-      "Teravolt"
-     ]
     }
    ]
   },
@@ -676,54 +659,20 @@
      ]
     },
     {
-     "nguon": 1044,
-     "ten": "Landorus",
-     "cong": 12000,
-     "thu": 1200,
-     "mau": 17000,
-     "exp": 8,
+     "nguon": 16,
+     "ten": "sâu xanh",
+     "cong": 150,
+     "thu": 120,
+     "mau": 100,
+     "exp": 5,
      "vang": 5,
-     "he": 10,
-     "nac": 7,
+     "he": 1,
+     "nac": 3,
      "chieu": [
-      "Mud Shot",
-      "Bulldoze",
-      "Earth Power",
-      "Earthquake"
-     ]
-    },
-    {
-     "nguon": 1045,
-     "ten": "Victini",
-     "cong": 14000,
-     "thu": 14000,
-     "mau": 21000,
-     "exp": 12,
-     "vang": 7,
-     "he": 2,
-     "nac": 7,
-     "chieu": [
-      "Searing Shot",
-      "Confusion",
-      "Flame Charge",
-      "Inferno"
-     ]
-    },
-    {
-     "nguon": 1046,
-     "ten": "Mewtwo",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 25000,
-     "exp": 12,
-     "vang": 7,
-     "he": 11,
-     "nac": 7,
-     "chieu": [
-      "Confusion",
-      "Future Sight",
-      "Psycho Cut",
-      "Psychic"
+      "attack",
+      "Fusion bolt",
+      "Photoshop Strike",
+      "Teravolt"
      ]
     }
    ]
@@ -5500,6 +5449,64 @@
       "Karate Chop",
       "Revenge",
       "Vital Throw"
+     ]
+    }
+   ]
+  },
+  {
+   "ma": "huyenthoai",
+   "ten": "Hang Huyền Thoại",
+   "bac": 8,
+   "thu": [
+    {
+     "nguon": 1044,
+     "ten": "Landorus",
+     "cong": 12000,
+     "thu": 1200,
+     "mau": 17000,
+     "exp": 8,
+     "vang": 5,
+     "he": 10,
+     "nac": 7,
+     "chieu": [
+      "Mud Shot",
+      "Bulldoze",
+      "Earth Power",
+      "Earthquake"
+     ]
+    },
+    {
+     "nguon": 1045,
+     "ten": "Victini",
+     "cong": 14000,
+     "thu": 14000,
+     "mau": 21000,
+     "exp": 12,
+     "vang": 7,
+     "he": 2,
+     "nac": 7,
+     "chieu": [
+      "Searing Shot",
+      "Confusion",
+      "Flame Charge",
+      "Inferno"
+     ]
+    },
+    {
+     "nguon": 1046,
+     "ten": "Mewtwo",
+     "cong": 17000,
+     "thu": 17000,
+     "mau": 25000,
+     "exp": 12,
+     "vang": 7,
+     "he": 11,
+     "nac": 7,
+     "chieu": [
+      "Confusion",
+      "Future Sight",
+      "Psycho Cut",
+      "Psychic"
      ]
     }
    ]

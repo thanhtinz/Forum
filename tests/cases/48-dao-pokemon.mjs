@@ -34,7 +34,9 @@ export default async function run(check) {
   const soHoang = await db.pokeThuHoang.count();
   check('đã nạp bảng thú hoang', soHoang >= 300, `${soHoang} con`);
   const soKhu = (await db.pokeThuHoang.groupBy({ by: ['khu'], _count: true })).length;
-  check('đủ mười bốn khu', soKhu === 14, `${soKhu} khu`);
+  // Mười bốn khu của bản gốc, cộng Hang Huyền Thoại tách ra từ bảng của
+  // Rừng Xanh — xem chú thích ở `KHU_HUYEN_THOAI`.
+  check('đủ mười lăm khu', soKhu === 15, `${soKhu} khu`);
   const thieuChieu = await db.pokeThuHoang.count({ where: { chieu: { isEmpty: true } } });
   check('thú hoang nào cũng có chiêu', thieuChieu === 0, `${thieuChieu} con trống chiêu`);
   const heLa = await db.pokeThuHoang.count({ where: { OR: [{ he: { lt: 1 } }, { he: { gt: 17 } }] } });

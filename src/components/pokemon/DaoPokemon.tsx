@@ -28,7 +28,7 @@ interface Khu { ma: string; ten: string; bac: number; mo: string }
 
 export function DaoPokemon({ nv, raTran, tran, khuHienTai, soTrongKhu, khuMo }: {
   nv: NV; raTran: Thu | null | undefined; tran: Tran | null;
-  khuHienTai: Khu; soTrongKhu: number; khuMo: (Khu & { mo_cap: number })[];
+  khuHienTai: Khu; soTrongKhu: number; khuMo: (Khu & { chan: string | null })[];
 }) {
   return (
     <>
@@ -95,7 +95,7 @@ function O({ nhan, giaTri, mau }: { nhan: string; giaTri: number; mau: string })
 // ─────────────────────────── Màn đi tìm thú ───────────────────────────
 
 function ManDi({ khu, soTrongKhu, khuMo, nv }: {
-  khu: Khu; soTrongKhu: number; khuMo: (Khu & { mo_cap: number })[]; nv: NV;
+  khu: Khu; soTrongKhu: number; khuMo: (Khu & { chan: string | null })[]; nv: NV;
 }) {
   const [tim, timAction, dangTim] = useActionState<PokeState, FormData>(timThu, {});
   const [doi, doiAction, dangDoi] = useActionState<PokeState, FormData>(doiKhu, {});
@@ -128,12 +128,12 @@ function ManDi({ khu, soTrongKhu, khuMo, nv }: {
       </section>
 
       <section className="card p-5">
-        <h2 className="zib-title mb-3">Mười bốn khu</h2>
+        <h2 className="zib-title mb-3">{khuMo.length} khu trên đảo</h2>
         {doi.error && <p className="mb-2 text-sm text-red-600">{doi.error}</p>}
         <div className="grid gap-2 sm:grid-cols-2">
           {khuMo.map((k) => {
             const dangO = k.ma === khu.ma;
-            const khoa = nv.cap < k.mo_cap;
+            const khoa = k.chan !== null;
             return (
               <form key={k.ma} action={doiAction}>
                 <input type="hidden" name="khu" value={k.ma} />
@@ -152,7 +152,7 @@ function ManDi({ khu, soTrongKhu, khuMo, nv }: {
                     {dangO && <span className="text-[11px] font-bold text-brand-600">đang ở đây</span>}
                   </span>
                   <span className="mt-0.5 block text-xs text-ink-400">
-                    {khoa ? `Mở từ cấp ${k.mo_cap}` : k.mo}
+                    {khoa ? k.chan : k.mo}
                   </span>
                 </button>
               </form>

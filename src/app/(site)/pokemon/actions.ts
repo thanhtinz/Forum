@@ -14,7 +14,8 @@ import {
   CAP_CUONG_TOI_DA, CHO_GIA_MAX, CHO_GIA_MIN,
   DAU_CAP_MAX, DAU_CAP_MIN, DAU_EXP, DAU_HAN_MS, DAU_VANG, NGOC_MOI_DA, NHIEM_VU,
   timHuyenTinh,
-  boThu, capTheoExp, capVaoKhu, gymDuocVao, laGioVang, nacTienHoaMoi, satThuongDau,
+  DIEM_DOI_QUA, KHU_CHIEN_TRUONG, QUA_LANH_THO,
+  boThu, canVaoKhu, capTheoExp, gymDuocVao, laGioVang, nacTienHoaMoi, satThuongDau,
   timKhu, tinhSatThuong,
 } from '@/lib/pokemon-const';
 import { chotDauQuaHan, traThuong } from '@/lib/pokemon-dau';
@@ -107,9 +108,8 @@ export async function doiKhu(_prev: PokeState, fd: FormData): Promise<PokeState>
   const ma = String(fd.get('khu') ?? '');
   const khu = timKhu(ma);
   if (!khu) return { error: 'Khu này không có trên đảo.' };
-  if (r.nv.cap < capVaoKhu(khu.bac)) {
-    return { error: `${khu.ten} chỉ mở từ cấp ${capVaoKhu(khu.bac)}.` };
-  }
+  const chan = canVaoKhu(khu.bac, khu.ma, r.nv.cap, r.nv.huyChuong);
+  if (chan) return { error: `${khu.ten}: ${chan.toLowerCase()}.` };
   if (await db.pokeTran.findUnique({ where: { nhanVatId: r.nv.id }, select: { id: true } })) {
     return { error: 'Đang đánh dở, xong trận đã rồi hẵng đi.' };
   }
@@ -270,13 +270,22 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
           };
         }
 
+        // Lãnh Thổ là chiến trường: mỗi con hạ được tính một điểm chiến công
+        // và một vạch vào bảng diệt quái.
+        const laChienTruong = tran.khu === KHU_CHIEN_TRUONG;
         await tx.pokeNhanVat.update({
           where: { id: nv.id },
-          data: { vang: { increment: tran.vang }, exp: expMoi, cap: capMoi },
+          data: {
+            vang: { increment: tran.vang }, exp: expMoi, cap: capMoi,
+            ...(laChienTruong
+              ? { diemChien: { increment: 1 }, soDiet: { increment: 1 } }
+              : {}),
+          },
         });
         return {
           ok: true,
           ke: `${ke} ${tran.ten} gục! Bạn được ${tran.vang} vàng và ${tran.exp} kinh nghiệm.`
+            + (laChienTruong ? ' Thêm 1 điểm chiến công.' : '')
             + (capMoi > nv.cap ? ` Bạn lên cấp ${capMoi}!` : ''),
         };
       }
@@ -1280,4 +1289,47 @@ export async function nhanThuongNhiemVu(_prev: PokeState, _fd: FormData): Promis
     ...(nhiem.ngoc ? [`${nhiem.ngoc} ngọc`] : []),
   ].join(', ');
   return { ok: true, ke: `Xong “${nhiem.ten}” — nhận ${qua}.` };
+}
+
+// ─────────────────────────── Lãnh Thổ: đổi quà ───────────────────────────
+
+/**
+ * Đổi 100 điểm chiến công lấy một phần quà bốc ngẫu nhiên trong bảy phần.
+ *
+ * Trừ điểm CÓ ĐIỀU KIỆN rồi mới bốc, nên hai tab bấm cùng lúc không lấy được
+ * hai phần quà bằng một lần điểm.
+ */
+export async function doiQuaChien(_prev: PokeState, _fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+
+  try {
+    const kq = await db.$transaction(async (tx) => {
+      const tru = await tx.pokeNhanVat.updateMany({
+        where: { id: r.nv.id, diemChien: { gte: DIEM_DOI_QUA } },
+        data: { diemChien: { decrement: DIEM_DOI_QUA } },
+      });
+      if (tru.count === 0) throw new Error('thieu-diem');
+
+      const qua = QUA_LANH_THO[Math.floor(Math.random() * QUA_LANH_THO.length)]!;
+      await tx.pokeNhanVat.update({
+        where: { id: r.nv.id },
+        data: {
+          ...(qua.da ? { da: { increment: qua.da } } : {}),
+          ...(qua.cau ? { cau: { increment: qua.cau } } : {}),
+          ...(qua.vang ? { vang: { increment: qua.vang } } : {}),
+          ...(qua.ngoc ? { ngoc: { increment: qua.ngoc } } : {}),
+          ...(qua.skToiDa ? { skToiDa: { increment: qua.skToiDa } } : {}),
+        },
+      });
+      return { ok: true, ke: `Bốc trúng: ${qua.ten}.` };
+    });
+    revalidatePath('/pokemon/lanh-tho');
+    return kq;
+  } catch (e) {
+    if (e instanceof Error && e.message === 'thieu-diem') {
+      return { error: `Cần ${DIEM_DOI_QUA} điểm chiến công mới đổi được.` };
+    }
+    return { error: 'Không đổi được lúc này.' };
+  }
 }

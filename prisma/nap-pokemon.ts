@@ -28,6 +28,13 @@ async function main() {
     readFileSync(new URL('./du-lieu/pokemon.json', import.meta.url), 'utf8'),
   ) as { khu: KhuGoc[]; gym: GymGoc[] };
 
+  // Xoá sạch rồi nạp lại thay vì chỉ `upsert`: khi một con được chuyển sang
+  // khu khác thì bản cũ vẫn nằm lại, và đúng thế thật — ba con huyền thoại đã
+  // sót lại ở Rừng Xanh sau lần chuyển đầu tiên. Bảng này là dữ liệu suy ra,
+  // không hàng nào trỏ tới nó theo khoá (trận đấu chép giá trị ra chứ không
+  // giữ tham chiếu), nên xoá đi nạp lại là an toàn.
+  await db.pokeThuHoang.deleteMany({});
+
   let dem = 0;
   for (const khu of duLieu.khu) {
     for (const [i, t] of khu.thu.entries()) {

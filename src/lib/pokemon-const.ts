@@ -172,7 +172,7 @@ export const GIA_CAU = 20;
 export const GIA_DA = 500;
 export const MUA_TOI_DA = 99;
 
-// ─────────────────────────── Mười bốn khu ───────────────────────────
+// ─────────────────────────── Các khu trên đảo ───────────────────────────
 
 /**
  * Bản gốc để mỗi khu một thư mục `modules/` và một bảng cơ sở dữ liệu riêng
@@ -194,7 +194,8 @@ export const KHU = [
   { ma: 'map5', ten: 'Đỉnh Tuyết', bac: 5, mo: 'Đỉnh cao nhất đảo, thú hệ băng.' },
   { ma: 'ho9', ten: 'Hồ Chín', bac: 6, mo: 'Vực nước đen, ít ai dám xuống.' },
   { ma: 'ho11', ten: 'Hồ Mười Một', bac: 6, mo: 'Nơi sâu nhất trong chuỗi hồ.' },
-  { ma: 'lanhtho', ten: 'Lãnh Thổ', bac: 7, mo: 'Vùng đất cuối, thú mạnh nhất tụ về.' },
+  { ma: 'lanhtho', ten: 'Lãnh Thổ', bac: 7, mo: 'Chiến trường tranh đoạt — thắng ở đây được điểm chiến công.' },
+  { ma: 'huyenthoai', ten: 'Hang Huyền Thoại', bac: 8, mo: 'Ba con mạnh nhất đảo. Phải đủ mười bốn huy chương mới vào được.' },
 ] as const;
 
 export type MaKhu = (typeof KHU)[number]['ma'];
@@ -208,10 +209,36 @@ export function timKhu(ma: string) {
  *
  * Bản gốc KHÔNG khoá khu nào — ai cũng đi thẳng vào Lãnh Thổ được, gặp con
  * 8000 máu rồi mất trắng thể lực mà chẳng hiểu vì sao. Thêm ngưỡng cấp để thứ
- * tự mười bốn khu có nghĩa, và để người mới không lạc ngay vào chỗ chết.
+ * tự các khu có nghĩa, và để người mới không lạc ngay vào chỗ chết.
  */
 export function capVaoKhu(bac: number): number {
   return bac <= 1 ? 1 : (bac - 1) * 3;
+}
+
+/**
+ * Khu Lãnh Thổ là chiến trường: thắng ở đây được thêm điểm chiến công, và
+ * mỗi con hạ được tính vào bảng "số quái đã diệt".
+ */
+export const KHU_CHIEN_TRUONG = 'lanhtho';
+
+/**
+ * Hang Huyền Thoại mở bằng HUY CHƯƠNG chứ không bằng cấp.
+ *
+ * Ba con trong đó — Landorus, Victini, Mewtwo, máu 17.000 tới 25.000 — nằm
+ * lẫn trong bảng của Rừng Xanh ở bản gốc, nhưng Rừng Xanh chỉ bốc `rand(1,20)`
+ * còn khu huyền thoại bốc thẳng `rand(1044,1046)`. Lúc gộp mười bốn bảng làm
+ * một, tôi bê nguyên cả bảng nên Rừng Xanh bậc 2 có thể nhả ra Mewtwo — đã
+ * tách ra thành khu riêng.
+ */
+export const KHU_HUYEN_THOAI = 'huyenthoai';
+
+/** Điều kiện vào khu: trả về lời nhắc nếu chưa đủ, rỗng nghĩa là vào được. */
+export function canVaoKhu(bac: number, ma: string, cap: number, huyChuong: number): string | null {
+  if (ma === KHU_HUYEN_THOAI) {
+    return huyChuong >= SO_GYM ? null : `Cần đủ ${SO_GYM} huy chương Gym`;
+  }
+  const can = capVaoKhu(bac);
+  return cap >= can ? null : `Mở từ cấp ${can}`;
 }
 
 // ─────────────────────────── Cấp nhân vật ───────────────────────────
@@ -222,7 +249,7 @@ export function capVaoKhu(bac: number): number {
  * PHẢI THÊM, bản gốc thiếu hẳn. Ở đó cột `chars.lvl` được ghi '1' lúc tạo
  * nhân vật rồi không câu lệnh nào trong 291 tệp đụng vào nữa — kinh nghiệm cứ
  * cộng dồn mà cấp đứng yên mãi ở 1. Không có phép này thì mười ba khu sau khoá
- * vĩnh viễn, mà thứ tự mười bốn khu cũng chẳng còn nghĩa gì.
+ * vĩnh viễn, mà thứ tự các khu cũng chẳng còn nghĩa gì.
  *
  * Chọn hàm bậc hai chứ không tuyến tính để đoạn đầu đi nhanh (cấp 2 chỉ cần
  * 50 điểm, quãng chục con thú ở Khu Cỏ) rồi chậm dần về sau, khớp với việc thú
@@ -400,4 +427,28 @@ export const NHIEM_VU = [
   { ten: 'Thử sức ở Gym', mo: 'Hạ Gym đầu tiên và lấy huy chương.', exp: 20, vang: 0, ngoc: 1 },
   { ten: 'Đi cho biết đó biết đây', mo: 'Đạt cấp 3 để mở khu thứ hai.', exp: 40, vang: 0, ngoc: 1 },
   { ten: 'Ra sàn đấu', mo: 'Thắng một trận ở đấu trường.', exp: 40, vang: 0, ngoc: 1 },
+] as const;
+
+// ─────────────────────────── Lãnh thổ: điểm chiến công ───────────────────────────
+
+/**
+ * Thắng một trận ở Lãnh Thổ được 1 điểm chiến công và tính 1 con vào bảng
+ * diệt quái. Đủ 100 điểm thì đổi một phần quà bốc ngẫu nhiên.
+ *
+ * Bảy phần quà lấy đúng của bản gốc, sửa hai chỗ hỏng:
+ *  • Phần "5 quả cầu" bản gốc ghi nhầm vào cột NGỌC (`tree`) chứ không phải
+ *    cột cầu (`ball`) — chữ nói một đằng, số vào một nẻo.
+ *  • Bản gốc bốc `rand(1,7)` nhưng lại viết thêm nhánh quà thứ 8, nên nhánh
+ *    ấy không bao giờ trúng. Ở đây bảy phần là bảy phần.
+ */
+export const DIEM_DOI_QUA = 100;
+
+export const QUA_LANH_THO = [
+  { ten: 'Một viên đá tiến cấp', da: 1, cau: 0, vang: 0, ngoc: 0, skToiDa: 0 },
+  { ten: 'Một quả cầu', da: 0, cau: 1, vang: 0, ngoc: 0, skToiDa: 0 },
+  { ten: 'Năm quả cầu', da: 0, cau: 5, vang: 0, ngoc: 0, skToiDa: 0 },
+  { ten: 'Thêm 10 thể lực tối đa', da: 0, cau: 0, vang: 0, ngoc: 0, skToiDa: 10 },
+  { ten: '100 vàng', da: 0, cau: 0, vang: 100, ngoc: 0, skToiDa: 0 },
+  { ten: '200 vàng', da: 0, cau: 0, vang: 200, ngoc: 0, skToiDa: 0 },
+  { ten: '10 ngọc', da: 0, cau: 0, vang: 0, ngoc: 10, skToiDa: 0 },
 ] as const;

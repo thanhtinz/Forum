@@ -4,7 +4,7 @@ Bản này ghi **hiện trạng thật**, đã đối chiếu với mã và dữ
 ban đầu (P0–P16) đã xong và không còn ý nghĩa, nên gỡ đi — sản phẩm nay là diễn
 đàn + kho game tính bằng điểm, không còn blog, tiền thật hay VIP.
 
-Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **1143/1143**.
+Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **đang đo lại sau đợt Đảo Pokémon**.
 
 ---
 
@@ -26,6 +26,52 @@ Xếp theo mức đáng làm. Không cái nào đang gây lỗi cho người dù
 ## Đã xong trong đợt gần đây
 
 Ghi lại để khỏi làm lại, và để biết chỗ nào vừa đụng vào.
+
+**Nâng cấp Đảo Pokémon (sáu đợt)** — đảo đã có đủ mười bốn màn hình và 34
+server action, nhưng phần *sâu* thì mỏng và có ba chỗ hỏng thật.
+
+1. *Tên loài và chủ Gym.* Bản gốc đặt "s" cho 39 mã ảnh khác nhau và "sâu
+   xanh" cho 20 mã nữa; đợt trước đã tách ra cho mỗi mã một tên nhưng tên tách
+   ra là tên máy sinh ("Nước #47", "Bọ #12"), còn sáu mã mang tên viết thường
+   không dấu ("ran da", "picachu"). Đo lại thì 223 dòng thiếu tên chỉ quy về
+   **46 mã ảnh** — mở từng tệp .gif ra nhìn rồi đặt. Hai chỗ tên gốc sai hẳn so
+   với hình. Mười bốn Gym trước chỉ đánh số, nay mỗi Gym một chủ Gym kèm hệ.
+   Bộ nạp vốn dựng lại tên Gym từ số hiệu nên sửa dữ liệu không có tác dụng;
+   và `PokeDoGiam` chép tên lúc gặp nên phải quét lại sổ theo mã ảnh.
+
+2. *Mỗi chiêu có hệ riêng.* Bốn chiêu của thú người chơi LUÔN bằng nhau về sát
+   thương (khởi đầu 10 cả bốn, mỗi viên đá cộng 100 vào cả bốn) — suốt cả game
+   chọn chiêu nào cũng y hệt, và mười bảy hệ chỉ ăn thua ở hệ của CON, thứ
+   người chơi không đổi được. Nay hệ đọc từ tên chiêu (bảng 153 tên, kể cả mấy
+   tên bản gốc gõ nhầm). Hai hệ số của `tinhSatThuong` tách ra: phần gây theo
+   hệ chiêu, phần chịu theo hệ con. Không thêm cột nào.
+
+3. *Chí mạng, trượt, trạng thái, đổi thú giữa trận.* Bản gốc không có thứ nào
+   trong bốn thứ ấy. Chí mạng 1/16 ×1,5; trượt 6%; bốn trạng thái gắn bốn hệ
+   chiêu. Đổi thú giữa trận mất một lượt. Phần ngẫu nhiên vẫn kiểm được vì máy
+   chủ ghi kết quả bốc vào `lanChiMang`/`lanTruot`, và mọi hàm luật nhận số bốc
+   từ ngoài vào chứ không tự gọi `Math.random`.
+
+4. *Chỉ số bang hết là số chết.* Trang bang hiện "công 10, thủ 10" mà không
+   trận nào cộng vào đâu, và không có đường nào tăng; cột `ngoc` của quỹ cũng
+   chưa từng được đụng tới. Nay cộng thật, nâng qua năm bậc bằng quỹ, và quỹ
+   góp/rút được cả ngọc.
+
+5. *Thưởng Đồ Giám và việc hằng ngày.* Sổ 468 loài trước chỉ là hai thanh tiến
+   độ, không có thưởng; chuỗi nhiệm vụ có đúng bốn bước rồi hết. Thêm tám mốc
+   sổ và ba việc làm lại mỗi ngày. Tiến độ ngày không có cột đếm riêng: dòng
+   của hôm nay chép bộ đếm tổng lúc sinh ra, tiến độ là hiệu số.
+
+6. *Đấu trường.* Trước không có xếp hạng — chỉ cột `thangDau` cộng dồn vĩnh
+   viễn nên người vào sau không bao giờ đuổi kịp — và những dòng `PokeDau` đã
+   kết thúc nằm chết trong bảng. Nay có điểm Elo, mùa giải theo tháng (chốt
+   lười, thưởng theo điểm của chính mình chứ không theo hạng vì chốt lười thì
+   không có thời điểm nào bảng xếp hạng là đúng), lịch sử trận và ghép kèo
+   nhanh.
+
+Bài kiểm mới: `62-he-cua-chieu` (16), `63-tran-danh-sau` (31),
+`64-chi-so-bang` (18), `65-thuong-do-giam-viec-ngay` (20),
+`66-xep-hang-dau-truong` (26).
 
 **Vá lỗi tồn đọng toàn hệ thống (bảy đợt)** — dừng thêm tính năng, rà lại ba
 hướng: nợ kỹ thuật, phân quyền/tính đúng của lớp máy chủ, chỗ dở dang ở giao

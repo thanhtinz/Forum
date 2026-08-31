@@ -84,27 +84,42 @@ export default async function run(check) {
   // ── Trang bị PHẢI đổi sát thương thật ────────────────────────────────
   // Cởi hết ra, đánh một đòn, ghi lại số máu trừ được; rồi mặc vào, đánh lại.
   await db.pokeDo.updateMany({ where: { nhanVatId: nv.id }, data: { dangMac: false } });
+  /**
+   * Đánh cho tới khi được một lượt THƯỜNG — không chí mạng, không trượt.
+   *
+   * Bài này đo phần cộng của trang bị, mà lượt đánh nay có chí mạng (×1,5) và
+   * trượt (mất trắng): lấy đại một lượt thì con số đo được lệch hẳn. Máy chủ
+   * ghi kết quả bốc vào `lanChiMang`/`lanTruot` nên đọc ra rồi bỏ qua những
+   * lượt không thường là được, không phải tắt ngẫu nhiên đi.
+   */
   const danhMotDon = async () => {
-    await db.pokeTran.deleteMany({ where: { nhanVatId: nv.id } });
-    await db.pokeNhanVat.update({ where: { id: nv.id }, data: { sk: 20, khu: 'co' } });
-    await db.pokeThu.update({ where: { id: t.id }, data: { mau: 500 } });
-    await p.goto(`${BASE}/pokemon`, { waitUntil: 'networkidle' });
-    await p.waitForTimeout(800);
-    await p.locator('button:has-text("Tìm thú")').click();
-    await doiToi(async () => (await db.pokeTran.count({ where: { nhanVatId: nv.id } })) > 0);
-    // Ép con thú hoang về bộ đã biết: hệ 1 để bảng khắc hệ không xen vào, máu
-    // cao để trận không kết thúc giữa chừng.
-    await db.pokeTran.update({
-      where: { nhanVatId: nv.id },
-      data: { he: 1, cong: 200, thu: 30, mau: 100_000, mauToiDa: 100_000 },
-    });
-    await p.reload({ waitUntil: 'networkidle' });
-    await p.waitForTimeout(700);
-    await p.locator('form button[name="chieu"]').first().click();
-    await doiToi(async () => (await db.pokeTran.findUnique({ where: { nhanVatId: nv.id } })).mau < 100_000);
-    const tr = await db.pokeTran.findUnique({ where: { nhanVatId: nv.id } });
-    const th = await db.pokeThu.findUnique({ where: { id: t.id } });
-    return { gay: 100_000 - tr.mau, chiu: 500 - th.mau };
+    for (let lan = 0; lan < 25; lan++) {
+      await db.pokeTran.deleteMany({ where: { nhanVatId: nv.id } });
+      await db.pokeNhanVat.update({ where: { id: nv.id }, data: { sk: 20, khu: 'co' } });
+      await db.pokeThu.update({ where: { id: t.id }, data: { mau: 500 } });
+      await p.goto(`${BASE}/pokemon`, { waitUntil: 'networkidle' });
+      await p.waitForTimeout(800);
+      await p.locator('button:has-text("Tìm thú")').click();
+      await doiToi(async () => (await db.pokeTran.count({ where: { nhanVatId: nv.id } })) > 0);
+      // Ép con thú hoang về bộ đã biết: hệ 1 để bảng khắc hệ không xen vào, máu
+      // cao để trận không kết thúc giữa chừng.
+      await db.pokeTran.update({
+        where: { nhanVatId: nv.id },
+        data: { he: 1, cong: 200, thu: 30, mau: 100_000, mauToiDa: 100_000 },
+      });
+      await p.reload({ waitUntil: 'networkidle' });
+      await p.waitForTimeout(700);
+      await p.locator('form button[name="chieu"]').first().click();
+      // Chờ theo MÁU CỦA MÌNH: địch lượt nào cũng đánh trả, còn máu địch thì
+      // lượt trượt không đổi.
+      await doiToi(async () => (await db.pokeThu.findUnique({ where: { id: t.id } })).mau < 500);
+      const tr = await db.pokeTran.findUnique({ where: { nhanVatId: nv.id } });
+      const th = await db.pokeThu.findUnique({ where: { id: t.id } });
+      if (tr && !tr.lanTruot && !tr.lanChiMang) {
+        return { gay: 100_000 - tr.mau, chiu: 500 - th.mau };
+      }
+    }
+    return { gay: -1, chiu: -1 };
   };
 
   const tran = await danhMotDon();

@@ -15,6 +15,7 @@ import {
   DAU_CAP_MAX, DAU_CAP_MIN, DAU_EXP, DAU_HAN_MS, DAU_VANG, NGOC_MOI_DA, NHIEM_VU,
   O_TRANG_BI, congTrangBi, tenLoaiDo, timHuyenTinh,
   DIEM_DOI_QUA, KHU_CHIEN_TRUONG, QUA_LANH_THO,
+  NHAN_CHI_MANG, TRANG_THAI, ketQuaLuot, matLuotVi, mauTramMoiLuot, tenTrangThai, trangThaiGayRa,
   boThu, canVaoKhu, capTheoExp, gymDuocVao, heRaChieu, laGioVang, nacTienHoaMoi, satThuongDau,
   tenHe, timKhu, tinhSatThuong,
   chuoiDiemDanh, dauNgayVN, quaDiemDanh,
@@ -250,12 +251,55 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
       // Hệ của CHIÊU quyết định phần sát thương gây ra; hệ của CON vẫn quyết
       // định phần phải chịu. Chiêu nào tra không ra hệ thì lấy hệ của con.
       const heRa = heRaChieu(tenChieu, toi.he);
-      const { gay, chiu } = tinhSatThuong(
+      const { gay: gayGoc, chiu: chiuGoc } = tinhSatThuong(
         chieu, boThu(toi) + them.thu, toi.he, tran.cong, tran.thu, tran.he, heRa,
       );
 
-      const mauDich = Math.max(0, tran.mau - gay);
-      const mauToi = Math.max(0, toi.mau - chiu);
+      // Máy chủ là nơi DUY NHẤT bốc số; mấy hàm luật đều nhận số bốc từ ngoài
+      // vào nên bài kiểm gọi lại được với số cố định.
+      const boc = () => Math.random();
+
+      // ── Lượt của mình ─────────────────────────────────────────────────
+      const matLuot = matLuotVi(tran.toiTrangThai, boc());
+      const { chiMang, truot } = matLuot
+        ? { chiMang: false, truot: false }
+        : ketQuaLuot(boc(), boc());
+
+      let gay = 0;
+      if (!matLuot && !truot) {
+        gay = chiMang ? Math.floor(gayGoc * NHAN_CHI_MANG) : gayGoc;
+      }
+
+      let ke: string;
+      if (matLuot) {
+        ke = `${toi.ten} đang ${tenTrangThai(tran.toiTrangThai).toLowerCase()}, không đánh được lượt này.`;
+      } else if (truot) {
+        ke = `${toi.ten} ra ${tenChieu} nhưng trượt.`;
+      } else if (gayGoc === 0) {
+        ke = `${tran.ten} miễn nhiễm — ${tenChieu} không ăn thua gì.`;
+      } else {
+        ke = `${toi.ten} dùng ${tenChieu} (hệ ${tenHe(heRa)})`
+          + `${chiMang ? ' — CHÍ MẠNG!' : ''}, ${tran.ten} mất ${gay} máu.`;
+      }
+
+      // Trúng đòn thì có thể dính trạng thái của hệ chiêu ấy.
+      let dichTrangThai = tran.trangThai;
+      let dichTramLuot = tran.tramLuot;
+      if (gay > 0) {
+        const dinh = trangThaiGayRa(heRa, tran.trangThai, boc());
+        if (dinh) {
+          dichTrangThai = dinh;
+          dichTramLuot = TRANG_THAI[dinh].soLuot;
+          ke += ` ${tran.ten} bị ${tenTrangThai(dinh).toLowerCase()}!`;
+        }
+      }
+
+      // ── Trạng thái trừ máu cuối lượt ──────────────────────────────────
+      const tramDich = mauTramMoiLuot(dichTrangThai, tran.mauToiDa);
+      const tramToi = mauTramMoiLuot(tran.toiTrangThai, toi.mauToiDa);
+
+      const mauDich = Math.max(0, tran.mau - gay - tramDich);
+      if (tramDich > 0) ke += ` ${tran.ten} mất thêm ${tramDich} máu vì ${tenTrangThai(dichTrangThai).toLowerCase()}.`;
 
       // Trừ thể lực đúng một lần cho mỗi lượt, và chỉ khi thể lực chưa bị ai
       // trừ mất — điều kiện nằm trong `where` chứ không đọc rồi ghi.
@@ -265,10 +309,11 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
       });
       if (tru.count === 0) throw new Error('het-sk');
 
+      // Địch đánh trả cả khi vừa gục — giữ đúng nếp bản gốc, đợt này chỉ thêm
+      // chí mạng/trượt/trạng thái chứ không đụng thứ tự lượt.
+      const chiu = chiuGoc;
+      const mauToi = Math.max(0, toi.mau - chiu - tramToi);
       await tx.pokeThu.update({ where: { id: toi.id }, data: { mau: mauToi } });
-
-      let ke = `${toi.ten} dùng ${tenChieu} (hệ ${tenHe(heRa)}), ${tran.ten} mất ${gay} máu.`;
-      if (gay === 0) ke = `${tran.ten} miễn nhiễm — ${tenChieu} không ăn thua gì.`;
 
       // ── Thắng ─────────────────────────────────────────────────────────
       if (mauDich <= 0) {
@@ -338,13 +383,44 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
 
       ke += ` ${tran.ten} đánh trả, ${toi.ten} mất ${chiu} máu.`;
 
+      // Đòn trả của địch cũng gây được trạng thái, theo hệ của chính nó —
+      // trạng thái một chiều thì người chơi chỉ có lợi, chẳng phải cân nhắc gì.
+      let toiTrangThai = tran.toiTrangThai;
+      let toiTramLuot = Math.max(0, tran.toiTramLuot - 1);
+      if (toiTramLuot === 0) toiTrangThai = null;
+      if (!toiTrangThai) {
+        const dinh = trangThaiGayRa(tran.he, null, boc());
+        if (dinh) {
+          toiTrangThai = dinh;
+          toiTramLuot = TRANG_THAI[dinh].soLuot;
+          ke += ` ${toi.ten} bị ${tenTrangThai(dinh).toLowerCase()}!`;
+        }
+      }
+      if (tramToi > 0) {
+        ke += ` ${toi.ten} mất thêm ${tramToi} máu vì ${tenTrangThai(tran.toiTrangThai).toLowerCase()}.`;
+      }
+
       // ── Thú mình gục ──────────────────────────────────────────────────
       if (mauToi <= 0) {
         await tx.pokeTran.delete({ where: { id: tran.id } });
         return { ok: true, ke: `${ke} ${toi.ten} gục mất rồi, mang vào trạm y tế thôi.` };
       }
 
-      await tx.pokeTran.update({ where: { id: tran.id }, data: { mau: mauDich, ke } });
+      // Đếm ngược trạng thái của địch sau khi đã trừ máu của lượt này.
+      const dichConLai = dichTrangThai === tran.trangThai
+        ? Math.max(0, tran.tramLuot - 1)
+        : dichTramLuot;
+
+      await tx.pokeTran.update({
+        where: { id: tran.id },
+        data: {
+          mau: mauDich, ke,
+          lanChiMang: chiMang, lanTruot: truot,
+          trangThai: dichConLai === 0 ? null : dichTrangThai,
+          tramLuot: dichConLai,
+          toiTrangThai, toiTramLuot,
+        },
+      });
       return { ok: true, ke };
     });
 
@@ -359,6 +435,86 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
     if (m === 'gym-da-xong') return { error: 'Gym này đã được ghi nhận rồi.' };
     if (m === 'khong-co-gym') return { error: 'Gym này không còn trên đảo.' };
     return { error: 'Không đánh được lúc này, thử lại nhé.' };
+  }
+}
+
+/**
+ * Đổi con ra trận NGAY GIỮA TRẬN.
+ *
+ * Bản gốc chỉ cho đổi ngoài trận: gặp con khắc hệ mình là hoặc đứng đánh chịu
+ * thiệt, hoặc bỏ chạy rồi đi tìm lại từ đầu — nên cả kho thú và cả bảng khắc
+ * hệ chỉ có tác dụng TRƯỚC khi vào trận.
+ *
+ * Đổi giữa trận MẤT MỘT LƯỢT: con vừa vào ăn trọn một đòn của địch, đúng lối
+ * `uongThuoc` đã làm. Không tính lượt thì cứ đổi qua đổi lại là vô hiệu hoá
+ * mọi bất lợi về hệ mà chẳng mất gì.
+ *
+ * Trạng thái đang dính của phía mình được GỠ khi đổi con — trạng thái bám vào
+ * con thú chứ không bám vào người chơi.
+ */
+export async function doiThuGiuaTran(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const { nv } = r;
+  const id = String(fd.get('thu') ?? '');
+
+  try {
+    const kq = await db.$transaction(async (tx) => {
+      await lockUsers(tx, r.userId);
+
+      const tran = await tx.pokeTran.findUnique({ where: { nhanVatId: nv.id } });
+      if (!tran) throw new Error('het-tran');
+      if (nv.sk < SK_MOI_TRAN) throw new Error('het-sk');
+      if (id === nv.raTranId) throw new Error('dang-ra-tran');
+
+      // Quyền nằm trong `where`: chỉ thú của chính mình.
+      const moi = await tx.pokeThu.findFirst({ where: { id, nhanVatId: nv.id } });
+      if (!moi) throw new Error('khong-phai-thu-cua-minh');
+      if (moi.mau <= 0) throw new Error('thu-bi-thuong');
+
+      const tru = await tx.pokeNhanVat.updateMany({
+        where: { id: nv.id, sk: { gte: SK_MOI_TRAN } },
+        data: { sk: { decrement: SK_MOI_TRAN }, raTranId: id },
+      });
+      if (tru.count === 0) throw new Error('het-sk');
+
+      // Con vừa vào chịu một đòn: tính đúng công thức của lượt thường, chỉ
+      // khác là mình không gây sát thương nào.
+      const dangMac = await tx.pokeDo.findMany({
+        where: { nhanVatId: nv.id, dangMac: true },
+        select: { cong: true, thu: true, mu: true, giap: true },
+        take: O_TRANG_BI.length,
+      });
+      const { chiu } = tinhSatThuong(
+        0, boThu(moi) + congTrangBi(dangMac).thu, moi.he, tran.cong, tran.thu, tran.he,
+      );
+      const mauSau = Math.max(0, moi.mau - chiu);
+      await tx.pokeThu.update({ where: { id: moi.id }, data: { mau: mauSau } });
+
+      let ke = `${moi.ten} ra sân thay chỗ. ${tran.ten} đánh trả, mất ${chiu} máu.`;
+      if (mauSau <= 0) {
+        await tx.pokeTran.delete({ where: { id: tran.id } });
+        ke += ` ${moi.ten} gục ngay khi vừa vào.`;
+      } else {
+        await tx.pokeTran.update({
+          where: { id: tran.id },
+          // Trạng thái theo con cũ đi ra, con mới vào sạch sẽ.
+          data: { ke, toiTrangThai: null, toiTramLuot: 0, lanChiMang: false, lanTruot: false },
+        });
+      }
+      return { ok: true, ke };
+    });
+
+    revalidatePath('/pokemon');
+    return kq;
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'het-tran') return { error: 'Không có trận nào đang diễn ra.' };
+    if (m === 'het-sk') return { error: 'Hết thể lực, vào trạm y tế nghỉ đã.' };
+    if (m === 'dang-ra-tran') return { error: 'Con này đang ra trận rồi.' };
+    if (m === 'khong-phai-thu-cua-minh') return { error: 'Đó không phải thú của bạn.' };
+    if (m === 'thu-bi-thuong') return { error: 'Con ấy đã gục, chữa đã.' };
+    return { error: 'Không đổi được lúc này.' };
   }
 }
 

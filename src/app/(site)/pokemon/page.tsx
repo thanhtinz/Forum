@@ -68,6 +68,18 @@ export default async function TrangPokemon() {
     take: 8,
   });
 
+  // Cả kho thú, để đổi con ngay giữa trận. Chỉ những con còn máu mới đổi vào
+  // được, nhưng vẫn bày con đã gục ra (khoá nút) — giấu đi thì người chơi
+  // tưởng mình mất con.
+  const khoThu = nv.tran
+    ? await db.pokeThu.findMany({
+      where: { nhanVatId: nv.id },
+      select: { id: true, ten: true, nguon: true, nac: true, he: true, mau: true, mauToiDa: true },
+      orderBy: { createdAt: 'asc' },
+      take: 24,
+    })
+    : [];
+
   // Trang bị đang mặc, để bản xem trước sát thương khớp với thứ máy chủ tính.
   const dangMac = await db.pokeDo.findMany({
     where: { nhanVatId: nv.id, dangMac: true },
@@ -103,7 +115,10 @@ export default async function TrangPokemon() {
           mau: nv.tran.mau, mauToiDa: nv.tran.mauToiDa,
           cong: nv.tran.cong, thu: nv.tran.thu, exp: nv.tran.exp, vang: nv.tran.vang,
           ke: nv.tran.ke, gym: nv.tran.gym,
+          trangThai: nv.tran.trangThai, tramLuot: nv.tran.tramLuot,
+          toiTrangThai: nv.tran.toiTrangThai, toiTramLuot: nv.tran.toiTramLuot,
         }}
+        khoThu={khoThu}
         khuHienTai={{ ...khu }}
         soTrongKhu={soTrongKhu}
         khuMo={KHU.map((k) => ({ ...k, chan: canVaoKhu(k.bac, k.ma, nv.cap, nv.huyChuong) }))}

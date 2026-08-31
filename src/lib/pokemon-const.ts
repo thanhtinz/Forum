@@ -234,6 +234,91 @@ export function boThu(c: { c1: number; c2: number; c3: number; c4: number }): nu
   return Math.floor((c.c1 + c.c2 + c.c3 + c.c4) / 4);
 }
 
+// ─────────────────── Chí mạng, trượt và trạng thái ───────────────────
+
+/**
+ * Bản gốc KHÔNG có chí mạng, không có trượt, không có trạng thái: mỗi lượt là
+ * một phép trừ tất định, đánh mười lượt giống hệt nhau mười lần. Bốn thứ dưới
+ * đây là THÊM MỚI, không phải dựng lại — ghi rõ ra đây để sau này khỏi ai đi
+ * tìm chúng trong mã PHP gốc.
+ *
+ * Mọi phép bốc đều nhận số ngẫu nhiên TỪ NGOÀI VÀO chứ không tự gọi
+ * `Math.random()`: bài kiểm phải gọi được với số cố định, và máy chủ phải là
+ * nơi duy nhất bốc số.
+ */
+export const TI_CHI_MANG = 1 / 16;
+export const NHAN_CHI_MANG = 1.5;
+export const TI_TRUOT = 0.06;
+
+export interface KetQuaBoc { chiMang: boolean; truot: boolean }
+
+/** Bốc chí mạng và trượt cho một lượt. Hai tham số là hai số trong `[0, 1)`. */
+export function ketQuaLuot(bocChiMang: number, bocTruot: number): KetQuaBoc {
+  const truot = bocTruot < TI_TRUOT;
+  // Trượt rồi thì chí mạng vô nghĩa — không để câu kể nói "chí mạng nhưng trượt".
+  return { truot, chiMang: !truot && bocChiMang < TI_CHI_MANG };
+}
+
+export type MaTrangThai = 'bong' | 'te' | 'ngu' | 'doc';
+
+/**
+ * Bốn trạng thái, mỗi cái gắn với một hệ chiêu.
+ *
+ *  • `tiDinh`  — cơ hội dính khi trúng đòn của hệ ấy.
+ *  • `soLuot`  — dính được mấy lượt.
+ *  • `tiMauMoiLuot` — phần máu tối đa mất mỗi lượt (0 nghĩa là không mất máu).
+ *  • `tiMatLuot`    — cơ hội mất hẳn lượt đánh.
+ */
+export const TRANG_THAI = {
+  bong: { he: 2, ten: 'Bỏng', tiDinh: 0.12, soLuot: 3, tiMauMoiLuot: 1 / 16, tiMatLuot: 0 },
+  te: { he: 4, ten: 'Tê', tiDinh: 0.12, soLuot: 3, tiMauMoiLuot: 0, tiMatLuot: 0.25 },
+  ngu: { he: 11, ten: 'Ngủ', tiDinh: 0.1, soLuot: 2, tiMauMoiLuot: 0, tiMatLuot: 1 },
+  doc: { he: 8, ten: 'Độc', tiDinh: 0.15, soLuot: 4, tiMauMoiLuot: 1 / 12, tiMatLuot: 0 },
+} as const satisfies Record<MaTrangThai, {
+  he: number; ten: string; tiDinh: number; soLuot: number;
+  tiMauMoiLuot: number; tiMatLuot: number;
+}>;
+
+export function tenTrangThai(ma: string | null | undefined): string {
+  return ma && ma in TRANG_THAI ? TRANG_THAI[ma as MaTrangThai].ten : '';
+}
+
+/** Trạng thái mà một hệ chiêu có thể gây ra, hoặc rỗng nếu hệ ấy không gây gì. */
+export function trangThaiCuaHe(he: number): MaTrangThai | null {
+  for (const [ma, t] of Object.entries(TRANG_THAI)) {
+    if (t.he === he) return ma as MaTrangThai;
+  }
+  return null;
+}
+
+/**
+ * Đòn vừa trúng có gây trạng thái không.
+ *
+ * Đang dính sẵn một trạng thái thì không chồng thêm — chồng được thì một con
+ * dính đủ bốn thứ là đứng yên chịu trận, mà đó là kiểu thua không cứu vãn nổi.
+ */
+export function trangThaiGayRa(
+  heChieuRa: number, dangDinh: string | null | undefined, boc: number,
+): MaTrangThai | null {
+  if (dangDinh) return null;
+  const ma = trangThaiCuaHe(heChieuRa);
+  if (!ma) return null;
+  return boc < TRANG_THAI[ma].tiDinh ? ma : null;
+}
+
+/** Máu mất mỗi lượt vì trạng thái. Sàn 1 khi có mất, để trạng thái luôn có nghĩa. */
+export function mauTramMoiLuot(ma: string | null | undefined, mauToiDa: number): number {
+  if (!ma || !(ma in TRANG_THAI)) return 0;
+  const ti = TRANG_THAI[ma as MaTrangThai].tiMauMoiLuot;
+  return ti === 0 ? 0 : Math.max(1, Math.floor(mauToiDa * ti));
+}
+
+/** Trạng thái có làm mất hẳn lượt này không. `boc` là một số trong `[0, 1)`. */
+export function matLuotVi(ma: string | null | undefined, boc: number): boolean {
+  if (!ma || !(ma in TRANG_THAI)) return false;
+  return boc < TRANG_THAI[ma as MaTrangThai].tiMatLuot;
+}
+
 // ─────────────────────────── Bắt thú ───────────────────────────
 
 /** Bản gốc: `rand(0,5) == 1`, tức đúng một phần sáu, không phụ thuộc máu. */

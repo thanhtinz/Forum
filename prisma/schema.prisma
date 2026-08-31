@@ -2681,6 +2681,24 @@ model PokeTran {
   /// Câu kể lượt vừa rồi.
   ke String?
 
+  /// Kết quả BỐC của lượt vừa rồi, ghi lại chứ không chỉ kể ra chữ.
+  ///
+  /// Chí mạng và trượt là hai thứ ngẫu nhiên duy nhất trong một lượt đánh, mà
+  /// bài kiểm thì phải khẳng định được máu trừ đúng công thức. Ghi ra cột thì
+  /// bài kiểm ĐỌC được lượt vừa rồi đã bốc ra gì rồi mới so máu — không phải
+  /// tắt ngẫu nhiên đi mới kiểm được, cũng không phải đoán.
+  lanChiMang Boolean @default(false)
+  lanTruot   Boolean @default(false)
+
+  /// Trạng thái đang dính của hai bên và số lượt còn lại.
+  ///
+  /// Để trong trận chứ không để trên `PokeThu`: hết trận là hết, không có gì
+  /// phải dọn và không có đường nào để một con mang trạng thái đi ra ngoài.
+  trangThai    String?
+  tramLuot     Int     @default(0)
+  toiTrangThai String?
+  toiTramLuot  Int     @default(0)
+
   createdAt DateTime @default(now())
 }
 

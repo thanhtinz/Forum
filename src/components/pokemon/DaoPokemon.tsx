@@ -3,10 +3,10 @@
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { Loader2, Lock, Search } from 'lucide-react';
 import {
-  boChay, doiKhu, nemCau, raChieu, timThu, uongThuoc, type PokeState,
+  boChay, doiKhu, doiThuGiuaTran, nemCau, raChieu, timThu, uongThuoc, type PokeState,
 } from '@/app/(site)/pokemon/actions';
 import {
-  CO_HOI_BAT, boThu, expChoCap, heRaChieu, heSoHe, tenHe, tinhSatThuong,
+  CO_HOI_BAT, boThu, expChoCap, heRaChieu, heSoHe, tenHe, tenTrangThai, tinhSatThuong,
 } from '@/lib/pokemon-const';
 import { bienCanh, canhKhu } from '@/lib/pokemon-giao-dien';
 import { cn } from '@/lib/utils';
@@ -21,6 +21,12 @@ interface Tran {
   ten: string; nguon: number; nac: number; he: number;
   mau: number; mauToiDa: number; cong: number; thu: number;
   exp: number; vang: number; ke: string | null; gym: number | null;
+  trangThai: string | null; tramLuot: number;
+  toiTrangThai: string | null; toiTramLuot: number;
+}
+export interface ThuTrongKho {
+  id: string; ten: string; nguon: number; nac: number;
+  he: number; mau: number; mauToiDa: number;
 }
 interface NV {
   ten: string; vang: number; exp: number; cap: number;
@@ -30,16 +36,21 @@ interface NV {
 interface Khu { ma: string; ten: string; bac: number; mo: string }
 export interface Thuoc { id: string; ten: string; mau: number; sl: number }
 
-export function DaoPokemon({ nv, raTran, tran, khuHienTai, soTrongKhu, khuMo, thuoc, boTrangBi }: {
+export function DaoPokemon({
+  nv, raTran, tran, khuHienTai, soTrongKhu, khuMo, thuoc, boTrangBi, khoThu,
+}: {
   nv: NV; raTran: Thu | null | undefined; tran: Tran | null;
   khuHienTai: Khu; soTrongKhu: number; khuMo: (Khu & { chan: string | null })[];
-  thuoc: Thuoc[]; boTrangBi: { cong: number; thu: number };
+  thuoc: Thuoc[]; boTrangBi: { cong: number; thu: number }; khoThu: ThuTrongKho[];
 }) {
   return (
     <div style={bienCanh(nv.khu)} className="space-y-4">
       <BangNhanVat nv={nv} raTran={raTran} />
       {tran && raTran
-        ? <ManDanh tran={tran} toi={raTran} coCau={nv.cau} khu={khuHienTai} thuoc={thuoc} boTrangBi={boTrangBi} />
+        ? (
+          <ManDanh tran={tran} toi={raTran} coCau={nv.cau} khu={khuHienTai}
+            thuoc={thuoc} boTrangBi={boTrangBi} khoThu={khoThu} />
+        )
         : <ManDi khu={khuHienTai} soTrongKhu={soTrongKhu} khuMo={khuMo} nv={nv} />}
     </div>
   );
@@ -212,15 +223,16 @@ function TheKhu({ k, dangO, doiAction, dangDoi }: {
 
 // ─────────────────────────── Màn đánh nhau ───────────────────────────
 
-function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi }: {
+function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi, khoThu }: {
   tran: Tran; toi: Thu; coCau: number; khu: Khu; thuoc: Thuoc[];
-  boTrangBi: { cong: number; thu: number };
+  boTrangBi: { cong: number; thu: number }; khoThu: ThuTrongKho[];
 }) {
   const [danh, danhAction, dangDanh] = useActionState<PokeState, FormData>(raChieu, {});
   const [bat, batAction, dangBat] = useActionState<PokeState, FormData>(nemCau, {});
   const [chay, chayAction, dangChay] = useActionState<PokeState, FormData>(boChay, {});
   const [uong, uongAction, dangUong] = useActionState<PokeState, FormData>(uongThuoc, {});
-  const ban = dangDanh || dangBat || dangChay || dangUong;
+  const [doi, doiAction, dangDoi] = useActionState<PokeState, FormData>(doiThuGiuaTran, {});
+  const ban = dangDanh || dangBat || dangChay || dangUong || dangDoi;
   const luot = useNhipDon(dangDanh);
 
   // Xem trước hệ số hệ: chính là thứ quyết định nên ra chiêu hay nên bỏ chạy,
@@ -232,7 +244,7 @@ function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi }: {
   // trước đây chỗ này quên nên mặc Ma Kiếm +500 mà nút vẫn báo con số như lúc
   // tay không — người chơi tưởng trang bị vô dụng.
   const boThuToi = boThu({ c1: toi.c[0]!, c2: toi.c[1]!, c3: toi.c[2]!, c4: toi.c[3]! }) + boTrangBi.thu;
-  const loi = danh.error ?? bat.error ?? chay.error ?? uong.error;
+  const loi = danh.error ?? bat.error ?? chay.error ?? uong.error ?? doi.error;
 
   return (
     <section className="dao-tam overflow-hidden">
@@ -241,6 +253,7 @@ function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi }: {
       <div className="dao-canh relative h-52 overflow-hidden sm:h-60">
         <div className="absolute left-3 top-3 z-[2] w-[52%] max-w-[15rem]">
           <TheDau ten={tran.ten} he={tran.he} mau={tran.mau} toiDa={tran.mauToiDa} />
+          <NhanTrangThai ma={tran.trangThai} conLai={tran.tramLuot} />
         </div>
         <TrenBe key={`dich-${luot}`} nguon={tran.nguon} nac={tran.nac}
           hieuUng={luot > 0 ? 'dao-dinh' : 'dao-ra-san'}
@@ -251,6 +264,7 @@ function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi }: {
           className="absolute bottom-[8%] left-[6%] z-[1] h-20 w-24 sm:h-24 sm:w-28" />
         <div className="absolute bottom-3 right-3 z-[2] w-[52%] max-w-[15rem]">
           <TheDau ten={toi.ten} he={toi.he} mau={toi.mau} toiDa={toi.mauToiDa} cap={toi.cap} />
+          <NhanTrangThai ma={tran.toiTrangThai} conLai={tran.toiTramLuot} />
         </div>
 
       </div>
@@ -277,6 +291,11 @@ function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi }: {
         {uong.ke && !uong.error && (
           <p className="man-hien mt-3 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
             {uong.ke}
+          </p>
+        )}
+        {doi.ke && !doi.error && (
+          <p className="man-hien mt-3 rounded-xl bg-sky-50 p-3 text-sm text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+            {doi.ke}
           </p>
         )}
         {loi && <p className="mt-3 text-sm text-red-600">{loi}</p>}
@@ -323,6 +342,27 @@ function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi }: {
                 <button key={t.id} type="submit" name="do" value={t.id} disabled={ban || toi.mau >= toi.mauToiDa}
                   className="btn-outline gap-1.5 !py-1.5 text-xs disabled:opacity-50">
                   {t.ten} +{t.mau.toLocaleString('vi')} ×{t.sl}
+                </button>
+              ))}
+            </div>
+          </form>
+        )}
+
+        {/* Đổi con giữa trận — bản gốc chỉ cho đổi ngoài trận, nên gặp con khắc
+            hệ mình là hoặc đứng chịu thiệt, hoặc bỏ chạy đi tìm lại từ đầu. */}
+        {khoThu.length > 1 && (
+          <form action={doiAction} className="mt-3">
+            <p className="label mb-2">Đổi thú ra sân · mất một lượt</p>
+            <div className="flex flex-wrap gap-2">
+              {khoThu.filter((c) => c.id !== toi.id).map((c) => (
+                <button key={c.id} type="submit" name="thu" value={c.id}
+                  disabled={ban || c.mau <= 0}
+                  title={c.mau <= 0 ? `${c.ten} đã gục` : `Đưa ${c.ten} ra sân`}
+                  className="btn-outline gap-1.5 !py-1.5 text-xs disabled:opacity-40">
+                  <TrenBe nguon={c.nguon} nac={c.nac} className="h-6 w-7" />
+                  <span className="max-w-[7rem] truncate">{c.ten}</span>
+                  <HuyHieuHe he={c.he} />
+                  <span className="opacity-60">{c.mau}/{c.mauToiDa}</span>
                 </button>
               ))}
             </div>
@@ -389,5 +429,20 @@ function TheDau({ ten, he, mau, toiDa, cap }: {
         {mau.toLocaleString('vi')}/{toiDa.toLocaleString('vi')}
       </span>
     </div>
+  );
+}
+
+/**
+ * Nhãn trạng thái dưới thanh máu.
+ *
+ * Không hiện gì khi không dính — một cái nhãn trống chỉ tổ chiếm chỗ trên sân
+ * đấu vốn đã chật.
+ */
+function NhanTrangThai({ ma, conLai }: { ma: string | null; conLai: number }) {
+  if (!ma || conLai <= 0) return null;
+  return (
+    <span className="mt-1 inline-block rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow">
+      {tenTrangThai(ma)} · còn {conLai} lượt
+    </span>
   );
 }

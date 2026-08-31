@@ -148,12 +148,18 @@ export default async function run(check) {
   //   mình chịu = (công của địch − thủ của mình), sàn 1,  thủ = trung bình 4 chiêu
   // rồi nhân hệ số khắc hệ.
   const boThu = Math.floor((conTruoc.c1 + conTruoc.c2 + conTruoc.c3 + conTruoc.c4) / 4);
-  const gay = heSo[0] === 0 ? 0 : Math.max(1, Math.floor(Math.max(1, conTruoc.c1 - tranD.thu) * heSo[0]));
+  const goc = heSo[0] === 0 ? 0 : Math.max(1, Math.floor(Math.max(1, conTruoc.c1 - tranD.thu) * heSo[0]));
   const chiu = heSo[1] === 0 ? 0 : Math.max(1, Math.floor(Math.max(1, tranD.cong - boThu) * heSo[1]));
+
+  // Lượt đánh nay có chí mạng (×1,5) và trượt (mất trắng). Máy chủ GHI kết quả
+  // bốc của lượt vừa rồi ra hai cột, nên đọc chúng rồi mới so máu — không phải
+  // tắt ngẫu nhiên đi mới kiểm được công thức.
+  const gay = tranSau.lanTruot ? 0 : tranSau.lanChiMang ? Math.floor(goc * 1.5) : goc;
 
   check('sát thương gây ra khớp công thức gốc',
     tranSau.mau === Math.max(0, tranD.mau - gay),
-    `${tranD.mau} − ${gay} ≠ ${tranSau.mau}`);
+    `${tranD.mau} − ${gay} ≠ ${tranSau.mau}`
+      + ` (chí mạng ${tranSau.lanChiMang}, trượt ${tranSau.lanTruot})`);
   check('sát thương phải chịu khớp công thức gốc',
     conSau.mau === Math.max(0, conTruoc.mau - chiu),
     `${conTruoc.mau} − ${chiu} ≠ ${conSau.mau}`);
@@ -161,10 +167,18 @@ export default async function run(check) {
   // ── Hạ gục thì được đúng số vàng và kinh nghiệm của con thú ──────────
   await db.pokeTran.update({ where: { nhanVatId: nv0.id }, data: { mau: 1 } });
   const truocThang = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
-  await p.reload({ waitUntil: 'networkidle' });
-  await p.waitForTimeout(900);
-  await p.locator('form button[name="chieu"]').first().click();
-  await doiToi(async () => (await db.pokeTran.count({ where: { nhanVatId: nv0.id } })) === 0);
+  // Lượt kết liễu có thể TRƯỢT — 6% — và trượt thì con thú còn đúng 1 máu, trận
+  // chưa kết thúc. Bấm lại tới khi nó gục thật; phần thưởng chỉ phát một lần
+  // nên mấy lượt trượt không làm sai con số bên dưới.
+  for (let i = 0; i < 20; i++) {
+    if (!(await db.pokeTran.count({ where: { nhanVatId: nv0.id } }))) break;
+    await p.reload({ waitUntil: 'networkidle' });
+    await p.waitForTimeout(900);
+    await p.locator('form button[name="chieu"]').first().click();
+    await doiToi(
+      async () => (await db.pokeTran.count({ where: { nhanVatId: nv0.id } })) === 0, 8,
+    );
+  }
 
   const sauThang = await db.pokeNhanVat.findUnique({ where: { id: nv0.id } });
   check('hạ gục thì được đúng số vàng của con thú',
@@ -199,13 +213,41 @@ export default async function run(check) {
     sauCau.cau === cauTruoc - 1, `${cauTruoc} → ${sauCau.cau}`);
   check('bắt trúng thì thú vào kho, trượt thì kho giữ nguyên',
     khoSau === khoTruoc || khoSau === khoTruoc + 1, `${khoTruoc} → ${khoSau}`);
-  if (khoSau > khoTruoc) {
-    const moi = await db.pokeThu.findFirst({
-      where: { nhanVatId: nv0.id }, orderBy: { createdAt: 'desc' },
+  // Ném tới khi bắt trúng: tỉ lệ chỉ một phần sáu, mà mục kiểm ngay dưới chỉ có
+  // nghĩa khi thật sự bắt được con nào. Trước đây nó nằm trong một câu `if` nên
+  // chạy hay không là tuỳ may — hai lượt chạy trọn bộ ra hai con số mục kiểm
+  // khác nhau, mà "hai lượt cùng một con số" chính là cách chốt bộ kiểm.
+  let daBat = khoSau > khoTruoc;
+  for (let i = 0; i < 40 && !daBat; i++) {
+    await db.pokeNhanVat.update({ where: { id: nv0.id }, data: { sk: 20, cau: 20 } });
+    // Dựng thẳng trận bằng dữ liệu: đi qua nút "Tìm thú" thì mỗi vòng mất thêm
+    // một lượt chờ, mà vòng này có thể phải chạy vài chục lần.
+    await db.pokeTran.deleteMany({ where: { nhanVatId: nv0.id } });
+    await db.pokeTran.create({
+      data: {
+        nhanVatId: nv0.id, khu: 'co', nguon: 1, ten: 'Con Để Bắt', he: 1,
+        cong: 1, thu: 1, mau: 50, mauToiDa: 50, exp: 1, vang: 1,
+        chieu: ['TACKLE', 'TACKLE', 'TACKLE', 'TACKLE'],
+      },
     });
-    check('con bắt được bắt đầu lại từ 20 máu và bốn chiêu 10, y bản gốc',
-      moi.mauToiDa === 20 && moi.c1 === 10, `${moi.mauToiDa} máu, chiêu ${moi.c1}`);
+    await p.goto(`${BASE}/pokemon`, { waitUntil: 'networkidle' });
+    // Nút do máy chủ dựng sẵn nhưng chỉ chạy sau khi trang hydrate xong.
+    await doiToi(async () => (await p.locator('button:has-text("Ném cầu")').count()) > 0);
+    await p.waitForTimeout(900);
+
+    const truoc = await db.pokeThu.count({ where: { nhanVatId: nv0.id } });
+    await p.locator('button:has-text("Ném cầu")').click();
+    await doiToi(async () => (await db.pokeThu.count({ where: { nhanVatId: nv0.id } })) > truoc
+      || (await db.pokeNhanVat.findUnique({ where: { id: nv0.id } })).cau < 20);
+    daBat = (await db.pokeThu.count({ where: { nhanVatId: nv0.id } })) > truoc;
   }
+  check('ném đủ nhiều lần thì bắt được', daBat);
+
+  const moi = await db.pokeThu.findFirst({
+    where: { nhanVatId: nv0.id }, orderBy: { createdAt: 'desc' },
+  });
+  check('con bắt được bắt đầu lại từ 20 máu và bốn chiêu 10, y bản gốc',
+    moi.mauToiDa === 20 && moi.c1 === 10, `${moi.mauToiDa} máu, chiêu ${moi.c1}`);
 
   // ── Hết cầu thì không ném được ───────────────────────────────────────
   await db.pokeNhanVat.update({ where: { id: nv0.id }, data: { cau: 0 } });

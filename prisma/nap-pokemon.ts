@@ -6,6 +6,28 @@
  * `pokemon3`, `nuoc3`, `lanhtho`…) thành một bảng có cột `khu`.
  *
  * Chạy được nhiều lần: khoá theo (khu, số hiệu gốc) rồi `upsert`.
+ *
+ * BA CHỖ ĐÃ ĐỔI so với bản gốc, ghi rõ ra đây vì đều là đổi SỐ LIỆU:
+ *
+ * 1. Chỉ số và phần thưởng của mười lăm khu gốc đã được giãn lại thành một
+ *    đường tăng đều theo bậc. Bảng gốc sai bậc tới mức gãy hẳn tiến trình:
+ *    Lãnh Thổ (bậc 7, mở ở cấp 18) là BẢN SAO NGUYÊN XI bảng Núi Đá (bậc 3,
+ *    cấp 6) nên lên tới chiến trường lại gặp thú yếu hơn cả khu bậc 4 và trả
+ *    2 vàng; Hang Huyền Thoại có thú 25.000 máu mà trả 7 vàng; Hoang Mạc bậc
+ *    4 yếu hơn Núi Đá bậc 3. Phần thưởng của cả bản gốc cũng gần như đứng yên
+ *    (exp và vàng quanh 2–28) trong khi sức mạnh thú đi từ 7 tới 32.000.
+ *    Sức mạnh nay lấy theo THỨ HẠNG của con thú trong khu, còn dáng của nó —
+ *    lì đòn hay đánh mạnh — vẫn giữ nguyên tỉ lệ cũ giữa công/thủ/máu.
+ *
+ * 2. Năm khu bậc 9–13 hoàn toàn không có trong bản gốc (bản gốc dừng ở bậc 8
+ *    là hết đường đi) — xem chú thích ở `KHU` trong `pokemon-const.ts`.
+ *
+ * 3. Bộ chiêu của 150 con thuộc năm khu mới lấy theo HỆ, gom từ chính 52 bộ
+ *    chiêu của mười lăm khu gốc; riêng hệ Đá bản gốc không có con nào nên bộ
+ *    chiêu của hệ ấy là viết mới.
+ *
+ * Bài kiểm `60-can-bang-dao-pokemon` canh đường cong này, nên chỉnh tay số
+ * liệu thì chạy lại bài ấy.
  */
 import { readFileSync } from 'node:fs';
 import { PrismaClient } from '@prisma/client';

@@ -361,7 +361,11 @@ function TheDau({ ten, he, mau, toiDa, cap }: {
   ten: string; he: number; mau: number; toiDa: number; cap?: number;
 }) {
   return (
-    <div className="rounded-lg border border-black/10 bg-white/80 px-2.5 py-1.5 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-black/50">
+    // `text-ink-900` là BẮT BUỘC, không bỏ đi cho gọn: thẻ này nằm trong
+    // `.dao-canh`, mà khung cảnh đặt `color: var(--dao-chu)` — ở tám khu nền
+    // tối (Lãnh Thổ, Hang Huyền Thoại, Núi Lửa Đỏ…) màu ấy gần trắng, nên chữ
+    // trắng trên nền thẻ trắng là không đọc được gì.
+    <div className="rounded-lg border border-black/10 bg-white/80 px-2.5 py-1.5 text-ink-900 shadow-sm backdrop-blur-sm dark:border-white/10 dark:bg-black/50 dark:text-white">
       <div className="flex items-center gap-1.5">
         <b className="min-w-0 flex-1 truncate text-xs">{ten}</b>
         {cap !== undefined && <span className="text-[10px] opacity-60">Cp{cap}</span>}

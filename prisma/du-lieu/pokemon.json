@@ -8,11 +8,11 @@
     {
      "nguon": 1,
      "ten": "Bọ #1",
-     "cong": 7,
-     "thu": 3,
-     "mau": 20,
-     "exp": 5,
-     "vang": 5,
+     "cong": 9,
+     "thu": 4,
+     "mau": 25,
+     "exp": 2,
+     "vang": 2,
      "he": 12,
      "nac": 0,
      "chieu": [
@@ -25,11 +25,11 @@
     {
      "nguon": 2,
      "ten": "Bọ #2",
-     "cong": 7,
-     "thu": 3,
-     "mau": 25,
-     "exp": 3,
-     "vang": 4,
+     "cong": 9,
+     "thu": 5,
+     "mau": 31,
+     "exp": 2,
+     "vang": 2,
      "he": 12,
      "nac": 0,
      "chieu": [
@@ -42,11 +42,11 @@
     {
      "nguon": 3,
      "ten": "Thường #3",
-     "cong": 10,
-     "thu": 15,
-     "mau": 15,
-     "exp": 2,
-     "vang": 6,
+     "cong": 13,
+     "thu": 20,
+     "mau": 20,
+     "exp": 3,
+     "vang": 3,
      "he": 1,
      "nac": 0,
      "chieu": [
@@ -59,10 +59,10 @@
     {
      "nguon": 4,
      "ten": "Bay #4",
-     "cong": 7,
-     "thu": 9,
-     "mau": 18,
-     "exp": 6,
+     "cong": 8,
+     "thu": 11,
+     "mau": 22,
+     "exp": 2,
      "vang": 2,
      "he": 10,
      "nac": 0,
@@ -76,11 +76,11 @@
     {
      "nguon": 5,
      "ten": "Độc #5",
-     "cong": 12,
-     "thu": 12,
-     "mau": 20,
-     "exp": 2,
-     "vang": 5,
+     "cong": 17,
+     "thu": 17,
+     "mau": 28,
+     "exp": 3,
+     "vang": 3,
      "he": 8,
      "nac": 2,
      "chieu": [
@@ -93,11 +93,11 @@
     {
      "nguon": 6,
      "ten": "Đất #6",
-     "cong": 8,
-     "thu": 8,
-     "mau": 21,
+     "cong": 11,
+     "thu": 11,
+     "mau": 28,
      "exp": 3,
-     "vang": 5,
+     "vang": 3,
      "he": 9,
      "nac": 2,
      "chieu": [
@@ -110,11 +110,11 @@
     {
      "nguon": 7,
      "ten": "Độc #7",
-     "cong": 14,
-     "thu": 7,
-     "mau": 20,
+     "cong": 20,
+     "thu": 10,
+     "mau": 29,
      "exp": 3,
-     "vang": 5,
+     "vang": 3,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -127,9 +127,9 @@
     {
      "nguon": 8,
      "ten": "Độc #8",
-     "cong": 15,
-     "thu": 10,
-     "mau": 20,
+     "cong": 22,
+     "thu": 15,
+     "mau": 29,
      "exp": 4,
      "vang": 3,
      "he": 8,
@@ -144,11 +144,11 @@
     {
      "nguon": 9,
      "ten": "Lửa #9",
-     "cong": 12,
-     "thu": 10,
-     "mau": 25,
-     "exp": 3,
-     "vang": 6,
+     "cong": 18,
+     "thu": 15,
+     "mau": 38,
+     "exp": 4,
+     "vang": 4,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -161,10 +161,10 @@
     {
      "nguon": 10,
      "ten": "Thường #10",
-     "cong": 9,
-     "thu": 12,
-     "mau": 28,
-     "exp": 3,
+     "cong": 14,
+     "thu": 18,
+     "mau": 43,
+     "exp": 4,
      "vang": 4,
      "he": 1,
      "nac": 2,
@@ -178,11 +178,11 @@
     {
      "nguon": 11,
      "ten": "Cỏ #11",
-     "cong": 16,
-     "thu": 12,
-     "mau": 22,
-     "exp": 3,
-     "vang": 3,
+     "cong": 25,
+     "thu": 19,
+     "mau": 34,
+     "exp": 4,
+     "vang": 4,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -195,11 +195,11 @@
     {
      "nguon": 12,
      "ten": "Bay #12",
-     "cong": 14,
-     "thu": 14,
-     "mau": 24,
-     "exp": 3,
-     "vang": 5,
+     "cong": 22,
+     "thu": 22,
+     "mau": 37,
+     "exp": 4,
+     "vang": 4,
      "he": 10,
      "nac": 3,
      "chieu": [
@@ -212,11 +212,11 @@
     {
      "nguon": 13,
      "ten": "Bọ #13",
-     "cong": 12,
-     "thu": 12,
-     "mau": 21,
+     "cong": 18,
+     "thu": 18,
+     "mau": 32,
      "exp": 4,
-     "vang": 6,
+     "vang": 3,
      "he": 12,
      "nac": 2,
      "chieu": [
@@ -229,11 +229,11 @@
     {
      "nguon": 14,
      "ten": "Thường #14",
-     "cong": 11,
-     "thu": 10,
-     "mau": 14,
-     "exp": 6,
-     "vang": 5,
+     "cong": 15,
+     "thu": 13,
+     "mau": 19,
+     "exp": 3,
+     "vang": 2,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -246,11 +246,11 @@
     {
      "nguon": 15,
      "ten": "Giác Đấu #15",
-     "cong": 8,
-     "thu": 12,
-     "mau": 20,
-     "exp": 4,
-     "vang": 2,
+     "cong": 11,
+     "thu": 17,
+     "mau": 28,
+     "exp": 3,
+     "vang": 3,
      "he": 7,
      "nac": 2,
      "chieu": [
@@ -270,11 +270,11 @@
     {
      "nguon": 1,
      "ten": "Bọ #1",
-     "cong": 70,
-     "thu": 30,
-     "mau": 70,
-     "exp": 5,
-     "vang": 5,
+     "cong": 43,
+     "thu": 19,
+     "mau": 43,
+     "exp": 4,
+     "vang": 3,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -287,11 +287,11 @@
     {
      "nguon": 2,
      "ten": "Bọ #2",
-     "cong": 70,
-     "thu": 70,
-     "mau": 70,
-     "exp": 3,
-     "vang": 4,
+     "cong": 37,
+     "thu": 37,
+     "mau": 37,
+     "exp": 4,
+     "vang": 3,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -304,11 +304,11 @@
     {
      "nguon": 3,
      "ten": "Thường #3",
-     "cong": 85,
-     "thu": 55,
-     "mau": 85,
-     "exp": 2,
-     "vang": 6,
+     "cong": 44,
+     "thu": 28,
+     "mau": 44,
+     "exp": 4,
+     "vang": 3,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -321,11 +321,11 @@
     {
      "nguon": 4,
      "ten": "Bay #4",
-     "cong": 78,
-     "thu": 92,
-     "mau": 100,
-     "exp": 6,
-     "vang": 2,
+     "cong": 35,
+     "thu": 41,
+     "mau": 45,
+     "exp": 4,
+     "vang": 4,
      "he": 10,
      "nac": 2,
      "chieu": [
@@ -338,11 +338,11 @@
     {
      "nguon": 5,
      "ten": "Độc #5",
-     "cong": 120,
-     "thu": 120,
-     "mau": 200,
-     "exp": 2,
-     "vang": 5,
+     "cong": 61,
+     "thu": 61,
+     "mau": 102,
+     "exp": 8,
+     "vang": 7,
      "he": 8,
      "nac": 2,
      "chieu": [
@@ -355,11 +355,11 @@
     {
      "nguon": 6,
      "ten": "Đất #6",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 3,
-     "vang": 5,
+     "cong": 65,
+     "thu": 65,
+     "mau": 65,
+     "exp": 6,
+     "vang": 6,
      "he": 9,
      "nac": 2,
      "chieu": [
@@ -372,11 +372,11 @@
     {
      "nguon": 7,
      "ten": "Độc #7",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 45,
+     "thu": 45,
+     "mau": 45,
+     "exp": 5,
+     "vang": 4,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -389,11 +389,11 @@
     {
      "nguon": 8,
      "ten": "Độc #8",
-     "cong": 120,
-     "thu": 100,
-     "mau": 120,
-     "exp": 4,
-     "vang": 3,
+     "cong": 54,
+     "thu": 45,
+     "mau": 54,
+     "exp": 5,
+     "vang": 5,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -406,11 +406,11 @@
     {
      "nguon": 9,
      "ten": "Lửa #9",
-     "cong": 120,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 6,
+     "cong": 55,
+     "thu": 46,
+     "mau": 46,
+     "exp": 5,
+     "vang": 4,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -423,10 +423,10 @@
     {
      "nguon": 10,
      "ten": "Thường #10",
-     "cong": 90,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
+     "cong": 41,
+     "thu": 55,
+     "mau": 46,
+     "exp": 5,
      "vang": 4,
      "he": 1,
      "nac": 2,
@@ -440,11 +440,11 @@
     {
      "nguon": 11,
      "ten": "Cỏ #11",
-     "cong": 90,
-     "thu": 90,
-     "mau": 90,
-     "exp": 3,
-     "vang": 3,
+     "cong": 42,
+     "thu": 42,
+     "mau": 42,
+     "exp": 4,
+     "vang": 4,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -457,11 +457,11 @@
     {
      "nguon": 12,
      "ten": "Bay #12",
-     "cong": 50,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 24,
+     "thu": 58,
+     "mau": 49,
+     "exp": 4,
+     "vang": 4,
      "he": 10,
      "nac": 3,
      "chieu": [
@@ -474,10 +474,10 @@
     {
      "nguon": 13,
      "ten": "Bọ #13",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 4,
+     "cong": 66,
+     "thu": 66,
+     "mau": 66,
+     "exp": 7,
      "vang": 6,
      "he": 12,
      "nac": 2,
@@ -491,11 +491,11 @@
     {
      "nguon": 14,
      "ten": "Thường #14",
-     "cong": 110,
-     "thu": 100,
-     "mau": 140,
+     "cong": 59,
+     "thu": 54,
+     "mau": 75,
      "exp": 6,
-     "vang": 5,
+     "vang": 6,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -508,11 +508,11 @@
     {
      "nguon": 15,
      "ten": "Giác Đấu #15",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 55,
+     "thu": 55,
+     "mau": 46,
+     "exp": 5,
+     "vang": 5,
      "he": 7,
      "nac": 2,
      "chieu": [
@@ -525,11 +525,11 @@
     {
      "nguon": 16,
      "ten": "Siêu Linh #16",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 57,
+     "thu": 57,
+     "mau": 48,
+     "exp": 5,
+     "vang": 5,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -542,11 +542,11 @@
     {
      "nguon": 17,
      "ten": "Lửa #17",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 59,
+     "thu": 59,
+     "mau": 49,
+     "exp": 6,
+     "vang": 5,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -559,11 +559,11 @@
     {
      "nguon": 18,
      "ten": "Cỏ #18",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 61,
+     "thu": 61,
+     "mau": 51,
+     "exp": 6,
+     "vang": 5,
      "he": 5,
      "nac": 2,
      "chieu": [
@@ -576,11 +576,11 @@
     {
      "nguon": 19,
      "ten": "Lửa #19",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 63,
+     "thu": 63,
+     "mau": 52,
+     "exp": 6,
+     "vang": 5,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -593,11 +593,11 @@
     {
      "nguon": 20,
      "ten": "Thường #20",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 65,
+     "thu": 65,
+     "mau": 54,
+     "exp": 6,
+     "vang": 5,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -610,11 +610,11 @@
     {
      "nguon": 22,
      "ten": "Pikachu",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
+     "cong": 68,
+     "thu": 68,
+     "mau": 68,
      "exp": 7,
-     "vang": 5,
+     "vang": 6,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -627,11 +627,11 @@
     {
      "nguon": 25,
      "ten": "ran da",
-     "cong": 129,
-     "thu": 129,
-     "mau": 129,
-     "exp": 2,
-     "vang": 3,
+     "cong": 73,
+     "thu": 73,
+     "mau": 73,
+     "exp": 7,
+     "vang": 7,
      "he": 1,
      "nac": 1,
      "chieu": [
@@ -644,11 +644,11 @@
     {
      "nguon": 23,
      "ten": "Bulbasaur",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 5,
-     "vang": 5,
+     "cong": 70,
+     "thu": 70,
+     "mau": 70,
+     "exp": 7,
+     "vang": 6,
      "he": 5,
      "nac": 2,
      "chieu": [
@@ -661,11 +661,11 @@
     {
      "nguon": 16,
      "ten": "Siêu Linh #16",
-     "cong": 150,
-     "thu": 120,
-     "mau": 100,
-     "exp": 5,
-     "vang": 5,
+     "cong": 87,
+     "thu": 70,
+     "mau": 58,
+     "exp": 7,
+     "vang": 6,
      "he": 1,
      "nac": 3,
      "chieu": [
@@ -685,11 +685,11 @@
     {
      "nguon": 1,
      "ten": "Bọ #1",
-     "cong": 70,
-     "thu": 30,
-     "mau": 70,
+     "cong": 121,
+     "thu": 52,
+     "mau": 121,
      "exp": 5,
-     "vang": 5,
+     "vang": 4,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -702,11 +702,11 @@
     {
      "nguon": 2,
      "ten": "Bọ #2",
-     "cong": 70,
-     "thu": 70,
-     "mau": 70,
-     "exp": 3,
-     "vang": 4,
+     "cong": 101,
+     "thu": 101,
+     "mau": 101,
+     "exp": 5,
+     "vang": 5,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -719,11 +719,11 @@
     {
      "nguon": 3,
      "ten": "Thường #3",
-     "cong": 85,
-     "thu": 55,
-     "mau": 85,
-     "exp": 2,
-     "vang": 6,
+     "cong": 122,
+     "thu": 79,
+     "mau": 122,
+     "exp": 5,
+     "vang": 5,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -736,11 +736,11 @@
     {
      "nguon": 4,
      "ten": "Bay #4",
-     "cong": 78,
-     "thu": 92,
-     "mau": 100,
+     "cong": 96,
+     "thu": 114,
+     "mau": 124,
      "exp": 6,
-     "vang": 2,
+     "vang": 5,
      "he": 10,
      "nac": 2,
      "chieu": [
@@ -753,11 +753,11 @@
     {
      "nguon": 5,
      "ten": "Độc #5",
-     "cong": 120,
-     "thu": 120,
-     "mau": 200,
-     "exp": 2,
-     "vang": 5,
+     "cong": 139,
+     "thu": 139,
+     "mau": 232,
+     "exp": 9,
+     "vang": 8,
      "he": 8,
      "nac": 2,
      "chieu": [
@@ -770,11 +770,11 @@
     {
      "nguon": 6,
      "ten": "Đất #6",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 3,
-     "vang": 5,
+     "cong": 161,
+     "thu": 161,
+     "mau": 161,
+     "exp": 8,
+     "vang": 7,
      "he": 9,
      "nac": 2,
      "chieu": [
@@ -787,10 +787,10 @@
     {
      "nguon": 7,
      "ten": "Độc #7",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
+     "cong": 121,
+     "thu": 121,
+     "mau": 121,
+     "exp": 6,
      "vang": 5,
      "he": 8,
      "nac": 3,
@@ -804,11 +804,11 @@
     {
      "nguon": 8,
      "ten": "Độc #8",
-     "cong": 120,
-     "thu": 100,
-     "mau": 120,
-     "exp": 4,
-     "vang": 3,
+     "cong": 142,
+     "thu": 118,
+     "mau": 142,
+     "exp": 7,
+     "vang": 6,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -821,10 +821,10 @@
     {
      "nguon": 9,
      "ten": "Lửa #9",
-     "cong": 120,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
+     "cong": 144,
+     "thu": 120,
+     "mau": 120,
+     "exp": 6,
      "vang": 6,
      "he": 2,
      "nac": 2,
@@ -838,11 +838,11 @@
     {
      "nguon": 10,
      "ten": "Thường #10",
-     "cong": 90,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 4,
+     "cong": 108,
+     "thu": 144,
+     "mau": 120,
+     "exp": 6,
+     "vang": 6,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -855,11 +855,11 @@
     {
      "nguon": 11,
      "ten": "Cỏ #11",
-     "cong": 90,
-     "thu": 90,
-     "mau": 90,
-     "exp": 3,
-     "vang": 3,
+     "cong": 114,
+     "thu": 114,
+     "mau": 114,
+     "exp": 6,
+     "vang": 5,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -872,10 +872,10 @@
     {
      "nguon": 12,
      "ten": "Bay #12",
-     "cong": 50,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
+     "cong": 65,
+     "thu": 157,
+     "mau": 131,
+     "exp": 6,
      "vang": 5,
      "he": 10,
      "nac": 3,
@@ -889,11 +889,11 @@
     {
      "nguon": 13,
      "ten": "Bọ #13",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 4,
-     "vang": 6,
+     "cong": 164,
+     "thu": 164,
+     "mau": 164,
+     "exp": 8,
+     "vang": 7,
      "he": 12,
      "nac": 2,
      "chieu": [
@@ -906,11 +906,11 @@
     {
      "nguon": 14,
      "ten": "Thường #14",
-     "cong": 110,
-     "thu": 100,
-     "mau": 140,
-     "exp": 6,
-     "vang": 5,
+     "cong": 148,
+     "thu": 135,
+     "mau": 189,
+     "exp": 8,
+     "vang": 7,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -923,11 +923,11 @@
     {
      "nguon": 15,
      "ten": "Giác Đấu #15",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 146,
+     "thu": 146,
+     "mau": 121,
+     "exp": 7,
+     "vang": 6,
      "he": 7,
      "nac": 2,
      "chieu": [
@@ -940,11 +940,11 @@
     {
      "nguon": 16,
      "ten": "Siêu Linh #16",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 149,
+     "thu": 149,
+     "mau": 124,
+     "exp": 7,
+     "vang": 6,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -957,11 +957,11 @@
     {
      "nguon": 17,
      "ten": "Lửa #17",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 153,
+     "thu": 153,
+     "mau": 127,
+     "exp": 7,
+     "vang": 6,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -974,11 +974,11 @@
     {
      "nguon": 18,
      "ten": "Cỏ #18",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 156,
+     "thu": 156,
+     "mau": 130,
+     "exp": 7,
+     "vang": 7,
      "he": 5,
      "nac": 2,
      "chieu": [
@@ -991,11 +991,11 @@
     {
      "nguon": 19,
      "ten": "Lửa #19",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 160,
+     "thu": 160,
+     "mau": 133,
+     "exp": 8,
+     "vang": 7,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -1008,11 +1008,11 @@
     {
      "nguon": 20,
      "ten": "Thường #20",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 163,
+     "thu": 163,
+     "mau": 136,
+     "exp": 8,
+     "vang": 7,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -1025,11 +1025,11 @@
     {
      "nguon": 22,
      "ten": "Pikachu",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 7,
-     "vang": 5,
+     "cong": 167,
+     "thu": 167,
+     "mau": 167,
+     "exp": 8,
+     "vang": 8,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -1042,11 +1042,11 @@
     {
      "nguon": 23,
      "ten": "Bulbasaur",
-     "cong": 100,
-     "thu": 100,
-     "mau": 130,
-     "exp": 6,
-     "vang": 3,
+     "cong": 119,
+     "thu": 119,
+     "mau": 155,
+     "exp": 7,
+     "vang": 6,
      "he": 5,
      "nac": 5,
      "chieu": [
@@ -1059,11 +1059,11 @@
     {
      "nguon": 25,
      "ten": "ran da",
-     "cong": 240,
-     "thu": 235,
-     "mau": 500,
-     "exp": 10,
-     "vang": 12,
+     "cong": 138,
+     "thu": 135,
+     "mau": 288,
+     "exp": 9,
+     "vang": 8,
      "he": 3,
      "nac": 5,
      "chieu": [
@@ -1076,11 +1076,11 @@
     {
      "nguon": 24,
      "ten": "rong ca chep",
-     "cong": 240,
-     "thu": 235,
-     "mau": 450,
-     "exp": 10,
-     "vang": 12,
+     "cong": 143,
+     "thu": 140,
+     "mau": 268,
+     "exp": 9,
+     "vang": 8,
      "he": 3,
      "nac": 5,
      "chieu": [
@@ -1093,11 +1093,11 @@
     {
      "nguon": 26,
      "ten": "Cyndaquil",
-     "cong": 240,
-     "thu": 235,
-     "mau": 500,
+     "cong": 140,
+     "thu": 138,
+     "mau": 293,
      "exp": 10,
-     "vang": 12,
+     "vang": 9,
      "he": 2,
      "nac": 5,
      "chieu": [
@@ -1110,11 +1110,11 @@
     {
      "nguon": 27,
      "ten": "Electrode",
-     "cong": 95,
-     "thu": 70,
-     "mau": 50,
-     "exp": 6,
-     "vang": 2,
+     "cong": 139,
+     "thu": 102,
+     "mau": 73,
+     "exp": 5,
+     "vang": 5,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -1127,11 +1127,11 @@
     {
      "nguon": 28,
      "ten": "Chikorita",
-     "cong": 210,
-     "thu": 110,
-     "mau": 240,
-     "exp": 8,
-     "vang": 7,
+     "cong": 203,
+     "thu": 106,
+     "mau": 232,
+     "exp": 9,
+     "vang": 8,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -1144,11 +1144,11 @@
     {
      "nguon": 29,
      "ten": "Totodile",
-     "cong": 210,
-     "thu": 150,
-     "mau": 100,
-     "exp": 7,
-     "vang": 4,
+     "cong": 238,
+     "thu": 170,
+     "mau": 113,
+     "exp": 9,
+     "vang": 8,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1161,11 +1161,11 @@
     {
      "nguon": 30,
      "ten": "Charmander",
-     "cong": 120,
-     "thu": 120,
-     "mau": 250,
-     "exp": 7,
-     "vang": 4,
+     "cong": 130,
+     "thu": 130,
+     "mau": 271,
+     "exp": 9,
+     "vang": 8,
      "he": 2,
      "nac": 3,
      "chieu": [
@@ -1178,11 +1178,11 @@
     {
      "nguon": 31,
      "ten": "Meditite",
-     "cong": 650,
-     "thu": 420,
-     "mau": 350,
-     "exp": 8,
-     "vang": 4,
+     "cong": 275,
+     "thu": 178,
+     "mau": 148,
+     "exp": 10,
+     "vang": 9,
      "he": 11,
      "nac": 3,
      "chieu": [
@@ -1195,11 +1195,11 @@
     {
      "nguon": 32,
      "ten": "Gastly",
-     "cong": 420,
-     "thu": 410,
-     "mau": 250,
-     "exp": 8,
-     "vang": 7,
+     "cong": 230,
+     "thu": 224,
+     "mau": 137,
+     "exp": 10,
+     "vang": 9,
      "he": 14,
      "nac": 3,
      "chieu": [
@@ -1212,11 +1212,11 @@
     {
      "nguon": 33,
      "ten": "abysol",
-     "cong": 650,
-     "thu": 740,
-     "mau": 820,
-     "exp": 7,
-     "vang": 5,
+     "cong": 185,
+     "thu": 211,
+     "mau": 234,
+     "exp": 10,
+     "vang": 9,
      "he": 16,
      "nac": 7,
      "chieu": [
@@ -1229,11 +1229,11 @@
     {
      "nguon": 34,
      "ten": "Umbreon",
-     "cong": 420,
-     "thu": 120,
-     "mau": 520,
-     "exp": 9,
-     "vang": 5,
+     "cong": 230,
+     "thu": 68,
+     "mau": 285,
+     "exp": 10,
+     "vang": 9,
      "he": 16,
      "nac": 3,
      "chieu": [
@@ -1246,11 +1246,11 @@
     {
      "nguon": 35,
      "ten": "Sceptile",
-     "cong": 450,
-     "thu": 450,
-     "mau": 720,
-     "exp": 7,
-     "vang": 6,
+     "cong": 170,
+     "thu": 170,
+     "mau": 271,
+     "exp": 10,
+     "vang": 9,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -1263,11 +1263,11 @@
     {
      "nguon": 36,
      "ten": "Machop",
-     "cong": 520,
-     "thu": 520,
-     "mau": 640,
-     "exp": 8,
-     "vang": 4,
+     "cong": 192,
+     "thu": 192,
+     "mau": 236,
+     "exp": 10,
+     "vang": 9,
      "he": 7,
      "nac": 3,
      "chieu": [
@@ -1287,10 +1287,10 @@
     {
      "nguon": 53,
      "ten": "Krookodile",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 8,
+     "cong": 400,
+     "thu": 400,
+     "mau": 400,
+     "exp": 9,
      "vang": 8,
      "he": 16,
      "nac": 3,
@@ -1304,11 +1304,11 @@
     {
      "nguon": 52,
      "ten": "Metagross",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 8,
-     "vang": 8,
+     "cong": 440,
+     "thu": 440,
+     "mau": 440,
+     "exp": 10,
+     "vang": 9,
      "he": 17,
      "nac": 3,
      "chieu": [
@@ -1321,11 +1321,11 @@
     {
      "nguon": 51,
      "ten": "Klinklang",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 8,
-     "vang": 8,
+     "cong": 480,
+     "thu": 480,
+     "mau": 480,
+     "exp": 11,
+     "vang": 10,
      "he": 17,
      "nac": 3,
      "chieu": [
@@ -1338,11 +1338,11 @@
     {
      "nguon": 50,
      "ten": "Vanilluxe",
-     "cong": 199,
-     "thu": 199,
-     "mau": 199,
-     "exp": 8,
-     "vang": 7,
+     "cong": 600,
+     "thu": 600,
+     "mau": 600,
+     "exp": 14,
+     "vang": 12,
      "he": 6,
      "nac": 3,
      "chieu": [
@@ -1355,11 +1355,11 @@
     {
      "nguon": 49,
      "ten": "Galvantula",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 8,
-     "vang": 7,
+     "cong": 520,
+     "thu": 520,
+     "mau": 520,
+     "exp": 12,
+     "vang": 11,
      "he": 4,
      "nac": 3,
      "chieu": [
@@ -1372,11 +1372,11 @@
     {
      "nguon": 48,
      "ten": "Stoutland",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 7,
-     "vang": 7,
+     "cong": 560,
+     "thu": 560,
+     "mau": 560,
+     "exp": 13,
+     "vang": 11,
      "he": 1,
      "nac": 3,
      "chieu": [
@@ -1389,11 +1389,11 @@
     {
      "nguon": 47,
      "ten": "Staraptor",
-     "cong": 90,
-     "thu": 90,
-     "mau": 90,
-     "exp": 5,
-     "vang": 5,
+     "cong": 360,
+     "thu": 360,
+     "mau": 360,
+     "exp": 8,
+     "vang": 7,
      "he": 10,
      "nac": 3,
      "chieu": [
@@ -1406,11 +1406,11 @@
     {
      "nguon": 46,
      "ten": "Hydreigon",
-     "cong": 80,
-     "thu": 80,
-     "mau": 80,
-     "exp": 5,
-     "vang": 5,
+     "cong": 320,
+     "thu": 320,
+     "mau": 320,
+     "exp": 7,
+     "vang": 6,
      "he": 15,
      "nac": 3,
      "chieu": [
@@ -1423,11 +1423,11 @@
     {
      "nguon": 45,
      "ten": "Garchomp",
-     "cong": 70,
-     "thu": 70,
-     "mau": 70,
-     "exp": 5,
-     "vang": 5,
+     "cong": 280,
+     "thu": 280,
+     "mau": 280,
+     "exp": 6,
+     "vang": 6,
      "he": 15,
      "nac": 3,
      "chieu": [
@@ -1447,11 +1447,11 @@
     {
      "nguon": 7,
      "ten": "Độc #7",
-     "cong": 4000,
-     "thu": 5000,
-     "mau": 6000,
-     "exp": 19,
-     "vang": 18,
+     "cong": 726,
+     "thu": 907,
+     "mau": 1089,
+     "exp": 9,
+     "vang": 9,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -1464,11 +1464,11 @@
     {
      "nguon": 8,
      "ten": "Độc #8",
-     "cong": 6000,
-     "thu": 5000,
-     "mau": 4400,
-     "exp": 19,
-     "vang": 19,
+     "cong": 1299,
+     "thu": 1083,
+     "mau": 953,
+     "exp": 12,
+     "vang": 10,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -1481,11 +1481,11 @@
     {
      "nguon": 9,
      "ten": "Lửa #9",
-     "cong": 8000,
-     "thu": 8000,
-     "mau": 8000,
-     "exp": 19,
-     "vang": 18,
+     "cong": 1674,
+     "thu": 1674,
+     "mau": 1674,
+     "exp": 17,
+     "vang": 16,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -1498,11 +1498,11 @@
     {
      "nguon": 10,
      "ten": "Thường #10",
-     "cong": 9000,
-     "thu": 4000,
-     "mau": 6000,
-     "exp": 19,
-     "vang": 16,
+     "cong": 2088,
+     "thu": 928,
+     "mau": 1392,
+     "exp": 15,
+     "vang": 14,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -1515,11 +1515,11 @@
     {
      "nguon": 11,
      "ten": "Cỏ #11",
-     "cong": 5000,
-     "thu": 5000,
-     "mau": 7000,
-     "exp": 19,
-     "vang": 17,
+     "cong": 1026,
+     "thu": 1026,
+     "mau": 1436,
+     "exp": 12,
+     "vang": 11,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -1532,11 +1532,11 @@
     {
      "nguon": 12,
      "ten": "Bay #12",
-     "cong": 6000,
-     "thu": 6000,
-     "mau": 6000,
-     "exp": 18,
-     "vang": 19,
+     "cong": 1214,
+     "thu": 1214,
+     "mau": 1214,
+     "exp": 13,
+     "vang": 11,
      "he": 10,
      "nac": 3,
      "chieu": [
@@ -1549,11 +1549,11 @@
     {
      "nguon": 13,
      "ten": "Bọ #13",
-     "cong": 9000,
-     "thu": 9000,
-     "mau": 9000,
+     "cong": 1725,
+     "thu": 1725,
+     "mau": 1725,
      "exp": 18,
-     "vang": 19,
+     "vang": 16,
      "he": 12,
      "nac": 2,
      "chieu": [
@@ -1566,11 +1566,11 @@
     {
      "nguon": 14,
      "ten": "Thường #14",
-     "cong": 7000,
-     "thu": 7000,
-     "mau": 7000,
-     "exp": 19,
-     "vang": 19,
+     "cong": 1521,
+     "thu": 1521,
+     "mau": 1521,
+     "exp": 16,
+     "vang": 14,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -1583,11 +1583,11 @@
     {
      "nguon": 15,
      "ten": "Giác Đấu #15",
-     "cong": 5000,
-     "thu": 5000,
-     "mau": 5000,
-     "exp": 19,
-     "vang": 20,
+     "cong": 958,
+     "thu": 958,
+     "mau": 958,
+     "exp": 10,
+     "vang": 9,
      "he": 7,
      "nac": 2,
      "chieu": [
@@ -1600,11 +1600,11 @@
     {
      "nguon": 16,
      "ten": "Siêu Linh #16",
-     "cong": 6000,
-     "thu": 6000,
-     "mau": 6000,
-     "exp": 19,
-     "vang": 21,
+     "cong": 1265,
+     "thu": 1265,
+     "mau": 1265,
+     "exp": 13,
+     "vang": 12,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -1617,11 +1617,11 @@
     {
      "nguon": 17,
      "ten": "Lửa #17",
-     "cong": 7000,
-     "thu": 7000,
-     "mau": 7000,
-     "exp": 20,
-     "vang": 17,
+     "cong": 1572,
+     "thu": 1572,
+     "mau": 1572,
+     "exp": 16,
+     "vang": 15,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -1634,11 +1634,11 @@
     {
      "nguon": 18,
      "ten": "Cỏ #18",
-     "cong": 6000,
-     "thu": 6000,
-     "mau": 6000,
-     "exp": 19,
-     "vang": 19,
+     "cong": 1316,
+     "thu": 1316,
+     "mau": 1316,
+     "exp": 14,
+     "vang": 12,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -1651,11 +1651,11 @@
     {
      "nguon": 19,
      "ten": "Lửa #19",
-     "cong": 4000,
-     "thu": 4000,
-     "mau": 4000,
-     "exp": 20,
-     "vang": 19,
+     "cong": 856,
+     "thu": 856,
+     "mau": 856,
+     "exp": 9,
+     "vang": 8,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -1668,11 +1668,11 @@
     {
      "nguon": 20,
      "ten": "Thường #20",
-     "cong": 3000,
-     "thu": 3000,
-     "mau": 3000,
-     "exp": 19,
-     "vang": 18,
+     "cong": 805,
+     "thu": 805,
+     "mau": 805,
+     "exp": 8,
+     "vang": 8,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -1685,11 +1685,11 @@
     {
      "nguon": 21,
      "ten": "Cỏ #21",
-     "cong": 7000,
-     "thu": 7000,
-     "mau": 7000,
-     "exp": 18,
-     "vang": 18,
+     "cong": 1623,
+     "thu": 1623,
+     "mau": 1623,
+     "exp": 17,
+     "vang": 15,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -1702,11 +1702,11 @@
     {
      "nguon": 22,
      "ten": "Pikachu",
-     "cong": 6000,
-     "thu": 6000,
-     "mau": 6000,
-     "exp": 19,
-     "vang": 17,
+     "cong": 1367,
+     "thu": 1367,
+     "mau": 1367,
+     "exp": 14,
+     "vang": 13,
      "he": 2,
      "nac": 3,
      "chieu": [
@@ -1719,11 +1719,11 @@
     {
      "nguon": 23,
      "ten": "Bulbasaur",
-     "cong": 5000,
-     "thu": 5000,
-     "mau": 5000,
-     "exp": 17,
-     "vang": 19,
+     "cong": 1009,
+     "thu": 1009,
+     "mau": 1009,
+     "exp": 11,
+     "vang": 9,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1736,11 +1736,11 @@
     {
      "nguon": 24,
      "ten": "rong ca chep",
-     "cong": 5000,
-     "thu": 5000,
-     "mau": 5000,
-     "exp": 17,
-     "vang": 18,
+     "cong": 1061,
+     "thu": 1061,
+     "mau": 1061,
+     "exp": 11,
+     "vang": 10,
      "he": 10,
      "nac": 2,
      "chieu": [
@@ -1753,11 +1753,11 @@
     {
      "nguon": 25,
      "ten": "ran da",
-     "cong": 6000,
-     "thu": 6000,
-     "mau": 6000,
-     "exp": 16,
-     "vang": 19,
+     "cong": 1418,
+     "thu": 1418,
+     "mau": 1418,
+     "exp": 15,
+     "vang": 13,
      "he": 4,
      "nac": 2,
      "chieu": [
@@ -1777,11 +1777,11 @@
     {
      "nguon": 37,
      "ten": "Squirtle",
-     "cong": 210,
-     "thu": 235,
-     "mau": 210,
-     "exp": 6,
-     "vang": 3,
+     "cong": 69,
+     "thu": 77,
+     "mau": 69,
+     "exp": 7,
+     "vang": 6,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1794,11 +1794,11 @@
     {
      "nguon": 38,
      "ten": "Poliwag",
-     "cong": 57,
-     "thu": 75,
-     "mau": 75,
-     "exp": 4,
-     "vang": 3,
+     "cong": 39,
+     "thu": 51,
+     "mau": 51,
+     "exp": 5,
+     "vang": 4,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1811,11 +1811,11 @@
     {
      "nguon": 39,
      "ten": "Lotad",
-     "cong": 45,
-     "thu": 45,
-     "mau": 45,
+     "cong": 41,
+     "thu": 41,
+     "mau": 41,
      "exp": 4,
-     "vang": 6,
+     "vang": 4,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1828,11 +1828,11 @@
     {
      "nguon": 40,
      "ten": "mudkip",
-     "cong": 120,
-     "thu": 120,
-     "mau": 70,
+     "cong": 62,
+     "thu": 62,
+     "mau": 36,
      "exp": 5,
-     "vang": 3,
+     "vang": 5,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1845,11 +1845,11 @@
     {
      "nguon": 41,
      "ten": "Spheal",
-     "cong": 250,
-     "thu": 250,
-     "mau": 70,
+     "cong": 87,
+     "thu": 87,
+     "mau": 24,
      "exp": 7,
-     "vang": 3,
+     "vang": 6,
      "he": 1,
      "nac": 3,
      "chieu": [
@@ -1862,10 +1862,10 @@
     {
      "nguon": 43,
      "ten": "Horsea",
-     "cong": 40,
-     "thu": 40,
-     "mau": 50,
-     "exp": 5,
+     "cong": 32,
+     "thu": 32,
+     "mau": 40,
+     "exp": 4,
      "vang": 3,
      "he": 3,
      "nac": 3,
@@ -1879,11 +1879,11 @@
     {
      "nguon": 44,
      "ten": "miclotic",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
+     "cong": 60,
+     "thu": 60,
+     "mau": 60,
      "exp": 6,
-     "vang": 4,
+     "vang": 5,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1896,11 +1896,11 @@
     {
      "nguon": 37,
      "ten": "Squirtle",
-     "cong": 210,
-     "thu": 235,
-     "mau": 210,
-     "exp": 6,
-     "vang": 3,
+     "cong": 72,
+     "thu": 81,
+     "mau": 72,
+     "exp": 8,
+     "vang": 7,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1913,11 +1913,11 @@
     {
      "nguon": 38,
      "ten": "Poliwag",
-     "cong": 57,
-     "thu": 75,
-     "mau": 75,
-     "exp": 4,
-     "vang": 3,
+     "cong": 42,
+     "thu": 55,
+     "mau": 55,
+     "exp": 5,
+     "vang": 5,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1930,11 +1930,11 @@
     {
      "nguon": 39,
      "ten": "Lotad",
-     "cong": 45,
-     "thu": 45,
-     "mau": 45,
+     "cong": 44,
+     "thu": 44,
+     "mau": 44,
      "exp": 4,
-     "vang": 6,
+     "vang": 4,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1947,11 +1947,11 @@
     {
      "nguon": 40,
      "ten": "mudkip",
-     "cong": 120,
-     "thu": 120,
-     "mau": 70,
-     "exp": 5,
-     "vang": 3,
+     "cong": 66,
+     "thu": 66,
+     "mau": 38,
+     "exp": 6,
+     "vang": 5,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -1964,11 +1964,11 @@
     {
      "nguon": 41,
      "ten": "Spheal",
-     "cong": 250,
-     "thu": 250,
-     "mau": 70,
+     "cong": 91,
+     "thu": 91,
+     "mau": 25,
      "exp": 7,
-     "vang": 3,
+     "vang": 6,
      "he": 1,
      "nac": 3,
      "chieu": [
@@ -1981,10 +1981,10 @@
     {
      "nguon": 43,
      "ten": "Horsea",
-     "cong": 40,
-     "thu": 40,
-     "mau": 50,
-     "exp": 5,
+     "cong": 35,
+     "thu": 35,
+     "mau": 44,
+     "exp": 4,
      "vang": 3,
      "he": 3,
      "nac": 3,
@@ -1998,11 +1998,11 @@
     {
      "nguon": 44,
      "ten": "miclotic",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
+     "cong": 63,
+     "thu": 63,
+     "mau": 63,
      "exp": 6,
-     "vang": 4,
+     "vang": 6,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2022,11 +2022,11 @@
     {
      "nguon": 1,
      "ten": "Bọ #1",
-     "cong": 70,
-     "thu": 30,
-     "mau": 70,
+     "cong": 121,
+     "thu": 52,
+     "mau": 121,
      "exp": 5,
-     "vang": 5,
+     "vang": 4,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -2039,11 +2039,11 @@
     {
      "nguon": 2,
      "ten": "Bọ #2",
-     "cong": 70,
-     "thu": 70,
-     "mau": 70,
-     "exp": 3,
-     "vang": 4,
+     "cong": 104,
+     "thu": 104,
+     "mau": 104,
+     "exp": 5,
+     "vang": 5,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -2056,11 +2056,11 @@
     {
      "nguon": 3,
      "ten": "Thường #3",
-     "cong": 85,
-     "thu": 55,
-     "mau": 85,
-     "exp": 2,
-     "vang": 6,
+     "cong": 124,
+     "thu": 81,
+     "mau": 124,
+     "exp": 5,
+     "vang": 5,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -2073,11 +2073,11 @@
     {
      "nguon": 4,
      "ten": "Bay #4",
-     "cong": 78,
-     "thu": 92,
-     "mau": 100,
+     "cong": 100,
+     "thu": 118,
+     "mau": 129,
      "exp": 6,
-     "vang": 2,
+     "vang": 5,
      "he": 10,
      "nac": 2,
      "chieu": [
@@ -2090,11 +2090,11 @@
     {
      "nguon": 5,
      "ten": "Độc #5",
-     "cong": 120,
-     "thu": 120,
-     "mau": 200,
-     "exp": 2,
-     "vang": 5,
+     "cong": 172,
+     "thu": 172,
+     "mau": 286,
+     "exp": 10,
+     "vang": 9,
      "he": 8,
      "nac": 2,
      "chieu": [
@@ -2107,11 +2107,11 @@
     {
      "nguon": 6,
      "ten": "Đất #6",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 3,
-     "vang": 5,
+     "cong": 198,
+     "thu": 198,
+     "mau": 198,
+     "exp": 10,
+     "vang": 9,
      "he": 9,
      "nac": 2,
      "chieu": [
@@ -2124,11 +2124,11 @@
     {
      "nguon": 7,
      "ten": "Độc #7",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 133,
+     "thu": 133,
+     "mau": 133,
+     "exp": 7,
+     "vang": 6,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -2141,11 +2141,11 @@
     {
      "nguon": 8,
      "ten": "Độc #8",
-     "cong": 120,
-     "thu": 100,
-     "mau": 120,
-     "exp": 4,
-     "vang": 3,
+     "cong": 160,
+     "thu": 133,
+     "mau": 160,
+     "exp": 8,
+     "vang": 7,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -2158,11 +2158,11 @@
     {
      "nguon": 9,
      "ten": "Lửa #9",
-     "cong": 120,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 6,
+     "cong": 163,
+     "thu": 136,
+     "mau": 136,
+     "exp": 7,
+     "vang": 7,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -2175,11 +2175,11 @@
     {
      "nguon": 10,
      "ten": "Thường #10",
-     "cong": 90,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 4,
+     "cong": 121,
+     "thu": 162,
+     "mau": 135,
+     "exp": 7,
+     "vang": 6,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -2192,11 +2192,11 @@
     {
      "nguon": 11,
      "ten": "Cỏ #11",
-     "cong": 90,
-     "thu": 90,
-     "mau": 90,
-     "exp": 3,
-     "vang": 3,
+     "cong": 122,
+     "thu": 122,
+     "mau": 122,
+     "exp": 6,
+     "vang": 5,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -2209,11 +2209,11 @@
     {
      "nguon": 12,
      "ten": "Bay #12",
-     "cong": 50,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 71,
+     "thu": 170,
+     "mau": 142,
+     "exp": 6,
+     "vang": 6,
      "he": 10,
      "nac": 3,
      "chieu": [
@@ -2226,11 +2226,11 @@
     {
      "nguon": 13,
      "ten": "Bọ #13",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 4,
-     "vang": 6,
+     "cong": 204,
+     "thu": 204,
+     "mau": 204,
+     "exp": 10,
+     "vang": 9,
      "he": 12,
      "nac": 2,
      "chieu": [
@@ -2243,11 +2243,11 @@
     {
      "nguon": 14,
      "ten": "Thường #14",
-     "cong": 110,
-     "thu": 100,
-     "mau": 140,
-     "exp": 6,
-     "vang": 5,
+     "cong": 181,
+     "thu": 165,
+     "mau": 231,
+     "exp": 10,
+     "vang": 9,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -2260,11 +2260,11 @@
     {
      "nguon": 15,
      "ten": "Giác Đấu #15",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 166,
+     "thu": 166,
+     "mau": 138,
+     "exp": 8,
+     "vang": 7,
      "he": 7,
      "nac": 2,
      "chieu": [
@@ -2277,11 +2277,11 @@
     {
      "nguon": 16,
      "ten": "Siêu Linh #16",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 172,
+     "thu": 172,
+     "mau": 144,
+     "exp": 8,
+     "vang": 7,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -2294,11 +2294,11 @@
     {
      "nguon": 17,
      "ten": "Lửa #17",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 179,
+     "thu": 179,
+     "mau": 149,
+     "exp": 8,
+     "vang": 8,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -2311,11 +2311,11 @@
     {
      "nguon": 18,
      "ten": "Cỏ #18",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 185,
+     "thu": 185,
+     "mau": 154,
+     "exp": 9,
+     "vang": 8,
      "he": 5,
      "nac": 2,
      "chieu": [
@@ -2328,11 +2328,11 @@
     {
      "nguon": 19,
      "ten": "Lửa #19",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 191,
+     "thu": 191,
+     "mau": 159,
+     "exp": 9,
+     "vang": 8,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -2345,11 +2345,11 @@
     {
      "nguon": 20,
      "ten": "Thường #20",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 197,
+     "thu": 197,
+     "mau": 164,
+     "exp": 9,
+     "vang": 8,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -2369,11 +2369,11 @@
     {
      "nguon": 300,
      "ten": "Nước #300",
-     "cong": 700,
-     "thu": 700,
-     "mau": 900,
-     "exp": 12,
-     "vang": 12,
+     "cong": 256,
+     "thu": 256,
+     "mau": 329,
+     "exp": 6,
+     "vang": 6,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2386,11 +2386,11 @@
     {
      "nguon": 301,
      "ten": "Nước #301",
-     "cong": 700,
-     "thu": 700,
-     "mau": 1000,
-     "exp": 12,
-     "vang": 11,
+     "cong": 280,
+     "thu": 280,
+     "mau": 400,
+     "exp": 7,
+     "vang": 6,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2403,11 +2403,11 @@
     {
      "nguon": 302,
      "ten": "Nước #302",
-     "cong": 1000,
-     "thu": 1500,
-     "mau": 1500,
-     "exp": 10,
-     "vang": 15,
+     "cong": 450,
+     "thu": 675,
+     "mau": 675,
+     "exp": 14,
+     "vang": 12,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2420,11 +2420,11 @@
     {
      "nguon": 303,
      "ten": "Nước #303",
-     "cong": 700,
-     "thu": 900,
-     "mau": 1000,
-     "exp": 12,
-     "vang": 13,
+     "cong": 323,
+     "thu": 415,
+     "mau": 462,
+     "exp": 9,
+     "vang": 8,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2437,11 +2437,11 @@
     {
      "nguon": 304,
      "ten": "Nước #304",
-     "cong": 1200,
-     "thu": 1200,
-     "mau": 900,
-     "exp": 13,
-     "vang": 15,
+     "cong": 524,
+     "thu": 524,
+     "mau": 393,
+     "exp": 11,
+     "vang": 10,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2454,11 +2454,11 @@
     {
      "nguon": 305,
      "ten": "Nước #305",
-     "cong": 800,
-     "thu": 800,
-     "mau": 800,
-     "exp": 11,
-     "vang": 15,
+     "cong": 360,
+     "thu": 360,
+     "mau": 360,
+     "exp": 8,
+     "vang": 7,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2471,11 +2471,11 @@
     {
      "nguon": 306,
      "ten": "Nước #306",
-     "cong": 1400,
-     "thu": 700,
-     "mau": 1200,
-     "exp": 10,
-     "vang": 15,
+     "cong": 662,
+     "thu": 331,
+     "mau": 567,
+     "exp": 12,
+     "vang": 11,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2488,11 +2488,11 @@
     {
      "nguon": 307,
      "ten": "Nước #307",
-     "cong": 900,
-     "thu": 1500,
-     "mau": 1300,
+     "cong": 409,
+     "thu": 681,
+     "mau": 590,
      "exp": 13,
-     "vang": 15,
+     "vang": 11,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2505,11 +2505,11 @@
     {
      "nguon": 308,
      "ten": "Nước #308",
-     "cong": 900,
-     "thu": 1200,
-     "mau": 900,
+     "cong": 396,
+     "thu": 528,
+     "mau": 396,
      "exp": 10,
-     "vang": 14,
+     "vang": 9,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2529,11 +2529,11 @@
     {
      "nguon": 300,
      "ten": "Nước #300",
-     "cong": 2000,
-     "thu": 2000,
-     "mau": 2000,
-     "exp": 15,
-     "vang": 15,
+     "cong": 440,
+     "thu": 440,
+     "mau": 440,
+     "exp": 10,
+     "vang": 9,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2546,11 +2546,11 @@
     {
      "nguon": 301,
      "ten": "Nước #301",
-     "cong": 700,
-     "thu": 700,
-     "mau": 1000,
-     "exp": 15,
-     "vang": 14,
+     "cong": 245,
+     "thu": 245,
+     "mau": 350,
+     "exp": 6,
+     "vang": 6,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2563,11 +2563,11 @@
     {
      "nguon": 302,
      "ten": "Nước #302",
-     "cong": 1000,
-     "thu": 1500,
-     "mau": 1500,
-     "exp": 15,
-     "vang": 17,
+     "cong": 240,
+     "thu": 360,
+     "mau": 360,
+     "exp": 7,
+     "vang": 6,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2580,11 +2580,11 @@
     {
      "nguon": 303,
      "ten": "Nước #303",
-     "cong": 1700,
-     "thu": 1900,
-     "mau": 2000,
-     "exp": 15,
-     "vang": 16,
+     "cong": 328,
+     "thu": 366,
+     "mau": 386,
+     "exp": 8,
+     "vang": 7,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2597,11 +2597,11 @@
     {
      "nguon": 304,
      "ten": "Nước #304",
-     "cong": 2400,
-     "thu": 2400,
-     "mau": 2400,
-     "exp": 18,
-     "vang": 20,
+     "cong": 560,
+     "thu": 560,
+     "mau": 560,
+     "exp": 13,
+     "vang": 11,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2614,11 +2614,11 @@
     {
      "nguon": 305,
      "ten": "Nước #305",
-     "cong": 2500,
-     "thu": 2500,
-     "mau": 2500,
-     "exp": 18,
-     "vang": 16,
+     "cong": 600,
+     "thu": 600,
+     "mau": 600,
+     "exp": 14,
+     "vang": 12,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2631,11 +2631,11 @@
     {
      "nguon": 306,
      "ten": "Nước #306",
-     "cong": 2100,
-     "thu": 2100,
-     "mau": 2100,
-     "exp": 14,
-     "vang": 19,
+     "cong": 480,
+     "thu": 480,
+     "mau": 480,
+     "exp": 11,
+     "vang": 10,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2648,11 +2648,11 @@
     {
      "nguon": 307,
      "ten": "Nước #307",
-     "cong": 2300,
-     "thu": 2300,
-     "mau": 2300,
-     "exp": 13,
-     "vang": 14,
+     "cong": 520,
+     "thu": 520,
+     "mau": 520,
+     "exp": 12,
+     "vang": 11,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2665,11 +2665,11 @@
     {
      "nguon": 308,
      "ten": "Nước #308",
-     "cong": 2500,
-     "thu": 1200,
-     "mau": 1900,
-     "exp": 19,
-     "vang": 14,
+     "cong": 536,
+     "thu": 257,
+     "mau": 407,
+     "exp": 9,
+     "vang": 8,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2689,11 +2689,11 @@
     {
      "nguon": 300,
      "ten": "Nước #300",
-     "cong": 7000,
-     "thu": 7000,
-     "mau": 9000,
-     "exp": 20,
-     "vang": 17,
+     "cong": 1470,
+     "thu": 1470,
+     "mau": 1890,
+     "exp": 17,
+     "vang": 15,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2706,11 +2706,11 @@
     {
      "nguon": 301,
      "ten": "Nước #301",
-     "cong": 7000,
-     "thu": 7000,
-     "mau": 5000,
-     "exp": 20,
-     "vang": 18,
+     "cong": 1144,
+     "thu": 1144,
+     "mau": 817,
+     "exp": 11,
+     "vang": 10,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2723,11 +2723,11 @@
     {
      "nguon": 302,
      "ten": "Nước #302",
-     "cong": 6000,
-     "thu": 6006,
-     "mau": 6060,
-     "exp": 20,
-     "vang": 18,
+     "cong": 917,
+     "thu": 918,
+     "mau": 926,
+     "exp": 10,
+     "vang": 9,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2740,11 +2740,11 @@
     {
      "nguon": 303,
      "ten": "Nước #303",
-     "cong": 7000,
-     "thu": 9000,
-     "mau": 4000,
-     "exp": 19,
-     "vang": 19,
+     "cong": 1449,
+     "thu": 1863,
+     "mau": 828,
+     "exp": 14,
+     "vang": 13,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2757,11 +2757,11 @@
     {
      "nguon": 304,
      "ten": "Nước #304",
-     "cong": 9000,
-     "thu": 4000,
-     "mau": 6000,
-     "exp": 19,
-     "vang": 19,
+     "cong": 1634,
+     "thu": 726,
+     "mau": 1089,
+     "exp": 12,
+     "vang": 11,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2774,11 +2774,11 @@
     {
      "nguon": 305,
      "ten": "Nước #305",
-     "cong": 8000,
-     "thu": 8000,
-     "mau": 8000,
+     "cong": 1725,
+     "thu": 1725,
+     "mau": 1725,
      "exp": 18,
-     "vang": 18,
+     "vang": 16,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2791,11 +2791,11 @@
     {
      "nguon": 306,
      "ten": "Nước #306",
-     "cong": 6000,
-     "thu": 7000,
-     "mau": 5000,
-     "exp": 18,
-     "vang": 18,
+     "cong": 805,
+     "thu": 939,
+     "mau": 671,
+     "exp": 8,
+     "vang": 8,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2808,11 +2808,11 @@
     {
      "nguon": 307,
      "ten": "Nước #307",
-     "cong": 6000,
-     "thu": 6000,
-     "mau": 7000,
-     "exp": 18,
-     "vang": 19,
+     "cong": 1198,
+     "thu": 1198,
+     "mau": 1398,
+     "exp": 13,
+     "vang": 12,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2825,11 +2825,11 @@
     {
      "nguon": 308,
      "ten": "Nước #308",
-     "cong": 6000,
-     "thu": 8000,
-     "mau": 7000,
-     "exp": 19,
-     "vang": 18,
+     "cong": 1281,
+     "thu": 1709,
+     "mau": 1495,
+     "exp": 16,
+     "vang": 14,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2849,11 +2849,11 @@
     {
      "nguon": 300,
      "ten": "Nước #300",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 19000,
-     "exp": 22,
-     "vang": 17,
+     "cong": 1660,
+     "thu": 1660,
+     "mau": 1855,
+     "exp": 18,
+     "vang": 16,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2866,11 +2866,11 @@
     {
      "nguon": 301,
      "ten": "Nước #301",
-     "cong": 14000,
-     "thu": 14000,
-     "mau": 15000,
-     "exp": 24,
-     "vang": 18,
+     "cong": 1603,
+     "thu": 1603,
+     "mau": 1718,
+     "exp": 17,
+     "vang": 15,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2883,11 +2883,11 @@
     {
      "nguon": 302,
      "ten": "Nước #302",
-     "cong": 13000,
-     "thu": 13006,
-     "mau": 13060,
-     "exp": 25,
-     "vang": 26,
+     "cong": 1388,
+     "thu": 1389,
+     "mau": 1395,
+     "exp": 15,
+     "vang": 13,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2900,11 +2900,11 @@
     {
      "nguon": 303,
      "ten": "Nước #303",
-     "cong": 14000,
-     "thu": 14000,
-     "mau": 14000,
-     "exp": 26,
-     "vang": 24,
+     "cong": 1474,
+     "thu": 1474,
+     "mau": 1474,
+     "exp": 15,
+     "vang": 14,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2917,11 +2917,11 @@
     {
      "nguon": 304,
      "ten": "Nước #304",
-     "cong": 12000,
-     "thu": 12000,
-     "mau": 12000,
-     "exp": 23,
-     "vang": 20,
+     "cong": 1056,
+     "thu": 1056,
+     "mau": 1056,
+     "exp": 11,
+     "vang": 10,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2934,11 +2934,11 @@
     {
      "nguon": 305,
      "ten": "Nước #305",
-     "cong": 11000,
-     "thu": 11000,
-     "mau": 11000,
-     "exp": 28,
-     "vang": 24,
+     "cong": 972,
+     "thu": 972,
+     "mau": 972,
+     "exp": 10,
+     "vang": 9,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -2951,11 +2951,11 @@
     {
      "nguon": 306,
      "ten": "Nước #306",
-     "cong": 12000,
-     "thu": 12000,
-     "mau": 12000,
-     "exp": 22,
-     "vang": 28,
+     "cong": 1140,
+     "thu": 1140,
+     "mau": 1140,
+     "exp": 12,
+     "vang": 11,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2968,11 +2968,11 @@
     {
      "nguon": 307,
      "ten": "Nước #307",
-     "cong": 13000,
-     "thu": 13000,
-     "mau": 13000,
-     "exp": 25,
-     "vang": 27,
+     "cong": 1307,
+     "thu": 1307,
+     "mau": 1307,
+     "exp": 14,
+     "vang": 12,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -2985,11 +2985,11 @@
     {
      "nguon": 308,
      "ten": "Nước #308",
-     "cong": 14000,
-     "thu": 14000,
-     "mau": 14000,
-     "exp": 24,
-     "vang": 26,
+     "cong": 1558,
+     "thu": 1558,
+     "mau": 1558,
+     "exp": 16,
+     "vang": 15,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3002,11 +3002,11 @@
     {
      "nguon": 309,
      "ten": "Nước #309",
-     "cong": 12000,
-     "thu": 12000,
-     "mau": 12000,
-     "exp": 23,
-     "vang": 25,
+     "cong": 1223,
+     "thu": 1223,
+     "mau": 1223,
+     "exp": 13,
+     "vang": 11,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3019,11 +3019,11 @@
     {
      "nguon": 310,
      "ten": "Nước #310",
-     "cong": 10000,
-     "thu": 10000,
-     "mau": 10000,
-     "exp": 22,
-     "vang": 23,
+     "cong": 805,
+     "thu": 805,
+     "mau": 805,
+     "exp": 8,
+     "vang": 8,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3036,11 +3036,11 @@
     {
      "nguon": 312,
      "ten": "Nước #312",
-     "cong": 10000,
-     "thu": 10000,
-     "mau": 10000,
-     "exp": 21,
-     "vang": 20,
+     "cong": 889,
+     "thu": 889,
+     "mau": 889,
+     "exp": 9,
+     "vang": 8,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3060,11 +3060,11 @@
     {
      "nguon": 300,
      "ten": "Nước #300",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 19000,
-     "exp": 22,
-     "vang": 17,
+     "cong": 2858,
+     "thu": 2858,
+     "mau": 3194,
+     "exp": 16,
+     "vang": 15,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3077,11 +3077,11 @@
     {
      "nguon": 301,
      "ten": "Nước #301",
-     "cong": 18000,
-     "thu": 18000,
-     "mau": 18000,
-     "exp": 24,
-     "vang": 18,
+     "cong": 3124,
+     "thu": 3124,
+     "mau": 3124,
+     "exp": 17,
+     "vang": 16,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3094,11 +3094,11 @@
     {
      "nguon": 302,
      "ten": "Nước #302",
-     "cong": 13000,
-     "thu": 13006,
-     "mau": 13060,
-     "exp": 25,
-     "vang": 26,
+     "cong": 1887,
+     "thu": 1888,
+     "mau": 1896,
+     "exp": 10,
+     "vang": 9,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3111,11 +3111,11 @@
     {
      "nguon": 303,
      "ten": "Nước #303",
-     "cong": 14000,
-     "thu": 14000,
-     "mau": 14000,
-     "exp": 26,
-     "vang": 24,
+     "cong": 2044,
+     "thu": 2044,
+     "mau": 2044,
+     "exp": 11,
+     "vang": 10,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3128,11 +3128,11 @@
     {
      "nguon": 304,
      "ten": "Nước #304",
-     "cong": 25000,
-     "thu": 12000,
-     "mau": 18000,
-     "exp": 23,
-     "vang": 20,
+     "cong": 4892,
+     "thu": 2348,
+     "mau": 3522,
+     "exp": 20,
+     "vang": 18,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3145,11 +3145,11 @@
     {
      "nguon": 305,
      "ten": "Nước #305",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 17000,
-     "exp": 28,
-     "vang": 24,
+     "cong": 2353,
+     "thu": 2353,
+     "mau": 2353,
+     "exp": 13,
+     "vang": 12,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3162,11 +3162,11 @@
     {
      "nguon": 306,
      "ten": "Nước #306",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 17000,
-     "exp": 22,
-     "vang": 28,
+     "cong": 2507,
+     "thu": 2507,
+     "mau": 2507,
+     "exp": 14,
+     "vang": 13,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3179,11 +3179,11 @@
     {
      "nguon": 307,
      "ten": "Nước #307",
-     "cong": 18000,
-     "thu": 18000,
-     "mau": 18000,
-     "exp": 25,
-     "vang": 27,
+     "cong": 3279,
+     "thu": 3279,
+     "mau": 3279,
+     "exp": 18,
+     "vang": 16,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3196,11 +3196,11 @@
     {
      "nguon": 308,
      "ten": "Nước #308",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 17000,
-     "exp": 24,
-     "vang": 26,
+     "cong": 2661,
+     "thu": 2661,
+     "mau": 2661,
+     "exp": 15,
+     "vang": 13,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3213,11 +3213,11 @@
     {
      "nguon": 309,
      "ten": "Nước #309",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 17000,
-     "exp": 23,
-     "vang": 25,
+     "cong": 2816,
+     "thu": 2816,
+     "mau": 2816,
+     "exp": 16,
+     "vang": 14,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3230,11 +3230,11 @@
     {
      "nguon": 310,
      "ten": "Nước #310",
-     "cong": 21000,
-     "thu": 21000,
-     "mau": 21000,
+     "cong": 4050,
+     "thu": 4050,
+     "mau": 4050,
      "exp": 22,
-     "vang": 23,
+     "vang": 20,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3247,11 +3247,11 @@
     {
      "nguon": 312,
      "ten": "Nước #312",
-     "cong": 19000,
-     "thu": 19000,
-     "mau": 19000,
+     "cong": 3741,
+     "thu": 3741,
+     "mau": 3741,
      "exp": 21,
-     "vang": 20,
+     "vang": 19,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3264,11 +3264,11 @@
     {
      "nguon": 313,
      "ten": "picachu",
-     "cong": 20000,
-     "thu": 20000,
-     "mau": 20000,
-     "exp": 21,
-     "vang": 20,
+     "cong": 3896,
+     "thu": 3896,
+     "mau": 3896,
+     "exp": 22,
+     "vang": 19,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3281,11 +3281,11 @@
     {
      "nguon": 314,
      "ten": "Nước #314",
-     "cong": 18000,
-     "thu": 18000,
-     "mau": 18000,
-     "exp": 24,
-     "vang": 26,
+     "cong": 3433,
+     "thu": 3433,
+     "mau": 3433,
+     "exp": 19,
+     "vang": 17,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3298,11 +3298,11 @@
     {
      "nguon": 315,
      "ten": "Nước #315",
-     "cong": 16000,
-     "thu": 16000,
-     "mau": 16000,
-     "exp": 23,
-     "vang": 25,
+     "cong": 2199,
+     "thu": 2199,
+     "mau": 2199,
+     "exp": 12,
+     "vang": 11,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3322,11 +3322,11 @@
     {
      "nguon": 312,
      "ten": "Nước #312",
-     "cong": 19000,
-     "thu": 19000,
-     "mau": 19000,
-     "exp": 21,
-     "vang": 20,
+     "cong": 3368,
+     "thu": 3368,
+     "mau": 3368,
+     "exp": 19,
+     "vang": 17,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3339,11 +3339,11 @@
     {
      "nguon": 310,
      "ten": "Nước #310",
-     "cong": 21000,
-     "thu": 21000,
-     "mau": 21000,
-     "exp": 22,
-     "vang": 23,
+     "cong": 3823,
+     "thu": 3823,
+     "mau": 3823,
+     "exp": 21,
+     "vang": 19,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3356,11 +3356,11 @@
     {
      "nguon": 309,
      "ten": "Nước #309",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 17000,
-     "exp": 23,
-     "vang": 25,
+     "cong": 2231,
+     "thu": 2231,
+     "mau": 2231,
+     "exp": 12,
+     "vang": 11,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3373,11 +3373,11 @@
     {
      "nguon": 308,
      "ten": "Nước #308",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 17000,
-     "exp": 24,
-     "vang": 26,
+     "cong": 2345,
+     "thu": 2345,
+     "mau": 2345,
+     "exp": 13,
+     "vang": 12,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3390,11 +3390,11 @@
     {
      "nguon": 307,
      "ten": "Nước #307",
-     "cong": 18000,
-     "thu": 18000,
-     "mau": 18000,
-     "exp": 25,
-     "vang": 27,
+     "cong": 2799,
+     "thu": 2799,
+     "mau": 2799,
+     "exp": 16,
+     "vang": 14,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3407,11 +3407,11 @@
     {
      "nguon": 306,
      "ten": "Nước #306",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 17000,
-     "exp": 22,
-     "vang": 28,
+     "cong": 2458,
+     "thu": 2458,
+     "mau": 2458,
+     "exp": 14,
+     "vang": 12,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3424,11 +3424,11 @@
     {
      "nguon": 305,
      "ten": "Nước #305",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 17000,
-     "exp": 28,
-     "vang": 24,
+     "cong": 2572,
+     "thu": 2572,
+     "mau": 2572,
+     "exp": 14,
+     "vang": 13,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3441,11 +3441,11 @@
     {
      "nguon": 304,
      "ten": "Nước #304",
-     "cong": 25000,
-     "thu": 12000,
-     "mau": 18000,
-     "exp": 23,
-     "vang": 20,
+     "cong": 4438,
+     "thu": 2130,
+     "mau": 3195,
+     "exp": 18,
+     "vang": 16,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3458,11 +3458,11 @@
     {
      "nguon": 303,
      "ten": "Nước #303",
-     "cong": 14000,
-     "thu": 14000,
-     "mau": 14000,
-     "exp": 26,
-     "vang": 24,
+     "cong": 2004,
+     "thu": 2004,
+     "mau": 2004,
+     "exp": 11,
+     "vang": 10,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3475,11 +3475,11 @@
     {
      "nguon": 302,
      "ten": "Nước #302",
-     "cong": 13000,
-     "thu": 13006,
-     "mau": 13060,
-     "exp": 25,
-     "vang": 26,
+     "cong": 1887,
+     "thu": 1888,
+     "mau": 1896,
+     "exp": 10,
+     "vang": 9,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3492,11 +3492,11 @@
     {
      "nguon": 301,
      "ten": "Nước #301",
-     "cong": 18000,
-     "thu": 18000,
-     "mau": 18000,
-     "exp": 24,
-     "vang": 18,
+     "cong": 2913,
+     "thu": 2913,
+     "mau": 2913,
+     "exp": 16,
+     "vang": 15,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3509,11 +3509,11 @@
     {
      "nguon": 300,
      "ten": "Nước #300",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 19000,
-     "exp": 22,
-     "vang": 17,
+     "cong": 2584,
+     "thu": 2584,
+     "mau": 2888,
+     "exp": 15,
+     "vang": 13,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3526,11 +3526,11 @@
     {
      "nguon": 313,
      "ten": "picachu",
-     "cong": 20000,
-     "thu": 20000,
-     "mau": 20000,
-     "exp": 21,
-     "vang": 20,
+     "cong": 3595,
+     "thu": 3595,
+     "mau": 3595,
+     "exp": 20,
+     "vang": 18,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3543,11 +3543,11 @@
     {
      "nguon": 314,
      "ten": "Nước #314",
-     "cong": 18000,
-     "thu": 18000,
-     "mau": 18000,
-     "exp": 24,
-     "vang": 26,
+     "cong": 3027,
+     "thu": 3027,
+     "mau": 3027,
+     "exp": 17,
+     "vang": 15,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3560,11 +3560,11 @@
     {
      "nguon": 315,
      "ten": "Nước #315",
-     "cong": 16000,
-     "thu": 16000,
-     "mau": 16000,
-     "exp": 23,
-     "vang": 25,
+     "cong": 2117,
+     "thu": 2117,
+     "mau": 2117,
+     "exp": 12,
+     "vang": 11,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3577,11 +3577,11 @@
     {
      "nguon": 316,
      "ten": "Nước #316",
-     "cong": 21000,
-     "thu": 21000,
-     "mau": 21000,
+     "cong": 3936,
+     "thu": 3936,
+     "mau": 3936,
      "exp": 22,
-     "vang": 23,
+     "vang": 20,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3594,11 +3594,11 @@
     {
      "nguon": 317,
      "ten": "Nước #317",
-     "cong": 19000,
-     "thu": 19000,
-     "mau": 19000,
-     "exp": 21,
-     "vang": 20,
+     "cong": 3482,
+     "thu": 3482,
+     "mau": 3482,
+     "exp": 19,
+     "vang": 17,
      "he": 3,
      "nac": 2,
      "chieu": [
@@ -3611,11 +3611,11 @@
     {
      "nguon": 318,
      "ten": "Nước #318",
-     "cong": 20000,
-     "thu": 20000,
-     "mau": 20000,
+     "cong": 3709,
+     "thu": 3709,
+     "mau": 3709,
      "exp": 21,
-     "vang": 20,
+     "vang": 19,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3628,11 +3628,11 @@
     {
      "nguon": 319,
      "ten": "Nước #319",
-     "cong": 18000,
-     "thu": 18000,
-     "mau": 18000,
-     "exp": 24,
-     "vang": 26,
+     "cong": 3141,
+     "thu": 3141,
+     "mau": 3141,
+     "exp": 17,
+     "vang": 16,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -3645,11 +3645,11 @@
     {
      "nguon": 320,
      "ten": "Nước #320",
-     "cong": 32000,
-     "thu": 30000,
-     "mau": 30000,
-     "exp": 23,
-     "vang": 25,
+     "cong": 4226,
+     "thu": 3962,
+     "mau": 3962,
+     "exp": 22,
+     "vang": 20,
      "he": 3,
      "nac": 1,
      "chieu": [
@@ -3669,11 +3669,11 @@
     {
      "nguon": 1,
      "ten": "Bọ #1",
-     "cong": 70,
-     "thu": 30,
-     "mau": 70,
-     "exp": 5,
-     "vang": 5,
+     "cong": 3978,
+     "thu": 1705,
+     "mau": 3978,
+     "exp": 13,
+     "vang": 11,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -3686,11 +3686,11 @@
     {
      "nguon": 2,
      "ten": "Bọ #2",
-     "cong": 70,
-     "thu": 70,
-     "mau": 70,
-     "exp": 3,
-     "vang": 4,
+     "cong": 3326,
+     "thu": 3326,
+     "mau": 3326,
+     "exp": 13,
+     "vang": 12,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -3703,11 +3703,11 @@
     {
      "nguon": 3,
      "ten": "Thường #3",
-     "cong": 85,
-     "thu": 55,
-     "mau": 85,
-     "exp": 2,
-     "vang": 6,
+     "cong": 4010,
+     "thu": 2595,
+     "mau": 4010,
+     "exp": 14,
+     "vang": 12,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -3720,11 +3720,11 @@
     {
      "nguon": 4,
      "ten": "Bay #4",
-     "cong": 78,
-     "thu": 92,
-     "mau": 100,
-     "exp": 6,
-     "vang": 2,
+     "cong": 3159,
+     "thu": 3726,
+     "mau": 4050,
+     "exp": 14,
+     "vang": 13,
      "he": 10,
      "nac": 2,
      "chieu": [
@@ -3737,11 +3737,11 @@
     {
      "nguon": 5,
      "ten": "Độc #5",
-     "cong": 120,
-     "thu": 120,
-     "mau": 200,
-     "exp": 2,
-     "vang": 5,
+     "cong": 4545,
+     "thu": 4545,
+     "mau": 7576,
+     "exp": 22,
+     "vang": 20,
      "he": 8,
      "nac": 2,
      "chieu": [
@@ -3754,11 +3754,11 @@
     {
      "nguon": 6,
      "ten": "Đất #6",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 3,
-     "vang": 5,
+     "cong": 5237,
+     "thu": 5237,
+     "mau": 5237,
+     "exp": 20,
+     "vang": 18,
      "he": 9,
      "nac": 2,
      "chieu": [
@@ -3771,11 +3771,11 @@
     {
      "nguon": 7,
      "ten": "Độc #7",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 3963,
+     "thu": 3963,
+     "mau": 3963,
+     "exp": 16,
+     "vang": 14,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -3788,11 +3788,11 @@
     {
      "nguon": 8,
      "ten": "Độc #8",
-     "cong": 120,
-     "thu": 100,
-     "mau": 120,
-     "exp": 4,
-     "vang": 3,
+     "cong": 4646,
+     "thu": 3871,
+     "mau": 4646,
+     "exp": 17,
+     "vang": 15,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -3805,11 +3805,11 @@
     {
      "nguon": 9,
      "ten": "Lửa #9",
-     "cong": 120,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 6,
+     "cong": 4697,
+     "thu": 3914,
+     "mau": 3914,
+     "exp": 16,
+     "vang": 15,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -3822,11 +3822,11 @@
     {
      "nguon": 10,
      "ten": "Thường #10",
-     "cong": 90,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 4,
+     "cong": 3544,
+     "thu": 4726,
+     "mau": 3938,
+     "exp": 16,
+     "vang": 14,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -3839,11 +3839,11 @@
     {
      "nguon": 11,
      "ten": "Cỏ #11",
-     "cong": 90,
-     "thu": 90,
-     "mau": 90,
-     "exp": 3,
-     "vang": 3,
+     "cong": 3680,
+     "thu": 3680,
+     "mau": 3680,
+     "exp": 14,
+     "vang": 13,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -3856,11 +3856,11 @@
     {
      "nguon": 12,
      "ten": "Bay #12",
-     "cong": 50,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 2064,
+     "thu": 4954,
+     "mau": 4128,
+     "exp": 15,
+     "vang": 13,
      "he": 10,
      "nac": 3,
      "chieu": [
@@ -3873,11 +3873,11 @@
     {
      "nguon": 13,
      "ten": "Bọ #13",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 4,
-     "vang": 6,
+     "cong": 5272,
+     "thu": 5272,
+     "mau": 5272,
+     "exp": 21,
+     "vang": 19,
      "he": 12,
      "nac": 2,
      "chieu": [
@@ -3890,11 +3890,11 @@
     {
      "nguon": 14,
      "ten": "Thường #14",
-     "cong": 110,
-     "thu": 100,
-     "mau": 140,
-     "exp": 6,
-     "vang": 5,
+     "cong": 4838,
+     "thu": 4398,
+     "mau": 6157,
+     "exp": 20,
+     "vang": 18,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -3907,11 +3907,11 @@
     {
      "nguon": 15,
      "ten": "Giác Đấu #15",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 4683,
+     "thu": 4683,
+     "mau": 3903,
+     "exp": 17,
+     "vang": 16,
      "he": 7,
      "nac": 2,
      "chieu": [
@@ -3924,11 +3924,11 @@
     {
      "nguon": 16,
      "ten": "Siêu Linh #16",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 4721,
+     "thu": 4721,
+     "mau": 3934,
+     "exp": 17,
+     "vang": 16,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -3941,11 +3941,11 @@
     {
      "nguon": 17,
      "ten": "Lửa #17",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 4758,
+     "thu": 4758,
+     "mau": 3965,
+     "exp": 18,
+     "vang": 16,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -3958,11 +3958,11 @@
     {
      "nguon": 18,
      "ten": "Cỏ #18",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 4796,
+     "thu": 4796,
+     "mau": 3996,
+     "exp": 18,
+     "vang": 16,
      "he": 5,
      "nac": 2,
      "chieu": [
@@ -3975,11 +3975,11 @@
     {
      "nguon": 19,
      "ten": "Lửa #19",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 4833,
+     "thu": 4833,
+     "mau": 4028,
+     "exp": 18,
+     "vang": 16,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -3992,11 +3992,11 @@
     {
      "nguon": 20,
      "ten": "Thường #20",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 4871,
+     "thu": 4871,
+     "mau": 4059,
+     "exp": 18,
+     "vang": 16,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -4009,11 +4009,11 @@
     {
      "nguon": 22,
      "ten": "Pikachu",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 7,
-     "vang": 5,
+     "cong": 5308,
+     "thu": 5308,
+     "mau": 5308,
+     "exp": 21,
+     "vang": 19,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -4026,11 +4026,11 @@
     {
      "nguon": 23,
      "ten": "Bulbasaur",
-     "cong": 100,
-     "thu": 100,
-     "mau": 130,
-     "exp": 6,
-     "vang": 3,
+     "cong": 3892,
+     "thu": 3892,
+     "mau": 5060,
+     "exp": 17,
+     "vang": 15,
      "he": 5,
      "nac": 5,
      "chieu": [
@@ -4043,11 +4043,11 @@
     {
      "nguon": 25,
      "ten": "ran da",
-     "cong": 240,
-     "thu": 235,
-     "mau": 500,
-     "exp": 10,
-     "vang": 12,
+     "cong": 4494,
+     "thu": 4401,
+     "mau": 9363,
+     "exp": 24,
+     "vang": 21,
      "he": 3,
      "nac": 5,
      "chieu": [
@@ -4060,11 +4060,11 @@
     {
      "nguon": 24,
      "ten": "rong ca chep",
-     "cong": 240,
-     "thu": 235,
-     "mau": 450,
-     "exp": 10,
-     "vang": 12,
+     "cong": 4655,
+     "thu": 4558,
+     "mau": 8728,
+     "exp": 23,
+     "vang": 21,
      "he": 3,
      "nac": 5,
      "chieu": [
@@ -4077,11 +4077,11 @@
     {
      "nguon": 26,
      "ten": "Cyndaquil",
-     "cong": 240,
-     "thu": 235,
-     "mau": 500,
-     "exp": 10,
-     "vang": 12,
+     "cong": 4521,
+     "thu": 4426,
+     "mau": 9418,
+     "exp": 24,
+     "vang": 22,
      "he": 2,
      "nac": 5,
      "chieu": [
@@ -4094,11 +4094,11 @@
     {
      "nguon": 27,
      "ten": "Electrode",
-     "cong": 95,
-     "thu": 70,
-     "mau": 50,
-     "exp": 6,
-     "vang": 2,
+     "cong": 4550,
+     "thu": 3352,
+     "mau": 2395,
+     "exp": 13,
+     "vang": 12,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -4111,11 +4111,11 @@
     {
      "nguon": 28,
      "ten": "Chikorita",
-     "cong": 210,
-     "thu": 110,
-     "mau": 240,
-     "exp": 8,
-     "vang": 7,
+     "cong": 6608,
+     "thu": 3461,
+     "mau": 7552,
+     "exp": 23,
+     "vang": 21,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -4128,11 +4128,11 @@
     {
      "nguon": 29,
      "ten": "Totodile",
-     "cong": 210,
-     "thu": 150,
-     "mau": 100,
-     "exp": 7,
-     "vang": 4,
+     "cong": 7754,
+     "thu": 5538,
+     "mau": 3692,
+     "exp": 22,
+     "vang": 20,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -4145,11 +4145,11 @@
     {
      "nguon": 30,
      "ten": "Charmander",
-     "cong": 120,
-     "thu": 120,
-     "mau": 250,
-     "exp": 7,
-     "vang": 4,
+     "cong": 4237,
+     "thu": 4237,
+     "mau": 8828,
+     "exp": 23,
+     "vang": 20,
      "he": 2,
      "nac": 3,
      "chieu": [
@@ -4162,11 +4162,11 @@
     {
      "nguon": 31,
      "ten": "Meditite",
-     "cong": 650,
-     "thu": 420,
-     "mau": 350,
-     "exp": 8,
-     "vang": 4,
+     "cong": 8941,
+     "thu": 5777,
+     "mau": 4814,
+     "exp": 25,
+     "vang": 23,
      "he": 11,
      "nac": 3,
      "chieu": [
@@ -4179,11 +4179,11 @@
     {
      "nguon": 32,
      "ten": "Gastly",
-     "cong": 420,
-     "thu": 410,
-     "mau": 250,
-     "exp": 8,
-     "vang": 7,
+     "cong": 7472,
+     "thu": 7294,
+     "mau": 4448,
+     "exp": 25,
+     "vang": 23,
      "he": 14,
      "nac": 3,
      "chieu": [
@@ -4196,11 +4196,11 @@
     {
      "nguon": 33,
      "ten": "abysol",
-     "cong": 650,
-     "thu": 740,
-     "mau": 820,
-     "exp": 7,
-     "vang": 5,
+     "cong": 6026,
+     "thu": 6860,
+     "mau": 7602,
+     "exp": 27,
+     "vang": 24,
      "he": 16,
      "nac": 7,
      "chieu": [
@@ -4213,11 +4213,11 @@
     {
      "nguon": 34,
      "ten": "Umbreon",
-     "cong": 420,
-     "thu": 120,
-     "mau": 520,
-     "exp": 9,
-     "vang": 5,
+     "cong": 7487,
+     "thu": 2204,
+     "mau": 9269,
+     "exp": 25,
+     "vang": 22,
      "he": 16,
      "nac": 3,
      "chieu": [
@@ -4230,11 +4230,11 @@
     {
      "nguon": 35,
      "ten": "Sceptile",
-     "cong": 450,
-     "thu": 450,
-     "mau": 720,
-     "exp": 7,
-     "vang": 6,
+     "cong": 5514,
+     "thu": 5514,
+     "mau": 8823,
+     "exp": 26,
+     "vang": 23,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -4247,11 +4247,11 @@
     {
      "nguon": 36,
      "ten": "Machop",
-     "cong": 520,
-     "thu": 520,
-     "mau": 640,
-     "exp": 8,
-     "vang": 4,
+     "cong": 6243,
+     "thu": 6243,
+     "mau": 7684,
+     "exp": 26,
+     "vang": 24,
      "he": 7,
      "nac": 3,
      "chieu": [
@@ -4264,11 +4264,11 @@
     {
      "nguon": 1,
      "ten": "Bọ #1",
-     "cong": 70,
-     "thu": 30,
-     "mau": 70,
-     "exp": 5,
-     "vang": 5,
+     "cong": 4021,
+     "thu": 1723,
+     "mau": 4021,
+     "exp": 13,
+     "vang": 11,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -4281,11 +4281,11 @@
     {
      "nguon": 2,
      "ten": "Bọ #2",
-     "cong": 70,
-     "thu": 70,
-     "mau": 70,
-     "exp": 3,
-     "vang": 4,
+     "cong": 3362,
+     "thu": 3362,
+     "mau": 3362,
+     "exp": 13,
+     "vang": 12,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -4298,11 +4298,11 @@
     {
      "nguon": 3,
      "ten": "Thường #3",
-     "cong": 85,
-     "thu": 55,
-     "mau": 85,
-     "exp": 2,
-     "vang": 6,
+     "cong": 4050,
+     "thu": 2621,
+     "mau": 4050,
+     "exp": 14,
+     "vang": 13,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -4315,11 +4315,11 @@
     {
      "nguon": 4,
      "ten": "Bay #4",
-     "cong": 78,
-     "thu": 92,
-     "mau": 100,
-     "exp": 6,
-     "vang": 2,
+     "cong": 3251,
+     "thu": 3834,
+     "mau": 4168,
+     "exp": 15,
+     "vang": 13,
      "he": 10,
      "nac": 2,
      "chieu": [
@@ -4332,11 +4332,11 @@
     {
      "nguon": 5,
      "ten": "Độc #5",
-     "cong": 120,
-     "thu": 120,
-     "mau": 200,
-     "exp": 2,
-     "vang": 5,
+     "cong": 4574,
+     "thu": 4574,
+     "mau": 7624,
+     "exp": 22,
+     "vang": 20,
      "he": 8,
      "nac": 2,
      "chieu": [
@@ -4349,11 +4349,11 @@
     {
      "nguon": 6,
      "ten": "Đất #6",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 3,
-     "vang": 5,
+     "cong": 5343,
+     "thu": 5343,
+     "mau": 5343,
+     "exp": 21,
+     "vang": 19,
      "he": 9,
      "nac": 2,
      "chieu": [
@@ -4366,11 +4366,11 @@
     {
      "nguon": 7,
      "ten": "Độc #7",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 3998,
+     "thu": 3998,
+     "mau": 3998,
+     "exp": 16,
+     "vang": 14,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -4383,11 +4383,11 @@
     {
      "nguon": 8,
      "ten": "Độc #8",
-     "cong": 120,
-     "thu": 100,
-     "mau": 120,
-     "exp": 4,
-     "vang": 3,
+     "cong": 4908,
+     "thu": 4090,
+     "mau": 4908,
+     "exp": 18,
+     "vang": 16,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -4400,11 +4400,11 @@
     {
      "nguon": 9,
      "ten": "Lửa #9",
-     "cong": 120,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 6,
+     "cong": 4737,
+     "thu": 3948,
+     "mau": 3948,
+     "exp": 16,
+     "vang": 15,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -4417,11 +4417,11 @@
     {
      "nguon": 10,
      "ten": "Thường #10",
-     "cong": 90,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 4,
+     "cong": 3575,
+     "thu": 4767,
+     "mau": 3972,
+     "exp": 16,
+     "vang": 14,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -4434,11 +4434,11 @@
     {
      "nguon": 11,
      "ten": "Cỏ #11",
-     "cong": 90,
-     "thu": 90,
-     "mau": 90,
-     "exp": 3,
-     "vang": 3,
+     "cong": 3786,
+     "thu": 3786,
+     "mau": 3786,
+     "exp": 15,
+     "vang": 13,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -4451,11 +4451,11 @@
     {
      "nguon": 12,
      "ten": "Bay #12",
-     "cong": 50,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 2123,
+     "thu": 5095,
+     "mau": 4246,
+     "exp": 15,
+     "vang": 13,
      "he": 10,
      "nac": 3,
      "chieu": [
@@ -4468,11 +4468,11 @@
     {
      "nguon": 13,
      "ten": "Bọ #13",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 4,
-     "vang": 6,
+     "cong": 5378,
+     "thu": 5378,
+     "mau": 5378,
+     "exp": 21,
+     "vang": 19,
      "he": 12,
      "nac": 2,
      "chieu": [
@@ -4485,11 +4485,11 @@
     {
      "nguon": 14,
      "ten": "Thường #14",
-     "cong": 110,
-     "thu": 100,
-     "mau": 140,
-     "exp": 6,
-     "vang": 5,
+     "cong": 4871,
+     "thu": 4428,
+     "mau": 6199,
+     "exp": 20,
+     "vang": 18,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -4502,11 +4502,11 @@
     {
      "nguon": 15,
      "ten": "Giác Đấu #15",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 4946,
+     "thu": 4946,
+     "mau": 4121,
+     "exp": 18,
+     "vang": 16,
      "he": 7,
      "nac": 2,
      "chieu": [
@@ -4519,11 +4519,11 @@
     {
      "nguon": 16,
      "ten": "Siêu Linh #16",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 4983,
+     "thu": 4983,
+     "mau": 4152,
+     "exp": 18,
+     "vang": 17,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -4536,11 +4536,11 @@
     {
      "nguon": 17,
      "ten": "Lửa #17",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5020,
+     "thu": 5020,
+     "mau": 4184,
+     "exp": 19,
+     "vang": 17,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -4553,11 +4553,11 @@
     {
      "nguon": 18,
      "ten": "Cỏ #18",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5058,
+     "thu": 5058,
+     "mau": 4215,
+     "exp": 19,
+     "vang": 17,
      "he": 5,
      "nac": 2,
      "chieu": [
@@ -4570,11 +4570,11 @@
     {
      "nguon": 19,
      "ten": "Lửa #19",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5095,
+     "thu": 5095,
+     "mau": 4246,
+     "exp": 19,
+     "vang": 17,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -4587,11 +4587,11 @@
     {
      "nguon": 20,
      "ten": "Thường #20",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5133,
+     "thu": 5133,
+     "mau": 4277,
+     "exp": 19,
+     "vang": 17,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -4604,11 +4604,11 @@
     {
      "nguon": 22,
      "ten": "Pikachu",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 7,
-     "vang": 5,
+     "cong": 5414,
+     "thu": 5414,
+     "mau": 5414,
+     "exp": 21,
+     "vang": 19,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -4621,11 +4621,11 @@
     {
      "nguon": 23,
      "ten": "Bulbasaur",
-     "cong": 100,
-     "thu": 100,
-     "mau": 130,
-     "exp": 6,
-     "vang": 3,
+     "cong": 3924,
+     "thu": 3924,
+     "mau": 5102,
+     "exp": 17,
+     "vang": 15,
      "he": 5,
      "nac": 5,
      "chieu": [
@@ -4638,11 +4638,11 @@
     {
      "nguon": 25,
      "ten": "ran da",
-     "cong": 240,
-     "thu": 235,
-     "mau": 500,
-     "exp": 10,
-     "vang": 12,
+     "cong": 4547,
+     "thu": 4452,
+     "mau": 9472,
+     "exp": 24,
+     "vang": 22,
      "he": 3,
      "nac": 5,
      "chieu": [
@@ -4655,11 +4655,11 @@
     {
      "nguon": 24,
      "ten": "rong ca chep",
-     "cong": 240,
-     "thu": 235,
-     "mau": 450,
-     "exp": 10,
-     "vang": 12,
+     "cong": 4682,
+     "thu": 4585,
+     "mau": 8779,
+     "exp": 24,
+     "vang": 21,
      "he": 3,
      "nac": 5,
      "chieu": [
@@ -4672,11 +4672,11 @@
     {
      "nguon": 26,
      "ten": "Cyndaquil",
-     "cong": 240,
-     "thu": 235,
-     "mau": 500,
-     "exp": 10,
-     "vang": 12,
+     "cong": 4573,
+     "thu": 4478,
+     "mau": 9527,
+     "exp": 24,
+     "vang": 22,
      "he": 2,
      "nac": 5,
      "chieu": [
@@ -4689,11 +4689,11 @@
     {
      "nguon": 27,
      "ten": "Electrode",
-     "cong": 95,
-     "thu": 70,
-     "mau": 50,
-     "exp": 6,
-     "vang": 2,
+     "cong": 4597,
+     "thu": 3387,
+     "mau": 2419,
+     "exp": 14,
+     "vang": 12,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -4706,11 +4706,11 @@
     {
      "nguon": 28,
      "ten": "Chikorita",
-     "cong": 210,
-     "thu": 110,
-     "mau": 240,
-     "exp": 8,
-     "vang": 7,
+     "cong": 6648,
+     "thu": 3482,
+     "mau": 7598,
+     "exp": 23,
+     "vang": 21,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -4723,11 +4723,11 @@
     {
      "nguon": 29,
      "ten": "Totodile",
-     "cong": 210,
-     "thu": 150,
-     "mau": 100,
-     "exp": 7,
-     "vang": 4,
+     "cong": 7802,
+     "thu": 5573,
+     "mau": 3715,
+     "exp": 22,
+     "vang": 20,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -4740,11 +4740,11 @@
     {
      "nguon": 30,
      "ten": "Charmander",
-     "cong": 120,
-     "thu": 120,
-     "mau": 250,
-     "exp": 7,
-     "vang": 4,
+     "cong": 4263,
+     "thu": 4263,
+     "mau": 8882,
+     "exp": 23,
+     "vang": 20,
      "he": 2,
      "nac": 3,
      "chieu": [
@@ -4757,11 +4757,11 @@
     {
      "nguon": 31,
      "ten": "Meditite",
-     "cong": 650,
-     "thu": 420,
-     "mau": 350,
-     "exp": 8,
-     "vang": 4,
+     "cong": 8989,
+     "thu": 5809,
+     "mau": 4840,
+     "exp": 26,
+     "vang": 23,
      "he": 11,
      "nac": 3,
      "chieu": [
@@ -4774,11 +4774,11 @@
     {
      "nguon": 32,
      "ten": "Gastly",
-     "cong": 420,
-     "thu": 410,
-     "mau": 250,
-     "exp": 8,
-     "vang": 7,
+     "cong": 7513,
+     "thu": 7334,
+     "mau": 4472,
+     "exp": 25,
+     "vang": 23,
      "he": 14,
      "nac": 3,
      "chieu": [
@@ -4791,11 +4791,11 @@
     {
      "nguon": 33,
      "ten": "abysol",
-     "cong": 650,
-     "thu": 740,
-     "mau": 820,
-     "exp": 7,
-     "vang": 5,
+     "cong": 6057,
+     "thu": 6896,
+     "mau": 7641,
+     "exp": 27,
+     "vang": 24,
      "he": 16,
      "nac": 7,
      "chieu": [
@@ -4808,11 +4808,11 @@
     {
      "nguon": 34,
      "ten": "Umbreon",
-     "cong": 420,
-     "thu": 120,
-     "mau": 520,
-     "exp": 9,
-     "vang": 5,
+     "cong": 7529,
+     "thu": 2217,
+     "mau": 9322,
+     "exp": 25,
+     "vang": 22,
      "he": 16,
      "nac": 3,
      "chieu": [
@@ -4825,11 +4825,11 @@
     {
      "nguon": 35,
      "ten": "Sceptile",
-     "cong": 450,
-     "thu": 450,
-     "mau": 720,
-     "exp": 7,
-     "vang": 6,
+     "cong": 5544,
+     "thu": 5544,
+     "mau": 8870,
+     "exp": 26,
+     "vang": 23,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -4842,11 +4842,11 @@
     {
      "nguon": 36,
      "ten": "Machop",
-     "cong": 520,
-     "thu": 520,
-     "mau": 640,
-     "exp": 8,
-     "vang": 4,
+     "cong": 6276,
+     "thu": 6276,
+     "mau": 7724,
+     "exp": 26,
+     "vang": 24,
      "he": 7,
      "nac": 3,
      "chieu": [
@@ -4859,11 +4859,11 @@
     {
      "nguon": 1,
      "ten": "Bọ #1",
-     "cong": 70,
-     "thu": 30,
-     "mau": 70,
-     "exp": 5,
-     "vang": 5,
+     "cong": 4065,
+     "thu": 1742,
+     "mau": 4065,
+     "exp": 13,
+     "vang": 12,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -4876,11 +4876,11 @@
     {
      "nguon": 2,
      "ten": "Bọ #2",
-     "cong": 70,
-     "thu": 70,
-     "mau": 70,
-     "exp": 3,
-     "vang": 4,
+     "cong": 3397,
+     "thu": 3397,
+     "mau": 3397,
+     "exp": 13,
+     "vang": 12,
      "he": 12,
      "nac": 3,
      "chieu": [
@@ -4893,11 +4893,11 @@
     {
      "nguon": 3,
      "ten": "Thường #3",
-     "cong": 85,
-     "thu": 55,
-     "mau": 85,
-     "exp": 2,
-     "vang": 6,
+     "cong": 4090,
+     "thu": 2647,
+     "mau": 4090,
+     "exp": 14,
+     "vang": 13,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -4910,11 +4910,11 @@
     {
      "nguon": 4,
      "ten": "Bay #4",
-     "cong": 78,
-     "thu": 92,
-     "mau": 100,
-     "exp": 6,
-     "vang": 2,
+     "cong": 3343,
+     "thu": 3943,
+     "mau": 4285,
+     "exp": 15,
+     "vang": 14,
      "he": 10,
      "nac": 2,
      "chieu": [
@@ -4927,11 +4927,11 @@
     {
      "nguon": 5,
      "ten": "Độc #5",
-     "cong": 120,
-     "thu": 120,
-     "mau": 200,
-     "exp": 2,
-     "vang": 5,
+     "cong": 4603,
+     "thu": 4603,
+     "mau": 7672,
+     "exp": 22,
+     "vang": 20,
      "he": 8,
      "nac": 2,
      "chieu": [
@@ -4944,11 +4944,11 @@
     {
      "nguon": 6,
      "ten": "Đất #6",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 3,
-     "vang": 5,
+     "cong": 5449,
+     "thu": 5449,
+     "mau": 5449,
+     "exp": 21,
+     "vang": 19,
      "he": 9,
      "nac": 2,
      "chieu": [
@@ -4961,11 +4961,11 @@
     {
      "nguon": 7,
      "ten": "Độc #7",
-     "cong": 100,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 4034,
+     "thu": 4034,
+     "mau": 4034,
+     "exp": 16,
+     "vang": 14,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -4978,11 +4978,11 @@
     {
      "nguon": 8,
      "ten": "Độc #8",
-     "cong": 120,
-     "thu": 100,
-     "mau": 120,
-     "exp": 4,
-     "vang": 3,
+     "cong": 5170,
+     "thu": 4309,
+     "mau": 5170,
+     "exp": 19,
+     "vang": 17,
      "he": 8,
      "nac": 3,
      "chieu": [
@@ -4995,11 +4995,11 @@
     {
      "nguon": 9,
      "ten": "Lửa #9",
-     "cong": 120,
-     "thu": 100,
-     "mau": 100,
-     "exp": 3,
-     "vang": 6,
+     "cong": 4777,
+     "thu": 3981,
+     "mau": 3981,
+     "exp": 17,
+     "vang": 15,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -5012,11 +5012,11 @@
     {
      "nguon": 10,
      "ten": "Thường #10",
-     "cong": 90,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 4,
+     "cong": 3606,
+     "thu": 4808,
+     "mau": 4006,
+     "exp": 16,
+     "vang": 15,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -5029,11 +5029,11 @@
     {
      "nguon": 11,
      "ten": "Cỏ #11",
-     "cong": 90,
-     "thu": 90,
-     "mau": 90,
-     "exp": 3,
-     "vang": 3,
+     "cong": 3892,
+     "thu": 3892,
+     "mau": 3892,
+     "exp": 15,
+     "vang": 14,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -5046,11 +5046,11 @@
     {
      "nguon": 12,
      "ten": "Bay #12",
-     "cong": 50,
-     "thu": 120,
-     "mau": 100,
-     "exp": 3,
-     "vang": 5,
+     "cong": 2182,
+     "thu": 5237,
+     "mau": 4364,
+     "exp": 15,
+     "vang": 14,
      "he": 10,
      "nac": 3,
      "chieu": [
@@ -5063,11 +5063,11 @@
     {
      "nguon": 13,
      "ten": "Bọ #13",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 4,
-     "vang": 6,
+     "cong": 5485,
+     "thu": 5485,
+     "mau": 5485,
+     "exp": 21,
+     "vang": 19,
      "he": 12,
      "nac": 2,
      "chieu": [
@@ -5080,11 +5080,11 @@
     {
      "nguon": 14,
      "ten": "Thường #14",
-     "cong": 110,
-     "thu": 100,
-     "mau": 140,
-     "exp": 6,
-     "vang": 5,
+     "cong": 4904,
+     "thu": 4458,
+     "mau": 6242,
+     "exp": 20,
+     "vang": 18,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -5097,11 +5097,11 @@
     {
      "nguon": 15,
      "ten": "Giác Đấu #15",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5208,
+     "thu": 5208,
+     "mau": 4340,
+     "exp": 19,
+     "vang": 17,
      "he": 7,
      "nac": 2,
      "chieu": [
@@ -5114,11 +5114,11 @@
     {
      "nguon": 16,
      "ten": "Siêu Linh #16",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5245,
+     "thu": 5245,
+     "mau": 4371,
+     "exp": 19,
+     "vang": 17,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -5131,11 +5131,11 @@
     {
      "nguon": 17,
      "ten": "Lửa #17",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5283,
+     "thu": 5283,
+     "mau": 4402,
+     "exp": 20,
+     "vang": 18,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -5148,11 +5148,11 @@
     {
      "nguon": 18,
      "ten": "Cỏ #18",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5320,
+     "thu": 5320,
+     "mau": 4433,
+     "exp": 20,
+     "vang": 18,
      "he": 5,
      "nac": 2,
      "chieu": [
@@ -5165,11 +5165,11 @@
     {
      "nguon": 19,
      "ten": "Lửa #19",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5358,
+     "thu": 5358,
+     "mau": 4465,
+     "exp": 20,
+     "vang": 18,
      "he": 2,
      "nac": 2,
      "chieu": [
@@ -5182,11 +5182,11 @@
     {
      "nguon": 20,
      "ten": "Thường #20",
-     "cong": 120,
-     "thu": 120,
-     "mau": 100,
-     "exp": 4,
-     "vang": 2,
+     "cong": 5395,
+     "thu": 5395,
+     "mau": 4496,
+     "exp": 20,
+     "vang": 18,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -5199,11 +5199,11 @@
     {
      "nguon": 22,
      "ten": "Pikachu",
-     "cong": 120,
-     "thu": 120,
-     "mau": 120,
-     "exp": 7,
-     "vang": 5,
+     "cong": 5520,
+     "thu": 5520,
+     "mau": 5520,
+     "exp": 22,
+     "vang": 19,
      "he": 1,
      "nac": 2,
      "chieu": [
@@ -5216,11 +5216,11 @@
     {
      "nguon": 23,
      "ten": "Bulbasaur",
-     "cong": 100,
-     "thu": 100,
-     "mau": 130,
-     "exp": 6,
-     "vang": 3,
+     "cong": 3957,
+     "thu": 3957,
+     "mau": 5144,
+     "exp": 17,
+     "vang": 15,
      "he": 5,
      "nac": 5,
      "chieu": [
@@ -5233,11 +5233,11 @@
     {
      "nguon": 25,
      "ten": "ran da",
-     "cong": 240,
-     "thu": 235,
-     "mau": 500,
-     "exp": 10,
-     "vang": 12,
+     "cong": 4599,
+     "thu": 4503,
+     "mau": 9581,
+     "exp": 24,
+     "vang": 22,
      "he": 3,
      "nac": 5,
      "chieu": [
@@ -5250,11 +5250,11 @@
     {
      "nguon": 24,
      "ten": "rong ca chep",
-     "cong": 240,
-     "thu": 235,
-     "mau": 450,
-     "exp": 10,
-     "vang": 12,
+     "cong": 4710,
+     "thu": 4612,
+     "mau": 8831,
+     "exp": 24,
+     "vang": 21,
      "he": 3,
      "nac": 5,
      "chieu": [
@@ -5267,11 +5267,11 @@
     {
      "nguon": 26,
      "ten": "Cyndaquil",
-     "cong": 240,
-     "thu": 235,
-     "mau": 500,
-     "exp": 10,
-     "vang": 12,
+     "cong": 4625,
+     "thu": 4529,
+     "mau": 9636,
+     "exp": 25,
+     "vang": 22,
      "he": 2,
      "nac": 5,
      "chieu": [
@@ -5284,11 +5284,11 @@
     {
      "nguon": 27,
      "ten": "Electrode",
-     "cong": 95,
-     "thu": 70,
-     "mau": 50,
-     "exp": 6,
-     "vang": 2,
+     "cong": 4644,
+     "thu": 3422,
+     "mau": 2444,
+     "exp": 14,
+     "vang": 12,
      "he": 11,
      "nac": 2,
      "chieu": [
@@ -5301,11 +5301,11 @@
     {
      "nguon": 28,
      "ten": "Chikorita",
-     "cong": 210,
-     "thu": 110,
-     "mau": 240,
-     "exp": 8,
-     "vang": 7,
+     "cong": 6688,
+     "thu": 3503,
+     "mau": 7643,
+     "exp": 23,
+     "vang": 21,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -5318,11 +5318,11 @@
     {
      "nguon": 29,
      "ten": "Totodile",
-     "cong": 210,
-     "thu": 150,
-     "mau": 100,
-     "exp": 7,
-     "vang": 4,
+     "cong": 7851,
+     "thu": 5608,
+     "mau": 3738,
+     "exp": 22,
+     "vang": 20,
      "he": 3,
      "nac": 3,
      "chieu": [
@@ -5335,11 +5335,11 @@
     {
      "nguon": 30,
      "ten": "Charmander",
-     "cong": 120,
-     "thu": 120,
-     "mau": 250,
-     "exp": 7,
-     "vang": 4,
+     "cong": 4289,
+     "thu": 4289,
+     "mau": 8936,
+     "exp": 23,
+     "vang": 21,
      "he": 2,
      "nac": 3,
      "chieu": [
@@ -5352,11 +5352,11 @@
     {
      "nguon": 31,
      "ten": "Meditite",
-     "cong": 650,
-     "thu": 420,
-     "mau": 350,
-     "exp": 8,
-     "vang": 4,
+     "cong": 9038,
+     "thu": 5840,
+     "mau": 4867,
+     "exp": 26,
+     "vang": 23,
      "he": 11,
      "nac": 3,
      "chieu": [
@@ -5369,11 +5369,11 @@
     {
      "nguon": 32,
      "ten": "Gastly",
-     "cong": 420,
-     "thu": 410,
-     "mau": 250,
-     "exp": 8,
-     "vang": 7,
+     "cong": 7555,
+     "thu": 7375,
+     "mau": 4497,
+     "exp": 25,
+     "vang": 23,
      "he": 14,
      "nac": 3,
      "chieu": [
@@ -5386,11 +5386,11 @@
     {
      "nguon": 33,
      "ten": "abysol",
-     "cong": 650,
-     "thu": 740,
-     "mau": 820,
-     "exp": 7,
-     "vang": 5,
+     "cong": 6088,
+     "thu": 6931,
+     "mau": 7681,
+     "exp": 27,
+     "vang": 24,
      "he": 16,
      "nac": 7,
      "chieu": [
@@ -5403,11 +5403,11 @@
     {
      "nguon": 34,
      "ten": "Umbreon",
-     "cong": 420,
-     "thu": 120,
-     "mau": 520,
-     "exp": 9,
-     "vang": 5,
+     "cong": 7571,
+     "thu": 2229,
+     "mau": 9374,
+     "exp": 25,
+     "vang": 22,
      "he": 16,
      "nac": 3,
      "chieu": [
@@ -5420,11 +5420,11 @@
     {
      "nguon": 35,
      "ten": "Sceptile",
-     "cong": 450,
-     "thu": 450,
-     "mau": 720,
-     "exp": 7,
-     "vang": 6,
+     "cong": 5573,
+     "thu": 5573,
+     "mau": 8917,
+     "exp": 26,
+     "vang": 24,
      "he": 5,
      "nac": 3,
      "chieu": [
@@ -5437,11 +5437,11 @@
     {
      "nguon": 36,
      "ten": "Machop",
-     "cong": 520,
-     "thu": 520,
-     "mau": 640,
-     "exp": 8,
-     "vang": 4,
+     "cong": 6309,
+     "thu": 6309,
+     "mau": 7764,
+     "exp": 27,
+     "vang": 24,
      "he": 7,
      "nac": 3,
      "chieu": [
@@ -5461,11 +5461,11 @@
     {
      "nguon": 1044,
      "ten": "Landorus",
-     "cong": 12000,
-     "thu": 1200,
-     "mau": 17000,
-     "exp": 8,
-     "vang": 5,
+     "cong": 5507,
+     "thu": 1617,
+     "mau": 7802,
+     "exp": 14,
+     "vang": 13,
      "he": 10,
      "nac": 7,
      "chieu": [
@@ -5478,11 +5478,11 @@
     {
      "nguon": 1045,
      "ten": "Victini",
-     "cong": 14000,
-     "thu": 14000,
-     "mau": 21000,
-     "exp": 12,
-     "vang": 7,
+     "cong": 6223,
+     "thu": 6223,
+     "mau": 9334,
+     "exp": 22,
+     "vang": 20,
      "he": 2,
      "nac": 7,
      "chieu": [
@@ -5495,11 +5495,11 @@
     {
      "nguon": 1046,
      "ten": "Mewtwo",
-     "cong": 17000,
-     "thu": 17000,
-     "mau": 25000,
-     "exp": 12,
-     "vang": 7,
+     "cong": 8558,
+     "thu": 8558,
+     "mau": 12585,
+     "exp": 30,
+     "vang": 27,
      "he": 11,
      "nac": 7,
      "chieu": [
@@ -5527,10 +5527,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -5544,10 +5544,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -5561,10 +5561,10 @@
      "he": 1,
      "nac": 0,
      "chieu": [
-      "TACKLE",
       "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
      ]
     },
     {
@@ -5578,10 +5578,10 @@
      "he": 5,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
      ]
     },
     {
@@ -5595,10 +5595,10 @@
      "he": 5,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAM",
+      "ROLLING KICK"
      ]
     },
     {
@@ -5612,10 +5612,10 @@
      "he": 1,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Volt Tackle",
+      "Volt Tackle 1",
+      "Volt Tackle 2",
+      "Volt Tackle 3"
      ]
     },
     {
@@ -5629,10 +5629,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -5646,10 +5646,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
      ]
     },
     {
@@ -5663,10 +5663,10 @@
      "he": 5,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Tackle",
+      "Growl",
+      "Leech Seed",
+      "Vine Whip"
      ]
     },
     {
@@ -5680,10 +5680,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Charge",
+      "Tackle",
+      "Spark",
+      "Sonicboom"
      ]
     },
     {
@@ -5697,10 +5697,10 @@
      "he": 5,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "SolarBeam",
+      "Aromatherapy",
+      "Safeguard",
+      "Magical Leaf"
      ]
     },
     {
@@ -5714,10 +5714,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Rock Throw",
+      "super Rock Throw",
+      "Rock Throw 2",
+      "Rock Throw  3"
      ]
     },
     {
@@ -5731,10 +5731,10 @@
      "he": 1,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "fsd",
+      "sdf",
+      "sfsdf",
+      "dfsf"
      ]
     },
     {
@@ -5748,10 +5748,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -5765,10 +5765,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -5782,10 +5782,10 @@
      "he": 13,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "ROCK THROW",
+      "ROCK SLIDE",
+      "STONE EDGE",
+      "ROCK BLAST"
      ]
     },
     {
@@ -5799,10 +5799,10 @@
      "he": 1,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "attack",
+      "Fusion bolt",
+      "Photoshop Strike",
+      "Teravolt"
      ]
     },
     {
@@ -5816,10 +5816,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -5833,10 +5833,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bounce",
+      "Bug Bite",
+      "Electroweb",
+      "Gastro Acid"
      ]
     },
     {
@@ -5850,10 +5850,10 @@
      "he": 1,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Covet",
+      "Helping Hand",
+      "Hyper Voice",
+      "Last Resort"
      ]
     },
     {
@@ -5867,10 +5867,10 @@
      "he": 5,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Absorb",
+      "Mega Drain",
+      "Giga Drain",
+      "Energy Ball"
      ]
     },
     {
@@ -5884,10 +5884,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Dragon Dance",
+      "Waterfall",
+      "Stone Edge",
+      "Earthquake"
      ]
     },
     {
@@ -5901,10 +5901,10 @@
      "he": 1,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Powder Snow",
+      "Water Gun",
+      "Ice Ball",
+      "Blizzard"
      ]
     },
     {
@@ -5918,10 +5918,10 @@
      "he": 1,
      "nac": 0,
      "chieu": [
-      "TACKLE",
       "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "HYPER FANG",
+      "SCARY FACE",
+      "RETURN"
      ]
     },
     {
@@ -5935,10 +5935,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -5952,10 +5952,10 @@
      "he": 5,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
      ]
     },
     {
@@ -5969,10 +5969,10 @@
      "he": 5,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAN",
+      "RAZOR LEAF"
      ]
     },
     {
@@ -5986,10 +5986,10 @@
      "he": 14,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
      ]
     },
     {
@@ -6003,10 +6003,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -6020,10 +6020,10 @@
      "he": 1,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Volt Tackle",
+      "Volt Tackle 1",
+      "Volt Tackle 2",
+      "Volt Tackle 3"
      ]
     }
    ]
@@ -6044,10 +6044,10 @@
      "he": 14,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
      ]
     },
     {
@@ -6061,10 +6061,10 @@
      "he": 13,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "ROCK THROW",
+      "ROCK SLIDE",
+      "STONE EDGE",
+      "ROCK BLAST"
      ]
     },
     {
@@ -6078,10 +6078,10 @@
      "he": 13,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "ROCK THROW",
+      "ROCK SLIDE",
+      "STONE EDGE",
+      "ROCK BLAST"
      ]
     },
     {
@@ -6095,10 +6095,10 @@
      "he": 9,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
      ]
     },
     {
@@ -6112,10 +6112,10 @@
      "he": 15,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Aqua Tail",
+      "Dark Pulse",
+      "Draco Meteor",
+      "Dragon Pulse"
      ]
     },
     {
@@ -6129,10 +6129,10 @@
      "he": 9,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
      ]
     },
     {
@@ -6146,10 +6146,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
      ]
     },
     {
@@ -6163,10 +6163,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Tackle",
+      "Leer",
+      "Smokescreen",
+      "Ember"
      ]
     },
     {
@@ -6180,10 +6180,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Ember",
+      "Fire Fang",
+      "Flame Burst",
+      "Fire Spin"
      ]
     },
     {
@@ -6197,10 +6197,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Searing Shot",
+      "Confusion",
+      "Flame Charge",
+      "Inferno"
      ]
     },
     {
@@ -6214,10 +6214,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -6231,10 +6231,10 @@
      "he": 9,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
      ]
     },
     {
@@ -6248,10 +6248,10 @@
      "he": 9,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
      ]
     },
     {
@@ -6265,10 +6265,10 @@
      "he": 13,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "ROCK THROW",
+      "ROCK SLIDE",
+      "STONE EDGE",
+      "ROCK BLAST"
      ]
     },
     {
@@ -6282,10 +6282,10 @@
      "he": 13,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "ROCK THROW",
+      "ROCK SLIDE",
+      "STONE EDGE",
+      "ROCK BLAST"
      ]
     },
     {
@@ -6299,10 +6299,10 @@
      "he": 9,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
      ]
     },
     {
@@ -6316,10 +6316,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Water Gun",
+      "Rage",
+      "Bite",
+      "Scary Face"
      ]
     },
     {
@@ -6333,10 +6333,10 @@
      "he": 14,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
      ]
     },
     {
@@ -6350,10 +6350,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
      ]
     },
     {
@@ -6367,10 +6367,10 @@
      "he": 13,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "ROCK THROW",
+      "ROCK SLIDE",
+      "STONE EDGE",
+      "ROCK BLAST"
      ]
     },
     {
@@ -6384,10 +6384,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
      ]
     },
     {
@@ -6401,10 +6401,10 @@
      "he": 15,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Tackle",
+      "Sand-Attack",
+      "Dragon Rage",
+      "Sandstorm"
      ]
     },
     {
@@ -6418,10 +6418,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Tackle",
+      "Leer",
+      "Smokescreen",
+      "Ember"
      ]
     },
     {
@@ -6435,10 +6435,10 @@
      "he": 9,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
      ]
     },
     {
@@ -6452,10 +6452,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bubble",
+      "Water Gun",
+      "Water Pulse",
+      "Aqua Tail"
      ]
     },
     {
@@ -6469,10 +6469,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Ember",
+      "Fire Fang",
+      "Flame Burst",
+      "Fire Spin"
      ]
     },
     {
@@ -6486,10 +6486,10 @@
      "he": 9,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
      ]
     },
     {
@@ -6503,10 +6503,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Searing Shot",
+      "Confusion",
+      "Flame Charge",
+      "Inferno"
      ]
     },
     {
@@ -6520,10 +6520,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -6537,10 +6537,10 @@
      "he": 13,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "ROCK THROW",
+      "ROCK SLIDE",
+      "STONE EDGE",
+      "ROCK BLAST"
      ]
     }
    ]
@@ -6561,10 +6561,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -6578,10 +6578,10 @@
      "he": 5,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULLET SEED",
+      "GIGA DRAIN",
+      "SOLARBEAM",
+      "ROLLING KICK"
      ]
     },
     {
@@ -6595,10 +6595,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bubble",
+      "Water Gun",
+      "BubbleBeam",
+      "Hydro Pump"
      ]
     },
     {
@@ -6612,10 +6612,10 @@
      "he": 5,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Tackle",
+      "Growl",
+      "Leech Seed",
+      "Vine Whip"
      ]
     },
     {
@@ -6629,10 +6629,10 @@
      "he": 8,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
      ]
     },
     {
@@ -6646,10 +6646,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Absorb",
+      "Mega Drain",
+      "BubbleBeam",
+      "Energy Ball"
      ]
     },
     {
@@ -6663,10 +6663,10 @@
      "he": 6,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Icicle Spear",
+      "Harden",
+      "Astonish",
+      "Uproar"
      ]
     },
     {
@@ -6680,10 +6680,10 @@
      "he": 6,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Icicle Spear",
+      "Harden",
+      "Astonish",
+      "Uproar"
      ]
     },
     {
@@ -6697,10 +6697,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Water Gun",
+      "Whirlpool",
+      "Hydro Pump",
+      "Endeavor"
      ]
     },
     {
@@ -6714,10 +6714,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bubble",
+      "Water Gun",
+      "BubbleBeam",
+      "Brine"
      ]
     },
     {
@@ -6731,10 +6731,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Toxic",
+      "Surf",
+      "Waterfall",
+      "Dive"
      ]
     },
     {
@@ -6748,10 +6748,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "WATERFALL",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
      ]
     },
     {
@@ -6765,10 +6765,10 @@
      "he": 8,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
      ]
     },
     {
@@ -6782,10 +6782,10 @@
      "he": 8,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
      ]
     },
     {
@@ -6799,10 +6799,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "DIVE",
+      "MUDDY WATER",
+      "MUDDY WATER",
+      "WATERFALL"
      ]
     },
     {
@@ -6816,10 +6816,10 @@
      "he": 8,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
      ]
     },
     {
@@ -6833,10 +6833,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "WATER PULSE",
+      "RAIN DANCE",
+      "MUDDY WATER",
+      "DIVE"
      ]
     },
     {
@@ -6850,10 +6850,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "DIVE",
+      "MUDDY WATER",
+      "SURF",
+      "WATERFALL"
      ]
     },
     {
@@ -6867,10 +6867,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -6884,10 +6884,10 @@
      "he": 6,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Icicle Spear",
+      "Harden",
+      "Astonish",
+      "Uproar"
      ]
     },
     {
@@ -6901,10 +6901,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Rock Throw",
+      "super Rock Throw",
+      "Rock Throw 2",
+      "Rock Throw  3"
      ]
     },
     {
@@ -6918,10 +6918,10 @@
      "he": 1,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "fsd",
+      "sdf",
+      "sfsdf",
+      "dfsf"
      ]
     },
     {
@@ -6935,10 +6935,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Dragon Dance",
+      "Waterfall",
+      "Stone Edge",
+      "Earthquake"
      ]
     },
     {
@@ -6952,10 +6952,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Water Gun",
+      "Rage",
+      "Bite",
+      "Scary Face"
      ]
     },
     {
@@ -6969,10 +6969,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "DIVE",
+      "SURF",
+      "MUDDY WATER",
+      "WATERFALL"
      ]
     },
     {
@@ -6986,10 +6986,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bubble",
+      "Water Gun",
+      "Water Pulse",
+      "Aqua Tail"
      ]
     },
     {
@@ -7003,10 +7003,10 @@
      "he": 8,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
      ]
     },
     {
@@ -7020,10 +7020,10 @@
      "he": 8,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
      ]
     },
     {
@@ -7037,10 +7037,10 @@
      "he": 6,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Icicle Spear",
+      "Harden",
+      "Astonish",
+      "Uproar"
      ]
     },
     {
@@ -7054,10 +7054,10 @@
      "he": 3,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bubble",
+      "Water Gun",
+      "BubbleBeam",
+      "Hydro Pump"
      ]
     }
    ]
@@ -7078,10 +7078,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Dark Pulse",
+      "Foul Play",
+      "Knock Off",
+      "Zen Headbutt"
      ]
     },
     {
@@ -7095,10 +7095,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Confusion",
+      "Force Palm",
+      "Hi Jump Kick",
+      "Reversal"
      ]
     },
     {
@@ -7112,10 +7112,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Confusion",
+      "Future Sight",
+      "Psycho Cut",
+      "Psychic"
      ]
     },
     {
@@ -7129,10 +7129,10 @@
      "he": 17,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Iron Defense",
+      "Iron Head",
+      "Zen Headbutt",
+      "TACKLE"
      ]
     },
     {
@@ -7146,10 +7146,10 @@
      "he": 14,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
      ]
     },
     {
@@ -7163,10 +7163,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Pursuit",
+      "Faint Attack",
+      "Assurance",
+      "Quick Attack"
      ]
     },
     {
@@ -7180,10 +7180,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Aqua Tail",
+      "Dark Pulse",
+      "Earth Power",
+      "foul"
      ]
     },
     {
@@ -7197,10 +7197,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Dark Pulse",
+      "Foul Play",
+      "Knock Off",
+      "Zen Headbutt"
      ]
     },
     {
@@ -7214,10 +7214,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Pursuit",
+      "Faint Attack",
+      "Assurance",
+      "Quick Attack"
      ]
     },
     {
@@ -7231,10 +7231,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Aqua Tail",
+      "Dark Pulse",
+      "Earth Power",
+      "foul"
      ]
     },
     {
@@ -7248,10 +7248,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "THUNDERBOLT",
+      "SPARK",
+      "THUNDER",
+      "SHOCK UAVE"
      ]
     },
     {
@@ -7265,10 +7265,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Dark Pulse",
+      "Foul Play",
+      "Knock Off",
+      "Zen Headbutt"
      ]
     },
     {
@@ -7282,10 +7282,10 @@
      "he": 14,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
      ]
     },
     {
@@ -7299,10 +7299,10 @@
      "he": 14,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
      ]
     },
     {
@@ -7316,10 +7316,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
      ]
     },
     {
@@ -7333,10 +7333,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Charge",
+      "Tackle",
+      "Spark",
+      "Sonicboom"
      ]
     },
     {
@@ -7350,10 +7350,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Confusion",
+      "Force Palm",
+      "Hi Jump Kick",
+      "Reversal"
      ]
     },
     {
@@ -7367,10 +7367,10 @@
      "he": 13,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "ROCK THROW",
+      "ROCK SLIDE",
+      "STONE EDGE",
+      "ROCK BLAST"
      ]
     },
     {
@@ -7384,10 +7384,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -7401,10 +7401,10 @@
      "he": 8,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
      ]
     },
     {
@@ -7418,10 +7418,10 @@
      "he": 9,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "SAND ATTACK",
+      "MUD-SLAP",
+      "DIG",
+      "SAND TOMB"
      ]
     },
     {
@@ -7435,10 +7435,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Pursuit",
+      "Faint Attack",
+      "Assurance",
+      "Quick Attack"
      ]
     },
     {
@@ -7452,10 +7452,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Confusion",
+      "Future Sight",
+      "Psycho Cut",
+      "Psychic"
      ]
     },
     {
@@ -7469,10 +7469,10 @@
      "he": 17,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bind",
+      "Gravity",
+      "Iron Defense",
+      "Magic Coat"
      ]
     },
     {
@@ -7486,10 +7486,10 @@
      "he": 7,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
      ]
     },
     {
@@ -7503,10 +7503,10 @@
      "he": 14,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Lick",
+      "Spite",
+      "Shadow Ball",
+      "Hex"
      ]
     },
     {
@@ -7520,10 +7520,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bounce",
+      "Bug Bite",
+      "Electroweb",
+      "Gastro Acid"
      ]
     },
     {
@@ -7537,10 +7537,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "CALM MIND",
+      "SKILL SWAP",
+      "TOXIC",
+      "REST"
      ]
     },
     {
@@ -7554,10 +7554,10 @@
      "he": 11,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Charge",
+      "Tackle",
+      "Spark",
+      "Sonicboom"
      ]
     },
     {
@@ -7571,10 +7571,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "FIRE BLAST",
+      "OVERHEAT",
+      "FLAMETHROWER",
+      "SUNNY DAY"
      ]
     }
    ]
@@ -7595,10 +7595,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "THUNDERBOLT",
+      "SPARK",
+      "THUNDER",
+      "SHOCK UAVE"
      ]
     },
     {
@@ -7612,10 +7612,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bounce",
+      "Bug Bite",
+      "Electroweb",
+      "Gastro Acid"
      ]
     },
     {
@@ -7629,10 +7629,10 @@
      "he": 7,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Low Kick",
+      "Karate Chop",
+      "Revenge",
+      "Vital Throw"
      ]
     },
     {
@@ -7646,10 +7646,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "THUNDERBOLT",
+      "SPARK",
+      "THUNDER",
+      "SHOCK UAVE"
      ]
     },
     {
@@ -7663,10 +7663,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Aqua Tail",
+      "Dark Pulse",
+      "Earth Power",
+      "foul"
      ]
     },
     {
@@ -7680,10 +7680,10 @@
      "he": 7,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
      ]
     },
     {
@@ -7697,10 +7697,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -7714,10 +7714,10 @@
      "he": 15,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Aqua Tail",
+      "Dark Pulse",
+      "Draco Meteor",
+      "Dragon Pulse"
      ]
     },
     {
@@ -7731,10 +7731,10 @@
      "he": 7,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Low Kick",
+      "Karate Chop",
+      "Revenge",
+      "Vital Throw"
      ]
     },
     {
@@ -7748,10 +7748,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bounce",
+      "Bug Bite",
+      "Electroweb",
+      "Gastro Acid"
      ]
     },
     {
@@ -7765,10 +7765,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "THUNDERBOLT",
+      "SPARK",
+      "THUNDER",
+      "SHOCK UAVE"
      ]
     },
     {
@@ -7782,10 +7782,10 @@
      "he": 7,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
      ]
     },
     {
@@ -7799,10 +7799,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bounce",
+      "Bug Bite",
+      "Electroweb",
+      "Gastro Acid"
      ]
     },
     {
@@ -7816,10 +7816,10 @@
      "he": 15,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Tackle",
+      "Sand-Attack",
+      "Dragon Rage",
+      "Sandstorm"
      ]
     },
     {
@@ -7833,10 +7833,10 @@
      "he": 7,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Low Kick",
+      "Karate Chop",
+      "Revenge",
+      "Vital Throw"
      ]
     },
     {
@@ -7850,10 +7850,10 @@
      "he": 7,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
      ]
     },
     {
@@ -7867,10 +7867,10 @@
      "he": 12,
      "nac": 0,
      "chieu": [
+      "STRING SHOT",
       "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "MEGAHORM",
+      "BUG BITE"
      ]
     },
     {
@@ -7884,10 +7884,10 @@
      "he": 15,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Aqua Tail",
+      "Dark Pulse",
+      "Draco Meteor",
+      "Dragon Pulse"
      ]
     },
     {
@@ -7901,10 +7901,10 @@
      "he": 16,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Dark Pulse",
+      "Foul Play",
+      "Knock Off",
+      "Zen Headbutt"
      ]
     },
     {
@@ -7918,10 +7918,10 @@
      "he": 8,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "TOXIC",
+      "POISON STING",
+      "POSONPOWDER",
+      "REFLECT"
      ]
     },
     {
@@ -7935,10 +7935,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "THUNDERBOLT",
+      "SPARK",
+      "THUNDER",
+      "SHOCK UAVE"
      ]
     },
     {
@@ -7952,10 +7952,10 @@
      "he": 7,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Low Kick",
+      "Karate Chop",
+      "Revenge",
+      "Vital Throw"
      ]
     },
     {
@@ -7969,10 +7969,10 @@
      "he": 7,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "BULK UP",
+      "BRICK BREAK",
+      "JUMP KICK",
+      "ROLLING KICK"
      ]
     },
     {
@@ -7986,10 +7986,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bounce",
+      "Bug Bite",
+      "Electroweb",
+      "Gastro Acid"
      ]
     },
     {
@@ -8003,10 +8003,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "THUNDERBOLT",
+      "SPARK",
+      "THUNDER",
+      "SHOCK UAVE"
      ]
     },
     {
@@ -8020,10 +8020,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Tackle",
+      "Leer",
+      "Smokescreen",
+      "Ember"
      ]
     },
     {
@@ -8037,10 +8037,10 @@
      "he": 2,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Ember",
+      "Fire Fang",
+      "Flame Burst",
+      "Fire Spin"
      ]
     },
     {
@@ -8054,10 +8054,10 @@
      "he": 4,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Bounce",
+      "Bug Bite",
+      "Electroweb",
+      "Gastro Acid"
      ]
     },
     {
@@ -8071,10 +8071,10 @@
      "he": 15,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Tackle",
+      "Sand-Attack",
+      "Dragon Rage",
+      "Sandstorm"
      ]
     },
     {
@@ -8088,10 +8088,10 @@
      "he": 17,
      "nac": 0,
      "chieu": [
-      "TACKLE",
-      "QUICK ATTACK",
-      "BITE",
-      "SLASH"
+      "Iron Defense",
+      "Iron Head",
+      "Zen Headbutt",
+      "TACKLE"
      ]
     }
    ]

@@ -673,6 +673,40 @@ export const BANG_THU_DAU = 10;
 export const BANG_TEN_TOI_THIEU = 3;
 export const BANG_TEN_TOI_DA = 20;
 
+/**
+ * Chỉ số bang cộng cho thành viên khi đánh nhau.
+ *
+ * GIỐNG HỆT BẢNG KHẮC HỆ VÀ BỘ TRANG BỊ: bản gốc dựng đủ hai cột `cong` và
+ * `thu` cho bang hội, trang bang hiện ra "chỉ số bang: công 10, thủ 10" — rồi
+ * KHÔNG trận nào cộng chúng vào đâu cả, và cũng không có đường nào tăng chúng
+ * lên. Hai con số chết nằm trên màn hình từ đầu tới cuối. Ở đây nối vào thật,
+ * và cho nâng bằng quỹ bang.
+ */
+export function congBang(
+  bang: { cong: number; thu: number } | null | undefined,
+): { cong: number; thu: number } {
+  return { cong: bang?.cong ?? 0, thu: bang?.thu ?? 0 };
+}
+
+/**
+ * Bậc nâng chỉ số bang. Trưởng bang tiêu quỹ để lên bậc kế tiếp.
+ *
+ * Đây cũng là chỗ cột `PokeBang.ngoc` cuối cùng có việc: bản gốc dựng cột ấy
+ * rồi chẳng bao giờ cộng vào lẫn trừ ra.
+ */
+export const BANG_NANG_CAP = [
+  { moc: 1, cong: 30, thu: 30, vang: 20_000, ngoc: 0 },
+  { moc: 2, cong: 60, thu: 60, vang: 60_000, ngoc: 20 },
+  { moc: 3, cong: 120, thu: 120, vang: 150_000, ngoc: 60 },
+  { moc: 4, cong: 250, thu: 250, vang: 400_000, ngoc: 150 },
+  { moc: 5, cong: 500, thu: 500, vang: 1_000_000, ngoc: 400 },
+] as const;
+
+/** Bậc nâng kế tiếp theo chỉ số công hiện tại, rỗng nghĩa là đã kịch bậc. */
+export function bacNangBangKe(congHienTai: number) {
+  return BANG_NANG_CAP.find((b) => b.cong > congHienTai) ?? null;
+}
+
 // ─────────────────────────── Nhiệm vụ ───────────────────────────
 
 /**

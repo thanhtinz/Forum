@@ -3,10 +3,11 @@
 import { useActionState } from 'react';
 import { Crown, Lock, Unlock } from 'lucide-react';
 import {
-  khoaQuyBang, lapBang, quyBang, roiBang, vaoBang, type PokeState,
+  khoaQuyBang, lapBang, nangBang, quyBang, roiBang, vaoBang, type PokeState,
 } from '@/app/(site)/pokemon/actions';
 import {
   BANG_CAP_TOI_THIEU, BANG_GIA_NGOC, BANG_TEN_TOI_DA, BANG_TEN_TOI_THIEU,
+  bacNangBangKe,
 } from '@/lib/pokemon-const';
 
 interface Bang {
@@ -25,8 +26,9 @@ export function BangHoi({ bang, danhSach, toiId, cap, ngoc, vang }: {
   const [roi, roiAction, dangRoi] = useActionState<PokeState, FormData>(roiBang, {});
   const [quy, quyAction, dangQuy] = useActionState<PokeState, FormData>(quyBang, {});
   const [khoa, khoaAction, dangKhoa] = useActionState<PokeState, FormData>(khoaQuyBang, {});
-  const loi = lap.error ?? vao.error ?? roi.error ?? quy.error ?? khoa.error;
-  const ke = lap.ke ?? vao.ke ?? roi.ke ?? quy.ke ?? khoa.ke;
+  const [nang, nangAction, dangNang] = useActionState<PokeState, FormData>(nangBang, {});
+  const loi = lap.error ?? vao.error ?? roi.error ?? quy.error ?? khoa.error ?? nang.error;
+  const ke = lap.ke ?? vao.ke ?? roi.ke ?? quy.ke ?? khoa.ke ?? nang.ke;
 
   const bao = (
     <>
@@ -50,8 +52,14 @@ export function BangHoi({ bang, danhSach, toiId, cap, ngoc, vang }: {
             </span>
           </div>
           <p className="mt-1 text-sm text-ink-500">
-            Quỹ: <b>{bang.vang}</b> vàng, <b>{bang.ngoc}</b> ngọc ·
-            {' '}chỉ số bang: công {bang.cong}, thủ {bang.thu}
+            Quỹ: <b>{bang.vang.toLocaleString('vi')}</b> vàng,{' '}
+            <b>{bang.ngoc.toLocaleString('vi')}</b> ngọc
+          </p>
+          {/* Nói rõ hai con số này cộng vào đâu. Trước đây chúng chỉ nằm đó,
+              và cũng đúng là chẳng cộng vào đâu thật. */}
+          <p className="mt-0.5 text-sm text-ink-500">
+            Chỉ số bang <b>+{bang.cong} công</b>, <b>+{bang.thu} thủ</b> — cộng thẳng
+            vào mọi trận đánh thú hoang của từng thành viên.
           </p>
           <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-400">
             {bang.khoaQuy ? <><Lock size={12} /> Quỹ đang khoá — chỉ trưởng bang rút được</>
@@ -73,12 +81,48 @@ export function BangHoi({ bang, danhSach, toiId, cap, ngoc, vang }: {
           </ul>
         </div>
 
+        {/* Nâng chỉ số bang — chỗ tiêu quỹ, và cũng là chỗ cột ngọc của quỹ
+            cuối cùng có việc. */}
+        {(() => {
+          const bac = bacNangBangKe(bang.cong);
+          if (!bac) {
+            return (
+              <p className="rounded-xl border-2 border-emerald-300 p-3 text-sm text-emerald-700 dark:border-emerald-900 dark:text-emerald-300">
+                Bang đã ở bậc cao nhất: công {bang.cong}, thủ {bang.thu}.
+              </p>
+            );
+          }
+          return (
+            <form action={nangAction} className="rounded-xl border-2 border-ink-200 p-3 dark:border-ink-700">
+              <p className="label mb-2">Nâng chỉ số bang · bậc {bac.moc}</p>
+              <p className="mb-2 text-xs text-ink-500">
+                Lên <b>+{bac.cong} công</b>, <b>+{bac.thu} thủ</b> cho cả bang. Tốn{' '}
+                {bac.vang.toLocaleString('vi')} vàng{bac.ngoc ? ` và ${bac.ngoc} ngọc` : ''} lấy
+                từ quỹ. {laTruong ? '' : 'Chỉ trưởng bang bấm được.'}
+              </p>
+              <button disabled={dangNang || !laTruong}
+                className="btn-primary !py-1.5 text-sm disabled:opacity-50">
+                Nâng lên bậc {bac.moc}
+              </button>
+            </form>
+          );
+        })()}
+
         <form action={quyAction} className="rounded-xl border-2 border-ink-200 p-3 dark:border-ink-700">
-          <p className="label mb-2">Quỹ vàng</p>
-          <p className="mb-2 text-xs text-ink-500">Bạn đang có {vang} vàng.</p>
+          <p className="label mb-2">Quỹ bang</p>
+          <p className="mb-2 text-xs text-ink-500">
+            Bạn đang có {vang.toLocaleString('vi')} vàng và {ngoc.toLocaleString('vi')} ngọc.
+          </p>
           <div className="flex flex-wrap items-end gap-2">
             <label className="block">
-              <span className="label">Số vàng</span>
+              <span className="label">Loại</span>
+              <select name="kho" defaultValue="vang" className="input !w-24">
+                <option value="vang">Vàng</option>
+                <option value="ngoc">Ngọc</option>
+              </select>
+            </label>
+            <label className="block">
+              <span className="label">Số lượng</span>
               <input name="so" type="number" min={1} defaultValue={10} className="input !w-28" />
             </label>
             <button type="submit" name="huong" value="gop" disabled={dangQuy}

@@ -14,6 +14,7 @@ import {
   CAP_CUONG_TOI_DA, CHO_GIA_MAX, CHO_GIA_MIN, MUA_DO_TOI_DA,
   DAU_CAP_MAX, DAU_CAP_MIN, DAU_EXP, DAU_HAN_MS, DAU_VANG, NGOC_MOI_DA, NHIEM_VU,
   O_TRANG_BI, congTrangBi, tenLoaiDo, timHuyenTinh,
+  bacNangBangKe, congBang,
   DIEM_DOI_QUA, KHU_CHIEN_TRUONG, QUA_LANH_THO,
   NHAN_CHI_MANG, TRANG_THAI, ketQuaLuot, matLuotVi, mauTramMoiLuot, tenTrangThai, trangThaiGayRa,
   boThu, canVaoKhu, capTheoExp, gymDuocVao, heRaChieu, laGioVang, nacTienHoaMoi, satThuongDau,
@@ -244,7 +245,14 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
         // cũng không kéo về cả túi.
         take: O_TRANG_BI.length,
       });
-      const them = congTrangBi(dangMac);
+      const trangBi = congTrangBi(dangMac);
+      // Chỉ số bang cộng cho mọi thành viên. Bản gốc dựng hai cột ấy, bày ra
+      // màn hình, rồi không trận nào cộng vào đâu cả.
+      const bang = nv.bangId
+        ? await tx.pokeBang.findUnique({ where: { id: nv.bangId }, select: { cong: true, thu: true } })
+        : null;
+      const cuaBang = congBang(bang);
+      const them = { cong: trangBi.cong + cuaBang.cong, thu: trangBi.thu + cuaBang.thu };
 
       const chieu = [toi.c1, toi.c2, toi.c3, toi.c4][so - 1]! + them.cong;
       const tenChieu = toi.chieu[so - 1] ?? `Chiêu ${so}`;
@@ -1365,6 +1373,63 @@ export async function vaoBang(_prev: PokeState, fd: FormData): Promise<PokeState
   return { ok: true, ke: 'Đã gia nhập bang.' };
 }
 
+/**
+ * Trưởng bang tiêu quỹ để nâng chỉ số bang lên bậc kế tiếp.
+ *
+ * Đây là chỗ hai cột `cong`/`thu` của bang hết là số chết, và cũng là chỗ cột
+ * `ngoc` của quỹ cuối cùng có việc — bản gốc dựng cột ấy rồi chẳng bao giờ
+ * cộng vào lẫn trừ ra.
+ */
+export async function nangBang(_prev: PokeState, _fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  if (!r.nv.bangId) return { error: 'Bạn không ở bang nào.' };
+
+  try {
+    const kq = await db.$transaction(async (tx) => {
+      const bang = await tx.pokeBang.findUnique({
+        where: { id: r.nv.bangId! },
+        select: { id: true, ten: true, truongId: true, cong: true, vang: true, ngoc: true },
+      });
+      if (!bang) throw new Error('khong-co-bang');
+      if (bang.truongId !== r.nv.id) throw new Error('khong-phai-truong');
+
+      const bac = bacNangBangKe(bang.cong);
+      if (!bac) throw new Error('kich-bac');
+
+      // Điều kiện nằm trong `where`: hai tab cùng bấm thì tab sau đếm được 0
+      // dòng, quỹ không bị trừ hai lần và chỉ số không nhảy hai bậc.
+      const ghi = await tx.pokeBang.updateMany({
+        where: {
+          id: bang.id, cong: bang.cong,
+          vang: { gte: bac.vang }, ngoc: { gte: bac.ngoc },
+        },
+        data: {
+          cong: bac.cong, thu: bac.thu,
+          vang: { decrement: bac.vang }, ngoc: { decrement: bac.ngoc },
+        },
+      });
+      if (ghi.count === 0) throw new Error('quy-thieu');
+
+      return {
+        ok: true,
+        ke: `Bang ${bang.ten} lên bậc ${bac.moc}: công ${bac.cong}, thủ ${bac.thu}.`
+          + ` Quỹ trừ ${bac.vang.toLocaleString('vi')} vàng`
+          + (bac.ngoc ? ` và ${bac.ngoc} ngọc.` : '.'),
+      };
+    });
+    revalidatePath('/pokemon/bang');
+    return kq;
+  } catch (e) {
+    const m = e instanceof Error ? e.message : '';
+    if (m === 'khong-co-bang') return { error: 'Bang này không còn.' };
+    if (m === 'khong-phai-truong') return { error: 'Chỉ trưởng bang nâng được chỉ số bang.' };
+    if (m === 'kich-bac') return { error: 'Bang đã ở bậc cao nhất.' };
+    if (m === 'quy-thieu') return { error: 'Quỹ bang không đủ để nâng bậc này.' };
+    return { error: 'Không nâng được lúc này.' };
+  }
+}
+
 /** Rời bang. Trưởng bang rời thì bang giải tán. */
 export async function roiBang(_prev: PokeState, _fd: FormData): Promise<PokeState> {
   const r = await layNhanVat();
@@ -1397,8 +1462,14 @@ export async function quyBang(_prev: PokeState, fd: FormData): Promise<PokeState
 
   const huong = String(fd.get('huong') ?? '');
   if (huong !== 'gop' && huong !== 'rut') return { error: 'Chọn góp hay rút đã nào.' };
+  // Quỹ bang có sẵn cả cột vàng lẫn cột ngọc từ bản gốc, nhưng cột ngọc chưa
+  // bao giờ được cộng vào hay trừ ra. Nay nâng chỉ số bang tiêu cả hai, nên
+  // phải góp được cả hai.
+  const kho = String(fd.get('kho') ?? 'vang');
+  if (kho !== 'vang' && kho !== 'ngoc') return { error: 'Chọn vàng hay ngọc đã nào.' };
+  const tenKho = kho === 'vang' ? 'vàng' : 'ngọc';
   const so = Number(fd.get('so'));
-  if (!Number.isInteger(so) || so < 1) return { error: 'Số vàng phải là số nguyên dương.' };
+  if (!Number.isInteger(so) || so < 1) return { error: `Số ${tenKho} phải là số nguyên dương.` };
 
   const bang = await db.pokeBang.findUnique({
     where: { id: r.nv.bangId }, select: { id: true, truongId: true, khoaQuy: true },
@@ -1412,27 +1483,30 @@ export async function quyBang(_prev: PokeState, fd: FormData): Promise<PokeState
     await db.$transaction(async (tx) => {
       if (huong === 'gop') {
         const tru = await tx.pokeNhanVat.updateMany({
-          where: { id: r.nv.id, vang: { gte: so } }, data: { vang: { decrement: so } },
+          where: { id: r.nv.id, [kho]: { gte: so } }, data: { [kho]: { decrement: so } },
         });
         if (tru.count === 0) throw new Error('khong-du');
-        await tx.pokeBang.update({ where: { id: bang.id }, data: { vang: { increment: so } } });
+        await tx.pokeBang.update({ where: { id: bang.id }, data: { [kho]: { increment: so } } });
         return;
       }
       const tru = await tx.pokeBang.updateMany({
-        where: { id: bang.id, vang: { gte: so } }, data: { vang: { decrement: so } },
+        where: { id: bang.id, [kho]: { gte: so } }, data: { [kho]: { decrement: so } },
       });
       if (tru.count === 0) throw new Error('quy-thieu');
-      await tx.pokeNhanVat.update({ where: { id: r.nv.id }, data: { vang: { increment: so } } });
+      await tx.pokeNhanVat.update({ where: { id: r.nv.id }, data: { [kho]: { increment: so } } });
     });
   } catch (e) {
     const m = e instanceof Error ? e.message : '';
-    if (m === 'khong-du') return { error: 'Bạn không đủ vàng.' };
-    if (m === 'quy-thieu') return { error: 'Quỹ bang không đủ.' };
+    if (m === 'khong-du') return { error: `Bạn không đủ ${tenKho}.` };
+    if (m === 'quy-thieu') return { error: `Quỹ bang không đủ ${tenKho}.` };
     return { error: 'Không làm được lúc này.' };
   }
 
   revalidatePath('/pokemon/bang');
-  return { ok: true, ke: huong === 'gop' ? `Đã góp ${so} vàng vào quỹ.` : `Đã rút ${so} vàng.` };
+  return {
+    ok: true,
+    ke: huong === 'gop' ? `Đã góp ${so} ${tenKho} vào quỹ.` : `Đã rút ${so} ${tenKho}.`,
+  };
 }
 
 /** Trưởng bang khoá hoặc mở quỹ. */

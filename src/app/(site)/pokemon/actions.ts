@@ -159,8 +159,39 @@ export async function timThu(_prev: PokeState, _fd: FormData): Promise<PokeState
     select: { id: true },
   });
 
+  const moi = await ghiDoGiam(db, nv.id, hoang, false);
+
   revalidatePath('/pokemon');
-  return { ok: true, ke: `Một con ${hoang.ten} hoang nhảy ra!` };
+  return {
+    ok: true,
+    ke: `Một con ${hoang.ten} hoang nhảy ra!` + (moi ? ' Loài mới — đã ghi vào Đồ Giám.' : ''),
+  };
+}
+
+/**
+ * Ghi một loài vào Đồ Giám. Trả về `true` nếu đây là lần đầu gặp loài ấy.
+ *
+ * `upsert` chứ không đọc-rồi-ghi: hai tab cùng gặp một loài thì tab sau rơi
+ * vào nhánh `update` chứ không vỡ vì trùng khoá. Và `daBat` chỉ bật lên chứ
+ * không bao giờ tắt — gặp lại một loài đã bắt không được xoá dấu đã bắt.
+ */
+async function ghiDoGiam(
+  tx: { pokeDoGiam: { findUnique: typeof db.pokeDoGiam.findUnique; upsert: typeof db.pokeDoGiam.upsert } },
+  nhanVatId: string,
+  loai: { nguon: number; ten: string; he: number },
+  daBat: boolean,
+): Promise<boolean> {
+  const co = await tx.pokeDoGiam.findUnique({
+    where: { nhanVatId_nguon: { nhanVatId, nguon: loai.nguon } },
+    select: { id: true },
+  });
+  await tx.pokeDoGiam.upsert({
+    where: { nhanVatId_nguon: { nhanVatId, nguon: loai.nguon } },
+    create: { nhanVatId, nguon: loai.nguon, ten: loai.ten, he: loai.he, daBat },
+    update: daBat ? { daBat: true } : {},
+    select: { id: true },
+  });
+  return co === null;
 }
 
 async function conRaTranHoacLoi(nhanVatId: string, raTranId: string | null) {
@@ -383,6 +414,7 @@ export async function nemCau(_prev: PokeState, _fd: FormData): Promise<PokeState
         select: { id: true },
       });
       await tx.pokeTran.delete({ where: { id: tran.id } });
+      await ghiDoGiam(tx, nv.id, tran, true);
       return { ok: true, ke: `Bắt được ${tran.ten}! Nó đã vào kho của bạn.` };
     });
 

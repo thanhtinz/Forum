@@ -1,6 +1,6 @@
 'use client';
 
-import { anhHe, anhThu, tenHe, ANH_POKE } from '@/lib/pokemon-const';
+import { anhHe, anhThu, tenHe, tenHeGoc, ANH_POKE } from '@/lib/pokemon-const';
 import { cn } from '@/lib/utils';
 
 /**
@@ -24,7 +24,7 @@ export function ThanhMau({ mau, toiDa, nho }: { mau: number; toiDa: number; nho?
 export function HuyHieuHe({ he, className }: { he: number; className?: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={anhHe(he)} alt={tenHe(he)} title={tenHe(he)}
+    <img src={anhHe(he)} alt={tenHe(he)} title={`${tenHe(he)} (${tenHeGoc(he)})`}
       className={cn('h-4 w-auto', className)} style={{ imageRendering: 'pixelated' }} />
   );
 }

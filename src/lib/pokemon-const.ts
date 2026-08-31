@@ -23,7 +23,25 @@ export const HE = [
 
 export const SO_HE = 17;
 
+/**
+ * Tên hệ tiếng Việt.
+ *
+ * Bản gốc để nguyên chữ Anh trên huy hiệu ảnh, mà cả game còn lại toàn tiếng
+ * Việt — nên dòng "BUG đánh BUG: sát thương ×1" đọc lên nửa nạc nửa mỡ. Huy
+ * hiệu vẫn là ảnh gốc, chỉ phần chữ đổi sang tiếng Việt.
+ */
+export const HE_VN = [
+  '', 'Thường', 'Lửa', 'Nước', 'Điện', 'Cỏ', 'Băng', 'Giác Đấu',
+  'Độc', 'Đất', 'Bay', 'Siêu Linh', 'Bọ', 'Đá', 'Ma', 'Rồng',
+  'Bóng Tối', 'Thép',
+] as const;
+
 export function tenHe(he: number): string {
+  return HE_VN[he] ?? HE_VN[1]!;
+}
+
+/** Tên gốc tiếng Anh — vẫn cần cho nhãn `alt` của huy hiệu ảnh. */
+export function tenHeGoc(he: number): string {
   return HE[he] ?? HE[1]!;
 }
 
@@ -71,6 +89,8 @@ export function heSoHe(minh: number, dich: number): readonly [number, number] {
 
 /** Ba con thú khởi đầu, đúng ba lựa chọn của bản gốc. */
 export const THU_DAU = [
+  // Ba con này bản gốc có ghi tên hẳn hoi nên giữ nguyên, khác 228 dòng thú
+  // hoang vốn chỉ ghi "s" hay "sâu xanh" cho hàng chục mã ảnh khác nhau.
   { nguon: 1, ten: 'Sâu Xanh', he: 12, nacToiDa: 1 },
   { nguon: 3, ten: 'Rattata', he: 1, nacToiDa: 3 },
   { nguon: 4, ten: 'Spearow', he: 10, nacToiDa: 3 },

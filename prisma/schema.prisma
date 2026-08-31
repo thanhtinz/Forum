@@ -2508,6 +2508,8 @@ model PokeNhanVat {
   diemDanhNgay   DateTime?
   diemDanhChuoi  Int       @default(0)
 
+  doGiam PokeDoGiam[]
+
   bangId String?
   bang   PokeBang? @relation("BangThanhVien", fields: [bangId], references: [id], onDelete: SetNull)
 
@@ -2579,6 +2581,34 @@ model PokeThu {
 }
 
 /// Bảng thú hoang của từng khu, nạp từ `prisma/du-lieu/pokemon.json`.
+/**
+ * Đồ Giám — sổ ghi từng loài đã GẶP và đã BẮT.
+ *
+ * Bản gốc không có mục này, mà đảo có tới 468 loài: không có sổ thì người chơi
+ * chẳng bao giờ biết mình còn thiếu con nào, và cả bộ ảnh coi như chỉ để lướt
+ * qua trong lúc đánh nhau.
+ *
+ * Ghi theo `nguon` (mã ảnh) chứ không theo bản ghi thú hoang: cùng một loài
+ * xuất hiện ở nhiều khu, mà gặp ở khu nào cũng là gặp loài ấy.
+ */
+model PokeDoGiam {
+  id        String      @id @default(cuid())
+  nhanVatId String
+  nhanVat   PokeNhanVat @relation(fields: [nhanVatId], references: [id], onDelete: Cascade)
+
+  nguon Int
+  ten   String
+  he    Int
+
+  /// Đã bắt được ít nhất một con. Gặp thì luôn đúng, nên không có cột riêng.
+  daBat Boolean @default(false)
+
+  lanDau DateTime @default(now())
+
+  @@unique([nhanVatId, nguon])
+  @@index([nhanVatId])
+}
+
 model PokeThuHoang {
   id  String @id @default(cuid())
   khu String

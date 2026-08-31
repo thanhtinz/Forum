@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Backpack, Cross, Flame, Map, Medal, ScrollText, ShoppingBasket, Store,
+  Backpack, BookOpen, Cross, Flame, Map, Medal, ScrollText, ShoppingBasket, Store,
   Sword, Swords, Target, Trophy, Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 const TAB = [
   { href: '/pokemon', ten: 'Bản đồ', Icon: Map },
   { href: '/pokemon/kho', ten: 'Kho thú', Icon: Backpack },
+  { href: '/pokemon/do-giam', ten: 'Đồ Giám', Icon: BookOpen },
   { href: '/pokemon/gym', ten: 'Gym', Icon: Medal },
   { href: '/pokemon/dau-truong', ten: 'Đấu trường', Icon: Swords },
   { href: '/pokemon/lanh-tho', ten: 'Lãnh Thổ', Icon: Target },

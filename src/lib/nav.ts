@@ -26,6 +26,7 @@ export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: 
     { label: 'Giải trí', url: '/giai-tri', icon: '🎲' },
     { label: 'Nông trại', url: '/nong-trai', icon: '🌱' },
     { label: 'Đảo Pokémon', url: '/pokemon', icon: '🔴' },
+    { label: 'Đảo Rồng', url: '/rong', icon: '🐉' },
     { label: 'Xếp hạng', url: '/ranking', icon: '🏆' },
     { label: 'Câu lạc bộ', url: '/clb', icon: '👥' },
     { label: 'Thành viên', url: '/thanh-vien', icon: '🧑‍🤝‍🧑' },
@@ -37,6 +38,7 @@ export const NAV_DEFAULTS: Record<NavGroup, { label: string; url: string; icon: 
     { label: 'Giải trí', url: '/giai-tri', icon: '' },
     { label: 'Nông trại', url: '/nong-trai', icon: '' },
     { label: 'Đảo Pokémon', url: '/pokemon', icon: '' },
+    { label: 'Đảo Rồng', url: '/rong', icon: '' },
     { label: 'Xếp hạng', url: '/ranking', icon: '' },
     { label: 'Thành viên', url: '/thanh-vien', icon: '' },
     { label: 'Cửa hàng', url: '/cua-hang', icon: '' },
@@ -65,7 +67,12 @@ export async function getNavItems(group: NavGroup): Promise<NavItem[]> {
 /**
  * Đường dẫn cho menu: chỉ nhận đường dẫn nội bộ hoặc http(s).
  * Chặn javascript: và các scheme lạ để không biến menu thành chỗ chèn mã.
+ *
+ * `//evil.com` cũng bắt đầu bằng `/` nhưng trình duyệt hiểu là sang hẳn tên
+ * miền khác, nên phải loại riêng — cùng một cái bẫy đã vá ở `nhan-anh.ts`,
+ * `bbcode.ts` và hai trang đăng nhập/đăng ký.
  */
 export function isSafeNavUrl(url: string): boolean {
+  if (url.startsWith('//')) return false;
   return /^\/[^\s]*$/.test(url) || /^https?:\/\/\S+$/.test(url);
 }

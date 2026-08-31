@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Pin, Lock } from 'lucide-react';
 import { db } from '@/lib/db';
-import { cn, fmtCount } from '@/lib/utils';
+import { cn, soDay, tinhSoTrang } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { ThreadRowActions } from '@/components/admin/ThreadRowActions';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
@@ -53,7 +53,7 @@ export default async function AdminThreadsPage({ searchParams }: { searchParams:
     }),
     db.forum.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, select: { name: true, slug: true } }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
 
   // Giữ nguyên bộ lọc khu vực khi chuyển trang.
   const qs = new URLSearchParams();
@@ -66,7 +66,7 @@ export default async function AdminThreadsPage({ searchParams }: { searchParams:
       <div>
         <h1 className="text-xl font-bold text-ink-900 dark:text-white">Quản lý chủ đề</h1>
         <p className="text-sm text-ink-500">
-          Bài do thành viên đăng trong diễn đàn · {STATUSES.find((s) => s.key === status)?.label} · {fmtCount(total)} chủ đề
+          Bài do thành viên đăng trong diễn đàn · {STATUSES.find((s) => s.key === status)?.label} · {soDay(total)} chủ đề
         </p>
       </div>
 
@@ -105,9 +105,9 @@ export default async function AdminThreadsPage({ searchParams }: { searchParams:
                 <span>·</span>
                 <span>{format(t.createdAt, 'dd/MM/yyyy')}</span>
                 <span>·</span>
-                <span>{fmtCount(t.replyCount)} trả lời</span>
+                <span>{soDay(t.replyCount)} trả lời</span>
                 <span>·</span>
-                <span>{fmtCount(t.viewCount)} lượt xem</span>
+                <span>{soDay(t.viewCount)} lượt xem</span>
               </div>
             </div>
             {/* Mobile: trạng thái và nút xuống hàng riêng cho khỏi bóp tiêu đề */}

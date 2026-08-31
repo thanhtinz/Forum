@@ -5,7 +5,7 @@ import { ArrowLeft, ImageOff } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { otherId } from '@/lib/messages';
-import { fmtAgo } from '@/lib/utils';
+import { fmtAgo, tinhSoTrang } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 
 export const metadata: Metadata = { title: 'Ảnh đã gửi' };
@@ -62,7 +62,7 @@ export default async function ConversationMediaPage({ params, searchParams }: {
   // không còn đường nào xem lại.
   const locAnh = { conversationId: id, content: { contains: '![' } };
   const tongTin = await db.message.count({ where: locAnh });
-  const soTrang = Math.max(1, Math.ceil(tongTin / TIN_MOI_TRANG));
+  const soTrang = tinhSoTrang(tongTin, TIN_MOI_TRANG);
   const trang = Math.min(Math.max(1, Number((await searchParams).page) || 1), soTrang);
 
   const rows = await db.message.findMany({

@@ -10,16 +10,49 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
  * tự ẩn khi ≤ 1 trang nên chưa nổ ở đâu, nhưng con số vẫn sai và mỗi chỗ tính
  * lại tự bọc `Math.max` một kiểu.
  */
-export function soTrang(tong: number, moiTrang: number): number {
+export function tinhSoTrang(tong: number, moiTrang: number): number {
   return Math.max(1, Math.ceil(tong / Math.max(1, moiTrang)));
 }
 
-/** Định dạng số gọn: 1.2K, 3.4M */
+/**
+ * Định dạng số gọn: 1.2K, 3.4M — dùng cho TRANG CÔNG KHAI.
+ *
+ * Đừng dùng ở bảng quản trị: 1.500 và 1.549 đều ra "1.5K", mà admin sửa điểm
+ * hay đối soát lượt tải thì cần đúng con số. Chỗ đó dùng `soDay`.
+ */
 export function fmtCount(n?: number | null): string {
   const v = n ?? 0;
   if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (v >= 1000) return `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K`;
   return String(v);
+}
+
+/** Số đầy đủ có dấu phân nhóm kiểu Việt: 1.549.203. Dùng ở bảng quản trị. */
+export function soDay(n?: number | null): string {
+  return (n ?? 0).toLocaleString('vi-VN');
+}
+
+/**
+ * Mô tả một khoảng thời gian còn lại cho người đọc: "2 giờ 5 phút", "45 phút",
+ * "30 giây".
+ *
+ * Nông trại và Đảo Rồng trước đây mỗi bên chép một bản `moTaConLai` riêng với
+ * cùng phép tính, chỉ khác chữ báo hết giờ và việc có đếm giây hay không — sửa
+ * cách viết ở một bên là hai màn hình lệch nhau. Nay phần tính nằm ở đây, mỗi
+ * bên chỉ còn khai báo chữ của mình.
+ *
+ * @param xong Chữ hiện khi đã hết giờ ("đã chín", "xong rồi"…).
+ * @param giay Có đếm tới từng giây khi còn dưới một phút hay không.
+ */
+export function moTaThoiLuong(ms: number, xong: string, giay = false): string {
+  if (ms <= 0) return xong;
+  const soGiay = Math.ceil(ms / 1000);
+  if (giay && soGiay < 60) return `${soGiay} giây`;
+  const phut = Math.max(1, Math.ceil(soGiay / 60));
+  if (phut < 60) return `${phut} phút`;
+  const gio = Math.floor(phut / 60);
+  const du = phut % 60;
+  return du === 0 ? `${gio} giờ` : `${gio} giờ ${du} phút`;
 }
 
 

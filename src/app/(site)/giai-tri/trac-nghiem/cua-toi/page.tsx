@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { Pagination } from '@/components/Pagination';
 import { QuizDanhSach } from '@/components/giaitri/QuizDanhSach';
 import { QUIZ_MOI_TRANG, cauHoiCuaToi } from '@/lib/quiz';
+import { tinhSoTrang } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Câu hỏi của bạn' };
 export const dynamic = 'force-dynamic';
@@ -29,7 +30,7 @@ export default async function CauHoiCuaToiPage({ searchParams }: {
   if (!userId) redirect('/login?callbackUrl=/giai-tri/trac-nghiem/cua-toi');
 
   const danh = await cauHoiCuaToi(userId, trang);
-  const soTrang = Math.ceil(danh.tong / QUIZ_MOI_TRANG);
+  const soTrang = tinhSoTrang(danh.tong, QUIZ_MOI_TRANG);
 
   return (
     <div className="mx-auto max-w-2xl">

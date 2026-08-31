@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { MedalManager, type MedalRow } from '@/components/admin/MedalManager';
 import { Pagination } from '@/components/Pagination';
+import { tinhSoTrang } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Huy chương' };
 export const dynamic = 'force-dynamic';
@@ -27,7 +28,7 @@ export default async function AdminMedalsPage({ searchParams }: {
     },
     }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
   const rows: MedalRow[] = medals.map((m) => ({
     id: m.id, slug: m.slug, name: m.name, description: m.description, icon: m.icon,
     color: m.color, rarity: m.rarity, autoGrant: m.autoGrant,

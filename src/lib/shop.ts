@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import { SHOP_PAGE_SIZE, type Cosmetics, type ShopItemView, type ShopKind } from './shop-const';
+import { tinhSoTrang } from '@/lib/utils';
 
 export * from './shop-const';
 
@@ -153,7 +154,7 @@ export async function getShopItems(opts: {
 
   return {
     total,
-    totalPages: Math.ceil(total / SHOP_PAGE_SIZE),
+    totalPages: tinhSoTrang(total, SHOP_PAGE_SIZE),
     items: rows.map((r) => ({
       id: r.id, slug: r.slug, kind: r.kind, name: r.name, description: r.description,
       value: r.value, pricePoints: r.pricePoints, active: r.active, order: r.order,
@@ -189,7 +190,7 @@ export async function getMyItems(userId: string, page = 1): Promise<{
 
   return {
     total,
-    totalPages: Math.ceil(total / SHOP_PAGE_SIZE),
+    totalPages: tinhSoTrang(total, SHOP_PAGE_SIZE),
     items: rows.map((r) => ({ ...r.item, owned: true, equipped: equippedIds.has(r.item.id) })),
   };
 }

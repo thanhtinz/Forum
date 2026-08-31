@@ -6,6 +6,7 @@ import {
 } from './club-const';
 import { authorChipSelect, toAuthorChip, type AuthorChip } from './shop';
 import { renderHidden, renderHiddenClosed } from './bbcode';
+import { tinhSoTrang } from '@/lib/utils';
 
 export * from './club-const';
 
@@ -96,7 +97,7 @@ export async function getClubs(opts: { page?: number; q?: string } = {}) {
   return {
     items: rows.map(toCard),
     page,
-    totalPages: Math.max(1, Math.ceil(total / CLUBS_PER_PAGE)),
+    totalPages: tinhSoTrang(total, CLUBS_PER_PAGE),
     total,
   };
 }
@@ -182,7 +183,7 @@ export async function getClubMembers(clubId: string, page = 1) {
   return {
     items: rows.map((r) => ({ id: r.id, role: r.role, createdAt: r.createdAt, user: toAuthorChip(r.user) })),
     page: p,
-    totalPages: Math.max(1, Math.ceil(total / CLUB_MEMBERS_PER_PAGE)),
+    totalPages: tinhSoTrang(total, CLUB_MEMBERS_PER_PAGE),
     total,
   };
 }
@@ -368,7 +369,7 @@ export async function getClubPosts(
       comments: commentMap.get(r.id) ?? [],
     })),
     page: p,
-    totalPages: Math.max(1, Math.ceil(total / CLUB_POSTS_PER_PAGE)),
+    totalPages: tinhSoTrang(total, CLUB_POSTS_PER_PAGE),
     total,
   };
 }

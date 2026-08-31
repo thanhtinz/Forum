@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { Pin, Lock, Award, CheckCircle2, Eye, EyeOff, MessageSquare, Star } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { cn, fmtCount, truncate } from '@/lib/utils';
+import { cn, fmtCount, tinhSoTrang, truncate } from '@/lib/utils';
 import { ThreadActionBar } from '@/components/forum/ThreadActionBar';
 import { PollCard } from '@/components/forum/PollCard';
 import { toPollView } from '@/lib/poll';
@@ -189,7 +189,7 @@ export default async function ThreadPage({ params, searchParams }: {
     : undefined;
 
   const totalReplies = await db.reply.count({ where: { threadId: id, parentId: null, hidden: false } });
-  const totalPages = Math.max(1, Math.ceil(totalReplies / REPLIES_PER_PAGE));
+  const totalPages = tinhSoTrang(totalReplies, REPLIES_PER_PAGE);
   const page = Math.min(totalPages, Math.max(1, parseInt(pageRaw ?? '1', 10) || 1));
 
   // Người kiểm duyệt thấy cả trả lời đã ẩn (có dấu riêng) để còn hiện lại được.

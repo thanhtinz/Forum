@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { Search } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { cn, fmtCount } from '@/lib/utils';
+import { cn, soDay, tinhSoTrang } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { UserRowActions } from '@/components/admin/UserRowActions';
 
@@ -40,7 +40,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
       select: { id: true, name: true, username: true, email: true, image: true, role: true, status: true, points: true, createdAt: true },
     }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
   const base = q ? `/admin/users?q=${encodeURIComponent(q)}` : '/admin/users';
 
   // Lệnh cấm còn hiệu lực của những người đang hiển thị (hết hạn thì bỏ qua).
@@ -63,7 +63,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-bold text-ink-900 dark:text-white">Quản lý người dùng</h1>
-        <span className="text-sm text-ink-500">{fmtCount(total)} thành viên</span>
+        <span className="text-sm text-ink-500">{soDay(total)} thành viên</span>
       </div>
 
       <form action="/admin/users" className="relative">
@@ -95,7 +95,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: P
                   <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-ink-500">
                     <span className="truncate">{u.email ?? `@${u.username}`}</span>
                     <span>·</span>
-                    <span>{fmtCount(u.points)} điểm</span>
+                    <span>{soDay(u.points)} điểm</span>
                     <span>·</span>
                     <span>{format(u.createdAt, 'dd/MM/yyyy')}</span>
                   </div>

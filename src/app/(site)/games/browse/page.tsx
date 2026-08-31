@@ -3,7 +3,7 @@ import { LayoutGrid } from 'lucide-react';
 import { db } from '@/lib/db';
 import { gameFilterQuery, isGameSort, parseGameFilter } from '@/lib/game';
 import { searchGames } from '@/lib/game-search';
-import { fmtCount } from '@/lib/utils';
+import { fmtCount, tinhSoTrang } from '@/lib/utils';
 import { GameFilters } from '@/components/game/GameFilters';
 import { GameGrid } from '@/components/game/GameGrid';
 import { GameSearchBox } from '@/components/game/GameSearchBox';
@@ -61,7 +61,7 @@ export default async function BrowseGamesPage({ searchParams }: {
         </header>
 
         <GameGrid games={games} empty="Không có game nào khớp bộ lọc. Thử nới lỏng điều kiện xem sao." />
-        <Pagination page={page} totalPages={Math.ceil(total / PAGE_SIZE)} basePath={basePath} />
+        <Pagination page={page} totalPages={tinhSoTrang(total, PAGE_SIZE)} basePath={basePath} />
       </div>
     </div>
   );

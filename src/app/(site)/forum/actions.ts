@@ -15,6 +15,7 @@ import { canModerateForum } from '@/lib/moderation';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { bbcodeToHtml, hideRules } from '@/lib/bbcode';
 import { authorShareOf } from '@/lib/revenue-share';
+import { getSiteSettings } from '@/lib/site';
 import { resolveMentions, notifyMentions } from '@/lib/mention-notify';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
@@ -1086,7 +1087,8 @@ export async function unlockThreadHide(threadId: string): Promise<HideUnlockStat
   });
   if (already) return { ok: true };
 
-  const share = authorShareOf(price);
+  const { hoaHongPhanTram } = await getSiteSettings();
+  const share = authorShareOf(price, hoaHongPhanTram);
   try {
     await db.$transaction(async (tx) => {
       await grantPoints(

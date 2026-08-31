@@ -9,7 +9,7 @@ import { HomeSidebar } from '@/components/HomeSidebar';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { unreadThreadIds } from '@/lib/thread-read';
 import { threadExcerpt } from '@/lib/bbcode';
-import { fmtCount } from '@/lib/utils';
+import { fmtCount, tinhSoTrang } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 const PAGE_SIZE = 20;
@@ -50,7 +50,7 @@ export default async function TagPage({ params, searchParams }: {
 
   const session = await auth();
   const unread = await unreadThreadIds(session?.user?.id ?? null, threads);
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
 
   const rows: ThreadRowData[] = threads.map((t) => ({
     id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,

@@ -37,6 +37,7 @@ export default async function run(check) {
     const req = await db.gameRequest.findFirst({ select: { id: true, title: true, status: true } });
     check('gửi được yêu cầu', req?.title === 'Chinh Phục Vũ Môn 128x160', `đang là ${req?.title}`);
     check('trạng thái ban đầu là chờ duyệt', req?.status === 'PENDING');
+    await doiToi(async () => (await member.locator('text=Chinh Phục Vũ Môn').count()) > 0);
     check('yêu cầu hiện trên bảng', (await member.locator('text=Chinh Phục Vũ Môn').count()) > 0);
 
     // Xin trùng tên thì cộng phiếu chứ không đẻ thêm dòng
@@ -44,7 +45,8 @@ export default async function run(check) {
     await other.waitForTimeout(700);
     await other.fill('input[name="title"]', 'chinh phục vũ môn 128x160');
     await other.locator('button:has-text("Gửi yêu cầu")').click();
-    await other.waitForTimeout(2500);
+    await doiToi(async () =>
+      (await db.gameRequest.findUnique({ where: { id: req.id }, select: { voteCount: true } }))?.voteCount === 1);
     check('xin trùng tên không tạo dòng mới', (await db.gameRequest.count()) === 1);
     check('xin trùng tên được tính thành một lượt muốn',
       (await db.gameRequest.findUnique({ where: { id: req.id }, select: { voteCount: true } }))?.voteCount === 1);
@@ -104,7 +106,7 @@ export default async function run(check) {
     await admin.waitForTimeout(400);
     await admin.fill('input[name="gameSlug"]', 'khong-co-game-nay');
     await admin.locator('button:has-text("Lưu")').first().click();
-    await admin.waitForTimeout(2000);
+    await doiToi(async () => (await admin.locator('text=Không có game nào mang slug').count()) > 0);
     check('slug không tồn tại thì báo lỗi',
       (await admin.locator('text=Không có game nào mang slug').count()) > 0);
 
@@ -136,7 +138,7 @@ export default async function run(check) {
     await member.waitForTimeout(700);
     await member.fill('input[name="title"]', 'Game vuot han muc');
     await member.locator('button:has-text("Gửi yêu cầu")').click();
-    await member.waitForTimeout(2000);
+    await doiToi(async () => (await member.locator('text=yêu cầu hôm nay rồi').count()) > 0);
     check('quá hạn mức ngày thì bị chặn', (await member.locator('text=yêu cầu hôm nay rồi').count()) > 0);
     check('lần bị chặn không tạo thêm', (await db.gameRequest.count()) === 5);
   } finally {

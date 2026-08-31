@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { Users, FileText, Flag, MessagesSquare, Gamepad2 } from 'lucide-react';
 import { db } from '@/lib/db';
-import { fmtCount } from '@/lib/utils';
+import { soDay } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +18,12 @@ async function getStats() {
 }
 
 const CARDS = (s: Awaited<ReturnType<typeof getStats>>) => [
-  { label: 'Thành viên', value: fmtCount(s.users), icon: Users, tint: 'text-sky-500', href: '/admin/users' },
-  { label: 'Chủ đề', value: fmtCount(s.threads), icon: MessagesSquare, tint: 'text-emerald-500', href: '/admin/threads' },
-  { label: 'Trả lời', value: fmtCount(s.replies), icon: FileText, tint: 'text-violet-500', href: '/admin/threads' },
-  { label: 'Câu lạc bộ', value: fmtCount(s.clubs), icon: Users, tint: 'text-amber-500', href: '/admin/clubs' },
-  { label: 'Game', value: fmtCount(s.games), icon: Gamepad2, tint: 'text-fuchsia-500', href: '/admin/games' },
-  { label: 'Báo cáo chờ xử lý', value: fmtCount(s.openReports), icon: Flag, tint: 'text-red-500', href: '/admin/reports' },
+  { label: 'Thành viên', value: soDay(s.users), icon: Users, tint: 'text-sky-500', href: '/admin/users' },
+  { label: 'Chủ đề', value: soDay(s.threads), icon: MessagesSquare, tint: 'text-emerald-500', href: '/admin/threads' },
+  { label: 'Trả lời', value: soDay(s.replies), icon: FileText, tint: 'text-violet-500', href: '/admin/threads' },
+  { label: 'Câu lạc bộ', value: soDay(s.clubs), icon: Users, tint: 'text-amber-500', href: '/admin/clubs' },
+  { label: 'Game', value: soDay(s.games), icon: Gamepad2, tint: 'text-fuchsia-500', href: '/admin/games' },
+  { label: 'Báo cáo chờ xử lý', value: soDay(s.openReports), icon: Flag, tint: 'text-red-500', href: '/admin/reports' },
 ];
 
 export default async function AdminDashboard() {

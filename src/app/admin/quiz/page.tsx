@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { requireAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
-import { cn } from '@/lib/utils';
+import { cn, tinhSoTrang } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { FolderCog } from 'lucide-react';
 import { QUIZ_NHAN, QUIZ_TRANG_THAI_LABEL } from '@/lib/quiz-const';
@@ -58,7 +58,7 @@ export default async function AdminQuizPage({ searchParams }: {
       },
     }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
 
   return (
     <div className="space-y-4">

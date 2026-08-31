@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { ArrowLeft, Bell, MessageSquare, Eye } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { fmtCount } from '@/lib/utils';
+import { fmtCount, tinhSoTrang } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { UnfollowThreadButton } from '@/components/forum/UnfollowThreadButton';
 
@@ -41,7 +41,7 @@ export default async function FollowedThreadsPage({ searchParams }: { searchPara
       },
     }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
 
   return (
     <div className="mx-auto max-w-5xl">

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { ArrowLeft, Bookmark, MessageSquare, Eye } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { cn, fmtCount } from '@/lib/utils';
+import { cn, fmtCount, tinhSoTrang } from '@/lib/utils';
 import { gameCardSelect, toGameCard } from '@/lib/game';
 import { DEFAULT_FOLDER, FOLDER_LIMIT, folderLabel } from '@/lib/favorite-folder';
 import { GameGrid } from '@/components/game/GameGrid';
@@ -53,7 +53,7 @@ export default async function FavoritesPage({ searchParams }: {
     db.favorite.count({ where: { userId, gameId: { not: null }, ...scope } }),
   ]);
   const total = tab.key === 'threads' ? threadTotal : gameTotal;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
   const skip = (page - 1) * PAGE_SIZE;
 
   const threads = tab.key === 'threads'

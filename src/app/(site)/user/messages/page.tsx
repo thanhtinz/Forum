@@ -6,7 +6,7 @@ import { PixelIcon } from '@/components/PixelIcon';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { otherId, messagePreview } from '@/lib/messages';
-import { fmtAgo, truncate } from '@/lib/utils';
+import { fmtAgo, tinhSoTrang, truncate } from '@/lib/utils';
 import { LiveRefresh } from '@/components/user/LiveRefresh';
 import { cn } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
@@ -32,7 +32,7 @@ export default async function MessagesPage({ searchParams }: {
    * được bằng cách nào trên giao diện.
    */
   const tong = await db.conversation.count({ where });
-  const soTrang = Math.max(1, Math.ceil(tong / MOI_TRANG));
+  const soTrang = tinhSoTrang(tong, MOI_TRANG);
   const trang = Math.min(Math.max(1, Number((await searchParams).page) || 1), soTrang);
 
   const convos = await db.conversation.findMany({

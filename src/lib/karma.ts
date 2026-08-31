@@ -3,6 +3,7 @@ import { db } from './db';
 import { cosmeticSelect, toCosmetics } from './shop';
 import type { Cosmetics } from './shop-const';
 import { KARMA_COOLDOWN_HOURS, KARMA_DAILY_MAX, KARMA_MIN_POSTS, KARMA_PAGE_SIZE } from './karma-const';
+import { tinhSoTrang } from '@/lib/utils';
 
 export * from './karma-const';
 
@@ -50,7 +51,7 @@ export async function getKarmaPage(userId: string, page = 1): Promise<KarmaPage>
   return {
     items: rows.map((r) => ({ ...r, from: { ...r.from, cosmetics: toCosmetics(r.from) } })),
     total,
-    totalPages: Math.ceil(total / KARMA_PAGE_SIZE),
+    totalPages: tinhSoTrang(total, KARMA_PAGE_SIZE),
     up: countOf(1),
     down: countOf(-1),
   };

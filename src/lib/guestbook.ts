@@ -4,6 +4,7 @@ import {
   canRemoveEntry, isStaff, GUESTBOOK_PAGE_SIZE, GUESTBOOK_GAP_SECONDS, GUESTBOOK_PER_DAY,
   type GuestbookItem, type Viewer,
 } from './guestbook-const';
+import { tinhSoTrang } from '@/lib/utils';
 
 export * from './guestbook-const';
 
@@ -58,7 +59,7 @@ export async function getGuestbook(
 
   return {
     total,
-    totalPages: Math.ceil(total / GUESTBOOK_PAGE_SIZE),
+    totalPages: tinhSoTrang(total, GUESTBOOK_PAGE_SIZE),
     items: rows.map((r) => ({
       id: r.id,
       content: r.content,

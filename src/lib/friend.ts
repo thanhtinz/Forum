@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import { cosmeticSelect, toCosmetics } from './shop';
 import type { Cosmetics } from './shop-const';
+import { tinhSoTrang } from '@/lib/utils';
 
 /** Lời nhắn kèm khi xin kết bạn. */
 export const FRIEND_MESSAGE_MAX = 200;
@@ -36,7 +37,7 @@ export interface FriendPage {
 }
 
 const page_ = (items: FriendRow[], total: number): FriendPage => ({
-  items, total, totalPages: Math.ceil(total / FRIEND_PAGE_SIZE),
+  items, total, totalPages: tinhSoTrang(total, FRIEND_PAGE_SIZE),
 });
 
 const userSelect = {

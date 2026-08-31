@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import type { Prisma } from '@prisma/client';
 import { MessagesSquare, MessageSquare, PenLine, Sparkles } from 'lucide-react';
 import { db } from '@/lib/db';
-import { truncate, plainText, cn } from '@/lib/utils';
+import { cn, plainText, tinhSoTrang, truncate } from '@/lib/utils';
 import { FORUM_ACCESS_BADGE, forumTint } from '@/lib/forum';
 import { Pagination } from '@/components/Pagination';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
@@ -93,7 +93,7 @@ export default async function ForumPage({ params, searchParams }: {
   ]);
   const unread = await unreadThreadIds(session?.user?.id ?? null, threads);
 
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
   const badge = FORUM_ACCESS_BADGE[forum.postAccess];
   const tint = forumTint(forum.slug);
   const qs = (t: TabKey) => (t === 'new' ? `/forum/${slug}` : `/forum/${slug}?sort=${t}`);

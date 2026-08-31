@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import type { Prisma } from '@prisma/client';
 import { Search as SearchIcon, MessagesSquare, Users, SlidersHorizontal } from 'lucide-react';
 import { db } from '@/lib/db';
-import { cn, fmtCount, plainText, truncate } from '@/lib/utils';
+import { cn, fmtCount, plainText, tinhSoTrang, truncate } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { TableHead } from '@/components/forum/TableHead';
 import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
@@ -90,7 +90,7 @@ export default async function SearchPage({ searchParams }: {
     : 0;
 
   const total = tab === 'threads' ? threadTotal : userTotal;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
   const skip = (page - 1) * PAGE_SIZE;
 
   const threads: ThreadRowData[] = tab === 'threads'

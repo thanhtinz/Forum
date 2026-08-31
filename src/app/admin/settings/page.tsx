@@ -12,7 +12,7 @@ export default async function AdminSettingsPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-xl font-bold text-ink-900 dark:text-white">Cài đặt chung</h1>
-        <p className="text-sm text-ink-500">Tên trang, logo và mô tả dùng chung cho toàn site.</p>
+        <p className="text-sm text-ink-500">Tên trang, logo, mô tả và mức hoa hồng dùng chung cho toàn site.</p>
       </div>
       <SiteSettingsForm initial={settings} />
     </div>

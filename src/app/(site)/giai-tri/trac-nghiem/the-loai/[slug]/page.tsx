@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { Pagination } from '@/components/Pagination';
 import { QuizDanhSach } from '@/components/giaitri/QuizDanhSach';
 import { QUIZ_MOI_TRANG, danhSachCauHoi, theLoaiTheoSlug } from '@/lib/quiz';
+import { tinhSoTrang } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,7 @@ export default async function TheLoaiPage({ params, searchParams }: {
   const session = await auth();
   const userId = session?.user?.id ?? null;
   const danh = await danhSachCauHoi({ categoryId: theLoai.id, trang });
-  const soTrang = Math.ceil(danh.tong / QUIZ_MOI_TRANG);
+  const soTrang = tinhSoTrang(danh.tong, QUIZ_MOI_TRANG);
   const goc = `/giai-tri/trac-nghiem/the-loai/${theLoai.slug}`;
 
   return (

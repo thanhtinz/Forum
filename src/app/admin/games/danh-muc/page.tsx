@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { requireSuperAdmin } from '@/lib/admin';
 import { GameTaxonomyManager, type TaxonomyRow } from '@/components/admin/GameTaxonomyManager';
 import { Pagination } from '@/components/Pagination';
-import { soTrang } from '@/lib/utils';
+import { tinhSoTrang } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Danh mục kho game', robots: { index: false } };
@@ -79,12 +79,12 @@ export default async function GameTaxonomyPage({ searchParams }: {
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
           <GameTaxonomyManager kind="genre" rows={rows(genres)} />
-          <Pagination page={pages.tl} totalPages={soTrang(genreCount, PAGE_SIZE)}
+          <Pagination page={pages.tl} totalPages={tinhSoTrang(genreCount, PAGE_SIZE)}
             pageParam="tl" basePath={keepOthers('tl')} />
         </div>
         <div>
           <GameTaxonomyManager kind="platform" rows={rows(platforms)} />
-          <Pagination page={pages.dm} totalPages={soTrang(platformCount, PAGE_SIZE)}
+          <Pagination page={pages.dm} totalPages={tinhSoTrang(platformCount, PAGE_SIZE)}
             pageParam="dm" basePath={keepOthers('dm')} />
         </div>
         <div>
@@ -95,7 +95,7 @@ export default async function GameTaxonomyPage({ searchParams }: {
               order: r.order, count: r._count.games,
             }))}
           />
-          <Pagination page={pages.pg} totalPages={soTrang(resolutionCount, PAGE_SIZE)}
+          <Pagination page={pages.pg} totalPages={tinhSoTrang(resolutionCount, PAGE_SIZE)}
             pageParam="pg" basePath={keepOthers('pg')} />
         </div>
       </div>

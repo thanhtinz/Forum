@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { db } from './db';
 import { authorChipSelect, toAuthorChip, type AuthorChip } from './shop';
+import { tinhSoTrang } from '@/lib/utils';
 
 /**
  * Danh bạ thành viên.
@@ -110,7 +111,7 @@ export async function getMembers(opts: { page?: number; q?: string; sort?: Membe
   return {
     items,
     page,
-    totalPages: Math.max(1, Math.ceil(total / MEMBERS_PER_PAGE)),
+    totalPages: tinhSoTrang(total, MEMBERS_PER_PAGE),
     total,
     online,
   };

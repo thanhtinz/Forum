@@ -12,6 +12,7 @@ import { normalizeIcon } from '@/lib/icon';
 import { AnhKhongHopLeError, nhanAnhVaoKho } from '@/lib/nhan-anh';
 import { NAV_GROUPS, NAV_DEFAULTS, isSafeNavUrl } from '@/lib/nav';
 import { SITE_SETTING_KEY } from '@/lib/site';
+import { chuanHoaHoaHong } from '@/lib/revenue-share';
 import { isBanScope, banExpiry } from '@/lib/ban';
 import { logAdmin, pruneAdminLogs } from '@/lib/audit';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
@@ -710,6 +711,7 @@ export async function saveSiteSettings(_prev: SiteState, formData: FormData): Pr
   const logo = String(formData.get('logo') ?? '').trim();
   const description = String(formData.get('description') ?? '').trim();
   const footerText = String(formData.get('footerText') ?? '').trim();
+  const hoaHongPhanTram = chuanHoaHoaHong(formData.get('hoaHongPhanTram'));
 
   if (name.length < 1) return { error: 'Hãy nhập tên trang.' };
   let anhLogo: string;
@@ -719,7 +721,7 @@ export async function saveSiteSettings(_prev: SiteState, formData: FormData): Pr
     return { error: e instanceof AnhKhongHopLeError ? e.message : 'Không nhận được logo này.' };
   }
 
-  const value = { name, tagline, logo: anhLogo, description, footerText };
+  const value = { name, tagline, logo: anhLogo, description, footerText, hoaHongPhanTram };
   await db.siteSetting.upsert({
     where: { key: SITE_SETTING_KEY },
     update: { value },

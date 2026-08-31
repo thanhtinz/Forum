@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { ArrowLeft, Gift, Users, Coins } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { fmtCount } from '@/lib/utils';
+import { fmtCount, tinhSoTrang } from '@/lib/utils';
 import { INVITE_BONUS_POINTS, INVITE_DAILY_MAX } from '@/lib/invite';
 import { InviteLink } from '@/components/user/InviteLink';
 import { Pagination } from '@/components/Pagination';
@@ -41,7 +41,7 @@ export default async function InvitePage({ searchParams }: {
    * tính điểm xong.
    */
   const tongMoi = await db.user.count({ where: { invitedById: userId } });
-  const soTrang = Math.max(1, Math.ceil(tongMoi / MOI_TRANG));
+  const soTrang = tinhSoTrang(tongMoi, MOI_TRANG);
   const trang = Math.min(Math.max(1, Number((await searchParams).page) || 1), soTrang);
 
   const invitees = await db.user.findMany({

@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import { ArrowLeft, ArrowUpRight, ArrowDownRight, Coins } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { fmtCount } from '@/lib/utils';
+import { fmtCount, tinhSoTrang } from '@/lib/utils';
 import { POINTS_REASON_LABEL } from '@/lib/labels';
 import { Pagination } from '@/components/Pagination';
 
@@ -27,7 +27,7 @@ export default async function PointsPage({ searchParams }: { searchParams: Promi
     db.pointsLog.aggregate({ where: { userId, amount: { gt: 0 } }, _sum: { amount: true } }),
     db.pointsLog.aggregate({ where: { userId, amount: { lt: 0 } }, _sum: { amount: true } }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
 
   return (
     <div className="mx-auto max-w-3xl">

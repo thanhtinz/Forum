@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Search as SearchIcon } from 'lucide-react';
 import { GAME_SORTS, isGameSort, parseGameFilter, type GameCardData } from '@/lib/game';
 import { searchGames } from '@/lib/game-search';
-import { cn, fmtCount } from '@/lib/utils';
+import { cn, fmtCount, tinhSoTrang } from '@/lib/utils';
 import { GameCard } from '@/components/game/GameCard';
 import { GameSearchBox } from '@/components/game/GameSearchBox';
 import { Pagination } from '@/components/Pagination';
@@ -80,7 +80,7 @@ export default async function GameSearchPage({ searchParams }: {
         </div>
       )}
 
-      <Pagination page={page} totalPages={Math.ceil(total / PAGE_SIZE)} basePath={linkFor(sort)} />
+      <Pagination page={page} totalPages={tinhSoTrang(total, PAGE_SIZE)} basePath={linkFor(sort)} />
     </div>
   );
 }

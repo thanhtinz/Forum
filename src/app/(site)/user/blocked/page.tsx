@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { ShieldOff } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { fmtAgo } from '@/lib/utils';
+import { fmtAgo, tinhSoTrang } from '@/lib/utils';
 import { BlockButton } from '@/components/user/BlockButton';
 import { Pagination } from '@/components/Pagination';
 
@@ -36,7 +36,7 @@ export default async function BlockedPage({ searchParams }: {
     },
     }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
 
   return (
     <div className="space-y-4">

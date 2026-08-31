@@ -2,6 +2,7 @@ import type { Role } from '@prisma/client';
 import { db } from './db';
 import { ONLINE_WINDOW_MS } from './members';
 import { authorChipSelect, toAuthorChip, type AuthorChip } from './shop';
+import { tinhSoTrang } from '@/lib/utils';
 
 /**
  * "Ai đang online" — trang mà forum wap nào cũng có, kể cả chỗ người ta đang
@@ -78,7 +79,7 @@ export async function getOnline(
     db.user.count({ where }),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(matched / ONLINE_PER_PAGE));
+  const totalPages = tinhSoTrang(matched, ONLINE_PER_PAGE);
   const page = Math.min(Math.max(1, pageRaw), totalPages);
 
   const users = await db.user.findMany({

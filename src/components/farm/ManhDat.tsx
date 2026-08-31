@@ -7,7 +7,7 @@ import {
   NEN_CAO, NEN_DAI_CANH, NEN_RONG, O_DAT_TOI_DA, O_MOI_TRANG, TROI_DEM, TROI_NGAY,
   changCua, doToiTroi,
 } from '@/lib/farm-const';
-import { cn } from '@/lib/utils';
+import { cn, tinhSoTrang } from '@/lib/utils';
 import { AnhPixel } from './AnhPixel';
 import { ODat, ODatKhoa } from './ODat';
 
@@ -120,7 +120,7 @@ export function ManhDat({
    * Chia trang trên SỐ Ô ĐANG BÀY, không phải trên trần 40: người mới chơi có
    * bốn ô thì vẫn đúng một trang, không phải bốn trang rỗng đứng chờ.
    */
-  const soTrang = Math.max(1, Math.ceil(soHienRa / O_MOI_TRANG));
+  const soTrang = tinhSoTrang(soHienRa, O_MOI_TRANG);
   const trangAnToan = Math.min(Math.max(0, trang), soTrang - 1);
   const dau = trangAnToan * O_MOI_TRANG;
   const cuoi = Math.min(soHienRa, dau + O_MOI_TRANG);

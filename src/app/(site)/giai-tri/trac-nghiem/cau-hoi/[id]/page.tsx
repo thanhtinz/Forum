@@ -11,7 +11,7 @@ import { QuizBinhLuan } from '@/components/giaitri/QuizBinhLuan';
 import {
   QUIZ_BINH_LUAN_MOI_TRANG, QUIZ_NHAN, binhLuanCuaCau, cauHoiChiTiet, nguoiDaTraLoi, rutGon,
 } from '@/lib/quiz';
-import { cn } from '@/lib/utils';
+import { cn, tinhSoTrang } from '@/lib/utils';
 import type { AuthorChip } from '@/lib/shop';
 
 export const dynamic = 'force-dynamic';
@@ -57,7 +57,7 @@ export default async function CauHoiPage({ params, searchParams }: {
     cau.soLuot > 0 ? nguoiDaTraLoi(cau.id) : Promise.resolve({ dung: [], sai: [] }),
     binhLuanCuaCau(cau.id, { trang, xemDuocPhanAn: dieuHanh }),
   ]);
-  const soTrangBinhLuan = Math.ceil(binhLuan.tong / QUIZ_BINH_LUAN_MOI_TRANG);
+  const soTrangBinhLuan = tinhSoTrang(binhLuan.tong, QUIZ_BINH_LUAN_MOI_TRANG);
   const goc = `/giai-tri/trac-nghiem/cau-hoi/${cau.id}`;
 
   const duocBinhLuan = Boolean(userId) && (laTacGia || dieuHanh || cau.luot !== null);

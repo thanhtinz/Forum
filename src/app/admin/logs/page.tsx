@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { ScrollText, Trash2 } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin';
 import { db } from '@/lib/db';
-import { cn, fmtCount } from '@/lib/utils';
+import { cn, soDay, tinhSoTrang } from '@/lib/utils';
 import { AUDIT_GROUPS, actionLabel, actionTone } from '@/lib/audit';
 import { Pagination } from '@/components/Pagination';
 import { PruneLogsButton } from '@/components/admin/PruneLogsButton';
@@ -64,7 +64,7 @@ export default async function AdminLogsPage({ searchParams }: {
       take: 100,
     }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
 
   const qs = new URLSearchParams();
   if (group) qs.set('group', group);
@@ -80,7 +80,7 @@ export default async function AdminLogsPage({ searchParams }: {
           <h1 className="flex items-center gap-2 text-xl font-bold text-ink-900 dark:text-white">
             <ScrollText size={20} className="text-brand-500" /> Nhật ký quản trị
           </h1>
-          <p className="text-sm text-ink-500">{fmtCount(total)} hành động được ghi lại</p>
+          <p className="text-sm text-ink-500">{soDay(total)} hành động được ghi lại</p>
         </div>
         <PruneLogsButton />
       </div>

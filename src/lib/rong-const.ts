@@ -5,6 +5,8 @@
  * gọi được, và mọi con số cân bằng trò chơi nằm gọn một chỗ để còn chỉnh.
  */
 
+import { moTaThoiLuong } from '@/lib/utils';
+
 /** Thư mục ảnh lấy từ mã nguồn JohnCMS cũ. */
 export const ANH_RONG = '/hoai-niem/rong';
 
@@ -118,14 +120,9 @@ export function vuiHienGio(vui: number, tinhLuc: number, bayGio: number): number
   return Math.max(0, Math.min(100, Math.round(vui - gio * VUI_TUT_MOI_GIO)));
 }
 
-/** Còn bao lâu nữa, viết cho người đọc. */
+/** Còn bao lâu nữa, viết cho người đọc. Rồng không đếm giây, chỉ tính phút. */
 export function moTaConLai(ms: number): string {
-  if (ms <= 0) return 'xong rồi';
-  const phut = Math.ceil(ms / 60000);
-  if (phut < 60) return `${phut} phút`;
-  const gio = Math.floor(phut / 60);
-  const du = phut % 60;
-  return du === 0 ? `${gio} giờ` : `${gio} giờ ${du} phút`;
+  return moTaThoiLuong(ms, 'xong rồi');
 }
 
 export const TEN_TOI_DA = 24;

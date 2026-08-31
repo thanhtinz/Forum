@@ -4,6 +4,7 @@ import { requireSuperAdmin } from '@/lib/admin';
 import { Pagination } from '@/components/Pagination';
 import { ShopManager } from '@/components/admin/ShopManager';
 import { SHOP_PAGE_SIZE, type ShopItemView } from '@/lib/shop';
+import { tinhSoTrang } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Cửa hàng', robots: { index: false } };
@@ -46,7 +47,7 @@ export default async function AdminShopPage({ searchParams }: {
 
       <ShopManager items={items} />
 
-      <Pagination page={page} totalPages={Math.ceil(total / SHOP_PAGE_SIZE)} basePath="/admin/shop" />
+      <Pagination page={page} totalPages={tinhSoTrang(total, SHOP_PAGE_SIZE)} basePath="/admin/shop" />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { Download, Eye, FolderTree, Plus, RefreshCw, Search, Star } from 'lucide
 import { db } from '@/lib/db';
 import { requireSuperAdmin } from '@/lib/admin';
 import { GAME_STATUS_LABEL, assetUrl } from '@/lib/game';
-import { fmtCount } from '@/lib/utils';
+import { soDay, tinhSoTrang } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { refreshTrending, setGameStatus, toggleGameFlag } from './actions';
 
@@ -55,7 +55,7 @@ export default async function AdminGamesPage({ searchParams }: {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="zib-title text-xl">Quản lý game ({fmtCount(total)})</h1>
+        <h1 className="zib-title text-xl">Quản lý game ({soDay(total)})</h1>
         <div className="flex gap-2">
           <form action={refreshTrending}>
             <button type="submit" className="btn-outline !py-1.5 text-sm"><RefreshCw size={14} /> Tính lại trending</button>
@@ -118,8 +118,8 @@ export default async function AdminGamesPage({ searchParams }: {
                 <td className="p-3 text-ink-500">{g._count.versions}</td>
                 <td className="p-3">
                   <span className="flex flex-wrap gap-2 text-[11px] text-ink-400">
-                    <span className="flex items-center gap-1"><Eye size={11} />{fmtCount(g.viewCount)}</span>
-                    <span className="flex items-center gap-1"><Download size={11} />{fmtCount(g.downloadCount)}</span>
+                    <span className="flex items-center gap-1"><Eye size={11} />{soDay(g.viewCount)}</span>
+                    <span className="flex items-center gap-1"><Download size={11} />{soDay(g.downloadCount)}</span>
                     <span className="flex items-center gap-1"><Star size={11} />{g.ratingCount > 0 ? (g.ratingSum / g.ratingCount).toFixed(1) : '—'}</span>
                   </span>
                 </td>
@@ -141,7 +141,7 @@ export default async function AdminGamesPage({ searchParams }: {
         </table>
       </div>
 
-      <Pagination page={page} totalPages={Math.ceil(total / PAGE_SIZE)} basePath={qs ? `/admin/games?${qs}` : '/admin/games'} />
+      <Pagination page={page} totalPages={tinhSoTrang(total, PAGE_SIZE)} basePath={qs ? `/admin/games?${qs}` : '/admin/games'} />
     </div>
   );
 }

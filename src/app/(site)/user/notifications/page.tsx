@@ -6,7 +6,7 @@ import type { NotificationType, Prisma } from '@prisma/client';
 import { Bell, CheckCheck, Trash2, Settings } from 'lucide-react';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { cn } from '@/lib/utils';
+import { cn, tinhSoTrang } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { NotificationItem } from '@/components/user/NotificationItem';
 import { markAllRead, clearRead } from './actions';
@@ -46,7 +46,7 @@ export default async function NotificationsPage({ searchParams }: {
     db.notification.count({ where: { userId, read: true } }),
     db.notification.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
   const tabHref = (key: string) => (key === 'all' ? '/user/notifications' : `/user/notifications?tab=${key}`);
 
   return (

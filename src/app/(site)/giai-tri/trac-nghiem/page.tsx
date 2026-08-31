@@ -9,6 +9,7 @@ import {
   QUIZ_BAI_TOI_THIEU, QUIZ_COC_MAX, QUIZ_COC_MIN, QUIZ_MOI_TRANG,
   danhSachCauHoi, danhSachTheLoai,
 } from '@/lib/quiz';
+import { tinhSoTrang } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: 'Trắc nghiệm',
@@ -38,7 +39,7 @@ export default async function TracNghiemPage({ searchParams }: {
     danhSachCauHoi({ trang }),
     danhSachTheLoai(),
   ]);
-  const soTrang = Math.ceil(danh.tong / QUIZ_MOI_TRANG);
+  const soTrang = tinhSoTrang(danh.tong, QUIZ_MOI_TRANG);
 
   return (
     <div className="mx-auto max-w-2xl">

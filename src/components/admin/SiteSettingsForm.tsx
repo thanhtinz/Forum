@@ -33,7 +33,15 @@ export function SiteSettingsForm({ initial }: { initial: SiteSettings }) {
           <textarea name="description" defaultValue={initial.description} rows={2} className="input"
             placeholder="Mô tả ngắn cho công cụ tìm kiếm và khi chia sẻ link." />
         </label>
-        <label className="block sm:col-span-2">
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium">Hoa hồng nền tảng (%)</span>
+          <input name="hoaHongPhanTram" type="number" min={0} max={100} step={1}
+            defaultValue={initial.hoaHongPhanTram} className="input" />
+          <span className="mt-1 block text-xs text-ink-400">
+            Phần trang giữ lại mỗi lượt mở khối [hide=diem:N]; tác giả nhận phần còn lại.
+          </span>
+        </label>
+        <label className="block">
           <span className="mb-1 block text-sm font-medium">Dòng chân trang</span>
           <input name="footerText" defaultValue={initial.footerText} className="input" placeholder="Nova Platform. Diễn đàn và kho game." />
           <span className="mt-1 block text-xs text-ink-400">Năm bản quyền được thêm tự động phía trước.</span>

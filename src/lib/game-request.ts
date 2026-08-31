@@ -4,6 +4,7 @@ import {
   REQUEST_PAGE_SIZE, REQUEST_PER_DAY,
   type RequestItem, type RequestStatus,
 } from './game-request-const';
+import { tinhSoTrang } from '@/lib/utils';
 
 export * from './game-request-const';
 
@@ -70,7 +71,7 @@ export async function getGameRequests(opts: {
 
   return {
     total,
-    totalPages: Math.ceil(total / REQUEST_PAGE_SIZE),
+    totalPages: tinhSoTrang(total, REQUEST_PAGE_SIZE),
     items: rows.map((r) => ({
       id: r.id,
       title: r.title,

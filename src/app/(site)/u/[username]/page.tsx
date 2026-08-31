@@ -15,7 +15,7 @@ import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { threadExcerpt } from '@/lib/bbcode';
 import { Pagination } from '@/components/Pagination';
 import { FollowButton } from '@/components/user/FollowButton';
-import { cn, fmtCount } from '@/lib/utils';
+import { cn, fmtCount, tinhSoTrang } from '@/lib/utils';
 import { getLevelLook } from '@/lib/level';
 import { IconGlyph } from '@/components/IconGlyph';
 import { openConversation } from '@/app/(site)/user/messages/actions';
@@ -145,7 +145,7 @@ export default async function ProfilePage({ params, searchParams }: {
     : null;
   // Quản trị viên không chặn được — che nút cho khỏi bấm rồi mới báo lỗi.
   const canBlock = user.role !== 'ADMIN' && user.role !== 'MODERATOR';
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
   const rows: ThreadRowData[] = threads.map((t) => ({
     id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
     pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,

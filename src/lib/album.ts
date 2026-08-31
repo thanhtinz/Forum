@@ -4,6 +4,7 @@ import {
   ALBUM_PAGE_SIZE, PHOTO_PAGE_SIZE,
   type AlbumCard, type PhotoItem, type Privacy,
 } from './album-const';
+import { tinhSoTrang } from '@/lib/utils';
 
 export * from './album-const';
 
@@ -47,7 +48,7 @@ export async function getAlbums(ownerId: string, viewer: Viewer, page = 1): Prom
     }),
   ]);
 
-  return { items: rows, total, totalPages: Math.ceil(total / ALBUM_PAGE_SIZE) };
+  return { items: rows, total, totalPages: tinhSoTrang(total, ALBUM_PAGE_SIZE) };
 }
 
 /** Đếm album mà người này được xem — để hiện con số trên hồ sơ. */
@@ -107,6 +108,6 @@ export async function getAlbum(id: string, viewer: Viewer, page = 1): Promise<Al
     isOwner: viewer.id === album.ownerId,
     photos,
     page: Math.max(1, page),
-    totalPages: Math.max(1, Math.ceil(album.photoCount / PHOTO_PAGE_SIZE)),
+    totalPages: tinhSoTrang(album.photoCount, PHOTO_PAGE_SIZE),
   };
 }

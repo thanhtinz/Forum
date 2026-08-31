@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { db } from '@/lib/db';
-import { cn } from '@/lib/utils';
+import { cn, tinhSoTrang } from '@/lib/utils';
 import { Pagination } from '@/components/Pagination';
 import { ReportRowActions } from '@/components/admin/ReportRowActions';
 
@@ -49,7 +49,7 @@ export default async function AdminReportsPage({ searchParams }: { searchParams:
       },
     }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
 
   return (
     <div className="space-y-4">

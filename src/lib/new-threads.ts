@@ -3,6 +3,7 @@ import { db } from './db';
 import { authorChipSelect, toAuthorChip } from './shop';
 import { threadExcerpt } from './bbcode';
 import type { ThreadRowData } from '@/components/forum/ThreadRow';
+import { tinhSoTrang } from '@/lib/utils';
 
 /**
  * Trang "Chưa đọc" — gom mọi chủ đề có bài mới kể từ lần mình ghé.
@@ -98,7 +99,7 @@ export async function getNewThreads(
     Prisma.sql`SELECT COUNT(*)::bigint AS n ${loc}`,
   );
   const total = Number(dem?.n ?? 0);
-  const totalPages = Math.min(NEW_MAX_PAGES, Math.max(1, Math.ceil(total / NEW_PER_PAGE)));
+  const totalPages = Math.min(NEW_MAX_PAGES, tinhSoTrang(total, NEW_PER_PAGE));
   const page = Math.min(Math.max(1, pageRaw), totalPages);
 
   const ids = await db.$queryRaw<{ id: string }[]>(Prisma.sql`

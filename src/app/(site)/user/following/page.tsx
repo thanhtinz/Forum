@@ -8,6 +8,7 @@ import { ThreadRow, type ThreadRowData } from '@/components/forum/ThreadRow';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { threadExcerpt } from '@/lib/bbcode';
 import { Pagination } from '@/components/Pagination';
+import { tinhSoTrang } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'Chủ đề từ người bạn theo dõi' };
 export const dynamic = 'force-dynamic';
@@ -58,7 +59,7 @@ export default async function FollowingFeedPage({ searchParams }: { searchParams
       include: { author: { select: authorChipSelect }, forum: { select: { slug: true, name: true } } },
     }),
   ]);
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const totalPages = tinhSoTrang(total, PAGE_SIZE);
   const rows: ThreadRowData[] = threads.map((t) => ({
     id: t.id, title: t.title, createdAt: t.createdAt, lastReplyAt: t.lastReplyAt,
     pinned: t.pinned, locked: t.locked, solved: !!t.solvedReplyId, bountyPoints: t.bountyPoints,

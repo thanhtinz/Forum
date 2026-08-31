@@ -2,6 +2,7 @@ import { db } from './db';
 import { visiblePrivacies, type Viewer } from './album';
 import { threadExcerpt } from './bbcode';
 import { plainText, truncate } from './utils';
+import { tinhSoTrang } from '@/lib/utils';
 
 /**
  * Dòng hoạt động gần đây của một thành viên.
@@ -185,7 +186,7 @@ export async function getUserActivity(
 
   items.sort((a, b) => b.at.getTime() - a.at.getTime());
 
-  const totalPages = Math.min(ACTIVITY_MAX_PAGES, Math.max(1, Math.ceil(total / pageSize)));
+  const totalPages = Math.min(ACTIVITY_MAX_PAGES, tinhSoTrang(total, pageSize));
   return {
     items: items.slice((page - 1) * pageSize, page * pageSize),
     page,

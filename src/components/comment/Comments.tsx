@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { ReportButton } from '@/components/ReportButton';
 import { CommentModActions } from './CommentModActions';
-import { cn } from '@/lib/utils';
+import { cn, tinhSoTrang } from '@/lib/utils';
 import { CommentForm } from './CommentForm';
 import { CommentReply } from './CommentReply';
 import { CommentBody } from './CommentBody';
@@ -52,7 +52,7 @@ export async function Comments({ gameId, slug, loggedIn, page = 1 }: {
    * đi tiếp. Nay đếm tổng rồi cắt trang đàng hoàng.
    */
   const tong = await db.comment.count({ where });
-  const soTrang = Math.max(1, Math.ceil(tong / MOI_TRANG));
+  const soTrang = tinhSoTrang(tong, MOI_TRANG);
   const trang = Math.min(Math.max(1, page), soTrang);
 
   const roots = await db.comment.findMany({

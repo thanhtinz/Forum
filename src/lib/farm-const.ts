@@ -10,6 +10,8 @@
  * nhoè, mất hẳn cái chất pixel vốn là lý do giữ lại bộ ảnh này.
  */
 
+import { moTaThoiLuong } from '@/lib/utils';
+
 /** Thư mục gốc của bộ ảnh nông trại cũ. */
 export const FARM_ANH = '/hoai-niem/nongtrai';
 
@@ -345,14 +347,7 @@ export const DAT_TOI = '#624400';
 
 /** "2 giờ 5 phút", "45 phút", "30 giây" — đọc lướt là biết còn bao lâu. */
 export function moTaConLai(ms: number): string {
-  if (ms <= 0) return 'đã chín';
-  const giay = Math.ceil(ms / 1000);
-  if (giay < 60) return `${giay} giây`;
-  const phut = Math.ceil(giay / 60);
-  if (phut < 60) return `${phut} phút`;
-  const gio = Math.floor(phut / 60);
-  const du = phut % 60;
-  return du === 0 ? `${gio} giờ` : `${gio} giờ ${du} phút`;
+  return moTaThoiLuong(ms, 'đã chín', true);
 }
 
 /**

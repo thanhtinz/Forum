@@ -104,9 +104,11 @@ export default async function run(check) {
   // Người mua thiếu ngọc.
   await db.pokeNhanVat.update({ where: { id: B.nv.id }, data: { ngoc: 5 } });
   await pB.goto(`${BASE}/pokemon/cho`, { waitUntil: 'networkidle' });
-  await pB.waitForTimeout(900);
-  check('thiếu ngọc thì nút mua bị khoá',
-    await pB.locator(`form:has(input[value="${rao.id}"]) button:has-text("Mua")`).isDisabled());
+  // Chờ theo trạng thái chứ không ngủ cứng: trang phải dựng xong bằng số ngọc
+  // vừa hạ xuống 5 thì nút mới khoá, mà lúc chạy cả bộ kiểm thì lâu hơn 900ms.
+  const nutMua = pB.locator(`form:has(input[value="${rao.id}"]) button:has-text("Mua")`);
+  await doiToi(async () => (await nutMua.count()) > 0 && (await nutMua.isDisabled()));
+  check('thiếu ngọc thì nút mua bị khoá', await nutMua.isDisabled());
 
   await pB.evaluate(async ([base, id]) => {
     const fd = new FormData(); fd.set('rao', id);

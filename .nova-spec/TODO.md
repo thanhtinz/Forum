@@ -4,7 +4,7 @@ Bản này ghi **hiện trạng thật**, đã đối chiếu với mã và dữ
 ban đầu (P0–P16) đã xong và không còn ý nghĩa, nên gỡ đi — sản phẩm nay là diễn
 đàn + kho game tính bằng điểm, không còn blog, tiền thật hay VIP.
 
-Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **677/677**.
+Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **SOKIEM**.
 
 ---
 
@@ -12,25 +12,76 @@ Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **67
 
 Xếp theo mức đáng làm. Không cái nào đang gây lỗi cho người dùng.
 
-- [ ] **38 chỗ ngủ cứng còn lại trong bộ kiểm.** Đã đổi 34 chỗ sang `doiToi`;
-      số còn lại là những mục kiểm khẳng định KHÔNG có gì xảy ra, mà không chờ
-      được một việc không xảy ra — ngủ cứng ở đó mới đúng. Đừng "dọn nốt cho
-      đều".
+- [ ] **Những chỗ ngủ cứng còn lại trong bộ kiểm.** Số còn lại là những mục
+      kiểm khẳng định KHÔNG có gì xảy ra, mà không chờ được một việc không xảy
+      ra — ngủ cứng ở đó mới đúng. Đừng "dọn nốt cho đều".
 
-- [ ] **Hai hàm `moTaConLai` giống hệt nhau** ở `farm-const.ts` và
-      `rong-const.ts`, khác mỗi câu trả về khi hết giờ ("đã chín" / "xong
-      rồi"). Gộp lại thì phải truyền câu ấy vào, mà lúc đó hàm chung cũng chỉ
-      còn là chỗ chứa một phép chia — chưa chắc đáng.
+- [ ] **`moTaConLaiNgan` vẫn chép lại phép chia của `moTaThoiLuong`**
+      (`farm-const.ts`). Hai hàm `moTaConLai` đã gộp, riêng bản rút gọn còn
+      lệch mỗi cái đuôi ("11h58" thay cho "11 giờ 58 phút") nên chưa gộp.
 
-- [ ] **35 chỗ `Math.ceil(total / SIZE)` thiếu `Math.max(1, …)`.** Hiện KHÔNG
-      gây lỗi — `Pagination` đã tự ẩn khi `totalPages <= 1` — nên đây là chuyện
-      gọn gàng, không phải lỗi. Ghi lại để khỏi ai đó "phát hiện" lại lần nữa.
-
----
+- [ ] **Đơn vị của `sizeBytes` nhập tay.** Biểu mẫu file game bắt admin gõ số
+      byte; tiện hơn thì cho gõ "12 MB". Không phải lỗi.
 
 ## Đã xong trong đợt gần đây
 
 Ghi lại để khỏi làm lại, và để biết chỗ nào vừa đụng vào.
+
+**Vá lỗi tồn đọng toàn hệ thống (bảy đợt)** — dừng thêm tính năng, rà lại ba
+hướng: nợ kỹ thuật, phân quyền/tính đúng của lớp máy chủ, chỗ dở dang ở giao
+diện. Không có lỗ hổng phân quyền hay tiền tệ nghiêm trọng nào; thứ thật sự
+hỏng nằm chỗ khác.
+
+1. *Trang quản trị game xoá trắng dữ liệu.* `VersionForm` không nạp giá trị cũ
+   mà `upsertVersion` vẫn `update` bằng cả biểu mẫu trống — sửa một dòng version
+   là `pricePoints` về `null`, một bản game đang bán tự thành miễn phí.
+   `FileForm` còn tệ hơn: `upsert` theo khoá `versionId_type` nên chọn trùng cặp
+   là âm thầm đè bản ghi cũ, và ô `scanStatus` không có mục rỗng nên tệp đang
+   `QUARANTINED` bị đá về `PENDING` — vô tình cho tải lại. Nay mọi ô đều
+   *controlled*, và chỉ ghi trường nào biểu mẫu thật sự gửi lên. Bốn nút xoá
+   thêm bước hỏi lại. Thêm `58-sua-version-file-game` (18 mục).
+
+2. *Ba chỗ đua ghi.* `approveMember` / `respondInvite` đọc trạng thái rồi ghi
+   không điều kiện: hai tab cùng duyệt một đơn thì `memberCount` cộng hai lần,
+   sai vĩnh viễn. Nhận thưởng nhiệm vụ Pokémon ghi `exp` TUYỆT ĐỐI nên nuốt mất
+   exp của trận vừa thắng ở tab kia. Thêm `59-dua-ghi-clb-nhiem-vu`.
+
+3. *Sáu đường ghi không có trần nào.* `recordShare` / `recordGameView` là điểm
+   POST công khai mà `recomputeTrending` cân VIEW=1 SHARE=2 — một vòng lặp là
+   đẩy được game bất kỳ lên trang chủ. Cộng thêm tải ảnh, bài và bình luận câu
+   lạc bộ, bình luận trắc nghiệm, báo cáo.
+
+4. *Gỡ hẳn bộ sưu tập game.* Không một dòng mã nào ghi vào `GamesOnCollections`;
+   admin lập được, trang kho game quảng cáo "Xem tất cả", mà mọi bộ sưu tập
+   rỗng vĩnh viễn.
+
+5. *Cân bằng lại Đảo Pokémon.* Lãnh Thổ (bậc 7, mở ở cấp 18) là bản sao nguyên
+   xi bảng Núi Đá (bậc 3, cấp 6) nên lên được chiến trường thì gặp thú yếu hơn
+   cả khu bậc 4 và trả 2 vàng; Hang Huyền Thoại có thú 25.000 máu mà trả 7 vàng.
+   Giãn 15 khu gốc thành một đường tăng đều nối liền vào năm khu mới. Kèm gán bộ
+   chiêu theo hệ cho 150 con bậc 9–13 (trước đó cả 150 dùng chung MỘT bộ). Thêm
+   `60-can-bang-dao-pokemon` (11 mục).
+
+6. *Ba chỗ đúng/sai lẻ.* `authorize()` kéo cả hàng kể cả `passwordHash`; năm chỗ
+   nhận `//evil.com` làm đường dẫn nội bộ — một trong số đó là chuyển hướng mở
+   thật sự ở trang đăng nhập/đăng ký; `minRating` lọc SAU phân trang nên trang 2
+   trả mảng rỗng kèm `hasMore: true`.
+
+7. *Dọn nốt.* `fmtCount` rút gọn cả ở bảng quản trị (admin sửa điểm mà thấy
+   "1.5M"); hoa hồng 30% là hằng số cứng kèm dòng TODO, nay chỉnh được ở Cài đặt
+   chung; 43 chỗ tự tính số trang gom về `tinhSoTrang`; hai bản `moTaConLai` gộp
+   thành `moTaThoiLuong`; `isSafeNavUrl` nhận cả `//evil.com`; menu mặc định
+   thiếu Đảo Rồng. Thêm `61-hoa-hong-cau-hinh` (15 mục).
+
+**Kho game khoá theo phiên bản** — trước chỉ khoá được cả game; nay mỗi
+`GameVersion` có `pricePoints` riêng, mở độc lập qua `GameVersionUnlock`.
+
+**Khu vực diễn đàn cần huy hiệu** — chuyên mục đặt được điều kiện huy hiệu cho
+cả XEM lẫn ĐĂNG. Quyền nằm trong `where` chứ không lọc sau, và đã rà chín bề
+mặt có thể lộ tên bài (tìm kiếm, thẻ, hoạt động, chủ đề mới, sitemap…).
+
+**Triển khai Railway** — `railway.json`, `Dockerfile`, `.dockerignore` và tài
+liệu biến môi trường.
 
 **Bảo mật** — vá bốn lỗ hổng nặng: `purgeExpiredMessages` là endpoint công khai
 không kiểm gì; link tải game không ràng buộc vào người tải; khoá ký có giá trị

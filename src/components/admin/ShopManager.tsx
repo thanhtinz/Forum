@@ -9,7 +9,7 @@ import {
   isGradient, KIND_LABELS, SHOP_KINDS, SHOP_NAME_MAX, SHOP_DESC_MAX, SHOP_PRICE_MAX,
   type ShopItemView, type ShopKind,
 } from '@/lib/shop-const';
-import { fmtCount } from '@/lib/utils';
+import { soDay } from '@/lib/utils';
 
 export function ShopManager({ items }: { items: ShopItemView[] }) {
   const [editing, setEditing] = useState<ShopItemView | null>(null);
@@ -19,7 +19,7 @@ export function ShopManager({ items }: { items: ShopItemView[] }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm text-ink-500">{fmtCount(items.length)} món trên trang này</p>
+        <p className="text-sm text-ink-500">{soDay(items.length)} món trên trang này</p>
         <button type="button" onClick={() => { setAdding((v) => !v); setEditing(null); }}
           className="btn-primary !py-1.5 text-sm">
           {adding ? <><X size={15} /> Đóng</> : <><Plus size={15} /> Thêm món</>}
@@ -64,7 +64,7 @@ function Row({ item, onEdit }: { item: ShopItemView; onEdit: () => void }) {
           {/* `break-all`: giá trị của món có thể là cả một chuỗi CSS không dấu
               cách ("linear-gradient(90deg,#f43f5e,…)"), không cho ngắt thì nó
               đẩy rộng cả trang và điện thoại cuộn ngang được. */}
-          {fmtCount(item.pricePoints)} điểm · thứ tự {item.order} · <code className="break-all">{item.value}</code>
+          {soDay(item.pricePoints)} điểm · thứ tự {item.order} · <code className="break-all">{item.value}</code>
         </p>
       </div>
 

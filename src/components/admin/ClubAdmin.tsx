@@ -5,7 +5,7 @@ import { useActionState, useTransition } from 'react';
 import { Save, Coins, Trash2, Lock } from 'lucide-react';
 import { saveClubSettings, adminDeleteClub, type ClubSettingState } from '@/app/admin/actions';
 import { ActionForm } from '@/components/ActionForm';
-import { fmtCount } from '@/lib/utils';
+import { soDay } from '@/lib/utils';
 
 export interface AdminClubRow {
   id: string;
@@ -70,8 +70,8 @@ export function ClubAdmin({ createCost, clubs }: { createCost: number; clubs: Ad
                 <td className="px-4 py-2.5 text-ink-500">
                   {c.owner ? <Link href={`/u/${c.owner.username}`} className="hover:underline">{c.owner.name ?? c.owner.username}</Link> : '—'}
                 </td>
-                <td className="px-4 py-2.5 text-ink-500">{fmtCount(c.memberCount)}</td>
-                <td className="px-4 py-2.5 text-ink-500">{fmtCount(c.postCount)}</td>
+                <td className="px-4 py-2.5 text-ink-500">{soDay(c.memberCount)}</td>
+                <td className="px-4 py-2.5 text-ink-500">{soDay(c.postCount)}</td>
                 <td className="px-4 py-2.5 text-right">
                   <button type="button" title="Giải tán" disabled={busy} onClick={() => remove(c)}
                     className="grid size-8 place-items-center rounded-lg text-ink-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950/40">

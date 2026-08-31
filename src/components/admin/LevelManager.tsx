@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition, useActionState } from 'react';
 import { Plus, Pencil, Trash2, X, Download, MessageSquarePlus, Upload } from 'lucide-react';
 import { saveLevelRule, deleteLevelRule, type LevelState } from '@/app/admin/actions';
-import { fmtCount } from '@/lib/utils';
+import { soDay } from '@/lib/utils';
 import { ActionForm } from '@/components/ActionForm';
 
 export interface LevelRow {
@@ -62,7 +62,7 @@ function LevelRowView({ row, onEdit }: { row: LevelRow; onEdit: () => void }) {
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-sm font-semibold text-ink-900 dark:text-white">Cấp {row.level} · {row.name}</span>
           <span className="chip bg-brand-50 !py-0 text-[11px] text-brand-700 dark:bg-brand-950/40 dark:text-brand-300">
-            {fmtCount(row.expRequired)} EXP
+            {soDay(row.expRequired)} EXP
           </span>
         </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-500">
@@ -78,7 +78,7 @@ function LevelRowView({ row, onEdit }: { row: LevelRow; onEdit: () => void }) {
             <Upload size={12} /> {row.canUploadFile ? 'Được tải tệp lên' : 'Không được tải tệp lên'}
           </span>
           <span>·</span>
-          <span>{fmtCount(row.userCount)} thành viên</span>
+          <span>{soDay(row.userCount)} thành viên</span>
         </div>
       </div>
 

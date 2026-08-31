@@ -15,8 +15,8 @@ import {
   DAU_CAP_MAX, DAU_CAP_MIN, DAU_EXP, DAU_HAN_MS, DAU_VANG, NGOC_MOI_DA, NHIEM_VU,
   O_TRANG_BI, congTrangBi, tenLoaiDo, timHuyenTinh,
   DIEM_DOI_QUA, KHU_CHIEN_TRUONG, QUA_LANH_THO,
-  boThu, canVaoKhu, capTheoExp, gymDuocVao, laGioVang, nacTienHoaMoi, satThuongDau,
-  timKhu, tinhSatThuong,
+  boThu, canVaoKhu, capTheoExp, gymDuocVao, heRaChieu, laGioVang, nacTienHoaMoi, satThuongDau,
+  tenHe, timKhu, tinhSatThuong,
   chuoiDiemDanh, dauNgayVN, quaDiemDanh,
 } from '@/lib/pokemon-const';
 import { chotDauQuaHan, traThuong } from '@/lib/pokemon-dau';
@@ -246,8 +246,12 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
       const them = congTrangBi(dangMac);
 
       const chieu = [toi.c1, toi.c2, toi.c3, toi.c4][so - 1]! + them.cong;
+      const tenChieu = toi.chieu[so - 1] ?? `Chiêu ${so}`;
+      // Hệ của CHIÊU quyết định phần sát thương gây ra; hệ của CON vẫn quyết
+      // định phần phải chịu. Chiêu nào tra không ra hệ thì lấy hệ của con.
+      const heRa = heRaChieu(tenChieu, toi.he);
       const { gay, chiu } = tinhSatThuong(
-        chieu, boThu(toi) + them.thu, toi.he, tran.cong, tran.thu, tran.he,
+        chieu, boThu(toi) + them.thu, toi.he, tran.cong, tran.thu, tran.he, heRa,
       );
 
       const mauDich = Math.max(0, tran.mau - gay);
@@ -263,8 +267,7 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
 
       await tx.pokeThu.update({ where: { id: toi.id }, data: { mau: mauToi } });
 
-      const tenChieu = toi.chieu[so - 1] ?? `Chiêu ${so}`;
-      let ke = `${toi.ten} dùng ${tenChieu}, ${tran.ten} mất ${gay} máu.`;
+      let ke = `${toi.ten} dùng ${tenChieu} (hệ ${tenHe(heRa)}), ${tran.ten} mất ${gay} máu.`;
       if (gay === 0) ke = `${tran.ten} miễn nhiễm — ${tenChieu} không ăn thua gì.`;
 
       // ── Thắng ─────────────────────────────────────────────────────────

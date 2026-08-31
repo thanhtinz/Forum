@@ -5,7 +5,9 @@ import { Loader2, Lock, Search } from 'lucide-react';
 import {
   boChay, doiKhu, nemCau, raChieu, timThu, uongThuoc, type PokeState,
 } from '@/app/(site)/pokemon/actions';
-import { CO_HOI_BAT, boThu, expChoCap, heSoHe, tenHe, tinhSatThuong } from '@/lib/pokemon-const';
+import {
+  CO_HOI_BAT, boThu, expChoCap, heRaChieu, heSoHe, tenHe, tinhSatThuong,
+} from '@/lib/pokemon-const';
 import { bienCanh, canhKhu } from '@/lib/pokemon-giao-dien';
 import { cn } from '@/lib/utils';
 import { HuyHieuHe, OTaiNguyen, ThanhMau, TrenBe } from './ThePoke';
@@ -223,7 +225,9 @@ function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi }: {
 
   // Xem trước hệ số hệ: chính là thứ quyết định nên ra chiêu hay nên bỏ chạy,
   // mà bản gốc chẳng nói gì cả — người chơi phải tự đoán qua từng trận.
-  const [nGay, nChiu] = heSoHe(toi.he, tran.he);
+  // Phần CHỊU theo hệ của con; phần GÂY nay theo hệ của từng chiêu nên hiện
+  // ngay trên từng nút chứ không còn một con số chung cho cả bốn.
+  const nChiu = heSoHe(toi.he, tran.he)[1];
   // Cộng cả trang bị đang mặc vào bản xem trước. Máy chủ vẫn cộng ở `raChieu`;
   // trước đây chỗ này quên nên mặc Ma Kiếm +500 mà nút vẫn báo con số như lúc
   // tay không — người chơi tưởng trang bị vô dụng.
@@ -253,14 +257,11 @@ function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi }: {
 
       <div className="p-4">
         <p className="text-center text-xs opacity-70">
-          {khu.ten} · {tenHe(toi.he)} đánh {tenHe(tran.he)}:{' '}
-          <b className={cn(nGay > 1 ? 'text-emerald-600' : nGay < 1 ? 'text-rose-600' : '')}>
-            {nGay === 0 ? 'vô hiệu' : `sát thương ×${nGay}`}
-          </b>
-          {' · '}
+          {khu.ten} · {tenHe(toi.he)} gặp {tenHe(tran.he)}:{' '}
           <b className={cn(nChiu > 1 ? 'text-rose-600' : nChiu < 1 ? 'text-emerald-600' : '')}>
             chịu ×{nChiu}
           </b>
+          {' · sát thương tuỳ hệ của từng chiêu, xem ngay trên nút.'}
         </p>
 
         {(danh.ke ?? tran.ke) && !danh.error && (
@@ -284,15 +285,27 @@ function ManDanh({ tran, toi, coCau, khu, thuoc, boTrangBi }: {
           <p className="label mb-2">Ra chiêu</p>
           <div className="grid grid-cols-2 gap-2">
             {[0, 1, 2, 3].map((i) => {
+              const ten = toi.chieu[i] || `Chiêu ${i + 1}`;
+              const heRa = heRaChieu(ten, toi.he);
+              const nGay = heSoHe(heRa, tran.he)[0];
               const { gay } = tinhSatThuong(
-                toi.c[i]! + boTrangBi.cong, boThuToi, toi.he, tran.cong, tran.thu, tran.he);
+                toi.c[i]! + boTrangBi.cong, boThuToi, toi.he, tran.cong, tran.thu, tran.he, heRa);
               return (
                 <button key={i} type="submit" name="chieu" value={i + 1} disabled={ban}
-                  className="dao-vien rounded-xl border-2 p-2.5 text-left transition-colors hover:bg-black/5 disabled:opacity-60 dark:hover:bg-white/5">
-                  <span className="block truncate text-sm font-bold">
-                    {toi.chieu[i] || `Chiêu ${i + 1}`}
+                  className={cn(
+                    'dao-vien rounded-xl border-2 p-2.5 text-left transition-colors hover:bg-black/5 disabled:opacity-60 dark:hover:bg-white/5',
+                    // Chiêu khắc hệ viền xanh, chiêu bị kháng viền đỏ: bốn nút
+                    // nay khác nhau thật nên phải nhìn ra ngay cái nào đáng bấm.
+                    nGay > 1 && 'border-emerald-400', nGay < 1 && 'border-rose-300',
+                  )}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="min-w-0 flex-1 truncate text-sm font-bold">{ten}</span>
+                    <HuyHieuHe he={heRa} />
                   </span>
-                  <span className="text-[11px] opacity-60">gây khoảng {gay.toLocaleString('vi')} máu</span>
+                  <span className="text-[11px] opacity-60">
+                    gây khoảng {gay.toLocaleString('vi')} máu
+                    {nGay !== 1 && (nGay === 0 ? ' · vô hiệu' : ` · ×${nGay}`)}
+                  </span>
                 </button>
               );
             })}

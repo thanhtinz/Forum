@@ -80,6 +80,94 @@ export const KHAC_HE: Record<number, Record<number, readonly [number, number]>> 
   16: { 7: [0.5, 2], 11: [2, 0.5], 14: [2, 0.5], 17: [0.5, 1] },
   17: { 2: [0.5, 2], 3: [0.5, 2], 4: [0.5, 2], 6: [2, 0.5], 13: [2, 0.5] },};
 
+/**
+ * Hệ của TỪNG CHIÊU, tra theo tên chiêu.
+ *
+ * Bốn chiêu của một con thú trong bản gốc chỉ là bốn con số sát thương, mà
+ * với thú của người chơi thì bốn số ấy LUÔN BẰNG NHAU: khởi đầu 10 cả bốn,
+ * mỗi lần dùng đá tiến cấp cộng 100 vào cả bốn. Nghĩa là suốt cả game, chọn
+ * chiêu nào cũng y hệt nhau — bảng chiêu chỉ là bốn cái nút giống nhau, và
+ * mười bảy hệ chỉ ăn thua ở hệ của CON, thứ người chơi không đổi được.
+ *
+ * Nay hệ đọc từ tên chiêu, nên đánh Sứa Lam hệ Nước thì chọn THUNDERBOLT chứ
+ * không chọn TACKLE. Đây là chỗ khiến trận đánh có quyết định thật.
+ *
+ * Chiêu nào tra không ra — bản gốc có mấy tên gõ nhầm ("DFSF", "SFSDF",
+ * "PHOTOSHOP STRIKE") — thì trả 0, và chỗ gọi hiểu là "dùng hệ của con thú",
+ * đúng như nếp cũ. Không đoán bừa.
+ */
+const HE_CHIEU: Readonly<Record<string, number>> = {
+  // Thường
+  ATTACK: 1, BIND: 1, COVET: 1, ENDEAVOR: 1, GROWL: 1, HARDEN: 1,
+  'HELPING HAND': 1, 'HYPER FANG': 1, 'HYPER VOICE': 1, 'LAST RESORT': 1,
+  LEER: 1, 'QUICK ATTACK': 1, RAGE: 1, RETURN: 1, SAFEGUARD: 1,
+  'SCARY FACE': 1, SMOKESCREEN: 1, SNORE: 1, SONICBOOM: 1, TACKLE: 1, UPROAR: 1,
+  // Lửa
+  EMBER: 2, 'FIRE BLAST': 2, 'FIRE FANG': 2, 'FIRE SPIN': 2, 'FLAME BURST': 2,
+  'FLAME CHARGE': 2, FLAMETHROWER: 2, 'HEAT WAVE': 2, INFERNO: 2, OVERHEAT: 2,
+  'SEARING SHOT': 2, 'SUNNY DAY': 2,
+  // Nước
+  'AQUA TAIL': 3, BRINE: 3, BUBBLE: 3, BUBBLEBEAM: 3, DIVE: 3, 'HYDRO PUMP': 3,
+  'MUDDY WATER': 3, 'RAIN DANCE': 3, SURF: 3, 'WATER GUN': 3, 'WATER PULSE': 3,
+  WATERFALL: 3, WHIRLPOOL: 3,
+  // Điện. "SHOCK UAVE" là "SHOCK WAVE" gõ nhầm trong bản gốc.
+  CHARGE: 4, ELECTROWEB: 4, 'FUSION BOLT': 4, 'SHOCK WAVE': 4, 'SHOCK UAVE': 4,
+  SPARK: 4, TERAVOLT: 4, THUNDER: 4, THUNDERBOLT: 4, 'VOLT TACKLE': 4,
+  // Cỏ. "SOLARBEAN" là "SOLARBEAM" gõ nhầm.
+  ABSORB: 5, AROMATHERAPY: 5, 'BULLET SEED': 5, 'ENERGY BALL': 5, 'GIGA DRAIN': 5,
+  'LEECH SEED': 5, 'MAGICAL LEAF': 5, 'MEGA DRAIN': 5, 'RAZOR LEAF': 5,
+  SOLARBEAM: 5, SOLARBEAN: 5, 'VINE WHIP': 5,
+  // Băng
+  BLIZZARD: 6, 'ICE BALL': 6, 'ICICLE SPEAR': 6, 'POWDER SNOW': 6,
+  // Giác Đấu
+  'BRICK BREAK': 7, 'BULK UP': 7, 'FORCE PALM': 7, 'HI JUMP KICK': 7,
+  'JUMP KICK': 7, 'KARATE CHOP': 7, 'LOW KICK': 7, REVENGE: 7, REVERSAL: 7,
+  'ROLLING KICK': 7, 'VITAL THROW': 7,
+  // Độc. "POSONPOWDER" là "POISONPOWDER" gõ nhầm.
+  'GASTRO ACID': 8, 'POISON STING': 8, POSONPOWDER: 8, POISONPOWDER: 8, TOXIC: 8,
+  // Đất
+  BULLDOZE: 9, DIG: 9, 'EARTH POWER': 9, EARTHQUAKE: 9, 'MUD SHOT': 9,
+  'MUD-SLAP': 9, 'SAND ATTACK': 9, 'SAND-ATTACK': 9, 'SAND TOMB': 9,
+  // Bay
+  'AERIAL ACE': 10, BOUNCE: 10, FLY: 10, GUST: 10, ROOST: 10, 'WING ATTACK': 10,
+  // Siêu Linh
+  'CALM MIND': 11, CONFUSION: 11, 'FUTURE SIGHT': 11, GRAVITY: 11,
+  'MAGIC COAT': 11, PSYCHIC: 11, 'PSYCHO CUT': 11, REFLECT: 11, REST: 11,
+  'SKILL SWAP': 11, 'ZEN HEADBUTT': 11,
+  // Bọ. "MEGAHORM" là "MEGAHORN" gõ nhầm.
+  'BUG BITE': 12, MEGAHORM: 12, MEGAHORN: 12, 'STRING SHOT': 12,
+  // Đá
+  'ROCK BLAST': 13, 'ROCK SLIDE': 13, 'ROCK THROW': 13, 'SUPER ROCK THROW': 13,
+  SANDSTORM: 13, 'STONE EDGE': 13,
+  // Ma
+  ASTONISH: 14, CURSE: 14, HEX: 14, LICK: 14, 'NIGHT SHADE': 14,
+  'SHADOW BALL': 14, SPITE: 14,
+  // Rồng
+  'DRACO METEOR': 15, 'DRAGON DANCE': 15, 'DRAGON PULSE': 15, 'DRAGON RAGE': 15,
+  // Bóng Tối. "FOUL" là "FOUL PLAY" bị cắt cụt.
+  ASSURANCE: 16, BITE: 16, 'DARK PULSE': 16, 'FAINT ATTACK': 16, FOUL: 16,
+  'FOUL PLAY': 16, 'KNOCK OFF': 16, PURSUIT: 16,
+  // Thép
+  'IRON DEFENSE': 17, 'IRON HEAD': 17,
+};
+
+/**
+ * Hệ của một chiêu; 0 nghĩa là không tra ra, chỗ gọi dùng hệ của con thú.
+ *
+ * Chuẩn hoá trước khi tra: bản gốc có "ROCK THROW 2", "ROCK THROW  3",
+ * "VOLT TACKLE 1" — cùng một chiêu bị đánh số để nhét vừa bốn ô.
+ */
+export function heCuaChieu(ten: string | null | undefined): number {
+  if (!ten) return 0;
+  const chuan = ten.trim().toUpperCase().replace(/\s+/g, ' ').replace(/ \d+$/, '');
+  return HE_CHIEU[chuan] ?? 0;
+}
+
+/** Hệ dùng để tính sát thương của một chiêu: của chiêu, không tra ra thì của con thú. */
+export function heRaChieu(tenChieu: string | null | undefined, heThu: number): number {
+  return heCuaChieu(tenChieu) || heThu;
+}
+
 /** Hệ số [gây, chịu] khi hệ `minh` gặp hệ `dich`. */
 export function heSoHe(minh: number, dich: number): readonly [number, number] {
   return KHAC_HE[minh]?.[dich] ?? [1, 1];
@@ -122,12 +210,19 @@ export const SK_MOI_TRAN = 2;
  * không bao giờ có lượt đánh không mất máu nào.
  *
  * Phần nhân theo hệ là của `he.php`, xem chú thích ở `KHAC_HE`.
+ *
+ * HAI HỆ SỐ NAY TÁCH RA. Phần MÌNH GÂY nhân theo hệ của CHIÊU đang ra
+ * (`heRa`), phần MÌNH CHỊU vẫn nhân theo hệ của CON THÚ — đòn của địch nhằm
+ * vào con chứ không nhằm vào chiêu. Bỏ `heRa` trống thì nó lấy `heMinh`, tức
+ * đúng y cách cũ, nên mọi chỗ gọi cũ không đổi kết quả.
  */
 export function tinhSatThuong(
   chieu: number, boThu: number, heMinh: number,
   congDich: number, thuDich: number, heDich: number,
+  heRa: number = heMinh,
 ): { gay: number; chiu: number } {
-  const [nGay, nChiu] = heSoHe(heMinh, heDich);
+  const nGay = heSoHe(heRa || heMinh, heDich)[0];
+  const nChiu = heSoHe(heMinh, heDich)[1];
   const gay = Math.floor(Math.max(1, chieu - thuDich) * nGay);
   const chiu = Math.floor(Math.max(1, congDich - boThu) * nChiu);
   // Hệ số 0 nghĩa là miễn nhiễm hoàn toàn — giữ đúng 0, không kéo lên 1.

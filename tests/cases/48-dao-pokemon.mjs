@@ -112,16 +112,24 @@ export default async function run(check) {
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(900);
 
-  // Hệ số khắc hệ đọc từ chính dòng chữ trang đang hiện: nếu bảng hệ của máy
-  // chủ và dòng chữ nói hai đằng thì phép so bên dưới sẽ đỏ.
-  const dongHe = await p.locator('text=/sát thương/').first().innerText();
+  // Hệ số khắc hệ đọc từ chính chữ trang đang hiện: nếu bảng hệ của máy chủ và
+  // dòng chữ nói hai đằng thì phép so bên dưới sẽ đỏ.
+  //
+  // Phần CHỊU là một con số chung cho cả trận (theo hệ của con thú), còn phần
+  // GÂY nay tuỳ HỆ CỦA TỪNG CHIÊU nên nằm trên chính cái nút sắp bấm.
+  const dongChiu = await p.locator('text=/chịu ×/').first().innerText();
+  const nutDau = p.locator('form button[name="chieu"]').first();
+  const chuNut = await nutDau.innerText();
   const heSo = [
-    /vô hiệu/.test(dongHe) ? 0 : Number(dongHe.match(/sát thương ×([\d.]+)/)?.[1] ?? 1),
-    Number(dongHe.match(/chịu ×([\d.]+)/)?.[1] ?? 1),
+    /vô hiệu/.test(chuNut) ? 0 : Number(chuNut.match(/×([\d.]+)/)?.[1] ?? 1),
+    Number(dongChiu.match(/chịu ×([\d.]+)/)?.[1] ?? 1),
   ];
-  check('trang có nói rõ hệ số khắc hệ', dongHe.includes('×') || dongHe.includes('vô hiệu'), dongHe);
+  check('trang có nói rõ hệ số phải chịu', dongChiu.includes('chịu ×'), dongChiu);
+  check('mỗi nút chiêu nói rõ hệ của chiêu ấy',
+    (await p.locator('form button[name="chieu"] img[src^="/hoai-niem/pokemon/he/"]').count()) === 4,
+    String(await p.locator('form button[name="chieu"] img[src^="/hoai-niem/pokemon/he/"]').count()));
 
-  await p.locator('form button[name="chieu"]').first().click();
+  await nutDau.click();
   await doiToi(async () => {
     const t = await db.pokeTran.findUnique({ where: { nhanVatId: nv0.id } });
     return !!t && t.mau < tranD.mau;

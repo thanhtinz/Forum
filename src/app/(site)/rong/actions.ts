@@ -11,7 +11,7 @@ import { bocRongNgauNhien, danhNhau } from '@/lib/rong';
 import {
   AN_CHO_MS, AP_MS, CHOI_CHO_MS, CHUONG_TOI_DA, DAU_MOI_NGAY, EXP_MOI_BUA,
   EXP_MOI_LAN_CHOI, GIA_AN, GIA_NO_NGAY, GIA_TRUNG, PHI_DAU, THUONG_THANG,
-  VUI_MOI_LAN, CAP_TOI_DA, chiSo, expCanDe, loiTenRong, tenRong, vuiHienGio,
+  VUI_MOI_LAN, CAP_TOI_DA, chiSo, dauNgayVN, expCanDe, loiTenRong, tenRong, vuiHienGio,
 } from '@/lib/rong-const';
 
 /**
@@ -48,18 +48,12 @@ async function nguoiNuoi(): Promise<{ userId: string } | { error: string }> {
 }
 
 function lamMoi(): void {
-  revalidatePath('/rong');
+  revalidatePath('/rong', 'layout');
 }
 
 function docId(v: FormDataEntryValue | null): string | null {
   const s = String(v ?? '').trim();
   return s.length > 0 && s.length < 40 ? s : null;
-}
-
-/** Mốc 00:00 giờ Việt Nam của hôm nay. */
-function dauNgayVN(now: number): Date {
-  const lech = 7 * 3600 * 1000;
-  return new Date(Math.floor((now + lech) / 86_400_000) * 86_400_000 - lech);
 }
 
 // ─────────────────────────── Mua trứng ───────────────────────────

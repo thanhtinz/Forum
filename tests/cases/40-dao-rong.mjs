@@ -35,11 +35,14 @@ export default async function run(check) {
     await db.user.updateMany({ where: { id: { in: [a.id, b.id] } }, data: { points: 3000 } });
 
     const p = await openPage('minhdev');
-    const mo = async () => {
-      await p.goto(`${BASE}/rong`, { waitUntil: 'networkidle' });
+    // Đảo tách làm bốn lối đi, nên mở trang phải nói rõ lối nào: chuồng ở
+    // `/rong`, mua và nở trứng ở `/rong/ap-trung`, thách đấu ở
+    // `/rong/dau-truong`.
+    const mo = async (duong = '/rong') => {
+      await p.goto(`${BASE}${duong}`, { waitUntil: 'networkidle' });
       await p.waitForTimeout(500);
     };
-    await mo();
+    await mo('/rong/ap-trung');
 
     // ── Mua trứng ───────────────────────────────────────────────────────
     let truoc = await diem(a.id);
@@ -75,7 +78,7 @@ export default async function run(check) {
     check('rồng mới nở ở cấp 1', daNo?.cap === 1, `cấp ${daNo?.cap}`);
 
     // ── Cho ăn ──────────────────────────────────────────────────────────
-    await mo();
+    await mo('/rong');
     truoc = await diem(a.id);
     await p.locator('button:has-text("Ăn ·")').click();
     await doiToi(async () => (await db.rong.findUnique({ where: { id: trung.id }, select: { exp: true } }))?.exp > 0);
@@ -115,11 +118,11 @@ export default async function run(check) {
       select: { id: true },
     });
 
-    await mo();
+    await mo('/rong');
     await p.locator('button:has-text("Cử ra trận")').click();
     await doiToi(async () => (await db.rong.findUnique({ where: { id: trung.id }, select: { raTran: true } }))?.raTran === true);
 
-    await mo();
+    await mo('/rong/dau-truong');
     const thayDoiThu = (await p.locator('main').innerText()).includes(`${KHOA} doi thu`);
     check('thấy rồng của người khác ở đấu trường', thayDoiThu);
 
@@ -200,7 +203,7 @@ export default async function run(check) {
     const khach = await openPage(null);
     await khach.goto(`${BASE}/rong`, { waitUntil: 'networkidle' });
     const chuKhach = await khach.locator('main').innerText();
-    check('khách vãng lai không thấy chuồng', !chuKhach.includes('Mua trứng'));
+    check('khách vãng lai không thấy chuồng', !chuKhach.includes('Chuồng rồng'));
     check('khách vãng lai được mời đăng nhập', chuKhach.includes('Đăng nhập'));
   } finally {
     await wipe();

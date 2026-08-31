@@ -1,7 +1,7 @@
 import { db } from './db';
 import {
   CHUONG_TOI_DA, DAU_MOI_NGAY, SO_HIEP, SO_LOAI, SO_MAU,
-  type ChiSo, chiSo, vuiHienGio,
+  type ChiSo, chiSo, dauNgayVN, vuiHienGio,
 } from './rong-const';
 
 /**
@@ -63,32 +63,124 @@ export function doiRong(r: HangRong, now: number, anChoMs: number, choiChoMs: nu
   };
 }
 
-export interface DaoRong {
+/**
+ * Bốn hàm đọc, mỗi trang một hàm.
+ *
+ * Trước đây chỉ có `xemDao()` lấy MỌI thứ cho MỘT trang: đàn rồng, bộ sưu tập
+ * 54 ô, số trận còn lại, số điểm. Nay đảo tách làm sáu trang nên trang chuồng
+ * không việc gì phải quét bảng sưu tầm, còn trang sưu tầm không cần biết hôm
+ * nay còn mấy trận. Gọi chung một hàm to thì mỗi lần mở trang là ba câu truy
+ * vấn thừa.
+ */
+
+export interface ChuongRong {
   now: number;
-  diem: number;
+  /** CHỈ rồng đã nở. Trứng nằm ở trang ấp trứng. */
   dan: RongXem[];
-  /** Số con đã sưu tầm được, tính theo cặp loài+màu chứ không theo số con nuôi. */
-  daCo: number;
-  /** Cặp `loài-màu` đã từng có, để tô sáng trong bộ sưu tập. */
-  boSuuTap: string[];
-  conLaiHomNay: number;
+  /** Số trứng đang ấp — để nhắc sang trang bên kia. */
+  soTrung: number;
+  /** Chỗ trống còn lại, tính cả trứng lẫn rồng. */
+  conCho: number;
 }
 
-/** Mốc 00:00 giờ Việt Nam của hôm nay, tính theo UTC. */
-function dauNgayVN(now: number): Date {
-  const lech = 7 * 3600 * 1000;
-  return new Date(Math.floor((now + lech) / 86_400_000) * 86_400_000 - lech);
-}
-
-export async function xemDao(userId: string, anChoMs: number, choiChoMs: number): Promise<DaoRong> {
+export async function xemChuong(userId: string, anChoMs: number, choiChoMs: number): Promise<ChuongRong> {
   const now = Date.now();
-  const [me, dan, daDau] = await Promise.all([
-    db.user.findUnique({ where: { id: userId }, select: { points: true } }),
-    db.rong.findMany({
-      where: { userId },
-      orderBy: [{ noAt: 'asc' }, { createdAt: 'asc' }],
-      take: CHUONG_TOI_DA,
-      select: chonRong,
+  const tatCa = await db.rong.findMany({
+    where: { userId },
+    orderBy: [{ raTran: 'desc' }, { createdAt: 'asc' }],
+    take: CHUONG_TOI_DA,
+    select: chonRong,
+  });
+
+  const daNo = tatCa.filter((r) => r.noAt !== null);
+  return {
+    now,
+    dan: daNo.map((r) => doiRong(r, now, anChoMs, choiChoMs)),
+    soTrung: tatCa.length - daNo.length,
+    conCho: Math.max(0, CHUONG_TOI_DA - tatCa.length),
+  };
+}
+
+export interface TrungXem {
+  id: string;
+  apXongLuc: number;
+  noDuoc: boolean;
+}
+
+export interface OApTrung {
+  now: number;
+  trung: TrungXem[];
+  conCho: number;
+  /** Số rồng đã nở — trang ấp trứng cần biết để bày phần lai tạo. */
+  soRong: number;
+}
+
+export async function xemTrung(userId: string): Promise<OApTrung> {
+  const now = Date.now();
+  const tatCa = await db.rong.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'asc' },
+    take: CHUONG_TOI_DA,
+    select: { id: true, apXongAt: true, noAt: true },
+  });
+
+  const trung = tatCa.filter((r) => r.noAt === null);
+  return {
+    now,
+    trung: trung.map((r) => ({
+      id: r.id,
+      apXongLuc: r.apXongAt.getTime(),
+      noDuoc: now >= r.apXongAt.getTime(),
+    })),
+    conCho: Math.max(0, CHUONG_TOI_DA - tatCa.length),
+    soRong: tatCa.length - trung.length,
+  };
+}
+
+export interface SuuTam {
+  /** Số cặp loài+màu đã từng nở. */
+  daCo: number;
+  /** Cặp `loài-màu` đã từng có, để tô sáng trong sổ. */
+  boSuuTap: string[];
+}
+
+/**
+ * Sổ sưu tầm tính trên MỌI con từng nở, kể cả con đã thả — đã từng có thì coi
+ * như đã sưu tầm được.
+ */
+export async function xemSuuTam(userId: string): Promise<SuuTam> {
+  const tung = await db.rong.findMany({
+    where: { userId, noAt: { not: null } },
+    distinct: ['loai', 'mau'],
+    take: SO_LOAI * SO_MAU,
+    select: { loai: true, mau: true },
+  });
+  return { daCo: tung.length, boSuuTap: tung.map((x) => `${x.loai}-${x.mau}`) };
+}
+
+export interface RongRaTran {
+  id: string;
+  loai: number;
+  mau: number;
+  ten: string | null;
+  cap: number;
+  suc: ChiSo;
+}
+
+export interface SanDau {
+  now: number;
+  /** Con đang được cử ra trận; chưa cử con nào thì null. */
+  raTran: RongRaTran | null;
+  conLaiHomNay: number;
+  doiThu: DoiThu[];
+}
+
+export async function xemSanDau(userId: string): Promise<SanDau> {
+  const now = Date.now();
+  const [cua, daDau] = await Promise.all([
+    db.rong.findFirst({
+      where: { userId, raTran: true, noAt: { not: null } },
+      select: { id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true },
     }),
     // Cùng nguồn với chỗ chặn ở server action — xem chú thích tại `thachDau`.
     // Đếm trên `RongTran` thì con số in ra trang cũng nói dối theo mỗi lần có
@@ -98,22 +190,17 @@ export async function xemDao(userId: string, anChoMs: number, choiChoMs: number)
     }),
   ]);
 
-  // Bộ sưu tập tính trên MỌI con từng nở, kể cả con đã không còn nuôi nữa —
-  // đã từng có thì coi như đã sưu tầm được.
-  const tung = await db.rong.findMany({
-    where: { userId, noAt: { not: null } },
-    distinct: ['loai', 'mau'],
-    take: SO_LOAI * SO_MAU,
-    select: { loai: true, mau: true },
-  });
-
   return {
     now,
-    diem: me?.points ?? 0,
-    dan: dan.map((r) => doiRong(r, now, anChoMs, choiChoMs)),
-    daCo: tung.length,
-    boSuuTap: tung.map((x) => `${x.loai}-${x.mau}`),
+    raTran: cua
+      ? {
+        id: cua.id, loai: cua.loai, mau: cua.mau, ten: cua.ten, cap: cua.cap,
+        suc: chiSo({ loai: cua.loai, cap: cua.cap, vui: vuiHienGio(cua.vui, cua.vuiTinhAt.getTime(), now) }),
+      }
+      : null,
     conLaiHomNay: Math.max(0, DAU_MOI_NGAY - daDau),
+    // Chưa cử con nào thì không việc gì phải đi tìm đối thủ.
+    doiThu: cua ? await timDoiThu(userId) : [],
   };
 }
 

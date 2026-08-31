@@ -4,17 +4,15 @@ import { useState } from 'react';
 import { Drumstick, Swords, Tag, Trash2 } from 'lucide-react';
 import type { RongXem } from '@/lib/rong';
 import {
-  ANH_BONG, ANH_TRUNG, CAP_TOI_DA, GIA_AN, GIA_NO_NGAY,
-  anhRong, expCanDe, moTaConLai, tenRong,
+  ANH_BONG, CAP_TOI_DA, GIA_AN, anhRong, expCanDe, moTaConLai, tenRong,
 } from '@/lib/rong-const';
 import { cn } from '@/lib/utils';
 
 /**
- * Một ô trong chuồng: quả trứng đang ấp, hoặc một con rồng đã nở.
+ * Một ô trong chuồng: một con rồng ĐÃ NỞ.
  *
- * Trứng và rồng khác nhau đủ nhiều để đáng vẽ hai kiểu riêng — trứng chỉ có một
- * việc duy nhất là chờ nở, còn rồng thì có bốn nút. Gộp làm một thẻ "đa năng"
- * thì nửa số nút lúc nào cũng mờ đi, nhìn ra một thẻ hỏng.
+ * Trứng vẽ riêng ở `TheTrung` và nằm hẳn ở trang ấp trứng — xem lý do ở đầu
+ * tệp ấy.
  */
 export function TheRong({
   r, now, dangLam, onViec,
@@ -27,40 +25,13 @@ export function TheRong({
   const [doiTen, setDoiTen] = useState(false);
   const ten = r.ten || tenRong(r.loai, r.mau);
 
-  if (r.laTrung) {
-    const conMs = r.apXongLuc - now;
-    return (
-      <li className="card flex flex-col items-center gap-2 p-4 text-center">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={ANH_TRUNG} alt="Trứng rồng" className={cn('h-20 w-auto', !r.noDuoc && 'rong-lac')}
-          style={{ imageRendering: 'pixelated' }} />
-        <p className="text-sm font-bold">Trứng rồng</p>
-        <p className="retro-sub text-ink-400">
-          {r.noDuoc ? 'Nứt vỏ rồi, nở được!' : `Nở sau ${moTaConLai(conMs)}`}
-        </p>
-        {r.noDuoc ? (
-          <button type="button" disabled={dangLam} onClick={() => onViec('no', { rong: r.id })}
-            className="btn-primary w-full justify-center disabled:opacity-50">
-            Cho nở
-          </button>
-        ) : (
-          <button type="button" disabled={dangLam}
-            onClick={() => onViec('no', { rong: r.id, ngay: '1' })}
-            className="btn-outline w-full justify-center text-sm disabled:opacity-50">
-            Thúc nở ngay · {GIA_NO_NGAY} điểm
-          </button>
-        )}
-      </li>
-    );
-  }
-
   const canExp = expCanDe(r.cap);
   const phanExp = r.cap >= CAP_TOI_DA ? 100 : Math.min(100, Math.round((r.exp / canExp) * 100));
   const anDuoc = now >= r.anDuocLuc;
   const choiDuoc = now >= r.choiDuocLuc;
 
   return (
-    <li className={cn('card flex flex-col gap-2 p-4', r.raTran && 'ring-2 ring-amber-400')}>
+    <li className={cn('rong-tam flex flex-col gap-2 p-4', r.raTran && 'ring-2 ring-amber-400')}>
       <div className="flex items-start gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={anhRong(r.loai, r.mau)} alt={ten} className="size-20 shrink-0 object-contain"

@@ -3,9 +3,12 @@
  *
  * Tệp này KHÔNG đụng cơ sở dữ liệu, nên trang, server action lẫn bài kiểm đều
  * gọi được, và mọi con số cân bằng trò chơi nằm gọn một chỗ để còn chỉnh.
+ *
+ * VÀ KHÔNG IMPORT GÌ CẢ. Đây là ràng buộc chịu lực chứ không phải sở thích:
+ * bài kiểm `.mjs` nạp thẳng tệp này, mà Node chỉ bóc kiểu chứ không giải được
+ * alias `@/` lẫn đường dẫn tương đối thiếu đuôi — thêm một dòng `import` là
+ * bài kiểm không chạy nữa. `pokemon-const.ts` giữ đúng luật ấy vì cùng lý do.
  */
-
-import { moTaThoiLuong } from '@/lib/utils';
 
 /** Thư mục ảnh lấy từ mã nguồn JohnCMS cũ. */
 export const ANH_RONG = '/hoai-niem/rong';
@@ -120,9 +123,31 @@ export function vuiHienGio(vui: number, tinhLuc: number, bayGio: number): number
   return Math.max(0, Math.min(100, Math.round(vui - gio * VUI_TUT_MOI_GIO)));
 }
 
-/** Còn bao lâu nữa, viết cho người đọc. Rồng không đếm giây, chỉ tính phút. */
+/**
+ * Còn bao lâu nữa, viết cho người đọc. Rồng không đếm giây, chỉ tính phút.
+ *
+ * Chép lại phép tính của `moTaThoiLuong` trong `src/lib/utils.ts` chứ không
+ * import — xem lý do ở đầu tệp. Bốn dòng số học, chép rẻ hơn là phá vỡ ràng
+ * buộc "không import gì".
+ */
 export function moTaConLai(ms: number): string {
-  return moTaThoiLuong(ms, 'xong rồi');
+  if (ms <= 0) return 'xong rồi';
+  const phut = Math.max(1, Math.ceil(ms / 60_000));
+  if (phut < 60) return `${phut} phút`;
+  const gio = Math.floor(phut / 60);
+  const du = phut % 60;
+  return du === 0 ? `${gio} giờ` : `${gio} giờ ${du} phút`;
+}
+
+/**
+ * Mốc 00:00 hôm nay theo giờ Việt Nam, quy về UTC.
+ *
+ * Trước đây chép ở hai chỗ (`rong.ts` và `actions.ts`) mà chẳng chỗ nào biết
+ * chỗ kia — sửa một bên là hai bên cắt ngày khác nhau. Nay một bản ở đây.
+ */
+export function dauNgayVN(now: number = Date.now()): Date {
+  const lech = 7 * 3600 * 1000;
+  return new Date(Math.floor((now + lech) / 86_400_000) * 86_400_000 - lech);
 }
 
 export const TEN_TOI_DA = 24;

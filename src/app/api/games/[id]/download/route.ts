@@ -5,7 +5,7 @@ import { getActor } from '@/lib/actor';
 import { fileTypeFitsPlatform } from '@/lib/game';
 import { downloadFileName, signedFileUrl, SIGNED_URL_TTL } from '@/lib/game-files';
 import { recordGameEvent } from '@/lib/game-stats';
-import { checkGameAccess } from '@/lib/game-unlock';
+import { checkGameAccess, checkVersionAccess } from '@/lib/game-unlock';
 import { auth } from '@/lib/auth';
 import { rateLimit } from '@/lib/rate-limit-memory';
 
@@ -62,6 +62,16 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         include: { files: true },
       });
   if (!version) return NextResponse.json({ error: 'VERSION_NOT_FOUND' }, { status: 404 });
+
+  // Lớp khoá thứ hai: bản này có thể thu điểm riêng dù cả game đã mở (hoặc
+  // vốn tải tự do). Kiểm sau khi đã qua khoá của game, không thay cho nó.
+  const versionAccess = await checkVersionAccess(
+    session?.user?.id ?? null, version,
+    (session?.user as { role?: string } | undefined)?.role,
+  );
+  if (!versionAccess.allowed) {
+    return NextResponse.json({ error: 'VERSION_LOCKED', price: versionAccess.price }, { status: 403 });
+  }
 
   if (!fileTypeFitsPlatform(version.platform, type)) {
     return NextResponse.json({ error: 'BAD_TYPE' }, { status: 400 });

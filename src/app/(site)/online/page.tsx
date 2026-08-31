@@ -4,6 +4,7 @@ import { Radio, MessageSquare, MessagesSquare, ShieldCheck } from 'lucide-react'
 import { Pagination } from '@/components/Pagination';
 import { Avatar, UserName } from '@/components/user/Cosmetic';
 import { getLevelLooks } from '@/lib/level';
+import { auth } from '@/lib/auth';
 import { getOnline, isOnlineTab, ONLINE_TABS, type OnlineTab, type OnlineSpot } from '@/lib/online';
 import { cn, fmtAgo, fmtCount } from '@/lib/utils';
 
@@ -37,8 +38,13 @@ export default async function OnlinePage({ searchParams }: {
 }) {
   const { page: pageRaw, loc } = await searchParams;
   const tab: OnlineTab = isOnlineTab(loc) ? loc : 'tat-ca';
+  const session = await auth();
+  const viewer = {
+    id: session?.user?.id ?? null,
+    role: (session?.user as { role?: string } | undefined)?.role,
+  };
   const [list, levelLooks] = await Promise.all([
-    getOnline(tab, Math.max(1, parseInt(pageRaw ?? '1', 10) || 1)),
+    getOnline(tab, Math.max(1, parseInt(pageRaw ?? '1', 10) || 1), viewer),
     getLevelLooks(),
   ]);
 

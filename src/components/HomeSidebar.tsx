@@ -11,8 +11,11 @@ export async function HomeSidebar() {
   const [hotThreads, topUsers, tags] = await Promise.all([
     // Chủ đề nhiều lượt xem nhất — trước đây ô này khoe bài viết, mà mục bài
     // viết đã gỡ khỏi trang.
+    // Ô này hiện cho mọi khách như nhau, không phân biệt người xem — cùng lý
+    // do với các bảng tin toàn trang khác, loại thẳng khu vực đặt huy hiệu
+    // bắt buộc thay vì lọc riêng theo từng người.
     db.thread.findMany({
-      where: { status: 'PUBLISHED' },
+      where: { status: 'PUBLISHED', forum: { requiredMedalId: null } },
       orderBy: { viewCount: 'desc' },
       take: 5,
       select: { id: true, title: true, viewCount: true, forum: { select: { slug: true } } },

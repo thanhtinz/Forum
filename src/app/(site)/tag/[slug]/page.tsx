@@ -31,7 +31,12 @@ export default async function TagPage({ params, searchParams }: {
   const tag = await db.tag.findUnique({ where: { slug } });
   if (!tag) notFound();
 
-  const where = { status: 'PUBLISHED' as const, tags: { some: { tagId: tag.id } } };
+  // Cùng lý do với tìm kiếm: khu vực đặt huy hiệu bắt buộc thì loại khỏi
+  // danh sách theo thẻ, không mang huy hiệu người xem vào đây để so từng dòng.
+  const where = {
+    status: 'PUBLISHED' as const, tags: { some: { tagId: tag.id } },
+    forum: { requiredMedalId: null },
+  };
   const [total, threads] = await Promise.all([
     db.thread.count({ where }),
     db.thread.findMany({

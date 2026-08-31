@@ -108,7 +108,10 @@ export function buildThreadSearch(input: ThreadSearchInput): ThreadSearchQuery {
     // Lưới thô: khớp cả vào phần `[hide]` nên PHẢI lọc lại bằng
     // `matchesVisibleText` trước khi đưa dòng nào ra màn hình.
     ...(q ? { OR: [{ title: like }, { content: like }] } : {}),
-    ...(forum ? { forum: { slug: forum } } : {}),
+    // Khu vực đặt huy hiệu bắt buộc thì loại khỏi tìm kiếm luôn, kể cả khi ai
+    // đó gõ đúng slug của nó vào ô lọc theo khu vực — tìm kiếm không mang
+    // theo huy hiệu của người xem để mà kiểm riêng từng dòng.
+    forum: { requiredMedalId: null, ...(forum ? { slug: forum } : {}) },
     // Lọc theo QUAN HỆ chứ không tra tên ra id rồi lọc: bớt một lượt hỏi, mà
     // tên không có thật thì tự khắc ra rỗng chứ không phải xử lý riêng.
     ...(author ? { author: { username: author } } : {}),

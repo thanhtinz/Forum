@@ -1,14 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useMemo, useState, useTransition } from 'react';
 import { format } from 'date-fns';
 import type { DownloadPlatform } from '@prisma/client';
 import {
-  AlertTriangle, Apple, CheckCircle2, Coffee, Download, Globe, Loader2,
-  Monitor, Package, ShieldCheck, Smartphone, Terminal,
+  AlertTriangle, Apple, CheckCircle2, Coffee, Coins, Download, Globe, Loader2,
+  Lock, LogIn, Monitor, Package, ShieldCheck, Smartphone, Terminal,
 } from 'lucide-react';
+import { unlockGameVersion } from '@/app/(site)/games/actions';
 import { DOWNLOAD_PLATFORMS, DOWNLOAD_PLATFORM_ORDER } from '@/lib/game';
-import { cn, fmtBytes } from '@/lib/utils';
+import { cn, fmtBytes, fmtCount } from '@/lib/utils';
 
 const PLATFORM_ICON = { Monitor, Apple, Terminal, Smartphone, Globe, Coffee } as const;
 
@@ -31,11 +33,17 @@ export interface VersionInfo {
   latest: boolean;
   note: string | null;
   files: VersionFile[];
+  /** Bản này còn khoá điểm RIÊNG, độc lập với khoá của cả game. */
+  locked: boolean;
+  price: number;
 }
 
 export interface DownloadPanelProps {
   slug: string;
   versions: VersionInfo[];
+  loggedIn: boolean;
+  myPoints?: number;
+  callbackUrl: string;
 }
 
 /**
@@ -45,7 +53,7 @@ export interface DownloadPanelProps {
  * sách version bên dưới. Link tải là signed URL do backend cấp sau khi kiểm
  * tra file, nên phải xin ngay lúc bấm chứ không nhúng sẵn vào HTML.
  */
-export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
+export function DownloadPanel({ slug, versions, loggedIn, myPoints, callbackUrl }: DownloadPanelProps) {
   // Nền tảng nào có version thì mới dựng nút, giữ đúng thứ tự đã khai báo.
   const platforms = useMemo(
     () => DOWNLOAD_PLATFORM_ORDER.filter((p) => versions.some((v) => v.platform === p)),
@@ -56,6 +64,8 @@ export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
   const [versionId, setVersionId] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [unlockErr, setUnlockErr] = useState<string | null>(null);
+  const [unlockPending, startUnlock] = useTransition();
 
   const ofPlatform = useMemo(
     () => versions.filter((v) => v.platform === platform),
@@ -98,6 +108,15 @@ export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
   };
 
   const primary = current.files.find((f) => f.available) ?? current.files[0];
+
+  const onUnlockVersion = () => {
+    setUnlockErr(null);
+    startUnlock(async () => {
+      const r = await unlockGameVersion(current.id);
+      if (r.error) { setUnlockErr(r.error); return; }
+      window.location.reload();
+    });
+  };
 
   return (
     <div className="card p-4 sm:p-5" id="download">
@@ -167,25 +186,63 @@ export function DownloadPanel({ slug, versions }: DownloadPanelProps) {
 
       {current.note && <p className="mb-3 text-xs text-ink-500">{current.note}</p>}
 
-      <div className="space-y-2">
-        {current.files.length === 0 && (
-          <p className="rounded-lg bg-ink-50 p-2.5 text-center text-xs text-ink-400 dark:bg-ink-800/60">
-            Bản này chưa gắn file tải.
+      {current.locked ? (
+        // Bản này thu điểm RIÊNG dù cả game đã mở — không dựng file nào cả,
+        // cùng lý do khoá ở mức game: chưa có quyền thì đường tải không được
+        // lộ ra trong mã nguồn trang.
+        <div className="rounded-xl border-2 border-dashed border-amber-400 p-3.5 text-center">
+          <span className="mx-auto grid size-9 place-items-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950/50">
+            <Lock size={16} />
+          </span>
+          <p className="mt-2 text-xs text-ink-500">Bản v{current.version} này cần mở khoá riêng.</p>
+          <p className="mt-1 flex items-center justify-center gap-1 text-lg font-black text-ink-800 dark:text-ink-100">
+            <Coins size={16} className="text-amber-500" /> {fmtCount(current.price)}
+            <span className="text-xs font-semibold text-ink-500">điểm</span>
           </p>
-        )}
-        {current.files.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => download(f)}
-            disabled={!f.available || busy !== null}
-            className="btn-outline w-full disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {busy === f.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-            TẢI {f.type}{f.sizeBytes != null && ` · ${fmtBytes(f.sizeBytes)}`}
-          </button>
-        ))}
-      </div>
+          {loggedIn ? (
+            <>
+              <button type="button" onClick={onUnlockVersion} disabled={unlockPending}
+                className="btn-primary mt-2.5 w-full !py-2 text-sm disabled:opacity-60">
+                <Coins size={14} /> {unlockPending ? 'Đang mở khoá…' : 'Dùng điểm để mở khoá bản này'}
+              </button>
+              {myPoints != null && (
+                <p className="retro-sub mt-1 text-ink-400">
+                  Bạn đang có {fmtCount(myPoints)} điểm
+                  {myPoints < current.price && (
+                    <span className="text-red-500"> — còn thiếu {fmtCount(current.price - myPoints)}</span>
+                  )}
+                </p>
+              )}
+            </>
+          ) : (
+            <Link href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+              className="btn-primary mt-2.5 w-full !py-2 text-sm">
+              <LogIn size={14} /> Đăng nhập để mở khoá
+            </Link>
+          )}
+          {unlockErr && <p className="mt-2 text-xs font-medium text-red-600">{unlockErr}</p>}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {current.files.length === 0 && (
+            <p className="rounded-lg bg-ink-50 p-2.5 text-center text-xs text-ink-400 dark:bg-ink-800/60">
+              Bản này chưa gắn file tải.
+            </p>
+          )}
+          {current.files.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => download(f)}
+              disabled={!f.available || busy !== null}
+              className="btn-outline w-full disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {busy === f.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+              TẢI {f.type}{f.sizeBytes != null && ` · ${fmtBytes(f.sizeBytes)}`}
+            </button>
+          ))}
+        </div>
+      )}
 
       {error && (
         <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-950/40">

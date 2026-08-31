@@ -25,9 +25,22 @@ export default async function FollowingFeedPage({ searchParams }: { searchParams
   // Lọc chủ đề bằng quan hệ chứ không kéo danh sách người đang theo dõi về rồi
   // nhét vào `in:` — người theo dõi vài nghìn người sẽ dựng ra một câu truy vấn
   // dài vài nghìn id, và số đó chỉ có tăng.
+  // Khu vực đặt huy hiệu bắt buộc: bài của người mình theo dõi trong đó chỉ
+  // hiện ở đây nếu MÌNH cũng có huy hiệu ấy — theo dõi ai không có nghĩa là
+  // đi vòng được qua khoá của khu vực họ đăng vào.
+  const role = (session.user as { role?: string } | undefined)?.role;
+  const boGiaLuat = role === 'ADMIN' || role === 'MODERATOR';
+  const myMedalIds = !boGiaLuat
+    ? (await db.userMedal.findMany({ where: { userId }, select: { medalId: true }, take: 200 }))
+        .map((m) => m.medalId)
+    : [];
+
   const where = {
     status: 'PUBLISHED' as const,
     author: { followers: { some: { followerId: userId } } },
+    ...(boGiaLuat ? {} : {
+      forum: { OR: [{ requiredMedalId: null }, { requiredMedalId: { in: myMedalIds } }] },
+    }),
   };
 
   const [followCount, authors, total, threads] = await Promise.all([

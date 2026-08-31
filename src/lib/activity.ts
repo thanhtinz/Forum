@@ -71,8 +71,23 @@ export async function getUserActivity(
   const perSource = page * pageSize;
   const privacies = await visiblePrivacies(viewer, ownerId);
 
-  const threadWhere = { authorId: ownerId, status: 'PUBLISHED' as const };
-  const replyWhere = { authorId: ownerId, hidden: false, thread: { status: 'PUBLISHED' as const } };
+  // Khu vực đặt huy hiệu bắt buộc: bài của chủ trang trong đó chỉ hiện với
+  // người xem CÓ huy hiệu ấy (hoặc quản trị viên) — không thì tab hoạt động
+  // của một người là chỗ rò rỉ tiêu đề chủ đề từ khu vực không công khai.
+  const boGiaLuat = viewer.role === 'ADMIN' || viewer.role === 'MODERATOR';
+  const myMedalIds = !boGiaLuat && viewer.id
+    ? (await db.userMedal.findMany({ where: { userId: viewer.id }, select: { medalId: true }, take: 200 }))
+        .map((m) => m.medalId)
+    : [];
+  const forumGate = boGiaLuat
+    ? {}
+    : { forum: { OR: [{ requiredMedalId: null }, { requiredMedalId: { in: myMedalIds } }] } };
+
+  const threadWhere = { authorId: ownerId, status: 'PUBLISHED' as const, ...forumGate };
+  const replyWhere = {
+    authorId: ownerId, hidden: false,
+    thread: { status: 'PUBLISHED' as const, ...forumGate },
+  };
   const clubWhere = {
     authorId: ownerId,
     club: viewer.id

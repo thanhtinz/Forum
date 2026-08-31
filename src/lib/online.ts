@@ -62,7 +62,10 @@ function threadIdOf(scope: string): string | null {
   return scope.startsWith('thread:') ? scope.slice('thread:'.length) || null : null;
 }
 
-export async function getOnline(tab: OnlineTab, pageRaw: number): Promise<OnlineResult> {
+export async function getOnline(
+  tab: OnlineTab, pageRaw: number,
+  viewer: { id: string | null; role?: string | null },
+): Promise<OnlineResult> {
   const since = new Date(Date.now() - ONLINE_WINDOW_MS);
   const where = {
     status: 'ACTIVE' as const,
@@ -106,9 +109,23 @@ export async function getOnline(tab: OnlineTab, pageRaw: number): Promise<Online
 
   // Tiêu đề chủ đề lấy một lượt cho cả trang, không phải mỗi dòng một truy vấn.
   const threadIds = [...new Set([...scopeOf.values()].map(threadIdOf).filter((x): x is string => !!x))];
+  // Khu vực đặt huy hiệu bắt buộc: người xem trang "đang online" này mà chưa
+  // có huy hiệu thì không được thấy ai đang xem chủ đề nào trong đó — cùng
+  // cách xử lý với chủ đề đã gỡ/đã ẩn ngay bên dưới, chỉ khác lý do.
+  const boGiaLuat = viewer.role === 'ADMIN' || viewer.role === 'MODERATOR';
+  const myMedalIds = !boGiaLuat && viewer.id
+    ? new Set((await db.userMedal.findMany({
+        where: { userId: viewer.id }, select: { medalId: true }, take: 200,
+      })).map((m) => m.medalId))
+    : new Set<string>();
   const threads = threadIds.length
     ? await db.thread.findMany({
-        where: { id: { in: threadIds }, status: 'PUBLISHED' },
+        where: {
+          id: { in: threadIds }, status: 'PUBLISHED',
+          ...(boGiaLuat ? {} : {
+            forum: { OR: [{ requiredMedalId: null }, { requiredMedalId: { in: [...myMedalIds] } }] },
+          }),
+        },
         select: { id: true, title: true, forum: { select: { slug: true } } },
       })
     : [];

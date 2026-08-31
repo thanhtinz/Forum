@@ -163,3 +163,60 @@ export async function unlockGame(gameId: string): Promise<UnlockGameState> {
   revalidatePath(`/games/${game.slug}`);
   return { ok: true };
 }
+
+/**
+ * Mở khoá một PHIÊN BẢN riêng — độc lập với khoá của cả game.
+ *
+ * Cùng cấu trúc với `unlockGame`, chỉ đổi bảng: khoá game dùng `GameUnlock`,
+ * khoá version dùng `GameVersionUnlock`. Không kiểm lại quyền của cả game ở
+ * đây — trang chỉ dựng nút này SAU khi đã qua `checkGameAccess`, và tự bản
+ * ghi version cũng không lộ gì nếu gọi thẳng khi chưa mở game.
+ */
+export async function unlockGameVersion(versionId: string): Promise<UnlockGameState> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return { error: 'Bạn cần đăng nhập để mở khoá.' };
+
+  const version = await db.gameVersion.findUnique({
+    where: { id: versionId },
+    select: {
+      id: true, pricePoints: true, version: true,
+      game: { select: { id: true, slug: true, title: true, status: true } },
+    },
+  });
+  if (!version || version.game.status !== 'PUBLISHED') return { error: 'Không tìm thấy phiên bản.' };
+
+  const price = version.pricePoints ?? 0;
+  if (price <= 0) return { ok: true };
+
+  const already = await db.gameVersionUnlock.findUnique({
+    where: { userId_versionId: { userId, versionId } },
+    select: { id: true },
+  });
+  if (already) return { ok: true };
+
+  try {
+    await db.$transaction(async (tx) => {
+      await grantPoints(
+        {
+          userId, amount: -price, reason: 'PURCHASE_CONTENT', refId: version.id,
+          note: `Mở khoá bản ${version.version}: ${version.game.title}`,
+        },
+        tx,
+      );
+      await tx.gameVersionUnlock.create({
+        data: { userId, versionId, pointsPaid: price }, select: { id: true },
+      });
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) return { error: 'Bạn không đủ điểm để mở khoá bản này.' };
+    const owned = await db.gameVersionUnlock.findUnique({
+      where: { userId_versionId: { userId, versionId } }, select: { id: true },
+    });
+    if (owned) return { ok: true };
+    return { error: 'Không mở khoá được, vui lòng thử lại.' };
+  }
+
+  revalidatePath(`/games/${version.game.slug}`);
+  return { ok: true };
+}

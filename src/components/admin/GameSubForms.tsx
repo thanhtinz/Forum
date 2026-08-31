@@ -25,6 +25,8 @@ export function VersionForm({ gameId, versions }: { gameId: string; versions: Ve
       <Input name="version" label="Số hiệu *" placeholder="1.0.2" required />
       <Input name="releaseDate" label="Ngày phát hành" type="date" />
       <Input name="sizeBytes" label="Dung lượng (byte)" type="number" />
+      <Input name="pricePoints" label="Giá điểm riêng bản này" type="number" min={0}
+        placeholder="Để trống = theo giá game / miễn phí" />
       <Input name="note" label="Ghi chú" />
       <label className="flex items-end gap-4 pb-2 text-sm">
         <span className="flex items-center gap-1.5">

@@ -205,6 +205,13 @@ export async function upsertVersion(_prev: ActionState, fd: FormData): Promise<A
   const id = str(fd, 'versionId');
   const releaseDate = str(fd, 'releaseDate');
 
+  // Giá điểm RIÊNG của bản này, tách khỏi giá của cả game — xem chú thích ở
+  // `GameVersion.pricePoints`.
+  const priceRaw = int(fd, 'pricePoints') ?? 0;
+  if (priceRaw < 0 || priceRaw > GAME_PRICE_MAX) {
+    return { error: `Giá điểm phải từ 0 đến ${GAME_PRICE_MAX}.` };
+  }
+
   const data = {
     platform,
     version,
@@ -212,6 +219,7 @@ export async function upsertVersion(_prev: ActionState, fd: FormData): Promise<A
     changelog: str(fd, 'changelog'),
     sizeBytes: big(fd, 'sizeBytes'),
     note: str(fd, 'note'),
+    pricePoints: priceRaw > 0 ? priceRaw : null,
   };
 
   // Số hiệu chỉ cần duy nhất trong phạm vi một nền tảng — Windows 1.0 và

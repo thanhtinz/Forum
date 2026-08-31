@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MessagesSquare } from 'lucide-react';
+import { Crown, MessagesSquare } from 'lucide-react';
 import { fmtCount, fmtAgo } from '@/lib/utils';
 import { FORUM_ACCESS_BADGE, forumTint } from '@/lib/forum';
 import { TableHead } from './TableHead';
@@ -15,6 +15,8 @@ export interface BoardRow {
   threadCount: number;
   replyCount: number;
   latest: { id: string; title: string; at: Date; author: string | null } | null;
+  /** Không null nghĩa là khu vực đang khoá với NGƯỜI XEM này — chưa có huy hiệu. */
+  requiredMedalName: string | null;
 }
 
 export interface BoardSection {
@@ -69,6 +71,12 @@ function BoardRowView({ board }: { board: BoardRow }) {
             {board.name}
           </Link>
           {badge && <span className={`chip ${badge.className}`}>{badge.label}</span>}
+          {board.requiredMedalName && (
+            <span className="chip gap-1 bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300"
+              title={`Cần huy hiệu "${board.requiredMedalName}" mới xem được`}>
+              <Crown size={11} /> Khoá
+            </span>
+          )}
         </div>
 
         {board.description && <p className="retro-sub mt-0.5 line-clamp-1 text-ink-400">{board.description}</p>}

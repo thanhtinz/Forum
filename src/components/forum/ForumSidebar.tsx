@@ -23,8 +23,12 @@ export async function ForumSidebar() {
       take: 14,
       select: { username: true, name: true, image: true, level: true, ...cosmeticSelect },
     }),
+    // Cột sôi nổi hiện cho MỌI khách như nhau, không phân biệt người xem —
+    // nên loại thẳng khu vực đặt huy hiệu bắt buộc ra, cùng lý do với bảng
+    // tin toàn trang: không có chỗ nào để hỏi "người này có huy hiệu chưa"
+    // trong một câu truy vấn dùng chung cho tất cả.
     db.thread.findMany({
-      where: { status: 'PUBLISHED' },
+      where: { status: 'PUBLISHED', forum: { requiredMedalId: null } },
       orderBy: [{ replyCount: 'desc' }, { viewCount: 'desc' }],
       take: 5,
       select: { id: true, title: true, replyCount: true, forum: { select: { slug: true } } },

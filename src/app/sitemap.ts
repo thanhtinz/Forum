@@ -27,7 +27,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Chỉ chủ đề đã đăng: chủ đề đang chờ duyệt hoặc đã ẩn thì trang của nó
     // trả 404, mà vẫn nằm trong sitemap là tự mời máy tìm kiếm đi vào ngõ cụt —
     // tệ hơn nữa là lộ ra rằng có một chủ đề như thế ở đúng địa chỉ ấy.
-    safe(db.thread.findMany({ where: { status: 'PUBLISHED' }, select: { id: true, updatedAt: true, forum: { select: { slug: true } } }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
+    // Khu vực đặt huy hiệu bắt buộc thì KHÔNG vào sitemap — công cụ tìm
+    // kiếm không mang huy hiệu, đưa link vào chỉ để mọi người bấm trúng
+    // đúng cái đáng ra phải khoá.
+    safe(db.thread.findMany({
+      where: { status: 'PUBLISHED', forum: { requiredMedalId: null } },
+      select: { id: true, updatedAt: true, forum: { select: { slug: true } } },
+      orderBy: { updatedAt: 'desc' }, take: 5000,
+    })),
     safe(db.game.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
     safe(db.gameGenre.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
     safe(db.gameCollection.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),

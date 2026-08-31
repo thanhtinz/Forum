@@ -24,6 +24,8 @@ import { Pagination } from '@/components/Pagination';
 import { ReplyBody } from '@/components/forum/ReplyBody';
 import { EditScope } from '@/components/EditScope';
 import { canModerateForum } from '@/lib/moderation';
+import { checkForumViewAccess } from '@/lib/forum-view-access';
+import { ForumLockedNotice } from '@/components/forum/ForumLockedNotice';
 import { getLevelLooks, type LevelLook } from '@/lib/level';
 import { LevelBadge } from '@/components/LevelBadge';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
@@ -38,13 +40,19 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug, id } = await params;
   const thread = await db.thread.findUnique({
     where: { id },
-    select: { title: true, content: true, status: true, forum: { select: { slug: true } } },
+    select: {
+      title: true, content: true, status: true,
+      forum: { select: { slug: true, requiredMedalId: true } },
+    },
   });
   // Lọc y hệt thân trang (`notFound()` ở dưới). Thẻ meta được dựng riêng, nên
   // thân trang trả 404 mà chỗ này không lọc thì tiêu đề và trích nội dung của
   // một chủ đề đang chờ duyệt / đã ẩn vẫn nằm trong <head> — chỉ cần xem mã
   // nguồn trang 404 là đọc được thứ mà ban điều hành vừa gỡ xuống.
-  return thread && thread.forum.slug === slug && thread.status === 'PUBLISHED'
+  // Khu vực đặt huy hiệu bắt buộc thì thẻ meta cũng không được lộ tiêu đề hay
+  // nội dung — thẻ này đi thẳng vào <head>, công cụ tìm kiếm đọc được mà
+  // không cần vượt qua bất cứ khoá nào ở thân trang.
+  return thread && thread.forum.slug === slug && thread.status === 'PUBLISHED' && !thread.forum.requiredMedalId
     // Bỏ phần [hide] trước khi rút mô tả: thẻ meta đi ra ngoài trang, ai cũng
     // đọc được mà không phải trả lời câu nào.
     ? { title: thread.title, description: truncate(stripHidden(thread.content).replace(/<[^>]+>/g, ' '), 160) }
@@ -104,7 +112,7 @@ export default async function ThreadPage({ params, searchParams }: {
   const thread = await db.thread.findUnique({
     where: { id },
     include: {
-      forum: { select: { slug: true, name: true } },
+      forum: { select: { id: true, slug: true, name: true, icon: true, requiredMedalId: true } },
       author: authorSelect,
       tags: { include: { tag: { select: { slug: true, name: true } } } },
       poll: {
@@ -118,12 +126,32 @@ export default async function ThreadPage({ params, searchParams }: {
   });
   if (!thread || thread.forum.slug !== slug || thread.status !== 'PUBLISHED') notFound();
 
-  // Đếm lượt xem (không chặn hiển thị nếu lỗi)
-  db.thread.update({ where: { id }, data: { viewCount: { increment: 1 } }, select: { id: true } }).catch(() => {});
-
   const session = await auth();
   const userId = session?.user?.id ?? null;
   const loggedIn = !!userId;
+
+  // Cùng một khoá với trang danh sách khu vực (`checkForumViewAccess`): một
+  // chủ đề bên trong khu vực đặt huy hiệu bắt buộc không được lộ ra qua
+  // đường dẫn trực tiếp, dù người xem có đúng đường link truyền tay.
+  const viewAccess = await checkForumViewAccess(
+    userId, (session?.user as { role?: string } | undefined)?.role, thread.forum,
+  );
+  if (!viewAccess.allowed) {
+    return (
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0">
+          <ForumLockedNotice
+            name={thread.forum.name} icon={thread.forum.icon}
+            medalName={viewAccess.medalName} loggedIn={loggedIn}
+          />
+        </div>
+        <div className="hidden lg:block lg:sticky lg:top-[72px] lg:self-start"><ForumSidebar /></div>
+      </div>
+    );
+  }
+
+  // Đếm lượt xem (không chặn hiển thị nếu lỗi)
+  db.thread.update({ where: { id }, data: { viewCount: { increment: 1 } }, select: { id: true } }).catch(() => {});
   const callbackUrl = `/forum/${slug}/${id}`;
   const isOwner = userId === thread.authorId;
   const canMarkSolution = isOwner && !thread.solvedReplyId && !thread.locked;

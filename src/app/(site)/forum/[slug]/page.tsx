@@ -13,6 +13,8 @@ import { ForumSidebar } from '@/components/forum/ForumSidebar';
 import { IconGlyph } from '@/components/IconGlyph';
 import { authorChipSelect, toAuthorChip } from '@/lib/shop';
 import { auth } from '@/lib/auth';
+import { checkForumViewAccess } from '@/lib/forum-view-access';
+import { ForumLockedNotice } from '@/components/forum/ForumLockedNotice';
 import { unreadThreadIds } from '@/lib/thread-read';
 import { MarkAllReadButton } from '@/components/forum/MarkAllReadButton';
 import { threadExcerpt } from '@/lib/bbcode';
@@ -56,6 +58,28 @@ export default async function ForumPage({ params, searchParams }: {
   });
   if (!forum) notFound();
 
+  const session = await auth();
+  const viewAccess = await checkForumViewAccess(
+    session?.user?.id ?? null,
+    (session?.user as { role?: string } | undefined)?.role,
+    forum,
+  );
+  if (!viewAccess.allowed) {
+    return (
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0">
+          <ForumLockedNotice
+            name={forum.name}
+            icon={forum.icon}
+            medalName={viewAccess.medalName}
+            loggedIn={!!session?.user}
+          />
+        </div>
+        <div className="hidden lg:block lg:sticky lg:top-[72px] lg:self-start"><ForumSidebar /></div>
+      </div>
+    );
+  }
+
   const where: Prisma.ThreadWhereInput = { forumId: forum.id, status: 'PUBLISHED', ...(tab === 'featured' ? { featured: true } : {}) };
   const [total, threads] = await Promise.all([
     db.thread.count({ where }),
@@ -67,7 +91,6 @@ export default async function ForumPage({ params, searchParams }: {
       include: { author: { select: authorChipSelect } },
     }),
   ]);
-  const session = await auth();
   const unread = await unreadThreadIds(session?.user?.id ?? null, threads);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);

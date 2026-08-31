@@ -34,3 +34,28 @@ export async function checkGameAccess(
   });
   return { allowed: !!unlock, price, owned: !!unlock };
 }
+
+/**
+ * Ai được mở một PHIÊN BẢN cụ thể — độc lập với khoá của cả game.
+ *
+ * Đây là lớp khoá THỨ HAI: một game có thể tải tự do mà vẫn có một bản nâng
+ * cấp thu điểm riêng, vì mỗi loại file có version riêng và admin định giá
+ * riêng cho từng cái. Không mở game thì đương nhiên không mở được version bên
+ * trong, nên phải qua `checkGameAccess` trước — hàm này không tự kiểm lại.
+ */
+export async function checkVersionAccess(
+  userId: string | null,
+  version: { id: string; pricePoints: number | null },
+  role?: string | null,
+): Promise<GameAccess> {
+  const price = version.pricePoints ?? 0;
+  if (price <= 0) return { allowed: true, price: 0, owned: false };
+  if (role === 'ADMIN' || role === 'MODERATOR') return { allowed: true, price, owned: false };
+  if (!userId) return { allowed: false, price, owned: false };
+
+  const unlock = await db.gameVersionUnlock.findUnique({
+    where: { userId_versionId: { userId, versionId: version.id } },
+    select: { id: true },
+  });
+  return { allowed: !!unlock, price, owned: !!unlock };
+}

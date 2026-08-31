@@ -335,18 +335,28 @@ export async function saveForum(_prev: ForumState, formData: FormData): Promise<
   const order = parseInt(String(formData.get('order') ?? '0'), 10) || 0;
   const postAccess = parseForumAccess(formData.get('postAccess'));
   const minLevel = Math.max(1, parseInt(String(formData.get('minLevel') ?? '1'), 10) || 1);
+  const requiredMedalId = String(formData.get('requiredMedalId') ?? '').trim() || null;
 
   if (name.length < 2) return { error: 'Tên diễn đàn quá ngắn.' };
   if (parentId && parentId === id) return { error: 'Diễn đàn không thể là cha của chính nó.' };
+  if (requiredMedalId && !(await db.medal.findUnique({ where: { id: requiredMedalId }, select: { id: true } }))) {
+    return { error: 'Huy hiệu bắt buộc không tồn tại.' };
+  }
 
   let savedId = id;
   try {
     if (id) {
-      await db.forum.update({ where: { id }, data: { name, parentId, description, icon, order, postAccess, minLevel } });
+      await db.forum.update({
+        where: { id },
+        data: { name, parentId, description, icon, order, postAccess, minLevel, requiredMedalId },
+      });
     } else {
       let slug = slugify(name, 'dien-dan');
       if (await db.forum.findUnique({ where: { slug }, select: { id: true } })) slug = `${slug}-${Date.now().toString().slice(-4)}`;
-      const created = await db.forum.create({ data: { slug, name, parentId, description, icon, order, postAccess, minLevel }, select: { id: true } });
+      const created = await db.forum.create({
+        data: { slug, name, parentId, description, icon, order, postAccess, minLevel, requiredMedalId },
+        select: { id: true },
+      });
       savedId = created.id;
     }
   } catch {

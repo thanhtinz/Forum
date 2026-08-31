@@ -107,6 +107,7 @@ model User {
   shouts        ShoutMessage[]
   shoutsDeleted ShoutMessage[]     @relation("ShoutDeleter")
   gameUnlocks   GameUnlock[]
+  gameVersionUnlocks GameVersionUnlock[]
   hideUnlocks   ThreadHideUnlock[]
 
   clubsOwned        Club[]            @relation("ClubOwner")
@@ -253,6 +254,16 @@ model Forum {
   postAccess ForumAccess @default(ALL)
   minLevel   Int         @default(1)
 
+  /**
+   * Huy hiệu bắt buộc để XEM khu vực này — khác `postAccess`/`minLevel` vốn
+   * chỉ chặn việc mở chủ đề mới, còn xem thì ai cũng xem được. Đặt cái này
+   * là khoá cả việc xem: khu vực vẫn hiện tên trong danh sách (không giấu sự
+   * tồn tại), nhưng mở vào thì chỉ thấy lời nhắc cần huy hiệu gì, không lộ
+   * chủ đề hay bài viết bên trong.
+   */
+  requiredMedalId String?
+  requiredMedal   Medal?  @relation(fields: [requiredMedalId], references: [id], onDelete: SetNull)
+
   threadCount Int @default(0)
   replyCount  Int @default(0)
 
@@ -266,6 +277,7 @@ model Forum {
   createdAt DateTime @default(now())
 
   @@index([parentId])
+  @@index([requiredMedalId])
 }
 
 enum ForumAccess {
@@ -634,7 +646,8 @@ model Medal {
   conditionType  String? // posts_count | checkin_streak | ...
   conditionValue Int?
 
-  users UserMedal[]
+  users  UserMedal[]
+  forums Forum[]
 
   createdAt DateTime @default(now())
 }
@@ -1028,13 +1041,43 @@ model GameVersion {
   latest      Boolean          @default(false)
   note        String?
 
+  /**
+   * Giá điểm RIÊNG của bản này. null hoặc 0 = tải tự do (nếu game cũng
+   * không khoá). Tách khỏi `Game.pricePoints`: một game có thể miễn phí bản
+   * cũ mà thu điểm bản mới, hoặc mỗi nền tảng một giá khác nhau — khoá theo
+   * game thì không nói được chuyện đó, vì cả game chỉ có một cái khoá.
+   */
+  pricePoints Int?
+
   createdAt DateTime @default(now())
 
-  files  GameFile[]
-  events GameEvent[]
+  files   GameFile[]
+  events  GameEvent[]
+  unlocks GameVersionUnlock[]
 
   @@unique([gameId, platform, version])
   @@index([gameId, platform, latest])
+}
+
+/**
+ * Ai đã trả điểm để mở một PHIÊN BẢN cụ thể — khác `GameUnlock` vốn mở cả
+ * game. Một game có thể không khoá gì cả mà một bản nâng cấp trong đó vẫn
+ * thu điểm riêng, nên khoá phải theo từng version chứ gộp vào `GameUnlock`
+ * là hai chuyện admin định giá độc lập với nhau lại chung một bảng.
+ */
+model GameVersionUnlock {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versionId String
+  version   GameVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  pointsPaid Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, versionId])
+  @@index([versionId, createdAt])
 }
 
 /// Nút tải trên trang chi tiết game. Khác `GamePlatform` (dòng máy để lọc catalog).

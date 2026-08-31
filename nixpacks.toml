@@ -1,0 +1,13 @@
+# Cấu hình build cho Railway (Nixpacks) — chốt đúng phiên bản Node đang dùng
+# để tránh Nixpacks tự chọn bản khác rồi lệch hành vi so với máy phát triển.
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm run start:railway"

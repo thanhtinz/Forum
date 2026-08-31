@@ -66,6 +66,19 @@ function dieuKien(userId: string, allRead: Date, tab: NewTabKey): Prisma.Sql {
     WHERE t.status = 'PUBLISHED'
       AND COALESCE(t."lastReplyAt", t."createdAt") > ${allRead}
       AND (r."readAt" IS NULL OR COALESCE(t."lastReplyAt", t."createdAt") > r."readAt")
+      -- Khu vực đặt huy hiệu bắt buộc thì chỉ lọt vào "chưa đọc" của người CÓ
+      -- huy hiệu ấy — không thì thông báo chưa đọc lại là chỗ rò rỉ đầu tiên
+      -- (không tính điều hành viên riêng của khu vực, một khoảng hụt nhỏ
+      -- chấp nhận được: họ chỉ mất thông báo ở ô này, trang khu vực vẫn mở
+      -- bình thường vì checkForumViewAccess() kiểm riêng, đầy đủ hơn ở đó).
+      AND NOT EXISTS (
+        SELECT 1 FROM "Forum" gf
+        WHERE gf.id = t."forumId" AND gf."requiredMedalId" IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM "UserMedal" um
+            WHERE um."userId" = ${userId} AND um."medalId" = gf."requiredMedalId"
+          )
+      )
       ${theoDoi}
   `;
 }

@@ -98,7 +98,20 @@ export default async function ProfilePage({ params, searchParams }: {
   const viewerId = session?.user?.id ?? null;
   const viewer = { id: viewerId, role: (session?.user as { role?: string } | undefined)?.role };
 
-  const where = { authorId: user.id, status: 'PUBLISHED' as const };
+  // Khu vực đặt huy hiệu bắt buộc: tab "Chủ đề" của một người chỉ lộ bài họ
+  // đăng trong đó nếu NGƯỜI XEM có huy hiệu ấy — đang xem hồ sơ ai không mở
+  // được khoá của khu vực họ đăng vào.
+  const boGiaLuat = viewer.role === 'ADMIN' || viewer.role === 'MODERATOR';
+  const myMedalIds = !boGiaLuat && viewerId
+    ? (await db.userMedal.findMany({ where: { userId: viewerId }, select: { medalId: true }, take: 200 }))
+        .map((m) => m.medalId)
+    : [];
+  const where = {
+    authorId: user.id, status: 'PUBLISHED' as const,
+    ...(boGiaLuat ? {} : {
+      forum: { OR: [{ requiredMedalId: null }, { requiredMedalId: { in: myMedalIds } }] },
+    }),
+  };
 
   // Mỗi phần nay là một tab, nên CHỈ hỏi cơ sở dữ liệu phần đang mở. Trước đây
   // một lượt xem hồ sơ kéo cả dòng hoạt động, cả danh sách chủ đề, cả sổ lưu

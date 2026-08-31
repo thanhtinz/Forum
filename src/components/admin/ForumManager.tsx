@@ -12,6 +12,7 @@ export interface ForumRow {
   id: string; name: string; slug: string; description: string | null; icon: string | null;
   order: number; parentId: string | null; threadCount: number; replyCount: number;
   postAccess: string; minLevel: number;
+  requiredMedalId: string | null; requiredMedalName: string | null;
 }
 
 /*
@@ -28,7 +29,7 @@ const ACCESS_LABEL: Record<string, string> = {
   MODERATORS: 'Chỉ điều hành viên',
 };
 
-export function ForumManager({ forums }: { forums: ForumRow[] }) {
+export function ForumManager({ forums, medals }: { forums: ForumRow[]; medals: { id: string; name: string }[] }) {
   const [editing, setEditing] = useState<ForumRow | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -46,6 +47,7 @@ export function ForumManager({ forums }: { forums: ForumRow[] }) {
           key={editing?.id ?? 'new'}
           initial={editing}
           forums={forums}
+          medals={medals}
           onDone={() => { setCreating(false); setEditing(null); }}
         />
       )}
@@ -79,6 +81,11 @@ function ForumRowView({ forum, child, onEdit }: { forum: ForumRow; child?: boole
         <div className="flex items-center gap-1.5">
           <span className="truncate text-sm font-semibold text-ink-900 dark:text-white">{forum.name}</span>
           {forum.postAccess !== 'ALL' && <Lock size={12} className="shrink-0 text-ink-400" />}
+          {forum.requiredMedalId && (
+            <span className="chip !py-0 text-[10px] text-amber-600" title="Cần huy hiệu mới xem được">
+              <Crown size={10} className="mr-0.5 inline" />{forum.requiredMedalName ?? 'huy hiệu'}
+            </span>
+          )}
         </div>
         <div className="truncate text-xs text-ink-400">
           /forum/{forum.slug} · {forum.threadCount} chủ đề · {forum.replyCount} trả lời · {ACCESS_LABEL[forum.postAccess] ?? forum.postAccess}
@@ -94,7 +101,9 @@ function ForumRowView({ forum, child, onEdit }: { forum: ForumRow; child?: boole
   );
 }
 
-function ForumForm({ initial, forums, onDone }: { initial: ForumRow | null; forums: ForumRow[]; onDone: () => void }) {
+function ForumForm({ initial, forums, medals, onDone }: {
+  initial: ForumRow | null; forums: ForumRow[]; medals: { id: string; name: string }[]; onDone: () => void;
+}) {
   const [state, action, pending] = useActionState<ForumState, FormData>(saveForum, {});
   useEffect(() => { if (state.ok) onDone(); }, [state.ok, onDone]);
 
@@ -127,6 +136,18 @@ function ForumForm({ initial, forums, onDone }: { initial: ForumRow | null; foru
           </select></label>
         <label className="block"><span className="mb-1 block text-sm font-medium">Cấp độ tối thiểu</span>
           <input name="minLevel" type="number" min={1} defaultValue={initial?.minLevel ?? 1} className="input" /></label>
+        <label className="block sm:col-span-2">
+          <span className="mb-1 block text-sm font-medium">Huy hiệu bắt buộc để XEM (khác quyền đăng ở trên)</span>
+          <select name="requiredMedalId" defaultValue={initial?.requiredMedalId ?? ''} className="input">
+            <option value="">— Không, khu vực công khai —</option>
+            {medals.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+          </select>
+          <span className="mt-1 block text-xs text-ink-400">
+            Đặt huy hiệu thì cả khu vực khoá lại — chỉ ai có huy hiệu này (hoặc điều hành
+            viên của khu vực) mới xem được chủ đề bên trong. Khu vực vẫn hiện tên trong danh
+            sách, chỉ nội dung là bị chắn.
+          </span>
+        </label>
       </div>
 
       <label className="block"><span className="mb-1 block text-sm font-medium">Mô tả</span>

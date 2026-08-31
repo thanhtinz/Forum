@@ -22,7 +22,7 @@ import { GameViewTracker } from '@/components/game/GameViewTracker';
 import { RatingStars } from '@/components/game/RatingStars';
 import { Comments } from '@/components/comment/Comments';
 import { GameUnlockBox } from '@/components/game/GameUnlockBox';
-import { checkGameAccess } from '@/lib/game-unlock';
+import { checkGameAccess, checkVersionAccess } from '@/lib/game-unlock';
 
 export const dynamic = 'force-dynamic';
 
@@ -110,7 +110,17 @@ export default async function GameDetailPage({ params, searchParams }: {
     game,
     (session?.user as { role?: string } | undefined)?.role,
   );
-  const myPoints = userId && !gameAccess.allowed
+  // Lớp khoá thứ hai, RIÊNG cho từng version — độc lập với khoá của cả game.
+  // Chỉ cần kiểm khi đã qua được khoá game, vì chưa qua thì cũng chẳng dựng
+  // gì trong `versionInfos` để mà kiểm.
+  const role = (session?.user as { role?: string } | undefined)?.role;
+  const versionAccessById = new Map<string, { allowed: boolean; price: number }>();
+  if (gameAccess.allowed) {
+    for (const v of game.versions) {
+      versionAccessById.set(v.id, await checkVersionAccess(userId ?? null, v, role));
+    }
+  }
+  const myPoints = userId && (!gameAccess.allowed || [...versionAccessById.values()].some((a) => !a.allowed))
     ? (await db.user.findUnique({ where: { id: userId }, select: { points: true } }))?.points
     : undefined;
 
@@ -119,6 +129,7 @@ export default async function GameDetailPage({ params, searchParams }: {
     // dung lượng và checksum đại diện.
     const order = DOWNLOAD_PLATFORMS[v.platform].fileTypes;
     const files = [...v.files].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
+    const access = versionAccessById.get(v.id)!;
     return {
       id: v.id,
       platform: v.platform,
@@ -128,14 +139,18 @@ export default async function GameDetailPage({ params, searchParams }: {
       sizeBytes: v.sizeBytes != null ? Number(v.sizeBytes) : null,
       latest: v.latest,
       note: v.note,
-      files: files.map((f) => ({
+      // Bản bị khoá thì KHÔNG dựng danh sách file — cùng lý do khoá ở mức
+      // game: đường tải không được lộ ra trong mã nguồn trang lúc chưa có quyền.
+      locked: !access.allowed,
+      price: access.price,
+      files: access.allowed ? files.map((f) => ({
         id: f.id,
         type: f.type,
         sizeBytes: f.sizeBytes != null ? Number(f.sizeBytes) : null,
         checksum: f.checksum,
         checksumAlgo: f.checksumAlgo,
         available: f.scanStatus !== 'QUARANTINED',
-      })),
+      })) : [],
     };
   }) : [];
 
@@ -352,7 +367,8 @@ export default async function GameDetailPage({ params, searchParams }: {
         {/* ── Cột phải ── */}
         <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           {gameAccess.allowed ? (
-            <DownloadPanel slug={game.slug} versions={versionInfos} />
+            <DownloadPanel slug={game.slug} versions={versionInfos}
+              loggedIn={!!userId} myPoints={myPoints} callbackUrl={`/games/${game.slug}`} />
           ) : (
             <GameUnlockBox gameId={game.id} price={gameAccess.price} loggedIn={!!userId}
               myPoints={myPoints} callbackUrl={`/games/${game.slug}`} />

@@ -39,10 +39,14 @@ export default async function HomePage() {
           take: 1,
           select: { id: true, title: true, lastReplyAt: true, createdAt: true, author: { select: { username: true } } },
         },
+        requiredMedal: { select: { name: true } },
       },
     }),
+    // Bảng tin toàn trang không phân biệt người xem, nên loại thẳng khu vực
+    // đặt huy hiệu bắt buộc ra khỏi đây — chứ không phải lọc theo từng người:
+    // widget này dùng chung một câu truy vấn cho mọi khách.
     db.thread.findMany({
-      where: { status: 'PUBLISHED' },
+      where: { status: 'PUBLISHED', forum: { requiredMedalId: null } },
       orderBy: [{ lastReplyAt: 'desc' }, { createdAt: 'desc' }],
       take: LATEST_TAKE,
       select: {
@@ -55,13 +59,29 @@ export default async function HomePage() {
     }),
   ]);
 
+  // Huy hiệu của người đang xem, để quyết định hàng nào trong danh sách khu
+  // vực được lộ ra tiêu đề bài mới nhất.
+  const myMedalIds = session?.user?.id
+    ? new Set((await db.userMedal.findMany({
+        where: { userId: session.user.id }, select: { medalId: true }, take: 200,
+      })).map((m) => m.medalId))
+    : new Set<string>();
+  // ADMIN/MODERATOR toàn site xem được mọi khu vực — họ là người quản trị nó.
+  const myRole = (session?.user as { role?: string } | undefined)?.role;
+  const boGiaLuat = myRole === 'ADMIN' || myRole === 'MODERATOR';
+
   const toBoard = (f: (typeof forums)[number]): BoardRow => {
     const t = f.threads[0];
+    // Khu vực đặt huy hiệu bắt buộc mà người xem chưa có: tên khu vực vẫn
+    // hiện (không giấu sự tồn tại), nhưng bài mới nhất thì không lộ ra —
+    // nội dung của một khu vực không công khai không thể lọt qua trang chủ.
+    const khoa = !boGiaLuat && !!f.requiredMedalId && !myMedalIds.has(f.requiredMedalId);
     return {
       id: f.id, slug: f.slug, name: f.name, description: f.description, icon: f.icon,
       postAccess: f.postAccess,
       threadCount: f.threadCount, replyCount: f.replyCount,
-      latest: t ? { id: t.id, title: t.title, at: t.lastReplyAt ?? t.createdAt, author: t.author?.username ?? null } : null,
+      latest: khoa || !t ? null : { id: t.id, title: t.title, at: t.lastReplyAt ?? t.createdAt, author: t.author?.username ?? null },
+      requiredMedalName: khoa ? f.requiredMedal?.name ?? null : null,
     };
   };
 

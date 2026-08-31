@@ -21,7 +21,10 @@ export default async function NewThreadPage({ params }: { params: Promise<{ slug
   const { slug } = await params;
   const forum = await db.forum.findUnique({
     where: { slug },
-    select: { id: true, slug: true, name: true, icon: true, description: true, postAccess: true, minLevel: true },
+    select: {
+      id: true, slug: true, name: true, icon: true, description: true,
+      postAccess: true, minLevel: true, requiredMedalId: true,
+    },
   });
   if (!forum) notFound();
 

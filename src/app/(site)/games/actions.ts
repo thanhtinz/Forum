@@ -7,6 +7,7 @@ import { getActor } from '@/lib/actor';
 import { avgRating } from '@/lib/game';
 import { recordGameEvent } from '@/lib/game-stats';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
+import { rateLimit } from '@/lib/rate-limit-memory';
 
 export interface ToggleFavoriteState {
   active: boolean;
@@ -95,15 +96,33 @@ export async function reportGame(_prev: ReportState, formData: FormData): Promis
   return { ok: true };
 }
 
+/**
+ * Hạn mức cho hai hàm ghi nhận dưới đây.
+ *
+ * Cả hai là điểm POST CÔNG KHAI, không cần đăng nhập, mà `recordGameEvent` thì
+ * chèn một hàng `GameEvent` và cộng `viewCount`/`shareCount` mỗi lượt gọi (chỉ
+ * cột *unique* mới chống trùng). Không có trần thì một vòng lặp là bơm được
+ * lượt xem tuỳ ý, mà `recomputeTrending` cân VIEW=1 SHARE=2 nên đẩy thẳng được
+ * game mình chọn lên trang chủ — chưa kể bảng `GameEvent` phình vô hạn.
+ *
+ * Đếm trong bộ nhớ theo actor chứ không đếm trên bảng như `checkRateLimit`:
+ * hai hàm này không sinh ra hàng nào để mà đếm ngược lại. Trần đặt rộng tay,
+ * chỉ chặn kiểu gọi máy móc chứ không cản người xem thật lướt qua lướt lại.
+ */
+const XEM_MOI_PHUT = 40;
+const CHIA_SE_MOI_GIO = 30;
+
 /** Ghi nhận lượt chia sẻ (nút Share trên trang chi tiết). */
 export async function recordShare(gameId: string): Promise<void> {
   const actor = await getActor();
+  if (!rateLimit(`share:${actor.actorKey}`, CHIA_SE_MOI_GIO, 3600).ok) return;
   await recordGameEvent({ gameId, userId: actor.userId, actorKey: actor.actorKey, type: 'SHARE' });
 }
 
 /** Ghi nhận lượt xem trang chi tiết (gọi từ client sau khi render). */
 export async function recordGameView(gameId: string, slug: string): Promise<void> {
   const actor = await getActor();
+  if (!rateLimit(`view:${actor.actorKey}`, XEM_MOI_PHUT, 60).ok) return;
   const { unique } = await recordGameEvent({ gameId, userId: actor.userId, actorKey: actor.actorKey, type: 'VIEW' });
   if (unique) revalidatePath(`/games/${slug}`);
 }

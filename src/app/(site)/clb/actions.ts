@@ -10,6 +10,7 @@ import { bbcodeToHtml } from '@/lib/bbcode';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { AnhKhongHopLeError, nhanAnhVaoKho } from '@/lib/nhan-anh';
 import { isBlockedBetween, BLOCK_MESSAGE } from '@/lib/block';
+import { checkRateLimit } from '@/lib/rate-limit';
 import {
   clubSlug, getClubConfig,
   CLUBS_OWNED_MAX, CLUB_NAME_MIN, CLUB_NAME_MAX, CLUB_DESC_MAX,
@@ -282,6 +283,9 @@ export async function postToClub(_prev: ClubActionState, formData: FormData): Pr
   const club = await db.club.findUnique({ where: { id: clubId }, select: { id: true, slug: true } });
   if (!club) return { error: 'Không tìm thấy câu lạc bộ.' };
 
+  const han = await checkRateLimit('clubPost', me.id);
+  if (!han.allowed) return { error: han.message };
+
   // Quyền đăng KHÔNG lấy theo giao diện: phải đang là thành viên đã được nhận.
   const m = await db.clubMember.findUnique({
     where: { clubId_userId: { clubId, userId: me.id } }, select: { status: true },
@@ -473,6 +477,9 @@ export async function addClubComment(_prev: ClubActionState, formData: FormData)
     where: { id: postId }, select: { id: true, clubId: true, authorId: true, club: { select: { slug: true, name: true } } },
   });
   if (!post) return { error: 'Không tìm thấy bài.' };
+
+  const han = await checkRateLimit('clubComment', me.id);
+  if (!han.allowed) return { error: han.message };
 
   const m = await db.clubMember.findUnique({
     where: { clubId_userId: { clubId: post.clubId, userId: me.id } }, select: { status: true },

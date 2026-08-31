@@ -39,6 +39,9 @@ export default async function run(check) {
     await visitor.locator('#so-luu-but button:has-text("Ghi sổ")').click();
     await doiToi(async () => (await db.guestbookEntry.count({ where: { ownerId: owner.id } })) === 1);
     check('ghi được lời nhắn', (await db.guestbookEntry.count({ where: { ownerId: owner.id } })) === 1);
+    // Ghi xong ở cơ sở dữ liệu KHÔNG có nghĩa là trang đã dựng lại xong: chờ
+    // chính dòng chữ hiện ra rồi mới khẳng định, không thì đây là chỗ đỏ oan.
+    await visitor.locator('text=Ghé qua chào chủ nhà').first().waitFor({ timeout: 15000 }).catch(() => {});
     check('lời nhắn hiện trên trang', (await visitor.locator('text=Ghé qua chào chủ nhà').count()) > 0);
     check('chủ nhà nhận thông báo',
       (await db.notification.count({ where: { userId: owner.id, type: 'GUESTBOOK' } })) === 1);

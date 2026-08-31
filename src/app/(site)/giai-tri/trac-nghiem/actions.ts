@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { Prisma } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { checkRateLimit } from '@/lib/rate-limit';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import { getActiveBan, banMessage } from '@/lib/ban';
 import { lockUsers } from '@/lib/lock';
@@ -324,6 +325,9 @@ export async function guiBinhLuan(
     select: { id: true, authorId: true },
   });
   if (!cau) return { error: 'Không tìm thấy câu hỏi này.' };
+
+  const han = await checkRateLimit('quizComment', me.userId);
+  if (!han.allowed) return { error: han.message };
 
   if (cau.authorId !== me.userId && !(await laDieuHanh())) {
     const daTraLoi = await db.quizAnswer.findUnique({

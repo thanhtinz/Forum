@@ -2,6 +2,7 @@
 
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export type ReportTarget = 'thread' | 'reply' | 'comment';
 export type ReportState = { ok?: boolean; error?: string };
@@ -45,6 +46,11 @@ export async function createReport(_prev: ReportState, formData: FormData): Prom
   // Tránh báo cáo trùng khi vẫn còn đang xử lý
   const dup = await db.report.findFirst({ where: { reporterId: userId, [field]: targetId, status: 'OPEN' }, select: { id: true } });
   if (dup) return { error: 'Bạn đã báo cáo nội dung này rồi. Cảm ơn bạn!' };
+
+  // Trần chung theo NGƯỜI: chỗ chặn trùng ngay trên chỉ tính từng đối tượng
+  // một, nên rải báo cáo lên hàng loạt đối tượng khác nhau thì không gì cản.
+  const han = await checkRateLimit('report', userId);
+  if (!han.allowed) return { error: han.message };
 
   await db.report.create({ data: { reporterId: userId, [field]: targetId, reason, detail }, select: { id: true } });
   return { ok: true };

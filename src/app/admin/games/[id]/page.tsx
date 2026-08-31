@@ -7,16 +7,24 @@ import { db } from '@/lib/db';
 import { requireSuperAdmin } from '@/lib/admin';
 import { assetUrl, DOWNLOAD_PLATFORMS } from '@/lib/game';
 import { gameAnalytics } from '@/lib/game-stats';
-import { fmtBytes, fmtCount } from '@/lib/utils';
+import { fmtBytes } from '@/lib/utils';
 import { GameEditForm } from '@/components/admin/GameEditForm';
 import { TroLyGameAi } from '@/components/admin/TroLyGameAi';
-import { FileForm, ImageForm, VersionForm } from '@/components/admin/GameSubForms';
+import { FileForm, ImageForm, VersionForm, type FileOption, type VersionOption } from '@/components/admin/GameSubForms';
+import { NutXoa } from '@/components/admin/NutXoa';
 import { deleteFile, deleteGame, deleteImage, deleteVersion, quarantineFile, setGameStatus, setLatestVersion } from '../actions';
 import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 import { coAi } from '@/lib/ai';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sửa game', robots: { index: false } };
+
+/**
+ * Số liệu ở trang quản trị ghi ĐẦY ĐỦ, không rút gọn kiểu `1.5K` như trang công
+ * khai: 1.500 và 1.549 lượt tải là hai con số khác nhau, mà người vào đây là
+ * người cần biết chính xác.
+ */
+const so = (n: number) => n.toLocaleString('vi');
 
 export default async function AdminGameEditPage({ params }: { params: Promise<{ id: string }> }) {
   // Kho game là hàng của nền tảng: chỉ quản trị viên, không cho điều hành viên.
@@ -41,11 +49,35 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
   if (!game) notFound();
 
   const stats = await gameAnalytics(game.id);
-  const versionOptions = game.versions.map((v) => ({
+  // Truyền ĐỦ dữ liệu đang lưu xuống biểu mẫu, không chỉ mỗi cái tên: chọn "sửa"
+  // mà ô để trống thì lượt lưu sẽ xoá trắng đúng những ô ấy — xem `VersionOption`.
+  const versionOptions: VersionOption[] = game.versions.map((v) => ({
     id: v.id,
     platform: v.platform,
     name: `${DOWNLOAD_PLATFORMS[v.platform].label} · v${v.version}${v.latest ? ' (latest)' : ''}`,
+    version: v.version,
+    releaseDate: v.releaseDate ? format(v.releaseDate, 'yyyy-MM-dd') : null,
+    changelog: v.changelog,
+    // BigInt không tuần tự hoá qua ranh giới server→client được.
+    sizeBytes: v.sizeBytes != null ? String(v.sizeBytes) : null,
+    note: v.note,
+    pricePoints: v.pricePoints,
+    latest: v.latest,
   }));
+  const fileOptions: FileOption[] = game.versions.flatMap((v) => v.files.map((f) => ({
+    id: f.id,
+    name: `${DOWNLOAD_PLATFORMS[v.platform].label} · v${v.version} · ${f.type}`,
+    versionId: v.id,
+    type: f.type,
+    storageKey: f.storageKey,
+    fileName: f.fileName,
+    sizeBytes: f.sizeBytes != null ? String(f.sizeBytes) : null,
+    checksum: f.checksum,
+    checksumAlgo: f.checksumAlgo,
+    mimeType: f.mimeType,
+    scanStatus: f.scanStatus,
+    scanNote: f.scanNote,
+  })));
 
   return (
     <div className="space-y-5">
@@ -58,16 +90,17 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
             <ExternalLink size={14} /> Xem trang công khai
           </Link>
           <form action={async () => { 'use server'; await deleteGame(game.id); }}>
-            <button type="submit" className="btn !py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40">
+            <NutXoa hoi={`Xoá hẳn game “${game.title}”? Mất luôn mọi version, file và ảnh.`}
+              className="btn !py-1.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40">
               <Trash2 size={14} /> Xoá game
-            </button>
+            </NutXoa>
           </form>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <Tile label="Views" value={fmtCount(stats.views)} sub={`${fmtCount(stats.uniqueViews)} unique`} />
-        <Tile label="Downloads" value={fmtCount(stats.downloads)} sub={`${fmtCount(stats.uniqueDownloads)} unique`} />
+        <Tile label="Views" value={so(stats.views)} sub={`${so(stats.uniqueViews)} unique`} />
+        <Tile label="Downloads" value={so(stats.downloads)} sub={`${so(stats.uniqueDownloads)} unique`} />
         <Tile label="Xem → tải" value={`${stats.viewToDownload}%`} />
         <Tile label="Trending" value={game.trendingScore.toFixed(1)} />
         <Tile label="Rating" value={game.ratingCount ? (game.ratingSum / game.ratingCount).toFixed(1) : '—'} sub={`${game.ratingCount} lượt`} />
@@ -141,7 +174,10 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
                             </button>
                           </form>
                           <form action={async () => { 'use server'; await deleteFile(f.id); }}>
-                            <button type="submit" className="text-ink-400 hover:text-red-500" title="Xoá file" aria-label="Xoá file"><Trash2 size={13} /></button>
+                            <NutXoa hoi={`Xoá file ${f.type} của bản v${v.version}?`}
+                              className="text-ink-400 hover:text-red-500" title="Xoá file" aria-label="Xoá file">
+                              <Trash2 size={13} />
+                            </NutXoa>
                           </form>
                         </li>
                       ))}
@@ -155,7 +191,8 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
                         </form>
                       )}
                       <form action={async () => { 'use server'; await deleteVersion(v.id); }}>
-                        <button type="submit" className="text-red-500 hover:underline">Xoá</button>
+                        <NutXoa hoi={`Xoá bản v${v.version} (${DOWNLOAD_PLATFORMS[v.platform].label})? Mất luôn file đính kèm.`}
+                          className="text-red-500 hover:underline">Xoá</NutXoa>
                       </form>
                     </div>
                   </td>
@@ -171,8 +208,8 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
             <VersionForm gameId={game.id} versions={versionOptions} />
           </div>
           <div className="rounded-xl border border-ink-200 p-3 dark:border-ink-700">
-            <h3 className="mb-3 text-sm font-bold">Gắn file JAR / JAD</h3>
-            <FileForm versions={versionOptions} />
+            <h3 className="mb-3 text-sm font-bold">Gắn / sửa file tải</h3>
+            <FileForm versions={versionOptions} files={fileOptions} />
           </div>
         </div>
       </section>
@@ -188,7 +225,7 @@ export default async function AdminGameEditPage({ params }: { params: Promise<{ 
                 <img src={assetUrl(img.storageKey)!} alt={img.caption ?? ''} className="h-20 w-full rounded-lg object-cover" style={{ imageRendering: 'pixelated' }} />
                 <p className="mt-1 truncate text-[10px] text-ink-400">{img.type} · #{img.sortOrder}</p>
                 <form action={async () => { 'use server'; await deleteImage(img.id); }}>
-                  <button type="submit" className="text-[11px] text-red-500 hover:underline">Xoá</button>
+                  <NutXoa hoi="Xoá ảnh này?" className="text-[11px] text-red-500 hover:underline">Xoá</NutXoa>
                 </form>
               </div>
             ))}

@@ -32,6 +32,23 @@ const big = (fd: FormData, k: string) => {
   return n == null ? null : BigInt(n);
 };
 
+/**
+ * Chỉ giữ lại những trường mà biểu mẫu THỰC SỰ có gửi lên.
+ *
+ * `upsertVersion`/`upsertFile` dùng chung một khối `data` cho cả tạo mới lẫn
+ * sửa, nên một biểu mẫu thiếu ô là ghi `null` đè lên giá trị đang lưu. Biểu mẫu
+ * nay đã nạp sẵn giá trị cũ nên bình thường không thiếu ô nào — nhưng một lượt
+ * gửi thiếu (bản dựng cũ còn trong bộ nhớ đệm, hay ai đó gửi tay) thì vẫn không
+ * được phép xoá trắng dữ liệu.
+ */
+function chiTruongCoGui<T extends object>(fd: FormData, data: T): Partial<T> {
+  const ra: Partial<T> = {};
+  for (const k of Object.keys(data) as (keyof T & string)[]) {
+    if (fd.has(k)) ra[k] = data[k];
+  }
+  return ra;
+}
+
 const gameSchema = z.object({
   title: z.string().min(1, 'Thiếu tên game').max(200),
   slug: z.string().max(80).optional(),
@@ -238,7 +255,8 @@ export async function upsertVersion(_prev: ActionState, fd: FormData): Promise<A
   await db.$transaction(async (tx) => {
     // Mỗi nền tảng đúng một bản Latest.
     if (latest) await tx.gameVersion.updateMany({ where: { gameId, platform }, data: { latest: false } });
-    if (id) await tx.gameVersion.update({ where: { id }, data: { ...data, latest } });
+    // Sửa thì chỉ ghi những trường biểu mẫu có gửi lên — xem `chiTruongCoGui`.
+    if (id) await tx.gameVersion.update({ where: { id }, data: { ...chiTruongCoGui(fd, data), latest } });
     else await tx.gameVersion.create({ data: { ...data, latest, gameId } });
   });
 
@@ -314,7 +332,10 @@ export async function upsertFile(_prev: ActionState, fd: FormData): Promise<Acti
 
   await db.gameFile.upsert({
     where: { versionId_type: { versionId, type } },
-    update: data,
+    // `scanStatus` và `checksumAlgo` có giá trị mặc định cứng, nên một lượt gửi
+    // thiếu ô sẽ đá tệp đang CÁCH LY về "chờ quét" — tức là cho tải lại, vì
+    // đường tải chỉ chặn đúng QUARANTINED. Sửa thì chỉ ghi ô nào có gửi.
+    update: chiTruongCoGui(fd, data),
     create: { ...data, versionId, type },
   });
 

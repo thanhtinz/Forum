@@ -36,7 +36,7 @@ export default async function run(check) {
   // ── Tầng lưu và tầng tiền thật ───────────────────────────────────────
   const author = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true } });
   const reader = await db.user.findFirst({ where: { username: 'huytran' }, select: { id: true } });
-  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL' }, select: { id: true, slug: true } });
+  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL', requiredMedalId: null }, select: { id: true, slug: true } });
   if (!author || !reader || !forum) { check('có dữ liệu mẫu', false, 'thiếu người dùng hoặc chuyên mục'); return; }
 
   const cuTru = await db.siteSetting.findUnique({ where: { key: SITE_SETTING_KEY } });

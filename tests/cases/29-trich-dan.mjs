@@ -16,7 +16,7 @@ const BIMAT = 'PHANAN-KHONGDUOCTRICH-9z';
 export default async function run(check) {
   const chu = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true } });
   const nguoi2 = await db.user.findFirst({ where: { username: 'huytran' }, select: { id: true } });
-  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL' }, select: { id: true, slug: true } });
+  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL', requiredMedalId: null }, select: { id: true, slug: true } });
   if (!chu || !nguoi2 || !forum) { check('có dữ liệu mẫu', false, 'thiếu dữ liệu'); return; }
 
   const wipe = () => db.thread.deleteMany({ where: { title: { startsWith: DAU } } });

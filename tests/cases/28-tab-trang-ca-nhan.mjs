@@ -15,7 +15,7 @@ const CHU_DE_MOI_TRANG = 10;
 export default async function run(check) {
   const chu = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true, username: true } });
   const khach = await db.user.findFirst({ where: { username: 'huytran' }, select: { id: true } });
-  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL' }, select: { id: true } });
+  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL', requiredMedalId: null }, select: { id: true } });
   if (!chu || !khach || !forum) { check('có dữ liệu mẫu', false, 'thiếu dữ liệu'); return; }
 
   const wipe = async () => {

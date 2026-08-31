@@ -13,7 +13,7 @@ import { BASE, db, openPage } from '../helpers.mjs';
  * thật sự, và phải ăn màu theo chữ xung quanh.
  */
 export default async function run(check) {
-  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL' }, select: { slug: true } });
+  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL', requiredMedalId: null }, select: { slug: true } });
   const game = await db.game.findFirst({ where: { status: 'PUBLISHED' }, select: { slug: true } });
   if (!forum) { check('có dữ liệu mẫu', false, 'thiếu diễn đàn'); return; }
 

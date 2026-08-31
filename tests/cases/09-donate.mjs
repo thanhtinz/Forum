@@ -11,7 +11,7 @@ const TITLE = 'Chủ đề kiểm thử tặng điểm';
 export default async function run(check) {
   const lan = await db.user.findFirst({ where: { username: 'lanpham' }, select: { id: true, points: true } });
   const minh = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true, points: true } });
-  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL' }, select: { id: true, slug: true } });
+  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL', requiredMedalId: null }, select: { id: true, slug: true } });
 
   await db.thread.deleteMany({ where: { title: { startsWith: TITLE } } });
   const thread = await db.thread.create({

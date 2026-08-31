@@ -47,7 +47,7 @@ export default async function run(check) {
 
   // Ô soạn bài: bảng trợ giúp phải dẫn sang trang hướng dẫn đầy đủ.
   const { db } = await import('../helpers.mjs');
-  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL' }, select: { slug: true } });
+  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL', requiredMedalId: null }, select: { slug: true } });
   const poster = await openPage('minhdev');
   await poster.goto(`${BASE}/forum/${forum.slug}/new`, { waitUntil: 'networkidle' });
   await poster.waitForTimeout(600);

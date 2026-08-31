@@ -9,12 +9,22 @@ import { BASE, db, openPage } from '../helpers.mjs';
  */
 export default async function run(check) {
   const huy = await db.user.findFirst({ where: { username: 'huytran' }, select: { id: true } });
+  // Bài này cần một chủ đề CÓ SẴN trả lời gốc để treo phản hồi cấp hai vào.
+  // Trước đây chỉ hỏi `status: PUBLISHED` rồi lấy đại con đầu tiên, mà
+  // `findFirst` không có `orderBy` thì Postgres trả về hàng nào tuỳ thứ tự vật
+  // lý — chạy đủ lâu là bốc trúng chủ đề mẫu không có trả lời nào, và bài đỏ
+  // oan ngay ở mục "có dữ liệu mẫu". Nói thẳng điều kiện ra trong `where`.
   const thread = await db.thread.findFirst({
-    where: { status: 'PUBLISHED' },
+    where: { status: 'PUBLISHED', replies: { some: { parentId: null } } },
+    orderBy: { createdAt: 'asc' },
     select: { id: true, forum: { select: { slug: true } } },
   });
   const parent = thread
-    ? await db.reply.findFirst({ where: { threadId: thread.id, parentId: null }, select: { id: true } })
+    ? await db.reply.findFirst({
+      where: { threadId: thread.id, parentId: null },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    })
     : null;
   if (!huy || !thread || !parent) { check('có dữ liệu mẫu', false, 'thiếu chủ đề hoặc trả lời'); return; }
 

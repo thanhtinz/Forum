@@ -22,7 +22,7 @@ export default async function run(check) {
   const chu = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true } });
   const kia = await db.user.findFirst({ where: { username: 'huytran' }, select: { id: true } });
   const ba = await db.user.findFirst({ where: { username: 'lanpham' }, select: { id: true } });
-  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL' }, select: { id: true, slug: true } });
+  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL', requiredMedalId: null }, select: { id: true, slug: true } });
   if (!chu || !kia || !ba || !forum) { check('có dữ liệu mẫu', false, 'thiếu dữ liệu'); return; }
 
   const wipe = async () => {

@@ -20,7 +20,7 @@ const CONTENT = `<p>Bản mới đây nhé, tải về dùng thử:</p><!--hide-
 export default async function run(check) {
   const author = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true } });
   const reader = await db.user.findFirst({ where: { username: 'huytran' }, select: { id: true } });
-  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL' }, select: { id: true, slug: true } });
+  const forum = await db.forum.findFirst({ where: { postAccess: 'ALL', requiredMedalId: null }, select: { id: true, slug: true } });
   if (!author || !reader || !forum) { check('có dữ liệu mẫu', false, 'thiếu người dùng hoặc chuyên mục'); return; }
 
   const wipe = () => db.thread.deleteMany({ where: { title: { startsWith: 'Kiểm thử nội dung ẩn' } } });

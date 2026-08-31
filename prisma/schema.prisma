@@ -2527,6 +2527,19 @@ model PokeNhanVat {
   diemDanhNgay   DateTime?
   diemDanhChuoi  Int       @default(0)
 
+  /// Mốc thưởng Đồ Giám đã nhận. Cùng lối cột `nhiemVu`: chỉ ghi ĐÃ NHẬN TỚI
+  /// ĐÂU, còn tiến độ thì đọc thẳng từ bảng `PokeDoGiam` nên không lệch được.
+  mocDoGiam Int @default(0)
+
+  /// Hai bộ đếm cho nhiệm vụ hằng ngày.
+  ///
+  /// `soDiet` sẵn có chỉ đếm riêng Lãnh Thổ, còn số dòng `PokeThu` thì thả thú
+  /// ra là mất dấu — cả hai đều không dùng làm mốc ngày được.
+  soHaGuc Int @default(0)
+  soBat   Int @default(0)
+
+  nhiemVuNgay PokeNhiemVuNgay[]
+
   doGiam PokeDoGiam[]
 
   bangId String?
@@ -2700,6 +2713,34 @@ model PokeTran {
   toiTramLuot  Int     @default(0)
 
   createdAt DateTime @default(now())
+}
+
+/// Nhiệm vụ hằng ngày: mỗi người mỗi ngày mỗi việc một dòng.
+///
+/// Chuỗi nhiệm vụ nhập môn chỉ có bốn bước, nhận hết là hết — sau đó mục
+/// Nhiệm vụ vĩnh viễn không còn gì để làm. Ba việc hằng ngày ở đây làm lại
+/// mỗi ngày.
+///
+/// Tiến độ KHÔNG có cột đếm riêng: `mocDau` chép lại bộ đếm tổng lúc dòng này
+/// sinh ra, tiến độ là hiệu số với bộ đếm hiện tại. Nhờ vậy không có đường nào
+/// để tiến độ lệch khỏi sự thật, đúng lối `tienDoNhiemVu` đang dùng.
+model PokeNhiemVuNgay {
+  id        String      @id @default(cuid())
+  nhanVatId String
+  nhanVat   PokeNhanVat @relation(fields: [nhanVatId], references: [id], onDelete: Cascade)
+
+  /// Đầu ngày theo lịch giờ Việt Nam, dùng chung mốc với điểm danh.
+  ngay DateTime
+  ma   String
+
+  mocDau Int     @default(0)
+  daNhan Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  /// Chống nhận hai lần bằng chính ràng buộc của cơ sở dữ liệu.
+  @@unique([nhanVatId, ngay, ma])
+  @@index([nhanVatId, ngay])
 }
 
 /// Mười bốn Gym, nạp từ `prisma/du-lieu/pokemon.json`.

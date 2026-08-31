@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { anhThu, tenHe } from '@/lib/pokemon-const';
+import { useActionState, useMemo, useState } from 'react';
+import { Check, Gift, Lock } from 'lucide-react';
+import { nhanThuongDoGiam, type PokeState } from '@/app/(site)/pokemon/actions';
+import { MOC_DO_GIAM, anhThu, mocDoGiamDatDuoc, tenHe } from '@/lib/pokemon-const';
 import { canhKhu } from '@/lib/pokemon-giao-dien';
 import { cn } from '@/lib/utils';
 import { HuyHieuHe } from './ThePoke';
@@ -20,12 +22,18 @@ interface Khu { ma: string; ten: string; bac: number }
  * viền. Ghi chữ "chưa gặp / đã gặp / đã bắt" dưới từng ô thì bốn trăm sáu tám
  * ô thành bốn trăm sáu tám dòng chữ.
  */
-export function DoGiam({ loai, khu }: { loai: Loai[]; khu: Khu[] }) {
+export function DoGiam({ loai, khu, daNhanMoc }: {
+  loai: Loai[]; khu: Khu[]; daNhanMoc: number;
+}) {
   const [xemKhu, setXemKhu] = useState<string>('tatca');
   const [chiThieu, setChiThieu] = useState(false);
+  const [thuong, thuongAction, dangNhan] = useActionState<PokeState, FormData>(
+    nhanThuongDoGiam, {});
 
   const daGap = loai.filter((l) => l.gap).length;
   const daBat = loai.filter((l) => l.bat).length;
+  const datDuoc = mocDoGiamDatDuoc(daGap, daBat);
+  const mocKe = MOC_DO_GIAM[daNhanMoc] ?? null;
 
   const hien = useMemo(() => loai
     .filter((l) => xemKhu === 'tatca' || l.khu === xemKhu)
@@ -45,6 +53,46 @@ export function DoGiam({ loai, khu }: { loai: Loai[]; khu: Khu[] }) {
       <div className="space-y-1.5">
         <Vach nhan="Đã gặp" so={daGap} tong={loai.length} lop="bg-sky-500" />
         <Vach nhan="Đã bắt" so={daBat} tong={loai.length} lop="bg-emerald-500" />
+      </div>
+
+      {/* Mốc thưởng — trước đây lấp đủ sổ 468 loài mà không có phần thưởng
+          nào, sổ chỉ là hai thanh tiến độ. */}
+      <div className="rounded-xl border-2 border-ink-200 p-3 dark:border-ink-700">
+        <p className="label mb-2 flex items-center gap-1.5"><Gift size={13} /> Mốc thưởng của sổ</p>
+        {thuong.error && <p className="mb-2 text-sm text-red-600">{thuong.error}</p>}
+        {thuong.ke && !thuong.error && (
+          <p className="man-hien mb-2 text-sm font-medium text-emerald-600">{thuong.ke}</p>
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          {MOC_DO_GIAM.map((m, i) => (
+            <span key={m.ma} className={cn(
+              'chip !py-0.5 text-[11px]',
+              i < daNhanMoc ? 'border-emerald-400 text-emerald-600'
+                : i < datDuoc ? 'border-brand-400 font-bold text-brand-600'
+                  : 'opacity-50',
+            )}>
+              {i < daNhanMoc && <Check size={11} />}
+              {i >= datDuoc && <Lock size={11} />}
+              {m.ten}
+            </span>
+          ))}
+        </div>
+        {mocKe ? (
+          <form action={thuongAction} className="mt-2">
+            <p className="mb-1.5 text-xs text-ink-500">
+              Mốc kế: <b>{mocKe.ten}</b> — {mocKe.vang.toLocaleString('vi')} vàng
+              {mocKe.ngoc ? `, ${mocKe.ngoc} ngọc` : ''}
+              {mocKe.cau ? `, ${mocKe.cau} quả cầu` : ''}
+              {mocKe.da ? `, ${mocKe.da} đá tiến cấp` : ''}.
+            </p>
+            <button disabled={dangNhan || datDuoc <= daNhanMoc}
+              className="btn-primary gap-1.5 !py-1.5 text-sm disabled:opacity-50">
+              {datDuoc > daNhanMoc ? <><Check size={14} /> Nhận thưởng</> : 'Chưa tới mốc'}
+            </button>
+          </form>
+        ) : (
+          <p className="mt-2 text-xs text-emerald-600">Bạn đã nhận hết mốc thưởng của sổ.</p>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-1.5">

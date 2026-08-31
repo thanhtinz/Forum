@@ -109,12 +109,17 @@ export default async function run(check) {
     for (let i = 0; i < 30; i++) {
       const truoc = await db.pokeTran.findUnique({ where: { nhanVatId: nv.id } });
       if (!truoc) break;
+      const mauToiTruoc = (await db.pokeThu.findUnique({ where: { id: conA.id } })).mau;
       await p.locator('form button[name="chieu"]').first().click();
+      // Chờ theo MÁU CỦA MÌNH: địch lượt nào cũng đánh trả, còn máu địch thì
+      // lượt trượt không đổi — chờ theo nó là dừng ngay ở lượt trượt đầu tiên.
       const sau = await doiToi(async () => {
-        const t = await db.pokeTran.findUnique({ where: { nhanVatId: nv.id } });
-        return t && t.mau !== truoc.mau ? t : null;
+        const c = await db.pokeThu.findUnique({ where: { id: conA.id } });
+        if (!c || c.mau >= mauToiTruoc) return null;
+        return db.pokeTran.findUnique({ where: { nhanVatId: nv.id } });
       });
       if (!sau) break;
+      await db.pokeThu.update({ where: { id: conA.id }, data: { mau: 5000 } });
       soLuot++;
       const mat = truoc.mau - sau.mau;
       // Chiêu 500 − thủ 50 = 450, cùng hệ nên không nhân hệ số.

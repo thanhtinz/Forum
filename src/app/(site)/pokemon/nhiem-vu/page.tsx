@@ -3,8 +3,9 @@ import type { Metadata } from 'next';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { NHIEM_VU } from '@/lib/pokemon-const';
-import { tienDoNhiemVu } from '@/lib/pokemon';
+import { nhiemVuNgayHomNay, tienDoNhiemVu } from '@/lib/pokemon';
 import { BangNhiemVu } from '@/components/pokemon/BangNhiemVu';
+import { ViecHangNgay } from '@/components/pokemon/ViecHangNgay';
 
 export const metadata: Metadata = { title: 'Nhiệm vụ — Đảo Pokémon' };
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,8 @@ export default async function TrangNhiemVu() {
   if (!nv) redirect('/pokemon');
 
   const tienDo = await tienDoNhiemVu(nv.id);
+  // Mở LƯỜI ngay lúc có người xem trang — không tiến trình nền nào cả.
+  const viecNgay = await nhiemVuNgayHomNay(nv.id);
 
   return (
     <>
@@ -31,6 +34,20 @@ export default async function TrangNhiemVu() {
           kho, huy chương, cấp, số trận thắng — nên không có chỗ nào để lệch.
         </p>
         <BangNhiemVu daNhan={nv.nhiemVu} tienDo={tienDo} />
+      </section>
+
+      <section className="dao-tam mt-4 p-5">
+        <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-xl font-black">Việc hằng ngày</h1>
+          <span className="retro-sub text-ink-400">
+            {viecNgay.filter((v) => v.daNhan).length}/{viecNgay.length} đã nhận hôm nay
+          </span>
+        </div>
+        <p className="mb-4 text-sm text-ink-500">
+          Đặt lại mỗi ngày theo lịch giờ Việt Nam, cùng mốc với điểm danh. Tiến độ
+          đọc từ bộ đếm thật chứ không có cột riêng nào để lệch.
+        </p>
+        <ViecHangNgay viec={viecNgay} />
       </section>
     </>
   );

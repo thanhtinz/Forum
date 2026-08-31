@@ -726,6 +726,66 @@ export const NHIEM_VU = [
   { ten: 'Ra sàn đấu', mo: 'Thắng một trận ở đấu trường.', exp: 40, vang: 0, ngoc: 1 },
 ] as const;
 
+// ─────────────────────── Mốc thưởng Đồ Giám ───────────────────────
+
+/**
+ * Sổ 468 loài trước đây chỉ là hai thanh tiến độ: sưu tầm đủ cả sổ mà KHÔNG có
+ * phần thưởng nào. Tám mốc dưới đây cho việc lấp sổ một lý do.
+ *
+ * Chia hai nhánh — GẶP và BẮT — vì hai việc ấy khó khác hẳn nhau: gặp là đi
+ * cho đủ khu, còn bắt thì tỉ lệ trúng chỉ một phần sáu.
+ */
+export const MOC_DO_GIAM = [
+  { ma: 'gap50', gap: 50, bat: 0, ten: 'Gặp 50 loài', vang: 2_000, ngoc: 0, cau: 10, da: 0 },
+  { ma: 'bat25', gap: 0, bat: 25, ten: 'Bắt 25 loài', vang: 4_000, ngoc: 5, cau: 10, da: 1 },
+  { ma: 'gap150', gap: 150, bat: 0, ten: 'Gặp 150 loài', vang: 10_000, ngoc: 10, cau: 20, da: 1 },
+  { ma: 'bat75', gap: 0, bat: 75, ten: 'Bắt 75 loài', vang: 20_000, ngoc: 20, cau: 20, da: 2 },
+  { ma: 'gap300', gap: 300, bat: 0, ten: 'Gặp 300 loài', vang: 50_000, ngoc: 40, cau: 30, da: 3 },
+  { ma: 'bat150', gap: 0, bat: 150, ten: 'Bắt 150 loài', vang: 100_000, ngoc: 80, cau: 40, da: 5 },
+  { ma: 'gapHet', gap: 468, bat: 0, ten: 'Gặp trọn sổ', vang: 200_000, ngoc: 150, cau: 50, da: 8 },
+  { ma: 'batHet', gap: 0, bat: 300, ten: 'Bắt 300 loài', vang: 500_000, ngoc: 300, cau: 99, da: 15 },
+] as const;
+
+/** Số mốc Đồ Giám đã ĐỦ ĐIỀU KIỆN, tính theo số loài đã gặp và đã bắt. */
+export function mocDoGiamDatDuoc(daGap: number, daBat: number): number {
+  let n = 0;
+  for (const m of MOC_DO_GIAM) {
+    if (daGap >= m.gap && daBat >= m.bat) n++;
+    else break;
+  }
+  return n;
+}
+
+// ─────────────────────── Nhiệm vụ hằng ngày ───────────────────────
+
+/**
+ * Ba việc làm lại mỗi ngày, bù cho chuỗi nhập môn chỉ có bốn bước rồi hết.
+ *
+ * `mocTu` nói tiến độ đọc từ bộ đếm nào; tiến độ là HIỆU giữa bộ đếm hiện tại
+ * và giá trị của nó lúc đầu ngày, nên không cần cột đếm riêng nào cho từng
+ * ngày và cũng không có đường nào để nó lệch.
+ */
+export const NHIEM_VU_NGAY = [
+  {
+    ma: 'haGuc', ten: 'Đi săn', mo: 'Hạ 10 con thú hoang.',
+    mocTu: 'soHaGuc' as const, can: 10, vang: 3_000, ngoc: 1, cau: 3,
+  },
+  {
+    ma: 'bat', ten: 'Thợ bắt', mo: 'Bắt 3 con bằng quả cầu.',
+    mocTu: 'soBat' as const, can: 3, vang: 5_000, ngoc: 2, cau: 5,
+  },
+  {
+    ma: 'dau', ten: 'Ra sàn', mo: 'Thắng 1 trận ở đấu trường.',
+    mocTu: 'thangDau' as const, can: 1, vang: 4_000, ngoc: 2, cau: 3,
+  },
+] as const;
+
+export type MaNhiemVuNgay = (typeof NHIEM_VU_NGAY)[number]['ma'];
+
+export function timNhiemVuNgay(ma: string) {
+  return NHIEM_VU_NGAY.find((n) => n.ma === ma);
+}
+
 // ─────────────────────────── Lãnh thổ: điểm chiến công ───────────────────────────
 
 /**

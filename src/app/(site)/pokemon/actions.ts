@@ -16,6 +16,7 @@ import {
   O_TRANG_BI, congTrangBi, tenLoaiDo, timHuyenTinh,
   bacNangBangKe, congBang,
   DIEM_DOI_QUA, KHU_CHIEN_TRUONG, QUA_LANH_THO,
+  MOC_DO_GIAM, mocDoGiamDatDuoc, timNhiemVuNgay,
   NHAN_CHI_MANG, TRANG_THAI, ketQuaLuot, matLuotVi, mauTramMoiLuot, tenTrangThai, trangThaiGayRa,
   boThu, canVaoKhu, capTheoExp, gymDuocVao, heRaChieu, laGioVang, nacTienHoaMoi, satThuongDau,
   tenHe, timKhu, tinhSatThuong,
@@ -376,6 +377,9 @@ export async function raChieu(_prev: PokeState, fd: FormData): Promise<PokeState
           where: { id: nv.id },
           data: {
             vang: { increment: tran.vang }, exp: expMoi, cap: capMoi,
+            // `soDiet` chỉ đếm riêng Lãnh Thổ nên không làm mốc ngày được;
+            // `soHaGuc` đếm mọi con hạ được ở mọi khu.
+            soHaGuc: { increment: 1 },
             ...(laChienTruong
               ? { diemChien: { increment: 1 }, soDiet: { increment: 1 } }
               : {}),
@@ -582,6 +586,9 @@ export async function nemCau(_prev: PokeState, _fd: FormData): Promise<PokeState
       });
       await tx.pokeTran.delete({ where: { id: tran.id } });
       await ghiDoGiam(tx, nv.id, tran, true);
+      // Số dòng `PokeThu` không làm mốc ngày được: thả một con ra là số ấy tụt
+      // xuống, mà việc "đã bắt hôm nay" thì không tụt.
+      await tx.pokeNhanVat.update({ where: { id: nv.id }, data: { soBat: { increment: 1 } } });
       return { ok: true, ke: `Bắt được ${tran.ten}! Nó đã vào kho của bạn.` };
     });
 
@@ -1590,6 +1597,103 @@ export async function nhanThuongNhiemVu(_prev: PokeState, _fd: FormData): Promis
  * Trừ điểm CÓ ĐIỀU KIỆN rồi mới bốc, nên hai tab bấm cùng lúc không lấy được
  * hai phần quà bằng một lần điểm.
  */
+/**
+ * Nhận thưởng một mốc Đồ Giám.
+ *
+ * Tiến độ đọc THẲNG từ bảng `PokeDoGiam` chứ không có cột đếm riêng, nên không
+ * có đường nào để nó lệch khỏi sự thật. Cột `mocDoGiam` chỉ ghi ĐÃ NHẬN TỚI
+ * ĐÂU — cùng lối cột `nhiemVu` của chuỗi nhập môn.
+ */
+export async function nhanThuongDoGiam(_prev: PokeState, _fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const { nv } = r;
+
+  const [daGap, daBat] = await Promise.all([
+    db.pokeDoGiam.count({ where: { nhanVatId: nv.id } }),
+    db.pokeDoGiam.count({ where: { nhanVatId: nv.id, daBat: true } }),
+  ]);
+  const dat = mocDoGiamDatDuoc(daGap, daBat);
+  if (dat <= nv.mocDoGiam) return { error: 'Chưa tới mốc thưởng tiếp theo.' };
+
+  const moc = MOC_DO_GIAM[nv.mocDoGiam];
+  if (!moc) return { error: 'Bạn đã nhận hết mốc thưởng của sổ.' };
+
+  // Mốc cũ nằm trong `where`: hai tab cùng bấm thì tab sau đếm được 0 dòng và
+  // không phát thưởng lần thứ hai.
+  const ghi = await db.pokeNhanVat.updateMany({
+    where: { id: nv.id, mocDoGiam: nv.mocDoGiam },
+    data: {
+      mocDoGiam: nv.mocDoGiam + 1,
+      vang: { increment: moc.vang }, ngoc: { increment: moc.ngoc },
+      cau: { increment: moc.cau }, da: { increment: moc.da },
+    },
+  });
+  if (ghi.count === 0) return { error: 'Mốc này vừa được nhận rồi.' };
+
+  revalidatePath('/pokemon/do-giam');
+  return {
+    ok: true,
+    ke: `Nhận mốc “${moc.ten}”: ${moc.vang.toLocaleString('vi')} vàng`
+      + `${moc.ngoc ? `, ${moc.ngoc} ngọc` : ''}`
+      + `${moc.cau ? `, ${moc.cau} quả cầu` : ''}`
+      + `${moc.da ? `, ${moc.da} đá tiến cấp` : ''}.`,
+  };
+}
+
+/** Nhận thưởng một nhiệm vụ hằng ngày. */
+export async function nhanThuongNgay(_prev: PokeState, fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const { nv } = r;
+
+  const ma = String(fd.get('ma') ?? '');
+  const viec = timNhiemVuNgay(ma);
+  if (!viec) return { error: 'Không có nhiệm vụ này.' };
+
+  const ngay = dauNgayVN(new Date());
+  const dong = await db.pokeNhiemVuNgay.findUnique({
+    where: { nhanVatId_ngay_ma: { nhanVatId: nv.id, ngay, ma } },
+  });
+  if (!dong) return { error: 'Hôm nay chưa mở nhiệm vụ này, mở lại trang đã.' };
+  if (dong.daNhan) return { error: 'Nhiệm vụ này hôm nay đã nhận rồi.' };
+
+  const tienDo = nv[viec.mocTu] - dong.mocDau;
+  if (tienDo < viec.can) {
+    return { error: `Còn thiếu ${viec.can - tienDo} nữa mới xong nhiệm vụ này.` };
+  }
+
+  try {
+    await db.$transaction(async (tx) => {
+      // `daNhan: false` nằm trong `where`: hai tab cùng bấm thì tab sau đếm
+      // được 0 dòng và không phát thưởng lần thứ hai.
+      const ghi = await tx.pokeNhiemVuNgay.updateMany({
+        where: { id: dong.id, daNhan: false }, data: { daNhan: true },
+      });
+      if (ghi.count === 0) throw new Error('da-nhan');
+      await tx.pokeNhanVat.update({
+        where: { id: nv.id },
+        data: {
+          vang: { increment: viec.vang }, ngoc: { increment: viec.ngoc },
+          cau: { increment: viec.cau },
+        },
+      });
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === 'da-nhan') {
+      return { error: 'Nhiệm vụ này hôm nay đã nhận rồi.' };
+    }
+    return { error: 'Không nhận được lúc này.' };
+  }
+
+  revalidatePath('/pokemon/nhiem-vu');
+  return {
+    ok: true,
+    ke: `Xong “${viec.ten}”: ${viec.vang.toLocaleString('vi')} vàng, `
+      + `${viec.ngoc} ngọc, ${viec.cau} quả cầu.`,
+  };
+}
+
 export async function doiQuaChien(_prev: PokeState, _fd: FormData): Promise<PokeState> {
   const r = await layNhanVat();
   if ('error' in r) return { error: r.error };

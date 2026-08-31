@@ -19,7 +19,9 @@ export default async function TrangDoGiam() {
   const userId = s?.user?.id;
   if (!userId) redirect('/login?callbackUrl=/pokemon/do-giam');
 
-  const nv = await db.pokeNhanVat.findUnique({ where: { userId }, select: { id: true } });
+  const nv = await db.pokeNhanVat.findUnique({
+    where: { userId }, select: { id: true, mocDoGiam: true },
+  });
   if (!nv) redirect('/pokemon');
 
   // Danh sách loài dựng từ chính bảng thú hoang: một loài có mặt ở nhiều khu
@@ -55,7 +57,8 @@ export default async function TrangDoGiam() {
 
   return (
     <section className="dao-tam p-5">
-      <DoGiam loai={loai} khu={KHU.map((k) => ({ ma: k.ma, ten: k.ten, bac: k.bac }))} />
+      <DoGiam loai={loai} khu={KHU.map((k) => ({ ma: k.ma, ten: k.ten, bac: k.bac }))}
+        daNhanMoc={nv.mocDoGiam} />
     </section>
   );
 }

@@ -1,7 +1,9 @@
 import 'server-only';
 import { db } from './db';
 import { auth } from './auth';
-import { YTE_MAU, YTE_MAU_CHO_MS, YTE_SK, YTE_SK_CHO_MS, boThu } from './pokemon-const';
+import {
+  NHIEM_VU_NGAY, YTE_MAU, YTE_MAU_CHO_MS, YTE_SK, YTE_SK_CHO_MS, boThu, dauNgayVN,
+} from './pokemon-const';
 
 export * from './pokemon-const';
 
@@ -57,4 +59,54 @@ export async function tienDoNhiemVu(nhanVatId: string): Promise<boolean[]> {
   if (!nv) return [];
   const soThu = await db.pokeThu.count({ where: { nhanVatId } });
   return [soThu >= 2, nv.huyChuong >= 1, nv.cap >= 3, nv.thangDau >= 1];
+}
+
+/**
+ * Ba việc hằng ngày của hôm nay, mở LƯỜI ngay lúc có người xem trang.
+ *
+ * Không có tiến trình nền nào cả — cùng lối `chotDauQuaHan` của đấu trường và
+ * bảng đơn hàng nông trại. Dòng của hôm nay sinh ra kèm `mocDau` chép lại bộ
+ * đếm tổng lúc ấy, nên tiến độ là hiệu số và không cần cột đếm riêng.
+ *
+ * Ràng buộc duy nhất `(nhanVatId, ngay, ma)` lo phần hai tab cùng mở trang:
+ * dòng thứ hai bị chặn ở tầng cơ sở dữ liệu chứ không phải ở đây.
+ */
+export async function nhiemVuNgayHomNay(nhanVatId: string) {
+  const nv = await db.pokeNhanVat.findUnique({
+    where: { id: nhanVatId },
+    select: { id: true, soHaGuc: true, soBat: true, thangDau: true },
+  });
+  if (!nv) return [];
+
+  const ngay = dauNgayVN(new Date());
+  for (const viec of NHIEM_VU_NGAY) {
+    await db.pokeNhiemVuNgay.upsert({
+      where: { nhanVatId_ngay_ma: { nhanVatId, ngay, ma: viec.ma } },
+      update: {},
+      create: { nhanVatId, ngay, ma: viec.ma, mocDau: nv[viec.mocTu] },
+      select: { id: true },
+    }).catch(() => null);
+  }
+
+  const dong = await db.pokeNhiemVuNgay.findMany({
+    where: { nhanVatId, ngay },
+    select: { ma: true, mocDau: true, daNhan: true },
+    take: NHIEM_VU_NGAY.length,
+  });
+  const theoMa = new Map(dong.map((d) => [d.ma, d]));
+
+  return NHIEM_VU_NGAY.map((viec) => {
+    const d = theoMa.get(viec.ma);
+    const lam = Math.max(0, Math.min(viec.can, (nv[viec.mocTu] ?? 0) - (d?.mocDau ?? 0)));
+    return { ...viec, lam, xong: lam >= viec.can, daNhan: d?.daNhan ?? false };
+  });
+}
+
+/** Số loài đã gặp và đã bắt trong sổ Đồ Giám. */
+export async function tienDoDoGiam(nhanVatId: string) {
+  const [daGap, daBat] = await Promise.all([
+    db.pokeDoGiam.count({ where: { nhanVatId } }),
+    db.pokeDoGiam.count({ where: { nhanVatId, daBat: true } }),
+  ]);
+  return { daGap, daBat };
 }

@@ -49,7 +49,6 @@ export default async function TrangLanhTho() {
         )}
 
         <DoiQua diem={nv.diemChien} qua={QUA_LANH_THO.map((q) => q.ten)} />
-
       </section>
     </>
   );

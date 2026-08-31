@@ -897,7 +897,6 @@ model Game {
   resolution   GameResolution?      @relation(fields: [resolutionId], references: [id], onDelete: SetNull)
   genres       GenresOnGames[]
   tags         TagsOnGames[]
-  collections  GamesOnCollections[]
 
   // Hướng dẫn / lưu ý
   controls          Json? // [{ key, action }] — key mapping mô tả
@@ -999,30 +998,7 @@ model GameResolution {
   games Game[]
 }
 
-model GameCollection {
-  id          String  @id @default(cuid())
-  slug        String  @unique
-  name        String
-  description String? @db.Text
-  cover       String?
-  featured    Boolean @default(false)
-  order       Int     @default(0)
 
-  createdAt DateTime @default(now())
-
-  games GamesOnCollections[]
-}
-
-model GamesOnCollections {
-  gameId       String
-  collectionId String
-  order        Int            @default(0)
-  game         Game           @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  collection   GameCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-
-  @@id([gameId, collectionId])
-  @@index([collectionId])
-}
 
 // ── Versioning ────────────────────────────────────────────
 

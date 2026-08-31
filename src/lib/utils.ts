@@ -3,6 +3,17 @@ export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(' ');
 }
 
+/**
+ * Số trang của một danh sách phân trang — luôn ít nhất một trang.
+ *
+ * `Math.ceil(0 / 20)` là 0, mà "trang 1 / 0" thì vô nghĩa; thanh phân trang có
+ * tự ẩn khi ≤ 1 trang nên chưa nổ ở đâu, nhưng con số vẫn sai và mỗi chỗ tính
+ * lại tự bọc `Math.max` một kiểu.
+ */
+export function soTrang(tong: number, moiTrang: number): number {
+  return Math.max(1, Math.ceil(tong / Math.max(1, moiTrang)));
+}
+
 /** Định dạng số gọn: 1.2K, 3.4M */
 export function fmtCount(n?: number | null): string {
   const v = n ?? 0;

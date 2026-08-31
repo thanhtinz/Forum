@@ -20,13 +20,12 @@ export interface TaxonomyRow {
   count: number;
 }
 
-export type Kind = 'genre' | 'platform' | 'resolution' | 'collection';
+export type Kind = 'genre' | 'platform' | 'resolution';
 
 const LABEL: Record<Kind, { one: string; add: string }> = {
   genre: { one: 'thể loại', add: 'Thêm thể loại' },
   platform: { one: 'dòng máy', add: 'Thêm dòng máy' },
   resolution: { one: 'độ phân giải', add: 'Thêm độ phân giải' },
-  collection: { one: 'bộ sưu tập', add: 'Thêm bộ sưu tập' },
 };
 
 /**
@@ -155,23 +154,11 @@ function TaxonomyForm({ kind, initial, onDone }: { kind: Kind; initial: Taxonomy
             <input name="color" type="color" defaultValue={initial?.color ?? '#2c7bfe'} className="input h-10 !py-1" />
           </Field>
         )}
-        {kind === 'collection' && (
-          <Field label="Mô tả">
-            <input name="description" defaultValue={initial?.description ?? ''} className="input" />
-          </Field>
-        )}
 
         <Field label="Thứ tự" hint="Số nhỏ đứng trước.">
           <input name="order" type="number" defaultValue={initial?.order ?? 0} className="input" />
         </Field>
       </div>
-
-      {kind === 'collection' && (
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="featured" defaultChecked={initial?.featured} className="size-4 rounded" />
-          Bộ sưu tập nổi bật
-        </label>
-      )}
 
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
 

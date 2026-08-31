@@ -403,16 +403,15 @@ export async function refreshTrending(): Promise<void> {
 // ─────────────────── Danh mục kho game (thể loại, dòng máy…) ───────────────────
 
 /**
- * Bốn bảng phân loại của kho game đều cùng một hình dạng: slug + tên + thứ tự.
- * Gộp chung một cặp hàm lưu/xoá thay vì viết bốn lần gần y hệt nhau.
+ * Ba bảng phân loại của kho game đều cùng một hình dạng: slug + tên + thứ tự.
+ * Gộp chung một cặp hàm lưu/xoá thay vì viết ba lần gần y hệt nhau.
  */
-export type GameTaxonomy = 'genre' | 'platform' | 'resolution' | 'collection';
+export type GameTaxonomy = 'genre' | 'platform' | 'resolution';
 
 const TAXONOMY_LABEL: Record<GameTaxonomy, string> = {
   genre: 'thể loại',
   platform: 'dòng máy',
   resolution: 'độ phân giải',
-  collection: 'bộ sưu tập',
 };
 
 function isTaxonomy(v: string): v is GameTaxonomy {
@@ -455,22 +454,17 @@ export async function saveGameTaxonomy(_prev: ActionState, fd: FormData): Promis
     const where = { slug, NOT: id ? { id } : undefined };
     const clash =
       kind === 'genre' ? await db.gameGenre.findFirst({ where, select: { id: true } })
-      : kind === 'platform' ? await db.gamePlatform.findFirst({ where, select: { id: true } })
-      : await db.gameCollection.findFirst({ where, select: { id: true } });
+      : await db.gamePlatform.findFirst({ where, select: { id: true } });
     if (clash) return { error: 'Slug đã được mục khác dùng.' };
 
     if (kind === 'genre') {
       const data = { slug, name, icon, color: str(fd, 'color'), order };
       if (id) await db.gameGenre.update({ where: { id }, data, select: { id: true } });
       else await db.gameGenre.create({ data, select: { id: true } });
-    } else if (kind === 'platform') {
+    } else {
       const data = { slug, name, icon, order };
       if (id) await db.gamePlatform.update({ where: { id }, data, select: { id: true } });
       else await db.gamePlatform.create({ data, select: { id: true } });
-    } else {
-      const data = { slug, name, description: str(fd, 'description'), featured: bool(fd, 'featured'), order };
-      if (id) await db.gameCollection.update({ where: { id }, data, select: { id: true } });
-      else await db.gameCollection.create({ data, select: { id: true } });
     }
   }
 
@@ -491,8 +485,7 @@ export async function deleteGameTaxonomy(kind: string, id: string): Promise<Acti
 
   if (kind === 'genre') await db.gameGenre.delete({ where: { id } });
   else if (kind === 'platform') await db.gamePlatform.delete({ where: { id } });
-  else if (kind === 'resolution') await db.gameResolution.delete({ where: { id } });
-  else await db.gameCollection.delete({ where: { id } });
+  else await db.gameResolution.delete({ where: { id } });
 
   revalidatePath('/admin/games/danh-muc');
   revalidatePath('/games');

@@ -224,7 +224,6 @@ export interface GameFilter {
   maxSizeKb?: number;
   minDownloads?: number;
   updatedWithinDays?: number;
-  collection?: string;
 }
 
 /** Dựng `where` Prisma từ bộ lọc catalog (chỉ game đã đăng). */
@@ -249,7 +248,6 @@ export function gameWhere(f: GameFilter): Prisma.GameWhereInput {
   if (f.resolution) and.push({ resolution: { slug: f.resolution } });
   if (f.language) and.push({ language: f.language });
   if (f.vietnamized) and.push({ vietnamized: true });
-  if (f.collection) and.push({ collections: { some: { collection: { slug: f.collection } } } });
   if (f.yearFrom != null) and.push({ releaseYear: { gte: f.yearFrom } });
   if (f.yearTo != null) and.push({ releaseYear: { lte: f.yearTo } });
   if (f.minDownloads != null) and.push({ downloadCount: { gte: f.minDownloads } });
@@ -311,7 +309,6 @@ export function parseGameFilter(sp: Record<string, string | string[] | undefined
     maxSizeKb: num('maxSizeKb'),
     minDownloads: num('minDownloads'),
     updatedWithinDays: num('updatedIn'),
-    collection: one('collection'),
   };
 }
 
@@ -333,7 +330,6 @@ export function gameFilterQuery(f: GameFilter, extra: Record<string, string | un
   put('maxSizeKb', f.maxSizeKb);
   put('minDownloads', f.minDownloads);
   put('updatedIn', f.updatedWithinDays);
-  put('collection', f.collection);
   for (const [k, v] of Object.entries(extra)) put(k, v);
   return p.toString();
 }

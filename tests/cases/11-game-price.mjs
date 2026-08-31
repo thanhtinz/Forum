@@ -26,7 +26,7 @@ export default async function run(check) {
     const r = await admin.goto(`${BASE}/admin/games/danh-muc`, { waitUntil: 'networkidle' });
     await admin.waitForTimeout(700);
     check('trang danh mục kho game mở được', r.status() === 200, `trả về ${r.status()}`);
-    for (const t of ['thể loại', 'dòng máy', 'độ phân giải', 'bộ sưu tập']) {
+    for (const t of ['thể loại', 'dòng máy', 'độ phân giải']) {
       check(`có nhóm ${t}`, (await admin.locator(`h2:has-text("${t}")`).count()) > 0);
     }
 

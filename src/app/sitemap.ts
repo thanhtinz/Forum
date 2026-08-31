@@ -21,7 +21,7 @@ async function safe<T>(query: Promise<T[]>): Promise<T[]> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const url = (path: string) => `${SITE_URL}${path}`;
 
-  const [tags, forums, threads, games, genres, collections] = await Promise.all([
+  const [tags, forums, threads, games, genres] = await Promise.all([
     safe(db.tag.findMany({ select: { slug: true }, take: 1000 })),
     safe(db.forum.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
     // Chỉ chủ đề đã đăng: chủ đề đang chờ duyệt hoặc đã ẩn thì trang của nó
@@ -37,7 +37,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
     safe(db.game.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, updatedAt: true }, orderBy: { updatedAt: 'desc' }, take: 5000 })),
     safe(db.gameGenre.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
-    safe(db.gameCollection.findMany({ take: CONFIG_LIST_CAP, select: { slug: true } })),
   ]);
 
   const staticPages: MetadataRoute.Sitemap = [
@@ -45,7 +44,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url('/clb'), changeFrequency: 'daily', priority: 0.6 },
     { url: url('/games'), changeFrequency: 'daily', priority: 0.8 },
     { url: url('/games/browse'), changeFrequency: 'daily', priority: 0.6 },
-    { url: url('/games/collections'), changeFrequency: 'weekly', priority: 0.5 },
     { url: url('/search'), changeFrequency: 'weekly', priority: 0.3 },
   ];
 
@@ -54,9 +52,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...tags.map((t) => ({ url: url(`/tag/${t.slug}`), changeFrequency: 'weekly' as const, priority: 0.4 })),
     ...forums.map((f) => ({ url: url(`/forum/${f.slug}`), changeFrequency: 'daily' as const, priority: 0.5 })),
     ...threads.filter((t) => t.forum).map((t) => ({ url: url(`/forum/${t.forum!.slug}/${t.id}`), lastModified: t.updatedAt, changeFrequency: 'weekly' as const, priority: 0.5 })),
-    // Kho game: trang chi tiết + trang lọc theo thể loại + bộ sưu tập.
+    // Kho game: trang chi tiết + trang lọc theo thể loại.
     ...games.map((g) => ({ url: url(`/games/${g.slug}`), lastModified: g.updatedAt, changeFrequency: 'weekly' as const, priority: 0.7 })),
     ...genres.map((g) => ({ url: url(`/games/browse?genre=${g.slug}`), changeFrequency: 'daily' as const, priority: 0.4 })),
-    ...collections.map((c) => ({ url: url(`/games/collections/${c.slug}`), changeFrequency: 'weekly' as const, priority: 0.5 })),
   ];
 }

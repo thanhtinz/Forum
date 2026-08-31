@@ -66,7 +66,6 @@ export default async function run(check) {
     // ── Các trang có phân trang mới ──────────────────────────────────────
     for (const [ten, path] of [
       ['đã chặn', '/user/blocked'],
-      ['bộ sưu tập game', '/games/collections'],
       ['bạn bè', '/user/friends'],
       ['đang theo dõi', '/user/following'],
     ]) {
@@ -100,11 +99,11 @@ export default async function run(check) {
     const html2 = await admin.content();
     check('trang 2 của nhóm thể loại hiện đúng phần còn lại', html2.includes('TL kiểm thử 29'));
     check('trang 2 không còn dựng hàng của trang 1', !html2.includes('TL kiểm thử 0<'));
-    // Mọi liên kết lật trang phải mang theo tham số của ba nhóm còn lại,
-    // nếu không lật nhóm này là ba nhóm kia nhảy hết về trang 1.
+    // Mọi liên kết lật trang phải mang theo tham số của hai nhóm còn lại,
+    // nếu không lật nhóm này là hai nhóm kia nhảy về trang 1.
     const links = await admin.$$eval('a[href*="danh-muc?"]', (els) => els.map((e) => e.getAttribute('href') ?? ''));
     check('liên kết lật trang giữ tham số của các nhóm khác',
-      links.length > 0 && links.every((h) => h.includes('dm=') && h.includes('pg=') && h.includes('bst=')),
+      links.length > 0 && links.every((h) => h.includes('dm=') && h.includes('pg=')),
       JSON.stringify(links));
   } finally {
     await wipe();

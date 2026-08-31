@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
-  Award, Clock, Download, Eye, Flame, Gamepad2, Languages, LayoutGrid, Library,
+  Clock, Download, Eye, Flame, Gamepad2, Languages, LayoutGrid,
   Inbox, MonitorSmartphone, Shuffle, Sparkles, Trophy,
 } from 'lucide-react';
 import { db } from '@/lib/db';
@@ -23,7 +23,7 @@ const PUBLISHED = { status: 'PUBLISHED' as const };
 const ROW_TAKE = 12;
 
 export default async function GamesHomePage() {
-  const [featured, updated, trending, mostViewed, mostDownloaded, vietnamized, genres, platforms, resolutions, collections, totals] =
+  const [featured, updated, trending, mostViewed, mostDownloaded, vietnamized, genres, platforms, resolutions, totals] =
     await Promise.all([
       db.game.findMany({ where: { ...PUBLISHED, featured: true }, orderBy: { publishedAt: 'desc' }, take: 6, select: gameCardSelect }),
       db.game.findMany({ where: PUBLISHED, orderBy: { updatedAt: 'desc' }, take: ROW_TAKE, select: gameCardSelect }),
@@ -34,7 +34,6 @@ export default async function GamesHomePage() {
       db.gameGenre.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, include: { _count: { select: { games: true } } } }),
       db.gamePlatform.findMany({ take: CONFIG_LIST_CAP, orderBy: { order: 'asc' }, include: { _count: { select: { games: true } } } }),
       db.gameResolution.findMany({ take: CONFIG_LIST_CAP, orderBy: [{ order: 'asc' }, { width: 'asc' }], include: { _count: { select: { games: true } } } }),
-      db.gameCollection.findMany({ orderBy: [{ featured: 'desc' }, { order: 'asc' }], take: 6, include: { _count: { select: { games: true } } } }),
       db.game.aggregate({ where: PUBLISHED, _count: { _all: true }, _sum: { viewCount: true, downloadCount: true } }),
     ]);
 
@@ -57,9 +56,6 @@ Tải JAR/JAD về máy thật, kèm checksum để đối chiếu.
           <div className="mt-4 flex flex-wrap gap-2 text-sm">
             <Link href="/games/browse" className="chip bg-white/20 px-3 py-1.5 backdrop-blur hover:bg-white/30">
               <LayoutGrid size={14} className="mr-1" /> Duyệt kho game
-            </Link>
-            <Link href="/games/collections" className="chip bg-white/20 px-3 py-1.5 backdrop-blur hover:bg-white/30">
-              <Library size={14} className="mr-1" /> Bộ sưu tập
             </Link>
             <Link href="/games/random" prefetch={false} className="chip bg-white/20 px-3 py-1.5 backdrop-blur hover:bg-white/30">
               <Shuffle size={14} className="mr-1" /> Game ngẫu nhiên
@@ -140,27 +136,6 @@ Tải JAR/JAD về máy thật, kèm checksum để đối chiếu.
         </section>
       </div>
 
-      {/* Collections */}
-      {collections.length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="zib-title flex items-center gap-2"><Award size={18} /> Bộ sưu tập</h2>
-            <Link href="/games/collections" className="text-sm text-ink-400 hover:text-brand-600">Xem tất cả</Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {collections.map((c) => (
-              <Link key={c.id} href={`/games/collections/${c.slug}`} className="post-card p-4">
-                <div className="flex items-center gap-2">
-                  <Library size={18} className="text-brand-500" />
-                  <b className="truncate">{c.name}</b>
-                </div>
-                {c.description && <p className="mt-1 line-clamp-2 text-sm text-ink-500">{c.description}</p>}
-                <p className="mt-2 text-[11px] text-ink-400">{c._count.games} game</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
       </div>
       </GopTrenDienThoai>
     </div>

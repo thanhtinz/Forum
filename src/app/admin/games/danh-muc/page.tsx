@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { requireSuperAdmin } from '@/lib/admin';
 import { GameTaxonomyManager, type TaxonomyRow } from '@/components/admin/GameTaxonomyManager';
 import { Pagination } from '@/components/Pagination';
+import { soTrang } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Danh mục kho game', robots: { index: false } };
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: 'Danh mục kho game', robots: { inde
 /**
  * Quản lý phân loại của kho game.
  *
- * Trước đây thể loại / dòng máy / độ phân giải / bộ sưu tập chỉ sinh ra từ dữ
+ * Trước đây thể loại / dòng máy / độ phân giải chỉ sinh ra từ dữ
  * liệu mẫu: biểu mẫu sửa game cho tick chọn, nhưng không có chỗ nào tạo thêm.
  */
 const PAGE_SIZE = 25;
@@ -27,15 +28,14 @@ export default async function GameTaxonomyPage({ searchParams }: {
   // Bốn nhóm nằm chung một trang nên mỗi nhóm phải có tham số trang riêng;
   // dùng chung `?page=` thì lật nhóm này lại kéo cả ba nhóm kia đi theo.
   const sp = await searchParams;
-  const pages = { tl: num(sp.tl), dm: num(sp.dm), pg: num(sp.pg), bst: num(sp.bst) };
+  const pages = { tl: num(sp.tl), dm: num(sp.dm), pg: num(sp.pg) };
   const skip = (p: number) => (p - 1) * PAGE_SIZE;
 
-  const [genreCount, platformCount, resolutionCount, collectionCount,
-    genres, platforms, resolutions, collections] = await Promise.all([
+  const [genreCount, platformCount, resolutionCount,
+    genres, platforms, resolutions] = await Promise.all([
     db.gameGenre.count(),
     db.gamePlatform.count(),
     db.gameResolution.count(),
-    db.gameCollection.count(),
     db.gameGenre.findMany({
       orderBy: [{ order: 'asc' }, { name: 'asc' }], skip: skip(pages.tl), take: PAGE_SIZE,
       select: { id: true, slug: true, name: true, icon: true, color: true, order: true, _count: { select: { games: true } } },
@@ -47,10 +47,6 @@ export default async function GameTaxonomyPage({ searchParams }: {
     db.gameResolution.findMany({
       orderBy: [{ order: 'asc' }, { width: 'asc' }], skip: skip(pages.pg), take: PAGE_SIZE,
       select: { id: true, slug: true, label: true, width: true, height: true, order: true, _count: { select: { games: true } } },
-    }),
-    db.gameCollection.findMany({
-      orderBy: [{ order: 'asc' }, { name: 'asc' }], skip: skip(pages.bst), take: PAGE_SIZE,
-      select: { id: true, slug: true, name: true, description: true, featured: true, order: true, _count: { select: { games: true } } },
     }),
   ]);
 
@@ -76,19 +72,19 @@ export default async function GameTaxonomyPage({ searchParams }: {
       <div>
         <h1 className="text-xl font-bold text-ink-900 dark:text-white">Danh mục kho game</h1>
         <p className="text-sm text-ink-500">
-          Thể loại, dòng máy, độ phân giải và bộ sưu tập — chính là các bộ lọc người dùng thấy ở trang kho game.
+          Thể loại, dòng máy và độ phân giải — chính là các bộ lọc người dùng thấy ở trang kho game.
         </p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
           <GameTaxonomyManager kind="genre" rows={rows(genres)} />
-          <Pagination page={pages.tl} totalPages={Math.ceil(genreCount / PAGE_SIZE)}
+          <Pagination page={pages.tl} totalPages={soTrang(genreCount, PAGE_SIZE)}
             pageParam="tl" basePath={keepOthers('tl')} />
         </div>
         <div>
           <GameTaxonomyManager kind="platform" rows={rows(platforms)} />
-          <Pagination page={pages.dm} totalPages={Math.ceil(platformCount / PAGE_SIZE)}
+          <Pagination page={pages.dm} totalPages={soTrang(platformCount, PAGE_SIZE)}
             pageParam="dm" basePath={keepOthers('dm')} />
         </div>
         <div>
@@ -99,13 +95,8 @@ export default async function GameTaxonomyPage({ searchParams }: {
               order: r.order, count: r._count.games,
             }))}
           />
-          <Pagination page={pages.pg} totalPages={Math.ceil(resolutionCount / PAGE_SIZE)}
+          <Pagination page={pages.pg} totalPages={soTrang(resolutionCount, PAGE_SIZE)}
             pageParam="pg" basePath={keepOthers('pg')} />
-        </div>
-        <div>
-          <GameTaxonomyManager kind="collection" rows={rows(collections)} />
-          <Pagination page={pages.bst} totalPages={Math.ceil(collectionCount / PAGE_SIZE)}
-            pageParam="bst" basePath={keepOthers('bst')} />
         </div>
       </div>
     </div>

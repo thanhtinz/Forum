@@ -576,41 +576,6 @@ async function main() {
     }
   }
 
-  // ── Bộ sưu tập ──
-  const collectionDefs = [
-    {
-      slug: 'huyen-thoai-nokia', name: 'Huyền thoại Nokia', featured: true,
-      description: 'Những tựa game gắn liền với thời điện thoại phím bấm.',
-      games: ['snake-xenzia', 'bounce-tales', 'contra-4'],
-    },
-    {
-      slug: 'ban-viet-hoa', name: 'Bản Việt hóa tuyển chọn', featured: true,
-      description: 'Game đã được dịch trọn vẹn sang tiếng Việt.',
-      games: ['contra-4', 'bounce-tales', 'dragon-hunter', 'farm-frenzy'],
-    },
-    {
-      slug: 'giai-tri-nhe-nhang', name: 'Giải trí nhẹ nhàng', featured: false,
-      description: 'Chơi vài phút lúc rảnh, không cần cày cuốc.',
-      games: ['sudoku-classic', 'snake-xenzia', 'chess-master'],
-    },
-  ];
-  for (const [i, c] of collectionDefs.entries()) {
-    const col = await db.gameCollection.upsert({
-      where: { slug: c.slug },
-      update: { name: c.name, description: c.description, featured: c.featured, order: i },
-      create: { slug: c.slug, name: c.name, description: c.description, featured: c.featured, order: i },
-    });
-    for (const [j, slug] of c.games.entries()) {
-      const gameId = gameIds[slug];
-      if (!gameId) continue;
-      await db.gamesOnCollections.upsert({
-        where: { gameId_collectionId: { gameId, collectionId: col.id } },
-        update: { order: j },
-        create: { gameId, collectionId: col.id, order: j },
-      });
-    }
-  }
-
   // ── Cửa hàng: vài màu tên có sẵn ─────────────────────────────────────
   // Chỉ seed màu, không seed khung/huy hiệu: hai loại kia cần ảnh thật do
   // quản trị viên tải lên, seed sẵn đường dẫn không có ảnh chỉ tổ hiện ảnh vỡ.

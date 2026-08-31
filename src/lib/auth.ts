@@ -22,8 +22,16 @@ const providers: NextAuthConfig['providers'] = [
       const password = String(creds?.password ?? '');
       if (!identifier || !password) return null;
 
+      // Liệt kê ĐÚNG những cột dùng phía dưới. `passwordHash` phải có thật —
+      // `bcrypt.compare` cần nó — nhưng không có nghĩa là kéo về cả hàng: một
+      // `findFirst` trống `select` mang theo mọi cột của người dùng, kể cả
+      // những cột chẳng liên quan gì tới việc đăng nhập.
       const user = await db.user.findFirst({
         where: { OR: [{ email: identifier }, { username: identifier }] },
+        select: {
+          id: true, name: true, username: true, email: true, image: true,
+          role: true, status: true, passwordHash: true,
+        },
       });
       if (!user?.passwordHash) return null;
       if (user.status === 'SUSPENDED') return null;

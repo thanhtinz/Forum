@@ -24,8 +24,10 @@ export async function nhanAnhVaoKho(gt: string | null | undefined): Promise<stri
   const v = (gt ?? '').trim();
   if (!v) return null;
 
-  // Đã là đường dẫn nội bộ.
-  if (v.startsWith('/')) return v;
+  // Đã là đường dẫn nội bộ. Loại `//…` ra: trình duyệt đọc `//evil.com/a.png`
+  // là địa chỉ NGOÀI theo giao thức hiện tại, nên lọt qua đây là dính đúng ba
+  // tác hại kể ở trên — chỉ khác là không có lấy một chữ `http` để mà thấy.
+  if (v.startsWith('/') && !v.startsWith('//')) return v;
 
   if (!/^https?:\/\//i.test(v)) {
     throw new AnhKhongHopLeError('Ảnh phải là link http(s) hoặc ảnh đã tải lên.');

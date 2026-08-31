@@ -21,7 +21,9 @@ function escapeHtml(s: string): string {
 function safeUrl(raw: string): string | null {
   const u = raw.trim().replace(/^&quot;|&quot;$/g, '');
   if (!u) return null;
-  if (u.startsWith('/')) return u;
+  // `//evil.com/x` cũng bắt đầu bằng dấu gạch nhưng là địa chỉ NGOÀI theo
+  // giao thức hiện tại — để lọt thì cả phần chặn bên dưới thành vô nghĩa.
+  if (u.startsWith('/') && !u.startsWith('//')) return u;
   try {
     const p = new URL(u);
     return p.protocol === 'http:' || p.protocol === 'https:' ? u : null;

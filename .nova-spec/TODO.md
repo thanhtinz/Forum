@@ -4,7 +4,7 @@ Bản này ghi **hiện trạng thật**, đã đối chiếu với mã và dữ
 ban đầu (P0–P16) đã xong và không còn ý nghĩa, nên gỡ đi — sản phẩm nay là diễn
 đàn + kho game tính bằng điểm, không còn blog, tiền thật hay VIP.
 
-Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **đang đo lại sau đợt Đảo Pokémon**.
+Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **1261/1261**.
 
 ---
 

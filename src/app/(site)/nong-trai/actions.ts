@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { banMessage, getActiveBan } from '@/lib/ban';
 import { lockUsers } from '@/lib/lock';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
+import { MON_MOI_DON_TOI_DA } from '@/lib/farm-don';
 import {
   HAT_MUA_TOI_DA, KHE_CHU_KY_MS, KHE_MAX, KHE_MIN, O_DAT_BAN_DAU, O_DAT_TOI_DA,
   KHE_KEY, PHAN_MUA_TOI_DA, TUOI_RUT_NGAN, giaMoODat, loaiPhan,
@@ -430,7 +431,11 @@ export async function giaoDon(_prev: FarmState, formData: FormData): Promise<Far
         where: { id: donId, userId: me.userId, deliveredAt: null },
         select: {
           reward: true, khach: true, expiresAt: true,
-          items: { take: 4, select: { cropId: true, qty: true, crop: { select: { name: true } } } },
+          // Trần bám theo LUẬT sinh đơn, không phải một con số gõ riêng ở đây.
+          items: {
+            take: MON_MOI_DON_TOI_DA,
+            select: { cropId: true, qty: true, crop: { select: { name: true } } },
+          },
         },
       });
       if (!don) throw new Error('khong-thay');

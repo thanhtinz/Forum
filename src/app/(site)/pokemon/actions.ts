@@ -1314,17 +1314,31 @@ export async function nhanThuongNhiemVu(_prev: PokeState, _fd: FormData): Promis
   const tienDo = await tienDoNhiemVu(nv.id);
   if (!tienDo[buoc]) return { error: `Chưa xong: ${nhiem.mo}` };
 
-  const expMoi = nv.exp + nhiem.exp;
-  const ghi = await db.pokeNhanVat.updateMany({
-    where: { id: nv.id, nhiemVu: buoc },
-    data: {
-      nhiemVu: buoc + 1,
-      exp: expMoi, cap: capTheoExp(expMoi),
-      vang: { increment: nhiem.vang },
-      ngoc: { increment: nhiem.ngoc },
-    },
+  // CỘNG THÊM chứ không ghi con số tuyệt đối tính từ `nv.exp` vừa đọc: nhận
+  // thưởng đúng lúc tab kia vừa thắng một trận thì phần kinh nghiệm của trận ấy
+  // bị đè mất. Cấp phải tính lại từ kinh nghiệm SAU khi cộng, nên chốt trong
+  // cùng một giao dịch: đọc ra rồi mới ghi cấp.
+  const ghi = await db.$transaction(async (tx) => {
+    const buocDung = await tx.pokeNhanVat.updateMany({
+      where: { id: nv.id, nhiemVu: buoc },
+      data: {
+        nhiemVu: buoc + 1,
+        exp: { increment: nhiem.exp },
+        vang: { increment: nhiem.vang },
+        ngoc: { increment: nhiem.ngoc },
+      },
+    });
+    if (buocDung.count === 0) return 0;
+
+    const sau = await tx.pokeNhanVat.findUnique({ where: { id: nv.id }, select: { exp: true } });
+    if (sau) {
+      await tx.pokeNhanVat.update({
+        where: { id: nv.id }, data: { cap: capTheoExp(sau.exp) }, select: { id: true },
+      });
+    }
+    return buocDung.count;
   });
-  if (ghi.count === 0) return { error: 'Phần thưởng này đã nhận rồi.' };
+  if (ghi === 0) return { error: 'Phần thưởng này đã nhận rồi.' };
 
   revalidatePath('/pokemon/nhiem-vu');
   const qua = [

@@ -50,12 +50,21 @@ function boc<T>(xs: readonly T[]): T {
  * nào ra điểm. Vẫn chừa chỗ cho món lạ để bảng không thành ra chỉ lặp lại
  * đúng thứ đang có.
  */
+/**
+ * Số món tối đa trong một đơn.
+ *
+ * Trần khi ĐỌC đơn phải bám đúng con số này: trước đây luật sinh tối đa hai
+ * món mà chỗ đọc lại `take: 4` — hai con số ở hai nơi, đơn nhiều món hơn trần
+ * sẽ chỉ bị trừ đúng số món đọc được trong kho mà vẫn trả đủ tiền thưởng.
+ */
+export const MON_MOI_DON_TOI_DA = 2;
+
 function nghiDon(
   cay: { id: string; sellPrice: number }[],
   trongKho: Set<string>,
 ): { items: { cropId: string; qty: number }[]; tien: number } {
   const quen = cay.filter((c) => trongKho.has(c.id));
-  const soMon = quen.length >= 2 && Math.random() < 0.5 ? 2 : 1;
+  const soMon = quen.length >= 2 && Math.random() < 0.5 ? MON_MOI_DON_TOI_DA : 1;
 
   const chon: typeof cay = [];
   for (let i = 0; i < soMon; i++) {
@@ -130,7 +139,7 @@ export async function dungBangDon(userId: string): Promise<void> {
 const donSelect = {
   id: true, khach: true, kind: true, reward: true, expiresAt: true,
   items: {
-    take: 4,
+    take: MON_MOI_DON_TOI_DA,
     select: { qty: true, crop: { select: { id: true, key: true, name: true } } },
   },
 } satisfies Prisma.FarmOrderSelect;

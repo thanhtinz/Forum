@@ -222,7 +222,15 @@ export async function approveMember(memberId: string): Promise<ClubActionState> 
   if (m.status === 'ACTIVE') return { ok: true };
 
   await db.$transaction(async (tx) => {
-    await tx.clubMember.update({ where: { id: m.id }, data: { status: 'ACTIVE' }, select: { id: true } });
+    // Điều kiện "còn đang chờ" nằm TRONG `where` chứ không đọc rồi mới ghi:
+    // chủ nhóm mở hai tab danh sách chờ rồi bấm Duyệt cùng một đơn thì hàng
+    // `ClubMember` chỉ đổi một lần, nhưng `memberCount` cộng hai lần và sai
+    // vĩnh viễn. Xét `count` rồi mới cộng, y như `xetDuyet` ở trang trắc nghiệm.
+    const ghi = await tx.clubMember.updateMany({
+      where: { id: m.id, status: 'PENDING' }, data: { status: 'ACTIVE' },
+    });
+    if (ghi.count === 0) return;
+
     await tx.club.update({ where: { id: m.clubId }, data: { memberCount: { increment: 1 } }, select: { id: true } });
     await notify(
       {
@@ -707,7 +715,13 @@ export async function respondInvite(clubId: string, accept: boolean): Promise<Cl
       await tx.clubMember.delete({ where: { id: m.id }, select: { id: true } });
       return;
     }
-    await tx.clubMember.update({ where: { id: m.id }, data: { status: 'ACTIVE' }, select: { id: true } });
+    // Cùng lý do với `approveMember`: bấm "Đồng ý" hai lần (hai tab, hay một
+    // cú nhấp đúp) thì trạng thái chỉ đổi một lần mà bộ đếm cộng hai.
+    const ghi = await tx.clubMember.updateMany({
+      where: { id: m.id, status: 'INVITED' }, data: { status: 'ACTIVE' },
+    });
+    if (ghi.count === 0) return;
+
     await tx.club.update({ where: { id: clubId }, data: { memberCount: { increment: 1 } }, select: { id: true } });
     if (m.invitedById) {
       await notify(

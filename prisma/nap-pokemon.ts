@@ -26,6 +26,16 @@
  *    chiêu của mười lăm khu gốc; riêng hệ Đá bản gốc không có con nào nên bộ
  *    chiêu của hệ ấy là viết mới.
  *
+ * 4. TÊN của 46 mã ảnh và của cả mười bốn Gym là ĐẶT MỚI, không phải của bản
+ *    gốc. Bản gốc đặt "s" cho 39 mã ảnh khác nhau và "sâu xanh" cho 20 mã nữa;
+ *    đợt trước đã tách ra cho mỗi mã một tên nhưng tên tách ra là tên máy sinh
+ *    ("Nước #47", "Bọ #12"), còn sáu mã thì mang tên viết thường không dấu
+ *    ("ran da", "picachu"). Tên mới đặt theo ĐÚNG hình trong
+ *    `public/hoai-niem/pokemon/thu/<mã>.gif` — mở từng tệp ra nhìn rồi đặt.
+ *    Hai chỗ tên gốc SAI hẳn so với hình: mã 44 ghi "miclotic" mà hình là con
+ *    ốc hoá thạch, mã 313 ghi "picachu" mà hình là con ốc xoắn.
+ *    Mười bốn Gym bản gốc không có tên nào cả, chỉ đánh số.
+ *
  * Bài kiểm `60-can-bang-dao-pokemon` canh đường cong này, nên chỉnh tay số
  * liệu thì chạy lại bài ấy.
  */
@@ -93,7 +103,7 @@ async function main() {
   // trong `src/lib/pokemon-const.ts`.
   for (const g of duLieu.gym) {
     const chung = {
-      ten: `Gym ${g.so}`, he: g.he || 1,
+      ten: g.ten, he: g.he || 1,
       cong: g.cong, thu: g.thu, mau: g.mau,
       exp: g.exp, vang: g.vang, cau: g.cau, ngoc: 10 + g.so * 5,
       chieu: g.chieu.filter(Boolean),
@@ -108,9 +118,21 @@ async function main() {
     await db.pokeHang.upsert({ where: { ma }, update: phan, create: { ma, ...phan } });
   }
 
+  // ── Sổ Đồ Giám của người chơi ─────────────────────────────────────────
+  // `PokeDoGiam` CHÉP tên loài lúc gặp chứ không trỏ về bảng thú hoang, nên
+  // đổi tên ở đây mà không quét sổ thì người đang chơi vẫn thấy tên cũ mãi.
+  // Khoá là mã ảnh, đúng thứ định danh một loài.
+  const tenTheoNguon = new Map<number, string>();
+  for (const khu of duLieu.khu) for (const t of khu.thu) tenTheoNguon.set(t.nguon, t.ten);
+  let soSo = 0;
+  for (const [nguon, ten] of tenTheoNguon) {
+    const r = await db.pokeDoGiam.updateMany({ where: { nguon, NOT: { ten } }, data: { ten } });
+    soSo += r.count;
+  }
+
   console.log(
     `✅ Nạp ${dem} thú hoang trên ${duLieu.khu.length} khu, ${duLieu.gym.length} Gym,`
-    + ` ${duLieu.hang.length} món hàng.`,
+    + ` ${duLieu.hang.length} món hàng. Sửa tên ${soSo} dòng trong sổ Đồ Giám.`,
   );
 }
 

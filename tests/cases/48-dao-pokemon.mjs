@@ -322,9 +322,10 @@ export default async function run(check) {
 
   await p.goto(`${BASE}/pokemon/gym`, { waitUntil: 'networkidle' });
   await p.waitForTimeout(900);
-  check('trang Gym bày đủ mười bốn Gym',
-    (await p.locator('text=/^Gym \\d+$/').count()) >= 14,
-    String(await p.locator('text=/^Gym \\d+$/').count()));
+  // Đếm theo ẢNH của Gym chứ không theo nhãn chữ: mười bốn Gym nay mang tên
+  // chủ Gym chứ không còn đánh số, nên đếm chữ "Gym N" là đếm hụt hết.
+  const soO = await p.locator('img[src^="/hoai-niem/pokemon/gym/"]').count();
+  check('trang Gym bày đủ mười bốn Gym', soO >= 14, String(soO));
   check('chỉ Gym kế tiếp mới có nút thách đấu',
     (await p.locator('button:has-text("Thách đấu")').count()) === 1);
 

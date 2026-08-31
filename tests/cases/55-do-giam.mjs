@@ -23,6 +23,27 @@ export default async function run(check) {
     new Set(ds.map((t) => t.nguon)).size
       === new Set(ds.map((t) => `${t.nguon}|${t.ten}`)).size);
 
+  // Tên phải ĐỌC ĐƯỢC, không chỉ khác nhau. Đợt tách tên trước đây làm mỗi mã
+  // một tên thật, nhưng tên tách ra là tên máy sinh — "Nước #47", "Bọ #12" —
+  // nên sổ mở ra vẫn không cho biết con nào là con nào.
+  const maySinh = ds.filter((t) => t.ten.includes('#'));
+  check('không tên loài nào còn là tên máy sinh kèm số hiệu',
+    maySinh.length === 0, [...new Set(maySinh.map((t) => t.ten))].slice(0, 6).join(', '));
+
+  const thuong = ds.filter((t) => t.ten === t.ten.toLowerCase());
+  check('không tên loài nào viết thường không dấu',
+    thuong.length === 0, [...new Set(thuong.map((t) => t.ten))].join(', '));
+
+  // Mười bốn Gym bản gốc không có tên, chỉ đánh số — mà bảng Gym là chỗ người
+  // chơi quay lại nhiều nhất, "Gym 7" thì không nhớ nổi mình đã qua những ai.
+  const gym = await db.pokeGym.findMany({ select: { so: true, ten: true }, take: 50 });
+  const chuaDat = gym.filter((g) => /^Gym \d+$/.test(g.ten));
+  check('mười bốn Gym đều có tên chủ Gym, không còn đánh số suông',
+    gym.length === 14 && chuaDat.length === 0,
+    `${gym.length} Gym, ${chuaDat.length} cái còn đánh số`);
+  check('tên chủ Gym không trùng nhau',
+    new Set(gym.map((g) => g.ten)).size === gym.length);
+
   // ── Ghi sổ khi gặp và khi bắt ────────────────────────────────────────
   const me = await db.user.findFirst({ where: { username: 'minhdev' }, select: { id: true } });
   if (!me) { check('có dữ liệu mẫu', false, 'thiếu minhdev'); return; }

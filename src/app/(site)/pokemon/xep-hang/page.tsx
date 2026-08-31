@@ -28,15 +28,22 @@ export default async function TrangXepHang() {
   const toi = await db.pokeNhanVat.findUnique({ where: { userId }, select: { id: true } });
   if (!toi) redirect('/pokemon');
 
-  const chon = { id: true, ten: true, cap: true, exp: true, vang: true, thangDau: true, soDiet: true };
-  const [theoExp, theoDau, theoVang, theoDiet] = await Promise.all([
+  const chon = {
+    id: true, ten: true, cap: true, exp: true, vang: true,
+    thangDau: true, soDiet: true, diemDau: true,
+  };
+  const [theoExp, theoDau, theoVang, theoDiet, theoDiem] = await Promise.all([
     db.pokeNhanVat.findMany({ orderBy: { exp: 'desc' }, take: CO_BAN, select: chon }),
     db.pokeNhanVat.findMany({ where: { thangDau: { gt: 0 } }, orderBy: { thangDau: 'desc' }, take: CO_BAN, select: chon }),
     db.pokeNhanVat.findMany({ orderBy: { vang: 'desc' }, take: CO_BAN, select: chon }),
     db.pokeNhanVat.findMany({ where: { soDiet: { gt: 0 } }, orderBy: { soDiet: 'desc' }, take: CO_BAN, select: chon }),
+    // Điểm đấu trường của MÙA NÀY — khác hẳn cột `thangDau` cộng dồn vĩnh viễn
+    // bên cạnh, vốn làm người vào sau không bao giờ đuổi kịp.
+    db.pokeNhanVat.findMany({ where: { thangDau: { gt: 0 } }, orderBy: { diemDau: 'desc' }, take: CO_BAN, select: chon }),
   ]);
 
   const bang = [
+    { ten: 'Điểm đấu trường mùa này', ds: theoDiem, so: (x: typeof theoExp[number]) => x.diemDau },
     { ten: 'Kinh nghiệm', ds: theoExp, so: (x: typeof theoExp[number]) => x.exp },
     { ten: 'Thắng đấu trường', ds: theoDau, so: (x: typeof theoExp[number]) => x.thangDau },
     { ten: 'Vàng', ds: theoVang, so: (x: typeof theoExp[number]) => x.vang },

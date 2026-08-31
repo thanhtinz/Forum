@@ -23,6 +23,7 @@ import {
   chuoiDiemDanh, dauNgayVN, quaDiemDanh,
 } from '@/lib/pokemon-const';
 import { chotDauQuaHan, traThuong } from '@/lib/pokemon-dau';
+import { CONFIG_LIST_CAP } from '@/lib/list-cap';
 import { tienDoNhiemVu } from '@/lib/pokemon';
 
 export interface PokeState { ok?: boolean; error?: string; ke?: string }
@@ -912,6 +913,60 @@ export async function taoKeo(_prev: PokeState, fd: FormData): Promise<PokeState>
 
   revalidatePath('/pokemon/dau-truong');
   return { ok: true, ke: `Đã mở kèo cho cấp ${min}–${max}. Kèo sống ${DAU_HAN_MS / 60_000} phút.` };
+}
+
+/**
+ * Ghép kèo nhanh: nhận ngay kèo hợp lệ có điểm gần mình nhất, không có thì mở
+ * kèo mới.
+ *
+ * Trước đây muốn đánh là phải mở kèo rồi ngồi chờ, hoặc tự đọc danh sách rồi
+ * bấm — mà trên một diễn đàn nhỏ thì đa số lúc chỉ có đúng một kèo đang mở.
+ * Nút này gộp cả hai việc vào một cú bấm.
+ */
+export async function ghepKeoNhanh(_prev: PokeState, _fd: FormData): Promise<PokeState> {
+  const r = await layNhanVat();
+  if ('error' in r) return { error: r.error };
+  const { nv } = r;
+
+  const con = await conRaTranHoacLoi(nv.id, nv.raTranId);
+  if ('error' in con) return { error: con.error };
+  if (con.thu.mau <= 0) return { error: 'Thú của bạn đang bị thương, chữa đã.' };
+
+  await chotDauQuaHan();
+  const dangCo = await db.pokeDau.findFirst({
+    where: { ketThuc: null, OR: [{ chuId: nv.id }, { doiId: nv.id }] },
+    select: { id: true },
+  });
+  if (dangCo) return { error: 'Bạn đang có một kèo dở rồi.' };
+
+  // Kèo hợp lệ: chưa ai nhận, không phải của mình, và cấp mình nằm trong
+  // khoảng chủ kèo nhận. Lọc ngay trong `where` chứ không lọc sau.
+  const hopLe = await db.pokeDau.findMany({
+    where: {
+      ketThuc: null, doiId: null, NOT: { chuId: nv.id },
+      capMin: { lte: nv.cap }, capMax: { gte: nv.cap },
+    },
+    select: { id: true, chu: { select: { diemDau: true } } },
+    orderBy: { createdAt: 'asc' },
+    take: CONFIG_LIST_CAP,
+  });
+
+  if (hopLe.length > 0) {
+    // Gần điểm mình nhất: đánh với người ngang sức thì Elo mới có nghĩa.
+    const gan = hopLe.reduce((a, b) => (
+      Math.abs(b.chu.diemDau - nv.diemDau) < Math.abs(a.chu.diemDau - nv.diemDau) ? b : a
+    ));
+    const fd = new FormData();
+    fd.set('dau', gan.id);
+    const kq = await vaoKeo({}, fd);
+    // Có người nhận mất kèo ấy đúng lúc: rơi xuống mở kèo mới thay vì báo lỗi.
+    if (kq.ok) return kq;
+  }
+
+  const fd = new FormData();
+  fd.set('min', String(DAU_CAP_MIN));
+  fd.set('max', String(DAU_CAP_MAX));
+  return taoKeo({}, fd);
 }
 
 /** Huỷ kèo của mình khi chưa ai nhận. */

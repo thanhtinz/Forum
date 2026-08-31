@@ -2,9 +2,9 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Swords } from 'lucide-react';
+import { Crown, History, Swords, Zap } from 'lucide-react';
 import {
-  danhDau, huyKeo, taoKeo, vaoKeo, type PokeState,
+  danhDau, ghepKeoNhanh, huyKeo, taoKeo, vaoKeo, type PokeState,
 } from '@/app/(site)/pokemon/actions';
 import { DAU_CAP_MAX, DAU_CAP_MIN } from '@/lib/pokemon-const';
 import { cn } from '@/lib/utils';
@@ -21,16 +21,22 @@ interface Tran {
 }
 interface Keo {
   id: string; nguoi: string; cap: number; capMin: number; capMax: number;
-  hanLuc: number; ten: string; nguon: number; nac: number; he: number;
+  hanLuc: number; ten: string; nguon: number; nac: number; he: number; diem: number;
 }
 interface Con { ten: string; nguon: number; nac: number; he: number; mau: number; mauToiDa: number }
+interface TranXong { id: string; doiThu: string; thang: boolean; hoa: boolean; luc: number }
+interface HangBang { id: string; ten: string; diem: number; thang: number; laToi: boolean }
 
-export function DauTruong({ tran, keo, cap, con }: {
+export function DauTruong({ tran, keo, cap, con, diem, tenHang, xong, bang }: {
   toiId: string; cap: number; con: Con | null | undefined;
   tran: Tran | null; keo: Keo[];
+  diem: number; tenHang: string | null; xong: TranXong[]; bang: HangBang[];
 }) {
   if (tran) return <ManDau tran={tran} />;
-  return <SanKeo keo={keo} cap={cap} con={con} />;
+  return (
+    <SanKeo keo={keo} cap={cap} con={con} diem={diem} tenHang={tenHang}
+      xong={xong} bang={bang} />
+  );
 }
 
 /** Đồng hồ đếm ngược, tự làm mới trang khi hết giờ để thấy kết quả chốt. */
@@ -50,17 +56,38 @@ function DemNguoc({ den, khiHet }: { den: number; khiHet?: () => void }) {
 
 // ─────────────────────────── Sàn kèo ───────────────────────────
 
-function SanKeo({ keo, cap, con }: { keo: Keo[]; cap: number; con: Con | null | undefined }) {
+function SanKeo({ keo, cap, con, diem, tenHang, xong, bang }: {
+  keo: Keo[]; cap: number; con: Con | null | undefined;
+  diem: number; tenHang: string | null; xong: TranXong[]; bang: HangBang[];
+}) {
   const [tao, taoAction, dangTao] = useActionState<PokeState, FormData>(taoKeo, {});
   const [vao, vaoAction, dangVao] = useActionState<PokeState, FormData>(vaoKeo, {});
-  const loi = tao.error ?? vao.error;
+  const [nhanh, nhanhAction, dangNhanh] = useActionState<PokeState, FormData>(ghepKeoNhanh, {});
+  const loi = tao.error ?? vao.error ?? nhanh.error;
 
   return (
     <div className="space-y-4">
       {loi && <p className="text-sm text-red-600">{loi}</p>}
-      {(tao.ke ?? vao.ke) && !loi && (
-        <p className="man-hien text-sm font-medium text-emerald-600">{tao.ke ?? vao.ke}</p>
+      {(tao.ke ?? vao.ke ?? nhanh.ke) && !loi && (
+        <p className="man-hien text-sm font-medium text-emerald-600">
+          {tao.ke ?? vao.ke ?? nhanh.ke}
+        </p>
       )}
+
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border-2 border-brand-400 p-3">
+        <b className="text-base tabular-nums">{diem}</b>
+        <span className="text-xs text-ink-500">điểm mùa này</span>
+        {tenHang && <span className="chip !py-0 text-[11px]">{tenHang}</span>}
+        {/* Ghép nhanh gộp "đọc danh sách rồi bấm" và "mở kèo rồi ngồi chờ" vào
+            một cú bấm — trên một diễn đàn nhỏ, phần lớn thời gian chỉ có đúng
+            một kèo đang mở. */}
+        <form action={nhanhAction} className="ml-auto">
+          <button disabled={dangNhanh || !con}
+            className="btn-primary gap-1.5 !py-1.5 text-sm disabled:opacity-50">
+            <Zap size={14} /> Ghép kèo nhanh
+          </button>
+        </form>
+      </div>
 
       {con ? (
         <div className="flex items-center gap-3 rounded-xl bg-ink-50 p-3 dark:bg-ink-800/50">
@@ -121,6 +148,7 @@ function SanKeo({ keo, cap, con }: { keo: Keo[]; cap: number; con: Con | null | 
                     <div className="flex flex-wrap items-center gap-2">
                       <b className="text-sm">{k.nguoi}</b>
                       <span className="text-xs text-ink-400">cấp {k.cap}</span>
+                      <span className="text-xs tabular-nums text-ink-400">{k.diem} điểm</span>
                       <HuyHieuHe he={k.he} />
                     </div>
                     <p className="text-xs text-ink-400">
@@ -138,6 +166,50 @@ function SanKeo({ keo, cap, con }: { keo: Keo[]; cap: number; con: Con | null | 
           </div>
         )}
       </div>
+
+      {/* Những dòng đã kết thúc vốn nằm chết trong bảng, không màn nào đọc ra —
+          nên đánh xong là mất dấu, chỉ còn một con số "thắng N trận". */}
+      {xong.length > 0 && (
+        <div>
+          <p className="label mb-2 flex items-center gap-1.5"><History size={13} /> Trận gần đây</p>
+          <ul className="space-y-1.5">
+            {xong.map((t) => (
+              <li key={t.id}
+                className="flex flex-wrap items-center gap-2 rounded-lg bg-ink-50 px-3 py-2 text-sm dark:bg-ink-800/50">
+                <b className={cn(
+                  'text-xs font-bold',
+                  t.hoa ? 'text-ink-400' : t.thang ? 'text-emerald-600' : 'text-rose-600',
+                )}>
+                  {t.hoa ? 'HOÀ' : t.thang ? 'THẮNG' : 'THUA'}
+                </b>
+                <span className="min-w-0 flex-1 truncate">{t.doiThu}</span>
+                <span className="shrink-0 text-xs text-ink-400">
+                  {new Date(t.luc).toLocaleString('vi', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {bang.length > 0 && (
+        <div>
+          <p className="label mb-2 flex items-center gap-1.5"><Crown size={13} /> Bảng điểm mùa này</p>
+          <ol className="space-y-1.5">
+            {bang.map((h, i) => (
+              <li key={h.id} className={cn(
+                'flex items-center gap-2 rounded-lg px-3 py-2 text-sm',
+                h.laToi ? 'bg-brand-50 font-bold dark:bg-brand-950/40' : 'bg-ink-50 dark:bg-ink-800/50',
+              )}>
+                <span className="w-5 shrink-0 text-xs tabular-nums text-ink-400">{i + 1}</span>
+                <span className="min-w-0 flex-1 truncate">{h.ten}</span>
+                <span className="shrink-0 text-xs text-ink-400">{h.thang} thắng</span>
+                <b className="shrink-0 tabular-nums">{h.diem}</b>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 }

@@ -622,6 +622,59 @@ export function laGioVang(now: Date = new Date()): boolean {
   return Math.floor((now.getTime() / 3600000 + 7) % 24) === DAU_GIO_VANG;
 }
 
+// ─────────────────── Xếp hạng và mùa giải đấu trường ───────────────────
+
+/**
+ * Bản gốc không có xếp hạng nào cho đấu trường: thắng bao nhiêu trận cũng chỉ
+ * có cột `thangDau` cộng dồn vĩnh viễn. Người vào sau không bao giờ đuổi kịp,
+ * nên bảng đứng yên và chẳng ai còn lý do đánh thêm trận nào.
+ *
+ * Điểm khởi đầu 1000, tính kiểu Elo với K = 32 — chuẩn quen thuộc, và quan
+ * trọng hơn: thắng người mạnh hơn được nhiều điểm hơn, nên đánh kèo dễ không
+ * lên hạng được.
+ */
+export const DIEM_DAU_DAU = 1000;
+export const HE_SO_K = 32;
+
+/** Điểm mới sau một trận. Trả về CẢ HAI để chỗ gọi ghi một lần. */
+export function diemSauTran(
+  cuaToi: number, cuaDich: number, thang: boolean,
+): { toi: number; dich: number } {
+  const kyVong = 1 / (1 + 10 ** ((cuaDich - cuaToi) / 400));
+  const doi = Math.round(HE_SO_K * ((thang ? 1 : 0) - kyVong));
+  // Sàn 100: điểm âm thì bảng xếp hạng đọc lên vô nghĩa, mà thua liên tục là
+  // chuyện thường của người mới.
+  return {
+    toi: Math.max(100, cuaToi + doi),
+    dich: Math.max(100, cuaDich - doi),
+  };
+}
+
+/** Số hiệu mùa của một mốc thời gian: năm × 100 + tháng, theo lịch giờ Việt Nam. */
+export function muaCua(t: Date): number {
+  const vn = new Date(t.getTime() + LECH_GIO_VN);
+  return vn.getUTCFullYear() * 100 + (vn.getUTCMonth() + 1);
+}
+
+/**
+ * Thưởng cuối mùa, xét theo ĐIỂM của chính mình chứ không theo thứ hạng.
+ *
+ * Xét theo hạng thì phải chụp lại bảng lúc hết mùa, mà chốt lười thì mỗi người
+ * chốt vào một lúc khác nhau nên bảng ấy không có thời điểm nào là đúng. Xét
+ * theo điểm thì chỉ cần đúng hàng của người ấy, và mốc điểm cũng là thứ người
+ * chơi ngắm được suốt mùa.
+ */
+export const HANG_MUA = [
+  { moc: 1600, ten: 'Cao thủ', vang: 200_000, ngoc: 100, da: 5 },
+  { moc: 1400, ten: 'Kỳ cựu', vang: 80_000, ngoc: 40, da: 3 },
+  { moc: 1200, ten: 'Khá', vang: 30_000, ngoc: 15, da: 1 },
+  { moc: 1050, ten: 'Có góp mặt', vang: 10_000, ngoc: 5, da: 0 },
+] as const;
+
+export function hangTheoDiem(diem: number) {
+  return HANG_MUA.find((h) => diem >= h.moc) ?? null;
+}
+
 // ─────────────────────────── Cường hoá ───────────────────────────
 
 /**

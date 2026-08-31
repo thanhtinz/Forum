@@ -2527,6 +2527,17 @@ model PokeNhanVat {
   diemDanhNgay   DateTime?
   diemDanhChuoi  Int       @default(0)
 
+  /// Điểm xếp hạng đấu trường và mùa giải đang tính.
+  ///
+  /// Bản gốc không có xếp hạng nào cho đấu trường: thắng bao nhiêu trận cũng
+  /// chỉ có cột `thangDau` cộng dồn vĩnh viễn, nên người vào sau không bao giờ
+  /// đuổi kịp và bảng xếp hạng đứng yên.
+  ///
+  /// `muaDau` là số hiệu mùa (năm × 100 + tháng, lịch giờ Việt Nam). Sang mùa
+  /// mới thì lượt đọc đầu tiên chốt mùa cũ — chốt LƯỜI, không tiến trình nền.
+  diemDau Int @default(1000)
+  muaDau  Int @default(0)
+
   /// Mốc thưởng Đồ Giám đã nhận. Cùng lối cột `nhiemVu`: chỉ ghi ĐÃ NHẬN TỚI
   /// ĐÂU, còn tiến độ thì đọc thẳng từ bảng `PokeDoGiam` nên không lệch được.
   mocDoGiam Int @default(0)

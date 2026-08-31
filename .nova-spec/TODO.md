@@ -4,7 +4,7 @@ Bản này ghi **hiện trạng thật**, đã đối chiếu với mã và dữ
 ban đầu (P0–P16) đã xong và không còn ý nghĩa, nên gỡ đi — sản phẩm nay là diễn
 đàn + kho game tính bằng điểm, không còn blog, tiền thật hay VIP.
 
-Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **1261/1261**.
+Trạng thái: `tsc` sạch · `npm run scan` sạch · `npm run test:that` **1273/1273**.
 
 ---
 
@@ -26,6 +26,33 @@ Xếp theo mức đáng làm. Không cái nào đang gây lỗi cho người dù
 ## Đã xong trong đợt gần đây
 
 Ghi lại để khỏi làm lại, và để biết chỗ nào vừa đụng vào.
+
+**Gộp bảng xếp hạng Đảo Pokémon về một chỗ** — đảo bày xếp hạng ở ba nơi, hai
+trong số đó chép lại nguyên xi: trang Đấu trường chép "Bảng điểm mùa này",
+trang Lãnh Thổ chép "Bảng diệt quái". Cùng bảng dữ liệu, cùng `take: 10`, cùng
+cách dựng dòng — mà ba bản còn lệch vặt nhau. Nay chỉ còn ở `/pokemon/xep-hang`;
+hai trang kia giữ đúng chỉ số của riêng người chơi và KHÔNG thêm liên kết dẫn
+sang, vì thanh tab của đảo đã có sẵn ô Xếp hạng. Trang xếp hạng dựng lại: năm
+bảng chia tab (tab là liên kết `?bang=…`, không cần mã phía trình duyệt), thêm
+phân trang `?trang=…` — trước cắt cứng top 10 nên ai hạng 11 trở đi vĩnh viễn
+không thấy mình — kèm dòng "Bạn đang hạng N/M", và thứ tự có khoá phụ `id` để
+hai người bằng điểm không làm phân trang nhảy dòng.
+
+**Ba lỗi của chính bộ kiểm, tìm ra khi một lượt chạy bị giết giữa chừng** —
+lượt ấy đỏ 51 mục ở khắp nơi trong khi hai lượt trước xanh hết:
+- Bài 57 dựng một chuyên mục KHOÁ HUY HIỆU rồi dọn ở cuối hàm, không
+  `try/finally`. Đứt giữa chừng là cái khu ấy nằm lại, mà mười bốn bài khác lấy
+  chuyên mục bằng `findFirst({ postAccess: 'ALL' })` — trong khi `postAccess`
+  chỉ nói về quyền ĐĂNG, khu khoá huy hiệu vẫn "ai cũng đăng được" và chỉ chặn
+  XEM. Nay mười bốn bài nêu đúng điều kiện `requiredMedalId: null`, còn bài 57
+  dọn trong `finally` cả chuyên mục lẫn quyền MODERATOR nó tạm nâng.
+- Bài 15 hỏi `findFirst` chủ đề PUBLISHED rồi mới tìm trả lời gốc của nó, không
+  `orderBy` nên bốc trúng chủ đề mẫu không trả lời nào là đỏ. Điều kiện "có trả
+  lời gốc" nay nằm trong `where`.
+- `next dev` và `npm run test:that` dùng CHUNG thư mục `.next`, nên chạy bộ
+  kiểm xong là dev phục vụ bản dựng production và mấy bài giao diện đỏ oan.
+  Ghi lại đây vì đây là cái bẫy môi trường, không sửa bằng mã được: chạy
+  `test:that` xong thì `rm -rf .next` trước khi mở lại dev.
 
 **Nâng cấp Đảo Pokémon (sáu đợt)** — đảo đã có đủ mười bốn màn hình và 34
 server action, nhưng phần *sâu* thì mỏng và có ba chỗ hỏng thật.

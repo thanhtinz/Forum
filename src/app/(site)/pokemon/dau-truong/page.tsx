@@ -24,7 +24,7 @@ export default async function TrangDauTruong() {
   // Chốt mùa cũ cũng LƯỜI, ngay tại lượt đọc này — không tiến trình nền nào.
   const chotMua = await chotMuaDau(nv.id);
 
-  const [cuaToi, keo, xong, hang] = await Promise.all([
+  const [cuaToi, keo, xong] = await Promise.all([
     db.pokeDau.findFirst({
       where: { ketThuc: null, OR: [{ chuId: nv.id }, { doiId: nv.id }] },
       include: { chu: { select: { ten: true } }, doi: { select: { ten: true } } },
@@ -44,12 +44,6 @@ export default async function TrangDauTruong() {
         id: true, chuId: true, thangId: true, ketThuc: true, ke: true,
         chu: { select: { ten: true } }, doi: { select: { ten: true } },
       },
-    }),
-    db.pokeNhanVat.findMany({
-      where: { thangDau: { gt: 0 } },
-      orderBy: { diemDau: 'desc' },
-      take: 10,
-      select: { id: true, ten: true, diemDau: true, thangDau: true },
     }),
   ]);
 
@@ -124,9 +118,7 @@ export default async function TrangDauTruong() {
             hoa: t.thangId == null,
             luc: t.ketThuc?.getTime() ?? 0,
           }))}
-          bang={hang.map((h) => ({
-            id: h.id, ten: h.ten, diem: h.diemDau, thang: h.thangDau, laToi: h.id === nv.id,
-          }))} />
+        />
       </section>
     </>
   );

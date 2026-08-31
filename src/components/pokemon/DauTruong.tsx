@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Crown, History, Swords, Zap } from 'lucide-react';
+import { History, Swords, Zap } from 'lucide-react';
 import {
   danhDau, ghepKeoNhanh, huyKeo, taoKeo, vaoKeo, type PokeState,
 } from '@/app/(site)/pokemon/actions';
@@ -25,18 +25,14 @@ interface Keo {
 }
 interface Con { ten: string; nguon: number; nac: number; he: number; mau: number; mauToiDa: number }
 interface TranXong { id: string; doiThu: string; thang: boolean; hoa: boolean; luc: number }
-interface HangBang { id: string; ten: string; diem: number; thang: number; laToi: boolean }
 
-export function DauTruong({ tran, keo, cap, con, diem, tenHang, xong, bang }: {
+export function DauTruong({ tran, keo, cap, con, diem, tenHang, xong }: {
   toiId: string; cap: number; con: Con | null | undefined;
   tran: Tran | null; keo: Keo[];
-  diem: number; tenHang: string | null; xong: TranXong[]; bang: HangBang[];
+  diem: number; tenHang: string | null; xong: TranXong[];
 }) {
   if (tran) return <ManDau tran={tran} />;
-  return (
-    <SanKeo keo={keo} cap={cap} con={con} diem={diem} tenHang={tenHang}
-      xong={xong} bang={bang} />
-  );
+  return <SanKeo keo={keo} cap={cap} con={con} diem={diem} tenHang={tenHang} xong={xong} />;
 }
 
 /** Đồng hồ đếm ngược, tự làm mới trang khi hết giờ để thấy kết quả chốt. */
@@ -56,9 +52,9 @@ function DemNguoc({ den, khiHet }: { den: number; khiHet?: () => void }) {
 
 // ─────────────────────────── Sàn kèo ───────────────────────────
 
-function SanKeo({ keo, cap, con, diem, tenHang, xong, bang }: {
+function SanKeo({ keo, cap, con, diem, tenHang, xong }: {
   keo: Keo[]; cap: number; con: Con | null | undefined;
-  diem: number; tenHang: string | null; xong: TranXong[]; bang: HangBang[];
+  diem: number; tenHang: string | null; xong: TranXong[];
 }) {
   const [tao, taoAction, dangTao] = useActionState<PokeState, FormData>(taoKeo, {});
   const [vao, vaoAction, dangVao] = useActionState<PokeState, FormData>(vaoKeo, {});
@@ -192,24 +188,6 @@ function SanKeo({ keo, cap, con, diem, tenHang, xong, bang }: {
         </div>
       )}
 
-      {bang.length > 0 && (
-        <div>
-          <p className="label mb-2 flex items-center gap-1.5"><Crown size={13} /> Bảng điểm mùa này</p>
-          <ol className="space-y-1.5">
-            {bang.map((h, i) => (
-              <li key={h.id} className={cn(
-                'flex items-center gap-2 rounded-lg px-3 py-2 text-sm',
-                h.laToi ? 'bg-brand-50 font-bold dark:bg-brand-950/40' : 'bg-ink-50 dark:bg-ink-800/50',
-              )}>
-                <span className="w-5 shrink-0 text-xs tabular-nums text-ink-400">{i + 1}</span>
-                <span className="min-w-0 flex-1 truncate">{h.ten}</span>
-                <span className="shrink-0 text-xs text-ink-400">{h.thang} thắng</span>
-                <b className="shrink-0 tabular-nums">{h.diem}</b>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
     </div>
   );
 }

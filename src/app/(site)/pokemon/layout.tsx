@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 /**
  * Khung chung cho mọi trang của Đảo Pokémon.
  *
- * Thanh tab nằm ở đây chứ không rải vào từng trang: mười hai lối đi mà mỗi
+ * Thanh tab nằm ở đây chứ không rải vào từng trang: mười bốn lối đi mà mỗi
  * trang con chỉ có một liên kết "quay lại" thì đi từ kho sang chợ mất hai lần
  * chạm. Chưa tạo nhân vật thì không dựng thanh nào cả — lúc ấy chỉ có đúng
  * một việc để làm là tạo nhân vật.

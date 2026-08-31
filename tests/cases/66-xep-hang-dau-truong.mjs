@@ -131,8 +131,18 @@ export default async function run(check) {
     await doiToi(async () => (await pB.locator('text=Trận gần đây').count()) > 0);
     check('cùng trận ấy hiện là THUA với người thua',
       (await pB.locator('text=THUA').count()) > 0);
-    check('bảng điểm mùa này hiện trên trang đấu trường',
-      (await pA.locator('text=Bảng điểm mùa này').count()) > 0);
+    // Bảng xếp hạng nay CHỈ ở khu xếp hạng. Trước đây trang đấu trường chép
+    // lại nguyên xi bảng điểm mùa, còn trang Lãnh Thổ chép lại bảng diệt quái
+    // — cùng một bảng dữ liệu, cùng cách dựng dòng, ba bản lệch vặt nhau.
+    check('trang đấu trường không còn chép lại bảng xếp hạng',
+      (await pA.locator('text=Bảng điểm mùa này').count()) === 0);
+    check('trang đấu trường vẫn giữ điểm của riêng mình',
+      (await pA.locator('text=điểm mùa này').count()) > 0);
+
+    await pA.goto(`${BASE}/pokemon/xep-hang`, { waitUntil: 'networkidle' });
+    await doiToi(async () => (await pA.locator('text=Điểm đấu trường mùa này').count()) > 0);
+    check('bảng điểm mùa này nằm ở khu xếp hạng',
+      (await pA.locator('text=Điểm đấu trường mùa này').count()) > 0);
 
     // ── Chốt mùa ──────────────────────────────────────────────────────
     const hang = HANG_MUA[HANG_MUA.length - 1];

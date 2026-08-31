@@ -11,12 +11,12 @@ import { cn } from '@/lib/utils';
 /**
  * Thanh đi lại của Đảo Pokémon.
  *
- * Trước đây là một hàng nút viên thuốc xếp cạnh nhau: mười hai lối đi thì trên
+ * Trước đây là một hàng nút viên thuốc xếp cạnh nhau: mười bốn lối đi thì trên
  * điện thoại gãy thành năm hàng chữ vụn, mà mỗi trang con lại chỉ có đúng một
  * liên kết "quay lại" nên đi từ kho sang chợ mất hai lần chạm.
  *
  * Giờ là lưới ô vuông biểu tượng-trên-chữ-dưới, bốn cột trên điện thoại và sáu
- * cột từ máy tính bảng trở lên — mười hai ô nhìn thấy hết cùng lúc, không phải
+ * cột từ máy tính bảng trở lên — mười bốn ô nhìn thấy hết cùng lúc, không phải
  * cuộn ngang mò. Đặt ở layout nên trang nào cũng có, và ô của trang đang mở
  * thì sáng lên.
  */

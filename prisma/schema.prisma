@@ -159,6 +159,7 @@ model User {
   farmOrders    FarmOrder[]
   pokeNhanVat   PokeNhanVat?
   rong          Rong[]
+  rongHoSo      RongNguoiChoi?
   /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
   lastTreeAt    DateTime?
 
@@ -2442,6 +2443,38 @@ model Rong {
  * rồng của MÌNH còn quét cả những trận người khác đã đánh với nó. Trần ngày
  * đếm trên `MiniGamePlay` — bảng người chơi không xoá được.
  */
+/// Hồ sơ của một người chơi ở Đảo Rồng.
+///
+/// Trước nay đảo chỉ có bảng cho CON RỒNG, không có bảng nào cho NGƯỜI NUÔI —
+/// nên số mốc sưu tầm đã lĩnh chẳng biết cất vào đâu. Nhét lên `User` thì lẫn
+/// với diễn đàn, mà đếm lại lúc đọc thì bảng xếp hạng không sắp theo được:
+/// `ORDER BY` cần một cột thật chứ không nhận một phép đếm `distinct`.
+///
+/// Hàng tự sinh lúc người chơi mở trang sổ sưu tầm lần đầu, nên người đã nuôi
+/// rồng từ trước không cần bộ nạp lại nào.
+model RongNguoiChoi {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Số cặp loài+màu đã TỪNG nở, kể cả con đã thả về trời.
+  ///
+  /// Ghi trong cùng transaction với lúc nở trứng, và tự sửa lại nếu lệch khi
+  /// mở trang sổ — con số này chỉ để xếp hạng, còn cái sổ vẫn đọc thẳng từ
+  /// bảng `Rong` nên không bao giờ bày sai.
+  daSuuTam Int @default(0)
+
+  /// Số mốc sưu tầm đã lĩnh thưởng, tính theo THỨ TỰ trong `MOC_SUU_TAM`.
+  ///
+  /// Lưu số thứ tự chứ không lưu danh sách mốc: thêm mốc mới vào cuối bảng
+  /// hằng số là người chơi cũ tự khắc lĩnh được mốc ấy, không phải vá dữ liệu.
+  mocDaNhan Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([daSuuTam])
+}
+
 model RongTran {
   id String @id @default(cuid())
 

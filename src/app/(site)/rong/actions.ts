@@ -7,15 +7,16 @@ import { db } from '@/lib/db';
 import { banMessage, getActiveBan } from '@/lib/ban';
 import { lockUsers } from '@/lib/lock';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
-import { bocRongNgauNhien, danhNhau } from '@/lib/rong';
+import { bocRongNgauNhien, danhNhau, demSuuTam } from '@/lib/rong';
 import {
   AN_CHO_MS, AP_MS, CHOI_CHO_MS, CHUONG_TOI_DA, DAU_MOI_NGAY, EXP_MOI_BUA,
   EXP_MOI_LAN_CHOI, GIA_AN, GIA_NO_NGAY, GIA_TRUNG, PHI_DAU, THUONG_THANG,
-  VUI_MOI_LAN, CAP_TOI_DA, chiSo, dauNgayVN, expCanDe, loiTenRong, tenRong, vuiHienGio,
+  VUI_MOI_LAN, CAP_TOI_DA, MOC_SUU_TAM, chiSo, dauNgayVN, expCanDe, loiTenRong,
+  mocDatDuoc, tenRong, vuiHienGio,
 } from '@/lib/rong-const';
 
 /**
- * Đảo rồng — bảy thao tác đổi dữ liệu.
+ * Đảo rồng — chín thao tác đổi dữ liệu.
  *
  * Mọi hàm export ở đây là một endpoint POST công khai, nên hàm nào cũng tự kiểm
  * quyền của chính nó và tự kiểm con rồng có đúng của người gọi không. Không hàm
@@ -143,6 +144,17 @@ export async function noTrung(_prev: RongState, formData: FormData): Promise<Ron
         data: { noAt: now, vui: 60, vuiTinhAt: now },
       });
       if (xong.count === 0) throw new Error('Quả trứng này vừa nở ở nơi khác rồi.');
+
+      // Đếm lại sổ sưu tầm NGAY trong giao dịch này. Đếm lúc đọc trang thì
+      // bảng xếp hạng sắp theo một con số đi sau sự thật, mà `ORDER BY` thì
+      // không nhận một phép đếm `distinct`.
+      const daCo = await demSuuTam(tx, me.userId);
+      await tx.rongNguoiChoi.upsert({
+        where: { userId: me.userId },
+        create: { userId: me.userId, daSuuTam: daCo },
+        update: { daSuuTam: daCo },
+        select: { id: true },
+      });
 
       ten = tenRong(r.loai, r.mau);
     });
@@ -419,6 +431,60 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
   } catch (e) {
     if (e instanceof InsufficientPointsError) return { error: `Không đủ điểm. Ghi danh một trận tốn ${PHI_DAU} điểm.` };
     return { error: e instanceof Error ? e.message : 'Không ghép được trận.' };
+  }
+
+  lamMoi();
+  return { ok: true, ke };
+}
+
+// ─────────────────────────── Mốc sưu tầm ───────────────────────────
+
+/**
+ * Lĩnh thưởng một mốc của sổ sưu tầm.
+ *
+ * Số con trong sổ đếm LẠI ở đây chứ không đọc cột `daSuuTam`: cột ấy là bản
+ * chép để xếp hạng, mà đây là chỗ phát điểm thật. Trình duyệt cũng không gửi
+ * lên mốc nào — máy chủ tự suy ra từ số đếm.
+ */
+export async function nhanMocSuuTam(_prev: RongState, _formData: FormData): Promise<RongState> {
+  const me = await nguoiNuoi();
+  if ('error' in me) return { error: me.error };
+
+  let ke = '';
+  try {
+    await db.$transaction(async (tx) => {
+      const ho = await tx.rongNguoiChoi.findUnique({
+        where: { userId: me.userId },
+        select: { id: true, mocDaNhan: true },
+      });
+      if (!ho) throw new Error('Bạn chưa nở con rồng nào cả.');
+
+      const daCo = await demSuuTam(tx, me.userId);
+      const dat = mocDatDuoc(daCo);
+      if (dat <= ho.mocDaNhan) throw new Error('Chưa tới mốc nào mới.');
+
+      // Lĩnh MỘT mốc mỗi lần bấm, đúng mốc kế tiếp — để lời nhắn nói được rõ
+      // vừa đạt mốc nào và được bao nhiêu.
+      const moc = MOC_SUU_TAM[ho.mocDaNhan];
+      if (!moc) throw new Error('Chưa tới mốc nào mới.');
+
+      // Mốc cũ nằm trong `where`: hai tab cùng bấm thì tab sau đếm được 0 dòng
+      // và `throw` kéo luôn khoản thưởng vừa phát về chỗ cũ.
+      const xong = await tx.rongNguoiChoi.updateMany({
+        where: { id: ho.id, mocDaNhan: ho.mocDaNhan },
+        data: { mocDaNhan: ho.mocDaNhan + 1, daSuuTam: daCo },
+      });
+      if (xong.count === 0) throw new Error('Bạn vừa lĩnh mốc này ở nơi khác rồi.');
+
+      await grantPoints({
+        userId: me.userId, amount: moc.thuong, reason: 'RONG_THANG',
+        note: `Sưu tầm đủ ${moc.so} con rồng`,
+      }, tx);
+
+      ke = `Sưu tầm đủ ${moc.so} con — thưởng ${moc.thuong} điểm!`;
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Không lĩnh được thưởng.' };
   }
 
   lamMoi();

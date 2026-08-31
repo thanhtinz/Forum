@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { CHUONG_TOI_DA, DAU_MOI_NGAY, DU_BO, dauNgayVN } from '@/lib/rong-const';
+import { CHUONG_TOI_DA, DAU_MOI_NGAY, DU_BO, dauNgayVN, mocDatDuoc } from '@/lib/rong-const';
 import { bienCanhRong } from '@/lib/rong-giao-dien';
 import { ThanhTab } from '@/components/rong/ThanhTab';
 
@@ -38,7 +38,7 @@ export default async function KhungRong({ children }: { children: ReactNode }) {
     // Tông màu ăn theo con đang cử ra trận; chưa cử con nào thì lấy con đầu.
     mauCanh = (dan.find((r) => r.raTran && r.noAt) ?? dan[0]!).mau;
 
-    const [daCo, daDau] = await Promise.all([
+    const [daCo, daDau, ho] = await Promise.all([
       db.rong.findMany({
         where: { userId, noAt: { not: null } },
         distinct: ['loai', 'mau'],
@@ -48,16 +48,23 @@ export default async function KhungRong({ children }: { children: ReactNode }) {
       db.miniGamePlay.count({
         where: { userId, game: 'RONGDAU', createdAt: { gte: dauNgayVN(now) } },
       }),
+      // Chỉ ĐỌC ở đây, không tự tạo: khung dựng ở mọi trang của đảo, mà tạo
+      // hàng trong một hàm chỉ để vẽ một cái huy hiệu thì mỗi lần mở trang là
+      // một lượt ghi. Hàng sinh ra lúc mở sổ sưu tầm.
+      db.rongNguoiChoi.findUnique({ where: { userId }, select: { mocDaNhan: true } }),
     ]);
 
     // Chỉ báo thứ CÓ VIỆC ĐỂ LÀM: trứng nở được ngay, và số trận còn lại hôm
     // nay. Một con số đếm suông thì chẳng nhắc được gì.
     const noDuoc = dan.filter((r) => !r.noAt && now >= r.apXongAt.getTime()).length;
     const conDau = Math.max(0, DAU_MOI_NGAY - daDau);
+    // Có mốc chưa lĩnh thì kêu "!" thay cho con số: một dấu chấm than là việc
+    // phải làm, còn "23/54" chỉ là tình hình.
+    const cocMoc = mocDatDuoc(daCo.length) > (ho?.mocDaNhan ?? 0);
     nhan = {
       ...(noDuoc > 0 ? { '/rong/ap-trung': String(noDuoc) } : {}),
       ...(conDau > 0 ? { '/rong/dau-truong': String(conDau) } : {}),
-      '/rong/so-suu-tam': `${daCo.length}/${DU_BO}`,
+      '/rong/so-suu-tam': cocMoc ? '!' : `${daCo.length}/${DU_BO}`,
     };
   }
 

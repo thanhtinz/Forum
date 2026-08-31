@@ -1,7 +1,7 @@
 import { db } from './db';
 import {
   CHUONG_TOI_DA, DAU_MOI_NGAY, SO_HIEP, SO_LOAI, SO_MAU,
-  type ChiSo, chiSo, dauNgayVN, vuiHienGio,
+  type ChiSo, chiSo, dauNgayVN, mocDatDuoc, vuiHienGio,
 } from './rong-const';
 
 /**
@@ -137,25 +137,92 @@ export async function xemTrung(userId: string): Promise<OApTrung> {
   };
 }
 
+/**
+ * Đếm số cặp loài+màu đã TỪNG nở của một người.
+ *
+ * Nhận `tx` để gọi được cả ngoài lẫn trong transaction: lúc trứng nở phải đếm
+ * lại NGAY trong cùng giao dịch, không thì có lúc `daSuuTam` đi sau sự thật.
+ */
+export async function demSuuTam(tx: KhachDb, userId: string): Promise<number> {
+  const tung = await tx.rong.findMany({
+    where: { userId, noAt: { not: null } },
+    distinct: ['loai', 'mau'],
+    take: SO_LOAI * SO_MAU,
+    select: { loai: true },
+  });
+  return tung.length;
+}
+
+/** Chỗ nào cũng nhận được: `db` hay `tx` bên trong `$transaction`. */
+type KhachDb = Pick<typeof db, 'rong' | 'rongNguoiChoi'>;
+
+/**
+ * Hồ sơ Đảo Rồng của một người, tự tạo nếu chưa có.
+ *
+ * `daSuuTam` lúc tạo lấy từ số đếm THẬT chứ không để 0: người đã nuôi rồng từ
+ * trước ngày có bảng này vẫn phải thấy đúng số con mình đã sưu tầm, mà không
+ * cần bộ nạp lại nào.
+ */
+export async function hoSoRong(userId: string) {
+  const co = await db.rongNguoiChoi.findUnique({
+    where: { userId },
+    select: { id: true, daSuuTam: true, mocDaNhan: true },
+  });
+  if (co) return co;
+
+  const daCo = await demSuuTam(db, userId);
+  return db.rongNguoiChoi.upsert({
+    where: { userId },
+    create: { userId, daSuuTam: daCo },
+    update: {},
+    select: { id: true, daSuuTam: true, mocDaNhan: true },
+  });
+}
+
 export interface SuuTam {
   /** Số cặp loài+màu đã từng nở. */
   daCo: number;
   /** Cặp `loài-màu` đã từng có, để tô sáng trong sổ. */
   boSuuTap: string[];
+  /** Số mốc đã lĩnh thưởng. */
+  mocDaNhan: number;
+  /** Số mốc đủ điều kiện lĩnh — lớn hơn `mocDaNhan` là có thưởng chờ. */
+  mocDatDuoc: number;
 }
 
 /**
  * Sổ sưu tầm tính trên MỌI con từng nở, kể cả con đã thả — đã từng có thì coi
  * như đã sưu tầm được.
+ *
+ * Cái sổ đọc THẲNG từ bảng `Rong` chứ không tin cột `daSuuTam`: cột ấy chỉ
+ * sinh ra để xếp hạng. Lệch nhau thì sửa cột lại theo bảng, và chỉ ghi khi
+ * thật sự lệch — mở trang không được là một lượt ghi cơ sở dữ liệu.
  */
 export async function xemSuuTam(userId: string): Promise<SuuTam> {
-  const tung = await db.rong.findMany({
-    where: { userId, noAt: { not: null } },
-    distinct: ['loai', 'mau'],
-    take: SO_LOAI * SO_MAU,
-    select: { loai: true, mau: true },
-  });
-  return { daCo: tung.length, boSuuTap: tung.map((x) => `${x.loai}-${x.mau}`) };
+  const [tung, ho] = await Promise.all([
+    db.rong.findMany({
+      where: { userId, noAt: { not: null } },
+      distinct: ['loai', 'mau'],
+      take: SO_LOAI * SO_MAU,
+      select: { loai: true, mau: true },
+    }),
+    hoSoRong(userId),
+  ]);
+
+  if (ho.daSuuTam !== tung.length) {
+    // Ghi có điều kiện: hai tab cùng mở thì tab sau đếm được 0 dòng và thôi.
+    await db.rongNguoiChoi.updateMany({
+      where: { id: ho.id, daSuuTam: ho.daSuuTam },
+      data: { daSuuTam: tung.length },
+    });
+  }
+
+  return {
+    daCo: tung.length,
+    boSuuTap: tung.map((x) => `${x.loai}-${x.mau}`),
+    mocDaNhan: ho.mocDaNhan,
+    mocDatDuoc: mocDatDuoc(tung.length),
+  };
 }
 
 export interface RongRaTran {

@@ -91,6 +91,34 @@ export function expCanDe(cap: number): number {
   return 40 + (cap - 1) * 28;
 }
 
+// ── Sổ sưu tầm ───────────────────────────────────────────────────────────
+
+/**
+ * Mốc thưởng của sổ sưu tầm.
+ *
+ * Sổ 54 ô mà không có mốc nào thì chỉ là một cái bảng đếm: người chơi nở đủ
+ * năm mươi tư con cũng chẳng được gì ngoài việc bảng hết xám. Mốc thưa dần và
+ * thưởng dốc lên vì mười con đầu chỉ cần mua trứng đều tay, còn mười con cuối
+ * là chuyện của may rủi kéo dài.
+ *
+ * Thứ tự trong mảng CHÍNH LÀ số mốc đã lĩnh (`RongNguoiChoi.mocDaNhan`), nên
+ * chỉ được THÊM VÀO CUỐI, không chèn giữa và không sắp lại.
+ */
+export const MOC_SUU_TAM: readonly { so: number; thuong: number }[] = [
+  { so: 10, thuong: 120 },
+  { so: 20, thuong: 300 },
+  { so: 30, thuong: 700 },
+  { so: 40, thuong: 1400 },
+  { so: DU_BO, thuong: 3000 },
+] as const;
+
+/** Số mốc lĩnh được với `daCo` con trong sổ — luôn ≥ số đã lĩnh. */
+export function mocDatDuoc(daCo: number): number {
+  let n = 0;
+  for (const m of MOC_SUU_TAM) if (daCo >= m.so) n += 1;
+  return n;
+}
+
 // ── Đấu trường ───────────────────────────────────────────────────────────
 
 export const DAU_MOI_NGAY = 10;

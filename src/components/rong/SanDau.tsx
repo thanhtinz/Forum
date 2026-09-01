@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Swords } from 'lucide-react';
 import type { SanDau as DuLieu } from '@/lib/rong';
 import { PHI_DAU, THUONG_THANG, anhRong, tenRong } from '@/lib/rong-const';
+import { ManDau } from './ManDau';
 import { TinRong, useViecRong } from './dung-viec';
 
 /** Đấu trường: chọn một đối thủ rồi thách. */
@@ -13,7 +14,15 @@ export function SanDau({ d }: { d: DuLieu }) {
 
   return (
     <div className="space-y-3">
-      <TinRong tin={tin} />
+      {/* Có màn kể lại trận thì GIẤU câu tường thuật đi: in sẵn "hạ được Hắc
+          Long, +25 điểm" ngay trên đầu là lộ hết kết quả trước khi hiệp một
+          kịp diễn. Lỗi thì vẫn phải hiện — lỗi không phải chuyện để hồi hộp. */}
+      <TinRong tin={tin.tran ? { error: tin.error } : tin} />
+
+      {/* Trận vừa đánh diễn lại ngay tại đây. `key` là mấu chốt: hai trận liên
+          tiếp mà không đổi khoá thì React giữ nguyên thành phần cũ và màn kể
+          đứng im ở kết quả trận trước. */}
+      {tin.tran && <ManDau key={JSON.stringify(tin.tran.dienBien)} t={tin.tran} />}
 
       <section className="rong-tam p-4">
         <h2 className="zib-title mb-1 flex items-center gap-2"><Swords size={17} /> Đấu trường</h2>

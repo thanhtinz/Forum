@@ -1,8 +1,22 @@
 import { db } from './db';
 import {
-  CHUONG_TOI_DA, DAU_MOI_NGAY, SO_HIEP, SO_LOAI, SO_MAU,
-  type ChiSo, chiSo, dauNgayVN, mocDatDuoc, vuiHienGio,
+  CHUONG_TOI_DA, DAU_MOI_NGAY, LECH_CAP, SO_DOI_THU, SO_LOAI, SO_MAU,
+  type ChiSo, type Hiep, chiSo, dauNgayVN, mocDatDuoc, vuiHienGio,
 } from './rong-const';
+
+/*
+ * `danhNhau` và `bocRongNgauNhien` nằm ở `rong-const.ts` chứ không ở đây.
+ *
+ * Cả hai là hàm THUẦN — luật chơi, không đụng cơ sở dữ liệu — mà tệp này thì
+ * `import { db }`, nên bài kiểm `.mjs` (nạp thẳng tệp hằng số, không giải được
+ * alias `@/`) sẽ không với tới được. Riêng `danhNhau` có sẵn tham số `tungXu`
+ * để bơm ngẫu nhiên cố định vào, đúng để bài kiểm chốt kết quả một trận; để nó
+ * ở tệp không kiểm được thì tham số ấy vô nghĩa.
+ *
+ * Xuất lại ở đây cho chỗ gọi khỏi phải biết nó nằm đâu.
+ */
+export { bocRongNgauNhien, danhNhau } from './rong-const';
+export type { Hiep, KetQuaTran } from './rong-const';
 
 /**
  * Đảo rồng — phần hỏi cơ sở dữ liệu.
@@ -267,69 +281,11 @@ export async function xemSanDau(userId: string): Promise<SanDau> {
       : null,
     conLaiHomNay: Math.max(0, DAU_MOI_NGAY - daDau),
     // Chưa cử con nào thì không việc gì phải đi tìm đối thủ.
-    doiThu: cua ? await timDoiThu(userId) : [],
-  };
-}
-
-/** Một con rồng ngẫu nhiên. Mọi cặp loài+màu đều có cơ hội như nhau. */
-export function bocRongNgauNhien(): { loai: number; mau: number } {
-  return {
-    loai: 1 + Math.floor(Math.random() * SO_LOAI),
-    mau: 1 + Math.floor(Math.random() * SO_MAU),
+    doiThu: cua ? await timDoiThu(userId, cua.cap) : [],
   };
 }
 
 // ── Đấu trường ───────────────────────────────────────────────────────────
-
-export interface Hiep {
-  hiep: number;
-  aDanh: number;
-  bDanh: number;
-  aMau: number;
-  bMau: number;
-}
-
-export interface KetQuaTran {
-  dienBien: Hiep[];
-  /** 'a' | 'b' | 'hoa' */
-  ai: 'a' | 'b' | 'hoa';
-}
-
-/**
- * Đánh ba hiệp rồi tính ai còn nhiều máu hơn.
- *
- * Có ngẫu nhiên, nhưng ngẫu nhiên trong một khoảng hẹp (±20%) và luôn gây ít
- * nhất 1 sát thương: con mạnh hơn phải thắng phần lớn số trận, chứ nếu may rủi
- * quyết định tất thì chăm rồng thành vô nghĩa. `nhanh` cho cơ hội né hẳn một
- * đòn, đó là chỗ để loài nhanh có đường thắng loài dày.
- */
-export function danhNhau(a: ChiSo, b: ChiSo, tungXu: () => number = Math.random): KetQuaTran {
-  const MAU_DAU = 100;
-  let aMau = MAU_DAU;
-  let bMau = MAU_DAU;
-  const dienBien: Hiep[] = [];
-
-  const motDon = (ben: ChiSo, doi: ChiSo): number => {
-    // Né: chênh lệch nhanh càng lớn thì càng dễ né, nhưng không bao giờ quá 40%.
-    const coNe = Math.min(0.4, Math.max(0, (doi.nhanh - ben.nhanh) / 100));
-    if (tungXu() < coNe) return 0;
-    const thoc = ben.cong * 2 - doi.thu;
-    const bienDo = 0.8 + tungXu() * 0.4;
-    return Math.max(1, Math.round(thoc * bienDo));
-  };
-
-  for (let i = 1; i <= SO_HIEP; i++) {
-    const aDanh = motDon(a, b);
-    bMau = Math.max(0, bMau - aDanh);
-    const bDanh = bMau > 0 ? motDon(b, a) : 0;
-    aMau = Math.max(0, aMau - bDanh);
-    dienBien.push({ hiep: i, aDanh, bDanh, aMau, bMau });
-    if (aMau === 0 || bMau === 0) break;
-  }
-
-  const ai = aMau === bMau ? 'hoa' : aMau > bMau ? 'a' : 'b';
-  return { dienBien, ai };
-}
 
 export interface DoiThu {
   rongId: string;
@@ -342,25 +298,55 @@ export interface DoiThu {
   suc: ChiSo;
 }
 
+const CHON_DOI_THU = {
+  id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true,
+  // Chỉ lấy tên để hiện và tên đăng nhập để trỏ link — id của chủ nhân không
+  // dùng tới, mà đây là dữ liệu của NGƯỜI KHÁC nên lấy vừa đủ.
+  user: { select: { name: true, username: true } },
+} as const;
+
 /**
- * Tìm đối thủ: rồng của người KHÁC, đã nở, đang được cử ra trận.
+ * Tìm đối thủ: rồng của người KHÁC, đã nở, đang được cử ra trận, và GẦN CẤP.
  *
- * Lọc ngay trong `where` chứ không lấy về rồi loại: rồng của chính mình lọt vào
- * danh sách là tự đánh mình, mà rồng chưa nở thì chưa có chỉ số nào để đánh.
+ * Ba điều kiện đầu lọc ngay trong `where` chứ không lấy về rồi loại: rồng của
+ * chính mình lọt vào danh sách là tự đánh mình, mà rồng chưa nở thì chưa có
+ * chỉ số nào để đánh.
+ *
+ * Điều kiện thứ tư là chỗ vừa sửa. Trước đây hàm này lấy sáu con MỚI NHẤT bất
+ * kể cấp, nên rồng cấp 1 mở trang ra gặp toàn cấp 30 — thua chắc, mà vẫn mất
+ * đủ 25 điểm ghi danh mỗi trận. Nay quét trong khoảng `±LECH_CAP` trước; chỉ
+ * khi không đủ người mới nới ra, vì một đấu trường trống trơn còn tệ hơn một
+ * trận chênh cấp.
  */
-export async function timDoiThu(userId: string, soLuong = 6): Promise<DoiThu[]> {
+export async function timDoiThu(
+  userId: string, capCuaToi: number, soLuong = SO_DOI_THU,
+): Promise<DoiThu[]> {
   const now = Date.now();
-  const rows = await db.rong.findMany({
-    where: { userId: { not: userId }, noAt: { not: null }, raTran: true },
+  const chung = { userId: { not: userId }, noAt: { not: null }, raTran: true } as const;
+
+  const gan = await db.rong.findMany({
+    where: { ...chung, cap: { gte: capCuaToi - LECH_CAP, lte: capCuaToi + LECH_CAP } },
     orderBy: { createdAt: 'desc' },
     take: soLuong,
-    select: {
-      id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true,
-      // Chỉ lấy tên để hiện và tên đăng nhập để trỏ link — id của chủ nhân
-      // không dùng tới, mà đây là dữ liệu của NGƯỜI KHÁC nên lấy vừa đủ.
-      user: { select: { name: true, username: true } },
-    },
+    select: CHON_DOI_THU,
   });
+
+  // Nới ra cho đủ danh sách. `notIn` để khỏi bày hai lần cùng một con.
+  const thieu = soLuong - gan.length;
+  const xa = thieu > 0
+    ? await db.rong.findMany({
+      where: { ...chung, id: { notIn: gan.map((r) => r.id) } },
+      orderBy: { createdAt: 'desc' },
+      take: thieu,
+      select: CHON_DOI_THU,
+    })
+    : [];
+
+  // Xếp lại theo độ chênh cấp: con gần cấp nhất đứng đầu, để người chơi bấm
+  // trúng đối thủ vừa sức mà không phải dò cả danh sách.
+  const rows = [...gan, ...xa].sort(
+    (x, y) => Math.abs(x.cap - capCuaToi) - Math.abs(y.cap - capCuaToi),
+  );
 
   return rows.map((r) => {
     const vui = vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now);
@@ -376,3 +362,89 @@ export async function timDoiThu(userId: string, soLuong = 6): Promise<DoiThu[]> 
     };
   });
 }
+
+// ── Kể lại trận ──────────────────────────────────────────────────────────
+
+/** Một bên trên màn kể lại trận. */
+export interface BenDau {
+  ten: string;
+  loai: number;
+  mau: number;
+  cap: number;
+}
+
+/**
+ * Đủ thứ để dựng lại một trận đấu trên màn hình.
+ *
+ * `RongTran.dienBien` ghi đủ từng hiệp từ ngày đầu mà KHÔNG nơi nào đọc — trận
+ * đấu xong chỉ hiện đúng một dòng "thắng rồi, được 25 điểm". Kiểu này là chỗ
+ * để cả server action lẫn trang lịch sử cùng dựng một màn kể.
+ */
+export interface KeLaiTran {
+  id?: string;
+  dienBien: Hiep[];
+  ai: 'a' | 'b' | 'hoa';
+  a: BenDau;
+  b: BenDau;
+  /** Điểm diễn đàn bên thách đấu được (âm nếu thua). */
+  duoc: number;
+  luc?: number;
+}
+
+const MOI_TRANG_TRAN = 8;
+
+export interface LichSuTran {
+  tran: KeLaiTran[];
+  tong: number;
+}
+
+/**
+ * Lịch sử đấu của một người.
+ *
+ * Chỉ còn lại trận của những con rồng ĐANG NUÔI: `RongTran` cascade theo cả
+ * hai con, mà thả rồng thì lúc nào cũng thả được. Đó là chủ ý — trần trận mỗi
+ * ngày đếm ở `MiniGamePlay` chính vì thế (xem chú thích tại `thachDau`).
+ */
+export async function lichSuTran(
+  userId: string, trang: number, moiTrang = MOI_TRANG_TRAN,
+): Promise<LichSuTran> {
+  const cua = await db.rong.findMany({
+    where: { userId }, take: CHUONG_TOI_DA, select: { id: true },
+  });
+  if (cua.length === 0) return { tran: [], tong: 0 };
+
+  const ids = cua.map((r) => r.id);
+  const loc = { OR: [{ aId: { in: ids } }, { bId: { in: ids } }] };
+  const chonBen = { select: { loai: true, mau: true, ten: true, cap: true } };
+
+  const [tong, rows] = await Promise.all([
+    db.rongTran.count({ where: loc }),
+    db.rongTran.findMany({
+      where: loc,
+      // Khoá phụ `id`: hai trận cùng mốc thời gian mà không có khoá phụ thì
+      // thứ tự giữa hai lần đọc có thể đảo, và phân trang sẽ nhảy dòng.
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      skip: Math.max(0, (trang - 1) * moiTrang),
+      take: moiTrang,
+      select: {
+        id: true, thangId: true, duoc: true, createdAt: true, dienBien: true,
+        aId: true, a: chonBen, b: chonBen,
+      },
+    }),
+  ]);
+
+  return {
+    tong,
+    tran: rows.map((t) => ({
+      id: t.id,
+      dienBien: (Array.isArray(t.dienBien) ? t.dienBien : []) as unknown as Hiep[],
+      ai: t.thangId === null ? 'hoa' : t.thangId === t.aId ? 'a' : 'b',
+      a: { ten: t.a.ten ?? '', loai: t.a.loai, mau: t.a.mau, cap: t.a.cap },
+      b: { ten: t.b.ten ?? '', loai: t.b.loai, mau: t.b.mau, cap: t.b.cap },
+      duoc: t.duoc,
+      luc: t.createdAt.getTime(),
+    })),
+  };
+}
+
+export { MOI_TRANG_TRAN };

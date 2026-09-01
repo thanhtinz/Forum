@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
 import { banMessage, getActiveBan } from '@/lib/ban';
 import { lockUsers } from '@/lib/lock';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
-import { bocRongNgauNhien, danhNhau, demSuuTam } from '@/lib/rong';
+import { bocRongNgauNhien, danhNhau, demSuuTam, type KeLaiTran } from '@/lib/rong';
 import {
   AN_CHO_MS, AP_MS, CHOI_CHO_MS, CHUONG_TOI_DA, DAU_MOI_NGAY, EXP_MOI_BUA,
   EXP_MOI_LAN_CHOI, GIA_AN, GIA_NO_NGAY, GIA_TRUNG, PHI_DAU, THUONG_THANG,
@@ -37,6 +37,14 @@ export interface RongState {
   error?: string;
   /** Câu kể lại việc vừa làm, in ngay trên trang. */
   ke?: string;
+  /**
+   * Trận vừa đánh, đủ để dựng lại trên màn hình.
+   *
+   * `RongTran.dienBien` ghi đủ từng hiệp từ ngày đầu mà chẳng nơi nào đọc —
+   * đánh xong chỉ hiện một dòng chữ. Trả về đây thì màn kể lại trận dựng được
+   * ngay, không phải hỏi lại máy chủ một lượt nữa.
+   */
+  tran?: KeLaiTran;
 }
 
 async function nguoiNuoi(): Promise<{ userId: string } | { error: string }> {
@@ -339,6 +347,7 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
   if (cuaToi === doiThu) return { error: 'Không thể tự đánh chính mình.' };
 
   let ke = '';
+  let keLai: KeLaiTran | undefined;
   try {
     await db.$transaction(async (tx) => {
       // Khoá: trần "mỗi ngày mấy trận" là phép đếm, `where` không nói được.
@@ -422,6 +431,13 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
 
       const tenA = a.ten || tenRong(a.loai, a.mau);
       const tenB = b.ten || tenRong(b.loai, b.mau);
+      keLai = {
+        dienBien: kq.dienBien,
+        ai: kq.ai,
+        a: { ten: tenA, loai: a.loai, mau: a.mau, cap: a.cap },
+        b: { ten: tenB, loai: b.loai, mau: b.mau, cap: b.cap },
+        duoc: duoc - PHI_DAU,
+      };
       ke = kq.ai === 'a'
         ? `${tenA} hạ ${tenB}, được ${THUONG_THANG - PHI_DAU} điểm!`
         : kq.ai === 'hoa'
@@ -434,7 +450,7 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
   }
 
   lamMoi();
-  return { ok: true, ke };
+  return { ok: true, ke, tran: keLai };
 }
 
 // ─────────────────────────── Mốc sưu tầm ───────────────────────────

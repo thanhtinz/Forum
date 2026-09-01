@@ -57,8 +57,8 @@ export function anhRong(loai: number, mau: number): string {
 
 export const ANH_TRUNG = `${ANH_RONG}/trung.gif`;
 export const ANH_BONG = `${ANH_RONG}/ball.png`;
+/** Lọ máu 20×20 của bộ ảnh gốc, đặt cạnh thanh máu ở màn kể lại trận. */
 export const ANH_HP = `${ANH_RONG}/hp.png`;
-export const ANH_MP = `${ANH_RONG}/mp.png`;
 
 // ── Giá cả và thời gian ──────────────────────────────────────────────────
 
@@ -122,10 +122,79 @@ export function mocDatDuoc(daCo: number): number {
 // ── Đấu trường ───────────────────────────────────────────────────────────
 
 export const DAU_MOI_NGAY = 10;
+
+/**
+ * Ghép đối thủ trong khoảng cấp này trước.
+ *
+ * Trước đây danh sách chỉ là SÁU CON MỚI NHẤT ở đấu trường, bất kể cấp — nên
+ * con cấp 1 mở trang ra gặp toàn cấp 30, đánh trận nào thua trận ấy, mà mỗi
+ * trận vẫn mất 25 điểm ghi danh. Nay quét trong khoảng cấp trước; thiếu người
+ * thì mới nới ra cho đủ danh sách, chứ một đấu trường trống trơn còn tệ hơn.
+ */
+export const LECH_CAP = 3;
+export const SO_DOI_THU = 12;
 /** Phí ghi danh mỗi trận; thắng thì ăn gấp đôi. */
 export const PHI_DAU = 25;
 export const THUONG_THANG = 50;
 export const SO_HIEP = 3;
+
+export interface Hiep {
+  hiep: number;
+  aDanh: number;
+  bDanh: number;
+  aMau: number;
+  bMau: number;
+}
+
+export interface KetQuaTran {
+  dienBien: Hiep[];
+  /** 'a' | 'b' | 'hoa' */
+  ai: 'a' | 'b' | 'hoa';
+}
+
+/**
+ * Đánh ba hiệp rồi tính ai còn nhiều máu hơn.
+ *
+ * Có ngẫu nhiên, nhưng ngẫu nhiên trong một khoảng hẹp (±20%) và luôn gây ít
+ * nhất 1 sát thương: con mạnh hơn phải thắng phần lớn số trận, chứ nếu may rủi
+ * quyết định tất thì chăm rồng thành vô nghĩa. `nhanh` cho cơ hội né hẳn một
+ * đòn, đó là chỗ để loài nhanh có đường thắng loài dày.
+ */
+export function danhNhau(a: ChiSo, b: ChiSo, tungXu: () => number = Math.random): KetQuaTran {
+  const MAU_DAU = 100;
+  let aMau = MAU_DAU;
+  let bMau = MAU_DAU;
+  const dienBien: Hiep[] = [];
+
+  const motDon = (ben: ChiSo, doi: ChiSo): number => {
+    // Né: chênh lệch nhanh càng lớn thì càng dễ né, nhưng không bao giờ quá 40%.
+    const coNe = Math.min(0.4, Math.max(0, (doi.nhanh - ben.nhanh) / 100));
+    if (tungXu() < coNe) return 0;
+    const thoc = ben.cong * 2 - doi.thu;
+    const bienDo = 0.8 + tungXu() * 0.4;
+    return Math.max(1, Math.round(thoc * bienDo));
+  };
+
+  for (let i = 1; i <= SO_HIEP; i++) {
+    const aDanh = motDon(a, b);
+    bMau = Math.max(0, bMau - aDanh);
+    const bDanh = bMau > 0 ? motDon(b, a) : 0;
+    aMau = Math.max(0, aMau - bDanh);
+    dienBien.push({ hiep: i, aDanh, bDanh, aMau, bMau });
+    if (aMau === 0 || bMau === 0) break;
+  }
+
+  const ai = aMau === bMau ? 'hoa' : aMau > bMau ? 'a' : 'b';
+  return { dienBien, ai };
+}
+
+/** Một con rồng ngẫu nhiên. Mọi cặp loài+màu đều có cơ hội như nhau. */
+export function bocRongNgauNhien(): { loai: number; mau: number } {
+  return {
+    loai: 1 + Math.floor(Math.random() * SO_LOAI),
+    mau: 1 + Math.floor(Math.random() * SO_MAU),
+  };
+}
 
 /**
  * Ba chỉ số của một con rồng lúc ra trận.

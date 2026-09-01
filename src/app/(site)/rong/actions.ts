@@ -11,14 +11,15 @@ import { bocRongNgauNhien, danhNhau, demSuuTam, type KeLaiTran } from '@/lib/ron
 import {
   AP_MS, CHUONG_TOI_DA, DAU_MOI_NGAY, EXP_MOI_BUA,
   EXP_MOI_LAN_CHOI, GIA_AN, GIA_NO_NGAY, GIA_TRUNG, NGUONG_CHO_AN, NO_MOI_BUA,
-  PHI_DAU, THE_LUC_CHOI, THUONG_THANG, TOI_DA_CHAM, noHienGio, theLucHienGio,
+  PHI_DAU, THE_LUC_CHOI, THE_LUC_HANG, THUONG_THANG, TOI_DA_CHAM,
+  expLuyen, noHienGio, theLucHienGio, timTang,
   VUI_MOI_LAN, CAP_TOI_DA, GIA_LAI, LAI_CAP_TOI_THIEU, LAI_CHO_MS, LAI_TOI_DA,
   MOC_SUU_TAM, MUA_TOI_DA, bocTrungLai, chiSo, dauNgayVN, diemSauTran, expCanDe,
   loiTenRong, mocDatDuoc, muaCua, tenRong, timDo, vuiHienGio,
 } from '@/lib/rong-const';
 
 /**
- * Đảo rồng — mười hai thao tác đổi dữ liệu.
+ * Đảo rồng — mười ba thao tác đổi dữ liệu.
  *
  * Mọi hàm export ở đây là một endpoint POST công khai, nên hàm nào cũng tự kiểm
  * quyền của chính nó và tự kiểm con rồng có đúng của người gọi không. Không hàm
@@ -685,6 +686,147 @@ export async function nhanMocSuuTam(_prev: RongState, _formData: FormData): Prom
 
   lamMoi();
   return { ok: true, ke };
+}
+
+// ─────────────────────────── Hang Rồng ───────────────────────────
+
+/**
+ * Vào một tầng Hang Rồng.
+ *
+ * Đây là phần chơi một mình, nên nó phải tự chặn lấy mình chứ không nhờ ai:
+ *
+ *  • Tầng nào được đánh do MÁY CHỦ quyết, từ `tangHang` trong hồ sơ. Trình
+ *    duyệt gửi lên số tầng, nhưng gửi tầng mười hai lúc mới qua tầng một thì
+ *    bị chặn thẳng — không thì cứ nhảy tới tầng cuối mà ăn thưởng.
+ *  • Thưởng ĐIỂM chỉ phát đúng lần đầu vượt tầng, khoá bằng chính `tangHang`
+ *    nằm trong `where` của câu ghi. Đánh lại chỉ có kinh nghiệm; không thì
+ *    hang thành vòi bơm điểm không đáy, mà thể lực chỉ làm chậm chứ không chặn.
+ *  • Thể lực trừ TRƯỚC khi đánh và trừ bằng câu ghi mang mốc cũ, nên hai tab
+ *    cùng bấm thì tab sau không khớp và không đánh được ké một lượt miễn phí.
+ */
+export async function vaoHang(_prev: RongState, formData: FormData): Promise<RongState> {
+  const me = await nguoiNuoi();
+  if ('error' in me) return { error: me.error };
+
+  const so = Math.floor(Number(formData.get('tang')) || 0);
+  const tang = timTang(so);
+  if (!tang) return { error: 'Không có tầng nào như vậy.' };
+
+  let ke = '';
+  let keLai: KeLaiTran | undefined;
+  try {
+    await db.$transaction(async (tx) => {
+      const ho = await tx.rongNguoiChoi.upsert({
+        where: { userId: me.userId },
+        create: { userId: me.userId },
+        update: {},
+        select: { id: true, tangHang: true },
+      });
+
+      // Chỉ đánh được tầng ĐÃ QUA (luyện) hoặc đúng tầng kế tiếp.
+      const lanDau = so === ho.tangHang + 1;
+      if (!lanDau && so > ho.tangHang) {
+        throw new Error(`Phải qua tầng ${ho.tangHang + 1} trước đã.`);
+      }
+
+      const r = await tx.rong.findFirst({
+        where: { userId: me.userId, raTran: true, noAt: { not: null } },
+        select: {
+          id: true, ten: true, loai: true, mau: true, cap: true, exp: true, doi: true,
+          vui: true, vuiTinhAt: true, doNo: true, noTinhAt: true,
+          theLuc: true, lucTinhAt: true,
+        },
+      });
+      if (!r) throw new Error('Cử một con rồng ra trận trước đã.');
+
+      const now = Date.now();
+      const lucGio = theLucHienGio(r.theLuc, r.lucTinhAt.getTime(), now);
+      if (lucGio < THE_LUC_HANG) {
+        throw new Error(`Vào hang tốn ${THE_LUC_HANG} thể lực, nó chỉ còn ${lucGio}.`);
+      }
+
+      const truLuc = await tx.rong.updateMany({
+        where: { id: r.id, userId: me.userId, lucTinhAt: r.lucTinhAt },
+        data: { theLuc: lucGio - THE_LUC_HANG, lucTinhAt: new Date(now) },
+      });
+      if (truLuc.count === 0) throw new Error('Nó vừa đi đâu đó rồi, thử lại xem.');
+
+      const vui = vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now);
+      const doNo = noHienGio(r.doNo, r.noTinhAt.getTime(), now);
+      const sucToi = chiSo({ loai: r.loai, cap: r.cap, doi: r.doi, vui, doNo });
+      // Con canh cửa luôn no đủ vui vẻ — nó là thước đo, thước đo thì đứng yên.
+      const sucCanh = chiSo({ loai: tang.loai, cap: tang.cap, vui: 100 });
+      const kq = danhNhau(sucToi, sucCanh);
+
+      const tenToi = r.ten || tenRong(r.loai, r.mau);
+      const tenCanh = tenRong(tang.loai, tang.mau);
+      keLai = {
+        dienBien: kq.dienBien,
+        ai: kq.ai,
+        a: { ten: tenToi, loai: r.loai, mau: r.mau, cap: r.cap },
+        b: { ten: `${tenCanh} · tầng ${tang.so}`, loai: tang.loai, mau: tang.mau, cap: tang.cap },
+        duoc: 0,
+      };
+
+      if (kq.ai !== 'a') {
+        ke = kq.ai === 'hoa'
+          ? `${tenToi} cầm hoà con canh cửa tầng ${tang.so}. Chưa qua được.`
+          : `${tenToi} thua con canh cửa tầng ${tang.so}. Cho ăn rồi vào lại.`;
+        return;
+      }
+
+      // Thắng: kinh nghiệm luôn có, còn điểm và đồ thì chỉ lần đầu.
+      const themExp = lanDau ? tang.expThuong : expLuyen(tang);
+      const sau = lenCap(r.cap, r.exp + themExp);
+      await tx.rong.updateMany({
+        where: { id: r.id, userId: me.userId },
+        data: { cap: sau.cap, exp: sau.exp },
+      });
+
+      if (!lanDau) {
+        ke = `${tenToi} luyện lại tầng ${tang.so}, +${themExp} kinh nghiệm`
+          + (sau.len ? ` và lên cấp ${sau.cap}!` : '.');
+        return;
+      }
+
+      // Tầng cũ nằm trong `where`: hai tab cùng bấm thì tab sau đếm được 0
+      // dòng và không phát thưởng lần thứ hai.
+      const lenTang = await tx.rongNguoiChoi.updateMany({
+        where: { id: ho.id, tangHang: ho.tangHang },
+        data: { tangHang: so },
+      });
+      if (lenTang.count === 0) throw new Error('Bạn vừa vượt tầng này ở nơi khác rồi.');
+
+      await grantPoints({
+        userId: me.userId, amount: tang.thuong, reason: 'RONG_THANG',
+        note: `Vượt tầng ${tang.so} Hang Rồng`,
+      }, tx);
+      keLai.duoc = tang.thuong;
+
+      let themDo = '';
+      if (tang.roi) {
+        const mon = timDo(tang.roi);
+        if (mon) {
+          await tx.rongDo.upsert({
+            where: { chuId_ma: { chuId: me.userId, ma: mon.ma } },
+            create: { chuId: me.userId, ma: mon.ma, soLuong: 1 },
+            update: { soLuong: { increment: 1 } },
+            select: { id: true },
+          });
+          themDo = ` Nhặt được ${mon.ten}.`;
+        }
+      }
+
+      ke = `${tenToi} hạ con canh cửa tầng ${tang.so} — thưởng ${tang.thuong} điểm`
+        + `, +${themExp} kinh nghiệm.${themDo}`
+        + (sau.len ? ` Lên cấp ${sau.cap}!` : '');
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Không vào hang được.' };
+  }
+
+  lamMoi();
+  return { ok: true, ke, tran: keLai };
 }
 
 // ─────────────────────────── Cửa hàng ───────────────────────────

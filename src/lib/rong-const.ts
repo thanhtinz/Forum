@@ -355,6 +355,70 @@ export function bocTrungLai(
   };
 }
 
+// ── Hang Rồng ────────────────────────────────────────────────────────────
+
+/**
+ * Hang Rồng — phần chơi MỘT MÌNH của đảo.
+ *
+ * Vì sao phải có: đấu trường chỉ đánh với rồng của NGƯỜI KHÁC đã cử ra trận.
+ * Diễn đàn vắng người là đấu trường trống trơn, và người vừa nở xong con rồng
+ * đầu tiên thì chỉ còn hai cái nút cho ăn với chơi bóng nằm chờ hết giờ —
+ * không có gì để làm. Hang là nơi lúc nào cũng có đối thủ.
+ *
+ * Mười hai tầng, mỗi tầng một con rồng canh cửa mạnh dần. Loài của từng con
+ * chọn để CHẠY VÒNG NGŨ HÀNH: leo lên vài tầng là gặp hệ khắc mình, và lúc ấy
+ * mới đáng công nuôi nhiều con trong chuồng. Đó cũng là chỗ khiến sổ sưu tầm
+ * có ích thật chứ không phải chỉ gom cho đủ.
+ */
+export const THE_LUC_HANG = 20;
+
+export interface TangHang {
+  so: number;
+  ten: string;
+  /** Loài và màu của con canh cửa — tra thẳng vào bộ ảnh có sẵn. */
+  loai: number;
+  mau: number;
+  cap: number;
+  /** Điểm thưởng lần ĐẦU vượt tầng; đánh lại thì không có nữa. */
+  thuong: number;
+  expThuong: number;
+  /** Vượt lần đầu thì rơi món này. Rỗng là không rơi gì. */
+  roi?: string;
+}
+
+/**
+ * Thưởng lần đầu là MỘT LẦN cho mỗi tầng, và mười hai tầng thì có trần.
+ *
+ * Nếu đánh lại cũng ăn điểm thì hang thành cái vòi bơm điểm diễn đàn không
+ * đáy — thể lực chỉ làm chậm chứ không chặn được. Đánh lại tầng đã qua chỉ có
+ * kinh nghiệm, và đó cũng đủ lý do để đi.
+ */
+export const TANG_HANG: readonly TangHang[] = [
+  { so: 1, ten: 'Cửa hang', loai: 5, mau: 1, cap: 3, thuong: 30, expThuong: 20 },
+  { so: 2, ten: 'Lối đá hẹp', loai: 3, mau: 2, cap: 6, thuong: 40, expThuong: 26 },
+  { so: 3, ten: 'Hồ nước ngầm', loai: 9, mau: 3, cap: 9, thuong: 50, expThuong: 32, roi: 'banh-vui' },
+  { so: 4, ten: 'Vực gió', loai: 3, mau: 4, cap: 12, thuong: 60, expThuong: 38 },
+  { so: 5, ten: 'Đường nham', loai: 6, mau: 5, cap: 15, thuong: 70, expThuong: 44 },
+  { so: 6, ten: 'Phòng vảy sắt', loai: 1, mau: 6, cap: 18, thuong: 80, expThuong: 50, roi: 'thit-thuong-hang' },
+  { so: 7, ten: 'Hầm đất sụt', loai: 2, mau: 1, cap: 20, thuong: 90, expThuong: 56 },
+  { so: 8, ten: 'Rừng rêu', loai: 8, mau: 3, cap: 22, thuong: 100, expThuong: 62 },
+  { so: 9, ten: 'Suối băng', loai: 5, mau: 2, cap: 24, thuong: 110, expThuong: 68, roi: 'sach-kinh-nghiem' },
+  { so: 10, ten: 'Đài sư tử', loai: 4, mau: 5, cap: 26, thuong: 120, expThuong: 74 },
+  { so: 11, ten: 'Mái trời', loai: 7, mau: 4, cap: 28, thuong: 130, expThuong: 80 },
+  { so: 12, ten: 'Long Vương điện', loai: 6, mau: 6, cap: 30, thuong: 150, expThuong: 90, roi: 'da-thuc-no' },
+] as const;
+
+export const SO_TANG_HANG = TANG_HANG.length;
+
+export function timTang(so: number): TangHang | null {
+  return TANG_HANG.find((t) => t.so === so) ?? null;
+}
+
+/** Kinh nghiệm khi đánh LẠI một tầng đã qua — bằng một phần ba lần đầu. */
+export function expLuyen(t: TangHang): number {
+  return Math.max(1, Math.round(t.expThuong / 3));
+}
+
 // ── Sổ sưu tầm ───────────────────────────────────────────────────────────
 
 /**

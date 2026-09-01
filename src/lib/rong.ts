@@ -2,7 +2,8 @@ import { db } from './db';
 import { grantPoints } from './points';
 import {
   CHUONG_TOI_DA, DAU_MOI_NGAY, DIEM_DAU_DAU, LAI_CAP_TOI_THIEU, LAI_CHO_MS,
-  LAI_TOI_DA, LECH_CAP, NGUONG_CHO_AN, SO_DOI_THU, SO_LOAI, SO_MAU, THE_LUC_CHOI,
+  LAI_TOI_DA, LECH_CAP, NGUONG_CHO_AN, SO_DOI_THU, SO_LOAI, SO_MAU,
+  TANG_HANG, THE_LUC_CHOI, THE_LUC_HANG,
   type ChiSo, type Hiep, chiSo, dauNgayVN, hangTheoDiemRong, mocDatDuoc,
   muaCua, noHienGio, theLucHienGio, vuiHienGio,
 } from './rong-const';
@@ -219,7 +220,7 @@ type KhachDb = Pick<typeof db, 'rong' | 'rongNguoiChoi'>;
  * cần bộ nạp lại nào.
  */
 const CHON_HO_SO = {
-  id: true, daSuuTam: true, mocDaNhan: true,
+  id: true, daSuuTam: true, mocDaNhan: true, tangHang: true,
   diemDau: true, muaDau: true, thangDau: true, thuaDau: true, hoaDau: true,
 } as const;
 
@@ -627,3 +628,79 @@ export async function lichSuTran(
 }
 
 export { MOI_TRANG_TRAN };
+
+// ── Hang Rồng ────────────────────────────────────────────────────────────
+
+/** Một tầng hang, kèm trạng thái của riêng người đang xem. */
+export interface TangXem {
+  so: number;
+  ten: string;
+  loai: number;
+  mau: number;
+  cap: number;
+  thuong: number;
+  expThuong: number;
+  roi?: string;
+  /** Chỉ số con canh cửa — bày sẵn để người chơi liệu sức trước khi vào. */
+  suc: ChiSo;
+  /** Đã vượt chưa. */
+  daQua: boolean;
+  /** Đúng tầng tiếp theo phải đánh. */
+  keTiep: boolean;
+}
+
+export interface HangXem {
+  tangCaoNhat: number;
+  theLucHang: number;
+  /** Con đang cử ra trận — cũng là con vào hang. */
+  raTran: RongRaTran | null;
+  tang: TangXem[];
+}
+
+/**
+ * Hang Rồng.
+ *
+ * Dùng CHUNG con "đang ra trận" với đấu trường chứ không cho chọn riêng: một
+ * người chỉ cử được một con, và có hai chỗ chọn con khác nhau thì người chơi
+ * phải nhớ mình đang cử con nào ở đâu.
+ */
+export async function xemHang(userId: string): Promise<HangXem> {
+  const now = Date.now();
+  const [ho, cua] = await Promise.all([
+    hoSoRong(userId),
+    db.rong.findFirst({
+      where: { userId, raTran: true, noAt: { not: null } },
+      select: {
+        id: true, loai: true, mau: true, ten: true, cap: true, doi: true,
+        vui: true, vuiTinhAt: true, doNo: true, noTinhAt: true,
+        theLuc: true, lucTinhAt: true,
+      },
+    }),
+  ]);
+
+  return {
+    tangCaoNhat: ho.tangHang,
+    theLucHang: THE_LUC_HANG,
+    raTran: cua
+      ? {
+        id: cua.id, loai: cua.loai, mau: cua.mau, ten: cua.ten, cap: cua.cap,
+        vui: vuiHienGio(cua.vui, cua.vuiTinhAt.getTime(), now),
+        doNo: noHienGio(cua.doNo, cua.noTinhAt.getTime(), now),
+        theLuc: theLucHienGio(cua.theLuc, cua.lucTinhAt.getTime(), now),
+        suc: chiSo({
+          loai: cua.loai, cap: cua.cap, doi: cua.doi,
+          vui: vuiHienGio(cua.vui, cua.vuiTinhAt.getTime(), now),
+          doNo: noHienGio(cua.doNo, cua.noTinhAt.getTime(), now),
+        }),
+      }
+      : null,
+    // Con canh cửa luôn no đủ và vui vẻ: nó là thước đo, mà thước đo thì phải
+    // đứng yên — để nó cũng đói dần thì mỗi hôm một khác, không ai liệu được.
+    tang: TANG_HANG.map((t) => ({
+      ...t,
+      suc: chiSo({ loai: t.loai, cap: t.cap, vui: 100 }),
+      daQua: t.so <= ho.tangHang,
+      keTiep: t.so === ho.tangHang + 1,
+    })),
+  };
+}

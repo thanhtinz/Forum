@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Egg, Home, Store, Swords, Trophy } from 'lucide-react';
+import { BookOpen, Egg, Home, Mountain, Store, Swords, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 const TAB = [
   { href: '/rong', ten: 'Chuồng', Icon: Home },
   { href: '/rong/ap-trung', ten: 'Ấp trứng', Icon: Egg },
+  { href: '/rong/hang', ten: 'Hang Rồng', Icon: Mountain },
   { href: '/rong/dau-truong', ten: 'Đấu trường', Icon: Swords },
   { href: '/rong/so-suu-tam', ten: 'Sổ sưu tầm', Icon: BookOpen },
   { href: '/rong/cua-hang', ten: 'Cửa hàng', Icon: Store },
@@ -28,7 +29,7 @@ export function ThanhTab({ nhan }: { nhan?: Partial<Record<string, string>> }) {
 
   return (
     <nav aria-label="Đảo Rồng"
-      className="rong-tam grid grid-cols-3 gap-1.5 p-1.5 sm:grid-cols-6">
+      className="rong-tam grid grid-cols-4 gap-1.5 p-1.5 sm:grid-cols-7">
       {TAB.map(({ href, ten, Icon }) => {
         // So khớp CHÍNH XÁC, không dùng `startsWith`: mọi đường dẫn con đều bắt
         // đầu bằng `/rong` nên ô Chuồng sẽ sáng ở khắp mọi trang.

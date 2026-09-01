@@ -2504,6 +2504,15 @@ model RongNguoiChoi {
   thuaDau  Int @default(0)
   hoaDau   Int @default(0)
 
+  /**
+   * Tầng Hang Rồng cao nhất đã vượt. 0 là chưa vào hang bao giờ.
+   *
+   * Vừa là tiến độ vừa là CÁI KHOÁ của thưởng: mỗi tầng chỉ phát thưởng đúng
+   * lần đầu vượt qua, nên điểm kiếm được từ hang có trần cứng. Đánh lại tầng
+   * đã qua chỉ có kinh nghiệm.
+   */
+  tangHang Int @default(0)
+
   /// Số mốc sưu tầm đã lĩnh thưởng, tính theo THỨ TỰ trong `MOC_SUU_TAM`.
   ///
   /// Lưu số thứ tự chứ không lưu danh sách mốc: thêm mốc mới vào cuối bảng

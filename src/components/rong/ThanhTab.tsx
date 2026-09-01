@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, Egg, Home, Swords } from 'lucide-react';
+import { BookOpen, Egg, Home, Store, Swords } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -13,14 +13,15 @@ import { cn } from '@/lib/utils';
  * sáu. Nay tách thành sáu lối đi, và thanh này đặt ở khung nên trang nào cũng
  * có — không phải quay ngược về trang chính rồi mới đi tiếp.
  *
- * Cửa hàng và xếp hạng sẽ thêm vào đây khi hai trang ấy dựng xong; thêm ô dẫn
- * tới trang chưa có thì người bấm vào chỉ gặp một trang trống.
+ * Xếp hạng sẽ thêm vào đây khi trang ấy dựng xong; thêm ô dẫn tới trang chưa
+ * có thì người bấm vào chỉ gặp một trang trống.
  */
 const TAB = [
   { href: '/rong', ten: 'Chuồng', Icon: Home },
   { href: '/rong/ap-trung', ten: 'Ấp trứng', Icon: Egg },
   { href: '/rong/dau-truong', ten: 'Đấu trường', Icon: Swords },
   { href: '/rong/so-suu-tam', ten: 'Sổ sưu tầm', Icon: BookOpen },
+  { href: '/rong/cua-hang', ten: 'Cửa hàng', Icon: Store },
 ] as const;
 
 export function ThanhTab({ nhan }: { nhan?: Partial<Record<string, string>> }) {
@@ -28,7 +29,7 @@ export function ThanhTab({ nhan }: { nhan?: Partial<Record<string, string>> }) {
 
   return (
     <nav aria-label="Đảo Rồng"
-      className="rong-tam grid grid-cols-4 gap-1.5 p-1.5">
+      className="rong-tam grid grid-cols-3 gap-1.5 p-1.5 sm:grid-cols-5">
       {TAB.map(({ href, ten, Icon }) => {
         // So khớp CHÍNH XÁC, không dùng `startsWith`: mọi đường dẫn con đều bắt
         // đầu bằng `/rong` nên ô Chuồng sẽ sáng ở khắp mọi trang.

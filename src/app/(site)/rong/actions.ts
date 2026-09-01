@@ -12,12 +12,12 @@ import {
   AN_CHO_MS, AP_MS, CHOI_CHO_MS, CHUONG_TOI_DA, DAU_MOI_NGAY, EXP_MOI_BUA,
   EXP_MOI_LAN_CHOI, GIA_AN, GIA_NO_NGAY, GIA_TRUNG, PHI_DAU, THUONG_THANG,
   VUI_MOI_LAN, CAP_TOI_DA, GIA_LAI, LAI_CAP_TOI_THIEU, LAI_CHO_MS, LAI_TOI_DA,
-  MOC_SUU_TAM, bocTrungLai, chiSo, dauNgayVN, expCanDe, loiTenRong,
-  mocDatDuoc, tenRong, vuiHienGio,
+  MOC_SUU_TAM, MUA_TOI_DA, bocTrungLai, chiSo, dauNgayVN, expCanDe, loiTenRong,
+  mocDatDuoc, tenRong, timDo, vuiHienGio,
 } from '@/lib/rong-const';
 
 /**
- * Đảo rồng — mười thao tác đổi dữ liệu.
+ * Đảo rồng — mười hai thao tác đổi dữ liệu.
  *
  * Mọi hàm export ở đây là một endpoint POST công khai, nên hàm nào cũng tự kiểm
  * quyền của chính nó và tự kiểm con rồng có đúng của người gọi không. Không hàm
@@ -598,6 +598,155 @@ export async function nhanMocSuuTam(_prev: RongState, _formData: FormData): Prom
     });
   } catch (e) {
     return { error: e instanceof Error ? e.message : 'Không lĩnh được thưởng.' };
+  }
+
+  lamMoi();
+  return { ok: true, ke };
+}
+
+// ─────────────────────────── Cửa hàng ───────────────────────────
+
+/**
+ * Mua một món đồ.
+ *
+ * Trình duyệt gửi lên MÃ MÓN và SỐ LƯỢNG, không gửi giá — giá đọc từ mảng hằng
+ * `RONG_DO` ở đây. Số lượng thì kẹp về `1..MUA_TOI_DA`, nên có gửi lên chín
+ * nghìn cũng chỉ mua được mười, và tiền vẫn trừ đúng bấy nhiêu.
+ */
+export async function muaDo(_prev: RongState, formData: FormData): Promise<RongState> {
+  const me = await nguoiNuoi();
+  if ('error' in me) return { error: me.error };
+
+  const mon = timDo(String(formData.get('ma') ?? ''));
+  if (!mon) return { error: 'Cửa hàng không bán món này.' };
+
+  const so = Math.max(1, Math.min(MUA_TOI_DA, Math.floor(Number(formData.get('so')) || 1)));
+  const tien = mon.gia * so;
+
+  try {
+    await db.$transaction(async (tx) => {
+      await grantPoints({
+        userId: me.userId, amount: -tien, reason: 'RONG_AN',
+        note: `Mua ${so} ${mon.ten}`,
+      }, tx);
+
+      // `@@unique([chuId, ma])` khiến `upsert` + `increment` an toàn mà không
+      // cần khoá hàng người dùng: hai tab cùng bấm thì cộng dồn, không đè nhau.
+      await tx.rongDo.upsert({
+        where: { chuId_ma: { chuId: me.userId, ma: mon.ma } },
+        create: { chuId: me.userId, ma: mon.ma, soLuong: so },
+        update: { soLuong: { increment: so } },
+        select: { id: true },
+      });
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) return { error: `Không đủ điểm. ${so} ${mon.ten} tốn ${tien} điểm.` };
+    return { error: e instanceof Error ? e.message : 'Không mua được.' };
+  }
+
+  lamMoi();
+  return { ok: true, ke: `Đã mua ${so} ${mon.ten}.` };
+}
+
+/**
+ * Dùng một món lên một con rồng.
+ *
+ * Trừ đồ TRƯỚC, bằng một câu ghi có điều kiện mang theo `soLuong: { gte: 1 }`:
+ * hai tab cùng bấm thì tab sau đếm được 0 dòng và không có tác dụng nào. Tác
+ * dụng nằm trong CÙNG giao dịch, nên món trừ rồi mà con rồng không đổi được là
+ * cả hai cùng quay về chỗ cũ.
+ */
+export async function dungDo(_prev: RongState, formData: FormData): Promise<RongState> {
+  const me = await nguoiNuoi();
+  if ('error' in me) return { error: me.error };
+
+  const mon = timDo(String(formData.get('ma') ?? ''));
+  if (!mon) return { error: 'Không có món nào như vậy.' };
+
+  const id = docId(formData.get('rong'));
+  if (!id) return { error: 'Chọn con rồng muốn dùng đã.' };
+
+  let ke = '';
+  try {
+    await db.$transaction(async (tx) => {
+      const bot = await tx.rongDo.updateMany({
+        where: { chuId: me.userId, ma: mon.ma, soLuong: { gte: 1 } },
+        data: { soLuong: { decrement: 1 } },
+      });
+      if (bot.count === 0) throw new Error(`Bạn không còn ${mon.ten} nào.`);
+
+      // Trứng và rồng đã nở là hai đích khác hẳn nhau, và điều kiện ấy nằm
+      // trong `where` chứ không kiểm sau: đá thúc nở mà dùng lên con đã nở thì
+      // chẳng có gì để nở cả.
+      const r = await tx.rong.findFirst({
+        where: { id, userId: me.userId, noAt: mon.choTrung ? null : { not: null } },
+        select: { id: true, ten: true, loai: true, mau: true, cap: true, exp: true, vui: true, vuiTinhAt: true },
+      });
+      if (!r) {
+        throw new Error(mon.choTrung
+          ? 'Món này dùng cho trứng đang ấp.'
+          : 'Món này dùng cho rồng đã nở.');
+      }
+
+      const now = Date.now();
+      const ten = r.ten || tenRong(r.loai, r.mau);
+      const vuiGio = vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now);
+
+      if (mon.viec === 'no') {
+        const xong = await tx.rong.updateMany({
+          where: { id: r.id, userId: me.userId, noAt: null },
+          data: { noAt: new Date(now), vui: 60, vuiTinhAt: new Date(now) },
+        });
+        if (xong.count === 0) throw new Error('Quả trứng này vừa nở ở nơi khác rồi.');
+
+        const daCo = await demSuuTam(tx, me.userId);
+        await tx.rongNguoiChoi.upsert({
+          where: { userId: me.userId },
+          create: { userId: me.userId, daSuuTam: daCo },
+          update: { daSuuTam: daCo },
+          select: { id: true },
+        });
+        ke = `Trứng nở rồi — một chú ${tenRong(r.loai, r.mau)}!`;
+        return;
+      }
+
+      if (mon.viec === 'lai') {
+        await tx.rong.updateMany({
+          where: { id: r.id, userId: me.userId },
+          data: { laiLanCuoi: null },
+        });
+        ke = `${ten} nghỉ đủ rồi, ghép lại được ngay.`;
+        return;
+      }
+
+      if (mon.viec === 'vui') {
+        await tx.rong.updateMany({
+          where: { id: r.id, userId: me.userId },
+          data: { vui: Math.min(100, vuiGio + mon.so), vuiTinhAt: new Date(now) },
+        });
+        ke = `${ten} ăn ${mon.ten}, vui hẳn lên.`;
+        return;
+      }
+
+      // Còn lại là hai món cộng kinh nghiệm: thịt tính theo bữa ăn nhân lên,
+      // sách thì cộng thẳng con số của nó.
+      const them = mon.viec === 'an' ? EXP_MOI_BUA * mon.so : mon.so;
+      const sau = lenCap(r.cap, r.exp + them);
+      await tx.rong.updateMany({
+        where: { id: r.id, userId: me.userId },
+        data: {
+          cap: sau.cap, exp: sau.exp,
+          ...(mon.viec === 'an'
+            ? { vui: Math.min(100, vuiGio + 8), vuiTinhAt: new Date(now), anLanCuoi: new Date(now) }
+            : {}),
+        },
+      });
+      ke = sau.len
+        ? `${ten} dùng ${mon.ten} và lên cấp ${sau.cap}!`
+        : `${ten} dùng ${mon.ten}, +${them} kinh nghiệm.`;
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Không dùng được món này.' };
   }
 
   lamMoi();

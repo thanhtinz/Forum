@@ -391,6 +391,52 @@ export async function timDoiThu(
   });
 }
 
+// ── Cửa hàng ─────────────────────────────────────────────────────────────
+
+/** Một con rồng (hoặc quả trứng) làm đích cho món đồ. */
+export interface DichDungDo {
+  id: string;
+  ten: string | null;
+  loai: number;
+  mau: number;
+  cap: number;
+  laTrung: boolean;
+}
+
+export interface CuaHangRong {
+  diem: number;
+  /** Món đang có trong túi: mã → số lượng. Món chưa có thì không xuất hiện. */
+  tui: Record<string, number>;
+  dan: DichDungDo[];
+}
+
+export async function xemCuaHang(userId: string): Promise<CuaHangRong> {
+  const [me, tui, dan] = await Promise.all([
+    db.user.findUnique({ where: { id: userId }, select: { points: true } }),
+    db.rongDo.findMany({
+      where: { chuId: userId, soLuong: { gt: 0 } },
+      // Danh sách món là hằng số đóng, nên trần này không bao giờ chạm tới —
+      // vẫn đặt vì mọi truy vấn danh sách trong repo đều phải có trần.
+      take: 50,
+      select: { ma: true, soLuong: true },
+    }),
+    db.rong.findMany({
+      where: { userId },
+      orderBy: [{ noAt: 'asc' }, { createdAt: 'asc' }],
+      take: CHUONG_TOI_DA,
+      select: { id: true, ten: true, loai: true, mau: true, cap: true, noAt: true },
+    }),
+  ]);
+
+  return {
+    diem: me?.points ?? 0,
+    tui: Object.fromEntries(tui.map((d) => [d.ma, d.soLuong])),
+    dan: dan.map((r) => ({
+      id: r.id, ten: r.ten, loai: r.loai, mau: r.mau, cap: r.cap, laTrung: r.noAt === null,
+    })),
+  };
+}
+
 // ── Kể lại trận ──────────────────────────────────────────────────────────
 
 /** Một bên trên màn kể lại trận. */

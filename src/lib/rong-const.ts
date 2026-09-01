@@ -91,6 +91,63 @@ export function expCanDe(cap: number): number {
   return 40 + (cap - 1) * 28;
 }
 
+// ── Cửa hàng ─────────────────────────────────────────────────────────────
+
+/**
+ * Món đồ trong cửa hàng rồng.
+ *
+ * Danh sách ĐÓNG, để trong hằng số chứ không thành bảng: giá và tác dụng là
+ * luật chơi, đọc ở máy chủ, không cho quản trị sửa và trình duyệt cũng không
+ * gửi lên được. Bảng `RongDo` chỉ giữ đúng "ai đang có mấy cái".
+ *
+ * Mỗi món một tác dụng TỨC THÌ, không có buff kéo dài: trạng thái tạm thời
+ * chẳng có chỗ nào để lưu, mà lưu rồi thì lại phải có người dọn khi nó hết —
+ * mà đảo này không có tác vụ nền nào cả.
+ */
+export type ViecDo = 'an' | 'vui' | 'no' | 'exp' | 'lai';
+
+export interface MonDo {
+  ma: string;
+  ten: string;
+  moTa: string;
+  gia: number;
+  viec: ViecDo;
+  /** Trị số của tác dụng — nghĩa tuỳ `viec`. */
+  so: number;
+  /** Dùng lên TRỨNG (true) hay lên rồng đã nở (false). */
+  choTrung: boolean;
+}
+
+export const RONG_DO: readonly MonDo[] = [
+  {
+    ma: 'thit-thuong-hang', ten: 'Thịt thượng hạng', gia: 40, viec: 'an', so: 2, choTrung: false,
+    moTa: 'Một bữa no ngay, không phải chờ, và ăn vào gấp đôi kinh nghiệm.',
+  },
+  {
+    ma: 'banh-vui', ten: 'Bánh vui', gia: 25, viec: 'vui', so: 35, choTrung: false,
+    moTa: 'Cộng thẳng 35 độ vui. Vui cao thì ra trận đánh mạnh hơn.',
+  },
+  {
+    ma: 'da-thuc-no', ten: 'Đá thúc nở', gia: 55, viec: 'no', so: 0, choTrung: true,
+    moTa: 'Cho một quả trứng nở ngay, không tốn thêm điểm nào nữa.',
+  },
+  {
+    ma: 'sach-kinh-nghiem', ten: 'Sách kinh nghiệm', gia: 70, viec: 'exp', so: 80, choTrung: false,
+    moTa: 'Cộng 80 kinh nghiệm, đủ thì lên cấp luôn.',
+  },
+  {
+    ma: 'long-vu-lai', ten: 'Lông vũ lai tạo', gia: 90, viec: 'lai', so: 0, choTrung: false,
+    moTa: 'Xoá thời gian nghỉ sau khi lai, cho ghép lại ngay.',
+  },
+] as const;
+
+/** Mỗi lần bấm mua nhiều nhất chừng này — chặn ngay ở máy chủ. */
+export const MUA_TOI_DA = 10;
+
+export function timDo(ma: string): MonDo | null {
+  return RONG_DO.find((d) => d.ma === ma) ?? null;
+}
+
 // ── Lai tạo ──────────────────────────────────────────────────────────────
 
 /**

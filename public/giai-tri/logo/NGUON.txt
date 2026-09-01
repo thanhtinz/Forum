@@ -1,0 +1,13 @@
+Bốn tệp SVG trong thư mục này là hình VẼ MỚI cho chính dự án này, không lấy từ
+đâu về, nên không kèm giấy phép của bên thứ ba nào.
+
+  nong-trai.svg     mầm cây trên luống đất
+  pokemon.svg       quả cầu bắt thú
+  rong.svg          rồng con nở ra từ trứng
+  trac-nghiem.svg   bóng đèn, bên trong có dấu hỏi mờ
+
+Khác hẳn `public/hoai-niem/*`: chỗ ấy là ảnh giữ nguyên từ mấy mã nguồn JohnCMS
+cũ, còn đây là hình của riêng khu giải trí.
+
+Mỗi tệp là một ô vuông 128×128 ĐÃ CÓ SẴN NỀN, nên trang chỉ việc bo góc rồi
+dựng full-bleed — không phải đặt hình lên một cái nền nào khác nữa.

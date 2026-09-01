@@ -1,9 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Gamepad2 } from 'lucide-react';
-import { anhRong } from '@/lib/rong-const';
-import { FARM_ANH } from '@/lib/farm-const';
-import { ANH_POKE } from '@/lib/pokemon-const';
 
 export const metadata: Metadata = {
   title: 'Khu giải trí',
@@ -35,51 +32,20 @@ export const metadata: Metadata = {
 /**
  * Biểu tượng của bốn game.
  *
- * Mỗi ô là một ảnh CÓ SẴN TRONG GAME đặt giữa một nền màu riêng, chứ không vẽ
- * mới cái gì: quả cầu là đúng quả cầu dùng để bắt thú, con rồng là đúng một
- * trong 54 con nuôi được, luống cây là đúng ô đất lúc chín. Repo này đã một
- * lần vẽ tay ảnh thay thế cho kho game rồi phải gỡ đi (hai lượt commit chỉ để
- * dọn), nên phần "thiết kế" ở đây là cái khuôn — nền, bo góc, vệt sáng, bố cục
- * — còn hình thì mượn nguyên của game.
+ * Bốn tệp SVG vẽ mới cho khu này, mỗi tệp là một ô vuông 128×128 ĐÃ CÓ SẴN
+ * NỀN — nên trang chỉ việc bo góc rồi dựng full-bleed, không phải xếp hình lên
+ * một cái nền nào khác nữa. Xem `public/giai-tri/logo/NGUON.txt`.
  *
- * `mượt` = ảnh vẽ mượt, không được ép pixel hoá; nông sản là ảnh vector còn ba
- * thứ kia là ảnh pixel cũ, ép sai chiều nào cũng xấu.
+ * TRƯỚC ĐÂY mỗi ô là một ảnh cắt ra từ chính game phóng to lên. Đúng là không
+ * vẽ gì thật, nhưng mấy ảnh ấy vốn là sprite 20–40 điểm ảnh dựng cho cỡ bé
+ * xíu, phóng lên 120 điểm ảnh thì vỡ hạt và lệch tông nhau — bốn ô nhìn ra bốn
+ * thứ nhặt về chứ không ra một bộ.
  */
 const GAME = [
-  {
-    href: '/nong-trai',
-    ten: 'Nông trại',
-    anh: `${FARM_ANH}/o-dat/4-chin.png`,
-    muot: true,
-    nen: 'linear-gradient(160deg,#8fd14f 0%,#4ea72e 55%,#2f7a1f 100%)',
-  },
-  {
-    href: '/pokemon',
-    ten: 'Đảo Pokémon',
-    // `icon/quacau.gif` chứ không phải `icon/ball.png`: ảnh kia 19×20 và KHÔNG
-    // có kênh trong suốt, phóng lên là một khối vuông trắng chình ình giữa ô.
-    anh: `${ANH_POKE}/icon/quacau.gif`,
-    muot: false,
-    // Nền XANH chứ không đỏ: quả cầu vốn đỏ, để lên nền đỏ là chìm nghỉm.
-    nen: 'linear-gradient(160deg,#93c5fd 0%,#3b82f6 55%,#1e40af 100%)',
-  },
-  {
-    href: '/rong',
-    // Thanh Long Lục: mình dài, uốn kín cả ô vuông — mấy loài đứng hai chân để
-    // trong ô vuông thì thừa hai bên, nhìn ra một con thú bị nhốt.
-    ten: 'Đảo Rồng',
-    anh: anhRong(8, 3),
-    muot: false,
-    nen: 'linear-gradient(160deg,#6ee7d3 0%,#0d9488 55%,#0f5f5c 100%)',
-  },
-  {
-    href: '/giai-tri/trac-nghiem',
-    ten: 'Trắc nghiệm',
-    // Trò này không có ảnh nào trong game, nên biểu tượng là chính dấu hỏi —
-    // mượn tạm một cái icon lạc đề còn tệ hơn.
-    chu: '?',
-    nen: 'linear-gradient(160deg,#c4b5fd 0%,#7c3aed 55%,#4c1d95 100%)',
-  },
+  { href: '/nong-trai', ten: 'Nông trại', logo: '/giai-tri/logo/nong-trai.svg' },
+  { href: '/pokemon', ten: 'Đảo Pokémon', logo: '/giai-tri/logo/pokemon.svg' },
+  { href: '/rong', ten: 'Đảo Rồng', logo: '/giai-tri/logo/rong.svg' },
+  { href: '/giai-tri/trac-nghiem', ten: 'Trắc nghiệm', logo: '/giai-tri/logo/trac-nghiem.svg' },
 ] as const;
 
 export default function GiaiTriPage() {
@@ -91,24 +57,17 @@ export default function GiaiTriPage() {
 
       {/* Hai cột trên điện thoại, bốn trên máy tính: bốn game vừa đúng một
           hàng, không có ô nào rơi xuống đứng lẻ. */}
+      {/* Hai cột trên điện thoại, bốn trên máy tính: bốn game vừa đúng một
+          hàng, không có ô nào rơi xuống đứng lẻ. */}
       <ul className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
         {GAME.map((g) => (
           <li key={g.href}>
             <Link href={g.href}
               className="group flex flex-col items-center gap-2 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-ink-950">
-              <div className="o-game flex aspect-square w-full items-center justify-center p-4"
-                style={{ background: 'nen' in g ? g.nen : undefined }}>
-                {'chu' in g ? (
-                  <span aria-hidden
-                    className="font-mono text-[3.5rem] font-black leading-none text-white/85 drop-shadow-md transition-transform duration-200 group-hover:scale-110">
-                    {g.chu}
-                  </span>
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={g.anh} alt="" aria-hidden
-                    className="h-full w-full object-contain drop-shadow-md transition-transform duration-200 group-hover:scale-110"
-                    style={{ imageRendering: g.muot ? 'auto' : 'pixelated' }} />
-                )}
+              <div className="o-game aspect-square w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={g.logo} alt="" aria-hidden width={128} height={128}
+                  className="h-full w-full object-cover" />
               </div>
               <span className="text-center text-sm font-bold text-ink-700 group-hover:text-brand-600 dark:text-ink-200">
                 {g.ten}

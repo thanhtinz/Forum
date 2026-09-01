@@ -11,12 +11,13 @@ import { bocRongNgauNhien, danhNhau, demSuuTam, type KeLaiTran } from '@/lib/ron
 import {
   AN_CHO_MS, AP_MS, CHOI_CHO_MS, CHUONG_TOI_DA, DAU_MOI_NGAY, EXP_MOI_BUA,
   EXP_MOI_LAN_CHOI, GIA_AN, GIA_NO_NGAY, GIA_TRUNG, PHI_DAU, THUONG_THANG,
-  VUI_MOI_LAN, CAP_TOI_DA, MOC_SUU_TAM, chiSo, dauNgayVN, expCanDe, loiTenRong,
+  VUI_MOI_LAN, CAP_TOI_DA, GIA_LAI, LAI_CAP_TOI_THIEU, LAI_CHO_MS, LAI_TOI_DA,
+  MOC_SUU_TAM, bocTrungLai, chiSo, dauNgayVN, expCanDe, loiTenRong,
   mocDatDuoc, tenRong, vuiHienGio,
 } from '@/lib/rong-const';
 
 /**
- * Đảo rồng — chín thao tác đổi dữ liệu.
+ * Đảo rồng — mười thao tác đổi dữ liệu.
  *
  * Mọi hàm export ở đây là một endpoint POST công khai, nên hàm nào cũng tự kiểm
  * quyền của chính nó và tự kiểm con rồng có đúng của người gọi không. Không hàm
@@ -378,7 +379,7 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
 
       const a = await tx.rong.findFirst({
         where: { id: cuaToi, userId: me.userId, noAt: { not: null } },
-        select: { id: true, loai: true, cap: true, vui: true, vuiTinhAt: true, ten: true, mau: true },
+        select: { id: true, loai: true, cap: true, vui: true, vuiTinhAt: true, ten: true, mau: true, doi: true },
       });
       if (!a) throw new Error('Không tìm thấy con rồng nào của bạn.');
 
@@ -386,7 +387,7 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
       // trong `where` chứ không lấy về rồi loại.
       const b = await tx.rong.findFirst({
         where: { id: doiThu, noAt: { not: null }, raTran: true, userId: { not: me.userId } },
-        select: { id: true, loai: true, cap: true, vui: true, vuiTinhAt: true, ten: true, mau: true },
+        select: { id: true, loai: true, cap: true, vui: true, vuiTinhAt: true, ten: true, mau: true, doi: true },
       });
       if (!b) throw new Error('Đối thủ này không còn ở đấu trường nữa.');
 
@@ -395,8 +396,8 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
         note: 'Ghi danh đấu trường rồng',
       }, tx);
 
-      const sucA = chiSo({ loai: a.loai, cap: a.cap, vui: vuiHienGio(a.vui, a.vuiTinhAt.getTime(), now) });
-      const sucB = chiSo({ loai: b.loai, cap: b.cap, vui: vuiHienGio(b.vui, b.vuiTinhAt.getTime(), now) });
+      const sucA = chiSo({ loai: a.loai, cap: a.cap, doi: a.doi, vui: vuiHienGio(a.vui, a.vuiTinhAt.getTime(), now) });
+      const sucB = chiSo({ loai: b.loai, cap: b.cap, doi: b.doi, vui: vuiHienGio(b.vui, b.vuiTinhAt.getTime(), now) });
       const kq = danhNhau(sucA, sucB);
 
       const duoc = kq.ai === 'a' ? THUONG_THANG : kq.ai === 'hoa' ? PHI_DAU : 0;
@@ -451,6 +452,102 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
 
   lamMoi();
   return { ok: true, ke, tran: keLai };
+}
+
+// ─────────────────────────── Lai tạo ───────────────────────────
+
+/**
+ * Ghép hai con rồng của mình lấy một quả trứng.
+ *
+ * Đây là hàm ghi phức tạp nhất của đảo, nên nói rõ chỗ nào chống được gì:
+ *
+ *  • `lockUsers` — luật "chuồng còn chỗ" là một phép ĐẾM, thứ một câu `where`
+ *    không nói được, nên hai tab cùng bấm phải xếp hàng ở đây.
+ *  • Mọi điều kiện của cha mẹ (cấp, số lần đã lai, thời gian nghỉ) nằm trong
+ *    `where` của câu `updateMany` tăng `soLanLai`. Đọc rồi mới ghi thì giữa
+ *    hai bước ấy con rồng có thể vừa lai ở tab khác.
+ *  • `count === 0` là huỷ cả giao dịch, kéo luôn khoản tiền vừa trừ về chỗ cũ.
+ */
+export async function laiTao(_prev: RongState, formData: FormData): Promise<RongState> {
+  const me = await nguoiNuoi();
+  if ('error' in me) return { error: me.error };
+
+  const chaId = docId(formData.get('cha'));
+  const meId = docId(formData.get('me'));
+  if (!chaId || !meId) return { error: 'Chọn đủ hai con rồng đã.' };
+  if (chaId === meId) return { error: 'Phải là hai con khác nhau.' };
+
+  let ke = '';
+  try {
+    await db.$transaction(async (tx) => {
+      await lockUsers(tx, me.userId);
+
+      const dang = await tx.rong.count({ where: { userId: me.userId } });
+      if (dang >= CHUONG_TOI_DA) {
+        throw new Error(`Chuồng chỉ chứa được ${CHUONG_TOI_DA} con. Thả bớt rồi hẵng lai.`);
+      }
+
+      const now = Date.now();
+      const nghi = new Date(now - LAI_CHO_MS);
+      const dieuKien: Prisma.RongWhereInput = {
+        userId: me.userId,
+        noAt: { not: null },
+        cap: { gte: LAI_CAP_TOI_THIEU },
+        soLanLai: { lt: LAI_TOI_DA },
+        OR: [{ laiLanCuoi: null }, { laiLanCuoi: { lte: nghi } }],
+      };
+
+      const bo = await tx.rong.findMany({
+        where: { ...dieuKien, id: { in: [chaId, meId] } },
+        take: 2,
+        select: { id: true, loai: true, mau: true, doi: true, ten: true, soLanLai: true, laiLanCuoi: true },
+      });
+      if (bo.length < 2) {
+        throw new Error(
+          `Cả hai con phải là rồng của bạn, đã nở, từ cấp ${LAI_CAP_TOI_THIEU} trở lên, `
+          + `còn lượt lai và đã nghỉ đủ.`,
+        );
+      }
+
+      await grantPoints({
+        userId: me.userId, amount: -GIA_LAI, reason: 'RONG_TRUNG',
+        note: 'Lai tạo một quả trứng rồng',
+      }, tx);
+
+      // Điều kiện lặp lại NGUYÊN VẸN trong `where`, cộng thêm trạng thái vừa
+      // đọc được — hai tab cùng bấm thì tab sau không khớp con nào.
+      for (const r of bo) {
+        const xong = await tx.rong.updateMany({
+          where: { ...dieuKien, id: r.id, soLanLai: r.soLanLai, laiLanCuoi: r.laiLanCuoi },
+          data: { soLanLai: { increment: 1 }, laiLanCuoi: new Date(now) },
+        });
+        if (xong.count === 0) throw new Error('Một trong hai con vừa lai ở nơi khác rồi.');
+      }
+
+      const chaR = bo.find((r) => r.id === chaId)!;
+      const meR = bo.find((r) => r.id === meId)!;
+      const con = bocTrungLai(chaR, meR);
+
+      await tx.rong.create({
+        data: {
+          userId: me.userId,
+          loai: con.loai, mau: con.mau, doi: con.doi,
+          chaId: chaR.id, meId: meR.id,
+          apXongAt: new Date(now + AP_MS),
+        },
+        select: { id: true },
+      });
+
+      ke = `${chaR.ten || tenRong(chaR.loai, chaR.mau)} và ${meR.ten || tenRong(meR.loai, meR.mau)} `
+        + `để lại một quả trứng đời ${con.doi}. Nở ra con gì thì chờ mới biết.`;
+    });
+  } catch (e) {
+    if (e instanceof InsufficientPointsError) return { error: `Không đủ điểm. Lai một quả trứng tốn ${GIA_LAI} điểm.` };
+    return { error: e instanceof Error ? e.message : 'Không lai được.' };
+  }
+
+  lamMoi();
+  return { ok: true, ke };
 }
 
 // ─────────────────────────── Mốc sưu tầm ───────────────────────────

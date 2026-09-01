@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Egg } from 'lucide-react';
 import type { OApTrung } from '@/lib/rong';
 import { AP_MS, CHUONG_TOI_DA, GIA_NO_NGAY, GIA_TRUNG, moTaConLai } from '@/lib/rong-const';
+import { LaiTao } from './LaiTao';
 import { TheTrung } from './TheTrung';
 import { TinRong, useViecRong } from './dung-viec';
 
@@ -33,7 +34,7 @@ export function LoApTrung({ d }: { d: OApTrung }) {
         {d.trung.length === 0 ? (
           <p className="py-6 text-center text-sm text-ink-500">
             Chưa có quả trứng nào đang ấp.{' '}
-            {d.soRong > 0 && (
+            {d.chaMe.length > 0 && (
               <Link href="/rong" className="rong-nhan font-semibold hover:underline">
                 Về chuồng
               </Link>
@@ -48,6 +49,8 @@ export function LoApTrung({ d }: { d: OApTrung }) {
           </ul>
         )}
       </section>
+
+      <LaiTao chaMe={d.chaMe} now={now} />
     </div>
   );
 }

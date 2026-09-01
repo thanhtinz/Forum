@@ -1,6 +1,7 @@
 import { db } from './db';
 import {
-  CHUONG_TOI_DA, DAU_MOI_NGAY, LECH_CAP, SO_DOI_THU, SO_LOAI, SO_MAU,
+  CHUONG_TOI_DA, DAU_MOI_NGAY, LAI_CAP_TOI_THIEU, LAI_CHO_MS, LAI_TOI_DA,
+  LECH_CAP, SO_DOI_THU, SO_LOAI, SO_MAU,
   type ChiSo, type Hiep, chiSo, dauNgayVN, mocDatDuoc, vuiHienGio,
 } from './rong-const';
 
@@ -42,19 +43,20 @@ export interface RongXem {
   anDuocLuc: number;
   choiDuocLuc: number;
   raTran: boolean;
+  doi: number;
   suc: ChiSo;
 }
 
 const chonRong = {
   id: true, loai: true, mau: true, ten: true, cap: true, exp: true,
   vui: true, vuiTinhAt: true, apXongAt: true, noAt: true,
-  anLanCuoi: true, choiLanCuoi: true, raTran: true,
+  anLanCuoi: true, choiLanCuoi: true, raTran: true, doi: true,
 } as const;
 
 type HangRong = {
   id: string; loai: number; mau: number; ten: string | null; cap: number; exp: number;
   vui: number; vuiTinhAt: Date; apXongAt: Date; noAt: Date | null;
-  anLanCuoi: Date | null; choiLanCuoi: Date | null; raTran: boolean;
+  anLanCuoi: Date | null; choiLanCuoi: Date | null; raTran: boolean; doi: number;
 };
 
 export function doiRong(r: HangRong, now: number, anChoMs: number, choiChoMs: number): RongXem {
@@ -73,7 +75,8 @@ export function doiRong(r: HangRong, now: number, anChoMs: number, choiChoMs: nu
     anDuocLuc: (r.anLanCuoi?.getTime() ?? 0) + anChoMs,
     choiDuocLuc: (r.choiLanCuoi?.getTime() ?? 0) + choiChoMs,
     raTran: r.raTran,
-    suc: chiSo({ loai: r.loai, cap: r.cap, vui }),
+    doi: r.doi,
+    suc: chiSo({ loai: r.loai, cap: r.cap, vui, doi: r.doi }),
   };
 }
 
@@ -121,12 +124,27 @@ export interface TrungXem {
   noDuoc: boolean;
 }
 
+/** Một con rồng xét ở góc độ "có lai được không". */
+export interface ChaMeXem {
+  id: string;
+  ten: string | null;
+  loai: number;
+  mau: number;
+  cap: number;
+  doi: number;
+  soLanLai: number;
+  /** Lai lại được kể từ lúc này. */
+  laiDuocLuc: number;
+  /** Đủ mọi điều kiện của riêng nó chưa (chưa xét con còn lại). */
+  sanSang: boolean;
+}
+
 export interface OApTrung {
   now: number;
   trung: TrungXem[];
   conCho: number;
-  /** Số rồng đã nở — trang ấp trứng cần biết để bày phần lai tạo. */
-  soRong: number;
+  /** Rồng đã nở, để chọn cặp lai. */
+  chaMe: ChaMeXem[];
 }
 
 export async function xemTrung(userId: string): Promise<OApTrung> {
@@ -135,7 +153,10 @@ export async function xemTrung(userId: string): Promise<OApTrung> {
     where: { userId },
     orderBy: { createdAt: 'asc' },
     take: CHUONG_TOI_DA,
-    select: { id: true, apXongAt: true, noAt: true },
+    select: {
+      id: true, apXongAt: true, noAt: true, ten: true, loai: true, mau: true,
+      cap: true, doi: true, soLanLai: true, laiLanCuoi: true,
+    },
   });
 
   const trung = tatCa.filter((r) => r.noAt === null);
@@ -147,7 +168,14 @@ export async function xemTrung(userId: string): Promise<OApTrung> {
       noDuoc: now >= r.apXongAt.getTime(),
     })),
     conCho: Math.max(0, CHUONG_TOI_DA - tatCa.length),
-    soRong: tatCa.length - trung.length,
+    chaMe: tatCa.filter((r) => r.noAt !== null).map((r) => {
+      const laiDuocLuc = (r.laiLanCuoi?.getTime() ?? 0) + LAI_CHO_MS;
+      return {
+        id: r.id, ten: r.ten, loai: r.loai, mau: r.mau, cap: r.cap,
+        doi: r.doi, soLanLai: r.soLanLai, laiDuocLuc,
+        sanSang: r.cap >= LAI_CAP_TOI_THIEU && r.soLanLai < LAI_TOI_DA && now >= laiDuocLuc,
+      };
+    }),
   };
 }
 
@@ -261,7 +289,7 @@ export async function xemSanDau(userId: string): Promise<SanDau> {
   const [cua, daDau] = await Promise.all([
     db.rong.findFirst({
       where: { userId, raTran: true, noAt: { not: null } },
-      select: { id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true },
+      select: { id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true, doi: true },
     }),
     // Cùng nguồn với chỗ chặn ở server action — xem chú thích tại `thachDau`.
     // Đếm trên `RongTran` thì con số in ra trang cũng nói dối theo mỗi lần có
@@ -276,7 +304,7 @@ export async function xemSanDau(userId: string): Promise<SanDau> {
     raTran: cua
       ? {
         id: cua.id, loai: cua.loai, mau: cua.mau, ten: cua.ten, cap: cua.cap,
-        suc: chiSo({ loai: cua.loai, cap: cua.cap, vui: vuiHienGio(cua.vui, cua.vuiTinhAt.getTime(), now) }),
+        suc: chiSo({ loai: cua.loai, cap: cua.cap, doi: cua.doi, vui: vuiHienGio(cua.vui, cua.vuiTinhAt.getTime(), now) }),
       }
       : null,
     conLaiHomNay: Math.max(0, DAU_MOI_NGAY - daDau),
@@ -299,7 +327,7 @@ export interface DoiThu {
 }
 
 const CHON_DOI_THU = {
-  id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true,
+  id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true, doi: true,
   // Chỉ lấy tên để hiện và tên đăng nhập để trỏ link — id của chủ nhân không
   // dùng tới, mà đây là dữ liệu của NGƯỜI KHÁC nên lấy vừa đủ.
   user: { select: { name: true, username: true } },
@@ -358,7 +386,7 @@ export async function timDoiThu(
       loai: r.loai,
       mau: r.mau,
       cap: r.cap,
-      suc: chiSo({ loai: r.loai, cap: r.cap, vui }),
+      suc: chiSo({ loai: r.loai, cap: r.cap, vui, doi: r.doi }),
     };
   });
 }

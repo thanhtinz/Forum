@@ -160,6 +160,7 @@ model User {
   pokeNhanVat   PokeNhanVat?
   rong          Rong[]
   rongHoSo      RongNguoiChoi?
+  rongDo        RongDo[]
   /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
   lastTreeAt    DateTime?
 
@@ -2404,6 +2405,33 @@ model Rong {
   exp Int @default(0)
 
   /**
+   * Đời: rồng mua bằng trứng thường là đời 1, lai ra thì cộng 1, chặn ở đời 5.
+   *
+   * Có tác dụng thật chứ không phải con số trang trí — mỗi đời cộng thẳng một
+   * điểm vào cả ba chỉ số (xem `chiSo` trong `rong-const.ts`). Cộng nhỏ và có
+   * trần, chứ nhân lên thì đời sau đè hết đời trước và đấu trường thành cuộc
+   * đua ai lai lâu hơn.
+   */
+  doi Int @default(1)
+
+  /// Đã lai mấy lần; mỗi con chỉ lai được vài lần rồi thôi.
+  soLanLai Int @default(0)
+
+  /// Lần lai gần nhất — lai xong phải nghỉ, xem `LAI_CHO_MS`.
+  laiLanCuoi DateTime?
+
+  /**
+   * Cha mẹ, chỉ để kể phả hệ.
+   *
+   * KHÔNG khai quan hệ Prisma: quan hệ kéo theo ràng buộc khoá ngoại, mà cha
+   * mẹ thì thả về trời lúc nào cũng được — hoặc là con cũng bị cascade xoá
+   * theo (mất trắng), hoặc là không thả được cha mẹ nữa. Hai chuỗi id trần,
+   * trỏ hụt thì thôi không kể phả hệ, là đúng thứ cần ở đây.
+   */
+  chaId String?
+  meId  String?
+
+  /**
    * Độ vui 0–100. Bỏ bê thì tụt dần theo giờ, tụt thì đánh yếu đi.
    */
   vui       Int      @default(60)
@@ -2452,6 +2480,26 @@ model Rong {
 ///
 /// Hàng tự sinh lúc người chơi mở trang sổ sưu tầm lần đầu, nên người đã nuôi
 /// rồng từ trước không cần bộ nạp lại nào.
+/// Một món đồ trong túi của người chơi Đảo Rồng.
+///
+/// `ma` trỏ vào mảng hằng `RONG_DO` chứ không thành một bảng: danh sách món là
+/// LUẬT CHƠI — giá và tác dụng đọc ở máy chủ, không cho quản trị sửa và trình
+/// duyệt cũng không gửi lên được. Bảng này chỉ giữ "ai đang có mấy cái".
+///
+/// `@@unique([chuId, ma])` để `upsert` + `increment` chạy an toàn mà không cần
+/// khoá hàng người dùng.
+model RongDo {
+  id    String @id @default(cuid())
+  chuId String
+  chu   User   @relation(fields: [chuId], references: [id], onDelete: Cascade)
+
+  ma      String
+  soLuong Int    @default(0)
+
+  @@unique([chuId, ma])
+  @@index([chuId])
+}
+
 model RongNguoiChoi {
   id     String @id @default(cuid())
   userId String @unique

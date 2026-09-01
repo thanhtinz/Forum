@@ -91,6 +91,60 @@ export function expCanDe(cap: number): number {
   return 40 + (cap - 1) * 28;
 }
 
+// ── Lai tạo ──────────────────────────────────────────────────────────────
+
+/**
+ * Ghép hai con rồng lấy một quả trứng.
+ *
+ * Vì sao cần: mua trứng thường thì loài và màu bốc hoàn toàn ngẫu nhiên trong
+ * 54 cửa, nên săn cho đủ sổ sưu tầm là chuyện của may rủi thuần tuý — chăm con
+ * rồng cấp 30 chẳng giúp gì cho việc ấy. Lai tạo là đường DUY NHẤT mà công
+ * nuôi nấng đổi được thành một quả trứng đoán trước được phần nào.
+ */
+export const LAI_CAP_TOI_THIEU = 10;
+/** Mỗi con lai được mấy lần rồi thôi — không thì một cặp đẻ ra cả đảo. */
+export const LAI_TOI_DA = 3;
+export const LAI_CHO_MS = 24 * 60 * 60 * 1000;
+export const GIA_LAI = 60;
+export const DOI_TOI_DA = 5;
+
+/**
+ * Tỉ lệ đột biến: bốc lại hoàn toàn ngẫu nhiên thay vì lấy của cha mẹ.
+ *
+ * Không có nó thì người chơi khoá cứng vào đúng những loài mình đã có — lai
+ * mãi cũng chỉ ra đi ra lại chín cửa ấy, và sổ 54 ô không bao giờ đầy được
+ * bằng đường lai tạo.
+ */
+export const TI_LE_DOT_BIEN = 0.15;
+
+/**
+ * Trứng lai ra con gì.
+ *
+ * `tungXu` bơm được như `danhNhau`, để bài kiểm chốt được kết quả thay vì
+ * đoán mò trên một hàm ngẫu nhiên.
+ */
+export function bocTrungLai(
+  cha: { loai: number; mau: number; doi: number },
+  me: { loai: number; mau: number; doi: number },
+  tungXu: () => number = Math.random,
+): { loai: number; mau: number; doi: number } {
+  const doi = Math.min(DOI_TOI_DA, Math.max(cha.doi, me.doi) + 1);
+  if (tungXu() < TI_LE_DOT_BIEN) {
+    return {
+      loai: 1 + Math.floor(tungXu() * SO_LOAI),
+      mau: 1 + Math.floor(tungXu() * SO_MAU),
+      doi,
+    };
+  }
+  // Loài và màu bốc RỜI nhau: lấy nguyên bộ của một bên thì lai ra bản sao của
+  // cha hoặc của mẹ, chẳng bao giờ ra một cửa mới trong sổ.
+  return {
+    loai: tungXu() < 0.5 ? cha.loai : me.loai,
+    mau: tungXu() < 0.5 ? cha.mau : me.mau,
+    doi,
+  };
+}
+
 // ── Sổ sưu tầm ───────────────────────────────────────────────────────────
 
 /**
@@ -205,12 +259,16 @@ export function bocRongNgauNhien(): { loai: number; mau: number } {
  */
 export interface ChiSo { cong: number; thu: number; nhanh: number }
 
-export function chiSo(r: { loai: number; cap: number; vui: number }): ChiSo {
+export function chiSo(r: { loai: number; cap: number; vui: number; doi?: number }): ChiSo {
   const l = LOAI.find((x) => x.id === r.loai)?.manh ?? { cong: 0, thu: 0, nhanh: 0 };
   const nen = 10 + r.cap * 2;
   // Vui 100 → giữ nguyên sức; vui 0 → còn một nửa.
   const heSo = 0.5 + (Math.max(0, Math.min(100, r.vui)) / 100) * 0.5;
-  const lam = (x: number) => Math.max(1, Math.round((nen + x * r.cap * 0.4 + x) * heSo));
+  // Đời cộng SAU hệ số vui: cộng trước thì con đời 5 bị bỏ đói vẫn ăn nguyên
+  // phần thưởng của đời, mà cả ý của độ vui là bỏ bê thì yếu đi.
+  const themDoi = Math.max(0, Math.min(DOI_TOI_DA, r.doi ?? 1) - 1);
+  const lam = (x: number) =>
+    Math.max(1, Math.round((nen + x * r.cap * 0.4 + x) * heSo) + themDoi);
   return { cong: lam(l.cong), thu: lam(l.thu), nhanh: lam(l.nhanh) };
 }
 

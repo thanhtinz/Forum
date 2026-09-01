@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import type { KeLaiTran } from '@/lib/rong';
-import { ANH_HP, anhRong, tenRong } from '@/lib/rong-const';
+import { ANH_HP, anhRong, heCua, tenRong, theKhac } from '@/lib/rong-const';
+import { TheHe } from './TheHe';
 import { cn } from '@/lib/utils';
 
 /**
@@ -45,6 +46,13 @@ export function ManDau({ t, goN = false }: { t: KeLaiTran; goN?: boolean }) {
             {xong ? 'hết' : `hiệp ${hiep + 1}`}
           </span>
           <span className="text-lg font-black opacity-60">VS</span>
+          {/* Nói thẳng bên nào đang được lợi về hệ — người xem không phải
+              đoán vì sao một bên trừ máu nhanh hơn hẳn. */}
+          {theKhac(heCua(t.a.loai), heCua(t.b.loai)) !== 'ngang' && (
+            <span className="text-[10px] font-bold opacity-90">
+              {theKhac(heCua(t.a.loai), heCua(t.b.loai)) === 'khac' ? '◀ khắc' : 'khắc ▶'}
+            </span>
+          )}
         </div>
         <Ben ben={t.b} mau={bMau} sat={vua?.aDanh} ben2 dang={!xong} />
       </div>
@@ -80,7 +88,10 @@ function Ben({
   return (
     <div className={cn('min-w-0 flex-1', ben2 && 'text-right')}>
       <p className="truncate text-sm font-bold">{ben.ten || tenRong(ben.loai, ben.mau)}</p>
-      <p className="text-[11px] opacity-80">cấp {ben.cap}</p>
+      <p className={cn('flex items-center gap-1.5 text-[11px] opacity-80', ben2 && 'justify-end')}>
+        cấp {ben.cap}
+        <TheHe he={heCua(ben.loai)} />
+      </p>
 
       <div className={cn('relative mt-1 flex items-center gap-1.5', ben2 && 'flex-row-reverse')}>
         {/* eslint-disable-next-line @next/next/no-img-element */}

@@ -18,11 +18,77 @@ export const SO_MAU = 6;
 /** Sưu tầm đủ là chừng này con. */
 export const DU_BO = SO_LOAI * SO_MAU;
 
+// ── Ngũ hành ─────────────────────────────────────────────────────────────
+
+/**
+ * Năm hệ theo ngũ hành, và vòng TƯƠNG KHẮC khép kín:
+ *
+ *   Kim → Mộc → Thổ → Thuỷ → Hoả → Kim
+ *
+ * Vì sao cần: trước đây chín loài chỉ khác nhau ở ba con số công/thủ/nhanh
+ * lệch qua lệch lại, nên chọn con nào ra trận cũng gần như nhau và sổ sưu tầm
+ * chỉ là gom cho đủ. Có khắc chế thì mỗi con trong sổ là một quân bài — gặp
+ * đối thủ hệ Hoả thì lôi con hệ Thuỷ ra.
+ *
+ * Chọn ngũ hành chứ không bịa ra hệ mới vì nó là một vòng ĐÓNG và ai cũng
+ * thuộc: mỗi hệ khắc đúng một hệ và bị đúng một hệ khắc, không có hệ nào mạnh
+ * hơn hệ nào. Bịa bảng khắc chế tự do là kiểu gì cũng có hệ hoá ra trội hẳn.
+ */
+export const HE = [
+  { id: 1, ten: 'Kim', mau: '#c9a227', khac: 2 },
+  { id: 2, ten: 'Mộc', mau: '#3f9d4f', khac: 5 },
+  { id: 3, ten: 'Thuỷ', mau: '#2f7fd0', khac: 4 },
+  { id: 4, ten: 'Hoả', mau: '#e0562f', khac: 1 },
+  { id: 5, ten: 'Thổ', mau: '#9a6b3f', khac: 3 },
+] as const;
+
+export type MaHe = (typeof HE)[number]['id'];
+
+/**
+ * Hệ của một loài.
+ *
+ * Suy ra từ số hiệu loài chứ không lưu thành cột: hệ là thuộc tính của LOÀI,
+ * không phải của từng con — lưu lại là mở đường cho hai con cùng loài mà khác
+ * hệ, và mấy trận đã ghi từ trước cũng đọc ra hệ được ngay.
+ */
+export function heCua(loai: number): MaHe {
+  return LOAI.find((x) => x.id === loai)?.he ?? 1;
+}
+
+export function tenHe(he: number): string {
+  return HE.find((h) => h.id === he)?.ten ?? '—';
+}
+
+export function mauHe(he: number): string {
+  return HE.find((h) => h.id === he)?.mau ?? '#888';
+}
+
+/** Đánh vào hệ mình khắc thì mạnh thêm chừng này. */
+export const HE_KHAC = 1.5;
+/** Đánh vào hệ khắc mình thì yếu đi chừng này. */
+export const HE_BI_KHAC = 0.7;
+
+/**
+ * Hệ số sát thương khi bên hệ `ben` đánh vào bên hệ `doi`.
+ *
+ * Không cộng dồn: hai hệ không khắc nhau thì đúng 1, không có nửa vời.
+ */
+export function heSoKhac(ben: number, doi: number): number {
+  if (HE.find((h) => h.id === ben)?.khac === doi) return HE_KHAC;
+  if (HE.find((h) => h.id === doi)?.khac === ben) return HE_BI_KHAC;
+  return 1;
+}
+
 /**
  * Chín loài, đặt tên theo đúng hình vẽ trong bộ ảnh gốc.
  *
  * `manh` là thiên hướng của loài, cộng thẳng vào chỉ số lúc đấu — để chín loài
  * đánh nhau ra khác nhau chứ không phải chín bộ da đổi màu.
+ *
+ * `he` gán theo NGHĨA CỦA CÁI TÊN chứ không rải cho đều: Hoả Long thở lửa thì
+ * phải là Hoả, Thanh Long là rồng phương Đông nên đúng hành Mộc theo sách,
+ * Rồng Giáp vảy dày như áo giáp thì là Kim. Vì thế năm hệ không chia đều chín
+ * loài — Hoả chỉ có một mình Hoả Long, và đó là chủ ý.
  */
 export interface Loai {
   id: number;
@@ -30,18 +96,20 @@ export interface Loai {
   moTa: string;
   /** Cộng vào công / thủ / nhanh. Tổng ba số luôn là 0 cho công bằng. */
   manh: { cong: number; thu: number; nhanh: number };
+  /** Hệ ngũ hành, quyết định khắc chế lúc đánh. */
+  he: MaHe;
 }
 
 export const LOAI: readonly Loai[] = [
-  { id: 1, ten: 'Rồng Giáp', moTa: 'Đứng hai chân, vảy dày như áo giáp.', manh: { cong: 0, thu: 3, nhanh: -3 } },
-  { id: 2, ten: 'Rồng Mập', moTa: 'Tròn trịa, hiền lành, dai sức lạ thường.', manh: { cong: -2, thu: 4, nhanh: -2 } },
-  { id: 3, ten: 'Dực Long', moTa: 'Cánh da mỏng, bay nhanh như tên bắn.', manh: { cong: 1, thu: -4, nhanh: 3 } },
-  { id: 4, ten: 'Sư Long', moTa: 'Mình sư tử, cánh chim, dáng đi kiêu hãnh.', manh: { cong: 3, thu: 0, nhanh: -3 } },
-  { id: 5, ten: 'Miêu Long', moTa: 'Nhỏ như mèo, nghịch ngợm, né đòn rất tài.', manh: { cong: -3, thu: -1, nhanh: 4 } },
-  { id: 6, ten: 'Hoả Long', moTa: 'Rồng phương Tây cổ điển, thở ra lửa.', manh: { cong: 4, thu: -1, nhanh: -3 } },
-  { id: 7, ten: 'Thiên Long', moTa: 'Cánh rộng, dáng thanh, đủ đường đều khá.', manh: { cong: 1, thu: 1, nhanh: -2 } },
-  { id: 8, ten: 'Thanh Long', moTa: 'Rồng phương Đông, mình dài uốn lượn giữa mây.', manh: { cong: 2, thu: 1, nhanh: -3 } },
-  { id: 9, ten: 'Xà Long', moTa: 'Thân rắn cuộn tròn, ra đòn hiểm.', manh: { cong: 3, thu: -2, nhanh: -1 } },
+  { id: 1, ten: 'Rồng Giáp', moTa: 'Đứng hai chân, vảy dày như áo giáp.', manh: { cong: 0, thu: 3, nhanh: -3 }, he: 1 },
+  { id: 2, ten: 'Rồng Mập', moTa: 'Tròn trịa, hiền lành, dai sức lạ thường.', manh: { cong: -2, thu: 4, nhanh: -2 }, he: 5 },
+  { id: 3, ten: 'Dực Long', moTa: 'Cánh da mỏng, bay nhanh như tên bắn.', manh: { cong: 1, thu: -4, nhanh: 3 }, he: 2 },
+  { id: 4, ten: 'Sư Long', moTa: 'Mình sư tử, cánh chim, dáng đi kiêu hãnh.', manh: { cong: 3, thu: 0, nhanh: -3 }, he: 1 },
+  { id: 5, ten: 'Miêu Long', moTa: 'Nhỏ như mèo, nghịch ngợm, né đòn rất tài.', manh: { cong: -3, thu: -1, nhanh: 4 }, he: 3 },
+  { id: 6, ten: 'Hoả Long', moTa: 'Rồng phương Tây cổ điển, thở ra lửa.', manh: { cong: 4, thu: -1, nhanh: -3 }, he: 4 },
+  { id: 7, ten: 'Thiên Long', moTa: 'Cánh rộng, dáng thanh, đủ đường đều khá.', manh: { cong: 1, thu: 1, nhanh: -2 }, he: 5 },
+  { id: 8, ten: 'Thanh Long', moTa: 'Rồng phương Đông, mình dài uốn lượn giữa mây.', manh: { cong: 2, thu: 1, nhanh: -3 }, he: 2 },
+  { id: 9, ten: 'Xà Long', moTa: 'Thân rắn cuộn tròn, ra đòn hiểm.', manh: { cong: 3, thu: -2, nhanh: -1 }, he: 3 },
 ] as const;
 
 export const MAU_TEN = ['Lam', 'Bạch', 'Lục', 'Tía', 'Kim', 'Huyền'] as const;
@@ -315,6 +383,14 @@ export interface Hiep {
   bMau: number;
 }
 
+/** Bên A khắc bên B, bị khắc, hay ngang nhau — để màn kể lại nói ra được. */
+export type TheKhac = 'khac' | 'bi-khac' | 'ngang';
+
+export function theKhac(ben: number, doi: number): TheKhac {
+  const h = heSoKhac(ben, doi);
+  return h > 1 ? 'khac' : h < 1 ? 'bi-khac' : 'ngang';
+}
+
 export interface KetQuaTran {
   dienBien: Hiep[];
   /** 'a' | 'b' | 'hoa' */
@@ -328,6 +404,10 @@ export interface KetQuaTran {
  * nhất 1 sát thương: con mạnh hơn phải thắng phần lớn số trận, chứ nếu may rủi
  * quyết định tất thì chăm rồng thành vô nghĩa. `nhanh` cho cơ hội né hẳn một
  * đòn, đó là chỗ để loài nhanh có đường thắng loài dày.
+ *
+ * KHẮC CHẾ nhân vào sát thương SAU khi đã trừ thủ, không phải trước: nhân
+ * trước thì con thủ dày nuốt trọn phần lợi của hệ, và cả cái vòng ngũ hành
+ * thành ra vô nghĩa với mấy loài dày.
  */
 export function danhNhau(a: ChiSo, b: ChiSo, tungXu: () => number = Math.random): KetQuaTran {
   const MAU_DAU = 100;
@@ -339,7 +419,7 @@ export function danhNhau(a: ChiSo, b: ChiSo, tungXu: () => number = Math.random)
     // Né: chênh lệch nhanh càng lớn thì càng dễ né, nhưng không bao giờ quá 40%.
     const coNe = Math.min(0.4, Math.max(0, (doi.nhanh - ben.nhanh) / 100));
     if (tungXu() < coNe) return 0;
-    const thoc = ben.cong * 2 - doi.thu;
+    const thoc = (ben.cong * 2 - doi.thu) * heSoKhac(ben.he, doi.he);
     const bienDo = 0.8 + tungXu() * 0.4;
     return Math.max(1, Math.round(thoc * bienDo));
   };
@@ -372,10 +452,11 @@ export function bocRongNgauNhien(): { loai: number; mau: number } {
  * con bị bỏ đói cả tuần vẫn ra trận được, nhưng đánh chỉ còn một nửa sức. Nhờ
  * vậy chăm rồng mới có ý nghĩa, chứ không phải cứ mua trứng rồi bỏ đó.
  */
-export interface ChiSo { cong: number; thu: number; nhanh: number }
+export interface ChiSo { cong: number; thu: number; nhanh: number; he: MaHe }
 
 export function chiSo(r: { loai: number; cap: number; vui: number; doi?: number }): ChiSo {
-  const l = LOAI.find((x) => x.id === r.loai)?.manh ?? { cong: 0, thu: 0, nhanh: 0 };
+  const loai = LOAI.find((x) => x.id === r.loai);
+  const l = loai?.manh ?? { cong: 0, thu: 0, nhanh: 0 };
   const nen = 10 + r.cap * 2;
   // Vui 100 → giữ nguyên sức; vui 0 → còn một nửa.
   const heSo = 0.5 + (Math.max(0, Math.min(100, r.vui)) / 100) * 0.5;
@@ -384,7 +465,7 @@ export function chiSo(r: { loai: number; cap: number; vui: number; doi?: number 
   const themDoi = Math.max(0, Math.min(DOI_TOI_DA, r.doi ?? 1) - 1);
   const lam = (x: number) =>
     Math.max(1, Math.round((nen + x * r.cap * 0.4 + x) * heSo) + themDoi);
-  return { cong: lam(l.cong), thu: lam(l.thu), nhanh: lam(l.nhanh) };
+  return { cong: lam(l.cong), thu: lam(l.thu), nhanh: lam(l.nhanh), he: loai?.he ?? 1 };
 }
 
 /** Độ vui còn lại sau khi trừ phần tụt vì bỏ bê. */

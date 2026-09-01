@@ -7,6 +7,7 @@ import {
   ANH_BONG, CAP_TOI_DA, GIA_AN, anhRong, expCanDe, moTaConLai, tenRong,
 } from '@/lib/rong-const';
 import { cn } from '@/lib/utils';
+import { TheHe } from './TheHe';
 
 /**
  * Một ô trong chuồng: một con rồng ĐÃ NỞ.
@@ -40,6 +41,7 @@ export function TheRong({
           <p className="flex flex-wrap items-center gap-1.5">
             <b className="min-w-0 truncate">{ten}</b>
             <span className="chip bg-brand-100 text-brand-700 dark:bg-brand-950 dark:text-brand-300">Cấp {r.cap}</span>
+            <TheHe he={r.suc.he} />
             {r.raTran && <span className="chip bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300">Đang ra trận</span>}
           </p>
           <p className="retro-sub text-ink-400">{tenRong(r.loai, r.mau)}</p>

@@ -5,6 +5,7 @@ import { Swords } from 'lucide-react';
 import type { SanDau as DuLieu } from '@/lib/rong';
 import { PHI_DAU, THUONG_THANG, anhRong, tenRong } from '@/lib/rong-const';
 import { ManDau } from './ManDau';
+import { TheHe, TheKhacChe } from './TheHe';
 import { TinRong, useViecRong } from './dung-viec';
 
 /** Đấu trường: chọn một đối thủ rồi thách. */
@@ -48,6 +49,8 @@ export function SanDau({ d }: { d: DuLieu }) {
         <p className="retro-sub mb-3 text-ink-400">
           Ghi danh {PHI_DAU} điểm, thắng được {THUONG_THANG} điểm, hoà thì hoàn phí.
           Người bị thách không mất gì. Còn {d.conLaiHomNay} trận hôm nay.
+          Ngũ hành khắc nhau theo vòng Kim → Mộc → Thổ → Thuỷ → Hoả → Kim;
+          đánh trúng hệ mình khắc thì mạnh hơn hẳn.
         </p>
 
         {!raTran ? (
@@ -62,9 +65,10 @@ export function SanDau({ d }: { d: DuLieu }) {
               <img src={anhRong(raTran.loai, raTran.mau)} alt="" aria-hidden
                 className="size-14 shrink-0 object-contain" style={{ imageRendering: 'pixelated' }} />
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold">
-                  {raTran.ten || tenRong(raTran.loai, raTran.mau)}
-                  <span className="retro-sub ml-2 font-normal text-ink-400">của bạn · cấp {raTran.cap}</span>
+                <p className="flex flex-wrap items-center gap-1.5 text-sm font-bold">
+                  <span className="min-w-0 truncate">{raTran.ten || tenRong(raTran.loai, raTran.mau)}</span>
+                  <TheHe he={raTran.suc.he} />
+                  <span className="retro-sub font-normal text-ink-400">của bạn · cấp {raTran.cap}</span>
                 </p>
                 <p className="text-[11px] text-ink-500 dark:text-ink-300">
                   Công {raTran.suc.cong} · Thủ {raTran.suc.thu} · Nhanh {raTran.suc.nhanh}
@@ -84,7 +88,13 @@ export function SanDau({ d }: { d: DuLieu }) {
                     <img src={anhRong(o.loai, o.mau)} alt="" aria-hidden
                       className="size-14 shrink-0 object-contain" style={{ imageRendering: 'pixelated' }} />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold">{o.ten || tenRong(o.loai, o.mau)}</p>
+                      <p className="flex flex-wrap items-center gap-1.5 text-sm font-bold">
+                        <span className="min-w-0 truncate">{o.ten || tenRong(o.loai, o.mau)}</span>
+                        <TheHe he={o.suc.he} />
+                        {/* Chỗ khắc chế thành ra có ích: khỏi phải tự thuộc
+                            vòng ngũ hành mới biết nên chọn ai. */}
+                        <TheKhacChe cuaToi={raTran.suc.he} cuaDoi={o.suc.he} />
+                      </p>
                       <p className="retro-sub truncate text-ink-400">
                         Cấp {o.cap} · của{' '}
                         <Link href={`/u/${o.chuUsername}`} className="hover:text-brand-600">{o.chuTen}</Link>

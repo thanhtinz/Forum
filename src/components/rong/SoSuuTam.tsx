@@ -2,6 +2,7 @@ import type { SuuTam } from '@/lib/rong';
 import { DU_BO, LOAI, MAU_TEN, anhRong } from '@/lib/rong-const';
 import { cn } from '@/lib/utils';
 import { MocSuuTam } from './MocSuuTam';
+import { TheHe } from './TheHe';
 
 /**
  * Sổ sưu tầm 54 con — chín loài, mỗi loài sáu màu.
@@ -27,8 +28,9 @@ export function SoSuuTam({ d }: { d: SuuTam }) {
         <div className="space-y-3">
           {LOAI.map((l) => (
             <div key={l.id}>
-              <p className="mb-1 text-sm font-bold">
-                {l.ten} <span className="retro-sub font-normal text-ink-400">· {l.moTa}</span>
+              <p className="mb-1 flex flex-wrap items-center gap-1.5 text-sm font-bold">
+                {l.ten} <TheHe he={l.he} />
+                <span className="retro-sub font-normal text-ink-400">{l.moTa}</span>
               </p>
               {/* Sáu màu của một loài phải nằm trọn MỘT hàng. Xếp tự do thì ở
                   390px vừa đúng năm con một hàng, con thứ sáu rơi xuống dòng dưới

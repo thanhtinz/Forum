@@ -140,18 +140,45 @@ export const GIA_NO_NGAY = 40;
 /** Nuôi tối đa mấy con một lúc — kể cả trứng chưa nở. */
 export const CHUONG_TOI_DA = 6;
 
-export const GIA_AN = 12;
-/** Cho ăn xong phải chờ chừng này mới cho ăn tiếp. */
-export const AN_CHO_MS = 30 * 60 * 1000;
-export const EXP_MOI_BUA = 18;
+// ── Ba trục chăm sóc ─────────────────────────────────────────────────────
 
-/** Chơi bóng không mất điểm, nhưng cũng phải chờ. */
-export const CHOI_CHO_MS = 20 * 60 * 1000;
+/**
+ * Vui, no, thể lực.
+ *
+ * TRƯỚC ĐÂY con rồng chỉ có MỘT trục là độ vui, còn hai việc chăm sóc thì
+ * chặn bằng hai cái hẹn giờ vô hình — "cho ăn xong chờ nửa tiếng", "chơi xong
+ * chờ hai mươi phút". Hai cái hẹn ấy chẳng nói lên điều gì về con rồng, người
+ * chơi chỉ thấy nút mờ đi mà không hiểu vì sao.
+ *
+ * Nay chính hai trục mới làm việc chặn ấy, và chặn thì có nghĩa:
+ *
+ *   cho ăn   chỉ khi con rồng CHƯA NO   (no tụt dần, hai chục tiếng thì cạn)
+ *   chơi     tốn THỂ LỰC                (thể lực hồi dần, mười ba tiếng đầy)
+ *
+ * Ba trục kéo lẫn nhau chứ không cùng đi xuống một nhịp: vui và no tụt, thể
+ * lực hồi; mà chơi thì được vui nhưng mất lực. Bỏ bê cả hai thì con rồng ra
+ * trận chỉ còn hơn một phần ba sức.
+ */
+export const TOI_DA_CHAM = 100;
+
+export const GIA_AN = 12;
+export const EXP_MOI_BUA = 18;
+/** Một bữa no thêm chừng này. */
+export const NO_MOI_BUA = 35;
+/** Còn no hơn mức này thì nó không ăn nữa. */
+export const NGUONG_CHO_AN = 90;
+/** Độ no tụt chừng này mỗi giờ. */
+export const NO_TUT_MOI_GIO = 5;
+
+/** Chơi bóng không mất điểm, nhưng tốn thể lực. */
+export const THE_LUC_CHOI = 10;
 export const VUI_MOI_LAN = 20;
 export const EXP_MOI_LAN_CHOI = 6;
 
 /** Độ vui tụt chừng này mỗi giờ nếu bỏ bê. */
 export const VUI_TUT_MOI_GIO = 4;
+/** Thể lực hồi chừng này mỗi giờ. */
+export const LUC_HOI_MOI_GIO = 8;
 
 export const CAP_TOI_DA = 30;
 /** Kinh nghiệm cần để lên cấp `cap` tiếp theo. */
@@ -454,24 +481,49 @@ export function bocRongNgauNhien(): { loai: number; mau: number } {
  */
 export interface ChiSo { cong: number; thu: number; nhanh: number; he: MaHe }
 
-export function chiSo(r: { loai: number; cap: number; vui: number; doi?: number }): ChiSo {
+export function chiSo(
+  r: { loai: number; cap: number; vui: number; doi?: number; doNo?: number },
+): ChiSo {
   const loai = LOAI.find((x) => x.id === r.loai);
   const l = loai?.manh ?? { cong: 0, thu: 0, nhanh: 0 };
   const nen = 10 + r.cap * 2;
   // Vui 100 → giữ nguyên sức; vui 0 → còn một nửa.
-  const heSo = 0.5 + (Math.max(0, Math.min(100, r.vui)) / 100) * 0.5;
+  const heSo = 0.5 + (kep(r.vui) / TOI_DA_CHAM) * 0.5;
+  // Đói ăn ÍT hơn vào sức so với buồn (0,7–1 chứ không 0,5–1): đói là chuyện
+  // sửa được bằng một bữa mười hai điểm, còn vui thì phải chơi mà chơi lại tốn
+  // thể lực — thứ khó gỡ hơn thì phạt nặng hơn.
+  const heSoNo = 0.7 + (kep(r.doNo ?? TOI_DA_CHAM) / TOI_DA_CHAM) * 0.3;
   // Đời cộng SAU hệ số vui: cộng trước thì con đời 5 bị bỏ đói vẫn ăn nguyên
   // phần thưởng của đời, mà cả ý của độ vui là bỏ bê thì yếu đi.
   const themDoi = Math.max(0, Math.min(DOI_TOI_DA, r.doi ?? 1) - 1);
   const lam = (x: number) =>
-    Math.max(1, Math.round((nen + x * r.cap * 0.4 + x) * heSo) + themDoi);
+    Math.max(1, Math.round((nen + x * r.cap * 0.4 + x) * heSo * heSoNo) + themDoi);
   return { cong: lam(l.cong), thu: lam(l.thu), nhanh: lam(l.nhanh), he: loai?.he ?? 1 };
+}
+
+/** Kẹp một trục chăm sóc về khoảng hợp lệ. */
+function kep(x: number): number {
+  return Math.max(0, Math.min(TOI_DA_CHAM, Math.round(x)));
+}
+
+/** Số giờ đã trôi kể từ mốc, không bao giờ âm. */
+function gioTu(tinhLuc: number, bayGio: number): number {
+  return Math.max(0, (bayGio - tinhLuc) / 3_600_000);
 }
 
 /** Độ vui còn lại sau khi trừ phần tụt vì bỏ bê. */
 export function vuiHienGio(vui: number, tinhLuc: number, bayGio: number): number {
-  const gio = Math.max(0, (bayGio - tinhLuc) / 3_600_000);
-  return Math.max(0, Math.min(100, Math.round(vui - gio * VUI_TUT_MOI_GIO)));
+  return kep(vui - gioTu(tinhLuc, bayGio) * VUI_TUT_MOI_GIO);
+}
+
+/** Độ no còn lại. Cùng lối với độ vui, chỉ khác nhịp tụt. */
+export function noHienGio(doNo: number, tinhLuc: number, bayGio: number): number {
+  return kep(doNo - gioTu(tinhLuc, bayGio) * NO_TUT_MOI_GIO);
+}
+
+/** Thể lực hiện có. Trục DUY NHẤT đi lên theo thời gian. */
+export function theLucHienGio(theLuc: number, tinhLuc: number, bayGio: number): number {
+  return kep(theLuc + gioTu(tinhLuc, bayGio) * LUC_HOI_MOI_GIO);
 }
 
 /**

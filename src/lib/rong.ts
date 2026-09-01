@@ -2,9 +2,9 @@ import { db } from './db';
 import { grantPoints } from './points';
 import {
   CHUONG_TOI_DA, DAU_MOI_NGAY, DIEM_DAU_DAU, LAI_CAP_TOI_THIEU, LAI_CHO_MS,
-  LAI_TOI_DA, LECH_CAP, SO_DOI_THU, SO_LOAI, SO_MAU,
+  LAI_TOI_DA, LECH_CAP, NGUONG_CHO_AN, SO_DOI_THU, SO_LOAI, SO_MAU, THE_LUC_CHOI,
   type ChiSo, type Hiep, chiSo, dauNgayVN, hangTheoDiemRong, mocDatDuoc,
-  muaCua, vuiHienGio,
+  muaCua, noHienGio, theLucHienGio, vuiHienGio,
 } from './rong-const';
 
 /*
@@ -37,13 +37,18 @@ export interface RongXem {
   ten: string | null;
   cap: number;
   exp: number;
+  /** Ba trục chăm sóc, đã tính cả phần trôi đi tới `now`. */
   vui: number;
+  doNo: number;
+  theLuc: number;
   laTrung: boolean;
   /** Trứng nở được chưa (chỉ có nghĩa khi `laTrung`). */
   noDuoc: boolean;
   apXongLuc: number;
-  anDuocLuc: number;
-  choiDuocLuc: number;
+  /** Đủ đói để ăn chưa. Thay hẳn cho cái hẹn giờ nửa tiếng trước đây. */
+  anDuoc: boolean;
+  /** Còn đủ thể lực để chơi không. */
+  choiDuoc: boolean;
   raTran: boolean;
   doi: number;
   suc: ChiSo;
@@ -51,18 +56,22 @@ export interface RongXem {
 
 const chonRong = {
   id: true, loai: true, mau: true, ten: true, cap: true, exp: true,
-  vui: true, vuiTinhAt: true, apXongAt: true, noAt: true,
-  anLanCuoi: true, choiLanCuoi: true, raTran: true, doi: true,
+  vui: true, vuiTinhAt: true, doNo: true, noTinhAt: true,
+  theLuc: true, lucTinhAt: true,
+  apXongAt: true, noAt: true, raTran: true, doi: true,
 } as const;
 
 type HangRong = {
   id: string; loai: number; mau: number; ten: string | null; cap: number; exp: number;
-  vui: number; vuiTinhAt: Date; apXongAt: Date; noAt: Date | null;
-  anLanCuoi: Date | null; choiLanCuoi: Date | null; raTran: boolean; doi: number;
+  vui: number; vuiTinhAt: Date; doNo: number; noTinhAt: Date;
+  theLuc: number; lucTinhAt: Date;
+  apXongAt: Date; noAt: Date | null; raTran: boolean; doi: number;
 };
 
-export function doiRong(r: HangRong, now: number, anChoMs: number, choiChoMs: number): RongXem {
+export function doiRong(r: HangRong, now: number): RongXem {
   const vui = vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now);
+  const doNo = noHienGio(r.doNo, r.noTinhAt.getTime(), now);
+  const theLuc = theLucHienGio(r.theLuc, r.lucTinhAt.getTime(), now);
   return {
     id: r.id,
     loai: r.loai,
@@ -71,14 +80,16 @@ export function doiRong(r: HangRong, now: number, anChoMs: number, choiChoMs: nu
     cap: r.cap,
     exp: r.exp,
     vui,
+    doNo,
+    theLuc,
     laTrung: r.noAt === null,
     noDuoc: r.noAt === null && now >= r.apXongAt.getTime(),
     apXongLuc: r.apXongAt.getTime(),
-    anDuocLuc: (r.anLanCuoi?.getTime() ?? 0) + anChoMs,
-    choiDuocLuc: (r.choiLanCuoi?.getTime() ?? 0) + choiChoMs,
+    anDuoc: doNo < NGUONG_CHO_AN,
+    choiDuoc: theLuc >= THE_LUC_CHOI,
     raTran: r.raTran,
     doi: r.doi,
-    suc: chiSo({ loai: r.loai, cap: r.cap, vui, doi: r.doi }),
+    suc: chiSo({ loai: r.loai, cap: r.cap, vui, doi: r.doi, doNo }),
   };
 }
 
@@ -102,7 +113,7 @@ export interface ChuongRong {
   conCho: number;
 }
 
-export async function xemChuong(userId: string, anChoMs: number, choiChoMs: number): Promise<ChuongRong> {
+export async function xemChuong(userId: string): Promise<ChuongRong> {
   const now = Date.now();
   const tatCa = await db.rong.findMany({
     where: { userId },
@@ -114,7 +125,7 @@ export async function xemChuong(userId: string, anChoMs: number, choiChoMs: numb
   const daNo = tatCa.filter((r) => r.noAt !== null);
   return {
     now,
-    dan: daNo.map((r) => doiRong(r, now, anChoMs, choiChoMs)),
+    dan: daNo.map((r) => doiRong(r, now)),
     soTrung: tatCa.length - daNo.length,
     conCho: Math.max(0, CHUONG_TOI_DA - tatCa.length),
   };
@@ -327,6 +338,9 @@ export interface RongRaTran {
   mau: number;
   ten: string | null;
   cap: number;
+  vui: number;
+  doNo: number;
+  theLuc: number;
   suc: ChiSo;
 }
 
@@ -356,7 +370,11 @@ export async function xemSanDau(userId: string): Promise<SanDau> {
   const [cua, daDau] = await Promise.all([
     db.rong.findFirst({
       where: { userId, raTran: true, noAt: { not: null } },
-      select: { id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true, doi: true },
+      select: {
+        id: true, loai: true, mau: true, ten: true, cap: true, doi: true,
+        vui: true, vuiTinhAt: true, doNo: true, noTinhAt: true,
+        theLuc: true, lucTinhAt: true,
+      },
     }),
     // Cùng nguồn với chỗ chặn ở server action — xem chú thích tại `thachDau`.
     // Đếm trên `RongTran` thì con số in ra trang cũng nói dối theo mỗi lần có
@@ -371,7 +389,14 @@ export async function xemSanDau(userId: string): Promise<SanDau> {
     raTran: cua
       ? {
         id: cua.id, loai: cua.loai, mau: cua.mau, ten: cua.ten, cap: cua.cap,
-        suc: chiSo({ loai: cua.loai, cap: cua.cap, doi: cua.doi, vui: vuiHienGio(cua.vui, cua.vuiTinhAt.getTime(), now) }),
+        vui: vuiHienGio(cua.vui, cua.vuiTinhAt.getTime(), now),
+        doNo: noHienGio(cua.doNo, cua.noTinhAt.getTime(), now),
+        theLuc: theLucHienGio(cua.theLuc, cua.lucTinhAt.getTime(), now),
+        suc: chiSo({
+          loai: cua.loai, cap: cua.cap, doi: cua.doi,
+          vui: vuiHienGio(cua.vui, cua.vuiTinhAt.getTime(), now),
+          doNo: noHienGio(cua.doNo, cua.noTinhAt.getTime(), now),
+        }),
       }
       : null,
     conLaiHomNay: Math.max(0, DAU_MOI_NGAY - daDau),
@@ -402,7 +427,8 @@ export interface DoiThu {
 }
 
 const CHON_DOI_THU = {
-  id: true, loai: true, mau: true, ten: true, cap: true, vui: true, vuiTinhAt: true, doi: true,
+  id: true, loai: true, mau: true, ten: true, cap: true, doi: true,
+  vui: true, vuiTinhAt: true, doNo: true, noTinhAt: true,
   // Chỉ lấy tên để hiện và tên đăng nhập để trỏ link — id của chủ nhân không
   // dùng tới, mà đây là dữ liệu của NGƯỜI KHÁC nên lấy vừa đủ.
   user: { select: { name: true, username: true } },
@@ -453,6 +479,7 @@ export async function timDoiThu(
 
   return rows.map((r) => {
     const vui = vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now);
+    const doNo = noHienGio(r.doNo, r.noTinhAt.getTime(), now);
     return {
       rongId: r.id,
       ten: r.ten ?? '',
@@ -461,7 +488,7 @@ export async function timDoiThu(
       loai: r.loai,
       mau: r.mau,
       cap: r.cap,
-      suc: chiSo({ loai: r.loai, cap: r.cap, vui, doi: r.doi }),
+      suc: chiSo({ loai: r.loai, cap: r.cap, vui, doi: r.doi, doNo }),
     };
   });
 }

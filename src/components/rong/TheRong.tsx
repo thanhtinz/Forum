@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Drumstick, Swords, Tag, Trash2 } from 'lucide-react';
 import type { RongXem } from '@/lib/rong';
 import {
-  ANH_BONG, CAP_TOI_DA, GIA_AN, anhRong, expCanDe, moTaConLai, tenRong,
+  ANH_BONG, CAP_TOI_DA, GIA_AN, THE_LUC_CHOI, anhRong, expCanDe, tenRong,
 } from '@/lib/rong-const';
 import { cn } from '@/lib/utils';
 import { TheHe } from './TheHe';
@@ -16,10 +16,9 @@ import { TheHe } from './TheHe';
  * tệp ấy.
  */
 export function TheRong({
-  r, now, dangLam, onViec,
+  r, dangLam, onViec,
 }: {
   r: RongXem;
-  now: number;
   dangLam: boolean;
   onViec: (viec: string, truong?: Record<string, string>) => void;
 }) {
@@ -28,8 +27,8 @@ export function TheRong({
 
   const canExp = expCanDe(r.cap);
   const phanExp = r.cap >= CAP_TOI_DA ? 100 : Math.min(100, Math.round((r.exp / canExp) * 100));
-  const anDuoc = now >= r.anDuocLuc;
-  const choiDuoc = now >= r.choiDuocLuc;
+  const anDuoc = r.anDuoc;
+  const choiDuoc = r.choiDuoc;
 
   return (
     <li className={cn('rong-tam flex flex-col gap-2 p-4', r.raTran && 'ring-2 ring-amber-400')}>
@@ -55,10 +54,18 @@ export function TheRong({
         </div>
       </div>
 
-      {/* Vui và kinh nghiệm: hai thanh, vì hai thứ này đổi theo cách khác nhau */}
+      {/*
+        Bốn thanh, và cố ý xếp theo thứ tự VIỆC PHẢI LÀM chứ không theo thứ tự
+        quan trọng: no và vui là hai thứ tụt xuống cần người chăm, thể lực là
+        thứ tự hồi nên đứng sau, kinh nghiệm là kết quả nên đứng cuối.
+      */}
       <div className="space-y-1">
+        <Thanh nhan="No" phan={r.doNo} mau="bg-orange-400"
+          ghi={r.doNo < 25 ? `${r.doNo}% — đói lả, đánh yếu hẳn` : `${r.doNo}%`} />
         <Thanh nhan="Vui" phan={r.vui} mau="bg-amber-400"
           ghi={r.vui < 35 ? `${r.vui}% — đang buồn, đánh yếu hẳn` : `${r.vui}%`} />
+        <Thanh nhan="Thể lực" phan={r.theLuc} mau="bg-sky-400"
+          ghi={`${r.theLuc}%`} />
         <Thanh nhan="Kinh nghiệm" phan={phanExp} mau="bg-brand-500"
           ghi={r.cap >= CAP_TOI_DA ? 'đã kịch cấp' : `${r.exp}/${canExp}`} />
       </div>
@@ -81,18 +88,20 @@ export function TheRong({
         <div className="grid grid-cols-2 gap-1.5">
           <button type="button" disabled={dangLam || !anDuoc}
             onClick={() => onViec('an', { rong: r.id })}
-            title={anDuoc ? `Cho ăn · ${GIA_AN} điểm` : `Còn no, chờ ${moTaConLai(r.anDuocLuc - now)}`}
+            title={anDuoc ? `Cho ăn · ${GIA_AN} điểm` : 'Nó còn no căng'}
             className="btn-outline justify-center gap-1.5 text-sm disabled:opacity-45">
-            <Drumstick size={15} /> {anDuoc ? `Ăn · ${GIA_AN}đ` : moTaConLai(r.anDuocLuc - now)}
+            <Drumstick size={15} /> {anDuoc ? `Ăn · ${GIA_AN}đ` : 'Còn no'}
           </button>
 
           <button type="button" disabled={dangLam || !choiDuoc}
             onClick={() => onViec('choi', { rong: r.id })}
-            title={choiDuoc ? 'Chơi bóng, miễn phí' : `Đang mệt, chờ ${moTaConLai(r.choiDuocLuc - now)}`}
+            title={choiDuoc
+              ? `Chơi bóng, miễn phí — tốn ${THE_LUC_CHOI} thể lực`
+              : `Cần ${THE_LUC_CHOI} thể lực, nó chỉ còn ${r.theLuc}`}
             className="btn-outline justify-center gap-1.5 text-sm disabled:opacity-45">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={ANH_BONG} alt="" aria-hidden className="size-4" />
-            {choiDuoc ? 'Chơi bóng' : moTaConLai(r.choiDuocLuc - now)}
+            {choiDuoc ? 'Chơi bóng' : 'Mệt lử'}
           </button>
 
           <button type="button" disabled={dangLam || r.raTran}

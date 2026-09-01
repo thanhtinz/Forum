@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { auth } from '@/lib/auth';
 import { xemChuong } from '@/lib/rong';
 import { ChuongRong } from '@/components/rong/ChuongRong';
-import { AN_CHO_MS, CHOI_CHO_MS, DU_BO, GIA_TRUNG } from '@/lib/rong-const';
+import { DU_BO, GIA_TRUNG } from '@/lib/rong-const';
 
 export const metadata: Metadata = { title: 'Đảo rồng' };
 export const dynamic = 'force-dynamic';
@@ -20,7 +20,7 @@ export default async function RongPage() {
   const session = await auth();
   const userId = session?.user?.id ?? null;
 
-  const chuong = userId ? await xemChuong(userId, AN_CHO_MS, CHOI_CHO_MS) : null;
+  const chuong = userId ? await xemChuong(userId) : null;
 
   return (
     <div className="space-y-4">

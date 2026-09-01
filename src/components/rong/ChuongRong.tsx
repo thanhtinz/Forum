@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Egg } from 'lucide-react';
 import type { ChuongRong as DuLieu } from '@/lib/rong';
 import { CHUONG_TOI_DA, anhRong, tenRong } from '@/lib/rong-const';
+import { TheHe } from './TheHe';
 import { TheRong } from './TheRong';
 import { TinRong, useViecRong } from './dung-viec';
 
@@ -15,7 +16,9 @@ import { TinRong, useViecRong } from './dung-viec';
  * chẳng cho ăn hay cử ra trận được — nhìn như một chuồng hỏng.
  */
 export function ChuongRong({ d }: { d: DuLieu }) {
-  const { now, tin, dangLam, lam } = useViecRong(d.now);
+  // Không cần đồng hồ chạy: ba trục chăm sóc tính ở máy chủ theo từng lượt mở
+  // trang, chứ không còn cái hẹn giờ nào để đếm ngược nữa.
+  const { tin, dangLam, lam } = useViecRong(d.now);
   // Con "đứng đầu chuồng": con đang ra trận, không có thì con đầu danh sách.
   // Chính nó cho khung cảnh tông màu, nên nó phải xuất hiện trong khung cảnh
   // ấy — bằng không người xem không hiểu vì sao hôm nay đảo màu tía.
@@ -36,7 +39,8 @@ export function ChuongRong({ d }: { d: DuLieu }) {
               <p className="truncate text-lg font-black">
                 {dai.ten || tenRong(dai.loai, dai.mau)}
               </p>
-              <p className="text-sm opacity-90">
+              <p className="flex flex-wrap items-center gap-1.5 text-sm opacity-90">
+                <TheHe he={dai.suc.he} />
                 {tenRong(dai.loai, dai.mau)} · cấp {dai.cap}
                 {dai.raTran && ' · đang ra trận'}
               </p>
@@ -73,7 +77,7 @@ export function ChuongRong({ d }: { d: DuLieu }) {
           // rồng cụt ngay và ba chỉ số phải xuống dòng.
           <ul className="grid gap-3 sm:grid-cols-2">
             {d.dan.map((r) => (
-              <TheRong key={r.id} r={r} now={now} dangLam={dangLam}
+              <TheRong key={r.id} r={r} dangLam={dangLam}
                 onViec={(v, t) => lam(v as 'an', t)} />
             ))}
           </ul>

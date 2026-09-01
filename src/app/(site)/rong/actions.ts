@@ -9,8 +9,9 @@ import { lockUsers } from '@/lib/lock';
 import { grantPoints, InsufficientPointsError } from '@/lib/points';
 import { bocRongNgauNhien, danhNhau, demSuuTam, type KeLaiTran } from '@/lib/rong';
 import {
-  AN_CHO_MS, AP_MS, CHOI_CHO_MS, CHUONG_TOI_DA, DAU_MOI_NGAY, EXP_MOI_BUA,
-  EXP_MOI_LAN_CHOI, GIA_AN, GIA_NO_NGAY, GIA_TRUNG, PHI_DAU, THUONG_THANG,
+  AP_MS, CHUONG_TOI_DA, DAU_MOI_NGAY, EXP_MOI_BUA,
+  EXP_MOI_LAN_CHOI, GIA_AN, GIA_NO_NGAY, GIA_TRUNG, NGUONG_CHO_AN, NO_MOI_BUA,
+  PHI_DAU, THE_LUC_CHOI, THUONG_THANG, TOI_DA_CHAM, noHienGio, theLucHienGio,
   VUI_MOI_LAN, CAP_TOI_DA, GIA_LAI, LAI_CAP_TOI_THIEU, LAI_CHO_MS, LAI_TOI_DA,
   MOC_SUU_TAM, MUA_TOI_DA, bocTrungLai, chiSo, dauNgayVN, diemSauTran, expCanDe,
   loiTenRong, mocDatDuoc, muaCua, tenRong, timDo, vuiHienGio,
@@ -150,7 +151,10 @@ export async function noTrung(_prev: RongState, formData: FormData): Promise<Ron
       const now = new Date();
       const xong = await tx.rong.updateMany({
         where: { id, userId: me.userId, noAt: null },
-        data: { noAt: now, vui: 60, vuiTinhAt: now },
+        data: {
+          noAt: now, vui: 60, vuiTinhAt: now,
+          doNo: 70, noTinhAt: now, theLuc: TOI_DA_CHAM, lucTinhAt: now,
+        },
       });
       if (xong.count === 0) throw new Error('Quả trứng này vừa nở ở nơi khác rồi.');
 
@@ -203,13 +207,23 @@ export async function choAn(_prev: RongState, formData: FormData): Promise<RongS
     await db.$transaction(async (tx) => {
       const r = await tx.rong.findFirst({
         where: { id, userId: me.userId, noAt: { not: null } },
-        select: { cap: true, exp: true, vui: true, vuiTinhAt: true, anLanCuoi: true, ten: true, loai: true, mau: true },
+        select: {
+          cap: true, exp: true, vui: true, vuiTinhAt: true, doNo: true, noTinhAt: true,
+          ten: true, loai: true, mau: true,
+        },
       });
       if (!r) throw new Error('Không tìm thấy con rồng nào của bạn.');
 
       const now = Date.now();
-      const chờ = (r.anLanCuoi?.getTime() ?? 0) + AN_CHO_MS;
-      if (now < chờ) throw new Error('Nó vừa ăn xong, còn no. Lát nữa hẵng cho ăn tiếp.');
+      /*
+       * Chặn bằng CHÍNH ĐỘ NO, không bằng hẹn giờ.
+       *
+       * Trước đây là "cho ăn xong chờ nửa tiếng" — một con số vô hình chẳng
+       * nói lên điều gì về con rồng, người chơi chỉ thấy nút mờ đi. Nay nó
+       * no thì nó không ăn nữa, mà độ no thì đang hiện ngay trên thẻ.
+       */
+      const noGio = noHienGio(r.doNo, r.noTinhAt.getTime(), now);
+      if (noGio >= NGUONG_CHO_AN) throw new Error('Nó còn no căng, chưa ăn thêm được đâu.');
 
       await grantPoints({
         userId: me.userId, amount: -GIA_AN, reason: 'RONG_AN', refId: id,
@@ -217,15 +231,18 @@ export async function choAn(_prev: RongState, formData: FormData): Promise<RongS
       }, tx);
 
       const sau = lenCap(r.cap, r.exp + EXP_MOI_BUA);
-      const vuiMoi = Math.min(100, vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now) + 8);
+      const vuiMoi = Math.min(TOI_DA_CHAM, vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now) + 8);
+      const noMoi = Math.min(TOI_DA_CHAM, noGio + NO_MOI_BUA);
 
-      // `anLanCuoi` nằm trong `where`: hai tab cùng bấm thì tab sau không khớp
+      // `noTinhAt` nằm trong `where`: hai tab cùng bấm thì tab sau không khớp
       // và `throw` kéo luôn khoản tiền vừa trừ về chỗ cũ.
       const xong = await tx.rong.updateMany({
-        where: { id, userId: me.userId, anLanCuoi: r.anLanCuoi },
+        where: { id, userId: me.userId, noTinhAt: r.noTinhAt },
         data: {
-          cap: sau.cap, exp: sau.exp, vui: vuiMoi,
-          vuiTinhAt: new Date(now), anLanCuoi: new Date(now),
+          cap: sau.cap, exp: sau.exp,
+          vui: vuiMoi, vuiTinhAt: new Date(now),
+          doNo: noMoi, noTinhAt: new Date(now),
+          anLanCuoi: new Date(now),
         },
       });
       if (xong.count === 0) throw new Error('Bạn vừa cho nó ăn ở nơi khác rồi.');
@@ -253,23 +270,28 @@ export async function choiBong(_prev: RongState, formData: FormData): Promise<Ro
 
   const r = await db.rong.findFirst({
     where: { id, userId: me.userId, noAt: { not: null } },
-    select: { cap: true, exp: true, vui: true, vuiTinhAt: true, choiLanCuoi: true, ten: true, loai: true, mau: true },
+    select: {
+      cap: true, exp: true, vui: true, vuiTinhAt: true,
+      theLuc: true, lucTinhAt: true, ten: true, loai: true, mau: true,
+    },
   });
   if (!r) return { error: 'Không tìm thấy con rồng nào của bạn.' };
 
   const now = Date.now();
-  if (now < (r.choiLanCuoi?.getTime() ?? 0) + CHOI_CHO_MS) {
-    return { error: 'Nó đang mệt, để nó nghỉ một lát đã.' };
-  }
+  // Chặn bằng THỂ LỰC, không bằng hẹn giờ — xem chú thích ở `choAn`.
+  const lucGio = theLucHienGio(r.theLuc, r.lucTinhAt.getTime(), now);
+  if (lucGio < THE_LUC_CHOI) return { error: 'Nó đang mệt lử, để nó nghỉ lấy sức đã.' };
 
   const sau = lenCap(r.cap, r.exp + EXP_MOI_LAN_CHOI);
-  const vuiMoi = Math.min(100, vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now) + VUI_MOI_LAN);
+  const vuiMoi = Math.min(TOI_DA_CHAM, vuiHienGio(r.vui, r.vuiTinhAt.getTime(), now) + VUI_MOI_LAN);
 
   const xong = await db.rong.updateMany({
-    where: { id, userId: me.userId, choiLanCuoi: r.choiLanCuoi },
+    where: { id, userId: me.userId, lucTinhAt: r.lucTinhAt },
     data: {
-      cap: sau.cap, exp: sau.exp, vui: vuiMoi,
-      vuiTinhAt: new Date(now), choiLanCuoi: new Date(now),
+      cap: sau.cap, exp: sau.exp,
+      vui: vuiMoi, vuiTinhAt: new Date(now),
+      theLuc: lucGio - THE_LUC_CHOI, lucTinhAt: new Date(now),
+      choiLanCuoi: new Date(now),
     },
   });
   if (xong.count === 0) return { error: 'Bạn vừa chơi với nó ở nơi khác rồi.' };
@@ -741,7 +763,10 @@ export async function dungDo(_prev: RongState, formData: FormData): Promise<Rong
       // chẳng có gì để nở cả.
       const r = await tx.rong.findFirst({
         where: { id, userId: me.userId, noAt: mon.choTrung ? null : { not: null } },
-        select: { id: true, ten: true, loai: true, mau: true, cap: true, exp: true, vui: true, vuiTinhAt: true },
+        select: {
+          id: true, ten: true, loai: true, mau: true, cap: true, exp: true,
+          vui: true, vuiTinhAt: true, doNo: true, noTinhAt: true,
+        },
       });
       if (!r) {
         throw new Error(mon.choTrung
@@ -756,7 +781,11 @@ export async function dungDo(_prev: RongState, formData: FormData): Promise<Rong
       if (mon.viec === 'no') {
         const xong = await tx.rong.updateMany({
           where: { id: r.id, userId: me.userId, noAt: null },
-          data: { noAt: new Date(now), vui: 60, vuiTinhAt: new Date(now) },
+          data: {
+            noAt: new Date(now), vui: 60, vuiTinhAt: new Date(now),
+            doNo: 70, noTinhAt: new Date(now),
+            theLuc: TOI_DA_CHAM, lucTinhAt: new Date(now),
+          },
         });
         if (xong.count === 0) throw new Error('Quả trứng này vừa nở ở nơi khác rồi.');
 
@@ -783,7 +812,7 @@ export async function dungDo(_prev: RongState, formData: FormData): Promise<Rong
       if (mon.viec === 'vui') {
         await tx.rong.updateMany({
           where: { id: r.id, userId: me.userId },
-          data: { vui: Math.min(100, vuiGio + mon.so), vuiTinhAt: new Date(now) },
+          data: { vui: Math.min(TOI_DA_CHAM, vuiGio + mon.so), vuiTinhAt: new Date(now) },
         });
         ke = `${ten} ăn ${mon.ten}, vui hẳn lên.`;
         return;
@@ -798,7 +827,13 @@ export async function dungDo(_prev: RongState, formData: FormData): Promise<Rong
         data: {
           cap: sau.cap, exp: sau.exp,
           ...(mon.viec === 'an'
-            ? { vui: Math.min(100, vuiGio + 8), vuiTinhAt: new Date(now), anLanCuoi: new Date(now) }
+            ? {
+              vui: Math.min(TOI_DA_CHAM, vuiGio + 8), vuiTinhAt: new Date(now),
+              // Thịt thượng hạng làm no HẲN: nó là món bỏ qua mọi điều kiện,
+              // mà điều kiện của bữa ăn thường bây giờ chính là độ no.
+              doNo: TOI_DA_CHAM, noTinhAt: new Date(now),
+              anLanCuoi: new Date(now),
+            }
             : {}),
         },
       });

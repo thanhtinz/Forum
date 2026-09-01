@@ -73,6 +73,14 @@ export function SanDau({ d }: { d: DuLieu }) {
                 <p className="text-[11px] text-ink-500 dark:text-ink-300">
                   Công {raTran.suc.cong} · Thủ {raTran.suc.thu} · Nhanh {raTran.suc.nhanh}
                 </p>
+                {/* Ba trục chăm sóc nhân thẳng vào ba chỉ số trên, nên phải
+                    bày ngay cạnh: bỏ đói mà ra trận thì thua không hiểu vì sao. */}
+                <p className="text-[11px] text-ink-400">
+                  No {raTran.doNo}% · Vui {raTran.vui}% · Lực {raTran.theLuc}%
+                  {(raTran.doNo < 25 || raTran.vui < 35) && (
+                    <b className="ml-1.5 text-rose-500">đang yếu, cho ăn rồi hẵng đấu</b>
+                  )}
+                </p>
               </div>
             </div>
 

@@ -9,6 +9,26 @@ import { BASE, db, doiToi, openPage } from '../helpers.mjs';
  * bốn bảng làm một tôi bê nguyên cả bảng, nên Rừng Xanh bậc 2 nhả ra Mewtwo.
  * Bài này canh đúng chỗ ấy.
  */
+/**
+ * Đánh cho tới khi trận kết thúc.
+ *
+ * Ép con thú về máu 1 thì một đòn TRÚNG là hạ, nhưng đòn vẫn TRƯỢT được —
+ * `PokeTran.lanTruot` có cột riêng chính vì thế. Bấm đúng một cái rồi chờ là
+ * mười lần chín lần xanh, lần thứ mười đỏ oan; nên bấm lại cho tới khi xong.
+ */
+async function danhChoXong(p, xong, lanToiDa = 12) {
+  for (let i = 0; i < lanToiDa; i += 1) {
+    const nut = p.locator('form button[name="chieu"]').first();
+    if ((await nut.count()) === 0) break;
+    await nut.click();
+    await p.waitForTimeout(800);
+    if (await xong()) return true;
+    await p.reload({ waitUntil: 'networkidle' });
+    await p.waitForTimeout(500);
+  }
+  return xong();
+}
+
 /** Ép trận đang đánh về một con hệ NORMAL máu 1 — chắc chắn hạ trong một đòn. */
 async function deTranDeThang(nhanVatId) {
   await db.pokeTran.update({
@@ -97,8 +117,7 @@ export default async function run(check) {
   await deTranDeThang(nv.id);
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(700);
-  await p.locator('form button[name="chieu"]').first().click();
-  await doiToi(async () => (await db.pokeTran.count({ where: { nhanVatId: nv.id } })) === 0);
+  await danhChoXong(p, async () => (await db.pokeTran.count({ where: { nhanVatId: nv.id } })) === 0);
   const sauKhuThuong = await db.pokeNhanVat.findUnique({ where: { id: nv.id } });
   check('thắng ở khu thường KHÔNG cho điểm chiến công',
     sauKhuThuong.diemChien === 0 && sauKhuThuong.soDiet === 0,
@@ -112,8 +131,7 @@ export default async function run(check) {
   await deTranDeThang(nv.id);
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(700);
-  await p.locator('form button[name="chieu"]').first().click();
-  await doiToi(async () => (await db.pokeNhanVat.findUnique({ where: { id: nv.id } })).diemChien > 0);
+  await danhChoXong(p, async () => (await db.pokeNhanVat.findUnique({ where: { id: nv.id } })).diemChien > 0);
   const sauChien = await db.pokeNhanVat.findUnique({ where: { id: nv.id } });
   check('thắng ở Lãnh Thổ cho đúng 1 điểm chiến công', sauChien.diemChien === 1, String(sauChien.diemChien));
   check('và tính đúng 1 con vào bảng diệt quái', sauChien.soDiet === 1, String(sauChien.soDiet));

@@ -24,8 +24,27 @@ export function SanDau({ d }: { d: DuLieu }) {
           đứng im ở kết quả trận trước. */}
       {tin.tran && <ManDau key={JSON.stringify(tin.tran.dienBien)} t={tin.tran} />}
 
+      {d.chotMua && (
+        <p className="rong-nen-nhan rounded-xl p-3 text-sm font-semibold">
+          Mùa trước khép lại ở {d.chotMua.diemCu} điểm
+          {d.chotMua.ten
+            ? ` — hạng ${d.chotMua.ten}, thưởng ${d.chotMua.thuong} điểm.`
+            : ' — chưa đủ mốc nào để có thưởng.'}
+          {' '}Mùa mới bắt đầu lại từ đầu.
+        </p>
+      )}
+
       <section className="rong-tam p-4">
-        <h2 className="zib-title mb-1 flex items-center gap-2"><Swords size={17} /> Đấu trường</h2>
+        <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="zib-title flex items-center gap-2"><Swords size={17} /> Đấu trường</h2>
+          <span className="retro-sub text-ink-400">
+            Mùa này <b className="rong-nhan">{d.diemDau}</b> điểm
+            {d.tenHang && <> · {d.tenHang}</>}
+            {' · '}{d.thangDau} thắng / {d.thuaDau} thua
+            {' · '}
+            <Link href="/rong/xep-hang" className="rong-nhan font-semibold hover:underline">bảng xếp hạng</Link>
+          </span>
+        </div>
         <p className="retro-sub mb-3 text-ink-400">
           Ghi danh {PHI_DAU} điểm, thắng được {THUONG_THANG} điểm, hoà thì hoàn phí.
           Người bị thách không mất gì. Còn {d.conLaiHomNay} trận hôm nay.

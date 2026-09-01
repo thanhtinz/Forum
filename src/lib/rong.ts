@@ -1,8 +1,10 @@
 import { db } from './db';
+import { grantPoints } from './points';
 import {
-  CHUONG_TOI_DA, DAU_MOI_NGAY, LAI_CAP_TOI_THIEU, LAI_CHO_MS, LAI_TOI_DA,
-  LECH_CAP, SO_DOI_THU, SO_LOAI, SO_MAU,
-  type ChiSo, type Hiep, chiSo, dauNgayVN, mocDatDuoc, vuiHienGio,
+  CHUONG_TOI_DA, DAU_MOI_NGAY, DIEM_DAU_DAU, LAI_CAP_TOI_THIEU, LAI_CHO_MS,
+  LAI_TOI_DA, LECH_CAP, SO_DOI_THU, SO_LOAI, SO_MAU,
+  type ChiSo, type Hiep, chiSo, dauNgayVN, hangTheoDiemRong, mocDatDuoc,
+  muaCua, vuiHienGio,
 } from './rong-const';
 
 /*
@@ -205,11 +207,13 @@ type KhachDb = Pick<typeof db, 'rong' | 'rongNguoiChoi'>;
  * trước ngày có bảng này vẫn phải thấy đúng số con mình đã sưu tầm, mà không
  * cần bộ nạp lại nào.
  */
+const CHON_HO_SO = {
+  id: true, daSuuTam: true, mocDaNhan: true,
+  diemDau: true, muaDau: true, thangDau: true, thuaDau: true, hoaDau: true,
+} as const;
+
 export async function hoSoRong(userId: string) {
-  const co = await db.rongNguoiChoi.findUnique({
-    where: { userId },
-    select: { id: true, daSuuTam: true, mocDaNhan: true },
-  });
+  const co = await db.rongNguoiChoi.findUnique({ where: { userId }, select: CHON_HO_SO });
   if (co) return co;
 
   const daCo = await demSuuTam(db, userId);
@@ -217,8 +221,58 @@ export async function hoSoRong(userId: string) {
     where: { userId },
     create: { userId, daSuuTam: daCo },
     update: {},
-    select: { id: true, daSuuTam: true, mocDaNhan: true },
+    select: CHON_HO_SO,
   });
+}
+
+/**
+ * Chốt mùa cũ cho MỘT người, chốt lười lúc họ mở trang đấu trường.
+ *
+ * Đảo này không có tác vụ nền nào — cũng không nên có: một mùa giải là thứ chỉ
+ * cần đúng vào lúc người chơi nhìn vào nó. Cùng khuôn `chotMuaDau` của Đảo
+ * Pokémon, kể cả chỗ mùa cũ nằm trong `where` để hai tab không phát thưởng
+ * hai lần.
+ *
+ * Trả về phần thưởng vừa phát, hoặc null nếu chưa tới mùa mới.
+ */
+export async function chotMuaRong(userId: string, now = new Date()) {
+  const mua = muaCua(now);
+  const ho = await hoSoRong(userId);
+
+  // Lần đầu tiên: chỉ ghi mùa hiện tại, không phát thưởng cho một mùa chưa đánh.
+  if (ho.muaDau === 0) {
+    await db.rongNguoiChoi.updateMany({
+      where: { id: ho.id, muaDau: 0 }, data: { muaDau: mua },
+    });
+    return null;
+  }
+  if (ho.muaDau >= mua) return null;
+
+  const hang = hangTheoDiemRong(ho.diemDau);
+
+  // Đặt lại mùa VÀ phát thưởng trong cùng một giao dịch: tách ra thì có lúc
+  // mùa đã sang mà tiền chưa về, và không có đường nào phát bù nữa.
+  const phat = await db.$transaction(async (tx) => {
+    const ghi = await tx.rongNguoiChoi.updateMany({
+      where: { id: ho.id, muaDau: ho.muaDau },
+      data: {
+        muaDau: mua, diemDau: DIEM_DAU_DAU,
+        thangDau: 0, thuaDau: 0, hoaDau: 0,
+      },
+    });
+    if (ghi.count === 0) return false;
+
+    if (hang) {
+      await grantPoints({
+        userId, amount: hang.thuong, reason: 'RONG_THANG',
+        note: `Kết mùa đấu trường rồng — hạng ${hang.ten}`,
+      }, tx);
+    }
+    return true;
+  });
+  if (!phat) return null;
+
+  return { hang, diemCu: ho.diemDau, muaCu: ho.muaDau };
 }
 
 export interface SuuTam {
@@ -282,10 +336,23 @@ export interface SanDau {
   raTran: RongRaTran | null;
   conLaiHomNay: number;
   doiThu: DoiThu[];
+  /** Chỉ số mùa này của chính người chơi. */
+  diemDau: number;
+  thangDau: number;
+  thuaDau: number;
+  hoaDau: number;
+  tenHang: string | null;
+  /** Mùa vừa chốt, nếu lượt mở trang này chính là lượt chốt. */
+  chotMua: { ten: string | null; thuong: number; diemCu: number } | null;
 }
 
 export async function xemSanDau(userId: string): Promise<SanDau> {
   const now = Date.now();
+  // Chốt mùa TRƯỚC khi đọc chỉ số: chốt sau thì trang này bày điểm mùa cũ
+  // đúng một lượt tải, rồi tự đổi khi bấm lại — nhìn ra một con số nhảy loạn.
+  const daChot = await chotMuaRong(userId, new Date(now));
+  const ho = await hoSoRong(userId);
+
   const [cua, daDau] = await Promise.all([
     db.rong.findFirst({
       where: { userId, raTran: true, noAt: { not: null } },
@@ -310,6 +377,14 @@ export async function xemSanDau(userId: string): Promise<SanDau> {
     conLaiHomNay: Math.max(0, DAU_MOI_NGAY - daDau),
     // Chưa cử con nào thì không việc gì phải đi tìm đối thủ.
     doiThu: cua ? await timDoiThu(userId, cua.cap) : [],
+    diemDau: ho.diemDau,
+    thangDau: ho.thangDau,
+    thuaDau: ho.thuaDau,
+    hoaDau: ho.hoaDau,
+    tenHang: hangTheoDiemRong(ho.diemDau)?.ten ?? null,
+    chotMua: daChot
+      ? { ten: daChot.hang?.ten ?? null, thuong: daChot.hang?.thuong ?? 0, diemCu: daChot.diemCu }
+      : null,
   };
 }
 
@@ -462,6 +537,8 @@ export interface KeLaiTran {
   b: BenDau;
   /** Điểm diễn đàn bên thách đấu được (âm nếu thua). */
   duoc: number;
+  /** Điểm Elo bên thách đấu được (âm nếu thua, 0 nếu hoà). */
+  diemDoi?: number;
   luc?: number;
 }
 
@@ -502,7 +579,7 @@ export async function lichSuTran(
       take: moiTrang,
       select: {
         id: true, thangId: true, duoc: true, createdAt: true, dienBien: true,
-        aId: true, a: chonBen, b: chonBen,
+        diemDoi: true, aId: true, a: chonBen, b: chonBen,
       },
     }),
   ]);
@@ -516,6 +593,7 @@ export async function lichSuTran(
       a: { ten: t.a.ten ?? '', loai: t.a.loai, mau: t.a.mau, cap: t.a.cap },
       b: { ten: t.b.ten ?? '', loai: t.b.loai, mau: t.b.mau, cap: t.b.cap },
       duoc: t.duoc,
+      diemDoi: t.diemDoi,
       luc: t.createdAt.getTime(),
     })),
   };

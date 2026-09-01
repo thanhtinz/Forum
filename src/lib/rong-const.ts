@@ -91,6 +91,64 @@ export function expCanDe(cap: number): number {
   return 40 + (cap - 1) * 28;
 }
 
+// ── Xếp hạng và mùa giải ─────────────────────────────────────────────────
+
+/** Chênh lệch giờ Việt Nam so với UTC, tính bằng mili giây. */
+export const LECH_GIO_VN = 7 * 3600 * 1000;
+
+/**
+ * Điểm đấu trường kiểu Elo.
+ *
+ * Chép công thức từ `pokemon-const.ts` chứ không import — xem ràng buộc "không
+ * import gì" ở đầu tệp. Bốn dòng số học, chép rẻ hơn là phá vỡ ràng buộc ấy;
+ * và hai đảo cân bằng riêng nên có ngày hai bản số sẽ khác nhau thật.
+ */
+export const DIEM_DAU_DAU = 1000;
+export const HE_SO_K = 32;
+
+/** Điểm mới của cả hai bên sau một trận. Trả về cả hai để chỗ gọi ghi một lượt. */
+export function diemSauTran(
+  cuaToi: number, cuaDich: number, thang: boolean,
+): { toi: number; dich: number; doi: number } {
+  const kyVong = 1 / (1 + 10 ** ((cuaDich - cuaToi) / 400));
+  const doi = Math.round(HE_SO_K * ((thang ? 1 : 0) - kyVong));
+  // Sàn 100: điểm âm thì bảng xếp hạng đọc lên vô nghĩa, mà thua liên tục là
+  // chuyện thường của người mới.
+  return {
+    toi: Math.max(100, cuaToi + doi),
+    dich: Math.max(100, cuaDich - doi),
+    doi,
+  };
+}
+
+/** Số hiệu mùa của một mốc thời gian: năm × 100 + tháng, theo lịch giờ Việt Nam. */
+export function muaCua(t: Date): number {
+  const vn = new Date(t.getTime() + LECH_GIO_VN);
+  return vn.getUTCFullYear() * 100 + (vn.getUTCMonth() + 1);
+}
+
+/**
+ * Thưởng cuối mùa, xét theo ĐIỂM của chính mình chứ không theo thứ hạng.
+ *
+ * Xét theo hạng thì phải chụp lại bảng lúc hết mùa, mà chốt lười thì mỗi người
+ * chốt vào một lúc khác nhau nên bảng ấy không có thời điểm nào là đúng. Xét
+ * theo điểm thì chỉ cần đúng hàng của người ấy, và mốc điểm cũng là thứ người
+ * chơi ngắm được suốt mùa.
+ *
+ * Thưởng trả bằng ĐIỂM DIỄN ĐÀN, cùng thang giá với 80 điểm một quả trứng —
+ * đảo này không có tiền tệ riêng.
+ */
+export const HANG_MUA_RONG = [
+  { moc: 1600, ten: 'Cao thủ', thuong: 600 },
+  { moc: 1400, ten: 'Kỳ cựu', thuong: 300 },
+  { moc: 1200, ten: 'Khá', thuong: 150 },
+  { moc: 1050, ten: 'Có góp mặt', thuong: 60 },
+] as const;
+
+export function hangTheoDiemRong(diem: number) {
+  return HANG_MUA_RONG.find((h) => diem >= h.moc) ?? null;
+}
+
 // ── Cửa hàng ─────────────────────────────────────────────────────────────
 
 /**
@@ -358,8 +416,9 @@ export function moTaConLai(ms: number): string {
  * chỗ kia — sửa một bên là hai bên cắt ngày khác nhau. Nay một bản ở đây.
  */
 export function dauNgayVN(now: number = Date.now()): Date {
-  const lech = 7 * 3600 * 1000;
-  return new Date(Math.floor((now + lech) / 86_400_000) * 86_400_000 - lech);
+  return new Date(
+    Math.floor((now + LECH_GIO_VN) / 86_400_000) * 86_400_000 - LECH_GIO_VN,
+  );
 }
 
 export const TEN_TOI_DA = 24;

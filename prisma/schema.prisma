@@ -2512,6 +2512,23 @@ model RongNguoiChoi {
   /// bảng `Rong` nên không bao giờ bày sai.
   daSuuTam Int @default(0)
 
+  /**
+   * Điểm đấu trường kiểu Elo, khởi đầu 1000, sàn 100.
+   *
+   * Bản gốc không có xếp hạng nào cho đấu trường rồng: đánh bao nhiêu trận
+   * cũng chỉ có tiền thưởng từng trận, nên bảng không có mà lý do đánh thêm
+   * cũng không. Elo thì thắng người mạnh hơn được nhiều điểm hơn, nên đánh
+   * kèo dễ không lên hạng được.
+   */
+  diemDau Int @default(1000)
+
+  /// Mùa đang tính: năm×100+tháng theo giờ Việt Nam. 0 = chưa vào mùa nào.
+  muaDau Int @default(0)
+
+  thangDau Int @default(0)
+  thuaDau  Int @default(0)
+  hoaDau   Int @default(0)
+
   /// Số mốc sưu tầm đã lĩnh thưởng, tính theo THỨ TỰ trong `MOC_SUU_TAM`.
   ///
   /// Lưu số thứ tự chứ không lưu danh sách mốc: thêm mốc mới vào cuối bảng
@@ -2521,6 +2538,8 @@ model RongNguoiChoi {
   createdAt DateTime @default(now())
 
   @@index([daSuuTam])
+  @@index([diemDau])
+  @@index([thangDau])
 }
 
 model RongTran {
@@ -2545,6 +2564,12 @@ model RongTran {
    * Diễn biến từng hiệp, để kể lại trận đấu.
    */
   dienBien Json
+
+  /// Điểm Elo bên thách đấu được (âm nếu thua). Bên bị thách đổi ngược lại.
+  diemDoi Int @default(0)
+
+  /// Mùa lúc đánh trận này — năm×100+tháng.
+  mua Int @default(0)
 
   createdAt DateTime @default(now())
 

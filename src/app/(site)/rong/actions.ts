@@ -12,8 +12,8 @@ import {
   AN_CHO_MS, AP_MS, CHOI_CHO_MS, CHUONG_TOI_DA, DAU_MOI_NGAY, EXP_MOI_BUA,
   EXP_MOI_LAN_CHOI, GIA_AN, GIA_NO_NGAY, GIA_TRUNG, PHI_DAU, THUONG_THANG,
   VUI_MOI_LAN, CAP_TOI_DA, GIA_LAI, LAI_CAP_TOI_THIEU, LAI_CHO_MS, LAI_TOI_DA,
-  MOC_SUU_TAM, MUA_TOI_DA, bocTrungLai, chiSo, dauNgayVN, expCanDe, loiTenRong,
-  mocDatDuoc, tenRong, timDo, vuiHienGio,
+  MOC_SUU_TAM, MUA_TOI_DA, bocTrungLai, chiSo, dauNgayVN, diemSauTran, expCanDe,
+  loiTenRong, mocDatDuoc, muaCua, tenRong, timDo, vuiHienGio,
 } from '@/lib/rong-const';
 
 /**
@@ -387,9 +387,13 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
       // trong `where` chứ không lấy về rồi loại.
       const b = await tx.rong.findFirst({
         where: { id: doiThu, noAt: { not: null }, raTran: true, userId: { not: me.userId } },
-        select: { id: true, loai: true, cap: true, vui: true, vuiTinhAt: true, ten: true, mau: true, doi: true },
+        select: {
+          id: true, loai: true, cap: true, vui: true, vuiTinhAt: true, ten: true,
+          mau: true, doi: true, userId: true,
+        },
       });
       if (!b) throw new Error('Đối thủ này không còn ở đấu trường nữa.');
+      const chuB = { userId: b.userId };
 
       await grantPoints({
         userId: me.userId, amount: -PHI_DAU, reason: 'RONG_DAU', refId: b.id,
@@ -407,6 +411,59 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
           note: kq.ai === 'a' ? 'Thắng ở đấu trường rồng' : 'Hoà ở đấu trường rồng, hoàn phí',
         }, tx);
       }
+
+      /*
+       * Điểm Elo của CẢ HAI BÊN đều đổi, kể cả người bị thách.
+       *
+       * Nghe thì nghịch với luật "người bị thách không mất gì", nhưng hai thứ
+       * ấy khác nhau: ĐIỂM DIỄN ĐÀN là tiền, lấy của người không được hỏi ý là
+       * lấy trộm; còn ĐIỂM ELO chỉ là chỗ đứng trên bảng, mà một cái bảng chỉ
+       * lên không xuống thì chẳng nói được ai mạnh hơn ai. Con rồng của họ
+       * đứng ở đấu trường chính là lời mời đánh.
+       *
+       * `upsert` cho cả hai: người bị thách có thể chưa từng mở sổ sưu tầm nên
+       * chưa có hàng hồ sơ nào.
+       */
+      const [hoA, hoB] = await Promise.all([
+        tx.rongNguoiChoi.upsert({
+          where: { userId: me.userId },
+          create: { userId: me.userId },
+          update: {},
+          select: { id: true, diemDau: true },
+        }),
+        tx.rongNguoiChoi.upsert({
+          where: { userId: chuB.userId },
+          create: { userId: chuB.userId },
+          update: {},
+          select: { id: true, diemDau: true },
+        }),
+      ]);
+
+      const mua = muaCua(new Date(now));
+      // Hoà thì không ai đổi điểm: Elo hoà cần công thức riêng, mà một trận
+      // hoà ở đây vốn đã hiếm và hoàn phí — không đáng thêm một nhánh nữa.
+      const elo = kq.ai === 'hoa' ? null : diemSauTran(hoA.diemDau, hoB.diemDau, kq.ai === 'a');
+
+      await tx.rongNguoiChoi.update({
+        where: { id: hoA.id },
+        data: {
+          ...(elo ? { diemDau: elo.toi } : {}),
+          ...(kq.ai === 'a' ? { thangDau: { increment: 1 } }
+            : kq.ai === 'hoa' ? { hoaDau: { increment: 1 } }
+              : { thuaDau: { increment: 1 } }),
+        },
+        select: { id: true },
+      });
+      await tx.rongNguoiChoi.update({
+        where: { id: hoB.id },
+        data: {
+          ...(elo ? { diemDau: elo.dich } : {}),
+          ...(kq.ai === 'b' ? { thangDau: { increment: 1 } }
+            : kq.ai === 'hoa' ? { hoaDau: { increment: 1 } }
+              : { thuaDau: { increment: 1 } }),
+        },
+        select: { id: true },
+      });
 
       // Ghi lượt chơi trước khi ghi trận: đây mới là thứ chặn trần ngày, nên
       // nó phải tồn tại kể cả khi hàng `RongTran` sau này bị cascade xoá đi.
@@ -426,6 +483,8 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
           // Prisma đòi kiểu JSON của riêng nó; `Hiep[]` là interface nên không
           // tự khớp dù nội dung hoàn toàn là JSON hợp lệ.
           dienBien: kq.dienBien as unknown as Prisma.InputJsonValue,
+          diemDoi: elo?.doi ?? 0,
+          mua,
         },
         select: { id: true },
       });
@@ -438,6 +497,7 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
         a: { ten: tenA, loai: a.loai, mau: a.mau, cap: a.cap },
         b: { ten: tenB, loai: b.loai, mau: b.mau, cap: b.cap },
         duoc: duoc - PHI_DAU,
+        diemDoi: elo?.doi ?? 0,
       };
       ke = kq.ai === 'a'
         ? `${tenA} hạ ${tenB}, được ${THUONG_THANG - PHI_DAU} điểm!`

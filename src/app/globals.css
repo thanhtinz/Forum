@@ -310,6 +310,110 @@ html, body {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
+ * Vạn Đạo Tu Tiên — lớp áo riêng
+ *
+ * Game này KHÔNG DÙNG ẢNH, EMOJI HAY ICON NÀO. Đó là chủ ý chứ không phải
+ * thiếu tài nguyên: đây là dòng game chữ, mà nguyên tắc lõi của cả dòng bên
+ * Trung Quốc là 文字即界面 — chữ chính là giao diện. Nên toàn bộ sức nặng thị
+ * giác phải nằm ở NỀN, KHUNG và CHỮ.
+ *
+ * Bảng màu mực nho: nền giấy ngả, chữ mực, một vệt son đỏ làm điểm nhấn.
+ * ════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --tien-giay: #efe7d6;
+  --tien-muc: #23201b;
+  --tien-son: #9d2933;
+  --tien-ngoc: #2f6f5e;
+  --tien-vien: #c9b892;
+}
+:root:not([data-theme='light']) {
+  color-scheme: light dark;
+}
+.dark {
+  --tien-giay: #14161a;
+  --tien-muc: #e8e3d6;
+  --tien-son: #d4636c;
+  --tien-ngoc: #6fbfa5;
+  --tien-vien: #3a3f47;
+}
+
+/* Tấm giấy: nền của mọi khối trong game. */
+.tien-giay {
+  background: var(--tien-giay);
+  color: var(--tien-muc);
+  border: 1px solid var(--tien-vien);
+  border-radius: 0.5rem;
+}
+
+/* Khung kép kiểu triện, cho khối quan trọng nhất trên trang. */
+.tien-trieu {
+  position: relative;
+  background: var(--tien-giay);
+  color: var(--tien-muc);
+  border: 2px solid var(--tien-son);
+  border-radius: 0.25rem;
+}
+.tien-trieu::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  pointer-events: none;
+  border: 1px solid color-mix(in srgb, var(--tien-son) 45%, transparent);
+  border-radius: 0.125rem;
+}
+
+.tien-son { color: var(--tien-son); }
+.tien-ngoc { color: var(--tien-ngoc); }
+
+/* Nút: khối chữ có viền, không icon. */
+.tien-nut {
+  background: var(--tien-son);
+  color: #fff;
+  border-radius: 0.25rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: filter 0.15s;
+}
+.tien-nut:hover:not(:disabled) { filter: brightness(1.12); }
+.tien-nut:disabled { filter: grayscale(0.7); opacity: 0.55; }
+
+.tien-nut-vien {
+  background: transparent;
+  color: var(--tien-muc);
+  border: 1px solid var(--tien-vien);
+  border-radius: 0.25rem;
+  font-weight: 600;
+}
+.tien-nut-vien:hover:not(:disabled) { border-color: var(--tien-son); color: var(--tien-son); }
+.tien-nut-vien:disabled { opacity: 0.45; }
+
+/* Thanh tiến độ mảnh, không bo tròn — cho hợp lối giấy mực. */
+.tien-thanh {
+  height: 6px;
+  background: color-mix(in srgb, var(--tien-vien) 55%, transparent);
+  overflow: hidden;
+}
+.tien-thanh > i {
+  display: block;
+  height: 100%;
+  background: var(--tien-son);
+  transition: width 0.6s ease-out;
+}
+
+/*
+ * Nhật ký trận và nhật ký tu luyện.
+ *
+ * Đây là thứ THAY CHO hoạt cảnh: chữ chạy ra từng dòng. Chữ đều nét để mấy
+ * con số thẳng cột, và một vạch dọc bên trái cho ra dáng thẻ tre.
+ */
+.tien-so {
+  border-left: 3px solid color-mix(in srgb, var(--tien-son) 60%, transparent);
+  padding-left: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
  * Đảo Pokémon — lớp áo riêng
  *
  * Cả trang game trước đây dùng chung .card trắng của diễn đàn, nên mười lăm

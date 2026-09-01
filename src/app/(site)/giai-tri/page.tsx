@@ -45,6 +45,9 @@ const GAME = [
   { href: '/nong-trai', ten: 'Nông trại', logo: '/giai-tri/logo/nong-trai.svg' },
   { href: '/pokemon', ten: 'Đảo Pokémon', logo: '/giai-tri/logo/pokemon.svg' },
   { href: '/rong', ten: 'Đảo Rồng', logo: '/giai-tri/logo/rong.svg' },
+  // Ô này là một CON DẤU CHỮ chứ không phải hình vẽ — Vạn Đạo Tu Tiên là game
+  // chữ, và đây cũng là bản tạm cho tới khi có bộ ảnh thật.
+  { href: '/tu-tien', ten: 'Vạn Đạo Tu Tiên', logo: '/giai-tri/logo/van-dao.svg' },
   { href: '/giai-tri/trac-nghiem', ten: 'Trắc nghiệm', logo: '/giai-tri/logo/trac-nghiem.svg' },
 ] as const;
 
@@ -55,11 +58,11 @@ export default function GiaiTriPage() {
         <Gamepad2 size={22} className="text-brand-500" /> Khu giải trí
       </h1>
 
-      {/* Hai cột trên điện thoại, bốn trên máy tính: bốn game vừa đúng một
+      {/* Hai cột trên điện thoại, năm trên máy tính: năm game vừa đúng một
           hàng, không có ô nào rơi xuống đứng lẻ. */}
-      {/* Hai cột trên điện thoại, bốn trên máy tính: bốn game vừa đúng một
+      {/* Hai cột trên điện thoại, năm trên máy tính: năm game vừa đúng một
           hàng, không có ô nào rơi xuống đứng lẻ. */}
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-5">
         {GAME.map((g) => (
           <li key={g.href}>
             <Link href={g.href}

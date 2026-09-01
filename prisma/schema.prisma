@@ -157,6 +157,7 @@ model User {
   farmOrders    FarmOrder[]
   pokeNhanVat   PokeNhanVat?
   rong          Rong[]
+  tienNhanVat   TienNhanVat?
   rongHoSo      RongNguoiChoi?
   rongDo        RongDo[]
   rongLuotDau   RongLuotDau[]
@@ -2435,6 +2436,67 @@ model Rong {
 ///
 /// `@@unique([chuId, ma])` để `upsert` + `increment` chạy an toàn mà không cần
 /// khoá hàng người dùng.
+/// Nhân vật Vạn Đạo Tu Tiên.
+///
+/// Một tài khoản một nhân vật, đúng lối `PokeNhanVat` — game này là một chặng
+/// đường dài, có hai nhân vật thì cái nào cũng dở dang.
+model TienNhanVat {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Đạo hiệu, khác tên tài khoản diễn đàn.
+  ten String @unique
+
+  /// Đạo chính, một trong năm mã ở `DAO`. Đạo phụ là chuyện của đợt sau.
+  dao String
+
+  /// Linh căn 1–8; 6–8 là dị linh căn.
+  linhCan Int
+
+  /**
+   * Tám thuộc tính, mỗi cái một cột.
+   *
+   * Không nhét chung vào một cột JSON: bảng xếp hạng và mấy câu lọc về sau
+   * cần `ORDER BY` và `WHERE` trên từng thuộc tính, mà JSON thì không đánh
+   * chỉ mục cho ra hồn được.
+   */
+  canCot    Int
+  ngoTinh   Int
+  daoTam    Int
+  khiVan    Int
+  thanHon   Int
+  khiHuyet  Int
+  satY      Int
+  huyetMach Int
+
+  /// Đại cảnh giới (1–3 ở đợt này) và tầng trong bậc (1–4).
+  bac  Int @default(1)
+  tang Int @default(1)
+
+  /// Tu vi đang có ở tầng hiện tại.
+  tuVi Int @default(0)
+
+  /**
+   * Mốc bế quan: tu vi ngoại tuyến tính từ đây tới lúc đọc, có trần.
+   *
+   * Không có tác vụ nền nào cộng dần — đảo này không có cron, mà GDD mục 27
+   * cũng chốt đúng cách ấy: server giữ `last_active_at`, lúc vào thì tính
+   * `min(duration, cap) × rate`. Và KHÔNG tin mốc thời gian do trình duyệt
+   * gửi lên: `bayGio` luôn lấy ở máy chủ.
+   */
+  tuLuyenTu DateTime @default(now())
+
+  /// Linh thạch — tiền trong game, không dính gì tới điểm diễn đàn.
+  linhThach Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bac, tang, tuVi])
+  @@index([dao])
+}
+
 /// Một lượt ghi danh đấu trường rồng — sổ đếm trần trận mỗi ngày.
 ///
 /// Trước đây đếm nhờ bảng chung `MiniGamePlay` của khu giải trí. Khu ấy dẹp

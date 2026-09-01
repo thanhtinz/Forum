@@ -102,6 +102,11 @@ sổ sưu tầm 54 con có mốc thưởng, cửa hàng vật phẩm, xếp hạ
 khắc nhau theo vòng Kim → Mộc → Thổ → Thuỷ → Hoả → Kim. Con rồng có ba trục
 chăm sóc — no, vui, thể lực — và cả ba đều ăn vào sức đánh.
 
+**Vạn Đạo Tu Tiên** — game chữ dựng theo GDD riêng: tám thuộc tính máy chủ
+gieo, tám linh căn (ba dị linh căn), năm đại đạo đi năm lối khác nhau, ba đại
+cảnh giới mỗi bậc bốn tầng, tu luyện ngoại tuyến có trần. Cố ý KHÔNG dùng ảnh,
+emoji hay icon nào — đây là dòng 文字修仙, chữ chính là giao diện.
+
 **Cửa hàng điểm** — màu nick và huy hiệu. Danh hiệu **không bán**, nó là tên cấp
 bậc theo cấp độ.
 

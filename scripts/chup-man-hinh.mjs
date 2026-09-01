@@ -129,8 +129,6 @@ function dungDanhSach(ts) {
     ['/games/search', 'games-search'],
     ['/games/yeu-cau', 'games-yeu-cau'],
     ['/giai-tri', 'giai-tri'],
-    ['/giai-tri/bau-cua', 'giai-tri-bau-cua'],
-    ['/giai-tri/oan-tu-ti', 'giai-tri-oan-tu-ti'],
     ['/giai-tri/trac-nghiem', 'giai-tri-trac-nghiem'],
     ['/giai-tri/trac-nghiem/cua-toi', 'giai-tri-trac-nghiem-cua-toi'],
     ['/nong-trai', 'nong-trai'],

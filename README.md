@@ -89,9 +89,15 @@ bình luận, duyệt thành viên.
 JAR/JAD qua URL có chữ ký và hạn dùng, mở khoá game trả điểm, bình luận có phân
 trang, yêu cầu game.
 
-**Khu giải trí** — bầu cua bàn chung tự xóc theo phiên, oẳn tù tì, trắc nghiệm
-(thể loại, ra câu hỏi, bình luận), nông trại (gieo, tưới, thu hoạch, bán, mở
-đất, cây khế). Ảnh lấy từ chính các mã nguồn JohnCMS cũ, giữ nguyên nét pixel.
+**Khu giải trí** — cửa vào của bốn thứ: nông trại (gieo, tưới, thu hoạch, bán,
+mở đất, cây khế), Đảo Pokémon, Đảo Rồng và trắc nghiệm (thể loại, ra câu hỏi,
+bình luận). Ba game đầu đứng riêng ở đường dẫn gốc của mình, `/giai-tri` chỉ
+bày chúng cạnh nhau chứ không phải trang cha. Ảnh lấy từ chính các mã nguồn
+JohnCMS cũ, giữ nguyên nét pixel.
+
+**Đảo Rồng** — sáu trang: chuồng, ấp trứng, đấu trường (kể lại trận, ghép theo
+cấp, sổ trận), sổ sưu tầm 54 con có mốc thưởng, cửa hàng vật phẩm, xếp hạng
+theo mùa tính điểm Elo. Lai tạo hai con lấy một quả trứng.
 
 **Cửa hàng điểm** — màu nick và huy hiệu. Danh hiệu **không bán**, nó là tên cấp
 bậc theo cấp độ.

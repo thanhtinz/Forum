@@ -356,7 +356,7 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
 
       const now = Date.now();
       /*
-       * Đếm trên `MiniGamePlay` chứ KHÔNG trên `RongTran`.
+       * Đếm trên `RongLuotDau` chứ KHÔNG trên `RongTran`.
        *
        * `RongTran` cascade theo cả hai con rồng, mà `thaRong` cho thả bất cứ
        * lúc nào — nên đếm ở đó thì người chơi tự xoá được bộ đếm của chính
@@ -367,11 +367,12 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
        * đủ 10 trận rồi B thả con rồng ấy — cascade quét luôn 10 hàng có `bId`
        * là nó, và bộ đếm của A về 0 dù A không đụng gì vào rồng của mình.
        *
-       * `MiniGamePlay` không có đường nào để người chơi xoá, và đây cũng đúng
-       * bảng mà bầu cua với oẳn tù tì đang dùng để chặn trần ngày.
+       * `RongLuotDau` không có đường nào để người chơi xoá. Trước đây việc này
+       * nhờ bảng chung `MiniGamePlay` của khu giải trí; khu ấy dẹp mấy trò cầu
+       * may nên đảo phải có sổ của riêng mình.
        */
-      const daDau = await tx.miniGamePlay.count({
-        where: { userId: me.userId, game: 'RONGDAU', createdAt: { gte: dauNgayVN(now) } },
+      const daDau = await tx.rongLuotDau.count({
+        where: { userId: me.userId, createdAt: { gte: dauNgayVN(now) } },
       });
       if (daDau >= DAU_MOI_NGAY) {
         throw new Error(`Hôm nay bạn đã đấu đủ ${DAU_MOI_NGAY} trận. Mai quay lại nhé.`);
@@ -465,12 +466,12 @@ export async function thachDau(_prev: RongState, formData: FormData): Promise<Ro
         select: { id: true },
       });
 
-      // Ghi lượt chơi trước khi ghi trận: đây mới là thứ chặn trần ngày, nên
+      // Ghi lượt đấu trước khi ghi trận: đây mới là thứ chặn trần ngày, nên
       // nó phải tồn tại kể cả khi hàng `RongTran` sau này bị cascade xoá đi.
-      await tx.miniGamePlay.create({
+      await tx.rongLuotDau.create({
         data: {
-          userId: me.userId, game: 'RONGDAU', bet: PHI_DAU, delta: duoc - PHI_DAU,
-          detail: kq.ai === 'a' ? 'thang' : kq.ai === 'hoa' ? 'hoa' : 'thua',
+          userId: me.userId, doi: duoc - PHI_DAU,
+          ketQua: kq.ai === 'a' ? 'thang' : kq.ai === 'hoa' ? 'hoa' : 'thua',
         },
         select: { id: true },
       });

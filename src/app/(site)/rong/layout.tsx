@@ -1,6 +1,4 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { CHUONG_TOI_DA, DAU_MOI_NGAY, DU_BO, dauNgayVN, mocDatDuoc } from '@/lib/rong-const';
@@ -11,6 +9,10 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Khung chung cho mọi trang của Đảo Rồng.
+ *
+ * KHÔNG có đường lùi về khu giải trí. Đảo này đứng riêng đúng như Nông trại và
+ * Đảo Pokémon: `/giai-tri` chỉ là một chỗ bày cả bốn trò cho dễ thấy, không
+ * phải trang cha — mà một nút "quay lại" thì bảo người ta rằng nó là cha.
  *
  * Thanh tab nằm ở đây chứ không rải vào từng trang, đúng lối Đảo Pokémon: sáu
  * lối đi mà mỗi trang con chỉ có một liên kết "quay lại" thì đi từ chuồng sang
@@ -45,8 +47,8 @@ export default async function KhungRong({ children }: { children: ReactNode }) {
         take: DU_BO,
         select: { loai: true },
       }),
-      db.miniGamePlay.count({
-        where: { userId, game: 'RONGDAU', createdAt: { gte: dauNgayVN(now) } },
+      db.rongLuotDau.count({
+        where: { userId, createdAt: { gte: dauNgayVN(now) } },
       }),
       // Chỉ ĐỌC ở đây, không tự tạo: khung dựng ở mọi trang của đảo, mà tạo
       // hàng trong một hàm chỉ để vẽ một cái huy hiệu thì mỗi lần mở trang là
@@ -70,12 +72,6 @@ export default async function KhungRong({ children }: { children: ReactNode }) {
 
   return (
     <div style={bienCanhRong(mauCanh)} className="mx-auto max-w-2xl space-y-4">
-      {/* Đường lùi đặt ở KHUNG chứ không ở từng trang: sáu lối đi mà chỉ trang
-          chính có nút quay ra thì từ sổ sưu tầm muốn về khu giải trí phải chạm
-          hai lần. */}
-      <Link href="/giai-tri" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-brand-600">
-        <ArrowLeft size={15} /> Khu giải trí
-      </Link>
       {dan.length > 0 && <ThanhTab nhan={nhan} />}
       {children}
     </div>

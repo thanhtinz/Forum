@@ -27,7 +27,7 @@ export default async function run(check) {
   const wipe = async () => {
     await db.rongTran.deleteMany({ where: { OR: [{ a: { userId: { in: [a.id, b.id] } } }, { b: { userId: { in: [a.id, b.id] } } }] } });
     await db.rong.deleteMany({ where: { userId: { in: [a.id, b.id] } } });
-    await db.miniGamePlay.deleteMany({ where: { userId: { in: [a.id, b.id] }, game: 'RONGDAU' } });
+    await db.rongLuotDau.deleteMany({ where: { userId: { in: [a.id, b.id] } } });
   };
   await wipe();
 
@@ -187,17 +187,15 @@ export default async function run(check) {
     // Trần từng đếm trên `RongTran`, mà bảng ấy cascade theo con rồng và người
     // chơi thả rồng lúc nào cũng được — đấu đủ số trận rồi thả con vừa đấu là
     // bộ đếm về 0, đấu tiếp, mỗi trận thắng lãi ròng 25 điểm.
-    const truocTha = await db.miniGamePlay.count({
-      where: { userId: a.id, game: 'RONGDAU' },
-    });
-    check('trận đấu có ghi vào sổ chơi', truocTha > 0, `mới có ${truocTha} lượt`);
+    const truocTha = await db.rongLuotDau.count({ where: { userId: a.id } });
+    check('trận đấu có ghi vào sổ lượt đấu', truocTha > 0, `mới có ${truocTha} lượt`);
 
     await db.rong.delete({ where: { id: trung.id } });
     check('thả rồng thì lịch sử trận đi theo',
       (await db.rongTran.count({ where: { aId: trung.id } })) === 0);
-    check('nhưng SỔ CHƠI vẫn còn nguyên — trần ngày không bị xoá',
-      (await db.miniGamePlay.count({ where: { userId: a.id, game: 'RONGDAU' } })) === truocTha,
-      `còn ${await db.miniGamePlay.count({ where: { userId: a.id, game: 'RONGDAU' } })}/${truocTha}`);
+    check('nhưng SỔ LƯỢT ĐẤU vẫn còn nguyên — trần ngày không bị xoá',
+      (await db.rongLuotDau.count({ where: { userId: a.id } })) === truocTha,
+      `còn ${await db.rongLuotDau.count({ where: { userId: a.id } })}/${truocTha}`);
 
     // ── Khách vãng lai ──────────────────────────────────────────────────
     const khach = await openPage(null);

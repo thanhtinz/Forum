@@ -55,7 +55,7 @@ export default async function run(check) {
     await db.rongTran.deleteMany({ where: { OR: [{ a: { userId: { in: [a.id, b.id] } } }, { b: { userId: { in: [a.id, b.id] } } }] } });
     await db.rong.deleteMany({ where: { userId: { in: [a.id, b.id] } } });
     await db.rongNguoiChoi.deleteMany({ where: { userId: { in: [a.id, b.id] } } });
-    await db.miniGamePlay.deleteMany({ where: { userId: { in: [a.id, b.id] }, game: 'RONGDAU' } });
+    await db.rongLuotDau.deleteMany({ where: { userId: { in: [a.id, b.id] } } });
   };
   await wipe();
 

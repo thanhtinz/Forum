@@ -146,8 +146,6 @@ model User {
   shopBadgeId   String?
   shopBadge     ShopItem?      @relation("EquipBadge", fields: [shopBadgeId], references: [id], onDelete: SetNull)
 
-  gamePlays     MiniGamePlay[]
-  bauCuaBets    BauCuaBet[]
   quizQuestions QuizQuestion[] @relation("QuizAuthor")
   quizReviewed  QuizQuestion[] @relation("QuizReviewer")
   quizAnswers   QuizAnswer[]
@@ -161,6 +159,7 @@ model User {
   rong          Rong[]
   rongHoSo      RongNguoiChoi?
   rongDo        RongDo[]
+  rongLuotDau   RongLuotDau[]
   /// Lần hái cây khế gần nhất — nguồn điểm nhỏ, không mất gì, mỗi giờ một lần.
   lastTreeAt    DateTime?
 
@@ -1992,45 +1991,7 @@ model ClubCommentLike {
  * • và để in bảng "lượt chơi gần đây" cho vui, đúng kiểu wap ngày trước.
  * Điểm vẫn đi qua `grantPoints` như mọi nơi khác; bảng này chỉ là sổ chơi.
  */
-model MiniGamePlay {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  game MiniGame
-
-  /// Số điểm đặt cược (0 với những trò không cược, như hộp quà).
-  bet   Int @default(0)
-  /// Điểm thay đổi sau lượt: dương là được, âm là mất.
-  delta Int @default(0)
-
-  /// Kết quả gọn để in lại: mặt xúc xắc, tay ra của bot… Mỗi trò tự quy ước.
-  detail String?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId, game, createdAt])
-  @@index([game, createdAt])
-}
-
-enum MiniGame {
-  /// Bầu cua tôm cá.
-  BAUCUA
-  /// Oẳn tù tì với máy.
-  OANTUTI
-  /// Đấu trường đảo rồng.
-  RONGDAU
-  /// Máy quay xèng ba hàng ba cột.
-  QUAYXENG
-  /// Phi tiêu, so điểm với máy.
-  PHITIEU
-  /// Sóc đĩa chẵn/lẻ.
-  SOCDIA
-  /// Đập trứng, chọn một trong năm quả.
-  DAPTRUNG
-  /// Sút phạt đền.
-  SUTPHAT
-}
 
 /**
  * Một phiên bầu cua chung cho cả nhà.
@@ -2043,47 +2004,12 @@ enum MiniGame {
  * chính người ấy chốt sổ phiên cũ — chốt bằng ghi có điều kiện nên dù mười
  * người cùng ghé cũng chỉ xóc đúng một lần.
  */
-model BauCuaRound {
-  /// Mốc giây bắt đầu phiên, dạng chuỗi — vừa là khoá vừa là số thứ tự.
-  id String @id
-
-  startAt DateTime
-  /// Hết giờ đặt cược; sau mốc này là xóc được.
-  closeAt DateTime
-
-  rolledAt DateTime?
-  /// Ba mặt đã xóc, dạng "3,1,6". Chưa xóc thì rỗng.
-  dice     String?
-
-  bets BauCuaBet[]
-
-  @@index([startAt])
-}
 
 /**
  * Một cửa đặt của một người trong một phiên.
  * Điểm TRỪ ngay lúc đặt (không ai đặt được cửa mà chưa trả tiền) và TRẢ lúc
  * chốt sổ. `payout` rỗng nghĩa là phiên chưa chốt.
  */
-model BauCuaBet {
-  id      String      @id @default(cuid())
-  roundId String
-  round   BauCuaRound @relation(fields: [roundId], references: [id], onDelete: Cascade)
-  userId  String
-  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  /// Cửa đặt: 1..6, theo `BAUCUA_CONS`.
-  con    Int
-  amount Int
-
-  /// Điểm nhận lại khi chốt sổ (0 nếu trượt). Rỗng = chưa chốt.
-  payout Int?
-
-  createdAt DateTime @default(now())
-
-  @@unique([roundId, userId, con])
-  @@index([userId, createdAt])
-}
 
 // ============================================================
 // TRẮC NGHIỆM — thành viên tự ra câu hỏi, đặt cọc bằng điểm
@@ -2469,7 +2395,7 @@ model Rong {
  * `onDelete: Cascade`, mà người chơi thả rồng lúc nào cũng được, nên xoá một
  * con rồng là xoá luôn lịch sử trận của nó và bộ đếm ngày tự về 0. Tệ hơn, thả
  * rồng của MÌNH còn quét cả những trận người khác đã đánh với nó. Trần ngày
- * đếm trên `MiniGamePlay` — bảng người chơi không xoá được.
+ * đếm trên `RongLuotDau` — bảng người chơi không xoá được.
  */
 /// Hồ sơ của một người chơi ở Đảo Rồng.
 ///
@@ -2488,6 +2414,34 @@ model Rong {
 ///
 /// `@@unique([chuId, ma])` để `upsert` + `increment` chạy an toàn mà không cần
 /// khoá hàng người dùng.
+/// Một lượt ghi danh đấu trường rồng — sổ đếm trần trận mỗi ngày.
+///
+/// Trước đây đếm nhờ bảng chung `MiniGamePlay` của khu giải trí. Khu ấy dẹp
+/// mấy trò cầu may nên bảng chung đi theo, còn phép đếm thì vẫn phải nằm ở
+/// một bảng NGƯỜI CHƠI KHÔNG XOÁ ĐƯỢC.
+///
+/// Vì sao không đếm thẳng trên `RongTran`: bảng ấy cascade theo cả hai con
+/// rồng, mà thả rồng thì lúc nào cũng thả được — đấu đủ số trận, thả con vừa
+/// đấu, bộ đếm về 0, đấu tiếp; mỗi trận thắng lãi ròng 25 điểm nên vòng lặp
+/// ấy có lãi. Tệ hơn là đường vòng qua người khác: B thả con rồng mà A vừa
+/// đánh mười trận là bộ đếm của A về 0 dù A không đụng gì vào rồng của mình.
+model RongLuotDau {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// Điểm diễn đàn ròng của lượt ấy (thưởng trừ phí ghi danh), giữ để soát sổ.
+  doi Int @default(0)
+
+  /// 'thang' | 'hoa' | 'thua' — chép lại kết quả cho khỏi phải join `RongTran`,
+  /// vốn là bảng có thể biến mất khi người ta thả rồng.
+  ketQua String
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
 model RongDo {
   id    String @id @default(cuid())
   chuId String

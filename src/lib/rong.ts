@@ -361,8 +361,8 @@ export async function xemSanDau(userId: string): Promise<SanDau> {
     // Cùng nguồn với chỗ chặn ở server action — xem chú thích tại `thachDau`.
     // Đếm trên `RongTran` thì con số in ra trang cũng nói dối theo mỗi lần có
     // ai đó thả rồng.
-    db.miniGamePlay.count({
-      where: { userId, game: 'RONGDAU', createdAt: { gte: dauNgayVN(now) } },
+    db.rongLuotDau.count({
+      where: { userId, createdAt: { gte: dauNgayVN(now) } },
     }),
   ]);
 
@@ -554,7 +554,7 @@ export interface LichSuTran {
  *
  * Chỉ còn lại trận của những con rồng ĐANG NUÔI: `RongTran` cascade theo cả
  * hai con, mà thả rồng thì lúc nào cũng thả được. Đó là chủ ý — trần trận mỗi
- * ngày đếm ở `MiniGamePlay` chính vì thế (xem chú thích tại `thachDau`).
+ * ngày đếm ở `RongLuotDau` chính vì thế (xem chú thích tại `thachDau`).
  */
 export async function lichSuTran(
   userId: string, trang: number, moiTrang = MOI_TRANG_TRAN,

@@ -266,6 +266,49 @@ html, body {
 }
 
 
+/*
+ * ── Ô game ở khu giải trí ───────────────────────────────────────────────
+ *
+ * Một ô vuông bo góc sâu kiểu biểu tượng ứng dụng, tên nằm dưới. Bốn game
+ * trông như bốn app trên màn hình chính, nên nhìn một cái là biết bấm vào đâu
+ * — khác hẳn kiểu thẻ ngang có tiêu đề và mô tả, thứ đọc mới hiểu.
+ *
+ * Nền và ảnh do nơi gọi đặt; chỗ này lo phần khuôn: bo góc, vệt sáng chéo, và
+ * viền trong cho ô không bị chìm vào nền trang.
+ */
+.o-game {
+  position: relative;
+  overflow: hidden;
+  /* Bo 26% cạnh chứ không phải một số pixel cố định: ô co giãn theo bề rộng
+     cột, mà bo cứng thì ở màn hình hẹp góc trông vuông hẳn ra. */
+  border-radius: 26%;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.35),
+    0 6px 16px -8px rgb(0 0 0 / 0.45);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.dark .o-game {
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.08),
+    0 6px 16px -8px rgb(0 0 0 / 0.7);
+}
+
+/* Vệt sáng chéo ở nửa trên — thứ khiến một ô màu phẳng ra dáng biểu tượng. */
+.o-game::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(160deg, rgb(255 255 255 / 0.38) 0%, rgb(255 255 255 / 0.06) 42%, transparent 62%);
+}
+
+.group:hover .o-game {
+  transform: translateY(-4px);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.45),
+    0 14px 24px -10px rgb(0 0 0 / 0.5);
+}
+
 /* ══════════════════════════════════════════════════════════════════════
  * Đảo Pokémon — lớp áo riêng
  *

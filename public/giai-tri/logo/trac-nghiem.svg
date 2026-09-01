@@ -5,22 +5,21 @@
     </linearGradient>
   </defs>
   <rect width="128" height="128" fill="url(#tn)"/>
-  <!-- tia sáng -->
-  <path d="M14 50h11M103 50h11M25 20l8 8M103 20l-8 8" stroke="#ffe9a8" stroke-width="6" stroke-linecap="round" opacity=".95"/>
-  <!-- bầu đèn -->
+  <!--
+    Bóng đèn KHÔNG có mặt, và dấu hỏi là NHÂN VẬT CHÍNH chứ không phải hoa văn
+    mờ phía sau: đây là trò hỏi đáp, cái bóng đèn chỉ đóng khung cho nó.
+  -->
+  <path d="M14 50h11M103 50h11M25 20l8 8M103 20l-8 8M30 82l8-7M98 82l-8-7"
+        stroke="#ffe9a8" stroke-width="6" stroke-linecap="round" opacity=".95"/>
   <circle cx="64" cy="52" r="34" fill="#ffdc7a"/>
   <circle cx="64" cy="52" r="28" fill="#fff6d6"/>
+  <path d="M46 34a24 24 0 0 1 16-9c-8 2-13 5-16 9z" fill="#fff" opacity=".8"/>
   <!-- đui -->
   <rect x="50" y="84" width="28" height="9" rx="4" fill="#c3ccd8"/>
   <rect x="52" y="95" width="24" height="8" rx="4" fill="#98a4b3"/>
   <rect x="56" y="105" width="16" height="7" rx="3.5" fill="#c3ccd8"/>
-  <!-- dấu hỏi mờ bên trong, để ra "câu hỏi" chứ không chỉ "ý tưởng" -->
-  <text x="64" y="66" font-family="Georgia,serif" font-size="46" font-weight="700"
-        text-anchor="middle" fill="#f0b429" opacity=".28">?</text>
-  <!-- mặt -->
-  <circle cx="53" cy="47" r="7.5" fill="#fff"/><circle cx="54" cy="48" r="5" fill="#3f2b0b"/><circle cx="56" cy="45.4" r="2" fill="#fff"/>
-  <circle cx="75" cy="47" r="7.5" fill="#fff"/><circle cx="76" cy="48" r="5" fill="#3f2b0b"/><circle cx="78" cy="45.4" r="2" fill="#fff"/>
-  <ellipse cx="42" cy="58" rx="5.5" ry="3.4" fill="#f4a0a0" opacity=".7"/>
-  <ellipse cx="86" cy="58" rx="5.5" ry="3.4" fill="#f4a0a0" opacity=".7"/>
-  <path d="M56 62q8 7 16 0" fill="none" stroke="#3f2b0b" stroke-width="3" stroke-linecap="round"/>
+  <!-- dấu hỏi, dựng bằng hình chứ không bằng chữ để khỏi phụ thuộc phông máy -->
+  <path d="M53 41a11.5 11.5 0 0 1 22 4.5c0 8-9 9.5-9 16.5" fill="none"
+        stroke="#7c3aed" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="66" cy="71" r="5.5" fill="#7c3aed"/>
 </svg>

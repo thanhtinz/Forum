@@ -4,7 +4,7 @@
       <stop offset="0" stop-color="#bfe9ff"/><stop offset="1" stop-color="#79c9f2"/>
     </linearGradient>
   </defs>
-  <!-- Trời xanh, ruộng xanh lá: mầm cây xanh trên nền xanh lá thì chìm hẳn -->
+  <!-- Trời xanh, ruộng xanh lá: cây xanh trên nền xanh lá thì chìm hẳn. -->
   <rect width="128" height="128" fill="url(#tr)"/>
   <circle cx="103" cy="25" r="14" fill="#ffd85e"/>
   <path d="M0 92h128v36H0z" fill="#5cb544"/>
@@ -13,16 +13,18 @@
   <ellipse cx="64" cy="103" rx="40" ry="14" fill="#8b5a33"/>
   <ellipse cx="64" cy="100" rx="31" ry="9" fill="#a9713f"/>
   <!-- thân -->
-  <rect x="59" y="60" width="10" height="40" rx="5" fill="#2f8140"/>
-  <!-- hai lá -->
-  <path d="M59 78C36 78 24 66 27 54c15-6 30 6 32 24z" fill="#4fb84f"/>
-  <path d="M69 78c23 0 35-12 32-24-15-6-30 6-32 24z" fill="#6fd46a"/>
-  <!-- đầu mầm -->
-  <circle cx="64" cy="50" r="26" fill="#8ce87f"/>
-  <circle cx="64" cy="50" r="20" fill="#a9f294"/>
-  <circle cx="55" cy="46" r="7" fill="#fff"/><circle cx="56" cy="47" r="4.8" fill="#183a1c"/><circle cx="57.8" cy="44.6" r="1.9" fill="#fff"/>
-  <circle cx="73" cy="46" r="7" fill="#fff"/><circle cx="74" cy="47" r="4.8" fill="#183a1c"/><circle cx="75.8" cy="44.6" r="1.9" fill="#fff"/>
-  <ellipse cx="45" cy="56" rx="5" ry="3.2" fill="#f47b7b" opacity=".75"/>
-  <ellipse cx="83" cy="56" rx="5" ry="3.2" fill="#f47b7b" opacity=".75"/>
-  <path d="M58 60q6 6 12 0" fill="none" stroke="#183a1c" stroke-width="2.8" stroke-linecap="round"/>
+  <rect x="59" y="58" width="10" height="42" rx="5" fill="#2f8140"/>
+  <!-- hai lá bên -->
+  <path d="M59 80C36 80 24 68 27 56c15-6 30 6 32 24z" fill="#4fb84f"/>
+  <path d="M69 80c23 0 35-12 32-24-15-6-30 6-32 24z" fill="#6fd46a"/>
+  <path d="M31 60c9 4 19 11 26 20M97 60c-9 4-19 11-26 20" fill="none" stroke="#2f814066" stroke-width="2.4"/>
+  <!-- tán lá -->
+  <circle cx="64" cy="46" r="28" fill="#4fb84f"/>
+  <circle cx="52" cy="40" r="17" fill="#6fd46a"/>
+  <circle cx="76" cy="42" r="15" fill="#6fd46a"/>
+  <circle cx="64" cy="34" r="14" fill="#8ce87f"/>
+  <!-- quả -->
+  <circle cx="50" cy="52" r="5.5" fill="#ef4444"/><circle cx="48.4" cy="50.2" r="1.7" fill="#fff" opacity=".6"/>
+  <circle cx="76" cy="55" r="5" fill="#ef4444"/><circle cx="74.6" cy="53.4" r="1.5" fill="#fff" opacity=".6"/>
+  <circle cx="66" cy="30" r="4.5" fill="#ef4444"/><circle cx="64.7" cy="28.6" r="1.4" fill="#fff" opacity=".6"/>
 </svg>

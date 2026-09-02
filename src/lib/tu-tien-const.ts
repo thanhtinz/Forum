@@ -28,22 +28,17 @@ export const ANH_TU_TIEN = '/tu-tien';
 // ── Hệ màu ───────────────────────────────────────────────────────────────
 
 /**
- * Token màu, lấy đúng bảng ở mục 6 của bản UX/UI Blueprint.
+ * Accent của TỪNG ĐẠO, lấy đúng bảng token ở mục 6 của bản UX/UI Blueprint.
  *
- * Để ở đây chứ không chỉ trong CSS vì hai chỗ cần tới: CSS dựng lớp áo, còn
- * mã thì cần màu accent CỦA TỪNG ĐẠO để gắn vào khung — blueprint chốt "mỗi
- * đạo có accent riêng nhưng dùng chung token", và đó là một trong năm nguyên
- * tắc hiển thị ("năm đạo phải khác nhau").
+ * Chỉ mỗi bảng này nằm trong mã, còn nền/chữ/viền thì để hẳn cho CSS lấy theo
+ * biến của diễn đàn — khu game phải sáng tối cùng phần còn lại của trang.
+ * Bảng này phải ở đây vì màu đạo do MÁY CHỦ gắn vào khung theo nhân vật, CSS
+ * không tự biết ai đang tu đạo nào. Blueprint chốt "mỗi đạo có accent riêng
+ * nhưng dùng chung token", và đó là một trong năm nguyên tắc hiển thị.
+ *
+ * Năm mã dưới đây là sắc cho NỀN TỐI. Nền sáng thì CSS tự trộn đậm lại qua
+ * `--tien-dao-chu`, chứ không giữ hai bảng màu trong mã rồi có ngày lệch nhau.
  */
-export const MAU = {
-  ink950: '#0B1020',
-  ink800: '#151C32',
-  jade: '#5ED6B3',
-  gold: '#E7B85B',
-  crimson: '#D85C68',
-} as const;
-
-/** Accent của từng đạo, đúng bảng token. */
 export const MAU_DAO: Record<string, string> = {
   the: '#A8B3C2',
   linh: '#6DB7FF',
@@ -52,8 +47,9 @@ export const MAU_DAO: Record<string, string> = {
   tula: '#F4A261',
 };
 
+/** Đạo lạ thì trả về sắc ngọc — cùng mã với `--tien-jade` ở nền tối. */
 export function mauDao(ma: string): string {
-  return MAU_DAO[ma] ?? MAU.jade;
+  return MAU_DAO[ma] ?? '#5ED6B3';
 }
 
 // ── Thuộc tính nhân vật ──────────────────────────────────────────────────

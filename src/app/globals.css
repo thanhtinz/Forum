@@ -332,66 +332,78 @@ html, body {
  * ════════════════════════════════════════════════════════════════════ */
 
 .tien-khu {
-  --tien-ink-950: #0B1020;
-  --tien-ink-800: #151C32;
+  /*
+   * ĐỒNG BỘ VỚI DIỄN ĐÀN.
+   *
+   * Bản trước tự sơn một nền mực xanh đen theo đúng bảng token mục 6 của bản
+   * thiết kế, và nó đẹp — nhưng đặt giữa một diễn đàn nền trắng thì thành một
+   * ô đen dán lên trang, không phải một khu của cùng một trang. Nay nền, chữ,
+   * viền đều lấy thẳng biến của diễn đàn (`--nova-*`), nên khu này sáng tối
+   * theo đúng chế độ người dùng đang bật.
+   *
+   * Thứ GIỮ LẠI của bản thiết kế là phần làm nên bản sắc: ngọc/vàng/son và
+   * accent của năm đạo. Chỗ đổi là mỗi màu có HAI sắc — sắc đậm cho nền sáng,
+   * sắc nguyên bản của bản thiết kế cho nền tối — vì #5ED6B3 đặt lên giấy
+   * trắng thì đọc không ra chữ.
+   */
+  --tien-tam-nen: var(--nova-surface);
+  --tien-chu: var(--nova-text);
+  --tien-mo: var(--nova-muted);
+  --tien-vien: var(--nova-border);
+
+  /* Sắc đậm, dùng trên nền sáng. */
+  --tien-jade: #12876B;
+  --tien-gold: #9C7415;
+  --tien-crimson: #C0394A;
+
+  /* Đạo chưa chọn thì lấy ngọc làm accent tạm. */
+  --tien-dao: var(--tien-jade);
+  /*
+   * Màu CHỮ của đạo suy từ `--tien-dao` chứ không nhận riêng: `--tien-dao` do
+   * máy chủ gắn vào bằng một mã hex cố định (mục 6 của bản thiết kế), mà một
+   * mã cố định thì không tự sáng tối theo chế độ được. Trộn thêm đen ở nền
+   * sáng là đủ để cùng một hex đọc được ở cả hai chế độ.
+   */
+  --tien-dao-chu: color-mix(in srgb, var(--tien-dao) 70%, #000);
+  /* Chữ trên nút nền accent: nền sáng thì accent đã đậm nên chữ trắng; nền
+     tối thì accent sáng rực nên phải lật lại thành chữ mực. */
+  --tien-nut-chu: #fff;
+
+  color: var(--tien-chu);
+}
+
+.dark .tien-khu {
+  /* Nền tối thì trả lại đúng ba mã của bản thiết kế. */
   --tien-jade: #5ED6B3;
   --tien-gold: #E7B85B;
   --tien-crimson: #D85C68;
-  --tien-chu: #E8EDF7;
-  --tien-mo: #9AA6BF;
-  --tien-vien: #2A3350;
-  /* Đạo chưa chọn thì lấy ngọc làm accent tạm. */
-  --tien-dao: var(--tien-jade);
-
-  /*
-   * Khu này TỰ SƠN NỀN MỰC của nó chứ không mượn nền diễn đàn: bảng màu
-   * blueprint mục 6 là "nền mực xanh đen", mà diễn đàn ở chế độ sáng thì nền
-   * trắng — chữ #E8EDF7 đặt lên đó là mất hút. Sơn ở đây thì cả năm trang con
-   * cùng một nền, và chuyển trang không thấy chớp trắng giữa chừng.
-   */
-  background:
-    radial-gradient(90% 45% at 50% 0%, color-mix(in srgb, var(--tien-dao) 12%, transparent) 0%, transparent 70%),
-    linear-gradient(180deg, var(--tien-ink-950) 0%, #070A14 100%);
-  border: 1px solid var(--tien-vien);
-  border-radius: 12px;
-  padding: 1rem;
-  color: var(--tien-chu);
+  --tien-dao-chu: var(--tien-dao);
+  --tien-nut-chu: #0B1020;
 }
 
-/* Ô nhập trong khu mực: `.input` của diễn đàn là nền trắng viền xám, đặt vào
-   đây thì vừa chói vừa nuốt mất chữ nhạt. */
-.tien-khu .input {
-  background: color-mix(in srgb, var(--tien-ink-800) 80%, #000);
-  border-color: var(--tien-vien);
-  color: var(--tien-chu);
-}
-.tien-khu .input::placeholder { color: var(--tien-mo); }
-.tien-khu .input:focus {
-  border-color: var(--tien-dao);
-  outline-color: var(--tien-dao);
-}
+/* Ô nhập vốn đã là `.input` của diễn đàn, không phải nắn gì nữa. */
 
-/* Bề mặt giấy/đá nổi trên nền mực. */
+/* Tấm nội dung: đúng khuôn `.card` của diễn đàn, cùng bo góc cùng đổ bóng. */
 .tien-tam {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--tien-ink-800) 92%, #fff) 0%, var(--tien-ink-800) 100%);
+  background: var(--tien-tam-nen);
   border: 1px solid var(--tien-vien);
-  border-radius: 8px;
-  color: var(--tien-chu);
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px var(--nova-shadow);
 }
 
 /*
- * Tấm quan trọng nhất trên trang: thêm một đường viền kim loại cổ ở trong và
- * một vệt sáng linh lực chạy dọc mép trái theo accent của đạo.
+ * Tấm quan trọng nhất trên trang: thêm một vệt sáng linh lực chạy dọc mép
+ * trái theo accent của đạo, và một quầng rất nhạt ở góc — đủ để nổi lên khỏi
+ * mấy tấm thường mà không phải đổi hẳn nền.
  */
 .tien-trieu {
   position: relative;
   background:
-    radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--tien-dao) 14%, transparent) 0%, transparent 60%),
-    linear-gradient(180deg, color-mix(in srgb, var(--tien-ink-800) 92%, #fff) 0%, var(--tien-ink-950) 100%);
-  border: 1px solid color-mix(in srgb, var(--tien-gold) 38%, transparent);
-  border-radius: 8px;
-  color: var(--tien-chu);
+    radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--tien-dao-chu) 10%, transparent) 0%, transparent 62%),
+    var(--tien-tam-nen);
+  border: 1px solid color-mix(in srgb, var(--tien-dao-chu) 34%, var(--tien-vien));
+  border-radius: 1rem;
+  box-shadow: 0 1px 2px var(--nova-shadow);
   overflow: hidden;
 }
 .tien-trieu::before {
@@ -399,10 +411,10 @@ html, body {
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: linear-gradient(180deg, transparent, var(--tien-dao), transparent);
+  background: linear-gradient(180deg, transparent, var(--tien-dao-chu), transparent);
 }
 
-.tien-dao-mau { color: var(--tien-dao); }
+.tien-dao-mau { color: var(--tien-dao-chu); }
 .tien-vang { color: var(--tien-gold); }
 .tien-ngoc { color: var(--tien-jade); }
 .tien-son { color: var(--tien-crimson); }
@@ -414,8 +426,8 @@ html, body {
  */
 .tien-nut {
   min-height: 44px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--tien-dao) 88%, #fff), var(--tien-dao));
-  color: #0B1020;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tien-dao-chu) 88%, #fff), var(--tien-dao-chu));
+  color: var(--tien-nut-chu);
   border-radius: 6px;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -433,8 +445,8 @@ html, body {
   font-weight: 600;
 }
 .tien-nut-vien:hover:not(:disabled) {
-  border-color: var(--tien-dao);
-  color: var(--tien-dao);
+  border-color: var(--tien-dao-chu);
+  color: var(--tien-dao-chu);
 }
 .tien-nut-vien:disabled { opacity: 0.4; }
 
@@ -448,7 +460,7 @@ html, body {
  */
 .tien-thanh {
   height: 8px;
-  background: color-mix(in srgb, var(--tien-vien) 70%, transparent);
+  background: color-mix(in srgb, var(--tien-chu) 12%, transparent);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -456,7 +468,7 @@ html, body {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--tien-dao);
+  background: var(--tien-dao-chu);
   transition: width 0.6s ease-out;
 }
 .tien-thanh.nguy > i {
@@ -478,7 +490,7 @@ html, body {
  * của đạo cho ra dáng thẻ tre.
  */
 .tien-so {
-  border-left: 2px solid color-mix(in srgb, var(--tien-dao) 55%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--tien-dao-chu) 55%, transparent);
   padding-left: 0.75rem;
   font-variant-numeric: tabular-nums;
 }

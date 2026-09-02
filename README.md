@@ -104,8 +104,10 @@ chăm sóc — no, vui, thể lực — và cả ba đều ăn vào sức đánh
 
 **Vạn Đạo Tu Tiên** — game chữ dựng theo GDD riêng: tám thuộc tính máy chủ
 gieo, tám linh căn (ba dị linh căn), năm đại đạo đi năm lối khác nhau, ba đại
-cảnh giới mỗi bậc bốn tầng, tu luyện ngoại tuyến có trần. Cố ý KHÔNG dùng ảnh,
-emoji hay icon nào — đây là dòng 文字修仙, chữ chính là giao diện.
+cảnh giới mỗi bậc bốn tầng, tu luyện ngoại tuyến có trần. Thế giới là một lưới
+toạ độ đi bằng liên kết chữ, quái nằm theo ô, trận đánh xử ở máy chủ rồi trả về
+nhật ký chạy từng dòng — và năm đạo đánh theo năm cơ chế khác nhau. Cố ý KHÔNG
+dùng ảnh, emoji hay icon nào: đây là dòng 文字修仙, chữ chính là giao diện.
 
 **Cửa hàng điểm** — màu nick và huy hiệu. Danh hiệu **không bán**, nó là tên cấp
 bậc theo cấp độ.

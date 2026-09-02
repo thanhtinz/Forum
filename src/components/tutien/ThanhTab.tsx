@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 const TAB = [
   { href: '/tu-tien', ten: 'Đạo Đường' },
   { href: '/tu-tien/tu-luyen', ten: 'Bế Quan' },
+  { href: '/tu-tien/the-gioi', ten: 'Thế Giới' },
   { href: '/tu-tien/dao', ten: 'Đạo Phổ' },
 ] as const;
 

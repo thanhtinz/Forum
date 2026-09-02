@@ -52,8 +52,22 @@ export function TheNhanVat({ nv }: { nv: NhanVatXem }) {
         ))}
       </ul>
 
+      <div className="mt-3 border-t pt-2" style={{ borderColor: 'var(--tien-vien)' }}>
+        <div className="mb-1 flex items-baseline justify-between text-xs opacity-75">
+          <span>Khí huyết</span>
+          <span className="tabular-nums">{nv.hp}/{nv.suc.hpToiDa}</span>
+        </div>
+        <div className="tien-thanh">
+          <i style={{ width: `${Math.max(2, Math.round((nv.hp / nv.suc.hpToiDa) * 100))}%` }} />
+        </div>
+        <p className="mt-2 text-sm">
+          Công <b>{nv.suc.cong}</b> · Thủ <b>{nv.suc.thu}</b> · Nhanh <b>{nv.suc.nhanh}</b>
+        </p>
+      </div>
+
       <p className="mt-3 text-xs opacity-70">
         Tu vi {nv.moiPhut.toFixed(2)}/phút · Linh thạch {nv.linhThach.toLocaleString('vi')}
+        {' · đang ở '}{nv.tenViTri}
       </p>
     </section>
   );

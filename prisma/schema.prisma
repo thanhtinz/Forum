@@ -2490,6 +2490,23 @@ model TienNhanVat {
   /// Linh thạch — tiền trong game, không dính gì tới điểm diễn đàn.
   linhThach Int @default(0)
 
+  /**
+   * Ô đang đứng trên bản đồ, mã trong `DIA_DIEM`.
+   *
+   * Thế giới là một lưới toạ độ đi bằng liên kết chữ, nên vị trí chỉ cần một
+   * chuỗi. Máy chủ chặn nhảy cóc bằng cách xét hai ô có kề nhau không.
+   */
+  viTri String @default("chan-nui")
+
+  /**
+   * Máu hiện tại. Máu tối đa thì SUY RA từ thuộc tính và cảnh giới chứ không
+   * lưu — lưu chỉ số suy ra được là ép phải chạy lại dữ liệu mỗi lần cân bằng.
+   *
+   * Hồi dần theo giờ, tính lúc đọc từ `hpTinhAt`; không có tác vụ nền nào.
+   */
+  hp        Int      @default(0)
+  hpTinhAt  DateTime @default(now())
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

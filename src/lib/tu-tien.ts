@@ -1,7 +1,9 @@
 import { db } from './db';
 import {
-  BAC_TOI_DA, SO_TANG, type BoThuocTinh, THUOC_TINH,
-  bacKeTiep, laDotPha, phanTramBeQuan, tenCanhGioi, tenLinhCan, timDao,
+  BAC_TOI_DA, DIA_DIEM_DAU, type DongTran, type Quai, SO_TANG,
+  type BoThuocTinh, type SucChien, THUOC_TINH,
+  bacKeTiep, hpHienGio, laDotPha, loiRaCua, phanTramBeQuan, sucChien,
+  tenCanhGioi, tenLinhCan, timDao, timDiaDiem, timQuai,
   tuViBeQuan, tuViCanDe, tuViMoiPhut,
 } from './tu-tien-const';
 
@@ -38,11 +40,17 @@ export interface NhanVatXem {
   phanTramBeQuan: number;
   /** Tu vi đang chờ nhận, chưa ghi vào sổ. */
   choNhan: number;
+  /** Ô đang đứng và ba chỉ số ra trận. */
+  viTri: string;
+  tenViTri: string;
+  hp: number;
+  suc: SucChien;
 }
 
 const CHON_NV = {
   id: true, ten: true, dao: true, linhCan: true,
   bac: true, tang: true, tuVi: true, tuLuyenTu: true, linhThach: true,
+  viTri: true, hp: true, hpTinhAt: true,
   canCot: true, ngoTinh: true, daoTam: true, khiVan: true,
   thanHon: true, khiHuyet: true, satY: true, huyetMach: true,
 } as const;
@@ -50,6 +58,7 @@ const CHON_NV = {
 type HangNV = {
   id: string; ten: string; dao: string; linhCan: number;
   bac: number; tang: number; tuVi: number; tuLuyenTu: Date; linhThach: number;
+  viTri: string; hp: number; hpTinhAt: Date;
   canCot: number; ngoTinh: number; daoTam: number; khiVan: number;
   thanHon: number; khiHuyet: number; satY: number; huyetMach: number;
 };
@@ -65,6 +74,7 @@ function doiNhanVat(r: HangNV, now: number): NhanVatXem {
   const bo = boCua(r);
   const moiPhut = tuViMoiPhut(bo, r.dao, r.linhCan, r.bac);
   const kichTran = r.bac >= BAC_TOI_DA && r.tang >= SO_TANG;
+  const suc = sucChien(bo, r.dao, r.bac, r.tang);
   return {
     id: r.id,
     ten: r.ten,
@@ -85,6 +95,10 @@ function doiNhanVat(r: HangNV, now: number): NhanVatXem {
     phanTramBeQuan: phanTramBeQuan(r.tuLuyenTu.getTime(), now),
     // Kịch trần thì không gom thêm nữa, khỏi bày một con số chẳng dùng vào đâu.
     choNhan: kichTran ? 0 : tuViBeQuan(moiPhut, r.tuLuyenTu.getTime(), now),
+    viTri: r.viTri,
+    tenViTri: timDiaDiem(r.viTri)?.ten ?? '—',
+    hp: hpHienGio(r.hp, suc.hpToiDa, r.hpTinhAt.getTime(), now),
+    suc,
   };
 }
 
@@ -161,3 +175,51 @@ export async function chotBeQuan(userId: string, bayGio = Date.now()): Promise<K
     chanDotPha,
   };
 }
+
+// ── Thế giới và trận đánh ────────────────────────────────────────────────
+
+export interface QuaiXem extends Quai {
+  /** Số thứ tự trong ô — hai con cùng loài thì phân biệt bằng số này. */
+  thu: number;
+}
+
+export interface OXem {
+  ma: string;
+  ten: string;
+  x: number;
+  y: number;
+  moTa: string;
+  quai: QuaiXem[];
+  loiRa: ReturnType<typeof loiRaCua>;
+}
+
+/** Ô người chơi đang đứng, kèm quái và lối ra. */
+export function xemO(ma: string): OXem | null {
+  const d = timDiaDiem(ma);
+  if (!d) return null;
+  return {
+    ma: d.ma, ten: d.ten, x: d.x, y: d.y, moTa: d.moTa,
+    quai: d.quai
+      .map((q, i) => {
+        const x = timQuai(q);
+        return x ? { ...x, thu: i + 1 } : null;
+      })
+      .filter((x): x is QuaiXem => x !== null),
+    loiRa: loiRaCua(d.ma),
+  };
+}
+
+export interface KeLaiTran {
+  dienBien: DongTran[];
+  thang: boolean;
+  tenTa: string;
+  tenDich: string;
+  hpToiDa: number;
+  hpDichDau: number;
+  /** Thu được khi thắng; khi thua thì là phần tu vi mất đi (số âm). */
+  tuVi: number;
+  linhThach: number;
+}
+
+/** Ô đầu bản đồ — chỗ người thua trận bị đưa về. */
+export { DIA_DIEM_DAU };

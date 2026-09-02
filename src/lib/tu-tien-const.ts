@@ -348,3 +348,326 @@ export function phanTramBeQuan(tuLuc: number, bayGio: number, tranMs = BE_QUAN_T
   const troi = Math.min(Math.max(0, bayGio - tuLuc), tranMs);
   return Math.round((troi / tranMs) * 100);
 }
+
+// ── Thế giới ─────────────────────────────────────────────────────────────
+
+/**
+ * Bản đồ là một LƯỚI TOẠ ĐỘ đi bằng liên kết chữ.
+ *
+ * Lối này học từ mấy game wap Trung Quốc cùng dòng: một màn hình là một danh
+ * sách dọc — tên địa điểm kèm toạ độ, thứ có ở ô ấy, rồi "chọn lối ra" ghi rõ
+ * mỗi hướng dẫn đi đâu. Không cần một tấm ảnh nào mà vẫn ra thế giới, và trên
+ * màn hình điện thoại hẹp thì đọc dễ hơn hẳn một tấm bản đồ vẽ.
+ *
+ * LỐI RA SUY RA TỪ TOẠ ĐỘ, không khai tay: hai ô kề nhau thì đi được. Khai
+ * tay thì sẽ có ngày một ô trỏ sang ô không tồn tại, hoặc trỏ một chiều — mà
+ * lỗi ấy nhìn bảng dữ liệu không thấy được.
+ */
+export interface DiaDiem {
+  ma: string;
+  ten: string;
+  x: number;
+  y: number;
+  moTa: string;
+  /** Mã quái xuất hiện ở ô này, lặp mã là ô ấy có nhiều con cùng loại. */
+  quai: readonly string[];
+}
+
+export const BAN_DO_TEN = 'Thanh Vân Sơn';
+
+export const DIA_DIEM: readonly DiaDiem[] = [
+  { ma: 'chan-nui', ten: 'Chân núi', x: 0, y: 0, moTa: 'Đường mòn lên núi bắt đầu từ đây.', quai: [] },
+  { ma: 'rung-truc', ten: 'Rừng trúc', x: 1, y: 0, moTa: 'Trúc mọc kín, gió đi qua nghe như tiếng người.', quai: ['thao-khau', 'thao-khau'] },
+  { ma: 'khe-suoi', ten: 'Khe suối', x: 2, y: 0, moTa: 'Nước chảy xiết, đá trơn.', quai: ['thao-khau', 'lang-yeu'] },
+  { ma: 'doc-da', ten: 'Dốc đá', x: 0, y: 1, moTa: 'Dốc dựng, phải bám đá mà lên.', quai: ['lang-yeu'] },
+  { ma: 'mieu-hoang', ten: 'Miếu hoang', x: 1, y: 1, moTa: 'Miếu bỏ lâu năm, nhang tàn còn vương mùi.', quai: ['am-linh', 'am-linh'] },
+  { ma: 'ho-nuoc', ten: 'Hồ nước', x: 2, y: 1, moTa: 'Mặt hồ phẳng lặng tới mức khó chịu.', quai: ['giao-xa'] },
+  { ma: 'vach-gio', ten: 'Vách gió', x: 0, y: 2, moTa: 'Gió cắt mặt, đứng lâu không nổi.', quai: ['am-linh', 'giao-xa'] },
+  { ma: 'rung-thong', ten: 'Rừng thông', x: 1, y: 2, moTa: 'Thông già, rễ nổi ngang lối đi.', quai: ['giao-xa', 'thiet-bi-hung'] },
+  { ma: 'dinh-vong-nguyet', ten: 'Đỉnh Vọng Nguyệt', x: 2, y: 2, moTa: 'Trên này nhìn thấy hết chân núi.', quai: ['thiet-bi-hung'] },
+] as const;
+
+export const DIA_DIEM_DAU = 'chan-nui';
+
+export function timDiaDiem(ma: string): DiaDiem | null {
+  return DIA_DIEM.find((d) => d.ma === ma) ?? null;
+}
+
+/** Bốn hướng, đặt theo lối bản đồ giấy: bắc là y lớn hơn. */
+export const HUONG = [
+  { ma: 'bac', ten: 'Bắc', dx: 0, dy: 1 },
+  { ma: 'nam', ten: 'Nam', dx: 0, dy: -1 },
+  { ma: 'dong', ten: 'Đông', dx: 1, dy: 0 },
+  { ma: 'tay', ten: 'Tây', dx: -1, dy: 0 },
+] as const;
+
+export interface LoiRa {
+  huong: string;
+  tenHuong: string;
+  ma: string;
+  ten: string;
+}
+
+/** Các lối ra của một ô, suy thẳng từ toạ độ. */
+export function loiRaCua(ma: string): LoiRa[] {
+  const d = timDiaDiem(ma);
+  if (!d) return [];
+  const ra: LoiRa[] = [];
+  for (const h of HUONG) {
+    const ke = DIA_DIEM.find((x) => x.x === d.x + h.dx && x.y === d.y + h.dy);
+    if (ke) ra.push({ huong: h.ma, tenHuong: h.ten, ma: ke.ma, ten: ke.ten });
+  }
+  return ra;
+}
+
+/** Hai ô có kề nhau không — dùng để chặn nhảy cóc từ phía máy chủ. */
+export function keNhau(tu: string, den: string): boolean {
+  return loiRaCua(tu).some((r) => r.ma === den);
+}
+
+// ── Quái ─────────────────────────────────────────────────────────────────
+
+export interface Quai {
+  ma: string;
+  ten: string;
+  cap: number;
+  hp: number;
+  cong: number;
+  thu: number;
+  nhanh: number;
+  /** Thưởng khi hạ được. */
+  tuVi: number;
+  linhThach: number;
+}
+
+export const QUAI: readonly Quai[] = [
+  { ma: 'thao-khau', ten: 'Thảo khấu', cap: 1, hp: 60, cong: 8, thu: 4, nhanh: 6, tuVi: 18, linhThach: 4 },
+  { ma: 'lang-yeu', ten: 'Lang yêu', cap: 3, hp: 95, cong: 13, thu: 6, nhanh: 11, tuVi: 34, linhThach: 8 },
+  { ma: 'am-linh', ten: 'Âm linh', cap: 5, hp: 130, cong: 18, thu: 9, nhanh: 8, tuVi: 56, linhThach: 13 },
+  { ma: 'giao-xa', ten: 'Giao xà', cap: 8, hp: 190, cong: 24, thu: 14, nhanh: 10, tuVi: 92, linhThach: 21 },
+  { ma: 'thiet-bi-hung', ten: 'Thiết Bí Hùng', cap: 12, hp: 280, cong: 33, thu: 22, nhanh: 7, tuVi: 150, linhThach: 34 },
+] as const;
+
+export function timQuai(ma: string): Quai | null {
+  return QUAI.find((q) => q.ma === ma) ?? null;
+}
+
+// ── Chiến đấu ────────────────────────────────────────────────────────────
+
+/**
+ * Máu tối đa và ba chỉ số ra trận.
+ *
+ * Suy từ thuộc tính và cảnh giới, KHÔNG lưu thành cột: lưu chỉ số suy ra được
+ * chính là thứ ép phải chạy migration mỗi lần cân bằng lại.
+ */
+export interface SucChien {
+  hpToiDa: number;
+  cong: number;
+  thu: number;
+  nhanh: number;
+}
+
+export function sucChien(bo: BoThuocTinh, dao: string, bac: number, tang: number): SucChien {
+  const nen = (bac - 1) * SO_TANG + tang;
+  const kh = bo.khiHuyet ?? 0;
+  const cc = bo.canCot ?? 0;
+  const nt = bo.ngoTinh ?? 0;
+  const th = bo.thanHon ?? 0;
+  const sy = bo.satY ?? 0;
+  const hm = bo.huyetMach ?? 0;
+
+  // Mỗi đạo lấy sức từ chỗ khác nhau, đúng bảng tài nguyên lõi ở mục 5 GDD.
+  const theo: Record<string, { cong: number; thu: number; nhanh: number; mau: number }> = {
+    the: { cong: cc * 0.9 + kh * 0.5, thu: kh * 1.1 + cc * 0.4, nhanh: cc * 0.3, mau: 14 },
+    linh: { cong: nt * 1.1 + th * 0.5, thu: th * 0.6, nhanh: nt * 0.5, mau: 8 },
+    ma: { cong: sy * 1.0 + th * 0.6, thu: th * 0.5 + kh * 0.3, nhanh: sy * 0.4, mau: 9 },
+    yeu: { cong: hm * 0.9 + cc * 0.5, thu: hm * 0.6 + kh * 0.4, nhanh: hm * 0.6, mau: 11 },
+    tula: { cong: sy * 1.0 + cc * 0.6, thu: cc * 0.5, nhanh: sy * 0.5 + cc * 0.3, mau: 10 },
+  };
+  const t = theo[dao] ?? theo.linh!;
+
+  return {
+    hpToiDa: Math.round(40 + nen * t.mau + kh * 2.5),
+    cong: Math.max(1, Math.round(4 + nen * 1.6 + t.cong)),
+    thu: Math.max(1, Math.round(2 + nen * 0.9 + t.thu)),
+    nhanh: Math.max(1, Math.round(3 + nen * 0.7 + t.nhanh)),
+  };
+}
+
+/** Máu hồi mỗi giờ khi không đánh nhau. */
+export const HP_HOI_MOI_GIO = 12;
+
+export function hpHienGio(hp: number, hpToiDa: number, tinhLuc: number, bayGio: number): number {
+  const gio = Math.max(0, (bayGio - tinhLuc) / 3_600_000);
+  return Math.max(0, Math.min(hpToiDa, Math.round(hp + gio * HP_HOI_MOI_GIO)));
+}
+
+export const SO_HIEP_TOI_DA = 12;
+
+/** Ma tâm dâng chừng này mỗi hiệp, và cắn ngược khi vượt mốc dưới. */
+export const MA_TAM_MOI_HIEP = 18;
+export const MA_TAM_PHAN_PHE = 55;
+
+/** Một dòng nhật ký trận. */
+export interface DongTran {
+  hiep: number;
+  /** Ai ra đòn. */
+  ben: 'ta' | 'dich';
+  /** Câu kể, đã viết sẵn thành tiếng Việt. */
+  cau: string;
+  satThuong: number;
+  hpTa: number;
+  hpDich: number;
+}
+
+export interface KetQuaTran {
+  dienBien: DongTran[];
+  thang: boolean;
+  /** Máu còn lại của mình sau trận. */
+  hpConLai: number;
+}
+
+/**
+ * Đánh nhau, xử ở máy chủ rồi trả về NHẬT KÝ TRẬN.
+ *
+ * Đây là hình thức của cả hai dòng game mà bản thiết kế này dựa vào — game
+ * chữ Trung Quốc và wap MMORPG Nga đều làm y hệt: trình duyệt không mô phỏng
+ * gì cả, nó chỉ đọc lại một bản ghi.
+ *
+ * NĂM ĐẠO CÓ NĂM CƠ CHẾ KHÁC NHAU, không phải năm cái tên của cùng một phép
+ * trừ. Đây là nguyên tắc số một của GDD ("5 đạo phải có cơ chế lõi khác nhau,
+ * không chỉ đổi tên tài nguyên"), nên chỗ này là chỗ phải làm cho đúng:
+ *
+ *   Luyện Thể  PHÁ GIÁP tích theo đòn — mỗi đòn trúng bào mòn thủ của địch,
+ *              càng đánh lâu càng xuyên. Đổi lại ra đòn chậm.
+ *   Linh Tu    LINH LỰC có hạn — pháp thuật mạnh nhưng tiêu linh lực, hết thì
+ *              chỉ còn đòn thường yếu hẳn. Phải biết dừng.
+ *   Ma Luyện   MA TÂM tự dâng theo từng đòn — càng cao càng mạnh, nhưng quá
+ *              ngưỡng thì phản phệ, tự mất máu. Kèm hút máu.
+ *   Yêu Luyện  BIẾN HÌNH theo ngưỡng máu — nhân hình, bán yêu, nguyên hình;
+ *              mỗi dạng một bộ chỉ số. Càng bị dồn càng đổi dạng.
+ *   Tu La      CHIẾN Ý tích theo đòn TRÚNG — càng đánh trúng càng mạnh, mà
+ *              trượt một đòn là tụt hẳn. Được đà thì cuốn, mất đà thì thôi.
+ *
+ * `tungXu` bơm được để bài kiểm chốt kết quả.
+ */
+export function danhQuai(
+  ta: SucChien, hpTa: number, quai: Quai, dao: string,
+  tungXu: () => number = Math.random,
+): KetQuaTran {
+  const dienBien: DongTran[] = [];
+  let mauTa = Math.max(1, hpTa);
+  let mauDich = quai.hp;
+
+  // Trạng thái riêng của từng đạo.
+  let phaGiap = 0;
+  let linhLuc = Math.round(ta.cong * 2.2);
+  let maTam = 0;
+  let chienY = 0;
+  let dang = 0; // 0 nhân hình, 1 bán yêu, 2 nguyên hình
+
+  const them = (hiep: number, ben: 'ta' | 'dich', cau: string, satThuong: number) => {
+    dienBien.push({ hiep, ben, cau, satThuong, hpTa: mauTa, hpDich: mauDich });
+  };
+
+  for (let hiep = 1; hiep <= SO_HIEP_TOI_DA && mauTa > 0 && mauDich > 0; hiep += 1) {
+    // ── Lượt của mình ────────────────────────────────────────────────
+    let cong = ta.cong;
+    let thuDich = quai.thu;
+    let cau = '';
+    let tuThuong = 0;
+    let hut = 0;
+
+    if (dao === 'the') {
+      thuDich = Math.max(0, quai.thu - phaGiap);
+      cau = phaGiap > 0
+        ? `dồn sức đấm tới, giáp địch đã mòn ${phaGiap} tầng`
+        : 'nghiến răng lao vào cận chiến';
+    } else if (dao === 'linh') {
+      if (linhLuc >= 10) {
+        linhLuc -= 10;
+        cong = Math.round(cong * 1.55);
+        cau = `vận linh lực phóng pháp thuật (còn ${linhLuc} linh lực)`;
+      } else {
+        cong = Math.round(cong * 0.6);
+        cau = 'cạn linh lực, chỉ còn đánh chay';
+      }
+    } else if (dao === 'ma') {
+      /*
+       * Ma tâm phải DÂNG ĐỦ NHANH để cái giá của nó thật sự tới.
+       *
+       * Bản đầu dâng 14 mỗi hiệp và phản phệ ở mốc 70, tức phải sang hiệp thứ
+       * sáu mới cắn ngược — mà phần lớn trận kết thúc trước đó, nên rủi ro chỉ
+       * có trên giấy còn thực tế toàn phần thưởng. Bài kiểm bắt được đúng chỗ
+       * ấy. Nay dâng 18 và cắn từ mốc 55, nên một trận vừa phải là đã phải trả
+       * giá — đúng như bảng ở mục 11 của GDD, nơi ma tâm 41–70 đã "bắt đầu
+       * xuất hiện tâm ma".
+       */
+      maTam = Math.min(100, maTam + MA_TAM_MOI_HIEP);
+      cong = Math.round(cong * (1 + maTam / 130));
+      cau = `ma khí dâng lên, ma tâm ${maTam}`;
+      if (maTam > MA_TAM_PHAN_PHE) {
+        tuThuong = Math.round(ta.hpToiDa * 0.04);
+        cau += ' — phản phệ cắn ngược';
+      }
+    } else if (dao === 'yeu') {
+      const conLai = mauTa / ta.hpToiDa;
+      const dangMoi = conLai < 0.35 ? 2 : conLai < 0.7 ? 1 : 0;
+      if (dangMoi > dang) {
+        dang = dangMoi;
+        cau = dang === 2 ? 'huyết mạch bùng lên, hiện nguyên hình' : 'nửa người nửa thú, vuốt mọc dài';
+      } else {
+        cau = ['ra đòn bằng tay không', 'chồm tới cào một nhát', 'gầm một tiếng rồi vồ'][dang]!;
+      }
+      cong = Math.round(cong * [1, 1.25, 1.55][dang]!);
+    } else {
+      // Tu La
+      cong = Math.round(cong * (1 + chienY * 0.12));
+      cau = chienY > 0 ? `chiến ý ${chienY} tầng, đao càng lúc càng nặng` : 'nhập trận, đao vừa rút';
+    }
+
+    // Né: chênh lệch nhanh, không bao giờ quá 35%.
+    const neDich = Math.min(0.35, Math.max(0, (quai.nhanh - ta.nhanh) / 110));
+    let satThuong = 0;
+    if (tungXu() < neDich) {
+      if (dao === 'tula') chienY = 0;
+      them(hiep, 'ta', `${cau}, nhưng địch né được`, 0);
+    } else {
+      const thoc = cong * 2 - thuDich;
+      satThuong = Math.max(1, Math.round(thoc * (0.85 + tungXu() * 0.3)));
+      mauDich = Math.max(0, mauDich - satThuong);
+      if (dao === 'the') phaGiap = Math.min(quai.thu, phaGiap + 3);
+      if (dao === 'tula') chienY = Math.min(6, chienY + 1);
+      if (dao === 'ma') hut = Math.round(satThuong * 0.22);
+      them(hiep, 'ta', cau, satThuong);
+    }
+
+    if (tuThuong > 0) {
+      mauTa = Math.max(1, mauTa - tuThuong);
+      them(hiep, 'ta', `ma khí phản phệ, tự mất ${tuThuong} máu`, 0);
+    }
+    if (hut > 0 && mauTa < ta.hpToiDa) {
+      mauTa = Math.min(ta.hpToiDa, mauTa + hut);
+      them(hiep, 'ta', `hút về ${hut} máu`, 0);
+    }
+    if (mauDich <= 0) break;
+
+    // ── Lượt của quái ────────────────────────────────────────────────
+    const neTa = Math.min(0.35, Math.max(0, (ta.nhanh - quai.nhanh) / 110));
+    // Câu kể KHÔNG mang tên: chỗ hiển thị đã in tên rồi, nhét vào đây nữa là
+    // ra "Âm linh Âm linh phản kích".
+    if (tungXu() < neTa) {
+      them(hiep, 'dich', 'bổ tới, bị né', 0);
+    } else {
+      const thoc = quai.cong * 2 - ta.thu;
+      const st = Math.max(1, Math.round(thoc * (0.85 + tungXu() * 0.3)));
+      mauTa = Math.max(0, mauTa - st);
+      them(hiep, 'dich', 'phản kích', st);
+    }
+  }
+
+  return { dienBien, thang: mauDich <= 0 && mauTa > 0, hpConLai: mauTa };
+}
+
+/** Thua thì mất chừng này phần tu vi đang có. */
+export const PHAT_THUA = 0.1;

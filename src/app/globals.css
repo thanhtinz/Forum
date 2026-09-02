@@ -502,6 +502,23 @@ html, body {
   letter-spacing: 0.01em;
 }
 
+/*
+ * Tranh sơn thuỷ trên đầu ô bản đồ.
+ *
+ * Tranh vẽ mực đen trên giấy ngà, tức là một mảng SÁNG. Trên nền sáng thì vừa
+ * vặn; trên nền tối nó thành một ô đèn giữa trang, nên chế độ tối lật âm bản —
+ * giấy hoá mực, nét hoá sáng, ra đúng cảnh núi đêm. Hạ độ tương phản một chút
+ * ở cả hai chế độ để nó lùi về sau làm nền chứ không tranh chữ.
+ */
+.tien-canh {
+  opacity: 0.85;
+  filter: contrast(0.9);
+}
+.dark .tien-canh {
+  opacity: 0.7;
+  filter: invert(1) contrast(0.85);
+}
+
 /* Dòng điều kiện: đạt thì ngọc, chưa đạt thì son. Mục 5, component cấp 2. */
 .tien-dieu-kien-dat { color: var(--tien-jade); }
 .tien-dieu-kien-thieu { color: var(--tien-crimson); }

@@ -398,20 +398,31 @@ export interface DiaDiem {
   moTa: string;
   /** Mã quái xuất hiện ở ô này, lặp mã là ô ấy có nhiều con cùng loại. */
   quai: readonly string[];
+  /**
+   * Tranh sơn thuỷ của ô, đường dẫn trong `public`.
+   *
+   * Khai TỪNG Ô một chứ không suy từ `ma`: suy ra thì ngày thêm một ô mới mà
+   * quên bỏ tranh vào là trang gãy một ô ảnh hỏng, không ai thấy cho tới lúc
+   * người chơi đi tới đó. Khai tay thì để rỗng là cố ý, và giao diện đọc được
+   * khi rỗng.
+   *
+   * Xem `public/tu-tien/NGUON.txt` để biết tranh ở đâu ra.
+   */
+  anh: string;
 }
 
 export const BAN_DO_TEN = 'Thanh Vân Sơn';
 
 export const DIA_DIEM: readonly DiaDiem[] = [
-  { ma: 'chan-nui', ten: 'Chân núi', x: 0, y: 0, moTa: 'Đường mòn lên núi bắt đầu từ đây.', quai: [] },
-  { ma: 'rung-truc', ten: 'Rừng trúc', x: 1, y: 0, moTa: 'Trúc mọc kín, gió đi qua nghe như tiếng người.', quai: ['thao-khau', 'thao-khau'] },
-  { ma: 'khe-suoi', ten: 'Khe suối', x: 2, y: 0, moTa: 'Nước chảy xiết, đá trơn.', quai: ['thao-khau', 'lang-yeu'] },
-  { ma: 'doc-da', ten: 'Dốc đá', x: 0, y: 1, moTa: 'Dốc dựng, phải bám đá mà lên.', quai: ['lang-yeu'] },
-  { ma: 'mieu-hoang', ten: 'Miếu hoang', x: 1, y: 1, moTa: 'Miếu bỏ lâu năm, nhang tàn còn vương mùi.', quai: ['am-linh', 'am-linh'] },
-  { ma: 'ho-nuoc', ten: 'Hồ nước', x: 2, y: 1, moTa: 'Mặt hồ phẳng lặng tới mức khó chịu.', quai: ['giao-xa'] },
-  { ma: 'vach-gio', ten: 'Vách gió', x: 0, y: 2, moTa: 'Gió cắt mặt, đứng lâu không nổi.', quai: ['am-linh', 'giao-xa'] },
-  { ma: 'rung-thong', ten: 'Rừng thông', x: 1, y: 2, moTa: 'Thông già, rễ nổi ngang lối đi.', quai: ['giao-xa', 'thiet-bi-hung'] },
-  { ma: 'dinh-vong-nguyet', ten: 'Đỉnh Vọng Nguyệt', x: 2, y: 2, moTa: 'Trên này nhìn thấy hết chân núi.', quai: ['thiet-bi-hung'] },
+  { ma: 'chan-nui', ten: 'Chân núi', x: 0, y: 0, moTa: 'Đường mòn lên núi bắt đầu từ đây.', quai: [], anh: '/tu-tien/canh/chan-nui.jpg' },
+  { ma: 'rung-truc', ten: 'Rừng trúc', x: 1, y: 0, moTa: 'Trúc mọc kín, gió đi qua nghe như tiếng người.', quai: ['thao-khau', 'thao-khau'], anh: '/tu-tien/canh/rung-truc.jpg' },
+  { ma: 'khe-suoi', ten: 'Khe suối', x: 2, y: 0, moTa: 'Nước chảy xiết, đá trơn.', quai: ['thao-khau', 'lang-yeu'], anh: '/tu-tien/canh/khe-suoi.jpg' },
+  { ma: 'doc-da', ten: 'Dốc đá', x: 0, y: 1, moTa: 'Dốc dựng, phải bám đá mà lên.', quai: ['lang-yeu'], anh: '/tu-tien/canh/doc-da.jpg' },
+  { ma: 'mieu-hoang', ten: 'Miếu hoang', x: 1, y: 1, moTa: 'Miếu bỏ lâu năm, nhang tàn còn vương mùi.', quai: ['am-linh', 'am-linh'], anh: '/tu-tien/canh/mieu-hoang.jpg' },
+  { ma: 'ho-nuoc', ten: 'Hồ nước', x: 2, y: 1, moTa: 'Mặt hồ phẳng lặng tới mức khó chịu.', quai: ['giao-xa'], anh: '/tu-tien/canh/ho-nuoc.jpg' },
+  { ma: 'vach-gio', ten: 'Vách gió', x: 0, y: 2, moTa: 'Gió cắt mặt, đứng lâu không nổi.', quai: ['am-linh', 'giao-xa'], anh: '/tu-tien/canh/vach-gio.jpg' },
+  { ma: 'rung-thong', ten: 'Rừng thông', x: 1, y: 2, moTa: 'Thông già, rễ nổi ngang lối đi.', quai: ['giao-xa', 'thiet-bi-hung'], anh: '/tu-tien/canh/rung-thong.jpg' },
+  { ma: 'dinh-vong-nguyet', ten: 'Đỉnh Vọng Nguyệt', x: 2, y: 2, moTa: 'Trên này nhìn thấy hết chân núi.', quai: ['thiet-bi-hung'], anh: '/tu-tien/canh/dinh-vong-nguyet.jpg' },
 ] as const;
 
 export const DIA_DIEM_DAU = 'chan-nui';

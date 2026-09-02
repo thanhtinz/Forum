@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { BASE, db, openPage, doiToi } from '../helpers.mjs';
 import {
   DIA_DIEM, DIA_DIEM_DAU, HUONG, MA_TAM_PHAN_PHE, PHAT_THUA, QUAI,
@@ -29,6 +30,19 @@ export default async function run(check) {
     new Set(DIA_DIEM.map((d) => `${d.x},${d.y}`)).size === DIA_DIEM.length);
   check('ô đầu bản đồ có thật', timDiaDiem(DIA_DIEM_DAU) !== null);
   check('nơi nào cũng có mô tả', DIA_DIEM.every((d) => d.moTa.trim().length > 0));
+
+  /*
+   * Tranh của ô: khai tay từng ô nên phải canh cả BA thứ — có khai, tệp có
+   * thật, và chín ô không dùng chung một bức. Quên một trong ba thì trang gãy
+   * đúng ở ô ấy, mà không ai thấy cho tới lúc người chơi đi tới đó.
+   */
+  check('ô nào cũng có tranh', DIA_DIEM.every((d) => d.anh.startsWith('/tu-tien/canh/')),
+    DIA_DIEM.filter((d) => !d.anh.startsWith('/tu-tien/canh/')).map((d) => d.ma).join(','));
+  const thieuAnh = DIA_DIEM.filter((d) => !fs.existsSync(`public${d.anh}`));
+  check('và tệp tranh có thật trên đĩa', thieuAnh.length === 0,
+    thieuAnh.map((d) => d.anh).join(','));
+  check('không hai ô nào dùng chung một bức',
+    new Set(DIA_DIEM.map((d) => d.anh)).size === DIA_DIEM.length);
   check('mọi mã quái trên bản đồ đều có trong bảng quái',
     DIA_DIEM.every((d) => d.quai.every((q) => timQuai(q) !== null)),
     DIA_DIEM.flatMap((d) => d.quai.filter((q) => !timQuai(q))).join(','));
@@ -161,6 +175,10 @@ export default async function run(check) {
       loiRaCua(DIA_DIEM_DAU).every((r) => chu.includes(r.ten)));
     check('màn thế giới không có biểu tượng nào',
       (await p.locator('main svg').count()) === 0);
+    // Tranh phải là ẢNH RASTER, không phải SVG dán thẳng vào trang: mục kiểm
+    // ngay trên đếm `svg` bằng không, mà cả game cố ý không có biểu tượng nào.
+    check('và có đúng tranh của ô đang đứng',
+      (await p.locator(`main img[src="${timDiaDiem(DIA_DIEM_DAU).anh}"]`).count()) === 1);
 
     /*
      * Chốt chặn nhảy cóc và chặn đánh con vắng mặt nằm ở MÁY CHỦ, nhưng không

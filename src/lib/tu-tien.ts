@@ -199,6 +199,8 @@ export interface OXem {
   moTa: string;
   quai: QuaiXem[];
   loiRa: ReturnType<typeof loiRaCua>;
+  /** Tranh sơn thuỷ của ô; rỗng thì trang không dựng khung ảnh nào. */
+  anh: string;
 }
 
 /** Ô người chơi đang đứng, kèm quái và lối ra. */
@@ -206,7 +208,7 @@ export function xemO(ma: string): OXem | null {
   const d = timDiaDiem(ma);
   if (!d) return null;
   return {
-    ma: d.ma, ten: d.ten, x: d.x, y: d.y, moTa: d.moTa,
+    ma: d.ma, ten: d.ten, x: d.x, y: d.y, moTa: d.moTa, anh: d.anh,
     quai: d.quai
       .map((q, i) => {
         const x = timQuai(q);

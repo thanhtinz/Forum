@@ -49,7 +49,27 @@ export function ManThe({ nv, o }: { nv: NhanVatXem; o: OXem }) {
 
       {tin.tran && <NhatKyTran key={JSON.stringify(tin.tran.dienBien)} t={tin.tran} />}
 
-      <section className="tien-tam p-5">
+      <section className="tien-tam overflow-hidden">
+        {/*
+          Tranh sơn thuỷ của ô — thứ ẢNH DUY NHẤT trong cả game, và cố ý chỉ
+          có ở đây.
+
+          Game này là game chữ, nguyên tắc lõi của cả dòng là 文字即界面. Nhưng
+          "chữ là giao diện" nói về chỗ CHƠI — chỉ số, quyết định, nhật ký trận
+          — chứ không cấm một bức tranh làm nền cho nơi mình đang đứng. Chín ô
+          chín bức khác nhau, nên đi một bước là thấy cảnh đổi; trước đây chín
+          ô chỉ khác nhau ở một dòng mô tả.
+
+          Ảnh nền cố ý ĐỂ MỜ và không có chữ nào đè lên: nó là cảnh, không phải
+          thông tin. Xem `public/tu-tien/NGUON.txt`.
+        */}
+        {o.anh && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={o.anh} alt="" aria-hidden width={1200} height={400}
+            className="tien-canh h-28 w-full object-cover sm:h-36" />
+        )}
+
+        <div className="p-5">
         <p className="mb-1 text-lg font-black">
           {o.ten} <span className="text-sm font-normal opacity-60">({o.x},{o.y})</span>
         </p>
@@ -103,6 +123,7 @@ export function ManThe({ nv, o }: { nv: NhanVatXem; o: OXem }) {
         </ul>
 
         <p className="text-sm opacity-75">{o.moTa}</p>
+        </div>
       </section>
     </div>
   );

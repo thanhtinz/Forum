@@ -6,6 +6,17 @@ Bốn tệp SVG trong thư mục này là hình VẼ MỚI cho chính dự án n
   rong.svg          rồng con nở ra từ trứng
   trac-nghiem.svg   bóng đèn, bên trong có dấu hỏi mờ
 
+Tệp thứ năm thì KHÁC HẲN — không phải hình vẽ:
+
+  van-dao.jpg       một khúc tranh sơn thuỷ, cắt quanh ngôi tháp trên đỉnh núi
+
+Nó cắt từ chính bộ tranh dùng cho bản đồ Thanh Vân Sơn trong game, sinh bằng
+{Shan, Shui}* của Lingdong Huang, giấy phép MIT. Giải thích đầy đủ và bản sao
+giấy phép nằm ở `public/tu-tien/NGUON.txt`.
+
+Trước đó ô này là `van-dao.svg`, một con dấu chữ 萬道 tôi tự dựng — tức là đúng
+thứ repo này cấm. Đã xoá.
+
 Khác hẳn `public/hoai-niem/*`: chỗ ấy là ảnh giữ nguyên từ mấy mã nguồn JohnCMS
 cũ, còn đây là hình của riêng khu giải trí.
 

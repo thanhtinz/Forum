@@ -1,6 +1,6 @@
 import { db } from './db';
 import {
-  BAC_TOI_DA, DIA_DIEM_DAU, type DongTran, type Quai, SO_TANG,
+  BAC_TOI_DA, DIA_DIEM_DAU, type DongKiep, type DongTran, type Quai, SO_TANG,
   type BoThuocTinh, type SucChien, THUOC_TINH,
   bacKeTiep, hpHienGio, laDotPha, loiRaCua, phanTramBeQuan, sucChien,
   tenCanhGioi, tenLinhCan, timDao, timDiaDiem, timQuai,
@@ -32,6 +32,13 @@ export interface NhanVatXem {
   kichTran: boolean;
   /** Lên tầng kế tiếp là ĐỘT PHÁ (qua bậc mới) hay chỉ lên tầng. */
   laDotPha: boolean;
+  /**
+   * Đã đủ tu vi ở tầng Viên mãn và còn bậc để lên — tức là ngồi vào độ kiếp
+   * được ngay bây giờ. Blueprint mục 4.2 bắt đầu luồng đột phá bằng đúng cảnh
+   * báo này ở trang chính, nên nó phải nằm sẵn trong thẻ nhân vật chứ không
+   * để mỗi trang tự suy lại.
+   */
+  duocDotPha: boolean;
   thuocTinh: BoThuocTinh;
   linhThach: number;
   /** Tu vi mỗi phút với bộ thuộc tính và cảnh giới hiện tại. */
@@ -89,6 +96,7 @@ function doiNhanVat(r: HangNV, now: number): NhanVatXem {
     tuViCan: tuViCanDe(r.bac, r.tang),
     kichTran,
     laDotPha: laDotPha(r.tang),
+    duocDotPha: laDotPha(r.tang) && r.bac < BAC_TOI_DA && r.tuVi >= tuViCanDe(r.bac, r.tang),
     thuocTinh: bo,
     linhThach: r.linhThach,
     moiPhut,
@@ -219,6 +227,30 @@ export interface KeLaiTran {
   /** Thu được khi thắng; khi thua thì là phần tu vi mất đi (số âm). */
   tuVi: number;
   linhThach: number;
+}
+
+/**
+ * Kết quả một lần độ kiếp, đủ để dựng lại màn "Kết quả Thiên kiếp".
+ *
+ * Blueprint xếp màn ấy ngang hàng P0 với cả Combat HUD, và mục 9 nói rõ vì
+ * sao: thất bại phải chỉ ra được nguyên nhân CÓ THỂ HÀNH ĐỘNG, nên `nguyenNhan`
+ * đi kèm ngay trong kết quả chứ không để trang tự đoán lại.
+ */
+export interface KeLaiKiep {
+  ten: string;
+  soDao: number;
+  dienBien: DongKiep[];
+  qua: boolean;
+  hong: 'than' | 'tam' | null;
+  nguyenNhan: string[];
+  hpDau: number;
+  hpToiDa: number;
+  /** Cảnh giới vừa mở ra, chỉ có khi qua được. */
+  canhGioiMoi: string | null;
+  /** Tu vi mất đi khi hỏng. */
+  matTuVi: number;
+  /** Linh thạch đã bỏ ra cho đồ chuẩn bị. */
+  tonLinhThach: number;
 }
 
 /** Ô đầu bản đồ — chỗ người thua trận bị đưa về. */

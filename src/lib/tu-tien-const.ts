@@ -702,3 +702,253 @@ export function danhQuai(
 
 /** Thua thì mất chừng này phần tu vi đang có. */
 export const PHAT_THUA = 0.1;
+
+// ── Đột phá và thiên kiếp ────────────────────────────────────────────────
+
+/**
+ * Lên TẦNG trong cùng một bậc thì tự động; qua BẬC mới phải độ kiếp.
+ *
+ * Blueprint mục 4.2 vẽ hẳn luồng cho chỗ này: cảnh báo "đủ điều kiện" ở trang
+ * chính → checklist điều kiện → chuẩn bị vật phẩm/trận → PREVIEW RỦI RO CÁ
+ * NHÂN HOÁ → xác nhận → thiên kiếp → kết quả. Bốn chữ in hoa kia là phần khó:
+ * con số dự báo phải tính bằng ĐÚNG công thức mà lát nữa máy chủ dùng để xử,
+ * không thì nó là lời hứa suông. Nên `tiLeQuaKiep` và `doKiep` ở dưới dùng
+ * chung một bộ phép tính, và bài kiểm canh đúng chỗ ấy.
+ */
+export interface ThienKiep {
+  /** Độ kiếp để rời khỏi bậc này. */
+  bac: number;
+  ten: string;
+  /** Số đạo lôi phải chịu. */
+  soDao: number;
+  /** Sức một đạo lôi, đối chọi với thủ. */
+  sucLoi: number;
+}
+
+/*
+ * Sức lôi cân theo MÁU THẬT của nhân vật ở tầng Viên mãn, không phải bốc đại.
+ *
+ * Máu tối đa lên rất chậm (40 + nền × hệ đạo + khí huyết × 2,5) trong khi thủ
+ * cũng lên, nên hai con số dưới đây phải nhích chứ không được nhân lên: bản
+ * đầu để 24 và 58, tính ra bậc 2 chịu hơn 500 sát thương trên 129 máu — tức là
+ * một cửa KHÔNG QUA ĐƯỢC dù chuẩn bị kiểu gì. Đó mới là lỗi nặng, chứ không
+ * phải "hơi khó".
+ *
+ * Chỗ nặng dần nằm ở SỐ ĐẠO LÔI (3 rồi 5), và ở chỗ bậc 2 gần như bắt buộc
+ * phải mang đồ mới đủ cửa — đúng cái quyết định mà bản thiết kế muốn có.
+ */
+export const THIEN_KIEP: readonly ThienKiep[] = [
+  { bac: 1, ten: 'Tam Đạo Lôi Kiếp', soDao: 3, sucLoi: 19 },
+  { bac: 2, ten: 'Ngũ Đạo Lôi Kiếp', soDao: 5, sucLoi: 21 },
+] as const;
+
+export function timThienKiep(bac: number): ThienKiep | null {
+  return THIEN_KIEP.find((k) => k.bac === bac) ?? null;
+}
+
+/**
+ * Ba món chuẩn bị, mua bằng LINH THẠCH ngay lúc độ kiếp.
+ *
+ * Cố ý KHÔNG làm túi đồ: món mua rồi để đấy thì phải có bảng kho, phải có
+ * chuyện dùng nhầm, phải có chuyện hai tab cùng dùng một món. Ở đây trả tiền
+ * và dùng là một hành động, nên không có trạng thái nào sống sót giữa hai lần
+ * bấm — mà người chơi vẫn có đúng cái quyết định blueprint muốn: bỏ linh thạch
+ * ra đổi lấy tỉ lệ, hay để dành mà liều.
+ *
+ * Hai món đánh vào hai chỗ khác nhau, vì kiếp có hai cửa tử: chết vì đòn (thân
+ * tổn) và hỏng vì tâm ma. Chọn nhầm món là chuẩn bị cho cửa mình không thiếu.
+ */
+export interface MonChuanBi {
+  ma: string;
+  ten: string;
+  gia: number;
+  /** Cộng thẳng vào tỉ lệ vượt tâm ma. */
+  congTam: number;
+  /** Mỗi đạo lôi nhẹ đi ngần này phần. */
+  giamLoi: number;
+  moTa: string;
+}
+
+export const CHUAN_BI: readonly MonChuanBi[] = [
+  {
+    ma: 'tinh-tam-dan', ten: 'Tĩnh Tâm đan', gia: 55, congTam: 0.14, giamLoi: 0,
+    moTa: 'Giữ cho đạo tâm không loạn giữa tiếng sấm. Chỉ giúp ở cửa tâm ma.',
+  },
+  {
+    ma: 'ho-the-phu', ten: 'Hộ Thể phù', gia: 40, congTam: 0, giamLoi: 0.26,
+    moTa: 'Một lớp linh quang chắn lôi. Chỉ giúp ở cửa thân tổn.',
+  },
+  {
+    ma: 'tu-linh-tran', ten: 'Tụ Linh trận', gia: 95, congTam: 0.08, giamLoi: 0.14,
+    moTa: 'Dựng trận rồi mới ngồi vào. Đỡ được cả hai cửa, nhưng đắt hơn cả hai cộng lại chia đôi.',
+  },
+] as const;
+
+export function timChuanBi(ma: string): MonChuanBi | null {
+  return CHUAN_BI.find((m) => m.ma === ma) ?? null;
+}
+
+/** Gom tác dụng của các món đã chọn. Mã lạ bị bỏ qua, không nổ. */
+export function gomChuanBi(ma: readonly string[]): { gia: number; congTam: number; giamLoi: number } {
+  // Lọc trùng: gửi lên cùng một mã ba lần thì cũng chỉ tính một.
+  const rieng = [...new Set(ma)];
+  let gia = 0; let congTam = 0; let giamLoi = 0;
+  for (const m of rieng) {
+    const x = timChuanBi(m);
+    if (!x) continue;
+    gia += x.gia; congTam += x.congTam; giamLoi += x.giamLoi;
+  }
+  // Trần cho giảm lôi: gom đủ ba món cũng không được miễn nhiễm.
+  return { gia, congTam, giamLoi: Math.min(0.5, giamLoi) };
+}
+
+/** Sát thương trung bình của MỘT đạo lôi, sau khi trừ thủ và trừ đồ chuẩn bị. */
+export function satThuongLoi(sucLoi: number, thu: number, giamLoi: number): number {
+  return Math.max(1, Math.round((sucLoi * 2 - thu) * (1 - giamLoi)));
+}
+
+/**
+ * Dự báo rủi ro, tách làm HAI CON SỐ chứ không gộp thành một.
+ *
+ * Đây là chỗ blueprint mục 9 đòi: "người chơi chuẩn bị đột phá phải biết điều
+ * kiện còn thiếu, RỦI RO CHÍNH và cách giảm rủi ro". Một con số 47% thì không
+ * nói được nên mua đan hay mua phù; tách ra thành "sống sót 92%, vượt tâm ma
+ * 51%" thì nhìn là biết tiền nên bỏ vào đâu.
+ */
+export interface DuBaoKiep {
+  /** Xác suất chịu hết các đạo lôi mà chưa gục. */
+  song: number;
+  /** Xác suất giữ được đạo tâm sau khi đã chịu xong. */
+  tam: number;
+  /** Tích của hai cái trên. */
+  qua: number;
+  /** Sát thương trung bình phải chịu tất cả. */
+  tongSatThuong: number;
+}
+
+export function tiLeQuaKiep(
+  bo: BoThuocTinh, suc: SucChien, hp: number, bac: number, chuanBi: readonly string[],
+): DuBaoKiep {
+  const k = timThienKiep(bac);
+  if (!k) return { song: 0, tam: 0, qua: 0, tongSatThuong: 0 };
+  const { congTam, giamLoi } = gomChuanBi(chuanBi);
+
+  const moiDao = satThuongLoi(k.sucLoi, suc.thu, giamLoi);
+  const tong = moiDao * k.soDao;
+
+  // Còn bao nhiêu máu so với tổng phải chịu. Dư gấp rưỡi trở lên là gần như
+  // chắc sống; vừa đủ là năm ăn năm thua; thiếu là gần như chắc gục.
+  const du = tong > 0 ? hp / tong : 2;
+  const song = Math.min(0.98, Math.max(0.02, (du - 0.75) / 0.75));
+
+  // Tâm ma ăn ĐẠO TÂM là chính, THẦN HỒN đỡ thêm một phần — đúng cột "dùng"
+  // của hai thuộc tính ấy ở bảng trên, chứ không bịa ra một công thức khác.
+  const nen = 0.30 - (bac - 1) * 0.06;
+  const tam = Math.min(0.97, Math.max(0.03,
+    nen + (bo.daoTam ?? 0) * 0.032 + (bo.thanHon ?? 0) * 0.014 + congTam));
+
+  return { song, tam, qua: song * tam, tongSatThuong: tong };
+}
+
+/** Đột phá hỏng thì mất chừng này phần tu vi — nặng hơn thua một trận quái. */
+export const PHAT_DO_KIEP = 0.25;
+
+export interface DongKiep {
+  /** Đạo lôi thứ mấy; 0 là lượt tâm ma sau cùng. */
+  dao: number;
+  cau: string;
+  satThuong: number;
+  hpConLai: number;
+}
+
+export interface KetQuaKiep {
+  dienBien: DongKiep[];
+  qua: boolean;
+  hpConLai: number;
+  /** Hỏng ở cửa nào: chịu không nổi đòn, hay giữ không nổi đạo tâm. */
+  hong: 'than' | 'tam' | null;
+  /** Việc CÓ THỂ LÀM để lần sau khác đi. Rỗng khi qua được. */
+  nguyenNhan: string[];
+}
+
+/**
+ * Độ kiếp. Hàm THUẦN, `tungXu` bơm được để bài kiểm chốt kết quả.
+ *
+ * Blueprint mục 9, câu cuối và cũng là câu khó nhất: "khi thất bại, hệ thống
+ * phải cho thấy nguyên nhân CÓ THỂ HÀNH ĐỘNG ĐƯỢC thay vì chỉ thông báo Thất
+ * bại". Nên hàm này không trả về một chữ `false` — nó trả về hỏng ở cửa nào,
+ * thiếu đúng bao nhiêu, và món nào lẽ ra bù được chỗ thiếu ấy.
+ */
+export function doKiep(
+  bo: BoThuocTinh, suc: SucChien, hp: number, bac: number,
+  chuanBi: readonly string[], tungXu: () => number = Math.random,
+): KetQuaKiep {
+  const k = timThienKiep(bac);
+  if (!k) {
+    return { dienBien: [], qua: false, hpConLai: hp, hong: null, nguyenNhan: [] };
+  }
+  const { congTam, giamLoi } = gomChuanBi(chuanBi);
+  const daDung = new Set(chuanBi);
+
+  const dienBien: DongKiep[] = [];
+  let mau = hp;
+  let chiu = 0;
+
+  for (let i = 1; i <= k.soDao; i += 1) {
+    const nen = satThuongLoi(k.sucLoi, suc.thu, giamLoi);
+    const st = Math.max(1, Math.round(nen * (0.85 + tungXu() * 0.3)));
+    chiu += st;
+    mau = Math.max(0, mau - st);
+    dienBien.push({
+      dao: i,
+      cau: `Đạo lôi thứ ${i} giáng xuống`,
+      satThuong: st,
+      hpConLai: mau,
+    });
+    if (mau <= 0) break;
+  }
+
+  if (mau <= 0) {
+    const nguyenNhan = [
+      `Chịu ${chiu} sát thương trên ${hp} máu — thiếu ${chiu - hp + 1} máu nữa mới trụ hết ${k.soDao} đạo lôi.`,
+    ];
+    if (!daDung.has('ho-the-phu') && !daDung.has('tu-linh-tran')) {
+      nguyenNhan.push('Chưa mang Hộ Thể phù. Mỗi đạo lôi nhẹ đi 26% là đủ đổi kết quả ở khoảng cách này.');
+    }
+    nguyenNhan.push('Nghỉ cho đầy khí huyết rồi hãy ngồi vào — máu hồi 12 mỗi giờ, không tốn gì.');
+    nguyenNhan.push('Hoặc tu thêm vài tầng: thủ càng cao thì mỗi đạo lôi càng nhẹ.');
+    return { dienBien, qua: false, hpConLai: 1, hong: 'than', nguyenNhan };
+  }
+
+  // Cửa thứ hai: giữ đạo tâm. Dùng lại ĐÚNG con số mà màn chuẩn bị đã hứa.
+  const { tam } = tiLeQuaKiep(bo, suc, hp, bac, chuanBi);
+  const xu = tungXu();
+  if (xu < tam) {
+    dienBien.push({
+      dao: 0,
+      cau: 'Tâm ma dâng lên rồi tan — đạo tâm giữ vững, cảnh giới vỡ ra',
+      satThuong: 0,
+      hpConLai: mau,
+    });
+    return { dienBien, qua: true, hpConLai: mau, hong: null, nguyenNhan: [] };
+  }
+
+  dienBien.push({
+    dao: 0,
+    cau: 'Tâm ma đè xuống, đạo tâm vỡ trước khi cảnh giới kịp vỡ',
+    satThuong: 0,
+    hpConLai: mau,
+  });
+  const nguyenNhan = [
+    `Đạo tâm ${bo.daoTam ?? 0}, thần hồn ${bo.thanHon ?? 0} — cửa tâm ma chỉ qua được ${Math.round(tam * 100)}%, và lần này rơi vào phần còn lại.`,
+  ];
+  if (!daDung.has('tinh-tam-dan')) {
+    nguyenNhan.push('Chưa uống Tĩnh Tâm đan. Cộng thẳng 14% vào đúng cửa vừa hỏng.');
+  } else if (!daDung.has('tu-linh-tran')) {
+    nguyenNhan.push('Có thể dựng thêm Tụ Linh trận: cộng thêm 8% nữa vào cửa này.');
+  } else {
+    nguyenNhan.push('Đã mang đủ đồ cho cửa này — phần còn lại là số trời, ngồi lại lần nữa thôi.');
+  }
+  nguyenNhan.push('Thân thể không hề hấn — hỏng ở tâm chứ không ở đòn, nên đừng đổ tiền vào Hộ Thể phù.');
+  return { dienBien, qua: false, hpConLai: mau, hong: 'tam', nguyenNhan };
+}

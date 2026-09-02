@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { auth } from '@/lib/auth';
 import { chotBeQuan, xemNhanVat } from '@/lib/tu-tien';
 import { BeQuan } from '@/components/tutien/BeQuan';
+import { CanhBaoDotPha } from '@/components/tutien/CanhBaoDotPha';
 import { THUOC_TINH, timDao } from '@/lib/tu-tien-const';
 
 export const metadata: Metadata = { title: 'Bế quan — Vạn Đạo Tu Tiên' };
@@ -23,6 +24,7 @@ export default async function TrangTuLuyen() {
   return (
     <>
       <h1 className="text-xl font-black">Bế quan</h1>
+      <CanhBaoDotPha nv={nv} />
       <BeQuan nv={nv} />
 
       <section className="tien-tam p-5">

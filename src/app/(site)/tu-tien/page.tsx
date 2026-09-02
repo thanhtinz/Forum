@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { chotBeQuan, xemNhanVat } from '@/lib/tu-tien';
 import { TheNhanVat } from '@/components/tutien/TheNhanVat';
 import { BeQuan } from '@/components/tutien/BeQuan';
+import { CanhBaoDotPha } from '@/components/tutien/CanhBaoDotPha';
 import { BAC_TOI_DA, CANH_GIOI, DAO, SO_TANG } from '@/lib/tu-tien-const';
 
 export const metadata: Metadata = { title: 'Vạn Đạo Tu Tiên' };
@@ -58,6 +59,9 @@ export default async function TrangTuTien() {
     <>
       <h1 className="text-xl font-black">Đạo Đường</h1>
       <TheNhanVat nv={nv} />
+      {/* Cảnh báo đứng TRÊN bế quan: lúc đã đủ điều kiện thì bế quan là việc
+          vô nghĩa, để nó ở trên là chỉ sai việc. */}
+      <CanhBaoDotPha nv={nv} />
       <BeQuan nv={nv} />
     </>
   );

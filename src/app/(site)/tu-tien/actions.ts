@@ -4,10 +4,12 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { banMessage, getActiveBan } from '@/lib/ban';
-import { boCua, chotBeQuan, trungTen, type KeLaiTran } from '@/lib/tu-tien';
+import { boCua, chotBeQuan, trungTen, type KeLaiKiep, type KeLaiTran } from '@/lib/tu-tien';
 import {
-  DIA_DIEM_DAU, PHAT_THUA, danhQuai, gieoLinhCan, gieoThuocTinh, hpHienGio,
-  keNhau, loiTenDao, sucChien, timDao, timDiaDiem, timQuai,
+  BAC_TOI_DA, DIA_DIEM_DAU, PHAT_DO_KIEP, PHAT_THUA, danhQuai, doKiep,
+  gieoLinhCan, gieoThuocTinh, gomChuanBi, hpHienGio, keNhau, laDotPha,
+  loiTenDao, sucChien, tenCanhGioi, timDao, timDiaDiem, timQuai, timThienKiep,
+  tuViCanDe,
 } from '@/lib/tu-tien-const';
 
 /**
@@ -28,6 +30,8 @@ export interface TienState {
   ke?: string;
   /** Trận vừa đánh, đủ để dựng lại nhật ký trên màn hình. */
   tran?: KeLaiTran;
+  /** Lần độ kiếp vừa rồi, đủ để dựng màn kết quả. */
+  kiep?: KeLaiKiep;
 }
 
 async function nguoiTu(): Promise<{ userId: string } | { error: string }> {
@@ -259,4 +263,104 @@ export async function danhNhau(_prev: TienState, formData: FormData): Promise<Ti
 
   lamMoi();
   return { ok: true, ke, tran: keLai };
+}
+
+/**
+ * Độ kiếp — đột phá qua bậc cảnh giới mới.
+ *
+ * Đây là hành động đắt nhất trong game nên cũng là chỗ chặt nhất:
+ *
+ *   • Trình duyệt CHỈ gửi lên danh sách MÃ món chuẩn bị. Giá, tác dụng và tỉ
+ *     lệ đều đọc ở máy chủ từ `CHUAN_BI` — gửi kèm một cái giá 0 lên đây thì
+ *     cũng không ai đọc.
+ *   • Ghi CÓ ĐIỀU KIỆN: `where` mang theo bậc, tầng, tu vi, mốc máu cũ và
+ *     `linhThach: { gte: gia }`. Hai tab cùng bấm thì tab sau đếm được 0 hàng
+ *     và không có gì xảy ra — không có chuyện độ kiếp hai lần bằng một lượt
+ *     tu vi, cũng không có chuyện tiêu âm linh thạch.
+ *   • Trừ tiền bằng `decrement` chứ không ghi đè một con số đọc trước đó.
+ */
+export async function doThienKiep(_prev: TienState, fd: FormData): Promise<TienState> {
+  const me = await nguoiTu();
+  if ('error' in me) return me;
+
+  // Mốc bế quan phải chốt TRƯỚC: người ngồi bế quan đủ tu vi rồi mở thẳng
+  // trang này thì tu vi còn nằm ở dạng "chờ nhận", chưa vào sổ.
+  await chotBeQuan(me.userId);
+
+  const maChuanBi = String(fd.get('chuanBi') ?? '')
+    .split(',').map((x) => x.trim()).filter(Boolean);
+  const { gia } = gomChuanBi(maChuanBi);
+
+  const r = await db.tienNhanVat.findUnique({
+    where: { userId: me.userId },
+    select: {
+      id: true, dao: true, bac: true, tang: true, tuVi: true, linhThach: true,
+      hp: true, hpTinhAt: true,
+      canCot: true, ngoTinh: true, daoTam: true, khiVan: true,
+      thanHon: true, khiHuyet: true, satY: true, huyetMach: true,
+    },
+  });
+  if (!r) return { error: 'Chưa có nhân vật nào.' };
+
+  if (!laDotPha(r.tang)) return { error: 'Chưa tới tầng Viên mãn, chưa có kiếp nào để độ.' };
+  if (r.bac >= BAC_TOI_DA) return { error: 'Đã tới trần cảnh giới của giai đoạn này.' };
+  if (r.tuVi < tuViCanDe(r.bac, r.tang)) return { error: 'Tu vi chưa đầy tầng Viên mãn.' };
+  if (r.linhThach < gia) return { error: 'Không đủ linh thạch cho món đã chọn.' };
+
+  const k = timThienKiep(r.bac);
+  if (!k) return { error: 'Bậc này chưa có thiên kiếp.' };
+
+  const bo = boCua(r as never);
+  const suc = sucChien(bo, r.dao, r.bac, r.tang);
+  const now = Date.now();
+  const hp = hpHienGio(r.hp, suc.hpToiDa, r.hpTinhAt.getTime(), now);
+  if (hp <= 1) return { error: 'Thương thế còn nặng, ngồi vào là chết chắc.' };
+
+  const kq = doKiep(bo, suc, hp, r.bac, maChuanBi);
+  const keChung = {
+    ten: k.ten, soDao: k.soDao, dienBien: kq.dienBien, qua: kq.qua,
+    hong: kq.hong, nguyenNhan: kq.nguyenNhan, hpDau: hp, hpToiDa: suc.hpToiDa,
+    tonLinhThach: gia,
+  };
+
+  if (kq.qua) {
+    const bacMoi = r.bac + 1;
+    const n = await db.tienNhanVat.updateMany({
+      where: {
+        id: r.id, bac: r.bac, tang: r.tang, tuVi: r.tuVi,
+        hpTinhAt: r.hpTinhAt, linhThach: { gte: gia },
+      },
+      data: {
+        bac: bacMoi, tang: 1, tuVi: 0,
+        hp: kq.hpConLai, hpTinhAt: new Date(now),
+        // Mốc bế quan đặt lại: quãng trước cửa đột phá đã chốt xong rồi, để
+        // nguyên là vừa lên bậc đã có sẵn một bình tu vi đầy.
+        tuLuyenTu: new Date(now),
+        linhThach: { decrement: gia },
+      },
+    });
+    if (n.count === 0) return { error: 'Có thao tác khác vừa chen vào, thử lại.' };
+    lamMoi();
+    return {
+      ok: true,
+      kiep: { ...keChung, canhGioiMoi: tenCanhGioi(bacMoi, 1, r.dao), matTuVi: 0 },
+    };
+  }
+
+  const mat = Math.floor(r.tuVi * PHAT_DO_KIEP);
+  const n = await db.tienNhanVat.updateMany({
+    where: {
+      id: r.id, bac: r.bac, tang: r.tang, tuVi: r.tuVi,
+      hpTinhAt: r.hpTinhAt, linhThach: { gte: gia },
+    },
+    data: {
+      tuVi: r.tuVi - mat,
+      hp: Math.max(1, kq.hpConLai), hpTinhAt: new Date(now),
+      tuLuyenTu: new Date(now),
+      linhThach: { decrement: gia },
+    },
+  });
+  if (n.count === 0) return { error: 'Có thao tác khác vừa chen vào, thử lại.' };
+  lamMoi();
+  return { kiep: { ...keChung, canhGioiMoi: null, matTuVi: mat } };
 }

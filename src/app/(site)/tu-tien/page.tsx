@@ -31,9 +31,9 @@ export default async function TrangTuTien() {
       <>
         <h1 className="text-xl font-black">Vạn Đạo Tu Tiên</h1>
         <GioiThieu />
-        <section className="tien-giay p-5">
+        <section className="tien-tam p-5">
           <p className="text-sm">
-            <Link href="/login?callbackUrl=/tu-tien" className="tien-son font-bold hover:underline">
+            <Link href="/login?callbackUrl=/tu-tien" className="tien-dao-mau font-bold hover:underline">
               Đăng nhập
             </Link>{' '}để lập đạo hiệu.
           </p>
@@ -71,7 +71,7 @@ export default async function TrangTuTien() {
  */
 function GioiThieu() {
   return (
-    <section className="tien-giay p-5">
+    <section className="tien-tam p-5">
       <p className="mb-3 text-sm">
         Bắt đầu là phàm nhân. Chọn một trong năm đạo, tu tới cảnh giới, rồi độ
         kiếp mà lên bậc. Cảnh giới cao không bảo đảm thắng — công pháp, pháp

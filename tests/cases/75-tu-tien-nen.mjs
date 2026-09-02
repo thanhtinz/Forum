@@ -2,7 +2,7 @@ import { BASE, db, openPage, doiToi } from '../helpers.mjs';
 import {
   BAC_TOI_DA, BE_QUAN_TRAN_MS, CANH_GIOI, DAO, LINH_CAN, SO_TANG,
   THUOC_TINH, THUOC_TINH_TOI_DA, THUOC_TINH_TOI_THIEU, TONG_THUOC_TINH,
-  bacKeTiep, gieoLinhCan, gieoThuocTinh, laDotPha, tenCanhGioi, timDao,
+  bacKeTiep, gieoLinhCan, gieoThuocTinh, laDotPha, sucChien, tenCanhGioi, timDao,
   tongBo, tuViBeQuan, tuViCanDe, tuViMoiPhut,
 } from '../../src/lib/tu-tien-const.ts';
 
@@ -143,6 +143,11 @@ export default async function run(check) {
     check('bộ thuộc tính ghi vào sổ đúng tổng đã định', tongBo(boThat) === TONG_THUOC_TINH,
       `tổng ${tongBo(boThat)}`);
     check('và linh căn hợp lệ', LINH_CAN.some((l) => l.id === nv.linhCan), String(nv.linhCan));
+    // Cột `hp` mặc định 0 ở lược đồ, mà máu chỉ hồi theo giờ — quên đặt lúc
+    // tạo là nhân vật mới toanh đứng ở 0 máu, không đánh nổi con quái nào cho
+    // tới mấy tiếng sau. Đã dính đúng lỗi này một lần.
+    check('vào cửa là đầy máu', nv.hp === sucChien(boThat, nv.dao, 1, 1).hpToiDa,
+      `${nv.hp}/${sucChien(boThat, nv.dao, 1, 1).hpToiDa}`);
 
     // ── Trình duyệt KHÔNG gửi được thuộc tính lên ────────────────────────
     // Gieo là việc của máy chủ; gửi kèm tám cột kịch trần cũng không ăn thua.

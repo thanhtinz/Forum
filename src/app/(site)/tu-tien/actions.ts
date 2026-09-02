@@ -86,6 +86,12 @@ export async function taoNhanVat(_prev: TienState, formData: FormData): Promise<
         // Mốc bế quan đặt NGAY LÚC TẠO, không để mặc định của cơ sở dữ liệu:
         // hai chỗ đặt mốc là có lúc lệch nhau vài giây, mà vài giây ấy là tu vi.
         tuLuyenTu: new Date(),
+        // Vào cửa là ĐẦY MÁU. Cột `hp` mặc định 0 ở lược đồ, mà máu hồi theo
+        // giờ nên để nguyên mặc định thì nhân vật mới toanh đứng ở 0/69 và
+        // phải chờ mấy tiếng mới đánh được con quái đầu tiên — không ai hiểu
+        // nổi vì sao. `hpTinhAt` đặt cùng lúc, cùng lý do với `tuLuyenTu`.
+        hp: sucChien(bo, dao.ma, 1, 1).hpToiDa,
+        hpTinhAt: new Date(),
       },
       select: { id: true },
     });

@@ -53,7 +53,7 @@ export function NhatKyTran({ t }: { t: KeLaiTran }) {
             <span className="opacity-55">Hiệp {d.hiep}</span>{' — '}
             {d.ben === 'ta' ? <b>{t.tenTa}</b> : t.tenDich} {d.cau}
             {d.satThuong > 0 && (
-              <>, gây <b className={d.ben === 'ta' ? 'tien-son' : ''}>{d.satThuong}</b> sát thương</>
+              <>, gây <b className={d.ben === 'ta' ? 'tien-dao-mau' : 'tien-son'}>{d.satThuong}</b> sát thương</>
             )}.
           </li>
         ))}

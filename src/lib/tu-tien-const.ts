@@ -25,6 +25,37 @@
 /** Thư mục ảnh của game, hiện chưa có tệp nào. */
 export const ANH_TU_TIEN = '/tu-tien';
 
+// ── Hệ màu ───────────────────────────────────────────────────────────────
+
+/**
+ * Token màu, lấy đúng bảng ở mục 6 của bản UX/UI Blueprint.
+ *
+ * Để ở đây chứ không chỉ trong CSS vì hai chỗ cần tới: CSS dựng lớp áo, còn
+ * mã thì cần màu accent CỦA TỪNG ĐẠO để gắn vào khung — blueprint chốt "mỗi
+ * đạo có accent riêng nhưng dùng chung token", và đó là một trong năm nguyên
+ * tắc hiển thị ("năm đạo phải khác nhau").
+ */
+export const MAU = {
+  ink950: '#0B1020',
+  ink800: '#151C32',
+  jade: '#5ED6B3',
+  gold: '#E7B85B',
+  crimson: '#D85C68',
+} as const;
+
+/** Accent của từng đạo, đúng bảng token. */
+export const MAU_DAO: Record<string, string> = {
+  the: '#A8B3C2',
+  linh: '#6DB7FF',
+  ma: '#B58BFF',
+  yeu: '#82C878',
+  tula: '#F4A261',
+};
+
+export function mauDao(ma: string): string {
+  return MAU_DAO[ma] ?? MAU.jade;
+}
+
 // ── Thuộc tính nhân vật ──────────────────────────────────────────────────
 
 /**

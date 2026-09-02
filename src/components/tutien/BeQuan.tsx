@@ -27,27 +27,39 @@ export function BeQuan({ nv }: { nv: NhanVatXem }) {
   });
 
   const gio = Math.round(BE_QUAN_TRAN_MS / 3_600_000);
+  const day = !nv.kichTran && nv.phanTramBeQuan >= 100;
 
   return (
-    <section className="tien-giay p-5">
+    <section className="tien-tam p-5">
       <h2 className="mb-1 text-lg font-black">Bế quan</h2>
       <p className="mb-3 text-sm opacity-75">
         Rời trang vẫn tu. Máy chủ gom tu vi theo thời gian trôi, tối đa {gio} giờ
         một lần — quá {gio} giờ thì phần dôi ra không tính nữa.
       </p>
 
-      <div className="mb-1 flex items-baseline justify-between text-xs opacity-75">
-        <span>Bình chứa</span>
-        <span>{nv.phanTramBeQuan}% của {gio} giờ</span>
+      {/*
+        Blueprint mục 5: một resource bar phải nói được cả TỐC ĐỘ và TRẠNG THÁI
+        NGUY HIỂM. Ở bình bế quan, "nguy hiểm" chính là bình ĐÃ ĐẦY — từ giây
+        ấy trở đi mọi phút trôi qua đều mất trắng, mà thanh đầy thì trông y hệt
+        thanh khoẻ mạnh nếu không báo gì.
+      */}
+      <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+        <span className="tien-mo">Bình chứa</span>
+        <span className="tabular-nums">
+          {nv.phanTramBeQuan}% của {gio} giờ
+          <span className={day ? 'tien-son' : 'tien-mo'}>
+            {day ? ' · đã tràn, phút nào trôi qua là mất' : ` · +${nv.moiPhut.toFixed(2)}/phút`}
+          </span>
+        </span>
       </div>
-      <div className="tien-thanh mb-3">
+      <div className={day ? 'tien-thanh nguy mb-3' : 'tien-thanh mb-3'}>
         <i style={{ width: `${Math.max(2, nv.phanTramBeQuan)}%` }} />
       </div>
 
       <p className="mb-3 text-sm">
         {nv.kichTran
           ? 'Đã tới trần cảnh giới của giai đoạn này — bế quan thêm cũng không vào đâu.'
-          : <>Đang chờ nhận: <b className="tien-son">{nv.choNhan.toLocaleString('vi')}</b> tu vi.</>}
+          : <>Đang chờ nhận: <b className="tien-dao-mau">{nv.choNhan.toLocaleString('vi')}</b> tu vi.</>}
       </p>
 
       {tin.ke && <p className="tien-ngoc mb-2 text-sm font-semibold">{tin.ke}</p>}

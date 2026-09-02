@@ -25,7 +25,7 @@ export default async function TrangTuLuyen() {
       <h1 className="text-xl font-black">Bế quan</h1>
       <BeQuan nv={nv} />
 
-      <section className="tien-giay p-5">
+      <section className="tien-tam p-5">
         <h2 className="mb-1 text-lg font-black">Tốc độ tu vi</h2>
         <p className="mb-3 text-sm opacity-75">
           GDD chốt rằng người chơi phải nhìn được lý do mình mạnh lên, nên chỗ
@@ -38,7 +38,7 @@ export default async function TrangTuLuyen() {
           ))}
           <li>Linh căn <b>{nv.tenLinhCan}</b> nhân vào hiệu suất.</li>
           <li>Cảnh giới càng cao càng chậm — hiện ở bậc <b>{nv.bac}</b>.</li>
-          <li className="pt-1">Kết quả: <b className="tien-son">{nv.moiPhut.toFixed(2)}</b> tu vi mỗi phút.</li>
+          <li className="pt-1">Kết quả: <b className="tien-dao-mau">{nv.moiPhut.toFixed(2)}</b> tu vi mỗi phút.</li>
         </ul>
       </section>
     </>

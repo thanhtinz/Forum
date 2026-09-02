@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { taoNhanVat, type TienState } from '@/app/(site)/tu-tien/actions';
 import {
   DAO, LINH_CAN, TEN_TOI_DA, THUOC_TINH, TI_LE_DI_LINH_CAN, TONG_THUOC_TINH,
+  mauDao, timDao,
 } from '@/lib/tu-tien-const';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,9 @@ export function TaoNhanVat() {
   const [tin, setTin] = useState<TienState>({});
   const [dangLam, batDau] = useTransition();
 
+  const daChon = dao ? timDao(dao) : undefined;
+  const tenThuocTinh = (ma: string) => THUOC_TINH.find((t) => t.ma === ma)?.ten ?? ma;
+
   const lam = () => batDau(async () => {
     const fd = new FormData();
     fd.set('ten', ten);
@@ -33,7 +37,9 @@ export function TaoNhanVat() {
   });
 
   return (
-    <div className="space-y-4">
+    // Đã chọn đạo thì cả màn đổi accent theo — nút "Bái nhập đạo đồ" ở cuối
+    // trang cũng đổi màu, nên nhìn xuống ngón cái là biết mình đang bái đạo nào.
+    <div className="space-y-4" style={daChon ? ({ '--tien-dao': mauDao(daChon.ma) } as CSSProperties) : undefined}>
       <section className="tien-trieu p-5">
         <h2 className="mb-1 text-lg font-black">Lập đạo hiệu</h2>
         <p className="mb-3 text-sm opacity-75">
@@ -44,7 +50,7 @@ export function TaoNhanVat() {
           className="input w-full" />
       </section>
 
-      <section className="tien-giay p-5">
+      <section className="tien-tam p-5">
         <h2 className="mb-1 text-lg font-black">Chọn đạo</h2>
         <p className="mb-3 text-sm opacity-75">
           Năm đạo đi năm đường khác nhau, không phải năm cái tên của cùng một
@@ -53,17 +59,25 @@ export function TaoNhanVat() {
         <ul className="space-y-2">
           {DAO.map((d) => (
             <li key={d.ma}>
+              {/*
+                Mỗi ô tự đặt `--tien-dao` của riêng nó, nên ngay ở màn chọn đã
+                thấy năm màu khác nhau chứ không phải năm khối chữ giống hệt —
+                blueprint mục 1: "năm đạo phải khác nhau".
+              */}
               <button type="button" onClick={() => setDao(d.ma)}
                 aria-pressed={dao === d.ma}
+                style={{ '--tien-dao': mauDao(d.ma) } as CSSProperties}
                 className={cn('w-full p-3 text-left transition-colors',
                   dao === d.ma ? 'tien-trieu' : 'tien-nut-vien')}>
                 <span className="flex flex-wrap items-baseline gap-x-2">
-                  <b className="text-base">{d.ten}</b>
+                  <b className="tien-dao-mau text-base">{d.ten}</b>
                   <span className="text-xs opacity-70">{d.taiNguyen}</span>
                 </span>
                 <span className="mt-1 block text-sm opacity-85">{d.loiChoi}</span>
-                <span className="mt-1 block text-xs opacity-70">
-                  Mạnh: {d.manh} · Yếu: {d.yeu}
+                <span className="mt-1 block text-xs">
+                  <span className="tien-dieu-kien-dat">Mạnh: {d.manh}</span>
+                  <span className="tien-mo"> · </span>
+                  <span className="tien-dieu-kien-thieu">Yếu: {d.yeu}</span>
                 </span>
               </button>
             </li>
@@ -71,7 +85,29 @@ export function TaoNhanVat() {
         </ul>
       </section>
 
-      <section className="tien-giay p-5">
+      {/*
+        Blueprint mục 1, nguyên tắc đầu: "quyết định trước, chỉ số sau — mỗi
+        màn hình build có khu vực 'Bạn đang đánh đổi gì?'". Đây là khu ấy, và
+        nó chỉ hiện SAU khi đã chọn, để câu trả lời nói về đúng lựa chọn đang
+        cầm trên tay chứ không phải một bảng so sánh chung chung.
+      */}
+      {daChon && (
+        <section className="tien-trieu p-5" style={{ '--tien-dao': mauDao(daChon.ma) } as CSSProperties}>
+          <h2 className="mb-2 text-lg font-black">Bạn đang đánh đổi gì?</h2>
+          <ul className="tien-so space-y-1 text-sm">
+            <li>
+              <span className="tien-mo">Được: </span>
+              tu vi ăn theo <b>{tenThuocTinh(daChon.nuoi[0])}</b> và{' '}
+              <b>{tenThuocTinh(daChon.nuoi[1])}</b> — gieo cao hai thuộc tính ấy
+              là tu nhanh hẳn.
+            </li>
+            <li><span className="tien-mo">Mất: </span>bốn đạo còn lại đóng lại, đạo chính không đổi được.</li>
+            <li><span className="tien-mo">Rủi ro: </span>{daChon.yeu}</li>
+          </ul>
+        </section>
+      )}
+
+      <section className="tien-tam p-5">
         <h2 className="mb-1 text-lg font-black">Số trời</h2>
         <p className="mb-3 text-sm opacity-75">
           Tám thuộc tính và linh căn do máy chủ gieo lúc lập đạo hiệu, tổng

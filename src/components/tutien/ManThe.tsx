@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { danhNhau, diChuyen, type TienState } from '@/app/(site)/tu-tien/actions';
 import type { NhanVatXem, OXem } from '@/lib/tu-tien';
-import { BAN_DO_TEN } from '@/lib/tu-tien-const';
+import { BAN_DO_TEN, HP_HOI_MOI_GIO } from '@/lib/tu-tien-const';
 import { NhatKyTran } from './NhatKyTran';
 
 /**
@@ -31,6 +31,8 @@ export function ManThe({ nv, o }: { nv: NhanVatXem; o: OXem }) {
   });
 
   const kietSuc = nv.hp <= 1;
+  const phanHp = Math.round((nv.hp / nv.suc.hpToiDa) * 100);
+  const nguy = phanHp < 25;
 
   return (
     <div className="space-y-3">
@@ -47,18 +49,21 @@ export function ManThe({ nv, o }: { nv: NhanVatXem; o: OXem }) {
 
       {tin.tran && <NhatKyTran key={JSON.stringify(tin.tran.dienBien)} t={tin.tran} />}
 
-      <section className="tien-giay p-5">
+      <section className="tien-tam p-5">
         <p className="mb-1 text-lg font-black">
           {o.ten} <span className="text-sm font-normal opacity-60">({o.x},{o.y})</span>
         </p>
         <p className="mb-3 text-xs opacity-60">{BAN_DO_TEN}</p>
 
-        <div className="mb-1 flex items-baseline justify-between text-xs opacity-75">
-          <span>Khí huyết</span>
-          <span className="tabular-nums">{nv.hp}/{nv.suc.hpToiDa}</span>
+        <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
+          <span className="tien-mo">Khí huyết</span>
+          <span className="tabular-nums">
+            {nv.hp}/{nv.suc.hpToiDa}
+            {nv.hp < nv.suc.hpToiDa && <span className="tien-mo"> · hồi {HP_HOI_MOI_GIO}/giờ</span>}
+          </span>
         </div>
-        <div className="tien-thanh mb-3">
-          <i style={{ width: `${Math.max(2, Math.round((nv.hp / nv.suc.hpToiDa) * 100))}%` }} />
+        <div className={nguy ? 'tien-thanh nguy mb-3' : 'tien-thanh mb-3'}>
+          <i style={{ width: `${Math.max(2, phanHp)}%` }} />
         </div>
         {kietSuc && (
           <p className="tien-son mb-3 text-sm font-semibold">
@@ -83,7 +88,7 @@ export function ManThe({ nv, o }: { nv: NhanVatXem; o: OXem }) {
           </p>
         )}
 
-        <p className="mb-1 text-sm opacity-70">Chọn lối ra:</p>
+        <p className="tien-mo mb-1 text-sm">Chọn lối ra:</p>
         <ul className="mb-3 space-y-1 text-sm">
           {o.loiRa.map((r) => (
             <li key={r.huong}>

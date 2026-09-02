@@ -312,106 +312,187 @@ html, body {
 /* ══════════════════════════════════════════════════════════════════════
  * Vạn Đạo Tu Tiên — lớp áo riêng
  *
- * Game này KHÔNG DÙNG ẢNH, EMOJI HAY ICON NÀO. Đó là chủ ý chứ không phải
- * thiếu tài nguyên: đây là dòng game chữ, mà nguyên tắc lõi của cả dòng bên
- * Trung Quốc là 文字即界面 — chữ chính là giao diện. Nên toàn bộ sức nặng thị
- * giác phải nằm ở NỀN, KHUNG và CHỮ.
+ * Bảng màu và mấy quy tắc dưới đây lấy đúng mục 6 của bản UX/UI Blueprint:
+ * nền mực xanh đen, bề mặt giấy/đá, đường viền kim loại cổ, ánh sáng linh lực.
  *
- * Bảng màu mực nho: nền giấy ngả, chữ mực, một vệt son đỏ làm điểm nhấn.
+ * KHU NÀY LUÔN NỀN TỐI, không đổi theo chế độ sáng/tối của diễn đàn. Không
+ * phải quên: bảng token chốt một nền mực xanh đen, mà một tấm nền như thế lật
+ * sang sáng thì mất hẳn cái "ánh sáng linh lực" — thứ cả hệ màu xoay quanh.
+ * Mỗi tấm tự mang nền và màu chữ của nó nên đặt vào trang sáng hay tối đều
+ * đọc được.
+ *
+ * `--tien-dao` là accent của ĐẠO người chơi đang tu, gắn vào khung từ máy chủ.
+ * Đây là một trong năm nguyên tắc hiển thị của blueprint: "năm đạo phải khác
+ * nhau — màu, resource bar, skill rhythm và widget đặc thù thay đổi theo đạo".
+ *
+ * Game này KHÔNG DÙNG ẢNH, EMOJI HAY ICON NÀO. Đó là chủ ý: đây là dòng game
+ * chữ, mà nguyên tắc lõi của cả dòng bên Trung Quốc là 文字即界面 — chữ chính
+ * là giao diện. Chỗ blueprint gọi là "icon tài nguyên" thì ở đây làm bằng
+ * nhãn chữ, vẫn đủ tooltip tên/nguồn/sink như bảng component đòi.
  * ════════════════════════════════════════════════════════════════════ */
 
-:root {
-  --tien-giay: #efe7d6;
-  --tien-muc: #23201b;
-  --tien-son: #9d2933;
-  --tien-ngoc: #2f6f5e;
-  --tien-vien: #c9b892;
-}
-:root:not([data-theme='light']) {
-  color-scheme: light dark;
-}
-.dark {
-  --tien-giay: #14161a;
-  --tien-muc: #e8e3d6;
-  --tien-son: #d4636c;
-  --tien-ngoc: #6fbfa5;
-  --tien-vien: #3a3f47;
-}
+.tien-khu {
+  --tien-ink-950: #0B1020;
+  --tien-ink-800: #151C32;
+  --tien-jade: #5ED6B3;
+  --tien-gold: #E7B85B;
+  --tien-crimson: #D85C68;
+  --tien-chu: #E8EDF7;
+  --tien-mo: #9AA6BF;
+  --tien-vien: #2A3350;
+  /* Đạo chưa chọn thì lấy ngọc làm accent tạm. */
+  --tien-dao: var(--tien-jade);
 
-/* Tấm giấy: nền của mọi khối trong game. */
-.tien-giay {
-  background: var(--tien-giay);
-  color: var(--tien-muc);
+  /*
+   * Khu này TỰ SƠN NỀN MỰC của nó chứ không mượn nền diễn đàn: bảng màu
+   * blueprint mục 6 là "nền mực xanh đen", mà diễn đàn ở chế độ sáng thì nền
+   * trắng — chữ #E8EDF7 đặt lên đó là mất hút. Sơn ở đây thì cả năm trang con
+   * cùng một nền, và chuyển trang không thấy chớp trắng giữa chừng.
+   */
+  background:
+    radial-gradient(90% 45% at 50% 0%, color-mix(in srgb, var(--tien-dao) 12%, transparent) 0%, transparent 70%),
+    linear-gradient(180deg, var(--tien-ink-950) 0%, #070A14 100%);
   border: 1px solid var(--tien-vien);
-  border-radius: 0.5rem;
+  border-radius: 12px;
+  padding: 1rem;
+  color: var(--tien-chu);
 }
 
-/* Khung kép kiểu triện, cho khối quan trọng nhất trên trang. */
+/* Ô nhập trong khu mực: `.input` của diễn đàn là nền trắng viền xám, đặt vào
+   đây thì vừa chói vừa nuốt mất chữ nhạt. */
+.tien-khu .input {
+  background: color-mix(in srgb, var(--tien-ink-800) 80%, #000);
+  border-color: var(--tien-vien);
+  color: var(--tien-chu);
+}
+.tien-khu .input::placeholder { color: var(--tien-mo); }
+.tien-khu .input:focus {
+  border-color: var(--tien-dao);
+  outline-color: var(--tien-dao);
+}
+
+/* Bề mặt giấy/đá nổi trên nền mực. */
+.tien-tam {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--tien-ink-800) 92%, #fff) 0%, var(--tien-ink-800) 100%);
+  border: 1px solid var(--tien-vien);
+  border-radius: 8px;
+  color: var(--tien-chu);
+}
+
+/*
+ * Tấm quan trọng nhất trên trang: thêm một đường viền kim loại cổ ở trong và
+ * một vệt sáng linh lực chạy dọc mép trái theo accent của đạo.
+ */
 .tien-trieu {
   position: relative;
-  background: var(--tien-giay);
-  color: var(--tien-muc);
-  border: 2px solid var(--tien-son);
-  border-radius: 0.25rem;
+  background:
+    radial-gradient(120% 80% at 0% 0%, color-mix(in srgb, var(--tien-dao) 14%, transparent) 0%, transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--tien-ink-800) 92%, #fff) 0%, var(--tien-ink-950) 100%);
+  border: 1px solid color-mix(in srgb, var(--tien-gold) 38%, transparent);
+  border-radius: 8px;
+  color: var(--tien-chu);
+  overflow: hidden;
 }
-.tien-trieu::after {
+.tien-trieu::before {
   content: '';
   position: absolute;
-  inset: 4px;
-  pointer-events: none;
-  border: 1px solid color-mix(in srgb, var(--tien-son) 45%, transparent);
-  border-radius: 0.125rem;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, transparent, var(--tien-dao), transparent);
 }
 
-.tien-son { color: var(--tien-son); }
-.tien-ngoc { color: var(--tien-ngoc); }
+.tien-dao-mau { color: var(--tien-dao); }
+.tien-vang { color: var(--tien-gold); }
+.tien-ngoc { color: var(--tien-jade); }
+.tien-son { color: var(--tien-crimson); }
+.tien-mo { color: var(--tien-mo); }
 
-/* Nút: khối chữ có viền, không icon. */
+/*
+ * Nút. Chạm tối thiểu 44px và chữ đủ nặng — blueprint mục 6 chốt cả hai, và
+ * đây là game chơi bằng ngón cái trên điện thoại.
+ */
 .tien-nut {
-  background: var(--tien-son);
-  color: #fff;
-  border-radius: 0.25rem;
+  min-height: 44px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--tien-dao) 88%, #fff), var(--tien-dao));
+  color: #0B1020;
+  border-radius: 6px;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   transition: filter 0.15s;
 }
-.tien-nut:hover:not(:disabled) { filter: brightness(1.12); }
-.tien-nut:disabled { filter: grayscale(0.7); opacity: 0.55; }
+.tien-nut:hover:not(:disabled) { filter: brightness(1.1); }
+.tien-nut:disabled { filter: grayscale(0.75); opacity: 0.5; }
 
 .tien-nut-vien {
+  min-height: 44px;
   background: transparent;
-  color: var(--tien-muc);
+  color: var(--tien-chu);
   border: 1px solid var(--tien-vien);
-  border-radius: 0.25rem;
+  border-radius: 6px;
   font-weight: 600;
 }
-.tien-nut-vien:hover:not(:disabled) { border-color: var(--tien-son); color: var(--tien-son); }
-.tien-nut-vien:disabled { opacity: 0.45; }
+.tien-nut-vien:hover:not(:disabled) {
+  border-color: var(--tien-dao);
+  color: var(--tien-dao);
+}
+.tien-nut-vien:disabled { opacity: 0.4; }
 
-/* Thanh tiến độ mảnh, không bo tròn — cho hợp lối giấy mực. */
+/*
+ * Thanh tài nguyên.
+ *
+ * Blueprint mục 5 đòi thanh này nói được BỐN thứ: giá trị hiện tại, giới hạn,
+ * tốc độ và trạng thái nguy hiểm — chứ không phải chỉ một vạch dài ngắn. Ba
+ * thứ đầu là chuyện của chỗ gọi; còn TRẠNG THÁI NGUY HIỂM thì làm ở đây bằng
+ * lớp `.nguy`, để mọi thanh trong game báo nguy giống hệt nhau.
+ */
 .tien-thanh {
-  height: 6px;
-  background: color-mix(in srgb, var(--tien-vien) 55%, transparent);
+  height: 8px;
+  background: color-mix(in srgb, var(--tien-vien) 70%, transparent);
+  border-radius: 999px;
   overflow: hidden;
 }
 .tien-thanh > i {
   display: block;
   height: 100%;
-  background: var(--tien-son);
+  border-radius: inherit;
+  background: var(--tien-dao);
   transition: width 0.6s ease-out;
 }
+.tien-thanh.nguy > i {
+  background: var(--tien-crimson);
+  animation: tien-nguy 1.4s ease-in-out infinite;
+}
+@keyframes tien-nguy {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.5); }
+}
+
+/* Thanh phụ, dùng cho tài nguyên riêng của đạo trong màn đánh nhau. */
+.tien-thanh-nho { height: 5px; }
 
 /*
- * Nhật ký trận và nhật ký tu luyện.
+ * Nhật ký trận và nhật ký tu luyện — thứ THAY CHO hoạt cảnh.
  *
- * Đây là thứ THAY CHO hoạt cảnh: chữ chạy ra từng dòng. Chữ đều nét để mấy
- * con số thẳng cột, và một vạch dọc bên trái cho ra dáng thẻ tre.
+ * Chữ đều nét để mấy con số thẳng cột, và một vạch dọc bên trái theo accent
+ * của đạo cho ra dáng thẻ tre.
  */
 .tien-so {
-  border-left: 3px solid color-mix(in srgb, var(--tien-son) 60%, transparent);
+  border-left: 2px solid color-mix(in srgb, var(--tien-dao) 55%, transparent);
   padding-left: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
+
+/* Tên cảnh giới: chữ có chân, đúng mục 6 — "serif display cho tiêu đề cảnh
+   giới và sans-serif dễ đọc cho số liệu, CTA, combat log". */
+.tien-canh-gioi {
+  font-family: 'Noto Serif', Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.01em;
+}
+
+/* Dòng điều kiện: đạt thì ngọc, chưa đạt thì son. Mục 5, component cấp 2. */
+.tien-dieu-kien-dat { color: var(--tien-jade); }
+.tien-dieu-kien-thieu { color: var(--tien-crimson); }
 
 /* ══════════════════════════════════════════════════════════════════════
  * Đảo Pokémon — lớp áo riêng

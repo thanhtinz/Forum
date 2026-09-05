@@ -49,6 +49,16 @@ Bỏ qua bước này thì `db push` dừng giữa chừng ở enum `GameEventTy
 không cho bỏ giá trị enum khi còn hàng dùng tới), nên cột `GameVersion.platform`
 không được tạo và mọi trang game trả về lỗi 500.
 
+Nếu cơ sở dữ liệu từng chạy bản **có Đảo Pokémon / Đảo Rồng / Vạn Đạo Tu Tiên**:
+
+```bash
+npm run db:don-ba-game
+npx prisma db push        # bỏ luôn mấy chục bảng của ba game
+```
+
+`db push` tự bỏ được các bảng, nhưng không đụng tới menu admin tự nhập — bước
+dọn xoá các mục `NavLink` trỏ vào ba game, không thì menu còn dẫn vào trang 404.
+
 Nếu từng chạy bản **có tiền thật và VIP**, hoặc bản **còn bán danh hiệu**:
 
 ```bash
@@ -89,25 +99,14 @@ bình luận, duyệt thành viên.
 JAR/JAD qua URL có chữ ký và hạn dùng, mở khoá game trả điểm, bình luận có phân
 trang, yêu cầu game.
 
-**Khu giải trí** — cửa vào của bốn thứ: nông trại (gieo, tưới, thu hoạch, bán,
-mở đất, cây khế), Đảo Pokémon, Đảo Rồng và trắc nghiệm (thể loại, ra câu hỏi,
-bình luận). Ba game đầu đứng riêng ở đường dẫn gốc của mình, `/giai-tri` chỉ
-bày chúng cạnh nhau chứ không phải trang cha. Ảnh lấy từ chính các mã nguồn
-JohnCMS cũ, giữ nguyên nét pixel.
+**Khu giải trí** — cửa vào của hai thứ: nông trại (gieo, tưới, bón, thu hoạch,
+bán, mở đất, đơn hàng, cây khế) và trắc nghiệm (thể loại, ra câu hỏi, bình
+luận). Nông trại đứng riêng ở đường dẫn gốc của mình, `/giai-tri` chỉ bày hai
+thứ cạnh nhau chứ không phải trang cha. Ảnh lấy từ chính các mã nguồn JohnCMS
+cũ, giữ nguyên nét pixel.
 
-**Đảo Rồng** — bảy trang: chuồng, ấp trứng, Hang Rồng (mười hai tầng đánh với
-con canh cửa, chơi một mình), đấu trường (kể lại trận, ghép theo cấp, sổ trận),
-sổ sưu tầm 54 con có mốc thưởng, cửa hàng vật phẩm, xếp hạng theo mùa tính
-điểm Elo. Lai tạo hai con lấy một quả trứng. Chín loài chia theo ngũ hành và
-khắc nhau theo vòng Kim → Mộc → Thổ → Thuỷ → Hoả → Kim. Con rồng có ba trục
-chăm sóc — no, vui, thể lực — và cả ba đều ăn vào sức đánh.
-
-**Vạn Đạo Tu Tiên** — game chữ dựng theo GDD riêng: tám thuộc tính máy chủ
-gieo, tám linh căn (ba dị linh căn), năm đại đạo đi năm lối khác nhau, ba đại
-cảnh giới mỗi bậc bốn tầng, tu luyện ngoại tuyến có trần. Thế giới là một lưới
-toạ độ đi bằng liên kết chữ, quái nằm theo ô, trận đánh xử ở máy chủ rồi trả về
-nhật ký chạy từng dòng — và năm đạo đánh theo năm cơ chế khác nhau. Cố ý KHÔNG
-dùng ảnh, emoji hay icon nào: đây là dòng 文字修仙, chữ chính là giao diện.
+Đảo Pokémon, Đảo Rồng và Vạn Đạo Tu Tiên từng nằm ở đây, nay đã gỡ khỏi dự án
+— cả mã, ảnh lẫn bảng dữ liệu.
 
 **Cửa hàng điểm** — màu nick và huy hiệu. Danh hiệu **không bán**, nó là tên cấp
 bậc theo cấp độ.

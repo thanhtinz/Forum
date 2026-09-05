@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import {
-  AlertTriangle, Building2, Calendar, Clock, Coins, Download, Eye,
+  AlertTriangle, Building2, Calendar, ChevronLeft, Clock, Coins, Download, Eye,
   Gamepad2, Keyboard, Languages, MessageSquare, MonitorSmartphone,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -157,6 +157,17 @@ export default async function GameDetailPage({ params, searchParams }: {
   return (
     <div className="space-y-5">
       <GameViewTracker gameId={game.id} slug={game.slug} />
+
+      {/*
+        Đường về kho game. Trang này mở ra từ khắp nơi — trang chủ, tìm kiếm,
+        một game liên quan ở cuối chính trang này — nên đi tới thì dễ mà lần
+        ra thì không: trước đây trong cả trang không có lấy một đường dẫn nào
+        ngược lên kho, người xem chỉ còn nút Back của trình duyệt, mà nút ấy
+        thì vô dụng khi trang được mở từ một liên kết dán vào.
+      */}
+      <Link href="/games" className="inline-flex items-center gap-1 text-sm text-ink-400 hover:text-brand-600">
+        <ChevronLeft size={15} /> Kho game
+      </Link>
 
       {/* ── Đầu trang ── */}
       <header className="card overflow-hidden">

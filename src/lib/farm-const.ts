@@ -380,3 +380,22 @@ export function moTaVu(phut: number): string {
   const du = phut % 60;
   return du === 0 ? `${gio} giờ` : `${gio} giờ ${du} phút`;
 }
+
+/**
+ * Ảnh đại diện cho một việc, dùng ở bảng việc nổi trên ô đất.
+ *
+ * Bộ ảnh cũ không có tấm nào vẽ riêng cái cuốc hay cái bay, nên mỗi việc mượn
+ * đúng tấm nói về KẾT QUẢ của nó — thứ người chơi sẽ thấy trên ruộng sau khi
+ * bấm: xới thì ra luống đất trống, gieo thì ra mầm, tưới thì có bình nước,
+ * bón thì có bao phân, thu thì được chính quả của cây đang trồng.
+ *
+ * `cropKey` là cây đang đứng ở ô: có thì nút "Thu hoạch" mang đúng quả ấy,
+ * không có (ô còn trống) thì mượn tạm bó lúa cho khỏi khoảng trắng.
+ */
+export function anhViec(v: ViecVu, cropKey: number | null): string {
+  if (v === 'xoi') return `${FARM_ANH}/o-dat/0.png`;
+  if (v === 'gieo') return `${FARM_ANH}/o-dat/gieohat.png`;
+  if (v === 'tuoi') return ANH_TUOI_NUOC;
+  if (v === 'bon') return anhPhan(PHAN_LOAI[0].kind);
+  return anhNongSan(cropKey ?? 1);
+}

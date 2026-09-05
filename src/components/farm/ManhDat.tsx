@@ -88,12 +88,20 @@ interface Props {
   /** Cây khế đã ra quả chưa, và bấm vào thì hái. */
   kheSanSang: boolean;
   onHaiKhe: () => void;
+  /**
+   * Bảng việc của ô đang chọn, dựng bởi trang và thả nổi ngay trên ô ấy.
+   *
+   * Truyền vào dưới dạng hàm dựng chứ không phải một mớ props việc-vụ: mảnh
+   * ruộng chỉ lo chỗ đứng của bảng, còn việc nào bấm được và bấm thì chạy gì
+   * là chuyện của trang — chỗ duy nhất nắm cả hạt giống lẫn phân bón.
+   */
+  bangViec?: (o: ODatDL) => React.ReactNode;
 }
 
 export function ManhDat({
   oDat, now, dangChon, onChon, giaMoO, duTienMoO, dangLam, onMua,
   trang, onTrang, onMoCuaHang, onMoNhaKho, onMoBxh, onMoBangDon,
-  kheSanSang, onHaiKhe,
+  kheSanSang, onHaiKhe, bangViec,
 }: Props) {
   /*
    * Trời tính từ ĐỒNG HỒ ĐANG CHẠY, không phải từ một cái cờ máy chủ gửi
@@ -557,13 +565,21 @@ export function ManhDat({
             >
               {oTrongHang.map((c) =>
                 c.o ? (
-                  <ODat
-                    key={c.soTT}
-                    o={c.o}
-                    now={now}
-                    dangChon={dangChon === c.o.index}
-                    onChon={() => onChon(c.o!.index)}
-                  />
+                  /*
+                    Bọc thêm một lớp định vị quanh ô: bảng việc nổi lên trên
+                    phải neo vào CHÍNH ô ấy, mà bản thân ô lại là một thẻ
+                    button — nhét bảng vào trong nó thì thành nút lồng nút,
+                    trình duyệt tự gỡ ra và cú bấm việc rơi thẳng xuống ô.
+                  */
+                  <div key={c.soTT} className="relative">
+                    <ODat
+                      o={c.o}
+                      now={now}
+                      dangChon={dangChon === c.o.index}
+                      onChon={() => onChon(c.o!.index)}
+                    />
+                    {dangChon === c.o.index && bangViec?.(c.o)}
+                  </div>
                 ) : (
                   <ODatKhoa
                     key={c.soTT}

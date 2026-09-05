@@ -16,7 +16,7 @@ import { Modal } from '@/components/Modal';
 import { BangDon } from './BangDon';
 import { BxhNongTrai } from './BxhNongTrai';
 import { CuaHangHat } from './CuaHangHat';
-import { ThanhViecVu } from './ThanhViecVu';
+import { ViecTrenO } from './ViecTrenO';
 import { TuiHat } from './TuiHat';
 import { TuiPhan } from './TuiPhan';
 import { ManhDat } from './ManhDat';
@@ -33,9 +33,9 @@ import { NhaKho } from './NhaKho';
  * ở trình duyệt đã dùng `Date.now()` của máy người xem thì máy nào lệch giờ là
  * React kêu sai lệch dựng hình ngay giây đầu tiên.
  *
- * Bố cục xếp theo thứ tự người chơi nhìn: mảnh ruộng trước (kèm một thanh việc
- * dính ngay dưới chân ruộng, làm gì cũng ở đó), rồi mới tới cửa hàng, góc trại
- * và nhà kho. Số điểm KHÔNG in ở đâu trong trang — nó đã nằm trên thanh đầu
+ * Bố cục xếp theo thứ tự người chơi nhìn: mảnh ruộng trước (việc của một ô
+ * hiện ngay trên đầu ô ấy, dưới chân ruộng chỉ còn một dòng thuật lại ô đang
+ * chọn), rồi mới tới cửa hàng, góc trại và nhà kho. Số điểm KHÔNG in ở đâu trong trang — nó đã nằm trên thanh đầu
  * trang, in lại là có hai con số phải giữ cho khớp nhau.
  */
 
@@ -94,9 +94,9 @@ export function NongTrai({ d }: { d: DuLieu }) {
   const moODatNgay = () => lam(moODat, {});
 
   /*
-   * Lật trang thì bỏ luôn ô đang chọn: thanh việc ở dưới nói về ô đang chọn,
-   * mà ô ấy nay đã ở trang khác — để nguyên là thanh việc mời làm một việc
-   * lên chính cái ô người chơi không còn nhìn thấy.
+   * Lật trang thì bỏ luôn ô đang chọn: bảng việc bám vào ô, mà ô ấy nay đã ở
+   * trang khác — để nguyên thì bảng biến mất còn dòng thuật dưới chân ruộng
+   * vẫn mời làm việc lên một ô người chơi không còn nhìn thấy.
    */
   const doiTrang = (t: number) => { setTrang(t); setOChon(null); };
 
@@ -136,7 +136,13 @@ export function NongTrai({ d }: { d: DuLieu }) {
         )}
       </div>
 
-      {/* ── Mảnh ruộng và thanh việc, chung một khối ── */}
+      {/*
+        ── Mảnh ruộng và dòng thuật việc, chung một khối ──
+
+        Năm cái nút việc nay nổi ngay trên ô đất vừa bấm (`ViecTrenO`), nên chỗ
+        này chỉ còn kể lại ô đang chọn đang ra sao: bấm ở đâu thì nút mọc ở đó,
+        mắt không phải chạy xuống cuối khung ruộng rồi ngược lên.
+      */}
       <div className="card overflow-hidden">
         <ManhDat
           oDat={d.oDat} now={now}
@@ -149,6 +155,16 @@ export function NongTrai({ d }: { d: DuLieu }) {
           onMoBangDon={() => setMoDon(true)}
           kheSanSang={now >= d.kheSanSangLuc}
           onHaiKhe={() => lam(haiCayKhe, {})}
+          bangViec={(oNay) => (
+            <ViecTrenO
+              tinhTrang={tinhTrangViec(
+                oNay, changCua(oNay.plantedAt, oNay.readyAt, now) === 'chin',
+              )}
+              cropKey={oNay.cropKey}
+              dangLam={dangLam}
+              onViec={(v) => lamViec(v, oNay.index)}
+            />
+          )}
         />
         <ThanhViec
           nhan={
@@ -163,15 +179,7 @@ export function NongTrai({ d }: { d: DuLieu }) {
           phan={o && o.cropKey != null && changO !== 'chin'
             ? Math.round(tienDoVu(o.plantedAt, o.readyAt, now) * 100)
             : null}
-        >
-          {o && (
-            <ThanhViecVu
-              tinhTrang={tinhTrangViec(o, changO === 'chin')}
-              dangLam={dangLam}
-              onViec={(v) => lamViec(v, o.index)}
-            />
-          )}
-        </ThanhViec>
+        />
       </div>
 
       {(tin.ke || tin.error) && (
@@ -260,24 +268,18 @@ export function NongTrai({ d }: { d: DuLieu }) {
 }
 
 /**
- * Thanh việc dính ngay dưới chân ruộng.
+ * Dòng thuật việc dính ngay dưới chân ruộng.
  *
- * Một chỗ duy nhất cho mọi việc của ô đang chọn, nên mắt không phải chạy đi
- * tìm nút: bấm ô nào thì câu chữ và cái nút ở đây đổi theo ô ấy.
+ * Chỉ còn CHỮ và vạch tiến độ: mấy cái nút đã dọn lên bảng nổi trên chính ô
+ * đất. Dòng này ở lại vì nó nói được thứ bảng nút không nói nổi trong bốn tấm
+ * ảnh bé — cây gì, ở ô số mấy, còn bao lâu nữa thì chín.
  */
-function ThanhViec({
-  nhan, phan, children,
-}: {
+function ThanhViec({ nhan, phan }: {
   nhan: string;
   /** Phần trăm vụ đã đi, `null` khi ô không có gì đang lớn. */
   phan: number | null;
-  children?: React.ReactNode;
 }) {
   return (
-    // Dải năm việc chiếm hẳn một dòng riêng (`basis-full`) chứ không đứng
-    // cạnh nhãn: xếp cùng hàng thì ở 754px nhãn chỉ còn ~280px và câu "Chuối
-    // ở ô 2 · còn 1 giờ 30 phút" cụt mất nửa sau — đúng cái nửa cho biết bao
-    // giờ cây chín.
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-[var(--nova-border)] px-3 py-2.5">
       <div className="min-w-0 flex-1 basis-full">
         <p className="text-sm font-semibold">{nhan}</p>
@@ -290,7 +292,6 @@ function ThanhViec({
           </span>
         )}
       </div>
-      {children && <div className="min-w-0 basis-full">{children}</div>}
     </div>
   );
 }

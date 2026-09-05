@@ -132,7 +132,6 @@ function dungDanhSach(ts) {
     ['/giai-tri/trac-nghiem', 'giai-tri-trac-nghiem'],
     ['/giai-tri/trac-nghiem/cua-toi', 'giai-tri-trac-nghiem-cua-toi'],
     ['/nong-trai', 'nong-trai'],
-    ['/rong', 'rong'],
     ['/user/dashboard', 'user-dashboard'],
     ['/user/threads', 'user-threads'],
     ['/user/favorites', 'user-favorites'],

@@ -4,7 +4,7 @@ import { Gamepad2 } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Khu giải trí',
-  description: 'Nông trại, Đảo Pokémon, Đảo Rồng và Trắc nghiệm — chơi bằng điểm kiếm được trên diễn đàn.',
+  description: 'Nông trại và Trắc nghiệm — chơi bằng điểm kiếm được trên diễn đàn.',
 };
 
 /**
@@ -13,12 +13,15 @@ export const metadata: Metadata = {
  * TRƯỚC ĐÂY đây là bảy trò cầu may dựng lại từ bộ mod JohnCMS cũ: bầu cua, oẳn
  * tù tì, quay xèng, phi tiêu, sóc đĩa, đập trứng, sút phạt. Bấm một cái ăn
  * thua ngay, chơi vài lượt là hết chuyện. Nay bỏ hết; chỗ này thành cửa vào
- * của ba game dài cộng Trắc nghiệm, thứ mà nội dung do chính thành viên làm ra
- * chứ không phải máy bốc số.
+ * của Nông trại và Trắc nghiệm — hai thứ chơi được lâu, mà nội dung Trắc
+ * nghiệm còn do chính thành viên làm ra chứ không phải máy bốc số.
  *
- * Trang này KHÔNG phải trang cha của ba game ấy: mỗi game đứng riêng ở đường
- * dẫn gốc của nó (`/nong-trai`, `/pokemon`, `/rong`) và có menu riêng, nên
- * trong game không có nút "quay lại khu giải trí" nào cả.
+ * Ba game từng đứng ở đây — Đảo Pokémon, Đảo Rồng, Vạn Đạo Tu Tiên — đã gỡ
+ * khỏi dự án.
+ *
+ * Trang này KHÔNG phải trang cha của hai trò còn lại: Nông trại đứng riêng ở
+ * `/nong-trai` và có menu riêng, nên trong đó không có nút "quay lại khu giải
+ * trí" nào cả.
  *
  * Vẫn để ở `/giai-tri` chứ không phải `/games`: `/games` là KHO GAME tải về,
  * còn đây là mấy trò chơi ngay trên trang.
@@ -30,25 +33,19 @@ export const metadata: Metadata = {
  */
 
 /**
- * Biểu tượng của bốn game.
+ * Biểu tượng của hai trò.
  *
- * Bốn tệp SVG vẽ mới cho khu này, mỗi tệp là một ô vuông 128×128 ĐÃ CÓ SẴN
+ * Tệp SVG vẽ mới cho khu này, mỗi tệp là một ô vuông 128×128 ĐÃ CÓ SẴN
  * NỀN — nên trang chỉ việc bo góc rồi dựng full-bleed, không phải xếp hình lên
  * một cái nền nào khác nữa. Xem `public/giai-tri/logo/NGUON.txt`.
  *
  * TRƯỚC ĐÂY mỗi ô là một ảnh cắt ra từ chính game phóng to lên. Đúng là không
  * vẽ gì thật, nhưng mấy ảnh ấy vốn là sprite 20–40 điểm ảnh dựng cho cỡ bé
- * xíu, phóng lên 120 điểm ảnh thì vỡ hạt và lệch tông nhau — bốn ô nhìn ra bốn
- * thứ nhặt về chứ không ra một bộ.
+ * xíu, phóng lên 120 điểm ảnh thì vỡ hạt và lệch tông nhau — mấy ô nhìn ra
+ * mấy thứ nhặt về chứ không ra một bộ.
  */
 const GAME = [
   { href: '/nong-trai', ten: 'Nông trại', logo: '/giai-tri/logo/nong-trai.svg' },
-  { href: '/pokemon', ten: 'Đảo Pokémon', logo: '/giai-tri/logo/pokemon.svg' },
-  { href: '/rong', ten: 'Đảo Rồng', logo: '/giai-tri/logo/rong.svg' },
-  // Ô này KHÔNG phải hình vẽ mà là một khúc tranh sơn thuỷ thật, cắt từ chính
-  // bộ tranh dùng cho bản đồ trong game — xem `public/tu-tien/NGUON.txt`.
-  // Trước đó là một con dấu chữ 萬道 tôi tự dựng, tức là đúng thứ repo này cấm.
-  { href: '/tu-tien', ten: 'Vạn Đạo Tu Tiên', logo: '/giai-tri/logo/van-dao.jpg' },
   { href: '/giai-tri/trac-nghiem', ten: 'Trắc nghiệm', logo: '/giai-tri/logo/trac-nghiem.svg' },
 ] as const;
 
@@ -59,9 +56,10 @@ export default function GiaiTriPage() {
         <Gamepad2 size={22} className="text-brand-500" /> Khu giải trí
       </h1>
 
-      {/* Hai cột trên điện thoại, năm trên máy tính: năm game vừa đúng một
-          hàng, không có ô nào rơi xuống đứng lẻ. */}
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-5">
+      {/* Hai cột: hai trò vừa đúng một hàng ở mọi khổ, không có ô nào rơi
+          xuống đứng lẻ. Giữ lưới hai cột cả trên máy tính thay vì giãn ra cho
+          rộng — hai tấm logo kéo hết bề ngang trang thì to như tấm áp phích. */}
+      <ul className="mx-auto grid max-w-sm grid-cols-2 gap-x-4 gap-y-5">
         {GAME.map((g) => (
           <li key={g.href}>
             <Link href={g.href}

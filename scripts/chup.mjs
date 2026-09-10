@@ -33,7 +33,7 @@ for (const [ten, rong, cao] of [['dt', 390, 844], ['ban', 1280, 900]]) {
   const p = await ctx.newPage();
   await p.goto(`${GOC}/dang-nhap`, { waitUntil: 'domcontentloaded' }).catch(() => {});
   if (await p.locator('input[name="dinhDanh"]').count()) {
-    await p.fill('input[name="dinhDanh"]', 'admin@nova.local');
+    await p.fill('input[name="dinhDanh"]', 'admin@sunnystore.local');
     await p.fill('input[name="matKhau"]', 'admin123');
     await p.click('button[type="submit"]');
     await p.waitForTimeout(2200);

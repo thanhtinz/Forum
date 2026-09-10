@@ -36,7 +36,7 @@ export default async function chay(kiem) {
     await p.close();
 
     // ── Quản trị trả lời ───────────────────────────────────────────────
-    const admin = await moTrangDaDangNhap('admin@nova.local', 'admin123');
+    const admin = await moTrangDaDangNhap('admin@sunnystore.local', 'admin123');
     await admin.goto(`${GOC}/quan-tri/yeu-cau`, { waitUntil: 'networkidle' });
     kiem('quản trị thấy yêu cầu vừa gửi',
       (await admin.locator(`text=${DAU} game bắn máy bay ngày xưa`).count()) > 0);

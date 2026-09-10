@@ -20,6 +20,8 @@ export default {
         chu: mau('chu'),
         mo: mau('mo'),
         nhan: mau('nhan'),
+        cam: mau('cam'),
+        vang: mau('vang'),
         canh: mau('canh'),
         xau: mau('xau'),
       },

@@ -21,7 +21,7 @@ const THU_MUC_TEP = path.join(process.cwd(), 'public', 'tep-mau');
 function dungTepMau(ten: string, moTa: string, coXapXi: number): { duongDan: string; maKiemTra: string; dungLuong: number } {
   mkdirSync(THU_MUC_TEP, { recursive: true });
   const dau =
-    `Tệp mẫu của kho Nova\n` +
+    `Tệp mẫu của kho SunnyStore\n` +
     `====================\n\n` +
     `${moTa}\n\n` +
     `Đây KHÔNG phải game thật. Tệp này chỉ để phần tải xuống của trang chạy\n` +
@@ -146,7 +146,7 @@ const GAME: GameMau[] = [
     ],
   },
   {
-    ten: 'Sudoku Classic', tenViet: 'Sudoku cổ điển', nhaPhatTrien: 'Nova Studio', nam: 2019, vietHoa: true,
+    ten: 'Sudoku Classic', tenViet: 'Sudoku cổ điển', nhaPhatTrien: 'Bumblebee Games', nam: 2019, vietHoa: true,
     theLoai: ['Giải đố', 'Thường thức'], ngonNgu: 'vi',
     gioiThieu: 'Sudoku 9×9 với bốn mức khó và bộ đề sinh ngẫu nhiên. Có gợi ý, có đánh dấu nháp, và đếm giờ nếu bạn muốn tự thi với chính mình.',
     ban: [
@@ -163,7 +163,7 @@ const GAME: GameMau[] = [
     ban: [{ he: 'ANDROID', soHieu: '1.9', tep: ['APK'], dungLuong: 33_554_432 }],
   },
   {
-    ten: 'Dragon Hunter', tenViet: 'Thợ săn rồng', nhaPhatTrien: 'Nova Studio', nam: 2011, vietHoa: true,
+    ten: 'Dragon Hunter', tenViet: 'Thợ săn rồng', nhaPhatTrien: 'Bumblebee Games', nam: 2011, vietHoa: true,
     theLoai: ['Nhập vai', 'Hành động'], ngonNgu: 'vi',
     gioiThieu: 'Game nhập vai theo lượt: nhận việc ở làng, đi hang, đánh rồng, về bán chiến lợi phẩm. Ba lớp nhân vật, mỗi lớp một cây kỹ năng riêng.',
     cachChoi: 'Trong trận, mỗi lượt chọn một trong bốn ô: đánh, kỹ năng, vật phẩm, chạy.',
@@ -248,11 +248,18 @@ async function main() {
   const matKhauQuanTri = await bcrypt.hash('admin123', 10);
   const matKhauThuong = await bcrypt.hash('thanhvien123', 10);
 
+  /*
+   * Khoá theo TÊN ĐĂNG NHẬP, không theo email.
+   *
+   * Email đổi được (đổi tên miền là đổi cả loạt), mà `upsert` khoá theo email
+   * thì lần chạy sau nó không nhận ra tài khoản cũ, đi tạo mới, rồi vấp ràng
+   * buộc duy nhất của tên đăng nhập. Tên đăng nhập mới là thứ không đổi.
+   */
   const quanTri = await db.nguoiDung.upsert({
-    where: { email: 'admin@nova.local' },
-    update: { vaiTro: 'QUAN_TRI' },
+    where: { tenDangNhap: 'admin' },
+    update: { email: 'admin@sunnystore.local', vaiTro: 'QUAN_TRI' },
     create: {
-      email: 'admin@nova.local', tenDangNhap: 'admin', tenHienThi: 'Ban quản kho',
+      email: 'admin@sunnystore.local', tenDangNhap: 'admin', tenHienThi: 'Ban quản kho',
       matKhauBam: matKhauQuanTri, vaiTro: 'QUAN_TRI',
     },
     select: { id: true },
@@ -261,9 +268,9 @@ async function main() {
   const thanhVien: string[] = [];
   for (const [ten, hien] of [['minhdev', 'Minh'], ['lanpham', 'Lan Phạm'], ['huytran', 'Huy Trần'], ['anhthu', 'Anh Thư']]) {
     const u = await db.nguoiDung.upsert({
-      where: { email: `${ten}@nova.local` },
-      update: {},
-      create: { email: `${ten}@nova.local`, tenDangNhap: ten, tenHienThi: hien, matKhauBam: matKhauThuong },
+      where: { tenDangNhap: ten },
+      update: { email: `${ten}@sunnystore.local` },
+      create: { email: `${ten}@sunnystore.local`, tenDangNhap: ten, tenHienThi: hien, matKhauBam: matKhauThuong },
       select: { id: true },
     });
     thanhVien.push(u.id);
@@ -435,7 +442,7 @@ async function main() {
 
   const tong = await db.game.count();
   console.log(`✅ Xong. ${tong} game, ${THE_LOAI.length} thể loại.`);
-  console.log('   Quản trị: admin@nova.local / admin123');
+  console.log('   Quản trị: admin@sunnystore.local / admin123');
   console.log('   Thành viên: minhdev / thanhvien123');
 }
 

@@ -58,7 +58,7 @@ export default async function HomNay() {
   if (tongGame === 0) {
     return (
       <div className="the mx-auto max-w-md p-8 text-center">
-        <BieuTuongGame ten="Nova" icon={null} co={64} className="mx-auto" />
+        <BieuTuongGame ten="SunnyStore" icon={null} co={64} className="mx-auto" />
         <h1 className="mt-4 text-lg font-bold">Kho chưa có game nào</h1>
         <p className="phu mt-1.5">
           Game đầu tiên phải do quản trị viên thêm vào rồi bấm đăng.

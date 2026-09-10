@@ -24,12 +24,21 @@
   --mo: 95 99 104;
 
   /*
-   * Màu nhấn là XANH LỤC — màu nút "Cài đặt" của CH Play.
-   * Một màu duy nhất cho mọi hành động chính; thêm màu thứ hai là mắt hết biết
-   * đâu mới là nút đáng bấm.
+   * MÀU NHẤN LẤY TỪ LOGO — xanh của chữ "Store".
+   *
+   * Xanh gốc trong logo là #007EF9, nhưng chữ trắng trên nền ấy chỉ đạt
+   * 3,92:1 — dưới mức 4,5:1 mà chữ thường cần. Đậm thêm đúng một nấc thành
+   * #0074E5 là đạt 4,54:1 cho CẢ HAI chiều: chữ trắng trên nút, và chính màu
+   * ấy làm chữ trên nền trắng. Mắt vẫn thấy đúng màu xanh của logo.
+   *
+   * Cam #FEA814 của chữ "Sunny" chỉ đạt 1,94:1 nên KHÔNG bao giờ dùng làm
+   * chữ trên nền sáng — nó là màu trang trí: nhãn "hôm nay", tia nắng, hạng
+   * cao trong bảng xếp hạng.
    */
-  --nhan: 1 135 95;
-  --canh: 240 160 20;
+  --nhan: 0 116 229;
+  --cam: 254 168 20;
+  --vang: 254 222 90;
+  --canh: 217 119 6;
   --xau: 217 48 37;
 
   --bo-the: 12px;
@@ -59,7 +68,10 @@
   --chu: 232 234 237;
   --mo: 154 160 166;
 
-  --nhan: 108 219 168;
+  /* Nền tối: dùng thẳng sắc xanh gốc của logo — trên nền #0f1114 nó đạt
+     4,82:1, mà chữ trắng đặt lên nó vẫn còn 3,92:1 nên nút tô đặc giữ nguyên
+     sắc đậm hơn ở trên. */
+  --nhan: 0 126 249;
 }
 
 * { -webkit-tap-highlight-color: transparent; }

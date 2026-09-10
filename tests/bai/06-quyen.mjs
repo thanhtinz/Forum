@@ -50,7 +50,7 @@ export default async function chay(kiem) {
   await thuong.close();
 
   // ── Quản trị thì vào được ────────────────────────────────────────────
-  const admin = await moTrangDaDangNhap('admin@nova.local', 'admin123');
+  const admin = await moTrangDaDangNhap('admin@sunnystore.local', 'admin123');
   await admin.goto(`${GOC}/quan-tri`, { waitUntil: 'networkidle' });
   kiem('quản trị viên vào được khu quản trị', admin.url().includes('/quan-tri'), admin.url());
   kiem('trang tổng quan có số liệu', (await admin.locator('text=Game đang hiện').count()) > 0);

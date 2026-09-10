@@ -17,7 +17,7 @@ import { db } from './db';
  *     bảng cũng không mạo danh được ai.
  */
 
-const TEN_COOKIE = 'nova_phien';
+const TEN_COOKIE = 'sunny_phien';
 const HAN_NGAY = 30;
 
 function bamMa(ma: string): string {

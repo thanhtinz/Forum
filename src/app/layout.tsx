@@ -6,10 +6,16 @@ import { ThanhTren } from '@/components/vo/ThanhTren';
 import { ThanhDay } from '@/components/vo/ThanhDay';
 
 export const metadata: Metadata = {
-  title: { default: 'Nova — kho game Java, Android, iOS', template: '%s · Nova' },
+  title: { default: 'SunnyStore — kho game Java, Android, iOS', template: '%s · SunnyStore' },
   description: 'Tải game về máy, và bàn luận cùng người chơi khác ngay trong trang của từng game.',
   // Cho phép cài lên màn hình chính iPhone và hiện đúng tên dưới biểu tượng.
-  appleWebApp: { capable: true, title: 'Nova', statusBarStyle: 'default' },
+  appleWebApp: { capable: true, title: 'SunnyStore', statusBarStyle: 'default' },
+  // Ảnh hiện ra khi ai đó dán liên kết trang này vào Zalo, Messenger, Facebook.
+  openGraph: {
+    type: 'website',
+    siteName: 'SunnyStore',
+    images: [{ url: '/anh-chia-se.png', width: 1200, height: 630 }],
+  },
 };
 
 export const viewport: Viewport = {
@@ -31,7 +37,7 @@ export const viewport: Viewport = {
  * trắng giữa mặt mỗi lần mở trang. Đoạn này đồng bộ, nằm ngay đầu <head>, nên
  * nền đúng ngay từ khung hình đầu tiên.
  */
-const DAT_NEN = `try{if(localStorage.getItem('nova:nen')==='toi')document.documentElement.dataset.nen='toi'}catch(e){}`;
+const DAT_NEN = `try{if(localStorage.getItem('sunny:nen')==='toi')document.documentElement.dataset.nen='toi'}catch(e){}`;
 
 export default async function BoCucGoc({ children }: { children: React.ReactNode }) {
   const nguoi = await nguoiHienTai();

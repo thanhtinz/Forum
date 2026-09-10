@@ -13,13 +13,13 @@ import type { MetadataRoute } from 'next';
  */
 export default function banKeKhai(): MetadataRoute.Manifest {
   return {
-    name: 'Nova — kho game Java, Android, iOS',
-    short_name: 'Nova',
+    name: 'SunnyStore — kho game Java, Android, iOS',
+    short_name: 'SunnyStore',
     description: 'Tải game về máy, và bàn luận cùng người chơi khác ngay trong trang của từng game.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
-    theme_color: '#01875f',
+    theme_color: '#0074e5',
     lang: 'vi',
     orientation: 'portrait',
     categories: ['games', 'entertainment'],
@@ -29,7 +29,7 @@ export default function banKeKhai(): MetadataRoute.Manifest {
       // `maskable`: Android tự cắt biểu tượng theo hình của máy (tròn, vuông
       // bo, giọt nước). Không khai báo thì nó bọc thêm một khung trắng quanh
       // biểu tượng, trông như dán nhãn lên màn hình chính.
-      { src: '/bieu-tuong-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      { src: '/bieu-tuong-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
     ],
     shortcuts: [
       { name: 'Tìm game', url: '/tim' },

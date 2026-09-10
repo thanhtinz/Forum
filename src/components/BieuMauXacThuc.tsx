@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import Link from 'next/link';
+import { DauHieu } from '@/components/vo/DauHieu';
 import type { KetQuaXacThuc } from '@/app/dang-nhap/viec';
 
 /**
@@ -23,8 +24,8 @@ export function BieuMauXacThuc({ viec, tieuDe, phu, nut, children, duoi }: {
 
   return (
     <div className="mx-auto max-w-sm py-6">
-      <Link href="/" className="mx-auto mb-5 grid size-12 place-items-center rounded-[13px] bg-nhan text-[22px] font-black text-white">
-        N
+      <Link href="/" className="mx-auto mb-5 block w-fit" aria-label="SunnyStore — về trang đầu">
+        <DauHieu co={44} />
       </Link>
       <h1 className="text-center text-[22px] font-bold tracking-tight">{tieuDe}</h1>
       <p className="phu mt-1 text-center">{phu}</p>

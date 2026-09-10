@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { OTim } from './OTim';
+import { DauHieu } from './DauHieu';
 import { DoiNen } from './DoiNen';
 import type { NguoiDangNhap } from '@/lib/xac-thuc';
 
@@ -17,8 +18,8 @@ export function ThanhTren({ nguoi, tuKhoa }: { nguoi: NguoiDangNhap | null; tuKh
   return (
     <header className="sticky top-0 z-30 border-b border-vien bg-nen/95 backdrop-blur">
       <div className="flex items-center gap-2 px-4 py-2.5 sm:px-6">
-        <Link href="/" className="flex shrink-0 items-center gap-2 lg:hidden">
-          <span className="grid size-8 place-items-center rounded-[9px] bg-nhan text-[15px] font-black text-white">N</span>
+        <Link href="/" className="shrink-0 lg:hidden" aria-label="SunnyStore — về trang đầu">
+          <DauHieu co={30} chu={false} />
         </Link>
 
         <div className="mx-auto flex w-full max-w-2xl items-center gap-1">

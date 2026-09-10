@@ -1,6 +1,6 @@
 import { GOC, db, doiToi, moTrang } from '../tro-giup.mjs';
 
-const EMAIL = 'kiemthu-dangky@nova.local';
+const EMAIL = 'kiemthu-dangky@sunnystore.local';
 
 /** Đăng ký, đăng nhập, đăng xuất — và phiên phải chết thật khi đăng xuất. */
 export default async function chay(kiem) {

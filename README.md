@@ -1,4 +1,6 @@
-# Nova — kho game
+<img src="public/bieu-tuong-192.png" width="72" align="left" alt="" hspace="12" />
+
+# SunnyStore — kho game
 
 Trang tải game Java ME, Android, iOS và Windows. Mỗi game có trang riêng kèm
 bản tải theo từng hệ máy, mã kiểm tra tệp, đánh giá của người chơi, và một khu
@@ -18,7 +20,7 @@ Tài khoản mẫu sau khi seed:
 
 | Vai trò | Đăng nhập | Mật khẩu |
 |---|---|---|
-| Quản trị | `admin@nova.local` | `admin123` |
+| Quản trị | `admin@sunnystore.local` | `admin123` |
 | Thành viên | `minhdev` | `thanhvien123` |
 
 ## Bài kiểm
@@ -30,6 +32,24 @@ npm run kiem -- 03        # chỉ chạy bài có "03" trong tên
 
 Bài kiểm mở trình duyệt thật, bấm nút thật, rồi soi lại CSDL — không có bài nào
 chỉ kiểm mỗi mã trạng thái HTTP.
+
+## Bộ nhận diện
+
+| Tệp | Dùng ở đâu |
+|---|---|
+| `public/logo-goc.png` | Bản gốc do chủ trang đưa, giữ nguyên để còn cắt lại khi cần |
+| `public/bieu-tuong-{192,512}.png` | Biểu tượng ứng dụng, thanh bên, thanh đầu trang |
+| `public/bieu-tuong-maskable-512.png` | Android cắt theo hình của máy — nền liền màu, nội dung thu vào 80% giữa |
+| `src/app/icon.png`, `src/app/apple-icon.png` | Next tự gắn làm favicon và biểu tượng màn hình chính iPhone |
+| `public/anh-chia-se.png` | Ảnh hiện ra khi dán liên kết vào Zalo, Messenger |
+
+Chữ "SunnyStore" trên giao diện dựng bằng **chữ thật**, không dùng ảnh chữ
+trong logo: ảnh chữ mờ trên màn hình mật độ cao, bộ đọc màn hình không đọc
+được, và nền tối thì không đổi màu theo được.
+
+Màu nhấn `#0074E5` — xanh của chữ "Store", đậm thêm một nấc so với `#007EF9`
+trong logo. Lý do trong `globals.css`: xanh gốc chỉ đạt 3,92:1 với chữ trắng,
+dưới mức 4,5:1 mà chữ thường cần.
 
 ## Vài quyết định đáng nói
 

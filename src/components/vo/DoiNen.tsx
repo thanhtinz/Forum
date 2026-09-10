@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
-const KHOA = 'nova:nen';
+const KHOA = 'sunny:nen';
 
 /**
  * Nút đổi nền sáng / tối.

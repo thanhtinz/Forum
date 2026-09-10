@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Inbox, Shield } from 'lucide-react';
 import { LOI_DI, LOI_PHU, dangO } from './duong-di';
+import { DauHieu } from './DauHieu';
 import { gop } from '@/lib/tien-ich';
 import type { NguoiDangNhap } from '@/lib/xac-thuc';
 
@@ -30,9 +31,8 @@ export function ThanhBen({ nguoi }: { nguoi: NguoiDangNhap | null }) {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[240px] flex-col border-r border-vien bg-nen lg:flex">
-      <Link href="/" className="flex items-center gap-2.5 px-5 py-4">
-        <span className="grid size-9 place-items-center rounded-[10px] bg-nhan text-[17px] font-black text-white">N</span>
-        <span className="text-[19px] font-bold tracking-tight">Nova</span>
+      <Link href="/" className="px-5 py-4" aria-label="SunnyStore — về trang đầu">
+        <DauHieu co={34} />
       </Link>
 
       <nav className="flex-1 space-y-1 pr-3">
@@ -70,7 +70,7 @@ export function ThanhBen({ nguoi }: { nguoi: NguoiDangNhap | null }) {
         </div>
       </nav>
 
-      <p className="phu px-5 py-4">© {new Date().getFullYear()} Nova</p>
+      <p className="phu px-5 py-4">© {new Date().getFullYear()} SunnyStore</p>
     </aside>
   );
 }

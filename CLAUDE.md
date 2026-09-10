@@ -1,4 +1,4 @@
-# Nova — kho game
+# SunnyStore — kho game
 
 Trang tải game Java / Android / iOS, mỗi game kèm một khu thảo luận riêng.
 

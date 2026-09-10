@@ -1,7 +1,7 @@
-import { Apple, Coffee, Monitor, Smartphone } from 'lucide-react';
+import { Apple, Coffee, Laptop, Monitor, Smartphone } from 'lucide-react';
 import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 
-const ICON = { coffee: Coffee, smartphone: Smartphone, apple: Apple, monitor: Monitor };
+const ICON = { coffee: Coffee, smartphone: Smartphone, apple: Apple, monitor: Monitor, laptop: Laptop };
 
 /**
  * Dãy biểu tượng hệ máy một game có bản tải.

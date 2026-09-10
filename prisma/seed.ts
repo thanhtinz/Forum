@@ -111,9 +111,18 @@ const GAME: GameMau[] = [
     ten: 'Chess Master', tenViet: 'Cờ vua', nhaPhatTrien: 'Optima', nam: 2006, vietHoa: true,
     theLoai: ['Chiến thuật', 'Giải đố'], ngonNgu: 'vi',
     gioiThieu: 'Cờ vua với máy tính ở tám mức, kèm bộ thế cờ để tự luyện. Ván đang chơi dở được giữ lại khi tắt máy.',
+    /*
+     * Game bày đủ CẢ NĂM hệ máy — cố ý để mặt tiền, trang game và khung tải
+     * đều có một ca thật để kiểm, thay vì mỗi game một hệ rồi không bao giờ
+     * biết chỗ chọn hệ máy trông ra sao khi đầy.
+     */
     ban: [
-      { he: 'JAVA', soHieu: '1.5', tep: ['JAR'], dungLuong: 204_800 },
+      { he: 'JAVA', soHieu: '1.5', tep: ['JAR', 'JAD'], dungLuong: 204_800 },
+      { he: 'ANDROID', soHieu: '3.0', tep: ['APK'], dungLuong: 18_874_368 },
+      { he: 'IOS', soHieu: '3.0', tep: [], cuaHang: 'https://apps.apple.com/' },
       { he: 'WINDOWS', soHieu: '2.2', tep: ['EXE', 'ZIP'], dungLuong: 12_582_912 },
+      { he: 'MAC', soHieu: '2.2', tep: ['DMG'], dungLuong: 15_728_640,
+        doiMoi: 'Chạy được trên máy chip Apple mà không cần Rosetta.' },
     ],
   },
   {
@@ -123,6 +132,8 @@ const GAME: GameMau[] = [
     ban: [
       { he: 'ANDROID', soHieu: '4.2', tep: ['APK'], dungLuong: 8_388_608 },
       { he: 'IOS', soHieu: '4.2', tep: [], cuaHang: 'https://apps.apple.com/' },
+      { he: 'MAC', soHieu: '4.1', tep: ['DMG'], dungLuong: 9_437_184 },
+      { he: 'WINDOWS', soHieu: '4.1', tep: ['EXE'], dungLuong: 7_340_032 },
     ],
   },
   {
@@ -139,13 +150,18 @@ const GAME: GameMau[] = [
     ban: [
       { he: 'JAVA', soHieu: '1.3', tep: ['JAR', 'JAD'], dungLuong: 573_440 },
       { he: 'ANDROID', soHieu: '2.4', tep: ['APK'], dungLuong: 46_137_344 },
+      { he: 'MAC', soHieu: '2.4', tep: ['DMG'], dungLuong: 52_428_800 },
     ],
   },
   {
     ten: 'Tetris Mania', nhaPhatTrien: 'EA Mobile', nam: 2006,
     theLoai: ['Giải đố', 'Arcade'],
     gioiThieu: 'Bảy khối quen thuộc rơi xuống, xếp kín một hàng thì hàng ấy biến mất. Bản này thêm chế độ Marathon và chế độ chạy đua 40 hàng.',
-    ban: [{ he: 'JAVA', soHieu: '1.0', tep: ['JAR'], dungLuong: 163_840 }],
+    ban: [
+      { he: 'JAVA', soHieu: '1.0', tep: ['JAR'], dungLuong: 163_840 },
+      { he: 'WINDOWS', soHieu: '1.4', tep: ['EXE', 'ZIP'], dungLuong: 5_242_880 },
+      { he: 'MAC', soHieu: '1.4', tep: ['DMG'], dungLuong: 6_291_456 },
+    ],
   },
   {
     ten: 'Real Football 2009', tenViet: 'Bóng đá 2009', nhaPhatTrien: 'Gameloft', nam: 2008,

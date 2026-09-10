@@ -1,11 +1,11 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Apple, Coffee, Download, ExternalLink, Monitor, ShieldCheck, Smartphone } from 'lucide-react';
-import { MO_TA_HE, caiThangDuoc, type MaHeMay } from '@/lib/he-may';
+import { Apple, Coffee, Download, ExternalLink, Info, Laptop, Monitor, ShieldCheck, Smartphone } from 'lucide-react';
+import { HE_MAY, MO_TA_HE, NHAC_KHI_CAI, caiThangDuoc, type MaHeMay } from '@/lib/he-may';
 import { gonDungLuong, gop } from '@/lib/tien-ich';
 
-const ICON = { coffee: Coffee, smartphone: Smartphone, apple: Apple, monitor: Monitor };
+const ICON = { coffee: Coffee, smartphone: Smartphone, apple: Apple, monitor: Monitor, laptop: Laptop };
 
 export interface TepXem {
   id: string;
@@ -38,9 +38,14 @@ export interface BanXem {
  * cũ thì mã ấy không còn trong danh sách nữa, nên tự rơi về mặc định.
  */
 export function KhungTai({ ban }: { ban: BanXem[] }) {
+  /*
+   * Lọc theo HE_MAY chứ không chép cứng một dãy ở đây: thêm một hệ máy mới vào
+   * `he-may.ts` mà quên sửa chỗ này thì bản của hệ ấy có trong CSDL nhưng
+   * không bao giờ hiện ra nút, và không có gì báo cho ai biết.
+   */
   const heCo = useMemo(() => {
     const thay = new Set(ban.map((b) => b.heMay));
-    return (['JAVA', 'ANDROID', 'IOS', 'WINDOWS'] as MaHeMay[]).filter((h) => thay.has(h));
+    return HE_MAY.filter((h) => thay.has(h));
   }, [ban]);
 
   const [he, datHe] = useState<MaHeMay | null>(heCo[0] ?? null);
@@ -126,6 +131,19 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
             </a>
           ))}
         </div>
+      )}
+
+      {/*
+        Câu nhắc riêng của hệ đang chọn.
+        Mỗi hệ có đúng một chỗ hay làm người ta khựng lại lúc cài — Android hỏi
+        nguồn ngoài, Windows chặn tệp chưa ký, macOS thì Gatekeeper. Nói trước ở
+        đây rẻ hơn nhiều so với một chủ đề "tải về không chạy" ở khu cộng đồng.
+      */}
+      {caiThangDuoc(he) && NHAC_KHI_CAI[he] && (
+        <p className="flex gap-2 rounded-nut bg-nen3 px-3 py-2.5 text-[12px] leading-relaxed text-mo">
+          <Info size={14} className="mt-px shrink-0" />
+          {NHAC_KHI_CAI[he]}
+        </p>
       )}
 
       {/* ── Mã kiểm tra ─────────────────────────────────────────────────── */}

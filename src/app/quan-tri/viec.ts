@@ -5,12 +5,9 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { batBuocQuanTri } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
-import { HE_MAY, type MaHeMay } from '@/lib/he-may';
+import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 
 export interface KetQua { loi?: string }
-
-const LOAI_TEP = ['JAR', 'JAD', 'APK', 'IPA', 'ZIP', 'EXE'] as const;
-type MaLoaiTep = (typeof LOAI_TEP)[number];
 
 function chu(form: FormData, ten: string): string {
   return String(form.get(ten) ?? '').trim();
@@ -144,7 +141,7 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
       select: { id: true },
     });
 
-    if (duongDanTep && (LOAI_TEP as readonly string[]).includes(loaiTep)) {
+    if (duongDanTep && laLoaiTep(loaiTep)) {
       await tx.tepTai.create({
         data: { banId: ban.id, loai: loaiTep, duongDan: duongDanTep },
         select: { id: true },

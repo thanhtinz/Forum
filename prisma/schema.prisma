@@ -171,6 +171,7 @@ enum HeMay {
   ANDROID
   IOS
   WINDOWS
+  MAC
 }
 
 model TepTai {
@@ -197,6 +198,10 @@ enum LoaiTep {
   IPA
   ZIP
   EXE
+  /// Ảnh đĩa của macOS — kéo vào thư mục Applications là xong.
+  DMG
+  /// Gói cài đặt của macOS, dùng khi bản game cần chạy kịch bản lúc cài.
+  PKG
 }
 
 model AnhChup {

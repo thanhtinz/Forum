@@ -1,9 +1,9 @@
 'use client';
 
-import { useActionState, useTransition } from 'react';
+import { useActionState, useState, useTransition } from 'react';
 import { Trash2 } from 'lucide-react';
 import { themBanTai, xoaBanTai, type KetQua } from '@/app/quan-tri/viec';
-import { HE_MAY, MO_TA_HE } from '@/lib/he-may';
+import { HE_MAY, MO_TA_HE, caiThangDuoc, type MaHeMay } from '@/lib/he-may';
 import { gonDungLuong } from '@/lib/tien-ich';
 
 export interface BanQuanTri {
@@ -15,8 +15,6 @@ export interface BanQuanTri {
   tep: { id: string; loai: string; duongDan: string; dungLuong: number | null }[];
 }
 
-const LOAI_TEP = ['JAR', 'JAD', 'APK', 'IPA', 'ZIP', 'EXE'];
-
 /**
  * Quản lý bản tải của một game.
  *
@@ -27,6 +25,16 @@ const LOAI_TEP = ['JAR', 'JAD', 'APK', 'IPA', 'ZIP', 'EXE'];
 export function KhungBanTai({ gameId, ban }: { gameId: string; ban: BanQuanTri[] }) {
   const [ketQua, gui, dangChay] = useActionState<KetQua, FormData>(themBanTai, {});
   const [dangXoa, batDauXoa] = useTransition();
+
+  /*
+   * Loại tệp bày ra THEO HỆ ĐANG CHỌN.
+   *
+   * Gộp cả tám loại vào một danh sách thì gắn nhầm tệp JAR cho bản Windows là
+   * chuyện sớm muộn, mà lỗi ấy chỉ lộ ra lúc có người tải về và không mở được.
+   * Lọc ngay ở đây thì chọn sai là chuyện không xảy ra được.
+   */
+  const [heMay, datHeMay] = useState<MaHeMay>('JAVA');
+  const loaiHopLe = MO_TA_HE[heMay].loaiTep;
 
   return (
     <div className="space-y-4">
@@ -65,7 +73,8 @@ export function KhungBanTai({ gameId, ban }: { gameId: string; ban: BanQuanTri[]
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
             <span className="phu mb-1 block">Hệ máy</span>
-            <select name="heMay" className="o-nhap" defaultValue="JAVA">
+            <select name="heMay" className="o-nhap" value={heMay}
+              onChange={(e) => datHeMay(e.target.value as MaHeMay)}>
               {HE_MAY.map((h) => <option key={h} value={h}>{MO_TA_HE[h].ten}</option>)}
             </select>
           </label>
@@ -75,24 +84,29 @@ export function KhungBanTai({ gameId, ban }: { gameId: string; ban: BanQuanTri[]
           </label>
           <label className="block">
             <span className="phu mb-1 block">Loại tệp</span>
-            <select name="loaiTep" className="o-nhap" defaultValue="JAR">
-              {LOAI_TEP.map((l) => <option key={l} value={l}>{l}</option>)}
+            <select name="loaiTep" className="o-nhap" key={heMay} defaultValue={loaiHopLe[0]}>
+              {loaiHopLe.map((l) => <option key={l} value={l}>{l}</option>)}
             </select>
           </label>
           <label className="block">
             <span className="phu mb-1 block">Địa chỉ tệp</span>
-            <input name="duongDanTep" placeholder="/tep-mau/vi-du.jar" className="o-nhap" />
+            <input name="duongDanTep" placeholder={`/tep-mau/vi-du.${loaiHopLe[0].toLowerCase()}`}
+              className="o-nhap" />
           </label>
         </div>
 
-        <label className="block">
-          <span className="phu mb-1 block">Đường dẫn App Store (chỉ dùng cho iOS)</span>
-          <input name="duongDanCuaHang" placeholder="https://apps.apple.com/…" className="o-nhap" />
-          <span className="phu mt-1 block">
-            iPhone chưa bẻ khoá không cài được tệp IPA tải từ web, nên bản iOS phải dẫn
-            sang App Store thay vì gắn tệp.
-          </span>
-        </label>
+        {/* Ô App Store chỉ hiện khi đang thêm bản iOS: hiện ở mọi hệ thì nó gợi ý
+            rằng bản Windows cũng nên có, mà điều đó thì vô nghĩa. */}
+        {!caiThangDuoc(heMay) && (
+          <label className="block">
+            <span className="phu mb-1 block">Đường dẫn App Store</span>
+            <input name="duongDanCuaHang" placeholder="https://apps.apple.com/…" className="o-nhap" />
+            <span className="phu mt-1 block">
+              iPhone chưa bẻ khoá không cài được tệp IPA tải từ web, nên bản iOS phải dẫn
+              sang App Store thay vì gắn tệp. Còn macOS thì cài tệp DMG bình thường.
+            </span>
+          </label>
+        )}
 
         <label className="block">
           <span className="phu mb-1 block">Có gì mới ở bản này</span>

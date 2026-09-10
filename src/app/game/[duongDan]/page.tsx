@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { TriangleAlert } from 'lucide-react';
 import { db } from '@/lib/db';
-import { DANG_HIEN, layKe } from '@/lib/kho-game';
+import { DANG_HIEN, layKe } from '@/lib/danh-muc';
 import { PhoDiem } from '@/components/game/PhoDiem';
 import { SaoNam } from '@/components/game/SaoNam';
 import { KeThe } from '@/components/game/KeThe';
@@ -133,7 +133,7 @@ export default async function TabThongTin({ params }: { params: Promise<{ duongD
           <Dong nhan="Năm phát hành" giaTri={game.namPhatHanh ? String(game.namPhatHanh) : '—'} />
           <Dong nhan="Ngôn ngữ" giaTri={NGON_NGU[game.ngonNgu] ?? game.ngonNgu} />
           <Dong nhan="Số bản tải" giaTri={`${game._count.banTai} bản trên ${soHe.length} hệ máy`} />
-          <Dong nhan="Lên kho" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
+          <Dong nhan="Có mặt từ" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
         </dl>
       </section>
 

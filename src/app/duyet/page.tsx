@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { CACH_SAP, DANG_HIEN, MOI_TRANG, docBoLoc, duyetKho, thanhTruyVan } from '@/lib/kho-game';
+import { CACH_SAP, DANG_HIEN, MOI_TRANG, docBoLoc, duyetDanhMuc, thanhTruyVan } from '@/lib/danh-muc';
 import { HangGame } from '@/components/game/HangGame';
 import { HangChip } from '@/components/game/HangChip';
 import { CotLoc, type NhomLoc } from '@/components/game/CotLoc';
@@ -10,7 +10,7 @@ import { HE_MAY, MO_TA_HE } from '@/lib/he-may';
 import { gonSo, gop, soTrang } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Duyệt kho' };
+export const metadata: Metadata = { title: 'Tất cả trò chơi' };
 
 /*
  * TRANG DUYỆT — danh sách dọc, mỗi game một hàng.
@@ -26,7 +26,7 @@ export default async function TrangDuyet({ searchParams }: {
   const loc = docBoLoc(sp);
 
   const [{ game, tong, trang }, theLoai, soTheoHe] = await Promise.all([
-    duyetKho(loc),
+    duyetDanhMuc(loc),
     db.theLoai.findMany({
       orderBy: [{ thuTu: 'asc' }],
       take: 24,
@@ -83,7 +83,7 @@ export default async function TrangDuyet({ searchParams }: {
 
       <div className="min-w-0 flex-1 space-y-4">
         <div>
-          <h1 className="text-[24px] font-bold tracking-tight">Duyệt kho</h1>
+          <h1 className="text-[24px] font-bold tracking-tight">Tất cả trò chơi</h1>
           <p className="phu mt-0.5">{gonSo(tong)} game khớp với lựa chọn của bạn</p>
         </div>
 
@@ -122,7 +122,7 @@ export default async function TrangDuyet({ searchParams }: {
         {game.length === 0 ? (
           <div className="the p-8 text-center">
             <p className="text-[14px] font-semibold">Không có game nào khớp</p>
-            <p className="phu mt-1">Thử bỏ bớt một bộ lọc, hoặc nhắn cho ban quản kho.</p>
+            <p className="phu mt-1">Thử bỏ bớt một bộ lọc, hoặc gửi yêu cầu cho SunnyStore.</p>
             <div className="mt-4 flex justify-center gap-2">
               <Link href="/duyet" className="nut-xam">Bỏ hết bộ lọc</Link>
               <Link href="/yeu-cau" className="nut-vien">Yêu cầu game</Link>

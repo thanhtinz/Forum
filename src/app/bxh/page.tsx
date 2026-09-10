@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { DANG_HIEN } from '@/lib/kho-game';
+import { DANG_HIEN } from '@/lib/danh-muc';
 import { CHON_THE, thanhThe } from '@/components/game/the-game';
 import { HangGame } from '@/components/game/HangGame';
 import { HE_MAY, MO_TA_HE, laHeMay, type MaHeMay } from '@/lib/he-may';
@@ -26,7 +26,7 @@ export const metadata: Metadata = { title: 'Bảng xếp hạng' };
 const BANG = [
   { ma: 'tai', ten: 'Tải nhiều nhất', phu: 'Cộng dồn từ trước tới nay' },
   { ma: 'diem', ten: 'Điểm cao nhất', phu: 'Theo đánh giá của người đã chơi' },
-  { ma: 'moi', ten: 'Mới lên kho', phu: 'Vừa được thêm vào' },
+  { ma: 'moi', ten: 'Mới ra mắt', phu: 'Vừa được thêm vào' },
 ] as const;
 
 type MaBang = (typeof BANG)[number]['ma'];
@@ -99,7 +99,7 @@ export default async function TrangBXH({ searchParams }: {
 
       {hang.length === 0 ? (
         <p className="the p-8 text-center text-[13px] text-mo">
-          Chưa có game nào cho hệ máy này.
+          Chưa có trò chơi nào cho hệ máy này.
         </p>
       ) : (
         <ol className="space-y-3.5">

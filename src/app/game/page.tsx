@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight, Inbox } from 'lucide-react';
 import { db } from '@/lib/db';
-import { DANG_HIEN, layKe } from '@/lib/kho-game';
+import { DANG_HIEN, layKe } from '@/lib/danh-muc';
 import { BangNoiBat } from '@/components/game/BangNoiBat';
 import { HangChip } from '@/components/game/HangChip';
 import { KeDanhSach } from '@/components/game/KeDanhSach';
@@ -10,10 +10,10 @@ import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { HE_MAY, MO_TA_HE } from '@/lib/he-may';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Kho game' };
+export const metadata = { title: 'Trò chơi' };
 
 /*
- * TAB "GAME" — mặt tiền của kho.
+ * TAB "GAME" — mặt tiền của trang.
  *
  * Xếp theo thứ tự người ta thật sự đi qua khi mở một cửa hàng ứng dụng:
  *
@@ -73,7 +73,7 @@ export default async function TrangKhoGame() {
       <KeDanhSach ten="Bảng xếp hạng" phu="Tải nhiều nhất từ trước tới nay"
         xemThem="/bxh" game={taiNhieu} danhSo />
 
-      <KeThe ten="Mới lên kho" phu="Vừa được thêm vào, chưa ai kịp chơi"
+      <KeThe ten="Mới ra mắt" phu="Vừa được thêm vào, chưa ai kịp chơi"
         xemThem="/duyet?sap=moi" game={moi} />
 
       <KeThe ten="Có bản Việt hoá" phu="Chơi bằng tiếng Việt, không phải đoán chữ"
@@ -100,7 +100,7 @@ export default async function TrangKhoGame() {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] font-semibold">Không thấy game bạn cần?</span>
-          <span className="phu block">Nhắn cho ban quản kho, chúng tôi sẽ đi tìm</span>
+          <span className="phu block">Gửi yêu cầu, SunnyStore sẽ đi tìm giúp bạn</span>
         </span>
         <ChevronRight size={18} className="shrink-0 text-mo" />
       </Link>
@@ -118,7 +118,7 @@ function KhoTrong() {
   return (
     <div className="the mx-auto max-w-md p-8 text-center">
       <BieuTuongGame ten="SunnyStore" icon={null} co={64} className="mx-auto" />
-      <h1 className="mt-4 text-lg font-bold">Kho chưa có game nào</h1>
+      <h1 className="mt-4 text-lg font-bold">Chưa có trò chơi nào</h1>
       <p className="phu mt-1.5">
         Game đầu tiên phải do quản trị viên thêm vào rồi bấm đăng. Sau đó trang
         này sẽ tự bày ra các kệ.

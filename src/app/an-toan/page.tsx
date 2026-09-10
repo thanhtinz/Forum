@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Tải sao cho an toàn' };
 const MUC = [
   {
     ten: 'Đối chiếu mã kiểm tra',
-    chu: 'Mỗi tệp trong kho đều in kèm một dãy mã sha256. Tải xong, tính lại mã của tệp trên máy bạn rồi so với dãy in ở trang game. Khác nhau nghĩa là tệp đã bị đổi trên đường truyền — xoá đi, đừng mở.',
+    chu: 'Mỗi tệp tải về đều in kèm một dãy mã sha256. Tải xong, tính lại mã của tệp trên máy bạn rồi so với dãy in ở trang game. Khác nhau nghĩa là tệp đã bị đổi trên đường truyền — xoá đi, đừng mở.',
   },
   {
     ten: 'Tệp JAR không xin quyền gì cả',
@@ -19,7 +19,7 @@ const MUC = [
   },
   {
     ten: 'APK lạ thì xem kỹ phần quyền',
-    chu: 'Android hỏi quyền trước khi cài. Một game xếp hình mà xin quyền đọc tin nhắn hoặc quyền gọi điện là dấu hiệu rõ ràng. Bấm huỷ, rồi báo cho ban quản kho.',
+    chu: 'Android hỏi quyền trước khi cài. Một game xếp hình mà xin quyền đọc tin nhắn hoặc quyền gọi điện là dấu hiệu rõ ràng. Bấm huỷ, rồi báo cho SunnyStore.',
   },
   {
     ten: 'iPhone thì chỉ cài qua App Store',

@@ -1,5 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { rmSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
+import net from 'node:net';
 
 /*
  * Chạy bộ kiểm trên BẢN DỰNG THẬT, không phải trên máy chủ dev.
@@ -21,14 +22,52 @@ function chay(lenh, thamSo, chu) {
   if (r.status !== 0) { process.exit(r.status ?? 1); }
 }
 
+/**
+ * Cổng có đang bị ai giữ không.
+ *
+ * Đây là phép kiểm TỐN CÔNG NHẤT của cả tệp này, và nó có mặt vì một lần mất
+ * gần một tiếng: một `next start` cũ còn sống giữ cổng 3100, `next start` mới
+ * chết ngay vì EADDRINUSE, nhưng kịch bản chỉ chờ "cổng có trả lời không" —
+ * mà cổng ấy CÓ trả lời, do máy chủ cũ. Thế là cả bộ kiểm chạy vào một bản
+ * dựng từ đời nào, đỏ mười lăm mục, và mọi dấu hiệu đều trỏ vào mã mới.
+ */
+function congDangBan(cong) {
+  return new Promise((xong) => {
+    const thu = net.createServer();
+    thu.once('error', () => xong(true));
+    thu.once('listening', () => thu.close(() => xong(false)));
+    thu.listen(cong, '127.0.0.1');
+  });
+}
+
+if (await congDangBan(CONG)) {
+  console.error(
+    `\nCổng ${CONG} đang có tiến trình khác giữ.\n` +
+    `Bộ kiểm sẽ chạy nhầm vào máy chủ ấy thay vì bản vừa dựng.\n` +
+    `Dọn trước: pkill -f "next-server"   (hoặc đặt cổng khác: CONG=3200 npm run kiem:that)\n`,
+  );
+  process.exit(1);
+}
+
 // `.next` dựng cho bản chạy thật khác hẳn bản dev, nên xoá trước cho chắc.
 rmSync('.next', { recursive: true, force: true });
 chay('npm', ['run', 'build'], 'Dựng bản chạy thật');
+
+const maBanDung = readFileSync('.next/BUILD_ID', 'utf8').trim();
 
 const may = spawn('npx', ['next', 'start', '-p', CONG], {
   stdio: ['ignore', 'pipe', 'inherit'], env: process.env,
 });
 
+// Máy chủ chết giữa chừng thì dừng hẳn, đừng ngồi chờ cho hết sáu mươi giây.
+may.on('exit', (ma) => {
+  if (!daXongKiem) {
+    console.error(`\nMáy chủ tắt sớm (mã ${ma}). Xem lỗi ở trên.`);
+    process.exit(ma ?? 1);
+  }
+});
+
+let daXongKiem = false;
 let daTat = false;
 const tat = () => {
   if (daTat) return;
@@ -58,10 +97,30 @@ if (!(await doiMayChu())) {
   process.exit(1);
 }
 
+/*
+ * Máy chủ đang trả lời có phải MÁY CHỦ CỦA TA không.
+ *
+ * Mỗi bản dựng mang một mã riêng, và chỉ máy chủ chạy đúng bản ấy mới phục vụ
+ * được `/_next/static/<mã>/_buildManifest.js`. Phép kiểm cổng ở trên đã chặn
+ * gần hết, nhưng cái này chặn nốt phần còn lại — và rẻ, chỉ một lượt gọi.
+ */
+const bangKe = await fetch(`${GOC}/_next/static/${maBanDung}/_buildManifest.js`)
+  .then((r) => r.ok)
+  .catch(() => false);
+if (!bangKe) {
+  console.error(
+    `\nMáy chủ ở cổng ${CONG} KHÔNG phục vụ bản vừa dựng (${maBanDung}).\n` +
+    `Nhiều khả năng là một tiến trình cũ. Dọn rồi chạy lại.\n`,
+  );
+  tat();
+  process.exit(1);
+}
+
 const loc = process.argv[2] ?? '';
 const bo = spawnSync('node', ['tests/chay.mjs', ...(loc ? [loc] : [])], {
   stdio: 'inherit', env: { ...process.env, GOC },
 });
 
+daXongKiem = true;
 tat();
 process.exit(bo.status ?? 1);

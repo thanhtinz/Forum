@@ -1,6 +1,6 @@
-# SunnyStore — kho game
+# SunnyStore
 
-Trang tải game Java / Android / iOS, mỗi game kèm một khu thảo luận riêng.
+Cửa hàng tải game Java / Android / iOS, mỗi game kèm một khu diễn đàn riêng.
 
 ## Quy ước
 - Mọi chữ trên giao diện, tên biến và chú thích đều bằng **tiếng Việt**.

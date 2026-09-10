@@ -8,7 +8,7 @@
  * BA ĐIỀU PHẢI ĐÚNG CÙNG LÚC
  *
  *   1. Mỗi ngày một bộ khác — không thì tab này chỉ là một cái kệ đứng yên.
- *   2. KHÔNG TRÙNG cho tới khi đi hết kho. Bốc ngẫu nhiên thật thì hôm nay ra
+ *   2. KHÔNG TRÙNG cho tới khi đi hết danh mục. Bốc ngẫu nhiên thật thì hôm nay ra
  *      Contra, mai lại Contra, mà nửa số game trong kho không bao giờ được
  *      bày. Nghịch lý sinh nhật: kho hai trăm game, bốc bốn con mỗi ngày, thì
  *      chỉ hơn tháng là gặp trùng.

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
-import { DANG_HIEN } from '@/lib/kho-game';
+import { DANG_HIEN } from '@/lib/danh-muc';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { KhungTai, type BanXem } from '@/components/game/KhungTai';
 import { SaoNam } from '@/components/game/SaoNam';

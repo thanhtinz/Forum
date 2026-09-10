@@ -4,7 +4,7 @@ import { CHON_THE, thanhThe, type TheGame } from '@/components/game/the-game';
 import { laHeMay, type MaHeMay } from './he-may';
 import { kep } from './tien-ich';
 
-/** Chỉ game ĐANG HIỆN mới ra khỏi kho — game nháp và game đã gỡ thì không. */
+/** Chỉ game ĐANG HIỆN mới lộ ra ngoài — game nháp và game đã gỡ thì không. */
 export const DANG_HIEN = { trangThai: 'DANG_HIEN' as const };
 
 export const CACH_SAP = [
@@ -92,7 +92,7 @@ export interface KetQuaDuyet {
   trang: number;
 }
 
-export async function duyetKho(loc: BoLoc): Promise<KetQuaDuyet> {
+export async function duyetDanhMuc(loc: BoLoc): Promise<KetQuaDuyet> {
   const where = dieuKien(loc);
   const tong = await db.game.count({ where });
   // Kẹp trang vào khoảng thật: gõ `?trang=999` không được ra trang rỗng.
@@ -109,7 +109,7 @@ export async function duyetKho(loc: BoLoc): Promise<KetQuaDuyet> {
   return { game: hang.map(thanhThe), tong, trang };
 }
 
-/** Lấy một danh sách ngắn cho kệ ở trang chủ. */
+/** Lấy một danh sách ngắn cho một kệ. */
 export async function layKe(
   where: Prisma.GameWhereInput,
   orderBy: Prisma.GameOrderByWithRelationInput[],

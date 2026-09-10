@@ -259,7 +259,7 @@ async function main() {
     where: { tenDangNhap: 'admin' },
     update: { email: 'admin@sunnystore.local', vaiTro: 'QUAN_TRI' },
     create: {
-      email: 'admin@sunnystore.local', tenDangNhap: 'admin', tenHienThi: 'Ban quản kho',
+      email: 'admin@sunnystore.local', tenDangNhap: 'admin', tenHienThi: 'SunnyStore',
       matKhauBam: matKhauQuanTri, vaiTro: 'QUAN_TRI',
     },
     select: { id: true },

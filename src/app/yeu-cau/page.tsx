@@ -47,7 +47,7 @@ export default async function TrangYeuCau() {
       <div>
         <h1 className="text-[26px] font-bold tracking-tight">Yêu cầu game</h1>
         <p className="phu mt-0.5">
-          Không thấy game bạn cần trong kho? Cho biết tên, ban quản kho sẽ đi tìm.
+          Không thấy game bạn cần trong kho? Cho biết tên, SunnyStore sẽ đi tìm.
         </p>
       </div>
 
@@ -70,7 +70,7 @@ export default async function TrangYeuCau() {
       ) : (
         <div className="the p-5 text-center">
           <p className="text-[14px] font-semibold">Đăng nhập để gửi yêu cầu</p>
-          <p className="phu mt-1">Cần tài khoản để ban quản kho còn biết trả lời cho ai.</p>
+          <p className="phu mt-1">Cần tài khoản để SunnyStore còn biết trả lời cho ai.</p>
           <Link href="/dang-nhap" className="nut-xam mt-3">Đăng nhập</Link>
         </div>
       )}
@@ -98,7 +98,7 @@ export default async function TrangYeuCau() {
                   </div>
                   {y.loiNhan && (
                     <p className="phu mt-2 rounded-nut bg-nen3 px-3 py-2">
-                      Ban quản kho: {y.loiNhan}
+                      SunnyStore: {y.loiNhan}
                     </p>
                   )}
                 </li>

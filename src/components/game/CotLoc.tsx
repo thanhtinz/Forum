@@ -29,7 +29,7 @@ export interface NhomLoc {
 export function CotLoc({ nhom }: { nhom: NhomLoc[] }) {
   return (
     <aside className="hidden w-[212px] shrink-0 lg:block">
-      <nav aria-label="Lọc kho game" className="sticky top-[68px] space-y-6">
+      <nav aria-label="Lọc trò chơi" className="sticky top-[68px] space-y-6">
         {nhom.map((n) => (
           <div key={n.ten}>
             <h2 className="mb-2 text-[12px] font-bold uppercase tracking-wide text-mo">{n.ten}</h2>

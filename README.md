@@ -1,10 +1,10 @@
 <img src="public/bieu-tuong-192.png" width="72" align="left" alt="" hspace="12" />
 
-# SunnyStore — kho game
+# SunnyStore
 
-Trang tải game Java ME, Android, iOS và Windows. Mỗi game có trang riêng kèm
-bản tải theo từng hệ máy, mã kiểm tra tệp, đánh giá của người chơi, và một khu
-thảo luận nằm ngay trong game ấy.
+Cửa hàng tải game Java ME, Android, iOS, macOS và Windows. Mỗi game có trang riêng kèm bản tải
+theo từng hệ máy, đánh giá của người chơi, và một khu diễn đàn nằm ngay trong
+trang game ấy.
 
 ## Chạy thử
 
@@ -62,8 +62,8 @@ dưới mức 4,5:1 mà chữ thường cần.
   luỹ trước khi tải. Cửa hàng nào cũng thế.
 - **Diễn đàn nằm trong game** như một tab bên cạnh Thông tin, không có bảng
   chuyên mục riêng: người ta bàn về một game cụ thể.
-- **Tab "Hôm nay" xoay game theo ngày mà không lặp lại.** Coi cả kho là một cỗ
-  bài: đầu mỗi vòng xáo một lần rồi mỗi ngày chia ra bốn lá. Trong một vòng,
+- **Tab "Hôm nay" xoay game theo ngày mà không lặp lại.** Coi cả danh mục là
+  một cỗ bài: đầu mỗi vòng xáo một lần rồi mỗi ngày chia ra bốn lá. Trong một vòng,
   mỗi game đi qua đúng một lần — "không trùng" là điều không thể sai, chứ
   không phải một điều kiện phải đi kiểm sau. Xem `src/lib/hom-nay-const.ts`,
   và `npx tsx scripts/soat-vong-hom-nay.ts` để duyệt lịch chia qua nhiều ngày.

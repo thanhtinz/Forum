@@ -6,7 +6,7 @@ import { ThanhTren } from '@/components/vo/ThanhTren';
 import { ThanhDay } from '@/components/vo/ThanhDay';
 
 export const metadata: Metadata = {
-  title: { default: 'SunnyStore — kho game Java, Android, iOS', template: '%s · SunnyStore' },
+  title: { default: 'SunnyStore — trò chơi Java, Android, iOS', template: '%s · SunnyStore' },
   description: 'Tải game về máy, và bàn luận cùng người chơi khác ngay trong trang của từng game.',
   // Cho phép cài lên màn hình chính iPhone và hiện đúng tên dưới biểu tượng.
   appleWebApp: { capable: true, title: 'SunnyStore', statusBarStyle: 'default' },

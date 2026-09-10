@@ -35,7 +35,7 @@ export default async function DanhSachGame() {
       </div>
 
       {game.length === 0 ? (
-        <p className="the p-8 text-center text-[13px] text-mo">Chưa có game nào trong kho.</p>
+        <p className="the p-8 text-center text-[13px] text-mo">Chưa có trò chơi nào.</p>
       ) : (
         <ul className="the divide-y divide-vien">
           {game.map((g) => {

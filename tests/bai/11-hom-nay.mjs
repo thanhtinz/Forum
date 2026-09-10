@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process';
 import { GOC, db, moTrang } from '../tro-giup.mjs';
 
 /**
- * TAB "HÔM NAY" — mỗi ngày một bộ, và KHÔNG TRÙNG cho tới khi đi hết kho.
+ * TAB "HÔM NAY" — mỗi ngày một bộ, và KHÔNG TRÙNG cho tới khi đi hết danh mục.
  *
  * Phần thuật toán kiểm bằng kịch bản `soat-vong-hom-nay.ts` chạy thẳng vào
  * hàm chia, duyệt hàng trăm ngày liền trong một tích tắc. Không có cách nào
@@ -49,7 +49,7 @@ export default async function chay(kiem) {
 
   // Game của hôm nay phải là game ĐANG HIỆN thật, không phải nháp lọt ra.
   const co = await db.game.count({ where: { ten: tenLan1, trangThai: 'DANG_HIEN' } });
-  kiem('game của hôm nay là game đang hiện trong kho', co === 1, `tìm thấy ${co}`);
+  kiem('game của hôm nay là game đang hiện trên trang', co === 1, `tìm thấy ${co}`);
 
   // Tải lại trang KHÔNG được đổi game — đây là chỗ `Math.random()` sẽ lộ ra.
   await p.reload({ waitUntil: 'networkidle' });

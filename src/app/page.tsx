@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { ChevronRight } from 'lucide-react';
 import { db } from '@/lib/db';
-import { DANG_HIEN, layKe } from '@/lib/kho-game';
+import { DANG_HIEN, layKe } from '@/lib/danh-muc';
 import { CHON_THE, thanhThe, type TheGame } from '@/components/game/the-game';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { HangGame } from '@/components/game/HangGame';
@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic';
  * Không phải một cái kho bày ra để lọc, mà một trang có người biên tập: mỗi
  * ngày vài game, mỗi game một tấm to, có dòng nhãn nói VÌ SAO nó nằm đó.
  *
- * MỖI NGÀY MỘT BỘ, VÀ KHÔNG TRÙNG cho tới khi đi hết kho — cách chia nằm ở
+ * MỖI NGÀY MỘT BỘ, VÀ KHÔNG TRÙNG cho tới khi đi hết danh mục — cách chia nằm ở
  * `hom-nay-const.ts`, và có một kịch bản duyệt hàng trăm ngày liền để soát.
  * Nói ngắn: coi cả kho là một cỗ bài, đầu mỗi vòng xáo một lần rồi mỗi ngày
  * chia ra vài lá. Trong một vòng, mỗi lá đi qua tay đúng một lần.
@@ -85,13 +85,13 @@ export default async function HomNay() {
         <TheBoSuuTap
           nhan="CŨNG ĐÁNG THỬ"
           tieuDe="Ba game nữa cho hôm nay"
-          phu="Mai lại là ba game khác, cho tới khi đi hết kho"
+          phu="Mai lại là ba game khác, cho tới khi đi hết danh mục"
           game={conLai.map(thanhThe)} />
       )}
 
       <TheBoSuuTap
         nhan="MỚI NHẤT"
-        tieuDe="Vừa lên kho"
+        tieuDe="Mới ra mắt"
         phu="Mới được thêm vào, chưa ai kịp chơi"
         xemThem="/game"
         game={moi.filter((g) => !daBay.has(g.id)).slice(0, 3)} />
@@ -202,7 +202,7 @@ function KhoTrong() {
   return (
     <div className="the mx-auto max-w-md p-8 text-center">
       <BieuTuongGame ten="SunnyStore" icon={null} co={64} className="mx-auto" />
-      <h1 className="mt-4 text-lg font-bold">Kho chưa có game nào</h1>
+      <h1 className="mt-4 text-lg font-bold">Chưa có trò chơi nào</h1>
       <p className="phu mt-1.5">
         Game đầu tiên phải do quản trị viên thêm vào rồi bấm đăng.
       </p>

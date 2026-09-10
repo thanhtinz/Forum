@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { MessageSquare, PenLine, Pin } from 'lucide-react';
 import { db } from '@/lib/db';
-import { DANG_HIEN } from '@/lib/kho-game';
+import { DANG_HIEN } from '@/lib/danh-muc';
 import { cachDay } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';

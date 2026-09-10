@@ -48,7 +48,7 @@ export default async function TrangThuVien() {
           <Library size={24} className="mx-auto text-mo" />
           <p className="mt-2 text-[14px] font-semibold">Thư viện còn trống</p>
           <p className="phu mt-1">Tải một game bất kỳ là nó tự hiện ở đây, khỏi phải lưu tay.</p>
-          <Link href="/" className="nut-cai-dam mt-4 !min-h-[38px] !px-5 !text-[13px]">Ghé kho xem thử</Link>
+          <Link href="/" className="nut-cai-dam mt-4 !min-h-[38px] !px-5 !text-[13px]">Khám phá trò chơi</Link>
         </div>
       ) : (
         <ul className="space-y-3">

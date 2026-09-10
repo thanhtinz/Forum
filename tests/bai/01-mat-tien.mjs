@@ -26,7 +26,7 @@ export default async function chay(kiem) {
   // ── Tab "Game" — mặt tiền của kho ────────────────────────────────────
   await p.goto(`${GOC}/game`, { waitUntil: 'networkidle' });
 
-  for (const ten of ['Bảng xếp hạng', 'Mới lên kho', 'Thể loại']) {
+  for (const ten of ['Bảng xếp hạng', 'Mới ra mắt', 'Thể loại']) {
     kiem(`tab Game có khối “${ten}”`, (await p.locator(`text=${ten}`).count()) > 0);
   }
 
@@ -46,7 +46,7 @@ export default async function chay(kiem) {
   };
 
   const xepHang = await tenTrongKhoi('Bảng xếp hạng');
-  const moiLenKho = await tenTrongKhoi('Mới lên kho');
+  const moiLenKho = await tenTrongKhoi('Mới ra mắt');
   if (xepHang.length >= 3 && moiLenKho.length >= 3) {
     const trung = xepHang.filter((t) => moiLenKho.includes(t)).length;
     const tiLe = trung / Math.min(xepHang.length, moiLenKho.length);

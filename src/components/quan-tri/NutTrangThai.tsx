@@ -22,7 +22,7 @@ export function NutTrangThai({ gameId, trangThai }: { gameId: string; trangThai:
   return (
     <button type="button" onClick={doi} disabled={dangChay}
       className={dangHien ? 'nut-vien' : 'nut-cai-dam !min-h-[38px] !px-5 !text-[13px]'}>
-      {dangChay ? 'Đang lưu…' : dangHien ? 'Rút về nháp' : 'Đăng ra kho'}
+      {dangChay ? 'Đang lưu…' : dangHien ? 'Rút về nháp' : 'Đăng'}
     </button>
   );
 }

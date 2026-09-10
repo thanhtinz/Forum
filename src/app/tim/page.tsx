@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Search } from 'lucide-react';
 import { db } from '@/lib/db';
-import { MOI_TRANG, docBoLoc, duyetKho, thanhTruyVan } from '@/lib/kho-game';
+import { MOI_TRANG, docBoLoc, duyetDanhMuc, thanhTruyVan } from '@/lib/danh-muc';
 import { HangGame } from '@/components/game/HangGame';
 import { HangChip } from '@/components/game/HangChip';
 import { PhanTrang } from '@/components/PhanTrang';
@@ -27,7 +27,7 @@ export default async function TrangTim({ searchParams }: {
 
   if (!loc.tuKhoa) return <ChuaGo />;
 
-  const { game, tong, trang } = await duyetKho(loc);
+  const { game, tong, trang } = await duyetDanhMuc(loc);
 
   return (
     <div className="space-y-5">
@@ -45,7 +45,7 @@ export default async function TrangTim({ searchParams }: {
           <p className="phu mt-1">
             Thử gõ ngắn hơn — chỉ một từ trong tên game thường ra nhiều kết quả hơn cả câu.
           </p>
-          <Link href="/yeu-cau" className="nut-xam mt-4">Nhắn cho ban quản kho</Link>
+          <Link href="/yeu-cau" className="nut-xam mt-4">Gửi yêu cầu</Link>
         </div>
       ) : (
         <>

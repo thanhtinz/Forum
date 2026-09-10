@@ -13,7 +13,7 @@ import type { MetadataRoute } from 'next';
  */
 export default function banKeKhai(): MetadataRoute.Manifest {
   return {
-    name: 'SunnyStore — kho game Java, Android, iOS',
+    name: 'SunnyStore — trò chơi Java, Android, iOS',
     short_name: 'SunnyStore',
     description: 'Tải game về máy, và bàn luận cùng người chơi khác ngay trong trang của từng game.',
     start_url: '/',

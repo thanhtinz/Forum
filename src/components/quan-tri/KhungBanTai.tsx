@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import { Trash2 } from 'lucide-react';
 import { themBanTai, xoaBanTai, type KetQua } from '@/app/quan-tri/viec';
-import { HE_MAY, MO_TA_HE, caiThangDuoc, type MaHeMay } from '@/lib/he-may';
+import { HE_MAY, MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { gonDungLuong } from '@/lib/tien-ich';
 
 export interface BanQuanTri {
@@ -95,18 +95,14 @@ export function KhungBanTai({ gameId, ban }: { gameId: string; ban: BanQuanTri[]
           </label>
         </div>
 
-        {/* Ô App Store chỉ hiện khi đang thêm bản iOS: hiện ở mọi hệ thì nó gợi ý
-            rằng bản Windows cũng nên có, mà điều đó thì vô nghĩa. */}
-        {!caiThangDuoc(heMay) && (
-          <label className="block">
-            <span className="phu mb-1 block">Đường dẫn App Store</span>
-            <input name="duongDanCuaHang" placeholder="https://apps.apple.com/…" className="o-nhap" />
-            <span className="phu mt-1 block">
-              iPhone chưa bẻ khoá không cài được tệp IPA tải từ web, nên bản iOS phải dẫn
-              sang App Store thay vì gắn tệp. Còn macOS thì cài tệp DMG bình thường.
-            </span>
-          </label>
-        )}
+        <label className="block">
+          <span className="phu mb-1 block">Đường dẫn cửa hàng chính chủ (không bắt buộc)</span>
+          <input name="duongDanCuaHang" placeholder="https://apps.apple.com/… hoặc play.google.com/…"
+            className="o-nhap" />
+          <span className="phu mt-1 block">
+            Hiện thành một nút phụ đứng sau nút tải, cho ai muốn lấy bản chính chủ.
+          </span>
+        </label>
 
         <label className="block">
           <span className="phu mb-1 block">Có gì mới ở bản này</span>

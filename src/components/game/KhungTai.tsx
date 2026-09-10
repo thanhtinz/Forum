@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Apple, Coffee, Download, ExternalLink, Info, Laptop, Monitor, ShieldCheck, Smartphone } from 'lucide-react';
-import { HE_MAY, MO_TA_HE, NHAC_KHI_CAI, caiThangDuoc, type MaHeMay } from '@/lib/he-may';
+import { HE_MAY, MO_TA_HE, NHAC_KHI_CAI, type MaHeMay } from '@/lib/he-may';
 import { gonDungLuong, gop } from '@/lib/tien-ich';
 
 const ICON = { coffee: Coffee, smartphone: Smartphone, apple: Apple, monitor: Monitor, laptop: Laptop };
@@ -95,43 +95,34 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
       )}
 
       {/*
-        iOS ĐI LỐI KHÁC, và phải nói thẳng vì sao.
-        iPhone chưa bẻ khoá không cài được tệp IPA tải từ web — Apple chỉ mở
-        App Store, TestFlight, hệ quản lý thiết bị của doanh nghiệp và chợ ứng
-        dụng thay thế ở châu Âu. Dựng một nút "Tải IPA" ở đây là hứa với người
-        dùng một thứ họ chắc chắn không dùng được.
+        NÚT TẢI — mọi hệ như nhau, kể cả iOS.
+
+        Tệp đầu tiên là nút đặc, các tệp còn lại là nút viền: một bản Java có cả
+        JAR lẫn JAD, mà JAD một mình thì không cài được — tô đặc cả hai là mời
+        người ta bấm nhầm vào cái không dùng được.
       */}
-      {!caiThangDuoc(he) ? (
-        <div className="the p-4">
-          {hienTai.duongDanCuaHang ? (
-            <a href={hienTai.duongDanCuaHang} target="_blank" rel="noopener noreferrer"
-              className="nut-cai-dam w-full">
-              <ExternalLink size={17} /> Mở trong App Store
-            </a>
-          ) : (
-            <p className="phu">Bản iOS chưa có đường dẫn App Store.</p>
-          )}
-          <p className="phu mt-3">
-            iPhone chưa bẻ khoá không cài được tệp IPA tải từ web: Apple chỉ cho cài qua
-            App Store, TestFlight, hệ quản lý thiết bị của doanh nghiệp, hoặc chợ ứng dụng
-            thay thế ở châu Âu.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {hienTai.tep.length === 0 && (
-            <p className="the p-4 text-center text-[13px] text-mo">Bản này chưa gắn tệp tải.</p>
-          )}
-          {hienTai.tep.map((t, i) => (
-            <a key={t.id} href={`/api/tai/${t.id}`}
-              className={gop('w-full', i === 0 ? 'nut-cai-dam' : 'nut-vien !w-full')}>
-              <Download size={i === 0 ? 17 : 15} />
-              Tải {t.loai}
-              {t.dungLuong != null && ` · ${gonDungLuong(t.dungLuong)}`}
-            </a>
-          ))}
-        </div>
-      )}
+      <div className="space-y-2">
+        {hienTai.tep.length === 0 && !hienTai.duongDanCuaHang && (
+          <p className="the p-4 text-center text-[13px] text-mo">Bản này chưa gắn tệp tải.</p>
+        )}
+        {hienTai.tep.map((t, i) => (
+          <a key={t.id} href={`/api/tai/${t.id}`}
+            className={gop('w-full', i === 0 ? 'nut-cai-dam' : 'nut-vien !w-full')}>
+            <Download size={i === 0 ? 17 : 15} />
+            Tải {t.loai}
+            {t.dungLuong != null && ` · ${gonDungLuong(t.dungLuong)}`}
+          </a>
+        ))}
+
+        {/* Đường dẫn cửa hàng ngoài là lối PHỤ, đứng sau nút tải: có thì tốt cho
+            ai muốn bản chính chủ, không có cũng chẳng thiếu gì. */}
+        {hienTai.duongDanCuaHang && (
+          <a href={hienTai.duongDanCuaHang} target="_blank" rel="noopener noreferrer"
+            className={gop('w-full', hienTai.tep.length === 0 ? 'nut-cai-dam' : 'nut-vien !w-full')}>
+            <ExternalLink size={15} /> Mở trong cửa hàng chính chủ
+          </a>
+        )}
+      </div>
 
       {/*
         Câu nhắc riêng của hệ đang chọn.
@@ -139,7 +130,7 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
         nguồn ngoài, Windows chặn tệp chưa ký, macOS thì Gatekeeper. Nói trước ở
         đây rẻ hơn nhiều so với một chủ đề "tải về không chạy" ở khu cộng đồng.
       */}
-      {caiThangDuoc(he) && NHAC_KHI_CAI[he] && (
+      {NHAC_KHI_CAI[he] && (
         <p className="flex gap-2 rounded-nut bg-nen3 px-3 py-2.5 text-[12px] leading-relaxed text-mo">
           <Info size={14} className="mt-px shrink-0" />
           {NHAC_KHI_CAI[he]}

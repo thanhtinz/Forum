@@ -92,6 +92,7 @@ const GAME: GameMau[] = [
     ban: [
       { he: 'JAVA', soHieu: '1.0.4', tep: ['JAR', 'JAD'], dungLuong: 512_000 },
       { he: 'ANDROID', soHieu: '2.0', tep: ['APK'], dungLuong: 27_262_976 },
+      { he: 'IOS', soHieu: '2.0', tep: ['IPA'], dungLuong: 31_457_280 },
     ],
   },
   {
@@ -119,7 +120,7 @@ const GAME: GameMau[] = [
     ban: [
       { he: 'JAVA', soHieu: '1.5', tep: ['JAR', 'JAD'], dungLuong: 204_800 },
       { he: 'ANDROID', soHieu: '3.0', tep: ['APK'], dungLuong: 18_874_368 },
-      { he: 'IOS', soHieu: '3.0', tep: [], cuaHang: 'https://apps.apple.com/' },
+      { he: 'IOS', soHieu: '3.0', tep: ['IPA'], dungLuong: 22_020_096, cuaHang: 'https://apps.apple.com/' },
       { he: 'WINDOWS', soHieu: '2.2', tep: ['EXE', 'ZIP'], dungLuong: 12_582_912 },
       { he: 'MAC', soHieu: '2.2', tep: ['DMG'], dungLuong: 15_728_640,
         doiMoi: 'Chạy được trên máy chip Apple mà không cần Rosetta.' },
@@ -131,7 +132,7 @@ const GAME: GameMau[] = [
     gioiThieu: 'Sudoku 9×9 với bốn mức khó và bộ đề sinh ngẫu nhiên. Có gợi ý, có đánh dấu nháp, và đếm giờ nếu bạn muốn tự thi với chính mình.',
     ban: [
       { he: 'ANDROID', soHieu: '4.2', tep: ['APK'], dungLuong: 8_388_608 },
-      { he: 'IOS', soHieu: '4.2', tep: [], cuaHang: 'https://apps.apple.com/' },
+      { he: 'IOS', soHieu: '4.2', tep: ['IPA'], dungLuong: 11_534_336, cuaHang: 'https://apps.apple.com/' },
       { he: 'MAC', soHieu: '4.1', tep: ['DMG'], dungLuong: 9_437_184 },
       { he: 'WINDOWS', soHieu: '4.1', tep: ['EXE'], dungLuong: 7_340_032 },
     ],

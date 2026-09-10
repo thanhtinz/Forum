@@ -27,7 +27,10 @@ export default async function chay(kiem) {
   await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
 
   const NHAN = { JAVA: 'Java ME', ANDROID: 'Android', IOS: 'iOS', WINDOWS: 'Windows', MAC: 'macOS' };
-  const LOAI = { JAVA: ['JAR', 'JAD'], ANDROID: ['APK', 'ZIP'], WINDOWS: ['EXE', 'ZIP'], MAC: ['DMG', 'PKG', 'ZIP'] };
+  const LOAI = {
+    JAVA: ['JAR', 'JAD'], ANDROID: ['APK', 'ZIP'], IOS: ['IPA'],
+    WINDOWS: ['EXE', 'ZIP'], MAC: ['DMG', 'PKG', 'ZIP'],
+  };
 
   for (const he of game.he) {
     const nut = p.locator(`#tai button:has-text("${NHAN[he]}")`);
@@ -38,28 +41,23 @@ export default async function chay(kiem) {
     await p.locator(`#tai button:has-text("${NHAN[he]}")`).click();
     await p.waitForTimeout(400);
 
-    if (he === 'IOS') {
-      /*
-       * iOS KHÔNG được có nút tải tệp.
-       * iPhone chưa bẻ khoá không cài nổi IPA lấy từ web, nên dựng nút tải ở
-       * đây là hứa với người dùng một thứ họ chắc chắn không dùng được.
-       */
-      const soNutTai = await p.locator('#tai a[href^="/api/tai/"]').count();
-      kiem('iOS không dựng nút tải tệp', soNutTai === 0, `đếm được ${soNutTai}`);
-      kiem('iOS dẫn sang App Store',
-        (await p.locator('#tai a:has-text("App Store")').count()) > 0);
-      kiem('iOS nói rõ vì sao không tải thẳng được',
-        (await p.locator('#tai').textContent()).includes('bẻ khoá'));
-      continue;
-    }
-
     const chu = await p.locator('#tai').textContent();
+
+    if (he === 'IOS') {
+      // iOS tải thẳng tệp IPA như mọi hệ khác.
+      const soNutTai = await p.locator('#tai a[href^="/api/tai/"]').count();
+      kiem('iOS có nút tải tệp IPA', soNutTai > 0 && chu.includes('Tải IPA'), `đếm được ${soNutTai}`);
+      // Và nói rõ cần công cụ gì mới cài được — giấu đi không làm tệp cài được.
+      kiem('iOS nhắc rõ cần công cụ ký để cài',
+        chu.includes('AltStore') || chu.includes('Sideloadly'), chu.slice(0, 160));
+    }
     const dungLoai = LOAI[he].some((l) => chu.includes(`Tải ${l}`));
     kiem(`hệ ${NHAN[he]} dựng nút tải đúng loại tệp`, dungLoai,
       LOAI[he].join('/') + ' — đang là: ' + (chu.match(/Tải \w+/g) ?? []).join(', '));
 
     // Không được lẫn tệp của hệ khác sang: JAR nằm trong khung Windows là dấu
     // hiệu khung tải đang dựng theo cả game thay vì theo hệ đang chọn.
+    // (iOS cũng đi qua đúng hai phép kiểm này, không có ngoại lệ nào nữa.)
     const lanSang = Object.entries(LOAI)
       .filter(([k]) => k !== he)
       .flatMap(([, v]) => v)

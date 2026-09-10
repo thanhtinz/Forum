@@ -37,8 +37,10 @@ chỉ kiểm mỗi mã trạng thái HTTP.
   luỹ trước khi tải. Cửa hàng nào cũng thế.
 - **Cộng đồng nằm trong game**, không có bảng chuyên mục riêng: người ta bàn về
   một game cụ thể, không bàn về "chuyên mục game hành động".
-- **iOS đi lối khác.** iPhone chưa bẻ khoá không cài được tệp IPA tải từ web, nên
-  bản iOS dẫn sang App Store thay vì gắn tệp. Xem `src/lib/he-may.ts`.
+- **Mọi hệ máy tải thẳng tệp về máy**, kể cả iOS: JAR/JAD, APK, IPA, EXE, DMG/PKG.
+  Đường dẫn cửa hàng chính chủ là một nút PHỤ đứng sau nút tải, không thay nó.
+  Riêng IPA thì kèm một dòng nhắc: iPhone chưa bẻ khoá cần công cụ ký như
+  AltStore hoặc Sideloadly mới cài được. Xem `src/lib/he-may.ts`.
 - **Phiên đăng nhập giữ ở CSDL**, cookie chỉ mang một mã ngẫu nhiên. Khoá một
   tài khoản là đá được người ấy ra ngay.
 - **Mỗi hàm trong tệp `'use server'` tự kiểm quyền lấy** — nó là một địa chỉ POST

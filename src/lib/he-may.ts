@@ -43,29 +43,20 @@ export function laLoaiTep(v: string | undefined | null): v is MaLoaiTep {
 }
 
 /**
- * iOS là hệ DUY NHẤT không tải thẳng được.
- *
- * iPhone chưa bẻ khoá không cài nổi tệp IPA lấy từ web — Apple chỉ mở đúng bốn
- * lối: App Store, TestFlight, hệ quản lý thiết bị của doanh nghiệp, và chợ ứng
- * dụng thay thế ở châu Âu.
- *
- * macOS thì KHÁC hẳn, đừng gộp chung chỉ vì cùng là Apple: tệp DMG tải từ web
- * cài được bình thường. Gatekeeper có hỏi một câu khi tệp chưa ký, nhưng hỏi
- * rồi vẫn cho cài — nên macOS đi lối tải thẳng như Windows.
- */
-export function caiThangDuoc(he: MaHeMay): boolean {
-  return he !== 'IOS';
-}
-
-/**
  * Câu nhắc riêng của từng hệ, hiện ngay dưới nút tải.
  *
- * Mỗi hệ có đúng một chỗ hay làm người ta khựng lại lúc cài; nói trước ở đây
- * rẻ hơn nhiều so với việc nhận một chủ đề "tải về không chạy" ở khu cộng đồng.
+ * MỌI hệ đều tải thẳng tệp về máy, kể cả iOS. Nhưng mỗi hệ có đúng một chỗ hay
+ * làm người ta khựng lại lúc cài, và nói trước ở đây rẻ hơn nhiều so với việc
+ * nhận một chủ đề "tải về không chạy" ở khu cộng đồng.
+ *
+ * Câu của iOS dài hơn cả vì chỗ khựng của nó cũng lớn hơn cả: bấm vào tệp IPA
+ * trên iPhone thường thì máy không làm gì hết. Nói thẳng ra cần công cụ gì thì
+ * người tải còn biết đường, chứ giấu đi không làm tệp cài được.
  */
 export const NHAC_KHI_CAI: Partial<Record<MaHeMay, string>> = {
   JAVA: 'Chép tệp JAR vào thẻ nhớ rồi mở bằng trình quản lý tệp của máy. Tệp JAD chỉ là phần mô tả đi kèm, một mình nó không cài được.',
   ANDROID: 'Android sẽ hỏi có cho cài từ nguồn ngoài không — bật riêng cho trình duyệt bạn đang dùng, cài xong nên tắt lại.',
+  IOS: 'Tệp IPA cần một công cụ ký để cài, như AltStore hoặc Sideloadly trên máy tính. Máy đã bẻ khoá hoặc chợ ứng dụng thay thế ở châu Âu thì cài thẳng được.',
   WINDOWS: 'Windows SmartScreen có thể chặn tệp chưa ký: bấm “Thông tin thêm” rồi “Vẫn chạy”.',
   MAC: 'Tệp chưa ký thì macOS báo không mở được: vào Cài đặt hệ thống › Quyền riêng tư & Bảo mật, bấm “Mở bằng mọi cách”.',
 };

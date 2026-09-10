@@ -26,9 +26,14 @@ Tài khoản mẫu sau khi seed:
 ## Bài kiểm
 
 ```bash
-npm run kiem              # cần một máy chủ đang chạy ở cổng 3000
+npm run kiem:that         # dựng sạch → next start ở cổng 3100 → kiểm → tắt
+npm run kiem              # chạy vào máy chủ đang mở ở cổng 3000
 npm run kiem -- 03        # chỉ chạy bài có "03" trong tên
 ```
+
+Dùng `kiem:that` là chính. Máy chủ dev và `npm run build` dùng chung thư mục
+`.next`, chạy xen kẽ nhau là có lúc thiếu một mẩu chunk rồi cả trang trắng —
+mà lỗi ấy trông y hệt lỗi thật: trang trả về 200 nhưng rỗng ruột.
 
 Bài kiểm mở trình duyệt thật, bấm nút thật, rồi soi lại CSDL — không có bài nào
 chỉ kiểm mỗi mã trạng thái HTTP.
@@ -55,8 +60,13 @@ dưới mức 4,5:1 mà chữ thường cần.
 
 - **Tải là tải.** Không có điểm, không có mức thành viên, không có gì phải tích
   luỹ trước khi tải. Cửa hàng nào cũng thế.
-- **Cộng đồng nằm trong game**, không có bảng chuyên mục riêng: người ta bàn về
-  một game cụ thể, không bàn về "chuyên mục game hành động".
+- **Diễn đàn nằm trong game** như một tab bên cạnh Thông tin, không có bảng
+  chuyên mục riêng: người ta bàn về một game cụ thể.
+- **Tab "Hôm nay" xoay game theo ngày mà không lặp lại.** Coi cả kho là một cỗ
+  bài: đầu mỗi vòng xáo một lần rồi mỗi ngày chia ra bốn lá. Trong một vòng,
+  mỗi game đi qua đúng một lần — "không trùng" là điều không thể sai, chứ
+  không phải một điều kiện phải đi kiểm sau. Xem `src/lib/hom-nay-const.ts`,
+  và `npx tsx scripts/soat-vong-hom-nay.ts` để duyệt lịch chia qua nhiều ngày.
 - **Mọi hệ máy tải thẳng tệp về máy**, kể cả iOS: JAR/JAD, APK, IPA, EXE, DMG/PKG.
   Đường dẫn cửa hàng chính chủ là một nút PHỤ đứng sau nút tải, không thay nó.
   Riêng IPA thì kèm một dòng nhắc: iPhone chưa bẻ khoá cần công cụ ký như

@@ -49,6 +49,10 @@
 
   --chuyen: 150ms cubic-bezier(.2, .7, .3, 1);
 
+  /* Bóng của thẻ nổi: một lớp sát mép cho ra đường viền mềm, một lớp toả rộng
+     cho ra cảm giác tấm thiệp đang nằm trên mặt bàn. */
+  --bong-the: 0 1px 2px rgb(16 24 40 / .06), 0 6px 20px -4px rgb(16 24 40 / .12);
+
   /* Bóng của thanh tab nổi. Hai lớp: một lớp mỏng sát mép cho ra đường viền
      mềm, một lớp toả rộng cho ra cảm giác thanh đang trôi trên nền. */
   --bong-noi: 0 1px 2px rgb(16 24 40 / .10), 0 8px 28px -6px rgb(16 24 40 / .22);
@@ -60,6 +64,7 @@
   /* Nền tối thì bóng đen chìm nghỉm, không tách được thanh khỏi nền. Dùng một
      vòng sáng mảnh thay cho bóng đổ. */
   --bong-noi: 0 0 0 1px rgb(255 255 255 / .06), 0 8px 28px -6px rgb(0 0 0 / .6);
+  --bong-the: 0 0 0 1px rgb(255 255 255 / .06), 0 6px 20px -4px rgb(0 0 0 / .5);
 
   --nen: 15 17 20;
   --nen2: 26 29 34;
@@ -231,6 +236,25 @@ body {
   }
 
   .the { @apply rounded-the border border-vien bg-nen2; }
+
+  /*
+   * THẺ NỔI — dáng thẻ của tab Today ở App Store.
+   *
+   * Bo góc to hơn thẻ thường (20px so với 12px) và có bóng đổ thay cho viền.
+   * Khác biệt ấy có việc để làm: tab "Hôm nay" chỉ gồm ba bốn tấm, mỗi tấm là
+   * một lời giới thiệu riêng — bóng đổ tách chúng ra thành mấy tấm thiệp rời,
+   * còn viền mảnh thì gộp chúng lại thành một danh sách.
+   *
+   * Bấm vào thì thu lại một chút. Chỉ 1,5% — đủ để ngón tay biết máy đã nhận,
+   * không đủ để thành một hiệu ứng phô trương. Ai bật "giảm chuyển động" thì
+   * quy tắc ở đầu tệp tắt luôn phần này.
+   */
+  .the-noi {
+    @apply rounded-[20px] bg-nen2;
+    box-shadow: var(--bong-the);
+    transition: transform var(--chuyen), box-shadow var(--chuyen);
+  }
+  .the-noi:active { transform: scale(.985); }
   .the-bam { @apply the transition-shadow; }
   .the-bam:hover { box-shadow: 0 1px 3px rgb(32 33 36 / .12), 0 4px 12px rgb(32 33 36 / .08); }
 

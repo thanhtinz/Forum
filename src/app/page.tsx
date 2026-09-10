@@ -4,172 +4,209 @@ import { vi } from 'date-fns/locale';
 import { ChevronRight } from 'lucide-react';
 import { db } from '@/lib/db';
 import { DANG_HIEN, layKe } from '@/lib/kho-game';
+import { CHON_THE, thanhThe, type TheGame } from '@/components/game/the-game';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { HangGame } from '@/components/game/HangGame';
 import { NutCai } from '@/components/game/NutCai';
+import { chiaHomNay } from '@/lib/hom-nay-const';
 import { mauCuaGame } from '@/lib/mau-game';
 import { catChu } from '@/lib/tien-ich';
-import type { TheGame } from '@/components/game/the-game';
 
 export const dynamic = 'force-dynamic';
 
 /*
- * TAB "HÔM NAY".
+ * TAB "HÔM NAY" — chép lối tab Today của App Store.
  *
- * Chép ý của tab Today ở App Store: không phải một cái kho bày ra để lọc, mà
- * một trang có người biên tập — mỗi ngày vài game, mỗi game một tấm to, có
- * dòng nhãn nói VÌ SAO nó nằm ở đây.
+ * Không phải một cái kho bày ra để lọc, mà một trang có người biên tập: mỗi
+ * ngày vài game, mỗi game một tấm to, có dòng nhãn nói VÌ SAO nó nằm đó.
  *
- * Khác chỗ này: dòng hook lấy từ chính phần giới thiệu của game, không phải
- * một câu quảng cáo viết thêm. Kho này chưa có ban biên tập, mà bịa ra một
- * giọng biên tập thì thành nói thay người không tồn tại.
+ * MỖI NGÀY MỘT BỘ, VÀ KHÔNG TRÙNG cho tới khi đi hết kho — cách chia nằm ở
+ * `hom-nay-const.ts`, và có một kịch bản duyệt hàng trăm ngày liền để soát.
+ * Nói ngắn: coi cả kho là một cỗ bài, đầu mỗi vòng xáo một lần rồi mỗi ngày
+ * chia ra vài lá. Trong một vòng, mỗi lá đi qua tay đúng một lần.
  *
- * Tab "Game" mới là chỗ bày kho: kệ, bảng xếp hạng, thể loại.
+ * Câu chữ trên thẻ lấy từ chính phần giới thiệu do người nhập game viết. Kho
+ * này chưa có ban biên tập, mà bịa ra một giọng biên tập thì là nói thay một
+ * người không tồn tại.
  */
 
-const NHAN: Record<string, string> = {
-  chon: 'BAN QUẢN KHO CHỌN',
-  moi: 'VỪA LÊN KHO',
-  viet: 'CÓ BẢN VIỆT HOÁ',
-};
+/** Bốn game mỗi ngày: một tấm lớn, ba game trong thẻ bộ sưu tập. */
+const MOI_NGAY = 4;
 
 export default async function HomNay() {
-  const [noiBat, hook, moi, vietHoa, tongGame] = await Promise.all([
-    layKe({ noiBat: true }, [{ dangLuc: 'desc' }, { id: 'desc' }], 3),
-    /*
-     * Câu mở đầu phần giới thiệu của mấy game nổi bật.
-     *
-     * Tấm lớn đã in tên game to đùng trên nền màu; in lại đúng cái tên ấy ở
-     * hàng ngay dưới là bắt người đọc đọc hai lần một thứ. Thay bằng câu đầu
-     * của phần giới thiệu — do chính người nhập game viết, không phải một câu
-     * quảng cáo bịa thêm.
-     */
+  /*
+   * Lấy id của CẢ KHO để xáo. Chỉ một cột, không kèm gì khác.
+   *
+   * Sắp theo `id` để thứ tự trước khi xáo luôn cố định — xáo một cỗ bài đã bị
+   * xếp lộn xộn thì cùng một ngày lại ra hai kết quả khác nhau.
+   *
+   * Kho tới hàng chục nghìn game thì nên chuyển sang một bảng lịch tính sẵn;
+   * ở cỡ hiện tại, đọc một cột id vẫn rẻ hơn nhiều so với việc dựng thêm bảng.
+   */
+  const tatCa = await db.game.findMany({
+    where: DANG_HIEN, orderBy: { id: 'asc' }, select: { id: true },
+  });
+
+  if (tatCa.length === 0) return <KhoTrong />;
+
+  const { chon } = chiaHomNay(tatCa.map((g) => g.id), MOI_NGAY);
+
+  const [duocChon, moi] = await Promise.all([
     db.game.findMany({
-      where: { ...DANG_HIEN, noiBat: true },
-      orderBy: [{ dangLuc: 'desc' }, { id: 'desc' }],
-      take: 3,
-      select: { id: true, gioiThieu: true },
+      where: { id: { in: chon } },
+      select: { ...CHON_THE, gioiThieu: true },
     }),
-    layKe({}, [{ dangLuc: 'desc' }, { id: 'desc' }], 4),
-    layKe({ vietHoa: true }, [{ dangLuc: 'desc' }, { id: 'desc' }], 4),
-    db.game.count({ where: DANG_HIEN }),
+    layKe({}, [{ dangLuc: 'desc' }, { id: 'desc' }], 3),
   ]);
 
-  if (tongGame === 0) {
-    return (
-      <div className="the mx-auto max-w-md p-8 text-center">
-        <BieuTuongGame ten="SunnyStore" icon={null} co={64} className="mx-auto" />
-        <h1 className="mt-4 text-lg font-bold">Kho chưa có game nào</h1>
-        <p className="phu mt-1.5">
-          Game đầu tiên phải do quản trị viên thêm vào rồi bấm đăng.
-        </p>
-        <Link href="/quan-tri/game/moi" className="nut-cai-dam mt-5">Thêm game đầu tiên</Link>
-      </div>
-    );
-  }
+  // Prisma trả về theo thứ tự của nó, nên xếp lại đúng thứ tự vừa chia — bằng
+  // không thì "game của hôm nay" đổi mỗi lần tải trang dù bộ bốn vẫn thế.
+  const thuTu = new Map(chon.map((id, i) => [id, i]));
+  const ngayNay = duocChon.sort((a, b) => (thuTu.get(a.id) ?? 0) - (thuTu.get(b.id) ?? 0));
 
-  // Game đã lên tấm to thì không lặp lại ở mấy khối dưới.
-  const daBay = new Set(noiBat.map((g) => g.id));
-  const moiKhac = moi.filter((g) => !daBay.has(g.id)).slice(0, 3);
-  moiKhac.forEach((g) => daBay.add(g.id));
-  const vietKhac = vietHoa.filter((g) => !daBay.has(g.id)).slice(0, 3);
+  const [chinh, ...conLai] = ngayNay;
+  const daBay = new Set(ngayNay.map((g) => g.id));
 
   return (
-    <div className="mx-auto max-w-[680px] space-y-6">
-      <header>
+    <div className="mx-auto max-w-[680px] space-y-5">
+      <header className="pt-1">
         <p className="text-[13px] font-bold uppercase tracking-wide text-mo">
           {format(new Date(), "EEEE, d 'tháng' M", { locale: vi })}
         </p>
         <h1 className="text-[32px] font-bold leading-tight tracking-tight">Hôm nay</h1>
       </header>
 
-      {noiBat.map((g) => (
-        <TamLon key={g.id} game={g} nhan={NHAN.chon}
-          hook={cauDau(hook.find((h) => h.id === g.id)?.gioiThieu)} />
-      ))}
-
-      {moiKhac.length > 0 && (
-        <KhoiDanhSach tieuDe="Vừa lên kho" phu="Mới được thêm vào tuần này"
-          xemThem="/game" game={moiKhac} />
+      {chinh && (
+        <TamLon game={thanhThe(chinh)} nhan="GAME CỦA HÔM NAY"
+          doan={chinh.gioiThieu ? catChu(chinh.gioiThieu, 220) : null} />
       )}
 
-      {vietKhac.length > 0 && (
-        <KhoiDanhSach tieuDe="Chơi bằng tiếng Việt" phu="Không phải đoán chữ"
-          xemThem="/duyet?viet-hoa=1" game={vietKhac} />
+      {conLai.length > 0 && (
+        <TheBoSuuTap
+          nhan="CŨNG ĐÁNG THỬ"
+          tieuDe="Ba game nữa cho hôm nay"
+          phu="Mai lại là ba game khác, cho tới khi đi hết kho"
+          game={conLai.map(thanhThe)} />
       )}
+
+      <TheBoSuuTap
+        nhan="MỚI NHẤT"
+        tieuDe="Vừa lên kho"
+        phu="Mới được thêm vào, chưa ai kịp chơi"
+        xemThem="/game"
+        game={moi.filter((g) => !daBay.has(g.id)).slice(0, 3)} />
     </div>
   );
-}
-
-/** Câu đầu tiên của một đoạn văn, cắt ở dấu chấm. Rỗng thì trả `null`. */
-function cauDau(doan: string | null | undefined): string | null {
-  const chu = (doan ?? '').trim();
-  if (!chu) return null;
-  const het = chu.indexOf('. ');
-  return het > 0 ? `${chu.slice(0, het)}.` : catChu(chu, 120);
 }
 
 /**
  * TẤM LỚN — một game chiếm trọn bề ngang.
  *
- * Tỉ lệ 3:2 cố định. Để chiều cao tự do thì mỗi tấm một chiều cao, và trang
- * cuộn xuống thành một dãy hộp so le trông như bị vỡ.
+ * Dáng thẻ "App of the Day" của App Store: nhãn nhỏ chữ hoa nằm TRÊN tên
+ * game, cả hai đè lên tấm màu; dưới tấm là một hàng trắng có biểu tượng thật
+ * và nút cài, rồi tới đoạn giới thiệu.
+ *
+ * Nhãn đặt trên tên chứ không dưới: đọc "GAME CỦA HÔM NAY" trước rồi mới tới
+ * cái tên thì cái tên ấy có nghĩa ngay. Ngược lại thì phải đọc xong tên, gặp
+ * dòng nhãn, rồi quay lên đọc lại tên.
  *
  * Nền là dải màu suy từ tên game chứ không phải ảnh: kho chưa có ảnh bìa
  * thật, mà dựng một tấm ảnh giả là nói dối người xem về thứ họ sắp tải.
  */
-function TamLon({ game, nhan, hook }: { game: TheGame; nhan: string; hook: string | null }) {
+function TamLon({ game, nhan, doan }: { game: TheGame; nhan: string; doan: string | null }) {
   const { tu, den } = mauCuaGame(game.ten);
 
   return (
-    <article className="the overflow-hidden">
+    <article className="the-noi overflow-hidden">
       <Link href={`/game/${game.duongDan}`} className="block">
-        <div className="relative aspect-[3/2] w-full"
+        <div className="relative aspect-[4/3] w-full sm:aspect-[16/10]"
           style={{ backgroundImage: `linear-gradient(140deg, ${tu}, ${den})` }}>
           <span aria-hidden
-            className="absolute -right-6 -top-10 select-none font-black leading-none text-white/15"
-            style={{ fontSize: 'clamp(160px, 42vw, 300px)' }}>
+            className="absolute -bottom-16 -right-8 select-none font-black leading-none text-white/15"
+            style={{ fontSize: 'clamp(180px, 46vw, 320px)' }}>
             {game.ten.slice(0, 2).toUpperCase()}
           </span>
-          <span className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/60 to-transparent" />
-          <span className="absolute inset-x-0 bottom-0 p-5">
-            <span className="block text-[11px] font-bold tracking-widest text-white/80">{nhan}</span>
-            <span className="mt-1 block text-[26px] font-bold leading-tight text-white">{game.ten}</span>
+          <span className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-black/45 to-transparent" />
+          <span className="absolute inset-x-0 top-0 p-5">
+            <span className="block text-[12px] font-bold tracking-[0.14em] text-white/85">{nhan}</span>
+            <span className="mt-1 block text-[28px] font-bold leading-tight text-white">{game.ten}</span>
           </span>
         </div>
       </Link>
 
-      {/* Hàng dưới tấm: biểu tượng thật, câu mở đầu của phần giới thiệu, nút
-          cài. Không có nó thì tấm băng chỉ để ngắm chứ không dẫn tới đâu. */}
       <div className="flex items-center gap-3 p-4">
         <BieuTuongGame ten={game.ten} icon={game.icon} co={52} />
         <span className="min-w-0 flex-1">
           {/* KHÔNG in lại tên game: nó đã nằm to đùng ngay trên tấm màu. */}
-          <span className="block dong-2 text-[13px] leading-snug">
-            {hook ?? (game.theLoai.map((t) => t.ten).join(' · ') || 'Game')}
+          <span className="block truncate text-[13px] font-medium">
+            {game.theLoai.map((t) => t.ten).join(' · ') || 'Game'}
+          </span>
+          <span className="phu block truncate">
+            {game.soLuotDanhGia > 0
+              ? `${game.sao.toFixed(1).replace('.', ',')} sao · ${game.heMay.length} hệ máy`
+              : `${game.heMay.length} hệ máy`}
           </span>
         </span>
         <NutCai duongDan={game.duongDan} />
       </div>
+
+      {doan && (
+        <p className="vach px-4 pb-4 pt-3.5 text-[13px] leading-relaxed text-mo">{doan}</p>
+      )}
     </article>
   );
 }
 
-function KhoiDanhSach({ tieuDe, phu, xemThem, game }: {
-  tieuDe: string; phu: string; xemThem: string; game: TheGame[];
+/**
+ * THẺ BỘ SƯU TẬP — vài game gom dưới một đầu đề.
+ *
+ * App Store dùng dáng này cho mấy mục "5 ứng dụng để…". Ở đây nó gánh phần
+ * còn lại của lượt chia trong ngày, nên đầu đề phải nói thật: đây là ba game
+ * của hôm nay, mai sẽ khác.
+ */
+function TheBoSuuTap({ nhan, tieuDe, phu, game, xemThem }: {
+  nhan: string;
+  tieuDe: string;
+  phu: string;
+  game: TheGame[];
+  xemThem?: string;
 }) {
+  if (game.length === 0) return null;
+
+  const dau = (
+    <>
+      <p className="text-[12px] font-bold tracking-[0.14em] text-nhan">{nhan}</p>
+      <p className="mt-0.5 text-[19px] font-bold leading-tight tracking-tight">{tieuDe}</p>
+      <p className="phu mt-0.5">{phu}</p>
+    </>
+  );
+
   return (
-    <section className="the p-4">
-      <Link href={xemThem} className="mb-3 flex items-center justify-between gap-3">
-        <span className="min-w-0">
-          <span className="tieu-de block truncate">{tieuDe}</span>
-          <span className="phu mt-0.5 block truncate">{phu}</span>
-        </span>
-        <ChevronRight size={20} className="shrink-0 text-mo" aria-hidden />
-      </Link>
+    <section className="the-noi p-4">
+      {xemThem ? (
+        <Link href={xemThem} className="mb-3.5 flex items-start justify-between gap-3">
+          <span className="min-w-0">{dau}</span>
+          <ChevronRight size={20} className="mt-4 shrink-0 text-mo" aria-hidden />
+        </Link>
+      ) : (
+        <div className="mb-3.5">{dau}</div>
+      )}
       <ul className="space-y-3.5">
         {game.map((g) => <li key={g.id}><HangGame game={g} /></li>)}
       </ul>
     </section>
+  );
+}
+
+function KhoTrong() {
+  return (
+    <div className="the mx-auto max-w-md p-8 text-center">
+      <BieuTuongGame ten="SunnyStore" icon={null} co={64} className="mx-auto" />
+      <h1 className="mt-4 text-lg font-bold">Kho chưa có game nào</h1>
+      <p className="phu mt-1.5">
+        Game đầu tiên phải do quản trị viên thêm vào rồi bấm đăng.
+      </p>
+      <Link href="/quan-tri/game/moi" className="nut-cai-dam mt-5">Thêm game đầu tiên</Link>
+    </div>
   );
 }

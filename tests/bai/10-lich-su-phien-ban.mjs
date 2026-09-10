@@ -38,7 +38,17 @@ export default async function chay(kiem) {
   const p = await moTrang();
   await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
 
-  const heDau = [...theoHe.keys()][0];
+  /*
+   * Hệ máy được chọn sẵn là hệ ĐẦU TIÊN THEO THỨ TỰ KHAI BÁO (`HE_MAY`), chứ
+   * không phải hệ nào tình cờ đứng đầu trong kết quả CSDL trả về.
+   *
+   * Bản trước bài kiểm lấy `[...theoHe.keys()][0]` — tức thứ tự của CSDL — nên
+   * chạy lại seed một lần là hàng đổi id, thứ tự đổi theo, và bài kiểm đỏ
+   * trong khi mã không sai chỗ nào. Đoán thứ tự của CSDL là đoán bừa: Postgres
+   * không hứa gì khi truy vấn không có ORDER BY.
+   */
+  const THU_TU_HE = ['JAVA', 'ANDROID', 'IOS', 'WINDOWS', 'MAC'];
+  const heDau = THU_TU_HE.find((h) => theoHe.has(h));
   const banHeDau = theoHe.get(heDau);
 
   /*
@@ -67,7 +77,7 @@ export default async function chay(kiem) {
 
   // ── Bản của hệ KHÁC không được lọt vào danh sách ──────────────────────
   const chuTrongLichSu = await p.locator('#tai ol').textContent();
-  const heKhac = [...theoHe.keys()].find((h) => h !== heDau);
+  const heKhac = THU_TU_HE.find((h) => theoHe.has(h) && h !== heDau);
   if (heKhac) {
     const soHieuHeKhac = theoHe.get(heKhac)
       .map((b) => b.soHieu)

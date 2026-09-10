@@ -1,4 +1,5 @@
 import { HangGame } from './HangGame';
+import { gop } from '@/lib/tien-ich';
 import { TieuDeKe } from './TieuDeKe';
 import type { TheGame } from './the-game';
 
@@ -31,15 +32,37 @@ export function KeDanhSach({ ten, phu, xemThem, game, moiCot = 3, danhSo = false
   return (
     <section>
       <TieuDeKe ten={ten} phu={phu} xemThem={xemThem} />
-      {/* `-mx-4 px-4` cho kệ tràn ra sát mép màn hình điện thoại: cột kế tiếp
-          ló ra ở mép chứ không bị chặn lại bởi một dải lề trắng. */}
-      <div className="ke -mx-4 px-4 sm:mx-0 sm:px-0">
+
+      {/*
+        HAI BỐ CỤC, KHÔNG PHẢI MỘT BỐ CỤC CO GIÃN.
+
+        Điện thoại: cột lật ngang bằng ngón cái — thao tác tự nhiên nhất trên
+        màn hình cầm tay, và là cách cả hai cửa hàng lớn đang làm.
+
+        Máy bàn: LƯỚI ba cột đứng yên. Cuộn ngang bằng chuột là cực hình — hoặc
+        phải kéo thanh cuộn, hoặc phải giữ Shift mà lăn. Cùng ngần ấy game, cùng
+        ngần ấy chỗ, mà không bắt ai kéo gì cả. Đây chính là chỗ máy bàn phải
+        khác điện thoại, chứ không phải chỉ rộng hơn.
+      */}
+      <div className="ke -mx-4 px-4 lg:hidden">
         {cot.map((c, iCot) => (
           <div key={iCot} className="ke-cot space-y-3">
             {c.map((g, i) => (
               <HangGame key={g.id} game={g} soThuTu={danhSo ? iCot * moiCot + i + 1 : undefined} />
             ))}
           </div>
+        ))}
+      </div>
+
+      {/* Bảng xếp hạng đọc XUỐNG từng cột (1,2,3 rồi mới 4,5,6), như bảng xếp
+          hạng của CH Play trên máy bàn — hạng 1 tới 3 đứng cạnh nhau theo
+          chiều dọc thì mắt bắt được thứ hạng ngay, khỏi phải nhảy ngang. */}
+      <div className={gop(
+        'hidden gap-x-8 gap-y-3.5 lg:grid lg:grid-cols-3',
+        danhSo && 'lg:grid-flow-col lg:grid-rows-3',
+      )}>
+        {game.map((g, i) => (
+          <HangGame key={g.id} game={g} soThuTu={danhSo ? i + 1 : undefined} />
         ))}
       </div>
     </section>

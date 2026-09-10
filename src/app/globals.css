@@ -69,7 +69,37 @@ body {
 *::-webkit-scrollbar-thumb { background: rgb(var(--vien)); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
 
 ::selection { background: rgb(var(--nhan) / .2); }
-:focus-visible { outline: 2px solid rgb(var(--nhan)); outline-offset: 2px; }
+:focus-visible { outline: 2px solid rgb(var(--nhan)); outline-offset: 2px; border-radius: 4px; }
+
+/*
+ * TÔN TRỌNG "GIẢM CHUYỂN ĐỘNG".
+ *
+ * Người bị rối loạn tiền đình có thể chóng mặt thật sự vì hiệu ứng trượt, và
+ * họ đã nói điều đó ở phần cài đặt hệ điều hành rồi. Tắt gần hết thay vì tắt
+ * sạch: giữ lại 1ms để mã nào chờ sự kiện `transitionend` vẫn chạy tiếp, chứ
+ * đặt thẳng `none` là treo luôn ở đó.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Lối nhảy thẳng tới nội dung, cho người dùng bàn phím.
+ *
+ * Không có nó thì mỗi lần đổi trang phải Tab qua toàn bộ thanh bên mới tới chỗ
+ * cần đọc. Nút giấu đi tới khi được Tab vào — hiện ra là biết ngay dùng để làm gì.
+ */
+.nhay-toi-noi-dung {
+  @apply sr-only;
+}
+.nhay-toi-noi-dung:focus {
+  @apply not-sr-only fixed left-4 top-4 z-50 rounded-nut bg-nhan px-4 py-2.5 text-sm font-semibold text-white;
+}
 
 @layer components {
   .khung { @apply mx-auto w-full max-w-khung px-4 sm:px-6; }
@@ -85,9 +115,23 @@ body {
    *                 GAME, nơi cả trang chỉ có đúng một việc để làm.
    */
   .nut-cai {
-    @apply inline-flex shrink-0 items-center justify-center rounded-full bg-nen3 px-4 text-[13px] font-bold text-nhan;
+    @apply relative inline-flex shrink-0 items-center justify-center rounded-full bg-nen3 px-4 text-[13px] font-bold text-nhan;
     min-height: 32px;
     transition: background-color var(--chuyen);
+  }
+  /*
+   * Vùng bấm nới rộng ra 44×44 bằng một lớp trong suốt đè lên.
+   *
+   * Nút cao 32px là đúng dáng của App Store, nhưng 32px thì ngón tay bấm trượt
+   * — mức thấp nhất bấm trúng được là 44px. Nới bằng lớp phủ chứ không bằng
+   * padding: padding làm viên thuốc phình to ra và vỡ hết bố cục từng hàng.
+   */
+  .nut-cai::after {
+    content: '';
+    position: absolute;
+    inset: 50% 0 0 0;
+    transform: translateY(-50%);
+    height: 44px;
   }
   .nut-cai:hover { background: rgb(var(--nhan) / .12); }
 
@@ -113,7 +157,10 @@ body {
    * biết mình muốn loại gì mà chưa biết muốn game nào.
    */
   .chip {
-    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-vien px-3.5 py-1.5 text-[13px] font-medium text-chu;
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-vien px-3.5 text-[13px] font-medium text-chu;
+    /* 36px — thấp hơn 44px vì chip nằm thành hàng có khoảng hở giữa, nhưng
+       không thấp hơn nữa: dưới mức này là bấm trượt sang chip bên cạnh. */
+    min-height: 36px;
     transition: background-color var(--chuyen), border-color var(--chuyen);
   }
   .chip:hover { @apply bg-nen3; }
@@ -134,6 +181,16 @@ body {
   .ke { @apply flex snap-x snap-mandatory gap-4 overflow-x-auto; scrollbar-width: none; }
   .ke::-webkit-scrollbar { display: none; }
   .ke > * { @apply snap-start shrink-0; }
+
+  /*
+   * Kệ cuộn ngang trên điện thoại, XUỐNG DÒNG trên máy bàn.
+   *
+   * Quẹt ngang bằng ngón cái là tự nhiên; cuộn ngang bằng chuột thì phải kéo
+   * thanh cuộn hoặc giữ Shift mà lăn. Nên chỗ nào nằm trong một cột hẹp của
+   * bố cục máy bàn thì phải xuống dòng, không được để nó cuộn.
+   */
+  .ke-goi { @apply lg:flex-wrap lg:overflow-x-visible; }
+  .ke-goi > * { @apply lg:snap-align-none; }
 
   /*
    * MỘT CỘT BA HÀNG trong kệ danh sách — dáng đặc trưng của App Store.

@@ -30,9 +30,9 @@ async function layGame(duongDan: string) {
       anhChup: { orderBy: { thuTu: 'asc' }, take: 12, select: { id: true, duongDan: true, chuThich: true } },
       banTai: {
         orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }],
-        take: 24,
+        take: 60,
         select: {
-          id: true, heMay: true, soHieu: true, dungLuong: true, ngayRa: true,
+          id: true, heMay: true, soHieu: true, moiNhat: true, dungLuong: true, ngayRa: true,
           doiMoi: true, ghiChu: true, duongDanCuaHang: true,
           tep: { select: { id: true, loai: true, dungLuong: true, maKiemTra: true, thuatToan: true } },
         },
@@ -112,6 +112,7 @@ export default async function TrangGame({ params }: { params: Promise<{ duongDan
     id: b.id,
     heMay: b.heMay as MaHeMay,
     soHieu: b.soHieu,
+    moiNhat: b.moiNhat,
     dungLuong: b.dungLuong != null ? Number(b.dungLuong) : null,
     ngayRa: b.ngayRa ? b.ngayRa.toISOString().slice(0, 10) : null,
     doiMoi: b.doiMoi,
@@ -125,193 +126,203 @@ export default async function TrangGame({ params }: { params: Promise<{ duongDan
   }));
 
   return (
-    <div className="space-y-8">
-      {/* ══ ĐẦU TRANG ═════════════════════════════════════════════════════
-          Biểu tượng lớn, tên, nhà phát triển in màu nhấn — đúng ba thứ mà cả
-          App Store lẫn CH Play đặt trên cùng, vì đó là ba câu hỏi đầu tiên:
-          nó là cái gì, tên gì, ai làm. */}
-      <header>
-        <div className="flex gap-4">
-          <BieuTuongGame ten={game.ten} icon={game.icon} co={96} className="sm:!size-[120px]" />
-          <div className="min-w-0 flex-1 pt-1">
-            <h1 className="text-[22px] font-bold leading-tight sm:text-[28px]">{game.ten}</h1>
-            {game.tenViet && <p className="phu mt-0.5">{game.tenViet}</p>}
-            {game.nhaPhatTrien && (
-              <p className="mt-1 text-[13px] font-semibold text-nhan">{game.nhaPhatTrien}</p>
-            )}
-            <p className="phu mt-1">
-              {game.theLoai.map((t) => t.theLoai.ten).join(' · ') || 'Game'}
-              {game.vietHoa && ' · Có bản Việt hoá'}
-            </p>
+    /*
+     * HAI BỐ CỤC KHÁC NHAU, KHÔNG PHẢI MỘT BỐ CỤC CO GIÃN.
+     *
+     * Điện thoại: xếp dọc theo đúng thứ tự CH Play dùng — tên game, số liệu,
+     * NÚT TẢI, rồi mới tới ảnh và mô tả. Người mở trang này phần lớn đã biết
+     * mình muốn game gì; bắt họ cuộn qua ba đoạn văn mới thấy nút là bắt vô ích.
+     *
+     * Máy bàn: cột trái DÍNH LẠI, mang tên game, số liệu và cả khung tải; cột
+     * phải cuộn qua ảnh, mô tả, đánh giá, thảo luận. Đọc tới bình luận cuối
+     * trang mà nút tải vẫn trong tầm mắt — thứ mà bố cục dọc kéo giãn ra không
+     * làm được, và cũng là lý do máy bàn đáng có bố cục riêng.
+     */
+    <div className="lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-x-10">
+      <div className="space-y-5 lg:sticky lg:top-[68px]">
+        <header>
+          <div className="flex gap-4">
+            <BieuTuongGame ten={game.ten} icon={game.icon} co={88} />
+            <div className="min-w-0 flex-1">
+              <h1 className="text-[21px] font-bold leading-tight tracking-tight">{game.ten}</h1>
+              {game.tenViet && <p className="phu mt-0.5">{game.tenViet}</p>}
+              {game.nhaPhatTrien && (
+                <p className="mt-1 text-[13px] font-semibold text-nhan">{game.nhaPhatTrien}</p>
+              )}
+              <p className="phu mt-1">
+                {game.theLoai.map((t) => t.theLoai.ten).join(' · ') || 'Game'}
+                {game.vietHoa && ' · Có bản Việt hoá'}
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/*
-          HÀNG BỐN Ô SỐ LIỆU, ngăn bằng vạch dọc.
-          Đây là chi tiết CH Play dùng ở mọi trang ứng dụng, và nó làm được một
-          việc mà đoạn văn không làm được: trả lời bốn câu hỏi khác nhau trong
-          một cái liếc mắt. Cuộn ngang ở khổ hẹp thay vì xuống dòng, để nó vẫn
-          là MỘT hàng chứ không vỡ thành hai.
-        */}
-        <dl className="ke mt-5 divide-x divide-vien text-center">
-          <O nhan="Đánh giá" chinh={game.soLuotDanhGia > 0 ? sao.toFixed(1).replace('.', ',') : '—'}
-            duoi={game.soLuotDanhGia > 0 ? <SaoNam diem={sao} co={11} /> : <span>chưa có</span>} />
-          <O nhan="Lượt tải" chinh={gonSo(game.soLuotTai)} duoi={<span>tổng cộng</span>} />
-          <O nhan="Dung lượng" chinh={gonDungLuong(banMoiNhat?.dungLuong ?? null)}
-            duoi={<span>bản {banMoiNhat?.soHieu ?? '—'}</span>} />
-          <O nhan="Hệ máy" chinh={he.length > 0 ? MO_TA_HE[he[0]].ten : '—'}
-            duoi={<span>{he.length > 1 ? `và ${he.length - 1} hệ nữa` : 'duy nhất'}</span>} />
-        </dl>
-      </header>
+          {/*
+            HÀNG BỐN Ô SỐ LIỆU, ngăn bằng vạch dọc.
+            Chi tiết CH Play dùng ở mọi trang ứng dụng, và nó làm được một việc
+            mà đoạn văn không làm được: trả lời bốn câu hỏi khác nhau trong một
+            cái liếc mắt. Cuộn ngang ở khổ hẹp thay vì xuống dòng, để nó vẫn là
+            MỘT hàng chứ không vỡ thành hai.
+          */}
+          {/* Điện thoại: một hàng ngang cuộn được, ngăn bằng vạch dọc — dáng
+              CH Play. Máy bàn: cột bên chỉ rộng 300px nên bốn ô không đứng
+              cùng hàng được, xếp thành lưới 2×2 và bỏ vạch. Cùng bốn con số,
+              hai cách bày, không chỗ nào phải cuộn ngang bằng chuột. */}
+          <dl className="ke mt-4 divide-x divide-vien text-center lg:mt-5
+            lg:grid lg:grid-cols-2 lg:gap-y-4 lg:divide-x-0 lg:overflow-visible lg:text-left">
+            <O nhan="Đánh giá" chinh={game.soLuotDanhGia > 0 ? sao.toFixed(1).replace('.', ',') : '—'}
+              duoi={game.soLuotDanhGia > 0 ? <SaoNam diem={sao} co={11} /> : <span>chưa có</span>} />
+            <O nhan="Lượt tải" chinh={gonSo(game.soLuotTai)} duoi={<span>tổng cộng</span>} />
+            <O nhan="Dung lượng" chinh={gonDungLuong(banMoiNhat?.dungLuong ?? null)}
+              duoi={<span>bản {banMoiNhat?.soHieu ?? '—'}</span>} />
+            <O nhan="Hệ máy" chinh={he.length > 0 ? MO_TA_HE[he[0]].ten : '—'}
+              duoi={<span>{he.length > 1 ? `và ${he.length - 1} hệ nữa` : 'duy nhất'}</span>} />
+          </dl>
+        </header>
 
-      {/* ══ ẢNH CHỤP MÀN HÌNH ═══════════════════════════════════════════ */}
-      {game.anhChup.length > 0 && (
-        <section className="ke -mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
-          {game.anhChup.map((a) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={a.id} src={a.duongDan} alt={a.chuThich ?? ''} loading="lazy"
-              className="h-52 w-auto rounded-the border border-vien object-cover sm:h-72" />
-          ))}
-        </section>
-      )}
-
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        {/* Khối tải đứng TRƯỚC trong mã nguồn để trên điện thoại nó nằm ngay
-            dưới ảnh — người vào đây là để tải, không nên bắt cuộn qua ba đoạn
-            văn mới thấy nút. Trên màn hình rộng nó nhảy sang cột phải. */}
-        <aside id="tai" className="space-y-4 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-20 lg:self-start">
-          <h2 className="tieu-de">Tải về</h2>
+        <section id="tai" className="scroll-mt-20">
+          <h2 className="tieu-de mb-3 lg:sr-only">Tải về</h2>
           <KhungTai ban={banXem} />
-        </aside>
-
-        <div className="space-y-8 lg:col-start-1 lg:row-start-1">
-          {game.gioiThieu && (
-            <section>
-              <h2 className="tieu-de mb-2">Giới thiệu</h2>
-              <p className="whitespace-pre-line text-[14px] leading-relaxed text-chu/90">{game.gioiThieu}</p>
-            </section>
-          )}
-
-          {game.cachChoi && (
-            <section>
-              <h2 className="tieu-de mb-2">Cách chơi</h2>
-              <p className="whitespace-pre-line text-[14px] leading-relaxed text-chu/90">{game.cachChoi}</p>
-            </section>
-          )}
-
-          {game.luuY && (
-            <section className="the border-canh/40 bg-canh/10 p-4">
-              <h2 className="text-[14px] font-bold">Cần biết trước khi tải</h2>
-              <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed">{game.luuY}</p>
-            </section>
-          )}
-
-          <section>
-            <h2 className="tieu-de mb-3">Thông tin</h2>
-            <dl className="the divide-y divide-vien text-[13px]">
-              <Dong nhan="Nhà phát triển" giaTri={game.nhaPhatTrien ?? '—'} />
-              <Dong nhan="Năm phát hành" giaTri={game.namPhatHanh ? String(game.namPhatHanh) : '—'} />
-              <Dong nhan="Ngôn ngữ" giaTri={NGON_NGU[game.ngonNgu] ?? game.ngonNgu} />
-              <Dong nhan="Hệ máy" giaTri={he.map((h) => MO_TA_HE[h].ten).join(', ') || '—'} />
-              <Dong nhan="Lên kho" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
-            </dl>
-          </section>
-
-          {/* ══ ĐÁNH GIÁ ════════════════════════════════════════════════
-              Điểm to bên trái, phổ điểm bên phải — bố cục của CH Play. Chỉ in
-              con số trung bình thôi thì không nói được "4,3 này là do ai cũng
-              cho 4, hay do một nửa cho 5 và một nửa cho 2". */}
-          <section>
-            <h2 className="tieu-de mb-3">Đánh giá</h2>
-            <PhoDiem sao={sao} tong={game.soLuotDanhGia}
-              phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))} />
-
-            <div className="mt-5">
-              <ODanhGia gameId={game.id} banDau={danhGiaCuaToi} daDangNhap={!!nguoi} />
-            </div>
-
-            {danhGia.length > 0 && (
-              <ul className="mt-5 space-y-4">
-                {danhGia.map((d) => (
-                  <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
-                    <div className="flex items-center gap-2.5">
-                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-nen3 text-[12px] font-bold">
-                        {d.nguoi.tenHienThi.slice(0, 1).toUpperCase()}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-[13px] font-semibold">{d.nguoi.tenHienThi}</p>
-                        <p className="flex items-center gap-1.5">
-                          <SaoNam diem={d.sao} co={11} />
-                          <span className="phu">{cachDay(d.taoLuc)}</span>
-                        </p>
-                      </div>
-                    </div>
-                    <p className="mt-2 text-[13px] leading-relaxed text-chu/90">{d.noiDung}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* ══ CỘNG ĐỒNG ═══════════════════════════════════════════════
-              Thảo luận nằm TRONG game chứ không có bảng chuyên mục riêng: người
-              ta bàn về game, không bàn về "chuyên mục game hành động". */}
-          <section>
-            <div className="mb-3 flex items-end justify-between gap-3">
-              <div>
-                <h2 className="tieu-de">Cộng đồng</h2>
-                <p className="phu mt-0.5">{game._count.chuDe} chủ đề về game này</p>
-              </div>
-              <Link href={`/game/${game.duongDan}/cong-dong`}
-                className="flex shrink-0 items-center gap-0.5 text-[13px] font-semibold text-nhan hover:underline">
-                Xem tất cả <ChevronRight size={14} />
-              </Link>
-            </div>
-
-            {chuDe.length === 0 ? (
-              <div className="the p-5 text-center">
-                <MessageSquare size={22} className="mx-auto text-mo" />
-                <p className="mt-2 text-[13px] font-semibold">Chưa ai mở lời</p>
-                <p className="phu mt-0.5">Hỏi cách qua màn, khoe điểm, hay chỉ để nói chuyện.</p>
-                <Link href={`/game/${game.duongDan}/cong-dong/dang`} className="nut-xam mt-3">
-                  Đăng chủ đề đầu tiên
-                </Link>
-              </div>
-            ) : (
-              <ul className="the divide-y divide-vien">
-                {chuDe.map((c) => (
-                  <li key={c.id}>
-                    <Link href={`/game/${game.duongDan}/cong-dong/${c.id}`}
-                      className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-nen3">
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-medium">{c.tieuDe}</span>
-                        <span className="phu block truncate">
-                          {c.nguoi.tenHienThi} · {cachDay(c.traLoiCuoiLuc)}
-                        </span>
-                      </span>
-                      <span className="phu flex shrink-0 items-center gap-1">
-                        <MessageSquare size={12} /> {c.soTraLoi}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
+        </section>
       </div>
 
-      <KeThe ten="Game tương tự" phu="Cùng thể loại, xếp theo lượt tải" game={lienQuan} />
+      <div className="mt-8 space-y-8 lg:mt-0">
+        {game.anhChup.length > 0 && (
+          <section className="ke -mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
+            {game.anhChup.map((a) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={a.id} src={a.duongDan} alt={a.chuThich ?? ''} loading="lazy"
+                className="h-52 w-auto rounded-the border border-vien object-cover sm:h-72" />
+            ))}
+          </section>
+        )}
+
+        {game.gioiThieu && (
+          <section>
+            <h2 className="tieu-de mb-2">Giới thiệu</h2>
+            <p className="whitespace-pre-line text-[14px] leading-relaxed">{game.gioiThieu}</p>
+          </section>
+        )}
+
+        {game.cachChoi && (
+          <section>
+            <h2 className="tieu-de mb-2">Cách chơi</h2>
+            <p className="whitespace-pre-line text-[14px] leading-relaxed">{game.cachChoi}</p>
+          </section>
+        )}
+
+        {game.luuY && (
+          <section className="the border-canh/40 bg-canh/10 p-4">
+            <h2 className="text-[14px] font-bold">Cần biết trước khi tải</h2>
+            <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed">{game.luuY}</p>
+          </section>
+        )}
+
+        <section>
+          <h2 className="tieu-de mb-3">Thông tin</h2>
+          <dl className="the divide-y divide-vien text-[13px]">
+            <Dong nhan="Nhà phát triển" giaTri={game.nhaPhatTrien ?? '—'} />
+            <Dong nhan="Năm phát hành" giaTri={game.namPhatHanh ? String(game.namPhatHanh) : '—'} />
+            <Dong nhan="Ngôn ngữ" giaTri={NGON_NGU[game.ngonNgu] ?? game.ngonNgu} />
+            <Dong nhan="Hệ máy" giaTri={he.map((h) => MO_TA_HE[h].ten).join(', ') || '—'} />
+            <Dong nhan="Số bản tải" giaTri={`${game.banTai.length} bản trên ${he.length} hệ`} />
+            <Dong nhan="Lên kho" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
+          </dl>
+        </section>
+
+        {/* ══ ĐÁNH GIÁ ══════════════════════════════════════════════════
+            Điểm to bên trái, phổ điểm bên phải — bố cục của CH Play. Chỉ in
+            con số trung bình thôi thì không nói được "4,3 này là do ai cũng
+            cho 4, hay do một nửa cho 5 và một nửa cho 2". */}
+        <section>
+          <h2 className="tieu-de mb-3">Đánh giá</h2>
+          <PhoDiem sao={sao} tong={game.soLuotDanhGia}
+            phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))} />
+
+          <div className="mt-5">
+            <ODanhGia gameId={game.id} banDau={danhGiaCuaToi} daDangNhap={!!nguoi} />
+          </div>
+
+          {danhGia.length > 0 && (
+            <ul className="mt-5 space-y-4">
+              {danhGia.map((d) => (
+                <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-nen3 text-[12px] font-bold">
+                      {d.nguoi.tenHienThi.slice(0, 1).toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[13px] font-semibold">{d.nguoi.tenHienThi}</p>
+                      <p className="flex items-center gap-1.5">
+                        <SaoNam diem={d.sao} co={11} />
+                        <span className="phu">{cachDay(d.taoLuc)}</span>
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-2 text-[13px] leading-relaxed">{d.noiDung}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* ══ CỘNG ĐỒNG ═════════════════════════════════════════════════
+            Thảo luận nằm TRONG game chứ không có bảng chuyên mục riêng: người
+            ta bàn về game, không bàn về "chuyên mục game hành động". */}
+        <section>
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="tieu-de">Cộng đồng</h2>
+              <p className="phu mt-0.5">{game._count.chuDe} chủ đề về game này</p>
+            </div>
+            <Link href={`/game/${game.duongDan}/cong-dong`}
+              className="flex shrink-0 items-center gap-0.5 text-[13px] font-semibold text-nhan hover:underline">
+              Xem tất cả <ChevronRight size={14} />
+            </Link>
+          </div>
+
+          {chuDe.length === 0 ? (
+            <div className="the p-5 text-center">
+              <MessageSquare size={22} className="mx-auto text-mo" aria-hidden />
+              <p className="mt-2 text-[13px] font-semibold">Chưa ai mở lời</p>
+              <p className="phu mt-0.5">Hỏi cách qua màn, khoe điểm, hay chỉ để nói chuyện.</p>
+              <Link href={`/game/${game.duongDan}/cong-dong/dang`} className="nut-xam mt-3">
+                Đăng chủ đề đầu tiên
+              </Link>
+            </div>
+          ) : (
+            <ul className="the divide-y divide-vien">
+              {chuDe.map((c) => (
+                <li key={c.id}>
+                  <Link href={`/game/${game.duongDan}/cong-dong/${c.id}`}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-nen3">
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[14px] font-medium">{c.tieuDe}</span>
+                      <span className="phu block truncate">
+                        {c.nguoi.tenHienThi} · {cachDay(c.traLoiCuoiLuc)}
+                      </span>
+                    </span>
+                    <span className="phu flex shrink-0 items-center gap-1">
+                      <MessageSquare size={12} aria-hidden /> {c.soTraLoi}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <KeThe ten="Game tương tự" phu="Cùng thể loại, xếp theo lượt tải" game={lienQuan} />
+      </div>
     </div>
   );
 }
 
 function O({ nhan, chinh, duoi }: { nhan: string; chinh: string; duoi: React.ReactNode }) {
   return (
-    <div className="min-w-[100px] flex-1 whitespace-nowrap px-3">
+    <div className="min-w-[100px] flex-1 whitespace-nowrap px-3 lg:min-w-0 lg:px-0">
       <dt className="phu uppercase tracking-wide">{nhan}</dt>
       <dd className="mt-0.5 text-[16px] font-bold leading-tight">{chinh}</dd>
-      <dd className="phu mt-0.5 flex items-center justify-center gap-1">{duoi}</dd>
+      <dd className="phu mt-0.5 flex items-center justify-center gap-1 lg:justify-start">{duoi}</dd>
     </div>
   );
 }

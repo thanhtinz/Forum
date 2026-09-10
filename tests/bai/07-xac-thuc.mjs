@@ -21,6 +21,17 @@ export default async function chay(kiem) {
       (await db.nguoiDung.count({ where: { email: EMAIL } })) === 1);
     kiem('đăng ký tạo được tài khoản', daTao);
 
+    /*
+     * Chờ ĐIỀU HƯỚNG xong hẳn, đừng chỉ chờ hàng trong CSDL.
+     *
+     * `dangKy` tạo tài khoản TRƯỚC rồi mới mở phiên và đặt cookie, nên hàng
+     * người dùng xuất hiện sớm hơn cookie vài chục mili giây. Đi thẳng sang
+     * trang khác ngay lúc ấy là đi với tư cách khách — bài kiểm đỏ trong khi
+     * mã hoàn toàn đúng, mà lại chỉ đỏ lúc chạy cả bộ nên rất khó lần ra.
+     */
+    await p.waitForURL((u) => !u.pathname.startsWith('/dang-ky'), { timeout: 15_000 })
+      .catch(() => {});
+
     const moi = await db.nguoiDung.findUnique({
       where: { email: EMAIL }, select: { matKhauBam: true, tenDangNhap: true, vaiTro: true },
     });
@@ -38,7 +49,7 @@ export default async function chay(kiem) {
 
     // ── Đăng xuất ──────────────────────────────────────────────────────
     await p.click('button:has-text("Đăng xuất")');
-    await p.waitForTimeout(1500);
+    await doiToi(async () => (await db.phien.count({ where: { nguoi: { email: EMAIL } } })) === 0);
     await p.goto(`${GOC}/toi`, { waitUntil: 'networkidle' });
     kiem('đăng xuất rồi thì thành khách',
       (await p.locator('text=Bạn chưa đăng nhập').count()) > 0);

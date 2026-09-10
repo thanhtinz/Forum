@@ -18,14 +18,25 @@ const db = new PrismaClient();
 
 const THU_MUC_TEP = path.join(process.cwd(), 'public', 'tep-mau');
 
-function dungTepMau(ten: string, moTa: string): { duongDan: string; maKiemTra: string; dungLuong: number } {
+function dungTepMau(ten: string, moTa: string, coXapXi: number): { duongDan: string; maKiemTra: string; dungLuong: number } {
   mkdirSync(THU_MUC_TEP, { recursive: true });
-  const noiDung =
+  const dau =
     `Tệp mẫu của kho Nova\n` +
     `====================\n\n` +
     `${moTa}\n\n` +
     `Đây KHÔNG phải game thật. Tệp này chỉ để phần tải xuống của trang chạy\n` +
-    `được từ đầu tới cuối trong lúc dựng kho.\n`;
+    `được từ đầu tới cuối trong lúc dựng kho.\n\n`;
+  /*
+   * Chèn thêm cho tệp đạt cỡ mong muốn.
+   *
+   * Cỡ tệp phải KHÁC nhau giữa các bản, vì lịch sử phiên bản có bày ra dung
+   * lượng và "bản cũ nhẹ hơn" là một thông tin thật người dùng dựa vào. Nhồi
+   * cho đủ cỡ thì con số in ra là cỡ THẬT của tệp thật — thay vì một con số
+   * đẹp ghi trong CSDL còn tệp tải về thì vài trăm byte.
+   */
+  const dong = 'Phần đệm để tệp mẫu đạt đúng cỡ ghi trong kho.\n';
+  const con = Math.max(0, coXapXi - Buffer.byteLength(dau, 'utf8'));
+  const noiDung = dau + dong.repeat(Math.ceil(con / Buffer.byteLength(dong, 'utf8')));
   const tep = path.join(THU_MUC_TEP, ten);
   writeFileSync(tep, noiDung, 'utf8');
   return {
@@ -47,6 +58,14 @@ interface BanMau {
   dungLuong?: number;
   cuaHang?: string;
   doiMoi?: string;
+  /**
+   * Số bản CŨ cần dựng thêm cho hệ này.
+   *
+   * Kho game cũ thì bản cũ không phải rác: máy đời 2006 chạy được bản 1.0
+   * nhưng treo ở bản 1.2. Nên mỗi hệ phải có một dãy lịch sử thật để phần
+   * "lịch sử phiên bản" có cái mà bày, và để bài kiểm có ca thật mà soi.
+   */
+  soBanCu?: number;
 }
 
 interface GameMau {
@@ -71,7 +90,7 @@ const GAME: GameMau[] = [
     gioiThieu: 'Quả bóng đỏ lăn qua mười hai màn, nhảy qua gai, đẩy thùng và né dòng nước. Trò cài sẵn trong máy Nokia đời S40 mà gần như ai cầm điện thoại thời ấy cũng từng chơi.',
     cachChoi: 'Trái/phải để lăn, phím giữa để nhảy. Bóng nặng dần khi ăn vật phẩm, nặng thì chìm chậm hơn nhưng nhảy thấp đi.',
     luuY: 'Bản JAR chạy trên máy hỗ trợ MIDP 2.0 trở lên. Màn hình dưới 128×128 sẽ bị cắt mất phần đếm điểm.',
-    ban: [{ he: 'JAVA', soHieu: '1.2', tep: ['JAR', 'JAD'], dungLuong: 348_160 }],
+    ban: [{ he: 'JAVA', soHieu: '1.2', tep: ['JAR', 'JAD'], dungLuong: 348_160, soBanCu: 4 }],
   },
   {
     ten: 'Snake Xenzia', tenViet: 'Rắn săn mồi', nhaPhatTrien: 'Nokia', nam: 2005, vietHoa: true, noiBat: true,
@@ -118,8 +137,8 @@ const GAME: GameMau[] = [
      * biết chỗ chọn hệ máy trông ra sao khi đầy.
      */
     ban: [
-      { he: 'JAVA', soHieu: '1.5', tep: ['JAR', 'JAD'], dungLuong: 204_800 },
-      { he: 'ANDROID', soHieu: '3.0', tep: ['APK'], dungLuong: 18_874_368 },
+      { he: 'JAVA', soHieu: '1.5', tep: ['JAR', 'JAD'], dungLuong: 204_800, soBanCu: 4 },
+      { he: 'ANDROID', soHieu: '3.0', tep: ['APK'], dungLuong: 18_874_368, soBanCu: 3 },
       { he: 'IOS', soHieu: '3.0', tep: ['IPA'], dungLuong: 22_020_096, cuaHang: 'https://apps.apple.com/' },
       { he: 'WINDOWS', soHieu: '2.2', tep: ['EXE', 'ZIP'], dungLuong: 12_582_912 },
       { he: 'MAC', soHieu: '2.2', tep: ['DMG'], dungLuong: 15_728_640,
@@ -177,6 +196,32 @@ const GAME: GameMau[] = [
     ban: [{ he: 'JAVA', soHieu: '1.1', tep: ['JAR'], dungLuong: 245_760 }],
   },
 ];
+
+/**
+ * Ghi chú "có gì mới" cho các bản cũ.
+ *
+ * Xoay vòng theo thứ tự bản chứ không bốc ngẫu nhiên: chạy seed hai lần phải
+ * ra cùng một kết quả, không thì mỗi lần chạy lại là lịch sử phiên bản đổi
+ * khác và không bài kiểm nào bám vào đâu được.
+ */
+const DOI_MOI_CU = [
+  'Sửa lỗi treo máy khi thoát giữa chừng.',
+  'Giảm dung lượng, chạy nhẹ hơn trên máy đời cũ.',
+  'Thêm màn chơi mới và sửa vài lỗi hiển thị.',
+  'Sửa lỗi mất điểm sau khi tắt máy.',
+  'Chỉnh lại độ khó ở mấy màn cuối.',
+  'Bản phát hành đầu tiên.',
+];
+
+/** "1.2" → "1.1" → "1.0". Hết số thì lùi số chính. */
+function banTruoc(soHieu: string): string {
+  const phan = soHieu.split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = phan.length - 1; i >= 0; i--) {
+    if (phan[i] > 0) { phan[i] -= 1; return phan.join('.'); }
+    phan[i] = 9;
+  }
+  return soHieu;
+}
 
 const BINH_LUAN_MAU = [
   'Chơi lại thấy y như hồi cầm cái điện thoại cũ. Tải một phát chạy luôn, không lỗi gì.',
@@ -261,31 +306,86 @@ async function main() {
       });
     }
 
-    for (const b of g.ban) {
-      const ban = await db.banTai.upsert({
-        where: { gameId_heMay_soHieu: { gameId: game.id, heMay: b.he, soHieu: b.soHieu } },
-        update: {},
-        create: {
-          gameId: game.id, heMay: b.he, soHieu: b.soHieu, moiNhat: true,
-          dungLuong: b.dungLuong ? BigInt(b.dungLuong) : null,
-          doiMoi: b.doiMoi ?? null,
-          duongDanCuaHang: b.cuaHang ?? null,
-          ngayRa: new Date(Date.UTC(g.nam, (i % 12), 1 + (i % 27))),
-        },
-        select: { id: true },
-      });
+    /*
+     * Dựng lại bản tải từ đầu thay vì `upsert` rồi bỏ qua.
+     *
+     * `upsert` với `update: {}` giữ nguyên hàng cũ, nên sửa dữ liệu mẫu rồi
+     * chạy lại seed thì chẳng có gì đổi — mất cả buổi tưởng mã hỏng trong khi
+     * chỉ là hàng cũ còn nằm đó.
+     */
+    await db.banTai.deleteMany({ where: { gameId: game.id } });
 
-      for (const loai of b.tep) {
-        const tenTep = `${duongDan}-${b.soHieu}.${loai.toLowerCase()}`;
-        const mau = dungTepMau(tenTep, `${g.ten} — bản ${b.soHieu} cho ${b.he}.`);
-        await db.tepTai.deleteMany({ where: { banId: ban.id, loai } });
-        await db.tepTai.create({
+    for (const b of g.ban) {
+      // Dãy số hiệu: bản mới nhất đứng đầu, rồi lùi dần về bản đầu tiên.
+      const day = [b.soHieu];
+      for (let k = 0; k < (b.soBanCu ?? 2); k++) day.push(banTruoc(day[day.length - 1]));
+
+      for (const [thu, soHieu] of day.entries()) {
+        const moiNhat = thu === 0;
+        /*
+         * Cỡ tệp mẫu: bản càng cũ càng nhẹ, để lịch sử phiên bản đọc ra hợp lẽ.
+         *
+         * Chia nhỏ hẳn so với cỡ thật của game (một tệp APK 18 MB nhân với 83
+         * bản là gần hai gigabyte rác trên đĩa), nhưng vẫn là cỡ THẬT của tệp
+         * thật — con số in ra trang và tệp tải về luôn khớp nhau.
+         */
+        const co = Math.max(2_048, Math.round(((b.dungLuong ?? 200_000) / 40) * (1 - thu * 0.08)));
+
+        const ban = await db.banTai.create({
           data: {
-            banId: ban.id, loai, duongDan: mau.duongDan, tenTep,
-            dungLuong: BigInt(mau.dungLuong), maKiemTra: mau.maKiemTra,
+            gameId: game.id, heMay: b.he, soHieu, moiNhat,
+            // Điền sau, bằng TỔNG cỡ thật của các tệp vừa dựng — xem bên dưới.
+            dungLuong: null,
+            // Bản đầu tiên của dãy luôn mang đúng một câu; các bản giữa xoay
+            // vòng theo thứ tự, để chạy seed hai lần vẫn ra cùng lịch sử.
+            doiMoi: thu === day.length - 1
+              ? 'Bản phát hành đầu tiên.'
+              : moiNhat
+                ? (b.doiMoi ?? DOI_MOI_CU[i % (DOI_MOI_CU.length - 1)])
+                : DOI_MOI_CU[(i + thu) % (DOI_MOI_CU.length - 1)],
+            // Chỉ bản mới nhất dẫn sang cửa hàng ngoài: cửa hàng chính chủ
+            // không giữ bản cũ, trỏ sang đó là trỏ vào bản khác hẳn.
+            duongDanCuaHang: moiNhat ? (b.cuaHang ?? null) : null,
+            /*
+             * Bản càng cũ, ngày càng LÙI VỀ TRƯỚC — mỗi bậc lùi năm tháng.
+             * Tính bằng cách trừ thẳng vào số tháng rồi để `Date.UTC` tự mượn
+             * năm: tự xoay vòng tháng bằng `% 12` là kiểu gì cũng có ngày ra
+             * một dãy lịch sử mà bản cũ lại đứng sau bản mới.
+             */
+            ngayRa: new Date(Date.UTC(g.nam, 10 - thu * 5, 1 + (i % 27))),
           },
           select: { id: true },
         });
+
+        let tongCo = 0;
+        for (const [thuTep, loai] of b.tep.entries()) {
+          const tenTep = `${duongDan}-${soHieu}.${loai.toLowerCase()}`;
+          // Tệp đi kèm (JAD) bé hơn hẳn tệp chính — đúng như ngoài đời.
+          const mau = dungTepMau(tenTep, `${g.ten} — bản ${soHieu} cho ${b.he}.`,
+            thuTep === 0 ? co : Math.round(co / 200));
+          tongCo += mau.dungLuong;
+          await db.tepTai.create({
+            data: {
+              banId: ban.id, loai, duongDan: mau.duongDan, tenTep,
+              dungLuong: BigInt(mau.dungLuong), maKiemTra: mau.maKiemTra,
+            },
+            select: { id: true },
+          });
+        }
+
+        /*
+         * Dung lượng của BẢN = tổng cỡ các tệp của nó.
+         *
+         * Trước đây cột này là một con số quản trị tự gõ, nên trang in ra
+         * "200 KB" ở hàng phiên bản trong khi nút tải ghi "240 B" — hai con số
+         * cho cùng một thứ, và người đọc không biết tin cái nào. Nay chỉ còn
+         * một nguồn sự thật: tệp.
+         */
+        if (tongCo > 0) {
+          await db.banTai.update({
+            where: { id: ban.id }, data: { dungLuong: BigInt(tongCo) }, select: { id: true },
+          });
+        }
       }
     }
 

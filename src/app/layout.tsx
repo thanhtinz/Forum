@@ -35,6 +35,7 @@ export default async function BoCucGoc({ children }: { children: React.ReactNode
         <script dangerouslySetInnerHTML={{ __html: DAT_NEN }} />
       </head>
       <body>
+        <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>
         <ThanhBen nguoi={nguoi} />
 
         {/*
@@ -43,7 +44,7 @@ export default async function BoCucGoc({ children }: { children: React.ReactNode
         */}
         <div className="min-h-screen pb-20 lg:pb-0 lg:pl-[240px]">
           <ThanhTren nguoi={nguoi} />
-          <main className="khung py-5 sm:py-6">{children}</main>
+          <main id="noi-dung" className="khung py-5 sm:py-6">{children}</main>
         </div>
 
         <ThanhDay daDangNhap={!!nguoi} />

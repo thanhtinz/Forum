@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { CACH_SAP, MOI_TRANG, docBoLoc, duyetKho, thanhTruyVan } from '@/lib/kho-game';
+import { CACH_SAP, DANG_HIEN, MOI_TRANG, docBoLoc, duyetKho, thanhTruyVan } from '@/lib/kho-game';
 import { HangGame } from '@/components/game/HangGame';
 import { HangChip } from '@/components/game/HangChip';
+import { CotLoc, type NhomLoc } from '@/components/game/CotLoc';
 import { PhanTrang } from '@/components/PhanTrang';
 import { HE_MAY, MO_TA_HE } from '@/lib/he-may';
-import { gop, gonSo, soTrang } from '@/lib/tien-ich';
+import { gonSo, gop, soTrang } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Duyệt kho' };
@@ -23,73 +24,122 @@ export default async function TrangDuyet({ searchParams }: {
 }) {
   const sp = await searchParams;
   const loc = docBoLoc(sp);
-  const [{ game, tong, trang }, theLoai] = await Promise.all([
+
+  const [{ game, tong, trang }, theLoai, soTheoHe] = await Promise.all([
     duyetKho(loc),
-    db.theLoai.findMany({ orderBy: [{ thuTu: 'asc' }], take: 24, select: { ten: true, duongDan: true } }),
+    db.theLoai.findMany({
+      orderBy: [{ thuTu: 'asc' }],
+      take: 24,
+      select: {
+        ten: true, duongDan: true,
+        _count: { select: { game: { where: { game: DANG_HIEN } } } },
+      },
+    }),
+    Promise.all(HE_MAY.map((h) =>
+      db.game.count({ where: { ...DANG_HIEN, banTai: { some: { heMay: h } } } }))),
   ]);
 
-  const chipHe = [
-    { ten: 'Mọi hệ máy', duongDan: `/duyet${thanhTruyVan({ ...loc, he: undefined, trang: 1 })}` },
-    ...HE_MAY.map((h) => ({
-      ten: MO_TA_HE[h].ten,
-      duongDan: `/duyet${thanhTruyVan({ ...loc, he: h, trang: 1 })}`,
-    })),
+  const duong = (doi: Parameters<typeof thanhTruyVan>[1]) => `/duyet${thanhTruyVan({ ...loc, trang: 1 }, doi)}`;
+
+  const nhom: NhomLoc[] = [
+    {
+      ten: 'Hệ máy',
+      muc: [
+        { ten: 'Mọi hệ máy', duongDan: duong({ he: undefined }), chon: !loc.he },
+        ...HE_MAY.map((h, i) => ({
+          ten: MO_TA_HE[h].ten, duongDan: duong({ he: h }), so: soTheoHe[i], chon: loc.he === h,
+        })),
+      ],
+    },
+    {
+      ten: 'Thể loại',
+      muc: [
+        { ten: 'Mọi thể loại', duongDan: duong({ theLoai: undefined }), chon: !loc.theLoai },
+        ...theLoai.map((t) => ({
+          ten: t.ten, duongDan: duong({ theLoai: t.duongDan }), so: t._count.game,
+          chon: loc.theLoai === t.duongDan,
+        })),
+      ],
+    },
+    {
+      ten: 'Sắp xếp',
+      muc: CACH_SAP.map((c) => ({
+        ten: c.ten, duongDan: duong({ sap: c.ma }), chon: loc.sap === c.ma,
+      })),
+    },
+    {
+      ten: 'Khác',
+      muc: [{
+        ten: 'Có bản Việt hoá',
+        duongDan: duong({ vietHoa: loc.vietHoa ? undefined : true }),
+        chon: !!loc.vietHoa,
+      }],
+    },
   ];
-  const chonHe = `/duyet${thanhTruyVan({ ...loc, trang: 1 })}`;
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-[26px] font-bold tracking-tight">Duyệt kho</h1>
-        <p className="phu mt-0.5">{gonSo(tong)} game khớp với lựa chọn của bạn</p>
-      </div>
+    <div className="lg:flex lg:gap-8">
+      <CotLoc nhom={nhom} />
 
-      <HangChip muc={chipHe} dangChon={chonHe} />
+      <div className="min-w-0 flex-1 space-y-4">
+        <div>
+          <h1 className="text-[24px] font-bold tracking-tight">Duyệt kho</h1>
+          <p className="phu mt-0.5">{gonSo(tong)} game khớp với lựa chọn của bạn</p>
+        </div>
 
-      {/* Thể loại tách thành hàng riêng: gộp chung với hệ máy thì hai loại lựa
-          chọn khác hẳn nhau nằm lẫn vào nhau, bấm nhầm là chuyện thường. */}
-      <HangChip
-        muc={[
-          { ten: 'Mọi thể loại', duongDan: `/duyet${thanhTruyVan({ ...loc, theLoai: undefined, trang: 1 })}` },
-          ...theLoai.map((t) => ({
-            ten: t.ten,
-            duongDan: `/duyet${thanhTruyVan({ ...loc, theLoai: t.duongDan, trang: 1 })}`,
-          })),
-        ]}
-        dangChon={chonHe}
-      />
-
-      <div className="flex flex-wrap items-center gap-2">
-        {CACH_SAP.map((c) => (
-          <Link key={c.ma} href={`/duyet${thanhTruyVan({ ...loc, sap: c.ma, trang: 1 })}`}
-            className={gop('chip', c.ma === loc.sap && 'chip-chon')}>
-            {c.ten}
-          </Link>
-        ))}
-        <Link href={`/duyet${thanhTruyVan({ ...loc, vietHoa: loc.vietHoa ? undefined : true, trang: 1 })}`}
-          className={gop('chip', loc.vietHoa && 'chip-chon')}>
-          Có bản Việt hoá
-        </Link>
-      </div>
-
-      {game.length === 0 ? (
-        <div className="the p-8 text-center">
-          <p className="text-[14px] font-semibold">Không có game nào khớp</p>
-          <p className="phu mt-1">Thử bỏ bớt một bộ lọc, hoặc nhắn cho ban quản kho.</p>
-          <div className="mt-4 flex justify-center gap-2">
-            <Link href="/duyet" className="nut-xam">Bỏ hết bộ lọc</Link>
-            <Link href="/yeu-cau" className="nut-vien">Yêu cầu game</Link>
+        {/* Bộ lọc trên ĐIỆN THOẠI: hai hàng chip cuộn ngang. Cột lọc bên trái
+            ẩn hẳn ở khổ này, nên đây là lối duy nhất — không được thiếu thứ gì
+            mà cột kia có. */}
+        <div className="space-y-2 lg:hidden">
+          <HangChip
+            muc={[
+              { ten: 'Mọi hệ máy', duongDan: duong({ he: undefined }) },
+              ...HE_MAY.map((h) => ({ ten: MO_TA_HE[h].ten, duongDan: duong({ he: h }) })),
+            ]}
+            dangChon={loc.he ? duong({ he: loc.he }) : duong({ he: undefined })}
+          />
+          <HangChip
+            muc={[
+              { ten: 'Mọi thể loại', duongDan: duong({ theLoai: undefined }) },
+              ...theLoai.map((t) => ({ ten: t.ten, duongDan: duong({ theLoai: t.duongDan }) })),
+            ]}
+            dangChon={loc.theLoai ? duong({ theLoai: loc.theLoai }) : duong({ theLoai: undefined })}
+          />
+          <div className="ke gap-2">
+            {CACH_SAP.map((c) => (
+              <Link key={c.ma} href={duong({ sap: c.ma })}
+                className={gop('chip', c.ma === loc.sap && 'chip-chon')}>
+                {c.ten}
+              </Link>
+            ))}
+            <Link href={duong({ vietHoa: loc.vietHoa ? undefined : true })}
+              className={gop('chip', loc.vietHoa && 'chip-chon')}>
+              Có bản Việt hoá
+            </Link>
           </div>
         </div>
-      ) : (
-        <>
-          <ul className="space-y-3">
-            {game.map((g) => <li key={g.id}><HangGame game={g} /></li>)}
-          </ul>
-          <PhanTrang trang={trang} tongTrang={soTrang(tong, MOI_TRANG)}
-            dungDuong={(t) => `/duyet${thanhTruyVan(loc, { trang: t })}`} />
-        </>
-      )}
+
+        {game.length === 0 ? (
+          <div className="the p-8 text-center">
+            <p className="text-[14px] font-semibold">Không có game nào khớp</p>
+            <p className="phu mt-1">Thử bỏ bớt một bộ lọc, hoặc nhắn cho ban quản kho.</p>
+            <div className="mt-4 flex justify-center gap-2">
+              <Link href="/duyet" className="nut-xam">Bỏ hết bộ lọc</Link>
+              <Link href="/yeu-cau" className="nut-vien">Yêu cầu game</Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Máy bàn xếp hai cột: hàng game cao 72px, một cột thì màn hình
+                rộng bỏ trống hẳn nửa bên phải mà vẫn phải cuộn. */}
+            <ul className="grid gap-x-8 gap-y-3.5 xl:grid-cols-2">
+              {game.map((g) => <li key={g.id}><HangGame game={g} /></li>)}
+            </ul>
+            <PhanTrang trang={trang} tongTrang={soTrang(tong, MOI_TRANG)}
+              dungDuong={(t) => `/duyet${thanhTruyVan(loc, { trang: t })}`} />
+          </>
+        )}
+      </div>
     </div>
   );
 }

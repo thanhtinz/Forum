@@ -66,10 +66,11 @@ export default async function chay(kiem) {
     kiem(`hệ ${NHAN[he]} không lẫn tệp của hệ khác`, !lanSang);
   }
 
-  // Huy hiệu hệ máy ở hàng số liệu phải đếm đủ, không nói dối là chỉ có một hệ.
-  const soLieu = await p.locator('dl').first().textContent();
-  kiem('hàng số liệu nói đúng số hệ máy còn lại',
-    soLieu.includes(`${game.he.length - 1} hệ nữa`), soLieu);
+  // Dãy chip phải liệt kê ĐỦ số hệ máy game có — đây mới là chỗ nói về hệ máy,
+  // sau khi ô "Hệ máy" ở hàng số liệu đã bỏ vì lặp lại đúng thông tin này.
+  const soChip = await p.locator('#tai [role="group"] button').count();
+  kiem('dãy chip liệt kê đủ mọi hệ máy của game',
+    soChip === game.he.length, `đếm được ${soChip}, chờ ${game.he.length}`);
 
   await p.close();
 }

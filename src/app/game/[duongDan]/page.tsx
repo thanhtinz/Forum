@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ChevronRight, Download, MessageSquare, Star, Users } from 'lucide-react';
+import { ChevronRight, MessageSquare, TriangleAlert } from 'lucide-react';
 import { db } from '@/lib/db';
 import { DANG_HIEN, layKe } from '@/lib/kho-game';
 import { CHON_THE, thanhThe } from '@/components/game/the-game';
@@ -10,10 +10,11 @@ import { KhungTai, type BanXem } from '@/components/game/KhungTai';
 import { SaoNam } from '@/components/game/SaoNam';
 import { PhoDiem } from '@/components/game/PhoDiem';
 import { KeThe } from '@/components/game/KeThe';
-import { MO_TA_HE, NGON_NGU, type MaHeMay } from '@/lib/he-may';
+import { NGON_NGU, type MaHeMay } from '@/lib/he-may';
 import { catChu, cachDay, diemSao, gonDungLuong, gonSo } from '@/lib/tien-ich';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { ODanhGia } from '@/components/game/ODanhGia';
+import { KhoiGap } from '@/components/KhoiGap';
 
 export const dynamic = 'force-dynamic';
 
@@ -163,19 +164,30 @@ export default async function TrangGame({ params }: { params: Promise<{ duongDan
             cái liếc mắt. Cuộn ngang ở khổ hẹp thay vì xuống dòng, để nó vẫn là
             MỘT hàng chứ không vỡ thành hai.
           */}
-          {/* Điện thoại: một hàng ngang cuộn được, ngăn bằng vạch dọc — dáng
-              CH Play. Máy bàn: cột bên chỉ rộng 300px nên bốn ô không đứng
-              cùng hàng được, xếp thành lưới 2×2 và bỏ vạch. Cùng bốn con số,
-              hai cách bày, không chỗ nào phải cuộn ngang bằng chuột. */}
+          {/*
+            HÀNG SỐ LIỆU — SỐ TO TRÊN, NHÃN NHỎ DƯỚI. Đúng hai dòng.
+
+            Bản trước có ba dòng: một nhãn IN HOA ở trên, con số ở giữa, một
+            dòng chú ở dưới. CH Play chỉ có hai — "4,3★" rồi "12 N đánh giá" —
+            và cái nhãn in hoa kia là thừa thật: đọc "5,3K / lượt tải" là hiểu
+            ngay, thêm chữ "LƯỢT TẢI" phía trên chỉ tổ chiếm một dòng nữa và
+            bắt mắt nhảy ba bậc thay vì hai.
+
+            BA ô, không phải bốn — đúng số CH Play dùng, và vừa khít bề ngang
+            điện thoại nên không phải cuộn. Ô "Hệ máy" đã bỏ: dãy chip chọn hệ
+            nằm ngay bốn chục điểm ảnh bên dưới đã nói đúng điều ấy, lại còn
+            nói rõ hơn vì liệt kê ra hết chứ không gộp thành "+4 hệ nữa".
+
+            Máy bàn: cột bên chỉ rộng 300px nên xếp thành lưới 2 cột, bỏ vạch.
+          */}
           <dl className="ke mt-4 divide-x divide-vien text-center lg:mt-5
             lg:grid lg:grid-cols-2 lg:gap-y-4 lg:divide-x-0 lg:overflow-visible lg:text-left">
-            <O nhan="Đánh giá" chinh={game.soLuotDanhGia > 0 ? sao.toFixed(1).replace('.', ',') : '—'}
-              duoi={game.soLuotDanhGia > 0 ? <SaoNam diem={sao} co={11} /> : <span>chưa có</span>} />
-            <O nhan="Lượt tải" chinh={gonSo(game.soLuotTai)} duoi={<span>tổng cộng</span>} />
-            <O nhan="Dung lượng" chinh={gonDungLuong(banMoiNhat?.dungLuong ?? null)}
-              duoi={<span>bản {banMoiNhat?.soHieu ?? '—'}</span>} />
-            <O nhan="Hệ máy" chinh={he.length > 0 ? MO_TA_HE[he[0]].ten : '—'}
-              duoi={<span>{he.length > 1 ? `và ${he.length - 1} hệ nữa` : 'duy nhất'}</span>} />
+            <O chinh={game.soLuotDanhGia > 0 ? sao.toFixed(1).replace('.', ',') : '—'}
+              icon={game.soLuotDanhGia > 0 ? <SaoNam diem={sao} co={12} /> : null}
+              nhan={game.soLuotDanhGia > 0 ? `${gonSo(game.soLuotDanhGia)} đánh giá` : 'chưa có đánh giá'} />
+            <O chinh={gonSo(game.soLuotTai)} nhan="lượt tải" />
+            <O chinh={gonDungLuong(banMoiNhat?.dungLuong ?? null)}
+              nhan={`bản ${banMoiNhat?.soHieu ?? '—'}`} />
           </dl>
         </header>
 
@@ -196,25 +208,35 @@ export default async function TrangGame({ params }: { params: Promise<{ duongDan
           </section>
         )}
 
-        {game.gioiThieu && (
+        {/*
+          MỘT KHỐI "GIỚI THIỆU" DUY NHẤT.
+
+          Cả hai cửa hàng lớn chỉ có đúng một mục mô tả ("About this game" /
+          phần mô tả), không tách "cách chơi" ra thành mục riêng. Tách ra thì
+          được thêm một cái tiêu đề mà chẳng nói thêm điều gì — cách chơi vốn
+          là một phần của việc giới thiệu game.
+        */}
+        {(game.gioiThieu || game.cachChoi) && (
           <section>
             <h2 className="tieu-de mb-2">Giới thiệu</h2>
-            <p className="whitespace-pre-line text-[14px] leading-relaxed">{game.gioiThieu}</p>
+            {game.gioiThieu && (
+              <p className="whitespace-pre-line text-[14px] leading-relaxed">{game.gioiThieu}</p>
+            )}
+            {game.cachChoi && (
+              <p className="mt-3 whitespace-pre-line text-[14px] leading-relaxed">{game.cachChoi}</p>
+            )}
           </section>
         )}
 
-        {game.cachChoi && (
-          <section>
-            <h2 className="tieu-de mb-2">Cách chơi</h2>
-            <p className="whitespace-pre-line text-[14px] leading-relaxed">{game.cachChoi}</p>
-          </section>
-        )}
-
+        {/* Lưu ý tương thích gấp lại, đặt ngay sau phần giới thiệu — đúng chỗ
+            CH Play để mục "an toàn dữ liệu". Khung vàng cỡ lớn như bản trước
+            hét to hơn cả nút tải, trong khi phần lớn người đọc lướt qua nó. */}
         {game.luuY && (
-          <section className="the border-canh/40 bg-canh/10 p-4">
-            <h2 className="text-[14px] font-bold">Cần biết trước khi tải</h2>
-            <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed">{game.luuY}</p>
-          </section>
+          <KhoiGap tieuDe="Cần biết trước khi tải"
+            tomTat="Máy nào chạy được, và những lỗi đã biết"
+            icon={<TriangleAlert size={16} className="text-canh" />}>
+            <p className="whitespace-pre-line text-[13px] leading-relaxed text-mo">{game.luuY}</p>
+          </KhoiGap>
         )}
 
         {/*
@@ -323,12 +345,19 @@ export default async function TrangGame({ params }: { params: Promise<{ duongDan
   );
 }
 
-function O({ nhan, chinh, duoi }: { nhan: string; chinh: string; duoi: React.ReactNode }) {
+/**
+ * Một ô số liệu: con số to, nhãn nhỏ ngay dưới. Không có gì khác.
+ *
+ * `icon` chỉ dùng cho ô điểm sao — năm ngôi sao đứng cạnh con số nói được
+ * "trên thang 5" mà không phải viết ra chữ ấy.
+ */
+function O({ chinh, nhan, icon }: { chinh: string; nhan: string; icon?: React.ReactNode }) {
   return (
-    <div className="min-w-[100px] flex-1 whitespace-nowrap px-3 lg:min-w-0 lg:px-0">
-      <dt className="phu uppercase tracking-wide">{nhan}</dt>
-      <dd className="mt-0.5 text-[16px] font-bold leading-tight">{chinh}</dd>
-      <dd className="phu mt-0.5 flex items-center justify-center gap-1 lg:justify-start">{duoi}</dd>
+    <div className="min-w-[92px] flex-1 whitespace-nowrap px-3 lg:min-w-0 lg:px-0">
+      <dd className="flex items-center justify-center gap-1 text-[17px] font-bold leading-none lg:justify-start">
+        {chinh}{icon}
+      </dd>
+      <dt className="phu mt-1">{nhan}</dt>
     </div>
   );
 }

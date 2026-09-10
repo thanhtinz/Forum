@@ -6,6 +6,7 @@ import {
   Laptop, Monitor, ShieldCheck, Smartphone,
 } from 'lucide-react';
 import { HE_MAY, MO_TA_HE, NHAC_KHI_CAI, type MaHeMay } from '@/lib/he-may';
+import { KhoiGap } from '@/components/KhoiGap';
 import { gonDungLuong, gop } from '@/lib/tien-ich';
 
 const ICON = { coffee: Coffee, smartphone: Smartphone, apple: Apple, monitor: Monitor, laptop: Laptop };
@@ -65,6 +66,19 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
 
   const hienTai = theoHe.find((b) => b.id === banId) ?? theoHe[0];
 
+  /*
+   * Tệp CHÍNH là tệp đứng đầu danh sách loại tệp của hệ ấy (`MO_TA_HE.loaiTep`),
+   * chứ không phải tệp nào tình cờ được nhập trước. Với Java là JAR chứ không
+   * phải JAD; với Windows là EXE chứ không phải ZIP.
+   */
+  const thuTuLoai = he ? MO_TA_HE[he].loaiTep : [];
+  const tepXep = hienTai
+    ? [...hienTai.tep].sort((a, b) =>
+        thuTuLoai.indexOf(a.loai as never) - thuTuLoai.indexOf(b.loai as never))
+    : [];
+  const tepChinh = tepXep[0];
+  const tepPhu = tepXep.slice(1);
+
   if (!he || !hienTai) {
     return <p className="the p-5 text-center text-[13px] text-mo">Game này chưa có bản tải nào.</p>;
   }
@@ -103,37 +117,62 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
         {hienTai.ngayRa && <span className="phu">{ngayGon(hienTai.ngayRa)}</span>}
       </div>
 
-      {/* ── Nút tải ─────────────────────────────────────────────────────
-          Tệp đầu tiên là nút đặc, phần còn lại là nút viền: một bản Java có cả
-          JAR lẫn JAD, mà JAD một mình thì không cài được — tô đặc cả hai là
-          mời người ta bấm nhầm vào cái không dùng được. */}
+      {/*
+        MỘT NÚT TẢI, KHÔNG PHẢI HAI.
+
+        Cả hai cửa hàng lớn chỉ có đúng một nút cài. Bản trước dựng mỗi tệp một
+        nút to bằng nhau, nên một bản Java có hai nút xanh chằn chặn — trong khi
+        JAD một mình thì KHÔNG cài được, đúng như câu nhắc ngay bên dưới nói.
+        Hai nút bằng nhau cho hai thứ khác hẳn nhau về giá trị là mời bấm nhầm.
+
+        Nay tệp chính là nút; mấy tệp còn lại tụt xuống thành liên kết chữ nhỏ,
+        vẫn tải được cho ai cần, mà không tranh chỗ với thứ 99% người vào đây
+        muốn bấm.
+      */}
       <div className="space-y-2">
         {hienTai.tep.length === 0 && !hienTai.duongDanCuaHang && (
           <p className="the p-4 text-center text-[13px] text-mo">Bản này chưa gắn tệp tải.</p>
         )}
-        {hienTai.tep.map((t, i) => (
-          <a key={t.id} href={`/api/tai/${t.id}`}
-            className={gop('w-full', i === 0 ? 'nut-cai-dam' : 'nut-vien !w-full')}>
-            <Download size={i === 0 ? 17 : 15} />
-            Tải {t.loai}
-            {t.dungLuong != null && ` · ${gonDungLuong(t.dungLuong)}`}
+
+        {tepChinh && (
+          <a href={`/api/tai/${tepChinh.id}`} className="nut-cai-dam w-full">
+            <Download size={17} aria-hidden />
+            Tải {tepChinh.loai}
+            {tepChinh.dungLuong != null && ` · ${gonDungLuong(tepChinh.dungLuong)}`}
           </a>
-        ))}
+        )}
 
         {/* Cửa hàng chính chủ là lối PHỤ, đứng sau nút tải. */}
         {hienTai.duongDanCuaHang && (
           <a href={hienTai.duongDanCuaHang} target="_blank" rel="noopener noreferrer"
-            className={gop('w-full', hienTai.tep.length === 0 ? 'nut-cai-dam' : 'nut-vien !w-full')}>
-            <ExternalLink size={15} /> Mở trong cửa hàng chính chủ
+            className={gop('w-full', tepChinh ? 'nut-vien !w-full' : 'nut-cai-dam')}>
+            <ExternalLink size={15} aria-hidden /> Mở trong cửa hàng chính chủ
           </a>
+        )}
+
+        {tepPhu.length > 0 && (
+          <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 pt-0.5">
+            {tepPhu.map((t) => (
+              <a key={t.id} href={`/api/tai/${t.id}`}
+                className="text-[12px] font-semibold text-mo underline-offset-2 hover:text-nhan hover:underline">
+                Tải {t.loai}
+                {t.dungLuong != null && ` · ${gonDungLuong(t.dungLuong)}`}
+              </a>
+            ))}
+          </p>
         )}
       </div>
 
+      {/*
+        Cách cài GẤP LẠI, không phải một khối chữ xám nằm chắn dưới nút tải.
+        Người tải lần thứ hai không cần đọc lại, mà lần đầu thì vẫn thấy đầu đề
+        và bấm được. Cả hai cửa hàng lớn không có mục này vì họ tự cài hộ; kho
+        này thì người dùng phải tự cài, nên bỏ hẳn đi cũng không được.
+      */}
       {NHAC_KHI_CAI[he] && (
-        <p className="flex gap-2 rounded-nut bg-nen3 px-3 py-2.5 text-[12px] leading-relaxed text-mo">
-          <Info size={14} className="mt-px shrink-0" aria-hidden />
-          {NHAC_KHI_CAI[he]}
-        </p>
+        <KhoiGap tieuDe={`Cách cài trên ${MO_TA_HE[he].ten}`} icon={<Info size={16} />}>
+          <p className="text-[13px] leading-relaxed text-mo">{NHAC_KHI_CAI[he]}</p>
+        </KhoiGap>
       )}
 
       {/*
@@ -156,19 +195,22 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
           datMo={datMoLichSu} chon={(id) => { datBanId(id); }} />
       )}
 
-      {/* ── Mã kiểm tra ─────────────────────────────────────────────────── */}
-      {hienTai.tep[0]?.maKiemTra && (
-        <div className="the p-3">
-          <p className="flex items-center gap-1.5 text-[12px] font-semibold">
-            <ShieldCheck size={14} className="text-nhan" aria-hidden /> Mã kiểm tra tệp
+      {/*
+        Mã kiểm tra cũng gấp lại: một dãy sáu mươi tư ký tự hệ mười sáu là thứ
+        chỉ vài người dùng tới, nhưng với họ thì nó là thứ quan trọng nhất
+        trang này có. Gấp lại để nó có mặt mà không chắn đường ai.
+      */}
+      {tepChinh?.maKiemTra && (
+        <KhoiGap tieuDe="Mã kiểm tra tệp" tomTat="Đối chiếu sau khi tải để chắc tệp không bị đổi"
+          icon={<ShieldCheck size={16} className="text-nhan" />}>
+          <p className="break-all font-mono text-[11px] leading-relaxed text-mo">
+            {tepChinh.thuatToan}: {tepChinh.maKiemTra}
           </p>
-          <p className="mt-1 break-all font-mono text-[11px] leading-relaxed text-mo">
-            {hienTai.tep[0].thuatToan}: {hienTai.tep[0].maKiemTra}
+          <p className="phu mt-2">
+            Tính lại mã của tệp trên máy bạn rồi so với dãy này. Khác nhau nghĩa là tệp
+            đã bị đổi trên đường truyền — xoá đi, đừng mở.
           </p>
-          <p className="phu mt-1.5">
-            Tải xong đối chiếu mã này; khác nhau nghĩa là tệp đã bị đổi trên đường truyền.
-          </p>
-        </div>
+        </KhoiGap>
       )}
     </div>
   );

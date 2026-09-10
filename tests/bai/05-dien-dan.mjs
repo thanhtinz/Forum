@@ -1,8 +1,8 @@
 import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 
-const DAU = 'kiemthu-cong-dong';
+const DAU = 'kiemthu-dien-dan';
 
-/** Thảo luận nằm trong game, đăng được, trả lời được, và bộ đếm khớp. */
+/** Diễn đàn là MỘT TAB của trang game: đăng được, trả lời được, bộ đếm khớp. */
 export default async function chay(kiem) {
   const game = await db.game.findFirst({
     where: { trangThai: 'DANG_HIEN' }, select: { id: true, duongDan: true },
@@ -15,13 +15,13 @@ export default async function chay(kiem) {
   try {
     // ── Khách không đăng bài được ──────────────────────────────────────
     const khach = await moTrang();
-    await khach.goto(`${GOC}/game/${game.duongDan}/cong-dong/dang`, { waitUntil: 'networkidle' });
+    await khach.goto(`${GOC}/game/${game.duongDan}/dien-dan/dang`, { waitUntil: 'networkidle' });
     kiem('khách bị đưa sang trang đăng nhập', khach.url().includes('/dang-nhap'), khach.url());
     await khach.close();
 
     // ── Thành viên đăng chủ đề ─────────────────────────────────────────
     const p = await moTrangDaDangNhap('huytran', 'thanhvien123');
-    await p.goto(`${GOC}/game/${game.duongDan}/cong-dong/dang`, { waitUntil: 'networkidle' });
+    await p.goto(`${GOC}/game/${game.duongDan}/dien-dan/dang`, { waitUntil: 'networkidle' });
     await p.fill('input[name="tieuDe"]', `${DAU} máy nào chạy được bản này?`);
     await p.fill('textarea[name="noiDung"]', 'Máy mình đời cũ, không biết có chạy nổi không.');
     await p.click('button[type="submit"]');
@@ -42,7 +42,7 @@ export default async function chay(kiem) {
      * đọc `p.url()` ngay sau khi thấy hàng ấy là đọc phải địa chỉ cũ — bài kiểm
      * đỏ trong khi mã hoàn toàn đúng.
      */
-    const daChuyen = await p.waitForURL(`**/cong-dong/${chuDe.id}`, { timeout: 15_000 })
+    const daChuyen = await p.waitForURL(`**/dien-dan/${chuDe.id}`, { timeout: 15_000 })
       .then(() => true).catch(() => false);
     kiem('đăng xong thì nhảy thẳng vào chủ đề vừa đăng', daChuyen, p.url());
 

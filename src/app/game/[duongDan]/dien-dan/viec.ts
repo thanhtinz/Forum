@@ -10,7 +10,7 @@ export interface KetQua { loi?: string }
 const TIEU_DE_TOI_DA = 150;
 const NOI_DUNG_TOI_DA = 8000;
 
-/** Mở một chủ đề mới trong khu thảo luận của một game. */
+/** Mở một chủ đề mới trong khu diễn đàn của một game. */
 export async function dangChuDe(_truoc: KetQua, form: FormData): Promise<KetQua> {
   let nguoi;
   try { nguoi = await batBuocDangNhap(); }
@@ -38,7 +38,7 @@ export async function dangChuDe(_truoc: KetQua, form: FormData): Promise<KetQua>
   });
 
   revalidatePath(`/game/${duongDan}`);
-  redirect(`/game/${duongDan}/cong-dong/${chuDe.id}`);
+  redirect(`/game/${duongDan}/dien-dan/${chuDe.id}`);
 }
 
 /**
@@ -76,6 +76,6 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
     });
   });
 
-  revalidatePath(`/game/${duongDan}/cong-dong/${chuDeId}`);
+  revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
   return {};
 }

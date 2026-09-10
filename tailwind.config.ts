@@ -32,6 +32,7 @@ export default {
         sans: ['var(--font-chu)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       maxWidth: { khung: '1180px' },
+      boxShadow: { noi: 'var(--bong-noi)' },
       /*
        * Tailwind chỉ nhận những mức mờ có sẵn trong bảng (5, 10, 20, 25…), nên
        * `bg-nhan/12` im lặng hỏng chứ không báo gì. Mấy mức tô nhạt của trang

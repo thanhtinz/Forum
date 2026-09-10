@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Inbox, Shield } from 'lucide-react';
-import { LOI_DI, dangO } from './duong-di';
+import { LOI_DI, LOI_PHU, dangO } from './duong-di';
 import { gop } from '@/lib/tien-ich';
 import type { NguoiDangNhap } from '@/lib/xac-thuc';
 
@@ -46,8 +46,19 @@ export function ThanhBen({ nguoi }: { nguoi: NguoiDangNhap | null }) {
           );
         })}
 
+        {/* Máy bàn có sẵn chiều cao, nên mấy lối phải rời khỏi thanh tab đáy
+            của điện thoại (chỉ chứa được bốn ô) vẫn có chỗ đứng ở đây. */}
         <div className="!mt-3 pt-3">
           <div className="vach mb-3 ml-5" />
+          {LOI_PHU.filter((l) => !l.canDangNhap || nguoi).map((l) => {
+            const Icon = l.icon;
+            return (
+              <Link key={l.duongDan} href={l.duongDan} className={lop(l.duongDan)}>
+                <Icon size={20} strokeWidth={dangO(duongDan, l.duongDan) ? 2.3 : 1.8} />
+                {l.ten}
+              </Link>
+            );
+          })}
           <Link href="/yeu-cau" className={lop('/yeu-cau')}>
             <Inbox size={20} strokeWidth={1.8} /> Yêu cầu game
           </Link>

@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, MessageSquare, Pin, PenLine } from 'lucide-react';
+import { MessageSquare, PenLine, Pin } from 'lucide-react';
 import { db } from '@/lib/db';
-import { BieuTuongGame } from '@/components/game/BieuTuongGame';
+import { DANG_HIEN } from '@/lib/kho-game';
 import { cachDay } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
@@ -11,16 +11,23 @@ export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: Promise<{ duongDan: string }> }): Promise<Metadata> {
   const { duongDan } = await params;
   const g = await db.game.findFirst({ where: { duongDan }, select: { ten: true } });
-  return { title: g ? `Cộng đồng ${g.ten}` : 'Cộng đồng' };
+  return { title: g ? `Diễn đàn ${g.ten}` : 'Diễn đàn' };
 }
 
-export default async function TrangCongDong({ params }: { params: Promise<{ duongDan: string }> }) {
+/*
+ * TAB "DIỄN ĐÀN" của một game.
+ *
+ * Không có bảng chuyên mục nào cả: người ta bàn về MỘT GAME cụ thể, không bàn
+ * về "chuyên mục game hành động". Vào được đây tức là đã ở trong trang của
+ * game ấy rồi, nên khung chung đã lo phần tên game và nút tải.
+ */
+export default async function TabDienDan({ params }: { params: Promise<{ duongDan: string }> }) {
   const { duongDan } = await params;
 
   const game = await db.game.findFirst({
-    where: { duongDan, trangThai: 'DANG_HIEN' },
+    where: { duongDan, ...DANG_HIEN },
     select: {
-      id: true, ten: true, icon: true, duongDan: true,
+      duongDan: true,
       chuDe: {
         orderBy: [{ ghim: 'desc' }, { traLoiCuoiLuc: 'desc' }],
         take: 50,
@@ -34,37 +41,36 @@ export default async function TrangCongDong({ params }: { params: Promise<{ duon
   if (!game) notFound();
 
   return (
-    <div className="space-y-5">
-      <Link href={`/game/${game.duongDan}`} className="inline-flex items-center gap-1 text-[13px] font-semibold text-mo hover:text-chu">
-        <ChevronLeft size={15} /> Về trang game
-      </Link>
-
-      <div className="flex items-center gap-3">
-        <BieuTuongGame ten={game.ten} icon={game.icon} co={52} />
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-[20px] font-bold tracking-tight">Cộng đồng {game.ten}</h1>
-          <p className="phu">{game.chuDe.length} chủ đề</p>
-        </div>
-        <Link href={`/game/${game.duongDan}/cong-dong/dang`} className="nut-cai-dam shrink-0 !min-h-[38px] !px-4 !text-[13px]">
-          <PenLine size={15} /> Đăng bài
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="phu">
+          {game.chuDe.length > 0
+            ? `${game.chuDe.length} chủ đề`
+            : 'Chưa có chủ đề nào'}
+        </p>
+        <Link href={`/game/${game.duongDan}/dien-dan/dang`}
+          className="nut-cai-dam shrink-0 !min-h-[36px] !px-4 !text-[13px]">
+          <PenLine size={15} aria-hidden /> Đăng bài
         </Link>
       </div>
 
       {game.chuDe.length === 0 ? (
         <div className="the p-8 text-center">
-          <MessageSquare size={24} className="mx-auto text-mo" />
+          <MessageSquare size={24} className="mx-auto text-mo" aria-hidden />
           <p className="mt-2 text-[14px] font-semibold">Chưa ai mở lời</p>
-          <p className="phu mt-1">Hỏi cách qua màn, báo lỗi gặp phải, hay chỉ để nói chuyện.</p>
+          <p className="phu mt-1">
+            Hỏi cách qua màn, báo lỗi gặp phải, hay chỉ để nói chuyện về game này.
+          </p>
         </div>
       ) : (
         <ul className="the divide-y divide-vien">
           {game.chuDe.map((c) => (
             <li key={c.id}>
-              <Link href={`/game/${game.duongDan}/cong-dong/${c.id}`}
+              <Link href={`/game/${game.duongDan}/dien-dan/${c.id}`}
                 className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-nen3">
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">
-                    {c.ghim && <Pin size={12} className="shrink-0 text-nhan" />}
+                    {c.ghim && <Pin size={12} className="shrink-0 text-nhan" aria-label="ghim" />}
                     <span className="truncate text-[14px] font-medium">{c.tieuDe}</span>
                   </span>
                   <span className="phu mt-0.5 block truncate">
@@ -73,7 +79,7 @@ export default async function TrangCongDong({ params }: { params: Promise<{ duon
                   </span>
                 </span>
                 <span className="phu flex shrink-0 items-center gap-1">
-                  <MessageSquare size={12} /> {c.soTraLoi}
+                  <MessageSquare size={12} aria-hidden /> {c.soTraLoi}
                 </span>
               </Link>
             </li>

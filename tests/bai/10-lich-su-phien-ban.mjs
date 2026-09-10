@@ -85,15 +85,21 @@ export default async function chay(kiem) {
     kiem('chọn bản cũ thì phần đầu đổi theo bản ấy',
       dauTrang.includes(`Bản ${banCu.soHieu}`), dauTrang.slice(0, 120));
 
-    // Và mã kiểm tra phải đổi theo — mỗi bản một tệp khác nhau, dùng lại mã
-    // của bản mới nhất là nói dối về đúng thứ người ta dựa vào để đối chiếu.
+    // Nút tải phải trỏ sang ĐÚNG tệp của bản vừa chọn, không phải tệp của bản
+    // mới nhất — đây mới là chỗ chọn nhầm gây hậu quả thật.
     const tepBanCu = await db.tepTai.findFirst({
-      where: { ban: { gameId: { not: undefined }, heMay: heDau, soHieu: banCu.soHieu, game: { duongDan: game.duongDan } } },
-      select: { maKiemTra: true },
+      where: { ban: { heMay: heDau, soHieu: banCu.soHieu, game: { duongDan: game.duongDan } } },
+      orderBy: { loai: 'asc' },
+      select: { id: true },
     });
-    if (tepBanCu?.maKiemTra) {
-      kiem('mã kiểm tra đổi theo bản đang chọn',
-        dauTrang.includes(tepBanCu.maKiemTra.slice(0, 24)), tepBanCu.maKiemTra.slice(0, 24));
+    if (tepBanCu) {
+      const dich = await p.locator('#tai a[href^="/api/tai/"]').first().getAttribute('href');
+      const moiTepCuaBan = await db.tepTai.findMany({
+        where: { ban: { heMay: heDau, soHieu: banCu.soHieu, game: { duongDan: game.duongDan } } },
+        select: { id: true },
+      });
+      kiem('nút tải trỏ đúng tệp của bản đang chọn',
+        moiTepCuaBan.some((t) => dich === `/api/tai/${t.id}`), `đang trỏ ${dich}`);
     }
   }
 

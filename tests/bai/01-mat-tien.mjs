@@ -1,7 +1,7 @@
 import { GOC, db, moTrang } from '../tro-giup.mjs';
 
 /**
- * Mặt tiền cửa hàng dựng ra đủ các khối, và mỗi khối trỏ đi đâu đó thật.
+ * Bốn tab đáy và hai mặt tiền: "Hôm nay" và "Game".
  *
  * Kiểm ở mức MÃ NGUỒN và mức số đếm chứ không chỉ "trang trả về 200": một
  * trang lỗi giữa chừng vẫn trả 200 với cái vỏ rỗng.
@@ -9,10 +9,25 @@ import { GOC, db, moTrang } from '../tro-giup.mjs';
 export default async function chay(kiem) {
   const p = await moTrang();
 
+  // ── Tab "Hôm nay" (trang gốc) ────────────────────────────────────────
   await p.goto(GOC, { waitUntil: 'networkidle' });
+  kiem('tab Hôm nay có tiêu đề ngày', (await p.locator('h1:has-text("Hôm nay")').count()) > 0);
+  const soTamLon = await p.locator('main article').count();
+  kiem('tab Hôm nay bày tấm lớn do người chọn', soTamLon > 0, `đếm được ${soTamLon}`);
+
+  // ── Thanh tab đáy: đúng bốn ô, đúng bốn tên ──────────────────────────
+  const tenTab = await p.locator('nav[aria-label="Điều hướng chính"] a').evaluateAll((els) =>
+    els.map((e) => e.textContent?.trim() ?? ''));
+  kiem('thanh tab đáy có đúng bốn ô', tenTab.length === 4, JSON.stringify(tenTab));
+  for (const t of ['Hôm nay', 'Game', 'BXH', 'Tìm kiếm']) {
+    kiem(`thanh tab đáy có ô “${t}”`, tenTab.includes(t), JSON.stringify(tenTab));
+  }
+
+  // ── Tab "Game" — mặt tiền của kho ────────────────────────────────────
+  await p.goto(`${GOC}/game`, { waitUntil: 'networkidle' });
 
   for (const ten of ['Bảng xếp hạng', 'Mới lên kho', 'Thể loại']) {
-    kiem(`trang chủ có khối “${ten}”`, (await p.locator(`text=${ten}`).count()) > 0);
+    kiem(`tab Game có khối “${ten}”`, (await p.locator(`text=${ten}`).count()) > 0);
   }
 
   /*
@@ -42,11 +57,7 @@ export default async function chay(kiem) {
   // Nút cài phải có ở mỗi hàng game — đây là dấu hiệu của cửa hàng, thiếu nó
   // thì danh sách chỉ là một bảng chữ.
   const soNutCai = await p.locator('a.nut-cai').count();
-  kiem('mỗi hàng game có nút Cài đặt', soNutCai >= 9, `đếm được ${soNutCai}`);
-
-  // Bảng xếp hạng phải ĐÁNH SỐ, không thì nó chỉ là một kệ nữa.
-  const co1 = await p.locator('text="Bảng xếp hạng"').count();
-  kiem('có bảng xếp hạng', co1 > 0);
+  kiem('mỗi hàng game có nút Cài đặt', soNutCai >= 5, `đếm được ${soNutCai}`);
 
   // Băng nổi bật chỉ bày game được đánh dấu, không bày bừa.
   const soNoiBat = await db.game.count({ where: { trangThai: 'DANG_HIEN', noiBat: true } });
@@ -64,6 +75,13 @@ export default async function chay(kiem) {
     const html = await p.content();
     kiem('game nháp không lọt ra trang chủ', !html.includes(nhap.ten));
   }
+
+  // ── Tab "BXH" ────────────────────────────────────────────────────────
+  await p.goto(`${GOC}/bxh`, { waitUntil: 'networkidle' });
+  const soHang = await p.locator('main ol > li').count();
+  kiem('trang BXH có danh sách đánh số', soHang > 0, `đếm được ${soHang}`);
+  const soDau = await p.locator('main ol > li').first().textContent();
+  kiem('hạng đầu bảng đánh số 1', (soDau ?? '').trim().startsWith('1'), (soDau ?? '').slice(0, 30));
 
   // Chip lọc bấm được và dẫn sang trang duyệt có đúng bộ lọc.
   await p.goto(`${GOC}/duyet?he=JAVA`, { waitUntil: 'networkidle' });

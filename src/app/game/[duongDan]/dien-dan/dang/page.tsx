@@ -1,7 +1,5 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGui } from '@/components/BieuMauGui';
@@ -22,15 +20,12 @@ export default async function TrangDangBai({ params }: { params: Promise<{ duong
   if (!(await nguoiHienTai())) redirect('/dang-nhap');
 
   return (
-    <div className="mx-auto max-w-2xl space-y-5">
-      <Link href={`/game/${game.duongDan}/cong-dong`}
-        className="inline-flex items-center gap-1 text-[13px] font-semibold text-mo hover:text-chu">
-        <ChevronLeft size={15} /> Về cộng đồng {game.ten}
-      </Link>
-
+    /* Không có liên kết lùi ở đây: hàng tab ngay trên đầu đã là lối lùi, và
+       nó còn nói rõ mình đang ở phần nào của trang game. */
+    <div className="max-w-2xl space-y-5">
       <div>
-        <h1 className="text-[22px] font-bold tracking-tight">Đăng chủ đề</h1>
-        <p className="phu mt-0.5">Bài này sẽ nằm trong khu thảo luận của {game.ten}.</p>
+        <h1 className="text-[20px] font-bold tracking-tight">Đăng chủ đề</h1>
+        <p className="phu mt-0.5">Bài này sẽ nằm trong khu diễn đàn của {game.ten}.</p>
       </div>
 
       <BieuMauGui viec={dangChuDe} nut="Đăng chủ đề" nutDangChay="Đang đăng…">

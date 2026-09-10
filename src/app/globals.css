@@ -39,10 +39,18 @@
   --bo-icon: 22%;
 
   --chuyen: 150ms cubic-bezier(.2, .7, .3, 1);
+
+  /* Bóng của thanh tab nổi. Hai lớp: một lớp mỏng sát mép cho ra đường viền
+     mềm, một lớp toả rộng cho ra cảm giác thanh đang trôi trên nền. */
+  --bong-noi: 0 1px 2px rgb(16 24 40 / .10), 0 8px 28px -6px rgb(16 24 40 / .22);
 }
 
 :root[data-nen='toi'] {
   color-scheme: dark;
+
+  /* Nền tối thì bóng đen chìm nghỉm, không tách được thanh khỏi nền. Dùng một
+     vòng sáng mảnh thay cho bóng đổ. */
+  --bong-noi: 0 0 0 1px rgb(255 255 255 / .06), 0 8px 28px -6px rgb(0 0 0 / .6);
 
   --nen: 15 17 20;
   --nen2: 26 29 34;

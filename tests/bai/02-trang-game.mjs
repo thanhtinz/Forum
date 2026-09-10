@@ -34,9 +34,30 @@ export default async function chay(kiem) {
     !/hệ nữa|hệ máy/.test(soLieu ?? ''), soLieu ?? '');
 
   kiem('có nút tải nổi bật', (await p.locator('a.nut-cai-dam').count()) > 0);
-  kiem('có mã kiểm tra tệp', html.includes('sha256'));
-  kiem('có khối cộng đồng', html.includes('Cộng đồng'));
   kiem('có mục game tương tự', html.includes('Game tương tự'));
+
+  /*
+   * DIỄN ĐÀN LÀ MỘT TAB, không phải một khối nhét cuối trang.
+   *
+   * Tab dựng bằng <Link> sang đường dẫn riêng chứ không phải nút đổi trạng
+   * thái, nên phải kiểm đúng ba thứ: có tab, bấm sang được, và địa chỉ đổi
+   * theo — có địa chỉ riêng thì mới dán cho người khác và mới lùi lại được.
+   */
+  const tab = p.locator('nav[aria-label="Phần của trang game"] a');
+  const tenTab = await tab.evaluateAll((els) => els.map((e) => e.textContent?.trim() ?? ''));
+  kiem('trang game có hàng tab', tenTab.length === 2, JSON.stringify(tenTab));
+  kiem('tab đầu là Thông tin', (tenTab[0] ?? '').startsWith('Thông tin'), tenTab[0] ?? '');
+  kiem('tab sau là Diễn đàn', (tenTab[1] ?? '').startsWith('Diễn đàn'), tenTab[1] ?? '');
+
+  await tab.nth(1).click();
+  await p.waitForURL('**/dien-dan', { timeout: 15_000 }).catch(() => {});
+  kiem('bấm tab Diễn đàn thì đổi sang đường dẫn riêng',
+    p.url().endsWith('/dien-dan'), p.url());
+
+  // Phần đầu (tên game + nút tải) phải ĐỨNG YÊN khi đổi tab — nó nằm ở khung
+  // chung, nên người đọc không mất chỗ tải khi sang xem thảo luận.
+  kiem('đổi tab thì tên game vẫn còn', (await p.content()).includes(game.ten));
+  kiem('đổi tab thì nút tải vẫn còn', (await p.locator('a.nut-cai-dam').count()) > 0);
 
   // Game đã gỡ / còn nháp phải trả 404, không được xem lén bằng đường dẫn.
   const nhap = await db.game.findFirst({ where: { trangThai: 'NHAP' }, select: { duongDan: true } });

@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Compass, Library, LayoutGrid, Search, User } from 'lucide-react';
+import { Gamepad2, Library, Search, Sparkles, Trophy } from 'lucide-react';
 
 /**
  * Năm lối đi chính của trang, khai báo MỘT chỗ.
@@ -16,12 +16,27 @@ export interface LoiDi {
   canDangNhap?: boolean;
 }
 
+/*
+ * BỐN tab, không phải năm.
+ *
+ * Bốn ô trên một hàng đáy điện thoại thì mỗi ô rộng chừng 90px — đủ chỗ cho
+ * một biểu tượng và một chữ đọc được. Năm ô là mỗi ô còn 78px, chữ bắt đầu
+ * phải cắt bớt. App Store cũng chỉ để ngần này ô ở đáy.
+ *
+ * Thư viện và tài khoản KHÔNG ở đây mà nằm sau ảnh đại diện góc trên phải —
+ * đúng chỗ cả hai cửa hàng lớn để chúng, và cũng hợp lẽ: đó là việc của
+ * riêng một người, không phải một lối duyệt kho.
+ */
 export const LOI_DI: LoiDi[] = [
-  { duongDan: '/', ten: 'Kho game', icon: LayoutGrid },
-  { duongDan: '/duyet', ten: 'Duyệt', icon: Compass },
-  { duongDan: '/tim', ten: 'Tìm', icon: Search },
+  { duongDan: '/', ten: 'Hôm nay', icon: Sparkles },
+  { duongDan: '/game', ten: 'Game', icon: Gamepad2 },
+  { duongDan: '/bxh', ten: 'BXH', icon: Trophy },
+  { duongDan: '/tim', ten: 'Tìm kiếm', icon: Search },
+];
+
+/** Mấy lối phụ chỉ hiện ở thanh bên máy bàn, không chen vào thanh tab đáy. */
+export const LOI_PHU: LoiDi[] = [
   { duongDan: '/thu-vien', ten: 'Thư viện', icon: Library, canDangNhap: true },
-  { duongDan: '/toi', ten: 'Tôi', icon: User },
 ];
 
 /**

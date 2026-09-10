@@ -42,10 +42,12 @@ export default async function TrangChuDe({ params }: {
   const nguoi = await nguoiHienTai();
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <Link href={`/game/${chuDe.game.duongDan}/cong-dong`}
+    <div className="max-w-3xl space-y-5">
+      {/* Giữ lối lùi ở đây: hàng tab chỉ nói "đang ở phần Diễn đàn", không
+          phân biệt được danh sách chủ đề với một bài cụ thể. */}
+      <Link href={`/game/${chuDe.game.duongDan}/dien-dan`}
         className="inline-flex items-center gap-1 text-[13px] font-semibold text-mo hover:text-chu">
-        <ChevronLeft size={15} /> Cộng đồng {chuDe.game.ten}
+        <ChevronLeft size={15} aria-hidden /> Tất cả chủ đề
       </Link>
 
       <header>

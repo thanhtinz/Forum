@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import {
   Apple, Check, ChevronDown, Coffee, Download, ExternalLink, Info,
-  Laptop, Monitor, ShieldCheck, Smartphone,
+  Laptop, Monitor, Smartphone,
 } from 'lucide-react';
 import { HE_MAY, MO_TA_HE, NHAC_KHI_CAI, type MaHeMay } from '@/lib/he-may';
 import { KhoiGap } from '@/components/KhoiGap';
@@ -15,8 +15,6 @@ export interface TepXem {
   id: string;
   loai: string;
   dungLuong: number | null;
-  maKiemTra: string | null;
-  thuatToan: string;
 }
 
 export interface BanXem {
@@ -195,23 +193,6 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
           datMo={datMoLichSu} chon={(id) => { datBanId(id); }} />
       )}
 
-      {/*
-        Mã kiểm tra cũng gấp lại: một dãy sáu mươi tư ký tự hệ mười sáu là thứ
-        chỉ vài người dùng tới, nhưng với họ thì nó là thứ quan trọng nhất
-        trang này có. Gấp lại để nó có mặt mà không chắn đường ai.
-      */}
-      {tepChinh?.maKiemTra && (
-        <KhoiGap tieuDe="Mã kiểm tra tệp" tomTat="Đối chiếu sau khi tải để chắc tệp không bị đổi"
-          icon={<ShieldCheck size={16} className="text-nhan" />}>
-          <p className="break-all font-mono text-[11px] leading-relaxed text-mo">
-            {tepChinh.thuatToan}: {tepChinh.maKiemTra}
-          </p>
-          <p className="phu mt-2">
-            Tính lại mã của tệp trên máy bạn rồi so với dãy này. Khác nhau nghĩa là tệp
-            đã bị đổi trên đường truyền — xoá đi, đừng mở.
-          </p>
-        </KhoiGap>
-      )}
     </div>
   );
 }
@@ -224,8 +205,8 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
  * đổi những gì, bản nào nhẹ hơn cho máy yếu. Danh sách xổ xuống giấu hết mấy
  * thứ ấy, chỉ còn lại một dãy con số vô nghĩa.
  *
- * Mặc định gấp lại, chỉ chừa bản mới nhất: phần lớn người vào đây lấy bản mới
- * nhất rồi đi, không cần phải bước qua cả lịch sử mới tải được.
+ * Mặc định gấp HẲN, không chừa dòng nào: phần lớn người vào đây lấy bản mới
+ * nhất rồi đi, mà bản mới nhất thì phần đầu khung tải đã nói rồi.
  */
 function LichSu({ ban, dangChon, mo, datMo, chon }: {
   ban: BanXem[];

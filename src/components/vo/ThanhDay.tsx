@@ -6,35 +6,41 @@ import { LOI_DI, dangO } from './duong-di';
 import { gop } from '@/lib/tien-ich';
 
 /**
- * Thanh tab dưới đáy — chỉ có trên điện thoại.
+ * Thanh tab đáy — chỉ có trên điện thoại.
  *
- * Ngón cái cầm điện thoại một tay với tới vùng đáy chứ không với tới đỉnh màn
- * hình, nên lối đi chính nằm ở đáy — cả hai cửa hàng lớn đều đặt ở đây.
+ * NỔI LÊN VÀ BO TRÒN, không dính sát mép dưới.
  *
- * Mục đang chọn tô một viên thuốc sau biểu tượng (dáng Material 3 của CH Play)
- * thay vì chỉ đổi màu: đổi màu không thôi thì người mù màu không thấy gì.
+ * Đây là dáng của một ứng dụng cài trên máy chứ không phải của một trang web:
+ * thanh trôi trên nền, có bóng đổ, bo tròn cả bốn góc. Khi trang này được cài
+ * thành ứng dụng (PWA) thì nó chạy toàn màn hình, không còn thanh địa chỉ của
+ * trình duyệt — lúc ấy một thanh dính đáy trông y hệt một trang web bị nhét
+ * vào khung ứng dụng, còn thanh nổi thì trông như thứ vốn thuộc về máy.
+ *
+ * `env(safe-area-inset-bottom)` cộng thêm vào lề dưới để thanh nằm TRÊN vạch
+ * gạt của iPhone, không bị nó đè lên.
  */
-export function ThanhDay({ daDangNhap }: { daDangNhap: boolean }) {
+export function ThanhDay() {
   const duongDan = usePathname();
-  const muc = LOI_DI.filter((l) => !l.canDangNhap || daDangNhap);
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-vien bg-nen2 lg:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      <ul className="flex">
-        {muc.map((l) => {
+    <nav aria-label="Điều hướng chính"
+      className="fixed inset-x-0 bottom-0 z-40 px-3 lg:hidden"
+      style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>
+      <ul className="mx-auto flex max-w-md rounded-[26px] border border-vien bg-nen2/90 p-1.5 shadow-noi backdrop-blur-xl">
+        {LOI_DI.map((l) => {
           const Icon = l.icon;
           const chon = dangO(duongDan, l.duongDan);
           return (
             <li key={l.duongDan} className="flex-1">
-              <Link href={l.duongDan} className="flex flex-col items-center gap-1 py-1.5">
-                <span className={gop(
-                  'grid h-7 w-16 place-items-center rounded-full transition-colors',
-                  chon ? 'bg-nhan/15' : '',
+              <Link href={l.duongDan} aria-current={chon ? 'page' : undefined}
+                className={gop(
+                  'flex flex-col items-center gap-0.5 rounded-[20px] py-1.5 transition-colors',
+                  chon ? 'bg-nhan/12' : '',
                 )}>
-                  <Icon size={20} strokeWidth={chon ? 2.4 : 1.8} className={chon ? 'text-nhan' : 'text-mo'} />
-                </span>
-                <span className={gop('text-[10px]', chon ? 'font-bold text-nhan' : 'font-medium text-mo')}>
+                <Icon size={20} strokeWidth={chon ? 2.4 : 1.8}
+                  className={chon ? 'text-nhan' : 'text-mo'} aria-hidden />
+                <span className={gop('text-[10px] leading-none',
+                  chon ? 'font-bold text-nhan' : 'font-medium text-mo')}>
                   {l.ten}
                 </span>
               </Link>

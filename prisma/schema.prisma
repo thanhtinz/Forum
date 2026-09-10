@@ -1,0 +1,332 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ════════════════════════════════════════════════════════════════════
+// NGƯỜI DÙNG
+// ════════════════════════════════════════════════════════════════════
+
+model NguoiDung {
+  id          String  @id @default(cuid())
+  email       String  @unique
+  tenDangNhap String  @unique
+  tenHienThi  String
+  anh         String?
+  matKhauBam  String
+  vaiTro      VaiTro  @default(THANH_VIEN)
+  khoa        Boolean @default(false)
+
+  taoLuc      DateTime  @default(now())
+  ghePhutCuoi DateTime?
+
+  danhGia       DanhGia[]
+  luotTai       LuotTai[]
+  chuDe         ChuDe[]
+  traLoi        TraLoi[]
+  yeuCau        YeuCau[]
+  phienDangNhap Phien[]
+
+  @@index([taoLuc])
+}
+
+enum VaiTro {
+  THANH_VIEN
+  QUAN_TRI
+}
+
+/// Phiên đăng nhập của NextAuth. Giữ ở CSDL chứ không nhét hết vào cookie:
+/// khoá một tài khoản là phải đá được người ấy ra ngay, mà cookie thì không
+/// gọi về được.
+model Phien {
+  id      String    @id @default(cuid())
+  ma      String    @unique
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+  hetHan  DateTime
+
+  @@index([nguoiId])
+}
+
+// ════════════════════════════════════════════════════════════════════
+// KHO GAME
+// ════════════════════════════════════════════════════════════════════
+
+model Game {
+  id       String  @id @default(cuid())
+  duongDan String  @unique // slug trên URL
+  ten      String
+  tenViet  String? // tên tiếng Việt, nếu có bản Việt hoá
+
+  nhaPhatTrien String?
+  namPhatHanh  Int?
+
+  gioiThieu String? @db.Text
+  cachChoi  String? @db.Text
+  /// Điều người tải cần biết TRƯỚC khi bấm: máy nào chạy được, lỗi đã biết.
+  luuY      String? @db.Text
+
+  icon String?
+  bia  String?
+
+  ngonNgu   String        @default("en") // en | vi | da-ngon-ngu
+  vietHoa   Boolean       @default(false)
+  noiBat    Boolean       @default(false)
+  trangThai TrangThaiGame @default(NHAP)
+
+  /**
+   * Điểm đánh giá lưu sẵn dạng TỔNG + SỐ LƯỢT chứ không lưu số trung bình.
+   * Trung bình thì không cộng thêm một lượt mới vào được mà không đọc lại cả
+   * bảng; tổng thì chỉ việc `increment`, và vẫn chia ra được lúc hiển thị.
+   */
+  tongSao       Int @default(0)
+  soLuotDanhGia Int @default(0)
+
+  soLuotTai Int @default(0)
+  soLuotXem Int @default(0)
+
+  taoLuc  DateTime  @default(now())
+  suaLuc  DateTime  @updatedAt
+  dangLuc DateTime?
+
+  theLoai TheLoaiTrenGame[]
+  banTai  BanTai[]
+  anhChup AnhChup[]
+  danhGia DanhGia[]
+  luotTai LuotTai[]
+  chuDe   ChuDe[]
+
+  @@index([trangThai, dangLuc])
+  @@index([trangThai, soLuotTai])
+  @@index([trangThai, noiBat])
+}
+
+enum TrangThaiGame {
+  NHAP
+  DANG_HIEN
+  DA_GO
+}
+
+model TheLoai {
+  id       String @id @default(cuid())
+  duongDan String @unique
+  ten      String
+  thuTu    Int    @default(0)
+
+  game TheLoaiTrenGame[]
+}
+
+model TheLoaiTrenGame {
+  gameId    String
+  game      Game    @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  theLoaiId String
+  theLoai   TheLoai @relation(fields: [theLoaiId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, theLoaiId])
+  @@index([theLoaiId])
+}
+
+/**
+ * MỘT BẢN TẢI = một hệ máy + một số hiệu.
+ * Tách theo hệ máy chứ không gom chung: bản Android 2.1 và bản Java 1.4 là hai
+ * dãy số hoàn toàn riêng, gom vào một danh sách thì người dùng phải tự lọc
+ * xem số nào dành cho máy mình.
+ */
+model BanTai {
+  id     String @id @default(cuid())
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  heMay     HeMay
+  soHieu    String // "1.0.2"
+  ghiChu    String?
+  doiMoi    String?   @db.Text // có gì mới ở bản này
+  dungLuong BigInt?
+  ngayRa    DateTime?
+
+  /// Bản mới nhất CỦA HỆ MÁY NÀY — mỗi hệ đúng một bản được đánh dấu.
+  moiNhat Boolean @default(false)
+
+  /**
+   * Địa chỉ cửa hàng ngoài (App Store, Google Play).
+   * iPhone chưa bẻ khoá KHÔNG cài được tệp IPA tải từ web: Apple chỉ cho cài
+   * qua App Store, TestFlight, hệ thống quản lý thiết bị của doanh nghiệp,
+   * hoặc chợ ứng dụng thay thế ở châu Âu. Nên lối vào của iOS phải là một
+   * đường dẫn sang App Store; tệp IPA nếu có chỉ dành cho người tự biết cài.
+   */
+  duongDanCuaHang String?
+
+  tep TepTai[]
+
+  @@unique([gameId, heMay, soHieu])
+  @@index([gameId, heMay, moiNhat])
+}
+
+enum HeMay {
+  JAVA
+  ANDROID
+  IOS
+  WINDOWS
+}
+
+model TepTai {
+  id    String @id @default(cuid())
+  banId String
+  ban   BanTai @relation(fields: [banId], references: [id], onDelete: Cascade)
+
+  loai      LoaiTep
+  duongDan  String // địa chỉ tải thật
+  tenTep    String?
+  dungLuong BigInt?
+
+  /// Mã kiểm tra để người tải đối chiếu sau khi tải xong.
+  maKiemTra String?
+  thuatToan String  @default("sha256")
+
+  @@index([banId])
+}
+
+enum LoaiTep {
+  JAR
+  JAD
+  APK
+  IPA
+  ZIP
+  EXE
+}
+
+model AnhChup {
+  id     String @id @default(cuid())
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  duongDan String
+  chuThich String?
+  thuTu    Int     @default(0)
+
+  @@index([gameId, thuTu])
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ĐÁNH GIÁ · THƯ VIỆN
+// ════════════════════════════════════════════════════════════════════
+
+model DanhGia {
+  id      String    @id @default(cuid())
+  gameId  String
+  game    Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  sao     Int // 1..5
+  noiDung String? @db.Text
+
+  taoLuc DateTime @default(now())
+  suaLuc DateTime @updatedAt
+
+  /// Mỗi người một tiếng nói cho mỗi game; chấm lại là sửa bài cũ.
+  @@unique([gameId, nguoiId])
+  @@index([gameId, taoLuc])
+}
+
+/**
+ * THƯ VIỆN — mỗi người mỗi game một hàng, ghi lần tải GẦN NHẤT.
+ * Ghi từng lượt tải thì bảng phình theo số lần bấm mà mục "game tôi đã tải"
+ * vẫn phải gom nhóm lại mới in ra được. Số lượt tải tổng đã có sẵn ở
+ * `Game.soLuotTai`, nên ở đây chỉ cần biết ai có game gì.
+ */
+model LuotTai {
+  id      String    @id @default(cuid())
+  gameId  String
+  game    Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  heMay   HeMay
+  soHieu  String?
+  lanCuoi DateTime @default(now())
+  soLan   Int      @default(1)
+
+  @@unique([gameId, nguoiId])
+  @@index([nguoiId, lanCuoi])
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CỘNG ĐỒNG — nằm TRONG từng game, không có bảng chuyên mục riêng
+// ════════════════════════════════════════════════════════════════════
+
+model ChuDe {
+  id      String    @id @default(cuid())
+  gameId  String
+  game    Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  tieuDe  String
+  noiDung String @db.Text
+
+  ghim Boolean @default(false)
+  khoa Boolean @default(false)
+
+  soTraLoi      Int      @default(0)
+  traLoiCuoiLuc DateTime @default(now())
+  taoLuc        DateTime @default(now())
+
+  traLoi TraLoi[]
+
+  @@index([gameId, ghim, traLoiCuoiLuc])
+}
+
+model TraLoi {
+  id      String    @id @default(cuid())
+  chuDeId String
+  chuDe   ChuDe     @relation(fields: [chuDeId], references: [id], onDelete: Cascade)
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  noiDung String   @db.Text
+  taoLuc  DateTime @default(now())
+
+  @@index([chuDeId, taoLuc])
+}
+
+// ════════════════════════════════════════════════════════════════════
+// YÊU CẦU GAME
+// ════════════════════════════════════════════════════════════════════
+
+model YeuCau {
+  id      String    @id @default(cuid())
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  ten    String
+  ghiChu String? @db.Text
+
+  trangThai TrangThaiYeuCau @default(CHO_XEM)
+  loiNhan   String? // ban quản kho trả lời
+
+  taoLuc DateTime @default(now())
+
+  @@index([trangThai, taoLuc])
+}
+
+enum TrangThaiYeuCau {
+  CHO_XEM
+  DANG_TIM
+  DA_THEM
+  TU_CHOI
+}
+
+// ════════════════════════════════════════════════════════════════════
+// CÀI ĐẶT TRANG
+// ════════════════════════════════════════════════════════════════════
+
+model CaiDat {
+  khoa   String   @id
+  giaTri Json
+  suaLuc DateTime @updatedAt
+}

@@ -1,0 +1,169 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * HỆ MÀU — SÁNG LÀ MẶC ĐỊNH.
+ *
+ * CH Play và App Store đều nền sáng, và không phải ngẫu nhiên: mặt tiền cửa
+ * hàng gần như toàn ẢNH — biểu tượng game, ảnh chụp màn hình, băng nổi bật.
+ * Nền sáng đẩy mấy tấm ảnh ấy ra trước; nền tối thì ảnh nào cũng như dán trên
+ * một tấm bảng đen, và phải kẻ viền quanh từng cái mới tách ra được.
+ *
+ * Vẫn giữ bản tối cho ai thích, nhưng nó là NGOẠI LỆ ghi đè, không phải gốc.
+ */
+:root {
+  color-scheme: light;
+
+  --nen: 255 255 255;
+  --nen2: 255 255 255;
+  /* Xám của chip và nút phụ — cùng đúng một sắc xám cho cả trang. */
+  --nen3: 241 243 244;
+  --vien: 232 234 237;
+  --chu: 32 33 36;
+  --mo: 95 99 104;
+
+  /*
+   * Màu nhấn là XANH LỤC — màu nút "Cài đặt" của CH Play.
+   * Một màu duy nhất cho mọi hành động chính; thêm màu thứ hai là mắt hết biết
+   * đâu mới là nút đáng bấm.
+   */
+  --nhan: 1 135 95;
+  --canh: 240 160 20;
+  --xau: 217 48 37;
+
+  --bo-the: 12px;
+  --bo-nut: 8px;
+  /* 22% — đúng độ bo biểu tượng ứng dụng của iOS/Android. Lệch đi là mắt thấy
+     ngay "không giống app", dù không chỉ ra được vì sao. */
+  --bo-icon: 22%;
+
+  --chuyen: 150ms cubic-bezier(.2, .7, .3, 1);
+}
+
+:root[data-nen='toi'] {
+  color-scheme: dark;
+
+  --nen: 15 17 20;
+  --nen2: 26 29 34;
+  --nen3: 38 42 48;
+  --vien: 52 57 64;
+  --chu: 232 234 237;
+  --mo: 154 160 166;
+
+  --nhan: 108 219 168;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: rgb(var(--nen));
+  color: rgb(var(--chu));
+  -webkit-font-smoothing: antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* { scrollbar-color: rgb(var(--vien)) transparent; scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: rgb(var(--vien)); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
+
+::selection { background: rgb(var(--nhan) / .2); }
+:focus-visible { outline: 2px solid rgb(var(--nhan)); outline-offset: 2px; }
+
+@layer components {
+  .khung { @apply mx-auto w-full max-w-khung px-4 sm:px-6; }
+
+  /*
+   * NÚT CÀI — viên thuốc.
+   *
+   * Hai dáng, và cả hai đều chép từ chỗ nó ra đời:
+   *   .nut-cai      nền xám, chữ nhấn đậm — dáng của App Store, dùng ở mỗi
+   *                 HÀNG trong danh sách, nơi có hàng chục nút cạnh nhau nên
+   *                 nút nào cũng tô đặc thì cả trang thành một mảng màu.
+   *   .nut-cai-dam  nền đặc, chữ trắng — dáng của CH Play, chỉ dùng ở TRANG
+   *                 GAME, nơi cả trang chỉ có đúng một việc để làm.
+   */
+  .nut-cai {
+    @apply inline-flex shrink-0 items-center justify-center rounded-full bg-nen3 px-4 text-[13px] font-bold text-nhan;
+    min-height: 32px;
+    transition: background-color var(--chuyen);
+  }
+  .nut-cai:hover { background: rgb(var(--nhan) / .12); }
+
+  .nut-cai-dam {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-nhan px-7 text-[15px] font-bold text-white;
+    min-height: 44px;
+    transition: filter var(--chuyen);
+  }
+  .nut-cai-dam:hover { filter: brightness(1.1); }
+  .nut-cai-dam:disabled { @apply cursor-not-allowed opacity-40; filter: none; }
+
+  .nut {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold;
+    min-height: 38px;
+    transition: background-color var(--chuyen), border-color var(--chuyen);
+  }
+  .nut-xam { @apply nut bg-nen3 text-chu hover:bg-vien; }
+  .nut-vien { @apply nut border border-vien text-chu hover:bg-nen3; }
+
+  /*
+   * CHIP LỌC — hàng nút bo tròn ngay dưới thanh tìm.
+   * CH Play đặt đúng hàng này ở đầu mọi tab, vì nó là lối tắt cho người đã
+   * biết mình muốn loại gì mà chưa biết muốn game nào.
+   */
+  .chip {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-vien px-3.5 py-1.5 text-[13px] font-medium text-chu;
+    transition: background-color var(--chuyen), border-color var(--chuyen);
+  }
+  .chip:hover { @apply bg-nen3; }
+  .chip-chon { @apply border-transparent bg-nhan/12 font-semibold text-nhan; }
+
+  .o-nhap {
+    @apply w-full rounded-full border border-vien bg-nen3 px-4 py-2.5 text-sm text-chu placeholder:text-mo;
+    transition: background-color var(--chuyen), border-color var(--chuyen);
+  }
+  .o-nhap:focus { @apply border-vien bg-nen2 outline-none; box-shadow: 0 1px 6px rgb(32 33 36 / .18); }
+  textarea.o-nhap, select.o-nhap { @apply rounded-the; }
+
+  /*
+   * KỆ CUỘN NGANG.
+   * `snap` để buông tay ra là kệ dừng đúng mép một thẻ. Không có nó thì kệ
+   * hay dừng giữa chừng, bỏ lại nửa cái thẻ trông như trang vỡ.
+   */
+  .ke { @apply flex snap-x snap-mandatory gap-4 overflow-x-auto; scrollbar-width: none; }
+  .ke::-webkit-scrollbar { display: none; }
+  .ke > * { @apply snap-start shrink-0; }
+
+  /*
+   * MỘT CỘT BA HÀNG trong kệ danh sách — dáng đặc trưng của App Store.
+   *
+   * Bề ngang cột đặt hụt hơn bề ngang màn hình một chút, để cột kế tiếp ló ra
+   * chừng một đốt ngón tay. Chính cái mẩu ló ra ấy nói cho người dùng biết
+   * "còn nữa, lật tiếp đi" — mà không cần mũi tên hay dòng chữ nào.
+   */
+  .ke-cot { width: min(86vw, 380px); }
+
+  .bieu-tuong { @apply relative overflow-hidden bg-nen3; border-radius: var(--bo-icon); }
+  /* Viền tóc BÊN TRONG: viền ngoài cộng vào kích thước và làm lệch cả lưới. */
+  .bieu-tuong::after {
+    content: '';
+    @apply pointer-events-none absolute inset-0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08);
+  }
+
+  .the { @apply rounded-the border border-vien bg-nen2; }
+  .the-bam { @apply the transition-shadow; }
+  .the-bam:hover { box-shadow: 0 1px 3px rgb(32 33 36 / .12), 0 4px 12px rgb(32 33 36 / .08); }
+
+  .phu { @apply text-[12px] leading-snug text-mo; }
+  .tieu-de { @apply text-[19px] font-bold tracking-tight; }
+  .vach { @apply border-t border-vien; }
+}
+
+@layer utilities {
+  .dong-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .dong-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .dong-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+}

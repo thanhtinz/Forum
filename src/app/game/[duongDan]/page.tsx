@@ -217,14 +217,20 @@ export default async function TrangGame({ params }: { params: Promise<{ duongDan
           </section>
         )}
 
+        {/*
+          BẢNG THÔNG TIN CHỈ GIỮ THỨ CHƯA NÓI Ở ĐÂU KHÁC.
+          Bản trước bảng này in lại "Nhà phát triển" (đã có ngay dưới tên game,
+          in màu nhấn) và "Hệ máy" (đã có ở hàng số liệu VÀ ở dãy chip trong
+          khung tải — tức là in tới ba lần trên một màn hình). Một bảng chỉ để
+          nhắc lại thì người đọc học được cách bỏ qua nó, rồi bỏ qua luôn mấy
+          dòng thật sự chỉ có ở đây.
+        */}
         <section>
           <h2 className="tieu-de mb-3">Thông tin</h2>
           <dl className="the divide-y divide-vien text-[13px]">
-            <Dong nhan="Nhà phát triển" giaTri={game.nhaPhatTrien ?? '—'} />
             <Dong nhan="Năm phát hành" giaTri={game.namPhatHanh ? String(game.namPhatHanh) : '—'} />
             <Dong nhan="Ngôn ngữ" giaTri={NGON_NGU[game.ngonNgu] ?? game.ngonNgu} />
-            <Dong nhan="Hệ máy" giaTri={he.map((h) => MO_TA_HE[h].ten).join(', ') || '—'} />
-            <Dong nhan="Số bản tải" giaTri={`${game.banTai.length} bản trên ${he.length} hệ`} />
+            <Dong nhan="Số bản tải" giaTri={`${game.banTai.length} bản trên ${he.length} hệ máy`} />
             <Dong nhan="Lên kho" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
           </dl>
         </section>

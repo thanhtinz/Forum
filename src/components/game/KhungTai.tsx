@@ -136,7 +136,14 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
         </p>
       )}
 
-      {hienTai.doiMoi && (
+      {/*
+        "Có gì mới" KHÔNG có khối riêng.
+        Câu ấy đã nằm ngay ở dòng đầu của trục thời gian bên dưới, nguyên văn.
+        In hai lần trên cùng một màn hình thì người đọc dừng lại đối chiếu xem
+        hai chỗ có khác nhau chỗ nào không — mất công vì chúng giống hệt.
+        Game chỉ có đúng một bản thì không có trục nào cả, nên in ở đây.
+      */}
+      {hienTai.doiMoi && theoHe.length === 1 && (
         <div>
           <h3 className="text-[13px] font-bold">Có gì mới ở bản {hienTai.soHieu}</h3>
           <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">{hienTai.doiMoi}</p>
@@ -185,7 +192,22 @@ function LichSu({ ban, dangChon, mo, datMo, chon }: {
   datMo: (v: boolean) => void;
   chon: (id: string) => void;
 }) {
-  const hien = mo ? ban : ban.slice(0, 1);
+  /*
+   * Lúc gấp lại thì KHÔNG in dòng nào cả.
+   *
+   * Trước đây gấp lại vẫn chừa dòng của bản đang chọn — mà dòng ấy lặp đúng
+   * những gì phần đầu khung tải vừa nói: số hiệu, nhãn "mới nhất", ngày, và cả
+   * câu "có gì mới". Bốn thứ in hai lần cách nhau một gang tay.
+   */
+  if (!mo) {
+    return (
+      <button type="button" onClick={() => datMo(true)} aria-expanded={false}
+        className="the flex w-full items-center justify-center gap-1 px-4 py-2.5 text-[13px] font-semibold text-nhan transition-colors hover:bg-nen3">
+        Xem {ban.length} phiên bản
+        <ChevronDown size={15} aria-hidden />
+      </button>
+    );
+  }
 
   return (
     <section className="the overflow-hidden">
@@ -195,9 +217,9 @@ function LichSu({ ban, dangChon, mo, datMo, chon }: {
       </h3>
 
       <ol className="px-4 py-3">
-        {hien.map((b, i) => {
+        {ban.map((b, i) => {
           const chonRoi = b.id === dangChon;
-          const cuoi = i === hien.length - 1;
+          const cuoi = i === ban.length - 1;
           return (
             <li key={b.id} className="relative flex gap-3 pb-3 last:pb-0">
               {/* Đường dọc nối các chấm. Vẽ bằng một khối tuyệt đối chứ không
@@ -227,10 +249,10 @@ function LichSu({ ban, dangChon, mo, datMo, chon }: {
         })}
       </ol>
 
-      <button type="button" onClick={() => datMo(!mo)} aria-expanded={mo}
+      <button type="button" onClick={() => datMo(false)} aria-expanded
         className="flex w-full items-center justify-center gap-1 border-t border-vien py-2.5 text-[13px] font-semibold text-nhan transition-colors hover:bg-nen3">
-        {mo ? 'Thu gọn' : `Xem ${ban.length - 1} bản cũ hơn`}
-        <ChevronDown size={15} className={gop('transition-transform', mo && 'rotate-180')} aria-hidden />
+        Thu gọn
+        <ChevronDown size={15} className="rotate-180" aria-hidden />
       </button>
     </section>
   );

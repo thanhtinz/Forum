@@ -41,14 +41,25 @@ export default async function chay(kiem) {
   const heDau = [...theoHe.keys()][0];
   const banHeDau = theoHe.get(heDau);
 
-  // ── Mặc định GẤP LẠI, chỉ chừa bản mới nhất ──────────────────────────
+  /*
+   * ── Mặc định GẤP HẲN, không in dòng nào ───────────────────────────────
+   *
+   * Gấp lại mà vẫn chừa dòng của bản đang chọn thì dòng ấy lặp đúng những gì
+   * phần đầu khung tải vừa nói — số hiệu, nhãn "mới nhất", ngày, câu "có gì
+   * mới" — bốn thứ in hai lần cách nhau một gang tay.
+   */
   const hienLucDau = await p.locator('#tai ol li').count();
-  kiem('lịch sử mặc định chỉ hiện bản mới nhất', hienLucDau === 1, `đang hiện ${hienLucDau} bản`);
-  kiem('có nút mở xem bản cũ',
-    (await p.locator(`#tai button:has-text("bản cũ hơn")`).count()) > 0);
+  kiem('lịch sử gấp lại thì không in dòng nào', hienLucDau === 0, `đang hiện ${hienLucDau} dòng`);
+  kiem('có nút mở lịch sử, ghi rõ tổng số bản',
+    (await p.locator(`#tai button:has-text("Xem ${banHeDau.length} phiên bản")`).count()) > 0,
+    `chờ "Xem ${banHeDau.length} phiên bản"`);
+
+  // Và phần đầu khung tải KHÔNG được lặp lại câu "có gì mới" của bản đang chọn.
+  const soLanCoGiMoi = await p.locator('#tai h3:has-text("Có gì mới")').count();
+  kiem('không in khối "Có gì mới" riêng khi đã có trục thời gian', soLanCoGiMoi === 0);
 
   // ── Mở ra thì hiện đủ ─────────────────────────────────────────────────
-  await p.locator('#tai button:has-text("bản cũ hơn")').click();
+  await p.locator(`#tai button:has-text("Xem ${banHeDau.length} phiên bản")`).click();
   await p.waitForTimeout(400);
   const hienSauKhiMo = await p.locator('#tai ol li').count();
   kiem('mở ra thì hiện đủ mọi bản của hệ đang chọn',
@@ -92,7 +103,7 @@ export default async function chay(kiem) {
     await p.locator(`#tai button:has-text("${NHAN[heKhac]}")`).first().click();
     await p.waitForTimeout(400);
     const lai = await p.locator('#tai ol li').count();
-    kiem('đổi hệ máy thì lịch sử gấp lại', lai === 1, `đang hiện ${lai}`);
+    kiem('đổi hệ máy thì lịch sử gấp lại', lai === 0, `đang hiện ${lai}`);
 
     const moiNhatHeKhac = theoHe.get(heKhac).find((b) => b.moiNhat);
     const chu = await p.locator('#tai').textContent();

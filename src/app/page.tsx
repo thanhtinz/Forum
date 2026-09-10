@@ -14,25 +14,32 @@ export const dynamic = 'force-dynamic';
 /*
  * MẶT TIỀN CỬA HÀNG.
  *
- * Xếp theo đúng thứ tự CH Play và App Store dùng, vì đó là thứ tự người ta
- * thật sự đi qua khi mở một cửa hàng ứng dụng:
+ * Xếp theo thứ tự người ta thật sự đi qua khi mở một cửa hàng ứng dụng:
  *
- *   1. Chip lọc  — lối tắt cho người biết mình muốn loại gì.
+ *   1. Chip lọc  — lối tắt cho người biết mình muốn hệ máy nào.
  *   2. Băng nổi bật — khối lớn duy nhất, chỗ dừng mắt, do người chọn tay.
- *   3. Kệ danh sách "đề xuất" — ba hàng một cột, lật ngang, mỗi hàng một nút cài.
- *   4. Bảng xếp hạng có ĐÁNH SỐ — dấu hiệu riêng của CH Play.
- *   5. Kệ thẻ — khoe biểu tượng, dành cho mục mới lên kho.
- *   6. Thể loại — cho người chưa biết mình muốn gì.
+ *   3. Bảng xếp hạng có ĐÁNH SỐ — dấu hiệu riêng của CH Play.
+ *   4. Kệ thẻ — khoe biểu tượng, cho mục mới lên kho và mục Việt hoá.
+ *   5. Thể loại — cho người chưa biết mình muốn gì.
+ *
+ * MỖI KHỐI PHẢI NÓI MỘT ĐIỀU KHÁC NHAU.
+ *
+ * Bản trước có thêm kệ "Đề xuất cho bạn" xếp theo lượt XEM, đứng ngay trên
+ * bảng xếp hạng xếp theo lượt TẢI. Hai kệ ấy ra đúng chín game giống nhau
+ * theo đúng một thứ tự — người đọc cuộn qua hai lần cùng một danh sách rồi
+ * tưởng trang bị lặp. Cửa hàng lớn để được cả hai vì họ có hàng triệu ứng
+ * dụng; kho này thì không, nên bỏ đi một.
+ *
+ * Cũng vì lẽ ấy mà hàng chip không liệt kê thể loại nữa: cuối trang đã có
+ * hẳn một lưới thể loại đầy đủ kèm số đếm.
  *
  * Không có khối cộng đồng nào ở đây: thảo luận thuộc về TỪNG GAME và nằm
- * trong trang của game ấy. Dồn ra mặt tiền thì nó tranh chỗ với chính thứ
- * người ta vào đây để tìm.
+ * trong trang của game ấy.
  */
 
 export default async function TrangChu() {
-  const [noiBat, deXuat, taiNhieu, moi, vietHoa, theLoai, tongGame] = await Promise.all([
+  const [noiBat, taiNhieu, moi, vietHoa, theLoai, tongGame] = await Promise.all([
     layKe({ noiBat: true }, [{ dangLuc: 'desc' }, { id: 'desc' }], 5),
-    layKe({}, [{ soLuotXem: 'desc' }, { id: 'desc' }], 9),
     layKe({}, [{ soLuotTai: 'desc' }, { id: 'desc' }], 9),
     layKe({}, [{ dangLuc: 'desc' }, { id: 'desc' }], 12),
     layKe({ vietHoa: true }, [{ dangLuc: 'desc' }, { id: 'desc' }], 12),
@@ -54,7 +61,6 @@ export default async function TrangChu() {
     ...HE_MAY.map((h) => ({ ten: MO_TA_HE[h].ten, duongDan: `/duyet?he=${h}` })),
     { ten: 'Có bản Việt hoá', duongDan: '/duyet?viet-hoa=1' },
     { ten: 'Điểm cao', duongDan: '/duyet?sap=diem-cao' },
-    ...theLoai.slice(0, 8).map((t) => ({ ten: t.ten, duongDan: `/duyet?the-loai=${t.duongDan}` })),
   ];
 
   return (
@@ -62,9 +68,6 @@ export default async function TrangChu() {
       <HangChip muc={chip} />
 
       <BangNoiBat game={noiBat} />
-
-      <KeDanhSach ten="Đề xuất cho bạn" phu="Đang được xem nhiều trong kho"
-        xemThem="/duyet" game={deXuat} />
 
       <KeDanhSach ten="Bảng xếp hạng" phu="Tải nhiều nhất từ trước tới nay"
         xemThem="/duyet?sap=tai-nhieu" game={taiNhieu} danhSo />

@@ -11,8 +11,32 @@ export default async function chay(kiem) {
 
   await p.goto(GOC, { waitUntil: 'networkidle' });
 
-  for (const ten of ['Đề xuất cho bạn', 'Bảng xếp hạng', 'Mới lên kho', 'Thể loại']) {
+  for (const ten of ['Bảng xếp hạng', 'Mới lên kho', 'Thể loại']) {
     kiem(`trang chủ có khối “${ten}”`, (await p.locator(`text=${ten}`).count()) > 0);
+  }
+
+  /*
+   * KHÔNG KHỐI NÀO ĐƯỢC LẶP LẠI KHỐI KHÁC.
+   *
+   * Đây từng là lỗi thật: kệ "Đề xuất cho bạn" xếp theo lượt XEM đứng ngay
+   * trên bảng xếp hạng xếp theo lượt TẢI, và cả hai ra đúng chín game giống
+   * nhau theo đúng một thứ tự. Bài kiểm này gom tên game trong từng khối rồi
+   * so, nên kho có đổi dữ liệu thì nó vẫn bắt được nếu hai kệ lại trùng nhau.
+   */
+  const tenTrongKhoi = async (tieuDe) => {
+    const khoi = p.locator('section').filter({ hasText: tieuDe }).first();
+    const ten = await khoi.locator('a[href^="/game/"]').evaluateAll((els) =>
+      els.map((e) => e.textContent?.trim().split('\n')[0] ?? '').filter(Boolean));
+    return [...new Set(ten)];
+  };
+
+  const xepHang = await tenTrongKhoi('Bảng xếp hạng');
+  const moiLenKho = await tenTrongKhoi('Mới lên kho');
+  if (xepHang.length >= 3 && moiLenKho.length >= 3) {
+    const trung = xepHang.filter((t) => moiLenKho.includes(t)).length;
+    const tiLe = trung / Math.min(xepHang.length, moiLenKho.length);
+    kiem('hai kệ liền nhau không bày cùng một danh sách', tiLe < 0.9,
+      `trùng ${trung}/${Math.min(xepHang.length, moiLenKho.length)}`);
   }
 
   // Nút cài phải có ở mỗi hàng game — đây là dấu hiệu của cửa hàng, thiếu nó

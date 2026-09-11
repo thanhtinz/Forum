@@ -43,6 +43,7 @@ export default async function chay(kiem) {
     sau === truoc, `trước ${truoc}, sau ${sau}`);
 
   const lot = await db.game.findFirst({
+    orderBy: { id: 'asc' },
     where: { ten: 'Game lẽ ra không được tạo' }, select: { id: true },
   });
   kiem('không có game lạ nào lọt vào kho', !lot);

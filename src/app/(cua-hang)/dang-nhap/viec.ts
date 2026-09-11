@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
+import { conDuocThu, ghiLanHong, xoaLanHong } from '@/lib/chan-do-mat-khau';
 import { bamMatKhau, donPhienCu, dongPhien, khopMatKhau, moPhien } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
 
@@ -21,6 +22,18 @@ export async function dangNhap(_truoc: KetQuaXacThuc, form: FormData): Promise<K
   const matKhau = String(form.get('matKhau') ?? '');
   if (!dinhDanh || !matKhau) return { loi: 'Hãy nhập đủ hai ô.' };
 
+  /*
+   * Hỏi cửa chặn TRƯỚC khi chạm vào CSDL và trước khi chạy bcrypt.
+   *
+   * Đặt trước vì bcrypt cố ý chạy chậm (cả trăm mili giây): để kẻ dò gọi được
+   * tới đó thì mỗi lượt của họ vẫn ngốn một nhân CPU của máy chủ, và chặn hay
+   * không cũng chẳng cứu được gì khi bị bắn hàng nghìn lượt.
+   */
+  const cua = await conDuocThu(dinhDanh);
+  if (cua.chan) {
+    return { loi: `Sai quá nhiều lần. Thử lại sau ${cua.conPhut} phút.` };
+  }
+
   const nguoi = await db.nguoiDung.findFirst({
     where: { OR: [{ email: dinhDanh }, { tenDangNhap: dinhDanh }] },
     select: { id: true, matKhauBam: true, khoa: true },
@@ -36,9 +49,15 @@ export async function dangNhap(_truoc: KetQuaXacThuc, form: FormData): Promise<K
   const bamGia = '$2a$10$abcdefghijklmnopqrstuv0123456789012345678901234567890';
   const dung = await khopMatKhau(matKhau, nguoi?.matKhauBam ?? bamGia);
 
-  if (!nguoi || !dung) return { loi: SAI };
+  if (!nguoi || !dung) {
+    await ghiLanHong(dinhDanh);
+    return { loi: SAI };
+  }
+  // Tài khoản bị khoá KHÔNG tính là gõ sai: mật khẩu họ gõ đúng, và đếm nó vào
+  // thì người bị khoá oan còn bị cấm thêm một lớp nữa.
   if (nguoi.khoa) return { loi: 'Tài khoản này đang bị khoá.' };
 
+  await xoaLanHong(dinhDanh);
   await donPhienCu();
   await moPhien(nguoi.id);
   redirect('/');

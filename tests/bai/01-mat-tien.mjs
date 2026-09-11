@@ -70,7 +70,8 @@ export default async function chay(kiem) {
   }
 
   // Game NHÁP tuyệt đối không được lọt ra mặt tiền.
-  const nhap = await db.game.findFirst({ where: { trangThai: 'NHAP' }, select: { ten: true } });
+  const nhap = await db.game.findFirst({
+    orderBy: { id: 'asc' }, where: { trangThai: 'NHAP' }, select: { ten: true } });
   if (nhap) {
     const html = await p.content();
     kiem('game nháp không lọt ra trang chủ', !html.includes(nhap.ten));

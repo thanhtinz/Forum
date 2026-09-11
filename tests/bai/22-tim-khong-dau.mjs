@@ -28,7 +28,8 @@ export default async function chay(kiem) {
 
   const p = await moTrang();
   try {
-    const tl = await db.theLoai.findFirst({ where: { ten: 'Đua xe' }, select: { id: true, ten: true } });
+    const tl = await db.theLoai.findFirst({
+    orderBy: { id: 'asc' }, where: { ten: 'Đua xe' }, select: { id: true, ten: true } });
     /*
      * Dựng game rồi gọi KỊCH BẢN LẤP để nó tự tính chuỗi tìm.
      *

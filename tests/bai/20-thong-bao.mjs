@@ -11,6 +11,7 @@ import { GOC, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
  */
 export default async function chay(kiem) {
   const game = await db.game.findFirst({
+    orderBy: { id: 'asc' },
     where: { trangThai: 'DANG_HIEN' }, select: { id: true, duongDan: true },
   });
   const [a, b] = await Promise.all([
@@ -113,6 +114,7 @@ export default async function chay(kiem) {
     kiem('gỡ nội dung thì báo cho người viết', tinGo);
 
     const tin = await db.thongBao.findFirst({
+    orderBy: { id: 'asc' },
       where: { nguoiId: a.id, loai: 'GO_NOI_DUNG' },
       select: { tieuDe: true, duongDan: true },
     });

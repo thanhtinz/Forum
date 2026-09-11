@@ -12,6 +12,7 @@ import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
  */
 export default async function chay(kiem) {
   const game = await db.game.findFirst({
+    orderBy: { id: 'asc' },
     where: { trangThai: 'DANG_HIEN' }, select: { id: true, duongDan: true },
   });
   const [a, b] = await Promise.all([
@@ -64,6 +65,7 @@ export default async function chay(kiem) {
       (await pB.locator('text=Đã báo, cảm ơn bạn').count()) > 0);
 
     const hang = await db.baoXau.findFirst({
+    orderBy: { id: 'asc' },
       where: { chuDeId: chuDe.id }, select: { lyDo: true, ghiChu: true, trangThai: true },
     });
     kiem('ghi đúng lý do và ghi chú',
@@ -90,7 +92,8 @@ export default async function chay(kiem) {
     // ── Bỏ qua: nội dung còn nguyên, lượt báo đóng lại ────────────────
     await admin.click('button:has-text("Bỏ qua")');
     const daBoQua = await doiToi(async () =>
-      (await db.baoXau.findFirst({ where: { chuDeId: chuDe.id }, select: { trangThai: true } }))
+      (await db.baoXau.findFirst({
+    orderBy: { id: 'asc' }, where: { chuDeId: chuDe.id }, select: { trangThai: true } }))
         ?.trangThai === 'BO_QUA');
     kiem('bỏ qua thì đóng lượt báo', daBoQua);
     kiem('bỏ qua KHÔNG xoá nội dung',

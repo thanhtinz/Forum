@@ -9,6 +9,7 @@ import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
  */
 export default async function chay(kiem) {
   const game = await db.game.findFirst({
+    orderBy: { id: 'asc' },
     where: { trangThai: 'DANG_HIEN' }, select: { id: true, duongDan: true },
   });
   const nguoi = await db.nguoiDung.findFirst({
@@ -104,6 +105,7 @@ export default async function chay(kiem) {
 
     // ── Quản trị trả lời đánh giá ────────────────────────────────────────
     const bai = await db.danhGia.findFirst({
+    orderBy: { id: 'asc' },
       where: { gameId: game.id, nguoiId: nguoi.id }, select: { id: true },
     });
 

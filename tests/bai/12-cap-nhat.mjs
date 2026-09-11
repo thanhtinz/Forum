@@ -13,6 +13,7 @@ export default async function chay(kiem) {
 
   // Cần một game có từ hai bản trở lên trên cùng một hệ máy.
   const game = await db.game.findFirst({
+    orderBy: { id: 'asc' },
     where: { trangThai: 'DANG_HIEN', banTai: { some: { moiNhat: false } } },
     select: {
       id: true, ten: true, duongDan: true,
@@ -83,6 +84,7 @@ export default async function chay(kiem) {
      * lọt vào một trong hai chỗ ấy là hỏng.
      */
     const gameKhac = await db.game.findFirst({
+    orderBy: { id: 'asc' },
       where: { trangThai: 'DANG_HIEN', id: { not: game.id } },
       select: { id: true, ten: true },
     });

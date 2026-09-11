@@ -39,6 +39,20 @@ export async function dongTrinhDuyet() {
   await db.$disconnect();
 }
 
+/*
+ * LUÔN GHIM THỨ TỰ KHI CHỌN DỮ LIỆU MẪU.
+ *
+ * `findFirst` không kèm `orderBy` thì Postgres trả về hàng nào là tuỳ nó, và
+ * thứ tự vật lý ấy ĐỔI mỗi khi có hàng được thêm hay xoá — mà mấy bài kiểm ở
+ * đây dựng rồi xoá game suốt. Hậu quả: một bài xanh cả tháng bỗng đỏ sau khi
+ * thêm một bài kiểm mới chẳng liên quan gì, và người đọc kết quả đi tìm lỗi ở
+ * đúng chỗ không có lỗi.
+ *
+ * Đã dính hai lần: bài 13 chọn nhầm game cùng hãng, bài 02 chọn nhằm game
+ * không có game cùng thể loại. Nên mọi lượt chọn dữ liệu mẫu trong `tests/bai`
+ * đều phải kèm `orderBy` — trừ lượt tra theo khoá duy nhất như `tenDangNhap`.
+ */
+
 /** Mở một trang KHÁCH — chưa đăng nhập. */
 export async function moTrang() {
   const ctx = await (await moTrinhDuyet()).newContext({ viewport: { width: 1280, height: 900 } });

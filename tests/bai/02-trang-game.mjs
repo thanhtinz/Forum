@@ -3,8 +3,12 @@ import { GOC, db, moTrang } from '../tro-giup.mjs';
 /** Trang game bày đủ những thứ người ta vào đây để tìm. */
 export default async function chay(kiem) {
   const game = await db.game.findFirst({
+    orderBy: { id: 'asc' },
     where: { trangThai: 'DANG_HIEN', banTai: { some: { heMay: 'JAVA' } } },
-    select: { duongDan: true, ten: true, nhaPhatTrien: true, gioiThieu: true },
+    select: {
+      id: true, duongDan: true, ten: true, nhaPhatTrien: true, gioiThieu: true,
+      theLoai: { select: { theLoaiId: true } },
+    },
   });
   if (!game) { kiem('có game mẫu để kiểm', false); return; }
 
@@ -34,7 +38,21 @@ export default async function chay(kiem) {
     !/hệ nữa|hệ máy/.test(soLieu ?? ''), soLieu ?? '');
 
   kiem('có nút tải nổi bật', (await p.locator('a.nut-cai-dam').count()) > 0);
-  kiem('có mục game tương tự', html.includes('Game tương tự'));
+  /*
+   * Kệ "Game tương tự" chỉ dựng khi THẬT SỰ có game cùng thể loại — kho nhỏ
+   * hoặc thể loại hiếm thì không có, và khi ấy một kệ rỗng mới là lỗi.
+   * Nên đếm trước rồi mới khẳng định, chứ không khẳng định suông.
+   */
+  const cungTheLoai = await db.game.count({
+    where: {
+      trangThai: 'DANG_HIEN',
+      id: { not: game.id },
+      theLoai: { some: { theLoaiId: { in: game.theLoai.map((t) => t.theLoaiId) } } },
+    },
+  });
+  kiem(cungTheLoai > 0 ? 'có mục game tương tự' : 'không dựng kệ rỗng khi hết game cùng thể loại',
+    html.includes('Game tương tự') === (cungTheLoai > 0),
+    `${cungTheLoai} game cùng thể loại`);
 
   /*
    * DIỄN ĐÀN LÀ MỘT TAB, không phải một khối nhét cuối trang.
@@ -60,7 +78,8 @@ export default async function chay(kiem) {
   kiem('đổi tab thì nút tải vẫn còn', (await p.locator('a.nut-cai-dam').count()) > 0);
 
   // Game đã gỡ / còn nháp phải trả 404, không được xem lén bằng đường dẫn.
-  const nhap = await db.game.findFirst({ where: { trangThai: 'NHAP' }, select: { duongDan: true } });
+  const nhap = await db.game.findFirst({
+    orderBy: { id: 'asc' }, where: { trangThai: 'NHAP' }, select: { duongDan: true } });
   if (nhap) {
     const r = await p.goto(`${GOC}/game/${nhap.duongDan}`, { waitUntil: 'domcontentloaded' });
     kiem('game nháp trả về 404', r.status() === 404, `trả về ${r.status()}`);

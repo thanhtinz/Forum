@@ -446,3 +446,24 @@ model ThongBao {
 
   @@index([nguoiId, daDoc, taoLuc])
 }
+
+/// Lượt đăng nhập HỎNG, để chặn dò mật khẩu.
+///
+/// Ghi ở CSDL chứ không giữ trong bộ nhớ tiến trình: bộ nhớ mất sạch mỗi lần
+/// khởi động lại, mà khởi động lại là thứ kẻ dò có thể tự gây ra; và chạy
+/// nhiều tiến trình thì mỗi tiến trình đếm một kiểu, nên ngưỡng 8 lần hoá ra
+/// 8 lần NHÂN số tiến trình.
+///
+/// `khoa` là định danh người ta gõ vào (email hoặc tên đăng nhập) đã hạ về chữ
+/// thường, hoặc địa chỉ IP. Không lưu mật khẩu đã thử — biết thêm chuỗi ấy
+/// chẳng để làm gì, mà lỡ lộ bảng này thì lộ luôn mật khẩu người gõ nhầm ô.
+model LanHong {
+  khoa   String   @id
+  soLan  Int      @default(0)
+  /// Mốc bắt đầu đếm. Quá cửa sổ thì đếm lại từ đầu.
+  tuLuc  DateTime @default(now())
+  /// Cấm tới lúc này. Rỗng nghĩa là chưa bị cấm.
+  camDen DateTime?
+
+  @@index([camDen])
+}

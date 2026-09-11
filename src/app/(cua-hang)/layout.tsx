@@ -2,12 +2,21 @@ import type { Metadata, Viewport } from 'next';
 import '../globals.css';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { demChuaDoc } from '@/lib/thong-bao';
+import { DIA_CHI_GOC } from '@/lib/dia-chi-goc';
 import { ThanhBen } from '@/components/vo/ThanhBen';
 import { ThanhTren } from '@/components/vo/ThanhTren';
 import { ThanhDay } from '@/components/vo/ThanhDay';
 import { DangKySW } from '@/components/vo/DangKySW';
 
 export const metadata: Metadata = {
+  /*
+   * Gốc để Next nối vào mọi địa chỉ TƯƠNG ĐỐI trong phần thẻ meta.
+   *
+   * Thiếu nó thì bản dựng kêu một dòng cảnh báo rồi tự lấy `localhost`, và
+   * `/anh-chia-se.png` ở dưới thành `http://localhost:3000/anh-chia-se.png` —
+   * tức là dán liên kết vào Zalo hay Messenger sẽ không ra ảnh nào.
+   */
+  metadataBase: new URL(DIA_CHI_GOC),
   title: { default: 'SunnyStore — trò chơi Java, Android, iOS', template: '%s · SunnyStore' },
   description: 'Tải game về máy, và bàn luận cùng người chơi khác ngay trong trang của từng game.',
   // Cho phép cài lên màn hình chính iPhone và hiện đúng tên dưới biểu tượng.

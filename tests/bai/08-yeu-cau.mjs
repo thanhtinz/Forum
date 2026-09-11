@@ -27,7 +27,8 @@ export default async function chay(kiem) {
       (await db.yeuCau.count({ where: { ten: { startsWith: DAU } } })) === 1);
     kiem('gửi được yêu cầu', daGui);
 
-    const yc = await db.yeuCau.findFirst({ where: { ten: { startsWith: DAU } }, select: { id: true, trangThai: true } });
+    const yc = await db.yeuCau.findFirst({
+    orderBy: { id: 'asc' }, where: { ten: { startsWith: DAU } }, select: { id: true, trangThai: true } });
     kiem('yêu cầu mới ở trạng thái chờ xem', yc?.trangThai === 'CHO_XEM', yc?.trangThai);
 
     await p.reload({ waitUntil: 'networkidle' });

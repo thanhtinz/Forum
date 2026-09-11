@@ -5,6 +5,7 @@ const DAU = 'kiemthu-dien-dan';
 /** Diễn đàn là MỘT TAB của trang game: đăng được, trả lời được, bộ đếm khớp. */
 export default async function chay(kiem) {
   const game = await db.game.findFirst({
+    orderBy: { id: 'asc' },
     where: { trangThai: 'DANG_HIEN' }, select: { id: true, duongDan: true },
   });
   if (!game) { kiem('có game mẫu', false); return; }
@@ -31,6 +32,7 @@ export default async function chay(kiem) {
     kiem('đăng được chủ đề', daDang);
 
     const chuDe = await db.chuDe.findFirst({
+    orderBy: { id: 'asc' },
       where: { tieuDe: { startsWith: DAU } }, select: { id: true, gameId: true, soTraLoi: true },
     });
     kiem('chủ đề gắn đúng vào game đang xem', chuDe?.gameId === game.id);

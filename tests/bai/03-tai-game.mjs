@@ -8,6 +8,7 @@ import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
  */
 export default async function chay(kiem) {
   const tep = await db.tepTai.findFirst({
+    orderBy: { id: 'asc' },
     where: { ban: { game: { trangThai: 'DANG_HIEN' } } },
     select: { id: true, duongDan: true, ban: { select: { gameId: true, game: { select: { duongDan: true } } } } },
   });
@@ -42,9 +43,11 @@ export default async function chay(kiem) {
     (await p.locator(`a[href="/game/${tep.ban.game.duongDan}"]`).count()) > 0);
 
   // ── Tệp của game đã gỡ thì không tải được ────────────────────────────
-  const anh = await db.game.findFirst({ where: { trangThai: 'NHAP' }, select: { id: true } });
+  const anh = await db.game.findFirst({
+    orderBy: { id: 'asc' }, where: { trangThai: 'NHAP' }, select: { id: true } });
   if (anh) {
     const tepAn = await db.tepTai.findFirst({
+    orderBy: { id: 'asc' },
       where: { ban: { gameId: anh.id } }, select: { id: true },
     });
     if (tepAn) {

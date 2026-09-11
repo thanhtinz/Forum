@@ -14,6 +14,7 @@ import { GOC, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
  */
 export default async function chay(kiem) {
   const game = await db.game.findFirst({
+    orderBy: { id: 'asc' },
     where: { trangThai: 'DANG_HIEN' }, select: { id: true, ten: true, duongDan: true },
   });
   const nguoi = await db.nguoiDung.findFirst({
@@ -113,6 +114,7 @@ export default async function chay(kiem) {
     kiem('thêm được thể loại mới', daThem);
 
     const tl = await db.theLoai.findFirst({
+    orderBy: { id: 'asc' },
       where: { ten: TEN_THE_LOAI }, select: { id: true, duongDan: true },
     });
     kiem('đường dẫn thể loại tự suy ra không dấu',
@@ -172,7 +174,8 @@ async function don(gameId, nguoiId, tenTheLoai) {
   if (!gameId || !nguoiId) return;
   await db.chuDe.deleteMany({ where: { gameId, tieuDe: { contains: 'kiểm thử kiểm duyệt' } } });
   await db.danhGia.deleteMany({ where: { gameId, nguoiId } });
-  const tl = await db.theLoai.findFirst({ where: { ten: tenTheLoai }, select: { id: true } });
+  const tl = await db.theLoai.findFirst({
+    orderBy: { id: 'asc' }, where: { ten: tenTheLoai }, select: { id: true } });
   if (tl) {
     await db.theLoaiTrenGame.deleteMany({ where: { theLoaiId: tl.id } });
     await db.theLoai.delete({ where: { id: tl.id } });

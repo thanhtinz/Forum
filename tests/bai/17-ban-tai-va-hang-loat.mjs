@@ -43,6 +43,7 @@ export default async function chay(kiem) {
 
     const daSua = await doiToi(async () => {
       const b = await db.banTai.findFirst({
+    orderBy: { id: 'asc' },
         where: { gameId: game.id, soHieu: '1.0.1' }, select: { doiMoi: true },
       });
       return b?.doiMoi === 'Vá lỗi treo ở màn hai.';
@@ -61,6 +62,7 @@ export default async function chay(kiem) {
     await admin.click('button[aria-label="Mở bản Java ME 1.0.1"]');
 
     const tepThat = await db.tepTai.findFirst({
+    orderBy: { id: 'asc' },
       where: { duongDan: { startsWith: '/tep-mau/' }, dungLuong: { not: null } },
       select: { duongDan: true, dungLuong: true },
     });
@@ -82,6 +84,7 @@ export default async function chay(kiem) {
     kiem('gắn được tệp vào bản đã có', daGan);
 
     const tepMoi = await db.tepTai.findFirst({
+    orderBy: { id: 'asc' },
       where: { ban: { gameId: game.id } }, select: { id: true, dungLuong: true },
     });
     kiem('dung lượng tệp đo từ tệp thật, không phải gõ tay',
@@ -89,6 +92,7 @@ export default async function chay(kiem) {
       `đo được ${tepMoi?.dungLuong}, tệp thật ${tepThat.dungLuong}`);
 
     const ban = await db.banTai.findFirst({
+    orderBy: { id: 'asc' },
       where: { gameId: game.id, soHieu: '1.0.1' }, select: { dungLuong: true },
     });
     kiem('dung lượng bản bằng tổng dung lượng tệp',
@@ -105,6 +109,7 @@ export default async function chay(kiem) {
     kiem('gỡ được tệp khỏi bản', daGo);
 
     const banSau = await db.banTai.findFirst({
+    orderBy: { id: 'asc' },
       where: { gameId: game.id, soHieu: '1.0.1' }, select: { dungLuong: true },
     });
     kiem('hết tệp thì dung lượng bản để TRỐNG, không phải 0',
@@ -117,6 +122,7 @@ export default async function chay(kiem) {
 
     const daDoi = await doiToi(async () => {
       const b = await db.banTai.findFirst({
+    orderBy: { id: 'asc' },
         where: { gameId: game.id, soHieu: '2.0' }, select: { moiNhat: true },
       });
       return b?.moiNhat === true;

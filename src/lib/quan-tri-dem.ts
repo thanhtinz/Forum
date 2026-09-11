@@ -1,0 +1,22 @@
+import { db } from '@/lib/db';
+import type { MaDem } from '@/lib/quan-tri-loi-di';
+
+/**
+ * Đếm việc TỒN ĐỌNG cho huy hiệu trên thanh bên.
+ *
+ * Gom vào một hàm vì cả khung lẫn trang tổng quan đều cần đúng bộ số này —
+ * hai chỗ tự đếm lấy thì sớm muộn một bên đổi điều kiện mà bên kia không, rồi
+ * huy hiệu ghi 3 còn danh sách bày ra 5.
+ *
+ * "Đánh giá chưa đáp" chỉ tính bài CÓ LỜI VIẾT. Bài chấm sao suông thì không
+ * có gì để trả lời, mà đếm nó vào thì huy hiệu lúc nào cũng đỏ và người ta
+ * học được cách phớt lờ nó — huy hiệu không bao giờ về không là huy hiệu chết.
+ */
+export async function demViecTonDong(): Promise<Record<MaDem, number>> {
+  const [yeuCauCho, gameNhap, danhGiaChuaDap] = await Promise.all([
+    db.yeuCau.count({ where: { trangThai: 'CHO_XEM' } }),
+    db.game.count({ where: { trangThai: 'NHAP' } }),
+    db.danhGia.count({ where: { noiDung: { not: null }, traLoi: null } }),
+  ]);
+  return { yeuCauCho, gameNhap, danhGiaChuaDap };
+}

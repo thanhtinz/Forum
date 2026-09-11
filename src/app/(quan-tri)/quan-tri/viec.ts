@@ -304,6 +304,11 @@ export async function traLoiDanhGia(danhGiaId: string, loi: string): Promise<Ket
     select: { id: true },
   });
 
+  // Làm mới cả trang game công khai LẪN hai chỗ trong khu quản trị: huy hiệu
+  // "chưa đáp" trên thanh bên và danh sách lọc mặc định đều đọc từ con số này,
+  // nên quên một chỗ là vừa trả lời xong mà huy hiệu vẫn nguyên số cũ.
   revalidatePath(`/game/${bai.game.duongDan}`);
+  revalidatePath('/quan-tri/danh-gia');
+  revalidatePath('/quan-tri');
   return {};
 }

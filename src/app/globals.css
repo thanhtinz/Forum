@@ -321,7 +321,22 @@ p { text-wrap: pretty; }
   /* Nhãn chữ hoa nhỏ đứng trên một tiêu đề — dáng "eyebrow" của App Store. */
   .nhan-tren { @apply text-[12px] font-bold uppercase tracking-[0.14em]; }
 
+  /*
+   * KHUNG XƯƠNG — ô xám nhấp nháy lúc chờ dữ liệu.
+   *
+   * Không phải để trang trí: mọi trang ở đây đều dựng ở máy chủ theo từng
+   * lượt, nên giữa lúc bấm và lúc trang mới hiện ra có một quãng màn hình
+   * đứng im hoàn toàn. Người dùng đọc quãng ấy là "máy treo" rồi bấm lại lần
+   * nữa. Một khung xương đúng hình dáng trang sắp tới nói ngay hai điều: máy
+   * đã nhận, và thứ sắp hiện ra trông như thế này.
+   *
+   * `prefers-reduced-motion` ở đầu tệp tự tắt phần nhấp nháy, còn ô xám thì
+   * vẫn còn — người tắt hiệu ứng vẫn cần biết chỗ nào đang chờ.
+   */
+  .xuong { @apply animate-pulse rounded-nut bg-nen3; }
+
   .vach { @apply border-t border-vien; }
+  .vach-duoi { @apply border-b border-vien; }
 }
 
 @layer utilities {

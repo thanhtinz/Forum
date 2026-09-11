@@ -2,46 +2,40 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LOI_QUAN_TRI, dangOQuanTri, type MaDem } from '@/lib/quan-tri-loi-di';
 import { gop } from '@/lib/tien-ich';
 
-const MUC = [
-  { duongDan: '/quan-tri', ten: 'Tổng quan' },
-  { duongDan: '/quan-tri/game', ten: 'Game' },
-  { duongDan: '/quan-tri/yeu-cau', ten: 'Yêu cầu' },
-];
-
 /**
- * Menu của khu quản trị, nằm ngay trên thanh đầu trang.
+ * Menu ngang của khu quản trị — chỉ dùng ở khổ nhỏ, nơi không có thanh bên.
  *
- * Ba mục thì nhét thẳng lên thanh đầu, không dựng thêm một cột bên: cột bên
- * ăn mất bề ngang mà khu này toàn bảng biểu và biểu mẫu — đúng thứ cần bề
- * ngang nhất.
- *
- * "Tổng quan" phải so khớp TUYỆT ĐỐI, mấy mục kia so theo tiền tố: `/quan-tri`
- * là tiền tố của mọi đường dẫn trong khu này, nên so theo tiền tố thì nó sáng
- * ở mọi trang và chẳng còn chỉ ra được đang đứng ở đâu.
+ * Cuộn ngang được, vì năm mục tiếng Việt không vừa bề ngang điện thoại. Bỏ
+ * tiêu đề nhóm ở đây: hàng ngang không có chỗ cho nó, mà năm mục thì mắt vẫn
+ * quét hết được trong một nhịp.
  */
-export function MenuQuanTri() {
+export function MenuQuanTri({ dem }: { dem: Record<MaDem, number> }) {
   const duongDan = usePathname();
 
   return (
-    <nav className="flex items-center gap-1">
-      {MUC.map((m) => {
-        const dangO = m.duongDan === '/quan-tri'
-          ? duongDan === '/quan-tri'
-          : duongDan.startsWith(m.duongDan);
+    <div className="ke gap-1 px-4 pb-2.5">
+      {LOI_QUAN_TRI.map((l) => {
+        const mo = dangOQuanTri(duongDan, l.duongDan);
+        const so = l.demCho ? dem[l.demCho] : 0;
 
         return (
-          <Link key={m.duongDan} href={m.duongDan}
-            aria-current={dangO ? 'page' : undefined}
+          <Link key={l.duongDan} href={l.duongDan} aria-current={mo ? 'page' : undefined}
             className={gop(
-              'rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors',
-              dangO ? 'bg-nen/20 text-nen' : 'text-nen/65 hover:bg-nen/10 hover:text-nen',
+              'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors',
+              mo ? 'bg-nen/20 text-nen' : 'text-nen/60 hover:bg-nen/10 hover:text-nen',
             )}>
-            {m.ten}
+            {l.ten}
+            {so > 0 && (
+              <span className="rounded-full bg-cam px-1.5 text-[10px] font-bold leading-[15px] text-chu">
+                {so > 99 ? '99+' : so}
+              </span>
+            )}
           </Link>
         );
       })}
-    </nav>
+    </div>
   );
 }

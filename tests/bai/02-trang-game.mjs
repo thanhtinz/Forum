@@ -66,5 +66,21 @@ export default async function chay(kiem) {
     kiem('game nháp trả về 404', r.status() === 404, `trả về ${r.status()}`);
   }
 
+  /*
+   * Đường dẫn game bịa ra phải trả ĐÚNG MÃ 404, không phải 200 kèm chữ
+   * "không có trang này".
+   *
+   * Mục này canh một lỗi đã xảy ra thật: đặt `loading.tsx` lên tuyến cha biến
+   * trang thành phản hồi phát dần, mà phát dần thì mã 200 bị chốt ngay lúc
+   * đẩy phần vỏ ra — trước khi trang chạy tới chỗ gọi `notFound()`. Nhìn bằng
+   * mắt thì trang vẫn ghi "không có trang này" nên chẳng ai thấy gì sai; chỉ
+   * máy tìm kiếm là lập chỉ mục hàng loạt trang rác. Mã trạng thái là thứ chỉ
+   * bài kiểm mới thấy, nên nó phải được canh ở đây.
+   */
+  const bia = await p.goto(`${GOC}/game/duong-dan-bia-ra-khong-ton-tai`, { waitUntil: 'domcontentloaded' });
+  kiem('đường dẫn game không có thật trả về 404', bia.status() === 404, `trả về ${bia.status()}`);
+  kiem('trang 404 nói bằng tiếng Việt',
+    (await p.locator('text=Không có trang này').count()) > 0);
+
   await p.close();
 }

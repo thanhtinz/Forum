@@ -29,7 +29,17 @@ export interface NhomLoc {
 export function CotLoc({ nhom }: { nhom: NhomLoc[] }) {
   return (
     <aside className="hidden w-[212px] shrink-0 lg:block">
-      <nav aria-label="Lọc trò chơi" className="sticky top-[68px] space-y-6">
+      {/*
+        Cột tự cuộn TRONG LÒNG NÓ, không kéo dài cả trang.
+
+        Hai chục mục lọc xếp dọc thì cột này cao hơn cả danh sách kết quả, và
+        `sticky` chẳng cứu được gì vì bản thân cột đã dài hơn màn hình — cuộn
+        xuống là mất hút đầu cột. Giam chiều cao lại đúng một màn hình rồi cho
+        cuộn riêng thì bộ lọc luôn ở trong tầm mắt, mà đáy trang cũng hết cảnh
+        bên trái còn dài lê thê trong khi bên phải đã hết bài.
+      */}
+      <nav aria-label="Lọc trò chơi"
+        className="sticky top-[68px] max-h-[calc(100vh-88px)] space-y-6 overflow-y-auto pr-1">
         {nhom.map((n) => (
           <div key={n.ten}>
             <h2 className="mb-2 text-[12px] font-bold uppercase tracking-wide text-mo">{n.ten}</h2>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { X } from 'lucide-react';
 import { db } from '@/lib/db';
 import { CACH_SAP, DANG_HIEN, MOI_TRANG, docBoLoc, duyetDanhMuc, thanhTruyVan } from '@/lib/danh-muc';
 import { HangGame } from '@/components/game/HangGame';
@@ -40,6 +41,26 @@ export default async function TrangDuyet({ searchParams }: {
   ]);
 
   const duong = (doi: Parameters<typeof thanhTruyVan>[1]) => `/duyet${thanhTruyVan({ ...loc, trang: 1 }, doi)}`;
+
+  /*
+   * Bộ lọc ĐANG BẬT, gom thành chip gỡ được.
+   *
+   * Cột lọc bên trái có đánh dấu mục đang chọn, nhưng nó nằm tách khỏi kết quả
+   * và phải cuộn mới thấy hết. Cuộn tới cuối trang rồi tự hỏi "sao có mỗi bốn
+   * game" là chuyện xảy ra suốt, vì bộ lọc gây ra điều đó nằm khuất phía trên.
+   * Hàng chip này đứng ngay trên kết quả, nói thẳng "đang lọc những thứ này",
+   * và mỗi chip gỡ được đúng một điều kiện.
+   */
+  const dangLoc: { ten: string; bo: string }[] = [
+    ...(loc.he ? [{ ten: MO_TA_HE[loc.he].ten, bo: duong({ he: undefined }) }] : []),
+    ...(loc.theLoai
+      ? [{
+          ten: theLoai.find((t) => t.duongDan === loc.theLoai)?.ten ?? loc.theLoai,
+          bo: duong({ theLoai: undefined }),
+        }]
+      : []),
+    ...(loc.vietHoa ? [{ ten: 'Có bản Việt hoá', bo: duong({ vietHoa: undefined }) }] : []),
+  ];
 
   const nhom: NhomLoc[] = [
     {
@@ -86,6 +107,23 @@ export default async function TrangDuyet({ searchParams }: {
           <h1 className="tieu-de-trang">Tất cả trò chơi</h1>
           <p className="phu mt-0.5">{gonSo(tong)} game khớp với lựa chọn của bạn</p>
         </div>
+
+        {dangLoc.length > 0 && (
+          <div className="hidden flex-wrap items-center gap-2 lg:flex">
+            {dangLoc.map((d) => (
+              <Link key={d.bo} href={d.bo} className="chip chip-chon gap-1"
+                aria-label={`Bỏ lọc ${d.ten}`}>
+                {d.ten} <X size={13} aria-hidden />
+              </Link>
+            ))}
+            {dangLoc.length > 1 && (
+              <Link href={duong({ he: undefined, theLoai: undefined, vietHoa: undefined })}
+                className="text-[12px] font-semibold text-mo hover:text-chu hover:underline">
+                Bỏ hết
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Bộ lọc trên ĐIỆN THOẠI: hai hàng chip cuộn ngang. Cột lọc bên trái
             ẩn hẳn ở khổ này, nên đây là lối duy nhất — không được thiếu thứ gì

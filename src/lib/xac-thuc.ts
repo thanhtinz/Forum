@@ -100,7 +100,37 @@ export async function nguoiHienTai(): Promise<NguoiDangNhap | null> {
       },
     },
   });
-  return phien?.nguoi ?? null;
+  if (!phien) return null;
+
+  void danhDauCoMat(phien.nguoi.id);
+  return phien.nguoi;
+}
+
+/** Không ghi lại dấu có mặt quá dày hơn khoảng này. */
+const NHIP_GHE_MS = 15 * 60 * 1000;
+
+/**
+ * Đánh dấu "người này vừa ghé".
+ *
+ * VÌ SAO CẦN: người coi kho đang phải quyết định có khoá một tài khoản hay
+ * không mà chỉ nhìn thấy ngày họ đăng ký. Một tài khoản mở ba năm trước và một
+ * tài khoản đang rải bài lúc này trông y hệt nhau trên bảng thành viên.
+ *
+ * GHI THƯA, và ghi bằng ĐÚNG MỘT câu lệnh có điều kiện. Hàm này chạy gần như
+ * mỗi lần vẽ một trang, nên ghi mỗi lượt là mỗi lượt xem trang đẻ thêm một
+ * lượt ghi vào cùng một hàng — chính là kiểu tranh chấp làm nghẽn cả bảng
+ * người dùng. Điều kiện "cũ hơn 15 phút" nằm trong `where`, nên không cần đọc
+ * lên xem rồi mới quyết: CSDL tự bỏ qua những lượt không cần ghi.
+ *
+ * KHÔNG `await`, và nuốt lỗi: đây là ghi chú bên lề, nó không được quyền làm
+ * chậm hay làm hỏng trang mà nó đang ghi chú.
+ */
+function danhDauCoMat(nguoiId: string): void {
+  const nguong = new Date(Date.now() - NHIP_GHE_MS);
+  void db.nguoiDung.updateMany({
+    where: { id: nguoiId, OR: [{ ghePhutCuoi: null }, { ghePhutCuoi: { lt: nguong } }] },
+    data: { ghePhutCuoi: new Date() },
+  }).catch(() => {});
 }
 
 /** Như trên nhưng ném ra lỗi nếu là khách — dùng trong server action. */

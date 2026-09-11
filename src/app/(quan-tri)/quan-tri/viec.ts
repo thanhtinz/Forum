@@ -804,10 +804,22 @@ export async function themTep(_truoc: KetQua, form: FormData): Promise<KetQua> {
   const banId = chu(form, 'banId');
   const duongDanTep = chu(form, 'duongDanTep');
   const loaiTep = chu(form, 'loaiTep') as MaLoaiTep;
+  const tenTep = chu(form, 'tenTep').slice(0, 200);
+  const maKiemTra = chu(form, 'maKiemTra').toLowerCase();
 
   if (!duongDanTep) return { loi: 'Hãy nhập địa chỉ tệp.' };
   if (!laLoaiTep(loaiTep)) return { loi: 'Loại tệp không hợp lệ.' };
   if (!laDiaChiHopLe(duongDanTep)) return { loi: LOI_DIA_CHI };
+  /*
+   * Mã kiểm tra phải ĐÚNG DẠNG sha256, không nhận chuỗi bất kỳ.
+   *
+   * Một mã gõ thiếu mấy ký tự trông vẫn như mã thật, mà người đối chiếu sẽ
+   * thấy "không khớp" rồi kết luận tệp bị sửa đổi — tức là ta tự vu cho mình.
+   * Thà từ chối ngay lúc nhập còn hơn.
+   */
+  if (maKiemTra && !/^[0-9a-f]{64}$/.test(maKiemTra)) {
+    return { loi: 'Mã kiểm tra phải là 64 ký tự sha256 (0-9, a-f).' };
+  }
 
   const ban = await db.banTai.findUnique({
     where: { id: banId },
@@ -819,7 +831,10 @@ export async function themTep(_truoc: KetQua, form: FormData): Promise<KetQua> {
 
   await db.$transaction(async (tx) => {
     await tx.tepTai.create({
-      data: { banId, loai: loaiTep, duongDan: duongDanTep, dungLuong },
+      data: {
+        banId, loai: loaiTep, duongDan: duongDanTep, dungLuong,
+        tenTep: tenTep || null, maKiemTra: maKiemTra || null,
+      },
       select: { id: true },
     });
     await tinhLaiDungLuongBan(tx as typeof db, banId);

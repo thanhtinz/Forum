@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useTransition } from 'react';
+import { useActionState, useEffect, useState, useTransition } from 'react';
 import { Check, ChevronDown, Paperclip, Pencil, Trash2, X } from 'lucide-react';
 import {
   datBanMoiNhat, suaBanTai, themBanTai, themTep, xoaBanTai, xoaTep, type KetQua,
@@ -18,7 +18,10 @@ export interface BanQuanTri {
   doiMoi: string | null;
   ngayRa: string | null;
   duongDanCuaHang: string | null;
-  tep: { id: string; loai: string; duongDan: string; dungLuong: number | null }[];
+  tep: {
+    id: string; loai: string; duongDan: string; dungLuong: number | null;
+    tenTep: string | null; maKiemTra: string | null;
+  }[];
 }
 
 /**
@@ -247,6 +250,28 @@ function KhoiTep({ b }: { b: BanQuanTri }) {
   const [ketQua, gui, dangChay] = useActionState<KetQua, FormData>(themTep, {});
   const loaiHopLe = MO_TA_HE[b.heMay as keyof typeof MO_TA_HE]?.loaiTep ?? LOAI_TEP;
 
+  /*
+   * GIỮ LẠI THỨ ĐÃ GÕ KHI GỬI HỎNG.
+   *
+   * React 19 tự xoá trắng một biểu mẫu sau khi hành động của nó chạy xong —
+   * kể cả khi hành động ấy TRẢ VỀ LỖI. Nghĩa là gõ nhầm một ký tự trong mã
+   * sha256 là mất luôn cả đường dẫn tệp dài ngoằng vừa dán vào, phải làm lại
+   * từ đầu. Đo tận mắt rồi mới tin: sau một lượt gửi hỏng, cả ba ô đều rỗng.
+   *
+   * Nên ba ô này thành ô CÓ ĐIỀU KHIỂN. Đổi lại một chút mã, nhưng thứ người
+   * ta gõ là của người ta, không phải thứ khung vẽ được quyền vứt đi.
+   */
+  const [duongDanTep, datDuongDanTep] = useState('');
+  const [tenTep, datTenTep] = useState('');
+  const [maKiemTra, datMaKiemTra] = useState('');
+
+  // Gắn được rồi thì mới dọn ô, để lần sau gõ từ đầu cho sạch.
+  useEffect(() => {
+    if (!dangChay && !ketQua.loi) {
+      datDuongDanTep(''); datTenTep(''); datMaKiemTra('');
+    }
+  }, [dangChay, ketQua.loi]);
+
   return (
     <div className="space-y-2 border-t border-vien pt-4">
       <p className="text-[13px] font-bold">Tệp của bản này</p>
@@ -269,7 +294,10 @@ function KhoiTep({ b }: { b: BanQuanTri }) {
                     {t.dungLuong ? gonDungLuong(t.dungLuong) : 'chưa đo được dung lượng'}
                   </span>
                 </span>
-                <span className="phu block truncate">{t.duongDan}</span>
+                <span className="phu block truncate">{t.tenTep ? `${t.tenTep} · ` : ''}{t.duongDan}</span>
+                {t.maKiemTra && (
+                  <span className="phu block truncate font-mono">sha256 {t.maKiemTra}</span>
+                )}
               </span>
               <NutViec lam={() => xoaTep(t.id)} kieu="nguyHiem"
                 nho={`Gỡ tệp ${t.loai}`} nhan={<X size={15} />}
@@ -289,8 +317,25 @@ function KhoiTep({ b }: { b: BanQuanTri }) {
         </label>
         <label className="min-w-[200px] flex-1">
           <span className="phu mb-1 block">Địa chỉ tệp</span>
-          <input name="duongDanTep" placeholder={`/tep-mau/vi-du.${loaiHopLe[0].toLowerCase()}`}
+          <input name="duongDanTep" value={duongDanTep}
+            onChange={(e) => datDuongDanTep(e.target.value)}
+            placeholder={`/tep-mau/vi-du.${loaiHopLe[0].toLowerCase()}`}
             className="o-nhap" />
+        </label>
+        <label className="min-w-[150px] flex-1">
+          <span className="phu mb-1 block">Tên tệp khi tải về</span>
+          <input name="tenTep" value={tenTep} onChange={(e) => datTenTep(e.target.value)}
+            placeholder={`ten-game-1.0.${loaiHopLe[0].toLowerCase()}`}
+            maxLength={200} className="o-nhap" />
+        </label>
+        {/* Mã kiểm tra để người tải đối chiếu. Máy Java đời cũ tải qua mạng
+            chập chờn hay nhận về tệp cụt, mà tệp cụt thì báo "không cài được"
+            chứ không báo "tải hỏng" — có mã này thì tự phân biệt được. */}
+        <label className="basis-full">
+          <span className="phu mb-1 block">Mã kiểm tra sha256 (không bắt buộc)</span>
+          <input name="maKiemTra" value={maKiemTra} onChange={(e) => datMaKiemTra(e.target.value)}
+            maxLength={64} placeholder="64 ký tự 0-9 a-f"
+            className="o-nhap font-mono !text-[12px]" />
         </label>
         {/* Nhãn đọc được kèm số hiệu bản: trang này có thể mở nhiều bản cùng
             lúc, và "Gắn tệp" trơ trọi thì bộ đọc màn hình đọc ra ba bốn nút

@@ -47,7 +47,7 @@ export default async function ThanhVien({ searchParams }: {
       take: MOI_TRANG,
       select: {
         id: true, tenHienThi: true, tenDangNhap: true, anh: true,
-        vaiTro: true, khoa: true, taoLuc: true,
+        vaiTro: true, khoa: true, taoLuc: true, ghePhutCuoi: true,
         _count: { select: { danhGia: true, luotTai: true, chuDe: true } },
       },
     }),
@@ -68,6 +68,7 @@ export default async function ThanhVien({ searchParams }: {
               <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Đã tải</th>
               <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Đánh giá</th>
               <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Chủ đề</th>
+              <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Ghé lần cuối</th>
               <th scope="col" className="px-3 py-2.5 text-right">Tham gia</th>
               <th scope="col" className="px-3 py-2.5 text-right">Việc</th>
             </tr>
@@ -106,6 +107,12 @@ export default async function ThanhVien({ searchParams }: {
                 <td className="hidden px-3 py-2.5 text-right tabular-nums sm:table-cell">{n._count.luotTai}</td>
                 <td className="hidden px-3 py-2.5 text-right tabular-nums sm:table-cell">{n._count.danhGia}</td>
                 <td className="hidden px-3 py-2.5 text-right tabular-nums sm:table-cell">{n._count.chuDe}</td>
+                {/* "Ghé lần cuối" đứng TRƯỚC "Tham gia": lúc cân nhắc có khoá
+                    một tài khoản hay không, thứ cần biết là họ còn hoạt động
+                    không, chứ không phải họ mở tài khoản từ bao giờ. */}
+                <td className="hidden px-3 py-2.5 text-right text-mo sm:table-cell">
+                  {n.ghePhutCuoi ? cachDay(n.ghePhutCuoi) : '—'}
+                </td>
                 <td className="px-3 py-2.5 text-right text-mo">{cachDay(n.taoLuc)}</td>
                 <td className="px-3 py-2.5 text-right">
                   <NutThanhVien id={n.id} ten={n.tenHienThi} laQuanTri={n.vaiTro === 'QUAN_TRI'}

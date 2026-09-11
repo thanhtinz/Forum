@@ -41,7 +41,7 @@ export default async function KhungGame({ children, params }: {
         select: {
           id: true, heMay: true, soHieu: true, moiNhat: true, dungLuong: true, ngayRa: true,
           doiMoi: true, ghiChu: true, duongDanCuaHang: true,
-          tep: { select: { id: true, loai: true, dungLuong: true } },
+          tep: { select: { id: true, loai: true, dungLuong: true, tenTep: true, maKiemTra: true } },
         },
       },
       _count: { select: { chuDe: true, danhGia: true } },
@@ -66,6 +66,7 @@ export default async function KhungGame({ children, params }: {
     tep: b.tep.map((t) => ({
       id: t.id, loai: t.loai,
       dungLuong: t.dungLuong != null ? Number(t.dungLuong) : null,
+      tenTep: t.tenTep, maKiemTra: t.maKiemTra,
     })),
   }));
 

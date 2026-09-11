@@ -35,7 +35,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
           select: {
             id: true, heMay: true, soHieu: true, moiNhat: true, duongDanCuaHang: true,
             ghiChu: true, doiMoi: true, ngayRa: true,
-            tep: { select: { id: true, loai: true, duongDan: true, dungLuong: true } },
+            tep: { select: { id: true, loai: true, duongDan: true, dungLuong: true, tenTep: true, maKiemTra: true } },
           },
         },
       },
@@ -79,6 +79,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
             tep: b.tep.map((t) => ({
               id: t.id, loai: t.loai, duongDan: t.duongDan,
               dungLuong: t.dungLuong != null ? Number(t.dungLuong) : null,
+              tenTep: t.tenTep, maKiemTra: t.maKiemTra,
             })),
           }))}
         />

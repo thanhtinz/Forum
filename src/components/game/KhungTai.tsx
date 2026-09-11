@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import {
-  Apple, Check, ChevronDown, Coffee, Download, ExternalLink, Info,
+  Apple, Check, ChevronDown, Coffee, Download, ExternalLink, FileDigit, Info,
   Laptop, Monitor, Smartphone,
 } from 'lucide-react';
 import { HE_MAY, MO_TA_HE, NHAC_KHI_CAI, type MaHeMay } from '@/lib/he-may';
@@ -15,6 +15,9 @@ export interface TepXem {
   id: string;
   loai: string;
   dungLuong: number | null;
+  /** Tên tệp gốc — để người tải biết mình sắp nhận về cái gì. */
+  tenTep: string | null;
+  maKiemTra: string | null;
 }
 
 export interface BanXem {
@@ -160,6 +163,39 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
           </p>
         )}
       </div>
+
+      {/*
+        CHI TIẾT TỆP — gấp lại, dưới nút tải.
+
+        Máy Java đời cũ tải qua mạng chập chờn rất hay nhận về một tệp cụt, mà
+        tệp cụt thì máy báo "không cài được" chứ không báo "tải hỏng" — người
+        dùng ngồi đổ lỗi cho game. Có mã kiểm tra thì tự phân biệt được hai
+        chuyện ấy. Gấp lại vì phần lớn người tải không cần tới nó.
+      */}
+      {tepXep.some((t) => t.tenTep || t.maKiemTra) && (
+        <KhoiGap tieuDe="Chi tiết tệp" icon={<FileDigit size={16} />}>
+          <ul className="space-y-2.5">
+            {tepXep.map((t) => (
+              <li key={t.id}>
+                <p className="text-[13px] font-semibold">
+                  {t.tenTep ?? `Tệp ${t.loai}`}
+                  {t.dungLuong != null && (
+                    <span className="phu ml-2 font-normal">{gonDungLuong(t.dungLuong)}</span>
+                  )}
+                </p>
+                {t.maKiemTra && (
+                  <p className="phu mt-0.5">
+                    sha256
+                    {/* `break-all` chứ không cắt ngắn: mã này sinh ra để ĐỐI
+                        CHIẾU, mà đối chiếu thì phải thấy đủ 64 ký tự. */}
+                    <span className="ml-1 break-all font-mono">{t.maKiemTra}</span>
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </KhoiGap>
+      )}
 
       {/*
         Cách cài GẤP LẠI, không phải một khối chữ xám nằm chắn dưới nút tải.

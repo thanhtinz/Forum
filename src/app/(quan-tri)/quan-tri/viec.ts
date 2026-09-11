@@ -7,6 +7,7 @@ import { batBuocQuanTri } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
 import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
+import { baoBanMoi } from '@/lib/bao-ban-moi';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
 import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
 
@@ -176,6 +177,9 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
       await tinhLaiDungLuongBan(tx as typeof db, ban.id);
     }
   });
+
+  // Ngoài giao dịch: bản đã ra rồi, thông báo hỏng thì không được kéo nó đổ theo.
+  await baoBanMoi(gameId, heMay, soHieu);
 
   revalidatePath(`/quan-tri/game/${gameId}`);
   revalidatePath(`/game/${game.duongDan}`);
@@ -774,7 +778,7 @@ export async function datBanMoiNhat(banId: string): Promise<KetQua> {
 
   const ban = await db.banTai.findUnique({
     where: { id: banId },
-    select: { gameId: true, heMay: true, game: { select: { duongDan: true } } },
+    select: { gameId: true, heMay: true, soHieu: true, game: { select: { duongDan: true } } },
   });
   if (!ban) return { loi: 'Không tìm thấy bản tải.' };
 
@@ -784,6 +788,8 @@ export async function datBanMoiNhat(banId: string): Promise<KetQua> {
     }),
     db.banTai.update({ where: { id: banId }, data: { moiNhat: true }, select: { id: true } }),
   ]);
+
+  await baoBanMoi(ban.gameId, ban.heMay as MaHeMay, ban.soHieu);
 
   revalidatePath(`/quan-tri/game/${ban.gameId}`);
   revalidatePath(`/game/${ban.game.duongDan}`);

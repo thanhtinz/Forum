@@ -417,6 +417,7 @@ enum LoaiThongBao {
   DAP_DANH_GIA
   TRA_LOI_YEU_CAU
   GO_NOI_DUNG
+  GAME_CO_BAN_MOI
 }
 
 /// Một thông báo gửi tới một người.

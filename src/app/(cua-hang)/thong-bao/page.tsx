@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { Bell, Flag, Inbox, MessageSquare, Star } from 'lucide-react';
+import { ArrowUpCircle, Bell, Flag, Inbox, MessageSquare, Star } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { NutDonThongBao } from '@/components/NutDocHet';
@@ -15,6 +15,7 @@ const HINH: Record<string, { icon: React.ReactNode; sac: string }> = {
   DAP_DANH_GIA: { icon: <Star size={16} />, sac: 'bg-nhan/12 text-nhan' },
   TRA_LOI_YEU_CAU: { icon: <Inbox size={16} />, sac: 'bg-cam/15 text-canh' },
   GO_NOI_DUNG: { icon: <Flag size={16} />, sac: 'bg-xau/10 text-xau' },
+  GAME_CO_BAN_MOI: { icon: <ArrowUpCircle size={16} />, sac: 'bg-nhan/12 text-nhan' },
 };
 
 export default async function ThongBao() {

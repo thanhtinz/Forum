@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { traLoiDanhGia } from '@/app/quan-tri/viec';
+import { traLoiDanhGia } from '@/app/(quan-tri)/quan-tri/viec';
 
 /**
  * Ô trả lời một bài đánh giá, chỉ quản trị thấy.

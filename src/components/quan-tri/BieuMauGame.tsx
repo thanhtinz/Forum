@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import { luuGame, type KetQua } from '@/app/quan-tri/viec';
+import { luuGame, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 
 export interface GameSua {
   id: string;

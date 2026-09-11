@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from 'react';
 import { Trash2 } from 'lucide-react';
-import { themBanTai, xoaBanTai, type KetQua } from '@/app/quan-tri/viec';
+import { themBanTai, xoaBanTai, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 import { HE_MAY, MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { gonDungLuong } from '@/lib/tien-ich';
 

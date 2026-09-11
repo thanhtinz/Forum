@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Star } from 'lucide-react';
 import Link from 'next/link';
-import { chamSao } from '@/app/game/[duongDan]/viec';
+import { chamSao } from '@/app/(cua-hang)/game/[duongDan]/viec';
 import { gop } from '@/lib/tien-ich';
 
 /**

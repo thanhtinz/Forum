@@ -3,7 +3,7 @@
 import { useActionState } from 'react';
 import Link from 'next/link';
 import { DauHieu } from '@/components/vo/DauHieu';
-import type { KetQuaXacThuc } from '@/app/dang-nhap/viec';
+import type { KetQuaXacThuc } from '@/app/(cua-hang)/dang-nhap/viec';
 
 /**
  * Khung biểu mẫu dùng chung cho đăng nhập và đăng ký.

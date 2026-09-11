@@ -4,7 +4,12 @@ import { useState } from 'react';
 import { Check, Share2 } from 'lucide-react';
 
 /**
- * Nút chia sẻ trang game.
+ * Nút chia sẻ trang game — nút TRÒN nổi ở góc trên, đúng lối App Store.
+ *
+ * Chỉ mỗi một hình, không kèm chữ: nó đứng chung hàng với nút lùi ở góc kia,
+ * và cả hai đều là việc phụ. Đặt hẳn một nút chữ to trong luồng trang thì
+ * "Chia sẻ" tranh chỗ với nút tải — mà nút tải mới là việc người ta vào đây để
+ * làm. Nhãn đọc được vẫn còn nguyên trong `aria-label` cho bộ đọc màn hình.
  *
  * Ưu tiên `navigator.share` — trên điện thoại nó mở đúng bảng chia sẻ của hệ
  * điều hành, có sẵn Zalo, Messenger, tin nhắn. Đó là cách người Việt gửi link
@@ -43,10 +48,9 @@ export function NutChiaSe({ ten, duongDan }: { ten: string; duongDan: string }) 
   };
 
   return (
-    <button type="button" onClick={chiaSe} className="nut-vien w-full">
-      {daChep
-        ? <><Check size={16} aria-hidden /> Đã chép đường dẫn</>
-        : <><Share2 size={16} aria-hidden /> Chia sẻ</>}
+    <button type="button" onClick={chiaSe} className="nut-tron"
+      aria-label={daChep ? 'Đã chép đường dẫn' : `Chia sẻ ${ten}`}>
+      {daChep ? <Check size={18} aria-hidden /> : <Share2 size={18} aria-hidden />}
     </button>
   );
 }

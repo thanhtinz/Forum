@@ -5,12 +5,11 @@ import { DANG_HIEN } from '@/lib/danh-muc';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { KhungTai, type BanXem } from '@/components/game/KhungTai';
 import { NutChiaSe } from '@/components/game/NutChiaSe';
-import { NutLuu } from '@/components/game/NutLuu';
+import { NutLui } from '@/components/game/NutLui';
 import { SaoNam } from '@/components/game/SaoNam';
 import { TabGame } from '@/components/game/TabGame';
 import type { MaHeMay } from '@/lib/he-may';
 import { diemSao, gonDungLuong, gonSo } from '@/lib/tien-ich';
-import { nguoiHienTai } from '@/lib/xac-thuc';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,14 +49,6 @@ export default async function KhungGame({ children, params }: {
   });
   if (!game) notFound();
 
-  const nguoi = await nguoiHienTai();
-  const daLuu = nguoi
-    ? !!(await db.daLuu.findUnique({
-        where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
-        select: { id: true },
-      }))
-    : false;
-
   const sao = diemSao(game.tongSao, game.soLuotDanhGia);
   const he = [...new Set(game.banTai.map((b) => b.heMay))] as MaHeMay[];
   const banMoiNhat = game.banTai[0];
@@ -92,6 +83,19 @@ export default async function KhungGame({ children, params }: {
      */
     <div className="lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-x-10">
       <div className="space-y-5 lg:sticky lg:top-[68px]">
+        {/*
+          HÀNG NÚT GÓC TRÊN — lùi bên trái, chia sẻ bên phải.
+
+          Đúng cặp nút App Store đặt đè lên ảnh bìa ở đầu trang ứng dụng. Ở đây
+          chưa có ảnh bìa nên chúng nằm thành một hàng riêng trên cùng, nhưng
+          vẫn giữ nguyên hai góc ấy: tay cầm điện thoại thì hai góc trên là hai
+          chỗ ngón cái mò tới mà không cần nhìn.
+        */}
+        <div className="flex items-center justify-between">
+          <NutLui />
+          <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
+        </div>
+
         <header>
           <div className="flex gap-4">
             <BieuTuongGame ten={game.ten} icon={game.icon} co={88} />
@@ -137,10 +141,6 @@ export default async function KhungGame({ children, params }: {
         <section id="tai" className="scroll-mt-20 space-y-3">
           <h2 className="tieu-de lg:sr-only">Tải về</h2>
           <KhungTai ban={banXem} />
-          <div className="grid grid-cols-2 gap-2">
-            <NutLuu gameId={game.id} daLuuLucDau={daLuu} daDangNhap={!!nguoi} />
-            <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
-          </div>
         </section>
       </div>
 

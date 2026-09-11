@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { traLoiYeuCau } from '@/app/quan-tri/viec';
+import { traLoiYeuCau } from '@/app/(quan-tri)/quan-tri/viec';
 
 const TRANG_THAI = [
   { ma: 'CHO_XEM', ten: 'Chờ xem' },

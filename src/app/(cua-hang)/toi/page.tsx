@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ArrowUpCircle, Bookmark, ChevronRight, Inbox, Library, LogIn, LogOut, Shield } from 'lucide-react';
+import { ArrowUpCircle, ChevronRight, Inbox, Library, LogIn, LogOut, Shield } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { dangXuat } from '../dang-nhap/viec';
@@ -37,10 +37,9 @@ export default async function TrangToi() {
     );
   }
 
-  const [soTai, soDanhGia, soLuu, soBanMoi] = await Promise.all([
+  const [soTai, soDanhGia, soBanMoi] = await Promise.all([
     db.luotTai.count({ where: { nguoiId: nguoi.id } }),
     db.danhGia.count({ where: { nguoiId: nguoi.id } }),
-    db.daLuu.count({ where: { nguoiId: nguoi.id } }),
     demBanMoi(nguoi.id),
   ]);
 
@@ -61,9 +60,8 @@ export default async function TrangToi() {
         </div>
       </div>
 
-      <div className="the grid grid-cols-3 divide-x divide-vien text-center">
+      <div className="the grid grid-cols-2 divide-x divide-vien text-center">
         <O so={soTai} nhan="game đã tải" />
-        <O so={soLuu} nhan="đã lưu" />
         <O so={soDanhGia} nhan="đánh giá" />
       </div>
 
@@ -72,7 +70,6 @@ export default async function TrangToi() {
             trong danh sách này có việc cần làm ngay. */}
         <Muc duongDan="/cap-nhat" icon={<ArrowUpCircle size={18} />} ten="Bản cập nhật" huyHieu={soBanMoi} />
         <Muc duongDan="/thu-vien" icon={<Library size={18} />} ten="Thư viện của tôi" />
-        <Muc duongDan="/da-luu" icon={<Bookmark size={18} />} ten="Đã lưu" />
         <Muc duongDan="/yeu-cau" icon={<Inbox size={18} />} ten="Yêu cầu game của tôi" />
         {nguoi.vaiTro === 'QUAN_TRI' && (
           <Muc duongDan="/quan-tri" icon={<Shield size={18} />} ten="Trang quản trị" />

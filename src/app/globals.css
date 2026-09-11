@@ -200,6 +200,24 @@ p { text-wrap: pretty; }
     transition: background-color var(--chuyen), border-color var(--chuyen);
   }
   .nut-xam { @apply nut bg-nen3 text-chu hover:bg-vien; }
+
+  /*
+   * NÚT TRÒN NỔI — lùi, chia sẻ, và mấy việc phụ khác ở góc trên trang game.
+   *
+   * Đủ 44×44 thật chứ không phải nới bằng lớp phủ: hai nút này nằm sát mép màn
+   * hình, đúng chỗ ngón cái với tay tới khó nhất, nên vùng bấm phải to thật.
+   *
+   * Nền hơi mờ và có `backdrop-blur` để sau này đặt đè lên ảnh bìa vẫn đọc
+   * được hình bên trong — App Store làm đúng thế, và nền dưới nút thì không
+   * đoán trước được là sáng hay tối.
+   */
+  .nut-tron {
+    @apply grid size-11 shrink-0 place-items-center rounded-full border border-vien
+      bg-nen2/80 text-chu backdrop-blur;
+    transition: background-color var(--chuyen), transform var(--chuyen);
+  }
+  .nut-tron:hover { @apply bg-nen3; }
+  .nut-tron:active { transform: scale(.94); }
   .nut-vien { @apply nut border border-vien text-chu hover:bg-nen3; }
 
   /*

@@ -2,7 +2,7 @@
 
 import { useActionState, useTransition } from 'react';
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
-import { doiChoAnhChup, themAnhChup, xoaAnhChup, type KetQua } from '@/app/quan-tri/viec';
+import { doiChoAnhChup, themAnhChup, xoaAnhChup, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 
 export interface AnhQuanTri {
   id: string;

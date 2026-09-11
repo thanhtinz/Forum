@@ -1,7 +1,7 @@
 import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 
 /**
- * "Bản cập nhật" và "Đã lưu" — hai mục cửa hàng nào cũng có.
+ * "Bản cập nhật" — mục cửa hàng nào cũng có.
  *
  * Mục cập nhật không có bảng riêng: nó so số hiệu bản đã tải (`LuotTai`) với
  * bản mang cờ `moiNhat` của đúng hệ máy ấy. Nên bài kiểm phải dựng đúng tình
@@ -35,18 +35,15 @@ export default async function chay(kiem) {
    */
   const don = async () => {
     await db.luotTai.deleteMany({ where: { nguoiId: nguoi.id } });
-    await db.daLuu.deleteMany({ where: { nguoiId: nguoi.id } });
   };
   await don();
 
   try {
-    // ── Khách không vào được hai mục này ──────────────────────────────
+    // ── Khách không vào được mục này ──────────────────────────────────
     const khach = await moTrang();
-    for (const [ten, url] of [['bản cập nhật', '/cap-nhat'], ['đã lưu', '/da-luu']]) {
-      await khach.goto(GOC + url, { waitUntil: 'networkidle' });
-      kiem(`khách bị đưa sang trang đăng nhập ở mục ${ten}`,
-        khach.url().includes('/dang-nhap'), khach.url());
-    }
+    await khach.goto(`${GOC}/cap-nhat`, { waitUntil: 'networkidle' });
+    kiem('khách bị đưa sang trang đăng nhập ở mục bản cập nhật',
+      khach.url().includes('/dang-nhap'), khach.url());
     await khach.close();
 
     const p = await moTrangDaDangNhap('minhdev', 'thanhvien123');
@@ -78,52 +75,25 @@ export default async function chay(kiem) {
       (await p.locator('text=Mọi thứ đều mới nhất').count()) > 0);
 
     /*
-     * Game CHƯA TẢI mà chỉ lưu thì KHÔNG được báo cập nhật.
-     * Đây là lý do "đã lưu" và "thư viện" phải là hai bảng khác nhau: nhắc
-     * bản mới của một game người ta chưa tải bao giờ là vô nghĩa.
+     * THƯ VIỆN chỉ gồm game ĐÃ TẢI.
+     *
+     * Trước đây chỗ này còn kiểm một mục "đã lưu" riêng, nhưng mục ấy đã bỏ.
+     * Điều còn lại đáng canh là ranh giới giữa "đã tải" và "chưa tải": mục cập
+     * nhật và thư viện đều đọc từ `LuotTai`, nên game chưa ai tải bao giờ mà
+     * lọt vào một trong hai chỗ ấy là hỏng.
      */
     const gameKhac = await db.game.findFirst({
-      where: { trangThai: 'DANG_HIEN', id: { not: game.id }, banTai: { some: { moiNhat: false } } },
-      select: { id: true, ten: true, duongDan: true },
+      where: { trangThai: 'DANG_HIEN', id: { not: game.id } },
+      select: { id: true, ten: true },
     });
     if (gameKhac) {
-      await db.daLuu.create({ data: { nguoiId: nguoi.id, gameId: gameKhac.id }, select: { id: true } });
-      await p.reload({ waitUntil: 'networkidle' });
-      kiem('game chỉ lưu mà chưa tải thì không bị báo cập nhật',
-        !(await p.locator('main').textContent()).includes(gameKhac.ten));
-      await db.daLuu.deleteMany({ where: { nguoiId: nguoi.id } });
-    }
-
-    // ── Nút lưu trên trang game ───────────────────────────────────────
-    await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
-    const nut = p.locator('button:has-text("Lưu để dành")');
-    kiem('trang game có nút lưu', (await nut.count()) > 0);
-
-    await nut.click();
-    const daLuu = await doiToi(async () =>
-      (await db.daLuu.count({ where: { nguoiId: nguoi.id, gameId: game.id } })) === 1);
-    kiem('bấm lưu thì ghi vào danh sách', daLuu);
-    kiem('bấm xong nút đổi thành "Đã lưu"',
-      (await p.locator('button:has-text("Đã lưu")').count()) > 0);
-
-    await p.goto(`${GOC}/da-luu`, { waitUntil: 'networkidle' });
-    kiem('game vừa lưu hiện ở trang Đã lưu',
-      (await p.locator(`a[href="/game/${game.duongDan}"]`).count()) > 0);
-
-    // ── Bấm lần nữa thì bỏ lưu ────────────────────────────────────────
-    await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
-    await p.locator('button:has-text("Đã lưu")').click();
-    const daBo = await doiToi(async () =>
-      (await db.daLuu.count({ where: { nguoiId: nguoi.id, gameId: game.id } })) === 0);
-    kiem('bấm lần nữa thì bỏ lưu', daBo);
-
-    // ── Lưu KHÔNG phải là tải: thư viện không được lẫn ────────────────
-    await db.daLuu.create({ data: { nguoiId: nguoi.id, gameId: gameKhac?.id ?? game.id }, select: { id: true } });
-    await p.goto(`${GOC}/thu-vien`, { waitUntil: 'networkidle' });
-    if (gameKhac) {
-      kiem('game mới lưu KHÔNG lọt vào thư viện',
+      await p.goto(`${GOC}/thu-vien`, { waitUntil: 'networkidle' });
+      kiem('game chưa tải thì không nằm trong thư viện',
         !(await p.locator('main').textContent()).includes(gameKhac.ten));
     }
+
+    kiem('game đã tải thì nằm trong thư viện',
+      (await p.locator('main').textContent()).includes(game.ten));
 
     await p.close();
   } finally {

@@ -30,7 +30,6 @@ model NguoiDung {
   traLoi        TraLoi[]
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
-  daLuus        DaLuu[]
 
   @@index([taoLuc])
 }
@@ -100,7 +99,6 @@ model Game {
   danhGia DanhGia[]
   luotTai LuotTai[]
   chuDe   ChuDe[]
-  daLuus  DaLuu[]
 
   @@index([trangThai, dangLuc])
   @@index([trangThai, soLuotTai])
@@ -274,18 +272,6 @@ model LuotTai {
  * một thì "thư viện của tôi" lẫn game chưa hề tải, mà mục cập nhật lại đi
  * nhắc bản mới của game người ta chưa tải bao giờ.
  */
-model DaLuu {
-  id      String    @id @default(cuid())
-  gameId  String
-  game    Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
-  nguoiId String
-  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
-
-  taoLuc DateTime @default(now())
-
-  @@unique([gameId, nguoiId])
-  @@index([nguoiId, taoLuc])
-}
 
 // ════════════════════════════════════════════════════════════════════
 // CỘNG ĐỒNG — nằm TRONG từng game, không có bảng chuyên mục riêng

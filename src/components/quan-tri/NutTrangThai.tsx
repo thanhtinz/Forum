@@ -1,7 +1,7 @@
 'use client';
 
 import { useTransition } from 'react';
-import { doiTrangThai } from '@/app/quan-tri/viec';
+import { doiTrangThai } from '@/app/(quan-tri)/quan-tri/viec';
 
 /**
  * Nút đăng game ra kho / rút về nháp.

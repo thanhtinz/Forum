@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ChevronRight, Inbox, Library, LogIn, LogOut, MessageSquare, Shield, Star } from 'lucide-react';
+import { ArrowUpCircle, Bookmark, ChevronRight, Inbox, Library, LogIn, LogOut, Shield } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { dangXuat } from '../dang-nhap/viec';
-import { cachDay } from '@/lib/tien-ich';
+import { demBanMoi } from '@/lib/cap-nhat';
+import { gop } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Tài khoản' };
@@ -36,10 +37,11 @@ export default async function TrangToi() {
     );
   }
 
-  const [soTai, soDanhGia, soChuDe] = await Promise.all([
+  const [soTai, soDanhGia, soLuu, soBanMoi] = await Promise.all([
     db.luotTai.count({ where: { nguoiId: nguoi.id } }),
     db.danhGia.count({ where: { nguoiId: nguoi.id } }),
-    db.chuDe.count({ where: { nguoiId: nguoi.id } }),
+    db.daLuu.count({ where: { nguoiId: nguoi.id } }),
+    demBanMoi(nguoi.id),
   ]);
 
   return (
@@ -61,12 +63,16 @@ export default async function TrangToi() {
 
       <div className="the grid grid-cols-3 divide-x divide-vien text-center">
         <O so={soTai} nhan="game đã tải" />
+        <O so={soLuu} nhan="đã lưu" />
         <O so={soDanhGia} nhan="đánh giá" />
-        <O so={soChuDe} nhan="chủ đề" />
       </div>
 
       <ul className="the divide-y divide-vien">
+        {/* Bản cập nhật đứng ĐẦU, và có huy hiệu số: đây là mục duy nhất
+            trong danh sách này có việc cần làm ngay. */}
+        <Muc duongDan="/cap-nhat" icon={<ArrowUpCircle size={18} />} ten="Bản cập nhật" huyHieu={soBanMoi} />
         <Muc duongDan="/thu-vien" icon={<Library size={18} />} ten="Thư viện của tôi" />
+        <Muc duongDan="/da-luu" icon={<Bookmark size={18} />} ten="Đã lưu" />
         <Muc duongDan="/yeu-cau" icon={<Inbox size={18} />} ten="Yêu cầu game của tôi" />
         {nguoi.vaiTro === 'QUAN_TRI' && (
           <Muc duongDan="/quan-tri" icon={<Shield size={18} />} ten="Trang quản trị" />
@@ -91,13 +97,22 @@ function O({ so, nhan }: { so: number; nhan: string }) {
   );
 }
 
-function Muc({ duongDan, icon, ten }: { duongDan: string; icon: React.ReactNode; ten: string }) {
+function Muc({ duongDan, icon, ten, huyHieu }: {
+  duongDan: string; icon: React.ReactNode; ten: string; huyHieu?: number;
+}) {
   return (
     <li>
       <Link href={duongDan} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-nen3">
-        <span className="shrink-0 text-mo">{icon}</span>
+        <span className={gop('shrink-0', huyHieu ? 'text-nhan' : 'text-mo')}>{icon}</span>
         <span className="min-w-0 flex-1 truncate text-[14px] font-medium">{ten}</span>
-        <ChevronRight size={16} className="shrink-0 text-mo" />
+        {/* Huy hiệu chỉ hiện khi CÓ việc. Một con số 0 tròn trĩnh nằm đó thì
+            mắt vẫn phải dừng lại đọc, rồi mới biết là không có gì. */}
+        {!!huyHieu && (
+          <span className="shrink-0 rounded-full bg-nhan px-2 py-0.5 text-[11px] font-bold text-white">
+            {huyHieu}
+          </span>
+        )}
+        <ChevronRight size={16} className="shrink-0 text-mo" aria-hidden />
       </Link>
     </li>
   );

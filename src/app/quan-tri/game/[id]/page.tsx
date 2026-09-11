@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ExternalLink } from 'lucide-react';
 import { db } from '@/lib/db';
 import { BieuMauGame } from '@/components/quan-tri/BieuMauGame';
+import { KhungAnhChup } from '@/components/quan-tri/KhungAnhChup';
 import { KhungBanTai } from '@/components/quan-tri/KhungBanTai';
 import { NutTrangThai } from '@/components/quan-tri/NutTrangThai';
 
@@ -21,6 +22,11 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
         namPhatHanh: true, gioiThieu: true, cachChoi: true, luuY: true, icon: true,
         ngonNgu: true, vietHoa: true, noiBat: true, trangThai: true,
         theLoai: { select: { theLoaiId: true } },
+        anhChup: {
+          orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
+          take: 30,
+          select: { id: true, duongDan: true, chuThich: true },
+        },
         banTai: {
           orderBy: [{ heMay: 'asc' }, { moiNhat: 'desc' }],
           take: 50,
@@ -47,6 +53,11 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
         </div>
         <NutTrangThai gameId={game.id} trangThai={game.trangThai} />
       </div>
+
+      <section>
+        <h2 className="tieu-de mb-3">Ảnh chụp</h2>
+        <KhungAnhChup gameId={game.id} anh={game.anhChup} />
+      </section>
 
       <section>
         <h2 className="tieu-de mb-3">Bản tải</h2>

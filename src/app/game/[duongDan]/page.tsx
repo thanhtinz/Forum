@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { TriangleAlert } from 'lucide-react';
 import { db } from '@/lib/db';
@@ -7,6 +8,7 @@ import { PhoDiem } from '@/components/game/PhoDiem';
 import { SaoNam } from '@/components/game/SaoNam';
 import { KeThe } from '@/components/game/KeThe';
 import { ODanhGia } from '@/components/game/ODanhGia';
+import { ODapDanhGia } from '@/components/game/ODapDanhGia';
 import { KhoiGap } from '@/components/KhoiGap';
 import { NGON_NGU } from '@/lib/he-may';
 import { cachDay, catChu } from '@/lib/tien-ich';
@@ -31,15 +33,24 @@ export async function generateMetadata({ params }: { params: Promise<{ duongDan:
  * chỉ còn phần nội dung: ảnh, giới thiệu, bảng thông tin, đánh giá, game
  * tương tự. Tab "Diễn đàn" là một trang khác, cùng khung.
  */
-export default async function TabThongTin({ params }: { params: Promise<{ duongDan: string }> }) {
+export default async function TabThongTin({ params, searchParams }: {
+  params: Promise<{ duongDan: string }>;
+  searchParams: Promise<{ sao?: string }>;
+}) {
   const { duongDan } = await params;
+  const { sao: saoNhap } = await searchParams;
+
+  // Lọc chỉ nhận 1..5; số rác trên URL thì coi như không lọc, chứ không phải
+  // lỗi — địa chỉ là thứ ai cũng sửa tay được.
+  const soLoc = Number(saoNhap);
+  const locSao = Number.isInteger(soLoc) && soLoc >= 1 && soLoc <= 5 ? soLoc : null;
 
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
     select: {
       id: true, gioiThieu: true, cachChoi: true, luuY: true, namPhatHanh: true,
       ngonNgu: true, dangLuc: true,
-      anhChup: { orderBy: { thuTu: 'asc' }, take: 12, select: { id: true, duongDan: true, chuThich: true } },
+      anhChup: { orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: 12, select: { id: true, duongDan: true, chuThich: true } },
       theLoai: { select: { theLoai: { select: { duongDan: true } } } },
       _count: { select: { banTai: true } },
     },
@@ -51,11 +62,11 @@ export default async function TabThongTin({ params }: { params: Promise<{ duongD
   const [phanBo, danhGia, cuaToi, lienQuan, soHe] = await Promise.all([
     db.danhGia.groupBy({ by: ['sao'], where: { gameId: game.id }, _count: { _all: true } }),
     db.danhGia.findMany({
-      where: { gameId: game.id, noiDung: { not: null } },
-      orderBy: { taoLuc: 'desc' },
+      where: { gameId: game.id, noiDung: { not: null }, ...(locSao ? { sao: locSao } : {}) },
+      orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
       take: 6,
       select: {
-        id: true, sao: true, noiDung: true, taoLuc: true,
+        id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
         nguoi: { select: { tenHienThi: true } },
       },
     }),
@@ -81,6 +92,10 @@ export default async function TabThongTin({ params }: { params: Promise<{ duongD
   void db.game.update({
     where: { id: game.id }, data: { soLuotXem: { increment: 1 } }, select: { id: true },
   }).catch(() => {});
+
+  // Ô trả lời chỉ VẼ ra cho quản trị; còn chặn thật nằm trong `traLoiDanhGia`,
+  // vì một hàm `'use server'` thì ai cũng gọi được, không cần thấy nút.
+  const laQuanTri = nguoi?.vaiTro === 'QUAN_TRI';
 
   const gom = phanBo.reduce((t, p) => t + p._count._all, 0);
   const tongSao = phanBo.reduce((t, p) => t + p.sao * p._count._all, 0);
@@ -142,12 +157,25 @@ export default async function TabThongTin({ params }: { params: Promise<{ duongD
           một nửa cho 5 và một nửa cho 2". */}
       <section>
         <h2 className="tieu-de mb-3">Đánh giá</h2>
-        <PhoDiem sao={sao} tong={gom}
+        <PhoDiem sao={sao} tong={gom} locSao={locSao}
           phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))} />
+
+        {locSao !== null && (
+          <p className="mt-3 flex items-center gap-2 text-[13px]">
+            <span className="text-mo">Đang xem đánh giá {locSao} sao</span>
+            <Link href="?" scroll={false} className="font-semibold text-nhan hover:underline">
+              Xem tất cả
+            </Link>
+          </p>
+        )}
 
         <div className="mt-5">
           <ODanhGia gameId={game.id} banDau={cuaToi} daDangNhap={!!nguoi} />
         </div>
+
+        {danhGia.length === 0 && locSao !== null && (
+          <p className="phu mt-5">Không có bài nào {locSao} sao kèm lời nhận xét.</p>
+        )}
 
         {danhGia.length > 0 && (
           <ul className="mt-5 space-y-4">
@@ -166,6 +194,20 @@ export default async function TabThongTin({ params }: { params: Promise<{ duongD
                   </div>
                 </div>
                 <p className="mt-2 text-[13px] leading-relaxed">{d.noiDung}</p>
+
+                {/* Lời đáp thụt vào và đổi nền để không ai đọc lẫn nó với bài
+                    của người chơi — đó là hai tiếng nói khác nhau. */}
+                {d.traLoi && (
+                  <div className="mt-2.5 rounded-the bg-nen2 px-3 py-2.5">
+                    <p className="text-[12px] font-bold text-nhan">
+                      SunnyStore trả lời
+                      {d.traLoiLuc && <span className="phu ml-1.5 font-normal">{cachDay(d.traLoiLuc)}</span>}
+                    </p>
+                    <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">{d.traLoi}</p>
+                  </div>
+                )}
+
+                {laQuanTri && <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} />}
               </li>
             ))}
           </ul>

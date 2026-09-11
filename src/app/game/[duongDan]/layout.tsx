@@ -1,12 +1,16 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { KhungTai, type BanXem } from '@/components/game/KhungTai';
+import { NutChiaSe } from '@/components/game/NutChiaSe';
+import { NutLuu } from '@/components/game/NutLuu';
 import { SaoNam } from '@/components/game/SaoNam';
 import { TabGame } from '@/components/game/TabGame';
 import type { MaHeMay } from '@/lib/he-may';
 import { diemSao, gonDungLuong, gonSo } from '@/lib/tien-ich';
+import { nguoiHienTai } from '@/lib/xac-thuc';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,6 +49,14 @@ export default async function KhungGame({ children, params }: {
     },
   });
   if (!game) notFound();
+
+  const nguoi = await nguoiHienTai();
+  const daLuu = nguoi
+    ? !!(await db.daLuu.findUnique({
+        where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
+        select: { id: true },
+      }))
+    : false;
 
   const sao = diemSao(game.tongSao, game.soLuotDanhGia);
   const he = [...new Set(game.banTai.map((b) => b.heMay))] as MaHeMay[];
@@ -86,8 +98,13 @@ export default async function KhungGame({ children, params }: {
             <div className="min-w-0 flex-1">
               <h1 className="text-[21px] font-bold leading-tight tracking-tight">{game.ten}</h1>
               {game.tenViet && <p className="phu mt-0.5">{game.tenViet}</p>}
+              {/* Tên hãng bấm được, như App Store: người ta nhớ "mấy game của
+                  Gameloft hồi đó" rõ hơn là nhớ tên từng game. */}
               {game.nhaPhatTrien && (
-                <p className="mt-1 text-[13px] font-semibold text-nhan">{game.nhaPhatTrien}</p>
+                <Link href={`/nha-phat-trien/${encodeURIComponent(game.nhaPhatTrien)}`}
+                  className="mt-1 block text-[13px] font-semibold text-nhan hover:underline">
+                  {game.nhaPhatTrien}
+                </Link>
               )}
               <p className="phu mt-1">
                 {game.theLoai.map((t) => t.theLoai.ten).join(' · ') || 'Game'}
@@ -117,9 +134,13 @@ export default async function KhungGame({ children, params }: {
           </dl>
         </header>
 
-        <section id="tai" className="scroll-mt-20">
-          <h2 className="tieu-de mb-3 lg:sr-only">Tải về</h2>
+        <section id="tai" className="scroll-mt-20 space-y-3">
+          <h2 className="tieu-de lg:sr-only">Tải về</h2>
           <KhungTai ban={banXem} />
+          <div className="grid grid-cols-2 gap-2">
+            <NutLuu gameId={game.id} daLuuLucDau={daLuu} daDangNhap={!!nguoi} />
+            <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
+          </div>
         </section>
       </div>
 

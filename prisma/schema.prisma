@@ -30,6 +30,7 @@ model NguoiDung {
   traLoi        TraLoi[]
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
+  daLuus        DaLuu[]
 
   @@index([taoLuc])
 }
@@ -99,6 +100,7 @@ model Game {
   danhGia DanhGia[]
   luotTai LuotTai[]
   chuDe   ChuDe[]
+  daLuus  DaLuu[]
 
   @@index([trangThai, dangLuc])
   @@index([trangThai, soLuotTai])
@@ -230,6 +232,11 @@ model DanhGia {
   sao     Int // 1..5
   noiDung String? @db.Text
 
+  /// Lời đáp của cửa hàng, nằm ngay trong hàng đánh giá thay vì thành bảng
+  /// riêng: mỗi bài chỉ có đúng một lời đáp, y như CH Play.
+  traLoi    String?   @db.Text
+  traLoiLuc DateTime?
+
   taoLuc DateTime @default(now())
   suaLuc DateTime @updatedAt
 
@@ -258,6 +265,26 @@ model LuotTai {
 
   @@unique([gameId, nguoiId])
   @@index([nguoiId, lanCuoi])
+}
+
+/**
+ * ĐÃ LƯU — danh sách game để dành, chưa tải.
+ * Khác `LuotTai` ở đúng một chỗ, mà chỗ ấy quan trọng: `LuotTai` ghi việc đã
+ * XẢY RA (ai tải gì, lúc nào), còn bảng này ghi một Ý ĐỊNH. Nhập hai thứ làm
+ * một thì "thư viện của tôi" lẫn game chưa hề tải, mà mục cập nhật lại đi
+ * nhắc bản mới của game người ta chưa tải bao giờ.
+ */
+model DaLuu {
+  id      String    @id @default(cuid())
+  gameId  String
+  game    Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  taoLuc DateTime @default(now())
+
+  @@unique([gameId, nguoiId])
+  @@index([nguoiId, taoLuc])
 }
 
 // ════════════════════════════════════════════════════════════════════

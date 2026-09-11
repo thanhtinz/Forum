@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { SaoNam } from './SaoNam';
 import { gonSo } from '@/lib/tien-ich';
 
@@ -11,11 +12,16 @@ import { gonSo } from '@/lib/tien-ich';
  * Thanh dài theo TỈ LỆ so với mức đông nhất chứ không so với tổng: nếu chia
  * theo tổng thì game nào cũng ra năm cái gạch bé tí gần bằng nhau, không đọc
  * ra hình dáng gì.
+ *
+ * Mỗi hàng còn là một lối LỌC: thấy phổ điểm lệch xuống 1 sao thì việc muốn
+ * làm ngay là đọc xem mấy người ấy phàn nàn gì, nên bấm thẳng vào hàng ấy.
  */
-export function PhoDiem({ sao, tong, phanBo }: {
+export function PhoDiem({ sao, tong, phanBo, locSao }: {
   sao: number;
   tong: number;
   phanBo: Record<number, number>;
+  /** Sao đang lọc; `null` là chưa lọc. Không truyền thì phổ điểm không bấm được. */
+  locSao?: number | null;
 }) {
   if (tong === 0) {
     return <p className="phu">Chưa ai đánh giá game này. Bạn là người đầu tiên?</p>;
@@ -34,14 +40,29 @@ export function PhoDiem({ sao, tong, phanBo }: {
       <div className="min-w-0 flex-1 space-y-1">
         {[5, 4, 3, 2, 1].map((s) => {
           const n = phanBo[s] ?? 0;
-          return (
-            <div key={s} className="flex items-center gap-2">
+          const dangChon = locSao === s;
+          const than = (
+            <>
               <span className="w-2 shrink-0 text-[11px] tabular-nums text-mo">{s}</span>
               <span className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-nen3">
-                <span className="block h-full rounded-full bg-nhan"
+                <span className={`block h-full rounded-full ${dangChon ? 'bg-cam' : 'bg-nhan'}`}
                   style={{ width: `${(n / dongNhat) * 100}%` }} />
               </span>
-            </div>
+            </>
+          );
+
+          // Hàng không có bài nào thì lọc vào cũng chỉ ra trang trống, nên để
+          // nguyên là chữ chứ không mời người ta bấm vào chỗ không có gì.
+          if (locSao === undefined || n === 0) {
+            return <div key={s} className="flex items-center gap-2">{than}</div>;
+          }
+
+          return (
+            <Link key={s} href={dangChon ? '?' : `?sao=${s}`} scroll={false}
+              aria-label={dangChon ? `Bỏ lọc ${s} sao` : `Chỉ xem đánh giá ${s} sao (${n} bài)`}
+              className="flex items-center gap-2 rounded-full py-0.5 transition-opacity hover:opacity-70">
+              {than}
+            </Link>
           );
         })}
       </div>

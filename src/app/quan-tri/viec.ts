@@ -183,3 +183,127 @@ export async function traLoiYeuCau(id: string, trangThai: string, loiNhan: strin
   revalidatePath('/yeu-cau');
   return {};
 }
+
+/**
+ * Gắn một ảnh chụp cho game.
+ *
+ * `thuTu` tính bằng "ảnh cuối cùng + 10" chứ không phải "số ảnh đang có": chừa
+ * khoảng trống giữa hai ảnh để sau này đổi chỗ chỉ cần ghi lại một con số,
+ * không phải đánh số lại cả dãy.
+ */
+export async function themAnhChup(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const gameId = chu(form, 'gameId');
+  const duongDanAnh = chu(form, 'duongDanAnh');
+  if (!duongDanAnh) return { loi: 'Hãy nhập địa chỉ ảnh.' };
+
+  // Chỉ nhận ảnh trong nhà hoặc qua https. Cho phép mọi thứ thì một địa chỉ
+  // `javascript:` hay `data:` lọt vào thuộc tính src là chuyện xảy ra được.
+  if (!duongDanAnh.startsWith('/') && !duongDanAnh.startsWith('https://')) {
+    return { loi: 'Địa chỉ ảnh phải bắt đầu bằng “/” hoặc “https://”.' };
+  }
+
+  const game = await db.game.findUnique({ where: { id: gameId }, select: { duongDan: true } });
+  if (!game) return { loi: 'Không tìm thấy game.' };
+
+  const cuoi = await db.anhChup.findFirst({
+    where: { gameId }, orderBy: { thuTu: 'desc' }, select: { thuTu: true },
+  });
+
+  await db.anhChup.create({
+    data: {
+      gameId,
+      duongDan: duongDanAnh,
+      chuThich: chu(form, 'chuThich') || null,
+      thuTu: (cuoi?.thuTu ?? 0) + 10,
+    },
+    select: { id: true },
+  });
+
+  revalidatePath(`/quan-tri/game/${gameId}`);
+  revalidatePath(`/game/${game.duongDan}`);
+  return {};
+}
+
+export async function xoaAnhChup(anhId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const anh = await db.anhChup.findUnique({
+    where: { id: anhId }, select: { game: { select: { id: true, duongDan: true } } },
+  });
+  if (!anh) return {};
+
+  await db.anhChup.delete({ where: { id: anhId } });
+  revalidatePath(`/quan-tri/game/${anh.game.id}`);
+  revalidatePath(`/game/${anh.game.duongDan}`);
+  return {};
+}
+
+/**
+ * Đổi chỗ một ảnh với ảnh liền kề.
+ *
+ * Hai người quản trị bấm cùng lúc thì `thuTu` có thể trùng nhau; không sao, vì
+ * `orderBy` đã có khoá phụ, và lần bấm sau vẫn đổi được chỗ. Khoá hàng lại chỉ
+ * để xếp thứ tự ảnh là cái giá quá đắt cho thứ chẳng ai thiệt hại.
+ */
+export async function doiChoAnhChup(anhId: string, len: boolean): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const anh = await db.anhChup.findUnique({
+    where: { id: anhId },
+    select: { id: true, thuTu: true, gameId: true, game: { select: { duongDan: true } } },
+  });
+  if (!anh) return { loi: 'Không tìm thấy ảnh.' };
+
+  const canh = await db.anhChup.findFirst({
+    where: {
+      gameId: anh.gameId,
+      id: { not: anh.id },
+      thuTu: len ? { lte: anh.thuTu } : { gte: anh.thuTu },
+    },
+    orderBy: len ? [{ thuTu: 'desc' }, { id: 'desc' }] : [{ thuTu: 'asc' }, { id: 'asc' }],
+    select: { id: true, thuTu: true },
+  });
+  if (!canh) return {};
+
+  await db.$transaction([
+    db.anhChup.update({ where: { id: anh.id }, data: { thuTu: canh.thuTu }, select: { id: true } }),
+    db.anhChup.update({ where: { id: canh.id }, data: { thuTu: anh.thuTu }, select: { id: true } }),
+  ]);
+
+  revalidatePath(`/quan-tri/game/${anh.gameId}`);
+  revalidatePath(`/game/${anh.game.duongDan}`);
+  return {};
+}
+
+/**
+ * Cửa hàng đáp lại một bài đánh giá.
+ *
+ * Gửi chuỗi rỗng là XOÁ lời đáp — quản trị viết hớ một câu thì phải rút được
+ * về, mà thêm hẳn một endpoint xoá riêng chỉ để làm việc ấy thì là hai chỗ
+ * cùng kiểm quyền cho một việc.
+ */
+export async function traLoiDanhGia(danhGiaId: string, loi: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const chuLoi = loi.trim().slice(0, 1000);
+
+  const bai = await db.danhGia.findUnique({
+    where: { id: danhGiaId }, select: { game: { select: { duongDan: true } } },
+  });
+  if (!bai) return { loi: 'Không tìm thấy bài đánh giá.' };
+
+  await db.danhGia.update({
+    where: { id: danhGiaId },
+    data: chuLoi ? { traLoi: chuLoi, traLoiLuc: new Date() } : { traLoi: null, traLoiLuc: null },
+    select: { id: true },
+  });
+
+  revalidatePath(`/game/${bai.game.duongDan}`);
+  return {};
+}

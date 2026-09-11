@@ -1,10 +1,11 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { Library } from 'lucide-react';
+import { ArrowUpCircle, ChevronRight, Library } from 'lucide-react';
 import { db } from '@/lib/db';
 import { CHON_THE, thanhThe } from '@/components/game/the-game';
 import { HangGame } from '@/components/game/HangGame';
+import { demBanMoi } from '@/lib/cap-nhat';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { cachDay } from '@/lib/tien-ich';
@@ -24,6 +25,8 @@ export default async function TrangThuVien() {
   const nguoi = await nguoiHienTai();
   if (!nguoi) redirect('/dang-nhap');
 
+  const soBanMoi = await demBanMoi(nguoi.id);
+
   const hang = await db.luotTai.findMany({
     where: { nguoiId: nguoi.id, game: { trangThai: 'DANG_HIEN' } },
     orderBy: { lanCuoi: 'desc' },
@@ -42,6 +45,23 @@ export default async function TrangThuVien() {
           {hang.length > 0 ? `${hang.length} game bạn đã tải` : 'Những game bạn tải sẽ nằm ở đây'}
         </p>
       </div>
+
+      {/* Có bản mới thì nói ngay ở đây — người mở thư viện là người đang tìm
+          lại game đã tải, đúng lúc để bảo họ "cái này có bản mới rồi". */}
+      {soBanMoi > 0 && (
+        <Link href="/cap-nhat" className="the-bam flex items-center gap-3 px-4 py-3.5">
+          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-nhan/12 text-nhan">
+            <ArrowUpCircle size={19} aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-semibold">
+              {soBanMoi} game có bản mới
+            </span>
+            <span className="phu block">Xem có gì thay đổi trước khi tải lại</span>
+          </span>
+          <ChevronRight size={18} className="shrink-0 text-mo" aria-hidden />
+        </Link>
+      )}
 
       {hang.length === 0 ? (
         <div className="the p-8 text-center">

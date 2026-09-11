@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Gamepad2, Library, Search, Sparkles, Trophy } from 'lucide-react';
+import { ArrowUpCircle, Bookmark, Gamepad2, Library, Search, Sparkles, Trophy } from 'lucide-react';
 
 /**
  * Năm lối đi chính của trang, khai báo MỘT chỗ.
@@ -36,7 +36,9 @@ export const LOI_DI: LoiDi[] = [
 
 /** Mấy lối phụ chỉ hiện ở thanh bên máy bàn, không chen vào thanh tab đáy. */
 export const LOI_PHU: LoiDi[] = [
+  { duongDan: '/cap-nhat', ten: 'Bản cập nhật', icon: ArrowUpCircle, canDangNhap: true },
   { duongDan: '/thu-vien', ten: 'Thư viện', icon: Library, canDangNhap: true },
+  { duongDan: '/da-luu', ten: 'Đã lưu', icon: Bookmark, canDangNhap: true },
 ];
 
 /**

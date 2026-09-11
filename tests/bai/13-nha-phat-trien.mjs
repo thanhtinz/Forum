@@ -44,8 +44,24 @@ export default async function chay(kiem) {
   kiem('liệt kê đủ mọi game của hãng', thieu.length === 0, `sót: ${thieu.join(', ')}`);
 
   // Và KHÔNG được lẫn game của hãng khác.
+  /*
+   * Hai điều kiện, HAI khoá khác nhau.
+   *
+   * Bản trước viết `{ not: hang, not: null }` — hai khoá `not` trùng tên trong
+   * cùng một object, nên JavaScript lặng lẽ giữ cái sau và vứt cái trước. Bộ
+   * lọc hoá ra chỉ còn "hãng khác rỗng", nên nó trả về được cả game của CHÍNH
+   * hãng đang xem, và mục kiểm đỏ oan. Bấy lâu nay nó xanh nhờ may: `findFirst`
+   * không có `orderBy` nên trả về hàng nào tuỳ CSDL, mà hàng ấy tình cờ thuộc
+   * hãng khác. Thêm `orderBy` để lần sau hỏng thì hỏng ổn định, không hỏng lúc
+   * được lúc không.
+   */
   const hangKhac = await db.game.findFirst({
-    where: { trangThai: 'DANG_HIEN', nhaPhatTrien: { not: hang, not: null } },
+    where: {
+      trangThai: 'DANG_HIEN',
+      nhaPhatTrien: { not: null },
+      NOT: { nhaPhatTrien: hang },
+    },
+    orderBy: { ten: 'asc' },
     select: { ten: true },
   });
   if (hangKhac) {

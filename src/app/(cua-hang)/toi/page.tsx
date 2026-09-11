@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ArrowUpCircle, ChevronRight, Inbox, Library, LogIn, LogOut, Shield } from 'lucide-react';
+import { ArrowUpCircle, Settings, ChevronRight, Inbox, Library, LogIn, LogOut, Shield } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { dangXuat } from '../dang-nhap/viec';
@@ -71,6 +71,7 @@ export default async function TrangToi() {
         <Muc duongDan="/cap-nhat" icon={<ArrowUpCircle size={18} />} ten="Bản cập nhật" huyHieu={soBanMoi} />
         <Muc duongDan="/thu-vien" icon={<Library size={18} />} ten="Thư viện của tôi" />
         <Muc duongDan="/yeu-cau" icon={<Inbox size={18} />} ten="Yêu cầu game của tôi" />
+        <Muc duongDan="/toi/cai-dat" icon={<Settings size={18} />} ten="Cài đặt tài khoản" />
         {nguoi.vaiTro === 'QUAN_TRI' && (
           <Muc duongDan="/quan-tri" icon={<Shield size={18} />} ten="Trang quản trị" />
         )}

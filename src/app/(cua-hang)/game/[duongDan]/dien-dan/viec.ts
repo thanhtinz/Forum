@@ -79,3 +79,141 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
   revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
   return {};
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * SỬA VÀ XOÁ BÀI CỦA CHÍNH MÌNH
+ *
+ * Trước đây gõ nhầm một chữ là chịu vĩnh viễn. Ở mọi diễn đàn, sửa bài của
+ * mình là việc cơ bản nhất sau đăng bài.
+ *
+ * Điều kiện "bài này của tôi" nằm TRONG `where` của Prisma, không phải đọc ra
+ * rồi so `if`. Đọc rồi so thì giữa lúc đọc và lúc ghi có một khe hở, và quan
+ * trọng hơn: quên mất câu `if` ấy là chuyện xảy ra được, còn quên một dòng
+ * trong `where` thì câu truy vấn không khớp bài nào cả — hỏng về phía an toàn.
+ *
+ * Chủ đề ĐÃ KHOÁ thì không sửa được nữa, kể cả bài của chính mình: khoá là để
+ * chốt lại một cuộc trao đổi, mà sửa được bài cũ thì chốt bằng thừa.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Sửa chủ đề của chính mình. */
+export async function suaChuDe(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập.' }; }
+
+  const chuDeId = String(form.get('chuDeId') ?? '');
+  const tieuDe = String(form.get('tieuDe') ?? '').trim();
+  const noiDung = String(form.get('noiDung') ?? '').trim();
+
+  if (tieuDe.length < 5) return { loi: 'Tiêu đề cần ít nhất 5 ký tự.' };
+  if (tieuDe.length > TIEU_DE_TOI_DA) return { loi: `Tiêu đề tối đa ${TIEU_DE_TOI_DA} ký tự.` };
+  if (noiDung.length < 10) return { loi: 'Nội dung cần ít nhất 10 ký tự.' };
+  if (noiDung.length > NOI_DUNG_TOI_DA) return { loi: `Nội dung tối đa ${NOI_DUNG_TOI_DA} ký tự.` };
+
+  const { count } = await db.chuDe.updateMany({
+    where: { id: chuDeId, nguoiId: nguoi.id, khoa: false },
+    data: { tieuDe, noiDung },
+  });
+  if (count === 0) return { loi: 'Không sửa được bài này. Có thể bài đã bị khoá hoặc không phải của bạn.' };
+
+  const c = await db.chuDe.findUnique({
+    where: { id: chuDeId }, select: { game: { select: { duongDan: true } } },
+  });
+  if (c) {
+    revalidatePath(`/game/${c.game.duongDan}/dien-dan`);
+    revalidatePath(`/game/${c.game.duongDan}/dien-dan/${chuDeId}`);
+  }
+  return {};
+}
+
+/**
+ * Xoá chủ đề của chính mình.
+ *
+ * Chỉ cho xoá khi CHƯA AI TRẢ LỜI. Xoá một chủ đề đã có người vào góp chuyện
+ * là xoá luôn công của họ — mấy lời đáp ấy đi theo vì `onDelete: Cascade`, và
+ * người viết chúng chẳng làm gì sai cả. Muốn gỡ một chủ đề đã thành cuộc trao
+ * đổi thì đó là việc của ban quản kho, và họ có nút riêng.
+ */
+export async function xoaChuDeCuaToi(chuDeId: string): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập.' }; }
+
+  const c = await db.chuDe.findUnique({
+    where: { id: chuDeId }, select: { game: { select: { duongDan: true } } },
+  });
+
+  const { count } = await db.chuDe.deleteMany({
+    where: { id: chuDeId, nguoiId: nguoi.id, khoa: false, soTraLoi: 0 },
+  });
+  if (count === 0) {
+    return { loi: 'Không xoá được. Chủ đề đã có người trả lời, đã bị khoá, hoặc không phải của bạn.' };
+  }
+
+  if (c) revalidatePath(`/game/${c.game.duongDan}/dien-dan`);
+  redirect(c ? `/game/${c.game.duongDan}/dien-dan` : '/');
+}
+
+/** Sửa một lời đáp của chính mình. */
+export async function suaTraLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập.' }; }
+
+  const traLoiId = String(form.get('traLoiId') ?? '');
+  const noiDung = String(form.get('noiDung') ?? '').trim();
+
+  if (noiDung.length < 2) return { loi: 'Nội dung cần ít nhất 2 ký tự.' };
+  if (noiDung.length > NOI_DUNG_TOI_DA) return { loi: `Nội dung tối đa ${NOI_DUNG_TOI_DA} ký tự.` };
+
+  // Chủ đề khoá thì lời đáp trong đó cũng đóng băng theo — điều kiện ấy nằm
+  // luôn trong `where` qua quan hệ, không phải một lượt đọc riêng.
+  const { count } = await db.traLoi.updateMany({
+    where: { id: traLoiId, nguoiId: nguoi.id, chuDe: { khoa: false } },
+    data: { noiDung },
+  });
+  if (count === 0) return { loi: 'Không sửa được lời đáp này.' };
+
+  const t = await db.traLoi.findUnique({
+    where: { id: traLoiId },
+    select: { chuDeId: true, chuDe: { select: { game: { select: { duongDan: true } } } } },
+  });
+  if (t) revalidatePath(`/game/${t.chuDe.game.duongDan}/dien-dan/${t.chuDeId}`);
+  return {};
+}
+
+/**
+ * Xoá lời đáp của chính mình, và trừ lại bộ đếm trong cùng giao dịch.
+ *
+ * Đếm lại từ bảng chứ không trừ đi một: trừ tay thì mỗi lần lệch là lệch vĩnh
+ * viễn, mà không có chỗ nào phát hiện ra.
+ */
+export async function xoaTraLoiCuaToi(traLoiId: string): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập.' }; }
+
+  const t = await db.traLoi.findUnique({
+    where: { id: traLoiId },
+    select: { chuDeId: true, chuDe: { select: { game: { select: { duongDan: true } } } } },
+  });
+  if (!t) return {};
+
+  const xong = await db.$transaction(async (tx) => {
+    const { count } = await tx.traLoi.deleteMany({
+      where: { id: traLoiId, nguoiId: nguoi.id, chuDe: { khoa: false } },
+    });
+    if (count === 0) return false;
+
+    const con = await tx.traLoi.count({ where: { chuDeId: t.chuDeId } });
+    await tx.chuDe.update({
+      where: { id: t.chuDeId }, data: { soTraLoi: con }, select: { id: true },
+    });
+    return true;
+  });
+
+  if (!xong) return { loi: 'Không xoá được lời đáp này.' };
+
+  revalidatePath(`/game/${t.chuDe.game.duongDan}/dien-dan/${t.chuDeId}`);
+  return {};
+}

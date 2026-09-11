@@ -48,6 +48,24 @@ export async function moPhien(nguoiId: string): Promise<void> {
   });
 }
 
+/**
+ * Đóng MỌI phiên của một người, TRỪ phiên đang dùng.
+ *
+ * Gọi sau khi đổi mật khẩu. Đổi mật khẩu mà mấy phiên cũ vẫn sống thì việc ấy
+ * gần như vô nghĩa: người ta đổi mật khẩu chính vì nghi có kẻ khác đang đăng
+ * nhập, mà kẻ ấy giữ cookie chứ có cần biết mật khẩu đâu.
+ *
+ * Chừa lại phiên hiện tại để chính người vừa đổi không bị đá ra — đá ra ngay
+ * sau khi đổi thì ai cũng tưởng mình vừa làm hỏng cái gì.
+ */
+export async function dongPhienKhac(nguoiId: string): Promise<number> {
+  const ma = (await cookies()).get(TEN_COOKIE)?.value;
+  const { count } = await db.phien.deleteMany({
+    where: { nguoiId, ...(ma ? { NOT: { ma: bamMa(ma) } } : {}) },
+  });
+  return count;
+}
+
 export async function dongPhien(): Promise<void> {
   const kho = await cookies();
   const ma = kho.get(TEN_COOKIE)?.value;

@@ -5,6 +5,7 @@ import { ChevronLeft, Lock, Pin } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGui } from '@/components/BieuMauGui';
+import { SuaChuDe, SuaTraLoi } from '@/components/game/OSuaBaiDienDan';
 import { traLoi } from '../viec';
 import { cachDay, catChu } from '@/lib/tien-ich';
 
@@ -25,13 +26,14 @@ export default async function TrangChuDe({ params }: {
     where: { id: chuDeId, game: { duongDan, trangThai: 'DANG_HIEN' } },
     select: {
       id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true, taoLuc: true,
+      nguoiId: true,
       nguoi: { select: { tenHienThi: true, tenDangNhap: true } },
       game: { select: { ten: true, duongDan: true } },
       traLoi: {
         orderBy: { taoLuc: 'asc' },
         take: 200,
         select: {
-          id: true, noiDung: true, taoLuc: true,
+          id: true, noiDung: true, taoLuc: true, nguoiId: true,
           nguoi: { select: { tenHienThi: true, tenDangNhap: true } },
         },
       },
@@ -63,6 +65,12 @@ export default async function TrangChuDe({ params }: {
       <article className="the p-4">
         <Nguoi ten={chuDe.nguoi.tenHienThi} luc={chuDe.taoLuc} />
         <p className="mt-2.5 whitespace-pre-line text-[14px] leading-relaxed">{chuDe.noiDung}</p>
+        {/* Nút sửa chỉ VẼ ra cho chủ bài và khi chủ đề chưa khoá; chặn thật
+            nằm trong `where` của Prisma ở `suaChuDe`. */}
+        {nguoi?.id === chuDe.nguoiId && !chuDe.khoa && (
+          <SuaChuDe chuDeId={chuDe.id} tieuDe={chuDe.tieuDe} noiDung={chuDe.noiDung}
+            xoaDuoc={chuDe.traLoi.length === 0} />
+        )}
       </article>
 
       {chuDe.traLoi.length > 0 && (
@@ -71,6 +79,9 @@ export default async function TrangChuDe({ params }: {
             <li key={t.id} className="the p-4">
               <Nguoi ten={t.nguoi.tenHienThi} luc={t.taoLuc} />
               <p className="mt-2.5 whitespace-pre-line text-[14px] leading-relaxed">{t.noiDung}</p>
+              {nguoi?.id === t.nguoiId && !chuDe.khoa && (
+                <SuaTraLoi traLoiId={t.id} noiDung={t.noiDung} />
+              )}
             </li>
           ))}
         </ul>

@@ -7,6 +7,7 @@ import { batBuocQuanTri } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
 import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
+import { dungChuoiTim } from '@/lib/tim-kiem-const';
 
 export interface KetQua { loi?: string }
 
@@ -70,6 +71,10 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
       skipDuplicates: true,
     });
   }
+
+  // Dựng lại chuỗi tìm SAU khi gắn xong thể loại — nó gộp cả tên thể loại vào,
+  // nên dựng trước thì chuỗi thiếu đúng phần vừa đổi.
+  await lamMoiChuoiTim(game.id);
 
   revalidatePath('/quan-tri/game');
   revalidatePath(`/game/${duongDan}`);
@@ -584,6 +589,15 @@ export async function luuTheLoai(_truoc: KetQua, form: FormData): Promise<KetQua
     });
   }
 
+  // Đổi tên thể loại thì chuỗi tìm của mọi game mang nhãn ấy đã cũ — gõ tên
+  // mới sẽ không ra game nào. Dựng lại từng cái; danh sách này luôn nhỏ.
+  if (id) {
+    const gan = await db.theLoaiTrenGame.findMany({
+      where: { theLoaiId: id }, select: { gameId: true },
+    });
+    for (const x of gan) await lamMoiChuoiTim(x.gameId);
+  }
+
   revalidatePath('/quan-tri/the-loai');
   revalidatePath('/duyet');
   revalidatePath('/game');
@@ -905,4 +919,34 @@ export async function xoaNoiDungBiBao(
   revalidatePath('/quan-tri/bao-xau');
   revalidatePath('/quan-tri');
   return kq;
+}
+
+
+/**
+ * Dựng lại chuỗi tìm kiếm của một game.
+ *
+ * Đọc lại thể loại từ CSDL thay vì nhận từ nơi gọi: chỗ nào quên truyền là
+ * chuỗi tìm mất phần thể loại, mà lỗi ấy chỉ lộ ra khi có người gõ đúng tên
+ * thể loại rồi không thấy game — tức là không bao giờ lộ ra với người viết mã.
+ */
+async function lamMoiChuoiTim(gameId: string): Promise<void> {
+  const g = await db.game.findUnique({
+    where: { id: gameId },
+    select: {
+      ten: true, tenViet: true, nhaPhatTrien: true,
+      theLoai: { select: { theLoai: { select: { ten: true } } } },
+    },
+  });
+  if (!g) return;
+
+  await db.game.update({
+    where: { id: gameId },
+    data: {
+      timKiem: dungChuoiTim({
+        ten: g.ten, tenViet: g.tenViet, nhaPhatTrien: g.nhaPhatTrien,
+        theLoai: g.theLoai.map((t) => t.theLoai.ten),
+      }),
+    },
+    select: { id: true },
+  });
 }

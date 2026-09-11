@@ -10,7 +10,8 @@
     "day-luoc-do": "prisma db push && prisma generate",
     "kiem": "node tests/chay.mjs",
     "kiem:that": "node scripts/kiem-tren-ban-dung.mjs",
-    "xem": "node scripts/xem-tan-mat.mjs"
+    "xem": "node scripts/xem-tan-mat.mjs",
+    "lap-tim": "tsx scripts/lap-chuoi-tim.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",

@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
 import { PrismaClient, type HeMay, type LoaiTep } from '@prisma/client';
+import { dungChuoiTim } from '../src/lib/tim-kiem-const';
 
 const db = new PrismaClient();
 
@@ -288,6 +289,11 @@ async function main() {
         duongDan,
         ten: g.ten,
         tenViet: g.tenViet ?? null,
+        // Chuỗi tìm dựng ngay lúc gieo, bằng đúng hàm quản trị dùng — hai chỗ
+        // dựng bằng hai cách là kiểu gì cũng có ngày ra hai kết quả khác nhau.
+        timKiem: dungChuoiTim({
+          ten: g.ten, tenViet: g.tenViet, nhaPhatTrien: g.nhaPhatTrien, theLoai: g.theLoai,
+        }),
         nhaPhatTrien: g.nhaPhatTrien,
         namPhatHanh: g.nam,
         gioiThieu: g.gioiThieu,

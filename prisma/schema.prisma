@@ -64,6 +64,10 @@ model Game {
   ten      String
   tenViet  String? // tên tiếng Việt, nếu có bản Việt hoá
 
+  /// Chuỗi gộp đã BỎ DẤU, dùng cho ô tìm kiếm. Dựng ở `dungChuoiTim`; xem tệp
+  /// ấy để biết vì sao gộp vào một cột thay vì `OR` qua bốn cột.
+  timKiem String @default("")
+
   nhaPhatTrien String?
   namPhatHanh  Int?
 

@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { khongDau } from './tim-kiem-const';
 import { db } from './db';
 import { CHON_THE, thanhThe, type TheGame } from '@/components/game/the-game';
 import { laHeMay, type MaHeMay } from './he-may';
@@ -63,11 +64,20 @@ function dieuKien(loc: BoLoc): Prisma.GameWhereInput {
   if (loc.theLoai) w.theLoai = { some: { theLoai: { duongDan: loc.theLoai } } };
   if (loc.vietHoa) w.vietHoa = true;
   if (loc.tuKhoa) {
-    w.OR = [
-      { ten: { contains: loc.tuKhoa, mode: 'insensitive' } },
-      { tenViet: { contains: loc.tuKhoa, mode: 'insensitive' } },
-      { nhaPhatTrien: { contains: loc.tuKhoa, mode: 'insensitive' } },
-    ];
+    /*
+     * Tìm trên cột đã BỎ DẤU, và bỏ dấu luôn từ khoá người ta gõ.
+     *
+     * Nhờ vậy "rong", "rồng", "RỒNG" đều ra "Thợ săn rồng"; "dua xe" ra mấy
+     * game đua xe. Bản trước so thẳng ba cột gốc nên gõ không dấu là không ra
+     * gì — mà phần lớn người dùng điện thoại gõ không dấu, nên với họ cửa hàng
+     * này coi như không có game nào.
+     *
+     * Cắt từ khoá theo khoảng trắng và bắt khớp MỌI từ: gõ "gameloft dua" thì
+     * ra game của Gameloft mà lại là game đua xe, chứ không phải mọi game khớp
+     * một trong hai từ.
+     */
+    const tu = khongDau(loc.tuKhoa).split(' ').filter(Boolean).slice(0, 6);
+    w.AND = tu.map((t) => ({ timKiem: { contains: t } }));
   }
   return w;
 }

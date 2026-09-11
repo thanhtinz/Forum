@@ -6,6 +6,7 @@ import { nguoiHienTai } from '@/lib/xac-thuc';
 import { dangXuat } from '../dang-nhap/viec';
 import { demBanMoi } from '@/lib/cap-nhat';
 import { gop } from '@/lib/tien-ich';
+import { AnhDaiDien, duongDanHoSo } from '@/components/NguoiDung';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Tài khoản' };
@@ -46,17 +47,14 @@ export default async function TrangToi() {
   return (
     <div className="mx-auto max-w-lg space-y-5">
       <div className="flex items-center gap-4">
-        {nguoi.anh ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={nguoi.anh} alt="" className="size-16 rounded-full object-cover" />
-        ) : (
-          <span className="grid size-16 place-items-center rounded-full bg-nhan/15 text-[24px] font-bold text-nhan">
-            {nguoi.tenHienThi.slice(0, 1).toUpperCase()}
-          </span>
-        )}
+        <AnhDaiDien ten={nguoi.tenHienThi} anh={nguoi.anh} co={64} />
         <div className="min-w-0">
           <h1 className="truncate text-[20px] font-bold">{nguoi.tenHienThi}</h1>
-          <p className="phu">@{nguoi.tenDangNhap}</p>
+          {/* Dẫn sang chính hồ sơ công khai của mình: người ta cần xem được
+              thứ người khác đang thấy trước khi quyết định viết gì lên đó. */}
+          <Link href={duongDanHoSo(nguoi.tenDangNhap)} className="phu hover:text-chu">
+            @{nguoi.tenDangNhap} · xem hồ sơ công khai
+          </Link>
         </div>
       </div>
 

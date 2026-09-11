@@ -7,10 +7,15 @@ import { DIA_CHI_GOC } from '@/lib/dia-chi-goc';
  * Sơ đồ trang cho máy tìm kiếm.
  *
  * Chỉ liệt kê thứ CÔNG KHAI và ỔN ĐỊNH: trang game, trang thể loại, trang nhà
- * phát triển, và vài lối chính. Không có trang cá nhân (chặn ở `robots.ts`),
- * không có trang kết quả lọc — `/duyet?he=JAVA&sap=ten&trang=3` sinh ra hàng
- * nghìn tổ hợp mà nội dung thì trùng nhau, đó là cách nhanh nhất để máy tìm
- * kiếm coi cả trang là rác.
+ * phát triển, và vài lối chính. Không có khu đăng nhập mới thấy (chặn ở
+ * `robots.ts`), không có trang kết quả lọc — `/duyet?he=JAVA&sap=ten&trang=3`
+ * sinh ra hàng nghìn tổ hợp mà nội dung thì trùng nhau, đó là cách nhanh nhất
+ * để máy tìm kiếm coi cả trang là rác.
+ *
+ * Hồ sơ thành viên thì công khai và máy tìm kiếm bò vào được, nhưng KHÔNG nằm
+ * ở đây: phần lớn thành viên chưa viết gì, mà mời máy tìm kiếm đi qua hàng
+ * nghìn trang rỗng cũng là cách coi cả trang là rác. Ai có bài thì được dẫn
+ * tới từ chính bài ấy — đúng lối một hồ sơ đáng đọc nên được tìm thấy.
  *
  * `lastModified` lấy từ `suaLuc` thật của từng game, không phải `new Date()`.
  * Khai bừa "vừa sửa xong" cho mọi trang ở mọi lượt hỏi thì máy tìm kiếm học

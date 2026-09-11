@@ -71,6 +71,12 @@ dưới mức 4,5:1 mà chữ thường cần.
   Đường dẫn cửa hàng chính chủ là một nút PHỤ đứng sau nút tải, không thay nó.
   Riêng IPA thì kèm một dòng nhắc: iPhone chưa bẻ khoá cần công cụ ký như
   AltStore hoặc Sideloadly mới cài được. Xem `src/lib/he-may.ts`.
+- **Hồ sơ công khai chỉ bày thứ người ta đã tự đăng công khai** — đánh giá và
+  bài diễn đàn. Không lượt tải: lượt tải là thứ riêng tư nhất trong cả CSDL
+  này, nó nói người ta chơi gì, mà chẳng ai bấm "tải" với ý định khoe. Tài
+  khoản bị khoá thì hồ sơ trả 404 — khoá một người là để người ấy biến mất
+  khỏi trang, không phải chỉ chặn đăng nhập. Xem
+  `src/app/(cua-hang)/thanh-vien/[ten]/page.tsx`.
 - **Phiên đăng nhập giữ ở CSDL**, cookie chỉ mang một mã ngẫu nhiên. Khoá một
   tài khoản là đá được người ấy ra ngay.
 - **Mỗi hàm trong tệp `'use server'` tự kiểm quyền lấy** — nó là một địa chỉ POST

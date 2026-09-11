@@ -3,6 +3,7 @@ import { OTim } from './OTim';
 import { DauHieu } from './DauHieu';
 import { DoiNen } from './DoiNen';
 import { Chuong } from './Chuong';
+import { AnhDaiDien } from '@/components/NguoiDung';
 import type { NguoiDangNhap } from '@/lib/xac-thuc';
 
 /**
@@ -37,7 +38,7 @@ export function ThanhTren({ nguoi, tuKhoa, chuaDoc = 0 }: {
 
         {nguoi ? (
           <Link href="/toi" aria-label="Tài khoản của bạn" className="shrink-0">
-            <AnhDaiDien nguoi={nguoi} />
+            <AnhDaiDien ten={nguoi.tenHienThi} anh={nguoi.anh} co={36} />
           </Link>
         ) : (
           <Link href="/dang-nhap" className="nut-xam shrink-0 !px-4 max-sm:!px-3">Đăng nhập</Link>
@@ -47,14 +48,3 @@ export function ThanhTren({ nguoi, tuKhoa, chuaDoc = 0 }: {
   );
 }
 
-function AnhDaiDien({ nguoi }: { nguoi: NguoiDangNhap }) {
-  if (nguoi.anh) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={nguoi.anh} alt="" className="size-9 rounded-full object-cover" />;
-  }
-  return (
-    <span className="grid size-9 place-items-center rounded-full bg-nhan/15 text-sm font-bold text-nhan">
-      {nguoi.tenHienThi.slice(0, 1).toUpperCase()}
-    </span>
-  );
-}

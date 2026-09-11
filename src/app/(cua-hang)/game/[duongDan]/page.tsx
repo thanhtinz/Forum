@@ -10,6 +10,7 @@ import { KeThe } from '@/components/game/KeThe';
 import { ODanhGia } from '@/components/game/ODanhGia';
 import { ODapDanhGia } from '@/components/game/ODapDanhGia';
 import { NutBaoXau } from '@/components/NutBaoXau';
+import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { KhoiGap } from '@/components/KhoiGap';
 import { NGON_NGU } from '@/lib/he-may';
 import { cachDay, catChu } from '@/lib/tien-ich';
@@ -69,7 +70,7 @@ export default async function TabThongTin({ params, searchParams }: {
       select: {
         id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
         nguoiId: true,
-        nguoi: { select: { tenHienThi: true } },
+        nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
       },
     }),
     nguoi
@@ -184,11 +185,11 @@ export default async function TabThongTin({ params, searchParams }: {
             {danhGia.map((d) => (
               <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
                 <div className="flex items-center gap-2.5">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-nen3 text-[12px] font-bold">
-                    {d.nguoi.tenHienThi.slice(0, 1).toUpperCase()}
-                  </span>
+                  <AnhDaiDien ten={d.nguoi.tenHienThi} anh={d.nguoi.anh} co={32} />
                   <div className="min-w-0">
-                    <p className="truncate text-[13px] font-semibold">{d.nguoi.tenHienThi}</p>
+                    <p className="truncate text-[13px] font-semibold">
+                      <TenNguoi ten={d.nguoi.tenHienThi} tenDangNhap={d.nguoi.tenDangNhap} />
+                    </p>
                     <p className="flex items-center gap-1.5">
                       <SaoNam diem={d.sao} co={11} />
                       <span className="phu">{cachDay(d.taoLuc)}</span>

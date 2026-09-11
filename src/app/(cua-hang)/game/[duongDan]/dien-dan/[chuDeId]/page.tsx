@@ -7,6 +7,7 @@ import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGui } from '@/components/BieuMauGui';
 import { SuaChuDe, SuaTraLoi } from '@/components/game/OSuaBaiDienDan';
 import { NutBaoXau } from '@/components/NutBaoXau';
+import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { traLoi } from '../viec';
 import { cachDay, catChu } from '@/lib/tien-ich';
 
@@ -28,14 +29,14 @@ export default async function TrangChuDe({ params }: {
     select: {
       id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true, taoLuc: true,
       nguoiId: true,
-      nguoi: { select: { tenHienThi: true, tenDangNhap: true } },
+      nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
       game: { select: { ten: true, duongDan: true } },
       traLoi: {
         orderBy: { taoLuc: 'asc' },
         take: 200,
         select: {
           id: true, noiDung: true, taoLuc: true, nguoiId: true,
-          nguoi: { select: { tenHienThi: true, tenDangNhap: true } },
+          nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
         },
       },
     },
@@ -59,12 +60,13 @@ export default async function TrangChuDe({ params }: {
           {chuDe.tieuDe}
         </h1>
         <p className="phu mt-1">
-          {chuDe.nguoi.tenHienThi} · {cachDay(chuDe.taoLuc)} · {chuDe.traLoi.length} trả lời
+          <TenNguoi ten={chuDe.nguoi.tenHienThi} tenDangNhap={chuDe.nguoi.tenDangNhap} />
+          {' · '}{cachDay(chuDe.taoLuc)} · {chuDe.traLoi.length} trả lời
         </p>
       </header>
 
       <article className="the p-4">
-        <Nguoi ten={chuDe.nguoi.tenHienThi} luc={chuDe.taoLuc} />
+        <Nguoi nguoi={chuDe.nguoi} luc={chuDe.taoLuc} />
         <p className="mt-2.5 whitespace-pre-line text-[14px] leading-relaxed">{chuDe.noiDung}</p>
         {/* Nút sửa chỉ VẼ ra cho chủ bài và khi chủ đề chưa khoá; chặn thật
             nằm trong `where` của Prisma ở `suaChuDe`. */}
@@ -81,7 +83,7 @@ export default async function TrangChuDe({ params }: {
         <ul className="space-y-3">
           {chuDe.traLoi.map((t) => (
             <li key={t.id} className="the p-4">
-              <Nguoi ten={t.nguoi.tenHienThi} luc={t.taoLuc} />
+              <Nguoi nguoi={t.nguoi} luc={t.taoLuc} />
               <p className="mt-2.5 whitespace-pre-line text-[14px] leading-relaxed">{t.noiDung}</p>
               {nguoi?.id === t.nguoiId && !chuDe.khoa && (
                 <SuaTraLoi traLoiId={t.id} noiDung={t.noiDung} />
@@ -118,14 +120,17 @@ export default async function TrangChuDe({ params }: {
   );
 }
 
-function Nguoi({ ten, luc }: { ten: string; luc: Date }) {
+function Nguoi({ nguoi, luc }: {
+  nguoi: { tenHienThi: string; tenDangNhap: string; anh: string | null };
+  luc: Date;
+}) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-nen3 text-[12px] font-bold">
-        {ten.slice(0, 1).toUpperCase()}
-      </span>
+      <AnhDaiDien ten={nguoi.tenHienThi} anh={nguoi.anh} co={32} />
       <div className="min-w-0">
-        <p className="truncate text-[13px] font-semibold">{ten}</p>
+        <p className="truncate text-[13px] font-semibold">
+          <TenNguoi ten={nguoi.tenHienThi} tenDangNhap={nguoi.tenDangNhap} />
+        </p>
         <p className="phu">{cachDay(luc)}</p>
       </div>
     </div>

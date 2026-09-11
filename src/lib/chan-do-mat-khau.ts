@@ -123,3 +123,70 @@ export async function xoaLanHong(dinhDanh: string): Promise<void> {
     await db.lanHong.deleteMany({ where: { khoa: { in: khoa } } });
   } catch { /* không quan trọng bằng việc cho người ta vào */ }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * CHẶN MỞ TÀI KHOẢN HÀNG LOẠT
+ *
+ * Cùng bảng đếm, khác khoá và khác ngưỡng. Lối đăng ký trước đây không có gì
+ * chặn: một kịch bản bắn liên tục là dựng được hàng nghìn tài khoản, mỗi cái
+ * ngốn một lượt bcrypt của máy chủ, rồi đem đi rải bài trên diễn đàn.
+ *
+ * Chỉ đếm theo IP — đăng ký thì chưa có định danh nào để mà đếm. Ngưỡng đặt
+ * thấp vì mở tài khoản là việc hiếm: người thật mở một cái rồi thôi, cả nhà
+ * cùng mạng cũng khó tới năm cái trong mười lăm phút.
+ *
+ * Đếm lượt MỞ ĐƯỢC, không đếm lượt gõ sai: gõ nhầm email ba lần rồi bị cấm
+ * đăng ký là phạt đúng người thật, mà chẳng cản được kẻ bắn kịch bản.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const TOI_DA_DANG_KY = 5;
+
+/** Khoá đếm đăng ký. Không có IP thì không đếm được — trả rỗng để nơi gọi bỏ qua. */
+async function khoaDangKy(): Promise<string> {
+  const ip = await layIp();
+  return ip ? `dk:${ip.slice(0, 60)}` : '';
+}
+
+/** Hỏi trước khi tạo tài khoản: chỗ này còn được mở thêm không? */
+export async function conDuocDangKy(): Promise<KetQuaChan> {
+  const khoa = await khoaDangKy();
+  if (!khoa) return { chan: false, conPhut: 0 };
+
+  const bay = new Date();
+  const hang = await db.lanHong.findFirst({
+    where: { khoa, camDen: { gt: bay } }, select: { camDen: true },
+  });
+  if (!hang) return { chan: false, conPhut: 0 };
+
+  return {
+    chan: true,
+    conPhut: Math.max(1, Math.ceil((hang.camDen!.getTime() - bay.getTime()) / 60_000)),
+  };
+}
+
+/** Ghi một lượt mở tài khoản thành công. */
+export async function ghiLanDangKy(): Promise<void> {
+  const khoa = await khoaDangKy();
+  if (!khoa) return;
+
+  const bay = new Date();
+  const motCuaSoTruoc = new Date(bay.getTime() - CUA_SO_MS);
+  try {
+    const cu = await db.lanHong.findUnique({ where: { khoa }, select: { soLan: true, tuLuc: true } });
+    const trongCuaSo = cu && cu.tuLuc > motCuaSoTruoc;
+    const soLan = trongCuaSo ? cu.soLan + 1 : 1;
+
+    await db.lanHong.upsert({
+      where: { khoa },
+      create: { khoa, soLan: 1, tuLuc: bay },
+      update: {
+        soLan,
+        tuLuc: trongCuaSo ? cu.tuLuc : bay,
+        camDen: soLan >= TOI_DA_DANG_KY ? new Date(bay.getTime() + CAM_MS) : null,
+      },
+      select: { khoa: true },
+    });
+  } catch {
+    // Đếm hỏng thì thôi — không để việc đếm chặn mất một lượt đăng ký thật.
+  }
+}

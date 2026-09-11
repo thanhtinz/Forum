@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
-import { conDuocThu, ghiLanHong, xoaLanHong } from '@/lib/chan-do-mat-khau';
+import { conDuocDangKy, conDuocThu, ghiLanDangKy, ghiLanHong, xoaLanHong } from '@/lib/chan-do-mat-khau';
 import { bamMatKhau, donPhienCu, dongPhien, khopMatKhau, moPhien } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
 
@@ -63,31 +63,87 @@ export async function dangNhap(_truoc: KetQuaXacThuc, form: FormData): Promise<K
   redirect('/');
 }
 
+/*
+ * Trần độ dài, cùng con số với trang Cài đặt tài khoản.
+ *
+ * Trước đây lối đăng ký chỉ có sàn mà không có trần, còn `luuHoSo` thì chặn ở
+ * 40 — nghĩa là mở tài khoản với cái tên dài mười nghìn chữ thì được, mà sau
+ * đó chính chủ vào Cài đặt sửa lại tên ấy thì bị từ chối. Hai cửa vào cùng một
+ * cột thì phải cùng một luật.
+ */
+const TEN_TOI_DA = 40;
+const EMAIL_TOI_DA = 190;
+/* Trần mật khẩu không phải để bắt bẻ ai: bcrypt băm chuỗi dài nào cũng tốn
+ * CPU theo độ dài, nên một ô nhập không trần là một lối làm nghẽn máy chủ. */
+const MAT_KHAU_TOI_DA = 200;
+
 export async function dangKy(_truoc: KetQuaXacThuc, form: FormData): Promise<KetQuaXacThuc> {
   const email = String(form.get('email') ?? '').trim().toLowerCase();
   const tenHienThi = String(form.get('tenHienThi') ?? '').trim();
   const matKhau = String(form.get('matKhau') ?? '');
 
+  if (email.length > EMAIL_TOI_DA) return { loi: 'Địa chỉ email dài quá.' };
   if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email)) return { loi: 'Địa chỉ email trông không hợp lệ.' };
   if (tenHienThi.length < 2) return { loi: 'Tên hiển thị cần ít nhất 2 ký tự.' };
+  if (tenHienThi.length > TEN_TOI_DA) return { loi: `Tên hiển thị dài quá ${TEN_TOI_DA} ký tự.` };
   if (matKhau.length < 8) return { loi: 'Mật khẩu cần ít nhất 8 ký tự.' };
+  if (matKhau.length > MAT_KHAU_TOI_DA) return { loi: 'Mật khẩu dài quá.' };
+
+  /*
+   * Hỏi cửa chặn TRƯỚC khi chạy bcrypt, y như lối đăng nhập.
+   *
+   * Không có gì chặn thì một kịch bản bắn liên tục dựng được hàng nghìn tài
+   * khoản, mỗi cái ngốn một lượt bcrypt của máy chủ, rồi đem đi rải bài.
+   */
+  const cua = await conDuocDangKy();
+  if (cua.chan) {
+    return { loi: `Chỗ này vừa mở quá nhiều tài khoản. Thử lại sau ${cua.conPhut} phút.` };
+  }
 
   if (await db.nguoiDung.findUnique({ where: { email }, select: { id: true } })) {
     return { loi: 'Email này đã có tài khoản. Bạn muốn đăng nhập chứ?' };
   }
 
-  // Tên đăng nhập suy ra từ tên hiển thị; trùng thì nối thêm số cho tới khi rỗi.
-  const goc = thanhDuongDan(tenHienThi) || 'thanhvien';
+  /*
+   * Tên đăng nhập suy ra từ tên hiển thị; trùng thì nối thêm số.
+   *
+   * VÒNG LẶP CÓ TRẦN, và hết trần thì bốc ngẫu nhiên. Bản trước lặp "cho tới
+   * khi rỗi" — mười nghìn người cùng tên "Minh" là lượt đăng ký thứ mười nghìn
+   * phải hỏi CSDL mười nghìn lượt trước khi được vào, và ai cũng dựng được
+   * tình cảnh ấy bằng cách mở sẵn một loạt tài khoản cùng tên.
+   */
+  const goc = thanhDuongDan(tenHienThi).slice(0, 30) || 'thanhvien';
   let tenDangNhap = goc;
-  for (let i = 2; await db.nguoiDung.findUnique({ where: { tenDangNhap }, select: { id: true } }); i++) {
+  let ronh = false;
+  for (let i = 2; i <= 20; i++) {
+    if (!(await db.nguoiDung.findUnique({ where: { tenDangNhap }, select: { id: true } }))) {
+      ronh = true;
+      break;
+    }
     tenDangNhap = `${goc}${i}`;
   }
+  // Hai mươi lượt mà vẫn kẹt thì thôi đếm, bốc một đuôi ngẫu nhiên. Xấu hơn
+  // "minh21" một chút, nhưng nó KẾT THÚC — mà tên đăng nhập thì đổi được sau.
+  if (!ronh) tenDangNhap = `${goc}-${Math.random().toString(36).slice(2, 8)}`;
 
-  const nguoi = await db.nguoiDung.create({
-    data: { email, tenDangNhap, tenHienThi, matKhauBam: await bamMatKhau(matKhau) },
-    select: { id: true },
-  });
+  const matKhauBam = await bamMatKhau(matKhau);
+  let nguoi;
+  try {
+    nguoi = await db.nguoiDung.create({
+      data: { email, tenDangNhap, tenHienThi, matKhauBam },
+      select: { id: true },
+    });
+  } catch {
+    /*
+     * Hai lượt đăng ký cùng lúc mới lọt được tới đây: cả hai đọc thấy email
+     * (hoặc tên đăng nhập) còn rỗi, rồi cả hai cùng ghi. Không bắt thì lượt
+     * thua cuộc nhận nguyên một trang lỗi 500 — trong khi điều cần nói với họ
+     * chỉ là "thử lại lần nữa".
+     */
+    return { loi: 'Không mở được tài khoản lúc này. Thử lại giúp mình nhé.' };
+  }
 
+  await ghiLanDangKy();
   await moPhien(nguoi.id);
   redirect('/');
 }

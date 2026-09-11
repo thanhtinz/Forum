@@ -28,8 +28,23 @@ export default async function chay(kiem) {
     for (const [ten, dia] of [['cửa hàng', '/'], ['quản trị', '/quan-tri']]) {
       await p.goto(GOC + dia, { waitUntil: 'networkidle' });
 
+      /*
+       * KHẲNG ĐỊNH ĐANG ĐỨNG ĐÚNG TRANG trước khi phán xét cái nền.
+       *
+       * Mục này đã có một lần đỏ mà không dựng lại được: `data-nen` rỗng và
+       * nền trắng ở `/quan-tri`, trong khi chạy riêng bài này sáu lượt đều
+       * xanh. Nếu lần ấy phiên quản trị hết hiệu lực thì trang đã bị đá về chỗ
+       * khác, và cái đỏ kia nói về một trang hoàn toàn khác — nhưng câu báo
+       * lỗi không hé ra điều đó, nên chẳng có gì để lần.
+       *
+       * Ghi kèm địa chỉ thật vào mọi câu báo: lần sau đỏ là biết ngay nó đỏ vì
+       * nền, hay vì đang đứng nhầm chỗ.
+       */
+      const dangO = new URL(p.url()).pathname;
+      kiem(`${ten}: vào được đúng trang để soi nền`, dangO === dia, `đang ở ${dangO}`);
+
       const nen = await p.getAttribute('html', 'data-nen');
-      kiem(`${ten} áp nền tối theo cài đặt`, nen === 'toi', `data-nen = ${nen}`);
+      kiem(`${ten} áp nền tối theo cài đặt`, nen === 'toi', `data-nen = ${nen} ở ${dangO}`);
 
       /*
        * Kiểm MÀU THẬT, không chỉ kiểm thuộc tính.
@@ -42,7 +57,7 @@ export default async function chay(kiem) {
         const [r, g, b] = m.map(Number);
         return Math.round(0.299 * r + 0.587 * g + 0.114 * b);
       });
-      kiem(`${ten} có nền thật sự sẫm`, sang < 60, `độ sáng ${sang}`);
+      kiem(`${ten} có nền thật sự sẫm`, sang < 60, `độ sáng ${sang} ở ${dangO}`);
     }
 
     /*

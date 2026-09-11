@@ -44,7 +44,10 @@ export default async function chay(kiem) {
   kiem('tab Hôm nay có tấm "GAME CỦA HÔM NAY"',
     (await p.locator('text=GAME CỦA HÔM NAY').count()) > 0);
 
-  const tenLan1 = (await tam.locator('a span span').nth(1).textContent())?.trim() ?? '';
+  // Bám vào TIÊU ĐỀ chứ không vào thứ tự thẻ span: đổi chút bố cục bên trong
+  // tấm là dãy span xê dịch ngay, mà bài kiểm thì đỏ vì một lẽ chẳng liên quan
+  // gì tới thứ nó định canh.
+  const tenLan1 = (await tam.locator('h2').first().textContent())?.trim() ?? '';
   kiem('tấm lớn có tên game', tenLan1.length > 0, tenLan1);
 
   // Game của hôm nay phải là game ĐANG HIỆN thật, không phải nháp lọt ra.
@@ -53,13 +56,13 @@ export default async function chay(kiem) {
 
   // Tải lại trang KHÔNG được đổi game — đây là chỗ `Math.random()` sẽ lộ ra.
   await p.reload({ waitUntil: 'networkidle' });
-  const tenLan2 = (await p.locator('article').first().locator('a span span').nth(1).textContent())?.trim() ?? '';
+  const tenLan2 = (await p.locator('article').first().locator('h2').first().textContent())?.trim() ?? '';
   kiem('tải lại trang vẫn đúng game ấy', tenLan1 === tenLan2, `${tenLan1} → ${tenLan2}`);
 
   // Và người khác mở cũng phải thấy y hệt — không phụ thuộc phiên hay cookie.
   const nguoiKhac = await moTrang();
   await nguoiKhac.goto(GOC, { waitUntil: 'networkidle' });
-  const tenNguoiKhac = (await nguoiKhac.locator('article').first().locator('a span span').nth(1).textContent())?.trim() ?? '';
+  const tenNguoiKhac = (await nguoiKhac.locator('article').first().locator('h2').first().textContent())?.trim() ?? '';
   kiem('người khác mở cũng thấy đúng game ấy', tenLan1 === tenNguoiKhac,
     `${tenLan1} ↔ ${tenNguoiKhac}`);
 

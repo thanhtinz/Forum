@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ChevronRight, Inbox } from 'lucide-react';
+import { OTheLoai } from '@/components/game/OTheLoai';
 import { db } from '@/lib/db';
 import { DANG_HIEN, layKe } from '@/lib/danh-muc';
 import { BangNoiBat } from '@/components/game/BangNoiBat';
@@ -84,11 +85,7 @@ export default async function TrangKhoGame() {
           <h2 className="tieu-de mb-3">Thể loại</h2>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
             {theLoai.map((t) => (
-              <Link key={t.id} href={`/duyet?the-loai=${t.duongDan}`}
-                className="the-bam flex items-center justify-between gap-2 px-4 py-3">
-                <span className="truncate text-[14px] font-medium">{t.ten}</span>
-                <span className="phu shrink-0">{t._count.game}</span>
-              </Link>
+              <OTheLoai key={t.id} ten={t.ten} duongDan={t.duongDan} soGame={t._count.game} />
             ))}
           </div>
         </section>

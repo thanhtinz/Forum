@@ -45,7 +45,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="truncate text-[26px] font-bold tracking-tight">{game.ten}</h1>
+          <h1 className="tieu-de-trang truncate">{game.ten}</h1>
           <Link href={`/game/${game.duongDan}`}
             className="inline-flex items-center gap-1 text-[13px] font-semibold text-nhan hover:underline">
             Xem trang công khai <ExternalLink size={13} />

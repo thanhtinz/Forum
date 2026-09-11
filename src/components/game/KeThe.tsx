@@ -1,3 +1,4 @@
+import { Ke } from './Ke';
 import { TheDoc } from './TheDoc';
 import { TieuDeKe } from './TieuDeKe';
 import type { TheGame } from './the-game';
@@ -21,9 +22,9 @@ export function KeThe({ ten, phu, xemThem, game, rong = 104 }: {
   return (
     <section>
       <TieuDeKe ten={ten} phu={phu} xemThem={xemThem} />
-      <div className="ke -mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
+      <Ke nhan={ten} className="-mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
         {game.map((g) => <TheDoc key={g.id} game={g} rong={rong} />)}
-      </div>
+      </Ke>
     </section>
   );
 }

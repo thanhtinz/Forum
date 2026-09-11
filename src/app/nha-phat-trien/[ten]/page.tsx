@@ -64,7 +64,7 @@ export default async function TrangNhaPhatTrien({ params }: { params: Promise<{ 
         </span>
         <div className="min-w-0">
           <p className="phu">Nhà phát triển</p>
-          <h1 className="truncate text-[24px] font-bold leading-tight tracking-tight">{tenHien}</h1>
+          <h1 className="tieu-de-trang truncate">{tenHien}</h1>
         </div>
       </header>
 

@@ -49,6 +49,18 @@
 
   --chuyen: 150ms cubic-bezier(.2, .7, .3, 1);
 
+  /*
+   * `tailwind.config.ts` trỏ `font-sans` vào biến này, nhưng trước đây không
+   * nơi nào đặt nó — nên mọi lớp `font-sans` rơi tuột xuống mức dự phòng, và
+   * chữ trong đó khác chữ của `body` một nhịp rất khó chỉ tên.
+   *
+   * Không nạp phông từ ngoài: phông hệ điều hành là đúng thứ App Store và CH
+   * Play dùng (San Francisco trên máy Apple, Roboto trên Android), vẽ ngay từ
+   * khung hình đầu, không tốn một lượt tải nào và không bao giờ nháy chữ.
+   */
+  --font-chu: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
   /* Bóng của thẻ nổi: một lớp sát mép cho ra đường viền mềm, một lớp toả rộng
      cho ra cảm giác tấm thiệp đang nằm trên mặt bàn. */
   --bong-the: 0 1px 2px rgb(16 24 40 / .06), 0 6px 20px -4px rgb(16 24 40 / .12);
@@ -86,8 +98,22 @@ body {
   background: rgb(var(--nen));
   color: rgb(var(--chu));
   -webkit-font-smoothing: antialiased;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: var(--font-chu);
 }
+
+/*
+ * NGẮT DÒNG CÓ CÂN NHẮC.
+ *
+ * `balance` cho tiêu đề: trình duyệt chia đều chữ giữa các dòng thay vì nhồi
+ * dòng đầu rồi bỏ lại một chữ lủi thủi ở dòng hai — tiếng Việt lắm từ ghép
+ * nên chuyện ấy xảy ra suốt. Chỉ dùng cho tiêu đề vì nó tốn công đo, và trình
+ * duyệt cũng chỉ nhận tối đa vài dòng.
+ *
+ * `pretty` cho đoạn văn: chỉ lo mỗi việc không để dòng cuối còn đúng một chữ.
+ * Rẻ hơn nhiều nên dùng được cho văn bản dài.
+ */
+h1, h2, h3, .tieu-de, .tieu-de-trang { text-wrap: balance; }
+p { text-wrap: pretty; }
 
 * { scrollbar-color: rgb(var(--vien)) transparent; scrollbar-width: thin; }
 *::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -255,11 +281,28 @@ body {
     transition: transform var(--chuyen), box-shadow var(--chuyen);
   }
   .the-noi:active { transform: scale(.985); }
-  .the-bam { @apply the transition-shadow; }
+  .the-bam { @apply the; transition: box-shadow var(--chuyen), transform var(--chuyen); }
   .the-bam:hover { box-shadow: 0 1px 3px rgb(32 33 36 / .12), 0 4px 12px rgb(32 33 36 / .08); }
+  /* Ngón tay chạm vào phải thấy thẻ nhận — trên điện thoại không có con trỏ
+     nào để đổi dáng, nên đây là phản hồi duy nhất người dùng nhận được. */
+  .the-bam:active { transform: scale(.99); }
 
   .phu { @apply text-[12px] leading-snug text-mo; }
-  .tieu-de { @apply text-[19px] font-bold tracking-tight; }
+
+  /*
+   * THANG CHỮ — ba bậc, và chỉ ba.
+   *
+   * Chữ càng to thì khoảng cách giữa các con chữ càng phải bóp lại, không thì
+   * tiêu đề trông rời rạc; chữ càng nhỏ và viết hoa thì càng phải nới ra, không
+   * thì các con chữ dính vào nhau. Đây là phép bù quang học, và nó là khác biệt
+   * dễ thấy nhất giữa chữ của một ứng dụng thật và chữ đặt mặc định.
+   */
+  .tieu-de-trang { @apply text-[30px] font-bold leading-[1.12] tracking-[-0.02em] sm:text-[34px]; }
+  .tieu-de { @apply text-[19px] font-bold tracking-[-0.01em]; }
+
+  /* Nhãn chữ hoa nhỏ đứng trên một tiêu đề — dáng "eyebrow" của App Store. */
+  .nhan-tren { @apply text-[12px] font-bold uppercase tracking-[0.14em]; }
+
   .vach { @apply border-t border-vien; }
 }
 

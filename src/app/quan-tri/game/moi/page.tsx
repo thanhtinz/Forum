@@ -13,7 +13,7 @@ export default async function ThemGame() {
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <div>
-        <h1 className="text-[26px] font-bold tracking-tight">Thêm game</h1>
+        <h1 className="tieu-de-trang">Thêm game</h1>
         <p className="phu mt-0.5">
           Tạo xong game nằm ở trạng thái nháp. Gắn bản tải rồi mới bấm đăng.
         </p>

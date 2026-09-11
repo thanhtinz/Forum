@@ -20,7 +20,7 @@ export default async function QuanTriYeuCau() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <h1 className="text-[26px] font-bold tracking-tight">Yêu cầu game</h1>
+      <h1 className="tieu-de-trang">Yêu cầu game</h1>
 
       {yeuCau.length === 0 ? (
         <p className="the p-8 text-center text-[13px] text-mo">Chưa có yêu cầu nào.</p>

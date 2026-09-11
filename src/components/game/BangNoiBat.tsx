@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { BieuTuongGame } from './BieuTuongGame';
+import { Ke } from './Ke';
+import { NenGame } from './NenGame';
 import { NutCai } from './NutCai';
-import { mauCuaGame } from '@/lib/mau-game';
+import { MO_TA_HE } from '@/lib/he-may';
 import { gop } from '@/lib/tien-ich';
 import type { TheGame } from './the-game';
 
@@ -21,27 +23,19 @@ import type { TheGame } from './the-game';
  * Dải màu thì thành thật — nó chỉ là màu, và vẫn làm xong việc dẫn mắt.
  */
 export function BangNoiBat({ game }: { game: TheGame[] }) {
-  const oRef = useRef<HTMLDivElement>(null);
   const [dangO, datDangO] = useState(0);
+
+  // Bọc lại vì `Ke` giữ hàm này trong danh sách phụ thuộc của bộ nhớ đệm —
+  // truyền thẳng một hàm mới mỗi lần vẽ là bắt nó dựng lại bộ theo dõi liên tục.
+  const theoTam = useCallback((i: number) => datDangO(i), []);
 
   if (game.length === 0) return null;
 
-  /*
-   * Chấm trang tính bằng vị trí cuộn chứ không bằng `IntersectionObserver`:
-   * mỗi tấm rộng gần bằng cả khung nên chia vị trí cuộn cho bề rộng khung là
-   * ra ngay tấm nào đang ở giữa, khỏi cần dựng bộ theo dõi cho từng tấm.
-   */
-  const theoCuon = () => {
-    const o = oRef.current;
-    if (!o) return;
-    datDangO(Math.round(o.scrollLeft / Math.max(1, o.clientWidth)));
-  };
-
   return (
     <section>
-      <div ref={oRef} onScroll={theoCuon} className="ke -mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
+      <Ke nhan="băng nổi bật" theoTam={theoTam} className="-mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
         {game.map((g) => <Tam key={g.id} game={g} />)}
-      </div>
+      </Ke>
 
       {game.length > 1 && (
         <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
@@ -59,8 +53,6 @@ export function BangNoiBat({ game }: { game: TheGame[] }) {
 }
 
 function Tam({ game }: { game: TheGame }) {
-  const { tu, den } = mauCuaGame(game.ten);
-
   return (
     <article className="w-full max-w-[calc(100vw-2rem)] sm:max-w-[560px]">
       <Link href={`/game/${game.duongDan}`} className="block overflow-hidden rounded-the">
@@ -68,24 +60,31 @@ function Tam({ game }: { game: TheGame }) {
           Tỉ lệ 2:1 cố định. Để chiều cao tự do thì mỗi tấm một chiều cao khác
           nhau, và lúc lật ngang cả khối co giật lên xuống theo từng tấm.
         */}
-        <div className="relative aspect-[2/1] w-full"
-          style={{ backgroundImage: `linear-gradient(125deg, ${tu}, ${den})` }}>
-          {/* Chữ tắt phóng to làm hoa văn nền — cùng màu game, mờ đi để không
-              tranh chỗ với dòng chữ đè lên trên. */}
-          <span aria-hidden
-            className="absolute -right-4 -top-6 select-none font-black leading-none text-white/15"
-            style={{ fontSize: 'clamp(120px, 34vw, 220px)' }}>
-            {game.ten.slice(0, 2).toUpperCase()}
-          </span>
-          <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 to-transparent" />
-          <span className="absolute bottom-3 left-4 right-4">
-            <span className="block text-[11px] font-bold uppercase tracking-widest text-white/75">
+        <div className="relative aspect-[2/1] w-full">
+          <NenGame ten={game.ten} doLuoi={5} />
+
+          {/* Dãy hệ máy nằm ở góc trên — nửa trên tấm vốn trống, mà "chạy được
+              trên máy nào" lại đúng là thứ người ta hỏi trước khi bấm vào. */}
+          {game.heMay.length > 0 && (
+            <span className="absolute left-4 top-3.5 flex flex-wrap gap-1.5">
+              {game.heMay.map((h) => (
+                <span key={h}
+                  className="rounded-full bg-black/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white backdrop-blur-sm">
+                  {MO_TA_HE[h as keyof typeof MO_TA_HE]?.ten ?? h}
+                </span>
+              ))}
+            </span>
+          )}
+
+          <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute bottom-3 left-4 right-4">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-white/75">
               Đáng chơi lúc này
-            </span>
-            <span className="mt-0.5 block truncate text-[22px] font-bold leading-tight text-white">
+            </p>
+            <h3 className="mt-0.5 truncate text-[22px] font-bold leading-tight text-white">
               {game.ten}
-            </span>
-          </span>
+            </h3>
+          </div>
         </div>
       </Link>
 

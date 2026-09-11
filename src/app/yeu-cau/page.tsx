@@ -45,7 +45,7 @@ export default async function TrangYeuCau() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h1 className="text-[26px] font-bold tracking-tight">Yêu cầu game</h1>
+        <h1 className="tieu-de-trang">Yêu cầu game</h1>
         <p className="phu mt-0.5">
           Không thấy game bạn cần trong kho? Cho biết tên, SunnyStore sẽ đi tìm.
         </p>

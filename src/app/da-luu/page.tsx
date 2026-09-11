@@ -32,7 +32,7 @@ export default async function TrangDaLuu() {
   return (
     <div className="mx-auto max-w-[680px] space-y-4">
       <div>
-        <h1 className="text-[28px] font-bold tracking-tight">Đã lưu</h1>
+        <h1 className="tieu-de-trang">Đã lưu</h1>
         <p className="phu mt-0.5">
           {hang.length > 0 ? `${hang.length} game để dành` : 'Game bạn định tải sau sẽ nằm ở đây'}
         </p>

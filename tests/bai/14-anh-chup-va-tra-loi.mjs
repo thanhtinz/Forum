@@ -85,6 +85,7 @@ export default async function chay(kiem) {
       ],
       skipDuplicates: true,
     });
+    await lamMoiBoDem(game.id);
 
     await khach.goto(`${GOC}/game/${game.duongDan}?sao=1`, { waitUntil: 'networkidle' });
     kiem('lọc 1 sao thì thấy bài một sao',
@@ -188,4 +189,24 @@ export default async function chay(kiem) {
 async function don(gameId, nguoiId) {
   await db.anhChup.deleteMany({ where: { gameId } });
   await db.danhGia.deleteMany({ where: { gameId, nguoiId } });
+  await lamMoiBoDem(gameId);
+}
+
+/**
+ * Tính lại `tongSao`/`soLuotDanhGia` ở bảng Game.
+ *
+ * Hai cột ấy là bản đếm sẵn, và chỉ `chamSao` mới tự lo cập nhật. Bài này ghi
+ * thẳng vào bảng đánh giá nên phải tự tính lại — bỏ qua thì trang game in một
+ * con số ở đầu trang và một con số khác hẳn ở mục đánh giá, mà cái sai ấy còn
+ * nằm lại cho mọi bài chạy sau và cho cả lần xem bằng mắt.
+ */
+async function lamMoiBoDem(gameId) {
+  const gom = await db.danhGia.aggregate({
+    where: { gameId }, _sum: { sao: true }, _count: { _all: true },
+  });
+  await db.game.update({
+    where: { id: gameId },
+    data: { tongSao: gom._sum.sao ?? 0, soLuotDanhGia: gom._count._all },
+    select: { id: true },
+  });
 }

@@ -83,7 +83,7 @@ export default async function TrangDuyet({ searchParams }: {
 
       <div className="min-w-0 flex-1 space-y-4">
         <div>
-          <h1 className="text-[24px] font-bold tracking-tight">Tất cả trò chơi</h1>
+          <h1 className="tieu-de-trang">Tất cả trò chơi</h1>
           <p className="phu mt-0.5">{gonSo(tong)} game khớp với lựa chọn của bạn</p>
         </div>
 

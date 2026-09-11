@@ -21,7 +21,7 @@ export default async function TongQuan() {
   return (
     <div className="space-y-5">
       <div className="flex items-end justify-between gap-3">
-        <h1 className="text-[26px] font-bold tracking-tight">Tổng quan</h1>
+        <h1 className="tieu-de-trang">Tổng quan</h1>
         <Link href="/quan-tri/game/moi" className="nut-cai-dam !min-h-[38px] !px-4 !text-[13px]">
           <Plus size={15} /> Thêm game
         </Link>

@@ -31,7 +31,7 @@ export default function TrangAnToan() {
   return (
     <div className="mx-auto max-w-2xl space-y-5">
       <div>
-        <h1 className="text-[26px] font-bold tracking-tight">Tải sao cho an toàn</h1>
+        <h1 className="tieu-de-trang">Tải sao cho an toàn</h1>
         <p className="phu mt-1">Bốn điều nên biết trước khi cài bất cứ thứ gì lấy từ mạng về.</p>
       </div>
 

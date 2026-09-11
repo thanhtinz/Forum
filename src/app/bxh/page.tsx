@@ -75,7 +75,7 @@ export default async function TrangBXH({ searchParams }: {
   return (
     <div className="mx-auto max-w-[680px] space-y-4">
       <div>
-        <h1 className="text-[28px] font-bold tracking-tight">Bảng xếp hạng</h1>
+        <h1 className="tieu-de-trang">Bảng xếp hạng</h1>
         <p className="phu mt-0.5">{dangXem.phu}</p>
       </div>
 

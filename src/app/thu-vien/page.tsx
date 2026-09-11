@@ -40,7 +40,7 @@ export default async function TrangThuVien() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-[26px] font-bold tracking-tight">Thư viện của tôi</h1>
+        <h1 className="tieu-de-trang">Thư viện của tôi</h1>
         <p className="phu mt-0.5">
           {hang.length > 0 ? `${hang.length} game bạn đã tải` : 'Những game bạn tải sẽ nằm ở đây'}
         </p>

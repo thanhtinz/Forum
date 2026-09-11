@@ -32,7 +32,7 @@ export default async function TrangCapNhat() {
   return (
     <div className="mx-auto max-w-[680px] space-y-4">
       <div>
-        <h1 className="text-[28px] font-bold tracking-tight">Bản cập nhật</h1>
+        <h1 className="tieu-de-trang">Bản cập nhật</h1>
         <p className="phu mt-0.5">
           {banMoi.length > 0
             ? `${banMoi.length} game bạn đã tải có bản mới hơn`

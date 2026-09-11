@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { batBuocDangNhap } from '@/lib/xac-thuc';
 import { guiThongBao } from '@/lib/thong-bao';
+import { soTrang } from '@/lib/tien-ich';
+import { MOI_TRANG_TRA_LOI } from './moi-trang';
 
 export interface KetQua { loi?: string }
 
@@ -68,13 +70,16 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
   });
   if (!chuDe) return { loi: 'Chủ đề này đã khoá hoặc không còn.' };
 
-  await db.$transaction(async (tx) => {
-    await tx.traLoi.create({ data: { chuDeId, nguoiId: nguoi.id, noiDung }, select: { id: true } });
+  const bai = await db.$transaction(async (tx) => {
+    const b = await tx.traLoi.create({
+      data: { chuDeId, nguoiId: nguoi.id, noiDung }, select: { id: true },
+    });
     await tx.chuDe.update({
       where: { id: chuDeId },
       data: { soTraLoi: { increment: 1 }, traLoiCuoiLuc: new Date() },
       select: { id: true },
     });
+    return b;
   });
 
   // Báo cho chủ chủ đề. Đặt NGOÀI giao dịch trên: mất một thông báo thì tiếc,
@@ -89,7 +94,20 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
   });
 
   revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
-  return {};
+
+  /*
+   * ĐƯA NGƯỜI VIẾT TỚI ĐÚNG BÀI VỪA GỬI.
+   *
+   * Chủ đề nay chia trang, nên ở lại chỗ cũ là hỏng: gửi bài từ trang 1 của
+   * một chủ đề bốn trang thì bài mới nằm ở trang 4, màn hình không đổi gì
+   * cả — và người ta bấm Gửi lần nữa vì tưởng trượt. Tính lại số trang SAU
+   * khi đã ghi, nên bài đẩy chủ đề sang trang mới cũng tới đúng nơi.
+   */
+  const tong = await db.traLoi.count({ where: { chuDeId } });
+  const trang = soTrang(tong, MOI_TRANG_TRA_LOI);
+  redirect(
+    `/game/${duongDan}/dien-dan/${chuDeId}${trang > 1 ? `?trang=${trang}` : ''}#tl-${bai.id}`,
+  );
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

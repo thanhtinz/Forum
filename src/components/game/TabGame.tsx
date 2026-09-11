@@ -5,23 +5,34 @@ import { usePathname } from 'next/navigation';
 import { gop } from '@/lib/tien-ich';
 
 /**
- * Hai tab của trang game: Thông tin | Diễn đàn.
+ * Ba tab của trang game: Thông tin | Đánh giá | Diễn đàn.
  *
- * Là <Link> thật sang hai ĐƯỜNG DẪN khác nhau, không phải nút đổi trạng thái
+ * Là <Link> thật sang ba ĐƯỜNG DẪN khác nhau, không phải nút đổi trạng thái
  * trong một trang. Ba lẽ, và cả ba đều là chuyện người dùng gặp thật:
  *   • dán được địa chỉ khu diễn đàn của một game cho người khác;
  *   • nút Lùi của trình duyệt quay về đúng tab vừa xem, không văng khỏi trang;
- *   • máy tìm kiếm đọc được cả hai tab, chứ không chỉ tab mặc định.
+ *   • máy tìm kiếm đọc được cả ba tab, chứ không chỉ tab mặc định.
  *
- * Gạch chân chạy DƯỚI tab đang chọn chứ không tô nền: đây là hai phần của
- * cùng một trang, không phải hai nút bấm rời — gạch chân nói đúng điều ấy.
+ * Gạch chân chạy DƯỚI tab đang chọn chứ không tô nền: đây là ba phần của
+ * cùng một trang, không phải ba nút bấm rời — gạch chân nói đúng điều ấy.
  */
-export function TabGame({ duongDanGame, soChuDe }: { duongDanGame: string; soChuDe: number }) {
+export function TabGame({ duongDanGame, soChuDe, soDanhGia }: {
+  duongDanGame: string;
+  soChuDe: number;
+  soDanhGia: number;
+}) {
   const dangO = usePathname();
   const goc = `/game/${duongDanGame}`;
 
+  /*
+   * Đánh giá có tab riêng vì tab Thông tin chỉ khoe được sáu bài mới nhất.
+   * Một game nghìn lượt đánh giá thì 994 bài còn lại trước đây không có lối
+   * nào đọc được — mà đọc người khác nói gì chính là việc người ta vào cửa
+   * hàng để làm trước khi bấm tải.
+   */
   const tab = [
     { dich: goc, ten: 'Thông tin' },
+    { dich: `${goc}/danh-gia`, ten: 'Đánh giá', so: soDanhGia },
     { dich: `${goc}/dien-dan`, ten: 'Diễn đàn', so: soChuDe },
   ];
 

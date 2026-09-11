@@ -8,8 +8,10 @@ import { BieuMauGui } from '@/components/BieuMauGui';
 import { SuaChuDe, SuaTraLoi } from '@/components/game/OSuaBaiDienDan';
 import { NutBaoXau } from '@/components/NutBaoXau';
 import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
+import { PhanTrang } from '@/components/PhanTrang';
 import { traLoi } from '../viec';
-import { cachDay, catChu } from '@/lib/tien-ich';
+import { MOI_TRANG_TRA_LOI } from '../moi-trang';
+import { cachDay, catChu, kep, soTrang } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,10 +21,12 @@ export async function generateMetadata({ params }: { params: Promise<{ chuDeId: 
   return { title: c ? catChu(c.tieuDe, 60) : 'Chủ đề' };
 }
 
-export default async function TrangChuDe({ params }: {
+export default async function TrangChuDe({ params, searchParams }: {
   params: Promise<{ duongDan: string; chuDeId: string }>;
+  searchParams: Promise<{ trang?: string }>;
 }) {
   const { duongDan, chuDeId } = await params;
+  const { trang: trangNhap } = await searchParams;
 
   const chuDe = await db.chuDe.findFirst({
     where: { id: chuDeId, game: { duongDan, trangThai: 'DANG_HIEN' } },
@@ -31,19 +35,38 @@ export default async function TrangChuDe({ params }: {
       nguoiId: true,
       nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
       game: { select: { ten: true, duongDan: true } },
-      traLoi: {
-        orderBy: { taoLuc: 'asc' },
-        take: 200,
-        select: {
-          id: true, noiDung: true, taoLuc: true, nguoiId: true,
-          nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
-        },
-      },
     },
   });
   if (!chuDe) notFound();
 
+  /*
+   * ĐẾM THẬT, không đọc `ChuDe.soTraLoi`.
+   *
+   * `soTraLoi` là bộ đếm dựng sẵn để danh sách chủ đề khỏi phải đếm từng dòng,
+   * và nó có thể lệch (một lần ghi hỏng là lệch mãi). Ở đây con số quyết định
+   * CÓ BAO NHIÊU TRANG — lệch một là sinh ra một trang trống, hoặc giấu mất
+   * bài cuối cùng.
+   */
+  const tongTraLoi = await db.traLoi.count({ where: { chuDeId: chuDe.id } });
+  const tongTrang = soTrang(tongTraLoi, MOI_TRANG_TRA_LOI);
+  const trang = kep(trangNhap, 1, tongTrang, 1);
+
+  const danhSach = await db.traLoi.findMany({
+    where: { chuDeId: chuDe.id },
+    // Xếp theo thời gian, khoá phụ `id`: hai bài gửi trong cùng một phần nghìn
+    // giây mà không có khoá phụ thì thứ tự đổi mỗi lần hỏi, và phân trang lặp bài.
+    orderBy: [{ taoLuc: 'asc' }, { id: 'asc' }],
+    skip: (trang - 1) * MOI_TRANG_TRA_LOI,
+    take: MOI_TRANG_TRA_LOI,
+    select: {
+      id: true, noiDung: true, taoLuc: true, nguoiId: true,
+      nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
+    },
+  });
+
   const nguoi = await nguoiHienTai();
+  const duongTrang = (t: number) =>
+    `/game/${chuDe.game.duongDan}/dien-dan/${chuDe.id}${t > 1 ? `?trang=${t}` : ''}`;
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -61,7 +84,7 @@ export default async function TrangChuDe({ params }: {
         </h1>
         <p className="phu mt-1">
           <TenNguoi ten={chuDe.nguoi.tenHienThi} tenDangNhap={chuDe.nguoi.tenDangNhap} />
-          {' · '}{cachDay(chuDe.taoLuc)} · {chuDe.traLoi.length} trả lời
+          {' · '}{cachDay(chuDe.taoLuc)} · {tongTraLoi} trả lời
         </p>
       </header>
 
@@ -72,17 +95,19 @@ export default async function TrangChuDe({ params }: {
             nằm trong `where` của Prisma ở `suaChuDe`. */}
         {nguoi?.id === chuDe.nguoiId && !chuDe.khoa && (
           <SuaChuDe chuDeId={chuDe.id} tieuDe={chuDe.tieuDe} noiDung={chuDe.noiDung}
-            xoaDuoc={chuDe.traLoi.length === 0} />
+            xoaDuoc={tongTraLoi === 0} />
         )}
         {nguoi && nguoi.id !== chuDe.nguoiId && (
           <div className="mt-3"><NutBaoXau loai="chuDe" mucId={chuDe.id} /></div>
         )}
       </article>
 
-      {chuDe.traLoi.length > 0 && (
-        <ul className="space-y-3">
-          {chuDe.traLoi.map((t) => (
-            <li key={t.id} className="the p-4">
+      {danhSach.length > 0 && (
+        <ul aria-label="Các trả lời" className="space-y-3">
+          {danhSach.map((t) => (
+            /* Mỗi bài mang một mỏ neo: trả lời xong máy chủ đưa thẳng người
+               viết tới đúng bài vừa gửi, kể cả khi nó rơi sang trang mới. */
+            <li key={t.id} id={`tl-${t.id}`} className="the p-4 scroll-mt-24">
               <Nguoi nguoi={t.nguoi} luc={t.taoLuc} />
               <p className="mt-2.5 whitespace-pre-line text-[14px] leading-relaxed">{t.noiDung}</p>
               {nguoi?.id === t.nguoiId && !chuDe.khoa && (
@@ -95,6 +120,8 @@ export default async function TrangChuDe({ params }: {
           ))}
         </ul>
       )}
+
+      <PhanTrang trang={trang} tongTrang={tongTrang} dungDuong={duongTrang} />
 
       {chuDe.khoa ? (
         <p className="the flex items-center justify-center gap-2 p-4 text-[13px] text-mo">

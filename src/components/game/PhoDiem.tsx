@@ -16,12 +16,20 @@ import { gonSo } from '@/lib/tien-ich';
  * Mỗi hàng còn là một lối LỌC: thấy phổ điểm lệch xuống 1 sao thì việc muốn
  * làm ngay là đọc xem mấy người ấy phàn nàn gì, nên bấm thẳng vào hàng ấy.
  */
-export function PhoDiem({ sao, tong, phanBo, locSao }: {
+export function PhoDiem({ sao, tong, phanBo, locSao, dungDuong }: {
   sao: number;
   tong: number;
   phanBo: Record<number, number>;
   /** Sao đang lọc; `null` là chưa lọc. Không truyền thì phổ điểm không bấm được. */
   locSao?: number | null;
+  /*
+   * Dựng địa chỉ cho một mức sao (`null` là bỏ lọc).
+   *
+   * Không truyền thì mặc định `?sao=N`, tức là XOÁ SẠCH tham số khác. Ở trang
+   * chỉ có mỗi bộ lọc sao thì thế là đúng; còn trang đánh giá đầy đủ có thêm
+   * cách sắp, mà đổi bộ lọc lại mất cách sắp đang chọn thì khó chịu.
+   */
+  dungDuong?: (sao: number | null) => string;
 }) {
   if (tong === 0) {
     return <p className="phu">Chưa ai đánh giá game này. Bạn là người đầu tiên?</p>;
@@ -57,8 +65,12 @@ export function PhoDiem({ sao, tong, phanBo, locSao }: {
             return <div key={s} className="flex items-center gap-2">{than}</div>;
           }
 
+          const dich = dangChon
+            ? (dungDuong?.(null) ?? '?')
+            : (dungDuong?.(s) ?? `?sao=${s}`);
+
           return (
-            <Link key={s} href={dangChon ? '?' : `?sao=${s}`} scroll={false}
+            <Link key={s} href={dich} scroll={false}
               aria-label={dangChon ? `Bỏ lọc ${s} sao` : `Chỉ xem đánh giá ${s} sao (${n} bài)`}
               className="flex items-center gap-2 rounded-full py-0.5 transition-opacity hover:opacity-70">
               {than}

@@ -9,7 +9,8 @@ import { GOC, moTrinhDuyet } from '../tro-giup.mjs';
  * tiên ra ngay một lỗi: trang `/duyet` tràn 51px và cuộn ngang cả trang.
  */
 const TRANG = ['/', '/game', '/bxh', '/duyet', '/tim?q=rong', '/game/dragon-hunter',
-  '/game/dragon-hunter/dien-dan', '/dang-nhap', '/yeu-cau', '/an-toan', '/toi'];
+  '/game/dragon-hunter/dien-dan', '/game/dragon-hunter/danh-gia',
+  '/dang-nhap', '/yeu-cau', '/an-toan', '/toi'];
 
 export default async function chay(kiem) {
   const may = await moTrinhDuyet();

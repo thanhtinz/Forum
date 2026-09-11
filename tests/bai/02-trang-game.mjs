@@ -63,11 +63,12 @@ export default async function chay(kiem) {
    */
   const tab = p.locator('nav[aria-label="Phần của trang game"] a');
   const tenTab = await tab.evaluateAll((els) => els.map((e) => e.textContent?.trim() ?? ''));
-  kiem('trang game có hàng tab', tenTab.length === 2, JSON.stringify(tenTab));
+  kiem('trang game có hàng tab', tenTab.length === 3, JSON.stringify(tenTab));
   kiem('tab đầu là Thông tin', (tenTab[0] ?? '').startsWith('Thông tin'), tenTab[0] ?? '');
-  kiem('tab sau là Diễn đàn', (tenTab[1] ?? '').startsWith('Diễn đàn'), tenTab[1] ?? '');
+  kiem('tab giữa là Đánh giá', (tenTab[1] ?? '').startsWith('Đánh giá'), tenTab[1] ?? '');
+  kiem('tab cuối là Diễn đàn', (tenTab[2] ?? '').startsWith('Diễn đàn'), tenTab[2] ?? '');
 
-  await tab.nth(1).click();
+  await tab.nth(2).click();
   await p.waitForURL('**/dien-dan', { timeout: 15_000 }).catch(() => {});
   kiem('bấm tab Diễn đàn thì đổi sang đường dẫn riêng',
     p.url().endsWith('/dien-dan'), p.url());

@@ -8,12 +8,10 @@ import { PhoDiem } from '@/components/game/PhoDiem';
 import { SaoNam } from '@/components/game/SaoNam';
 import { KeThe } from '@/components/game/KeThe';
 import { ODanhGia } from '@/components/game/ODanhGia';
-import { ODapDanhGia } from '@/components/game/ODapDanhGia';
-import { NutBaoXau } from '@/components/NutBaoXau';
-import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
+import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
 import { KhoiGap } from '@/components/KhoiGap';
 import { NGON_NGU } from '@/lib/he-may';
-import { cachDay, catChu } from '@/lib/tien-ich';
+import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 
 export const dynamic = 'force-dynamic';
@@ -67,11 +65,7 @@ export default async function TabThongTin({ params, searchParams }: {
       where: { gameId: game.id, noiDung: { not: null }, ...(locSao ? { sao: locSao } : {}) },
       orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
       take: 6,
-      select: {
-        id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
-        nguoiId: true,
-        nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
-      },
+      select: CHON_DANH_GIA,
     }),
     nguoi
       ? db.danhGia.findUnique({
@@ -184,43 +178,19 @@ export default async function TabThongTin({ params, searchParams }: {
           <ul className="mt-5 space-y-4">
             {danhGia.map((d) => (
               <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
-                <div className="flex items-center gap-2.5">
-                  <AnhDaiDien ten={d.nguoi.tenHienThi} anh={d.nguoi.anh} co={32} />
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-semibold">
-                      <TenNguoi ten={d.nguoi.tenHienThi} tenDangNhap={d.nguoi.tenDangNhap} />
-                    </p>
-                    <p className="flex items-center gap-1.5">
-                      <SaoNam diem={d.sao} co={11} />
-                      <span className="phu">{cachDay(d.taoLuc)}</span>
-                    </p>
-                  </div>
-                </div>
-                <p className="mt-2 text-[13px] leading-relaxed">{d.noiDung}</p>
-
-                {/* Lời đáp thụt vào và đổi nền để không ai đọc lẫn nó với bài
-                    của người chơi — đó là hai tiếng nói khác nhau. */}
-                {d.traLoi && (
-                  <div className="mt-2.5 rounded-the bg-nen2 px-3 py-2.5">
-                    <p className="text-[12px] font-bold text-nhan">
-                      SunnyStore trả lời
-                      {d.traLoiLuc && <span className="phu ml-1.5 font-normal">{cachDay(d.traLoiLuc)}</span>}
-                    </p>
-                    <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">{d.traLoi}</p>
-                  </div>
-                )}
-
-                <div className="mt-2 flex flex-wrap items-center gap-3">
-                  {laQuanTri && <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} />}
-                  {/* Chỉ mời báo khi đã đăng nhập và không phải bài của chính
-                      mình — bài của mình thì sửa thẳng được. */}
-                  {nguoi && nguoi.id !== d.nguoiId && (
-                    <NutBaoXau loai="danhGia" mucId={d.id} />
-                  )}
-                </div>
+                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} laQuanTri={laQuanTri} />
               </li>
             ))}
           </ul>
+        )}
+
+        {/* Sáu bài là bản nếm thử. Ai đang cân nhắc tải thật thì muốn đọc hết,
+            và tab Đánh giá cho lọc theo sao lẫn sắp theo điểm. */}
+        {gom > danhGia.length && (
+          <Link href={`/game/${duongDan}/danh-gia${locSao ? `?sao=${locSao}` : ''}`}
+            className="nut-vien mt-5 w-full">
+            Xem tất cả {gonSo(gom)} đánh giá
+          </Link>
         )}
       </section>
 

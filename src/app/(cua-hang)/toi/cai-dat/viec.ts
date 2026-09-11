@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import {
   bamMatKhau, batBuocDangNhap, dongPhienKhac, khopMatKhau,
 } from '@/lib/xac-thuc';
+import { LOI_DIA_CHI, laDiaChiHopLe } from '@/lib/dia-chi-an-toan';
 
 export interface KetQua { ok?: string; loi?: string }
 
@@ -32,9 +33,7 @@ export async function luuHoSo(_truoc: KetQua, form: FormData): Promise<KetQua> {
   const anh = chu(form, 'anh');
   // Chỉ nhận ảnh qua https hoặc ảnh trong nhà. Bỏ ngỏ thì một địa chỉ
   // `javascript:` hay `data:` lọt thẳng vào thuộc tính src của thẻ ảnh.
-  if (anh && !anh.startsWith('https://') && !anh.startsWith('/')) {
-    return { loi: 'Địa chỉ ảnh phải bắt đầu bằng “https://” hoặc “/”.' };
-  }
+  if (anh && !laDiaChiHopLe(anh)) return { loi: LOI_DIA_CHI };
 
   await db.nguoiDung.update({
     where: { id: nguoi.id },

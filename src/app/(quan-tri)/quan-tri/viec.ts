@@ -8,6 +8,7 @@ import { thanhDuongDan } from '@/lib/tien-ich';
 import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
+import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
 
 export interface KetQua { loi?: string }
 
@@ -41,6 +42,10 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
   });
   if (trung) return { loi: `Đường dẫn “${duongDan}” đã có game khác dùng.` };
 
+  // Ảnh biểu tượng trước đây nhận bất cứ chuỗi gì — kể cả `javascript:`.
+  const icon = chu(form, 'icon');
+  if (icon && !laDiaChiHopLe(icon)) return { loi: LOI_DIA_CHI };
+
   const namRaw = parseInt(chu(form, 'namPhatHanh'), 10);
   const duLieu = {
     duongDan,
@@ -51,7 +56,7 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
     gioiThieu: chu(form, 'gioiThieu') || null,
     cachChoi: chu(form, 'cachChoi') || null,
     luuY: chu(form, 'luuY') || null,
-    icon: chu(form, 'icon') || null,
+    icon: icon || null,
     ngonNgu: chu(form, 'ngonNgu') || 'en',
     vietHoa: form.get('vietHoa') === 'on',
     noiBat: form.get('noiBat') === 'on',
@@ -129,6 +134,12 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
 
   if (!(HE_MAY as readonly string[]).includes(heMay)) return { loi: 'Hệ máy không hợp lệ.' };
   if (!soHieu) return { loi: 'Hãy nhập số hiệu bản, ví dụ 1.0.' };
+  // Tệp gắn ngay lúc tạo bản trước đây KHÔNG kiểm gì cả — lối vào này bị bỏ
+  // sót trong khi lối "gắn thêm tệp" thì có kiểm.
+  if (duongDanTep && !laDiaChiHopLe(duongDanTep)) return { loi: LOI_DIA_CHI };
+  if (cuaHang && !laHttpsHopLe(cuaHang)) {
+    return { loi: 'Đường dẫn cửa hàng phải là một địa chỉ https đầy đủ.' };
+  }
 
   const game = await db.game.findUnique({ where: { id: gameId }, select: { duongDan: true } });
   if (!game) return { loi: 'Không tìm thấy game.' };
@@ -227,11 +238,9 @@ export async function themAnhChup(_truoc: KetQua, form: FormData): Promise<KetQu
   const duongDanAnh = chu(form, 'duongDanAnh');
   if (!duongDanAnh) return { loi: 'Hãy nhập địa chỉ ảnh.' };
 
-  // Chỉ nhận ảnh trong nhà hoặc qua https. Cho phép mọi thứ thì một địa chỉ
-  // `javascript:` hay `data:` lọt vào thuộc tính src là chuyện xảy ra được.
-  if (!duongDanAnh.startsWith('/') && !duongDanAnh.startsWith('https://')) {
-    return { loi: 'Địa chỉ ảnh phải bắt đầu bằng “/” hoặc “https://”.' };
-  }
+  // Chỉ nhận ảnh trong nhà hoặc qua https — và kiểm bằng cách PHÂN TÍCH địa
+  // chỉ, không so đầu chuỗi; xem `dia-chi-an-toan.ts` để biết vì sao.
+  if (!laDiaChiHopLe(duongDanAnh)) return { loi: LOI_DIA_CHI };
 
   const game = await db.game.findUnique({ where: { id: gameId }, select: { duongDan: true } });
   if (!game) return { loi: 'Không tìm thấy game.' };
@@ -672,7 +681,7 @@ export async function doiChoTheLoai(theLoaiId: string, len: boolean): Promise<Ke
  * Trả `null`, và trang game tự biết giấu phần dung lượng đi.
  */
 async function doDungLuongTep(duongDan: string): Promise<bigint | null> {
-  if (!duongDan.startsWith('/')) return null;
+  if (xemDiaChi(duongDan) !== 'trong-nha') return null;
   try {
     const { stat } = await import('node:fs/promises');
     const path = await import('node:path');
@@ -729,6 +738,11 @@ export async function suaBanTai(_truoc: KetQua, form: FormData): Promise<KetQua>
   });
   if (trung) return { loi: `Bản ${soHieu} của hệ này đã có rồi.` };
 
+  const cuaHangMoi = chu(form, 'duongDanCuaHang');
+  if (cuaHangMoi && !laHttpsHopLe(cuaHangMoi)) {
+    return { loi: 'Đường dẫn cửa hàng phải là một địa chỉ https đầy đủ.' };
+  }
+
   const ngay = chu(form, 'ngayRa');
   await db.banTai.update({
     where: { id: banId },
@@ -736,7 +750,7 @@ export async function suaBanTai(_truoc: KetQua, form: FormData): Promise<KetQua>
       soHieu,
       ghiChu: chu(form, 'ghiChu') || null,
       doiMoi: chu(form, 'doiMoi') || null,
-      duongDanCuaHang: chu(form, 'duongDanCuaHang') || null,
+      duongDanCuaHang: cuaHangMoi || null,
       ngayRa: ngay ? new Date(ngay) : null,
     },
     select: { id: true },
@@ -787,9 +801,7 @@ export async function themTep(_truoc: KetQua, form: FormData): Promise<KetQua> {
 
   if (!duongDanTep) return { loi: 'Hãy nhập địa chỉ tệp.' };
   if (!laLoaiTep(loaiTep)) return { loi: 'Loại tệp không hợp lệ.' };
-  if (!duongDanTep.startsWith('/') && !duongDanTep.startsWith('https://')) {
-    return { loi: 'Địa chỉ tệp phải bắt đầu bằng “/” hoặc “https://”.' };
-  }
+  if (!laDiaChiHopLe(duongDanTep)) return { loi: LOI_DIA_CHI };
 
   const ban = await db.banTai.findUnique({
     where: { id: banId },

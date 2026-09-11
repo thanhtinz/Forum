@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
+import { xemDiaChi } from '@/lib/dia-chi-an-toan';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,5 +55,26 @@ export async function GET(_req: Request, { params }: { params: Promise<{ tepId: 
     }
   });
 
-  return NextResponse.redirect(new URL(tep.duongDan, _req.url), 302);
+  /*
+   * KIỂM LẠI ĐỊA CHỈ NGAY TRƯỚC KHI CHUYỂN HƯỚNG, dù lúc nhập đã kiểm rồi.
+   *
+   * Không phải vì không tin người quản trị, mà vì hàng trong CSDL có thể tới
+   * từ nơi khác: một lượt nhập liệu tay, một bản khôi phục cũ, hay chính lối
+   * nhập mà bản trước đây quên kiểm. Chuyển hướng là chỗ THẬT SỰ nguy hiểm —
+   * đường dẫn ra ngoài mà liên kết lại mang tên miền cửa hàng thì đó đúng là
+   * thứ người ta dùng để lừa người khác bấm vào.
+   *
+   * Địa chỉ hỏng thì trả 404 chứ không trả lỗi máy chủ: với người bấm, một tệp
+   * không dẫn đi đâu được và một tệp không tồn tại là cùng một chuyện.
+   */
+  const kieu = xemDiaChi(tep.duongDan);
+  if (kieu === 'hong') {
+    return NextResponse.json({ loi: 'DIA_CHI_HONG' }, { status: 404 });
+  }
+
+  // Đường dẫn trong nhà thì nối vào gốc của chính yêu cầu này; địa chỉ https
+  // đầy đủ thì dùng nguyên. Không nối gốc vào một địa chỉ đã đủ, vì `URL` sẽ
+  // im lặng bỏ gốc đi và ta mất luôn chỗ để nhìn ra mình đang làm gì.
+  const dich = kieu === 'trong-nha' ? new URL(tep.duongDan, _req.url) : new URL(tep.duongDan);
+  return NextResponse.redirect(dich, 302);
 }

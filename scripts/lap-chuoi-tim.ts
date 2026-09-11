@@ -28,7 +28,18 @@ async function chay() {
       ten: g.ten, tenViet: g.tenViet, nhaPhatTrien: g.nhaPhatTrien,
       theLoai: g.theLoai.map((t) => t.theLoai.ten),
     });
-    await db.game.update({ where: { id: g.id }, data: { timKiem: chuoi }, select: { id: true } });
+    /*
+     * Ghi bằng SQL thô để KHÔNG chạm vào `suaLuc`.
+     *
+     * `suaLuc` mang `@updatedAt`, nên một lượt `update` bình thường sẽ đánh
+     * dấu cả mười hai game là "vừa sửa xong" — dù chẳng ai sửa gì. Hai chỗ
+     * hỏng theo: cột "Sửa lần cuối" trong bảng quản trị hoá ra nói dối, và
+     * `lastmod` trong sơ đồ trang bảo máy tìm kiếm rằng cả kho vừa đổi.
+     *
+     * Đây là việc BẢO TRÌ, không phải một lần sửa nội dung, nên nó phải đi
+     * qua mà không để lại dấu vết nào.
+     */
+    await db.$executeRaw`UPDATE "Game" SET "timKiem" = ${chuoi} WHERE "id" = ${g.id}`;
     doi += 1;
   }
 

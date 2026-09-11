@@ -3,6 +3,19 @@ import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { DIA_CHI_GOC } from '@/lib/dia-chi-goc';
 
+/*
+ * DỰNG THEO TỪNG LƯỢT HỎI, không dựng sẵn lúc build.
+ *
+ * Mặc định Next coi tệp này là tĩnh và chạy nó NGAY TRONG lúc `next build` —
+ * nghĩa là bản dựng đòi phải có một cơ sở dữ liệu sống. Đã dính thật: CSDL
+ * chập một nhịp và cả lượt dựng đổ, với một câu lỗi chẳng nhắc gì tới sơ đồ
+ * trang. Máy dựng ở nơi khác không với tới CSDL thì còn không dựng nổi lần nào.
+ *
+ * Mà dựng sẵn cũng chẳng được gì: danh sách game đổi mỗi lần thêm hay gỡ một
+ * game, nên một sơ đồ đóng băng từ lúc dựng là một sơ đồ sai.
+ */
+export const dynamic = 'force-dynamic';
+
 /**
  * Sơ đồ trang cho máy tìm kiếm.
  *

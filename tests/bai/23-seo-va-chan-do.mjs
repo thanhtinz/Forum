@@ -20,7 +20,7 @@ export default async function chay(kiem) {
 
   const game = await db.game.findFirst({
     orderBy: { id: 'asc' },
-    where: { trangThai: 'DANG_HIEN' }, select: { duongDan: true },
+    where: { trangThai: 'DANG_HIEN' }, select: { duongDan: true, suaLuc: true },
   });
   kiem('sơ đồ trang có trang game đang hiện',
     xml.includes(`/game/${game.duongDan}<`), game.duongDan);
@@ -44,12 +44,27 @@ export default async function chay(kiem) {
     !xml.includes('sap=') && !xml.includes('trang='),
     'mấy tổ hợp lọc sinh ra hàng nghìn địa chỉ trùng nội dung');
 
-  // `lastmod` phải là ngày sửa THẬT, không phải lúc nào cũng "vừa xong".
+  /*
+   * `lastmod` phải là ngày sửa THẬT của từng game.
+   *
+   * Bản trước canh bằng cách so với đồng hồ — "mốc phải cũ hơn một giây". Mục
+   * ấy canh DỮ LIỆU chứ không canh MÃ: một bài kiểm chạy trước vừa động vào
+   * game là nó đỏ, mà mã sinh sơ đồ thì không sai chỗ nào. So thẳng với
+   * `suaLuc` trong CSDL mới là canh đúng thứ cần canh — và nó bắt được cả
+   * trường hợp khai bừa `new Date()`, vì con số ấy sẽ không khớp.
+   */
   const mod = [...xml.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)].map((m) => m[1]);
   kiem('sơ đồ trang có mốc sửa đổi', mod.length > 0, `${mod.length} mốc`);
-  kiem('mốc sửa đổi không phải đúng lúc này',
-    mod.every((m) => Date.now() - new Date(m).getTime() > 1000),
-    'nếu mọi mốc đều là hiện tại thì con số ấy vô nghĩa');
+
+  const khoi = xml.split('<url>').find((k) => k.includes(`/game/${game.duongDan}<`));
+  const modCuaGame = khoi?.match(/<lastmod>([^<]+)<\/lastmod>/)?.[1];
+  const suaThat = (await db.game.findFirst({
+    where: { duongDan: game.duongDan }, orderBy: { id: 'asc' }, select: { suaLuc: true },
+  }))?.suaLuc;
+  kiem('mốc sửa đổi lấy từ ngày sửa THẬT của game',
+    !!modCuaGame && !!suaThat
+      && Math.abs(new Date(modCuaGame).getTime() - suaThat.getTime()) < 1000,
+    `sơ đồ ghi ${modCuaGame}, CSDL ghi ${suaThat?.toISOString()}`);
 
   // ── Cửa chặn dò mật khẩu ──────────────────────────────────────────────
   const AI = 'anhthu';

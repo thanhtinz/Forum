@@ -80,14 +80,22 @@ export async function doiTrangThai(gameId: string, trangThai: 'NHAP' | 'DANG_HIE
   try { await batBuocQuanTri(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
+  /*
+   * CHỈ ghi `trangThai` ở lượt này, KHÔNG đụng tới `dangLuc`.
+   *
+   * Bản trước viết `dangLuc: { set: undefined }` với ý "để nguyên cột ấy".
+   * Prisma không hiểu thế: nó đòi một DateTime hoặc null, gặp object là ném
+   * lỗi — nên mọi lần bấm Đăng từ khu quản trị đều hỏng, im lặng, suốt từ đầu.
+   * Kho vẫn chạy vì kịch bản gieo dữ liệu tự đặt `dangLuc` lấy, nên không ai
+   * gặp. Muốn để nguyên một cột thì đơn giản là ĐỪNG nhắc tới nó.
+   *
+   * Ngày đăng đặt ở lượt thứ hai bên dưới, và chỉ đặt LẦN ĐẦU: rút về nháp rồi
+   * đăng lại mà đặt lại ngày thì game cũ nhảy lên đầu kệ "Mới ra mắt", đẩy
+   * game mới thật xuống dưới.
+   */
   const game = await db.game.update({
     where: { id: gameId },
-    data: {
-      trangThai,
-      // Ngày đăng chỉ đặt LẦN ĐẦU. Rút về nháp rồi đăng lại mà đặt lại ngày thì
-      // game cũ nhảy lên đầu kệ "Mới lên kho", đẩy game mới thật xuống dưới.
-      ...(trangThai === 'DANG_HIEN' ? { dangLuc: { set: undefined } } : {}),
-    },
+    data: { trangThai },
     select: { id: true, duongDan: true, dangLuc: true },
   });
 
@@ -142,10 +150,13 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
     });
 
     if (duongDanTep && laLoaiTep(loaiTep)) {
+      // Dung lượng đo thẳng từ tệp thật — xem `doDungLuongTep` để biết vì sao
+      // không bắt người nhập gõ tay con số ấy.
       await tx.tepTai.create({
-        data: { banId: ban.id, loai: loaiTep, duongDan: duongDanTep },
+        data: { banId: ban.id, loai: loaiTep, duongDan: duongDanTep, dungLuong: await doDungLuongTep(duongDanTep) },
         select: { id: true },
       });
+      await tinhLaiDungLuongBan(tx as typeof db, ban.id);
     }
   });
 
@@ -570,4 +581,218 @@ export async function doiChoTheLoai(theLoaiId: string, len: boolean): Promise<Ke
   revalidatePath('/duyet');
   revalidatePath('/game');
   return {};
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * BẢN TẢI VÀ TỆP
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Đo dung lượng THẬT của một tệp nằm trong thư mục `public`.
+ *
+ * Bắt người nhập gõ tay con số byte là cách chắc chắn có ngày lệch: gõ nhầm
+ * một chữ số thì trang game ghi "1,1 MB" trong khi tệp tải về nặng 11 MB, mà
+ * chẳng có gì đối chiếu để phát hiện. Đo thẳng tệp thì con số luôn đúng, và
+ * đúng mãi kể cả khi ai đó thay tệp khác vào cùng đường dẫn rồi bấm lưu lại.
+ *
+ * Địa chỉ ngoài (`https://…`) thì chịu — không tải cả tệp về chỉ để cân nó.
+ * Trả `null`, và trang game tự biết giấu phần dung lượng đi.
+ */
+async function doDungLuongTep(duongDan: string): Promise<bigint | null> {
+  if (!duongDan.startsWith('/')) return null;
+  try {
+    const { stat } = await import('node:fs/promises');
+    const path = await import('node:path');
+    // `path.join` tự gạt bỏ `..` — không thì một đường dẫn khéo léo đọc được
+    // kích thước tệp bất kỳ ngoài thư mục `public`.
+    const that = path.join(process.cwd(), 'public', path.normalize(duongDan));
+    if (!that.startsWith(path.join(process.cwd(), 'public'))) return null;
+    return BigInt((await stat(that)).size);
+  } catch {
+    return null; // chưa có tệp ở đó — người nhập có thể tải lên sau
+  }
+}
+
+/**
+ * Cộng lại dung lượng của một bản từ chính các tệp của nó.
+ *
+ * Bản nhiều tệp (JAR kèm JAD) thì con số người tải cần biết là TỔNG, vì họ sẽ
+ * lấy hết. Cộng lại từ bảng chứ không cộng dồn tay: cộng dồn thì mỗi lần xoá
+ * một tệp mà quên trừ là lệch vĩnh viễn.
+ */
+async function tinhLaiDungLuongBan(tx: typeof db, banId: string) {
+  const tep = await tx.tepTai.findMany({ where: { banId }, select: { dungLuong: true } });
+  const co = tep.some((t) => t.dungLuong != null);
+  const tong = tep.reduce((t, x) => t + (x.dungLuong ?? 0n), 0n);
+  await tx.banTai.update({
+    where: { id: banId },
+    // Không tệp nào đo được thì để trống hẳn, đừng ghi 0 — "0 B" đọc ra là
+    // tệp rỗng, còn để trống thì trang game giấu dòng ấy đi.
+    data: { dungLuong: co ? tong : null },
+    select: { id: true },
+  });
+}
+
+/** Sửa thông tin một bản tải đã có. */
+export async function suaBanTai(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const banId = chu(form, 'banId');
+  const soHieu = chu(form, 'soHieu');
+  if (!soHieu) return { loi: 'Hãy nhập số hiệu bản.' };
+
+  const ban = await db.banTai.findUnique({
+    where: { id: banId },
+    select: { gameId: true, heMay: true, game: { select: { duongDan: true } } },
+  });
+  if (!ban) return { loi: 'Không tìm thấy bản tải.' };
+
+  // `@@unique([gameId, heMay, soHieu])` sẽ chặn, nhưng chặn bằng một lỗi thô.
+  // Kiểm trước để báo một câu người đọc hiểu được.
+  const trung = await db.banTai.findFirst({
+    where: { gameId: ban.gameId, heMay: ban.heMay, soHieu, NOT: { id: banId } },
+    select: { id: true },
+  });
+  if (trung) return { loi: `Bản ${soHieu} của hệ này đã có rồi.` };
+
+  const ngay = chu(form, 'ngayRa');
+  await db.banTai.update({
+    where: { id: banId },
+    data: {
+      soHieu,
+      ghiChu: chu(form, 'ghiChu') || null,
+      doiMoi: chu(form, 'doiMoi') || null,
+      duongDanCuaHang: chu(form, 'duongDanCuaHang') || null,
+      ngayRa: ngay ? new Date(ngay) : null,
+    },
+    select: { id: true },
+  });
+
+  revalidatePath(`/quan-tri/game/${ban.gameId}`);
+  revalidatePath(`/game/${ban.game.duongDan}`);
+  return {};
+}
+
+/**
+ * Đặt một bản làm bản mới nhất của hệ máy ấy.
+ *
+ * Hạ cờ của mọi bản cùng hệ rồi mới dựng cờ cho bản này, trong CÙNG một giao
+ * dịch: hai bản cùng mang cờ thì trang game không biết bày bản nào ra trước,
+ * mà nó chọn bừa nên lỗi hiện ra lúc này lúc khác.
+ */
+export async function datBanMoiNhat(banId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const ban = await db.banTai.findUnique({
+    where: { id: banId },
+    select: { gameId: true, heMay: true, game: { select: { duongDan: true } } },
+  });
+  if (!ban) return { loi: 'Không tìm thấy bản tải.' };
+
+  await db.$transaction([
+    db.banTai.updateMany({
+      where: { gameId: ban.gameId, heMay: ban.heMay }, data: { moiNhat: false },
+    }),
+    db.banTai.update({ where: { id: banId }, data: { moiNhat: true }, select: { id: true } }),
+  ]);
+
+  revalidatePath(`/quan-tri/game/${ban.gameId}`);
+  revalidatePath(`/game/${ban.game.duongDan}`);
+  return {};
+}
+
+/** Gắn thêm một tệp vào bản đã có — ví dụ thêm JAD cho bản JAR. */
+export async function themTep(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const banId = chu(form, 'banId');
+  const duongDanTep = chu(form, 'duongDanTep');
+  const loaiTep = chu(form, 'loaiTep') as MaLoaiTep;
+
+  if (!duongDanTep) return { loi: 'Hãy nhập địa chỉ tệp.' };
+  if (!laLoaiTep(loaiTep)) return { loi: 'Loại tệp không hợp lệ.' };
+  if (!duongDanTep.startsWith('/') && !duongDanTep.startsWith('https://')) {
+    return { loi: 'Địa chỉ tệp phải bắt đầu bằng “/” hoặc “https://”.' };
+  }
+
+  const ban = await db.banTai.findUnique({
+    where: { id: banId },
+    select: { gameId: true, game: { select: { duongDan: true } } },
+  });
+  if (!ban) return { loi: 'Không tìm thấy bản tải.' };
+
+  const dungLuong = await doDungLuongTep(duongDanTep);
+
+  await db.$transaction(async (tx) => {
+    await tx.tepTai.create({
+      data: { banId, loai: loaiTep, duongDan: duongDanTep, dungLuong },
+      select: { id: true },
+    });
+    await tinhLaiDungLuongBan(tx as typeof db, banId);
+  });
+
+  revalidatePath(`/quan-tri/game/${ban.gameId}`);
+  revalidatePath(`/game/${ban.game.duongDan}`);
+  return {};
+}
+
+/** Gỡ một tệp khỏi bản. Dung lượng của bản cộng lại ngay trong cùng giao dịch. */
+export async function xoaTep(tepId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const tep = await db.tepTai.findUnique({
+    where: { id: tepId },
+    select: {
+      banId: true,
+      ban: { select: { gameId: true, game: { select: { duongDan: true } } } },
+    },
+  });
+  if (!tep) return {};
+
+  await db.$transaction(async (tx) => {
+    await tx.tepTai.delete({ where: { id: tepId } });
+    await tinhLaiDungLuongBan(tx as typeof db, tep.banId);
+  });
+
+  revalidatePath(`/quan-tri/game/${tep.ban.gameId}`);
+  revalidatePath(`/game/${tep.ban.game.duongDan}`);
+  return {};
+}
+
+/**
+ * ĐỔI TRẠNG THÁI NHIỀU GAME CÙNG LÚC.
+ *
+ * Gọi lại `doiTrangThai` cho từng game chứ không viết một `updateMany`: luật
+ * "ngày đăng chỉ đặt lần đầu" nằm trong hàm ấy, mà `updateMany` thì không chạy
+ * qua nó được. Chép luật ra chỗ thứ hai là chuẩn bị sẵn cho ngày hai bản lệch
+ * nhau — lúc ấy đăng một game và đăng mười game cho ra hai kết quả khác nhau.
+ *
+ * Chạy TUẦN TỰ, không `Promise.all`: mỗi lượt là một lượt ghi cộng một lượt
+ * làm mới bộ đệm trang, và bắn ba chục lượt cùng lúc thì chỉ tổ tranh nhau
+ * kết nối CSDL. Người bấm chọn ba chục game đã sẵn sàng chờ một nhịp rồi.
+ */
+export async function doiTrangThaiNhieu(
+  gameId: string[],
+  trangThai: 'NHAP' | 'DANG_HIEN' | 'DA_GO',
+): Promise<KetQua & { so?: number }> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  // Chặn trần để một yêu cầu bịa ra không kéo cả kho vào một giao dịch.
+  if (gameId.length === 0) return { so: 0 };
+  if (gameId.length > 100) return { loi: 'Mỗi lượt tối đa 100 game.' };
+
+  let so = 0;
+  for (const id of gameId) {
+    const kq = await doiTrangThai(id, trangThai);
+    if (!kq.loi) so += 1;
+  }
+
+  revalidatePath('/quan-tri/game');
+  revalidatePath('/quan-tri');
+  return { so };
 }

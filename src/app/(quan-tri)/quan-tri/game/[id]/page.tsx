@@ -34,6 +34,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
           take: 50,
           select: {
             id: true, heMay: true, soHieu: true, moiNhat: true, duongDanCuaHang: true,
+            ghiChu: true, doiMoi: true, ngayRa: true,
             tep: { select: { id: true, loai: true, duongDan: true, dungLuong: true } },
           },
         },
@@ -70,6 +71,10 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
             heMay: b.heMay,
             soHieu: b.soHieu,
             moiNhat: b.moiNhat,
+            ghiChu: b.ghiChu,
+            doiMoi: b.doiMoi,
+            // Ô <input type="date"> chỉ nhận đúng dạng YYYY-MM-DD.
+            ngayRa: b.ngayRa ? b.ngayRa.toISOString().slice(0, 10) : null,
             duongDanCuaHang: b.duongDanCuaHang,
             tep: b.tep.map((t) => ({
               id: t.id, loai: t.loai, duongDan: t.duongDan,

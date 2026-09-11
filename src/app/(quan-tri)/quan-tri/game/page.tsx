@@ -5,6 +5,7 @@ import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { PhanTrang } from '@/components/PhanTrang';
+import { ODanhDau, ODanhDauHet, ThanhViecChon, VungChon } from '@/components/quan-tri/ChonNhieu';
 import { cachDay, gonSo, gop } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
@@ -140,7 +141,7 @@ export default async function DanhSachGame({ searchParams }: {
           {tim || trangThai ? 'Không có game nào khớp bộ lọc.' : 'Chưa có trò chơi nào.'}
         </p>
       ) : (
-        <>
+        <VungChon>
           {/*
             BẢNG THẬT trên máy bàn, DANH SÁCH THẺ trên điện thoại.
 
@@ -153,6 +154,9 @@ export default async function DanhSachGame({ searchParams }: {
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="vach-duoi bg-nen3/60 text-left text-[12px] text-mo">
+                  <th scope="col" className="w-9 pl-3">
+                    <ODanhDauHet id={game.map((g) => g.id)} />
+                  </th>
                   <ThSap ma="ten" dangSap={sap} duong={duong}>Game</ThSap>
                   <th scope="col" className="px-3 py-2.5 font-semibold">Trạng thái</th>
                   <th scope="col" className="px-3 py-2.5 font-semibold">Bản tải</th>
@@ -176,6 +180,12 @@ export default async function DanhSachGame({ searchParams }: {
                       bàn phím không Tab tới được và chuột giữa không mở tab mới.
                     */
                     <tr key={g.id} className="relative transition-colors hover:bg-nen3/60">
+                      {/* Ô tích đứng NGOÀI lớp phủ bấm-cả-hàng: `relative` ở
+                          đây nâng nó lên trên lớp ấy, không thì tích vào một
+                          hàng lại nhảy sang trang sửa game. */}
+                      <td className="relative pl-3">
+                        <ODanhDau id={g.id} ten={g.ten} />
+                      </td>
                       <td className="px-3 py-2.5">
                         <Link href={`/quan-tri/game/${g.id}`}
                           className="flex items-center gap-2.5 after:absolute after:inset-0 after:content-['']">
@@ -213,9 +223,10 @@ export default async function DanhSachGame({ searchParams }: {
             {game.map((g) => {
               const n = NHAN[g.trangThai] ?? NHAN.NHAP;
               return (
-                <li key={g.id}>
+                <li key={g.id} className="flex items-center gap-3 pl-4">
+                  <ODanhDau id={g.id} ten={g.ten} />
                   <Link href={`/quan-tri/game/${g.id}`}
-                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-nen3">
+                    className="flex min-w-0 flex-1 items-center gap-3 py-3 pr-4 transition-colors hover:bg-nen3">
                     <BieuTuongGame ten={g.ten} icon={g.icon} co={40} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[14px] font-medium">{g.ten}</span>
@@ -233,7 +244,8 @@ export default async function DanhSachGame({ searchParams }: {
           </ul>
 
           <PhanTrang trang={trang} tongTrang={tongTrang} dungDuong={(t) => duong({ trang: t })} />
-        </>
+          <ThanhViecChon />
+        </VungChon>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { OTim } from './OTim';
 import { DauHieu } from './DauHieu';
 import { DoiNen } from './DoiNen';
+import { Chuong } from './Chuong';
 import type { NguoiDangNhap } from '@/lib/xac-thuc';
 
 /**
@@ -14,7 +15,11 @@ import type { NguoiDangNhap } from '@/lib/xac-thuc';
  * Dấu hiệu nhận biết trang chỉ hiện ở khổ nhỏ: từ `lg` trở lên nó đã nằm trên
  * đầu thanh bên rồi, in hai lần là thừa.
  */
-export function ThanhTren({ nguoi, tuKhoa }: { nguoi: NguoiDangNhap | null; tuKhoa?: string }) {
+export function ThanhTren({ nguoi, tuKhoa, chuaDoc = 0 }: {
+  nguoi: NguoiDangNhap | null;
+  tuKhoa?: string;
+  chuaDoc?: number;
+}) {
   return (
     <header className="sticky top-0 z-30 border-b border-vien bg-nen/95 backdrop-blur">
       <div className="flex items-center gap-2 px-4 py-2.5 sm:px-6">
@@ -27,6 +32,8 @@ export function ThanhTren({ nguoi, tuKhoa }: { nguoi: NguoiDangNhap | null; tuKh
         </div>
 
         <DoiNen />
+
+        {nguoi && <Chuong chuaDoc={chuaDoc} />}
 
         {nguoi ? (
           <Link href="/toi" aria-label="Tài khoản của bạn" className="shrink-0">

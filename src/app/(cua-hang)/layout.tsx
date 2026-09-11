@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import '../globals.css';
 import { nguoiHienTai } from '@/lib/xac-thuc';
+import { demChuaDoc } from '@/lib/thong-bao';
 import { ThanhBen } from '@/components/vo/ThanhBen';
 import { ThanhTren } from '@/components/vo/ThanhTren';
 import { ThanhDay } from '@/components/vo/ThanhDay';
@@ -41,6 +42,8 @@ const DAT_NEN = `try{if(localStorage.getItem('sunny:nen')==='toi')document.docum
 
 export default async function BoCucGoc({ children }: { children: React.ReactNode }) {
   const nguoi = await nguoiHienTai();
+  // Đếm ở khung để mọi trang đều có con số trên chuông, khỏi phải nhớ truyền.
+  const chuaDoc = nguoi ? await demChuaDoc(nguoi.id) : 0;
 
   return (
     <html lang="vi" suppressHydrationWarning>
@@ -58,7 +61,7 @@ export default async function BoCucGoc({ children }: { children: React.ReactNode
         {/* `pb-28` chừa chỗ cho thanh tab NỔI: nó cao hơn thanh dính đáy vì
             còn cộng thêm lề dưới. Thiếu chỗ chừa thì đoạn cuối mọi trang bị che. */}
         <div className="min-h-screen pb-28 lg:pb-0 lg:pl-[240px]">
-          <ThanhTren nguoi={nguoi} />
+          <ThanhTren nguoi={nguoi} chuaDoc={chuaDoc} />
           <main id="noi-dung" className="khung py-5 sm:py-6">{children}</main>
         </div>
 

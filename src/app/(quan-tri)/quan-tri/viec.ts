@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { batBuocQuanTri } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
 import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
+import { guiThongBao } from '@/lib/thong-bao';
 
 export interface KetQua { loi?: string }
 
@@ -184,10 +185,21 @@ export async function traLoiYeuCau(id: string, trangThai: string, loiNhan: strin
   const hopLe = ['CHO_XEM', 'DANG_TIM', 'DA_THEM', 'TU_CHOI'];
   if (!hopLe.includes(trangThai)) return { loi: 'Trạng thái không hợp lệ.' };
 
-  await db.yeuCau.update({
+  const yc = await db.yeuCau.update({
     where: { id },
     data: { trangThai: trangThai as 'CHO_XEM', loiNhan: loiNhan.trim().slice(0, 500) || null },
-    select: { id: true },
+    select: { nguoiId: true, ten: true },
+  });
+
+  // Người gửi yêu cầu không có lý do gì để quay lại trang ấy xem đã có trả lời
+  // chưa — nên phải chủ động báo, bằng không lời trả lời nằm đó không ai đọc.
+  const noi = { CHO_XEM: 'đang chờ xem', DANG_TIM: 'đang được tìm', DA_THEM: 'đã lên kho', TU_CHOI: 'bị từ chối' };
+  await guiThongBao({
+    nguoiNhanId: yc.nguoiId,
+    loai: 'TRA_LOI_YEU_CAU',
+    tieuDe: `Yêu cầu “${yc.ten}” ${noi[trangThai as keyof typeof noi] ?? 'đã được xem'}`,
+    chiTiet: loiNhan.trim() || null,
+    duongDan: '/yeu-cau',
   });
 
   revalidatePath('/quan-tri/yeu-cau');
@@ -305,7 +317,8 @@ export async function traLoiDanhGia(danhGiaId: string, loi: string): Promise<Ket
   const chuLoi = loi.trim().slice(0, 1000);
 
   const bai = await db.danhGia.findUnique({
-    where: { id: danhGiaId }, select: { game: { select: { duongDan: true } } },
+    where: { id: danhGiaId },
+    select: { nguoiId: true, game: { select: { ten: true, duongDan: true } } },
   });
   if (!bai) return { loi: 'Không tìm thấy bài đánh giá.' };
 
@@ -318,6 +331,18 @@ export async function traLoiDanhGia(danhGiaId: string, loi: string): Promise<Ket
   // Làm mới cả trang game công khai LẪN hai chỗ trong khu quản trị: huy hiệu
   // "chưa đáp" trên thanh bên và danh sách lọc mặc định đều đọc từ con số này,
   // nên quên một chỗ là vừa trả lời xong mà huy hiệu vẫn nguyên số cũ.
+  // Chỉ báo khi THÊM lời đáp, không báo lúc xoá: "cửa hàng đã rút lại lời đáp"
+  // là một tin chẳng ai cần biết.
+  if (chuLoi) {
+    await guiThongBao({
+      nguoiNhanId: bai.nguoiId,
+      loai: 'DAP_DANH_GIA',
+      tieuDe: `SunnyStore đã trả lời đánh giá của bạn`,
+      chiTiet: `${bai.game.ten} · ${chuLoi}`,
+      duongDan: `/game/${bai.game.duongDan}`,
+    });
+  }
+
   revalidatePath(`/game/${bai.game.duongDan}`);
   revalidatePath('/quan-tri/danh-gia');
   revalidatePath('/quan-tri');
@@ -378,11 +403,28 @@ export async function xoaChuDe(chuDeId: string): Promise<KetQua> {
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
   const c = await db.chuDe.findUnique({
-    where: { id: chuDeId }, select: { game: { select: { duongDan: true } } },
+    where: { id: chuDeId },
+    select: { tieuDe: true, nguoiId: true, game: { select: { duongDan: true } } },
   });
   if (!c) return {};
 
   await db.chuDe.delete({ where: { id: chuDeId } });
+
+  /*
+   * Báo cho người viết biết bài của họ đã bị gỡ.
+   *
+   * Gỡ im lặng thì người ấy đi tìm bài mình, không thấy, và kết luận trang bị
+   * lỗi — rồi đăng lại đúng bài ấy. Nói ra thì họ biết vì sao và thôi.
+   *
+   * `duongDan` để RỖNG: bài không còn, dẫn tới một trang 404 còn tệ hơn không
+   * dẫn đi đâu.
+   */
+  await guiThongBao({
+    nguoiNhanId: c.nguoiId,
+    loai: 'GO_NOI_DUNG',
+    tieuDe: 'Một chủ đề của bạn đã bị gỡ',
+    chiTiet: c.tieuDe,
+  });
 
   revalidatePath(`/game/${c.game.duongDan}/dien-dan`);
   revalidatePath('/quan-tri/dien-dan');
@@ -403,7 +445,10 @@ export async function xoaTraLoi(traLoiId: string): Promise<KetQua> {
 
   const t = await db.traLoi.findUnique({
     where: { id: traLoiId },
-    select: { chuDeId: true, chuDe: { select: { game: { select: { duongDan: true } } } } },
+    select: {
+      chuDeId: true, nguoiId: true, noiDung: true,
+      chuDe: { select: { tieuDe: true, game: { select: { duongDan: true } } } },
+    },
   });
   if (!t) return {};
 
@@ -413,6 +458,13 @@ export async function xoaTraLoi(traLoiId: string): Promise<KetQua> {
     await tx.chuDe.update({
       where: { id: t.chuDeId }, data: { soTraLoi: con }, select: { id: true },
     });
+  });
+
+  await guiThongBao({
+    nguoiNhanId: t.nguoiId,
+    loai: 'GO_NOI_DUNG',
+    tieuDe: 'Một lời đáp của bạn đã bị gỡ',
+    chiTiet: `Trong chủ đề “${t.chuDe.tieuDe}”`,
   });
 
   revalidatePath(`/game/${t.chuDe.game.duongDan}/dien-dan/${t.chuDeId}`);
@@ -433,7 +485,7 @@ export async function xoaDanhGia(danhGiaId: string): Promise<KetQua> {
 
   const d = await db.danhGia.findUnique({
     where: { id: danhGiaId },
-    select: { gameId: true, game: { select: { duongDan: true } } },
+    select: { gameId: true, nguoiId: true, game: { select: { ten: true, duongDan: true } } },
   });
   if (!d) return {};
 
@@ -447,6 +499,13 @@ export async function xoaDanhGia(danhGiaId: string): Promise<KetQua> {
       data: { tongSao: gom._sum.sao ?? 0, soLuotDanhGia: gom._count._all },
       select: { id: true },
     });
+  });
+
+  await guiThongBao({
+    nguoiNhanId: d.nguoiId,
+    loai: 'GO_NOI_DUNG',
+    tieuDe: 'Đánh giá của bạn đã bị gỡ',
+    chiTiet: d.game.ten,
   });
 
   revalidatePath(`/game/${d.game.duongDan}`);

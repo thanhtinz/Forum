@@ -31,6 +31,7 @@ model NguoiDung {
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
   baoXau        BaoXau[]
+  thongBao      ThongBao[]
 
   @@index([taoLuc])
 }
@@ -403,4 +404,41 @@ model BaoXau {
   @@unique([nguoiId, chuDeId])
   @@unique([nguoiId, traLoiId])
   @@index([trangThai, taoLuc])
+}
+
+/// Loại thông báo. Quyết định biểu tượng và màu, không quyết định câu chữ —
+/// câu chữ chốt sẵn lúc tạo, xem chú thích ở model.
+enum LoaiThongBao {
+  TRA_LOI_CHU_DE
+  DAP_DANH_GIA
+  TRA_LOI_YEU_CAU
+  GO_NOI_DUNG
+}
+
+/// Một thông báo gửi tới một người.
+///
+/// CHỐT SẴN câu chữ và đường dẫn ngay lúc tạo, KHÔNG trỏ khoá ngoại sang nội
+/// dung gốc. Ngược hẳn với `BaoXau`, và có lý do: một lượt báo chỉ có nghĩa
+/// khi nội dung còn đó, nên nó phải chết theo. Còn thông báo thì phải sống
+/// LÂU HƠN thứ sinh ra nó — "bài của bạn đã bị gỡ" mà lại biến mất cùng lúc
+/// với bài ấy thì người nhận không bao giờ biết chuyện gì đã xảy ra.
+///
+/// Cái giá: sửa tiêu đề một chủ đề thì thông báo cũ vẫn ghi tên cũ. Chấp nhận
+/// được — thông báo là ảnh chụp một khoảnh khắc, không phải cửa sổ nhìn vào
+/// hiện tại.
+model ThongBao {
+  id      String    @id @default(cuid())
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  loai     LoaiThongBao
+  tieuDe   String
+  chiTiet  String?
+  /// Chỗ bấm vào. Rỗng nghĩa là không còn chỗ nào để đi tới (nội dung đã gỡ).
+  duongDan String?
+
+  daDoc  Boolean  @default(false)
+  taoLuc DateTime @default(now())
+
+  @@index([nguoiId, daDoc, taoLuc])
 }

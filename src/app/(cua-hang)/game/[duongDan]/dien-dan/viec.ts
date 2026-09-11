@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { batBuocDangNhap } from '@/lib/xac-thuc';
+import { guiThongBao } from '@/lib/thong-bao';
 
 export interface KetQua { loi?: string }
 
@@ -63,7 +64,7 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
   // Chủ đề bị khoá thì không nhận thêm bài — kiểm trong `where`, không lọc sau.
   const chuDe = await db.chuDe.findFirst({
     where: { id: chuDeId, khoa: false, game: { trangThai: 'DANG_HIEN' } },
-    select: { id: true },
+    select: { id: true, tieuDe: true, nguoiId: true },
   });
   if (!chuDe) return { loi: 'Chủ đề này đã khoá hoặc không còn.' };
 
@@ -74,6 +75,17 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
       data: { soTraLoi: { increment: 1 }, traLoiCuoiLuc: new Date() },
       select: { id: true },
     });
+  });
+
+  // Báo cho chủ chủ đề. Đặt NGOÀI giao dịch trên: mất một thông báo thì tiếc,
+  // còn để nó kéo đổ cả bài trả lời vừa viết thì tệ hơn nhiều.
+  await guiThongBao({
+    nguoiNhanId: chuDe.nguoiId,
+    nguoiGayRaId: nguoi.id,
+    loai: 'TRA_LOI_CHU_DE',
+    tieuDe: `${nguoi.tenHienThi} đã trả lời chủ đề của bạn`,
+    chiTiet: chuDe.tieuDe,
+    duongDan: `/game/${duongDan}/dien-dan/${chuDeId}`,
   });
 
   revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);

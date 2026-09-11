@@ -67,6 +67,20 @@ export default async function TrangKhoGame() {
 
   return (
     <div className="space-y-8">
+      {/*
+        ĐẦU ĐỀ TRANG, CHỈ BỘ ĐỌC MÀN HÌNH NGHE THẤY.
+
+        Trang này trước đây KHÔNG có thẻ h1 nào — đầu đề đầu tiên là một h3 của
+        một cái kệ. Với người dùng bộ đọc màn hình, mở trang ra là không biết
+        mình đang ở đâu; với máy tìm kiếm, trang chính của cả kho không có đầu
+        đề nào để đọc.
+
+        Giấu đi thay vì in ra, vì bố cục ở đây cố ý mở thẳng bằng dãy chip lọc
+        rồi tới băng nổi bật — thêm một dòng chữ to phía trên là thêm một thứ
+        người xem phải lướt qua mới tới được nội dung.
+      */}
+      <h1 className="sr-only">Game — toàn bộ kho trò chơi của SunnyStore</h1>
+
       <HangChip muc={chip} />
 
       <BangNoiBat game={noiBat} />

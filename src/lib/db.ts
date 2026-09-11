@@ -9,6 +9,15 @@ import { PrismaClient } from '@prisma/client';
  */
 const kho = globalThis as unknown as { db?: PrismaClient };
 
-export const db = kho.db ?? new PrismaClient();
+/*
+ * Bật `DEM_TRUY_VAN=1` thì mỗi câu truy vấn in ra một dòng.
+ *
+ * Dùng để đi tìm chỗ gọi CSDL trong vòng lặp — thứ không nhìn ra được bằng đọc
+ * mã, vì nó nằm rải ở mấy thành phần lồng nhau. Mặc định TẮT: ở bản thật, in
+ * mọi câu truy vấn vừa làm chậm vừa đổ cả tham số vào nhật ký.
+ */
+export const db = kho.db ?? new PrismaClient(
+  process.env.DEM_TRUY_VAN === '1' ? { log: ['query'] } : undefined,
+);
 
 if (process.env.NODE_ENV !== 'production') kho.db = db;

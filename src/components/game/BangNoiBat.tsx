@@ -32,7 +32,12 @@ export function BangNoiBat({ game }: { game: TheGame[] }) {
   if (game.length === 0) return null;
 
   return (
-    <section>
+    <section aria-labelledby="bang-noi-bat">
+      {/* Khối này cố ý không có đầu đề nhìn thấy được — mấy tấm băng tự nói
+          lấy. Nhưng nó vẫn cần một đầu đề để bậc không nhảy từ h1 thẳng xuống
+          h3, và để bộ đọc màn hình gọi được tên khối. */}
+      <h2 id="bang-noi-bat" className="sr-only">Đáng chơi lúc này</h2>
+
       <Ke nhan="băng nổi bật" theoTam={theoTam} className="-mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
         {game.map((g) => <Tam key={g.id} game={g} />)}
       </Ke>

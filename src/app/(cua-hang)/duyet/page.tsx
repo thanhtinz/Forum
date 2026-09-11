@@ -99,10 +99,16 @@ export default async function TrangDuyet({ searchParams }: {
   ];
 
   return (
+    /*
+      CỘT LỌC ĐẶT SAU TRONG DOM, KÉO SANG TRÁI BẰNG CSS.
+      Mấy tiêu đề nhóm lọc là h2, nên để cột này lên trước thì h2 xuất hiện
+      trước h1 của trang — bộ đọc màn hình duyệt theo đầu đề sẽ gặp "Hệ máy"
+      trước khi gặp "Tất cả trò chơi", và mất luôn chỗ để biết đang ở trang gì.
+      `order` chỉ đổi chỗ lúc VẼ, không đổi thứ tự đọc.
+    */
     <div className="lg:flex lg:gap-8">
-      <CotLoc nhom={nhom} />
 
-      <div className="min-w-0 flex-1 space-y-4">
+      <div className="min-w-0 flex-1 space-y-4 lg:order-2">
         <div>
           <h1 className="tieu-de-trang">Tất cả trò chơi</h1>
           <p className="phu mt-0.5">{gonSo(tong)} game khớp với lựa chọn của bạn</p>
@@ -178,6 +184,8 @@ export default async function TrangDuyet({ searchParams }: {
           </>
         )}
       </div>
+
+      <CotLoc nhom={nhom} />
     </div>
   );
 }

@@ -14,7 +14,10 @@ export function TieuDeKe({ ten, phu, xemThem }: { ten: string; phu?: string; xem
   const ruot = (
     <>
       <span className="min-w-0">
-        <span className="tieu-de block truncate">{ten}</span>
+        {/* Tên kệ là đầu đề THẬT của khối, không phải một cái span tô đậm: bộ
+            đọc màn hình duyệt trang bằng cách nhảy giữa các đầu đề, mà một
+            trang toàn span thì với họ là một khối chữ liền không có mốc nào. */}
+        <h2 className="tieu-de block truncate">{ten}</h2>
         {phu && <span className="phu mt-0.5 block truncate">{phu}</span>}
       </span>
       {xemThem && <ChevronRight size={20} className="shrink-0 text-mo" />}

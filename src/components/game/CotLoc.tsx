@@ -28,7 +28,7 @@ export interface NhomLoc {
  */
 export function CotLoc({ nhom }: { nhom: NhomLoc[] }) {
   return (
-    <aside className="hidden w-[212px] shrink-0 lg:block">
+    <aside className="hidden w-[212px] shrink-0 lg:order-1 lg:block">
       {/*
         Cột tự cuộn TRONG LÒNG NÓ, không kéo dài cả trang.
 

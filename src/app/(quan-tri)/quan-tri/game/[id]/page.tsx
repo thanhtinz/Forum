@@ -7,6 +7,7 @@ import { BieuMauGame } from '@/components/quan-tri/BieuMauGame';
 import { KhungAnhChup } from '@/components/quan-tri/KhungAnhChup';
 import { KhungBanTai } from '@/components/quan-tri/KhungBanTai';
 import { NutTrangThai } from '@/components/quan-tri/NutTrangThai';
+import { KhuNguyHiem } from '@/components/quan-tri/KhuNguyHiem';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sửa game' };
@@ -22,6 +23,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
         namPhatHanh: true, gioiThieu: true, cachChoi: true, luuY: true, icon: true,
         ngonNgu: true, vietHoa: true, noiBat: true, trangThai: true,
         theLoai: { select: { theLoaiId: true } },
+        _count: { select: { danhGia: true, chuDe: true } },
         anhChup: {
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
           take: 30,
@@ -98,6 +100,12 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
             theLoaiId: game.theLoai.map((t) => t.theLoaiId),
           }}
         />
+      </section>
+
+      {/* Cuối trang, tách hẳn bằng một vạch: xem chú thích trong `KhuNguyHiem`. */}
+      <section className="vach pt-6">
+        <KhuNguyHiem gameId={game.id} ten={game.ten}
+          soDanhGia={game._count.danhGia} soChuDe={game._count.chuDe} />
       </section>
     </div>
   );

@@ -3,13 +3,15 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Gamepad2, Inbox, LayoutDashboard, Star, Users, type LucideIcon,
+  Gamepad2, Inbox, LayoutDashboard, MessageSquare, Star, Tags, Users, type LucideIcon,
 } from 'lucide-react';
 import { LOI_QUAN_TRI, NHOM_QUAN_TRI, dangOQuanTri, type MaDem } from '@/lib/quan-tri-loi-di';
 import { gop } from '@/lib/tien-ich';
 
 /* Viết tay từng dòng: `import * as` kéo cả nghìn biểu tượng vào bản dựng. */
-const BANG: Record<string, LucideIcon> = { Gamepad2, Inbox, LayoutDashboard, Star, Users };
+const BANG: Record<string, LucideIcon> = {
+  Gamepad2, Inbox, LayoutDashboard, MessageSquare, Star, Tags, Users,
+};
 
 /**
  * Thanh bên của khu quản trị.

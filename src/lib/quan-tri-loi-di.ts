@@ -23,7 +23,9 @@ export interface LoiQuanTri {
 export const LOI_QUAN_TRI: LoiQuanTri[] = [
   { duongDan: '/quan-tri', ten: 'Tổng quan', icon: 'LayoutDashboard', nhom: 'Kho hàng' },
   { duongDan: '/quan-tri/game', ten: 'Game', icon: 'Gamepad2', demCho: 'gameNhap', nhom: 'Kho hàng' },
+  { duongDan: '/quan-tri/the-loai', ten: 'Thể loại', icon: 'Tags', nhom: 'Kho hàng' },
   { duongDan: '/quan-tri/danh-gia', ten: 'Đánh giá', icon: 'Star', demCho: 'danhGiaChuaDap', nhom: 'Cộng đồng' },
+  { duongDan: '/quan-tri/dien-dan', ten: 'Diễn đàn', icon: 'MessageSquare', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/yeu-cau', ten: 'Yêu cầu game', icon: 'Inbox', demCho: 'yeuCauCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/thanh-vien', ten: 'Thành viên', icon: 'Users', nhom: 'Cộng đồng' },
 ];

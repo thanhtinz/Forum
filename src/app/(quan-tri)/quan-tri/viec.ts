@@ -312,3 +312,262 @@ export async function traLoiDanhGia(danhGiaId: string, loi: string): Promise<Ket
   revalidatePath('/quan-tri');
   return {};
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * KIỂM DUYỆT DIỄN ĐÀN
+ *
+ * `ChuDe.ghim` và `ChuDe.khoa` đã được trang diễn đàn ĐỌC từ đầu — có biểu
+ * tượng ghim, có câu "đã khoá", có cả việc giấu ô trả lời đi. Nhưng không nơi
+ * nào ĐẶT được hai cột ấy, nên chúng vĩnh viễn bằng `false`. Nghĩa là mã hiển
+ * thị đúng, chỉ thiếu đúng cái công tắc. Đây là công tắc ấy.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Ghim hoặc bỏ ghim một chủ đề. */
+export async function ghimChuDe(chuDeId: string, ghim: boolean): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const c = await db.chuDe.update({
+    where: { id: chuDeId },
+    data: { ghim },
+    select: { gameId: true, game: { select: { duongDan: true } } },
+  });
+
+  revalidatePath(`/game/${c.game.duongDan}/dien-dan`);
+  revalidatePath('/quan-tri/dien-dan');
+  return {};
+}
+
+/** Khoá hoặc mở một chủ đề. Khoá rồi thì không ai trả lời thêm được nữa. */
+export async function khoaChuDe(chuDeId: string, khoa: boolean): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const c = await db.chuDe.update({
+    where: { id: chuDeId },
+    data: { khoa },
+    select: { id: true, game: { select: { duongDan: true } } },
+  });
+
+  revalidatePath(`/game/${c.game.duongDan}/dien-dan`);
+  revalidatePath(`/game/${c.game.duongDan}/dien-dan/${chuDeId}`);
+  revalidatePath('/quan-tri/dien-dan');
+  return {};
+}
+
+/**
+ * Xoá hẳn một chủ đề, kéo theo mọi lời đáp trong đó.
+ *
+ * Lời đáp đi theo nhờ `onDelete: Cascade` ở lược đồ, không phải nhờ đoạn mã
+ * nào ở đây — nên thêm một bảng mới treo vào chủ đề thì nhớ khai báo cho đúng,
+ * bằng không nó ở lại thành rác không ai trỏ tới.
+ */
+export async function xoaChuDe(chuDeId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const c = await db.chuDe.findUnique({
+    where: { id: chuDeId }, select: { game: { select: { duongDan: true } } },
+  });
+  if (!c) return {};
+
+  await db.chuDe.delete({ where: { id: chuDeId } });
+
+  revalidatePath(`/game/${c.game.duongDan}/dien-dan`);
+  revalidatePath('/quan-tri/dien-dan');
+  revalidatePath('/quan-tri');
+  return {};
+}
+
+/**
+ * Xoá một lời đáp.
+ *
+ * `ChuDe.soTraLoi` là bản đếm sẵn nên phải trừ lại TRONG CÙNG giao dịch với
+ * lần xoá. Đếm lại từ bảng thay vì trừ đi một: trừ tay thì mỗi lần lệch là
+ * lệch vĩnh viễn, mà không có chỗ nào phát hiện ra.
+ */
+export async function xoaTraLoi(traLoiId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const t = await db.traLoi.findUnique({
+    where: { id: traLoiId },
+    select: { chuDeId: true, chuDe: { select: { game: { select: { duongDan: true } } } } },
+  });
+  if (!t) return {};
+
+  await db.$transaction(async (tx) => {
+    await tx.traLoi.delete({ where: { id: traLoiId } });
+    const con = await tx.traLoi.count({ where: { chuDeId: t.chuDeId } });
+    await tx.chuDe.update({
+      where: { id: t.chuDeId }, data: { soTraLoi: con }, select: { id: true },
+    });
+  });
+
+  revalidatePath(`/game/${t.chuDe.game.duongDan}/dien-dan/${t.chuDeId}`);
+  revalidatePath('/quan-tri/dien-dan');
+  return {};
+}
+
+/**
+ * Xoá một bài đánh giá.
+ *
+ * Hai cột đếm sẵn ở bảng Game phải khớp lại sau đó, và tính lại từ chính bảng
+ * đánh giá chứ không trừ dần — đó là thứ luôn đúng, kể cả khi có ai đó đã ghi
+ * thẳng vào CSDL trước đấy.
+ */
+export async function xoaDanhGia(danhGiaId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const d = await db.danhGia.findUnique({
+    where: { id: danhGiaId },
+    select: { gameId: true, game: { select: { duongDan: true } } },
+  });
+  if (!d) return {};
+
+  await db.$transaction(async (tx) => {
+    await tx.danhGia.delete({ where: { id: danhGiaId } });
+    const gom = await tx.danhGia.aggregate({
+      where: { gameId: d.gameId }, _sum: { sao: true }, _count: { _all: true },
+    });
+    await tx.game.update({
+      where: { id: d.gameId },
+      data: { tongSao: gom._sum.sao ?? 0, soLuotDanhGia: gom._count._all },
+      select: { id: true },
+    });
+  });
+
+  revalidatePath(`/game/${d.game.duongDan}`);
+  revalidatePath('/quan-tri/danh-gia');
+  revalidatePath('/quan-tri');
+  return {};
+}
+
+/**
+ * XOÁ HẲN một game.
+ *
+ * Bắt gõ lại đúng tên game để xác nhận. Một hộp thoại "bạn có chắc không?" thì
+ * ai cũng bấm Đồng ý theo phản xạ, còn gõ lại cái tên thì buộc phải đọc xem
+ * mình đang đứng ở game nào — đúng cái nhịp dừng mà thao tác không lùi lại
+ * được này cần.
+ *
+ * Kéo theo bản tải, tệp, ảnh chụp, đánh giá, chủ đề, lượt tải — tất cả nhờ
+ * `onDelete: Cascade` ở lược đồ. Lượt tải đi theo nghĩa là con số "tổng lượt
+ * tải" ở trang tổng quan tụt xuống; đó là đúng, vì game ấy không còn nữa.
+ */
+export async function xoaGame(gameId: string, tenGoLai: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const game = await db.game.findUnique({
+    where: { id: gameId }, select: { ten: true, duongDan: true },
+  });
+  if (!game) return { loi: 'Không tìm thấy game.' };
+
+  if (tenGoLai.trim() !== game.ten) {
+    return { loi: `Tên gõ vào không khớp. Hãy gõ đúng “${game.ten}”.` };
+  }
+
+  await db.game.delete({ where: { id: gameId } });
+
+  revalidatePath('/quan-tri/game');
+  revalidatePath('/quan-tri');
+  revalidatePath(`/game/${game.duongDan}`);
+  revalidatePath('/');
+  redirect('/quan-tri/game');
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * THỂ LOẠI
+ *
+ * Trước đây thể loại chỉ ra đời được bằng kịch bản gieo dữ liệu. Thêm một thể
+ * loại mới nghĩa là phải sửa mã nguồn rồi chạy lại lệnh gieo — trên máy thật
+ * thì đó là việc không ai làm, nên danh sách thể loại đóng băng vĩnh viễn.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Thêm mới hoặc đổi tên một thể loại. */
+export async function luuTheLoai(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const id = chu(form, 'id') || null;
+  const ten = chu(form, 'ten');
+  if (ten.length < 2) return { loi: 'Hãy nhập tên thể loại.' };
+
+  const duongDan = thanhDuongDan(chu(form, 'duongDan') || ten);
+  if (!duongDan) return { loi: 'Tên này không tạo được đường dẫn hợp lệ.' };
+
+  const trung = await db.theLoai.findFirst({
+    where: { duongDan, ...(id ? { NOT: { id } } : {}) }, select: { id: true },
+  });
+  if (trung) return { loi: `Đường dẫn “${duongDan}” đã có thể loại khác dùng.` };
+
+  if (id) {
+    await db.theLoai.update({ where: { id }, data: { ten, duongDan }, select: { id: true } });
+  } else {
+    // Xếp cuối danh sách, cách mục cuối 10 nấc — chừa chỗ để sau này đổi chỗ
+    // chỉ phải ghi lại một con số thay vì đánh số lại cả dãy.
+    const cuoi = await db.theLoai.findFirst({ orderBy: { thuTu: 'desc' }, select: { thuTu: true } });
+    await db.theLoai.create({
+      data: { ten, duongDan, thuTu: (cuoi?.thuTu ?? 0) + 10 }, select: { id: true },
+    });
+  }
+
+  revalidatePath('/quan-tri/the-loai');
+  revalidatePath('/duyet');
+  revalidatePath('/game');
+  return {};
+}
+
+/**
+ * Xoá một thể loại.
+ *
+ * CHẶN nếu còn game nào đang gắn nó. Lược đồ để `TheLoaiTrenGame` cascade nên
+ * xoá vẫn trôi, nhưng trôi im lặng: mười hai game bỗng mất một nhãn phân loại
+ * mà không ai biết, và không có đường lùi. Thà báo ra rồi bắt gỡ nhãn trước.
+ */
+export async function xoaTheLoai(theLoaiId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const dangDung = await db.theLoaiTrenGame.count({ where: { theLoaiId } });
+  if (dangDung > 0) {
+    return { loi: `Còn ${dangDung} game đang thuộc thể loại này. Gỡ nhãn ở từng game trước đã.` };
+  }
+
+  await db.theLoai.delete({ where: { id: theLoaiId } });
+
+  revalidatePath('/quan-tri/the-loai');
+  revalidatePath('/duyet');
+  revalidatePath('/game');
+  return {};
+}
+
+/** Đổi chỗ một thể loại với thể loại liền kề. Cùng lối với ảnh chụp. */
+export async function doiChoTheLoai(theLoaiId: string, len: boolean): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const t = await db.theLoai.findUnique({
+    where: { id: theLoaiId }, select: { id: true, thuTu: true },
+  });
+  if (!t) return { loi: 'Không tìm thấy thể loại.' };
+
+  const canh = await db.theLoai.findFirst({
+    where: { id: { not: t.id }, thuTu: len ? { lte: t.thuTu } : { gte: t.thuTu } },
+    orderBy: len ? [{ thuTu: 'desc' }, { id: 'desc' }] : [{ thuTu: 'asc' }, { id: 'asc' }],
+    select: { id: true, thuTu: true },
+  });
+  if (!canh) return {};
+
+  await db.$transaction([
+    db.theLoai.update({ where: { id: t.id }, data: { thuTu: canh.thuTu }, select: { id: true } }),
+    db.theLoai.update({ where: { id: canh.id }, data: { thuTu: t.thuTu }, select: { id: true } }),
+  ]);
+
+  revalidatePath('/quan-tri/the-loai');
+  revalidatePath('/duyet');
+  revalidatePath('/game');
+  return {};
+}

@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { SaoNam } from '@/components/game/SaoNam';
 import { ODapDanhGia } from '@/components/game/ODapDanhGia';
+import { NutXoaDanhGia } from '@/components/quan-tri/NutXoaDanhGia';
 import { PhanTrang } from '@/components/PhanTrang';
 import { cachDay, gonSo, gop } from '@/lib/tien-ich';
 
@@ -126,7 +127,13 @@ export default async function DanhGiaQuanTri({ searchParams }: {
                       </div>
                     )}
 
-                    <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} />
+                    <div className="flex items-center gap-3">
+                      <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} />
+                      {/* Xoá nằm cạnh Trả lời chứ không giấu đi: bài rác thì
+                          việc cần làm là xoá, không phải đáp lại nó. */}
+                      <NutXoaDanhGia danhGiaId={d.id} tenGame={d.game.ten}
+                        nguoi={d.nguoi.tenHienThi} />
+                    </div>
                   </div>
                 </div>
               </li>

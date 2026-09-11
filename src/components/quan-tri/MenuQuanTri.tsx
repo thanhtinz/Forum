@@ -25,7 +25,7 @@ export function MenuQuanTri({ dem }: { dem: Record<MaDem, number> }) {
           <Link key={l.duongDan} href={l.duongDan} aria-current={mo ? 'page' : undefined}
             className={gop(
               'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors',
-              mo ? 'bg-nen/20 text-nen' : 'text-nen/60 hover:bg-nen/10 hover:text-nen',
+              mo ? 'bg-vo-qt-chu/20 text-vo-qt-chu' : 'text-vo-qt-chu/60 hover:bg-vo-qt-chu/10 hover:text-vo-qt-chu',
             )}>
             {l.ten}
             {so > 0 && (

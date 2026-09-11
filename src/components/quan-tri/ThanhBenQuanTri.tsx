@@ -31,7 +31,7 @@ export function ThanhBenQuanTri({ dem }: { dem: Record<MaDem, number> }) {
     <nav className="space-y-6" aria-label="Khu quản trị">
       {NHOM_QUAN_TRI.map((nhom) => (
         <div key={nhom}>
-          <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-nen/40">
+          <p className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-vo-qt-chu/40">
             {nhom}
           </p>
           <ul className="space-y-0.5">
@@ -45,7 +45,7 @@ export function ThanhBenQuanTri({ dem }: { dem: Record<MaDem, number> }) {
                   <Link href={l.duongDan} aria-current={mo ? 'page' : undefined}
                     className={gop(
                       'flex items-center gap-3 rounded-nut px-3 py-2 text-[13px] transition-colors',
-                      mo ? 'bg-nen/15 font-bold text-nen' : 'font-medium text-nen/65 hover:bg-nen/10 hover:text-nen',
+                      mo ? 'bg-vo-qt-chu/15 font-bold text-vo-qt-chu' : 'font-medium text-vo-qt-chu/65 hover:bg-vo-qt-chu/10 hover:text-vo-qt-chu',
                     )}>
                     <Hinh size={16} className="shrink-0" aria-hidden />
                     <span className="min-w-0 flex-1 truncate">{l.ten}</span>

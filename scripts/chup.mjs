@@ -21,6 +21,14 @@ function timChrome() {
 }
 
 const GOC = process.env.GOC ?? 'http://localhost:3000';
+/*
+ * `NEN=toi npm run chup …` để chụp nền tối.
+ *
+ * Nền tối là một nửa hệ thiết kế, mà suốt một thời gian dài không lần nào được
+ * nhìn tới — và đúng lúc nhìn thì ra ngay một lỗi: khu quản trị không nghe lời
+ * cài đặt nền. Có sẵn công tắc ở đây thì lần sau còn nhớ mà nhìn.
+ */
+const NEN = process.env.NEN === 'toi' ? 'toi' : 'sang';
 const TRANG = process.argv.slice(2);
 if (TRANG.length === 0) TRANG.push('/');
 
@@ -29,6 +37,12 @@ fs.mkdirSync('anh-chup', { recursive: true });
 
 for (const [ten, rong, cao] of [['dt', 390, 844], ['ban', 1280, 900]]) {
   const ctx = await may.newContext({ viewport: { width: rong, height: cao }, deviceScaleFactor: 2 });
+  // Đặt trước khi trang chạy, đúng lối đoạn mã trong <head> đọc nó.
+  if (NEN === 'toi') {
+    await ctx.addInitScript(() => {
+      try { localStorage.setItem('sunny:nen', 'toi'); } catch { /* bị chặn thì thôi */ }
+    });
+  }
   // Đăng nhập sẵn để chụp được cả những trang cần tài khoản.
   const p = await ctx.newPage();
   await p.goto(`${GOC}/dang-nhap`, { waitUntil: 'domcontentloaded' }).catch(() => {});
@@ -41,7 +55,8 @@ for (const [ten, rong, cao] of [['dt', 390, 844], ['ban', 1280, 900]]) {
   for (const duong of TRANG) {
     await p.goto(GOC + duong, { waitUntil: 'networkidle' });
     await p.waitForTimeout(900);
-    const nhan = duong === '/' ? 'trang-chu' : duong.replace(/^\//, '').replace(/[/?=&]/g, '-');
+    const goc = duong === '/' ? 'trang-chu' : duong.replace(/^\//, '').replace(/[/?=&]/g, '-');
+    const nhan = NEN === 'toi' ? `toi-${goc}` : goc;
     await p.screenshot({ path: `anh-chup/${nhan}--${ten}.png`, fullPage: true });
     console.log(`${nhan}--${ten}.png`);
   }

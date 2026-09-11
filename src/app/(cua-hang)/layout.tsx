@@ -3,6 +3,7 @@ import '../globals.css';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { demChuaDoc } from '@/lib/thong-bao';
 import { DIA_CHI_GOC } from '@/lib/dia-chi-goc';
+import { MA_DAT_NEN } from '@/lib/dat-nen';
 import { ThanhBen } from '@/components/vo/ThanhBen';
 import { ThanhTren } from '@/components/vo/ThanhTren';
 import { ThanhDay } from '@/components/vo/ThanhDay';
@@ -41,14 +42,6 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-/*
- * Đoạn mã đặt nền, chạy TRƯỚC khi trang vẽ ra.
- *
- * Để React đặt nền sau khi tải xong thì người chọn nền tối sẽ thấy một nháy
- * trắng giữa mặt mỗi lần mở trang. Đoạn này đồng bộ, nằm ngay đầu <head>, nên
- * nền đúng ngay từ khung hình đầu tiên.
- */
-const DAT_NEN = `try{if(localStorage.getItem('sunny:nen')==='toi')document.documentElement.dataset.nen='toi'}catch(e){}`;
 
 export default async function BoCucGoc({ children }: { children: React.ReactNode }) {
   const nguoi = await nguoiHienTai();
@@ -58,7 +51,7 @@ export default async function BoCucGoc({ children }: { children: React.ReactNode
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: DAT_NEN }} />
+        <script dangerouslySetInnerHTML={{ __html: MA_DAT_NEN }} />
       </head>
       <body>
         <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>

@@ -7,6 +7,7 @@ import { nguoiHienTai } from '@/lib/xac-thuc';
 import { demViecTonDong } from '@/lib/quan-tri-dem';
 import { ThanhBenQuanTri } from '@/components/quan-tri/ThanhBenQuanTri';
 import { MenuQuanTri } from '@/components/quan-tri/MenuQuanTri';
+import { MA_DAT_NEN } from '@/lib/dat-nen';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,11 @@ export default async function GocQuanTri({ children }: { children: React.ReactNo
   const dem = await demViecTonDong();
 
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
+      <head>
+        {/* Khu quản trị cũng phải nghe lời cài đặt nền — xem `dat-nen.ts`. */}
+        <script dangerouslySetInnerHTML={{ __html: MA_DAT_NEN }} />
+      </head>
       <body className="bg-nen3">
         <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>
 
@@ -52,34 +57,34 @@ export default async function GocQuanTri({ children }: { children: React.ReactNo
           mới phải biết ngay mình đang đứng ở đâu, mà cách nhanh nhất để biết
           là cả trang đổi màu — nhanh hơn đọc một dòng chữ.
         */}
-        <aside className="fixed inset-y-0 left-0 z-40 hidden w-[228px] flex-col bg-chu px-3 py-4 lg:flex">
-          <Link href="/quan-tri" className="px-3 pb-5 text-[15px] font-bold tracking-tight text-nen">
-            SunnyStore <span className="font-normal text-nen/55">Quản trị</span>
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-[228px] flex-col bg-vo-qt px-3 py-4 lg:flex">
+          <Link href="/quan-tri" className="px-3 pb-5 text-[15px] font-bold tracking-tight text-vo-qt-chu">
+            SunnyStore <span className="font-normal text-vo-qt-chu/55">Quản trị</span>
           </Link>
 
           <div className="flex-1 overflow-y-auto">
             <ThanhBenQuanTri dem={dem} />
           </div>
 
-          <div className="space-y-1 border-t border-nen/10 px-3 pt-3 text-[12px]">
-            <p className="truncate font-semibold text-nen/80">{nguoi.tenHienThi}</p>
+          <div className="space-y-1 border-t border-vo-qt-chu/10 px-3 pt-3 text-[12px]">
+            <p className="truncate font-semibold text-vo-qt-chu/80">{nguoi.tenHienThi}</p>
             {/* Mở tab mới: đang sửa dở một game mà bấm nhầm rồi mất hết chữ
                 đang gõ là chuyện không nên xảy ra. */}
             <a href="/" target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-nen/55 hover:text-nen">
+              className="inline-flex items-center gap-1.5 text-vo-qt-chu/55 hover:text-vo-qt-chu">
               Xem cửa hàng <ExternalLink size={12} aria-hidden />
             </a>
           </div>
         </aside>
 
         {/* Khổ nhỏ không có chỗ cho cột đứng, nên rơi về một thanh ngang. */}
-        <header className="sticky top-0 z-40 bg-chu lg:hidden">
+        <header className="sticky top-0 z-40 bg-vo-qt lg:hidden">
           <div className="flex items-center gap-3 px-4 py-3">
-            <Link href="/quan-tri" className="text-[14px] font-bold tracking-tight text-nen">
-              SunnyStore <span className="font-normal text-nen/55">Quản trị</span>
+            <Link href="/quan-tri" className="text-[14px] font-bold tracking-tight text-vo-qt-chu">
+              SunnyStore <span className="font-normal text-vo-qt-chu/55">Quản trị</span>
             </Link>
             <a href="/" target="_blank" rel="noreferrer"
-              className="ml-auto text-[12px] font-semibold text-nen/55">
+              className="ml-auto text-[12px] font-semibold text-vo-qt-chu/55">
               Xem cửa hàng
             </a>
           </div>

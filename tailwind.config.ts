@@ -24,6 +24,8 @@ export default {
         vang: mau('vang'),
         canh: mau('canh'),
         xau: mau('xau'),
+        'vo-qt': mau('vo-qt'),
+        'vo-qt-chu': mau('vo-qt-chu'),
       },
       borderRadius: {
         the: 'var(--bo-the)',

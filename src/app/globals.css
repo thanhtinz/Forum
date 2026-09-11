@@ -41,6 +41,21 @@
   --canh: 217 119 6;
   --xau: 217 48 37;
 
+  /*
+   * VỎ KHU QUẢN TRỊ — hai màu CỐ ĐỊNH, không đảo theo nền.
+   *
+   * Thanh bên quản trị cố ý luôn sẫm ở cả hai nền: nó là dấu hiệu để người vừa
+   * mở tab mới biết mình đang ở khu nào, mà một dấu hiệu đổi màu theo cài đặt
+   * thì không còn là dấu hiệu.
+   *
+   * Bản trước dùng `bg-chu` với `text-nen` cho tiện. Hai token ấy ĐẢO NHAU khi
+   * sang nền tối — chữ thành nền, nền thành chữ — nên bật nền tối lên là cả
+   * thanh bên hoá trắng toát. Khai riêng ở đây, và cố ý KHÔNG khai lại trong
+   * khối nền tối bên dưới.
+   */
+  --vo-qt: 24 26 30;
+  --vo-qt-chu: 244 245 247;
+
   --bo-the: 12px;
   --bo-nut: 8px;
   /* 22% — đúng độ bo biểu tượng ứng dụng của iOS/Android. Lệch đi là mắt thấy

@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
-import { ArrowUpCircle, Gamepad2, Library, Search, Sparkles, Trophy } from 'lucide-react';
+import { ArrowUpCircle, Gamepad2, Library, Search, Trophy } from 'lucide-react';
+import { IconHomNay } from './IconHomNay';
 
 /**
  * Năm lối đi chính của trang, khai báo MỘT chỗ.
@@ -28,7 +29,7 @@ export interface LoiDi {
  * riêng một người, không phải một lối duyệt kho.
  */
 export const LOI_DI: LoiDi[] = [
-  { duongDan: '/', ten: 'Hôm nay', icon: Sparkles },
+  { duongDan: '/', ten: 'Hôm nay', icon: IconHomNay },
   { duongDan: '/game', ten: 'Game', icon: Gamepad2 },
   { duongDan: '/bxh', ten: 'BXH', icon: Trophy },
   { duongDan: '/tim', ten: 'Tìm kiếm', icon: Search },

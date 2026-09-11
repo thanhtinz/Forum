@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
-  ArrowRight, Download, FileText, Inbox, MessageSquare, Plus, Star, Users,
+  ArrowRight, Download, FileText, Flag, Inbox, MessageSquare, Plus, Star, Users,
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { demViecTonDong } from '@/lib/quan-tri-dem';
@@ -56,6 +56,9 @@ export default async function TongQuan() {
   ]);
 
   const viec = [
+    // Báo xấu đứng ĐẦU: mấy việc kia chờ thêm một ngày không sao, còn một bài
+    // rác thì mỗi giờ nằm đó là thêm người đọc phải nhìn thấy nó.
+    { so: dem.baoXauCho, ten: 'nội dung bị báo xấu', di: '/quan-tri/bao-xau', icon: <Flag size={16} /> },
     { so: dem.yeuCauCho, ten: 'yêu cầu game chờ xem', di: '/quan-tri/yeu-cau', icon: <Inbox size={16} /> },
     { so: dem.danhGiaChuaDap, ten: 'đánh giá chưa được trả lời', di: '/quan-tri/danh-gia', icon: <Star size={16} /> },
     { so: dem.gameNhap, ten: 'game còn ở dạng nháp', di: '/quan-tri/game?trangThai=NHAP', icon: <FileText size={16} /> },

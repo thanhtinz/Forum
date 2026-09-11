@@ -30,6 +30,7 @@ model NguoiDung {
   traLoi        TraLoi[]
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
+  baoXau        BaoXau[]
 
   @@index([taoLuc])
 }
@@ -238,6 +239,8 @@ model DanhGia {
   taoLuc DateTime @default(now())
   suaLuc DateTime @updatedAt
 
+  baoXau BaoXau[]
+
   /// Mỗi người một tiếng nói cho mỗi game; chấm lại là sửa bài cũ.
   @@unique([gameId, nguoiId])
   @@index([gameId, taoLuc])
@@ -295,6 +298,7 @@ model ChuDe {
   taoLuc        DateTime @default(now())
 
   traLoi TraLoi[]
+  baoXau BaoXau[]
 
   @@index([gameId, ghim, traLoiCuoiLuc])
 }
@@ -308,6 +312,8 @@ model TraLoi {
 
   noiDung String   @db.Text
   taoLuc  DateTime @default(now())
+
+  baoXau BaoXau[]
 
   @@index([chuDeId, taoLuc])
 }
@@ -347,4 +353,54 @@ model CaiDat {
   khoa   String   @id
   giaTri Json
   suaLuc DateTime @updatedAt
+}
+
+/// Vì sao báo. Danh sách ngắn và cố định: ô chữ tự do thì người báo viết cả
+/// đoạn tâm sự, còn người xử lý phải đọc hết mới biết chuyện gì.
+enum LyDoBaoXau {
+  RAC
+  XUC_PHAM
+  SAI_SU_THAT
+  KHAC
+}
+
+enum TrangThaiBaoXau {
+  CHO_XEM
+  DA_XU_LY
+  BO_QUA
+}
+
+/// Một lượt báo xấu.
+///
+/// Ba cột trỏ tới ba loại nội dung, và ĐÚNG MỘT cột có giá trị mỗi lần. Cách
+/// kia — một cột `loai` kèm một cột `mucId` chung — thì gọn hơn khi viết,
+/// nhưng CSDL không ràng buộc được gì cả: xoá một bài đánh giá là mấy lượt báo
+/// nó ở lại thành rác trỏ vào hư không. Ba khoá ngoại thật thì `Cascade` tự
+/// dọn, không cần nhớ.
+///
+/// `@@unique` với cột cho phép rỗng: Postgres coi mỗi NULL là một giá trị
+/// riêng, nên ba ràng buộc này chặn đúng "một người báo một mục một lần" mà
+/// không chặn nhầm hai lượt báo hai mục khác nhau.
+model BaoXau {
+  id      String    @id @default(cuid())
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  danhGiaId String?
+  danhGia   DanhGia? @relation(fields: [danhGiaId], references: [id], onDelete: Cascade)
+  chuDeId   String?
+  chuDe     ChuDe?   @relation(fields: [chuDeId], references: [id], onDelete: Cascade)
+  traLoiId  String?
+  traLoi    TraLoi?  @relation(fields: [traLoiId], references: [id], onDelete: Cascade)
+
+  lyDo   LyDoBaoXau
+  ghiChu String?
+
+  trangThai TrangThaiBaoXau @default(CHO_XEM)
+  taoLuc    DateTime        @default(now())
+
+  @@unique([nguoiId, danhGiaId])
+  @@unique([nguoiId, chuDeId])
+  @@unique([nguoiId, traLoiId])
+  @@index([trangThai, taoLuc])
 }

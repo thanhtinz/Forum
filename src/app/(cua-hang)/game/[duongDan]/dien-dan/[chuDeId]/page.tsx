@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGui } from '@/components/BieuMauGui';
 import { SuaChuDe, SuaTraLoi } from '@/components/game/OSuaBaiDienDan';
+import { NutBaoXau } from '@/components/NutBaoXau';
 import { traLoi } from '../viec';
 import { cachDay, catChu } from '@/lib/tien-ich';
 
@@ -71,6 +72,9 @@ export default async function TrangChuDe({ params }: {
           <SuaChuDe chuDeId={chuDe.id} tieuDe={chuDe.tieuDe} noiDung={chuDe.noiDung}
             xoaDuoc={chuDe.traLoi.length === 0} />
         )}
+        {nguoi && nguoi.id !== chuDe.nguoiId && (
+          <div className="mt-3"><NutBaoXau loai="chuDe" mucId={chuDe.id} /></div>
+        )}
       </article>
 
       {chuDe.traLoi.length > 0 && (
@@ -81,6 +85,9 @@ export default async function TrangChuDe({ params }: {
               <p className="mt-2.5 whitespace-pre-line text-[14px] leading-relaxed">{t.noiDung}</p>
               {nguoi?.id === t.nguoiId && !chuDe.khoa && (
                 <SuaTraLoi traLoiId={t.id} noiDung={t.noiDung} />
+              )}
+              {nguoi && nguoi.id !== t.nguoiId && (
+                <div className="mt-2.5"><NutBaoXau loai="traLoi" mucId={t.id} /></div>
               )}
             </li>
           ))}

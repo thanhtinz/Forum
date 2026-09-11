@@ -9,6 +9,7 @@ import { SaoNam } from '@/components/game/SaoNam';
 import { KeThe } from '@/components/game/KeThe';
 import { ODanhGia } from '@/components/game/ODanhGia';
 import { ODapDanhGia } from '@/components/game/ODapDanhGia';
+import { NutBaoXau } from '@/components/NutBaoXau';
 import { KhoiGap } from '@/components/KhoiGap';
 import { NGON_NGU } from '@/lib/he-may';
 import { cachDay, catChu } from '@/lib/tien-ich';
@@ -67,6 +68,7 @@ export default async function TabThongTin({ params, searchParams }: {
       take: 6,
       select: {
         id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
+        nguoiId: true,
         nguoi: { select: { tenHienThi: true } },
       },
     }),
@@ -207,7 +209,14 @@ export default async function TabThongTin({ params, searchParams }: {
                   </div>
                 )}
 
-                {laQuanTri && <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} />}
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  {laQuanTri && <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} />}
+                  {/* Chỉ mời báo khi đã đăng nhập và không phải bài của chính
+                      mình — bài của mình thì sửa thẳng được. */}
+                  {nguoi && nguoi.id !== d.nguoiId && (
+                    <NutBaoXau loai="danhGia" mucId={d.id} />
+                  )}
+                </div>
               </li>
             ))}
           </ul>

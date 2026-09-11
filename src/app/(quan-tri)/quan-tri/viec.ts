@@ -796,3 +796,54 @@ export async function doiTrangThaiNhieu(
   revalidatePath('/quan-tri');
   return { so };
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * BÁO XẤU
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Đóng một lượt báo mà KHÔNG xoá nội dung — "xem rồi, không có gì".
+ *
+ * Phải có lối này, bằng không hàng chờ chỉ vơi đi bằng cách xoá bài, và người
+ * xử lý bị đẩy về phía xoá cả những bài chẳng sai gì.
+ */
+export async function boQuaBaoXau(baoXauId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  await db.baoXau.update({
+    where: { id: baoXauId }, data: { trangThai: 'BO_QUA' }, select: { id: true },
+  });
+
+  revalidatePath('/quan-tri/bao-xau');
+  revalidatePath('/quan-tri');
+  return {};
+}
+
+/**
+ * Xoá nội dung bị báo, rồi đóng luôn MỌI lượt báo còn lại về chính nội dung ấy.
+ *
+ * Bản thân mấy hàng báo đi theo nhờ `onDelete: Cascade`, nên đoạn này không
+ * phải dọn gì. Nhưng một nội dung có thể bị nhiều người báo, và khi ấy người
+ * xử lý chỉ bấm một lần — mấy lượt kia biến mất cùng nội dung, đúng như mong
+ * đợi. Chép lại điều đó ra đây vì nó KHÔNG nhìn thấy được trong mã: ai đọc
+ * hàm này sẽ đi tìm đoạn dọn mà không có.
+ */
+export async function xoaNoiDungBiBao(
+  loai: 'danhGia' | 'chuDe' | 'traLoi',
+  mucId: string,
+): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  // Dùng lại đúng ba hàm xoá đã có: chúng mang theo phần tính lại bộ đếm
+  // (`Game.tongSao`, `ChuDe.soTraLoi`). Viết một lượt xoá riêng ở đây là chép
+  // luật đếm ra chỗ thứ hai, rồi hai bản lệch nhau.
+  const kq = loai === 'danhGia' ? await xoaDanhGia(mucId)
+    : loai === 'chuDe' ? await xoaChuDe(mucId)
+      : await xoaTraLoi(mucId);
+
+  revalidatePath('/quan-tri/bao-xau');
+  revalidatePath('/quan-tri');
+  return kq;
+}

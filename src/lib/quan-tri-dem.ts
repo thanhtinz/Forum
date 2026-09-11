@@ -13,10 +13,11 @@ import type { MaDem } from '@/lib/quan-tri-loi-di';
  * học được cách phớt lờ nó — huy hiệu không bao giờ về không là huy hiệu chết.
  */
 export async function demViecTonDong(): Promise<Record<MaDem, number>> {
-  const [yeuCauCho, gameNhap, danhGiaChuaDap] = await Promise.all([
+  const [yeuCauCho, gameNhap, danhGiaChuaDap, baoXauCho] = await Promise.all([
     db.yeuCau.count({ where: { trangThai: 'CHO_XEM' } }),
     db.game.count({ where: { trangThai: 'NHAP' } }),
     db.danhGia.count({ where: { noiDung: { not: null }, traLoi: null } }),
+    db.baoXau.count({ where: { trangThai: 'CHO_XEM' } }),
   ]);
-  return { yeuCauCho, gameNhap, danhGiaChuaDap };
+  return { yeuCauCho, gameNhap, danhGiaChuaDap, baoXauCho };
 }

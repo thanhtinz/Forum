@@ -47,3 +47,19 @@ export function dungChuoiTim(g: {
     ...(g.theLoai ?? []),
   ].filter(Boolean).join(' '));
 }
+
+/**
+ * Dựng chuỗi tìm kiếm của một chủ đề diễn đàn.
+ *
+ * GỘP CẢ PHẦN NỘI DUNG, không riêng tiêu đề. Người đi hỏi thường đặt tiêu đề
+ * rất mơ hồ — "giúp mình với", "ai biết chỉ mình" — rồi mới tả rõ chuyện gặp
+ * phải ở thân bài. Tìm theo mỗi tiêu đề thì đúng những chủ đề ấy không bao giờ
+ * ra, mà chúng lại là chủ đề người sau gặp cùng lỗi cần đọc nhất.
+ *
+ * Cái giá là một bản sao đã bỏ dấu của thân bài nằm trong CSDL. Chấp nhận
+ * được: chữ là thứ rẻ nhất trong kho này, còn một ô tìm kiếm không ra gì thì
+ * người ta thôi dùng.
+ */
+export function dungChuoiTimChuDe(c: { tieuDe: string; noiDung: string }): string {
+  return khongDau(`${c.tieuDe} ${c.noiDung}`);
+}

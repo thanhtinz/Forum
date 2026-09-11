@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { batBuocDangNhap } from '@/lib/xac-thuc';
 import { guiThongBao } from '@/lib/thong-bao';
 import { soTrang } from '@/lib/tien-ich';
+import { dungChuoiTimChuDe } from '@/lib/tim-kiem-const';
 import { MOI_TRANG_TRA_LOI } from './moi-trang';
 
 export interface KetQua { loi?: string }
@@ -36,7 +37,12 @@ export async function dangChuDe(_truoc: KetQua, form: FormData): Promise<KetQua>
   if (!game) return { loi: 'Không tìm thấy game này.' };
 
   const chuDe = await db.chuDe.create({
-    data: { gameId: game.id, nguoiId: nguoi.id, tieuDe, noiDung },
+    // `timKiem` dựng ngay lúc ghi, không tính lúc đọc: cột sẵn thì thêm được
+    // chỉ mục, còn bỏ dấu từng dòng lúc truy vấn thì CSDL phải quét cả bảng.
+    data: {
+      gameId: game.id, nguoiId: nguoi.id, tieuDe, noiDung,
+      timKiem: dungChuoiTimChuDe({ tieuDe, noiDung }),
+    },
     select: { id: true },
   });
 
@@ -142,7 +148,9 @@ export async function suaChuDe(_truoc: KetQua, form: FormData): Promise<KetQua> 
 
   const { count } = await db.chuDe.updateMany({
     where: { id: chuDeId, nguoiId: nguoi.id, khoa: false },
-    data: { tieuDe, noiDung },
+    // Sửa bài mà quên dựng lại chuỗi tìm thì ô tìm kiếm còn trỏ vào chữ cũ —
+    // bài đã sửa tên vẫn ra theo tên cũ, và không ra theo tên mới.
+    data: { tieuDe, noiDung, timKiem: dungChuoiTimChuDe({ tieuDe, noiDung }) },
   });
   if (count === 0) return { loi: 'Không sửa được bài này. Có thể bài đã bị khoá hoặc không phải của bạn.' };
 

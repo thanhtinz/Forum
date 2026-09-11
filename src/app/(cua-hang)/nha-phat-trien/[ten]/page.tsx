@@ -6,7 +6,18 @@ import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { CHON_THE, thanhThe } from '@/components/game/the-game';
 import { HangGame } from '@/components/game/HangGame';
-import { gonSo } from '@/lib/tien-ich';
+import { PhanTrang } from '@/components/PhanTrang';
+import { gonSo, kep, soTrang } from '@/lib/tien-ich';
+
+/*
+ * Mỗi trang bao nhiêu game.
+ *
+ * Trước đây lấy `take: 100` rồi thôi — và tệ hơn: mọi con số ở hàng thống kê
+ * (số trò chơi, tổng lượt tải, khoảng năm) đều tính từ đúng 100 hàng ấy. Hãng
+ * nào làm trên trăm game thì trang này vừa giấu mất phần dôi ra, vừa in ra
+ * những con số SAI mà trông vẫn rất chắc chắn.
+ */
+const MOI_TRANG = 20;
 
 export const dynamic = 'force-dynamic';
 
@@ -34,26 +45,50 @@ export async function generateMetadata({ params }: { params: Promise<{ ten: stri
   return { title: giaiTen(ten) };
 }
 
-export default async function TrangNhaPhatTrien({ params }: { params: Promise<{ ten: string }> }) {
+export default async function TrangNhaPhatTrien({ params, searchParams }: {
+  params: Promise<{ ten: string }>;
+  searchParams: Promise<{ trang?: string }>;
+}) {
   const { ten } = await params;
+  const { trang: trangNhap } = await searchParams;
   const hang = giaiTen(ten);
   if (!hang) notFound();
 
+  const loc = { ...DANG_HIEN, nhaPhatTrien: { equals: hang, mode: 'insensitive' as const } };
+
+  /*
+   * Thống kê hỏi thẳng CSDL chứ không cộng từ danh sách đang vẽ.
+   *
+   * Cộng từ danh sách thì con số chỉ đúng chừng nào cả kho của hãng nằm lọt
+   * trong một trang — mà đó chính là điều kiện vừa bị bỏ đi.
+   */
+  const gom = await db.game.aggregate({
+    where: loc,
+    _count: { _all: true },
+    _sum: { soLuotTai: true },
+    _min: { namPhatHanh: true },
+    _max: { namPhatHanh: true },
+  });
+  const tongGame = gom._count._all;
+  if (tongGame === 0) notFound();
+
+  const tongTrang = soTrang(tongGame, MOI_TRANG);
+  const trang = kep(trangNhap, 1, tongTrang, 1);
+
   const game = await db.game.findMany({
-    where: { ...DANG_HIEN, nhaPhatTrien: { equals: hang, mode: 'insensitive' } },
+    where: loc,
     orderBy: [{ soLuotTai: 'desc' }, { id: 'desc' }],
-    take: 100,
+    skip: (trang - 1) * MOI_TRANG,
+    take: MOI_TRANG,
     select: { ...CHON_THE, nhaPhatTrien: true, namPhatHanh: true },
   });
-  if (game.length === 0) notFound();
 
-  const tenHien = game[0].nhaPhatTrien ?? hang;
-  const tongTai = game.reduce((t, g) => t + g.soLuotTai, 0);
-  const nam = game.map((g) => g.namPhatHanh).filter((n): n is number => !!n);
-  const khoang = nam.length > 0
-    ? (Math.min(...nam) === Math.max(...nam)
-        ? String(Math.min(...nam))
-        : `${Math.min(...nam)}–${Math.max(...nam)}`)
+  const tenHien = game[0]?.nhaPhatTrien ?? hang;
+  const tongTai = gom._sum.soLuotTai ?? 0;
+  const namDau = gom._min.namPhatHanh;
+  const namCuoi = gom._max.namPhatHanh;
+  const khoang = namDau && namCuoi
+    ? (namDau === namCuoi ? String(namDau) : `${namDau}–${namCuoi}`)
     : null;
 
   return (
@@ -69,7 +104,7 @@ export default async function TrangNhaPhatTrien({ params }: { params: Promise<{ 
       </header>
 
       <dl className="the flex divide-x divide-vien text-center">
-        <O chinh={String(game.length)} nhan={game.length === 1 ? 'trò chơi' : 'trò chơi'} />
+        <O chinh={gonSo(tongGame)} nhan="trò chơi" />
         <O chinh={gonSo(tongTai)} nhan="lượt tải" />
         {khoang && <O chinh={khoang} nhan="năm phát hành" />}
       </dl>
@@ -79,6 +114,8 @@ export default async function TrangNhaPhatTrien({ params }: { params: Promise<{ 
         <ul className="space-y-3.5">
           {game.map((g) => <li key={g.id}><HangGame game={thanhThe(g)} /></li>)}
         </ul>
+        <PhanTrang trang={trang} tongTrang={tongTrang}
+          dungDuong={(t) => `/nha-phat-trien/${ten}${t > 1 ? `?trang=${t}` : ''}`} />
       </section>
 
       <Link href="/duyet" className="phu block text-center hover:text-chu">Xem tất cả trò chơi</Link>

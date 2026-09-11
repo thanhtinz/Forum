@@ -73,6 +73,28 @@ export default async function chay(kiem) {
     { waitUntil: 'domcontentloaded' });
   kiem('gõ tên hãng viết hoa vẫn ra đúng trang', r.status() === 200, `trả về ${r.status()}`);
 
+  /*
+   * HÀNG THỐNG KÊ PHẢI HỎI CSDL, KHÔNG CỘNG TỪ DANH SÁCH ĐANG VẼ.
+   *
+   * Trang này lấy 100 game rồi cộng lượt tải của đúng 100 hàng ấy. Hãng nào
+   * làm trên trăm game thì con số in ra vừa sai vừa trông rất chắc chắn — mà
+   * không ai soi ra, vì nó chỉ sai ở đúng những hãng lớn nhất.
+   */
+  const gom = await db.game.aggregate({
+    where: { trangThai: 'DANG_HIEN', nhaPhatTrien: { equals: hang, mode: 'insensitive' } },
+    _count: { _all: true }, _sum: { soLuotTai: true },
+  });
+  await p.goto(`${GOC}/nha-phat-trien/${encodeURIComponent(hang)}`, { waitUntil: 'networkidle' });
+  const soLieu = await p.locator('dl').first().innerText();
+  kiem('hàng thống kê nói đúng số trò chơi của hãng',
+    soLieu.includes(String(gom._count._all)), soLieu.replace(/\n/g, ' '));
+
+  // Trang bịa trên địa chỉ thì kẹp về trang cuối, không ra danh sách rỗng.
+  const rTrang = await p.goto(`${GOC}/nha-phat-trien/${encodeURIComponent(hang)}?trang=99`,
+    { waitUntil: 'networkidle' });
+  kiem('?trang=99 ở trang hãng kẹp về trang cuối', rTrang.status() === 200
+    && (await p.locator('section ul li').count()) > 0, `trả về ${rTrang.status()}`);
+
   // ── Hãng không có thật thì 404, không phải trang rỗng ────────────────
   const r2 = await p.goto(`${GOC}/nha-phat-trien/hang-khong-co-that-dau`,
     { waitUntil: 'domcontentloaded' });

@@ -133,3 +133,58 @@ export async function layKe(
   });
   return hang.map(thanhThe);
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * TÌM TRONG DIỄN ĐÀN
+ *
+ * Ô tìm kiếm trước đây chỉ biết tìm GAME. Nhưng một nửa giá trị của kho này
+ * nằm ở mấy chủ đề kiểu "bản 1.2 treo ở màn 3, sửa thế nào" — người gặp đúng
+ * lỗi ấy gõ vào ô tìm rồi không ra gì, lại mở một chủ đề mới hỏi y hệt.
+ *
+ * Cùng lối với tìm game: so trên cột `timKiem` đã bỏ dấu, cắt từ khoá theo
+ * khoảng trắng và bắt khớp MỌI từ.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Bao nhiêu chủ đề một trang ở trang kết quả tìm. */
+export const MOI_TRANG_THAO_LUAN = 20;
+
+export interface ChuDeTim {
+  id: string;
+  tieuDe: string;
+  soTraLoi: number;
+  traLoiCuoiLuc: Date;
+  nguoi: { tenHienThi: string };
+  game: { ten: string; duongDan: string };
+}
+
+function dieuKienChuDe(tuKhoa: string): Prisma.ChuDeWhereInput {
+  const tu = khongDau(tuKhoa).split(' ').filter(Boolean).slice(0, 6);
+  return {
+    // Chủ đề của game đã gỡ thì không hiện: bấm vào là gặp 404.
+    game: DANG_HIEN,
+    AND: tu.map((t) => ({ timKiem: { contains: t } })),
+  };
+}
+
+/** Đếm chủ đề khớp từ khoá — cho con số trên tab, khỏi kéo cả danh sách về. */
+export function demChuDeTim(tuKhoa: string): Promise<number> {
+  if (!tuKhoa) return Promise.resolve(0);
+  return db.chuDe.count({ where: dieuKienChuDe(tuKhoa) });
+}
+
+export async function timChuDe(tuKhoa: string, trang: number): Promise<ChuDeTim[]> {
+  if (!tuKhoa) return [];
+  return db.chuDe.findMany({
+    where: dieuKienChuDe(tuKhoa),
+    // Chủ đề còn sống trước: người tìm "lỗi màn 3" cần cuộc trao đổi đang có
+    // người đáp, không cần bài mở ra ba năm trước rồi im.
+    orderBy: [{ traLoiCuoiLuc: 'desc' }, { id: 'desc' }],
+    skip: (trang - 1) * MOI_TRANG_THAO_LUAN,
+    take: MOI_TRANG_THAO_LUAN,
+    select: {
+      id: true, tieuDe: true, soTraLoi: true, traLoiCuoiLuc: true,
+      nguoi: { select: { tenHienThi: true } },
+      game: { select: { ten: true, duongDan: true } },
+    },
+  });
+}

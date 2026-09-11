@@ -1,8 +1,8 @@
 import { PrismaClient } from '@prisma/client';
-import { dungChuoiTim } from '../src/lib/tim-kiem-const';
+import { dungChuoiTim, dungChuoiTimChuDe } from '../src/lib/tim-kiem-const';
 
 /*
- * Lấp cột `timKiem` cho mọi game đang có.
+ * Lấp cột `timKiem` cho mọi game và mọi chủ đề diễn đàn đang có.
  *
  * Cần một lượt chạy tay vì cột này mới thêm: game nhập trước đó mang chuỗi
  * rỗng, nên tìm kiểu gì cũng không ra. Chạy lại nhiều lần vô hại — nó tính lại
@@ -44,6 +44,16 @@ async function chay() {
   }
 
   console.log(`Đã dựng lại chuỗi tìm cho ${doi} game.`);
+
+  // Chủ đề diễn đàn: cùng lẽ, cùng cách ghi thô — `taoLuc` không được xê dịch,
+  // vì thứ tự trong danh sách chủ đề dựa vào mốc thời gian.
+  const chuDe = await db.chuDe.findMany({ select: { id: true, tieuDe: true, noiDung: true } });
+  for (const c of chuDe) {
+    const chuoi = dungChuoiTimChuDe({ tieuDe: c.tieuDe, noiDung: c.noiDung });
+    await db.$executeRaw`UPDATE "ChuDe" SET "timKiem" = ${chuoi} WHERE "id" = ${c.id}`;
+  }
+  console.log(`Đã dựng lại chuỗi tìm cho ${chuDe.length} chủ đề.`);
+
   await db.$disconnect();
 }
 

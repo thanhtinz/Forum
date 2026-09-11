@@ -295,6 +295,10 @@ model ChuDe {
   tieuDe  String
   noiDung String @db.Text
 
+  /// Tiêu đề + nội dung đã BỎ DẤU, cho ô tìm kiếm. Cùng lối với `Game.timKiem`
+  /// — xem `dungChuoiTimChuDe` để biết vì sao gộp cả phần nội dung vào.
+  timKiem String @default("") @db.Text
+
   ghim Boolean @default(false)
   khoa Boolean @default(false)
 

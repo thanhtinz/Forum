@@ -968,3 +968,115 @@ async function lamMoiChuoiTim(gameId: string): Promise<void> {
     select: { id: true },
   });
 }
+
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * KHOÁ TÀI KHOẢN VÀ ĐỔI VAI TRÒ
+ *
+ * Trang Thành viên trước đây CHỈ ĐỌC, cố ý: mỗi nút ở đây là một địa chỉ POST
+ * công khai mới, mà lại là loại nguy hiểm nhất — tự phong quản trị, hoặc khoá
+ * đúng người quản trị cuối cùng rồi không ai vào được nữa.
+ *
+ * Nay mở ra vì chuỗi kiểm duyệt đang cụt: báo xấu → gỡ bài → báo cho người
+ * viết, rồi hết. Người rải bài quay lại rải tiếp, và người coi kho chỉ còn
+ * cách gỡ từng bài một, mãi. Cột `khoa` vốn đã được canh ở mọi lối vào
+ * (`nguoiHienTai` lọc ngay trong `where`, `dangNhap` nói rõ lý do) — tức là
+ * cả phần thi hành đã sẵn sàng từ lâu, chỉ thiếu đúng cái nút bật nó.
+ *
+ * Hai cái bẫy được chặn thẳng, xem chú thích từng hàm.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Khoá hoặc mở khoá một tài khoản. */
+export async function khoaThanhVien(nguoiId: string, khoa: boolean): Promise<KetQua> {
+  let toi;
+  try { toi = await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  // Tự khoá mình là tự đá mình ra khỏi khu quản trị, và không có nút nào ở
+  // giao diện để vào mở lại — chỉ còn cách sửa thẳng CSDL.
+  if (nguoiId === toi.id) return { loi: 'Không tự khoá tài khoản của mình được.' };
+
+  /*
+   * Không khoá được một quản trị viên khác.
+   *
+   * Không phải vì tin nhau, mà vì luật này khiến mọi cuộc "khoá qua khoá lại"
+   * thành không thể: muốn chặn một quản trị thì phải HẠ QUYỀN trước, và phép
+   * hạ quyền đã có luật riêng canh số quản trị còn lại. Hai bước, mỗi bước một
+   * luật rõ ràng, thay vì một nút làm được cả hai.
+   */
+  const { count } = await db.nguoiDung.updateMany({
+    where: { id: nguoiId, vaiTro: 'THANH_VIEN' },
+    data: { khoa },
+  });
+  if (count === 0) {
+    return { loi: 'Không khoá được. Quản trị viên thì phải hạ quyền trước đã.' };
+  }
+
+  /*
+   * Khoá xong thì xoá sạch phiên của người ấy.
+   *
+   * `nguoiHienTai` vốn đã lọc `khoa: false` ngay trong `where`, nên người bị
+   * khoá mất quyền ngay lượt tải trang kế tiếp kể cả khi phiên còn sống. Xoá
+   * thêm ở đây là để bảng `Phien` khỏi giữ lại một nắm hàng chết — và để câu
+   * trả lời cho "khoá rồi thì phiên cũ còn dùng được không" là KHÔNG, ở cả
+   * hai lớp, chứ không phải chỉ ở một lớp mà quên là hỏng.
+   */
+  if (khoa) {
+    await db.phien.deleteMany({ where: { nguoiId } });
+  }
+
+  revalidatePath('/quan-tri/thanh-vien');
+  return {};
+}
+
+/** Phong hoặc hạ quyền quản trị. */
+export async function doiVaiTro(nguoiId: string, thanhQuanTri: boolean): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  if (thanhQuanTri) {
+    // Phong quyền cho một tài khoản đang bị khoá là phong cho một người không
+    // đăng nhập được — vô nghĩa, và che mất việc họ đang bị khoá.
+    const { count } = await db.nguoiDung.updateMany({
+      where: { id: nguoiId, khoa: false },
+      data: { vaiTro: 'QUAN_TRI' },
+    });
+    if (count === 0) return { loi: 'Không phong được. Tài khoản này đang bị khoá.' };
+    revalidatePath('/quan-tri/thanh-vien');
+    return {};
+  }
+
+  /*
+   * HẠ QUYỀN: KHO PHẢI CÒN ÍT NHẤT MỘT QUẢN TRỊ.
+   *
+   * Hạ nốt người cuối cùng là khoá cửa rồi ném chìa vào trong: không còn ai
+   * vào được khu quản trị để phong lại cho ai cả, và lối duy nhất là sửa thẳng
+   * CSDL. Đây đúng loại việc mà một lần bấm nhầm là hỏng vĩnh viễn.
+   *
+   * Luật này là một phép ĐẾM, nên nó đua được: hai quản trị cùng hạ quyền nhau
+   * trong cùng một khoảnh khắc thì mỗi bên đều thấy "vẫn còn một người nữa" và
+   * cả hai cùng xuống. Chạy ở mức cô lập `Serializable` để CSDL bắt đúng cú
+   * ấy: một trong hai giao dịch bị dội ra, và ta trả lời như mọi lần từ chối.
+   */
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.nguoiDung.update({
+        where: { id: nguoiId },
+        data: { vaiTro: 'THANH_VIEN' },
+        select: { id: true },
+      });
+      const con = await tx.nguoiDung.count({ where: { vaiTro: 'QUAN_TRI' } });
+      // Đếm SAU khi ghi, rồi huỷ cả giao dịch nếu hết người: hỏi trước rồi mới
+      // ghi thì giữa hai bước ấy có một khe hở.
+      if (con === 0) throw new Error('HET_QUAN_TRI');
+    }, { isolationLevel: 'Serializable' });
+  } catch (e) {
+    if (e instanceof Error && e.message === 'HET_QUAN_TRI') {
+      return { loi: 'Kho phải còn ít nhất một quản trị viên.' };
+    }
+    return { loi: 'Không đổi được vai trò lúc này. Thử lại giúp mình nhé.' };
+  }
+
+  revalidatePath('/quan-tri/thanh-vien');
+  return {};
+}

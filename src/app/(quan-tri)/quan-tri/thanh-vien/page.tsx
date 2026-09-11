@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { Shield } from 'lucide-react';
 import { db } from '@/lib/db';
 import { PhanTrang } from '@/components/PhanTrang';
-import { cachDay, gonSo } from '@/lib/tien-ich';
+import { NutThanhVien } from '@/components/quan-tri/NutThanhVien';
+import { nguoiHienTai } from '@/lib/xac-thuc';
+import { cachDay, gonSo, kep, soTrang } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Thành viên' };
@@ -10,13 +12,17 @@ export const metadata: Metadata = { title: 'Thành viên' };
 const MOI_TRANG = 30;
 
 /*
- * THÀNH VIÊN — CHỈ ĐỌC, cố ý.
+ * THÀNH VIÊN.
  *
- * Không có nút đổi vai trò hay khoá tài khoản ở đây, dù lược đồ có sẵn cả hai
- * cột. Mỗi nút như thế là một hàm `'use server'` mới, tức một địa chỉ POST
- * công khai mới, mà lại là loại nguy hiểm nhất: tự phong quản trị, hoặc khoá
- * đúng người quản trị cuối cùng rồi không ai vào được nữa. Chưa có nhu cầu
- * thật thì chưa mở ra — thêm sau vẫn kịp, gỡ một lỗ hổng thì không.
+ * Trang này từng CHỈ ĐỌC, và lý do ghi ở đây là "chưa có nhu cầu thật thì chưa
+ * mở ra". Nhu cầu ấy nay đã rõ: chuỗi kiểm duyệt dừng ở chỗ gỡ bài, nên người
+ * rải bài quay lại rải tiếp và người coi kho chỉ còn cách gỡ từng bài, mãi.
+ * Cột `khoa` vốn đã được canh ở mọi lối vào, tức là phần thi hành sẵn sàng từ
+ * lâu — chỉ thiếu đúng cái nút bật nó.
+ *
+ * Hai mối nguy của mấy nút này — tự phong quản trị, và khoá nốt người quản trị
+ * cuối cùng — chặn ở `khoaThanhVien` và `doiVaiTro`, không chặn bằng cách giấu
+ * nút đi.
  *
  * Email KHÔNG in ra: người coi kho cần biết ai đang hoạt động, không cần địa
  * chỉ liên lạc của họ; mà một bảng đầy email là một bảng đáng để người ngoài
@@ -26,10 +32,15 @@ export default async function ThanhVien({ searchParams }: {
   searchParams: Promise<{ trang?: string }>;
 }) {
   const sp = await searchParams;
-  const trang = Math.max(1, Number(sp.trang) || 1);
+  const toi = await nguoiHienTai();
 
-  const [tong, nguoi] = await Promise.all([
-    db.nguoiDung.count(),
+  const tong = await db.nguoiDung.count();
+  const tongTrang = soTrang(tong, MOI_TRANG);
+  // Kẹp vào khoảng có thật: `?trang=99` trước đây ra một bảng trống trơn, trông
+  // y như kho không có thành viên nào.
+  const trang = kep(sp.trang, 1, tongTrang, 1);
+
+  const [nguoi] = await Promise.all([
     db.nguoiDung.findMany({
       orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
       skip: (trang - 1) * MOI_TRANG,
@@ -41,8 +52,6 @@ export default async function ThanhVien({ searchParams }: {
       },
     }),
   ]);
-
-  const tongTrang = Math.max(1, Math.ceil(tong / MOI_TRANG));
 
   return (
     <div className="space-y-4">
@@ -60,6 +69,7 @@ export default async function ThanhVien({ searchParams }: {
               <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Đánh giá</th>
               <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Chủ đề</th>
               <th scope="col" className="px-3 py-2.5 text-right">Tham gia</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Việc</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-vien">
@@ -97,6 +107,10 @@ export default async function ThanhVien({ searchParams }: {
                 <td className="hidden px-3 py-2.5 text-right tabular-nums sm:table-cell">{n._count.danhGia}</td>
                 <td className="hidden px-3 py-2.5 text-right tabular-nums sm:table-cell">{n._count.chuDe}</td>
                 <td className="px-3 py-2.5 text-right text-mo">{cachDay(n.taoLuc)}</td>
+                <td className="px-3 py-2.5 text-right">
+                  <NutThanhVien id={n.id} ten={n.tenHienThi} laQuanTri={n.vaiTro === 'QUAN_TRI'}
+                    dangKhoa={n.khoa} laToi={n.id === toi?.id} />
+                </td>
               </tr>
             ))}
           </tbody>

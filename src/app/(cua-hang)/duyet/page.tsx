@@ -176,8 +176,22 @@ export default async function TrangDuyet({ searchParams }: {
           <>
             {/* Máy bàn xếp hai cột: hàng game cao 72px, một cột thì màn hình
                 rộng bỏ trống hẳn nửa bên phải mà vẫn phải cuộn. */}
+            {/*
+              `min-w-0` trên từng ô lưới, không thừa.
+
+              Ô của lưới CSS mặc định mang `min-width: auto`, nghĩa là nó không
+              chịu hẹp hơn nội dung bên trong. Một hàng game có biểu tượng 56px,
+              tên game và nút cài, nên ở màn hình 320px cái ô ấy đẩy rộng cả
+              cột — và cả TRANG cuộn ngang theo. Đúng lỗi này đã có thật: trang
+              duyệt tràn 51px ở 320px, trong khi `/tim` dùng cùng hàng game ấy
+              mà không sao, vì nó xếp dòng chứ không xếp lưới.
+
+              320px là cỡ máy Android cũ, tức là đúng người mở một kho game Java.
+            */}
             <ul className="grid gap-x-8 gap-y-3.5 xl:grid-cols-2">
-              {game.map((g) => <li key={g.id}><HangGame game={g} /></li>)}
+              {game.map((g) => (
+                <li key={g.id} className="min-w-0"><HangGame game={g} /></li>
+              ))}
             </ul>
             <PhanTrang trang={trang} tongTrang={soTrang(tong, MOI_TRANG)}
               dungDuong={(t) => `/duyet${thanhTruyVan(loc, { trang: t })}`} />

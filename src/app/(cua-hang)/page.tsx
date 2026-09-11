@@ -9,6 +9,7 @@ import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { HangGame } from '@/components/game/HangGame';
 import { NutCai } from '@/components/game/NutCai';
 import { NenGame } from '@/components/game/NenGame';
+import { NutCaiUngDung } from '@/components/vo/NutCaiUngDung';
 import { chiaHomNay } from '@/lib/hom-nay-const';
 import { catChu } from '@/lib/tien-ich';
 
@@ -69,6 +70,10 @@ export default async function HomNay() {
 
   return (
     <div className="mx-auto max-w-[680px] space-y-5">
+      {/* Lời mời cài đặt chỉ đặt ở tab Hôm nay — đây là trang người ta mở
+          thường xuyên nhất, mà mời cài ở mọi trang thì thành phiền. */}
+      <NutCaiUngDung />
+
       <header className="pt-1">
         <p className="text-[13px] font-bold uppercase tracking-wide text-mo">
           {format(new Date(), "EEEE, d 'tháng' M", { locale: vi })}

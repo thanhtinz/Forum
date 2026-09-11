@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ngoại tuyến · SunnyStore</title>
+<!--
+  TRANG NGOẠI TUYẾN LÀ MỘT TỆP TĨNH, KHÔNG PHẢI MỘT TUYẾN CỦA NEXT.
+
+  Vì nó phải nằm sẵn trong bộ nhớ đệm của service worker, mà mọi tuyến của
+  trang này đều `force-dynamic` và mang theo trạng thái đăng nhập. Lưu đệm một
+  trang như thế là tự chuốc lấy cảnh máy dùng chung hiện tên người trước.
+
+  Kiểu dáng viết thẳng vào đây chứ không dùng tệp CSS chung, vì lúc cần tới
+  trang này thì mạng đã mất — và tệp CSS chung mang mã băm đổi theo mỗi lần
+  dựng, nên không ghim sẵn được.
+-->
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; min-height: 100dvh;
+    display: grid; place-items: center; padding: 24px;
+    background: #fff; color: #202124;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  @media (prefers-color-scheme: dark) { body { background: #0f1114; color: #e8eaed; } }
+  main { max-width: 340px; text-align: center; }
+  h1 { margin: 16px 0 0; font-size: 20px; letter-spacing: -.01em; }
+  p { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: #5f6368; }
+  @media (prefers-color-scheme: dark) { p { color: #9aa0a6; } }
+  button {
+    margin-top: 20px; min-height: 44px; padding: 0 28px;
+    border: 0; border-radius: 999px; background: #0074e5; color: #fff;
+    font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  svg { color: #9aa0a6; }
+</style>
+</head>
+<body>
+<main>
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="m2 2 20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/>
+    <path d="M2 8.82a15 15 0 0 1 4.17-2.65"/><path d="M10.66 5c4.01-.36 8.14.9 11.34 3.76"/>
+    <path d="M16.85 11.25a10 10 0 0 1 2.22 1.68"/><path d="M5 13a10 10 0 0 1 5.24-2.76"/>
+    <line x1="12" x2="12.01" y1="20" y2="20"/>
+  </svg>
+  <h1>Đang mất mạng</h1>
+  <p>
+    SunnyStore cần mạng để lấy danh sách game. Game bạn đã tải về máy thì vẫn
+    chơi được bình thường — chúng nằm trong máy, không nằm ở đây.
+  </p>
+  <button type="button" onclick="location.reload()">Thử lại</button>
+</main>
+</body>
+</html>

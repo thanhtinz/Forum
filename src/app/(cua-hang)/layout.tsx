@@ -5,6 +5,7 @@ import { demChuaDoc } from '@/lib/thong-bao';
 import { ThanhBen } from '@/components/vo/ThanhBen';
 import { ThanhTren } from '@/components/vo/ThanhTren';
 import { ThanhDay } from '@/components/vo/ThanhDay';
+import { DangKySW } from '@/components/vo/DangKySW';
 
 export const metadata: Metadata = {
   title: { default: 'SunnyStore — trò chơi Java, Android, iOS', template: '%s · SunnyStore' },
@@ -66,6 +67,7 @@ export default async function BoCucGoc({ children }: { children: React.ReactNode
         </div>
 
         <ThanhDay />
+        <DangKySW />
       </body>
     </html>
   );

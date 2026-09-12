@@ -1,7 +1,7 @@
 'use client';
 
 import { useActionState } from 'react';
-import { OSoanThao } from '@/components/quan-tri/OSoanThao';
+import { OSoanThao } from '@/components/OSoanThao';
 import { luuHoSoTacGia, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 
 export function OHoSoTacGia({ tenTacGia, gioiThieu, tenDuPhong }: {

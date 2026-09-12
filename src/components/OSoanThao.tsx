@@ -60,7 +60,9 @@ const DAU_DE = [
   { ma: 'd3', ten: 'Đầu đề nhỏ', dau: '### ', hinh: <Heading3 size={14} /> },
 ];
 
-export function OSoanThao({ ten, nhan, giaTri, dong = 8, goYy, chiDan, choAnh = 'anh-chup' }: {
+export function OSoanThao({
+  ten, nhan, giaTri, dong = 8, goYy, chiDan, choAnh = 'anh-chup', gon = false,
+}: {
   ten: string;
   nhan: string;
   giaTri: string;
@@ -69,6 +71,16 @@ export function OSoanThao({ ten, nhan, giaTri, dong = 8, goYy, chiDan, choAnh = 
   chiDan?: boolean;
   /** Ảnh chèn trong bài đặt vào ngăn nào của kho. */
   choAnh?: ChoAnh;
+  /**
+   * Hàng nút GỌN — dùng ở diễn đàn.
+   *
+   * Bỏ menu kiểu chữ, bảng, đường kẻ ngang và nút toàn màn hình. Không phải để
+   * giấu tính năng: một ô trả lời trong diễn đàn cao bốn dòng, mà hàng nút đầy
+   * đủ có mười bốn nút — nó cao gần bằng chính ô chữ, và người vào trả lời một
+   * câu thì chín phần mười chỉ cần đậm, nghiêng, dán ảnh. Mô tả game thì khác:
+   * ở đó người ta soạn cả trang có đầu đề và bảng, nên hàng nút đầy đủ là đúng.
+   */
+  gon?: boolean;
 }) {
   const [chu, datChu] = useState(giaTri);
   const [xemTruoc, datXemTruoc] = useState(false);
@@ -197,7 +209,7 @@ export function OSoanThao({ ten, nhan, giaTri, dong = 8, goYy, chiDan, choAnh = 
     if (!xemTruoc) return;
     let con = true;
     const hen = setTimeout(async () => {
-      const { xemThuChuDam } = await import('@/app/(quan-tri)/quan-tri/viec');
+      const { xemThuChuDam } = await import('@/lib/viec-chu-dam');
       const h = await xemThuChuDam(chu);
       if (con) datHtmlXem(h);
     }, 400);
@@ -232,16 +244,22 @@ export function OSoanThao({ ten, nhan, giaTri, dong = 8, goYy, chiDan, choAnh = 
         ảnh chụp mới thấy, vì nút vẫn sáng lên như đã mở.
       */}
       <div className="vach-duoi flex flex-wrap items-center gap-0.5 rounded-t-nut border border-vien bg-nen3/60 p-1">
-        <MenuDauDe datDau={(d) => dauDong(d, true)} />
+        {!gon && (
+          <>
+            <MenuDauDe datDau={(d) => dauDong(d, true)} />
+            <span className="mx-0.5 h-5 w-px shrink-0 bg-vien" aria-hidden />
+          </>
+        )}
+        {(gon ? DINH_DANG.filter((l) => l.ma !== 'gach') : DINH_DANG).map(nut)}
         <span className="mx-0.5 h-5 w-px shrink-0 bg-vien" aria-hidden />
-        {DINH_DANG.map(nut)}
-        <span className="mx-0.5 h-5 w-px shrink-0 bg-vien" aria-hidden />
-        {KHOI.map(nut)}
-        <button type="button" aria-label="Đường kẻ ngang" title="Đường kẻ ngang"
-          onClick={() => { const o = oRef.current; if (o) datVao('\n---\n', o.selectionStart, o.selectionEnd); }}
-          className="grid size-8 shrink-0 place-items-center rounded-nut text-mo hover:bg-nen2 hover:text-chu">
-          <Minus size={15} />
-        </button>
+        {(gon ? KHOI.filter((l) => l.ma !== 'danh-so') : KHOI).map(nut)}
+        {!gon && (
+          <button type="button" aria-label="Đường kẻ ngang" title="Đường kẻ ngang"
+            onClick={() => { const o = oRef.current; if (o) datVao('\n---\n', o.selectionStart, o.selectionEnd); }}
+            className="grid size-8 shrink-0 place-items-center rounded-nut text-mo hover:bg-nen2 hover:text-chu">
+            <Minus size={15} />
+          </button>
+        )}
         <span className="mx-0.5 h-5 w-px shrink-0 bg-vien" aria-hidden />
         <button type="button" aria-label="Liên kết" title="Liên kết (Ctrl+K)" onClick={chenLienKet}
           className="grid size-8 shrink-0 place-items-center rounded-nut text-mo hover:bg-nen2 hover:text-chu">
@@ -252,7 +270,7 @@ export function OSoanThao({ ten, nhan, giaTri, dong = 8, goYy, chiDan, choAnh = 
           className="grid size-8 shrink-0 place-items-center rounded-nut text-mo hover:bg-nen2 hover:text-chu disabled:opacity-50">
           {dangNapAnh ? <Loader2 size={15} className="animate-spin" /> : <ImagePlus size={15} />}
         </button>
-        <MenuBang chen={chenBang} />
+        {!gon && <MenuBang chen={chenBang} />}
 
         <span className="ml-auto shrink-0" />
         <button type="button" onClick={() => datXemTruoc((v) => !v)}
@@ -261,11 +279,13 @@ export function OSoanThao({ ten, nhan, giaTri, dong = 8, goYy, chiDan, choAnh = 
             xemTruoc ? 'bg-nhan/12 text-nhan' : 'text-mo hover:bg-nen2 hover:text-chu')}>
           <Eye size={15} />
         </button>
-        <button type="button" onClick={() => datToanMan((v) => !v)}
-          aria-label={toanMan ? 'Thu nhỏ' : 'Toàn màn hình'} title={toanMan ? 'Thu nhỏ' : 'Toàn màn hình'}
-          className="grid size-8 shrink-0 place-items-center rounded-nut text-mo hover:bg-nen2 hover:text-chu">
-          {toanMan ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-        </button>
+        {!gon && (
+          <button type="button" onClick={() => datToanMan((v) => !v)}
+            aria-label={toanMan ? 'Thu nhỏ' : 'Toàn màn hình'} title={toanMan ? 'Thu nhỏ' : 'Toàn màn hình'}
+            className="grid size-8 shrink-0 place-items-center rounded-nut text-mo hover:bg-nen2 hover:text-chu">
+            {toanMan ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+          </button>
+        )}
       </div>
 
       <div className={gop('grid min-h-0 flex-1', xemTruoc && 'lg:grid-cols-2')}>

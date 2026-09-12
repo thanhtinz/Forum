@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ChevronLeft, Lock, Pin } from 'lucide-react';
 import { db } from '@/lib/db';
+import { dungChuDam } from '@/lib/chu-dam';
+import { OSoanThao } from '@/components/OSoanThao';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGui } from '@/components/BieuMauGui';
 import { SuaChuDe, SuaTraLoi } from '@/components/game/OSuaBaiDienDan';
@@ -90,7 +92,18 @@ export default async function TrangChuDe({ params, searchParams }: {
 
       <article className="the p-4">
         <Nguoi nguoi={chuDe.nguoi} luc={chuDe.taoLuc} />
-        <p className="mt-2.5 whitespace-pre-line text-[14px] leading-relaxed">{chuDe.noiDung}</p>
+        {/*
+          `dangerouslySetInnerHTML` ở đây KHÔNG nguy hiểm, và chỗ nguy hiểm
+          thật đã bị chặn từ trước: `dungChuDam` bật `html: false`, nên mọi thẻ
+          người viết gõ tay đều bị escape thành chữ thường. Đầu ra chỉ chứa
+          đúng những thẻ do chính bộ dựng sinh ra — xem `chu-dam.ts`.
+
+          Bài cũ lưu dạng chữ trần vẫn hiện đúng: Markdown coi mỗi dòng trống
+          là một đoạn mới, mà bộ dựng bật `breaks` nên một lần xuống dòng cũng
+          thành một lần xuống dòng thật.
+        */}
+        <div className="chu-dam mt-2.5"
+          dangerouslySetInnerHTML={{ __html: dungChuDam(chuDe.noiDung) }} />
         {/* Nút sửa chỉ VẼ ra cho chủ bài và khi chủ đề chưa khoá; chặn thật
             nằm trong `where` của Prisma ở `suaChuDe`. */}
         {nguoi?.id === chuDe.nguoiId && !chuDe.khoa && (
@@ -109,7 +122,8 @@ export default async function TrangChuDe({ params, searchParams }: {
                viết tới đúng bài vừa gửi, kể cả khi nó rơi sang trang mới. */
             <li key={t.id} id={`tl-${t.id}`} className="the p-4 scroll-mt-24">
               <Nguoi nguoi={t.nguoi} luc={t.taoLuc} />
-              <p className="mt-2.5 whitespace-pre-line text-[14px] leading-relaxed">{t.noiDung}</p>
+              <div className="chu-dam chu-dam-nho mt-2.5"
+                dangerouslySetInnerHTML={{ __html: dungChuDam(t.noiDung) }} />
               {nguoi?.id === t.nguoiId && !chuDe.khoa && (
                 <SuaTraLoi traLoiId={t.id} noiDung={t.noiDung} />
               )}
@@ -129,12 +143,18 @@ export default async function TrangChuDe({ params, searchParams }: {
         </p>
       ) : nguoi ? (
         <div className="the p-4">
-          <h2 className="mb-2 text-[14px] font-bold">Trả lời</h2>
+          {/* Không còn đầu đề "Trả lời" ở đây: chính trình soạn thảo đã mang
+              một nhãn "Trả lời" gắn vào ô chữ, nên đầu đề này là chữ thứ hai
+              nói đúng một việc, cách nhau một dòng. */}
           <BieuMauGui viec={traLoi} nut="Gửi trả lời" xoaSauKhiGui>
             <input type="hidden" name="chuDeId" value={chuDe.id} />
             <input type="hidden" name="duongDan" value={chuDe.game.duongDan} />
-            <textarea name="noiDung" required minLength={2} maxLength={8000} rows={4}
-              className="o-nhap" placeholder="Viết trả lời của bạn…" />
+            {/* `key` đổi theo TỔNG số lời đáp: `xoaSauKhiGui` xoá ô chữ trần được,
+                nhưng trình soạn thảo giữ chữ trong trạng thái của nó, nên phải
+                dựng lại nó sau mỗi lượt gửi — không thì lời đáp vừa gửi vẫn
+                nằm trong ô và người ta bấm gửi lần nữa. */}
+            <OSoanThao key={tongTraLoi} ten="noiDung" nhan="Trả lời"
+              giaTri="" dong={4} gon choAnh="dien-dan" />
           </BieuMauGui>
         </div>
       ) : (

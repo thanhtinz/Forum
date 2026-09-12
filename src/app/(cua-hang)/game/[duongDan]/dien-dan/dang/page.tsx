@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGui } from '@/components/BieuMauGui';
+import { OSoanThao } from '@/components/OSoanThao';
 import { dangChuDe } from '../viec';
 
 export const dynamic = 'force-dynamic';
@@ -35,11 +36,18 @@ export default async function TrangDangBai({ params }: { params: Promise<{ duong
           <input name="tieuDe" required minLength={5} maxLength={150} className="o-nhap"
             placeholder="Hỏi gì, kể gì, hay báo lỗi gì?" />
         </label>
-        <label className="block">
-          <span className="phu mb-1 block">Nội dung</span>
-          <textarea name="noiDung" required minLength={10} maxLength={8000} rows={9} className="o-nhap"
-            placeholder="Máy bạn đời nào, chạy bản nào, kẹt ở đoạn nào… càng rõ càng dễ có người giúp." />
-        </label>
+        {/*
+          TRÌNH SOẠN THẢO, không còn là ô chữ trần.
+
+          Diễn đàn của một cửa hàng game cũ sống bằng mấy bài kể cách vượt màn
+          và báo lỗi — mà hai loại bài ấy cần đúng những thứ ô chữ trần không
+          có: ẢNH CHỤP màn hình lúc kẹt, danh sách các bước, và khối mã cho
+          mấy dòng cấu hình. Cổng nhận ảnh cho diễn đàn đã có sẵn từ đợt kho
+          ảnh (`dien-dan`, có cửa chặn đếm lượt) mà tới giờ chưa nơi nào dùng.
+        */}
+        <OSoanThao ten="noiDung" nhan="Nội dung" giaTri="" dong={9} gon choAnh="dien-dan"
+          goYy="Máy bạn đời nào, chạy bản nào, kẹt ở đoạn nào… càng rõ càng dễ có người giúp.
+            Dán thẳng ảnh chụp vào ô là nó tự tải lên." />
       </BieuMauGui>
     </div>
   );

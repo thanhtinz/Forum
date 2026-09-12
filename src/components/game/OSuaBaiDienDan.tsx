@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition } from 'react';
 import { useXacNhan } from '@/components/HopXacNhan';
+import { OSoanThao } from '@/components/OSoanThao';
 import {
   suaChuDe, suaTraLoi, xoaChuDeCuaToi, xoaTraLoiCuaToi, type KetQua,
 } from '@/app/(cua-hang)/game/[duongDan]/dien-dan/viec';
@@ -122,8 +123,8 @@ export function SuaTraLoi({ traLoiId, noiDung }: { traLoiId: string; noiDung: st
   return (
     <form action={gui} className="mt-2.5 space-y-2">
       <input type="hidden" name="traLoiId" value={traLoiId} />
-      <textarea name="noiDung" defaultValue={noiDung} required minLength={2} maxLength={8000}
-        rows={4} aria-label="Nội dung lời đáp" className="o-nhap" />
+      <OSoanThao ten="noiDung" nhan="Nội dung lời đáp" giaTri={noiDung} dong={4}
+        gon choAnh="dien-dan" />
       {kq.loi && <p role="alert" className="text-[12px] font-medium text-xau">{kq.loi}</p>}
       <div className="flex items-center gap-2">
         <button type="submit" disabled={dangChay} className="nut-xam">

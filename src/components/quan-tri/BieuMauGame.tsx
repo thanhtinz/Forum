@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react';
 import { luuGame, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
-import { OSoanThao } from '@/components/quan-tri/OSoanThao';
+import { OSoanThao } from '@/components/OSoanThao';
 import { ONapAnh } from '@/components/quan-tri/ONapAnh';
 import { DO_TUOI, MO_TA_TUOI } from '@/lib/do-tuoi-const';
 

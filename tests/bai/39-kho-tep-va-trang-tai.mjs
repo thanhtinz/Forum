@@ -138,10 +138,23 @@ export default async function chay(kiem) {
     const chu = await khach.locator('body').textContent();
     kiem('trang tải nói rõ đang tải game nào', chu.includes('Game kiểm kho tệp'));
     kiem('trang tải nói rõ bản nào', chu.includes('1.0'));
-    kiem('trang tải bày sẵn mã kiểm tra', chu.includes(bam));
     kiem('trang tải có thanh tiến trình',
       (await khach.locator('[role="progressbar"]').count()) > 0
       || (await khach.locator('text=Đã tải xong').count()) > 0, chu.slice(0, 300));
+    kiem('trang tải có hai tab',
+      (await khach.locator('[role="tab"]').count()) === 2);
+
+    /*
+     * TRANG TẢI CHỈ LÀM MỘT VIỆC.
+     *
+     * Bản đầu bày thêm mã sha256, cách cài trên từng hệ máy và một kệ game gợi
+     * ý. Ba thứ ấy đều đúng chỗ ở TRANG GAME; ở đây chúng biến một màn hình
+     * chỉ cần trả lời "xong chưa" thành một trang phải cuộn. Canh lại kẻo có
+     * ngày ai đó thấy trống mà nhét vào.
+     */
+    for (const thua of [bam, 'Cách cài', 'Trong lúc chờ']) {
+      kiem(`trang tải không bày “${thua.slice(0, 12)}”`, !chu.includes(thua));
+    }
 
     // Nút tải ở trang game phải dẫn SANG TRANG TẢI, không bắn thẳng vào tệp.
     await khach.goto(`${GOC}/game/${DUONG_DAN}`, { waitUntil: 'networkidle' });

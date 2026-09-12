@@ -2,7 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CircleCheck, Download, TriangleAlert, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { CircleCheck, Download, Pause, Play, TriangleAlert, X } from 'lucide-react';
+import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { gonDungLuong, gop } from '@/lib/tien-ich';
 
 /**
@@ -16,33 +18,47 @@ import { gonDungLuong, gop } from '@/lib/tien-ich';
  */
 export const NGUONG_DONG = 150 * 1024 * 1024;
 
-type Trang = 'dang' | 'xong' | 'huy' | 'loi';
+type Trang = 'dang' | 'xong' | 'loi';
 
 /**
- * THANH TIẾN TRÌNH CỦA TRANG TẢI.
+ * MỘT LƯỢT TẢI ĐANG CHẠY: biểu tượng, tên game, thanh tiến trình, hai nút.
  *
  * Tự chạy ngay khi mở trang, không đợi bấm thêm một nút nữa: người vào đây đã
  * bấm "Tải" ở trang game rồi, bắt bấm lần hai là hỏi lại một câu họ vừa trả
  * lời.
  *
+ * TẠM DỪNG và HUỶ là hai việc khác nhau, nên là hai nút. Tạm dừng chỉ thôi đọc
+ * tiếp — phần đã nhận vẫn nằm nguyên đó, bấm tiếp là chạy tiếp từ đúng chỗ ấy.
+ * Huỷ thì bỏ hẳn và quay về trang game. Gộp làm một nút "Dừng" thì người muốn
+ * nghe điện thoại một phút phải tải lại từ đầu.
+ *
  * Tải xong thì tự bật hộp lưu tệp. Trình duyệt có thể chặn cú bấm giả ấy nếu
  * nó không tin là do người dùng gây ra, nên vẫn bày sẵn nút "Lưu lại" — thứ
  * không bao giờ được phép xảy ra là tải xong mà không có cách nào lấy tệp.
  */
-export function TienTrinhTai({ tepId, ten, dungLuong, duongDanGame }: {
+export function TienTrinhTai({ tepId, ten, dungLuong, game, dongPhu }: {
   tepId: string;
+  /** Tên tệp khi lưu xuống máy. */
   ten: string;
   dungLuong: number | null;
-  duongDanGame: string;
+  game: { ten: string; icon: string | null; duongDan: string };
+  /** Dòng nhỏ dưới tên game: hệ máy, số hiệu bản, cỡ tệp. */
+  dongPhu: string;
 }) {
+  const router = useRouter();
   const [trang, datTrang] = useState<Trang>('dang');
+  const [nghi, datNghi] = useState(false);
   const [daNhan, datDaNhan] = useState(0);
   const [tong, datTong] = useState<number | null>(dungLuong);
-  const [giay, datGiay] = useState(0);
+  const [giayChay, datGiayChay] = useState(0);
   const [loi, datLoi] = useState('');
 
   const boQua = useRef<AbortController | null>(null);
   const neo = useRef<string | null>(null);
+  /* Cờ nghỉ và lời hẹn đánh thức — vòng đọc nằm ngoài React nên nó không thấy
+     được `useState`, phải đọc qua `ref`. */
+  const coNghi = useRef(false);
+  const danhThuc = useRef<(() => void) | null>(null);
 
   const luuTep = useCallback((dc: string) => {
     const a = document.createElement('a');
@@ -56,7 +72,10 @@ export function TienTrinhTai({ tepId, ten, dungLuong, duongDanGame }: {
   useEffect(() => {
     const bo = new AbortController();
     boQua.current = bo;
-    const batDau = Date.now();
+    /* Đếm THỜI GIAN CHẠY, không đếm thời gian trôi: nghỉ năm phút rồi tải tiếp
+       mà vẫn chia cho cả năm phút ấy thì tốc độ báo ra là một con số bịa. */
+    let daChay = 0;
+    let moc = Date.now();
 
     (async () => {
       try {
@@ -71,12 +90,17 @@ export function TienTrinhTai({ tepId, ten, dungLuong, duongDanGame }: {
         let duoc = 0;
 
         for (;;) {
+          if (coNghi.current) {
+            daChay += Date.now() - moc;
+            await new Promise<void>((xong) => { danhThuc.current = xong; });
+            moc = Date.now();
+          }
           const mau = await doc.read();
           if (mau.done) break;
           khuc.push(mau.value);
           duoc += mau.value.length;
           datDaNhan(duoc);
-          datGiay(Math.max(0.001, (Date.now() - batDau) / 1000));
+          datGiayChay(Math.max(0.001, (daChay + Date.now() - moc) / 1000));
         }
 
         const cuc = new Blob(khuc as BlobPart[], { type: 'application/octet-stream' });
@@ -93,23 +117,48 @@ export function TienTrinhTai({ tepId, ten, dungLuong, duongDanGame }: {
 
     return () => {
       bo.abort();
+      // Đánh thức vòng đọc trước khi rời đi, kẻo nó nằm chờ mãi một lời hẹn
+      // không bao giờ tới và giữ luôn cả đống khúc tệp trong bộ nhớ.
+      danhThuc.current?.();
       // Trả lại bộ nhớ của cục tệp khi rời trang. Không trả thì nó nằm đó tới
       // lúc đóng tab — mà "tới lúc đóng tab" với một tệp trăm megabyte là lâu.
       if (neo.current) URL.revokeObjectURL(neo.current);
     };
   }, [tepId, luuTep]);
 
+  const doiNghi = () => {
+    const moi = !nghi;
+    coNghi.current = moi;
+    datNghi(moi);
+    if (!moi) { danhThuc.current?.(); danhThuc.current = null; }
+  };
+
+  const huy = () => {
+    coNghi.current = false;
+    danhThuc.current?.();
+    boQua.current?.abort();
+    router.push(`/game/${game.duongDan}`);
+  };
+
   const phanTram = tong ? Math.min(100, Math.round((daNhan / tong) * 100)) : null;
-  const tocDo = giay > 0.2 ? daNhan / giay : 0;
+  const tocDo = giayChay > 0.2 ? daNhan / giayChay : 0;
   const conLai = tong && tocDo > 0 ? Math.max(0, Math.round((tong - daNhan) / tocDo)) : null;
 
   return (
-    <div className="the space-y-3 p-4">
+    <div className="the p-4">
+      <div className="flex items-center gap-3">
+        <BieuTuongGame ten={game.ten} icon={game.icon} co={56} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-bold leading-tight">{game.ten}</p>
+          <p className="phu mt-0.5 truncate">{dongPhu}</p>
+        </div>
+      </div>
+
       {trang === 'dang' && (
-        <>
+        <div className="mt-3.5 space-y-2.5">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-[15px] font-bold">
-              {phanTram !== null ? `Đang tải… ${phanTram}%` : 'Đang tải…'}
+            <span className="text-[13px] font-semibold">
+              {nghi ? 'Đã tạm dừng' : phanTram !== null ? `Đang tải… ${phanTram}%` : 'Đang tải…'}
             </span>
             <span className="phu">
               {gonDungLuong(daNhan)}{tong ? ` / ${gonDungLuong(tong)}` : ''}
@@ -125,54 +174,46 @@ export function TienTrinhTai({ tepId, ten, dungLuong, duongDanGame }: {
             role="progressbar" aria-label="Tiến trình tải"
             aria-valuenow={phanTram ?? undefined} aria-valuemin={0} aria-valuemax={100}>
             <div className={gop('h-full rounded-full bg-nhan',
-              phanTram !== null ? 'transition-[width] duration-200' : 'w-1/3 thanh-chay')}
+              phanTram !== null ? 'transition-[width] duration-200' : 'w-1/3 thanh-chay',
+              nghi && 'opacity-50')}
               style={phanTram !== null ? { width: `${phanTram}%` } : undefined} />
           </div>
 
           <p className="phu">
-            {tocDo > 0 ? `${gonDungLuong(tocDo)}/giây` : 'Đang nối tới kho…'}
-            {conLai !== null && tocDo > 0 && ` · còn khoảng ${gonGiay(conLai)}`}
+            {nghi ? 'Phần đã tải vẫn còn, bấm tiếp là chạy tiếp.'
+              : tocDo > 0 ? `${gonDungLuong(tocDo)}/giây` : 'Đang nối tới kho…'}
+            {!nghi && conLai !== null && tocDo > 0 && ` · còn khoảng ${gonGiay(conLai)}`}
           </p>
 
-          <button type="button" onClick={() => { boQua.current?.abort(); datTrang('huy'); }}
-            className="nut-vien !w-full">
-            <X size={15} aria-hidden /> Dừng lại
-          </button>
-        </>
+          <div className="flex gap-2">
+            <button type="button" onClick={doiNghi} className="nut-vien flex-1">
+              {nghi ? <><Play size={15} aria-hidden /> Tiếp tục</> : <><Pause size={15} aria-hidden /> Tạm dừng</>}
+            </button>
+            <button type="button" onClick={huy} className="nut-vien flex-1 !text-xau">
+              <X size={15} aria-hidden /> Huỷ
+            </button>
+          </div>
+        </div>
       )}
 
       {trang === 'xong' && (
-        <>
-          <p className="flex items-center gap-2 text-[15px] font-bold text-nhan">
-            <CircleCheck size={18} aria-hidden /> Đã tải xong {gonDungLuong(daNhan)}
+        <div className="mt-3.5 space-y-2.5">
+          <p className="flex items-center gap-2 text-[14px] font-bold text-nhan">
+            <CircleCheck size={17} aria-hidden /> Đã tải xong {gonDungLuong(daNhan)}
           </p>
-          <p className="phu">
-            Tệp đã về máy bạn. Hộp lưu không hiện ra thì bấm nút dưới đây.
-          </p>
+          <p className="phu">Hộp lưu không hiện ra thì bấm nút dưới đây.</p>
           <button type="button" onClick={() => neo.current && luuTep(neo.current)}
             className="nut-cai-dam w-full">
             <Download size={17} aria-hidden /> Lưu lại {ten}
           </button>
-          <Link href={`/game/${duongDanGame}`} className="nut-vien !w-full">
-            Về trang game
-          </Link>
-        </>
-      )}
-
-      {trang === 'huy' && (
-        <>
-          <p className="text-[15px] font-bold">Đã dừng</p>
-          <p className="phu">Bạn dừng lượt tải này giữa chừng.</p>
-          <button type="button" onClick={() => window.location.reload()} className="nut-cai-dam w-full">
-            <Download size={17} aria-hidden /> Tải lại từ đầu
-          </button>
-        </>
+          <Link href={`/game/${game.duongDan}`} className="nut-vien !w-full">Về trang game</Link>
+        </div>
       )}
 
       {trang === 'loi' && (
-        <>
-          <p className="flex items-center gap-2 text-[15px] font-bold text-xau">
-            <TriangleAlert size={18} aria-hidden /> Tải không xong
+        <div className="mt-3.5 space-y-2.5">
+          <p className="flex items-center gap-2 text-[14px] font-bold text-xau">
+            <TriangleAlert size={17} aria-hidden /> Tải không xong
           </p>
           <p className="phu">
             Đường truyền đứt giữa chừng, hoặc tệp đang có vấn đề{loi ? ` (${loi})` : ''}.
@@ -185,7 +226,7 @@ export function TienTrinhTai({ tepId, ten, dungLuong, duongDanGame }: {
           <a href={`/api/tai/${tepId}`} className="nut-cai-dam w-full">
             <Download size={17} aria-hidden /> Tải thẳng bằng trình duyệt
           </a>
-        </>
+        </div>
       )}
     </div>
   );

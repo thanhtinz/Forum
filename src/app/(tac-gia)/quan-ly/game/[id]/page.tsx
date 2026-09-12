@@ -8,6 +8,7 @@ import { BieuMauGame } from '@/components/quan-tri/BieuMauGame';
 import { KhungBanTai } from '@/components/quan-tri/KhungBanTai';
 import { KhungAnhChup } from '@/components/quan-tri/KhungAnhChup';
 import { KhungSuKien } from '@/components/quan-tri/KhungSuKien';
+import { KhungPhim } from '@/components/quan-tri/KhungPhim';
 import { NhanTrangThai } from '@/components/tac-gia/NhanTrangThai';
 import { NutGuiDuyet } from '@/components/tac-gia/NutGuiDuyet';
 
@@ -37,6 +38,10 @@ export default async function SuaGameTacGia({ params }: { params: Promise<{ id: 
         anhChup: {
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
           select: { id: true, duongDan: true, chuThich: true },
+        },
+        phim: {
+          orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
+          select: { id: true, duongDan: true, dungLuong: true },
         },
         suKien: {
           orderBy: [{ batDau: 'desc' }, { id: 'desc' }],
@@ -99,6 +104,16 @@ export default async function SuaGameTacGia({ params }: { params: Promise<{ id: 
       <section>
         <h2 className="tieu-de mb-3">Ảnh chụp</h2>
         <KhungAnhChup gameId={game.id} anh={game.anhChup} />
+      </section>
+
+      <section>
+        <h2 className="tieu-de mb-3">Phim xem trước</h2>
+        <KhungPhim gameId={game.id}
+          phim={game.phim.map((f) => ({
+            ...f,
+            // `BigInt` không qua được ranh giới máy chủ → máy khách.
+            dungLuong: f.dungLuong != null ? Number(f.dungLuong) : null,
+          }))} />
       </section>
 
       <section>

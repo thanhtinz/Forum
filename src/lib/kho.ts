@@ -275,8 +275,49 @@ export interface TepDaLuu {
 export async function luuTepGame(
   dong: ReadableStream<Uint8Array>, duoi: string, dungLuong: number,
 ): Promise<TepDaLuu> {
-  const ten = `${Date.now().toString(36)}-${randomBytes(8).toString('hex')}.${duoi.toLowerCase()}`;
-  const khoa = `${THU_MUC_TEP}/${ten}`;
+  return luuDong(dong, THU_MUC_TEP, duoi.toLowerCase(), kieuTep(duoi), dungLuong, DIA_CHI_TEP);
+}
+
+/** Thư mục và địa chỉ của ĐOẠN PHIM XEM TRƯỚC. */
+export const THU_MUC_PHIM = 'phim';
+export const DIA_CHI_PHIM = '/api/phim';
+
+/**
+ * Đưa một đoạn phim xem trước vào kho.
+ *
+ * Cùng một đường ống với tệp game — đếm byte, băm sha256, chảy thành dòng —
+ * chỉ khác thư mục và kiểu MIME. Phim còn nặng hơn tệp game nên chuyện "không
+ * gom vào bộ nhớ" ở đây càng đúng.
+ */
+export async function luuPhim(
+  dong: ReadableStream<Uint8Array>, dungLuong: number,
+): Promise<TepDaLuu> {
+  return luuDong(dong, THU_MUC_PHIM, 'mp4', 'video/mp4', dungLuong, DIA_CHI_PHIM);
+}
+
+/**
+ * Ruột tệp có phải MP4 không?
+ *
+ * MP4 không mở đầu bằng một dấu cố định ở byte 0: byte 0-3 là ĐỘ DÀI của khối
+ * đầu, rồi mới tới tên khối `ftyp` ở byte 4. Nên phải soi ở byte 4, và đây
+ * đúng là chỗ mà một phép kiểm viết vội sẽ trượt.
+ */
+export function laMP4(byte: Uint8Array): boolean {
+  return byte.length >= 12
+    && byte[4] === 0x66 && byte[5] === 0x74 && byte[6] === 0x79 && byte[7] === 0x70;
+}
+
+/** Ruột chung của mọi phép cất theo DÒNG. Xem `luuTepGame` và `luuPhim`. */
+async function luuDong(
+  dong: ReadableStream<Uint8Array>,
+  thuMuc: string,
+  duoi: string,
+  kieu: string,
+  dungLuong: number,
+  diaChiDia: string,
+): Promise<TepDaLuu> {
+  const ten = `${Date.now().toString(36)}-${randomBytes(8).toString('hex')}.${duoi}`;
+  const khoa = `${thuMuc}/${ten}`;
 
   const bam = createHash('sha256');
   let dem = 0;
@@ -296,17 +337,17 @@ export async function luuTepGame(
       Key: khoa,
       Body: nguon,
       ContentLength: dungLuong,
-      ContentType: kieuTep(duoi),
+      ContentType: kieu,
       // Tên mang mã ngẫu nhiên nên ruột không bao giờ đổi.
       CacheControl: 'public, max-age=31536000, immutable',
     }));
     return { duongDan: `${R2_DIA_CHI}/${khoa}`, khoa, dungLuong: dem, maKiemTra: bam.digest('hex') };
   }
 
-  const goc = join(THU_MUC_DIA, THU_MUC_TEP);
+  const goc = join(THU_MUC_DIA, thuMuc);
   await mkdir(goc, { recursive: true });
   await pipeline(nguon, createWriteStream(join(goc, ten)));
-  return { duongDan: `${DIA_CHI_TEP}/${khoa}`, khoa, dungLuong: dem, maKiemTra: bam.digest('hex') };
+  return { duongDan: `${diaChiDia}/${khoa}`, khoa, dungLuong: dem, maKiemTra: bam.digest('hex') };
 }
 
 /**
@@ -333,6 +374,26 @@ export async function xoaTepGame(duongDan: string | null | undefined): Promise<v
     }
   } catch {
     // Cố ý im lặng — xem chú thích ở trên.
+  }
+}
+
+/** Gỡ một đoạn phim khỏi kho. Nuốt lỗi y như `xoaTepGame`, cùng một lẽ. */
+export async function xoaPhim(duongDan: string | null | undefined): Promise<void> {
+  const d = (duongDan ?? '').trim();
+  if (!d) return;
+  try {
+    if (dungR2() && d.startsWith(`${R2_DIA_CHI}/`)) {
+      await mayR2().send(new DeleteObjectCommand({
+        Bucket: R2_THUNG, Key: d.slice(R2_DIA_CHI.length + 1),
+      }));
+      return;
+    }
+    if (d.startsWith(`${DIA_CHI_PHIM}/`)) {
+      const duong = trongKhoDia(d.slice(DIA_CHI_PHIM.length + 1).split('/'));
+      if (duong) await unlink(duong);
+    }
+  } catch {
+    // Cố ý im lặng — xem chú thích ở `xoaTepGame`.
   }
 }
 

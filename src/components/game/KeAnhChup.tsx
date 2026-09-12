@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { PhimXemTruoc, type PhimXem } from '@/components/game/PhimXemTruoc';
 
 export interface AnhXem {
   id: string;
@@ -30,7 +31,7 @@ export interface AnhXem {
  * mang sẵn bẫy tiêu điểm, đóng bằng Esc, và chặn cuộn phía sau — ba thứ mà tự
  * viết thì lần nào cũng thiếu một.
  */
-export function KeAnhChup({ anh }: { anh: AnhXem[] }) {
+export function KeAnhChup({ anh, phim = [] }: { anh: AnhXem[]; phim?: PhimXem[] }) {
   const [dangXem, datDangXem] = useState<number | null>(null);
   const hopRef = useRef<HTMLDialogElement>(null);
   const anhRef = useRef<HTMLImageElement>(null);
@@ -74,7 +75,14 @@ export function KeAnhChup({ anh }: { anh: AnhXem[] }) {
 
   return (
     <>
-      <section className="ke -mx-4 gap-3 px-4 sm:mx-0 sm:px-0" aria-label="Ảnh chụp trong game">
+      <section className="ke -mx-4 gap-3 px-4 sm:mx-0 sm:px-0" aria-label="Ảnh và phim trong game">
+        {/*
+          PHIM ĐỨNG TRƯỚC ẢNH, đúng thứ tự App Store dùng: với một game thì thứ
+          đáng xem nhất là nó CHẠY như thế nào, mà ảnh tĩnh không nói được điều
+          đó. Ai không quan tâm thì quệt một cái là tới ảnh.
+        */}
+        {phim.map((f) => <PhimXemTruoc key={f.id} phim={f} />)}
+
         {anh.map((a, i) => (
           <button key={a.id} type="button" onClick={() => datDangXem(i)}
             aria-label={a.chuThich ? `Xem to: ${a.chuThich}` : `Xem to ảnh ${i + 1}`}

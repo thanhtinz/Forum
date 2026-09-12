@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { BieuMauGame } from '@/components/quan-tri/BieuMauGame';
 import { KhungAnhChup } from '@/components/quan-tri/KhungAnhChup';
 import { KhungSuKien } from '@/components/quan-tri/KhungSuKien';
+import { KhungPhim } from '@/components/quan-tri/KhungPhim';
 import { KhungBanTai } from '@/components/quan-tri/KhungBanTai';
 import { NutTrangThai } from '@/components/quan-tri/NutTrangThai';
 import { KhuNguyHiem } from '@/components/quan-tri/KhuNguyHiem';
@@ -29,6 +30,10 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
           take: 30,
           select: { id: true, duongDan: true, chuThich: true },
+        },
+        phim: {
+          orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
+          select: { id: true, duongDan: true, dungLuong: true },
         },
         suKien: {
           orderBy: [{ batDau: 'desc' }, { id: 'desc' }],
@@ -69,6 +74,16 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
       <section>
         <h2 className="tieu-de mb-3">Ảnh chụp</h2>
         <KhungAnhChup gameId={game.id} anh={game.anhChup} />
+      </section>
+
+      <section>
+        <h2 className="tieu-de mb-3">Phim xem trước</h2>
+        <KhungPhim gameId={game.id}
+          phim={game.phim.map((f) => ({
+            ...f,
+            // `BigInt` không qua được ranh giới máy chủ → máy khách.
+            dungLuong: f.dungLuong != null ? Number(f.dungLuong) : null,
+          }))} />
       </section>
 
       <section>

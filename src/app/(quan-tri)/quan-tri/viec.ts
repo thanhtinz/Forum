@@ -9,7 +9,7 @@ import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
 import { baoBanMoi } from '@/lib/bao-ban-moi';
 import { dungChuDam } from '@/lib/chu-dam';
-import { xoaAnh, xoaTepGame } from '@/lib/kho';
+import { xoaAnh, xoaPhim, xoaTepGame } from '@/lib/kho';
 import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
 import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
 import { napDoTuoi } from '@/lib/do-tuoi-const';
@@ -319,6 +319,33 @@ export async function traLoiYeuCau(id: string, trangThai: string, loiNhan: strin
 
   revalidatePath('/quan-tri/yeu-cau');
   revalidatePath('/yeu-cau');
+  return {};
+}
+
+/**
+ * Gỡ một đoạn phim xem trước, và gỡ luôn tệp khỏi kho.
+ *
+ * Không có hành động THÊM ở đây: phim đi lên qua cổng `/api/tai-len-phim`, vì
+ * một tệp bốn chục megabyte thì phải chảy thành dòng, mà `'use server'` nhận
+ * `FormData` là gom hết vào bộ nhớ trước đã.
+ */
+export async function xoaPhimGame(phimId: string): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const phim = await db.phimGame.findFirst({
+    where: { id: phimId, game: locGameCuaToi(nguoi) },
+    select: { duongDan: true, anhBia: true, gameId: true, game: { select: { duongDan: true } } },
+  });
+  if (!phim) return { loi: LOI_KHONG_QUYEN };
+
+  await db.phimGame.delete({ where: { id: phimId } });
+  await xoaPhim(phim.duongDan);
+  await xoaAnh(phim.anhBia);
+
+  revalidatePath(`/quan-tri/game/${phim.gameId}`);
+  revalidatePath(`/game/${phim.game.duongDan}`);
   return {};
 }
 
@@ -782,6 +809,7 @@ export async function xoaGame(gameId: string, tenGoLai: string): Promise<KetQua>
     select: {
       ten: true, duongDan: true, icon: true, bia: true,
       anhChup: { select: { duongDan: true } },
+      phim: { select: { duongDan: true, anhBia: true } },
       banTai: { select: { tep: { select: { duongDan: true } } } },
     },
   });
@@ -804,6 +832,11 @@ export async function xoaGame(gameId: string, tenGoLai: string): Promise<KetQua>
   await Promise.all([game.icon, game.bia, ...game.anhChup.map((a) => a.duongDan)].map(xoaAnh));
   // Tệp cài đặt cũng vậy, mà chúng còn nặng gấp trăm lần mấy tấm ảnh.
   await Promise.all(game.banTai.flatMap((b) => b.tep.map((t) => xoaTepGame(t.duongDan))));
+  // Và phim xem trước — nặng nhất trong cả ba loại.
+  await Promise.all([
+    ...game.phim.map((f) => xoaPhim(f.duongDan)),
+    ...game.phim.map((f) => xoaAnh(f.anhBia)),
+  ]);
 
   revalidatePath('/quan-tri/game');
   revalidatePath('/quan-tri');

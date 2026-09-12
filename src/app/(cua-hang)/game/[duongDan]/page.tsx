@@ -20,6 +20,7 @@ import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
 import { bocChu, dungChuDam } from '@/lib/chu-dam';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
+import { PHIM_TOI_DA } from '@/lib/phim-const';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +63,11 @@ export default async function TabThongTin({ params, searchParams }: {
       anhChup: {
         orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: TOI_DA_ANH_CHUP,
         select: { id: true, duongDan: true, chuThich: true },
+      },
+      phim: {
+        orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
+        take: PHIM_TOI_DA,
+        select: { id: true, duongDan: true, anhBia: true },
       },
       /*
        * Sự kiện ĐANG CÒN HẠN, sắp tới trước.
@@ -150,8 +156,8 @@ export default async function TabThongTin({ params, searchParams }: {
 
   return (
     <div className="space-y-8">
-      {game.anhChup.length > 0 && (
-        <KeAnhChup anh={game.anhChup} />
+      {(game.anhChup.length > 0 || game.phim.length > 0) && (
+        <KeAnhChup anh={game.anhChup} phim={game.phim} />
       )}
 
       {/*

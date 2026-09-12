@@ -130,6 +130,7 @@ model Game {
   theLoai TheLoaiTrenGame[]
   banTai  BanTai[]
   anhChup AnhChup[]
+  phim    PhimGame[]
   suKien  SuKien[]
   danhGia DanhGia[]
   luotTai LuotTai[]
@@ -296,6 +297,31 @@ enum LoaiTep {
   DMG
   /// Gói cài đặt của macOS, dùng khi bản game cần chạy kịch bản lúc cài.
   PKG
+}
+
+/*
+ * ĐOẠN PHIM XEM TRƯỚC — "app preview" của App Store.
+ *
+ * Apple cho tối đa ba đoạn, đứng TRƯỚC ảnh chụp trong dải xem trước, và chạy
+ * ngay lúc người ta cuộn tới — không tiếng. Lý do họ đặt phim lên trước ảnh:
+ * một game thì thứ đáng xem nhất là nó CHẠY như thế nào, mà ảnh tĩnh không nói
+ * được điều đó.
+ *
+ * `anhBia` là tấm hiện ra trước khi phim chạy. Không có thì trình duyệt tự lấy
+ * khung đầu, mà khung đầu của phim game thường là màn hình đen.
+ */
+model PhimGame {
+  id     String @id @default(cuid())
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  duongDan  String
+  anhBia    String?
+  dungLuong BigInt?
+  thuTu     Int     @default(0)
+  taoLuc    DateTime @default(now())
+
+  @@index([gameId, thuTu])
 }
 
 model AnhChup {

@@ -145,3 +145,27 @@ export function tuDongXacNhan(p, hanMs = 8000) {
     .then((nut) => nut.click())
     .catch(() => {});
 }
+
+/**
+ * Dựng một tệp MP4 có PHẦN ĐẦU THẬT, phần ruột là đệm.
+ *
+ * Cổng nhận phim soi bốn byte `ftyp` ở vị trí thứ tư — đúng chỗ MP4 ghi tên
+ * khối đầu — nên tệp dựng ở đây qua được phép soi ấy y như một tệp thật, mà
+ * không phải kéo `ffmpeg` vào bộ kiểm hay để sẵn một tệp phim trong mã nguồn.
+ *
+ * Nó KHÔNG phát được: mấy mục kiểm ở đây canh đường đi của tệp (nhận, cất,
+ * phát theo khúc, gỡ), không canh chuyện trình duyệt giải mã hình ảnh.
+ */
+export function taoMP4(soByte = 4096) {
+  const dau = Buffer.concat([
+    Buffer.from([0, 0, 0, 0x18]), // độ dài khối ftyp
+    Buffer.from('ftypisom', 'ascii'),
+    Buffer.from([0, 0, 2, 0]), // phiên bản nhỏ
+    Buffer.from('isomiso2', 'ascii'), // mấy hiệu tương thích
+  ]);
+  const conLai = Math.max(0, soByte - dau.length - 8);
+  const dem = Buffer.alloc(8 + conLai);
+  dem.writeUInt32BE(8 + conLai, 0);
+  dem.write('free', 4, 'ascii');
+  return Buffer.concat([dau, dem]);
+}

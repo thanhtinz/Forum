@@ -3,10 +3,10 @@ import type { Metadata } from 'next';
 import { MessageSquare, Search } from 'lucide-react';
 import { db } from '@/lib/db';
 import {
-  MOI_TRANG, MOI_TRANG_THAO_LUAN, demChuDeTim, docBoLoc, duyetDanhMuc, thanhTruyVan, timChuDe,
+  MOI_TRANG, MOI_TRANG_THAO_LUAN, demChuDeTim, docBoLoc, duyetDanhMuc, layKe, thanhTruyVan, timChuDe,
 } from '@/lib/danh-muc';
 import { HangGame } from '@/components/game/HangGame';
-import { HangChip } from '@/components/game/HangChip';
+import { LuoiTheLoai } from '@/components/game/LuoiTheLoai';
 import { PhanTrang } from '@/components/PhanTrang';
 import { OTim } from '@/components/vo/OTim';
 import { cachDay, gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
@@ -164,18 +164,13 @@ async function KetQuaThaoLuan({ tuKhoa, tong, trangNhap }: {
 }
 
 async function ChuaGo() {
-  const [theLoai, taiNhieu] = await Promise.all([
+  const [theLoai, goiY] = await Promise.all([
     db.theLoai.findMany({ orderBy: [{ thuTu: 'asc' }], take: 12, select: { ten: true, duongDan: true } }),
-    db.game.findMany({
-      where: { trangThai: 'DANG_HIEN' },
-      orderBy: [{ soLuotTai: 'desc' }, { id: 'desc' }],
-      take: 8,
-      select: { id: true, ten: true, duongDan: true },
-    }),
+    layKe({}, [{ soLuotTai: 'desc' }, { id: 'desc' }], 4),
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <div className="lg:hidden"><OTim /></div>
 
       <div>
@@ -183,24 +178,29 @@ async function ChuaGo() {
         <p className="phu mt-0.5">Gõ tên game, tên nhà phát triển, hoặc chọn một lối dưới đây.</p>
       </div>
 
-      <section>
-        <h2 className="tieu-de mb-3">Thể loại</h2>
-        <HangChip muc={theLoai.map((t) => ({ ten: t.ten, duongDan: `/the-loai/${t.duongDan}` }))} />
-      </section>
+      {/*
+        GỢI Ý LÀ HÀNG GAME ĐẦY ĐỦ, KHÔNG PHẢI DANH SÁCH TỪ KHOÁ.
+
+        Bản trước bày mấy cái tên kèm hình kính lúp, tức là gợi ý một CHỮ ĐỂ
+        GÕ. Nhưng người mở trang tìm mà chưa gõ gì thì thứ họ thiếu là một
+        game, không phải một từ khoá — nên mỗi dòng ở đây là game thật, có
+        biểu tượng, có điểm sao, và có nút cài ngay bên phải để bấm phát ăn
+        ngay. Đúng mục "Suggested" của App Store.
+      */}
+      {goiY.length > 0 && (
+        <section>
+          <h2 className="tieu-de mb-3">Gợi ý cho bạn</h2>
+          <ul className="the-noi danh-sach-the">
+            {goiY.map((g) => (
+              <li key={g.id} className="p-3.5"><HangGame game={g} /></li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section>
-        <h2 className="tieu-de mb-3">Mọi người hay tìm</h2>
-        <ul className="the divide-y divide-vien">
-          {taiNhieu.map((g) => (
-            <li key={g.id}>
-              <Link href={`/game/${g.duongDan}`}
-                className="flex items-center gap-3 px-4 py-3 text-[14px] transition-colors hover:bg-nen3">
-                <Search size={15} className="shrink-0 text-mo" />
-                <span className="truncate">{g.ten}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <h2 className="tieu-de mb-3">Duyệt theo thể loại</h2>
+        <LuoiTheLoai muc={theLoai} />
       </section>
     </div>
   );

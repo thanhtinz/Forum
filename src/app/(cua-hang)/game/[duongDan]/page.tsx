@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { TriangleAlert } from 'lucide-react';
+import { ChevronRight, TriangleAlert } from 'lucide-react';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { PhoDiem } from '@/components/game/PhoDiem';
@@ -10,6 +10,7 @@ import { ODanhGia } from '@/components/game/ODanhGia';
 import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
 import { KeAnhChup } from '@/components/game/KeAnhChup';
 import { TamDanhGia } from '@/components/game/TamDanhGia';
+import { MoTaGame } from '@/components/game/MoTaGame';
 import { KhoiGap } from '@/components/KhoiGap';
 import { NGON_NGU } from '@/lib/he-may';
 import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
@@ -51,7 +52,8 @@ export default async function TabThongTin({ params, searchParams }: {
     where: { duongDan, ...DANG_HIEN },
     select: {
       id: true, gioiThieu: true, namPhatHanh: true,
-      ngonNgu: true, dangLuc: true,
+      ngonNgu: true, dangLuc: true, nhaPhatTrien: true,
+      tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
       anhChup: { orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: 12, select: { id: true, duongDan: true, chuThich: true } },
       _count: { select: { banTai: true } },
     },
@@ -88,6 +90,20 @@ export default async function TabThongTin({ params, searchParams }: {
   // vì một hàm `'use server'` thì ai cũng gọi được, không cần thấy nút.
   const laQuanTri = nguoi?.vaiTro === 'QUAN_TRI';
 
+  /*
+   * Có TÁC GIẢ thì trỏ về trang tác giả, không trỏ về trang gom theo tên hãng.
+   * Trang tên hãng gom theo một CHUỖI ghi trên từng game nên hai cách gõ thành
+   * hai hãng; trang tác giả gom theo tài khoản nên nó là thật.
+   */
+  const tenTacGia = game.tacGia
+    ? game.tacGia.tenTacGia ?? game.tacGia.tenHienThi
+    : game.nhaPhatTrien;
+  const duongDanTacGia = game.tacGia
+    ? `/tac-gia/${game.tacGia.tenDangNhap}`
+    : game.nhaPhatTrien
+      ? `/nha-phat-trien/${encodeURIComponent(game.nhaPhatTrien)}`
+      : null;
+
   const gom = phanBo.reduce((t, p) => t + p._count._all, 0);
   const tongSao = phanBo.reduce((t, p) => t + p.sao * p._count._all, 0);
   const sao = gom > 0 ? Math.round((tongSao / gom) * 10) / 10 : 0;
@@ -112,14 +128,27 @@ export default async function TabThongTin({ params, searchParams }: {
       {game.gioiThieu && (
         <section>
           <h2 className="tieu-de mb-2">Giới thiệu</h2>
-          {/*
-            `dangerouslySetInnerHTML` ở đây KHÔNG nguy hiểm, và chỗ nguy hiểm
-            thật đã bị chặn từ trước: `dungChuDam` bật `html: false`, nên mọi
-            thẻ gõ tay trong phần mô tả đều bị escape thành chữ thường. Đầu ra
-            chỉ chứa đúng những thẻ do chính bộ dựng sinh — xem `chu-dam.ts`.
-          */}
-          <div className="chu-dam" dangerouslySetInnerHTML={{ __html: dungChuDam(game.gioiThieu) }} />
+          <MoTaGame html={dungChuDam(game.gioiThieu)} />
         </section>
+      )}
+
+      {/*
+        HÀNG NHÀ PHÁT TRIỂN — một dòng bấm được, có mũi tên.
+
+        Tên hãng đã in nhỏ dưới tên game ở đầu trang, nhưng ở đó nó là một
+        mẩu chú thích. Hàng này là một LỐI ĐI: mũi tên nói rõ bấm vào sẽ sang
+        chỗ khác, và nó nằm ngay sau phần mô tả — đúng lúc người đọc vừa thích
+        game này và nảy ra ý "hãng này còn làm gì nữa".
+      */}
+      {duongDanTacGia && (
+        <Link href={duongDanTacGia}
+          className="the flex items-center gap-3 px-4 py-3 transition-colors hover:bg-nen3">
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[14px] font-semibold text-nhan">{tenTacGia}</span>
+            <span className="phu mt-0.5 block">Nhà phát triển</span>
+          </span>
+          <ChevronRight size={18} className="shrink-0 text-mo" aria-hidden />
+        </Link>
       )}
 
       {/*

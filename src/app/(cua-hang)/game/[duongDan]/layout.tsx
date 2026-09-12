@@ -8,8 +8,8 @@ import { NutChiaSe } from '@/components/game/NutChiaSe';
 import { NutLui } from '@/components/game/NutLui';
 import { TabGame } from '@/components/game/TabGame';
 import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
-import type { MaHeMay } from '@/lib/he-may';
-import { diemSao } from '@/lib/tien-ich';
+import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
+import { diemSao, gonDungLuong } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,6 +103,25 @@ export default async function KhungGame({ children, params }: {
   const he = [...new Set(game.banTai.map((b) => b.heMay))] as MaHeMay[];
   const banMoiNhat = game.banTai[0];
 
+  /*
+   * NÚT TẢI Ở NGAY ĐẦU TRANG, cạnh tên game — đúng chỗ nút "Get" của App Store.
+   *
+   * Khung tải đầy đủ (chọn hệ, chọn bản, lịch sử phiên bản) vẫn nằm bên dưới và
+   * vẫn là chỗ để CHỌN. Nút này không thay nó, nó chỉ trả lời cái câu mà chín
+   * phần mười người mở trang này đang hỏi — "tải ở đâu" — mà không bắt cuộn.
+   *
+   * Game chỉ có MỘT hệ máy thì nút đi thẳng tới trang tải của tệp chính: không
+   * có gì để chọn thì một nhịp bấm nữa chỉ là một nhịp thừa. Nhiều hệ thì nút
+   * đưa xuống khung tải, vì lúc ấy chọn máy nào là việc người dùng phải làm và
+   * chọn hộ họ là chọn sai.
+   */
+  const tepChinh = he.length === 1 && banMoiNhat
+    ? [...banMoiNhat.tep].sort((a, b) =>
+        MO_TA_HE[he[0]].loaiTep.indexOf(a.loai as never)
+        - MO_TA_HE[he[0]].loaiTep.indexOf(b.loai as never))[0]
+    : null;
+  const dichTai = tepChinh ? `/tai/${tepChinh.id}` : '#tai';
+
   const banXem: BanXem[] = game.banTai.map((b) => ({
     id: b.id,
     heMay: b.heMay as MaHeMay,
@@ -189,6 +208,18 @@ export default async function KhungGame({ children, params }: {
               </p>
             </div>
           </div>
+
+          {/* Nút tải và cỡ tệp đứng cùng một hàng, y như App Store đặt "Get"
+              cạnh dòng "In-App Purchases": một hàng nói cả việc bấm lẫn cái
+              giá phải trả để bấm. */}
+          {(tepChinh || game.banTai.length > 0) && (
+            <p className="mt-3 flex items-center gap-2.5">
+              <Link href={dichTai} className="nut-cai">Tải về</Link>
+              {banMoiNhat?.dungLuong != null && (
+                <span className="phu">{gonDungLuong(banMoiNhat.dungLuong)}</span>
+              )}
+            </p>
+          )}
 
           <HangSoLieu o={soLieu} />
         </header>

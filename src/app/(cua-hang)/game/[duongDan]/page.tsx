@@ -16,6 +16,7 @@ import { NGON_NGU } from '@/lib/he-may';
 import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
 import { bocChu, dungChuDam } from '@/lib/chu-dam';
 import { nguoiHienTai } from '@/lib/xac-thuc';
+import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,7 +55,11 @@ export default async function TabThongTin({ params, searchParams }: {
       id: true, gioiThieu: true, namPhatHanh: true,
       ngonNgu: true, dangLuc: true, nhaPhatTrien: true,
       tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
-      anhChup: { orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: 12, select: { id: true, duongDan: true, chuThich: true } },
+      // Lấy đúng trần luật định — game cũ lỡ có hơn thì cũng chỉ bày chừng ấy.
+      anhChup: {
+        orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: TOI_DA_ANH_CHUP,
+        select: { id: true, duongDan: true, chuThich: true },
+      },
       _count: { select: { banTai: true } },
     },
   });

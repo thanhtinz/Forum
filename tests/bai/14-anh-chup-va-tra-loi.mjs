@@ -1,10 +1,14 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, doiToi, moTrang, moTrangDaDangNhap, taoAnhPNG } from '../tro-giup.mjs';
+import { ANH_CHUP_TOI_THIEU } from '../../src/lib/luat-anh-const.ts';
 
-/* Một tấm PNG 1×1 thật — đủ để cổng nhận ảnh soi ruột và chấp nhận. */
-const PNG_THAT = Buffer.from(
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
-  'base64',
-);
+/*
+ * Một tấm PNG THẬT, đủ lớn để qua được luật ảnh của cửa hàng.
+ *
+ * Trước đây là tấm 1×1 chép cứng. Nay ảnh bày ở cửa hàng phải đủ điểm ảnh mới
+ * nhận (xem bài 41), nên dựng đúng cỡ sàn — và dựng ra thay vì chép cứng thì
+ * đổi con số sàn một chỗ là mọi bài kiểm theo kịp.
+ */
+const PNG_THAT = taoAnhPNG(ANH_CHUP_TOI_THIEU, ANH_CHUP_TOI_THIEU + 160);
 
 /** Chọn một tệp ảnh thật rồi chờ nó tải lên xong. */
 async function napAnhThat(p) {

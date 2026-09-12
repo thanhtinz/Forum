@@ -11,6 +11,7 @@ import { baoBanMoi } from '@/lib/bao-ban-moi';
 import { dungChuDam } from '@/lib/chu-dam';
 import { xoaAnh, xoaTepGame } from '@/lib/kho';
 import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
+import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
 import { LOI_KHONG_QUYEN, locGameCuaToi, quyenTrenGame } from '@/lib/quyen-game';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
 import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
@@ -332,6 +333,18 @@ export async function themAnhChup(_truoc: KetQua, form: FormData): Promise<KetQu
 
   const game = await db.game.findFirst({ where: quyen.loc, select: { duongDan: true } });
   if (!game) return { loi: 'Không tìm thấy game.' };
+
+  /*
+   * TRẦN MƯỜI TẤM, đúng luật của App Store.
+   *
+   * Không phải để làm khó người bày hàng: trang sản phẩm nào cũng chỉ có chừng
+   * ấy chỗ trước khi người xem thôi vuốt, nên tấm thứ mười một không ai thấy,
+   * mà vẫn tốn chỗ trong kho và tốn một lượt tải của người xem.
+   */
+  const dangCo = await db.anhChup.count({ where: { gameId } });
+  if (dangCo >= TOI_DA_ANH_CHUP) {
+    return { loi: `Mỗi game chỉ bày được ${TOI_DA_ANH_CHUP} ảnh chụp. Gỡ bớt một tấm rồi thêm lại.` };
+  }
 
   const cuoi = await db.anhChup.findFirst({
     where: { gameId }, orderBy: { thuTu: 'desc' }, select: { thuTu: true },

@@ -7,6 +7,7 @@ import {
 } from '@/lib/danh-muc';
 import { HangGame } from '@/components/game/HangGame';
 import { LuoiTheLoai } from '@/components/game/LuoiTheLoai';
+import { ANH_TRONG_KET_QUA } from '@/lib/luat-anh-const';
 import { PhanTrang } from '@/components/PhanTrang';
 import { OTim } from '@/components/vo/OTim';
 import { cachDay, gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
@@ -45,6 +46,26 @@ export default async function TrangTim({ searchParams }: {
     duyetDanhMuc(loc),
     demChuDeTim(tuKhoa),
   ]);
+
+  /*
+   * Ảnh của MỌI game trong trang kết quả lấy bằng MỘT câu truy vấn, rồi gom
+   * lại theo game. Hỏi từng game một thì một trang hai mươi kết quả là hai
+   * mươi lượt đi về cơ sở dữ liệu, mà lượt nào cũng lấy đúng ba hàng.
+   */
+  const anh = game.length > 0
+    ? await db.anhChup.findMany({
+        where: { gameId: { in: game.map((g) => g.id) } },
+        orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
+        select: { id: true, gameId: true, duongDan: true },
+      })
+    : [];
+  const anhTheoGame = new Map<string, typeof anh>();
+  for (const a of anh) {
+    const co = anhTheoGame.get(a.gameId) ?? [];
+    // Cắt ở đây chứ không cắt trong câu truy vấn: `take` của Prisma cắt trên
+    // CẢ danh sách gộp, nên game đầu bảng sẽ ăn hết chỗ của mấy game sau.
+    if (co.length < ANH_TRONG_KET_QUA) anhTheoGame.set(a.gameId, [...co, a]);
+  }
 
   const duongTab = (loai: 'game' | 'thao-luan') =>
     `/tim?q=${encodeURIComponent(tuKhoa)}${loai === 'thao-luan' ? '&loai=thao-luan' : ''}`;
@@ -102,8 +123,32 @@ export default async function TrangTim({ searchParams }: {
           </div>
         ) : (
           <>
-            <ul className="space-y-3">
-              {game.map((g) => <li key={g.id}><HangGame game={g} /></li>)}
+            <ul className="space-y-5">
+              {game.map((g) => (
+                <li key={g.id}>
+                  <HangGame game={g} />
+                  {/*
+                    BA TẤM ẢNH NGAY DƯỚI HÀNG KẾT QUẢ.
+
+                    Luật của App Store: "up to three screenshots can appear in
+                    search results". Lý do thì rõ khi nhìn một trang kết quả
+                    toàn chữ — tên game cũ chẳng nói lên được gì, nhưng ba tấm
+                    ảnh thì người tìm nhận ra ngay "à, đúng cái trò này" mà
+                    không phải mở từng trang ra xem.
+                  */}
+                  {(anhTheoGame.get(g.id)?.length ?? 0) > 0 && (
+                    <ul className="ke mt-2.5 gap-2 pl-[68px]">
+                      {anhTheoGame.get(g.id)!.map((a) => (
+                        <li key={a.id}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={a.duongDan} alt="" loading="lazy"
+                            className="anh-chup-game h-[116px] w-[86px] rounded-nut border border-vien bg-nen2 object-cover" />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
             </ul>
             <PhanTrang trang={trang} tongTrang={soTrang(tong, MOI_TRANG)}
               dungDuong={(t) => `/tim${thanhTruyVan(loc, { trang: t })}`} />

@@ -4,6 +4,7 @@ import { useActionState, useTransition } from 'react';
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
 import { doiChoAnhChup, themAnhChup, xoaAnhChup, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 import { ONapAnh } from '@/components/quan-tri/ONapAnh';
+import { ANH_TRONG_KET_QUA, TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
 
 export interface AnhQuanTri {
   id: string;
@@ -21,8 +22,22 @@ export function KhungAnhChup({ gameId, anh }: { gameId: string; anh: AnhQuanTri[
   const [ketQua, gui, dangChay] = useActionState<KetQua, FormData>(themAnhChup, {});
   const [dangSua, batDauSua] = useTransition();
 
+  const day = anh.length >= TOI_DA_ANH_CHUP;
+
   return (
     <div className="space-y-4">
+      {/*
+        NÓI RÕ BA TẤM ĐẦU LÀ BA TẤM ĐẶC BIỆT.
+
+        Luật của App Store: kết quả tìm chỉ bày được ba tấm. Người bày hàng
+        không biết điều ấy thì họ xếp ảnh theo trình tự màn chơi, và ba tấm ra
+        mặt hoá ra là ba màn đầu nhạt nhất. Đây là chỗ duy nhất nói được câu ấy
+        đúng lúc — lúc tay họ đang cầm mấy cái nút đổi chỗ.
+      */}
+      <p className="phu">
+        {anh.length}/{TOI_DA_ANH_CHUP} ảnh · {ANH_TRONG_KET_QUA} tấm đầu là {ANH_TRONG_KET_QUA} tấm
+        hiện ở kết quả tìm, nên xếp tấm mạnh nhất lên trước.
+      </p>
       {anh.length > 0 ? (
         <ul className="ke -mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
           {anh.map((a, i) => (
@@ -30,7 +45,14 @@ export function KhungAnhChup({ gameId, anh }: { gameId: string; anh: AnhQuanTri[
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={a.duongDan} alt={a.chuThich ?? ''} loading="lazy"
                 className="h-48 w-36 rounded-the border border-vien bg-nen2 object-cover" />
-              <p className="phu mt-1 truncate">{a.chuThich ?? `Ảnh ${i + 1}`}</p>
+              <p className="phu mt-1 truncate">
+                {i < ANH_TRONG_KET_QUA && (
+                  <span className="mr-1 rounded-full bg-nhan/12 px-1.5 py-0.5 text-[10px] font-bold text-nhan">
+                    ra mặt
+                  </span>
+                )}
+                {a.chuThich ?? `Ảnh ${i + 1}`}
+              </p>
               <div className="mt-1 flex items-center gap-1">
                 <button type="button" disabled={dangSua || i === 0}
                   onClick={() => batDauSua(async () => { await doiChoAnhChup(a.id, true); })}
@@ -58,6 +80,12 @@ export function KhungAnhChup({ gameId, anh }: { gameId: string; anh: AnhQuanTri[
         <p className="phu">Chưa có ảnh nào, nên trang game đang trống phần đầu.</p>
       )}
 
+      {day ? (
+        <p className="the p-4 text-[13px] text-mo">
+          Đã đủ {TOI_DA_ANH_CHUP} ảnh — trần của một trang game. Muốn thay tấm
+          khác thì gỡ bớt một tấm ở trên.
+        </p>
+      ) : (
       <form action={gui} className="the space-y-3 p-4">
         <p className="text-[14px] font-bold">Thêm ảnh chụp</p>
         <input type="hidden" name="gameId" value={gameId} />
@@ -87,6 +115,7 @@ export function KhungAnhChup({ gameId, anh }: { gameId: string; anh: AnhQuanTri[
           {dangChay ? 'Đang thêm…' : 'Thêm ảnh'}
         </button>
       </form>
+      )}
     </div>
   );
 }

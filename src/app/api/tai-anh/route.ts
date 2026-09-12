@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { doanLoaiAnh, luuAnh } from '@/lib/kho';
+import { doCoAnh } from '@/lib/co-anh';
+import { ANH_CHUP_TOI_THIEU, ICON_TOI_THIEU } from '@/lib/luat-anh-const';
 import { conDuocDangAnh, ghiLanDangAnh } from '@/lib/chan-do-mat-khau';
 
 export const dynamic = 'force-dynamic';
@@ -23,9 +25,27 @@ export const runtime = 'nodejs';
  */
 
 const CHO_DAT = {
-  icon: { thuMuc: 'icon', toiDa: 512 * 1024, canQuanTri: true },
-  'anh-chup': { thuMuc: 'anh-chup', toiDa: 3 * 1024 * 1024, canQuanTri: true },
-  'dien-dan': { thuMuc: 'dien-dan', toiDa: 3 * 1024 * 1024, canQuanTri: false },
+  /*
+   * `canhToiThieu` là luật tài sản của cửa hàng, xem `luat-anh-const.ts`.
+   * `vuong` chỉ đặt cho biểu tượng: biểu tượng bị cắt thành hình vuông lúc
+   * bày, nên một tấm chữ nhật gửi lên là một tấm sẽ mất hai bên mà người gửi
+   * không hay — thà từ chối ngay còn hơn để họ tự phát hiện ở trang chủ.
+   */
+  icon: {
+    thuMuc: 'icon', toiDa: 512 * 1024, canQuanTri: true,
+    canhToiThieu: ICON_TOI_THIEU, vuong: true,
+  },
+  'anh-chup': {
+    thuMuc: 'anh-chup', toiDa: 3 * 1024 * 1024, canQuanTri: true,
+    canhToiThieu: ANH_CHUP_TOI_THIEU, vuong: false,
+  },
+  // Ảnh trong bài diễn đàn không có luật cỡ: người ta dán ảnh chụp lỗi, ảnh
+  // chụp màn hình điện thoại cũ, có tấm bé tí — và tấm bé tí ấy vẫn nói đúng
+  // thứ cần nói. Luật tài sản là luật của HÀNG BÀY, không phải của lời bình.
+  'dien-dan': {
+    thuMuc: 'dien-dan', toiDa: 3 * 1024 * 1024, canQuanTri: false,
+    canhToiThieu: 0, vuong: false,
+  },
 } as const;
 
 type MaChoDat = keyof typeof CHO_DAT;
@@ -94,6 +114,32 @@ export async function POST(req: Request) {
       { loi: 'Tệp này không phải ảnh PNG, JPG, GIF hay WebP.' },
       { status: 415 },
     );
+  }
+
+  /*
+   * ĐỦ LỚN ĐỂ ĐỌC ĐƯỢC Ở MỌI CỠ.
+   *
+   * Đọc số đo thẳng từ phần đầu tệp — xem `co-anh.ts`. Không đọc ra được thì
+   * cũng từ chối: tệp mà ngay cái đầu đã không đọc nổi thì trình duyệt người
+   * xem cũng chẳng vẽ ra được, chỉ khác là lúc ấy mới lộ.
+   */
+  if (luat.canhToiThieu > 0) {
+    const co = doCoAnh(ruot, loai);
+    if (!co) {
+      return NextResponse.json({ loi: 'Không đọc được kích thước của ảnh này.' }, { status: 415 });
+    }
+    if (Math.min(co.rong, co.cao) < luat.canhToiThieu) {
+      return NextResponse.json(
+        { loi: `Ảnh nhỏ quá: ${co.rong}×${co.cao}, cần ít nhất ${luat.canhToiThieu} điểm ảnh mỗi cạnh.` },
+        { status: 422 },
+      );
+    }
+    if (luat.vuong && co.rong !== co.cao) {
+      return NextResponse.json(
+        { loi: `Biểu tượng phải vuông, tấm này ${co.rong}×${co.cao}.` },
+        { status: 422 },
+      );
+    }
   }
 
   try {

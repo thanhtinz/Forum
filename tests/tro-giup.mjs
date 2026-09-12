@@ -1,3 +1,4 @@
+import zlib from 'node:zlib';
 import fs from 'node:fs';
 import { PrismaClient } from '@prisma/client';
 import { chromium } from 'playwright-core';
@@ -89,4 +90,40 @@ export async function doiToi(dieuKien, hanGiay = 15) {
     await new Promise((r) => setTimeout(r, 250));
   }
   return false;
+}
+
+/**
+ * Dựng một tệp PNG THẬT, đúng cỡ yêu cầu.
+ *
+ * Cửa hàng nay đo kích thước ảnh trước khi nhận (xem `luat-anh-const.ts`), nên
+ * mấy bài kiểm không dùng lại được tấm PNG 1×1 chép cứng như trước. Dựng ra ở
+ * đây thay vì để sẵn mấy tệp mẫu trên đĩa: bài kiểm cần cỡ nào thì gọi đúng cỡ
+ * ấy, và không ai phải đoán tệp `mau-400.png` trong thư mục là tệp của bài nào.
+ *
+ * Ảnh đen một màu, ít màu nhất có thể — ruột nó không phải thứ đang kiểm.
+ */
+export function taoAnhPNG(rong, cao) {
+  const khoi = (ten, than) => {
+    const dai = Buffer.alloc(4);
+    dai.writeUInt32BE(than.length);
+    const ruot = Buffer.concat([Buffer.from(ten, 'ascii'), than]);
+    const ma = Buffer.alloc(4);
+    ma.writeUInt32BE(zlib.crc32(ruot));
+    return Buffer.concat([dai, ruot, ma]);
+  };
+
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(rong, 0);
+  ihdr.writeUInt32BE(cao, 4);
+  ihdr[8] = 8; // tám bit một kênh
+  ihdr[9] = 0; // ảnh xám, không kênh trong suốt
+
+  // Mỗi dòng ảnh mở đầu bằng một byte nói dòng ấy lọc kiểu gì — để 0 là không lọc.
+  const tho = Buffer.alloc((rong + 1) * cao);
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    khoi('IHDR', ihdr),
+    khoi('IDAT', zlib.deflateSync(tho)),
+    khoi('IEND', Buffer.alloc(0)),
+  ]);
 }

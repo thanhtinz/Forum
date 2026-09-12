@@ -1,8 +1,15 @@
-import { GOC, db, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, moTrang, moTrangDaDangNhap, taoAnhPNG } from '../tro-giup.mjs';
+import { ICON_TOI_THIEU } from '../../src/lib/luat-anh-const.ts';
 
 const DUONG_DAN = 'game-kiem-tai-anh';
 
-/* Một tấm PNG 1×1 thật, dựng bằng tay để khỏi phụ thuộc tệp nào trên đĩa. */
+/*
+ * Một tấm PNG 1×1 thật, dựng bằng tay để khỏi phụ thuộc tệp nào trên đĩa.
+ *
+ * Chỉ còn dùng được cho ảnh DIỄN ĐÀN và cho mấy phép kiểm về ruột tệp: ảnh của
+ * cửa hàng nay phải đủ lớn mới nhận (xem bài 41), nên chỗ nào cần một tấm hợp
+ * lệ thì gọi `taoAnhPNG` dựng đúng cỡ.
+ */
 const PNG_THAT = [
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
   0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
@@ -11,6 +18,9 @@ const PNG_THAT = [
   0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49,
   0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
 ];
+
+/** Tấm biểu tượng hợp luật: vuông và đủ điểm ảnh. */
+const ICON_THAT = taoAnhPNG(ICON_TOI_THIEU, ICON_TOI_THIEU);
 
 /*
  * TẢI ẢNH LÊN — thay cho lối dán địa chỉ.
@@ -52,7 +62,7 @@ export default async function chay(kiem) {
     // ── Thành viên thường không đụng được chỗ của cửa hàng ─────────────
     const thuong = await moTrangDaDangNhap('huytran', 'thanhvien123');
     await thuong.goto(`${GOC}/`, { waitUntil: 'networkidle' });
-    const rThuong = await gui(thuong, 'icon', PNG_THAT, 'a.png', 'image/png');
+    const rThuong = await gui(thuong, 'icon', [...ICON_THAT], 'a.png', 'image/png');
     kiem('thành viên thường không đặt được ảnh biểu tượng', rThuong.ma === 403, `mã ${rThuong.ma}`);
 
     // Nhưng ảnh cho diễn đàn thì được.
@@ -82,11 +92,11 @@ export default async function chay(kiem) {
 
     // Quá cỡ thì chặn TRƯỚC khi đọc vào bộ nhớ.
     const to = new Array(600 * 1024).fill(0x41);
-    const rTo = await gui(admin, 'icon', [...PNG_THAT, ...to], 'to.png', 'image/png');
+    const rTo = await gui(admin, 'icon', [...ICON_THAT, ...to], 'to.png', 'image/png');
     kiem('ảnh nặng quá mức cho phép bị chặn', rTo.ma === 413, `mã ${rTo.ma}`);
 
     // ── Ảnh thật thì lưu được, và đọc lại được ─────────────────────────
-    const rThat = await gui(admin, 'icon', PNG_THAT, 'bieu-tuong.png', 'image/png');
+    const rThat = await gui(admin, 'icon', [...ICON_THAT], 'bieu-tuong.png', 'image/png');
     kiem('ảnh PNG thật thì lưu được', rThat.ma === 200 && !!rThat.than.duongDan,
       JSON.stringify(rThat.than));
 

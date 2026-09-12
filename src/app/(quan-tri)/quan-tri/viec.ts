@@ -3,17 +3,18 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
-import { batBuocQuanTri } from '@/lib/xac-thuc';
+import { batBuocDangNhap, batBuocQuanTri } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
 import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
 import { baoBanMoi } from '@/lib/bao-ban-moi';
 import { dungChuDam } from '@/lib/chu-dam';
 import { xoaAnh } from '@/lib/kho-anh';
+import { LOI_KHONG_QUYEN, locGameCuaToi, quyenTrenGame } from '@/lib/quyen-game';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
 import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
 
-export interface KetQua { loi?: string }
+export interface KetQua { loi?: string; ok?: boolean }
 
 function chu(form: FormData, ten: string): string {
   return String(form.get(ten) ?? '').trim();
@@ -27,10 +28,29 @@ function chu(form: FormData, ten: string): string {
  * `batBuocQuanTri()` ở dòng đầu không phải thừa — nó là lớp chặn thật sự.
  */
 export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
-  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
-
   const id = chu(form, 'id') || null;
+
+  /*
+   * SỬA thì phải là chủ game (hoặc ban quản trị); TẠO thì chỉ cần là tác giả.
+   *
+   * Hai phép kiểm khác nhau nên tách hẳn ra, chứ không gộp thành một câu `if`
+   * — gộp lại là kiểu chỗ mà về sau ai đó thêm một nhánh rồi vô tình mở toang
+   * lối tạo game cho thành viên thường.
+   */
+  let nguoi;
+  try {
+    if (id) {
+      nguoi = (await quyenTrenGame(id)).nguoi;
+    } else {
+      nguoi = await batBuocDangNhap();
+      if (nguoi.vaiTro !== 'QUAN_TRI' && nguoi.vaiTro !== 'TAC_GIA') {
+        throw new Error('khong-phai-tac-gia');
+      }
+    }
+  } catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const laQuanTri = nguoi.vaiTro === 'QUAN_TRI';
+
   const ten = chu(form, 'ten');
   if (ten.length < 2) return { loi: 'Hãy nhập tên game.' };
 
@@ -60,7 +80,13 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
     icon: icon || null,
     ngonNgu: chu(form, 'ngonNgu') || 'en',
     vietHoa: form.get('vietHoa') === 'on',
-    noiBat: form.get('noiBat') === 'on',
+    /*
+     * "Đưa lên băng nổi bật" là chỗ của BAN QUẢN TRỊ, không phải của tác giả.
+     * Nó quyết định game nào chiếm mặt tiền, nên để tác giả tự bật là ai cũng
+     * tự đưa mình lên đầu trang. Tác giả gửi lên cờ này thì bỏ qua, và giữ
+     * nguyên giá trị cũ chứ không hạ xuống.
+     */
+    ...(laQuanTri ? { noiBat: form.get('noiBat') === 'on' } : {}),
   };
 
   /*
@@ -74,9 +100,30 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
     ? (await db.game.findUnique({ where: { id }, select: { icon: true } }))?.icon ?? null
     : null;
 
-  const game = id
-    ? await db.game.update({ where: { id }, data: duLieu, select: { id: true } })
-    : await db.game.create({ data: duLieu, select: { id: true } });
+  /*
+   * SỬA bằng `updateMany` chứ không `update`, để điều kiện "game của tôi" nằm
+   * TRONG `where`. `update` nhận `where` kiểu duy nhất nên không nhét thêm
+   * `tacGiaId` vào được, và mọi cách còn lại đều là "đọc lên rồi so" — tức là
+   * có khe hở, và quên mất câu so là mở toang.
+   */
+  let gameId: string;
+  if (id) {
+    const { count } = await db.game.updateMany({
+      where: laQuanTri ? { id } : { id, tacGiaId: nguoi.id },
+      data: duLieu,
+    });
+    if (count === 0) return { loi: LOI_KHONG_QUYEN };
+    gameId = id;
+  } else {
+    const moi = await db.game.create({
+      // Tác giả tạo game thì game ấy thuộc về họ ngay. Quản trị tạo thì để
+      // trống — đó là game của chính cửa hàng.
+      data: { ...duLieu, ...(laQuanTri ? {} : { tacGiaId: nguoi.id }) },
+      select: { id: true },
+    });
+    gameId = moi.id;
+  }
+  const game = { id: gameId };
 
   if (iconCu && iconCu !== duLieu.icon) await xoaAnh(iconCu);
 
@@ -96,8 +143,18 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
   await lamMoiChuoiTim(game.id);
 
   revalidatePath('/quan-tri/game');
+  revalidatePath('/quan-ly/game');
   revalidatePath(`/game/${duongDan}`);
-  redirect(`/quan-tri/game/${game.id}`);
+
+  /*
+   * Về đúng khu người ta đang đứng.
+   *
+   * Cùng một biểu mẫu phục vụ hai bảng điều khiển, nên nơi gọi nói rõ mình ở
+   * đâu. Không có thì đoán theo vai trò — mà một người vừa là tác giả vừa là
+   * quản trị thì đoán kiểu gì cũng sai một nửa số lần.
+   */
+  const veSau = chu(form, 'veSau');
+  redirect(veSau === 'tac-gia' ? `/quan-ly/game/${game.id}` : `/quan-tri/game/${game.id}`);
 }
 
 /** Bày game ra cửa hàng, hoặc rút về nháp. */
@@ -136,10 +193,11 @@ export async function doiTrangThai(gameId: string, trangThai: 'NHAP' | 'DANG_HIE
 
 /** Thêm một bản tải kèm một tệp. Gộp làm một vì bản không tệp thì tải bằng gì. */
 export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
+  const gameId = chu(form, 'gameId');
+  let quyen;
+  try { quyen = await quyenTrenGame(gameId); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
-  const gameId = chu(form, 'gameId');
   const heMay = chu(form, 'heMay') as MaHeMay;
   const soHieu = chu(form, 'soHieu');
   const duongDanTep = chu(form, 'duongDanTep');
@@ -155,8 +213,9 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
     return { loi: 'Đường dẫn cửa hàng phải là một địa chỉ https đầy đủ.' };
   }
 
-  const game = await db.game.findUnique({ where: { id: gameId }, select: { duongDan: true } });
-  if (!game) return { loi: 'Không tìm thấy game.' };
+  // Điều kiện "game này của tôi" nằm TRONG `where` — xem `quyen-game.ts`.
+  const game = await db.game.findFirst({ where: quyen.loc, select: { duongDan: true } });
+  if (!game) return { loi: LOI_KHONG_QUYEN };
 
   const daCo = await db.banTai.findFirst({
     where: { gameId, heMay, soHieu }, select: { id: true },
@@ -200,11 +259,17 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
 }
 
 export async function xoaBanTai(banId: string): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
-  const ban = await db.banTai.findUnique({ where: { id: banId }, select: { gameId: true } });
-  if (!ban) return {};
+  // Lọc qua QUAN HỆ: một bản tải không mang chủ sở hữu, nhưng game của nó thì
+  // có. Hỏi luôn trong một câu thay vì đọc game lên rồi so.
+  const ban = await db.banTai.findFirst({
+    where: { id: banId, game: locGameCuaToi(nguoi) },
+    select: { gameId: true },
+  });
+  if (!ban) return { loi: LOI_KHONG_QUYEN };
   await db.banTai.delete({ where: { id: banId } });
   revalidatePath(`/quan-tri/game/${ban.gameId}`);
   return {};
@@ -248,10 +313,11 @@ export async function traLoiYeuCau(id: string, trangThai: string, loiNhan: strin
  * không phải đánh số lại cả dãy.
  */
 export async function themAnhChup(_truoc: KetQua, form: FormData): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
+  const gameId = chu(form, 'gameId');
+  let quyen;
+  try { quyen = await quyenTrenGame(gameId); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
-  const gameId = chu(form, 'gameId');
   const duongDanAnh = chu(form, 'duongDanAnh');
   if (!duongDanAnh) return { loi: 'Hãy chọn một ảnh.' };
 
@@ -259,7 +325,7 @@ export async function themAnhChup(_truoc: KetQua, form: FormData): Promise<KetQu
   // chỉ, không so đầu chuỗi; xem `dia-chi-an-toan.ts` để biết vì sao.
   if (!laDiaChiHopLe(duongDanAnh)) return { loi: LOI_DIA_CHI };
 
-  const game = await db.game.findUnique({ where: { id: gameId }, select: { duongDan: true } });
+  const game = await db.game.findFirst({ where: quyen.loc, select: { duongDan: true } });
   if (!game) return { loi: 'Không tìm thấy game.' };
 
   const cuoi = await db.anhChup.findFirst({
@@ -282,14 +348,15 @@ export async function themAnhChup(_truoc: KetQua, form: FormData): Promise<KetQu
 }
 
 export async function xoaAnhChup(anhId: string): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
-  const anh = await db.anhChup.findUnique({
-    where: { id: anhId },
+  const anh = await db.anhChup.findFirst({
+    where: { id: anhId, game: locGameCuaToi(nguoi) },
     select: { duongDan: true, game: { select: { id: true, duongDan: true } } },
   });
-  if (!anh) return {};
+  if (!anh) return { loi: LOI_KHONG_QUYEN };
 
   await db.anhChup.delete({ where: { id: anhId } });
   /*
@@ -313,14 +380,15 @@ export async function xoaAnhChup(anhId: string): Promise<KetQua> {
  * để xếp thứ tự ảnh là cái giá quá đắt cho thứ chẳng ai thiệt hại.
  */
 export async function doiChoAnhChup(anhId: string, len: boolean): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
-  const anh = await db.anhChup.findUnique({
-    where: { id: anhId },
+  const anh = await db.anhChup.findFirst({
+    where: { id: anhId, game: locGameCuaToi(nguoi) },
     select: { id: true, thuTu: true, gameId: true, game: { select: { duongDan: true } } },
   });
-  if (!anh) return { loi: 'Không tìm thấy ảnh.' };
+  if (!anh) return { loi: LOI_KHONG_QUYEN };
 
   const canh = await db.anhChup.findFirst({
     where: {
@@ -757,18 +825,19 @@ async function tinhLaiDungLuongBan(tx: typeof db, banId: string) {
 
 /** Sửa thông tin một bản tải đã có. */
 export async function suaBanTai(_truoc: KetQua, form: FormData): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
   const banId = chu(form, 'banId');
   const soHieu = chu(form, 'soHieu');
   if (!soHieu) return { loi: 'Hãy nhập số hiệu bản.' };
 
-  const ban = await db.banTai.findUnique({
-    where: { id: banId },
+  const ban = await db.banTai.findFirst({
+    where: { id: banId, game: locGameCuaToi(nguoi) },
     select: { gameId: true, heMay: true, game: { select: { duongDan: true } } },
   });
-  if (!ban) return { loi: 'Không tìm thấy bản tải.' };
+  if (!ban) return { loi: LOI_KHONG_QUYEN };
 
   // `@@unique([gameId, heMay, soHieu])` sẽ chặn, nhưng chặn bằng một lỗi thô.
   // Kiểm trước để báo một câu người đọc hiểu được.
@@ -809,14 +878,15 @@ export async function suaBanTai(_truoc: KetQua, form: FormData): Promise<KetQua>
  * mà nó chọn bừa nên lỗi hiện ra lúc này lúc khác.
  */
 export async function datBanMoiNhat(banId: string): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
-  const ban = await db.banTai.findUnique({
-    where: { id: banId },
+  const ban = await db.banTai.findFirst({
+    where: { id: banId, game: locGameCuaToi(nguoi) },
     select: { gameId: true, heMay: true, soHieu: true, game: { select: { duongDan: true } } },
   });
-  if (!ban) return { loi: 'Không tìm thấy bản tải.' };
+  if (!ban) return { loi: LOI_KHONG_QUYEN };
 
   await db.$transaction([
     db.banTai.updateMany({
@@ -834,7 +904,8 @@ export async function datBanMoiNhat(banId: string): Promise<KetQua> {
 
 /** Gắn thêm một tệp vào bản đã có — ví dụ thêm JAD cho bản JAR. */
 export async function themTep(_truoc: KetQua, form: FormData): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
   const banId = chu(form, 'banId');
@@ -857,11 +928,11 @@ export async function themTep(_truoc: KetQua, form: FormData): Promise<KetQua> {
     return { loi: 'Mã kiểm tra phải là 64 ký tự sha256 (0-9, a-f).' };
   }
 
-  const ban = await db.banTai.findUnique({
-    where: { id: banId },
+  const ban = await db.banTai.findFirst({
+    where: { id: banId, game: locGameCuaToi(nguoi) },
     select: { gameId: true, game: { select: { duongDan: true } } },
   });
-  if (!ban) return { loi: 'Không tìm thấy bản tải.' };
+  if (!ban) return { loi: LOI_KHONG_QUYEN };
 
   const dungLuong = await doDungLuongTep(duongDanTep);
 
@@ -883,11 +954,12 @@ export async function themTep(_truoc: KetQua, form: FormData): Promise<KetQua> {
 
 /** Gỡ một tệp khỏi bản. Dung lượng của bản cộng lại ngay trong cùng giao dịch. */
 export async function xoaTep(tepId: string): Promise<KetQua> {
-  try { await batBuocQuanTri(); }
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
-  const tep = await db.tepTai.findUnique({
-    where: { id: tepId },
+  const tep = await db.tepTai.findFirst({
+    where: { id: tepId, ban: { game: locGameCuaToi(nguoi) } },
     select: {
       banId: true,
       ban: { select: { gameId: true, game: { select: { duongDan: true } } } },
@@ -1145,4 +1217,180 @@ export async function doiVaiTro(nguoiId: string, thanhQuanTri: boolean): Promise
  */
 export async function xemThuChuDam(chu: string): Promise<string> {
   return dungChuDam(String(chu ?? '').slice(0, 20_000));
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * DUYỆT GAME
+ *
+ * Tác giả tự soạn game của mình, nhưng KHÔNG tự bày nó ra cửa hàng được. Ai
+ * cũng đăng thẳng lên được thì cửa hàng thành bãi rác trong một tuần, và
+ * người tải chẳng còn lý do gì để tin cái gì ở đây.
+ *
+ * Đường đi: NHAP → CHO_DUYET → DANG_HIEN, hoặc bị trả lại thành TU_CHOI rồi
+ * sửa và gửi lại. Mỗi bước là một lượt ghi CÓ ĐIỀU KIỆN mang theo trạng thái
+ * cũ, nên bấm hai lần hay hai người bấm cùng lúc cũng chỉ ăn một lần.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Tác giả gửi game đi duyệt. */
+export async function guiDuyet(gameId: string): Promise<KetQua> {
+  let quyen;
+  try { quyen = await quyenTrenGame(gameId); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  /*
+   * GAME PHẢI CÓ ĐỦ THỨ ĐỂ NGƯỜI TA TẢI ĐƯỢC, mới cho gửi.
+   *
+   * Chặn ở đây chứ không để ban quản trị phát hiện ra lúc duyệt: một vòng
+   * gửi–từ chối–sửa–gửi lại tốn thời gian của cả hai bên, mà cái thiếu thì
+   * máy tự nhìn ra được.
+   */
+  const game = await db.game.findFirst({
+    where: quyen.loc,
+    select: {
+      ten: true, gioiThieu: true, trangThai: true,
+      _count: { select: { banTai: true, theLoai: true } },
+    },
+  });
+  if (!game) return { loi: LOI_KHONG_QUYEN };
+
+  if (game.trangThai === 'DANG_HIEN') return { loi: 'Game này đang bày ngoài cửa hàng rồi.' };
+  if (game.trangThai === 'CHO_DUYET') return { loi: 'Game này đang chờ duyệt.' };
+  if (!game.gioiThieu?.trim()) return { loi: 'Hãy viết phần giới thiệu trước khi gửi duyệt.' };
+  if (game._count.theLoai === 0) return { loi: 'Hãy chọn ít nhất một thể loại.' };
+  if (game._count.banTai === 0) return { loi: 'Chưa có bản tải nào — không ai tải được gì.' };
+
+  const { count } = await db.game.updateMany({
+    // Trạng thái CŨ nằm trong `where`: bấm hai lần thì lần sau không khớp.
+    where: { ...quyen.loc, trangThai: { in: ['NHAP', 'TU_CHOI', 'DA_GO'] } },
+    data: { trangThai: 'CHO_DUYET', guiDuyetLuc: new Date(), lyDoTuChoi: null },
+  });
+  if (count === 0) return { loi: 'Không gửi được. Thử tải lại trang.' };
+
+  revalidatePath('/quan-ly');
+  revalidatePath(`/quan-ly/game/${gameId}`);
+  revalidatePath('/quan-tri/duyet');
+  return {};
+}
+
+/** Tác giả rút game về lại nháp khi đang chờ duyệt. */
+export async function rutVeNhap(gameId: string): Promise<KetQua> {
+  let quyen;
+  try { quyen = await quyenTrenGame(gameId); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const { count } = await db.game.updateMany({
+    where: { ...quyen.loc, trangThai: 'CHO_DUYET' },
+    data: { trangThai: 'NHAP', guiDuyetLuc: null },
+  });
+  if (count === 0) return { loi: 'Game này không còn ở hàng chờ duyệt.' };
+
+  revalidatePath('/quan-ly');
+  revalidatePath('/quan-tri/duyet');
+  return {};
+}
+
+/** Ban quản trị duyệt: game lên kệ. */
+export async function duyetGame(gameId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const game = await db.game.findUnique({
+    where: { id: gameId },
+    select: { ten: true, duongDan: true, tacGiaId: true, dangLuc: true },
+  });
+  if (!game) return { loi: 'Không tìm thấy game.' };
+
+  const { count } = await db.game.updateMany({
+    where: { id: gameId, trangThai: 'CHO_DUYET' },
+    data: {
+      trangThai: 'DANG_HIEN',
+      lyDoTuChoi: null,
+      // Giữ nguyên mốc đăng lần đầu: game gỡ xuống rồi bày lại không được
+      // nhảy lên đầu kệ "Mới ra mắt" như hàng mới về.
+      ...(game.dangLuc ? {} : { dangLuc: new Date() }),
+    },
+  });
+  if (count === 0) return { loi: 'Game này không còn ở hàng chờ duyệt.' };
+
+  if (game.tacGiaId) {
+    await guiThongBao({
+      nguoiNhanId: game.tacGiaId,
+      loai: 'GAME_DA_DUYET',
+      tieuDe: `${game.ten} đã được duyệt`,
+      chiTiet: 'Game của bạn đang bày ngoài cửa hàng.',
+      duongDan: `/game/${game.duongDan}`,
+    });
+  }
+
+  revalidatePath('/quan-tri/duyet');
+  revalidatePath('/quan-ly');
+  revalidatePath(`/game/${game.duongDan}`);
+  revalidatePath('/');
+  return {};
+}
+
+/** Ban quản trị trả game về, kèm lý do. */
+export async function tuChoiGame(gameId: string, lyDo: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  /*
+   * BẮT BUỘC VIẾT LÝ DO.
+   *
+   * Trả về một cái game kèm hai chữ "không đạt" thì tác giả chỉ có nước đoán,
+   * rồi gửi lại đúng thứ vừa bị trả — tốn thêm một vòng cho cả hai bên. Đây là
+   * chỗ đáng bắt người duyệt gõ thêm vài dòng.
+   */
+  const chuLyDo = lyDo.trim().slice(0, 2000);
+  if (chuLyDo.length < 10) {
+    return { loi: 'Hãy viết rõ vì sao trả lại — ít nhất 10 ký tự.' };
+  }
+
+  const game = await db.game.findUnique({
+    where: { id: gameId }, select: { ten: true, tacGiaId: true },
+  });
+  if (!game) return { loi: 'Không tìm thấy game.' };
+
+  const { count } = await db.game.updateMany({
+    where: { id: gameId, trangThai: 'CHO_DUYET' },
+    data: { trangThai: 'TU_CHOI', lyDoTuChoi: chuLyDo, guiDuyetLuc: null },
+  });
+  if (count === 0) return { loi: 'Game này không còn ở hàng chờ duyệt.' };
+
+  if (game.tacGiaId) {
+    await guiThongBao({
+      nguoiNhanId: game.tacGiaId,
+      loai: 'GAME_BI_TU_CHOI',
+      tieuDe: `${game.ten} chưa được duyệt`,
+      chiTiet: chuLyDo,
+      duongDan: `/quan-ly/game/${gameId}`,
+    });
+  }
+
+  revalidatePath('/quan-tri/duyet');
+  revalidatePath('/quan-ly');
+  return {};
+}
+
+/** Tác giả tự sửa hồ sơ của mình. */
+export async function luuHoSoTacGia(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập.' }; }
+  if (nguoi.vaiTro !== 'TAC_GIA' && nguoi.vaiTro !== 'QUAN_TRI') {
+    return { loi: 'Bạn chưa phải tác giả.' };
+  }
+
+  const tenTacGia = chu(form, 'tenTacGia').slice(0, 60);
+  const gioiThieu = chu(form, 'gioiThieuTacGia').slice(0, 4000);
+
+  await db.nguoiDung.update({
+    where: { id: nguoi.id },
+    data: { tenTacGia: tenTacGia || null, gioiThieuTacGia: gioiThieu || null },
+    select: { id: true },
+  });
+
+  revalidatePath('/quan-ly/ho-so');
+  revalidatePath(`/tac-gia/${nguoi.tenDangNhap}`);
+  return { ok: true };
 }

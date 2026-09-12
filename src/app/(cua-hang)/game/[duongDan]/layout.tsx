@@ -35,6 +35,7 @@ export default async function KhungGame({ children, params }: {
       id: true, duongDan: true, ten: true, tenViet: true, nhaPhatTrien: true,
       icon: true, vietHoa: true, tongSao: true, soLuotDanhGia: true, soLuotTai: true,
       theLoai: { select: { theLoai: { select: { ten: true, duongDan: true } } } },
+      tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
       banTai: {
         orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }],
         take: 60,
@@ -105,7 +106,18 @@ export default async function KhungGame({ children, params }: {
               {game.tenViet && <p className="phu mt-0.5">{game.tenViet}</p>}
               {/* Tên hãng bấm được, như App Store: người ta nhớ "mấy game của
                   Gameloft hồi đó" rõ hơn là nhớ tên từng game. */}
-              {game.nhaPhatTrien && (
+              {/*
+                Có TÁC GIẢ thì trỏ về trang tác giả, không trỏ về trang gom
+                theo tên hãng. Trang tên hãng gom theo một CHUỖI ghi trên từng
+                game nên hai cách gõ thành hai hãng; trang tác giả gom theo tài
+                khoản nên nó là thật, và là chỗ tác giả tự giới thiệu.
+              */}
+              {game.tacGia ? (
+                <Link href={`/tac-gia/${game.tacGia.tenDangNhap}`}
+                  className="mt-1 block text-[13px] font-semibold text-nhan hover:underline">
+                  {game.tacGia.tenTacGia ?? game.tacGia.tenHienThi}
+                </Link>
+              ) : game.nhaPhatTrien && (
                 <Link href={`/nha-phat-trien/${encodeURIComponent(game.nhaPhatTrien)}`}
                   className="mt-1 block text-[13px] font-semibold text-nhan hover:underline">
                   {game.nhaPhatTrien}

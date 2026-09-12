@@ -1,0 +1,134 @@
+import Link from 'next/link';
+import type { Metadata } from 'next';
+import { notFound, redirect } from 'next/navigation';
+import { ExternalLink, TriangleAlert } from 'lucide-react';
+import { db } from '@/lib/db';
+import { nguoiHienTai } from '@/lib/xac-thuc';
+import { BieuMauGame } from '@/components/quan-tri/BieuMauGame';
+import { KhungBanTai } from '@/components/quan-tri/KhungBanTai';
+import { KhungAnhChup } from '@/components/quan-tri/KhungAnhChup';
+import { NhanTrangThai } from '@/components/tac-gia/NhanTrangThai';
+import { NutGuiDuyet } from '@/components/tac-gia/NutGuiDuyet';
+
+export const dynamic = 'force-dynamic';
+export const metadata: Metadata = { title: 'Sửa game' };
+
+/*
+ * SỬA MỘT GAME CỦA CHÍNH MÌNH.
+ *
+ * `tacGiaId` nằm trong `where` của chính câu truy vấn, nên gõ id game của
+ * người khác lên địa chỉ thì ra 404 — không phải "có nhưng không cho xem",
+ * mà là "không tìm thấy". Nói ít nhất có thể về thứ không phải của mình.
+ */
+export default async function SuaGameTacGia({ params }: { params: Promise<{ id: string }> }) {
+  const nguoi = await nguoiHienTai();
+  if (!nguoi) redirect('/dang-nhap');
+  const { id } = await params;
+
+  const [game, theLoai] = await Promise.all([
+    db.game.findFirst({
+      where: { id, tacGiaId: nguoi.id },
+      select: {
+        id: true, ten: true, duongDan: true, tenViet: true, nhaPhatTrien: true,
+        namPhatHanh: true, gioiThieu: true, icon: true, ngonNgu: true,
+        vietHoa: true, noiBat: true, trangThai: true, lyDoTuChoi: true,
+        theLoai: { select: { theLoaiId: true } },
+        anhChup: {
+          orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
+          select: { id: true, duongDan: true, chuThich: true },
+        },
+        banTai: {
+          orderBy: [{ heMay: 'asc' }, { moiNhat: 'desc' }],
+          take: 50,
+          select: {
+            id: true, heMay: true, soHieu: true, moiNhat: true, duongDanCuaHang: true,
+            ghiChu: true, doiMoi: true, ngayRa: true,
+            tep: {
+              select: {
+                id: true, loai: true, duongDan: true, dungLuong: true,
+                tenTep: true, maKiemTra: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    db.theLoai.findMany({ orderBy: [{ thuTu: 'asc' }], take: 50, select: { id: true, ten: true } }),
+  ]);
+  if (!game) notFound();
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="tieu-de-trang truncate">{game.ten}</h1>
+          {game.trangThai === 'DANG_HIEN' && (
+            <Link href={`/game/${game.duongDan}`}
+              className="inline-flex items-center gap-1 text-[13px] font-semibold text-nhan hover:underline">
+              Xem trang công khai <ExternalLink size={13} />
+            </Link>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <NhanTrangThai trangThai={game.trangThai} />
+          <NutGuiDuyet gameId={game.id} trangThai={game.trangThai} />
+        </div>
+      </div>
+
+      {/* Lý do bị trả lại đặt NGAY dưới đầu trang, trước mọi biểu mẫu: đó là
+          thứ duy nhất tác giả cần đọc trước khi sửa bất cứ gì. */}
+      {game.trangThai === 'TU_CHOI' && game.lyDoTuChoi && (
+        <div className="the border-xau/30 bg-xau/5 p-4">
+          <p className="flex items-center gap-2 text-[14px] font-bold text-xau">
+            <TriangleAlert size={16} aria-hidden /> Ban quản trị đã trả lại game này
+          </p>
+          <p className="mt-1.5 whitespace-pre-line text-[13px] leading-relaxed">{game.lyDoTuChoi}</p>
+          <p className="phu mt-2">Sửa xong thì bấm gửi duyệt lại.</p>
+        </div>
+      )}
+
+      <section>
+        <h2 className="tieu-de mb-3">Ảnh chụp</h2>
+        <KhungAnhChup gameId={game.id} anh={game.anhChup} />
+      </section>
+
+      <section>
+        <h2 className="tieu-de mb-3">Bản tải</h2>
+        <KhungBanTai
+          gameId={game.id}
+          ban={game.banTai.map((b) => ({
+            id: b.id,
+            heMay: b.heMay,
+            soHieu: b.soHieu,
+            moiNhat: b.moiNhat,
+            ghiChu: b.ghiChu,
+            doiMoi: b.doiMoi,
+            ngayRa: b.ngayRa ? b.ngayRa.toISOString().slice(0, 10) : null,
+            duongDanCuaHang: b.duongDanCuaHang,
+            tep: b.tep.map((t) => ({
+              id: t.id, loai: t.loai, duongDan: t.duongDan,
+              dungLuong: t.dungLuong != null ? Number(t.dungLuong) : null,
+              tenTep: t.tenTep, maKiemTra: t.maKiemTra,
+            })),
+          }))}
+        />
+      </section>
+
+      <section>
+        <h2 className="tieu-de mb-3">Thông tin game</h2>
+        <BieuMauGame
+          laQuanTri={false}
+          veSau="tac-gia"
+          theLoai={theLoai}
+          game={{
+            id: game.id, ten: game.ten, duongDan: game.duongDan, tenViet: game.tenViet,
+            nhaPhatTrien: game.nhaPhatTrien, namPhatHanh: game.namPhatHanh,
+            gioiThieu: game.gioiThieu, icon: game.icon, ngonNgu: game.ngonNgu,
+            vietHoa: game.vietHoa, noiBat: game.noiBat,
+            theLoaiId: game.theLoai.map((t) => t.theLoaiId),
+          }}
+        />
+      </section>
+    </div>
+  );
+}

@@ -78,7 +78,7 @@ export interface NguoiDangNhap {
   tenDangNhap: string;
   tenHienThi: string;
   anh: string | null;
-  vaiTro: 'THANH_VIEN' | 'QUAN_TRI';
+  vaiTro: 'THANH_VIEN' | 'TAC_GIA' | 'QUAN_TRI';
 }
 
 /**

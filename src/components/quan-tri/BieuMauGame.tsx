@@ -27,9 +27,13 @@ export interface GameSua {
  * lần thêm một trường là phải nhớ sửa hai chỗ, và kiểu gì cũng có ngày trang
  * "sửa" thiếu mất đúng cái ô mà trang "thêm" vừa có.
  */
-export function BieuMauGame({ game, theLoai }: {
+export function BieuMauGame({ game, theLoai, laQuanTri = true, veSau }: {
   game: GameSua | null;
   theLoai: { id: string; ten: string }[];
+  /** Tác giả không thấy ô "đưa lên băng nổi bật" — đó là chỗ của ban quản trị. */
+  laQuanTri?: boolean;
+  /** Lưu xong thì về khu nào: `'tac-gia'` hay bỏ trống cho khu quản trị. */
+  veSau?: string;
 }) {
   const [ketQua, gui, dangChay] = useActionState<KetQua, FormData>(luuGame, {});
   const daChon = new Set(game?.theLoaiId ?? []);
@@ -37,6 +41,7 @@ export function BieuMauGame({ game, theLoai }: {
   return (
     <form action={gui} className="space-y-4">
       {game && <input type="hidden" name="id" value={game.id} />}
+      {veSau && <input type="hidden" name="veSau" value={veSau} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <O ten="ten" nhan="Tên game" batBuoc giaTri={game?.ten} />
@@ -76,7 +81,10 @@ export function BieuMauGame({ game, theLoai }: {
 
       <div className="flex flex-wrap gap-4">
         <Danh ten="vietHoa" nhan="Có bản Việt hoá" bat={game?.vietHoa} />
-        <Danh ten="noiBat" nhan="Đưa lên băng nổi bật" bat={game?.noiBat} />
+        {/* Băng nổi bật quyết định game nào chiếm mặt tiền, nên nó là chỗ của
+            ban quản trị. Máy chủ cũng bỏ qua cờ này khi người gửi là tác giả —
+            giấu nút đi không phải là chặn. */}
+        {laQuanTri && <Danh ten="noiBat" nhan="Đưa lên băng nổi bật" bat={game?.noiBat} />}
       </div>
 
       {ketQua.loi && (

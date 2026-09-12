@@ -32,12 +32,21 @@ model NguoiDung {
   phienDangNhap Phien[]
   baoXau        BaoXau[]
   thongBao      ThongBao[]
+  gameDaDang    Game[]    @relation("GameCuaTacGia")
+
+  /// Tên hiện ở trang tác giả, thay cho tên hiển thị thường. Rỗng thì dùng
+  /// tên hiển thị — người làm game một mình chẳng cần nghĩ ra tên hãng.
+  tenTacGia  String?
+  /// Vài dòng tự giới thiệu, viết bằng Markdown như phần mô tả game.
+  gioiThieuTacGia String? @db.Text
 
   @@index([taoLuc])
 }
 
 enum VaiTro {
   THANH_VIEN
+  /// Tác giả: tự đăng game của mình, nhưng game phải qua duyệt mới lên kệ.
+  TAC_GIA
   QUAN_TRI
 }
 
@@ -97,6 +106,19 @@ model Game {
   suaLuc  DateTime  @updatedAt
   dangLuc DateTime?
 
+  /// Ai đăng game này. Rỗng = game do ban quản trị tự nhập.
+  ///
+  /// `SetNull` chứ không `Cascade`: xoá một tài khoản tác giả thì game của họ
+  /// PHẢI ở lại. Người đã tải game ấy về vẫn cần trang của nó để xem bản mới,
+  /// và cả khu diễn đàn quanh nó cũng chết theo nếu game biến mất.
+  tacGiaId String?
+  tacGia   NguoiDung? @relation("GameCuaTacGia", fields: [tacGiaId], references: [id], onDelete: SetNull)
+
+  /// Lúc bấm gửi duyệt — để xếp hàng chờ theo thứ tự ai gửi trước.
+  guiDuyetLuc DateTime?
+  /// Vì sao bị trả lại. Ban quản trị bắt buộc phải viết, xem `tuChoiGame`.
+  lyDoTuChoi  String?   @db.Text
+
   theLoai TheLoaiTrenGame[]
   banTai  BanTai[]
   anhChup AnhChup[]
@@ -109,9 +131,21 @@ model Game {
   @@index([trangThai, noiBat])
 }
 
+/// Đường đi của một game.
+///
+///   NHAP      → tác giả đang soạn, chưa ai ngoài họ thấy
+///   CHO_DUYET → đã gửi, nằm trong hàng chờ của ban quản trị
+///   DANG_HIEN → đã duyệt, đang bày ngoài cửa hàng
+///   TU_CHOI   → bị trả lại kèm lý do; sửa xong gửi lại được
+///   DA_GO     → từng bày rồi bị gỡ xuống
+///
+/// `DANG_HIEN` là trạng thái DUY NHẤT người ngoài thấy được — mọi truy vấn ở
+/// mặt tiền đều lọc theo nó, nên thêm trạng thái mới không làm rò game nháp.
 enum TrangThaiGame {
   NHAP
+  CHO_DUYET
   DANG_HIEN
+  TU_CHOI
   DA_GO
 }
 
@@ -420,6 +454,8 @@ enum LoaiThongBao {
   TRA_LOI_YEU_CAU
   GO_NOI_DUNG
   GAME_CO_BAN_MOI
+  GAME_DA_DUYET
+  GAME_BI_TU_CHOI
 }
 
 /// Một thông báo gửi tới một người.

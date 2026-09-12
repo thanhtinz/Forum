@@ -55,6 +55,30 @@ export default async function chay(kiem) {
   kiem('bảng thông tin không lặp lại năm và ngôn ngữ',
     !bangTin.includes('năm phát hành') && !bangTin.includes('ngôn ngữ'), bangTin);
 
+  /*
+   * HAI LỚP SAO PHẢI CHỒNG KHỚP NHAU.
+   *
+   * Dãy sao vẽ bằng một lớp sao vàng đè lên một lớp sao xám, rồi cắt lớp vàng
+   * theo phần trăm điểm. Lỗi đã xảy ra thật: hàng sao bên trong là một `flex`,
+   * mà flex mặc định cho phép CO ITEM lại để vừa chỗ — nên năm ngôi sao vàng
+   * bị nén vào phần trăm ấy thay vì bị cắt ở đó. Hai lớp lệch nhau, và trên
+   * màn hình nó hiện ra đúng như "sao có màu với sao không màu đè lên nhau".
+   *
+   * Nên đo BỀ NGANG THẬT của hai hàng: chúng phải bằng nhau. Và bề ngang của ô
+   * cắt chia cho bề ngang ấy phải đúng bằng điểm chia năm — cùng một phép đo
+   * bắt được cả chuyện lệch lớp lẫn chuyện cắt sai chỗ.
+   */
+  const doSao = await p.locator('[role="img"][aria-label*="trên 5 sao"]').first().evaluate((o) => ({
+    nhan: o.getAttribute('aria-label'),
+    xam: o.firstElementChild.getBoundingClientRect().width,
+    vang: o.lastElementChild.firstElementChild.getBoundingClientRect().width,
+    oCat: o.lastElementChild.getBoundingClientRect().width,
+  }));
+  kiem('hai lớp sao rộng bằng nhau, không lớp nào bị nén',
+    Math.abs(doSao.xam - doSao.vang) < 1, JSON.stringify(doSao));
+  kiem('lớp sao vàng cắt đúng theo số điểm',
+    Math.abs(doSao.oCat / doSao.xam - parseFloat(doSao.nhan) / 5) < 0.02, JSON.stringify(doSao));
+
   kiem('có nút tải nổi bật', (await p.locator('a.nut-cai-dam').count()) > 0);
   /*
    * KHÔNG CÒN KỆ "GAME TƯƠNG TỰ" Ở TAB THÔNG TIN.

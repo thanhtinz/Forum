@@ -531,3 +531,35 @@ p { text-wrap: pretty; }
 .chu-dam pre code { background: none; padding: 0; }
 
 .chu-dam hr { border-top: 1px solid rgb(var(--vien)); }
+
+/*
+ * BẢNG VÀ ẢNH TRONG KHỐI CHỮ.
+ *
+ * Bảng bọc trong khung cuộn ngang riêng: một bảng sáu cột trên màn 320px thì
+ * rộng hơn màn hình, và nếu không cho nó cuộn riêng thì CẢ TRANG cuộn ngang —
+ * đúng cái lỗi đã vá ở trang duyệt.
+ */
+.chu-dam table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: .95em;
+}
+.chu-dam th, .chu-dam td {
+  border: 1px solid rgb(var(--vien));
+  padding: .45em .7em;
+  text-align: left;
+}
+.chu-dam th { background: rgb(var(--nen3)); font-weight: 700; }
+
+/* Ảnh trong bài: bo góc, không vượt bề ngang, và giữ nét cho ảnh chụp game cũ
+   — cùng lẽ với kệ ảnh ở trang game. */
+.chu-dam img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--bo-nut);
+  border: 1px solid rgb(var(--vien));
+  image-rendering: pixelated;
+}

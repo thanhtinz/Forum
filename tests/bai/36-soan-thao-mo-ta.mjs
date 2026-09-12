@@ -57,8 +57,8 @@ export default async function chay(kiem) {
 
     // ── Xem trước dựng bằng đúng bộ dựng của trang game ────────────────
     await o.fill('## Cách chơi\n\nBấm **trái** và *phải*.\n\n- Nhảy bằng phím giữa\n- Ăn vật phẩm');
-    await admin.click('button:has-text("Xem trước")');
-    await admin.waitForTimeout(700);
+    await admin.click('button[title="Xem trước"]');
+    await admin.waitForTimeout(1200);
     const xem = admin.locator('.chu-dam').first();
     kiem('xem trước dựng ra đầu đề thật',
       (await xem.locator('h2:has-text("Cách chơi")').count()) > 0);
@@ -67,7 +67,11 @@ export default async function chay(kiem) {
     kiem('xem trước dựng ra danh sách thật',
       (await xem.locator('li').count()) === 2);
 
-    await admin.click('button:has-text("Soạn tiếp")');
+    // Bấm lại là tắt ô xem trước — nay nó là nút BẬT/TẮT, không phải hai nút.
+    await admin.click('button[title="Xem trước"]');
+    await admin.waitForTimeout(300);
+
+    await chayThem(kiem, admin, o);
 
     /*
      * ── THẺ HTML GÕ TAY PHẢI THÀNH CHỮ, KHÔNG THÀNH THẺ ───────────────
@@ -150,4 +154,43 @@ export default async function chay(kiem) {
     if (admin) await admin.close();
     await don();
   }
+}
+
+/*
+ * Mấy nút mới của thanh công cụ. Tách thành hàm riêng vì bài trên đã dài, mà
+ * phần này kiểm một thứ khác hẳn: không phải Markdown dựng ra gì, mà là thanh
+ * công cụ CHÈN ĐÚNG ký hiệu gì vào ô.
+ */
+export async function chayThem(kiem, admin, o) {
+  // Gạch ngang chữ
+  await o.fill('bỏ đi');
+  await o.evaluate((e) => e.setSelectionRange(0, e.value.length));
+  await admin.click('button[aria-label="Gạch ngang chữ"]');
+  kiem('nút gạch ngang bọc ~~', (await o.inputValue()) === '~~bỏ đi~~', await o.inputValue());
+
+  // Bấm lần nữa thì GỠ ra, không chồng thêm lớp nữa.
+  await o.evaluate((e) => e.setSelectionRange(2, e.value.length - 2));
+  await admin.click('button[aria-label="Gạch ngang chữ"]');
+  kiem('bấm lần nữa thì gỡ ~~ ra', (await o.inputValue()) === 'bỏ đi', await o.inputValue());
+
+  // Đầu đề: đổi cấp phải THAY cấp cũ, không cộng dồn thành "## # Tên"
+  await o.fill('Tên mục');
+  await o.evaluate((e) => e.setSelectionRange(0, 0));
+  await admin.click('summary:has-text("Kiểu chữ")');
+  await admin.click('button:has-text("Đầu đề lớn")');
+  kiem('chọn đầu đề lớn thì thêm một dấu thăng',
+    (await o.inputValue()) === '# Tên mục', await o.inputValue());
+
+  await admin.click('summary:has-text("Kiểu chữ")');
+  await admin.click('button:has-text("Đầu đề vừa")');
+  kiem('đổi cấp đầu đề thì THAY cấp cũ, không cộng dồn',
+    (await o.inputValue()) === '## Tên mục', await o.inputValue());
+
+  // Bảng
+  await o.fill('');
+  await admin.click('summary[aria-label="Chèn bảng"]');
+  await admin.click('button[aria-label="Bảng 2 hàng 3 cột"]');
+  const bang = await o.inputValue();
+  kiem('chèn bảng ra đúng số cột', (bang.match(/\|/g) ?? []).length >= 16, JSON.stringify(bang));
+  kiem('bảng có hàng vạch ngăn', bang.includes('| --- | --- | --- |'), JSON.stringify(bang));
 }

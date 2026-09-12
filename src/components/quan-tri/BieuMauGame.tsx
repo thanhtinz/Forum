@@ -57,7 +57,10 @@ export function BieuMauGame({ game, theLoai, laQuanTri = true, veSau }: {
 
       <ONapAnh ten="icon" nhan="Ảnh biểu tượng" banDau={game?.icon ?? ''} cho="icon"
         goYy="Phải vuông và mỗi cạnh ít nhất 256 điểm ảnh — biểu tượng còn bày ở
-          cỡ bé xíu trong danh sách, nhỏ quá là nhoè. Bỏ trống thì dùng ô màu kèm chữ tắt." />
+          cỡ bé xíu trong danh sách, nhỏ quá là nhoè. Đừng tự bo góc hay chừa
+          nền trong suốt ở bốn góc: cửa hàng tự cắt theo hình biểu tượng iOS,
+          nên ảnh bo góc sẵn sẽ bị cắt hai lần và hở ra một vành trắng. Bỏ
+          trống thì dùng ô màu kèm chữ tắt." />
 
       <ONapAnh ten="bia" nhan="Ảnh bìa đầu trang" banDau={game?.bia ?? ''} cho="bia"
         goYy="Tấm nằm ngang trải hết bề ngang đầu trang game, như ảnh bìa ở App Store.

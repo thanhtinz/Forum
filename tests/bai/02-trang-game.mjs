@@ -79,6 +79,16 @@ export default async function chay(kiem) {
   kiem('lớp sao vàng cắt đúng theo số điểm',
     Math.abs(doSao.oCat / doSao.xam - parseFloat(doSao.nhan) / 5) < 0.02, JSON.stringify(doSao));
 
+  /*
+   * Biểu tượng game phải được cắt theo hình SIÊU Ê-LÍP, không phải hình vuông
+   * bo góc — xem `.bieu-tuong` trong `globals.css`. Mặt nạ ấy là một dòng CSS
+   * dài và trông như rác, nên nó đúng là thứ có ngày bị ai đó dọn đi cho gọn.
+   */
+  const matNa = await p.locator('.bieu-tuong').first()
+    .evaluate((o) => getComputedStyle(o).maskImage || getComputedStyle(o).webkitMaskImage);
+  kiem('biểu tượng game cắt theo hình squircle',
+    !!matNa && matNa !== 'none' && matNa.includes('svg'), String(matNa).slice(0, 60));
+
   kiem('có nút tải nổi bật', (await p.locator('a.nut-cai-dam').count()) > 0);
   /*
    * KHÔNG CÒN KỆ "GAME TƯƠNG TỰ" Ở TAB THÔNG TIN.

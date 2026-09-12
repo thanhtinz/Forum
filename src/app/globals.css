@@ -411,7 +411,33 @@ p { text-wrap: pretty; }
    */
   .ke-cot { width: min(86vw, 380px); }
 
-  .bieu-tuong { @apply relative overflow-hidden bg-nen3; border-radius: var(--bo-icon); }
+  /*
+   * BIỂU TƯỢNG GAME — hình "squircle", không phải hình vuông bo góc.
+   *
+   * `border-radius` vẽ ra góc bằng một cung tròn, nên chỗ cung nối vào cạnh
+   * thẳng có một điểm gãy. Biểu tượng ứng dụng của iOS thì không: nó là một
+   * SIÊU Ê-LÍP — độ cong tăng dần từ giữa cạnh ra tới góc, không có điểm gãy
+   * nào. Mắt nhận ra khác biệt ấy trước khi kịp gọi tên: hình vuông bo góc
+   * trông "như web", squircle trông "như app".
+   *
+   * Bản mẫu biểu tượng ở developer.apple.com/design/resources là bản Figma và
+   * Sketch, không dùng được thẳng trên web — nên hình ở đây dựng lại bằng
+   * chính công thức siêu ê-líp bậc năm, rồi cắt bằng `mask`.
+   *
+   * VẪN GIỮ `border-radius`: máy không cắt được mặt nạ thì rơi về hình vuông
+   * bo góc, tức là về đúng thứ đang có trước đợt này. Không bao giờ rơi về
+   * hình vuông sắc cạnh.
+   */
+  .bieu-tuong {
+    @apply relative overflow-hidden bg-nen3;
+    border-radius: var(--bo-icon);
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M100.0 50.0 L99.9 70.8 L99.5 77.4 L98.9 82.1 L98.0 85.8 L96.8 88.8 L95.3 91.4 L93.5 93.5 L91.4 95.3 L88.8 96.8 L85.8 98.0 L82.1 98.9 L77.4 99.5 L70.8 99.9 L50.0 100.0 L29.2 99.9 L22.6 99.5 L17.9 98.9 L14.2 98.0 L11.2 96.8 L8.6 95.3 L6.5 93.5 L4.7 91.4 L3.2 88.8 L2.0 85.8 L1.1 82.1 L0.5 77.4 L0.1 70.8 L0.0 50.0 L0.1 29.2 L0.5 22.6 L1.1 17.9 L2.0 14.2 L3.2 11.2 L4.7 8.6 L6.5 6.5 L8.6 4.7 L11.2 3.2 L14.2 2.0 L17.9 1.1 L22.6 0.5 L29.2 0.1 L50.0 0.0 L70.8 0.1 L77.4 0.5 L82.1 1.1 L85.8 2.0 L88.8 3.2 L91.4 4.7 L93.5 6.5 L95.3 8.6 L96.8 11.2 L98.0 14.2 L98.9 17.9 L99.5 22.6 L99.9 29.2 Z' fill='%23000'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M100.0 50.0 L99.9 70.8 L99.5 77.4 L98.9 82.1 L98.0 85.8 L96.8 88.8 L95.3 91.4 L93.5 93.5 L91.4 95.3 L88.8 96.8 L85.8 98.0 L82.1 98.9 L77.4 99.5 L70.8 99.9 L50.0 100.0 L29.2 99.9 L22.6 99.5 L17.9 98.9 L14.2 98.0 L11.2 96.8 L8.6 95.3 L6.5 93.5 L4.7 91.4 L3.2 88.8 L2.0 85.8 L1.1 82.1 L0.5 77.4 L0.1 70.8 L0.0 50.0 L0.1 29.2 L0.5 22.6 L1.1 17.9 L2.0 14.2 L3.2 11.2 L4.7 8.6 L6.5 6.5 L8.6 4.7 L11.2 3.2 L14.2 2.0 L17.9 1.1 L22.6 0.5 L29.2 0.1 L50.0 0.0 L70.8 0.1 L77.4 0.5 L82.1 1.1 L85.8 2.0 L88.8 3.2 L91.4 4.7 L93.5 6.5 L95.3 8.6 L96.8 11.2 L98.0 14.2 L98.9 17.9 L99.5 22.6 L99.9 29.2 Z' fill='%23000'/%3E%3C/svg%3E");
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+  }
   /* Viền tóc BÊN TRONG: viền ngoài cộng vào kích thước và làm lệch cả lưới. */
   .bieu-tuong::after {
     content: '';

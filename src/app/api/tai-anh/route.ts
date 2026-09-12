@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { nguoiHienTai } from '@/lib/xac-thuc';
-import { doanLoaiAnh, luuAnh } from '@/lib/kho-anh';
+import { doanLoaiAnh, luuAnh } from '@/lib/kho';
 import { conDuocDangAnh, ghiLanDangAnh } from '@/lib/chan-do-mat-khau';
 
 export const dynamic = 'force-dynamic';

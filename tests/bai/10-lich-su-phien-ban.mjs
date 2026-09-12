@@ -103,13 +103,13 @@ export default async function chay(kiem) {
       select: { id: true },
     });
     if (tepBanCu) {
-      const dich = await p.locator('#tai a[href^="/api/tai/"]').first().getAttribute('href');
+      const dich = await p.locator('#tai a[href^="/tai/"]').first().getAttribute('href');
       const moiTepCuaBan = await db.tepTai.findMany({
         where: { ban: { heMay: heDau, soHieu: banCu.soHieu, game: { duongDan: game.duongDan } } },
         select: { id: true },
       });
       kiem('nút tải trỏ đúng tệp của bản đang chọn',
-        moiTepCuaBan.some((t) => dich === `/api/tai/${t.id}`), `đang trỏ ${dich}`);
+        moiTepCuaBan.some((t) => dich === `/tai/${t.id}`), `đang trỏ ${dich}`);
     }
   }
 

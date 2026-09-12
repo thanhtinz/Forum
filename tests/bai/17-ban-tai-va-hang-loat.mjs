@@ -76,6 +76,8 @@ export default async function chay(kiem) {
      * biệt hoa thường. Bài kiểm bấm nhầm vào đó, gập panel lại, rồi báo hỏng
      * vì một lẽ chẳng liên quan gì tới thứ nó định canh.
      */
+    // Ô dán địa chỉ nay nằm trong khối gấp, vì lối thường là TẢI TỆP LÊN.
+    await admin.click('summary:has-text("Hoặc dán địa chỉ")');
     await admin.fill('input[name="duongDanTep"]', tepThat.duongDan);
     await admin.click(`button[aria-label="Gắn tệp vào bản 1.0.1"]`);
 

@@ -44,8 +44,8 @@ export default async function chay(kiem) {
     const chu = await p.locator('#tai').textContent();
 
     if (he === 'IOS') {
-      // iOS tải thẳng tệp IPA như mọi hệ khác.
-      const soNutTai = await p.locator('#tai a[href^="/api/tai/"]').count();
+      // iOS tải tệp IPA như mọi hệ khác — qua trang tải, cùng lối với hệ khác.
+      const soNutTai = await p.locator('#tai a[href^="/tai/"]').count();
       kiem('iOS có nút tải tệp IPA', soNutTai > 0 && chu.includes('Tải IPA'), `đếm được ${soNutTai}`);
       // Và nói rõ cần công cụ gì mới cài được — giấu đi không làm tệp cài được.
       kiem('iOS nhắc rõ cần công cụ ký để cài',

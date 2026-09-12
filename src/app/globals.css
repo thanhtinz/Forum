@@ -563,3 +563,22 @@ p { text-wrap: pretty; }
   border: 1px solid rgb(var(--vien));
   image-rendering: pixelated;
 }
+
+/*
+ * THANH CHẠY QUA LẠI — dùng khi máy chủ không nói được tệp nặng bao nhiêu.
+ *
+ * Không biết tổng thì không vẽ phần trăm được, mà một thanh đứng im thì đọc ra
+ * là "đã treo". Thanh trượt qua lại nói đúng thứ ta biết: vẫn đang chạy, chưa
+ * biết còn bao lâu.
+ */
+@keyframes chay-qua-lai {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.thanh-chay { animation: chay-qua-lai 1.2s ease-in-out infinite; }
+
+/* Ai đặt máy giảm chuyển động thì thôi hẳn phần trượt — đứng yên mà đủ màu
+   vẫn nói được là đang có việc diễn ra. */
+@media (prefers-reduced-motion: reduce) {
+  .thanh-chay { animation: none; width: 100%; opacity: .5; }
+}

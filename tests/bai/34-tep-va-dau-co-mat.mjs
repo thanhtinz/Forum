@@ -36,6 +36,8 @@ export default async function chay(kiem) {
     await admin.goto(`${GOC}/quan-tri/game/${game.id}`, { waitUntil: 'networkidle' });
     await admin.click('button[aria-label="Mở bản Java ME 1.0"]');
 
+    // Ô dán địa chỉ nay nằm trong khối gấp, vì lối thường là TẢI TỆP LÊN.
+    await admin.click('summary:has-text("Hoặc dán địa chỉ")');
     await admin.fill('input[name="duongDanTep"]', '/tep-mau/kiem-thu.jar');
     await admin.fill('input[name="tenTep"]', 'kiem-thu-1.0.jar');
 

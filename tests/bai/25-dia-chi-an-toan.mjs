@@ -34,6 +34,9 @@ export default async function chay(kiem) {
     await admin.goto(`${GOC}/quan-tri/game/${game.id}`, { waitUntil: 'networkidle' });
     await admin.click(`button[aria-label="Mở bản Java ME ${ban.soHieu}"]`);
 
+    // Ô dán địa chỉ nay nằm trong khối gấp, vì lối thường là TẢI TỆP LÊN.
+    await admin.click('summary:has-text("Hoặc dán địa chỉ")');
+
     const thuGan = async (dia) => {
       await admin.fill('input[name="duongDanTep"]', dia);
       await admin.click(`button[aria-label="Gắn tệp vào bản ${ban.soHieu}"]`);

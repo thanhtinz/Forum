@@ -8,6 +8,7 @@ import {
 import { HE_MAY, LOAI_TEP, MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { gonDungLuong, gop } from '@/lib/tien-ich';
 import { NutViec } from './NutViec';
+import { ONapTep } from './ONapTep';
 
 export interface BanQuanTri {
   id: string;
@@ -307,7 +308,21 @@ function KhoiTep({ b }: { b: BanQuanTri }) {
         </ul>
       )}
 
-      <form action={gui} className="flex flex-wrap items-end gap-2 pt-1">
+      <ONapTep banId={b.id} loaiHopLe={loaiHopLe} />
+
+      {/*
+        DÁN ĐỊA CHỈ là lối PHỤ, gấp lại.
+
+        Tệp game nay nằm trong kho của chính cửa hàng, nên tải lên mới là lối
+        thường. Nhưng lối dán địa chỉ không bỏ được: có bản gốc nằm ở máy chủ
+        của chính nhà phát hành mà dẫn sang đó mới phải phép, và mấy nghìn tệp
+        nhập từ thời trước cũng đang là địa chỉ.
+      */}
+      <details className="pt-1">
+        <summary className="cursor-pointer text-[12px] font-semibold text-mo hover:text-chu">
+          Hoặc dán địa chỉ một tệp có sẵn
+        </summary>
+      <form action={gui} className="flex flex-wrap items-end gap-2 pt-2">
         <input type="hidden" name="banId" value={b.id} />
         <label className="w-[110px]">
           <span className="phu mb-1 block">Loại</span>
@@ -348,6 +363,7 @@ function KhoiTep({ b }: { b: BanQuanTri }) {
           <p role="alert" className="basis-full text-[12px] font-medium text-xau">{ketQua.loi}</p>
         )}
       </form>
+      </details>
     </div>
   );
 }

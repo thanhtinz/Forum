@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { nguoiHienTai } from '@/lib/xac-thuc';
+import { ghiLuotTai } from '@/lib/ghi-luot-tai';
 import { xemDiaChi } from '@/lib/dia-chi-an-toan';
 
 export const dynamic = 'force-dynamic';
@@ -29,31 +29,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ tepId: 
   });
   if (!tep) return NextResponse.json({ loi: 'KHONG_TIM_THAY' }, { status: 404 });
 
-  const nguoi = await nguoiHienTai();
-
-  await db.$transaction(async (tx) => {
-    await tx.game.update({
-      where: { id: tep.ban.gameId },
-      data: { soLuotTai: { increment: 1 } },
-      select: { id: true },
-    });
-
-    // Khách vãng lai vẫn tải được — chỉ là không có thư viện để ghi vào.
-    if (nguoi) {
-      await tx.luotTai.upsert({
-        where: { gameId_nguoiId: { gameId: tep.ban.gameId, nguoiId: nguoi.id } },
-        update: {
-          heMay: tep.ban.heMay, soHieu: tep.ban.soHieu,
-          lanCuoi: new Date(), soLan: { increment: 1 },
-        },
-        create: {
-          gameId: tep.ban.gameId, nguoiId: nguoi.id,
-          heMay: tep.ban.heMay, soHieu: tep.ban.soHieu,
-        },
-        select: { id: true },
-      });
-    }
-  });
+  await ghiLuotTai(tep.ban.gameId, tep.ban.heMay, tep.ban.soHieu);
 
   /*
    * KIỂM LẠI ĐỊA CHỈ NGAY TRƯỚC KHI CHUYỂN HƯỚNG, dù lúc nhập đã kiểm rồi.

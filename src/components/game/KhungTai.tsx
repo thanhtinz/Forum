@@ -135,8 +135,16 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
           <p className="the p-4 text-center text-[13px] text-mo">Bản này chưa gắn tệp tải.</p>
         )}
 
+        {/*
+          Nút tải dẫn sang TRANG TẢI, không bắn thẳng vào tệp.
+
+          Bắn thẳng thì lượt tải nằm gọn trong thanh của trình duyệt: trên điện
+          thoại nó loé lên một giây rồi biến, và người bấm không chắc mình vừa
+          bấm trúng — nên bấm lại lần nữa. Trang tải nói rõ đang tải game nào,
+          bản nào, còn bao lâu, và bày sẵn mã kiểm tra đúng lúc cần tới.
+        */}
         {tepChinh && (
-          <a href={`/api/tai/${tepChinh.id}`} className="nut-cai-dam w-full">
+          <a href={`/tai/${tepChinh.id}`} className="nut-cai-dam w-full">
             <Download size={17} aria-hidden />
             Tải {tepChinh.loai}
             {tepChinh.dungLuong != null && ` · ${gonDungLuong(tepChinh.dungLuong)}`}
@@ -154,7 +162,7 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
         {tepPhu.length > 0 && (
           <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 pt-0.5">
             {tepPhu.map((t) => (
-              <a key={t.id} href={`/api/tai/${t.id}`}
+              <a key={t.id} href={`/tai/${t.id}`}
                 className="text-[12px] font-semibold text-mo underline-offset-2 hover:text-nhan hover:underline">
                 Tải {t.loai}
                 {t.dungLuong != null && ` · ${gonDungLuong(t.dungLuong)}`}

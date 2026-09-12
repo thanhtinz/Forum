@@ -9,7 +9,8 @@ import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
 import { baoBanMoi } from '@/lib/bao-ban-moi';
 import { dungChuDam } from '@/lib/chu-dam';
-import { xoaAnh } from '@/lib/kho-anh';
+import { xoaAnh, xoaTepGame } from '@/lib/kho';
+import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
 import { LOI_KHONG_QUYEN, locGameCuaToi, quyenTrenGame } from '@/lib/quyen-game';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
 import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
@@ -267,10 +268,14 @@ export async function xoaBanTai(banId: string): Promise<KetQua> {
   // có. Hỏi luôn trong một câu thay vì đọc game lên rồi so.
   const ban = await db.banTai.findFirst({
     where: { id: banId, game: locGameCuaToi(nguoi) },
-    select: { gameId: true },
+    select: { gameId: true, tep: { select: { duongDan: true } } },
   });
   if (!ban) return { loi: LOI_KHONG_QUYEN };
   await db.banTai.delete({ where: { id: banId } });
+  // Hàng trong bảng đi theo dây `onDelete: Cascade`, nhưng tệp trong kho thì
+  // không: xoá bản mà quên dọn là để lại mấy trăm megabyte không ai trỏ tới,
+  // vẫn nằm tính tiền trong thùng.
+  for (const t of ban.tep) await xoaTepGame(t.duongDan);
   revalidatePath(`/quan-tri/game/${ban.gameId}`);
   return {};
 }
@@ -643,6 +648,7 @@ export async function xoaGame(gameId: string, tenGoLai: string): Promise<KetQua>
     select: {
       ten: true, duongDan: true, icon: true,
       anhChup: { select: { duongDan: true } },
+      banTai: { select: { tep: { select: { duongDan: true } } } },
     },
   });
   if (!game) return { loi: 'Không tìm thấy game.' };
@@ -662,6 +668,8 @@ export async function xoaGame(gameId: string, tenGoLai: string): Promise<KetQua>
    * mồ côi không đáng để làm hỏng cả lượt xoá.
    */
   await Promise.all([game.icon, ...game.anhChup.map((a) => a.duongDan)].map(xoaAnh));
+  // Tệp cài đặt cũng vậy, mà chúng còn nặng gấp trăm lần mấy tấm ảnh.
+  await Promise.all(game.banTai.flatMap((b) => b.tep.map((t) => xoaTepGame(t.duongDan))));
 
   revalidatePath('/quan-tri/game');
   revalidatePath('/quan-tri');
@@ -803,26 +811,6 @@ async function doDungLuongTep(duongDan: string): Promise<bigint | null> {
   }
 }
 
-/**
- * Cộng lại dung lượng của một bản từ chính các tệp của nó.
- *
- * Bản nhiều tệp (JAR kèm JAD) thì con số người tải cần biết là TỔNG, vì họ sẽ
- * lấy hết. Cộng lại từ bảng chứ không cộng dồn tay: cộng dồn thì mỗi lần xoá
- * một tệp mà quên trừ là lệch vĩnh viễn.
- */
-async function tinhLaiDungLuongBan(tx: typeof db, banId: string) {
-  const tep = await tx.tepTai.findMany({ where: { banId }, select: { dungLuong: true } });
-  const co = tep.some((t) => t.dungLuong != null);
-  const tong = tep.reduce((t, x) => t + (x.dungLuong ?? 0n), 0n);
-  await tx.banTai.update({
-    where: { id: banId },
-    // Không tệp nào đo được thì để trống hẳn, đừng ghi 0 — "0 B" đọc ra là
-    // tệp rỗng, còn để trống thì trang game giấu dòng ấy đi.
-    data: { dungLuong: co ? tong : null },
-    select: { id: true },
-  });
-}
-
 /** Sửa thông tin một bản tải đã có. */
 export async function suaBanTai(_truoc: KetQua, form: FormData): Promise<KetQua> {
   let nguoi;
@@ -961,7 +949,7 @@ export async function xoaTep(tepId: string): Promise<KetQua> {
   const tep = await db.tepTai.findFirst({
     where: { id: tepId, ban: { game: locGameCuaToi(nguoi) } },
     select: {
-      banId: true,
+      banId: true, duongDan: true,
       ban: { select: { gameId: true, game: { select: { duongDan: true } } } },
     },
   });
@@ -971,6 +959,11 @@ export async function xoaTep(tepId: string): Promise<KetQua> {
     await tx.tepTai.delete({ where: { id: tepId } });
     await tinhLaiDungLuongBan(tx as typeof db, tep.banId);
   });
+
+  // Dọn tệp trong kho SAU khi cơ sở dữ liệu đã ghi xong. Ngược lại thì một
+  // giao dịch hỏng để lại hàng trỏ vào tệp đã bay mất, mà người tải gặp đúng
+  // cái nút tải dẫn tới hư không.
+  await xoaTepGame(tep.duongDan);
 
   revalidatePath(`/quan-tri/game/${tep.ban.gameId}`);
   revalidatePath(`/game/${tep.ban.game.duongDan}`);

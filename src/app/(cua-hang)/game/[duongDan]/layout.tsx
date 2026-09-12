@@ -8,8 +8,10 @@ import { NutChiaSe } from '@/components/game/NutChiaSe';
 import { NutLui } from '@/components/game/NutLui';
 import { TabGame } from '@/components/game/TabGame';
 import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
+import { NutTaiDau } from '@/components/game/NutTaiDau';
 import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { diemSao, gonDungLuong } from '@/lib/tien-ich';
+import { nguoiHienTai } from '@/lib/xac-thuc';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +54,16 @@ export default async function KhungGame({ children, params }: {
   if (!game) notFound();
 
   const sao = diemSao(game.tongSao, game.soLuotDanhGia);
+
+  /*
+   * Tên hãng bày trên tấm xác nhận: ưu tiên tên tác giả đã đăng ký, rồi mới
+   * tới chuỗi `nhaPhatTrien` gõ tay. Cùng một lẽ với liên kết dưới tên game —
+   * tài khoản là thật, còn một chuỗi gõ tay thì hai cách gõ thành hai hãng.
+   */
+  const tenHang = game.tacGia?.tenTacGia ?? game.tacGia?.tenHienThi ?? game.nhaPhatTrien;
+
+  // Ai đang xem — chỉ để in lên tấm xác nhận, y như App Store in Apple ID.
+  const nguoi = await nguoiHienTai();
 
   /*
    * HẠNG TRONG THỂ LOẠI CHÍNH.
@@ -120,7 +132,6 @@ export default async function KhungGame({ children, params }: {
         MO_TA_HE[he[0]].loaiTep.indexOf(a.loai as never)
         - MO_TA_HE[he[0]].loaiTep.indexOf(b.loai as never))[0]
     : null;
-  const dichTai = tepChinh ? `/tai/${tepChinh.id}` : '#tai';
 
   const banXem: BanXem[] = game.banTai.map((b) => ({
     id: b.id,
@@ -231,7 +242,15 @@ export default async function KhungGame({ children, params }: {
               giá phải trả để bấm. */}
           {(tepChinh || game.banTai.length > 0) && (
             <p className="mt-3 flex items-center gap-2.5">
-              <Link href={dichTai} className="nut-cai">Tải về</Link>
+              <NutTaiDau nhan="Tải về" dichLui="#tai" taiKhoan={nguoi?.tenHienThi ?? null}
+                game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang }}
+                tep={tepChinh && banMoiNhat
+                  ? {
+                      id: tepChinh.id, loai: tepChinh.loai,
+                      dungLuong: tepChinh.dungLuong != null ? Number(tepChinh.dungLuong) : null,
+                      soHieu: banMoiNhat.soHieu, heMay: MO_TA_HE[he[0]].ten,
+                    }
+                  : null} />
               {banMoiNhat?.dungLuong != null && (
                 <span className="phu">{gonDungLuong(banMoiNhat.dungLuong)}</span>
               )}
@@ -243,7 +262,8 @@ export default async function KhungGame({ children, params }: {
 
         <section id="tai" className="scroll-mt-20 space-y-3">
           <h2 className="tieu-de lg:sr-only">Tải về</h2>
-          <KhungTai ban={banXem} />
+          <KhungTai ban={banXem} taiKhoan={nguoi?.tenHienThi ?? null}
+            game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang }} />
         </section>
       </div>
 

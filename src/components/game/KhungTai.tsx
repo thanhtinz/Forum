@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { HE_MAY, MO_TA_HE, NHAC_KHI_CAI, type MaHeMay } from '@/lib/he-may';
 import { KhoiGap } from '@/components/KhoiGap';
+import { TamXacNhanTai, type TepChon } from '@/components/game/TamXacNhanTai';
 import { gonDungLuong, gop } from '@/lib/tien-ich';
 
 const ICON = { coffee: Coffee, smartphone: Smartphone, apple: Apple, monitor: Monitor, laptop: Laptop };
@@ -42,7 +43,12 @@ export interface BanXem {
  * người dùng lúc nào cũng mới hơn phần mềm; ở đây thì ngược lại, nên lịch sử
  * phiên bản là thứ phải bày ra chứ không phải thứ giấu đi.
  */
-export function KhungTai({ ban }: { ban: BanXem[] }) {
+export function KhungTai({ ban, game, taiKhoan }: {
+  ban: BanXem[];
+  game: { ten: string; icon: string | null; nhaPhatTrien: string | null };
+  /** Tên người đang đăng nhập, hoặc `null` nếu là khách. */
+  taiKhoan: string | null;
+}) {
   const heCo = useMemo(() => {
     const thay = new Set(ban.map((b) => b.heMay));
     // Lọc theo HE_MAY chứ không chép cứng một dãy: thêm hệ máy mới vào
@@ -53,6 +59,8 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
   const [he, datHe] = useState<MaHeMay | null>(heCo[0] ?? null);
   const [banId, datBanId] = useState<string | null>(null);
   const [moLichSu, datMoLichSu] = useState(false);
+  /* Tệp đang chờ xác nhận. `null` là tấm đang đóng. */
+  const [choXacNhan, datChoXacNhan] = useState<TepChon | null>(null);
 
   /** Bản của hệ đang chọn, mới nhất trước. */
   const theoHe = useMemo(
@@ -85,6 +93,23 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
   }
 
   const doiHe = (h: MaHeMay) => { datHe(h); datBanId(null); datMoLichSu(false); };
+
+  /*
+   * Nút tải vẫn là một <a> trỏ thẳng tới trang tải, và chỉ bị chặn lại khi
+   * JavaScript chạy được.
+   *
+   * Máy cũ tắt JS — đúng loại máy hay mở một cửa hàng game Java — vẫn tải
+   * được, chỉ là không có nhịp xác nhận. Còn chuột giữa hay Ctrl+bấm thì để
+   * trình duyệt mở tab mới như thường, đừng cướp lấy cử chỉ của người dùng.
+   */
+  const xinXacNhan = (e: React.MouseEvent, t: TepXem) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    e.preventDefault();
+    datChoXacNhan({
+      id: t.id, loai: t.loai, dungLuong: t.dungLuong,
+      soHieu: hienTai.soHieu, heMay: MO_TA_HE[he].ten,
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -144,7 +169,8 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
           bản nào, còn bao lâu, và bày sẵn mã kiểm tra đúng lúc cần tới.
         */}
         {tepChinh && (
-          <a href={`/tai/${tepChinh.id}`} className="nut-cai-dam w-full">
+          <a href={`/tai/${tepChinh.id}`} className="nut-cai-dam w-full"
+            onClick={(e) => xinXacNhan(e, tepChinh)}>
             <Download size={17} aria-hidden />
             Tải {tepChinh.loai}
             {tepChinh.dungLuong != null && ` · ${gonDungLuong(tepChinh.dungLuong)}`}
@@ -162,7 +188,7 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
         {tepPhu.length > 0 && (
           <p className="flex flex-wrap justify-center gap-x-4 gap-y-1 pt-0.5">
             {tepPhu.map((t) => (
-              <a key={t.id} href={`/tai/${t.id}`}
+              <a key={t.id} href={`/tai/${t.id}`} onClick={(e) => xinXacNhan(e, t)}
                 className="text-[12px] font-semibold text-mo underline-offset-2 hover:text-nhan hover:underline">
                 Tải {t.loai}
                 {t.dungLuong != null && ` · ${gonDungLuong(t.dungLuong)}`}
@@ -230,6 +256,9 @@ export function KhungTai({ ban }: { ban: BanXem[] }) {
           <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">{hienTai.doiMoi}</p>
         </div>
       )}
+
+      <TamXacNhanTai tep={choXacNhan} game={game} taiKhoan={taiKhoan}
+        mo={choXacNhan !== null} dong={() => datChoXacNhan(null)} />
 
       {/* ── LỊCH SỬ PHIÊN BẢN ───────────────────────────────────────────── */}
       {theoHe.length > 1 && (

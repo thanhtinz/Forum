@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import { luuGame, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 import { OSoanThao } from '@/components/quan-tri/OSoanThao';
 import { ONapAnh } from '@/components/quan-tri/ONapAnh';
+import { DO_TUOI, MO_TA_TUOI } from '@/lib/do-tuoi-const';
 
 export interface GameSua {
   id: string;
@@ -15,6 +16,7 @@ export interface GameSua {
   gioiThieu: string | null;
   icon: string | null;
   bia: string | null;
+  doTuoi: number;
   ngonNgu: string;
   vietHoa: boolean;
   noiBat: boolean;
@@ -60,6 +62,21 @@ export function BieuMauGame({ game, theLoai, laQuanTri = true, veSau }: {
       <ONapAnh ten="bia" nhan="Ảnh bìa đầu trang" banDau={game?.bia ?? ''} cho="bia"
         goYy="Tấm nằm ngang trải hết bề ngang đầu trang game, như ảnh bìa ở App Store.
           Ảnh trong game hoặc ảnh quảng bá đều được; bỏ trống thì trang bắt đầu thẳng từ tên game." />
+
+      {/*
+        ĐỘ TUỔI có mặc định 4+, và đó là chủ ý: phần lớn game trong cửa hàng
+        này là game Java đời 2005, vô hại. Bắt người bày hàng chọn tay từng
+        game thì họ chọn bừa cho xong, mà chọn bừa thì con số ấy còn tệ hơn
+        không có — nó nói dối mà lại trông như thật.
+      */}
+      <label className="block">
+        <span className="phu mb-1 block">Độ tuổi khuyến nghị</span>
+        <select name="doTuoi" defaultValue={String(game?.doTuoi ?? 4)} className="o-nhap">
+          {DO_TUOI.map((t) => (
+            <option key={t} value={t}>{MO_TA_TUOI[t].nhan} — {MO_TA_TUOI[t].y}</option>
+          ))}
+        </select>
+      </label>
 
       <label className="block">
         <span className="phu mb-1 block">Ngôn ngữ</span>

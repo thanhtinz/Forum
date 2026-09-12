@@ -32,7 +32,7 @@ export function OTim({ giaTriDau = '' }: { giaTriDau?: string }) {
         onChange={(e) => datChu(e.target.value)}
         placeholder="Tìm game, nhà phát triển…"
         aria-label="Tìm game"
-        className="o-nhap !pl-11"
+        className="o-nhap o-nhap-kinh !pl-11"
       />
     </form>
   );

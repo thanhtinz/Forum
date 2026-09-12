@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Download, X } from 'lucide-react';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { gonDungLuong } from '@/lib/tien-ich';
+import { MO_TA_TUOI, napDoTuoi } from '@/lib/do-tuoi-const';
 
 export interface TepChon {
   id: string;
@@ -33,7 +34,7 @@ export interface TepChon {
  */
 export function TamXacNhanTai({ tep, game, taiKhoan, mo, dong }: {
   tep: TepChon | null;
-  game: { ten: string; icon: string | null; nhaPhatTrien: string | null };
+  game: { ten: string; icon: string | null; nhaPhatTrien: string | null; doTuoi: number };
   /** Tên người đang đăng nhập, hoặc `null` nếu là khách. */
   taiKhoan: string | null;
   mo: boolean;
@@ -68,7 +69,15 @@ export function TamXacNhanTai({ tep, game, taiKhoan, mo, dong }: {
           <div className="flex items-center gap-3">
             <BieuTuongGame ten={game.ten} icon={game.icon} co={56} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-bold leading-tight">{game.ten}</p>
+              {/* Huy hiệu tuổi đứng NGAY SAU tên, không xuống dòng riêng —
+                  đúng chỗ App Store đặt nó. Đây là lần cuối cùng người ta còn
+                  nhìn thấy con số ấy trước khi tệp về máy. */}
+              <p className="flex items-center gap-1.5 text-[15px] font-bold leading-tight">
+                <span className="truncate">{game.ten}</span>
+                <span className="shrink-0 rounded-[5px] border border-vien px-1 py-px text-[10px] font-bold text-mo">
+                  {MO_TA_TUOI[napDoTuoi(game.doTuoi)].nhan}
+                </span>
+              </p>
               {game.nhaPhatTrien && <p className="phu mt-0.5 truncate">{game.nhaPhatTrien}</p>}
               <p className="phu mt-0.5 truncate">
                 {tep.heMay} · bản {tep.soHieu} · {tep.loai}

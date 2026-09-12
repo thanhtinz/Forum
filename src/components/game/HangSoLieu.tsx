@@ -3,6 +3,7 @@ import { UserRound } from 'lucide-react';
 import { Ke } from '@/components/game/Ke';
 import { SaoNam } from '@/components/game/SaoNam';
 import { gonDungLuong, gonSo } from '@/lib/tien-ich';
+import { MO_TA_TUOI, napDoTuoi } from '@/lib/do-tuoi-const';
 
 export interface OSoLieu {
   ma: string;
@@ -101,6 +102,7 @@ export function dungSoLieu(g: {
   hang: { thu: number; theLoai: string; duongDan: string } | null;
   namPhatHanh: number | null;
   ngonNgu: string;
+  doTuoi: number;
   tacGia: { ten: string; duongDan: string } | null;
 }): OSoLieu[] {
   const o: OSoLieu[] = [];
@@ -115,6 +117,22 @@ export function dungSoLieu(g: {
       duoi: <SaoNam diem={g.sao} co={12} />,
     });
   }
+
+  /*
+   * Ô ĐỘ TUỔI đứng THỨ HAI, ngay sau điểm đánh giá — đúng chỗ App Store xếp nó.
+   *
+   * Bản đầu tôi xếp nó xuống sau lượt tải và dung lượng, lý luận rằng cửa hàng
+   * này phần lớn là game cũ vô hại. Chụp màn hình ra mới thấy hậu quả: dải
+   * cuộn ngang chỉ bày ba ô một lúc, nên ô thứ tư nằm ngoài màn hình — tức là
+   * với người mua game cho con, con số họ cần nhất là con số duy nhất họ không
+   * thấy. Thứ tự trên một dải cuộn không phải chuyện thẩm mỹ.
+   */
+  o.push({
+    ma: 'tuoi',
+    nhan: 'Độ tuổi',
+    chinh: MO_TA_TUOI[napDoTuoi(g.doTuoi)].nhan,
+    duoi: 'trở lên',
+  });
 
   o.push({
     ma: 'tai',

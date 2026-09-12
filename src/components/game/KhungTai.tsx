@@ -45,7 +45,7 @@ export interface BanXem {
  */
 export function KhungTai({ ban, game, taiKhoan }: {
   ban: BanXem[];
-  game: { ten: string; icon: string | null; nhaPhatTrien: string | null };
+  game: { ten: string; icon: string | null; nhaPhatTrien: string | null; doTuoi: number };
   /** Tên người đang đăng nhập, hoặc `null` nếu là khách. */
   taiKhoan: string | null;
 }) {

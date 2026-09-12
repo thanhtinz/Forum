@@ -310,6 +310,37 @@ p { text-wrap: pretty; }
   }
 
   /*
+   * Bản cho THANH BÊN máy bàn: không viền quanh, chỉ một vạch dọc bên phải.
+   *
+   * Thanh bên đứng yên trong khi cả trang cuộn dưới nó, nên nó cũng là thứ
+   * trôi trên nội dung — chỉ khác là trôi theo chiều đứng. Kính ở đây làm lộ
+   * ra chuyện ấy: thấy lưới game trượt lờ mờ sau thanh là biết mình đang cuộn,
+   * chứ không phải trang đang nhảy.
+   */
+  .kinh-ben {
+    background: rgb(var(--nen) / calc(var(--kinh-nen) + .12));
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border-right: 1px solid rgb(var(--vien) / .8);
+  }
+
+  /*
+   * Ô NHẬP TRÊN KÍNH — dùng cho ô tìm nằm trong thanh đầu trang.
+   *
+   * Ô `o-nhap` thường tô nền đặc `nen3`; đặt nguyên nó lên một thanh kính thì
+   * thành một viên nhựa đục nằm trên tấm kính, tức là hai vật liệu cãi nhau
+   * trên cùng một thanh. Bản này trong suốt hơn và tự làm mờ lấy phần nền sau
+   * nó, nên cả thanh vẫn là MỘT tấm.
+   */
+  .o-nhap-kinh {
+    background: rgb(var(--nen3) / .55);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    backdrop-filter: blur(12px) saturate(160%);
+    border-color: var(--kinh-vien);
+  }
+  .o-nhap-kinh:focus { background: rgb(var(--nen2) / .9); }
+
+  /*
    * MÁY KHÔNG LÀM MỜ ĐƯỢC thì quay về nền ĐẶC.
    *
    * Không có nhánh này thì trên trình duyệt cũ, thanh tab và tấm trượt thành
@@ -318,7 +349,8 @@ p { text-wrap: pretty; }
    */
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .kinh { background: rgb(var(--nen2)); }
-    .kinh-tren { background: rgb(var(--nen)); }
+    .kinh-tren, .kinh-ben { background: rgb(var(--nen)); }
+    .o-nhap-kinh { background: rgb(var(--nen3)); }
   }
 
   .nut-tron {

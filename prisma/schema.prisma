@@ -86,6 +86,14 @@ model Game {
   icon String?
   bia  String?
 
+  /**
+   * Độ tuổi khuyến nghị, chép theo thang của App Store: 4+, 9+, 12+, 17+.
+   *
+   * Lưu con SỐ chứ không lưu chuỗi "12+": số thì so sánh và lọc được (cha mẹ
+   * xem "game từ 9 tuổi trở xuống"), còn chuỗi thì chỉ in ra được.
+   */
+  doTuoi Int @default(4)
+
   ngonNgu   String        @default("en") // en | vi | da-ngon-ngu
   vietHoa   Boolean       @default(false)
   noiBat    Boolean       @default(false)

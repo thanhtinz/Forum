@@ -12,6 +12,7 @@ import { dungChuDam } from '@/lib/chu-dam';
 import { xoaAnh, xoaTepGame } from '@/lib/kho';
 import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
 import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
+import { napDoTuoi } from '@/lib/do-tuoi-const';
 import {
   SU_KIEN_MO_TA_TOI_DA, SU_KIEN_TIEU_DE_TOI_DA, laLoaiSuKien,
 } from '@/lib/su-kien-const';
@@ -86,6 +87,9 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
     gioiThieu: chu(form, 'gioiThieu') || null,
     icon: icon || null,
     bia: bia || null,
+    // Số lạ gửi lên thì về mức thấp nhất, không nhận bừa: một game 17+ bị ghi
+    // thành 4+ vì gõ sai một chữ số là chuyện không được phép xảy ra.
+    doTuoi: napDoTuoi(parseInt(chu(form, 'doTuoi'), 10)),
     ngonNgu: chu(form, 'ngonNgu') || 'en',
     vietHoa: form.get('vietHoa') === 'on',
     /*

@@ -19,7 +19,7 @@ export function NutTaiDau({ tep, dichLui, game, taiKhoan, nhan }: {
   tep: TepChon | null;
   /** Đi đâu khi không có tệp nào chọn sẵn — thường là `#tai`. */
   dichLui: string;
-  game: { ten: string; icon: string | null; nhaPhatTrien: string | null };
+  game: { ten: string; icon: string | null; nhaPhatTrien: string | null; doTuoi: number };
   taiKhoan: string | null;
   nhan: string;
 }) {

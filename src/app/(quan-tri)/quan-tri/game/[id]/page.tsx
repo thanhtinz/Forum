@@ -21,7 +21,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
       where: { id },
       select: {
         id: true, ten: true, duongDan: true, tenViet: true, nhaPhatTrien: true,
-        namPhatHanh: true, gioiThieu: true, icon: true, bia: true,
+        namPhatHanh: true, gioiThieu: true, icon: true, bia: true, doTuoi: true,
         ngonNgu: true, vietHoa: true, noiBat: true, trangThai: true,
         theLoai: { select: { theLoaiId: true } },
         _count: { select: { danhGia: true, chuDe: true } },
@@ -120,6 +120,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
             gioiThieu: game.gioiThieu,
             icon: game.icon,
             bia: game.bia,
+            doTuoi: game.doTuoi,
             ngonNgu: game.ngonNgu,
             vietHoa: game.vietHoa,
             noiBat: game.noiBat,

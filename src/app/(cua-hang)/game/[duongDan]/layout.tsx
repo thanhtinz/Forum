@@ -36,7 +36,7 @@ export default async function KhungGame({ children, params }: {
     select: {
       id: true, duongDan: true, ten: true, tenViet: true, nhaPhatTrien: true,
       icon: true, bia: true, vietHoa: true, tongSao: true, soLuotDanhGia: true, soLuotTai: true,
-      namPhatHanh: true, ngonNgu: true,
+      namPhatHanh: true, ngonNgu: true, doTuoi: true,
       theLoai: { select: { theLoai: { select: { ten: true, duongDan: true } } } },
       tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
       banTai: {
@@ -100,6 +100,7 @@ export default async function KhungGame({ children, params }: {
     hang,
     namPhatHanh: game.namPhatHanh,
     ngonNgu: game.ngonNgu,
+    doTuoi: game.doTuoi,
     tacGia: game.tacGia
       ? {
           ten: game.tacGia.tenTacGia ?? game.tacGia.tenHienThi,
@@ -253,7 +254,7 @@ export default async function KhungGame({ children, params }: {
               {(tepChinh || game.banTai.length > 0) && (
                 <p className="mt-2.5">
                   <NutTaiDau nhan="Tải về" dichLui="#tai" taiKhoan={nguoi?.tenHienThi ?? null}
-                    game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang }}
+                    game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }}
                     tep={tepChinh && banMoiNhat
                       ? {
                           id: tepChinh.id, loai: tepChinh.loai,
@@ -272,7 +273,7 @@ export default async function KhungGame({ children, params }: {
         <section id="tai" className="scroll-mt-20 space-y-3">
           <h2 className="tieu-de lg:sr-only">Tải về</h2>
           <KhungTai ban={banXem} taiKhoan={nguoi?.tenHienThi ?? null}
-            game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang }} />
+            game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }} />
         </section>
       </div>
 

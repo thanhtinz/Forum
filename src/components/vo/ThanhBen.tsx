@@ -30,7 +30,7 @@ export function ThanhBen({ nguoi }: { nguoi: NguoiDangNhap | null }) {
   );
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[240px] flex-col border-r border-vien bg-nen lg:flex">
+    <aside className="kinh-ben fixed inset-y-0 left-0 z-40 hidden w-[240px] flex-col lg:flex">
       <Link href="/" className="px-5 py-4" aria-label="SunnyStore — về trang đầu">
         <DauHieu co={34} />
       </Link>

@@ -9,6 +9,7 @@ import { NutLui } from '@/components/game/NutLui';
 import { TabGame } from '@/components/game/TabGame';
 import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
 import { NutTaiDau } from '@/components/game/NutTaiDau';
+import { DongLuanPhien } from '@/components/game/DongLuanPhien';
 import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { diemSao } from '@/lib/tien-ich';
 import { nguoiHienTai } from '@/lib/xac-thuc';
@@ -61,6 +62,11 @@ export default async function KhungGame({ children, params }: {
    * tài khoản là thật, còn một chuỗi gõ tay thì hai cách gõ thành hai hãng.
    */
   const tenHang = game.tacGia?.tenTacGia ?? game.tacGia?.tenHienThi ?? game.nhaPhatTrien;
+  const duongDanHang = game.tacGia
+    ? `/tac-gia/${game.tacGia.tenDangNhap}`
+    : game.nhaPhatTrien
+      ? `/nha-phat-trien/${encodeURIComponent(game.nhaPhatTrien)}`
+      : null;
 
   // Ai đang xem — chỉ để in lên tấm xác nhận, y như App Store in Apple ID.
   const nguoi = await nguoiHienTai();
@@ -202,29 +208,27 @@ export default async function KhungGame({ children, params }: {
               <h1 className="text-[23px] font-bold leading-[1.15] tracking-tight">{game.ten}</h1>
               {game.tenViet && <p className="phu mt-0.5">{game.tenViet}</p>}
               {/*
-                KHÔNG in tên hãng ở đây nữa.
+                MỘT DÒNG LUÂN PHIÊN: tên hãng, rồi từng thể loại, rồi bản Việt
+                hoá — đúng lối App Store xoay dòng dưới tên ứng dụng.
 
-                App Store cũng không: dưới tên ứng dụng chỉ có mỗi dòng thể
-                loại, còn tên hãng nằm thành MỘT HÀNG RIÊNG bấm được ở giữa
-                trang. Trước đây ta in cả hai chỗ, nên tên hãng hiện hai lần
-                cách nhau một gang tay — lần trên là chữ nhỏ màu xanh không rõ
-                bấm được hay không, lần dưới mới là lối đi thật có mũi tên.
+                Trước đây ba thứ ấy chia làm hai dòng: tên hãng một dòng màu
+                xanh, thể loại một dòng xám. Hai dòng ăn hai lần chiều cao ở
+                đúng khúc đầu trang chật nhất, mà nhồi cả vào một dòng thì dài
+                quá phải cắt cụt. Xoay thì thứ nào cũng có lượt, mà bố cục
+                đứng yên — xem `DongLuanPhien.tsx` để biết nó dừng xoay lúc
+                nào, kẻo chữ đổi ngay dưới ngón tay đang hạ xuống.
               */}
-              {/* Thể loại BẤM ĐƯỢC, cùng lẽ với tên hãng: thấy một game đua xe
-                  hay thì việc muốn làm ngay là xem gian đua xe có gì nữa. */}
-              <p className="phu mt-1">
-                {game.theLoai.length > 0
-                  ? game.theLoai.map((t, i) => (
-                      <span key={t.theLoai.duongDan}>
-                        {i > 0 && ' · '}
-                        <Link href={`/the-loai/${t.theLoai.duongDan}`} className="hover:text-chu hover:underline">
-                          {t.theLoai.ten}
-                        </Link>
-                      </span>
-                    ))
-                  : 'Game'}
-                {game.vietHoa && ' · Có bản Việt hoá'}
-              </p>
+              <DongLuanPhien className="mt-1.5" muc={[
+                ...(tenHang && duongDanHang ? [{ ma: 'hang', chu: tenHang, dich: duongDanHang }] : []),
+                ...game.theLoai.map((t) => ({
+                  ma: t.theLoai.duongDan,
+                  chu: t.theLoai.ten,
+                  dich: `/the-loai/${t.theLoai.duongDan}`,
+                })),
+                ...(game.vietHoa
+                  ? [{ ma: 'viet-hoa', chu: 'Có bản Việt hoá', dich: '/duyet?viet-hoa=1' }]
+                  : []),
+              ]} />
 
               {/*
                 NÚT TẢI NẰM TRONG CỘT PHẢI, ngay dưới dòng thể loại — đúng chỗ

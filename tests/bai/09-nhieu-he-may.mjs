@@ -47,9 +47,18 @@ export default async function chay(kiem) {
       // iOS tải tệp IPA như mọi hệ khác — qua trang tải, cùng lối với hệ khác.
       const soNutTai = await p.locator('#tai a[href^="/tai/"]').count();
       kiem('iOS có nút tải tệp IPA', soNutTai > 0 && chu.includes('Tải IPA'), `đếm được ${soNutTai}`);
-      // Và nói rõ cần công cụ gì mới cài được — giấu đi không làm tệp cài được.
+      /*
+       * Và nói rõ cần công cụ gì mới cài được — giấu đi không làm tệp cài được.
+       *
+       * Câu nhắc ấy nay nằm ở TAB THÔNG TIN, không còn trong khung tải: trên
+       * điện thoại khung tải nằm trên cả hàng tab, nên mỗi khối gấp trong ấy
+       * đẩy ảnh chụp với mô tả xuống thêm một nhịp cuộn. Nên đọc chữ của cả
+       * trang, đừng đọc riêng khung tải.
+       */
+      const chuTrang = await p.locator('body').textContent();
       kiem('iOS nhắc rõ cần công cụ ký để cài',
-        chu.includes('AltStore') || chu.includes('Sideloadly'), chu.slice(0, 160));
+        chuTrang.includes('AltStore') || chuTrang.includes('Sideloadly'),
+        chuTrang.slice(0, 200));
     }
     const dungLoai = LOAI[he].some((l) => chu.includes(`Tải ${l}`));
     kiem(`hệ ${NHAN[he]} dựng nút tải đúng loại tệp`, dungLoai,

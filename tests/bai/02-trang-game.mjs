@@ -89,7 +89,16 @@ export default async function chay(kiem) {
   kiem('biểu tượng game cắt theo hình squircle',
     !!matNa && matNa !== 'none' && matNa.includes('svg'), String(matNa).slice(0, 60));
 
-  kiem('có nút tải nổi bật', (await p.locator('a.nut-cai-dam').count()) > 0);
+  /*
+   * ĐÚNG MỘT nút tải tô đặc trên cả trang.
+   *
+   * Game một hệ máy thì nút tô đặc là nút ở đầu trang (bấm là tải ngay); game
+   * nhiều hệ thì nó nằm trong khung tải, sau dãy chip chọn hệ. Hai nút xanh
+   * đặc cùng lúc là mời bấm nhầm — đếm ở đây để chuyện ấy không lặng lẽ quay
+   * lại lúc ai đó sửa một trong hai chỗ.
+   */
+  const soNutDam = await p.locator('a.nut-cai-dam').count();
+  kiem('có đúng một nút tải tô đặc', soNutDam === 1, `đếm được ${soNutDam}`);
   /*
    * KHÔNG CÒN KỆ "GAME TƯƠNG TỰ" Ở TAB THÔNG TIN.
    *
@@ -127,7 +136,8 @@ export default async function chay(kiem) {
   // Phần đầu (tên game + nút tải) phải ĐỨNG YÊN khi đổi tab — nó nằm ở khung
   // chung, nên người đọc không mất chỗ tải khi sang xem thảo luận.
   kiem('đổi tab thì tên game vẫn còn', (await p.content()).includes(game.ten));
-  kiem('đổi tab thì nút tải vẫn còn', (await p.locator('a.nut-cai-dam').count()) > 0);
+  kiem('đổi tab thì nút tải vẫn còn',
+    (await p.locator('#tai a[href^="/tai/"]').count()) > 0);
 
   // Game đã gỡ / còn nháp phải trả 404, không được xem lén bằng đường dẫn.
   const nhap = await db.game.findFirst({

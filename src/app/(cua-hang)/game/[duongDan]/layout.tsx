@@ -197,29 +197,19 @@ export default async function KhungGame({ children, params }: {
 
         <header>
           <div className="flex gap-4">
-            <BieuTuongGame ten={game.ten} icon={game.icon} co={88} />
+            <BieuTuongGame ten={game.ten} icon={game.icon} co={104} />
             <div className="min-w-0 flex-1">
-              <h1 className="text-[21px] font-bold leading-tight tracking-tight">{game.ten}</h1>
+              <h1 className="text-[23px] font-bold leading-[1.15] tracking-tight">{game.ten}</h1>
               {game.tenViet && <p className="phu mt-0.5">{game.tenViet}</p>}
-              {/* Tên hãng bấm được, như App Store: người ta nhớ "mấy game của
-                  Gameloft hồi đó" rõ hơn là nhớ tên từng game. */}
               {/*
-                Có TÁC GIẢ thì trỏ về trang tác giả, không trỏ về trang gom
-                theo tên hãng. Trang tên hãng gom theo một CHUỖI ghi trên từng
-                game nên hai cách gõ thành hai hãng; trang tác giả gom theo tài
-                khoản nên nó là thật, và là chỗ tác giả tự giới thiệu.
+                KHÔNG in tên hãng ở đây nữa.
+
+                App Store cũng không: dưới tên ứng dụng chỉ có mỗi dòng thể
+                loại, còn tên hãng nằm thành MỘT HÀNG RIÊNG bấm được ở giữa
+                trang. Trước đây ta in cả hai chỗ, nên tên hãng hiện hai lần
+                cách nhau một gang tay — lần trên là chữ nhỏ màu xanh không rõ
+                bấm được hay không, lần dưới mới là lối đi thật có mũi tên.
               */}
-              {game.tacGia ? (
-                <Link href={`/tac-gia/${game.tacGia.tenDangNhap}`}
-                  className="mt-1 block text-[13px] font-semibold text-nhan hover:underline">
-                  {game.tacGia.tenTacGia ?? game.tacGia.tenHienThi}
-                </Link>
-              ) : game.nhaPhatTrien && (
-                <Link href={`/nha-phat-trien/${encodeURIComponent(game.nhaPhatTrien)}`}
-                  className="mt-1 block text-[13px] font-semibold text-nhan hover:underline">
-                  {game.nhaPhatTrien}
-                </Link>
-              )}
               {/* Thể loại BẤM ĐƯỢC, cùng lẽ với tên hãng: thấy một game đua xe
                   hay thì việc muốn làm ngay là xem gian đua xe có gì nữa. */}
               <p className="phu mt-1">
@@ -252,7 +242,7 @@ export default async function KhungGame({ children, params }: {
                 nhau chỗ nào không — mất công vì chúng giống hệt.
               */}
               {(tepChinh || game.banTai.length > 0) && (
-                <p className="mt-2.5">
+                <p className="mt-3">
                   <NutTaiDau nhan="Tải về" dichLui="#tai" taiKhoan={nguoi?.tenHienThi ?? null}
                     game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }}
                     tep={tepChinh && banMoiNhat
@@ -271,8 +261,20 @@ export default async function KhungGame({ children, params }: {
         </header>
 
         <section id="tai" className="scroll-mt-20 space-y-3">
-          <h2 className="tieu-de lg:sr-only">Tải về</h2>
-          <KhungTai ban={banXem} taiKhoan={nguoi?.tenHienThi ?? null}
+          {/* Đầu đề nhỏ, không phải đầu đề trang: từ đợt này nút tải chính đã
+              lên đầu trang, nên khối này là chỗ CHỌN bản chứ không còn là việc
+              chính — một đầu đề 22px ở đây tranh vai với tên game. */}
+          <h2 className="tieu-de-nho lg:sr-only">Tải về</h2>
+          {/*
+            `nutChinhDam` — CHỈ MỘT NÚT TÔ ĐẶC TRÊN CẢ TRANG.
+
+            Game một hệ máy thì nút ở đầu trang đã đi thẳng tới trang tải, nên
+            nút trong khung này hạ xuống dáng viền: hai nút xanh đặc cách nhau
+            một màn hình là mời bấm nhầm, và người bấm không đoán được hai nút
+            khác nhau chỗ nào. Game nhiều hệ thì ngược lại — nút đầu trang chỉ
+            đưa xuống đây, nên nút tô đặc phải nằm ở đây, sau khi đã chọn hệ.
+          */}
+          <KhungTai ban={banXem} taiKhoan={nguoi?.tenHienThi ?? null} nutChinhDam={he.length > 1}
             game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }} />
         </section>
       </div>

@@ -45,7 +45,7 @@ export default async function chay(kiem) {
       soLieu.includes(MO_TA_TUOI[12].nhan.toLowerCase()), soLieu);
 
     // ── Tấm xác nhận trước khi tải ────────────────────────────────────
-    await khach.click('#tai a.nut-cai-dam');
+    await khach.click('#tai a[href^="/tai/"]');
     await khach.waitForSelector('dialog[open]', { timeout: 5000 });
     const chuTam = await khach.locator('dialog[open]').textContent();
     kiem('tấm xác nhận mang huy hiệu tuổi', chuTam.includes(MO_TA_TUOI[12].nhan), chuTam.slice(0, 200));

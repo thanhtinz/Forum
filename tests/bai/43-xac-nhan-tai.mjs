@@ -31,7 +31,7 @@ export default async function chay(kiem) {
     kiem('chưa bấm thì chưa có tấm nào mở',
       (await p.locator('dialog[open]').count()) === 0);
 
-    await p.click('#tai a.nut-cai-dam');
+    await p.click('#tai a[href^="/tai/"]');
     await p.waitForSelector('dialog[open]', { timeout: 5000 });
 
     const chu = await p.locator('dialog[open]').textContent();
@@ -64,7 +64,7 @@ export default async function chay(kiem) {
       new URL(p.url()).pathname === `/game/${game.duongDan}`, p.url());
 
     // ── Xác nhận thì mới sang trang tải ───────────────────────────────
-    await p.click('#tai a.nut-cai-dam');
+    await p.click('#tai a[href^="/tai/"]');
     await p.waitForSelector('dialog[open]', { timeout: 5000 });
     await p.click('dialog[open] button:has-text("Xác nhận tải")');
     await p.waitForURL('**/tai/**', { timeout: 10000 });
@@ -73,7 +73,7 @@ export default async function chay(kiem) {
     // ── Người đã đăng nhập thì tấm in tên tài khoản ───────────────────
     nguoi = await moTrangDaDangNhap('minhdev', 'thanhvien123');
     await nguoi.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
-    await nguoi.click('#tai a.nut-cai-dam');
+    await nguoi.click('#tai a[href^="/tai/"]');
     await nguoi.waitForSelector('dialog[open]', { timeout: 5000 });
     const chuNguoi = await nguoi.locator('dialog[open]').textContent();
     kiem('tấm in tài khoản của người đang đăng nhập',

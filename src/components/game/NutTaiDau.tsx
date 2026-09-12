@@ -27,7 +27,15 @@ export function NutTaiDau({ tep, dichLui, game, taiKhoan, nhan }: {
 
   return (
     <>
-      <a href={tep ? `/tai/${tep.id}` : dichLui} className="nut-cai"
+      {/*
+        TÔ ĐẶC KHI NÚT NÀY LÀ LỐI TẢI THẬT.
+        Có tệp chọn sẵn thì bấm là tải — đây là nút "Get" của App Store, và nó
+        phải là nút tô đặc duy nhất trên trang. Không có tệp chọn sẵn thì nút
+        chỉ đưa xuống khung chọn hệ máy, nên nó là việc phụ và mang dáng nhạt;
+        nút tô đặc lúc ấy nằm dưới khung, sau khi đã chọn.
+      */}
+      <a href={tep ? `/tai/${tep.id}` : dichLui} data-viec="tai-dau"
+        className={tep ? 'nut-cai-dam !min-h-[36px] !px-6 !text-[14px]' : 'nut-cai'}
         onClick={(e) => {
           // Không có tệp chọn sẵn thì để liên kết chạy như thường: nó chỉ cuộn
           // xuống khung chọn, chẳng có gì để xác nhận.

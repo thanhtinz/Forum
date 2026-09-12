@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronRight, TriangleAlert } from 'lucide-react';
+import { ChevronRight, Info, TriangleAlert } from 'lucide-react';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { PhoDiem } from '@/components/game/PhoDiem';
@@ -15,7 +15,7 @@ import { Ke } from '@/components/game/Ke';
 import { TheSuKien } from '@/components/game/TheSuKien';
 import { SU_KIEN_TREN_TRANG } from '@/lib/su-kien-const';
 import { KhoiGap } from '@/components/KhoiGap';
-import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
+import { MO_TA_HE, NHAC_KHI_CAI, type MaHeMay } from '@/lib/he-may';
 import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
 import { bocChu, dungChuDam } from '@/lib/chu-dam';
 import { nguoiHienTai } from '@/lib/xac-thuc';
@@ -255,6 +255,30 @@ export default async function TabThongTin({ params, searchParams }: {
           <Dong nhan="Có mặt từ" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
         </dl>
       </section>
+
+      {/*
+        CÁCH CÀI chuyển từ khung tải xuống ĐÂY.
+
+        Trên điện thoại, khung tải nằm trên cả hàng tab — nên mỗi khối gấp
+        trong ấy đẩy ảnh chụp và mô tả xuống thêm một nhịp cuộn. App Store
+        không có mục này (họ tự cài hộ), nhưng cửa hàng game Java thì người
+        dùng phải tự cài, nên bỏ hẳn không được; chỗ đúng của nó là cạnh bảng
+        thông tin, nơi người đọc đang tìm hiểu chi tiết chứ không đang bấm tải.
+      */}
+      {soHe.some((h) => NHAC_KHI_CAI[h.heMay as MaHeMay]) && (
+        <section className="space-y-2">
+          {soHe.map((h) => {
+            const nhac = NHAC_KHI_CAI[h.heMay as MaHeMay];
+            if (!nhac) return null;
+            return (
+              <KhoiGap key={h.heMay} icon={<Info size={16} />}
+                tieuDe={`Cách cài trên ${MO_TA_HE[h.heMay as MaHeMay]?.ten ?? h.heMay}`}>
+                <p className="text-[13px] leading-relaxed text-mo">{nhac}</p>
+              </KhoiGap>
+            );
+          })}
+        </section>
+      )}
 
       {/* Điểm to bên trái, phổ điểm bên phải — bố cục của CH Play. Chỉ in con
           số trung bình thì không nói được "4,3 này là do ai cũng cho 4, hay do

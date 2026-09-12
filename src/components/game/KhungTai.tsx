@@ -43,11 +43,13 @@ export interface BanXem {
  * người dùng lúc nào cũng mới hơn phần mềm; ở đây thì ngược lại, nên lịch sử
  * phiên bản là thứ phải bày ra chứ không phải thứ giấu đi.
  */
-export function KhungTai({ ban, game, taiKhoan }: {
+export function KhungTai({ ban, game, taiKhoan, nutChinhDam = true }: {
   ban: BanXem[];
   game: { ten: string; icon: string | null; nhaPhatTrien: string | null; doTuoi: number };
   /** Tên người đang đăng nhập, hoặc `null` nếu là khách. */
   taiKhoan: string | null;
+  /** Nút tải chính ở đây tô đặc, hay hạ xuống dáng viền — xem chú thích nơi gọi. */
+  nutChinhDam?: boolean;
 }) {
   const heCo = useMemo(() => {
     const thay = new Set(ban.map((b) => b.heMay));
@@ -169,7 +171,8 @@ export function KhungTai({ ban, game, taiKhoan }: {
           bản nào, còn bao lâu, và bày sẵn mã kiểm tra đúng lúc cần tới.
         */}
         {tepChinh && (
-          <a href={`/tai/${tepChinh.id}`} className="nut-cai-dam w-full"
+          <a href={`/tai/${tepChinh.id}`}
+            className={nutChinhDam ? 'nut-cai-dam w-full' : 'nut-vien !w-full'}
             onClick={(e) => xinXacNhan(e, tepChinh)}>
             <Download size={17} aria-hidden />
             Tải {tepChinh.loai}
@@ -228,18 +231,6 @@ export function KhungTai({ ban, game, taiKhoan }: {
               </li>
             ))}
           </ul>
-        </KhoiGap>
-      )}
-
-      {/*
-        Cách cài GẤP LẠI, không phải một khối chữ xám nằm chắn dưới nút tải.
-        Người tải lần thứ hai không cần đọc lại, mà lần đầu thì vẫn thấy đầu đề
-        và bấm được. Cả hai cửa hàng lớn không có mục này vì họ tự cài hộ; kho
-        này thì người dùng phải tự cài, nên bỏ hẳn đi cũng không được.
-      */}
-      {NHAC_KHI_CAI[he] && (
-        <KhoiGap tieuDe={`Cách cài trên ${MO_TA_HE[he].ten}`} icon={<Info size={16} />}>
-          <p className="text-[13px] leading-relaxed text-mo">{NHAC_KHI_CAI[he]}</p>
         </KhoiGap>
       )}
 

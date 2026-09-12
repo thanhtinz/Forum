@@ -58,7 +58,9 @@ export default async function chay(kiem) {
     await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
 
     const soHe = new Set(game.banTai.map((b) => b.heMay)).size;
-    const nutDau = p.locator('a.nut-cai').first();
+    /* Bám `data-viec` chứ không bám lớp CSS: lớp của nút này đổi theo việc nó
+       làm — tô đặc khi bấm là tải ngay, nhạt khi chỉ đưa xuống khung chọn. */
+    const nutDau = p.locator('a[data-viec="tai-dau"]').first();
     kiem('đầu trang game có nút tải', (await nutDau.count()) > 0);
     const dich = await nutDau.getAttribute('href');
     if (soHe === 1) {

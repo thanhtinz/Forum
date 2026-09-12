@@ -33,7 +33,7 @@ export default async function KhungGame({ children, params }: {
     where: { duongDan, ...DANG_HIEN },
     select: {
       id: true, duongDan: true, ten: true, tenViet: true, nhaPhatTrien: true,
-      icon: true, vietHoa: true, tongSao: true, soLuotDanhGia: true, soLuotTai: true,
+      icon: true, bia: true, vietHoa: true, tongSao: true, soLuotDanhGia: true, soLuotTai: true,
       namPhatHanh: true, ngonNgu: true,
       theLoai: { select: { theLoai: { select: { ten: true, duongDan: true } } } },
       tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
@@ -156,15 +156,32 @@ export default async function KhungGame({ children, params }: {
         {/*
           HÀNG NÚT GÓC TRÊN — lùi bên trái, chia sẻ bên phải.
 
-          Đúng cặp nút App Store đặt đè lên ảnh bìa ở đầu trang ứng dụng. Ở đây
-          chưa có ảnh bìa nên chúng nằm thành một hàng riêng trên cùng, nhưng
-          vẫn giữ nguyên hai góc ấy: tay cầm điện thoại thì hai góc trên là hai
-          chỗ ngón cái mò tới mà không cần nhìn.
+          Đúng cặp nút App Store đặt đè lên ảnh bìa ở đầu trang ứng dụng, và
+          hai góc ấy giữ nguyên dù game có bìa hay không: tay cầm điện thoại
+          thì hai góc trên là hai chỗ ngón cái mò tới mà không cần nhìn.
+
+          CÓ BÌA thì hai nút nằm ĐÈ LÊN ảnh, kèm một vệt tối hắt từ mép trên
+          xuống. Không có vệt ấy thì gặp tấm bìa sáng màu là hai nút trắng biến
+          mất trên nền trắng — mà nút lùi biến mất là người ta kẹt lại trang.
         */}
-        <div className="flex items-center justify-between">
-          <NutLui />
-          <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
-        </div>
+        {game.bia ? (
+          <div className="relative -mx-4 sm:mx-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={game.bia} alt="" fetchPriority="high"
+              className="aspect-[16/9] w-full object-cover sm:rounded-the" />
+            <span aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent sm:rounded-t-the" />
+            <div className="absolute inset-x-3 top-3 flex items-center justify-between">
+              <NutLui />
+              <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <NutLui />
+            <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
+          </div>
+        )}
 
         <header>
           <div className="flex gap-4">

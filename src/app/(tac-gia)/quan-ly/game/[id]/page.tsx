@@ -7,6 +7,7 @@ import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGame } from '@/components/quan-tri/BieuMauGame';
 import { KhungBanTai } from '@/components/quan-tri/KhungBanTai';
 import { KhungAnhChup } from '@/components/quan-tri/KhungAnhChup';
+import { KhungSuKien } from '@/components/quan-tri/KhungSuKien';
 import { NhanTrangThai } from '@/components/tac-gia/NhanTrangThai';
 import { NutGuiDuyet } from '@/components/tac-gia/NutGuiDuyet';
 
@@ -30,12 +31,20 @@ export default async function SuaGameTacGia({ params }: { params: Promise<{ id: 
       where: { id, tacGiaId: nguoi.id },
       select: {
         id: true, ten: true, duongDan: true, tenViet: true, nhaPhatTrien: true,
-        namPhatHanh: true, gioiThieu: true, icon: true, ngonNgu: true,
+        namPhatHanh: true, gioiThieu: true, icon: true, bia: true, ngonNgu: true,
         vietHoa: true, noiBat: true, trangThai: true, lyDoTuChoi: true,
         theLoai: { select: { theLoaiId: true } },
         anhChup: {
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
           select: { id: true, duongDan: true, chuThich: true },
+        },
+        suKien: {
+          orderBy: [{ batDau: 'desc' }, { id: 'desc' }],
+          take: 20,
+          select: {
+            id: true, loai: true, tieuDe: true, moTaNgan: true, anh: true,
+            batDau: true, ketThuc: true, hien: true,
+          },
         },
         banTai: {
           orderBy: [{ heMay: 'asc' }, { moiNhat: 'desc' }],
@@ -93,6 +102,18 @@ export default async function SuaGameTacGia({ params }: { params: Promise<{ id: 
       </section>
 
       <section>
+        <h2 className="tieu-de mb-3">Sự kiện</h2>
+        <KhungSuKien gameId={game.id}
+          suKien={game.suKien.map((s) => ({
+            ...s,
+            // Ngày giờ qua ranh giới máy chủ → máy khách phải là CHUỖI: đối
+            // tượng `Date` không đi qua được, và Next sẽ báo lỗi dựng trang.
+            batDau: s.batDau.toISOString(),
+            ketThuc: s.ketThuc.toISOString(),
+          }))} />
+      </section>
+
+      <section>
         <h2 className="tieu-de mb-3">Bản tải</h2>
         <KhungBanTai
           gameId={game.id}
@@ -123,7 +144,7 @@ export default async function SuaGameTacGia({ params }: { params: Promise<{ id: 
           game={{
             id: game.id, ten: game.ten, duongDan: game.duongDan, tenViet: game.tenViet,
             nhaPhatTrien: game.nhaPhatTrien, namPhatHanh: game.namPhatHanh,
-            gioiThieu: game.gioiThieu, icon: game.icon, ngonNgu: game.ngonNgu,
+            gioiThieu: game.gioiThieu, icon: game.icon, bia: game.bia, ngonNgu: game.ngonNgu,
             vietHoa: game.vietHoa, noiBat: game.noiBat,
             theLoaiId: game.theLoai.map((t) => t.theLoaiId),
           }}

@@ -5,6 +5,7 @@ import { ExternalLink } from 'lucide-react';
 import { db } from '@/lib/db';
 import { BieuMauGame } from '@/components/quan-tri/BieuMauGame';
 import { KhungAnhChup } from '@/components/quan-tri/KhungAnhChup';
+import { KhungSuKien } from '@/components/quan-tri/KhungSuKien';
 import { KhungBanTai } from '@/components/quan-tri/KhungBanTai';
 import { NutTrangThai } from '@/components/quan-tri/NutTrangThai';
 import { KhuNguyHiem } from '@/components/quan-tri/KhuNguyHiem';
@@ -20,7 +21,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
       where: { id },
       select: {
         id: true, ten: true, duongDan: true, tenViet: true, nhaPhatTrien: true,
-        namPhatHanh: true, gioiThieu: true, icon: true,
+        namPhatHanh: true, gioiThieu: true, icon: true, bia: true,
         ngonNgu: true, vietHoa: true, noiBat: true, trangThai: true,
         theLoai: { select: { theLoaiId: true } },
         _count: { select: { danhGia: true, chuDe: true } },
@@ -28,6 +29,14 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
           take: 30,
           select: { id: true, duongDan: true, chuThich: true },
+        },
+        suKien: {
+          orderBy: [{ batDau: 'desc' }, { id: 'desc' }],
+          take: 20,
+          select: {
+            id: true, loai: true, tieuDe: true, moTaNgan: true, anh: true,
+            batDau: true, ketThuc: true, hien: true,
+          },
         },
         banTai: {
           orderBy: [{ heMay: 'asc' }, { moiNhat: 'desc' }],
@@ -60,6 +69,18 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
       <section>
         <h2 className="tieu-de mb-3">Ảnh chụp</h2>
         <KhungAnhChup gameId={game.id} anh={game.anhChup} />
+      </section>
+
+      <section>
+        <h2 className="tieu-de mb-3">Sự kiện</h2>
+        <KhungSuKien gameId={game.id}
+          suKien={game.suKien.map((s) => ({
+            ...s,
+            // Ngày giờ qua ranh giới máy chủ → máy khách phải là CHUỖI: đối
+            // tượng `Date` không đi qua được, và Next sẽ báo lỗi dựng trang.
+            batDau: s.batDau.toISOString(),
+            ketThuc: s.ketThuc.toISOString(),
+          }))} />
       </section>
 
       <section>
@@ -98,6 +119,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
             namPhatHanh: game.namPhatHanh,
             gioiThieu: game.gioiThieu,
             icon: game.icon,
+            bia: game.bia,
             ngonNgu: game.ngonNgu,
             vietHoa: game.vietHoa,
             noiBat: game.noiBat,

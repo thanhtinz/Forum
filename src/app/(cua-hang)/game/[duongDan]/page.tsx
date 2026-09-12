@@ -11,6 +11,9 @@ import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
 import { KeAnhChup } from '@/components/game/KeAnhChup';
 import { TamDanhGia } from '@/components/game/TamDanhGia';
 import { MoTaGame } from '@/components/game/MoTaGame';
+import { Ke } from '@/components/game/Ke';
+import { TheSuKien } from '@/components/game/TheSuKien';
+import { SU_KIEN_TREN_TRANG } from '@/lib/su-kien-const';
 import { KhoiGap } from '@/components/KhoiGap';
 import { NGON_NGU } from '@/lib/he-may';
 import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
@@ -59,6 +62,22 @@ export default async function TabThongTin({ params, searchParams }: {
       anhChup: {
         orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: TOI_DA_ANH_CHUP,
         select: { id: true, duongDan: true, chuThich: true },
+      },
+      /*
+       * Sự kiện ĐANG CÒN HẠN, sắp tới trước.
+       *
+       * Lọc theo ngày kết thúc ngay trong câu truy vấn: một sự kiện hết hạn mà
+       * còn nằm trên trang thì tệ hơn là không có sự kiện nào — nó nói với
+       * người xem rằng trang này lâu rồi không ai ngó tới.
+       */
+      suKien: {
+        where: { hien: true, ketThuc: { gte: new Date() } },
+        orderBy: [{ batDau: 'asc' }, { id: 'asc' }],
+        take: SU_KIEN_TREN_TRANG,
+        select: {
+          id: true, loai: true, tieuDe: true, moTaNgan: true, anh: true,
+          batDau: true, ketThuc: true,
+        },
       },
       _count: { select: { banTai: true } },
     },
@@ -117,6 +136,29 @@ export default async function TabThongTin({ params, searchParams }: {
     <div className="space-y-8">
       {game.anhChup.length > 0 && (
         <KeAnhChup anh={game.anhChup} />
+      )}
+
+      {/*
+        SỰ KIỆN ĐỨNG TRƯỚC MÔ TẢ.
+
+        Mô tả game nói game LÀ GÌ — thứ không đổi suốt hai mươi năm. Sự kiện
+        nói tuần này trong game có gì, và nó có hạn. Thứ có hạn phải đứng trên
+        thứ không đổi, không thì tới lúc người ta cuộn xuống đủ sâu để thấy thì
+        sự kiện đã hết.
+      */}
+      {game.suKien.length > 0 && (
+        <section>
+          <h2 className="tieu-de mb-3">Sự kiện</h2>
+          <Ke nhan="sự kiện" className="-mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
+            {game.suKien.map((s) => (
+              <TheSuKien key={s.id} duongDanGame={duongDan}
+                s={{
+                  id: s.id, loai: s.loai, tieuDe: s.tieuDe, moTaNgan: s.moTaNgan, anh: s.anh,
+                  batDau: s.batDau.toISOString(), ketThuc: s.ketThuc.toISOString(),
+                }} />
+            ))}
+          </Ke>
+        </section>
       )}
 
       {/*

@@ -2,7 +2,7 @@ import { GOC, db, moTrang, moTrangDaDangNhap, taoAnhPNG } from '../tro-giup.mjs'
 import { doCoAnh } from '../../src/lib/co-anh.ts';
 import { dungChuoiTim } from '../../src/lib/tim-kiem-const.ts';
 import {
-  ANH_TRONG_KET_QUA, ANH_CHUP_TOI_THIEU, ICON_TOI_THIEU, TOI_DA_ANH_CHUP,
+  ANH_TRONG_KET_QUA, ANH_CHUP_TOI_THIEU, BIA_RONG_TOI_THIEU, ICON_TOI_THIEU, TOI_DA_ANH_CHUP,
 } from '../../src/lib/luat-anh-const.ts';
 
 const DUONG_DAN = 'game-kiem-luat-anh';
@@ -74,6 +74,30 @@ export default async function chay(kiem) {
      */
     const dienDan = await gui('dien-dan', taoAnhPNG(12, 12), 'a.png');
     kiem('ảnh diễn đàn bé tí vẫn được đăng', dienDan.ma === 200, `mã ${dienDan.ma}`);
+
+    /*
+     * ── Ảnh bìa: phải NẰM NGANG và đủ rộng ────────────────────────────
+     *
+     * Bìa trải hết bề ngang đầu trang game, nên một tấm dựng đứng đặt vào đấy
+     * là hỏng cả khúc đầu trang — hoặc bị cắt cụt còn một dải, hoặc đẩy tên
+     * game xuống tận dưới màn hình.
+     */
+    const biaDung = await gui('bia', taoAnhPNG(600, 1000), 'a.png');
+    kiem('ảnh bìa dựng đứng thì bị từ chối', biaDung.ma === 422, `mã ${biaDung.ma}`);
+
+    const biaHep = await gui('bia', taoAnhPNG(BIA_RONG_TOI_THIEU - 100, 300), 'a.png');
+    kiem('ảnh bìa hẹp hơn sàn thì bị từ chối', biaHep.ma === 422, `mã ${biaHep.ma}`);
+
+    const biaVua = await gui('bia', taoAnhPNG(BIA_RONG_TOI_THIEU, Math.round(BIA_RONG_TOI_THIEU / 1.78)), 'a.png');
+    kiem('ảnh bìa nằm ngang đủ rộng thì nhận', biaVua.ma === 200, `mã ${biaVua.ma}`);
+
+    // Và bìa đã đặt thì phải HIỆN RA ở đầu trang game, không nằm chết trong cột.
+    await db.game.update({ where: { id: game.id }, data: { bia: biaVua.than.duongDan } });
+    const xemBia = await moTrang();
+    await xemBia.goto(`${GOC}/game/${DUONG_DAN}`, { waitUntil: 'networkidle' });
+    kiem('ảnh bìa hiện ở đầu trang game',
+      (await xemBia.locator(`img[src="${biaVua.than.duongDan}"]`).count()) > 0);
+    await xemBia.close();
 
     /* ── Trần mười ảnh một game ───────────────────────────────────────── */
     await db.anhChup.createMany({

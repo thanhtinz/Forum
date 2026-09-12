@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { doanLoaiAnh, luuAnh } from '@/lib/kho';
 import { doCoAnh } from '@/lib/co-anh';
-import { ANH_CHUP_TOI_THIEU, ICON_TOI_THIEU } from '@/lib/luat-anh-const';
+import {
+  ANH_CHUP_TOI_THIEU, BIA_RONG_TOI_THIEU, BIA_TI_LE_TOI_THIEU, ICON_TOI_THIEU,
+} from '@/lib/luat-anh-const';
 import { conDuocDangAnh, ghiLanDangAnh } from '@/lib/chan-do-mat-khau';
 
 export const dynamic = 'force-dynamic';
@@ -33,18 +35,28 @@ const CHO_DAT = {
    */
   icon: {
     thuMuc: 'icon', toiDa: 512 * 1024, canQuanTri: true,
-    canhToiThieu: ICON_TOI_THIEU, vuong: true,
+    canhToiThieu: ICON_TOI_THIEU, vuong: true, ngang: false,
+  },
+  // Ảnh bìa nặng hơn hẳn mấy thứ khác vì nó trải cả bề ngang màn hình.
+  bia: {
+    thuMuc: 'bia', toiDa: 2 * 1024 * 1024, canQuanTri: true,
+    canhToiThieu: 0, vuong: false, ngang: true,
   },
   'anh-chup': {
     thuMuc: 'anh-chup', toiDa: 3 * 1024 * 1024, canQuanTri: true,
-    canhToiThieu: ANH_CHUP_TOI_THIEU, vuong: false,
+    canhToiThieu: ANH_CHUP_TOI_THIEU, vuong: false, ngang: false,
+  },
+  // Ảnh thẻ sự kiện: cùng luật nằm ngang với ảnh bìa, vì thẻ cũng cắt 16:9.
+  'su-kien': {
+    thuMuc: 'su-kien', toiDa: 2 * 1024 * 1024, canQuanTri: true,
+    canhToiThieu: 0, vuong: false, ngang: true,
   },
   // Ảnh trong bài diễn đàn không có luật cỡ: người ta dán ảnh chụp lỗi, ảnh
   // chụp màn hình điện thoại cũ, có tấm bé tí — và tấm bé tí ấy vẫn nói đúng
   // thứ cần nói. Luật tài sản là luật của HÀNG BÀY, không phải của lời bình.
   'dien-dan': {
     thuMuc: 'dien-dan', toiDa: 3 * 1024 * 1024, canQuanTri: false,
-    canhToiThieu: 0, vuong: false,
+    canhToiThieu: 0, vuong: false, ngang: false,
   },
 } as const;
 
@@ -123,7 +135,7 @@ export async function POST(req: Request) {
    * cũng từ chối: tệp mà ngay cái đầu đã không đọc nổi thì trình duyệt người
    * xem cũng chẳng vẽ ra được, chỉ khác là lúc ấy mới lộ.
    */
-  if (luat.canhToiThieu > 0) {
+  if (luat.canhToiThieu > 0 || luat.ngang) {
     const co = doCoAnh(ruot, loai);
     if (!co) {
       return NextResponse.json({ loi: 'Không đọc được kích thước của ảnh này.' }, { status: 415 });
@@ -137,6 +149,15 @@ export async function POST(req: Request) {
     if (luat.vuong && co.rong !== co.cao) {
       return NextResponse.json(
         { loi: `Biểu tượng phải vuông, tấm này ${co.rong}×${co.cao}.` },
+        { status: 422 },
+      );
+    }
+    if (luat.ngang && (co.rong < BIA_RONG_TOI_THIEU || co.rong < co.cao * BIA_TI_LE_TOI_THIEU)) {
+      return NextResponse.json(
+        {
+          loi: `Ảnh bìa phải nằm ngang và rộng ít nhất ${BIA_RONG_TOI_THIEU} điểm ảnh,`
+            + ` tấm này ${co.rong}×${co.cao}.`,
+        },
         { status: 422 },
       );
     }

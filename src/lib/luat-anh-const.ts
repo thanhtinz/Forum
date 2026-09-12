@@ -31,3 +31,15 @@ export const ICON_TOI_THIEU = 256;
 
 /** Cạnh nhỏ nhất của một ảnh chụp màn hình. */
 export const ANH_CHUP_TOI_THIEU = 320;
+
+/*
+ * ẢNH BÌA — "product page header" của App Store.
+ *
+ * Apple tả nó là tấm ảnh (hoặc đoạn phim) mở đầu trang sản phẩm, dùng để khoe
+ * thương hiệu, mùa lễ, hay nội dung mới. Nó nằm TRÊN CÙNG và chiếm cả bề ngang,
+ * nên một tấm dựng đứng hay một tấm bé đặt vào đấy là hỏng cả khúc đầu trang:
+ * bề ngang phải đủ, và phải NẰM NGANG.
+ */
+export const BIA_RONG_TOI_THIEU = 960;
+/** Bề ngang chia bề cao ít nhất chừng này thì mới coi là ảnh nằm ngang. */
+export const BIA_TI_LE_TOI_THIEU = 1.3;

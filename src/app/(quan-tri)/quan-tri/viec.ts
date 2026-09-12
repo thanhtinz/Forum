@@ -12,6 +12,9 @@ import { dungChuDam } from '@/lib/chu-dam';
 import { xoaAnh, xoaTepGame } from '@/lib/kho';
 import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
 import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
+import {
+  SU_KIEN_MO_TA_TOI_DA, SU_KIEN_TIEU_DE_TOI_DA, laLoaiSuKien,
+} from '@/lib/su-kien-const';
 import { LOI_KHONG_QUYEN, locGameCuaToi, quyenTrenGame } from '@/lib/quyen-game';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
 import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
@@ -70,6 +73,8 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
   // Ảnh biểu tượng trước đây nhận bất cứ chuỗi gì — kể cả `javascript:`.
   const icon = chu(form, 'icon');
   if (icon && !laDiaChiHopLe(icon)) return { loi: LOI_DIA_CHI };
+  const bia = chu(form, 'bia');
+  if (bia && !laDiaChiHopLe(bia)) return { loi: LOI_DIA_CHI };
 
   const namRaw = parseInt(chu(form, 'namPhatHanh'), 10);
   const duLieu = {
@@ -80,6 +85,7 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
     namPhatHanh: Number.isFinite(namRaw) && namRaw > 1970 && namRaw < 2100 ? namRaw : null,
     gioiThieu: chu(form, 'gioiThieu') || null,
     icon: icon || null,
+    bia: bia || null,
     ngonNgu: chu(form, 'ngonNgu') || 'en',
     vietHoa: form.get('vietHoa') === 'on',
     /*
@@ -98,8 +104,8 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
    * chỉ gỡ khi thật sự khác: lưu lại game mà không đụng tới ảnh là chuyện xảy
    * ra suốt, mà gỡ nhầm thì trang thủng lỗ ngay.
    */
-  const iconCu = id
-    ? (await db.game.findUnique({ where: { id }, select: { icon: true } }))?.icon ?? null
+  const anhCu = id
+    ? await db.game.findUnique({ where: { id }, select: { icon: true, bia: true } })
     : null;
 
   /*
@@ -127,7 +133,8 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
   }
   const game = { id: gameId };
 
-  if (iconCu && iconCu !== duLieu.icon) await xoaAnh(iconCu);
+  if (anhCu?.icon && anhCu.icon !== duLieu.icon) await xoaAnh(anhCu.icon);
+  if (anhCu?.bia && anhCu.bia !== duLieu.bia) await xoaAnh(anhCu.bia);
 
   // Thể loại: xoá hết rồi gắn lại. Danh sách chỉ vài mục nên rẻ, mà so từng
   // cái để thêm/bớt thì dài gấp ba lần và dễ sót đúng cái vừa bỏ chọn.
@@ -308,6 +315,116 @@ export async function traLoiYeuCau(id: string, trangThai: string, loiNhan: strin
 
   revalidatePath('/quan-tri/yeu-cau');
   revalidatePath('/yeu-cau');
+  return {};
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * SỰ KIỆN TRONG GAME
+ *
+ * Cùng một luật quyền với mọi thứ khác của game: điều kiện "game này của tôi"
+ * nằm TRONG `where`, và `quyenTrenGame` trả về mảnh `where` ấy chứ không trả
+ * về một câu trả lời đúng/sai — quên ghép vào thì câu truy vấn không khớp gì
+ * cả, tức là hỏng về phía an toàn.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Bày một sự kiện lên trang game. */
+export async function themSuKien(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  const gameId = chu(form, 'gameId');
+  let quyen;
+  try { quyen = await quyenTrenGame(gameId); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const game = await db.game.findFirst({ where: quyen.loc, select: { duongDan: true } });
+  if (!game) return { loi: LOI_KHONG_QUYEN };
+
+  const loai = chu(form, 'loai');
+  if (!laLoaiSuKien(loai)) return { loi: 'Loại sự kiện không hợp lệ.' };
+
+  const tieuDe = chu(form, 'tieuDe').slice(0, SU_KIEN_TIEU_DE_TOI_DA);
+  const moTaNgan = chu(form, 'moTaNgan').slice(0, SU_KIEN_MO_TA_TOI_DA);
+  if (!tieuDe) return { loi: 'Hãy đặt tiêu đề cho sự kiện.' };
+  if (!moTaNgan) return { loi: 'Hãy viết một dòng mô tả ngắn — nó in ngay trên thẻ.' };
+
+  const anh = chu(form, 'anh');
+  if (anh && !laDiaChiHopLe(anh)) return { loi: LOI_DIA_CHI };
+
+  /*
+   * HAI MỐC THỜI GIAN PHẢI THEO ĐÚNG THỨ TỰ.
+   *
+   * Kết thúc trước khi bắt đầu thì sự kiện ấy không bao giờ hiện ra — câu lọc
+   * ở trang game đọc theo ngày kết thúc — mà người nhập thì thấy nó nằm trong
+   * danh sách quản trị và tưởng mọi thứ vẫn ổn. Chặn ngay lúc nhập.
+   */
+  const batDau = new Date(chu(form, 'batDau'));
+  const ketThuc = new Date(chu(form, 'ketThuc'));
+  if (Number.isNaN(batDau.getTime()) || Number.isNaN(ketThuc.getTime())) {
+    return { loi: 'Hãy chọn ngày bắt đầu và ngày kết thúc.' };
+  }
+  if (ketThuc.getTime() <= batDau.getTime()) {
+    return { loi: 'Ngày kết thúc phải sau ngày bắt đầu.' };
+  }
+
+  await db.suKien.create({
+    data: {
+      gameId, loai, tieuDe, moTaNgan,
+      noiDung: chu(form, 'noiDung') || null,
+      anh: anh || null,
+      batDau, ketThuc,
+    },
+    select: { id: true },
+  });
+
+  revalidatePath(`/quan-tri/game/${gameId}`);
+  revalidatePath(`/game/${game.duongDan}`);
+  return {};
+}
+
+/** Gỡ một sự kiện, và gỡ luôn ảnh thẻ của nó khỏi kho. */
+export async function xoaSuKien(suKienId: string): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const su = await db.suKien.findFirst({
+    where: { id: suKienId, game: locGameCuaToi(nguoi) },
+    select: { anh: true, gameId: true, game: { select: { duongDan: true } } },
+  });
+  if (!su) return { loi: LOI_KHONG_QUYEN };
+
+  await db.suKien.delete({ where: { id: suKienId } });
+  await xoaAnh(su.anh);
+
+  revalidatePath(`/quan-tri/game/${su.gameId}`);
+  revalidatePath(`/game/${su.game.duongDan}`);
+  return {};
+}
+
+/**
+ * Bật hoặc tắt một sự kiện.
+ *
+ * Trạng thái MỚI do nơi gọi truyền lên, không phải "đảo cái đang có": hai tab
+ * cùng mở thì tab thứ hai đang nhìn trạng thái cũ, và một phép đảo sẽ đưa nó
+ * về đúng chỗ người kia vừa bỏ đi.
+ */
+export async function hienSuKien(suKienId: string, hien: boolean): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const { count } = await db.suKien.updateMany({
+    where: { id: suKienId, game: locGameCuaToi(nguoi) },
+    data: { hien },
+  });
+  if (count === 0) return { loi: LOI_KHONG_QUYEN };
+
+  const su = await db.suKien.findUnique({
+    where: { id: suKienId },
+    select: { gameId: true, game: { select: { duongDan: true } } },
+  });
+  if (su) {
+    revalidatePath(`/quan-tri/game/${su.gameId}`);
+    revalidatePath(`/game/${su.game.duongDan}`);
+  }
   return {};
 }
 
@@ -659,7 +776,7 @@ export async function xoaGame(gameId: string, tenGoLai: string): Promise<KetQua>
   const game = await db.game.findUnique({
     where: { id: gameId },
     select: {
-      ten: true, duongDan: true, icon: true,
+      ten: true, duongDan: true, icon: true, bia: true,
       anhChup: { select: { duongDan: true } },
       banTai: { select: { tep: { select: { duongDan: true } } } },
     },
@@ -680,7 +797,7 @@ export async function xoaGame(gameId: string, tenGoLai: string): Promise<KetQua>
    * Gỡ SAU khi xoá xong, và `xoaAnh` tự nuốt lỗi: game đã mất rồi thì một tệp
    * mồ côi không đáng để làm hỏng cả lượt xoá.
    */
-  await Promise.all([game.icon, ...game.anhChup.map((a) => a.duongDan)].map(xoaAnh));
+  await Promise.all([game.icon, game.bia, ...game.anhChup.map((a) => a.duongDan)].map(xoaAnh));
   // Tệp cài đặt cũng vậy, mà chúng còn nặng gấp trăm lần mấy tấm ảnh.
   await Promise.all(game.banTai.flatMap((b) => b.tep.map((t) => xoaTepGame(t.duongDan))));
 

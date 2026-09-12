@@ -122,6 +122,7 @@ model Game {
   theLoai TheLoaiTrenGame[]
   banTai  BanTai[]
   anhChup AnhChup[]
+  suKien  SuKien[]
   danhGia DanhGia[]
   luotTai LuotTai[]
   chuDe   ChuDe[]
@@ -147,6 +148,53 @@ enum TrangThaiGame {
   DANG_HIEN
   TU_CHOI
   DA_GO
+}
+
+/*
+ * SỰ KIỆN TRONG GAME — "In-App Events" của App Store.
+ *
+ * Một trang game vốn chỉ kể được chuyện game ấy LÀ GÌ, mà không kể được chuyện
+ * tuần này trong game có gì. Apple thêm mục sự kiện đúng vì chỗ trống ấy: bản
+ * cập nhật lớn, mùa mới, giải đấu, buổi phát trực tiếp — những thứ có ngày bắt
+ * đầu và ngày kết thúc, và hết ngày thì phải tự lui đi chứ không nằm lại làm
+ * trang game cũ kỹ.
+ *
+ * Ở một cửa hàng game cũ thì nó còn hợp hơn: chỗ này là nơi báo "bản Việt hoá
+ * vừa xong", "giải đấu điểm cao tháng này", "server riêng mở lại".
+ */
+enum LoaiSuKien {
+  THU_THACH // thử thách trong game
+  THI_DAU // giải đấu, đua điểm
+  TRUC_TIEP // buổi phát trực tiếp
+  CAP_NHAT_LON // bản cập nhật lớn
+  MUA_MOI // mùa chơi mới
+  RA_MAT // ra mắt nội dung mới
+  DAC_BIET // dịp đặc biệt, lễ tết
+}
+
+model SuKien {
+  id     String @id @default(cuid())
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  loai     LoaiSuKien
+  tieuDe   String
+  /// Một dòng in trên thẻ, dưới tiêu đề. Dài hơn thì thẻ vỡ dáng.
+  moTaNgan String
+  noiDung  String?    @db.Text
+
+  /// Ảnh thẻ, nằm ngang — xem `luat-anh-const.ts`. Trống thì thẻ dùng dải màu.
+  anh String?
+
+  batDau  DateTime
+  ketThuc DateTime
+
+  /// Tắt đi mà không xoá: sự kiện năm ngoái còn dùng lại được năm sau.
+  hien Boolean @default(true)
+
+  taoLuc DateTime @default(now())
+
+  @@index([gameId, ketThuc])
 }
 
 model TheLoai {

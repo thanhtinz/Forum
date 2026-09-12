@@ -14,6 +14,7 @@ export interface GameSua {
   namPhatHanh: number | null;
   gioiThieu: string | null;
   icon: string | null;
+  bia: string | null;
   ngonNgu: string;
   vietHoa: boolean;
   noiBat: boolean;
@@ -53,7 +54,12 @@ export function BieuMauGame({ game, theLoai, laQuanTri = true, veSau }: {
       </div>
 
       <ONapAnh ten="icon" nhan="Ảnh biểu tượng" banDau={game?.icon ?? ''} cho="icon"
-        goYy="Vuông thì đẹp nhất. Bỏ trống thì dùng ô màu kèm chữ tắt." />
+        goYy="Phải vuông và mỗi cạnh ít nhất 256 điểm ảnh — biểu tượng còn bày ở
+          cỡ bé xíu trong danh sách, nhỏ quá là nhoè. Bỏ trống thì dùng ô màu kèm chữ tắt." />
+
+      <ONapAnh ten="bia" nhan="Ảnh bìa đầu trang" banDau={game?.bia ?? ''} cho="bia"
+        goYy="Tấm nằm ngang trải hết bề ngang đầu trang game, như ảnh bìa ở App Store.
+          Ảnh trong game hoặc ảnh quảng bá đều được; bỏ trống thì trang bắt đầu thẳng từ tên game." />
 
       <label className="block">
         <span className="phu mb-1 block">Ngôn ngữ</span>

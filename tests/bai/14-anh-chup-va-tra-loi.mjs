@@ -1,5 +1,23 @@
 import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 
+/* Một tấm PNG 1×1 thật — đủ để cổng nhận ảnh soi ruột và chấp nhận. */
+const PNG_THAT = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+/** Chọn một tệp ảnh thật rồi chờ nó tải lên xong. */
+async function napAnhThat(p) {
+  await p.setInputFiles('input[type="file"]', {
+    name: 'anh-kiem.png', mimeType: 'image/png', buffer: PNG_THAT,
+  });
+  // Chờ ô ẩn có địa chỉ — đó là dấu hiệu kho đã nhận xong.
+  await p.waitForFunction(
+    () => !!document.querySelector('input[name="duongDanAnh"]')?.value,
+    { timeout: 15_000 },
+  );
+}
+
 /**
  * Ảnh chụp trong quản trị, lọc đánh giá theo sao, và lời đáp của cửa hàng.
  *
@@ -27,14 +45,21 @@ export default async function chay(kiem) {
     kiem('trang quản trị game có khối ảnh chụp',
       (await admin.locator('text=Thêm ảnh chụp').count()) > 0);
 
-    await admin.fill('input[name="duongDanAnh"]', '/anh-kiem/mot.jpg');
+    /*
+     * ẢNH NAY TẢI LÊN, không dán địa chỉ nữa.
+     *
+     * Nên bài kiểm cũng phải đi đúng lối người dùng đi: chọn một tệp thật,
+     * chờ nó lên kho, rồi mới bấm Thêm. Nhét thẳng địa chỉ vào ô ẩn thì kiểm
+     * được mỗi biểu mẫu, bỏ qua đúng phần mới và phần dễ hỏng nhất.
+     */
+    await napAnhThat(admin);
     await admin.fill('input[name="chuThich"]', 'Ảnh kiểm một');
     await admin.click('button:has-text("Thêm ảnh")');
     const anhMot = await doiToi(async () =>
-      (await db.anhChup.count({ where: { gameId: game.id, duongDan: '/anh-kiem/mot.jpg' } })) === 1);
-    kiem('thêm ảnh thì ghi vào CSDL', anhMot);
+      (await db.anhChup.count({ where: { gameId: game.id } })) === 1);
+    kiem('tải ảnh lên rồi thêm thì ghi vào CSDL', anhMot);
 
-    await admin.fill('input[name="duongDanAnh"]', '/anh-kiem/hai.jpg');
+    await napAnhThat(admin);
     await admin.click('button:has-text("Thêm ảnh")');
     const anhHai = await doiToi(async () =>
       (await db.anhChup.count({ where: { gameId: game.id } })) === 2);
@@ -43,11 +68,11 @@ export default async function chay(kiem) {
     // Thứ tự chừa khoảng trống 10 để đổi chỗ chỉ phải ghi lại một con số.
     const xep = await db.anhChup.findMany({
       where: { gameId: game.id }, orderBy: { thuTu: 'asc' },
-      select: { duongDan: true, thuTu: true },
+      select: { id: true, duongDan: true, thuTu: true },
     });
     kiem('ảnh thêm sau nằm sau ảnh thêm trước',
-      xep[0]?.duongDan === '/anh-kiem/mot.jpg' && xep[1]?.thuTu > xep[0]?.thuTu,
-      JSON.stringify(xep));
+      xep.length === 2 && xep[1].thuTu > xep[0].thuTu, JSON.stringify(xep.map((a) => a.thuTu)));
+    const anhSau = xep[1]?.duongDan;
 
     // ── Đổi chỗ hai ảnh ──────────────────────────────────────────────────
     await admin.click('button[aria-label="Đưa ảnh 2 lên trước"]');
@@ -55,12 +80,23 @@ export default async function chay(kiem) {
       const a = await db.anhChup.findMany({
         where: { gameId: game.id }, orderBy: { thuTu: 'asc' }, select: { duongDan: true },
       });
-      return a[0]?.duongDan === '/anh-kiem/hai.jpg';
+      return a[0]?.duongDan === anhSau;
     });
     kiem('đổi chỗ được thứ tự ảnh', daDoi);
 
-    // ── Địa chỉ ảnh lạ bị chặn ───────────────────────────────────────────
-    await admin.fill('input[name="duongDanAnh"]', 'javascript:alert(1)');
+    /*
+     * ── Địa chỉ ảnh lạ bị chặn ──────────────────────────────────────────
+     *
+     * Ô địa chỉ nay ẩn và do máy điền, nhưng luật phía máy chủ vẫn phải còn:
+     * ô ẩn thì ai cũng sửa được bằng một dòng trong bảng điều khiển, và bài
+     * kiểm này đi đúng lối ấy.
+     */
+    await admin.evaluate(() => {
+      const o = document.querySelector('input[name="duongDanAnh"]');
+      const dat = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      dat.call(o, 'javascript:alert(1)');
+      o.dispatchEvent(new Event('input', { bubbles: true }));
+    });
     await admin.click('button:has-text("Thêm ảnh")');
     await admin.waitForSelector('[role="alert"]', { timeout: 5000 }).catch(() => {});
     const soSauKhiThemRac = await db.anhChup.count({ where: { gameId: game.id } });
@@ -71,7 +107,7 @@ export default async function chay(kiem) {
     const khach = await moTrang();
     await khach.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
     kiem('ảnh chụp hiện ở trang game',
-      (await khach.locator('img[src="/anh-kiem/hai.jpg"]').count()) > 0);
+      (await khach.locator(`img[src="${anhSau}"]`).count()) > 0);
 
     // ── Thành viên thường gọi thẳng endpoint thêm ảnh thì không ăn ────────
     const thuong = await moTrangDaDangNhap('anhthu', 'thanhvien123');

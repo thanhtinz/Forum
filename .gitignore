@@ -6,3 +6,6 @@ next-env.d.ts
 /anh-chup
 *.tsbuildinfo
 public/tep-mau/
+
+# Ảnh tải lên lúc chạy ở máy phát triển — kho thật là Cloudflare R2.
+/tai-len/

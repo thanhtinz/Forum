@@ -76,12 +76,26 @@ interface GameMau {
   nam: number;
   theLoai: string[];
   gioiThieu: string;
+  /*
+   * `cachChoi` và `luuY` KHÔNG còn là cột trong CSDL: mô tả nay viết bằng
+   * Markdown nên người viết tự chia phần bằng đầu đề, thay vì nhét vào ba ngăn
+   * do biểu mẫu đặt sẵn. Giữ tách ở đây cho dữ liệu mẫu dễ đọc, rồi gộp lại
+   * lúc gieo — xem `gopMoTa`.
+   */
   cachChoi?: string;
   luuY?: string;
   ngonNgu?: string;
   vietHoa?: boolean;
   noiBat?: boolean;
   ban: BanMau[];
+}
+
+/** Gộp ba phần mô tả thành một khối Markdown duy nhất. */
+function gopMoTa(g: GameMau): string {
+  const phan = [g.gioiThieu.trim()];
+  if (g.cachChoi?.trim()) phan.push(`## Cách chơi\n\n${g.cachChoi.trim()}`);
+  if (g.luuY?.trim()) phan.push(`## Cần biết trước khi tải\n\n${g.luuY.trim()}`);
+  return phan.join('\n\n');
 }
 
 const GAME: GameMau[] = [
@@ -296,9 +310,7 @@ async function main() {
         }),
         nhaPhatTrien: g.nhaPhatTrien,
         namPhatHanh: g.nam,
-        gioiThieu: g.gioiThieu,
-        cachChoi: g.cachChoi ?? null,
-        luuY: g.luuY ?? null,
+        gioiThieu: gopMoTa(g),
         ngonNgu: g.ngonNgu ?? 'en',
         vietHoa: g.vietHoa ?? false,
         noiBat: g.noiBat ?? false,

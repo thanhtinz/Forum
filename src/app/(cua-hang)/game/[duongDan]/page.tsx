@@ -51,7 +51,7 @@ export default async function TabThongTin({ params, searchParams }: {
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
     select: {
-      id: true, gioiThieu: true, cachChoi: true, luuY: true, namPhatHanh: true,
+      id: true, gioiThieu: true, namPhatHanh: true,
       ngonNgu: true, dangLuc: true,
       anhChup: { orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: 12, select: { id: true, duongDan: true, chuThich: true } },
       theLoai: { select: { theLoai: { select: { duongDan: true } } } },
@@ -109,11 +109,17 @@ export default async function TabThongTin({ params, searchParams }: {
       )}
 
       {/*
-        MỘT KHỐI "GIỚI THIỆU" DUY NHẤT.
-        Cả hai cửa hàng lớn chỉ có đúng một mục mô tả, không tách "cách chơi"
-        ra thành mục riêng — cách chơi vốn là một phần của việc giới thiệu game.
+        MỘT KHỐI MÔ TẢ DUY NHẤT.
+
+        Từng có ba ô rời: Giới thiệu, Cách chơi, Cần biết trước khi tải. Ba ô
+        ấy sinh ra từ hồi mô tả còn là chữ trần, không xuống dòng nổi một đầu
+        đề — nên phải lấy chính biểu mẫu làm cấu trúc. Nay ô mô tả có đầu đề,
+        danh sách và trích dẫn, nên người viết tự chia phần đúng theo game họ
+        đang viết, thay vì nhét vào ba ngăn do người khác đặt sẵn.
+
+        Cả App Store lẫn CH Play cũng chỉ có đúng một mục mô tả.
       */}
-      {(game.gioiThieu || game.cachChoi) && (
+      {game.gioiThieu && (
         <section>
           <h2 className="tieu-de mb-2">Giới thiệu</h2>
           {/*
@@ -122,24 +128,8 @@ export default async function TabThongTin({ params, searchParams }: {
             thẻ gõ tay trong phần mô tả đều bị escape thành chữ thường. Đầu ra
             chỉ chứa đúng những thẻ do chính bộ dựng sinh — xem `chu-dam.ts`.
           */}
-          {game.gioiThieu && (
-            <div className="chu-dam" dangerouslySetInnerHTML={{ __html: dungChuDam(game.gioiThieu) }} />
-          )}
-          {game.cachChoi && (
-            <div className="chu-dam mt-3" dangerouslySetInnerHTML={{ __html: dungChuDam(game.cachChoi) }} />
-          )}
+          <div className="chu-dam" dangerouslySetInnerHTML={{ __html: dungChuDam(game.gioiThieu) }} />
         </section>
-      )}
-
-      {/* Lưu ý tương thích gấp lại — khung vàng cỡ lớn hét to hơn cả nút tải,
-          trong khi phần lớn người đọc lướt qua nó. */}
-      {game.luuY && (
-        <KhoiGap tieuDe="Cần biết trước khi tải"
-          tomTat="Máy nào chạy được, và những lỗi đã biết"
-          icon={<TriangleAlert size={16} className="text-canh" />}>
-          <div className="chu-dam chu-dam-nho text-mo"
-            dangerouslySetInnerHTML={{ __html: dungChuDam(game.luuY) }} />
-        </KhoiGap>
       )}
 
       {/* Bảng thông tin chỉ giữ thứ CHƯA nói ở đâu khác trên trang: nhà phát

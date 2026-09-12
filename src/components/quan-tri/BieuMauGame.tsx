@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { luuGame, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 import { OSoanThao } from '@/components/quan-tri/OSoanThao';
+import { ONapAnh } from '@/components/quan-tri/ONapAnh';
 
 export interface GameSua {
   id: string;
@@ -12,8 +13,6 @@ export interface GameSua {
   nhaPhatTrien: string | null;
   namPhatHanh: number | null;
   gioiThieu: string | null;
-  cachChoi: string | null;
-  luuY: string | null;
   icon: string | null;
   ngonNgu: string;
   vietHoa: boolean;
@@ -46,9 +45,10 @@ export function BieuMauGame({ game, theLoai }: {
         <O ten="tenViet" nhan="Tên tiếng Việt" giaTri={game?.tenViet ?? ''} />
         <O ten="nhaPhatTrien" nhan="Nhà phát triển" giaTri={game?.nhaPhatTrien ?? ''} />
         <O ten="namPhatHanh" nhan="Năm phát hành" kieu="number" giaTri={game?.namPhatHanh ?? ''} />
-        <O ten="icon" nhan="Địa chỉ ảnh biểu tượng" giaTri={game?.icon ?? ''}
-          goYy="Bỏ trống thì dùng ô màu kèm chữ tắt." />
       </div>
+
+      <ONapAnh ten="icon" nhan="Ảnh biểu tượng" banDau={game?.icon ?? ''} cho="icon"
+        goYy="Vuông thì đẹp nhất. Bỏ trống thì dùng ô màu kèm chữ tắt." />
 
       <label className="block">
         <span className="phu mb-1 block">Ngôn ngữ</span>
@@ -73,9 +73,6 @@ export function BieuMauGame({ game, theLoai }: {
       </fieldset>
 
       <OSoanThao ten="gioiThieu" nhan="Giới thiệu" giaTri={game?.gioiThieu ?? ''} dong={7} chiDan />
-      <OSoanThao ten="cachChoi" nhan="Cách chơi" giaTri={game?.cachChoi ?? ''} dong={4} />
-      <OSoanThao ten="luuY" nhan="Cần biết trước khi tải" giaTri={game?.luuY ?? ''} dong={4}
-        goYy="Máy nào chạy được, lỗi đã biết — hiện trong khung vàng ở trang game." />
 
       <div className="flex flex-wrap gap-4">
         <Danh ten="vietHoa" nhan="Có bản Việt hoá" bat={game?.vietHoa} />

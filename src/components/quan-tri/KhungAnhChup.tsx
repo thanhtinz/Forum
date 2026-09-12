@@ -3,6 +3,7 @@
 import { useActionState, useTransition } from 'react';
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
 import { doiChoAnhChup, themAnhChup, xoaAnhChup, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
+import { ONapAnh } from '@/components/quan-tri/ONapAnh';
 
 export interface AnhQuanTri {
   id: string;
@@ -61,10 +62,15 @@ export function KhungAnhChup({ gameId, anh }: { gameId: string; anh: AnhQuanTri[
         <p className="text-[14px] font-bold">Thêm ảnh chụp</p>
         <input type="hidden" name="gameId" value={gameId} />
 
-        <label className="block">
-          <span className="phu mb-1 block">Địa chỉ ảnh</span>
-          <input name="duongDanAnh" required placeholder="/anh/game/vi-du-1.jpg" className="o-nhap" />
-        </label>
+        {/*
+          `key` đổi theo SỐ ẢNH ĐANG CÓ, và đó là chủ ý: thêm xong một ảnh thì
+          danh sách dài thêm một, `key` đổi, ô chọn ảnh dựng lại từ đầu và sạch
+          trơn. Không có nó thì ảnh vừa thêm vẫn nằm trong ô, và người dùng bấm
+          "Thêm ảnh" lần nữa là thêm đúng tấm ấy hai lần.
+        */}
+        <ONapAnh key={anh.length} ten="duongDanAnh" nhan="Ảnh chụp màn hình"
+          banDau="" cho="anh-chup"
+          goYy="Ảnh gốc của máy là đẹp nhất — đừng phóng to trước khi tải lên." />
 
         <label className="block">
           <span className="phu mb-1 block">Chú thích (không bắt buộc)</span>

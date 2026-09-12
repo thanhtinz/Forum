@@ -72,9 +72,7 @@ model Game {
   namPhatHanh  Int?
 
   gioiThieu String? @db.Text
-  cachChoi  String? @db.Text
   /// Điều người tải cần biết TRƯỚC khi bấm: máy nào chạy được, lỗi đã biết.
-  luuY      String? @db.Text
 
   icon String?
   bia  String?

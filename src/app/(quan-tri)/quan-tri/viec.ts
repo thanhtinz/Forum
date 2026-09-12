@@ -9,6 +9,7 @@ import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
 import { baoBanMoi } from '@/lib/bao-ban-moi';
 import { dungChuDam } from '@/lib/chu-dam';
+import { xoaAnh } from '@/lib/kho-anh';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
 import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
 
@@ -56,17 +57,28 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
     nhaPhatTrien: chu(form, 'nhaPhatTrien') || null,
     namPhatHanh: Number.isFinite(namRaw) && namRaw > 1970 && namRaw < 2100 ? namRaw : null,
     gioiThieu: chu(form, 'gioiThieu') || null,
-    cachChoi: chu(form, 'cachChoi') || null,
-    luuY: chu(form, 'luuY') || null,
     icon: icon || null,
     ngonNgu: chu(form, 'ngonNgu') || 'en',
     vietHoa: form.get('vietHoa') === 'on',
     noiBat: form.get('noiBat') === 'on',
   };
 
+  /*
+   * Đổi biểu tượng thì gỡ tấm cũ khỏi kho ảnh.
+   *
+   * Đọc tấm cũ TRƯỚC khi ghi đè, vì sau đó không còn chỗ nào biết nó nữa. Và
+   * chỉ gỡ khi thật sự khác: lưu lại game mà không đụng tới ảnh là chuyện xảy
+   * ra suốt, mà gỡ nhầm thì trang thủng lỗ ngay.
+   */
+  const iconCu = id
+    ? (await db.game.findUnique({ where: { id }, select: { icon: true } }))?.icon ?? null
+    : null;
+
   const game = id
     ? await db.game.update({ where: { id }, data: duLieu, select: { id: true } })
     : await db.game.create({ data: duLieu, select: { id: true } });
+
+  if (iconCu && iconCu !== duLieu.icon) await xoaAnh(iconCu);
 
   // Thể loại: xoá hết rồi gắn lại. Danh sách chỉ vài mục nên rẻ, mà so từng
   // cái để thêm/bớt thì dài gấp ba lần và dễ sót đúng cái vừa bỏ chọn.
@@ -241,7 +253,7 @@ export async function themAnhChup(_truoc: KetQua, form: FormData): Promise<KetQu
 
   const gameId = chu(form, 'gameId');
   const duongDanAnh = chu(form, 'duongDanAnh');
-  if (!duongDanAnh) return { loi: 'Hãy nhập địa chỉ ảnh.' };
+  if (!duongDanAnh) return { loi: 'Hãy chọn một ảnh.' };
 
   // Chỉ nhận ảnh trong nhà hoặc qua https — và kiểm bằng cách PHÂN TÍCH địa
   // chỉ, không so đầu chuỗi; xem `dia-chi-an-toan.ts` để biết vì sao.
@@ -274,11 +286,20 @@ export async function xoaAnhChup(anhId: string): Promise<KetQua> {
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
   const anh = await db.anhChup.findUnique({
-    where: { id: anhId }, select: { game: { select: { id: true, duongDan: true } } },
+    where: { id: anhId },
+    select: { duongDan: true, game: { select: { id: true, duongDan: true } } },
   });
   if (!anh) return {};
 
   await db.anhChup.delete({ where: { id: anhId } });
+  /*
+   * Gỡ luôn tệp khỏi kho ảnh, SAU khi hàng trong CSDL đã mất.
+   *
+   * Thứ tự ấy quan trọng: xoá tệp trước mà lượt xoá hàng hỏng thì trang còn
+   * trỏ vào một tấm ảnh không còn nữa — thủng lỗ ngay trên mặt tiền. Ngược
+   * lại, tệp mồ côi nằm trong kho thì chẳng ai thấy.
+   */
+  await xoaAnh(anh.duongDan);
   revalidatePath(`/quan-tri/game/${anh.game.id}`);
   revalidatePath(`/game/${anh.game.duongDan}`);
   return {};
@@ -550,7 +571,11 @@ export async function xoaGame(gameId: string, tenGoLai: string): Promise<KetQua>
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
   const game = await db.game.findUnique({
-    where: { id: gameId }, select: { ten: true, duongDan: true },
+    where: { id: gameId },
+    select: {
+      ten: true, duongDan: true, icon: true,
+      anhChup: { select: { duongDan: true } },
+    },
   });
   if (!game) return { loi: 'Không tìm thấy game.' };
 
@@ -559,6 +584,16 @@ export async function xoaGame(gameId: string, tenGoLai: string): Promise<KetQua>
   }
 
   await db.game.delete({ where: { id: gameId } });
+
+  /*
+   * Ảnh chụp đi theo game nhờ `onDelete: Cascade`, nhưng TỆP trong kho ảnh thì
+   * không: cascade chỉ biết tới hàng trong CSDL. Không gỡ ở đây thì mỗi game
+   * bị xoá để lại một nắm tệp không ai trỏ tới, và hoá đơn kho cứ dày lên.
+   *
+   * Gỡ SAU khi xoá xong, và `xoaAnh` tự nuốt lỗi: game đã mất rồi thì một tệp
+   * mồ côi không đáng để làm hỏng cả lượt xoá.
+   */
+  await Promise.all([game.icon, ...game.anhChup.map((a) => a.duongDan)].map(xoaAnh));
 
   revalidatePath('/quan-tri/game');
   revalidatePath('/quan-tri');

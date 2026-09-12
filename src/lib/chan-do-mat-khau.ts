@@ -190,3 +190,50 @@ export async function ghiLanDangKy(): Promise<void> {
     // Đếm hỏng thì thôi — không để việc đếm chặn mất một lượt đăng ký thật.
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * CHẶN TẢI ẢNH HÀNG LOẠT
+ *
+ * Ảnh là thứ NẶNG nhất một thành viên thường gửi lên được, và mỗi tấm là một
+ * tệp nằm lại trong kho mãi mãi — xoá bài viết cũng không gỡ được nó ra, vì
+ * ảnh nhúng trong chữ thì không có hàng nào trỏ tới.
+ *
+ * Đếm theo NGƯỜI chứ không theo IP: người tải ảnh thì phải đăng nhập rồi, nên
+ * đã có một định danh thật để đếm; mà đếm theo IP thì cả quán net chung nhau
+ * một hạn ngạch.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const TOI_DA_ANH = 30;
+
+export async function conDuocDangAnh(nguoiId: string): Promise<KetQuaChan> {
+  const bay = new Date();
+  const hang = await db.lanHong.findFirst({
+    where: { khoa: `anh:${nguoiId}`, camDen: { gt: bay } }, select: { camDen: true },
+  });
+  if (!hang) return { chan: false, conPhut: 0 };
+  return {
+    chan: true,
+    conPhut: Math.max(1, Math.ceil((hang.camDen!.getTime() - bay.getTime()) / 60_000)),
+  };
+}
+
+export async function ghiLanDangAnh(nguoiId: string): Promise<void> {
+  const khoa = `anh:${nguoiId}`;
+  const bay = new Date();
+  const motCuaSoTruoc = new Date(bay.getTime() - CUA_SO_MS);
+  try {
+    const cu = await db.lanHong.findUnique({ where: { khoa }, select: { soLan: true, tuLuc: true } });
+    const trongCuaSo = cu && cu.tuLuc > motCuaSoTruoc;
+    const soLan = trongCuaSo ? cu.soLan + 1 : 1;
+    await db.lanHong.upsert({
+      where: { khoa },
+      create: { khoa, soLan: 1, tuLuc: bay },
+      update: {
+        soLan,
+        tuLuc: trongCuaSo ? cu.tuLuc : bay,
+        camDen: soLan >= TOI_DA_ANH ? new Date(bay.getTime() + CAM_MS) : null,
+      },
+      select: { khoa: true },
+    });
+  } catch { /* đếm hỏng thì thôi, đừng chặn mất một lượt tải thật */ }
+}

@@ -10,7 +10,7 @@ import { TabGame } from '@/components/game/TabGame';
 import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
 import { NutTaiDau } from '@/components/game/NutTaiDau';
 import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
-import { diemSao, gonDungLuong } from '@/lib/tien-ich';
+import { diemSao } from '@/lib/tien-ich';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 
 export const dynamic = 'force-dynamic';
@@ -234,28 +234,37 @@ export default async function KhungGame({ children, params }: {
                   : 'Game'}
                 {game.vietHoa && ' · Có bản Việt hoá'}
               </p>
+
+              {/*
+                NÚT TẢI NẰM TRONG CỘT PHẢI, ngay dưới dòng thể loại — đúng chỗ
+                nút "Get" của App Store.
+
+                Bản trước đặt nó thành một hàng riêng bên dưới cả khối biểu
+                tượng, nên nó tụt xuống mép trái, thẳng hàng với cái biểu tượng
+                chứ không thẳng hàng với tên game. Nhìn ra thì rõ ngay: mắt đọc
+                tên game xong đi xuống là gặp khoảng trắng, còn cái nút thì nằm
+                lệch hẳn sang một cột khác.
+
+                Cỡ tệp KHÔNG in cạnh nút nữa: hàng số liệu cuộn ngang ngay bên
+                dưới đã có ô "Dung lượng" kèm số hiệu bản. In hai lần cách nhau
+                ba phân thì người đọc dừng lại đối chiếu xem hai chỗ có khác
+                nhau chỗ nào không — mất công vì chúng giống hệt.
+              */}
+              {(tepChinh || game.banTai.length > 0) && (
+                <p className="mt-2.5">
+                  <NutTaiDau nhan="Tải về" dichLui="#tai" taiKhoan={nguoi?.tenHienThi ?? null}
+                    game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang }}
+                    tep={tepChinh && banMoiNhat
+                      ? {
+                          id: tepChinh.id, loai: tepChinh.loai,
+                          dungLuong: tepChinh.dungLuong != null ? Number(tepChinh.dungLuong) : null,
+                          soHieu: banMoiNhat.soHieu, heMay: MO_TA_HE[he[0]].ten,
+                        }
+                      : null} />
+                </p>
+              )}
             </div>
           </div>
-
-          {/* Nút tải và cỡ tệp đứng cùng một hàng, y như App Store đặt "Get"
-              cạnh dòng "In-App Purchases": một hàng nói cả việc bấm lẫn cái
-              giá phải trả để bấm. */}
-          {(tepChinh || game.banTai.length > 0) && (
-            <p className="mt-3 flex items-center gap-2.5">
-              <NutTaiDau nhan="Tải về" dichLui="#tai" taiKhoan={nguoi?.tenHienThi ?? null}
-                game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang }}
-                tep={tepChinh && banMoiNhat
-                  ? {
-                      id: tepChinh.id, loai: tepChinh.loai,
-                      dungLuong: tepChinh.dungLuong != null ? Number(tepChinh.dungLuong) : null,
-                      soHieu: banMoiNhat.soHieu, heMay: MO_TA_HE[he[0]].ten,
-                    }
-                  : null} />
-              {banMoiNhat?.dungLuong != null && (
-                <span className="phu">{gonDungLuong(banMoiNhat.dungLuong)}</span>
-              )}
-            </p>
-          )}
 
           <HangSoLieu o={soLieu} />
         </header>

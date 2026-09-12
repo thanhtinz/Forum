@@ -17,7 +17,7 @@ export function MenuTacGia({ loiDi, ten }: {
   const [mo, datMo] = useState(false);
 
   return (
-    <header className="vach-duoi sticky top-0 z-30 border-b bg-nen2/90 backdrop-blur lg:hidden">
+    <header className="kinh-tren sticky top-0 z-30 lg:hidden">
       <div className="khung flex items-center justify-between gap-3 py-2.5">
         <Link href="/quan-ly" className="text-[15px] font-bold tracking-tight">
           SunnyStore <span className="font-medium text-mo">Tác giả</span>

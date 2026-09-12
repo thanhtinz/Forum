@@ -22,7 +22,7 @@ export function ThanhTren({ nguoi, tuKhoa, chuaDoc = 0 }: {
   chuaDoc?: number;
 }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-vien bg-nen/95 backdrop-blur">
+    <header className="kinh-tren sticky top-0 z-30">
       <div className="flex items-center gap-2 px-4 py-2.5 sm:px-6">
         <Link href="/" className="shrink-0 lg:hidden" aria-label="SunnyStore — về trang đầu">
           <DauHieu co={30} chu={false} />

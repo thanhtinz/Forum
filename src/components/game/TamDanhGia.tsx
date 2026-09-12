@@ -92,9 +92,11 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau }: {
       </a>
 
       <dialog ref={hopRef} onClose={() => datMo(false)}
-        className="tam-truot w-full max-w-[560px] bg-nen2 text-chu backdrop:bg-black/40">
+        className="tam-truot w-full max-w-[560px] text-chu backdrop:bg-black/40">
         <div className="flex max-h-[86vh] flex-col">
-          <header className="vach-duoi sticky top-0 z-10 flex items-start gap-3 border-b bg-nen2 px-4 py-3.5">
+          {/* Đầu tấm dính lại khi cuộn nên nó phải là kính luôn: một dải đặc nằm
+              trên một tấm kính thì lộ ra ngay là hai vật liệu khác nhau. */}
+          <header className="kinh-tren sticky top-0 z-10 flex items-start gap-3 px-4 py-3.5">
             <div className="min-w-0 flex-1">
               <h2 className="tieu-de-nho">Đánh giá</h2>
               <p className="phu mt-0.5">{gonSo(tong)} bài từ người đã tải</p>

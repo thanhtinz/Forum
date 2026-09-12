@@ -55,7 +55,7 @@ export function TamXacNhanTai({ tep, game, taiKhoan, mo, dong }: {
 
   return (
     <dialog ref={hopRef} onClose={dong}
-      className="tam-truot w-full max-w-[440px] bg-nen2 text-chu backdrop:bg-black/40">
+      className="tam-truot w-full max-w-[440px] text-chu backdrop:bg-black/40">
       <div className="p-4">
         <header className="flex items-center justify-between">
           <h2 className="tieu-de-nho">SunnyStore</h2>

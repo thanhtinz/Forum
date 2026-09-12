@@ -26,7 +26,7 @@ export function ThanhDay() {
     <nav aria-label="Điều hướng chính"
       className="fixed inset-x-0 bottom-0 z-40 px-3 lg:hidden"
       style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}>
-      <ul className="mx-auto flex max-w-md rounded-[26px] border border-vien bg-nen2/90 p-1.5 shadow-noi backdrop-blur-xl">
+      <ul className="kinh mx-auto flex max-w-md rounded-[26px] p-1.5">
         {LOI_DI.map((l) => {
           const Icon = l.icon;
           const chon = dangO(duongDan, l.duongDan);

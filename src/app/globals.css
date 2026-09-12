@@ -104,6 +104,19 @@
   /* Bóng của thanh tab nổi. Hai lớp: một lớp mỏng sát mép cho ra đường viền
      mềm, một lớp toả rộng cho ra cảm giác thanh đang trôi trên nền. */
   --bong-noi: 0 1px 2px rgb(16 24 40 / .10), 0 8px 28px -6px rgb(16 24 40 / .22);
+
+  /*
+   * Ba con số của vật liệu KÍNH LỎNG, tách ra biến để nền sáng và nền tối
+   * dùng chung một đoạn CSS mà vẫn khác nhau đúng chỗ cần khác.
+   *
+   * Nền tối phải TRONG HƠN và viền sáng phải MỜ HƠN: trên nền tối, một sợi
+   * trắng 65% không còn là ánh sáng hắt vào mép kính nữa, nó thành một đường
+   * kẻ trắng. Còn nền thì đục hơn một chút vì chữ sáng trên kính trong là chỗ
+   * khó đọc nhất của cả hệ màu.
+   */
+  --kinh-nen: .62;
+  --kinh-vien: rgb(255 255 255 / .5);
+  --kinh-sang: rgb(255 255 255 / .65);
 }
 
 :root[data-nen='toi'] {
@@ -113,6 +126,10 @@
      vòng sáng mảnh thay cho bóng đổ. */
   --bong-noi: 0 0 0 1px rgb(255 255 255 / .06), 0 8px 28px -6px rgb(0 0 0 / .6);
   --bong-the: 0 0 0 1px rgb(255 255 255 / .06), 0 6px 20px -4px rgb(0 0 0 / .5);
+
+  --kinh-nen: .7;
+  --kinh-vien: rgb(255 255 255 / .1);
+  --kinh-sang: rgb(255 255 255 / .12);
 
   --nen: 15 17 20;
   --nen2: 26 29 34;
@@ -247,12 +264,68 @@ p { text-wrap: pretty; }
    * được hình bên trong — App Store làm đúng thế, và nền dưới nút thì không
    * đoán trước được là sáng hay tối.
    */
+
+  /*
+   * ──────────────────────────────────────────────────────────────────────
+   * KÍNH LỎNG — vật liệu của iOS 26.
+   *
+   * Không phải "nền mờ mờ" như mấy lớp `backdrop-blur` rải rác trước đây.
+   * Vật liệu ấy có bốn phần, thiếu phần nào là ra nhựa chứ không ra kính:
+   *
+   *   1. NỀN TRONG SUỐT VỪA PHẢI (~60%). Trong quá thì chữ đè lên không đọc
+   *      được; đục quá thì chẳng còn là kính, chỉ là một tấm xám.
+   *   2. LÀM MỜ KÈM TĂNG ĐỘ TƯƠI. Chỉ mờ không thôi thì phần nền phía sau
+   *      xỉn đi thành một mảng bùn; `saturate` kéo màu nền trở lại, và đó
+   *      đúng là thứ khiến kính trông như kính — nó dẫn màu của thứ bên dưới.
+   *   3. VIỀN SÁNG Ở MÉP TRÊN. Một sợi trắng mờ chạy dọc cạnh trên, như ánh
+   *      sáng hắt vào mép một tấm kính thật. Đây là phần mắt nhận ra nhanh
+   *      nhất mà lại hay bị bỏ quên nhất.
+   *   4. BÓNG ĐỔ MỀM Ở DƯỚI, để tấm kính TRÔI trên nội dung chứ không dán
+   *      vào nội dung.
+   *
+   * DÙNG Ở ĐÂU: chỉ những thứ TRÔI TRÊN nội dung — thanh trên, thanh tab
+   * đáy, nút tròn nổi, tấm trượt. KHÔNG dùng cho thẻ nội dung: chữ trên một
+   * tấm kính đặt trên chữ khác là chữ chồng chữ, và đó là lỗi đọc được chứ
+   * không phải chuyện thẩm mỹ.
+   *
+   * MÁY KHÔNG LÀM MỜ ĐƯỢC thì tự động quay về nền đặc — xem `@supports` ở
+   * dưới. Không có nó thì trên mấy trình duyệt cũ, thanh tab thành trong
+   * suốt hoàn toàn và nội dung chạy xuyên qua nó.
+   * ────────────────────────────────────────────────────────────────────── */
+  .kinh {
+    background: rgb(var(--nen2) / var(--kinh-nen));
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid var(--kinh-vien);
+    box-shadow: var(--bong-noi), inset 0 1px 0 var(--kinh-sang);
+  }
+
+  /* Bản dành cho thanh dính mép trên: không viền quanh, chỉ một vạch dưới. */
+  .kinh-tren {
+    background: rgb(var(--nen) / calc(var(--kinh-nen) + .12));
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border-bottom: 1px solid rgb(var(--vien) / .8);
+    box-shadow: inset 0 1px 0 var(--kinh-sang);
+  }
+
+  /*
+   * MÁY KHÔNG LÀM MỜ ĐƯỢC thì quay về nền ĐẶC.
+   *
+   * Không có nhánh này thì trên trình duyệt cũ, thanh tab và tấm trượt thành
+   * trong suốt sáu mươi phần trăm mà chẳng mờ gì cả — nội dung chạy xuyên qua
+   * và không đọc nổi chữ nào. Hỏng kiểu ấy tệ hơn hẳn là không có kính.
+   */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .kinh { background: rgb(var(--nen2)); }
+    .kinh-tren { background: rgb(var(--nen)); }
+  }
+
   .nut-tron {
-    @apply grid size-11 shrink-0 place-items-center rounded-full border border-vien
-      bg-nen2/80 text-chu backdrop-blur;
+    @apply kinh grid size-11 shrink-0 place-items-center rounded-full text-chu;
     transition: background-color var(--chuyen), transform var(--chuyen);
   }
-  .nut-tron:hover { @apply bg-nen3; }
+  .nut-tron:hover { background: rgb(var(--nen3) / .8); }
   .nut-tron:active { transform: scale(.94); }
   .nut-vien { @apply nut border border-vien text-chu hover:bg-nen3; }
 
@@ -443,6 +516,13 @@ p { text-wrap: pretty; }
  * xuống đáy ở khổ hẹp và cho nó chạy hết bề ngang.
  */
 .tam-truot {
+  /* Tấm trượt cũng là thứ TRÔI TRÊN nội dung, nên cũng là kính — và nó là chỗ
+     vật liệu ấy dễ thấy nhất: trang phía sau vẫn hiện lờ mờ sau tấm, nên người
+     dùng không mất dấu chỗ mình đang đứng. */
+  background: rgb(var(--nen2) / calc(var(--kinh-nen) + .2));
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: var(--bong-noi), inset 0 1px 0 var(--kinh-sang);
   margin: 0;
   max-width: 100%;
   max-height: 100vh;
@@ -451,7 +531,10 @@ p { text-wrap: pretty; }
   border-radius: var(--bo-the-lon) var(--bo-the-lon) 0 0;
   position: fixed;
   inset: auto 0 0 0;
-  box-shadow: var(--bong-noi);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tam-truot { background: rgb(var(--nen2)); }
 }
 
 @media (min-width: 640px) {

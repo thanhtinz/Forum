@@ -153,6 +153,21 @@ export default async function chay(kiem) {
       const d = await db.danhGia.findUnique({ where: { id: baiB.id }, select: { traLoi: true } });
       return d?.traLoi === 'B đã đọc góp ý.';
     }));
+
+    /*
+     * ── ĐÁP ĐƯỢC NGAY TRÊN TRANG GAME ────────────────────────────────────
+     *
+     * Người chơi viết lời ở đây, nên chỗ đáp gọn nhất cũng là đây. Nút chỉ
+     * hiện cho tác giả CỦA GAME ẤY — tác giả khác mở cùng trang thì không.
+     */
+    const NUT_DAP = 'button:has-text("Trả lời bài này"), button:has-text("Sửa lời trả lời")';
+    await aPage.goto(`${GOC}/game/${DAU}-a`, { waitUntil: 'networkidle' });
+    kiem('tác giả thấy nút trả lời ngay trên trang game của mình',
+      (await aPage.locator(NUT_DAP).count()) > 0);
+
+    await bPage.goto(`${GOC}/game/${DAU}-a`, { waitUntil: 'networkidle' });
+    kiem('tác giả khác mở cùng trang ấy thì KHÔNG thấy nút trả lời',
+      (await bPage.locator(NUT_DAP).count()) === 0);
   } finally {
     if (aPage) await aPage.close();
     if (bPage) await bPage.close();

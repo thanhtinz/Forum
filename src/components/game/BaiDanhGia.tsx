@@ -1,6 +1,5 @@
 import { SaoNam } from '@/components/game/SaoNam';
 import { ODapDanhGia } from '@/components/game/ODapDanhGia';
-import { traLoiDanhGia } from '@/app/(quan-tri)/quan-tri/viec';
 import { NutBaoXau } from '@/components/NutBaoXau';
 import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { cachDay } from '@/lib/tien-ich';
@@ -31,11 +30,19 @@ export interface BaiDanhGiaData {
  * đến lúc sửa một bên quên bên kia — mà bên quên ấy lại là bên người ta đọc
  * nhiều hơn.
  */
-export function BaiDanhGia({ d, nguoiXemId, laQuanTri }: {
+export function BaiDanhGia({ d, nguoiXemId, dap }: {
   d: BaiDanhGiaData;
   /** `null` là khách chưa đăng nhập. */
   nguoiXemId: string | null;
-  laQuanTri: boolean;
+  /**
+   * Việc ghi lời đáp, hoặc `null` nếu người đang xem không được đáp.
+   *
+   * Truyền VIỆC chứ không truyền một cờ `laQuanTri`: nay có hai người đáp được
+   * — ban quản trị đáp mọi bài, tác giả chỉ đáp bài của game mình — và hai bên
+   * gọi hai hàm kiểm quyền khác nhau. Cờ đúng/sai thì nơi gọi phải tự nhớ ghép
+   * cờ nào với hàm nào, mà đó chính là chỗ để quên.
+   */
+  dap?: ((danhGiaId: string, loi: string) => Promise<{ loi?: string }>) | null;
 }) {
   return (
     <>
@@ -68,7 +75,7 @@ export function BaiDanhGia({ d, nguoiXemId, laQuanTri }: {
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        {laQuanTri && <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} dap={traLoiDanhGia} />}
+        {dap && <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} dap={dap} />}
         {/* Chỉ mời báo khi đã đăng nhập và không phải bài của chính mình —
             bài của mình thì sửa thẳng được. */}
         {nguoiXemId && nguoiXemId !== d.nguoiId && <NutBaoXau loai="danhGia" mucId={d.id} />}

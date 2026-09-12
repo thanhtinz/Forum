@@ -6,6 +6,8 @@ import { DANG_HIEN } from '@/lib/danh-muc';
 import { PhoDiem } from '@/components/game/PhoDiem';
 import { ODanhGia } from '@/components/game/ODanhGia';
 import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
+import { traLoiDanhGia } from '@/app/(quan-tri)/quan-tri/viec';
+import { tacGiaTraLoiDanhGia } from '@/app/(tac-gia)/quan-ly/viec';
 import { PhanTrang } from '@/components/PhanTrang';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
@@ -51,7 +53,7 @@ export default async function TabDanhGia({ params, searchParams }: {
 
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
-    select: { id: true, duongDan: true },
+    select: { id: true, duongDan: true, tacGiaId: true },
   });
   if (!game) notFound();
 
@@ -63,6 +65,13 @@ export default async function TabDanhGia({ params, searchParams }: {
 
   const nguoi = await nguoiHienTai();
   const loc = { gameId: game.id, ...(locSao ? { sao: locSao } : {}) };
+
+  // Ban quản trị đáp mọi bài, tác giả chỉ đáp bài game mình — xem chú thích
+  // dài ở trang game. Câu `if` này chỉ quyết định bày nút hay không; cửa thật
+  // nằm trong từng hàm.
+  const dapDanhGia = nguoi?.vaiTro === 'QUAN_TRI' ? traLoiDanhGia
+    : nguoi && game.tacGiaId === nguoi.id ? tacGiaTraLoiDanhGia
+      : null;
 
   const [phanBo, tong, cuaToi] = await Promise.all([
     db.danhGia.groupBy({ by: ['sao'], where: { gameId: game.id }, _count: { _all: true } }),
@@ -144,8 +153,7 @@ export default async function TabDanhGia({ params, searchParams }: {
           <ul aria-label="Danh sách đánh giá" className="space-y-4">
             {danhGia.map((d) => (
               <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
-                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null}
-                  laQuanTri={nguoi?.vaiTro === 'QUAN_TRI'} />
+                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} dap={dapDanhGia} />
               </li>
             ))}
           </ul>

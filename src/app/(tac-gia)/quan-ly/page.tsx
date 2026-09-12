@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { ArrowRight, Clock, Download, Eye, Star, TriangleAlert } from 'lucide-react';
+import { ArrowRight, Clock, Download, Eye, MessageSquare, Star, TriangleAlert } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { NhanTrangThai } from '@/components/tac-gia/NhanTrangThai';
+import { SaoNam } from '@/components/game/SaoNam';
 import { cachDay, diemSao, gonSo } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export default async function TongQuanTacGia() {
   const nguoi = await nguoiHienTai();
   if (!nguoi) redirect('/dang-nhap');
 
-  const [gom, game, bịTraLai] = await Promise.all([
+  const [gom, game, bịTraLai, soChuaDap, chuaDap] = await Promise.all([
     db.game.aggregate({
       where: { tacGiaId: nguoi.id },
       _count: { _all: true },
@@ -43,6 +44,20 @@ export default async function TongQuanTacGia() {
       orderBy: { suaLuc: 'desc' },
       take: 5,
       select: { id: true, ten: true, lyDoTuChoi: true },
+    }),
+    // Đếm RIÊNG chứ không lấy độ dài của danh sách dưới: danh sách chỉ lấy ba
+    // bài mới nhất, nên đếm nó thì ba mươi bài chờ cũng hiện ra "3".
+    db.danhGia.count({
+      where: { game: { tacGiaId: nguoi.id }, noiDung: { not: null }, traLoi: null },
+    }),
+    db.danhGia.findMany({
+      where: { game: { tacGiaId: nguoi.id }, noiDung: { not: null }, traLoi: null },
+      orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
+      take: 3,
+      select: {
+        id: true, sao: true, noiDung: true, taoLuc: true,
+        game: { select: { ten: true } },
+      },
     }),
   ]);
 
@@ -71,6 +86,39 @@ export default async function TongQuanTacGia() {
                   {g.lyDoTuChoi && (
                     <span className="phu mt-0.5 block line-clamp-2">{g.lyDoTuChoi}</span>
                   )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Đánh giá chờ trả lời cũng là VIỆC, nên đứng cùng khu với game bị trả
+          lại — trên số liệu. Người chơi hỏi mà mấy tuần không ai đáp thì lời
+          hỏi ấy nằm lại trang game cho mọi người sau đọc. */}
+      {soChuaDap > 0 && (
+        <section className="the p-4">
+          <div className="flex items-end justify-between gap-3">
+            <p className="flex items-center gap-2 text-[15px] font-bold">
+              <MessageSquare size={17} aria-hidden />
+              {gonSo(soChuaDap)} đánh giá chờ trả lời
+            </p>
+            <Link href="/quan-ly/danh-gia"
+              className="inline-flex shrink-0 items-center gap-1 text-[13px] font-semibold text-nhan hover:underline">
+              Trả lời <ArrowRight size={14} aria-hidden />
+            </Link>
+          </div>
+          <ul className="mt-3 space-y-2.5">
+            {chuaDap.map((d) => (
+              <li key={d.id}>
+                <Link href="/quan-ly/danh-gia" className="group block">
+                  <span className="flex flex-wrap items-center gap-x-2">
+                    <SaoNam diem={d.sao} co={11} />
+                    <span className="phu">{d.game.ten} · {cachDay(d.taoLuc)}</span>
+                  </span>
+                  <span className="mt-0.5 block line-clamp-2 text-[13px] group-hover:underline">
+                    {d.noiDung}
+                  </span>
                 </Link>
               </li>
             ))}

@@ -147,9 +147,9 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau }: {
               <ul className="mt-4 space-y-4">
                 {bai.map((d) => (
                   <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
-                    {/* Trong tấm trượt thì không bày nút trả lời của quản trị:
-                        đây là chỗ ĐỌC, còn trả lời làm ở ngay trang game. */}
-                    <BaiDanhGia d={d} nguoiXemId={null} laQuanTri={false} />
+                    {/* Trong tấm trượt thì không bày nút trả lời: đây là chỗ
+                        ĐỌC, còn trả lời làm ở ngay trang game. */}
+                    <BaiDanhGia d={d} nguoiXemId={null} />
                   </li>
                 ))}
               </ul>

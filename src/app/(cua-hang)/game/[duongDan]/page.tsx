@@ -8,6 +8,8 @@ import { PhoDiem } from '@/components/game/PhoDiem';
 import { SaoNam } from '@/components/game/SaoNam';
 import { ODanhGia } from '@/components/game/ODanhGia';
 import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
+import { traLoiDanhGia } from '@/app/(quan-tri)/quan-tri/viec';
+import { tacGiaTraLoiDanhGia } from '@/app/(tac-gia)/quan-ly/viec';
 import { KeAnhChup } from '@/components/game/KeAnhChup';
 import { TamDanhGia } from '@/components/game/TamDanhGia';
 import { MoTaGame } from '@/components/game/MoTaGame';
@@ -56,7 +58,7 @@ export default async function TabThongTin({ params, searchParams }: {
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
     select: {
-      id: true, gioiThieu: true, namPhatHanh: true,
+      id: true, tacGiaId: true, gioiThieu: true, namPhatHanh: true,
       ngonNgu: true, dangLuc: true, nhaPhatTrien: true,
       tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
       // Lấy đúng trần luật định — game cũ lỡ có hơn thì cũng chỉ bày chừng ấy.
@@ -133,6 +135,20 @@ export default async function TabThongTin({ params, searchParams }: {
   // Ô trả lời chỉ VẼ ra cho quản trị; còn chặn thật nằm trong `traLoiDanhGia`,
   // vì một hàm `'use server'` thì ai cũng gọi được, không cần thấy nút.
   const laQuanTri = nguoi?.vaiTro === 'QUAN_TRI';
+  /*
+   * AI ĐÁP ĐƯỢC BÀI ĐÁNH GIÁ NGAY TẠI ĐÂY.
+   *
+   * Tác giả của chính game này đáp được, không phải chỉ ban quản trị: người
+   * chơi viết lời ngay dưới trang game, nên chỗ đáp gọn nhất cũng là chỗ ấy —
+   * bắt tác giả vòng qua bảng riêng mới nói lại được một câu thì phần lớn sẽ
+   * chẳng nói gì.
+   *
+   * Hai vai gọi hai hàm khác nhau vì chúng kiểm quyền khác nhau; câu `if` ở
+   * đây chỉ quyết ĐỊNH BÀY nút hay không, còn cửa thật nằm trong từng hàm.
+   */
+  const dapDanhGia = laQuanTri ? traLoiDanhGia
+    : nguoi && game.tacGiaId === nguoi.id ? tacGiaTraLoiDanhGia
+      : null;
 
   /*
    * Có TÁC GIẢ thì trỏ về trang tác giả, không trỏ về trang gom theo tên hãng.
@@ -315,7 +331,7 @@ export default async function TabThongTin({ params, searchParams }: {
           <ul className="mt-5 space-y-4">
             {danhGia.map((d) => (
               <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
-                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} laQuanTri={laQuanTri} />
+                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} dap={dapDanhGia} />
               </li>
             ))}
           </ul>

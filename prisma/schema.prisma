@@ -32,6 +32,7 @@ model NguoiDung {
   phienDangNhap Phien[]
   baoXau        BaoXau[]
   thongBao      ThongBao[]
+  donTacGia     DonTacGia?
   gameDaDang    Game[]    @relation("GameCuaTacGia")
 
   /// Tên hiện ở trang tác giả, thay cho tên hiển thị thường. Rỗng thì dùng
@@ -530,6 +531,45 @@ model BaoXau {
 
 /// Loại thông báo. Quyết định biểu tượng và màu, không quyết định câu chữ —
 /// câu chữ chốt sẵn lúc tạo, xem chú thích ở model.
+/*
+ * ĐƠN XIN LÀM TÁC GIẢ.
+ *
+ * Trước đây trang mời làm tác giả chỉ nói "nhắn cho ban quản trị" — tức là lối
+ * đi duy nhất nằm NGOÀI cửa hàng, mà ban quản trị thì cũng chẳng có chỗ nào để
+ * xem ai đã nhắn. Người muốn đăng game phải tự tìm cách liên lạc, còn người
+ * xét thì lục tin nhắn. Cả hai đầu đều hỏng.
+ *
+ * Mỗi người MỘT đơn (`@unique`), và đơn bị trả lại thì sửa chính nó rồi gửi
+ * lại: giữ một dãy đơn cũ của cùng một người chỉ khiến hàng chờ dài ra mà
+ * chẳng nói thêm điều gì.
+ */
+enum TrangThaiDon {
+  CHO_XEM
+  DONG_Y
+  TU_CHOI
+}
+
+model DonTacGia {
+  id      String   @id @default(cuid())
+  nguoiId String   @unique
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  /// Tên muốn bày ở trang tác giả — có thể khác tên tài khoản.
+  tenTacGia  String
+  gioiThieu  String? @db.Text
+  /// Định đăng game gì: câu này là thứ ban quản trị đọc để quyết.
+  lyDo       String  @db.Text
+
+  trangThai TrangThaiDon @default(CHO_XEM)
+  /// Vì sao bị trả lại — người gửi đọc đúng câu này.
+  loiNhan   String?
+
+  taoLuc DateTime  @default(now())
+  xetLuc DateTime?
+
+  @@index([trangThai, taoLuc])
+}
+
 enum LoaiThongBao {
   TRA_LOI_CHU_DE
   DAP_DANH_GIA
@@ -538,6 +578,8 @@ enum LoaiThongBao {
   GAME_CO_BAN_MOI
   GAME_DA_DUYET
   GAME_BI_TU_CHOI
+  TAC_GIA_DUOC_DUYET
+  TAC_GIA_BI_TU_CHOI
 }
 
 /// Một thông báo gửi tới một người.

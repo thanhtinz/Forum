@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { CheckCircle2, Send, ShieldCheck, Upload } from 'lucide-react';
 import { nguoiHienTai } from '@/lib/xac-thuc';
+import { db } from '@/lib/db';
+import { ODon } from '@/components/tac-gia/ODon';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Đăng game lên SunnyStore' };
@@ -14,13 +16,25 @@ export const metadata: Metadata = { title: 'Đăng game lên SunnyStore' };
  * hàng chờ duyệt ngập bài rác trong một tuần, và ban quản trị mất đúng thứ họ
  * cần nhất: thời gian để xem tử tế mấy game thật.
  *
- * Nên ở đây chỉ nói rõ đường đi và mời liên hệ. Việc phong quyền làm ở trang
- * Thành viên của khu quản trị — chỗ ấy đã có sẵn nút, và có luật canh.
+ * Nhưng bản trước đi quá xa về phía kia: nó chỉ nói "nhắn cho ban quản trị",
+ * tức là lối đi duy nhất nằm NGOÀI cửa hàng — người muốn đăng game phải tự
+ * tìm cách liên lạc, mà ban quản trị cũng chẳng có chỗ nào để xem ai đã nhắn.
+ * Một trang mời làm việc gì đó mà không có chỗ bấm thì là một trang cụt.
+ *
+ * Nay có ĐƠN: gửi ngay tại đây, ban quản trị xét ở khu riêng, đồng ý hay trả
+ * lại đều báo về cho người gửi. Vẫn không ai tự phong được cho mình.
  */
 export default async function MoiLamTacGia() {
   const nguoi = await nguoiHienTai();
   // Đã là tác giả rồi thì vào thẳng bảng của mình, đừng bắt đọc lại lời mời.
   if (nguoi?.vaiTro === 'TAC_GIA' || nguoi?.vaiTro === 'QUAN_TRI') redirect('/quan-ly');
+
+  const don = nguoi
+    ? await db.donTacGia.findUnique({
+        where: { nguoiId: nguoi.id },
+        select: { trangThai: true, tenTacGia: true, gioiThieu: true, lyDo: true, loiNhan: true },
+      })
+    : null;
 
   return (
     <div className="mx-auto max-w-[640px] space-y-6">
@@ -43,15 +57,14 @@ export default async function MoiLamTacGia() {
           mo="Game có trang riêng, khu diễn đàn riêng, và hiện ở trang tác giả của bạn." />
       </ol>
 
-      <div className="the p-4">
-        <p className="text-[14px] font-semibold">Chưa có quyền tác giả?</p>
-        <p className="phu mt-1">
-          {nguoi
-            ? 'Nhắn cho ban quản trị để được cấp. Tài khoản của bạn đã sẵn sàng.'
-            : 'Đăng nhập trước đã, rồi nhắn cho ban quản trị.'}
-        </p>
-        {!nguoi && <Link href="/dang-nhap" className="nut-cai-dam mt-3">Đăng nhập</Link>}
-      </div>
+      {nguoi ? <ODon don={don} /> : (
+        <div className="the p-4">
+          <p className="text-[14px] font-semibold">Chưa có quyền tác giả?</p>
+          <p className="phu mt-1">Đăng nhập trước đã, rồi gửi đơn ngay tại trang này.</p>
+          <Link href="/dang-nhap" className="nut-cai-dam mt-3">Đăng nhập</Link>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -13,7 +13,7 @@ import type { MaDem } from '@/lib/quan-tri-loi-di';
  * học được cách phớt lờ nó — huy hiệu không bao giờ về không là huy hiệu chết.
  */
 export async function demViecTonDong(): Promise<Record<MaDem, number>> {
-  const [yeuCauCho, gameNhap, danhGiaChuaDap, baoXauCho, choDuyet] = await Promise.all([
+  const [yeuCauCho, gameNhap, danhGiaChuaDap, baoXauCho, choDuyet, donTacGiaCho] = await Promise.all([
     db.yeuCau.count({ where: { trangThai: 'CHO_XEM' } }),
     db.game.count({ where: { trangThai: 'NHAP' } }),
     db.danhGia.count({ where: { noiDung: { not: null }, traLoi: null } }),
@@ -21,6 +21,9 @@ export async function demViecTonDong(): Promise<Record<MaDem, number>> {
     // Game của tác giả đang đợi xem xét — con số duy nhất ở đây mà người
     // NGOÀI cửa hàng đang chờ, nên nó đáng nằm trên thanh bên nhất.
     db.game.count({ where: { trangThai: 'CHO_DUYET' } }),
+    // Người xin làm tác giả đang đợi trả lời. Cũng là người ngoài đang chờ, mà
+    // chờ ở đúng cái cửa đầu tiên — không trả lời thì họ bỏ đi luôn.
+    db.donTacGia.count({ where: { trangThai: 'CHO_XEM' } }),
   ]);
-  return { yeuCauCho, gameNhap, danhGiaChuaDap, baoXauCho, choDuyet };
+  return { yeuCauCho, gameNhap, danhGiaChuaDap, baoXauCho, choDuyet, donTacGiaCho };
 }

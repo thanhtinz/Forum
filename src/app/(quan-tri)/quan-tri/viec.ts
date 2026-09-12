@@ -322,6 +322,95 @@ export async function traLoiYeuCau(id: string, trangThai: string, loiNhan: strin
   return {};
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+ * ĐƠN XIN LÀM TÁC GIẢ
+ *
+ * Hai việc, và cả hai đều là lượt ghi CÓ ĐIỀU KIỆN mang theo trạng thái cũ
+ * (`trangThai: 'CHO_XEM'` nằm trong `where`): hai quản trị cùng mở hàng chờ
+ * rồi cùng bấm thì người thứ hai nhận `count === 0` và được báo là đơn đã xét
+ * rồi, thay vì phong quyền hai lần hoặc ghi đè lời nhắn của người kia.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Đồng ý một đơn: phong quyền tác giả và chép hồ sơ sang tài khoản. */
+export async function duyetDonTacGia(donId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const don = await db.donTacGia.findFirst({
+    where: { id: donId, trangThai: 'CHO_XEM' },
+    select: { nguoiId: true, tenTacGia: true, gioiThieu: true },
+  });
+  if (!don) return { loi: 'Đơn này đã được xét rồi.' };
+
+  /*
+   * Phong quyền cho một tài khoản ĐANG BỊ KHOÁ là phong cho người không đăng
+   * nhập được — vô nghĩa, và che mất việc họ đang bị khoá. Cùng luật với
+   * `doiVaiTro`, nên điều kiện `khoa: false` nằm trong `where`.
+   */
+  const { count } = await db.nguoiDung.updateMany({
+    where: { id: don.nguoiId, khoa: false, vaiTro: 'THANH_VIEN' },
+    data: {
+      vaiTro: 'TAC_GIA',
+      tenTacGia: don.tenTacGia,
+      gioiThieuTacGia: don.gioiThieu,
+    },
+  });
+  if (count === 0) {
+    return { loi: 'Không phong được: tài khoản đang bị khoá, hoặc đã có quyền khác.' };
+  }
+
+  await db.donTacGia.updateMany({
+    where: { id: donId, trangThai: 'CHO_XEM' },
+    data: { trangThai: 'DONG_Y', loiNhan: null, xetLuc: new Date() },
+  });
+
+  await guiThongBao({
+    nguoiNhanId: don.nguoiId,
+    loai: 'TAC_GIA_DUOC_DUYET',
+    tieuDe: 'Bạn đã là tác giả của SunnyStore',
+    chiTiet: 'Vào bảng tác giả để thêm game đầu tiên của bạn.',
+    duongDan: '/quan-ly',
+  });
+
+  revalidatePath('/quan-tri/tac-gia');
+  revalidatePath('/quan-tri/thanh-vien');
+  return {};
+}
+
+/** Trả lại một đơn kèm lý do. Người gửi sửa chính đơn ấy rồi gửi lại. */
+export async function tuChoiDonTacGia(donId: string, lyDo: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const noi = lyDo.trim().slice(0, 500);
+  // Trả lại mà không nói vì sao thì người gửi chỉ biết gửi lại y hệt — cùng
+  // luật với lượt trả lại game.
+  if (noi.length < 10) return { loi: 'Hãy nói rõ vì sao trả lại, ít nhất 10 ký tự.' };
+
+  const don = await db.donTacGia.findFirst({
+    where: { id: donId, trangThai: 'CHO_XEM' },
+    select: { nguoiId: true },
+  });
+  if (!don) return { loi: 'Đơn này đã được xét rồi.' };
+
+  const { count } = await db.donTacGia.updateMany({
+    where: { id: donId, trangThai: 'CHO_XEM' },
+    data: { trangThai: 'TU_CHOI', loiNhan: noi, xetLuc: new Date() },
+  });
+  if (count === 0) return { loi: 'Đơn này đã được xét rồi.' };
+
+  await guiThongBao({
+    nguoiNhanId: don.nguoiId,
+    loai: 'TAC_GIA_BI_TU_CHOI',
+    tieuDe: 'Đơn xin làm tác giả bị trả lại',
+    chiTiet: noi,
+    duongDan: '/tac-gia/dang-ky',
+  });
+
+  revalidatePath('/quan-tri/tac-gia');
+  return {};
+}
+
 /**
  * Đặt ẢNH BÌA cho một đoạn phim — tấm hiện ra trước khi phim chạy.
  *
@@ -1344,7 +1433,11 @@ export async function khoaThanhVien(nguoiId: string, khoa: boolean): Promise<Ket
 }
 
 /** Phong hoặc hạ quyền quản trị. */
-export async function doiVaiTro(nguoiId: string, thanhQuanTri: boolean): Promise<KetQua> {
+export async function doiVaiTro(
+  nguoiId: string,
+  thanhQuanTri: boolean,
+  vaiMoi: 'QUAN_TRI' | 'TAC_GIA' = 'QUAN_TRI',
+): Promise<KetQua> {
   try { await batBuocQuanTri(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
@@ -1353,7 +1446,7 @@ export async function doiVaiTro(nguoiId: string, thanhQuanTri: boolean): Promise
     // đăng nhập được — vô nghĩa, và che mất việc họ đang bị khoá.
     const { count } = await db.nguoiDung.updateMany({
       where: { id: nguoiId, khoa: false },
-      data: { vaiTro: 'QUAN_TRI' },
+      data: { vaiTro: vaiMoi },
     });
     if (count === 0) return { loi: 'Không phong được. Tài khoản này đang bị khoá.' };
     revalidatePath('/quan-tri/thanh-vien');

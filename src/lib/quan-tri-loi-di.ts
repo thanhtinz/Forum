@@ -9,7 +9,8 @@
  * ĐỌNG mới cần huy hiệu — đếm tổng số game rồi in lên cạnh chữ "Game" thì đó
  * là một con số không ai phải làm gì với nó, chỉ tổ làm nhiễu hai con số kia.
  */
-export type MaDem = 'yeuCauCho' | 'gameNhap' | 'danhGiaChuaDap' | 'baoXauCho' | 'choDuyet';
+export type MaDem =
+  | 'yeuCauCho' | 'gameNhap' | 'danhGiaChuaDap' | 'baoXauCho' | 'choDuyet' | 'donTacGiaCho';
 
 export interface LoiQuanTri {
   duongDan: string;
@@ -29,6 +30,7 @@ export const LOI_QUAN_TRI: LoiQuanTri[] = [
   { duongDan: '/quan-tri/bao-xau', ten: 'Báo xấu', icon: 'Flag', demCho: 'baoXauCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/dien-dan', ten: 'Diễn đàn', icon: 'MessageSquare', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/yeu-cau', ten: 'Yêu cầu game', icon: 'Inbox', demCho: 'yeuCauCho', nhom: 'Cộng đồng' },
+  { duongDan: '/quan-tri/tac-gia', ten: 'Đơn tác giả', icon: 'UserPlus', demCho: 'donTacGiaCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/thanh-vien', ten: 'Thành viên', icon: 'Users', nhom: 'Cộng đồng' },
 ];
 

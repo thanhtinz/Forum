@@ -115,7 +115,7 @@ export default async function ThanhVien({ searchParams }: {
                 </td>
                 <td className="px-3 py-2.5 text-right text-mo">{cachDay(n.taoLuc)}</td>
                 <td className="px-3 py-2.5 text-right">
-                  <NutThanhVien id={n.id} ten={n.tenHienThi} laQuanTri={n.vaiTro === 'QUAN_TRI'}
+                  <NutThanhVien id={n.id} ten={n.tenHienThi} vaiTro={n.vaiTro}
                     dangKhoa={n.khoa} laToi={n.id === toi?.id} />
                 </td>
               </tr>

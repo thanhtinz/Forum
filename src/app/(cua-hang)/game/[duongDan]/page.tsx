@@ -132,13 +132,15 @@ export default async function TabThongTin({ params, searchParams }: {
         </section>
       )}
 
-      {/* Bảng thông tin chỉ giữ thứ CHƯA nói ở đâu khác trên trang: nhà phát
-          triển đã in màu nhấn dưới tên game, hệ máy đã có ở dãy chip. */}
+      {/*
+        Bảng thông tin chỉ giữ thứ CHƯA nói ở đâu khác trên trang.
+        Nhà phát triển đã in màu nhấn dưới tên game; hệ máy đã có ở dãy chip;
+        còn năm phát hành và ngôn ngữ nay nằm trên hàng số liệu ngay dưới tên
+        game — in lại ở đây thì bảng này chỉ là một bản sao mờ của hàng ấy.
+      */}
       <section>
         <h2 className="tieu-de mb-3">Thông tin</h2>
         <dl className="the divide-y divide-vien text-[13px]">
-          <Dong nhan="Năm phát hành" giaTri={game.namPhatHanh ? String(game.namPhatHanh) : '—'} />
-          <Dong nhan="Ngôn ngữ" giaTri={NGON_NGU[game.ngonNgu] ?? game.ngonNgu} />
           <Dong nhan="Số bản tải" giaTri={`${game._count.banTai} bản trên ${soHe.length} hệ máy`} />
           <Dong nhan="Có mặt từ" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
         </dl>

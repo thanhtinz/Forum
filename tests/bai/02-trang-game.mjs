@@ -31,21 +31,29 @@ export default async function chay(kiem) {
     bocChu(game.gioiThieu ?? '').slice(0, 30));
 
   /*
-   * Hàng số liệu: BA ô, số to trên và nhãn nhỏ dưới — đúng dáng CH Play.
-   * Kiểm bằng nhãn ở dòng dưới chứ không bằng nhãn in hoa: nhãn in hoa đã bỏ
-   * vì nó là dòng chữ thứ ba thừa ra trong một khối chỉ cần hai.
+   * Hàng số liệu: BA TẦNG mỗi ô — nhãn nhỏ chữ hoa, số to, chú thích nhỏ.
+   * Nhãn in hoa bằng CSS chứ không bằng chữ, nên trong DOM nó vẫn là chữ
+   * thường; so bằng chữ thường hết để bài kiểm không vỡ khi đổi kiểu chữ.
    */
-  const soLieu = await p.locator('dl').first().textContent();
+  const soLieu = (await p.locator('dl').first().textContent() ?? '').toLowerCase();
   for (const nhan of ['đánh giá', 'lượt tải']) {
-    kiem(`hàng số liệu có ô “${nhan}”`, (soLieu ?? '').includes(nhan), soLieu ?? '');
+    kiem(`hàng số liệu có ô “${nhan}”`, soLieu.includes(nhan), soLieu);
   }
   kiem('hàng số liệu nói dung lượng của bản mới nhất',
-    /bản \S+/.test(soLieu ?? ''), soLieu ?? '');
+    /bản \S+/.test(soLieu), soLieu);
 
   // Ô "Hệ máy" đã bỏ khỏi hàng số liệu: dãy chip chọn hệ ngay bên dưới đã nói
   // đúng điều ấy, lại còn liệt kê ra hết thay vì gộp thành "+4 hệ nữa".
   kiem('hàng số liệu không lặp lại hệ máy',
-    !/hệ nữa|hệ máy/.test(soLieu ?? ''), soLieu ?? '');
+    !/hệ nữa|hệ máy/.test(soLieu), soLieu);
+
+  // Năm phát hành và ngôn ngữ nay nằm trên hàng số liệu. Bảng "Thông tin" bên
+  // dưới đã bỏ hai dòng ấy, nên kiểm cả hai đầu: có ở hàng số liệu, và KHÔNG
+  // còn ở bảng — in một con số hai chỗ thì sớm muộn hai chỗ nói khác nhau.
+  kiem('hàng số liệu có ô ngôn ngữ', soLieu.includes('ngôn ngữ'), soLieu);
+  const bangTin = (await p.locator('dl').last().textContent() ?? '').toLowerCase();
+  kiem('bảng thông tin không lặp lại năm và ngôn ngữ',
+    !bangTin.includes('năm phát hành') && !bangTin.includes('ngôn ngữ'), bangTin);
 
   kiem('có nút tải nổi bật', (await p.locator('a.nut-cai-dam').count()) > 0);
   /*

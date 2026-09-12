@@ -6,10 +6,10 @@ import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { KhungTai, type BanXem } from '@/components/game/KhungTai';
 import { NutChiaSe } from '@/components/game/NutChiaSe';
 import { NutLui } from '@/components/game/NutLui';
-import { SaoNam } from '@/components/game/SaoNam';
 import { TabGame } from '@/components/game/TabGame';
+import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
 import type { MaHeMay } from '@/lib/he-may';
-import { diemSao, gonDungLuong, gonSo } from '@/lib/tien-ich';
+import { diemSao } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +34,7 @@ export default async function KhungGame({ children, params }: {
     select: {
       id: true, duongDan: true, ten: true, tenViet: true, nhaPhatTrien: true,
       icon: true, vietHoa: true, tongSao: true, soLuotDanhGia: true, soLuotTai: true,
+      namPhatHanh: true, ngonNgu: true,
       theLoai: { select: { theLoai: { select: { ten: true, duongDan: true } } } },
       tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
       banTai: {
@@ -51,6 +52,54 @@ export default async function KhungGame({ children, params }: {
   if (!game) notFound();
 
   const sao = diemSao(game.tongSao, game.soLuotDanhGia);
+
+  /*
+   * HẠNG TRONG THỂ LOẠI CHÍNH.
+   *
+   * Đếm xem có bao nhiêu game cùng thể loại được tải nhiều hơn, rồi cộng một —
+   * rẻ hơn hẳn việc kéo cả danh sách về rồi tự tìm chỗ đứng, và không phải
+   * dựng thêm bảng nào để lưu hạng.
+   *
+   * Chỉ xét thể loại ĐẦU TIÊN: một game ba thể loại thì có ba hạng, mà bày cả
+   * ba lên một ô là biến con số thành thứ phải đọc chú thích mới hiểu.
+   */
+  const theLoaiChinh = game.theLoai[0]?.theLoai ?? null;
+  const hang = theLoaiChinh
+    ? {
+        thu: 1 + await db.game.count({
+          where: {
+            ...DANG_HIEN,
+            id: { not: game.id },
+            theLoai: { some: { theLoai: { duongDan: theLoaiChinh.duongDan } } },
+            soLuotTai: { gt: game.soLuotTai },
+          },
+        }),
+        theLoai: theLoaiChinh.ten,
+        duongDan: theLoaiChinh.duongDan,
+      }
+    : null;
+
+  const soLieu = dungSoLieu({
+    sao,
+    soLuotDanhGia: game.soLuotDanhGia,
+    soLuotTai: game.soLuotTai,
+    dungLuong: game.banTai[0]?.dungLuong ?? null,
+    soHieu: game.banTai[0]?.soHieu ?? null,
+    hang,
+    namPhatHanh: game.namPhatHanh,
+    ngonNgu: game.ngonNgu,
+    tacGia: game.tacGia
+      ? {
+          ten: game.tacGia.tenTacGia ?? game.tacGia.tenHienThi,
+          duongDan: `/tac-gia/${game.tacGia.tenDangNhap}`,
+        }
+      : game.nhaPhatTrien
+        ? {
+            ten: game.nhaPhatTrien,
+            duongDan: `/nha-phat-trien/${encodeURIComponent(game.nhaPhatTrien)}`,
+          }
+        : null,
+  });
   const he = [...new Set(game.banTai.map((b) => b.heMay))] as MaHeMay[];
   const banMoiNhat = game.banTai[0];
 
@@ -141,25 +190,7 @@ export default async function KhungGame({ children, params }: {
             </div>
           </div>
 
-          {/*
-            HÀNG SỐ LIỆU — SỐ TO TRÊN, NHÃN NHỎ DƯỚI. Đúng hai dòng.
-
-            BA ô, đúng số CH Play dùng, và vừa khít bề ngang điện thoại nên
-            không phải cuộn. Ô "Hệ máy" đã bỏ: dãy chip chọn hệ nằm ngay bốn
-            chục điểm ảnh bên dưới đã nói đúng điều ấy, lại còn nói rõ hơn vì
-            liệt kê ra hết chứ không gộp thành "+4 hệ nữa".
-
-            Máy bàn: cột bên chỉ rộng 300px nên xếp thành lưới 2 cột, bỏ vạch.
-          */}
-          <dl className="ke mt-4 divide-x divide-vien text-center lg:mt-5
-            lg:grid lg:grid-cols-2 lg:gap-y-4 lg:divide-x-0 lg:overflow-visible lg:text-left">
-            <O chinh={game.soLuotDanhGia > 0 ? sao.toFixed(1).replace('.', ',') : '—'}
-              icon={game.soLuotDanhGia > 0 ? <SaoNam diem={sao} co={12} /> : null}
-              nhan={game.soLuotDanhGia > 0 ? `${gonSo(game.soLuotDanhGia)} đánh giá` : 'chưa có đánh giá'} />
-            <O chinh={gonSo(game.soLuotTai)} nhan="lượt tải" />
-            <O chinh={gonDungLuong(banMoiNhat?.dungLuong ?? null)}
-              nhan={`bản ${banMoiNhat?.soHieu ?? '—'}`} />
-          </dl>
+          <HangSoLieu o={soLieu} />
         </header>
 
         <section id="tai" className="scroll-mt-20 space-y-3">
@@ -176,19 +207,3 @@ export default async function KhungGame({ children, params }: {
   );
 }
 
-/**
- * Một ô số liệu: con số to, nhãn nhỏ ngay dưới. Không có gì khác.
- *
- * `icon` chỉ dùng cho ô điểm sao — năm ngôi sao đứng cạnh con số nói được
- * "trên thang 5" mà không phải viết ra chữ ấy.
- */
-function O({ chinh, nhan, icon }: { chinh: string; nhan: string; icon?: React.ReactNode }) {
-  return (
-    <div className="min-w-[92px] flex-1 whitespace-nowrap px-3 lg:min-w-0 lg:px-0">
-      <dd className="flex items-center justify-center gap-1 text-[17px] font-bold leading-none lg:justify-start">
-        {chinh}{icon}
-      </dd>
-      <dt className="phu mt-1">{nhan}</dt>
-    </div>
-  );
-}

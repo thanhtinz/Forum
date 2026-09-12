@@ -61,8 +61,17 @@ export default async function chay(kiem) {
     const daBao = await doiToi(async () =>
       (await db.baoXau.count({ where: { chuDeId: chuDe.id, nguoiId: b.id } })) === 1);
     kiem('báo được chủ đề của người khác', daBao);
-    kiem('bấm xong thì nút đổi thành đã báo',
-      (await pB.locator('text=Đã báo, cảm ơn bạn').count()) > 0);
+    /*
+     * CHỜ dòng chữ hiện ra, không đếm ngay.
+     *
+     * Hàng trong CSDL xong TRƯỚC lời cảm ơn trên màn hình: máy chủ ghi xong,
+     * trả về, rồi React mới vẽ lại. Đếm ngay sau khi CSDL có hàng là bắt kịp
+     * đúng cái khe giữa hai việc ấy — bài kiểm đỏ lúc được lúc không mà mã
+     * thì chẳng sai gì.
+     */
+    const hienLoiCamOn = await pB.locator('text=Đã báo, cảm ơn bạn')
+      .waitFor({ timeout: 5000 }).then(() => true, () => false);
+    kiem('bấm xong thì nút đổi thành đã báo', hienLoiCamOn);
 
     const hang = await db.baoXau.findFirst({
     orderBy: { id: 'asc' },

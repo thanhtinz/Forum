@@ -57,20 +57,15 @@ export default async function chay(kiem) {
 
   kiem('có nút tải nổi bật', (await p.locator('a.nut-cai-dam').count()) > 0);
   /*
-   * Kệ "Game tương tự" chỉ dựng khi THẬT SỰ có game cùng thể loại — cửa hàng nhỏ
-   * hoặc thể loại hiếm thì không có, và khi ấy một kệ rỗng mới là lỗi.
-   * Nên đếm trước rồi mới khẳng định, chứ không khẳng định suông.
+   * KHÔNG CÒN KỆ "GAME TƯƠNG TỰ" Ở TAB THÔNG TIN.
+   *
+   * Cuối trang game là chỗ người ta vừa đọc xong mô tả và đánh giá, tức là
+   * đang gần bấm tải nhất. Bày ngay đó một kệ mời đi xem game khác là tự kéo
+   * người ta ra khỏi việc họ đang làm. Gợi ý game khác đã có ở trang tải —
+   * lúc đang đứng chờ mới là lúc rảnh để ngó sang hàng khác.
    */
-  const cungTheLoai = await db.game.count({
-    where: {
-      trangThai: 'DANG_HIEN',
-      id: { not: game.id },
-      theLoai: { some: { theLoaiId: { in: game.theLoai.map((t) => t.theLoaiId) } } },
-    },
-  });
-  kiem(cungTheLoai > 0 ? 'có mục game tương tự' : 'không dựng kệ rỗng khi hết game cùng thể loại',
-    html.includes('Game tương tự') === (cungTheLoai > 0),
-    `${cungTheLoai} game cùng thể loại`);
+  kiem('tab thông tin không còn kệ game tương tự',
+    !html.includes('Game tương tự'));
 
   /*
    * DIỄN ĐÀN LÀ MỘT TAB, không phải một khối nhét cuối trang.

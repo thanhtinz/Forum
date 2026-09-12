@@ -3,10 +3,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { TriangleAlert } from 'lucide-react';
 import { db } from '@/lib/db';
-import { DANG_HIEN, layKe } from '@/lib/danh-muc';
+import { DANG_HIEN } from '@/lib/danh-muc';
 import { PhoDiem } from '@/components/game/PhoDiem';
 import { SaoNam } from '@/components/game/SaoNam';
-import { KeThe } from '@/components/game/KeThe';
 import { ODanhGia } from '@/components/game/ODanhGia';
 import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
 import { KeAnhChup } from '@/components/game/KeAnhChup';
@@ -54,7 +53,6 @@ export default async function TabThongTin({ params, searchParams }: {
       id: true, gioiThieu: true, namPhatHanh: true,
       ngonNgu: true, dangLuc: true,
       anhChup: { orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: 12, select: { id: true, duongDan: true, chuThich: true } },
-      theLoai: { select: { theLoai: { select: { duongDan: true } } } },
       _count: { select: { banTai: true } },
     },
   });
@@ -62,7 +60,7 @@ export default async function TabThongTin({ params, searchParams }: {
 
   const nguoi = await nguoiHienTai();
 
-  const [phanBo, danhGia, cuaToi, lienQuan, soHe] = await Promise.all([
+  const [phanBo, danhGia, cuaToi, soHe] = await Promise.all([
     db.danhGia.groupBy({ by: ['sao'], where: { gameId: game.id }, _count: { _all: true } }),
     db.danhGia.findMany({
       where: { gameId: game.id, noiDung: { not: null }, ...(locSao ? { sao: locSao } : {}) },
@@ -77,14 +75,6 @@ export default async function TabThongTin({ params, searchParams }: {
           select: { sao: true, noiDung: true },
         })
       : null,
-    layKe(
-      {
-        id: { not: game.id },
-        theLoai: { some: { theLoai: { duongDan: { in: game.theLoai.map((t) => t.theLoai.duongDan) } } } },
-      },
-      [{ soLuotTai: 'desc' }, { id: 'desc' }],
-      12,
-    ),
     db.banTai.findMany({ where: { gameId: game.id }, distinct: ['heMay'], select: { heMay: true } }),
   ]);
 
@@ -191,7 +181,6 @@ export default async function TabThongTin({ params, searchParams }: {
         )}
       </section>
 
-      <KeThe ten="Game tương tự" phu="Cùng thể loại, xếp theo lượt tải" game={lienQuan} />
     </div>
   );
 }

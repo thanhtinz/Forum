@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { UserRound } from 'lucide-react';
+import { Ke } from '@/components/game/Ke';
 import { SaoNam } from '@/components/game/SaoNam';
 import { gonDungLuong, gonSo } from '@/lib/tien-ich';
 
@@ -24,37 +25,39 @@ export interface OSoLieu {
  * ai dừng lại đọc. Bản trước chỉ có hai tầng (số rồi nhãn), nên mỗi ô phải tự
  * giải thích bằng chính con số — mà "543" thì không tự nói được nó là cái gì.
  *
- * CUỘN NGANG, không xuống dòng và không nén lại. Số ô thay đổi theo từng game:
- * game chưa ai đánh giá thì mất ô điểm, game không rõ năm thì mất ô năm. Nén
- * cho vừa thì game nhiều số liệu trông chật, game ít số liệu trông trống
- * trải; cuộn ngang giữ mọi ô đúng một bề rộng ở mọi game.
+ * CUỘN NGANG Ở MỌI KHỔ, không xuống dòng và không nén lại. Số ô thay đổi theo
+ * từng game: game chưa ai đánh giá thì mất ô điểm, game không rõ năm thì mất ô
+ * năm. Nén cho vừa thì game nhiều số liệu trông chật, game ít số liệu trông
+ * trống trải; cuộn ngang giữ mọi ô đúng một bề rộng ở mọi game.
+ *
+ * Từng thử xếp lưới hai cột cho khổ rộng, vì cột trái trang game chỉ khoảng ba
+ * trăm điểm ảnh. Nhưng lưới thì mỗi game một hình dáng khác — game bảy ô cao
+ * gấp đôi game ba ô — còn một dải cuộn thì game nào cũng đúng một hàng, và ô
+ * bị cắt ở mép phải chính là lời mời kéo tiếp.
+ *
+ * Chuột không quệt ngang được, nên dải này mượn `Ke`: hai nút lật và dải mờ ở
+ * mép, hiện đúng lúc còn chỗ để lật.
  *
  * Vạch dọc NGĂN GIỮA các ô chứ không viền quanh từng ô: viền quanh thì mỗi ô
  * thành một cái thẻ, mà đây là một hàng liền mạch chứ không phải bốn cái thẻ.
- *
- * TỪ `lg` TRỞ LÊN THÌ XẾP LƯỚI, KHÔNG CUỘN. Ở khổ rộng, phần đầu trang game
- * nằm trong cột trái chỉ khoảng ba trăm điểm ảnh — một dải cuộn ngang trong
- * cái cột ấy thì ô thứ ba đã bị cắt cụt, mà chuột thì không có ngón tay để
- * quệt. Lưới hai cột vừa khít cột ấy và bày hết mọi ô cùng lúc.
  */
 export function HangSoLieu({ o }: { o: OSoLieu[] }) {
   if (o.length === 0) return null;
 
   return (
-    <dl className="ke vach vach-duoi -mx-4 mt-4 border-y px-4 py-3 sm:mx-0 sm:px-0
-      lg:mt-5 lg:grid lg:grid-cols-2 lg:gap-x-4 lg:gap-y-4 lg:overflow-visible">
+    <Ke the="dl" nhan="số liệu" className="vach vach-duoi -mx-4 mt-4 border-y px-4 py-3 sm:mx-0 sm:px-0">
       {o.map((m, i) => {
         const than = (
           <>
             <dt className="text-[11px] font-bold uppercase leading-none tracking-[0.06em] text-mo">
               {m.nhan}
             </dt>
-            <dd className="mt-1.5 flex items-center justify-center gap-1 text-[20px] font-bold leading-none tracking-[-0.02em] lg:justify-start">
+            <dd className="mt-1.5 flex items-center justify-center gap-1 text-[20px] font-bold leading-none tracking-[-0.02em]">
               {m.chinh}
               {m.hinh}
             </dd>
             {m.duoi && (
-              <dd className="mt-1.5 flex items-center justify-center text-[12px] leading-none text-mo lg:justify-start">
+              <dd className="mt-1.5 flex items-center justify-center text-[12px] leading-none text-mo">
                 {m.duoi}
               </dd>
             )}
@@ -63,13 +66,11 @@ export function HangSoLieu({ o }: { o: OSoLieu[] }) {
 
         return (
           <div key={m.ma}
-            className={`min-w-[104px] shrink-0 whitespace-nowrap px-4 text-center
-              lg:min-w-0 lg:px-0 lg:text-left${
+            className={`min-w-[104px] shrink-0 whitespace-nowrap px-4 text-center${
               // Vạch ngăn vẽ bằng viền TRÁI của ô thứ hai trở đi, không bằng
-              // `divide-x`: `divide-x` kẻ cả ở ô cuối khi danh sách cuộn, và
-              // vạch treo lơ lửng ở mép phải trông như trang bị cắt. Ở khổ rộng
-              // thì bỏ hẳn vạch — lưới đã tự tách các ô ra rồi.
-              i > 0 ? ' border-l border-vien lg:border-l-0' : ''
+              // `divide-x`: `divide-x` kẻ cả ở ô cuối, và một vạch treo lơ
+              // lửng ở mép phải trông như trang bị cắt chứ không như còn nữa.
+              i > 0 ? ' border-l border-vien' : ''
             }`}>
             {m.dich
               ? <Link href={m.dich} className="block transition-opacity hover:opacity-70">{than}</Link>
@@ -77,7 +78,7 @@ export function HangSoLieu({ o }: { o: OSoLieu[] }) {
           </div>
         );
       })}
-    </dl>
+    </Ke>
   );
 }
 

@@ -20,9 +20,17 @@ import { gop } from '@/lib/tien-ich';
  * Lật đi 85% bề ngang khung chứ không phải 100%: chừa lại một mẩu của tấm cũ
  * làm mốc, để sau cú lật người xem còn biết mình vừa ở đâu.
  */
-export function Ke({ children, className, nhan, theoTam }: {
+export function Ke({ children, className, nhan, theoTam, the: The = 'div' }: {
   children: React.ReactNode;
   className?: string;
+  /**
+   * Thẻ HTML của đường cuộn. Mặc định `div`.
+   *
+   * Có chỗ cần `dl`: hàng số liệu dưới tên game là một danh sách định nghĩa
+   * thật — nhãn là `dt`, con số là `dd`. Bọc thêm một `div` vào giữa `dl` và
+   * `dt` là phá đúng cái quan hệ khiến bộ đọc màn hình đọc ra "đánh giá: 4,0".
+   */
+  the?: 'div' | 'dl';
   /** Nhãn đọc được của cả kệ, ghép vào nhãn hai nút lật. */
   nhan?: string;
   /**
@@ -34,7 +42,9 @@ export function Ke({ children, className, nhan, theoTam }: {
    */
   theoTam?: (i: number) => void;
 }) {
-  const oRef = useRef<HTMLDivElement>(null);
+  // `HTMLElement` chứ không `HTMLDivElement`: đường cuộn có thể là `dl`, và
+  // mọi thứ đọc ở đây (`scrollLeft`, `clientWidth`) đều là của `HTMLElement`.
+  const oRef = useRef<HTMLElement>(null);
   const [conTrai, datConTrai] = useState(false);
   const [conPhai, datConPhai] = useState(false);
 
@@ -67,9 +77,10 @@ export function Ke({ children, className, nhan, theoTam }: {
 
   return (
     <div className="group/ke relative">
-      <div ref={oRef} onScroll={doLai} className={gop('ke', className)}>
+      <The ref={oRef as React.RefObject<HTMLDivElement & HTMLDListElement>}
+        onScroll={doLai} className={gop('ke', className)}>
         {children}
-      </div>
+      </The>
 
       {/* Dải mờ chỉ để NGẮM, không bắt chuột — đặt trên đường cuộn mà ăn chuột
           thì mép kệ thành chỗ bấm không ra gì. */}

@@ -41,7 +41,7 @@ export default async function SuaGameTacGia({ params }: { params: Promise<{ id: 
         },
         phim: {
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
-          select: { id: true, duongDan: true, dungLuong: true },
+          select: { id: true, duongDan: true, anhBia: true, dungLuong: true },
         },
         suKien: {
           orderBy: [{ batDau: 'desc' }, { id: 'desc' }],

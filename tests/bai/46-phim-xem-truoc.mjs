@@ -1,6 +1,8 @@
 import { unlink } from 'node:fs/promises';
 import { join } from 'node:path';
-import { GOC, db, moTrang, moTrangDaDangNhap, taoMP4, tuDongXacNhan } from '../tro-giup.mjs';
+import {
+  GOC, db, moTrang, moTrangDaDangNhap, taoAnhPNG, taoMP4, tuDongXacNhan,
+} from '../tro-giup.mjs';
 import { PHIM_TOI_DA } from '../../src/lib/phim-const.ts';
 
 const DUONG_DAN = 'game-kiem-phim';
@@ -139,6 +141,35 @@ export default async function chay(kiem) {
       return !!(v.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING);
     });
     kiem('phim đứng trước ảnh chụp trong dải xem trước', truoc === true, String(truoc));
+
+    /*
+     * ── ẢNH BÌA CỦA ĐOẠN PHIM ─────────────────────────────────────────
+     *
+     * Cột `anhBia` từng nằm trong lược đồ mà không nơi nào ghi vào — tức là
+     * một cột chết, và phim mở màn bằng khung đầu của chính nó: với phim game
+     * thì khung đầu gần như luôn là màn hình đen lúc trò đang nạp.
+     */
+    const guiBia = (p, cho, byte) => p.evaluate(async ([goc, cho, byte]) => {
+      const fd = new FormData();
+      fd.set('cho', cho);
+      fd.set('tep', new File([new Uint8Array(byte)], 'bia.png', { type: 'image/png' }));
+      const r = await fetch(`${goc}/api/tai-anh`, { method: 'POST', body: fd });
+      return { ma: r.status, than: await r.json().catch(() => ({})) };
+    }, [GOC, cho, byte]);
+
+    const biaNho = await guiBia(admin, 'phim-bia', [...taoAnhPNG(100, 180)]);
+    kiem('ảnh bìa phim nhỏ hơn sàn thì bị từ chối', biaNho.ma === 422, `mã ${biaNho.ma}`);
+
+    // Đủ lớn, và KHÔNG đòi nằm ngang: phim game điện thoại phần lớn dựng đứng.
+    const biaVua = await guiBia(admin, 'phim-bia', [...taoAnhPNG(360, 640)]);
+    kiem('ảnh bìa phim dựng đứng mà đủ lớn thì nhận', biaVua.ma === 200, `mã ${biaVua.ma}`);
+
+    await db.phimGame.update({
+      where: { id: phim.id }, data: { anhBia: biaVua.than.duongDan },
+    });
+    await khach.goto(`${GOC}/game/${DUONG_DAN}`, { waitUntil: 'networkidle' });
+    kiem('trang game dùng ảnh bìa ấy làm tấm mở màn của phim',
+      (await khach.locator(`video[poster="${biaVua.than.duongDan}"]`).count()) > 0);
 
     // ── Trần ba đoạn ──────────────────────────────────────────────────
     await db.phimGame.createMany({

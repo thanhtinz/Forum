@@ -2,8 +2,9 @@
 
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Film, Trash2, Upload } from 'lucide-react';
-import { xoaPhimGame } from '@/app/(quan-tri)/quan-tri/viec';
+import { Film, ImagePlus, Trash2, Upload } from 'lucide-react';
+import { datAnhBiaPhim, xoaPhimGame } from '@/app/(quan-tri)/quan-tri/viec';
+import { napAnh } from '@/components/quan-tri/ONapAnh';
 import { useXacNhan } from '@/components/HopXacNhan';
 import { PHIM_NANG_TOI_DA, PHIM_TOI_DA } from '@/lib/phim-const';
 import { gonDungLuong } from '@/lib/tien-ich';
@@ -11,6 +12,7 @@ import { gonDungLuong } from '@/lib/tien-ich';
 export interface PhimQuanTri {
   id: string;
   duongDan: string;
+  anhBia: string | null;
   dungLuong: number | null;
 }
 
@@ -29,6 +31,25 @@ export function KhungPhim({ gameId, phim }: { gameId: string; phim: PhimQuanTri[
   const [loi, datLoi] = useState('');
   const [dangXoa, batDauXoa] = useTransition();
   const { hoi, hop } = useXacNhan();
+  /* Một ô chọn tệp DÙNG CHUNG cho mọi đoạn, và một ô nhớ xem đang đặt bìa cho
+     đoạn nào: dựng một ô chọn tệp cho mỗi đoạn thì ba đoạn là ba ô ẩn nằm
+     chờ, mà chỉ một cái được dùng mỗi lượt. */
+  const oBia = useRef<HTMLInputElement>(null);
+  const biaChoPhim = useRef<string | null>(null);
+  const [dangBia, datDangBia] = useState<string | null>(null);
+
+  async function napBia(tep: File) {
+    const id = biaChoPhim.current;
+    if (!id) return;
+    datLoi('');
+    datDangBia(id);
+    const kq = await napAnh(tep, 'phim-bia');
+    if (kq.loi || !kq.duongDan) { datDangBia(null); datLoi(kq.loi ?? 'Không tải được ảnh.'); return; }
+    const dat = await datAnhBiaPhim(id, kq.duongDan);
+    datDangBia(null);
+    if (dat.loi) { datLoi(dat.loi); return; }
+    router.refresh();
+  }
 
   const dangNap = phanTram !== null;
   const day = phim.length >= PHIM_TOI_DA;
@@ -66,12 +87,26 @@ export function KhungPhim({ gameId, phim }: { gameId: string; phim: PhimQuanTri[
               {/* Bày bằng chính thẻ `video` có thanh điều khiển: người bày hàng
                   phải xem lại được đoạn mình vừa gửi, chứ một ô đen kèm tên tệp
                   thì không nói được đoạn ấy có đúng hay không. */}
-              <video src={f.duongDan} controls preload="metadata" playsInline
+              <video src={f.duongDan} poster={f.anhBia ?? undefined}
+                controls preload="metadata" playsInline
                 className="aspect-[9/16] w-full rounded-the bg-black object-cover" />
               <p className="phu mt-1">
                 Đoạn {i + 1}
                 {f.dungLuong != null && ` · ${gonDungLuong(f.dungLuong)}`}
               </p>
+
+              {/*
+                ẢNH BÌA của từng đoạn. Không có thì trình duyệt lấy khung đầu
+                của phim, mà khung đầu của phim game gần như luôn là màn hình
+                đen lúc trò đang nạp — tức là dải xem trước mở màn bằng một ô
+                đen, đúng chỗ đáng khoe nhất của trang.
+              */}
+              <button type="button" disabled={dangBia === f.id}
+                onClick={() => { biaChoPhim.current = f.id; oBia.current?.click(); }}
+                className="mt-0.5 inline-flex items-center gap-1 text-[12px] font-semibold text-mo transition-colors hover:text-chu">
+                <ImagePlus size={13} aria-hidden />
+                {dangBia === f.id ? 'Đang tải…' : f.anhBia ? 'Đổi ảnh bìa' : 'Đặt ảnh bìa'}
+              </button>
               <button type="button" disabled={dangXoa}
                 onClick={async () => {
                   if (!(await hoi(`Gỡ đoạn phim thứ ${i + 1}?`, true))) return;
@@ -124,6 +159,14 @@ export function KhungPhim({ gameId, phim }: { gameId: string; phim: PhimQuanTri[
           {loi && <p role="alert" className="text-[12px] font-medium text-xau">{loi}</p>}
         </div>
       )}
+      {/* Ô chọn ảnh bìa: giấu đi, mấy nút "Đặt ảnh bìa" ở trên tự bấm hộ. */}
+      <input ref={oBia} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden
+        onChange={(e) => {
+          const t = e.target.files?.[0];
+          e.target.value = '';
+          if (t) void napBia(t);
+        }} />
+
       {hop}
     </div>
   );

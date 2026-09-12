@@ -323,6 +323,37 @@ export async function traLoiYeuCau(id: string, trangThai: string, loiNhan: strin
 }
 
 /**
+ * Đặt ẢNH BÌA cho một đoạn phim — tấm hiện ra trước khi phim chạy.
+ *
+ * Không có ảnh bìa thì trình duyệt lấy khung đầu của phim, mà khung đầu của
+ * phim game gần như luôn là màn hình đen lúc trò đang nạp. Nên dải xem trước
+ * hoá ra mở màn bằng một ô đen — đúng chỗ đáng khoe nhất của trang.
+ */
+export async function datAnhBiaPhim(phimId: string, duongDanAnh: string): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  if (!laDiaChiHopLe(duongDanAnh)) return { loi: LOI_DIA_CHI };
+
+  const phim = await db.phimGame.findFirst({
+    where: { id: phimId, game: locGameCuaToi(nguoi) },
+    select: { anhBia: true, gameId: true, game: { select: { duongDan: true } } },
+  });
+  if (!phim) return { loi: LOI_KHONG_QUYEN };
+
+  await db.phimGame.update({
+    where: { id: phimId }, data: { anhBia: duongDanAnh }, select: { id: true },
+  });
+  // Đổi bìa thì gỡ tấm cũ, và chỉ gỡ khi thật sự khác — cùng lẽ với biểu tượng game.
+  if (phim.anhBia && phim.anhBia !== duongDanAnh) await xoaAnh(phim.anhBia);
+
+  revalidatePath(`/quan-tri/game/${phim.gameId}`);
+  revalidatePath(`/game/${phim.game.duongDan}`);
+  return {};
+}
+
+/**
  * Gỡ một đoạn phim xem trước, và gỡ luôn tệp khỏi kho.
  *
  * Không có hành động THÊM ở đây: phim đi lên qua cổng `/api/tai-len-phim`, vì

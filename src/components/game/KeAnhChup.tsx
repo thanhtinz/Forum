@@ -20,6 +20,13 @@ export interface AnhXem {
  *    bằng phép nội suy mượt, và pixel art ra nhoè. Nay dùng `max-h` nên ảnh
  *    nhỏ đứng đúng cỡ thật của nó.
  *
+ *    TRẦN ẤY NAY CAO HƠN (300px, và 400px từ khổ `sm`), vì từ đợt luật ảnh thì
+ *    mọi tấm gửi lên phải tối thiểu 320 điểm ảnh mỗi cạnh — tức là có tấm để
+ *    mà bày to. `max-h` chỉ GIỚI HẠN chứ không phóng, nên mấy tấm 176×208 nhập
+ *    từ thời trước vẫn đứng đúng cỡ thật, không nhoè thêm một điểm ảnh nào.
+ *    App Store để mỗi tấm chiếm chừng hai phần ba bề ngang màn hình, và đó là
+ *    tỉ lệ khiến người ta thật sự NHÌN ảnh thay vì lướt qua.
+ *
  * 2. XEM ĐƯỢC CỠ LỚN. Ảnh 176px trên màn hình 1440px thì bé như con tem; người
  *    muốn xem game trông thế nào phải nheo mắt. Bấm vào là mở to — và phóng
  *    theo BỘI SỐ NGUYÊN (2x, 3x…) chứ không phóng cho vừa khung: phóng bội số
@@ -89,7 +96,7 @@ export function KeAnhChup({ anh, phim = [] }: { anh: AnhXem[]; phim?: PhimXem[] 
             className="shrink-0 rounded-the border border-vien transition-transform hover:scale-[1.02]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={a.duongDan} alt={a.chuThich ?? ''} loading="lazy"
-              className="anh-chup-game max-h-52 w-auto rounded-the sm:max-h-72" />
+              className="anh-chup-game max-h-[300px] w-auto rounded-the sm:max-h-[400px]" />
           </button>
         ))}
       </section>

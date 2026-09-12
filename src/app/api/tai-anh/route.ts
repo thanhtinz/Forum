@@ -46,6 +46,17 @@ const CHO_DAT = {
     thuMuc: 'anh-chup', toiDa: 3 * 1024 * 1024, canQuanTri: true,
     canhToiThieu: ANH_CHUP_TOI_THIEU, vuong: false, ngang: false,
   },
+  /*
+   * Ảnh bìa của một đoạn phim: tấm hiện ra TRƯỚC khi phim chạy.
+   *
+   * Không đòi nằm ngang như ảnh bìa game, vì phim game điện thoại phần lớn
+   * dựng đứng — đòi ngang là buộc người bày hàng cắt mất hai đầu cảnh chơi.
+   * Chỉ đòi đủ điểm ảnh, cùng sàn với ảnh chụp màn hình.
+   */
+  'phim-bia': {
+    thuMuc: 'phim-bia', toiDa: 2 * 1024 * 1024, canQuanTri: true,
+    canhToiThieu: ANH_CHUP_TOI_THIEU, vuong: false, ngang: false,
+  },
   // Ảnh thẻ sự kiện: cùng luật nằm ngang với ảnh bìa, vì thẻ cũng cắt 16:9.
   'su-kien': {
     thuMuc: 'su-kien', toiDa: 2 * 1024 * 1024, canQuanTri: true,

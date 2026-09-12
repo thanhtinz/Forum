@@ -56,7 +56,7 @@ export function PhimXemTruoc({ phim }: { phim: PhimXem }) {
     <div className="relative shrink-0">
       <video ref={oRef} src={phim.duongDan} poster={phim.anhBia ?? undefined}
         muted={!coTieng} loop playsInline preload="metadata" controls
-        className="max-h-52 w-auto rounded-the border border-vien bg-black sm:max-h-72" />
+        className="max-h-[300px] w-auto rounded-the border border-vien bg-black sm:max-h-[400px]" />
 
       {/* Nút loa đặt đè lên góc, không nằm ngoài khung: đây là nút của ĐOẠN
           PHIM NÀY, mà một trang có thể có ba đoạn. */}

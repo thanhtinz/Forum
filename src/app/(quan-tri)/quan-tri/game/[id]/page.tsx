@@ -33,7 +33,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
         },
         phim: {
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
-          select: { id: true, duongDan: true, dungLuong: true },
+          select: { id: true, duongDan: true, anhBia: true, dungLuong: true },
         },
         suKien: {
           orderBy: [{ batDau: 'desc' }, { id: 'desc' }],

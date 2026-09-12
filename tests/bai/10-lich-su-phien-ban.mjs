@@ -68,6 +68,32 @@ export default async function chay(kiem) {
   const soLanCoGiMoi = await p.locator('#tai h3:has-text("Có gì mới")').count();
   kiem('không in khối "Có gì mới" riêng khi đã có trục thời gian', soLanCoGiMoi === 0);
 
+  /*
+   * ── MỤC "CÓ GÌ MỚI" Ở TAB THÔNG TIN ──────────────────────────────────
+   *
+   * Khác hẳn khối vừa kiểm ở trên: khối kia nằm TRONG khung tải, cạnh trục
+   * thời gian, nên in ra là lặp. Mục này nằm ở tab thông tin, trên phần giới
+   * thiệu — đúng chỗ App Store đặt nó, và đúng thứ người đã tải quay lại xem.
+   *
+   * Nó phải nhắc ghi chú của bản MỚI NHẤT CÓ GHI, không phải bản mới nhất:
+   * game cũ thường chỉ ghi cho một hai bản giữa dãy.
+   */
+  const banCoGhi = await db.banTai.findFirst({
+    where: { game: { duongDan: game.duongDan }, doiMoi: { not: null } },
+    orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }, { id: 'desc' }],
+    select: { soHieu: true, doiMoi: true },
+  });
+  if (banCoGhi) {
+    const chuTrang = await p.locator('body').textContent();
+    kiem('tab thông tin có mục "Có gì mới"',
+      (await p.locator('h2:has-text("Có gì mới")').count()) > 0);
+    kiem('mục ấy nhắc đúng ghi chú của bản mới nhất có ghi',
+      chuTrang.includes(banCoGhi.doiMoi.slice(0, 40)), banCoGhi.doiMoi.slice(0, 40));
+    kiem('mục ấy nói rõ là bản nào', chuTrang.includes(`Bản ${banCoGhi.soHieu}`));
+    kiem('mục ấy có đường xuống lịch sử phiên bản',
+      (await p.locator('a[href="#tai"]:has-text("Lịch sử phiên bản")').count()) > 0);
+  }
+
   // ── Mở ra thì hiện đủ ─────────────────────────────────────────────────
   await p.locator(`#tai button:has-text("Xem ${banHeDau.length} phiên bản")`).click();
   await p.waitForTimeout(400);

@@ -15,7 +15,7 @@ import { Ke } from '@/components/game/Ke';
 import { TheSuKien } from '@/components/game/TheSuKien';
 import { SU_KIEN_TREN_TRANG } from '@/lib/su-kien-const';
 import { KhoiGap } from '@/components/KhoiGap';
-import { NGON_NGU } from '@/lib/he-may';
+import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
 import { bocChu, dungChuDam } from '@/lib/chu-dam';
 import { nguoiHienTai } from '@/lib/xac-thuc';
@@ -79,6 +79,20 @@ export default async function TabThongTin({ params, searchParams }: {
           batDau: true, ketThuc: true,
         },
       },
+      /*
+       * Bản MỚI NHẤT CÓ GHI "có gì mới", để dựng mục "Có gì mới".
+       *
+       * Lọc `doiMoi: { not: null }` ngay trong câu truy vấn chứ không lấy bản
+       * mới nhất rồi xem nó có ghi gì không: game cũ thường chỉ ghi ghi chú
+       * cho một hai bản giữa dãy, nên lấy bản mới nhất trước rồi xét sau thì
+       * phần lớn lượt ra tay trắng dù trong dãy vẫn có bản có ghi.
+       */
+      banTai: {
+        where: { doiMoi: { not: null } },
+        orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }, { id: 'desc' }],
+        take: 1,
+        select: { heMay: true, soHieu: true, ngayRa: true, doiMoi: true },
+      },
       _count: { select: { banTai: true } },
     },
   });
@@ -128,6 +142,8 @@ export default async function TabThongTin({ params, searchParams }: {
       ? `/nha-phat-trien/${encodeURIComponent(game.nhaPhatTrien)}`
       : null;
 
+  const moiNhat = game.banTai[0] ?? null;
+
   const gom = phanBo.reduce((t, p) => t + p._count._all, 0);
   const tongSao = phanBo.reduce((t, p) => t + p.sao * p._count._all, 0);
   const sao = gom > 0 ? Math.round((tongSao / gom) * 10) / 10 : 0;
@@ -158,6 +174,34 @@ export default async function TabThongTin({ params, searchParams }: {
                 }} />
             ))}
           </Ke>
+        </section>
+      )}
+
+      {/*
+        "CÓ GÌ MỚI" ĐỨNG TRƯỚC PHẦN GIỚI THIỆU, đúng thứ tự App Store dùng.
+
+        Lẽ của thứ tự ấy: phần giới thiệu là thứ người MỚI tới đọc, mà người
+        mới thì mỗi game chỉ có một lần; còn "có gì mới" là thứ người ĐÃ tải
+        quay lại xem, và họ quay lại nhiều lần. Xếp theo số lần người ta thật
+        sự cần đọc, không xếp theo thứ tự mình viết ra.
+
+        Nhắc lại y nguyên phần ghi chú của bản mới nhất — chỗ chi tiết từng bản
+        vẫn nằm trong trục thời gian ở khung tải, và có đường dẫn xuống đó.
+      */}
+      {moiNhat?.doiMoi && (
+        <section>
+          <div className="mb-2 flex items-baseline justify-between gap-3">
+            <h2 className="tieu-de">Có gì mới</h2>
+            <a href="#tai" className="text-[13px] font-semibold text-nhan hover:underline">
+              Lịch sử phiên bản
+            </a>
+          </div>
+          <p className="phu">
+            Bản {moiNhat.soHieu}
+            {soHe.length > 1 && ` · ${MO_TA_HE[moiNhat.heMay as MaHeMay]?.ten ?? moiNhat.heMay}`}
+            {moiNhat.ngayRa && ` · ${cachDay(moiNhat.ngayRa)}`}
+          </p>
+          <p className="mt-1.5 whitespace-pre-line text-[14px] leading-relaxed">{moiNhat.doiMoi}</p>
         </section>
       )}
 

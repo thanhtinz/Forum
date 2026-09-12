@@ -37,8 +37,13 @@ export function NenGame({ ten, className, doLuoi = 4 }: {
       <span className="absolute inset-0"
         style={{ backgroundImage: `linear-gradient(140deg, ${tu}, ${den})` }} />
 
+      {/* Vệt sáng lệch về góc trên trái, và một vùng tối dồn xuống đáy phải:
+          hai thứ ấy làm mảng màu có CHIỀU SÂU, nên biểu tượng đặt lên trông
+          như đang đứng trên một cái phông, chứ không như dán lên giấy màu. */}
       <span className="absolute inset-0"
-        style={{ backgroundImage: `radial-gradient(120% 90% at 12% 0%, rgb(255 255 255 / .28), transparent 62%)` }} />
+        style={{ backgroundImage: `radial-gradient(120% 90% at 12% 0%, rgb(255 255 255 / .26), transparent 62%)` }} />
+      <span className="absolute inset-0"
+        style={{ backgroundImage: `radial-gradient(90% 80% at 85% 105%, rgb(0 0 0 / .28), transparent 60%)` }} />
 
       <span className="absolute inset-0 mix-blend-overlay"
         style={{

@@ -15,11 +15,25 @@
 :root {
   color-scheme: light;
 
-  --nen: 255 255 255;
+  /*
+   * BA TẦNG NỀN, KHÔNG PHẢI MỘT.
+   *
+   * Trước đây `--nen` và `--nen2` đều là trắng tinh: thẻ trắng nằm trên nền
+   * trắng, nên cả trang phẳng lì và thứ duy nhất tách được thẻ khỏi nền là một
+   * sợi viền xám mảnh. Nhìn ra là một tờ giấy kẻ ô, không phải một chồng thẻ.
+   *
+   * App Store nền xám nhạt, thẻ trắng — thẻ NỔI LÊN nhờ chênh sáng chứ không
+   * nhờ viền. Chênh đúng 3% là đủ: thấy được tầng mà không thành hai vùng màu
+   * đánh nhau.
+   *
+   *   --nen  : mặt bàn, thứ nằm dưới cùng
+   *   --nen2 : mặt thẻ, trắng tinh để ảnh và biểu tượng đặt lên đúng màu
+   *   --nen3 : chip, nút phụ, ô nhập — phải sẫm hơn MẶT BÀN mới thấy
+   */
+  --nen: 244 245 247;
   --nen2: 255 255 255;
-  /* Xám của chip và nút phụ — cùng đúng một sắc xám cho cả trang. */
-  --nen3: 241 243 244;
-  --vien: 232 234 237;
+  --nen3: 233 236 240;
+  --vien: 226 229 234;
   --chu: 32 33 36;
   --mo: 95 99 104;
 
@@ -56,8 +70,15 @@
   --vo-qt: 24 26 30;
   --vo-qt-chu: 244 245 247;
 
-  --bo-the: 12px;
-  --bo-nut: 8px;
+  /*
+   * Bo góc rộng hơn trước (12px). Thẻ của App Store bo sâu, và khi thẻ đã nổi
+   * lên khỏi nền bằng chênh sáng thì góc mềm mới ra dáng một tấm thiệp; góc
+   * 12px trên một thẻ rộng 700px trông như một ô bảng biểu.
+   */
+  --bo-the: 16px;
+  /** Thẻ lớn — tấm nổi bật, tấm hôm nay. Bo sâu hơn vì nó to hơn hẳn. */
+  --bo-the-lon: 20px;
+  --bo-nut: 10px;
   /* 22% — đúng độ bo biểu tượng ứng dụng của iOS/Android. Lệch đi là mắt thấy
      ngay "không giống app", dù không chỉ ra được vì sao. */
   --bo-icon: 22%;
@@ -320,7 +341,7 @@ p { text-wrap: pretty; }
      nào để đổi dáng, nên đây là phản hồi duy nhất người dùng nhận được. */
   .the-bam:active { transform: scale(.99); }
 
-  .phu { @apply text-[12px] leading-snug text-mo; }
+  .phu { @apply text-[13px] leading-snug text-mo; }
 
   /*
    * THANG CHỮ — ba bậc, và chỉ ba.
@@ -331,7 +352,16 @@ p { text-wrap: pretty; }
    * dễ thấy nhất giữa chữ của một ứng dụng thật và chữ đặt mặc định.
    */
   .tieu-de-trang { @apply text-[30px] font-bold leading-[1.12] tracking-[-0.02em] sm:text-[34px]; }
-  .tieu-de { @apply text-[19px] font-bold tracking-[-0.01em]; }
+  /*
+   * Đầu đề mục: 22px, không phải 19px.
+   *
+   * App Store để đầu đề mục to gần bằng tên trang, vì nó là thứ người cuộn dọc
+   * dùng để định vị — cuộn nhanh thì chỉ mấy dòng đậm ấy kịp đọc. 19px đứng
+   * cạnh tên game 15px thì chênh chưa đủ để mắt bắt được lúc lướt.
+   */
+  .tieu-de { @apply text-[22px] font-bold leading-tight tracking-[-0.02em]; }
+  /** Đầu đề nhỏ hơn, cho mục nằm TRONG một thẻ. */
+  .tieu-de-nho { @apply text-[17px] font-bold tracking-[-0.01em]; }
 
   /* Nhãn chữ hoa nhỏ đứng trên một tiêu đề — dáng "eyebrow" của App Store. */
   .nhan-tren { @apply text-[12px] font-bold uppercase tracking-[0.14em]; }
@@ -380,4 +410,24 @@ p { text-wrap: pretty; }
 .anh-chup-game {
   image-rendering: pixelated;
   object-fit: contain;
+}
+
+/*
+ * VẠCH NGĂN THỤT VÀO, không kẻ suốt bề ngang.
+ *
+ * Vạch kẻ suốt cắt cả cột biểu tượng, nên mỗi hàng thành một ô bảng biểu. iOS
+ * thụt vạch vào ngang chỗ chữ bắt đầu: cột biểu tượng liền một dải, và mắt đọc
+ * ra "một danh sách" chứ không phải "một cái bảng".
+ *
+ * Dùng `::before` chứ không dùng `border-top`: viền thì luôn rộng bằng cả hàng,
+ * còn lớp giả thì đặt được mép trái vào đúng chỗ muốn.
+ */
+.danh-sach-the > li { position: relative; }
+.danh-sach-the > li + li::before {
+  content: '';
+  position: absolute;
+  left: 82px;
+  right: 0;
+  top: 0;
+  border-top: 1px solid rgb(var(--vien));
 }

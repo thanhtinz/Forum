@@ -28,14 +28,30 @@ export function BieuTuongGame({ ten, icon, co, className }: {
 
   const { tu, den } = mauCuaGame(ten);
   return (
+    /*
+     * Ô màu này phải trông như một BIỂU TƯỢNG ỨNG DỤNG, không như một ô bảng
+     * màu. Ba lớp làm nên khác biệt ấy, và cả ba đều rất nhẹ:
+     *
+     *   • dải màu chéo — cái đã có;
+     *   • một vệt sáng ở góc trên trái, như ánh sáng hắt vào một mặt bóng;
+     *   • một sợi viền trong bằng màu trắng mờ, đúng cái viền mà biểu tượng
+     *     iOS nào cũng có để tách khỏi nền sáng.
+     *
+     * Chữ tắt hạ từ `font-black` xuống `font-bold`: ở cỡ 56px thì chữ đen
+     * kịt bít gần hết ô, mà biểu tượng thật thì hình bao giờ cũng có chỗ thở.
+     */
     <span aria-hidden
-      className={gop('bieu-tuong grid shrink-0 place-items-center font-black text-white', className)}
+      className={gop('bieu-tuong grid shrink-0 place-items-center font-bold text-white', className)}
       style={{
         width: co,
         height: co,
-        backgroundImage: `linear-gradient(140deg, ${tu}, ${den})`,
-        fontSize: Math.round(co * 0.34),
-        letterSpacing: '-0.02em',
+        backgroundImage:
+          `radial-gradient(105% 85% at 18% 2%, rgb(255 255 255 / .34), transparent 58%),`
+          + `linear-gradient(145deg, ${tu}, ${den})`,
+        boxShadow: 'inset 0 0 0 1px rgb(255 255 255 / .18), inset 0 -1px 2px rgb(0 0 0 / .12)',
+        fontSize: Math.round(co * 0.33),
+        letterSpacing: '-0.03em',
+        textShadow: '0 1px 2px rgb(0 0 0 / .18)',
       }}>
       {chuTat(ten)}
     </span>

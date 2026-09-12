@@ -69,7 +69,7 @@ export default async function HomNay() {
   const daBay = new Set(ngayNay.map((g) => g.id));
 
   return (
-    <div className="mx-auto max-w-[680px] space-y-5">
+    <div className="mx-auto max-w-[680px] space-y-7">
       {/* Lời mời cài đặt chỉ đặt ở tab Hôm nay — đây là trang người ta mở
           thường xuyên nhất, mà mời cài ở mọi trang thì thành phiền. */}
       <NutCaiUngDung />
@@ -120,40 +120,48 @@ export default async function HomNay() {
  */
 function TamLon({ game, nhan, doan }: { game: TheGame; nhan: string; doan: string | null }) {
   return (
-    <article className="the-noi overflow-hidden">
+    <article className="the-noi overflow-hidden !rounded-the-lon">
       <Link href={`/game/${game.duongDan}`} className="block">
-        <div className="relative aspect-[4/3] w-full sm:aspect-[16/10]">
+        {/*
+          TẤM NGANG, KHÔNG PHẢI TẤM CAO.
+
+          Bản trước là khung 4:3 với biểu tượng 104px thả giữa: ở khổ máy bàn
+          thành hơn năm trăm điểm ảnh màu phẳng quây quanh một cái biểu tượng
+          bé tí, và mắt đọc ra ngay là "ảnh chưa tải xong". App Store lấp chỗ
+          ấy bằng ảnh chụp thật; cửa hàng này chưa có ảnh nào, mà dựng ảnh giả
+          là nói dối người xem về thứ họ sắp tải.
+
+          Nên bày đúng thứ có thật: biểu tượng, ở cỡ LỚN, đặt cạnh cái tên —
+          dáng một tấm ảnh sản phẩm chụp trên phông. Tấm thấp lại, biểu tượng
+          to lên, và khoảng trống biến mất vì không còn chỗ nào để trống.
+        */}
+        <div className="relative aspect-[4/3] w-full sm:aspect-[21/9]">
           <NenGame ten={game.ten} doLuoi={6} />
 
-          {/*
-            BIỂU TƯỢNG ĐẶT TO GIỮA TẤM.
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center sm:flex-row sm:justify-start sm:gap-8 sm:p-10 sm:text-left">
+            <BieuTuongGame ten={game.ten} icon={game.icon} co={124}
+              className="shrink-0 shadow-[0_14px_34px_-8px_rgb(0_0_0/.5)]" />
 
-            Bản trước để cả cửa hàngảng giữa trống trơn, chỉ có dải màu — mà khoảng
-            trống to nhất trang thì mắt đọc ra là "chỗ này ảnh chưa tải xong".
-            Biểu tượng là thứ hình ảnh THẬT duy nhất cửa hàng đang có của mỗi game,
-            nên nó vào đúng chỗ ấy làm chủ thể của tấm, thay vì nằm bé tí ở
-            hàng dưới cùng với cái tên vừa in to phía trên.
-          */}
-          <span className="absolute inset-0 grid place-items-center pt-6">
-            <BieuTuongGame ten={game.ten} icon={game.icon} co={104}
-              className="shadow-[0_10px_30px_-6px_rgb(0_0_0/.45)]" />
-          </span>
-
-          <span className="absolute inset-x-0 top-0 h-2/5 bg-gradient-to-b from-black/50 to-transparent" />
-          {/* Tên game là một TIÊU ĐỀ THẬT, không phải một cái span tô đậm: nó
-              là đầu đề của khối này, nên bộ đọc màn hình phải nhảy tới được. */}
-          <div className="absolute inset-x-0 top-0 p-5">
-            <p className="nhan-tren text-white/85">{nhan}</p>
-            <h2 className="mt-1 text-[28px] font-bold leading-tight text-white">{game.ten}</h2>
+            <div className="min-w-0">
+              <p className="nhan-tren text-white/85">{nhan}</p>
+              {/* Tên game là một TIÊU ĐỀ THẬT, không phải một span tô đậm: nó là
+                  đầu đề của khối này, nên bộ đọc màn hình phải nhảy tới được. */}
+              <h2 className="mt-1.5 text-[26px] font-bold leading-[1.1] tracking-[-0.02em] text-white sm:text-[32px]">
+                {game.ten}
+              </h2>
+              {game.tenViet && (
+                <p className="mt-1 text-[14px] text-white/80">{game.tenViet}</p>
+              )}
+            </div>
           </div>
         </div>
       </Link>
 
-      {/* Hàng dưới KHÔNG lặp lại biểu tượng nữa — nó đã là chủ thể của tấm
-          ngay trên. Chỗ ấy nhường cho thứ chưa nói ở đâu: thể loại và điểm. */}
+      {/* Hàng dưới KHÔNG lặp lại biểu tượng — nó vừa là chủ thể của tấm ngay
+          trên. Chỗ ấy nhường cho thứ chưa nói ở đâu: thể loại và điểm. */}
       <div className="flex items-center gap-3 p-4">
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14px] font-semibold">
+          <span className="block truncate text-[15px] font-semibold">
             {game.theLoai.map((t) => t.ten).join(' · ') || 'Game'}
           </span>
           <span className="phu mt-0.5 block truncate">
@@ -166,7 +174,7 @@ function TamLon({ game, nhan, doan }: { game: TheGame; nhan: string; doan: strin
       </div>
 
       {doan && (
-        <p className="vach px-4 pb-4 pt-3.5 text-[13px] leading-relaxed text-mo">{doan}</p>
+        <p className="vach px-4 pb-4 pt-3.5 text-[14px] leading-relaxed text-mo">{doan}</p>
       )}
     </article>
   );
@@ -191,23 +199,34 @@ function TheBoSuuTap({ nhan, tieuDe, phu, game, xemThem }: {
   const dau = (
     <>
       <p className="nhan-tren text-nhan">{nhan}</p>
-      <p className="mt-0.5 text-[19px] font-bold leading-tight tracking-tight">{tieuDe}</p>
-      <p className="phu mt-0.5">{phu}</p>
+      <p className="tieu-de mt-0.5">{tieuDe}</p>
+      <p className="phu mt-1">{phu}</p>
     </>
   );
 
+  /*
+   * ĐẦU ĐỀ NẰM NGOÀI THẺ, chỉ danh sách nằm trong.
+   *
+   * Bản trước nhét cả nhãn, đầu đề và dòng phụ vào trong thẻ trắng, nên trước
+   * mỗi nhóm game có ba dòng chữ trong một hộp — cuộn dọc thì cả trang thành
+   * một chồng biểu mẫu giống hệt nhau. Đặt đầu đề lên nền xám thì nó thành
+   * MỐC ĐỊNH VỊ: lướt nhanh vẫn bắt được mình đang ở mục nào, mà thẻ trắng
+   * bên dưới chỉ còn đúng một việc là chứa danh sách.
+   */
   return (
-    <section className="the-noi p-4">
+    <section>
       {xemThem ? (
-        <Link href={xemThem} className="mb-3.5 flex items-start justify-between gap-3">
+        <Link href={xemThem} className="mb-3 flex items-start justify-between gap-3 px-1">
           <span className="min-w-0">{dau}</span>
-          <ChevronRight size={20} className="mt-4 shrink-0 text-mo" aria-hidden />
+          <ChevronRight size={20} className="mt-5 shrink-0 text-mo" aria-hidden />
         </Link>
       ) : (
-        <div className="mb-3.5">{dau}</div>
+        <div className="mb-3 px-1">{dau}</div>
       )}
-      <ul className="space-y-3.5">
-        {game.map((g) => <li key={g.id}><HangGame game={g} /></li>)}
+      <ul className="the-noi danh-sach-the">
+        {game.map((g) => (
+          <li key={g.id} className="p-3.5"><HangGame game={g} /></li>
+        ))}
       </ul>
     </section>
   );

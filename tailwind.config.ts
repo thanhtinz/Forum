@@ -29,6 +29,7 @@ export default {
       },
       borderRadius: {
         the: 'var(--bo-the)',
+        'the-lon': 'var(--bo-the-lon)',
         nut: 'var(--bo-nut)',
         icon: 'var(--bo-icon)',
       },

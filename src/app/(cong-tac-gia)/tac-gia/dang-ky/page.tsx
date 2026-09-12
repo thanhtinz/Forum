@@ -47,8 +47,8 @@ export default async function MoiLamTacGia() {
       </header>
 
       <ol className="the-noi danh-sach-the">
-        <Buoc so={1} hinh={<ShieldCheck size={18} />} ten="Được cấp quyền tác giả"
-          mo="Nhắn cho ban quản trị kèm vài dòng về game bạn định đăng." />
+        <Buoc so={1} hinh={<ShieldCheck size={18} />} ten="Gửi đơn xin làm tác giả"
+          mo="Ngay dưới trang này. Kể vài dòng về game bạn định đăng — ban quản trị đọc rồi trả lời." />
         <Buoc so={2} hinh={<Upload size={18} />} ten="Soạn game trong bảng tác giả"
           mo="Tên, mô tả, ảnh chụp, và ít nhất một bản tải. Game nằm ở nháp, chưa ai thấy." />
         <Buoc so={3} hinh={<Send size={18} />} ten="Gửi duyệt"

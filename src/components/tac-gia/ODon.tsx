@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react';
 import { Clock, TriangleAlert } from 'lucide-react';
-import { guiDonTacGia, type KetQuaDon } from '@/app/(cua-hang)/tac-gia/dang-ky/viec';
+import { guiDonTacGia, type KetQuaDon } from '@/app/(cong-tac-gia)/tac-gia/dang-ky/viec';
 
 export interface DonXem {
   trangThai: string;

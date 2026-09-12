@@ -1,16 +1,24 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { traLoiDanhGia } from '@/app/(quan-tri)/quan-tri/viec';
 
 /**
- * Ô trả lời một bài đánh giá, chỉ quản trị thấy.
+ * Ô trả lời một bài đánh giá.
  *
  * Mặc định gấp lại thành một dòng chữ nhỏ: trang game là chỗ người chơi đọc,
- * nên công cụ quản trị không được chiếm chỗ của nội dung. Mở ra thì mới thành
- * ô chữ.
+ * nên công cụ của người bán hàng không được chiếm chỗ của nội dung. Mở ra thì
+ * mới thành ô chữ.
+ *
+ * VIỆC GHI TRUYỀN TỪ NGOÀI VÀO, vì nay có hai người đáp được: ban quản trị đáp
+ * mọi bài trong cửa hàng, tác giả chỉ đáp bài của game mình. Hai việc ấy kiểm
+ * quyền khác nhau nên phải là hai hàm khác nhau — còn cái ô chữ thì vẫn là một
+ * cái ô chữ, chép ra hai bản chỉ tổ sửa một bên quên bên kia.
  */
-export function ODapDanhGia({ danhGiaId, banDau }: { danhGiaId: string; banDau: string | null }) {
+export function ODapDanhGia({ danhGiaId, banDau, dap }: {
+  danhGiaId: string;
+  banDau: string | null;
+  dap: (danhGiaId: string, loi: string) => Promise<{ loi?: string }>;
+}) {
   const [mo, datMo] = useState(false);
   const [chu, datChu] = useState(banDau ?? '');
   const [loi, datLoi] = useState<string | null>(null);
@@ -28,7 +36,7 @@ export function ODapDanhGia({ danhGiaId, banDau }: { danhGiaId: string; banDau: 
   const gui = () => {
     datLoi(null);
     batDau(async () => {
-      const kq = await traLoiDanhGia(danhGiaId, chu);
+      const kq = await dap(danhGiaId, chu);
       if (kq.loi) datLoi(kq.loi);
       else datMo(false);
     });
@@ -55,7 +63,7 @@ export function ODapDanhGia({ danhGiaId, banDau }: { danhGiaId: string; banDau: 
         {/* Xoá = lưu chuỗi rỗng, nên chỉ mời bấm khi đang thật có lời đáp. */}
         {banDau && (
           <button type="button" disabled={dangGui}
-            onClick={() => { datChu(''); batDau(async () => { await traLoiDanhGia(danhGiaId, ''); datMo(false); }); }}
+            onClick={() => { datChu(''); batDau(async () => { await dap(danhGiaId, ''); datMo(false); }); }}
             className="ml-auto text-[12px] font-semibold text-xau hover:underline">
             Xoá lời trả lời
           </button>

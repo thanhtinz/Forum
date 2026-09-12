@@ -40,17 +40,23 @@ export default async function GocTacGia({ children }: { children: React.ReactNod
   // game nào nên danh sách sẽ trống — đúng như thật.
   if (nguoi.vaiTro !== 'TAC_GIA' && nguoi.vaiTro !== 'QUAN_TRI') redirect('/tac-gia/dang-ky');
 
-  const [choDuyet, tuChoi] = await Promise.all([
+  const [choDuyet, tuChoi, chuaDap] = await Promise.all([
     db.game.count({ where: { tacGiaId: nguoi.id, trangThai: 'CHO_DUYET' } }),
     db.game.count({ where: { tacGiaId: nguoi.id, trangThai: 'TU_CHOI' } }),
+    // Chỉ đếm bài CÓ LỜI VIẾT: bài chấm sao suông không có gì để trả lời, đếm
+    // nó vào thì huy hiệu bày ra một chồng việc không bao giờ vơi.
+    db.danhGia.count({
+      where: { game: { tacGiaId: nguoi.id }, noiDung: { not: null }, traLoi: null },
+    }),
   ]);
 
   // Con số đếm ở máy chủ rồi gắn thẳng vào mục, để thanh trên không phải biết
   // gì về game hay trạng thái game.
-  const loiDi = LOI_DI.map((l) => ({
-    ...l,
-    so: l.dich === '/quan-ly/game' ? choDuyet + tuChoi : undefined,
-  }));
+  const HUY_HIEU: Record<string, number> = {
+    '/quan-ly/game': choDuyet + tuChoi,
+    '/quan-ly/danh-gia': chuaDap,
+  };
+  const loiDi = LOI_DI.map((l) => ({ ...l, so: HUY_HIEU[l.dich] }));
 
   return (
     <html lang="vi" suppressHydrationWarning>

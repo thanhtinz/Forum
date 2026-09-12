@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  ArrowLeft, FilePen, Gamepad2, LayoutDashboard, Menu, UserRound, X,
+  ArrowLeft, FilePen, Gamepad2, LayoutDashboard, Menu, Star, UserRound, X,
 } from 'lucide-react';
 import { gop } from '@/lib/tien-ich';
 
-const HINH = { LayoutDashboard, Gamepad2, UserRound, FilePen };
+const HINH = { LayoutDashboard, Gamepad2, Star, UserRound, FilePen };
 
 export interface MucTacGia {
   dich: string;
@@ -41,7 +41,7 @@ function dangChon(hienTai: string, dich: string): boolean {
  * vừa mua hàng nhìn một cái là biết mình đang ở bên nào.
  *
  * Danh sách lối đi truyền từ ngoài vào: phần mở chỉ có một mục (đăng ký), phần
- * trong có ba. Một thành phần, hai cảnh — chứ không phải hai thanh trên gần
+ * trong có đủ cả bảng. Một thành phần, hai cảnh — chứ không phải hai thanh trên gần
  * giống nhau rồi sửa cái này quên cái kia.
  */
 export function DauTrangTacGia({ loiDi, trangChu, ten }: {

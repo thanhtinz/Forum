@@ -1,5 +1,6 @@
 import { SaoNam } from '@/components/game/SaoNam';
 import { ODapDanhGia } from '@/components/game/ODapDanhGia';
+import { traLoiDanhGia } from '@/app/(quan-tri)/quan-tri/viec';
 import { NutBaoXau } from '@/components/NutBaoXau';
 import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { cachDay } from '@/lib/tien-ich';
@@ -67,7 +68,7 @@ export function BaiDanhGia({ d, nguoiXemId, laQuanTri }: {
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        {laQuanTri && <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} />}
+        {laQuanTri && <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} dap={traLoiDanhGia} />}
         {/* Chỉ mời báo khi đã đăng nhập và không phải bài của chính mình —
             bài của mình thì sửa thẳng được. */}
         {nguoiXemId && nguoiXemId !== d.nguoiId && <NutBaoXau loai="danhGia" mucId={d.id} />}

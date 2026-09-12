@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useMemo, useState, useTransition } from 'react';
 import { doiTrangThaiNhieu } from '@/app/(quan-tri)/quan-tri/viec';
+import { useXacNhan } from '@/components/HopXacNhan';
 
 /**
  * CHỌN NHIỀU GAME rồi đổi trạng thái một lượt.
@@ -87,12 +88,13 @@ export function ThanhViecChon() {
   const { chon, batHet } = dungKho();
   const [dangChay, batDau] = useTransition();
   const [loi, datLoi] = useState<string | null>(null);
+  const { hoi, hop } = useXacNhan();
   const id = [...chon];
 
   if (id.length === 0) return null;
 
-  const lam = (trangThai: 'DANG_HIEN' | 'NHAP' | 'DA_GO', hoi: string) => {
-    if (!window.confirm(`${hoi} ${id.length} game đang chọn?`)) return;
+  const lam = async (trangThai: 'DANG_HIEN' | 'NHAP' | 'DA_GO', cauHoi: string) => {
+    if (!(await hoi(`${cauHoi} ${id.length} game đang chọn?`, true))) return;
     datLoi(null);
     batDau(async () => {
       const kq = await doiTrangThaiNhieu(id, trangThai);
@@ -103,7 +105,9 @@ export function ThanhViecChon() {
 
   return (
     <div className="fixed inset-x-0 bottom-4 z-40 flex justify-center px-4">
-      <div className="flex max-w-full flex-wrap items-center gap-2 rounded-full border border-vien bg-nen2 px-4 py-2.5 shadow-noi">
+      {/* Thanh này trôi trên danh sách game nên nó cũng là kính, cùng vật liệu
+          với thanh tab đáy — xem `.kinh` trong `globals.css`. */}
+      <div className="kinh flex max-w-full flex-wrap items-center gap-2 rounded-full px-4 py-2.5">
         <span className="text-[13px] font-bold">{id.length} game</span>
         <button type="button" disabled={dangChay} onClick={() => lam('DANG_HIEN', 'Đăng')}
           className="nut-xam !min-h-[32px] !px-3 !text-[12px]">Đăng</button>
@@ -115,6 +119,7 @@ export function ThanhViecChon() {
           className="text-[12px] font-semibold text-mo hover:underline">Bỏ chọn</button>
         {loi && <span role="alert" className="basis-full text-[12px] font-medium text-xau">{loi}</span>}
       </div>
+      {hop}
     </div>
   );
 }

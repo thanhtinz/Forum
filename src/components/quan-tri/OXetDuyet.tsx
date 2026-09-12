@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Check, X } from 'lucide-react';
 import { duyetGame, tuChoiGame } from '@/app/(quan-tri)/quan-tri/viec';
+import { useXacNhan } from '@/components/HopXacNhan';
 
 /*
  * Hai nút quyết định của hàng chờ: duyệt, hoặc trả lại kèm lý do.
@@ -15,6 +16,7 @@ export function OXetDuyet({ gameId, ten }: { gameId: string; ten: string }) {
   const [lyDo, datLyDo] = useState('');
   const [loi, datLoi] = useState<string | null>(null);
   const [dangChay, batDau] = useTransition();
+  const { hoi, hop } = useXacNhan();
 
   const lam = (viec: () => Promise<{ loi?: string }>) => {
     datLoi(null);
@@ -28,7 +30,9 @@ export function OXetDuyet({ gameId, ten }: { gameId: string; ten: string }) {
   return (
     <>
       <button type="button" disabled={dangChay}
-        onClick={() => { if (window.confirm(`Duyệt “${ten}” và bày ra cửa hàng?`)) lam(() => duyetGame(gameId)); }}
+        onClick={async () => {
+          if (await hoi(`Duyệt “${ten}” và bày ra cửa hàng?`)) lam(() => duyetGame(gameId));
+        }}
         className="nut-cai-dam !min-h-[34px] !px-3 !text-[13px]">
         <Check size={14} aria-hidden /> Duyệt
       </button>
@@ -54,6 +58,7 @@ export function OXetDuyet({ gameId, ten }: { gameId: string; ten: string }) {
       )}
 
       {loi && <p role="alert" className="basis-full text-[12px] font-medium text-xau">{loi}</p>}
+      {hop}
     </>
   );
 }

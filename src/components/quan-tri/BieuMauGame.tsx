@@ -105,12 +105,21 @@ export function BieuMauGame({ game, theLoai, laQuanTri = true, veSau }: {
 
       <OSoanThao ten="gioiThieu" nhan="Giới thiệu" giaTri={game?.gioiThieu ?? ''} dong={7} chiDan />
 
-      <div className="flex flex-wrap gap-4">
-        <Danh ten="vietHoa" nhan="Có bản Việt hoá" bat={game?.vietHoa} />
+      {/* Mỗi công tắc một dòng, có vạch ngăn — dáng khối cài đặt của iOS.
+          Xếp ngang cạnh nhau thì hai nhãn dài không thẳng hàng với nhau, và
+          hai công tắc nằm lẫn giữa chữ. */}
+      <div className="the divide-y divide-vien px-4">
+        <div className="py-3">
+          <Danh ten="vietHoa" nhan="Có bản Việt hoá" bat={game?.vietHoa} />
+        </div>
         {/* Băng nổi bật quyết định game nào chiếm mặt tiền, nên nó là chỗ của
             ban quản trị. Máy chủ cũng bỏ qua cờ này khi người gửi là tác giả —
             giấu nút đi không phải là chặn. */}
-        {laQuanTri && <Danh ten="noiBat" nhan="Đưa lên băng nổi bật" bat={game?.noiBat} />}
+        {laQuanTri && (
+          <div className="py-3">
+            <Danh ten="noiBat" nhan="Đưa lên băng nổi bật" bat={game?.noiBat} />
+          </div>
+        )}
       </div>
 
       {ketQua.loi && (
@@ -138,11 +147,19 @@ function O({ ten, nhan, giaTri, kieu = 'text', batBuoc, goYy }: {
   );
 }
 
+/**
+ * Một dòng CÔNG TẮC: nhãn bên trái, công tắc bên phải.
+ *
+ * Nhãn trước, công tắc sau — và chiếm cả bề ngang. Đó là dáng mọi dòng cài đặt
+ * của iOS, và nó có việc để làm: mắt đọc nhãn ở lề trái, còn TRẠNG THÁI thì
+ * luôn nằm đúng một chỗ ở lề phải, nên quét mắt xuống cả cột là thấy ngay cái
+ * nào đang bật mà không phải đọc lại từng dòng.
+ */
 function Danh({ ten, nhan, bat }: { ten: string; nhan: string; bat?: boolean }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-[14px]">
-      <input type="checkbox" name={ten} defaultChecked={bat} className="size-4 accent-[rgb(var(--nhan))]" />
-      {nhan}
+    <label className="flex cursor-pointer items-center justify-between gap-3 text-[14px]">
+      <span>{nhan}</span>
+      <input type="checkbox" name={ten} defaultChecked={bat} className="cong-tac" />
     </label>
   );
 }

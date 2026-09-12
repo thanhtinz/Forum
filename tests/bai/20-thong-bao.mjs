@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, doiToi, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 
 /**
  * Thông báo: sinh ra đúng lúc, tới đúng người, và SỐNG LÂU HƠN thứ sinh ra nó.
@@ -101,7 +101,7 @@ export default async function chay(kiem) {
      * mặc định "Chưa trả lời", nên tìm nó ở đó là tìm mãi không thấy.
      */
     await admin.goto(`${GOC}/quan-tri/danh-gia?loc=`, { waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.locator('li', { hasText: `${DAU} — đánh giá của Anh Thư.` })
       .locator('button:has-text("Xoá bài này")').click();
 
@@ -128,7 +128,7 @@ export default async function chay(kiem) {
     kiem('có nút xoá mục đã đọc',
       (await pA.locator('button:has-text("Xoá mục đã đọc")').count()) > 0);
 
-    pA.once('dialog', (d) => d.accept());
+    tuDongXacNhan(pA);
     await pA.click('button:has-text("Xoá mục đã đọc")');
     const sach = await doiToi(async () =>
       (await db.thongBao.count({ where: { nguoiId: a.id } })) === 0);

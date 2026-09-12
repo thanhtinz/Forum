@@ -127,3 +127,21 @@ export function taoAnhPNG(rong, cao) {
     khoi('IEND', Buffer.alloc(0)),
   ]);
 }
+
+/**
+ * Tự bấm "Đồng ý" khi hộp xác nhận của cửa hàng hiện ra.
+ *
+ * Thay cho `p.once('dialog', (d) => d.accept())`: hộp xác nhận nay là một
+ * `<dialog>` trong trang chứ không phải `window.confirm` của trình duyệt, nên
+ * Playwright không còn coi nó là "dialog" để mà nhận.
+ *
+ * GỌI TRƯỚC cú bấm và KHÔNG cần `await`, đúng như lối cũ: hàm này chỉ gieo một
+ * lời hẹn chạy nền — chờ hộp hiện rồi bấm. Ai cần chắc thì `await` cái nó trả
+ * về. Nuốt lỗi hết vì có bài kiểm gọi phòng xa cho một thao tác hoá ra không
+ * hỏi lại, và một lời hẹn không ai chờ mà ném lỗi thì làm đỏ cả bài.
+ */
+export function tuDongXacNhan(p, hanMs = 8000) {
+  return p.waitForSelector('dialog[open] [data-viec="dong-y"]', { timeout: hanMs })
+    .then((nut) => nut.click())
+    .catch(() => {});
+}

@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, doiToi, moTrang, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 
 /**
  * Báo xấu, và hàng chờ xử lý trong khu quản trị.
@@ -115,7 +115,7 @@ export default async function chay(kiem) {
     // ── Xoá nội dung thì lượt báo đi theo ─────────────────────────────
     await db.baoXau.updateMany({ where: { chuDeId: chuDe.id }, data: { trangThai: 'CHO_XEM' } });
     await admin.reload({ waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click('button:has-text("Xoá nội dung")');
 
     const daXoa = await doiToi(async () =>

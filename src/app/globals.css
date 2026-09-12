@@ -511,6 +511,39 @@ p { text-wrap: pretty; }
    */
   .xuong { @apply animate-pulse rounded-nut bg-nen3; }
 
+  /*
+   * CÔNG TẮC — dáng switch của iOS, thay cho ô vuông tích.
+   *
+   * Vẫn là một `<input type="checkbox">` thật, chỉ tắt phần trình duyệt tự vẽ
+   * rồi vẽ lại: nhờ vậy biểu mẫu vẫn gửi lên đúng `on` như cũ, bàn phím vẫn
+   * bật tắt bằng phím cách, và bộ đọc màn hình vẫn đọc ra "hộp kiểm, đã chọn".
+   * Dựng bằng `<div>` nghe sự kiện chuột thì mất cả ba thứ ấy.
+   *
+   * VÌ SAO ĐỔI: ô vuông tích nói "đây là một mục trong danh sách chọn", còn
+   * công tắc nói "đây là một thứ đang bật hoặc đang tắt". Hai câu khác nhau,
+   * và mấy chỗ dùng nó — "có bản Việt hoá", "đưa lên băng nổi bật" — đều là
+   * câu thứ hai.
+   */
+  .cong-tac {
+    @apply relative shrink-0 cursor-pointer appearance-none rounded-full bg-nen3;
+    width: 51px;
+    height: 31px;
+    transition: background-color var(--chuyen);
+  }
+  .cong-tac::after {
+    content: '';
+    @apply absolute rounded-full bg-white;
+    width: 27px;
+    height: 27px;
+    top: 2px;
+    left: 2px;
+    box-shadow: 0 1px 3px rgb(0 0 0 / .25);
+    transition: transform var(--chuyen);
+  }
+  .cong-tac:checked { background: rgb(var(--nhan)); }
+  .cong-tac:checked::after { transform: translateX(20px); }
+  .cong-tac:disabled { @apply cursor-not-allowed opacity-50; }
+
   .vach { @apply border-t border-vien; }
   .vach-duoi { @apply border-b border-vien; }
 }
@@ -610,6 +643,42 @@ p { text-wrap: pretty; }
   @keyframes truot-len {
     from { transform: translateY(14px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+/*
+ * HỘP XÁC NHẬN — dáng hộp cảnh báo của iOS.
+ *
+ * Nằm GIỮA màn hình chứ không trượt lên từ đáy như tấm chọn: hộp cảnh báo của
+ * iOS luôn ở giữa, và chỗ đứng ấy có việc để làm — nó chặn hẳn mắt người dùng
+ * lại, đúng lúc cần một câu trả lời chứ không phải một lựa chọn.
+ *
+ * Bề ngang 270 điểm ảnh, đúng con số của hộp iOS: hẹp để câu hỏi ngắt thành
+ * hai ba dòng và đọc được trong một nhịp, chứ không dài thành một dòng chữ
+ * phải quét mắt ngang cả màn hình.
+ */
+.hop-xac-nhan {
+  margin: auto;
+  width: 270px;
+  max-width: calc(100vw - 32px);
+  border: 0;
+  padding: 0;
+  border-radius: 14px;
+  background: rgb(var(--nen2) / calc(var(--kinh-nen) + .2));
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  box-shadow: var(--bong-noi), inset 0 1px 0 var(--kinh-sang);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .hop-xac-nhan { background: rgb(var(--nen2)); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hop-xac-nhan[open] { animation: hien-hop 160ms cubic-bezier(.2, .7, .3, 1); }
+  @keyframes hien-hop {
+    from { transform: scale(.94); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
   }
 }
 

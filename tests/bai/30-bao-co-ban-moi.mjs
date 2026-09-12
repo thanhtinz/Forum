@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, doiToi, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 
 const DAU = 'kiemthu-banmoi';
 const DUONG_DAN = 'game-kiem-bao-ban-moi';
@@ -65,7 +65,7 @@ export default async function chay(kiem) {
     // ── Quản trị đặt bản 2.0 làm bản mới nhất ──────────────────────────
     admin = await moTrangDaDangNhap('admin@sunnystore.local', 'admin123');
     await admin.goto(`${GOC}/quan-tri/game/${game.id}`, { waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click('button:has-text("Đặt mới nhất")');
 
     const daBao = await doiToi(async () => (await demCua(nguoiCu.id)) === 1);
@@ -103,14 +103,14 @@ export default async function chay(kiem) {
      * và cái chuông mất hết giá trị.
      */
     await admin.reload({ waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     // Bản 1.0 giờ mới là bản KHÔNG mang cờ, nên nút của nó là nút đặt lại.
     await admin.click('button:has-text("Đặt mới nhất")');
     await doiToi(async () =>
       (await db.banTai.count({ where: { gameId: game.id, soHieu: '1.0', moiNhat: true } })) === 1);
 
     await admin.reload({ waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click('button:has-text("Đặt mới nhất")');
     await doiToi(async () =>
       (await db.banTai.count({ where: { gameId: game.id, soHieu: '2.0', moiNhat: true } })) === 1);

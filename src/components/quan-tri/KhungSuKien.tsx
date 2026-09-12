@@ -4,6 +4,7 @@ import { useActionState, useTransition } from 'react';
 import { Eye, EyeOff, Trash2 } from 'lucide-react';
 import { hienSuKien, themSuKien, xoaSuKien, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 import { ONapAnh } from '@/components/quan-tri/ONapAnh';
+import { useXacNhan } from '@/components/HopXacNhan';
 import {
   LOAI_SU_KIEN, MO_TA_SU_KIEN, SU_KIEN_MO_TA_TOI_DA, SU_KIEN_TIEU_DE_TOI_DA,
   type MaLoaiSuKien,
@@ -30,6 +31,7 @@ export interface SuKienQuanTri {
 export function KhungSuKien({ gameId, suKien }: { gameId: string; suKien: SuKienQuanTri[] }) {
   const [ketQua, gui, dangChay] = useActionState<KetQua, FormData>(themSuKien, {});
   const [dangSua, batDauSua] = useTransition();
+  const { hoi, hop } = useXacNhan();
 
   return (
     <div className="space-y-4">
@@ -61,8 +63,8 @@ export function KhungSuKien({ gameId, suKien }: { gameId: string; suKien: SuKien
                 </button>
 
                 <button type="button" disabled={dangSua}
-                  onClick={() => {
-                    if (!window.confirm(`Gỡ sự kiện “${s.tieuDe}”?`)) return;
+                  onClick={async () => {
+                    if (!(await hoi(`Gỡ sự kiện “${s.tieuDe}”?`, true))) return;
                     batDauSua(async () => { await xoaSuKien(s.id); });
                   }}
                   aria-label={`Gỡ sự kiện ${s.tieuDe}`}

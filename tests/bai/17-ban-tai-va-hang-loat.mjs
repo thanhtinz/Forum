@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, doiToi, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 
 /**
  * Sửa bản tải, quản lý từng tệp, và đổi trạng thái nhiều game một lượt.
@@ -103,7 +103,7 @@ export default async function chay(kiem) {
     // ── Gỡ tệp thì dung lượng bản về trống, không về 0 ─────────────────
     await admin.reload({ waitUntil: 'networkidle' });
     await admin.click('button[aria-label="Mở bản Java ME 1.0.1"]');
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click(`button[aria-label^="Gỡ tệp"]`);
 
     const daGo = await doiToi(async () =>
@@ -119,7 +119,7 @@ export default async function chay(kiem) {
 
     // ── Đặt bản mới nhất: mỗi hệ đúng một cờ ──────────────────────────
     await admin.reload({ waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click('button:has-text("Đặt mới nhất")');
 
     const daDoi = await doiToi(async () => {
@@ -180,7 +180,7 @@ export default async function chay(kiem) {
     kiem('thanh việc hiện ra khi đã chọn',
       (await admin.locator('button:has-text("Rút về nháp")').count()) > 0);
 
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click('button:has-text("Đăng")');
 
     const daDang = await doiToi(async () =>

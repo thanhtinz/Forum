@@ -9,6 +9,7 @@ import { HE_MAY, LOAI_TEP, MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { gonDungLuong, gop } from '@/lib/tien-ich';
 import { NutViec } from './NutViec';
 import { ONapTep } from './ONapTep';
+import { useXacNhan } from '@/components/HopXacNhan';
 
 export interface BanQuanTri {
   id: string;
@@ -125,6 +126,7 @@ function MotBan({ b, dangXoa, batDauXoa }: {
   batDauXoa: (f: () => void) => void;
 }) {
   const [mo, datMo] = useState(false);
+  const { hoi, hop } = useXacNhan();
   const ten = MO_TA_HE[b.heMay as keyof typeof MO_TA_HE]?.ten ?? b.heMay;
 
   return (
@@ -159,14 +161,15 @@ function MotBan({ b, dangXoa, batDauXoa }: {
         )}
 
         <button type="button" disabled={dangXoa}
-          onClick={() => {
-            if (!window.confirm(`Xoá bản ${ten} ${b.soHieu} cùng ${b.tep.length} tệp của nó?`)) return;
+          onClick={async () => {
+            if (!(await hoi(`Xoá bản ${ten} ${b.soHieu} cùng ${b.tep.length} tệp của nó?`, true))) return;
             batDauXoa(async () => { await xoaBanTai(b.id); });
           }}
           aria-label={`Xoá bản ${b.soHieu}`}
           className="grid size-9 shrink-0 place-items-center rounded-full text-mo transition-colors hover:bg-xau/10 hover:text-xau">
           <Trash2 size={16} />
         </button>
+        {hop}
       </div>
 
       {mo && (

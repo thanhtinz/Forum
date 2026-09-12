@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, doiToi, moTrang, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 
 const DAU = 'kiemthu-khoa';
 
@@ -46,7 +46,7 @@ export default async function chay(kiem) {
     // ── Quản trị khoá tài khoản ấy ─────────────────────────────────────
     admin = await moTrangDaDangNhap('admin@sunnystore.local', 'admin123');
     await admin.goto(`${GOC}/quan-tri/thanh-vien`, { waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click(`button[aria-label="Khoá Người bị khoá"]`);
 
     const daKhoa = await doiToi(async () =>

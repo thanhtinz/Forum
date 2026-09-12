@@ -1,6 +1,7 @@
 'use client';
 
 import { useActionState, useState, useTransition } from 'react';
+import { useXacNhan } from '@/components/HopXacNhan';
 import {
   suaChuDe, suaTraLoi, xoaChuDeCuaToi, xoaTraLoiCuaToi, type KetQua,
 } from '@/app/(cua-hang)/game/[duongDan]/dien-dan/viec';
@@ -31,6 +32,7 @@ export function SuaChuDe({ chuDeId, tieuDe, noiDung, xoaDuoc }: {
   );
   const [dangXoa, batDauXoa] = useTransition();
   const [loiXoa, datLoiXoa] = useState<string | null>(null);
+  const { hoi, hop } = useXacNhan();
 
   if (!mo) {
     return (
@@ -41,8 +43,8 @@ export function SuaChuDe({ chuDeId, tieuDe, noiDung, xoaDuoc }: {
         </button>
         {xoaDuoc && (
           <button type="button" disabled={dangXoa}
-            onClick={() => {
-              if (!window.confirm('Xoá hẳn chủ đề này?')) return;
+            onClick={async () => {
+              if (!(await hoi('Xoá hẳn chủ đề này?', true))) return;
               datLoiXoa(null);
               batDauXoa(async () => {
                 const r = await xoaChuDeCuaToi(chuDeId);
@@ -54,6 +56,7 @@ export function SuaChuDe({ chuDeId, tieuDe, noiDung, xoaDuoc }: {
           </button>
         )}
         {loiXoa && <span role="alert" className="text-[12px] font-medium text-xau">{loiXoa}</span>}
+        {hop}
       </div>
     );
   }
@@ -89,6 +92,7 @@ export function SuaTraLoi({ traLoiId, noiDung }: { traLoiId: string; noiDung: st
   );
   const [dangXoa, batDauXoa] = useTransition();
   const [loiXoa, datLoiXoa] = useState<string | null>(null);
+  const { hoi, hop } = useXacNhan();
 
   if (!mo) {
     return (
@@ -98,8 +102,8 @@ export function SuaTraLoi({ traLoiId, noiDung }: { traLoiId: string; noiDung: st
           Sửa
         </button>
         <button type="button" disabled={dangXoa}
-          onClick={() => {
-            if (!window.confirm('Xoá lời đáp này?')) return;
+          onClick={async () => {
+            if (!(await hoi('Xoá lời đáp này?', true))) return;
             datLoiXoa(null);
             batDauXoa(async () => {
               const r = await xoaTraLoiCuaToi(traLoiId);
@@ -110,6 +114,7 @@ export function SuaTraLoi({ traLoiId, noiDung }: { traLoiId: string; noiDung: st
           Xoá
         </button>
         {loiXoa && <span role="alert" className="text-[12px] font-medium text-xau">{loiXoa}</span>}
+        {hop}
       </div>
     );
   }

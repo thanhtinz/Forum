@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useXacNhan } from '@/components/HopXacNhan';
 import { gop } from '@/lib/tien-ich';
 
 /**
@@ -10,9 +11,10 @@ import { gop } from '@/lib/tien-ich';
  * và mỗi chỗ tự viết lấy `useTransition` cùng phần bắt lỗi thì sớm muộn có
  * chỗ quên mất phần bắt lỗi, rồi việc hỏng mà nút vẫn im như không.
  *
- * `xacNhan` dùng `window.confirm` chứ không dựng hộp thoại riêng: hộp thoại
- * của trình duyệt CHẶN hẳn luồng, nên không có cảnh bấm nhầm hai lần trong
- * lúc hộp đang mở. Với thao tác xoá thì chặn hẳn là đúng thứ cần.
+ * `xacNhan` mở hộp xác nhận của cửa hàng (`useXacNhan`), không phải
+ * `window.confirm`. Vẫn chặn hẳn luồng như hộp của trình duyệt — `<dialog>` mở
+ * kiểu modal thì phía sau không bấm được — mà chữ thì bằng tiếng Việt và nút
+ * xoá tô đỏ được. Xem `HopXacNhan.tsx` để biết vì sao đổi.
  */
 export function NutViec({ lam, nhan, xacNhan, kieu = 'thuong', nho, className }: {
   lam: () => Promise<{ loi?: string }>;
@@ -26,9 +28,10 @@ export function NutViec({ lam, nhan, xacNhan, kieu = 'thuong', nho, className }:
 }) {
   const [dangChay, batDau] = useTransition();
   const [loi, datLoi] = useState<string | null>(null);
+  const { hoi, hop } = useXacNhan();
 
-  const bam = () => {
-    if (xacNhan && !window.confirm(xacNhan)) return;
+  const bam = async () => {
+    if (xacNhan && !(await hoi(xacNhan, kieu === 'nguyHiem'))) return;
     datLoi(null);
     batDau(async () => {
       const kq = await lam();
@@ -47,6 +50,7 @@ export function NutViec({ lam, nhan, xacNhan, kieu = 'thuong', nho, className }:
         {nhan}
       </button>
       {loi && <p role="alert" className="mt-1 text-[12px] font-medium text-xau">{loi}</p>}
+      {hop}
     </>
   );
 }

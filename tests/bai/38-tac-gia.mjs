@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, doiToi, moTrang, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 
 const DAU = 'kiemthu-tacgia';
 
@@ -106,7 +106,7 @@ export default async function chay(kiem) {
     });
 
     await aPage.goto(`${GOC}/quan-ly/game/${gameA.id}`, { waitUntil: 'networkidle' });
-    aPage.once('dialog', (d) => d.accept());
+    tuDongXacNhan(aPage);
     await aPage.click('button:has-text("Gửi duyệt")');
     const daGui = await doiToi(async () =>
       (await db.game.findUnique({ where: { id: gameA.id }, select: { trangThai: true } }))
@@ -161,14 +161,14 @@ export default async function chay(kiem) {
       (await aPage.locator('text=máy S40').count()) > 0);
 
     // ── Gửi lại rồi quản trị duyệt ─────────────────────────────────────
-    aPage.once('dialog', (d) => d.accept());
+    tuDongXacNhan(aPage);
     await aPage.click('button:has-text("Gửi duyệt")');
     await doiToi(async () =>
       (await db.game.findUnique({ where: { id: gameA.id }, select: { trangThai: true } }))
         ?.trangThai === 'CHO_DUYET');
 
     await admin.goto(`${GOC}/quan-tri/duyet`, { waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click('button:has-text("Duyệt")');
     const daDuyet = await doiToi(async () =>
       (await db.game.findUnique({ where: { id: gameA.id }, select: { trangThai: true } }))

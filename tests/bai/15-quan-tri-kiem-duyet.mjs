@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, doiToi, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 
 /**
  * Chức năng mới của khu quản trị: ghim/khoá/xoá chủ đề, thể loại, xoá đánh giá.
@@ -97,7 +97,7 @@ export default async function chay(kiem) {
 
     // ── XOÁ CHỦ ĐỀ kéo theo lời đáp ───────────────────────────────────
     await admin.reload({ waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click('button[aria-label="Xoá chủ đề Chủ đề kiểm thử kiểm duyệt"]');
     const daXoa = await doiToi(async () =>
       (await db.chuDe.count({ where: { id: chuDe.id } })) === 0);
@@ -130,7 +130,7 @@ export default async function chay(kiem) {
 
     await db.theLoaiTrenGame.deleteMany({ where: { theLoaiId: tl.id } });
     await admin.reload({ waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.click(`button[aria-label="Xoá thể loại ${TEN_THE_LOAI}"]`);
     const tlXoa = await doiToi(async () =>
       (await db.theLoai.count({ where: { id: tl.id } })) === 0);
@@ -148,7 +148,7 @@ export default async function chay(kiem) {
     });
 
     await admin.goto(`${GOC}/quan-tri/danh-gia`, { waitUntil: 'networkidle' });
-    admin.once('dialog', (d) => d.accept());
+    tuDongXacNhan(admin);
     await admin.locator('li', { hasText: 'Bài rác để kiểm xoá.' })
       .locator('button:has-text("Xoá bài này")').click();
 

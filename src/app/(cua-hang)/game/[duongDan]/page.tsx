@@ -10,9 +10,11 @@ import { KeThe } from '@/components/game/KeThe';
 import { ODanhGia } from '@/components/game/ODanhGia';
 import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
 import { KeAnhChup } from '@/components/game/KeAnhChup';
+import { TamDanhGia } from '@/components/game/TamDanhGia';
 import { KhoiGap } from '@/components/KhoiGap';
 import { NGON_NGU } from '@/lib/he-may';
 import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
+import { bocChu, dungChuDam } from '@/lib/chu-dam';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ duongDan:
     select: { ten: true, gioiThieu: true },
   });
   if (!g) return { title: 'Không tìm thấy game' };
-  return { title: g.ten, description: g.gioiThieu ? catChu(g.gioiThieu, 160) : undefined };
+  return { title: g.ten, description: g.gioiThieu ? catChu(bocChu(g.gioiThieu), 160) : undefined };
 }
 
 /*
@@ -65,7 +67,8 @@ export default async function TabThongTin({ params, searchParams }: {
     db.danhGia.findMany({
       where: { gameId: game.id, noiDung: { not: null }, ...(locSao ? { sao: locSao } : {}) },
       orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
-      take: 6,
+      // Năm bài là bản nếm thử; đọc hết thì mở tấm trượt, không rời trang.
+      take: 5,
       select: CHON_DANH_GIA,
     }),
     nguoi
@@ -113,11 +116,17 @@ export default async function TabThongTin({ params, searchParams }: {
       {(game.gioiThieu || game.cachChoi) && (
         <section>
           <h2 className="tieu-de mb-2">Giới thiệu</h2>
+          {/*
+            `dangerouslySetInnerHTML` ở đây KHÔNG nguy hiểm, và chỗ nguy hiểm
+            thật đã bị chặn từ trước: `dungChuDam` bật `html: false`, nên mọi
+            thẻ gõ tay trong phần mô tả đều bị escape thành chữ thường. Đầu ra
+            chỉ chứa đúng những thẻ do chính bộ dựng sinh — xem `chu-dam.ts`.
+          */}
           {game.gioiThieu && (
-            <p className="whitespace-pre-line text-[14px] leading-relaxed">{game.gioiThieu}</p>
+            <div className="chu-dam" dangerouslySetInnerHTML={{ __html: dungChuDam(game.gioiThieu) }} />
           )}
           {game.cachChoi && (
-            <p className="mt-3 whitespace-pre-line text-[14px] leading-relaxed">{game.cachChoi}</p>
+            <div className="chu-dam mt-3" dangerouslySetInnerHTML={{ __html: dungChuDam(game.cachChoi) }} />
           )}
         </section>
       )}
@@ -128,7 +137,8 @@ export default async function TabThongTin({ params, searchParams }: {
         <KhoiGap tieuDe="Cần biết trước khi tải"
           tomTat="Máy nào chạy được, và những lỗi đã biết"
           icon={<TriangleAlert size={16} className="text-canh" />}>
-          <p className="whitespace-pre-line text-[13px] leading-relaxed text-mo">{game.luuY}</p>
+          <div className="chu-dam chu-dam-nho text-mo"
+            dangerouslySetInnerHTML={{ __html: dungChuDam(game.luuY) }} />
         </KhoiGap>
       )}
 
@@ -179,13 +189,13 @@ export default async function TabThongTin({ params, searchParams }: {
           </ul>
         )}
 
-        {/* Sáu bài là bản nếm thử. Ai đang cân nhắc tải thật thì muốn đọc hết,
-            và tab Đánh giá cho lọc theo sao lẫn sắp theo điểm. */}
+        {/* Còn bài chưa bày thì mời đọc tiếp — trong một tấm trượt, không sang
+            trang khác: người đang cân nhắc tải hay đọc vài bài rồi ngước lên
+            nhìn lại nút tải và cỡ tệp. */}
         {gom > danhGia.length && (
-          <Link href={`/game/${duongDan}/danh-gia${locSao ? `?sao=${locSao}` : ''}`}
-            className="nut-vien mt-5 w-full">
-            Xem tất cả {gonSo(gom)} đánh giá
-          </Link>
+          <TamDanhGia gameId={game.id} duongDan={duongDan} tong={gom} sao={sao}
+            phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))}
+            banDau={danhGia} />
         )}
       </section>
 

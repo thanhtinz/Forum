@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { luuGame, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
+import { OSoanThao } from '@/components/quan-tri/OSoanThao';
 
 export interface GameSua {
   id: string;
@@ -71,9 +72,9 @@ export function BieuMauGame({ game, theLoai }: {
         </div>
       </fieldset>
 
-      <Vung ten="gioiThieu" nhan="Giới thiệu" giaTri={game?.gioiThieu ?? ''} dong={5} />
-      <Vung ten="cachChoi" nhan="Cách chơi" giaTri={game?.cachChoi ?? ''} dong={3} />
-      <Vung ten="luuY" nhan="Cần biết trước khi tải" giaTri={game?.luuY ?? ''} dong={3}
+      <OSoanThao ten="gioiThieu" nhan="Giới thiệu" giaTri={game?.gioiThieu ?? ''} dong={7} chiDan />
+      <OSoanThao ten="cachChoi" nhan="Cách chơi" giaTri={game?.cachChoi ?? ''} dong={4} />
+      <OSoanThao ten="luuY" nhan="Cần biết trước khi tải" giaTri={game?.luuY ?? ''} dong={4}
         goYy="Máy nào chạy được, lỗi đã biết — hiện trong khung vàng ở trang game." />
 
       <div className="flex flex-wrap gap-4">
@@ -101,18 +102,6 @@ function O({ ten, nhan, giaTri, kieu = 'text', batBuoc, goYy }: {
     <label className="block">
       <span className="phu mb-1 block">{nhan}{batBuoc && ' *'}</span>
       <input name={ten} type={kieu} required={batBuoc} defaultValue={giaTri ?? ''} className="o-nhap" />
-      {goYy && <span className="phu mt-1 block">{goYy}</span>}
-    </label>
-  );
-}
-
-function Vung({ ten, nhan, giaTri, dong, goYy }: {
-  ten: string; nhan: string; giaTri: string; dong: number; goYy?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="phu mb-1 block">{nhan}</span>
-      <textarea name={ten} rows={dong} defaultValue={giaTri} className="o-nhap" />
       {goYy && <span className="phu mt-1 block">{goYy}</span>}
     </label>
   );

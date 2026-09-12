@@ -1,4 +1,5 @@
 import { GOC, db, moTrang } from '../tro-giup.mjs';
+import { bocChu } from '../../src/lib/chu-dam-const.ts';
 
 /** Trang game bày đủ những thứ người ta vào đây để tìm. */
 export default async function chay(kiem) {
@@ -18,7 +19,16 @@ export default async function chay(kiem) {
 
   kiem('có tên game', html.includes(game.ten));
   kiem('có nhà phát triển', !game.nhaPhatTrien || html.includes(game.nhaPhatTrien));
-  kiem('có phần giới thiệu', !game.gioiThieu || html.includes(game.gioiThieu.slice(0, 40)));
+  /*
+   * So với chữ TRẦN, không so với nguyên văn trong CSDL.
+   *
+   * Phần mô tả nay là Markdown, nên `**mười hai màn**` trong CSDL ra
+   * `<strong>mười hai màn</strong>` trên trang — tìm nguyên văn thì không bao
+   * giờ thấy, dù trang vẫn hiện đúng.
+   */
+  kiem('có phần giới thiệu',
+    !game.gioiThieu || html.includes(bocChu(game.gioiThieu).slice(0, 30)),
+    bocChu(game.gioiThieu ?? '').slice(0, 30));
 
   /*
    * Hàng số liệu: BA ô, số to trên và nhãn nhỏ dưới — đúng dáng CH Play.
@@ -63,12 +73,16 @@ export default async function chay(kiem) {
    */
   const tab = p.locator('nav[aria-label="Phần của trang game"] a');
   const tenTab = await tab.evaluateAll((els) => els.map((e) => e.textContent?.trim() ?? ''));
-  kiem('trang game có hàng tab', tenTab.length === 3, JSON.stringify(tenTab));
+  /*
+   * ĐÚNG HAI TAB. Đã có một đợt tách đánh giá ra thành tab thứ ba, và đó là
+   * bước lùi: tab Thông tin vốn đã có mục đánh giá ở cuối, nên người dùng gặp
+   * đúng một thứ ở hai chỗ và phải đoán hai chỗ ấy khác nhau ở đâu.
+   */
+  kiem('trang game có đúng hai tab', tenTab.length === 2, JSON.stringify(tenTab));
   kiem('tab đầu là Thông tin', (tenTab[0] ?? '').startsWith('Thông tin'), tenTab[0] ?? '');
-  kiem('tab giữa là Đánh giá', (tenTab[1] ?? '').startsWith('Đánh giá'), tenTab[1] ?? '');
-  kiem('tab cuối là Diễn đàn', (tenTab[2] ?? '').startsWith('Diễn đàn'), tenTab[2] ?? '');
+  kiem('tab sau là Diễn đàn', (tenTab[1] ?? '').startsWith('Diễn đàn'), tenTab[1] ?? '');
 
-  await tab.nth(2).click();
+  await tab.nth(1).click();
   await p.waitForURL('**/dien-dan', { timeout: 15_000 }).catch(() => {});
   kiem('bấm tab Diễn đàn thì đổi sang đường dẫn riêng',
     p.url().endsWith('/dien-dan'), p.url());

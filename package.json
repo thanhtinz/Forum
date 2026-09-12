@@ -16,9 +16,11 @@
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
     "@prisma/client": "^6.2.1",
+    "@types/markdown-it": "^14.2.0",
     "bcryptjs": "^2.4.3",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.469.0",
+    "markdown-it": "^14.3.1",
     "next": "^15.1.4",
     "next-auth": "^5.0.0-beta.25",
     "react": "^19.0.0",

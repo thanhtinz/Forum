@@ -8,6 +8,7 @@ import { thanhDuongDan } from '@/lib/tien-ich';
 import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
 import { baoBanMoi } from '@/lib/bao-ban-moi';
+import { dungChuDam } from '@/lib/chu-dam';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
 import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
 
@@ -1094,4 +1095,19 @@ export async function doiVaiTro(nguoiId: string, thanhQuanTri: boolean): Promise
 
   revalidatePath('/quan-tri/thanh-vien');
   return {};
+}
+
+/**
+ * Dựng thử Markdown thành HTML, cho ô xem trước ở trình soạn thảo.
+ *
+ * Chạy ở MÁY CHỦ và dùng đúng bộ dựng của trang game — xem trước mà dùng bộ
+ * dựng khác thì nó là một lời hứa sai, và người soạn chỉ phát hiện ra sau khi
+ * đã đăng.
+ *
+ * Không đụng CSDL, không nhận id nào, nên nó không cần quyền quản trị: thứ
+ * duy nhất gửi vào là chữ của chính người gọi, và thứ trả về là chữ ấy dựng
+ * lại. Vẫn chặn chuỗi quá dài để không ai lấy nó làm chỗ đốt CPU.
+ */
+export async function xemThuChuDam(chu: string): Promise<string> {
+  return dungChuDam(String(chu ?? '').slice(0, 20_000));
 }

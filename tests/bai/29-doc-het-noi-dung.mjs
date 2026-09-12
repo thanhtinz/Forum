@@ -156,6 +156,49 @@ export default async function chay(kiem) {
     kiem('tab Thông tin mời đọc hết đánh giá',
       (await d.locator('a:has-text("Xem tất cả")').count()) > 0);
 
+    /*
+     * ── ĐỌC TIẾP TRONG TẤM TRƯỢT, KHÔNG RỜI TRANG ────────────────────
+     *
+     * Người đang cân nhắc tải hay đọc vài bài rồi ngước lên nhìn lại nút tải
+     * và cỡ tệp; rời trang là mất chỗ đang đứng, quay lại phải cuộn tìm từ đầu.
+     */
+    const diaChiTruoc = d.url();
+    await d.click('a:has-text("Xem tất cả")');
+    await d.waitForTimeout(600);
+    kiem('bấm xem tất cả thì KHÔNG rời trang', d.url() === diaChiTruoc, d.url());
+    kiem('tấm trượt đánh giá mở ra',
+      (await d.locator('dialog[open] h2:has-text("Đánh giá")').count()) > 0);
+
+    const trongTam = d.locator('dialog[open] ul li');
+    const soDau = await trongTam.count();
+    kiem('tấm trượt mở ra đã có sẵn mấy bài của trang', soDau > 0, `${soDau} bài`);
+
+    // Lọc theo sao ngay trong tấm, không phải tải lại trang.
+    await d.click('dialog[open] button:has-text("1 sao")');
+    await d.waitForTimeout(800);
+    const motSaoTrongTam = await db.danhGia.count({ where: { gameId: game.id, sao: 1 } });
+    const sauLoc = await trongTam.count();
+    kiem('lọc 1 sao ngay trong tấm trượt', sauLoc === Math.min(20, motSaoTrongTam),
+      `${sauLoc} so với ${motSaoTrongTam}`);
+
+    // Còn bài chưa bày thì phải có nút tải thêm, và bấm là dài ra.
+    await d.click('dialog[open] button:has-text("Tất cả")');
+    await d.waitForTimeout(800);
+    const coTaiThem = await d.locator('dialog[open] button:has-text("Tải thêm")').count();
+    if (coTaiThem > 0) {
+      const truocKhiTai = await trongTam.count();
+      await d.click('dialog[open] button:has-text("Tải thêm")');
+      await d.waitForTimeout(900);
+      kiem('bấm tải thêm thì danh sách dài ra',
+        (await trongTam.count()) > truocKhiTai, `${truocKhiTai} → ${await trongTam.count()}`);
+    }
+
+    // Esc đóng được — đó là thứ <dialog> mang sẵn, và phải còn nguyên.
+    await d.keyboard.press('Escape');
+    await d.waitForTimeout(400);
+    kiem('nhấn Esc thì tấm trượt đóng lại',
+      (await d.locator('dialog[open]').count()) === 0);
+
     const duongDG = `${GOC}/game/${game.duongDan}/danh-gia`;
     await d.goto(duongDG, { waitUntil: 'networkidle' });
     const dg1 = await d.locator('ul[aria-label="Danh sách đánh giá"] li').count();

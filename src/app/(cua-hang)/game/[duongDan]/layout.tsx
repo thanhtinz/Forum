@@ -44,7 +44,7 @@ export default async function KhungGame({ children, params }: {
           tep: { select: { id: true, loai: true, dungLuong: true, tenTep: true, maKiemTra: true } },
         },
       },
-      _count: { select: { chuDe: true, danhGia: true } },
+      _count: { select: { chuDe: true } },
     },
   });
   if (!game) notFound();
@@ -157,8 +157,7 @@ export default async function KhungGame({ children, params }: {
       </div>
 
       <div className="mt-8 lg:mt-0">
-        <TabGame duongDanGame={game.duongDan} soChuDe={game._count.chuDe}
-          soDanhGia={game._count.danhGia} />
+        <TabGame duongDanGame={game.duongDan} soChuDe={game._count.chuDe} />
         <div className="mt-6">{children}</div>
       </div>
     </div>

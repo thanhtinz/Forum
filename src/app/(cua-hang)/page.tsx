@@ -12,6 +12,7 @@ import { NenGame } from '@/components/game/NenGame';
 import { NutCaiUngDung } from '@/components/vo/NutCaiUngDung';
 import { chiaHomNay } from '@/lib/hom-nay-const';
 import { catChu } from '@/lib/tien-ich';
+import { bocChu } from '@/lib/chu-dam';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,7 +84,7 @@ export default async function HomNay() {
 
       {chinh && (
         <TamLon game={thanhThe(chinh)} nhan="GAME CỦA HÔM NAY"
-          doan={chinh.gioiThieu ? catChu(chinh.gioiThieu, 220) : null} />
+          doan={chinh.gioiThieu ? catChu(bocChu(chinh.gioiThieu), 220) : null} />
       )}
 
       {conLai.length > 0 && (

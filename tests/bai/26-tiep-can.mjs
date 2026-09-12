@@ -8,7 +8,7 @@ import { GOC, moTrang } from '../tro-giup.mjs';
  * hai thì không báo lại cho ai. Nên chúng phải được canh bằng bài kiểm.
  *
  * Đã tìm ra hai lỗi thật ngay lượt chạy đầu: `/game` không có thẻ h1 nào (trang
- * chính của cả kho, mở ra là không biết mình đang ở đâu), và `/duyet` để mấy
+ * chính của cả cửa hàng, mở ra là không biết mình đang ở đâu), và `/duyet` để mấy
  * h2 của cột lọc đứng trước h1 trong DOM nên duyệt theo đầu đề sẽ gặp "Hệ máy"
  * trước khi gặp tên trang.
  */

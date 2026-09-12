@@ -3,7 +3,7 @@ import { GOC, db, moTrang } from '../tro-giup.mjs';
 /**
  * LỊCH SỬ PHIÊN BẢN — mỗi hệ máy một dãy số hiệu riêng.
  *
- * Đây là thứ kho game cũ có mà cửa hàng lớn không có, nên cũng là chỗ dễ hỏng
+ * Đây là thứ cửa hàng game cũ có mà cửa hàng lớn không có, nên cũng là chỗ dễ hỏng
  * nhất: dãy của hệ này lọt sang hệ kia thì người dùng tải bản Android về máy
  * Nokia. Bài kiểm soi đúng chuyện ấy.
  */

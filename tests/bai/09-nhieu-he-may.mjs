@@ -8,7 +8,7 @@ import { GOC, db, moTrang } from '../tro-giup.mjs';
  * hệ rồi soi xem nút dựng ra có đúng loại tệp của hệ ấy không.
  */
 export default async function chay(kiem) {
-  // Tìm game nhiều hệ nhất trong kho, không chép cứng tên: đổi dữ liệu mẫu thì
+  // Tìm game nhiều hệ nhất trong cửa hàng, không chép cứng tên: đổi dữ liệu mẫu thì
   // bài kiểm vẫn tự tìm được ca đáng kiểm.
   const game = await db.game.findMany({
     where: { trangThai: 'DANG_HIEN' },

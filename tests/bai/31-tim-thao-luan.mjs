@@ -6,7 +6,7 @@ const DAU = 'kiemthu-timdd';
 /*
  * TÌM TRONG DIỄN ĐÀN.
  *
- * Ô tìm kiếm trước đây chỉ biết tìm GAME. Nhưng một nửa giá trị của kho này
+ * Ô tìm kiếm trước đây chỉ biết tìm GAME. Nhưng một nửa giá trị của cửa hàng này
  * nằm ở mấy chủ đề kiểu "bản 1.2 treo ở màn 3" — người gặp đúng lỗi ấy gõ vào
  * ô tìm, không ra gì, rồi mở một chủ đề mới hỏi y hệt.
  */

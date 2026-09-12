@@ -4,7 +4,7 @@ import { gop } from '@/lib/tien-ich';
 /**
  * NỀN THAY ẢNH BÌA — dùng chung cho tấm băng và thẻ Hôm nay.
  *
- * Kho chưa có ảnh bìa thật, mà dựng một tấm ảnh giả là nói dối người xem về
+ * Cửa hàng chưa có ảnh bìa thật, mà dựng một tấm ảnh giả là nói dối người xem về
  * thứ họ sắp tải. Nên chỗ ấy là một mảng màu — nhưng một mảng màu phẳng lì thì
  * trông như chỗ ảnh chưa tải xong, chứ không ra một tấm bìa cố ý.
  *
@@ -12,8 +12,8 @@ import { gop } from '@/lib/tien-ich';
  *   1. Dải màu chéo, suy từ tên game (cùng game là cùng màu ở mọi trang).
  *   2. Một quầng sáng lệch góc trên — thứ tách "một khối có chiều sâu" khỏi
  *      "một ô tô màu".
- *   3. LƯỚI ĐIỂM ẢNH mảnh phủ lên trên. Kho này bán game Java đời 2005 lẫn
- *      game hiện đại, nên vân pixel là thứ nói đúng về hàng trong kho —
+ *   3. LƯỚI ĐIỂM ẢNH mảnh phủ lên trên. Cửa hàng này bán game Java đời 2005 lẫn
+ *      game hiện đại, nên vân pixel là thứ nói đúng về hàng trong cửa hàng —
  *      không phải hoa văn nhặt đại cho đỡ trống.
  *
  * Lưới vẽ bằng `repeating-linear-gradient` chứ không phải ảnh nền: không tốn

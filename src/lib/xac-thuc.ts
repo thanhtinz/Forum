@@ -112,7 +112,7 @@ const NHIP_GHE_MS = 15 * 60 * 1000;
 /**
  * Đánh dấu "người này vừa ghé".
  *
- * VÌ SAO CẦN: người coi kho đang phải quyết định có khoá một tài khoản hay
+ * VÌ SAO CẦN: người bán hàng đang phải quyết định có khoá một tài khoản hay
  * không mà chỉ nhìn thấy ngày họ đăng ký. Một tài khoản mở ba năm trước và một
  * tài khoản đang rải bài lúc này trông y hệt nhau trên bảng thành viên.
  *

@@ -22,11 +22,11 @@ const THU_MUC_TEP = path.join(process.cwd(), 'public', 'tep-mau');
 function dungTepMau(ten: string, moTa: string, coXapXi: number): { duongDan: string; maKiemTra: string; dungLuong: number } {
   mkdirSync(THU_MUC_TEP, { recursive: true });
   const dau =
-    `Tệp mẫu của kho SunnyStore\n` +
+    `Tệp mẫu của cửa hàng SunnyStore\n` +
     `====================\n\n` +
     `${moTa}\n\n` +
     `Đây KHÔNG phải game thật. Tệp này chỉ để phần tải xuống của trang chạy\n` +
-    `được từ đầu tới cuối trong lúc dựng kho.\n\n`;
+    `được từ đầu tới cuối trong lúc dựng cửa hàng.\n\n`;
   /*
    * Chèn thêm cho tệp đạt cỡ mong muốn.
    *
@@ -35,7 +35,7 @@ function dungTepMau(ten: string, moTa: string, coXapXi: number): { duongDan: str
    * cho đủ cỡ thì con số in ra là cỡ THẬT của tệp thật — thay vì một con số
    * đẹp ghi trong CSDL còn tệp tải về thì vài trăm byte.
    */
-  const dong = 'Phần đệm để tệp mẫu đạt đúng cỡ ghi trong kho.\n';
+  const dong = 'Phần đệm để tệp mẫu đạt đúng cỡ ghi trong cửa hàng.\n';
   const con = Math.max(0, coXapXi - Buffer.byteLength(dau, 'utf8'));
   const noiDung = dau + dong.repeat(Math.ceil(con / Buffer.byteLength(dong, 'utf8')));
   const tep = path.join(THU_MUC_TEP, ten);
@@ -62,7 +62,7 @@ interface BanMau {
   /**
    * Số bản CŨ cần dựng thêm cho hệ này.
    *
-   * Kho game cũ thì bản cũ không phải rác: máy đời 2006 chạy được bản 1.0
+   * Cửa hàng game cũ thì bản cũ không phải rác: máy đời 2006 chạy được bản 1.0
    * nhưng treo ở bản 1.2. Nên mỗi hệ phải có một dãy lịch sử thật để phần
    * "lịch sử phiên bản" có cái mà bày, và để bài kiểm có ca thật mà soi.
    */
@@ -303,7 +303,7 @@ async function main() {
         vietHoa: g.vietHoa ?? false,
         noiBat: g.noiBat ?? false,
         trangThai: 'DANG_HIEN',
-        // Giãn ngày đăng ra để kệ "Mới lên kho" có thứ tự thật chứ không phải
+        // Giãn ngày đăng ra để kệ "Mới lên kệ" có thứ tự thật chứ không phải
         // mười hai game cùng một mốc rồi sắp bừa.
         dangLuc: new Date(Date.now() - i * 36 * 3600 * 1000),
         soLuotTai: 400 + ((i * 977) % 21_000),

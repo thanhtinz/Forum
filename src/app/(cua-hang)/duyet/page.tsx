@@ -186,7 +186,7 @@ export default async function TrangDuyet({ searchParams }: {
               duyệt tràn 51px ở 320px, trong khi `/tim` dùng cùng hàng game ấy
               mà không sao, vì nó xếp dòng chứ không xếp lưới.
 
-              320px là cỡ máy Android cũ, tức là đúng người mở một kho game Java.
+              320px là cỡ máy Android cũ, tức là đúng người mở một cửa hàng game Java.
             */}
             <ul className="grid gap-x-8 gap-y-3.5 xl:grid-cols-2">
               {game.map((g) => (

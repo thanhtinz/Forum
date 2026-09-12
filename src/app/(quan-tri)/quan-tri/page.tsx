@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Tổng quan' };
 
 /*
- * TỔNG QUAN — mở ra là biết CÓ GÌ PHẢI LÀM, rồi mới tới kho lớn cỡ nào.
+ * TỔNG QUAN — mở ra là biết CÓ GÌ PHẢI LÀM, rồi mới tới cửa hàng lớn cỡ nào.
  *
  * Bản trước chỉ có bảy ô đếm. Bảy con số ấy không sai, nhưng chúng không trả
  * lời được câu hỏi duy nhất người mở trang quản trị đang có: "hôm nay tôi phải
@@ -69,7 +69,7 @@ export default async function TongQuan() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="tieu-de-trang">Tổng quan</h1>
-          <p className="phu mt-1">Tình hình kho và những việc đang chờ</p>
+          <p className="phu mt-1">Tình hình cửa hàng và những việc đang chờ</p>
         </div>
         <Link href="/quan-tri/game/moi" className="nut-cai-dam !min-h-[38px] !px-4 !text-[13px]">
           <Plus size={15} aria-hidden /> Thêm game

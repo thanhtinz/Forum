@@ -9,15 +9,15 @@
  *
  *   1. Mỗi ngày một bộ khác — không thì tab này chỉ là một cái kệ đứng yên.
  *   2. KHÔNG TRÙNG cho tới khi đi hết danh mục. Bốc ngẫu nhiên thật thì hôm nay ra
- *      Contra, mai lại Contra, mà nửa số game trong kho không bao giờ được
- *      bày. Nghịch lý sinh nhật: kho hai trăm game, bốc bốn con mỗi ngày, thì
+ *      Contra, mai lại Contra, mà nửa số game trong cửa hàng không bao giờ được
+ *      bày. Nghịch lý sinh nhật: cửa hàng hai trăm game, bốc bốn con mỗi ngày, thì
  *      chỉ hơn tháng là gặp trùng.
  *   3. Ai mở cũng thấy y hệt nhau, và tải lại trang không đổi. `Math.random()`
  *      hỏng cả hai: mỗi lượt tải một kết quả, mỗi người một kết quả.
  *
  * CÁCH LÀM: XÁO CẢ CỖ RỒI CHIA DẦN
  *
- * Coi cả kho là một cỗ bài. Đầu mỗi VÒNG thì xáo cỗ ấy một lần, rồi mỗi ngày
+ * Coi cả cửa hàng là một cỗ bài. Đầu mỗi VÒNG thì xáo cỗ ấy một lần, rồi mỗi ngày
  * chia ra vài lá theo đúng thứ tự đã xáo. Đi hết cỗ là hết một vòng, xáo lại
  * bằng một hạt giống khác rồi chia tiếp.
  *

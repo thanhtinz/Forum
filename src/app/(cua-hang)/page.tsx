@@ -18,12 +18,12 @@ export const dynamic = 'force-dynamic';
 /*
  * TAB "HÔM NAY" — chép lối tab Today của App Store.
  *
- * Không phải một cái kho bày ra để lọc, mà một trang có người biên tập: mỗi
+ * Không phải một danh mục bày ra để lọc, mà một trang có người biên tập: mỗi
  * ngày vài game, mỗi game một tấm to, có dòng nhãn nói VÌ SAO nó nằm đó.
  *
  * MỖI NGÀY MỘT BỘ, VÀ KHÔNG TRÙNG cho tới khi đi hết danh mục — cách chia nằm ở
  * `hom-nay-const.ts`, và có một kịch bản duyệt hàng trăm ngày liền để soát.
- * Nói ngắn: coi cả kho là một cỗ bài, đầu mỗi vòng xáo một lần rồi mỗi ngày
+ * Nói ngắn: coi cả cửa hàng là một cỗ bài, đầu mỗi vòng xáo một lần rồi mỗi ngày
  * chia ra vài lá. Trong một vòng, mỗi lá đi qua tay đúng một lần.
  *
  * Câu chữ trên thẻ lấy từ chính phần giới thiệu do người nhập game viết. Kho
@@ -115,7 +115,7 @@ export default async function HomNay() {
  * cái tên thì cái tên ấy có nghĩa ngay. Ngược lại thì phải đọc xong tên, gặp
  * dòng nhãn, rồi quay lên đọc lại tên.
  *
- * Chỗ đáng lẽ là ảnh bìa thì xem `NenGame` — kho chưa có ảnh bìa thật, và
+ * Chỗ đáng lẽ là ảnh bìa thì xem `NenGame` — cửa hàng chưa có ảnh bìa thật, và
  * dựng một tấm ảnh giả là nói dối người xem về thứ họ sắp tải.
  */
 function TamLon({ game, nhan, doan }: { game: TheGame; nhan: string; doan: string | null }) {
@@ -128,9 +128,9 @@ function TamLon({ game, nhan, doan }: { game: TheGame; nhan: string; doan: strin
           {/*
             BIỂU TƯỢNG ĐẶT TO GIỮA TẤM.
 
-            Bản trước để cả khoảng giữa trống trơn, chỉ có dải màu — mà khoảng
+            Bản trước để cả cửa hàngảng giữa trống trơn, chỉ có dải màu — mà khoảng
             trống to nhất trang thì mắt đọc ra là "chỗ này ảnh chưa tải xong".
-            Biểu tượng là thứ hình ảnh THẬT duy nhất kho đang có của mỗi game,
+            Biểu tượng là thứ hình ảnh THẬT duy nhất cửa hàng đang có của mỗi game,
             nên nó vào đúng chỗ ấy làm chủ thể của tấm, thay vì nằm bé tí ở
             hàng dưới cùng với cái tên vừa in to phía trên.
           */}

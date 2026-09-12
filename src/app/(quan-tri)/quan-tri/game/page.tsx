@@ -53,7 +53,7 @@ export default async function DanhSachGame({ searchParams }: {
 
   const dieuKien: Prisma.GameWhereInput = {
     ...(trangThai ? { trangThai: trangThai as 'NHAP' } : {}),
-    // Tìm cả tên tiếng Việt và tên hãng: người quản kho nhớ "mấy game của
+    // Tìm cả tên tiếng Việt và tên hãng: người quản trị nhớ "mấy game của
     // Gameloft" chứ không nhớ từng cái tên một.
     ...(tim
       ? {
@@ -112,7 +112,7 @@ export default async function DanhSachGame({ searchParams }: {
       {/*
         Ô tìm là một biểu mẫu GET thật, không phải ô nghe từng phím.
         Gõ tới đâu gọi máy chủ tới đó thì mỗi chữ cái là một lượt truy vấn cả
-        bảng; mà người quản kho gõ xong tên rồi mới bấm Enter, không ai vừa gõ
+        bảng; mà người quản trị gõ xong tên rồi mới bấm Enter, không ai vừa gõ
         vừa đọc kết quả nhảy. Là biểu mẫu GET thì địa chỉ cũng dán được cho
         người khác, và nút lùi của trình duyệt chạy đúng.
       */}

@@ -20,7 +20,7 @@ const TRANG_THAI: Record<string, { ten: string; lop: string }> = {
 /*
  * TRANG YÊU CẦU GAME.
  *
- * Kho game cũ thì bao giờ cũng thiếu — thứ người ta tìm thường là một cái tên
+ * Cửa hàng game cũ thì bao giờ cũng thiếu — thứ người ta tìm thường là một cái tên
  * họ nhớ mang máng từ mười lăm năm trước. Mục này biến cái ngõ cụt "không tìm
  * thấy" thành một lời nhắn, và danh sách công khai bên dưới cho người sau thấy
  * game mình định xin đã có ai xin rồi hay chưa.
@@ -47,7 +47,7 @@ export default async function TrangYeuCau() {
       <div>
         <h1 className="tieu-de-trang">Yêu cầu game</h1>
         <p className="phu mt-0.5">
-          Không thấy game bạn cần trong kho? Cho biết tên, SunnyStore sẽ đi tìm.
+          Không thấy game bạn cần trong cửa hàng? Cho biết tên, SunnyStore sẽ đi tìm.
         </p>
       </div>
 

@@ -26,7 +26,7 @@ const LOC = [
 ];
 
 /*
- * ĐÁNH GIÁ — một chỗ trả lời cho cả kho.
+ * ĐÁNH GIÁ — một chỗ trả lời cho cả cửa hàng.
  *
  * Trước đây muốn đáp một bài đánh giá thì phải mò ra trang công khai của đúng
  * game ấy rồi cuộn xuống tìm. Nghĩa là muốn biết còn bài nào chưa đáp, phải

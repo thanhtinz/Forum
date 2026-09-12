@@ -10,7 +10,7 @@ export function gop(...phan: (string | false | null | undefined)[]): string {
   return phan.filter(Boolean).join(' ');
 }
 
-/** "kho game 2024!" → "kho-game-2024" */
+/** "Cửa Hàng Game 2024!" → "cua-hang-game-2024" */
 export function thanhDuongDan(chu: string): string {
   return chu
     .normalize('NFD')

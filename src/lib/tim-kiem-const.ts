@@ -28,7 +28,7 @@ export function khongDau(chu: string): string {
  *
  * Gộp sẵn vào MỘT cột thay vì `OR` qua bốn cột lúc truy vấn: một cột thì thêm
  * được chỉ mục, mà bốn điều kiện `contains` nối bằng `OR` thì CSDL quét cả
- * bảng bốn lượt. Ở cỡ kho này chưa thấy chậm, nhưng cấu trúc đúng thì để sẵn
+ * bảng bốn lượt. Ở cỡ cửa hàng này chưa thấy chậm, nhưng cấu trúc đúng thì để sẵn
  * từ đầu rẻ hơn sửa sau.
  *
  * Có cả tên thể loại: gõ "dua xe" là ra mấy game đua xe, dù không game nào
@@ -57,7 +57,7 @@ export function dungChuoiTim(g: {
  * ra, mà chúng lại là chủ đề người sau gặp cùng lỗi cần đọc nhất.
  *
  * Cái giá là một bản sao đã bỏ dấu của thân bài nằm trong CSDL. Chấp nhận
- * được: chữ là thứ rẻ nhất trong kho này, còn một ô tìm kiếm không ra gì thì
+ * được: chữ là thứ rẻ nhất trong cửa hàng này, còn một ô tìm kiếm không ra gì thì
  * người ta thôi dùng.
  */
 export function dungChuoiTimChuDe(c: { tieuDe: string; noiDung: string }): string {

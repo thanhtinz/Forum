@@ -4,7 +4,7 @@ import { GOC, moTrinhDuyet } from '../tro-giup.mjs';
  * Màn hình HẸP 320px, và điều hướng bằng bàn phím.
  *
  * 320px không phải một con số chọn bừa: đó là cỡ màn hình máy Android đời cũ,
- * tức là đúng người mở một kho game Java. Bộ kiểm trước giờ chỉ chạy ở 1280px
+ * tức là đúng người mở một cửa hàng game Java. Bộ kiểm trước giờ chỉ chạy ở 1280px
  * còn ảnh chụp ở 390px, nên khoảng hẹp nhất chưa ai nhìn — và lượt soát đầu
  * tiên ra ngay một lỗi: trang `/duyet` tràn 51px và cuộn ngang cả trang.
  */

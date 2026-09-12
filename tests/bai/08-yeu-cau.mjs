@@ -56,7 +56,7 @@ export default async function chay(kiem) {
     // ── Lời nhắn hiện công khai ────────────────────────────────────────
     const xem = await moTrang();
     await xem.goto(`${GOC}/yeu-cau`, { waitUntil: 'networkidle' });
-    kiem('lời nhắn của ban quản kho hiện công khai',
+    kiem('lời nhắn của ban quản trị hiện công khai',
       (await xem.locator('text=Đang tìm giúp bạn').count()) > 0);
     await xem.close();
   } finally {

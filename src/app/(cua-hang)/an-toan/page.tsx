@@ -4,7 +4,7 @@ import { ShieldCheck } from 'lucide-react';
 export const metadata: Metadata = { title: 'Tải sao cho an toàn' };
 
 /*
- * Trang này tồn tại vì kho game cũ là nơi phần mềm độc hại hay núp nhất: người
+ * Trang này tồn tại vì cửa hàng game cũ là nơi phần mềm độc hại hay núp nhất: người
  * ta tải tệp lạ về máy, cài bằng tay, và bỏ qua mọi cảnh báo vì đang háo hức.
  * Nói trước bốn điều dưới đây rẻ hơn nhiều so với việc sửa hậu quả.
  */

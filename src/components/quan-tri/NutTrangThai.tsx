@@ -4,7 +4,7 @@ import { useTransition } from 'react';
 import { doiTrangThai } from '@/app/(quan-tri)/quan-tri/viec';
 
 /**
- * Nút đăng game ra kho / rút về nháp.
+ * Nút bày game ra cửa hàng / rút về nháp.
  *
  * Rút về nháp hỏi lại một câu, đăng thì không: đăng nhầm chỉ cần bấm rút là
  * xong, còn rút một game đang có người tải xuống thì mọi đường dẫn tới nó gãy

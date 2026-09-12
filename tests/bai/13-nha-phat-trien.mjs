@@ -47,7 +47,7 @@ export default async function chay(kiem) {
   /*
    * Hai điều kiện, HAI khoá khác nhau.
    *
-   * Bản trước viết `{ not: hang, not: null }` — hai khoá `not` trùng tên trong
+   * Bản trước viết `{ not: hang, not: null }` — hai cửa hàngá `not` trùng tên trong
    * cùng một object, nên JavaScript lặng lẽ giữ cái sau và vứt cái trước. Bộ
    * lọc hoá ra chỉ còn "hãng khác rỗng", nên nó trả về được cả game của CHÍNH
    * hãng đang xem, và mục kiểm đỏ oan. Bấy lâu nay nó xanh nhờ may: `findFirst`

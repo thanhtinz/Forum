@@ -137,7 +137,7 @@ export async function layKe(
 /* ──────────────────────────────────────────────────────────────────────────
  * TÌM TRONG DIỄN ĐÀN
  *
- * Ô tìm kiếm trước đây chỉ biết tìm GAME. Nhưng một nửa giá trị của kho này
+ * Ô tìm kiếm trước đây chỉ biết tìm GAME. Nhưng một nửa giá trị của cửa hàng này
  * nằm ở mấy chủ đề kiểu "bản 1.2 treo ở màn 3, sửa thế nào" — người gặp đúng
  * lỗi ấy gõ vào ô tìm rồi không ra gì, lại mở một chủ đề mới hỏi y hệt.
  *

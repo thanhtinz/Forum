@@ -37,7 +37,7 @@ export interface BanXem {
  * KHUNG TẢI — chọn hệ máy, chọn phiên bản, rồi tải.
  *
  * Mỗi hệ máy có DÃY SỐ HIỆU RIÊNG, và dãy ấy quan trọng hơn nhiều so với ở
- * một cửa hàng thường: đây là kho game cũ, máy Nokia đời 2006 chạy được bản
+ * một cửa hàng thường: đây là cửa hàng game cũ, máy Nokia đời 2006 chạy được bản
  * 1.1 nhưng treo ở bản 1.5. Cửa hàng lớn chỉ đưa bản mới nhất vì máy của
  * người dùng lúc nào cũng mới hơn phần mềm; ở đây thì ngược lại, nên lịch sử
  * phiên bản là thứ phải bày ra chứ không phải thứ giấu đi.

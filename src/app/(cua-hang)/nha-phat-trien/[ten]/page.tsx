@@ -59,7 +59,7 @@ export default async function TrangNhaPhatTrien({ params, searchParams }: {
   /*
    * Thống kê hỏi thẳng CSDL chứ không cộng từ danh sách đang vẽ.
    *
-   * Cộng từ danh sách thì con số chỉ đúng chừng nào cả kho của hãng nằm lọt
+   * Cộng từ danh sách thì con số chỉ đúng chừng nào cả cửa hàng của hãng nằm lọt
    * trong một trang — mà đó chính là điều kiện vừa bị bỏ đi.
    */
   const gom = await db.game.aggregate({

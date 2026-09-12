@@ -7,7 +7,7 @@ import type { TheGame } from './the-game';
  * KỆ THẺ — hàng biểu tượng cuộn ngang.
  *
  * Dùng khi cái đáng khoe là BIỂU TƯỢNG chứ không phải thông tin: mục mới lên
- * kho, mục cùng thể loại. Muốn người ta cân nhắc và bấm cài ngay thì dùng
+ * kệ, mục cùng thể loại. Muốn người ta cân nhắc và bấm cài ngay thì dùng
  * `KeDanhSach` — thẻ dọc không có chỗ cho nút cài.
  */
 export function KeThe({ ten, phu, xemThem, game, rong = 104 }: {

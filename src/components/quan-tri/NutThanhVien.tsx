@@ -43,7 +43,7 @@ export function NutThanhVien({ id, ten, laQuanTri, dangKhoa, laToi }: {
           lam={() => doiVaiTro(id, false)} />
       ) : (
         <NutViec nho={`Phong quản trị cho ${ten}`} nhan={<><Shield size={13} aria-hidden /> Phong quản trị</>}
-          xacNhan={`Phong ${ten} làm quản trị? Họ sẽ sửa và xoá được mọi thứ trong kho.`}
+          xacNhan={`Phong ${ten} làm quản trị? Họ sẽ sửa và xoá được mọi thứ trong cửa hàng.`}
           lam={() => doiVaiTro(id, true)} />
       )}
     </span>

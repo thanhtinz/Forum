@@ -22,7 +22,7 @@ const LOC = [
 /*
  * HÀNG CHỜ BÁO XẤU.
  *
- * Ban quản kho xoá được bài rác từ lâu, nhưng chưa có cách nào BIẾT bài nào
+ * Ban quản trị xoá được bài rác từ lâu, nhưng chưa có cách nào BIẾT bài nào
  * rác — phải tự đọc hết diễn đàn và mọi đánh giá. Trang này là đầu kia của
  * việc ấy: người đọc gặp bài rác trước tiên, và giờ họ chỉ được chỗ.
  *

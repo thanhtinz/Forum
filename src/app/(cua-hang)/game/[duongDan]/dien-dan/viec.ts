@@ -170,7 +170,7 @@ export async function suaChuDe(_truoc: KetQua, form: FormData): Promise<KetQua> 
  * Chỉ cho xoá khi CHƯA AI TRẢ LỜI. Xoá một chủ đề đã có người vào góp chuyện
  * là xoá luôn công của họ — mấy lời đáp ấy đi theo vì `onDelete: Cascade`, và
  * người viết chúng chẳng làm gì sai cả. Muốn gỡ một chủ đề đã thành cuộc trao
- * đổi thì đó là việc của ban quản kho, và họ có nút riêng.
+ * đổi thì đó là việc của ban quản trị, và họ có nút riêng.
  */
 export async function xoaChuDeCuaToi(chuDeId: string): Promise<KetQua> {
   let nguoi;

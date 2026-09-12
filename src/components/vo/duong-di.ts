@@ -26,7 +26,7 @@ export interface LoiDi {
  *
  * Thư viện và tài khoản KHÔNG ở đây mà nằm sau ảnh đại diện góc trên phải —
  * đúng chỗ cả hai cửa hàng lớn để chúng, và cũng hợp lẽ: đó là việc của
- * riêng một người, không phải một lối duyệt kho.
+ * riêng một người, không phải một lối duyệt cửa hàng.
  */
 export const LOI_DI: LoiDi[] = [
   { duongDan: '/', ten: 'Hôm nay', icon: IconHomNay },

@@ -16,9 +16,9 @@ import type { TheGame } from './the-game';
  * Cả App Store lẫn CH Play đều mở đầu bằng đúng khối này, và đều vì một lẽ:
  * mặt tiền toàn thẻ vuông đều tăm tắp thì không có gì dẫn mắt, người ta lướt
  * qua mà không dừng ở đâu cả. Một tấm to gấp mười lần thẻ thường mới tạo được
- * chỗ dừng — và đó là chỗ ban quản kho được nói "hãy xem cái này".
+ * chỗ dừng — và đó là chỗ ban quản trị được nói "hãy xem cái này".
  *
- * Nền là dải màu suy ra từ tên game chứ không phải ảnh: kho chưa có ảnh bìa
+ * Nền là dải màu suy ra từ tên game chứ không phải ảnh: cửa hàng chưa có ảnh bìa
  * thật, mà dựng một tấm ảnh giả thì là nói dối người xem về thứ họ sắp tải.
  * Dải màu thì thành thật — nó chỉ là màu, và vẫn làm xong việc dẫn mắt.
  */

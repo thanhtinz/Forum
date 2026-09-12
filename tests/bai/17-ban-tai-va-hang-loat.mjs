@@ -148,7 +148,7 @@ export default async function chay(kiem) {
       });
       return g?.trangThai === 'DANG_HIEN' && g?.dangLuc != null;
     });
-    kiem('bấm Đăng ở trang sửa game thì game lên kho và có ngày đăng', motDaDang);
+    kiem('bấm Đăng ở trang sửa game thì game lên kệ và có ngày đăng', motDaDang);
 
     // Đăng lại sau khi rút về nháp KHÔNG được đặt lại ngày đăng.
     const ngayDau = (await db.game.findUnique({

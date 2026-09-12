@@ -6,7 +6,7 @@ import { GOC, moTrang } from '../tro-giup.mjs';
  * Mục đáng giá nhất là mục CUỐI: service worker KHÔNG được lưu đệm HTML. Mọi
  * tuyến ở đây đều mang trạng thái đăng nhập, nên một trang HTML nằm trong bộ
  * đệm là một trang có thể trả lại cho người khác trên cùng máy. Bài kiểm dựng
- * đúng tình huống ấy: tải trang, rồi soi xem trong kho đệm có gì.
+ * đúng tình huống ấy: tải trang, rồi soi xem trong cửa hàng đệm có gì.
  */
 export default async function chay(kiem) {
   const p = await moTrang();

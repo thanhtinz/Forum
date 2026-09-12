@@ -50,7 +50,7 @@ export default async function CaiDat() {
         </dl>
         <p className="phu mt-3">
           Tên đăng nhập nằm trong mọi bài viết cũ của bạn, còn email là thứ duy nhất
-          dùng để nhận ra tài khoản. Cần đổi thì nhắn cho ban quản kho.
+          dùng để nhận ra tài khoản. Cần đổi thì nhắn cho SunnyStore.
         </p>
       </section>
     </div>

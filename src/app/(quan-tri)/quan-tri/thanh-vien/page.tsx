@@ -16,7 +16,7 @@ const MOI_TRANG = 30;
  *
  * Trang này từng CHỈ ĐỌC, và lý do ghi ở đây là "chưa có nhu cầu thật thì chưa
  * mở ra". Nhu cầu ấy nay đã rõ: chuỗi kiểm duyệt dừng ở chỗ gỡ bài, nên người
- * rải bài quay lại rải tiếp và người coi kho chỉ còn cách gỡ từng bài, mãi.
+ * rải bài quay lại rải tiếp và người bán hàng chỉ còn cách gỡ từng bài, mãi.
  * Cột `khoa` vốn đã được canh ở mọi lối vào, tức là phần thi hành sẵn sàng từ
  * lâu — chỉ thiếu đúng cái nút bật nó.
  *
@@ -24,7 +24,7 @@ const MOI_TRANG = 30;
  * cuối cùng — chặn ở `khoaThanhVien` và `doiVaiTro`, không chặn bằng cách giấu
  * nút đi.
  *
- * Email KHÔNG in ra: người coi kho cần biết ai đang hoạt động, không cần địa
+ * Email KHÔNG in ra: người bán hàng cần biết ai đang hoạt động, không cần địa
  * chỉ liên lạc của họ; mà một bảng đầy email là một bảng đáng để người ngoài
  * đi lấy.
  */

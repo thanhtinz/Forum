@@ -87,7 +87,7 @@ export async function luuGame(_truoc: KetQua, form: FormData): Promise<KetQua> {
   redirect(`/quan-tri/game/${game.id}`);
 }
 
-/** Đăng game ra kho, hoặc rút về nháp. */
+/** Bày game ra cửa hàng, hoặc rút về nháp. */
 export async function doiTrangThai(gameId: string, trangThai: 'NHAP' | 'DANG_HIEN' | 'DA_GO'): Promise<KetQua> {
   try { await batBuocQuanTri(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
@@ -213,7 +213,7 @@ export async function traLoiYeuCau(id: string, trangThai: string, loiNhan: strin
 
   // Người gửi yêu cầu không có lý do gì để quay lại trang ấy xem đã có trả lời
   // chưa — nên phải chủ động báo, bằng không lời trả lời nằm đó không ai đọc.
-  const noi = { CHO_XEM: 'đang chờ xem', DANG_TIM: 'đang được tìm', DA_THEM: 'đã lên kho', TU_CHOI: 'bị từ chối' };
+  const noi = { CHO_XEM: 'đang chờ xem', DANG_TIM: 'đang được tìm', DA_THEM: 'đã lên kệ', TU_CHOI: 'bị từ chối' };
   await guiThongBao({
     nguoiNhanId: yc.nguoiId,
     loai: 'TRA_LOI_YEU_CAU',
@@ -888,7 +888,7 @@ export async function doiTrangThaiNhieu(
   try { await batBuocQuanTri(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
-  // Chặn trần để một yêu cầu bịa ra không kéo cả kho vào một giao dịch.
+  // Chặn trần để một yêu cầu bịa ra không kéo cả cửa hàng vào một giao dịch.
   if (gameId.length === 0) return { so: 0 };
   if (gameId.length > 100) return { loi: 'Mỗi lượt tối đa 100 game.' };
 
@@ -993,7 +993,7 @@ async function lamMoiChuoiTim(gameId: string): Promise<void> {
  * đúng người quản trị cuối cùng rồi không ai vào được nữa.
  *
  * Nay mở ra vì chuỗi kiểm duyệt đang cụt: báo xấu → gỡ bài → báo cho người
- * viết, rồi hết. Người rải bài quay lại rải tiếp, và người coi kho chỉ còn
+ * viết, rồi hết. Người rải bài quay lại rải tiếp, và người bán hàng chỉ còn
  * cách gỡ từng bài một, mãi. Cột `khoa` vốn đã được canh ở mọi lối vào
  * (`nguoiHienTai` lọc ngay trong `where`, `dangNhap` nói rõ lý do) — tức là
  * cả phần thi hành đã sẵn sàng từ lâu, chỉ thiếu đúng cái nút bật nó.

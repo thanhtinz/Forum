@@ -34,7 +34,7 @@ async function chay() {
      * `suaLuc` mang `@updatedAt`, nên một lượt `update` bình thường sẽ đánh
      * dấu cả mười hai game là "vừa sửa xong" — dù chẳng ai sửa gì. Hai chỗ
      * hỏng theo: cột "Sửa lần cuối" trong bảng quản trị hoá ra nói dối, và
-     * `lastmod` trong sơ đồ trang bảo máy tìm kiếm rằng cả kho vừa đổi.
+     * `lastmod` trong sơ đồ trang bảo máy tìm kiếm rằng cả cửa hàng vừa đổi.
      *
      * Đây là việc BẢO TRÌ, không phải một lần sửa nội dung, nên nó phải đi
      * qua mà không để lại dấu vết nào.

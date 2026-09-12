@@ -24,7 +24,7 @@ export const metadata: Metadata = {
  * Đây là BỐ CỤC GỐC thứ hai, ngang hàng với bố cục cửa hàng chứ không nằm
  * trong nó: tệp này tự dựng lấy <html> và <body>. Nhờ vậy khu quản trị không
  * mang theo thanh bên, thanh tab đáy hay ô tìm game của mặt tiền — mấy thứ ấy
- * nói chuyện với người đi mua hàng, còn ở đây là người coi kho.
+ * nói chuyện với người đi mua hàng, còn ở đây là người bán hàng.
  *
  * Cái giá: đi từ khu này sang khu kia là một lượt tải trang đầy đủ. Đáng —
  * người ta ra vào khu quản trị vài lần một ngày, không phải vài lần một phút.

@@ -340,7 +340,7 @@ model YeuCau {
   ghiChu String? @db.Text
 
   trangThai TrangThaiYeuCau @default(CHO_XEM)
-  loiNhan   String? // ban quản kho trả lời
+  loiNhan   String? // ban quản trị trả lời
 
   taoLuc DateTime @default(now())
 

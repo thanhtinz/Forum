@@ -17,10 +17,10 @@ export const metadata: Metadata = { title: 'Bảng xếp hạng' };
  * cùng một câu:
  *   • Tải nhiều nhất — cái gì phổ biến (cộng dồn từ trước tới nay).
  *   • Điểm cao nhất  — cái gì hay, theo lời người đã chơi.
- *   • Mới lên kho    — cái gì vừa có.
+ *   • Mới lên kệ    — cái gì vừa có.
  *
  * Lọc thêm theo hệ máy, vì "top game" mà máy mình không chạy được thì cũng
- * chỉ để ngắm — nhất là ở một kho toàn game cũ.
+ * chỉ để ngắm — nhất là ở một cửa hàng toàn game cũ.
  */
 
 const BANG = [

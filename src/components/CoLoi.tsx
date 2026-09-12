@@ -35,7 +35,7 @@ export function CoLoi({ thu, digest }: { thu: () => void; digest?: string }) {
         <p className="phu mt-6">
           Mã lỗi: <code className="font-mono">{digest}</code>
           <br />
-          Báo cho ban quản kho kèm mã này thì tìm ra nhanh hơn nhiều.
+          Báo cho SunnyStore kèm mã này thì tìm ra nhanh hơn nhiều.
         </p>
       )}
     </div>

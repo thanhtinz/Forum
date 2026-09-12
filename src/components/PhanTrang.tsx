@@ -20,7 +20,7 @@ export function PhanTrang({ trang, tongTrang, dungDuong }: {
 }) {
   if (tongTrang <= 1) return null;
 
-  // Chỉ in tối đa năm số quanh trang hiện tại: kho vài trăm trang mà in hết
+  // Chỉ in tối đa năm số quanh trang hiện tại: danh sách vài trăm trang mà in hết
   // thì thanh phân trang dài hơn cả danh sách nó phục vụ.
   const tu = Math.max(1, Math.min(trang - 2, tongTrang - 4));
   const den = Math.min(tongTrang, tu + 4);

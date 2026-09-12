@@ -13,7 +13,7 @@ import type { TheGame } from './the-game';
  * chỗ đi thì mỗi hàng lại bắt họ đọc lại từ đầu.
  *
  * Dòng phụ ưu tiên thể loại chứ không phải nhà phát triển: người tìm game ở
- * kho cũ thường nhớ "game bắn súng ngày xưa" chứ ít ai nhớ tên hãng làm ra nó.
+ * cửa hàng cũ thường nhớ "game bắn súng ngày xưa" chứ ít ai nhớ tên hãng làm ra nó.
  */
 export function HangGame({ game, soThuTu }: { game: TheGame; soThuTu?: number }) {
   return (

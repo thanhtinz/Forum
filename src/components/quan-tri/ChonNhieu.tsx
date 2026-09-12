@@ -110,7 +110,7 @@ export function ThanhViecChon() {
         <button type="button" disabled={dangChay} onClick={() => lam('NHAP', 'Rút về nháp')}
           className="nut-xam !min-h-[32px] !px-3 !text-[12px]">Rút về nháp</button>
         <button type="button" disabled={dangChay} onClick={() => lam('DA_GO', 'Gỡ')}
-          className="nut-xam !min-h-[32px] !px-3 !text-[12px]">Gỡ khỏi kho</button>
+          className="nut-xam !min-h-[32px] !px-3 !text-[12px]">Gỡ khỏi cửa hàng</button>
         <button type="button" onClick={() => batHet(id, false)}
           className="text-[12px] font-semibold text-mo hover:underline">Bỏ chọn</button>
         {loi && <span role="alert" className="basis-full text-[12px] font-medium text-xau">{loi}</span>}

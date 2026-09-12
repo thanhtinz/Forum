@@ -13,7 +13,7 @@ type MaLoai = (typeof LOAI)[number];
 /**
  * Báo một nội dung là xấu.
  *
- * Ban quản kho đã xoá được bài rác từ lâu, nhưng chưa có cách nào BIẾT bài nào
+ * Ban quản trị đã xoá được bài rác từ lâu, nhưng chưa có cách nào BIẾT bài nào
  * rác: họ phải tự đi đọc hết diễn đàn và mọi đánh giá. Người đọc thì gặp bài
  * rác trước tiên, nên để chính họ chỉ chỗ là cách duy nhất chạy được.
  *

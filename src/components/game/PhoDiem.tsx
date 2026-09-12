@@ -7,7 +7,7 @@ import { gonSo } from '@/lib/tien-ich';
  *
  * Bố cục này của CH Play, và nó nói được thứ mà con số trung bình giấu đi:
  * "4,3" có thể là ai cũng cho 4, mà cũng có thể là một nửa cho 5 còn một nửa
- * cho 2 — hai kho game hoàn toàn khác nhau, cùng in ra một con số.
+ * cho 2 — hai cửa hàng game hoàn toàn khác nhau, cùng in ra một con số.
  *
  * Thanh dài theo TỈ LỆ so với mức đông nhất chứ không so với tổng: nếu chia
  * theo tổng thì game nào cũng ra năm cái gạch bé tí gần bằng nhau, không đọc

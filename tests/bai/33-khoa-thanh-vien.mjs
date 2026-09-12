@@ -6,7 +6,7 @@ const DAU = 'kiemthu-khoa';
  * KHOÁ TÀI KHOẢN VÀ ĐỔI VAI TRÒ.
  *
  * Chuỗi kiểm duyệt trước đây cụt ở chỗ gỡ bài: người rải bài quay lại rải
- * tiếp, và người coi kho chỉ còn cách gỡ từng bài một, mãi. Cột `khoa` vốn đã
+ * tiếp, và người bán hàng chỉ còn cách gỡ từng bài một, mãi. Cột `khoa` vốn đã
  * được canh ở mọi lối vào, chỉ thiếu cái nút bật nó.
  *
  * Ba mục nguy hiểm nhất phải canh, vì mỗi cái hỏng là hỏng vĩnh viễn:

@@ -39,7 +39,7 @@ export default async function chay(kiem) {
 
   kiem('có nút tải nổi bật', (await p.locator('a.nut-cai-dam').count()) > 0);
   /*
-   * Kệ "Game tương tự" chỉ dựng khi THẬT SỰ có game cùng thể loại — kho nhỏ
+   * Kệ "Game tương tự" chỉ dựng khi THẬT SỰ có game cùng thể loại — cửa hàng nhỏ
    * hoặc thể loại hiếm thì không có, và khi ấy một kệ rỗng mới là lỗi.
    * Nên đếm trước rồi mới khẳng định, chứ không khẳng định suông.
    */

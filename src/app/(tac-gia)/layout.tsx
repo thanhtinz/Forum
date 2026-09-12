@@ -1,13 +1,12 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { ExternalLink, Gamepad2, LayoutDashboard, UserRound } from 'lucide-react';
 import '../globals.css';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { MA_DAT_NEN } from '@/lib/dat-nen';
-import { MenuTacGia } from '@/components/tac-gia/MenuTacGia';
 import { LOI_DI_TAC_GIA as LOI_DI } from '@/lib/tac-gia-loi-di';
+import { DauTrangTacGia } from '@/components/tac-gia/DauTrangTacGia';
+import { ChanTrangTacGia } from '@/components/tac-gia/ChanTrangTacGia';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +17,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const HINH = { LayoutDashboard, Gamepad2, UserRound };
-
 /*
  * BẢNG TÁC GIẢ — BỐ CỤC GỐC THỨ BA.
  *
@@ -28,9 +25,9 @@ const HINH = { LayoutDashboard, Gamepad2, UserRound };
  * game, không cần thanh tab đáy — họ cần danh sách game của họ và trạng thái
  * của từng cái.
  *
- * Vỏ cố ý KHÁC khu quản trị: thanh bên sáng, không sẫm. Một người vừa là tác
- * giả vừa là quản trị phải nhìn ra ngay mình đang đứng ở vai nào, vì hai vai
- * ấy làm được những việc rất khác nhau.
+ * Vỏ là vỏ CỔNG NHÀ PHÁT TRIỂN, dùng chung với trang đăng ký: thanh trên ngang
+ * và chân trang, không phải thanh bên như cửa hàng hay khu quản trị. Một người
+ * vừa bán hàng vừa mua hàng nhìn cái vỏ là biết mình đang đứng bên nào.
  *
  * CỔNG CHẶN đặt ở đây, không ở từng trang con: thêm trang mới mà quên chép
  * đoạn kiểm quyền là cả trang ấy mở toang. Nhưng đây chỉ chặn GIAO DIỆN — mỗi
@@ -48,6 +45,13 @@ export default async function GocTacGia({ children }: { children: React.ReactNod
     db.game.count({ where: { tacGiaId: nguoi.id, trangThai: 'TU_CHOI' } }),
   ]);
 
+  // Con số đếm ở máy chủ rồi gắn thẳng vào mục, để thanh trên không phải biết
+  // gì về game hay trạng thái game.
+  const loiDi = LOI_DI.map((l) => ({
+    ...l,
+    so: l.dich === '/quan-ly/game' ? choDuyet + tuChoi : undefined,
+  }));
+
   return (
     <html lang="vi" suppressHydrationWarning>
       <head>
@@ -56,40 +60,10 @@ export default async function GocTacGia({ children }: { children: React.ReactNod
       <body className="bg-nen">
         <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>
 
-        <aside className="vach-phai fixed inset-y-0 left-0 z-40 hidden w-[236px] flex-col border-r bg-nen2 px-3 py-4 lg:flex">
-          <Link href="/quan-ly" className="mb-5 block px-2.5 text-[17px] font-bold tracking-tight">
-            SunnyStore <span className="font-medium text-mo">Tác giả</span>
-          </Link>
-
-          <nav className="space-y-0.5">
-            {LOI_DI.map((l) => {
-              const H = HINH[l.hinh];
-              return (
-                <Link key={l.dich} href={l.dich}
-                  className="flex items-center gap-2.5 rounded-nut px-2.5 py-2 text-[14px] font-medium text-mo transition-colors hover:bg-nen3 hover:text-chu">
-                  <H size={17} aria-hidden /> {l.ten}
-                  {l.dich === '/quan-ly/game' && choDuyet + tuChoi > 0 && (
-                    <span className="ml-auto rounded-full bg-cam/20 px-1.5 py-0.5 text-[11px] font-bold text-canh">
-                      {choDuyet + tuChoi}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
-
-          <div className="mt-auto space-y-1 px-2.5 pt-4 text-[13px]">
-            <p className="font-semibold">{nguoi.tenHienThi}</p>
-            <Link href="/" className="inline-flex items-center gap-1 text-mo hover:text-chu">
-              Xem cửa hàng <ExternalLink size={12} aria-hidden />
-            </Link>
-          </div>
-        </aside>
-
-        <div className="min-h-screen lg:pl-[236px]">
-          <MenuTacGia loiDi={LOI_DI.map((l) => ({ dich: l.dich, ten: l.ten }))}
-            ten={nguoi.tenHienThi} />
-          <main id="noi-dung" className="khung py-5 sm:py-7">{children}</main>
+        <div className="flex min-h-screen flex-col">
+          <DauTrangTacGia loiDi={loiDi} trangChu="/quan-ly" ten={nguoi.tenHienThi} />
+          <main id="noi-dung" className="khung flex-1 py-5 sm:py-7">{children}</main>
+          <ChanTrangTacGia laTacGia />
         </div>
       </body>
     </html>

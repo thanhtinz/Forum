@@ -79,6 +79,31 @@ export default async function chay(kiem) {
       rBang.status() === 200, `mã ${rBang.status()}`);
     kiem('và nội dung ấy là bảng tác giả',
       (await rBang.text()).includes('/quan-ly/game'));
+
+    /* ── VỎ RIÊNG: thanh trên ngang, chân trang, không thanh bên ──────── */
+    const donChu = await khach.request.get(`${GOC}/tac-gia/dang-ky`, { headers: HOST_CONG });
+    const don = await donChu.text();
+    kiem('cổng có chân trang riêng', don.includes('© ') && don.includes('Việc của tác giả'));
+    /*
+     * Người chưa được duyệt mà chân trang vẫn bày "Game của tôi" thì bấm vào
+     * chỉ bị đẩy ngược về đúng trang đang đứng — cánh cửa khoá bày giữa nhà.
+     */
+    kiem('chân trang của người chưa là tác giả không bày lối vào bảng tác giả',
+      !don.includes('Game của tôi'));
+
+    await tacGia.goto(`${GOC}/quan-ly`);
+    kiem('bảng tác giả mặc chung vỏ cổng nhà phát triển',
+      await tacGia.locator('header a[href="/quan-ly/game"]').count() === 1);
+    kiem('ba lối đi đều nằm trên thanh trên',
+      await tacGia.locator('header nav a').first().isVisible());
+    kiem('bảng tác giả cũng có chân trang ấy',
+      await tacGia.locator('footer').count() === 1);
+    /*
+     * Thanh bên cũ đã gỡ: để lẫn cả hai thì cùng một danh sách lối đi hiện ở
+     * hai chỗ, và người dùng phải tự đoán hai chỗ ấy khác nhau ở đâu.
+     */
+    kiem('và không còn thanh bên nào sót lại',
+      await tacGia.locator('aside').count() === 0);
   } finally {
     await khach.close();
     if (tacGia) await tacGia.close();

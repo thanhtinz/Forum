@@ -72,8 +72,15 @@ export default async function chay(kiem) {
 
     // ── A không thấy game của B trong danh sách của mình ───────────────
     await aPage.goto(`${GOC}/quan-ly/game`, { waitUntil: 'networkidle' });
+    /*
+     * So khớp ĐÚNG CHỮ và chỉ tìm trong phần nội dung.
+     *
+     * `text=` của Playwright tìm chuỗi CON và KHÔNG phân biệt hoa thường, nên
+     * "Game của B" khớp luôn câu "Bày game của bạn ra cửa hàng" ở chân trang —
+     * phép kiểm báo hỏng trong khi danh sách chẳng có game nào của B cả.
+     */
     kiem('danh sách game của A không có game của B',
-      (await aPage.locator('text=Game của B').count()) === 0);
+      (await aPage.locator('main').getByText('Game của B', { exact: true }).count()) === 0);
 
     /*
      * ── THIẾU THỨ THÌ KHÔNG GỬI DUYỆT ĐƯỢC ───────────────────────────

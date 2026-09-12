@@ -26,7 +26,7 @@ export function OTheLoai({ ten, duongDan, soGame }: {
   const Hinh = BANG[icon] ?? Gamepad2;
 
   return (
-    <Link href={`/duyet?the-loai=${duongDan}`}
+    <Link href={`/the-loai/${duongDan}`}
       className="the-bam group flex items-center gap-3 px-3.5 py-3">
       <span className="grid size-10 shrink-0 place-items-center rounded-full transition-transform duration-200 group-hover:scale-110"
         style={{ backgroundColor: `rgb(${sac} / .12)`, color: `rgb(${sac})` }}>

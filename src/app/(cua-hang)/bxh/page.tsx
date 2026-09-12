@@ -32,7 +32,7 @@ const BANG = [
 type MaBang = (typeof BANG)[number]['ma'];
 
 /*
- * Khoá phụ `id` ở mọi cách sắp. Hai game cùng số lượt tải (rất hay gặp khi kho
+ * Khoá phụ `id` ở mọi cách sắp. Hai game cùng số lượt tải (rất hay gặp khi cửa hàng
  * mới lập) mà không có khoá phụ thì Postgres trả về thứ tự tuỳ hứng, và bảng
  * xếp hạng đổi chỗ mỗi lần tải lại trang — người xem tưởng số liệu đang nhảy.
  */

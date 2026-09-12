@@ -70,7 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
 
     ...theLoai.map((t) => ({
-      url: `${DIA_CHI_GOC}/duyet?the-loai=${t.duongDan}`,
+      url: `${DIA_CHI_GOC}/the-loai/${t.duongDan}`,
       lastModified: moiNhat,
       changeFrequency: 'weekly' as const,
       priority: 0.5,

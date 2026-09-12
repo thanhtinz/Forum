@@ -185,7 +185,7 @@ async function ChuaGo() {
 
       <section>
         <h2 className="tieu-de mb-3">Thể loại</h2>
-        <HangChip muc={theLoai.map((t) => ({ ten: t.ten, duongDan: `/duyet?the-loai=${t.duongDan}` }))} />
+        <HangChip muc={theLoai.map((t) => ({ ten: t.ten, duongDan: `/the-loai/${t.duongDan}` }))} />
       </section>
 
       <section>

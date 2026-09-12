@@ -34,7 +34,7 @@ export default async function KhungGame({ children, params }: {
     select: {
       id: true, duongDan: true, ten: true, tenViet: true, nhaPhatTrien: true,
       icon: true, vietHoa: true, tongSao: true, soLuotDanhGia: true, soLuotTai: true,
-      theLoai: { select: { theLoai: { select: { ten: true } } } },
+      theLoai: { select: { theLoai: { select: { ten: true, duongDan: true } } } },
       banTai: {
         orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }],
         take: 60,
@@ -111,8 +111,19 @@ export default async function KhungGame({ children, params }: {
                   {game.nhaPhatTrien}
                 </Link>
               )}
+              {/* Thể loại BẤM ĐƯỢC, cùng lẽ với tên hãng: thấy một game đua xe
+                  hay thì việc muốn làm ngay là xem gian đua xe có gì nữa. */}
               <p className="phu mt-1">
-                {game.theLoai.map((t) => t.theLoai.ten).join(' · ') || 'Game'}
+                {game.theLoai.length > 0
+                  ? game.theLoai.map((t, i) => (
+                      <span key={t.theLoai.duongDan}>
+                        {i > 0 && ' · '}
+                        <Link href={`/the-loai/${t.theLoai.duongDan}`} className="hover:text-chu hover:underline">
+                          {t.theLoai.ten}
+                        </Link>
+                      </span>
+                    ))
+                  : 'Game'}
                 {game.vietHoa && ' · Có bản Việt hoá'}
               </p>
             </div>

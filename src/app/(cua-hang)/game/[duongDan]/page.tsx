@@ -9,6 +9,7 @@ import { SaoNam } from '@/components/game/SaoNam';
 import { KeThe } from '@/components/game/KeThe';
 import { ODanhGia } from '@/components/game/ODanhGia';
 import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
+import { KeAnhChup } from '@/components/game/KeAnhChup';
 import { KhoiGap } from '@/components/KhoiGap';
 import { NGON_NGU } from '@/lib/he-may';
 import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
@@ -101,13 +102,7 @@ export default async function TabThongTin({ params, searchParams }: {
   return (
     <div className="space-y-8">
       {game.anhChup.length > 0 && (
-        <section className="ke -mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
-          {game.anhChup.map((a) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={a.id} src={a.duongDan} alt={a.chuThich ?? ''} loading="lazy"
-              className="h-52 w-auto rounded-the border border-vien object-cover sm:h-72" />
-          ))}
-        </section>
+        <KeAnhChup anh={game.anhChup} />
       )}
 
       {/*

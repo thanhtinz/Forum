@@ -359,3 +359,25 @@ p { text-wrap: pretty; }
   .dong-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .dong-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 }
+
+/*
+ * ẢNH CHỤP GAME CŨ — KHÔNG PHÓNG MỜ.
+ *
+ * Ảnh chụp game Java thường là 128×128 hay 176×208. Ép nó cao 208px rồi 288px
+ * là phóng to gần gấp rưỡi, mà trình duyệt phóng ảnh bằng phép nội suy mượt —
+ * nên pixel art ra nhoè nhoẹt, đúng thứ trông rẻ tiền nhất ở một cửa hàng
+ * game hoài niệm.
+ *
+ * Hai việc cùng lúc:
+ *   • `max-height` theo cỡ THẬT của ảnh (`--cao-that`), nên ảnh nhỏ không bị
+ *     kéo giãn — nó chỉ đứng đúng cỡ của nó;
+ *   • `image-rendering: pixelated` cho phần vẫn phải phóng (màn hình 2x, hoặc
+ *     người bấm xem to), để pixel ra pixel vuông vắn chứ không ra vệt mờ.
+ *
+ * `object-fit: contain` chứ không `cover`: ảnh chụp game là ảnh có KHUNG, cắt
+ * mất một dải là cắt mất chỗ hiện điểm hoặc hiện mạng.
+ */
+.anh-chup-game {
+  image-rendering: pixelated;
+  object-fit: contain;
+}

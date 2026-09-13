@@ -110,6 +110,13 @@ model Game {
   tongSao       Int @default(0)
   soLuotDanhGia Int @default(0)
 
+  /// Điểm trung bình tính sẵn, 0 khi chưa đủ phiếu — xem `diem-game-const.ts`.
+  ///
+  /// VÌ SAO LƯU: trung bình là một phép chia, mà `orderBy` của Prisma không
+  /// xếp theo phép chia được. Không có cột này thì mọi bảng "điểm cao nhất"
+  /// đành xếp theo SỐ LƯỢT đánh giá và nói sai về chính mình.
+  diemTB Float @default(0)
+
   soLuotTai Int @default(0)
   soLuotXem Int @default(0)
 

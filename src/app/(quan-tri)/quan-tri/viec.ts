@@ -13,6 +13,7 @@ import { xoaAnh, xoaPhim, xoaTepGame } from '@/lib/kho';
 import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
 import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
 import { napDoTuoi } from '@/lib/do-tuoi-const';
+import { tinhDiemTB } from '@/lib/diem-game-const';
 import {
   SU_KIEN_MO_TA_TOI_DA, SU_KIEN_TIEU_DE_TOI_DA, laLoaiSuKien,
 } from '@/lib/su-kien-const';
@@ -918,7 +919,13 @@ export async function xoaDanhGia(danhGiaId: string): Promise<KetQua> {
     });
     await tx.game.update({
       where: { id: d.gameId },
-      data: { tongSao: gom._sum.sao ?? 0, soLuotDanhGia: gom._count._all },
+      data: {
+        tongSao: gom._sum.sao ?? 0,
+        soLuotDanhGia: gom._count._all,
+        // Ghi cùng lúc với hai con số nó sinh ra từ đó: để lệch pha là bảng
+        // "điểm cao nhất" xếp theo một sự thật đã cũ.
+        diemTB: tinhDiemTB(gom._sum.sao ?? 0, gom._count._all),
+      },
       select: { id: true },
     });
   });

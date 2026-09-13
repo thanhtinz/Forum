@@ -1,4 +1,5 @@
 import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { TOI_THIEU_PHIEU, tinhDiemTB } from '../../src/lib/diem-game-const.ts';
 
 /**
  * Chấm sao: ghi đúng, sửa được, và con số trung bình luôn khớp với dữ liệu.
@@ -53,6 +54,27 @@ export default async function chay(kiem) {
   kiem('mỗi người chỉ có một đánh giá cho một game', soBai === 1, `đếm được ${soBai}`);
   kiem('bộ đếm khớp sau khi sửa điểm', await boDemKhop(game.id));
 
+  /*
+   * ── ĐIỂM TÍNH SẴN: ngưỡng phiếu nằm ngay trong con số ────────────────
+   *
+   * Bảng "điểm cao nhất" xếp theo cột `diemTB`. Nếu cột ấy nhận điểm của một
+   * game mới có đúng một phiếu 5 sao thì cả bảng thành vô nghĩa — nên dưới
+   * ngưỡng, điểm phải là 0 để game ấy CHÌM chứ không BIẾN MẤT.
+   */
+  kiem('một phiếu 5 sao thì chưa tính là có điểm', tinhDiemTB(5, 1) === 0);
+  kiem(`đủ ${TOI_THIEU_PHIEU} phiếu thì mới có điểm`,
+    tinhDiemTB(12, 3) === 4, `${tinhDiemTB(12, 3)}`);
+  kiem('điểm giữ nguyên số lẻ để còn xếp hạng được',
+    Math.abs(tinhDiemTB(17, 4) - 4.25) < 1e-9, `${tinhDiemTB(17, 4)}`);
+
+  const diemTrongKho = await db.game.findUnique({
+    where: { id: game.id }, select: { diemTB: true, tongSao: true, soLuotDanhGia: true },
+  });
+  kiem('cột điểm trong cơ sở dữ liệu khớp với hai con số sinh ra nó',
+    Math.abs(diemTrongKho.diemTB
+      - tinhDiemTB(diemTrongKho.tongSao, diemTrongKho.soLuotDanhGia)) < 1e-9,
+    `${diemTrongKho.diemTB} vs ${diemTrongKho.tongSao}/${diemTrongKho.soLuotDanhGia}`);
+
   await db.danhGia.deleteMany({ where: { gameId: game.id, nguoiId: nguoi.id } });
   await lamMoiBoDem(game.id);
   await p.close();
@@ -71,6 +93,10 @@ async function lamMoiBoDem(gameId) {
   const gom = await db.danhGia.aggregate({ where: { gameId }, _sum: { sao: true }, _count: { _all: true } });
   await db.game.update({
     where: { id: gameId },
-    data: { tongSao: gom._sum.sao ?? 0, soLuotDanhGia: gom._count._all },
+    data: {
+      tongSao: gom._sum.sao ?? 0,
+      soLuotDanhGia: gom._count._all,
+      diemTB: tinhDiemTB(gom._sum.sao ?? 0, gom._count._all),
+    },
   });
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { batBuocDangNhap, nguoiHienTai } from '@/lib/xac-thuc';
+import { tinhDiemTB } from '@/lib/diem-game-const';
 
 export interface KetQua { ok?: boolean; loi?: string }
 
@@ -68,7 +69,13 @@ export async function chamSao(gameId: string, sao: number, noiDung: string, tieu
     });
     await tx.game.update({
       where: { id: gameId },
-      data: { tongSao: gom._sum.sao ?? 0, soLuotDanhGia: gom._count._all },
+      data: {
+        tongSao: gom._sum.sao ?? 0,
+        soLuotDanhGia: gom._count._all,
+        // Ghi cùng lúc với hai con số nó sinh ra từ đó: để lệch pha là bảng
+        // "điểm cao nhất" xếp theo một sự thật đã cũ.
+        diemTB: tinhDiemTB(gom._sum.sao ?? 0, gom._count._all),
+      },
       select: { id: true },
     });
   });

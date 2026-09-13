@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import bcrypt from 'bcryptjs';
+import { tinhDiemTB } from '../src/lib/diem-game-const';
 import { PrismaClient, type HeMay, type LoaiTep } from '@prisma/client';
 import { dungChuoiTim } from '../src/lib/tim-kiem-const';
 
@@ -430,7 +431,7 @@ async function main() {
     }
     await db.game.update({
       where: { id: game.id },
-      data: { tongSao: tong, soLuotDanhGia: soDanhGia },
+      data: { tongSao: tong, soLuotDanhGia: soDanhGia, diemTB: tinhDiemTB(tong, soDanhGia) },
       select: { id: true },
     });
 

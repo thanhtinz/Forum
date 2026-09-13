@@ -89,10 +89,12 @@ function dieuKien(loc: BoLoc): Prisma.GameWhereInput {
  * thì Postgres trả về thứ tự tuỳ hứng — và người bấm sang trang 2 sẽ thấy lại
  * đúng cái game vừa xem ở trang 1, hoặc mất hẳn một game không bao giờ hiện.
  */
-const SAP_THEO: Record<MaCachSap, Prisma.GameOrderByWithRelationInput[]> = {
+export const SAP_THEO: Record<MaCachSap, Prisma.GameOrderByWithRelationInput[]> = {
   moi: [{ dangLuc: 'desc' }, { id: 'desc' }],
   'tai-nhieu': [{ soLuotTai: 'desc' }, { id: 'desc' }],
-  'diem-cao': [{ soLuotDanhGia: 'desc' }, { tongSao: 'desc' }, { id: 'desc' }],
+  /* Xếp theo ĐIỂM tính sẵn, rồi mới tới số phiếu. Game chưa đủ ba phiếu mang
+     điểm 0 nên tự chìm xuống đáy — xem `diem-game-const.ts`. */
+  'diem-cao': [{ diemTB: 'desc' }, { soLuotDanhGia: 'desc' }, { id: 'desc' }],
   ten: [{ ten: 'asc' }, { id: 'asc' }],
 };
 

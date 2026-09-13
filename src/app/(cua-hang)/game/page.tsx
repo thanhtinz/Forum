@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import { ChevronRight, Inbox } from 'lucide-react';
 import { OTheLoai } from '@/components/game/OTheLoai';
-import { CHON_THE, thanhThe } from '@/components/game/the-game';
 import { db } from '@/lib/db';
-import { DANG_HIEN, layKe } from '@/lib/danh-muc';
+import { DANG_HIEN, SAP_THEO, layKe } from '@/lib/danh-muc';
 import { BangNoiBat } from '@/components/game/BangNoiBat';
 import { HangChip } from '@/components/game/HangChip';
 import { KeDanhSach } from '@/components/game/KeDanhSach';
@@ -49,31 +48,17 @@ export const metadata = { title: 'Trò chơi' };
  */
 
 export default async function TrangKhoGame() {
-  const [noiBat, ungVien, moi, ngayXua, theLoai, tongGame] = await Promise.all([
+  const [noiBat, diemCao, moi, ngayXua, theLoai, tongGame] = await Promise.all([
     layKe({ noiBat: true }, [{ dangLuc: 'desc' }, { id: 'desc' }], 5),
     /*
-     * ỨNG VIÊN CHO KỆ "ĐIỂM CAO NHẤT" — lấy rộng rồi mới xếp ở đây.
+     * Điểm cao nhất — xếp theo cột `diemTB` tính sẵn.
      *
-     * Điểm trung bình là một phép CHIA, mà Prisma thì không xếp theo phép chia
-     * được. Bản ở trang duyệt lách bằng cách xếp theo số lượt đánh giá rồi tới
-     * tổng sao — nghe thì gần, nhưng đó là "được chấm nhiều nhất" chứ không
-     * phải "điểm cao nhất": một game trăm bài toàn 3 sao vẫn đứng trên một
-     * game mười bài toàn 5 sao.
-     *
-     * Nên lấy sáu chục game có đủ phiếu rồi chia ngay tại đây. Cửa hàng cỡ này
-     * thì sáu chục hàng là rẻ; tới lúc phình lên hàng vạn game thì mới đáng
-     * thêm một cột điểm tính sẵn.
-     *
-     * NGƯỠNG BA PHIẾU, không phải một: một game duy nhất một bài 5 sao mà đứng
-     * đầu bảng "điểm cao nhất" thì cái bảng ấy chỉ nói lên rằng có người vừa
-     * chấm sao, chứ không nói game nào hay.
+     * Không lọc thêm ngưỡng phiếu ở đây: ngưỡng đã nằm ngay trong con số (game
+     * chưa đủ ba phiếu mang điểm 0), nên kệ này và lối "xem tất cả" sang trang
+     * duyệt cùng xếp một kiểu. Trước đó hai chỗ xếp hai kiểu khác nhau mà lại
+     * mang chung một cái tên.
      */
-    db.game.findMany({
-      where: { ...DANG_HIEN, soLuotDanhGia: { gte: 3 } },
-      orderBy: [{ soLuotDanhGia: 'desc' }, { id: 'desc' }],
-      take: 60,
-      select: CHON_THE,
-    }),
+    layKe({ diemTB: { gt: 0 } }, SAP_THEO['diem-cao'], 9),
     layKe({}, [{ dangLuc: 'desc' }, { id: 'desc' }], 12),
     /*
      * "Chơi lại ngày xưa" — game cũ nhất theo NĂM PHÁT HÀNH GỐC.
@@ -96,11 +81,6 @@ export default async function TrangKhoGame() {
   ]);
 
   if (tongGame === 0) return <KhoTrong />;
-
-  const diemCao = ungVien
-    .map(thanhThe)
-    .sort((a, b) => b.sao - a.sao || b.soLuotDanhGia - a.soLuotDanhGia)
-    .slice(0, 9);
 
   const chip = [
     { ten: 'Tất cả', duongDan: '/duyet' },

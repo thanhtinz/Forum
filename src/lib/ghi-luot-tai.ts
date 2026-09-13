@@ -1,5 +1,6 @@
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
+import { dauNgayVN } from '@/lib/ngay-vn-const';
 
 /**
  * Ghi sổ một lượt tải: cộng bộ đếm của game, và ghi vào thư viện người tải.
@@ -20,6 +21,22 @@ export async function ghiLuotTai(
       where: { id: gameId },
       data: { soLuotTai: { increment: 1 } },
       select: { id: true },
+    });
+
+    /*
+     * Ô ĐẾM CỦA NGÀY HÔM NAY — nằm trong cùng giao dịch với bộ đếm tổng.
+     *
+     * Để ngoài giao dịch thì có lúc tổng cộng một mà ngày không cộng, và hai
+     * con số lệch nhau vĩnh viễn mà không chỗ nào phát hiện. Đếm cả lượt của
+     * khách vãng lai: người ta tải thật thì đó là một lượt thật, dù không đăng
+     * nhập.
+     */
+    const ngay = dauNgayVN();
+    await tx.luotTaiNgay.upsert({
+      where: { gameId_ngay_heMay: { gameId, ngay, heMay: heMay as 'JAVA' } },
+      update: { so: { increment: 1 } },
+      create: { gameId, ngay, heMay: heMay as 'JAVA', so: 1 },
+      select: { so: true },
     });
 
     // Khách vãng lai vẫn tải được — chỉ là không có thư viện để ghi vào.

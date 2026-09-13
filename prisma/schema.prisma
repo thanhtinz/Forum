@@ -137,6 +137,7 @@ model Game {
   suKien  SuKien[]
   danhGia DanhGia[]
   luotTai LuotTai[]
+  luotTaiNgay LuotTaiNgay[]
   daLuu   DaLuu[]
   chuDe   ChuDe[]
 
@@ -440,6 +441,38 @@ model DanhGiaHuuIch {
  * vẫn phải gom nhóm lại mới in ra được. Số lượt tải tổng đã có sẵn ở
  * `Game.soLuotTai`, nên ở đây chỉ cần biết ai có game gì.
  */
+/**
+ * LƯỢT TẢI GOM THEO NGÀY — để tác giả xem được đường đi của game mình.
+ *
+ * VÌ SAO CẦN BẢNG RIÊNG: `Game.soLuotTai` chỉ là một con số cộng dồn, nó không
+ * nói được tuần này hơn hay kém tuần trước; còn `LuotTai` thì mỗi người mỗi
+ * game đúng MỘT hàng, ghi đè mỗi lần tải lại — nên lịch sử coi như không có.
+ * Hai thứ ấy không dựng lại được đường biểu diễn, dù có xoay kiểu gì.
+ *
+ * Gom sẵn theo ngày thay vì ghi từng lượt: một cửa hàng game Java chạy lâu năm
+ * thì bảng "từng lượt tải" phình theo số lần bấm, mà câu hỏi người ta hỏi thì
+ * luôn là "ngày ấy bao nhiêu lượt". Đếm sẵn lúc ghi thì lúc đọc chỉ việc lấy
+ * ra.
+ *
+ * Mốc ngày tính theo GIỜ VIỆT NAM, xem `ngay-vn-const.ts`: gom theo giờ UTC
+ * thì mọi lượt tải từ nửa đêm tới 7 giờ sáng giờ ta rơi sang hôm trước.
+ *
+ * Tách luôn theo hệ máy, vì đó là câu hỏi thật của người bày hàng: "còn ai tải
+ * bản Java nữa không, hay dẹp đi cho rồi".
+ */
+model LuotTaiNgay {
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  /// Mốc 0 giờ giờ Việt Nam của ngày ấy.
+  ngay  DateTime
+  heMay HeMay
+  so    Int      @default(0)
+
+  @@id([gameId, ngay, heMay])
+  @@index([gameId, ngay])
+}
+
 model LuotTai {
   id      String    @id @default(cuid())
   gameId  String

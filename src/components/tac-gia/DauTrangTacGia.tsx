@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  ArrowLeft, FilePen, Gamepad2, LayoutDashboard, Menu, Star, UserRound, X,
+  ArrowLeft, ChartColumn, FilePen, Gamepad2, LayoutDashboard, Menu, Star, UserRound, X,
 } from 'lucide-react';
 import { gop } from '@/lib/tien-ich';
 
-const HINH = { LayoutDashboard, Gamepad2, Star, UserRound, FilePen };
+const HINH = { LayoutDashboard, Gamepad2, ChartColumn, Star, UserRound, FilePen };
 
 export interface MucTacGia {
   dich: string;

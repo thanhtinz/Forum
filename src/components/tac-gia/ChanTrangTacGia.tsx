@@ -40,6 +40,7 @@ export function ChanTrangTacGia({ laTacGia = false }: {
                 <li><Link href="/quan-ly" className="hover:text-chu">Tổng quan</Link></li>
                 <li><Link href="/quan-ly/game" className="hover:text-chu">Game của tôi</Link></li>
                 <li><Link href="/quan-ly/game/moi" className="hover:text-chu">Bày game mới</Link></li>
+                <li><Link href="/quan-ly/so-lieu" className="hover:text-chu">Số liệu</Link></li>
                 <li><Link href="/quan-ly/danh-gia" className="hover:text-chu">Đánh giá</Link></li>
                 <li><Link href="/quan-ly/ho-so" className="hover:text-chu">Hồ sơ tác giả</Link></li>
               </>

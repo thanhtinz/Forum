@@ -9,6 +9,7 @@
 export const LOI_DI_TAC_GIA = [
   { dich: '/quan-ly', ten: 'Tổng quan', hinh: 'LayoutDashboard' },
   { dich: '/quan-ly/game', ten: 'Game của tôi', hinh: 'Gamepad2' },
+  { dich: '/quan-ly/so-lieu', ten: 'Số liệu', hinh: 'ChartColumn' },
   { dich: '/quan-ly/danh-gia', ten: 'Đánh giá', hinh: 'Star' },
   { dich: '/quan-ly/ho-so', ten: 'Hồ sơ tác giả', hinh: 'UserRound' },
 ] as const;

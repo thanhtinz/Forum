@@ -37,11 +37,17 @@ fs.mkdirSync('anh-chup', { recursive: true });
 
 for (const [ten, rong, cao] of [['dt', 390, 844], ['ban', 1280, 900]]) {
   const ctx = await may.newContext({ viewport: { width: rong, height: cao }, deviceScaleFactor: 2 });
-  // Đặt trước khi trang chạy, đúng lối đoạn mã trong <head> đọc nó.
+  /*
+   * Nền đặt bằng BÁNH QUY, đúng thứ máy chủ đọc để dựng `<html data-nen>`.
+   *
+   * Bản trước nhét vào `localStorage` theo lối cũ. Lối ấy nay không còn chỗ
+   * nào đọc, mà tệ hơn: nó từng khiến ảnh chụp "nền tối" ra nền sáng, vì React
+   * dựng lại thẻ `<html>` và xoá mất thuộc tính do đoạn mã trong `<head>` đặt.
+   */
   if (NEN === 'toi') {
-    await ctx.addInitScript(() => {
-      try { localStorage.setItem('sunny:nen', 'toi'); } catch { /* bị chặn thì thôi */ }
-    });
+    await ctx.addCookies([{
+      name: 'sunny-nen', value: 'toi', url: GOC, sameSite: 'Lax',
+    }]);
   }
   // Đăng nhập sẵn để chụp được cả những trang cần tài khoản.
   const p = await ctx.newPage();

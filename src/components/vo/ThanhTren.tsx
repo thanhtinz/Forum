@@ -16,8 +16,10 @@ import type { NguoiDangNhap } from '@/lib/xac-thuc';
  * Dấu hiệu nhận biết trang chỉ hiện ở khổ nhỏ: từ `lg` trở lên nó đã nằm trên
  * đầu thanh bên rồi, in hai lần là thừa.
  */
-export function ThanhTren({ nguoi, tuKhoa, chuaDoc = 0 }: {
+export function ThanhTren({ nguoi, tuKhoa, chuaDoc = 0, nen }: {
   nguoi: NguoiDangNhap | null;
+  /** Nền đang dùng, đọc từ bánh quy ở bố cục gốc — xem `dat-nen.ts`. */
+  nen: 'sang' | 'toi';
   tuKhoa?: string;
   chuaDoc?: number;
 }) {
@@ -32,7 +34,7 @@ export function ThanhTren({ nguoi, tuKhoa, chuaDoc = 0 }: {
           <OTim giaTriDau={tuKhoa} />
         </div>
 
-        <DoiNen />
+        <DoiNen banDau={nen} />
 
         {nguoi && <Chuong chuaDoc={chuaDoc} />}
 

@@ -1,31 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
-const KHOA = 'sunny:nen';
+/** Giữ một năm: đây là thói quen, không phải một lượt ghé. */
+const HAN = 60 * 60 * 24 * 365;
 
 /**
  * Nút đổi nền sáng / tối.
  *
- * Lựa chọn ghi vào `localStorage` chứ không vào CSDL: nó là chuyện của cái máy
- * đang cầm, không phải của tài khoản — cùng một người có thể muốn tối trên
- * điện thoại và sáng trên máy bàn.
+ * Lựa chọn ghi vào BÁNH QUY chứ không vào `localStorage`, và cũng không vào
+ * cơ sở dữ liệu. Bánh quy vì máy chủ phải đọc được: nó dựng sẵn
+ * `<html data-nen="toi">` ngay trong bản dựng đầu tiên, nên không có nháy
+ * trắng và không lệch bản giữa máy chủ với trình duyệt — xem `dat-nen.ts` để
+ * biết bản `localStorage` đã hỏng thế nào. Không vào cơ sở dữ liệu vì đây là
+ * chuyện của cái máy đang cầm: cùng một người có thể muốn tối trên điện thoại
+ * và sáng trên máy bàn.
  *
- * Việc đặt nền LÚC TẢI TRANG do đoạn mã nhỏ trong `layout.tsx` lo, chạy trước
- * cả React. Ở đây chỉ đọc lại xem đang là gì để vẽ đúng biểu tượng.
+ * Trạng thái ban đầu do máy chủ truyền xuống, nên nút vẽ ra đúng biểu tượng
+ * ngay từ khung hình đầu — không cần `useEffect` đọc lại DOM như bản trước.
  */
-export function DoiNen() {
-  const [toi, datToi] = useState(false);
-
-  useEffect(() => {
-    datToi(document.documentElement.dataset.nen === 'toi');
-  }, []);
+export function DoiNen({ banDau }: { banDau: 'sang' | 'toi' }) {
+  const [toi, datToi] = useState(banDau === 'toi');
 
   const doi = () => {
     const toiMoi = !toi;
     document.documentElement.dataset.nen = toiMoi ? 'toi' : 'sang';
-    try { localStorage.setItem(KHOA, toiMoi ? 'toi' : 'sang'); } catch { /* chế độ riêng tư chặn ghi */ }
+    // `SameSite=Lax` là đủ: bánh quy này không mang gì bí mật, chỉ nói người
+    // dùng thích nền nào.
+    document.cookie = `sunny-nen=${toiMoi ? 'toi' : 'sang'}; path=/; max-age=${HAN}; SameSite=Lax`;
     datToi(toiMoi);
   };
 

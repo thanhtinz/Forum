@@ -3,7 +3,7 @@ import '../globals.css';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { demChuaDoc } from '@/lib/thong-bao';
 import { ANH_CHIA_SE, DIA_CHI_GOC } from '@/lib/dia-chi-goc';
-import { MA_DAT_NEN } from '@/lib/dat-nen';
+import { docNen } from '@/lib/dat-nen';
 import { ThanhBen } from '@/components/vo/ThanhBen';
 import { ThanhTren } from '@/components/vo/ThanhTren';
 import { ThanhDay } from '@/components/vo/ThanhDay';
@@ -44,15 +44,13 @@ export const viewport: Viewport = {
 
 
 export default async function BoCucGoc({ children }: { children: React.ReactNode }) {
+  const nen = await docNen();
   const nguoi = await nguoiHienTai();
   // Đếm ở khung để mọi trang đều có con số trên chuông, khỏi phải nhớ truyền.
   const chuaDoc = nguoi ? await demChuaDoc(nguoi.id) : 0;
 
   return (
-    <html lang="vi" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: MA_DAT_NEN }} />
-      </head>
+    <html lang="vi" data-nen={nen}>
       <body>
         <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>
         <ThanhBen nguoi={nguoi} />
@@ -64,7 +62,7 @@ export default async function BoCucGoc({ children }: { children: React.ReactNode
         {/* `pb-28` chừa chỗ cho thanh tab NỔI: nó cao hơn thanh dính đáy vì
             còn cộng thêm lề dưới. Thiếu chỗ chừa thì đoạn cuối mọi trang bị che. */}
         <div className="min-h-screen pb-28 lg:pb-0 lg:pl-[240px]">
-          <ThanhTren nguoi={nguoi} chuaDoc={chuaDoc} />
+          <ThanhTren nguoi={nguoi} chuaDoc={chuaDoc} nen={nen} />
           <main id="noi-dung" className="khung py-5 sm:py-6">{children}</main>
         </div>
 

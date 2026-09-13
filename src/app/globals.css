@@ -147,8 +147,26 @@
 * { -webkit-tap-highlight-color: transparent; }
 html { scroll-behavior: smooth; }
 
+/*
+ * NỀN CÓ MẢNG MÀU RẤT NHẠT, KHÔNG PHẢI MỘT MẢNG XÁM PHẲNG.
+ *
+ * Đây là chỗ quyết định cả vật liệu kính có nhìn ra được hay không. Kính chỉ
+ * đọc ra là kính khi có thứ gì đó ở SAU nó để mà thấu qua: đặt một tấm kính
+ * lên một mặt xám phẳng thì nó trông y hệt một tấm nhựa xám. Nhìn ảnh chụp
+ * sau đợt chuyển vật liệu mới thấy rõ — thẻ đã là kính thật mà trang vẫn
+ * phẳng lì, vì phía sau chẳng có gì.
+ *
+ * Hai quầng màu rất nhạt, ghim theo khung nhìn (`fixed`) nên nội dung cuộn
+ * qua chúng chứ chúng không cuộn theo — đúng cảm giác trang trôi trên một mặt
+ * nền đứng yên. Nhạt tới mức gần như không nhận ra khi nhìn thẳng: việc của
+ * nó là làm nền cho kính, không phải làm trang trí.
+ */
 body {
   background: rgb(var(--nen));
+  background-image:
+    radial-gradient(1200px 600px at 12% -10%, rgb(var(--nhan) / .10), transparent 62%),
+    radial-gradient(1000px 520px at 96% 4%, rgb(var(--cam) / .09), transparent 60%);
+  background-attachment: fixed;
   color: rgb(var(--chu));
   -webkit-font-smoothing: antialiased;
   font-family: var(--font-chu);
@@ -252,7 +270,14 @@ p { text-wrap: pretty; }
     min-height: 38px;
     transition: background-color var(--chuyen), border-color var(--chuyen);
   }
-  .nut-xam { @apply nut bg-nen3 text-chu hover:bg-vien; }
+  .nut-xam {
+    @apply nut text-chu;
+    background: rgb(var(--nen3) / .72);
+    -webkit-backdrop-filter: blur(14px) saturate(170%);
+    backdrop-filter: blur(14px) saturate(170%);
+    border: 1px solid var(--kinh-vien);
+  }
+  .nut-xam:hover { background: rgb(var(--nen3) / .95); }
 
   /*
    * NÚT TRÒN NỔI — lùi, chia sẻ, và mấy việc phụ khác ở góc trên trang game.
@@ -351,6 +376,13 @@ p { text-wrap: pretty; }
     .kinh { background: rgb(var(--nen2)); }
     .kinh-tren, .kinh-ben { background: rgb(var(--nen)); }
     .o-nhap-kinh { background: rgb(var(--nen3)); }
+    /* Mặt phẳng nào cũng phải có bản đặc để lùi về: một tấm thẻ trong suốt bảy
+       mươi phần trăm mà KHÔNG mờ gì cả thì chữ trên nó chồng lên nội dung phía
+       sau — hỏng kiểu ấy tệ hơn hẳn là không có kính. */
+    .the, .the-noi, .chip { background: rgb(var(--nen2)); }
+    .o-nhap { background: rgb(var(--nen3)); }
+    .nut-xam { background: rgb(var(--nen3)); }
+    .nut-vien { background: rgb(var(--nen2)); }
   }
 
   .nut-tron {
@@ -359,7 +391,14 @@ p { text-wrap: pretty; }
   }
   .nut-tron:hover { background: rgb(var(--nen3) / .8); }
   .nut-tron:active { transform: scale(.94); }
-  .nut-vien { @apply nut border border-vien text-chu hover:bg-nen3; }
+  .nut-vien {
+    @apply nut text-chu;
+    background: rgb(var(--nen2) / calc(var(--kinh-nen) - .1));
+    -webkit-backdrop-filter: blur(14px) saturate(170%);
+    backdrop-filter: blur(14px) saturate(170%);
+    border: 1px solid var(--kinh-vien);
+  }
+  .nut-vien:hover { background: rgb(var(--nen3) / .85); }
 
   /*
    * CHIP LỌC — hàng nút bo tròn ngay dưới thanh tìm.
@@ -367,20 +406,38 @@ p { text-wrap: pretty; }
    * biết mình muốn loại gì mà chưa biết muốn game nào.
    */
   .chip {
-    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full border border-vien px-3.5 text-[13px] font-medium text-chu;
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium text-chu;
+    /* Viên kính: chip là thứ NỔI trên nội dung nó lọc, nên cùng vật liệu với
+       thanh nổi chứ không phải một viên nhựa viền xám. */
+    background: rgb(var(--nen2) / var(--kinh-nen));
+    -webkit-backdrop-filter: blur(14px) saturate(170%);
+    backdrop-filter: blur(14px) saturate(170%);
+    border: 1px solid var(--kinh-vien);
     /* 36px — thấp hơn 44px vì chip nằm thành hàng có khoảng hở giữa, nhưng
        không thấp hơn nữa: dưới mức này là bấm trượt sang chip bên cạnh. */
     min-height: 36px;
     transition: background-color var(--chuyen), border-color var(--chuyen);
   }
-  .chip:hover { @apply bg-nen3; }
-  .chip-chon { @apply border-transparent bg-nhan/12 font-semibold text-nhan; }
+  .chip:hover { background: rgb(var(--nen3) / .8); }
+  .chip-chon {
+    @apply font-semibold text-nhan;
+    background: rgb(var(--nhan) / .14);
+    border-color: rgb(var(--nhan) / .22);
+  }
 
   .o-nhap {
-    @apply w-full rounded-full border border-vien bg-nen3 px-4 py-2.5 text-sm text-chu placeholder:text-mo;
+    @apply w-full rounded-full px-4 py-2.5 text-sm text-chu placeholder:text-mo;
+    background: rgb(var(--nen3) / .6);
+    -webkit-backdrop-filter: blur(12px) saturate(160%);
+    backdrop-filter: blur(12px) saturate(160%);
+    border: 1px solid var(--kinh-vien);
     transition: background-color var(--chuyen), border-color var(--chuyen);
   }
-  .o-nhap:focus { @apply border-vien bg-nen2 outline-none; box-shadow: 0 1px 6px rgb(32 33 36 / .18); }
+  .o-nhap:focus {
+    @apply outline-none;
+    background: rgb(var(--nen2) / .92);
+    border-color: rgb(var(--nhan) / .4);
+  }
   textarea.o-nhap, select.o-nhap { @apply rounded-the; }
 
   /*
@@ -446,7 +503,26 @@ p { text-wrap: pretty; }
     box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08);
   }
 
-  .the { @apply rounded-the border border-vien bg-nen2; }
+  /*
+   * THẺ — nay cũng là KÍNH.
+   *
+   * Đợt chuyển sang vật liệu kính mới làm mấy thanh nổi (thanh trên, thanh
+   * bên, tấm trượt), nên trang thành ra nửa nọ nửa kia: thanh thì trong, thẻ
+   * thì đục. iOS 26 không chia như thế — mọi mặt phẳng nổi trên nền đều là
+   * cùng một vật liệu, chỉ khác độ dày.
+   *
+   * Thẻ DÀY HƠN thanh nổi: `--kinh-nen` cộng thêm, và làm mờ nhẹ hơn. Thẻ là
+   * chỗ ĐỌC CHỮ, mà chữ trên một tấm kính quá trong thì nền phía sau lọt lên
+   * và mắt phải tự tách hai lớp. Thanh nổi thì ngược lại — nó trôi trên nội
+   * dung nên càng trong càng nói đúng chuyện ấy.
+   */
+  .the {
+    @apply rounded-the;
+    background: rgb(var(--nen2) / calc(var(--kinh-nen) + .28));
+    -webkit-backdrop-filter: blur(16px) saturate(170%);
+    backdrop-filter: blur(16px) saturate(170%);
+    border: 1px solid var(--kinh-vien);
+  }
 
   /*
    * THẺ NỔI — dáng thẻ của tab Today ở App Store.
@@ -461,8 +537,11 @@ p { text-wrap: pretty; }
    * quy tắc ở đầu tệp tắt luôn phần này.
    */
   .the-noi {
-    @apply rounded-[20px] bg-nen2;
-    box-shadow: var(--bong-the);
+    @apply rounded-[20px];
+    background: rgb(var(--nen2) / calc(var(--kinh-nen) + .24));
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: var(--bong-the), inset 0 1px 0 var(--kinh-sang);
     transition: transform var(--chuyen), box-shadow var(--chuyen);
   }
   .the-noi:active { transform: scale(.985); }

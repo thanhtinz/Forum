@@ -295,11 +295,23 @@ export default async function KhungGame({ children, params }: {
                 BẤM LÀ MỞ TẤM TẢI, không cuộn đi đâu cả: mọi lựa chọn hệ máy và
                 phiên bản nằm gọn trong tấm ấy. Xem `TamTai`.
               */}
+              {/*
+                BỌC BẰNG `div`, KHÔNG PHẢI `p`.
+
+                `TamTai` mang trong nó một `<dialog>`, mà HTML không cho
+                `<dialog>` nằm trong `<p>`: trình duyệt tự ĐÓNG thẻ `<p>` ngay
+                trước đó, nên cây DOM thật khác cây React dựng ra. Hậu quả
+                không dừng ở một dòng cảnh báo — React coi đó là hỏng hydration
+                (lỗi 418) và dựng lại cả cây từ gốc, xoá luôn `data-nen` trên
+                thẻ `<html>`. Người chọn nền tối mở trang game ra thấy tối một
+                khoảnh khắc rồi trắng loá, và suốt một thời gian dài không ai
+                lần ra vì sao.
+              */}
               {banXem.length > 0 && (
-                <p className="mt-3">
+                <div className="mt-3">
                   <TamTai ban={banXem} daTai={daTai} taiKhoan={nguoi?.tenHienThi ?? null}
                     game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }} />
-                </p>
+                </div>
               )}
             </div>
           </div>

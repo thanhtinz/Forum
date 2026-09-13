@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import '../globals.css';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
-import { MA_DAT_NEN } from '@/lib/dat-nen';
+import { docNen } from '@/lib/dat-nen';
 import { LOI_DI_TAC_GIA as LOI_DI } from '@/lib/tac-gia-loi-di';
 import { DauTrangTacGia } from '@/components/tac-gia/DauTrangTacGia';
 import { ChanTrangTacGia } from '@/components/tac-gia/ChanTrangTacGia';
@@ -34,6 +34,7 @@ export const metadata: Metadata = {
  * hàm `'use server'` vẫn phải tự kiểm quyền, vì nó là địa chỉ POST công khai.
  */
 export default async function GocTacGia({ children }: { children: React.ReactNode }) {
+  const nen = await docNen();
   const nguoi = await nguoiHienTai();
   if (!nguoi) redirect('/dang-nhap');
   // Quản trị vào được để xem bảng tác giả trông thế nào, nhưng họ không sở hữu
@@ -59,10 +60,7 @@ export default async function GocTacGia({ children }: { children: React.ReactNod
   const loiDi = LOI_DI.map((l) => ({ ...l, so: HUY_HIEU[l.dich] }));
 
   return (
-    <html lang="vi" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: MA_DAT_NEN }} />
-      </head>
+    <html lang="vi" data-nen={nen}>
       <body className="bg-nen">
         <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>
 

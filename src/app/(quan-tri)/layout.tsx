@@ -7,7 +7,7 @@ import { nguoiHienTai } from '@/lib/xac-thuc';
 import { demViecTonDong } from '@/lib/quan-tri-dem';
 import { ThanhBenQuanTri } from '@/components/quan-tri/ThanhBenQuanTri';
 import { MenuQuanTri } from '@/components/quan-tri/MenuQuanTri';
-import { MA_DAT_NEN } from '@/lib/dat-nen';
+import { docNen } from '@/lib/dat-nen';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +35,7 @@ export const metadata: Metadata = {
  * chỉ POST công khai, gọi thẳng vào được mà không qua đây.
  */
 export default async function GocQuanTri({ children }: { children: React.ReactNode }) {
+  const nen = await docNen();
   const nguoi = await nguoiHienTai();
   if (!nguoi) redirect('/dang-nhap');
   if (nguoi.vaiTro !== 'QUAN_TRI') redirect('/');
@@ -42,11 +43,7 @@ export default async function GocQuanTri({ children }: { children: React.ReactNo
   const dem = await demViecTonDong();
 
   return (
-    <html lang="vi" suppressHydrationWarning>
-      <head>
-        {/* Khu quản trị cũng phải nghe lời cài đặt nền — xem `dat-nen.ts`. */}
-        <script dangerouslySetInnerHTML={{ __html: MA_DAT_NEN }} />
-      </head>
+    <html lang="vi" data-nen={nen}>
       <body className="bg-nen3">
         <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>
 

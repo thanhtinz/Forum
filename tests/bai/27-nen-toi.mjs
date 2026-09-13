@@ -3,18 +3,20 @@ import { GOC, moTrang, moTrinhDuyet } from '../tro-giup.mjs';
 /**
  * Nền tối phải áp ở CẢ HAI bố cục gốc.
  *
- * Dự án có hai `<html>` riêng — cửa hàng và quản trị — và đoạn mã đặt nền phải
- * có ở cả hai. Đã dính đúng chuyện này: lúc tách ra, đoạn ấy ở lại bên cửa
- * hàng còn khu quản trị không có bản nào, nên người chọn nền tối mở khu quản
- * trị ra bị loá cả mắt. Lỗi ấy không có gì báo — cả hai trang đều chạy, chỉ là
- * một trang không nghe lời cài đặt.
+ * Dự án có mấy `<html>` riêng — cửa hàng, quản trị, bảng tác giả, cổng nhà
+ * phát triển — và chỗ đặt nền phải có ở tất cả. Đã dính đúng chuyện này: lúc
+ * tách ra, đoạn mã ở lại bên cửa hàng còn khu quản trị không có bản nào, nên
+ * người chọn nền tối mở khu quản trị ra bị loá cả mắt. Lỗi ấy không có gì báo
+ * — cả hai trang đều chạy, chỉ là một trang không nghe lời cài đặt.
+ *
+ * Lựa chọn nay nằm trong BÁNH QUY chứ không `localStorage`: máy chủ phải đọc
+ * được mới dựng sẵn `<html data-nen="toi">`. Xem `dat-nen.ts` để biết bản
+ * `localStorage` đã hỏng thế nào, và bài 54 canh đúng chỗ hỏng ấy.
  */
 export default async function chay(kiem) {
   const may = await moTrinhDuyet();
   const ctx = await may.newContext({ viewport: { width: 1280, height: 900 } });
-  await ctx.addInitScript(() => {
-    try { localStorage.setItem('sunny:nen', 'toi'); } catch { /* bị chặn thì thôi */ }
-  });
+  await ctx.addCookies([{ name: 'sunny-nen', value: 'toi', url: GOC, sameSite: 'Lax' }]);
   const p = await ctx.newPage();
 
   try {

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import '../globals.css';
-import { MA_DAT_NEN } from '@/lib/dat-nen';
+import { docNen } from '@/lib/dat-nen';
 import { LOI_DI_CONG_TAC_GIA } from '@/lib/tac-gia-loi-di';
 import { DauTrangTacGia } from '@/components/tac-gia/DauTrangTacGia';
 import { ChanTrangTacGia } from '@/components/tac-gia/ChanTrangTacGia';
@@ -23,12 +23,10 @@ export const metadata: Metadata = {
  * người dùng chỉ thấy MỘT trang web, nên vỏ phải liền một mạch — được duyệt
  * đơn xong, thanh trên mọc thêm mấy mục chứ không phải cả trang đổi kiểu.
  */
-export default function GocCongTacGia({ children }: { children: React.ReactNode }) {
+export default async function GocCongTacGia({ children }: { children: React.ReactNode }) {
+  const nen = await docNen();
   return (
-    <html lang="vi" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: MA_DAT_NEN }} />
-      </head>
+    <html lang="vi" data-nen={nen}>
       <body className="bg-nen">
         <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>
 

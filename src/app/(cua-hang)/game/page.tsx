@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronRight, Inbox } from 'lucide-react';
 import { OTheLoai } from '@/components/game/OTheLoai';
+import { CHON_THE, thanhThe } from '@/components/game/the-game';
 import { db } from '@/lib/db';
 import { DANG_HIEN, layKe } from '@/lib/danh-muc';
 import { BangNoiBat } from '@/components/game/BangNoiBat';
@@ -20,17 +21,21 @@ export const metadata = { title: 'Trò chơi' };
  *
  *   1. Chip lọc  — lối tắt cho người biết mình muốn hệ máy nào.
  *   2. Băng nổi bật — khối lớn duy nhất, chỗ dừng mắt, do người chọn tay.
- *   3. Bảng xếp hạng có ĐÁNH SỐ — dấu hiệu riêng của CH Play.
- *   4. Kệ thẻ — khoe biểu tượng, cho mục mới lên kệ.
- *   5. Thể loại — cho người chưa biết mình muốn gì.
+ *   3. Kệ danh sách và kệ thẻ xen kẽ nhau — mỗi kệ trả lời một câu khác.
+ *   4. Thể loại — cho người chưa biết mình muốn gì.
  *
  * MỖI KHỐI PHẢI NÓI MỘT ĐIỀU KHÁC NHAU.
  *
- * Bản trước có thêm kệ "Đề xuất cho bạn" xếp theo lượt XEM, đứng ngay trên
- * bảng xếp hạng xếp theo lượt TẢI. Hai kệ ấy ra đúng chín game giống nhau
+ * KHÔNG CÓ BẢNG XẾP HẠNG Ở ĐÂY, cố ý. Xếp hạng theo lượt tải đã có hẳn một
+ * trang riêng, và trang ấy còn nằm ngay trên thanh điều hướng chính — bày lại
+ * chín game đầu bảng ở đây là đưa người ta tới cùng một chỗ bằng hai lối, mà
+ * chỗ ấy thì họ bấm một cái là tới.
+ *
+ * Cùng lẽ ấy, bản trước có kệ "Đề xuất cho bạn" xếp theo lượt XEM đứng ngay
+ * trên bảng xếp hạng xếp theo lượt TẢI. Hai kệ ra đúng chín game giống nhau
  * theo đúng một thứ tự — người đọc cuộn qua hai lần cùng một danh sách rồi
  * tưởng trang bị lặp. Cửa hàng lớn để được cả hai vì họ có hàng triệu ứng
- * dụng; cửa hàng này thì không, nên bỏ đi một.
+ * dụng; cửa hàng này thì không.
  *
  * Cũng vì lẽ ấy mà hàng chip không liệt kê thể loại nữa: cuối trang đã có
  * hẳn một lưới thể loại đầy đủ kèm số đếm. Và cũng vì lẽ ấy mà kệ "Có bản Việt
@@ -44,10 +49,41 @@ export const metadata = { title: 'Trò chơi' };
  */
 
 export default async function TrangKhoGame() {
-  const [noiBat, taiNhieu, moi, theLoai, tongGame] = await Promise.all([
+  const [noiBat, ungVien, moi, ngayXua, theLoai, tongGame] = await Promise.all([
     layKe({ noiBat: true }, [{ dangLuc: 'desc' }, { id: 'desc' }], 5),
-    layKe({}, [{ soLuotTai: 'desc' }, { id: 'desc' }], 9),
+    /*
+     * ỨNG VIÊN CHO KỆ "ĐIỂM CAO NHẤT" — lấy rộng rồi mới xếp ở đây.
+     *
+     * Điểm trung bình là một phép CHIA, mà Prisma thì không xếp theo phép chia
+     * được. Bản ở trang duyệt lách bằng cách xếp theo số lượt đánh giá rồi tới
+     * tổng sao — nghe thì gần, nhưng đó là "được chấm nhiều nhất" chứ không
+     * phải "điểm cao nhất": một game trăm bài toàn 3 sao vẫn đứng trên một
+     * game mười bài toàn 5 sao.
+     *
+     * Nên lấy sáu chục game có đủ phiếu rồi chia ngay tại đây. Cửa hàng cỡ này
+     * thì sáu chục hàng là rẻ; tới lúc phình lên hàng vạn game thì mới đáng
+     * thêm một cột điểm tính sẵn.
+     *
+     * NGƯỠNG BA PHIẾU, không phải một: một game duy nhất một bài 5 sao mà đứng
+     * đầu bảng "điểm cao nhất" thì cái bảng ấy chỉ nói lên rằng có người vừa
+     * chấm sao, chứ không nói game nào hay.
+     */
+    db.game.findMany({
+      where: { ...DANG_HIEN, soLuotDanhGia: { gte: 3 } },
+      orderBy: [{ soLuotDanhGia: 'desc' }, { id: 'desc' }],
+      take: 60,
+      select: CHON_THE,
+    }),
     layKe({}, [{ dangLuc: 'desc' }, { id: 'desc' }], 12),
+    /*
+     * "Chơi lại ngày xưa" — game cũ nhất theo NĂM PHÁT HÀNH GỐC.
+     *
+     * Không phải năm lên kệ ở đây: một game 2003 mới được thêm vào tuần trước
+     * vẫn là game của 2003. Đây là kệ duy nhất trên trang không xếp theo thứ
+     * gì của cửa hàng mà xếp theo tuổi thật của trò chơi — mà với một cửa hàng
+     * game Java thì đó chính là thứ nhiều người vào đây để tìm.
+     */
+    layKe({ namPhatHanh: { not: null } }, [{ namPhatHanh: 'asc' }, { id: 'asc' }], 9),
     db.theLoai.findMany({
       orderBy: [{ thuTu: 'asc' }, { ten: 'asc' }],
       take: 24,
@@ -60,6 +96,11 @@ export default async function TrangKhoGame() {
   ]);
 
   if (tongGame === 0) return <KhoTrong />;
+
+  const diemCao = ungVien
+    .map(thanhThe)
+    .sort((a, b) => b.sao - a.sao || b.soLuotDanhGia - a.soLuotDanhGia)
+    .slice(0, 9);
 
   const chip = [
     { ten: 'Tất cả', duongDan: '/duyet' },
@@ -88,11 +129,14 @@ export default async function TrangKhoGame() {
 
       <BangNoiBat game={noiBat} />
 
-      <KeDanhSach ten="Bảng xếp hạng" phu="Tải nhiều nhất từ trước tới nay"
-        xemThem="/bxh" game={taiNhieu} danhSo />
+      <KeDanhSach ten="Được chấm cao nhất" phu="Người chơi cho điểm cao, không phải tải nhiều"
+        xemThem="/duyet?sap=diem-cao" game={diemCao} />
 
       <KeThe ten="Mới ra mắt" phu="Vừa được thêm vào, chưa ai kịp chơi"
         xemThem="/duyet?sap=moi" game={moi} />
+
+      <KeDanhSach ten="Chơi lại ngày xưa" phu="Mấy trò ra đời sớm nhất còn trong cửa hàng"
+        game={ngayXua} />
 
       {theLoai.length > 0 && (
         <section>

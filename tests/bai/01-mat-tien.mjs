@@ -66,9 +66,19 @@ export default async function chay(kiem) {
   // ── Tab "Game" — mặt tiền của kho ────────────────────────────────────
   await p.goto(`${GOC}/game`, { waitUntil: 'networkidle' });
 
-  for (const ten of ['Bảng xếp hạng', 'Mới ra mắt', 'Thể loại']) {
+  for (const ten of ['Được chấm cao nhất', 'Mới ra mắt', 'Chơi lại ngày xưa', 'Thể loại']) {
     kiem(`tab Game có khối “${ten}”`, (await p.locator(`text=${ten}`).count()) > 0);
   }
+
+  /*
+   * TAB GAME KHÔNG BÀY LẠI BẢNG XẾP HẠNG.
+   *
+   * Xếp hạng theo lượt tải đã có hẳn một trang riêng, và trang ấy nằm ngay
+   * trên thanh điều hướng chính — bày lại chín game đầu bảng ở đây là đưa
+   * người ta tới cùng một chỗ bằng hai lối.
+   */
+  kiem('tab Game KHÔNG bày lại bảng xếp hạng',
+    (await p.locator('h2, h3').filter({ hasText: 'Bảng xếp hạng' }).count()) === 0);
 
   /*
    * KHÔNG KHỐI NÀO ĐƯỢC LẶP LẠI KHỐI KHÁC.
@@ -85,13 +95,19 @@ export default async function chay(kiem) {
     return [...new Set(ten)];
   };
 
-  const xepHang = await tenTrongKhoi('Bảng xếp hạng');
-  const moiLenKho = await tenTrongKhoi('Mới ra mắt');
-  if (xepHang.length >= 3 && moiLenKho.length >= 3) {
-    const trung = xepHang.filter((t) => moiLenKho.includes(t)).length;
-    const tiLe = trung / Math.min(xepHang.length, moiLenKho.length);
-    kiem('hai kệ liền nhau không bày cùng một danh sách', tiLe < 0.9,
-      `trùng ${trung}/${Math.min(xepHang.length, moiLenKho.length)}`);
+  const chamCao = await tenTrongKhoi('Được chấm cao nhất');
+  const moiLenKe = await tenTrongKhoi('Mới ra mắt');
+  const ngayXua = await tenTrongKhoi('Chơi lại ngày xưa');
+  const soSanh = [
+    ['chấm cao', chamCao, 'mới ra mắt', moiLenKe],
+    ['mới ra mắt', moiLenKe, 'ngày xưa', ngayXua],
+  ];
+  for (const [tenA, a, tenB, b] of soSanh) {
+    if (a.length < 3 || b.length < 3) continue;
+    const trung = a.filter((t) => b.includes(t)).length;
+    const tiLe = trung / Math.min(a.length, b.length);
+    kiem(`kệ "${tenA}" và kệ "${tenB}" không bày cùng một danh sách`, tiLe < 0.9,
+      `trùng ${trung}/${Math.min(a.length, b.length)}`);
   }
 
   // Nút cài phải có ở mỗi hàng game — đây là dấu hiệu của cửa hàng, thiếu nó

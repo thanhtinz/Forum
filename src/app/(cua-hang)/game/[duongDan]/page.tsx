@@ -14,7 +14,7 @@ import { tacGiaTraLoiDanhGia } from '@/app/(tac-gia)/quan-ly/viec';
 import { KeAnhChup } from '@/components/game/KeAnhChup';
 import { KeThe } from '@/components/game/KeThe';
 import { CHON_THE, thanhThe } from '@/components/game/the-game';
-import { KhungTai } from '@/components/game/KhungTai';
+import { TamTai } from '@/components/game/TamTai';
 import { docBanXem } from '@/lib/ban-tai-xem';
 import { TamDanhGia } from '@/components/game/TamDanhGia';
 import { MoTaGame } from '@/components/game/MoTaGame';
@@ -299,9 +299,12 @@ export default async function TabThongTin({ params, searchParams }: {
         <section>
           <div className="mb-2 flex items-baseline justify-between gap-3">
             <h2 className="tieu-de">Có gì mới</h2>
-            <a href="#tai" className="text-[13px] font-semibold text-nhan hover:underline">
-              Lịch sử phiên bản
-            </a>
+            {/* Lịch sử phiên bản nay nằm trong TẤM TẢI, cùng chỗ với nút
+                tải của từng bản: xem đổi gì rồi tải ngay bản ấy là một mạch,
+                chứ không phải đọc ở đây rồi đi tìm nút tải ở chỗ khác. */}
+            <TamTai ban={banXem} dang="lien" nhan="Lịch sử phiên bản"
+              taiKhoan={nguoi?.tenHienThi ?? null}
+              game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenTacGia, doTuoi: game.doTuoi }} />
           </div>
           {/*
             SỐ HIỆU BẢN VÀ THỜI GIAN NẰM BÊN PHẢI, ngang hàng với lời ghi chú.
@@ -357,36 +360,6 @@ export default async function TabThongTin({ params, searchParams }: {
           </span>
           <ChevronRight size={18} className="shrink-0 text-mo" aria-hidden />
         </Link>
-      )}
-
-      {/*
-        KHUNG TẢI — chỗ CHỌN hệ máy và phiên bản.
-
-        Đặt sau phần mô tả và hàng nhà phát triển, trước phần đánh giá: đọc
-        game là gì rồi mới tới lúc lấy nó về, còn ai đã biết mình muốn gì thì
-        đã có nút "Tải về" ở ngay đầu trang, không phải cuộn tới đây.
-
-        Bản trước khối này nằm ở khung chung, tức là nó đứng trên cả hàng tab
-        và chen cả vào tab Diễn đàn — một bảng điều khiển chắn giữa người đọc
-        và chủ đề họ vừa bấm vào.
-      */}
-      {banXem.length > 0 && (
-        <section id="tai" className="scroll-mt-20 space-y-3">
-          <h2 className="tieu-de mb-3">Tải về</h2>
-          {/*
-            `nutChinhDam` TẮT HẲN — chỉ một nút tô đặc trên cả trang, và nút ấy
-            ở đầu trang.
-
-            Trước đây nút đặc nhảy qua nhảy lại: game một hệ máy thì nó ở đầu
-            trang, game nhiều hệ thì nó nằm đây. Từ đợt dựng lại theo App Store,
-            khung này tụt xuống dưới cả phần mô tả nên không còn là thứ đập vào
-            mắt trước; nút xanh ở lại đầu trang, chỗ trang ứng dụng nào của họ
-            cũng có một nút xanh.
-          */}
-          <KhungTai ban={banXem} taiKhoan={nguoi?.tenHienThi ?? null}
-            nutChinhDam={false}
-            game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenTacGia, doTuoi: game.doTuoi }} />
-        </section>
       )}
 
       {/* Điểm to bên trái, phổ điểm bên phải — bố cục của CH Play. Chỉ in con

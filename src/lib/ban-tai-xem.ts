@@ -1,7 +1,36 @@
 import { cache } from 'react';
 import { db } from '@/lib/db';
-import type { BanXem } from '@/components/game/KhungTai';
 import type { MaHeMay } from '@/lib/he-may';
+
+export interface TepXem {
+  id: string;
+  loai: string;
+  dungLuong: number | null;
+  /** Tên tệp gốc — để người tải biết mình sắp nhận về cái gì. */
+  tenTep: string | null;
+  maKiemTra: string | null;
+}
+
+/**
+ * MỘT BẢN TẢI, đã chuyển sang dạng thành phần client đọc được.
+ *
+ * Kiểu này ở lại lib chứ không nằm trong thành phần vẽ ra nó: trước đây nó
+ * khai trong `KhungTai.tsx`, nên tệp lib phải import ngược lên một thành phần
+ * client chỉ để lấy một cái kiểu — và ngày `KhungTai` bị gỡ đi thì cả chỗ đọc
+ * dữ liệu vỡ theo, dù nó chẳng liên quan gì tới việc vẽ.
+ */
+export interface BanXem {
+  id: string;
+  heMay: MaHeMay;
+  soHieu: string;
+  moiNhat: boolean;
+  dungLuong: number | null;
+  ngayRa: string | null;
+  doiMoi: string | null;
+  ghiChu: string | null;
+  duongDanCuaHang: string | null;
+  tep: TepXem[];
+}
 
 /** Trần số bản kéo về một lượt — game cũ có dãy bản rất dài. */
 const TOI_DA = 60;

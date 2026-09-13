@@ -91,15 +91,18 @@ export default async function chay(kiem) {
     !!matNa && matNa !== 'none' && matNa.includes('svg'), String(matNa).slice(0, 60));
 
   /*
-   * ĐÚNG MỘT nút tải tô đặc trên cả trang.
+   * ĐÚNG MỘT nút tải tô đặc ĐANG NHÌN THẤY trên trang.
    *
-   * Game một hệ máy thì nút tô đặc là nút ở đầu trang (bấm là tải ngay); game
-   * nhiều hệ thì nó nằm trong khung tải, sau dãy chip chọn hệ. Hai nút xanh
-   * đặc cùng lúc là mời bấm nhầm — đếm ở đây để chuyện ấy không lặng lẽ quay
-   * lại lúc ai đó sửa một trong hai chỗ.
+   * Từ đợt dựng lại lối tải, trang chỉ còn đúng một nút "Tải về" ở đầu; mọi
+   * nút tải của từng bản nằm trong tấm tải, mà tấm ấy đang đóng. Nên phải đếm
+   * nút ĐANG HIỆN, không đếm mọi thẻ trong DOM: thẻ trong một `<dialog>` chưa
+   * mở vẫn nằm đó.
+   *
+   * Hai nút xanh đặc cùng lúc là mời bấm nhầm — đếm ở đây để chuyện ấy không
+   * lặng lẽ quay lại lúc ai đó sửa một trong hai chỗ.
    */
-  const soNutDam = await p.locator('a.nut-cai-dam').count();
-  kiem('có đúng một nút tải tô đặc', soNutDam === 1, `đếm được ${soNutDam}`);
+  const soNutDam = await p.locator('.nut-cai-dam:visible').count();
+  kiem('có đúng một nút tải tô đặc đang hiện', soNutDam === 1, `đếm được ${soNutDam}`);
   /*
    * KHÔNG CÒN KỆ "GAME TƯƠNG TỰ" Ở TAB THÔNG TIN.
    *
@@ -248,10 +251,11 @@ export default async function chay(kiem) {
    */
   kiem('đổi tab thì tên game vẫn còn', (await p.content()).includes(game.ten));
   kiem('đổi tab thì nút tải đầu trang vẫn còn',
-    (await p.locator('a[data-viec="tai-dau"]').count()) > 0);
-  // Còn khung CHỌN bản thì ở lại tab Thông tin, không chen vào diễn đàn.
-  kiem('tab diễn đàn không mang theo khung chọn bản',
-    (await p.locator('#tai').count()) === 0);
+    (await p.locator('[data-viec="tai-dau"]').count()) > 0);
+  // Và tấm tải phải ĐÓNG cho tới khi người ta bấm: mở sẵn một tấm che kín
+  // trang thì người vừa bấm sang diễn đàn không đọc được gì.
+  kiem('tấm tải không tự mở khi vào trang',
+    (await p.locator('dialog[open]').count()) === 0);
 
   // Game đã gỡ / còn nháp phải trả 404, không được xem lén bằng đường dẫn.
   const nhap = await db.game.findFirst({

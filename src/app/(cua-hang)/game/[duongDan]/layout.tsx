@@ -9,7 +9,7 @@ import { NutDeDanh } from '@/components/game/NutDeDanh';
 import { NutLui } from '@/components/game/NutLui';
 import { TabGame } from '@/components/game/TabGame';
 import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
-import { NutTaiDau } from '@/components/game/NutTaiDau';
+import { TamTai } from '@/components/game/TamTai';
 import { DongLuanPhien } from '@/components/game/DongLuanPhien';
 import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { diemSao } from '@/lib/tien-ich';
@@ -81,7 +81,7 @@ export default async function KhungGame({ children, params }: {
    *
    * Mỗi người mỗi game đúng một hàng `LuotTai` (xem lược đồ), nên đây là một
    * lượt tra khoá duy nhất, không phải phép đếm. Có hàng ấy thì nút đầu trang
-   * đổi sang biểu tượng đám mây — xem `NutTaiDau`.
+   * đổi sang biểu tượng đám mây — xem `TamTai`.
    */
   const [daTai, deDanh] = nguoi
     ? await Promise.all([
@@ -287,35 +287,18 @@ export default async function KhungGame({ children, params }: {
               {/*
                 NÚT NẰM DƯỚI DÒNG HÃNG, CĂN TRÁI — kể cả ở khổ rộng.
 
-                Bản trước đẩy nó sát mép phải cột 1000px, và nhìn tận mắt thì
-                thấy nó trôi hẳn khỏi khối tên game: giữa tên và nút là một
-                khoảng trắng rộng bằng nửa màn hình, mắt đọc xong tên game
-                không biết đi đâu tiếp. App Store trên máy Mac để nút ngay dưới
-                tên hãng, sát lề trái của cột chữ — cạnh đúng thứ nó nói tới.
+                App Store trên máy Mac để nút ngay dưới tên hãng, sát lề trái
+                của cột chữ — cạnh đúng thứ nó nói tới. Đẩy nó sát mép phải cột
+                1000px thì giữa tên game và nút là một khoảng trắng rộng bằng
+                nửa màn hình, mắt đọc xong tên game không biết đi đâu tiếp.
 
-                MỘT NÚT, KHÔNG PHẢI HAI.
-
-                Bản vừa rồi dựng hai thẻ nút — một cho khổ hẹp, một cho khổ
-                rộng — rồi ẩn bớt bằng lớp CSS. Bài kiểm 02 bắt ngay: nó đếm
-                nút tô đặc trên cả trang và thấy HAI, vì lớp `sm:hidden` chỉ
-                giấu con mắt chứ thẻ vẫn nằm đó. Hai lối tải trên một trang là
-                đúng cái mà phép đếm ấy sinh ra để chặn.
-
-                Nên nút ở lại trong cột chữ, và khổ rộng thì đẩy nó sát mép
-                phải — chỗ nút giá của trang ứng dụng trên web App Store.
+                BẤM LÀ MỞ TẤM TẢI, không cuộn đi đâu cả: mọi lựa chọn hệ máy và
+                phiên bản nằm gọn trong tấm ấy. Xem `TamTai`.
               */}
-              {(tepChinh || banXem.length > 0) && (
+              {banXem.length > 0 && (
                 <p className="mt-3">
-                  <NutTaiDau nhan="Tải về" daTai={daTai}
-                    dichLui={`/game/${game.duongDan}#tai`} taiKhoan={nguoi?.tenHienThi ?? null}
-                    game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }}
-                    tep={tepChinh && banMoiNhat
-                      ? {
-                          id: tepChinh.id, loai: tepChinh.loai,
-                          dungLuong: tepChinh.dungLuong,
-                          soHieu: banMoiNhat.soHieu, heMay: MO_TA_HE[he[0]].ten,
-                        }
-                      : null} />
+                  <TamTai ban={banXem} daTai={daTai} taiKhoan={nguoi?.tenHienThi ?? null}
+                    game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }} />
                 </p>
               )}
             </div>

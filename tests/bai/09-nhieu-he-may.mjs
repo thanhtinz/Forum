@@ -26,6 +26,17 @@ export default async function chay(kiem) {
   const p = await moTrang();
   await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
 
+  /*
+   * MỌI LỰA CHỌN NẰM TRONG TẤM TẢI.
+   *
+   * Trước đợt này chúng nằm thành một khối giữa trang (`#tai`). Nay bấm "Tải
+   * về" là mở tấm, chọn hệ máy ở hàng tab trên cùng, rồi mỗi bản một hàng kèm
+   * nút tải — nên bài kiểm cũng phải mở tấm ra trước khi đo.
+   */
+  await p.click('[data-viec="tai-dau"]');
+  await p.waitForSelector('dialog[open]', { timeout: 5000 });
+  const tam = p.locator('dialog[open]');
+
   const NHAN = { JAVA: 'Java ME', ANDROID: 'Android', IOS: 'iOS', WINDOWS: 'Windows', MAC: 'macOS' };
   const LOAI = {
     JAVA: ['JAR', 'JAD'], ANDROID: ['APK', 'ZIP'], IOS: ['IPA'],
@@ -33,20 +44,20 @@ export default async function chay(kiem) {
   };
 
   for (const he of game.he) {
-    const nut = p.locator(`#tai button:has-text("${NHAN[he]}")`);
+    const nut = tam.locator(`button:has-text("${NHAN[he]}")`);
     kiem(`có nút chọn hệ ${NHAN[he]}`, (await nut.count()) > 0);
   }
 
   for (const he of game.he) {
-    await p.locator(`#tai button:has-text("${NHAN[he]}")`).click();
+    await tam.locator(`button:has-text("${NHAN[he]}")`).click();
     await p.waitForTimeout(400);
 
-    const chu = await p.locator('#tai').textContent();
+    const chu = await tam.textContent();
 
     if (he === 'IOS') {
       // iOS tải tệp IPA như mọi hệ khác — qua trang tải, cùng lối với hệ khác.
-      const soNutTai = await p.locator('#tai a[href^="/tai/"]').count();
-      kiem('iOS có nút tải tệp IPA', soNutTai > 0 && chu.includes('Tải IPA'), `đếm được ${soNutTai}`);
+      const soNutTai = await tam.locator('a[href^="/tai/"]').count();
+      kiem('iOS có nút tải tệp IPA', soNutTai > 0 && chu.includes('IPA'), `đếm được ${soNutTai}`);
       /*
        * Và nói rõ cần công cụ gì mới cài được — giấu đi không làm tệp cài được.
        *
@@ -60,7 +71,7 @@ export default async function chay(kiem) {
         chuTrang.includes('AltStore') || chuTrang.includes('Sideloadly'),
         chuTrang.slice(0, 200));
     }
-    const dungLoai = LOAI[he].some((l) => chu.includes(`Tải ${l}`));
+    const dungLoai = LOAI[he].some((l) => chu.includes(l));
     kiem(`hệ ${NHAN[he]} dựng nút tải đúng loại tệp`, dungLoai,
       LOAI[he].join('/') + ' — đang là: ' + (chu.match(/Tải \w+/g) ?? []).join(', '));
 
@@ -71,13 +82,13 @@ export default async function chay(kiem) {
       .filter(([k]) => k !== he)
       .flatMap(([, v]) => v)
       .filter((l) => !LOAI[he].includes(l))
-      .some((l) => chu.includes(`Tải ${l}`));
+      .some((l) => chu.includes(l));
     kiem(`hệ ${NHAN[he]} không lẫn tệp của hệ khác`, !lanSang);
   }
 
   // Dãy chip phải liệt kê ĐỦ số hệ máy game có — đây mới là chỗ nói về hệ máy,
   // sau khi ô "Hệ máy" ở hàng số liệu đã bỏ vì lặp lại đúng thông tin này.
-  const soChip = await p.locator('#tai [role="group"] button').count();
+  const soChip = await tam.locator('[role="group"] button').count();
   kiem('dãy chip liệt kê đủ mọi hệ máy của game',
     soChip === game.he.length, `đếm được ${soChip}, chờ ${game.he.length}`);
 

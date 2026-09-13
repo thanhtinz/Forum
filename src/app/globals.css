@@ -615,7 +615,16 @@ p { text-wrap: pretty; }
   backdrop-filter: blur(30px) saturate(180%);
   box-shadow: var(--bong-noi), inset 0 1px 0 var(--kinh-sang);
   margin: 0;
-  max-width: 100%;
+  /*
+   * KHÔNG đặt `max-width` ở đây.
+   *
+   * `<dialog>` mặc định co theo nội dung, nên mỗi tấm tự đặt bề ngang của nó
+   * bằng lớp Tailwind (`max-w-[520px]` chẳng hạn). Đặt `max-width: 100%` ở
+   * đây thì luật này và luật kia cùng một mức riêng biệt, mà luật này viết
+   * sau nên luôn thắng — hậu quả: mọi tấm đều trải hết bề ngang màn hình ở
+   * khổ rộng, dù nơi gọi đã ghi rõ 520px. Ở khổ hẹp thì `inset: auto 0 0 0`
+   * dưới đây đã kéo tấm ra sát hai mép rồi, không cần thêm gì.
+   */
   max-height: 100vh;
   border: 0;
   padding: 0;

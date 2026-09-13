@@ -52,21 +52,23 @@ export default async function chay(kiem) {
   const banHeDau = theoHe.get(heDau);
 
   /*
-   * ── Mặc định GẤP HẲN, không in dòng nào ───────────────────────────────
+   * ── CẢ DÃY BẢN NẰM TRONG TẤM TẢI, KHÔNG GẤP LẠI NỮA ───────────────────
    *
-   * Gấp lại mà vẫn chừa dòng của bản đang chọn thì dòng ấy lặp đúng những gì
-   * phần đầu khung tải vừa nói — số hiệu, nhãn "mới nhất", ngày, câu "có gì
-   * mới" — bốn thứ in hai lần cách nhau một gang tay.
+   * Trước đợt này lịch sử là một ô GẤP trong khối tải giữa trang: mặc định
+   * đóng, phải bấm "Xem N phiên bản" mới mở. Nay bấm "Tải về" là tấm tải hiện
+   * ra với đủ dãy bản của hệ đang chọn, mỗi bản một hàng kèm nút tải ngay cạnh
+   * — muốn so hai bản không phải mở ra đóng vào hai lượt nữa.
    */
-  const hienLucDau = await p.locator('#tai ol li').count();
-  kiem('lịch sử gấp lại thì không in dòng nào', hienLucDau === 0, `đang hiện ${hienLucDau} dòng`);
-  kiem('có nút mở lịch sử, ghi rõ tổng số bản',
-    (await p.locator(`#tai button:has-text("Xem ${banHeDau.length} phiên bản")`).count()) > 0,
-    `chờ "Xem ${banHeDau.length} phiên bản"`);
+  kiem('vào trang thì tấm tải chưa mở',
+    (await p.locator('dialog[open]').count()) === 0);
 
-  // Và phần đầu khung tải KHÔNG được lặp lại câu "có gì mới" của bản đang chọn.
-  const soLanCoGiMoi = await p.locator('#tai h3:has-text("Có gì mới")').count();
-  kiem('không in khối "Có gì mới" riêng khi đã có trục thời gian', soLanCoGiMoi === 0);
+  await p.click('[data-viec="tai-dau"]');
+  await p.waitForSelector('dialog[open]', { timeout: 5000 });
+  const tam = p.locator('dialog[open]');
+
+  const soHang = await tam.locator('ul li').count();
+  kiem('tấm tải bày đủ mọi bản của hệ đang chọn',
+    soHang === banHeDau.length, `hiện ${soHang}, chờ ${banHeDau.length}`);
 
   /*
    * ── MỤC "CÓ GÌ MỚI" Ở TAB THÔNG TIN ──────────────────────────────────
@@ -90,19 +92,15 @@ export default async function chay(kiem) {
     kiem('mục ấy nhắc đúng ghi chú của bản mới nhất có ghi',
       chuTrang.includes(banCoGhi.doiMoi.slice(0, 40)), banCoGhi.doiMoi.slice(0, 40));
     kiem('mục ấy nói rõ là bản nào', chuTrang.includes(`Bản ${banCoGhi.soHieu}`));
-    kiem('mục ấy có đường xuống lịch sử phiên bản',
-      (await p.locator('a[href="#tai"]:has-text("Lịch sử phiên bản")').count()) > 0);
+    /* Lối "Lịch sử phiên bản" nay MỞ TẤM TẢI chứ không cuộn xuống một khối
+       nào nữa, nên nó là một cái nút — xem đổi gì rồi tải ngay bản ấy là một
+       mạch. */
+    kiem('mục ấy có lối mở lịch sử phiên bản',
+      (await p.locator('button:has-text("Lịch sử phiên bản")').count()) > 0);
   }
 
-  // ── Mở ra thì hiện đủ ─────────────────────────────────────────────────
-  await p.locator(`#tai button:has-text("Xem ${banHeDau.length} phiên bản")`).click();
-  await p.waitForTimeout(400);
-  const hienSauKhiMo = await p.locator('#tai ol li').count();
-  kiem('mở ra thì hiện đủ mọi bản của hệ đang chọn',
-    hienSauKhiMo === banHeDau.length, `hiện ${hienSauKhiMo}, chờ ${banHeDau.length}`);
-
   // ── Bản của hệ KHÁC không được lọt vào danh sách ──────────────────────
-  const chuTrongLichSu = await p.locator('#tai ol').textContent();
+  const chuTrongLichSu = await tam.locator('ul').textContent();
   const heKhac = THU_TU_HE.find((h) => theoHe.has(h) && h !== heDau);
   if (heKhac) {
     const soHieuHeKhac = theoHe.get(heKhac)
@@ -112,45 +110,26 @@ export default async function chay(kiem) {
     kiem('không lẫn bản của hệ máy khác vào lịch sử', lot.length === 0, `lọt: ${lot.join(', ')}`);
   }
 
-  // ── Bấm một bản cũ thì đổi hẳn nút tải sang bản ấy ────────────────────
+  /*
+   * ── MỖI HÀNG TRỎ ĐÚNG TỆP CỦA CHÍNH BẢN ẤY ────────────────────────────
+   *
+   * Đây là chỗ chọn nhầm gây hậu quả thật: trỏ nhầm sang tệp của bản mới nhất
+   * thì người cố ý lấy bản cũ cho máy đời 2006 lại nhận đúng bản làm treo máy.
+   */
   const banCu = banHeDau.find((b) => !b.moiNhat);
   if (banCu) {
-    await p.locator(`#tai ol button:has-text("${banCu.soHieu}")`).first().click();
-    await p.waitForTimeout(400);
-    const dauTrang = await p.locator('#tai').textContent();
-    kiem('chọn bản cũ thì phần đầu đổi theo bản ấy',
-      dauTrang.includes(`Bản ${banCu.soHieu}`), dauTrang.slice(0, 120));
+    const hang = tam.locator('li').filter({ hasText: `Bản ${banCu.soHieu}` }).first();
+    kiem('bản cũ có hàng riêng trong tấm tải', (await hang.count()) > 0);
 
-    // Nút tải phải trỏ sang ĐÚNG tệp của bản vừa chọn, không phải tệp của bản
-    // mới nhất — đây mới là chỗ chọn nhầm gây hậu quả thật.
-    const tepBanCu = await db.tepTai.findFirst({
+    const moiTepCuaBan = await db.tepTai.findMany({
       where: { ban: { heMay: heDau, soHieu: banCu.soHieu, game: { duongDan: game.duongDan } } },
-      orderBy: { loai: 'asc' },
       select: { id: true },
     });
-    if (tepBanCu) {
-      const dich = await p.locator('#tai a[href^="/tai/"]').first().getAttribute('href');
-      const moiTepCuaBan = await db.tepTai.findMany({
-        where: { ban: { heMay: heDau, soHieu: banCu.soHieu, game: { duongDan: game.duongDan } } },
-        select: { id: true },
-      });
-      kiem('nút tải trỏ đúng tệp của bản đang chọn',
+    if (moiTepCuaBan.length > 0) {
+      const dich = await hang.locator('a[href^="/tai/"]').first().getAttribute('href');
+      kiem('nút tải của hàng ấy trỏ đúng tệp của chính bản ấy',
         moiTepCuaBan.some((t) => dich === `/tai/${t.id}`), `đang trỏ ${dich}`);
     }
-  }
-
-  // ── Đổi hệ máy thì lịch sử gấp lại và đổi sang dãy của hệ mới ─────────
-  if (heKhac) {
-    const NHAN = { JAVA: 'Java ME', ANDROID: 'Android', IOS: 'iOS', WINDOWS: 'Windows', MAC: 'macOS' };
-    await p.locator(`#tai button:has-text("${NHAN[heKhac]}")`).first().click();
-    await p.waitForTimeout(400);
-    const lai = await p.locator('#tai ol li').count();
-    kiem('đổi hệ máy thì lịch sử gấp lại', lai === 0, `đang hiện ${lai}`);
-
-    const moiNhatHeKhac = theoHe.get(heKhac).find((b) => b.moiNhat);
-    const chu = await p.locator('#tai').textContent();
-    kiem('đổi hệ máy thì nhảy về bản mới nhất của hệ ấy',
-      chu.includes(`Bản ${moiNhatHeKhac.soHieu}`), chu.slice(0, 120));
   }
 
   await p.close();

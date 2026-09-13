@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { db } from '@/lib/db';
-import { HAN_MA_GIO, SO_BYTE_MA, donMa } from '@/lib/dat-lai-const';
+import { HAN_MA_GIO, SO_BYTE_MA, donMa, machBase32 } from '@/lib/dat-lai-const';
 
 /**
  * Băm mã đặt lại. SHA-256 chứ không bcrypt — xem chú thích ở `MaDatLai`.
@@ -22,13 +22,15 @@ function bamMa(ma: string): string {
  * để chữa khi lỡ đưa mã nhầm người.
  */
 export async function phatMa(nguoiId: string): Promise<string> {
-  const ma = randomBytes(SO_BYTE_MA).toString('base64url');
+  const ma = machBase32(randomBytes(SO_BYTE_MA));
   const hetHan = new Date(Date.now() + HAN_MA_GIO * 3600 * 1000);
 
   await db.$transaction(async (tx) => {
     await tx.maDatLai.deleteMany({ where: { nguoiId, dungLuc: null } });
     await tx.maDatLai.create({
-      data: { nguoiId, ma: bamMa(ma), hetHan }, select: { id: true },
+      // Băm bản ĐÃ DỌN, y hệt lúc tra: phát một kiểu mà tra một kiểu thì mã
+      // đúng vẫn bị chối.
+      data: { nguoiId, ma: bamMa(donMa(ma)), hetHan }, select: { id: true },
     });
   });
 

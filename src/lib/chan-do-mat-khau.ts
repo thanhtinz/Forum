@@ -237,3 +237,83 @@ export async function ghiLanDangAnh(nguoiId: string): Promise<void> {
     });
   } catch { /* đếm hỏng thì thôi, đừng chặn mất một lượt tải thật */ }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * CHẶN XIN MÃ ĐẶT LẠI MẬT KHẨU
+ *
+ * Cùng bảng đếm, khác khoá và khác ngưỡng. Lối xin mã tự động mở ra một cửa
+ * mà mấy lối kia không có: nó khiến MÁY CHỦ CỦA TA gửi thư tới một địa chỉ do
+ * người lạ gõ vào. Không chặn thì ai cũng biến chỗ này thành máy rải thư —
+ * bắn một nghìn lượt vào hòm thư của một người là họ ngập, mà tên miền của
+ * cửa hàng thì vào danh sách đen.
+ *
+ * ĐẾM CẢ LƯỢT XIN THÀNH CÔNG, khác hẳn lối đếm ở chỗ đăng nhập.
+ *
+ * Chỗ đăng nhập chỉ đếm lượt GÕ SAI, vì gõ đúng là việc bình thường và đếm nó
+ * thì phạt người thật. Ở đây ngược lại: chính lượt "thành công" mới là lượt
+ * tốn một lá thư, nên nó là thứ phải đếm. Một người quên mật khẩu xin hai ba
+ * lượt là cùng; ai xin tới lượt thứ tư trong mười lăm phút thì không còn là
+ * người quên mật khẩu nữa.
+ *
+ * Ngưỡng theo IP nới rộng hơn theo email, cùng lẽ với chỗ đăng nhập: quán net
+ * và văn phòng ra ngoài bằng một địa chỉ.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const TOI_DA_XIN_MA_EMAIL = 3;
+const TOI_DA_XIN_MA_IP = 12;
+
+function khoaXinMa(email: string, ip: string): Khoa[] {
+  const k: Khoa[] = [
+    { khoa: `xm:${email.toLowerCase().slice(0, 100)}`, toiDa: TOI_DA_XIN_MA_EMAIL },
+  ];
+  if (ip) k.push({ khoa: `xmip:${ip.slice(0, 60)}`, toiDa: TOI_DA_XIN_MA_IP });
+  return k;
+}
+
+/** Hỏi trước khi gửi thư: chỗ này còn được xin mã không? */
+export async function conDuocXinMa(email: string): Promise<KetQuaChan> {
+  const khoa = khoaXinMa(email, await layIp()).map((k) => k.khoa);
+  const bay = new Date();
+
+  const hang = await db.lanHong.findMany({
+    where: { khoa: { in: khoa }, camDen: { gt: bay } },
+    select: { camDen: true },
+  });
+  if (hang.length === 0) return { chan: false, conPhut: 0 };
+
+  const lauNhat = Math.max(...hang.map((h) => h.camDen!.getTime()));
+  return { chan: true, conPhut: Math.max(1, Math.ceil((lauNhat - bay.getTime()) / 60_000)) };
+}
+
+/**
+ * Ghi một lượt xin mã.
+ *
+ * Gọi cho MỌI lượt xin, kể cả lượt gõ email không có tài khoản nào. Chỉ đếm
+ * lượt có tài khoản thật thì kẻ dò biết ngay: xin mười lượt mà không bao giờ
+ * bị chặn nghĩa là mười địa chỉ ấy đều chưa ai đăng ký.
+ */
+export async function ghiLanXinMa(email: string): Promise<void> {
+  const bay = new Date();
+  const motCuaSoTruoc = new Date(bay.getTime() - CUA_SO_MS);
+
+  for (const { khoa, toiDa } of khoaXinMa(email, await layIp())) {
+    try {
+      const cu = await db.lanHong.findUnique({ where: { khoa }, select: { soLan: true, tuLuc: true } });
+      const trongCuaSo = cu && cu.tuLuc > motCuaSoTruoc;
+      const soLan = trongCuaSo ? cu.soLan + 1 : 1;
+
+      await db.lanHong.upsert({
+        where: { khoa },
+        create: { khoa, soLan: 1, tuLuc: bay },
+        update: {
+          soLan,
+          tuLuc: trongCuaSo ? cu.tuLuc : bay,
+          camDen: soLan >= toiDa ? new Date(bay.getTime() + CAM_MS) : null,
+        },
+        select: { khoa: true },
+      });
+    } catch {
+      // Đếm hỏng thì thôi, y như mấy chỗ đếm khác.
+    }
+  }
+}

@@ -1,5 +1,5 @@
 import { GOC, db, doiToi, moTrang, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
-import { HAN_MA_GIO, chiaCum, donMa } from '../../src/lib/dat-lai-const.ts';
+import { HAN_MA_GIO, chiaCum, donMa, machBase32 } from '../../src/lib/dat-lai-const.ts';
 
 const TEN = 'kiemthu-datlai';
 const CU = 'thanhvien123';
@@ -26,11 +26,27 @@ export default async function chay(kiem) {
   let admin; let nanNhan; let khach;
   try {
     /* ── Phần thuần: cắt cụm cho dễ đọc, gõ kiểu nào cũng nhận ───────── */
-    kiem('mã chia cụm cho dễ đọc', chiaCum('abcdefgh') === 'abcd-efgh');
+    kiem('mã chia cụm cho dễ đọc', chiaCum('ABCDEFGH') === 'ABCD-EFGH');
     kiem('bỏ gạch nối và khoảng trắng lúc nhận vào',
-      donMa(' abcd-efgh ') === 'abcdefgh');
+      donMa(' abcd-efgh ') === 'ABCDEFGH');
     kiem('mã chia cụm rồi dọn lại thì ra đúng mã gốc',
-      donMa(chiaCum('xyz123ABC')) === 'xyz123ABC');
+      donMa(chiaCum('XYZ234ABC')) === 'XYZ234ABC');
+
+    /*
+     * BẢNG CHỮ CỦA MÃ KHÔNG ĐƯỢC CHỨA DẤU DÙNG ĐỂ CẮT CỤM.
+     *
+     * Đây là chỗ đã hỏng thật. Bản đầu dùng base64url, tức bảng chữ có cả `-`,
+     * mà `donMa` thì xoá sạch gạch ngang — nên gần một nửa số mã sinh ra bị
+     * phá hỏng ngay lúc nhận vào. Lỗi hỏng lúc được lúc không, và bài kiểm
+     * xanh là do may. Nghìn mã ở đây là đủ để cái may ấy không lặp lại.
+     */
+    let dinhGach = 0;
+    for (let i = 0; i < 1000; i++) {
+      const m = machBase32(new Uint8Array(32).map(() => Math.floor(Math.random() * 256)));
+      if (/[-\s]/.test(m)) dinhGach++;
+      if (donMa(chiaCum(m)) !== m) dinhGach++;
+    }
+    kiem('nghìn mã liền không mã nào dính dấu cắt cụm', dinhGach === 0, `${dinhGach} mã hỏng`);
 
     const bcrypt = (await import('bcryptjs')).default;
     const nguoi = await db.nguoiDung.create({
@@ -41,13 +57,20 @@ export default async function chay(kiem) {
       select: { id: true },
     });
 
-    /* ── Khách chưa đăng nhập KHÔNG tự phát mã cho mình được ─────────── */
+    /*
+     * ── Trang nhập mã mở được mà không cần đăng nhập ─────────────────
+     *
+     * Bài này canh lối ban quản trị PHÁT TAY, chạy được dù cửa hàng có gửi
+     * được thư hay không. Phần xin mã qua thư nằm ở bài 59 — bản đầu của bài
+     * này soi luôn cả trang quên mật khẩu, rồi đỏ ngay khi bộ kiểm bật máy thư
+     * giả lên và trang ấy đổi sang bày ô nhập email.
+     */
     khach = await moTrang();
-    await khach.goto(`${GOC}/quen-mat-khau`, { waitUntil: 'networkidle' });
-    kiem('trang quên mật khẩu nói rõ phải xin ban quản trị',
-      (await khach.locator('main').textContent()).includes('ban quản trị'));
-    kiem('trang quên mật khẩu KHÔNG có ô nhập email để tự xin mã',
-      (await khach.locator('main input').count()) === 0);
+    await khach.goto(`${GOC}/dat-lai-mat-khau`, { waitUntil: 'networkidle' });
+    kiem('khách chưa đăng nhập vẫn mở được trang nhập mã',
+      (await khach.locator('input[name="ma"]').count()) === 1);
+    kiem('trang nhập mã đòi cả mật khẩu mới lẫn ô nhắc lại',
+      (await khach.locator('input[type="password"]').count()) === 2);
 
     /* ── Ban quản trị phát mã ─────────────────────────────────────────── */
     admin = await moTrangDaDangNhap('admin@sunnystore.local', 'admin123');

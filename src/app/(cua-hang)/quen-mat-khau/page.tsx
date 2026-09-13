@@ -3,6 +3,10 @@ import Link from 'next/link';
 import { KeyRound, MessageSquare, ShieldCheck } from 'lucide-react';
 import { HAN_MA_GIO } from '@/lib/dat-lai-const';
 import { DauHieu } from '@/components/vo/DauHieu';
+import { OXinMaDatLai } from '@/components/OXinMaDatLai';
+import { thuBat } from '@/lib/gui-thu';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Quên mật khẩu',
@@ -10,18 +14,21 @@ export const metadata: Metadata = {
 };
 
 /*
- * QUÊN MẬT KHẨU — trang chỉ đường, không phải biểu mẫu.
+ * QUÊN MẬT KHẨU — hai dáng, tuỳ cửa hàng có gửi được thư hay không.
  *
- * Và đây là chỗ phải nói thật thay vì bày ra một cái ô cho giống người ta:
- * cửa hàng chưa gửi được email, lại cũng chưa xác minh email lúc đăng ký, nên
- * một ô "nhập email, chúng tôi gửi mã cho bạn" vừa không chạy được vừa không
- * đáng tin — ai biết email ấy là chiếm được tài khoản.
+ * KHAI ĐỦ CẤU HÌNH THƯ: một ô nhập email, bấm là mã bay đi. Lối thường gặp.
  *
- * Nên lối thật là: xin ban quản trị, họ hỏi vài câu rồi phát mã. Trang này kể
- * đúng ba bước ấy. Ngày cắm được máy gửi thư vào thì thay bước đầu bằng một ô
- * nhập email, còn hai bước sau giữ nguyên.
+ * CHƯA KHAI: bày đúng ba bước xin mã tay từ ban quản trị, và nói thẳng là
+ * chưa gửi được thư. Đây mới là chỗ đáng nói: phần lớn trang web gặp cảnh này
+ * vẫn bày cái ô nhập ra cho giống người ta, rồi người dùng bấm xong ngồi đợi
+ * một lá thư không bao giờ tới. Thà nói mình đang thiếu gì.
+ *
+ * Xét ở MÁY CHỦ mỗi lượt mở trang chứ không dựng sẵn: cắm cấu hình thư vào là
+ * trang đổi ngay, không phải dựng lại bản chạy.
  */
 export default function TrangQuenMatKhau() {
+  const guiDuocThu = thuBat();
+
   const buoc = [
     {
       icon: MessageSquare,
@@ -47,9 +54,14 @@ export default function TrangQuenMatKhau() {
       </Link>
       <h1 className="text-center text-[22px] font-bold tracking-tight">Quên mật khẩu</h1>
       <p className="phu mt-1 text-center">
-        SunnyStore chưa gửi được thư tự động, nên việc này làm qua người thật.
+        {guiDuocThu
+          ? 'Nhập email đã đăng ký, SunnyStore gửi cho bạn một đường dẫn đặt lại.'
+          : 'SunnyStore đang chưa gửi được thư tự động, nên việc này làm qua người thật.'}
       </p>
 
+      {guiDuocThu && <OXinMaDatLai />}
+
+      {!guiDuocThu && (
       <ol className="mt-6 space-y-3">
         {buoc.map((b, i) => (
           <li key={b.ten} className="the flex gap-3 p-4">
@@ -66,10 +78,13 @@ export default function TrangQuenMatKhau() {
           </li>
         ))}
       </ol>
+      )}
 
-      <Link href="/dat-lai-mat-khau" className="nut-cai-dam mt-5 w-full">
-        Tôi đã có mã
-      </Link>
+      {!guiDuocThu && (
+        <Link href="/dat-lai-mat-khau" className="nut-cai-dam mt-5 w-full">
+          Tôi đã có mã
+        </Link>
+      )}
       <p className="phu mt-4 text-center">
         Nhớ ra mật khẩu rồi? <Link href="/dang-nhap" className="font-semibold text-nhan hover:underline">
           Đăng nhập

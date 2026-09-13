@@ -98,8 +98,25 @@ chay('npm', ['run', 'build'], 'Dựng bản chạy thật');
 
 const maBanDung = readFileSync('.next/BUILD_ID', 'utf8').trim();
 
+/*
+ * TRỎ PHẦN GỬI THƯ VỀ MỘT MÁY GIẢ Ở NGAY MÁY NÀY.
+ *
+ * Đè lên cấu hình thật trong `.env` chứ không mượn nó, và đây là chỗ không
+ * được phép tiết kiệm: mượn cấu hình thật là mỗi lượt chạy bộ kiểm lại bắn
+ * một nắm thư vào hòm thư của người ngoài. Máy giả do chính bài kiểm dựng lên
+ * ở cổng này (xem `tests/thu-gia.mjs`); bài nào không dựng thì lượt gửi hỏng
+ * gọn, y như lúc máy chủ thư ngoài kia không nhận.
+ */
 const may = spawn('npx', ['next', 'start', '-p', CONG], {
-  stdio: ['ignore', 'pipe', 'inherit'], env: process.env,
+  stdio: ['ignore', 'pipe', 'inherit'],
+  env: {
+    ...process.env,
+    THU_MAY_CHU: '127.0.0.1',
+    THU_CONG: '2525',
+    THU_NGUOI: 'kiemthu@localhost',
+    THU_MAT_KHAU: 'kiemthu',
+    THU_TU: 'SunnyStore kiểm thử <kiemthu@localhost>',
+  },
 });
 
 // Máy chủ chết giữa chừng thì dừng hẳn, đừng ngồi chờ cho hết sáu mươi giây.

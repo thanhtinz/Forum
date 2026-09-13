@@ -2,7 +2,7 @@ import { SaoNam } from '@/components/game/SaoNam';
 import { ODapDanhGia } from '@/components/game/ODapDanhGia';
 import { NutBaoXau } from '@/components/NutBaoXau';
 import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
-import { cachDay } from '@/lib/tien-ich';
+import { cachDay, gop } from '@/lib/tien-ich';
 
 /** Đúng những trường một bài đánh giá cần để vẽ ra — nơi gọi cứ `select` theo đây. */
 export const CHON_DANH_GIA = {
@@ -30,7 +30,7 @@ export interface BaiDanhGiaData {
  * đến lúc sửa một bên quên bên kia — mà bên quên ấy lại là bên người ta đọc
  * nhiều hơn.
  */
-export function BaiDanhGia({ d, nguoiXemId, dap }: {
+export function BaiDanhGia({ d, nguoiXemId, dap, gon }: {
   d: BaiDanhGiaData;
   /** `null` là khách chưa đăng nhập. */
   nguoiXemId: string | null;
@@ -43,6 +43,14 @@ export function BaiDanhGia({ d, nguoiXemId, dap }: {
    * cờ nào với hàm nào, mà đó chính là chỗ để quên.
    */
   dap?: ((danhGiaId: string, loi: string) => Promise<{ loi?: string }>) | null;
+  /**
+   * Dáng THẺ TRÊN KỆ: cắt bớt lời bình còn bốn dòng.
+   *
+   * Kệ cuộn ngang chỉ đẹp khi mọi thẻ cao bằng nhau; một bài viết mười dòng
+   * nằm cạnh một bài hai dòng thì kệ thành bậc thang. Ai muốn đọc hết thì mở
+   * tấm trượt "xem tất cả" — ở đó không cắt dòng nào.
+   */
+  gon?: boolean;
 }) {
   return (
     <>
@@ -59,7 +67,10 @@ export function BaiDanhGia({ d, nguoiXemId, dap }: {
         </div>
       </div>
       {d.noiDung && (
-        <p className="mt-2 whitespace-pre-line text-[13px] leading-relaxed">{d.noiDung}</p>
+        <p className={gop('mt-2 whitespace-pre-line text-[13px] leading-relaxed',
+          gon && 'line-clamp-4')}>
+          {d.noiDung}
+        </p>
       )}
 
       {/* Lời đáp thụt vào và đổi nền để không ai đọc lẫn nó với bài của người

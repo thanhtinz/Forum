@@ -260,6 +260,14 @@ export default async function KhungGame({ children, params }: {
                 nhau chỗ nào không — mất công vì chúng giống hệt.
               */}
               {/*
+                NÚT NẰM DƯỚI DÒNG HÃNG, CĂN TRÁI — kể cả ở khổ rộng.
+
+                Bản trước đẩy nó sát mép phải cột 1000px, và nhìn tận mắt thì
+                thấy nó trôi hẳn khỏi khối tên game: giữa tên và nút là một
+                khoảng trắng rộng bằng nửa màn hình, mắt đọc xong tên game
+                không biết đi đâu tiếp. App Store trên máy Mac để nút ngay dưới
+                tên hãng, sát lề trái của cột chữ — cạnh đúng thứ nó nói tới.
+
                 MỘT NÚT, KHÔNG PHẢI HAI.
 
                 Bản vừa rồi dựng hai thẻ nút — một cho khổ hẹp, một cho khổ
@@ -272,7 +280,7 @@ export default async function KhungGame({ children, params }: {
                 phải — chỗ nút giá của trang ứng dụng trên web App Store.
               */}
               {(tepChinh || banXem.length > 0) && (
-                <p className="mt-3 sm:flex sm:justify-end">
+                <p className="mt-3">
                   <NutTaiDau nhan="Tải về" dichLui={`/game/${game.duongDan}#tai`} taiKhoan={nguoi?.tenHienThi ?? null}
                     game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }}
                     tep={tepChinh && banMoiNhat

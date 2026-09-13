@@ -323,14 +323,23 @@ export default async function TabThongTin({ params, searchParams }: {
           <p className="phu mt-5">Không có bài nào {locSao} sao kèm lời nhận xét.</p>
         )}
 
+        {/*
+          KỆ THẺ CUỘN NGANG, không phải danh sách dọc.
+
+          Đây là dáng App Store dùng cho phần đánh giá ở cả iPhone lẫn máy Mac,
+          và nó không phải chuyện trang trí: danh sách dọc bắt người đang cân
+          nhắc tải phải cuộn qua hết bài này tới bài kia mới tới được phần
+          thông tin, còn kệ thì năm bài chỉ chiếm một tầm mắt, ai muốn đọc tiếp
+          thì quẹt ngang.
+        */}
         {danhGia.length > 0 && (
-          <ul className="mt-5 space-y-4">
+          <Ke nhan="đánh giá" className="mt-5 -mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
             {danhGia.map((d) => (
-              <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
-                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} dap={dapDanhGia} />
-              </li>
+              <div key={d.id} className="the w-[300px] shrink-0 p-4 sm:w-[340px]">
+                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} dap={dapDanhGia} gon />
+              </div>
             ))}
-          </ul>
+          </Ke>
         )}
 
         {/* Còn bài chưa bày thì mời đọc tiếp — trong một tấm trượt, không sang
@@ -351,7 +360,15 @@ export default async function TabThongTin({ params, searchParams }: {
       */}
       <section>
         <h2 className="tieu-de mb-3">Thông tin</h2>
-        <dl className="the divide-y divide-vien text-[13px]">
+        {/*
+          LƯỚI CẶP NHÃN–GIÁ TRỊ, không phải bảng một cột.
+
+          Một cột giữa 1000px thì nhãn nằm mép trái, giá trị nằm mép phải, và
+          mắt phải lia hết bề ngang màn hình cho mỗi dòng — đọc năm dòng là lia
+          năm lượt. App Store trên máy Mac xếp phần này thành lưới hai, ba cột,
+          mỗi ô nhãn trên giá trị dưới, đọc theo cụm chứ không theo hàng dài.
+        */}
+        <dl className="the grid gap-x-8 gap-y-4 p-4 text-[13px] sm:grid-cols-2 lg:grid-cols-3">
           {/* "Chạy được trên" và "Thể loại" là hai dòng App Store luôn có
               (Compatibility, Category) mà hàng số liệu trên đầu trang KHÔNG
               có chỗ bày — nên đây không phải chép lại, đây là phần bù. */}
@@ -399,9 +416,9 @@ export default async function TabThongTin({ params, searchParams }: {
 
 function Dong({ nhan, giaTri }: { nhan: string; giaTri: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-2.5">
-      <dt className="text-mo">{nhan}</dt>
-      <dd className="text-right font-medium">{giaTri}</dd>
+    <div className="min-w-0">
+      <dt className="phu">{nhan}</dt>
+      <dd className="mt-0.5 font-medium">{giaTri}</dd>
     </div>
   );
 }

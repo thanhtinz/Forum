@@ -107,7 +107,7 @@ export default async function TabThongTin({ params, searchParams }: {
       // Lấy đúng trần luật định — game cũ lỡ có hơn thì cũng chỉ bày chừng ấy.
       anhChup: {
         orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: TOI_DA_ANH_CHUP,
-        select: { id: true, duongDan: true, chuThich: true },
+        select: { id: true, duongDan: true, chuThich: true, heMay: true },
       },
       phim: {
         orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],

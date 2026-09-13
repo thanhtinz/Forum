@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { batBuocDangNhap, batBuocQuanTri } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
-import { HE_MAY, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
+import { HE_MAY, laHeMay, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
 import { baoBanMoi } from '@/lib/bao-ban-moi';
 import { dungChuDam } from '@/lib/chu-dam';
@@ -618,11 +618,30 @@ export async function themAnhChup(_truoc: KetQua, form: FormData): Promise<KetQu
     where: { gameId }, orderBy: { thuTu: 'desc' }, select: { thuTu: true },
   });
 
+  /*
+   * HỆ MÁY CỦA TẤM ẢNH — rỗng là dùng chung.
+   *
+   * Chỉ nhận hệ máy mà game này THẬT SỰ có bản tải: gắn ảnh vào một hệ chẳng
+   * có bản nào thì tấm ấy không bao giờ hiện ra, và người bày hàng ngồi đợi
+   * mãi không hiểu vì sao.
+   */
+  const heAnh = chu(form, 'heMay');
+  let heHopLe: MaHeMay | null = null;
+  if (heAnh) {
+    if (!laHeMay(heAnh)) return { loi: 'Hệ máy không hợp lệ.' };
+    const co = await db.banTai.findFirst({
+      where: { gameId, heMay: heAnh }, select: { id: true },
+    });
+    if (!co) return { loi: 'Game này chưa có bản tải nào cho hệ máy ấy.' };
+    heHopLe = heAnh;
+  }
+
   await db.anhChup.create({
     data: {
       gameId,
       duongDan: duongDanAnh,
       chuThich: chu(form, 'chuThich') || null,
+      heMay: heHopLe,
       thuTu: (cuoi?.thuTu ?? 0) + 10,
     },
     select: { id: true },

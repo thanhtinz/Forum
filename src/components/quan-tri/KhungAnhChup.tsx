@@ -5,11 +5,13 @@ import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
 import { doiChoAnhChup, themAnhChup, xoaAnhChup, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 import { ONapAnh } from '@/components/quan-tri/ONapAnh';
 import { ANH_TRONG_KET_QUA, TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
+import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 
 export interface AnhQuanTri {
   id: string;
   duongDan: string;
   chuThich: string | null;
+  heMay: MaHeMay | null;
 }
 
 /**
@@ -18,7 +20,12 @@ export interface AnhQuanTri {
  * Ảnh bày ra dạng hàng ngang cuộn được, giống đúng chỗ nó sẽ nằm ở trang công
  * khai — xếp thứ tự mà không thấy kết quả giống trang thật thì xếp bằng cảm giác.
  */
-export function KhungAnhChup({ gameId, anh }: { gameId: string; anh: AnhQuanTri[] }) {
+export function KhungAnhChup({ gameId, anh, he }: {
+  gameId: string;
+  anh: AnhQuanTri[];
+  /** Mấy hệ máy game này thật sự có bản tải — ảnh chỉ gắn được vào mấy hệ ấy. */
+  he: MaHeMay[];
+}) {
   const [ketQua, gui, dangChay] = useActionState<KetQua, FormData>(themAnhChup, {});
   const [dangSua, batDauSua] = useTransition();
 
@@ -52,6 +59,11 @@ export function KhungAnhChup({ gameId, anh }: { gameId: string; anh: AnhQuanTri[
                   </span>
                 )}
                 {a.chuThich ?? `Ảnh ${i + 1}`}
+              </p>
+              {/* Hệ máy in ngay dưới tấm: xếp mười tấm của ba hệ máy lẫn nhau
+                  mà không thấy nhãn thì không ai biết mình đang xếp cái gì. */}
+              <p className="phu truncate">
+                {a.heMay ? MO_TA_HE[a.heMay].ten : 'Mọi hệ máy'}
               </p>
               <div className="mt-1 flex items-center gap-1">
                 <button type="button" disabled={dangSua || i === 0}
@@ -104,6 +116,25 @@ export function KhungAnhChup({ gameId, anh }: { gameId: string; anh: AnhQuanTri[
           <span className="phu mb-1 block">Chú thích (không bắt buộc)</span>
           <input name="chuThich" placeholder="Màn chơi đầu tiên" className="o-nhap" />
         </label>
+
+        {/*
+          CHỌN HỆ MÁY, và mặc định là "mọi hệ".
+
+          Cùng một game, bản Java ME là màn 176×208 hai màu còn bản Android là
+          đồ hoạ dựng lại — bày lẫn vào nhau thì người cầm máy Android tưởng
+          mình sắp tải đúng cái màn hình cũ kỹ kia. Nhưng KHÔNG bắt buộc: phần
+          lớn game cũ chỉ có một bộ ảnh, và bắt trả lời một câu chính họ cũng
+          không nhớ thì chỉ tổ nhận về câu trả lời bừa.
+        */}
+        {he.length > 1 && (
+          <label className="block">
+            <span className="phu mb-1 block">Ảnh này chụp trên hệ máy nào</span>
+            <select name="heMay" defaultValue="" className="o-nhap">
+              <option value="">Mọi hệ máy</option>
+              {he.map((h) => <option key={h} value={h}>{MO_TA_HE[h].ten}</option>)}
+            </select>
+          </label>
+        )}
 
         {ketQua.loi && (
           <p role="alert" className="rounded-nut bg-xau/10 px-3 py-2 text-[13px] font-medium text-xau">

@@ -10,6 +10,7 @@ import { KhungPhim } from '@/components/quan-tri/KhungPhim';
 import { KhungBanTai } from '@/components/quan-tri/KhungBanTai';
 import { NutTrangThai } from '@/components/quan-tri/NutTrangThai';
 import { KhuNguyHiem } from '@/components/quan-tri/KhuNguyHiem';
+import type { MaHeMay } from '@/lib/he-may';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sửa game' };
@@ -29,7 +30,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
         anhChup: {
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
           take: 30,
-          select: { id: true, duongDan: true, chuThich: true },
+          select: { id: true, duongDan: true, chuThich: true, heMay: true },
         },
         phim: {
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
@@ -58,6 +59,9 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
   ]);
   if (!game) notFound();
 
+  // Ảnh chụp chỉ gắn được vào hệ máy game THẬT SỰ có bản tải — xem `KhungAnhChup`.
+  const heCoBan = [...new Set(game.banTai.map((b) => b.heMay))] as MaHeMay[];
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -73,7 +77,7 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
 
       <section>
         <h2 className="tieu-de mb-3">Ảnh chụp</h2>
-        <KhungAnhChup gameId={game.id} anh={game.anhChup} />
+        <KhungAnhChup gameId={game.id} anh={game.anhChup} he={heCoBan} />
       </section>
 
       <section>

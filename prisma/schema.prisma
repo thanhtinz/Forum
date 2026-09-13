@@ -336,6 +336,18 @@ model AnhChup {
   chuThich String?
   thuTu    Int     @default(0)
 
+  /// Ảnh này chụp trên hệ máy nào. RỖNG nghĩa là dùng chung cho mọi hệ.
+  ///
+  /// App Store có bộ ảnh riêng cho iPhone, iPad, Mac vì cùng một ứng dụng trên
+  /// hai máy ấy trông khác hẳn nhau. Ở đây khoảng cách còn lớn hơn: cùng một
+  /// game, bản Java ME là màn 176×208 hai màu, bản Android là đồ hoạ dựng lại
+  /// — bày lẫn vào nhau thì người cầm điện thoại Android tưởng mình sắp tải
+  /// đúng cái màn hình cũ kỹ kia.
+  ///
+  /// Để RỖNG được, và phần lớn game cũ sẽ rỗng: bắt gắn hệ máy cho từng tấm là
+  /// bắt người bày hàng trả lời một câu mà chính họ cũng không nhớ.
+  heMay HeMay?
+
   @@index([gameId, thuTu])
 }
 

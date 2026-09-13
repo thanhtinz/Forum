@@ -3,11 +3,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { PhimXemTruoc, type PhimXem } from '@/components/game/PhimXemTruoc';
+import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
+import { gop } from '@/lib/tien-ich';
 
 export interface AnhXem {
   id: string;
   duongDan: string;
   chuThich: string | null;
+  /** Ảnh chụp trên hệ máy nào; rỗng là dùng chung cho mọi hệ. */
+  heMay?: MaHeMay | null;
 }
 
 /*
@@ -40,6 +44,22 @@ export interface AnhXem {
  */
 export function KeAnhChup({ anh, phim = [] }: { anh: AnhXem[]; phim?: PhimXem[] }) {
   const [dangXem, datDangXem] = useState<number | null>(null);
+  /*
+   * CHỌN HỆ MÁY — dãy chip chỉ hiện khi thật sự có ảnh của hơn một hệ.
+   *
+   * App Store có chỗ đổi giữa ảnh iPhone, iPad, Mac vì cùng một ứng dụng trên
+   * hai máy ấy trông khác nhau. Ở đây khoảng cách còn lớn hơn: bản Java ME là
+   * màn 176×208 hai màu, bản Android là đồ hoạ dựng lại.
+   *
+   * Ảnh KHÔNG gắn hệ máy thì hiện ở mọi lựa chọn — phần lớn game cũ chỉ có
+   * một bộ ảnh chung, và bắt chúng biến mất khi người xem bấm "Android" thì
+   * kệ ảnh trống trơn.
+   */
+  const [heChon, datHeChon] = useState<MaHeMay | null>(null);
+  const heCo = [...new Set(anh.map((a) => a.heMay).filter(Boolean))] as MaHeMay[];
+  const anhBay = heChon
+    ? anh.filter((a) => !a.heMay || a.heMay === heChon)
+    : anh;
   const hopRef = useRef<HTMLDialogElement>(null);
   const anhRef = useRef<HTMLImageElement>(null);
 
@@ -74,14 +94,38 @@ export function KeAnhChup({ anh, phim = [] }: { anh: AnhXem[]; phim?: PhimXem[] 
     return () => window.removeEventListener('resize', doi);
   }, [dangXem, canhCo]);
 
+  /*
+   * MỌI THỨ Ở TẤM XEM TO ĐỀU ĐẾM THEO `anhBay`, KHÔNG THEO `anh`.
+   *
+   * Chỗ này suýt hỏng lúc thêm bộ lọc hệ máy: kệ ảnh vẽ theo danh sách đã lọc
+   * còn tấm xem to vẫn tra vào danh sách gốc, nên bấm tấm thứ hai của "Android"
+   * lại mở ra tấm thứ hai của cả dãy — một ảnh Java ME. Đếm hai danh sách bằng
+   * một con số thì kiểu gì cũng có ngày lệch.
+   */
   const di = (buoc: number) => {
-    datDangXem((cu) => (cu === null ? null : (cu + buoc + anh.length) % anh.length));
+    datDangXem((cu) => (cu === null ? null : (cu + buoc + anhBay.length) % anhBay.length));
   };
 
-  const hienTai = dangXem === null ? null : anh[dangXem];
+  const hienTai = dangXem === null ? null : anhBay[dangXem] ?? null;
 
   return (
     <>
+      {heCo.length > 1 && (
+        <div className="ke -mx-4 mb-3 gap-1.5 px-4 sm:mx-0 sm:px-0" role="group"
+          aria-label="Chọn hệ máy của ảnh">
+          <button type="button" onClick={() => { datHeChon(null); datDangXem(null); }}
+            className={gop('chip shrink-0', heChon === null && 'chip-chon')}>
+            Mọi hệ máy
+          </button>
+          {heCo.map((h) => (
+            <button key={h} type="button" onClick={() => { datHeChon(h); datDangXem(null); }}
+              className={gop('chip shrink-0', heChon === h && 'chip-chon')}>
+              {MO_TA_HE[h].ten}
+            </button>
+          ))}
+        </div>
+      )}
+
       <section className="ke -mx-4 gap-3 px-4 sm:mx-0 sm:px-0" aria-label="Ảnh và phim trong game">
         {/*
           PHIM ĐỨNG TRƯỚC ẢNH, đúng thứ tự App Store dùng: với một game thì thứ
@@ -90,7 +134,7 @@ export function KeAnhChup({ anh, phim = [] }: { anh: AnhXem[]; phim?: PhimXem[] 
         */}
         {phim.map((f) => <PhimXemTruoc key={f.id} phim={f} />)}
 
-        {anh.map((a, i) => (
+        {anhBay.map((a, i) => (
           <button key={a.id} type="button" onClick={() => datDangXem(i)}
             aria-label={a.chuThich ? `Xem to: ${a.chuThich}` : `Xem to ảnh ${i + 1}`}
             className="shrink-0 rounded-the border border-vien transition-transform hover:scale-[1.02]">
@@ -115,10 +159,10 @@ export function KeAnhChup({ anh, phim = [] }: { anh: AnhXem[]; phim?: PhimXem[] 
             )}
 
             <p className="text-[12px] font-semibold tabular-nums text-white/70">
-              {(dangXem ?? 0) + 1}/{anh.length}
+              {(dangXem ?? 0) + 1}/{anhBay.length}
             </p>
 
-            {anh.length > 1 && (
+            {anhBay.length > 1 && (
               <>
                 <button type="button" onClick={() => di(-1)} aria-label="Ảnh trước"
                   className="absolute left-2 top-1/2 grid size-11 -translate-y-1/2 place-items-center rounded-full bg-black/50 text-white hover:bg-black/70">

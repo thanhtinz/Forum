@@ -7,6 +7,7 @@ import {
 } from '@/app/(cua-hang)/toi/cai-dat/viec';
 import { CAU_XAC_NHAN } from '@/lib/xoa-tai-khoan-const';
 import { ONhapGiu } from '@/components/ONhapGiu';
+import { ONapAnh } from '@/components/quan-tri/ONapAnh';
 
 /** Ô báo kết quả dùng chung cho cả hai biểu mẫu. */
 function Bao({ kq }: { kq: KetQua }) {
@@ -45,11 +46,16 @@ export function OHoSo({ banDau, guiDuocThu }: {
         <span className="phu mt-1 block">Tên này hiện cạnh mỗi bài viết và đánh giá của bạn.</span>
       </label>
 
-      <label className="block">
-        <span className="phu mb-1 block">Địa chỉ ảnh đại diện (không bắt buộc)</span>
-        <ONhapGiu name="anh" banDau={banDau.anh ?? ''} placeholder="https://…" className="o-nhap" />
-        <span className="phu mt-1 block">Bỏ trống thì dùng ô màu kèm chữ cái đầu tên bạn.</span>
-      </label>
+      {/*
+        TẢI THẲNG LÊN, không dán địa chỉ nữa.
+
+        Đây là chỗ cuối cùng trong cửa hàng còn bắt người dùng tự đi tìm nơi
+        đặt ảnh rồi dán đường dẫn về — mà ảnh nằm ở máy chủ người khác thì hôm
+        nào họ xoá là mặt người dùng thủng một lỗ trên mọi bài viết cũ, và mỗi
+        lượt vẽ một bài lại gửi địa chỉ IP của người đọc sang một máy chủ lạ.
+      */}
+      <ONapAnh ten="anh" nhan="Ảnh đại diện" banDau={banDau.anh ?? ''} cho="dai-dien"
+        goYy="Kéo ảnh thả vào đây cũng được. Bỏ trống thì dùng ô màu kèm chữ cái đầu tên bạn." />
 
       {/*
         Chỉ bày công tắc khi cửa hàng gửi được thư. Bày một cái công tắc bật

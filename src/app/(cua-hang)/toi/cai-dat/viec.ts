@@ -8,6 +8,7 @@ import {
   bamMatKhau, batBuocDangNhap, dongPhien, dongPhienKhac, khopMatKhau,
 } from '@/lib/xac-thuc';
 import { LOI_DIA_CHI, laDiaChiHopLe } from '@/lib/dia-chi-an-toan';
+import { xoaAnh } from '@/lib/kho';
 import {
   CAU_XAC_NHAN, TEN_DA_XOA, emailDaXoa, tenDangNhapDaXoa,
 } from '@/lib/xoa-tai-khoan-const';
@@ -16,6 +17,19 @@ export interface KetQua { ok?: string; loi?: string }
 
 function chu(form: FormData, ten: string): string {
   return String(form.get(ten) ?? '').trim();
+}
+
+/*
+ * Tấm này có phải ảnh đại diện do CỬA HÀNG NÀY cất hộ không.
+ *
+ * Chỉ dọn đúng tệp nằm trong thư mục `dai-dien/`, không dọn mọi thứ trỏ vào
+ * kho của ta. Trước đợt này ô ảnh đại diện là ô gõ tay, nên trong cơ sở dữ
+ * liệu vẫn còn những hàng mà người dùng dán vào đó địa chỉ ảnh của người
+ * khác — thậm chí địa chỉ biểu tượng của một game. Dọn bừa theo tiền tố kho
+ * thì chỉ cần một người đổi ảnh là gỡ mất biểu tượng của game ấy.
+ */
+function laAnhDaiDienCuaTa(dia: string): boolean {
+  return dia.includes('/dai-dien/');
 }
 
 /**
@@ -49,11 +63,15 @@ export async function luuHoSo(_truoc: KetQua, form: FormData): Promise<KetQua> {
    */
   const thuThongBao = form.get('thuThongBao') !== null;
 
-  await db.nguoiDung.update({
+  const cu = await db.nguoiDung.update({
     where: { id: nguoi.id },
     data: { tenHienThi, anh: anh || null, thuThongBao },
-    select: { id: true },
+    select: { anh: true },
   });
+
+  // Đổi ảnh xong thì dọn tấm cũ, kẻo mỗi lần đổi lại bỏ lại một tệp nằm mãi
+  // trong kho mà không ai trỏ tới nữa.
+  if (cu.anh && cu.anh !== anh && laAnhDaiDienCuaTa(cu.anh)) void xoaAnh(cu.anh);
 
   revalidatePath('/toi');
   revalidatePath('/toi/cai-dat');
@@ -130,7 +148,7 @@ export async function xoaTaiKhoan(_truoc: KetQua, form: FormData): Promise<KetQu
   }
 
   const hang = await db.nguoiDung.findUnique({
-    where: { id: nguoi.id }, select: { matKhauBam: true, vaiTro: true, xoaLuc: true },
+    where: { id: nguoi.id }, select: { matKhauBam: true, vaiTro: true, xoaLuc: true, anh: true },
   });
   if (!hang || hang.xoaLuc) return { loi: 'Tài khoản này không còn nữa.' };
   if (!(await khopMatKhau(chu(form, 'matKhau'), hang.matKhauBam))) {
@@ -193,6 +211,10 @@ export async function xoaTaiKhoan(_truoc: KetQua, form: FormData): Promise<KetQu
   } catch {
     return { loi: 'Không xoá được lúc này. Thử lại giúp mình nhé.' };
   }
+
+  // Ảnh đại diện là tệp DUY NHẤT người dùng để lại trong kho mà chỉ mình họ
+  // dùng; mấy thứ khác (ảnh trong bài viết) còn nằm trong bài của họ.
+  if (hang.anh && laAnhDaiDienCuaTa(hang.anh)) void xoaAnh(hang.anh);
 
   await dongPhien();
   revalidatePath('/', 'layout');

@@ -3,7 +3,8 @@ import { nguoiHienTai } from '@/lib/xac-thuc';
 import { doanLoaiAnh, luuAnh } from '@/lib/kho';
 import { doCoAnh } from '@/lib/co-anh';
 import {
-  ANH_CHUP_TOI_THIEU, BIA_RONG_TOI_THIEU, BIA_TI_LE_TOI_THIEU, ICON_TOI_THIEU,
+  ANH_CHUP_TOI_THIEU, BIA_RONG_TOI_THIEU, BIA_TI_LE_TOI_THIEU, DAI_DIEN_TOI_THIEU,
+  ICON_TOI_THIEU,
 } from '@/lib/luat-anh-const';
 import { conDuocDangAnh, ghiLanDangAnh } from '@/lib/chan-do-mat-khau';
 
@@ -20,7 +21,7 @@ export const runtime = 'nodejs';
  *   • `icon`, `bia`, `anh-chup`, `phim-bia` — ảnh của HÀNG BÀY: quản trị, và
  *     tác giả (họ tự bày game mình, nên tự lo tài sản của game mình).
  *   • `su-kien`         — chỉ quản trị: sự kiện là việc của cửa hàng.
- *   • `dien-dan`        — thành viên đã đăng nhập.
+ *   • `dien-dan`, `dai-dien` — thành viên đã đăng nhập.
  *
  * Ai KHÔNG phải quản trị đều qua cửa chặn đếm lượt, kể cả tác giả: ảnh là thứ
  * nặng nhất một tài khoản gửi lên được, và mỗi tấm nằm lại trong kho mãi mãi.
@@ -73,6 +74,22 @@ const CHO_DAT = {
   'dien-dan': {
     thuMuc: 'dien-dan', toiDa: 3 * 1024 * 1024, canQuanTri: false,
     canhToiThieu: 0, vuong: false, ngang: false,
+  },
+  /*
+   * Ảnh đại diện của một tài khoản.
+   *
+   * Trước đợt này đây là ô dán ĐỊA CHỈ — chỗ duy nhất trong cả cửa hàng còn
+   * bắt người dùng tự đi tìm nơi đặt ảnh rồi dán đường dẫn về. Ảnh nằm ở máy
+   * chủ người khác thì hôm nào họ xoá là mặt người dùng thủng một lỗ trên mọi
+   * bài viết cũ, mà cửa hàng cũng vô tình gửi địa chỉ IP của người xem sang
+   * một máy chủ lạ mỗi lần vẽ một bài.
+   *
+   * Trần 1MB, nhỏ hơn hẳn ảnh bìa: nó chỉ bày ở cỡ 96 điểm ảnh, tấm nặng hơn
+   * thế là nặng mà chẳng đẹp thêm được chút nào.
+   */
+  'dai-dien': {
+    thuMuc: 'dai-dien', toiDa: 1024 * 1024, canQuanTri: false,
+    canhToiThieu: DAI_DIEN_TOI_THIEU, vuong: false, ngang: false,
   },
 } as const;
 

@@ -43,3 +43,13 @@ export const ANH_CHUP_TOI_THIEU = 320;
 export const BIA_RONG_TOI_THIEU = 960;
 /** Bề ngang chia bề cao ít nhất chừng này thì mới coi là ảnh nằm ngang. */
 export const BIA_TI_LE_TOI_THIEU = 1.3;
+
+/*
+ * ẢNH ĐẠI DIỆN của một tài khoản.
+ *
+ * Bày to nhất ở 96 điểm ảnh (trang hồ sơ), mà màn hình nào cũng nhân đôi — nên
+ * 192 là sàn. KHÔNG đòi vuông như biểu tượng: ảnh đại diện bị cắt tròn lúc bày
+ * (`object-cover`), nên một tấm chụp dọc vẫn dùng được, chỉ mất hai đầu. Đòi
+ * vuông ở đây là chặn đúng thứ người ta hay có sẵn nhất — một tấm ảnh chụp.
+ */
+export const DAI_DIEN_TOI_THIEU = 192;

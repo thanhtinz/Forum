@@ -8,7 +8,8 @@ export interface KetQuaNap { duongDan?: string; loi?: string }
 
 /** Đẩy một tệp lên cổng nhận ảnh. Dùng chung cho mọi chỗ có nút chọn ảnh. */
 export async function napAnh(
-  tep: File, cho: 'icon' | 'bia' | 'su-kien' | 'phim-bia' | 'anh-chup' | 'dien-dan',
+  tep: File,
+  cho: 'icon' | 'bia' | 'su-kien' | 'phim-bia' | 'anh-chup' | 'dien-dan' | 'dai-dien',
 ): Promise<KetQuaNap> {
   const fd = new FormData();
   fd.set('cho', cho);
@@ -39,7 +40,7 @@ export function ONapAnh({ ten, nhan, banDau, cho, goYy }: {
   ten: string;
   nhan: string;
   banDau: string;
-  cho: 'icon' | 'bia' | 'su-kien' | 'anh-chup';
+  cho: 'icon' | 'bia' | 'su-kien' | 'anh-chup' | 'dai-dien';
   goYy?: string;
 }) {
   const [dia, datDia] = useState(banDau);

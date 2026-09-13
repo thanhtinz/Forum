@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { MO_TA_SU_KIEN, type MaLoaiSuKien } from '@/lib/su-kien-const';
 
 export interface SuKienXem {
@@ -28,18 +29,49 @@ export interface SuKienXem {
  * Chưa có ảnh thì dựng dải màu theo LOẠI sự kiện thay vì bỏ trống: một thẻ
  * trống trông như thẻ hỏng, còn dải màu vẫn nói được "đây là giải đấu".
  */
-export function TheSuKien({ s, duongDanGame }: { s: SuKienXem; duongDanGame: string }) {
+export function TheSuKien({ s, duongDanGame, game, trongKe, anTinhTrang }: {
+  s: SuKienXem;
+  duongDanGame: string;
+  /**
+   * Game chủ của sự kiện — CHỈ truyền ở chỗ trộn sự kiện của nhiều game.
+   *
+   * Ở trang game thì thừa: cả trang đang nói về đúng game ấy, in lại tên nó
+   * dưới mỗi thẻ chỉ tổ chiếm chỗ. Nhưng ở trang sự kiện chung hay kệ ngoài
+   * trang chủ thì thiếu nó là thẻ mất nghĩa — "Giải đua mùa hè" của game nào?
+   */
+  game?: { ten: string; icon: string | null };
+  /**
+   * Thẻ đang nằm trên KỆ CUỘN NGANG nên phải có bề ngang cố định.
+   *
+   * Trong lưới thì ngược lại: ô lưới quyết bề ngang, thẻ cứ giãn cho vừa. Để
+   * bề ngang cứng trong thành phần rồi dùng chung cả hai chỗ thì lưới ba cột
+   * hoá ra ba cái thẻ hẹp dính bên trái, chừa một khoảng trống bên phải.
+   */
+  trongKe?: boolean;
+  /**
+   * Bỏ chữ ĐANG DIỄN RA / SẮP TỚI, chỉ giữ lại mốc ngày.
+   *
+   * Dùng ở trang sự kiện chung, nơi thẻ đã nằm dưới đúng cái đầu mục nói y
+   * hệt điều đó — in lại trên từng thẻ là bắt người đọc đọc cùng một chữ ba
+   * lần trên một hàng. Mốc ngày thì vẫn phải giữ: nó khác nhau ở từng thẻ.
+   */
+  anTinhTrang?: boolean;
+}) {
   const mo = MO_TA_SU_KIEN[s.loai as MaLoaiSuKien] ?? { ten: 'Sự kiện', mau: '#475569' };
   const chuaMo = new Date(s.batDau).getTime() > Date.now();
 
   return (
-    <div className="w-[280px] shrink-0 sm:w-[320px]">
-      <p className="mb-1.5 text-[12px] font-bold uppercase tracking-[0.04em] text-nhan">
-        {chuaMo ? 'Sắp tới' : 'Đang diễn ra'}
-        <span className="phu ml-1.5 font-semibold normal-case tracking-normal">
-          {khoangNgay(s.batDau, s.ketThuc)}
-        </span>
-      </p>
+    <div className={trongKe ? 'w-[280px] shrink-0 sm:w-[320px]' : 'w-full'}>
+      {anTinhTrang ? (
+        <p className="phu mb-1.5 font-semibold">{khoangNgay(s.batDau, s.ketThuc)}</p>
+      ) : (
+        <p className="mb-1.5 text-[12px] font-bold uppercase tracking-[0.04em] text-nhan">
+          {chuaMo ? 'Sắp tới' : 'Đang diễn ra'}
+          <span className="phu ml-1.5 font-semibold normal-case tracking-normal">
+            {khoangNgay(s.batDau, s.ketThuc)}
+          </span>
+        </p>
+      )}
 
       <Link href={`/game/${duongDanGame}/su-kien/${s.id}`}
         className="the-bam relative block aspect-[4/3] overflow-hidden">
@@ -70,6 +102,14 @@ export function TheSuKien({ s, duongDanGame }: { s: SuKienXem; duongDanGame: str
           <span className="mt-0.5 block truncate text-[13px] text-white/80">{s.moTaNgan}</span>
         </span>
       </Link>
+
+      {game && (
+        <Link href={`/game/${duongDanGame}`}
+          className="mt-2 flex items-center gap-2 hover:opacity-70">
+          <BieuTuongGame ten={game.ten} icon={game.icon} co={28} />
+          <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{game.ten}</span>
+        </Link>
+      )}
     </div>
   );
 }

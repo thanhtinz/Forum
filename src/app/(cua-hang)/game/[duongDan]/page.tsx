@@ -310,7 +310,7 @@ export default async function TabThongTin({ params, searchParams }: {
           <h2 className="tieu-de mb-3">Sự kiện</h2>
           <Ke nhan="sự kiện" className="-mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
             {game.suKien.map((s) => (
-              <TheSuKien key={s.id} duongDanGame={duongDan}
+              <TheSuKien key={s.id} duongDanGame={duongDan} trongKe
                 s={{
                   id: s.id, loai: s.loai, tieuDe: s.tieuDe, moTaNgan: s.moTaNgan, anh: s.anh,
                   batDau: s.batDau.toISOString(), ketThuc: s.ketThuc.toISOString(),

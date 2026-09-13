@@ -10,6 +10,9 @@ import { HangGame } from '@/components/game/HangGame';
 import { NutCai } from '@/components/game/NutCai';
 import { NenGame } from '@/components/game/NenGame';
 import { NutCaiUngDung } from '@/components/vo/NutCaiUngDung';
+import { TheSuKien } from '@/components/game/TheSuKien';
+import { Ke } from '@/components/game/Ke';
+import { SU_KIEN_TREN_TRANG } from '@/lib/su-kien-const';
 import { chiaHomNay } from '@/lib/hom-nay-const';
 import { catChu } from '@/lib/tien-ich';
 import { bocChu } from '@/lib/chu-dam';
@@ -53,12 +56,33 @@ export default async function HomNay() {
 
   const { chon } = chiaHomNay(tatCa.map((g) => g.id), MOI_NGAY);
 
-  const [duocChon, moi] = await Promise.all([
+  const [duocChon, moi, suKien] = await Promise.all([
     db.game.findMany({
       where: { id: { in: chon } },
       select: { ...CHON_THE, gioiThieu: true },
     }),
     layKe({}, [{ dangLuc: 'desc' }, { id: 'desc' }], 3),
+    /*
+     * SỰ KIỆN ĐANG MỞ, trộn của mọi game.
+     *
+     * Sự kiện là thứ hết hạn nhanh nhất trên cửa hàng — vài ngày là tàn — mà
+     * nó lại chỉ sống trong trang của đúng một game. Ai không mở đúng trang ấy
+     * trong đúng mấy ngày ấy thì coi như không bao giờ biết. Bày ở đây là chỗ
+     * người ta ghé thường xuyên nhất.
+     *
+     * Xếp theo NGÀY KẾT THÚC gần nhất chứ không theo ngày mở: cái sắp tàn mới
+     * là cái cần được nhìn thấy trước.
+     */
+    db.suKien.findMany({
+      where: { hien: true, batDau: { lte: new Date() }, ketThuc: { gte: new Date() }, game: DANG_HIEN },
+      orderBy: [{ ketThuc: 'asc' }, { id: 'asc' }],
+      take: SU_KIEN_TREN_TRANG,
+      select: {
+        id: true, loai: true, tieuDe: true, moTaNgan: true, anh: true,
+        batDau: true, ketThuc: true,
+        game: { select: { ten: true, duongDan: true, icon: true } },
+      },
+    }),
   ]);
 
   // Prisma trả về theo thứ tự của nó, nên xếp lại đúng thứ tự vừa chia — bằng
@@ -85,6 +109,33 @@ export default async function HomNay() {
       {chinh && (
         <TamLon game={thanhThe(chinh)} nhan="GAME CỦA HÔM NAY"
           doan={chinh.gioiThieu ? catChu(bocChu(chinh.gioiThieu), 220) : null} />
+      )}
+
+      {/* Kệ sự kiện đứng ngay sau tấm lớn: nó là thứ có HẠN, phải gặp sớm. */}
+      {suKien.length > 0 && (
+        <section>
+          <Link href="/su-kien" className="mb-3 flex items-start justify-between gap-3 px-1">
+            <span className="min-w-0">
+              <span className="block text-[13px] font-bold uppercase tracking-wide text-nhan">
+                ĐANG DIỄN RA
+              </span>
+              <span className="tieu-de mt-0.5 block">Sự kiện trong game</span>
+            </span>
+            <ChevronRight size={20} className="mt-5 shrink-0 text-mo" aria-hidden />
+          </Link>
+          <Ke nhan="sự kiện" className="-mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
+            {suKien.map((s) => (
+              /* Kệ này chỉ chở sự kiện ĐANG mở, mà dòng nhãn ngay trên đầu kệ
+                 đã nói đúng chữ ấy — nên thẻ chỉ giữ lại mốc ngày. */
+              <TheSuKien key={s.id} duongDanGame={s.game.duongDan} trongKe anTinhTrang
+                game={{ ten: s.game.ten, icon: s.game.icon }}
+                s={{
+                  id: s.id, loai: s.loai, tieuDe: s.tieuDe, moTaNgan: s.moTaNgan, anh: s.anh,
+                  batDau: s.batDau.toISOString(), ketThuc: s.ketThuc.toISOString(),
+                }} />
+            ))}
+          </Ke>
+        </section>
       )}
 
       {conLai.length > 0 && (

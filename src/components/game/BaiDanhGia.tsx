@@ -7,7 +7,7 @@ import { cachDay, gop } from '@/lib/tien-ich';
 /** Đúng những trường một bài đánh giá cần để vẽ ra — nơi gọi cứ `select` theo đây. */
 export const CHON_DANH_GIA = {
   id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
-  nguoiId: true,
+  soHieu: true, nguoiId: true,
   nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
 } as const;
 
@@ -18,6 +18,7 @@ export interface BaiDanhGiaData {
   taoLuc: Date;
   traLoi: string | null;
   traLoiLuc: Date | null;
+  soHieu: string | null;
   nguoiId: string;
   nguoi: { tenHienThi: string; tenDangNhap: string; anh: string | null };
 }
@@ -60,9 +61,14 @@ export function BaiDanhGia({ d, nguoiXemId, dap, gon }: {
           <p className="truncate text-[13px] font-semibold">
             <TenNguoi ten={d.nguoi.tenHienThi} tenDangNhap={d.nguoi.tenDangNhap} />
           </p>
-          <p className="flex items-center gap-1.5">
+          {/* Số hiệu bản in cạnh ngày, đúng lối App Store: một lời chê nát
+              ở bản 1.0 đọc khác hẳn khi biết game nay đã ở bản 3.0. */}
+          <p className="flex flex-wrap items-center gap-x-1.5">
             <SaoNam diem={d.sao} co={11} />
-            <span className="phu">{cachDay(d.taoLuc)}</span>
+            <span className="phu">
+              {cachDay(d.taoLuc)}
+              {d.soHieu && ` · bản ${d.soHieu}`}
+            </span>
           </p>
         </div>
       </div>

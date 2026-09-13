@@ -365,6 +365,18 @@ model DanhGia {
   sao     Int // 1..5
   noiDung String? @db.Text
 
+  /// Game đang ở bản nào lúc người này chấm sao. RỖNG với bài chấm từ trước
+  /// đợt này, và với game chưa có bản tải nào.
+  ///
+  /// VÌ SAO CẦN: một game bị chê nát ở bản 1.0 rồi vá sạch lỗi ở bản 2.0 thì
+  /// điểm trung bình vẫn kéo lê mãi mấy bài cũ, mà người đang cân nhắc tải
+  /// bản 2.0 không có cách nào lọc ra tiếng nói về ĐÚNG bản họ sắp tải. App
+  /// Store cho lọc "mọi phiên bản" hay "bản hiện tại" đúng vì chuyện ấy.
+  ///
+  /// Ghi lại mỗi lần chấm, kể cả lúc sửa bài cũ: người sửa bài là người vừa
+  /// chơi lại, nên tiếng nói ấy thuộc về bản họ đang cầm.
+  soHieu String?
+
   /// Lời đáp của cửa hàng, nằm ngay trong hàng đánh giá thay vì thành bảng
   /// riêng: mỗi bài chỉ có đúng một lời đáp, y như CH Play.
   traLoi    String?   @db.Text

@@ -29,7 +29,9 @@ const SAP = [
  * Esc và chặn cuộn phía sau. Tự dựng lớp phủ bằng div thì lần nào cũng thiếu
  * một trong ba thứ ấy.
  */
-export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau, dangLien }: {
+export function TamDanhGia({
+  gameId, duongDan, tong, sao, phanBo, banDau, dangLien, banHienTai,
+}: {
   gameId: string;
   duongDan: string;
   /** Tổng số đánh giá của game, kể cả bài chỉ chấm sao không viết chữ. */
@@ -38,6 +40,14 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau, dangLi
   phanBo: Record<number, number>;
   /** Năm bài đã dựng sẵn ở trang — khỏi phải gọi lại ngay lúc mở. */
   banDau: BaiXem[];
+  /**
+   * Số hiệu bản MỚI NHẤT của game, để mời lọc "chỉ bản này".
+   *
+   * Rỗng thì không bày chip ấy: game chưa có bản tải nào thì mọi bài đánh giá
+   * đều không mang số hiệu, và một cái chip lọc ra danh sách rỗng thì chỉ làm
+   * người ta tưởng trang hỏng.
+   */
+  banHienTai?: string | null;
   /**
    * Dáng LIÊN KẾT nằm cạnh đầu đề mục, thay cho nút viền chiếm cả bề ngang.
    *
@@ -54,6 +64,7 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau, dangLi
   const [conLai, datConLai] = useState(Math.max(0, tong - banDau.length));
   const [locSao, datLocSao] = useState<number | null>(null);
   const [sap, datSap] = useState<string>('moi');
+  const [chiBanNay, datChiBanNay] = useState(false);
   const [trang, datTrang] = useState(1);
   const [dangTai, batDau] = useTransition();
   const [loi, datLoi] = useState<string | null>(null);
@@ -66,11 +77,11 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau, dangLi
   }, [mo]);
 
   /** Nạp một trang. `noiTiep` là true khi bấm "Tải thêm". */
-  const nap = useCallback((s: number | null, c: string, t: number, noiTiep: boolean) => {
+  const nap = useCallback((s: number | null, c: string, t: number, noiTiep: boolean, ban?: string | null) => {
     datLoi(null);
     batDau(async () => {
       try {
-        const kq = await layDanhGia(gameId, { sao: s, sap: c, trang: t });
+        const kq = await layDanhGia(gameId, { sao: s, sap: c, trang: t, ban: ban ?? null });
         datBai((cu) => (noiTiep ? [...cu, ...kq.bai] : kq.bai));
         datConLai(kq.tong - (noiTiep ? bai.length + kq.bai.length : kq.bai.length));
         datTrang(t);
@@ -82,10 +93,11 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau, dangLi
     });
   }, [gameId, bai.length]);
 
-  const doiLoc = (s: number | null, c: string) => {
+  const doiLoc = (s: number | null, c: string, banNay = chiBanNay) => {
     datLocSao(s);
     datSap(c);
-    nap(s, c, 1, false);
+    datChiBanNay(banNay);
+    nap(s, c, 1, false, banNay ? banHienTai : null);
   };
 
   return (
@@ -149,6 +161,22 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau, dangLi
                   {c.ten}
                 </button>
               ))}
+
+              {/*
+                LỌC THEO PHIÊN BẢN — chip cuối hàng sắp xếp.
+
+                Một game bị chê nát ở bản 1.0 rồi vá sạch lỗi ở bản 2.0 thì
+                điểm trung bình vẫn kéo lê mấy bài cũ, mà người đang cân nhắc
+                tải bản 2.0 không có cách nào nghe tiếng nói về ĐÚNG bản họ sắp
+                tải. App Store cho đổi giữa "mọi phiên bản" và "bản hiện tại"
+                đúng vì chuyện ấy.
+              */}
+              {banHienTai && (
+                <button type="button" onClick={() => doiLoc(locSao, sap, !chiBanNay)}
+                  className={gop('chip shrink-0', chiBanNay && 'chip-chon')}>
+                  Chỉ bản {banHienTai}
+                </button>
+              )}
             </div>
 
             {bai.length === 0 ? (
@@ -173,7 +201,7 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau, dangLi
 
             {conLai > 0 && (
               <button type="button" disabled={dangTai}
-                onClick={() => nap(locSao, sap, trang + 1, true)}
+                onClick={() => nap(locSao, sap, trang + 1, true, chiBanNay ? banHienTai : null)}
                 className="nut-xam mt-5 w-full">
                 {dangTai ? 'Đang tải…' : `Tải thêm ${gonSo(conLai)} đánh giá`}
               </button>

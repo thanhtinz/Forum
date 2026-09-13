@@ -29,11 +29,34 @@ export async function chamSao(gameId: string, sao: number, noiDung: string): Pro
   });
   if (!game) return { loi: 'Không tìm thấy game này.' };
 
+  /*
+   * BẢN NÀO LÚC CHẤM SAO.
+   *
+   * Ưu tiên bản CHÍNH NGƯỜI ẤY đã tải — đó mới là bản họ cầm trong tay lúc gõ
+   * mấy dòng này. Chưa tải bao giờ (chấm sao vẫn được, cửa hàng không bắt tải
+   * mới cho nói) thì lấy bản mới nhất đang bày, vì đó là thứ họ vừa xem.
+   *
+   * Ghi lại cả lúc SỬA bài cũ: người sửa là người vừa chơi lại, nên tiếng nói
+   * ấy thuộc về bản họ đang cầm chứ không phải bản của mấy năm trước.
+   */
+  const [daTai, banMoi] = await Promise.all([
+    db.luotTai.findUnique({
+      where: { gameId_nguoiId: { gameId, nguoiId: nguoi.id } },
+      select: { soHieu: true },
+    }),
+    db.banTai.findFirst({
+      where: { gameId },
+      orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }, { id: 'desc' }],
+      select: { soHieu: true },
+    }),
+  ]);
+  const soHieu = daTai?.soHieu ?? banMoi?.soHieu ?? null;
+
   await db.$transaction(async (tx) => {
     await tx.danhGia.upsert({
       where: { gameId_nguoiId: { gameId, nguoiId: nguoi.id } },
-      update: { sao, noiDung: chu || null },
-      create: { gameId, nguoiId: nguoi.id, sao, noiDung: chu || null },
+      update: { sao, noiDung: chu || null, soHieu },
+      create: { gameId, nguoiId: nguoi.id, sao, noiDung: chu || null, soHieu },
       select: { id: true },
     });
 
@@ -74,6 +97,8 @@ export interface BaiXem {
   taoLuc: Date;
   traLoi: string | null;
   traLoiLuc: Date | null;
+  /** Game ở bản nào lúc người ta chấm sao; rỗng với bài chấm từ trước. */
+  soHieu: string | null;
   nguoiId: string;
   nguoi: { tenHienThi: string; tenDangNhap: string; anh: string | null };
 }
@@ -92,7 +117,7 @@ const CACH_SAP = {
 
 export async function layDanhGia(
   gameId: string,
-  loc: { sao?: number | null; sap?: string; trang?: number },
+  loc: { sao?: number | null; sap?: string; trang?: number; ban?: string | null },
 ): Promise<TrangDanhGia> {
   // Mọi tham số đều do trình duyệt gửi lên, nên ép hết về khoảng cho phép —
   // `trang: 1e9` mà lọt vào `skip` là một lượt quét bảng không đáng có.
@@ -100,10 +125,20 @@ export async function layDanhGia(
   const theo = CACH_SAP[(loc.sap ?? 'moi') as keyof typeof CACH_SAP] ?? CACH_SAP.moi;
   const trang = Math.min(200, Math.max(1, Math.floor(Number(loc.trang) || 1)));
 
+  /*
+   * LỌC THEO PHIÊN BẢN.
+   *
+   * Chuỗi số hiệu do trình duyệt gửi lên nên cắt ngắn lại; nó chỉ đi vào một
+   * phép so bằng nên không có gì để chèn, nhưng một chuỗi mười nghìn ký tự vẫn
+   * là một chuỗi mười nghìn ký tự đi qua đường truyền và vào câu truy vấn.
+   */
+  const ban = typeof loc.ban === 'string' && loc.ban ? loc.ban.slice(0, 40) : null;
+
   const where = {
     gameId,
     game: { trangThai: 'DANG_HIEN' as const },
     ...(sao ? { sao } : {}),
+    ...(ban ? { soHieu: ban } : {}),
   };
 
   const [bai, tong] = await Promise.all([
@@ -114,7 +149,7 @@ export async function layDanhGia(
       take: MOI_TRANG_DANH_GIA,
       select: {
         id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
-        nguoiId: true,
+        soHieu: true, nguoiId: true,
         nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
       },
     }),

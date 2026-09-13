@@ -400,7 +400,7 @@ export default async function TabThongTin({ params, searchParams }: {
           {gom > danhGia.length && (
             <TamDanhGia gameId={game.id} duongDan={duongDan} tong={gom} sao={sao}
               phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))}
-              banDau={danhGia} dangLien />
+              banDau={danhGia} dangLien banHienTai={banXem[0]?.soHieu ?? null} />
           )}
         </div>
         <PhoDiem sao={sao} tong={gom} locSao={locSao}

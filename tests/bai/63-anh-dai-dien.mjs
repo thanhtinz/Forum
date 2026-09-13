@@ -31,7 +31,7 @@ export default async function chay(kiem) {
   const don = async () => { await db.nguoiDung.deleteMany({ where: { email: EMAIL } }); };
   await don();
 
-  let p, khach;
+  let p, khach, iconCu = null;
   try {
     const mau = await db.nguoiDung.findFirst({
       where: { tenDangNhap: 'anhthu' }, select: { matKhauBam: true },
@@ -109,11 +109,18 @@ export default async function chay(kiem) {
      * này. Dọn bừa theo tiền tố kho thì một người đổi ảnh là gỡ mất biểu tượng
      * của game ấy, mà chẳng ai lần ra được vì sao.
      */
-    const anhGame = await db.game.findFirst({
-      orderBy: { id: 'asc' }, where: { icon: { not: null } }, select: { id: true, icon: true },
+    const game = await db.game.findFirst({
+      orderBy: { id: 'asc' }, select: { id: true, icon: true },
     });
-    if (anhGame?.icon) {
-      await db.nguoiDung.update({ where: { id: toi.id }, data: { anh: anhGame.icon } });
+    if (game) {
+      // Tự dựng lấy tình huống: dữ liệu mẫu không có game nào mang biểu tượng,
+      // mà một mục kiểm chỉ chạy khi may mắn có dữ liệu là mục kiểm không canh
+      // gì cả — nó xanh vì không chạy.
+      const ICON = '/api/anh/icon/kiemthu-bieu-tuong.png';
+      iconCu = { id: game.id, icon: game.icon };
+      await db.game.update({ where: { id: game.id }, data: { icon: ICON } });
+      await db.nguoiDung.update({ where: { id: toi.id }, data: { anh: ICON } });
+
       await p.goto(`${GOC}/toi/cai-dat`, { waitUntil: 'networkidle' });
       await p.setInputFiles('input[type="file"][accept*="image"]', {
         name: 'thay.png', mimeType: 'image/png',
@@ -125,11 +132,8 @@ export default async function chay(kiem) {
         ((await db.nguoiDung.findUnique({ where: { id: toi.id }, select: { anh: true } }))?.anh ?? '')
           .includes('/dai-dien/'));
 
-      const conIcon = await db.game.findUnique({
-        where: { id: anhGame.id }, select: { icon: true },
-      });
-      kiem('biểu tượng game KHÔNG bị dọn theo khi người dùng đổi ảnh',
-        conIcon?.icon === anhGame.icon);
+      const con = await db.game.findUnique({ where: { id: game.id }, select: { icon: true } });
+      kiem('biểu tượng game KHÔNG bị dọn theo khi người dùng đổi ảnh', con?.icon === ICON, con?.icon);
     }
 
     // ── Khách thì không tải ảnh lên được ──────────────────────────────
@@ -144,6 +148,10 @@ export default async function chay(kiem) {
     });
     kiem('khách chưa đăng nhập thì không tải ảnh đại diện lên được', ma === 401, String(ma));
   } finally {
+    if (iconCu) {
+      await db.game.update({ where: { id: iconCu.id }, data: { icon: iconCu.icon } })
+        .catch(() => {});
+    }
     if (p) await p.close();
     if (khach) await khach.close();
     await don();

@@ -63,15 +63,26 @@ export async function luuHoSo(_truoc: KetQua, form: FormData): Promise<KetQua> {
    */
   const thuThongBao = form.get('thuThongBao') !== null;
 
-  const cu = await db.nguoiDung.update({
+  /*
+   * Đọc tấm CŨ TRƯỚC khi ghi đè.
+   *
+   * `update` của Prisma trả về hàng SAU khi ghi, không phải hàng trước — hỏi
+   * nó lấy ảnh cũ thì lúc nào cũng nhận đúng tấm vừa đặt vào, và phép so
+   * "khác nhau thì dọn" không bao giờ đúng. Bài kiểm 63 bắt được đúng chỗ này.
+   */
+  const cu = await db.nguoiDung.findUnique({
+    where: { id: nguoi.id }, select: { anh: true },
+  });
+
+  await db.nguoiDung.update({
     where: { id: nguoi.id },
     data: { tenHienThi, anh: anh || null, thuThongBao },
-    select: { anh: true },
+    select: { id: true },
   });
 
   // Đổi ảnh xong thì dọn tấm cũ, kẻo mỗi lần đổi lại bỏ lại một tệp nằm mãi
   // trong kho mà không ai trỏ tới nữa.
-  if (cu.anh && cu.anh !== anh && laAnhDaiDienCuaTa(cu.anh)) void xoaAnh(cu.anh);
+  if (cu?.anh && cu.anh !== anh && laAnhDaiDienCuaTa(cu.anh)) void xoaAnh(cu.anh);
 
   revalidatePath('/toi');
   revalidatePath('/toi/cai-dat');

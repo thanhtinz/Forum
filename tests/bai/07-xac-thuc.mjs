@@ -1,35 +1,68 @@
 import { GOC, db, doiToi, moTrang } from '../tro-giup.mjs';
+import { docThan, moThuGia } from '../thu-gia.mjs';
+import { donMa } from '../../src/lib/ma-xac-minh-const.ts';
 
 const EMAIL = 'kiemthu-dangky@sunnystore.local';
 
 /** Đăng ký, đăng nhập, đăng xuất — và phiên phải chết thật khi đăng xuất. */
 export default async function chay(kiem) {
-  const don = () => db.nguoiDung.deleteMany({ where: { email: EMAIL } });
+  const don = async () => {
+    await db.nguoiDung.deleteMany({ where: { email: EMAIL } });
+    await db.maXacMinh.deleteMany({ where: { email: EMAIL } });
+  };
   await don();
 
+  // Mã xác minh đi qua thư, nên phải có chỗ hứng — xem `thu-gia.mjs`.
+  const hom = moThuGia(2525);
   try {
+    await hom.san;
     const p = await moTrang();
 
-    // ── Đăng ký ────────────────────────────────────────────────────────
+    // ── Đăng ký, bước một: gửi hồ sơ, nhận mã qua thư ───────────────────
     await p.goto(`${GOC}/dang-ky`, { waitUntil: 'networkidle' });
     await p.fill('input[name="tenHienThi"]', 'Người Kiểm Thử');
     await p.fill('input[name="email"]', EMAIL);
     await p.fill('input[name="matKhau"]', 'matkhaudai123');
     await p.click('button[type="submit"]');
+    await p.waitForURL((u) => u.pathname.startsWith('/xac-minh'), { timeout: 15_000 })
+      .catch(() => {});
+
+    /*
+     * CHƯA GÕ MÃ THÌ CHƯA CÓ TÀI KHOẢN NÀO.
+     *
+     * Đây là chỗ đáng canh nhất của cả luồng: dựng sẵn tài khoản rồi đánh dấu
+     * "chưa xác minh" là để người lạ chiếm chỗ một địa chỉ email họ không sở
+     * hữu — chủ thật tới sau bị chối vì email đã có người dùng.
+     */
+    kiem('gửi hồ sơ xong mà CHƯA gõ mã thì chưa có tài khoản nào',
+      (await db.nguoiDung.count({ where: { email: EMAIL } })) === 0);
+    kiem('hồ sơ nằm chờ trong hàng mã',
+      (await db.maXacMinh.count({ where: { email: EMAIL, viec: 'DANG_KY' } })) === 1);
+
+    // ── Bước hai: lấy mã trong thư rồi gõ vào ───────────────────────────
+    const coThu = await doiToi(async () => hom.thu.length >= 1);
+    kiem('thư xác minh bay tới', coThu, `${hom.thu.length} thư`);
+    if (!coThu) return;
+
+    const ma = donMa((docThan(hom.thu[0].than).match(/\n\s*(\d{3}\s?\d{3})\s*\n/) ?? [])[1] ?? '');
+    kiem('thư mang một mã sáu số', ma.length === 6, ma);
+
+    await p.fill('input[name="ma"]', ma);
+    await p.click('button[type="submit"]');
 
     const daTao = await doiToi(async () =>
       (await db.nguoiDung.count({ where: { email: EMAIL } })) === 1);
-    kiem('đăng ký tạo được tài khoản', daTao);
+    kiem('gõ đúng mã thì tài khoản mới ra đời', daTao);
 
     /*
      * Chờ ĐIỀU HƯỚNG xong hẳn, đừng chỉ chờ hàng trong CSDL.
      *
-     * `dangKy` tạo tài khoản TRƯỚC rồi mới mở phiên và đặt cookie, nên hàng
-     * người dùng xuất hiện sớm hơn cookie vài chục mili giây. Đi thẳng sang
-     * trang khác ngay lúc ấy là đi với tư cách khách — bài kiểm đỏ trong khi
-     * mã hoàn toàn đúng, mà lại chỉ đỏ lúc chạy cả bộ nên rất khó lần ra.
+     * `xacMinhDangKy` tạo tài khoản TRƯỚC rồi mới mở phiên và đặt cookie, nên
+     * hàng người dùng xuất hiện sớm hơn cookie vài chục mili giây. Đi thẳng
+     * sang trang khác ngay lúc ấy là đi với tư cách khách — bài kiểm đỏ trong
+     * khi mã hoàn toàn đúng, mà lại chỉ đỏ lúc chạy cả bộ nên rất khó lần ra.
      */
-    await p.waitForURL((u) => !u.pathname.startsWith('/dang-ky'), { timeout: 15_000 })
+    await p.waitForURL((u) => !u.pathname.startsWith('/xac-minh'), { timeout: 15_000 })
       .catch(() => {});
 
     const moi = await db.nguoiDung.findUnique({
@@ -100,5 +133,6 @@ export default async function chay(kiem) {
     await p.close();
   } finally {
     await don();
+    await hom.dong();
   }
 }

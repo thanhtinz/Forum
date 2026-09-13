@@ -4,6 +4,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { datLaiMatKhau, type KetQuaDatLai } from '@/app/(cua-hang)/dat-lai-mat-khau/viec';
 import { MAT_KHAU_TOI_THIEU } from '@/lib/luat-tai-khoan-const';
+import { SO_CHU_SO } from '@/lib/ma-xac-minh-const';
 
 /**
  * Biểu mẫu đặt lại mật khẩu bằng mã.
@@ -18,7 +19,7 @@ import { MAT_KHAU_TOI_THIEU } from '@/lib/luat-tai-khoan-const';
  * ta bấm thêm lần nữa rồi nhận câu "mã không dùng được" — nghe như vừa hỏng
  * cái gì.
  */
-export function ODatLaiMatKhau({ maSan }: { maSan?: string }) {
+export function ODatLaiMatKhau({ maSan, emailSan }: { maSan?: string; emailSan?: string }) {
   const [ketQua, gui, dangChay] = useActionState<KetQuaDatLai, FormData>(datLaiMatKhau, {});
 
   if (ketQua.ok) {
@@ -36,12 +37,24 @@ export function ODatLaiMatKhau({ maSan }: { maSan?: string }) {
   return (
     <form action={gui} className="mt-6 space-y-3">
       <label className="block">
-        <span className="phu mb-1 block">Mã đặt lại</span>
-        {/* `defaultValue` chứ không giữ trong trạng thái: mã dán từ địa chỉ vào
-            thì không ai sửa nó, còn React 19 dọn biểu mẫu sau mỗi lượt gửi nên
-            ô tự giữ lại vẫn phải dựng lại từ đây. */}
-        <input name="ma" required defaultValue={maSan} autoComplete="off"
-          spellCheck={false} placeholder="abcd-efgh-…" className="o-nhap font-mono" />
+        <span className="phu mb-1 block">Email của tài khoản</span>
+        <input name="email" type="email" required defaultValue={emailSan}
+          autoComplete="email" className="o-nhap" />
+      </label>
+      <label className="block">
+        <span className="phu mb-1 block">Mã sáu số trong thư</span>
+        {/*
+          `inputMode="numeric"` để điện thoại bật bàn phím số — gõ mã bằng bàn
+          phím chữ là phải chuyển chế độ một nhịp, đúng lúc đang vội.
+
+          `defaultValue` chứ không giữ trong trạng thái: mã điền sẵn từ địa chỉ
+          thì không ai sửa nó, còn React 19 dọn biểu mẫu sau mỗi lượt gửi nên ô
+          tự giữ lại vẫn phải dựng lại từ đây.
+        */}
+        <input name="ma" required defaultValue={maSan} autoComplete="one-time-code"
+          inputMode="numeric" maxLength={SO_CHU_SO + 2} spellCheck={false}
+          placeholder="123 456"
+          className="o-nhap text-center font-mono !text-[18px] tracking-[0.3em]" />
       </label>
       <label className="block">
         <span className="phu mb-1 block">Mật khẩu mới</span>

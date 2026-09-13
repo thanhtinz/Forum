@@ -24,6 +24,15 @@ model NguoiDung {
   taoLuc      DateTime  @default(now())
   ghePhutCuoi DateTime?
 
+  /// Có gửi thư mỗi khi có thông báo mới không.
+  ///
+  /// BẬT SẴN, và đó là lựa chọn có cân nhắc: thông báo ở đây không phải quảng
+  /// cáo mà là chuyện người ta đang đợi — ai đó trả lời bài mình, game mình
+  /// gửi duyệt đã xong, bản mới của game mình đã tải. Mấy thứ ấy mà im lặng
+  /// thì người dùng phải tự nhớ quay lại xem, và phần lớn là không quay lại.
+  /// Mỗi lá thư đều kèm lối tắt đi.
+  thuThongBao Boolean @default(true)
+
   danhGia       DanhGia[]
   danhGiaHuuIch DanhGiaHuuIch[]
   luotTai       LuotTai[]
@@ -32,7 +41,7 @@ model NguoiDung {
   traLoi        TraLoi[]
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
-  maDatLai      MaDatLai[]
+  maXacMinh     MaXacMinh[]
   baoXau        BaoXau[]
   thongBao      ThongBao[]
   donTacGia     DonTacGia?
@@ -54,32 +63,57 @@ enum VaiTro {
   QUAN_TRI
 }
 
-/**
- * MÃ ĐẶT LẠI MẬT KHẨU — lối duy nhất cứu người đã quên mật khẩu.
- *
- * VÌ SAO CÓ: `doiMatKhau` chỉ chạy khi người ta ĐANG đăng nhập được. Ai quên
- * mật khẩu thì trước đợt này là khoá cứng vĩnh viễn — ban quản trị cũng không
- * cứu nổi, vì trang thành viên chỉ khoá tài khoản và đổi vai trò được.
- *
- * VÌ SAO KHÔNG GỬI QUA EMAIL: cửa hàng chưa gửi được email, và cũng chưa xác
- * minh email lúc đăng ký — nên một lối "gửi mã vào hòm thư" vừa không chạy
- * được vừa không đáng tin. Nay ban quản trị phát mã rồi trao tay; xác minh
- * người xin là việc của họ, ngoài phạm vi cái bảng này. Ngày cắm được máy gửi
- * thư vào thì chỉ phải thay chỗ GIAO mã, còn cả cơ chế dưới đây giữ nguyên.
- *
- * BĂM MÃ CHỨ KHÔNG LƯU MÃ THẬT, cùng lẽ với phiên đăng nhập: cơ sở dữ liệu rò
- * ra ngoài thì kẻ cầm được nó không có sẵn một nắm mã còn hiệu lực trong tay.
- * Băm bằng SHA-256 chứ không bcrypt vì ở đây phải TRA theo mã — bcrypt thì
- * phải quét cả bảng mà thử từng hàng. Dùng được SHA-256 là nhờ mã gồm 32 byte
- * ngẫu nhiên: không có gì để mà đoán mò.
- */
-model MaDatLai {
-  id      String    @id @default(cuid())
-  nguoiId String
-  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+/// Mã sáu số dùng vào việc gì.
+enum ViecXacMinh {
+  /// Xác minh email lúc mở tài khoản. Chưa nhập đúng mã thì CHƯA có tài khoản.
+  DANG_KY
+  /// Đặt lại mật khẩu cho người đã quên.
+  DAT_LAI
+}
 
-  /// SHA-256 của mã thật.
-  ma String @unique
+/**
+ * MÃ XÁC MINH SÁU SỐ — dùng chung cho mở tài khoản và đặt lại mật khẩu.
+ *
+ * MỘT BẢNG CHO CẢ HAI VIỆC, vì hai việc ấy giống nhau tới từng chi tiết: phát
+ * một mã có hạn, gửi tới một hòm thư, đếm số lần gõ sai, dùng đúng một lần.
+ * Dựng hai bảng gần y hệt là dựng sẵn chỗ để hai bên lệch nhau — vá lỗ hổng ở
+ * bên này rồi quên bên kia.
+ *
+ * SÁU SỐ, không phải một chuỗi dài ngẫu nhiên. Mã này đi tới người qua thư rồi
+ * người gõ lại bằng tay, có khi đọc qua điện thoại cho nhau chép. Một dãy năm
+ * mươi ký tự thì không ai chép nổi. Đổi lại, sáu số chỉ có một triệu khả năng,
+ * nên thứ giữ cho nó an toàn KHÔNG phải độ dài mà là ba cái chốt: hạn ngắn, số
+ * lần gõ sai có trần (`soLanSai`), và cửa chặn ở chỗ xin mã.
+ *
+ * BĂM MÃ, nhưng phải nói thật là băm ở đây yếu hơn hẳn chỗ mật khẩu: một triệu
+ * khả năng thì ai cầm được bảng này cũng dò ngược ra mã trong tích tắc. Vẫn
+ * băm vì nó chặn được lối đọc lướt — mã không nằm trần trong bản sao lưu hay
+ * trong một dòng nhật ký lỡ in cả hàng ra. Băm KÈM EMAIL để một bảng tra dựng
+ * sẵn không dùng lại được cho người khác.
+ *
+ * Hồ sơ đang chờ (`tenHienThi`, `matKhauBam`) nằm ngay đây chứ không nằm ở
+ * bảng người dùng: chưa xác minh xong thì CHƯA có tài khoản nào cả. Dựng sẵn
+ * tài khoản rồi đánh dấu "chưa xác minh" là để người lạ chiếm chỗ một địa chỉ
+ * email mà họ không sở hữu.
+ */
+model MaXacMinh {
+  id    String      @id @default(cuid())
+  viec  ViecXacMinh
+  email String
+
+  /// SHA-256 của "email:mã".
+  ma String
+
+  /// Chỉ có ở việc DAT_LAI — người đang xin đặt lại.
+  nguoiId String?
+  nguoi   NguoiDung? @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  /// Chỉ có ở việc DANG_KY — hồ sơ chờ xác minh xong mới dựng thành tài khoản.
+  tenHienThi String?
+  matKhauBam String?
+
+  /// Gõ sai mấy lần rồi. Quá trần là mã chết, không đợi tới lúc hết hạn.
+  soLanSai Int @default(0)
 
   hetHan  DateTime
   /// Lúc đã dùng. Có giá trị là mã chết — một mã chỉ đổi được một lần.
@@ -87,6 +121,7 @@ model MaDatLai {
 
   taoLuc DateTime @default(now())
 
+  @@index([email, viec])
   @@index([nguoiId])
   @@index([hetHan])
 }

@@ -8,6 +8,9 @@ import { thanhDuongDan } from '@/lib/tien-ich';
 import {
   EMAIL_TOI_DA, MAT_KHAU_TOI_DA, MAT_KHAU_TOI_THIEU, TEN_TOI_DA,
 } from '@/lib/luat-tai-khoan-const';
+import { danhDauDaDung, phatMa, traMa } from '@/lib/ma-xac-minh';
+import { HAN_MA_PHUT, TOI_DA_SAI, chiaCum } from '@/lib/ma-xac-minh-const';
+import { guiThu, thuBat } from '@/lib/gui-thu';
 
 export interface KetQuaXacThuc { loi?: string }
 
@@ -121,29 +124,110 @@ export async function dangKy(_truoc: KetQuaXacThuc, form: FormData): Promise<Ket
     return { loi: 'Email này đã có tài khoản. Bạn muốn đăng nhập chứ?' };
   }
 
-  /*
-   * Tên đăng nhập suy ra từ tên hiển thị; trùng thì nối thêm số.
-   *
-   * VÒNG LẶP CÓ TRẦN, và hết trần thì bốc ngẫu nhiên. Bản trước lặp "cho tới
-   * khi rỗi" — mười nghìn người cùng tên "Minh" là lượt đăng ký thứ mười nghìn
-   * phải hỏi CSDL mười nghìn lượt trước khi được vào, và ai cũng dựng được
-   * tình cảnh ấy bằng cách mở sẵn một loạt tài khoản cùng tên.
-   */
-  const goc = thanhDuongDan(tenHienThi).slice(0, 30) || 'thanhvien';
-  let tenDangNhap = goc;
-  let ronh = false;
-  for (let i = 2; i <= 20; i++) {
-    if (!(await db.nguoiDung.findUnique({ where: { tenDangNhap }, select: { id: true } }))) {
-      ronh = true;
-      break;
-    }
-    tenDangNhap = `${goc}${i}`;
-  }
-  // Hai mươi lượt mà vẫn kẹt thì thôi đếm, bốc một đuôi ngẫu nhiên. Xấu hơn
-  // "minh21" một chút, nhưng nó KẾT THÚC — mà tên đăng nhập thì đổi được sau.
-  if (!ronh) tenDangNhap = `${goc}-${Math.random().toString(36).slice(2, 8)}`;
-
   const matKhauBam = await bamMatKhau(matKhau);
+
+  /*
+   * ─── KHÔNG GỬI ĐƯỢC THƯ: mở tài khoản luôn ───────────────────────────
+   *
+   * Thiếu cấu hình thư thì bắt xác minh email là khoá cửa hẳn — chẳng ai mở
+   * được tài khoản nào nữa. Thà cho vào như trước đợt này, còn hơn dựng một
+   * bước không thể đi qua.
+   */
+  if (!thuBat()) {
+    let nguoi;
+    try {
+      nguoi = await db.nguoiDung.create({
+        data: { email, tenDangNhap: await bocTenDangNhap(tenHienThi), tenHienThi, matKhauBam },
+        select: { id: true },
+      });
+    } catch {
+      /*
+       * Hai lượt đăng ký cùng lúc mới lọt được tới đây: cả hai đọc thấy email
+       * (hoặc tên đăng nhập) còn rỗi, rồi cả hai cùng ghi. Không bắt thì lượt
+       * thua cuộc nhận nguyên một trang lỗi 500 — trong khi điều cần nói với
+       * họ chỉ là "thử lại lần nữa".
+       */
+      return { loi: 'Không mở được tài khoản lúc này. Thử lại giúp mình nhé.' };
+    }
+    await ghiLanDangKy();
+    await moPhien(nguoi.id);
+    redirect('/');
+  }
+
+  /*
+   * ─── GỬI ĐƯỢC THƯ: chưa dựng tài khoản, phát mã đã ───────────────────
+   *
+   * Hồ sơ nằm tạm trong hàng mã, không nằm ở bảng người dùng. Dựng sẵn tài
+   * khoản rồi đánh dấu "chưa xác minh" là để người lạ CHIẾM CHỖ một địa chỉ
+   * email họ không sở hữu: chủ thật của địa chỉ ấy tới sau sẽ bị chối vì email
+   * đã có người dùng, mà người kia thì chẳng bao giờ xác minh nổi.
+   *
+   * Tên đăng nhập bốc ở trên cũng bỏ đi, để dựng lại lúc xác minh xong: giữ
+   * chỗ một cái tên suốt một giờ cho một tài khoản có thể không bao giờ ra đời
+   * là tự làm hẹp kho tên của người khác.
+   */
+  const ma = await phatMa('DANG_KY', email, { hoSo: { tenHienThi, matKhauBam } });
+
+  const kq = await guiThu({
+    toi: email,
+    tieuDe: `${chiaCum(ma)} là mã xác minh SunnyStore`,
+    chu: [
+      `Chào ${tenHienThi},`,
+      '',
+      'Mã xác minh email để mở tài khoản SunnyStore của bạn là:',
+      '',
+      `    ${chiaCum(ma)}`,
+      '',
+      `Mã dùng được một lần và hết hạn sau ${HAN_MA_PHUT} phút.`,
+      '',
+      'Nếu không phải bạn mở tài khoản thì bỏ qua thư này —',
+      'chưa có tài khoản nào được dựng lên cả.',
+      '',
+      'SunnyStore',
+    ].join('\n'),
+  });
+  if (!kq.ok) {
+    return { loi: 'Gửi thư xác minh không thành. Thử lại sau giúp mình nhé.' };
+  }
+
+  await ghiLanDangKy();
+  redirect(`/xac-minh?email=${encodeURIComponent(email)}`);
+}
+
+/**
+ * Bước hai của đăng ký: gõ mã trong thư vào, rồi tài khoản mới ra đời.
+ *
+ * Tên đăng nhập bốc Ở ĐÂY chứ không bốc lúc gửi mã, vì tới lúc này mới chắc
+ * chắn có một tài khoản thật sự ra đời.
+ */
+export async function xacMinhDangKy(
+  _truoc: KetQuaXacThuc, form: FormData,
+): Promise<KetQuaXacThuc> {
+  const email = String(form.get('email') ?? '').trim().toLowerCase();
+  const ma = String(form.get('ma') ?? '');
+  if (!email) return { loi: 'Thiếu địa chỉ email.' };
+
+  const tra = await traMa('DANG_KY', email, ma);
+  if (!tra.ok) {
+    return {
+      loi: tra.hetSuc
+        ? `Gõ sai quá ${TOI_DA_SAI} lần nên mã này đã khoá. Mở lại tài khoản để nhận mã mới nhé.`
+        : 'Mã không đúng hoặc đã hết hạn.',
+    };
+  }
+
+  const { tenHienThi, matKhauBam } = tra.hang;
+  if (!tenHienThi || !matKhauBam) return { loi: 'Mã không đúng hoặc đã hết hạn.' };
+
+  // Email có thể đã bị người khác đăng ký xong trong lúc mã này nằm chờ.
+  if (await db.nguoiDung.findUnique({ where: { email }, select: { id: true } })) {
+    return { loi: 'Email này đã có tài khoản. Bạn muốn đăng nhập chứ?' };
+  }
+
+  if (!(await danhDauDaDung(tra.hang.id))) return { loi: 'Mã không đúng hoặc đã hết hạn.' };
+
+  const tenDangNhap = await bocTenDangNhap(tenHienThi);
+
   let nguoi;
   try {
     nguoi = await db.nguoiDung.create({
@@ -151,18 +235,33 @@ export async function dangKy(_truoc: KetQuaXacThuc, form: FormData): Promise<Ket
       select: { id: true },
     });
   } catch {
-    /*
-     * Hai lượt đăng ký cùng lúc mới lọt được tới đây: cả hai đọc thấy email
-     * (hoặc tên đăng nhập) còn rỗi, rồi cả hai cùng ghi. Không bắt thì lượt
-     * thua cuộc nhận nguyên một trang lỗi 500 — trong khi điều cần nói với họ
-     * chỉ là "thử lại lần nữa".
-     */
     return { loi: 'Không mở được tài khoản lúc này. Thử lại giúp mình nhé.' };
   }
 
-  await ghiLanDangKy();
   await moPhien(nguoi.id);
   redirect('/');
+}
+
+/**
+ * Bốc một tên đăng nhập còn rỗi, suy ra từ tên hiển thị.
+ *
+ * VÒNG LẶP CÓ TRẦN, và hết trần thì bốc ngẫu nhiên. Bản trước lặp "cho tới khi
+ * rỗi" — mười nghìn người cùng tên "Minh" là lượt đăng ký thứ mười nghìn phải
+ * hỏi cơ sở dữ liệu mười nghìn lượt trước khi được vào, và ai cũng dựng được
+ * tình cảnh ấy bằng cách mở sẵn một loạt tài khoản cùng tên.
+ */
+async function bocTenDangNhap(tenHienThi: string): Promise<string> {
+  const goc = thanhDuongDan(tenHienThi).slice(0, 30) || 'thanhvien';
+  let ten = goc;
+  for (let i = 2; i <= 20; i++) {
+    if (!(await db.nguoiDung.findUnique({ where: { tenDangNhap: ten }, select: { id: true } }))) {
+      return ten;
+    }
+    ten = `${goc}${i}`;
+  }
+  // Hai mươi lượt mà vẫn kẹt thì thôi đếm, bốc một đuôi ngẫu nhiên. Xấu hơn
+  // "minh21" một chút, nhưng nó KẾT THÚC — mà tên đăng nhập thì đổi được sau.
+  return `${goc}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 export async function dangXuat(): Promise<void> {

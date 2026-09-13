@@ -4,7 +4,7 @@ import { useActionState } from 'react';
 import Link from 'next/link';
 import { MailCheck } from 'lucide-react';
 import { xinMaDatLai, type KetQuaXinMa } from '@/app/(cua-hang)/quen-mat-khau/viec';
-import { CAU_DA_GUI } from '@/lib/dat-lai-const';
+import { CAU_DA_GUI } from '@/lib/ma-xac-minh-const';
 
 /**
  * Ô xin mã đặt lại qua thư.
@@ -22,7 +22,7 @@ export function OXinMaDatLai() {
         <MailCheck size={22} className="mx-auto text-nhan" aria-hidden />
         <p className="mt-2 text-[15px] font-bold">Đã gửi</p>
         <p className="phu mt-1 leading-relaxed">{CAU_DA_GUI}</p>
-        <Link href="/dat-lai-mat-khau" className="nut-xam mt-4">Tôi đã có mã</Link>
+        <Link href="/dat-lai-mat-khau" className="nut-cai-dam mt-4">Nhập mã</Link>
       </div>
     );
   }

@@ -13,16 +13,15 @@ export const dynamic = 'force-dynamic';
 /*
  * NHẬP MÃ, ĐỔI MẬT KHẨU.
  *
- * Nhận sẵn mã qua địa chỉ (`?ma=…`) để ban quản trị gửi được nguyên một đường
- * dẫn bấm là vào — nhưng ô nhập vẫn còn đó cho ai chép tay. Mã nằm trên địa
- * chỉ thì có nằm lại trong lịch sử trình duyệt, nhưng nó chết ngay sau lần
- * dùng đầu và tự hết hạn trong một ngày; đổi lại là người dùng khỏi phải chép
- * một dãy bốn mươi ký tự.
+ * Nhận sẵn email và mã qua địa chỉ (`?email=…&ma=…`) để thư và ban quản trị
+ * gửi được nguyên một đường dẫn bấm là vào — nhưng hai ô nhập vẫn còn đó cho
+ * ai gõ tay từ thư. Mã nằm trên địa chỉ thì có nằm lại trong lịch sử trình
+ * duyệt, nhưng nó chết ngay sau lần dùng đầu và tự hết hạn trong một giờ.
  */
 export default async function TrangDatLai(
-  { searchParams }: { searchParams: Promise<{ ma?: string }> },
+  { searchParams }: { searchParams: Promise<{ ma?: string; email?: string }> },
 ) {
-  const { ma } = await searchParams;
+  const { ma, email } = await searchParams;
 
   return (
     <div className="mx-auto max-w-sm py-6">
@@ -31,10 +30,10 @@ export default async function TrangDatLai(
       </Link>
       <h1 className="text-center text-[22px] font-bold tracking-tight">Đặt lại mật khẩu</h1>
       <p className="phu mt-1 text-center">
-        Nhập mã ban quản trị đưa, rồi chọn mật khẩu mới.
+        Nhập mã sáu số vừa nhận, rồi chọn mật khẩu mới.
       </p>
 
-      <ODatLaiMatKhau maSan={ma} />
+      <ODatLaiMatKhau maSan={ma} emailSan={email} />
 
       <p className="phu mt-5 text-center">
         Chưa có mã? <Link href="/quen-mat-khau" className="font-semibold text-nhan hover:underline">

@@ -35,9 +35,18 @@ export async function luuHoSo(_truoc: KetQua, form: FormData): Promise<KetQua> {
   // `javascript:` hay `data:` lọt thẳng vào thuộc tính src của thẻ ảnh.
   if (anh && !laDiaChiHopLe(anh)) return { loi: LOI_DIA_CHI };
 
+  /*
+   * Ô TÍCH ĐỌC THEO LỐI "CÓ MẶT LÀ BẬT".
+   *
+   * Trình duyệt KHÔNG gửi ô tích lúc nó đang tắt — không có tên ấy trong biểu
+   * mẫu nghĩa là người ta vừa bỏ tích. Đọc bằng `?? mặc định bật` là ô ấy
+   * không bao giờ tắt được.
+   */
+  const thuThongBao = form.get('thuThongBao') !== null;
+
   await db.nguoiDung.update({
     where: { id: nguoi.id },
-    data: { tenHienThi, anh: anh || null },
+    data: { tenHienThi, anh: anh || null, thuThongBao },
     select: { id: true },
   });
 

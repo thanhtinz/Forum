@@ -1,6 +1,6 @@
 import { GOC, db, doiToi, moTrang } from '../tro-giup.mjs';
 import { docThan, moThuGia } from '../thu-gia.mjs';
-import { donMa } from '../../src/lib/dat-lai-const.ts';
+import { donMa, laMaHopLe } from '../../src/lib/ma-xac-minh-const.ts';
 
 const TEN = 'kiemthu-thu';
 const EMAIL = `${TEN}@kiemthu.local`;
@@ -95,20 +95,26 @@ export default async function chay(kiem) {
     kiem('thư nói rõ bỏ qua được nếu không phải mình xin',
       chuThu.includes('Nếu không phải bạn xin'));
 
-    const dan = (chuThu.match(/https?:\/\/\S*dat-lai-mat-khau\?ma=\S+/) ?? [])[0] ?? '';
+    const dan = (chuThu.match(/https?:\/\/\S*dat-lai-mat-khau\?\S+/) ?? [])[0] ?? '';
     kiem('thư có đường dẫn đặt lại', !!dan, chuThu.slice(0, 200));
     if (!dan) return;
 
-    const ma = decodeURIComponent(dan.split('ma=')[1]);
+    const ma = donMa(dan.split('ma=')[1] ?? '');
+    kiem('thư mang một mã sáu số', laMaHopLe(ma), ma);
+    kiem('mã ấy cũng in ngay trên tiêu đề thư cho dễ đọc',
+      la.than.includes('Subject') && docThan(la.than).includes(ma.slice(0, 3)));
     kiem('mã trong thư KHÔNG nằm thẳng trong cơ sở dữ liệu', await (async () => {
-      const hang = await db.maDatLai.findFirst({
-        where: { nguoiId: nguoi.id }, select: { ma: true },
+      const hang = await db.maXacMinh.findFirst({
+        where: { nguoiId: nguoi.id, viec: 'DAT_LAI' }, select: { ma: true },
       });
-      return !!hang && hang.ma !== donMa(ma);
+      return !!hang && hang.ma !== ma;
     })());
 
     /* ── Mã trong thư dùng được thật ──────────────────────────────────── */
     await p.goto(dan.replace(/^https?:\/\/[^/]+/, GOC), { waitUntil: 'networkidle' });
+    kiem('đường dẫn trong thư điền sẵn cả email lẫn mã',
+      (await p.locator('input[name="email"]').inputValue()) === EMAIL
+      && donMa(await p.locator('input[name="ma"]').inputValue()) === ma);
     await p.fill('input[name="matKhau"]', MOI);
     await p.fill('input[name="nhacLai"]', MOI);
     await p.click('button:has-text("Đặt lại mật khẩu")');

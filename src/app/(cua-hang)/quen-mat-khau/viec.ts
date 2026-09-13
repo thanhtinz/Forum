@@ -2,8 +2,8 @@
 
 import { db } from '@/lib/db';
 import { conDuocXinMa, ghiLanXinMa } from '@/lib/chan-do-mat-khau';
-import { phatMa } from '@/lib/dat-lai';
-import { HAN_MA_GIO, chiaCum } from '@/lib/dat-lai-const';
+import { phatMa } from '@/lib/ma-xac-minh';
+import { HAN_MA_PHUT, chiaCum } from '@/lib/ma-xac-minh-const';
 import { guiThu, thuBat } from '@/lib/gui-thu';
 import { DIA_CHI_GOC } from '@/lib/dia-chi-goc';
 import { EMAIL_TOI_DA } from '@/lib/luat-tai-khoan-const';
@@ -44,32 +44,33 @@ export async function xinMaDatLai(
   });
   if (!nguoi) return { daGui: true };
 
-  const ma = chiaCum(await phatMa(nguoi.id));
-  const duongDan = `${DIA_CHI_GOC}/dat-lai-mat-khau?ma=${encodeURIComponent(ma)}`;
+  const ma = await phatMa('DAT_LAI', email, { nguoiId: nguoi.id });
+  const dan = `${DIA_CHI_GOC}/dat-lai-mat-khau?email=${encodeURIComponent(email)}&ma=${ma}`;
 
   const kq = await guiThu({
     toi: email,
-    tieuDe: 'Đặt lại mật khẩu SunnyStore',
+    tieuDe: `${chiaCum(ma)} là mã đặt lại mật khẩu SunnyStore`,
     /*
-     * Thư chữ trần, không HTML.
+     * MÃ NẰM NGAY TRÊN TIÊU ĐỀ THƯ.
      *
-     * Một lá thư chỉ có đúng một việc — đưa cái đường dẫn — thì dựng bản HTML
-     * là tự thêm cho mình một thứ phải bảo trì, mà đổi lại chẳng được gì.
-     * Chưa kể thư chữ trần thì hòm thư nào cũng đọc được và ít bị coi là rác
-     * hơn hẳn.
+     * Phần lớn hòm thư trên điện thoại hiện sẵn tiêu đề ngay ở danh sách, nên
+     * người ta đọc được mã mà chưa cần mở thư — bớt hẳn một nhịp qua lại giữa
+     * hai ứng dụng, đúng lúc đang dở tay gõ vào ô nhập.
      */
     chu: [
       `Chào ${nguoi.tenHienThi},`,
       '',
-      'Có người vừa xin đặt lại mật khẩu cho tài khoản SunnyStore của bạn.',
-      'Mở đường dẫn dưới đây rồi chọn mật khẩu mới:',
+      'Mã đặt lại mật khẩu SunnyStore của bạn là:',
       '',
-      duongDan,
+      `    ${chiaCum(ma)}`,
       '',
-      `Đường dẫn này dùng được một lần và hết hạn sau ${HAN_MA_GIO} giờ.`,
+      `Mã dùng được một lần và hết hạn sau ${HAN_MA_PHUT} phút.`,
+      'Gõ mã vào trang đặt lại, hoặc mở thẳng đường dẫn này:',
+      '',
+      dan,
       '',
       'Nếu không phải bạn xin thì bỏ qua thư này — mật khẩu cũ vẫn nguyên,',
-      'và không ai đổi được gì nếu không cầm đường dẫn trên.',
+      'và không ai đổi được gì nếu không cầm mã trên.',
       '',
       'SunnyStore',
     ].join('\n'),

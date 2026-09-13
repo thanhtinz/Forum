@@ -5,6 +5,7 @@ import { ChevronLeft } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { OHoSo, OMatKhau } from '@/components/OCaiDatTaiKhoan';
+import { thuBat } from '@/lib/gui-thu';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Cài đặt tài khoản' };
@@ -15,7 +16,7 @@ export default async function CaiDat() {
 
   const hang = await db.nguoiDung.findUnique({
     where: { id: nguoi.id },
-    select: { tenHienThi: true, anh: true, email: true, tenDangNhap: true },
+    select: { tenHienThi: true, anh: true, email: true, tenDangNhap: true, thuThongBao: true },
   });
   if (!hang) redirect('/dang-nhap');
 
@@ -28,7 +29,10 @@ export default async function CaiDat() {
         <h1 className="tieu-de-trang mt-1">Cài đặt</h1>
       </div>
 
-      <OHoSo banDau={{ tenHienThi: hang.tenHienThi, anh: hang.anh }} />
+      <OHoSo guiDuocThu={thuBat()}
+        banDau={{
+          tenHienThi: hang.tenHienThi, anh: hang.anh, thuThongBao: hang.thuThongBao,
+        }} />
       <OMatKhau />
 
       {/*

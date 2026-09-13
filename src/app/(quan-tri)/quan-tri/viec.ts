@@ -13,8 +13,8 @@ import { xoaAnh, xoaPhim, xoaTepGame } from '@/lib/kho';
 import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
 import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
 import { napDoTuoi } from '@/lib/do-tuoi-const';
-import { phatMa } from '@/lib/dat-lai';
-import { chiaCum } from '@/lib/dat-lai-const';
+import { phatMa } from '@/lib/ma-xac-minh';
+import { chiaCum } from '@/lib/ma-xac-minh-const';
 import { tinhDiemTB } from '@/lib/diem-game-const';
 import {
   SU_KIEN_MO_TA_TOI_DA, SU_KIEN_TIEU_DE_TOI_DA, laLoaiSuKien,
@@ -1506,19 +1506,21 @@ export async function khoaThanhVien(nguoiId: string, khoa: boolean): Promise<Ket
  * đăng nhập được là việc vô nghĩa, và nó che mất chuyện họ đang bị khoá. Điều
  * kiện ấy nằm trong `where` chứ không lọc sau.
  */
-export async function phatMaDatLai(nguoiId: string): Promise<KetQua & { ma?: string }> {
+export async function phatMaDatLai(
+  nguoiId: string,
+): Promise<KetQua & { ma?: string; email?: string }> {
   try { await batBuocQuanTri(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
   const nguoi = await db.nguoiDung.findFirst({
     where: { id: nguoiId, khoa: false },
-    select: { id: true },
+    select: { id: true, email: true },
   });
   if (!nguoi) return { loi: 'Không phát được. Tài khoản không tồn tại hoặc đang bị khoá.' };
 
-  const ma = await phatMa(nguoi.id);
+  const ma = await phatMa('DAT_LAI', nguoi.email, { nguoiId: nguoi.id });
   revalidatePath('/quan-tri/thanh-vien');
-  return { ok: true, ma: chiaCum(ma) };
+  return { ok: true, ma: chiaCum(ma), email: nguoi.email };
 }
 
 /** Phong hoặc hạ quyền quản trị. */

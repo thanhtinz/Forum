@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { KeyRound, MessageSquare, ShieldCheck } from 'lucide-react';
-import { HAN_MA_GIO } from '@/lib/dat-lai-const';
+import { HAN_MA_PHUT } from '@/lib/ma-xac-minh-const';
 import { DauHieu } from '@/components/vo/DauHieu';
 import { OXinMaDatLai } from '@/components/OXinMaDatLai';
 import { thuBat } from '@/lib/gui-thu';
@@ -38,7 +38,7 @@ export default function TrangQuenMatKhau() {
     {
       icon: ShieldCheck,
       ten: 'Ban quản trị phát mã',
-      y: `Mã dùng được một lần duy nhất và tự hết hạn sau ${HAN_MA_GIO} giờ. Xin mã mới thì mã cũ chết ngay.`,
+      y: `Mã sáu số, dùng được một lần và tự hết hạn sau ${HAN_MA_PHUT} phút. Xin mã mới thì mã cũ chết ngay.`,
     },
     {
       icon: KeyRound,

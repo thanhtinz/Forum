@@ -24,7 +24,11 @@ function Bao({ kq }: { kq: KetQua }) {
   return null;
 }
 
-export function OHoSo({ banDau }: { banDau: { tenHienThi: string; anh: string | null } }) {
+export function OHoSo({ banDau, guiDuocThu }: {
+  banDau: { tenHienThi: string; anh: string | null; thuThongBao: boolean };
+  /** Cửa hàng có gửi được thư không — tắt thì đừng bày công tắc vô nghĩa. */
+  guiDuocThu: boolean;
+}) {
   const [kq, gui, dangChay] = useActionState<KetQua, FormData>(luuHoSo, {});
 
   return (
@@ -43,6 +47,24 @@ export function OHoSo({ banDau }: { banDau: { tenHienThi: string; anh: string | 
         <ONhapGiu name="anh" banDau={banDau.anh ?? ''} placeholder="https://…" className="o-nhap" />
         <span className="phu mt-1 block">Bỏ trống thì dùng ô màu kèm chữ cái đầu tên bạn.</span>
       </label>
+
+      {/*
+        Chỉ bày công tắc khi cửa hàng gửi được thư. Bày một cái công tắc bật
+        lên chẳng dẫn tới lá thư nào là nói dối người dùng bằng giao diện.
+      */}
+      {guiDuocThu && (
+        <label className="vach flex items-start gap-3 border-t pt-3">
+          <input type="checkbox" name="thuThongBao" defaultChecked={banDau.thuThongBao}
+            className="cong-tac mt-0.5 shrink-0" />
+          <span className="min-w-0">
+            <span className="block text-[14px] font-semibold">Báo qua email</span>
+            <span className="phu mt-0.5 block leading-relaxed">
+              Gửi thư mỗi khi có thông báo mới — ai đó trả lời bài của bạn,
+              game bạn gửi duyệt đã xong, game bạn đã lưu có bản mới.
+            </span>
+          </span>
+        </label>
+      )}
 
       <Bao kq={kq} />
 

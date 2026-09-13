@@ -1,5 +1,7 @@
 import { db } from '@/lib/db';
 import type { LoaiThongBao } from '@prisma/client';
+import { guiThu, thuBat } from '@/lib/gui-thu';
+import { DIA_CHI_GOC } from '@/lib/dia-chi-goc';
 
 /**
  * Gửi một thông báo, và KHÔNG BAO GIỜ làm hỏng việc chính vì nó.
@@ -36,6 +38,66 @@ export async function guiThongBao(viec: {
     });
   } catch {
     // Nuốt lỗi có chủ ý — xem chú thích ở trên.
+    return;
+  }
+
+  await baoQuaThu(viec);
+}
+
+/**
+ * Báo cùng một chuyện ấy qua thư.
+ *
+ * TÁCH KHỎI LƯỢT GHI và chỉ chạy SAU khi ghi xong. Cái chuông trong trang là
+ * thứ phải có; lá thư chỉ là thứ nên có. Gộp chung thì máy chủ thư chậm một
+ * nhịp là cả việc đăng bài chậm theo, mà máy chủ thư thì chậm thật.
+ *
+ * Cũng nuốt sạch lỗi, cùng lẽ với lượt ghi: không việc nào ở đây đáng để vỡ cả
+ * một lượt yêu cầu.
+ */
+async function baoQuaThu(viec: {
+  nguoiNhanId: string;
+  tieuDe: string;
+  chiTiet?: string | null;
+  duongDan?: string | null;
+}): Promise<void> {
+  if (!thuBat()) return;
+
+  try {
+    /*
+     * Hỏi công tắc của người nhận NGAY TRONG `where`.
+     *
+     * Lấy người rồi mới xét `thuThongBao` thì chỉ cần quên một câu `if` là thư
+     * bay tới người đã tắt — mà đó đúng là kiểu lỗi khiến người ta chặn luôn
+     * tên miền của cửa hàng.
+     */
+    const nguoi = await db.nguoiDung.findFirst({
+      where: { id: viec.nguoiNhanId, thuThongBao: true, khoa: false },
+      select: { email: true, tenHienThi: true },
+    });
+    if (!nguoi) return;
+
+    const dich = viec.duongDan ? `${DIA_CHI_GOC}${viec.duongDan}` : `${DIA_CHI_GOC}/thong-bao`;
+
+    await guiThu({
+      toi: nguoi.email,
+      tieuDe: viec.tieuDe.slice(0, 200),
+      chu: [
+        `Chào ${nguoi.tenHienThi},`,
+        '',
+        viec.tieuDe,
+        ...(viec.chiTiet ? ['', viec.chiTiet] : []),
+        '',
+        dich,
+        '',
+        '—',
+        'Không muốn nhận thư kiểu này nữa? Tắt ở đây:',
+        `${DIA_CHI_GOC}/toi/cai-dat`,
+        '',
+        'SunnyStore',
+      ].join('\n'),
+    });
+  } catch {
+    // Thư hỏng thì thôi. Thông báo trong trang đã ghi xong từ trước rồi.
   }
 }
 

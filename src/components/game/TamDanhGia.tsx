@@ -41,7 +41,14 @@ export function TamDanhGia({
   tong: number;
   sao: number;
   phanBo: Record<number, number>;
-  /** Năm bài đã dựng sẵn ở trang — khỏi phải gọi lại ngay lúc mở. */
+  /*
+   * Mấy bài đã dựng sẵn ở trang — khỏi phải gọi lại ngay lúc mở.
+   *
+   * Tấm này mở được KỂ CẢ khi trang đã bày đủ mọi bài, và đó là chủ ý: ngoài
+   * việc đọc tiếp, nó còn là chỗ duy nhất lọc được theo sao, đổi cách sắp và
+   * xem riêng bản hiện tại. Game mới có ba bài đánh giá thì ba bài ấy vẫn đáng
+   * được lọc, mà đầu mục mất mũi tên thì không ai vào được tới đó.
+   */
   banDau: BaiXem[];
   /**
    * Số hiệu bản MỚI NHẤT của game, để mời lọc "chỉ bản này".

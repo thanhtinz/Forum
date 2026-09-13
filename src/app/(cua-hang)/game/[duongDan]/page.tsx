@@ -441,15 +441,14 @@ export default async function TabThongTin({ params, searchParams }: {
         {/* "Xem tất cả" nằm CẠNH ĐẦU ĐỀ, đúng chỗ App Store để "See All" —
             lướt qua đầu mục là biết ngay có chỗ đọc hết. */}
         <div className="mb-3">
-          {gom > danhGia.length ? (
+          {gom > 0 ? (
             <TamDanhGia gameId={game.id} duongDan={duongDan} tong={gom} sao={sao}
               phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))}
               banDau={danhGia.map((d) => ({ ...d, toiDaBam: daBam.has(d.id) }))}
               dangLien banHienTai={banXem[0]?.soHieu ?? null} nguoiXemId={nguoi?.id ?? null} />
           ) : (
-            /* Chưa có gì thêm để xem thì đầu mục là chữ trần, không mũi tên:
-               mũi tên hứa có chỗ đi tiếp, mà ở đây đi tiếp cũng chỉ gặp đúng
-               mấy bài đang bày. */
+            /* Chưa ai đánh giá thì đầu mục là chữ trần: mũi tên hứa có chỗ đi
+               tiếp, mà mở ra chỉ gặp một tấm rỗng. */
             <h2 className="tieu-de">Đánh giá</h2>
           )}
         </div>

@@ -51,7 +51,10 @@ export function NutHuuIch({ danhGiaId, dem, banDauBam, bamDuoc }: {
   };
 
   return (
-    <button type="button" onClick={bam} disabled={dangGui} aria-pressed={daBam}
+    /* `data-viec` để bài kiểm gọi đúng nút này: chữ "Hữu ích" còn nằm ở chip
+       sắp xếp "Hữu ích nhất" trong tấm đọc hết, nên bắt theo chữ là bắt nhầm —
+       đã nhầm thật một lần. */
+    <button type="button" onClick={bam} disabled={dangGui} aria-pressed={daBam} data-viec="huu-ich"
       className={gop('inline-flex items-center gap-1.5 text-[12px] font-semibold transition-colors',
         daBam ? 'text-nhan' : 'text-mo hover:text-chu')}>
       <ThumbsUp size={13} aria-hidden fill={daBam ? 'currentColor' : 'none'} />

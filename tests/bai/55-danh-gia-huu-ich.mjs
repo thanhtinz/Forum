@@ -106,7 +106,7 @@ export default async function chay(kiem) {
     /* ── Người KHÁC bấm hữu ích ──────────────────────────────────────── */
     khac = await moTrangDaDangNhap(`${TEN}-1`, 'thanhvien123');
     await khac.goto(`${GOC}/game/${DUONG_DAN}`, { waitUntil: 'networkidle' });
-    await khac.locator('button:has-text("Hữu ích")').first().click();
+    await khac.locator('button[data-viec="huu-ich"]:visible').first().click();
 
     kiem('bấm hữu ích thì cộng đúng một phiếu', await doiToi(async () => {
       const d = await db.danhGia.findUnique({
@@ -118,7 +118,7 @@ export default async function chay(kiem) {
       (await db.danhGiaHuuIch.count({ where: { danhGiaId: baiCua0.id } })) === 1);
 
     /* ── Bấm lần hai là BỎ phiếu, không phải cộng hai ────────────────── */
-    await khac.locator('button:has-text("Hữu ích")').first().click();
+    await khac.locator('button[data-viec="huu-ich"]:visible').first().click();
     kiem('bấm lần hai thì bỏ phiếu chứ không cộng thành hai', await doiToi(async () => {
       const d = await db.danhGia.findUnique({
         where: { id: baiCua0.id }, select: { soHuuIch: true },
@@ -142,7 +142,7 @@ export default async function chay(kiem) {
       delete dau.cookie; // bánh quy do ngữ cảnh tự gắn — bỏ ra mới là phép thử
       donHang = { dia: yc.url(), dau, than: yc.postData() };
     });
-    await khac.locator('button:has-text("Hữu ích")').first().click();
+    await khac.locator('button[data-viec="huu-ich"]:visible').first().click();
     kiem('bấm lại lần nữa thì phiếu về đúng 1', await doiToi(async () =>
       (await db.danhGia.findUnique({ where: { id: baiCua0.id }, select: { soHuuIch: true } }))
         ?.soHuuIch === 1));

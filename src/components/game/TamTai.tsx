@@ -122,9 +122,8 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
 
   if (ban.length === 0) return null;
 
-  return (
-    <>
-      <button type="button" onClick={() => datMo(true)} data-viec="tai-dau"
+  const nut = (
+    <button type="button" onClick={() => datMo(true)} data-viec="tai-dau"
         data-da-tai={daTai ? '1' : undefined}
         aria-label={daTai ? `Tải lại ${game.ten}` : dang === 'dau-de' ? `${nhan} — xem lịch sử phiên bản` : undefined}
         className={gop(
@@ -137,8 +136,16 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
         {dang === 'nut' && daTai
           ? <Download size={22} strokeWidth={1.8} aria-hidden />
           : nhan}
-        {dang === 'dau-de' && <ChevronRight size={20} className="text-mo" aria-hidden />}
-      </button>
+      {dang === 'dau-de' && <ChevronRight size={20} className="text-mo" aria-hidden />}
+    </button>
+  );
+
+  return (
+    <>
+      {/* Dáng đầu mục phải là ĐẦU MỤC THẬT: bọc trong <h2>, không chỉ mặc cỡ
+          chữ của nó. Bỏ thẻ heading đi thì cấu trúc trang mất một mục, người
+          dùng bộ đọc màn hình nhảy theo đầu mục sẽ không thấy phần này đâu. */}
+      {dang === 'dau-de' ? <h2>{nut}</h2> : nut}
 
       <dialog ref={hopRef} onClose={() => datMo(false)}
         className="tam-truot w-full max-w-[520px] text-chu backdrop:bg-black/40">

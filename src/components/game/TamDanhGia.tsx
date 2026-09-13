@@ -113,9 +113,8 @@ export function TamDanhGia({
     nap(s, c, 1, false, banNay ? banHienTai : null);
   };
 
-  return (
-    <>
-      <a href={`/game/${duongDan}/danh-gia`}
+  const loiMo = (
+    <a href={`/game/${duongDan}/danh-gia`}
         aria-label={dangLien ? `Xem tất cả ${gonSo(tong)} đánh giá` : undefined}
         className={dangLien
           ? 'tieu-de flex shrink-0 items-center gap-0.5 hover:opacity-70'
@@ -130,6 +129,14 @@ export function TamDanhGia({
           ? <>Đánh giá<ChevronRight size={20} className="text-mo" aria-hidden /></>
           : `Xem tất cả ${gonSo(tong)} đánh giá`}
       </a>
+  );
+
+  return (
+    <>
+      {/* Dáng đầu mục phải là ĐẦU MỤC THẬT: bọc trong <h2>, không chỉ mặc cỡ
+          chữ của nó. Bỏ thẻ heading đi thì cấu trúc trang mất một mục, người
+          dùng bộ đọc màn hình nhảy theo đầu mục sẽ không thấy phần này đâu. */}
+      {dangLien ? <h2>{loiMo}</h2> : loiMo}
 
       <dialog ref={hopRef} onClose={() => datMo(false)}
         className="tam-truot w-full max-w-[560px] text-chu backdrop:bg-black/40">

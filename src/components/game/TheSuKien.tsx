@@ -12,39 +12,65 @@ export interface SuKienXem {
 }
 
 /**
- * THẺ SỰ KIỆN — ảnh nằm ngang, huy hiệu loại, tiêu đề, một dòng mô tả.
+ * THẺ SỰ KIỆN — một tấm ảnh lớn, chữ đè lên nửa dưới.
  *
- * Dáng thẻ sự kiện của App Store: ảnh 16:9 chiếm phần trên, chữ nằm dưới. Tỉ lệ
- * ấy không phải tuỳ hứng — nó là tỉ lệ của mọi ảnh chụp trong game ở chế độ
- * nằm ngang, nên người bày hàng cắt được thẳng từ ảnh sẵn có.
+ * Dáng thẻ sự kiện của App Store, và bản trước làm khác: ảnh trên, chữ nằm
+ * trong một khối trắng bên dưới. Khác biệt ấy đáng kể vì thẻ sự kiện phải bán
+ * được cái KHÔNG KHÍ của sự kiện — ảnh càng to càng ăn. Tách chữ xuống một
+ * khối riêng là cắt mất một phần ba chiều cao của ảnh để in ba dòng chữ mà
+ * hai trong ba dòng ấy đã nói được bằng chính tấm ảnh.
+ *
+ * Dòng nhãn ĐANG DIỄN RA / SẮP TỚI nằm NGOÀI thẻ, ngay trên nó — App Store
+ * xếp thế. Nó là chuyện thời gian, không phải chuyện nội dung, nên để trong
+ * thẻ thì lẫn với tên sự kiện; mà đặt trên đầu thì lướt qua cả kệ là biết
+ * ngay cái nào còn kịp.
  *
  * Chưa có ảnh thì dựng dải màu theo LOẠI sự kiện thay vì bỏ trống: một thẻ
  * trống trông như thẻ hỏng, còn dải màu vẫn nói được "đây là giải đấu".
  */
 export function TheSuKien({ s, duongDanGame }: { s: SuKienXem; duongDanGame: string }) {
   const mo = MO_TA_SU_KIEN[s.loai as MaLoaiSuKien] ?? { ten: 'Sự kiện', mau: '#475569' };
+  const chuaMo = new Date(s.batDau).getTime() > Date.now();
 
   return (
-    <Link href={`/game/${duongDanGame}/su-kien/${s.id}`}
-      className="the-bam block w-[260px] overflow-hidden">
-      {s.anh ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={s.anh} alt="" loading="lazy"
-          className="aspect-[16/9] w-full object-cover" />
-      ) : (
-        <span aria-hidden className="block aspect-[16/9] w-full"
-          style={{ backgroundImage: `linear-gradient(135deg, ${mo.mau}, ${mo.mau}bb)` }} />
-      )}
-
-      <span className="block p-3">
-        <span className="text-[11px] font-bold uppercase tracking-[0.06em]" style={{ color: mo.mau }}>
-          {mo.ten}
+    <div className="w-[280px] shrink-0 sm:w-[320px]">
+      <p className="mb-1.5 text-[12px] font-bold uppercase tracking-[0.04em] text-nhan">
+        {chuaMo ? 'Sắp tới' : 'Đang diễn ra'}
+        <span className="phu ml-1.5 font-semibold normal-case tracking-normal">
+          {khoangNgay(s.batDau, s.ketThuc)}
         </span>
-        <span className="mt-0.5 block truncate text-[14px] font-bold leading-tight">{s.tieuDe}</span>
-        <span className="phu mt-0.5 block truncate">{s.moTaNgan}</span>
-        <span className="phu mt-1 block">{khoangNgay(s.batDau, s.ketThuc)}</span>
-      </span>
-    </Link>
+      </p>
+
+      <Link href={`/game/${duongDanGame}/su-kien/${s.id}`}
+        className="the-bam relative block aspect-[4/3] overflow-hidden">
+        {s.anh ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={s.anh} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+        ) : (
+          <span aria-hidden className="absolute inset-0"
+            style={{ backgroundImage: `linear-gradient(135deg, ${mo.mau}, ${mo.mau}bb)` }} />
+        )}
+
+        {/*
+          MÀN TỐI CHUYỂN DẦN Ở NỬA DƯỚI, không phải một lớp mờ phủ cả ảnh.
+
+          Ảnh chụp trong game sáng tối tuỳ cảnh, nên chữ trắng đặt thẳng lên có
+          lúc đọc được có lúc mất hút. Màn tối chỉ ăn phần dưới nên giữ nguyên
+          được phần ảnh đắt nhất — nhân vật, khung cảnh — mà vẫn bảo đảm chữ
+          luôn có nền sẫm để tựa vào.
+        */}
+        <span aria-hidden className="absolute inset-x-0 bottom-0 h-3/5
+          bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+
+        <span className="absolute inset-x-0 bottom-0 p-3.5 text-white">
+          <span className="block text-[11px] font-bold uppercase tracking-[0.06em] text-white/85">
+            {mo.ten}
+          </span>
+          <span className="mt-0.5 block truncate text-[17px] font-bold leading-tight">{s.tieuDe}</span>
+          <span className="mt-0.5 block truncate text-[13px] text-white/80">{s.moTaNgan}</span>
+        </span>
+      </Link>
+    </div>
   );
 }
 

@@ -295,7 +295,30 @@ export default async function TabThongTin({ params, searchParams }: {
      */
     <div className="divide-y divide-vien [&>*:first-child]:pt-0 [&>*:last-child]:pb-0 [&>*]:py-7">
       {/*
-        "CÓ GÌ MỚI" ĐỨNG ĐẦU TRANG THÔNG TIN, trên cả kệ ảnh.
+        SỰ KIỆN ĐỨNG ĐẦU TRANG, trên cả "Có gì mới" và kệ ảnh.
+
+        Đúng thứ tự App Store, và lẽ của nó là chuyện HẠN DÙNG. Mô tả game nói
+        game LÀ GÌ — thứ không đổi suốt hai mươi năm. Ghi chú bản mới thì sống
+        được vài tháng. Còn sự kiện hết hạn trong vài ngày, nên nó phải đứng
+        trên cùng: cuộn xuống đủ sâu mới thấy thì sự kiện đã tàn.
+      */}
+      {game.suKien.length > 0 && (
+        <section>
+          <h2 className="tieu-de mb-3">Sự kiện</h2>
+          <Ke nhan="sự kiện" className="-mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
+            {game.suKien.map((s) => (
+              <TheSuKien key={s.id} duongDanGame={duongDan}
+                s={{
+                  id: s.id, loai: s.loai, tieuDe: s.tieuDe, moTaNgan: s.moTaNgan, anh: s.anh,
+                  batDau: s.batDau.toISOString(), ketThuc: s.ketThuc.toISOString(),
+                }} />
+            ))}
+          </Ke>
+        </section>
+      )}
+
+      {/*
+        "CÓ GÌ MỚI" ĐỨNG TRÊN KỆ ẢNH, ngay sau mục sự kiện.
 
         Đúng thứ tự App Store, và lẽ của nó: phần giới thiệu với kệ ảnh là thứ
         người MỚI tới xem, mà người mới thì mỗi game chỉ có một lần; còn "có gì
@@ -345,29 +368,6 @@ export default async function TabThongTin({ params, searchParams }: {
         <section>
           <h2 className="tieu-de mb-3">Xem trước</h2>
           <KeAnhChup anh={game.anhChup} phim={game.phim} />
-        </section>
-      )}
-
-      {/*
-        SỰ KIỆN ĐỨNG TRƯỚC MÔ TẢ.
-
-        Mô tả game nói game LÀ GÌ — thứ không đổi suốt hai mươi năm. Sự kiện
-        nói tuần này trong game có gì, và nó có hạn. Thứ có hạn phải đứng trên
-        thứ không đổi, không thì tới lúc người ta cuộn xuống đủ sâu để thấy thì
-        sự kiện đã hết.
-      */}
-      {game.suKien.length > 0 && (
-        <section>
-          <h2 className="tieu-de mb-3">Sự kiện</h2>
-          <Ke nhan="sự kiện" className="-mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
-            {game.suKien.map((s) => (
-              <TheSuKien key={s.id} duongDanGame={duongDan}
-                s={{
-                  id: s.id, loai: s.loai, tieuDe: s.tieuDe, moTaNgan: s.moTaNgan, anh: s.anh,
-                  batDau: s.batDau.toISOString(), ketThuc: s.ketThuc.toISOString(),
-                }} />
-            ))}
-          </Ke>
         </section>
       )}
 

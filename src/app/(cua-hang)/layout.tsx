@@ -4,31 +4,46 @@ import { nguoiHienTai } from '@/lib/xac-thuc';
 import { demChuaDoc } from '@/lib/thong-bao';
 import { ANH_CHIA_SE, DIA_CHI_GOC } from '@/lib/dia-chi-goc';
 import { docNen } from '@/lib/dat-nen';
+import { docTrang } from '@/lib/cai-dat';
 import { ThanhBen } from '@/components/vo/ThanhBen';
 import { ThanhTren } from '@/components/vo/ThanhTren';
 import { ThanhDay } from '@/components/vo/ThanhDay';
 import { DangKySW } from '@/components/vo/DangKySW';
 
-export const metadata: Metadata = {
-  /*
-   * Gốc để Next nối vào mọi địa chỉ TƯƠNG ĐỐI trong phần thẻ meta.
-   *
-   * Thiếu nó thì bản dựng kêu một dòng cảnh báo rồi tự lấy `localhost`, và
-   * `/anh-chia-se.png` ở dưới thành `http://localhost:3000/anh-chia-se.png` —
-   * tức là dán liên kết vào Zalo hay Messenger sẽ không ra ảnh nào.
-   */
-  metadataBase: new URL(DIA_CHI_GOC),
-  title: { default: 'SunnyStore — trò chơi Java, Android, iOS', template: '%s · SunnyStore' },
-  description: 'Tải game về máy, và bàn luận cùng người chơi khác ngay trong trang của từng game.',
-  // Cho phép cài lên màn hình chính iPhone và hiện đúng tên dưới biểu tượng.
-  appleWebApp: { capable: true, title: 'SunnyStore', statusBarStyle: 'default' },
-  // Ảnh hiện ra khi ai đó dán liên kết trang này vào Zalo, Messenger, Facebook.
-  openGraph: {
-    type: 'website',
-    siteName: 'SunnyStore',
-    images: [ANH_CHIA_SE],
-  },
-};
+/*
+ * Thẻ meta dựng theo TÊN VÀ CÂU GIỚI THIỆU đang đặt trong khu quản trị.
+ *
+ * Phải là `generateMetadata` chứ không phải một hằng `metadata`: hằng ấy Next
+ * đọc đúng một lần lúc nạp tệp, nên đổi tên cửa hàng trong khu quản trị xong
+ * thì tiêu đề thẻ trình duyệt vẫn giữ tên cũ tới tận lượt triển khai sau.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await docTrang();
+
+  return {
+    /*
+     * Gốc để Next nối vào mọi địa chỉ TƯƠNG ĐỐI trong phần thẻ meta.
+     *
+     * Thiếu nó thì bản dựng kêu một dòng cảnh báo rồi tự lấy `localhost`, và
+     * `/anh-chia-se.png` ở dưới thành `http://localhost:3000/anh-chia-se.png` —
+     * tức là dán liên kết vào Zalo hay Messenger sẽ không ra ảnh nào.
+     */
+    metadataBase: new URL(DIA_CHI_GOC),
+    title: {
+      default: `${t.ten} — trò chơi Java, Android, iOS`,
+      template: `%s · ${t.ten}`,
+    },
+    description: t.moTa,
+    // Cho phép cài lên màn hình chính iPhone và hiện đúng tên dưới biểu tượng.
+    appleWebApp: { capable: true, title: t.ten, statusBarStyle: 'default' },
+    // Ảnh hiện ra khi ai đó dán liên kết trang này vào Zalo, Messenger, Facebook.
+    openGraph: {
+      type: 'website',
+      siteName: t.ten,
+      images: [ANH_CHIA_SE],
+    },
+  };
+}
 
 export const viewport: Viewport = {
   // Màu thanh trạng thái khi trang chạy dạng ứng dụng đã cài. Hai giá trị để
@@ -45,6 +60,7 @@ export const viewport: Viewport = {
 
 export default async function BoCucGoc({ children }: { children: React.ReactNode }) {
   const nen = await docNen();
+  const trang = await docTrang();
   const nguoi = await nguoiHienTai();
   // Đếm ở khung để mọi trang đều có con số trên chuông, khỏi phải nhớ truyền.
   const chuaDoc = nguoi ? await demChuaDoc(nguoi.id) : 0;
@@ -53,7 +69,7 @@ export default async function BoCucGoc({ children }: { children: React.ReactNode
     <html lang="vi" data-nen={nen}>
       <body>
         <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>
-        <ThanhBen nguoi={nguoi} />
+        <ThanhBen nguoi={nguoi} tenTrang={trang.ten} emailLienHe={trang.emailLienHe} />
 
         {/*
           `lg:pl-[240px]` chừa đúng bề ngang thanh bên. `pb-20` ở khổ nhỏ chừa

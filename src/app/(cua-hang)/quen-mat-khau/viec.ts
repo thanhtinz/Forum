@@ -13,7 +13,7 @@ export interface KetQuaXinMa { loi?: string; daGui?: boolean }
 export async function xinMaDatLai(
   _truoc: KetQuaXinMa, form: FormData,
 ): Promise<KetQuaXinMa> {
-  if (!thuBat()) {
+  if (!(await thuBat())) {
     return { loi: 'Cửa hàng đang chưa gửi được thư. Xin mã trực tiếp từ ban quản trị nhé.' };
   }
 

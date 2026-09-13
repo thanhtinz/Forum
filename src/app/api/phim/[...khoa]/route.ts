@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
  * `Range` — không lượt nào chạm tới đây.
  */
 export async function GET(req: Request, { params }: { params: Promise<{ khoa: string[] }> }) {
-  if (dungR2()) return new NextResponse(null, { status: 404 });
+  if (await dungR2()) return new NextResponse(null, { status: 404 });
 
   const { khoa } = await params;
   const duong = trongKhoDia(khoa);

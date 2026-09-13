@@ -28,7 +28,7 @@ const KIEU: Record<string, string> = {
 export async function GET(_req: Request, { params }: { params: Promise<{ khoa: string[] }> }) {
   // Cấu hình R2 rồi thì cổng này không có việc gì — trả 404 cho gọn, đừng để
   // nó thành một lối đọc đĩa còn mở toang trên máy chủ thật.
-  if (dungR2()) return new NextResponse(null, { status: 404 });
+  if (await dungR2()) return new NextResponse(null, { status: 404 });
 
   const { khoa } = await params;
 

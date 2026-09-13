@@ -19,7 +19,7 @@ export const dynamic = 'force-dynamic';
  * Cấu hình R2 rồi thì tệp nằm trên tên miền của kho và không ai chạm tới đây.
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ khoa: string[] }> }) {
-  if (dungR2()) return new NextResponse(null, { status: 404 });
+  if (await dungR2()) return new NextResponse(null, { status: 404 });
 
   const { khoa } = await params;
   const duong = trongKhoDia(khoa);

@@ -26,8 +26,8 @@ export const metadata: Metadata = {
  * Xét ở MÁY CHỦ mỗi lượt mở trang chứ không dựng sẵn: cắm cấu hình thư vào là
  * trang đổi ngay, không phải dựng lại bản chạy.
  */
-export default function TrangQuenMatKhau() {
-  const guiDuocThu = thuBat();
+export default async function TrangQuenMatKhau() {
+  const guiDuocThu = await thuBat();
 
   const buoc = [
     {

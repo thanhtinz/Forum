@@ -19,7 +19,12 @@ import type { NguoiDangNhap } from '@/lib/xac-thuc';
  * Mục đang chọn tô nền bo TRÒN HẲN một đầu chứ không phải hình chữ nhật: đó là
  * dáng CH Play dùng, và nó khiến mục được chọn nổi lên mà không cần đổi màu chữ.
  */
-export function ThanhBen({ nguoi }: { nguoi: NguoiDangNhap | null }) {
+export function ThanhBen({ nguoi, tenTrang, emailLienHe }: {
+  nguoi: NguoiDangNhap | null;
+  /** Tên và email đặt trong khu quản trị — xem `src/lib/cai-dat.ts`. */
+  tenTrang: string;
+  emailLienHe: string;
+}) {
   const duongDan = usePathname();
 
   const lop = (dich: string) => gop(
@@ -70,7 +75,16 @@ export function ThanhBen({ nguoi }: { nguoi: NguoiDangNhap | null }) {
         </div>
       </nav>
 
-      <p className="phu px-5 py-4">© {new Date().getFullYear()} SunnyStore</p>
+      <div className="px-5 py-4">
+        {/* Chỉ bày dòng liên hệ khi ban quản trị đã đặt địa chỉ; một liên kết
+            thư trỏ vào chỗ trống thì thà đừng có. */}
+        {emailLienHe && (
+          <a href={`mailto:${emailLienHe}`} className="phu mb-1 block hover:text-nhan">
+            Liên hệ
+          </a>
+        )}
+        <p className="phu">© {new Date().getFullYear()} {tenTrang}</p>
+      </div>
     </aside>
   );
 }

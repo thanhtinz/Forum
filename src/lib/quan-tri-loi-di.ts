@@ -18,7 +18,7 @@ export interface LoiQuanTri {
   icon: string;
   demCho?: MaDem;
   /** Nhóm để xếp thành từng cụm trên thanh bên. */
-  nhom: 'Kho hàng' | 'Cộng đồng';
+  nhom: 'Kho hàng' | 'Cộng đồng' | 'Cửa hàng';
 }
 
 export const LOI_QUAN_TRI: LoiQuanTri[] = [
@@ -32,9 +32,10 @@ export const LOI_QUAN_TRI: LoiQuanTri[] = [
   { duongDan: '/quan-tri/yeu-cau', ten: 'Yêu cầu game', icon: 'Inbox', demCho: 'yeuCauCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/tac-gia', ten: 'Đơn tác giả', icon: 'UserPlus', demCho: 'donTacGiaCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/thanh-vien', ten: 'Thành viên', icon: 'Users', nhom: 'Cộng đồng' },
+  { duongDan: '/quan-tri/cai-dat', ten: 'Cài đặt', icon: 'Settings', nhom: 'Cửa hàng' },
 ];
 
-export const NHOM_QUAN_TRI = ['Kho hàng', 'Cộng đồng'] as const;
+export const NHOM_QUAN_TRI = ['Kho hàng', 'Cộng đồng', 'Cửa hàng'] as const;
 
 /**
  * Mục nào đang mở.

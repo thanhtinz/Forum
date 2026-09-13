@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import { join, normalize } from 'node:path';
+import { docKho } from '@/lib/cai-dat';
 import { Readable, Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
@@ -37,21 +38,30 @@ import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client
  * tiến trình; `caiDatKho()` nói rõ đang chạy lối nào để trang quản trị bày ra.
  */
 
-const R2_TAI_KHOAN = process.env.R2_TAI_KHOAN ?? '';
-const R2_KHOA = process.env.R2_KHOA ?? '';
-const R2_BI_MAT = process.env.R2_BI_MAT ?? '';
-const R2_THUNG = process.env.R2_THUNG ?? '';
-/** Địa chỉ công khai của thùng, ví dụ `https://anh.sunnystore.vn`. */
-const R2_DIA_CHI = (process.env.R2_DIA_CHI ?? '').replace(/\/+$/, '');
+/*
+ * CẤU HÌNH KHO NAY ĐỌC TỪ `cai-dat.ts` — ưu tiên thứ ban quản trị đã lưu, rồi
+ * mới lùi về biến môi trường. Vì thế mọi hàm hỏi tới nó đều thành bất đồng bộ,
+ * kể cả `dungR2()` vốn chỉ là một phép so chuỗi.
+ *
+ * Đánh đổi phải nói ra: mỗi lượt tải tệp lên nay có thêm một câu hỏi cơ sở dữ
+ * liệu. Rẻ, vì `docKho` bọc `cache` của React nên một lượt yêu cầu chỉ hỏi
+ * đúng một lần — và đổi lại người trông cửa hàng sửa được chỗ để tệp mà không
+ * cần quyền triển khai.
+ */
 
-export function dungR2(): boolean {
-  return !!(R2_TAI_KHOAN && R2_KHOA && R2_BI_MAT && R2_THUNG && R2_DIA_CHI);
+export async function dungR2(): Promise<boolean> {
+  const k = await docKho();
+  return !!(k.taiKhoan && k.khoa && k.biMat && k.thung && k.diaChi);
 }
 
-export function caiDatKho(): { loai: 'r2' | 'dia'; thieu: string[] } {
-  const can = { R2_TAI_KHOAN, R2_KHOA, R2_BI_MAT, R2_THUNG, R2_DIA_CHI };
-  const thieu = Object.entries(can).filter(([, v]) => !v).map(([k]) => k);
-  return { loai: dungR2() ? 'r2' : 'dia', thieu };
+export async function caiDatKho(): Promise<{ loai: 'r2' | 'dia'; thieu: string[] }> {
+  const k = await docKho();
+  const can = {
+    R2_TAI_KHOAN: k.taiKhoan, R2_KHOA: k.khoa, R2_BI_MAT: k.biMat,
+    R2_THUNG: k.thung, R2_DIA_CHI: k.diaChi,
+  };
+  const thieu = Object.entries(can).filter(([, v]) => !v).map(([k2]) => k2);
+  return { loai: (await dungR2()) ? 'r2' : 'dia', thieu };
 }
 
 /** Thư mục của lối dự phòng, và địa chỉ phát ảnh ra. */
@@ -76,12 +86,27 @@ export function trongKhoDia(khoa: string[]): string | null {
 }
 
 let may: S3Client | null = null;
-function mayR2(): S3Client {
-  may ??= new S3Client({
-    region: 'auto',
-    endpoint: `https://${R2_TAI_KHOAN}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId: R2_KHOA, secretAccessKey: R2_BI_MAT },
-  });
+/*
+ * Dựng một lần rồi dùng lại, VÀ DỰNG LẠI KHI CẤU HÌNH ĐỔI.
+ *
+ * Nhớ kèm CHỮ KÝ của cấu hình: nay ban quản trị sửa được thùng ngay trên
+ * trang, mà giữ mãi một cái máy cũ thì sửa xong vẫn ghi vào thùng cũ cho tới
+ * lần khởi động lại — mà lỗi ấy im lặng, chẳng ai nhận ra cho tới lúc đi tìm
+ * một tấm ảnh không thấy đâu.
+ */
+let chuKyMay = '';
+
+async function mayR2(): Promise<S3Client> {
+  const k = await docKho();
+  const chuKy = `${k.taiKhoan}|${k.khoa}|${k.biMat}`;
+  if (!may || chuKyMay !== chuKy) {
+    may = new S3Client({
+      region: 'auto',
+      endpoint: `https://${k.taiKhoan}.r2.cloudflarestorage.com`,
+      credentials: { accessKeyId: k.khoa, secretAccessKey: k.biMat },
+    });
+    chuKyMay = chuKy;
+  }
   return may;
 }
 
@@ -134,9 +159,10 @@ export async function luuAnh(ruot: Uint8Array, thuMuc: string, loai: LoaiAnh): P
   const ten = `${Date.now().toString(36)}-${randomBytes(8).toString('hex')}.${loai}`;
   const khoa = `${thuMuc}/${ten}`;
 
-  if (dungR2()) {
-    await mayR2().send(new PutObjectCommand({
-      Bucket: R2_THUNG,
+  const k = await docKho();
+  if (await dungR2()) {
+    await (await mayR2()).send(new PutObjectCommand({
+      Bucket: k.thung,
       Key: khoa,
       Body: ruot,
       ContentType: KIEU_MIME[loai],
@@ -144,7 +170,7 @@ export async function luuAnh(ruot: Uint8Array, thuMuc: string, loai: LoaiAnh): P
       // giữ bản sao rất lâu — đỡ hẳn một lượt gọi mạng cho người xem lại trang.
       CacheControl: 'public, max-age=31536000, immutable',
     }));
-    return { duongDan: `${R2_DIA_CHI}/${khoa}`, khoa };
+    return { duongDan: `${k.diaChi}/${khoa}`, khoa };
   }
 
   const goc = join(THU_MUC_DIA, thuMuc);
@@ -165,9 +191,10 @@ export async function xoaAnh(duongDan: string | null | undefined): Promise<void>
   if (!d) return;
 
   try {
-    if (dungR2() && d.startsWith(`${R2_DIA_CHI}/`)) {
-      await mayR2().send(new DeleteObjectCommand({
-        Bucket: R2_THUNG, Key: d.slice(R2_DIA_CHI.length + 1),
+    const k = await docKho();
+    if ((await dungR2()) && d.startsWith(`${k.diaChi}/`)) {
+      await (await mayR2()).send(new DeleteObjectCommand({
+        Bucket: k.thung, Key: d.slice(k.diaChi.length + 1),
       }));
       return;
     }
@@ -331,9 +358,10 @@ async function luuDong(
 
   const nguon = Readable.fromWeb(dong as never).pipe(doDong);
 
-  if (dungR2()) {
-    await mayR2().send(new PutObjectCommand({
-      Bucket: R2_THUNG,
+  const k = await docKho();
+  if (await dungR2()) {
+    await (await mayR2()).send(new PutObjectCommand({
+      Bucket: k.thung,
       Key: khoa,
       Body: nguon,
       ContentLength: dungLuong,
@@ -341,7 +369,7 @@ async function luuDong(
       // Tên mang mã ngẫu nhiên nên ruột không bao giờ đổi.
       CacheControl: 'public, max-age=31536000, immutable',
     }));
-    return { duongDan: `${R2_DIA_CHI}/${khoa}`, khoa, dungLuong: dem, maKiemTra: bam.digest('hex') };
+    return { duongDan: `${k.diaChi}/${khoa}`, khoa, dungLuong: dem, maKiemTra: bam.digest('hex') };
   }
 
   const goc = join(THU_MUC_DIA, thuMuc);
@@ -362,9 +390,10 @@ export async function xoaTepGame(duongDan: string | null | undefined): Promise<v
   if (!d) return;
 
   try {
-    if (dungR2() && d.startsWith(`${R2_DIA_CHI}/`)) {
-      await mayR2().send(new DeleteObjectCommand({
-        Bucket: R2_THUNG, Key: d.slice(R2_DIA_CHI.length + 1),
+    const k = await docKho();
+    if ((await dungR2()) && d.startsWith(`${k.diaChi}/`)) {
+      await (await mayR2()).send(new DeleteObjectCommand({
+        Bucket: k.thung, Key: d.slice(k.diaChi.length + 1),
       }));
       return;
     }
@@ -382,9 +411,10 @@ export async function xoaPhim(duongDan: string | null | undefined): Promise<void
   const d = (duongDan ?? '').trim();
   if (!d) return;
   try {
-    if (dungR2() && d.startsWith(`${R2_DIA_CHI}/`)) {
-      await mayR2().send(new DeleteObjectCommand({
-        Bucket: R2_THUNG, Key: d.slice(R2_DIA_CHI.length + 1),
+    const k = await docKho();
+    if ((await dungR2()) && d.startsWith(`${k.diaChi}/`)) {
+      await (await mayR2()).send(new DeleteObjectCommand({
+        Bucket: k.thung, Key: d.slice(k.diaChi.length + 1),
       }));
       return;
     }
@@ -398,8 +428,9 @@ export async function xoaPhim(duongDan: string | null | undefined): Promise<void
 }
 
 /** Địa chỉ này có trỏ vào kho của chính cửa hàng không? */
-export function cuaKhoNha(duongDan: string): boolean {
+export async function cuaKhoNha(duongDan: string): Promise<boolean> {
   const d = duongDan.trim();
-  return d.startsWith(`${DIA_CHI_TEP}/`) || d.startsWith(`${DIA_CHI_DIA}/`)
-    || (dungR2() && d.startsWith(`${R2_DIA_CHI}/`));
+  if (d.startsWith(`${DIA_CHI_TEP}/`) || d.startsWith(`${DIA_CHI_DIA}/`)) return true;
+  const k = await docKho();
+  return (await dungR2()) && d.startsWith(`${k.diaChi}/`);
 }

@@ -1,4 +1,5 @@
 import nodemailer, { type Transporter } from 'nodemailer';
+import { docThu } from '@/lib/cai-dat';
 
 /*
  * GỬI THƯ.
@@ -16,40 +17,48 @@ import nodemailer, { type Transporter } from 'nodemailer';
  * TÊN BIẾN MÔI TRƯỜNG BẰNG TIẾNG VIỆT, theo lệ của cả dự án. Đây là chỗ dễ
  * thấy nhất nếu định lệch lệ ấy — mấy tên `SMTP_*` quen mắt hơn thật — nhưng
  * một dự án nửa Việt nửa Anh thì người mới phải đoán xem chỗ nào theo lệ nào.
+ *
+ * CẤU HÌNH NAY ĐỌC TỪ `cai-dat.ts`, tức là ưu tiên thứ ban quản trị đã lưu rồi
+ * mới lùi về biến môi trường. Vì thế mọi hàm ở đây thành bất đồng bộ — kể cả
+ * `thuBat()`, vốn chỉ là một phép so chuỗi.
  */
 
-const MAY_CHU = process.env.THU_MAY_CHU ?? '';
-const CONG = Number(process.env.THU_CONG ?? '587');
-const NGUOI = process.env.THU_NGUOI ?? '';
-const MAT_KHAU = process.env.THU_MAT_KHAU ?? '';
-/** Địa chỉ đứng tên người gửi. Không khai thì mượn luôn tài khoản đăng nhập. */
-const TU = process.env.THU_TU || NGUOI;
-
 /** Có gửi được thư không. Thiếu một mẩu cấu hình là coi như tắt. */
-export function thuBat(): boolean {
-  return !!(MAY_CHU && NGUOI && MAT_KHAU && TU);
+export async function thuBat(): Promise<boolean> {
+  const c = await docThu();
+  return !!(c.mayChu && c.nguoi && c.matKhau && (c.tu || c.nguoi));
 }
 
 /*
- * Dựng một lần rồi dùng lại.
+ * Dựng một lần rồi dùng lại, VÀ DỰNG LẠI KHI CẤU HÌNH ĐỔI.
  *
  * `nodemailer` giữ sẵn nối kết trong bể của nó, nên dựng mới mỗi lá thư là bắt
- * tay TLS lại từ đầu mỗi lần — chậm, mà máy chủ thư thì hay đếm số lần nối
- * kết để chặn.
+ * tay TLS lại từ đầu mỗi lần — chậm, mà máy chủ thư thì hay đếm số lần nối kết
+ * để chặn.
+ *
+ * Nhưng nay cấu hình sửa được từ khu quản trị, nên giữ mãi một cái xe là sửa
+ * xong vẫn gửi bằng máy chủ cũ cho tới lần khởi động lại. Nhớ kèm cả CHỮ KÝ
+ * của cấu hình: khác chữ ký là dựng xe mới.
  */
 let xe: Transporter | null = null;
+let chuKyXe = '';
 
-function layXe(): Transporter {
-  if (!xe) {
+async function layXe(): Promise<Transporter> {
+  const c = await docThu();
+  const cong = Number(c.cong || '587');
+  const chuKy = `${c.mayChu}|${cong}|${c.nguoi}|${c.matKhau}`;
+
+  if (!xe || chuKyXe !== chuKy) {
     xe = nodemailer.createTransport({
-      host: MAY_CHU,
-      port: CONG,
+      host: c.mayChu,
+      port: cong,
       // Cổng 465 là TLS ngay từ đầu; 587 và 25 thì bắt tay xong mới nâng cấp
       // lên TLS bằng STARTTLS. Đoán sai chỗ này là nối kết treo im, không báo
       // lỗi gì cho tới lúc hết giờ chờ.
-      secure: CONG === 465,
-      auth: { user: NGUOI, pass: MAT_KHAU },
+      secure: cong === 465,
+      auth: { user: c.nguoi, pass: c.matKhau },
     });
+    chuKyXe = chuKy;
   }
   return xe;
 }
@@ -70,11 +79,13 @@ export async function guiThu(thu: {
   chu: string;
   html?: string;
 }): Promise<KetQuaThu> {
-  if (!thuBat()) return { ok: false, loi: 'Chưa khai cấu hình gửi thư.' };
+  if (!(await thuBat())) return { ok: false, loi: 'Chưa khai cấu hình gửi thư.' };
 
   try {
-    await layXe().sendMail({
-      from: TU,
+    const c = await docThu();
+    const xeGui = await layXe();
+    await xeGui.sendMail({
+      from: c.tu || c.nguoi,
       to: thu.toi,
       subject: thu.tieuDe,
       text: thu.chu,

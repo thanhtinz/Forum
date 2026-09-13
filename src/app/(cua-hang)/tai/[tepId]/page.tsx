@@ -63,7 +63,7 @@ export default async function TrangTai({ params }: { params: Promise<{ tepId: st
    * trong kho của cửa hàng (chảy tệp của máy chủ người khác qua máy mình là
    * trả tiền băng thông hộ họ).
    */
-  const trongKho = cuaKhoNha(tep.duongDan) || tep.duongDan.startsWith('/');
+  const trongKho = (await cuaKhoNha(tep.duongDan)) || tep.duongDan.startsWith('/');
   const veThang = !trongKho || (nang != null && nang > NGUONG_DONG);
 
   const dongPhu = [

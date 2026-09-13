@@ -29,7 +29,7 @@ export default async function CaiDat() {
         <h1 className="tieu-de-trang mt-1">Cài đặt</h1>
       </div>
 
-      <OHoSo guiDuocThu={thuBat()}
+      <OHoSo guiDuocThu={await thuBat()}
         banDau={{
           tenHienThi: hang.tenHienThi, anh: hang.anh, thuThongBao: hang.thuThongBao,
         }} />

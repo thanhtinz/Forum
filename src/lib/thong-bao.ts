@@ -60,7 +60,7 @@ async function baoQuaThu(viec: {
   chiTiet?: string | null;
   duongDan?: string | null;
 }): Promise<void> {
-  if (!thuBat()) return;
+  if (!(await thuBat())) return;
 
   try {
     /*

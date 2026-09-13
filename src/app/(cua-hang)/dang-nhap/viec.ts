@@ -133,7 +133,7 @@ export async function dangKy(_truoc: KetQuaXacThuc, form: FormData): Promise<Ket
    * được tài khoản nào nữa. Thà cho vào như trước đợt này, còn hơn dựng một
    * bước không thể đi qua.
    */
-  if (!thuBat()) {
+  if (!(await thuBat())) {
     let nguoi;
     try {
       nguoi = await db.nguoiDung.create({

@@ -5,6 +5,7 @@ import { Bookmark } from 'lucide-react';
 import { db } from '@/lib/db';
 import { CHON_THE, thanhThe } from '@/components/game/the-game';
 import { HangGame } from '@/components/game/HangGame';
+import { NutBoDeDanh } from '@/components/game/NutBoDeDanh';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 
 export const dynamic = 'force-dynamic';
@@ -56,8 +57,9 @@ export default async function TrangDeDanh() {
       ) : (
         <ul className="the-noi danh-sach-the">
           {hang.map((h) => (
-            <li key={h.id} className="p-3.5">
-              <HangGame game={thanhThe(h.game)} />
+            <li key={h.id} className="flex items-center gap-2 p-3.5">
+              <span className="min-w-0 flex-1"><HangGame game={thanhThe(h.game)} /></span>
+              <NutBoDeDanh gameId={h.game.id} ten={h.game.ten} />
             </li>
           ))}
         </ul>

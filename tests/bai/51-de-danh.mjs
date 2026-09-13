@@ -65,6 +65,26 @@ export default async function chay(kiem) {
     kiem('trang Để dành bày game vừa đánh dấu',
       (await p.locator(`text=${game.ten}`).count()) > 0);
 
+    /*
+     * ── BỎ NGAY TRÊN DANH SÁCH ────────────────────────────────────────
+     *
+     * Danh sách để dành là chỗ người ta ngồi dọn, nên bỏ một game phải là một
+     * nhịp — chứ không phải mở trang game rồi bấm lại dấu trang, ba nhịp cho
+     * một việc.
+     *
+     * Nút ấy gọi hàm XOÁ chứ không phải hàm bật/tắt: mượn hàm bật/tắt thì hai
+     * cú bấm vội sẽ bỏ rồi thêm lại, và game biến mất xong hiện lên như trêu.
+     */
+    await p.locator('button[aria-label*="khỏi danh sách"]').first().click();
+    kiem('bấm nút trên hàng thì bỏ được ngay tại danh sách', await doiToi(async () =>
+      (await db.deDanh.count({ where: { gameId: game.id, nguoiId: nguoi.id } })) === 0));
+
+    // Bấm lại lần nữa trên một hàng đã mất cũng không được đẻ ra hàng mới.
+    await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
+    await p.locator('button[aria-label*="dành"]').first().click();
+    await doiToi(async () =>
+      (await db.deDanh.count({ where: { gameId: game.id, nguoiId: nguoi.id } })) === 1);
+
     await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
     kiem('mở lại trang game thì nút đang ở trạng thái đã bật',
       (await p.locator('button[aria-pressed="true"]').count()) > 0);

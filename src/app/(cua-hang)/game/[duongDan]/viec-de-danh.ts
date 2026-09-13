@@ -45,3 +45,22 @@ export async function doiDeDanh(gameId: string): Promise<KetQuaDeDanh> {
   revalidatePath('/de-danh');
   return { deDanh: !dangCo };
 }
+
+/**
+ * Bỏ một game khỏi danh sách để dành.
+ *
+ * Riêng một hàm chứ không mượn `doiDeDanh`: ở trang Để dành, cái nút trên mỗi
+ * hàng CHỈ có nghĩa "bỏ đi". Mượn hàm bật/tắt thì hai cú bấm vội — hoặc một cú
+ * bấm trong lúc trang đang tải lại — sẽ bỏ rồi thêm lại, và người dùng thấy
+ * game biến mất xong hiện lên như trêu.
+ *
+ * `deleteMany` nên gọi mấy lần cũng thế, và không ném lỗi khi hàng đã mất.
+ */
+export async function boDeDanh(gameId: string): Promise<KetQuaDeDanh> {
+  const nguoi = await nguoiHienTai();
+  if (!nguoi) return { loi: 'Bạn cần đăng nhập.' };
+
+  await db.deDanh.deleteMany({ where: { gameId, nguoiId: nguoi.id } });
+  revalidatePath('/de-danh');
+  return { deDanh: false };
+}

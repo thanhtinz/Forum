@@ -1,4 +1,4 @@
-import { GOC, db, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 import { MO_TA_TUOI, napDoTuoi } from '../../src/lib/do-tuoi-const.ts';
 
 const DUONG_DAN = 'game-kiem-do-tuoi';
@@ -67,13 +67,9 @@ export default async function chay(kiem) {
 
     await admin.selectOption('select[name="doTuoi"]', '17');
     await admin.click('button:has-text("Lưu thay đổi")');
-    const daDoi = await khach.waitForTimeout(0).then(async () => {
-      for (let i = 0; i < 30; i++) {
-        const g = await db.game.findUnique({ where: { id: game.id }, select: { doTuoi: true } });
-        if (g.doTuoi === 17) return true;
-        await new Promise((x) => setTimeout(x, 500));
-      }
-      return false;
+    const daDoi = await doiToi(async () => {
+      const g = await db.game.findUnique({ where: { id: game.id }, select: { doTuoi: true } });
+      return g.doTuoi === 17;
     });
     kiem('quản trị đổi được độ tuổi', daDoi);
 
@@ -84,6 +80,17 @@ export default async function chay(kiem) {
      * cụ nhà phát triển trong ba giây. Máy chủ phải tự nắn, chứ không tin vào
      * cái danh sách nó vừa vẽ ra.
      */
+    /*
+     * TẢI LẠI TRANG TRƯỚC KHI NHÉT SỐ LẠ.
+     *
+     * Bản trước nhét thẳng ngay sau lượt lưu đầu, và bài kiểm đỏ lúc được lúc
+     * không — lần đỏ nào cũng đọc ra đúng 17, tức là số CŨ chứ không phải 99.
+     * Lý do: React dựng lại biểu mẫu sau khi việc lưu xong, và lần dựng lại ấy
+     * quét sạch cái <option> vừa nhét cùng giá trị đang chọn. Nhét trước lần
+     * dựng lại thì thua cuộc đua; nhét sau thì thắng. Trang vừa tải xong thì
+     * không còn lượt dựng lại nào đang chờ.
+     */
+    await admin.reload({ waitUntil: 'networkidle' });
     await admin.evaluate(() => {
       const o = document.querySelector('select[name="doTuoi"]');
       const moi = document.createElement('option');
@@ -91,11 +98,23 @@ export default async function chay(kiem) {
       o.appendChild(moi);
       o.value = '99';
     });
+    kiem('nhét được số ngoài thang vào biểu mẫu để thử',
+      (await admin.locator('select[name="doTuoi"]').inputValue()) === '99');
     await admin.click('button:has-text("Lưu thay đổi")');
-    await admin.waitForTimeout(1500);
+    /*
+     * ĐỢI ĐIỀU KIỆN, không đợi một con số giây.
+     *
+     * Bản trước đợi cứng 1,5 giây rồi đọc thẳng. Máy rảnh thì vừa đủ, máy đang
+     * bận dựng bản khác thì lượt lưu chưa kịp về — và bài kiểm báo hỏng một
+     * chỗ hoàn toàn đúng. Đã đỏ thật một lần vì chuyện ấy.
+     */
+    const daNan = await doiToi(async () => {
+      const g = await db.game.findUnique({ where: { id: game.id }, select: { doTuoi: true } });
+      return g.doTuoi === 4;
+    });
     const sau = await db.game.findUnique({ where: { id: game.id }, select: { doTuoi: true } });
     kiem('số ngoài thang gửi lên thì bị nắn về mức thấp nhất',
-      sau.doTuoi === 4, `đang là ${sau.doTuoi}`);
+      daNan, `đang là ${sau.doTuoi}`);
   } finally {
     await don();
     for (const p of [khach, admin]) if (p) await p.close();

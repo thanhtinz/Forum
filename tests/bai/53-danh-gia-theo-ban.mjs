@@ -117,7 +117,7 @@ export default async function chay(kiem) {
     kiem('mỗi bài in kèm số hiệu bản',
       (await p.locator('text=bản 1.0').count()) > 0);
 
-    await p.locator('a:has-text("Xem tất cả")').first().click();
+    await p.locator('a[aria-label*="Xem tất cả"]').first().click();
     await p.waitForSelector('dialog[open]', { timeout: 5000 });
     const chipBan = p.locator('dialog[open] button:has-text("Chỉ bản 2.0")');
     kiem('tấm xem tất cả có chip lọc theo bản hiện tại', (await chipBan.count()) === 1);

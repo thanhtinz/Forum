@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { X } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import { BaiDanhGia } from '@/components/game/BaiDanhGia';
 import { PhoDiem } from '@/components/game/PhoDiem';
 import { layDanhGia, type BaiXem } from '@/app/(cua-hang)/game/[duongDan]/viec';
@@ -52,12 +52,13 @@ export function TamDanhGia({
    */
   banHienTai?: string | null;
   /**
-   * Dáng LIÊN KẾT nằm cạnh đầu đề mục, thay cho nút viền chiếm cả bề ngang.
+   * Dáng ĐẦU MỤC: chính chữ "Đánh giá" là lối đi, kèm mũi tên bên cạnh.
    *
-   * App Store để "See All" ngay cạnh chữ "Ratings & Reviews", không để một nút
-   * to ở cuối: người đọc lướt qua đầu mục là đã biết có chỗ xem hết, còn nút ở
-   * cuối thì phải cuộn hết mấy bài mẫu mới gặp — mà cuộn hết rồi thì cũng
-   * chẳng cần "xem tất cả" nữa.
+   * App Store làm thế với "Ratings & Reviews ›" thay vì để một nút to ở cuối
+   * mục: người đọc lướt qua đầu mục là đã biết có chỗ xem hết, còn nút ở cuối
+   * thì phải cuộn hết mấy bài mẫu mới gặp — mà cuộn hết rồi thì cũng chẳng cần
+   * "xem tất cả" nữa. Không truyền thì vẫn là nút viền chiếm cả bề ngang, dáng
+   * dùng ở chỗ không có đầu mục nào để mượn.
    */
   dangLien?: boolean;
 }) {
@@ -108,8 +109,9 @@ export function TamDanhGia({
   return (
     <>
       <a href={`/game/${duongDan}/danh-gia`}
+        aria-label={dangLien ? `Xem tất cả ${gonSo(tong)} đánh giá` : undefined}
         className={dangLien
-          ? 'shrink-0 text-[13px] font-semibold text-nhan hover:underline'
+          ? 'tieu-de flex shrink-0 items-center gap-0.5 hover:opacity-70'
           : 'nut-vien mt-5 w-full'}
         onClick={(e) => {
           // Chuột giữa, Ctrl/Cmd + bấm: để trình duyệt mở tab mới như thường.
@@ -117,7 +119,9 @@ export function TamDanhGia({
           e.preventDefault();
           datMo(true);
         }}>
-        {dangLien ? 'Xem tất cả' : `Xem tất cả ${gonSo(tong)} đánh giá`}
+        {dangLien
+          ? <>Đánh giá<ChevronRight size={20} className="text-mo" aria-hidden /></>
+          : `Xem tất cả ${gonSo(tong)} đánh giá`}
       </a>
 
       <dialog ref={hopRef} onClose={() => datMo(false)}

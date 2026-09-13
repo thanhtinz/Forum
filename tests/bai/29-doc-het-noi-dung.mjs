@@ -154,7 +154,7 @@ export default async function chay(kiem) {
     const d = await moTrang();
     await d.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
     kiem('tab Thông tin mời đọc hết đánh giá',
-      (await d.locator('a:has-text("Xem tất cả")').count()) > 0);
+      (await d.locator('a[aria-label*="Xem tất cả"]').count()) > 0);
 
     /*
      * ── ĐỌC TIẾP TRONG TẤM TRƯỢT, KHÔNG RỜI TRANG ────────────────────
@@ -163,7 +163,9 @@ export default async function chay(kiem) {
      * và cỡ tệp; rời trang là mất chỗ đang đứng, quay lại phải cuộn tìm từ đầu.
      */
     const diaChiTruoc = d.url();
-    await d.click('a:has-text("Xem tất cả")');
+    // Lối vào nay là chính ĐẦU MỤC "Đánh giá" kèm mũi tên, nên bắt theo nhãn
+    // đọc được chứ không theo chữ hiện trên màn hình.
+    await d.click('a[aria-label*="Xem tất cả"]');
     await d.waitForTimeout(600);
     kiem('bấm xem tất cả thì KHÔNG rời trang', d.url() === diaChiTruoc, d.url());
     kiem('tấm trượt đánh giá mở ra',

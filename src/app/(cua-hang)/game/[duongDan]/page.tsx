@@ -24,7 +24,7 @@ import { TheSuKien } from '@/components/game/TheSuKien';
 import { SU_KIEN_TREN_TRANG } from '@/lib/su-kien-const';
 import { KhoiGap } from '@/components/KhoiGap';
 import { MO_TA_HE, NHAC_KHI_CAI, type MaHeMay } from '@/lib/he-may';
-import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
+import { cachDay, catChu, gonSo, gop } from '@/lib/tien-ich';
 import { bocChu, dungChuDam } from '@/lib/chu-dam';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { MO_TA_TUOI, napDoTuoi } from '@/lib/do-tuoi-const';
@@ -294,6 +294,50 @@ export default async function TabThongTin({ params, searchParams }: {
      * câu ấy mà không tốn một điểm ảnh màu nào.
      */
     <div className="divide-y divide-vien [&>*:first-child]:pt-0 [&>*:last-child]:pb-0 [&>*]:py-7">
+      {/*
+        "CÓ GÌ MỚI" ĐỨNG ĐẦU TRANG THÔNG TIN, trên cả kệ ảnh.
+
+        Đúng thứ tự App Store, và lẽ của nó: phần giới thiệu với kệ ảnh là thứ
+        người MỚI tới xem, mà người mới thì mỗi game chỉ có một lần; còn "có gì
+        mới" là thứ người ĐÃ tải quay lại đọc, và họ quay lại nhiều lần. Xếp
+        theo số lần người ta thật sự cần đọc, không xếp theo thứ tự mình viết.
+
+        Nhắc lại y nguyên phần ghi chú của bản mới nhất — chi tiết từng bản vẫn
+        nằm trong tấm tải, và chính ĐẦU MỤC là lối xuống đó.
+      */}
+      {moiNhat?.doiMoi && (
+        <section>
+          {/* Đầu mục kèm mũi tên là lối đi luôn, không có thêm liên kết nào
+              bên phải: xem đổi gì rồi tải ngay bản ấy là một mạch, chứ không
+              phải đọc ở đây rồi đi tìm nút tải ở chỗ khác. */}
+          <TamTai ban={banXem} dang="dau-de" nhan="Có gì mới"
+            taiKhoan={nguoi?.tenHienThi ?? null}
+            game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenTacGia, doTuoi: game.doTuoi }} />
+
+          {/*
+            SỐ HIỆU BẢN VÀ THỜI GIAN THÀNH MỘT HÀNG RIÊNG NGAY DƯỚI ĐẦU MỤC,
+            bản trái ngày phải — đúng như App Store trên iPhone.
+
+            Từng để hai thứ ấy nằm dồn bên phải ngang hàng với lời ghi chú, và
+            nó sai ở chỗ: lời ghi chú xuống dòng tự do nên cột phải lúc cao lúc
+            thấp, hàng chữ chính thì bị bóp lại còn hai phần ba bề ngang.
+          */}
+          <div className="mt-1.5 flex items-baseline justify-between gap-4 text-[13px]">
+            <span className="font-semibold">
+              Bản {moiNhat.soHieu}
+              {soHe.length > 1 && (
+                <span className="phu ml-1.5 font-normal">
+                  {MO_TA_HE[moiNhat.heMay as MaHeMay]?.ten ?? moiNhat.heMay}
+                </span>
+              )}
+            </span>
+            {moiNhat.ngayRa && <span className="phu shrink-0">{cachDay(moiNhat.ngayRa)}</span>}
+          </div>
+
+          <p className="mt-2.5 whitespace-pre-line text-[14px] leading-relaxed">{moiNhat.doiMoi}</p>
+        </section>
+      )}
+
       {/* Kệ ảnh và phim có ĐẦU ĐỀ riêng, đúng như mục "Preview" của App Store:
           không có đầu đề thì nó lẫn vào dải bìa ngay trên nó, và người xem
           không biết mấy tấm này là cảnh chơi thật hay lại là ảnh quảng cáo. */}
@@ -328,47 +372,6 @@ export default async function TabThongTin({ params, searchParams }: {
       )}
 
       {/*
-        "CÓ GÌ MỚI" ĐỨNG TRƯỚC PHẦN GIỚI THIỆU, đúng thứ tự App Store dùng.
-
-        Lẽ của thứ tự ấy: phần giới thiệu là thứ người MỚI tới đọc, mà người
-        mới thì mỗi game chỉ có một lần; còn "có gì mới" là thứ người ĐÃ tải
-        quay lại xem, và họ quay lại nhiều lần. Xếp theo số lần người ta thật
-        sự cần đọc, không xếp theo thứ tự mình viết ra.
-
-        Nhắc lại y nguyên phần ghi chú của bản mới nhất — chỗ chi tiết từng bản
-        vẫn nằm trong trục thời gian ở khung tải, và có đường dẫn xuống đó.
-      */}
-      {moiNhat?.doiMoi && (
-        <section>
-          <div className="mb-2 flex items-baseline justify-between gap-3">
-            <h2 className="tieu-de">Có gì mới</h2>
-            {/* Lịch sử phiên bản nay nằm trong TẤM TẢI, cùng chỗ với nút
-                tải của từng bản: xem đổi gì rồi tải ngay bản ấy là một mạch,
-                chứ không phải đọc ở đây rồi đi tìm nút tải ở chỗ khác. */}
-            <TamTai ban={banXem} dang="lien" nhan="Lịch sử phiên bản"
-              taiKhoan={nguoi?.tenHienThi ?? null}
-              game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenTacGia, doTuoi: game.doTuoi }} />
-          </div>
-          {/*
-            SỐ HIỆU BẢN VÀ THỜI GIAN NẰM BÊN PHẢI, ngang hàng với lời ghi chú.
-
-            App Store xếp thế, và lẽ của nó: phần này người ta đọc để biết bản
-            mới sửa gì — đó là dòng chữ. Số hiệu bản với ngày ra là thứ tra
-            cứu, đặt nó nằm trên đầu thì mỗi lần đọc phải bước qua hai dòng dữ
-            liệu mới tới câu cần đọc.
-          */}
-          <div className="flex items-start justify-between gap-6">
-            <p className="whitespace-pre-line text-[14px] leading-relaxed">{moiNhat.doiMoi}</p>
-            <p className="phu shrink-0 text-right leading-relaxed">
-              {moiNhat.ngayRa && <>{cachDay(moiNhat.ngayRa)}<br /></>}
-              Bản {moiNhat.soHieu}
-              {soHe.length > 1 && <><br />{MO_TA_HE[moiNhat.heMay as MaHeMay]?.ten ?? moiNhat.heMay}</>}
-            </p>
-          </div>
-        </section>
-      )}
-
-      {/*
         MỘT KHỐI MÔ TẢ DUY NHẤT.
 
         Từng có ba ô rời: Giới thiệu, Cách chơi, Cần biết trước khi tải. Ba ô
@@ -379,10 +382,36 @@ export default async function TabThongTin({ params, searchParams }: {
 
         Cả App Store lẫn CH Play cũng chỉ có đúng một mục mô tả.
       */}
-      {game.gioiThieu && (
+      {(game.gioiThieu || game.theLoai.length > 0) && (
         <section>
-          <h2 className="tieu-de mb-2">Giới thiệu</h2>
-          <MoTaGame html={dungChuDam(game.gioiThieu)} />
+          {game.gioiThieu && (
+            <>
+              <h2 className="tieu-de mb-2">Giới thiệu</h2>
+              <MoTaGame html={dungChuDam(game.gioiThieu)} />
+            </>
+          )}
+
+          {/*
+            THỂ LOẠI THÀNH CHIP BẤM ĐƯỢC, ngay dưới phần mô tả.
+
+            App Store để đúng dãy chip ấy ở đây, và nó không phải trang trí:
+            người vừa đọc xong mô tả và thấy hợp gu thì thứ họ muốn làm tiếp là
+            "cho tôi xem thêm game kiểu này" — chip là lối đi thẳng tới đó.
+
+            Bảng thông tin phía dưới vẫn liệt kê thể loại thành chữ, nhưng đó
+            là chỗ TRA CỨU, đọc theo hàng cùng độ tuổi và dung lượng; hai chỗ
+            phục vụ hai việc khác nhau.
+          */}
+          {game.theLoai.length > 0 && (
+            <div className={gop('flex flex-wrap gap-2', game.gioiThieu && 'mt-4')}>
+              {game.theLoai.map((t) => (
+                <Link key={t.theLoai.duongDan} href={`/the-loai/${t.theLoai.duongDan}`}
+                  className="chip">
+                  {t.theLoai.ten}
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -411,13 +440,17 @@ export default async function TabThongTin({ params, searchParams }: {
       <section>
         {/* "Xem tất cả" nằm CẠNH ĐẦU ĐỀ, đúng chỗ App Store để "See All" —
             lướt qua đầu mục là biết ngay có chỗ đọc hết. */}
-        <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 className="tieu-de">Đánh giá</h2>
-          {gom > danhGia.length && (
+        <div className="mb-3">
+          {gom > danhGia.length ? (
             <TamDanhGia gameId={game.id} duongDan={duongDan} tong={gom} sao={sao}
               phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))}
               banDau={danhGia.map((d) => ({ ...d, toiDaBam: daBam.has(d.id) }))}
               dangLien banHienTai={banXem[0]?.soHieu ?? null} nguoiXemId={nguoi?.id ?? null} />
+          ) : (
+            /* Chưa có gì thêm để xem thì đầu mục là chữ trần, không mũi tên:
+               mũi tên hứa có chỗ đi tiếp, mà ở đây đi tiếp cũng chỉ gặp đúng
+               mấy bài đang bày. */
+            <h2 className="tieu-de">Đánh giá</h2>
           )}
         </div>
         <PhoDiem sao={sao} tong={gom} locSao={locSao}

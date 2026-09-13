@@ -92,11 +92,11 @@ export default async function chay(kiem) {
     kiem('mục ấy nhắc đúng ghi chú của bản mới nhất có ghi',
       chuTrang.includes(banCoGhi.doiMoi.slice(0, 40)), banCoGhi.doiMoi.slice(0, 40));
     kiem('mục ấy nói rõ là bản nào', chuTrang.includes(`Bản ${banCoGhi.soHieu}`));
-    /* Lối "Lịch sử phiên bản" nay MỞ TẤM TẢI chứ không cuộn xuống một khối
-       nào nữa, nên nó là một cái nút — xem đổi gì rồi tải ngay bản ấy là một
-       mạch. */
+    /* Lối vào lịch sử phiên bản nay là chính ĐẦU MỤC "Có gì mới" kèm mũi
+       tên, và nó MỞ TẤM TẢI chứ không cuộn xuống khối nào — xem đổi gì rồi tải
+       ngay bản ấy là một mạch. */
     kiem('mục ấy có lối mở lịch sử phiên bản',
-      (await p.locator('button:has-text("Lịch sử phiên bản")').count()) > 0);
+      (await p.locator('button[aria-label*="lịch sử phiên bản"]').count()) > 0);
   }
 
   // ── Bản của hệ KHÁC không được lọt vào danh sách ──────────────────────

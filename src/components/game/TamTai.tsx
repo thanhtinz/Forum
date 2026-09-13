@@ -52,8 +52,14 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
   taiKhoan: string | null;
   /** Người này từng tải game rồi — nút đổi thành biểu tượng đám mây. */
   daTai?: boolean;
-  /** `nut` là viên thuốc xanh ở đầu trang; `lien` là một dòng chữ bấm được. */
-  dang?: 'nut' | 'lien';
+  /*
+   * `nut` là viên thuốc xanh ở đầu trang; `lien` là một dòng chữ bấm được;
+   * `dau-de` là chính ĐẦU MỤC kèm mũi tên — dáng App Store dùng cho "What's
+   * New ›". Ở dáng ấy không có thêm chữ "xem tất cả" nào bên phải: đầu mục đã
+   * là lối đi rồi, thêm một liên kết nữa là hai lối vào cùng một chỗ nằm cạnh
+   * nhau.
+   */
+  dang?: 'nut' | 'lien' | 'dau-de';
   nhan?: string;
 }) {
   const [mo, datMo] = useState(false);
@@ -120,8 +126,9 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
     <>
       <button type="button" onClick={() => datMo(true)} data-viec="tai-dau"
         data-da-tai={daTai ? '1' : undefined}
-        aria-label={daTai ? `Tải lại ${game.ten}` : undefined}
+        aria-label={daTai ? `Tải lại ${game.ten}` : dang === 'dau-de' ? `${nhan} — xem lịch sử phiên bản` : undefined}
         className={gop(
+          dang === 'dau-de' && 'tieu-de flex items-center gap-0.5 hover:opacity-70',
           dang === 'lien' && 'text-[13px] font-semibold text-nhan hover:underline',
           dang === 'nut' && (daTai
             ? 'grid size-9 place-items-center rounded-full text-nhan transition-colors hover:bg-nen3'
@@ -130,6 +137,7 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
         {dang === 'nut' && daTai
           ? <Download size={22} strokeWidth={1.8} aria-hidden />
           : nhan}
+        {dang === 'dau-de' && <ChevronRight size={20} className="text-mo" aria-hidden />}
       </button>
 
       <dialog ref={hopRef} onClose={() => datMo(false)}

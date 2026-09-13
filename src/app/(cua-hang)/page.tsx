@@ -116,8 +116,9 @@ export default async function HomNay() {
  * cái tên thì cái tên ấy có nghĩa ngay. Ngược lại thì phải đọc xong tên, gặp
  * dòng nhãn, rồi quay lên đọc lại tên.
  *
- * Chỗ đáng lẽ là ảnh bìa thì xem `NenGame` — cửa hàng chưa có ảnh bìa thật, và
- * dựng một tấm ảnh giả là nói dối người xem về thứ họ sắp tải.
+ * CÓ ẢNH BÌA THẬT thì bày ảnh ấy; chưa có thì `NenGame` — một ô màu dựng từ
+ * tên game. Không bao giờ dựng ảnh giả: nói dối người xem về thứ họ sắp tải
+ * thì họ chỉ phát hiện ra sau khi đã tải xong.
  */
 function TamLon({ game, nhan, doan }: { game: TheGame; nhan: string; doan: string | null }) {
   return (
@@ -137,7 +138,19 @@ function TamLon({ game, nhan, doan }: { game: TheGame; nhan: string; doan: strin
           to lên, và khoảng trống biến mất vì không còn chỗ nào để trống.
         */}
         <div className="relative aspect-[4/3] w-full sm:aspect-[21/9]">
-          <NenGame ten={game.ten} doLuoi={6} />
+          {game.bia ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={game.bia} alt="" fetchPriority="high" data-viec="bia-tam"
+                className="absolute inset-0 size-full object-cover" />
+              {/* Vệt tối phủ lên ảnh: tên game in trắng, mà ảnh bìa thì tấm
+                  sáng tấm tối — không có vệt này thì gặp tấm sáng là cái tên
+                  biến mất. */}
+              <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/35 to-black/10" />
+            </>
+          ) : (
+            <NenGame ten={game.ten} doLuoi={6} />
+          )}
 
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center sm:flex-row sm:justify-start sm:gap-8 sm:p-10 sm:text-left">
             <BieuTuongGame ten={game.ten} icon={game.icon} co={124}

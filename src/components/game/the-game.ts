@@ -16,6 +16,9 @@ export const CHON_THE = {
   ten: true,
   tenViet: true,
   icon: true,
+  // Ảnh bìa: chỉ MỘT cột chữ, mà tấm lớn ở trang chủ cần nó để bày ảnh thật
+  // thay cho ô màu — xem `TamLon`.
+  bia: true,
   vietHoa: true,
   tongSao: true,
   soLuotDanhGia: true,
@@ -30,6 +33,7 @@ export interface TheGame {
   ten: string;
   tenViet: string | null;
   icon: string | null;
+  bia: string | null;
   vietHoa: boolean;
   sao: number;
   soLuotDanhGia: number;
@@ -48,6 +52,7 @@ export function thanhThe(g: HangGame): TheGame {
     ten: g.ten,
     tenViet: g.tenViet,
     icon: g.icon,
+    bia: g.bia,
     vietHoa: g.vietHoa,
     sao: diemSao(g.tongSao, g.soLuotDanhGia),
     soLuotDanhGia: g.soLuotDanhGia,

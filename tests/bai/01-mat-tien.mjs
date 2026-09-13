@@ -15,6 +15,46 @@ export default async function chay(kiem) {
   const soTamLon = await p.locator('main article').count();
   kiem('tab Hôm nay bày tấm lớn do người chọn', soTamLon > 0, `đếm được ${soTamLon}`);
 
+  /*
+   * ── TẤM LỚN DÙNG ẢNH BÌA THẬT KHI GAME CÓ ────────────────────────────
+   *
+   * Chỗ ấy vốn luôn là một ô màu dựng từ tên game, vì hồi viết nó cửa hàng
+   * chưa game nào có ảnh bìa. Nay người bán hàng tự tải bìa lên được, nên ô
+   * màu phải nhường chỗ cho ảnh thật — còn KHÔNG có bìa thì vẫn là ô màu, chứ
+   * tuyệt đối không dựng một tấm ảnh giả.
+   *
+   * Đặt bìa cho ĐÚNG game đang được chọn hôm nay (đọc ra từ chính đường dẫn
+   * trên tấm), rồi trả lại nguyên trạng ở `finally`.
+   */
+  const dichTam = await p.locator('main article a[href^="/game/"]').first()
+    .getAttribute('href').catch(() => null);
+  const duongDanTam = dichTam?.replace('/game/', '') ?? null;
+  let biaCu;
+  try {
+    if (duongDanTam) {
+      const g = await db.game.findUnique({
+        where: { duongDan: duongDanTam }, select: { id: true, bia: true },
+      });
+      if (g) {
+        biaCu = g;
+        if (g.bia === null) {
+          kiem('chưa có bìa thì tấm lớn là ô màu, không phải ảnh giả',
+            (await p.locator('[data-viec="bia-tam"]').count()) === 0);
+        }
+
+        await db.game.update({ where: { id: g.id }, data: { bia: '/anh-chia-se.png' } });
+        await p.reload({ waitUntil: 'networkidle' });
+        kiem('có bìa thì tấm lớn bày đúng ảnh ấy',
+          (await p.locator('[data-viec="bia-tam"][src="/anh-chia-se.png"]').count()) === 1);
+      }
+    }
+  } finally {
+    if (biaCu) {
+      await db.game.update({ where: { id: biaCu.id }, data: { bia: biaCu.bia } });
+      await p.reload({ waitUntil: 'networkidle' }).catch(() => {});
+    }
+  }
+
   // ── Thanh tab đáy: đúng bốn ô, đúng bốn tên ──────────────────────────
   const tenTab = await p.locator('nav[aria-label="Điều hướng chính"] a').evaluateAll((els) =>
     els.map((e) => e.textContent?.trim() ?? ''));

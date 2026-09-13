@@ -132,5 +132,65 @@ export default async function chay(kiem) {
     }
   }
 
+  /*
+   * ── DÃY DÀI THÌ CÓ Ô TÌM VÀ PHÂN TRANG ────────────────────────────────
+   *
+   * Game đời đầu có game mang vài chục bản: dãy ấy dài hơn cả màn hình, mà
+   * người đi tìm đúng bản 1.1 cho máy Nokia thì phải cuộn mò. Dựng hẳn một
+   * game mười bốn bản để đo, vì bộ dữ liệu mẫu không chắc có game nào đủ dài —
+   * mà bài kiểm dựa vào "chắc là có" thì đỏ lúc nào không hay.
+   */
+  const DAI = 'kiemthu-nhieu-ban';
+  try {
+    await db.game.deleteMany({ where: { duongDan: DAI } });
+    await db.game.create({
+      data: {
+        ten: 'Game nhiều bản', duongDan: DAI, trangThai: 'DANG_HIEN', dangLuc: new Date(),
+        banTai: {
+          create: Array.from({ length: 14 }, (_, i) => ({
+            heMay: 'JAVA', soHieu: `1.${i}`, moiNhat: i === 13,
+            ghiChu: i === 4 ? 'Sửa lỗi âm thanh' : null,
+          })),
+        },
+      },
+      select: { id: true },
+    });
+
+    await p.goto(`${GOC}/game/${DAI}`, { waitUntil: 'networkidle' });
+    await p.click('[data-viec="tai-dau"]');
+    await p.waitForSelector('dialog[open]', { timeout: 5000 });
+    const tamDai = p.locator('dialog[open]');
+
+    kiem('dãy dài thì tấm tải có ô tìm',
+      (await tamDai.locator('input[aria-label="Tìm phiên bản"]').count()) === 1);
+    kiem('và cắt trang thay vì đổ hết ra một mạch',
+      (await tamDai.locator('ul li').count()) === 8,
+      `đang hiện ${await tamDai.locator('ul li').count()}`);
+    kiem('dòng đếm nói rõ đang ở trang nào trên tổng bao nhiêu',
+      ((await tamDai.textContent()) ?? '').includes('Trang 1/2'));
+
+    await tamDai.locator('button:has-text("Sau")').click();
+    await p.waitForTimeout(300);
+    kiem('lật sang trang sau thì hiện nốt mấy bản còn lại',
+      (await tamDai.locator('ul li').count()) === 6,
+      `đang hiện ${await tamDai.locator('ul li').count()}`);
+
+    /* Tìm theo GHI CHÚ, không chỉ theo số hiệu: lắm khi người ta nhớ "bản sửa
+       lỗi âm thanh" chứ không nhớ con số. */
+    await tamDai.locator('input[aria-label="Tìm phiên bản"]').fill('âm thanh');
+    await p.waitForTimeout(400);
+    const conLai = await tamDai.locator('ul li').count();
+    kiem('gõ vào ô tìm thì lọc theo cả ghi chú', conLai === 1, `còn ${conLai} hàng`);
+    kiem('và nhảy về trang một, không để danh sách trống',
+      !((await tamDai.textContent()) ?? '').includes('Trang 2/'));
+
+    await tamDai.locator('input[aria-label="Tìm phiên bản"]').fill('không có bản nào thế này');
+    await p.waitForTimeout(400);
+    kiem('gõ chuỗi không khớp thì nói thẳng là không có',
+      ((await tamDai.textContent()) ?? '').includes('Không có bản nào khớp'));
+  } finally {
+    await db.game.deleteMany({ where: { duongDan: DAI } });
+  }
+
   await p.close();
 }

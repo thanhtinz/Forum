@@ -106,17 +106,32 @@
   --bong-noi: 0 1px 2px rgb(16 24 40 / .10), 0 8px 28px -6px rgb(16 24 40 / .22);
 
   /*
-   * Ba con số của vật liệu KÍNH LỎNG, tách ra biến để nền sáng và nền tối
+   * Mấy con số của vật liệu KÍNH LỎNG, tách ra biến để nền sáng và nền tối
    * dùng chung một đoạn CSS mà vẫn khác nhau đúng chỗ cần khác.
    *
-   * Nền tối phải TRONG HƠN và viền sáng phải MỜ HƠN: trên nền tối, một sợi
-   * trắng 65% không còn là ánh sáng hắt vào mép kính nữa, nó thành một đường
-   * kẻ trắng. Còn nền thì đục hơn một chút vì chữ sáng trên kính trong là chỗ
-   * khó đọc nhất của cả hệ màu.
+   * HAI MỨC TRONG, không phải một. Vỏ trang — thanh trên, thanh bên, thanh tab
+   * đáy — trong hơn hẳn mặt phẳng chứa chữ, vì nó chỉ chở mấy cái biểu tượng
+   * và dăm chữ ngắn, mà cái nó phải làm được là cho thấy nội dung TRÔI phía
+   * sau. Thẻ và chip thì chở nguyên một đoạn văn, nên phải đục hơn một bậc —
+   * chữ nhỏ đè lên chỗ quá trong là chỗ mỏi mắt nhất của cả hệ màu.
+   *
+   * Nền tối đục hơn nền sáng một chút và viền sáng thì mờ hơn nhiều: trên nền
+   * tối, một sợi trắng 65% không còn là ánh sáng hắt vào mép kính nữa, nó
+   * thành một đường kẻ trắng.
+   *
+   * PHẦN LỌC cũng thành biến, vì nó khác nhau giữa hai nền: `brightness` trên
+   * nền tối phải đẩy mạnh hơn hẳn thì tấm kính mới ra vẻ có ánh sáng xuyên
+   * qua, chứ không thành một mảng xám đặt lên một mảng xám.
    */
-  --kinh-nen: .62;
-  --kinh-vien: rgb(255 255 255 / .5);
-  --kinh-sang: rgb(255 255 255 / .65);
+  --kinh-nen: .44;
+  --kinh-vo: .34;
+  --kinh-vien: rgb(255 255 255 / .55);
+  --kinh-sang: rgb(255 255 255 / .7);
+  /* Vạch tối mảnh ở mép dưới — cái làm tấm kính có BỀ DÀY chứ không phải một
+     lớp màu dán lên. Thiếu nó thì kính trong tới mấy cũng vẫn phẳng lì. */
+  --kinh-day: rgb(16 24 40 / .06);
+  --kinh-loc: blur(34px) saturate(190%) brightness(1.06);
+  --kinh-loc-nho: blur(20px) saturate(175%) brightness(1.04);
 }
 
 :root[data-nen='toi'] {
@@ -127,9 +142,13 @@
   --bong-noi: 0 0 0 1px rgb(255 255 255 / .06), 0 8px 28px -6px rgb(0 0 0 / .6);
   --bong-the: 0 0 0 1px rgb(255 255 255 / .06), 0 6px 20px -4px rgb(0 0 0 / .5);
 
-  --kinh-nen: .7;
+  --kinh-nen: .5;
+  --kinh-vo: .42;
   --kinh-vien: rgb(255 255 255 / .1);
-  --kinh-sang: rgb(255 255 255 / .12);
+  --kinh-sang: rgb(255 255 255 / .14);
+  --kinh-day: rgb(0 0 0 / .25);
+  --kinh-loc: blur(34px) saturate(175%) brightness(1.3);
+  --kinh-loc-nho: blur(20px) saturate(165%) brightness(1.25);
 
   --nen: 15 17 20;
   --nen2: 26 29 34;
@@ -272,9 +291,9 @@ p { text-wrap: pretty; }
   }
   .nut-xam {
     @apply nut text-chu;
-    background: rgb(var(--nen3) / .72);
-    -webkit-backdrop-filter: blur(14px) saturate(170%);
-    backdrop-filter: blur(14px) saturate(170%);
+    background: rgb(var(--nen3) / .5);
+    -webkit-backdrop-filter: var(--kinh-loc-nho);
+    backdrop-filter: var(--kinh-loc-nho);
     border: 1px solid var(--kinh-vien);
   }
   .nut-xam:hover { background: rgb(var(--nen3) / .95); }
@@ -318,19 +337,22 @@ p { text-wrap: pretty; }
    * suốt hoàn toàn và nội dung chạy xuyên qua nó.
    * ────────────────────────────────────────────────────────────────────── */
   .kinh {
-    background: rgb(var(--nen2) / var(--kinh-nen));
-    -webkit-backdrop-filter: blur(22px) saturate(180%);
-    backdrop-filter: blur(22px) saturate(180%);
+    background: rgb(var(--nen2) / var(--kinh-vo));
+    -webkit-backdrop-filter: var(--kinh-loc);
+    backdrop-filter: var(--kinh-loc);
     border: 1px solid var(--kinh-vien);
-    box-shadow: var(--bong-noi), inset 0 1px 0 var(--kinh-sang);
+    box-shadow: var(--bong-noi), inset 0 1px 0 var(--kinh-sang),
+      inset 0 -1px 0 var(--kinh-day);
   }
 
   /* Bản dành cho thanh dính mép trên: không viền quanh, chỉ một vạch dưới. */
   .kinh-tren {
-    background: rgb(var(--nen) / calc(var(--kinh-nen) + .12));
-    -webkit-backdrop-filter: blur(22px) saturate(180%);
-    backdrop-filter: blur(22px) saturate(180%);
-    border-bottom: 1px solid rgb(var(--vien) / .8);
+    background: rgb(var(--nen) / var(--kinh-vo));
+    -webkit-backdrop-filter: var(--kinh-loc);
+    backdrop-filter: var(--kinh-loc);
+    /* Vạch dưới mảnh đi và mờ hẳn: một đường kẻ đậm dưới tấm kính trong thì
+       mắt đọc ra "cái khay xám", còn một sợi mờ thì đọc ra "mép của tấm kính". */
+    border-bottom: 1px solid rgb(var(--vien) / .45);
     box-shadow: inset 0 1px 0 var(--kinh-sang);
   }
 
@@ -343,10 +365,10 @@ p { text-wrap: pretty; }
    * chứ không phải trang đang nhảy.
    */
   .kinh-ben {
-    background: rgb(var(--nen) / calc(var(--kinh-nen) + .12));
-    -webkit-backdrop-filter: blur(22px) saturate(180%);
-    backdrop-filter: blur(22px) saturate(180%);
-    border-right: 1px solid rgb(var(--vien) / .8);
+    background: rgb(var(--nen) / var(--kinh-vo));
+    -webkit-backdrop-filter: var(--kinh-loc);
+    backdrop-filter: var(--kinh-loc);
+    border-right: 1px solid rgb(var(--vien) / .45);
   }
 
   /*
@@ -358,9 +380,9 @@ p { text-wrap: pretty; }
    * nó, nên cả thanh vẫn là MỘT tấm.
    */
   .o-nhap-kinh {
-    background: rgb(var(--nen3) / .55);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
-    backdrop-filter: blur(12px) saturate(160%);
+    background: rgb(var(--nen3) / .38);
+    -webkit-backdrop-filter: var(--kinh-loc-nho);
+    backdrop-filter: var(--kinh-loc-nho);
     border-color: var(--kinh-vien);
   }
   .o-nhap-kinh:focus { background: rgb(var(--nen2) / .9); }
@@ -393,9 +415,9 @@ p { text-wrap: pretty; }
   .nut-tron:active { transform: scale(.94); }
   .nut-vien {
     @apply nut text-chu;
-    background: rgb(var(--nen2) / calc(var(--kinh-nen) - .1));
-    -webkit-backdrop-filter: blur(14px) saturate(170%);
-    backdrop-filter: blur(14px) saturate(170%);
+    background: rgb(var(--nen2) / calc(var(--kinh-nen) - .12));
+    -webkit-backdrop-filter: var(--kinh-loc-nho);
+    backdrop-filter: var(--kinh-loc-nho);
     border: 1px solid var(--kinh-vien);
   }
   .nut-vien:hover { background: rgb(var(--nen3) / .85); }
@@ -410,8 +432,8 @@ p { text-wrap: pretty; }
     /* Viên kính: chip là thứ NỔI trên nội dung nó lọc, nên cùng vật liệu với
        thanh nổi chứ không phải một viên nhựa viền xám. */
     background: rgb(var(--nen2) / var(--kinh-nen));
-    -webkit-backdrop-filter: blur(14px) saturate(170%);
-    backdrop-filter: blur(14px) saturate(170%);
+    -webkit-backdrop-filter: var(--kinh-loc-nho);
+    backdrop-filter: var(--kinh-loc-nho);
     border: 1px solid var(--kinh-vien);
     /* 36px — thấp hơn 44px vì chip nằm thành hàng có khoảng hở giữa, nhưng
        không thấp hơn nữa: dưới mức này là bấm trượt sang chip bên cạnh. */
@@ -427,9 +449,9 @@ p { text-wrap: pretty; }
 
   .o-nhap {
     @apply w-full rounded-full px-4 py-2.5 text-sm text-chu placeholder:text-mo;
-    background: rgb(var(--nen3) / .6);
-    -webkit-backdrop-filter: blur(12px) saturate(160%);
-    backdrop-filter: blur(12px) saturate(160%);
+    background: rgb(var(--nen3) / .42);
+    -webkit-backdrop-filter: var(--kinh-loc-nho);
+    backdrop-filter: var(--kinh-loc-nho);
     border: 1px solid var(--kinh-vien);
     transition: background-color var(--chuyen), border-color var(--chuyen);
   }
@@ -519,9 +541,11 @@ p { text-wrap: pretty; }
   .the {
     @apply rounded-the;
     background: rgb(var(--nen2) / calc(var(--kinh-nen) + .28));
-    -webkit-backdrop-filter: blur(16px) saturate(170%);
-    backdrop-filter: blur(16px) saturate(170%);
+    -webkit-backdrop-filter: var(--kinh-loc-nho);
+    backdrop-filter: var(--kinh-loc-nho);
     border: 1px solid var(--kinh-vien);
+    /* Mép dưới sẫm hơn mép trên: đó là cả cái làm nên BỀ DÀY của tấm kính. */
+    box-shadow: inset 0 1px 0 var(--kinh-sang), inset 0 -1px 0 var(--kinh-day);
   }
 
   /*
@@ -539,9 +563,10 @@ p { text-wrap: pretty; }
   .the-noi {
     @apply rounded-[20px];
     background: rgb(var(--nen2) / calc(var(--kinh-nen) + .24));
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
-    box-shadow: var(--bong-the), inset 0 1px 0 var(--kinh-sang);
+    -webkit-backdrop-filter: var(--kinh-loc);
+    backdrop-filter: var(--kinh-loc);
+    box-shadow: var(--bong-the), inset 0 1px 0 var(--kinh-sang),
+      inset 0 -1px 0 var(--kinh-day);
     transition: transform var(--chuyen), box-shadow var(--chuyen);
   }
   .the-noi:active { transform: scale(.985); }

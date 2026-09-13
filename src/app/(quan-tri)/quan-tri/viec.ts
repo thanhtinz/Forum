@@ -7,7 +7,7 @@ import { batBuocDangNhap, batBuocQuanTri } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
 import { HE_MAY, laHeMay, laLoaiTep, type MaHeMay, type MaLoaiTep } from '@/lib/he-may';
 import { guiThongBao } from '@/lib/thong-bao';
-import { baoBanMoi } from '@/lib/bao-ban-moi';
+import { baoBanMoi, baoHeMayMoi } from '@/lib/bao-ban-moi';
 import { dungChuDam } from '@/lib/chu-dam';
 import { xoaAnh, xoaPhim, xoaTepGame } from '@/lib/kho';
 import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
@@ -235,6 +235,12 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
   });
   if (daCo) return { loi: `Bản ${soHieu} của ${heMay} đã có rồi.` };
 
+  /*
+   * Hệ máy này đã có bản nào chưa — hỏi TRƯỚC khi thêm, vì hỏi sau thì bản vừa
+   * thêm cũng tính vào và câu trả lời lúc nào cũng là "có rồi".
+   */
+  const heDaCo = await db.banTai.findFirst({ where: { gameId, heMay }, select: { id: true } });
+
   await db.$transaction(async (tx) => {
     // Bản mới thành bản mới nhất CỦA HỆ ẤY, và hạ cờ của bản cũ cùng hệ —
     // mỗi hệ chỉ được đúng một bản mang cờ, không thì trang game không biết
@@ -265,6 +271,9 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
 
   // Ngoài giao dịch: bản đã ra rồi, thông báo hỏng thì không được kéo nó đổ theo.
   await baoBanMoi(gameId, heMay, soHieu);
+  // Hệ máy mới thì báo riêng cho người ĐỂ DÀNH — phần lớn họ để dành đúng vì
+  // game chưa có bản cho máy mình. Xem `baoHeMayMoi`.
+  if (!heDaCo) await baoHeMayMoi(gameId, heMay);
 
   revalidatePath(`/quan-tri/game/${gameId}`);
   revalidatePath(`/game/${game.duongDan}`);

@@ -21,7 +21,7 @@ export default async function chay(kiem) {
   };
   await don();
 
-  let p; let khach;
+  let p; let khach; let admin;
   try {
     const game = await db.game.findFirst({
       where: { trangThai: 'DANG_HIEN' },
@@ -74,6 +74,61 @@ export default async function chay(kiem) {
       (await db.deDanh.count({ where: { gameId: game.id, nguoiId: nguoi.id } })) === 0));
 
     /*
+     * ── GAME ĐỂ DÀNH CÓ BẢN CHO HỆ MÁY MỚI THÌ ĐƯỢC BÁO ──────────────────
+     *
+     * Lý do phổ biến nhất để bấm "để dành" thay vì tải ngay là game chưa có
+     * bản cho máy mình: thấy game hay mà chỉ có bản Java trong khi máy là
+     * Android thì để dành lại là việc duy nhất làm được. Ngày bản Android lên
+     * kệ mà không ai nói với họ thì danh sách để dành chỉ là chỗ để quên.
+     *
+     * Chỉ báo khi hệ máy là MỚI: người để dành chưa tải bao giờ, nên bản 1.2
+     * của một hệ họ vốn không dùng chẳng nói gì với họ cả.
+     */
+    await db.deDanh.create({
+      data: { gameId: game.id, nguoiId: nguoi.id },
+      select: { id: true },
+    });
+
+    const daCo = await db.banTai.findMany({
+      where: { gameId: game.id }, distinct: ['heMay'], select: { heMay: true },
+    });
+    const heMoi = ['MAC', 'WINDOWS', 'IOS', 'ANDROID', 'JAVA']
+      .find((h) => !daCo.some((b) => b.heMay === h));
+
+    if (heMoi) {
+      const demTruoc = await db.thongBao.count({ where: { nguoiId: nguoi.id } });
+
+      /*
+       * Đi qua ĐÚNG lối quản trị vẫn dùng, không gọi thẳng hàm báo tin: chỗ dễ
+       * hỏng nhất không phải bản thân hàm ấy mà là chỗ NỐI — phải hỏi "hệ này
+       * đã có bản nào chưa" TRƯỚC khi thêm, vì hỏi sau thì bản vừa thêm cũng
+       * tính vào và câu trả lời lúc nào cũng là "có rồi".
+       */
+      admin = await moTrangDaDangNhap('admin@sunnystore.local', 'admin123');
+      await admin.goto(`${GOC}/quan-tri/game/${game.id}`, { waitUntil: 'networkidle' });
+      await admin.selectOption('select[name="heMay"]', heMoi);
+      await admin.fill('input[name="soHieu"]', '9.9');
+      await admin.click('button:has-text("Thêm bản tải")');
+
+      kiem('game để dành có bản cho hệ máy mới thì người để dành được báo',
+        await doiToi(async () =>
+          (await db.thongBao.count({ where: { nguoiId: nguoi.id } })) === demTruoc + 1));
+
+      const tin = await db.thongBao.findFirst({
+        where: { nguoiId: nguoi.id }, orderBy: { taoLuc: 'desc' },
+        select: { tieuDe: true, duongDan: true },
+      });
+      kiem('tin nhắc đúng hệ máy vừa có bản',
+        (tin?.tieuDe ?? '').includes(game.ten), tin?.tieuDe ?? '');
+      kiem('và dẫn thẳng về trang game ấy',
+        tin?.duongDan === `/game/${game.duongDan}`, tin?.duongDan ?? '');
+
+      await db.banTai.deleteMany({ where: { gameId: game.id, soHieu: '9.9' } });
+      await db.thongBao.deleteMany({ where: { nguoiId: nguoi.id } });
+    }
+    await db.deDanh.deleteMany({ where: { nguoiId: nguoi.id } });
+
+    /*
      * ── HAI CÚ BẤM CÙNG LÚC CHỈ RA MỘT HÀNG ──────────────────────────────
      *
      * Mỗi người mỗi game một khoá duy nhất trong lược đồ, nên cú thứ hai vấp
@@ -91,6 +146,7 @@ export default async function chay(kiem) {
   } finally {
     if (p) await p.close();
     if (khach) await khach.close();
+    if (admin) await admin.close();
     await don();
   }
 }

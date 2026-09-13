@@ -5,6 +5,9 @@ import { db } from '@/lib/db';
 import { conDuocDangKy, conDuocThu, ghiLanDangKy, ghiLanHong, xoaLanHong } from '@/lib/chan-do-mat-khau';
 import { bamMatKhau, donPhienCu, dongPhien, khopMatKhau, moPhien } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
+import {
+  EMAIL_TOI_DA, MAT_KHAU_TOI_DA, MAT_KHAU_TOI_THIEU, TEN_TOI_DA,
+} from '@/lib/luat-tai-khoan-const';
 
 export interface KetQuaXacThuc { loi?: string }
 
@@ -90,11 +93,6 @@ function duongVe(tiep: FormDataEntryValue | null): string {
  * đó chính chủ vào Cài đặt sửa lại tên ấy thì bị từ chối. Hai cửa vào cùng một
  * cột thì phải cùng một luật.
  */
-const TEN_TOI_DA = 40;
-const EMAIL_TOI_DA = 190;
-/* Trần mật khẩu không phải để bắt bẻ ai: bcrypt băm chuỗi dài nào cũng tốn
- * CPU theo độ dài, nên một ô nhập không trần là một lối làm nghẽn máy chủ. */
-const MAT_KHAU_TOI_DA = 200;
 
 export async function dangKy(_truoc: KetQuaXacThuc, form: FormData): Promise<KetQuaXacThuc> {
   const email = String(form.get('email') ?? '').trim().toLowerCase();
@@ -105,7 +103,7 @@ export async function dangKy(_truoc: KetQuaXacThuc, form: FormData): Promise<Ket
   if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(email)) return { loi: 'Địa chỉ email trông không hợp lệ.' };
   if (tenHienThi.length < 2) return { loi: 'Tên hiển thị cần ít nhất 2 ký tự.' };
   if (tenHienThi.length > TEN_TOI_DA) return { loi: `Tên hiển thị dài quá ${TEN_TOI_DA} ký tự.` };
-  if (matKhau.length < 8) return { loi: 'Mật khẩu cần ít nhất 8 ký tự.' };
+  if (matKhau.length < MAT_KHAU_TOI_THIEU) return { loi: `Mật khẩu cần ít nhất ${MAT_KHAU_TOI_THIEU} ký tự.` };
   if (matKhau.length > MAT_KHAU_TOI_DA) return { loi: 'Mật khẩu dài quá.' };
 
   /*

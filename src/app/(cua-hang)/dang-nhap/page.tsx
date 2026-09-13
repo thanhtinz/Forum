@@ -35,7 +35,15 @@ export default async function TrangDangNhap({ searchParams }: {
         <ONhapGiu name="dinhDanh" required autoComplete="username" className="o-nhap" />
       </label>
       <label className="block">
-        <span className="phu mb-1 block">Mật khẩu</span>
+        {/* Lối "quên mật khẩu" nằm NGAY CẠNH nhãn ô mật khẩu, không nhét xuống
+            cuối trang: người ta chỉ nhớ ra mình quên đúng vào lúc nhìn cái ô
+            này, chứ không phải lúc đọc hết cả trang. */}
+        <span className="mb-1 flex items-baseline justify-between gap-3">
+          <span className="phu">Mật khẩu</span>
+          <Link href="/quen-mat-khau" className="text-[13px] font-semibold text-nhan hover:underline">
+            Quên mật khẩu?
+          </Link>
+        </span>
         <input name="matKhau" type="password" required autoComplete="current-password" className="o-nhap" />
       </label>
     </BieuMauXacThuc>

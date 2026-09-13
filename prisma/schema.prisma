@@ -32,6 +32,7 @@ model NguoiDung {
   traLoi        TraLoi[]
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
+  maDatLai      MaDatLai[]
   baoXau        BaoXau[]
   thongBao      ThongBao[]
   donTacGia     DonTacGia?
@@ -51,6 +52,43 @@ enum VaiTro {
   /// Tác giả: tự đăng game của mình, nhưng game phải qua duyệt mới lên kệ.
   TAC_GIA
   QUAN_TRI
+}
+
+/**
+ * MÃ ĐẶT LẠI MẬT KHẨU — lối duy nhất cứu người đã quên mật khẩu.
+ *
+ * VÌ SAO CÓ: `doiMatKhau` chỉ chạy khi người ta ĐANG đăng nhập được. Ai quên
+ * mật khẩu thì trước đợt này là khoá cứng vĩnh viễn — ban quản trị cũng không
+ * cứu nổi, vì trang thành viên chỉ khoá tài khoản và đổi vai trò được.
+ *
+ * VÌ SAO KHÔNG GỬI QUA EMAIL: cửa hàng chưa gửi được email, và cũng chưa xác
+ * minh email lúc đăng ký — nên một lối "gửi mã vào hòm thư" vừa không chạy
+ * được vừa không đáng tin. Nay ban quản trị phát mã rồi trao tay; xác minh
+ * người xin là việc của họ, ngoài phạm vi cái bảng này. Ngày cắm được máy gửi
+ * thư vào thì chỉ phải thay chỗ GIAO mã, còn cả cơ chế dưới đây giữ nguyên.
+ *
+ * BĂM MÃ CHỨ KHÔNG LƯU MÃ THẬT, cùng lẽ với phiên đăng nhập: cơ sở dữ liệu rò
+ * ra ngoài thì kẻ cầm được nó không có sẵn một nắm mã còn hiệu lực trong tay.
+ * Băm bằng SHA-256 chứ không bcrypt vì ở đây phải TRA theo mã — bcrypt thì
+ * phải quét cả bảng mà thử từng hàng. Dùng được SHA-256 là nhờ mã gồm 32 byte
+ * ngẫu nhiên: không có gì để mà đoán mò.
+ */
+model MaDatLai {
+  id      String    @id @default(cuid())
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  /// SHA-256 của mã thật.
+  ma String @unique
+
+  hetHan  DateTime
+  /// Lúc đã dùng. Có giá trị là mã chết — một mã chỉ đổi được một lần.
+  dungLuc DateTime?
+
+  taoLuc DateTime @default(now())
+
+  @@index([nguoiId])
+  @@index([hetHan])
 }
 
 /// Phiên đăng nhập của NextAuth. Giữ ở CSDL chứ không nhét hết vào cookie:

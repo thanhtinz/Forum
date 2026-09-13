@@ -13,6 +13,8 @@ import { xoaAnh, xoaPhim, xoaTepGame } from '@/lib/kho';
 import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
 import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
 import { napDoTuoi } from '@/lib/do-tuoi-const';
+import { phatMa } from '@/lib/dat-lai';
+import { chiaCum } from '@/lib/dat-lai-const';
 import { tinhDiemTB } from '@/lib/diem-game-const';
 import {
   SU_KIEN_MO_TA_TOI_DA, SU_KIEN_TIEU_DE_TOI_DA, laLoaiSuKien,
@@ -1485,6 +1487,38 @@ export async function khoaThanhVien(nguoiId: string, khoa: boolean): Promise<Ket
 
   revalidatePath('/quan-tri/thanh-vien');
   return {};
+}
+
+/**
+ * Phát một mã đặt lại mật khẩu cho một thành viên.
+ *
+ * VÌ SAO VIỆC NÀY NẰM Ở BAN QUẢN TRỊ: cửa hàng chưa gửi được email và cũng
+ * chưa xác minh email lúc đăng ký, nên không có cách nào để MÁY tự tin rằng
+ * người đang xin đúng là chủ tài khoản. Người thì tin được — ban quản trị hỏi
+ * vài câu rồi quyết. Ngày cắm được máy gửi thư vào thì chỉ phải thay chỗ giao
+ * mã, cơ chế bên dưới giữ nguyên.
+ *
+ * TRẢ MÃ THẬT VỀ ĐÚNG MỘT LẦN, không lưu lại đâu để xem lại: trong cơ sở dữ
+ * liệu chỉ còn bản băm. Lỡ tay đóng cửa sổ thì phát lại cái khác — mà phát lại
+ * cũng chính là lối chữa khi lỡ đưa mã nhầm người, vì mã cũ chết ngay.
+ *
+ * KHÔNG PHÁT CHO TÀI KHOẢN ĐANG BỊ KHOÁ: đặt lại mật khẩu cho một người không
+ * đăng nhập được là việc vô nghĩa, và nó che mất chuyện họ đang bị khoá. Điều
+ * kiện ấy nằm trong `where` chứ không lọc sau.
+ */
+export async function phatMaDatLai(nguoiId: string): Promise<KetQua & { ma?: string }> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const nguoi = await db.nguoiDung.findFirst({
+    where: { id: nguoiId, khoa: false },
+    select: { id: true },
+  });
+  if (!nguoi) return { loi: 'Không phát được. Tài khoản không tồn tại hoặc đang bị khoá.' };
+
+  const ma = await phatMa(nguoi.id);
+  revalidatePath('/quan-tri/thanh-vien');
+  return { ok: true, ma: chiaCum(ma) };
 }
 
 /** Phong hoặc hạ quyền quản trị. */

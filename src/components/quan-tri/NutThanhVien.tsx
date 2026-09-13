@@ -2,6 +2,7 @@
 
 import { Lock, LockOpen, Shield, ShieldOff, UserPlus } from 'lucide-react';
 import { NutViec } from './NutViec';
+import { NutPhatMa } from './NutPhatMa';
 import { doiVaiTro, khoaThanhVien } from '@/app/(quan-tri)/quan-tri/viec';
 
 /**
@@ -28,6 +29,12 @@ export function NutThanhVien({ id, ten, vaiTro, dangKhoa, laToi }: {
 
   return (
     <span className="flex items-center justify-end gap-1">
+      {/* Phát mã được cho MỌI vai trò, kể cả quản trị khác: người quên mật
+          khẩu thì vai trò nào cũng quên được, mà ở đây không có lối nào khác
+          để cứu. Chặn thật nằm ở máy chủ và chỉ chặn đúng một chuyện — tài
+          khoản đang bị khoá. */}
+      {!dangKhoa && <NutPhatMa id={id} ten={ten} />}
+
       {!laQuanTri && (
         dangKhoa ? (
           <NutViec nho={`Mở khoá ${ten}`} nhan={<><LockOpen size={13} aria-hidden /> Mở khoá</>}

@@ -41,9 +41,9 @@ export default async function GameCuaToi({ searchParams }: {
     take: MOI_TRANG,
     select: {
       id: true, ten: true, icon: true, trangThai: true, soLuotTai: true,
-      // `deDanh` đếm ngay trong câu truy vấn: đây là con số nói với người làm
+      // `daLuu` đếm ngay trong câu truy vấn: đây là con số nói với người làm
       // game rằng có bao nhiêu người đang ĐỢI — xem chú thích ở chỗ in ra.
-      suaLuc: true, _count: { select: { banTai: true, deDanh: true } },
+      suaLuc: true, _count: { select: { banTai: true, daLuu: true } },
     },
   });
 
@@ -77,16 +77,16 @@ export default async function GameCuaToi({ searchParams }: {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[15px] font-semibold">{g.ten}</span>
                     {/*
-                      SỐ NGƯỜI ĐỂ DÀNH đứng cạnh số lượt tải, và nó là con số
+                      SỐ NGƯỜI ĐÃ LƯU đứng cạnh số lượt tải, và nó là con số
                       khác hẳn: lượt tải nói chuyện đã rồi, còn "đang đợi" nói
-                      chuyện sắp tới. Phần lớn người bấm để dành ở cửa hàng này
+                      chuyện sắp tới. Phần lớn người bấm lưu ở cửa hàng này
                       là người chưa tải được — máy họ chưa có bản hợp, hoặc
                       mạng lúc ấy yếu. Người làm game nhìn con số ấy mới biết
                       có đáng dựng thêm bản cho hệ máy khác không.
                     */}
                     <span className="phu mt-0.5 block truncate">
                       {g._count.banTai} bản tải · {gonSo(g.soLuotTai)} lượt tải
-                      {g._count.deDanh > 0 && ` · ${gonSo(g._count.deDanh)} người để dành`}
+                      {g._count.daLuu > 0 && ` · ${gonSo(g._count.daLuu)} người đã lưu`}
                       {' · '}sửa {cachDay(g.suaLuc)}
                     </span>
                   </span>

@@ -86,18 +86,18 @@ export async function baoBanMoi(gameId: string, heMay: MaHeMay, soHieu: string):
 }
 
 /**
- * Báo cho những người ĐỂ DÀNH game này rằng nay đã có bản cho một hệ máy MỚI.
+ * Báo cho những người ĐÃ LƯU game này rằng nay đã có bản cho một hệ máy MỚI.
  *
  * VÌ SAO ĐÁNG BÁO: ở cửa hàng này, lý do phổ biến nhất để một người bấm "để
  * dành" thay vì tải ngay là game chưa có bản cho máy họ — thấy một game hay mà
- * chỉ có bản Java trong khi máy mình là Android thì để dành lại là việc duy
+ * chỉ có bản Java trong khi máy mình là Android thì lưu lại là việc duy
  * nhất làm được. Ngày bản Android lên kệ mà không ai nói với họ thì cái danh
- * sách để dành ấy chỉ là một chỗ để quên.
+ * sách đã lưu ấy chỉ là một chỗ để quên.
  *
- * CHỈ BÁO KHI HỆ MÁY LÀ MỚI, không báo mỗi lần ra bản: người để dành chưa tải
+ * CHỈ BÁO KHI HỆ MÁY LÀ MỚI, không báo mỗi lần ra bản: người đã lưu chưa tải
  * bao giờ, nên bản 1.1 hay 1.2 của một hệ họ vốn không dùng chẳng nói gì với
  * họ cả. Còn ai đã tải rồi thì `baoBanMoi` lo, và hai hàm không giẫm chân nhau
- * vì hai bảng khác nhau: `LuotTai` ghi việc đã xảy ra, `DeDanh` ghi một ý định.
+ * vì hai bảng khác nhau: `LuotTai` ghi việc đã xảy ra, `DaLuu` ghi một ý định.
  *
  * Nuốt mọi lỗi, cùng lẽ với `baoBanMoi`: việc chính là RA BẢN, mất một loạt
  * thông báo thì tiếc, chứ để nó kéo đổ lượt ra bản thì tệ hơn nhiều.
@@ -110,17 +110,17 @@ export async function baoHeMayMoi(gameId: string, heMay: MaHeMay): Promise<numbe
     });
     if (!game) return 0;
 
-    const deDanh = await db.deDanh.findMany({
+    const daLuu = await db.daLuu.findMany({
       where: { gameId },
       orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
       take: TOI_DA_BAO,
       select: { nguoiId: true },
     });
-    if (deDanh.length === 0) return 0;
+    if (daLuu.length === 0) return 0;
 
     const ten = game.tenViet ?? game.ten;
     const tieuDe = `${ten} nay có bản cho ${MO_TA_HE[heMay].ten}`;
-    const chiTiet = 'Game bạn để dành vừa có bản cho hệ máy này';
+    const chiTiet = 'Game bạn đã lưu vừa có bản cho hệ máy này';
     const duongDan = `/game/${game.duongDan}`;
 
     /*
@@ -132,13 +132,13 @@ export async function baoHeMayMoi(gameId: string, heMay: MaHeMay): Promise<numbe
     const daBao = await db.thongBao.findMany({
       where: {
         loai: 'GAME_CO_BAN_MOI', tieuDe, duongDan,
-        nguoiId: { in: deDanh.map((d) => d.nguoiId) },
+        nguoiId: { in: daLuu.map((d) => d.nguoiId) },
       },
       select: { nguoiId: true },
     });
     const boQua = new Set(daBao.map((t) => t.nguoiId));
 
-    const canBao = [...new Set(deDanh.map((d) => d.nguoiId))].filter((id) => !boQua.has(id));
+    const canBao = [...new Set(daLuu.map((d) => d.nguoiId))].filter((id) => !boQua.has(id));
     if (canBao.length === 0) return 0;
 
     await db.thongBao.createMany({

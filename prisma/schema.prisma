@@ -26,7 +26,7 @@ model NguoiDung {
 
   danhGia       DanhGia[]
   luotTai       LuotTai[]
-  deDanh        DeDanh[]
+  daLuu         DaLuu[]
   chuDe         ChuDe[]
   traLoi        TraLoi[]
   yeuCau        YeuCau[]
@@ -136,7 +136,7 @@ model Game {
   suKien  SuKien[]
   danhGia DanhGia[]
   luotTai LuotTai[]
-  deDanh  DeDanh[]
+  daLuu   DaLuu[]
   chuDe   ChuDe[]
 
   @@index([trangThai, dangLuc])
@@ -415,7 +415,7 @@ model LuotTai {
 }
 
 /**
- * ĐỂ DÀNH — danh sách game định tải, chưa tải.
+ * ĐÃ LƯU — danh sách game định tải, chưa tải.
  * Khác `LuotTai` ở đúng một chỗ, mà chỗ ấy quan trọng: `LuotTai` ghi việc đã
  * XẢY RA (ai tải gì, lúc nào), còn bảng này ghi một Ý ĐỊNH. Nhập hai thứ làm
  * một thì "thư viện của tôi" lẫn game chưa hề tải, mà mục cập nhật lại đi
@@ -424,7 +424,7 @@ model LuotTai {
  * Mỗi người mỗi game MỘT hàng, nên bật tắt là `upsert`/`delete` chứ không phải
  * đếm rồi mới quyết — hai lần bấm nhanh không đẻ ra hai hàng.
  */
-model DeDanh {
+model DaLuu {
   id      String    @id @default(cuid())
   gameId  String
   game    Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)

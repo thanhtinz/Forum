@@ -271,7 +271,7 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
 
   // Ngoài giao dịch: bản đã ra rồi, thông báo hỏng thì không được kéo nó đổ theo.
   await baoBanMoi(gameId, heMay, soHieu);
-  // Hệ máy mới thì báo riêng cho người ĐỂ DÀNH — phần lớn họ để dành đúng vì
+  // Hệ máy mới thì báo riêng cho người ĐÃ LƯU — phần lớn họ lưu lại đúng vì
   // game chưa có bản cho máy mình. Xem `baoHeMayMoi`.
   if (!heDaCo) await baoHeMayMoi(gameId, heMay);
 

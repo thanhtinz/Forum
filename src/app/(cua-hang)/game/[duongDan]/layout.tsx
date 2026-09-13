@@ -5,7 +5,7 @@ import { docBanXem } from '@/lib/ban-tai-xem';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { NutChiaSe } from '@/components/game/NutChiaSe';
-import { NutDeDanh } from '@/components/game/NutDeDanh';
+import { NutLuu } from '@/components/game/NutLuu';
 import { NutLui } from '@/components/game/NutLui';
 import { TabGame } from '@/components/game/TabGame';
 import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
@@ -83,13 +83,13 @@ export default async function KhungGame({ children, params }: {
    * lượt tra khoá duy nhất, không phải phép đếm. Có hàng ấy thì nút đầu trang
    * đổi sang biểu tượng đám mây — xem `TamTai`.
    */
-  const [daTai, deDanh] = nguoi
+  const [daTai, daLuu] = nguoi
     ? await Promise.all([
         db.luotTai.findUnique({
           where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
           select: { id: true },
         }).then(Boolean),
-        db.deDanh.findUnique({
+        db.daLuu.findUnique({
           where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
           select: { id: true },
         }).then(Boolean),
@@ -208,8 +208,8 @@ export default async function KhungGame({ children, params }: {
             <div className="absolute inset-x-3 top-3 flex items-center justify-between">
               <NutLui />
               <span className="flex items-center gap-2">
-                <NutDeDanh gameId={game.id} duongDan={game.duongDan}
-                  banDau={deDanh} daDangNhap={!!nguoi} />
+                <NutLuu gameId={game.id} duongDan={game.duongDan}
+                  banDau={daLuu} daDangNhap={!!nguoi} />
                 <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
               </span>
             </div>
@@ -218,8 +218,8 @@ export default async function KhungGame({ children, params }: {
           <div className="flex items-center justify-between">
             <NutLui />
             <span className="flex items-center gap-2">
-              <NutDeDanh gameId={game.id} duongDan={game.duongDan}
-                banDau={deDanh} daDangNhap={!!nguoi} />
+              <NutLuu gameId={game.id} duongDan={game.duongDan}
+                banDau={daLuu} daDangNhap={!!nguoi} />
               <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
             </span>
           </div>

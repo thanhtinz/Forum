@@ -21,7 +21,7 @@ export const metadata = { title: 'Trò chơi' };
  *   1. Chip lọc  — lối tắt cho người biết mình muốn hệ máy nào.
  *   2. Băng nổi bật — khối lớn duy nhất, chỗ dừng mắt, do người chọn tay.
  *   3. Bảng xếp hạng có ĐÁNH SỐ — dấu hiệu riêng của CH Play.
- *   4. Kệ thẻ — khoe biểu tượng, cho mục mới lên kệ và mục Việt hoá.
+ *   4. Kệ thẻ — khoe biểu tượng, cho mục mới lên kệ.
  *   5. Thể loại — cho người chưa biết mình muốn gì.
  *
  * MỖI KHỐI PHẢI NÓI MỘT ĐIỀU KHÁC NHAU.
@@ -33,18 +33,21 @@ export const metadata = { title: 'Trò chơi' };
  * dụng; cửa hàng này thì không, nên bỏ đi một.
  *
  * Cũng vì lẽ ấy mà hàng chip không liệt kê thể loại nữa: cuối trang đã có
- * hẳn một lưới thể loại đầy đủ kèm số đếm.
+ * hẳn một lưới thể loại đầy đủ kèm số đếm. Và cũng vì lẽ ấy mà kệ "Có bản Việt
+ * hoá" đã bỏ đi: nó xếp theo NGÀY THÊM y như kệ "Mới ra mắt" ngay trên nó, mà
+ * phần lớn game trong cửa hàng đều có bản Việt hoá — nên hai kệ liền nhau ra
+ * gần đúng một danh sách. Ai muốn lọc riêng thì chip "Có bản Việt hoá" ở đầu
+ * trang vẫn dẫn thẳng sang trang duyệt đã lọc sẵn.
  *
  * Không có khối cộng đồng nào ở đây: thảo luận thuộc về TỪNG GAME và nằm
  * trong trang của game ấy.
  */
 
 export default async function TrangKhoGame() {
-  const [noiBat, taiNhieu, moi, vietHoa, theLoai, tongGame] = await Promise.all([
+  const [noiBat, taiNhieu, moi, theLoai, tongGame] = await Promise.all([
     layKe({ noiBat: true }, [{ dangLuc: 'desc' }, { id: 'desc' }], 5),
     layKe({}, [{ soLuotTai: 'desc' }, { id: 'desc' }], 9),
     layKe({}, [{ dangLuc: 'desc' }, { id: 'desc' }], 12),
-    layKe({ vietHoa: true }, [{ dangLuc: 'desc' }, { id: 'desc' }], 12),
     db.theLoai.findMany({
       orderBy: [{ thuTu: 'asc' }, { ten: 'asc' }],
       take: 24,
@@ -90,9 +93,6 @@ export default async function TrangKhoGame() {
 
       <KeThe ten="Mới ra mắt" phu="Vừa được thêm vào, chưa ai kịp chơi"
         xemThem="/duyet?sap=moi" game={moi} />
-
-      <KeThe ten="Có bản Việt hoá" phu="Chơi bằng tiếng Việt, không phải đoán chữ"
-        xemThem="/duyet?viet-hoa=1" game={vietHoa} />
 
       {theLoai.length > 0 && (
         <section>

@@ -1,4 +1,4 @@
-import { db, doiToi, GOC, LOI, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { datOAn, db, doiToi, GOC, LOI, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 
 /**
  * Cài đặt tài khoản, và sửa/xoá bài của chính mình trên diễn đàn.
@@ -43,7 +43,7 @@ export default async function chay(kiem) {
     kiem('đổi được tên hiển thị', daDoiTen);
 
     // Địa chỉ ảnh lạ bị chặn — `javascript:` lọt vào thuộc tính src là hỏng.
-    await pA.fill('input[name="anh"]', 'javascript:alert(1)');
+    await datOAn(pA, 'anh', 'javascript:alert(1)');
     await pA.click('button:has-text("Lưu hồ sơ")');
     await pA.waitForSelector(LOI, { timeout: 5000 }).catch(() => {});
     const anh = (await db.nguoiDung.findUnique({ where: { id: a.id }, select: { anh: true } }))?.anh;

@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { datOAn, db, doiToi, GOC, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 
 /**
  * Địa chỉ tệp và ảnh: câu kiểm phải PHÂN TÍCH, không so đầu chuỗi.
@@ -92,7 +92,7 @@ export default async function chay(kiem) {
     // ── Ảnh đại diện ở cài đặt tài khoản cũng chặn y vậy ──────────────
     const nguoi = await moTrangDaDangNhap('anhthu', 'thanhvien123');
     await nguoi.goto(`${GOC}/toi/cai-dat`, { waitUntil: 'networkidle' });
-    await nguoi.fill('input[name="anh"]', '//vi-du-xau.test/a.png');
+    await datOAn(nguoi, 'anh', '//vi-du-xau.test/a.png');
     await nguoi.click('button:has-text("Lưu hồ sơ")');
     await nguoi.waitForTimeout(900);
     const anh = (await db.nguoiDung.findFirst({

@@ -21,6 +21,30 @@ export const GOC = process.env.GOC ?? 'http://localhost:3000';
  */
 export const LOI = '[role="alert"]:not(#__next-route-announcer__)';
 
+/**
+ * Nhét một giá trị vào Ô ẨN của biểu mẫu — đúng lối kẻ nghịch trang làm.
+ *
+ * Mấy ô chọn ảnh nay gửi đi một ô `type="hidden"` chứa địa chỉ sau khi tải
+ * lên, nên `page.fill` không gõ vào được nữa (Playwright chối ô ẩn, và đúng —
+ * người thật không gõ vào đó). Nhưng phép kiểm ở đây không canh chuyện người
+ * thật gõ: nó canh máy chủ có chối một địa chỉ bịa hay không, mà địa chỉ bịa
+ * thì tới từ một biểu mẫu đã bị sửa trong trình duyệt.
+ *
+ * Gọi hàm đặt `value` GỐC của trình duyệt rồi bắn sự kiện `input`: React nghe
+ * được sự kiện ấy nên cập nhật trạng thái của nó theo, và giá trị vừa nhét ở
+ * lại qua lượt vẽ sau. Đặt thẳng `el.value` thì React vẽ lại một cái là xoá.
+ */
+export async function datOAn(trang, ten, giaTri) {
+  await trang.evaluate(({ ten: t, giaTri: g }) => {
+    const o = document.querySelector(`input[name="${t}"]`);
+    if (!o) throw new Error(`Không thấy ô tên ${t}`);
+    const dat = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+    dat.call(o, g);
+    o.dispatchEvent(new Event('input', { bubbles: true }));
+  }, { ten, giaTri });
+}
+
+
 export const db = new PrismaClient();
 
 /**

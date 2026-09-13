@@ -9,7 +9,10 @@ import { ONhapGiu } from '@/components/ONhapGiu';
 export const metadata: Metadata = { title: 'Đăng nhập' };
 export const dynamic = 'force-dynamic';
 
-export default async function TrangDangNhap() {
+export default async function TrangDangNhap({ searchParams }: {
+  searchParams: Promise<{ tiep?: string }>;
+}) {
+  const { tiep } = await searchParams;
   // Đã đăng nhập rồi mà vẫn mở trang này thì đưa về trang chủ: hiện một biểu
   // mẫu đăng nhập cho người đang đăng nhập chỉ tổ làm họ tưởng đã bị đăng xuất.
   if (await nguoiHienTai()) redirect('/');
@@ -22,6 +25,11 @@ export default async function TrangDangNhap() {
       nut="Đăng nhập"
       duoi={<>Chưa có tài khoản? <Link href="/dang-ky" className="font-semibold text-nhan hover:underline">Đăng ký</Link></>}
     >
+      {/* Đường về đi kèm biểu mẫu chứ không giữ trong phiên: người mở hai tab
+          đăng nhập cho hai trang khác nhau thì mỗi tab phải về đúng chỗ của
+          nó. Lọc đường về nằm ở máy chủ — xem `duongVe` trong `viec.ts`. */}
+      {tiep && <input type="hidden" name="tiep" value={tiep} />}
+
       <label className="block">
         <span className="phu mb-1 block">Email hoặc tên đăng nhập</span>
         <ONhapGiu name="dinhDanh" required autoComplete="username" className="o-nhap" />

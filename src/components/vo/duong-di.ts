@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { ArrowUpCircle, Gamepad2, Library, Search, Trophy } from 'lucide-react';
+import { ArrowUpCircle, Bookmark, Gamepad2, Library, Search, Trophy } from 'lucide-react';
 import { IconHomNay } from './IconHomNay';
 
 /**
@@ -39,6 +39,9 @@ export const LOI_DI: LoiDi[] = [
 export const LOI_PHU: LoiDi[] = [
   { duongDan: '/cap-nhat', ten: 'Bản cập nhật', icon: ArrowUpCircle, canDangNhap: true },
   { duongDan: '/thu-vien', ten: 'Thư viện', icon: Library, canDangNhap: true },
+  // Để dành đứng SAU thư viện: thư viện là thứ đã có trong tay, còn đây mới là
+  // ý định — mở cửa hàng ra thì người ta hay tìm lại cái đã tải trước.
+  { duongDan: '/de-danh', ten: 'Để dành', icon: Bookmark, canDangNhap: true },
 ];
 
 /**

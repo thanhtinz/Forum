@@ -5,6 +5,7 @@ import { docBanXem } from '@/lib/ban-tai-xem';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { NutChiaSe } from '@/components/game/NutChiaSe';
+import { NutDeDanh } from '@/components/game/NutDeDanh';
 import { NutLui } from '@/components/game/NutLui';
 import { TabGame } from '@/components/game/TabGame';
 import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
@@ -82,12 +83,18 @@ export default async function KhungGame({ children, params }: {
    * lượt tra khoá duy nhất, không phải phép đếm. Có hàng ấy thì nút đầu trang
    * đổi sang biểu tượng đám mây — xem `NutTaiDau`.
    */
-  const daTai = nguoi
-    ? !!await db.luotTai.findUnique({
-        where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
-        select: { id: true },
-      })
-    : false;
+  const [daTai, deDanh] = nguoi
+    ? await Promise.all([
+        db.luotTai.findUnique({
+          where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
+          select: { id: true },
+        }).then(Boolean),
+        db.deDanh.findUnique({
+          where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
+          select: { id: true },
+        }).then(Boolean),
+      ])
+    : [false, false];
 
   /*
    * HẠNG TRONG THỂ LOẠI CHÍNH.
@@ -200,13 +207,21 @@ export default async function KhungGame({ children, params }: {
               className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent sm:rounded-t-the" />
             <div className="absolute inset-x-3 top-3 flex items-center justify-between">
               <NutLui />
-              <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
+              <span className="flex items-center gap-2">
+                <NutDeDanh gameId={game.id} duongDan={game.duongDan}
+                  banDau={deDanh} daDangNhap={!!nguoi} />
+                <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
+              </span>
             </div>
           </div>
         ) : (
           <div className="flex items-center justify-between">
             <NutLui />
-            <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
+            <span className="flex items-center gap-2">
+              <NutDeDanh gameId={game.id} duongDan={game.duongDan}
+                banDau={deDanh} daDangNhap={!!nguoi} />
+              <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
+            </span>
           </div>
         )}
 

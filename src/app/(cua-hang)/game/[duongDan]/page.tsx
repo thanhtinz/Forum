@@ -12,6 +12,8 @@ import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
 import { traLoiDanhGia } from '@/app/(quan-tri)/quan-tri/viec';
 import { tacGiaTraLoiDanhGia } from '@/app/(tac-gia)/quan-ly/viec';
 import { KeAnhChup } from '@/components/game/KeAnhChup';
+import { KeThe } from '@/components/game/KeThe';
+import { CHON_THE, thanhThe } from '@/components/game/the-game';
 import { KhungTai } from '@/components/game/KhungTai';
 import { docBanXem } from '@/lib/ban-tai-xem';
 import { TamDanhGia } from '@/components/game/TamDanhGia';
@@ -24,6 +26,7 @@ import { MO_TA_HE, NHAC_KHI_CAI, type MaHeMay } from '@/lib/he-may';
 import { cachDay, catChu, gonSo } from '@/lib/tien-ich';
 import { bocChu, dungChuDam } from '@/lib/chu-dam';
 import { nguoiHienTai } from '@/lib/xac-thuc';
+import { MO_TA_TUOI, napDoTuoi } from '@/lib/do-tuoi-const';
 import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
 import { PHIM_TOI_DA } from '@/lib/phim-const';
 
@@ -148,7 +151,7 @@ export default async function TabThongTin({ params, searchParams }: {
 
   const nguoi = await nguoiHienTai();
 
-  const [phanBo, danhGia, cuaToi, soHe, banXem] = await Promise.all([
+  const [phanBo, danhGia, cuaToi, soHe, banXem, cungTacGia] = await Promise.all([
     db.danhGia.groupBy({ by: ['sao'], where: { gameId: game.id }, _count: { _all: true } }),
     db.danhGia.findMany({
       where: { gameId: game.id, noiDung: { not: null }, ...(locSao ? { sao: locSao } : {}) },
@@ -165,6 +168,32 @@ export default async function TabThongTin({ params, searchParams }: {
       : null,
     db.banTai.findMany({ where: { gameId: game.id }, distinct: ['heMay'], select: { heMay: true } }),
     docBanXem(game.id),
+    /*
+     * GAME KHÁC CỦA CHÍNH NGƯỜI LÀM RA GAME NÀY.
+     *
+     * App Store để kệ "More By This Developer" ở cuối trang ứng dụng, và nó
+     * khác hẳn kệ "game tương tự" đã bỏ đi: kệ kia đoán mò theo thể loại và
+     * kéo người ta ra khỏi thứ họ đang xem, còn kệ này trả lời một câu người
+     * ta tự hỏi sau khi đọc xong mô tả — "ai làm cái này, họ còn làm gì nữa".
+     *
+     * Gom theo TÀI KHOẢN tác giả nếu có; không có thì đành theo chuỗi tên hãng
+     * gõ tay, vì game cũ hai mươi năm trước không ai đứng tên cả. Không có cả
+     * hai thì kệ trống và không hiện.
+     */
+    (async () => {
+      const cua = game.tacGiaId
+        ? { tacGiaId: game.tacGiaId }
+        : game.nhaPhatTrien
+          ? { nhaPhatTrien: game.nhaPhatTrien }
+          : null;
+      if (!cua) return [];
+      return db.game.findMany({
+        where: { ...cua, ...DANG_HIEN, id: { not: game.id } },
+        orderBy: [{ soLuotTai: 'desc' }, { id: 'asc' }],
+        take: 12,
+        select: CHON_THE,
+      });
+    })(),
   ]);
 
   // Đếm lượt xem sau khi đã lấy đủ dữ liệu, và không chờ kết quả: hỏng bộ đếm
@@ -445,6 +474,13 @@ export default async function TabThongTin({ params, searchParams }: {
             <Dong nhan="Bản mới nhất"
               giaTri={moiNhat.soHieu + (moiNhat.ngayRa ? ` · ${cachDay(moiNhat.ngayRa)}` : '')} />
           )}
+          {/* ĐỘ TUỔI KÈM LÝ DO. Hàng số liệu trên đầu trang chỉ in được "12+"
+              — một con số không tự nói được vì sao. App Store bấm vào ô ấy ra
+              nguyên một bảng giải thích; câu giải thích ta đã có sẵn trong
+              `MO_TA_TUOI`, xưa nay chỉ hiện lúc bấm tải, tức là quá muộn cho
+              người đang cân nhắc cho con mình chơi. */}
+          <Dong nhan="Độ tuổi"
+            giaTri={`${MO_TA_TUOI[napDoTuoi(game.doTuoi)].nhan} · ${MO_TA_TUOI[napDoTuoi(game.doTuoi)].y}`} />
           <Dong nhan="Số bản tải" giaTri={`${game._count.banTai} bản trên ${soHe.length} hệ máy`} />
           <Dong nhan="Có mặt từ" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
         </dl>
@@ -474,6 +510,12 @@ export default async function TabThongTin({ params, searchParams }: {
         </section>
       )}
 
+      {cungTacGia.length > 0 && (
+        <KeThe ten={`Game khác của ${tenTacGia}`}
+          phu="Cùng người làm ra game này"
+          xemThem={duongDanTacGia ?? undefined}
+          game={cungTacGia.map(thanhThe)} />
+      )}
     </div>
   );
 }

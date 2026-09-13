@@ -112,6 +112,24 @@ export default async function chay(kiem) {
     !html.includes('Game tương tự'));
 
   /*
+   * NHƯNG CÓ KỆ GAME CÙNG NGƯỜI LÀM.
+   *
+   * Khác hẳn kệ "game tương tự" đã bỏ: kệ kia đoán mò theo thể loại và kéo
+   * người ta ra khỏi thứ họ đang xem, còn kệ này trả lời một câu người ta tự
+   * hỏi sau khi đọc xong mô tả — "ai làm cái này, họ còn làm gì nữa". Chỉ hiện
+   * khi hãng ấy thật sự còn game khác trên cửa hàng.
+   */
+  const conGameKhac = game.nhaPhatTrien
+    ? await db.game.count({
+        where: {
+          nhaPhatTrien: game.nhaPhatTrien, trangThai: 'DANG_HIEN', id: { not: game.id },
+        },
+      })
+    : 0;
+  kiem('có kệ game khác của cùng hãng khi hãng ấy còn game khác',
+    conGameKhac === 0 || html.includes('Game khác của'), `còn ${conGameKhac} game`);
+
+  /*
    * DẢI BÌA CHỈ DỰNG TỪ ẢNH THẬT.
    *
    * Có ảnh bìa, hoặc ít nhất một ảnh chụp, thì đầu trang là một dải hình trải
@@ -169,6 +187,17 @@ export default async function chay(kiem) {
     truoc('Giới thiệu', 'Tải về') && truoc('Tải về', 'Đánh giá')
     && truoc('Đánh giá', 'Thông tin'),
     JSON.stringify(dauDe));
+
+  /*
+   * BẢNG THÔNG TIN NÓI VÌ SAO ĐỘ TUỔI ẤY.
+   *
+   * Hàng số liệu đầu trang chỉ in được "12+" — một con số không tự nói được
+   * vì sao. Câu giải thích vốn đã có trong mã nhưng chỉ hiện lúc bấm tải, tức
+   * là quá muộn cho người đang cân nhắc cho con mình chơi.
+   */
+  const bangTuoi = (await p.locator('main dl').last().textContent() ?? '').toLowerCase();
+  kiem('bảng thông tin có dòng độ tuổi kèm lý do',
+    bangTuoi.includes('độ tuổi') && /\d\+\s*·/.test(bangTuoi), bangTuoi.slice(0, 200));
 
   /*
    * MỘT CỘT, KHÔNG PHẢI HAI.

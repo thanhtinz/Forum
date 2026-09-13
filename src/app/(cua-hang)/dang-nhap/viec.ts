@@ -60,7 +60,26 @@ export async function dangNhap(_truoc: KetQuaXacThuc, form: FormData): Promise<K
   await xoaLanHong(dinhDanh);
   await donPhienCu();
   await moPhien(nguoi.id);
-  redirect('/');
+  redirect(duongVe(form.get('tiep')));
+}
+
+/**
+ * Đăng nhập xong thì về đâu.
+ *
+ * CHỈ NHẬN ĐƯỜNG DẪN TRONG NHÀ. Trường `tiep` đi kèm biểu mẫu, tức là ai cũng
+ * sửa được — nhận bừa thì cửa hàng thành bàn đạp chuyển hướng: kẻ xấu gửi
+ * `sunnystore.vn/dang-nhap?tiep=https://trang-gia.example`, nạn nhân thấy tên
+ * miền quen nên đăng nhập, rồi bị ném sang trang giả mà vẫn tưởng mình đang ở
+ * cửa hàng.
+ *
+ * Nên: phải bắt đầu bằng đúng MỘT dấu gạch chéo. `//trang-gia.example` là địa
+ * chỉ tuyệt đối trá hình — trình duyệt đọc nó thành "cùng giao thức, khác tên
+ * miền" — nên nó bị loại cùng với `https://…`.
+ */
+function duongVe(tiep: FormDataEntryValue | null): string {
+  const chu = typeof tiep === 'string' ? tiep.trim() : '';
+  if (!chu.startsWith('/') || chu.startsWith('//')) return '/';
+  return chu;
 }
 
 /*

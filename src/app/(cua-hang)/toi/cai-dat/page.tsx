@@ -21,7 +21,7 @@ export default async function CaiDat() {
   if (!hang) redirect('/dang-nhap');
 
   return (
-    <div className="mx-auto max-w-lg space-y-5">
+    <div className="cot space-y-5">
       <div>
         <Link href="/toi" className="phu inline-flex items-center gap-1 hover:text-chu">
           <ChevronLeft size={14} aria-hidden /> Tài khoản

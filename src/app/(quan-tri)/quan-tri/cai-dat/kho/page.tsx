@@ -30,13 +30,13 @@ export default async function CaiDatKho() {
         { ten: 'thung', nhan: 'Tên thùng', hep: true, banDau: k.thung, goiY: 'sunnystore' },
         { ten: 'khoa', nhan: 'Mã khoá truy cập', hep: true, banDau: k.khoa },
         {
-          ten: 'biMat', nhan: 'Khoá bí mật', kieu: 'biMat', hep: true, daCo: !!k.biMat,
-          yNghia: 'Cloudflare chỉ cho xem khoá này đúng một lần lúc tạo.',
-        },
-        {
-          ten: 'diaChi', nhan: 'Địa chỉ công khai của thùng', banDau: k.diaChi,
+          ten: 'diaChi', nhan: 'Địa chỉ công khai của thùng', hep: true, banDau: k.diaChi,
           goiY: 'https://tep.sunnystore.vn',
           yNghia: 'Đường dẫn khách tải tệp về. Gạch chéo cuối dòng tự bỏ đi.',
+        },
+        {
+          ten: 'biMat', nhan: 'Khoá bí mật', kieu: 'biMat', daCo: !!k.biMat,
+          yNghia: 'Cloudflare chỉ cho xem khoá này đúng một lần lúc tạo.',
         },
       ]} />
   );

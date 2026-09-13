@@ -30,7 +30,7 @@ export default async function TrangCapNhat() {
   const banMoi = await timBanMoi(nguoi.id);
 
   return (
-    <div className="mx-auto max-w-[680px] space-y-4">
+    <div className="cot space-y-4">
       <div>
         <h1 className="tieu-de-trang">Bản cập nhật</h1>
         <p className="phu mt-0.5">

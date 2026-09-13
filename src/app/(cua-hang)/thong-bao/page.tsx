@@ -60,7 +60,7 @@ export default async function ThongBao() {
   }
 
   return (
-    <div className="mx-auto max-w-lg space-y-4">
+    <div className="cot space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="tieu-de-trang">Thông báo</h1>

@@ -45,7 +45,7 @@ export default async function TrangToi() {
   ]);
 
   return (
-    <div className="mx-auto max-w-lg space-y-5">
+    <div className="cot space-y-5">
       <div className="flex items-center gap-4">
         <AnhDaiDien ten={nguoi.tenHienThi} anh={nguoi.anh} co={64} />
         <div className="min-w-0">

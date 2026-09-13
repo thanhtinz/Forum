@@ -43,7 +43,7 @@ export default async function TrangYeuCau() {
   ]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="cot space-y-6">
       <div>
         <h1 className="tieu-de-trang">Yêu cầu game</h1>
         <p className="phu mt-0.5">

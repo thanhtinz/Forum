@@ -246,6 +246,23 @@ p { text-wrap: pretty; }
   .khung { @apply mx-auto w-full max-w-khung px-4 sm:px-6; }
 
   /*
+   * CỘT ĐỌC — bề ngang DUY NHẤT cho mọi trang một cột.
+   *
+   * Trước đây mỗi trang tự đặt lấy: trang đầu và bảng xếp hạng 680px, trang
+   * yêu cầu 672px, trang thông báo và trang tài khoản 512px. Trên máy tính để
+   * bàn thì đi từ trang này sang trang kia là cả cột chữ nhảy sang trái vài
+   * chục điểm ảnh rồi nhảy về — không ai chỉ ra được ngay là vì sao, chỉ thấy
+   * trang bị "rung".
+   *
+   * 680px vì đó là bề ngang một dòng chữ đọc dễ nhất (chừng 75 ký tự), cũng là
+   * bề ngang ô tìm trên thanh đầu — nên hai thứ ấy thẳng hàng nhau.
+   *
+   * Mấy trang bày LƯỚI game thì không dùng lớp này: lưới cần cả bề ngang
+   * `.khung`, ép vào 680px là còn hai cột và thừa một khoảng trống hai bên.
+   */
+  .cot { @apply mx-auto w-full max-w-[680px]; }
+
+  /*
    * NÚT CÀI — viên thuốc.
    *
    * Hai dáng, và cả hai đều chép từ chỗ nó ra đời:

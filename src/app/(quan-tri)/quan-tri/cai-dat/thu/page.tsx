@@ -34,12 +34,13 @@ export default async function CaiDatThu() {
         },
         { ten: 'nguoi', nhan: 'Tên đăng nhập', hep: true, banDau: t.nguoi, goiY: 'thu@sunnystore.vn' },
         {
-          ten: 'matKhau', nhan: 'Mật khẩu', kieu: 'biMat', hep: true, daCo: !!t.matKhau,
-          yNghia: 'Với Gmail thì đây là "mật khẩu ứng dụng", không phải mật khẩu tài khoản.',
+          ten: 'tu', nhan: 'Gửi dưới tên', hep: true, banDau: t.tu,
+          goiY: 'SunnyStore <thu@sunnystore.vn>',
+          yNghia: 'Dòng người nhận thấy ở ô "Từ". Bỏ trống thì lấy tên đăng nhập ở trên.',
         },
         {
-          ten: 'tu', nhan: 'Gửi dưới tên', banDau: t.tu, goiY: 'SunnyStore <thu@sunnystore.vn>',
-          yNghia: 'Dòng người nhận thấy ở ô "Từ". Bỏ trống thì lấy tên đăng nhập ở trên.',
+          ten: 'matKhau', nhan: 'Mật khẩu', kieu: 'biMat', daCo: !!t.matKhau,
+          yNghia: 'Với Gmail thì đây là "mật khẩu ứng dụng", không phải mật khẩu tài khoản.',
         },
       ]} />
   );

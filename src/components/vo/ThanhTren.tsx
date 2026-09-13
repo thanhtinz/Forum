@@ -25,26 +25,48 @@ export function ThanhTren({ nguoi, tuKhoa, chuaDoc = 0, nen }: {
 }) {
   return (
     <header className="kinh-tren sticky top-0 z-30">
-      <div className="flex items-center gap-2 px-4 py-2.5 sm:px-6">
-        <Link href="/" className="shrink-0 lg:hidden" aria-label="SunnyStore — về trang đầu">
-          <DauHieu co={30} chu={false} />
-        </Link>
+      {/*
+        BA RÃNH BẰNG NHAU, không phải một hàng `flex` với `mx-auto`.
 
-        <div className="mx-auto flex w-full max-w-2xl items-center gap-1">
-          <OTim giaTriDau={tuKhoa} />
+        Lối cũ để ô tìm tự căn giữa phần chỗ CÒN LẠI sau khi mấy nút bên phải
+        đã chiếm xong, nên trục giữa của nó lệch khỏi trục giữa của trang chừng
+        bảy chục điểm ảnh — trên máy tính để bàn thì thấy rõ ô tìm không thẳng
+        hàng với cột nội dung ngay dưới nó.
+
+        Hai rãnh ngoài cùng `1fr` nên luôn rộng bằng nhau, dù bên trái trống
+        trơn còn bên phải đầy nút. Rãnh giữa ôm đúng bề ngang của cột đọc
+        (`.cot`, 680px), nên ô tìm và cột nội dung chung một trục.
+
+        CHỈ TỪ `lg` TRỞ LÊN. Trên điện thoại thì không có cột nội dung nào để
+        thẳng hàng cùng, mà hai rãnh `1fr` lại ăn mất chỗ của ô tìm — đủ để câu
+        gợi ý bị cắt cụt giữa chừng. Khổ nhỏ quay về lối cũ: hai bên ôm vừa nội
+        dung, ô tìm lấy hết phần còn lại.
+      */}
+      <div className="khung grid grid-cols-[auto_1fr_auto] items-center gap-2 py-2.5
+        lg:grid-cols-[1fr_minmax(0,680px)_1fr]">
+        {/* Một thẻ duy nhất cho rãnh trái: thêm thẻ thứ hai là lưới ba cột đẩy
+            ô tìm xuống hàng dưới. Ở khổ lớn nó rỗng, nhưng vẫn giữ chỗ. */}
+        <div className="flex items-center">
+          <Link href="/" className="shrink-0 lg:hidden" aria-label="SunnyStore — về trang đầu">
+            <DauHieu co={30} chu={false} />
+          </Link>
         </div>
 
-        <DoiNen banDau={nen} />
+        <OTim giaTriDau={tuKhoa} />
 
-        {nguoi && <Chuong chuaDoc={chuaDoc} />}
+        <div className="flex items-center justify-end gap-2">
+          <DoiNen banDau={nen} />
 
-        {nguoi ? (
-          <Link href="/toi" aria-label="Tài khoản của bạn" className="shrink-0">
-            <AnhDaiDien ten={nguoi.tenHienThi} anh={nguoi.anh} co={36} />
-          </Link>
-        ) : (
-          <Link href="/dang-nhap" className="nut-xam shrink-0 !px-4 max-sm:!px-3">Đăng nhập</Link>
-        )}
+          {nguoi && <Chuong chuaDoc={chuaDoc} />}
+
+          {nguoi ? (
+            <Link href="/toi" aria-label="Tài khoản của bạn" className="shrink-0">
+              <AnhDaiDien ten={nguoi.tenHienThi} anh={nguoi.anh} co={36} />
+            </Link>
+          ) : (
+            <Link href="/dang-nhap" className="nut-xam shrink-0 !px-4 max-sm:!px-3">Đăng nhập</Link>
+          )}
+        </div>
       </div>
     </header>
   );

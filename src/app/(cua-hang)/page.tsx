@@ -94,7 +94,7 @@ export default async function HomNay() {
   const daBay = new Set(ngayNay.map((g) => g.id));
 
   return (
-    <div className="mx-auto max-w-[680px] space-y-7">
+    <div className="cot space-y-7">
       {/* Lời mời cài đặt chỉ đặt ở tab Hôm nay — đây là trang người ta mở
           thường xuyên nhất, mà mời cài ở mọi trang thì thành phiền. */}
       <NutCaiUngDung />

@@ -111,18 +111,22 @@ export default async function HomNay() {
           doan={chinh.gioiThieu ? catChu(bocChu(chinh.gioiThieu), 220) : null} />
       )}
 
-      {/* Kệ sự kiện đứng ngay sau tấm lớn: nó là thứ có HẠN, phải gặp sớm. */}
+      {/*
+        KỆ SỰ KIỆN đứng ngay sau tấm lớn: nó là thứ có HẠN, phải gặp sớm.
+
+        Không có trang "tất cả sự kiện" nào để đi tiếp, nên đầu mục ở đây là
+        chữ trần, không mũi tên. Sự kiện vẫn thuộc về trang game của nó — bấm
+        vào thẻ là sang thẳng đó; kệ này chỉ làm đúng một việc là cho người ta
+        biết mấy game đang bày có gì đang mở.
+      */}
       {suKien.length > 0 && (
         <section>
-          <Link href="/su-kien" className="mb-3 flex items-start justify-between gap-3 px-1">
-            <span className="min-w-0">
-              <span className="block text-[13px] font-bold uppercase tracking-wide text-nhan">
-                ĐANG DIỄN RA
-              </span>
-              <span className="tieu-de mt-0.5 block">Sự kiện trong game</span>
+          <div className="mb-3 px-1">
+            <span className="block text-[13px] font-bold uppercase tracking-wide text-nhan">
+              ĐANG DIỄN RA
             </span>
-            <ChevronRight size={20} className="mt-5 shrink-0 text-mo" aria-hidden />
-          </Link>
+            <span className="tieu-de mt-0.5 block">Sự kiện trong game</span>
+          </div>
           <Ke nhan="sự kiện" className="-mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
             {suKien.map((s) => (
               /* Kệ này chỉ chở sự kiện ĐANG mở, mà dòng nhãn ngay trên đầu kệ

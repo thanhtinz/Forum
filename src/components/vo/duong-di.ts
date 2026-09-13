@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { ArrowUpCircle, Bookmark, CalendarDays, Gamepad2, Library, Search, Trophy } from 'lucide-react';
+import { ArrowUpCircle, Bookmark, Gamepad2, Library, Search, Trophy } from 'lucide-react';
 import { IconHomNay } from './IconHomNay';
 
 /**
@@ -37,10 +37,6 @@ export const LOI_DI: LoiDi[] = [
 
 /** Mấy lối phụ chỉ hiện ở thanh bên máy bàn, không chen vào thanh tab đáy. */
 export const LOI_PHU: LoiDi[] = [
-  /* Sự kiện KHÔNG cần đăng nhập, khác mấy mục dưới: nó là một lối duyệt cửa
-     hàng như "Game" hay "BXH", chỉ không chen được vào bốn ô đáy điện thoại.
-     Trên điện thoại người ta gặp nó qua kệ ngoài trang Hôm nay. */
-  { duongDan: '/su-kien', ten: 'Sự kiện', icon: CalendarDays },
   { duongDan: '/cap-nhat', ten: 'Bản cập nhật', icon: ArrowUpCircle, canDangNhap: true },
   { duongDan: '/thu-vien', ten: 'Thư viện', icon: Library, canDangNhap: true },
   // Đã lưu đứng SAU thư viện: thư viện là thứ đã có trong tay, còn đây mới là

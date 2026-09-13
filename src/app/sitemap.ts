@@ -59,8 +59,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${DIA_CHI_GOC}/game`, lastModified: moiNhat, changeFrequency: 'daily', priority: 0.9 },
     { url: `${DIA_CHI_GOC}/bxh`, lastModified: moiNhat, changeFrequency: 'daily', priority: 0.8 },
     { url: `${DIA_CHI_GOC}/duyet`, lastModified: moiNhat, changeFrequency: 'weekly', priority: 0.7 },
-    // Đổi theo ngày vì sự kiện tự rụng khỏi trang lúc hết hạn, không cần ai sửa.
-    { url: `${DIA_CHI_GOC}/su-kien`, lastModified: moiNhat, changeFrequency: 'daily', priority: 0.6 },
     { url: `${DIA_CHI_GOC}/an-toan`, changeFrequency: 'yearly', priority: 0.3 },
     { url: `${DIA_CHI_GOC}/yeu-cau`, changeFrequency: 'monthly', priority: 0.3 },
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Share2 } from 'lucide-react';
+import { Check, Share } from 'lucide-react';
 
 /**
  * Nút chia sẻ trang game — nút TRÒN nổi ở góc trên, đúng lối App Store.
@@ -21,6 +21,14 @@ import { Check, Share2 } from 'lucide-react';
  *
  * Người dùng HUỶ bảng chia sẻ cũng ném ra lỗi y như khi hỏng thật, nên không
  * bắt lỗi để hiện thông báo — huỷ là chuyện bình thường, báo lỗi mới là lạ.
+ *
+ * HÌNH LÀ CÁI HỘP CÓ MŨI TÊN BAY LÊN, không phải ba chấm nối nhau.
+ *
+ * Ba chấm nối nhau là hình chia sẻ của Android; cái hộp có mũi tên bay lên là
+ * hình của iOS, và đó là hình nằm ở đúng góc này trên trang ứng dụng App Store.
+ * Hai hình ấy cùng nghĩa với người đã biết, nhưng cả trang này đang mượn dáng
+ * App Store — để lẫn một hình của hệ kia vào thì đúng chỗ mắt dừng lại đầu
+ * tiên, người ta thấy ngay là hai thứ chắp vào nhau.
  */
 export function NutChiaSe({ ten, duongDan }: { ten: string; duongDan: string }) {
   const [daChep, datDaChep] = useState(false);
@@ -50,7 +58,7 @@ export function NutChiaSe({ ten, duongDan }: { ten: string; duongDan: string }) 
   return (
     <button type="button" onClick={chiaSe} className="nut-tron"
       aria-label={daChep ? 'Đã chép đường dẫn' : `Chia sẻ ${ten}`}>
-      {daChep ? <Check size={18} aria-hidden /> : <Share2 size={18} aria-hidden />}
+      {daChep ? <Check size={18} aria-hidden /> : <Share size={18} aria-hidden />}
     </button>
   );
 }

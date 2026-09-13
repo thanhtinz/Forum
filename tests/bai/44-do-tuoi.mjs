@@ -44,11 +44,18 @@ export default async function chay(kiem) {
     kiem('hàng số liệu in đúng mức tuổi',
       soLieu.includes(MO_TA_TUOI[12].nhan.toLowerCase()), soLieu);
 
-    // ── Tấm xác nhận trước khi tải ────────────────────────────────────
-    await khach.click('#tai a[href^="/tai/"]');
+    /*
+     * ── TẤM TẢI MANG HUY HIỆU TUỔI ────────────────────────────────────
+     *
+     * Đây là nhịp cuối trước khi tệp về máy, nên mức tuổi phải còn nguyên ở
+     * đó: người lớn đưa máy cho trẻ con bấm thì chính tấm này là chỗ duy nhất
+     * họ còn kịp nhìn.
+     */
+    await khach.click('[data-viec="tai-dau"]');
     await khach.waitForSelector('dialog[open]', { timeout: 5000 });
     const chuTam = await khach.locator('dialog[open]').textContent();
-    kiem('tấm xác nhận mang huy hiệu tuổi', chuTam.includes(MO_TA_TUOI[12].nhan), chuTam.slice(0, 200));
+    kiem('tấm tải mang huy hiệu tuổi', chuTam.includes(MO_TA_TUOI[12].nhan), chuTam.slice(0, 200));
+    await khach.keyboard.press('Escape');
 
     // ── Quản trị đổi được, và số lạ không lọt ─────────────────────────
     admin = await moTrangDaDangNhap('admin@sunnystore.local', 'admin123');

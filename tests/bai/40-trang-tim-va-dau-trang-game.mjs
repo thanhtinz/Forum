@@ -58,18 +58,26 @@ export default async function chay(kiem) {
     await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
 
     const soHe = new Set(game.banTai.map((b) => b.heMay)).size;
-    /* Bám `data-viec` chứ không bám lớp CSS: lớp của nút này đổi theo việc nó
-       làm — tô đặc khi bấm là tải ngay, nhạt khi chỉ đưa xuống khung chọn. */
-    const nutDau = p.locator('a[data-viec="tai-dau"]').first();
+    /*
+     * Bám `data-viec` chứ không bám lớp CSS hay thẻ: lớp của nút đổi theo
+     * trạng thái (đám mây khi đã tải), và từ đợt dựng lại lối tải thì nó là
+     * một `<button>` mở tấm chứ không còn là một `<a>` đi đâu cả.
+     */
+    const nutDau = p.locator('[data-viec="tai-dau"]').first();
     kiem('đầu trang game có nút tải', (await nutDau.count()) > 0);
-    const dich = await nutDau.getAttribute('href');
-    if (soHe === 1) {
-      kiem('game một hệ máy thì nút đầu trang đi thẳng tới trang tải',
-        (dich ?? '').startsWith('/tai/'), `đang trỏ ${dich}`);
-    } else {
-      kiem('game nhiều hệ máy thì nút đầu trang đưa xuống khung chọn',
-        dich === '#tai', `đang trỏ ${dich}`);
-    }
+
+    await nutDau.click();
+    await p.waitForSelector('dialog[open]', { timeout: 5000 });
+    const tam = p.locator('dialog[open]');
+    kiem('bấm nút đầu trang thì mở tấm tải',
+      (await tam.locator('a[href^="/tai/"]').count()) > 0);
+    // Game nhiều hệ máy thì tấm phải có hàng tab để chọn hệ; một hệ thì không
+    // bày dãy chip chỉ có đúng một lựa chọn.
+    const soTab = await tam.locator('[role="group"] button').count();
+    kiem('tấm tải bày đủ tab hệ máy',
+      soHe === 1 ? soTab === 0 : soTab === soHe, `${soTab} tab cho ${soHe} hệ`);
+    await p.keyboard.press('Escape');
+    await p.waitForTimeout(300);
 
     // ── Mô tả gấp lại, và hàng nhà phát triển ─────────────────────────
     kiem('mô tả dài thì gấp lại, có nút xem thêm',

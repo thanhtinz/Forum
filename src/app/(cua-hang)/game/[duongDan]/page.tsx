@@ -268,6 +268,9 @@ export default async function TabThongTin({ params, searchParams }: {
     loiBinhTomTat.map((b) => b.noiDung ?? ''),
   );
 
+  /** Có gì để xem trước không — quyết định khối mô tả mượn đầu mục nào. */
+  const coAnhXem = game.anhChup.length > 0 || game.phim.length > 0;
+
   const tenTacGia = game.tacGia
     ? game.tacGia.tenTacGia ?? game.tacGia.tenHienThi
     : game.nhaPhatTrien;
@@ -345,14 +348,13 @@ export default async function TabThongTin({ params, searchParams }: {
             nó sai ở chỗ: lời ghi chú xuống dòng tự do nên cột phải lúc cao lúc
             thấp, hàng chữ chính thì bị bóp lại còn hai phần ba bề ngang.
           */}
-          <div className="mt-1.5 flex items-baseline justify-between gap-4 text-[13px]">
-            <span className="font-semibold">
+          {/* Cả hai đầu hàng đều là chữ MỜ, không in đậm bên nào: đây là hàng
+              tra cứu, còn thứ đáng đọc là lời ghi chú ngay dưới. In đậm số hiệu
+              bản là kéo mắt về đúng thứ ít cần đọc nhất. */}
+          <div className="mt-1.5 flex items-baseline justify-between gap-4">
+            <span className="phu">
               Bản {moiNhat.soHieu}
-              {soHe.length > 1 && (
-                <span className="phu ml-1.5 font-normal">
-                  {MO_TA_HE[moiNhat.heMay as MaHeMay]?.ten ?? moiNhat.heMay}
-                </span>
-              )}
+              {soHe.length > 1 && ` · ${MO_TA_HE[moiNhat.heMay as MaHeMay]?.ten ?? moiNhat.heMay}`}
             </span>
             {moiNhat.ngayRa && <span className="phu shrink-0">{cachDay(moiNhat.ngayRa)}</span>}
           </div>
@@ -361,34 +363,39 @@ export default async function TabThongTin({ params, searchParams }: {
         </section>
       )}
 
-      {/* Kệ ảnh và phim có ĐẦU ĐỀ riêng, đúng như mục "Preview" của App Store:
-          không có đầu đề thì nó lẫn vào dải bìa ngay trên nó, và người xem
-          không biết mấy tấm này là cảnh chơi thật hay lại là ảnh quảng cáo. */}
-      {(game.anhChup.length > 0 || game.phim.length > 0) && (
-        <section>
-          <h2 className="tieu-de mb-3">Xem trước</h2>
-          <KeAnhChup anh={game.anhChup} phim={game.phim} />
-        </section>
-      )}
-
       {/*
-        MỘT KHỐI MÔ TẢ DUY NHẤT.
+        ẢNH CHỤP VÀ LỜI GIỚI THIỆU LÀ MỘT KHỐI, không phải hai mục rời.
 
-        Từng có ba ô rời: Giới thiệu, Cách chơi, Cần biết trước khi tải. Ba ô
-        ấy sinh ra từ hồi mô tả còn là chữ trần, không xuống dòng nổi một đầu
-        đề — nên phải lấy chính biểu mẫu làm cấu trúc. Nay ô mô tả có đầu đề,
-        danh sách và trích dẫn, nên người viết tự chia phần đúng theo game họ
-        đang viết, thay vì nhét vào ba ngăn do người khác đặt sẵn.
+        App Store xếp thế: kệ ảnh, một vạch mảnh, rồi chữ chạy thẳng xuống —
+        phần mô tả không có đầu mục riêng. Lý do rất thực: hai thứ ấy trả lời
+        cùng một câu hỏi "game này là game gì", mà tách thành hai mục có hai
+        đầu đề thì người đọc phải bước qua một cái đầu đề vô nghĩa ("Giới
+        thiệu" thì giới thiệu cái gì, chẳng phải cả trang đang giới thiệu game
+        à) để tới đúng đoạn chữ họ đang định đọc.
 
-        Cả App Store lẫn CH Play cũng chỉ có đúng một mục mô tả.
+        Game chưa có ảnh nào thì mới cần đầu đề "Giới thiệu": lúc ấy khối này
+        không còn đầu mục nào khác để mượn.
+
+        MỘT KHỐI MÔ TẢ DUY NHẤT, không ba ô rời. Từng có ba ô: Giới thiệu,
+        Cách chơi, Cần biết trước khi tải — sinh ra từ hồi mô tả còn là chữ
+        trần, không xuống dòng nổi một đầu đề, nên phải lấy chính biểu mẫu làm
+        cấu trúc. Nay ô mô tả có đầu đề, danh sách và trích dẫn, nên người viết
+        tự chia phần theo game họ đang viết.
       */}
-      {(game.gioiThieu || game.theLoai.length > 0) && (
+      {(coAnhXem || game.gioiThieu || game.theLoai.length > 0) && (
         <section>
-          {game.gioiThieu && (
+          {coAnhXem && (
             <>
-              <h2 className="tieu-de mb-2">Giới thiệu</h2>
-              <MoTaGame html={dungChuDam(game.gioiThieu)} />
+              <h2 className="tieu-de mb-3">Xem trước</h2>
+              <KeAnhChup anh={game.anhChup} phim={game.phim} />
             </>
+          )}
+
+          {game.gioiThieu && (
+            <div className={gop(coAnhXem && 'vach mt-5 border-t pt-5')}>
+              {!coAnhXem && <h2 className="tieu-de mb-2">Giới thiệu</h2>}
+              <MoTaGame html={dungChuDam(game.gioiThieu)} />
+            </div>
           )}
 
           {/*
@@ -403,7 +410,7 @@ export default async function TabThongTin({ params, searchParams }: {
             phục vụ hai việc khác nhau.
           */}
           {game.theLoai.length > 0 && (
-            <div className={gop('flex flex-wrap gap-2', game.gioiThieu && 'mt-4')}>
+            <div className={gop('flex flex-wrap gap-2', (coAnhXem || game.gioiThieu) && 'mt-4')}>
               {game.theLoai.map((t) => (
                 <Link key={t.theLoai.duongDan} href={`/the-loai/${t.theLoai.duongDan}`}
                   className="chip">

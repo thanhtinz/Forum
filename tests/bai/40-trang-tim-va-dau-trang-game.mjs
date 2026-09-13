@@ -80,9 +80,10 @@ export default async function chay(kiem) {
     await p.waitForTimeout(300);
 
     // ── Mô tả gấp lại, và hàng nhà phát triển ─────────────────────────
-    kiem('mô tả dài thì gấp lại, có nút xem thêm',
-      (await p.locator('button:has-text("xem thêm")').count()) > 0);
-    await p.click('button:has-text("xem thêm")');
+    // Chữ mở rộng nay nằm ngay cuối dòng bị cắt, đúng chỗ App Store để "more".
+    kiem('mô tả dài thì gấp lại, có lối đọc tiếp',
+      (await p.locator('button:has-text("thêm")').count()) > 0);
+    await p.click('button:has-text("thêm")');
     kiem('bấm xem thêm thì đổi thành thu gọn',
       (await p.locator('button:has-text("Thu gọn")').count()) > 0);
 

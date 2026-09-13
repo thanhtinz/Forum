@@ -1,16 +1,22 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Apple, Coffee, Download, ExternalLink, Laptop, Monitor, Smartphone, X,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, ExternalLink, Search, X } from 'lucide-react';
 import { HE_MAY, MO_TA_HE, type MaHeMay } from '@/lib/he-may';
+import { HinhHeMay } from '@/components/game/HinhHeMay';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { MO_TA_TUOI, napDoTuoi } from '@/lib/do-tuoi-const';
 import type { BanXem } from '@/lib/ban-tai-xem';
 import { gonDungLuong, gop } from '@/lib/tien-ich';
 
-const ICON = { coffee: Coffee, smartphone: Smartphone, apple: Apple, monitor: Monitor, laptop: Laptop };
+/*
+ * Từ bao nhiêu bản thì bày ô tìm và phân trang.
+ *
+ * Dưới mức này thì cả dãy nằm gọn trong một tầm mắt, mà thêm một ô tìm cho ba
+ * dòng là thêm một thứ phải đọc để rồi không dùng tới.
+ */
+const NGUONG_TIM = 8;
+const MOI_TRANG = 8;
 
 /** Ngày kiểu 2005-11-03 → 11/2005. Ngày chính xác không nói thêm được gì. */
 function ngayGon(ngay: string): string {
@@ -61,6 +67,11 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
   }, [ban]);
 
   const [he, datHe] = useState<MaHeMay | null>(heCo[0] ?? null);
+  const [tim, datTim] = useState('');
+  const [trang, datTrang] = useState(1);
+
+  /** Đổi hệ máy thì bắt đầu lại từ đầu — dãy bản là dãy khác hẳn. */
+  const doiHe = (h: MaHeMay) => { datHe(h); datTim(''); datTrang(1); };
 
   useEffect(() => {
     const hop = hopRef.current;
@@ -79,6 +90,29 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
       }),
     [ban, he],
   );
+
+  /*
+   * LỌC RỒI MỚI CẮT TRANG.
+   *
+   * Game đời đầu có game mang vài chục bản — dãy ấy dài hơn cả màn hình, mà
+   * người đi tìm đúng bản 1.1 cho máy Nokia thì phải cuộn mò. Ô tìm khớp cả
+   * số hiệu lẫn ghi chú của bản, vì lắm khi người ta nhớ "bản sửa lỗi âm
+   * thanh" chứ không nhớ con số.
+   */
+  const goLoc = tim.trim().toLowerCase();
+  const daLoc = goLoc
+    ? theoHe.filter((b) =>
+      b.soHieu.toLowerCase().includes(goLoc)
+      || (b.ghiChu ?? '').toLowerCase().includes(goLoc)
+      || (b.doiMoi ?? '').toLowerCase().includes(goLoc))
+    : theoHe;
+
+  const tongTrang = Math.max(1, Math.ceil(daLoc.length / MOI_TRANG));
+  // Kẹp lại thay vì tin vào `trang`: lọc xong còn hai bản mà đang đứng ở trang
+  // năm thì danh sách trống trơn, trong khi bản cần tìm nằm ngay trang một.
+  const trangDung = Math.min(trang, tongTrang);
+  const hienRa = daLoc.slice((trangDung - 1) * MOI_TRANG, trangDung * MOI_TRANG);
+  const bayTim = theoHe.length > NGUONG_TIM;
 
   if (ban.length === 0) return null;
 
@@ -128,12 +162,11 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
             {heCo.length > 1 && (
               <div role="group" aria-label="Chọn hệ máy" className="ke gap-2 pb-3">
                 {heCo.map((h) => {
-                  const Icon = ICON[MO_TA_HE[h].icon];
                   const chon = h === he;
                   return (
-                    <button key={h} type="button" onClick={() => datHe(h)} aria-pressed={chon}
+                    <button key={h} type="button" onClick={() => doiHe(h)} aria-pressed={chon}
                       className={gop('chip shrink-0', chon && 'chip-chon')}>
-                      <Icon size={14} aria-hidden /> {MO_TA_HE[h].ten}
+                      <HinhHeMay he={h} co={14} /> {MO_TA_HE[h].ten}
                     </button>
                   );
                 })}
@@ -144,8 +177,24 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
                 MỖI BẢN MỘT HÀNG, nút tải nằm ngay cạnh. Bản trước bắt chọn
                 bản ở một ô gấp rồi mới hiện nút tải, nên muốn so hai bản phải
                 mở ra đóng vào hai lượt. */}
+            {bayTim && (
+              <label className="relative block pb-1">
+                <Search size={15} aria-hidden
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mo" />
+                <input type="search" value={tim}
+                  onChange={(e) => { datTim(e.target.value); datTrang(1); }}
+                  placeholder={`Tìm trong ${theoHe.length} bản — số hiệu hay ghi chú`}
+                  aria-label="Tìm phiên bản"
+                  className="o-nhap !pl-9" />
+              </label>
+            )}
+
+            {hienRa.length === 0 && (
+              <p className="phu py-6 text-center">Không có bản nào khớp “{tim.trim()}”.</p>
+            )}
+
             <ul className="divide-y divide-vien">
-              {theoHe.map((b) => {
+              {hienRa.map((b) => {
                 const thuTuLoai = he ? MO_TA_HE[he].loaiTep : [];
                 const tep = [...b.tep].sort((x, y) =>
                   thuTuLoai.indexOf(x.loai as never) - thuTuLoai.indexOf(y.loai as never));
@@ -203,6 +252,31 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
                 );
               })}
             </ul>
+
+            {/*
+              PHÂN TRANG — hai nút lật và một dòng đếm, không phải dãy số trang.
+
+              Dãy số chỉ đáng bày khi người ta nhảy thẳng tới trang bảy; ở đây
+              thứ người ta làm là lật dần cho tới khi thấy bản mình cần, hoặc
+              gõ vào ô tìm ngay trên kia.
+            */}
+            {tongTrang > 1 && (
+              <div className="vach mt-3 flex items-center justify-between gap-3 border-t pt-3">
+                <button type="button" disabled={trangDung <= 1}
+                  onClick={() => datTrang(trangDung - 1)}
+                  className="nut-vien !min-h-[32px] !px-3 !text-[12px] disabled:opacity-40">
+                  <ChevronLeft size={14} aria-hidden /> Trước
+                </button>
+                <span className="phu tabular-nums">
+                  Trang {trangDung}/{tongTrang} · {daLoc.length} bản
+                </span>
+                <button type="button" disabled={trangDung >= tongTrang}
+                  onClick={() => datTrang(trangDung + 1)}
+                  className="nut-vien !min-h-[32px] !px-3 !text-[12px] disabled:opacity-40">
+                  Sau <ChevronRight size={14} aria-hidden />
+                </button>
+              </div>
+            )}
 
             {/*
               KHÁCH VÃNG LAI ĐƯỢC NÓI THẲNG CÁI HỌ SẮP MẤT.

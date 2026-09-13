@@ -14,13 +14,13 @@ import { GOC, db, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
  */
 export default async function chay(kiem) {
   const p = await moTrang();
-  let nguoi;
+  let nguoi; let dauVet = null;
   try {
     const game = await db.game.findFirst({
       where: { trangThai: 'DANG_HIEN', banTai: { some: { tep: { some: {} } } } },
       orderBy: { id: 'asc' },
       select: {
-        ten: true, duongDan: true, nhaPhatTrien: true,
+        id: true, ten: true, duongDan: true, nhaPhatTrien: true,
         banTai: { select: { heMay: true, soHieu: true, tep: { select: { id: true, loai: true } } } },
       },
     });
@@ -80,8 +80,48 @@ export default async function chay(kiem) {
       chuNguoi.includes('Tài khoản'), chuNguoi.slice(0, 300));
     kiem('và không còn nhắc chuyện chưa đăng nhập',
       !chuNguoi.includes('Chưa đăng nhập'), chuNguoi.slice(0, 300));
+
+    /*
+     * ── ĐÃ TẢI RỒI THÌ NÚT ĐỔI SANG BIỂU TƯỢNG ĐÁM MÂY ────────────────
+     *
+     * Đúng thứ App Store bày cho ứng dụng đã tải rồi xoá đi: không còn viên
+     * thuốc chữ "Get" mà là một đám mây có mũi tên xuống. Nó nói được câu mà
+     * chữ "Tải về" không nói nổi — máy này từng có game ấy, đây là lấy LẠI.
+     */
+    await nguoi.keyboard.press('Escape');
+    const ai = await db.nguoiDung.findUnique({
+      where: { tenDangNhap: 'minhdev' }, select: { id: true },
+    });
+    const banDau = game.banTai[0];
+    dauVet = await db.luotTai.create({
+      data: {
+        gameId: game.id, nguoiId: ai.id,
+        heMay: banDau.heMay, soHieu: banDau.soHieu,
+      },
+      select: { id: true },
+    });
+
+    await nguoi.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
+    const nutDaTai = nguoi.locator('a[data-viec="tai-dau"][data-da-tai="1"]');
+    kiem('game đã tải thì nút đầu trang thành biểu tượng đám mây',
+      (await nutDaTai.count()) === 1);
+    kiem('và không còn chữ "Tải về" trên nút ấy',
+      ((await nutDaTai.textContent()) ?? '').trim() === '');
+    kiem('nút ấy vẫn nói được mình là gì cho bộ đọc màn hình',
+      ((await nutDaTai.getAttribute('aria-label')) ?? '').includes('Tải lại'));
+
+    await db.luotTai.delete({ where: { id: dauVet.id } });
+    dauVet = null;
+    await nguoi.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
+    kiem('chưa tải bao giờ thì vẫn là nút chữ "Tải về"',
+      (await nguoi.locator('a[data-viec="tai-dau"][data-da-tai="1"]').count()) === 0
+      && ((await nguoi.locator('a[data-viec="tai-dau"]').first().textContent()) ?? '')
+        .includes('Tải về'));
   } finally {
     await p.close();
     if (nguoi) await nguoi.close();
+    // Dấu vết dựng tay phải dọn, kẻo thư viện của `minhdev` mọc thêm một game
+    // và bài kiểm nào đếm thư viện sẽ đỏ vì chuyện chẳng liên quan.
+    if (dauVet) await db.luotTai.delete({ where: { id: dauVet.id } }).catch(() => {});
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { CloudDownload } from 'lucide-react';
 import { TamXacNhanTai, type TepChon } from '@/components/game/TamXacNhanTai';
 
 /**
@@ -15,13 +16,22 @@ import { TamXacNhanTai, type TepChon } from '@/components/game/TamXacNhanTai';
  * Game nhiều hệ máy thì `tep` để trống: lúc ấy không chọn hộ được, nút chỉ đưa
  * xuống khung chọn bên dưới.
  */
-export function NutTaiDau({ tep, dichLui, game, taiKhoan, nhan }: {
+export function NutTaiDau({ tep, dichLui, game, taiKhoan, nhan, daTai }: {
   tep: TepChon | null;
   /** Đi đâu khi không có tệp nào chọn sẵn — thường là `#tai`. */
   dichLui: string;
   game: { ten: string; icon: string | null; nhaPhatTrien: string | null; doTuoi: number };
   taiKhoan: string | null;
   nhan: string;
+  /**
+   * Người đang xem TỪNG tải game này rồi.
+   *
+   * Lúc ấy nút đổi hẳn dáng: không còn viên thuốc chữ "Tải về" mà thành một
+   * biểu tượng đám mây có mũi tên xuống — đúng thứ App Store bày cho ứng dụng
+   * đã tải rồi xoá đi. Nó nói được một câu mà chữ "Tải về" không nói nổi: máy
+   * này từng có game ấy, đây là lấy LẠI chứ không phải lấy mới.
+   */
+  daTai?: boolean;
 }) {
   const [mo, datMo] = useState(false);
 
@@ -35,7 +45,12 @@ export function NutTaiDau({ tep, dichLui, game, taiKhoan, nhan }: {
         nút tô đặc lúc ấy nằm dưới khung, sau khi đã chọn.
       */}
       <a href={tep ? `/tai/${tep.id}` : dichLui} data-viec="tai-dau"
-        className={tep ? 'nut-cai-dam !min-h-[36px] !px-6 !text-[14px]' : 'nut-cai'}
+        data-da-tai={daTai ? '1' : undefined}
+        aria-label={daTai ? `Tải lại ${game.ten}` : undefined}
+        title={daTai ? 'Bạn đã tải game này — tải lại' : undefined}
+        className={daTai
+          ? 'grid size-9 place-items-center rounded-full text-nhan transition-colors hover:bg-nen3'
+          : tep ? 'nut-cai-dam !min-h-[36px] !px-6 !text-[14px]' : 'nut-cai'}
         onClick={(e) => {
           // Không có tệp chọn sẵn thì để liên kết chạy như thường: nó chỉ cuộn
           // xuống khung chọn, chẳng có gì để xác nhận.
@@ -44,7 +59,7 @@ export function NutTaiDau({ tep, dichLui, game, taiKhoan, nhan }: {
           e.preventDefault();
           datMo(true);
         }}>
-        {nhan}
+        {daTai ? <CloudDownload size={24} strokeWidth={1.7} aria-hidden /> : nhan}
       </a>
 
       <TamXacNhanTai tep={tep} game={game} taiKhoan={taiKhoan}

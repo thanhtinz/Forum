@@ -71,8 +71,23 @@ export default async function KhungGame({ children, params }: {
       ? `/nha-phat-trien/${encodeURIComponent(game.nhaPhatTrien)}`
       : null;
 
-  // Ai đang xem — chỉ để in lên tấm xác nhận, y như App Store in Apple ID.
+  // Ai đang xem — để in lên tấm xác nhận (y như App Store in Apple ID), và để
+  // biết họ đã từng tải game này chưa.
   const nguoi = await nguoiHienTai();
+
+  /*
+   * ĐÃ TỪNG TẢI GAME NÀY CHƯA.
+   *
+   * Mỗi người mỗi game đúng một hàng `LuotTai` (xem lược đồ), nên đây là một
+   * lượt tra khoá duy nhất, không phải phép đếm. Có hàng ấy thì nút đầu trang
+   * đổi sang biểu tượng đám mây — xem `NutTaiDau`.
+   */
+  const daTai = nguoi
+    ? !!await db.luotTai.findUnique({
+        where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
+        select: { id: true },
+      })
+    : false;
 
   /*
    * HẠNG TRONG THỂ LOẠI CHÍNH.
@@ -276,7 +291,8 @@ export default async function KhungGame({ children, params }: {
               */}
               {(tepChinh || banXem.length > 0) && (
                 <p className="mt-3">
-                  <NutTaiDau nhan="Tải về" dichLui={`/game/${game.duongDan}#tai`} taiKhoan={nguoi?.tenHienThi ?? null}
+                  <NutTaiDau nhan="Tải về" daTai={daTai}
+                    dichLui={`/game/${game.duongDan}#tai`} taiKhoan={nguoi?.tenHienThi ?? null}
                     game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }}
                     tep={tepChinh && banMoiNhat
                       ? {

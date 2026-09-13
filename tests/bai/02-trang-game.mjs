@@ -7,8 +7,9 @@ export default async function chay(kiem) {
     orderBy: { id: 'asc' },
     where: { trangThai: 'DANG_HIEN', banTai: { some: { heMay: 'JAVA' } } },
     select: {
-      id: true, duongDan: true, ten: true, nhaPhatTrien: true, gioiThieu: true,
+      id: true, duongDan: true, ten: true, nhaPhatTrien: true, gioiThieu: true, bia: true,
       theLoai: { select: { theLoaiId: true } },
+      anhChup: { take: 1, select: { id: true } },
     },
   });
   if (!game) { kiem('có game mẫu để kiểm', false); return; }
@@ -111,19 +112,30 @@ export default async function chay(kiem) {
     !html.includes('Game tương tự'));
 
   /*
-   * ĐẦU TRANG LUÔN CÓ DẢI BÌA.
+   * DẢI BÌA CHỈ DỰNG TỪ ẢNH THẬT.
    *
-   * Trang ứng dụng của App Store mở bằng một dải hình trải hết bề ngang, hai
-   * nút lùi và chia sẻ nổi đè lên. Trước đợt này dải ấy chỉ hiện khi người bán
-   * hàng đã tự chọn ảnh bìa — mà chưa game nào có, nên thực tế là chẳng bao
-   * giờ hiện: mọi trang game mở ra bằng một hàng chữ và trông giống hệt nhau.
-   * Nay không có ảnh bìa thì lấy ảnh chụp đầu tiên, không có nữa thì một dải
-   * màu dựng từ chính tên game.
+   * Có ảnh bìa, hoặc ít nhất một ảnh chụp, thì đầu trang là một dải hình trải
+   * hết bề ngang, hai nút lùi và chia sẻ nổi đè lên — đúng trang ứng dụng của
+   * App Store. KHÔNG có ảnh nào thì tuyệt đối không dựng dải màu bịa ra cho có:
+   * trang ứng dụng trên máy Mac mở thẳng bằng hai cái nút ấy rồi tới biểu
+   * tượng, và một dải màu suy từ tên game chỉ chiếm một tầm mắt để nói đúng
+   * một điều — game này chưa có ảnh.
    */
+  const coAnhThat = !!game.bia || game.anhChup.length > 0;
   const daiBia = p.locator('[data-viec="bia"]');
-  kiem('đầu trang có dải bìa', (await daiBia.count()) === 1);
-  kiem('hai nút lùi và chia sẻ nổi trên dải bìa ấy',
-    (await daiBia.locator('button, a').count()) >= 2);
+  if (coAnhThat) {
+    kiem('game có ảnh thì đầu trang là một dải bìa', (await daiBia.count()) === 1);
+    kiem('dải bìa ấy dựng từ ảnh, không phải một mảng màu',
+      (await daiBia.locator('img').count()) === 1);
+    kiem('hai nút lùi và chia sẻ nổi trên dải bìa',
+      (await daiBia.locator('button, a').count()) >= 2);
+  } else {
+    kiem('game chưa có ảnh nào thì KHÔNG dựng dải bìa bịa ra',
+      (await daiBia.count()) === 0);
+    kiem('nhưng nút lùi và nút chia sẻ vẫn ở góc trên',
+      (await p.locator('main button[aria-label*="ùi"], main a[aria-label*="ùi"]').count()) > 0
+      || (await p.locator('main button').first().isVisible()));
+  }
 
   /*
    * THỨ TỰ MỤC THEO ĐÚNG TRANG ỨNG DỤNG CỦA APP STORE.

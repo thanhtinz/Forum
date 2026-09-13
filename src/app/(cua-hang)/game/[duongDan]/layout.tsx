@@ -161,65 +161,60 @@ export default async function KhungGame({ children, params }: {
     <div className="mx-auto max-w-[1000px]">
       <div className="space-y-5">
         {/*
-          DẢI BÌA ĐẦU TRANG — thứ mở màn trang ứng dụng của App Store.
+          DẢI BÌA CHỈ HIỆN KHI CÓ ẢNH THẬT.
 
-          Trang ứng dụng nào của họ cũng mở bằng một dải hình trải hết bề ngang,
-          hai nút lùi và chia sẻ nổi đè lên, rồi phần biểu tượng và tên mới bắt
-          đầu bên dưới như một tấm khác chồng lên. Thiếu dải ấy thì trang mở ra
-          bằng một hàng chữ, và mọi game trông giống hệt nhau ở nhịp đầu tiên —
-          đúng chỗ người ta quyết định có đọc tiếp hay không.
+          Đợt trước dựng thêm một dải màu suy từ tên game để trang nào cũng có
+          bìa. Nhìn lại trang ứng dụng trên máy Mac thì thấy sai: ở đó KHÔNG có
+          dải nào cả — trang mở thẳng bằng nút lùi, nút chia sẻ, rồi biểu tượng
+          và tên. Dải hình chỉ có ở game nào tự mang hình tới. Một dải màu bịa
+          ra thì chiếm cả một tầm mắt đầu trang để nói đúng một điều: game này
+          chưa có ảnh.
 
-          BA MỨC, lấy cái nào có trước: ảnh bìa người bán hàng tự chọn; không có
-          thì lấy TẤM ẢNH CHỤP ĐẦU TIÊN của chính game (ảnh thật của game ấy,
-          không phải hình bịa); không có nữa thì một dải màu dựng từ chính tên
-          game — cùng bảng màu với ô biểu tượng khi game chưa có icon, nên hai
-          thứ ấy luôn hợp màu nhau.
+          Nên hai mức, và cả hai đều là ảnh THẬT: ảnh bìa người bán hàng chọn,
+          không có thì lấy tấm ảnh chụp đầu tiên của chính game ấy.
 
-          Vệt tối hắt từ mép trên xuống là để hai nút trắng không biến mất trên
+          Vệt tối hắt từ mép trên xuống là để hai nút trắng không mất hút trên
           một tấm bìa sáng màu — nút lùi biến mất là người ta kẹt lại trang.
         */}
-        <div data-viec="bia" className="relative -mx-4 sm:mx-0">
-          {anhBia ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
+        {anhBia ? (
+          <div data-viec="bia" className="relative -mx-4 sm:mx-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={anhBia} alt="" fetchPriority="high"
               className="aspect-[16/9] w-full object-cover sm:aspect-[3/1] sm:rounded-the" />
-          ) : (
-            <div aria-hidden className="aspect-[16/9] w-full sm:aspect-[3/1] sm:rounded-the"
-              style={{
-                backgroundImage:
-                  `radial-gradient(120% 100% at 15% 0%, rgb(255 255 255 / .22), transparent 60%),`
-                  + `linear-gradient(145deg, ${mauBia.tu}, ${mauBia.den})`,
-              }} />
-          )}
-          <span aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent sm:rounded-t-the" />
-          <div className="absolute inset-x-3 top-3 flex items-center justify-between">
+            <span aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent sm:rounded-t-the" />
+            <div className="absolute inset-x-3 top-3 flex items-center justify-between">
+              <NutLui />
+              <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
             <NutLui />
             <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
           </div>
-        </div>
+        )}
 
-        {/* Tấm nội dung CHỒNG LÊN mép dưới dải bìa và bo hai góc trên: đó là
-            nhịp khiến dải bìa trông như nằm SAU trang chứ không phải một cái
-            ảnh dán vào đầu trang. */}
-        <header className="relative -mt-5 rounded-t-[22px] bg-nen px-4 pt-4 sm:-mt-7 sm:px-0 sm:pt-0">
+        {/* Có bìa thì tấm nội dung CHỒNG LÊN mép dưới nó và bo hai góc trên —
+            nhịp ấy khiến dải bìa trông như nằm sau trang chứ không phải một
+            cái ảnh dán vào đầu trang. Không có bìa thì không chồng lên cái gì,
+            nên cũng không bo góc. */}
+        <header className={anhBia
+          ? 'relative -mt-5 rounded-t-[22px] bg-nen px-4 pt-4 sm:-mt-7 sm:px-0 sm:pt-0'
+          : undefined}>
           <div className="flex flex-wrap items-start gap-4 sm:gap-6">
             {/*
-              HAI CỠ BIỂU TƯỢNG, hai thẻ.
+              MỘT CỠ BIỂU TƯỢNG: 104px.
 
-              App Store để biểu tượng rất to ở đầu trang ứng dụng — trên web nó
-              chiếm gần một phần tư bề ngang cột. Một ô 104px giữa cột 1000px
-              thì trang mở ra trông như một hàng danh sách bị phóng to, không
-              ra trang của riêng game ấy.
-
-              Cỡ truyền bằng `px` (xem `BieuTuongGame`), mà `px` thì không đổi
-              theo khổ màn hình được — nên hai thẻ, mỗi khổ hiện một. Ảnh mang
-              `alt=""` nên bộ đọc màn hình không đọc thành hai lần.
+              Đợt trước phóng lên 148px ở khổ rộng vì đoán App Store để biểu
+              tượng rất to. Đo lại trên ảnh chụp trang ứng dụng ở máy Mac thì
+              không phải: biểu tượng ở đó chiếm chừng một phần mười bề ngang
+              cột nội dung — cột 910px, biểu tượng 96px. Cột của ta rộng
+              1000px, nên 104px là đúng tỉ lệ ấy.
             */}
-            <BieuTuongGame ten={game.ten} icon={game.icon} co={104} className="sm:hidden" />
-            <BieuTuongGame ten={game.ten} icon={game.icon} co={148} className="hidden sm:block" />
+            <BieuTuongGame ten={game.ten} icon={game.icon} co={104} />
             <div className="min-w-0 flex-1">
-              <h1 className="text-[23px] font-bold leading-[1.15] tracking-tight sm:text-[30px]">{game.ten}</h1>
+              <h1 className="text-[23px] font-bold leading-[1.15] tracking-tight sm:text-[28px]">{game.ten}</h1>
               {game.tenViet && <p className="phu mt-0.5">{game.tenViet}</p>}
               {/*
                 MỘT DÒNG LUÂN PHIÊN: tên hãng, rồi từng thể loại, rồi bản Việt

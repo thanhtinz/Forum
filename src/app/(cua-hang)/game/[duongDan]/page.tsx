@@ -177,8 +177,14 @@ export default async function TabThongTin({ params, searchParams }: {
 
   return (
     <div className="space-y-8">
+      {/* Kệ ảnh và phim có ĐẦU ĐỀ riêng, đúng như mục "Preview" của App Store:
+          không có đầu đề thì nó lẫn vào dải bìa ngay trên nó, và người xem
+          không biết mấy tấm này là cảnh chơi thật hay lại là ảnh quảng cáo. */}
       {(game.anhChup.length > 0 || game.phim.length > 0) && (
-        <KeAnhChup anh={game.anhChup} phim={game.phim} />
+        <section>
+          <h2 className="tieu-de mb-3">Xem trước</h2>
+          <KeAnhChup anh={game.anhChup} phim={game.phim} />
+        </section>
       )}
 
       {/*
@@ -223,12 +229,22 @@ export default async function TabThongTin({ params, searchParams }: {
               Lịch sử phiên bản
             </a>
           </div>
-          <p className="phu">
-            Bản {moiNhat.soHieu}
-            {soHe.length > 1 && ` · ${MO_TA_HE[moiNhat.heMay as MaHeMay]?.ten ?? moiNhat.heMay}`}
-            {moiNhat.ngayRa && ` · ${cachDay(moiNhat.ngayRa)}`}
-          </p>
-          <p className="mt-1.5 whitespace-pre-line text-[14px] leading-relaxed">{moiNhat.doiMoi}</p>
+          {/*
+            SỐ HIỆU BẢN VÀ THỜI GIAN NẰM BÊN PHẢI, ngang hàng với lời ghi chú.
+
+            App Store xếp thế, và lẽ của nó: phần này người ta đọc để biết bản
+            mới sửa gì — đó là dòng chữ. Số hiệu bản với ngày ra là thứ tra
+            cứu, đặt nó nằm trên đầu thì mỗi lần đọc phải bước qua hai dòng dữ
+            liệu mới tới câu cần đọc.
+          */}
+          <div className="flex items-start justify-between gap-6">
+            <p className="whitespace-pre-line text-[14px] leading-relaxed">{moiNhat.doiMoi}</p>
+            <p className="phu shrink-0 text-right leading-relaxed">
+              {moiNhat.ngayRa && <>{cachDay(moiNhat.ngayRa)}<br /></>}
+              Bản {moiNhat.soHieu}
+              {soHe.length > 1 && <><br />{MO_TA_HE[moiNhat.heMay as MaHeMay]?.ten ?? moiNhat.heMay}</>}
+            </p>
+          </div>
         </section>
       )}
 

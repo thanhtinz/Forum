@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
-import { batBuocDangNhap } from '@/lib/xac-thuc';
+import { batBuocDangNhap, nguoiHienTai } from '@/lib/xac-thuc';
 
 export interface KetQua { ok?: boolean; loi?: string }
 
@@ -14,7 +14,7 @@ export interface KetQua { ok?: boolean; loi?: string }
  * lệch vĩnh viễn, mà không có chỗ nào phát hiện ra. Nên đếm lại từ chính bảng
  * đánh giá, trong CÙNG một giao dịch với lần ghi — đó là thứ luôn đúng.
  */
-export async function chamSao(gameId: string, sao: number, noiDung: string): Promise<KetQua> {
+export async function chamSao(gameId: string, sao: number, noiDung: string, tieuDe = ''): Promise<KetQua> {
   let nguoi;
   try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn cần đăng nhập để đánh giá.' }; }
@@ -22,6 +22,9 @@ export async function chamSao(gameId: string, sao: number, noiDung: string): Pro
   if (!Number.isInteger(sao) || sao < 1 || sao > 5) return { loi: 'Hãy chọn từ 1 đến 5 sao.' };
 
   const chu = noiDung.trim().slice(0, 2000);
+  // Đầu đề ngắn hẳn: nó nằm một dòng trên đầu thẻ đánh giá, dài hơn là tràn
+  // hoặc bị cắt giữa chừng — mà một câu chốt bị cắt giữa chừng thì vô nghĩa.
+  const de = tieuDe.trim().slice(0, 80);
 
   const game = await db.game.findFirst({
     where: { id: gameId, trangThai: 'DANG_HIEN' },
@@ -55,8 +58,8 @@ export async function chamSao(gameId: string, sao: number, noiDung: string): Pro
   await db.$transaction(async (tx) => {
     await tx.danhGia.upsert({
       where: { gameId_nguoiId: { gameId, nguoiId: nguoi.id } },
-      update: { sao, noiDung: chu || null, soHieu },
-      create: { gameId, nguoiId: nguoi.id, sao, noiDung: chu || null, soHieu },
+      update: { sao, noiDung: chu || null, tieuDe: de || null, soHieu },
+      create: { gameId, nguoiId: nguoi.id, sao, noiDung: chu || null, tieuDe: de || null, soHieu },
       select: { id: true },
     });
 
@@ -99,6 +102,10 @@ export interface BaiXem {
   traLoiLuc: Date | null;
   /** Game ở bản nào lúc người ta chấm sao; rỗng với bài chấm từ trước. */
   soHieu: string | null;
+  tieuDe: string | null;
+  soHuuIch: number;
+  /** Người đang xem đã bấm hữu ích cho bài này chưa. Khách thì luôn `false`. */
+  toiDaBam: boolean;
   nguoiId: string;
   nguoi: { tenHienThi: string; tenDangNhap: string; anh: string | null };
 }
@@ -110,6 +117,13 @@ export interface TrangDanhGia {
 }
 
 const CACH_SAP = {
+  /*
+   * "Hữu ích nhất" đứng đầu bảng vì nó là cách sắp MẶC ĐỊNH của phần đánh giá,
+   * đúng lối App Store. Bài mới nhất chưa ai kịp đọc nên chưa ai bấm hữu ích,
+   * vì thế khoá phụ vẫn là ngày: cả kệ toàn bài 0 phiếu thì nó tự quay về
+   * "mới nhất", chứ không ra một thứ tự ngẫu nhiên.
+   */
+  huuIch: [{ soHuuIch: 'desc' as const }, { taoLuc: 'desc' as const }, { id: 'desc' as const }],
   moi: [{ taoLuc: 'desc' as const }, { id: 'desc' as const }],
   cao: [{ sao: 'desc' as const }, { taoLuc: 'desc' as const }, { id: 'desc' as const }],
   thap: [{ sao: 'asc' as const }, { taoLuc: 'desc' as const }, { id: 'desc' as const }],
@@ -149,12 +163,89 @@ export async function layDanhGia(
       take: MOI_TRANG_DANH_GIA,
       select: {
         id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
-        soHieu: true, nguoiId: true,
+        soHieu: true, tieuDe: true, soHuuIch: true, nguoiId: true,
         nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
       },
     }),
     db.danhGia.count({ where }),
   ]);
 
-  return { bai, tong };
+  /*
+   * "Tôi đã bấm chưa" hỏi thành MỘT câu cho cả trang, không hỏi từng bài.
+   *
+   * Hai mươi bài là hai mươi lượt đi về cơ sở dữ liệu nếu hỏi lẻ, mà câu trả
+   * lời gần như luôn là "chưa" — phiếu hữu ích thưa hơn bài đánh giá rất nhiều.
+   * Lấy một phát danh sách bài NÀY người ấy đã bấm rồi tra trong bộ nhớ.
+   */
+  const nguoi = await nguoiHienTai();
+  const daBam = nguoi
+    ? new Set((await db.danhGiaHuuIch.findMany({
+        where: { nguoiId: nguoi.id, danhGiaId: { in: bai.map((b) => b.id) } },
+        select: { danhGiaId: true },
+      })).map((p) => p.danhGiaId))
+    : new Set<string>();
+
+  return { bai: bai.map((b) => ({ ...b, toiDaBam: daBam.has(b.id) })), tong };
+}
+
+/**
+ * Bấm / bỏ bấm "Hữu ích" cho một bài đánh giá.
+ *
+ * Một người một phiếu, và phiếu ghi thành hàng riêng chứ không cộng thẳng vào
+ * con số: không giữ dấu ai đã bấm thì bấm đi bấm lại là tự đẩy bài mình lên
+ * đầu kệ. Xoá trước rồi mới xét `count` — `deleteMany` trả về đã xoá mấy hàng,
+ * nên chính nó vừa là phép kiểm "đã bấm chưa" vừa là phép ghi, không có khe hở
+ * giữa hai bước cho lượt bấm thứ hai chen vào.
+ *
+ * Không cho bấm bài của chính mình, và điều kiện ấy nằm trong `where` của câu
+ * tìm bài chứ không lọc sau: hàm này là một endpoint POST công khai.
+ */
+export async function bamHuuIch(danhGiaId: string): Promise<KetQua & { dem?: number; daBam?: boolean }> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập để bình chọn.' }; }
+
+  const bai = await db.danhGia.findFirst({
+    where: {
+      id: danhGiaId,
+      nguoiId: { not: nguoi.id },
+      game: { trangThai: 'DANG_HIEN' },
+    },
+    select: { id: true, game: { select: { duongDan: true } } },
+  });
+  if (!bai) return { loi: 'Không bình chọn được bài này.' };
+
+  const kq = await db.$transaction(async (tx) => {
+    const bo = await tx.danhGiaHuuIch.deleteMany({
+      where: { danhGiaId, nguoiId: nguoi.id },
+    });
+    if (bo.count > 0) {
+      const sau = await tx.danhGia.update({
+        where: { id: danhGiaId },
+        // Sàn 0: con số đếm sẵn mà âm thì chỉ có thể là do lệch, và một cái
+        // "−1 người thấy hữu ích" in ra màn hình thì không cứu được nữa.
+        data: { soHuuIch: { decrement: 1 } },
+        select: { soHuuIch: true },
+      });
+      if (sau.soHuuIch < 0) {
+        await tx.danhGia.update({ where: { id: danhGiaId }, data: { soHuuIch: 0 }, select: { id: true } });
+        return { dem: 0, daBam: false };
+      }
+      return { dem: sau.soHuuIch, daBam: false };
+    }
+
+    await tx.danhGiaHuuIch.create({
+      data: { danhGiaId, nguoiId: nguoi.id },
+      select: { danhGiaId: true },
+    });
+    const sau = await tx.danhGia.update({
+      where: { id: danhGiaId },
+      data: { soHuuIch: { increment: 1 } },
+      select: { soHuuIch: true },
+    });
+    return { dem: sau.soHuuIch, daBam: true };
+  });
+
+  revalidatePath(`/game/${bai.game.duongDan}`);
+  return { ok: true, ...kq };
 }

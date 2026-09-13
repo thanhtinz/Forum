@@ -8,6 +8,7 @@ import { layDanhGia, type BaiXem } from '@/app/(cua-hang)/game/[duongDan]/viec';
 import { gonSo, gop } from '@/lib/tien-ich';
 
 const SAP = [
+  { ma: 'huuIch', ten: 'Hữu ích nhất' },
   { ma: 'moi', ten: 'Mới nhất' },
   { ma: 'cao', ten: 'Điểm cao' },
   { ma: 'thap', ten: 'Điểm thấp' },
@@ -30,9 +31,11 @@ const SAP = [
  * một trong ba thứ ấy.
  */
 export function TamDanhGia({
-  gameId, duongDan, tong, sao, phanBo, banDau, dangLien, banHienTai,
+  gameId, duongDan, tong, sao, phanBo, banDau, dangLien, banHienTai, nguoiXemId,
 }: {
   gameId: string;
+  /** Người đang xem, `null` là khách — chỉ để biết có mời bấm "Hữu ích" không. */
+  nguoiXemId: string | null;
   duongDan: string;
   /** Tổng số đánh giá của game, kể cả bài chỉ chấm sao không viết chữ. */
   tong: number;
@@ -63,7 +66,9 @@ export function TamDanhGia({
   const [bai, datBai] = useState<BaiXem[]>(banDau);
   const [conLai, datConLai] = useState(Math.max(0, tong - banDau.length));
   const [locSao, datLocSao] = useState<number | null>(null);
-  const [sap, datSap] = useState<string>('moi');
+  // Mặc định "hữu ích nhất", khớp với thứ tự kệ ở trang game — mở tấm ra mà
+  // thứ tự nhảy đi một kiểu khác thì người ta tưởng mất bài vừa đọc.
+  const [sap, datSap] = useState<string>('huuIch');
   const [chiBanNay, datChiBanNay] = useState(false);
   const [trang, datTrang] = useState(1);
   const [dangTai, batDau] = useTransition();
@@ -189,7 +194,7 @@ export function TamDanhGia({
                   <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
                     {/* Trong tấm trượt thì không bày nút trả lời: đây là chỗ
                         ĐỌC, còn trả lời làm ở ngay trang game. */}
-                    <BaiDanhGia d={d} nguoiXemId={null} />
+                    <BaiDanhGia d={d} nguoiXemId={nguoiXemId} banDauBam={d.toiDaBam} />
                   </li>
                 ))}
               </ul>

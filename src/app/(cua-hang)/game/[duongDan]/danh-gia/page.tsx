@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import { AlignLeft } from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { PhoDiem } from '@/components/game/PhoDiem';
+import { tomTatDanhGia } from '@/lib/tom-tat-danh-gia';
 import { ODanhGia } from '@/components/game/ODanhGia';
 import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
 import { traLoiDanhGia } from '@/app/(quan-tri)/quan-tri/viec';
@@ -31,6 +33,11 @@ export async function generateMetadata({ params }: { params: Promise<{ duongDan:
  * trang 1 trong khi một bài khác không trang nào có.
  */
 const CACH_SAP = [
+  /* "Hữu ích nhất" đứng đầu vì nó là cách sắp mặc định của cả phần đánh giá —
+     giống hệt trang game, để hai chỗ không bày ra hai thứ tự khác nhau cho
+     cùng một game. Khoá phụ vẫn là ngày nên game chưa ai bấm thì nó tự quay
+     về "mới nhất". */
+  { ma: 'huu-ich', ten: 'Hữu ích nhất', theo: [{ soHuuIch: 'desc' }, { taoLuc: 'desc' }, { id: 'desc' }] },
   { ma: 'moi', ten: 'Mới nhất', theo: [{ taoLuc: 'desc' }, { id: 'desc' }] },
   { ma: 'cao', ten: 'Điểm cao', theo: [{ sao: 'desc' }, { taoLuc: 'desc' }, { id: 'desc' }] },
   { ma: 'thap', ten: 'Điểm thấp', theo: [{ sao: 'asc' }, { taoLuc: 'desc' }, { id: 'desc' }] },
@@ -53,7 +60,8 @@ export default async function TabDanhGia({ params, searchParams }: {
 
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
-    select: { id: true, duongDan: true, tacGiaId: true },
+    select: { id: true, duongDan: true, tacGiaId: true, ten: true, icon: true, nhaPhatTrien: true,
+      tacGia: { select: { tenHienThi: true, tenTacGia: true } } },
   });
   if (!game) notFound();
 
@@ -73,16 +81,28 @@ export default async function TabDanhGia({ params, searchParams }: {
     : nguoi && game.tacGiaId === nguoi.id ? tacGiaTraLoiDanhGia
       : null;
 
-  const [phanBo, tong, cuaToi] = await Promise.all([
+  const [phanBo, tong, cuaToi, loiBinhTomTat] = await Promise.all([
     db.danhGia.groupBy({ by: ['sao'], where: { gameId: game.id }, _count: { _all: true } }),
     db.danhGia.count({ where: loc }),
     nguoi
       ? db.danhGia.findUnique({
           where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
-          select: { sao: true, noiDung: true },
+          select: { sao: true, tieuDe: true, noiDung: true },
         })
       : null,
+    // 200 bài gần đây là đủ nói game nay đang thế nào — xem chú thích ở trang game.
+    db.danhGia.findMany({
+      where: { gameId: game.id, noiDung: { not: null } },
+      orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
+      take: 200,
+      select: { noiDung: true },
+    }),
   ]);
+
+  const tomTat = tomTatDanhGia(
+    Object.fromEntries(phanBo.map((x) => [x.sao, x._count._all])),
+    loiBinhTomTat.map((b) => b.noiDung ?? ''),
+  );
 
   const tongTrang = soTrang(tong, MOI_TRANG);
   const trang = kep(sp.trang, 1, tongTrang, 1);
@@ -94,6 +114,15 @@ export default async function TabDanhGia({ params, searchParams }: {
     take: MOI_TRANG,
     select: CHON_DANH_GIA,
   });
+
+  // Bài nào người đang xem đã bấm "Hữu ích" — một câu cho cả trang, xem chú
+  // thích ở trang game.
+  const daBam = nguoi && danhGia.length > 0
+    ? new Set((await db.danhGiaHuuIch.findMany({
+        where: { nguoiId: nguoi.id, danhGiaId: { in: danhGia.map((d) => d.id) } },
+        select: { danhGiaId: true },
+      })).map((v) => v.danhGiaId))
+    : new Set<string>();
 
   const goc = `/game/${game.duongDan}/danh-gia`;
   /** Dựng địa chỉ giữ nguyên những lựa chọn KHÔNG đổi ở lần bấm này. */
@@ -121,7 +150,23 @@ export default async function TabDanhGia({ params, searchParams }: {
         phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))}
         dungDuong={(s) => duong({ sao: s })} />
 
-      <ODanhGia gameId={game.id} banDau={cuaToi} daDangNhap={!!nguoi} />
+      {/* Cùng đoạn tóm tắt với trang game — hai chỗ nói hai kiểu về cùng một
+          đống bài đánh giá thì người đọc phải tự đoán chỗ nào đúng. */}
+      {tomTat && (
+        <div className="vach border-t pt-4">
+          <p className="text-[13px] leading-relaxed">
+            <span className="font-bold">Tóm tắt đánh giá</span> — {tomTat}
+          </p>
+          <p className="phu mt-1.5 flex items-center gap-1.5">
+            <AlignLeft size={13} aria-hidden />
+            Tự động tổng hợp từ đánh giá của người chơi
+          </p>
+        </div>
+      )}
+
+      <ODanhGia gameId={game.id} tenGame={game.ten} icon={game.icon} duongDan={game.duongDan}
+        tacGia={game.tacGia?.tenTacGia ?? game.tacGia?.tenHienThi ?? game.nhaPhatTrien ?? 'Không rõ nhà phát triển'}
+        banDau={cuaToi} daDangNhap={!!nguoi} />
 
       {gom > 0 && (
         <div className="vach flex flex-wrap items-center gap-2 border-t pt-4">
@@ -153,7 +198,8 @@ export default async function TabDanhGia({ params, searchParams }: {
           <ul aria-label="Danh sách đánh giá" className="space-y-4">
             {danhGia.map((d) => (
               <li key={d.id} className="vach pt-4 first:border-0 first:pt-0">
-                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} dap={dapDanhGia} />
+                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} dap={dapDanhGia}
+                  banDauBam={daBam.has(d.id)} />
               </li>
             ))}
           </ul>

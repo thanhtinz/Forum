@@ -1,86 +1,81 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { Star } from 'lucide-react';
+import { useState } from 'react';
 import Link from 'next/link';
-import { chamSao } from '@/app/(cua-hang)/game/[duongDan]/viec';
+import { CircleHelp, SquarePen, Star } from 'lucide-react';
+import { TamVietDanhGia } from '@/components/game/TamVietDanhGia';
 import { gop } from '@/lib/tien-ich';
 
 /**
- * Ô chấm sao và viết đánh giá.
+ * KHỐI "CHẤM SAO" — hàng sao to ở giữa, hai nút bo tròn bên dưới.
  *
- * Năm ngôi sao BẤM ĐƯỢC, và mỗi ngôi là một <button> riêng có nhãn đọc được —
- * không phải một dãy <span> nghe sự kiện chuột. Bộ đọc màn hình phải gọi được
- * tên "3 sao" rồi bấm, mà một cái span thì nó không nhìn thấy.
+ * Đây là dáng "Tap to Rate" của App Store, và nó khác hẳn bản trước ở một
+ * điểm: chấm sao chỉ tốn MỘT cú bấm, còn viết chữ thì mở tấm riêng. Bản cũ để
+ * cả ô chữ nằm giữa mục đánh giá nên ai cũng phải cuộn qua một biểu mẫu mới
+ * đọc được bài của người khác — mà đọc mới là việc chính ở đây.
  *
- * Ô chữ chỉ hiện SAU khi đã chọn sao: bắt viết trước rồi mới chấm thì phần lớn
- * người ta bỏ dở, còn chấm sao thì chỉ tốn một cái bấm.
+ * Sao vẽ RỖNG RUỘT bằng màu nhấn chứ không tô vàng: sao vàng đặc là sao của
+ * người khác đã chấm (xem `SaoNam`), còn hàng này là lời mời bấm. Hai thứ
+ * trông giống nhau thì người ta tưởng game đã được mình chấm rồi.
  */
-export function ODanhGia({ gameId, banDau, daDangNhap }: {
+export function ODanhGia({ gameId, tenGame, icon, tacGia, duongDan, banDau, daDangNhap }: {
   gameId: string;
-  banDau: { sao: number; noiDung: string | null } | null;
+  tenGame: string;
+  icon: string | null;
+  tacGia: string;
+  duongDan: string;
+  banDau: { sao: number; tieuDe: string | null; noiDung: string | null } | null;
   daDangNhap: boolean;
 }) {
-  const [sao, datSao] = useState(banDau?.sao ?? 0);
-  const [chu, datChu] = useState(banDau?.noiDung ?? '');
-  const [loi, datLoi] = useState<string | null>(null);
-  const [xong, datXong] = useState(false);
-  const [dangGui, batDau] = useTransition();
+  // `null` là tấm đang đóng; số là sao vừa bấm ngoài trang (0 = mở suông).
+  const [mo, datMo] = useState<number | null>(null);
 
   if (!daDangNhap) {
     return (
-      <div className="the p-4 text-center">
-        <p className="text-[13px] font-semibold">Bạn đã chơi game này?</p>
+      <div className="py-2 text-center">
+        <p className="text-[15px] font-bold">Bạn đã chơi game này?</p>
         <p className="phu mt-0.5">Đăng nhập để chấm sao và để lại vài dòng.</p>
         <Link href="/dang-nhap" className="nut-xam mt-3">Đăng nhập</Link>
       </div>
     );
   }
 
-  const gui = () => {
-    datLoi(null);
-    batDau(async () => {
-      const r = await chamSao(gameId, sao, chu);
-      if (r.loi) { datLoi(r.loi); return; }
-      datXong(true);
-    });
-  };
-
-  /*
-   * MỘT HÀNG, không phải một khối.
-   *
-   * App Store để "Click to Rate" và năm ngôi sao trên cùng một dòng. Xếp dọc
-   * thì một việc bấm đúng một cái chiếm mất hai tầng chiều cao ngay giữa phần
-   * đánh giá — chỗ người ta đang đọc xem người khác nói gì.
-   */
   return (
-    <div className="the flex flex-wrap items-center gap-x-4 gap-y-2 p-4">
-      <p className="text-[13px] font-semibold">{banDau ? 'Đánh giá của bạn' : 'Chấm sao cho game này'}</p>
+    <div className="text-center">
+      <p className="text-[15px] font-bold">
+        {banDau ? 'Đánh giá của bạn' : 'Chấm sao cho game này'}
+      </p>
 
-      <div className="flex gap-1">
+      <div className="mt-2 flex justify-center gap-2">
         {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} type="button" onClick={() => { datSao(n); datXong(false); }}
-            aria-label={`${n} sao`} aria-pressed={sao === n}
+          <button key={n} type="button" onClick={() => datMo(n)}
+            aria-label={`${n} sao`} aria-pressed={banDau?.sao === n}
             className="p-0.5 transition-transform hover:scale-110">
-            <Star size={28} className={gop(n <= sao ? 'fill-canh text-canh' : 'fill-nen3 text-vien')} />
+            <Star size={32} strokeWidth={1.75}
+              className={gop('text-nhan', n <= (banDau?.sao ?? 0) ? 'fill-nhan' : 'fill-transparent')} />
           </button>
         ))}
       </div>
 
-      {sao > 0 && (
-        <>
-          <textarea value={chu} onChange={(e) => { datChu(e.target.value); datXong(false); }}
-            rows={3} maxLength={2000} placeholder="Máy bạn chạy có mượt không? Có lỗi gì không? (không bắt buộc)"
-            className="o-nhap mt-3" />
-          <div className="mt-2 flex items-center gap-3">
-            <button type="button" onClick={gui} disabled={dangGui} className="nut-cai-dam !min-h-[38px] !px-5 !text-[13px]">
-              {dangGui ? 'Đang gửi…' : banDau ? 'Cập nhật' : 'Gửi đánh giá'}
-            </button>
-            {xong && <span className="text-[13px] font-semibold text-nhan">Đã lưu. Cảm ơn bạn!</span>}
-            {loi && <span className="text-[13px] font-semibold text-xau">{loi}</span>}
-          </div>
-        </>
-      )}
+      {/*
+        HAI NÚT BO TRÒN NẰM CẠNH NHAU, chia đôi bề ngang — đúng cặp "Write a
+        Review" và "App Support" của App Store. "Hỗ trợ" ở cửa hàng này dẫn về
+        khu diễn đàn của chính game: đó là chỗ hỏi được người đang chơi và cả
+        người làm ra game, chứ cửa hàng không có hòm thư hỗ trợ riêng.
+      */}
+      <div className="mt-3.5 grid grid-cols-2 gap-2.5">
+        <button type="button" onClick={() => datMo(0)} className="nut-xam !rounded-full gap-1.5">
+          <SquarePen size={15} aria-hidden />
+          {banDau ? 'Sửa đánh giá' : 'Viết đánh giá'}
+        </button>
+        <Link href={`/game/${duongDan}/dien-dan`} className="nut-xam !rounded-full gap-1.5">
+          <CircleHelp size={15} aria-hidden />
+          Hỏi đáp
+        </Link>
+      </div>
+
+      <TamVietDanhGia gameId={gameId} tenGame={tenGame} icon={icon} tacGia={tacGia}
+        banDau={banDau} mo={mo} dongLai={() => datMo(null)} />
     </div>
   );
 }

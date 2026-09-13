@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronRight, Info, TriangleAlert } from 'lucide-react';
+import { AlignLeft, ChevronRight, Info, TriangleAlert } from 'lucide-react';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { ANH_CHIA_SE } from '@/lib/dia-chi-goc';
 import { PhoDiem } from '@/components/game/PhoDiem';
+import { tomTatDanhGia } from '@/lib/tom-tat-danh-gia';
 import { SaoNam } from '@/components/game/SaoNam';
 import { ODanhGia } from '@/components/game/ODanhGia';
 import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
@@ -151,11 +152,19 @@ export default async function TabThongTin({ params, searchParams }: {
 
   const nguoi = await nguoiHienTai();
 
-  const [phanBo, danhGia, cuaToi, soHe, banXem, cungTacGia] = await Promise.all([
+  const [phanBo, danhGia, cuaToi, loiBinhTomTat, soHe, banXem, cungTacGia] = await Promise.all([
     db.danhGia.groupBy({ by: ['sao'], where: { gameId: game.id }, _count: { _all: true } }),
     db.danhGia.findMany({
       where: { gameId: game.id, noiDung: { not: null }, ...(locSao ? { sao: locSao } : {}) },
-      orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
+      /*
+       * SẮP THEO "HỮU ÍCH NHẤT", không theo mới nhất — đúng lối App Store.
+       *
+       * Kệ này chỉ bày được năm bài, nên câu hỏi là: năm bài NÀO? Mới nhất thì
+       * một người vừa gõ "hay" lúc nãy chiếm mất chỗ của bài kể rõ game chạy
+       * thế nào trên máy yếu. Khoá phụ vẫn là ngày, nên game chưa ai bấm hữu
+       * ích thì kệ tự quay về mới nhất chứ không ra thứ tự ngẫu nhiên.
+       */
+      orderBy: [{ soHuuIch: 'desc' }, { taoLuc: 'desc' }, { id: 'desc' }],
       // Năm bài là bản nếm thử; đọc hết thì mở tấm trượt, không rời trang.
       take: 5,
       select: CHON_DANH_GIA,
@@ -163,9 +172,24 @@ export default async function TabThongTin({ params, searchParams }: {
     nguoi
       ? db.danhGia.findUnique({
           where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
-          select: { sao: true, noiDung: true },
+          select: { sao: true, tieuDe: true, noiDung: true },
         })
       : null,
+    /*
+     * LỜI BÌNH DÙNG ĐỂ DỰNG ĐOẠN TÓM TẮT.
+     *
+     * Lấy riêng chứ không dùng lại năm bài trên kệ: tóm tắt mà chỉ đọc năm bài
+     * thì nó không phải tóm tắt, nó là cái kệ viết lại bằng chữ khác. Chặn ở
+     * 200 bài mới nhất vì một game nghìn bài thì hai trăm bài gần đây đã đủ
+     * nói game ấy nay đang thế nào — mà quét cả nghìn bài mỗi lần mở trang thì
+     * không đáng.
+     */
+    db.danhGia.findMany({
+      where: { gameId: game.id, noiDung: { not: null } },
+      orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
+      take: 200,
+      select: { noiDung: true },
+    }),
     db.banTai.findMany({ where: { gameId: game.id }, distinct: ['heMay'], select: { heMay: true } }),
     docBanXem(game.id),
     /*
@@ -225,6 +249,25 @@ export default async function TabThongTin({ params, searchParams }: {
    * Trang tên hãng gom theo một CHUỖI ghi trên từng game nên hai cách gõ thành
    * hai hãng; trang tác giả gom theo tài khoản nên nó là thật.
    */
+  /*
+   * Người đang xem đã bấm "Hữu ích" cho bài nào — hỏi MỘT câu cho cả kệ.
+   *
+   * Hỏi lẻ từng bài là năm lượt đi về cơ sở dữ liệu để nhận về năm chữ "chưa",
+   * vì phiếu hữu ích thưa hơn bài đánh giá rất nhiều. Khách chưa đăng nhập thì
+   * khỏi hỏi câu nào.
+   */
+  const daBam = nguoi && danhGia.length > 0
+    ? new Set((await db.danhGiaHuuIch.findMany({
+        where: { nguoiId: nguoi.id, danhGiaId: { in: danhGia.map((d) => d.id) } },
+        select: { danhGiaId: true },
+      })).map((v) => v.danhGiaId))
+    : new Set<string>();
+
+  const tomTat = tomTatDanhGia(
+    Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all])),
+    loiBinhTomTat.map((b) => b.noiDung ?? ''),
+  );
+
   const tenTacGia = game.tacGia
     ? game.tacGia.tenTacGia ?? game.tacGia.tenHienThi
     : game.nhaPhatTrien;
@@ -373,11 +416,33 @@ export default async function TabThongTin({ params, searchParams }: {
           {gom > danhGia.length && (
             <TamDanhGia gameId={game.id} duongDan={duongDan} tong={gom} sao={sao}
               phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))}
-              banDau={danhGia} dangLien banHienTai={banXem[0]?.soHieu ?? null} />
+              banDau={danhGia.map((d) => ({ ...d, toiDaBam: daBam.has(d.id) }))}
+              dangLien banHienTai={banXem[0]?.soHieu ?? null} nguoiXemId={nguoi?.id ?? null} />
           )}
         </div>
         <PhoDiem sao={sao} tong={gom} locSao={locSao}
           phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))} />
+
+        {/*
+          TÓM TẮT ĐÁNH GIÁ — mấy dòng dựng từ chính những bài ở dưới.
+
+          App Store để đúng đoạn này ngay dưới điểm trung bình, và lý do thì rõ:
+          "4,2" không nói được người ta khen gì chê gì, mà đọc hai chục bài thì
+          chẳng ai đọc. Câu cuối nói rõ đoạn này do máy đếm ra, không phải lời
+          của ban quản trị — xem `tom-tat-danh-gia.ts` để biết vì sao nó đếm
+          chứ không nghĩ hộ.
+        */}
+        {tomTat && (
+          <div className="vach mt-4 border-t pt-4">
+            <p className="text-[13px] leading-relaxed">
+              <span className="font-bold">Tóm tắt đánh giá</span> — {tomTat}
+            </p>
+            <p className="phu mt-1.5 flex items-center gap-1.5">
+              <AlignLeft size={13} aria-hidden />
+              Tự động tổng hợp từ đánh giá của người chơi
+            </p>
+          </div>
+        )}
 
         {locSao !== null && (
           <p className="mt-3 flex items-center gap-2 text-[13px]">
@@ -387,10 +452,6 @@ export default async function TabThongTin({ params, searchParams }: {
             </Link>
           </p>
         )}
-
-        <div className="mt-5">
-          <ODanhGia gameId={game.id} banDau={cuaToi} daDangNhap={!!nguoi} />
-        </div>
 
         {danhGia.length === 0 && locSao !== null && (
           <p className="phu mt-5">Không có bài nào {locSao} sao kèm lời nhận xét.</p>
@@ -406,16 +467,27 @@ export default async function TabThongTin({ params, searchParams }: {
           thì quẹt ngang.
         */}
         {danhGia.length > 0 && (
-          <Ke nhan="đánh giá" className="mt-5 -mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
-            {danhGia.map((d) => (
-              <div key={d.id} className="the w-[300px] shrink-0 p-4 sm:w-[340px]">
-                <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} dap={dapDanhGia} gon />
-              </div>
-            ))}
-          </Ke>
+          <>
+            <h3 className="mt-5 text-[15px] font-bold">Bài hữu ích nhất</h3>
+            <Ke nhan="đánh giá" className="mt-2.5 -mx-4 gap-3 px-4 sm:mx-0 sm:px-0">
+              {danhGia.map((d) => (
+                <div key={d.id} className="the w-[300px] shrink-0 p-4 sm:w-[340px]">
+                  <BaiDanhGia d={d} nguoiXemId={nguoi?.id ?? null} dap={dapDanhGia} gon
+                    banDauBam={daBam.has(d.id)} />
+                </div>
+              ))}
+            </Ke>
+          </>
         )}
 
-
+        {/* Khối chấm sao nằm SAU kệ, đúng chỗ App Store để "Tap to Rate": vào
+            phần đánh giá là để nghe người khác nói trước đã, mời viết ngay từ
+            đầu thì đẩy hết tiếng nói ấy xuống dưới một màn hình. */}
+        <div className="vach mt-6 border-t pt-5">
+          <ODanhGia gameId={game.id} tenGame={game.ten} icon={game.icon} duongDan={duongDan}
+            tacGia={tenTacGia ?? 'Không rõ nhà phát triển'}
+            banDau={cuaToi} daDangNhap={!!nguoi} />
+        </div>
       </section>
 
       {/*

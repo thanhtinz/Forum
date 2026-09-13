@@ -25,6 +25,7 @@ model NguoiDung {
   ghePhutCuoi DateTime?
 
   danhGia       DanhGia[]
+  danhGiaHuuIch DanhGiaHuuIch[]
   luotTai       LuotTai[]
   daLuu         DaLuu[]
   chuDe         ChuDe[]
@@ -363,7 +364,25 @@ model DanhGia {
   nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
 
   sao     Int // 1..5
+
+  /// Đầu đề bài đánh giá — một câu chốt lại ý, in đậm trên đầu thẻ.
+  ///
+  /// VÌ SAO CẦN: kệ đánh giá cuộn ngang thì mỗi thẻ chỉ được liếc chừng một
+  /// giây. Không có đầu đề, người đọc phải nhá bốn dòng chữ của từng thẻ mới
+  /// đoán ra bài ấy khen hay chê — mà liếc nhanh chính là cách người ta đọc
+  /// kệ. RỖNG với bài chấm sao suông và với bài viết từ trước đợt này.
+  tieuDe  String?
   noiDung String? @db.Text
+
+  /// Số người thấy bài này hữu ích, đếm sẵn ở đây chứ không đếm lúc đọc.
+  ///
+  /// VÌ SAO ĐỂ SỐ Ở ĐÂY: cách sắp mặc định của phần đánh giá là "hữu ích
+  /// nhất", mà `orderBy` thì phải có cột để sắp. Đếm `DanhGiaHuuIch` lúc đọc
+  /// thì Prisma không sắp theo được, phải lôi hết bài về rồi sắp bằng tay —
+  /// game nghìn bài đánh giá là hỏng.
+  soHuuIch Int @default(0)
+
+  huuIch DanhGiaHuuIch[]
 
   /// Game đang ở bản nào lúc người này chấm sao. RỖNG với bài chấm từ trước
   /// đợt này, và với game chưa có bản tải nào.
@@ -390,6 +409,29 @@ model DanhGia {
   /// Mỗi người một tiếng nói cho mỗi game; chấm lại là sửa bài cũ.
   @@unique([gameId, nguoiId])
   @@index([gameId, taoLuc])
+  /// Sắp "hữu ích nhất" là lối vào mặc định của phần đánh giá, nên nó cần
+  /// chỉ mục riêng chứ không dựa được vào chỉ mục theo ngày ở trên.
+  @@index([gameId, soHuuIch])
+}
+
+/**
+ * PHIẾU "HỮU ÍCH" — mỗi người bấm được đúng một lần cho mỗi bài.
+ *
+ * Thành bảng riêng chứ không cộng thẳng vào `DanhGia.soHuuIch` là vì phải
+ * CHẶN bấm hai lần: không giữ dấu ai đã bấm thì một người bấm đi bấm lại là
+ * đẩy được bài của mình lên đầu kệ. Khoá chính ghép sẵn làm luôn việc ấy —
+ * hàng thứ hai không chèn nổi.
+ */
+model DanhGiaHuuIch {
+  danhGiaId String
+  danhGia   DanhGia   @relation(fields: [danhGiaId], references: [id], onDelete: Cascade)
+  nguoiId   String
+  nguoi     NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  taoLuc DateTime @default(now())
+
+  @@id([danhGiaId, nguoiId])
+  @@index([nguoiId])
 }
 
 /**

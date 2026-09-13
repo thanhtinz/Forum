@@ -1,4 +1,4 @@
-import { GOC, db, moTrang } from '../tro-giup.mjs';
+import { db, GOC, LOI, moTrang } from '../tro-giup.mjs';
 
 /**
  * Hai thứ không nhìn thấy trên giao diện, nên chỉ bài kiểm mới canh được:
@@ -78,7 +78,7 @@ export default async function chay(kiem) {
       await p.fill('input[name="matKhau"]', 'chac-chan-sai-roi');
       await p.click('button[type="submit"]');
       await p.waitForTimeout(400);
-      return (await p.locator('[role="alert"]').first().textContent()) ?? '';
+      return (await p.locator(LOI).first().textContent()) ?? '';
     };
 
     // Vài lần đầu chỉ báo sai thường, chưa cấm.

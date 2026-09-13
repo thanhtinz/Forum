@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang } from '../tro-giup.mjs';
+import { db, doiToi, GOC, LOI, moTrang } from '../tro-giup.mjs';
 import { docThan, moThuGia } from '../thu-gia.mjs';
 import { donMa } from '../../src/lib/ma-xac-minh-const.ts';
 
@@ -97,7 +97,7 @@ export default async function chay(kiem) {
     await p.click('button[type="submit"]');
     await p.waitForTimeout(1800);
     kiem('sai mật khẩu thì báo lỗi và không cho vào',
-      (await p.locator('[role="alert"]').count()) > 0 && p.url().includes('/dang-nhap'));
+      (await p.locator(LOI).count()) > 0 && p.url().includes('/dang-nhap'));
 
     /*
      * GỬI HỎNG THÌ CHỮ VỪA GÕ PHẢI CÒN NGUYÊN.
@@ -116,7 +116,7 @@ export default async function chay(kiem) {
 
     // Câu báo lỗi KHÔNG được nói tài khoản có tồn tại hay không, kẻo thành
     // công cụ dò xem ai đã đăng ký ở đây.
-    const loi = await p.locator('[role="alert"]').first().textContent();
+    const loi = await p.locator(LOI).first().textContent();
     kiem('câu báo lỗi không tiết lộ tài khoản có tồn tại hay không',
       !!loi && !/không tồn tại|chưa đăng ký|không có tài khoản/i.test(loi), loi ?? '');
 

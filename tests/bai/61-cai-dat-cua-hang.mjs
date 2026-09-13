@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { db, doiToi, GOC, LOI, moTrangDaDangNhap } from '../tro-giup.mjs';
 
 const TEN = 'Cửa Hàng Kiểm Thử';
 // Khu quản trị có mấy thanh lối đi khác cũng trỏ tới `/quan-tri/cai-dat`, nên
@@ -141,9 +141,9 @@ export default async function chay(kiem) {
     await admin.goto(`${GOC}/quan-tri/cai-dat/thu`, { waitUntil: 'networkidle' });
     await admin.fill('input[name="cong"]', 'năm-tám-bảy');
     await admin.click('button:has-text("Lưu cấu hình thư")');
-    await admin.waitForSelector('[role="alert"]', { timeout: 8000 }).catch(() => {});
+    await admin.waitForSelector(LOI, { timeout: 8000 }).catch(() => {});
     kiem('cổng không phải số thì báo lỗi',
-      (await admin.locator('[role="alert"]').count()) > 0);
+      (await admin.locator(LOI).count()) > 0);
     kiem('gửi hỏng thì KHÔNG ghi gì vào cấu hình thư',
       (await db.caiDat.count({ where: { khoa: 'thu' } })) === 0);
 

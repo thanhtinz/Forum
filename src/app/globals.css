@@ -299,6 +299,19 @@ p { text-wrap: pretty; }
   .nut-xam:hover { background: rgb(var(--nen3) / .95); }
 
   /*
+   * NÚT ĐỎ — chỉ dùng cho việc KHÔNG LÙI LẠI ĐƯỢC.
+   *
+   * Giữ nó hiếm thì màu đỏ mới còn nghĩa. Bôi đỏ mọi thứ có chữ "xoá" là chẳng
+   * mấy chốc người ta bấm qua màu đỏ mà không đọc nữa.
+   */
+  .nut-xau {
+    @apply nut text-white;
+    background: rgb(var(--xau));
+  }
+  .nut-xau:hover { filter: brightness(1.08); }
+  .nut-xau:disabled { @apply cursor-not-allowed opacity-40; filter: none; }
+
+  /*
    * NÚT TRÒN NỔI — lùi, chia sẻ, và mấy việc phụ khác ở góc trên trang game.
    *
    * Đủ 44×44 thật chứ không phải nới bằng lớp phủ: hai nút này nằm sát mép màn

@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
+import { db, doiToi, GOC, LOI, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 
 /**
  * Sửa bản tải, quản lý từng tệp, và đổi trạng thái nhiều game một lượt.
@@ -53,7 +53,7 @@ export default async function chay(kiem) {
     // ── Số hiệu trùng với bản khác cùng hệ thì bị chặn ─────────────────
     await admin.fill('input[name="soHieu"]', '2.0');
     await admin.click('button:has-text("Lưu bản này")');
-    await admin.waitForSelector('[role="alert"]', { timeout: 5000 }).catch(() => {});
+    await admin.waitForSelector(LOI, { timeout: 5000 }).catch(() => {});
     const conNguyen = await db.banTai.count({ where: { gameId: game.id, soHieu: '1.0.1' } });
     kiem('số hiệu trùng bản khác cùng hệ thì bị chặn', conNguyen === 1);
 

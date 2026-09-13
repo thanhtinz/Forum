@@ -32,7 +32,9 @@ async function timNguoi(tho: string) {
   const ten = decodeURIComponent(tho).trim();
   if (!ten) return null;
   return db.nguoiDung.findFirst({
-    where: { tenDangNhap: { equals: ten, mode: 'insensitive' }, khoa: false },
+    // Người đã tự xoá thì không còn trang hồ sơ: chữ cũ của họ vẫn nằm trên
+    // diễn đàn nhưng không dẫn về một con người nào nữa.
+    where: { tenDangNhap: { equals: ten, mode: 'insensitive' }, khoa: false, xoaLuc: null },
     select: {
       id: true, tenHienThi: true, tenDangNhap: true, anh: true, vaiTro: true, taoLuc: true,
     },

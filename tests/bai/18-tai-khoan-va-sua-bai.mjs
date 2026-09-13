@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { db, doiToi, GOC, LOI, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 
 /**
  * Cài đặt tài khoản, và sửa/xoá bài của chính mình trên diễn đàn.
@@ -45,7 +45,7 @@ export default async function chay(kiem) {
     // Địa chỉ ảnh lạ bị chặn — `javascript:` lọt vào thuộc tính src là hỏng.
     await pA.fill('input[name="anh"]', 'javascript:alert(1)');
     await pA.click('button:has-text("Lưu hồ sơ")');
-    await pA.waitForSelector('[role="alert"]', { timeout: 5000 }).catch(() => {});
+    await pA.waitForSelector(LOI, { timeout: 5000 }).catch(() => {});
     const anh = (await db.nguoiDung.findUnique({ where: { id: a.id }, select: { anh: true } }))?.anh;
     kiem('địa chỉ ảnh không phải https hay "/" thì bị chặn', anh == null, `lưu thành ${anh}`);
 
@@ -54,7 +54,7 @@ export default async function chay(kiem) {
     await pA.fill('input[name="matKhauMoi"]', 'matkhaumoi123');
     await pA.fill('input[name="matKhauLai"]', 'matkhaumoi123');
     await pA.click('button:has-text("Đổi mật khẩu")');
-    await pA.waitForSelector('form:has(input[name="matKhauCu"]) [role="alert"]', { timeout: 5000 }).catch(() => {});
+    await pA.waitForSelector(`form:has(input[name="matKhauCu"]) ${LOI}`, { timeout: 5000 }).catch(() => {});
     const conDangNhapDuoc = await thuDangNhap('anhthu', 'thanhvien123');
     kiem('sai mật khẩu cũ thì không đổi được', conDangNhapDuoc);
 

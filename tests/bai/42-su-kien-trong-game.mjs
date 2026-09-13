@@ -1,4 +1,4 @@
-import { GOC, db, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { db, GOC, LOI, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 import { SU_KIEN_TREN_TRANG } from '../../src/lib/su-kien-const.ts';
 
 const DUONG_DAN = 'game-kiem-su-kien';
@@ -102,7 +102,7 @@ export default async function chay(kiem) {
     kiem('ngày kết thúc trước ngày bắt đầu thì bị chặn',
       (await db.suKien.count({ where: { gameId: game.id, tieuDe: 'Sự kiện ngược ngày' } })) === 0);
     kiem('và nói rõ vì sao bị chặn',
-      (await admin.locator('[role="alert"]').first().textContent() ?? '').includes('sau ngày bắt đầu'));
+      (await admin.locator(LOI).first().textContent() ?? '').includes('sau ngày bắt đầu'));
 
     /*
      * Thành viên thường gọi thẳng endpoint thì không ăn.

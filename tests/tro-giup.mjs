@@ -4,6 +4,23 @@ import { PrismaClient } from '@prisma/client';
 import { chromium } from 'playwright-core';
 
 export const GOC = process.env.GOC ?? 'http://localhost:3000';
+
+/**
+ * Ô BÁO LỖI THẬT TRÊN TRANG.
+ *
+ * ĐỪNG dùng thẳng `[role="alert"]`: Next tự nhét vào MỌI trang một ô
+ * `#__next-route-announcer__` cũng mang `role="alert"` — nó rỗng và vô hình,
+ * chỉ để đọc tên trang cho bộ đọc màn hình. Nghĩa là `[role="alert"]` đếm ra ít
+ * nhất một ô kể cả khi trang chẳng báo lỗi gì, nên một mục kiểm "phải báo lỗi"
+ * viết theo lối ấy KHÔNG BAO GIỜ ĐỎ ĐƯỢC, và một lượt `waitForSelector` chờ nó
+ * thì về ngay lập tức chứ không chờ máy chủ trả lời.
+ *
+ * Đã cắn thật lúc dựng bài 62: phép chờ về sớm, bài kiểm đọc cơ sở dữ liệu
+ * trong khi server action còn đang chạy, rồi dựng lại quyền quản trị ngay giữa
+ * lúc hàm ấy đang đọc quyền — một cuộc đua do chính bài kiểm gây ra.
+ */
+export const LOI = '[role="alert"]:not(#__next-route-announcer__)';
+
 export const db = new PrismaClient();
 
 /**

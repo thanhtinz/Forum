@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
-import { OHoSo, OMatKhau } from '@/components/OCaiDatTaiKhoan';
+import { OHoSo, OMatKhau, OXoaTaiKhoan } from '@/components/OCaiDatTaiKhoan';
 import { thuBat } from '@/lib/gui-thu';
 
 export const dynamic = 'force-dynamic';
@@ -57,6 +57,8 @@ export default async function CaiDat() {
           dùng để nhận ra tài khoản. Cần đổi thì nhắn cho SunnyStore.
         </p>
       </section>
+
+      <OXoaTaiKhoan />
     </div>
   );
 }

@@ -2,7 +2,10 @@
 
 import { useActionState } from 'react';
 import { Check } from 'lucide-react';
-import { doiMatKhau, luuHoSo, type KetQua } from '@/app/(cua-hang)/toi/cai-dat/viec';
+import {
+  doiMatKhau, luuHoSo, xoaTaiKhoan, type KetQua,
+} from '@/app/(cua-hang)/toi/cai-dat/viec';
+import { CAU_XAC_NHAN } from '@/lib/xoa-tai-khoan-const';
 import { ONhapGiu } from '@/components/ONhapGiu';
 
 /** Ô báo kết quả dùng chung cho cả hai biểu mẫu. */
@@ -113,5 +116,58 @@ export function OMatKhau() {
         {dangChay ? 'Đang đổi…' : 'Đổi mật khẩu'}
       </button>
     </form>
+  );
+}
+
+/**
+ * Vùng nguy hiểm: tự xoá tài khoản.
+ *
+ * GẤP LẠI SẴN. Đây là việc duy nhất trên trang này không lùi lại được, mà nó
+ * lại nằm ngay dưới hai biểu mẫu người ta vào ra hằng ngày — bày sẵn một cái
+ * nút đỏ ở đó thì sớm muộn cũng có người bấm nhầm trong lúc định bấm "Lưu hồ
+ * sơ". Phải tự tay mở ra, rồi gõ mật khẩu, rồi gõ đúng một câu dài.
+ */
+export function OXoaTaiKhoan() {
+  const [kq, gui, dangChay] = useActionState<KetQua, FormData>(xoaTaiKhoan, {});
+
+  return (
+    <details className="the p-4" data-viec="vung-nguy-hiem">
+      <summary className="cursor-pointer text-[15px] font-bold text-xau">
+        Xoá tài khoản
+      </summary>
+
+      <div className="mt-3 space-y-3">
+        <p className="phu leading-relaxed">
+          Email, mật khẩu, ảnh đại diện, danh sách đã lưu và hộp thông báo của bạn
+          sẽ đi hẳn, và bạn bị đăng xuất khỏi mọi thiết bị. Việc này KHÔNG lùi lại
+          được.
+        </p>
+        <p className="phu leading-relaxed">
+          Đánh giá, chủ đề và lời đáp cũ thì ở lại nhưng không còn mang tên bạn —
+          gỡ chúng đi là khoét thủng những cuộc trò chuyện có người khác tham gia.
+        </p>
+
+        <form action={gui} className="space-y-3">
+          <label className="block">
+            <span className="phu mb-1 block">Mật khẩu hiện tại</span>
+            <input name="matKhau" type="password" required autoComplete="current-password"
+              className="o-nhap" />
+          </label>
+
+          <label className="block">
+            <span className="phu mb-1 block">
+              Gõ đúng câu <b className="text-chu">{CAU_XAC_NHAN}</b> để xác nhận
+            </span>
+            <ONhapGiu name="xacNhan" required autoComplete="off" className="o-nhap" />
+          </label>
+
+          <Bao kq={kq} />
+
+          <button type="submit" disabled={dangChay} className="nut-xau">
+            {dangChay ? 'Đang xoá…' : 'Xoá tài khoản của tôi'}
+          </button>
+        </form>
+      </div>
+    </details>
   );
 }

@@ -24,6 +24,18 @@ model NguoiDung {
   taoLuc      DateTime  @default(now())
   ghePhutCuoi DateTime?
 
+  /// Lúc người này tự xoá tài khoản. Chưa xoá thì để trống.
+  ///
+  /// XOÁ Ở ĐÂY LÀ XOÁ DANH TÍNH, KHÔNG PHẢI XOÁ HÀNG. Hàng vẫn ở lại nhưng đã
+  /// bị chùi sạch email, mật khẩu, ảnh và tên — vì bài viết, lời đáp và đánh
+  /// giá của người ấy treo vào hàng này. Xoá hàng đi thì mọi chủ đề họ từng mở
+  /// biến mất, kéo theo cả lời đáp của NHỮNG NGƯỜI KHÁC trong chủ đề ấy: một
+  /// người rời đi mà cuộc trò chuyện của mấy chục người khác thủng lỗ chỗ.
+  ///
+  /// Với người bày game ra cửa hàng thì còn nặng hơn: game của họ treo vào đây
+  /// qua `GameCuaTacGia`, xoá hàng là gỡ luôn game khỏi kệ.
+  xoaLuc      DateTime?
+
   /// Có gửi thư mỗi khi có thông báo mới không.
   ///
   /// BẬT SẴN, và đó là lựa chọn có cân nhắc: thông báo ở đây không phải quảng

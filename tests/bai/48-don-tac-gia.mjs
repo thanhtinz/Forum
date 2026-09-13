@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
+import { db, doiToi, GOC, LOI, moTrang, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 
 const TEN = 'kiemthu-don-tac-gia';
 
@@ -55,7 +55,7 @@ export default async function chay(kiem) {
     kiem('lý do quá ngắn thì đơn không được ghi',
       (await db.donTacGia.count({ where: { nguoiId: nguoi.id } })) === 0);
     kiem('và nói rõ vì sao bị chặn',
-      (await nguoiGui.locator('[role="alert"]').first().textContent() ?? '').includes('ít nhất'));
+      (await nguoiGui.locator(LOI).first().textContent() ?? '').includes('ít nhất'));
 
     await nguoiGui.fill('textarea[name="lyDo"]',
       'Mình làm ba game Java hồi 2008, muốn đăng lại cho ai còn máy Nokia chơi.');

@@ -1,11 +1,16 @@
 'use server';
 
+import { randomBytes } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import {
-  bamMatKhau, batBuocDangNhap, dongPhienKhac, khopMatKhau,
+  bamMatKhau, batBuocDangNhap, dongPhien, dongPhienKhac, khopMatKhau,
 } from '@/lib/xac-thuc';
 import { LOI_DIA_CHI, laDiaChiHopLe } from '@/lib/dia-chi-an-toan';
+import {
+  CAU_XAC_NHAN, TEN_DA_XOA, emailDaXoa, tenDangNhapDaXoa,
+} from '@/lib/xoa-tai-khoan-const';
 
 export interface KetQua { ok?: string; loi?: string }
 
@@ -97,4 +102,99 @@ export async function doiMatKhau(_truoc: KetQua, form: FormData): Promise<KetQua
       ? `Đã đổi mật khẩu, và đăng xuất ${soDong} thiết bị khác.`
       : 'Đã đổi mật khẩu.',
   };
+}
+
+/**
+ * Người dùng tự xoá tài khoản của mình.
+ *
+ * XOÁ DANH TÍNH, KHÔNG XOÁ HÀNG — lý do dài đã ghi ngay trên cột `xoaLuc`
+ * trong lược đồ. Gọn lại: bài viết và đánh giá treo vào hàng người dùng, xoá
+ * hàng là khoét thủng cả những cuộc trò chuyện của người khác và gỡ luôn game
+ * của người ấy khỏi kệ. Nên hàng ở lại, còn mọi thứ chỉ về một con người cụ
+ * thể thì đi: email, mật khẩu, ảnh, tên, quyền, và mấy thứ riêng tư như danh
+ * sách đã lưu hay hộp thông báo.
+ *
+ * BA LỚP CHẶN TAY TRƯỢT, vì việc này KHÔNG lùi lại được:
+ *   • hỏi lại mật khẩu — một máy bỏ quên đang mở phiên thì người lạ xoá được;
+ *   • bắt gõ đúng một câu dài, không phải bấm một cái là xong;
+ *   • quản trị viên CUỐI CÙNG thì không cho đi, kẻo cửa hàng còn lại không ai
+ *     mở nổi khu quản trị nữa.
+ */
+export async function xoaTaiKhoan(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập.' }; }
+
+  if (chu(form, 'xacNhan') !== CAU_XAC_NHAN) {
+    return { loi: `Gõ đúng câu "${CAU_XAC_NHAN}" thì mới xoá được.` };
+  }
+
+  const hang = await db.nguoiDung.findUnique({
+    where: { id: nguoi.id }, select: { matKhauBam: true, vaiTro: true, xoaLuc: true },
+  });
+  if (!hang || hang.xoaLuc) return { loi: 'Tài khoản này không còn nữa.' };
+  if (!(await khopMatKhau(chu(form, 'matKhau'), hang.matKhauBam))) {
+    return { loi: 'Mật khẩu không đúng.' };
+  }
+
+  if (hang.vaiTro === 'QUAN_TRI') {
+    const conLai = await db.nguoiDung.count({
+      where: { vaiTro: 'QUAN_TRI', xoaLuc: null, id: { not: nguoi.id } },
+    });
+    if (conLai === 0) {
+      return {
+        loi: 'Bạn là quản trị viên cuối cùng. Cất quyền quản trị cho người khác trước đã, '
+          + 'không thì cửa hàng còn lại không ai mở được khu quản trị.',
+      };
+    }
+  }
+
+  /*
+   * MẬT KHẨU MỚI LÀ MỘT CHUỖI NGẪU NHIÊN KHÔNG AI BIẾT.
+   *
+   * Để nguyên mật khẩu cũ thì tài khoản vẫn đăng nhập được y như trước — coi
+   * như chưa xoá gì. Mà để rỗng thì `khopMatKhau` gặp một chuỗi không phải bcrypt
+   * và ném lỗi, kéo theo cả trang đăng nhập của MỌI người.
+   */
+  const khoaChet = await bamMatKhau(randomBytes(32).toString('hex'));
+
+  try {
+    await db.$transaction(async (tx) => {
+      /*
+       * Giữ lại đánh giá, chủ đề, lời đáp, lượt tải và phiếu hữu ích: chúng
+       * hoặc là chữ của người khác đang dựa vào, hoặc là con số đã cộng sẵn
+       * vào cột đếm của game. Xoá đi thì mấy cột đếm ấy lệch vĩnh viễn mà
+       * không chỗ nào tự phát hiện ra.
+       */
+      await tx.phien.deleteMany({ where: { nguoiId: nguoi.id } });
+      await tx.daLuu.deleteMany({ where: { nguoiId: nguoi.id } });
+      await tx.thongBao.deleteMany({ where: { nguoiId: nguoi.id } });
+      await tx.maXacMinh.deleteMany({ where: { nguoiId: nguoi.id } });
+      await tx.donTacGia.deleteMany({ where: { nguoiId: nguoi.id } });
+
+      await tx.nguoiDung.update({
+        where: { id: nguoi.id },
+        data: {
+          email: emailDaXoa(nguoi.id),
+          tenDangNhap: tenDangNhapDaXoa(nguoi.id),
+          tenHienThi: TEN_DA_XOA,
+          anh: null,
+          matKhauBam: khoaChet,
+          // Quyền đi theo con người, không đi theo hàng dữ liệu còn sót lại.
+          vaiTro: 'THANH_VIEN',
+          thuThongBao: false,
+          tenTacGia: null,
+          gioiThieuTacGia: null,
+          xoaLuc: new Date(),
+        },
+        select: { id: true },
+      });
+    });
+  } catch {
+    return { loi: 'Không xoá được lúc này. Thử lại giúp mình nhé.' };
+  }
+
+  await dongPhien();
+  revalidatePath('/', 'layout');
+  redirect('/tam-biet');
 }

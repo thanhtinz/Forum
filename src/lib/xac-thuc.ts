@@ -104,7 +104,12 @@ export const nguoiHienTai = cache(async function nguoiHienTai(): Promise<NguoiDa
   if (!ma) return null;
 
   const phien = await db.phien.findFirst({
-    where: { ma: bamMa(ma), hetHan: { gt: new Date() }, nguoi: { khoa: false } },
+    where: {
+      ma: bamMa(ma), hetHan: { gt: new Date() },
+      // `xoaLuc` nằm ngay trong `where`: người đã tự xoá thì mọi phiên còn sót
+      // lại phải hết giá trị ngay, không đợi hàng phiên bị dọn.
+      nguoi: { khoa: false, xoaLuc: null },
+    },
     select: {
       nguoi: {
         select: { id: true, tenDangNhap: true, tenHienThi: true, anh: true, vaiTro: true },

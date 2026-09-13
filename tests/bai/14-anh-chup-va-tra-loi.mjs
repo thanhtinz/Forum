@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap, taoAnhPNG } from '../tro-giup.mjs';
+import { db, doiToi, GOC, LOI, moTrang, moTrangDaDangNhap, taoAnhPNG } from '../tro-giup.mjs';
 import { ANH_CHUP_TOI_THIEU } from '../../src/lib/luat-anh-const.ts';
 
 /*
@@ -102,7 +102,7 @@ export default async function chay(kiem) {
       o.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await admin.click('button:has-text("Thêm ảnh")');
-    await admin.waitForSelector('[role="alert"]', { timeout: 5000 }).catch(() => {});
+    await admin.waitForSelector(LOI, { timeout: 5000 }).catch(() => {});
     const soSauKhiThemRac = await db.anhChup.count({ where: { gameId: game.id } });
     kiem('địa chỉ ảnh không phải “/” hay “https://” thì bị chặn',
       soSauKhiThemRac === 2, `đếm được ${soSauKhiThemRac}`);

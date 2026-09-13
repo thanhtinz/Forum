@@ -41,7 +41,10 @@ export async function dangNhap(_truoc: KetQuaXacThuc, form: FormData): Promise<K
   }
 
   const nguoi = await db.nguoiDung.findFirst({
-    where: { OR: [{ email: dinhDanh }, { tenDangNhap: dinhDanh }] },
+    // `xoaLuc: null` ngay trong `where`: mật khẩu của người đã xoá tuy đã bị
+    // thay bằng chuỗi ngẫu nhiên, nhưng chặn ở đây thì không phải tin vào đúng
+    // một lớp ấy.
+    where: { xoaLuc: null, OR: [{ email: dinhDanh }, { tenDangNhap: dinhDanh }] },
     select: { id: true, matKhauBam: true, khoa: true },
   });
 

@@ -16,6 +16,7 @@ import { napDoTuoi } from '@/lib/do-tuoi-const';
 import { phatMa } from '@/lib/ma-xac-minh';
 import { chiaCum } from '@/lib/ma-xac-minh-const';
 import { tinhDiemTB } from '@/lib/diem-game-const';
+import { MA_LOAI, MA_MUC } from '@/lib/quyen-rieng-tu-const';
 import {
   SU_KIEN_MO_TA_TOI_DA, SU_KIEN_TIEU_DE_TOI_DA, laLoaiSuKien,
 } from '@/lib/su-kien-const';
@@ -1753,5 +1754,62 @@ export async function luuHoSoTacGia(_truoc: KetQua, form: FormData): Promise<Ket
 
   revalidatePath('/quan-ly/ho-so');
   revalidatePath(`/tac-gia/${nguoi.tenDangNhap}`);
+  return { ok: true };
+}
+
+/**
+ * Lưu lời khai quyền riêng tư của một game.
+ *
+ * GHI ĐÈ CẢ BẢNG, không ghi từng ô một. Biểu mẫu gửi lên trạng thái ĐẦY ĐỦ của
+ * ba mươi ô tích, nên "xoá sạch rồi chép lại" là phép ghi đúng và đơn giản
+ * nhất; ghi từng ô thì phải so bảng cũ với bảng mới để biết ô nào vừa bị bỏ
+ * tích, mà ô bị bỏ tích lại là ô quan trọng nhất — nó là lời khai được rút lại.
+ *
+ * `khaiQuyenRiengTu` bật lên kể cả khi KHÔNG tích ô nào: đó chính là lời khai
+ * "game này không thu thập dữ liệu nào", khác hẳn với im lặng. Xem chú thích
+ * trên cột ấy trong lược đồ.
+ *
+ * Điều kiện quyền nằm trong `where` của `updateMany` và xét qua `count`: hàm
+ * này là một địa chỉ POST công khai, nên tác giả A gọi thẳng vào với id game
+ * của tác giả B thì phải trượt ngay ở câu truy vấn, không dựa vào một câu `if`
+ * mà người sửa sau có thể quên.
+ */
+export async function luuQuyenRiengTu(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  const gameId = chu(form, 'gameId');
+  let quyen;
+  try { quyen = await quyenTrenGame(gameId); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const game = await db.game.findFirst({ where: quyen.loc, select: { duongDan: true } });
+  if (!game) return { loi: LOI_KHONG_QUYEN };
+
+  // Chỉ nhận mấy mã CÓ TRONG BẢNG. Biểu mẫu gửi tên ô lên nên tên ô bịa được,
+  // và một mã lạ lọt vào cơ sở dữ liệu thì trang game in ra một dòng trống.
+  const chon: { gameId: string; loai: string; muc: string }[] = [];
+  for (const loai of MA_LOAI) {
+    for (const muc of MA_MUC) {
+      if (form.get(`o-${loai}-${muc}`) !== null) chon.push({ gameId, loai, muc });
+    }
+  }
+
+  const xong = await db.$transaction(async (tx) => {
+    const n = await tx.game.updateMany({
+      where: quyen.locQuaGame, data: { khaiQuyenRiengTu: true },
+    });
+    if (n.count === 0) return false;
+
+    await tx.duLieuThuThap.deleteMany({ where: { gameId } });
+    if (chon.length > 0) {
+      await tx.duLieuThuThap.createMany({
+        data: chon as { gameId: string; loai: never; muc: never }[],
+      });
+    }
+    return true;
+  });
+  if (!xong) return { loi: LOI_KHONG_QUYEN };
+
+  revalidatePath(`/quan-tri/game/${gameId}`);
+  revalidatePath(`/quan-ly/game/${gameId}`);
+  revalidatePath(`/game/${game.duongDan}`);
   return { ok: true };
 }

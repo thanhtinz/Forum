@@ -19,6 +19,7 @@ import { TamTai } from '@/components/game/TamTai';
 import { docBanXem } from '@/lib/ban-tai-xem';
 import { TamDanhGia } from '@/components/game/TamDanhGia';
 import { MoTaGame } from '@/components/game/MoTaGame';
+import { QuyenRiengTu } from '@/components/game/QuyenRiengTu';
 import { Ke } from '@/components/game/Ke';
 import { TheSuKien } from '@/components/game/TheSuKien';
 import { SU_KIEN_TREN_TRANG } from '@/lib/su-kien-const';
@@ -145,6 +146,10 @@ export default async function TabThongTin({ params, searchParams }: {
         take: 1,
         select: { heMay: true, soHieu: true, ngayRa: true, doiMoi: true },
       },
+      khaiQuyenRiengTu: true,
+      // Lấy đủ cả bảng: mười nhóm dữ liệu nhân ba mức là trần tuyệt đối, nên
+      // không cần `take` mà cũng không sợ một game khai ra hàng nghìn hàng.
+      duLieu: { select: { loai: true, muc: true } },
       _count: { select: { banTai: true } },
     },
   });
@@ -569,6 +574,10 @@ export default async function TabThongTin({ params, searchParams }: {
           <Dong nhan="Có mặt từ" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
         </dl>
       </section>
+
+      {/* Ngay sau bảng thông tin: người đọc tới đây là người đang cân nhắc,
+          chưa bấm tải — đúng lúc cần biết game chạm vào dữ liệu nào. */}
+      <QuyenRiengTu daKhai={game.khaiQuyenRiengTu} duLieu={game.duLieu} />
 
       {/*
         CÁCH CÀI chuyển từ khung tải xuống ĐÂY.

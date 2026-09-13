@@ -232,6 +232,16 @@ model Game {
   luotTaiNgay LuotTaiNgay[]
   daLuu   DaLuu[]
   chuDe   ChuDe[]
+  duLieu  DuLieuThuThap[]
+
+  /// Người bày game đã KHAI phần quyền riêng tư chưa.
+  ///
+  /// Cần một cột riêng chứ không suy từ "có hàng `DuLieuThuThap` nào không":
+  /// hai chuyện khác hẳn nhau, và App Store phân biệt rất rõ. "Chưa khai" là
+  /// người tải KHÔNG BIẾT GÌ CẢ; "khai rồi mà không thu thập gì" là một lời
+  /// hứa của nhà phát triển. Gộp hai thứ ấy làm một là biến sự im lặng thành
+  /// một lời hứa chẳng ai từng nói.
+  khaiQuyenRiengTu Boolean @default(false)
 
   @@index([trangThai, dangLuc])
   @@index([trangThai, soLuotTai])
@@ -377,8 +387,13 @@ model TepTai {
   dungLuong BigInt?
 
   /// Mã kiểm tra để người tải đối chiếu sau khi tải xong.
+  ///
+  /// LUÔN LÀ SHA-256, nên không có cột nào ghi tên thuật toán: `luuDong` băm
+  /// bằng đúng nó, và trang quản trị in thẳng chữ "sha256" cạnh mã. Từng có
+  /// một cột `thuatToan` mặc định "sha256" ở đây — không nơi nào GHI giá trị
+  /// khác vào, cũng không nơi nào ĐỌC nó ra, nên nó chỉ hứa một sự linh hoạt
+  /// không có thật.
   maKiemTra String?
-  thuatToan String  @default("sha256")
 
   @@index([banId])
 }
@@ -837,4 +852,56 @@ model LanHong {
   camDen DateTime?
 
   @@index([camDen])
+}
+
+/*
+ * QUYỀN RIÊNG TƯ CỦA GAME — chép theo bảng "App Privacy" của App Store.
+ *
+ * Apple bắt mọi nhà phát triển tự khai game mình chạm vào dữ liệu nào, rồi in
+ * thẳng lên trang sản phẩm TRƯỚC khi người ta bấm tải. Lý do đơn giản: danh
+ * sách quyền của Android chỉ hiện ra lúc cài, còn tệp JAR thì chẳng hiện gì —
+ * tới lúc ấy người ta đã tải xong rồi, và phần lớn cứ bấm đồng ý cho xong.
+ *
+ * Đây là LỜI KHAI của người bày hàng, không phải kết quả cửa hàng đo được —
+ * nên chữ trên trang phải nói rõ "nhà phát triển cho biết", đừng nói như thể
+ * SunnyStore đã kiểm chứng.
+ */
+
+/// Nhóm dữ liệu. Danh sách ngắn và cố định: ô chữ tự do thì mỗi game khai một
+/// kiểu, và người đọc không so nổi hai game với nhau.
+enum LoaiDuLieu {
+  DANH_TINH
+  DANH_BA
+  VI_TRI
+  ANH_VA_PHIM
+  NOI_DUNG_NGUOI_DUNG
+  LICH_SU_TIM
+  MUA_HANG
+  DU_LIEU_SU_DUNG
+  CHAN_DOAN
+  KHAC
+}
+
+/// Dữ liệu ấy đi tới đâu — ba mức của App Store, xếp từ nặng tới nhẹ.
+enum MucDuLieu {
+  /// Dùng để theo dõi bạn sang ứng dụng và trang của công ty khác.
+  THEO_DOI
+  /// Liên kết với danh tính của bạn.
+  LIEN_KET
+  /// Thu thập nhưng không gắn với danh tính nào.
+  KHONG_LIEN_KET
+}
+
+model DuLieuThuThap {
+  id     String @id @default(cuid())
+  gameId String
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  loai LoaiDuLieu
+  muc  MucDuLieu
+
+  /// Một game khai một nhóm dữ liệu ở một mức ĐÚNG MỘT LẦN. Không chặn thì
+  /// bấm lưu hai lần là bảng có hai hàng y hệt, và trang game in trùng.
+  @@unique([gameId, loai, muc])
+  @@index([gameId])
 }

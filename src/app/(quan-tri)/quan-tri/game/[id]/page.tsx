@@ -8,6 +8,7 @@ import { KhungAnhChup } from '@/components/quan-tri/KhungAnhChup';
 import { KhungSuKien } from '@/components/quan-tri/KhungSuKien';
 import { KhungPhim } from '@/components/quan-tri/KhungPhim';
 import { KhungBanTai } from '@/components/quan-tri/KhungBanTai';
+import { KhungQuyenRiengTu } from '@/components/quan-tri/KhungQuyenRiengTu';
 import { NutTrangThai } from '@/components/quan-tri/NutTrangThai';
 import { KhuNguyHiem } from '@/components/quan-tri/KhuNguyHiem';
 import type { MaHeMay } from '@/lib/he-may';
@@ -26,6 +27,8 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
         namPhatHanh: true, gioiThieu: true, icon: true, bia: true, doTuoi: true,
         ngonNgu: true, vietHoa: true, noiBat: true, trangThai: true,
         theLoai: { select: { theLoaiId: true } },
+        khaiQuyenRiengTu: true,
+        duLieu: { select: { loai: true, muc: true } },
         _count: { select: { danhGia: true, chuDe: true } },
         anhChup: {
           orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
@@ -100,6 +103,14 @@ export default async function SuaGame({ params }: { params: Promise<{ id: string
             batDau: s.batDau.toISOString(),
             ketThuc: s.ketThuc.toISOString(),
           }))} />
+      </section>
+
+      {/* Đặt trước "Bản tải": người bày hàng khai xong quyền riêng tư rồi mới
+          tới bước đưa tệp lên, đúng thứ tự App Store bắt đi. */}
+      <section>
+        <h2 className="tieu-de mb-3">Quyền riêng tư</h2>
+        <KhungQuyenRiengTu gameId={game.id} daKhai={game.khaiQuyenRiengTu}
+          khai={game.duLieu} />
       </section>
 
       <section>

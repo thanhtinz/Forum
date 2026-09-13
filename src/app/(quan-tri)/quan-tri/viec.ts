@@ -1018,6 +1018,26 @@ export async function luuTheLoai(_truoc: KetQua, form: FormData): Promise<KetQua
   });
   if (trung) return { loi: `Đường dẫn “${duongDan}” đã có thể loại khác dùng.` };
 
+  /*
+   * TRÙNG TÊN cũng chặn, không chỉ trùng đường dẫn.
+   *
+   * Hai thể loại khác đường dẫn mà cùng tên thì trên trang game hiện ra hai
+   * cái chip y hệt nhau nằm cạnh nhau — người xem tưởng trang hỏng, mà người
+   * bày hàng thì gắn nhãn vào cái nào cũng được, nên game cùng loại tách làm
+   * hai danh sách rời. Chuyện này đã xảy ra thật: một bản `thanhDuongDan` cũ
+   * ăn mất chữ "Đ" đầu từ, đẻ ra "ua-xe" nằm cạnh "dua-xe", cả hai cùng tên
+   * "Đua xe".
+   *
+   * So không phân biệt hoa thường, vì "Đua xe" với "Đua Xe" cũng là một thứ.
+   */
+  const trungTen = await db.theLoai.findFirst({
+    where: { ten: { equals: ten, mode: 'insensitive' }, ...(id ? { NOT: { id } } : {}) },
+    select: { duongDan: true },
+  });
+  if (trungTen) {
+    return { loi: `Đã có thể loại tên “${ten}” (đường dẫn “${trungTen.duongDan}”).` };
+  }
+
   if (id) {
     await db.theLoai.update({ where: { id }, data: { ten, duongDan }, select: { id: true } });
   } else {

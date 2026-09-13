@@ -120,6 +120,21 @@ export default async function chay(kiem) {
     kiem('đường dẫn thể loại tự suy ra không dấu',
       tl?.duongDan === 'the-loai-kiem-thu', tl?.duongDan);
 
+    /*
+     * TRÙNG TÊN mà khác đường dẫn thì phải bị chặn.
+     *
+     * Hai thể loại cùng tên đẻ ra hai cái chip y hệt nhau nằm cạnh nhau trên
+     * trang game, mà người bày hàng thì gắn nhãn vào cái nào cũng được — game
+     * cùng loại tách làm hai danh sách rời. Đã có một cặp như thế trong dữ
+     * liệu thật, do một bản `thanhDuongDan` cũ ăn mất chữ "Đ" đầu từ.
+     */
+    await admin.fill('input[name="ten"]', TEN_THE_LOAI);
+    await admin.fill('input[name="duongDan"]', 'the-loai-kiem-thu-2');
+    await admin.click('button:has-text("Thêm thể loại")');
+    await admin.waitForTimeout(700);
+    kiem('thể loại trùng tên bị chặn dù đường dẫn khác',
+      (await db.theLoai.count({ where: { ten: TEN_THE_LOAI } })) === 1);
+
     // Gắn tạm vào một game rồi thử xoá: phải bị chặn, và thể loại còn nguyên.
     await db.theLoaiTrenGame.create({
       data: { gameId: game.id, theLoaiId: tl.id }, select: { gameId: true },

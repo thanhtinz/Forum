@@ -35,7 +35,9 @@ function thanhDuongDan(chu) {
 }
 
 const tatCa = await db.theLoai.findMany({
-  select: { id: true, ten: true, duongDan: true, taoLuc: true },
+  // Không có cột ngày tạo; `id` là cuid nên xếp theo nó cũng ra đúng thứ tự
+  // ra đời, đủ để chọn bản cũ hơn khi không bản nào khớp đường dẫn chuẩn.
+  select: { id: true, ten: true, duongDan: true },
   orderBy: { id: 'asc' },
 });
 

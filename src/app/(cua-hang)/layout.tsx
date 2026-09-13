@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import '../globals.css';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { demChuaDoc } from '@/lib/thong-bao';
-import { DIA_CHI_GOC } from '@/lib/dia-chi-goc';
+import { ANH_CHIA_SE, DIA_CHI_GOC } from '@/lib/dia-chi-goc';
 import { MA_DAT_NEN } from '@/lib/dat-nen';
 import { ThanhBen } from '@/components/vo/ThanhBen';
 import { ThanhTren } from '@/components/vo/ThanhTren';
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'SunnyStore',
-    images: [{ url: '/anh-chia-se.png', width: 1200, height: 630 }],
+    images: [ANH_CHIA_SE],
   },
 };
 

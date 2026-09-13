@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { db } from '@/lib/db';
 import type { BanXem } from '@/components/game/KhungTai';
 import type { MaHeMay } from '@/lib/he-may';
@@ -16,8 +17,13 @@ const TOI_DA = 60;
  *
  * `Decimal` của Prisma đổi sang `number` ngay tại đây: nó không vượt qua được
  * ranh giới máy chủ — client sang.
+ *
+ * Bọc `cache` của React vì đúng hai nơi ấy cùng gọi trong MỘT lượt dựng trang,
+ * với cùng một mã game: không bọc thì mỗi lượt xem trang game là hai câu truy
+ * vấn y hệt nhau, mà đây là câu nặng nhất trang — kéo tới sáu chục bản kèm
+ * danh sách tệp của từng bản. Kho nhớ ấy sống theo từng yêu cầu rồi bị vứt.
  */
-export async function docBanXem(gameId: string): Promise<BanXem[]> {
+export const docBanXem = cache(async function docBanXem(gameId: string): Promise<BanXem[]> {
   const ban = await db.banTai.findMany({
     where: { gameId },
     orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }],
@@ -47,4 +53,4 @@ export async function docBanXem(gameId: string): Promise<BanXem[]> {
       maKiemTra: t.maKiemTra,
     })),
   }));
-}
+});

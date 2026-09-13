@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ChevronRight, Info, TriangleAlert } from 'lucide-react';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
+import { ANH_CHIA_SE } from '@/lib/dia-chi-goc';
 import { PhoDiem } from '@/components/game/PhoDiem';
 import { SaoNam } from '@/components/game/SaoNam';
 import { ODanhGia } from '@/components/game/ODanhGia';
@@ -38,8 +39,12 @@ export const dynamic = 'force-dynamic';
  * không nói được game nào cả.
  *
  * Thứ tự lấy đúng như dải bìa đầu trang: ảnh bìa, rồi ảnh chụp đầu tiên, rồi
- * biểu tượng. Không có gì thì KHÔNG tự đặt `images`, để bản mặc định của cửa
- * hàng ở bố cục gốc lo — đặt mảng rỗng là mất luôn cả ô xem trước.
+ * biểu tượng. Không có gì thì lặp lại tấm chung của cửa hàng.
+ *
+ * PHẢI LẶP LẠI, không trông vào bố cục gốc: Next ghép thẻ meta theo lối THAY
+ * CẢ CỤM — trang con khai `openGraph` là cụm ấy đè hẳn lên cụm của bố cục gốc
+ * chứ không trộn từng trường. Bản đầu của đợt này quên mất chuyện ấy nên game
+ * chưa có ảnh riêng mất luôn ô xem trước, và bài kiểm 02 bắt được ngay.
  */
 export async function generateMetadata({ params }: { params: Promise<{ duongDan: string }> }): Promise<Metadata> {
   const { duongDan } = await params;
@@ -61,7 +66,7 @@ export async function generateMetadata({ params }: { params: Promise<{ duongDan:
     openGraph: {
       title: g.ten,
       description: moTa,
-      ...(anh ? { images: [{ url: anh, alt: g.ten }] } : {}),
+      images: [anh ? { url: anh, alt: g.ten } : ANH_CHIA_SE],
     },
     // Ô xem trước to, không phải cái thẻ vuông bé cạnh dòng chữ: ảnh game là
     // thứ đáng nhìn ở đây.

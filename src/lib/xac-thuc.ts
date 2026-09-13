@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { randomBytes, createHash } from 'node:crypto';
 import bcrypt from 'bcryptjs';
@@ -87,8 +88,18 @@ export interface NguoiDangNhap {
  * Hạn phiên nằm TRONG câu truy vấn chứ không kiểm sau khi lấy về: lọc sau thì
  * vẫn có một khoảnh khắc mã cầm trong tay bản ghi của một phiên đã hết hạn.
  * Tài khoản bị khoá cũng xét ngay ở đây, cùng lẽ ấy.
+ *
+ * BỌC `cache` CỦA REACT — nhớ trong ĐÚNG MỘT LƯỢT DỰNG TRANG, không phải một
+ * kho chung giữa các người dùng. Mỗi lượt dựng gọi hàm này nhiều lần: bố cục
+ * gốc gọi để vẽ thanh bên, khung game gọi để biết in tên ai lên tấm xác nhận,
+ * trang con gọi để biết có bày ô trả lời đánh giá không. Không bọc thì mỗi
+ * lượt xem một trang game là ba câu truy vấn phiên y hệt nhau, cộng ba lượt
+ * ghi dấu có mặt vào cùng một hàng người dùng.
+ *
+ * Bọc kiểu này an toàn vì kho nhớ của `cache` sống theo từng yêu cầu rồi bị
+ * vứt: hai người xem cùng lúc không bao giờ nhìn thấy phiên của nhau.
  */
-export async function nguoiHienTai(): Promise<NguoiDangNhap | null> {
+export const nguoiHienTai = cache(async function nguoiHienTai(): Promise<NguoiDangNhap | null> {
   const ma = (await cookies()).get(TEN_COOKIE)?.value;
   if (!ma) return null;
 
@@ -104,7 +115,7 @@ export async function nguoiHienTai(): Promise<NguoiDangNhap | null> {
 
   void danhDauCoMat(phien.nguoi.id);
   return phien.nguoi;
-}
+});
 
 /** Không ghi lại dấu có mặt quá dày hơn khoảng này. */
 const NHIP_GHE_MS = 15 * 60 * 1000;

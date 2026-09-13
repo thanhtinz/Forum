@@ -29,7 +29,7 @@ const SAP = [
  * Esc và chặn cuộn phía sau. Tự dựng lớp phủ bằng div thì lần nào cũng thiếu
  * một trong ba thứ ấy.
  */
-export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau }: {
+export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau, dangLien }: {
   gameId: string;
   duongDan: string;
   /** Tổng số đánh giá của game, kể cả bài chỉ chấm sao không viết chữ. */
@@ -38,6 +38,15 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau }: {
   phanBo: Record<number, number>;
   /** Năm bài đã dựng sẵn ở trang — khỏi phải gọi lại ngay lúc mở. */
   banDau: BaiXem[];
+  /**
+   * Dáng LIÊN KẾT nằm cạnh đầu đề mục, thay cho nút viền chiếm cả bề ngang.
+   *
+   * App Store để "See All" ngay cạnh chữ "Ratings & Reviews", không để một nút
+   * to ở cuối: người đọc lướt qua đầu mục là đã biết có chỗ xem hết, còn nút ở
+   * cuối thì phải cuộn hết mấy bài mẫu mới gặp — mà cuộn hết rồi thì cũng
+   * chẳng cần "xem tất cả" nữa.
+   */
+  dangLien?: boolean;
 }) {
   const hopRef = useRef<HTMLDialogElement>(null);
   const [mo, datMo] = useState(false);
@@ -81,14 +90,17 @@ export function TamDanhGia({ gameId, duongDan, tong, sao, phanBo, banDau }: {
 
   return (
     <>
-      <a href={`/game/${duongDan}/danh-gia`} className="nut-vien mt-5 w-full"
+      <a href={`/game/${duongDan}/danh-gia`}
+        className={dangLien
+          ? 'shrink-0 text-[13px] font-semibold text-nhan hover:underline'
+          : 'nut-vien mt-5 w-full'}
         onClick={(e) => {
           // Chuột giữa, Ctrl/Cmd + bấm: để trình duyệt mở tab mới như thường.
           if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
           e.preventDefault();
           datMo(true);
         }}>
-        Xem tất cả {gonSo(tong)} đánh giá
+        {dangLien ? 'Xem tất cả' : `Xem tất cả ${gonSo(tong)} đánh giá`}
       </a>
 
       <dialog ref={hopRef} onClose={() => datMo(false)}

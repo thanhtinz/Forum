@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { Check } from 'lucide-react';
 import { doiMatKhau, luuHoSo, type KetQua } from '@/app/(cua-hang)/toi/cai-dat/viec';
+import { ONhapGiu } from '@/components/ONhapGiu';
 
 /** Ô báo kết quả dùng chung cho cả hai biểu mẫu. */
 function Bao({ kq }: { kq: KetQua }) {
@@ -32,14 +33,14 @@ export function OHoSo({ banDau }: { banDau: { tenHienThi: string; anh: string | 
 
       <label className="block">
         <span className="phu mb-1 block">Tên hiển thị</span>
-        <input name="tenHienThi" defaultValue={banDau.tenHienThi} required maxLength={40}
+        <ONhapGiu name="tenHienThi" banDau={banDau.tenHienThi} required maxLength={40}
           className="o-nhap" />
         <span className="phu mt-1 block">Tên này hiện cạnh mỗi bài viết và đánh giá của bạn.</span>
       </label>
 
       <label className="block">
         <span className="phu mb-1 block">Địa chỉ ảnh đại diện (không bắt buộc)</span>
-        <input name="anh" defaultValue={banDau.anh ?? ''} placeholder="https://…" className="o-nhap" />
+        <ONhapGiu name="anh" banDau={banDau.anh ?? ''} placeholder="https://…" className="o-nhap" />
         <span className="phu mt-1 block">Bỏ trống thì dùng ô màu kèm chữ cái đầu tên bạn.</span>
       </label>
 

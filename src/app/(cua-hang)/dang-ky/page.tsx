@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { BieuMauXacThuc } from '@/components/BieuMauXacThuc';
 import { dangKy } from '../dang-nhap/viec';
 import { nguoiHienTai } from '@/lib/xac-thuc';
+import { ONhapGiu } from '@/components/ONhapGiu';
 
 export const metadata: Metadata = { title: 'Đăng ký' };
 export const dynamic = 'force-dynamic';
@@ -21,11 +22,11 @@ export default async function TrangDangKy() {
     >
       <label className="block">
         <span className="phu mb-1 block">Tên hiển thị</span>
-        <input name="tenHienThi" required minLength={2} maxLength={40} autoComplete="nickname" className="o-nhap" />
+        <ONhapGiu name="tenHienThi" required minLength={2} maxLength={40} autoComplete="nickname" className="o-nhap" />
       </label>
       <label className="block">
         <span className="phu mb-1 block">Email</span>
-        <input name="email" type="email" required autoComplete="email" className="o-nhap" />
+        <ONhapGiu name="email" type="email" required autoComplete="email" className="o-nhap" />
       </label>
       <label className="block">
         <span className="phu mb-1 block">Mật khẩu</span>

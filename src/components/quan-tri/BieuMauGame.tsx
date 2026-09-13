@@ -5,6 +5,7 @@ import { luuGame, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 import { OSoanThao } from '@/components/OSoanThao';
 import { ONapAnh } from '@/components/quan-tri/ONapAnh';
 import { DO_TUOI, MO_TA_TUOI } from '@/lib/do-tuoi-const';
+import { ONhapGiu } from '@/components/ONhapGiu';
 
 export interface GameSua {
   id: string;
@@ -141,7 +142,7 @@ function O({ ten, nhan, giaTri, kieu = 'text', batBuoc, goYy }: {
   return (
     <label className="block">
       <span className="phu mb-1 block">{nhan}{batBuoc && ' *'}</span>
-      <input name={ten} type={kieu} required={batBuoc} defaultValue={giaTri ?? ''} className="o-nhap" />
+      <ONhapGiu name={ten} type={kieu} required={batBuoc} banDau={String(giaTri ?? '')} className="o-nhap" />
       {goYy && <span className="phu mt-1 block">{goYy}</span>}
     </label>
   );

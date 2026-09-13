@@ -328,7 +328,16 @@ export default async function TabThongTin({ params, searchParams }: {
           số trung bình thì không nói được "4,3 này là do ai cũng cho 4, hay do
           một nửa cho 5 và một nửa cho 2". */}
       <section>
-        <h2 className="tieu-de mb-3">Đánh giá</h2>
+        {/* "Xem tất cả" nằm CẠNH ĐẦU ĐỀ, đúng chỗ App Store để "See All" —
+            lướt qua đầu mục là biết ngay có chỗ đọc hết. */}
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 className="tieu-de">Đánh giá</h2>
+          {gom > danhGia.length && (
+            <TamDanhGia gameId={game.id} duongDan={duongDan} tong={gom} sao={sao}
+              phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))}
+              banDau={danhGia} dangLien />
+          )}
+        </div>
         <PhoDiem sao={sao} tong={gom} locSao={locSao}
           phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))} />
 
@@ -368,14 +377,7 @@ export default async function TabThongTin({ params, searchParams }: {
           </Ke>
         )}
 
-        {/* Còn bài chưa bày thì mời đọc tiếp — trong một tấm trượt, không sang
-            trang khác: người đang cân nhắc tải hay đọc vài bài rồi ngước lên
-            nhìn lại nút tải và cỡ tệp. */}
-        {gom > danhGia.length && (
-          <TamDanhGia gameId={game.id} duongDan={duongDan} tong={gom} sao={sao}
-            phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))}
-            banDau={danhGia} />
-        )}
+
       </section>
 
       {/*

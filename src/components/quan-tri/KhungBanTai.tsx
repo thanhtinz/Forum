@@ -10,6 +10,7 @@ import { gonDungLuong, gop } from '@/lib/tien-ich';
 import { NutViec } from './NutViec';
 import { ONapTep } from './ONapTep';
 import { useXacNhan } from '@/components/HopXacNhan';
+import { ONhapGiu, OChuGiu } from '@/components/ONhapGiu';
 
 export interface BanQuanTri {
   id: string;
@@ -194,11 +195,11 @@ function OSuaBan({ b }: { b: BanQuanTri }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="phu mb-1 block">Số hiệu</span>
-          <input name="soHieu" defaultValue={b.soHieu} required className="o-nhap" />
+          <ONhapGiu name="soHieu" banDau={b.soHieu} required className="o-nhap" />
         </label>
         <label className="block">
           <span className="phu mb-1 block">Ngày ra</span>
-          <input name="ngayRa" type="date" defaultValue={b.ngayRa ?? ''} className="o-nhap" />
+          <ONhapGiu name="ngayRa" type="date" banDau={b.ngayRa ?? ''} className="o-nhap" />
         </label>
       </div>
 
@@ -214,18 +215,18 @@ function OSuaBan({ b }: { b: BanQuanTri }) {
 
       <label className="block">
         <span className="phu mb-1 block">Đường dẫn cửa hàng chính chủ</span>
-        <input name="duongDanCuaHang" defaultValue={b.duongDanCuaHang ?? ''}
+        <ONhapGiu name="duongDanCuaHang" banDau={b.duongDanCuaHang ?? ''}
           placeholder="https://apps.apple.com/…" className="o-nhap" />
       </label>
 
       <label className="block">
         <span className="phu mb-1 block">Có gì mới ở bản này</span>
-        <textarea name="doiMoi" rows={2} defaultValue={b.doiMoi ?? ''} className="o-nhap" />
+        <OChuGiu name="doiMoi" rows={2} banDau={b.doiMoi ?? ''} className="o-nhap" />
       </label>
 
       <label className="block">
         <span className="phu mb-1 block">Ghi chú tương thích</span>
-        <input name="ghiChu" defaultValue={b.ghiChu ?? ''}
+        <ONhapGiu name="ghiChu" banDau={b.ghiChu ?? ''}
           placeholder="Cần máy hỗ trợ MIDP 2.0" className="o-nhap" />
       </label>
 

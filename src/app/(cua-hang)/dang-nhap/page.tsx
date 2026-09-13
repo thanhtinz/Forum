@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { BieuMauXacThuc } from '@/components/BieuMauXacThuc';
 import { dangNhap } from './viec';
 import { nguoiHienTai } from '@/lib/xac-thuc';
+import { ONhapGiu } from '@/components/ONhapGiu';
 
 export const metadata: Metadata = { title: 'Đăng nhập' };
 export const dynamic = 'force-dynamic';
@@ -23,7 +24,7 @@ export default async function TrangDangNhap() {
     >
       <label className="block">
         <span className="phu mb-1 block">Email hoặc tên đăng nhập</span>
-        <input name="dinhDanh" required autoComplete="username" className="o-nhap" />
+        <ONhapGiu name="dinhDanh" required autoComplete="username" className="o-nhap" />
       </label>
       <label className="block">
         <span className="phu mb-1 block">Mật khẩu</span>

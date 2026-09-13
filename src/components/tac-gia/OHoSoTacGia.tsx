@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { OSoanThao } from '@/components/OSoanThao';
 import { luuHoSoTacGia, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
+import { ONhapGiu } from '@/components/ONhapGiu';
 
 export function OHoSoTacGia({ tenTacGia, gioiThieu, tenDuPhong }: {
   tenTacGia: string;
@@ -15,7 +16,7 @@ export function OHoSoTacGia({ tenTacGia, gioiThieu, tenDuPhong }: {
     <form action={gui} className="the space-y-4 p-4">
       <label className="block">
         <span className="phu mb-1 block">Tên hiện ở trang tác giả</span>
-        <input name="tenTacGia" defaultValue={tenTacGia} maxLength={60} className="o-nhap"
+        <ONhapGiu name="tenTacGia" banDau={tenTacGia} maxLength={60} className="o-nhap"
           placeholder={tenDuPhong} />
         {/* Bỏ trống là chuyện thường, không phải thiếu sót: người làm game một
             mình chẳng cần nghĩ ra tên hãng. */}

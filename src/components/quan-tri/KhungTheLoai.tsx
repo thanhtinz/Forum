@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react';
 import { ArrowDown, ArrowUp, Check, Pencil, Trash2, X } from 'lucide-react';
 import { doiChoTheLoai, luuTheLoai, xoaTheLoai, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 import { NutViec } from './NutViec';
+import { ONhapGiu } from '@/components/ONhapGiu';
 
 export interface TheLoaiQuanTri {
   id: string;
@@ -101,9 +102,9 @@ function OSua({ t, xong }: { t: TheLoaiQuanTri; xong: () => void }) {
   return (
     <form action={gui} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="id" value={t.id} />
-      <input name="ten" defaultValue={t.ten} required aria-label="Tên thể loại"
+      <ONhapGiu name="ten" banDau={t.ten} required aria-label="Tên thể loại"
         className="o-nhap min-w-[140px] flex-1" />
-      <input name="duongDan" defaultValue={t.duongDan} aria-label="Đường dẫn"
+      <ONhapGiu name="duongDan" banDau={t.duongDan} aria-label="Đường dẫn"
         className="o-nhap min-w-[140px] flex-1" />
       <button type="submit" disabled={dangChay} aria-label="Lưu"
         className="shrink-0 rounded-full px-2.5 py-1.5 text-nhan transition-colors hover:bg-nhan/10">

@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import { useXacNhan } from '@/components/HopXacNhan';
 import { OSoanThao } from '@/components/OSoanThao';
+import { ONhapGiu, OChuGiu } from '@/components/ONhapGiu';
 import {
   suaChuDe, suaTraLoi, xoaChuDeCuaToi, xoaTraLoiCuaToi, type KetQua,
 } from '@/app/(cua-hang)/game/[duongDan]/dien-dan/viec';
@@ -65,9 +66,9 @@ export function SuaChuDe({ chuDeId, tieuDe, noiDung, xoaDuoc }: {
   return (
     <form action={gui} className="mt-3 space-y-2">
       <input type="hidden" name="chuDeId" value={chuDeId} />
-      <input name="tieuDe" defaultValue={tieuDe} required minLength={5} maxLength={150}
+      <ONhapGiu name="tieuDe" banDau={tieuDe} required minLength={5} maxLength={150}
         aria-label="Tiêu đề" className="o-nhap" />
-      <textarea name="noiDung" defaultValue={noiDung} required minLength={10} maxLength={8000}
+      <OChuGiu name="noiDung" banDau={noiDung} required minLength={10} maxLength={8000}
         rows={6} aria-label="Nội dung" className="o-nhap" />
       {kq.loi && <p role="alert" className="text-[12px] font-medium text-xau">{kq.loi}</p>}
       <div className="flex items-center gap-2">

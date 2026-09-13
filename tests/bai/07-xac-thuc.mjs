@@ -66,6 +66,21 @@ export default async function chay(kiem) {
     kiem('sai mật khẩu thì báo lỗi và không cho vào',
       (await p.locator('[role="alert"]').count()) > 0 && p.url().includes('/dang-nhap'));
 
+    /*
+     * GỬI HỎNG THÌ CHỮ VỪA GÕ PHẢI CÒN NGUYÊN.
+     *
+     * React 19 xoá trắng biểu mẫu sau khi một `action` chạy xong — kể cả khi
+     * hàm ấy trả về lỗi. Nghĩa là gõ sai mật khẩu một lần là mất luôn cả ô
+     * tên đăng nhập, phải gõ lại từ đầu mới đọc nổi câu báo lỗi. Ô nhập tự giữ
+     * lấy chữ (`ONhapGiu`) chặn đúng chuyện ấy; phép kiểm này canh để nó không
+     * lặng lẽ quay lại lúc ai đó dựng lại biểu mẫu.
+     *
+     * Riêng ô MẬT KHẨU thì để nó trống lại là đúng: không ai muốn mật khẩu gõ
+     * hỏng nằm lại trên màn hình, mà trình duyệt cũng tự điền lại được.
+     */
+    kiem('gửi hỏng thì ô tên đăng nhập vẫn còn chữ vừa gõ',
+      (await p.inputValue('input[name="dinhDanh"]')) === EMAIL);
+
     // Câu báo lỗi KHÔNG được nói tài khoản có tồn tại hay không, kẻo thành
     // công cụ dò xem ai đã đăng ký ở đây.
     const loi = await p.locator('[role="alert"]').first().textContent();

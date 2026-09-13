@@ -17,8 +17,13 @@ export const runtime = 'nodejs';
  *
  * MỘT CỔNG, HAI MỨC QUYỀN, và mức quyền quyết định cả chỗ để lẫn cỡ tối đa:
  *
- *   • `icon`, `anh-chup` — chỉ quản trị. Đây là ảnh của cửa hàng.
- *   • `dien-dan`        — thành viên đã đăng nhập, và có cửa chặn đếm lượt.
+ *   • `icon`, `bia`, `anh-chup`, `phim-bia` — ảnh của HÀNG BÀY: quản trị, và
+ *     tác giả (họ tự bày game mình, nên tự lo tài sản của game mình).
+ *   • `su-kien`         — chỉ quản trị: sự kiện là việc của cửa hàng.
+ *   • `dien-dan`        — thành viên đã đăng nhập.
+ *
+ * Ai KHÔNG phải quản trị đều qua cửa chặn đếm lượt, kể cả tác giả: ảnh là thứ
+ * nặng nhất một tài khoản gửi lên được, và mỗi tấm nằm lại trong kho mãi mãi.
  *
  * Viết thành route handler chứ không thành server action: server action nhận
  * FormData được, nhưng ở đây cần trả mã lỗi HTTP rõ ràng cho phía trình duyệt
@@ -34,16 +39,16 @@ const CHO_DAT = {
    * không hay — thà từ chối ngay còn hơn để họ tự phát hiện ở trang chủ.
    */
   icon: {
-    thuMuc: 'icon', toiDa: 512 * 1024, canQuanTri: true,
+    thuMuc: 'icon', toiDa: 512 * 1024, canQuanTri: true, choTacGia: true,
     canhToiThieu: ICON_TOI_THIEU, vuong: true, ngang: false,
   },
   // Ảnh bìa nặng hơn hẳn mấy thứ khác vì nó trải cả bề ngang màn hình.
   bia: {
-    thuMuc: 'bia', toiDa: 2 * 1024 * 1024, canQuanTri: true,
+    thuMuc: 'bia', toiDa: 2 * 1024 * 1024, canQuanTri: true, choTacGia: true,
     canhToiThieu: 0, vuong: false, ngang: true,
   },
   'anh-chup': {
-    thuMuc: 'anh-chup', toiDa: 3 * 1024 * 1024, canQuanTri: true,
+    thuMuc: 'anh-chup', toiDa: 3 * 1024 * 1024, canQuanTri: true, choTacGia: true,
     canhToiThieu: ANH_CHUP_TOI_THIEU, vuong: false, ngang: false,
   },
   /*
@@ -54,7 +59,7 @@ const CHO_DAT = {
    * Chỉ đòi đủ điểm ảnh, cùng sàn với ảnh chụp màn hình.
    */
   'phim-bia': {
-    thuMuc: 'phim-bia', toiDa: 2 * 1024 * 1024, canQuanTri: true,
+    thuMuc: 'phim-bia', toiDa: 2 * 1024 * 1024, canQuanTri: true, choTacGia: true,
     canhToiThieu: ANH_CHUP_TOI_THIEU, vuong: false, ngang: false,
   },
   // Ảnh thẻ sự kiện: cùng luật nằm ngang với ảnh bìa, vì thẻ cũng cắt 16:9.
@@ -86,18 +91,30 @@ export async function POST(req: Request) {
   const luat = CHO_DAT[cho];
   if (!luat) return NextResponse.json({ loi: 'Chỗ đặt ảnh không hợp lệ.' }, { status: 400 });
 
-  if (luat.canQuanTri && nguoi.vaiTro !== 'QUAN_TRI') {
+  /*
+   * Tác giả tự bày game của mình, nên tự tải được biểu tượng, ảnh bìa và ảnh
+   * chụp của game ấy. Trước đợt này mấy chỗ đặt ấy đều đóng cứng ở mức quản
+   * trị, mà biểu mẫu game của tác giả VẪN bày nút tải ảnh — bấm vào là gặp
+   * câu "không có quyền", tức là một cánh cửa vẽ lên tường.
+   *
+   * Cổng này chỉ cất ảnh rồi trả về địa chỉ; gán ảnh ấy cho game nào vẫn phải
+   * đi qua hàm lưu game, và ở đó điều kiện chủ sở hữu nằm trong `where`.
+   */
+  const laQuanTri = nguoi.vaiTro === 'QUAN_TRI';
+  const duocDat = !luat.canQuanTri || laQuanTri
+    || ('choTacGia' in luat && luat.choTacGia && nguoi.vaiTro === 'TAC_GIA');
+  if (!duocDat) {
     return NextResponse.json({ loi: 'Bạn không có quyền làm việc này.' }, { status: 403 });
   }
 
   /*
-   * Cửa chặn cho ảnh diễn đàn.
+   * Cửa chặn đếm lượt cho MỌI người không phải quản trị.
    *
-   * Ảnh là thứ NẶNG nhất một thành viên thường gửi lên được, và mỗi tấm là một
-   * tệp nằm lại trong kho mãi mãi. Không đếm thì một tài khoản bắn kịch bản là
-   * đủ làm đầy thùng và đội hoá đơn.
+   * Ảnh là thứ NẶNG nhất một tài khoản gửi lên được, và mỗi tấm là một tệp nằm
+   * lại trong kho mãi mãi. Không đếm thì một tài khoản bắn kịch bản là đủ làm
+   * đầy thùng và đội hoá đơn — tài khoản tác giả cũng bắn được y như thế.
    */
-  if (!luat.canQuanTri) {
+  if (!laQuanTri) {
     const cua = await conDuocDangAnh(nguoi.id);
     if (cua.chan) {
       return NextResponse.json(
@@ -176,7 +193,7 @@ export async function POST(req: Request) {
 
   try {
     const daLuu = await luuAnh(ruot, luat.thuMuc, loai);
-    if (!luat.canQuanTri) await ghiLanDangAnh(nguoi.id);
+    if (!laQuanTri) await ghiLanDangAnh(nguoi.id);
     return NextResponse.json({ duongDan: daLuu.duongDan });
   } catch {
     // Kho hỏng hay thiếu cấu hình thì nói thật, đừng để người dùng ngồi đoán.

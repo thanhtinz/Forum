@@ -111,6 +111,21 @@ export default async function chay(kiem) {
     !html.includes('Game tương tự'));
 
   /*
+   * ĐẦU TRANG LUÔN CÓ DẢI BÌA.
+   *
+   * Trang ứng dụng của App Store mở bằng một dải hình trải hết bề ngang, hai
+   * nút lùi và chia sẻ nổi đè lên. Trước đợt này dải ấy chỉ hiện khi người bán
+   * hàng đã tự chọn ảnh bìa — mà chưa game nào có, nên thực tế là chẳng bao
+   * giờ hiện: mọi trang game mở ra bằng một hàng chữ và trông giống hệt nhau.
+   * Nay không có ảnh bìa thì lấy ảnh chụp đầu tiên, không có nữa thì một dải
+   * màu dựng từ chính tên game.
+   */
+  const daiBia = p.locator('[data-viec="bia"]');
+  kiem('đầu trang có dải bìa', (await daiBia.count()) === 1);
+  kiem('hai nút lùi và chia sẻ nổi trên dải bìa ấy',
+    (await daiBia.locator('button, a').count()) >= 2);
+
+  /*
    * THỨ TỰ MỤC THEO ĐÚNG TRANG ỨNG DỤNG CỦA APP STORE.
    *
    * Giới thiệu → Tải về → Đánh giá → Thông tin. Bảng thông tin đứng SAU phần

@@ -12,6 +12,7 @@ import { NutTaiDau } from '@/components/game/NutTaiDau';
 import { DongLuanPhien } from '@/components/game/DongLuanPhien';
 import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { diemSao } from '@/lib/tien-ich';
+import { mauCuaGame } from '@/lib/mau-game';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,11 @@ export default async function KhungGame({ children, params }: {
       namPhatHanh: true, ngonNgu: true, doTuoi: true,
       theLoai: { select: { theLoai: { select: { ten: true, duongDan: true } } } },
       tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
+      // Một tấm ảnh chụp để làm bìa dự phòng — xem chỗ dựng dải bìa bên dưới.
+      anhChup: {
+        orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: 1,
+        select: { duongDan: true },
+      },
       _count: { select: { chuDe: true } },
     },
   });
@@ -49,6 +55,9 @@ export default async function KhungGame({ children, params }: {
   const banXem = await docBanXem(game.id);
 
   const sao = diemSao(game.tongSao, game.soLuotDanhGia);
+
+  const anhBia = game.bia ?? game.anhChup[0]?.duongDan ?? null;
+  const mauBia = mauCuaGame(game.ten);
 
   /*
    * Tên hãng bày trên tấm xác nhận: ưu tiên tên tác giả đã đăng ký, rồi mới
@@ -152,36 +161,48 @@ export default async function KhungGame({ children, params }: {
     <div className="mx-auto max-w-[1000px]">
       <div className="space-y-5">
         {/*
-          HÀNG NÚT GÓC TRÊN — lùi bên trái, chia sẻ bên phải.
+          DẢI BÌA ĐẦU TRANG — thứ mở màn trang ứng dụng của App Store.
 
-          Đúng cặp nút App Store đặt đè lên ảnh bìa ở đầu trang ứng dụng, và
-          hai góc ấy giữ nguyên dù game có bìa hay không: tay cầm điện thoại
-          thì hai góc trên là hai chỗ ngón cái mò tới mà không cần nhìn.
+          Trang ứng dụng nào của họ cũng mở bằng một dải hình trải hết bề ngang,
+          hai nút lùi và chia sẻ nổi đè lên, rồi phần biểu tượng và tên mới bắt
+          đầu bên dưới như một tấm khác chồng lên. Thiếu dải ấy thì trang mở ra
+          bằng một hàng chữ, và mọi game trông giống hệt nhau ở nhịp đầu tiên —
+          đúng chỗ người ta quyết định có đọc tiếp hay không.
 
-          CÓ BÌA thì hai nút nằm ĐÈ LÊN ảnh, kèm một vệt tối hắt từ mép trên
-          xuống. Không có vệt ấy thì gặp tấm bìa sáng màu là hai nút trắng biến
-          mất trên nền trắng — mà nút lùi biến mất là người ta kẹt lại trang.
+          BA MỨC, lấy cái nào có trước: ảnh bìa người bán hàng tự chọn; không có
+          thì lấy TẤM ẢNH CHỤP ĐẦU TIÊN của chính game (ảnh thật của game ấy,
+          không phải hình bịa); không có nữa thì một dải màu dựng từ chính tên
+          game — cùng bảng màu với ô biểu tượng khi game chưa có icon, nên hai
+          thứ ấy luôn hợp màu nhau.
+
+          Vệt tối hắt từ mép trên xuống là để hai nút trắng không biến mất trên
+          một tấm bìa sáng màu — nút lùi biến mất là người ta kẹt lại trang.
         */}
-        {game.bia ? (
-          <div className="relative -mx-4 sm:mx-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={game.bia} alt="" fetchPriority="high"
-              className="aspect-[16/9] w-full object-cover sm:rounded-the" />
-            <span aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent sm:rounded-t-the" />
-            <div className="absolute inset-x-3 top-3 flex items-center justify-between">
-              <NutLui />
-              <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
+        <div data-viec="bia" className="relative -mx-4 sm:mx-0">
+          {anhBia ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={anhBia} alt="" fetchPriority="high"
+              className="aspect-[16/9] w-full object-cover sm:aspect-[3/1] sm:rounded-the" />
+          ) : (
+            <div aria-hidden className="aspect-[16/9] w-full sm:aspect-[3/1] sm:rounded-the"
+              style={{
+                backgroundImage:
+                  `radial-gradient(120% 100% at 15% 0%, rgb(255 255 255 / .22), transparent 60%),`
+                  + `linear-gradient(145deg, ${mauBia.tu}, ${mauBia.den})`,
+              }} />
+          )}
+          <span aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 to-transparent sm:rounded-t-the" />
+          <div className="absolute inset-x-3 top-3 flex items-center justify-between">
             <NutLui />
             <NutChiaSe ten={game.ten} duongDan={game.duongDan} />
           </div>
-        )}
+        </div>
 
-        <header>
+        {/* Tấm nội dung CHỒNG LÊN mép dưới dải bìa và bo hai góc trên: đó là
+            nhịp khiến dải bìa trông như nằm SAU trang chứ không phải một cái
+            ảnh dán vào đầu trang. */}
+        <header className="relative -mt-5 rounded-t-[22px] bg-nen px-4 pt-4 sm:-mt-7 sm:px-0 sm:pt-0">
           <div className="flex flex-wrap items-start gap-4 sm:gap-6">
             {/*
               HAI CỠ BIỂU TƯỢNG, hai thẻ.

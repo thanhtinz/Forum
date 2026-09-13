@@ -1,5 +1,5 @@
 import { GOC, db, moTrang, moTrangDaDangNhap, taoAnhPNG } from '../tro-giup.mjs';
-import { ICON_TOI_THIEU } from '../../src/lib/luat-anh-const.ts';
+import { BIA_RONG_TOI_THIEU, ICON_TOI_THIEU } from '../../src/lib/luat-anh-const.ts';
 
 const DUONG_DAN = 'game-kiem-tai-anh';
 
@@ -22,6 +22,11 @@ const PNG_THAT = [
 /** Tấm biểu tượng hợp luật: vuông và đủ điểm ảnh. */
 const ICON_THAT = taoAnhPNG(ICON_TOI_THIEU, ICON_TOI_THIEU);
 
+/** Tấm bìa hợp luật: nằm ngang và đủ rộng. */
+const BIA_THAT = taoAnhPNG(BIA_RONG_TOI_THIEU, Math.round(BIA_RONG_TOI_THIEU / 2));
+
+const TEN_TG = 'kiemthu-tai-anh-tac-gia';
+
 /*
  * TẢI ẢNH LÊN — thay cho lối dán địa chỉ.
  *
@@ -33,10 +38,11 @@ export default async function chay(kiem) {
   const don = async () => {
     await db.game.deleteMany({ where: { duongDan: DUONG_DAN } });
     await db.lanHong.deleteMany({ where: { khoa: { startsWith: 'anh:' } } });
+    await db.nguoiDung.deleteMany({ where: { tenDangNhap: TEN_TG } });
   };
   await don();
 
-  let admin;
+  let admin; let tacGia;
   try {
     const game = await db.game.create({
       data: { ten: 'Game kiểm tải ảnh', duongDan: DUONG_DAN, trangThai: 'DANG_HIEN', dangLuc: new Date() },
@@ -69,7 +75,40 @@ export default async function chay(kiem) {
     const rDienDan = await gui(thuong, 'dien-dan', PNG_THAT, 'a.png', 'image/png');
     kiem('thành viên thường tải được ảnh cho diễn đàn',
       rDienDan.ma === 200 && !!rDienDan.than.duongDan, JSON.stringify(rDienDan.than));
+
+    const rBiaThuong = await gui(thuong, 'bia', [...BIA_THAT], 'bia.png', 'image/png');
+    kiem('thành viên thường không đặt được ảnh bìa', rBiaThuong.ma === 403, `mã ${rBiaThuong.ma}`);
     await thuong.close();
+
+    /*
+     * ── TÁC GIẢ TỰ LO TÀI SẢN CỦA GAME MÌNH ───────────────────────────
+     *
+     * Biểu mẫu game của tác giả vẫn bày nút tải biểu tượng và ảnh bìa, nhưng
+     * cổng này xưa nay đóng cứng ở mức quản trị — bấm vào là gặp câu "không có
+     * quyền", tức một cánh cửa vẽ lên tường. Nay tác giả tải được ảnh của hàng
+     * bày, còn ảnh SỰ KIỆN thì vẫn chỉ quản trị: sự kiện là việc của cửa hàng,
+     * không phải của một game.
+     */
+    const bcrypt = (await import('bcryptjs')).default;
+    await db.nguoiDung.create({
+      data: {
+        tenDangNhap: TEN_TG, tenHienThi: 'Tác Giả Tải Ảnh', vaiTro: 'TAC_GIA',
+        email: `${TEN_TG}@kiemthu.local`, matKhauBam: await bcrypt.hash('thanhvien123', 10),
+      },
+      select: { id: true },
+    });
+    tacGia = await moTrangDaDangNhap(TEN_TG, 'thanhvien123');
+    await tacGia.goto(`${GOC}/`, { waitUntil: 'networkidle' });
+
+    const rBiaTG = await gui(tacGia, 'bia', [...BIA_THAT], 'bia.png', 'image/png');
+    kiem('tác giả tải được ảnh bìa cho game',
+      rBiaTG.ma === 200 && !!rBiaTG.than.duongDan, `mã ${rBiaTG.ma}`);
+    const rIconTG = await gui(tacGia, 'icon', [...ICON_THAT], 'icon.png', 'image/png');
+    kiem('tác giả tải được ảnh biểu tượng', rIconTG.ma === 200, `mã ${rIconTG.ma}`);
+    const rSuKienTG = await gui(tacGia, 'su-kien', [...BIA_THAT], 'sk.png', 'image/png');
+    kiem('nhưng ảnh sự kiện thì vẫn chỉ quản trị', rSuKienTG.ma === 403, `mã ${rSuKienTG.ma}`);
+    await tacGia.close();
+    tacGia = null;
 
     /*
      * ── NHÌN VÀO RUỘT TỆP, KHÔNG TIN CÁI NHÃN ────────────────────────
@@ -125,6 +164,7 @@ export default async function chay(kiem) {
     kiem('ảnh không tự biến mất khi chưa ai gỡ', conSong === 200, `mã ${conSong}`);
   } finally {
     if (admin) await admin.close();
+    if (tacGia) await tacGia.close();
     await don();
   }
 }

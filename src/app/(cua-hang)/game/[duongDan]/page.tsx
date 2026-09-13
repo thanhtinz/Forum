@@ -176,7 +176,16 @@ export default async function TabThongTin({ params, searchParams }: {
   const sao = gom > 0 ? Math.round((tongSao / gom) * 10) / 10 : 0;
 
   return (
-    <div className="space-y-8">
+    /*
+     * VẠCH KẺ MẢNH GIỮA CÁC MỤC, không phải khoảng trắng suông.
+     *
+     * Trang ứng dụng trên máy Mac ngăn "What's New", "Preview", phần mô tả và
+     * phần đánh giá bằng đúng một sợi kẻ mảnh chạy hết bề ngang cột — cùng thứ
+     * sợi kẻ đã kẹp trên dưới hàng số liệu. Để khoảng trắng suông thì ở cột
+     * rộng 1000px mắt không còn thấy mục nào hết ở đâu; sợi kẻ trả lời đúng
+     * câu ấy mà không tốn một điểm ảnh màu nào.
+     */
+    <div className="divide-y divide-vien [&>*:first-child]:pt-0 [&>*:last-child]:pb-0 [&>*]:py-7">
       {/* Kệ ảnh và phim có ĐẦU ĐỀ riêng, đúng như mục "Preview" của App Store:
           không có đầu đề thì nó lẫn vào dải bìa ngay trên nó, và người xem
           không biết mấy tấm này là cảnh chơi thật hay lại là ảnh quảng cáo. */}
@@ -300,16 +309,17 @@ export default async function TabThongTin({ params, searchParams }: {
         <section id="tai" className="scroll-mt-20 space-y-3">
           <h2 className="tieu-de mb-3">Tải về</h2>
           {/*
-            `nutChinhDam` — CHỈ MỘT NÚT TÔ ĐẶC TRÊN CẢ TRANG.
+            `nutChinhDam` TẮT HẲN — chỉ một nút tô đặc trên cả trang, và nút ấy
+            ở đầu trang.
 
-            Game một hệ máy thì nút ở đầu trang đã đi thẳng tới trang tải, nên
-            nút trong khung này hạ xuống dáng viền: hai nút xanh đặc cách nhau
-            một màn hình là mời bấm nhầm, và người bấm không đoán được hai nút
-            khác nhau chỗ nào. Game nhiều hệ thì ngược lại — nút đầu trang chỉ
-            đưa xuống đây, nên nút tô đặc phải nằm ở đây, sau khi đã chọn hệ.
+            Trước đây nút đặc nhảy qua nhảy lại: game một hệ máy thì nó ở đầu
+            trang, game nhiều hệ thì nó nằm đây. Từ đợt dựng lại theo App Store,
+            khung này tụt xuống dưới cả phần mô tả nên không còn là thứ đập vào
+            mắt trước; nút xanh ở lại đầu trang, chỗ trang ứng dụng nào của họ
+            cũng có một nút xanh.
           */}
           <KhungTai ban={banXem} taiKhoan={nguoi?.tenHienThi ?? null}
-            nutChinhDam={soHe.length > 1}
+            nutChinhDam={false}
             game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenTacGia, doTuoi: game.doTuoi }} />
         </section>
       )}

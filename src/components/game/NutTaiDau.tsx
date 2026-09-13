@@ -38,11 +38,17 @@ export function NutTaiDau({ tep, dichLui, game, taiKhoan, nhan, daTai }: {
   return (
     <>
       {/*
-        TÔ ĐẶC KHI NÚT NÀY LÀ LỐI TẢI THẬT.
-        Có tệp chọn sẵn thì bấm là tải — đây là nút "Get" của App Store, và nó
-        phải là nút tô đặc duy nhất trên trang. Không có tệp chọn sẵn thì nút
-        chỉ đưa xuống khung chọn hệ máy, nên nó là việc phụ và mang dáng nhạt;
-        nút tô đặc lúc ấy nằm dưới khung, sau khi đã chọn.
+        LUÔN TÔ ĐẶC — đây là nút "Get" của App Store.
+
+        Bản trước để nút này nhạt đi khi game có nhiều hệ máy, vì lúc ấy nó chỉ
+        đưa xuống khung chọn chứ không tải thẳng, và nút tô đặc nhường cho khung
+        ấy. Nhưng từ đợt dựng lại trang, khung tải tụt xuống dưới cả phần mô tả,
+        nên nút đầu trang thành thứ DUY NHẤT luôn nằm trong tầm mắt. Trang ứng
+        dụng của App Store không bao giờ mở ra mà thiếu một nút xanh ở đầu.
+
+        Vẫn đúng một nút tô đặc trên cả trang: nút trong khung tải nay luôn mang
+        dáng viền (xem `nutChinhDam` ở trang Thông tin). Hai nút xanh đặc cách
+        nhau một màn hình là mời bấm nhầm.
       */}
       <a href={tep ? `/tai/${tep.id}` : dichLui} data-viec="tai-dau"
         data-da-tai={daTai ? '1' : undefined}
@@ -50,7 +56,7 @@ export function NutTaiDau({ tep, dichLui, game, taiKhoan, nhan, daTai }: {
         title={daTai ? 'Bạn đã tải game này — tải lại' : undefined}
         className={daTai
           ? 'grid size-9 place-items-center rounded-full text-nhan transition-colors hover:bg-nen3'
-          : tep ? 'nut-cai-dam !min-h-[36px] !px-6 !text-[14px]' : 'nut-cai'}
+          : 'nut-cai-dam !min-h-[36px] !px-6 !text-[14px]'}
         onClick={(e) => {
           // Không có tệp chọn sẵn thì để liên kết chạy như thường: nó chỉ cuộn
           // xuống khung chọn, chẳng có gì để xác nhận.

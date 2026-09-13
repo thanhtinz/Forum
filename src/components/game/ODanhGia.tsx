@@ -46,11 +46,18 @@ export function ODanhGia({ gameId, banDau, daDangNhap }: {
     });
   };
 
+  /*
+   * MỘT HÀNG, không phải một khối.
+   *
+   * App Store để "Click to Rate" và năm ngôi sao trên cùng một dòng. Xếp dọc
+   * thì một việc bấm đúng một cái chiếm mất hai tầng chiều cao ngay giữa phần
+   * đánh giá — chỗ người ta đang đọc xem người khác nói gì.
+   */
   return (
-    <div className="the p-4">
+    <div className="the flex flex-wrap items-center gap-x-4 gap-y-2 p-4">
       <p className="text-[13px] font-semibold">{banDau ? 'Đánh giá của bạn' : 'Chấm sao cho game này'}</p>
 
-      <div className="mt-2 flex gap-1">
+      <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button key={n} type="button" onClick={() => { datSao(n); datXong(false); }}
             aria-label={`${n} sao`} aria-pressed={sao === n}

@@ -16,7 +16,7 @@ export default async function CaiDat() {
 
   const hang = await db.nguoiDung.findUnique({
     where: { id: nguoi.id },
-    select: { tenHienThi: true, anh: true, email: true, tenDangNhap: true, thuThongBao: true },
+    select: { tenHienThi: true, anh: true, thuThongBao: true },
   });
   if (!hang) redirect('/dang-nhap');
 
@@ -34,29 +34,6 @@ export default async function CaiDat() {
           tenHienThi: hang.tenHienThi, anh: hang.anh, thuThongBao: hang.thuThongBao,
         }} />
       <OMatKhau />
-
-      {/*
-        Tên đăng nhập và email chỉ ĐỌC, và nói rõ vì sao ngay tại chỗ.
-        Bày ra một ô xám không giải thích gì thì người ta sẽ đi tìm chỗ đổi,
-        không thấy, rồi kết luận trang này hỏng.
-      */}
-      <section className="the p-4">
-        <h2 className="text-[15px] font-bold">Không đổi được</h2>
-        <dl className="mt-2 space-y-2 text-[13px]">
-          <div className="flex justify-between gap-3">
-            <dt className="text-mo">Tên đăng nhập</dt>
-            <dd className="font-medium">@{hang.tenDangNhap}</dd>
-          </div>
-          <div className="flex justify-between gap-3">
-            <dt className="text-mo">Email</dt>
-            <dd className="truncate font-medium">{hang.email}</dd>
-          </div>
-        </dl>
-        <p className="phu mt-3">
-          Tên đăng nhập nằm trong mọi bài viết cũ của bạn, còn email là thứ duy nhất
-          dùng để nhận ra tài khoản. Cần đổi thì nhắn cho SunnyStore.
-        </p>
-      </section>
 
       <OXoaTaiKhoan />
     </div>

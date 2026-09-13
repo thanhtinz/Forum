@@ -23,14 +23,26 @@ export interface MoTaHeMay {
   loaiTep: readonly MaLoaiTep[];
   /** Tên biểu tượng, tra ở bảng `ICON` của mỗi thành phần vẽ ra nó. */
   icon: 'coffee' | 'smartphone' | 'apple' | 'monitor' | 'laptop';
+  /**
+   * Màu đại diện, dùng ở biểu đồ số liệu.
+   *
+   * Năm màu KHÁC HẲN NHAU về sắc độ chứ không chỉ khác sáng tối: cột chồng
+   * trong biểu đồ mỏng chừng tám điểm ảnh, mà người mù màu đỏ–lục thì chiếm
+   * chừng một phần hai mươi đàn ông — hai sắc gần nhau là hai khúc cột dính
+   * làm một.
+   *
+   * Chọn cỡ giữa (không quá nhạt, không quá sẫm) để đọc được trên cả nền sáng
+   * lẫn nền tối mà không phải giữ hai bảng màu.
+   */
+  mau: string;
 }
 
 export const MO_TA_HE: Record<MaHeMay, MoTaHeMay> = {
-  JAVA: { ten: 'Java ME', duoi: 'JAR', loaiTep: ['JAR', 'JAD'], icon: 'coffee' },
-  ANDROID: { ten: 'Android', duoi: 'APK', loaiTep: ['APK', 'ZIP'], icon: 'smartphone' },
-  IOS: { ten: 'iOS', duoi: 'IPA', loaiTep: ['IPA'], icon: 'apple' },
-  WINDOWS: { ten: 'Windows', duoi: 'EXE', loaiTep: ['EXE', 'ZIP'], icon: 'monitor' },
-  MAC: { ten: 'macOS', duoi: 'DMG', loaiTep: ['DMG', 'PKG', 'ZIP'], icon: 'laptop' },
+  JAVA: { ten: 'Java ME', duoi: 'JAR', loaiTep: ['JAR', 'JAD'], icon: 'coffee', mau: '#c2761b' },
+  ANDROID: { ten: 'Android', duoi: 'APK', loaiTep: ['APK', 'ZIP'], icon: 'smartphone', mau: '#1d8f6d' },
+  IOS: { ten: 'iOS', duoi: 'IPA', loaiTep: ['IPA'], icon: 'apple', mau: '#64748b' },
+  WINDOWS: { ten: 'Windows', duoi: 'EXE', loaiTep: ['EXE', 'ZIP'], icon: 'monitor', mau: '#2f6fe4' },
+  MAC: { ten: 'macOS', duoi: 'DMG', loaiTep: ['DMG', 'PKG', 'ZIP'], icon: 'laptop', mau: '#7c3aed' },
 };
 
 /** Có phải mã hệ máy hợp lệ không — dùng để lọc tham số trên URL. */

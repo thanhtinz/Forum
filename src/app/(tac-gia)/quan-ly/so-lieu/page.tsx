@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { HinhHeMay } from '@/components/game/HinhHeMay';
+import { BieuDoTai } from '@/components/tac-gia/BieuDoTai';
 import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { dauNgayTruoc, nhanNgayVN } from '@/lib/ngay-vn-const';
 import { gonSo, gop } from '@/lib/tien-ich';
@@ -68,10 +69,22 @@ export default async function SoLieuTacGia(
 
   const tuNgay = dauNgayTruoc(SO_NGAY - 1);
 
-  const [theoNgay, banDangCam, somNhat] = await Promise.all([
+  const [theoNgay, kyTruoc, banDangCam, somNhat] = await Promise.all([
     db.luotTaiNgay.findMany({
       where: { ...locGame, ngay: { gte: tuNgay } },
       select: { ngay: true, heMay: true, so: true },
+    }),
+    /*
+     * KỲ TRƯỚC — 30 ngày liền trước cửa sổ đang xem, để so hơn kém.
+     *
+     * Một con số đứng trơ trọi thì không ai biết nó to hay nhỏ: "641 lượt" là
+     * một tháng đẹp hay một tháng tệ? Chỉ có so với chính mình tháng trước mới
+     * trả lời được, và đó là phép so duy nhất cửa hàng này làm được một cách
+     * trung thực — không có số của game người khác để mà so.
+     */
+    db.luotTaiNgay.aggregate({
+      where: { ...locGame, ngay: { gte: dauNgayTruoc(SO_NGAY * 2 - 1), lt: tuNgay } },
+      _sum: { so: true },
     }),
     /*
      * "Bản người chơi đang cầm" — gom từ `LuotTai`, không từ bảng theo ngày.
@@ -99,12 +112,33 @@ export default async function SoLieuTacGia(
   const oNgay = Array.from({ length: SO_NGAY }, (_, i) => {
     const ngay = dauNgayTruoc(SO_NGAY - 1 - i);
     const cua = theoNgay.filter((d) => d.ngay.getTime() === ngay.getTime());
-    return { ngay, so: cua.reduce((t, d) => t + d.so, 0) };
+    return {
+      khoa: ngay.getTime(),
+      nhan: nhanNgayVN(ngay),
+      tong: cua.reduce((t, d) => t + d.so, 0),
+      // Sắp giảm dần để khúc to nhất nằm dưới cùng mỗi cột — cột chồng mà khúc
+      // to nằm trên thì mắt đọc thứ tự khác nhau ở mỗi cột.
+      he: cua.filter((d) => d.so > 0)
+        .map((d) => ({ ma: d.heMay as string, so: d.so }))
+        .sort((a, b) => b.so - a.so),
+    };
   });
 
-  const tong = oNgay.reduce((t, o) => t + o.so, 0);
-  const caoNhat = Math.max(1, ...oNgay.map((o) => o.so));
-  const homNayCo = oNgay[oNgay.length - 1]?.so ?? 0;
+  const tong = oNgay.reduce((t, o) => t + o.tong, 0);
+  const caoNhat = Math.max(1, ...oNgay.map((o) => o.tong));
+  const homNayCo = oNgay[oNgay.length - 1]?.tong ?? 0;
+  const dongNhat = oNgay.reduce((a, b) => (b.tong > a.tong ? b : a), oNgay[0]);
+  const trungBinh = tong / SO_NGAY;
+
+  /*
+   * Hơn kém bao nhiêu phần trăm so với kỳ trước.
+   *
+   * Kỳ trước bằng 0 thì KHÔNG in "tăng vô hạn phần trăm" — chia cho 0 ra một
+   * con số vô nghĩa, mà "tăng 100%" cũng sai nốt. Lúc ấy nói thẳng là kỳ trước
+   * chưa có lượt nào.
+   */
+  const soKyTruoc = kyTruoc._sum.so ?? 0;
+  const doi = soKyTruoc > 0 ? Math.round(((tong - soKyTruoc) / soKyTruoc) * 100) : null;
 
   const theoHe = new Map<string, number>();
   for (const d of theoNgay) theoHe.set(d.heMay, (theoHe.get(d.heMay) ?? 0) + d.so);
@@ -136,43 +170,38 @@ export default async function SoLieuTacGia(
         </div>
       )}
 
-      <section className="the p-4">
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
-          <div>
-            <p className="phu">Lượt tải {SO_NGAY} ngày qua</p>
-            <p className="mt-0.5 text-[30px] font-bold leading-none tabular-nums">{gonSo(tong)}</p>
-          </div>
-          <p className="phu">
-            Hôm nay: <span className="font-semibold text-chu tabular-nums">{gonSo(homNayCo)}</span>
-          </p>
-        </div>
+      {/* Bốn con số đứng trên biểu đồ: đọc một cái là biết tháng này ra sao,
+          còn biểu đồ trả lời câu tiếp theo là "ra sao theo ngày nào".
 
+          HAI CỘT NGAY TỪ KHỔ ĐIỆN THOẠI, không xếp dọc thành bốn hàng: bốn thẻ
+          chồng lên nhau đẩy biểu đồ xuống dưới màn hình đầu tiên, mà biểu đồ
+          mới là thứ người ta mở trang này để xem. */}
+      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <O nhan={`Lượt tải ${SO_NGAY} ngày`} so={gonSo(tong)}
+          duoi={doi === null
+            ? (soKyTruoc === 0 && tong > 0 ? 'Kỳ trước chưa có lượt nào' : undefined)
+            : `${doi >= 0 ? '+' : ''}${doi}% so với ${SO_NGAY} ngày trước đó`}
+          chieu={doi === null ? null : doi >= 0} />
+        <O nhan="Hôm nay" so={gonSo(homNayCo)} />
+        <O nhan="Trung bình mỗi ngày"
+          so={trungBinh >= 10 ? gonSo(Math.round(trungBinh)) : trungBinh.toFixed(1).replace('.', ',')} />
+        <O nhan="Ngày đông nhất" so={gonSo(dongNhat?.tong ?? 0)}
+          duoi={dongNhat && dongNhat.tong > 0 ? dongNhat.nhan : undefined} />
+      </section>
+
+      <section className="the p-4">
         {tong === 0 ? (
-          <p className="phu mt-4">
+          <p className="phu">
             Chưa có lượt tải nào trong {SO_NGAY} ngày qua.
             {!somNhat && ' Số liệu theo ngày bắt đầu được ghi từ đợt này, nên game cũ chưa có lịch sử.'}
           </p>
         ) : (
-          <>
-            {/*
-              Cột cao theo TỈ LỆ so với ngày đông nhất, không theo tổng: chia
-              theo tổng thì ba mươi cái cột đều tè le như nhau, không đọc ra
-              hình dáng gì. Cột của ngày không có lượt nào vẫn giữ một vạch mỏng
-              — để mắt thấy được cái ngày ấy tồn tại chứ không phải bị bỏ sót.
-            */}
-            <div className="mt-4 flex h-28 items-end gap-[3px]">
-              {oNgay.map((o) => (
-                <div key={o.ngay.getTime()}
-                  title={`${nhanNgayVN(o.ngay)}: ${o.so} lượt`}
-                  className="flex-1 rounded-t-[3px] bg-nhan/80"
-                  style={{ height: `${Math.max(2, (o.so / caoNhat) * 100)}%` }} />
-              ))}
-            </div>
-            <div className="phu mt-1.5 flex justify-between">
-              <span>{nhanNgayVN(oNgay[0].ngay)}</span>
-              <span>{nhanNgayVN(oNgay[oNgay.length - 1].ngay)}</span>
-            </div>
-          </>
+          /*
+            Cột cao theo TỈ LỆ so với ngày đông nhất, không theo tổng: chia theo
+            tổng thì ba mươi cái cột đều tè le như nhau, không đọc ra hình dáng
+            gì.
+          */
+          <BieuDoTai ngay={oNgay} caoNhat={caoNhat} />
         )}
       </section>
 
@@ -225,6 +254,39 @@ export default async function SoLieuTacGia(
         <p className="phu">
           Số liệu theo ngày ghi từ {nhanNgayVN(somNhat.ngay)}; lượt tải trước đó chỉ
           còn trong con số cộng dồn ở trang Tổng quan.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Một ô số liệu: nhãn nhỏ, con số to, một dòng phụ.
+ *
+ * `chieu` chỉ tô màu cho dòng phụ khi thật sự có phép so: màu nhấn là hơn kỳ
+ * trước, màu cảnh là kém. Không có gì để so thì để chữ mờ như thường — tô màu
+ * một dòng chẳng mang tin gì thì chỉ dạy mắt bỏ qua màu ở chỗ khác.
+ *
+ * Không mượn xanh lá / đỏ: bảng màu của cửa hàng này không có xanh lá, mà đỏ
+ * thì đang dành riêng cho lỗi và cảnh báo — một tháng ít lượt tải không phải
+ * là một cái lỗi.
+ */
+function O({ nhan, so, duoi, chieu }: {
+  nhan: string;
+  so: string;
+  duoi?: string;
+  chieu?: boolean | null;
+}) {
+  return (
+    <div className="the p-3.5">
+      <p className="phu">{nhan}</p>
+      <p className="mt-1 text-[24px] font-bold leading-none tabular-nums">{so}</p>
+      {duoi && (
+        <p className={gop('mt-1.5 text-[12px] font-semibold',
+          chieu === true && 'text-nhan',
+          chieu === false && 'text-canh',
+          chieu == null && 'text-mo')}>
+          {duoi}
         </p>
       )}
     </div>

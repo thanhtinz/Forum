@@ -104,11 +104,18 @@ export default async function chay(kiem) {
         ?.soLuotTai === 1);
 
     /* ── Trang số liệu ────────────────────────────────────────────────── */
-    // Gieo thêm một ít cho mấy ngày trước để biểu đồ có hình.
+    /*
+     * Gieo cho biểu đồ có hình, và gieo cả KỲ TRƯỚC để có cái mà so.
+     *
+     * Kỳ trước cố tình đặt 8 lượt, kỳ này 15 — hơn đúng 87,5%, làm tròn thành
+     * 88. Con số lẻ như thế mới bắt được lỗi làm tròn; đặt 10 với 20 thì công
+     * thức sai kiểu gì cũng có thể vô tình ra 100%.
+     */
     await db.luotTaiNgay.createMany({ data: [
       { gameId: game.id, ngay: dauNgayTruoc(1), heMay: 'JAVA', so: 5 },
       { gameId: game.id, ngay: dauNgayTruoc(2), heMay: 'ANDROID', so: 9 },
-      { gameId: game.id, ngay: dauNgayTruoc(60), heMay: 'JAVA', so: 1000 },
+      { gameId: game.id, ngay: dauNgayTruoc(35), heMay: 'JAVA', so: 8 },
+      { gameId: game.id, ngay: dauNgayTruoc(70), heMay: 'JAVA', so: 1000 },
     ] });
 
     p = await moTrangDaDangNhap(TEN, 'thanhvien123');
@@ -117,9 +124,31 @@ export default async function chay(kiem) {
 
     kiem('trang số liệu cộng đúng tổng 30 ngày', chu.includes('15'), chu.slice(0, 300));
     kiem('lượt tải cũ hơn 30 ngày KHÔNG lọt vào tổng', !chu.includes('1.0K') && !chu.includes('1015'));
+    kiem('kỳ trước nằm ngoài cửa sổ nhưng vẫn được đem ra so',
+      chu.includes('+88%'), chu.slice(0, 400));
     kiem('có mục tải theo hệ máy', chu.includes('Java'));
+    kiem('ô "ngày đông nhất" nói đúng con số', chu.includes('9'));
+
     kiem('biểu đồ dựng đủ 30 cột',
-      (await p.locator('div[title*="lượt"]').count()) === 30);
+      (await p.locator('button[aria-label*="lượt tải"]').count()) === 30);
+
+    /*
+     * Rê vào một cột thì chỗ đọc số phải đổi theo.
+     *
+     * Mặc định nó nói về ngày cuối; rê sang cột của hôm kia (9 lượt, toàn
+     * Android) thì cả ngày, tổng lẫn phần chia theo hệ đều phải đổi. Đây là
+     * chỗ duy nhất trên trang nói được "hôm ấy ai tải bằng máy gì".
+     */
+    const cot = p.locator('button[aria-label*="lượt tải"]');
+    await cot.nth(27).hover();
+    await p.waitForTimeout(200);
+    const docSo = await p.locator('main').textContent();
+    kiem('rê vào một cột thì chỗ đọc số đổi theo ngày ấy',
+      docSo.includes('9 lượt') && docSo.includes('Android 9'), docSo.slice(0, 300));
+
+    // Bàn phím phải tới được: cột là <button> thật chứ không phải <div> nghe chuột.
+    kiem('cột biểu đồ là nút bấm được bằng bàn phím',
+      (await cot.first().evaluate((n) => n.tagName)) === 'BUTTON');
 
     kiem('KHÔNG thấy số liệu của tác giả khác', !chu.includes('4.2K') && !chu.includes('4242'));
 

@@ -728,6 +728,25 @@ p { text-wrap: pretty; }
    động. Xin rồi mà vẫn trượt là làm khó đúng người đã nói mình khó chịu. */
 @media (prefers-reduced-motion: no-preference) {
   .tam-truot[open] { animation: truot-len 220ms cubic-bezier(.2, .7, .3, 1); }
+  /*
+   * CỘT BIỂU ĐỒ MỌC LÊN — mỗi cột trễ hơn cột trước một nhịp rất ngắn.
+   *
+   * Không phải để cho vui: ba mươi cột hiện ra cùng lúc thì mắt đọc cả mảng
+   * như một khối, còn mọc lần lượt từ trái sang phải thì nó tự nói ra chiều
+   * đọc — trái là cũ, phải là mới.
+   *
+   * `prefers-reduced-motion` ở đầu tệp tự rút thời lượng còn gần bằng không,
+   * nên người tắt hiệu ứng vẫn thấy đủ ba mươi cột, chỉ là thấy ngay.
+   */
+  .cot-tai > * { animation: moc-cot .32s cubic-bezier(.2, .7, .3, 1) both; animation-delay: inherit; }
+
+  @keyframes moc-cot {
+    from { transform: scaleY(0); }
+    to { transform: scaleY(1); }
+  }
+
+  .cot-tai > * { transform-origin: bottom; }
+
   @keyframes truot-len {
     from { transform: translateY(14px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }

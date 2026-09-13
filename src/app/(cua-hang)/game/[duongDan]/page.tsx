@@ -28,14 +28,45 @@ import { PHIM_TOI_DA } from '@/lib/phim-const';
 
 export const dynamic = 'force-dynamic';
 
+/*
+ * THẺ META CỦA MỘT GAME — gồm cả ẢNH hiện ra khi dán liên kết.
+ *
+ * Dán liên kết game vào Zalo hay Messenger là cách người ta gửi game cho nhau
+ * ở đây, và tấm ảnh trong ô xem trước quyết định người kia có bấm vào hay
+ * không. Trước đợt này mọi game đều mượn chung `anh-chia-se.png` của cửa hàng,
+ * nên mười liên kết gửi đi thì cả mười trông y hệt nhau — tức là tấm ảnh ấy
+ * không nói được game nào cả.
+ *
+ * Thứ tự lấy đúng như dải bìa đầu trang: ảnh bìa, rồi ảnh chụp đầu tiên, rồi
+ * biểu tượng. Không có gì thì KHÔNG tự đặt `images`, để bản mặc định của cửa
+ * hàng ở bố cục gốc lo — đặt mảng rỗng là mất luôn cả ô xem trước.
+ */
 export async function generateMetadata({ params }: { params: Promise<{ duongDan: string }> }): Promise<Metadata> {
   const { duongDan } = await params;
   const g = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
-    select: { ten: true, gioiThieu: true },
+    select: {
+      ten: true, gioiThieu: true, icon: true, bia: true,
+      anhChup: { orderBy: [{ thuTu: 'asc' }, { id: 'asc' }], take: 1, select: { duongDan: true } },
+    },
   });
   if (!g) return { title: 'Không tìm thấy game' };
-  return { title: g.ten, description: g.gioiThieu ? catChu(bocChu(g.gioiThieu), 160) : undefined };
+
+  const moTa = g.gioiThieu ? catChu(bocChu(g.gioiThieu), 160) : undefined;
+  const anh = g.bia ?? g.anhChup[0]?.duongDan ?? g.icon;
+
+  return {
+    title: g.ten,
+    description: moTa,
+    openGraph: {
+      title: g.ten,
+      description: moTa,
+      ...(anh ? { images: [{ url: anh, alt: g.ten }] } : {}),
+    },
+    // Ô xem trước to, không phải cái thẻ vuông bé cạnh dòng chữ: ảnh game là
+    // thứ đáng nhìn ở đây.
+    twitter: { card: 'summary_large_image' },
+  };
 }
 
 /*

@@ -121,6 +121,22 @@ export default async function chay(kiem) {
    * tượng, và một dải màu suy từ tên game chỉ chiếm một tầm mắt để nói đúng
    * một điều — game này chưa có ảnh.
    */
+  /*
+   * ẢNH XEM TRƯỚC KHI DÁN LIÊN KẾT.
+   *
+   * Dán liên kết game vào Zalo hay Messenger là cách người ta gửi game cho
+   * nhau ở đây. Game có ảnh riêng thì ô xem trước phải lấy ảnh ẤY, không mượn
+   * tấm chung của cửa hàng — mười liên kết trông y hệt nhau thì tấm ảnh không
+   * nói được game nào cả.
+   */
+  const ogAnh = await p.locator('meta[property="og:image"]').first()
+    .getAttribute('content').catch(() => null);
+  kiem('trang game có ảnh xem trước để dán liên kết', !!ogAnh, String(ogAnh));
+  if (game.bia) {
+    kiem('và ảnh ấy là ảnh bìa của chính game này',
+      (ogAnh ?? '').includes(game.bia), String(ogAnh));
+  }
+
   const coAnhThat = !!game.bia || game.anhChup.length > 0;
   const daiBia = p.locator('[data-viec="bia"]');
   if (coAnhThat) {

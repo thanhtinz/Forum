@@ -4,6 +4,7 @@ import { Ke } from '@/components/game/Ke';
 import { SaoNam } from '@/components/game/SaoNam';
 import { gonDungLuong, gonSo } from '@/lib/tien-ich';
 import { MO_TA_TUOI, napDoTuoi } from '@/lib/do-tuoi-const';
+import { NGON_NGU } from '@/lib/he-may';
 
 export interface OSoLieu {
   ma: string;
@@ -175,8 +176,9 @@ export function dungSoLieu(g: {
     ma: 'tieng',
     nhan: 'Ngôn ngữ',
     chinh: g.ngonNgu === 'vi' ? 'VI' : g.ngonNgu === 'da-ngon-ngu' ? 'NHIỀU' : 'EN',
-    duoi: g.ngonNgu === 'vi' ? 'Tiếng Việt'
-      : g.ngonNgu === 'da-ngon-ngu' ? 'Nhiều thứ tiếng' : 'Tiếng Anh',
+    // Tên đầy đủ lấy ở `NGON_NGU`, không chép lại: đã có một bản ở đó, và hai
+    // bản thì sớm muộn cũng lệch nhau lúc thêm một thứ tiếng mới.
+    duoi: NGON_NGU[g.ngonNgu] ?? 'Tiếng Anh',
   });
 
   if (g.tacGia) {

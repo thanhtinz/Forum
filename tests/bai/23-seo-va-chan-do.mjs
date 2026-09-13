@@ -11,6 +11,18 @@ export default async function chay(kiem) {
   kiem('robots.txt chặn khu quản trị', robots.includes('Disallow: /quan-tri'));
   kiem('robots.txt chặn mấy trang cá nhân',
     robots.includes('Disallow: /toi') && robots.includes('Disallow: /thu-vien'));
+
+  /*
+   * MỌI LỐI SAU CỬA ĐĂNG NHẬP ĐỀU PHẢI BỊ CHẶN, không chỉ vài lối nhớ ra được.
+   *
+   * Sót một lối là kết quả tìm "SunnyStore" lẫn vào một trang trống rỗng, mà
+   * người bấm vào chỉ gặp một biểu mẫu không dùng được — hoặc tệ hơn, một trang
+   * chỉ có nghĩa khi đang cầm sẵn một mã trong tay.
+   */
+  for (const loi of ['/da-luu', '/quen-mat-khau', '/dat-lai-mat-khau', '/xac-minh',
+    '/tam-biet', '/quan-ly', '/dang-nhap', '/dang-ky']) {
+    kiem(`robots.txt chặn ${loi}`, robots.includes(`Disallow: ${loi}`));
+  }
   kiem('robots.txt chỉ đường tới sơ đồ trang', /Sitemap: https?:\/\/\S+\/sitemap\.xml/.test(robots));
 
   // ── sitemap.xml ───────────────────────────────────────────────────────

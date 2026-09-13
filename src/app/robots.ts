@@ -26,6 +26,20 @@ export default function robots(): MetadataRoute.Robots {
         '/cap-nhat',
         '/dang-nhap',
         '/dang-ky',
+        /*
+         * Mấy lối còn lại của phần tài khoản. Cùng một lẽ với `/toi`: chúng
+         * hoặc là trang RIÊNG của một người, hoặc là một cánh cửa chỉ có nghĩa
+         * khi đang cầm sẵn một mã trong tay. Để máy tìm kiếm lập chỉ mục thì
+         * kết quả tìm "SunnyStore" lẫn vào mấy trang trống rỗng ấy, mà người
+         * bấm vào chỉ gặp một biểu mẫu không dùng được.
+         */
+        '/da-luu',
+        '/quen-mat-khau',
+        '/dat-lai-mat-khau',
+        '/xac-minh',
+        '/tam-biet',
+        // Khu của người bày hàng, không phải khu của người đi mua.
+        '/quan-ly',
       ],
     },
     sitemap: `${DIA_CHI_GOC}/sitemap.xml`,

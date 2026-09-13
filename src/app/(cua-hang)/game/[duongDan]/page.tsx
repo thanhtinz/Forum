@@ -11,6 +11,8 @@ import { BaiDanhGia, CHON_DANH_GIA } from '@/components/game/BaiDanhGia';
 import { traLoiDanhGia } from '@/app/(quan-tri)/quan-tri/viec';
 import { tacGiaTraLoiDanhGia } from '@/app/(tac-gia)/quan-ly/viec';
 import { KeAnhChup } from '@/components/game/KeAnhChup';
+import { KhungTai } from '@/components/game/KhungTai';
+import { docBanXem } from '@/lib/ban-tai-xem';
 import { TamDanhGia } from '@/components/game/TamDanhGia';
 import { MoTaGame } from '@/components/game/MoTaGame';
 import { Ke } from '@/components/game/Ke';
@@ -58,8 +60,10 @@ export default async function TabThongTin({ params, searchParams }: {
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
     select: {
-      id: true, tacGiaId: true, gioiThieu: true, namPhatHanh: true,
+      id: true, ten: true, icon: true, doTuoi: true, tacGiaId: true,
+      gioiThieu: true, namPhatHanh: true,
       ngonNgu: true, dangLuc: true, nhaPhatTrien: true,
+      theLoai: { select: { theLoai: { select: { ten: true, duongDan: true } } } },
       tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
       // Lấy đúng trần luật định — game cũ lỡ có hơn thì cũng chỉ bày chừng ấy.
       anhChup: {
@@ -108,7 +112,7 @@ export default async function TabThongTin({ params, searchParams }: {
 
   const nguoi = await nguoiHienTai();
 
-  const [phanBo, danhGia, cuaToi, soHe] = await Promise.all([
+  const [phanBo, danhGia, cuaToi, soHe, banXem] = await Promise.all([
     db.danhGia.groupBy({ by: ['sao'], where: { gameId: game.id }, _count: { _all: true } }),
     db.danhGia.findMany({
       where: { gameId: game.id, noiDung: { not: null }, ...(locSao ? { sao: locSao } : {}) },
@@ -124,6 +128,7 @@ export default async function TabThongTin({ params, searchParams }: {
         })
       : null,
     db.banTai.findMany({ where: { gameId: game.id }, distinct: ['heMay'], select: { heMay: true } }),
+    docBanXem(game.id),
   ]);
 
   // Đếm lượt xem sau khi đã lấy đủ dữ liệu, và không chờ kết quả: hỏng bộ đếm
@@ -265,40 +270,31 @@ export default async function TabThongTin({ params, searchParams }: {
       )}
 
       {/*
-        Bảng thông tin chỉ giữ thứ CHƯA nói ở đâu khác trên trang.
-        Nhà phát triển đã in màu nhấn dưới tên game; hệ máy đã có ở dãy chip;
-        còn năm phát hành và ngôn ngữ nay nằm trên hàng số liệu ngay dưới tên
-        game — in lại ở đây thì bảng này chỉ là một bản sao mờ của hàng ấy.
-      */}
-      <section>
-        <h2 className="tieu-de mb-3">Thông tin</h2>
-        <dl className="the divide-y divide-vien text-[13px]">
-          <Dong nhan="Số bản tải" giaTri={`${game._count.banTai} bản trên ${soHe.length} hệ máy`} />
-          <Dong nhan="Có mặt từ" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
-        </dl>
-      </section>
+        KHUNG TẢI — chỗ CHỌN hệ máy và phiên bản.
 
-      {/*
-        CÁCH CÀI chuyển từ khung tải xuống ĐÂY.
+        Đặt sau phần mô tả và hàng nhà phát triển, trước phần đánh giá: đọc
+        game là gì rồi mới tới lúc lấy nó về, còn ai đã biết mình muốn gì thì
+        đã có nút "Tải về" ở ngay đầu trang, không phải cuộn tới đây.
 
-        Trên điện thoại, khung tải nằm trên cả hàng tab — nên mỗi khối gấp
-        trong ấy đẩy ảnh chụp và mô tả xuống thêm một nhịp cuộn. App Store
-        không có mục này (họ tự cài hộ), nhưng cửa hàng game Java thì người
-        dùng phải tự cài, nên bỏ hẳn không được; chỗ đúng của nó là cạnh bảng
-        thông tin, nơi người đọc đang tìm hiểu chi tiết chứ không đang bấm tải.
+        Bản trước khối này nằm ở khung chung, tức là nó đứng trên cả hàng tab
+        và chen cả vào tab Diễn đàn — một bảng điều khiển chắn giữa người đọc
+        và chủ đề họ vừa bấm vào.
       */}
-      {soHe.some((h) => NHAC_KHI_CAI[h.heMay as MaHeMay]) && (
-        <section className="space-y-2">
-          {soHe.map((h) => {
-            const nhac = NHAC_KHI_CAI[h.heMay as MaHeMay];
-            if (!nhac) return null;
-            return (
-              <KhoiGap key={h.heMay} icon={<Info size={16} />}
-                tieuDe={`Cách cài trên ${MO_TA_HE[h.heMay as MaHeMay]?.ten ?? h.heMay}`}>
-                <p className="text-[13px] leading-relaxed text-mo">{nhac}</p>
-              </KhoiGap>
-            );
-          })}
+      {banXem.length > 0 && (
+        <section id="tai" className="scroll-mt-20 space-y-3">
+          <h2 className="tieu-de mb-3">Tải về</h2>
+          {/*
+            `nutChinhDam` — CHỈ MỘT NÚT TÔ ĐẶC TRÊN CẢ TRANG.
+
+            Game một hệ máy thì nút ở đầu trang đã đi thẳng tới trang tải, nên
+            nút trong khung này hạ xuống dáng viền: hai nút xanh đặc cách nhau
+            một màn hình là mời bấm nhầm, và người bấm không đoán được hai nút
+            khác nhau chỗ nào. Game nhiều hệ thì ngược lại — nút đầu trang chỉ
+            đưa xuống đây, nên nút tô đặc phải nằm ở đây, sau khi đã chọn hệ.
+          */}
+          <KhungTai ban={banXem} taiKhoan={nguoi?.tenHienThi ?? null}
+            nutChinhDam={soHe.length > 1}
+            game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenTacGia, doTuoi: game.doTuoi }} />
         </section>
       )}
 
@@ -346,6 +342,56 @@ export default async function TabThongTin({ params, searchParams }: {
             banDau={danhGia} />
         )}
       </section>
+
+      {/*
+        Bảng thông tin chỉ giữ thứ CHƯA nói ở đâu khác trên trang.
+        Nhà phát triển đã in màu nhấn dưới tên game; hệ máy đã có ở dãy chip;
+        còn năm phát hành và ngôn ngữ nay nằm trên hàng số liệu ngay dưới tên
+        game — in lại ở đây thì bảng này chỉ là một bản sao mờ của hàng ấy.
+      */}
+      <section>
+        <h2 className="tieu-de mb-3">Thông tin</h2>
+        <dl className="the divide-y divide-vien text-[13px]">
+          {/* "Chạy được trên" và "Thể loại" là hai dòng App Store luôn có
+              (Compatibility, Category) mà hàng số liệu trên đầu trang KHÔNG
+              có chỗ bày — nên đây không phải chép lại, đây là phần bù. */}
+          <Dong nhan="Chạy được trên"
+            giaTri={soHe.map((h) => MO_TA_HE[h.heMay as MaHeMay]?.ten ?? h.heMay).join(', ') || '—'} />
+          {game.theLoai.length > 0 && (
+            <Dong nhan="Thể loại" giaTri={game.theLoai.map((t) => t.theLoai.ten).join(', ')} />
+          )}
+          {moiNhat && (
+            <Dong nhan="Bản mới nhất"
+              giaTri={moiNhat.soHieu + (moiNhat.ngayRa ? ` · ${cachDay(moiNhat.ngayRa)}` : '')} />
+          )}
+          <Dong nhan="Số bản tải" giaTri={`${game._count.banTai} bản trên ${soHe.length} hệ máy`} />
+          <Dong nhan="Có mặt từ" giaTri={game.dangLuc ? cachDay(game.dangLuc) : '—'} />
+        </dl>
+      </section>
+
+      {/*
+        CÁCH CÀI chuyển từ khung tải xuống ĐÂY.
+
+        Trên điện thoại, khung tải nằm trên cả hàng tab — nên mỗi khối gấp
+        trong ấy đẩy ảnh chụp và mô tả xuống thêm một nhịp cuộn. App Store
+        không có mục này (họ tự cài hộ), nhưng cửa hàng game Java thì người
+        dùng phải tự cài, nên bỏ hẳn không được; chỗ đúng của nó là cạnh bảng
+        thông tin, nơi người đọc đang tìm hiểu chi tiết chứ không đang bấm tải.
+      */}
+      {soHe.some((h) => NHAC_KHI_CAI[h.heMay as MaHeMay]) && (
+        <section className="space-y-2">
+          {soHe.map((h) => {
+            const nhac = NHAC_KHI_CAI[h.heMay as MaHeMay];
+            if (!nhac) return null;
+            return (
+              <KhoiGap key={h.heMay} icon={<Info size={16} />}
+                tieuDe={`Cách cài trên ${MO_TA_HE[h.heMay as MaHeMay]?.ten ?? h.heMay}`}>
+                <p className="text-[13px] leading-relaxed text-mo">{nhac}</p>
+              </KhoiGap>
+            );
+          })}
+        </section>
+      )}
 
     </div>
   );

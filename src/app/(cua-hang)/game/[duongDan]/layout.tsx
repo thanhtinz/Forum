@@ -1,9 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/db';
+import { docBanXem } from '@/lib/ban-tai-xem';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
-import { KhungTai, type BanXem } from '@/components/game/KhungTai';
 import { NutChiaSe } from '@/components/game/NutChiaSe';
 import { NutLui } from '@/components/game/NutLui';
 import { TabGame } from '@/components/game/TabGame';
@@ -40,19 +40,13 @@ export default async function KhungGame({ children, params }: {
       namPhatHanh: true, ngonNgu: true, doTuoi: true,
       theLoai: { select: { theLoai: { select: { ten: true, duongDan: true } } } },
       tacGia: { select: { tenDangNhap: true, tenHienThi: true, tenTacGia: true } },
-      banTai: {
-        orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }],
-        take: 60,
-        select: {
-          id: true, heMay: true, soHieu: true, moiNhat: true, dungLuong: true, ngayRa: true,
-          doiMoi: true, ghiChu: true, duongDanCuaHang: true,
-          tep: { select: { id: true, loai: true, dungLuong: true, tenTep: true, maKiemTra: true } },
-        },
-      },
       _count: { select: { chuDe: true } },
     },
   });
   if (!game) notFound();
+
+  // Dãy bản tải đọc bằng hàm chung với tab Thông tin — xem `ban-tai-xem.ts`.
+  const banXem = await docBanXem(game.id);
 
   const sao = diemSao(game.tongSao, game.soLuotDanhGia);
 
@@ -101,8 +95,8 @@ export default async function KhungGame({ children, params }: {
     sao,
     soLuotDanhGia: game.soLuotDanhGia,
     soLuotTai: game.soLuotTai,
-    dungLuong: game.banTai[0]?.dungLuong ?? null,
-    soHieu: game.banTai[0]?.soHieu ?? null,
+    dungLuong: banXem[0]?.dungLuong ?? null,
+    soHieu: banXem[0]?.soHieu ?? null,
     hang,
     namPhatHanh: game.namPhatHanh,
     ngonNgu: game.ngonNgu,
@@ -119,8 +113,8 @@ export default async function KhungGame({ children, params }: {
           }
         : null,
   });
-  const he = [...new Set(game.banTai.map((b) => b.heMay))] as MaHeMay[];
-  const banMoiNhat = game.banTai[0];
+  const he = [...new Set(banXem.map((b) => b.heMay))] as MaHeMay[];
+  const banMoiNhat = banXem[0];
 
   /*
    * NÚT TẢI Ở NGAY ĐẦU TRANG, cạnh tên game — đúng chỗ nút "Get" của App Store.
@@ -140,37 +134,23 @@ export default async function KhungGame({ children, params }: {
         - MO_TA_HE[he[0]].loaiTep.indexOf(b.loai as never))[0]
     : null;
 
-  const banXem: BanXem[] = game.banTai.map((b) => ({
-    id: b.id,
-    heMay: b.heMay as MaHeMay,
-    soHieu: b.soHieu,
-    moiNhat: b.moiNhat,
-    dungLuong: b.dungLuong != null ? Number(b.dungLuong) : null,
-    ngayRa: b.ngayRa ? b.ngayRa.toISOString().slice(0, 10) : null,
-    doiMoi: b.doiMoi,
-    ghiChu: b.ghiChu,
-    duongDanCuaHang: b.duongDanCuaHang,
-    tep: b.tep.map((t) => ({
-      id: t.id, loai: t.loai,
-      dungLuong: t.dungLuong != null ? Number(t.dungLuong) : null,
-      tenTep: t.tenTep, maKiemTra: t.maKiemTra,
-    })),
-  }));
-
   return (
     /*
-     * HAI BỐ CỤC KHÁC NHAU, KHÔNG PHẢI MỘT BỐ CỤC CO GIÃN.
+     * MỘT CỘT, GIỮA TRANG — y như trang ứng dụng của App Store.
      *
-     * Điện thoại: xếp dọc theo đúng thứ tự CH Play dùng — tên game, số liệu,
-     * NÚT TẢI, rồi mới tới tab và nội dung. Người mở trang này phần lớn đã
-     * biết mình muốn game gì; bắt họ cuộn qua ba đoạn văn mới thấy nút là bắt
-     * vô ích.
+     * Bản trước chia máy bàn làm hai cột: cột trái 300px dính lại giữ biểu
+     * tượng, số liệu và cả khung tải; cột phải cuộn. Nhìn tận mắt mới thấy nó
+     * hỏng ở đâu: hàng số liệu bị bóp trong 300px nên ô "Lượt tải" đứt ngay
+     * giữa chữ, khung tải ăn hết chỗ đẹp nhất của trang, và dưới nó là một
+     * khoảng trắng cao bằng cả màn hình vì cột trái hết nội dung trước cột
+     * phải. App Store không có cột nào như thế: một cột, rộng chừng 1000px,
+     * mọi thứ xếp dọc theo đúng thứ tự người ta đọc.
      *
-     * Máy bàn: cột trái dính lại; cột phải cuộn qua ảnh, mô tả, đánh giá,
-     * diễn đàn.
+     * Thứ tự ấy giữ nguyên ở cả hai khổ máy, nên không còn hai bố cục phải
+     * trông chừng song song nữa.
      */
-    <div className="lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-x-10">
-      <div className="space-y-5 lg:sticky lg:top-[68px]">
+    <div className="mx-auto max-w-[1000px]">
+      <div className="space-y-5">
         {/*
           HÀNG NÚT GÓC TRÊN — lùi bên trái, chia sẻ bên phải.
 
@@ -202,10 +182,23 @@ export default async function KhungGame({ children, params }: {
         )}
 
         <header>
-          <div className="flex gap-4">
-            <BieuTuongGame ten={game.ten} icon={game.icon} co={104} />
+          <div className="flex flex-wrap items-start gap-4 sm:gap-6">
+            {/*
+              HAI CỠ BIỂU TƯỢNG, hai thẻ.
+
+              App Store để biểu tượng rất to ở đầu trang ứng dụng — trên web nó
+              chiếm gần một phần tư bề ngang cột. Một ô 104px giữa cột 1000px
+              thì trang mở ra trông như một hàng danh sách bị phóng to, không
+              ra trang của riêng game ấy.
+
+              Cỡ truyền bằng `px` (xem `BieuTuongGame`), mà `px` thì không đổi
+              theo khổ màn hình được — nên hai thẻ, mỗi khổ hiện một. Ảnh mang
+              `alt=""` nên bộ đọc màn hình không đọc thành hai lần.
+            */}
+            <BieuTuongGame ten={game.ten} icon={game.icon} co={104} className="sm:hidden" />
+            <BieuTuongGame ten={game.ten} icon={game.icon} co={148} className="hidden sm:block" />
             <div className="min-w-0 flex-1">
-              <h1 className="text-[23px] font-bold leading-[1.15] tracking-tight">{game.ten}</h1>
+              <h1 className="text-[23px] font-bold leading-[1.15] tracking-tight sm:text-[30px]">{game.ten}</h1>
               {game.tenViet && <p className="phu mt-0.5">{game.tenViet}</p>}
               {/*
                 MỘT DÒNG LUÂN PHIÊN: tên hãng, rồi từng thể loại, rồi bản Việt
@@ -245,14 +238,26 @@ export default async function KhungGame({ children, params }: {
                 ba phân thì người đọc dừng lại đối chiếu xem hai chỗ có khác
                 nhau chỗ nào không — mất công vì chúng giống hệt.
               */}
-              {(tepChinh || game.banTai.length > 0) && (
-                <p className="mt-3">
-                  <NutTaiDau nhan="Tải về" dichLui="#tai" taiKhoan={nguoi?.tenHienThi ?? null}
+              {/*
+                MỘT NÚT, KHÔNG PHẢI HAI.
+
+                Bản vừa rồi dựng hai thẻ nút — một cho khổ hẹp, một cho khổ
+                rộng — rồi ẩn bớt bằng lớp CSS. Bài kiểm 02 bắt ngay: nó đếm
+                nút tô đặc trên cả trang và thấy HAI, vì lớp `sm:hidden` chỉ
+                giấu con mắt chứ thẻ vẫn nằm đó. Hai lối tải trên một trang là
+                đúng cái mà phép đếm ấy sinh ra để chặn.
+
+                Nên nút ở lại trong cột chữ, và khổ rộng thì đẩy nó sát mép
+                phải — chỗ nút giá của trang ứng dụng trên web App Store.
+              */}
+              {(tepChinh || banXem.length > 0) && (
+                <p className="mt-3 sm:flex sm:justify-end">
+                  <NutTaiDau nhan="Tải về" dichLui={`/game/${game.duongDan}#tai`} taiKhoan={nguoi?.tenHienThi ?? null}
                     game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }}
                     tep={tepChinh && banMoiNhat
                       ? {
                           id: tepChinh.id, loai: tepChinh.loai,
-                          dungLuong: tepChinh.dungLuong != null ? Number(tepChinh.dungLuong) : null,
+                          dungLuong: tepChinh.dungLuong,
                           soHieu: banMoiNhat.soHieu, heMay: MO_TA_HE[he[0]].ten,
                         }
                       : null} />
@@ -264,26 +269,14 @@ export default async function KhungGame({ children, params }: {
           <HangSoLieu o={soLieu} />
         </header>
 
-        <section id="tai" className="scroll-mt-20 space-y-3">
-          {/* Đầu đề nhỏ, không phải đầu đề trang: từ đợt này nút tải chính đã
-              lên đầu trang, nên khối này là chỗ CHỌN bản chứ không còn là việc
-              chính — một đầu đề 22px ở đây tranh vai với tên game. */}
-          <h2 className="tieu-de-nho lg:sr-only">Tải về</h2>
-          {/*
-            `nutChinhDam` — CHỈ MỘT NÚT TÔ ĐẶC TRÊN CẢ TRANG.
-
-            Game một hệ máy thì nút ở đầu trang đã đi thẳng tới trang tải, nên
-            nút trong khung này hạ xuống dáng viền: hai nút xanh đặc cách nhau
-            một màn hình là mời bấm nhầm, và người bấm không đoán được hai nút
-            khác nhau chỗ nào. Game nhiều hệ thì ngược lại — nút đầu trang chỉ
-            đưa xuống đây, nên nút tô đặc phải nằm ở đây, sau khi đã chọn hệ.
-          */}
-          <KhungTai ban={banXem} taiKhoan={nguoi?.tenHienThi ?? null} nutChinhDam={he.length > 1}
-            game={{ ten: game.ten, icon: game.icon, nhaPhatTrien: tenHang, doTuoi: game.doTuoi }} />
-        </section>
       </div>
 
-      <div className="mt-8 lg:mt-0">
+      {/* Khung tải nay nằm TRONG tab Thông tin, không còn ở khung chung: App
+          Store để phần lấy ứng dụng trong mạch nội dung chứ không dựng một
+          bảng điều khiển riêng, và ở tab Diễn đàn thì cái bảng ấy chỉ chen
+          giữa người đọc và chủ đề họ đang mở. Nút "Tải về" ở đầu trang vẫn
+          theo suốt mọi tab. */}
+      <div className="mt-7">
         <TabGame duongDanGame={game.duongDan} soChuDe={game._count.chuDe} />
         <div className="mt-6">{children}</div>
       </div>

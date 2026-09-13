@@ -111,6 +111,37 @@ export default async function chay(kiem) {
     !html.includes('Game tương tự'));
 
   /*
+   * THỨ TỰ MỤC THEO ĐÚNG TRANG ỨNG DỤNG CỦA APP STORE.
+   *
+   * Giới thiệu → Tải về → Đánh giá → Thông tin. Bảng thông tin đứng SAU phần
+   * đánh giá là chỗ dễ bị xếp ngược nhất, vì viết mã thì ai cũng muốn để hai
+   * bảng dữ liệu cạnh nhau; còn người đọc thì muốn biết người khác nói gì
+   * trước khi tra mấy dòng khô khan.
+   */
+  const dauDe = await p.locator('main h2').evaluateAll((els) =>
+    els.map((e) => e.textContent?.trim() ?? ''));
+  const viTri = (ten) => dauDe.indexOf(ten);
+  const truoc = (a, b) => viTri(a) === -1 || viTri(b) === -1 || viTri(a) < viTri(b);
+  kiem('mục xếp đúng thứ tự App Store',
+    truoc('Giới thiệu', 'Tải về') && truoc('Tải về', 'Đánh giá')
+    && truoc('Đánh giá', 'Thông tin'),
+    JSON.stringify(dauDe));
+
+  /*
+   * MỘT CỘT, KHÔNG PHẢI HAI.
+   *
+   * Bản cũ chia máy bàn làm cột trái 300px dính lại và cột phải cuộn, nên hàng
+   * số liệu bị bóp đứt giữa chữ. Đo bề ngang thật của hàng ấy so với bề ngang
+   * phần nội dung: bóp lại lần nữa là con số này tụt ngay.
+   */
+  const rong = await p.locator('main').evaluate((m) => {
+    const hang = m.querySelector('dl');
+    return hang ? [hang.getBoundingClientRect().width, m.getBoundingClientRect().width] : null;
+  });
+  kiem('hàng số liệu trải hết bề ngang nội dung',
+    !!rong && rong[0] > rong[1] * 0.8, JSON.stringify(rong));
+
+  /*
    * DIỄN ĐÀN LÀ MỘT TAB, không phải một khối nhét cuối trang.
    *
    * Tab dựng bằng <Link> sang đường dẫn riêng chứ không phải nút đổi trạng
@@ -133,11 +164,22 @@ export default async function chay(kiem) {
   kiem('bấm tab Diễn đàn thì đổi sang đường dẫn riêng',
     p.url().endsWith('/dien-dan'), p.url());
 
-  // Phần đầu (tên game + nút tải) phải ĐỨNG YÊN khi đổi tab — nó nằm ở khung
-  // chung, nên người đọc không mất chỗ tải khi sang xem thảo luận.
+  /*
+   * Phần đầu (tên game + nút tải) phải ĐỨNG YÊN khi đổi tab — nó nằm ở khung
+   * chung, nên người đọc không mất chỗ tải khi sang xem thảo luận.
+   *
+   * Đo NÚT ĐẦU TRANG, không đo khung tải: từ đợt dựng lại trang theo App
+   * Store, khung chọn hệ máy và phiên bản nằm trong tab Thông tin chứ không
+   * còn ở khung chung — một bảng điều khiển chắn giữa người đọc và chủ đề họ
+   * vừa bấm vào thì chẳng giúp được ai. Thứ phải theo suốt mọi tab là cái nút
+   * trả lời câu "tải ở đâu", và đó chính là nút này.
+   */
   kiem('đổi tab thì tên game vẫn còn', (await p.content()).includes(game.ten));
-  kiem('đổi tab thì nút tải vẫn còn',
-    (await p.locator('#tai a[href^="/tai/"]').count()) > 0);
+  kiem('đổi tab thì nút tải đầu trang vẫn còn',
+    (await p.locator('a[data-viec="tai-dau"]').count()) > 0);
+  // Còn khung CHỌN bản thì ở lại tab Thông tin, không chen vào diễn đàn.
+  kiem('tab diễn đàn không mang theo khung chọn bản',
+    (await p.locator('#tai').count()) === 0);
 
   // Game đã gỡ / còn nháp phải trả 404, không được xem lén bằng đường dẫn.
   const nhap = await db.game.findFirst({

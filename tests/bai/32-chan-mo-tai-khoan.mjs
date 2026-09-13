@@ -1,4 +1,6 @@
 import { GOC, db, doiToi, moTrang } from '../tro-giup.mjs';
+import { docThan, moThuGia } from '../thu-gia.mjs';
+import { donMa } from '../../src/lib/ma-xac-minh-const.ts';
 
 const DAU = 'kiemthu-chandk';
 
@@ -14,10 +16,18 @@ const DAU = 'kiemthu-chandk';
  * hai luật khác nhau thì kiểu gì cũng có ngày lệch.
  */
 export default async function chay(kiem) {
-  const don = () => db.nguoiDung.deleteMany({ where: { email: { contains: DAU } } });
+  const don = async () => {
+    await db.nguoiDung.deleteMany({ where: { email: { contains: DAU } } });
+    await db.maXacMinh.deleteMany({ where: { email: { contains: DAU } } });
+  };
   const donDem = () => db.lanHong.deleteMany({ where: { khoa: { startsWith: 'dk:' } } });
   await don();
   await donDem();
+
+  // Đăng ký nay đi qua thư: bước một gửi mã, bước hai gõ mã vào mới thành tài
+  // khoản. Phải có chỗ hứng thư thì mới đi hết được đường.
+  const hom = moThuGia(2525);
+  await hom.san;
 
   const p = await moTrang();
   const guiDangKy = async (email, ten, matKhau) => {
@@ -42,6 +52,24 @@ export default async function chay(kiem) {
     await p.fill('input[name="matKhau"]', matKhau);
     await p.click('button[type="submit"]');
     await p.waitForTimeout(700);
+  };
+
+  /**
+   * Đi nốt BƯỚC HAI: lấy mã trong thư rồi gõ vào.
+   *
+   * Tách riêng vì mấy phép thử trần độ dài ở trên cố ý dừng ở bước một — hồ sơ
+   * hỏng thì không có thư nào bay đi để mà đợi.
+   */
+  const xacMinh = async (email) => {
+    const coThu = await doiToi(async () => hom.thu.some((t) => t.toi === email));
+    if (!coThu) return false;
+    const la = hom.thu.find((t) => t.toi === email);
+    const ma = donMa((docThan(la.than).match(/\n\s*(\d{3}\s?\d{3})\s*\n/) ?? [])[1] ?? '');
+    if (ma.length !== 6) return false;
+    await p.fill('input[name="ma"]', ma);
+    await p.click('button[type="submit"]');
+    await p.waitForTimeout(700);
+    return true;
   };
 
   /** Thoát ra, vì mở tài khoản xong là đăng nhập luôn và `/dang-ky` sẽ đá về trang chủ. */
@@ -74,7 +102,9 @@ export default async function chay(kiem) {
      * lượt hỏng thì tới cái thứ tư là đã bị chặn rồi.
      */
     for (let i = 0; i < 5; i++) {
-      await guiDangKy(`${DAU}-${i}@kiemthu.invalid`, `Người kiểm ${i}`, 'matkhau12345');
+      const email = `${DAU}-${i}@kiemthu.invalid`;
+      await guiDangKy(email, `Người kiểm ${i}`, 'matkhau12345');
+      await xacMinh(email);
       await thoatRa();
     }
     const moDuoc = await db.nguoiDung.count({ where: { email: { contains: `${DAU}-` } } });
@@ -106,6 +136,7 @@ export default async function chay(kiem) {
       ten.map((t) => t.tenDangNhap).join(', '));
   } finally {
     await p.close();
+    await hom.dong();
     await don();
     await donDem();
   }

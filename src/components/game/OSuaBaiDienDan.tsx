@@ -8,13 +8,22 @@ import {
   suaChuDe, suaTraLoi, xoaChuDeCuaToi, xoaTraLoiCuaToi, type KetQua,
 } from '@/app/(cua-hang)/game/[duongDan]/dien-dan/viec';
 
-/**
- * Hàng "Sửa · Xoá" dưới bài của chính mình, và biểu mẫu sửa tại chỗ.
+/*
+ * SỬA / XOÁ BÀI CỦA CHÍNH MÌNH.
  *
  * Sửa NGAY TẠI CHỖ chứ không mở trang riêng: người sửa bài phần lớn là sửa một
  * chữ gõ nhầm, mà đi một vòng sang trang khác rồi quay về thì đắt hơn nhiều
  * lần so với thứ thật sự thay đổi. Đổi lại, biểu mẫu phải giữ nguyên đúng
  * khoảng trống của bài cũ để trang không giật lên giật xuống lúc mở ra.
+ *
+ * LÚC CHƯA MỞ, HAI NÚT NÀY KHÔNG CÓ VỎ RIÊNG — chúng trả về một mảnh trần để
+ * nơi gọi xếp thẳng vào hàng nút chung. Trước đây chúng tự bọc một `<div>` có
+ * lề trên, nên bài của chính mình có HAI hàng nút ở hai độ thụt khác nhau,
+ * trong khi bài của người khác chỉ có một — nhìn cả chủ đề là thấy lệch, mà
+ * không chỉ ra được ngay vì sao.
+ *
+ * Lúc mở ra thì biểu mẫu chiếm nguyên một dòng (`w-full` trong hàng `flex-wrap`
+ * của nơi gọi), vì một ô soạn thảo không chen cạnh mấy cái nút được.
  */
 export function SuaChuDe({ chuDeId, tieuDe, noiDung, xoaDuoc }: {
   chuDeId: string;
@@ -38,7 +47,7 @@ export function SuaChuDe({ chuDeId, tieuDe, noiDung, xoaDuoc }: {
 
   if (!mo) {
     return (
-      <div className="mt-3 flex items-center gap-3">
+      <>
         <button type="button" onClick={() => datMo(true)}
           className="text-[12px] font-semibold text-mo hover:text-chu hover:underline">
           Sửa bài
@@ -59,12 +68,12 @@ export function SuaChuDe({ chuDeId, tieuDe, noiDung, xoaDuoc }: {
         )}
         {loiXoa && <span role="alert" className="text-[12px] font-medium text-xau">{loiXoa}</span>}
         {hop}
-      </div>
+      </>
     );
   }
 
   return (
-    <form action={gui} className="mt-3 space-y-2">
+    <form action={gui} className="mt-1 w-full space-y-2">
       <input type="hidden" name="chuDeId" value={chuDeId} />
       <ONhapGiu name="tieuDe" banDau={tieuDe} required minLength={5} maxLength={150}
         aria-label="Tiêu đề" className="o-nhap" />
@@ -98,7 +107,7 @@ export function SuaTraLoi({ traLoiId, noiDung }: { traLoiId: string; noiDung: st
 
   if (!mo) {
     return (
-      <div className="mt-2.5 flex items-center gap-3">
+      <>
         <button type="button" onClick={() => datMo(true)}
           className="text-[12px] font-semibold text-mo hover:text-chu hover:underline">
           Sửa
@@ -117,12 +126,12 @@ export function SuaTraLoi({ traLoiId, noiDung }: { traLoiId: string; noiDung: st
         </button>
         {loiXoa && <span role="alert" className="text-[12px] font-medium text-xau">{loiXoa}</span>}
         {hop}
-      </div>
+      </>
     );
   }
 
   return (
-    <form action={gui} className="mt-2.5 space-y-2">
+    <form action={gui} className="mt-1 w-full space-y-2">
       <input type="hidden" name="traLoiId" value={traLoiId} />
       <OSoanThao ten="noiDung" nhan="Nội dung lời đáp" giaTri={noiDung} dong={4}
         gon choAnh="dien-dan" />

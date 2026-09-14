@@ -200,14 +200,20 @@ export default async function TrangChuDe({ params, searchParams }: {
         */}
         <div className="chu-dam mt-2.5"
           dangerouslySetInnerHTML={{ __html: dungChuDam(chuDe.noiDung) }} />
-        {/* Nút sửa chỉ VẼ ra cho chủ bài và khi chủ đề chưa khoá; chặn thật
-            nằm trong `where` của Prisma ở `suaChuDe`. */}
-        {nguoi?.id === chuDe.nguoiId && !chuDe.khoa && (
-          <SuaChuDe chuDeId={chuDe.id} tieuDe={chuDe.tieuDe} noiDung={chuDe.noiDung}
-            xoaDuoc={tongTraLoi === 0} />
-        )}
-        {nguoi && nguoi.id !== chuDe.nguoiId && (
-          <div className="mt-3"><NutBaoXau loai="chuDe" mucId={chuDe.id} /></div>
+        {/*
+          MỘT hàng nút duy nhất, và đúng một thứ tự cho mọi bài trong chủ đề.
+
+          Nút sửa chỉ VẼ ra cho chủ bài và khi chủ đề chưa khoá; chặn thật nằm
+          trong `where` của Prisma ở `suaChuDe`.
+        */}
+        {nguoi && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {nguoi.id === chuDe.nguoiId && !chuDe.khoa && (
+              <SuaChuDe chuDeId={chuDe.id} tieuDe={chuDe.tieuDe} noiDung={chuDe.noiDung}
+                xoaDuoc={tongTraLoi === 0} />
+            )}
+            {nguoi.id !== chuDe.nguoiId && <NutBaoXau loai="chuDe" mucId={chuDe.id} />}
+          </div>
         )}
       </article>
 
@@ -262,14 +268,13 @@ export default async function TrangChuDe({ params, searchParams }: {
                   <NutLoiGiai chuDeId={chuDe.id} duongDan={chuDe.game.duongDan}
                     traLoiId={t.id} dangLa={t.id === chuDe.loiGiaiId} />
                 )}
+                {nguoi?.id === t.nguoiId && !chuDe.khoa && (
+                  <SuaTraLoi traLoiId={t.id} noiDung={t.noiDung} />
+                )}
                 {nguoi && nguoi.id !== t.nguoiId && (
                   <NutBaoXau loai="traLoi" mucId={t.id} />
                 )}
               </div>
-
-              {nguoi?.id === t.nguoiId && !chuDe.khoa && (
-                <SuaTraLoi traLoiId={t.id} noiDung={t.noiDung} />
-              )}
               </div>
             </li>
           ))}

@@ -88,6 +88,15 @@ interface GameMau {
   ngonNgu?: string;
   vietHoa?: boolean;
   noiBat?: boolean;
+  /*
+   * Lời khai quyền riêng tư. BA TRẠNG THÁI, và dữ liệu mẫu phải bày đủ cả ba,
+   * không thì nhìn cửa hàng mẫu chẳng ai biết trạng thái thứ ba tồn tại:
+   *
+   *   • bỏ trống ô này → chưa khai, trang game nói "nhà phát triển chưa cho biết";
+   *   • `[]`           → khai rồi mà không thu thập gì — một LỜI HỨA;
+   *   • có phần tử     → bảng dữ liệu.
+   */
+  quyenRiengTu?: [string, string][];
   ban: BanMau[];
 }
 
@@ -102,6 +111,7 @@ function gopMoTa(g: GameMau): string {
 const GAME: GameMau[] = [
   {
     ten: 'Bounce Tales', nhaPhatTrien: 'Nokia', nam: 2008, noiBat: true,
+    quyenRiengTu: [],
     theLoai: ['Phiêu lưu', 'Arcade'],
     gioiThieu: 'Quả bóng đỏ lăn qua mười hai màn, nhảy qua gai, đẩy thùng và né dòng nước. Trò cài sẵn trong máy Nokia đời S40 mà gần như ai cầm điện thoại thời ấy cũng từng chơi.',
     cachChoi: 'Trái/phải để lăn, phím giữa để nhảy. Bóng nặng dần khi ăn vật phẩm, nặng thì chìm chậm hơn nhưng nhảy thấp đi.',
@@ -139,12 +149,14 @@ const GAME: GameMau[] = [
   },
   {
     ten: 'Prince of Persia: Harem Adventures', nhaPhatTrien: 'Gameloft', nam: 2003,
+    quyenRiengTu: [],
     theLoai: ['Hành động', 'Phiêu lưu'],
     gioiThieu: 'Hoàng tử chạy, bám mép tường và đấu kiếm trong mê cung cung điện. Chuyển động vẽ theo lối quay hình người thật, thứ làm nên tên tuổi của dòng game này.',
     ban: [{ he: 'JAVA', soHieu: '1.0', tep: ['JAR'], dungLuong: 286_720 }],
   },
   {
     ten: 'Chess Master', tenViet: 'Cờ vua', nhaPhatTrien: 'Optima', nam: 2006, vietHoa: true,
+    quyenRiengTu: [],
     theLoai: ['Chiến thuật', 'Giải đố'], ngonNgu: 'vi',
     gioiThieu: 'Cờ vua với máy tính ở tám mức, kèm bộ thế cờ để tự luyện. Ván đang chơi dở được giữ lại khi tắt máy.',
     /*
@@ -163,6 +175,7 @@ const GAME: GameMau[] = [
   },
   {
     ten: 'Sudoku Classic', tenViet: 'Sudoku cổ điển', nhaPhatTrien: 'Bumblebee Games', nam: 2019, vietHoa: true,
+    quyenRiengTu: [['DU_LIEU_SU_DUNG', 'KHONG_LIEN_KET'], ['CHAN_DOAN', 'KHONG_LIEN_KET']],
     theLoai: ['Giải đố', 'Thường thức'], ngonNgu: 'vi',
     gioiThieu: 'Sudoku 9×9 với bốn mức khó và bộ đề sinh ngẫu nhiên. Có gợi ý, có đánh dấu nháp, và đếm giờ nếu bạn muốn tự thi với chính mình.',
     ban: [
@@ -174,12 +187,15 @@ const GAME: GameMau[] = [
   },
   {
     ten: 'Farm Frenzy', tenViet: 'Nông trại vui vẻ', nhaPhatTrien: 'Alawar', nam: 2007, vietHoa: true,
+    quyenRiengTu: [['MUA_HANG', 'LIEN_KET'], ['DU_LIEU_SU_DUNG', 'KHONG_LIEN_KET']],
     theLoai: ['Mô phỏng', 'Thường thức'], ngonNgu: 'vi',
     gioiThieu: 'Nuôi gà, vắt sữa, làm bánh rồi đem bán — mỗi màn một mức thời gian phải kịp. Càng về sau càng phải tính trước xem nên nuôi gì trước con gì.',
     ban: [{ he: 'ANDROID', soHieu: '1.9', tep: ['APK'], dungLuong: 33_554_432 }],
   },
   {
     ten: 'Dragon Hunter', tenViet: 'Thợ săn rồng', nhaPhatTrien: 'Bumblebee Games', nam: 2011, vietHoa: true,
+    quyenRiengTu: [['DANH_TINH', 'LIEN_KET'], ['MUA_HANG', 'LIEN_KET'],
+      ['DU_LIEU_SU_DUNG', 'KHONG_LIEN_KET']],
     theLoai: ['Nhập vai', 'Hành động'], ngonNgu: 'vi',
     gioiThieu: 'Game nhập vai theo lượt: nhận việc ở làng, đi hang, đánh rồng, về bán chiến lợi phẩm. Ba lớp nhân vật, mỗi lớp một cây kỹ năng riêng.',
     cachChoi: 'Trong trận, mỗi lượt chọn một trong bốn ô: đánh, kỹ năng, vật phẩm, chạy.',
@@ -201,6 +217,8 @@ const GAME: GameMau[] = [
   },
   {
     ten: 'Real Football 2009', tenViet: 'Bóng đá 2009', nhaPhatTrien: 'Gameloft', nam: 2008,
+    quyenRiengTu: [['DANH_TINH', 'THEO_DOI'], ['DU_LIEU_SU_DUNG', 'THEO_DOI'],
+      ['CHAN_DOAN', 'KHONG_LIEN_KET']],
     theLoai: ['Thể thao'],
     gioiThieu: 'Bóng đá 11 người với các giải đấu và đội hình cập nhật tới mùa 2008–2009. Có chế độ quản lý đội bóng bên cạnh phần thi đấu.',
     ban: [{ he: 'JAVA', soHieu: '1.2', tep: ['JAR', 'JAD'], dungLuong: 430_080 }],
@@ -330,6 +348,24 @@ async function main() {
         where: { gameId_theLoaiId: { gameId: game.id, theLoaiId: theLoaiId[ten] } },
         update: {}, create: { gameId: game.id, theLoaiId: theLoaiId[ten] },
       });
+    }
+
+    /*
+     * Lời khai quyền riêng tư: xoá sạch rồi chép lại, cùng lẽ với bản tải bên
+     * dưới — `upsert` ở trên mang `update: {}` nên sửa dữ liệu mẫu rồi chạy
+     * lại seed sẽ chẳng thấy gì đổi.
+     */
+    if (g.quyenRiengTu) {
+      await db.duLieuThuThap.deleteMany({ where: { gameId: game.id } });
+      await db.game.update({
+        where: { id: game.id }, data: { khaiQuyenRiengTu: true }, select: { id: true },
+      });
+      for (const [loai, muc] of g.quyenRiengTu) {
+        await db.duLieuThuThap.create({
+          data: { gameId: game.id, loai: loai as never, muc: muc as never },
+          select: { id: true },
+        });
+      }
     }
 
     /*

@@ -25,8 +25,25 @@ export default async function chay(kiem) {
   });
   if (!game) { kiem('có dữ liệu mẫu', false); return; }
 
+  /*
+   * DỰNG LẠI CẢ LỜI KHAI CŨ, không chỉ cái công tắc.
+   *
+   * Dữ liệu mẫu nay có game khai sẵn quyền riêng tư. Bài này xoá sạch bảng của
+   * game ấy để thử, nên nếu chỉ dựng lại `khaiQuyenRiengTu` thì chạy một lượt
+   * là mất luôn lời khai mẫu — cửa hàng mẫu thủng một mục mà phải chạy lại
+   * seed mới biết, và bài kiểm nào đọc tới đó sau này sẽ đỏ vì một lý do
+   * chẳng liên quan gì tới nó.
+   */
+  const khaiCu = await db.duLieuThuThap.findMany({
+    where: { gameId: game.id }, select: { loai: true, muc: true },
+  });
   const traLai = async () => {
     await db.duLieuThuThap.deleteMany({ where: { gameId: game.id } });
+    if (khaiCu.length > 0) {
+      await db.duLieuThuThap.createMany({
+        data: khaiCu.map((k) => ({ gameId: game.id, loai: k.loai, muc: k.muc })),
+      });
+    }
     await db.game.update({
       where: { id: game.id }, data: { khaiQuyenRiengTu: game.khaiQuyenRiengTu },
     });

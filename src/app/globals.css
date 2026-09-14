@@ -280,6 +280,19 @@ p { text-wrap: pretty; }
   .cot { @apply mx-auto w-full max-w-[680px]; }
 
   /*
+   * LỜI NHẮC TÊN trong bài viết — `@ten-dang-nhap`.
+   *
+   * Tô nền nhạt chứ không gạch chân: trong một bài dài, ba cái tên gạch chân
+   * trông y hệt ba liên kết ra ngoài, mà đây là chuyện khác hẳn — nó chỉ vào
+   * một người đang ở ngay trong cuộc trò chuyện này.
+   */
+  .nhac-ten {
+    @apply rounded px-1 font-semibold text-nhan no-underline;
+    background: rgb(var(--nhan) / .1);
+  }
+  .nhac-ten:hover { background: rgb(var(--nhan) / .18); }
+
+  /*
    * NÚT CÀI — viên thuốc.
    *
    * Hai dáng, và cả hai đều chép từ chỗ nó ra đời:

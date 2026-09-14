@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { batBuocDangNhap } from '@/lib/xac-thuc';
 import { guiThongBao } from '@/lib/thong-bao';
+import { bocTenNhac } from '@/lib/nhac-ten-const';
 import { soTrang } from '@/lib/tien-ich';
 import { dungChuoiTimChuDe } from '@/lib/tim-kiem-const';
 import { MOI_TRANG_TRA_LOI } from './moi-trang';
@@ -153,7 +154,36 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
   }).catch(() => {});
 
   /*
-   * BÁO CHO NGƯỜI THEO DÕI — trừ ba người đã báo hoặc không cần báo.
+   * BÁO CHO NGƯỜI ĐƯỢC NHẮC TÊN.
+   *
+   * Đặt TRƯỚC danh sách theo dõi và gộp vào cùng một danh sách "đã báo": người
+   * vừa được gọi thẳng tên mà lại nhận hai tin — một "có người nhắc bạn", một
+   * "chủ đề bạn theo dõi có bài mới" — thì tin thứ hai chỉ là tiếng ồn.
+   *
+   * Tra tên trong MỘT câu truy vấn, và điều kiện `xoaLuc: null` nằm trong
+   * `where`: gõ `@` một tài khoản đã xoá thì không đánh thức nó dậy.
+   */
+  const tenNhac = bocTenNhac(noiDung);
+  const nguoiNhac = tenNhac.length > 0
+    ? await db.nguoiDung.findMany({
+      where: { tenDangNhap: { in: tenNhac }, xoaLuc: null, khoa: false },
+      select: { id: true },
+    })
+    : [];
+
+  for (const n of nguoiNhac) {
+    await guiThongBao({
+      nguoiNhanId: n.id,
+      nguoiGayRaId: nguoi.id,
+      loai: 'DUOC_NHAC_TEN',
+      tieuDe: `${nguoi.tenHienThi} nhắc tên bạn`,
+      chiTiet: chuDe.tieuDe,
+      duongDan: `/game/${duongDan}/dien-dan/${chuDeId}#tl-${bai.id}`,
+    });
+  }
+
+  /*
+   * BÁO CHO NGƯỜI THEO DÕI — trừ mấy người đã báo hoặc không cần báo.
    *
    * Lọc ngay trong `where` chứ không lấy hết rồi lọc trong JavaScript: chủ đề
    * đông người thì đó là chênh lệch giữa vài hàng với vài trăm hàng kéo về chỉ
@@ -162,7 +192,9 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
    * ngồi đợi hết chỗ ấy.
    */
   const TRAN_BAO = 200;
-  const daBao = [nguoi.id, chuDe.nguoiId, traLoiCho?.nguoiId].filter(Boolean) as string[];
+  const daBao = [
+    nguoi.id, chuDe.nguoiId, traLoiCho?.nguoiId, ...nguoiNhac.map((n) => n.id),
+  ].filter(Boolean) as string[];
   const nguoiTheoDoi = await db.theoDoiChuDe.findMany({
     where: { chuDeId, nguoiId: { notIn: daBao } },
     orderBy: { taoLuc: 'asc' },

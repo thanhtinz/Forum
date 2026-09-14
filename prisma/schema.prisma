@@ -891,6 +891,8 @@ enum LoaiThongBao {
   DAP_BAI_CUA_BAN
   /// Bài của bạn được chọn làm lời giải cho chủ đề.
   BAI_THANH_LOI_GIAI
+  /// Có người nhắc tên bạn trong một bài viết.
+  DUOC_NHAC_TEN
   DAP_DANH_GIA
   TRA_LOI_YEU_CAU
   GO_NOI_DUNG

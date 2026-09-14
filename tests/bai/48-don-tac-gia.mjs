@@ -63,8 +63,19 @@ export default async function chay(kiem) {
     const daGui = await doiToi(async () =>
       (await db.donTacGia.count({ where: { nguoiId: nguoi.id, trangThai: 'CHO_XEM' } })) === 1);
     kiem('gửi được đơn', daGui);
-    kiem('gửi xong thì không còn biểu mẫu, chỉ còn dòng đang chờ',
+    /*
+     * CHỜ TRANG VẼ LẠI, đừng soi ngay sau khi thấy hàng trong cơ sở dữ liệu.
+     *
+     * `doiToi` ở trên về ngay lúc hàng xuất hiện, mà lúc ấy Next mới chỉ chạy
+     * xong server action — nó còn phải dựng lại trang rồi mới gửi HTML mới về.
+     * Hai bước ấy cách nhau vài chục mili giây lúc máy rảnh, nhưng lúc chạy cả
+     * bộ kiểm thì đủ lâu để phép soi này bắt được biểu mẫu CŨ và báo đỏ. Đã đỏ
+     * đúng kiểu ấy một lần, mà chạy riêng thì ba lượt đều xanh — loại hỏng tệ
+     * nhất, vì nó làm người đọc kết quả đi tìm lỗi ở chỗ không có lỗi.
+     */
+    const daThayBang = await doiToi(async () =>
       (await nguoiGui.locator('textarea[name="lyDo"]').count()) === 0);
+    kiem('gửi xong thì không còn biểu mẫu, chỉ còn dòng đang chờ', daThayBang);
 
     // ── Ai xét được đơn ───────────────────────────────────────────────
     thuong = await moTrangDaDangNhap('huytran', 'thanhvien123');

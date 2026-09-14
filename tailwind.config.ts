@@ -24,6 +24,7 @@ export default {
         vang: mau('vang'),
         canh: mau('canh'),
         xau: mau('xau'),
+        'xau-dac': mau('xau-dac'),
         'vo-qt': mau('vo-qt'),
         'vo-qt-chu': mau('vo-qt-chu'),
       },

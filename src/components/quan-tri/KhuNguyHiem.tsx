@@ -65,7 +65,7 @@ export function KhuNguyHiem({ gameId, ten, soDanhGia, soChuDe }: {
 
       <div className="mt-3 flex items-center gap-2">
         <button type="button" onClick={xoa} disabled={dangXoa || go.trim() !== ten}
-          className="nut rounded-full bg-xau px-4 text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40">
+          className="nut rounded-full bg-xau-dac px-4 text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40">
           {dangXoa ? 'Đang xoá…' : 'Xoá hẳn'}
         </button>
         <button type="button" onClick={() => { datMo(false); datGo(''); datLoi(null); }}

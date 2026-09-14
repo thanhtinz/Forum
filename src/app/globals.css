@@ -53,7 +53,20 @@
   --cam: 254 168 20;
   --vang: 254 222 90;
   --canh: 217 119 6;
+  /*
+   * HAI SẮC ĐỎ, vì một sắc không làm nổi hai việc.
+   *
+   * `--xau` là đỏ để VIẾT CHỮ lên nền trang; `--xau-dac` là đỏ để TÔ ĐẶC rồi
+   * đặt chữ trắng lên (huy hiệu chuông, nút xoá). Trước đây cùng một giá trị,
+   * và trên nền sáng thì may mà cả hai việc đều đạt — 4,77:1 cho cả chữ đỏ
+   * trên trắng lẫn chữ trắng trên đỏ.
+   *
+   * Nền tối mới lộ ra: sắc đỏ ấy trên mặt thẻ tối chỉ còn 3,54:1, tức là mọi
+   * câu báo lỗi trong cửa hàng đều DƯỚI chuẩn — mà báo lỗi thì đúng là thứ
+   * người ta cần đọc được nhất, và người đọc nó thường đang bực sẵn.
+   */
   --xau: 217 48 37;
+  --xau-dac: 217 48 37;
 
   /*
    * VỎ KHU QUẢN TRỊ — hai màu CỐ ĐỊNH, không đảo theo nền.
@@ -161,6 +174,10 @@
      4,82:1, mà chữ trắng đặt lên nó vẫn còn 3,92:1 nên nút tô đặc giữ nguyên
      sắc đậm hơn ở trên. */
   --nhan: 0 126 249;
+
+  /* Đỏ sáng hơn hẳn để chữ báo lỗi đạt 4,85:1 trên mặt thẻ tối. `--xau-dac`
+     GIỮ NGUYÊN sắc đậm: chữ trắng đặt lên sắc sáng này chỉ còn 3,49:1. */
+  --xau: 239 83 80;
 }
 
 * { -webkit-tap-highlight-color: transparent; }
@@ -323,7 +340,7 @@ p { text-wrap: pretty; }
    */
   .nut-xau {
     @apply nut text-white;
-    background: rgb(var(--xau));
+    background: rgb(var(--xau-dac));
   }
   .nut-xau:hover { filter: brightness(1.08); }
   .nut-xau:disabled { @apply cursor-not-allowed opacity-40; filter: none; }

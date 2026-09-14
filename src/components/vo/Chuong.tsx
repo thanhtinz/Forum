@@ -17,7 +17,7 @@ export function Chuong({ chuaDoc }: { chuaDoc: number }) {
       <Bell size={19} aria-hidden />
       {chuaDoc > 0 && (
         <span aria-hidden
-          className="absolute right-1 top-1 grid min-w-[15px] place-items-center rounded-full bg-xau px-1 text-[9px] font-bold leading-[15px] text-white">
+          className="absolute right-1 top-1 grid min-w-[15px] place-items-center rounded-full bg-xau-dac px-1 text-[9px] font-bold leading-[15px] text-white">
           {chuaDoc > 9 ? '9+' : chuaDoc}
         </span>
       )}

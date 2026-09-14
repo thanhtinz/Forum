@@ -52,6 +52,7 @@ model NguoiDung {
   chuDe         ChuDe[]
   traLoi        TraLoi[]
   theoDoiChuDe  TheoDoiChuDe[]
+  traLoiHuuIch  TraLoiHuuIch[]
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
   maXacMinh     MaXacMinh[]
@@ -679,6 +680,29 @@ model ChuDe {
  * lần, và ràng buộc ấy nằm trong cơ sở dữ liệu chứ không phải một câu `if` ở
  * chỗ ghi — bấm hai lần thật nhanh vẫn không đẻ ra hai hàng.
  */
+/*
+ * AI BẤM "HỮU ÍCH" CHO BÀI NÀO.
+ *
+ * Lời giải chỉ đánh dấu được MỘT bài, và chỉ chủ chủ đề đánh dấu được — nhưng
+ * một chủ đề thường có mấy câu trả lời đều đáng đọc, và người hỏi thì hay biến
+ * mất sau khi xong việc. Phiếu hữu ích để chính người đọc sau đẩy mấy câu ấy
+ * nổi lên, không phải chờ ai cho phép.
+ *
+ * Khoá chính là cặp (bài, người): một người bấm một bài đúng một lần, và ràng
+ * buộc ấy nằm trong cơ sở dữ liệu chứ không phải một câu `if` ở chỗ ghi.
+ */
+model TraLoiHuuIch {
+  traLoiId String
+  traLoi   TraLoi    @relation(fields: [traLoiId], references: [id], onDelete: Cascade)
+  nguoiId  String
+  nguoi    NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  taoLuc DateTime @default(now())
+
+  @@id([traLoiId, nguoiId])
+  @@index([nguoiId])
+}
+
 model TheoDoiChuDe {
   chuDeId String
   chuDe   ChuDe     @relation(fields: [chuDeId], references: [id], onDelete: Cascade)
@@ -701,6 +725,13 @@ model TraLoi {
   noiDung String   @db.Text
   taoLuc  DateTime @default(now())
 
+  /// Bao nhiêu người bấm "hữu ích" cho bài này.
+  ///
+  /// Đếm sẵn thay vì đếm lúc đọc: danh sách bài nào cũng cần con số này, mà
+  /// đếm lúc đọc là hai mươi bài thành hai mươi phép đếm. Cùng lối với
+  /// `DanhGia.soHuuIch`, kể cả chỗ chặn sàn 0.
+  soHuuIch Int @default(0)
+
   /// Bài này đáp thẳng vào bài nào trong cùng chủ đề.
   ///
   /// Diễn đàn ở đây là một dải bài PHẲNG xếp theo thời gian, và một chủ đề
@@ -717,6 +748,8 @@ model TraLoi {
 
   /// Chủ đề nào đang lấy bài này làm lời giải. Quan hệ ngược của `ChuDe.loiGiai`.
   laLoiGiaiCua ChuDe? @relation("LoiGiai")
+
+  huuIch TraLoiHuuIch[]
 
   baoXau BaoXau[]
 

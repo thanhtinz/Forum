@@ -11,6 +11,7 @@ import { SuaChuDe, SuaTraLoi } from '@/components/game/OSuaBaiDienDan';
 import { NutBaoXau } from '@/components/NutBaoXau';
 import { NutLoiGiai } from '@/components/game/NutLoiGiai';
 import { NutTheoDoi } from '@/components/game/NutTheoDoi';
+import { NutHuuIchTraLoi } from '@/components/game/NutHuuIch';
 import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { PhanTrang } from '@/components/PhanTrang';
 import { traLoi } from '../viec';
@@ -65,7 +66,7 @@ export default async function TrangChuDe({ params, searchParams }: {
     skip: (trang - 1) * MOI_TRANG_TRA_LOI,
     take: MOI_TRANG_TRA_LOI,
     select: {
-      id: true, noiDung: true, taoLuc: true, nguoiId: true,
+      id: true, noiDung: true, taoLuc: true, nguoiId: true, soHuuIch: true,
       nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true, vaiTro: true } },
       // Chỉ lấy đúng mẩu cần để in dòng trích — không kéo cả bài gốc về.
       traLoiCho: {
@@ -114,6 +115,19 @@ export default async function TrangChuDe({ params, searchParams }: {
     });
     loiGiaiO = Math.floor(truoc / MOI_TRANG_TRA_LOI) + 1;
   }
+
+  /*
+   * MÌNH ĐÃ BẤM HỮU ÍCH CHO BÀI NÀO — hỏi MỘT LẦN cho cả trang.
+   *
+   * Hỏi theo từng bài thì hai mươi bài là hai mươi câu truy vấn, mà câu trả
+   * lời chỉ là một chữ có hay không. Cùng lối phần đánh giá đang dùng.
+   */
+  const daBam = nguoi
+    ? new Set((await db.traLoiHuuIch.findMany({
+      where: { nguoiId: nguoi.id, traLoiId: { in: danhSach.map((t) => t.id) } },
+      select: { traLoiId: true },
+    })).map((x) => x.traLoiId))
+    : new Set<string>();
 
   const dangTheo = nguoi
     ? !!(await db.theoDoiChuDe.findUnique({
@@ -233,6 +247,9 @@ export default async function TrangChuDe({ params, searchParams }: {
                 dangerouslySetInnerHTML={{ __html: dungChuDam(t.noiDung) }} />
 
               <div className="mt-2.5 flex flex-wrap items-center gap-3">
+                <NutHuuIchTraLoi traLoiId={t.id} dem={t.soHuuIch}
+                  banDauBam={daBam.has(t.id)}
+                  bamDuoc={!!nguoi && nguoi.id !== t.nguoiId} />
                 {nguoi && !chuDe.khoa && (
                   <a href={`${duongTrang(trang)}${trang > 1 ? '&' : '?'}dap=${t.id}#soan`}
                     className="inline-flex items-center gap-1 text-[12px] font-semibold text-mo hover:text-nhan">

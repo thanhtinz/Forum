@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { ThumbsUp } from 'lucide-react';
 import { bamHuuIch } from '@/app/(cua-hang)/game/[duongDan]/viec';
+import { bamHuuIchTraLoi } from '@/app/(cua-hang)/game/[duongDan]/dien-dan/viec';
 import { gop } from '@/lib/tien-ich';
 
 /**
@@ -25,6 +26,37 @@ export function NutHuuIch({ danhGiaId, dem, banDauBam, bamDuoc }: {
   banDauBam: boolean;
   bamDuoc: boolean;
 }) {
+  return (
+    <Nut dem={dem} banDauBam={banDauBam} bamDuoc={bamDuoc}
+      goi={() => bamHuuIch(danhGiaId)} />
+  );
+}
+
+/**
+ * Nút "Hữu ích" dưới mỗi BÀI TRONG DIỄN ĐÀN.
+ *
+ * Dùng chung đúng cái ruột với nút của đánh giá, chỉ khác chỗ gọi: cách cư xử
+ * lúc bấm — đổi số ngay rồi mới gửi, hỏng thì trả về chỗ cũ — là thứ đã cân
+ * nhắc một lần, viết lại lần hai là mở đường cho hai bản trôi khỏi nhau.
+ */
+export function NutHuuIchTraLoi({ traLoiId, dem, banDauBam, bamDuoc }: {
+  traLoiId: string;
+  dem: number;
+  banDauBam: boolean;
+  bamDuoc: boolean;
+}) {
+  return (
+    <Nut dem={dem} banDauBam={banDauBam} bamDuoc={bamDuoc}
+      goi={() => bamHuuIchTraLoi(traLoiId)} />
+  );
+}
+
+function Nut({ dem, banDauBam, bamDuoc, goi }: {
+  dem: number;
+  banDauBam: boolean;
+  bamDuoc: boolean;
+  goi: () => Promise<{ loi?: string; dem?: number; daBam?: boolean }>;
+}) {
   const [so, datSo] = useState(dem);
   const [daBam, datDaBam] = useState(banDauBam);
   const [dangGui, batDau] = useTransition();
@@ -42,7 +74,7 @@ export function NutHuuIch({ danhGiaId, dem, banDauBam, bamDuoc }: {
     datSo(daBam ? Math.max(0, so - 1) : so + 1);
     datDaBam(!daBam);
     batDau(async () => {
-      const r = await bamHuuIch(danhGiaId);
+      const r = await goi();
       // Hỏng thì trả về đúng chỗ cũ, đừng để con số bịa nằm lại trên màn hình.
       if (r.loi || typeof r.dem !== 'number') { datSo(truoc.so); datDaBam(truoc.daBam); return; }
       datSo(r.dem);

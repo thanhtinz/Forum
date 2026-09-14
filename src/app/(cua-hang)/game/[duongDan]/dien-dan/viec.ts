@@ -445,3 +445,71 @@ export async function latTheoDoi(_truoc: KetQua, form: FormData): Promise<KetQua
   revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
   return {};
 }
+
+/**
+ * Bấm / bỏ bấm "hữu ích" cho một bài trong diễn đàn.
+ *
+ * VÌ SAO CÓ CẢ CÁI NÀY BÊN CẠNH LỜI GIẢI: lời giải chỉ đánh dấu được MỘT bài
+ * và chỉ chủ chủ đề đánh dấu được, nhưng một chủ đề thường có mấy câu trả lời
+ * đều đáng đọc, mà người hỏi thì hay biến mất sau khi xong việc. Phiếu hữu ích
+ * để chính người đọc sau đẩy mấy câu ấy nổi lên, không phải chờ ai cho phép.
+ *
+ * TỰ LẬT trạng thái đang có, không nghe biểu mẫu nói "bật hay tắt": nút trên
+ * trang có thể đã cũ vài phút.
+ *
+ * Xoá rồi ghi nằm trong CÙNG MỘT giao dịch, và con số đếm sẵn cộng trừ ngay
+ * trong đó — tách ra là có khe cho lượt bấm thứ hai chen vào giữa. Chép đúng
+ * lối `bamHuuIch` của đánh giá, kể cả chỗ chặn sàn 0: một cái "−1 người thấy
+ * hữu ích" in ra màn hình thì không cứu được nữa.
+ *
+ * Không cho bấm bài của chính mình, và điều kiện ấy nằm trong `where` của câu
+ * tìm bài chứ không lọc sau: hàm này là một địa chỉ POST công khai.
+ */
+export async function bamHuuIchTraLoi(traLoiId: string): Promise<
+  { loi?: string; ok?: boolean; dem?: number; daBam?: boolean }
+> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập để bình chọn.' }; }
+
+  const bai = await db.traLoi.findFirst({
+    where: {
+      id: traLoiId,
+      nguoiId: { not: nguoi.id },
+      chuDe: { game: { trangThai: 'DANG_HIEN' } },
+    },
+    select: { id: true, chuDeId: true, chuDe: { select: { game: { select: { duongDan: true } } } } },
+  });
+  if (!bai) return { loi: 'Không bình chọn được bài này.' };
+
+  const kq = await db.$transaction(async (tx) => {
+    const bo = await tx.traLoiHuuIch.deleteMany({ where: { traLoiId, nguoiId: nguoi.id } });
+    if (bo.count > 0) {
+      const sau = await tx.traLoi.update({
+        where: { id: traLoiId },
+        data: { soHuuIch: { decrement: 1 } },
+        select: { soHuuIch: true },
+      });
+      if (sau.soHuuIch < 0) {
+        await tx.traLoi.update({
+          where: { id: traLoiId }, data: { soHuuIch: 0 }, select: { id: true },
+        });
+        return { dem: 0, daBam: false };
+      }
+      return { dem: sau.soHuuIch, daBam: false };
+    }
+
+    await tx.traLoiHuuIch.create({
+      data: { traLoiId, nguoiId: nguoi.id }, select: { traLoiId: true },
+    });
+    const sau = await tx.traLoi.update({
+      where: { id: traLoiId },
+      data: { soHuuIch: { increment: 1 } },
+      select: { soHuuIch: true },
+    });
+    return { dem: sau.soHuuIch, daBam: true };
+  });
+
+  revalidatePath(`/game/${bai.chuDe.game.duongDan}/dien-dan/${bai.chuDeId}`);
+  return { ok: true, ...kq };
+}

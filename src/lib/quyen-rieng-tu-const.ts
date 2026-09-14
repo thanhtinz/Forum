@@ -46,11 +46,3 @@ export type MaLoai = (typeof LOAI)[number]['ma'];
 
 export const MA_MUC: readonly string[] = MUC.map((m) => m.ma);
 export const MA_LOAI: readonly string[] = LOAI.map((l) => l.ma);
-
-export function tenMuc(ma: string): string {
-  return MUC.find((m) => m.ma === ma)?.ten ?? ma;
-}
-
-export function tenLoai(ma: string): string {
-  return LOAI.find((l) => l.ma === ma)?.ten ?? ma;
-}

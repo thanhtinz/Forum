@@ -45,6 +45,15 @@ export default async function CaiDatKho() {
   );
 }
 
+/** Nhãn của từng ô, đúng chữ đang in ngay trên biểu mẫu. */
+const NHAN: Record<string, string> = {
+  taiKhoan: 'Mã tài khoản Cloudflare',
+  thung: 'Tên thùng',
+  khoa: 'Mã khoá truy cập',
+  biMat: 'Khoá bí mật',
+  diaChi: 'Địa chỉ công khai của thùng',
+};
+
 /**
  * Một dòng nói thẳng tệp đang rơi xuống đâu.
  *
@@ -66,7 +75,7 @@ function LoiNhac({ dang }: { dang: { loai: 'r2' | 'dia'; thieu: string[] } }) {
     <p className="rounded-nut bg-xau/10 px-3 py-2 text-[13px] leading-relaxed text-xau">
       <b>Tệp đang cất trên đĩa máy chủ.</b> Dùng tạm ở máy dựng thì được, nhưng
       trên máy chủ thật thì tệp mất sau mỗi lượt triển khai. Còn thiếu:{' '}
-      {dang.thieu.join(', ')}.
+      {dang.thieu.map((o) => NHAN[o] ?? o).join(', ')}.
     </p>
   );
 }

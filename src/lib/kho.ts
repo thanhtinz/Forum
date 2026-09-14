@@ -54,13 +54,20 @@ export async function dungR2(): Promise<boolean> {
   return !!(k.taiKhoan && k.khoa && k.biMat && k.thung && k.diaChi);
 }
 
+/**
+ * Kho đang chạy lối nào, và nếu là lối dự phòng thì thiếu ô nào.
+ *
+ * Trả về TÊN Ô trong nhóm cấu hình (`taiKhoan`, `khoa`…), không trả về tên
+ * biến môi trường. Nơi gọi là trang cài đặt, nơi mấy ô ấy mang nhãn tiếng
+ * Việt — đưa ra `R2_BI_MAT` là bắt người đọc tự ghép một cái tên viết hoa với
+ * một cái nhãn tiếng Việt cách đó vài dòng.
+ */
 export async function caiDatKho(): Promise<{ loai: 'r2' | 'dia'; thieu: string[] }> {
   const k = await docKho();
-  const can = {
-    R2_TAI_KHOAN: k.taiKhoan, R2_KHOA: k.khoa, R2_BI_MAT: k.biMat,
-    R2_THUNG: k.thung, R2_DIA_CHI: k.diaChi,
+  const can: Record<string, string> = {
+    taiKhoan: k.taiKhoan, khoa: k.khoa, biMat: k.biMat, thung: k.thung, diaChi: k.diaChi,
   };
-  const thieu = Object.entries(can).filter(([, v]) => !v).map(([k2]) => k2);
+  const thieu = Object.entries(can).filter(([, v]) => !v).map(([o]) => o);
   return { loai: (await dungR2()) ? 'r2' : 'dia', thieu };
 }
 

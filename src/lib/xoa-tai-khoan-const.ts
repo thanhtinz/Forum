@@ -28,8 +28,3 @@ export function emailDaXoa(id: string): string {
 export function tenDangNhapDaXoa(id: string): string {
   return `da-xoa-${id}`;
 }
-
-/** Người đã đi rồi thì hàng của họ mang dấu này. */
-export function daXoaRoi(ten: string): boolean {
-  return ten.startsWith('da-xoa-');
-}

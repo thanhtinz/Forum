@@ -2,10 +2,12 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { CircleCheckBig, Lock, MessageSquare, PenLine, Pin } from 'lucide-react';
+import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
+import { khongDau } from '@/lib/tim-kiem-const';
 import { PhanTrang } from '@/components/PhanTrang';
-import { cachDay, gonSo, kep, soTrang } from '@/lib/tien-ich';
+import { cachDay, gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
 import { rutGon } from '@/lib/trich-dan-const';
 import { AnhDaiDien } from '@/components/NguoiDung';
 
@@ -34,12 +36,25 @@ export async function generateMetadata({ params }: { params: Promise<{ duongDan:
  * về "chuyên mục game hành động". Vào được đây tức là đã ở trong trang của
  * game ấy rồi, nên khung chung đã lo phần tên game và nút tải.
  */
+/*
+ * BA LỐI LỌC, và chỉ ba.
+ *
+ * Diễn đàn game hỏi đi hỏi lại đúng mấy câu: "còn ai đang nói không", "chỗ nào
+ * chưa ai đáp", "chỗ nào đã xong rồi". Thêm lối lọc thứ tư là thêm một thứ
+ * phải đọc mà ít người bấm; ba cái này đã phủ gần hết.
+ */
+const LOC = [
+  { ma: '', ten: 'Mới nhất' },
+  { ma: 'chua-tra-loi', ten: 'Chưa ai đáp' },
+  { ma: 'da-giai', ten: 'Đã giải' },
+] as const;
+
 export default async function TabDienDan({ params, searchParams }: {
   params: Promise<{ duongDan: string }>;
-  searchParams: Promise<{ trang?: string }>;
+  searchParams: Promise<{ trang?: string; loc?: string; q?: string }>;
 }) {
   const { duongDan } = await params;
-  const { trang: trangNhap } = await searchParams;
+  const { trang: trangNhap, loc: locNhap, q } = await searchParams;
 
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
@@ -47,13 +62,36 @@ export default async function TabDienDan({ params, searchParams }: {
   });
   if (!game) notFound();
 
-  const tong = await db.chuDe.count({ where: { gameId: game.id } });
+  // Chỉ nhận mã lọc CÓ TRONG BẢNG: `?loc=` tới từ địa chỉ nên ai cũng gõ bừa
+  // được, mà một mã lạ lọt vào là danh sách rỗng trông như diễn đàn chết.
+  const loc = LOC.some((l) => l.ma === locNhap) ? (locNhap ?? '') : '';
+  const tuKhoa = (q ?? '').trim().slice(0, 80);
+
+  /*
+   * Tìm trong ĐÚNG diễn đàn của game này, không tìm cả cửa hàng.
+   *
+   * Người đang đứng trong trang một game mà gõ "màn 5" thì họ hỏi về game ấy.
+   * Cùng lối với ô tìm chung: so trên cột `timKiem` đã bỏ dấu, nên gõ có dấu
+   * hay không dấu đều ra.
+   */
+  const dieuKien: Prisma.ChuDeWhereInput = {
+    gameId: game.id,
+    ...(loc === 'chua-tra-loi' ? { soTraLoi: 0 } : {}),
+    ...(loc === 'da-giai' ? { loiGiaiId: { not: null } } : {}),
+    ...(tuKhoa
+      ? { AND: khongDau(tuKhoa).split(' ').filter(Boolean).slice(0, 6)
+        .map((t) => ({ timKiem: { contains: t } })) }
+      : {}),
+  };
+
+  const tongTatCa = await db.chuDe.count({ where: { gameId: game.id } });
+  const tong = await db.chuDe.count({ where: dieuKien });
   // Kẹp trang vào khoảng có thật: `?trang=99` trên diễn đàn hai trang thì đưa
   // về trang cuối, chứ không trả một danh sách rỗng trông như diễn đàn chết.
   const trang = kep(trangNhap, 1, soTrang(tong, MOI_TRANG), 1);
 
   const chuDe = await db.chuDe.findMany({
-    where: { gameId: game.id },
+    where: dieuKien,
     /*
       Khoá phụ `id` là thứ bắt buộc, không phải cho đẹp.
       Hai chủ đề cùng `traLoiCuoiLuc` (rất dễ xảy ra: chủ đề vừa tạo lấy mốc
@@ -88,7 +126,7 @@ export default async function TabDienDan({ params, searchParams }: {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="phu">
-          {tong > 0 ? `${gonSo(tong)} chủ đề` : 'Chưa có chủ đề nào'}
+          {tongTatCa > 0 ? `${gonSo(tongTatCa)} chủ đề` : 'Chưa có chủ đề nào'}
         </p>
         <Link href={`/game/${game.duongDan}/dien-dan/dang`}
           className="nut-cai-dam shrink-0 !min-h-[36px] !px-4 !text-[13px]">
@@ -96,7 +134,54 @@ export default async function TabDienDan({ params, searchParams }: {
         </Link>
       </div>
 
-      {tong === 0 ? (
+      {/* Chỉ bày hàng lọc khi đã có đủ chủ đề để mà lọc. Một diễn đàn ba bài mà
+          bày sẵn ô tìm với ba lối lọc thì trông trống trải hơn là tiện. */}
+      {tongTatCa >= 5 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            {LOC.map((l) => (
+              <Link key={l.ma || 'tat-ca'} href={duongLoc(game.duongDan, l.ma, tuKhoa)}
+                aria-current={l.ma === loc ? 'page' : undefined}
+                className={gop(
+                  'rounded-full px-3 py-1 text-[13px] font-semibold transition-colors',
+                  l.ma === loc ? 'bg-nhan text-white' : 'bg-nen3/70 text-mo hover:text-chu',
+                )}>
+                {l.ten}
+              </Link>
+            ))}
+          </div>
+
+          {/* Biểu mẫu GET, không phải ô gõ tới đâu lọc tới đó: gõ tới đâu lọc
+              tới đó nghĩa là mỗi phím một câu truy vấn, và địa chỉ thì không
+              dán được cho ai. */}
+          <form method="get" className="ml-auto flex min-w-[180px] flex-1 items-center gap-1.5 sm:flex-none">
+            {loc && <input type="hidden" name="loc" value={loc} />}
+            <input type="search" name="q" defaultValue={tuKhoa}
+              placeholder="Tìm trong diễn đàn này…" aria-label="Tìm trong diễn đàn của game này"
+              className="o-nhap !min-h-[34px] !py-1 !text-[13px]" />
+          </form>
+        </div>
+      )}
+
+      {tuKhoa && (
+        <p className="phu">
+          {tong > 0
+            ? `${gonSo(tong)} chủ đề khớp “${tuKhoa}”`
+            : `Không có chủ đề nào khớp “${tuKhoa}”`}
+          {' · '}
+          <Link href={`/game/${game.duongDan}/dien-dan`} className="font-semibold text-nhan hover:underline">
+            bỏ lọc
+          </Link>
+        </p>
+      )}
+
+      {tong === 0 && (tuKhoa || loc) ? (
+        <div className="the p-8 text-center">
+          <MessageSquare size={24} className="mx-auto text-mo" aria-hidden />
+          <p className="mt-2 text-[14px] font-semibold">Không có chủ đề nào khớp</p>
+          <p className="phu mt-1">Thử bỏ bớt bộ lọc, hoặc mở một chủ đề mới.</p>
+        </div>
+      ) : tong === 0 ? (
         <div className="the p-8 text-center">
           <MessageSquare size={24} className="mx-auto text-mo" aria-hidden />
           <p className="mt-2 text-[14px] font-semibold">Chưa ai mở lời</p>
@@ -170,9 +255,27 @@ export default async function TabDienDan({ params, searchParams }: {
           })}
         </ul>
         <PhanTrang trang={trang} tongTrang={soTrang(tong, MOI_TRANG)}
-          dungDuong={(t) => `/game/${game.duongDan}/dien-dan${t > 1 ? `?trang=${t}` : ''}`} />
+          dungDuong={(t) => {
+            // Giữ cả lối lọc lẫn từ khoá khi sang trang: mất chúng thì trang 2
+            // là cả diễn đàn, trong khi trang 1 vừa lọc — người đọc tưởng hỏng.
+            const q = new URLSearchParams();
+            if (loc) q.set('loc', loc);
+            if (tuKhoa) q.set('q', tuKhoa);
+            if (t > 1) q.set('trang', String(t));
+            const s2 = q.toString();
+            return `/game/${game.duongDan}/dien-dan${s2 ? `?${s2}` : ''}`;
+          }} />
         </>
       )}
     </div>
   );
+}
+
+/** Dựng địa chỉ cho một lối lọc, giữ nguyên từ khoá đang tìm. */
+function duongLoc(duongDan: string, ma: string, tuKhoa: string): string {
+  const p = new URLSearchParams();
+  if (ma) p.set('loc', ma);
+  if (tuKhoa) p.set('q', tuKhoa);
+  const q = p.toString();
+  return `/game/${duongDan}/dien-dan${q ? `?${q}` : ''}`;
 }

@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { CircleCheckBig, MessageSquare, PenLine, Pin } from 'lucide-react';
+import { CircleCheckBig, Lock, MessageSquare, PenLine, Pin } from 'lucide-react';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { PhanTrang } from '@/components/PhanTrang';
 import { cachDay, gonSo, kep, soTrang } from '@/lib/tien-ich';
+import { rutGon } from '@/lib/trich-dan-const';
+import { AnhDaiDien } from '@/components/NguoiDung';
 
 /*
  * Mỗi trang bao nhiêu chủ đề.
@@ -63,9 +65,22 @@ export default async function TabDienDan({ params, searchParams }: {
     skip: (trang - 1) * MOI_TRANG,
     take: MOI_TRANG,
     select: {
-      id: true, tieuDe: true, ghim: true, khoa: true, soTraLoi: true, traLoiCuoiLuc: true,
-      loiGiaiId: true,
-      nguoi: { select: { tenHienThi: true } },
+      id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true,
+      soTraLoi: true, traLoiCuoiLuc: true, loiGiaiId: true,
+      nguoi: { select: { tenHienThi: true, anh: true } },
+      /*
+       * Người viết bài GẦN NHẤT, lấy kèm trong cùng một câu.
+       *
+       * Dòng "ai nói cuối cùng" là thứ quyết định người ta có bấm vào hay
+       * không: một chủ đề mở ba hôm trước mà vừa có người đáp lúc nãy thì
+       * đáng xem hơn hẳn một chủ đề mở lúc nãy chưa ai đáp. Hỏi riêng cho từng
+       * chủ đề thì hai mươi chủ đề là hai mươi câu truy vấn.
+       */
+      traLoi: {
+        orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
+        take: 1,
+        select: { nguoi: { select: { tenHienThi: true, anh: true } } },
+      },
     },
   });
 
@@ -91,33 +106,68 @@ export default async function TabDienDan({ params, searchParams }: {
         </div>
       ) : (
         <>
+        {/*
+          MỖI CHỦ ĐỀ MỘT HÀNG CÓ MẶT NGƯỜI, có một dòng trích, có ai vừa nói.
+
+          Bản trước là một bảng hai dòng chữ nhỏ: tiêu đề, tên, một con số bên
+          phải. Đọc được, nhưng không nói được thứ người ta thật sự đang hỏi
+          khi lướt một diễn đàn — "chuyện này có gì hay không, và còn sống
+          không". Một dòng trích trả lời vế đầu, mặt người và "ai vừa nói" trả
+          lời vế sau.
+        */}
         <ul aria-label="Danh sách chủ đề" className="the divide-y divide-vien">
-          {chuDe.map((c) => (
-            <li key={c.id}>
-              <Link href={`/game/${game.duongDan}/dien-dan/${c.id}`}
-                className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-nen3">
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-1.5">
-                    {c.ghim && <Pin size={12} className="shrink-0 text-nhan" aria-label="ghim" />}
-                    {/* Dấu lời giải đặt TRƯỚC tiêu đề: người đang lướt tìm câu
-                        trả lời cần lọc bằng mắt, mà mắt thì chạy dọc mép trái. */}
-                    {c.loiGiaiId && (
-                      <CircleCheckBig size={12} className="shrink-0 text-nhan"
-                        aria-label="đã có lời giải" />
-                    )}
-                    <span className="truncate text-[14px] font-medium">{c.tieuDe}</span>
+          {chuDe.map((c) => {
+            const cuoi = c.traLoi[0]?.nguoi;
+            return (
+              <li key={c.id}>
+                <Link href={`/game/${game.duongDan}/dien-dan/${c.id}`}
+                  className="flex gap-3 px-4 py-3.5 transition-colors hover:bg-nen3/70">
+                  <span className="mt-0.5 shrink-0">
+                    <AnhDaiDien ten={c.nguoi.tenHienThi} anh={c.nguoi.anh} co={38} />
                   </span>
-                  <span className="phu mt-0.5 block truncate">
-                    {c.nguoi.tenHienThi} · {cachDay(c.traLoiCuoiLuc)}
-                    {c.khoa && ' · đã khoá'}
+
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      {c.ghim && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-nhan/12 px-1.5 py-0.5 text-[11px] font-bold text-nhan">
+                          <Pin size={10} aria-label="ghim" /> Ghim
+                        </span>
+                      )}
+                      {c.loiGiaiId && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-nhan/12 px-1.5 py-0.5 text-[11px] font-bold text-nhan">
+                          <CircleCheckBig size={10} aria-label="đã có lời giải" /> Đã giải
+                        </span>
+                      )}
+                      {c.khoa && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-nen3 px-1.5 py-0.5 text-[11px] font-bold text-mo">
+                          <Lock size={10} aria-label="đã khoá" /> Khoá
+                        </span>
+                      )}
+                      <span className="min-w-0 truncate text-[15px] font-semibold">{c.tieuDe}</span>
+                    </span>
+
+                    {/* Một dòng trích, chỉ một dòng: đủ để đoán chuyện gì, chưa
+                        đủ để thay việc mở chủ đề ra đọc. */}
+                    <span className="phu mt-0.5 block truncate">{rutGon(c.noiDung, 110)}</span>
+
+                    <span className="phu mt-1 block truncate text-[12px]">
+                      {c.nguoi.tenHienThi} mở
+                      {cuoi
+                        ? ` · ${cuoi.tenHienThi} trả lời ${cachDay(c.traLoiCuoiLuc)}`
+                        : ` · ${cachDay(c.traLoiCuoiLuc)}`}
+                    </span>
                   </span>
-                </span>
-                <span className="phu flex shrink-0 items-center gap-1">
-                  <MessageSquare size={12} aria-hidden /> {c.soTraLoi}
-                </span>
-              </Link>
-            </li>
-          ))}
+
+                  {/* Con số đứng thành CỘT có nhãn, không phải một chữ số lạc
+                      cạnh biểu tượng — liếc một cái là biết nó đếm cái gì. */}
+                  <span className="flex shrink-0 flex-col items-center justify-center px-1">
+                    <span className="text-[15px] font-bold leading-none">{c.soTraLoi}</span>
+                    <span className="phu mt-0.5 text-[11px]">trả lời</span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
         <PhanTrang trang={trang} tongTrang={soTrang(tong, MOI_TRANG)}
           dungDuong={(t) => `/game/${game.duongDan}/dien-dan${t > 1 ? `?trang=${t}` : ''}`} />

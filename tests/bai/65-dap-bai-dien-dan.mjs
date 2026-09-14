@@ -144,6 +144,41 @@ export default async function chay(kiem) {
     kiem('và con trỏ của nó thành rỗng chứ không trỏ vào hư không',
       motBai?.traLoiChoId === null);
 
+    /*
+     * ── NHÃN VAI PHẢI ĐÚNG NGƯỜI ──────────────────────────────────────
+     *
+     * Nhãn "Quản trị" đổi hẳn trọng lượng một câu trả lời — người đọc tin nó
+     * hơn hẳn. Gắn nhầm lên một người thường thì đó không còn là lỗi trình bày
+     * nữa, mà là cho một người mượn danh ban quản trị ngay giữa diễn đàn.
+     */
+    const admin = await db.nguoiDung.findFirst({
+      where: { vaiTro: 'QUAN_TRI' }, select: { id: true, tenHienThi: true },
+    });
+    const baiQuanTri = await db.traLoi.create({
+      data: { chuDeId: chuDe.id, nguoiId: admin.id, noiDung: 'Bản 1.2 đã chỉnh chỗ này.' },
+      select: { id: true },
+    });
+    await p.goto(dia, { waitUntil: 'networkidle' });
+
+    const nhanCuaQuanTri = await p.locator(`#tl-${baiQuanTri.id}`).textContent();
+    kiem('bài của quản trị mang nhãn Quản trị',
+      (nhanCuaQuanTri ?? '').includes('Quản trị'));
+
+    // Dựng lấy một bài của người thường thay vì đi tìm: mấy bài của `a` ở
+    // trên đã bị chính bài kiểm này xoá đi để thử chuyện khác.
+    const baiThuong = await db.traLoi.create({
+      data: { chuDeId: chuDe.id, nguoiId: a.id, noiDung: 'Bài của thành viên thường.' },
+      select: { id: true },
+    });
+    await p.goto(dia, { waitUntil: 'networkidle' });
+    const nhanCuaThuong = await p.locator(`#tl-${baiThuong.id}`).textContent();
+    kiem('bài của thành viên thường KHÔNG mang nhãn Quản trị',
+      !(nhanCuaThuong ?? '').includes('Quản trị'), (nhanCuaThuong ?? '').slice(0, 80));
+    kiem('và cũng không mang nhãn Người mở, vì họ không mở chủ đề này',
+      !(nhanCuaThuong ?? '').includes('Người mở'));
+
+    await db.traLoi.delete({ where: { id: baiQuanTri.id } });
+
     // ── Khách không thấy lối đáp ───────────────────────────────────────
     khach = await moTrang();
     await khach.goto(dia, { waitUntil: 'networkidle' });

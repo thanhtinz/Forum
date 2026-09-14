@@ -39,8 +39,8 @@ export default async function TrangChuDe({ params, searchParams }: {
       id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true, taoLuc: true,
       nguoiId: true, loiGiaiId: true,
       loiGiai: { select: { id: true, taoLuc: true, nguoi: { select: { tenHienThi: true } } } },
-      nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
-      game: { select: { ten: true, duongDan: true } },
+      nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true, vaiTro: true } },
+      game: { select: { ten: true, duongDan: true, tacGiaId: true } },
     },
   });
   if (!chuDe) notFound();
@@ -66,7 +66,7 @@ export default async function TrangChuDe({ params, searchParams }: {
     take: MOI_TRANG_TRA_LOI,
     select: {
       id: true, noiDung: true, taoLuc: true, nguoiId: true,
-      nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
+      nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true, vaiTro: true } },
       // Chỉ lấy đúng mẩu cần để in dòng trích — không kéo cả bài gốc về.
       traLoiCho: {
         select: { id: true, noiDung: true, nguoi: { select: { tenHienThi: true } } },
@@ -122,6 +122,9 @@ export default async function TrangChuDe({ params, searchParams }: {
     }))
     : false;
 
+  // Gói sẵn hai mốc để nhận vai, khỏi truyền lẻ hai biến xuống từng chỗ.
+  const vai = { chuChuDeId: chuDe.nguoiId, tacGiaGameId: chuDe.game.tacGiaId };
+
   const dangDap = dap
     ? await db.traLoi.findFirst({
       where: { id: dap, chuDeId: chuDe.id },
@@ -170,7 +173,7 @@ export default async function TrangChuDe({ params, searchParams }: {
       )}
 
       <article className="the p-4">
-        <Nguoi nguoi={chuDe.nguoi} luc={chuDe.taoLuc} />
+        <Nguoi nguoi={chuDe.nguoi} nguoiId={chuDe.nguoiId} luc={chuDe.taoLuc} vai={vai} />
         {/*
           `dangerouslySetInnerHTML` ở đây KHÔNG nguy hiểm, và chỗ nguy hiểm
           thật đã bị chặn từ trước: `dungChuDam` bật `html: false`, nên mọi thẻ
@@ -196,29 +199,33 @@ export default async function TrangChuDe({ params, searchParams }: {
 
       {danhSach.length > 0 && (
         <ul aria-label="Các trả lời" className="space-y-3">
-          {danhSach.map((t) => (
+          {danhSach.map((t, i) => (
             /* Mỗi bài mang một mỏ neo: trả lời xong máy chủ đưa thẳng người
                viết tới đúng bài vừa gửi, kể cả khi nó rơi sang trang mới. */
             <li key={t.id} id={`tl-${t.id}`}
-              className={gop('the p-4 scroll-mt-24',
-                t.id === chuDe.loiGiaiId && 'ring-1 ring-nhan/50')}>
+              className={gop('the scroll-mt-24 overflow-hidden',
+                t.id === chuDe.loiGiaiId && 'ring-1 ring-nhan/40')}>
+              {/* Dải đầu tô màu chạy hết bề ngang: một dòng chữ nhỏ trong lòng
+                  thẻ thì lướt qua là trôi mất, mà đây đúng là bài đáng dừng
+                  lại nhất trong cả chủ đề. */}
               {t.id === chuDe.loiGiaiId && (
-                <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-nhan">
-                  <CircleCheckBig size={14} aria-hidden /> Lời giải
+                <p className="flex items-center gap-1.5 bg-nhan/10 px-4 py-2 text-[12px] font-bold text-nhan">
+                  <CircleCheckBig size={14} aria-hidden /> Lời giải của chủ đề
                 </p>
               )}
-              <Nguoi nguoi={t.nguoi} luc={t.taoLuc} />
+              <div className="p-4">
+              <Nguoi nguoi={t.nguoi} nguoiId={t.nguoiId} luc={t.taoLuc} vai={vai}
+                thu={(trang - 1) * MOI_TRANG_TRA_LOI + i + 1} />
 
               {/* Dòng trích nằm TRÊN bài, không nằm dưới: đọc xuôi từ trên
                   xuống thì phải biết bài này đáp ai TRƯỚC khi đọc nó nói gì. */}
+              {/* Vạch dọc bên trái thay cho viên xám: đó là dáng ai cũng đọc
+                  ra ngay là "lời người khác", không cần biểu tượng giải thích. */}
               {t.traLoiCho && (
                 <a href={`#tl-${t.traLoiCho.id}`}
-                  className="mt-2 flex items-start gap-1.5 rounded-nut bg-nen3/50 px-2.5 py-1.5 text-[12px] text-mo hover:text-chu">
-                  <CornerDownRight size={13} className="mt-0.5 shrink-0" aria-hidden />
-                  <span className="min-w-0">
-                    <b className="font-semibold">{t.traLoiCho.nguoi.tenHienThi}</b>
-                    {': '}{rutGon(t.traLoiCho.noiDung)}
-                  </span>
+                  className="vach mt-2.5 block border-l-2 py-0.5 pl-3 text-[12px] leading-relaxed text-mo transition-colors hover:border-nhan hover:text-chu">
+                  <b className="font-semibold">{t.traLoiCho.nguoi.tenHienThi}</b>
+                  {': '}{rutGon(t.traLoiCho.noiDung)}
                 </a>
               )}
 
@@ -246,6 +253,7 @@ export default async function TrangChuDe({ params, searchParams }: {
               {nguoi?.id === t.nguoiId && !chuDe.khoa && (
                 <SuaTraLoi traLoiId={t.id} noiDung={t.noiDung} />
               )}
+              </div>
             </li>
           ))}
         </ul>
@@ -299,19 +307,54 @@ export default async function TrangChuDe({ params, searchParams }: {
   );
 }
 
-function Nguoi({ nguoi, luc }: {
-  nguoi: { tenHienThi: string; tenDangNhap: string; anh: string | null };
+/**
+ * NHÃN VAI, và chỉ ba vai đáng gắn.
+ *
+ * Trong một chủ đề hỏi đáp, ba câu hỏi luôn nổi lên: ai là người hỏi, câu này
+ * có phải người làm ra game nói không, và có phải ban quản trị không. Ba nhãn
+ * ấy đổi hẳn trọng lượng của một câu trả lời, nên đáng chiếm chỗ.
+ *
+ * KHÔNG gắn nhãn cho vai trò chung chung như "thành viên": nhãn mà ai cũng có
+ * thì không nói thêm gì, chỉ làm mờ hai nhãn thật sự có nghĩa.
+ */
+function nhanVai(
+  { nguoiId, vaiTro }: { nguoiId: string; vaiTro: string },
+  { chuChuDeId, tacGiaGameId }: { chuChuDeId: string; tacGiaGameId: string | null },
+): { chu: string; dam: boolean } | null {
+  if (vaiTro === 'QUAN_TRI') return { chu: 'Quản trị', dam: true };
+  if (tacGiaGameId && nguoiId === tacGiaGameId) return { chu: 'Tác giả game', dam: true };
+  if (nguoiId === chuChuDeId) return { chu: 'Người mở', dam: false };
+  return null;
+}
+
+function Nguoi({ nguoi, nguoiId, luc, vai, thu }: {
+  nguoi: { tenHienThi: string; tenDangNhap: string; anh: string | null; vaiTro: string };
+  nguoiId: string;
   luc: Date;
+  vai: { chuChuDeId: string; tacGiaGameId: string | null };
+  /** Số thứ tự bài trong chủ đề — để người ta nhắc tới nhau cho gọn. */
+  thu?: number;
 }) {
+  const nhan = nhanVai({ nguoiId, vaiTro: nguoi.vaiTro }, vai);
+
   return (
     <div className="flex items-center gap-2.5">
-      <AnhDaiDien ten={nguoi.tenHienThi} anh={nguoi.anh} co={32} />
-      <div className="min-w-0">
-        <p className="truncate text-[13px] font-semibold">
+      <AnhDaiDien ten={nguoi.tenHienThi} anh={nguoi.anh} co={36} />
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold">
           <TenNguoi ten={nguoi.tenHienThi} tenDangNhap={nguoi.tenDangNhap} />
+          {nhan && (
+            <span className={gop(
+              'rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+              nhan.dam ? 'bg-nhan/12 text-nhan' : 'bg-nen3 text-mo',
+            )}>
+              {nhan.chu}
+            </span>
+          )}
         </p>
         <p className="phu">{cachDay(luc)}</p>
       </div>
+      {thu != null && <span className="phu shrink-0 text-[12px]">#{thu}</span>}
     </div>
   );
 }

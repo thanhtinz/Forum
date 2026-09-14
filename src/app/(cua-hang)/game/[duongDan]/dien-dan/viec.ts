@@ -295,3 +295,69 @@ export async function xoaTraLoiCuaToi(traLoiId: string): Promise<KetQua> {
   revalidatePath(`/game/${t.chuDe.game.duongDan}/dien-dan/${t.chuDeId}`);
   return {};
 }
+
+/**
+ * Chọn — hoặc bỏ chọn — một bài làm lời giải của chủ đề.
+ *
+ * AI ĐƯỢC CHỌN: chủ chủ đề, và ban quản trị. Chủ chủ đề vì họ là người biết
+ * câu nào gỡ được đúng chuyện của mình; ban quản trị vì người hỏi hay biến mất
+ * sau khi xong việc, để lại một chủ đề có lời giải mà không ai đánh dấu được.
+ *
+ * Điều kiện quyền nằm trong `where` của `updateMany` rồi xét `count`, không
+ * phải một câu `if` đọc trước ghi sau: hàm này là địa chỉ POST công khai, và
+ * giữa lượt đọc với lượt ghi là một khe hở.
+ *
+ * BÀI PHẢI NẰM TRONG CHÍNH CHỦ ĐỀ NÀY. Không kiểm thì trỏ được sang bài ở chủ
+ * đề khác, và trang sẽ ghim lên đầu một câu trả lời cho câu hỏi nào đó khác
+ * hẳn — tệ hơn là không có lời giải nào.
+ */
+export async function datLoiGiai(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập.' }; }
+
+  const chuDeId = String(form.get('chuDeId') ?? '');
+  const duongDan = String(form.get('duongDan') ?? '');
+  const traLoiId = String(form.get('traLoiId') ?? '').trim();
+  const bo = form.get('bo') !== null;
+
+  const laQuanTri = nguoi.vaiTro === 'QUAN_TRI';
+  const locChu = laQuanTri ? {} : { nguoiId: nguoi.id };
+
+  if (bo) {
+    const n = await db.chuDe.updateMany({
+      where: { id: chuDeId, ...locChu }, data: { loiGiaiId: null },
+    });
+    if (n.count === 0) return { loi: 'Chỉ người mở chủ đề hoặc ban quản trị làm được việc này.' };
+    revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
+    revalidatePath(`/game/${duongDan}/dien-dan`);
+    return {};
+  }
+
+  const bai = await db.traLoi.findFirst({
+    where: { id: traLoiId, chuDeId },
+    select: { id: true, nguoiId: true },
+  });
+  if (!bai) return { loi: 'Bài này không nằm trong chủ đề.' };
+
+  const n = await db.chuDe.updateMany({
+    where: { id: chuDeId, ...locChu }, data: { loiGiaiId: bai.id },
+  });
+  if (n.count === 0) return { loi: 'Chỉ người mở chủ đề hoặc ban quản trị làm được việc này.' };
+
+  const chuDe = await db.chuDe.findUnique({
+    where: { id: chuDeId }, select: { tieuDe: true },
+  });
+  await guiThongBao({
+    nguoiNhanId: bai.nguoiId,
+    nguoiGayRaId: nguoi.id,
+    loai: 'BAI_THANH_LOI_GIAI',
+    tieuDe: 'Bài của bạn được chọn làm lời giải',
+    chiTiet: chuDe?.tieuDe ?? null,
+    duongDan: `/game/${duongDan}/dien-dan/${chuDeId}#tl-${bai.id}`,
+  });
+
+  revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
+  revalidatePath(`/game/${duongDan}/dien-dan`);
+  return {};
+}

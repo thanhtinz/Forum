@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { MessageSquare, PenLine, Pin } from 'lucide-react';
+import { CircleCheckBig, MessageSquare, PenLine, Pin } from 'lucide-react';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { PhanTrang } from '@/components/PhanTrang';
@@ -64,6 +64,7 @@ export default async function TabDienDan({ params, searchParams }: {
     take: MOI_TRANG,
     select: {
       id: true, tieuDe: true, ghim: true, khoa: true, soTraLoi: true, traLoiCuoiLuc: true,
+      loiGiaiId: true,
       nguoi: { select: { tenHienThi: true } },
     },
   });
@@ -98,6 +99,12 @@ export default async function TabDienDan({ params, searchParams }: {
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">
                     {c.ghim && <Pin size={12} className="shrink-0 text-nhan" aria-label="ghim" />}
+                    {/* Dấu lời giải đặt TRƯỚC tiêu đề: người đang lướt tìm câu
+                        trả lời cần lọc bằng mắt, mà mắt thì chạy dọc mép trái. */}
+                    {c.loiGiaiId && (
+                      <CircleCheckBig size={12} className="shrink-0 text-nhan"
+                        aria-label="đã có lời giải" />
+                    )}
                     <span className="truncate text-[14px] font-medium">{c.tieuDe}</span>
                   </span>
                   <span className="phu mt-0.5 block truncate">

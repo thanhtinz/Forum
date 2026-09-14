@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, CornerDownRight, Lock, Pin, X } from 'lucide-react';
+import { ChevronLeft, CircleCheckBig, CornerDownRight, Lock, Pin, X } from 'lucide-react';
 import { db } from '@/lib/db';
 import { dungChuDam } from '@/lib/chu-dam';
 import { OSoanThao } from '@/components/OSoanThao';
@@ -9,11 +9,12 @@ import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGui } from '@/components/BieuMauGui';
 import { SuaChuDe, SuaTraLoi } from '@/components/game/OSuaBaiDienDan';
 import { NutBaoXau } from '@/components/NutBaoXau';
+import { NutLoiGiai } from '@/components/game/NutLoiGiai';
 import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { PhanTrang } from '@/components/PhanTrang';
 import { traLoi } from '../viec';
 import { MOI_TRANG_TRA_LOI } from '../moi-trang';
-import { cachDay, catChu, kep, soTrang } from '@/lib/tien-ich';
+import { cachDay, catChu, gop, kep, soTrang } from '@/lib/tien-ich';
 import { rutGon } from '@/lib/trich-dan-const';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +36,8 @@ export default async function TrangChuDe({ params, searchParams }: {
     where: { id: chuDeId, game: { duongDan, trangThai: 'DANG_HIEN' } },
     select: {
       id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true, taoLuc: true,
-      nguoiId: true,
+      nguoiId: true, loiGiaiId: true,
+      loiGiai: { select: { id: true, taoLuc: true, nguoi: { select: { tenHienThi: true } } } },
       nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
       game: { select: { ten: true, duongDan: true } },
     },
@@ -87,6 +89,31 @@ export default async function TrangChuDe({ params, searchParams }: {
    * sửa được, trỏ sang bài ở chủ đề khác thì trang sẽ in một mẩu trích chẳng
    * liên quan gì.
    */
+  /*
+   * LỜI GIẢI NẰM Ở ĐÂU TRONG DÃY BÀI.
+   *
+   * Không kéo bài lời giải lên đầu danh sách như mấy trang hỏi đáp hay làm:
+   * chủ đề ở đây CHIA TRANG, mà xáo thứ tự thì bài lời giải vừa đứng đầu trang
+   * một vừa nằm đúng chỗ cũ ở trang ba — in hai lần, hoặc mất một chỗ trong
+   * mạch trò chuyện. Giữ nguyên mạch, chỉ dựng một lối tắt chỉ thẳng tới nó.
+   *
+   * Đếm số bài ĐỨNG TRƯỚC nó để biết nó rơi vào trang mấy — người đọc bấm một
+   * lần là tới, kể cả khi lời giải nằm tận trang cuối.
+   */
+  let loiGiaiO = null;
+  if (chuDe.loiGiai) {
+    const truoc = await db.traLoi.count({
+      where: {
+        chuDeId: chuDe.id,
+        OR: [
+          { taoLuc: { lt: chuDe.loiGiai.taoLuc } },
+          { taoLuc: chuDe.loiGiai.taoLuc, id: { lt: chuDe.loiGiai.id } },
+        ],
+      },
+    });
+    loiGiaiO = Math.floor(truoc / MOI_TRANG_TRA_LOI) + 1;
+  }
+
   const dangDap = dap
     ? await db.traLoi.findFirst({
       where: { id: dap, chuDeId: chuDe.id },
@@ -113,6 +140,17 @@ export default async function TrangChuDe({ params, searchParams }: {
           {' · '}{cachDay(chuDe.taoLuc)} · {tongTraLoi} trả lời
         </p>
       </header>
+
+      {chuDe.loiGiai && loiGiaiO && (
+        <a href={`${duongTrang(loiGiaiO)}#tl-${chuDe.loiGiai.id}`}
+          className="the flex items-center gap-2.5 p-3 text-[13px] transition-colors hover:bg-nen3/40">
+          <CircleCheckBig size={17} className="shrink-0 text-nhan" aria-hidden />
+          <span>
+            <b className="font-semibold">Chủ đề này đã có lời giải</b>
+            <span className="phu"> — {chuDe.loiGiai.nguoi.tenHienThi} trả lời</span>
+          </span>
+        </a>
+      )}
 
       <article className="the p-4">
         <Nguoi nguoi={chuDe.nguoi} luc={chuDe.taoLuc} />
@@ -144,7 +182,14 @@ export default async function TrangChuDe({ params, searchParams }: {
           {danhSach.map((t) => (
             /* Mỗi bài mang một mỏ neo: trả lời xong máy chủ đưa thẳng người
                viết tới đúng bài vừa gửi, kể cả khi nó rơi sang trang mới. */
-            <li key={t.id} id={`tl-${t.id}`} className="the p-4 scroll-mt-24">
+            <li key={t.id} id={`tl-${t.id}`}
+              className={gop('the p-4 scroll-mt-24',
+                t.id === chuDe.loiGiaiId && 'ring-1 ring-nhan/50')}>
+              {t.id === chuDe.loiGiaiId && (
+                <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-nhan">
+                  <CircleCheckBig size={14} aria-hidden /> Lời giải
+                </p>
+              )}
               <Nguoi nguoi={t.nguoi} luc={t.taoLuc} />
 
               {/* Dòng trích nằm TRÊN bài, không nằm dưới: đọc xuôi từ trên
@@ -169,6 +214,12 @@ export default async function TrangChuDe({ params, searchParams }: {
                     className="inline-flex items-center gap-1 text-[12px] font-semibold text-mo hover:text-nhan">
                     <CornerDownRight size={13} aria-hidden /> Trả lời
                   </a>
+                )}
+                {/* Chỉ vẽ nút cho người mở chủ đề và ban quản trị; chặn thật
+                    nằm trong `where` của Prisma ở `datLoiGiai`. */}
+                {nguoi && (nguoi.id === chuDe.nguoiId || nguoi.vaiTro === 'QUAN_TRI') && (
+                  <NutLoiGiai chuDeId={chuDe.id} duongDan={chuDe.game.duongDan}
+                    traLoiId={t.id} dangLa={t.id === chuDe.loiGiaiId} />
                 )}
                 {nguoi && nguoi.id !== t.nguoiId && (
                   <NutBaoXau loai="traLoi" mucId={t.id} />

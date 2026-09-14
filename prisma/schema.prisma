@@ -644,6 +644,21 @@ model ChuDe {
   traLoiCuoiLuc DateTime @default(now())
   taoLuc        DateTime @default(now())
 
+  /// Bài được chọn là LỜI GIẢI của chủ đề.
+  ///
+  /// Diễn đàn game phần lớn là câu hỏi: kẹt màn nào, máy nào chạy được, tệp
+  /// nào mới. Câu trả lời đúng thường nằm lẫn giữa hai chục bài bàn ra bàn
+  /// vào, nên người thứ hai gặp đúng chuyện ấy vẫn phải đọc lại từ đầu — mà
+  /// phần lớn thì bỏ giữa chừng rồi mở một chủ đề y hệt.
+  ///
+  /// Một con trỏ là đủ, không cần cột `laLoiGiai` trên từng bài: ràng buộc
+  /// "mỗi chủ đề đúng MỘT lời giải" nằm luôn trong hình dạng dữ liệu, chứ
+  /// không phải một luật phải nhớ giữ mỗi lần ghi.
+  ///
+  /// `SetNull`: bài lời giải bị gỡ thì chủ đề quay về chưa có lời giải.
+  loiGiaiId String? @unique
+  loiGiai   TraLoi? @relation("LoiGiai", fields: [loiGiaiId], references: [id], onDelete: SetNull)
+
   traLoi TraLoi[]
   baoXau BaoXau[]
 
@@ -673,6 +688,9 @@ model TraLoi {
   traLoiChoId String?
   traLoiCho   TraLoi?  @relation("DapLai", fields: [traLoiChoId], references: [id], onDelete: SetNull)
   daDap       TraLoi[] @relation("DapLai")
+
+  /// Chủ đề nào đang lấy bài này làm lời giải. Quan hệ ngược của `ChuDe.loiGiai`.
+  laLoiGiaiCua ChuDe? @relation("LoiGiai")
 
   baoXau BaoXau[]
 
@@ -812,6 +830,8 @@ enum LoaiThongBao {
   TRA_LOI_CHU_DE
   /// Có người đáp thẳng vào MỘT BÀI của bạn, không phải chỉ trả lời chủ đề.
   DAP_BAI_CUA_BAN
+  /// Bài của bạn được chọn làm lời giải cho chủ đề.
+  BAI_THANH_LOI_GIAI
   DAP_DANH_GIA
   TRA_LOI_YEU_CAU
   GO_NOI_DUNG

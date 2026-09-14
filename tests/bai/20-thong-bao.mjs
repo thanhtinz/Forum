@@ -142,8 +142,20 @@ export default async function chay(kiem) {
     await pA.goto(`${GOC}/thong-bao`, { waitUntil: 'networkidle' });
     kiem('không thấy thông báo của người khác',
       !(await pA.locator('main').textContent()).includes('tin của Minh'));
+    /*
+     * Đếm ĐÚNG TIN ẤY, không đếm cả hộp của Minh.
+     *
+     * Từ lúc diễn đàn có "theo dõi chủ đề", viết một bài là tự theo dõi chủ đề
+     * ấy — nên Minh còn nhận thêm tin mỗi khi có người khác viết tiếp. Đếm cả
+     * hộp rồi đòi đúng bằng một là đòi một điều KHÔNG CÒN ĐÚNG, và mục kiểm đỏ
+     * lên vì một tính năng chạy đúng như thiết kế.
+     *
+     * Thứ bài này canh vẫn nguyên: tin của người khác không bị người này xoá.
+     */
     kiem('và tin ấy vẫn còn nguyên bên kia',
-      (await db.thongBao.count({ where: { nguoiId: b.id } })) === 1);
+      (await db.thongBao.count({
+        where: { nguoiId: b.id, tieuDe: { contains: 'tin của Minh' } },
+      })) === 1);
   } finally {
     await don(DAU, a?.id, b?.id, game?.id);
     await pA?.close();

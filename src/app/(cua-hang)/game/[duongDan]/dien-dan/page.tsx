@@ -123,7 +123,7 @@ export default async function TabDienDan({ params, searchParams }: {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="cot-doc space-y-4">
       <div className="flex items-center justify-between gap-3">
         <p className="phu">
           {tongTatCa > 0 ? `${gonSo(tongTatCa)} chủ đề` : 'Chưa có chủ đề nào'}

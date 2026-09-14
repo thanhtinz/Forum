@@ -145,7 +145,7 @@ export default async function TabDanhGia({ params, searchParams }: {
   const diem = gom > 0 ? Math.round((tongSao / gom) * 10) / 10 : 0;
 
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="cot-doc space-y-5">
       <PhoDiem sao={diem} tong={gom} locSao={locSao}
         phanBo={Object.fromEntries(phanBo.map((p) => [p.sao, p._count._all]))}
         dungDuong={(s) => duong({ sao: s })} />

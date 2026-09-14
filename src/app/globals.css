@@ -280,6 +280,19 @@ p { text-wrap: pretty; }
   .cot { @apply mx-auto w-full max-w-[680px]; }
 
   /*
+   * CỘT ĐỌC TRONG TRANG GAME — rộng hơn `.cot` một nhịp, vì mấy trang này bày
+   * cả ảnh đại diện và hàng nút bên cạnh chữ.
+   *
+   * VÀ CĂN GIỮA, đó mới là chỗ vừa sửa. Trước đây ba trang trong tab game tự
+   * ghim `max-w-3xl` / `max-w-2xl` mà KHÔNG căn giữa, nên chúng dính mép trái
+   * và để trống hẳn một dải bên phải — trong khi đầu trang game với hàng tab
+   * ngay trên đầu lại chạy hết bề ngang. Nhìn xuống là thấy trang lệch hẳn về
+   * một bên, mà ba trang ấy còn hẹp ba kiểu khác nhau nên chuyển tab là bề
+   * ngang nhảy một nhịp nữa.
+   */
+  .cot-doc { @apply mx-auto w-full max-w-[768px]; }
+
+  /*
    * LỜI NHẮC TÊN trong bài viết — `@ten-dang-nhap`.
    *
    * Tô nền nhạt chứ không gạch chân: trong một bài dài, ba cái tên gạch chân

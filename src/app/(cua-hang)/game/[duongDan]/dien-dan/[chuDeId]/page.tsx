@@ -147,7 +147,7 @@ export default async function TrangChuDe({ params, searchParams }: {
     : null;
 
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="cot-doc space-y-5">
       {/* Giữ lối lùi ở đây: hàng tab chỉ nói "đang ở phần Diễn đàn", không
           phân biệt được danh sách chủ đề với một bài cụ thể. */}
       <Link href={`/game/${chuDe.game.duongDan}/dien-dan`}

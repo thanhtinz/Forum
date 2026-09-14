@@ -23,7 +23,7 @@ export default async function TrangDangBai({ params }: { params: Promise<{ duong
   return (
     /* Không có liên kết lùi ở đây: hàng tab ngay trên đầu đã là lối lùi, và
        nó còn nói rõ mình đang ở phần nào của trang game. */
-    <div className="max-w-2xl space-y-5">
+    <div className="cot-doc space-y-5">
       <div>
         <h1 className="text-[20px] font-bold tracking-tight">Đăng chủ đề</h1>
         <p className="phu mt-0.5">Bài này sẽ nằm trong khu diễn đàn của {game.ten}.</p>

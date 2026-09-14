@@ -10,6 +10,7 @@ import { BieuMauGui } from '@/components/BieuMauGui';
 import { SuaChuDe, SuaTraLoi } from '@/components/game/OSuaBaiDienDan';
 import { NutBaoXau } from '@/components/NutBaoXau';
 import { NutLoiGiai } from '@/components/game/NutLoiGiai';
+import { NutTheoDoi } from '@/components/game/NutTheoDoi';
 import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { PhanTrang } from '@/components/PhanTrang';
 import { traLoi } from '../viec';
@@ -114,6 +115,13 @@ export default async function TrangChuDe({ params, searchParams }: {
     loiGiaiO = Math.floor(truoc / MOI_TRANG_TRA_LOI) + 1;
   }
 
+  const dangTheo = nguoi
+    ? !!(await db.theoDoiChuDe.findUnique({
+      where: { chuDeId_nguoiId: { chuDeId: chuDe.id, nguoiId: nguoi.id } },
+      select: { chuDeId: true },
+    }))
+    : false;
+
   const dangDap = dap
     ? await db.traLoi.findFirst({
       where: { id: dap, chuDeId: chuDe.id },
@@ -135,10 +143,19 @@ export default async function TrangChuDe({ params, searchParams }: {
           {chuDe.ghim && <Pin size={16} className="mt-1.5 shrink-0 text-nhan" />}
           {chuDe.tieuDe}
         </h1>
-        <p className="phu mt-1">
-          <TenNguoi ten={chuDe.nguoi.tenHienThi} tenDangNhap={chuDe.nguoi.tenDangNhap} />
-          {' · '}{cachDay(chuDe.taoLuc)} · {tongTraLoi} trả lời
-        </p>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+          <p className="phu">
+            <TenNguoi ten={chuDe.nguoi.tenHienThi} tenDangNhap={chuDe.nguoi.tenDangNhap} />
+            {' · '}{cachDay(chuDe.taoLuc)} · {tongTraLoi} trả lời
+          </p>
+          {/* Công tắc đặt ngay cạnh đầu đề: quyết định "có muốn nghe tiếp
+              không" là quyết định người ta lấy lúc vừa đọc xong câu hỏi, chứ
+              không phải sau khi cuộn hết hai chục bài. */}
+          {nguoi && (
+            <NutTheoDoi chuDeId={chuDe.id} duongDan={chuDe.game.duongDan}
+              dangTheo={dangTheo} />
+          )}
+        </div>
       </header>
 
       {chuDe.loiGiai && loiGiaiO && (

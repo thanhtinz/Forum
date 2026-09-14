@@ -139,6 +139,48 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
     });
   }
 
+  /*
+   * VIẾT BÀI LÀ TỰ THEO DÕI CHỦ ĐỀ.
+   *
+   * Không bắt người ta bấm thêm một nút: đã bỏ công viết một bài thì gần như
+   * chắc chắn muốn biết ai đáp lại. Ai không muốn thì tắt bằng đúng cái nút ấy
+   * ngay trên trang.
+   *
+   * `skipDuplicates` để bài thứ hai trong cùng chủ đề không vỡ vì trùng khoá.
+   */
+  await db.theoDoiChuDe.createMany({
+    data: [{ chuDeId, nguoiId: nguoi.id }], skipDuplicates: true,
+  }).catch(() => {});
+
+  /*
+   * BÁO CHO NGƯỜI THEO DÕI — trừ ba người đã báo hoặc không cần báo.
+   *
+   * Lọc ngay trong `where` chứ không lấy hết rồi lọc trong JavaScript: chủ đề
+   * đông người thì đó là chênh lệch giữa vài hàng với vài trăm hàng kéo về chỉ
+   * để vứt đi. `TRAN_BAO` là chốt chặn cuối: một chủ đề nghìn người theo dõi mà
+   * gửi nghìn thông báo trong cùng một lượt yêu cầu thì người vừa bấm Gửi phải
+   * ngồi đợi hết chỗ ấy.
+   */
+  const TRAN_BAO = 200;
+  const daBao = [nguoi.id, chuDe.nguoiId, traLoiCho?.nguoiId].filter(Boolean) as string[];
+  const nguoiTheoDoi = await db.theoDoiChuDe.findMany({
+    where: { chuDeId, nguoiId: { notIn: daBao } },
+    orderBy: { taoLuc: 'asc' },
+    take: TRAN_BAO,
+    select: { nguoiId: true },
+  });
+
+  for (const t of nguoiTheoDoi) {
+    await guiThongBao({
+      nguoiNhanId: t.nguoiId,
+      nguoiGayRaId: nguoi.id,
+      loai: 'TRA_LOI_CHU_DE',
+      tieuDe: `${nguoi.tenHienThi} vừa viết trong chủ đề bạn theo dõi`,
+      chiTiet: chuDe.tieuDe,
+      duongDan: `/game/${duongDan}/dien-dan/${chuDeId}#tl-${bai.id}`,
+    });
+  }
+
   revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
 
   /*
@@ -359,5 +401,47 @@ export async function datLoiGiai(_truoc: KetQua, form: FormData): Promise<KetQua
 
   revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
   revalidatePath(`/game/${duongDan}/dien-dan`);
+  return {};
+}
+
+/**
+ * Bật / tắt theo dõi một chủ đề.
+ *
+ * KHÔNG nhận "bật hay tắt" từ biểu mẫu mà tự lật trạng thái đang có: nút trên
+ * trang có thể đã cũ vài phút — người ta mở hai tab — nên nghe theo nó thì bấm
+ * "Theo dõi" ở tab cũ lại hoá ra huỷ theo dõi. Đọc rồi lật là đúng thứ người
+ * bấm mong đợi.
+ *
+ * Cả hai nhánh đều là MỘT câu lệnh, và cả hai đều nuốt lỗi trùng: bấm hai lần
+ * thật nhanh thì lượt sau gặp đúng hàng lượt trước vừa ghi, mà khoá chính là
+ * cặp (chủ đề, người) nên không bao giờ đẻ ra hàng thứ hai.
+ */
+export async function latTheoDoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập để theo dõi chủ đề.' }; }
+
+  const chuDeId = String(form.get('chuDeId') ?? '');
+  const duongDan = String(form.get('duongDan') ?? '');
+
+  // Chủ đề phải có thật và thuộc một game đang bày — chặn trong `where`.
+  const co = await db.chuDe.findFirst({
+    where: { id: chuDeId, game: { trangThai: 'DANG_HIEN' } }, select: { id: true },
+  });
+  if (!co) return { loi: 'Chủ đề này không còn.' };
+
+  const dangTheo = await db.theoDoiChuDe.findUnique({
+    where: { chuDeId_nguoiId: { chuDeId, nguoiId: nguoi.id } }, select: { chuDeId: true },
+  });
+
+  if (dangTheo) {
+    await db.theoDoiChuDe.deleteMany({ where: { chuDeId, nguoiId: nguoi.id } });
+  } else {
+    await db.theoDoiChuDe.createMany({
+      data: [{ chuDeId, nguoiId: nguoi.id }], skipDuplicates: true,
+    });
+  }
+
+  revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
   return {};
 }

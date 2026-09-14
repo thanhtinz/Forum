@@ -51,6 +51,7 @@ model NguoiDung {
   daLuu         DaLuu[]
   chuDe         ChuDe[]
   traLoi        TraLoi[]
+  theoDoiChuDe  TheoDoiChuDe[]
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
   maXacMinh     MaXacMinh[]
@@ -659,10 +660,35 @@ model ChuDe {
   loiGiaiId String? @unique
   loiGiai   TraLoi? @relation("LoiGiai", fields: [loiGiaiId], references: [id], onDelete: SetNull)
 
-  traLoi TraLoi[]
-  baoXau BaoXau[]
+  traLoi  TraLoi[]
+  baoXau  BaoXau[]
+  theoDoi TheoDoiChuDe[]
 
   @@index([gameId, ghim, traLoiCuoiLuc])
+}
+
+/*
+ * AI ĐANG THEO DÕI MỘT CHỦ ĐỀ.
+ *
+ * Trước bảng này, chỉ chủ chủ đề được báo khi có bài mới. Nghĩa là người vào
+ * hỏi thêm một câu rồi đi thì không bao giờ biết có ai đáp mình — họ phải nhớ
+ * quay lại kiểm, và phần lớn thì không. Cuộc trò chuyện chết ở đúng chỗ nó
+ * đang có ích nhất.
+ *
+ * Khoá chính là CẶP (chủ đề, người): một người theo dõi một chủ đề đúng một
+ * lần, và ràng buộc ấy nằm trong cơ sở dữ liệu chứ không phải một câu `if` ở
+ * chỗ ghi — bấm hai lần thật nhanh vẫn không đẻ ra hai hàng.
+ */
+model TheoDoiChuDe {
+  chuDeId String
+  chuDe   ChuDe     @relation(fields: [chuDeId], references: [id], onDelete: Cascade)
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  taoLuc DateTime @default(now())
+
+  @@id([chuDeId, nguoiId])
+  @@index([nguoiId, taoLuc])
 }
 
 model TraLoi {

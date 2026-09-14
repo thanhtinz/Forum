@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ArrowUpCircle, Bell, Flag, Inbox, MessageSquare, Star } from 'lucide-react';
+import { ArrowUpCircle, Bell, CornerDownRight, Flag, Inbox, MessageSquare, Star } from 'lucide-react';
 import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { NutDonThongBao } from '@/components/NutDocHet';
@@ -12,6 +12,7 @@ export const metadata: Metadata = { title: 'Thông báo' };
 /** Hình và sắc theo loại. Tra qua bảng để loại lạ không làm vỡ trang. */
 const HINH: Record<string, { icon: React.ReactNode; sac: string }> = {
   TRA_LOI_CHU_DE: { icon: <MessageSquare size={16} />, sac: 'bg-nhan/12 text-nhan' },
+  DAP_BAI_CUA_BAN: { icon: <CornerDownRight size={16} />, sac: 'bg-nhan/12 text-nhan' },
   DAP_DANH_GIA: { icon: <Star size={16} />, sac: 'bg-nhan/12 text-nhan' },
   TRA_LOI_YEU_CAU: { icon: <Inbox size={16} />, sac: 'bg-cam/15 text-canh' },
   GO_NOI_DUNG: { icon: <Flag size={16} />, sac: 'bg-xau/10 text-xau' },

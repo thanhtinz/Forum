@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, Lock, Pin } from 'lucide-react';
+import { ChevronLeft, CornerDownRight, Lock, Pin, X } from 'lucide-react';
 import { db } from '@/lib/db';
 import { dungChuDam } from '@/lib/chu-dam';
 import { OSoanThao } from '@/components/OSoanThao';
@@ -14,6 +14,7 @@ import { PhanTrang } from '@/components/PhanTrang';
 import { traLoi } from '../viec';
 import { MOI_TRANG_TRA_LOI } from '../moi-trang';
 import { cachDay, catChu, kep, soTrang } from '@/lib/tien-ich';
+import { rutGon } from '@/lib/trich-dan-const';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,10 +26,10 @@ export async function generateMetadata({ params }: { params: Promise<{ chuDeId: 
 
 export default async function TrangChuDe({ params, searchParams }: {
   params: Promise<{ duongDan: string; chuDeId: string }>;
-  searchParams: Promise<{ trang?: string }>;
+  searchParams: Promise<{ trang?: string; dap?: string }>;
 }) {
   const { duongDan, chuDeId } = await params;
-  const { trang: trangNhap } = await searchParams;
+  const { trang: trangNhap, dap } = await searchParams;
 
   const chuDe = await db.chuDe.findFirst({
     where: { id: chuDeId, game: { duongDan, trangThai: 'DANG_HIEN' } },
@@ -63,12 +64,35 @@ export default async function TrangChuDe({ params, searchParams }: {
     select: {
       id: true, noiDung: true, taoLuc: true, nguoiId: true,
       nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
+      // Chỉ lấy đúng mẩu cần để in dòng trích — không kéo cả bài gốc về.
+      traLoiCho: {
+        select: { id: true, noiDung: true, nguoi: { select: { tenHienThi: true } } },
+      },
     },
   });
 
   const nguoi = await nguoiHienTai();
   const duongTrang = (t: number) =>
     `/game/${chuDe.game.duongDan}/dien-dan/${chuDe.id}${t > 1 ? `?trang=${t}` : ''}`;
+
+  /*
+   * ĐANG ĐỊNH ĐÁP BÀI NÀO — đọc từ ĐỊA CHỈ, không giữ trong trạng thái máy khách.
+   *
+   * Bấm "Trả lời" là đi tới `?dap=<id>#soan`, tức là một lượt tải trang thật.
+   * Đổi lại được ba thứ: dán được địa chỉ ấy cho người khác, nút Lùi quay về
+   * đúng chỗ cũ, và chọn xong mà tải lại trang thì lựa chọn vẫn còn. Giữ trong
+   * `useState` thì cả ba đều mất.
+   *
+   * Điều kiện `chuDeId` nằm trong `where`: `dap` tới từ địa chỉ nên ai cũng
+   * sửa được, trỏ sang bài ở chủ đề khác thì trang sẽ in một mẩu trích chẳng
+   * liên quan gì.
+   */
+  const dangDap = dap
+    ? await db.traLoi.findFirst({
+      where: { id: dap, chuDeId: chuDe.id },
+      select: { id: true, noiDung: true, nguoi: { select: { tenHienThi: true } } },
+    })
+    : null;
 
   return (
     <div className="max-w-3xl space-y-5">
@@ -122,13 +146,37 @@ export default async function TrangChuDe({ params, searchParams }: {
                viết tới đúng bài vừa gửi, kể cả khi nó rơi sang trang mới. */
             <li key={t.id} id={`tl-${t.id}`} className="the p-4 scroll-mt-24">
               <Nguoi nguoi={t.nguoi} luc={t.taoLuc} />
+
+              {/* Dòng trích nằm TRÊN bài, không nằm dưới: đọc xuôi từ trên
+                  xuống thì phải biết bài này đáp ai TRƯỚC khi đọc nó nói gì. */}
+              {t.traLoiCho && (
+                <a href={`#tl-${t.traLoiCho.id}`}
+                  className="mt-2 flex items-start gap-1.5 rounded-nut bg-nen3/50 px-2.5 py-1.5 text-[12px] text-mo hover:text-chu">
+                  <CornerDownRight size={13} className="mt-0.5 shrink-0" aria-hidden />
+                  <span className="min-w-0">
+                    <b className="font-semibold">{t.traLoiCho.nguoi.tenHienThi}</b>
+                    {': '}{rutGon(t.traLoiCho.noiDung)}
+                  </span>
+                </a>
+              )}
+
               <div className="chu-dam chu-dam-nho mt-2.5"
                 dangerouslySetInnerHTML={{ __html: dungChuDam(t.noiDung) }} />
+
+              <div className="mt-2.5 flex flex-wrap items-center gap-3">
+                {nguoi && !chuDe.khoa && (
+                  <a href={`${duongTrang(trang)}${trang > 1 ? '&' : '?'}dap=${t.id}#soan`}
+                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-mo hover:text-nhan">
+                    <CornerDownRight size={13} aria-hidden /> Trả lời
+                  </a>
+                )}
+                {nguoi && nguoi.id !== t.nguoiId && (
+                  <NutBaoXau loai="traLoi" mucId={t.id} />
+                )}
+              </div>
+
               {nguoi?.id === t.nguoiId && !chuDe.khoa && (
                 <SuaTraLoi traLoiId={t.id} noiDung={t.noiDung} />
-              )}
-              {nguoi && nguoi.id !== t.nguoiId && (
-                <div className="mt-2.5"><NutBaoXau loai="traLoi" mucId={t.id} /></div>
               )}
             </li>
           ))}
@@ -142,13 +190,29 @@ export default async function TrangChuDe({ params, searchParams }: {
           <Lock size={14} /> Chủ đề đã khoá, không nhận thêm trả lời.
         </p>
       ) : nguoi ? (
-        <div className="the p-4">
+        <div id="soan" className="the scroll-mt-24 p-4">
           {/* Không còn đầu đề "Trả lời" ở đây: chính trình soạn thảo đã mang
               một nhãn "Trả lời" gắn vào ô chữ, nên đầu đề này là chữ thứ hai
               nói đúng một việc, cách nhau một dòng. */}
+          {dangDap && (
+            <div className="vach mb-3 flex items-start gap-2 rounded-nut border bg-nen3/40 p-2.5">
+              <CornerDownRight size={14} className="mt-0.5 shrink-0 text-mo" aria-hidden />
+              <p className="min-w-0 flex-1 text-[12px] text-mo">
+                Đang đáp <b className="font-semibold text-chu">{dangDap.nguoi.tenHienThi}</b>
+                {': '}{rutGon(dangDap.noiDung)}
+              </p>
+              {/* Bỏ trích bằng một liên kết về chính trang này không kèm `dap`:
+                  cùng lẽ với lúc chọn — đi bằng địa chỉ thì Lùi vẫn đúng. */}
+              <a href={`${duongTrang(trang)}#soan`} aria-label="Bỏ trích dẫn"
+                className="shrink-0 text-mo hover:text-chu">
+                <X size={14} aria-hidden />
+              </a>
+            </div>
+          )}
           <BieuMauGui viec={traLoi} nut="Gửi trả lời" xoaSauKhiGui>
             <input type="hidden" name="chuDeId" value={chuDe.id} />
             <input type="hidden" name="duongDan" value={chuDe.game.duongDan} />
+            {dangDap && <input type="hidden" name="traLoiChoId" value={dangDap.id} />}
             {/* `key` đổi theo TỔNG số lời đáp: `xoaSauKhiGui` xoá ô chữ trần được,
                 nhưng trình soạn thảo giữ chữ trong trạng thái của nó, nên phải
                 dựng lại nó sau mỗi lượt gửi — không thì lời đáp vừa gửi vẫn

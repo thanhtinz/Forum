@@ -660,9 +660,24 @@ model TraLoi {
   noiDung String   @db.Text
   taoLuc  DateTime @default(now())
 
+  /// Bài này đáp thẳng vào bài nào trong cùng chủ đề.
+  ///
+  /// Diễn đàn ở đây là một dải bài PHẲNG xếp theo thời gian, và một chủ đề
+  /// đông người thì đọc mãi không ra ai đang đáp ai — nhất là khi hai ba cuộc
+  /// trò chuyện đan vào nhau. Một con trỏ ngược là đủ để mỗi bài tự nói nó
+  /// đang đáp ai, mà không phải đổi cả diễn đàn sang lối cây.
+  ///
+  /// `SetNull` chứ không `Cascade`: bài được đáp bị gỡ thì bài đáp PHẢI ở lại.
+  /// Cascade ở đây là một người xoá bài của mình rồi kéo theo cả mấy bài
+  /// người khác viết để đáp lại — mất chữ của người ngoài cuộc.
+  traLoiChoId String?
+  traLoiCho   TraLoi?  @relation("DapLai", fields: [traLoiChoId], references: [id], onDelete: SetNull)
+  daDap       TraLoi[] @relation("DapLai")
+
   baoXau BaoXau[]
 
   @@index([chuDeId, taoLuc])
+  @@index([traLoiChoId])
 }
 
 // ════════════════════════════════════════════════════════════════════
@@ -795,6 +810,8 @@ model DonTacGia {
 
 enum LoaiThongBao {
   TRA_LOI_CHU_DE
+  /// Có người đáp thẳng vào MỘT BÀI của bạn, không phải chỉ trả lời chủ đề.
+  DAP_BAI_CUA_BAN
   DAP_DANH_GIA
   TRA_LOI_YEU_CAU
   GO_NOI_DUNG

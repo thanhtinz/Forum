@@ -76,9 +76,26 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
   });
   if (!chuDe) return { loi: 'Chủ đề này đã khoá hoặc không còn.' };
 
+  /*
+   * BÀI ĐƯỢC ĐÁP PHẢI NẰM TRONG CHÍNH CHỦ ĐỀ NÀY.
+   *
+   * `traLoiChoId` đi kèm biểu mẫu nên ai cũng sửa được. Nhận bừa thì trỏ được
+   * sang một bài ở chủ đề khác — trang sẽ in một mẩu trích chẳng liên quan gì,
+   * và tệ hơn: người bị trỏ tới nhận một thông báo dẫn về một chủ đề họ chưa
+   * từng đặt chân vào. Điều kiện nằm trong `where`, không lọc sau.
+   */
+  const choId = String(form.get('traLoiChoId') ?? '').trim();
+  const traLoiCho = choId
+    ? await db.traLoi.findFirst({
+      where: { id: choId, chuDeId },
+      select: { id: true, nguoiId: true, noiDung: true },
+    })
+    : null;
+
   const bai = await db.$transaction(async (tx) => {
     const b = await tx.traLoi.create({
-      data: { chuDeId, nguoiId: nguoi.id, noiDung }, select: { id: true },
+      data: { chuDeId, nguoiId: nguoi.id, noiDung, traLoiChoId: traLoiCho?.id ?? null },
+      select: { id: true },
     });
     await tx.chuDe.update({
       where: { id: chuDeId },
@@ -88,16 +105,39 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
     return b;
   });
 
-  // Báo cho chủ chủ đề. Đặt NGOÀI giao dịch trên: mất một thông báo thì tiếc,
-  // còn để nó kéo đổ cả bài trả lời vừa viết thì tệ hơn nhiều.
-  await guiThongBao({
-    nguoiNhanId: chuDe.nguoiId,
-    nguoiGayRaId: nguoi.id,
-    loai: 'TRA_LOI_CHU_DE',
-    tieuDe: `${nguoi.tenHienThi} đã trả lời chủ đề của bạn`,
-    chiTiet: chuDe.tieuDe,
-    duongDan: `/game/${duongDan}/dien-dan/${chuDeId}`,
-  });
+  /*
+   * BÁO CHO AI, VÀ CHỈ BÁO MỘT LẦN.
+   *
+   * Đặt NGOÀI giao dịch trên: mất một thông báo thì tiếc, còn để nó kéo đổ cả
+   * bài trả lời vừa viết thì tệ hơn nhiều.
+   *
+   * Người bị đáp thẳng nhận một thông báo KHÁC hẳn chủ chủ đề: "ai đó đáp bài
+   * của bạn" là chuyện của riêng họ, còn "có người trả lời chủ đề" là chuyện
+   * của chủ đề. Nhưng nếu hai người ấy là MỘT thì chỉ gửi bản nói rõ hơn —
+   * hai thông báo cho cùng một bài viết là phiền chứ không phải chu đáo.
+   */
+  // Đáp bài của chính mình thì `guiThongBao` tự bỏ qua, không cần chặn ở đây.
+  if (traLoiCho) {
+    await guiThongBao({
+      nguoiNhanId: traLoiCho.nguoiId,
+      nguoiGayRaId: nguoi.id,
+      loai: 'DAP_BAI_CUA_BAN',
+      tieuDe: `${nguoi.tenHienThi} đã đáp lại bài của bạn`,
+      chiTiet: chuDe.tieuDe,
+      duongDan: `/game/${duongDan}/dien-dan/${chuDeId}#tl-${bai.id}`,
+    });
+  }
+
+  if (chuDe.nguoiId !== traLoiCho?.nguoiId) {
+    await guiThongBao({
+      nguoiNhanId: chuDe.nguoiId,
+      nguoiGayRaId: nguoi.id,
+      loai: 'TRA_LOI_CHU_DE',
+      tieuDe: `${nguoi.tenHienThi} đã trả lời chủ đề của bạn`,
+      chiTiet: chuDe.tieuDe,
+      duongDan: `/game/${duongDan}/dien-dan/${chuDeId}`,
+    });
+  }
 
   revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
 

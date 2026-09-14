@@ -98,14 +98,14 @@ export default async function chay(kiem) {
       (chuBia ?? '').includes('chua ai dap') && (chuBia ?? '').includes('da giai'));
 
     // ── Tìm trong đúng diễn đàn này ────────────────────────────────────
-    await khach.goto(`${dia}?q=lachtach`, { waitUntil: 'networkidle' });
+    await khach.goto(`${dia}?tim=lachtach`, { waitUntil: 'networkidle' });
     const chuTim = await khach.locator('ul[aria-label="Danh sách chủ đề"]').textContent();
     kiem('tìm được chủ đề theo từ khoá',
       (chuTim ?? '').includes('lachtach') && !(chuTim ?? '').includes('thuong mot'));
     kiem('và nói rõ đang lọc, kèm lối bỏ lọc',
       (await khach.locator('a:has-text("bỏ lọc")').count()) > 0);
 
-    await khach.goto(`${dia}?q=khongcotukhoanaokhopdau`, { waitUntil: 'networkidle' });
+    await khach.goto(`${dia}?tim=khongcotukhoanaokhopdau`, { waitUntil: 'networkidle' });
     kiem('không khớp gì thì nói không khớp, không nói diễn đàn trống',
       (await khach.locator('text=Không có chủ đề nào khớp').count()) > 0);
 

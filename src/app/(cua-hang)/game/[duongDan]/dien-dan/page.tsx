@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { CircleCheckBig, Lock, MessageSquare, PenLine, Pin } from 'lucide-react';
+import { CircleCheckBig, Lock, MessageSquare, PenLine, Pin, Search } from 'lucide-react';
 import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
@@ -51,10 +51,10 @@ const LOC = [
 
 export default async function TabDienDan({ params, searchParams }: {
   params: Promise<{ duongDan: string }>;
-  searchParams: Promise<{ trang?: string; loc?: string; q?: string }>;
+  searchParams: Promise<{ trang?: string; loc?: string; tim?: string }>;
 }) {
   const { duongDan } = await params;
-  const { trang: trangNhap, loc: locNhap, q } = await searchParams;
+  const { trang: trangNhap, loc: locNhap, tim } = await searchParams;
 
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
@@ -65,7 +65,18 @@ export default async function TabDienDan({ params, searchParams }: {
   // Chỉ nhận mã lọc CÓ TRONG BẢNG: `?loc=` tới từ địa chỉ nên ai cũng gõ bừa
   // được, mà một mã lạ lọt vào là danh sách rỗng trông như diễn đàn chết.
   const loc = LOC.some((l) => l.ma === locNhap) ? (locNhap ?? '') : '';
-  const tuKhoa = (q ?? '').trim().slice(0, 80);
+  /*
+   * Ô tìm của diễn đàn mang tên `tim`, KHÔNG phải `q`.
+   *
+   * `q` là của ô tìm chung trên thanh đầu — ô ấy có mặt ở mọi trang, nên đặt
+   * trùng tên là trên một trang có hai ô cùng tên, hai biểu mẫu khác nhau, đi
+   * hai nơi khác nhau. Con người thì không nhầm vì hai ô nằm hai chỗ, nhưng
+   * mọi thứ gọi theo TÊN đều nhầm: bài kiểm, trình điền hộ của trình duyệt, và
+   * bất cứ đoạn mã nào sau này đi tìm "ô tìm" trên trang.
+   *
+   * Đổi tên cũng làm địa chỉ tự nói ra nó là gì: `/dien-dan?tim=màn+5`.
+   */
+  const tuKhoa = (tim ?? '').trim().slice(0, 80);
 
   /*
    * Tìm trong ĐÚNG diễn đàn của game này, không tìm cả cửa hàng.
@@ -134,9 +145,18 @@ export default async function TabDienDan({ params, searchParams }: {
         </Link>
       </div>
 
-      {/* Chỉ bày hàng lọc khi đã có đủ chủ đề để mà lọc. Một diễn đàn ba bài mà
-          bày sẵn ô tìm với ba lối lọc thì trông trống trải hơn là tiện. */}
-      {tongTatCa >= 5 && (
+      {/*
+        Bày hàng lọc ngay khi có TỪ HAI chủ đề trở lên.
+        
+        Trước đây mốc là năm, và mốc ấy sai: phần lớn game trong cửa hàng chưa
+        tới năm chủ đề, nên ô tìm gần như không bao giờ hiện ra — người dùng
+        học được rằng diễn đàn này không tìm được, rồi thôi không tìm nữa. Một
+        tính năng ẩn sau ngưỡng thì cũng như không có.
+        
+        Hai là mốc có nghĩa thật: từ chủ đề thứ hai trở đi mới có gì để chọn
+        giữa. Một chủ đề thì lọc cái gì cũng ra chính nó.
+      */}
+      {tongTatCa >= 2 && (
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap gap-1.5">
             {LOC.map((l) => (
@@ -153,12 +173,23 @@ export default async function TabDienDan({ params, searchParams }: {
 
           {/* Biểu mẫu GET, không phải ô gõ tới đâu lọc tới đó: gõ tới đâu lọc
               tới đó nghĩa là mỗi phím một câu truy vấn, và địa chỉ thì không
-              dán được cho ai. */}
-          <form method="get" className="ml-auto flex min-w-[180px] flex-1 items-center gap-1.5 sm:flex-none">
+              dán được cho ai.
+
+              Có NÚT GỬI thật, không chỉ trông chờ phím Enter: trên điện thoại
+              bàn phím hiện lên che mất nửa màn hình, và không phải bàn phím
+              nào cũng bày sẵn phím tìm. */}
+          <form method="get" className="ml-auto flex min-w-[200px] flex-1 items-center gap-1.5 sm:flex-none">
             {loc && <input type="hidden" name="loc" value={loc} />}
-            <input type="search" name="q" defaultValue={tuKhoa}
-              placeholder="Tìm trong diễn đàn này…" aria-label="Tìm trong diễn đàn của game này"
-              className="o-nhap !min-h-[34px] !py-1 !text-[13px]" />
+            <span className="relative min-w-0 flex-1">
+              <Search size={14} aria-hidden
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mo" />
+              <input type="search" name="tim" defaultValue={tuKhoa}
+                placeholder="Tìm trong diễn đàn này…" aria-label="Tìm trong diễn đàn của game này"
+                className="o-nhap !min-h-[34px] !py-1 !pl-8 !text-[13px]" />
+            </span>
+            <button type="submit" className="nut-xam shrink-0 !min-h-[34px] !px-3 !text-[13px]">
+              Tìm
+            </button>
           </form>
         </div>
       )}
@@ -260,7 +291,7 @@ export default async function TabDienDan({ params, searchParams }: {
             // là cả diễn đàn, trong khi trang 1 vừa lọc — người đọc tưởng hỏng.
             const q = new URLSearchParams();
             if (loc) q.set('loc', loc);
-            if (tuKhoa) q.set('q', tuKhoa);
+            if (tuKhoa) q.set('tim', tuKhoa);
             if (t > 1) q.set('trang', String(t));
             const s2 = q.toString();
             return `/game/${game.duongDan}/dien-dan${s2 ? `?${s2}` : ''}`;
@@ -275,7 +306,7 @@ export default async function TabDienDan({ params, searchParams }: {
 function duongLoc(duongDan: string, ma: string, tuKhoa: string): string {
   const p = new URLSearchParams();
   if (ma) p.set('loc', ma);
-  if (tuKhoa) p.set('q', tuKhoa);
+  if (tuKhoa) p.set('tim', tuKhoa);
   const q = p.toString();
   return `/game/${duongDan}/dien-dan${q ? `?${q}` : ''}`;
 }

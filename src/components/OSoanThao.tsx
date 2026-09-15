@@ -7,6 +7,7 @@ import {
   Strikethrough, Table, Type,
 } from 'lucide-react';
 import { napAnh } from '@/components/quan-tri/ONapAnh';
+import { NutCamXuc } from '@/components/BangCamXuc';
 import { gop } from '@/lib/tien-ich';
 
 /*
@@ -175,6 +176,19 @@ export function OSoanThao({
     datVao(doan, o.selectionStart, o.selectionEnd);
   }, [datVao]);
 
+  /*
+   * Chèn một đoạn chữ tại con trỏ — lối vào cho bảng cảm xúc.
+   *
+   * Emoji chèn thẳng ký tự, còn sticker và ảnh động chèn một dòng ảnh Markdown:
+   * thứ lưu xuống vẫn là Markdown như mọi thứ khác trong ô này, nên bài viết cũ
+   * không cần biết tới sticker mà vẫn bày đúng.
+   */
+  const chenChu = useCallback((doan: string) => {
+    const o = oRef.current;
+    if (!o) return;
+    datVao(doan, o.selectionStart, o.selectionEnd);
+  }, [datVao]);
+
   const chenAnh = useCallback(async (tep: File | null | undefined) => {
     if (!tep) return;
     datLoi(null);
@@ -265,6 +279,9 @@ export function OSoanThao({
           className="grid size-8 shrink-0 place-items-center rounded-nut text-mo hover:bg-nen2 hover:text-chu">
           <Link2 size={15} />
         </button>
+        <NutCamXuc xuong nho
+          chonEmoji={(h) => chenChu(h)}
+          chonAnh={(d) => chenChu(`\n![](${d})\n`)} />
         <button type="button" aria-label="Chèn ảnh" title="Chèn ảnh" disabled={dangNapAnh}
           onClick={() => anhRef.current?.click()}
           className="grid size-8 shrink-0 place-items-center rounded-nut text-mo hover:bg-nen2 hover:text-chu disabled:opacity-50">

@@ -30,6 +30,7 @@ export const LOI_QUAN_TRI: LoiQuanTri[] = [
   { duongDan: '/quan-tri/bao-xau', ten: 'Báo xấu', icon: 'Flag', demCho: 'baoXauCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/dien-dan', ten: 'Diễn đàn', icon: 'MessageSquare', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/chuyen-muc', ten: 'Chuyên mục', icon: 'FolderTree', nhom: 'Cộng đồng' },
+  { duongDan: '/quan-tri/sticker', ten: 'Gói sticker', icon: 'Smile', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/yeu-cau', ten: 'Yêu cầu game', icon: 'Inbox', demCho: 'yeuCauCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/tac-gia', ten: 'Đơn tác giả', icon: 'UserPlus', demCho: 'donTacGiaCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/thanh-vien', ten: 'Thành viên', icon: 'Users', nhom: 'Cộng đồng' },

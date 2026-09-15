@@ -91,6 +91,17 @@ const CHO_DAT = {
     canhToiThieu: 0, vuong: false, ngang: false,
   },
   /*
+   * Một hình trong gói sticker.
+   *
+   * Nhỏ nhất trong mọi chỗ đặt: sticker bày ở cỡ 72 điểm ảnh và một lưới mở
+   * ra là mấy chục tấm cùng lúc, nên mỗi tấm nặng thêm một chút là nhân lên
+   * mấy chục lần ngay trước mắt người đang đợi bảng hiện.
+   */
+  sticker: {
+    thuMuc: 'sticker', toiDa: 256 * 1024, canQuanTri: true,
+    canhToiThieu: 0, vuong: false, ngang: false,
+  },
+  /*
    * Ảnh đại diện của một tài khoản.
    *
    * Trước đợt này đây là ô dán ĐỊA CHỈ — chỗ duy nhất trong cả cửa hàng còn

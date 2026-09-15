@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  ClipboardCheck, Flag, FolderTree, Gamepad2, Inbox, LayoutDashboard, MessageSquare, Settings, Star, Tags, UserPlus, Users,
+  ClipboardCheck, Flag, FolderTree, Gamepad2, Inbox, LayoutDashboard, MessageSquare, Settings, Smile, Star, Tags, UserPlus, Users,
   type LucideIcon,
 } from 'lucide-react';
 import { LOI_QUAN_TRI, NHOM_QUAN_TRI, dangOQuanTri, type MaDem } from '@/lib/quan-tri-loi-di';
@@ -11,7 +11,7 @@ import { gop } from '@/lib/tien-ich';
 
 /* Viết tay từng dòng: `import * as` kéo cả nghìn biểu tượng vào bản dựng. */
 const BANG: Record<string, LucideIcon> = {
-  ClipboardCheck, Flag, FolderTree, Gamepad2, Inbox, LayoutDashboard, MessageSquare, Settings, Star, Tags, UserPlus, Users,
+  ClipboardCheck, Flag, FolderTree, Gamepad2, Inbox, LayoutDashboard, MessageSquare, Settings, Smile, Star, Tags, UserPlus, Users,
 };
 
 /**

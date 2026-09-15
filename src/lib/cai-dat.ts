@@ -26,7 +26,7 @@ import { db } from '@/lib/db';
  */
 
 /** Tên hàng trong bảng `CaiDat`. */
-export type NhomCaiDat = 'thu' | 'kho' | 'trang';
+export type NhomCaiDat = 'thu' | 'kho' | 'trang' | 'anh-dong';
 
 export interface CaiDatThu {
   mayChu: string;
@@ -44,6 +44,19 @@ export interface CaiDatKho {
   diaChi: string;
 }
 
+/**
+ * Dịch vụ ẢNH ĐỘNG cho bảng cảm xúc.
+ *
+ * `nhaCungCap` là `tenor` hoặc `giphy` — hai chỗ duy nhất có kho ảnh động đủ
+ * lớn mà vẫn phát khoá miễn phí. Không dựng kho ảnh động của riêng cửa hàng:
+ * thứ người ta muốn gửi là ảnh động của cả thế giới, mà giữ lấy nghĩa là giữ
+ * luôn phần kiểm duyệt nội dung của cả thế giới ấy.
+ */
+export interface CaiDatAnhDong {
+  nhaCungCap: string;
+  khoaApi: string;
+}
+
 export interface CaiDatTrang {
   ten: string;
   moTa: string;
@@ -55,9 +68,12 @@ export const O_BI_MAT: Record<NhomCaiDat, readonly string[]> = {
   thu: ['matKhau'],
   kho: ['biMat'],
   trang: [],
+  'anh-dong': ['khoaApi'],
 };
 
-const NEN: { thu: CaiDatThu; kho: CaiDatKho; trang: CaiDatTrang } = {
+const NEN: {
+  thu: CaiDatThu; kho: CaiDatKho; trang: CaiDatTrang; 'anh-dong': CaiDatAnhDong;
+} = {
   thu: {
     mayChu: process.env.THU_MAY_CHU ?? '',
     cong: process.env.THU_CONG ?? '587',
@@ -71,6 +87,10 @@ const NEN: { thu: CaiDatThu; kho: CaiDatKho; trang: CaiDatTrang } = {
     biMat: process.env.R2_BI_MAT ?? '',
     thung: process.env.R2_THUNG ?? '',
     diaChi: (process.env.R2_DIA_CHI ?? '').replace(/\/+$/, ''),
+  },
+  'anh-dong': {
+    nhaCungCap: process.env.GIF_NHA_CUNG_CAP ?? 'tenor',
+    khoaApi: process.env.GIF_KHOA_API ?? '',
   },
   trang: {
     ten: 'SunnyStore',
@@ -93,6 +113,7 @@ const NEN: { thu: CaiDatThu; kho: CaiDatKho; trang: CaiDatTrang } = {
 export const docThu = cache(async (): Promise<CaiDatThu> => doc('thu'));
 export const docKho = cache(async (): Promise<CaiDatKho> => doc('kho'));
 export const docTrang = cache(async (): Promise<CaiDatTrang> => doc('trang'));
+export const docAnhDong = cache(async (): Promise<CaiDatAnhDong> => doc('anh-dong'));
 
 async function doc<T extends NhomCaiDat>(nhom: T): Promise<(typeof NEN)[T]> {
   try {
@@ -161,6 +182,16 @@ export async function nguonCua(
   // chữ chép sẵn trong `NEN`. Nói nhầm là "biến môi trường" thì người sửa đi
   // tìm một dòng `.env` không tồn tại.
   if (nhom === 'trang') return 'mac-dinh';
+
+  /*
+   * Nhóm ảnh động luôn có sẵn tên nhà cung cấp trong `NEN`, nên phép "có giá
+   * trị nào khác rỗng không" ở dưới lúc nào cũng đúng — mà thứ quyết định
+   * nhóm này đã cấu hình hay chưa CHỈ LÀ CÁI KHOÁ. Không tách riêng thì trang
+   * quản trị báo "đang lấy từ biến môi trường" trong khi chẳng có khoá nào.
+   */
+  if (nhom === 'anh-dong') {
+    return NEN['anh-dong'].khoaApi ? 'bien-moi-truong' : 'trong';
+  }
 
   return Object.values(NEN[nhom]).some((v) => v) ? 'bien-moi-truong' : 'trong';
 }

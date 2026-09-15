@@ -4,10 +4,10 @@ import { TabCaiDat } from '@/components/quan-tri/TabCaiDat';
 export const metadata: Metadata = { title: 'Cài đặt' };
 
 /*
- * KHUNG CHUNG CỦA KHU CÀI ĐẶT — đầu đề và hàng tab ở đây, không lặp ở ba trang.
+ * KHUNG CHUNG CỦA KHU CÀI ĐẶT — đầu đề và hàng tab ở đây, không lặp ở từng trang.
  *
- * Ba nhóm cấu hình tách thành ba TRANG chứ không gộp một trang ba khối: mỗi
- * nhóm là một biểu mẫu riêng có nút Lưu riêng, mà ba biểu mẫu dài xếp chồng
+ * Mỗi nhóm cấu hình một TRANG chứ không gộp hết vào một trang nhiều khối: mỗi
+ * nhóm là một biểu mẫu riêng có nút Lưu riêng, mà mấy biểu mẫu dài xếp chồng
  * nhau thì người sửa cứ phải cuộn đi cuộn lại để tìm đúng nút của mình. Tách
  * trang cũng đồng nghĩa mỗi nhóm có một địa chỉ riêng để dán cho nhau.
  */

@@ -639,6 +639,35 @@ model DaLuu {
 /// Nên chuyên mục là của CẢ CỬA HÀNG, còn chủ đề nằm trong nó thì của TỪNG
 /// GAME: vào game nào cũng thấy đúng bảng chuyên mục ấy, mà bấm vào thì chỉ ra
 /// chuyện của game đang xem.
+/// MỘT GÓI STICKER, do quản trị tải lên.
+///
+/// Gói chứ không phải một rổ sticker phẳng: người gửi tìm theo gói ("bộ mèo
+/// mập"), y như mọi ứng dụng nhắn tin — một lưới hai trăm hình không nhóm thì
+/// cuộn mãi không thấy cái mình nhớ.
+model GoiSticker {
+  id     String   @id @default(cuid())
+  ten    String
+  thuTu  Int      @default(0)
+  taoLuc DateTime @default(now())
+
+  sticker Sticker[]
+
+  @@index([thuTu])
+}
+
+/// Một hình trong gói. `Cascade`: gỡ gói thì hình đi theo, chúng chỉ tồn tại
+/// bên trong gói và không có chỗ nào khác trỏ tới.
+model Sticker {
+  id    String     @id @default(cuid())
+  goiId String
+  goi   GoiSticker @relation(fields: [goiId], references: [id], onDelete: Cascade)
+
+  anh   String
+  thuTu Int @default(0)
+
+  @@index([goiId, thuTu])
+}
+
 /// PHÒNG CHAT CHUNG của một game — mỗi game một phòng, ai cũng đọc được.
 ///
 /// Diễn đàn trả lời tốt mấy câu hỏi CÒN LẠI LÂU: "màn 12 qua kiểu gì", "bản
@@ -656,6 +685,17 @@ model TinNhanChat {
   nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
 
   noiDung String   @db.Text
+
+  /// Một tấm ảnh đi kèm: ảnh tự tải lên, một cái sticker, hay một ảnh động.
+  ///
+  /// MỘT CỘT CHO CẢ BA, vì cả ba rốt cuộc đều là một địa chỉ ảnh và đều bày ra
+  /// y như nhau. Tách ba cột (hoặc thêm cột "loại") thì mỗi chỗ đọc phải viết
+  /// ba nhánh, mà ba nhánh ấy in ra cùng một thẻ `img`.
+  ///
+  /// Câu có ảnh thì `noiDung` được phép rỗng — gửi mỗi cái sticker là chuyện
+  /// thường nhất trong một phòng chat.
+  anh String?
+
   taoLuc  DateTime @default(now())
 
   /// Đọc luôn luôn là "mấy câu mới nhất của phòng này", nên chỉ mục đúng theo

@@ -645,6 +645,24 @@ p { text-wrap: pretty; }
   .the-noi:active { transform: scale(.985); }
   .the-bam { @apply the; transition: box-shadow var(--chuyen), transform var(--chuyen); }
   .the-bam:hover { box-shadow: 0 1px 3px rgb(32 33 36 / .12), 0 4px 12px rgb(32 33 36 / .08); }
+
+  /*
+   * BẢNG ĐẶC — nền không nhìn xuyên qua được.
+   *
+   * `.the` là tấm kính mờ nằm TRÊN NỀN TRANG, và nó đẹp đúng ở chỗ ấy. Nhưng
+   * một bảng nổi chồng lên CHỮ — bảng cảm xúc, menu bật ra — mà vẫn trong suốt
+   * thì chữ dưới nó xuyên lên, và không đọc nổi cái nào ra cái nào. Đã đo tận
+   * mắt: bảng emoji mở ra trên khung chat, mỗi hàng emoji chồng lên một câu
+   * đang nói.
+   *
+   * Tên KHÔNG phải `.the-noi` — lớp ấy đã có rồi và là thứ khác hẳn (dáng thẻ
+   * tab Hôm nay, vẫn trong suốt).
+   */
+  .bang-dac {
+    background: rgb(var(--nen2));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
   /* Ngón tay chạm vào phải thấy thẻ nhận — trên điện thoại không có con trỏ
      nào để đổi dáng, nên đây là phản hồi duy nhất người dùng nhận được. */
   .the-bam:active { transform: scale(.99); }

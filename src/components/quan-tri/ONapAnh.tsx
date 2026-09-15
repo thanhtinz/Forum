@@ -9,7 +9,7 @@ export interface KetQuaNap { duongDan?: string; loi?: string }
 /** Đẩy một tệp lên cổng nhận ảnh. Dùng chung cho mọi chỗ có nút chọn ảnh. */
 export async function napAnh(
   tep: File,
-  cho: 'icon' | 'bia' | 'su-kien' | 'phim-bia' | 'anh-chup' | 'dien-dan' | 'dai-dien' | 'chuyen-muc',
+  cho: 'icon' | 'bia' | 'su-kien' | 'phim-bia' | 'anh-chup' | 'dien-dan' | 'dai-dien' | 'chuyen-muc' | 'sticker',
 ): Promise<KetQuaNap> {
   const fd = new FormData();
   fd.set('cho', cho);

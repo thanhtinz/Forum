@@ -10,6 +10,7 @@ const NHOM: Record<NhomCaiDat, readonly string[]> = {
   thu: ['mayChu', 'cong', 'nguoi', 'matKhau', 'tu'],
   kho: ['taiKhoan', 'khoa', 'biMat', 'thung', 'diaChi'],
   trang: ['ten', 'moTa', 'emailLienHe'],
+  'anh-dong': ['nhaCungCap', 'khoaApi'],
 };
 
 /**
@@ -43,6 +44,12 @@ export async function luuCaiDat(
     return { loi: 'Cổng phải là một con số, ví dụ 587 hoặc 465.' };
   }
 
+  // Chỉ nhận đúng hai nhà cung cấp cửa hàng biết cách hỏi. Gõ bừa tên thứ ba
+  // thì ô tìm ảnh động im lặng không ra gì, mà chẳng ai đoán ra vì sao.
+  if (nhom === 'anh-dong' && moi.nhaCungCap && !['tenor', 'giphy'].includes(moi.nhaCungCap)) {
+    return { loi: 'Nhà cung cấp chỉ nhận “tenor” hoặc “giphy”.' };
+  }
+
   const xoa = O_BI_MAT[nhom].filter((o) => form.get(`xoa-${o}`) !== null);
 
   try {
@@ -66,3 +73,4 @@ export async function luuCaiDat(
 export async function luuThu(t: KetQuaCaiDat, f: FormData) { return luuCaiDat('thu', t, f); }
 export async function luuKho(t: KetQuaCaiDat, f: FormData) { return luuCaiDat('kho', t, f); }
 export async function luuTrang(t: KetQuaCaiDat, f: FormData) { return luuCaiDat('trang', t, f); }
+export async function luuAnhDong(t: KetQuaCaiDat, f: FormData) { return luuCaiDat('anh-dong', t, f); }

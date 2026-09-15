@@ -2,19 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Globe, HardDrive, Mail } from 'lucide-react';
+import { Globe, HardDrive, Mail, Sparkles } from 'lucide-react';
 import { gop } from '@/lib/tien-ich';
 
 const TAB = [
   { dich: '/quan-tri/cai-dat', ten: 'Thông tin trang', hinh: Globe },
   { dich: '/quan-tri/cai-dat/thu', ten: 'Gửi thư', hinh: Mail },
   { dich: '/quan-tri/cai-dat/kho', ten: 'Kho tệp', hinh: HardDrive },
+  { dich: '/quan-tri/cai-dat/anh-dong', ten: 'Ảnh động', hinh: Sparkles },
 ] as const;
 
 /**
  * Hàng tab của khu cài đặt.
  *
- * Là `<Link>` thật sang ba địa chỉ, không phải nút đổi trạng thái trong một
+ * Là `<Link>` thật sang từng địa chỉ, không phải nút đổi trạng thái trong một
  * trang: dán được địa chỉ đúng tab cho người khác, nút Lùi quay về đúng tab
  * vừa xem, và mỗi tab tự dựng phần của nó ở máy chủ — cấu hình thư thì không
  * việc gì phải tải theo khi người ta chỉ vào sửa tên cửa hàng.

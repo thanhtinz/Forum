@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { MessageCircle, Send, Trash2 } from 'lucide-react';
+import { ImagePlus, Loader2, MessageCircle, Send, Trash2, X } from 'lucide-react';
 import { docChat, guiChat, xoaChat, type CauChat } from '@/app/(cua-hang)/game/[duongDan]/chat';
 import { AnhDaiDien } from '@/components/NguoiDung';
+import { NutCamXuc } from '@/components/BangCamXuc';
+import { napAnh } from '@/components/quan-tri/ONapAnh';
 import { NHIP_MS, TIN_TOI_DA } from '@/lib/chat-const';
 import { cachDay, gop } from '@/lib/tien-ich';
 
@@ -33,6 +35,11 @@ export function PhongChat({ gameId, tenGame, banDau, coTheNoi, toiLa, laQuanTri 
 }) {
   const [cau, datCau] = useState<CauChat[]>(banDau);
   const [chu, datChu] = useState('');
+  // Ảnh đính sẵn, chờ bấm gửi: sticker và ảnh động gửi thẳng luôn, còn ảnh tự
+  // tải lên thì người ta hay muốn gõ thêm một câu đi kèm.
+  const [anhKem, datAnhKem] = useState<string | null>(null);
+  const [dangNapAnh, datDangNapAnh] = useState(false);
+  const oAnh = useRef<HTMLInputElement>(null);
   const [loi, datLoi] = useState<string | null>(null);
   const [dangGui, batDau] = useTransition();
   const khung = useRef<HTMLDivElement>(null);
@@ -69,25 +76,47 @@ export function PhongChat({ gameId, tenGame, banDau, coTheNoi, toiLa, laQuanTri 
     return () => { clearInterval(nhip); document.removeEventListener('visibilitychange', khiHien); };
   }, [lamMoi]);
 
-  const gui = () => {
+  const gui = (dinhKem?: string) => {
     const noi = chu.trim();
-    if (!noi || dangGui) return;
+    const anh = dinhKem ?? anhKem ?? undefined;
+    if ((!noi && !anh) || dangGui) return;
     datLoi(null);
     batDau(async () => {
-      const kq = await guiChat(gameId, noi);
+      const kq = await guiChat(gameId, noi, anh);
       if (kq.loi) { datLoi(kq.loi); return; }
       // Chỉ xoá ô gõ khi máy chủ đã nhận: hỏng mà vẫn xoá thì câu vừa gõ mất
       // trắng, và người ta phải nhớ lại mình vừa viết gì.
       datChu('');
+      datAnhKem(null);
       nhoChoDung();
       oDay.current = true;
       if (kq.cau) datCau(kq.cau);
     });
   };
 
+  const napTep = async (tep: File | null | undefined) => {
+    if (!tep) return;
+    datLoi(null);
+    datDangNapAnh(true);
+    // Ảnh trong phòng chat đi chung ngăn với ảnh bài diễn đàn: cùng một loại
+    // ảnh người dùng dán vào, cùng một cửa chặn đếm lượt.
+    const kq = await napAnh(tep, 'dien-dan');
+    datDangNapAnh(false);
+    if (oAnh.current) oAnh.current.value = '';
+    if (kq.loi) { datLoi(kq.loi); return; }
+    datAnhKem(kq.duongDan ?? null);
+  };
+
   return (
-    <section aria-label={`Phòng chat ${tenGame}`} className="the overflow-hidden">
-      <h2 className="flex items-center gap-2 border-b border-vien bg-nen3/60 px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide text-mo">
+    /*
+     * KHÔNG `overflow-hidden` ở thẻ ngoài, dù mấy khối khác trong trang đều có.
+     *
+     * Bảng cảm xúc mở LÊN TRÊN nút mặt cười, tức là tràn ra ngoài mép thẻ này —
+     * cắt viền thì cắt luôn cả bảng, và người bấm chỉ thấy một mẩu. Bù lại,
+     * hàng đầu đề phải tự bo hai góc trên cho khớp mép thẻ.
+     */
+    <section aria-label={`Phòng chat ${tenGame}`} className="the">
+      <h2 className="flex items-center gap-2 rounded-t-the border-b border-vien bg-nen3/60 px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide text-mo">
         <MessageCircle size={14} aria-hidden /> Phòng chat
         {/* Câu phụ này biến mất ở khổ hẹp: gói vào cùng hàng với chữ "Phòng
             chat" thì nó xuống dòng ngay giữa câu, thành hai mẩu chữ chẳng đọc
@@ -115,9 +144,19 @@ export function PhongChat({ gameId, tenGame, banDau, coTheNoi, toiLa, laQuanTri 
                   </p>
                   {/* `break-words`: một chuỗi dài không dấu cách — địa chỉ tệp,
                       mã lỗi — sẽ kéo cả khung rộng ra và đẩy trang trôi ngang. */}
-                  <p className="whitespace-pre-wrap break-words text-[13px] leading-snug">
-                    {c.noiDung}
-                  </p>
+                  {c.noiDung && (
+                    <p className="whitespace-pre-wrap break-words text-[13px] leading-snug">
+                      {c.noiDung}
+                    </p>
+                  )}
+                  {c.anh && (
+                    /* Ảnh trong phòng chat có TRẦN CAO hẳn hoi: một tấm chụp
+                       màn hình dựng đứng mà để nguyên cỡ thì nó chiếm trọn
+                       khung, đẩy mọi câu khác ra khỏi tầm mắt.
+                       eslint-disable-next-line @next/next/no-img-element */
+                    <img src={c.anh} alt="" loading="lazy"
+                      className="mt-1 max-h-[160px] rounded-nut object-contain" />
+                  )}
                 </div>
 
                 {(laQuanTri || c.nguoi.tenDangNhap === toiLa) && (
@@ -140,7 +179,33 @@ export function PhongChat({ gameId, tenGame, banDau, coTheNoi, toiLa, laQuanTri 
       <div className="border-t border-vien px-4 py-3">
         {coTheNoi ? (
           <>
-            <div className="flex items-end gap-2">
+            {anhKem && (
+              <div className="relative mb-2 inline-block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={anhKem} alt="" className="max-h-24 rounded-nut border border-vien" />
+                <button type="button" onClick={() => datAnhKem(null)} aria-label="Bỏ ảnh đính kèm"
+                  className="absolute -right-2 -top-2 grid size-5 place-items-center rounded-full bg-xau-dac text-white">
+                  <X size={12} aria-hidden />
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-end gap-1.5">
+              <NutCamXuc
+                chonEmoji={(h) => datChu((c) => (c + h).slice(0, TIN_TOI_DA))}
+                chonAnh={(d) => gui(d)} />
+
+              <button type="button" onClick={() => oAnh.current?.click()} disabled={dangNapAnh}
+                aria-label="Gửi ảnh"
+                className="grid size-[34px] shrink-0 place-items-center rounded-nut text-mo transition-colors hover:bg-nen3 hover:text-chu disabled:opacity-50">
+                {dangNapAnh
+                  ? <Loader2 size={17} className="animate-spin" aria-hidden />
+                  : <ImagePlus size={17} aria-hidden />}
+              </button>
+              <input ref={oAnh} type="file" accept="image/*" className="sr-only"
+                aria-label="Chọn ảnh gửi vào phòng chat"
+                onChange={(e) => void napTep(e.target.files?.[0])} />
+
               <input value={chu} onChange={(e) => datChu(e.target.value)}
                 onKeyDown={(e) => {
                   // Enter gửi, Shift+Enter thì thôi — đây là một câu nói, không
@@ -150,7 +215,8 @@ export function PhongChat({ gameId, tenGame, banDau, coTheNoi, toiLa, laQuanTri 
                 maxLength={TIN_TOI_DA} aria-label="Gõ một câu"
                 placeholder={`Nói gì đó về ${tenGame}…`}
                 className="o-nhap !min-h-[38px] !py-1.5 !text-[13px]" />
-              <button type="button" onClick={gui} disabled={dangGui || !chu.trim()}
+              <button type="button" onClick={() => gui()}
+                disabled={dangGui || (!chu.trim() && !anhKem)}
                 aria-label="Gửi"
                 className="nut-cai-dam shrink-0 !min-h-[38px] !px-3.5">
                 <Send size={15} aria-hidden />

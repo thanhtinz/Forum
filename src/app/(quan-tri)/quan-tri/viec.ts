@@ -26,6 +26,7 @@ import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-c
 import {
   CHUYEN_MUC_TOI_DA, MO_TA_TOI_DA, MUC_CHUNG, TEN_TOI_DA,
 } from '@/lib/chuyen-muc-const';
+import { STICKER_MOI_GOI, TEN_GOI_TOI_DA } from '@/lib/cam-xuc-const';
 
 export interface KetQua { loi?: string; ok?: boolean }
 
@@ -1127,6 +1128,109 @@ export async function doiChoTheLoai(theLoaiId: string, len: boolean): Promise<Ke
   revalidatePath('/duyet');
   revalidatePath('/game');
   return {};
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * GÓI STICKER
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Thêm hoặc đổi tên một gói sticker. */
+export async function luuGoiSticker(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const id = chu(form, 'id') || null;
+  const ten = chu(form, 'ten');
+  if (ten.length < 2) return { loi: 'Hãy đặt tên cho gói.' };
+  if (ten.length > TEN_GOI_TOI_DA) return { loi: `Tên gói dài quá ${TEN_GOI_TOI_DA} chữ.` };
+
+  if (id) {
+    await db.goiSticker.update({ where: { id }, data: { ten }, select: { id: true } });
+  } else {
+    const cuoi = await db.goiSticker.findFirst({
+      orderBy: { thuTu: 'desc' }, select: { thuTu: true },
+    });
+    await db.goiSticker.create({
+      data: { ten, thuTu: (cuoi?.thuTu ?? 0) + 10 }, select: { id: true },
+    });
+  }
+
+  lamMoiSticker();
+  return {};
+}
+
+/**
+ * Gỡ cả một gói, kéo theo mọi hình trong đó (`Cascade` ở lược đồ).
+ *
+ * Không chặn như chuyên mục: hình trong gói chỉ tồn tại vì gói, không có bài
+ * viết nào treo vào chúng. Mấy câu chat đã gửi thì giữ nguyên ĐỊA CHỈ ảnh
+ * trong cột `anh` của chính câu ấy, nên chúng không hỏng theo.
+ */
+export async function xoaGoiSticker(goiId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const co = await db.goiSticker.findUnique({ where: { id: goiId }, select: { id: true } });
+  if (!co) return { loi: 'Không tìm thấy gói này.' };
+
+  await db.goiSticker.delete({ where: { id: goiId } });
+  lamMoiSticker();
+  return {};
+}
+
+/**
+ * Thêm một hình vào gói.
+ *
+ * Nhận ĐỊA CHỈ ảnh đã tải lên chứ không nhận tệp: cổng `/api/tai-anh` đã lo
+ * phần cân tệp, xét định dạng và đếm lượt — chép lại mấy phép ấy ở đây là hai
+ * bản luật sẽ lệch nhau vào một ngày nào đó.
+ */
+export async function themSticker(goiId: string, anh: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  if (!anh.startsWith('/') && !anh.startsWith('https://')) {
+    return { loi: 'Địa chỉ ảnh không hợp lệ.' };
+  }
+
+  const goi = await db.goiSticker.findUnique({
+    where: { id: goiId }, select: { id: true, _count: { select: { sticker: true } } },
+  });
+  if (!goi) return { loi: 'Không tìm thấy gói này.' };
+  if (goi._count.sticker >= STICKER_MOI_GOI) {
+    return { loi: `Mỗi gói nhiều nhất ${STICKER_MOI_GOI} hình. Mở gói mới đi.` };
+  }
+
+  const cuoi = await db.sticker.findFirst({
+    where: { goiId }, orderBy: { thuTu: 'desc' }, select: { thuTu: true },
+  });
+  await db.sticker.create({
+    data: { goiId, anh, thuTu: (cuoi?.thuTu ?? 0) + 10 }, select: { id: true },
+  });
+
+  lamMoiSticker();
+  return {};
+}
+
+/** Gỡ một hình khỏi gói. */
+export async function xoaSticker(stickerId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const kq = await db.sticker.deleteMany({ where: { id: stickerId } });
+  if (kq.count === 0) return { loi: 'Không tìm thấy hình này.' };
+
+  lamMoiSticker();
+  return {};
+}
+
+/*
+ * Bảng sticker hiện trong bảng cảm xúc của mọi trang có ô soạn bài hoặc ô
+ * chat, mà mấy trang ấy hỏi nó LÚC NGƯỜI TA BẤM vào tab — không qua bộ đệm
+ * trang. Nên chỉ cần dọn đúng trang quản trị.
+ */
+function lamMoiSticker() {
+  revalidatePath('/quan-tri/sticker');
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

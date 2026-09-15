@@ -7,6 +7,7 @@ import { LAY_MOI_LAN, NGHI_GIAY, TIN_TOI_DA } from '@/lib/chat-const';
 export interface CauChat {
   id: string;
   noiDung: string;
+  anh: string | null;
   taoLuc: string;
   nguoi: { tenDangNhap: string; tenHienThi: string; anh: string | null };
 }
@@ -47,7 +48,7 @@ export async function docChat(gameId: string): Promise<KetQuaChat> {
     orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
     take: LAY_MOI_LAN,
     select: {
-      id: true, noiDung: true, taoLuc: true,
+      id: true, noiDung: true, anh: true, taoLuc: true,
       nguoi: { select: { tenDangNhap: true, tenHienThi: true, anh: true } },
     },
   });
@@ -56,6 +57,7 @@ export async function docChat(gameId: string): Promise<KetQuaChat> {
     cau: cau.reverse().map((c) => ({
       id: c.id,
       noiDung: c.noiDung,
+      anh: c.anh,
       // Ngày tháng đi qua ranh giới máy chủ — trình duyệt tự dựng lại.
       taoLuc: c.taoLuc.toISOString(),
       nguoi: c.nguoi,
@@ -63,14 +65,34 @@ export async function docChat(gameId: string): Promise<KetQuaChat> {
   };
 }
 
-/** Gửi một câu vào phòng chat của game. */
-export async function guiChat(gameId: string, noiDung: string): Promise<KetQuaChat> {
+/**
+ * Gửi một câu vào phòng chat của game.
+ *
+ * `anh` là ảnh tự tải lên, một cái sticker, hay một ảnh động — cả ba đều là
+ * một địa chỉ. Có ảnh thì `noiDung` được phép rỗng: gửi mỗi cái sticker là
+ * chuyện thường nhất trong một phòng chat.
+ */
+export async function guiChat(
+  gameId: string, noiDung: string, anh?: string,
+): Promise<KetQuaChat> {
   let nguoi;
   try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn cần đăng nhập để nói chuyện.' }; }
 
   const chu = noiDung.trim();
-  if (!chu) return { loi: 'Chưa gõ gì cả.' };
+  const tam = (anh ?? '').trim();
+
+  /*
+   * Chỉ nhận ảnh của CHÍNH CỬA HÀNG hoặc của dịch vụ ngoài qua `https://`.
+   *
+   * Không kiểm thì trường này thành chỗ nhét `javascript:` hay `data:` vào một
+   * thẻ `img` bày cho mọi người trong phòng xem. Đây là chuỗi duy nhất ở đây
+   * đi thẳng vào thuộc tính `src`, nên nó phải qua cửa.
+   */
+  if (tam && !tam.startsWith('/') && !tam.startsWith('https://')) {
+    return { loi: 'Ảnh không hợp lệ.' };
+  }
+  if (!chu && !tam) return { loi: 'Chưa gõ gì cả.' };
   if (chu.length > TIN_TOI_DA) return { loi: `Mỗi câu tối đa ${TIN_TOI_DA} ký tự.` };
 
   // Điều kiện "game đang hiện" nằm trong truy vấn, không lọc sau: hàm này là
@@ -97,7 +119,8 @@ export async function guiChat(gameId: string, noiDung: string): Promise<KetQuaCh
   }
 
   await db.tinNhanChat.create({
-    data: { gameId, nguoiId: nguoi.id, noiDung: chu }, select: { id: true },
+    data: { gameId, nguoiId: nguoi.id, noiDung: chu, anh: tam || null },
+    select: { id: true },
   });
 
   // Trả luôn danh sách mới cho người vừa gửi: đỡ một lượt hỏi lại, và câu vừa

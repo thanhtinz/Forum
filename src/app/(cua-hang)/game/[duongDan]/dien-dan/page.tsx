@@ -9,6 +9,7 @@ import { khongDau } from '@/lib/tim-kiem-const';
 import { PhanTrang } from '@/components/PhanTrang';
 import { cachDay, gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
 import { rutGon } from '@/lib/trich-dan-const';
+import { NHAN, laNhan } from '@/lib/nhan-chu-de-const';
 import { AnhDaiDien } from '@/components/NguoiDung';
 
 /*
@@ -64,7 +65,17 @@ export default async function TabDienDan({ params, searchParams }: {
 
   // Chỉ nhận mã lọc CÓ TRONG BẢNG: `?loc=` tới từ địa chỉ nên ai cũng gõ bừa
   // được, mà một mã lạ lọt vào là danh sách rỗng trông như diễn đàn chết.
-  const loc = LOC.some((l) => l.ma === locNhap) ? (locNhap ?? '') : '';
+  /*
+   * Một ô `loc` duy nhất mang cả hai kiểu lọc: trạng thái và nhãn.
+   *
+   * Gộp vào một ô chứ không thêm `?nhan=` riêng, vì hai kiểu ấy KHÔNG chồng
+   * nhau được trong đầu người dùng: hàng chip chỉ sáng đúng một cái, nên hai
+   * tham số thì sinh ra mấy tổ hợp không lối nào bấm tới mà vẫn phải viết mã
+   * xử lý — và phải nghĩ xem "Đã giải + Báo lỗi" nghĩa là gì.
+   */
+  const loc = LOC.some((l) => l.ma === locNhap) || laNhan(locNhap ?? '')
+    ? (locNhap ?? '')
+    : '';
   /*
    * Ô tìm của diễn đàn mang tên `tim`, KHÔNG phải `q`.
    *
@@ -89,6 +100,7 @@ export default async function TabDienDan({ params, searchParams }: {
     gameId: game.id,
     ...(loc === 'chua-tra-loi' ? { soTraLoi: 0 } : {}),
     ...(loc === 'da-giai' ? { loiGiaiId: { not: null } } : {}),
+    ...(laNhan(loc) ? { nhan: loc as 'TAN_GAU' } : {}),
     ...(tuKhoa
       ? { AND: khongDau(tuKhoa).split(' ').filter(Boolean).slice(0, 6)
         .map((t) => ({ timKiem: { contains: t } })) }
@@ -115,7 +127,7 @@ export default async function TabDienDan({ params, searchParams }: {
     take: MOI_TRANG,
     select: {
       id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true,
-      soTraLoi: true, traLoiCuoiLuc: true, loiGiaiId: true,
+      soTraLoi: true, traLoiCuoiLuc: true, loiGiaiId: true, nhan: true,
       nguoi: { select: { tenHienThi: true, anh: true } },
       /*
        * Người viết bài GẦN NHẤT, lấy kèm trong cùng một câu.
@@ -159,16 +171,17 @@ export default async function TabDienDan({ params, searchParams }: {
       {tongTatCa >= 2 && (
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap gap-1.5">
-            {LOC.map((l) => (
-              <Link key={l.ma || 'tat-ca'} href={duongLoc(game.duongDan, l.ma, tuKhoa)}
-                aria-current={l.ma === loc ? 'page' : undefined}
-                className={gop(
-                  'rounded-full px-3 py-1 text-[13px] font-semibold transition-colors',
-                  l.ma === loc ? 'bg-nhan text-white' : 'bg-nen3/70 text-mo hover:text-chu',
-                )}>
-                {l.ten}
-              </Link>
-            ))}
+            {[...LOC, ...NHAN.map((n) => ({ ma: n.ma as string, ten: n.ten as string }))]
+              .map((l) => (
+                <Link key={l.ma || 'tat-ca'} href={duongLoc(game.duongDan, l.ma, tuKhoa)}
+                  aria-current={l.ma === loc ? 'page' : undefined}
+                  className={gop(
+                    'rounded-full px-3 py-1 text-[13px] font-semibold transition-colors',
+                    l.ma === loc ? 'bg-nhan text-white' : 'bg-nen3/70 text-mo hover:text-chu',
+                  )}>
+                  {l.ten}
+                </Link>
+              ))}
           </div>
 
           {/* Biểu mẫu GET, không phải ô gõ tới đâu lọc tới đó: gõ tới đâu lọc
@@ -259,6 +272,16 @@ export default async function TabDienDan({ params, searchParams }: {
                           <Lock size={10} aria-label="đã khoá" /> Khoá
                         </span>
                       )}
+                      {/* Nhãn đứng cạnh mấy chip trạng thái, cùng một hàng:
+                          người lướt lọc bằng mắt theo mép trái. */}
+                      {(() => {
+                        const n = NHAN.find((x) => x.ma === c.nhan);
+                        return n && n.ma !== 'TAN_GAU' ? (
+                          <span className={gop('rounded-full px-1.5 py-0.5 text-[11px] font-bold', n.sac)}>
+                            {n.ten}
+                          </span>
+                        ) : null;
+                      })()}
                       <span className="min-w-0 truncate text-[15px] font-semibold">{c.tieuDe}</span>
                     </span>
 

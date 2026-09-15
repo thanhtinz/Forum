@@ -5,6 +5,7 @@ import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGui } from '@/components/BieuMauGui';
 import { OSoanThao } from '@/components/OSoanThao';
 import { dangChuDe } from '../viec';
+import { NHAN, NHAN_MAC_DINH } from '@/lib/nhan-chu-de-const';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Đăng chủ đề' };
@@ -36,6 +37,32 @@ export default async function TrangDangBai({ params }: { params: Promise<{ duong
           <input name="tieuDe" required minLength={5} maxLength={150} className="o-nhap"
             placeholder="Hỏi gì, kể gì, hay báo lỗi gì?" />
         </label>
+
+        {/*
+          CHỌN NHÃN BẰNG Ô TRÒN BÀY HẾT RA, không phải một danh sách thả xuống.
+
+          Bốn lựa chọn thì bày hết ra rẻ hơn một cú bấm mở danh sách, và quan
+          trọng hơn: mỗi nhãn kèm được một dòng giải thích nó dành cho chuyện
+          gì. Danh sách thả xuống thì chỉ còn bốn cái tên trơ trọi, và người mở
+          chủ đề đoán bừa — mà đoán bừa thì bộ lọc ở trang danh sách hoá vô dụng.
+        */}
+        <fieldset>
+          <legend className="phu mb-1.5">Chủ đề này thuộc loại nào?</legend>
+          <div className="grid gap-1.5 sm:grid-cols-2">
+            {NHAN.map((n) => (
+              <label key={n.ma}
+                className="vach flex cursor-pointer items-start gap-2.5 rounded-nut border p-2.5 transition-colors hover:bg-nen3/60 has-[:checked]:border-nhan has-[:checked]:bg-nhan/5">
+                <input type="radio" name="nhan" value={n.ma}
+                  defaultChecked={n.ma === NHAN_MAC_DINH}
+                  className="mt-0.5 size-4 shrink-0 accent-[rgb(var(--nhan))]" />
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold">{n.ten}</span>
+                  <span className="phu block leading-snug">{n.ta}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         {/*
           TRÌNH SOẠN THẢO, không còn là ô chữ trần.
 

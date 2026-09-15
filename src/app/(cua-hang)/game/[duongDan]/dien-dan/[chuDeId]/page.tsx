@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { ChevronLeft, CircleCheckBig, CornerDownRight, Lock, Pin, X } from 'lucide-react';
+import { ChevronLeft, CircleCheckBig, CornerDownRight, Eye, Lock, Pin, X } from 'lucide-react';
 import { db } from '@/lib/db';
 import { dungChuDam } from '@/lib/chu-dam';
 import { OSoanThao } from '@/components/OSoanThao';
@@ -17,8 +17,9 @@ import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { PhanTrang } from '@/components/PhanTrang';
 import { traLoi } from '../viec';
 import { MOI_TRANG_TRA_LOI } from '../moi-trang';
-import { cachDay, catChu, gop, kep, soTrang } from '@/lib/tien-ich';
+import { cachDay, catChu, gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
 import { rutGon } from '@/lib/trich-dan-const';
+import { NHAN } from '@/lib/nhan-chu-de-const';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +40,7 @@ export default async function TrangChuDe({ params, searchParams }: {
     where: { id: chuDeId, game: { duongDan, trangThai: 'DANG_HIEN' } },
     select: {
       id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true, taoLuc: true,
-      nguoiId: true, loiGiaiId: true,
+      nguoiId: true, loiGiaiId: true, nhan: true, suaLuc: true, soLuotXem: true,
       loiGiai: { select: { id: true, taoLuc: true, nguoi: { select: { tenHienThi: true } } } },
       nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true, vaiTro: true } },
       game: { select: { ten: true, duongDan: true, tacGiaId: true } },
@@ -67,7 +68,7 @@ export default async function TrangChuDe({ params, searchParams }: {
     skip: (trang - 1) * MOI_TRANG_TRA_LOI,
     take: MOI_TRANG_TRA_LOI,
     select: {
-      id: true, noiDung: true, taoLuc: true, nguoiId: true, soHuuIch: true,
+      id: true, noiDung: true, taoLuc: true, nguoiId: true, soHuuIch: true, suaLuc: true,
       nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true, vaiTro: true } },
       // Chỉ lấy đúng mẩu cần để in dòng trích — không kéo cả bài gốc về.
       traLoiCho: {
@@ -137,6 +138,18 @@ export default async function TrangChuDe({ params, searchParams }: {
     }))
     : false;
 
+  /*
+   * Đếm lượt mở chủ đề SAU KHI đã lấy đủ dữ liệu, và không chờ kết quả.
+   *
+   * Cùng lối `Game.soLuotXem`: hỏng bộ đếm thì cùng lắm lệch một con số, còn
+   * chặn cả trang lại thì hỏng cả trang. Con số này là thứ duy nhất nói được
+   * một chủ đề im lặng là "chưa ai ngó tới" hay "ai cũng đọc mà không ai biết
+   * trả lời" — hai chuyện khác hẳn nhau với người đang chờ câu trả lời.
+   */
+  void db.chuDe.update({
+    where: { id: chuDe.id }, data: { soLuotXem: { increment: 1 } }, select: { id: true },
+  }).catch(() => {});
+
   // Gói sẵn hai mốc để nhận vai, khỏi truyền lẻ hai biến xuống từng chỗ.
   const vai = { chuChuDeId: chuDe.nguoiId, tacGiaGameId: chuDe.game.tacGiaId };
 
@@ -161,6 +174,15 @@ export default async function TrangChuDe({ params, searchParams }: {
           {chuDe.ghim && <Pin size={16} className="mt-1.5 shrink-0 text-nhan" />}
           {chuDe.tieuDe}
         </h1>
+
+        {/* Nhãn đứng dưới đầu đề chứ không chen vào trong: đầu đề dài thì nhãn
+            bị đẩy xuống dòng giữa chừng câu, trông như một chữ lạc vào. */}
+        <p className="mt-1.5 flex flex-wrap items-center gap-2">
+          <NhanChuDe ma={chuDe.nhan} />
+          <span className="phu inline-flex items-center gap-1 text-[12px]">
+            <Eye size={13} aria-hidden /> {gonSo(chuDe.soLuotXem)} lượt xem
+          </span>
+        </p>
         <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
           <p className="phu">
             <TenNguoi ten={chuDe.nguoi.tenHienThi} tenDangNhap={chuDe.nguoi.tenDangNhap} />
@@ -195,7 +217,8 @@ export default async function TrangChuDe({ params, searchParams }: {
       )}
 
       <article className="the p-4">
-        <Nguoi nguoi={chuDe.nguoi} nguoiId={chuDe.nguoiId} luc={chuDe.taoLuc} vai={vai} />
+        <Nguoi nguoi={chuDe.nguoi} nguoiId={chuDe.nguoiId} luc={chuDe.taoLuc} vai={vai}
+          suaLuc={chuDe.suaLuc} />
         {/*
           `dangerouslySetInnerHTML` ở đây KHÔNG nguy hiểm, và chỗ nguy hiểm
           thật đã bị chặn từ trước: `dungChuDam` bật `html: false`, nên mọi thẻ
@@ -243,7 +266,7 @@ export default async function TrangChuDe({ params, searchParams }: {
               )}
               <div className="p-4">
               <Nguoi nguoi={t.nguoi} nguoiId={t.nguoiId} luc={t.taoLuc} vai={vai}
-                thu={(trang - 1) * MOI_TRANG_TRA_LOI + i + 1} />
+                suaLuc={t.suaLuc} thu={(trang - 1) * MOI_TRANG_TRA_LOI + i + 1} />
 
               {/* Dòng trích nằm TRÊN bài, không nằm dưới: đọc xuôi từ trên
                   xuống thì phải biết bài này đáp ai TRƯỚC khi đọc nó nói gì. */}
@@ -362,13 +385,15 @@ function nhanVai(
   return null;
 }
 
-function Nguoi({ nguoi, nguoiId, luc, vai, thu }: {
+function Nguoi({ nguoi, nguoiId, luc, vai, thu, suaLuc }: {
   nguoi: { tenHienThi: string; tenDangNhap: string; anh: string | null; vaiTro: string };
   nguoiId: string;
   luc: Date;
   vai: { chuChuDeId: string; tacGiaGameId: string | null };
   /** Số thứ tự bài trong chủ đề — để người ta nhắc tới nhau cho gọn. */
   thu?: number;
+  /** Lần sửa gần nhất, nếu bài đã từng được sửa. */
+  suaLuc?: Date | null;
 }) {
   const nhan = nhanVai({ nguoiId, vaiTro: nguoi.vaiTro }, vai);
 
@@ -387,9 +412,31 @@ function Nguoi({ nguoi, nguoiId, luc, vai, thu }: {
             </span>
           )}
         </p>
-        <p className="phu">{cachDay(luc)}</p>
+        {/*
+          NÓI RA LÀ BÀI ĐÃ SỬA.
+
+          Người đọc quay lại một chủ đề và thấy câu chữ khác đi thì hoặc họ nhớ
+          nhầm, hoặc bài đã đổi — mà không có dấu nào thì không phân biệt được.
+          Với mấy chủ đề tranh luận, sửa bài lặng lẽ còn là cách rút lại lời đã
+          nói sau khi người khác đã đáp nó.
+        */}
+        <p className="phu">
+          {cachDay(luc)}
+          {suaLuc && <span title={`Sửa ${cachDay(suaLuc)}`}> · đã sửa</span>}
+        </p>
       </div>
       {thu != null && <span className="phu shrink-0 text-[12px]">#{thu}</span>}
     </div>
+  );
+}
+
+/** Nhãn của chủ đề, dựng thành một chip nhỏ. */
+function NhanChuDe({ ma }: { ma: string }) {
+  const n = NHAN.find((x) => x.ma === ma);
+  if (!n) return null;
+  return (
+    <span className={gop('rounded-full px-2 py-0.5 text-[11px] font-bold', n.sac)}>
+      {n.ten}
+    </span>
   );
 }

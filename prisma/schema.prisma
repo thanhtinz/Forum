@@ -642,9 +642,24 @@ model ChuDe {
   ghim Boolean @default(false)
   khoa Boolean @default(false)
 
+  /// Người mở chủ đề tự chọn. Mặc định `TAN_GAU` — nhãn nhẹ nhất, vì đoán sai
+  /// thành "báo lỗi" thì người bày hàng đi kiểm một thứ chẳng ai báo.
+  nhan NhanChuDe @default(TAN_GAU)
+
   soTraLoi      Int      @default(0)
   traLoiCuoiLuc DateTime @default(now())
   taoLuc        DateTime @default(now())
+
+  /// Lần sửa gần nhất. Chưa sửa lần nào thì để trống.
+  ///
+  /// KHÔNG dùng `@updatedAt`: cột ấy nhảy theo MỌI lượt ghi, kể cả lúc cửa
+  /// hàng tự cộng `soTraLoi` hay tự đặt lời giải — rồi trang in "đã sửa" lên
+  /// một bài mà chủ nó chưa hề đụng vào. Đây là chữ nói với người đọc rằng nội
+  /// dung đã đổi sau khi họ có thể đã đọc, nên chỉ chính lượt sửa mới được ghi.
+  suaLuc        DateTime?
+
+  /// Đếm lượt mở chủ đề. Cùng lối `Game.soLuotXem`.
+  soLuotXem     Int      @default(0)
 
   /// Bài được chọn là LỜI GIẢI của chủ đề.
   ///
@@ -666,6 +681,7 @@ model ChuDe {
   theoDoi TheoDoiChuDe[]
 
   @@index([gameId, ghim, traLoiCuoiLuc])
+  @@index([gameId, nhan])
 }
 
 /*
@@ -724,6 +740,9 @@ model TraLoi {
 
   noiDung String   @db.Text
   taoLuc  DateTime @default(now())
+
+  /// Lần sửa gần nhất — xem chú thích cùng tên ở `ChuDe`.
+  suaLuc  DateTime?
 
   /// Bao nhiêu người bấm "hữu ích" cho bài này.
   ///
@@ -792,6 +811,24 @@ model CaiDat {
   khoa   String   @id
   giaTri Json
   suaLuc DateTime @updatedAt
+}
+
+/*
+ * NHÃN CỦA MỘT CHỦ ĐỀ.
+ *
+ * Diễn đàn game hỏi đi hỏi lại đúng bốn kiểu chuyện, và bốn kiểu ấy cần bốn
+ * cách đọc khác nhau: người đang kẹt màn muốn tìm CÂU HỎI có lời giải, người
+ * rảnh thì đọc MẸO, còn người bày hàng thì chỉ quan tâm mấy bài BÁO LỖI. Không
+ * phân loại thì cả bốn trộn vào một dải, và ai cũng phải lọc bằng mắt.
+ *
+ * Danh sách CỐ ĐỊNH bốn nhãn, không cho người dùng tự đặt: nhãn tự đặt thì hai
+ * mươi người đẻ ra hai mươi cách gọi cùng một chuyện, và bộ lọc hoá vô dụng.
+ */
+enum NhanChuDe {
+  HOI_DAP
+  MEO_HAY
+  BAO_LOI
+  TAN_GAU
 }
 
 /// Vì sao báo. Danh sách ngắn và cố định: ô chữ tự do thì người báo viết cả

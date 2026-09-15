@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { batBuocDangNhap } from '@/lib/xac-thuc';
 import { guiThongBao } from '@/lib/thong-bao';
 import { bocTenNhac } from '@/lib/nhac-ten-const';
+import { NHAN_MAC_DINH, laNhan } from '@/lib/nhan-chu-de-const';
 import { soTrang } from '@/lib/tien-ich';
 import { dungChuoiTimChuDe } from '@/lib/tim-kiem-const';
 import { MOI_TRANG_TRA_LOI } from './moi-trang';
@@ -37,11 +38,22 @@ export async function dangChuDe(_truoc: KetQua, form: FormData): Promise<KetQua>
   });
   if (!game) return { loi: 'Không tìm thấy game này.' };
 
+  /*
+   * Nhãn phải CÓ TRONG BẢNG, không nhận bừa thứ biểu mẫu gửi lên.
+   *
+   * Gõ bừa thì Prisma ném lỗi enum và cả bài viết vừa soạn mất trắng — người
+   * viết chẳng làm gì sai. Lùi về nhãn nhẹ nhất thì bài vẫn đăng được, và
+   * người ta tự đổi lại được.
+   */
+  const nhanNhap = String(form.get('nhan') ?? '');
+  const nhan = laNhan(nhanNhap) ? nhanNhap : NHAN_MAC_DINH;
+
   const chuDe = await db.chuDe.create({
     // `timKiem` dựng ngay lúc ghi, không tính lúc đọc: cột sẵn thì thêm được
     // chỉ mục, còn bỏ dấu từng dòng lúc truy vấn thì CSDL phải quét cả bảng.
     data: {
       gameId: game.id, nguoiId: nguoi.id, tieuDe, noiDung,
+      nhan: nhan as 'TAN_GAU',
       timKiem: dungChuoiTimChuDe({ tieuDe, noiDung }),
     },
     select: { id: true },
@@ -264,7 +276,18 @@ export async function suaChuDe(_truoc: KetQua, form: FormData): Promise<KetQua> 
     where: { id: chuDeId, nguoiId: nguoi.id, khoa: false },
     // Sửa bài mà quên dựng lại chuỗi tìm thì ô tìm kiếm còn trỏ vào chữ cũ —
     // bài đã sửa tên vẫn ra theo tên cũ, và không ra theo tên mới.
-    data: { tieuDe, noiDung, timKiem: dungChuoiTimChuDe({ tieuDe, noiDung }) },
+    /*
+     * `suaLuc` ghi tay ở đây, KHÔNG dùng `@updatedAt`.
+     *
+     * Cột `@updatedAt` nhảy theo mọi lượt ghi — kể cả lúc cửa hàng tự cộng
+     * `soTraLoi` hay tự đặt lời giải — rồi trang in "đã sửa" lên một bài mà
+     * chủ nó chưa hề đụng vào. Chữ ấy nói với người đọc rằng nội dung đã đổi
+     * sau khi họ có thể đã đọc, nên chỉ chính lượt sửa mới được ghi.
+     */
+    data: {
+      tieuDe, noiDung, suaLuc: new Date(),
+      timKiem: dungChuoiTimChuDe({ tieuDe, noiDung }),
+    },
   });
   if (count === 0) return { loi: 'Không sửa được bài này. Có thể bài đã bị khoá hoặc không phải của bạn.' };
 
@@ -322,7 +345,8 @@ export async function suaTraLoi(_truoc: KetQua, form: FormData): Promise<KetQua>
   // luôn trong `where` qua quan hệ, không phải một lượt đọc riêng.
   const { count } = await db.traLoi.updateMany({
     where: { id: traLoiId, nguoiId: nguoi.id, chuDe: { khoa: false } },
-    data: { noiDung },
+    // `suaLuc` ghi tay, cùng lẽ với `suaChuDe` ở trên.
+    data: { noiDung, suaLuc: new Date() },
   });
   if (count === 0) return { loi: 'Không sửa được lời đáp này.' };
 

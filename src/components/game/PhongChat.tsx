@@ -118,12 +118,6 @@ export function PhongChat({ gameId, tenGame, banDau, coTheNoi, toiLa, laQuanTri 
     <section aria-label={`Phòng chat ${tenGame}`} className="the">
       <h2 className="flex items-center gap-2 rounded-t-the border-b border-vien bg-nen3/60 px-4 py-2.5 text-[13px] font-bold uppercase tracking-wide text-mo">
         <MessageCircle size={14} aria-hidden /> Phòng chat
-        {/* Câu phụ này biến mất ở khổ hẹp: gói vào cùng hàng với chữ "Phòng
-            chat" thì nó xuống dòng ngay giữa câu, thành hai mẩu chữ chẳng đọc
-            ra nghĩa gì. Chỗ đó trên điện thoại đã có ô gõ nói hộ rồi. */}
-        <span className="ml-auto hidden font-medium normal-case tracking-normal sm:inline">
-          Nói nhanh một câu, không cần mở chủ đề
-        </span>
       </h2>
 
       <div ref={khung} className="max-h-[320px] min-h-[120px] overflow-y-auto px-4 py-3">
@@ -231,7 +225,7 @@ export function PhongChat({ gameId, tenGame, banDau, coTheNoi, toiLa, laQuanTri 
             <Link href="/dang-nhap" className="font-semibold text-nhan hover:underline">
               Đăng nhập
             </Link>
-            {' '}để nói chuyện — đọc thì không cần.
+            {' '}để nói chuyện.
           </p>
         )}
 

@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from 'react';
 import { useXacNhan } from '@/components/HopXacNhan';
 import { OSoanThao } from '@/components/OSoanThao';
-import { ONhapGiu, OChuGiu } from '@/components/ONhapGiu';
+import { ONhapGiu } from '@/components/ONhapGiu';
 import {
   suaChuDe, suaTraLoi, xoaChuDeCuaToi, xoaTraLoiCuaToi, type KetQua,
 } from '@/app/(cua-hang)/game/[duongDan]/dien-dan/viec';
@@ -77,8 +77,11 @@ export function SuaChuDe({ chuDeId, tieuDe, noiDung, xoaDuoc }: {
       <input type="hidden" name="chuDeId" value={chuDeId} />
       <ONhapGiu name="tieuDe" banDau={tieuDe} required minLength={5} maxLength={150}
         aria-label="Tiêu đề" className="o-nhap" />
-      <OChuGiu name="noiDung" banDau={noiDung} required minLength={10} maxLength={8000}
-        rows={6} aria-label="Nội dung" className="o-nhap" />
+      {/* Cùng trình soạn thảo với lúc VIẾT bài, không phải ô chữ trần: sửa mà
+          mất luôn nút chèn ảnh với bảng cảm xúc thì thêm một tấm ảnh vào bài
+          cũ hoá ra phải tự gõ lấy cú pháp Markdown. */}
+      <OSoanThao ten="noiDung" nhan="Nội dung" giaTri={noiDung} dong={6} gon
+        choAnh="dien-dan" />
       {kq.loi && <p role="alert" className="text-[12px] font-medium text-xau">{kq.loi}</p>}
       <div className="flex items-center gap-2">
         <button type="submit" disabled={dangChay} className="nut-xam">

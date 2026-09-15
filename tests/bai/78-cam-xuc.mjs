@@ -32,7 +32,17 @@ export default async function chay(kiem) {
   });
   if (!game) { kiem('có game mẫu', false); return; }
 
+  const thuKy = await db.nguoiDung.findFirst({
+    where: { tenDangNhap: 'anhthu' }, select: { id: true },
+  });
+  if (!thuKy) { kiem('có thành viên mẫu', false); return; }
+
   const don = async () => {
+    const cu = await db.chuDe.findMany({
+      where: { tieuDe: { startsWith: DAU } }, select: { id: true },
+    });
+    await db.traLoi.deleteMany({ where: { chuDeId: { in: cu.map((c) => c.id) } } });
+    await db.chuDe.deleteMany({ where: { id: { in: cu.map((c) => c.id) } } });
     await db.tinNhanChat.deleteMany({ where: { noiDung: { contains: DAU } } });
     await db.tinNhanChat.deleteMany({ where: { anh: { contains: '/ktcx-' } } });
     await db.goiSticker.deleteMany({ where: { ten: { startsWith: DAU } } });
@@ -139,6 +149,31 @@ export default async function chay(kiem) {
     kiem('sticker vào ô soạn bài dưới dạng ảnh Markdown, không phải địa chỉ trần',
       (await thuong.inputValue('textarea[name="noiDung"]')).includes(`![](${hinh.anh})`),
       await thuong.inputValue('textarea[name="noiDung"]'));
+
+    /*
+     * ── Ô TRẢ LỜI VÀ Ô SỬA BÀI CŨNG PHẢI CÓ ──────────────────────────
+     *
+     * Ba chỗ gõ chữ trong một chủ đề — viết bài mới, trả lời, sửa lại — mà chỗ
+     * có chỗ không thì người dùng học được rằng "cửa hàng này lúc có lúc
+     * không". Ô SỬA là chỗ dễ sót nhất: nó vốn là một ô chữ trần.
+     */
+    const chuDe = await db.chuDe.create({
+      data: {
+        gameId: game.id, nguoiId: thuKy.id,
+        tieuDe: `${DAU} chủ đề để sửa`, noiDung: 'Nội dung ban đầu.',
+      },
+      select: { id: true },
+    });
+    await thuong.goto(`${GOC}/game/${game.duongDan}/dien-dan/${chuDe.id}`,
+      { waitUntil: 'networkidle' });
+    kiem('ô trả lời trong chủ đề có nút mặt cười',
+      (await thuong.locator('button[aria-label="Mở bảng cảm xúc"]').count()) >= 1);
+
+    await thuong.click('button:text-is("Sửa bài")');
+    kiem('mở ô sửa bài thì có thêm một nút mặt cười nữa',
+      (await thuong.locator('button[aria-label="Mở bảng cảm xúc"]').count()) >= 2);
+    kiem('và ô sửa cũng có nút chèn ảnh như lúc viết',
+      (await thuong.locator('button[aria-label="Chèn ảnh"]').count()) >= 2);
 
     /*
      * ── TAB GIF CHƯA CẤU HÌNH THÌ NÓI THẲNG ──────────────────────────

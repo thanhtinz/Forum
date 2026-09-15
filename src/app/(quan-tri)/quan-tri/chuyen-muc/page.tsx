@@ -20,13 +20,9 @@ export default async function ChuyenMucQuanTri() {
     <div className="space-y-4">
       <div>
         <h1 className="tieu-de-trang">Chuyên mục diễn đàn</h1>
-        {/* Nói thẳng ngay dòng đầu rằng bảng này dùng chung: không có câu này
-            thì người quản trị tưởng mình đang sửa diễn đàn của một game nào
-            đó, rồi ngạc nhiên khi thấy nó hiện ở khắp nơi. */}
-        <p className="phu mt-1">
-          Một bảng dùng cho diễn đàn của MỌI game — vào game nào cũng thấy đúng
-          mấy mục này, nhưng chủ đề bên trong thì của riêng game ấy
-        </p>
+        {/* Câu này ở lại: không có nó thì người quản trị tưởng mình đang sửa
+            diễn đàn của một game, rồi ngạc nhiên khi thấy nó hiện khắp nơi. */}
+        <p className="phu mt-1">Dùng chung cho diễn đàn của mọi game</p>
       </div>
 
       <KhungChuyenMuc

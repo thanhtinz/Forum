@@ -18,10 +18,7 @@ export default async function StickerQuanTri() {
     <div className="space-y-4">
       <div>
         <h1 className="tieu-de-trang">Gói sticker</h1>
-        <p className="phu mt-1">
-          Sticker tải lên ở đây hiện trong bảng cảm xúc của cả cửa hàng — ô chat
-          của từng game lẫn ô soạn bài diễn đàn
-        </p>
+        <p className="phu mt-1">Dùng chung cho cả cửa hàng</p>
       </div>
 
       <KhungSticker goi={goi} />

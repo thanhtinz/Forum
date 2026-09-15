@@ -38,7 +38,6 @@ export default async function TrangDangBai({ params, searchParams }: {
     <div className="cot-doc space-y-5">
       <div>
         <h1 className="text-[20px] font-bold tracking-tight">Đăng chủ đề</h1>
-        <p className="phu mt-0.5">Bài này sẽ nằm trong khu diễn đàn của {game.ten}.</p>
       </div>
 
       <BieuMauGui viec={dangChuDe} nut="Đăng chủ đề" nutDangChay="Đang đăng…">
@@ -107,8 +106,7 @@ export default async function TrangDangBai({ params, searchParams }: {
           ảnh (`dien-dan`, có cửa chặn đếm lượt) mà tới giờ chưa nơi nào dùng.
         */}
         <OSoanThao ten="noiDung" nhan="Nội dung" giaTri="" dong={9} gon choAnh="dien-dan"
-          goYy="Máy bạn đời nào, chạy bản nào, kẹt ở đoạn nào… càng rõ càng dễ có người giúp.
-            Dán thẳng ảnh chụp vào ô là nó tự tải lên." />
+          goYy="Máy bạn đời nào, chạy bản nào, kẹt ở đoạn nào… càng rõ càng dễ có người giúp." />
       </BieuMauGui>
     </div>
   );

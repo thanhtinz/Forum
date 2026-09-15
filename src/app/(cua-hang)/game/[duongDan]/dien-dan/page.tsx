@@ -13,6 +13,10 @@ import { NHAN, laNhan } from '@/lib/nhan-chu-de-const';
 import { AnhDaiDien } from '@/components/NguoiDung';
 import { NguoiTichCucDienDan } from '@/components/game/NguoiTichCucDienDan';
 import { BangChuyenMuc } from '@/components/game/BangChuyenMuc';
+import { BaiVietMoi } from '@/components/game/BaiVietMoi';
+import { PhongChat } from '@/components/game/PhongChat';
+import { docChat } from '../chat';
+import { nguoiHienTai } from '@/lib/xac-thuc';
 import { MO_TA_MUC_CHUNG, MUC_CHUNG, TEN_MUC_CHUNG } from '@/lib/chuyen-muc-const';
 
 /*
@@ -62,7 +66,7 @@ export default async function TabDienDan({ params, searchParams }: {
 
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
-    select: { id: true, duongDan: true },
+    select: { id: true, duongDan: true, ten: true },
   });
   if (!game) notFound();
 
@@ -145,6 +149,17 @@ export default async function TabDienDan({ params, searchParams }: {
   // về trang cuối, chứ không trả một danh sách rỗng trông như diễn đàn chết.
   const trang = kep(trangNhap, 1, soTrang(tong, MOI_TRANG), 1);
 
+  /*
+   * Nạp sẵn phòng chat NGAY Ở MÁY CHỦ, không đợi trình duyệt hỏi lượt đầu.
+   *
+   * Đợi thì khung chat trống trơn trong nửa giây đầu rồi chữ mới nhảy vào —
+   * đúng khoảnh khắc người ta vừa mở trang và đang nhìn thẳng vào nó.
+   */
+  const [chat, toi] = mucMo ? [{ cau: [] }, null] : await Promise.all([
+    docChat(game.id),
+    nguoiHienTai(),
+  ]);
+
   const chuDe = await db.chuDe.findMany({
     where: dieuKien,
     /*
@@ -180,10 +195,24 @@ export default async function TabDienDan({ params, searchParams }: {
 
   return (
     <div className="cot-doc space-y-4">
-      {/* Bảng mục lục chỉ bày ở CỬA diễn đàn. Vào trong một mục rồi mà vẫn
-          vác cả bảng theo thì mỗi trang con lại đẩy danh sách chủ đề — thứ
-          vừa bấm vào để xem — xuống dưới một màn hình. */}
-      {!mucMo && <BangChuyenMuc gameId={game.id} duongDan={game.duongDan} />}
+      {/*
+        THỨ TỰ Ở CỬA DIỄN ĐÀN: chuyện mới → phòng chat → bảng mục lục.
+
+        Bảng mục lục trả lời "chỗ này bàn những gì" — câu hỏi của lần ghé đầu
+        tiên. Từ lần thứ hai trở đi người ta hỏi "có gì mới không", nên thứ trả
+        lời câu ấy phải nằm trên. Phòng chat chen vào giữa vì nó là chỗ NÓI,
+        còn hai phần kia là chỗ ĐỌC: để nó dưới đáy trang thì chẳng ai cuộn
+        xuống tới, mà để trên cùng thì một phòng đang ồn ào che mất chuyện mới.
+      */}
+      {!mucMo && (
+        <>
+          <BaiVietMoi gameId={game.id} duongDan={game.duongDan} />
+          <PhongChat gameId={game.id} tenGame={game.ten} banDau={chat.cau ?? []}
+            coTheNoi={!!toi} toiLa={toi?.tenDangNhap ?? null}
+            laQuanTri={toi?.vaiTro === 'QUAN_TRI'} />
+          <BangChuyenMuc gameId={game.id} duongDan={game.duongDan} />
+        </>
+      )}
 
       {mucMo && (
         <div>

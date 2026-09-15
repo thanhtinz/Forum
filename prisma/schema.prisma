@@ -54,6 +54,7 @@ model NguoiDung {
   theoDoiChuDe  TheoDoiChuDe[]
   traLoiHuuIch  TraLoiHuuIch[]
   phieu         Phieu[]
+  tinNhanChat   TinNhanChat[]
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
   maXacMinh     MaXacMinh[]
@@ -235,6 +236,7 @@ model Game {
   luotTaiNgay LuotTaiNgay[]
   daLuu   DaLuu[]
   chuDe   ChuDe[]
+  chat    TinNhanChat[]
   duLieu  DuLieuThuThap[]
 
   /// Người bày game đã KHAI phần quyền riêng tư chưa.
@@ -637,6 +639,30 @@ model DaLuu {
 /// Nên chuyên mục là của CẢ CỬA HÀNG, còn chủ đề nằm trong nó thì của TỪNG
 /// GAME: vào game nào cũng thấy đúng bảng chuyên mục ấy, mà bấm vào thì chỉ ra
 /// chuyện của game đang xem.
+/// PHÒNG CHAT CHUNG của một game — mỗi game một phòng, ai cũng đọc được.
+///
+/// Diễn đàn trả lời tốt mấy câu hỏi CÒN LẠI LÂU: "màn 12 qua kiểu gì", "bản
+/// nào chạy trên máy nào". Nhưng nửa số câu người ta gõ ra lại là loại sống
+/// đúng ba phút — "ai đang chơi không", "vừa tải xong, mở lên đen sì" — mà mở
+/// hẳn một chủ đề cho một câu như thế thì vừa ngại vừa làm rác danh sách.
+///
+/// Nên phòng chat KHÔNG thay diễn đàn, nó nhận đúng phần chuyện mà diễn đàn
+/// nhận vào là hỏng: nói xong rồi trôi, không ai phải đặt tiêu đề.
+model TinNhanChat {
+  id      String    @id @default(cuid())
+  gameId  String
+  game    Game      @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  nguoiId String
+  nguoi   NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  noiDung String   @db.Text
+  taoLuc  DateTime @default(now())
+
+  /// Đọc luôn luôn là "mấy câu mới nhất của phòng này", nên chỉ mục đúng theo
+  /// hình dạng ấy — phòng đông tới chục nghìn câu thì vẫn chỉ chạm vào đuôi.
+  @@index([gameId, taoLuc])
+}
+
 model ChuyenMuc {
   id       String @id @default(cuid())
   duongDan String @unique

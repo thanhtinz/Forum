@@ -13,6 +13,7 @@ import { NutLoiGiai } from '@/components/game/NutLoiGiai';
 import { NutTheoDoi } from '@/components/game/NutTheoDoi';
 import { NutHuuIchTraLoi } from '@/components/game/NutHuuIch';
 import { NutGoTraLoi, ThanhQuanTriChuDe } from '@/components/game/ThanhQuanTriChuDe';
+import { KhungBinhChon, ThemBinhChon } from '@/components/game/KhungBinhChon';
 import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { PhanTrang } from '@/components/PhanTrang';
 import { traLoi } from '../viec';
@@ -41,6 +42,15 @@ export default async function TrangChuDe({ params, searchParams }: {
     select: {
       id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true, taoLuc: true,
       nguoiId: true, loiGiaiId: true, nhan: true, suaLuc: true, soLuotXem: true,
+      binhChon: {
+        select: {
+          cauHoi: true, nhieuLuaChon: true,
+          luaChon: {
+            orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
+            select: { id: true, noiDung: true, soPhieu: true },
+          },
+        },
+      },
       loiGiai: { select: { id: true, taoLuc: true, nguoi: { select: { tenHienThi: true } } } },
       nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true, vaiTro: true } },
       game: { select: { ten: true, duongDan: true, tacGiaId: true } },
@@ -153,6 +163,22 @@ export default async function TrangChuDe({ params, searchParams }: {
   // Gói sẵn hai mốc để nhận vai, khỏi truyền lẻ hai biến xuống từng chỗ.
   const vai = { chuChuDeId: chuDe.nguoiId, tacGiaGameId: chuDe.game.tacGiaId };
 
+  /*
+   * Mình đã bấm ô nào — hỏi MỘT LẦN cho cả cuộc bình chọn.
+   *
+   * Cùng lối với phiếu hữu ích: hỏi theo từng lựa chọn thì sáu ô là sáu câu
+   * truy vấn, mà câu trả lời chỉ là một chữ có hay không.
+   */
+  const daBamPhieu = nguoi && chuDe.binhChon
+    ? (await db.phieu.findMany({
+      where: {
+        nguoiId: nguoi.id,
+        luaChonId: { in: chuDe.binhChon.luaChon.map((l) => l.id) },
+      },
+      select: { luaChonId: true },
+    })).map((x) => x.luaChonId)
+    : [];
+
   const dangDap = dap
     ? await db.traLoi.findFirst({
       where: { id: dap, chuDeId: chuDe.id },
@@ -216,6 +242,9 @@ export default async function TrangChuDe({ params, searchParams }: {
         </a>
       )}
 
+      {/* Bình chọn đứng NGAY DƯỚI bài mở chủ đề: nó là một phần của câu hỏi,
+          không phải một bài đáp. Đặt dưới mấy lời đáp thì người đọc bấm xong
+          hai chục bài mới thấy ra là đáng lẽ chỉ cần bấm một ô. */}
       <article className="the p-4">
         <Nguoi nguoi={chuDe.nguoi} nguoiId={chuDe.nguoiId} luc={chuDe.taoLuc} vai={vai}
           suaLuc={chuDe.suaLuc} />
@@ -247,6 +276,24 @@ export default async function TrangChuDe({ params, searchParams }: {
           </div>
         )}
       </article>
+
+      {chuDe.binhChon && (
+        <KhungBinhChon
+          cauHoi={chuDe.binhChon.cauHoi}
+          nhieuLuaChon={chuDe.binhChon.nhieuLuaChon}
+          luaChon={chuDe.binhChon.luaChon}
+          daBam={daBamPhieu}
+          boPhieuDuoc={!!nguoi && !chuDe.khoa}
+          goDuoc={!!nguoi && (nguoi.id === chuDe.nguoiId || nguoi.vaiTro === 'QUAN_TRI')}
+          chuDeId={chuDe.id} duongDan={chuDe.game.duongDan} />
+      )}
+
+      {/* Lối gắn bình chọn chỉ VẼ cho chủ chủ đề và quản trị; chặn thật nằm
+          trong `where` của Prisma ở `taoBinhChon`. */}
+      {!chuDe.binhChon && !chuDe.khoa
+        && nguoi && (nguoi.id === chuDe.nguoiId || nguoi.vaiTro === 'QUAN_TRI') && (
+        <ThemBinhChon chuDeId={chuDe.id} duongDan={chuDe.game.duongDan} />
+      )}
 
       {danhSach.length > 0 && (
         <ul aria-label="Các trả lời" className="space-y-3">

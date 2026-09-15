@@ -53,6 +53,7 @@ model NguoiDung {
   traLoi        TraLoi[]
   theoDoiChuDe  TheoDoiChuDe[]
   traLoiHuuIch  TraLoiHuuIch[]
+  phieu         Phieu[]
   yeuCau        YeuCau[]
   phienDangNhap Phien[]
   maXacMinh     MaXacMinh[]
@@ -676,9 +677,10 @@ model ChuDe {
   loiGiaiId String? @unique
   loiGiai   TraLoi? @relation("LoiGiai", fields: [loiGiaiId], references: [id], onDelete: SetNull)
 
-  traLoi  TraLoi[]
-  baoXau  BaoXau[]
-  theoDoi TheoDoiChuDe[]
+  traLoi   TraLoi[]
+  baoXau   BaoXau[]
+  theoDoi  TheoDoiChuDe[]
+  binhChon BinhChon?
 
   @@index([gameId, ghim, traLoiCuoiLuc])
   @@index([gameId, nhan])
@@ -716,6 +718,68 @@ model TraLoiHuuIch {
   taoLuc DateTime @default(now())
 
   @@id([traLoiId, nguoiId])
+  @@index([nguoiId])
+}
+
+/*
+ * BÌNH CHỌN GẮN VÀO MỘT CHỦ ĐỀ.
+ *
+ * VÌ SAO DIỄN ĐÀN GAME CẦN: nửa số chủ đề tán gẫu ở đây thực ra là một câu hỏi
+ * đếm đầu người — "bản nào mượt hơn", "nên tải bản Việt hoá hay bản gốc", "ai
+ * còn chơi trên máy thật". Không có chỗ bấm thì hai chục người vào gõ đúng một
+ * chữ "bản 1.2", và người mở chủ đề phải tự ngồi đếm trong một dải bài.
+ *
+ * MỖI CHỦ ĐỀ NHIỀU NHẤT MỘT cuộc bình chọn (`@unique` trên `chuDeId`): hai
+ * cuộc trong một chủ đề thì phiếu của người đọc chia đôi mà chẳng ai biết cuộc
+ * nào mới là câu hỏi chính.
+ *
+ * KHÔNG có ngày đóng: một cuộc bình chọn trong diễn đàn game không phải cuộc
+ * bầu cử, và một cột thời hạn kéo theo cả việc phải chốt lười lúc đọc trang.
+ * Người mở chủ đề khoá chủ đề là bình chọn dừng theo.
+ */
+model BinhChon {
+  id      String @id @default(cuid())
+  chuDeId String @unique
+  chuDe   ChuDe  @relation(fields: [chuDeId], references: [id], onDelete: Cascade)
+
+  cauHoi String
+
+  /// Cho chọn nhiều đáp án một lúc hay chỉ một.
+  nhieuLuaChon Boolean @default(false)
+
+  taoLuc DateTime @default(now())
+
+  luaChon LuaChon[]
+}
+
+model LuaChon {
+  id         String   @id @default(cuid())
+  binhChonId String
+  binhChon   BinhChon @relation(fields: [binhChonId], references: [id], onDelete: Cascade)
+
+  noiDung String
+  thuTu   Int    @default(0)
+
+  /// Đếm sẵn số phiếu — cùng lẽ với `TraLoi.soHuuIch`: trang nào cũng cần con
+  /// số này cho MỌI lựa chọn, mà đếm lúc đọc thì mỗi lượt xem là mấy phép đếm.
+  soPhieu Int @default(0)
+
+  phieu Phieu[]
+
+  @@index([binhChonId, thuTu])
+}
+
+model Phieu {
+  luaChonId String
+  luaChon   LuaChon   @relation(fields: [luaChonId], references: [id], onDelete: Cascade)
+  nguoiId   String
+  nguoi     NguoiDung @relation(fields: [nguoiId], references: [id], onDelete: Cascade)
+
+  taoLuc DateTime @default(now())
+
+  /// Một người bỏ một phiếu cho một lựa chọn đúng một lần. Ràng buộc nằm ở
+  /// khoá chính, không phải ở một câu `if` chỗ ghi.
+  @@id([luaChonId, nguoiId])
   @@index([nguoiId])
 }
 

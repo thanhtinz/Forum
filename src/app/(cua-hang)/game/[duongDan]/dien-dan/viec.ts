@@ -7,6 +7,7 @@ import { batBuocDangNhap } from '@/lib/xac-thuc';
 import { guiThongBao } from '@/lib/thong-bao';
 import { bocTenNhac } from '@/lib/nhac-ten-const';
 import { NHAN_MAC_DINH, laNhan } from '@/lib/nhan-chu-de-const';
+import { CAU_HOI_TOI_DA, IT_NHAT, LUA_CHON_TOI_DA, NHIEU_NHAT } from '@/lib/binh-chon-const';
 import { soTrang } from '@/lib/tien-ich';
 import { dungChuoiTimChuDe } from '@/lib/tim-kiem-const';
 import { MOI_TRANG_TRA_LOI } from './moi-trang';
@@ -568,4 +569,175 @@ export async function bamHuuIchTraLoi(traLoiId: string): Promise<
 
   revalidatePath(`/game/${bai.chuDe.game.duongDan}/dien-dan/${bai.chuDeId}`);
   return { ok: true, ...kq };
+}
+
+/**
+ * Gắn một cuộc bình chọn vào chủ đề của mình.
+ *
+ * AI GẮN ĐƯỢC: người mở chủ đề, và ban quản trị. Điều kiện ấy nằm trong `where`
+ * của câu tìm chủ đề chứ không lọc sau — hàm này là một địa chỉ POST công khai.
+ *
+ * MỖI CHỦ ĐỀ NHIỀU NHẤT MỘT cuộc: ràng buộc nằm ở `@unique` trên `chuDeId`
+ * trong lược đồ, nên hai lượt bấm thật nhanh không đẻ ra hai cuộc. Ở đây vẫn
+ * hỏi trước một câu để báo cho người bấm biết vì sao trượt, thay vì ném ra một
+ * lỗi cơ sở dữ liệu.
+ */
+export async function taoBinhChon(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập.' }; }
+
+  const chuDeId = String(form.get('chuDeId') ?? '');
+  const duongDan = String(form.get('duongDan') ?? '');
+  const cauHoi = String(form.get('cauHoi') ?? '').trim().slice(0, CAU_HOI_TOI_DA);
+  const nhieuLuaChon = form.get('nhieuLuaChon') !== null;
+
+  if (cauHoi.length < 5) return { loi: 'Câu hỏi cần ít nhất 5 ký tự.' };
+
+  /*
+   * Bỏ hẳn mấy ô để trống thay vì báo lỗi.
+   *
+   * Biểu mẫu bày sẵn sáu ô cho người ta khỏi phải bấm thêm; ai chỉ cần ba lựa
+   * chọn thì để trống ba ô cuối, và đó là chuyện thường chứ không phải sai.
+   */
+  const luaChon = Array.from({ length: NHIEU_NHAT }, (_, i) =>
+    String(form.get(`luaChon-${i}`) ?? '').trim().slice(0, LUA_CHON_TOI_DA))
+    .filter(Boolean);
+
+  if (luaChon.length < IT_NHAT) {
+    return { loi: `Cần ít nhất ${IT_NHAT} lựa chọn — một đáp án thì không phải bình chọn.` };
+  }
+  if (new Set(luaChon.map((x) => x.toLowerCase())).size !== luaChon.length) {
+    return { loi: 'Có hai lựa chọn trùng nhau.' };
+  }
+
+  const laQuanTri = nguoi.vaiTro === 'QUAN_TRI';
+  const chuDe = await db.chuDe.findFirst({
+    where: {
+      id: chuDeId,
+      ...(laQuanTri ? {} : { nguoiId: nguoi.id }),
+      game: { trangThai: 'DANG_HIEN' },
+    },
+    select: { id: true, binhChon: { select: { id: true } } },
+  });
+  if (!chuDe) return { loi: 'Chỉ người mở chủ đề hoặc ban quản trị gắn được bình chọn.' };
+  if (chuDe.binhChon) return { loi: 'Chủ đề này đã có một cuộc bình chọn rồi.' };
+
+  await db.binhChon.create({
+    data: {
+      chuDeId, cauHoi, nhieuLuaChon,
+      luaChon: { create: luaChon.map((noiDung, thuTu) => ({ noiDung, thuTu })) },
+    },
+    select: { id: true },
+  });
+
+  revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
+  return {};
+}
+
+/** Gỡ cuộc bình chọn khỏi chủ đề. Phiếu đi theo bằng `Cascade`. */
+export async function xoaBinhChon(chuDeId: string, duongDan: string): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập.' }; }
+
+  const laQuanTri = nguoi.vaiTro === 'QUAN_TRI';
+  const { count } = await db.binhChon.deleteMany({
+    where: {
+      chuDeId,
+      chuDe: laQuanTri ? {} : { nguoiId: nguoi.id },
+    },
+  });
+  if (count === 0) return { loi: 'Không gỡ được cuộc bình chọn này.' };
+
+  revalidatePath(`/game/${duongDan}/dien-dan/${chuDeId}`);
+  return {};
+}
+
+/**
+ * Bỏ phiếu — hoặc rút phiếu — cho một lựa chọn.
+ *
+ * BA LUẬT, và cả ba đều nằm trong CÙNG MỘT giao dịch với phép cộng trừ con số
+ * đếm sẵn; tách ra là có khe cho lượt bấm thứ hai chen vào giữa:
+ *
+ *   • bấm lại đúng ô đang chọn thì RÚT phiếu — không có lối rút thì người bấm
+ *     nhầm mắc kẹt vĩnh viễn với một lựa chọn họ không muốn;
+ *   • cuộc CHỈ MỘT đáp án thì chọn ô mới tự bỏ ô cũ, chứ không chối lượt bấm:
+ *     chối thì người ta phải tự đoán ra là mình cần đi rút phiếu cũ trước;
+ *   • chủ đề khoá thì thôi, và điều kiện ấy nằm trong `where`.
+ */
+export async function boPhieu(luaChonId: string): Promise<KetQua & { ok?: boolean }> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập để bình chọn.' }; }
+
+  const oChon = await db.luaChon.findFirst({
+    where: {
+      id: luaChonId,
+      binhChon: { chuDe: { khoa: false, game: { trangThai: 'DANG_HIEN' } } },
+    },
+    select: {
+      id: true,
+      binhChonId: true,
+      binhChon: {
+        select: {
+          nhieuLuaChon: true,
+          chuDeId: true,
+          chuDe: { select: { game: { select: { duongDan: true } } } },
+        },
+      },
+    },
+  });
+  if (!oChon) return { loi: 'Không bình chọn được lúc này.' };
+
+  await db.$transaction(async (tx) => {
+    const daBam = await tx.phieu.deleteMany({ where: { luaChonId, nguoiId: nguoi.id } });
+    if (daBam.count > 0) {
+      const sau = await tx.luaChon.update({
+        where: { id: luaChonId },
+        data: { soPhieu: { decrement: 1 } },
+        select: { soPhieu: true },
+      });
+      // Sàn 0, cùng lẽ với phiếu hữu ích: một con số âm in ra màn hình thì
+      // không cứu được nữa.
+      if (sau.soPhieu < 0) {
+        await tx.luaChon.update({
+          where: { id: luaChonId }, data: { soPhieu: 0 }, select: { id: true },
+        });
+      }
+      return;
+    }
+
+    if (!oChon.binhChon.nhieuLuaChon) {
+      // Cuộc một đáp án: gỡ mọi phiếu cũ của người này trong CHÍNH cuộc ấy.
+      const cu = await tx.phieu.findMany({
+        where: { nguoiId: nguoi.id, luaChon: { binhChonId: oChon.binhChonId } },
+        select: { luaChonId: true },
+      });
+      if (cu.length > 0) {
+        await tx.phieu.deleteMany({
+          where: { nguoiId: nguoi.id, luaChonId: { in: cu.map((x) => x.luaChonId) } },
+        });
+        for (const x of cu) {
+          await tx.luaChon.update({
+            where: { id: x.luaChonId },
+            data: { soPhieu: { decrement: 1 } },
+            select: { id: true },
+          });
+        }
+      }
+    }
+
+    await tx.phieu.create({
+      data: { luaChonId, nguoiId: nguoi.id }, select: { luaChonId: true },
+    });
+    await tx.luaChon.update({
+      where: { id: luaChonId }, data: { soPhieu: { increment: 1 } }, select: { id: true },
+    });
+  });
+
+  revalidatePath(
+    `/game/${oChon.binhChon.chuDe.game.duongDan}/dien-dan/${oChon.binhChon.chuDeId}`,
+  );
+  return { ok: true };
 }

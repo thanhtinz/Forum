@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { doanLoaiAnh, luuAnh } from '@/lib/kho';
 import { doCoAnh } from '@/lib/co-anh';
+import { STICKER_TOI_DA } from '@/lib/cam-xuc-const';
 import {
   ANH_CHUP_TOI_THIEU, BIA_RONG_TOI_THIEU, BIA_TI_LE_TOI_THIEU, DAI_DIEN_TOI_THIEU,
   ICON_TOI_THIEU,
@@ -98,7 +99,7 @@ const CHO_DAT = {
    * mấy chục lần ngay trước mắt người đang đợi bảng hiện.
    */
   sticker: {
-    thuMuc: 'sticker', toiDa: 256 * 1024, canQuanTri: true,
+    thuMuc: 'sticker', toiDa: STICKER_TOI_DA, canQuanTri: true,
     canhToiThieu: 0, vuong: false, ngang: false,
   },
   /*

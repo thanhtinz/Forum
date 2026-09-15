@@ -134,6 +134,76 @@ export async function doiToi(dieuKien, hanGiay = 15) {
 }
 
 /**
+ * Dựng một tệp ZIP THẬT để kiểm cổng mở gói sticker.
+ *
+ * Tự viết thay vì gọi lệnh `zip` ngoài: bài kiểm phải chạy được ở máy nào cũng
+ * thế, mà `zip` thì không phải máy nào cũng có. Và tự viết thì nén được ĐÚNG
+ * thứ cần nén — kể cả một mục KHÔNG phải ảnh, để kiểm phần bỏ qua.
+ *
+ * Nén bằng `deflateRaw` (cách số 8) chứ không xếp trần (cách số 0): tệp zip
+ * thật ngoài đời là loại nén, nên kiểm loại nén mới là kiểm đúng đường đi.
+ */
+export function taoZip(muc) {
+  const bangCrc = [];
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    bangCrc[i] = c >>> 0;
+  }
+  const crc32 = (b) => {
+    let c = 0xffffffff;
+    for (let i = 0; i < b.length; i++) c = bangCrc[(c ^ b[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  };
+
+  const cucBo = [];
+  const mucLuc = [];
+  let con = 0;
+
+  for (const m of muc) {
+    const ten = Buffer.from(m.ten, 'utf8');
+    const ruot = Buffer.from(m.ruot);
+    const nen = zlib.deflateRawSync(ruot);
+    const ma = crc32(ruot);
+
+    const dau = Buffer.alloc(30);
+    dau.writeUInt32LE(0x04034b50, 0);
+    dau.writeUInt16LE(20, 4);
+    dau.writeUInt16LE(8, 8);
+    dau.writeUInt32LE(ma, 14);
+    dau.writeUInt32LE(nen.length, 18);
+    dau.writeUInt32LE(ruot.length, 22);
+    dau.writeUInt16LE(ten.length, 26);
+    cucBo.push(dau, ten, nen);
+
+    const ml = Buffer.alloc(46);
+    ml.writeUInt32LE(0x02014b50, 0);
+    ml.writeUInt16LE(20, 4);
+    ml.writeUInt16LE(20, 6);
+    ml.writeUInt16LE(8, 10);
+    ml.writeUInt32LE(ma, 16);
+    ml.writeUInt32LE(nen.length, 20);
+    ml.writeUInt32LE(ruot.length, 24);
+    ml.writeUInt16LE(ten.length, 28);
+    ml.writeUInt32LE(con, 42);
+    mucLuc.push(ml, ten);
+
+    con += dau.length + ten.length + nen.length;
+  }
+
+  const thanCucBo = Buffer.concat(cucBo);
+  const thanMucLuc = Buffer.concat(mucLuc);
+  const ket = Buffer.alloc(22);
+  ket.writeUInt32LE(0x06054b50, 0);
+  ket.writeUInt16LE(muc.length, 8);
+  ket.writeUInt16LE(muc.length, 10);
+  ket.writeUInt32LE(thanMucLuc.length, 12);
+  ket.writeUInt32LE(thanCucBo.length, 16);
+
+  return Buffer.concat([thanCucBo, thanMucLuc, ket]);
+}
+
+/**
  * Dựng một tệp PNG THẬT, đúng cỡ yêu cầu.
  *
  * Cửa hàng nay đo kích thước ảnh trước khi nhận (xem `luat-anh-const.ts`), nên

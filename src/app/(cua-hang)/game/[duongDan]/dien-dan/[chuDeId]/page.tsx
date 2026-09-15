@@ -12,6 +12,7 @@ import { NutBaoXau } from '@/components/NutBaoXau';
 import { NutLoiGiai } from '@/components/game/NutLoiGiai';
 import { NutTheoDoi } from '@/components/game/NutTheoDoi';
 import { NutHuuIchTraLoi } from '@/components/game/NutHuuIch';
+import { NutGoTraLoi, ThanhQuanTriChuDe } from '@/components/game/ThanhQuanTriChuDe';
 import { AnhDaiDien, TenNguoi } from '@/components/NguoiDung';
 import { PhanTrang } from '@/components/PhanTrang';
 import { traLoi } from '../viec';
@@ -175,6 +176,13 @@ export default async function TrangChuDe({ params, searchParams }: {
         </div>
       </header>
 
+      {/* Thanh kiểm duyệt đứng TRÊN CÙNG, trên cả dải lời giải: người trực mở
+          một chủ đề bị báo xấu thì việc đầu tiên của họ là xử lý nó. */}
+      {nguoi?.vaiTro === 'QUAN_TRI' && (
+        <ThanhQuanTriChuDe chuDeId={chuDe.id} duongDanGame={chuDe.game.duongDan}
+          tieuDe={chuDe.tieuDe} ghim={chuDe.ghim} khoa={chuDe.khoa} soTraLoi={tongTraLoi} />
+      )}
+
       {chuDe.loiGiai && loiGiaiO && (
         <a href={`${duongTrang(loiGiaiO)}#tl-${chuDe.loiGiai.id}`}
           className="the flex items-center gap-2.5 p-3 text-[13px] transition-colors hover:bg-nen3/40">
@@ -273,6 +281,11 @@ export default async function TrangChuDe({ params, searchParams }: {
                 )}
                 {nguoi && nguoi.id !== t.nguoiId && (
                   <NutBaoXau loai="traLoi" mucId={t.id} />
+                )}
+                {/* Quản trị gỡ được bài của người khác ngay tại chỗ; bài của
+                    chính mình thì đã có nút Xoá ở trên rồi. */}
+                {nguoi?.vaiTro === 'QUAN_TRI' && nguoi.id !== t.nguoiId && (
+                  <NutGoTraLoi traLoiId={t.id} />
                 )}
               </div>
               </div>

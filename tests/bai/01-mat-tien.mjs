@@ -63,7 +63,7 @@ export default async function chay(kiem) {
     kiem(`thanh tab đáy có ô “${t}”`, tenTab.includes(t), JSON.stringify(tenTab));
   }
 
-  // ── Tab "Game" — mặt tiền của kho ────────────────────────────────────
+  // ── Tab "Game" — mặt tiền của cửa hàng ────────────────────────────────
   await p.goto(`${GOC}/game`, { waitUntil: 'networkidle' });
 
   for (const ten of ['Được chấm cao nhất', 'Mới ra mắt', 'Chơi lại ngày xưa', 'Thể loại']) {
@@ -86,7 +86,7 @@ export default async function chay(kiem) {
    * Đây từng là lỗi thật: kệ "Đề xuất cho bạn" xếp theo lượt XEM đứng ngay
    * trên bảng xếp hạng xếp theo lượt TẢI, và cả hai ra đúng chín game giống
    * nhau theo đúng một thứ tự. Bài kiểm này gom tên game trong từng khối rồi
-   * so, nên kho có đổi dữ liệu thì nó vẫn bắt được nếu hai kệ lại trùng nhau.
+   * so, nên cửa hàng có đổi dữ liệu thì nó vẫn bắt được nếu hai kệ trùng nhau.
    */
   const tenTrongKhoi = async (tieuDe) => {
     const khoi = p.locator('section').filter({ hasText: tieuDe }).first();

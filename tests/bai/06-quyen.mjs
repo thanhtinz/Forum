@@ -30,7 +30,7 @@ export default async function chay(kiem) {
   // ── Lớp hai: gọi THẲNG vào server action ─────────────────────────────
   //
   // Gửi một biểu mẫu tạo game với tư cách thành viên thường. Nếu lớp chặn chỉ
-  // nằm ở khung giao diện thì cú này lọt, và kho mọc thêm một game.
+  // nằm ở khung giao diện thì cú này lọt, và cửa hàng mọc thêm một game.
   const truoc = await db.game.count();
   await thuong.evaluate(async (goc) => {
     const fd = new FormData();
@@ -46,7 +46,7 @@ export default async function chay(kiem) {
     orderBy: { id: 'asc' },
     where: { ten: 'Game lẽ ra không được tạo' }, select: { id: true },
   });
-  kiem('không có game lạ nào lọt vào kho', !lot);
+  kiem('không có game lạ nào bày được ra cửa hàng', !lot);
 
   await thuong.close();
 

@@ -9,8 +9,8 @@ import { GOC, db, moTrang } from '../tro-giup.mjs';
  * kiểm "sang ngày mai có trùng không" qua trình duyệt mà không phải chờ hết
  * một đêm, hoặc phải chỉnh đồng hồ máy chủ — cả hai đều tệ hơn.
  *
- * Chạy với NHIỀU cỡ kho, nhất là mấy cỡ chia không hết (13 game, 4 mỗi ngày):
- * đó là chỗ phép chia dễ sai nhất, và cũng là chỗ kho thật hay rơi vào.
+ * Chạy với NHIỀU cỡ cửa hàng, nhất là mấy cỡ chia không hết (13 game, 4 mỗi
+ * ngày): đó là chỗ phép chia dễ sai nhất, và cũng là cỡ cửa hàng thật hay gặp.
  */
 export default async function chay(kiem) {
   for (const [soGame, moiNgay, soNgay] of [[12, 4, 60], [13, 4, 80], [7, 4, 40], [1, 4, 10], [200, 4, 400]]) {
@@ -21,11 +21,11 @@ export default async function chay(kiem) {
         { env: { ...process.env, JSON: '1' }, encoding: 'utf8' });
       ra = JSON.parse(chu.trim().split('\n').pop());
     } catch (e) {
-      kiem(`chạy được phép chia với kho ${soGame} game`, false, e.message.slice(0, 120));
+      kiem(`chạy được phép chia với cửa hàng ${soGame} game`, false, e.message.slice(0, 120));
       continue;
     }
 
-    const nhan = `kho ${soGame} game, ${moiNgay} mỗi ngày`;
+    const nhan = `cửa hàng ${soGame} game, ${moiNgay} mỗi ngày`;
     kiem(`${nhan}: không game nào trùng trong một vòng`,
       ra.trungTrongVong === 0, `${ra.trungTrongVong} vòng có trùng`);
     kiem(`${nhan}: không game nào bị bỏ sót trong một vòng`,

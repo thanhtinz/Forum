@@ -21,7 +21,7 @@ export default async function chay(kiem) {
     kiem('có game mang nhiều hệ máy để kiểm', false, `nhiều nhất là ${game?.he.length ?? 0} hệ`);
     return;
   }
-  kiem('kho có game mang từ ba hệ máy trở lên', true, `${game.ten}: ${game.he.join(', ')}`);
+  kiem('cửa hàng có game mang từ ba hệ máy trở lên', true, `${game.ten}: ${game.he.join(', ')}`);
 
   const p = await moTrang();
   await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });

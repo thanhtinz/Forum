@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { CircleCheckBig, Lock, MessageSquare, PenLine, Pin, Search } from 'lucide-react';
+import { ChevronLeft, CircleCheckBig, Lock, MessageSquare, PenLine, Pin, Search } from 'lucide-react';
 import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
@@ -12,6 +12,8 @@ import { rutGon } from '@/lib/trich-dan-const';
 import { NHAN, laNhan } from '@/lib/nhan-chu-de-const';
 import { AnhDaiDien } from '@/components/NguoiDung';
 import { NguoiTichCucDienDan } from '@/components/game/NguoiTichCucDienDan';
+import { BangChuyenMuc } from '@/components/game/BangChuyenMuc';
+import { MO_TA_MUC_CHUNG, MUC_CHUNG, TEN_MUC_CHUNG } from '@/lib/chuyen-muc-const';
 
 /*
  * Mỗi trang bao nhiêu chủ đề.
@@ -53,16 +55,37 @@ const LOC = [
 
 export default async function TabDienDan({ params, searchParams }: {
   params: Promise<{ duongDan: string }>;
-  searchParams: Promise<{ trang?: string; loc?: string; tim?: string }>;
+  searchParams: Promise<{ trang?: string; loc?: string; tim?: string; muc?: string }>;
 }) {
   const { duongDan } = await params;
-  const { trang: trangNhap, loc: locNhap, tim } = await searchParams;
+  const { trang: trangNhap, loc: locNhap, tim, muc: mucNhap } = await searchParams;
 
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
     select: { id: true, duongDan: true },
   });
   if (!game) notFound();
+
+  /*
+   * CHUYÊN MỤC ĐANG MỞ, đọc từ `?muc=`.
+   *
+   * Không có `?muc=` là đang đứng ở BẢNG MỤC LỤC — trang bày bảng chuyên mục
+   * rồi tới danh sách mọi chủ đề. Có `?muc=` là đã bước vào một mục, lúc ấy
+   * bảng mục lục thu lại thành một dòng lùi, đúng lối diễn đàn xưa nay.
+   *
+   * Mã lạ thì coi như không có mục nào — chứ không phải trang trống: `?muc=`
+   * tới từ địa chỉ nên ai cũng gõ bừa được, mà một danh sách rỗng trông y hệt
+   * một diễn đàn chết.
+   */
+  const maMuc = (mucNhap ?? '').trim();
+  const mucMo = maMuc === MUC_CHUNG
+    ? { id: null, ten: TEN_MUC_CHUNG, moTa: MO_TA_MUC_CHUNG, duongDan: MUC_CHUNG }
+    : maMuc
+      ? await db.chuyenMuc.findUnique({
+        where: { duongDan: maMuc },
+        select: { id: true, ten: true, moTa: true, duongDan: true },
+      })
+      : null;
 
   // Chỉ nhận mã lọc CÓ TRONG BẢNG: `?loc=` tới từ địa chỉ nên ai cũng gõ bừa
   // được, mà một mã lạ lọt vào là danh sách rỗng trông như diễn đàn chết.
@@ -99,6 +122,9 @@ export default async function TabDienDan({ params, searchParams }: {
    */
   const dieuKien: Prisma.ChuDeWhereInput = {
     gameId: game.id,
+    // Mục "Chung" là mấy chủ đề CHƯA xếp mục nào, nên điều kiện của nó là
+    // `null` chứ không phải một mã nào đó trong bảng.
+    ...(mucMo ? { chuyenMucId: mucMo.id } : {}),
     ...(loc === 'chua-tra-loi' ? { soTraLoi: 0 } : {}),
     ...(loc === 'da-giai' ? { loiGiaiId: { not: null } } : {}),
     ...(laNhan(loc) ? { nhan: loc as 'TAN_GAU' } : {}),
@@ -108,7 +134,12 @@ export default async function TabDienDan({ params, searchParams }: {
       : {}),
   };
 
-  const tongTatCa = await db.chuDe.count({ where: { gameId: game.id } });
+  // Đếm "tất cả" là đếm trong ĐÚNG chỗ đang đứng: ở trong một chuyên mục thì
+  // con số của cả diễn đàn chẳng nói gì về chỗ ấy, mà hàng lọc lại hiện ra
+  // trong một mục chỉ có một chủ đề.
+  const tongTatCa = await db.chuDe.count({
+    where: { gameId: game.id, ...(mucMo ? { chuyenMucId: mucMo.id } : {}) },
+  });
   const tong = await db.chuDe.count({ where: dieuKien });
   // Kẹp trang vào khoảng có thật: `?trang=99` trên diễn đàn hai trang thì đưa
   // về trang cuối, chứ không trả một danh sách rỗng trông như diễn đàn chết.
@@ -129,6 +160,7 @@ export default async function TabDienDan({ params, searchParams }: {
     select: {
       id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true,
       soTraLoi: true, traLoiCuoiLuc: true, loiGiaiId: true, nhan: true,
+      chuyenMuc: { select: { ten: true, duongDan: true } },
       nguoi: { select: { tenHienThi: true, anh: true } },
       /*
        * Người viết bài GẦN NHẤT, lấy kèm trong cùng một câu.
@@ -148,11 +180,29 @@ export default async function TabDienDan({ params, searchParams }: {
 
   return (
     <div className="cot-doc space-y-4">
+      {/* Bảng mục lục chỉ bày ở CỬA diễn đàn. Vào trong một mục rồi mà vẫn
+          vác cả bảng theo thì mỗi trang con lại đẩy danh sách chủ đề — thứ
+          vừa bấm vào để xem — xuống dưới một màn hình. */}
+      {!mucMo && <BangChuyenMuc gameId={game.id} duongDan={game.duongDan} />}
+
+      {mucMo && (
+        <div>
+          <Link href={`/game/${game.duongDan}/dien-dan`}
+            className="phu inline-flex items-center gap-1 font-semibold hover:text-chu">
+            <ChevronLeft size={14} aria-hidden /> Mọi chuyên mục
+          </Link>
+          <h2 className="mt-1 text-[18px] font-bold tracking-tight">{mucMo.ten}</h2>
+          {mucMo.moTa && <p className="phu mt-0.5">{mucMo.moTa}</p>}
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-3">
         <p className="phu">
           {tongTatCa > 0 ? `${gonSo(tongTatCa)} chủ đề` : 'Chưa có chủ đề nào'}
         </p>
-        <Link href={`/game/${game.duongDan}/dien-dan/dang`}
+        {/* Mang theo mục đang mở: mở lời từ trong một chuyên mục thì gần như
+            chắc chắn là muốn đăng vào chính mục ấy. */}
+        <Link href={`/game/${game.duongDan}/dien-dan/dang${mucMo?.id ? `?muc=${mucMo.duongDan}` : ''}`}
           className="nut-cai-dam shrink-0 !min-h-[36px] !px-4 !text-[13px]">
           <PenLine size={15} aria-hidden /> Đăng bài
         </Link>
@@ -174,7 +224,7 @@ export default async function TabDienDan({ params, searchParams }: {
           <div className="flex flex-wrap gap-1.5">
             {[...LOC, ...NHAN.map((n) => ({ ma: n.ma as string, ten: n.ten as string }))]
               .map((l) => (
-                <Link key={l.ma || 'tat-ca'} href={duongLoc(game.duongDan, l.ma, tuKhoa)}
+                <Link key={l.ma || 'tat-ca'} href={duongLoc(game.duongDan, l.ma, tuKhoa, maMuc)}
                   aria-current={l.ma === loc ? 'page' : undefined}
                   className={gop(
                     'rounded-full px-3 py-1 text-[13px] font-semibold transition-colors',
@@ -194,6 +244,7 @@ export default async function TabDienDan({ params, searchParams }: {
               nào cũng bày sẵn phím tìm. */}
           <form method="get" className="ml-auto flex min-w-[200px] flex-1 items-center gap-1.5 sm:flex-none">
             {loc && <input type="hidden" name="loc" value={loc} />}
+            {mucMo && <input type="hidden" name="muc" value={mucMo.duongDan} />}
             <span className="relative min-w-0 flex-1">
               <Search size={14} aria-hidden
                 className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mo" />
@@ -214,7 +265,8 @@ export default async function TabDienDan({ params, searchParams }: {
             ? `${gonSo(tong)} chủ đề khớp “${tuKhoa}”`
             : `Không có chủ đề nào khớp “${tuKhoa}”`}
           {' · '}
-          <Link href={`/game/${game.duongDan}/dien-dan`} className="font-semibold text-nhan hover:underline">
+          <Link href={duongLoc(game.duongDan, '', '', maMuc)}
+            className="font-semibold text-nhan hover:underline">
             bỏ lọc
           </Link>
         </p>
@@ -273,6 +325,14 @@ export default async function TabDienDan({ params, searchParams }: {
                           <Lock size={10} aria-label="đã khoá" /> Khoá
                         </span>
                       )}
+                      {/* Chuyên mục chỉ hiện ở BẢNG CHUNG: đã bước vào một
+                          mục rồi thì mọi hàng cùng mục ấy, in lại trên từng
+                          hàng là một cột chữ giống hệt nhau chạy dọc trang. */}
+                      {!mucMo && c.chuyenMuc && (
+                        <span className="rounded-full bg-nen3 px-1.5 py-0.5 text-[11px] font-bold text-mo">
+                          {c.chuyenMuc.ten}
+                        </span>
+                      )}
                       {/* Nhãn đứng cạnh mấy chip trạng thái, cùng một hàng:
                           người lướt lọc bằng mắt theo mép trái. */}
                       {(() => {
@@ -314,6 +374,7 @@ export default async function TabDienDan({ params, searchParams }: {
             // Giữ cả lối lọc lẫn từ khoá khi sang trang: mất chúng thì trang 2
             // là cả diễn đàn, trong khi trang 1 vừa lọc — người đọc tưởng hỏng.
             const q = new URLSearchParams();
+            if (mucMo) q.set('muc', mucMo.duongDan);
             if (loc) q.set('loc', loc);
             if (tuKhoa) q.set('tim', tuKhoa);
             if (t > 1) q.set('trang', String(t));
@@ -328,16 +389,20 @@ export default async function TabDienDan({ params, searchParams }: {
           để đọc là danh sách ấy. Đặt dưới thì hai chỗ rộng như nhau ở mọi cỡ
           màn hình, và nó đúng là thứ đọc sau.
         */}
-        <NguoiTichCucDienDan gameId={game.id} />
+        {/* Chỉ ở cửa diễn đàn: bảng này đếm cả diễn đàn của game, nên đặt nó
+            dưới một danh sách đã lọc theo chuyên mục là để hai con số nói về
+            hai phạm vi khác nhau ngay cạnh nhau. */}
+        {!mucMo && <NguoiTichCucDienDan gameId={game.id} />}
         </>
       )}
     </div>
   );
 }
 
-/** Dựng địa chỉ cho một lối lọc, giữ nguyên từ khoá đang tìm. */
-function duongLoc(duongDan: string, ma: string, tuKhoa: string): string {
+/** Dựng địa chỉ cho một lối lọc, giữ nguyên từ khoá đang tìm và mục đang mở. */
+function duongLoc(duongDan: string, ma: string, tuKhoa: string, maMuc: string): string {
   const p = new URLSearchParams();
+  if (maMuc) p.set('muc', maMuc);
   if (ma) p.set('loc', ma);
   if (tuKhoa) p.set('tim', tuKhoa);
   const q = p.toString();

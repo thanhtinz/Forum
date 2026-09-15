@@ -53,6 +53,27 @@ const THE_LOAI = [
   'Nhập vai', 'Chiến thuật', 'Thể thao', 'Mô phỏng', 'Thường thức',
 ];
 
+/*
+ * Bốn chuyên mục dựng sẵn cho diễn đàn.
+ *
+ * Bảng chuyên mục dùng chung cho mọi game, nên cửa hàng mới dựng mà bảng trống
+ * thì diễn đàn game nào cũng trống chỗ ấy — quản trị phải tự nghĩ ra bốn cái
+ * tên trước khi tính năng có ích lần đầu. Bốn mục này là bốn kiểu chuyện diễn
+ * đàn game nào cũng có; quản trị đổi tên, thêm bớt thoải mái.
+ *
+ * Cố ý KHÔNG đặt trùng tên bốn cái nhãn chủ đề (Hỏi đáp / Mẹo hay / Báo lỗi /
+ * Tán gẫu): hai thứ ấy nằm cạnh nhau ngay trên một trang, nên trùng tên là
+ * người đọc thấy "Hỏi đáp" hai lần ở hai hàng khác nhau và tưởng trang hỏng.
+ * Chuyên mục là CHỖ NGỒI của bài, nhãn chỉ là chữ dán lên bìa — tên phải khác
+ * nhau thì mới nói ra được hai vai ấy.
+ */
+const CHUYEN_MUC: { duongDan: string; ten: string; moTa: string }[] = [
+  { duongDan: 'huong-dan-qua-man', ten: 'Hướng dẫn qua màn', moTa: 'Kẹt ở đâu thì hỏi, ai qua rồi thì kể lại' },
+  { duongDan: 'loi-va-su-co', ten: 'Lỗi và sự cố', moTa: 'Game đứng, mất dữ liệu, máy nào không chạy nổi' },
+  { duongDan: 'ban-mod-va-viet-hoa', ten: 'Bản mod và Việt hoá', moTa: 'Bản chỉnh sửa, bản dịch, cách cài đặt' },
+  { duongDan: 'goc-tan-gau', ten: 'Góc tán gẫu', moTa: 'Chuyện ngoài lề quanh game này' },
+];
+
 interface BanMau {
   he: HeMay;
   soHieu: string;
@@ -276,6 +297,18 @@ async function main() {
       select: { id: true },
     });
     theLoaiId[ten] = t.id;
+  }
+
+  // ── Chuyên mục diễn đàn ─────────────────────────────────────────────
+  // `upsert` theo đường dẫn: chạy lại hạt giống không đẻ thêm bản sao, mà tên
+  // quản trị đã sửa thì cũng không bị kéo ngược về bản gốc.
+  for (const [i, m] of CHUYEN_MUC.entries()) {
+    await db.chuyenMuc.upsert({
+      where: { duongDan: m.duongDan },
+      update: {},
+      create: { duongDan: m.duongDan, ten: m.ten, moTa: m.moTa, thuTu: (i + 1) * 10 },
+      select: { id: true },
+    });
   }
 
   // ── Người dùng ──────────────────────────────────────────────────────

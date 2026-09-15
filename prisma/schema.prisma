@@ -626,6 +626,40 @@ model DaLuu {
 // CỘNG ĐỒNG — nằm TRONG từng game, không có bảng chuyên mục riêng
 // ════════════════════════════════════════════════════════════════════
 
+/// CHUYÊN MỤC CỦA DIỄN ĐÀN — dựng MỘT LẦN ở khu quản trị, dùng cho MỌI game.
+///
+/// Cửa hàng có hàng trăm game, mà câu chuyện trong diễn đàn game nào cũng chia
+/// theo đúng mấy kiểu như nhau: hỏi cách qua màn, báo lỗi, khoe bản mod, tán
+/// gẫu. Cho mỗi game tự dựng lấy bảng chuyên mục thì người bày hàng phải gõ
+/// lại từng game một, mỗi nơi một tên, và người đọc đi từ game này sang game
+/// kia là gặp một cái bảng lạ.
+///
+/// Nên chuyên mục là của CẢ CỬA HÀNG, còn chủ đề nằm trong nó thì của TỪNG
+/// GAME: vào game nào cũng thấy đúng bảng chuyên mục ấy, mà bấm vào thì chỉ ra
+/// chuyện của game đang xem.
+model ChuyenMuc {
+  id       String @id @default(cuid())
+  duongDan String @unique
+  ten      String
+
+  /// Một dòng nói chuyên mục này để bàn chuyện gì. Hiện ngay dưới tên, đúng
+  /// lối bảng chuyên mục của mấy diễn đàn cũ — không có nó thì người đọc phải
+  /// bấm thử vào từng mục mới đoán ra nó chứa gì.
+  moTa String?
+
+  /// Biểu tượng của chuyên mục, do quản trị tải lên. Bỏ trống thì bày chữ cái
+  /// đầu, cùng lối với ảnh đại diện thành viên — một ô trống toang thì cả bảng
+  /// lệch hàng, mà bắt quản trị phải có ảnh mới thêm được mục thì quá đắt.
+  anh String?
+
+  thuTu  Int      @default(0)
+  taoLuc DateTime @default(now())
+
+  chuDe ChuDe[]
+
+  @@index([thuTu])
+}
+
 model ChuDe {
   id      String    @id @default(cuid())
   gameId  String
@@ -642,6 +676,16 @@ model ChuDe {
 
   ghim Boolean @default(false)
   khoa Boolean @default(false)
+
+  /// Chuyên mục chứa chủ đề này. Để trống là chủ đề chưa xếp mục nào — bảng
+  /// chuyên mục gom mấy bài ấy vào mục "Chung" dựng sẵn, chứ không giấu đi.
+  ///
+  /// `SetNull` chứ không `Cascade`: quản trị gỡ một chuyên mục thì mấy chủ đề
+  /// trong đó chỉ mất chỗ xếp, KHÔNG được biến mất theo — bên trong là bài của
+  /// hàng chục người khác, mà xoá một cái nhãn phân loại thì không đáng đổi
+  /// bằng cả cuộc trò chuyện.
+  chuyenMucId String?
+  chuyenMuc   ChuyenMuc? @relation(fields: [chuyenMucId], references: [id], onDelete: SetNull)
 
   /// Người mở chủ đề tự chọn. Mặc định `TAN_GAU` — nhãn nhẹ nhất, vì đoán sai
   /// thành "báo lỗi" thì người bày hàng đi kiểm một thứ chẳng ai báo.
@@ -684,6 +728,7 @@ model ChuDe {
 
   @@index([gameId, ghim, traLoiCuoiLuc])
   @@index([gameId, nhan])
+  @@index([gameId, chuyenMucId])
 }
 
 /*

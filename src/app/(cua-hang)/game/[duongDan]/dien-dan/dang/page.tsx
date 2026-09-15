@@ -10,8 +10,12 @@ import { NHAN, NHAN_MAC_DINH } from '@/lib/nhan-chu-de-const';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Đăng chủ đề' };
 
-export default async function TrangDangBai({ params }: { params: Promise<{ duongDan: string }> }) {
+export default async function TrangDangBai({ params, searchParams }: {
+  params: Promise<{ duongDan: string }>;
+  searchParams: Promise<{ muc?: string }>;
+}) {
   const { duongDan } = await params;
+  const { muc: mucNhap } = await searchParams;
 
   const game = await db.game.findFirst({
     where: { duongDan, trangThai: 'DANG_HIEN' },
@@ -20,6 +24,13 @@ export default async function TrangDangBai({ params }: { params: Promise<{ duong
   if (!game) notFound();
 
   if (!(await nguoiHienTai())) redirect('/dang-nhap');
+
+  const chuyenMuc = await db.chuyenMuc.findMany({
+    orderBy: [{ thuTu: 'asc' }, { id: 'asc' }],
+    select: { duongDan: true, ten: true, moTa: true },
+  });
+  // Mục chọn sẵn chỉ nhận khi CÓ THẬT trong bảng: `?muc=` tới từ địa chỉ.
+  const mucSan = chuyenMuc.some((m) => m.duongDan === mucNhap) ? mucNhap : '';
 
   return (
     /* Không có liên kết lùi ở đây: hàng tab ngay trên đầu đã là lối lùi, và
@@ -46,6 +57,29 @@ export default async function TrangDangBai({ params }: { params: Promise<{ duong
           gì. Danh sách thả xuống thì chỉ còn bốn cái tên trơ trọi, và người mở
           chủ đề đoán bừa — mà đoán bừa thì bộ lọc ở trang danh sách hoá vô dụng.
         */}
+        {/*
+          CHUYÊN MỤC ĐỨNG TRƯỚC NHÃN, và là một danh sách thả xuống.
+
+          Hai thứ này trông na ná nhau nên thứ tự phải nói ra được cái nào to
+          hơn: chuyên mục là CHỖ NGỒI của bài — nó quyết định bài nằm ở trang
+          nào — còn nhãn chỉ là một chữ dán lên bìa. Chỗ ngồi chọn trước.
+
+          Thả xuống chứ không bày hết ra như nhãn, vì số chuyên mục do quản trị
+          đặt và có thể lên tới vài chục; bốn ô tròn thì bày hết được, ba mươi
+          ô tròn thì đẩy ô soạn bài xuống dưới đáy màn hình.
+        */}
+        {chuyenMuc.length > 0 && (
+          <label className="block">
+            <span className="phu mb-1 block">Chuyên mục</span>
+            <select name="chuyenMuc" defaultValue={mucSan} className="o-nhap">
+              <option value="">— Chưa xếp mục —</option>
+              {chuyenMuc.map((m) => (
+                <option key={m.duongDan} value={m.duongDan}>{m.ten}</option>
+              ))}
+            </select>
+          </label>
+        )}
+
         <fieldset>
           <legend className="phu mb-1.5">Chủ đề này thuộc loại nào?</legend>
           <div className="grid gap-1.5 sm:grid-cols-2">

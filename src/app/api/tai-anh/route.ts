@@ -76,6 +76,21 @@ const CHO_DAT = {
     canhToiThieu: 0, vuong: false, ngang: false,
   },
   /*
+   * Biểu tượng của một chuyên mục diễn đàn.
+   *
+   * Chỉ quản trị đặt được, và cả cửa hàng dùng chung vài chục tấm — nên trần
+   * nhỏ: nó bày ở cỡ 44 điểm ảnh trong bảng mục lục, nặng hơn 512KB là nặng
+   * mà chẳng nét thêm.
+   *
+   * KHÔNG đòi vuông như biểu tượng game: tấm nào cũng bị cắt vuông lúc bày,
+   * nhưng đây là hình do chính người quản trị chọn và họ thấy ngay kết quả
+   * trên bảng, khác với biểu tượng game do người ngoài gửi lên rồi mới duyệt.
+   */
+  'chuyen-muc': {
+    thuMuc: 'chuyen-muc', toiDa: 512 * 1024, canQuanTri: true,
+    canhToiThieu: 0, vuong: false, ngang: false,
+  },
+  /*
    * Ảnh đại diện của một tài khoản.
    *
    * Trước đợt này đây là ô dán ĐỊA CHỈ — chỗ duy nhất trong cả cửa hàng còn

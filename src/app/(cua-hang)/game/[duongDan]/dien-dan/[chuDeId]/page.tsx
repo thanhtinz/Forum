@@ -42,6 +42,7 @@ export default async function TrangChuDe({ params, searchParams }: {
     select: {
       id: true, tieuDe: true, noiDung: true, ghim: true, khoa: true, taoLuc: true,
       nguoiId: true, loiGiaiId: true, nhan: true, suaLuc: true, soLuotXem: true,
+      chuyenMuc: { select: { ten: true, duongDan: true } },
       binhChon: {
         select: {
           cauHoi: true, nhieuLuaChon: true,
@@ -204,6 +205,15 @@ export default async function TrangChuDe({ params, searchParams }: {
         {/* Nhãn đứng dưới đầu đề chứ không chen vào trong: đầu đề dài thì nhãn
             bị đẩy xuống dòng giữa chừng câu, trông như một chữ lạc vào. */}
         <p className="mt-1.5 flex flex-wrap items-center gap-2">
+          {/* Chuyên mục là một LỐI ĐI, không phải một cái chip trang trí: đọc
+              xong một bài thì thứ người ta muốn kế tiếp thường là bài khác
+              cùng mục, chứ không phải cả diễn đàn. */}
+          {chuDe.chuyenMuc && (
+            <Link href={`/game/${chuDe.game.duongDan}/dien-dan?muc=${chuDe.chuyenMuc.duongDan}`}
+              className="rounded-full bg-nen3 px-2 py-0.5 text-[11px] font-bold text-mo transition-colors hover:text-chu">
+              {chuDe.chuyenMuc.ten}
+            </Link>
+          )}
           <NhanChuDe ma={chuDe.nhan} />
           <span className="phu inline-flex items-center gap-1 text-[12px]">
             <Eye size={13} aria-hidden /> {gonSo(chuDe.soLuotXem)} lượt xem

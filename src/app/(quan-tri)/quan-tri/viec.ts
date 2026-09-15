@@ -23,6 +23,9 @@ import {
 import { LOI_KHONG_QUYEN, locGameCuaToi, quyenTrenGame } from '@/lib/quyen-game';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
 import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
+import {
+  CHUYEN_MUC_TOI_DA, MO_TA_TOI_DA, MUC_CHUNG, TEN_TOI_DA,
+} from '@/lib/chuyen-muc-const';
 
 export interface KetQua { loi?: string; ok?: boolean }
 
@@ -1124,6 +1127,142 @@ export async function doiChoTheLoai(theLoaiId: string, len: boolean): Promise<Ke
   revalidatePath('/duyet');
   revalidatePath('/game');
   return {};
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * CHUYÊN MỤC DIỄN ĐÀN
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * Thêm hoặc sửa một chuyên mục diễn đàn.
+ *
+ * Bảng chuyên mục dựng ở đây dùng cho MỌI game — xem chú thích của model
+ * `ChuyenMuc`. Nghĩa là một dòng gõ sai ở đây hiện sai ở hàng trăm trang, nên
+ * mấy phép kiểm dưới đây chặt hơn hẳn một biểu mẫu thường.
+ */
+export async function luuChuyenMuc(_truoc: KetQua, form: FormData): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const id = chu(form, 'id') || null;
+  const ten = chu(form, 'ten');
+  if (ten.length < 2) return { loi: 'Hãy nhập tên chuyên mục.' };
+  if (ten.length > TEN_TOI_DA) return { loi: `Tên chuyên mục dài quá ${TEN_TOI_DA} chữ.` };
+
+  const moTa = chu(form, 'moTa').slice(0, MO_TA_TOI_DA) || null;
+  const anh = chu(form, 'anh') || null;
+
+  const duongDan = thanhDuongDan(chu(form, 'duongDan') || ten);
+  if (!duongDan) return { loi: 'Tên này không tạo được đường dẫn hợp lệ.' };
+
+  /*
+   * `chung` là mã DỰNG SẴN của mục "Chung" — chỗ đứng của chủ đề chưa xếp mục.
+   *
+   * Để lọt một chuyên mục thật mang đúng mã ấy thì địa chỉ `?muc=chung` trỏ
+   * vào hai chỗ khác nhau, và mục "Chung" thì không cách nào mở ra nữa.
+   */
+  if (duongDan === MUC_CHUNG) {
+    return { loi: `Đường dẫn “${MUC_CHUNG}” đã dành cho mục Chung dựng sẵn.` };
+  }
+
+  const trung = await db.chuyenMuc.findFirst({
+    where: { duongDan, ...(id ? { NOT: { id } } : {}) }, select: { id: true },
+  });
+  if (trung) return { loi: `Đường dẫn “${duongDan}” đã có chuyên mục khác dùng.` };
+
+  // Trùng tên cũng chặn, cùng lẽ với thể loại: hai mục cùng tên nằm cạnh nhau
+  // thì người mở chủ đề chọn bừa một cái, và bảng mục lục tách đôi chuyện.
+  const trungTen = await db.chuyenMuc.findFirst({
+    where: { ten: { equals: ten, mode: 'insensitive' }, ...(id ? { NOT: { id } } : {}) },
+    select: { duongDan: true },
+  });
+  if (trungTen) {
+    return { loi: `Đã có chuyên mục tên “${ten}” (đường dẫn “${trungTen.duongDan}”).` };
+  }
+
+  if (id) {
+    await db.chuyenMuc.update({
+      where: { id }, data: { ten, duongDan, moTa, anh }, select: { id: true },
+    });
+  } else {
+    const dem = await db.chuyenMuc.count();
+    if (dem >= CHUYEN_MUC_TOI_DA) {
+      return { loi: `Nhiều nhất ${CHUYEN_MUC_TOI_DA} chuyên mục. Gộp bớt mấy mục ít người vào đã.` };
+    }
+    // Xếp cuối, cách mục cuối 10 nấc — cùng lối với thể loại, chừa chỗ để đổi
+    // chỗ chỉ phải ghi lại một con số.
+    const cuoi = await db.chuyenMuc.findFirst({
+      orderBy: { thuTu: 'desc' }, select: { thuTu: true },
+    });
+    await db.chuyenMuc.create({
+      data: { ten, duongDan, moTa, anh, thuTu: (cuoi?.thuTu ?? 0) + 10 }, select: { id: true },
+    });
+  }
+
+  lamMoiChuyenMuc();
+  return {};
+}
+
+/**
+ * Xoá một chuyên mục.
+ *
+ * KHÔNG chặn khi còn chủ đề bên trong, khác với thể loại — và đó là chủ ý.
+ * Chuyên mục dùng chung cho cả cửa hàng, nên một mục đông có thể ôm hàng nghìn
+ * chủ đề nằm rải khắp hàng trăm game; chặn thì cái mục ấy vĩnh viễn không gỡ
+ * được, vì chẳng có lối nào xếp lại từng chủ đề một.
+ *
+ * Lược đồ để `SetNull`, nên chủ đề bên trong chỉ mất chỗ xếp chứ không mất
+ * bài. Chúng rơi về mục "Chung" dựng sẵn, vẫn mở ra đọc được như thường —
+ * người bấm nút cần biết đúng chuyện ấy, nên số chủ đề đi kèm câu xác nhận.
+ */
+export async function xoaChuyenMuc(chuyenMucId: string): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const co = await db.chuyenMuc.findUnique({
+    where: { id: chuyenMucId }, select: { id: true },
+  });
+  if (!co) return { loi: 'Không tìm thấy chuyên mục.' };
+
+  await db.chuyenMuc.delete({ where: { id: chuyenMucId } });
+
+  lamMoiChuyenMuc();
+  return {};
+}
+
+/** Đổi chỗ một chuyên mục với mục liền kề. Cùng lối với thể loại. */
+export async function doiChoChuyenMuc(chuyenMucId: string, len: boolean): Promise<KetQua> {
+  try { await batBuocQuanTri(); }
+  catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
+
+  const m = await db.chuyenMuc.findUnique({
+    where: { id: chuyenMucId }, select: { id: true, thuTu: true },
+  });
+  if (!m) return { loi: 'Không tìm thấy chuyên mục.' };
+
+  const canh = await db.chuyenMuc.findFirst({
+    where: { id: { not: m.id }, thuTu: len ? { lte: m.thuTu } : { gte: m.thuTu } },
+    orderBy: len ? [{ thuTu: 'desc' }, { id: 'desc' }] : [{ thuTu: 'asc' }, { id: 'asc' }],
+    select: { id: true, thuTu: true },
+  });
+  if (!canh) return {};
+
+  await db.$transaction([
+    db.chuyenMuc.update({ where: { id: m.id }, data: { thuTu: canh.thuTu }, select: { id: true } }),
+    db.chuyenMuc.update({ where: { id: canh.id }, data: { thuTu: m.thuTu }, select: { id: true } }),
+  ]);
+
+  lamMoiChuyenMuc();
+  return {};
+}
+
+/*
+ * Bảng chuyên mục hiện ở diễn đàn của MỌI game, mà đường dẫn game thì không
+ * biết trước — nên làm mới theo `layout`, quét cả nhánh `/game/…/dien-dan`.
+ */
+function lamMoiChuyenMuc() {
+  revalidatePath('/quan-tri/chuyen-muc');
+  revalidatePath('/game', 'layout');
 }
 
 /* ──────────────────────────────────────────────────────────────────────────

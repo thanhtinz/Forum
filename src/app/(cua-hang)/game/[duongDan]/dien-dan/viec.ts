@@ -49,12 +49,25 @@ export async function dangChuDe(_truoc: KetQua, form: FormData): Promise<KetQua>
   const nhanNhap = String(form.get('nhan') ?? '');
   const nhan = laNhan(nhanNhap) ? nhanNhap : NHAN_MAC_DINH;
 
+  /*
+   * Chuyên mục cũng phải CÓ THẬT, và tra bằng chính lượt đọc này.
+   *
+   * Biểu mẫu gửi lên một mã tuỳ ý, nên không tra thì Prisma ném lỗi khoá ngoại
+   * và bài vừa soạn mất trắng. Mã lạ thì lùi về KHÔNG mục nào — bài vẫn đăng
+   * được, vẫn đọc được, và người viết tự xếp lại mục sau.
+   */
+  const maMuc = String(form.get('chuyenMuc') ?? '').trim();
+  const muc = maMuc
+    ? await db.chuyenMuc.findUnique({ where: { duongDan: maMuc }, select: { id: true } })
+    : null;
+
   const chuDe = await db.chuDe.create({
     // `timKiem` dựng ngay lúc ghi, không tính lúc đọc: cột sẵn thì thêm được
     // chỉ mục, còn bỏ dấu từng dòng lúc truy vấn thì CSDL phải quét cả bảng.
     data: {
       gameId: game.id, nguoiId: nguoi.id, tieuDe, noiDung,
       nhan: nhan as 'TAN_GAU',
+      chuyenMucId: muc?.id ?? null,
       timKiem: dungChuoiTimChuDe({ tieuDe, noiDung }),
     },
     select: { id: true },

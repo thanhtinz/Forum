@@ -18,24 +18,25 @@ export interface LoiQuanTri {
   icon: string;
   demCho?: MaDem;
   /** Nhóm để xếp thành từng cụm trên thanh bên. */
-  nhom: 'Kho hàng' | 'Cộng đồng' | 'Cửa hàng';
+  nhom: 'Kệ hàng' | 'Cộng đồng' | 'Cửa hàng';
 }
 
 export const LOI_QUAN_TRI: LoiQuanTri[] = [
-  { duongDan: '/quan-tri', ten: 'Tổng quan', icon: 'LayoutDashboard', nhom: 'Kho hàng' },
-  { duongDan: '/quan-tri/game', ten: 'Game', icon: 'Gamepad2', demCho: 'gameNhap', nhom: 'Kho hàng' },
-  { duongDan: '/quan-tri/duyet', ten: 'Chờ duyệt', icon: 'ClipboardCheck', demCho: 'choDuyet', nhom: 'Kho hàng' },
-  { duongDan: '/quan-tri/the-loai', ten: 'Thể loại', icon: 'Tags', nhom: 'Kho hàng' },
+  { duongDan: '/quan-tri', ten: 'Tổng quan', icon: 'LayoutDashboard', nhom: 'Kệ hàng' },
+  { duongDan: '/quan-tri/game', ten: 'Game', icon: 'Gamepad2', demCho: 'gameNhap', nhom: 'Kệ hàng' },
+  { duongDan: '/quan-tri/duyet', ten: 'Chờ duyệt', icon: 'ClipboardCheck', demCho: 'choDuyet', nhom: 'Kệ hàng' },
+  { duongDan: '/quan-tri/the-loai', ten: 'Thể loại', icon: 'Tags', nhom: 'Kệ hàng' },
   { duongDan: '/quan-tri/danh-gia', ten: 'Đánh giá', icon: 'Star', demCho: 'danhGiaChuaDap', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/bao-xau', ten: 'Báo xấu', icon: 'Flag', demCho: 'baoXauCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/dien-dan', ten: 'Diễn đàn', icon: 'MessageSquare', nhom: 'Cộng đồng' },
+  { duongDan: '/quan-tri/chuyen-muc', ten: 'Chuyên mục', icon: 'FolderTree', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/yeu-cau', ten: 'Yêu cầu game', icon: 'Inbox', demCho: 'yeuCauCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/tac-gia', ten: 'Đơn tác giả', icon: 'UserPlus', demCho: 'donTacGiaCho', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/thanh-vien', ten: 'Thành viên', icon: 'Users', nhom: 'Cộng đồng' },
   { duongDan: '/quan-tri/cai-dat', ten: 'Cài đặt', icon: 'Settings', nhom: 'Cửa hàng' },
 ];
 
-export const NHOM_QUAN_TRI = ['Kho hàng', 'Cộng đồng', 'Cửa hàng'] as const;
+export const NHOM_QUAN_TRI = ['Kệ hàng', 'Cộng đồng', 'Cửa hàng'] as const;
 
 /**
  * Mục nào đang mở.

@@ -11,6 +11,7 @@ import { cachDay, gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
 import { rutGon } from '@/lib/trich-dan-const';
 import { NHAN, laNhan } from '@/lib/nhan-chu-de-const';
 import { AnhDaiDien } from '@/components/NguoiDung';
+import { NguoiTichCucDienDan } from '@/components/game/NguoiTichCucDienDan';
 
 /*
  * Mỗi trang bao nhiêu chủ đề.
@@ -319,6 +320,15 @@ export default async function TabDienDan({ params, searchParams }: {
             const s2 = q.toString();
             return `/game/${game.duongDan}/dien-dan${s2 ? `?${s2}` : ''}`;
           }} />
+        {/*
+          Bảng người tích cực nằm DƯỚI danh sách, không nằm cạnh.
+
+          Cột bên phải thì trên điện thoại nó rơi xuống dưới hết, mà trên máy
+          bàn thì bóp danh sách chủ đề hẹp lại — trong khi thứ người ta vào đây
+          để đọc là danh sách ấy. Đặt dưới thì hai chỗ rộng như nhau ở mọi cỡ
+          màn hình, và nó đúng là thứ đọc sau.
+        */}
+        <NguoiTichCucDienDan gameId={game.id} />
         </>
       )}
     </div>

@@ -10,6 +10,25 @@ const DUONG_DAN = 'game-kiem-soan-thao';
  * thành chữ thường. An toàn theo THIẾT KẾ, chứ không phải an toàn nhờ nhớ lọc
  * — mà quên lọc đúng một lần là một lỗ chèn mã.
  */
+/**
+ * Điền chữ vào ô soạn thảo RỒI ĐỢI cho ô thật sự mang đúng chữ ấy.
+ *
+ * Ô soạn thảo là một ô React CÓ TRẠNG THÁI: `fill` đặt giá trị vào DOM rồi bắn
+ * một sự kiện `input`, còn React thì vẽ lại ở lượt sau. Bấm nút thanh công cụ
+ * ngay lúc ấy là bấm vào một ô chưa kịp đổi — lệnh chạy trên chữ CŨ, và kết
+ * quả trộn hai bản chữ vào nhau.
+ *
+ * Đã cắn thật: bài này xanh khi chạy một mình, nhưng đỏ hai mục khi chạy cả
+ * bộ, vì lúc ấy máy bận hơn nên nhịp vẽ lại chậm hơn. Lỗi nằm ở phép ĐO, không
+ * ở mã — nên sửa bằng cách đợi, chứ không bằng cách nới lỏng phép so.
+ */
+async function dienVaDoi(trang, o, chu) {
+  await o.fill(chu);
+  for (let i = 0; i < 40 && (await o.inputValue()) !== chu; i++) {
+    await trang.waitForTimeout(50);
+  }
+}
+
 export default async function chay(kiem) {
   const don = () => db.game.deleteMany({ where: { duongDan: DUONG_DAN } });
   await don();
@@ -32,7 +51,8 @@ export default async function chay(kiem) {
 
     // ── Thanh công cụ bọc đúng đoạn đang chọn ──────────────────────────
     const o = admin.locator('textarea[name="gioiThieu"]');
-    await o.fill('Bóng đỏ lăn qua mười hai màn');
+
+    await dienVaDoi(admin, o, 'Bóng đỏ lăn qua mười hai màn');
     await o.evaluate((e) => e.setSelectionRange(0, 7));
     await admin.click('button[aria-label="Đậm"]');
     kiem('bấm Đậm thì bọc đúng đoạn đang chọn',
@@ -43,7 +63,7 @@ export default async function chay(kiem) {
      * không phải một gạch ở dòng đầu. Đây là chỗ mấy thanh công cụ tự viết
      * hay làm sai nhất, và người soạn phát hiện ra bằng cách gõ lại tay.
      */
-    await o.fill('Một\nHai\nBa');
+    await dienVaDoi(admin, o, 'Một\nHai\nBa');
     await o.evaluate((e) => e.setSelectionRange(0, e.value.length));
     await admin.click('button[aria-label="Danh sách"]');
     kiem('bôi đen ba dòng thì ra ba gạch đầu dòng',
@@ -56,7 +76,7 @@ export default async function chay(kiem) {
       (await o.inputValue()) === 'Một\nHai\nBa', JSON.stringify(await o.inputValue()));
 
     // ── Xem trước dựng bằng đúng bộ dựng của trang game ────────────────
-    await o.fill('## Cách chơi\n\nBấm **trái** và *phải*.\n\n- Nhảy bằng phím giữa\n- Ăn vật phẩm');
+    await dienVaDoi(admin, o, '## Cách chơi\n\nBấm **trái** và *phải*.\n\n- Nhảy bằng phím giữa\n- Ăn vật phẩm');
     await admin.click('button[title="Xem trước"]');
     await admin.waitForTimeout(1200);
     const xem = admin.locator('.chu-dam').first();
@@ -80,7 +100,7 @@ export default async function chay(kiem) {
      * được mô tả game cũng chèn được mã chạy trên trình duyệt người xem.
      */
     const doc = '<img src=x onerror=alert(1)> và <script>alert(2)</script>';
-    await o.fill(doc);
+    await dienVaDoi(admin, o, doc);
     // Nhắm ĐÚNG nút của biểu mẫu thông tin game: trang này còn hai biểu mẫu
     // nữa đứng trước (ảnh chụp, bản tải), nên `button[type=submit]` trần bấm
     // nhầm sang biểu mẫu khác — và bài kiểm đỏ ở chỗ chẳng liên quan.
@@ -163,7 +183,7 @@ export default async function chay(kiem) {
  */
 export async function chayThem(kiem, admin, o) {
   // Gạch ngang chữ
-  await o.fill('bỏ đi');
+  await dienVaDoi(admin, o, 'bỏ đi');
   await o.evaluate((e) => e.setSelectionRange(0, e.value.length));
   await admin.click('button[aria-label="Gạch ngang chữ"]');
   kiem('nút gạch ngang bọc ~~', (await o.inputValue()) === '~~bỏ đi~~', await o.inputValue());
@@ -174,7 +194,7 @@ export async function chayThem(kiem, admin, o) {
   kiem('bấm lần nữa thì gỡ ~~ ra', (await o.inputValue()) === 'bỏ đi', await o.inputValue());
 
   // Đầu đề: đổi cấp phải THAY cấp cũ, không cộng dồn thành "## # Tên"
-  await o.fill('Tên mục');
+  await dienVaDoi(admin, o, 'Tên mục');
   await o.evaluate((e) => e.setSelectionRange(0, 0));
   await admin.click('summary:has-text("Kiểu chữ")');
   await admin.click('button:has-text("Đầu đề lớn")');
@@ -187,7 +207,7 @@ export async function chayThem(kiem, admin, o) {
     (await o.inputValue()) === '## Tên mục', await o.inputValue());
 
   // Bảng
-  await o.fill('');
+  await dienVaDoi(admin, o, '');
   await admin.click('summary[aria-label="Chèn bảng"]');
   await admin.click('button[aria-label="Bảng 2 hàng 3 cột"]');
   const bang = await o.inputValue();

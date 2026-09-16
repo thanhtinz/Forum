@@ -23,6 +23,7 @@ export function OTraLoiYeuCau({ id, trangThai, loiNhan }: {
   const [chu, datChu] = useState(loiNhan);
   const [xong, datXong] = useState(false);
   const [dangLuu, batDau] = useTransition();
+  const [loi, datLoi] = useState<string | null>(null);
 
   return (
     <div className="space-y-2">
@@ -32,7 +33,15 @@ export function OTraLoiYeuCau({ id, trangThai, loiNhan }: {
           {TRANG_THAI.map((t) => <option key={t.ma} value={t.ma}>{t.ten}</option>)}
         </select>
         <button type="button" disabled={dangLuu}
-          onClick={() => batDau(async () => { await traLoiYeuCau(id, tt, chu); datXong(true); })}
+          /* Việc ở máy chủ TRẢ VỀ lỗi chứ không ném, nên vứt kết quả đi là in
+             "Đã lưu" cả lúc mất quyền giữa buổi trực: người trực thấy chữ xanh
+             mà cơ sở dữ liệu không đổi một chữ. */
+          onClick={() => batDau(async () => {
+            datLoi(null);
+            const kq = await traLoiYeuCau(id, tt, chu);
+            if (kq?.loi) datLoi(kq.loi);
+            else datXong(true);
+          })}
           className="nut-xam !min-h-[38px]">
           {dangLuu ? 'Đang lưu…' : 'Lưu'}
         </button>
@@ -40,6 +49,7 @@ export function OTraLoiYeuCau({ id, trangThai, loiNhan }: {
       </div>
       <textarea value={chu} onChange={(e) => { datChu(e.target.value); datXong(false); }}
         rows={2} maxLength={500} placeholder="Lời nhắn gửi người yêu cầu…" className="o-nhap !text-[13px]" />
+      {loi && <p role="alert" className="text-[12px] font-medium text-xau">{loi}</p>}
       <p className="phu">Lời nhắn này hiện công khai ở trang Yêu cầu game.</p>
     </div>
   );

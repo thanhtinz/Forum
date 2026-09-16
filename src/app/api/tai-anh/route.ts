@@ -131,9 +131,24 @@ export async function POST(req: Request) {
   const form = await req.formData().catch(() => null);
   if (!form) return NextResponse.json({ loi: 'Không đọc được dữ liệu gửi lên.' }, { status: 400 });
 
-  const cho = String(form.get('cho') ?? '') as MaChoDat;
-  const luat = CHO_DAT[cho];
-  if (!luat) return NextResponse.json({ loi: 'Chỗ đặt ảnh không hợp lệ.' }, { status: 400 });
+  /*
+   * Tra bằng `Object.hasOwn`, KHÔNG tra thẳng `CHO_DAT[cho]`.
+   *
+   * `cho` là chuỗi người gửi tự đặt. Gửi `cho=constructor` (hay `toString`,
+   * `valueOf`, `hasOwnProperty`) thì phép tra trúng một thành viên CÓ SẴN TRÊN
+   * NGUYÊN MẪU của mọi object — một giá trị thật, nên câu `if (!luat)` không
+   * chặn. Rồi mọi trường của `luat` đều `undefined`, và cả cái cổng mở toang
+   * theo đúng ba nhịp:
+   *   • `luat.canQuanTri` undefined → phép quyền cho qua, ai đăng nhập cũng lọt;
+   *   • `luat.toiDa` undefined → `tep.size > undefined` luôn sai → MẤT TRẦN CỠ;
+   *   • `luat.thuMuc` undefined → tệp ghi vào khoá `undefined/…`, một thư mục
+   *     không hàng nào trong cơ sở dữ liệu trỏ tới, tức là rác nằm lại mãi.
+   */
+  const cho = String(form.get('cho') ?? '');
+  if (!Object.hasOwn(CHO_DAT, cho)) {
+    return NextResponse.json({ loi: 'Chỗ đặt ảnh không hợp lệ.' }, { status: 400 });
+  }
+  const luat = CHO_DAT[cho as MaChoDat];
 
   /*
    * Tác giả tự bày game của mình, nên tự tải được biểu tượng, ảnh bìa và ảnh

@@ -72,7 +72,8 @@ export default async function DanhGiaCuaToi({ searchParams }: {
       skip: (trang - 1) * MOI_TRANG,
       take: MOI_TRANG,
       select: {
-        id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
+        id: true, sao: true, noiDung: true, taoLuc: true,
+        traLoi: true, traLoiAnh: true, traLoiLuc: true,
         nguoi: { select: { tenHienThi: true } },
         game: { select: { ten: true, icon: true, duongDan: true } },
       },
@@ -140,11 +141,25 @@ export default async function DanhGiaCuaToi({ searchParams }: {
                           Đã trả lời
                           {d.traLoiLuc && <span className="phu ml-1.5 font-normal">{cachDay(d.traLoiLuc)}</span>}
                         </p>
-                        <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">{d.traLoi}</p>
+                        {d.traLoi && (
+                          <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">
+                            {d.traLoi}
+                          </p>
+                        )}
+                        {d.traLoiAnh && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={d.traLoiAnh} alt="" loading="lazy"
+                            className="mt-1.5 max-h-[140px] rounded-nut object-contain" />
+                        )}
                       </div>
                     )}
 
-                    <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} dap={tacGiaTraLoiDanhGia} />
+                    {/* `banDauAnh` KHÔNG được quên: ô sửa khởi tạo ảnh bằng
+                        `banDauAnh ?? ''`, nên bỏ trống là mỗi lượt sửa một chữ
+                        trong câu trả lời lại ghi đè ảnh cũ thành rỗng — mà ảnh
+                        ấy đang hiện ở trang game công khai. */}
+                    <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} banDauAnh={d.traLoiAnh}
+                      dap={tacGiaTraLoiDanhGia} />
                   </div>
                 </div>
               </li>

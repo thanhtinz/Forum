@@ -11,16 +11,29 @@ import { cachDay, gonSo, gop, motChuoi } from '@/lib/tien-ich';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Quản lý game' };
 
+/*
+ * ĐỦ NĂM trạng thái của `enum TrangThaiGame`, không phải ba.
+ *
+ * Bản cũ thiếu `CHO_DUYET` và `TU_CHOI`, mà cả hai đều có thật trong luồng
+ * duyệt game của tác giả. Thiếu thì dòng `NHAN[g.trangThai] ?? NHAN.NHAP` dán
+ * cho chúng cái nhãn "Nháp" xám — người trực nhìn bảng không phân biệt được
+ * game tác giả đã GỬI DUYỆT với game họ còn đang viết dở, mà đúng cái đã gửi
+ * mới là cái đang có người ngồi đợi.
+ */
 const NHAN: Record<string, { ten: string; lop: string }> = {
   NHAP: { ten: 'Nháp', lop: 'bg-nen3 text-mo' },
+  CHO_DUYET: { ten: 'Chờ duyệt', lop: 'bg-cam/15 text-canh' },
   DANG_HIEN: { ten: 'Đang hiện', lop: 'bg-nhan/12 text-nhan' },
-  DA_GO: { ten: 'Đã gỡ', lop: 'bg-xau/10 text-xau' },
+  TU_CHOI: { ten: 'Bị trả lại', lop: 'bg-xau/10 text-xau' },
+  DA_GO: { ten: 'Đã gỡ', lop: 'bg-nen3 text-mo' },
 };
 
 const LOC = [
   { ma: '', ten: 'Tất cả' },
   { ma: 'DANG_HIEN', ten: 'Đang hiện' },
+  { ma: 'CHO_DUYET', ten: 'Chờ duyệt' },
   { ma: 'NHAP', ten: 'Nháp' },
+  { ma: 'TU_CHOI', ten: 'Bị trả lại' },
   { ma: 'DA_GO', ten: 'Đã gỡ' },
 ];
 

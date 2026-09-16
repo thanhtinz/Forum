@@ -38,14 +38,41 @@ const CAM_MS = 15 * 60 * 1000;
 const TOI_DA_DINH_DANH = 8;
 const TOI_DA_IP = 40;
 
-/** Lấy IP người gọi. Không có thì trả rỗng — ở sau proxy lạ là chuyện có thật. */
+/**
+ * Bao nhiêu proxy của CHÍNH MÌNH đứng trước cửa hàng.
+ *
+ * Mặc định 1 — kiểu dựng thường gặp nhất: một nginx (hoặc một CDN) đứng trước,
+ * nói thẳng với Next. Ai dựng hai tầng thì khai `SO_PROXY_TIN=2`.
+ */
+const SO_PROXY_TIN = Math.max(1, Number(process.env.SO_PROXY_TIN) || 1);
+
+/**
+ * Lấy IP người gọi. Không có thì trả rỗng — ở sau proxy lạ là chuyện có thật.
+ *
+ * KHÔNG LẤY MẨU ĐẦU CỦA `x-forwarded-for`. Proxy NỐI THÊM vào tiêu đề ấy chứ
+ * không thay, nên mẩu đầu chính là chuỗi MÁY KHÁCH TỰ KHAI: gửi kèm
+ * `X-Forwarded-For: 1.2.3.4` đổi mỗi lượt là mỗi lượt ra một khoá đếm mới, và
+ * mọi cửa chặn theo IP trong tệp này hoá ra không chặn gì. Nặng nhất là cửa
+ * chặn mở tài khoản hàng loạt — nó CHỈ đếm theo IP, mà mỗi tài khoản mới vẫn
+ * ngốn một lượt bcrypt.
+ *
+ * Mẩu ĐÚNG là mẩu do proxy của chính mình nối vào, đếm ngược từ cuối dãy đúng
+ * `SO_PROXY_TIN` bậc. Trước đó vẫn ưu tiên mấy tiêu đề do nhà cung cấp tự ký,
+ * vì người ngoài không đặt đè được.
+ */
 async function layIp(): Promise<string> {
   const h = await headers();
-  // `x-forwarded-for` là một dãy, cái ĐẦU là máy khách thật; mấy cái sau là
-  // proxy trung gian. Lấy nhầm cái cuối là đếm chung cả proxy thành một.
+
+  const kySan = h.get('cf-connecting-ip') ?? h.get('x-real-ip');
+  if (kySan?.trim()) return kySan.trim();
+
   const xff = h.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  return h.get('x-real-ip')?.trim() ?? '';
+  if (xff) {
+    const day = xff.split(',').map((x) => x.trim()).filter(Boolean);
+    const o = day.length - SO_PROXY_TIN;
+    return day[o >= 0 ? o : 0] ?? '';
+  }
+  return '';
 }
 
 interface Khoa { khoa: string; toiDa: number }

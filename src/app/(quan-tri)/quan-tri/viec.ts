@@ -1275,7 +1275,15 @@ export async function luuChuyenMuc(_truoc: KetQua, form: FormData): Promise<KetQ
   if (ten.length > TEN_TOI_DA) return { loi: `Tên chuyên mục dài quá ${TEN_TOI_DA} chữ.` };
 
   const moTa = chu(form, 'moTa').slice(0, MO_TA_TOI_DA) || null;
-  const anh = chu(form, 'anh') || null;
+  /*
+   * Ảnh chuyên mục cũng qua đúng cửa như mọi ô ảnh khác: nó đi thẳng vào
+   * `<img src>` của bảng chuyên mục, mà bảng ấy hiện ở diễn đàn của MỌI game.
+   */
+  const anhNhap = chu(form, 'anh');
+  if (anhNhap && (anhNhap.length > DIA_CHI_TOI_DA || !laDiaChiHopLe(anhNhap))) {
+    return { loi: LOI_DIA_CHI };
+  }
+  const anh = anhNhap || null;
 
   const duongDan = thanhDuongDan(chu(form, 'duongDan') || ten);
   if (!duongDan) return { loi: 'Tên này không tạo được đường dẫn hợp lệ.' };
@@ -1729,8 +1737,18 @@ export async function khoaThanhVien(nguoiId: string, khoa: boolean): Promise<Ket
    * hạ quyền đã có luật riêng canh số quản trị còn lại. Hai bước, mỗi bước một
    * luật rõ ràng, thay vì một nút làm được cả hai.
    */
+  /*
+   * `not: 'QUAN_TRI'` chứ không `'THANH_VIEN'`.
+   *
+   * Bản cũ đòi đúng vai THÀNH VIÊN, nên một tài khoản TÁC GIẢ không khoá được
+   * — mà hàng của họ trong bảng thành viên VẪN bày nút Khoá (giao diện chỉ
+   * giấu nút với quản trị). Bấm vào thì nhận đúng câu "quản trị viên thì phải
+   * hạ quyền trước đã", một câu vừa sai sự thật vừa khiến người trực tưởng dữ
+   * liệu hỏng. Mà một tác giả rải bài rác thì phải khoá được ngay, chứ không
+   * phải hạ quyền tác giả của họ trước.
+   */
   const { count } = await db.nguoiDung.updateMany({
-    where: { id: nguoiId, vaiTro: 'THANH_VIEN' },
+    where: { id: nguoiId, vaiTro: { not: 'QUAN_TRI' } },
     data: { khoa },
   });
   if (count === 0) {

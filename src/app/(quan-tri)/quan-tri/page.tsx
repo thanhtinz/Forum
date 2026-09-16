@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import {
-  ArrowRight, Download, FileText, Flag, Inbox, MessageSquare, Plus, Star, Users,
+  ArrowRight, ClipboardCheck, Download, FileText, Flag, Inbox, MessageSquare, Plus, Star, UserPlus, Users,
 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { demViecTonDong } from '@/lib/quan-tri-dem';
@@ -55,10 +55,20 @@ export default async function TongQuan() {
     }),
   ]);
 
+  /*
+   * ĐỦ SÁU con số mà `demViecTonDong` trả về, không phải bốn.
+   *
+   * Bản cũ bỏ sót `choDuyet` và `donTacGiaCho` — đúng hai việc mà bên kia có
+   * NGƯỜI NGOÀI đang ngồi đợi. Hệ quả nhìn thấy được: thanh bên đeo huy hiệu
+   * "3" ở Chờ duyệt, mà ngay cạnh nó trang tổng quan in "Không còn việc nào
+   * đang chờ." Người trực tin trang tổng quan, và ba game nằm đấy.
+   */
   const viec = [
     // Báo xấu đứng ĐẦU: mấy việc kia chờ thêm một ngày không sao, còn một bài
     // rác thì mỗi giờ nằm đó là thêm người đọc phải nhìn thấy nó.
     { so: dem.baoXauCho, ten: 'nội dung bị báo xấu', di: '/quan-tri/bao-xau', icon: <Flag size={16} /> },
+    { so: dem.choDuyet, ten: 'game đang chờ duyệt', di: '/quan-tri/duyet', icon: <ClipboardCheck size={16} /> },
+    { so: dem.donTacGiaCho, ten: 'đơn xin làm tác giả', di: '/quan-tri/tac-gia', icon: <UserPlus size={16} /> },
     { so: dem.yeuCauCho, ten: 'yêu cầu game chờ xem', di: '/quan-tri/yeu-cau', icon: <Inbox size={16} /> },
     { so: dem.danhGiaChuaDap, ten: 'đánh giá chưa được trả lời', di: '/quan-tri/danh-gia', icon: <Star size={16} /> },
     { so: dem.gameNhap, ten: 'game còn ở dạng nháp', di: '/quan-tri/game?trangThai=NHAP', icon: <FileText size={16} /> },

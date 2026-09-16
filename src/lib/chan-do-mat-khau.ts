@@ -192,6 +192,56 @@ export async function ghiLanDangKy(): Promise<void> {
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
+ * CHẶN HỎI ẢNH ĐỘNG HÀNG LOẠT
+ *
+ * Tab GIF hỏi qua máy chủ của cửa hàng, và mỗi lượt hỏi tiêu một lượt trong
+ * hạn ngạch của KHOÁ TRẢ TIỀN mà cửa hàng gắn ở khu cài đặt. Không chặn thì
+ * một vòng lặp gõ vào ô tìm là đủ đốt hết hạn ngạch cả tháng, mà hoá đơn thì
+ * của cửa hàng chứ không của người gõ.
+ *
+ * Trần rộng tay hơn trần tải ảnh: gõ tìm ảnh động là gõ vài chữ rồi đổi ý,
+ * nên một người dùng thật chạm tới ba bốn chục lượt trong mười lăm phút là
+ * chuyện bình thường.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+const TOI_DA_GIF = 80;
+
+export async function conDuocTimGif(nguoiId: string): Promise<KetQuaChan> {
+  const bay = new Date();
+  const hang = await db.lanHong.findFirst({
+    where: { khoa: `gif:${nguoiId}`, camDen: { gt: bay } }, select: { camDen: true },
+  });
+  if (!hang) return { chan: false, conPhut: 0 };
+  return {
+    chan: true,
+    conPhut: Math.max(1, Math.ceil((hang.camDen!.getTime() - bay.getTime()) / 60_000)),
+  };
+}
+
+export async function ghiLanTimGif(nguoiId: string): Promise<void> {
+  const khoa = `gif:${nguoiId}`;
+  const bay = new Date();
+  const motCuaSoTruoc = new Date(bay.getTime() - CUA_SO_MS);
+  try {
+    const cu = await db.lanHong.findUnique({ where: { khoa }, select: { soLan: true, tuLuc: true } });
+    const trongCuaSo = cu && cu.tuLuc > motCuaSoTruoc;
+    const soLan = trongCuaSo ? cu.soLan + 1 : 1;
+    await db.lanHong.upsert({
+      where: { khoa },
+      create: { khoa, soLan: 1, tuLuc: bay },
+      update: {
+        soLan,
+        tuLuc: trongCuaSo ? cu.tuLuc : bay,
+        camDen: soLan >= TOI_DA_GIF ? new Date(bay.getTime() + CAM_MS) : null,
+      },
+      select: { khoa: true },
+    });
+  } catch {
+    // Đếm hỏng thì thôi — không để việc đếm chặn mất một lượt tìm thật.
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
  * CHẶN TẢI ẢNH HÀNG LOẠT
  *
  * Ảnh là thứ NẶNG nhất một thành viên thường gửi lên được, và mỗi tấm là một

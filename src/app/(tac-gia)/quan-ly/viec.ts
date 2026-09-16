@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { guiThongBao } from '@/lib/thong-bao';
 import { LOI_KHONG_QUYEN } from '@/lib/quyen-game';
+import { DIA_CHI_TOI_DA, laDiaChiHopLe } from '@/lib/dia-chi-an-toan';
 
 export interface KetQuaTacGia { loi?: string; ok?: boolean }
 
@@ -37,7 +38,17 @@ export async function tacGiaTraLoiDanhGia(
 
   const chuLoi = loi.trim().slice(0, LOI_TOI_DA);
   const tam = anh.trim();
-  if (tam && !tam.startsWith('/') && !tam.startsWith('https://')) {
+  /*
+   * Ảnh đi THẲNG vào thuộc tính `src` lúc bày, nên nó phải qua đúng bộ kiểm
+   * địa chỉ của dự án — không tự so đầu chuỗi.
+   *
+   * `startsWith('/')` là cái bẫy `dia-chi-an-toan.ts` sinh ra để giết:
+   * `//may-chu-la/x.png` và `/\may-chu-la/x.png` đều bắt đầu bằng `/`, mà
+   * trình duyệt đọc chúng thành "cùng giao thức, KHÁC MÁY CHỦ". Lọt là cửa
+   * hàng bày ảnh của người lạ dưới tên mình, và mỗi lượt xem là một lượt gửi
+   * địa chỉ IP người xem sang máy chủ ấy.
+   */
+  if (tam && (tam.length > DIA_CHI_TOI_DA || !laDiaChiHopLe(tam))) {
     return { loi: 'Ảnh không hợp lệ.' };
   }
 

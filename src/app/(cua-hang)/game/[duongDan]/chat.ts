@@ -3,6 +3,7 @@
 import { db } from '@/lib/db';
 import { batBuocDangNhap, nguoiHienTai } from '@/lib/xac-thuc';
 import { LAY_MOI_LAN, NGHI_GIAY, TIN_TOI_DA } from '@/lib/chat-const';
+import { DIA_CHI_TOI_DA, laDiaChiHopLe } from '@/lib/dia-chi-an-toan';
 
 export interface CauChat {
   id: string;
@@ -83,13 +84,16 @@ export async function guiChat(
   const tam = (anh ?? '').trim();
 
   /*
-   * Chỉ nhận ảnh của CHÍNH CỬA HÀNG hoặc của dịch vụ ngoài qua `https://`.
+   * Ảnh đi THẲNG vào thuộc tính `src` lúc bày, nên nó phải qua đúng bộ kiểm
+   * địa chỉ của dự án — không tự so đầu chuỗi.
    *
-   * Không kiểm thì trường này thành chỗ nhét `javascript:` hay `data:` vào một
-   * thẻ `img` bày cho mọi người trong phòng xem. Đây là chuỗi duy nhất ở đây
-   * đi thẳng vào thuộc tính `src`, nên nó phải qua cửa.
+   * `startsWith('/')` là cái bẫy `dia-chi-an-toan.ts` sinh ra để giết:
+   * `//may-chu-la/x.png` và `/\may-chu-la/x.png` đều bắt đầu bằng `/`, mà
+   * trình duyệt đọc chúng thành "cùng giao thức, KHÁC MÁY CHỦ". Lọt là cửa
+   * hàng bày ảnh của người lạ dưới tên mình, và mỗi lượt xem là một lượt gửi
+   * địa chỉ IP người xem sang máy chủ ấy.
    */
-  if (tam && !tam.startsWith('/') && !tam.startsWith('https://')) {
+  if (tam && (tam.length > DIA_CHI_TOI_DA || !laDiaChiHopLe(tam))) {
     return { loi: 'Ảnh không hợp lệ.' };
   }
   if (!chu && !tam) return { loi: 'Chưa gõ gì cả.' };
@@ -106,11 +110,17 @@ export async function guiChat(
    * NHỊP NGHỈ đo trên hàng CUỐI CÙNG của chính người này, không đếm trong một
    * khoảng — đếm thì phải quét, mà tra hàng cuối là một lượt chạm chỉ mục.
    *
+   * Đếm theo NGƯỜI, không theo cặp (phòng, người). Kèm `gameId` vào đây thì
+   * mỗi phòng có một hạn ngạch riêng, mà cửa hàng có hàng trăm game — xoay
+   * vòng qua chúng là gửi được hàng trăm câu trong ba giây, đúng thứ nhịp nghỉ
+   * sinh ra để chặn. Chỉ mục `[nguoiId, taoLuc]` trong lược đồ có mặt cho đúng
+   * lượt tra này.
+   *
    * Người bị chặn vẫn nhận câu trả lời tử tế chứ không im lặng: im lặng thì họ
    * bấm gửi thêm năm lần nữa, đúng thứ nhịp nghỉ sinh ra để tránh.
    */
   const cuoi = await db.tinNhanChat.findFirst({
-    where: { gameId, nguoiId: nguoi.id },
+    where: { nguoiId: nguoi.id },
     orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
     select: { taoLuc: true },
   });

@@ -125,9 +125,17 @@ export default async function TrangNhaPhatTrien({ params, searchParams }: {
 
 function O({ chinh, nhan }: { chinh: string; nhan: string }) {
   return (
-    <div className="flex-1 px-2 py-3">
-      <dd className="text-[17px] font-bold leading-none">{chinh}</dd>
+    /*
+     * `dt` đứng TRƯỚC `dd` trong mã, dù mắt thấy con số nằm trên cái nhãn.
+     *
+     * Trong một `dl`, bộ đọc màn hình ghép nhãn với giá trị THEO THỨ TỰ TRONG
+     * MÃ, không theo chỗ chúng hiện ra. Đặt ngược thì nó đọc "12 — 3 game",
+     * tức là gán mỗi con số cho cái nhãn của ô bên cạnh. `flex-col-reverse`
+     * lo phần nhìn, thứ tự trong mã lo phần nghe.
+     */
+    <div className="flex flex-1 flex-col-reverse px-2 py-3">
       <dt className="phu mt-1">{nhan}</dt>
+      <dd className="text-[17px] font-bold leading-none">{chinh}</dd>
     </div>
   );
 }

@@ -1,6 +1,8 @@
 'use server';
 
 import { db } from '@/lib/db';
+import { nguoiHienTai } from '@/lib/xac-thuc';
+import { conDuocTimGif, ghiLanTimGif } from '@/lib/chan-do-mat-khau';
 import { docAnhDong } from '@/lib/cai-dat';
 import { GIF_MOI_LAN } from '@/lib/cam-xuc-const';
 
@@ -45,6 +47,25 @@ export async function docSticker(): Promise<GoiStickerXem[]> {
  * rỗng trông y như "không tìm thấy gì", và người quản trị sẽ đi sửa nhầm chỗ.
  */
 export async function timGif(tuKhoa: string): Promise<{ loi?: string; anh?: AnhDongXem[] }> {
+  /*
+   * PHẢI ĐĂNG NHẬP, và có cửa chặn đếm lượt.
+   *
+   * Khác mọi hàm đọc khác trong tệp này: mỗi lượt gọi ở đây tiêu một lượt
+   * trong hạn ngạch của khoá trả tiền mà cửa hàng gắn. Bỏ ngỏ thì đây là hàm
+   * tốn tiền nhất cửa hàng có, mà lại là hàm dễ gọi nhất — một địa chỉ POST
+   * công khai, không cần tài khoản, gọi bao nhiêu lượt cũng được.
+   *
+   * Và chỉ người đăng nhập mới gửi được ảnh động đi (ô chat lẫn ô soạn bài đều
+   * đòi đăng nhập), nên cửa này không chặn mất ai đang dùng thật.
+   */
+  const nguoi = await nguoiHienTai();
+  if (!nguoi) return { loi: 'Bạn cần đăng nhập để tìm ảnh động.' };
+
+  const cua = await conDuocTimGif(nguoi.id);
+  if (cua.chan) {
+    return { loi: `Bạn vừa tìm khá nhiều. Thử lại sau ${cua.conPhut} phút.` };
+  }
+
   const cau = await docAnhDong();
   if (!cau.khoaApi) {
     return { loi: 'Cửa hàng chưa gắn khoá dịch vụ ảnh động. Nhờ ban quản trị bật giúp.' };
@@ -58,6 +79,8 @@ export async function timGif(tuKhoa: string): Promise<{ loi?: string; anh?: AnhD
     : (tu
       ? `https://tenor.googleapis.com/v2/search?key=${encodeURIComponent(cau.khoaApi)}&q=${encodeURIComponent(tu)}&limit=${GIF_MOI_LAN}&contentfilter=medium`
       : `https://tenor.googleapis.com/v2/featured?key=${encodeURIComponent(cau.khoaApi)}&limit=${GIF_MOI_LAN}&contentfilter=medium`);
+
+  await ghiLanTimGif(nguoi.id);
 
   try {
     /*

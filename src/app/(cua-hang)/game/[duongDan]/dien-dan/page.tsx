@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
 import { DANG_HIEN } from '@/lib/danh-muc';
 import { khongDau } from '@/lib/tim-kiem-const';
 import { PhanTrang } from '@/components/PhanTrang';
-import { cachDay, gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
+import { cachDay, gonSo, gop, kep, motChuoi, soTrang } from '@/lib/tien-ich';
 import { rutGon } from '@/lib/trich-dan-const';
 import { NHAN, laNhan } from '@/lib/nhan-chu-de-const';
 import { AnhDaiDien } from '@/components/NguoiDung';
@@ -31,9 +31,19 @@ const MOI_TRANG = 20;
 
 export const dynamic = 'force-dynamic';
 
+/*
+ * Thẻ `<title>` cũng phải qua đúng cái cửa mà trang qua.
+ *
+ * `generateMetadata` chạy TÁCH RỜI phần dựng trang: trang dưới có `notFound()`
+ * đàng hoàng, nhưng nếu ở đây tra không kèm điều kiện thì cái tên vẫn kịp đi
+ * vào thẻ `<title>` của chính trang 404 ấy — và tên game nháp, tên game đã gỡ
+ * là thứ không ai ngoài ban quản trị được thấy.
+ */
 export async function generateMetadata({ params }: { params: Promise<{ duongDan: string }> }): Promise<Metadata> {
   const { duongDan } = await params;
-  const g = await db.game.findFirst({ where: { duongDan }, select: { ten: true } });
+  const g = await db.game.findFirst({
+    where: { duongDan, ...DANG_HIEN }, select: { ten: true },
+  });
   return { title: g ? `Diễn đàn ${g.ten}` : 'Diễn đàn' };
 }
 
@@ -59,10 +69,19 @@ const LOC = [
 
 export default async function TabDienDan({ params, searchParams }: {
   params: Promise<{ duongDan: string }>;
-  searchParams: Promise<{ trang?: string; loc?: string; tim?: string; muc?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { duongDan } = await params;
-  const { trang: trangNhap, loc: locNhap, tim, muc: mucNhap } = await searchParams;
+  /*
+   * Mọi tham số địa chỉ đi qua `motChuoi`: gõ lặp một tham số — `?tim=a&tim=b`
+   * — thì Next trả về một MẢNG, mà cả trang này gọi thẳng `.trim()` lên đó.
+   * Đã thử tận tay, đúng là trang 500.
+   */
+  const sp = await searchParams;
+  const trangNhap = motChuoi(sp.trang);
+  const locNhap = motChuoi(sp.loc);
+  const tim = motChuoi(sp.tim);
+  const mucNhap = motChuoi(sp.muc);
 
   const game = await db.game.findFirst({
     where: { duongDan, ...DANG_HIEN },
@@ -81,7 +100,7 @@ export default async function TabDienDan({ params, searchParams }: {
    * tới từ địa chỉ nên ai cũng gõ bừa được, mà một danh sách rỗng trông y hệt
    * một diễn đàn chết.
    */
-  const maMuc = (mucNhap ?? '').trim();
+  const maMuc = mucNhap.trim();
   const mucMo = maMuc === MUC_CHUNG
     ? { id: null, ten: TEN_MUC_CHUNG, moTa: MO_TA_MUC_CHUNG, duongDan: MUC_CHUNG }
     : maMuc
@@ -101,9 +120,7 @@ export default async function TabDienDan({ params, searchParams }: {
    * tham số thì sinh ra mấy tổ hợp không lối nào bấm tới mà vẫn phải viết mã
    * xử lý — và phải nghĩ xem "Đã giải + Báo lỗi" nghĩa là gì.
    */
-  const loc = LOC.some((l) => l.ma === locNhap) || laNhan(locNhap ?? '')
-    ? (locNhap ?? '')
-    : '';
+  const loc = LOC.some((l) => l.ma === locNhap) || laNhan(locNhap) ? locNhap : '';
   /*
    * Ô tìm của diễn đàn mang tên `tim`, KHÔNG phải `q`.
    *
@@ -115,7 +132,7 @@ export default async function TabDienDan({ params, searchParams }: {
    *
    * Đổi tên cũng làm địa chỉ tự nói ra nó là gì: `/dien-dan?tim=màn+5`.
    */
-  const tuKhoa = (tim ?? '').trim().slice(0, 80);
+  const tuKhoa = tim.trim().slice(0, 80);
 
   /*
    * Tìm trong ĐÚNG diễn đàn của game này, không tìm cả cửa hàng.

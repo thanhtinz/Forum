@@ -8,7 +8,8 @@ import { HangGame } from '@/components/game/HangGame';
 import { demBanMoi } from '@/lib/cap-nhat';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
-import { cachDay } from '@/lib/tien-ich';
+import { PhanTrang } from '@/components/PhanTrang';
+import { cachDay, gonSo, kep, soTrang } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Thư viện của tôi' };
@@ -21,16 +22,35 @@ export const metadata: Metadata = { title: 'Thư viện của tôi' };
  * nhất). Xếp mới trước, vì thứ người ta quay lại tìm gần như luôn là thứ vừa
  * tải hôm qua mà quên mất tên.
  */
-export default async function TrangThuVien() {
+const MOI_TRANG = 30;
+
+export default async function TrangThuVien({ searchParams }: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const nguoi = await nguoiHienTai();
   if (!nguoi) redirect('/dang-nhap');
 
   const soBanMoi = await demBanMoi(nguoi.id);
 
+  /*
+   * ĐẾM RIÊNG, và CÓ PHÂN TRANG.
+   *
+   * Bản trước lấy `take: 100` rồi in `hang.length` như thể đó là tổng số game
+   * đã tải: người tải 150 game thấy dòng "100 game bạn đã tải" — một con số
+   * sai — và game thứ 101 trở đi không có lối nào tới. Thư viện là chỗ người
+   * ta quay lại TÌM một game cũ, nên đúng mấy game cũ nhất mới là thứ bị mất.
+   */
+  const dieuKien = { nguoiId: nguoi.id, game: { trangThai: 'DANG_HIEN' as const } };
+  const tong = await db.luotTai.count({ where: dieuKien });
+  const trang = kep((await searchParams).trang, 1, soTrang(tong, MOI_TRANG), 1);
+
   const hang = await db.luotTai.findMany({
-    where: { nguoiId: nguoi.id, game: { trangThai: 'DANG_HIEN' } },
-    orderBy: { lanCuoi: 'desc' },
-    take: 100,
+    where: dieuKien,
+    // Khoá phụ `id`: hai lượt tải cùng một mốc `lanCuoi` mà không có khoá phụ
+    // thì sang trang 2 gặp lại đúng hàng đã thấy ở trang 1.
+    orderBy: [{ lanCuoi: 'desc' }, { id: 'desc' }],
+    skip: (trang - 1) * MOI_TRANG,
+    take: MOI_TRANG,
     select: {
       id: true, heMay: true, soHieu: true, lanCuoi: true, soLan: true,
       game: { select: CHON_THE },
@@ -42,7 +62,7 @@ export default async function TrangThuVien() {
       <div>
         <h1 className="tieu-de-trang">Thư viện của tôi</h1>
         <p className="phu mt-0.5">
-          {hang.length > 0 ? `${hang.length} game bạn đã tải` : 'Những game bạn tải sẽ nằm ở đây'}
+          {tong > 0 ? `${gonSo(tong)} game bạn đã tải` : 'Những game bạn tải sẽ nằm ở đây'}
         </p>
       </div>
 
@@ -63,7 +83,7 @@ export default async function TrangThuVien() {
         </Link>
       )}
 
-      {hang.length === 0 ? (
+      {tong === 0 ? (
         <div className="the p-8 text-center">
           <Library size={24} className="mx-auto text-mo" />
           <p className="mt-2 text-[14px] font-semibold">Thư viện còn trống</p>
@@ -84,6 +104,9 @@ export default async function TrangThuVien() {
           ))}
         </ul>
       )}
+
+      <PhanTrang trang={trang} tongTrang={soTrang(tong, MOI_TRANG)}
+        dungDuong={(t) => (t > 1 ? `/thu-vien?trang=${t}` : '/thu-vien')} />
     </div>
   );
 }

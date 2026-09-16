@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
+import { xemDiaChi } from '@/lib/dia-chi-an-toan';
 import { conDuocDangKy, conDuocThu, ghiLanDangKy, ghiLanHong, xoaLanHong } from '@/lib/chan-do-mat-khau';
 import { bamMatKhau, donPhienCu, dongPhien, khopMatKhau, moPhien } from '@/lib/xac-thuc';
 import { thanhDuongDan } from '@/lib/tien-ich';
@@ -81,14 +82,16 @@ export async function dangNhap(_truoc: KetQuaXacThuc, form: FormData): Promise<K
  * miền quen nên đăng nhập, rồi bị ném sang trang giả mà vẫn tưởng mình đang ở
  * cửa hàng.
  *
- * Nên: phải bắt đầu bằng đúng MỘT dấu gạch chéo. `//trang-gia.example` là địa
- * chỉ tuyệt đối trá hình — trình duyệt đọc nó thành "cùng giao thức, khác tên
- * miền" — nên nó bị loại cùng với `https://…`.
+ * Nên: đi qua ĐÚNG bộ phân tích địa chỉ của dự án (`xemDiaChi`), không tự so
+ * đầu chuỗi. Bản cũ ở đây chặn `//trang-gia.example` nhưng KHÔNG chặn
+ * `/\trang-gia.example` — trình duyệt đọc dấu gạch ngược y như gạch xuôi, nên
+ * kiểu viết ấy cũng là một địa chỉ tuyệt đối trá hình mà lọt qua được. Bộ phân
+ * tích thì dựng thử `URL` rồi xem nó ra máy chủ nào, nên nó đúng với mọi kiểu
+ * viết tắt trình duyệt hiểu, kể cả những kiểu chưa ai nghĩ ra.
  */
 function duongVe(tiep: FormDataEntryValue | null): string {
   const chu = typeof tiep === 'string' ? tiep.trim() : '';
-  if (!chu.startsWith('/') || chu.startsWith('//')) return '/';
-  return chu;
+  return xemDiaChi(chu) === 'trong-nha' ? chu : '/';
 }
 
 /*

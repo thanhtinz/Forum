@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { PhanTrang } from '@/components/PhanTrang';
 import { ODanhDau, ODanhDauHet, ThanhViecChon, VungChon } from '@/components/quan-tri/ChonNhieu';
-import { cachDay, gonSo, gop } from '@/lib/tien-ich';
+import { cachDay, gonSo, gop, motChuoi } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Quản lý game' };
@@ -42,13 +42,17 @@ type MaCot = keyof typeof COT;
 const MOI_TRANG = 20;
 
 export default async function DanhSachGame({ searchParams }: {
-  searchParams: Promise<{ tim?: string; trangThai?: string; sap?: string; trang?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
 
-  const tim = (sp.tim ?? '').trim().slice(0, 80);
-  const trangThai = LOC.some((l) => l.ma === sp.trangThai) ? (sp.trangThai ?? '') : '';
-  const sap: MaCot = sp.sap && sp.sap in COT ? (sp.sap as MaCot) : 'sua';
+  const tim = motChuoi(sp.tim).trim().slice(0, 80);
+  const trangThaiNhap = motChuoi(sp.trangThai);
+  const trangThai = LOC.some((l) => l.ma === trangThaiNhap) ? trangThaiNhap : '';
+  // `in` tra cả nguyên mẫu, nên `?sap=constructor` lọt qua rồi đi thẳng vào
+  // `orderBy` — `Object.hasOwn` chỉ nhận khoá có thật trên chính bảng.
+  const sapNhap = motChuoi(sp.sap);
+  const sap: MaCot = Object.hasOwn(COT, sapNhap) ? (sapNhap as MaCot) : 'sua';
   const trang = Math.max(1, Number(sp.trang) || 1);
 
   const dieuKien: Prisma.GameWhereInput = {

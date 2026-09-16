@@ -17,7 +17,7 @@ const NHOM: Record<NhomCaiDat, readonly string[]> = {
  * Lưu một nhóm cấu hình.
  *
  * DANH SÁCH Ô CHO PHÉP NẰM Ở MÁY CHỦ, không đọc bừa mọi thứ biểu mẫu gửi lên:
- * hàm này là một endpoint POST công khai, nên nếu cứ nhận hết thì ai cũng nhét
+ * hàm này là một địa chỉ POST công khai, nên nếu cứ nhận hết thì ai cũng nhét
  * thêm được khoá lạ vào khối JSON trong cơ sở dữ liệu.
  *
  * Ô bí mật để TRỐNG nghĩa là giữ nguyên, không phải xoá — trang không bao giờ

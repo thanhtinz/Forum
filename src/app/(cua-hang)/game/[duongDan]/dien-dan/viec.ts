@@ -732,11 +732,25 @@ export async function boPhieu(luaChonId: string): Promise<KetQua & { ok?: boolea
           where: { nguoiId: nguoi.id, luaChonId: { in: cu.map((x) => x.luaChonId) } },
         });
         for (const x of cu) {
-          await tx.luaChon.update({
+          /*
+           * SÀN 0 ở đây nữa, không chỉ ở nhánh rút phiếu phía trên.
+           *
+           * Hai nhánh cùng trừ một con số đếm sẵn mà chỉ một nhánh có sàn thì
+           * cái sàn ấy là sàn thủng: chỉ cần hàng `Phieu` còn đó mà `soPhieu`
+           * đã về 0 — vì một lượt dọn tay, hay một lần ghi hỏng nửa chừng từ
+           * đời nào — là lượt đổi phiếu kế tiếp đẩy nó xuống âm, rồi phần trăm
+           * in ra màn hình thành số âm.
+           */
+          const sau = await tx.luaChon.update({
             where: { id: x.luaChonId },
             data: { soPhieu: { decrement: 1 } },
-            select: { id: true },
+            select: { soPhieu: true },
           });
+          if (sau.soPhieu < 0) {
+            await tx.luaChon.update({
+              where: { id: x.luaChonId }, data: { soPhieu: 0 }, select: { id: true },
+            });
+          }
         }
       }
     }

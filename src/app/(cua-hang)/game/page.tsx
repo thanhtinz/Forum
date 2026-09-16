@@ -47,7 +47,7 @@ export const metadata = { title: 'Trò chơi' };
  * trong trang của game ấy.
  */
 
-export default async function TrangKhoGame() {
+export default async function TrangGame() {
   const [noiBat, diemCao, moi, ngayXua, theLoai, tongGame] = await Promise.all([
     layKe({ noiBat: true }, [{ dangLuc: 'desc' }, { id: 'desc' }], 5),
     /*
@@ -80,7 +80,7 @@ export default async function TrangKhoGame() {
     db.game.count({ where: DANG_HIEN }),
   ]);
 
-  if (tongGame === 0) return <KhoTrong />;
+  if (tongGame === 0) return <CuaHangTrong />;
 
   const chip = [
     { ten: 'Tất cả', duongDan: '/duyet' },
@@ -149,7 +149,7 @@ export default async function TrangKhoGame() {
  * Dựng đủ sáu cái tiêu đề trên khoảng trắng thì trông như trang hỏng. Nói
  * thẳng ra là cửa hàng đang trống, và chỉ đường cho quản trị.
  */
-function KhoTrong() {
+function CuaHangTrong() {
   return (
     <div className="the mx-auto max-w-md p-8 text-center">
       <BieuTuongGame ten="SunnyStore" icon={null} co={64} className="mx-auto" />

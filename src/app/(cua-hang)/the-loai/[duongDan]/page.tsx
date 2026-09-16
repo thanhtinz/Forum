@@ -14,7 +14,7 @@ import { HangGame } from '@/components/game/HangGame';
 import { HangChip } from '@/components/game/HangChip';
 import { PhanTrang } from '@/components/PhanTrang';
 import { HE_MAY, MO_TA_HE, type MaHeMay } from '@/lib/he-may';
-import { gonSo, kep, soTrang } from '@/lib/tien-ich';
+import { gonSo, kep, motChuoi, soTrang } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: {
  */
 export default async function TrangTheLoai({ params, searchParams }: {
   params: Promise<{ duongDan: string }>;
-  searchParams: Promise<{ he?: string; trang?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { duongDan } = await params;
   const sp = await searchParams;
@@ -83,7 +83,7 @@ export default async function TrangTheLoai({ params, searchParams }: {
   if (!theLoai) notFound();
 
   // Hệ máy lạ trên URL thì coi như không lọc — địa chỉ là thứ ai cũng sửa tay.
-  const he = (HE_MAY as readonly string[]).includes(sp.he ?? '')
+  const he = (HE_MAY as readonly string[]).includes(motChuoi(sp.he))
     ? (sp.he as MaHeMay)
     : null;
 

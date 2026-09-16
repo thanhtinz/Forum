@@ -30,7 +30,7 @@ export const dynamic = 'force-dynamic';
  * Nói ngắn: coi cả cửa hàng là một cỗ bài, đầu mỗi vòng xáo một lần rồi mỗi ngày
  * chia ra vài lá. Trong một vòng, mỗi lá đi qua tay đúng một lần.
  *
- * Câu chữ trên thẻ lấy từ chính phần giới thiệu do người nhập game viết. Kho
+ * Câu chữ trên thẻ lấy từ chính phần giới thiệu do người nhập game viết. Cửa hàng
  * này chưa có ban biên tập, mà bịa ra một giọng biên tập thì là nói thay một
  * người không tồn tại.
  */
@@ -45,14 +45,14 @@ export default async function HomNay() {
    * Sắp theo `id` để thứ tự trước khi xáo luôn cố định — xáo một cỗ bài đã bị
    * xếp lộn xộn thì cùng một ngày lại ra hai kết quả khác nhau.
    *
-   * Kho tới hàng chục nghìn game thì nên chuyển sang một bảng lịch tính sẵn;
+   * Cửa hàng tới hàng chục nghìn game thì nên chuyển sang một bảng lịch tính sẵn;
    * ở cỡ hiện tại, đọc một cột id vẫn rẻ hơn nhiều so với việc dựng thêm bảng.
    */
   const tatCa = await db.game.findMany({
     where: DANG_HIEN, orderBy: { id: 'asc' }, select: { id: true },
   });
 
-  if (tatCa.length === 0) return <KhoTrong />;
+  if (tatCa.length === 0) return <CuaHangTrong />;
 
   const { chon } = chiaHomNay(tatCa.map((g) => g.id), MOI_NGAY);
 
@@ -61,7 +61,16 @@ export default async function HomNay() {
       where: { id: { in: chon } },
       select: { ...CHON_THE, gioiThieu: true },
     }),
-    layKe({}, [{ dangLuc: 'desc' }, { id: 'desc' }], 3),
+    /*
+     * Lấy DƯ ra rồi mới lọc, không lấy đúng ba.
+     *
+     * Kệ này bỏ đi mấy game đã bày ở khối "Hôm nay" ngay phía trên — bày hai
+     * lần trên cùng một màn hình thì kệ dưới thành thừa. Nhưng lấy đúng ba rồi
+     * mới lọc thì hôm nào ba game mới nhất cũng nằm trong bộ hôm nay là kệ
+     * rỗng, và cả kệ biến mất mà chẳng ai hiểu vì sao. Lấy `3 + MOI_NGAY` thì
+     * dù cả bộ hôm nay đều là game mới, vẫn còn đủ ba cái để bày.
+     */
+    layKe({}, [{ dangLuc: 'desc' }, { id: 'desc' }], 3 + MOI_NGAY),
     /*
      * SỰ KIỆN ĐANG MỞ, trộn của mọi game.
      *
@@ -301,7 +310,7 @@ function TheBoSuuTap({ nhan, tieuDe, phu, game, xemThem }: {
   );
 }
 
-function KhoTrong() {
+function CuaHangTrong() {
   return (
     <div className="the mx-auto max-w-md p-8 text-center">
       <BieuTuongGame ten="SunnyStore" icon={null} co={64} className="mx-auto" />

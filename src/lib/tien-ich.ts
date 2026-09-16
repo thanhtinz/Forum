@@ -74,6 +74,24 @@ export function soTrang(tong: number, moiTrang: number): number {
   return Math.max(1, Math.ceil(tong / Math.max(1, moiTrang)));
 }
 
+/**
+ * Lấy MỘT chuỗi ra từ một tham số địa chỉ.
+ *
+ * Next khai `searchParams` là `string | string[] | undefined`: gõ cùng một
+ * tham số hai lần — `?tim=a&tim=b` — thì giá trị về là một MẢNG. Mọi trang
+ * trong dự án lại khai kiểu là `string?` rồi gọi thẳng `.trim()` lên đó, nên
+ * một địa chỉ ai cũng gõ được là một trang 500. Đã thử tận tay: `?muc=a&muc=b`
+ * và `?tim=a&tim=b` đều đổ.
+ *
+ * Lấy giá trị ĐẦU chứ không nối lại: hai lần khai cùng một tham số là một
+ * chuyện vô nghĩa, nên cứ xử như lần khai đầu tiên — giống hệt cách `URLSearch
+ * Params.get` làm.
+ */
+export function motChuoi(tho: string | string[] | undefined | null): string {
+  if (Array.isArray(tho)) return typeof tho[0] === 'string' ? tho[0] : '';
+  return typeof tho === 'string' ? tho : '';
+}
+
 /** Ép một số do người dùng gửi lên về khoảng cho phép. */
 export function kep(thoRaw: unknown, min: number, max: number, mac: number): number {
   const n = typeof thoRaw === 'number' ? thoRaw : parseInt(String(thoRaw ?? ''), 10);

@@ -16,14 +16,25 @@ import { gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
 
+/*
+ * Thẻ `<title>` cũng phải qua đúng cái cửa mà trang qua.
+ *
+ * `generateMetadata` chạy TÁCH RỜI phần dựng trang: trang dưới có `notFound()`
+ * đàng hoàng, nhưng nếu ở đây tra không kèm điều kiện thì cái tên vẫn kịp đi
+ * vào thẻ `<title>` của chính trang 404 ấy — và tên game nháp, tên game đã gỡ
+ * là thứ không ai ngoài ban quản trị được thấy.
+ */
 export async function generateMetadata({ params }: { params: Promise<{ duongDan: string }> }): Promise<Metadata> {
   const { duongDan } = await params;
-  const g = await db.game.findFirst({ where: { duongDan }, select: { ten: true } });
+  const g = await db.game.findFirst({
+    where: { duongDan, ...DANG_HIEN }, select: { ten: true },
+  });
   return { title: g ? `Đánh giá ${g.ten}` : 'Đánh giá' };
 }
 
 /*
- * Cách sắp. Ba lối, và mỗi lối trả lời một câu hỏi khác nhau:
+ * Cách sắp. Bốn lối, và mỗi lối trả lời một câu hỏi khác nhau:
+ *   • hữu ích nhất — lối MẶC ĐỊNH, "người đọc trước thấy bài nào đáng đọc";
  *   • mới nhất — "bản vừa ra có ai kêu gì không";
  *   • điểm cao — "người thích game này thích ở chỗ nào";
  *   • điểm thấp — "nó hỏng ở đâu", câu người ta hay hỏi nhất trước khi tải.
@@ -48,8 +59,8 @@ const MOI_TRANG = 20;
 /*
  * TAB "ĐÁNH GIÁ" — toàn bộ, lọc được theo sao và sắp được.
  *
- * Tab Thông tin chỉ khoe sáu bài mới nhất, nghĩa là ở một game đông người chơi
- * thì gần như mọi lời nhận xét đều nằm ngoài tầm với. Đây là chỗ đọc hết.
+ * Tab Thông tin chỉ khoe năm bài hữu ích nhất, nghĩa là ở một game đông người
+ * chơi thì gần như mọi lời nhận xét đều nằm ngoài tầm với. Đây là chỗ đọc hết.
  */
 export default async function TabDanhGia({ params, searchParams }: {
   params: Promise<{ duongDan: string }>;

@@ -22,7 +22,9 @@ import {
 } from '@/lib/su-kien-const';
 import { LOI_KHONG_QUYEN, locGameCuaToi, quyenTrenGame } from '@/lib/quyen-game';
 import { dungChuoiTim } from '@/lib/tim-kiem-const';
-import { LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi } from '@/lib/dia-chi-an-toan';
+import {
+  DIA_CHI_TOI_DA, LOI_DIA_CHI, laDiaChiHopLe, laHttpsHopLe, xemDiaChi,
+} from '@/lib/dia-chi-an-toan';
 import {
   CHUYEN_MUC_TOI_DA, MO_TA_TOI_DA, MUC_CHUNG, TEN_TOI_DA,
 } from '@/lib/chuyen-muc-const';
@@ -737,7 +739,7 @@ export async function doiChoAnhChup(anhId: string, len: boolean): Promise<KetQua
  * Cửa hàng đáp lại một bài đánh giá.
  *
  * Gửi chuỗi rỗng là XOÁ lời đáp — quản trị viết hớ một câu thì phải rút được
- * về, mà thêm hẳn một endpoint xoá riêng chỉ để làm việc ấy thì là hai chỗ
+ * về, mà thêm hẳn một địa chỉ xoá riêng chỉ để làm việc ấy thì là hai chỗ
  * cùng kiểm quyền cho một việc.
  */
 export async function traLoiDanhGia(
@@ -748,7 +750,17 @@ export async function traLoiDanhGia(
 
   const chuLoi = loi.trim().slice(0, 1000);
   const tam = anh.trim();
-  if (tam && !tam.startsWith('/') && !tam.startsWith('https://')) {
+  /*
+   * Ảnh đi THẲNG vào thuộc tính `src` lúc bày, nên nó phải qua đúng bộ kiểm
+   * địa chỉ của dự án — không tự so đầu chuỗi.
+   *
+   * `startsWith('/')` là cái bẫy `dia-chi-an-toan.ts` sinh ra để giết:
+   * `//may-chu-la/x.png` và `/\may-chu-la/x.png` đều bắt đầu bằng `/`, mà
+   * trình duyệt đọc chúng thành "cùng giao thức, KHÁC MÁY CHỦ". Lọt là cửa
+   * hàng bày ảnh của người lạ dưới tên mình, và mỗi lượt xem là một lượt gửi
+   * địa chỉ IP người xem sang máy chủ ấy.
+   */
+  if (tam && (tam.length > DIA_CHI_TOI_DA || !laDiaChiHopLe(tam))) {
     return { loi: 'Ảnh không hợp lệ.' };
   }
 
@@ -1198,7 +1210,7 @@ export async function themSticker(goiId: string, anh: string): Promise<KetQua> {
   try { await batBuocQuanTri(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
-  if (!anh.startsWith('/') && !anh.startsWith('https://')) {
+  if (anh.length > DIA_CHI_TOI_DA || !laDiaChiHopLe(anh)) {
     return { loi: 'Địa chỉ ảnh không hợp lệ.' };
   }
 

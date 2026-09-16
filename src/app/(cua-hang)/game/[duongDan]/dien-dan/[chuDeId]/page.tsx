@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ChevronLeft, CircleCheckBig, CornerDownRight, Eye, Lock, Pin, X } from 'lucide-react';
 import { db } from '@/lib/db';
+import { DANG_HIEN } from '@/lib/danh-muc';
 import { dungChuDam } from '@/lib/chu-dam';
 import { OSoanThao } from '@/components/OSoanThao';
 import { nguoiHienTai } from '@/lib/xac-thuc';
@@ -24,9 +25,23 @@ import { NHAN } from '@/lib/nhan-chu-de-const';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({ params }: { params: Promise<{ chuDeId: string }> }): Promise<Metadata> {
-  const { chuDeId } = await params;
-  const c = await db.chuDe.findUnique({ where: { id: chuDeId }, select: { tieuDe: true } });
+/*
+ * Thẻ `<title>` cũng phải qua đúng cái cửa mà trang qua.
+ *
+ * `generateMetadata` chạy TÁCH RỜI phần dựng trang: trang dưới có `notFound()`
+ * đàng hoàng, nhưng nếu ở đây tra không kèm điều kiện thì cái tên vẫn kịp đi
+ * vào thẻ `<title>` của chính trang 404 ấy — và tên game nháp, tên game đã gỡ
+ * là thứ không ai ngoài ban quản trị được thấy.
+ */
+export async function generateMetadata(
+  { params }: { params: Promise<{ duongDan: string; chuDeId: string }> },
+): Promise<Metadata> {
+  const { duongDan, chuDeId } = await params;
+  // Kèm cả `duongDan`: cùng một mã chủ đề dán vào địa chỉ của game khác thì
+  // trang dưới trả 404, mà thẻ tiêu đề lại in đúng tên chủ đề của game kia.
+  const c = await db.chuDe.findFirst({
+    where: { id: chuDeId, game: { duongDan, ...DANG_HIEN } }, select: { tieuDe: true },
+  });
   return { title: c ? catChu(c.tieuDe, 60) : 'Chủ đề' };
 }
 

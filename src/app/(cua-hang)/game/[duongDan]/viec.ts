@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/db';
 import { batBuocDangNhap, nguoiHienTai } from '@/lib/xac-thuc';
 import { tinhDiemTB } from '@/lib/diem-game-const';
+import { DIA_CHI_TOI_DA, laDiaChiHopLe } from '@/lib/dia-chi-an-toan';
 
 export interface KetQua { ok?: boolean; loi?: string }
 
@@ -29,12 +30,18 @@ export async function chamSao(
   // hoặc bị cắt giữa chừng — mà một câu chốt bị cắt giữa chừng thì vô nghĩa.
   const de = tieuDe.trim().slice(0, 80);
 
-  /*
-   * Ảnh đính kèm đi thẳng vào thuộc tính `src` lúc bày, nên nó phải qua cửa:
-   * chỉ nhận ảnh của chính cửa hàng hoặc `https://`. Cùng luật với ô chat.
-   */
   const tam = anh.trim();
-  if (tam && !tam.startsWith('/') && !tam.startsWith('https://')) {
+  /*
+   * Ảnh đi THẲNG vào thuộc tính `src` lúc bày, nên nó phải qua đúng bộ kiểm
+   * địa chỉ của dự án — không tự so đầu chuỗi.
+   *
+   * `startsWith('/')` là cái bẫy `dia-chi-an-toan.ts` sinh ra để giết:
+   * `//may-chu-la/x.png` và `/\may-chu-la/x.png` đều bắt đầu bằng `/`, mà
+   * trình duyệt đọc chúng thành "cùng giao thức, KHÁC MÁY CHỦ". Lọt là cửa
+   * hàng bày ảnh của người lạ dưới tên mình, và mỗi lượt xem là một lượt gửi
+   * địa chỉ IP người xem sang máy chủ ấy.
+   */
+  if (tam && (tam.length > DIA_CHI_TOI_DA || !laDiaChiHopLe(tam))) {
     return { loi: 'Ảnh không hợp lệ.' };
   }
 
@@ -159,7 +166,18 @@ export async function layDanhGia(
   // Mọi tham số đều do trình duyệt gửi lên, nên ép hết về khoảng cho phép —
   // `trang: 1e9` mà lọt vào `skip` là một lượt quét bảng không đáng có.
   const sao = Number.isInteger(loc.sao) && loc.sao! >= 1 && loc.sao! <= 5 ? loc.sao! : null;
-  const theo = CACH_SAP[(loc.sap ?? 'moi') as keyof typeof CACH_SAP] ?? CACH_SAP.moi;
+  /*
+   * Tra bằng `Object.hasOwn`, không tra thẳng rồi trông vào `??`.
+   *
+   * `loc.sap` tới từ địa chỉ, nên gõ `?sap=constructor` là tra trúng một khoá
+   * CÓ SẴN TRÊN NGUYÊN MẪU của mọi object. Giá trị ấy khác `undefined` nên
+   * `??` không đỡ, và một cái hàm đi thẳng vào `orderBy` — Prisma ném lỗi, cả
+   * trang đánh giá thành 500. Chỉ cần gõ một chữ trên thanh địa chỉ.
+   */
+  const maSap = loc.sap ?? 'moi';
+  const theo = Object.hasOwn(CACH_SAP, maSap)
+    ? CACH_SAP[maSap as keyof typeof CACH_SAP]
+    : CACH_SAP.moi;
   const trang = Math.min(200, Math.max(1, Math.floor(Number(loc.trang) || 1)));
 
   /*
@@ -222,7 +240,7 @@ export async function layDanhGia(
  * giữa hai bước cho lượt bấm thứ hai chen vào.
  *
  * Không cho bấm bài của chính mình, và điều kiện ấy nằm trong `where` của câu
- * tìm bài chứ không lọc sau: hàm này là một endpoint POST công khai.
+ * tìm bài chứ không lọc sau: hàm này là một địa chỉ POST công khai.
  */
 export async function bamHuuIch(danhGiaId: string): Promise<KetQua & { dem?: number; daBam?: boolean }> {
   let nguoi;

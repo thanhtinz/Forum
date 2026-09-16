@@ -713,6 +713,11 @@ model TinNhanChat {
   /// Đọc luôn luôn là "mấy câu mới nhất của phòng này", nên chỉ mục đúng theo
   /// hình dạng ấy — phòng đông tới chục nghìn câu thì vẫn chỉ chạm vào đuôi.
   @@index([gameId, taoLuc])
+
+  /// Nhịp nghỉ giữa hai câu tra "câu cuối cùng của người này" trên TOÀN CỬA
+  /// HÀNG, không riêng một phòng — xem `guiChat`. Không có chỉ mục này thì
+  /// mỗi lượt gửi là một lượt quét cả bảng.
+  @@index([nguoiId, taoLuc])
 }
 
 model ChuyenMuc {

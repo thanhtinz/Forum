@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import { db } from '@/lib/db';
+import { motChuoi } from '@/lib/tien-ich';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { BieuMauGui } from '@/components/BieuMauGui';
 import { OSoanThao } from '@/components/OSoanThao';
@@ -12,10 +13,10 @@ export const metadata: Metadata = { title: 'Đăng chủ đề' };
 
 export default async function TrangDangBai({ params, searchParams }: {
   params: Promise<{ duongDan: string }>;
-  searchParams: Promise<{ muc?: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { duongDan } = await params;
-  const { muc: mucNhap } = await searchParams;
+  const mucNhap = motChuoi((await searchParams).muc);
 
   const game = await db.game.findFirst({
     where: { duongDan, trangThai: 'DANG_HIEN' },

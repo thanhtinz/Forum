@@ -57,6 +57,17 @@ export function laHttpsHopLe(chu: string): boolean {
   return xemDiaChi(chu) === 'https';
 }
 
+/**
+ * Địa chỉ dài nhất bấy nhiêu ký tự.
+ *
+ * Mấy cột giữ địa chỉ ảnh (`TinNhanChat.anh`, `DanhGia.anh`…) không có trần
+ * nào, trong khi phần chữ đi cùng thì có. Nghĩa là gửi một câu chat rỗng kèm
+ * một "địa chỉ" dài một megabyte là ghi thẳng được vào bảng — mà đường ghi ấy
+ * mở cho mọi thành viên. Địa chỉ ảnh thật dài nhất trong cửa hàng chưa tới 120
+ * ký tự, nên 512 là thừa chỗ mà vẫn chặn cứng.
+ */
+export const DIA_CHI_TOI_DA = 512;
+
 /** Câu báo dùng chung, để bốn chỗ không mỗi chỗ nói một kiểu. */
 export const LOI_DIA_CHI =
   'Địa chỉ phải là đường dẫn trong trang (bắt đầu bằng “/”) hoặc một địa chỉ https đầy đủ.';

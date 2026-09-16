@@ -11,7 +11,6 @@ import { TabGame } from '@/components/game/TabGame';
 import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
 import { TamTai } from '@/components/game/TamTai';
 import { DongLuanPhien } from '@/components/game/DongLuanPhien';
-import { MO_TA_HE, type MaHeMay } from '@/lib/he-may';
 import { diemSao } from '@/lib/tien-ich';
 import { mauCuaGame } from '@/lib/mau-game';
 import { nguoiHienTai } from '@/lib/xac-thuc';
@@ -144,26 +143,7 @@ export default async function KhungGame({ children, params }: {
           }
         : null,
   });
-  const he = [...new Set(banXem.map((b) => b.heMay))] as MaHeMay[];
-  const banMoiNhat = banXem[0];
 
-  /*
-   * NÚT TẢI Ở NGAY ĐẦU TRANG, cạnh tên game — đúng chỗ nút "Get" của App Store.
-   *
-   * Khung tải đầy đủ (chọn hệ, chọn bản, lịch sử phiên bản) vẫn nằm bên dưới và
-   * vẫn là chỗ để CHỌN. Nút này không thay nó, nó chỉ trả lời cái câu mà chín
-   * phần mười người mở trang này đang hỏi — "tải ở đâu" — mà không bắt cuộn.
-   *
-   * Game chỉ có MỘT hệ máy thì nút đi thẳng tới trang tải của tệp chính: không
-   * có gì để chọn thì một nhịp bấm nữa chỉ là một nhịp thừa. Nhiều hệ thì nút
-   * đưa xuống khung tải, vì lúc ấy chọn máy nào là việc người dùng phải làm và
-   * chọn hộ họ là chọn sai.
-   */
-  const tepChinh = he.length === 1 && banMoiNhat
-    ? [...banMoiNhat.tep].sort((a, b) =>
-        MO_TA_HE[he[0]].loaiTep.indexOf(a.loai as never)
-        - MO_TA_HE[he[0]].loaiTep.indexOf(b.loai as never))[0]
-    : null;
 
   return (
     /*

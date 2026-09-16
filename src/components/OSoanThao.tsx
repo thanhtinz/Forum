@@ -306,7 +306,15 @@ export function OSoanThao({
       </div>
 
       <div className={gop('grid min-h-0 flex-1', xemTruoc && 'lg:grid-cols-2')}>
-        <textarea ref={oRef} name={ten} rows={toanMan ? undefined : dong} value={chu}
+        {/*
+          `aria-label` lấy theo nhãn, chứ không trông vào cái `<span>` nhãn ở
+          trên: `<span>` ấy không gắn với ô nào cả, nên trước đợt này ô soạn
+          thảo KHÔNG CÓ TÊN đọc được — bộ đọc màn hình chỉ xướng "vùng nhập
+          liệu". Và cái tên ấy cũng là thứ bài kiểm dùng để tìm đúng ô, khi một
+          trang có hai ô soạn thảo (trả lời và sửa bài).
+        */}
+        <textarea ref={oRef} name={ten} aria-label={nhan}
+          rows={toanMan ? undefined : dong} value={chu}
           onChange={(e) => datChu(e.target.value)} onKeyDown={batPhim}
           onPaste={(e) => {
             // Dán thẳng một tấm ảnh từ bộ nhớ tạm — nhanh hơn hẳn lưu ra tệp

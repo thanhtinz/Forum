@@ -283,7 +283,7 @@ const BINH_LUAN_MAU = [
   'Máy mình đời cũ mà vẫn mượt. Có điều màn hình bé nên chữ hơi khó đọc.',
   'Bản Việt hoá dịch khá tử tế, không bị lỗi phông như mấy bản trôi nổi ngoài kia.',
   'Game hay nhưng mấy màn cuối khó quá, ngồi cả buổi chưa qua nổi.',
-  'Đúng thứ mình đang tìm mấy năm nay. Cảm ơn kho đã giữ lại.',
+  'Đúng thứ mình đang tìm mấy năm nay. Cảm ơn cửa hàng đã giữ lại.',
 ];
 
 async function main() {

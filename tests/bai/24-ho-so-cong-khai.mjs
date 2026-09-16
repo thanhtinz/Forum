@@ -56,8 +56,17 @@ export default async function chay(kiem) {
     db.traLoi.count({ where: { nguoiId: chu.id, chuDe: { game: { trangThai: 'DANG_HIEN' } } } }),
     db.danhGia.count({ where: { nguoiId: chu.id, game: { trangThai: 'DANG_HIEN' } } }),
   ]);
+  /*
+   * `dd` là em kề sau `dt`, không phải anh kề trước.
+   *
+   * Trong `dl`, bộ đọc màn hình ghép nhãn với giá trị theo THỨ TỰ TRONG MÃ, nên
+   * ô hồ sơ viết `dt` trước rồi `dd` sau, còn `flex-col-reverse` lo phần nhìn.
+   * Bài này từng dò `preceding-sibling` theo chỗ con số HIỆN RA trên màn hình —
+   * đo cái mắt thấy chứ không đo cái mã nói, nên sửa thứ tự cho đúng chuẩn là
+   * bài đỏ dù trang tốt lên.
+   */
   const so = async (nhan) =>
-    (await p.locator(`dt:has-text("${nhan}")`).locator('xpath=preceding-sibling::dd[1]')
+    (await p.locator(`dt:has-text("${nhan}")`).locator('xpath=following-sibling::dd[1]')
       .first().textContent()).trim();
   kiem('đếm đúng số chủ đề', (await so('chủ đề')) === String(soChuDe), `bảng nói ${soChuDe}`);
   kiem('đếm đúng số trả lời', (await so('trả lời')) === String(soTraLoi), `bảng nói ${soTraLoi}`);

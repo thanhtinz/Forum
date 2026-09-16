@@ -15,7 +15,9 @@ export interface KetQua { ok?: boolean; loi?: string }
  * lệch vĩnh viễn, mà không có chỗ nào phát hiện ra. Nên đếm lại từ chính bảng
  * đánh giá, trong CÙNG một giao dịch với lần ghi — đó là thứ luôn đúng.
  */
-export async function chamSao(gameId: string, sao: number, noiDung: string, tieuDe = ''): Promise<KetQua> {
+export async function chamSao(
+  gameId: string, sao: number, noiDung: string, tieuDe = '', anh = '',
+): Promise<KetQua> {
   let nguoi;
   try { nguoi = await batBuocDangNhap(); }
   catch { return { loi: 'Bạn cần đăng nhập để đánh giá.' }; }
@@ -26,6 +28,15 @@ export async function chamSao(gameId: string, sao: number, noiDung: string, tieu
   // Đầu đề ngắn hẳn: nó nằm một dòng trên đầu thẻ đánh giá, dài hơn là tràn
   // hoặc bị cắt giữa chừng — mà một câu chốt bị cắt giữa chừng thì vô nghĩa.
   const de = tieuDe.trim().slice(0, 80);
+
+  /*
+   * Ảnh đính kèm đi thẳng vào thuộc tính `src` lúc bày, nên nó phải qua cửa:
+   * chỉ nhận ảnh của chính cửa hàng hoặc `https://`. Cùng luật với ô chat.
+   */
+  const tam = anh.trim();
+  if (tam && !tam.startsWith('/') && !tam.startsWith('https://')) {
+    return { loi: 'Ảnh không hợp lệ.' };
+  }
 
   const game = await db.game.findFirst({
     where: { id: gameId, trangThai: 'DANG_HIEN' },
@@ -59,8 +70,11 @@ export async function chamSao(gameId: string, sao: number, noiDung: string, tieu
   await db.$transaction(async (tx) => {
     await tx.danhGia.upsert({
       where: { gameId_nguoiId: { gameId, nguoiId: nguoi.id } },
-      update: { sao, noiDung: chu || null, tieuDe: de || null, soHieu },
-      create: { gameId, nguoiId: nguoi.id, sao, noiDung: chu || null, tieuDe: de || null, soHieu },
+      update: { sao, noiDung: chu || null, tieuDe: de || null, anh: tam || null, soHieu },
+      create: {
+        gameId, nguoiId: nguoi.id, sao, noiDung: chu || null, tieuDe: de || null,
+        anh: tam || null, soHieu,
+      },
       select: { id: true },
     });
 
@@ -104,8 +118,10 @@ export interface BaiXem {
   id: string;
   sao: number;
   noiDung: string | null;
+  anh: string | null;
   taoLuc: Date;
   traLoi: string | null;
+  traLoiAnh: string | null;
   traLoiLuc: Date | null;
   /** Game ở bản nào lúc người ta chấm sao; rỗng với bài chấm từ trước. */
   soHieu: string | null;
@@ -169,7 +185,8 @@ export async function layDanhGia(
       skip: (trang - 1) * MOI_TRANG_DANH_GIA,
       take: MOI_TRANG_DANH_GIA,
       select: {
-        id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
+        id: true, sao: true, noiDung: true, anh: true, taoLuc: true,
+        traLoi: true, traLoiAnh: true, traLoiLuc: true,
         soHieu: true, tieuDe: true, soHuuIch: true, nguoiId: true,
         nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
       },

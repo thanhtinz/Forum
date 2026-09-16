@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { ArrowUp, Star, X } from 'lucide-react';
+import { ArrowUp, ImagePlus, Loader2, Star, X } from 'lucide-react';
 import { BieuTuongGame } from '@/components/game/BieuTuongGame';
 import { chamSao } from '@/app/(cua-hang)/game/[duongDan]/viec';
+import { NutCamXuc } from '@/components/BangCamXuc';
+import { napAnh } from '@/components/quan-tri/ONapAnh';
 import { gop } from '@/lib/tien-ich';
 
 /**
@@ -28,7 +30,7 @@ export function TamVietDanhGia({
   tenGame: string;
   icon: string | null;
   tacGia: string;
-  banDau: { sao: number; tieuDe: string | null; noiDung: string | null } | null;
+  banDau: { sao: number; tieuDe: string | null; noiDung: string | null; anh?: string | null } | null;
   /** Sao người ta vừa bấm ngoài trang; `0` là mở tấm mà chưa chọn gì. */
   mo: number | null;
   dongLai: () => void;
@@ -37,6 +39,9 @@ export function TamVietDanhGia({
   const [sao, datSao] = useState(banDau?.sao ?? 0);
   const [de, datDe] = useState(banDau?.tieuDe ?? '');
   const [chu, datChu] = useState(banDau?.noiDung ?? '');
+  const [anh, datAnh] = useState(banDau?.anh ?? '');
+  const [dangNapAnh, datDangNapAnh] = useState(false);
+  const oAnh = useRef<HTMLInputElement>(null);
   const [loi, datLoi] = useState<string | null>(null);
   const [xong, datXong] = useState(false);
   const [dangGui, batDau] = useTransition();
@@ -58,13 +63,27 @@ export function TamVietDanhGia({
     if (sao < 1) { datLoi('Hãy chọn từ 1 đến 5 sao.'); return; }
     datLoi(null);
     batDau(async () => {
-      const r = await chamSao(gameId, sao, chu, de);
+      const r = await chamSao(gameId, sao, chu, de, anh);
       if (r.loi) { datLoi(r.loi); return; }
       datXong(true);
       // Đóng ngay sau khi lưu: tấm này không có gì để xem tiếp, mà bài vừa viết
       // thì đang nằm sẵn ở kệ phía sau.
       dongLai();
     });
+  };
+
+  const napTep = async (tep: File | null | undefined) => {
+    if (!tep) return;
+    datLoi(null);
+    datDangNapAnh(true);
+    // Đi chung ngăn với ảnh bài diễn đàn: cùng loại ảnh người dùng dán vào,
+    // cùng cửa chặn đếm lượt.
+    const kq = await napAnh(tep, 'dien-dan');
+    datDangNapAnh(false);
+    if (oAnh.current) oAnh.current.value = '';
+    if (kq.loi) { datLoi(kq.loi); return; }
+    datAnh(kq.duongDan ?? '');
+    datXong(false);
   };
 
   const nhanGui = banDau ? 'Cập nhật đánh giá' : 'Gửi đánh giá';
@@ -131,6 +150,41 @@ export function TamVietDanhGia({
                 className="min-w-0 flex-1 resize-none bg-transparent text-[14px] leading-relaxed outline-none placeholder:text-mo" />
             </label>
           </div>
+
+          {/*
+            Hàng nút đặt NGAY DƯỚI ô chữ, không nhét vào trong khối bo góc kia:
+            khối ấy là dáng bảng nhập của iOS, thêm một hàng nút vào giữa là
+            hỏng đúng cái dáng ấy.
+          */}
+          <div className="mt-2 flex items-center gap-1.5">
+            {/* Mở LÊN TRÊN: nút nằm gần đáy tấm, mở xuống là bảng thò hẳn ra
+                ngoài mép tấm và đè lên trang phía sau — đã thấy tận mắt. */}
+            <NutCamXuc
+              chonEmoji={(h) => { datChu((c) => (c + h).slice(0, 2000)); datXong(false); }}
+              chonAnh={(d) => { datAnh(d); datXong(false); }} />
+            <button type="button" onClick={() => oAnh.current?.click()} disabled={dangNapAnh}
+              aria-label="Đính ảnh vào bài đánh giá"
+              className="grid size-[34px] shrink-0 place-items-center rounded-nut text-mo transition-colors hover:bg-nen3 hover:text-chu disabled:opacity-50">
+              {dangNapAnh
+                ? <Loader2 size={17} className="animate-spin" aria-hidden />
+                : <ImagePlus size={17} aria-hidden />}
+            </button>
+            <input ref={oAnh} type="file" accept="image/*" className="sr-only"
+              aria-label="Chọn ảnh cho bài đánh giá"
+              onChange={(e) => void napTep(e.target.files?.[0])} />
+          </div>
+
+          {anh && (
+            <div className="relative mt-2 inline-block">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={anh} alt="" className="max-h-32 rounded-nut border border-vien" />
+              <button type="button" onClick={() => { datAnh(''); datXong(false); }}
+                aria-label="Bỏ ảnh đính kèm"
+                className="absolute -right-2 -top-2 grid size-5 place-items-center rounded-full bg-xau-dac text-white">
+                <X size={12} aria-hidden />
+              </button>
+            </div>
+          )}
 
           <p className="phu mt-3">
             Đánh giá đăng dưới tên tài khoản của bạn và ai cũng đọc được. Chấm lại

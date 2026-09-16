@@ -177,7 +177,7 @@ export default async function TabThongTin({ params, searchParams }: {
     nguoi
       ? db.danhGia.findUnique({
           where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
-          select: { sao: true, tieuDe: true, noiDung: true },
+          select: { sao: true, tieuDe: true, noiDung: true, anh: true },
         })
       : null,
     /*

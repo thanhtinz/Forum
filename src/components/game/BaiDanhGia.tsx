@@ -7,8 +7,8 @@ import { cachDay, gop } from '@/lib/tien-ich';
 
 /** Đúng những trường một bài đánh giá cần để vẽ ra — nơi gọi cứ `select` theo đây. */
 export const CHON_DANH_GIA = {
-  id: true, sao: true, tieuDe: true, noiDung: true, taoLuc: true,
-  traLoi: true, traLoiLuc: true, soHieu: true, soHuuIch: true, nguoiId: true,
+  id: true, sao: true, tieuDe: true, noiDung: true, anh: true, taoLuc: true,
+  traLoi: true, traLoiAnh: true, traLoiLuc: true, soHieu: true, soHuuIch: true, nguoiId: true,
   nguoi: { select: { tenHienThi: true, tenDangNhap: true, anh: true } },
 } as const;
 
@@ -17,8 +17,10 @@ export interface BaiDanhGiaData {
   sao: number;
   tieuDe: string | null;
   noiDung: string | null;
+  anh: string | null;
   taoLuc: Date;
   traLoi: string | null;
+  traLoiAnh: string | null;
   traLoiLuc: Date | null;
   soHieu: string | null;
   soHuuIch: number;
@@ -91,15 +93,34 @@ export function BaiDanhGia({ d, nguoiXemId, dap, gon, banDauBam }: {
         </p>
       )}
 
+      {/* Ảnh đính kèm KHÔNG hiện ở bản rút gọn trên kệ: thẻ trên kệ cao cố
+          định để cả hàng thẳng mép, mà một tấm ảnh thì đẩy nó cao gấp đôi.
+          eslint-disable-next-line @next/next/no-img-element */}
+      {d.anh && !gon && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={d.anh} alt="" loading="lazy"
+          className="mt-2 max-h-[200px] rounded-nut object-contain" />
+      )}
+
       {/* Lời đáp thụt vào và đổi nền để không ai đọc lẫn nó với bài của người
           chơi — đó là hai tiếng nói khác nhau. */}
-      {d.traLoi && (
+      {/* Điều kiện là "có chữ HOẶC có ảnh": một lời đáp chỉ gồm tấm ảnh chụp
+          bản đã vá vẫn là một lời đáp, mà treo cả khối vào mỗi phần chữ thì
+          tấm ảnh ấy nằm trong cơ sở dữ liệu và không nơi nào bày ra. */}
+      {(d.traLoi || d.traLoiAnh) && (
         <div className="mt-2.5 rounded-the bg-nen2 px-3 py-2.5">
           <p className="text-[12px] font-bold text-nhan">
             SunnyStore trả lời
             {d.traLoiLuc && <span className="phu ml-1.5 font-normal">{cachDay(d.traLoiLuc)}</span>}
           </p>
-          <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">{d.traLoi}</p>
+          {d.traLoi && (
+            <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">{d.traLoi}</p>
+          )}
+          {d.traLoiAnh && !gon && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={d.traLoiAnh} alt="" loading="lazy"
+              className="mt-1.5 max-h-[160px] rounded-nut object-contain" />
+          )}
         </div>
       )}
 
@@ -108,7 +129,9 @@ export function BaiDanhGia({ d, nguoiXemId, dap, gon, banDauBam }: {
             vẫn in con số, vì đó là thứ tác giả bài muốn biết nhất. */}
         <NutHuuIch danhGiaId={d.id} dem={d.soHuuIch} banDauBam={banDauBam ?? false}
           bamDuoc={!!nguoiXemId && nguoiXemId !== d.nguoiId} />
-        {dap && <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} dap={dap} />}
+        {dap && (
+          <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} banDauAnh={d.traLoiAnh} dap={dap} />
+        )}
         {/* Chỉ mời báo khi đã đăng nhập và không phải bài của chính mình —
             bài của mình thì sửa thẳng được. */}
         {nguoiXemId && nguoiXemId !== d.nguoiId && <NutBaoXau loai="danhGia" mucId={d.id} />}

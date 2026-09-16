@@ -29,11 +29,17 @@ const LOI_TOI_DA = 1000;
  * không đứng tên game nào nên câu truy vấn không khớp hàng nào. Hỏng về phía
  * an toàn, không phải phía mở toang.
  */
-export async function tacGiaTraLoiDanhGia(danhGiaId: string, loi: string): Promise<KetQuaTacGia> {
+export async function tacGiaTraLoiDanhGia(
+  danhGiaId: string, loi: string, anh = '',
+): Promise<KetQuaTacGia> {
   const nguoi = await nguoiHienTai();
   if (!nguoi) return { loi: 'Bạn cần đăng nhập trước đã.' };
 
   const chuLoi = loi.trim().slice(0, LOI_TOI_DA);
+  const tam = anh.trim();
+  if (tam && !tam.startsWith('/') && !tam.startsWith('https://')) {
+    return { loi: 'Ảnh không hợp lệ.' };
+  }
 
   const bai = await db.danhGia.findFirst({
     where: { id: danhGiaId, game: { tacGiaId: nguoi.id } },
@@ -48,13 +54,15 @@ export async function tacGiaTraLoiDanhGia(danhGiaId: string, loi: string): Promi
    */
   const { count } = await db.danhGia.updateMany({
     where: { id: danhGiaId, game: { tacGiaId: nguoi.id } },
-    data: chuLoi ? { traLoi: chuLoi, traLoiLuc: new Date() } : { traLoi: null, traLoiLuc: null },
+    data: chuLoi || tam
+      ? { traLoi: chuLoi || null, traLoiAnh: tam || null, traLoiLuc: new Date() }
+      : { traLoi: null, traLoiAnh: null, traLoiLuc: null },
   });
   if (count === 0) return { loi: LOI_KHONG_QUYEN };
 
   // Chỉ báo khi THÊM lời đáp: "tác giả đã rút lại lời đáp" là một tin chẳng ai
   // cần biết.
-  if (chuLoi) {
+  if (chuLoi || tam) {
     await guiThongBao({
       nguoiNhanId: bai.nguoiId,
       loai: 'DAP_DANH_GIA',

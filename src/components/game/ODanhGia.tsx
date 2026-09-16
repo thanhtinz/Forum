@@ -24,7 +24,7 @@ export function ODanhGia({ gameId, tenGame, icon, tacGia, duongDan, banDau, daDa
   icon: string | null;
   tacGia: string;
   duongDan: string;
-  banDau: { sao: number; tieuDe: string | null; noiDung: string | null } | null;
+  banDau: { sao: number; tieuDe: string | null; noiDung: string | null; anh: string | null } | null;
   daDangNhap: boolean;
 }) {
   // `null` là tấm đang đóng; số là sao vừa bấm ngoài trang (0 = mở suông).

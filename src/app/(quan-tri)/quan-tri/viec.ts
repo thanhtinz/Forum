@@ -740,11 +740,17 @@ export async function doiChoAnhChup(anhId: string, len: boolean): Promise<KetQua
  * về, mà thêm hẳn một endpoint xoá riêng chỉ để làm việc ấy thì là hai chỗ
  * cùng kiểm quyền cho một việc.
  */
-export async function traLoiDanhGia(danhGiaId: string, loi: string): Promise<KetQua> {
+export async function traLoiDanhGia(
+  danhGiaId: string, loi: string, anh = '',
+): Promise<KetQua> {
   try { await batBuocQuanTri(); }
   catch { return { loi: 'Bạn không có quyền làm việc này.' }; }
 
   const chuLoi = loi.trim().slice(0, 1000);
+  const tam = anh.trim();
+  if (tam && !tam.startsWith('/') && !tam.startsWith('https://')) {
+    return { loi: 'Ảnh không hợp lệ.' };
+  }
 
   const bai = await db.danhGia.findUnique({
     where: { id: danhGiaId },
@@ -754,7 +760,10 @@ export async function traLoiDanhGia(danhGiaId: string, loi: string): Promise<Ket
 
   await db.danhGia.update({
     where: { id: danhGiaId },
-    data: chuLoi ? { traLoi: chuLoi, traLoiLuc: new Date() } : { traLoi: null, traLoiLuc: null },
+    // Có ảnh mà không có chữ vẫn là một lời đáp; rỗng CẢ HAI mới là xoá.
+    data: chuLoi || tam
+      ? { traLoi: chuLoi || null, traLoiAnh: tam || null, traLoiLuc: new Date() }
+      : { traLoi: null, traLoiAnh: null, traLoiLuc: null },
     select: { id: true },
   });
 
@@ -763,7 +772,7 @@ export async function traLoiDanhGia(danhGiaId: string, loi: string): Promise<Ket
   // nên quên một chỗ là vừa trả lời xong mà huy hiệu vẫn nguyên số cũ.
   // Chỉ báo khi THÊM lời đáp, không báo lúc xoá: "cửa hàng đã rút lại lời đáp"
   // là một tin chẳng ai cần biết.
-  if (chuLoi) {
+  if (chuLoi || tam) {
     await guiThongBao({
       nguoiNhanId: bai.nguoiId,
       loai: 'DAP_DANH_GIA',

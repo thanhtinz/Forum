@@ -87,7 +87,7 @@ export default async function TabDanhGia({ params, searchParams }: {
     nguoi
       ? db.danhGia.findUnique({
           where: { gameId_nguoiId: { gameId: game.id, nguoiId: nguoi.id } },
-          select: { sao: true, tieuDe: true, noiDung: true },
+          select: { sao: true, tieuDe: true, noiDung: true, anh: true },
         })
       : null,
     // 200 bài gần đây là đủ nói game nay đang thế nào — xem chú thích ở trang game.

@@ -487,6 +487,16 @@ model DanhGia {
   tieuDe  String?
   noiDung String? @db.Text
 
+  /// Một tấm ảnh người chấm sao đính kèm: ảnh chụp màn hình lỗi, ảnh chụp máy
+  /// đang chạy. Cùng lối với `TinNhanChat.anh` — một cột cho cả ảnh tự tải
+  /// lên, sticker lẫn ảnh động, vì cả ba đều là một địa chỉ và đều bày ra y
+  /// như nhau.
+  ///
+  /// Bài đánh giá in ra dưới dạng CHỮ THUẦN, không phải Markdown, nên ảnh phải
+  /// có cột riêng: nhét `![](…)` vào phần chữ thì người đọc thấy đúng mấy ký
+  /// tự ấy chứ không thấy tấm hình.
+  anh String?
+
   /// Số người thấy bài này hữu ích, đếm sẵn ở đây chứ không đếm lúc đọc.
   ///
   /// VÌ SAO ĐỂ SỐ Ở ĐÂY: cách sắp mặc định của phần đánh giá là "hữu ích
@@ -512,6 +522,8 @@ model DanhGia {
   /// Lời đáp của cửa hàng, nằm ngay trong hàng đánh giá thay vì thành bảng
   /// riêng: mỗi bài chỉ có đúng một lời đáp, y như CH Play.
   traLoi    String?   @db.Text
+  /// Ảnh đính kèm lời đáp của cửa hàng. Cùng lẽ với `anh` ở trên.
+  traLoiAnh String?
   traLoiLuc DateTime?
 
   taoLuc DateTime @default(now())

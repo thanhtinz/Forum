@@ -10,6 +10,7 @@ import { NHAN_MAC_DINH, laNhan } from '@/lib/nhan-chu-de-const';
 import { CAU_HOI_TOI_DA, IT_NHAT, LUA_CHON_TOI_DA, NHIEU_NHAT } from '@/lib/binh-chon-const';
 import { soTrang } from '@/lib/tien-ich';
 import { dungChuoiTimChuDe } from '@/lib/tim-kiem-const';
+import { khopLaiChuDe } from '@/lib/khop-chu-de';
 import { MOI_TRANG_TRA_LOI } from './moi-trang';
 
 export interface KetQua { loi?: string }
@@ -373,10 +374,10 @@ export async function suaTraLoi(_truoc: KetQua, form: FormData): Promise<KetQua>
 }
 
 /**
- * Xoá lời đáp của chính mình, và trừ lại bộ đếm trong cùng giao dịch.
+ * Xoá lời đáp của chính mình, và khớp lại bộ đếm trong cùng giao dịch.
  *
- * Đếm lại từ bảng chứ không trừ đi một: trừ tay thì mỗi lần lệch là lệch vĩnh
- * viễn, mà không có chỗ nào phát hiện ra.
+ * Cả `soTraLoi` lẫn `traLoiCuoiLuc`, qua `khopLaiChuDe` — xem chú thích ở đó
+ * về chuyện vì sao cột mốc là cột dễ quên nhất.
  */
 export async function xoaTraLoiCuaToi(traLoiId: string): Promise<KetQua> {
   let nguoi;
@@ -395,10 +396,7 @@ export async function xoaTraLoiCuaToi(traLoiId: string): Promise<KetQua> {
     });
     if (count === 0) return false;
 
-    const con = await tx.traLoi.count({ where: { chuDeId: t.chuDeId } });
-    await tx.chuDe.update({
-      where: { id: t.chuDeId }, data: { soTraLoi: con }, select: { id: true },
-    });
+    await khopLaiChuDe(tx, t.chuDeId);
     return true;
   });
 

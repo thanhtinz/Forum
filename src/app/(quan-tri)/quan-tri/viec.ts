@@ -10,6 +10,7 @@ import { guiThongBao } from '@/lib/thong-bao';
 import { baoBanMoi, baoHeMayMoi } from '@/lib/bao-ban-moi';
 import { dungChuDam } from '@/lib/chu-dam';
 import { xoaAnh, xoaPhim, xoaTepGame } from '@/lib/kho';
+import { khopLaiChuDe } from '@/lib/khop-chu-de';
 import { tinhLaiDungLuongBan } from '@/lib/ban-tai';
 import { TOI_DA_ANH_CHUP } from '@/lib/luat-anh-const';
 import { napDoTuoi } from '@/lib/do-tuoi-const';
@@ -232,6 +233,15 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
   // Tệp gắn ngay lúc tạo bản trước đây KHÔNG kiểm gì cả — lối vào này bị bỏ
   // sót trong khi lối "gắn thêm tệp" thì có kiểm.
   if (duongDanTep && !laDiaChiHopLe(duongDanTep)) return { loi: LOI_DIA_CHI };
+  /*
+   * Có tệp thì PHẢI có loại tệp, và nói ra lúc này chứ không nuốt.
+   *
+   * Bản cũ chỉ xét `laLoaiTep` ở tận trong giao dịch, kiểu `if (duongDanTep &&
+   * laLoaiTep(loaiTep))`. Gửi lên một loại lạ thì bản tải vẫn được tạo, chỉ là
+   * KHÔNG CÓ TỆP NÀO trong đó — mà giao diện báo "đã thêm". Người bày hàng
+   * đóng trang, và cái hỏng chỉ lộ ra khi có người bấm tải rồi chẳng thấy gì.
+   */
+  if (duongDanTep && !laLoaiTep(loaiTep)) return { loi: 'Loại tệp không hợp lệ.' };
   if (cuaHang && !laHttpsHopLe(cuaHang)) {
     return { loi: 'Đường dẫn cửa hàng phải là một địa chỉ https đầy đủ.' };
   }
@@ -268,7 +278,7 @@ export async function themBanTai(_truoc: KetQua, form: FormData): Promise<KetQua
       select: { id: true },
     });
 
-    if (duongDanTep && laLoaiTep(loaiTep)) {
+    if (duongDanTep) {
       // Dung lượng đo thẳng từ tệp thật — xem `doDungLuongTep` để biết vì sao
       // không bắt người nhập gõ tay con số ấy.
       await tx.tepTai.create({
@@ -889,6 +899,13 @@ export async function xoaChuDe(chuDeId: string): Promise<KetQua> {
  * `ChuDe.soTraLoi` là bản đếm sẵn nên phải trừ lại TRONG CÙNG giao dịch với
  * lần xoá. Đếm lại từ bảng thay vì trừ đi một: trừ tay thì mỗi lần lệch là
  * lệch vĩnh viễn, mà không có chỗ nào phát hiện ra.
+ *
+ * `traLoiCuoiLuc` cũng phải lùi theo, và đó là cột DỄ QUÊN nhất ở đây. Nó là
+ * khoá sắp của cả bảng chủ đề (`[gameId, ghim, traLoiCuoiLuc]`), và trang diễn
+ * đàn in ra "<người trả lời cuối> trả lời <cachDay(traLoiCuoiLuc)>". Gỡ đúng
+ * lời đáp mới nhất mà để nguyên mốc thì chủ đề nằm lì trên đầu bảng vì một bài
+ * KHÔNG CÒN TỒN TẠI, và dòng chữ dưới nó ghép tên người trả lời áp chót với
+ * mốc giờ của bài vừa bị gỡ — một câu không có thật.
  */
 export async function xoaTraLoi(traLoiId: string): Promise<KetQua> {
   try { await batBuocQuanTri(); }
@@ -905,10 +922,7 @@ export async function xoaTraLoi(traLoiId: string): Promise<KetQua> {
 
   await db.$transaction(async (tx) => {
     await tx.traLoi.delete({ where: { id: traLoiId } });
-    const con = await tx.traLoi.count({ where: { chuDeId: t.chuDeId } });
-    await tx.chuDe.update({
-      where: { id: t.chuDeId }, data: { soTraLoi: con }, select: { id: true },
-    });
+    await khopLaiChuDe(tx, t.chuDeId);
   });
 
   await guiThongBao({
@@ -1073,6 +1087,18 @@ export async function luuTheLoai(_truoc: KetQua, form: FormData): Promise<KetQua
     return { loi: `Đã có thể loại tên “${ten}” (đường dẫn “${trungTen.duongDan}”).` };
   }
 
+  /*
+   * Đọc TÊN CŨ trước khi ghi đè, để biết có phải dựng lại chuỗi tìm hay không.
+   *
+   * Chuỗi tìm của game chỉ chứa TÊN thể loại, không chứa đường dẫn — nên sửa
+   * mỗi đường dẫn thì chẳng có chuỗi nào cũ đi. Không so thì mỗi lần bấm Lưu,
+   * kể cả lúc không đổi gì, đều kéo theo một lượt ghi lại toàn bộ game mang
+   * nhãn ấy.
+   */
+  const truocDo = id
+    ? await db.theLoai.findUnique({ where: { id }, select: { ten: true } })
+    : null;
+
   if (id) {
     await db.theLoai.update({ where: { id }, data: { ten, duongDan }, select: { id: true } });
   } else {
@@ -1084,14 +1110,17 @@ export async function luuTheLoai(_truoc: KetQua, form: FormData): Promise<KetQua
     });
   }
 
-  // Đổi tên thể loại thì chuỗi tìm của mọi game mang nhãn ấy đã cũ — gõ tên
-  // mới sẽ không ra game nào. Dựng lại từng cái; danh sách này luôn nhỏ.
-  if (id) {
-    const gan = await db.theLoaiTrenGame.findMany({
-      where: { theLoaiId: id }, select: { gameId: true },
-    });
-    for (const x of gan) await lamMoiChuoiTim(x.gameId);
-  }
+  /*
+   * Đổi tên thể loại thì chuỗi tìm của MỌI game mang nhãn ấy đã cũ — gõ tên
+   * mới sẽ không ra game nào.
+   *
+   * Bản cũ gọi `lamMoiChuoiTim` trong vòng lặp, kèm chú thích "danh sách này
+   * luôn nhỏ". Không đúng: nhãn rộng như "Hành động" thì gần cả cửa hàng đeo
+   * nó, và mỗi vòng lặp là HAI lượt đi về cơ sở dữ liệu nối đuôi nhau — đổi
+   * một cái tên hoá ra treo người quản trị hàng chục giây, trong một hàm mà họ
+   * chỉ vừa bấm nút Lưu.
+   */
+  if (id && truocDo && truocDo.ten !== ten) await lamMoiChuoiTimHangLoat(id);
 
   revalidatePath('/quan-tri/the-loai');
   revalidatePath('/duyet');
@@ -1680,6 +1709,37 @@ export async function xoaNoiDungBiBao(
  * chuỗi tìm mất phần thể loại, mà lỗi ấy chỉ lộ ra khi có người gõ đúng tên
  * thể loại rồi không thấy game — tức là không bao giờ lộ ra với người viết mã.
  */
+/**
+ * Dựng lại chuỗi tìm cho MỌI game đang mang một thể loại — một lượt đọc, một
+ * giao dịch ghi.
+ *
+ * Khác bản lẻ ở đúng một chỗ, và chỗ ấy là lý do nó tồn tại: số lượt đi về cơ
+ * sở dữ liệu không tăng theo số game nữa. Ghi gom vào một giao dịch để nửa
+ * chừng hỏng thì không để lại một nửa cửa hàng mang chuỗi tìm cũ và nửa kia
+ * mang chuỗi mới — trạng thái ấy không có chỗ nào phát hiện ra được.
+ */
+async function lamMoiChuoiTimHangLoat(theLoaiId: string): Promise<void> {
+  const game = await db.game.findMany({
+    where: { theLoai: { some: { theLoaiId } } },
+    select: {
+      id: true, ten: true, tenViet: true, nhaPhatTrien: true,
+      theLoai: { select: { theLoai: { select: { ten: true } } } },
+    },
+  });
+  if (game.length === 0) return;
+
+  await db.$transaction(game.map((g) => db.game.update({
+    where: { id: g.id },
+    data: {
+      timKiem: dungChuoiTim({
+        ten: g.ten, tenViet: g.tenViet, nhaPhatTrien: g.nhaPhatTrien,
+        theLoai: g.theLoai.map((t) => t.theLoai.ten),
+      }),
+    },
+    select: { id: true },
+  })));
+}
+
 async function lamMoiChuoiTim(gameId: string): Promise<void> {
   const g = await db.game.findUnique({
     where: { id: gameId },

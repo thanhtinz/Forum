@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 
 /*
@@ -114,32 +115,56 @@ export async function conDuocThu(dinhDanh: string): Promise<KetQuaChan> {
  * dựng hẳn một khoá hàng chỉ để đếm cho chuẩn thì biến chính chỗ đăng nhập
  * thành nút thắt của cả trang.
  */
-export async function ghiLanHong(dinhDanh: string): Promise<void> {
+/**
+ * Cộng MỘT lượt vào một khoá đếm, nguyên tử.
+ *
+ * VÌ SAO PHẢI LÀ MỘT CÂU SQL. Năm chỗ đếm trong tệp này từng viết cùng một
+ * khuôn: đọc `soLan` ra, cộng một trong JavaScript, rồi `upsert` giá trị mới
+ * xuống. Chú thích cũ cho rằng thiệt hại "cùng lắm là đếm thiếu một lần" —
+ * đúng với hai lượt chạy song song, nhưng SAI hẳn với năm mươi: cả năm mươi
+ * lượt cùng đọc ra `soLan = k` rồi cùng ghi `k + 1`, nên năm mươi lần gõ sai
+ * chỉ tính thành MỘT. Bắn từng loạt song song là dò mật khẩu thoải mái, và
+ * cửa chặn dò mật khẩu coi như không tồn tại. Cùng lỗ ấy có ở cả cửa xin mã,
+ * cửa mở tài khoản, cửa đăng ảnh và cửa tìm ảnh động.
+ *
+ * `INSERT … ON CONFLICT DO UPDATE` thì Postgres tự khoá hàng ấy, nên mấy lượt
+ * gọi cùng lúc xếp hàng chứ không giẫm lên nhau — và cả ba việc (cộng dồn,
+ * đặt lại cửa sổ đã hết hạn, bật mốc cấm) nằm gọn trong một câu, không còn
+ * khoảng hở nào ở giữa.
+ *
+ * Viết bằng SQL thô vì Prisma chưa diễn đạt được "cộng một RỒI so kết quả với
+ * một ngưỡng" trong cùng một lượt ghi. Mọi giá trị đều đi qua tham số, không
+ * ghép chuỗi.
+ */
+async function congMotLuot(khoa: string, toiDa: number): Promise<void> {
   const bay = new Date();
-  const motCuaSoTruoc = new Date(bay.getTime() - CUA_SO_MS);
+  const dauCuaSo = new Date(bay.getTime() - CUA_SO_MS);
+  const camToi = new Date(bay.getTime() + CAM_MS);
 
+  try {
+    await db.$executeRaw(Prisma.sql`
+      INSERT INTO "LanHong" ("khoa", "soLan", "tuLuc", "camDen")
+      VALUES (${khoa}, 1, ${bay}, NULL)
+      ON CONFLICT ("khoa") DO UPDATE SET
+        "soLan" = CASE WHEN "LanHong"."tuLuc" > ${dauCuaSo}
+                       THEN "LanHong"."soLan" + 1 ELSE 1 END,
+        "tuLuc" = CASE WHEN "LanHong"."tuLuc" > ${dauCuaSo}
+                       THEN "LanHong"."tuLuc" ELSE ${bay} END,
+        "camDen" = CASE WHEN (CASE WHEN "LanHong"."tuLuc" > ${dauCuaSo}
+                                   THEN "LanHong"."soLan" + 1 ELSE 1 END) >= ${toiDa}
+                        THEN ${camToi} ELSE NULL END
+    `);
+  } catch {
+    // Đếm hỏng thì thôi. Không để việc đếm làm hỏng chính việc người ta đang làm.
+  }
+}
+
+export async function ghiLanHong(dinhDanh: string): Promise<void> {
+  // Cửa sổ hết hạn thì đếm lại từ đầu chứ không cộng dồn mãi — cộng dồn thì
+  // một người gõ sai một lần mỗi tháng cũng có ngày bị cấm. Luật ấy nay nằm
+  // trong `congMotLuot`, cùng một câu SQL với phép cộng.
   for (const { khoa, toiDa } of khoaCua(dinhDanh, await layIp())) {
-    try {
-      const cu = await db.lanHong.findUnique({ where: { khoa }, select: { soLan: true, tuLuc: true } });
-
-      // Cửa sổ cũ đã hết hạn thì đếm lại từ đầu, chứ không cộng dồn mãi —
-      // cộng dồn thì một người gõ sai một lần mỗi tháng cũng có ngày bị cấm.
-      const trongCuaSo = cu && cu.tuLuc > motCuaSoTruoc;
-      const soLan = trongCuaSo ? cu.soLan + 1 : 1;
-
-      await db.lanHong.upsert({
-        where: { khoa },
-        create: { khoa, soLan: 1, tuLuc: bay },
-        update: {
-          soLan,
-          tuLuc: trongCuaSo ? cu.tuLuc : bay,
-          camDen: soLan >= toiDa ? new Date(bay.getTime() + CAM_MS) : null,
-        },
-        select: { khoa: true },
-      });
-    } catch {
-      // Đếm hỏng thì thôi. Không để việc đếm làm hỏng chính việc đăng nhập.
-    }
+    await congMotLuot(khoa, toiDa);
   }
 }
 
@@ -196,26 +221,7 @@ export async function ghiLanDangKy(): Promise<void> {
   const khoa = await khoaDangKy();
   if (!khoa) return;
 
-  const bay = new Date();
-  const motCuaSoTruoc = new Date(bay.getTime() - CUA_SO_MS);
-  try {
-    const cu = await db.lanHong.findUnique({ where: { khoa }, select: { soLan: true, tuLuc: true } });
-    const trongCuaSo = cu && cu.tuLuc > motCuaSoTruoc;
-    const soLan = trongCuaSo ? cu.soLan + 1 : 1;
-
-    await db.lanHong.upsert({
-      where: { khoa },
-      create: { khoa, soLan: 1, tuLuc: bay },
-      update: {
-        soLan,
-        tuLuc: trongCuaSo ? cu.tuLuc : bay,
-        camDen: soLan >= TOI_DA_DANG_KY ? new Date(bay.getTime() + CAM_MS) : null,
-      },
-      select: { khoa: true },
-    });
-  } catch {
-    // Đếm hỏng thì thôi — không để việc đếm chặn mất một lượt đăng ký thật.
-  }
+  await congMotLuot(khoa, TOI_DA_DANG_KY);
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -246,26 +252,7 @@ export async function conDuocTimGif(nguoiId: string): Promise<KetQuaChan> {
 }
 
 export async function ghiLanTimGif(nguoiId: string): Promise<void> {
-  const khoa = `gif:${nguoiId}`;
-  const bay = new Date();
-  const motCuaSoTruoc = new Date(bay.getTime() - CUA_SO_MS);
-  try {
-    const cu = await db.lanHong.findUnique({ where: { khoa }, select: { soLan: true, tuLuc: true } });
-    const trongCuaSo = cu && cu.tuLuc > motCuaSoTruoc;
-    const soLan = trongCuaSo ? cu.soLan + 1 : 1;
-    await db.lanHong.upsert({
-      where: { khoa },
-      create: { khoa, soLan: 1, tuLuc: bay },
-      update: {
-        soLan,
-        tuLuc: trongCuaSo ? cu.tuLuc : bay,
-        camDen: soLan >= TOI_DA_GIF ? new Date(bay.getTime() + CAM_MS) : null,
-      },
-      select: { khoa: true },
-    });
-  } catch {
-    // Đếm hỏng thì thôi — không để việc đếm chặn mất một lượt tìm thật.
-  }
+  await congMotLuot(`gif:${nguoiId}`, TOI_DA_GIF);
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -295,24 +282,7 @@ export async function conDuocDangAnh(nguoiId: string): Promise<KetQuaChan> {
 }
 
 export async function ghiLanDangAnh(nguoiId: string): Promise<void> {
-  const khoa = `anh:${nguoiId}`;
-  const bay = new Date();
-  const motCuaSoTruoc = new Date(bay.getTime() - CUA_SO_MS);
-  try {
-    const cu = await db.lanHong.findUnique({ where: { khoa }, select: { soLan: true, tuLuc: true } });
-    const trongCuaSo = cu && cu.tuLuc > motCuaSoTruoc;
-    const soLan = trongCuaSo ? cu.soLan + 1 : 1;
-    await db.lanHong.upsert({
-      where: { khoa },
-      create: { khoa, soLan: 1, tuLuc: bay },
-      update: {
-        soLan,
-        tuLuc: trongCuaSo ? cu.tuLuc : bay,
-        camDen: soLan >= TOI_DA_ANH ? new Date(bay.getTime() + CAM_MS) : null,
-      },
-      select: { khoa: true },
-    });
-  } catch { /* đếm hỏng thì thôi, đừng chặn mất một lượt tải thật */ }
+  await congMotLuot(`anh:${nguoiId}`, TOI_DA_ANH);
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -370,27 +340,7 @@ export async function conDuocXinMa(email: string): Promise<KetQuaChan> {
  * bị chặn nghĩa là mười địa chỉ ấy đều chưa ai đăng ký.
  */
 export async function ghiLanXinMa(email: string): Promise<void> {
-  const bay = new Date();
-  const motCuaSoTruoc = new Date(bay.getTime() - CUA_SO_MS);
-
   for (const { khoa, toiDa } of khoaXinMa(email, await layIp())) {
-    try {
-      const cu = await db.lanHong.findUnique({ where: { khoa }, select: { soLan: true, tuLuc: true } });
-      const trongCuaSo = cu && cu.tuLuc > motCuaSoTruoc;
-      const soLan = trongCuaSo ? cu.soLan + 1 : 1;
-
-      await db.lanHong.upsert({
-        where: { khoa },
-        create: { khoa, soLan: 1, tuLuc: bay },
-        update: {
-          soLan,
-          tuLuc: trongCuaSo ? cu.tuLuc : bay,
-          camDen: soLan >= toiDa ? new Date(bay.getTime() + CAM_MS) : null,
-        },
-        select: { khoa: true },
-      });
-    } catch {
-      // Đếm hỏng thì thôi, y như mấy chỗ đếm khác.
-    }
+    await congMotLuot(khoa, toiDa);
   }
 }

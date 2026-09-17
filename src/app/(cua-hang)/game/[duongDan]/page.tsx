@@ -142,7 +142,7 @@ export default async function TabThongTin({ params, searchParams }: {
        */
       banTai: {
         where: { doiMoi: { not: null } },
-        orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }, { id: 'desc' }],
+        orderBy: [{ moiNhat: 'desc' }, { ngayRa: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
         take: 1,
         select: { heMay: true, soHieu: true, ngayRa: true, doiMoi: true },
       },

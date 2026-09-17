@@ -55,7 +55,18 @@ const TOI_DA = 60;
 export const docBanXem = cache(async function docBanXem(gameId: string): Promise<BanXem[]> {
   const ban = await db.banTai.findMany({
     where: { gameId },
-    orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }],
+    /*
+     * `nulls: 'last'`, và khoá phụ `id`.
+     *
+     * `ngayRa` cho phép rỗng, mà Postgres xếp NULL LÊN ĐẦU khi sắp giảm dần —
+     * nên một bản chưa điền ngày ra lại đứng trên bản mới nhất thật, ngay ở
+     * khung tải của trang game.
+     *
+     * Khoá phụ `id` vì có `take`: hai bản cùng mốc mà thiếu nó thì mỗi lượt
+     * dựng trang lại chọn cắt một bản khác đi, và hai chỗ cùng gọi hàm này
+     * trong một trang có thể trỏ vào hai tệp khác nhau.
+     */
+    orderBy: [{ moiNhat: 'desc' }, { ngayRa: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
     take: TOI_DA,
     select: {
       id: true, heMay: true, soHieu: true, moiNhat: true, dungLuong: true, ngayRa: true,

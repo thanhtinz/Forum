@@ -118,6 +118,10 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
   // năm thì danh sách trống trơn, trong khi bản cần tìm nằm ngay trang một.
   const trangDung = Math.min(trang, tongTrang);
   const hienRa = daLoc.slice((trangDung - 1) * MOI_TRANG, trangDung * MOI_TRANG);
+
+  // Thứ tự ưu tiên loại tệp chỉ phụ thuộc HỆ MÁY đang chọn, không phụ thuộc
+  // từng bản — dựng một lần ở đây, không dựng lại trong mỗi vòng lặp.
+  const thuTuLoai = he ? MO_TA_HE[he].loaiTep : [];
   const bayTim = theoHe.length > NGUONG_TIM;
 
   if (ban.length === 0) return null;
@@ -210,9 +214,20 @@ export function TamTai({ ban, game, taiKhoan, daTai, dang = 'nut', nhan = 'Tải
 
             <ul className="divide-y divide-vien">
               {hienRa.map((b) => {
-                const thuTuLoai = he ? MO_TA_HE[he].loaiTep : [];
-                const tep = [...b.tep].sort((x, y) =>
-                  thuTuLoai.indexOf(x.loai as never) - thuTuLoai.indexOf(y.loai as never));
+                /*
+                 * Tệp mang loại LẠ phải xuống cuối, không được lên đầu.
+                 *
+                 * Bản cũ trừ thẳng hai `indexOf`, mà `indexOf` trả −1 cho thứ
+                 * không có trong danh sách — nên đúng cái tệp hệ máy này không
+                 * biết lại xếp trước mọi tệp hợp lệ. Mà `tep[0]` ngay dưới đây
+                 * chính là NÚT TẢI CHÍNH: gắn nhầm một tệp jar vào bản Android
+                 * là cả trang mời người ta tải cái jar ấy trước tiên.
+                 */
+                const nac = (loai: string) => {
+                  const i = thuTuLoai.indexOf(loai as never);
+                  return i === -1 ? thuTuLoai.length : i;
+                };
+                const tep = [...b.tep].sort((x, y) => nac(x.loai) - nac(y.loai));
                 const chinh = tep[0];
                 const phu = tep.slice(1);
 

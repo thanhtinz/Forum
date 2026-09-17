@@ -146,7 +146,7 @@ export function KhungPhim({ gameId, phim }: { gameId: string; phim: PhimQuanTri[
                 <div className="h-full rounded-full bg-nhan transition-[width] duration-150"
                   style={{ width: `${phanTram}%` }} />
               </div>
-              <p className="phu mt-1">Đang đưa lên kho… {phanTram}%</p>
+              <p className="phu mt-1">Đang tải lên… {phanTram}%</p>
             </div>
           ) : (
             <p className="phu flex items-center gap-1.5">

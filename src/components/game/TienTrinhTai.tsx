@@ -181,7 +181,7 @@ export function TienTrinhTai({ tepId, ten, dungLuong, game, dongPhu }: {
 
           <p className="phu">
             {nghi ? 'Phần đã tải vẫn còn, bấm tiếp là chạy tiếp.'
-              : tocDo > 0 ? `${gonDungLuong(tocDo)}/giây` : 'Đang nối tới kho…'}
+              : tocDo > 0 ? `${gonDungLuong(tocDo)}/giây` : 'Đang nối tới cửa hàng…'}
             {!nghi && conLai !== null && tocDo > 0 && ` · còn khoảng ${gonGiay(conLai)}`}
           </p>
 

@@ -68,7 +68,7 @@ export async function chamSao(
     }),
     db.banTai.findFirst({
       where: { gameId },
-      orderBy: [{ moiNhat: 'desc' }, { ngayRa: 'desc' }, { id: 'desc' }],
+      orderBy: [{ moiNhat: 'desc' }, { ngayRa: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
       select: { soHieu: true },
     }),
   ]);

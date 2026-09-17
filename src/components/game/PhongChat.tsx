@@ -216,7 +216,22 @@ export function PhongChat({ gameId, tenGame, banDau, coTheNoi, toiLa, laQuanTri 
                 <Send size={15} aria-hidden />
               </button>
             </div>
-            <p className={gop('phu mt-1 text-[11px]', chu.length > TIN_TOI_DA - 40 && 'text-cam')}>
+            {/*
+              Sắp chạm trần thì đổi CẢ MÀU LẪN ĐỘ ĐẬM, và màu là `xau` chứ
+              không phải `cam`.
+
+              `--cam` chỉ đạt 1,94:1 trên nền sáng — `globals.css` đã ghi rõ nó
+              KHÔNG bao giờ được làm chữ, nó là màu trang trí. Dùng nó ở đây là
+              tự đặt luật rồi tự phá. `--canh` khá hơn nhưng vẫn 3,19:1, vẫn
+              dưới mức 4,5:1 mà chữ thường cần; `--xau` đạt 4,77:1.
+
+              Và đổi luôn độ đậm chứ không chỉ đổi màu: báo bằng mỗi màu thì
+              người mù màu không nhận được tín hiệu nào.
+            */}
+            <p className={gop(
+              'phu mt-1 text-[11px]',
+              chu.length > TIN_TOI_DA - 40 && 'font-semibold text-xau',
+            )}>
               {chu.length}/{TIN_TOI_DA}
             </p>
           </>

@@ -62,7 +62,10 @@ export default async function GocQuanTri({ children }: { children: React.ReactNo
           dài — giữ nó luôn trong tầm mắt thì cuộn tới cuối bảng vẫn mở được
           menu, mà không phải chừa chỗ trống trên đầu mọi trang.
         */}
-        <header className="sticky top-0 z-40 bg-vo-qt">
+        {/* `data-vo` là mốc cho bài kiểm 27 bắt lấy: nó đo độ sáng của vỏ
+            khu này ở cả hai nền. Dò theo tên thẻ thì đổi `aside` thành
+            `header` là bài kiểm mù, mà nó mù thì im lặng chứ không đỏ. */}
+        <header data-vo="quan-tri" className="sticky top-0 z-40 bg-vo-qt">
           <div className="mx-auto flex max-w-[1080px] items-center gap-3 px-4 py-2.5 sm:px-6">
             <NganKeoQuanTri dem={dem} ten={nguoi.tenHienThi} />
 

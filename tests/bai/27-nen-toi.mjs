@@ -63,15 +63,20 @@ export default async function chay(kiem) {
     }
 
     /*
-     * Thanh bên quản trị luôn sẫm ở CẢ HAI nền.
+     * Vỏ khu quản trị luôn sẫm ở CẢ HAI nền.
      *
      * Nó là dấu hiệu để người vừa mở tab mới biết mình đang ở khu nào, mà một
      * dấu hiệu đổi màu theo cài đặt thì không còn là dấu hiệu. Bản trước tô nó
      * bằng `bg-chu`/`text-nen` — hai token ĐẢO NHAU khi sang nền tối, nên bật
-     * nền tối lên là cả thanh bên hoá trắng toát.
+     * nền tối lên là cả vỏ hoá trắng toát.
+     *
+     * Dò theo `data-vo`, KHÔNG theo tên thẻ. Vỏ ấy từng là một `aside` — cột
+     * đứng cố định — rồi thành `header` lúc khu quản trị đổi sang menu ba
+     * gạch, và bài kiểm dò `aside` hoá mù ngay. Cái tên `data-vo` thì đi theo
+     * vỏ dù nó mang hình dáng gì.
      */
-    const doSangThanhBen = async (trang) => trang.evaluate(() => {
-      const a = document.querySelector('aside');
+    const doSangVo = async (trang) => trang.evaluate(() => {
+      const a = document.querySelector('[data-vo="quan-tri"]');
       if (!a) return null;
       const m = getComputedStyle(a).backgroundColor.match(/\d+/g) ?? [];
       const [r, g, b] = m.map(Number);
@@ -79,7 +84,7 @@ export default async function chay(kiem) {
     });
 
     await p.goto(`${GOC}/quan-tri`, { waitUntil: 'networkidle' });
-    const toi = await doSangThanhBen(p);
+    const toi = await doSangVo(p);
 
     const ctx2 = await may.newContext({ viewport: { width: 1280, height: 900 } });
     const p2 = await ctx2.newPage();
@@ -89,12 +94,12 @@ export default async function chay(kiem) {
     await p2.click('button[type="submit"]');
     await p2.waitForURL((u) => !u.pathname.includes('/dang-nhap'), { timeout: 10_000 });
     await p2.goto(`${GOC}/quan-tri`, { waitUntil: 'networkidle' });
-    const sang = await doSangThanhBen(p2);
+    const sang = await doSangVo(p2);
     await ctx2.close();
 
-    kiem('thanh bên quản trị sẫm ở nền sáng', sang != null && sang < 60, `độ sáng ${sang}`);
-    kiem('thanh bên quản trị sẫm ở nền tối', toi != null && toi < 60, `độ sáng ${toi}`);
-    kiem('thanh bên quản trị giữ NGUYÊN màu ở cả hai nền',
+    kiem('vỏ khu quản trị sẫm ở nền sáng', sang != null && sang < 60, `độ sáng ${sang}`);
+    kiem('vỏ khu quản trị sẫm ở nền tối', toi != null && toi < 60, `độ sáng ${toi}`);
+    kiem('vỏ khu quản trị giữ NGUYÊN màu ở cả hai nền',
       toi != null && sang != null && Math.abs(toi - sang) < 6, `sáng ${sang} ↔ tối ${toi}`);
   } finally {
     await ctx.close();

@@ -60,15 +60,29 @@ export default async function ThanhVien({ searchParams }: {
         <p className="phu mt-1">{gonSo(tong)} tài khoản</p>
       </div>
 
-      <div className="the overflow-hidden">
+      {/*
+        BẢNG THẬT trên máy bàn, DANH SÁCH THẺ trên điện thoại — đúng lối trang
+        Game bên cạnh.
+
+        Bản cũ chỉ có một cái bảng, giấu bớt bốn cột dưới `sm` rồi thôi. Ba cột
+        còn lại vẫn không vừa khổ 390px, mà thẻ bọc lại mang `overflow-hidden`:
+        cột "Việc" bị CẮT CỤT ngay giữa chữ, và vì cắt chứ không phải cuộn nên
+        không có cách nào với tới. Nghĩa là trên điện thoại, người trực không
+        phong hay gỡ vai trò cho ai được — mà mấy cái nút ấy chính là lý do
+        trang này thôi chỉ-đọc.
+
+        Nén bảng cho vừa thì không cứu được: hàng nút nào cũng cần chỗ. Nên khổ
+        nhỏ đổi hẳn sang thẻ, mỗi người một khối, nút xuống hàng riêng.
+      */}
+      <div className="the hidden overflow-hidden lg:block">
         <table className="w-full text-[13px]">
           <thead>
             <tr className="vach-duoi bg-nen3/60 text-left text-[12px] font-semibold text-mo">
               <th scope="col" className="px-3 py-2.5">Thành viên</th>
-              <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Đã tải</th>
-              <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Đánh giá</th>
-              <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Chủ đề</th>
-              <th scope="col" className="hidden px-3 py-2.5 text-right sm:table-cell">Ghé lần cuối</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Đã tải</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Đánh giá</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Chủ đề</th>
+              <th scope="col" className="px-3 py-2.5 text-right">Ghé lần cuối</th>
               <th scope="col" className="px-3 py-2.5 text-right">Tham gia</th>
               <th scope="col" className="px-3 py-2.5 text-right">Việc</th>
             </tr>
@@ -104,13 +118,13 @@ export default async function ThanhVien({ searchParams }: {
                     </span>
                   </span>
                 </td>
-                <td className="hidden px-3 py-2.5 text-right tabular-nums sm:table-cell">{n._count.luotTai}</td>
-                <td className="hidden px-3 py-2.5 text-right tabular-nums sm:table-cell">{n._count.danhGia}</td>
-                <td className="hidden px-3 py-2.5 text-right tabular-nums sm:table-cell">{n._count.chuDe}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{n._count.luotTai}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{n._count.danhGia}</td>
+                <td className="px-3 py-2.5 text-right tabular-nums">{n._count.chuDe}</td>
                 {/* "Ghé lần cuối" đứng TRƯỚC "Tham gia": lúc cân nhắc có khoá
                     một tài khoản hay không, thứ cần biết là họ còn hoạt động
                     không, chứ không phải họ mở tài khoản từ bao giờ. */}
-                <td className="hidden px-3 py-2.5 text-right text-mo sm:table-cell">
+                <td className="px-3 py-2.5 text-right text-mo">
                   {n.ghePhutCuoi ? cachDay(n.ghePhutCuoi) : '—'}
                 </td>
                 <td className="px-3 py-2.5 text-right text-mo">{cachDay(n.taoLuc)}</td>
@@ -123,6 +137,56 @@ export default async function ThanhVien({ searchParams }: {
           </tbody>
         </table>
       </div>
+
+      <ul className="the divide-y divide-vien lg:hidden">
+        {nguoi.map((n) => (
+          <li key={n.id} className="space-y-2.5 p-4">
+            <div className="flex items-center gap-2.5">
+              {n.anh ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={n.anh} alt="" className="size-9 shrink-0 rounded-full object-cover" />
+              ) : (
+                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-nen3 text-[13px] font-bold">
+                  {n.tenHienThi.slice(0, 1).toUpperCase()}
+                </span>
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate text-[14px] font-semibold">{n.tenHienThi}</span>
+                  {n.vaiTro === 'QUAN_TRI' && (
+                    <span className="shrink-0 text-nhan">
+                      <Shield size={13} aria-label="Quản trị viên" />
+                    </span>
+                  )}
+                  {n.khoa && (
+                    <span className="shrink-0 rounded-full bg-xau/10 px-1.5 py-0.5 text-[10px] font-bold text-xau">
+                      đã khoá
+                    </span>
+                  )}
+                </span>
+                <span className="phu block truncate">@{n.tenDangNhap}</span>
+              </span>
+            </div>
+
+            {/* Mấy con số gộp một dòng: ở khổ này chúng là thông tin phụ, còn
+                thứ người trực mở trang ra để làm là hàng nút ngay dưới. */}
+            <p className="phu">
+              {n._count.luotTai} lượt tải · {n._count.danhGia} đánh giá · {n._count.chuDe} chủ đề
+            </p>
+            <p className="phu">
+              Ghé {n.ghePhutCuoi ? cachDay(n.ghePhutCuoi) : '—'} · tham gia {cachDay(n.taoLuc)}
+            </p>
+
+            {/* Hàng nút XUỐNG DÒNG ĐƯỢC — đây đúng là chỗ bản bảng cắt cụt
+                mất. Lối xếp mặc định của `NutThanhVien` là dồn về phải cho ô
+                cuối của bảng, mà dồn về phải lúc chật thì nút đầu trôi hẳn ra
+                ngoài mép trái. */}
+            <NutThanhVien id={n.id} ten={n.tenHienThi} vaiTro={n.vaiTro}
+              dangKhoa={n.khoa} laToi={n.id === toi?.id}
+              className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-0.5" />
+          </li>
+        ))}
+      </ul>
 
       <PhanTrang trang={trang} tongTrang={tongTrang}
         dungDuong={(t) => (t > 1 ? `/quan-tri/thanh-vien?trang=${t}` : '/quan-tri/thanh-vien')} />

@@ -16,19 +16,28 @@ import { doiVaiTro, khoaThanhVien } from '@/app/(quan-tri)/quan-tri/viec';
  * bị từ chối — luật thật nằm trong `khoaThanhVien` và `doiVaiTro`, vì một hàm
  * `'use server'` thì ai cũng gọi được, không cần nhìn thấy nút.
  */
-export function NutThanhVien({ id, ten, vaiTro, dangKhoa, laToi }: {
+export function NutThanhVien({ id, ten, vaiTro, dangKhoa, laToi, className }: {
   id: string;
   ten: string;
   vaiTro: string;
   dangKhoa: boolean;
   laToi: boolean;
+  /**
+   * Cách xếp hàng nút, do NƠI GỌI quyết định.
+   *
+   * Mặc định là `justify-end` cho ô cuối của bảng máy bàn. Nhưng `flex` không
+   * xuống dòng mà lại dồn về phải thì khi chật, hàng nút tràn sang TRÁI và nút
+   * đầu tiên trôi ra ngoài mép — không cắt được, không cuộn tới được. Ở khổ
+   * điện thoại, danh sách thẻ truyền vào `flex-wrap` để nút xuống hàng.
+   */
+  className?: string;
 }) {
   const laQuanTri = vaiTro === 'QUAN_TRI';
   const laTacGia = vaiTro === 'TAC_GIA';
   if (laToi) return <span className="phu">chính bạn</span>;
 
   return (
-    <span className="flex items-center justify-end gap-1">
+    <span className={className ?? 'flex items-center justify-end gap-1'}>
       {/* Phát mã được cho MỌI vai trò, kể cả quản trị khác: người quên mật
           khẩu thì vai trò nào cũng quên được, mà ở đây không có lối nào khác
           để cứu. Chặn thật nằm ở máy chủ và chỉ chặn đúng một chuyện — tài

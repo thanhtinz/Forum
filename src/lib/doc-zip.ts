@@ -92,9 +92,12 @@ export function docZip(du: Uint8Array, luat: LuatZip): MucZip[] {
     // Thư mục: zip đánh dấu bằng dấu gạch chéo cuối tên.
     if (ten.endsWith('/') || coThat === 0) continue;
 
+    /*
+     * Con số `coThat` ở đây là CỠ DO CHÍNH TỆP KHAI, nên nó chỉ dùng để chối
+     * sớm cho rẻ — chối được mục nào thì đỡ phải bung mục ấy. Trần thật nằm ở
+     * dưới, đo trên số byte ĐÃ BUNG RA.
+     */
     if (coThat > luat.moiMucToiDa) throw new Error('muc-qua-nang');
-    tong += coThat;
-    if (tong > luat.tongToiDa) throw new Error('tong-qua-nang');
 
     /*
      * Phần đầu CỤC BỘ đứng ngay trước ruột, và hai ô độ dài của nó KHÔNG
@@ -109,17 +112,59 @@ export function docZip(du: Uint8Array, luat: LuatZip): MucZip[] {
 
     const than = du.subarray(dau, dau + coNen);
 
+    /*
+     * Trần cho lượt bung này là phần CÒN LẠI của tổng, chứ không phải nguyên
+     * `moiMucToiDa`.
+     *
+     * Bản cũ cộng `tong += coThat` bằng con số tệp tự khai, rồi mới so với
+     * `tongToiDa`. Một gói ác ý khai mỗi mục nặng 1 byte thì tổng ấy không bao
+     * giờ chạm trần, mà mỗi mục vẫn bung ra tới `moiMucToiDa` — nhân với số
+     * mục cho phép là vượt xa cái trần tổng mà luật tưởng mình đang giữ.
+     * Trừ dần từ phần còn lại thì dù tệp khai gì, tổng byte bung ra vẫn không
+     * quá `tongToiDa`.
+     */
+    const conLai = luat.tongToiDa - tong;
+    if (conLai <= 0) throw new Error('tong-qua-nang');
+    const tranLuot = Math.min(luat.moiMucToiDa, conLai);
+
     let ruot: Uint8Array;
     if (cach === 0) {
+      /*
+       * Mục ĐỂ TRẦN cũng phải qua trần, không được đi cửa sau.
+       *
+       * Bản cũ gán thẳng `ruot = than`, nên mục không nén hoàn toàn thoát cả
+       * hai cái trần: `coThat` thì tệp tự khai nên khai nhỏ là qua, còn `than`
+       * lấy theo `coNen` nên nó to bao nhiêu cũng được.
+       */
+      if (than.length > tranLuot) throw new Error('muc-qua-nang');
       ruot = than;
     } else if (cach === 8) {
-      // `maxOutputLength` là cái chặn bom nén THẬT SỰ: con số `coThat` ở trên
-      // do chính tệp khai, nên nó nói dối được; chỗ này thì không.
-      ruot = new Uint8Array(inflateRawSync(than, { maxOutputLength: luat.moiMucToiDa }));
+      /*
+       * `maxOutputLength` là cái chặn bom nén THẬT SỰ: con số `coThat` ở trên
+       * do chính tệp khai, nên nó nói dối được; chỗ này thì không.
+       *
+       * Chạm trần thì `zlib` ném một câu tiếng Anh nói về cỡ Buffer — đổi lại
+       * thành mã của nhà, để nơi gọi nói đúng "ảnh bên trong nặng quá mức cho
+       * phép" thay vì "không mở được tệp zip này". Hai câu ấy đẩy người quản
+       * trị đi hai hướng khác hẳn nhau.
+       */
+      try {
+        ruot = new Uint8Array(inflateRawSync(than, { maxOutputLength: tranLuot }));
+      } catch (e) {
+        // Chỉ ĐÚNG lỗi chạm trần mới đổi mã. Luồng nén hỏng thật cũng ném ở
+        // đây, mà gọi nó là "nặng quá" thì người quản trị đi nén lại gói cho
+        // nhẹ bớt — một việc không sửa được cái gì.
+        const ma = (e as { code?: string })?.code;
+        throw new Error(ma === 'ERR_BUFFER_TOO_LARGE' ? 'muc-qua-nang' : 'hong');
+      }
     } else {
       // Mấy cách nén khác (và mục có mã hoá) thì bỏ qua, không làm hỏng cả gói.
       continue;
     }
+
+    // Cộng bằng số byte THẬT, sau khi đã bung — đây mới là thứ chiếm bộ nhớ.
+    tong += ruot.length;
+    if (tong > luat.tongToiDa) throw new Error('tong-qua-nang');
 
     ra.push({ ten, ruot });
   }

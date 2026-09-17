@@ -24,7 +24,7 @@ export default async function TongQuanTacGia() {
   const nguoi = await nguoiHienTai();
   if (!nguoi) redirect('/dang-nhap');
 
-  const [gom, game, bịTraLai, soChuaDap, chuaDap] = await Promise.all([
+  const [gom, game, soBịTraLai, bịTraLai, soChuaDap, chuaDap] = await Promise.all([
     db.game.aggregate({
       where: { tacGiaId: nguoi.id },
       _count: { _all: true },
@@ -39,9 +39,14 @@ export default async function TongQuanTacGia() {
         tongSao: true, soLuotDanhGia: true, suaLuc: true,
       },
     }),
+    // Cùng cái bẫy mà `soChuaDap` ngay dưới đã tránh: danh sách chỉ lấy năm
+    // cái, nên đếm nó thì tám game bị trả lại cũng hiện ra "5".
+    db.game.count({ where: { tacGiaId: nguoi.id, trangThai: 'TU_CHOI' } }),
     db.game.findMany({
       where: { tacGiaId: nguoi.id, trangThai: 'TU_CHOI' },
-      orderBy: { suaLuc: 'desc' },
+      // Khoá phụ `id`: hai game cùng một mốc `suaLuc` mà thiếu nó thì mỗi lần
+      // tải trang lại đổi chỗ nhau.
+      orderBy: [{ suaLuc: 'desc' }, { id: 'desc' }],
       take: 5,
       select: { id: true, ten: true, lyDoTuChoi: true },
     }),
@@ -76,7 +81,7 @@ export default async function TongQuanTacGia() {
         <section className="the border-canh/30 bg-cam/5 p-4">
           <p className="flex items-center gap-2 text-[15px] font-bold text-canh">
             <TriangleAlert size={17} aria-hidden />
-            {bịTraLai.length} game bị trả lại
+            {soBịTraLai} game bị trả lại
           </p>
           <ul className="mt-3 space-y-2.5">
             {bịTraLai.map((g) => (

@@ -15,25 +15,47 @@ export const metadata: Metadata = { title: 'Chờ duyệt' };
  * mà cứ bị đẩy xuống cuối mỗi lần có người khác gửi thì họ chờ mãi không tới
  * lượt. Khoá phụ `id` vì hai lượt gửi cùng một giây là chuyện có thật.
  */
+/**
+ * Lấy nhiều nhất chừng này một lượt.
+ *
+ * Hàng chờ vơi từ ĐẦU — duyệt xong là game rời hàng — nên người trực không bao
+ * giờ cần đi tới cuối; cái họ cần là mấy cái đợi lâu nhất, và chúng luôn nằm
+ * trên đầu.
+ */
+const MOT_LUOT = 50;
+
 export default async function ChoDuyet() {
-  const game = await db.game.findMany({
+  const [tong, game] = await Promise.all([
+    /*
+     * ĐẾM RIÊNG, không lấy `game.length` làm tổng.
+     *
+     * Bản cũ in thẳng `game.length` sau một câu `take: 50`, nên sáu mươi game
+     * đang đợi thì dòng chữ nói "50 game đang đợi xem xét" — một con số sai,
+     * ở đúng chỗ người trực nhìn để biết còn bao nhiêu việc.
+     */
+    db.game.count({ where: { trangThai: 'CHO_DUYET' } }),
+    db.game.findMany({
     where: { trangThai: 'CHO_DUYET' },
     orderBy: [{ guiDuyetLuc: 'asc' }, { id: 'asc' }],
-    take: 50,
+    take: MOT_LUOT,
     select: {
       id: true, ten: true, icon: true, duongDan: true, gioiThieu: true, guiDuyetLuc: true,
       tacGia: { select: { tenHienThi: true, tenDangNhap: true } },
       theLoai: { select: { theLoai: { select: { ten: true } } } },
       _count: { select: { banTai: true, anhChup: true } },
     },
-  });
+    }),
+  ]);
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="tieu-de-trang">Chờ duyệt</h1>
         <p className="phu mt-1">
-          {game.length > 0 ? `${game.length} game đang đợi xem xét` : 'Không có game nào đang đợi'}
+          {tong === 0 ? 'Không có game nào đang đợi' : `${tong} game đang đợi xem xét`}
+          {/* Nói thẳng ra là đang cắt, chứ không im lặng bày 50 cái rồi thôi:
+              người trực phải biết duyệt hết trang này vẫn còn việc. */}
+          {tong > game.length && ` · bày ${game.length} cái đợi lâu nhất`}
         </p>
       </div>
 

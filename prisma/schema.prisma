@@ -812,6 +812,10 @@ model ChuDe {
   @@index([gameId, ghim, traLoiCuoiLuc])
   @@index([gameId, nhan])
   @@index([gameId, chuyenMucId])
+  /// Cho lượt tra NHỊP NGHỈ: "chủ đề gần nhất của người này mở lúc nào".
+  /// Không có chỉ mục thì phép chống rải bài lại thành một lượt quét cả bảng —
+  /// tức là cái cửa chặn tự nó thành chỗ để đạp vào.
+  @@index([nguoiId, taoLuc])
 }
 
 /*
@@ -966,6 +970,8 @@ model TraLoi {
 
   @@index([chuDeId, taoLuc])
   @@index([traLoiChoId])
+  /// Cùng lẽ với `ChuDe`: lượt tra nhịp nghỉ của lời đáp.
+  @@index([nguoiId, taoLuc])
 }
 
 // ════════════════════════════════════════════════════════════════════

@@ -9,14 +9,16 @@ import { bocTenNhac } from '@/lib/nhac-ten-const';
 import { NHAN_MAC_DINH, laNhan } from '@/lib/nhan-chu-de-const';
 import { CAU_HOI_TOI_DA, IT_NHAT, LUA_CHON_TOI_DA, NHIEU_NHAT } from '@/lib/binh-chon-const';
 import { soTrang } from '@/lib/tien-ich';
+import {
+  NGHI_CHU_DE_GIAY, NGHI_TRA_LOI_GIAY, NOI_DUNG_TOI_DA, TIEU_DE_TOI_DA,
+} from '@/lib/dien-dan-const';
 import { dungChuoiTimChuDe } from '@/lib/tim-kiem-const';
 import { khopLaiChuDe } from '@/lib/khop-chu-de';
 import { MOI_TRANG_TRA_LOI } from './moi-trang';
 
 export interface KetQua { loi?: string }
 
-const TIEU_DE_TOI_DA = 150;
-const NOI_DUNG_TOI_DA = 8000;
+
 
 /** Mở một chủ đề mới trong khu diễn đàn của một game. */
 export async function dangChuDe(_truoc: KetQua, form: FormData): Promise<KetQua> {
@@ -39,6 +41,27 @@ export async function dangChuDe(_truoc: KetQua, form: FormData): Promise<KetQua>
     where: { duongDan, trangThai: 'DANG_HIEN' }, select: { id: true },
   });
   if (!game) return { loi: 'Không tìm thấy game này.' };
+
+  /*
+   * NHỊP NGHỈ, và nó nằm ở MÁY CHỦ chứ không phải một cái nút bị làm mờ.
+   *
+   * Đặt sau mấy phép kiểm chữ có chủ ý: bài quá ngắn thì chối vì quá ngắn, chứ
+   * đừng chối vì "chậm thôi" — người viết sẽ đợi ba mươi giây rồi gặp lại đúng
+   * câu chối cũ.
+   *
+   * Tra hàng cuối của chính người này, đếm theo NGƯỜI chứ không theo cặp
+   * (game, người) — lý do đầy đủ nằm ở `dien-dan-const.ts`.
+   */
+  const baiCuoi = await db.chuDe.findFirst({
+    where: { nguoiId: nguoi.id },
+    orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
+    select: { taoLuc: true },
+  });
+  if (baiCuoi && Date.now() - baiCuoi.taoLuc.getTime() < NGHI_CHU_DE_GIAY * 1000) {
+    // Nói thẳng ra là phải đợi, và đợi bao lâu: im lặng thì người ta bấm gửi
+    // thêm năm lần nữa, đúng thứ nhịp nghỉ sinh ra để tránh.
+    return { loi: `Chậm thôi — mỗi chủ đề cách nhau ${NGHI_CHU_DE_GIAY} giây.` };
+  }
 
   /*
    * Nhãn phải CÓ TRONG BẢNG, không nhận bừa thứ biểu mẫu gửi lên.
@@ -103,6 +126,16 @@ export async function traLoi(_truoc: KetQua, form: FormData): Promise<KetQua> {
     select: { id: true, tieuDe: true, nguoiId: true },
   });
   if (!chuDe) return { loi: 'Chủ đề này đã khoá hoặc không còn.' };
+
+  // Cùng cửa như `dangChuDe`, nhịp ngắn hơn — xem `dien-dan-const.ts`.
+  const dapCuoi = await db.traLoi.findFirst({
+    where: { nguoiId: nguoi.id },
+    orderBy: [{ taoLuc: 'desc' }, { id: 'desc' }],
+    select: { taoLuc: true },
+  });
+  if (dapCuoi && Date.now() - dapCuoi.taoLuc.getTime() < NGHI_TRA_LOI_GIAY * 1000) {
+    return { loi: `Chậm thôi — mỗi lời đáp cách nhau ${NGHI_TRA_LOI_GIAY} giây.` };
+  }
 
   /*
    * BÀI ĐƯỢC ĐÁP PHẢI NẰM TRONG CHÍNH CHỦ ĐỀ NÀY.

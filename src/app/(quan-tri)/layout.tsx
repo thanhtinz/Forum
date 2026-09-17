@@ -1,12 +1,10 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { ExternalLink } from 'lucide-react';
 import '../globals.css';
 import { nguoiHienTai } from '@/lib/xac-thuc';
 import { demViecTonDong } from '@/lib/quan-tri-dem';
-import { ThanhBenQuanTri } from '@/components/quan-tri/ThanhBenQuanTri';
-import { MenuQuanTri } from '@/components/quan-tri/MenuQuanTri';
+import { NganKeoQuanTri } from '@/components/quan-tri/NganKeoQuanTri';
 import { docNen } from '@/lib/dat-nen';
 
 export const dynamic = 'force-dynamic';
@@ -48,47 +46,40 @@ export default async function GocQuanTri({ children }: { children: React.ReactNo
         <a href="#noi-dung" className="nhay-toi-noi-dung">Tới nội dung chính</a>
 
         {/*
-          THANH BÊN ĐỨNG YÊN, nền sẫm — chỉ từ `lg` trở lên.
+          MỘT THANH ĐẦU TRANG, MỘT NÚT BA GẠCH — giống nhau ở mọi khổ.
 
-          Cố ý trông khác hẳn mặt tiền: người vừa sửa xong một game rồi mở tab
-          mới phải biết ngay mình đang đứng ở đâu, mà cách nhanh nhất để biết
-          là cả trang đổi màu — nhanh hơn đọc một dòng chữ.
+          Bản trước có hai bộ điều hướng: cột đứng cố định từ `lg` trở lên, và
+          dải chip cuộn ngang ở khổ nhỏ. Nuôi hai lối trình bày cho cùng một
+          danh sách thì chúng trôi khỏi nhau, và đã trôi thật — dải ngang bỏ mất
+          tiêu đề nhóm, nên mười ba mục thành một dãy phẳng mà phần lớn khuất
+          ngoài mép phải.
+
+          Nền sẫm thì giữ, và đó vẫn là chủ ý: người vừa sửa xong một game rồi
+          mở tab mới phải biết ngay mình đang đứng ở đâu, mà cách nhanh nhất để
+          biết là cả trang đổi màu — nhanh hơn đọc một dòng chữ.
+
+          `sticky` chứ không `fixed`: thanh này mỏng, mà khu quản trị toàn bảng
+          dài — giữ nó luôn trong tầm mắt thì cuộn tới cuối bảng vẫn mở được
+          menu, mà không phải chừa chỗ trống trên đầu mọi trang.
         */}
-        <aside className="fixed inset-y-0 left-0 z-40 hidden w-[228px] flex-col bg-vo-qt px-3 py-4 lg:flex">
-          <Link href="/quan-tri" className="px-3 pb-5 text-[15px] font-bold tracking-tight text-vo-qt-chu">
-            SunnyStore <span className="font-normal text-vo-qt-chu/55">Quản trị</span>
-          </Link>
+        <header className="sticky top-0 z-40 bg-vo-qt">
+          <div className="mx-auto flex max-w-[1080px] items-center gap-3 px-4 py-2.5 sm:px-6">
+            <NganKeoQuanTri dem={dem} ten={nguoi.tenHienThi} />
 
-          <div className="flex-1 overflow-y-auto">
-            <ThanhBenQuanTri dem={dem} />
-          </div>
+            <Link href="/quan-tri" className="min-w-0 truncate text-[14px] font-bold tracking-tight text-vo-qt-chu">
+              SunnyStore <span className="font-normal text-vo-qt-chu/55">Quản trị</span>
+            </Link>
 
-          <div className="space-y-1 border-t border-vo-qt-chu/10 px-3 pt-3 text-[12px]">
-            <p className="truncate font-semibold text-vo-qt-chu/80">{nguoi.tenHienThi}</p>
             {/* Mở tab mới: đang sửa dở một game mà bấm nhầm rồi mất hết chữ
                 đang gõ là chuyện không nên xảy ra. */}
             <a href="/" target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-1.5 text-vo-qt-chu/55 hover:text-vo-qt-chu">
-              Xem cửa hàng <ExternalLink size={12} aria-hidden />
-            </a>
-          </div>
-        </aside>
-
-        {/* Khổ nhỏ không có chỗ cho cột đứng, nên rơi về một thanh ngang. */}
-        <header className="sticky top-0 z-40 bg-vo-qt lg:hidden">
-          <div className="flex items-center gap-3 px-4 py-3">
-            <Link href="/quan-tri" className="text-[14px] font-bold tracking-tight text-vo-qt-chu">
-              SunnyStore <span className="font-normal text-vo-qt-chu/55">Quản trị</span>
-            </Link>
-            <a href="/" target="_blank" rel="noreferrer"
-              className="ml-auto text-[12px] font-semibold text-vo-qt-chu/55">
+              className="ml-auto shrink-0 text-[12px] font-semibold text-vo-qt-chu/55 hover:text-vo-qt-chu">
               Xem cửa hàng
             </a>
           </div>
-          <MenuQuanTri dem={dem} />
         </header>
 
-        <div className="lg:pl-[228px]">
+        <div>
           <main id="noi-dung" className="mx-auto max-w-[1080px] px-4 py-6 sm:px-6 lg:py-8">
             {children}
           </main>

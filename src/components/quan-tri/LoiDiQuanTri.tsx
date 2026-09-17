@@ -15,17 +15,22 @@ const BANG: Record<string, LucideIcon> = {
 };
 
 /**
- * Thanh bên của khu quản trị.
+ * Danh sách lối đi của khu quản trị — ruột của ngăn kéo.
  *
- * Ba mục nhét trên thanh đầu trang thì còn được; năm mục chia hai nhóm thì
- * không — thanh ngang không có chỗ cho tiêu đề nhóm, mà bỏ tiêu đề nhóm đi
- * thì năm mục thành một dãy phẳng không nói được cái nào thuộc về cái nào.
+ * Trước đây đây là THANH BÊN, một cột đứng cố định ở mép trái từ `lg` trở lên,
+ * và tên cũ `ThanhBenQuanTri` nói đúng chuyện đó. Nay cả khu chỉ còn một nút
+ * ba gạch, nên cái tên ấy chỉ vào một thứ không còn tồn tại — mà một cái tên
+ * sai thì tệ hơn một cái tên mờ: nó bảo người đọc đi tìm nhầm chỗ.
+ *
+ * Mười ba mục chia ba nhóm, và TIÊU ĐỀ NHÓM là thứ phải giữ. Bản dải ngang cũ
+ * bỏ chúng đi vì hàng ngang không có chỗ, rồi mười ba mục thành một dãy phẳng
+ * không nói được cái nào thuộc về cái nào.
  *
  * HUY HIỆU chỉ gắn ở mục có việc tồn đọng, và ẩn hẳn khi số bằng không: một
  * vòng tròn ghi "0" vẫn ăn chỗ và vẫn kéo mắt về phía nó, để rồi báo rằng
  * không có gì phải xem.
  */
-export function ThanhBenQuanTri({ dem }: { dem: Record<MaDem, number> }) {
+export function LoiDiQuanTri({ dem }: { dem: Record<MaDem, number> }) {
   const duongDan = usePathname();
 
   return (

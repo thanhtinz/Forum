@@ -80,24 +80,36 @@ export function KhungChuyenMuc({ muc }: { muc: MucQuanTri[] }) {
         </ul>
       )}
 
-      <form action={gui} className="the space-y-3 p-4">
+            {/*
+        Ô chữ TỰ GIỮ, và biểu mẫu mang `key` theo độ dài danh sách.
+
+        Trùng tên và trùng đường dẫn — mấy luật ấy chỉ máy chủ biết, mà React 19 xoá trắng biểu mẫu
+        sau mỗi lượt `action`, kể cả lượt trả về lỗi. Ô trần thì người nhập mất
+        sạch chữ vừa gõ, chỉ để đọc câu báo lỗi. Đổi lại, ô tự giữ thì thêm
+        XONG chữ cũng ở lại, nên `key` đổi theo danh sách: thêm được một cái là
+        React dựng lại biểu mẫu trắng.
+
+        Mấy ô ở biểu mẫu SỬA bên dưới vốn đã là ô tự giữ từ lâu; đúng biểu mẫu
+        THÊM MỚI này bị bỏ sót.
+      */}
+<form key={muc.length} action={gui} className="the space-y-3 p-4">
         <p className="text-[14px] font-bold">Thêm chuyên mục</p>
 
         <div className="flex flex-wrap gap-3">
           <label className="min-w-[180px] flex-1">
             <span className="phu mb-1 block">Tên</span>
-            <input name="ten" required maxLength={TEN_TOI_DA} placeholder="Hỏi đáp qua màn"
+            <ONhapGiu name="ten" required maxLength={TEN_TOI_DA} placeholder="Hỏi đáp qua màn"
               className="o-nhap" />
           </label>
           <label className="min-w-[180px] flex-1">
             <span className="phu mb-1 block">Đường dẫn (bỏ trống thì tự suy ra)</span>
-            <input name="duongDan" placeholder="hoi-dap-qua-man" className="o-nhap" />
+            <ONhapGiu name="duongDan" placeholder="hoi-dap-qua-man" className="o-nhap" />
           </label>
         </div>
 
         <label className="block">
           <span className="phu mb-1 block">Một dòng nói mục này để bàn chuyện gì</span>
-          <input name="moTa" maxLength={MO_TA_TOI_DA}
+          <ONhapGiu name="moTa" maxLength={MO_TA_TOI_DA}
             placeholder="Kẹt màn nào thì hỏi ở đây" className="o-nhap" />
         </label>
 

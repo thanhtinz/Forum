@@ -56,7 +56,19 @@ export function KhungBanTai({ gameId, ban }: { gameId: string; ban: BanQuanTri[]
         </ul>
       )}
 
-      <form action={gui} className="the space-y-3 p-4">
+            {/*
+        Ô chữ TỰ GIỮ, và biểu mẫu mang `key` theo độ dài danh sách.
+
+        Trùng số hiệu bản, địa chỉ tệp không hợp lệ, loại tệp lạ — mấy luật ấy chỉ máy chủ biết, mà React 19 xoá trắng biểu mẫu
+        sau mỗi lượt `action`, kể cả lượt trả về lỗi. Ô trần thì người nhập mất
+        sạch chữ vừa gõ, chỉ để đọc câu báo lỗi. Đổi lại, ô tự giữ thì thêm
+        XONG chữ cũng ở lại, nên `key` đổi theo danh sách: thêm được một cái là
+        React dựng lại biểu mẫu trắng.
+
+        Mấy ô ở biểu mẫu SỬA bên dưới vốn đã là ô tự giữ từ lâu; đúng biểu mẫu
+        THÊM MỚI này bị bỏ sót.
+      */}
+<form key={ban.length} action={gui} className="the space-y-3 p-4">
         <p className="text-[14px] font-bold">Thêm bản tải</p>
         <input type="hidden" name="gameId" value={gameId} />
 
@@ -70,7 +82,7 @@ export function KhungBanTai({ gameId, ban }: { gameId: string; ban: BanQuanTri[]
           </label>
           <label className="block">
             <span className="phu mb-1 block">Số hiệu</span>
-            <input name="soHieu" required placeholder="1.0" className="o-nhap" />
+            <ONhapGiu name="soHieu" required placeholder="1.0" className="o-nhap" />
           </label>
           <label className="block">
             <span className="phu mb-1 block">Loại tệp</span>
@@ -80,14 +92,14 @@ export function KhungBanTai({ gameId, ban }: { gameId: string; ban: BanQuanTri[]
           </label>
           <label className="block">
             <span className="phu mb-1 block">Địa chỉ tệp</span>
-            <input name="duongDanTep" placeholder={`/tep-mau/vi-du.${loaiHopLe[0].toLowerCase()}`}
+            <ONhapGiu name="duongDanTep" placeholder={`/tep-mau/vi-du.${loaiHopLe[0].toLowerCase()}`}
               className="o-nhap" />
           </label>
         </div>
 
         <label className="block">
           <span className="phu mb-1 block">Đường dẫn cửa hàng chính chủ (không bắt buộc)</span>
-          <input name="duongDanCuaHang" placeholder="https://apps.apple.com/… hoặc play.google.com/…"
+          <ONhapGiu name="duongDanCuaHang" placeholder="https://apps.apple.com/… hoặc play.google.com/…"
             className="o-nhap" />
           <span className="phu mt-1 block">
             Hiện thành một nút phụ đứng sau nút tải, cho ai muốn lấy bản chính chủ.

@@ -4,6 +4,7 @@ import { useActionState, useTransition } from 'react';
 import { Eye, EyeOff, Trash2 } from 'lucide-react';
 import { hienSuKien, themSuKien, xoaSuKien, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
 import { ONapAnh } from '@/components/quan-tri/ONapAnh';
+import { OChuGiu, ONhapGiu } from '@/components/ONhapGiu';
 import { useXacNhan } from '@/components/HopXacNhan';
 import {
   LOAI_SU_KIEN, MO_TA_SU_KIEN, SU_KIEN_MO_TA_TOI_DA, SU_KIEN_TIEU_DE_TOI_DA,
@@ -82,7 +83,22 @@ export function KhungSuKien({ gameId, suKien }: { gameId: string; suKien: SuKien
         </p>
       )}
 
-      <form action={gui} className="the space-y-3 p-4">
+      {/*
+        Mọi ô chữ ở đây đều là ô TỰ GIỮ (`ONhapGiu`/`OChuGiu`), không phải ô
+        trần.
+
+        Biểu mẫu này có một luật mà trình duyệt KHÔNG tự kiểm được: ngày kết
+        thúc phải sau ngày bắt đầu. Đặt ngược thì máy chủ chối — mà React 19
+        xoá trắng biểu mẫu sau mỗi lượt `action` chạy xong, kể cả lượt trả về
+        lỗi. Với ô trần thì người nhập mất sạch tiêu đề, dòng mô tả và cả phần
+        nội dung dài vừa gõ, chỉ để đọc một câu bảo họ đảo lại hai cái ngày.
+
+        Đổi lại, ô tự giữ thì thêm XONG chữ cũ cũng ở lại — nên cả biểu mẫu
+        mang `key` theo số sự kiện: thêm được một cái là danh sách dài ra, khoá
+        đổi, React dựng lại biểu mẫu trắng. Cùng mẹo mà `ONapAnh` ngay dưới vốn
+        đã dùng, nay áp cho cả khối thay vì mỗi cái ô ảnh.
+      */}
+      <form key={suKien.length} action={gui} className="the space-y-3 p-4">
         <p className="text-[14px] font-bold">Thêm sự kiện</p>
         <input type="hidden" name="gameId" value={gameId} />
 
@@ -97,33 +113,33 @@ export function KhungSuKien({ gameId, suKien }: { gameId: string; suKien: SuKien
           </label>
           <label className="block">
             <span className="phu mb-1 block">Tiêu đề</span>
-            <input name="tieuDe" required maxLength={SU_KIEN_TIEU_DE_TOI_DA}
+            <ONhapGiu name="tieuDe" required maxLength={SU_KIEN_TIEU_DE_TOI_DA}
               placeholder="Bản Việt hoá 2.0" className="o-nhap" />
           </label>
           <label className="block">
             <span className="phu mb-1 block">Bắt đầu</span>
-            <input name="batDau" type="datetime-local" required className="o-nhap" />
+            <ONhapGiu name="batDau" type="datetime-local" required className="o-nhap" />
           </label>
           <label className="block">
             <span className="phu mb-1 block">Kết thúc</span>
-            <input name="ketThuc" type="datetime-local" required className="o-nhap" />
+            <ONhapGiu name="ketThuc" type="datetime-local" required className="o-nhap" />
           </label>
         </div>
 
         <label className="block">
           <span className="phu mb-1 block">Một dòng trên thẻ</span>
-          <input name="moTaNgan" required maxLength={SU_KIEN_MO_TA_TOI_DA}
+          <ONhapGiu name="moTaNgan" required maxLength={SU_KIEN_MO_TA_TOI_DA}
             placeholder="Toàn bộ lời thoại đã dịch" className="o-nhap" />
         </label>
 
-        <ONapAnh key={suKien.length} ten="anh" nhan="Ảnh thẻ (không bắt buộc)"
+        <ONapAnh ten="anh" nhan="Ảnh thẻ (không bắt buộc)"
           banDau="" cho="su-kien"
           goYy="Ảnh nằm ngang, rộng ít nhất 960 điểm ảnh — thẻ cắt theo tỉ lệ 16:9.
             Bỏ trống thì thẻ dùng dải màu theo loại sự kiện." />
 
         <label className="block">
           <span className="phu mb-1 block">Nội dung đầy đủ (không bắt buộc)</span>
-          <textarea name="noiDung" rows={4} className="o-nhap"
+          <OChuGiu name="noiDung" rows={4} className="o-nhap"
             placeholder="Thể lệ, mốc thời gian, phần thưởng… Viết được Markdown." />
         </label>
 

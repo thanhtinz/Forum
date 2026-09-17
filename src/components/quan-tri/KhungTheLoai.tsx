@@ -66,14 +66,23 @@ export function KhungTheLoai({ theLoai }: { theLoai: TheLoaiQuanTri[] }) {
         ))}
       </ul>
 
-      <form action={gui} className="the flex flex-wrap items-end gap-3 p-4">
+      {/*
+        Ô chữ TỰ GIỮ, và biểu mẫu mang `key` theo độ dài danh sách.
+
+        Mấy luật ở đây chỉ máy chủ biết — trùng tên, trùng đường dẫn — mà React
+        19 xoá trắng biểu mẫu sau mỗi lượt `action`, kể cả lượt trả về lỗi. Ô
+        trần thì người nhập mất sạch chữ vừa gõ, chỉ để đọc câu báo lỗi. Đổi
+        lại, ô tự giữ thì thêm XONG chữ cũng ở lại, nên `key` đổi theo danh
+        sách: thêm được một cái là React dựng lại biểu mẫu trắng.
+      */}
+      <form key={theLoai.length} action={gui} className="the flex flex-wrap items-end gap-3 p-4">
         <label className="min-w-[180px] flex-1">
           <span className="phu mb-1 block">Tên thể loại mới</span>
-          <input name="ten" required placeholder="Bắn súng" className="o-nhap" />
+          <ONhapGiu name="ten" required placeholder="Bắn súng" className="o-nhap" />
         </label>
         <label className="min-w-[180px] flex-1">
           <span className="phu mb-1 block">Đường dẫn (bỏ trống thì tự suy ra)</span>
-          <input name="duongDan" placeholder="ban-sung" className="o-nhap" />
+          <ONhapGiu name="duongDan" placeholder="ban-sung" className="o-nhap" />
         </label>
         <button type="submit" disabled={dangChay} className="nut-xam">
           {dangChay ? 'Đang thêm…' : 'Thêm thể loại'}

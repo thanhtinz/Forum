@@ -20,7 +20,16 @@ import { napAnh } from '@/components/quan-tri/ONapAnh';
 export function ODapDanhGia({ danhGiaId, banDau, banDauAnh, dap }: {
   danhGiaId: string;
   banDau: string | null;
-  banDauAnh?: string | null;
+  /*
+   * BẮT BUỘC, không để tuỳ chọn.
+   *
+   * Để `?` thì nơi gọi quên truyền vẫn dựng được, mà quên ở đây nghĩa là ô sửa
+   * mở ra với cột ảnh RỖNG — người trực bấm Lưu là tấm ảnh trong lời đáp cũ
+   * lặng lẽ biến mất. Đã quên thật ở hai trang, và trình biên dịch không nói
+   * được một câu nào vì dấu `?` ấy. Bắt buộc thì mỗi trang mới thêm phải tự
+   * nghĩ xem cột ảnh lấy ở đâu ra.
+   */
+  banDauAnh: string | null;
   dap: (danhGiaId: string, loi: string, anh?: string) => Promise<{ loi?: string }>;
 }) {
   const [mo, datMo] = useState(false);
@@ -106,8 +115,10 @@ export function ODapDanhGia({ danhGiaId, banDau, banDauAnh, dap }: {
           className="text-[12px] font-semibold text-mo hover:underline">
           Thôi
         </button>
-        {/* Xoá = lưu chuỗi rỗng, nên chỉ mời bấm khi đang thật có lời đáp. */}
-        {banDau && (
+        {/* Xoá = lưu chuỗi rỗng, nên chỉ mời bấm khi đang thật có lời đáp —
+            mà một lời đáp CHỈ CÓ ẢNH cũng là một lời đáp, nên phải xét cả hai
+            cột. Xét mỗi phần chữ thì lời đáp ảnh không có đường nào gỡ. */}
+        {(banDau || banDauAnh) && (
           <button type="button" disabled={dangGui}
             onClick={() => {
               datChu(''); datAnh('');

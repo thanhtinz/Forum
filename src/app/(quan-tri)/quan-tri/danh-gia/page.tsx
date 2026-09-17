@@ -58,7 +58,7 @@ export default async function DanhGiaQuanTri({ searchParams }: {
       skip: (trang - 1) * MOI_TRANG,
       take: MOI_TRANG,
       select: {
-        id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiLuc: true,
+        id: true, sao: true, noiDung: true, taoLuc: true, traLoi: true, traLoiAnh: true, traLoiLuc: true,
         nguoi: { select: { tenHienThi: true } },
         game: { select: { ten: true, icon: true, duongDan: true } },
       },
@@ -118,18 +118,27 @@ export default async function DanhGiaQuanTri({ searchParams }: {
                     </p>
                     <p className="mt-1.5 whitespace-pre-line text-[13px] leading-relaxed">{d.noiDung}</p>
 
-                    {d.traLoi && (
+                    {/* Lời đáp CHỈ CÓ ẢNH cũng là một lời đáp — xét mỗi phần
+                        chữ thì cả khối biến mất và người trực tưởng chưa đáp. */}
+                    {(d.traLoi || d.traLoiAnh) && (
                       <div className="mt-2.5 rounded-the bg-nen3 px-3 py-2.5">
                         <p className="text-[12px] font-bold text-nhan">
                           Đã trả lời
                           {d.traLoiLuc && <span className="phu ml-1.5 font-normal">{cachDay(d.traLoiLuc)}</span>}
                         </p>
-                        <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">{d.traLoi}</p>
+                        {d.traLoi && (
+                          <p className="mt-1 whitespace-pre-line text-[13px] leading-relaxed text-mo">{d.traLoi}</p>
+                        )}
+                        {d.traLoiAnh && (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img src={d.traLoiAnh} alt="" className="mt-1.5 max-h-40 rounded-the" />
+                        )}
                       </div>
                     )}
 
                     <div className="flex items-center gap-3">
-                      <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi} dap={traLoiDanhGia} />
+                      <ODapDanhGia danhGiaId={d.id} banDau={d.traLoi}
+                        banDauAnh={d.traLoiAnh} dap={traLoiDanhGia} />
                       {/* Xoá nằm cạnh Trả lời chứ không giấu đi: bài rác thì
                           việc cần làm là xoá, không phải đáp lại nó. */}
                       <NutXoaDanhGia danhGiaId={d.id} tenGame={d.game.ten}

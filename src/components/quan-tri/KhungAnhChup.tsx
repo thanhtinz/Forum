@@ -1,5 +1,6 @@
 'use client';
 
+import { ONhapGiu } from '@/components/ONhapGiu';
 import { useActionState, useTransition } from 'react';
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
 import { doiChoAnhChup, themAnhChup, xoaAnhChup, type KetQua } from '@/app/(quan-tri)/quan-tri/viec';
@@ -98,23 +99,27 @@ export function KhungAnhChup({ gameId, anh, he }: {
           khác thì gỡ bớt một tấm ở trên.
         </p>
       ) : (
-      <form action={gui} className="the space-y-3 p-4">
+      <form key={anh.length} action={gui} className="the space-y-3 p-4">
+        {/*
+          `key` ở ĐÂY, trên cả biểu mẫu, chứ không chỉ trên ô chọn ảnh.
+
+          Ô chú thích nay là ô TỰ GIỮ: hai luật của biểu mẫu này — chưa chọn
+          ảnh, và đã chạm trần số ảnh mỗi game — đều là luật chỉ máy chủ biết,
+          mà React 19 xoá trắng biểu mẫu sau mỗi lượt `action` kể cả lượt trả
+          về lỗi, nên ô trần là mất luôn dòng vừa gõ. Đổi lại, ô tự giữ thì
+          thêm xong chữ cũng ở lại — `key` theo số ảnh lo nốt phần ấy, cho cả
+          ô chú thích lẫn ô chọn ảnh.
+        */}
         <p className="text-[14px] font-bold">Thêm ảnh chụp</p>
         <input type="hidden" name="gameId" value={gameId} />
 
-        {/*
-          `key` đổi theo SỐ ẢNH ĐANG CÓ, và đó là chủ ý: thêm xong một ảnh thì
-          danh sách dài thêm một, `key` đổi, ô chọn ảnh dựng lại từ đầu và sạch
-          trơn. Không có nó thì ảnh vừa thêm vẫn nằm trong ô, và người dùng bấm
-          "Thêm ảnh" lần nữa là thêm đúng tấm ấy hai lần.
-        */}
-        <ONapAnh key={anh.length} ten="duongDanAnh" nhan="Ảnh chụp màn hình"
+        <ONapAnh ten="duongDanAnh" nhan="Ảnh chụp màn hình"
           banDau="" cho="anh-chup"
           goYy="Ảnh gốc của máy là đẹp nhất — đừng phóng to trước khi tải lên." />
 
         <label className="block">
           <span className="phu mb-1 block">Chú thích (không bắt buộc)</span>
-          <input name="chuThich" placeholder="Màn chơi đầu tiên" className="o-nhap" />
+          <ONhapGiu name="chuThich" placeholder="Màn chơi đầu tiên" className="o-nhap" />
         </label>
 
         {/*

@@ -1,5 +1,6 @@
 'use client';
 
+import { ONhapGiu } from '@/components/ONhapGiu';
 import { useActionState, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileArchive, ImagePlus, Loader2, Trash2 } from 'lucide-react';
@@ -30,10 +31,22 @@ export function KhungSticker({ goi }: { goi: GoiQuanTri[] }) {
     <div className="space-y-4">
       {goi.map((g) => <MotGoi key={g.id} g={g} />)}
 
-      <form action={gui} className="the flex flex-wrap items-end gap-3 p-4">
+            {/*
+        Ô chữ TỰ GIỮ, và biểu mẫu mang `key` theo độ dài danh sách.
+
+        Tên gói rỗng hoặc quá dài — mấy luật ấy chỉ máy chủ biết, mà React 19 xoá trắng biểu mẫu
+        sau mỗi lượt `action`, kể cả lượt trả về lỗi. Ô trần thì người nhập mất
+        sạch chữ vừa gõ, chỉ để đọc câu báo lỗi. Đổi lại, ô tự giữ thì thêm
+        XONG chữ cũng ở lại, nên `key` đổi theo danh sách: thêm được một cái là
+        React dựng lại biểu mẫu trắng.
+
+        Mấy ô ở biểu mẫu SỬA bên dưới vốn đã là ô tự giữ từ lâu; đúng biểu mẫu
+        THÊM MỚI này bị bỏ sót.
+      */}
+<form key={goi.length} action={gui} className="the flex flex-wrap items-end gap-3 p-4">
         <label className="min-w-[200px] flex-1">
           <span className="phu mb-1 block">Tên gói mới</span>
-          <input name="ten" required maxLength={TEN_GOI_TOI_DA} placeholder="Bộ mèo mập"
+          <ONhapGiu name="ten" required maxLength={TEN_GOI_TOI_DA} placeholder="Bộ mèo mập"
             className="o-nhap" />
         </label>
         <button type="submit" disabled={dangChay} className="nut-xam">

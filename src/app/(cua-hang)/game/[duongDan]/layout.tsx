@@ -8,6 +8,7 @@ import { NutChiaSe } from '@/components/game/NutChiaSe';
 import { NutLuu } from '@/components/game/NutLuu';
 import { NutLui } from '@/components/game/NutLui';
 import { TabGame } from '@/components/game/TabGame';
+import { DauTrangGonGame } from '@/components/game/DauTrangGonGame';
 import { HangSoLieu, dungSoLieu } from '@/components/game/HangSoLieu';
 import { TamTai } from '@/components/game/TamTai';
 import { DongLuanPhien } from '@/components/game/DongLuanPhien';
@@ -300,6 +301,25 @@ export default async function KhungGame({ children, params }: {
         </header>
 
       </div>
+
+      {/*
+        THANH ĐẦU THU GỌN — đặt NGAY SAU khối đầu, và là con TRỰC TIẾP của khối
+        bao cả trang.
+
+        Hai điều kiện, thiếu cái nào cũng hỏng:
+
+        • Sau khối đầu, vì nó tự đo bằng một cái mốc vô hình đặt ở đúng chỗ
+          này. Mốc còn trong tầm nhìn nghĩa là khối đầu vẫn còn thấy được, và
+          thanh gọn nằm im. Đặt lên trước thì thanh hiện ra ngay từ lúc mở
+          trang.
+
+        • Con trực tiếp của khối bao cả trang, vì `position: sticky` chỉ dính
+          trong phạm vi THẺ CHA của nó. Bản đầu tôi để nó trong khối
+          `space-y-5` bọc phần đầu — mà khối ấy kết thúc ngay sau nó, nên thanh
+          không có quãng nào để dính, nó trôi đi mất cùng phần đầu. Đo ra
+          `top: -994px` mới thấy; nhìn ảnh chụp chỉ thấy "thanh không hiện".
+      */}
+      <DauTrangGonGame ten={game.ten} icon={game.icon} duongDan={game.duongDan} />
 
       {/* Khung tải nay nằm TRONG tab Thông tin, không còn ở khung chung: App
           Store để phần lấy ứng dụng trong mạch nội dung chứ không dựng một

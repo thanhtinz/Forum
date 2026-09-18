@@ -272,6 +272,25 @@ một tầng trừu tượng cho ba chỗ chỉ **trông** giống nhau).
 
 ---
 
+## Đợt 1 còn dở — nợ phải trả
+
+Tạm gác để làm đợt 3 (tính năng + giao diện) theo yêu cầu, KHÔNG được quên.
+
+Năm phát hiện bảo mật sống sót qua hai lượt phản biện, chưa sửa:
+
+| Hàm | Lỗi |
+|---|---|
+| `boPhieu` | Rút phiếu cũ đọc-rồi-ghi: hai lượt song song trừ `soPhieu` hai lần cho một hàng phiếu. Dìm được con số của ô đối thủ xuống sàn |
+| `xoaLanHong` | Đăng nhập đúng xoá luôn bộ đếm theo IP, tự mở lại cửa cho kiểu quét hàng loạt |
+| `dangKy` | Nói thẳng email nào đã có tài khoản, phá luôn công chống dò của lối đăng nhập |
+| `traMa` | Trần năm lần gõ sai mã sáu số không xét `count`, bắn song song vẫn đoán thoải mái |
+| `xoaTaiKhoan` | Chốt "quản trị viên cuối cùng" đếm ngoài giao dịch: hai người xoá cùng lúc là cửa hàng hết quản trị |
+
+Và hai mục chưa làm: 1.3 (~30 phát hiện mức thấp cũ), 1.6 (chặn lượt cho
+`api/tai-len-tep` và `api/tai-len-phim`).
+
+---
+
 ## Nợ còn treo, không thuộc đợt nào
 
 **Năm lỗ hổng `npm audit` không vá được** — một ở `postcss` mà Next ghim sẵn,

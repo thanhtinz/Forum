@@ -49,6 +49,15 @@
    * chữ trên nền sáng — nó là màu trang trí: nhãn "hôm nay", tia nắng, hạng
    * cao trong bảng xếp hạng.
    */
+  /*
+   * Chiều cao thanh trên của cửa hàng, đo thật chứ không đoán: 63px ở mọi khổ.
+   *
+   * Có tên gọi vì thứ khác phải dính NGAY DƯỚI nó — thanh đầu thu gọn của
+   * trang game. Chép con số ấy vào chỗ kia thì hai bên lệch nhau ngay lần đầu
+   * ai đó nới thanh trên thêm vài điểm ảnh, và cái lệch ấy hiện ra thành một
+   * khe hở mỏng để nội dung trôi qua.
+   */
+  --cao-thanh-tren: 63px;
   --nhan: 0 116 229;
   --cam: 254 168 20;
   --vang: 254 222 90;

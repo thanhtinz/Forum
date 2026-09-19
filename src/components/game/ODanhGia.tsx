@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useOptimistic, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { CircleHelp, SquarePen, Star } from 'lucide-react';
 import { TamVietDanhGia } from '@/components/game/TamVietDanhGia';
+import { chamSaoNhanh } from '@/app/(cua-hang)/game/[duongDan]/viec';
 import { gop } from '@/lib/tien-ich';
 
 /**
@@ -30,6 +31,34 @@ export function ODanhGia({ gameId, tenGame, icon, tacGia, duongDan, banDau, daDa
   // `null` là tấm đang đóng; số là sao vừa bấm ngoài trang (0 = mở suông).
   const [mo, datMo] = useState<number | null>(null);
 
+  /*
+   * MỘT CÚ BẤM LÀ CHẤM XONG — không mở tấm nào.
+   *
+   * Bản trước bấm sao là mở tấm viết đánh giá với sao ấy điền sẵn. Nhưng phần
+   * lớn người ta chỉ muốn nói "game này hay", không muốn viết gì; bắt họ đi
+   * qua một biểu mẫu để nói đúng chừng ấy là bắt trả giá cho thứ họ không cần.
+   * App Store chấm luôn tại chỗ, và cửa hàng này nay cũng thế.
+   *
+   * `useOptimistic` để mấy ngôi sao sáng lên NGAY dưới ngón tay, không đợi máy
+   * chủ trả lời. Đây là thao tác nhỏ nhất và hay dùng nhất trong cả trang, nên
+   * một nhịp chờ nửa giây ở đây đọc ra thành "bấm không ăn" rồi người ta bấm
+   * lại lần nữa. Máy chủ chối thì React tự trả con số về chỗ cũ.
+   */
+  const [sao, datSao] = useState(banDau?.sao ?? 0);
+  const [saoTam, datSaoTam] = useOptimistic(sao);
+  const [dangGui, batDau] = useTransition();
+  const [loi, datLoi] = useState<string | null>(null);
+
+  const cham = (n: number) => {
+    datLoi(null);
+    batDau(async () => {
+      datSaoTam(n);
+      const kq = await chamSaoNhanh(gameId, n);
+      if (kq?.loi) datLoi(kq.loi);
+      else datSao(n);
+    });
+  };
+
   if (!daDangNhap) {
     return (
       <div className="py-2 text-center">
@@ -43,19 +72,30 @@ export function ODanhGia({ gameId, tenGame, icon, tacGia, duongDan, banDau, daDa
   return (
     <div className="text-center">
       <p className="text-[15px] font-bold">
-        {banDau ? 'Đánh giá của bạn' : 'Chấm sao cho game này'}
+        {saoTam > 0 ? 'Đánh giá của bạn' : 'Chấm sao cho game này'}
       </p>
 
-      <div className="mt-2 flex justify-center gap-2">
+      {/* `radiogroup`: năm ngôi sao là NĂM LỰA CHỌN LOẠI TRỪ NHAU, không phải
+          năm cái nút rời. Bộ đọc màn hình đọc đúng "4 trên 5" thay vì đọc lần
+          lượt năm cái nút chẳng liên quan gì tới nhau. */}
+      <div className="mt-2 flex justify-center gap-2" role="radiogroup"
+        aria-label={`Chấm sao cho ${tenGame}`}>
         {[1, 2, 3, 4, 5].map((n) => (
-          <button key={n} type="button" onClick={() => datMo(n)}
-            aria-label={`${n} sao`} aria-pressed={banDau?.sao === n}
-            className="p-0.5 transition-transform hover:scale-110">
+          <button key={n} type="button" onClick={() => cham(n)} disabled={dangGui}
+            role="radio" aria-checked={saoTam === n} aria-label={`${n} sao`}
+            className="p-0.5 transition-transform hover:scale-110 disabled:opacity-60">
             <Star size={32} strokeWidth={1.75}
-              className={gop('text-nhan', n <= (banDau?.sao ?? 0) ? 'fill-nhan' : 'fill-transparent')} />
+              className={gop('text-nhan', n <= saoTam ? 'fill-nhan' : 'fill-transparent')} />
           </button>
         ))}
       </div>
+
+      {/* Nói ra là đã lưu. Chấm xong mà trang im thì người ta không biết cú bấm
+          ấy có tới nơi hay không, và bấm lại lần nữa cho chắc. */}
+      <p className="phu mt-1.5 min-h-[18px]" role="status">
+        {loi ? <span className="font-medium text-xau">{loi}</span>
+          : saoTam > 0 ? `Đã chấm ${saoTam} sao` : 'Bấm vào sao để chấm'}
+      </p>
 
       {/*
         HAI NÚT BO TRÒN NẰM CẠNH NHAU, chia đôi bề ngang — đúng cặp "Write a
@@ -66,7 +106,7 @@ export function ODanhGia({ gameId, tenGame, icon, tacGia, duongDan, banDau, daDa
       <div className="mt-3.5 grid grid-cols-2 gap-2.5">
         <button type="button" onClick={() => datMo(0)} className="nut-xam !rounded-full gap-1.5">
           <SquarePen size={15} aria-hidden />
-          {banDau ? 'Sửa đánh giá' : 'Viết đánh giá'}
+          {banDau?.noiDung || banDau?.tieuDe ? 'Sửa đánh giá' : 'Viết đánh giá'}
         </button>
         <Link href={`/game/${duongDan}/dien-dan`} className="nut-xam !rounded-full gap-1.5">
           <CircleHelp size={15} aria-hidden />

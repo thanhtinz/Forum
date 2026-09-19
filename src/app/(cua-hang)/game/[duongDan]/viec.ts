@@ -105,6 +105,80 @@ export async function chamSao(
   return { ok: true };
 }
 
+/**
+ * CHẤM SAO MỘT CÚ BẤM — không mở tấm nào, không đụng tới phần chữ.
+ *
+ * Đây là lối của App Store: bấm vào ngôi sao thứ tư là chấm xong bốn sao, hết.
+ * Viết chữ là một việc RIÊNG, và phần lớn người ta không viết — bắt họ đi qua
+ * một biểu mẫu chỉ để nói "game này hay" là bắt trả giá cho thứ họ không cần.
+ *
+ * VÌ SAO KHÔNG GỌI LẠI `chamSao` VỚI CHỮ RỖNG. Hàm ấy ghi `noiDung: chu ||
+ * null` — chữ rỗng nghĩa là XOÁ. Nên một cú bấm sao sẽ thổi bay cả bài đánh
+ * giá người ta đã viết, kèm tiêu đề và ảnh đính kèm, mà không hỏi một câu.
+ * Hàm này chỉ chạm đúng cột `sao`.
+ *
+ * `update` và `create` tách hẳn nhau trong `upsert` chính vì thế: hàng đã có
+ * thì chỉ đổi mỗi điểm sao, hàng chưa có mới dựng mới.
+ */
+export async function chamSaoNhanh(gameId: string, sao: number): Promise<KetQua> {
+  let nguoi;
+  try { nguoi = await batBuocDangNhap(); }
+  catch { return { loi: 'Bạn cần đăng nhập để đánh giá.' }; }
+
+  if (!Number.isInteger(sao) || sao < 1 || sao > 5) return { loi: 'Hãy chọn từ 1 đến 5 sao.' };
+
+  // Điều kiện "game đang bày" nằm trong `where`, không lọc sau: đây là một địa
+  // chỉ POST công khai như mọi hàm khác trong tệp này.
+  const game = await db.game.findFirst({
+    where: { id: gameId, trangThai: 'DANG_HIEN' },
+    select: { duongDan: true },
+  });
+  if (!game) return { loi: 'Không tìm thấy game này.' };
+
+  // Bản nào lúc chấm — cùng lẽ với `chamSao`, xem chú thích ở đó.
+  const [daTai, banMoi] = await Promise.all([
+    db.luotTai.findUnique({
+      where: { gameId_nguoiId: { gameId, nguoiId: nguoi.id } },
+      select: { soHieu: true },
+    }),
+    db.banTai.findFirst({
+      where: { gameId },
+      orderBy: [{ moiNhat: 'desc' }, { ngayRa: { sort: 'desc', nulls: 'last' } }, { id: 'desc' }],
+      select: { soHieu: true },
+    }),
+  ]);
+  const soHieu = daTai?.soHieu ?? banMoi?.soHieu ?? null;
+
+  await db.$transaction(async (tx) => {
+    await tx.danhGia.upsert({
+      where: { gameId_nguoiId: { gameId, nguoiId: nguoi.id } },
+      // CHỈ cột `sao` và `soHieu`. Không nhắc tới `noiDung`, `tieuDe`, `anh` —
+      // nhắc tới là ghi đè, mà ở đây không có gì để ghi vào chúng.
+      update: { sao, soHieu },
+      create: { gameId, nguoiId: nguoi.id, sao, soHieu },
+      select: { id: true },
+    });
+
+    // Ba cột đếm sẵn khớp lại trong CÙNG giao dịch, đếm lại từ bảng — y hệt
+    // `chamSao`, vì lệch một lần là lệch vĩnh viễn.
+    const gom = await tx.danhGia.aggregate({
+      where: { gameId }, _sum: { sao: true }, _count: { _all: true },
+    });
+    await tx.game.update({
+      where: { id: gameId },
+      data: {
+        tongSao: gom._sum.sao ?? 0,
+        soLuotDanhGia: gom._count._all,
+        diemTB: tinhDiemTB(gom._sum.sao ?? 0, gom._count._all),
+      },
+      select: { id: true },
+    });
+  });
+
+  revalidatePath(`/game/${game.duongDan}`);
+  return { ok: true };
+}
+
 /* ──────────────────────────────────────────────────────────────────────────
  * ĐỌC ĐÁNH GIÁ THEO TRANG — cho tấm trượt "tất cả đánh giá"
  *

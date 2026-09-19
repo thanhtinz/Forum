@@ -69,7 +69,11 @@ export default async function chay(kiem) {
     /* ── Viết đánh giá KÈM TIÊU ĐỀ qua tấm trượt ─────────────────────── */
     p = await moTrangDaDangNhap(`${TEN}-0`, 'thanhvien123');
     await p.goto(`${GOC}/game/${DUONG_DAN}`, { waitUntil: 'networkidle' });
-    await p.locator('button[aria-label="5 sao"]').first().click();
+    // Mở tấm viết rồi chấm sao TRONG tấm: bấm hàng sao ngoài trang nay là
+    // chấm luôn, không mở tấm nào (xem bài 88).
+    await p.locator('button:has-text("Viết đánh giá")').first().click();
+    await p.waitForSelector('dialog[open]', { timeout: 8000 });
+    await p.locator('dialog[open] button[aria-label="Chấm 5 sao"]').click();
     await p.locator('dialog[open] input').first().fill('Nhẹ máy mà vui');
     await p.locator('dialog[open] textarea').first().fill('Chạy mượt trên máy cũ của mình.');
     await p.locator('dialog[open] button:has-text("Gửi đánh giá")').first().click();
@@ -87,7 +91,8 @@ export default async function chay(kiem) {
       (await p.locator('p.font-bold:text-is("Nhẹ máy mà vui")').count()) > 0);
 
     /* ── Tiêu đề quá dài bị cắt ở máy chủ ────────────────────────────── */
-    await p.locator('button[aria-label="5 sao"]').first().click();
+    await p.locator('button:has-text("Sửa đánh giá")').first().click();
+    await p.waitForSelector('dialog[open]', { timeout: 8000 });
     await p.locator('dialog[open] input').first().fill('x'.repeat(400));
     await p.locator('dialog[open] button:has-text("Cập nhật")').first().click();
     kiem('tiêu đề dài bị cắt còn 80 ký tự', await doiToi(async () => {

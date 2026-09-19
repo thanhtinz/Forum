@@ -32,9 +32,18 @@ export default async function chay(kiem) {
   const p = await moTrangDaDangNhap('anhthu', 'thanhvien123');
   await p.goto(`${GOC}/game/${game.duongDan}`, { waitUntil: 'networkidle' });
 
-  await p.click('button[aria-label="5 sao"]');
-  await p.fill('textarea', 'Chạy mượt trên máy cũ của mình.');
-  await p.click('button:has-text("Gửi đánh giá")');
+  /*
+   * Hai lối chấm sao, và bài này đi lối VIẾT BÀI vì nó cần cả phần chữ.
+   *
+   * Bấm thẳng vào hàng sao ngoài trang là chấm luôn, một cú bấm, không mở gì —
+   * lối ấy có bài 88 canh riêng. Muốn kèm chữ thì mở tấm viết, rồi chấm sao
+   * TRONG tấm ấy (nhãn "Chấm N sao", khác hẳn nhãn "N sao" ngoài trang).
+   */
+  await p.click('button:has-text("Viết đánh giá")');
+  await p.waitForSelector('dialog[open]', { timeout: 8000 });
+  await p.click('dialog[open] button[aria-label="Chấm 5 sao"]');
+  await p.fill('dialog[open] textarea', 'Chạy mượt trên máy cũ của mình.');
+  await p.click('dialog[open] button:has-text("Gửi đánh giá")');
 
   const daGhi = await doiToi(async () =>
     (await db.danhGia.count({ where: { gameId: game.id, nguoiId: nguoi.id, sao: 5 } })) === 1);
@@ -43,8 +52,10 @@ export default async function chay(kiem) {
 
   // ── Chấm lại: SỬA bài cũ, không đẻ bài mới ───────────────────────────
   await p.reload({ waitUntil: 'networkidle' });
-  await p.click('button[aria-label="2 sao"]');
-  await p.click('button:has-text("Cập nhật")');
+  await p.click('button:has-text("Sửa đánh giá")');
+  await p.waitForSelector('dialog[open]', { timeout: 8000 });
+  await p.click('dialog[open] button[aria-label="Chấm 2 sao"]');
+  await p.click('dialog[open] button:has-text("Cập nhật")');
 
   const daSua = await doiToi(async () =>
     (await db.danhGia.count({ where: { gameId: game.id, nguoiId: nguoi.id, sao: 2 } })) === 1);

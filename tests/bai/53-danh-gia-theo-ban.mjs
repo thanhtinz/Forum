@@ -48,12 +48,14 @@ export default async function chay(kiem) {
 
     p = await moTrangDaDangNhap(TEN, 'thanhvien123');
 
-    /** Chấm sao rồi gửi — nút gửi đổi chữ tuỳ đã có bài cũ hay chưa. */
+    /*
+     * Chấm sao bằng MỘT CÚ BẤM ngoài trang — đúng lối App Store, và cũng là
+     * lối duy nhất bài này cần: nó đo cột `soHieu` ghi kèm bài đánh giá, chứ
+     * không đo phần chữ.
+     */
     const chamSao = async (n) => {
       await p.locator(`button[aria-label="${n} sao"]`).first().click();
-      await p.locator('button:has-text("Gửi đánh giá"), button:has-text("Cập nhật")')
-        .first().click();
-      await p.waitForTimeout(800);
+      await p.waitForTimeout(1200);
     };
 
     /* ── Chưa tải bao giờ: lấy bản mới nhất đang bày ──────────────────── */

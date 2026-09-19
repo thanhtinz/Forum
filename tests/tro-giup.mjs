@@ -280,3 +280,28 @@ export function taoMP4(soByte = 4096) {
   dem.write('free', 4, 'ascii');
   return Buffer.concat([dau, dem]);
 }
+
+/**
+ * Xoá nhịp nghỉ diễn đàn của một người, để bài kiểm đăng được bài tiếp theo.
+ *
+ * Diễn đàn có nhịp nghỉ thật ở máy chủ — 30 giây giữa hai chủ đề, 8 giây giữa
+ * hai lời đáp — và nó đếm theo NGƯỜI trên toàn cửa hàng, không theo từng game.
+ * Đó là luật đúng (xem `dien-dan-const.ts`), nhưng nó làm mấy bài kiểm giẫm
+ * lên nhau: bài 05 đăng bằng `huytran` xong, hai giây sau bài 20 cũng đăng
+ * bằng `huytran` là trượt — mà chạy lẻ từng bài thì không bao giờ thấy.
+ *
+ * Nên lùi mốc của CHÍNH người ấy về quá khứ, thay vì ngồi đợi ba mươi giây
+ * thật ở mỗi lượt đăng. Chỉ đụng hàng của họ, và lùi một quãng vừa đủ — không
+ * quét cả bảng, để không xáo trộn thứ tự mà bài khác đang canh.
+ *
+ * KHÔNG mở cửa hậu trong sản phẩm để làm việc này. Một cái công tắc "tắt nhịp
+ * nghỉ khi đang chạy kiểm" thì đúng cái cửa chặn ấy không còn được bài nào
+ * canh nữa — mà nó là cửa chống rải bài.
+ */
+export async function boNhipDienDan(nguoiId) {
+  const xa = new Date(Date.now() - 120_000);
+  await Promise.all([
+    db.chuDe.updateMany({ where: { nguoiId, taoLuc: { gt: xa } }, data: { taoLuc: xa } }),
+    db.traLoi.updateMany({ where: { nguoiId, taoLuc: { gt: xa } }, data: { taoLuc: xa } }),
+  ]);
+}

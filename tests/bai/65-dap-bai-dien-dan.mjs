@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, boNhipDienDan, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 import { rutGon } from '../../src/lib/trich-dan-const.ts';
 
 const TIEU_DE = 'Chủ đề kiểm thử đáp bài';
@@ -79,6 +79,9 @@ export default async function chay(kiem) {
       (await p.inputValue('input[name="traLoiChoId"]')) === baiGoc.id);
 
     await p.fill('textarea[name="noiDung"]', 'Đánh vào đuôi nó lúc nó đang hồi máu.');
+    // Nhịp nghỉ diễn đàn đếm theo NGƯỜI trên toàn cửa hàng, nên bài kiểm
+    // chạy trước có thể vừa đăng bằng chính tài khoản này. Xem `boNhipDienDan`.
+    await boNhipDienDan(b.id);
     await p.click('button:has-text("Gửi trả lời")');
     const daDap = await doiToi(async () =>
       (await db.traLoi.count({ where: { chuDeId: chuDe.id, traLoiChoId: baiGoc.id } })) === 1);
@@ -120,6 +123,9 @@ export default async function chay(kiem) {
       f.appendChild(o);
     }, baiChuDeKhac.id);
     await p.fill('textarea[name="noiDung"]', 'Bài trỏ chéo chủ đề.');
+    // Nhịp nghỉ diễn đàn đếm theo NGƯỜI trên toàn cửa hàng, nên bài kiểm
+    // chạy trước có thể vừa đăng bằng chính tài khoản này. Xem `boNhipDienDan`.
+    await boNhipDienDan(b.id);
     await p.click('button:has-text("Gửi trả lời")');
     const daGui = await doiToi(async () =>
       (await db.traLoi.count({

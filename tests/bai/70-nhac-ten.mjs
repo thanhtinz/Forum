@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, boNhipDienDan, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
 import { bocTenNhac, TOI_DA_NHAC } from '../../src/lib/nhac-ten-const.ts';
 
 const TIEU_DE = 'Kiểm thử nhắc tên';
@@ -65,6 +65,9 @@ export default async function chay(kiem) {
     await p.goto(dia, { waitUntil: 'networkidle' });
     await p.fill('textarea[name="noiDung"]',
       `@${duocNhac.tenDangNhap} xem giúp mình với, gửi qua ai-do@vi-du.test cũng được.`);
+    // Nhịp nghỉ diễn đàn đếm theo NGƯỜI trên toàn cửa hàng, nên bài kiểm
+    // chạy trước có thể vừa đăng bằng chính tài khoản này. Xem `boNhipDienDan`.
+    await boNhipDienDan(nguoiViet.id);
     await p.click('button:has-text("Gửi trả lời")');
 
     const daGui = await doiToi(async () =>
@@ -102,6 +105,9 @@ export default async function chay(kiem) {
     });
     await p.goto(dia, { waitUntil: 'networkidle' });
     await p.fill('textarea[name="noiDung"]', `@${duocNhac.tenDangNhap} nhắc lại lần nữa nhé.`);
+    // Nhịp nghỉ diễn đàn đếm theo NGƯỜI trên toàn cửa hàng, nên bài kiểm
+    // chạy trước có thể vừa đăng bằng chính tài khoản này. Xem `boNhipDienDan`.
+    await boNhipDienDan(nguoiViet.id);
     await p.click('button:has-text("Gửi trả lời")');
     await doiToi(async () => (await db.traLoi.count({ where: { chuDeId: chuDe.id } })) === 2);
     await p.waitForTimeout(1500);
@@ -120,6 +126,9 @@ export default async function chay(kiem) {
     await p.goto(dia, { waitUntil: 'networkidle' });
     await p.fill('textarea[name="noiDung"]',
       `Đoạn mã của mình: \`@${duocNhac.tenDangNhap} không phải lời nhắc\``);
+    // Nhịp nghỉ diễn đàn đếm theo NGƯỜI trên toàn cửa hàng, nên bài kiểm
+    // chạy trước có thể vừa đăng bằng chính tài khoản này. Xem `boNhipDienDan`.
+    await boNhipDienDan(nguoiViet.id);
     await p.click('button:has-text("Gửi trả lời")');
     await doiToi(async () => (await db.traLoi.count({ where: { chuDeId: chuDe.id } })) === 3);
 

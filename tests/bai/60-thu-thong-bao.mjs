@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, boNhipDienDan, db, doiToi, moTrangDaDangNhap } from '../tro-giup.mjs';
 import { docThan, moThuGia } from '../thu-gia.mjs';
 
 /* Chữ thường hết: lối đăng nhập hạ định danh về chữ thường trước khi tra, mà
@@ -92,10 +92,16 @@ export default async function chay(kiem) {
     });
 
     const khac = await moTrangDaDangNhap('admin@sunnystore.local', 'admin123');
+    // Bài này đáp HAI lần liên tiếp bằng cùng tài khoản, mà diễn đàn có nhịp
+    // nghỉ thật ở máy chủ — xem `boNhipDienDan`.
+    const quanTri = await db.nguoiDung.findFirst({
+      where: { email: 'admin@sunnystore.local' }, select: { id: true },
+    });
     hom.thu.length = 0;
     await khac.goto(`${GOC}/game/${game.duongDan}/dien-dan/${chuDe.id}`,
       { waitUntil: 'networkidle' });
     await khac.fill('textarea[name="noiDung"]', 'Lời đáp để bắn thông báo.');
+    await boNhipDienDan(quanTri.id);
     await khac.click('button:has-text("Gửi")');
 
     const coThu = await doiToi(async () => hom.thu.length >= 1);
@@ -115,6 +121,7 @@ export default async function chay(kiem) {
     await db.nguoiDung.update({ where: { id: nguoi.id }, data: { thuThongBao: false } });
     hom.thu.length = 0;
     await khac.fill('textarea[name="noiDung"]', 'Lời đáp thứ hai.');
+    await boNhipDienDan(quanTri.id);
     await khac.click('button:has-text("Gửi")');
     await doiToi(async () =>
       (await db.traLoi.count({ where: { chuDeId: chuDe.id } })) === 2);

@@ -1,4 +1,4 @@
-import { GOC, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
+import { GOC, boNhipDienDan, db, doiToi, moTrang, moTrangDaDangNhap } from '../tro-giup.mjs';
 
 const DUONG_DAN = 'game-kiem-dien-dan-dam';
 
@@ -100,6 +100,9 @@ export default async function chay(kiem) {
 
       // Và gửi được một lời đáp có Markdown, từ đầu tới cuối bằng trình duyệt.
       await nguoiDung.fill('textarea[name="noiDung"]', 'Cảm ơn, **đã qua** được rồi.');
+      // Nhịp nghỉ diễn đàn đếm theo NGƯỜI trên toàn cửa hàng, nên bài kiểm
+      // chạy trước có thể vừa đăng bằng chính tài khoản này. Xem `boNhipDienDan`.
+      await boNhipDienDan(nguoi.id);
       await nguoiDung.click('button:has-text("Gửi trả lời")');
       const daGui = await doiToi(async () =>
         (await db.traLoi.count({ where: { chuDeId: chuDe.id } })) === 2);

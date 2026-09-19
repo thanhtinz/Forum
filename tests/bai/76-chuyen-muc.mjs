@@ -1,4 +1,4 @@
-import { GOC, LOI, db, doiToi, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
+import { GOC, LOI, boNhipDienDan, db, doiToi, moTrangDaDangNhap, tuDongXacNhan } from '../tro-giup.mjs';
 import { MUC_CHUNG, TEN_TOI_DA } from '../../src/lib/chuyen-muc-const.ts';
 
 const DAU = 'Ktmuc';
@@ -208,6 +208,9 @@ export default async function chay(kiem) {
     await thuong.selectOption('select[name="chuyenMuc"]', muc.duongDan);
     await thuong.fill('input[name="tieuDe"]', `${DAU} bài đăng qua biểu mẫu`);
     await thuong.fill('textarea[name="noiDung"]', 'Nội dung đủ dài cho phép kiểm.');
+    // Nhịp nghỉ diễn đàn đếm theo NGƯỜI trên toàn cửa hàng, nên bài kiểm
+    // chạy trước có thể vừa đăng bằng chính tài khoản này. Xem `boNhipDienDan`.
+    await boNhipDienDan(nguoi.id);
     await thuong.click('button:has-text("Đăng chủ đề")');
     const daDang = await doiToi(async () =>
       (await db.chuDe.count({

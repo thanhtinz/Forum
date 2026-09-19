@@ -9,7 +9,6 @@ import { HangGame } from '@/components/game/HangGame';
 import { LuoiTheLoai } from '@/components/game/LuoiTheLoai';
 import { ANH_TRONG_KET_QUA } from '@/lib/luat-anh-const';
 import { PhanTrang } from '@/components/PhanTrang';
-import { OTim } from '@/components/vo/OTim';
 import { cachDay, gonSo, gop, kep, soTrang } from '@/lib/tien-ich';
 
 export const dynamic = 'force-dynamic';
@@ -72,8 +71,6 @@ export default async function TrangTim({ searchParams }: {
 
   return (
     <div className="space-y-5">
-      <div className="lg:hidden"><OTim giaTriDau={loc.tuKhoa} /></div>
-
       <div>
         <h1 className="text-[22px] font-bold tracking-tight">Kết quả cho “{tuKhoa}”</h1>
       </div>
@@ -216,8 +213,6 @@ async function ChuaGo() {
 
   return (
     <div className="space-y-7">
-      <div className="lg:hidden"><OTim /></div>
-
       <div>
         <h1 className="text-[22px] font-bold tracking-tight">Tìm game</h1>
         <p className="phu mt-0.5">Gõ tên game, tên nhà phát triển, hoặc chọn một lối dưới đây.</p>

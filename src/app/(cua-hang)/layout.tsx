@@ -5,6 +5,7 @@ import { demChuaDoc } from '@/lib/thong-bao';
 import { ANH_CHIA_SE, DIA_CHI_GOC } from '@/lib/dia-chi-goc';
 import { docNen } from '@/lib/dat-nen';
 import { docTrang } from '@/lib/cai-dat';
+import { ChanTrang } from '@/components/vo/ChanTrang';
 import { ThanhBen } from '@/components/vo/ThanhBen';
 import { ThanhTren } from '@/components/vo/ThanhTren';
 import { ThanhDay } from '@/components/vo/ThanhDay';
@@ -80,6 +81,12 @@ export default async function BoCucGoc({ children }: { children: React.ReactNode
         <div className="min-h-screen pb-28 lg:pb-0 lg:pl-[240px]">
           <ThanhTren nguoi={nguoi} chuaDoc={chuaDoc} nen={nen} />
           <main id="noi-dung" className="khung py-5 sm:py-6">{children}</main>
+
+          {/* Chân trang nằm NGOÀI `main`, sau nội dung chính: bộ đọc màn hình
+              gặp nó sau cùng, đúng chỗ người ta trông đợi. Và nó hiện ở MỌI
+              khổ — mấy lối này trước đây chỉ nằm ở đáy thanh bên máy bàn, nên
+              người dùng điện thoại không bao giờ thấy. */}
+          <ChanTrang tenTrang={trang.ten} />
         </div>
 
         <ThanhDay />
